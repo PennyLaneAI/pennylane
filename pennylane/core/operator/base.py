@@ -1741,7 +1741,7 @@ class Operation(Operator):
         **Example**
 
         >>> op = qp.CRot(0.4, 0.1, 0.3, wires=[0, 1])
-        >>> op.parameter_frequencies
+        >>> qp.gradients.parameter_frequencies(op)
         [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
 
         For operators that define a generator, the parameter frequencies are directly
