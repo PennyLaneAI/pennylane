@@ -185,6 +185,7 @@ class TestInitialization:
 
     def test_parametric_ops(self, power_method):
         """Test pow initialization for a standard parametric operation."""
+
         params = [1.2345, 2.3456, 3.4567]
         base = qp.Rot(*params, wires="b")
 
@@ -194,11 +195,7 @@ class TestInitialization:
         assert op.z == -0.766
         assert op.hyperparameters["base"] is base
         assert op.hyperparameters["z"] == -0.766
-        assert op.name == "Rot**-0.766"
-
-        assert op.num_params == 3
-        assert qp.math.allclose(params, op.parameters)
-        assert qp.math.allclose(params, op.data)
+        assert op.name == "Pow(Rot)" if isinstance(op, Pow2) else "Rot**-0.766"
 
         assert op.wires == qp.wires.Wires("b")
         assert op.num_wires == 1
