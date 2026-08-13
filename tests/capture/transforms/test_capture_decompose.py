@@ -508,8 +508,7 @@ class TestControlledDecompositions:
             qp.RX(x, 0)
             qp.IsingXX(x, [0, 1])
 
-        # C(IsingXX) is not in the default gate set
-        @DecomposeInterpreter(gate_set="C(IsingXX)")
+        @DecomposeInterpreter(gate_set={"C(IsingXX)", "C(RX)"})
         def f(x):
             qp.ctrl(inner_f, control=[2, 3])(x)
 
@@ -533,7 +532,7 @@ class TestControlledDecompositions:
 
             g()
 
-        @DecomposeInterpreter()
+        @DecomposeInterpreter(gate_set={"C(RX)"})
         def f(x, n):
             qp.ctrl(inner_f, control=[4, 5])(x, n)
 
@@ -541,8 +540,8 @@ class TestControlledDecompositions:
         jaxpr = jax.make_jaxpr(f)(*args)
         assert jaxpr.eqns[0].primitive == for_loop_prim
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr_body_fn"]
-        assert_eqn_matches_op(inner_jaxpr.eqns[-2], qp.RX)
-        assert inner_jaxpr.eqns[-1].primitive == qp.ops.Controlled._primitive
+        assert_eqn_matches_op(inner_jaxpr.eqns[0], qp.RX)
+        assert inner_jaxpr.eqns[0].params["n_ctrls"] == 2
 
     def test_ctrl_while_loop(self):
         """Test that a while_loop inside a ctrl_transform is not unrolled."""
@@ -555,7 +554,7 @@ class TestControlledDecompositions:
 
             g(0)
 
-        @DecomposeInterpreter()
+        @DecomposeInterpreter(gate_set={"C(RX)"})
         def f(x, n):
             qp.ctrl(inner_f, control=[4, 5])(x, n)
 
@@ -563,9 +562,8 @@ class TestControlledDecompositions:
         jaxpr = jax.make_jaxpr(f)(*args)
         assert jaxpr.eqns[0].primitive == while_loop_prim
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr_body_fn"]
-        assert_eqn_matches_op(inner_jaxpr.eqns[-3], qp.RX)
-        assert inner_jaxpr.eqns[-2].primitive == qp.ops.Controlled._primitive
-        # final primitive is the increment
+        assert_eqn_matches_op(inner_jaxpr.eqns[-2], qp.RX)
+        assert inner_jaxpr.eqns[-2].params["n_ctrls"] == 2
         assert inner_jaxpr.eqns[-1].primitive.name == "add"
 
     def test_ctrl_cond(self):
@@ -578,7 +576,7 @@ class TestControlledDecompositions:
 
             cond_f()
 
-        @DecomposeInterpreter()
+        @DecomposeInterpreter(gate_set={"C(RX)"})
         def f(x):
             qp.ctrl(inner_f, control=[4, 5])(x)
 
@@ -589,8 +587,8 @@ class TestControlledDecompositions:
 
         # True branch
         branch_jaxpr = jaxpr.eqns[1].params["jaxpr_branches"][0]
-        assert_eqn_matches_op(branch_jaxpr.eqns[-2], qp.RX)
-        assert branch_jaxpr.eqns[-1].primitive == qp.ops.Controlled._primitive
+        assert_eqn_matches_op(branch_jaxpr.eqns[0], qp.RX)
+        assert branch_jaxpr.eqns[0].params["n_ctrls"] == 2
 
 
 def test_decompose_plxpr_to_plxpr():
