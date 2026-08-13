@@ -80,9 +80,9 @@ Coprocessor functions
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 A :class:`~.Coprocessor` applies a precompiled function to each message it receives (e.g., decoding a
-syndrome). Coprocessor functions can be defined directly in C++ as a runtime function, or in Python
-through helper functions such as :func:`~.css_bp_decoder` and :func:`~.triton_decoder`. Either way they are referenced by a
-:class:`~.CoprocessorFunction`.
+syndrome). A :class:`~.CoprocessorFunction` can reference any compatible precompiled library symbol,
+including a custom C++ or Triton function. The :func:`~.triton_decoder` and :func:`~.css_bp_decoder`
+helpers compile user-defined Triton decoders and CSS belief-propagation decoders, respectively.
 
 .. autosummary::
     :toctree: api
