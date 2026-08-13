@@ -116,7 +116,7 @@ def _resolve_nodes(controller, coprocessor, decoder_id):
     if coprocessor is None:
         coprocs = placement.coprocessors
         if coprocs:
-            if decoder_id >= len(coprocs):
+            if not 0 <= decoder_id < len(coprocs):
                 raise ValueError(
                     f"decode: decoder_id {decoder_id} selects coprocessor {decoder_id}, but the "
                     f"placement has {len(coprocs)}. Pass coprocessor= to choose one directly."
