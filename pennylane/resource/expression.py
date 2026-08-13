@@ -20,7 +20,7 @@ from functools import lru_cache
 from typing import Union
 
 
-def _maybe_collapse(
+def _cast_if_constant(
     new_data: dict[tuple[str, ...], int], vars: set[str], skip_copy: bool, skip_normalization: bool
 ) -> Union["Expression", int]:
     """Collapse the new data for creating an Expression into an int if possible.
@@ -244,7 +244,7 @@ class Expression:
         if isinstance(other, int):
             if other == 0:
                 return 0
-            return _maybe_collapse(
+            return _cast_if_constant(
                 {vars: coeff * other for vars, coeff in self._data.items()},
                 vars=self._vars,
                 skip_copy=True,
@@ -255,7 +255,7 @@ class Expression:
         for vars1, coeff1 in self._data.items():
             for vars2, coeff2 in other._data.items():
                 new_data[vars1 + vars2] += coeff1 * coeff2
-        return _maybe_collapse(
+        return _cast_if_constant(
             new_data, self._vars.union(other._vars), skip_copy=False, skip_normalization=False
         )
 
@@ -280,7 +280,7 @@ class Expression:
                     new_data[other_vars] = new_val
             vars = vars.union(other._vars)
 
-        return _maybe_collapse(new_data, vars, skip_copy=True, skip_normalization=False)
+        return _cast_if_constant(new_data, vars, skip_copy=True, skip_normalization=False)
 
     def __radd__(self, other) -> Union["Expression", int]:
         return self.__add__(other)

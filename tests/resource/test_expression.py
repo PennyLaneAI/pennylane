@@ -20,31 +20,31 @@ import pytest
 
 from pennylane.resource.expression import (
     Expression,
-    _maybe_collapse,
+    _cast_if_constant,
     _term_to_str,
 )
 
 
-def test_maybe_collapse():
-    """Test that _maybe_collapse returns the expected type based on the input data."""
-    zero = _maybe_collapse({}, set(), skip_copy=True, skip_normalization=False)
+def test_cast_if_constant():
+    """Test that _cast_if_constant returns the expected type based on the input data."""
+    zero = _cast_if_constant({}, set(), skip_copy=True, skip_normalization=False)
     assert zero == 0
     assert isinstance(zero, int)
 
     # Check for literal 0
-    lit_zero = _maybe_collapse({(): 0}, set(), skip_copy=True, skip_normalization=False)
+    lit_zero = _cast_if_constant({(): 0}, set(), skip_copy=True, skip_normalization=False)
     assert lit_zero == 0
     assert isinstance(lit_zero, int)
 
-    three = _maybe_collapse({(): 3}, set(), skip_copy=True, skip_normalization=False)
+    three = _cast_if_constant({(): 3}, set(), skip_copy=True, skip_normalization=False)
     assert three == 3
     assert isinstance(three, int)
 
-    nega = _maybe_collapse({(): -1}, set(), skip_copy=True, skip_normalization=False)
+    nega = _cast_if_constant({(): -1}, set(), skip_copy=True, skip_normalization=False)
     assert nega == -1
     assert isinstance(nega, int)
 
-    exp = _maybe_collapse({("x",): 1}, set(), skip_copy=True, skip_normalization=False)
+    exp = _cast_if_constant({("x",): 1}, set(), skip_copy=True, skip_normalization=False)
     assert isinstance(exp, Expression)
     assert exp == Expression({("x",): 1})
 
