@@ -2,9 +2,10 @@
 
 <h3>New features since last release</h3>
 
-* Added :func:`~.triton_decoder` and :func:`~.css_bp_decoder` for compiling Triton-based
-  coprocessor decoders. :func:`~.triton_decoder` wraps user-provided Triton decoder tuples, while
-  :func:`~.css_bp_decoder` builds a CSS belief-propagation decoder from X- and Z-type parity-check
+* Added :func:`~pennylane.backline.triton_decoder` and
+  :func:`~pennylane.backline.css_bp_decoder` for compiling Triton-based coprocessor decoders.
+  :func:`~pennylane.backline.triton_decoder` wraps user-provided Triton decoder tuples, while
+  :func:`~pennylane.backline.css_bp_decoder` builds a CSS belief-propagation decoder from X- and Z-type parity-check
   matrices. In both cases, syndromes and corrections are packed into ``u64`` bitmasks.
 
   ```python
@@ -18,7 +19,7 @@
       zero = tl.cast(0, tl.uint64)
       return tl.where(syndrome != 0, one << (syndrome - 1), zero)
 
-  custom_decoder = qp.triton_decoder(
+  custom_decoder = qp.backline.triton_decoder(
       (steane_lookup, steane_lookup),
       platform="hip:gfx942:64",
   )
@@ -28,7 +29,7 @@
       [0, 1, 1, 0, 0, 1, 1],
       [0, 0, 0, 1, 1, 1, 1],
   ])
-  css_decoder = qp.css_bp_decoder(
+  css_decoder = qp.backline.css_bp_decoder(
       Hx,
       Hz,
       postprocess="osd",

@@ -140,6 +140,8 @@ from .placement import Controller, Coprocessor, ExecutorSpec, Node, Placement
 from .transports import Transport, get_transport, register_transport
 
 backline.decode = decode
+backline.css_bp_decoder = css_bp_decoder
+backline.triton_decoder = triton_decoder
 
 __all__ = [
     "Node",
