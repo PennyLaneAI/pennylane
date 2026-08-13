@@ -2531,6 +2531,9 @@ class TestGrad:
         assert np.allclose(np.real(res), expected, atol=tol, rtol=0)
 
     @pytest.mark.jax
+    @pytest.mark.xfail(
+        reason="jax.jacobian requires complex inputs which RX doesn't support anymore"
+    )
     @pytest.mark.parametrize("par", np.linspace(0, 2 * np.pi, 3))
     def test_qnode_with_rx_and_state_jacobian_jax(self, par, tol):
         """Test the jacobian of a complex valued QNode that contains a rotation
