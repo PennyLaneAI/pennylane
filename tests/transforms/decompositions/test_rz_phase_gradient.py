@@ -21,6 +21,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.decompositions import (
     make_rz_to_phase_gradient_decomp,
     validate_phase_gradient_wires,
@@ -63,6 +64,47 @@ def test_valid_decomp(phi, p):
     custom_decomp = make_rz_to_phase_gradient_decomp(**kwargs)
     op = qp.RZ(phi, 0)
     _test_decomposition_rule(op, custom_decomp, skip_decomp_matrix_check=True)
+
+
+@pytest.mark.capture
+@pytest.mark.parametrize("phi", [0.5, 0.3, 1 / 2 + 1 / 4 + 1 / 8, 1.0])
+@pytest.mark.parametrize("p", [1, 2, 3, 4])
+def test_capture(phi, p):
+    """Test that the rule from ``make_rz_to_phase_gradient_decomp`` produces the expected
+    operators when traced under program capture.
+
+    Note that under capture, ``ChangeOpBasis`` is unrolled into its ``compute_op``,
+    ``target_op``, and ``uncompute_op`` operators, so the collected ops are the
+    ``GlobalPhase``, the controlled fanout, the ``SemiAdder``, and then the fanout again
+    (``uncompute_op`` is the same callable as ``compute_op`` here), rather than a
+    ``GlobalPhase`` and a single ``ChangeOpBasis`` operator as in the non-capture case (see
+    ``test_valid_decomp``).
+    """
+    import jax  # pylint: disable=import-outside-toplevel
+
+    angle_wires = list(range(1, 1 + p))
+    phase_grad_wires = list(range(1 + p, 1 + 2 * p))
+    work_wires = list(range(1 + 2 * p, 1 + 2 * p + p - 1))
+
+    custom_decomp = make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
+
+    jaxpr = jax.make_jaxpr(custom_decomp)(phi, wires=[0])
+    collector = CollectOpsandMeas()
+    collector.eval(jaxpr.jaxpr, jaxpr.consts, phi, 0)
+    decomp_ops = collector.state["ops"]
+
+    # binary_int and the global phase are computed from the traced (jax-interface) phi,
+    # matching what the captured decomp_ops will contain
+    binary_int = qp.math.binary_decimals(jax.numpy.array(phi), p, unit=2 * np.pi)
+    expected_global_phase = qp.GlobalPhase(jax.numpy.array(phi) / 2)
+    expected_fanout = qp.ctrl(qp.BasisState(binary_int, angle_wires), control=0)
+    expected_target = qp.SemiAdder(angle_wires, phase_grad_wires, work_wires=work_wires)
+
+    assert len(decomp_ops) == 4
+    qp.assert_equal(decomp_ops[0], expected_global_phase)
+    qp.assert_equal(decomp_ops[1], expected_fanout)
+    qp.assert_equal(decomp_ops[2], expected_target)
+    qp.assert_equal(decomp_ops[3], expected_fanout)
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
