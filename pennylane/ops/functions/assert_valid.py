@@ -234,7 +234,6 @@ def _test_decomposition_rule(
     estimated_gate_counts = resources.gate_counts
 
     if not skip_capture:
-        qp.capture.enable()
         import jax  # pylint: disable=import-outside-toplevel
 
         # Match each operator model's capture boundary: legacy hyperparameters remain
@@ -248,12 +247,17 @@ def _test_decomposition_rule(
             capture_args = ()
             capture_kwargs = {**op.dynamic_args, **op.wire_args, **op.hybrid_args}
 
-        plxpr = qp.capture.make_plxpr(decomposition, autograph=False)(
-            *capture_args, **capture_kwargs
-        )
-        flat_capture_args = jax.tree.leaves((capture_args, capture_kwargs))
-        tape = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, *flat_capture_args)
-        qp.capture.disable()
+        was_enabled = qp.capture.enabled()
+        qp.capture.enable()
+        try:
+            plxpr = qp.capture.make_plxpr(decomposition, autograph=False)(
+                *capture_args, **capture_kwargs
+            )
+            flat_capture_args = jax.tree.leaves((capture_args, capture_kwargs))
+            tape = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, *flat_capture_args)
+        finally:
+            if not was_enabled:
+                qp.capture.disable()
     else:
         with qp.queuing.AnnotatedQueue() as q:
             rule(*args, **kwargs)
@@ -272,7 +276,7 @@ def _test_decomposition_rule(
         actual_gate_counts[op_rep] += 1
     actual_gate_counts = dict(sorted(actual_gate_counts.items(), key=lambda item: str(item[0])))
 
-    if qp.capture.enabled():
+    if not skip_capture:
         # When capture is enabled, ChangeOpBasis is unrolled. The resource functions are typically
         # not aware of that, and still produce resource reps of ChangeOpBasis. Therefore, we unroll
         # the ChangeOpBasis in the resources manually so that it will match the reality.
@@ -734,7 +738,7 @@ def _assert_valid_operator2(
         _check_bind_new_parameters_op2(op)
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
 def assert_valid(
     op: qp.core.Operator,
     *,
