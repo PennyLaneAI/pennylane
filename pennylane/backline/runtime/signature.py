@@ -34,6 +34,11 @@ class CType(Enum):
       point wants a byte count, declare it as a separate scalar parameter.
     * ``OUT`` is a buffer the entry point writes. The caller does not pass one: it gives the size
       with ``out_bytes=`` and gets the filled buffer back alongside the result.
+
+    .. note::
+
+        The 64-bit types like ``PTR``, ``I64``, ``U64``, ``F64``, and a ``BUF`` of 64-bit elements
+        need ``jax_enable_x64``, which Catalyst turns on when it is imported.
     """
 
     VOID = "void"
