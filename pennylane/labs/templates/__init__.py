@@ -25,6 +25,8 @@ This module contains templates, which are pre-coded routines that can be used in
     ~half_signed_out_multiplier
     ~SumOfSlatersPrep2
     ~trotter_fragmented
+    ~alias_sampling_thc
+    ~alias_sampling_thc_wires
 """
 
 from .left_classical_comparator import LeftClassicalComparator
@@ -36,6 +38,7 @@ from .trotter_fragmented import trotter_fragmented
 from .alias_sampling_thc import (
     _build_alias_tables,
     _build_qrom_data,
-    _first_arithmetic_op,
+    _compute_contiguous_register,
     alias_sampling_thc,
+    alias_sampling_thc_wires,
 )
