@@ -781,7 +781,12 @@ class TestOperator2AssertValid:
             wire_argnames = ("wires",)
 
             def __init__(self, phi, wires):  # pylint: disable=unused-argument
-                super().__init__(1.0, wires=wires)  # always 1.0, ignores ``phi``
+                print(phi, wires)
+                if isinstance(phi, qp.typing.AbstractArray):
+                    # so abstractify check isn't triggered
+                    super().__init__(phi, wires)
+                else:
+                    super().__init__(1.0, wires=wires)  # always 1.0, ignores ``phi``
 
         op = IgnoresParams(0.5, wires=0)
         with pytest.raises(AssertionError, match=r"bind_new_parameters must be able to update"):
