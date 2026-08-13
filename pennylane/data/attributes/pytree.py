@@ -13,7 +13,6 @@
 # limitations under the License.
 """Contains DatasetAttribute definition for PyTree types."""
 
-import json
 from typing import TypeVar
 
 import numpy as np
@@ -30,13 +29,6 @@ from pennylane.wires import Wires
 T = TypeVar("T")
 
 
-def _is_wires(obj) -> bool:
-    """Whether ``obj`` should be treated as a single (opaque) leaf when flattening, i.e. a
-    ``Wires`` object. This keeps wire labels out of the numeric leaves so they can be serialized
-    through the JSON path (see :func:`~.value_to_hdf5`)."""
-    return isinstance(obj, Wires)
-
-
 class DatasetPyTree(DatasetAttribute[HDF5Group, T, T]):
     """Attribute type for an object that can be converted to
     a Pytree. This is the default serialization method for
@@ -50,10 +42,6 @@ class DatasetPyTree(DatasetAttribute[HDF5Group, T, T]):
             structure = serialization.pytree_structure_load(bind["treedef"][()].tobytes())
             leaves = list(AttributeTypeMapper(bind)["leaves"].get_value())
 
-            # HDF5 reads scalar leaves back as numpy scalars. Restore wire labels (the leaves that
-            # live under a ``Wires`` node) to native Python scalars so that, e.g., an integer wire
-            # ``0`` comes back as ``int`` rather than ``np.int64``. Parameters are left as numpy,
-            # which is their expected representation.
             leaves = [
                 _to_python_scalar(leaf) if is_wire else leaf
                 for leaf, is_wire in zip(leaves, _wire_leaf_flags(structure), strict=True)
