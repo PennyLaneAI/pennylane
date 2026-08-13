@@ -308,7 +308,6 @@
 
   con = qp.Controller(
       device=qp.device("null.qubit", wires=2),
-      remote=True,
       executor_options={"host": address_controller},
       init_args={"out_bytes": 8},
   )
