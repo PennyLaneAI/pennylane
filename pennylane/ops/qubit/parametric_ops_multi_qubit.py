@@ -29,7 +29,6 @@ import numpy as np
 import pennylane as qp
 from pennylane import compiler, math
 from pennylane.capture.autograph import disable_autograph
-from pennylane.core import queuing
 from pennylane.core.operator import Operation, Operator, Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
@@ -38,7 +37,7 @@ from pennylane.math.decomposition import decomp_int_to_powers_of_two
 from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
-from pennylane.typing import FlatPytree, Float, TensorLike, Wire
+from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
@@ -594,7 +593,7 @@ add_decomps("Adjoint(PauliRot)", adjoint_rotation2)
 add_decomps("Pow(PauliRot)", pow_rotation2)
 
 
-class PCPhase(Operation):
+class PCPhase(Operator2):
     r"""PCPhase(phi, dim, wires)
     A projector-controlled phase gate.
 
@@ -668,137 +667,9 @@ class PCPhase(Operation):
     4: ─────────────────├GlobalPhase(1.23)─┤
     5: ─────────────────╰GlobalPhase(1.23)─┤
 
-    """
+    .. details::
+        :title: Decomposition
 
-    num_params = 1
-    """int: Number of trainable parameters that the operator depends on."""
-    ndim_params = (0,)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
-    @property
-    def basis(self) -> Literal["X", "Y", "Z", None]:
-        warn(
-            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
-            "qp.is_commuting should be used instead to check commutivity.",
-            PennyLaneDeprecationWarning,
-        )
-        return "Z"
-
-    grad_method = "A"
-    parameter_frequencies = [(2,)]
-
-    resource_keys = {"num_wires", "dim"}
-
-    def generator(self) -> "qp.Hermitian":
-        r"""Generator of the ``PCPhase`` operator, which is in single-parameter-form.
-        The operator reads
-
-        .. math:: \Pi(\phi) = e^{i\phi (2\Pi - \mathbb{I}_N)},
-
-        where :math:`\Pi` is the projector onto the first :math`d` (``dim``) computational basis
-        states and :math:`N=2^n` is the Hilbert space dimension for :math:`n` qubits.
-
-        Correspondingly, the generator is
-        :math:`2\Pi - \mathbb{I}_N=\text{diag}(\underset{d\text{ times}}{\underbrace{1, \dots, 1}},\underset{(N-d)\text{ times}}{\underbrace{-1, \dots, -1}})`:
-
-        >>> qp.PCPhase(0.5, dim=3, wires=[0, 1]).generator()
-        Hermitian(array([[ 1,  0,  0,  0],
-           [ 0,  1,  0,  0],
-           [ 0,  0,  1,  0],
-           [ 0,  0,  0, -1]]), wires=[0, 1])
-        """
-        dim, N = self.hyperparameters["dimension"]
-        mat = np.diag([1] * dim + [-1] * (N - dim))
-        return qp.Hermitian(mat, wires=self.wires)
-
-    def _flatten(self) -> FlatPytree:
-        hyperparameter = (("dim", self.hyperparameters["dimension"][0]),)
-        return tuple(self.data), (self.wires, hyperparameter)
-
-    def __init__(self, phi: TensorLike, dim: int, wires: WiresLike):
-        wires = wires if isinstance(wires, Wires) else Wires(wires)
-
-        if not (isinstance(dim, int) and (dim <= 2 ** len(wires))):
-            raise ValueError(
-                f"The projected dimension {dim} must be an integer that is less than or equal to "
-                f"the max size of the matrix {2 ** len(wires)}. Try adding more wires."
-            )
-
-        super().__init__(phi, wires=wires)
-        self.hyperparameters["dimension"] = (dim, 2 ** len(wires))
-
-    @property
-    def resource_params(self) -> dict:
-        return {"num_wires": len(self.wires), "dim": self.hyperparameters["dimension"][0]}
-
-    @staticmethod
-    def compute_matrix(phi: TensorLike, dimension: tuple[int, int]) -> TensorLike:
-        """Get the matrix representation of Pi-controlled phase unitary."""
-        d, t = dimension
-
-        if (
-            math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            p = math.exp(1j * math.cast_like(phi, 1j))
-            minus_p = math.exp(-1j * math.cast_like(phi, 1j))
-            zeros = math.zeros_like(p)
-
-            columns = []
-            for i in range(t):
-                columns.append(
-                    [p if j == i else zeros for j in range(t)]
-                    if i < d
-                    else [minus_p if j == i else zeros for j in range(t)]
-                )
-            r = math.stack(columns, like="tensorflow", axis=-2)
-            return r
-
-        arg = 1j * phi
-        prefactors = math.array([1] * d + [-1] * (t - d), like=phi)
-
-        if math.ndim(arg) == 0:
-            return math.diag(math.exp(arg * prefactors))
-
-        diags = math.exp(math.outer(arg, prefactors))
-        return math.stack([math.diag(d) for d in diags])
-
-    @staticmethod
-    def compute_eigvals(*params: TensorLike, **hyperparams) -> TensorLike:
-        """Get the eigvals for the Pi-controlled phase unitary."""
-        phi = params[0]
-        d, t = hyperparams["dimension"]
-
-        if (
-            math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phase = math.exp(1j * math.cast_like(phi, 1j))
-            minus_phase = math.exp(-1j * math.cast_like(phi, 1j))
-            return stack_last([phase if index < d else minus_phase for index in range(t)])
-
-        arg = 1j * phi
-        prefactors = math.array([1] * d + [-1] * (t - d), like=phi)
-
-        if math.ndim(phi) == 0:
-            product = arg * prefactors
-        else:
-            product = math.outer(arg, prefactors)
-        return math.exp(product)
-
-    @staticmethod
-    def compute_decomposition(
-        *params: TensorLike, wires: WiresLike, **hyperparams
-    ) -> list[Operator]:
-        r"""Representation of the PCPhase operator as a product of other operators (static method).
-
-        Args:
-            *params (list): trainable parameters of the operator, as stored in the
-                ``parameters`` attribute
-            wires (Iterable[Any], Wires): wires that the operator acts on
-            **hyperparams (dict): non-trainable hyper-parameters of the operator,
-                as stored in the ``hyperparameters`` attribute
-
-        Returns:
-            list[Operator]: decomposition of the operator
 
         In short, this decomposition relies on decomposing the generator (see :meth:`~.generator`)
         of the ``PCPhase`` gate into generators of multicontrolled :class:`~.PhaseShift` gates,
@@ -880,33 +751,129 @@ class PCPhase(Operation):
         1: ──X─╰Rϕ(2.46)──X─├○─────────├GlobalPhase(1.23)─┤
         2: ─────────────────├●─────────├GlobalPhase(1.23)─┤
         3: ─────────────────╰Rϕ(-2.46)─╰GlobalPhase(1.23)─┤
+    """
 
+    dynamic_argnames = ("phi",)
+    wire_argnames = ("wires",)
+    compilable_argnames = ("dim",)
+    arg_specs = {"phi": Float, "wires": Wire[-1]}
+
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    @property
+    def basis(self) -> Literal["X", "Y", "Z", None]:
+        """The basis of the operator."""
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
+        return "Z"
+
+    def generator(self) -> "qp.Hermitian":
+        r"""Generator of the ``PCPhase`` operator, which is in single-parameter-form.
+        The operator reads
+
+        .. math:: \Pi(\phi) = e^{i\phi (2\Pi - \mathbb{I}_N)},
+
+        where :math:`\Pi` is the projector onto the first :math`d` (``dim``) computational basis
+        states and :math:`N=2^n` is the Hilbert space dimension for :math:`n` qubits.
+
+        Correspondingly, the generator is
+        :math:`2\Pi - \mathbb{I}_N=\text{diag}(\underset{d\text{ times}}{\underbrace{1, \dots, 1}},\underset{(N-d)\text{ times}}{\underbrace{-1, \dots, -1}})`:
+
+        >>> qp.PCPhase(0.5, dim=3, wires=[0, 1]).generator()
+        Hermitian(array([[ 1,  0,  0,  0],
+           [ 0,  1,  0,  0],
+           [ 0,  0,  1,  0],
+           [ 0,  0,  0, -1]]), wires=[0, 1])
         """
-        with queuing.AnnotatedQueue() as q:
-            _decompose_pcphase(*params, wires=wires, **hyperparams)
+        dim, N = (self.dim, 2 ** len(self.wires))
+        mat = np.diag([1] * dim + [-1] * (N - dim))
+        return qp.Hermitian(mat, wires=self.wires)
 
-        if queuing.QueuingManager.recording():
-            for op in q.queue:
-                queuing.apply(op)
+    def __init__(self, phi: TensorLike, dim: int, wires: WiresLike):
+        wires = wires if isinstance(wires, Wires) else Wires(wires)
 
-        return q.queue
+        if not (isinstance(dim, int) and (dim <= 2 ** len(wires))):
+            raise ValueError(
+                f"The projected dimension {dim} must be an integer that is less than or equal to "
+                f"the max size of the matrix {2 ** len(wires)}. Try adding more wires."
+            )
+
+        super().__init__(phi, dim, wires=wires)
+
+    @staticmethod
+    def compute_matrix(phi: TensorLike, dim: int, wires: WiresLike) -> TensorLike:
+        """Get the matrix representation of Pi-controlled phase unitary."""
+        d, t = (dim, 2 ** len(wires))
+
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
+            p = math.exp(1j * math.cast_like(phi, 1j))
+            minus_p = math.exp(-1j * math.cast_like(phi, 1j))
+            zeros = math.zeros_like(p)
+
+            columns = []
+            for i in range(t):
+                columns.append(
+                    [p if j == i else zeros for j in range(t)]
+                    if i < d
+                    else [minus_p if j == i else zeros for j in range(t)]
+                )
+            r = math.stack(columns, like="tensorflow", axis=-2)
+            return r
+
+        arg = 1j * phi
+        prefactors = math.array([1] * d + [-1] * (t - d), like=phi)
+
+        if math.ndim(arg) == 0:
+            return math.diag(math.exp(arg * prefactors))
+
+        diags = math.exp(math.outer(arg, prefactors))
+        return math.stack([math.diag(d) for d in diags])
+
+    @staticmethod
+    def compute_eigvals(phi: TensorLike, dim: int, wires: WiresLike) -> TensorLike:
+        """Get the eigvals for the Pi-controlled phase unitary."""
+        d, t = (dim, 2 ** len(wires))
+
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
+            phase = math.exp(1j * math.cast_like(phi, 1j))
+            minus_phase = math.exp(-1j * math.cast_like(phi, 1j))
+            return stack_last([phase if index < d else minus_phase for index in range(t)])
+
+        arg = 1j * phi
+        prefactors = math.array([1] * d + [-1] * (t - d), like=phi)
+
+        if math.ndim(phi) == 0:
+            product = arg * prefactors
+        else:
+            product = math.outer(arg, prefactors)
+        return math.exp(product)
 
     def adjoint(self) -> "PCPhase":
         """Computes the adjoint of the operator."""
-        phi = self.parameters[0]
-        dim, _ = self.hyperparameters["dimension"]
+        phi = self.phi
+        dim = self.dim
         return PCPhase(-1 * phi, dim=dim, wires=self.wires)
 
     def pow(self, z: int | float) -> list[Operator]:
         """Computes the operator raised to z."""
-        phi = self.parameters[0]
-        dim, _ = self.hyperparameters["dimension"]
+        phi = self.phi
+        dim = self.dim
         return [PCPhase(phi * z, dim=dim, wires=self.wires)]
 
     def simplify(self) -> "PCPhase":
         """Simplifies the operator if possible."""
-        phi = self.parameters[0] % (2 * np.pi)
-        dim, _ = self.hyperparameters["dimension"]
+        phi = self.phi % (2 * np.pi)
+        dim = self.dim
 
         if _can_replace(phi, 0):
             return qp.Identity(wires=self.wires[0])
@@ -1007,9 +974,11 @@ def _ctrl_phase_shift(
     return 0.0
 
 
-def _decompose_pcphase_resource(num_wires, dim):
+# pylint: disable-next=unused-argument
+def _decompose_pcphase_resource(phi: TensorLike, dim: int, wires: WiresLike):
     """Decompose the PCPhase operation into controlled phase shifts and Pauli-X gates."""
 
+    num_wires = len(wires)
     gate_count = Counter()
     flipped, *powers_of_two = decomp_int_to_powers_of_two(dim, num_wires + 1)
     sigma = (-1) ** flipped
@@ -1045,10 +1014,8 @@ def _decompose_pcphase_resource(num_wires, dim):
 
 
 @register_resources(_decompose_pcphase_resource)
-def _decompose_pcphase(phi, wires, dimension, **_):
+def _decompose_pcphase(phi: TensorLike, dim: int, wires: WiresLike):
     """Decompose the PCPhase operation into controlled phase shifts and Pauli-X gates."""
-
-    dim, _ = dimension
 
     # Use one more bit than there are wires, according to flipping all relevant bits for the
     # projector decomposition, or a global phase on the gate level. Afterwards, we have
