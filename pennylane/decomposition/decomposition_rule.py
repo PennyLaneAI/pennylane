@@ -1129,7 +1129,9 @@ def _verify_is_abstract_and_fixed(op: AbstractOperatorLike):
 
 def _is_measurement(resource_op) -> bool:
     """Whether a resource key represents a mid-circuit or Pauli-product measurement."""
-    op_type = resource_op.op_type if isinstance(resource_op, CompressedResourceOp) else type(resource_op)
+    op_type = (
+        resource_op.op_type if isinstance(resource_op, CompressedResourceOp) else type(resource_op)
+    )
     return issubclass(op_type, (qp.ops.MidMeasure, qp.ops.PauliMeasure))
 
 
