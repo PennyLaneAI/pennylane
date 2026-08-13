@@ -20,6 +20,7 @@ import numpy as np
 import pytest
 
 triton = pytest.importorskip("triton")
+pytestmark = [pytest.mark.gpu]
 
 from pennylane.backline.decoders.triton import triton_so_builder as builder
 from pennylane.backline.decoders.triton.decoder_frontend import _make_css_decoder
