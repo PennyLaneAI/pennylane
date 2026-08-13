@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""``qp.backline.decode`` -- the explicit per-round syndrome->correction offload.
+"""``qp.backline.decode`` -- the explicit per-round syndrome->correction decode.
 
 :func:`decode` emits one transport round from inside a captured QNode: resolve the controller's
 session, stage the syndrome, post the round, collect the reply.
