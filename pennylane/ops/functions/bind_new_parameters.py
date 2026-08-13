@@ -224,7 +224,8 @@ def bind_new_parameters_symbolic_op(op: SymbolicOp, params: Sequence[TensorLike]
 
 @bind_new_parameters.register
 def bind_new_parameters_symbolic_op2(op: SymbolicOp2, params: Sequence[TensorLike]):
-    kwargs = op.dynamic_args | op.wire_args | op.static_args | op.compilable_args | op.hybrid_args
+    # Copy op.arguments so we don't pop "base" from it
+    kwargs = dict(op.arguments)
     _ = kwargs.pop("base")
     new_base = bind_new_parameters(op.base, params)
     return op.__class__(new_base, **kwargs)
