@@ -71,7 +71,7 @@ def runtime_call(target, *args, signature=None, out_bytes=0, address=None, libra
 
     **Local** (``address`` is ``None``):
     A local call is run in the process running the compiled program. The symbol is resolved and
-    invoked through the ordinary C ABI. `library` is recorded on the compiled module so the driver
+    invoked through the ordinary C ABI. ``library`` is recorded on the compiled module so the driver
     links the shared library that exports it.
 
     Args:
