@@ -52,8 +52,8 @@ class HeterogeneousDevice(Device):
         )
 
     The device stores the :class:`~.Placement` consisting of a :class:`transport <.Transport>`,
-    :class:`controller <.Controller>`, and :class:`coprocessors <.Coprocessor>`. This device requires
-    the Catalyst compiler.
+    :class:`controller <.Controller>`, and :class:`coprocessors <.Coprocessor>`. This device
+    requires the Catalyst compiler.
 
     Args:
         placement (Placement): The :class:`~.Placement` to execute over.
@@ -151,7 +151,7 @@ def backline(
         import pennylane as qp
 
         con = qp.Controller(
-            device=qp.device("lightning.qubit", wires=4),
+            device=qp.device("null.qubit", wires=4),
             label="cpu-controller",
             remote=True,
             executor_options={"host": "192.168.3.15"},
@@ -169,8 +169,9 @@ def backline(
 
         @qp.qjit
         @qp.qnode(dev)
-        def circuit():
-            ...
+        def circuit(x):
+            qp.RX(x, wires=0)
+            return qp.expval(qp.Z(0))
     """
     placement = Placement(controller=controller, coprocessors=coprocessors, transport=transport)
     return HeterogeneousDevice(placement=placement)

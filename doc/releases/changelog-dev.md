@@ -306,6 +306,68 @@
   decomposed recursively into :class:`~.FermionicSWAP` and :class:`~.TwoWireFFT` operations
   (two-site Fermionic Fourier transforms).
 
+* A new `pennylane.backline.runtime` module is added, adding the ability for a compiled program to call a runtime entry point directly via its C symbol name. A symbol's signature is declared once with `qp.runtime_declare` and called with `qp.runtime_call` from inside a `qjit` program.
+  [(#9970)](https://github.com/PennyLaneAI/pennylane/pull/9970)
+
+  ```python
+  import pennylane as qp
+
+  qp.runtime_declare("example_local_rounds", "(ptr, u32) -> u64", library="/path/librounds.so")
+
+  def program(session):
+      return qp.runtime_call("example_local_rounds", session, 100000)
+  ```
+
+  Passing `address="host:port"` dispatches the call to executor on remote side, which invokes the
+  symbol on the machine the runtime lives on; without it the call is local. Meanwhile, `qp.backline.runtime.CType` lists what can cross the boundary.
+
+  A symbol that fills a buffer declares it as an `out` parameter: the caller asks for `out_bytes=`
+  and gets the filled buffer back alongside the result.
+
+  ```python
+  qp.runtime_declare("example_collect", "(ptr, out, u64) -> i32")
+
+  def collect(session):
+      status, reply = qp.runtime_call("example_collect", session, 64, out_bytes=64)
+      return reply
+  ```
+
+* A new `qp.backline.decode` function is added, which offloads one syndrome to a coprocessor from inside a captured QNode and returns its correction, driving a single transport round: stage the syndrome, post it, collect the reply.
+  [(#9970)](https://github.com/PennyLaneAI/pennylane/pull/9970)
+
+  The nodes are taken from the placement of the device being traced, so a round on a built backline is just `correction = qp.backline.decode(syndrome)`:
+
+  ```python
+  import pennylane as qp
+
+  address_controller = "192.168.3.15"  # the host the controller runs on
+  address_coproc = "192.168.1.3"  # the host the coprocessor listens on
+
+  con = qp.Controller(
+      device=qp.device("null.qubit", wires=2),
+      remote=True,
+      executor_options={"host": address_controller},
+      init_args={"out_bytes": 8},
+  )
+  coproc = qp.Coprocessor(
+      coprocessor_fn="decoder",
+      label="decoder-0",
+      backend="gpu_verbs",
+      comm_host=address_coproc,
+      oob_port=18590,
+  )
+  dev = qp.backline(controller=con, coprocessors=[coproc], transport="rdma")
+
+  @qp.qjit(capture=True)
+  @qp.qnode(dev)
+  def circuit(syndrome):
+      correction = qp.backline.decode(syndrome)
+      qp.cond(correction[0] == 1, qp.X)(0)
+      return qp.expval(qp.Z(0))
+  ```
+
+  The round is resolved from the device being traced, so the program has to be captured (`qp.qjit(capture=True)`). The correction comes back as a `uint8` buffer of the controller's committed `out_bytes`. Pass `controller=` / `coprocessor=` to choose the nodes explicitly, and `decoder_id=` to select which coprocessor-side decoder handles the round.
+
 <h3>Improvements 🛠</h3>
 
 * Added decompositions of `CNOT`, `CZ`, `CY`, and `Hadamard` directly to PPMs.
@@ -1284,4 +1346,5 @@ Paul Haochen Wang,
 Dennis Wayo,
 David Wierichs,
 Jake Zaia,
+Hongsheng Zheng,
 Zinan Zhou.

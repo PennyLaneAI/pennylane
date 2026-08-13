@@ -208,16 +208,14 @@ from pennylane.backline import (
     Node,
     backline,
 )
+from pennylane.backline.runtime import declare as runtime_declare
+from pennylane.backline.runtime import runtime_call
 
 from pennylane import spin
 
 from pennylane import liealg
 from pennylane.liealg import lie_closure, structure_constants, center
 from pennylane import qnn
-
-from pennylane import runtime
-from pennylane.runtime import runtime_call
-from pennylane.runtime import declare as runtime_declare
 
 from pennylane import estimator
 

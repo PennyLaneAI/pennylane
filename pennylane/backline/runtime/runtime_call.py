@@ -24,7 +24,8 @@ from .signature import CSignature, CType, declare, signature_of
 
 def _tracing() -> bool:
     """Whether a JAX trace is open, which is where a recorded call belongs."""
-    try:  # pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
+    try:
         from jax._src.core import trace_state_clean
 
         return not trace_state_clean()
@@ -33,8 +34,8 @@ def _tracing() -> bool:
 
 
 @functools.lru_cache(maxsize=1)
-def _get_runtime_call_prim():
-    """Get the ``runtime_call`` primitive."""
+def get_runtime_call_prim():
+    """Get the ``runtime_call`` primitive, creating it on the first call."""
 
     # pylint: disable=import-outside-toplevel
     from pennylane.capture.custom_primitives import QpPrimitive
@@ -53,21 +54,25 @@ def _get_runtime_call_prim():
 def runtime_call(target, *args, signature=None, out_bytes=0, address=None, library=None):
     r"""Call a declared runtime symbol, in-process or on the executor it is addressed to.
 
-    A symbol is declared once, then called by name:
-
-    .. code-block:: python
-
-        import pennylane as qp
-
-        qp.runtime_declare("example_call_rounds", "(ptr, u32) -> u64")
-
-        def program(session):  # the body of a qjit program
-            return qp.runtime_call("example_call_rounds", session, 100000, address="board:9000")
+    A symbol is declared once with :func:`~.runtime_declare`, then called by name from inside a
+    ``qjit`` program.
 
     Passing ``address`` dispatches the call: it is recorded into the program and sent to that
     executor, which invokes the symbol on the machine the runtime lives on. Omitting ``address``
     makes the call **local**: the symbol is invoked in the process running the compiled program,
     through the ordinary in-process C ABI.
+
+    **Dispatched** (``address`` set):
+    A dispatched call is run by the Catalyst executor. The `dispatch-executor-targets` pass turns it
+    into an `executor.call`, which reaches `__catalyst__executor__call_wrapper` on the addressed
+    machine. That calls the symbol through LLVM ORC's wrapper convention. You need to have a
+    catalyst executor running on the addressed machine, which can be enabled from within a
+    backline-controlled QJIT function.
+
+    **Local** (``address`` is ``None``):
+    A local call is run in the process running the compiled program. The symbol is resolved and
+    invoked through the ordinary C ABI. `library` is recorded on the compiled module so the driver
+    links the shared library that exports it.
 
     Args:
         target (str | CSignature): the symbol to call, or its signature
@@ -83,6 +88,28 @@ def runtime_call(target, *args, signature=None, out_bytes=0, address=None, libra
     Returns:
         The symbol's declared result. A symbol with an ``out`` parameter returns
         ``(result, buffer)``. A local call to a ``void`` symbol returns ``None``.
+
+    **Example**
+
+    .. code-block:: python
+
+        import pennylane as qp
+
+        qp.runtime_declare("example_call_rounds", "(ptr, u32) -> u64")
+
+        def program(session):  # the body of a qjit program
+            return qp.runtime_call("example_call_rounds", session, 100000, address="board:9000")
+
+    A symbol that fills a buffer declares it as an ``out`` parameter. The caller does not pass one:
+    it asks for ``out_bytes=`` and gets the filled buffer back alongside the result.
+
+    .. code-block:: python
+
+        qp.runtime_declare("example_call_collect", "(ptr, out, u64) -> i32")
+
+        def collect(session):
+            status, reply = qp.runtime_call("example_call_collect", session, 64, out_bytes=64)
+            return reply
 
     .. seealso:: :func:`~.runtime_declare`
     """
@@ -112,7 +139,7 @@ def _record(signature: CSignature, args, sizes, address, library):
         raise TypeError(
             f"{signature.symbol}{signature} returns nothing, a dispatched call to it has no result."
         )
-    results = _get_runtime_call_prim().bind(
+    results = get_runtime_call_prim().bind(
         *operands.operands_for(signature, args, local=address is None),
         signature=signature,
         symbol=signature.symbol,

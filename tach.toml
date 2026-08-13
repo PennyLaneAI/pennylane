@@ -75,7 +75,7 @@ layer = "core"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
-path = "pennylane.runtime"
+path = "pennylane.backline.runtime"
 layer = "core"
 depends_on = ["pennylane.capture"]
 

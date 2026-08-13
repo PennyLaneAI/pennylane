@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for :mod:`pennylane.runtime`.
+"""Tests for :mod:`pennylane.backline.runtime`.
 
 Declared symbols land in a process-wide registry that is never cleared, so every symbol declared
 here has a name of its own.
@@ -22,11 +22,11 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.runtime import CSignature, CType, operands
+from pennylane.backline.runtime import CSignature, CType, operands
 
 
-@pytest.fixture
-def x64():
+@pytest.fixture(name="x64")
+def x64_fixture():
     """Run a test with 64-bit values available, as Catalyst configures JAX."""
     jax = pytest.importorskip("jax")
     with jax.experimental.enable_x64():
@@ -95,8 +95,8 @@ class TestDeclare:
     def test_declare_then_look_up(self):
         """A declared signature is retrievable by symbol."""
         signature = qp.runtime_declare("declared_symbol", "(ptr) -> i64")
-        assert qp.runtime.signature_of("declared_symbol") is signature
-        assert "declared_symbol" in qp.runtime.declared_symbols()
+        assert qp.backline.runtime.signature_of("declared_symbol") is signature
+        assert "declared_symbol" in qp.backline.runtime.declared_symbols()
 
     def test_redeclaring_the_same_signature_is_allowed(self):
         """The same declaration twice is bookkeeping, not a conflict."""
@@ -128,7 +128,8 @@ class TestDeclare:
 class TestRecordedCalls:
     """Recording a dispatched call, and the operands it becomes."""
 
-    def test_one_operand_per_parameter(self, x64):
+    @pytest.mark.usefixtures("x64")
+    def test_one_operand_per_parameter(self):
         """Each argument becomes its own operand, shaped the way the callee reads it."""
         signature = CSignature.parse("connect", "(ptr, str, u16) -> i32")
         built = operands.operands_for(signature, (0x7FAB1234, "10.0.0.1", 18560))
@@ -137,7 +138,8 @@ class TestRecordedCalls:
         assert [str(o.dtype) for o in built] == ["uint64", "uint8", "uint16"]
         assert int(built[0][0]) == 0x7FAB1234
 
-    def test_a_string_is_padded_to_a_fixed_field(self, x64):
+    @pytest.mark.usefixtures("x64")
+    def test_a_string_is_padded_to_a_fixed_field(self):
         """A str is padded to a fixed width, so a flat buffer needs no framing to delimit it."""
         signature = CSignature.parse("connect", "(ptr, str, u16) -> i32")
         built = operands.operands_for(signature, (0, "10.0.0.1", 0))
@@ -147,19 +149,22 @@ class TestRecordedCalls:
         assert field.startswith(b"10.0.0.1\x00")
         assert field == b"10.0.0.1".ljust(operands.STR_OPERAND_BYTES, b"\x00")
 
-    def test_a_string_that_does_not_fit_is_refused(self, x64):
+    @pytest.mark.usefixtures("x64")
+    def test_a_string_that_does_not_fit_is_refused(self):
         """A fixed field means there is a limit, and it is said rather than truncated."""
         signature = CSignature.parse("connect", "(ptr, str, u16) -> i32")
         with pytest.raises(ValueError, match="does not fit"):
             operands.operands_for(signature, (0, "x" * operands.STR_OPERAND_BYTES, 0))
 
-    def test_a_buffer_cannot_be_dispatched(self, x64):
+    @pytest.mark.usefixtures("x64")
+    def test_a_buffer_cannot_be_dispatched(self):
         """A buf's length is not implied by its type, so it cannot cross in a flat buffer."""
         signature = CSignature.parse("write_bytes", "(ptr, buf, u64) -> i32")
         with pytest.raises(TypeError, match="cannot be read out of the flat buffer"):
             operands.operands_for(signature, (0, np.arange(4, dtype=np.uint8), 4))
 
-    def test_an_out_buffer_comes_back_as_a_result(self, x64):
+    @pytest.mark.usefixtures("x64")
+    def test_an_out_buffer_comes_back_as_a_result(self):
         """A buffer the callee fills is returned, so it is never an operand."""
         signature = CSignature.parse("read_bytes", "(ptr, out, u64) -> i32")
         assert len(operands.operands_for(signature, (1, 4))) == 2
@@ -236,7 +241,8 @@ class TestRecordedCalls:
 class TestLocalCalls:
     """A call with no address, invoked in-process instead of dispatched to an executor."""
 
-    def test_a_local_call_can_pass_a_buffer(self, x64):
+    @pytest.mark.usefixtures("x64")
+    def test_a_local_call_can_pass_a_buffer(self):
         """A buf is refused for a dispatched call but fine locally: it crosses as its own pointer."""
         signature = CSignature.parse("sum_bytes", "(buf, u64) -> i32")
         built = operands.operands_for(signature, (np.arange(4, dtype=np.uint8), 4), local=True)

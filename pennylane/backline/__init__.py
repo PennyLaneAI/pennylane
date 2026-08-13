@@ -35,7 +35,7 @@ A backline device is built with :func:`~pennylane.backline` from a
     import pennylane as qp
 
     cpu_controller = qp.Controller(
-        device=qp.device("lightning.qubit", wires=4),
+        device=qp.device("null.qubit", wires=4),
         label="cpu-controller",
         backend="cpu_verbs",
         remote=True,
@@ -59,8 +59,9 @@ A backline device is built with :func:`~pennylane.backline` from a
 
     @qp.qjit
     @qp.qnode(dev)
-    def circuit():
-        ...
+    def circuit(x):
+        qp.RX(x, wires=0)
+        return qp.expval(qp.Z(0))
 
 Nodes
 ~~~~~
@@ -105,6 +106,18 @@ than constructed directly.
     ~backline
     ~Placement
 
+Decoding
+~~~~~~~~
+
+:func:`~.decode` drives one syndrome->correction round from inside a captured QNode: it stages the
+syndrome, posts it to a :class:`coprocessor <.Coprocessor>`, and returns the correction it replies
+with.
+
+.. autosummary::
+    :toctree: api
+
+    ~decode
+
 Device
 ~~~~~~
 
@@ -131,8 +144,42 @@ lives in the compiled runtime.
     ~Transport
     ~get_transport
     ~register_transport
+
+Runtime calls
+~~~~~~~~~~~~~
+
+This module provides the functionality to call a runtime entry point directly, by its C symbol
+name.
+
+A symbol is declared with :func:`~.runtime_declare` and called with :func:`~.runtime_call` from
+inside a compiled program. The call can be dispatched to an executor, which invokes the symbol on
+the machine the runtime lives on.
+
+.. currentmodule:: pennylane.backline.runtime
+
+.. autosummary::
+    :toctree: api
+
+    ~CSignature
+    ~CType
+
+**Example**
+
+Declare a symbol once, then call it:
+
+.. code-block:: python
+
+    import pennylane as qp
+
+    qp.runtime_declare("example_run_rounds", "(ptr, u32) -> u64")
+
+    def program(session):
+        return qp.runtime_call("example_run_rounds", session, 100000, address="board:9000")
+
+.. currentmodule:: pennylane.backline
 """
 
+from . import runtime
 from .decode import decode
 from .device import HeterogeneousDevice, backline
 from .functions import CoprocessorFunction, css_bp_decoder, triton_decoder
@@ -142,6 +189,7 @@ from .transports import Transport, get_transport, register_transport
 backline.decode = decode
 backline.css_bp_decoder = css_bp_decoder
 backline.triton_decoder = triton_decoder
+backline.runtime = runtime
 
 __all__ = [
     "Node",
@@ -158,4 +206,5 @@ __all__ = [
     "Transport",
     "get_transport",
     "register_transport",
+    "runtime",
 ]
