@@ -865,12 +865,18 @@ class TestControlledDecompositions:
 
         op1 = qp.ctrl(qp.GlobalPhase(0.5), control=[1])
         op2 = qp.ctrl(qp.GlobalPhase(0.5), control=[1, 2])
-        graph = DecompositionGraph([op1, op2], gate_set={"ControlledPhaseShift", "PhaseShift"})
-        # 4 op nodes and 2 decomposition nodes, and 1 dummy starting node.
-        assert len(graph._graph.nodes()) == 7
-        # 2 edges from decompositions to ops and 2 edges from ops to decompositions,
-        # and 2 edges from the dummy starting node to the target gate set.
-        assert len(graph._graph.edges()) == 6
+        # The decomposition rule conditionally applies X gates (and, for a single control
+        # wire, a GlobalPhase) depending on the control values, which are not concrete at
+        # resource-estimation time. Both must therefore be in the target gate set.
+        graph = DecompositionGraph(
+            [op1, op2],
+            gate_set={"ControlledPhaseShift", "PhaseShift", "GlobalPhase", "X"},
+        )
+        # 6 op nodes and 2 decomposition nodes, and 1 dummy starting node.
+        assert len(graph._graph.nodes()) == 9
+        # 2 edges from decompositions to ops and 4 edges from ops to decompositions,
+        # and 4 edges from the dummy starting node to the target gate set.
+        assert len(graph._graph.edges()) == 10
 
         # Verify the decompositions
         solution = graph.solve()
@@ -923,9 +929,11 @@ class TestControlledDecompositions:
         )
         # 18 op nodes and 24 decomposition nodes, and the dummy starting node
         assert len(graph._graph.nodes()) == 43
-        # 24 edges from decompositions to ops and 36 edges from ops to decompositions
-        # and 6 edge from the dummy starting node to the target gate set.
-        assert len(graph._graph.edges()) == 66
+        # 24 edges from decompositions to ops and 38 edges from ops to decompositions
+        # and 6 edge from the dummy starting node to the target gate set. The controlled
+        # GlobalPhase rule now always reports X gates for flipping zero control values,
+        # which adds two edges.
+        assert len(graph._graph.edges()) == 68
 
         solution = graph.solve()
 

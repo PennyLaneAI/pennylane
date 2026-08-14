@@ -400,6 +400,7 @@ class TestOpmath:
         assert_eqn_matches_op(base_eqn, qp.Y)
         assert base_eqn.params["n_ctrls"] == 3
 
+    @pytest.mark.pl2do(reason="ArgInfo issue")
     def test_Controlled(self):
         """Test a nested control operation."""
 
@@ -440,22 +441,25 @@ class TestOpmath:
             qp.ctrl(op, control=(3, 4), control_values=[0, 1])
 
         jaxpr = jax.make_jaxpr(f)()
+        assert len(jaxpr.eqns) == 1
+        eqn = jaxpr.eqns[0]
 
-        assert len(jaxpr.eqns) == 2
-        assert jaxpr.eqns[0].primitive == qp.IsingXX._primitive
+        assert_eqn_matches_op(eqn, qp.IsingXX)
 
-        eqn = jaxpr.eqns[1]
-        assert eqn.primitive == qp.ops.Controlled._primitive
-        assert eqn.invars[0] == jaxpr.eqns[0].outvars[0]  # the isingxx
-        assert eqn.invars[1].val == 3
-        assert eqn.invars[2].val == 4
+        assert eqn.params["wire_lens"] == (2,)
+        assert eqn.params["n_ctrls"] == 2
+
+        for var in eqn.invars:
+            assert isinstance(var, jax.extend.core.Literal)
+        assert eqn.invars[0].val == 1.2  # isingxx parameter
+        assert eqn.invars[1].val == 0  # isingxx wires
+        assert eqn.invars[2].val == 1
+        assert eqn.invars[3].val == 3  # control wires
+        assert eqn.invars[4].val == 4
+        assert eqn.invars[5].val == np.False_  # control values
+        assert eqn.invars[6].val == np.True_
 
         assert isinstance(eqn.outvars[0].aval, AbstractOperator)
-        assert eqn.params == {
-            "control_values": (0, 1),
-            "work_wires": None,
-            "work_wire_type": "borrowed",
-        }
 
 
 class TestAbstractDunders:
@@ -540,9 +544,13 @@ class TestAbstractDunders:
 
         jaxpr = jax.make_jaxpr(qfunc)(1.2)
 
-        assert len(jaxpr.eqns) == 2
-        assert jaxpr.eqns[0].primitive == qp.IsingZZ._primitive
-        assert jaxpr.eqns[1].primitive == qp.ops.Pow._primitive
+        assert len(jaxpr.eqns) == 1
 
-        assert jaxpr.eqns[1].invars[0] == jaxpr.eqns[0].outvars[0]
-        assert jaxpr.eqns[1].invars[1].val == 2
+        assert_eqn_matches_op(jaxpr.eqns[0], qp.ops.op_math.pow2.Pow2)
+        assert jaxpr.eqns[0].params["z"][0] == (2,)
+
+        assert len(jaxpr.eqns[0].params["hybrid_trees"]) == 1
+        assert (
+            jaxpr.eqns[0].params["hybrid_trees"][0].type_
+            == qp.ops.qubit.parametric_ops_multi_qubit.IsingZZ
+        )

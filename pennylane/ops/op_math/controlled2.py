@@ -842,7 +842,6 @@ def _ctrl_single_work_wire_resource(
 
 
 # pylint: disable=protected-access,unused-argument
-@register_condition(lambda base, **_: len(base.wires) > 0)
 @register_resources(_ctrl_single_work_wire_resource, work_wires={"zeroed": 1})
 def _ctrl_single_work_wire(base, control_wires, control_values, work_wires, work_wire_type):
     """Implements Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016."""
