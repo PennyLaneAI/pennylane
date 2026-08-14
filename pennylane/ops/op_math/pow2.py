@@ -113,11 +113,6 @@ class Pow2(SymbolicOp2):
 
     @property
     @override
-    def ndim_params(self):
-        return self.base.ndim_params
-
-    @property
-    @override
     def num_wires(self):
         """The number of wires this power op acts on."""
         return self.base.num_wires
