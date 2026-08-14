@@ -213,6 +213,25 @@ class TestRecordedCalls:
         avals = [v.aval for v in jaxpr.jaxpr.outvars]
         assert [tuple(a.shape) for a in avals] == [(), (8,)]
 
+    def test_several_out_buffers_come_back_in_order(self, x64):
+        """Returns several out buffers in the order they are declared."""
+        qp.runtime_declare("read_two_regions", "(out, out, u64) -> i32")
+
+        jaxpr = x64.make_jaxpr(
+            lambda: qp.runtime_call("read_two_regions", 96, out_bytes=(32, 64), address="h:1")
+        )()
+        avals = [v.aval for v in jaxpr.jaxpr.outvars]
+
+        assert [tuple(a.shape) for a in avals] == [(), (32,), (64,)]
+        assert [str(a.dtype) for a in avals] == ["int32", "uint8", "uint8"]
+
+    @pytest.mark.parametrize("sizes", [32, (32,), (32, 64, 8)])
+    def test_one_size_per_out_buffer_is_required(self, sizes):
+        """The number of sizes must match the number of out buffers."""
+        signature = CSignature.parse("read_two_regions", "(out, out, u64) -> i32")
+        with pytest.raises(ValueError, match=r"writes 2 out buffer\(s\)"):
+            operands.out_sizes(signature, sizes)
+
     def test_the_library_path_is_not_validated(self, x64):
         """The path is data for the linker. A cross-compiled program's library only exists on the
         target, so checking it here would reject the case the flow is built for."""

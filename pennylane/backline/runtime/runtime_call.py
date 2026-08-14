@@ -86,8 +86,9 @@ def runtime_call(target, *args, signature=None, out_bytes=0, address=None, libra
                               :func:`~.runtime_declare` time. Ignored for a dispatched call.
 
     Returns:
-        The symbol's declared result. A symbol with an ``out`` parameter returns
-        ``(result, buffer)``. A local call to a ``void`` symbol returns ``None``.
+        The symbol's declared result. A symbol with one ``out`` parameter returns
+        ``(result, buffer)``. With several, the buffers follow the result in the order they are
+        declared. A local call to a ``void`` symbol returns ``None``.
 
     **Example**
 
@@ -119,7 +120,21 @@ def runtime_call(target, *args, signature=None, out_bytes=0, address=None, libra
     * ``out_bytes=64`` says how big a buffer to give it. The number shows up twice because one is
       what you tell the symbol and the other is what you hand it, so keep the two in step.
     * The call returns two results: ``status``, the ``i32`` the symbol returned, and ``reply``,
-      which corresponds to the ``out`` buffer it filled in, as a ``uint8`` array of ``out_bytes`` bytes.
+      which corresponds to the ``out`` buffer it filled in, as a ``uint8`` array of ``out_bytes``
+      bytes.
+
+    A symbol can declare more than one ``out``. Give ``out_bytes`` one size per buffer, and they
+    return in the order they are declared, for example:
+
+    .. code-block:: python
+
+        qp.runtime_declare("example_call_two_regions", "(ptr, out, out, u64) -> i32")
+
+        def collect_both(session):
+            status, first, second = qp.runtime_call(
+                "example_call_two_regions", session, 96, out_bytes=(32, 64)
+            )
+            return first, second
 
     .. seealso:: :func:`~.runtime_declare`
     """
