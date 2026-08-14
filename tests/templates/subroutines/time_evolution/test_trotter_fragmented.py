@@ -40,7 +40,7 @@ from pennylane.templates.subroutines.time_evolution.trotter_fragmented import (
     _transpose_leaf,
     _trotter_step,
 )
-from pennylane.typing import Wire
+from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 
 pytestmark = pytest.mark.jax
@@ -54,7 +54,7 @@ def _random_orthogonal(n, rng):
 
 
 @pytest.fixture(scope="module")
-def toy_hamiltonian():
+def toy_hamiltonian_cgf():
     """Synthetic CGF Hamiltonian on 2 modes x 2 modals with 1 two-body fragment
     (4 qubits, 16-dim space)."""
     rng = np.random.default_rng(1)
@@ -148,9 +148,9 @@ def _manual_one_step_decomposition(hamiltonian, wires, t, control_wires, frag_sc
 class TestInitialization:
     """Test that TrotterFragmented is initialized correctly."""
 
-    def test_init_correctly(self, toy_hamiltonian):
+    def test_init_correctly(self, toy_hamiltonian_cgf):
         """Test that arguments and wires are stored correctly."""
-        ham, num_modes, n_states = toy_hamiltonian
+        ham, num_modes, n_states = toy_hamiltonian_cgf
         wires = list(range(num_modes * n_states))
         op = qp.TrotterFragmented(0.3, 5, ham, wires)
 
@@ -160,28 +160,46 @@ class TestInitialization:
         assert op.wires == Wires(wires)
         assert op._frag_scheme == "cgf"
 
-    def test_control_wires_default_is_empty(self, toy_hamiltonian):
+    def test_control_wires_default_is_empty(self, toy_hamiltonian_cgf):
         """Test that omitting control_wires results in an empty Wires object, not None."""
-        ham, num_modes, n_states = toy_hamiltonian
+        ham, num_modes, n_states = toy_hamiltonian_cgf
         wires = list(range(num_modes * n_states))
         op = qp.TrotterFragmented(0.3, 5, ham, wires)
         assert op.arguments["control_wires"] == Wires([])
 
-    def test_explicit_control_wires(self, toy_hamiltonian):
+    def test_explicit_control_wires(self, toy_hamiltonian_cgf):
         """Test that explicit control_wires are stored correctly and included in op.wires."""
-        ham, num_modes, n_states = toy_hamiltonian
+        ham, num_modes, n_states = toy_hamiltonian_cgf
         wires = list(range(num_modes * n_states))
         op = qp.TrotterFragmented(0.3, 5, ham, wires, control_wires=[99])
         assert op.arguments["control_wires"] == Wires([99])
         assert 99 in op.wires
 
+    def test_abstract_init_with_default_control_wires(self, toy_hamiltonian_cgf):
+        """Regression test: constructing an abstract TrotterFragmented (e.g. for
+        resource-rep purposes) without specifying control_wires dispatches to
+        __abstract_init__, which bypasses __init__'s None -> () normalization
+        entirely. Without a matching override, this used to crash inside
+        Wires(None) instead of defaulting to zero control wires."""
+        ham, num_modes, n_states = toy_hamiltonian_cgf
+        op = qp.TrotterFragmented(Float, 5, ham, Wire[num_modes * n_states])
+        assert op.is_abstract
+        assert len(op.arguments["control_wires"]) == 0
+
+    def test_abstract_init_with_explicit_control_wires(self, toy_hamiltonian_cgf):
+        """Test that explicit abstract control_wires are still respected."""
+        ham, num_modes, n_states = toy_hamiltonian_cgf
+        op = qp.TrotterFragmented(Float, 5, ham, Wire[num_modes * n_states], control_wires=Wire[1])
+        assert op.is_abstract
+        assert len(op.arguments["control_wires"]) == 1
+
 
 class TestValidity:
     """Basic structural validity tests for the TrotterFragmented operator."""
 
-    def test_assert_valid_cgf(self, toy_hamiltonian):
+    def test_assert_valid_cgf(self, toy_hamiltonian_cgf):
         """Run qp.ops.functions.assert_valid on a concrete CGF TrotterFragmented instance."""
-        ham, num_modes, n_states = toy_hamiltonian
+        ham, num_modes, n_states = toy_hamiltonian_cgf
         wires = list(range(num_modes * n_states))
         op = qp.TrotterFragmented(0.1, 3, ham, wires)
         # Differentiating through the (non-trainable) hamiltonian dict is not supported.
@@ -329,9 +347,9 @@ class TestCGFScheme:
     """Structural unit tests for the CGF-format (vibrational) branch of the
     private helper functions, called directly and in isolation."""
 
-    def test_frag_scheme_detects_cgf(self, toy_hamiltonian):
+    def test_frag_scheme_detects_cgf(self, toy_hamiltonian_cgf):
         """Test that a (5, 4) core/leaf tensor pair is detected as CGF."""
-        ham, _, _ = toy_hamiltonian
+        ham, _, _ = toy_hamiltonian_cgf
         assert _frag_scheme(ham) == "cgf"
 
     def test_merge_leaves_cgf(self):
@@ -470,9 +488,9 @@ class TestResourceRule:
     """Direct unit tests for the registered TrotterFragmented resource function,
     following the graph-based decomposition testing convention."""
 
-    def test_num_trotter_steps_zero_has_no_resources(self, toy_hamiltonian):
+    def test_num_trotter_steps_zero_has_no_resources(self, toy_hamiltonian_cgf):
         """Test that zero Trotter steps require zero resources."""
-        ham, num_modes, n_states = toy_hamiltonian
+        ham, num_modes, n_states = toy_hamiltonian_cgf
         wires = list(range(num_modes * n_states))
         rule = qp.list_decomps(qp.TrotterFragmented)[0]
 
@@ -539,9 +557,9 @@ class TestDecomposition:
             _test_decomposition_rule(op, rule)
 
     @pytest.mark.parametrize("control_wires", [(), (10,)])
-    def test_decomposition_new_cgf(self, toy_hamiltonian, control_wires):
+    def test_decomposition_new_cgf(self, toy_hamiltonian_cgf, control_wires):
         """Same self-consistency check as above, for the CGF branch."""
-        ham, num_modes, n_states = toy_hamiltonian
+        ham, num_modes, n_states = toy_hamiltonian_cgf
         wires = list(range(num_modes * n_states))
         op = qp.TrotterFragmented(0.4, 2, ham, wires, control_wires)
         for rule in qp.list_decomps(qp.TrotterFragmented):
@@ -576,9 +594,9 @@ class TestDecomposition:
             qp.assert_equal(actual_op, expected_op)
 
     @pytest.mark.parametrize("control_wires", [(), (10,)])
-    def test_decomposition_matches_manual_step_cgf(self, toy_hamiltonian, control_wires):
+    def test_decomposition_matches_manual_step_cgf(self, toy_hamiltonian_cgf, control_wires):
         """Same self-consistency check as above, for the CGF branch."""
-        ham, num_modes, n_states = toy_hamiltonian
+        ham, num_modes, n_states = toy_hamiltonian_cgf
         wires = list(range(num_modes * n_states))
         t = 0.41
         frag_scheme = _frag_scheme(ham)
@@ -632,9 +650,9 @@ class TestIntegration:
         assert np.allclose(actual_matrix, expected_matrix)
 
     @pytest.mark.parametrize("control_wires", [(), (10,)])
-    def test_execution_matches_manual_decomposition_cgf(self, toy_hamiltonian, control_wires):
+    def test_execution_matches_manual_decomposition_cgf(self, toy_hamiltonian_cgf, control_wires):
         """Same self-consistency check as above, for the CGF branch."""
-        ham, num_modes, n_states = toy_hamiltonian
+        ham, num_modes, n_states = toy_hamiltonian_cgf
         wires = list(range(num_modes * n_states))
         all_wires = wires + list(control_wires)
         t = 0.31
@@ -649,9 +667,9 @@ class TestIntegration:
 
         assert np.allclose(actual_matrix, expected_matrix)
 
-    def test_zero_trotter_steps_is_identity(self, toy_hamiltonian):
+    def test_zero_trotter_steps_is_identity(self, toy_hamiltonian_cgf):
         """Test that num_steps=0 produces the identity unitary."""
-        ham, num_modes, n_states = toy_hamiltonian
+        ham, num_modes, n_states = toy_hamiltonian_cgf
         wires = list(range(num_modes * n_states))
         t = 1.0
 
@@ -660,9 +678,9 @@ class TestIntegration:
 
         assert np.allclose(U, I_expected, atol=1e-12)
 
-    def test_zero_evolution_time(self, toy_hamiltonian):
+    def test_zero_evolution_time(self, toy_hamiltonian_cgf):
         """Check that t=0 produces the identity regardless of the number of steps."""
-        ham, num_modes, n_states = toy_hamiltonian
+        ham, num_modes, n_states = toy_hamiltonian_cgf
         wires = list(range(num_modes * n_states))
 
         U = run_trotter_circuit(ham, wires, t=0.0, num_steps=10)
