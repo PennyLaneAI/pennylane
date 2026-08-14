@@ -21,7 +21,6 @@ import pytest
 
 import pennylane as qp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.decompositions import make_crz_to_phase_gradient_decomp
 
 
@@ -58,6 +57,10 @@ def test_capture(phi, p):
     non-capture case (see ``test_valid_decomp``).
     """
     import jax  # pylint: disable=import-outside-toplevel
+
+    from pennylane.tape.plxpr_conversion import (  # pylint: disable=import-outside-toplevel
+        CollectOpsandMeas,
+    )
 
     angle_wires = list(range(2, 2 + p))
     phase_grad_wires = list(range(2 + p, 2 + 2 * p))
