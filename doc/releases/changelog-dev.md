@@ -904,6 +904,7 @@
   [(#9900)](https://github.com/PennyLaneAI/pennylane/pull/9900)
   [(#9995)](https://github.com/PennyLaneAI/pennylane/pull/9995)
   [(#10015)](https://github.com/PennyLaneAI/pennylane/pull/10015)
+  [(#10015)](https://github.com/PennyLaneAI/pennylane/pull/10015)
   - Miscelleneous operators are ported:
     - :class:`~.PauliMeasure`
   [(#10005)](https://github.com/PennyLaneAI/pennylane/pull/10005)
