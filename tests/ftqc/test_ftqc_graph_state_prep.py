@@ -92,7 +92,7 @@ class TestGraphStatePrep:
         assert len(res) == 2 ** len(lattice.graph)
         assert np.isclose(np.sum(res), 1.0, rtol=0)
 
-    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(
         "dims, shape, wires",
         [
@@ -118,7 +118,6 @@ class TestGraphStatePrep:
         assert repr(GraphStatePrep(graph=q, wires=wires)) == "GraphStatePrep(Hadamard, CZ)"
         assert GraphStatePrep(graph=q, wires=wires).label() == "GraphStatePrep(Hadamard, CZ)"
 
-    @pytest.mark.jax
     @pytest.mark.parametrize(
         "dims, shape, wires",
         [
@@ -138,6 +137,7 @@ class TestGraphStatePrep:
             ),
         ],
     )
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_graph_state_prep_creation_with_nx_graph(self, dims, shape, wires):
         lattice = generate_lattice(dims, shape)
         # Test for object construction via nx graph

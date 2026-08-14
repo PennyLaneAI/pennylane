@@ -363,7 +363,7 @@ class TestInitialization:
         assert op.hyperparameters == new_op.hyperparameters
         assert op is not new_op
 
-    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_standard_validity(self, hamiltonian):
         """Test standard validity criteria using assert_valid."""
@@ -371,7 +371,7 @@ class TestInitialization:
         op = qp.TrotterProduct(hamiltonian, time, n=n, order=order)
         qp.ops.functions.assert_valid(op, skip_differentiation=True)
 
-    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/pennylane/issues/6333", strict=False)
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_standard_validity_with_differentiation(self, hamiltonian):
@@ -518,6 +518,7 @@ class TestDecomposition:
         for op1, op2 in zip(decomp, true_decomp):
             qp.assert_equal(op1, op2)
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("order", (1, 2, 4))
     @pytest.mark.parametrize("hamiltonian_index, hamiltonian", list(enumerate(test_hamiltonians)))
     def test_decomposition_new(
@@ -1083,7 +1084,7 @@ class TestTrotterizedQfuncInitialization:
                 kwargs = {special_key: 1}
                 qp.trotterize(my_dummy_qfunc)(0.1, wires=[0, 1], **kwargs)
 
-    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_standard_validity(self):
         """Test standard validity criteria using assert_valid."""
 

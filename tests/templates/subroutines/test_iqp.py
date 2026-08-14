@@ -85,6 +85,7 @@ def test_raises(params, error, match):
         ),
     ],
 )
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_decomposition_new(weights, pattern, spin_sym, wires):  # pylint: disable=too-many-arguments
     op = IQP(weights, wires, pattern, spin_sym)
 

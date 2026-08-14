@@ -59,7 +59,7 @@ def f_test(x, y, z):
     return x**2 + y * x * z**5 - z**3 + 3
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity_OutPoly():
     """Check the operation using the assert_valid function."""
     wires = qp.registers({"x": 3, "y": 3, "z": 3, "output": 3, "aux": 2})
@@ -197,6 +197,7 @@ class TestOutPoly:
             (lambda x, y: x * y, [[0, 1], [2]], [3]),
         ],
     )
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_new(self, polynomial_function, input_registers, output_wires):
         """Tests the decomposition rule implemented with the new system."""
         op = qp.OutPoly(polynomial_function, input_registers, output_wires)

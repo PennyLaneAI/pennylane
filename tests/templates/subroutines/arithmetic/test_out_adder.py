@@ -22,7 +22,7 @@ from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity_OutAdder():
     """Check the operation using the assert_valid function."""
     x_wires = [0, 1]
@@ -215,6 +215,7 @@ class TestOutAdder:
         for op1, op2 in zip(adder_decomposition, op_list):
             qp.assert_equal(op1, op2)
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("mod", [7, 8])
     def test_decomposition_new(self, mod):
         """Tests the decomposition rule implemented with the new system."""

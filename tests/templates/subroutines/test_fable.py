@@ -38,7 +38,7 @@ class TestFable:
             ]
         )
 
-    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_standard_validity(self, input_matrix):
         """Check the operation using the assert_valid function."""
         op = qp.FABLE(input_matrix, wires=range(5), tol=0.01)
@@ -429,6 +429,7 @@ class TestFable:
             (np.random.random((5, 5)), 7, 1),
         ],
     )
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_new(self, input, wires, tol):
         """Tests the decomposition rule implemented with the new system."""
         op = qp.FABLE(input_matrix=input, wires=range(wires), tol=tol)
@@ -436,6 +437,7 @@ class TestFable:
         for rule in qp.list_decomps(qp.FABLE):
             _test_decomposition_rule(op, rule)
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_new_fixed_input(self):
         """Check the operation using the assert_valid function."""
         matrix = np.array(

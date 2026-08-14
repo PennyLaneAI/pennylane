@@ -28,7 +28,7 @@ def hadamards(wires):
         qp.Hadamard(wires=wire)
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Test standard validity criteria using assert_valid."""
     op = qp.Reflection(qp.Hadamard(wires=0), 0.5, reflection_wires=[0])
@@ -91,6 +91,7 @@ def test_decomposition(op, expected):
         qp.Reflection(qp.QFT(wires=[0, 1]), 0.5),
     ],
 )
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_decomposition_new(op):
     """Tests the decomposition rule implemented with the new system."""
     for rule in qp.list_decomps(qp.Reflection):

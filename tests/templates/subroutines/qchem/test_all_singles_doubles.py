@@ -25,7 +25,7 @@ from pennylane import numpy as pnp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Run standard tests of operation validity."""
     op = qp.AllSinglesDoubles(
@@ -65,7 +65,7 @@ class TestDecomposition:
         ),
     ]
 
-    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(("weights", "wires", "hf_state", "singles", "doubles"), DECOMP_PARAMS)
     def test_decomposition_new(self, weights, wires, hf_state, singles, doubles):
         """Test the decomposition of the AllSinglesDoubles template."""
@@ -192,7 +192,7 @@ class TestDecomposition:
 class TestInputs:
     """Test inputs and pre-processing."""
 
-    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("singles", [None, np.array([[0, 1]])])
     @pytest.mark.parametrize("doubles", [None, np.array([[0, 1, 2, 3]])])
     def test_optional_arguments(self, singles, doubles):

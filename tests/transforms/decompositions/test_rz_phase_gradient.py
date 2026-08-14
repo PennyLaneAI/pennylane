@@ -47,6 +47,7 @@ def test_validate_phase_gradient_wires(n_angle_wires, n_phase_grad_wires, n_work
         _ = validate_phase_gradient_wires(angle_wires, phase_grad_wires, work_wires)
 
 
+@pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize("phi", [0.5, 0.3, 1 / 2 + 1 / 4 + 1 / 8, 1.0])
 @pytest.mark.parametrize("p", [2, 3, 4])
 def test_valid_decomp(phi, p):

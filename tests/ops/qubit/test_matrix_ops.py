@@ -901,6 +901,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
         ),
     ]
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("op", standard_case_ops)
     def test_decomposition_rule_new(self, op):
         """Tests the decomposition rule compatible with the graph-based interface."""
@@ -963,6 +964,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
         ),
     ]
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("op", edge_case_ops)
     def test_decomposition_rule_edge_cases(self, op):
         """Tests the decomposition rule for various edge cases."""

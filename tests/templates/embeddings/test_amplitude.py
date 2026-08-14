@@ -47,7 +47,7 @@ TOO_MANY_FEATURES = [
 TOO_MANY_BROADCASTED_FEATURES = [np.eye(6)[:3, :5], np.ones((3, 8)) / np.sqrt(8)]
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
 
@@ -179,6 +179,7 @@ class TestDecomposition:
         ([0.4472135954999579, 0.4472135954999579], 5, 0.2, False),
     ]
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(("features", "wires", "pad_with", "normalize"), DECOMP_PARAMS)
     def test_decomposition_new(self, features, wires, pad_with, normalize):
         """Test the decomposition of the AmplitudeEmbedding template."""

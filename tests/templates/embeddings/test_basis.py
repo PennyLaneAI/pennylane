@@ -21,7 +21,7 @@ import pytest
 import pennylane as qp
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
     wires = qp.wires.Wires((0, 1, 2))

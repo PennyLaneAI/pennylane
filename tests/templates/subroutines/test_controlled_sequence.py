@@ -26,7 +26,7 @@ from pennylane.wires import Wires
 # pylint: disable=unidiomatic-typecheck, cell-var-from-loop
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
     op = qp.ControlledSequence(qp.RX(0.25, wires=3), control=[0, 1, 2])
@@ -158,6 +158,7 @@ class TestMethods:
         for op1, op2 in zip(decomp, expected_decomp):
             assert op1 == op2
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_new(self):
         """Tests the decomposition rule implemented with the new system."""
         op = qp.ControlledSequence(qp.RX(0.25, wires=3), control=["a", 1, "blue"])

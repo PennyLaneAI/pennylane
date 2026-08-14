@@ -26,7 +26,6 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule, asser
 from pennylane.templates import BasisEmbedding, TemporaryAND
 
 
-@pytest.mark.jax
 @pytest.mark.parametrize(
     "wires, work_wires",
     [
@@ -35,12 +34,12 @@ from pennylane.templates import BasisEmbedding, TemporaryAND
         ((0, 1, 2), []),  # no work wires
     ],
 )
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_assert_valid(wires, work_wires):
     op = Incrementer(wires, work_wires)
     assert_valid(op)
 
 
-@pytest.mark.capture
 @pytest.mark.parametrize(
     "wires, work_wires",
     [
@@ -49,7 +48,8 @@ def test_assert_valid(wires, work_wires):
         ((0, 1, 2), []),  # no work wires
     ],
 )
-def test_decomposition_capture(wires, work_wires):
+@pytest.mark.usefixtures("enable_and_disable_capture")
+def test_decomposition_new(wires, work_wires):
     op = Incrementer(wires, work_wires)
 
     for rule in list_decomps(Incrementer):
@@ -225,7 +225,6 @@ def test_controlled_allocates_work_wires(
     assert np.allclose(result, 0)
 
 
-@pytest.mark.capture
 @pytest.mark.parametrize(
     "wires, work_wires, controls",
     [
@@ -245,6 +244,7 @@ def test_controlled_allocates_work_wires(
         ((0, 1, 2), tuple(), (3, 4)),
     ],
 )
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_controlled_decomposition_new(wires, work_wires, controls):
     """Tests the decomposition rule implemented with the new system."""
     # Work wires only in incrementer

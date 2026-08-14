@@ -84,6 +84,7 @@ def _full_state(M, N, n):
         (7, 3, 3),
     ],
 )
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity(M, N, n):
     """Check the operation using the assert_valid function.
 
@@ -143,7 +144,7 @@ class TestSuperpositionTHC:
         probs = np.asarray(circuit()).reshape((2**n, 2**n, 2))
         success = probs[:, :, 1]
 
-        support = set(tuple(map(int, arr)) for arr in zip(*np.where(success > 1e-9)))
+        support = {tuple(map(int, arr)) for arr in zip(*np.where(success > 1e-9))}
 
         assert set(support) == _valid_pairs(M, N)
 

@@ -112,7 +112,7 @@ def test_order_states(basis_states, exp_map):
     assert order_states(basis_states) == exp_map
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
 
@@ -161,6 +161,7 @@ class TestSuperposition:
         for op1, op2 in zip(decomposition, expected):
             assert qp.equal(op1, op2)
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(("probs", "bases"), PROBS_BASES)
     def test_decomposition_new(self, probs, bases):
         """Test the decomposition of the Superposition template."""

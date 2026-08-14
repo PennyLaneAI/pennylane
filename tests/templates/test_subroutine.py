@@ -255,6 +255,7 @@ class TestSubroutineOp:
         # pylint: disable=isinstance-second-argument-not-valid-type
         assert isinstance(self.op1, Example1Subroutine)
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_basic_validity(self):
         """Test that subroutine op passes basic validity checks."""
         qp.ops.functions.assert_valid(self.op1, skip_pickle=True)
@@ -1059,6 +1060,7 @@ class TestGraphDecomposition:
         qp.assert_equal(tape_ry[1], qp.RY(1.0, 1))
         qp.assert_equal(tape_ry[2], qp.RY(2.0, 2))
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_inexact_resources_testing(self):
         """Test that assert_valid will work on a Subroutine with inexact resources."""
 

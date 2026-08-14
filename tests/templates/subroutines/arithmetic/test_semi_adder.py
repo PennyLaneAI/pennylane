@@ -23,7 +23,7 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arithmetic.semi_adder import _controlled_semi_adder
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity_SemiAdder():
     """Check the operation using the assert_valid function."""
     x_wires = [0, 1, 2]
@@ -157,6 +157,7 @@ class TestSemiAdder:
             [0, 1, 2, 3],
         ],
     )
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_rule(self, x_wires):
         """Tests that SemiAdder is decomposed properly."""
 
