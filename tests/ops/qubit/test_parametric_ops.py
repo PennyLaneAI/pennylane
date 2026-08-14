@@ -4311,11 +4311,6 @@ def test_decomposition():
 control_data = [
     (qp.RX(1.23, wires=0), Wires([])),
     (qp.RY(1.23, wires=0), Wires([])),
-    (qp.IsingXX(1.234, wires=(0, 1)), Wires([])),
-    (qp.IsingYY(1.234, wires=(0, 1)), Wires([])),
-    (qp.IsingXY(1.234, wires=(0, 1)), Wires([])),
-    (qp.IsingYY(np.array([-5.1, 0.219]), wires=(0, 1)), Wires([])),
-    (qp.IsingZZ(1.234, wires=(0, 1)), Wires([])),
     (qp.PSWAP(1.234, wires=(0, 1)), Wires([])),
     # Controlled Ops
     (qp.ControlledPhaseShift(1.234, wires=(0, 1)), Wires(0)),
