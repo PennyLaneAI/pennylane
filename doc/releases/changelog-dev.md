@@ -666,6 +666,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Renamed the `data` argument of :class:`~pennylane.QROM`, :class:`~pennylane.BBQRAM`, :class:`~pennylane.HybridQRAM`,
+  and :class:`~pennylane.SelectOnlyQRAM` to `bitstrings`.
+  [(#10010)](https://github.com/PennyLaneAI/pennylane/pull/10010)
+
 * :class:`~.BasisEmbedding` is now a direct alias of :class:`~.BasisState`.
   [(#9980)](https://github.com/PennyLaneAI/pennylane/pull/9980)
 
@@ -874,16 +878,21 @@
   [(#9854)](https://github.com/PennyLaneAI/pennylane/pull/9854)
   [(#9858)](https://github.com/PennyLaneAI/pennylane/pull/9858)
   [(#9960)](https://github.com/PennyLaneAI/pennylane/pull/9960)
+  [(#10004)](https://github.com/PennyLaneAI/pennylane/pull/10004)
   - Parametric operators are ported:
-    - :class:`~.RZ`, :class:`~.CRZ`, :class:`~.DiagonalQubitUnitary`, :class:`~.PauliRot`, :class:`~.MultiRZ`, :class:`~.PhaseShift`, :class:`~.ControlledPhaseShift`, `~.U1`, `~.U2`, `~.U3`, :class:`~.Rot`, :class:`~.CRot`
+    - :class:`~.RZ`, :class:`~.CRZ`, :class:`~.DiagonalQubitUnitary`, :class:`~.PauliRot`, :class:`~.MultiRZ`, :class:`~.PhaseShift`,
+      :class:`~.ControlledPhaseShift`, :class:`~.Rot`, :class:`~.CRot`, :class:`~.U1`, :class:`~.U2`, :class:`~.U3`, :class:`~.PCPhase`,
+      :class:`~.GlobalPhase`, :class:`~.IsingXX`, :class:`~.IsingYY`, :class:`~.IsingZZ`, :class:`~.IsingXY`
   [(#9857)](https://github.com/PennyLaneAI/pennylane/pull/9857)
   [(#9941)](https://github.com/PennyLaneAI/pennylane/pull/9941)
   [(#9897)](https://github.com/PennyLaneAI/pennylane/pull/9897)
   [(#9936)](https://github.com/PennyLaneAI/pennylane/pull/9936)
+  [(#9964)](https://github.com/PennyLaneAI/pennylane/pull/9964)
+  [(#10006)](https://github.com/PennyLaneAI/pennylane/pull/10006)
   [(#9977)](https://github.com/PennyLaneAI/pennylane/pull/9977)
   [(#9951)](https://github.com/PennyLaneAI/pennylane/pull/9951)
-  - Multi-qubit, parametric operators are ported:
-    - :class:`~.PCPhase`
+  [(#9923)](https://github.com/PennyLaneAI/pennylane/pull/9923)
+  [(#9952)](https://github.com/PennyLaneAI/pennylane/pull/9952)
   [(#9978)](https://github.com/PennyLaneAI/pennylane/pull/9978)
   - Templates are ported:
     - :class:`~.BasisRotation`, :class:`~.MultiplexerStatePreparation`, :class:`~.QROM`, :class:`~.QFT`, :class:`~.FlipSign`
@@ -901,6 +910,9 @@
   [(#9900)](https://github.com/PennyLaneAI/pennylane/pull/9900)
   [(#9995)](https://github.com/PennyLaneAI/pennylane/pull/9995)
   [(#9933)](https://github.com/PennyLaneAI/pennylane/pull/9933)
+  - Miscelleneous operators are ported:
+    - :class:`~.PauliMeasure`
+  [(#10005)](https://github.com/PennyLaneAI/pennylane/pull/10005)
 
 * The `cond` primitive no longer adds an artificial `True` Literal for the predicate of the default
   else branch.
@@ -1040,6 +1052,8 @@
     [(#9866)](https://github.com/PennyLaneAI/pennylane/pull/9866)
     [(#9897)](https://github.com/PennyLaneAI/pennylane/pull/9897)
     [(#9973)](https://github.com/PennyLaneAI/pennylane/pull/9973)
+  - The way that :class:`~.Wires` arguments in pytree leaves are read out of HDF5 was changed to be compatible with :class:`~.Operator2` in the data module.
+    [(#10012)](https://github.com/PennyLaneAI/pennylane/pull/10012)
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
@@ -1269,6 +1283,7 @@ Austin Huang,
 Harshal Janjani,
 Jacob Kitchen,
 Korbinian Kottmann,
+Isabel Nha Minh Le,
 Christina Lee,
 William Maxwell
 Anton Naim Ibrahim,
