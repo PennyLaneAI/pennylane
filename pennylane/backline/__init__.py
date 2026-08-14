@@ -185,7 +185,7 @@ from . import runtime
 from .decode import decode
 from .device import Backline
 from .functions import CoprocessorFunction, css_bp_decoder, triton_decoder
-from .placement import Controller, Coprocessor, ExecutorSpec, Node, Placement
+from .placement import Controller, Coprocessor, Node, Placement
 from .transports import Transport, get_transport, register_transport
 
 __all__ = [
