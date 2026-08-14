@@ -659,6 +659,12 @@
   resource operators from their quantum functions.
   [(#9764)](https://github.com/PennyLaneAI/pennylane/pull/9764)
 
+* Added a :func:`~.pennylane.labs.templates.mps_synthesis` template that
+  synthesizes a right-canonical matrix product state into a quantum circuit via
+  generalized flag decompositions. In case of power-of-two bond dimensions,
+  this method is parameter optimal.
+  [(#9971)](https://github.com/PennyLaneAI/pennylane/pull/9971)
+
 <h3>Breaking changes 💔</h3>
 
 * Moved phase gradient decomposition rules for `RZ`, `CRZ` and `SelectPauliRot` from `labs` to `pennylane/transforms/decompositions`.
@@ -1212,11 +1218,6 @@
 * Fixed a bug with :func:`~pennylane.equal` where comparing a base operator to
   one of its subclasses returned ``True`` if they shared the same data and wires.
   [(#9749)](https://github.com/PennyLaneAI/pennylane/pull/9749)
-
-* Added a :func:`~.pennylane.labs.templates.mps_synthesis` template that
-  synthesizes a right-canonical matrix product state into a quantum circuit via
-  generalized flag decompositions.
-  [(#9971)](https://github.com/PennyLaneAI/pennylane/pull/9971)
 
 <h3>Contributors ✍️</h3>
 

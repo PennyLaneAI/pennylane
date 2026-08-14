@@ -59,37 +59,51 @@ def is_right_canonical(tensors, atol=1e-10):
 
 
 def split_mps(mps):
-    """
-    Split an MPS into contiguous ``(left, bulk, right)`` segments, preserving site order.
+    """Split an MPS into contiguous ``(left, bulk, right)`` segments, preserving site order.
 
     Segments are identified by their bond profile:
-        left  : chi_L < chi_R   (1 -> 2 -> ... -> chi)
+        left  : chi_L < chi_R   (1 -> 2 -> 4 -> ... -> chi)
         bulk  : chi_L == chi_R  (chi -> chi, maximal bond)
-        right : chi_L > chi_R   (chi -> ... -> 2 -> 1)
+        right : chi_L > chi_R   (chi -> ... -> 4 -> 2 -> 1)
 
-    Only a single unimodal profile is supported: all ``left`` sites, then all ``bulk``
-    sites, then all ``right`` sites (bond dimension non-decreasing then non-increasing).
-    A non-unimodal profile such as ``1 -> 2 -> 1 -> 2 -> 1`` is rejected with a
-    ``ValueError`` rather than being silently reordered.
+    Two conditions are required, each raising ``ValueError`` otherwise:
+
+    - a single unimodal profile (contiguous lefts, then bulks, then rights, i.e. bond
+      dimension non-decreasing then non-increasing); e.g. ``1 -> 2 -> 1 -> 2 -> 1`` is rejected;
+    - boundary bond dimensions that double at each step (``1 -> 2 -> 4 -> ... -> chi``, capped
+      at the maximal bond dimension ``chi``); slower growth such as ``1 -> 2 -> 3 -> 5`` is
+      rejected.
     """
-    # Phase index per site: left -> 0, bulk -> 1, right -> 2. A supported profile has a
-    # non-decreasing phase sequence, i.e. lefts, then bulks, then rights, contiguously.
-    phases = []
-    for A in mps:
-        chi_L, _, chi_R = A.shape
-        phases.append(0 if chi_R > chi_L else (1 if chi_R == chi_L else 2))
+    bonds = [A.shape[0] for A in mps] + [mps[-1].shape[2]]
 
+    # Phase per site from consecutive bonds: left (0) grows, bulk (1) keeps, right (2) shrinks.
+    # A supported profile is unimodal: contiguous lefts, then bulks, then rights.
+    phases = [0 if r > l else (1 if r == l else 2) for l, r in zip(bonds, bonds[1:])]
     if any(later < earlier for earlier, later in zip(phases, phases[1:])):
-        bond_profile = [A.shape[0] for A in mps] + [mps[-1].shape[2]]
         raise ValueError(
             "mps_synthesis only supports a single left/bulk/right bond profile "
             "(bond dimension non-decreasing then non-increasing). Got the non-unimodal "
-            f"bond profile {bond_profile}."
+            f"bond profile {bonds}."
         )
 
-    left = [A for A, phase in zip(mps, phases) if phase == 0]
-    bulk = [A for A, phase in zip(mps, phases) if phase == 1]
-    right = [A for A, phase in zip(mps, phases) if phase == 2]
+    left = [A for A, p in zip(mps, phases) if p == 0]
+    bulk = [A for A, p in zip(mps, phases) if p == 1]
+    right = [A for A, p in zip(mps, phases) if p == 2]
+
+    # Boundary bonds must double at each step (1, 2, 4, ..., chi); slower growth such as
+    # 1 -> 2 -> 3 -> 5 is unsupported and would otherwise fail obscurely downstream.
+    chi = max(bonds)
+    expected = [1]
+    while expected[-1] < chi:
+        expected.append(min(2 * expected[-1], chi))
+    left_bonds, right_bonds = bonds[: len(left) + 1], bonds[len(mps) - len(right) :]
+    if left_bonds != expected or right_bonds != expected[::-1]:
+        raise ValueError(
+            "mps_synthesis only supports boundary bond dimensions that double at each step "
+            f"(1 -> 2 -> 4 -> ... -> {chi}). Got boundary bonds {left_bonds} (left) and "
+            f"{right_bonds} (right); expected {expected} and {expected[::-1]}."
+        )
+
     return left, bulk, right
 
 
@@ -570,14 +584,69 @@ def mps_synthesis(mps_tensors, wires):
         :class:`PartiallyMultiplexedFlag`) and the residual scalar phase.
 
     Raises:
-        ValueError: if ``mps_tensors`` is not right-canonical, or has an unsupported
-            (non-unimodal) bond profile.
+        ValueError: if ``mps_tensors`` is not right-canonical, has an unsupported
+            (non-unimodal) bond profile, or is a product state (bond dimension
+            ``chi = 1``, for which :class:`~pennylane.StatePrep` should be used instead);
+            or if ``wires`` does not contain exactly one distinct wire per MPS tensor.
+
+    **Example**
+
+    Build the preparation circuit and residual phase for a right-canonical MPS, without
+    queuing any operations:
+
+    .. code-block:: python
+
+        import numpy as np
+
+        rng = np.random.default_rng(0)
+
+        def rc(chi_l, chi_r, d=2):
+            g = rng.standard_normal((d * chi_r, chi_l)) + 1j * rng.standard_normal((d * chi_r, chi_l))
+            q, _ = np.linalg.qr(g)
+            return q.conj().T.reshape(chi_l, d, chi_r)
+
+        # Right-canonical MPS with bond dimension chi = 2 (three tensors).
+        mps = [rc(1, 2), rc(2, 2), rc(2, 1)]
+
+        # One wire per MPS tensor.
+        wires = [0, 1, 2]
+
+        # Returns the operations and residual phase without queuing anything.
+        circuit, global_phase = mps_synthesis(mps, wires)
+
+    The returned ``circuit`` and ``global_phase`` can then be applied inside a QNode to prepare
+    the encoded state on ``wires`` (this is exactly what :func:`mps_preparation` does):
+
+    .. code-block:: python
+
+        dev = qp.device("default.qubit", wires=wires)
+
+        @qp.qnode(dev)
+        def qnode():
+            for op in circuit:
+                qp.apply(op)
+            qp.GlobalPhase(-qp.math.angle(global_phase))
+            return qp.state()
     """
     if not is_right_canonical(mps_tensors):
         raise ValueError("MPS tensors must be right-canonical")
 
     chi = max(A.shape[0] for A in mps_tensors)  # maximum bond dimension
+    if chi == 1:
+        raise ValueError(
+            "mps_synthesis does not support product states (bond dimension chi = 1). "
+            "Use qp.StatePrep with the per-site amplitudes instead."
+        )
     n_aux = int(qp.math.ceil_log2(chi))
+
+    wires = list(wires)
+    if len(wires) != len(mps_tensors):
+        raise ValueError(
+            f"mps_synthesis requires exactly one wire per MPS tensor: got {len(wires)} "
+            f"wire(s) for {len(mps_tensors)} tensor(s)."
+        )
+    if len(set(wires)) != len(wires):
+        raise ValueError(f"mps_synthesis requires distinct wires, but got duplicates: {wires}.")
 
     aux_wires = list(wires[:n_aux])
     phys_wires = list(wires[n_aux:])
@@ -620,27 +689,28 @@ def mps_synthesis(mps_tensors, wires):
 def mps_preparation(mps_tensors, wires):
     r"""Prepare a right-canonical matrix product state on a quantum register.
 
-    Queues the flag circuit mapping :math:`\lvert 0 \rangle` to the state with amplitudes given
-    by ``mps_tensors``. The physical wires carry the state; the auxiliary (bond) wires are
-    returned to :math:`\lvert 0 \rangle`. See :func:`mps_synthesis` for the underlying builder.
+    Queues the flag circuit that maps :math:`\lvert 0 \rangle` to the state encoded by
+    ``mps_tensors``, spanning the entire ``wires`` register. See :func:`mps_synthesis`
+    for the underlying builder.
 
     Args:
         mps_tensors (Sequence[np.ndarray]): right-canonical MPS tensors, each of shape
             ``(chi_L, d, chi_R)`` (input bond, physical, output bond).
-        wires (Sequence): the full register — ``ceil(log2(chi))`` auxiliary (bond) wires
-            followed by the physical wires.
+        wires (Sequence): the full register the state is prepared on (one wire per MPS tensor).
 
     Returns:
         complex: the global phase applied via :class:`~pennylane.GlobalPhase`.
 
     Raises:
-        ValueError: if ``mps_tensors`` is not right-canonical or has an unsupported bond profile.
+        ValueError: if ``mps_tensors`` is not right-canonical, has an unsupported bond
+            profile, or is a product state (bond dimension ``chi = 1``, for which
+            :class:`~pennylane.StatePrep` should be used instead); or if ``wires`` does
+            not contain exactly one distinct wire per MPS tensor.
 
     **Example**
 
     Given right-canonical MPS tensors ``mps`` (each of shape ``(chi_L, d, chi_R)``) and a
-    combined ``wires`` register holding the ``ceil(log2(chi))`` auxiliary (bond) wires
-    followed by the physical wires:
+    ``wires`` register with one wire per tensor:
 
     .. code-block:: python
 
@@ -653,14 +723,15 @@ def mps_preparation(mps_tensors, wires):
             q, _ = np.linalg.qr(g)
             return q.conj().T.reshape(chi_l, d, chi_r)
 
-        # Right-canonical MPS with bond dimension chi = 2 (three tensors).
-        mps = [rc(1, 2), rc(2, 2), rc(2, 1)]
+        # Right-canonical MPS with bond dimension chi = 8 (eight tensors): the bond dimension
+        # doubles 1 -> 2 -> 4 -> 8 across the left boundary, stays at 8 through the bulk, and
+        # halves 8 -> 4 -> 2 -> 1 across the right boundary.
+        mps = [rc(1, 2), rc(2, 4), rc(4, 8), rc(8, 8), rc(8, 8), rc(8, 4), rc(4, 2), rc(2, 1)]
 
-        # ceil(log2(2)) = 1 bond (auxiliary) wire (label 2), listed first, then the two
-        # physical wires (labels 0, 1); the register length equals the number of tensors.
-        wires = [2, 0, 1]
+        # One wire per MPS tensor.
+        wires = list(range(8))
 
-        dev = qp.device("default.qubit", wires=sorted(wires))
+        dev = qp.device("default.qubit", wires=wires)
 
         @qp.qnode(dev)
         def circuit():
@@ -670,29 +741,47 @@ def mps_preparation(mps_tensors, wires):
     .. details::
         :title: Usage Details
 
-        **Wire register.** ``wires`` is a single register whose first
-        :math:`\lceil \log_2 \chi \rceil` entries are the bond (auxiliary) wires and whose
-        remaining entries are the physical wires, where :math:`\chi` is the maximal bond
-        dimension (inferred from ``mps_tensors``). Its total length equals the number of MPS
-        tensors. The physical state is prepared on the physical wires for the left boundary
-        and the bulk, while it is prepared on the auxiliary wires for the right boundary.
+        **Wire register.** The matrix product state is prepared on the full ``wires`` register,
+        whose length equals the number of MPS tensors. The register splits into two groups: the
+        first :math:`\lceil \log_2 \chi \rceil` wires are the *auxiliary* (bond) wires and the
+        remaining wires are the *physical* wires, where :math:`\chi` is the maximal bond
+        dimension (inferred from ``mps_tensors``).
+
+        The auxiliary wires do double duty. While the circuit runs they are re-used as the bond
+        register that carries the correlations along the chain; by the end they no longer hold
+        any bond information and instead encode the physical state of the last
+        :math:`\lceil \log_2 \chi \rceil` sites. Concretely, the left-boundary and bulk sites are
+        written directly onto the physical wires, while the right-boundary sites end up on the
+        auxiliary wires — so the entire register holds the prepared state, as shown below.
+
+        Consider an MPS with three left/ rightboundary tensors of increasing/ decreasing bond
+        dimensions and two bulk tensors of bond dimension χ in between:
 
         .. code-block::
 
-                     │          │          │          │          │  │ │ │  } physical
-                ┌───┐│     ┌───┐│     ┌───┐│     ┌───┐│     ┌───┐│  │ │ │  } state
-           |0> ─┤   ├┘     │   ││     │   ││     │   ││     │   ││  │ │ │
-                │   │ |0> ─┤   ├┘     │   ││     │   ││     │   ││  │ │ │
-                │   │      │   | |0> ─┤   ├┘     │   ││     │   ││  │ │ │
-                │   │      │   │      │   | |0> ─┤   ├┘     │   ││  │ │ │
-                │   │      │   │      │   │      │   | |0> ─┤   ├┘  │ │ │
-                │   │      │   │      │   │      │   │      │   │   │ │ │
-                │   │      │   │ |0> ─┤   ├──────┤   ├──────┤   ├───┘ │ │ } increasing
-                │   │ |0> ─┤   ├──────┤   ├──────┤   ├──────┤   ├─────┘ │ } bond
-           |0> ─┤   ├──────┤   ├──────┤   ├──────┤   ├──────┤   ├───────┘ } register
-                └───┘      └───┘      └───┘      └───┘      └───┘
-                \_________________________/      \______________/   \____/
-                    left boundary                    bulk         right boundary
+             │     │     │     │     │     │     │     │      physical indices (d = 2)
+            ┌┴┐   ┌┴┐   ┌┴┐   ┌┴┐   ┌┴┐   ┌┴┐   ┌┴┐   ┌┴┐
+            │ │───│ │═══│ │≡≡≡│ │≡≡≡│ │≡≡≡│ │═══│ │───│ │
+            └─┘   └─┘   └─┘   └─┘   └─┘   └─┘   └─┘   └─┘
+                2     4     χ     χ     χ     4     2         virtual bond dimension
+            └──── left ───┘   └─ bulk ┘   └─── right ───┘
+
+        The corresponding circuit to prepare this state is:
+
+        .. code-block::
+
+                            ┌─┐│        │        │        │        │        │        │        │
+                     { |0> ─┤ ├┘     ┌─┐│        │        │        │        │        │        │
+            physical {      │ │ |0> ─┤ ├┘     ┌─┐│        │        │        │        │        │
+            register {      │ │      │ │ |0> ─┤ ├┘     ┌─┐│        │        │        │        │
+                     {      │ │      │ │      │ │ |0> ─┤ ├┘     ┌─┐│        │        │        │
+                     {      │ │      │ │      │ │      │ │ |0> ─┤ ├┘     ┌─┐│        │        │
+                 aux{       │ │      │ │ |0> ─┤ ├──────┤ ├──────┤ ├──────┤ ├┘     ┌─┐│        │
+              (bond){       │ │ |0> ─┤ ├──────┤ ├──────┤ ├──────┤ ├──────┤ ├──────┤ ├┘     ┌─┐│
+            register{  |0> ─┤ ├──────┤ ├──────┤ ├──────┤ ├──────┤ ├──────┤ ├──────┤ ├──────┤ ├┘
+                            └─┘      └─┘      └─┘      └─┘      └─┘      └─┘      └─┘      └─┘
+                            \___________________/      \__________/      \___________________/
+                                left boundary              bulk             right boundary
 
     """
     # Build the circuit with queuing suspended: mps_synthesis instantiates many
