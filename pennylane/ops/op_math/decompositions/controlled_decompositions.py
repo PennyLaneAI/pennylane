@@ -255,10 +255,10 @@ def _ctrl_decomp_bisect_resources(wires, control_values, **__):
 # Resources are not exact because rotations might be skipped for zero angles
 @register_condition(_ctrl_decomp_bisect_condition)
 @register_resources(_ctrl_decomp_bisect_resources, exact=False)
-def ctrl_decomp_bisect_rule(U, wires, **__):
+def ctrl_decomp_bisect_rule(base, wires, **__):
     """The decomposition rule for ControlledQubitUnitary from
     `Vale et al. (2023) <https://arxiv.org/abs/2302.06377>`_."""
-    U, phase = math.convert_to_su2(U)
+    U, phase = math.convert_to_su2(base)
     imag_U = math.imag(U)
     ops.cond(
         math.allclose(imag_U[1, 0], 0) & math.allclose(imag_U[0, 1], 0),
@@ -333,7 +333,7 @@ def multi_control_decomp_zyz_rule(base, wires, work_wires, work_wire_type, **__)
     """The decomposition rule for ControlledQubitUnitary from Lemma 7.9 of
     https://arxiv.org/pdf/quant-ph/9503016"""
 
-    phi, theta, omega, phase = math.decomposition.zyz_rotation_angles(base.U)
+    phi, theta, omega, phase = math.decomposition.zyz_rotation_angles(base)
     _multi_control_zyz(
         phi,
         theta,
@@ -369,7 +369,9 @@ def _controlled_two_qubit_unitary_resource(wires, control_values, work_wires, wo
 # Resources are not exact because rotations might be skipped for zero angle(s)
 @register_condition(lambda wires, control_values, **_: len(wires) - len(control_values) == 2)
 @register_resources(_controlled_two_qubit_unitary_resource, exact=False)
-def controlled_two_qubit_unitary_rule(base, wires, control_values, work_wires, work_wire_type, **__):
+def controlled_two_qubit_unitary_rule(
+    base, wires, control_values, work_wires, work_wire_type, **__
+):
     """A controlled two-qubit unitary is decomposed by applying ctrl to the base decomposition."""
     zero_control_wires = [w for w, val in zip(wires[:-2], control_values, strict=True) if not val]
     for w in zero_control_wires:

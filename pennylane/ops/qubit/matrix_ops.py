@@ -207,7 +207,7 @@ class QubitUnitary(Operator2):
         **Example**
 
         >>> U = np.array([[0.98877108+0.j, 0.-0.14943813j], [0.-0.14943813j, 0.98877108+0.j]])
-        >>> qp.QubitUnitary.compute_matrix(U)
+        >>> qp.QubitUnitary.compute_matrix(U, wires=[0])
          array([[0.988...+0.j        , 0.        -0.149...j],
                 [0.        -0.149...j, 0.988...+0.j        ]])
         """
@@ -238,7 +238,7 @@ class QubitUnitary(Operator2):
         ...     [0, 0, 1, 0]
         ... ])
         >>> U = sp.sparse.csr_matrix(U)
-        >>> qp.QubitUnitary.compute_sparse_matrix(U)
+        >>> qp.QubitUnitary.compute_sparse_matrix(U, wires=[0, 1])
         <Compressed Sparse Row sparse matrix of dtype 'int64'
             with 4 stored elements and shape (4, 4)>
         """
@@ -314,6 +314,12 @@ class QubitUnitary(Operator2):
     @property
     def has_matrix(self) -> bool:
         return not self._issparse
+
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_decomposition(self) -> bool:
+        # Sparse matrices on more than one wire cannot be decomposed.
+        return self.has_matrix or len(self.wires) == 1
 
     def adjoint(self) -> "QubitUnitary":
         if self.has_matrix:

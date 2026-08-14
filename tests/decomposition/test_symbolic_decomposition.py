@@ -1076,8 +1076,14 @@ class TestControlledDecomposition:
     def test_controlled_decomp_with_work_wire(self):
         """Tests the controlled decomposition with a single work wire (Lemma 7.11 from https://arxiv.org/pdf/quant-ph/9503016)."""
 
-        U = qp.Rot.compute_matrix(0.123, 0.234, 0.345)
-        op = qp.ctrl(qp.QubitUnitary(U, wires=0), control=[1, 2])
+        class CustomRot(Operator):  # pylint: disable=too-few-public-methods
+            """A dummy legacy (Operator1) single-qubit op with a defined matrix."""
+
+            @staticmethod
+            def compute_matrix(*params):
+                return qp.Rot.compute_matrix(*params)
+
+        op = qp.ctrl(CustomRot(0.123, 0.234, 0.345, wires=0), control=[1, 2])
 
         with queuing.AnnotatedQueue() as q:
             qp.Projector([0], wires=3)

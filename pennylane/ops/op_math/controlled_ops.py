@@ -228,6 +228,12 @@ class ControlledQubitUnitary(Controlled2):
             )
         return self._base
 
+    @property
+    def has_decomposition(self) -> bool:  # pylint: disable=invalid-overridden-method
+        # A controlled *sparse* multi-qubit unitary has no decomposition, because the underlying
+        # ``QubitUnitary`` base cannot be decomposed (mirrors ``QubitUnitary.has_decomposition``).
+        return self.base.has_decomposition and super().has_decomposition
+
 
 def _to_general_c_qu_resource(wires, control_values, work_wires, work_wire_type, **_):
     num_control_wires = len(control_values)

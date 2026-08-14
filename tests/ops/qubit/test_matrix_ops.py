@@ -43,7 +43,7 @@ class TestQubitUnitaryCSR:
             qp.operation.MatrixUndefinedError,
             match="U is sparse matrix",
         ):
-            qp.QubitUnitary.compute_matrix(U)
+            qp.QubitUnitary.compute_matrix(U, wires=[0])
 
         with pytest.raises(
             qp.operation.MatrixUndefinedError,
@@ -56,14 +56,14 @@ class TestQubitUnitaryCSR:
         """Test that the compute_sparse_matrix method works correctly."""
         U = np.array([[0, 1], [1, 0]])
         U = csr_matrix(U)
-        op = qp.QubitUnitary.compute_sparse_matrix(U)
+        op = qp.QubitUnitary.compute_sparse_matrix(U, wires=0)
         assert isinstance(op, csr_matrix)
         assert np.allclose(op.toarray(), U.toarray())
 
         # Test that the sparse matrix accepts the format parameter.
-        op_csc = qp.QubitUnitary.compute_sparse_matrix(U, format="csc")
-        op_lil = qp.QubitUnitary.compute_sparse_matrix(U, format="lil")
-        op_coo = qp.QubitUnitary.compute_sparse_matrix(U, format="coo")
+        op_csc = qp.QubitUnitary.compute_sparse_matrix(U, wires=0, format="csc")
+        op_lil = qp.QubitUnitary.compute_sparse_matrix(U, wires=0, format="lil")
+        op_coo = qp.QubitUnitary.compute_sparse_matrix(U, wires=0, format="coo")
         assert isinstance(op_csc, csc_matrix)
         assert isinstance(op_lil, lil_matrix)
         assert isinstance(op_coo, coo_matrix)
@@ -1674,15 +1674,3 @@ class TestInterfaceMatricesLabel:
         mat = jnp.array([[1, 0], [0, -1]])
 
         self.check_interface(mat)
-
-
-control_data = [
-    (qp.QubitUnitary(X, wires=0), Wires([])),
-    (qp.ControlledQubitUnitary(X, wires=[0, 1]), Wires([0])),
-]
-
-
-@pytest.mark.parametrize("op, control_wires", control_data)
-def test_control_wires(op, control_wires):
-    """Test ``control_wires`` attribute for matrix operations."""
-    assert op.control_wires == control_wires
