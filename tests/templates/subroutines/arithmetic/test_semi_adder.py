@@ -23,6 +23,7 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arithmetic.semi_adder import _controlled_semi_adder
 
 
+@pytest.mark.pl2do(reason="Blocked by: sc-127789")
 @pytest.mark.capture
 def test_standard_validity_SemiAdder():
     """Check the operation using the assert_valid function."""
