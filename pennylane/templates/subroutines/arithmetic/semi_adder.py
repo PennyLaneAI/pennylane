@@ -287,7 +287,7 @@ def _semi_adder_resources(x_wires, y_wires, **_):
     }
 
 
-def _semi_adder_work_wires(y_wires, work_wires=(), base=None, **_):
+def _semi_adder_work_wires(y_wires=None, work_wires=(), base=None, **_):
     """The work wires that the ladders need, minus the ones that were already provided.
 
     Symbolic rules like ``C(SemiAdder)`` reuse this spec but are called with the symbolic
