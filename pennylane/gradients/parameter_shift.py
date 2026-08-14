@@ -31,7 +31,7 @@ from pennylane.exceptions import (
     ParameterFrequenciesUndefinedError,
 )
 from pennylane.measurements import ExpectationMP, VarianceMP, expval
-from pennylane.ops import PauliRot, Prod, prod
+from pennylane.ops import U2, U3, CRot, PauliRot, Prod, Rot, prod
 from pennylane.ops.functions import eigvals, generator
 from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.transforms import decompose, split_to_single_terms
@@ -1343,6 +1343,18 @@ def _handle_adjoint2(op: Adjoint2):
 
 
 @parameter_frequencies.register
+def _handle_u2(op: U2):
+    """Returns the parameter frequencies for a ``U2`` gate."""
+    return [(1,), (1,)]
+
+
+@parameter_frequencies.register
+def _handle_u3(op: U3):
+    """Returns the parameter frequencies for a ``U3`` gate."""
+    return [(1,), (1,), (1,)]
+
+
+@parameter_frequencies.register
 def _handle_pauli_rot(op: PauliRot):
     """Calculates the parameter frequencies for a PauliRot.
 
@@ -1351,3 +1363,15 @@ def _handle_pauli_rot(op: PauliRot):
     ``PauliRot``.
     """
     return [(1,)]
+
+
+@parameter_frequencies.register
+def _handle_rot(op: Rot):
+    """Calculates the parameter frequencies for an Rot."""
+    return [(1,), (1,), (1,)]
+
+
+@parameter_frequencies.register
+def _handle_crot(op: CRot):
+    """Calculates the parameter frequencies for an CRot."""
+    return [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
