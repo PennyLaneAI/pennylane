@@ -46,7 +46,7 @@ from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.typing import AbstractArray, AbstractWires, Bool, Wire
 from pennylane.wires import Wires, WiresLike
 
-from .symbolicop2 import SymbolicOp2
+from .symbolicop2 import SymbolicOp2, _remove_from_program
 
 # pylint: disable=unused-argument,protected-access,no-value-for-parameter
 
@@ -630,14 +630,6 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         # `res`` will be a concrete operator, not an abstract tracer, so we don't save it.
         if math.is_abstract(res):
             self.tracer = res
-
-
-def _remove_from_program(op):
-    """Removes an operator from the captured/queued program."""
-    if qp.QueuingManager.recording():
-        qp.QueuingManager.remove(op)
-    if qp.capture.enabled():
-        pop_op_eqns((op,))
 
 
 @list_decomps.register

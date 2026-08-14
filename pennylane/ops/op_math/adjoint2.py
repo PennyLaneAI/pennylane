@@ -37,7 +37,7 @@ from pennylane.decomposition.resources import (
 )
 from pennylane.decomposition.symbolic_decomposition import self_adjoint
 
-from .symbolicop2 import SymbolicOp2
+from .symbolicop2 import SymbolicOp2, _remove_from_program
 
 
 class Adjoint2(SymbolicOp2):
@@ -279,11 +279,3 @@ def adjoint_rotation(base):
     assert len(base.dynamic_argnames) == 1
     angle = tuple(base.dynamic_args.values())[0]
     qp.ops.functions.bind_new_parameters(base, (-angle,))
-
-
-def _remove_from_program(op):
-    """Removes an operator from the captured/queued program."""
-    if qp.QueuingManager.recording():
-        qp.QueuingManager.remove(op)
-    if qp.capture.enabled():
-        pop_op_eqns((op,))

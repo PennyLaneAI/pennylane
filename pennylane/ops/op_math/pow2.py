@@ -103,8 +103,6 @@ class Pow2(SymbolicOp2):
 
     @override
     def _bind_primitive(self):
-        if not qp.capture.enabled():
-            return
         pop_op_eqns((self.base,))
         super()._bind_primitive()
 
