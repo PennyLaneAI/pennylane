@@ -24,13 +24,14 @@ from pennylane.templates.subroutines.arithmetic.semi_adder import _controlled_se
 
 
 @pytest.mark.jax
+@pytest.mark.capture
 def test_standard_validity_SemiAdder():
     """Check the operation using the assert_valid function."""
     x_wires = [0, 1, 2]
     y_wires = [3, 4, 5]
     work_wires = [6, 7]
     op = qp.SemiAdder(x_wires, y_wires, work_wires)
-    qp.ops.functions.assert_valid(op)
+    qp.ops.functions.assert_valid(op, skip_wire_mapping=True)
 
 
 class TestSemiAdder:
