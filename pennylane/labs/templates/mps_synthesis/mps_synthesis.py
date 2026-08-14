@@ -574,19 +574,19 @@ def mps_synthesis(mps_tensors, wires):
     residual global phase without queuing anything.
 
     **Tensor Constraints**
-    
+
     The input ``mps_tensors`` must satisfy the following conditions:
-    
-    * **Right-canonical:** Each tensor :math:`A` of shape ``(chi_L, d, chi_R)`` must be an 
-      isometry from the physical and right virtual bonds to the left virtual bond. 
-      Specifically, if you reshape the tensor into a matrix of shape ``(chi_L, d * chi_R)``, 
+
+    * **Right-canonical:** Each tensor :math:`A` of shape ``(chi_L, d, chi_R)`` must be an
+      isometry from the physical and right virtual bonds to the left virtual bond.
+      Specifically, if you reshape the tensor into a matrix of shape ``(chi_L, d * chi_R)``,
       its rows must form an orthonormal set such that :math:`A A^\dagger = \mathbb{I}`.
-    * **Arbitrary bond dimension:** The maximal bond dimension can be any integer, including 
+    * **Arbitrary bond dimension:** The maximal bond dimension can be any integer, including
       non-powers-of-2.
-    * **Power-of-two boundaries:** The bond dimensions must grow and shrink by the factor 
-      of the physical dimension (:math:`d=2`) per site at the boundaries. For example, the 
-      bond dimension profile must start at 1 and double at each step from the left, 
-      and similarly halve at each step towards the right boundary (e.g., 
+    * **Power-of-two boundaries:** The bond dimensions must grow and shrink by the factor
+      of the physical dimension (:math:`d=2`) per site at the boundaries. For example, the
+      bond dimension profile must start at 1 and double at each step from the left,
+      and similarly halve at each step towards the right boundary (e.g.,
       :math:`1 \rightarrow 2 \rightarrow 4 \dots 4 \rightarrow 2 \rightarrow 1`).
 
     Args:
@@ -625,8 +625,8 @@ def mps_synthesis(mps_tensors, wires):
 
         # Right-canonical MPS with bond dimension chi = 2 (three tensors).
         mps = [
-            generate_rc_tensor(1, 2), 
-            generate_rc_tensor(2, 2), 
+            generate_rc_tensor(1, 2),
+            generate_rc_tensor(2, 2),
             generate_rc_tensor(2, 1)
         ]
 
@@ -764,19 +764,19 @@ def mps_preparation(mps_tensors, wires):
     for the underlying builder.
 
     **Tensor Constraints**
-    
+
     The input ``mps_tensors`` must satisfy the following conditions:
-    
-    * **Right-canonical:** Each tensor :math:`A` of shape ``(chi_L, d, chi_R)`` must be an 
-      isometry from the physical and right virtual bonds to the left virtual bond. 
-      Specifically, if you reshape the tensor into a matrix of shape ``(chi_L, d * chi_R)``, 
+
+    * **Right-canonical:** Each tensor :math:`A` of shape ``(chi_L, d, chi_R)`` must be an
+      isometry from the physical and right virtual bonds to the left virtual bond.
+      Specifically, if you reshape the tensor into a matrix of shape ``(chi_L, d * chi_R)``,
       its rows must form an orthonormal set such that :math:`A A^\dagger = \mathbb{I}`.
-    * **Arbitrary bond dimension:** The maximal bond dimension can be any integer, including 
+    * **Arbitrary bond dimension:** The maximal bond dimension can be any integer, including
       non-powers-of-2.
-    * **Power-of-two boundaries:** The bond dimensions must grow and shrink by the factor 
-      of the physical dimension (:math:`d=2`) per site at the boundaries. For example, the 
-      bond dimension profile must start at 1 and double at each step from the left, 
-      and similarly halve at each step towards the right boundary (e.g., 
+    * **Power-of-two boundaries:** The bond dimensions must grow and shrink by the factor
+      of the physical dimension (:math:`d=2`) per site at the boundaries. For example, the
+      bond dimension profile must start at 1 and double at each step from the left,
+      and similarly halve at each step towards the right boundary (e.g.,
       :math:`1 \rightarrow 2 \rightarrow 4 \dots 4 \rightarrow 2 \rightarrow 1`).
 
     Args:
@@ -872,7 +872,7 @@ def mps_preparation(mps_tensors, wires):
                             └─┘      └─┘      └─┘      └─┘      └─┘      └─┘      └─┘      └─┘
                             \___________________/      \__________/      \___________________/
                                 left boundary              bulk             right boundary
-                                
+
         Note how the right boundary tensors do not take any additional auxiliary wires initialized
         in the |0>-state, different than the left boundary and bulk tensors.
     """
