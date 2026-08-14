@@ -62,11 +62,8 @@ def _get_has_generator_types(num_wires):
 
 
 def _find_equal_generator(base, coeff):
-    coeff = (
-        math.real(-1j * coeff)  # jax has no real_if_close
-        if math.get_interface(coeff) in {"jax", "torch"}
-        else math.real_if_close(-1j * coeff)  # only cast to real if close
-    )
+    val = -1j * coeff
+    coeff = math.real(val) if math.is_real_obj_or_close(val) else val
     for op_class in _get_has_generator_types(len(base.wires)):
         # NOTE: Use a real probe coeff so that constructing the candidate does not fail for operators that do not support
         # complex angles (like RZ). This should be fine as any op_class in _get_has_generator_types has a generator
