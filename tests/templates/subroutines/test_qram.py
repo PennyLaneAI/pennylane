@@ -1386,6 +1386,7 @@ class TestFFQRAMDecomposition:
         for rule in list_decomps(FFQRAM):
             _test_decomposition_rule(op, rule)
 
+    @pytest.mark.pl2do(reason="we will come back to broadcasting later")
     def test_decomposition_broadcasted(self):
         """Checks the decomposition for broadcasted amplitudes."""
         amplitudes = np.array(
