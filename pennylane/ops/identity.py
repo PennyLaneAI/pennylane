@@ -289,7 +289,7 @@ class GlobalPhase(Operator2):
 
     def __init__(self, phi, wires: WiresLike = ()):  # pylint: disable=unused-argument
         # NOTE: Pass empty wires to mimic MLIR counterpart
-        # TODO: Remove 'wires' argument eventually, only here for backwards compatibility
+        # TODO: Remove 'wires' argument eventually, only here for backwards compatibility, [sc-127745]
         super().__init__(phi, ())
 
     @staticmethod
