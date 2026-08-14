@@ -428,14 +428,14 @@ class TestControlledQubitUnitary:
             ]
         )
 
-        op = qp.ControlledQubitUnitary(U1, wires=("b", "c", "a"), control_values="01")
+        op = qp.ControlledQubitUnitary(U1, wires=("b", "c", "a"), control_values=[0, 1])
 
         pow_ops = op.pow(n)
         assert len(pow_ops) == 1
 
         assert pow_ops[0].target_wires == op.target_wires
         assert pow_ops[0].control_wires == op.control_wires
-        assert pow_ops[0].control_values == op.control_values
+        assert np.all(pow_ops[0].control_values == op.control_values)
 
         op_mat_to_pow = qp.math.linalg.matrix_power(op.data[0], n)
         assert qp.math.allclose(pow_ops[0].data[0], op_mat_to_pow)
