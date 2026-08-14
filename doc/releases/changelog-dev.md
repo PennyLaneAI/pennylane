@@ -840,9 +840,6 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* The way that `~.Wires` arguments in pytree leaves are read out of HDF5 was changed to be compatible with `~.Operator2` in the data module.
-  [(#10012)](https://github.com/PennyLaneAI/pennylane/pull/10012)
-
 * Adds an `AGENTS.md` file providing guidelines and repository conventions for AI coding agents.
   [(#9929)](https://github.com/PennyLaneAI/pennylane/pull/9929)
 
@@ -1042,6 +1039,8 @@
     [(#9866)](https://github.com/PennyLaneAI/pennylane/pull/9866)
     [(#9897)](https://github.com/PennyLaneAI/pennylane/pull/9897)
     [(#9973)](https://github.com/PennyLaneAI/pennylane/pull/9973)
+  - The way that `~.Wires` arguments in pytree leaves are read out of HDF5 was changed to be compatible with `~.Operator2` in the data module.
+    [(#10012)](https://github.com/PennyLaneAI/pennylane/pull/10012)
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
