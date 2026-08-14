@@ -2050,20 +2050,7 @@ def _canonicalize_dynamic(d, op_name=None) -> Hashable:
     # Use qp.math.real to take the real part. We may get complex inputs for
     # example when differentiating holomorphic functions with JAX: a complex
     # valued QNode (one that returns qp.state) requires complex typed inputs.
-    if op_name is not None and op_name in (
-        "RX",
-        "CRX",
-        "RY",
-        "CRY",
-        "RZ",
-        "CRZ",
-        "PhaseShift",
-        "Rot",
-        "CRot",
-        "U1",
-        "U2",
-        "U3",
-    ):
+    if op_name is not None and op_name in ("RX", "RY", "RZ", "PhaseShift", "Rot", "U1", "U2", "U3"):
         mod_val = 2 * np.pi
     elif op_name is not None and op_name in ("CRX", "CRY", "CRZ", "CRot"):
         mod_val = 4 * np.pi
