@@ -543,8 +543,7 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
     def test_add_controlled_global_op(self, wires, control_wires, expected, wire_map, cls, label):
         """Test that adding a controlled global op works as expected."""
         expected = copy(expected)
-        num_params = 1 if cls is qp.GlobalPhase else 0
-        data = [0.5124][:num_params]
+        (0.5124,) if cls is qp.GlobalPhase else ()
         op = qp.ctrl(cls(*data, wires=wires), control=control_wires)
         n_wires = len(wire_map)
         if n_wires > 4:
