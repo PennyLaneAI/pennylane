@@ -877,11 +877,13 @@
   - Parametric operators are ported:
     - :class:`~.RZ`, :class:`~.CRZ`, :class:`~.DiagonalQubitUnitary`, :class:`~.PauliRot`, :class:`~.MultiRZ`, :class:`~.PhaseShift`,
       :class:`~.ControlledPhaseShift`, :class:`~.Rot`, :class:`~.CRot`, :class:`~.U1`, :class:`~.U2`, :class:`~.U3`, :class:`~.PCPhase`,
-      :class:`~.IsingXX`, :class:`~.IsingYY`, :class:`~.IsingZZ`, :class:`~.IsingXY`
+      :class:`~.GlobalPhase`, :class:`~.IsingXX`, :class:`~.IsingYY`, :class:`~.IsingZZ`, :class:`~.IsingXY`
   [(#9857)](https://github.com/PennyLaneAI/pennylane/pull/9857)
   [(#9941)](https://github.com/PennyLaneAI/pennylane/pull/9941)
   [(#9897)](https://github.com/PennyLaneAI/pennylane/pull/9897)
   [(#9936)](https://github.com/PennyLaneAI/pennylane/pull/9936)
+  [(#9964)](https://github.com/PennyLaneAI/pennylane/pull/9964)
+  [(#10006)](https://github.com/PennyLaneAI/pennylane/pull/10006)
   [(#9977)](https://github.com/PennyLaneAI/pennylane/pull/9977)
   [(#9951)](https://github.com/PennyLaneAI/pennylane/pull/9951)
   [(#9923)](https://github.com/PennyLaneAI/pennylane/pull/9923)
@@ -903,6 +905,7 @@
   [(#9900)](https://github.com/PennyLaneAI/pennylane/pull/9900)
   [(#9997)](https://github.com/PennyLaneAI/pennylane/pull/9997)
   [(#9995)](https://github.com/PennyLaneAI/pennylane/pull/9995)
+  [(#10018)](https://github.com/PennyLaneAI/pennylane/pull/10018)
   - Miscelleneous operators are ported:
     - :class:`~.PauliMeasure`
   [(#10005)](https://github.com/PennyLaneAI/pennylane/pull/10005)
