@@ -495,7 +495,17 @@ def _pauli_ctrl_pauli_ppm(wires, pauli0, pauli1):
         qp.cond(m2, qp.Z)(work_wires[0])  # Reset work wire (to |+>), achieving pure state
 
 
-@qp.register_resources({PauliMeasure: 3, Z: 2, Y: 1, GlobalPhase: 1}, work_wires={"burnable": 1})
+@qp.register_resources(
+    {
+        PauliMeasure("ZX", wires=Wire[2]): 1,
+        PauliMeasure("ZY", wires=Wire[2]): 1,
+        PauliMeasure("X", wires=Wire[1]): 1,
+        Z: 2,
+        Y: 1,
+        GlobalPhase: 1,
+    },
+    work_wires={"burnable": 1},
+)
 def _cy_lattice_surgery_ppm(wires: AbstractWires):
     _pauli_ctrl_pauli_ppm(wires, qp.Z, qp.Y)
 
@@ -612,7 +622,13 @@ def _cz_to_ppr(wires: AbstractWires, **_):
 def _cz_lattice_surgery_ppm_resources(
     wires: AbstractWires = None,
 ):  # pylint: disable=unused-argument
-    return {qp.resource_rep(PauliMeasure): 3, qp.Z: 3, qp.GlobalPhase: 1}
+    return {
+        PauliMeasure("ZX", wires=Wire[2]): 1,
+        PauliMeasure("ZZ", wires=Wire[2]): 1,
+        PauliMeasure("X", wires=Wire[1]): 1,
+        qp.Z: 3,
+        qp.GlobalPhase: 1,
+    }
 
 
 @qp.register_resources(_cz_lattice_surgery_ppm_resources, work_wires={"burnable": 1})
@@ -1045,7 +1061,13 @@ def _cnot_to_ppr(wires: AbstractWires):
 
 
 def _cnot_lattice_surgery_ppm_resources(wires: WiresLike):
-    return {PauliMeasure: 3, qp.Z: 2, qp.X: 1, qp.GlobalPhase: 1}
+    return {
+        PauliMeasure("ZX", wires=Wire[2]): 2,
+        PauliMeasure("X", wires=Wire[1]): 1,
+        qp.Z: 2,
+        qp.X: 1,
+        qp.GlobalPhase: 1,
+    }
 
 
 @qp.register_resources(_cnot_lattice_surgery_ppm_resources, work_wires={"burnable": 1})
