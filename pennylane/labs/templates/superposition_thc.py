@@ -16,6 +16,7 @@ hypercontraction (THC) qubitization."""
 
 import numpy as np
 
+import pennylane as qp
 from pennylane import adjoint, ctrl, math
 from pennylane.core.operator import Operation
 from pennylane.decomposition import (
@@ -26,8 +27,9 @@ from pennylane.decomposition import (
 )
 from pennylane.labs.templates import LeftClassicalComparator, LeftQuantumComparator
 from pennylane.ops import RY, BasisState, GlobalPhase, Hadamard, MultiControlledX, X, Z
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
-from pennylane.typing import Wire
+from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires, WiresLike
 
 
@@ -371,33 +373,39 @@ def _superposition_thc_resources(num_mu_wires, num_work_wires, M, N):
     lcc_gt = resource_rep(LeftClassicalComparator, num_x_wires=n, L=N // 2, comparator=">=")
     lqc = resource_rep(LeftQuantumComparator, num_y_wires=n, comparator="<=")
     basis = resource_rep(BasisState, num_wires=n)
-    mcx = _controlled_x(n, mcx_work, control_values=[0] * n)
+    mcx = MultiControlledX(
+        wires=Wire[n + 1],
+        control_values=Bool[n],
+        work_wires=Wire[mcx_work],
+        work_wire_type="borrowed",
+    )
 
-    resources = {}
+    resources = {
+        resource_rep(GlobalPhase): 1,
+        Hadamard: 6 * n,
+        X: 4 * n + 4,
+        resource_rep(RY): 3,
+        _ctrl_abstract(X(Wire[1]), Wire[2], Wire[ctrl_work]): 4,
+        _ctrl_abstract(X(Wire[1]), Wire[3], Wire[ctrl_work]): 1,
+        _controlled_z(3, ctrl_work): 1,
+        _controlled_z(2 * n, ctrl_work): 1,
+        # _left_inequalities applied twice in the forward direction
+        lcc_le: 2,
+        lcc_gt: 2,
+        lqc: 2,
+        basis: 2,
+        # _left_inequalities applied twice as an adjoint.
+        adjoint_resource_rep(LeftClassicalComparator, lcc_le.params): 2,
+        adjoint_resource_rep(LeftClassicalComparator, lcc_gt.params): 2,
+        adjoint_resource_rep(LeftQuantumComparator, lqc.params): 2,
+        adjoint_resource_rep(BasisState, basis.params): 2,
+        qp.adjoint(mcx): 1,
+    }
 
-    def _add(rep, count):
-        resources[rep] = resources.get(rep, 0) + count
-
-    _add(resource_rep(GlobalPhase), 1)
-    _add(Hadamard, 6 * n)
-    _add(X, 4 * n + 4)
-    _add(resource_rep(RY), 3)
-    _add(_controlled_x(2, ctrl_work), 4)
-    _add(_controlled_x(3, ctrl_work), 1)
-    _add(_controlled_z(3, ctrl_work), 1)
-    _add(_controlled_z(2 * n, ctrl_work), 1)
-    # _left_inequalities applied twice in the forward direction
-    _add(lcc_le, 2)
-    _add(lcc_gt, 2)
-    _add(lqc, 2)
-    _add(basis, 2)
-    # _left_inequalities applied twice as an adjoint.
-    _add(adjoint_resource_rep(LeftClassicalComparator, lcc_le.params), 2)
-    _add(adjoint_resource_rep(LeftClassicalComparator, lcc_gt.params), 2)
-    _add(adjoint_resource_rep(LeftQuantumComparator, lqc.params), 2)
-    _add(adjoint_resource_rep(BasisState, basis.params), 2)
-    _add(mcx, 2)
-    _add(adjoint(mcx), 1)
+    if mcx in resources:
+        resources[mcx] += 2
+    else:
+        resources[mcx] = 2
 
     return resources
 
