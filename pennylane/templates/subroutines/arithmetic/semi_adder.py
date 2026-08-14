@@ -164,8 +164,8 @@ class SemiAdder(Operator2):
         y_wires (Sequence[int]): The wires that store the integer :math:`y`. The number of wires must be sufficient to
             represent :math:`y` in binary. These wires are also used
             to encode the integer :math:`x+y` which is computed modulo :math:`2^{\text{len(y_wires)}}` in the computational basis.
-        work_wires (Optional(Sequence[int])): The auxiliary wires to use for the addition. If provided,
-            at least ``len(y_wires) - 1`` work wires are required. If not provided, they are
+        work_wires (Optional(Sequence[int])): The auxiliary wires to use for the addition. The
+            addition uses ``len(y_wires) - 1`` work wires; any of them that are not provided are
             dynamically allocated by the decomposition.
 
     **Example**
@@ -240,10 +240,6 @@ class SemiAdder(Operator2):
         # as their concrete values are not available during tracing.
         if not _wires_are_traced:
             if work_wires:
-                if len(work_wires) < len(y_wires) - 1:
-                    raise ValueError(
-                        f"At least {len(y_wires)-1} work_wires should be provided, got {len(work_wires)}"
-                    )
                 if work_wires.intersection(x_wires):
                     raise ValueError(
                         "None of the wires in work_wires should be included in x_wires."
@@ -291,17 +287,18 @@ def _semi_adder_resources(x_wires, y_wires, **_):
     }
 
 
-def _semi_adder_work_wires(y_wires=None, work_wires=(), base=None, **_):
-    """The ladders need ``len(y_wires) - 1`` work wires; only the ones the user did not
-    provide have to be allocated.
+def _semi_adder_work_wires(y_wires, work_wires=(), base=None, **_):
+    """The work wires that the ladders need, minus the ones that were already provided.
 
-    Symbolic rules such as ``C(SemiAdder)`` reuse this spec, but are called with the symbolic
-    operator's arguments. Their requirement is the one of the ``SemiAdder`` they wrap, so we
-    recurse into it. Note that ``work_wires`` of a wrapper are not the adder's.
+    Symbolic rules like ``C(SemiAdder)`` reuse this spec but are called with the symbolic
+    operator's arguments, so ``base`` is set instead of ``y_wires``. The requirement is the one
+    of the wrapped ``SemiAdder``, whose own ``work_wires`` are the relevant ones.
     """
     if base is not None:
         return _semi_adder_work_wires(**base.arguments)
-    return {"zeroed": max(len(y_wires) - 1 - len(work_wires), 0)}
+    num_work_wires_needed = len(y_wires) - 1
+    num_work_wires_provided = len(work_wires)
+    return {"zeroed": max(num_work_wires_needed - num_work_wires_provided, 0)}
 
 
 @register_resources(_semi_adder_resources, work_wires=_semi_adder_work_wires)

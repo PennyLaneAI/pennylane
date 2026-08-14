@@ -23,7 +23,9 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arithmetic.semi_adder import _controlled_semi_adder
 
 
-@pytest.mark.pl2do(reason="Blocked by: sc-127789")
+@pytest.mark.pl2do(
+    reason="PL 2.0: blocked on supporting wires as arguments to captured workflows [sc-127789]."
+)
 @pytest.mark.capture
 def test_standard_validity_SemiAdder():
     """Check the operation using the assert_valid function."""
@@ -55,7 +57,9 @@ class TestSemiAdder:
             ([0, 1, 2], [3, 4, 5, 6], [7, 8, 9], 6, 5),
             ([0], [3, 4, 5, 6], [7, 8, 9], 1, 5),
             ([0, 1, 2, 3, 4], [5, 6], [7], 11, 2),
-            # work_wires are optional: when not provided, they are allocated dynamically
+            # work_wires are optional: the missing ones are allocated dynamically
+            ([0, 1], [2, 3, 4], [5], 3, 2),
+            ([0, 1, 2], [3, 4, 5], [6], 5, 6),
             ([0, 1], [2, 3], None, 2, 0),
             ([0, 1], [2, 3, 4], None, 3, 2),
             ([0, 1, 2], [3, 4, 5], None, 5, 6),
@@ -98,12 +102,6 @@ class TestSemiAdder:
     @pytest.mark.parametrize(
         ("x_wires", "y_wires", "work_wires", "msg_match"),
         [
-            (
-                [0, 1, 2],
-                [3, 4, 5],
-                [1],
-                "At least 2 work_wires should be provided.",
-            ),
             (
                 [0, 1, 2],
                 [3, 4, 5],
