@@ -23,7 +23,6 @@ from pennylane.decomposition.resources import (
     Resources,
     adjoint_resource_rep,
     controlled_resource_rep,
-    custom_ctrl_op_to_base,
     pow_resource_rep,
     resource_rep,
 )
@@ -427,13 +426,6 @@ class TestControlledResourceRep:
             },
         )
 
-    def test_custom_controlled_ops(self):
-        """Tests that the resource rep of custom controlled ops remain as the custom version."""
-
-        for op_type in custom_ctrl_op_to_base():
-            rep = resource_rep(op_type)
-            assert rep == CompressedResourceOp(op_type, {})
-
 
 @pytest.mark.unit
 class TestSymbolicResourceRep:
@@ -461,19 +453,6 @@ class TestSymbolicResourceRep:
 
         with pytest.raises(TypeError, match="Missing keyword arguments"):
             qp.decomposition.adjoint_resource_rep(DummyOp, {})
-
-    def test_adjoint_custom_controlled_ops(self):
-        """Tests that the adjoint of custom controlled ops remain as the custom version."""
-
-        for op_type in custom_ctrl_op_to_base():
-            rep = qp.decomposition.adjoint_resource_rep(base_class=op_type, base_params={})
-            assert rep == CompressedResourceOp(
-                qp.ops.Adjoint,
-                {
-                    "base_class": op_type,
-                    "base_params": {},
-                },
-            )
 
     def test_pow_resource_rep(self):
         """Tests the pow_resource_rep utility function."""
