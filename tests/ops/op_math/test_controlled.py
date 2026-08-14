@@ -974,7 +974,6 @@ class TestDecomposition:
         theta = 1.2
         op = qp.ctrl(qp.RZ(qp.numpy.array(theta), 0), (1, 2, 3, 4))
         decomp = op.decomposition()
-        print(decomp)
 
         qp.assert_equal(decomp[0], qp.RZ(qp.numpy.array(theta / 2), [0]))
         qp.assert_equal(decomp[1], qp.MultiControlledX(wires=[1, 2, 3, 4, 0]))
