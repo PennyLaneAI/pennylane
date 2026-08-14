@@ -23,7 +23,6 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arithmetic.semi_adder import _controlled_semi_adder
 
 
-@pytest.mark.jax
 @pytest.mark.capture
 def test_standard_validity_SemiAdder():
     """Check the operation using the assert_valid function."""
@@ -31,7 +30,7 @@ def test_standard_validity_SemiAdder():
     y_wires = [3, 4, 5]
     work_wires = [6, 7]
     op = qp.SemiAdder(x_wires, y_wires, work_wires)
-    qp.ops.functions.assert_valid(op, skip_wire_mapping=True)
+    qp.ops.functions.assert_valid(op)
 
 
 class TestSemiAdder:
