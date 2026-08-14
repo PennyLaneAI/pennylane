@@ -1103,8 +1103,6 @@ class IsingXX(Operator2):
     """
 
     dynamic_argnames = ("phi",)
-    wires_argnames = ("wires",)
-
     arg_specs = {"phi": Float, "wires": Wire[2]}
 
     num_wires = 2
@@ -1240,8 +1238,6 @@ class IsingYY(Operator2):
     """
 
     dynamic_argnames = ("phi",)
-    wires_argnames = ("wires",)
-
     arg_specs = {"phi": Float, "wires": Wire[2]}
 
     num_wires = 2
@@ -1311,8 +1307,7 @@ class IsingYY(Operator2):
         return math.tensordot(c, np.eye(4), axes=0) + math.tensordot(js, r_term, axes=0)
 
     def adjoint(self) -> "IsingYY":
-        (phi,) = self.parameters
-        return IsingYY(-phi, wires=self.wires)
+        return IsingYY(-self.phi, wires=self.wires)
 
     def pow(self, z: int | float) -> list[Operator]:
         return [IsingYY(self.data[0] * z, wires=self.wires)]
@@ -1387,8 +1382,6 @@ class IsingZZ(Operator2):
     """
 
     dynamic_argnames = ("phi",)
-    wires_argnames = ("wires",)
-
     arg_specs = {"phi": Float, "wires": Wire[2]}
 
     num_wires = 2
@@ -1575,8 +1568,6 @@ class IsingXY(Operator2):
     """
 
     dynamic_argnames = ("phi",)
-    wires_argnames = ("wires",)
-
     arg_specs = {"phi": Float, "wires": Wire[2]}
 
     num_wires = 2
