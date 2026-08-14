@@ -248,14 +248,14 @@ def _to_general_c_qu_resource(wires, control_values, work_wires, work_wire_type,
 @qp.register_condition(lambda wires, control_values, **_: len(wires) - len(control_values) > 2)
 @qp.register_resources(_to_general_c_qu_resource)
 # pylint: disable=too-many-arguments
-def _to_general_c_qu(base, wires, control_values, work_wires, work_wire_type, **_):
+def _to_general_c_qu(base, wires, control_wires, control_values, work_wires, work_wire_type, **_):
     """Convert a ControlledQubitUnitary to a general Controlled(QubitUnitary) so that
     the graph finds the general decomposition rule of applying control to the decomposition
     of the base QubitUnitary."""
     num_target_wires = len(wires) - len(control_values)
     qp.ops.Controlled(
-        qp.QubitUnitary(base, wires=wires[-num_target_wires:]),
-        control_wires=wires[:-num_target_wires],
+        qp.QubitUnitary(base.U, wires=wires[-num_target_wires:]),
+        control_wires=control_wires,
         control_values=control_values,
         work_wires=work_wires,
         work_wire_type=work_wire_type,

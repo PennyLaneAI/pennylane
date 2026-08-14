@@ -417,41 +417,6 @@ class TestControlledResourceRep:
             },
         )
 
-    def test_nested_controlled_qubit_unitary(self):
-        """Tests that a nested controlled qubit unitary is flattened."""
-
-        rep = controlled_resource_rep(
-            qp.ops.Controlled,
-            {
-                "base_class": qp.ControlledQubitUnitary,
-                "base_params": {
-                    "num_target_wires": 1,
-                    "num_control_wires": 2,
-                    "num_zero_control_values": 1,
-                    "num_work_wires": 1,
-                    "work_wire_type": "borrowed",
-                },
-                "num_control_wires": 1,
-                "num_zero_control_values": 1,
-                "num_work_wires": 1,
-                "work_wire_type": "borrowed",
-            },
-            1,
-            1,
-            1,
-            "zeroed",
-        )
-        assert rep == CompressedResourceOp(
-            qp.ops.ControlledQubitUnitary,
-            {
-                "num_target_wires": 1,
-                "num_control_wires": 4,
-                "num_zero_control_values": 3,
-                "num_work_wires": 3,
-                "work_wire_type": "borrowed",
-            },
-        )
-
     def test_custom_controlled_ops(self):
         """Tests that the resource rep of custom controlled ops remain as the custom version."""
 

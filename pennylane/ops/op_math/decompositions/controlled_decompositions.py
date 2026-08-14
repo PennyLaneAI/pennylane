@@ -329,11 +329,11 @@ def _multi_ctrl_decomp_zyz_resources(U, wires, control_values, work_wires, work_
 # Resources are not exact because rotations might be skipped for zero angle(s)
 @register_condition(_multi_ctrl_decomp_zyz_condition)
 @register_resources(_multi_ctrl_decomp_zyz_resources, exact=False)
-def multi_control_decomp_zyz_rule(U, wires, work_wires, work_wire_type, **__):
+def multi_control_decomp_zyz_rule(base, wires, work_wires, work_wire_type, **__):
     """The decomposition rule for ControlledQubitUnitary from Lemma 7.9 of
     https://arxiv.org/pdf/quant-ph/9503016"""
 
-    phi, theta, omega, phase = math.decomposition.zyz_rotation_angles(U)
+    phi, theta, omega, phase = math.decomposition.zyz_rotation_angles(base.U)
     _multi_control_zyz(
         phi,
         theta,
