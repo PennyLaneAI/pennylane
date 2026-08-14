@@ -44,7 +44,6 @@ from pennylane.exceptions import (
     PowUndefinedError,
     SparseMatrixUndefinedError,
 )
-from pennylane.ops.identity import Identity
 from pennylane.ops.op_math import adjoint
 
 from .adjoint import Adjoint
@@ -158,7 +157,6 @@ class Pow2(SymbolicOp2):
     @property
     @override
     def has_decomposition(self):
-
         if isinstance(self.z, int) and self.z > 0:
             return True
         try:
@@ -291,7 +289,9 @@ class Pow2(SymbolicOp2):
         )
 
     @override
-    def simplify(self) -> Union["Pow", Identity]:
+    def simplify(self) -> Union["Pow", "Identity"]:
+        from pennylane.ops.identity import Identity  # pylint: disable=import-outside-toplevel
+
         # try using pauli_rep:
         if pr := self.pauli_rep:
             pr.prune()
@@ -394,7 +394,6 @@ def pow_rotation(base, z):
 
 @list_decomps.register
 def _list_pow_decomps(op: Pow2) -> DecompCollection:
-
     abs_op = abstractify(op)
 
     # fixed_decomps would override everything.
