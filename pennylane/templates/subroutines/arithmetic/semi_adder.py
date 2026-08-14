@@ -14,6 +14,7 @@
 """Contains the SemiAdder template for performing the semi-out-place addition."""
 
 from pennylane import math
+from pennylane.allocation import allocate
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import CNOT, adjoint, ctrl
@@ -163,8 +164,9 @@ class SemiAdder(Operator2):
         y_wires (Sequence[int]): The wires that store the integer :math:`y`. The number of wires must be sufficient to
             represent :math:`y` in binary. These wires are also used
             to encode the integer :math:`x+y` which is computed modulo :math:`2^{\text{len(y_wires)}}` in the computational basis.
-        work_wires (Optional(Sequence[int])): The auxiliary wires to use for the addition. At least, ``len(y_wires) - 1`` work
-            wires should be provided.
+        work_wires (Optional(Sequence[int])): The auxiliary wires to use for the addition. If provided,
+            at least ``len(y_wires) - 1`` work wires are required. If not provided, they are
+            dynamically allocated by the decomposition.
 
     **Example**
 
@@ -289,8 +291,25 @@ def _semi_adder_resources(x_wires, y_wires, **_):
     }
 
 
-@register_resources(_semi_adder_resources)
-def _semi_adder(x_wires, y_wires, work_wires, **_):
+def _semi_adder_work_wires(y_wires=None, work_wires=(), base=None, **_):
+    """Number of work wires ``_semi_adder`` has to allocate: the ``len(y_wires) - 1`` needed by
+    the ladders, minus those already provided by the user.
+
+    When this spec is reused by the symbolic rules generated for e.g. ``C(SemiAdder)``, it is
+    called with the symbolic operator's arguments instead, in which case the requirement is set
+    by the wrapped ``SemiAdder`` and the ``work_wires`` given belong to the wrapper, not the adder.
+    """
+    if base is not None:
+        while not isinstance(base, SemiAdder):  # unwrap nesting, e.g. C(C(SemiAdder))
+            base = base.base
+        y_wires, work_wires = base.y_wires, base.work_wires
+    if len(y_wires) == 1:
+        return {"zeroed": 0}  # decomposes into a single CNOT, no work wires needed
+    return {"zeroed": max(len(y_wires) - 1 - len(work_wires or []), 0)}
+
+
+@register_resources(_semi_adder_resources, work_wires=_semi_adder_work_wires)
+def _semi_adder(x_wires, y_wires, work_wires=None, **_):
 
     num_y_wires = len(y_wires)
     num_x_wires = len(x_wires)
@@ -298,6 +317,11 @@ def _semi_adder(x_wires, y_wires, work_wires, **_):
     if num_y_wires == 1:
         CNOT([x_wires[-1], y_wires[0]])
         return
+
+    work_wires = list(work_wires or [])
+    if len(work_wires) < num_y_wires - 1:
+        # The right ladder restores the work wires to zero, so they can be borrowed and returned.
+        work_wires += list(allocate(num_y_wires - 1 - len(work_wires), restored=True))
 
     # Turn wires from big endian to little endian
     # Truncate x_wires, as values larger than 2**num_y_wires-1 can anyways not be stored
@@ -342,7 +366,8 @@ def _controlled_semi_adder_resource(
     num_extra_work_wires = 0 if work_wires is None else len(work_wires)
     # The base's own work_wires beyond the (num_y_wires - 1) consumed by the ladders
     # are available, in addition to any extra work_wires passed to `ctrl`, to the ctrl-CNOTs.
-    num_work_wires = num_extra_work_wires + len(base_work_wires) - (num_y_wires - 1)
+    # Clamped at 0: if the base has too few, the ladders allocate and none are left over here.
+    num_work_wires = num_extra_work_wires + max(len(base_work_wires) - (num_y_wires - 1), 0)
 
     if num_y_wires == 1:
         return {
@@ -376,7 +401,7 @@ def _controlled_semi_adder_resource(
     }
 
 
-@register_resources(_controlled_semi_adder_resource)
+@register_resources(_controlled_semi_adder_resource, work_wires=_semi_adder_work_wires)
 def _controlled_semi_adder(
     base, control_wires, control_values=None, work_wires=None, work_wire_type="borrowed", **_
 ):  # pylint: disable=too-many-arguments
@@ -390,7 +415,10 @@ def _controlled_semi_adder(
     # Slice out the needed work wires for the left and right ladders, the extra work wires
     # will be used as work wires for `ctrl`
     extra_work_wires_from_base = base_work_wires[len(y_wires) - 1 :]
-    base_work_wires = base_work_wires[: len(y_wires) - 1]
+    base_work_wires = list(base_work_wires[: len(y_wires) - 1])
+    if len(base_work_wires) < len(y_wires) - 1:
+        # The right ladder restores the work wires to zero, so they can be borrowed and returned.
+        base_work_wires += list(allocate(len(y_wires) - 1 - len(base_work_wires), restored=True))
     work_wires = [] if work_wires is None else work_wires
     ctrl_kwargs = {
         "control": control_wires,
