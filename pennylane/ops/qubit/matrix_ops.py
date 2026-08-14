@@ -279,7 +279,7 @@ class QubitUnitary(Operator2):
         [RZ(3.141..., wires=[0]),
         RY(np.float64(1.570...), wires=[0]),
         RZ(0.0, wires=[0]),
-        GlobalPhase(np.float64(-1.570...), wires=[])]
+        GlobalPhase(-1.570..., wires=[])]
 
         """
         # Decomposes arbitrary single-qubit unitaries as Rot gates (RZ - RY - RZ format),
@@ -592,7 +592,7 @@ def _diagonal_qu_decomp(D, wires):
     diff = angles[..., 1::2] - angles[..., ::2]
     mean = (angles[..., ::2] + angles[..., 1::2]) / 2
     if len(wires) == 1:
-        qp.GlobalPhase(-qp.math.squeeze(mean, axis=-1), wires=wires)
+        qp.GlobalPhase(-qp.math.squeeze(mean, axis=-1))
         qp.RZ(qp.math.squeeze(diff, axis=-1), wires=wires)
     else:
         qp.DiagonalQubitUnitary(qp.math.exp(1j * mean), wires=wires[:-1])
