@@ -16,87 +16,10 @@
 
 """Tests for :mod:`pennylane.backline.decode`."""
 
-from importlib import import_module
-
 import numpy as np
 import pytest
 
 import pennylane as qp
-
-decode_mod = import_module("pennylane.backline.decode")
-
-
-@pytest.fixture
-def x64():
-    """Run a test with 64-bit values available, as Catalyst configures JAX."""
-    jax = pytest.importorskip("jax")
-    with jax.enable_x64():
-        yield jax
-
-
-class TestDecodeBitpack:
-    """Checks for decode(..., bitpack=True)."""
-
-    @staticmethod
-    def _nodes():
-        controller = qp.Controller()
-        coprocessor = qp.Coprocessor(coprocessor_fn="decoder", comm_host="127.0.0.1")
-        return controller, coprocessor
-
-    def test_bitpack_decode_returns_64_bits(self, x64):
-        """It should unpack the collected 8-byte reply into a 64-bit vector."""
-        controller, coprocessor = self._nodes()
-        jaxpr = x64.make_jaxpr(
-            lambda a, b: decode_mod.decode(
-                (a, b), controller=controller, coprocessor=coprocessor, bitpack=True
-            )
-        )(np.uint8(1), np.uint8(0))
-
-        avals = [v.aval for v in jaxpr.jaxpr.outvars]
-        assert [tuple(a.shape) for a in avals] == [(64,)]
-        assert [a.dtype for a in avals] == [np.dtype(bool)]
-
-        calls = [eqn for eqn in jaxpr.eqns if str(eqn.primitive) == "runtime_call"]
-        assert calls[-1].params["out_bytes"] == (8,)
-
-    def test_bitpack_decode_rejects_non_vector_input(self):
-        """It should require a 1D syndrome bit vector in packed mode."""
-        controller, coprocessor = self._nodes()
-
-        with pytest.raises(ValueError, match="1D bit vector"):
-            decode_mod.decode(
-                np.uint64(1),
-                controller=controller,
-                coprocessor=coprocessor,
-                bitpack=True,
-            )
-
-    def test_bitpack_decode_rejects_vectors_longer_than_u64(self):
-        """It should cap packed syndromes at 64 bits."""
-        controller, coprocessor = self._nodes()
-
-        with pytest.raises(ValueError, match="at most 64 bits"):
-            decode_mod.decode(
-                np.ones(65, dtype=np.uint8),
-                controller=controller,
-                coprocessor=coprocessor,
-                bitpack=True,
-            )
-
-    @pytest.mark.parametrize(
-        ("name", "kwargs"), [("in_bytes", {"in_bytes": 4}), ("out_bytes", {"out_bytes": 4})]
-    )
-    def test_bitpack_decode_requires_u64_sized_buffers(self, name, kwargs):
-        """It should refuse packed transport sizes other than one u64."""
-        controller, coprocessor = self._nodes()
-
-        with pytest.raises(ValueError, match=rf"{name}=8"):
-            decode_mod.decode(
-                np.array([1], dtype=np.uint8),
-                controller=controller,
-                coprocessor=coprocessor,
-                bitpack=True,
-                **kwargs,
 from pennylane.backline.decode import (
     ROLE_CONTROLLER,
     _byte_count,
@@ -123,6 +46,72 @@ def x64_fixture():
         yield jax
 
 
+class TestDecodeBitpack:
+    """Checks for decode(..., bitpack=True)."""
+
+    @staticmethod
+    def _nodes():
+        controller = qp.Controller()
+        coprocessor = qp.Coprocessor(coprocessor_fn="decoder", comm_host="127.0.0.1")
+        return controller, coprocessor
+
+    def test_bitpack_decode_returns_64_bits(self, x64):
+        """It should unpack the collected 8-byte reply into a 64-bit vector."""
+        controller, coprocessor = self._nodes()
+        jaxpr = x64.make_jaxpr(
+            lambda a, b: decode(
+                (a, b), controller=controller, coprocessor=coprocessor, bitpack=True
+            )
+        )(np.uint8(1), np.uint8(0))
+
+        avals = [v.aval for v in jaxpr.jaxpr.outvars]
+        assert [tuple(a.shape) for a in avals] == [(64,)]
+        assert [a.dtype for a in avals] == [np.dtype(bool)]
+
+        calls = [eqn for eqn in jaxpr.eqns if str(eqn.primitive) == "runtime_call"]
+        assert calls[-1].params["out_bytes"] == (8,)
+
+    def test_bitpack_decode_rejects_non_vector_input(self):
+        """It should require a 1D syndrome bit vector in packed mode."""
+        controller, coprocessor = self._nodes()
+
+        with pytest.raises(ValueError, match="1D bit vector"):
+            decode(
+                np.uint64(1),
+                controller=controller,
+                coprocessor=coprocessor,
+                bitpack=True,
+            )
+
+    def test_bitpack_decode_rejects_vectors_longer_than_u64(self):
+        """It should cap packed syndromes at 64 bits."""
+        controller, coprocessor = self._nodes()
+
+        with pytest.raises(ValueError, match="at most 64 bits"):
+            decode(
+                np.ones(65, dtype=np.uint8),
+                controller=controller,
+                coprocessor=coprocessor,
+                bitpack=True,
+            )
+
+    @pytest.mark.parametrize(
+        ("name", "kwargs"), [("in_bytes", {"in_bytes": 4}), ("out_bytes", {"out_bytes": 4})]
+    )
+    def test_bitpack_decode_requires_u64_sized_buffers(self, name, kwargs):
+        """It should refuse packed transport sizes other than one u64."""
+        controller, coprocessor = self._nodes()
+
+        with pytest.raises(ValueError, match=rf"{name}=8"):
+            decode(
+                np.array([1], dtype=np.uint8),
+                controller=controller,
+                coprocessor=coprocessor,
+                bitpack=True,
+                **kwargs,
+            )
+
+
 def a_coprocessor(label=None):
     """A coprocessor"""
     return qp.Coprocessor(coprocessor_fn="decoder", label=label, comm_host="127.0.0.1")
@@ -133,12 +122,13 @@ def a_device(coprocessors=(), out_bytes=8):
     controller = qp.Controller(
         device=qp.device("null.qubit", wires=2), init_args={"out_bytes": out_bytes}
     )
-    return qp.backline(controller=controller, coprocessors=coprocessors, transport="rdma")
+    return qp.Backline(controller=controller, coprocessors=coprocessors, transport="rdma")
 
 
 def a_round(jax, dev, syndrome=None, **kwargs):
     """Trace a round on ``dev`` and return its jaxpr."""
     syndrome = np.zeros(4, dtype=np.uint8) if syndrome is None else syndrome
+    kwargs.setdefault("bitpack", False)
     with qp.capture.tracing_device(dev):
         return jax.make_jaxpr(lambda s: decode(s, **kwargs))(syndrome)
 
@@ -253,46 +243,45 @@ class TestNodeResolution:
     def test_explicit_nodes_need_no_placement(self):
         """Both nodes given are self-contained, so no device has to be traced."""
         controller, coprocessor = qp.Controller(), a_coprocessor()
-        assert _resolve_nodes(controller, coprocessor, 0) == (controller, coprocessor)
+        assert _resolve_nodes(controller, coprocessor) == (controller, coprocessor)
 
     def test_the_nodes_come_from_the_traced_device(self):
         """The placement supplies both nodes."""
         dev = a_device(coprocessors=[a_coprocessor(label="decoder-0")])
         with qp.capture.tracing_device(dev):
-            controller, coprocessor = _resolve_nodes(None, None, 0)
+            controller, coprocessor = _resolve_nodes(None, None)
 
         assert controller is dev.placement.controller
         assert coprocessor is dev.placement.coprocessors[0]
 
-    def test_decoder_id_selects_the_coprocessor(self):
-        """The id picks the node."""
+    def test_an_explicit_coprocessor_selects_the_node(self):
+        """An explicit coprocessor picks the transport session."""
         coprocs = [a_coprocessor(label="decoder-0"), a_coprocessor(label="decoder-1")]
         with qp.capture.tracing_device(a_device(coprocessors=coprocs)):
-            _, coprocessor = _resolve_nodes(None, None, 1)
+            _, coprocessor = _resolve_nodes(None, coprocs[1])
 
         assert coprocessor is coprocs[1]
 
-    def test_a_decoder_id_out_of_range_is_refused(self):
-        """A bug selects a coprocessor that was never placed."""
-        with qp.capture.tracing_device(a_device(coprocessors=[a_coprocessor()])):
-            with pytest.raises(ValueError, match="but the placement has 1"):
-                _resolve_nodes(None, None, 3)
+    def test_multiple_coprocessors_need_an_explicit_node(self):
+        """A decoder ID does not select among transport sessions."""
+        coprocs = [a_coprocessor(label="decoder-0"), a_coprocessor(label="decoder-1")]
+        with qp.capture.tracing_device(a_device(coprocessors=coprocs)):
+            with pytest.raises(ValueError, match="with multiple coprocessors"):
+                _resolve_nodes(None, None)
 
-    def test_a_placement_without_coprocessors_leaves_the_node_unset(self):
-        """A controller-only placement still resolves nodes."""
+    def test_a_placement_without_coprocessors_is_refused(self):
+        """A decoding round requires a coprocessor."""
         dev = a_device()
         with qp.capture.tracing_device(dev):
-            controller, coprocessor = _resolve_nodes(None, None, 0)
-
-        assert controller is dev.placement.controller
-        assert coprocessor is None
+            with pytest.raises(ValueError, match="with multiple coprocessors"):
+                _resolve_nodes(None, None)
 
     @pytest.mark.parametrize("device", [None, qp.device("null.qubit", wires=1)])
     def test_a_trace_with_no_placement_is_refused(self, device):
         """A trace without a placement cannot resolve nodes."""
         with qp.capture.tracing_device(device):
             with pytest.raises(ValueError, match="this trace has none"):
-                _resolve_nodes(None, None, 0)
+                _resolve_nodes(None, None)
 
 
 class TestRecordedRound:
@@ -321,7 +310,6 @@ class TestRecordedRound:
         [
             ([a_coprocessor(label="decoder-1")], "decoder-1"),
             ([a_coprocessor()], "coprocessor.0"),
-            ([], "controller"),
         ],
     )
     def test_the_session_key_follows_the_placement(self, x64, coprocessors, key):
@@ -333,13 +321,19 @@ class TestRecordedRound:
         """A second decoder needs a label to choose it."""
         dev = a_device(coprocessors=[a_coprocessor(), a_coprocessor()])
         with pytest.raises(ValueError, match="no label, and the placement has 2"):
-            a_round(x64, dev, decoder_id=1)
+            a_round(x64, dev, coprocessor=dev.coprocessors[1], decoder_id=1)
 
     def test_the_staged_payload_carries_its_length_and_decoder(self, x64):
         """The length and decoder are stamped alongside the payload."""
         coprocs = [a_coprocessor(label="decoder-0"), a_coprocessor(label="decoder-1")]
         dev = a_device(coprocessors=coprocs)
-        jaxpr = a_round(x64, dev, syndrome=np.zeros(6, dtype=np.uint8), decoder_id=1)
+        jaxpr = a_round(
+            x64,
+            dev,
+            syndrome=np.zeros(6, dtype=np.uint8),
+            coprocessor=coprocs[1],
+            decoder_id=1,
+        )
         _session, _src, nbytes, decoder_id = scalars_of(jaxpr, calls_of(jaxpr)[1])
 
         assert nbytes == 6
