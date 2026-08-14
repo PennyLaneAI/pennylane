@@ -212,10 +212,10 @@ class RandomLayers(Operation):
         ...                                         imprimitive=qp.CNOT, rotations=rotations, seed=42)
         >>> from pprint import pprint
         >>> pprint(ops)
-        [RX(tensor(0.1000), wires=['a']),
-        RY(tensor(-2.1000), wires=['b']),
-        CNOT(wires=['a', 'b']),
-        RX(tensor(1.4000), wires=['b'])]
+        [RX(0.100..., wires=['a']),
+         RY(tensor(-2.1000), wires=['b']),
+         CNOT(wires=['a', 'b']),
+         RX(1.399..., wires=['b'])]
 
         """
         wires = Wires(wires)

@@ -400,11 +400,19 @@ def capture_qnode(qnode: "qp.QNode", *args, **kwargs) -> Result:
     { lambda ; a:f64[]. let
         b:f64[] = mul 3.141592653589793:f64[] a
         c:f64[] d:f64[2] = qnode[
-          device=<lightning.qubit device (wires=1) at ...>
+          device=<lightning.qubit device (wires=1) at 0x118f2e350>
           execution_config=ExecutionConfig(grad_on_execution=False, use_device_gradient=None, use_device_jacobian_product=False, gradient_method='best', gradient_keyword_arguments={}, device_options={}, interface=<Interface.JAX: 'jax'>, derivative_order=1, mcm_config=MCMConfig(mcm_method=None, postselect_mode=None), convert_to_numpy=True, executor_backend=<class 'pennylane.concurrency.executors.native.multiproc.MPPoolExec'>)
           n_consts=0
           qfunc_jaxpr={ lambda ; e:f64[]. let
-              _:AbstractOperator() = RX[n_wires=1] e 0:i64[]
+              _:AbstractOperator() = operator[
+                adjoint=False
+                forward_mask=()
+                hybrid_lens=()
+                hybrid_trees=()
+                n_ctrls=0
+                op_cls=<class 'pennylane.ops.qubit.parametric_ops_single_qubit.RX'>
+                wire_lens=(1,)
+              ] e 0:i64[]
               f:AbstractOperator() = operator[
                 adjoint=False
                 forward_mask=()
@@ -417,13 +425,12 @@ def capture_qnode(qnode: "qp.QNode", *args, **kwargs) -> Result:
               g:AbstractMeasurement(n_wires=None) = expval_obs f
               h:AbstractMeasurement(n_wires=0) = probs_wires
             in (g, h) }
-          qnode=<QNode: device='<lightning.qubit device (wires=1) at ...>', interface='jax', diff_method='best', shots='Shots(total=50000)'>
+          qnode=<QNode: device='<lightning.qubit device (wires=1) at 0x118f2e350>', interface='jax', diff_method='best', shots='Shots(total=50000)'>
           shots_len=1
         ] 50000:i64[] b
         i:f64[] = mul 2.0:f64[] c
         j:f64[2] = add i d
       in (j,) }
-
 
     """
     # apply transform to a callable so will be captured when called
