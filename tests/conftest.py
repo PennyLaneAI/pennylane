@@ -132,11 +132,8 @@ def seed(request):
 @pytest.fixture(scope="function")
 def enable_capture():
     """enable and disable capture around each test."""
-    qp.capture.enable()
-    try:
+    with qp.capture.toggle_ctx(True):
         yield
-    finally:
-        qp.capture.disable()
 
 
 @pytest.fixture(
@@ -152,12 +149,8 @@ def enable_and_disable_capture(request):
     afterwards.
 
     """
-    if request.param:
-        qp.capture.enable()
-    try:
+    with qp.capture.toggle_ctx(request.param):
         yield
-    finally:
-        qp.capture.disable()
 
 
 @pytest.fixture(scope="function")
