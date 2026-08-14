@@ -16,7 +16,6 @@
 
 from __future__ import annotations
 
-import functools
 from collections.abc import Set
 from dataclasses import dataclass, field
 from functools import cached_property
@@ -317,12 +316,6 @@ def controlled_resource_rep(  # pylint: disable=too-many-arguments, too-many-pos
     custom_ctrl = custom_controlled_map.get((base_class, num_control_wires))
     if num_zero_control_values == 0 and custom_ctrl:
         return resource_rep(custom_ctrl)  # handles direct dispatch to custom controlled ops.
-
-    # When the base class is a custom controlled op, update the base to the base of the op.
-    # For example, when the base class is `CRX`, use `RX` as the new base class.
-    if base_class in custom_ctrl_op_to_base():
-        num_control_wires = base_class.num_wires - 1 + num_control_wires
-        base_class = custom_ctrl_op_to_base()[base_class]
 
     # Special case for controlled qubit unitaries
     if base_class in (qp.QubitUnitary, qp.ControlledQubitUnitary):
