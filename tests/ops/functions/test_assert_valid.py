@@ -555,7 +555,6 @@ def test_bad_capture():
         _check_capture(op)
 
 
-@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_data_is_tuple():
     """Check that the data property is a tuple."""
 
