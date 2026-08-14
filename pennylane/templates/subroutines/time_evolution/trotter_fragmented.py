@@ -11,11 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains the Trotter templates for fragmented Hamiltonians."""
+"""Contains the TrotterFragmented template for fragmented Hamiltonians."""
+
+from collections import defaultdict
 
 import numpy as np
 
-import pennylane as qp
+from pennylane import compiler, math
+from pennylane.control_flow import for_loop
+from pennylane.core.operator import Operator2
+from pennylane.decomposition import add_decomps, register_resources
+from pennylane.ops import CNOT, RZ, GlobalPhase, IsingZZ
+from pennylane.templates.subroutines.qchem.basis_rotation import BasisRotation
+from pennylane.typing import Complex, Wire
 
 # pylint: disable=too-many-arguments, no-value-for-parameter, unused-argument
 
@@ -26,7 +34,23 @@ except ImportError:
     has_jax = False
 
 
-def trotter_fragmented(evolution_time, num_trotter_steps, hamiltonian, wires, control_wires=None):
+def _frag_scheme(hamiltonian):
+    """Auto-detect whether a fragmented Hamiltonian follows the CDF or CGF tensor layout."""
+    Z = hamiltonian["core_tensors"]
+    U = hamiltonian["leaf_tensors"]
+
+    if Z.ndim == 3 and U.ndim == 3:
+        return "cdf"
+    if Z.ndim == 5 and U.ndim == 4:
+        return "cgf"
+    raise ValueError(
+        "Could not auto-detect Hamiltonian type. "
+        f"Got core_tensors.ndim={Z.ndim}, leaf_tensors.ndim={U.ndim}. "
+        f"Expected (core_tensors.ndim, leaf_tensors.ndim)=(3, 3) (CDF) or (5, 4) (CGF)."
+    )
+
+
+class TrotterFragmented(Operator2):
     r"""Second-order Trotter time evolution for a fragmented Hamiltonian.
 
     This template works for both electronic Compressed Double Factorization (CDF), see `arXiv:2506.15784, Sec. III A <https://arxiv.org/abs/2506.15784>`__,
@@ -60,6 +84,7 @@ def trotter_fragmented(evolution_time, num_trotter_steps, hamiltonian, wires, co
 
     .. code-block:: python
 
+        np.random.seed(42)
         L = 2; M=2; N=3
         hamiltonian = {
             "core_tensors": np.random.rand(L, M, M, N, N),
@@ -88,7 +113,7 @@ def trotter_fragmented(evolution_time, num_trotter_steps, hamiltonian, wires, co
         def trotter_circuit():
             qp.H(registers["hadamard"])
 
-            trotter_fragmented(
+            qp.TrotterFragmented(
                 evolution_time=1., num_trotter_steps=10, hamiltonian=hamiltonian,
                 wires=registers["system"],
                 control_wires=registers["hadamard"],
@@ -99,65 +124,30 @@ def trotter_fragmented(evolution_time, num_trotter_steps, hamiltonian, wires, co
     We can now run this circuit consisting of just ``10`` Trotter steps.
 
     >>> trotter_circuit()
-    Array(-0.26934518, dtype=float64)
+    Array(-0.8596901, dtype=float64)
 
     Or check the quantum resources required for this task:
 
     >>> specs = qp.specs(trotter_circuit)()["resources"].quantum_operations
     >>> specs
-    {'PhaseShift': 1,
-     'IsingZZ': 180,
-     'CNOT': 480,
-     'RZ': 61,
-     'SingleExcitation': 186,
-     'Hadamard': 1}
+    {'IsingZZ': 180, 'RZ': 61, 'CNOT': 240, 'SingleExcitation': 186, 'PhaseShift': 62, 'Hadamard': 1}
 
     The :class:`~.SingleExcitation` gates are due to :class:`~.BasisRotation` decomposing into :class:`~.PhaseShift` and :class:`~.SingleExcitation`
     on ``lightning.qubit``.
     """
 
-    Z = hamiltonian["core_tensors"]
-    U = hamiltonian["leaf_tensors"]
+    dynamic_argnames = ("evolution_time",)
+    hybrid_argnames = ("hamiltonian",)
+    wire_argnames = ("wires", "control_wires")
+    # `hybrid_argnames` and `compilable_argnames` cannot both be non-empty on the same
+    # operator, so `num_trotter_steps` (a plain Python int that drives Python-level
+    # control flow) is treated as `static_argnames` instead.
+    static_argnames = ("num_trotter_steps",)
 
-    if Z.ndim == 3 and U.ndim == 3:
-        frag_scheme = "cdf"
-    elif Z.ndim == 5 and U.ndim == 4:
-        frag_scheme = "cgf"
-    else:
-        raise ValueError(
-            "Could not auto-detect Hamiltonian type. "
-            f"Got core_tensors.ndim={Z.ndim}, leaf_tensors.ndim={U.ndim}. "
-            f"Expected (core_tensors.ndim, leaf_tensors.ndim)=(3, 3) (CDF) or (5, 4) (CGF)."
-        )
-
-    if num_trotter_steps > 0:
-        second_order_time_step = evolution_time / num_trotter_steps
-
-        @qp.for_loop(num_trotter_steps)
-        def trotter_steps(step_idx, hamiltonian):
-            _trotter_step(
-                step_idx, second_order_time_step, hamiltonian, wires, control_wires, frag_scheme
-            )
-            return hamiltonian
-
-        trotter_steps(hamiltonian)  # pylint: disable=no-value-for-parameter
-
-        U_tensor = hamiltonian["leaf_tensors"]
-        very_last_U = _transpose_leaf(U_tensor[1], frag_scheme)
-        _apply_system_basis_rotation(very_last_U, wires, frag_scheme)
-
-        # Global phase
-        energy_shift = _energy_shift(hamiltonian, frag_scheme)
-        phi = (energy_shift * evolution_time) % (4 * np.pi)
-
-        if control_wires is not None:
-            # Controlled global phases lead to PhaseShift(-phi)
-            # However, the double-phase trick turns it into RZ(-phi)
-            # (differ only by an unobservable global
-            # phase, but we keep it exact for bookkeeping).
-            qp.RZ(-phi, control_wires)
-        else:
-            qp.GlobalPhase(phi)
+    def __init__(self, evolution_time, num_trotter_steps, hamiltonian, wires, control_wires=None):
+        _frag_scheme(hamiltonian)  # validates the tensor shapes eagerly
+        control_wires = () if control_wires is None else control_wires
+        super().__init__(evolution_time, num_trotter_steps, hamiltonian, wires, control_wires)
 
 
 def _trotter_step(step_idx, second_order_time_step, hamiltonian, wires, control_wires, frag_scheme):
@@ -165,13 +155,13 @@ def _trotter_step(step_idx, second_order_time_step, hamiltonian, wires, control_
 
     if not has_jax:
         raise ImportError(
-            "jax is required for trotter_fragmented. Install it with: pip install jax jaxlib"
+            "jax is required for TrotterFragmented. Install it with: pip install jax jaxlib"
         )
 
-    if qp.compiler.active():
-        wires = qp.math.array(wires, like="jax")
-        if control_wires is not None:
-            control_wires = qp.math.array(control_wires, like="jax")
+    if compiler.active():
+        wires = math.array(wires, like="jax")
+        if len(control_wires) > 0:
+            control_wires = math.array(control_wires, like="jax")
 
     U_tensor = hamiltonian["leaf_tensors"]
     Z_tensor = hamiltonian["core_tensors"]
@@ -206,24 +196,24 @@ def _trotter_step(step_idx, second_order_time_step, hamiltonian, wires, control_
             Z_tensor[0], wires, first_order_time_step, control_wires, frag_scheme
         )
 
-    prev_fragment_idx_forward = qp.math.sign(2 * step_idx - 1)
-    qp.for_loop(1, num_two_body_fragments + 1)(two_body_fragments)(prev_fragment_idx_forward)
+    prev_fragment_idx_forward = math.sign(2 * step_idx - 1)
+    for_loop(1, num_two_body_fragments + 1)(two_body_fragments)(prev_fragment_idx_forward)
 
     one_body_fragment()
 
     prev_fragment_idx_backward = 0
-    qp.for_loop(num_two_body_fragments, 0, -1)(two_body_fragments)(prev_fragment_idx_backward)
+    for_loop(num_two_body_fragments, 0, -1)(two_body_fragments)(prev_fragment_idx_backward)
 
 
 def _apply_system_basis_rotation(U, wires, frag_scheme):
     """Apply a fragment's basis rotation on the whole system."""
     if frag_scheme == "cdf":
-        if qp.math.is_abstract(U):
-            qp.BasisRotation(unitary_matrix=U, wires=wires[::2])
-            qp.BasisRotation(unitary_matrix=U, wires=wires[1::2])
+        if math.is_abstract(U):
+            BasisRotation(unitary_matrix=U, wires=wires[::2])
+            BasisRotation(unitary_matrix=U, wires=wires[1::2])
         elif not np.allclose(U, np.eye(len(U))):
-            qp.BasisRotation(unitary_matrix=U, wires=wires[::2])
-            qp.BasisRotation(unitary_matrix=U, wires=wires[1::2])
+            BasisRotation(unitary_matrix=U, wires=wires[::2])
+            BasisRotation(unitary_matrix=U, wires=wires[1::2])
     else:
         num_modes, n_states, _ = U.shape
         # The fragment's leaf O stores the "rotate-from-bare-to-diagonal-basis"
@@ -232,12 +222,12 @@ def _apply_system_basis_rotation(U, wires, frag_scheme):
         # U = O^T implements the single-particle map O^T (moving from bare
         # modal states to the diagonal basis).  Hence we pass the transpose.
         for l in range(num_modes):
-            U_l = qp.math.swapaxes(U[l], -2, -1)
+            U_l = math.swapaxes(U[l], -2, -1)
             mode_wires = wires[l * n_states : (l + 1) * n_states]
-            if qp.math.is_abstract(U_l):
-                qp.BasisRotation(unitary_matrix=U_l, wires=mode_wires)
+            if math.is_abstract(U_l):
+                BasisRotation(unitary_matrix=U_l, wires=mode_wires)
             elif not np.allclose(U_l, np.eye(n_states)):
-                qp.BasisRotation(unitary_matrix=U_l, wires=mode_wires)
+                BasisRotation(unitary_matrix=U_l, wires=mode_wires)
 
 
 def _merge_leaves(U_prev, U_curr, frag_scheme):
@@ -248,7 +238,7 @@ def _merge_leaves(U_prev, U_curr, frag_scheme):
     """
     if frag_scheme == "cdf":
         return U_prev.T @ U_curr
-    return qp.math.einsum("lji,ljk->lik", U_prev, U_curr)
+    return math.einsum("lji,ljk->lik", U_prev, U_curr)
 
 
 def _transpose_leaf(U, frag_scheme):
@@ -256,7 +246,7 @@ def _transpose_leaf(U, frag_scheme):
     if frag_scheme == "cdf":
         return U.T
     # CGF: batch-transpose over the leading mode axis.
-    return qp.math.swapaxes(U, -2, -1)
+    return math.swapaxes(U, -2, -1)
 
 
 def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, frag_scheme):
@@ -265,7 +255,7 @@ def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, fra
 
         def zz_rotations(wire_idx0):
 
-            @qp.for_loop(wire_idx0 + 1, 2 * num_cas)
+            @for_loop(wire_idx0 + 1, 2 * num_cas)
             def _zz_rotations(wire_idx1):
                 # Prefactor breakdown:
                 #   1/8  from (A29)
@@ -275,14 +265,14 @@ def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, fra
                 #                             (k,sigma)<->(l,tau) for sigma!=tau)
                 #   => -1/4
                 angle = -0.25 * Z[wire_idx0 // 2, wire_idx1 // 2] * first_order_time_step
-                qp.IsingZZ(angle, [wires[wire_idx0], wires[wire_idx1]])
+                IsingZZ(angle, [wires[wire_idx0], wires[wire_idx1]])
 
             # TODO: support multiple control wires (not needed for Hadamard tests)
-            if control_wires is not None:
-                qp.CNOT([control_wires[0], wires[wire_idx0]])
+            if len(control_wires) > 0:
+                CNOT([control_wires[0], wires[wire_idx0]])
             _zz_rotations()
-            if control_wires is not None:
-                qp.CNOT([control_wires[0], wires[wire_idx0]])
+            if len(control_wires) > 0:
+                CNOT([control_wires[0], wires[wire_idx0]])
 
         for wire_idx0 in range(2 * num_cas - 1):
             zz_rotations(wire_idx0)
@@ -294,24 +284,24 @@ def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, fra
             for m in range(l):  # strict lower triangle: l > m
                 Z_lm = Z[l, m]
 
-                @qp.for_loop(n_states)
+                @for_loop(n_states)
                 def _p_loop(p, Z_lm=Z_lm, l=l, m=m):
                     wire_lp = wires[l * n_states + p]
 
-                    @qp.for_loop(n_states)
+                    @for_loop(n_states)
                     def _q_loop(q, Z_lm=Z_lm, p=p, wire_lp=wire_lp, l=l, m=m):
                         # Symmetrization is already taken into account here
                         wire_mq = wires[m * n_states + q]
                         lam = Z_lm[p, q]
                         angle = 0.5 * lam * first_order_time_step
-                        qp.IsingZZ(angle, [wire_lp, wire_mq])
+                        IsingZZ(angle, [wire_lp, wire_mq])
 
                     # TODO: support multiple control wires (not needed for Hadamard tests)
-                    if control_wires is not None:
-                        qp.CNOT([control_wires[0], wire_lp])
+                    if len(control_wires) > 0:
+                        CNOT([control_wires[0], wire_lp])
                     _q_loop()
-                    if control_wires is not None:
-                        qp.CNOT([control_wires[0], wire_lp])
+                    if len(control_wires) > 0:
+                        CNOT([control_wires[0], wire_lp])
 
                 _p_loop()
 
@@ -320,7 +310,7 @@ def _apply_one_body_diagonal(Z_one_body, wires, first_order_time_step, control_w
     if frag_scheme == "cdf":
         num_cas = Z_one_body.shape[0]
 
-        @qp.for_loop(2 * num_cas)
+        @for_loop(2 * num_cas)
         def z_rotations(wire_idx):
             # Prefactor breakdown:
             #   -1/2 from (A29)
@@ -331,21 +321,21 @@ def _apply_one_body_diagonal(Z_one_body, wires, first_order_time_step, control_w
             #   => 1
             angle = Z_one_body[wire_idx // 2, wire_idx // 2] * first_order_time_step
 
-            if control_wires is not None:
-                qp.CNOT([control_wires[0], wires[wire_idx]])
-            qp.RZ(angle, wires[wire_idx])
-            if control_wires is not None:
-                qp.CNOT([control_wires[0], wires[wire_idx]])
+            if len(control_wires) > 0:
+                CNOT([control_wires[0], wires[wire_idx]])
+            RZ(angle, wires[wire_idx])
+            if len(control_wires) > 0:
+                CNOT([control_wires[0], wires[wire_idx]])
 
         z_rotations()
     else:
         num_modes = Z_one_body.shape[0]
         n_states = Z_one_body.shape[2]
 
-        @qp.for_loop(num_modes)
+        @for_loop(num_modes)
         def mode_loop(l):
 
-            @qp.for_loop(n_states)
+            @for_loop(n_states)
             def modal_loop(p):
                 wire_lp = wires[l * n_states + p]
                 # One-body prefactor derivation:
@@ -359,11 +349,11 @@ def _apply_one_body_diagonal(Z_one_body, wires, first_order_time_step, control_w
                 # So alpha_oneB = -2.
                 angle = -2.0 * Z_one_body[l, l, p, p] * first_order_time_step
 
-                if control_wires is not None:
-                    qp.CNOT([control_wires[0], wire_lp])
-                qp.RZ(angle, wire_lp)
-                if control_wires is not None:
-                    qp.CNOT([control_wires[0], wire_lp])
+                if len(control_wires) > 0:
+                    CNOT([control_wires[0], wire_lp])
+                RZ(angle, wire_lp)
+                if len(control_wires) > 0:
+                    CNOT([control_wires[0], wire_lp])
 
             modal_loop()
 
@@ -383,20 +373,118 @@ def _energy_shift(hamiltonian, frag_scheme):
         # Eq. (A29) first line: nuc + sum_k Z^(0)_{k,k}
         #   - (sum_{l,k,l'} Z^(l)_{k,l'}) / 2
         #   + (sum_{l,k} Z^(l)_{k,k}) / 4
-        phase_from_mod_one_body = qp.math.trace(Z_tensor[0])
+        phase_from_mod_one_body = math.trace(Z_tensor[0])
         phase_from_two_body = (
-            -qp.math.sum(Z_tensor[1:]) / 2
-            + qp.math.sum(qp.math.trace(Z_tensor[1:], axis1=1, axis2=2)) / 4
+            -math.sum(Z_tensor[1:]) / 2 + math.sum(math.trace(Z_tensor[1:], axis1=1, axis2=2)) / 4
         )
         return nuc_constant + phase_from_mod_one_body + phase_from_two_body
 
     # One-body diagonal: nested traces over axes (-2, -1) twice pick out the
     # (l == m, p == q) entries and sum ε^l_p.
-    one_body_diag = qp.math.trace(
-        qp.math.trace(Z_tensor[0], axis1=-2, axis2=-1),
+    one_body_diag = math.trace(
+        math.trace(Z_tensor[0], axis1=-2, axis2=-1),
         axis1=-2,
         axis2=-1,
     )  # scalar: Σ_{l, p} ε^l_p
     phase_from_one_body = one_body_diag / 2
 
     return nuc_constant + phase_from_one_body
+
+
+def _trotter_fragmented_resources(
+    evolution_time, num_trotter_steps, hamiltonian, wires, control_wires
+):
+    """Approximate (upper-bound) resource estimate for ``TrotterFragmented``.
+
+    The exact gate count can be lower at runtime because fragments whose basis rotation
+    happens to be the identity are skipped when the Hamiltonian data is concrete (not
+    traced); this estimate assumes no such fragment is skipped.
+    """
+    if num_trotter_steps <= 0:
+        return {}
+
+    frag_scheme = _frag_scheme(hamiltonian)
+    leaf_tensors = hamiltonian["leaf_tensors"]
+    num_two_body_fragments = leaf_tensors.shape[0] - 1
+    has_control = len(control_wires) > 0
+
+    resources = defaultdict(int)
+    num_sysrot_calls = num_trotter_steps * (2 * num_two_body_fragments + 1) + 1
+    num_twobody_blocks = num_trotter_steps * 2 * num_two_body_fragments
+    num_onebody_blocks = num_trotter_steps
+
+    if frag_scheme == "cdf":
+        num_cas = leaf_tensors.shape[-1]
+
+        sysrot_key = BasisRotation(Complex[num_cas, num_cas], wires=Wire[num_cas])
+        resources[sysrot_key] += 2 * num_sysrot_calls
+
+        resources[IsingZZ] += num_twobody_blocks * num_cas * (2 * num_cas - 1)
+        if has_control:
+            resources[CNOT] += num_twobody_blocks * 2 * (2 * num_cas - 1)
+
+        resources[RZ] += num_onebody_blocks * 2 * num_cas
+        if has_control:
+            resources[CNOT] += num_onebody_blocks * 4 * num_cas
+
+    else:
+        num_modes = leaf_tensors.shape[1]
+        n_states = leaf_tensors.shape[2]
+
+        sysrot_key = BasisRotation(Complex[n_states, n_states], wires=Wire[n_states])
+        resources[sysrot_key] += num_modes * num_sysrot_calls
+
+        num_pairs = num_modes * (num_modes - 1) // 2
+        resources[IsingZZ] += num_twobody_blocks * num_pairs * n_states**2
+        if has_control:
+            resources[CNOT] += num_twobody_blocks * num_pairs * 2 * n_states
+
+        resources[RZ] += num_onebody_blocks * num_modes * n_states
+        if has_control:
+            resources[CNOT] += num_onebody_blocks * 2 * num_modes * n_states
+
+    if has_control:
+        resources[RZ] += 1
+    else:
+        resources[GlobalPhase] += 1
+
+    return dict(resources)
+
+
+@register_resources(_trotter_fragmented_resources, exact=False)
+def _trotter_fragmented_decomposition(
+    evolution_time, num_trotter_steps, hamiltonian, wires, control_wires
+):
+    frag_scheme = _frag_scheme(hamiltonian)
+
+    if num_trotter_steps > 0:
+        second_order_time_step = evolution_time / num_trotter_steps
+
+        @for_loop(num_trotter_steps)
+        def trotter_steps(step_idx, hamiltonian):
+            _trotter_step(
+                step_idx, second_order_time_step, hamiltonian, wires, control_wires, frag_scheme
+            )
+            return hamiltonian
+
+        trotter_steps(hamiltonian)  # pylint: disable=no-value-for-parameter
+
+        U_tensor = hamiltonian["leaf_tensors"]
+        very_last_U = _transpose_leaf(U_tensor[1], frag_scheme)
+        _apply_system_basis_rotation(very_last_U, wires, frag_scheme)
+
+        # Global phase
+        energy_shift = _energy_shift(hamiltonian, frag_scheme)
+        phi = (energy_shift * evolution_time) % (4 * np.pi)
+
+        if len(control_wires) > 0:
+            # Controlled global phases lead to PhaseShift(-phi)
+            # However, the double-phase trick turns it into RZ(-phi)
+            # (differ only by an unobservable global
+            # phase, but we keep it exact for bookkeeping).
+            RZ(-phi, control_wires)
+        else:
+            GlobalPhase(phi)
+
+
+add_decomps(TrotterFragmented, _trotter_fragmented_decomposition)
