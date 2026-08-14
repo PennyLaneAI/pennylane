@@ -86,8 +86,8 @@ class Controller(Node):
     :class:`~pennylane.Backline` to build a device.
 
     Args:
-        device (Device | None): The PennyLane device the controller executes. Defaults to ``None``,
-            which uses a ``null.qubit`` device.
+        device (pennylane.devices.Device | None): The PennyLane device the controller executes.
+            Defaults to ``None``, which uses a ``null.qubit`` device.
 
     See the Attributes section for the options inherited from :class:`~.Node`.
 

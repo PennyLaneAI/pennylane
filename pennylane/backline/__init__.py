@@ -66,6 +66,8 @@ A backline device is built with :class:`~pennylane.Backline` from a
         qp.RX(x, wires=0)
         return qp.expval(qp.Z(0))
 
+.. currentmodule:: pennylane
+
 Nodes
 ~~~~~
 
@@ -80,58 +82,73 @@ and returned. Both share the options on :class:`~.Node`.
     ~Coprocessor
     ~Node
 
+.. currentmodule:: pennylane.backline
+
 Coprocessor functions
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-A :class:`~.Coprocessor` applies a precompiled function to each message it receives (e.g., decoding a
-syndrome). A :class:`~.CoprocessorFunction` can reference any compatible precompiled library symbol,
-including a custom C++ or Triton function. The :func:`~.triton_decoder` and :func:`~.css_bp_decoder`
-helpers compile user-defined Triton decoders and CSS belief-propagation decoders, respectively.
+A :class:`~pennylane.Coprocessor` applies a precompiled function to each message it receives (e.g.,
+decoding a syndrome). A :class:`~pennylane.CoprocessorFunction` can reference any compatible
+precompiled library symbol, including a custom C++ or Triton function. The
+:func:`~.triton_decoder` and :func:`~.css_bp_decoder` helpers compile user-defined Triton decoders
+and CSS belief-propagation decoders, respectively.
+
+.. currentmodule:: pennylane
 
 .. autosummary::
     :toctree: api
 
     ~CoprocessorFunction
+
+.. currentmodule:: pennylane.backline
+
+.. autosummary::
+    :toctree: api
+
     ~css_bp_decoder
     ~triton_decoder
 
 Placement
 ~~~~~~~~~
 
-A :class:`~.Placement` groups the :class:`~.Controller`, its :class:`coprocessors <.Coprocessor>`,
-and the :class:`~.Transport`. :class:`~pennylane.Backline` assembles them into a device that can be
-bound to a QNode, so a :class:`~.Placement` is normally created by constructing a
-:class:`~pennylane.Backline` rather than directly.
+A :class:`~.Placement` groups the :class:`~pennylane.Controller`, its
+:class:`coprocessors <pennylane.Coprocessor>`, and the :class:`~.Transport`.
+:class:`~pennylane.Backline` assembles them into a device that can be bound to a QNode, so a
+:class:`~.Placement` is normally created by constructing a :class:`~pennylane.Backline` rather than
+directly.
 
 .. autosummary::
     :toctree: api
 
-    ~Backline
     ~Placement
 
 Decoding
 ~~~~~~~~
 
 :func:`~.decode` drives one syndrome->correction round from inside a captured QNode: it stages the
-syndrome, posts it to a :class:`coprocessor <.Coprocessor>`, and returns the correction it replies
-with.
+syndrome, posts it to a :class:`coprocessor <pennylane.Coprocessor>`, and returns the correction it
+replies with.
 
 .. autosummary::
     :toctree: api
 
     ~decode
 
+.. currentmodule:: pennylane
+
 Device
 ~~~~~~
 
-:class:`~pennylane.Backline` carries a :class:`~.Placement` and can be bound directly to a
-:func:`~pennylane.qnode`. It requires the Catalyst compiler for execution, and exposes the placement
-it was built from as :attr:`~.Backline.placement`.
+:class:`~pennylane.Backline` carries a :class:`~pennylane.backline.Placement` and can be bound
+directly to a :func:`~pennylane.qnode`. It requires the Catalyst compiler for execution, and exposes
+the placement it was built from as :attr:`~.Backline.placement`.
 
 .. autosummary::
     :toctree: api
 
     ~Backline
+
+.. currentmodule:: pennylane.backline
 
 Transports
 ~~~~~~~~~~
