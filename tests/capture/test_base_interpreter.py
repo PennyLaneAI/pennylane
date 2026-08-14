@@ -728,8 +728,8 @@ class TestHigherOrderPrimitiveRegistrations:
         def f(x):
             @qp.qnode(qp.device("default.qubit", wires=2))
             def circuit(y):
-                exponent = add_3.bind(0)
-                qp.RX(y, 0) ** exponent  # pylint: disable=expression-not-assigned
+                theta = add_3.bind(0)
+                qp.Rot(y, theta, y, 0)  # pylint: disable=expression-not-assigned
                 return qp.expval(qp.Z(0) + qp.Z(0))
 
             return grad_f(circuit)(x)
@@ -749,8 +749,8 @@ class TestHigherOrderPrimitiveRegistrations:
         def f(x):
             @qp.qnode(qp.device("default.qubit", wires=2))
             def circuit(y):
-                exponent = add_3.bind(0)
-                _ = qp.RX(y, 0) ** exponent
+                theta = add_3.bind(0)
+                qp.Rot(y, theta, y, 0)  # pylint: disable=expression-not-assigned
                 return qp.expval(qp.Z(0) + qp.Z(0))
 
             return qp.vjp(circuit, (x,), (1.0,))
@@ -771,8 +771,8 @@ class TestHigherOrderPrimitiveRegistrations:
         def f(x):
             @qp.qnode(qp.device("default.qubit", wires=2))
             def circuit(y):
-                exponent = add_3.bind(0)
-                _ = qp.RX(y, 0) ** exponent
+                theta = add_3.bind(0)
+                qp.Rot(y, theta, y, 0)  # pylint: disable=expression-not-assigned
                 return qp.expval(qp.Z(0) + qp.Z(0))
 
             return qp.value_and_grad(circuit)(x)
@@ -793,8 +793,8 @@ class TestHigherOrderPrimitiveRegistrations:
         def f(x):
             @qp.qnode(qp.device("default.qubit", wires=2))
             def circuit(y):
-                exponent = add_3.bind(0)
-                _ = qp.RX(y, 0) ** exponent
+                theta = add_3.bind(0)
+                qp.Rot(y, theta, y, 0)  # pylint: disable=expression-not-assigned
                 return qp.expval(qp.Z(0) + qp.Z(0))
 
             return qp.jvp(circuit, (x,), (1.0,))
