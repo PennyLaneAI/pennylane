@@ -350,7 +350,7 @@ class TestSupportsBroadcasting:
         op = qp.MultiRZ(par, wires=wires)
 
         mat1 = op.matrix()
-        mat2 = qp.MultiRZ.compute_matrix(par, num_wires=len(wires))
+        mat2 = qp.MultiRZ.compute_matrix(par, wires)
         single_mats = [qp.MultiRZ(p, wires=wires).matrix() for p in par]
 
         assert qp.math.allclose(mat1, single_mats)
@@ -451,6 +451,7 @@ class TestSupportsBroadcasting:
         )
         op.decomposition()
 
+    @pytest.mark.pl2do(reason="PL 2.0: Parameter broadcasting will be re-visited.")
     def test_pcphase(self):
         """Test that the PCPhase matrix works with broadcasted parameters"""
         dim = 2
@@ -485,7 +486,14 @@ class TestHasUnitaryGenerator:
         attribute are unitary up to a factor of 2."""
         op_class = getattr(qp, entry)
         phi = 1.23
-        wires = [0, 1, 2] if op_class.num_wires is None else list(range(op_class.num_wires))
+        try:
+            wires = (
+                [0, 1, 2]
+                if not hasattr(op_class, "num_wires") or op_class.num_wires is None
+                else list(range(op_class.num_wires))
+            )
+        except TypeError:
+            wires = [0, 1, 2]
         if op_class is qp.PauliRot:
             op = op_class(phi, pauli_word="XYZ", wires=wires)  # PauliRot has num_wires == None
         elif op_class is qp.PCPhase:
@@ -509,7 +517,10 @@ class TestHasUnitaryGenerator:
         if not op_class.has_generator:
             pytest.skip("Operator does not have a generator")
         phi = 1.23
-        wires = [0, 1, 2] if op_class.num_wires is None else list(range(op_class.num_wires))
+        try:
+            wires = [0, 1, 2] if op_class.num_wires is None else list(range(op_class.num_wires))
+        except TypeError:
+            wires = [0, 1, 2]
         if op_class is qp.PauliRot:
             op = op_class(phi, pauli_word="XYZ", wires=wires)  # PauliRot has num_wires == None
         elif op_class is qp.PCPhase:

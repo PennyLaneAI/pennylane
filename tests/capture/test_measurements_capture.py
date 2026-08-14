@@ -15,9 +15,8 @@
 Tests for capturing measurements.
 """
 
-import numpy as np
-
 # pylint: disable=protected-access
+import numpy as np
 import pytest
 
 import pennylane as qp
@@ -38,11 +37,9 @@ from pennylane.measurements import (
 
 jax = pytest.importorskip("jax")
 
-# pylint: disable-next=wrong-import-position
-from pennylane.capture.primitives import AbstractMeasurement, operator_p
-from tests.capture.capture_utils import (  # pylint: disable=wrong-import-position,no-name-in-module
-    assert_eqn_matches_op,
-)
+# pylint: disable=wrong-import-position
+from pennylane.capture.primitives import AbstractMeasurement
+from tests.capture.capture_utils import assert_eqn_matches_op
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -393,7 +390,7 @@ class TestExpvalVar:
         jaxpr = jax.make_jaxpr(f)()
 
         assert len(jaxpr.eqns) == 2
-        assert jaxpr.eqns[0].primitive == qp.X._primitive
+        assert_eqn_matches_op(jaxpr.eqns[0], qp.X)
 
         assert jaxpr.eqns[1].primitive == m_type._obs_primitive
         assert jaxpr.eqns[0].outvars == jaxpr.eqns[1].invars
@@ -434,8 +431,7 @@ class TestExpvalVar:
         jaxpr = jax.make_jaxpr(f)()
 
         assert len(jaxpr.eqns) == 2
-        assert jaxpr.eqns[0].primitive == operator_p
-        assert jaxpr.eqns[0].params["op_cls"] == PauliX
+        assert_eqn_matches_op(jaxpr.eqns[0], PauliX)
 
         assert jaxpr.eqns[1].primitive == m_type._obs_primitive
         assert jaxpr.eqns[0].outvars == jaxpr.eqns[1].invars
@@ -509,7 +505,7 @@ class TestExpvalVar:
             return m_type(obs=obs)
 
         jaxpr = jax.make_jaxpr(f)()
-        assert jaxpr.eqns[0].primitive == qp.X._primitive
+        assert_eqn_matches_op(jaxpr.eqns[0], qp.X)
         assert jaxpr.eqns[1].primitive == qp.ops.SProd._primitive
         assert_eqn_matches_op(jaxpr.eqns[2], qp.Y)
         assert jaxpr.eqns[3].primitive == qp.ops.Sum._primitive
@@ -704,7 +700,7 @@ def test_shadow_expval(seed):
     jaxpr = jax.make_jaxpr(f)()
 
     assert len(jaxpr.eqns) == 2
-    assert jaxpr.eqns[0].primitive == qp.X._primitive
+    assert_eqn_matches_op(jaxpr.eqns[0], qp.X)
 
     assert jaxpr.eqns[1].primitive == ShadowExpvalMP._obs_primitive
     assert jaxpr.eqns[0].outvars == jaxpr.eqns[1].invars

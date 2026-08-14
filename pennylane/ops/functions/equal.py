@@ -389,8 +389,9 @@ def _equal_operator2(
     atol=1e-9,
 ):
     """Check equality between Operator2 instances."""
+
     if type(op1) is not type(op2):
-        return f"op1 and op2 are of different types. Got {type(op1)} and {type(op2)}."
+        return f"op1 and op2 have different types. Got {type(op1)} and {type(op2)}."
 
     # Check static arguments
     for (sname, sval1), (_, sval2) in zip(

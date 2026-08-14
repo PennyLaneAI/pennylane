@@ -23,7 +23,7 @@ import numpy as np
 
 from pennylane import math
 from pennylane.core.measurements import MeasurementTransform
-from pennylane.core.operator import Operator
+from pennylane.core.operator import Operator, Operator2
 from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import MeasurementShapeError
 from pennylane.ops import RZ, Hadamard, I, X, Y, Z
@@ -464,8 +464,18 @@ class ShadowExpvalMP(MeasurementTransform):
         k: int = 1,
         **kwargs,
     ):
+        def _get_tracer(op):
+            if isinstance(op, Operator2):
+                if op.tracer is None:
+                    # pylint: disable-next=protected-access
+                    op._bind_primitive()  # pragma: no cover
+                return op.tracer if op.tracer is not None else op
+            return op
+
+        H = _get_tracer(H)
         if cls._obs_primitive is None:  # pragma: no cover
             return type.__call__(cls, H=H, seed=seed, k=k, **kwargs)  # pragma: no cover
+
         return cls._obs_primitive.bind(H, seed=seed, k=k, **kwargs)
 
     def process(self, tape, device):
