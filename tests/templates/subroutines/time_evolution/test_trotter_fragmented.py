@@ -15,7 +15,7 @@
 Tests for the TrotterFragmented template (CGF scheme only).
 """
 
-# pylint: disable=too-many-arguments, too-many-nested-blocks, redefined-outer-name, too-few-public-methods
+# pylint: disable=too-many-arguments, too-many-nested-blocks, redefined-outer-name, too-few-public-methods, wrong-import-position
 import itertools
 import math
 
@@ -23,7 +23,11 @@ import numpy as np
 import pytest
 from scipy.linalg import expm
 
+jax = pytest.importorskip("jax")
+
 import pennylane as qp
+
+pytestmark = pytest.mark.jax
 
 
 def _random_orthogonal(n, rng):
@@ -158,8 +162,7 @@ def run_trotter_circuit(hamiltonian, num_modes, n_states, t, num_steps):
     def _circuit():
         qp.TrotterFragmented(t, num_steps, hamiltonian, wires)
 
-    with qp.decomposition.toggle_graph_ctx(True):
-        return qp.matrix(_circuit, wire_order=wires)()
+    return qp.matrix(_circuit, wire_order=wires)()
 
 
 class TestValidity:
@@ -174,6 +177,7 @@ class TestValidity:
         qp.ops.functions.assert_valid(op, skip_differentiation=True)
 
 
+@pytest.mark.usefixtures("enable_graph_decomposition")
 class TestDtScaling:
     """Test that single-step Trotter error scales as dt^3 (2nd-order)."""
 
@@ -213,6 +217,7 @@ class TestDtScaling:
         assert log_dev <= 0.35
 
 
+@pytest.mark.usefixtures("enable_graph_decomposition")
 class TestGlobalPhase:
     """Test that _energy_shift correctly tracks the Hamiltonian identity terms."""
 
@@ -239,6 +244,7 @@ class TestGlobalPhase:
         assert np.isclose(measured_phase, expected_phase)
 
 
+@pytest.mark.usefixtures("enable_graph_decomposition")
 class TestEdgeCases:
     """Test boundary conditions and edge cases."""
 
@@ -287,46 +293,44 @@ class TestInputValidation:
 
 
 @pytest.mark.catalyst
+@pytest.mark.usefixtures("enable_graph_decomposition")
 def test_catalyst_legacy_frontend():
     """Test that the template runs while using the legacy catalyst frontend"""
 
-    with qp.decomposition.toggle_graph_ctx(
-        True
-    ):  # safe alternative to avoid enabling graph globally on the test runner
-        L = 2
-        M = 2
-        N = 2
-        hamiltonian = {
-            "core_tensors": np.random.rand(L, M, M, N, N),
-            "leaf_tensors": np.random.rand(L, M, N, N),
-            "nuc_constant": 0.5,
-        }
+    L = 2
+    M = 2
+    N = 2
+    hamiltonian = {
+        "core_tensors": np.random.rand(L, M, M, N, N),
+        "leaf_tensors": np.random.rand(L, M, N, N),
+        "nuc_constant": 0.5,
+    }
 
-        registers = qp.registers({"hadamard": 1, "system": M * N})
+    registers = qp.registers({"hadamard": 1, "system": M * N})
 
-        target_gates = {
-            "Hadamard",
-            "BasisRotation",
-            "RZ",
-            "IsingZZ",
-            "CNOT",
-            "ForLoop",
-        }
+    target_gates = {
+        "Hadamard",
+        "BasisRotation",
+        "RZ",
+        "IsingZZ",
+        "CNOT",
+        "ForLoop",
+    }
 
-        @qp.qjit
-        @qp.transforms.decompose(gate_set=target_gates)
-        @qp.qnode(qp.device("lightning.qubit"))
-        def trotter_circuit():
-            qp.H(registers["hadamard"])
+    @qp.qjit
+    @qp.transforms.decompose(gate_set=target_gates)
+    @qp.qnode(qp.device("lightning.qubit"))
+    def trotter_circuit():
+        qp.H(registers["hadamard"])
 
-            qp.TrotterFragmented(
-                evolution_time=1.0,
-                num_trotter_steps=10,
-                hamiltonian=hamiltonian,
-                wires=registers["system"],
-                control_wires=registers["hadamard"],
-            )
+        qp.TrotterFragmented(
+            evolution_time=1.0,
+            num_trotter_steps=10,
+            hamiltonian=hamiltonian,
+            wires=registers["system"],
+            control_wires=registers["hadamard"],
+        )
 
-            return qp.expval(qp.X(registers["hadamard"]))
+        return qp.expval(qp.X(registers["hadamard"]))
 
-        assert not np.isclose(trotter_circuit(), 0)
+    assert not np.isclose(trotter_circuit(), 0)

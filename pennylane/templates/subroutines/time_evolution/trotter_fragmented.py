@@ -126,11 +126,12 @@ class TrotterFragmented(Operator2):
     >>> trotter_circuit()
     Array(-0.8596901, dtype=float64)
 
-    Or check the quantum resources required for this task:
+    Or check the quantum resources required for this task. Note that the order of the keys in
+    the ``quantum_operations`` dictionary is not guaranteed, so we sort it before printing:
 
     >>> specs = qp.specs(trotter_circuit)()["resources"].quantum_operations
-    >>> specs
-    {'IsingZZ': 180, 'RZ': 61, 'CNOT': 240, 'SingleExcitation': 186, 'PhaseShift': 62, 'Hadamard': 1}
+    >>> dict(sorted(specs.items()))
+    {'CNOT': 240, 'Hadamard': 1, 'IsingZZ': 180, 'PhaseShift': 62, 'RZ': 61, 'SingleExcitation': 186}
 
     The :class:`~.SingleExcitation` gates are due to :class:`~.BasisRotation` decomposing into :class:`~.PhaseShift` and :class:`~.SingleExcitation`
     on ``lightning.qubit``.
