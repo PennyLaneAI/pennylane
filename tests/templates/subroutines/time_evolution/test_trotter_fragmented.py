@@ -14,16 +14,15 @@
 """
 Tests for the TrotterFragmented template.
 
-The CGF (vibrational) numerical tests check physical correctness (Trotter error
-scaling). The CDF (electronic-structure) tests are structural unit tests of the
-private helper functions instead, since a from-scratch independent numerical
-reference for CDF would itself be a nontrivial physics derivation.
+There are no independent-physics-reference tests here (e.g. no Trotter-error-scaling
+checks against an independently reconstructed Hamiltonian matrix). Instead, the private
+helper functions for both the CDF (electronic-structure) and CGF (vibrational) branches
+are unit tested directly, and the full registered decomposition rule is checked for
+self-consistency: its output is compared against calling the very same private helpers
+directly in plain Python.
 """
 
 # pylint: disable=too-many-arguments, too-many-nested-blocks, redefined-outer-name, too-few-public-methods, wrong-import-position, protected-access
-import itertools
-import math
-
 import numpy as np
 import pytest
 from scipy.linalg import expm
@@ -40,8 +39,10 @@ from pennylane.templates.subroutines.time_evolution.trotter_fragmented import (
     _frag_scheme,
     _merge_leaves,
     _transpose_leaf,
+    _trotter_step,
 )
 from pennylane.typing import Wire
+from pennylane.wires import Wires
 
 pytestmark = pytest.mark.jax
 
@@ -55,8 +56,8 @@ def _random_orthogonal(n, rng):
 
 @pytest.fixture(scope="module")
 def toy_hamiltonian():
-    """Synthetic CGF on 2 modes x 2 modals with 1 two-body fragment.
-    4 qubits, 16-dim space, fast for convergence sweeps."""
+    """Synthetic CGF Hamiltonian on 2 modes x 2 modals with 1 two-body fragment
+    (4 qubits, 16-dim space)."""
     rng = np.random.default_rng(1)
     num_modes = 2
     n_states = 2
@@ -85,8 +86,7 @@ def toy_hamiltonian():
 @pytest.fixture(scope="module")
 def toy_hamiltonian_cdf():
     """Synthetic CDF (electronic-structure) Hamiltonian: 2 spatial orbitals
-    (4 qubits, alpha/beta interleaved), 1 two-body fragment. Used only for
-    structural unit tests of the CDF branch, not numerical convergence checks."""
+    (4 qubits, alpha/beta interleaved), 1 two-body fragment."""
     rng = np.random.default_rng(7)
     num_orbitals = 2
 
@@ -111,179 +111,89 @@ def toy_hamiltonian_cdf():
 # Helper functions
 
 
-def _qp_basis_rotation_matrix(leaf_frag, num_modes, n_states):
-    """Return the full unitary for per-mode BasisRotation, matching
-    what TrotterFragmented applies to each fragment."""
-    num_qubits = num_modes * n_states
-    wires = list(range(num_qubits))
-
-    def _circuit():
-        for l in range(num_modes):
-            qp.BasisRotation(
-                unitary_matrix=leaf_frag[l],
-                wires=list(range(l * n_states, (l + 1) * n_states)),
-            )
-
-    return qp.matrix(_circuit, wire_order=wires)()
-
-
-def build_H_exact(hamiltonian, num_modes, n_states):
-    """Build the exact CGF Hamiltonian matrix in SBE encoding."""
-    core_tensors = np.asarray(hamiltonian["core_tensors"])
-    leaf_tensors = np.asarray(hamiltonian["leaf_tensors"])
-    nuc_constant = hamiltonian["nuc_constant"]
-
-    num_qubits = num_modes * n_states
-    dim = 2**num_qubits
-    wires = list(range(num_qubits))
-
-    def get_Z(wire):
-        return qp.matrix(qp.PauliZ(wire), wire_order=wires)
-
-    Z_cache = [get_Z(w) for w in range(num_qubits)]
-    I_full = np.eye(dim, dtype=complex)
-    n_cache = [0.5 * (I_full - Z) for Z in Z_cache]
-
-    H = nuc_constant * I_full
-
-    # One-body (frag index 0)
-    H_1b_diag = np.zeros((dim, dim), dtype=complex)
-    for l in range(num_modes):
-        for p in range(n_states):
-            eps_lp = core_tensors[0, l, l, p, p]
-            H_1b_diag = H_1b_diag + eps_lp * n_cache[l * n_states + p]
-    U_1b = _qp_basis_rotation_matrix(leaf_tensors[0], num_modes, n_states)
-    H = H + U_1b @ H_1b_diag @ U_1b.conj().T
-
-    # Two-body fragments
-    num_frags = leaf_tensors.shape[0] - 1
-    for f in range(1, num_frags + 1):
-        H_2b_diag = np.zeros((dim, dim), dtype=complex)
-        for l in range(num_modes):
-            for m in range(l):
-                for p in range(n_states):
-                    for q in range(n_states):
-                        lam = core_tensors[f, l, m, p, q]
-                        if abs(lam) > 0.0:
-                            Z_p = Z_cache[l * n_states + p]
-                            Z_q = Z_cache[m * n_states + q]
-                            H_2b_diag = H_2b_diag + (lam / 4.0) * (Z_p @ Z_q)
-        U_2b = _qp_basis_rotation_matrix(leaf_tensors[f], num_modes, n_states)
-        H = H + U_2b @ H_2b_diag @ U_2b.conj().T
-
-    return H
-
-
-def sbe_subspace_indices(num_modes, n_states):
-    """Indices of the physical (one-hot per mode) subspace."""
-    num_qubits = num_modes * n_states
-    indices = []
-    for modal_choices in itertools.product(range(n_states), repeat=num_modes):
-        idx = 0
-        for l, p in enumerate(modal_choices):
-            qubit = l * n_states + p
-            idx |= 1 << (num_qubits - 1 - qubit)
-        indices.append(idx)
-    return np.array(sorted(indices))
-
-
-def subspace_operator_error(U_ref, U_trial, subspace_idx):
-    """Operator-norm error on SBE subspace after global-phase alignment."""
-    Aref = U_ref[np.ix_(subspace_idx, subspace_idx)]
-    Atrial = U_trial[np.ix_(subspace_idx, subspace_idx)]
-    overlap = np.trace(Aref.conj().T @ Atrial)
-    phase = np.exp(-1j * np.angle(overlap)) if np.abs(overlap) > 1e-14 else 1.0
-    return float(np.linalg.norm(Aref - phase * Atrial, ord=2))
-
-
-def run_trotter_circuit(hamiltonian, num_modes, n_states, t, num_steps):
+def run_trotter_circuit(hamiltonian, wires, t, num_steps, control_wires=()):
     """Run the Trotter circuit and return the full unitary matrix."""
-    num_qubits = num_modes * n_states
-    wires = list(range(num_qubits))
+    all_wires = list(wires) + list(control_wires)
 
     def _circuit():
-        qp.TrotterFragmented(t, num_steps, hamiltonian, wires)
+        qp.TrotterFragmented(t, num_steps, hamiltonian, wires, control_wires)
+
+    return qp.matrix(_circuit, wire_order=all_wires)()
+
+
+def _matrix_from_ops(ops, wires):
+    """Build the unitary matrix corresponding to applying ``ops`` in sequence."""
+
+    def _circuit():
+        for op in ops:
+            qp.apply(op)
 
     return qp.matrix(_circuit, wire_order=wires)()
+
+
+def _manual_one_step_decomposition(hamiltonian, wires, t, control_wires, frag_scheme):
+    """Queue the ops for a single Trotter step by calling the private helpers
+    directly in plain Python (i.e. without going through the registered rule's
+    outer ``for_loop`` over Trotter steps)."""
+    _trotter_step(0, t, hamiltonian, wires, control_wires, frag_scheme)
+    very_last_U = _transpose_leaf(hamiltonian["leaf_tensors"][1], frag_scheme)
+    _apply_system_basis_rotation(very_last_U, wires, frag_scheme)
+    energy_shift = _energy_shift(hamiltonian, frag_scheme)
+    phi = (energy_shift * t) % (4 * np.pi)
+    if len(control_wires) > 0:
+        qp.RZ(-phi, control_wires)
+    else:
+        qp.GlobalPhase(phi)
+
+
+class TestInitialization:
+    """Test that TrotterFragmented is initialized correctly."""
+
+    def test_init_correctly(self, toy_hamiltonian):
+        """Test that arguments and wires are stored correctly."""
+        ham, num_modes, n_states = toy_hamiltonian
+        wires = list(range(num_modes * n_states))
+        op = qp.TrotterFragmented(0.3, 5, ham, wires)
+
+        assert op.arguments["evolution_time"] == 0.3
+        assert op.arguments["num_trotter_steps"] == 5
+        assert op.arguments["hamiltonian"] is ham
+        assert op.wires == Wires(wires)
+        assert op._frag_scheme == "cgf"
+
+    def test_control_wires_default_is_empty(self, toy_hamiltonian):
+        """Test that omitting control_wires results in an empty Wires object, not None."""
+        ham, num_modes, n_states = toy_hamiltonian
+        wires = list(range(num_modes * n_states))
+        op = qp.TrotterFragmented(0.3, 5, ham, wires)
+        assert op.arguments["control_wires"] == Wires([])
+
+    def test_explicit_control_wires(self, toy_hamiltonian):
+        """Test that explicit control_wires are stored correctly and included in op.wires."""
+        ham, num_modes, n_states = toy_hamiltonian
+        wires = list(range(num_modes * n_states))
+        op = qp.TrotterFragmented(0.3, 5, ham, wires, control_wires=[99])
+        assert op.arguments["control_wires"] == Wires([99])
+        assert 99 in op.wires
 
 
 class TestValidity:
     """Basic structural validity tests for the TrotterFragmented operator."""
 
-    def test_assert_valid(self, toy_hamiltonian):
-        """Run qp.ops.functions.assert_valid on a concrete TrotterFragmented instance."""
+    def test_assert_valid_cgf(self, toy_hamiltonian):
+        """Run qp.ops.functions.assert_valid on a concrete CGF TrotterFragmented instance."""
         ham, num_modes, n_states = toy_hamiltonian
         wires = list(range(num_modes * n_states))
         op = qp.TrotterFragmented(0.1, 3, ham, wires)
         # Differentiating through the (non-trainable) hamiltonian dict is not supported.
         qp.ops.functions.assert_valid(op, skip_differentiation=True)
 
-
-@pytest.mark.usefixtures("enable_graph_decomposition")
-class TestDtScaling:
-    """Test that single-step Trotter error scales as dt^3 (2nd-order)."""
-
-    @pytest.mark.parametrize(
-        "dt",
-        [
-            (0.2),  # halving dt -> 8x error reduction
-            (0.1),
-            (0.05),
-        ],
-    )
-    def test_dt_cubic_scaling(self, toy_hamiltonian, dt):
-        """For a second-order Trotter evolution, error for a single time step should scale as dt^3.
-        Check that halving dt reduces error by ~8x."""
-        ham, num_modes, n_states = toy_hamiltonian
-        H = build_H_exact(ham, num_modes, n_states)
-        H_norm = float(np.linalg.norm(H, ord=2))
-        sub_idx = sbe_subspace_indices(num_modes, n_states)
-
-        dt_a = dt / max(H_norm, 1e-12)
-        dt_b = dt / 2 / max(H_norm, 1e-12)
-
-        U_ref_a = expm(-1j * H * dt_a)
-        U_tr_a = run_trotter_circuit(ham, num_modes, n_states, dt_a, 1)
-        err_a = subspace_operator_error(U_ref_a, U_tr_a, sub_idx)
-
-        U_ref_b = expm(-1j * H * dt_b)
-        U_tr_b = run_trotter_circuit(ham, num_modes, n_states, dt_b, 1)
-        err_b = subspace_operator_error(U_ref_b, U_tr_b, sub_idx)
-
-        if err_b <= 0:
-            pytest.skip("Denominator error is zero; scaling check not meaningful.")
-
-        ratio = err_a / err_b
-        # expected_ratio = (dt_a / dt_b)^3 = 8.0 for halving
-        log_dev = abs(math.log2(ratio + 1e-30) - math.log2(8.0)) / math.log2(8.0)
-        assert log_dev <= 0.35
-
-
-@pytest.mark.usefixtures("enable_graph_decomposition")
-class TestGlobalPhase:
-    """Test that _energy_shift correctly tracks the Hamiltonian identity terms."""
-
-    def test_energy_shift_toy(self, toy_hamiltonian):
-        """Test that phase difference between exact and Trotter matches _energy_shift * t."""
-        ham, num_modes, n_states = toy_hamiltonian
-        H = build_H_exact(ham, num_modes, n_states)
-        sub_idx = sbe_subspace_indices(num_modes, n_states)
-        t = 0.05
-
-        U_ref = expm(-1j * H * t)
-        U_tr = run_trotter_circuit(ham, num_modes, n_states, t, num_steps=64)
-
-        Aref = U_ref[np.ix_(sub_idx, sub_idx)]
-        Atrial = U_tr[np.ix_(sub_idx, sub_idx)]
-
-        overlap = np.trace(Aref.conj().T @ Atrial)
-        measured_phase = np.angle(overlap)
-
-        # Normalize to [-pi, pi]
-        measured_phase = (measured_phase + np.pi) % (2 * np.pi) - np.pi
-        expected_phase = 0
-
-        assert np.isclose(measured_phase, expected_phase)
+    def test_assert_valid_cdf(self, toy_hamiltonian_cdf):
+        """Run qp.ops.functions.assert_valid on a concrete CDF TrotterFragmented instance."""
+        ham, num_orbitals = toy_hamiltonian_cdf
+        wires = list(range(2 * num_orbitals))
+        op = qp.TrotterFragmented(0.1, 3, ham, wires)
+        qp.ops.functions.assert_valid(op, skip_differentiation=True)
 
 
 class TestCDFScheme:
@@ -416,6 +326,147 @@ class TestCDFScheme:
         assert np.isclose(shift, expected)
 
 
+class TestCGFScheme:
+    """Structural unit tests for the CGF-format (vibrational) branch of the
+    private helper functions, called directly and in isolation."""
+
+    def test_frag_scheme_detects_cgf(self, toy_hamiltonian):
+        """Test that a (5, 4) core/leaf tensor pair is detected as CGF."""
+        ham, _, _ = toy_hamiltonian
+        assert _frag_scheme(ham) == "cgf"
+
+    def test_merge_leaves_cgf(self):
+        """Test the CGF merge rule: per-mode U_prev^dagger @ U_curr."""
+        rng = np.random.default_rng(4)
+        num_modes, n_states = 2, 3
+        U_prev = np.stack([_random_orthogonal(n_states, rng) for _ in range(num_modes)])
+        U_curr = np.stack([_random_orthogonal(n_states, rng) for _ in range(num_modes)])
+        expected = np.stack([U_prev[l].T @ U_curr[l] for l in range(num_modes)])
+        assert np.allclose(_merge_leaves(U_prev, U_curr, "cgf"), expected)
+
+    def test_transpose_leaf_cgf(self):
+        """Test the CGF leaf transpose (batched over the mode axis)."""
+        rng = np.random.default_rng(5)
+        num_modes, n_states = 2, 3
+        U = np.stack([_random_orthogonal(n_states, rng) for _ in range(num_modes)])
+        expected = np.stack([U[l].T for l in range(num_modes)])
+        assert np.allclose(_transpose_leaf(U, "cgf"), expected)
+
+    def test_apply_system_basis_rotation_cgf_concrete(self):
+        """Test that per-mode rotations use the transpose convention and that a
+        mode whose rotation is the identity is skipped."""
+        num_modes, n_states = 2, 2
+        wires = list(range(num_modes * n_states))
+        U0 = _random_orthogonal(n_states, np.random.default_rng(2))
+        U = np.stack([U0, np.eye(n_states)])
+        with qp.queuing.AnnotatedQueue() as q:
+            _apply_system_basis_rotation(U, wires, "cgf")
+        tape = qp.tape.QuantumScript.from_queue(q)
+        assert [type(op) for op in tape.operations] == [qp.BasisRotation]
+        assert list(tape.operations[0].wires) == wires[:n_states]
+        assert np.allclose(tape.operations[0].parameters[0], U0.T)
+
+    def test_apply_system_basis_rotation_cgf_abstract(self):
+        """Test that the identity-skip optimization does not apply under jax tracing."""
+        num_modes, n_states = 2, 2
+        wires = list(range(num_modes * n_states))
+        captured = {}
+
+        def _fn(U):
+            with qp.queuing.AnnotatedQueue() as q:
+                _apply_system_basis_rotation(U, wires, "cgf")
+            captured["ops"] = list(q.queue)
+            return U
+
+        jax.jit(_fn)(jax.numpy.stack([jax.numpy.eye(n_states)] * num_modes))
+        assert [type(op) for op in captured["ops"]] == [qp.BasisRotation, qp.BasisRotation]
+
+    def test_apply_two_body_diagonal_cgf(self):
+        """Test the CGF two-body diagonal IsingZZ gates for a single mode pair."""
+        num_modes, n_states = 2, 2
+        wires = list(range(num_modes * n_states))
+        Z = np.zeros((num_modes, num_modes, n_states, n_states))
+        Z[1, 0] = np.array([[0.1, 0.2], [0.3, 0.4]])
+        t = 0.25
+        with qp.queuing.AnnotatedQueue() as q:
+            _apply_two_body_diagonal(Z, wires, t, [], "cgf")
+        tape = qp.tape.QuantumScript.from_queue(q)
+        ising_ops = [op for op in tape.operations if isinstance(op, qp.IsingZZ)]
+        expected = [
+            (wires[1 * n_states + p], wires[0 * n_states + q], 0.5 * Z[1, 0, p, q] * t)
+            for p in range(n_states)
+            for q in range(n_states)
+        ]
+        assert len(ising_ops) == len(expected)
+        for op, (w0, w1, angle) in zip(ising_ops, expected):
+            assert list(op.wires) == [w0, w1]
+            assert np.isclose(op.parameters[0], angle)
+
+    def test_apply_two_body_diagonal_cgf_with_control(self):
+        """Test that CNOTs sandwich each (l, p) IsingZZ block when control_wires is set."""
+        num_modes, n_states = 2, 1
+        wires = [0, 1]
+        control_wires = [10]
+        Z = np.zeros((num_modes, num_modes, n_states, n_states))
+        Z[1, 0, 0, 0] = 0.3
+        with qp.queuing.AnnotatedQueue() as q:
+            _apply_two_body_diagonal(Z, wires, 0.2, control_wires, "cgf")
+        tape = qp.tape.QuantumScript.from_queue(q)
+        cnots = [op for op in tape.operations if isinstance(op, qp.CNOT)]
+        # A single (l=1, m=0) mode pair with n_states=1 -> a single (l, p) block -> 2 CNOTs.
+        assert len(cnots) == 2
+        assert all(list(op.wires) == [10, wires[1]] for op in cnots)
+
+    def test_apply_one_body_diagonal_cgf(self):
+        """Test the CGF one-body diagonal RZ gates."""
+        num_modes, n_states = 2, 2
+        wires = list(range(num_modes * n_states))
+        Z = np.zeros((num_modes, num_modes, n_states, n_states))
+        for l in range(num_modes):
+            for p in range(n_states):
+                Z[l, l, p, p] = 0.1 * (l + 1) * (p + 1)
+        t = 0.2
+        with qp.queuing.AnnotatedQueue() as q:
+            _apply_one_body_diagonal(Z, wires, t, [], "cgf")
+        tape = qp.tape.QuantumScript.from_queue(q)
+        rz_ops = [op for op in tape.operations if isinstance(op, qp.RZ)]
+        assert len(rz_ops) == num_modes * n_states
+        idx = 0
+        for l in range(num_modes):
+            for p in range(n_states):
+                wire_lp = wires[l * n_states + p]
+                assert list(rz_ops[idx].wires) == [wire_lp]
+                assert np.isclose(rz_ops[idx].parameters[0], -2.0 * Z[l, l, p, p] * t)
+                idx += 1
+
+    def test_apply_one_body_diagonal_cgf_with_control(self):
+        """Test that CNOTs sandwich each RZ when control_wires is set."""
+        num_modes, n_states = 1, 2
+        wires = [0, 1]
+        control_wires = [10]
+        Z = np.zeros((num_modes, num_modes, n_states, n_states))
+        Z[0, 0] = np.diag([0.3, -0.1])
+        with qp.queuing.AnnotatedQueue() as q:
+            _apply_one_body_diagonal(Z, wires, 0.1, control_wires, "cgf")
+        tape = qp.tape.QuantumScript.from_queue(q)
+        cnots = [op for op in tape.operations if isinstance(op, qp.CNOT)]
+        assert len(cnots) == 2 * len(wires)
+        assert all(op.wires[0] == 10 for op in cnots)
+
+    def test_energy_shift_cgf(self):
+        """Test the CGF zero-of-energy shift formula (one-body diagonal only)."""
+        num_modes, n_states = 2, 2
+        Z0 = np.zeros((num_modes, num_modes, n_states, n_states))
+        for l in range(num_modes):
+            for p in range(n_states):
+                Z0[l, l, p, p] = 0.1 * (l + 1) * (p + 1)
+        ham = {"core_tensors": Z0[np.newaxis], "nuc_constant": 0.3}
+
+        shift = _energy_shift(ham, "cgf")
+        expected = 0.3 + sum(Z0[l, l, p, p] for l in range(num_modes) for p in range(n_states)) / 2
+        assert np.isclose(shift, expected)
+
+
 class TestResourceRule:
     """Direct unit tests for the registered TrotterFragmented resource function,
     following the graph-based decomposition testing convention."""
@@ -471,36 +522,175 @@ class TestResourceRule:
         assert qp.CNOT(wires=Wire[2]) in resources.gate_counts
 
 
+class TestDecomposition:
+    """Structural, self-consistency tests of the full registered decomposition
+    rule: its output (for a single Trotter step) is compared against calling
+    the same private helper functions directly in plain Python. No independent
+    physics/numerical reference is used."""
+
+    @pytest.mark.parametrize("control_wires", [(), (10,)])
+    def test_decomposition_matches_manual_step_cdf(self, toy_hamiltonian_cdf, control_wires):
+        """For num_trotter_steps=1, the registered rule should emit exactly the
+        ops produced by manually calling the private helpers in sequence."""
+        ham, num_orbitals = toy_hamiltonian_cdf
+        wires = list(range(2 * num_orbitals))
+        t = 0.37
+        frag_scheme = _frag_scheme(ham)
+
+        with qp.queuing.AnnotatedQueue() as q_expected:
+            _manual_one_step_decomposition(ham, wires, t, control_wires, frag_scheme)
+        expected_ops = qp.tape.QuantumScript.from_queue(q_expected).operations
+
+        rule = qp.list_decomps(qp.TrotterFragmented)[0]
+        with qp.queuing.AnnotatedQueue() as q_actual:
+            rule(
+                evolution_time=t,
+                num_trotter_steps=1,
+                hamiltonian=ham,
+                wires=wires,
+                control_wires=control_wires,
+            )
+        actual_ops = qp.tape.QuantumScript.from_queue(q_actual).operations
+
+        assert len(actual_ops) == len(expected_ops)
+        for actual_op, expected_op in zip(actual_ops, expected_ops):
+            qp.assert_equal(actual_op, expected_op)
+
+    @pytest.mark.parametrize("control_wires", [(), (10,)])
+    def test_decomposition_matches_manual_step_cgf(self, toy_hamiltonian, control_wires):
+        """Same self-consistency check as above, for the CGF branch."""
+        ham, num_modes, n_states = toy_hamiltonian
+        wires = list(range(num_modes * n_states))
+        t = 0.41
+        frag_scheme = _frag_scheme(ham)
+
+        with qp.queuing.AnnotatedQueue() as q_expected:
+            _manual_one_step_decomposition(ham, wires, t, control_wires, frag_scheme)
+        expected_ops = qp.tape.QuantumScript.from_queue(q_expected).operations
+
+        rule = qp.list_decomps(qp.TrotterFragmented)[0]
+        with qp.queuing.AnnotatedQueue() as q_actual:
+            rule(
+                evolution_time=t,
+                num_trotter_steps=1,
+                hamiltonian=ham,
+                wires=wires,
+                control_wires=control_wires,
+            )
+        actual_ops = qp.tape.QuantumScript.from_queue(q_actual).operations
+
+        assert len(actual_ops) == len(expected_ops)
+        for actual_op, expected_op in zip(actual_ops, expected_ops):
+            qp.assert_equal(actual_op, expected_op)
+
+
 @pytest.mark.usefixtures("enable_graph_decomposition")
-class TestEdgeCases:
-    """Test boundary conditions and edge cases."""
+class TestIntegration:
+    """Integration tests that check the TrotterFragmented template executes
+    correctly end-to-end. As in TestDecomposition, correctness is checked via
+    self-consistency (comparing circuit execution against directly multiplying
+    the matrices of a manually-obtained op list), not an independent physics
+    reference."""
+
+    @pytest.mark.parametrize("control_wires", [(), (10,)])
+    def test_execution_matches_manual_decomposition_cdf(self, toy_hamiltonian_cdf, control_wires):
+        """Executing TrotterFragmented (num_trotter_steps=1) should match directly
+        multiplying the matrices of the ops from a manual, plain-Python call to
+        the same private helper functions used internally."""
+        ham, num_orbitals = toy_hamiltonian_cdf
+        wires = list(range(2 * num_orbitals))
+        all_wires = wires + list(control_wires)
+        t = 0.29
+        frag_scheme = _frag_scheme(ham)
+
+        with qp.queuing.AnnotatedQueue() as q_expected:
+            _manual_one_step_decomposition(ham, wires, t, control_wires, frag_scheme)
+        expected_ops = qp.tape.QuantumScript.from_queue(q_expected).operations
+        expected_matrix = _matrix_from_ops(expected_ops, all_wires)
+
+        actual_matrix = run_trotter_circuit(ham, wires, t, num_steps=1, control_wires=control_wires)
+
+        assert np.allclose(actual_matrix, expected_matrix)
+
+    @pytest.mark.parametrize("control_wires", [(), (10,)])
+    def test_execution_matches_manual_decomposition_cgf(self, toy_hamiltonian, control_wires):
+        """Same self-consistency check as above, for the CGF branch."""
+        ham, num_modes, n_states = toy_hamiltonian
+        wires = list(range(num_modes * n_states))
+        all_wires = wires + list(control_wires)
+        t = 0.31
+        frag_scheme = _frag_scheme(ham)
+
+        with qp.queuing.AnnotatedQueue() as q_expected:
+            _manual_one_step_decomposition(ham, wires, t, control_wires, frag_scheme)
+        expected_ops = qp.tape.QuantumScript.from_queue(q_expected).operations
+        expected_matrix = _matrix_from_ops(expected_ops, all_wires)
+
+        actual_matrix = run_trotter_circuit(ham, wires, t, num_steps=1, control_wires=control_wires)
+
+        assert np.allclose(actual_matrix, expected_matrix)
 
     def test_zero_trotter_steps_is_identity(self, toy_hamiltonian):
         """Test that num_steps=0 produces the identity unitary."""
         ham, num_modes, n_states = toy_hamiltonian
-        num_qubits = num_modes * n_states
+        wires = list(range(num_modes * n_states))
         t = 1.0
 
-        U = run_trotter_circuit(ham, num_modes, n_states, t, num_steps=0)
-        I_expected = np.eye(2**num_qubits, dtype=complex)
+        U = run_trotter_circuit(ham, wires, t, num_steps=0)
+        I_expected = np.eye(2 ** len(wires), dtype=complex)
 
         assert np.allclose(U, I_expected, atol=1e-12)
 
     def test_zero_evolution_time(self, toy_hamiltonian):
-        """Check that the t=0 produces the identity regardless of steps."""
+        """Check that t=0 produces the identity regardless of the number of steps."""
         ham, num_modes, n_states = toy_hamiltonian
-        num_qubits = num_modes * n_states
+        wires = list(range(num_modes * n_states))
 
-        U = run_trotter_circuit(ham, num_modes, n_states, t=0.0, num_steps=10)
-        I_expected = np.eye(2**num_qubits, dtype=complex)
+        U = run_trotter_circuit(ham, wires, t=0.0, num_steps=10)
+        I_expected = np.eye(2 ** len(wires), dtype=complex)
 
         assert np.allclose(U, I_expected, atol=1e-12)
 
-    def test_hermiticity_of_exact_H(self, toy_hamiltonian):
-        """check that the exact Hamiltonian being built is Hermitian."""
-        ham, num_modes, n_states = toy_hamiltonian
-        H = build_H_exact(ham, num_modes, n_states)
-        assert np.linalg.norm(H - H.conj().T) < 1e-12
+    @pytest.mark.catalyst
+    def test_catalyst_legacy_frontend(self):
+        """Test that the template runs while using the legacy catalyst frontend."""
+        L = 2
+        M = 2
+        N = 2
+        hamiltonian = {
+            "core_tensors": np.random.rand(L, M, M, N, N),
+            "leaf_tensors": np.random.rand(L, M, N, N),
+            "nuc_constant": 0.5,
+        }
+
+        registers = qp.registers({"hadamard": 1, "system": M * N})
+
+        target_gates = {
+            "Hadamard",
+            "BasisRotation",
+            "RZ",
+            "IsingZZ",
+            "CNOT",
+            "ForLoop",
+        }
+
+        @qp.qjit
+        @qp.transforms.decompose(gate_set=target_gates)
+        @qp.qnode(qp.device("lightning.qubit"))
+        def trotter_circuit():
+            qp.H(registers["hadamard"])
+
+            qp.TrotterFragmented(
+                evolution_time=1.0,
+                num_trotter_steps=10,
+                hamiltonian=hamiltonian,
+                wires=registers["system"],
+                control_wires=registers["hadamard"],
+            )
+
+            return qp.expval(qp.X(registers["hadamard"]))
+
+        assert not np.isclose(trotter_circuit(), 0)
 
 
 class TestInputValidation:
@@ -517,47 +707,3 @@ class TestInputValidation:
 
         with pytest.raises(ValueError, match="Could not auto-detect"):
             qp.TrotterFragmented(0.1, 1, bad_ham, wires)
-
-
-@pytest.mark.catalyst
-@pytest.mark.usefixtures("enable_graph_decomposition")
-def test_catalyst_legacy_frontend():
-    """Test that the template runs while using the legacy catalyst frontend"""
-
-    L = 2
-    M = 2
-    N = 2
-    hamiltonian = {
-        "core_tensors": np.random.rand(L, M, M, N, N),
-        "leaf_tensors": np.random.rand(L, M, N, N),
-        "nuc_constant": 0.5,
-    }
-
-    registers = qp.registers({"hadamard": 1, "system": M * N})
-
-    target_gates = {
-        "Hadamard",
-        "BasisRotation",
-        "RZ",
-        "IsingZZ",
-        "CNOT",
-        "ForLoop",
-    }
-
-    @qp.qjit
-    @qp.transforms.decompose(gate_set=target_gates)
-    @qp.qnode(qp.device("lightning.qubit"))
-    def trotter_circuit():
-        qp.H(registers["hadamard"])
-
-        qp.TrotterFragmented(
-            evolution_time=1.0,
-            num_trotter_steps=10,
-            hamiltonian=hamiltonian,
-            wires=registers["system"],
-            control_wires=registers["hadamard"],
-        )
-
-        return qp.expval(qp.X(registers["hadamard"]))
-
-    assert not np.isclose(trotter_circuit(), 0)

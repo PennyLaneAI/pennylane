@@ -61,7 +61,7 @@
   `pennylane.labs.templates.trotter_fragmented`.
   [(#9459)](https://github.com/PennyLaneAI/pennylane/pull/9459)
   [(#9789)](https://github.com/PennyLaneAI/pennylane/pull/9789)
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#10015)](https://github.com/PennyLaneAI/pennylane/pull/10015)
 
 * A new arithmetic template called :class:`~.SignedOutMultiplier` has been added that multiplies numbers encoded in the
   input registers using a two's complement.
@@ -903,6 +903,7 @@
   [(#9987)](https://github.com/PennyLaneAI/pennylane/pull/9987)
   [(#9900)](https://github.com/PennyLaneAI/pennylane/pull/9900)
   [(#9995)](https://github.com/PennyLaneAI/pennylane/pull/9995)
+  [(#10015)](https://github.com/PennyLaneAI/pennylane/pull/10015)
   - Miscelleneous operators are ported:
     - :class:`~.PauliMeasure`
   [(#10005)](https://github.com/PennyLaneAI/pennylane/pull/10005)
