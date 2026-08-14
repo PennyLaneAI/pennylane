@@ -664,6 +664,13 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Renamed the `data` argument of :class:`~pennylane.QROM`, :class:`~pennylane.BBQRAM`, :class:`~pennylane.HybridQRAM`,
+  and :class:`~pennylane.SelectOnlyQRAM` to `bitstrings`.
+  [(#10010)](https://github.com/PennyLaneAI/pennylane/pull/10010)
+
+* :class:`~.BasisEmbedding` is now a direct alias of :class:`~.BasisState`.
+  [(#9980)](https://github.com/PennyLaneAI/pennylane/pull/9980)
+
 * Moved phase gradient decomposition rules for `RZ`, `CRZ` and `SelectPauliRot` from `labs` to `pennylane/transforms/decompositions`.
   [(#9928)](https://github.com/PennyLaneAI/pennylane/pull/9928)
 
@@ -871,26 +878,34 @@
   [(#9960)](https://github.com/PennyLaneAI/pennylane/pull/9960)
   - Parametric operators are ported:
     - :class:`~.RZ`, :class:`~.CRZ`, :class:`~.DiagonalQubitUnitary`, :class:`~.PauliRot`, :class:`~.MultiRZ`, :class:`~.PhaseShift`,
-      :class:`~.ControlledPhaseShift`
+      :class:`~.ControlledPhaseShift`, :class:`~.Rot`, :class:`~.CRot`, :class:`~.U1`, :class:`~.U2`, :class:`~.U3`, :class:`~.PCPhase`
   [(#9857)](https://github.com/PennyLaneAI/pennylane/pull/9857)
   [(#9941)](https://github.com/PennyLaneAI/pennylane/pull/9941)
   [(#9897)](https://github.com/PennyLaneAI/pennylane/pull/9897)
   [(#9936)](https://github.com/PennyLaneAI/pennylane/pull/9936)
+  [(#9977)](https://github.com/PennyLaneAI/pennylane/pull/9977)
   [(#9951)](https://github.com/PennyLaneAI/pennylane/pull/9951)
-  - Multi-qubit, parametric operators are ported:
+  [(#9923)](https://github.com/PennyLaneAI/pennylane/pull/9923)
+  [(#9952)](https://github.com/PennyLaneAI/pennylane/pull/9952)
+  [(#9978)](https://github.com/PennyLaneAI/pennylane/pull/9978)
   - Templates are ported:
     - :class:`~.BasisRotation`, :class:`~.MultiplexerStatePreparation`, :class:`~.QROM`, :class:`~.QFT`, :class:`~.FlipSign`
-      :class:`~.TemporaryAND`, :class:`~.SelectPauliRot`, :class:`~.GQSP`, :class:`~.AQFT`, 
+      :class:`~.TemporaryAND`, :class:`~.SelectPauliRot`, :class:`~.GQSP`, :class:`~.AQFT`, `~.SumOfSlatersPrep`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
   [(#9925)](https://github.com/PennyLaneAI/pennylane/pull/9925)
   [(#9918)](https://github.com/PennyLaneAI/pennylane/pull/9918)
   [(#9932)](https://github.com/PennyLaneAI/pennylane/pull/9932)
   [(#9924)](https://github.com/PennyLaneAI/pennylane/pull/9924)
   [(#9910)](https://github.com/PennyLaneAI/pennylane/pull/9910)
+  [(#9965)](https://github.com/PennyLaneAI/pennylane/pull/9965)
   [(#9943)](https://github.com/PennyLaneAI/pennylane/pull/9943)
   [(#9950)](https://github.com/PennyLaneAI/pennylane/pull/9950)
   [(#9987)](https://github.com/PennyLaneAI/pennylane/pull/9987)
   [(#9900)](https://github.com/PennyLaneAI/pennylane/pull/9900)
+  [(#9995)](https://github.com/PennyLaneAI/pennylane/pull/9995)
+  - Miscelleneous operators are ported:
+    - :class:`~.PauliMeasure`
+  [(#10005)](https://github.com/PennyLaneAI/pennylane/pull/10005)
 
 * The `cond` primitive no longer adds an artificial `True` Literal for the predicate of the default
   else branch.
@@ -950,6 +965,7 @@
   [(#9526)](https://github.com/PennyLaneAI/pennylane/pull/9526)
   [(#9527)](https://github.com/PennyLaneAI/pennylane/pull/9527)
   [(#9649)](https://github.com/PennyLaneAI/pennylane/pull/9649)
+  [(#9658)](https://github.com/PennyLaneAI/pennylane/pull/9658)
   [(#9675)](https://github.com/PennyLaneAI/pennylane/pull/9675)
   [(#9746)](https://github.com/PennyLaneAI/pennylane/pull/9746)
   [(#9783)](https://github.com/PennyLaneAI/pennylane/pull/9783)
@@ -958,6 +974,7 @@
   [(#9927)](https://github.com/PennyLaneAI/pennylane/pull/9927)
   [(#9920)](https://github.com/PennyLaneAI/pennylane/pull/9920)
   [(#9937)](https://github.com/PennyLaneAI/pennylane/pull/9937)
+  [(#9950)](https://github.com/PennyLaneAI/pennylane/pull/9950)
 
   This is an internal, work-in-progress effort that is being incrementally integrated into the PennyLane
   ecosystem. Supported functionality so far:

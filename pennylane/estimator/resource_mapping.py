@@ -199,7 +199,7 @@ def _(op: qops.PauliRot):
 
 @_map_to_resource_op.register
 def _(op: qops.PCPhase):
-    dim = op.hyperparameters["dimension"][0]
+    dim = op.dim
     return re_ops.PCPhase(num_wires=len(op.wires), dim=dim, wires=op.wires)
 
 
@@ -439,7 +439,7 @@ def _(op: qops.BasisState):
 
 @_map_to_resource_op.register
 def _(op: qtemps.BasisEmbedding):
-    return re_temps.BasisEmbedding(num_wires=len(op.wires), wires=op.wires)
+    return re_ops.BasisState(num_wires=len(op.wires), wires=op.wires)
 
 
 @_map_to_resource_op.register
