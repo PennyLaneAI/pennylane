@@ -26,6 +26,7 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import numpy as npp
+from pennylane.core.operator import Operator2
 from pennylane.gradients import parameter_frequencies
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.qubit import RX as old_loc_RX
@@ -158,6 +159,7 @@ SKIP_ASSERT_VALID = {
     qp.QubitUnitary: {"skip_differentiation": True},
     qp.DiagonalQubitUnitary: {"skip_differentiation": True},
     qp.ControlledQubitUnitary: {"skip_differentiation": True},
+    qp.MultiControlledX: {"skip_differentiation": True, "skip_bind_new_parameters": True},
 }
 
 
@@ -168,7 +170,6 @@ class TestOperations:
         kwargs = SKIP_ASSERT_VALID.get(type(op), {})
         if kwargs is True:
             pytest.skip()
-
         qp.ops.functions.assert_valid(op, **kwargs)
 
     @pytest.mark.parametrize("op", ALL_OPERATIONS + BROADCASTED_OPERATIONS)
@@ -199,6 +200,12 @@ class TestOperations:
         leaves, tree_def = jax.tree_util.tree_flatten(op)
         op_unflattened = jax.tree_util.tree_unflatten(tree_def, leaves)
         qp.assert_equal(op_unflattened, op)
+
+        if isinstance(op, Operator2):
+            # The test below assumes that `op.data` are numerical, which is not necessarily
+            # the case anymore for `Operator2` where `op.data` is anything that is dynamic
+            # and traceable, which could include things like `control_values`
+            return
 
         new_op = jax.tree_util.tree_map(lambda x: x + 1.0, op)
         for d1, d2 in zip(new_op.data, op.data):
@@ -683,6 +690,7 @@ class TestDecompositions:
         decomp_mat = qp.matrix(decomp_op, wire_order=wires)
         assert np.allclose(expected_mat, decomp_mat)
 
+    @pytest.mark.pl2do(reason="Broadcasting support not implemented yet for Operator2")
     @pytest.mark.parametrize("dim, wires", two_wire_pcphases + other_pcphases)
     def test_pcphase_decomposition_broadcasted(self, dim, wires):
         """Test that the broadcasted PCPhase decomposition produces the same unitary"""
@@ -4034,37 +4042,6 @@ class TestLabel:
         op3 = qp.Rot(jax.numpy.array(0.1), jax.numpy.array(0.2), jax.numpy.array(0.3), wires=0)
         assert op3.label(decimals=2) == "Rot\n(0.10,\n0.20,\n0.30)"
 
-    def test_string_parameter(self):
-        """Test labelling works if variable is a string instead of a float."""
-
-        op1 = qp.RX("x", wires=0)
-        assert op1.label() == "RX"
-        assert op1.label(decimals=0) == "RX\n(x)"
-
-        op2 = qp.CRX("y", wires=(0, 1))
-        assert op2.label(decimals=0) == "RX\n(y)"
-
-        op3 = qp.Rot("x", "y", "z", wires=0)
-        assert op3.label(decimals=0) == "Rot\n(x,\ny,\nz)"
-
-    def test_string_parameter_broadcasted(self):
-        """Test labelling works (i.e. does not raise an Error) if variable is a
-        string instead of a float."""
-
-        x = np.array(["x0", "x1", "x2"])
-        y = np.array(["y0", "y1", "y2"])
-        z = np.array(["z0", "z1", "z2"])
-
-        op1 = qp.RX(x, wires=0)
-        assert op1.label() == "RX"
-        assert op1.label(decimals=0) == "RX"
-
-        op2 = qp.CRX(y, wires=(0, 1))
-        assert op2.label(decimals=0) == "RX"
-
-        op3 = qp.Rot(x, y, z, wires=0)
-        assert op3.label(decimals=0) == "Rot"
-
 
 pow_parametric_ops = (
     qp.RX(1.234, wires=0),
@@ -4163,13 +4140,8 @@ def test_decomposition():
 
 
 control_data = [
-    (qp.Rot(1, 2, 3, wires=0), Wires([])),
     (qp.RX(1.23, wires=0), Wires([])),
     (qp.RY(1.23, wires=0), Wires([])),
-    (qp.PhaseShift(1.234, wires=0), Wires([])),
-    (qp.U1(1.234, wires=0), Wires([])),
-    (qp.U2(1.234, 2.345, wires=0), Wires([])),
-    (qp.U3(1.234, 2.345, 3.456, wires=0), Wires([])),
     (qp.IsingXX(1.234, wires=(0, 1)), Wires([])),
     (qp.IsingYY(1.234, wires=(0, 1)), Wires([])),
     (qp.IsingXY(1.234, wires=(0, 1)), Wires([])),

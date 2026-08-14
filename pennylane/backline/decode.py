@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""``qp.backline.decode`` -- the explicit per-round syndrome->correction offload.
+"""``qp.backline.decode`` -- the explicit per-round syndrome->correction decode.
 
 :func:`decode` emits one transport round from inside a captured QNode: resolve the controller's
 session, stage the syndrome, post the round, collect the reply.
@@ -54,17 +54,29 @@ _PACKED_U64_BITS = 64
 _PACKED_U64_BYTES = 8
 
 
-def _session_key(coprocessor) -> str:
+def _session_key(coprocessor, coprocessors=()) -> str:
     """The key the controller's session for this round is registered under.
 
     ``inject-transport-session`` keys one controller session per coprocessor by *that coprocessor's*
     ``label``, falling back to ``"coprocessor.0"``; a placement with no coprocessor is
-    ``"controller"``. Label the coprocessors to route a multi-coprocessor placement.
+    ``"controller"``. With several coprocessors that fallback would send every unlabelled one to the
+    same session, so a label is required.
+
+    Raises:
+        ValueError: if the round targets an unlabelled coprocessor and the placement holds more
+            than one, which no key can tell apart
     """
     if coprocessor is None:
         return "controller"
     label = getattr(coprocessor, "label", None)
-    return label if label else "coprocessor.0"
+    if label:
+        return label
+    if len(coprocessors) > 1:
+        raise ValueError(
+            f"decode: this round targets a coprocessor with no label, and the placement has "
+            f"{len(coprocessors)}. Pass coprocessor= to choose one directly."
+        )
+    return "coprocessor.0"
 
 
 def _byte_count(array) -> int:
@@ -226,6 +238,10 @@ def decode(  # pylint: disable=too-many-arguments
         The correction reply, as a ``uint8`` buffer of ``out_bytes`` bytes, or a 64-entry boolean
         bit vector when ``bitpack=True``.
 
+    Raises:
+        ValueError: if the round targets an unlabelled coprocessor while the placement holds more
+        than one.
+
     .. warning::
 
         Backline is experimental and only usable through the Catalyst compiler. :func:`decode` must
@@ -246,7 +262,6 @@ def decode(  # pylint: disable=too-many-arguments
 
         con = qp.Controller(
             device=qp.device("null.qubit", wires=2),
-            remote=True,
             executor_options={"host": "192.168.3.15"},
             init_args={"out_bytes": 8},
         )
@@ -274,7 +289,8 @@ def decode(  # pylint: disable=too-many-arguments
     ``decoder_id=`` to select which coprocessor-side decoder handles the round.
     """
     controller, coprocessor = _resolve_nodes(controller, coprocessor)
-    key = _session_key(coprocessor)
+    placement = active_placement()
+    key = _session_key(coprocessor, placement.coprocessors if placement is not None else ())
     if bitpack:
         syndrome = _pack(_validate_packed(syndrome, in_bytes, out_bytes))
         nbytes = _PACKED_U64_BYTES

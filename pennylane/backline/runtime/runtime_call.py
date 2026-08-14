@@ -111,6 +111,16 @@ def runtime_call(target, *args, signature=None, out_bytes=0, address=None, libra
             status, reply = qp.runtime_call("example_call_collect", session, 64, out_bytes=64)
             return reply
 
+    For example, the above call to this symbol declared ``(ptr, out, u64) -> i32``:
+
+    * ``session`` is the ``ptr``.
+    * The ``out`` takes no argument. The symbol writes that buffer, so there is nothing to pass in.
+    * ``64`` is the ``u64``: this symbol's own argument for how many bytes it may write.
+    * ``out_bytes=64`` says how big a buffer to give it. The number shows up twice because one is
+      what you tell the symbol and the other is what you hand it, so keep the two in step.
+    * The call returns two results: ``status``, the ``i32`` the symbol returned, and ``reply``,
+      which corresponds to the ``out`` buffer it filled in, as a ``uint8`` array of ``out_bytes`` bytes.
+
     .. seealso:: :func:`~.runtime_declare`
     """
     resolved = _resolve_signature(target, signature)

@@ -249,6 +249,35 @@ class TestLocalCalls:
         assert len(built) == 2
         assert tuple(np.asarray(built[0]).shape) == (4,)
 
+    @pytest.mark.usefixtures("x64")
+    def test_a_64_bit_buffer_keeps_its_width(self):
+        """The buffer's width is preserved."""
+        signature = CSignature.parse("sum_doubles", "(buf, u32) -> i32")
+        built = operands.operands_for(signature, (np.arange(4, dtype=np.float64), 32), local=True)
+        buffer = built[0]
+
+        assert buffer.dtype == np.float64
+        assert buffer.size * buffer.dtype.itemsize == 32
+
+    @pytest.mark.parametrize("array", [np.arange(4, dtype=np.uint64), [1.0, 2.0, 3.0]])
+    def test_a_64_bit_buffer_needs_x64(self, array):
+        """64-bit buffers are refused if JAX would narrow them to 32 bits."""
+        jax = pytest.importorskip("jax")
+        signature = CSignature.parse("sum_bytes_only", "(buf, u32) -> i32")
+        with jax.experimental.disable_x64():
+            with pytest.raises(TypeError, match="is a buf of .*narrowed to 32 bits"):
+                operands.operands_for(signature, (array, 32), local=True)
+
+    @pytest.mark.parametrize("dtype", [np.uint8, np.uint32, np.float32])
+    def test_a_narrow_buffer_is_unaffected(self, dtype):
+        """32-bit buffers are accepted if JAX would narrow them to 32 bits."""
+        jax = pytest.importorskip("jax")
+        signature = CSignature.parse("sum_narrow", "(buf, u32) -> i32")
+        with jax.experimental.disable_x64():
+            built = operands.operands_for(signature, (np.arange(4, dtype=dtype), 4), local=True)
+
+        assert built[0].dtype == dtype
+
     def test_a_local_call_is_not_dispatched(self, x64):
         """With no address the recorded call carries dispatch=None and the declared library."""
         qp.runtime_declare("local_xor", "(buf, u64) -> i32", library="/opt/libx.so")

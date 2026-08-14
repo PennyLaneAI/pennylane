@@ -60,15 +60,15 @@ class Backline(Device):
             device=qp.device("null.qubit", wires=4),
             label="cpu-controller",
             remote=True,
-            executor_options={"host": "192.168.3.15"},
+            executor_options={"host": "192.168.3.15", "port": 7810},
         )
         coproc = qp.Coprocessor(
             coprocessor_fn="decoder",
             label="decoder-0",
             backend="gpu_verbs",
-            comm_host="192.168.1.3",
-            oob_port=18590,
-            remote=False,
+            comm_host="198.51.100.2",
+            oob_port=7760,
+            executor_options={"host": "192.0.2.11", "port": 7813},
         )
 
         dev = qp.Backline(controller=con, coprocessors=[coproc], transport="rdma")
@@ -119,6 +119,11 @@ class Backline(Device):
     def coprocessors(self):
         """tuple[Coprocessor, ...]: The :class:`~.Coprocessor` nodes of the placement."""
         return self._placement.coprocessors
+
+    @property
+    def qec_code(self):
+        """str | None: The quantum error-correcting code circuits on this device are encoded for."""
+        return self._placement.qec_code
 
     @property
     def name(self):
