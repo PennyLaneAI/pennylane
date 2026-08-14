@@ -27,7 +27,7 @@ _TRANSPORTS = {}
 class Transport:
     """A named data transport.
 
-    Passed to :func:`~pennylane.backline` as the ``transport`` argument to select how messages move
+    Passed to :class:`~pennylane.Backline` as the ``transport`` argument to select how messages move
     between the :class:`~.Controller` and its :class:`coprocessors <.Coprocessor>`.
 
     See the Attributes section to learn more about the available options.
@@ -44,7 +44,7 @@ def register_transport(name):
 
     Args:
         name (str): The name the transport is selected by, as passed to
-            :func:`~pennylane.backline`.
+            :class:`~pennylane.Backline`.
 
     Returns:
         Callable: A decorator that registers the factory.

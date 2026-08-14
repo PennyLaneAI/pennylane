@@ -33,7 +33,7 @@ class Node:
 
     Base class for :class:`~.Controller` and :class:`~.Coprocessor`. It carries the node's label and
     backend implementation, how its code is deployed, and any backend-specific initialization
-    arguments. Nodes are assembled into a device with :func:`~pennylane.backline`.
+    arguments. Nodes are assembled into a device with :class:`~pennylane.Backline`.
 
     See the Attributes section to learn more about the available options.
     """
@@ -89,7 +89,7 @@ class Controller(Node):
 
     The controller runs the QNode and is the data-initiator during a decoding step: it sends
     syndromes to the :class:`coprocessors <.Coprocessor>` and receives corrections back. Pass it to
-    :func:`~pennylane.backline` to build a device.
+    :class:`~pennylane.Backline` to build a device.
 
     Args:
         device (Device | None): The PennyLane device the controller executes. Defaults to ``None``,
@@ -97,7 +97,7 @@ class Controller(Node):
 
     See the Attributes section for the options inherited from :class:`~.Node`.
 
-    .. seealso:: :class:`~.Coprocessor`, :func:`~pennylane.backline`
+    .. seealso:: :class:`~.Coprocessor`, :class:`~pennylane.Backline`
     """
 
     device: "Device | None" = None
@@ -117,14 +117,15 @@ class Coprocessor(Node):
     A coprocessor receives messages from the :class:`controller <.Controller>` (e.g., syndromes). The
     :attr:`coprocessor_fn` is used to process the message, and sends the result back (e.g.,
     corrections). Depending on the connection type, a :attr:`coprocessor_fn` may be a persistent
-    kernel. Pass coprocessors to :func:`~pennylane.backline` to build a device.
+    kernel. Pass coprocessors to :class:`~pennylane.Backline` to build a device.
 
     The coprocessor owns the connection endpoint: it listens on :attr:`oob_port`, and the controller
     dials :attr:`comm_host`\\ ``:``\\ :attr:`oob_port` to bring the connection up.
 
     See the Attributes section to learn more about the available options.
 
-    .. seealso:: :class:`~.Controller`, :class:`~.CoprocessorFunction`, :func:`~pennylane.backline`
+    .. seealso:: :class:`~.Controller`, :class:`~.CoprocessorFunction`,
+        :class:`~pennylane.Backline`
     """
 
     coprocessor_fn: str | CoprocessorFunction
@@ -160,13 +161,13 @@ class Placement:
 
     Contains a :class:`controller <.Controller>` node, any :class:`coprocessor <.Coprocessor>` nodes,
     and the :class:`transport <.Transport>` that carries data between them. Rather than constructing
-    this directly, use :func:`~pennylane.backline` to assemble a controller, coprocessors, and
+    this directly, use :class:`~pennylane.Backline` to assemble a controller, coprocessors, and
     transport into a device; the resulting placement is available as the device's
-    :attr:`~.HeterogeneousDevice.placement` attribute.
+    :attr:`~.Backline.placement` attribute.
 
     See the Attributes section to learn more about the available options.
 
-    .. seealso:: :func:`~pennylane.backline`, :class:`~.HeterogeneousDevice`
+    .. seealso:: :class:`~pennylane.Backline`
     """
 
     controller: Controller

@@ -16,7 +16,7 @@ r"""
 .. currentmodule:: pennylane.backline
 
 This module contains experimental features for compilation and execution on heterogeneous devices.
-The :func:`~pennylane.backline` function builds a device from a :class:`~.Placement`, which specifies
+The :class:`~pennylane.Backline` class builds a device with a :class:`~.Placement`, which specifies
 where each part of the workload runs and the :class:`~.Transport` protocol between them.
 
 .. warning::
@@ -24,10 +24,10 @@ where each part of the workload runs and the :class:`~.Transport` protocol betwe
     Backline is experimental. Its API may change without notice, and it is only usable through
     the Catalyst compiler.
 
-A backline device is built with :func:`~pennylane.backline` from a
+A backline device is built with :class:`~pennylane.Backline` from a
 :class:`controller <.Controller>` (which wraps the PennyLane device the QNode runs on, such as
 ``lightning.qubit`` or ``null.qubit``), zero or more :class:`coprocessors <.Coprocessor>`, and a
-:class:`transport <.Transport>`. The resulting :class:`~.HeterogeneousDevice` is passed into a
+:class:`transport <.Transport>`. The resulting device is passed into a
 :func:`~pennylane.qnode`:
 
 .. code-block:: python
@@ -53,7 +53,7 @@ A backline device is built with :func:`~pennylane.backline` from a
         init_args={"config": "dev=mlx5_0;gid=3"},
     )
 
-    dev = qp.backline(
+    dev = qp.Backline(
         controller=cpu_controller, coprocessors=[gpu_coprocessor], transport="rdma"
     )
 
@@ -95,15 +95,15 @@ helpers compile user-defined Triton decoders and CSS belief-propagation decoders
 Placement
 ~~~~~~~~~
 
-A :class:`~.Placement` groups the :class:`~.Controller`, its :class:`coprocessors <.Coprocessor>`, and
-the :class:`~.Transport`. :func:`~pennylane.backline` assembles them into a device that can be bound to
-a QNode, so a :class:`~.Placement` is normally created by calling :func:`~pennylane.backline` rather
-than constructed directly.
+A :class:`~.Placement` groups the :class:`~.Controller`, its :class:`coprocessors <.Coprocessor>`,
+and the :class:`~.Transport`. :class:`~pennylane.Backline` assembles them into a device that can be
+bound to a QNode, so a :class:`~.Placement` is normally created by constructing a
+:class:`~pennylane.Backline` rather than directly.
 
 .. autosummary::
     :toctree: api
 
-    ~backline
+    ~Backline
     ~Placement
 
 Decoding
@@ -121,15 +121,14 @@ with.
 Device
 ~~~~~~
 
-:func:`~pennylane.backline` returns a :class:`~.HeterogeneousDevice` that carries the
-:class:`~.Placement` and can be bound directly to a :func:`~pennylane.qnode`. It requires the Catalyst
-compiler for execution, and exposes the placement it was built from as
-:attr:`~.HeterogeneousDevice.placement`.
+:class:`~pennylane.Backline` carries a :class:`~.Placement` and can be bound directly to a
+:func:`~pennylane.qnode`. It requires the Catalyst compiler for execution, and exposes the placement
+it was built from as :attr:`~.Backline.placement`.
 
 .. autosummary::
     :toctree: api
 
-    ~HeterogeneousDevice
+    ~Backline
 
 Transports
 ~~~~~~~~~~
@@ -181,15 +180,10 @@ Declare a symbol once, then call it:
 
 from . import runtime
 from .decode import decode
-from .device import HeterogeneousDevice, backline
+from .device import Backline
 from .functions import CoprocessorFunction, css_bp_decoder, triton_decoder
 from .placement import Controller, Coprocessor, ExecutorSpec, Node, Placement
 from .transports import Transport, get_transport, register_transport
-
-backline.decode = decode
-backline.css_bp_decoder = css_bp_decoder
-backline.triton_decoder = triton_decoder
-backline.runtime = runtime
 
 __all__ = [
     "Node",
@@ -197,9 +191,8 @@ __all__ = [
     "Coprocessor",
     "ExecutorSpec",
     "Placement",
-    "backline",
+    "Backline",
     "decode",
-    "HeterogeneousDevice",
     "CoprocessorFunction",
     "css_bp_decoder",
     "triton_decoder",

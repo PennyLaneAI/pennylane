@@ -231,7 +231,8 @@ def decode(  # pylint: disable=too-many-arguments
         Backline is experimental and only usable through the Catalyst compiler. :func:`decode` must
         be called inside a ``@qjit`` program; calling it eagerly raises.
 
-    .. seealso:: :class:`~.Controller`, :class:`~.Coprocessor`, :func:`~pennylane.backline`
+    .. seealso:: :class:`~.Controller`, :class:`~.Coprocessor`,
+        :class:`~pennylane.Backline`
 
     **Example**
 
@@ -256,7 +257,7 @@ def decode(  # pylint: disable=too-many-arguments
             comm_host="192.168.1.3",
             oob_port=18590,
         )
-        dev = qp.backline(controller=con, coprocessors=[coproc], transport="rdma")
+        dev = qp.Backline(controller=con, coprocessors=[coproc], transport="rdma")
 
         @qp.qjit(capture=True)
         @qp.qnode(dev)
