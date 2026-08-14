@@ -819,6 +819,36 @@ class TestOperator2AssertValid:
                 skip_pickle=True,
             )
 
+    def test_cant_handle_AbstsractArray_inputs(self):
+        """Test an Operator that can't handle AbstractArray inputs."""
+
+        class NoAAOp(qp.core.Operator2):
+
+            dynamic_argnames = "x"
+
+            def __init__(self, x, wires):
+                _ = qp.math.allclose(x, 1)
+                # 2 * AA will cause an error
+                super().__init__(x, wires)
+
+        op = NoAAOp(0.5, 0)
+        with pytest.raises(AttributeError, match="'AbstractArray' object has no attribute 'numpy'"):
+            assert_valid(op)
+
+    def test_improperly_abstractified(self):
+        """Test an error will be raised in an operator isn't properly abstractified."""
+
+        class BadAAOp(qp.core.Operator2):
+
+            dynamic_argnames = "x"
+
+            def __init__(self, x, wires):
+                super().__init__(1, wires)
+
+        op = BadAAOp(0.5, 0)
+        with pytest.raises(AssertionError, match="Op not properly abstractified. "):
+            assert_valid(op)
+
 
 def create_op_instance(c):
     """Given an Operator class, create an instance of it."""
