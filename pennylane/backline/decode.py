@@ -262,7 +262,8 @@ def decode(  # pylint: disable=too-many-arguments
 
         con = qp.Controller(
             device=qp.device("null.qubit", wires=2),
-            executor_options={"host": "192.168.3.15"},
+            remote=True,
+            executor_options={"host": "192.168.3.15", "port": 7810},
             init_args={"out_bytes": 8},
         )
         coproc = qp.Coprocessor(

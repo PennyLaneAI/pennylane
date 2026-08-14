@@ -346,7 +346,8 @@
 
   con = qp.Controller(
       device=qp.device("null.qubit", wires=2),
-      executor_options={"host": address_controller},
+      remote=True,
+      executor_options={"host": address_controller, "port": 7810},
       init_args={"out_bytes": 8},
   )
   coproc = qp.Coprocessor(
