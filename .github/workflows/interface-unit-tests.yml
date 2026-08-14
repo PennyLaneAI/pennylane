@@ -106,7 +106,7 @@ jobs:
       - name: Set fail-fast for WAE
         id: mat_fail_fast
         run: |
-          echo "fail_fast=false" >> $GITHUB_OUTPUT
+          echo "fail_fast=${{ contains(inputs.python_warning_level, 'default') && 'default' || 'error' }}" >> $GITHUB_OUTPUT
 
       - name: Set pytest arguments for setting warnings level
         id: pytest_warning_flags
