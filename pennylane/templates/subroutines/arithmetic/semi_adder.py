@@ -292,20 +292,16 @@ def _semi_adder_resources(x_wires, y_wires, **_):
 
 
 def _semi_adder_work_wires(y_wires=None, work_wires=(), base=None, **_):
-    """Number of work wires ``_semi_adder`` has to allocate: the ``len(y_wires) - 1`` needed by
-    the ladders, minus those already provided by the user.
+    """The ladders need ``len(y_wires) - 1`` work wires; only the ones the user did not
+    provide have to be allocated.
 
-    When this spec is reused by the symbolic rules generated for e.g. ``C(SemiAdder)``, it is
-    called with the symbolic operator's arguments instead, in which case the requirement is set
-    by the wrapped ``SemiAdder`` and the ``work_wires`` given belong to the wrapper, not the adder.
+    Symbolic rules such as ``C(SemiAdder)`` reuse this spec, but are called with the symbolic
+    operator's arguments. Their requirement is the one of the ``SemiAdder`` they wrap, so we
+    recurse into it. Note that ``work_wires`` of a wrapper are not the adder's.
     """
     if base is not None:
-        while not isinstance(base, SemiAdder):  # unwrap nesting, e.g. C(C(SemiAdder))
-            base = base.base
-        y_wires, work_wires = base.y_wires, base.work_wires
-    if len(y_wires) == 1:
-        return {"zeroed": 0}  # decomposes into a single CNOT, no work wires needed
-    return {"zeroed": max(len(y_wires) - 1 - len(work_wires or []), 0)}
+        return _semi_adder_work_wires(**base.arguments)
+    return {"zeroed": max(len(y_wires) - 1 - len(work_wires), 0)}
 
 
 @register_resources(_semi_adder_resources, work_wires=_semi_adder_work_wires)

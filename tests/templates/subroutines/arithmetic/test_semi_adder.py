@@ -24,7 +24,6 @@ from pennylane.templates.subroutines.arithmetic.semi_adder import _controlled_se
 
 
 @pytest.mark.jax
-@pytest.mark.capture
 def test_standard_validity_SemiAdder():
     """Check the operation using the assert_valid function."""
     x_wires = [0, 1, 2]
