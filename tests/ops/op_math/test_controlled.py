@@ -980,7 +980,6 @@ class TestDecomposition:
         qp.assert_equal(decomp[2], qp.RZ(qp.numpy.array(-theta / 2), wires=[0]))
         qp.assert_equal(decomp[3], qp.MultiControlledX(wires=[1, 2, 3, 4, 0]))
 
-        print("and pre decompsotiion")
         decomp_mat = qp.matrix(op.decomposition, wire_order=op.wires)()
         assert qp.math.allclose(op.matrix(), decomp_mat)
 

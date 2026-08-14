@@ -781,7 +781,6 @@ class TestOperator2AssertValid:
             wire_argnames = ("wires",)
 
             def __init__(self, phi, wires):  # pylint: disable=unused-argument
-                print(phi, wires)
                 if isinstance(phi, qp.typing.AbstractArray):
                     # so abstractify check isn't triggered
                     super().__init__(phi, wires)
