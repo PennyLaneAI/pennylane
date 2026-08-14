@@ -1128,10 +1128,16 @@ def _verify_is_abstract_and_fixed(op: AbstractOperatorLike):
         )
 
 
+def _is_measurement(resource_op) -> bool:
+    """Whether a resource key represents a mid-circuit or Pauli-product measurement."""
+    op_type = (
+        resource_op.op_type if isinstance(resource_op, CompressedResourceOp) else type(resource_op)
+    )
+    return issubclass(op_type, (qp.ops.MidMeasure, qp.ops.PauliMeasure))
+
+
 def _decomp_contains_mcm(rule, params):
     if not rule.is_applicable(**params):
         return False
     resources = rule.compute_resources(**params).gate_counts
-    mcm = abstractify(qp.ops.MidMeasure)
-    ppm = abstractify(qp.ops.PauliMeasure)
-    return mcm in resources or ppm in resources
+    return any(_is_measurement(resource_op) for resource_op in resources)
