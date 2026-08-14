@@ -925,14 +925,17 @@ class TestJitAllCounts:
     def test_jit_allcounts(self, device_name, counts_wires):
         """Test jitting with counts with all_outcomes == True."""
 
-        tape = qp.tape.QuantumScript(
-            [qp.RX(0, 0), qp.I(1)], [qp.counts(wires=counts_wires, all_outcomes=True)], shots=50
-        )
         device = qp.device(device_name, wires=2)
 
-        res = jax.jit(qp.execute, static_argnums=(1, 2))((tape,), device, qp.gradients.param_shift)[
-            0
-        ]
+        def f(x):
+            tape = qp.tape.QuantumScript(
+                [qp.RX(x, 0), qp.I(1)],
+                [qp.counts(wires=counts_wires, all_outcomes=True)],
+                shots=50,
+            )
+            return qp.execute((tape,), device, qp.gradients.param_shift)
+
+        res = jax.jit(f)(0)[0]
 
         assert set(res.keys()) == {"00", "01", "10", "11"}
         assert qp.math.allclose(res["00"], 50)
@@ -946,16 +949,17 @@ class TestJitAllCounts:
         if device_name == "default.qubit":
             pytest.xfail(reason="counts on the executed tape is not compatible with JAX-JIT")
 
-        tape = qp.tape.QuantumScript(
-            [qp.RX(np.array([0.0, 0.0]), 0)],
-            [qp.counts(wires=(0, 1), all_outcomes=True)],
-            shots=50,
-        )
         device = qp.device(device_name, wires=2)
 
-        res = jax.jit(qp.execute, static_argnums=(1, 2))((tape,), device, qp.gradients.param_shift)[
-            0
-        ]
+        def f(x):
+            tape = qp.tape.QuantumScript(
+                [qp.RX(x, 0)],
+                [qp.counts(wires=(0, 1), all_outcomes=True)],
+                shots=50,
+            )
+            return qp.execute((tape,), device, qp.gradients.param_shift)
+
+        res = jax.jit(f)(np.array([0.0, 0.0]))[0]
         assert isinstance(res, tuple)
         assert len(res) == 2
 
