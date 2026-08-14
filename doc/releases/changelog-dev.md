@@ -891,7 +891,8 @@
   [(#9978)](https://github.com/PennyLaneAI/pennylane/pull/9978)
   - Templates are ported:
     - :class:`~.BasisRotation`, :class:`~.MultiplexerStatePreparation`, :class:`~.QROM`, :class:`~.QFT`, :class:`~.FlipSign`
-      :class:`~.TemporaryAND`, :class:`~.SelectPauliRot`, :class:`~.GQSP`, :class:`~.AQFT`, `~.SumOfSlatersPrep`
+      :class:`~.TemporaryAND`, :class:`~.SelectPauliRot`, :class:`~.GQSP`, :class:`~.AQFT`, `~.SumOfSlatersPrep`,
+      :class:`~.Select`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
   [(#9925)](https://github.com/PennyLaneAI/pennylane/pull/9925)
   [(#9918)](https://github.com/PennyLaneAI/pennylane/pull/9918)
@@ -904,6 +905,7 @@
   [(#9987)](https://github.com/PennyLaneAI/pennylane/pull/9987)
   [(#9900)](https://github.com/PennyLaneAI/pennylane/pull/9900)
   [(#9995)](https://github.com/PennyLaneAI/pennylane/pull/9995)
+  [(#10020)](https://github.com/PennyLaneAI/pennylane/pull/10020)
   - Miscelleneous operators are ported:
     - :class:`~.PauliMeasure`
   [(#10005)](https://github.com/PennyLaneAI/pennylane/pull/10005)
