@@ -356,7 +356,7 @@
       comm_host=address_coproc,
       oob_port=18590,
   )
-  dev = qp.backline(controller=con, coprocessors=[coproc], transport="rdma")
+  dev = qp.Backline(controller=con, coprocessors=[coproc], transport="rdma")
 
   @qp.qjit(capture=True)
   @qp.qnode(dev)

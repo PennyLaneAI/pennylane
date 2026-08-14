@@ -59,7 +59,6 @@ class Backline(Device):
         con = qp.Controller(
             device=qp.device("null.qubit", wires=4),
             label="cpu-controller",
-            remote=True,
             executor_options={"host": "192.168.3.15", "port": 7810},
         )
         coproc = qp.Coprocessor(
