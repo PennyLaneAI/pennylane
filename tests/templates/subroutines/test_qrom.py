@@ -600,11 +600,11 @@ class TestMeasurementQROM:
         """Test that resources are extracted from ``base`` (Adjoint path)."""
         # Only bitstrings and target_wires are relevant
         res_direct = _qrom_measurement_resources(
-            bitstrings=Int[8, 3], control_wires=Wire[1], target_wires=Wire[3], work_wires=Wire[1]
+            bitstrings=Int[8, 3], control_wires=Wire[3], target_wires=Wire[3], work_wires=Wire[1]
         )
 
         base = qp.QROM(
-            bitstrings=Int[8, 3], control_wires=Wire[1], target_wires=Wire[3], work_wires=Wire[1]
+            bitstrings=Int[8, 3], control_wires=Wire[3], target_wires=Wire[3], work_wires=Wire[1]
         )
         res_base = _qrom_measurement_resources(base=base)
         assert res_base == res_direct

@@ -743,6 +743,7 @@ class TestSpecsAbstractArrayIntegartion:
 
             hybrid_argnames = "a"
 
+            # pylint: disable=useless-parent-delegation
             def __init__(self, a, wires):
                 super().__init__(a, wires)
 
