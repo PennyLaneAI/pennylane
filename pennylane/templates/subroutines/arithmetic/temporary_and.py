@@ -27,7 +27,7 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.typing import AbstractArray, AbstractWires, Bool, Wire
+from pennylane.typing import AbstractArray, Bool, Wire
 from pennylane.wires import WiresLike
 
 
@@ -148,11 +148,6 @@ class TemporaryAND(Operator2):
         elif not all(ctrl_values):
             params.append(f"control_values={ctrl_values.tolist()}")
         return f"TemporaryAND({", ".join(params)})"
-
-    def __str__(self):
-        if isinstance(self.wires, AbstractWires) and isinstance(self.control_values, AbstractArray):
-            return "TemporaryAND"
-        return repr(self)
 
     @staticmethod
     @override
