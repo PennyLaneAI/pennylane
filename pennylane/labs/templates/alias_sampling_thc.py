@@ -418,7 +418,7 @@ def alias_sampling_thc(  # pylint: disable=too-many-arguments
     for w in sample_reg:
         qp.Hadamard(wires=w)
 
-    LeftQuantumComparator(keep_thresh, sample_reg, keep_flag, work_wires=cmp_work, comparator="<=")
+    LeftQuantumComparator(keep_thresh, sample_reg, keep_flag, work_wires=cmp_work, comparator="<")
 
     # 4. Phase the sign of the kept / alternate entries onto the amplitudes.
     qp.CZ([keep_flag, work_wires[n_d + 1]])  # alt_sign, applied when keeping
@@ -435,7 +435,7 @@ def alias_sampling_thc(  # pylint: disable=too-many-arguments
 
     # 6. Uncompute the comparator, leaving the keep decision imprinted on the state.
     qp.adjoint(LeftQuantumComparator)(
-        keep_thresh, sample_reg, keep_flag, work_wires=cmp_work, comparator="<"
+        keep_thresh, sample_reg, keep_flag, work_wires=cmp_work, comparator="<="
     )
     qp.H(swap_flag)
 
