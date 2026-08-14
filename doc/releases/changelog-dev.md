@@ -1039,7 +1039,7 @@
     [(#9866)](https://github.com/PennyLaneAI/pennylane/pull/9866)
     [(#9897)](https://github.com/PennyLaneAI/pennylane/pull/9897)
     [(#9973)](https://github.com/PennyLaneAI/pennylane/pull/9973)
-  - The way that `~.Wires` arguments in pytree leaves are read out of HDF5 was changed to be compatible with `~.Operator2` in the data module.
+  - The way that :class:`~.Wires` arguments in pytree leaves are read out of HDF5 was changed to be compatible with :class:`~.Operator2` in the data module.
     [(#10012)](https://github.com/PennyLaneAI/pennylane/pull/10012)
 
 * Adds a new `pennylane/core` module.
