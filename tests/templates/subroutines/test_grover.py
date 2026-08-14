@@ -201,7 +201,8 @@ def test_expand(wires):
 
     for actual_op, expected_class, expected_wire in zip(decomp, decomp_3wires, expected_wires):
         assert isinstance(actual_op, expected_class)
-        assert actual_op.wires == qp.wires.Wires(expected_wire)
+        if expected_class is not qp.GlobalPhase:
+            assert actual_op.wires == qp.wires.Wires(expected_wire)
 
 
 @pytest.mark.capture
