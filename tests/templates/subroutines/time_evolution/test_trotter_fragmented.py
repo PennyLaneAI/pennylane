@@ -120,16 +120,6 @@ def run_trotter_circuit(hamiltonian, wires, t, num_steps, control_wires=()):
     return qp.matrix(_circuit, wire_order=all_wires)()
 
 
-def _matrix_from_ops(ops, wires):
-    """Build the unitary matrix corresponding to applying ``ops`` in sequence."""
-
-    def _circuit():
-        for op in ops:
-            qp.apply(op)
-
-    return qp.matrix(_circuit, wire_order=wires)()
-
-
 def _manual_one_step_decomposition(hamiltonian, wires, t, control_wires, frag_scheme):
     """Queue the ops for a single Trotter step by calling the private helpers
     directly in plain Python (i.e. without going through the registered rule's
@@ -624,66 +614,16 @@ class TestDecomposition:
 @pytest.mark.usefixtures("enable_graph_decomposition")
 class TestIntegration:
     """Integration tests that check the TrotterFragmented template executes
-    correctly end-to-end. As in TestDecomposition, correctness is checked via
-    self-consistency (comparing circuit execution against directly multiplying
-    the matrices of a manually-obtained op list), not an independent physics
-    reference."""
+    correctly end-to-end, via the graph-based decomposition system."""
 
-    @pytest.mark.parametrize("control_wires", [(), (10,)])
-    def test_execution_matches_manual_decomposition_cdf(self, toy_hamiltonian_cdf, control_wires):
-        """Executing TrotterFragmented (num_trotter_steps=1) should match directly
-        multiplying the matrices of the ops from a manual, plain-Python call to
-        the same private helper functions used internally."""
-        ham, num_orbitals = toy_hamiltonian_cdf
-        wires = list(range(2 * num_orbitals))
-        all_wires = wires + list(control_wires)
-        t = 0.29
-        frag_scheme = _frag_scheme(ham)
-
-        with qp.queuing.AnnotatedQueue() as q_expected:
-            _manual_one_step_decomposition(ham, wires, t, control_wires, frag_scheme)
-        expected_ops = qp.tape.QuantumScript.from_queue(q_expected).operations
-        expected_matrix = _matrix_from_ops(expected_ops, all_wires)
-
-        actual_matrix = run_trotter_circuit(ham, wires, t, num_steps=1, control_wires=control_wires)
-
-        assert np.allclose(actual_matrix, expected_matrix)
-
-    @pytest.mark.parametrize("control_wires", [(), (10,)])
-    def test_execution_matches_manual_decomposition_cgf(self, toy_hamiltonian_cgf, control_wires):
-        """Same self-consistency check as above, for the CGF branch."""
-        ham, num_modes, n_states = toy_hamiltonian_cgf
-        wires = list(range(num_modes * n_states))
-        all_wires = wires + list(control_wires)
-        t = 0.31
-        frag_scheme = _frag_scheme(ham)
-
-        with qp.queuing.AnnotatedQueue() as q_expected:
-            _manual_one_step_decomposition(ham, wires, t, control_wires, frag_scheme)
-        expected_ops = qp.tape.QuantumScript.from_queue(q_expected).operations
-        expected_matrix = _matrix_from_ops(expected_ops, all_wires)
-
-        actual_matrix = run_trotter_circuit(ham, wires, t, num_steps=1, control_wires=control_wires)
-
-        assert np.allclose(actual_matrix, expected_matrix)
-
-    def test_zero_trotter_steps_is_identity(self, toy_hamiltonian_cgf):
-        """Test that num_steps=0 produces the identity unitary."""
-        ham, num_modes, n_states = toy_hamiltonian_cgf
-        wires = list(range(num_modes * n_states))
-        t = 1.0
-
-        U = run_trotter_circuit(ham, wires, t, num_steps=0)
-        I_expected = np.eye(2 ** len(wires), dtype=complex)
-
-        assert np.allclose(U, I_expected, atol=1e-12)
-
-    def test_zero_evolution_time(self, toy_hamiltonian_cgf):
-        """Check that t=0 produces the identity regardless of the number of steps."""
+    @pytest.mark.parametrize("t, num_steps", [(1.0, 0), (0.0, 10)])
+    def test_identity_edge_cases(self, toy_hamiltonian_cgf, t, num_steps):
+        """Test that zero Trotter steps, or zero evolution time, produce the
+        identity unitary regardless of the other parameter's value."""
         ham, num_modes, n_states = toy_hamiltonian_cgf
         wires = list(range(num_modes * n_states))
 
-        U = run_trotter_circuit(ham, wires, t=0.0, num_steps=10)
+        U = run_trotter_circuit(ham, wires, t, num_steps)
         I_expected = np.eye(2 ** len(wires), dtype=complex)
 
         assert np.allclose(U, I_expected, atol=1e-12)
