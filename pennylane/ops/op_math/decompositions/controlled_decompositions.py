@@ -310,7 +310,9 @@ def _multi_ctrl_decomp_zyz_condition(wires, control_values, **__):
     return num_target_wires == 1 and num_control_wires > 1
 
 
-def _multi_ctrl_decomp_zyz_resources(num_control_wires, num_work_wires, work_wire_type, **__):
+def _multi_ctrl_decomp_zyz_resources(U, wires, control_values, work_wires, work_wire_type, **__):
+    num_control_wires = len(control_values)
+    num_work_wires = len(work_wires)
     return {
         ops.CRZ: 3,
         ops.CRY: 2,
