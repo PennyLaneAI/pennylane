@@ -37,6 +37,7 @@ A backline device is built with :func:`~pennylane.backline` from a
     cpu_controller = qp.Controller(
         label="cpu-controller",
         backend="cpu_verbs",
+        remote=True,
         executor_options={"host": "192.0.2.10", "port": 7810},
         init_args={
             "config": "dev=mlx5_0;gid=1",
@@ -52,6 +53,7 @@ A backline device is built with :func:`~pennylane.backline` from a
         backend="gpu_verbs",
         comm_host="198.51.100.2",
         oob_port=7760,
+        remote=True,
         executor_options={"host": "192.0.2.11", "port": 7813},
         init_args={"config": "dev=mlx5_0;gid=3", "data_path": "cpu_verbs"},
     )

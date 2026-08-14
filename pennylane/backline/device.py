@@ -33,6 +33,7 @@ class HeterogeneousDevice(Device):
         cpu_controller = qp.Controller(
             label="cpu-controller",
             backend="cpu_verbs",
+            remote=True,
             executor_options={"host": "192.0.2.10", "port": 7810},
         )
 
@@ -42,6 +43,7 @@ class HeterogeneousDevice(Device):
             backend="gpu_verbs",
             comm_host="198.51.100.2",
             oob_port=7760,
+            remote=True,
             executor_options={"host": "192.0.2.11", "port": 7813},
         )
 
@@ -155,6 +157,7 @@ def backline(
         con = qp.Controller(
             label="cpu-controller",
             backend="cpu_verbs",
+            remote=True,
             executor_options={"host": "192.0.2.10", "port": 7810},
             init_args={
                 "config": "dev=mlx5_1;gid=3",
@@ -169,6 +172,7 @@ def backline(
             backend="gpu_verbs",
             comm_host="198.51.100.2",
             oob_port=7760,
+            remote=True,
             executor_options={"host": "192.0.2.11", "port": 7813},
             init_args={"config": "dev=mlx5_1;gid=3;gpu=0", "data_path": "cpu_verbs"},
         )
