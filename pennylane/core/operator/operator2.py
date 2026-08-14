@@ -1910,7 +1910,9 @@ if has_jax:
             i += len_
 
         if n_ctrls:
-            control_wires = all_args[i : i + n_ctrls]
+            control_wires = Wires(
+                tuple(w if math.is_abstract(w) else int(w) for w in all_args[i : i + n_ctrls])
+            )
             i += n_ctrls
             control_values = all_args[i:]
             assert len(control_wires) == len(control_values)
