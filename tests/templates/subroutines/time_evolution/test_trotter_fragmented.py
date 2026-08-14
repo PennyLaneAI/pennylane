@@ -31,6 +31,7 @@ jax = pytest.importorskip("jax")
 
 import pennylane as qp
 from pennylane.decomposition.resources import Resources
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.time_evolution.trotter_fragmented import (
     _apply_one_body_diagonal,
     _apply_system_basis_rotation,
@@ -527,6 +528,26 @@ class TestDecomposition:
     rule: its output (for a single Trotter step) is compared against calling
     the same private helper functions directly in plain Python. No independent
     physics/numerical reference is used."""
+
+    @pytest.mark.parametrize("control_wires", [(), (10,)])
+    def test_decomposition_new_cdf(self, toy_hamiltonian_cdf, control_wires):
+        """Test that the registered decomposition rule is self-consistent with
+        its own resource function, following the standard decomposition-rule
+        test utility used across other templates."""
+        ham, num_orbitals = toy_hamiltonian_cdf
+        wires = list(range(2 * num_orbitals))
+        op = qp.TrotterFragmented(0.4, 2, ham, wires, control_wires)
+        for rule in qp.list_decomps(qp.TrotterFragmented):
+            _test_decomposition_rule(op, rule)
+
+    @pytest.mark.parametrize("control_wires", [(), (10,)])
+    def test_decomposition_new_cgf(self, toy_hamiltonian, control_wires):
+        """Same self-consistency check as above, for the CGF branch."""
+        ham, num_modes, n_states = toy_hamiltonian
+        wires = list(range(num_modes * n_states))
+        op = qp.TrotterFragmented(0.4, 2, ham, wires, control_wires)
+        for rule in qp.list_decomps(qp.TrotterFragmented):
+            _test_decomposition_rule(op, rule)
 
     @pytest.mark.parametrize("control_wires", [(), (10,)])
     def test_decomposition_matches_manual_step_cdf(self, toy_hamiltonian_cdf, control_wires):
