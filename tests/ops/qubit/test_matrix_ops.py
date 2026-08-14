@@ -740,9 +740,9 @@ class TestQubitUnitaryDecompositions:
         )
         assert rules["rot"].compute_resources(num_wires=1) == Resources(
             {
-                qp.resource_rep(qp.Rot): 1,
+                abstractify(qp.Rot): 1,
                 abstractify(qp.RZ): 1,
-                qp.resource_rep(qp.GlobalPhase): 1,
+                abstractify(qp.GlobalPhase): 1,
             }
         )
         assert rules["two_qubit_decomp_rule"].compute_resources(num_wires=2) == Resources(
