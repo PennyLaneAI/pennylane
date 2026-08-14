@@ -288,6 +288,8 @@ class GlobalPhase(Operator2):
     grad_method = "A"
 
     def __init__(self, phi, wires: WiresLike = ()):  # pylint: disable=unused-argument
+        # NOTE: Pass empty wires to mimic MLIR counterpart
+        # TODO: Remove 'wires' argument eventually, only here for backwards compatibility
         super().__init__(phi, ())
 
     @staticmethod
@@ -393,25 +395,20 @@ class GlobalPhase(Operator2):
         """
         return []
 
-    def _matrix_wires(self, wire_order: WiresLike | None) -> WiresLike:
-        return self.wires if wire_order is None else wire_order
-
     def matrix(self, wire_order: WiresLike | None = None) -> TensorLike:
-        return self.compute_matrix(self.phi, wires=self._matrix_wires(wire_order))
+        return self.compute_matrix(self.phi, wires=wire_order or ())
 
     def sparse_matrix(self, wire_order: WiresLike | None = None, format: str = "csr"):
-        return self.compute_sparse_matrix(
-            self.phi, wires=self._matrix_wires(wire_order), format=format
-        )
+        return self.compute_sparse_matrix(self.phi, wires=wire_order or (), format=format)
 
     def eigvals(self) -> TensorLike:
         return self.compute_eigvals(self.phi, wires=self.wires)
 
     def adjoint(self):
-        return GlobalPhase(-1 * self.phi, self.wires)
+        return GlobalPhase(-1 * self.phi)
 
     def pow(self, z):
-        return [GlobalPhase(z * self.phi, self.wires)]
+        return [GlobalPhase(z * self.phi)]
 
     def generator(self):
         # needs to return a new_opmath instance regardless of whether new_opmath is enabled, because
