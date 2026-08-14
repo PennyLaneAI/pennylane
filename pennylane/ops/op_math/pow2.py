@@ -23,6 +23,7 @@ import pennylane as qp
 from pennylane import capture, math
 from pennylane.core import Operator
 from pennylane.core.operator import abstractify
+from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
 from pennylane.core.queuing import apply
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
@@ -100,12 +101,24 @@ class Pow2(SymbolicOp2):
         else:
             self._pauli_rep = None
 
+    @override
+    def _bind_primitive(self):
+        if not qp.capture.enabled():
+            return
+        pop_op_eqns((self.base,))
+        super()._bind_primitive()
+
     def __repr__(self):
         return (
             f"({self.base})**{self.z}"
             if self.base.arithmetic_depth > 0
             else f"{self.base}**{self.z}"
         )
+
+    @property
+    @override
+    def basis(self):  # pylint: disable=missing-function-docstring
+        return self.base.basis
 
     @property
     @override

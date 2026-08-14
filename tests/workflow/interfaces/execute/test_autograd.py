@@ -618,8 +618,9 @@ class TestAutogradExecuteIntegration:
         """Tests correct output shape and evaluation for a tape
         with prob outputs"""
 
-        if execute_kwargs.get("diff_method") == "adjoint":
-            pytest.xfail("adjoint state differentiation to be removed")  # pl2do
+        if execute_kwargs["diff_method"] == "adjoint":
+            pytest.xfail("adjoint diff of state measurements not supported.")
+
         device = get_device(device_name, seed=seed)
 
         def cost(x, y):
@@ -675,8 +676,9 @@ class TestAutogradExecuteIntegration:
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
 
-        if execute_kwargs.get("diff_method") == "adjoint":
-            pytest.xfail("adjoint state differentiation to be removed")  # pl2do
+        if execute_kwargs["diff_method"] == "adjoint":
+            pytest.xfail("adjoint diff of state measurements not supported.")
+
         device = get_device(device_name, seed=seed)
 
         def cost(x, y):

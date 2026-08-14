@@ -261,7 +261,7 @@ class TestGrad:
 
         qfunc_jaxpr = qnode_eqn.params["qfunc_jaxpr"]
         # Skipping a few equations related to indexing and preprocessing
-        assert qfunc_jaxpr.eqns[2].primitive == qp.RX._primitive
+        assert_eqn_matches_op(qfunc_jaxpr.eqns[2], qp.RX)
         assert_eqn_matches_op(qfunc_jaxpr.eqns[6], qp.RY)
         assert_eqn_matches_op(qfunc_jaxpr.eqns[7], qp.Z)
         assert qfunc_jaxpr.eqns[8].primitive == qp.measurements.ExpectationMP._obs_primitive
@@ -566,7 +566,7 @@ class TestJacobian:
 
         qfunc_jaxpr = qnode_eqn.params["qfunc_jaxpr"]
         # Skipping a few equations related to indexing
-        assert qfunc_jaxpr.eqns[2].primitive == qp.RX._primitive
+        assert_eqn_matches_op(qfunc_jaxpr.eqns[2], qp.RX)
         assert_eqn_matches_op(qfunc_jaxpr.eqns[5], qp.RY)
         assert_eqn_matches_op(qfunc_jaxpr.eqns[6], qp.Z)
         assert qfunc_jaxpr.eqns[7].primitive == qp.measurements.ExpectationMP._obs_primitive

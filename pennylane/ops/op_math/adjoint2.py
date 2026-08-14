@@ -119,10 +119,16 @@ class Adjoint2(SymbolicOp2):
 
     @override
     def simplify(self):
-        base = self.base.simplify()
-        if base.has_adjoint:
-            return base.adjoint().simplify()
-        return Adjoint2(base)
+        new_base = self.base.simplify()
+        if new_base is not self.base:
+            _remove_from_program(new_base)  # remove intermediate op from program
+        if new_base.has_adjoint:
+            adjoint_base = new_base.adjoint()
+            simplified_base = adjoint_base.simplify()
+            if simplified_base is not adjoint_base:
+                _remove_from_program(adjoint_base)  # remove intermediate op from program
+            return simplified_base
+        return Adjoint2(new_base)
 
     @property
     @override
@@ -273,3 +279,11 @@ def adjoint_rotation(base):
     assert len(base.dynamic_argnames) == 1
     angle = tuple(base.dynamic_args.values())[0]
     qp.ops.functions.bind_new_parameters(base, (-angle,))
+
+
+def _remove_from_program(op):
+    """Removes an operator from the captured/queued program."""
+    if qp.QueuingManager.recording():
+        qp.QueuingManager.remove(op)
+    if qp.capture.enabled():
+        pop_op_eqns((op,))

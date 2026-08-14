@@ -411,15 +411,6 @@ def pow_resource_rep(base_class, base_params, z):
     )
 
 
-@functools.lru_cache(maxsize=1)
-def custom_ctrl_op_to_base():
-    """The set of custom controlled operations."""
-
-    return {
-        qp.CRX: qp.RX,
-    }
-
-
 def resolve_work_wire_type(base_work_wires, base_work_wire_type, work_wires, work_wire_type):
     """Resolves the overall work wire type when the base op comes with work wires."""
 

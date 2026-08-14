@@ -719,7 +719,7 @@ def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
     DecompositionRule(name=_crx_to_ppr)
     >>> print(qp.list_decomps(qp.CRX)[0])
     @register_resources(_crx_to_rx_cz_resources)
-    def _crx_to_rx_cz(phi: TensorLike, wires: WiresLike, **__):
+    def _crx_to_rx_cz(phi: TensorLike, wires: WiresLike):
         qp.RX(phi / 2, wires=wires[1])
         qp.CZ(wires=wires)
         qp.RX(-phi / 2, wires=wires[1])
@@ -1127,10 +1127,16 @@ def _verify_is_abstract_and_fixed(op: AbstractOperatorLike):
         )
 
 
+def _is_measurement(resource_op) -> bool:
+    """Whether a resource key represents a mid-circuit or Pauli-product measurement."""
+    op_type = (
+        resource_op.op_type if isinstance(resource_op, CompressedResourceOp) else type(resource_op)
+    )
+    return issubclass(op_type, (qp.ops.MidMeasure, qp.ops.PauliMeasure))
+
+
 def _decomp_contains_mcm(rule, params):
     if not rule.is_applicable(**params):
         return False
     resources = rule.compute_resources(**params).gate_counts
-    mcm = abstractify(qp.ops.MidMeasure)
-    ppm = abstractify(qp.ops.PauliMeasure)
-    return mcm in resources or ppm in resources
+    return any(_is_measurement(resource_op) for resource_op in resources)

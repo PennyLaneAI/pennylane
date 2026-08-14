@@ -2065,6 +2065,8 @@ def _canonicalize_dynamic(d, op_name=None) -> Hashable:
         "U3",
     ):
         mod_val = 2 * np.pi
+    elif op_name is not None and op_name in ("CRX", "CRY", "CRZ", "CRot"):
+        mod_val = 4 * np.pi
     else:
         mod_val = None
 

@@ -22,7 +22,7 @@ import numpy as np
 
 from pennylane import math
 from pennylane import ops as qp_ops
-from pennylane.core.operator import Operation, abstractify
+from pennylane.core.operator import Operation, Operator2, abstractify
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.ops import CNOT, X, adjoint, ctrl
@@ -367,6 +367,15 @@ class Select(Operation):
     # pylint: disable=arguments-differ
     @classmethod
     def _primitive_bind_call(cls, ops, control, **kwargs):
+        def _get_tracer(op):
+            if isinstance(op, Operator2):
+                if op.tracer is None:
+                    # pylint: disable-next=protected-access
+                    op._bind_primitive()  # pragma: no cover
+                return op.tracer if op.tracer is not None else op
+            return op
+
+        ops = (_get_tracer(op) for op in ops)
         return super()._primitive_bind_call(*ops, wires=control, **kwargs)
 
     @classmethod

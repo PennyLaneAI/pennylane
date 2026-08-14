@@ -18,7 +18,6 @@
 import pytest
 
 import pennylane as qp
-from pennylane.core.operator import Operator2
 
 jax = pytest.importorskip("jax")
 
@@ -29,7 +28,6 @@ from pennylane.capture.primitives import (
     ctrl_transform_prim,
     for_loop_prim,
     jacobian_prim,
-    operator_p,
     qnode_prim,
     while_loop_prim,
 )
@@ -152,7 +150,7 @@ class TestDecomposeInterpreter:
             assert eqn.primitive == qp.capture.primitives.quantum_subroutine_prim
             j = eqn.params["jaxpr"]
             assert_eqn_matches_op(j.eqns[4], qp.CNOT)
-            assert j.eqns[5].primitive == qp.RX._primitive
+            assert_eqn_matches_op(j.eqns[5], qp.RX)
             assert_eqn_matches_op(j.eqns[6], qp.CNOT)
 
         assert eqn1.params["jaxpr"] is eqn2.params["jaxpr"]
@@ -260,28 +258,18 @@ class TestDecomposeInterpreter:
         interpreter = DecomposeInterpreter(gate_set=gate_set)
 
         def f(x):
-            qp.ctrl(qp.RX(x, 0), 1)
+            qp.ctrl(qp.RX(x, 0), [1, 2])
 
         args = (1.5,)
         jaxpr = jax.make_jaxpr(f)(*args)
-        assert jaxpr.eqns[-2].primitive == qp.RX._primitive
-        assert jaxpr.eqns[-1].primitive == qp.ops.Controlled._primitive
+        assert_eqn_matches_op(jaxpr.eqns[0], qp.RX)
+        assert jaxpr.eqns[0].params["n_ctrls"] == 2
 
         transformed_f = interpreter(f)
         transformed_jaxpr = jax.make_jaxpr(transformed_f)(*args)
         if decompose:
-            op_eqns = [
-                eqn
-                for eqn in transformed_jaxpr.eqns
-                if eqn.outvars[0].aval == qp.capture.AbstractOperator()
-                or eqn.primitive == operator_p
-            ]
-            expected_ops = [type(op) for op in qp.ctrl(qp.RX(*args, 0), 1).decomposition()]
-            for eqn, expected_op_type in zip(op_eqns, expected_ops, strict=True):
-                if issubclass(expected_op_type, Operator2):
-                    assert_eqn_matches_op(eqn, expected_op_type)
-                else:
-                    assert eqn.primitive == expected_op_type._primitive
+            tape = qp.tape.plxpr_to_tape(transformed_jaxpr.jaxpr, transformed_jaxpr.consts, *args)
+            assert all(type(op) in gate_set for op in tape.operations)
         else:
             for orig_eqn, transformed_eqn in zip(jaxpr.eqns, transformed_jaxpr.eqns):
                 assert orig_eqn.primitive == transformed_eqn.primitive
@@ -299,13 +287,13 @@ class TestDecomposeInterpreter:
 
         args = (1.5,)
         jaxpr = jax.make_jaxpr(f)(*args)
-        assert jaxpr.eqns[-2].primitive == qp.RX._primitive
-        assert jaxpr.eqns[-1].primitive == qp.ops.Adjoint._primitive
+        assert_eqn_matches_op(jaxpr.eqns[0], qp.RX)
+        assert jaxpr.eqns[0].params["adjoint"] is True
 
         transformed_f = interpreter(f)
         transformed_jaxpr = jax.make_jaxpr(transformed_f)(*args)
         if decompose:
-            assert transformed_jaxpr.eqns[-1].primitive == qp.RX._primitive
+            assert_eqn_matches_op(transformed_jaxpr.eqns[-1], qp.RX)
         else:
             for orig_eqn, transformed_eqn in zip(jaxpr.eqns, transformed_jaxpr.eqns):
                 assert orig_eqn.primitive == transformed_eqn.primitive
@@ -520,8 +508,7 @@ class TestControlledDecompositions:
             qp.RX(x, 0)
             qp.IsingXX(x, [0, 1])
 
-        # C(IsingXX) is not in the default gate set
-        @DecomposeInterpreter(gate_set="C(IsingXX)")
+        @DecomposeInterpreter(gate_set={"C(IsingXX)", "C(RX)"})
         def f(x):
             qp.ctrl(inner_f, control=[2, 3])(x)
 
@@ -545,7 +532,7 @@ class TestControlledDecompositions:
 
             g()
 
-        @DecomposeInterpreter()
+        @DecomposeInterpreter(gate_set={"C(RX)"})
         def f(x, n):
             qp.ctrl(inner_f, control=[4, 5])(x, n)
 
@@ -553,8 +540,8 @@ class TestControlledDecompositions:
         jaxpr = jax.make_jaxpr(f)(*args)
         assert jaxpr.eqns[0].primitive == for_loop_prim
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr_body_fn"]
-        assert inner_jaxpr.eqns[-2].primitive == qp.RX._primitive
-        assert inner_jaxpr.eqns[-1].primitive == qp.ops.Controlled._primitive
+        assert_eqn_matches_op(inner_jaxpr.eqns[0], qp.RX)
+        assert inner_jaxpr.eqns[0].params["n_ctrls"] == 2
 
     def test_ctrl_while_loop(self):
         """Test that a while_loop inside a ctrl_transform is not unrolled."""
@@ -567,7 +554,7 @@ class TestControlledDecompositions:
 
             g(0)
 
-        @DecomposeInterpreter()
+        @DecomposeInterpreter(gate_set={"C(RX)"})
         def f(x, n):
             qp.ctrl(inner_f, control=[4, 5])(x, n)
 
@@ -575,9 +562,8 @@ class TestControlledDecompositions:
         jaxpr = jax.make_jaxpr(f)(*args)
         assert jaxpr.eqns[0].primitive == while_loop_prim
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr_body_fn"]
-        assert inner_jaxpr.eqns[-3].primitive == qp.RX._primitive
-        assert inner_jaxpr.eqns[-2].primitive == qp.ops.Controlled._primitive
-        # final primitive is the increment
+        assert_eqn_matches_op(inner_jaxpr.eqns[-2], qp.RX)
+        assert inner_jaxpr.eqns[-2].params["n_ctrls"] == 2
         assert inner_jaxpr.eqns[-1].primitive.name == "add"
 
     def test_ctrl_cond(self):
@@ -590,7 +576,7 @@ class TestControlledDecompositions:
 
             cond_f()
 
-        @DecomposeInterpreter()
+        @DecomposeInterpreter(gate_set={"C(RX)"})
         def f(x):
             qp.ctrl(inner_f, control=[4, 5])(x)
 
@@ -601,8 +587,8 @@ class TestControlledDecompositions:
 
         # True branch
         branch_jaxpr = jaxpr.eqns[1].params["jaxpr_branches"][0]
-        assert branch_jaxpr.eqns[-2].primitive == qp.RX._primitive
-        assert branch_jaxpr.eqns[-1].primitive == qp.ops.Controlled._primitive
+        assert_eqn_matches_op(branch_jaxpr.eqns[0], qp.RX)
+        assert branch_jaxpr.eqns[0].params["n_ctrls"] == 2
 
 
 def test_decompose_plxpr_to_plxpr():

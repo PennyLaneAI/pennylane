@@ -107,11 +107,11 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
             qp.ctrl(qp.RX, (1,2,3), control_values=(0,1,0))(x, wires=0)
             return qp.expval(qp.Z(0))
 
-    >>> print(qp.draw(circuit)("x"))
-    0: ────╭RX(x)─┤  <Z>
-    1: ────├○─────┤
-    2: ──X─├●─────┤
-    3: ────╰○─────┤
+    >>> print(qp.draw(circuit)(0.5))
+    0: ────╭RX(0.50)─┤  <Z>
+    1: ────├○────────┤
+    2: ──X─├●────────┤
+    3: ────╰○────────┤
     >>> x = qp.numpy.array(1.2, requires_grad=True)
     >>> circuit(x)
     tensor(0.362..., requires_grad=True)
@@ -1211,10 +1211,7 @@ def base_to_custom_ctrl_op():
     ops_with_custom_ctrl_ops = {
         (qp.SWAP, 1): qp.CSWAP,
         (qp.Hadamard, 1): qp.CH,
-        (qp.RX, 1): qp.CRX,
         (qp.RY, 1): qp.CRY,
-        (qp.RZ, 1): qp.CRZ,
-        (qp.Rot, 1): qp.CRot,
         (qp.PhaseShift, 1): qp.ControlledPhaseShift,
     }
     return ops_with_custom_ctrl_ops

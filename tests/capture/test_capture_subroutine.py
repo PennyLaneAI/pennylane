@@ -123,7 +123,7 @@ class TestCaptureUse:
         assert jaxpr0 != jaxpr2
 
         assert len(jaxpr0.eqns) == 1
-        assert jaxpr0.eqns[0].primitive == qp.RX._primitive  # pylint: disable=protected-access
+        assert_eqn_matches_op(jaxpr0.eqns[0], qp.RX)  # pylint: disable=protected-access
 
         assert len(jaxpr2.eqns) == 1
         assert_eqn_matches_op(jaxpr2.eqns[0], qp.RY)

@@ -553,8 +553,9 @@ class TestJaxExecuteIntegration:
         """Tests correct output shape and evaluation for a tape
         with prob outputs"""
 
-        if execute_kwargs.get("diff_method") == "adjoint":
-            pytest.xfail("adjoint state differentiation to be removed")  # pl2do
+        if execute_kwargs.get("diff_method", "") == "adjoint":
+            pytest.xfail("adjoint differentiation of state measurement is not to be supported.")
+
         device = get_device(device_name, seed)
 
         def cost(x, y):
@@ -620,8 +621,9 @@ class TestJaxExecuteIntegration:
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
 
-        if execute_kwargs.get("diff_method") == "adjoint":
-            pytest.xfail("adjoint state differentiation to be removed")  # pl2do
+        if execute_kwargs.get("diff_method", "") == "adjoint":
+            pytest.xfail("adjoint differentiation of state measurement is not to be supported.")
+
         device = get_device(device_name, seed)
 
         def cost(x, y):

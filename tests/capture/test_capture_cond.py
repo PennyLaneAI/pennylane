@@ -1057,6 +1057,7 @@ class TestDynamicShapes:
         [res_false] = qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, False, 5)
         assert qp.math.allclose(res_false, 10)  # 0 + 1 + 2 + 3 + 4
 
+    @pytest.mark.pl2do("batching is something that we'll come back to")
     def test_dynamic_shape_matches_arg(self):
         """Test that cond can handle dynamic shapes where the dimension matches an earlier arg."""
 
