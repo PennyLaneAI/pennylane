@@ -174,7 +174,7 @@ def _build_qrom_data(
     """
     entries, weights = _build_thc_pairs(M, N, zeta, t_ell)
     probs = [abs(w) for w in weights]
-    signs = [1 if w >= 0 else -1 for w in weights]
+    signs = [-1 if w >= 0 else 1 for w in weights] # To fix a global phase signs are changed here
 
     # Classical alias matching on the magnitudes; aleph bits for the keep register.
     alt, keep = _build_alias_tables(probs, aleph)
