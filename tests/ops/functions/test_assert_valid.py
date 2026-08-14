@@ -37,7 +37,6 @@ from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import DynOp, OneWireDynOp
 
 
-@pytest.mark.usefixtures("enable_and_disable_capture")
 class TestDecompositionErrors:
     """Test assertions involving decompositions."""
 
@@ -122,6 +121,7 @@ class TestDecompositionErrors:
         with pytest.raises(AssertionError, match="decomposition must match queued operations"):
             assert_valid(BadDecompQueue(wires=[0, 1]), skip_pickle=True)
 
+    @pytest.mark.jax
     def test_decomposition_wires_must_be_mapped(self):
         """Test that an error is raised if the operators in decomposition do not have mapped
         wires after mapping the op."""
@@ -164,6 +164,7 @@ class TestDecompositionErrors:
         with pytest.raises(AssertionError, match="should not be included in its own decomposition"):
             assert_valid(BadDecomp(wires=0), skip_pickle=True)
 
+    @pytest.mark.jax
     def test_mcms_can_be_compared(self):
         """Tests that decompositions with mid-circuit measurements can be compared correctly."""
 
@@ -237,6 +238,7 @@ class TestDecompositionErrors:
         _test_decomposition_rule(op, rule)
         spy.assert_not_called()
 
+    @pytest.mark.capture
     def test_new_decomposition_rule_capture(self):
         """A captured decomposition is converted to a tape before validating its resources."""
 
@@ -253,6 +255,7 @@ class TestDecompositionErrors:
 
         _test_decomposition_rule(MyOp([0, 1, 2]), rule)
 
+    @pytest.mark.capture
     def test_new_decomposition_rule_capture_operator2(self):
         """Operator2 dynamic and wire arguments are forwarded as capture inputs."""
 
@@ -267,7 +270,6 @@ class TestDecompositionErrors:
         _test_decomposition_rule(OneWireDynOp(0.5, wires=0), rule)
 
 
-@pytest.mark.usefixtures("enable_and_disable_capture")
 class TestBadMatrix:
     """Tests involving matrix validation."""
 
@@ -310,7 +312,6 @@ class TestBadMatrix:
             assert_valid(BadMat(0), skip_pickle=True)
 
 
-@pytest.mark.usefixtures("enable_and_disable_capture")
 class TestBadCopyComparison:
     """Check errors invovling copy, deepcopy, and comparison."""
 
@@ -335,7 +336,6 @@ class TestBadCopyComparison:
             assert_valid(BadDeepComparison(0), skip_pickle=True)
 
 
-@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_mismatched_mat_decomp():
     """Test that an error is raised if the matrix does not match the decomposition if both are defined."""
 
@@ -351,7 +351,6 @@ def test_mismatched_mat_decomp():
         assert_valid(MisMatchedMatDecomp(0), skip_pickle=True)
 
 
-@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_bad_eigenvalues_order():
     """Test that an error is raised if the order of eigenvalues does not match the diagonalizing gates."""
 
@@ -396,7 +395,6 @@ class BadPickling0(Operator):
         self.hyperparameters["f"] = f
 
 
-@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_bad_pickling():
     """Test an error is raised in an operator cant be pickled."""
 
@@ -404,7 +402,6 @@ def test_bad_pickling():
         assert_valid(BadPickling0(lambda x: x, wires=0))
 
 
-@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_bad_bind_new_parameters():
     """Test that validation fails when rebinding cannot update an operator's data."""
 
@@ -421,7 +418,6 @@ def test_bad_bind_new_parameters():
         assert_valid(NoBindNewParameters(2.0, wires=0), skip_pickle=True)
 
 
-@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_bad_wire_mapping():
     """Test that an error is raised if the wires cant be mapped with map_wires."""
 
@@ -440,7 +436,6 @@ def test_bad_wire_mapping():
 class TestPytree:
     """Pytree related checks."""
 
-    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_not_hashable_metadata(self):
         """Assert that an error is raised if metadata is not hashable."""
 
@@ -453,7 +448,6 @@ class TestPytree:
         with pytest.raises(AssertionError, match=r"metadata output from _flatten must be hashable"):
             assert_valid(op, skip_pickle=True)
 
-    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_bad_pytree(self):
         """Check an operation that errors out of the _unflatten call."""
 
@@ -466,7 +460,6 @@ class TestPytree:
         with pytest.raises(AssertionError, match=r"BadPytree._unflatten must be able to reproduce"):
             assert_valid(op, skip_pickle=True)
 
-    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_badpytree_incomplete_info(self):
         """Assert that an unpacking and repacking a pytree reproduces the original operation."""
 
@@ -485,7 +478,7 @@ class TestPytree:
         ):
             assert_valid(op, skip_pickle=True)
 
-    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.jax
     def test_nested_bad_pytree(self):
         """Test that an operator with a bad leaf will raise an error."""
 
@@ -501,7 +494,7 @@ class TestPytree:
         with pytest.raises(AssertionError, match=r"op must be a valid pytree."):
             assert_valid(op, skip_pickle=True)
 
-    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.jax
     def test_bad_leaves_ordering(self):
         """Test an error is raised if data and pytree leaves have a different ordering convention."""
 
