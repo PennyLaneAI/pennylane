@@ -42,6 +42,9 @@ class DatasetPyTree(DatasetAttribute[HDF5Group, T, T]):
             structure = serialization.pytree_structure_load(bind["treedef"][()].tobytes())
             leaves = list(AttributeTypeMapper(bind)["leaves"].get_value())
 
+            # Wires are leaves but are distinct from other array-like data. So, we
+            # cast them to Python integers explicitly to ensure that the unflattened
+            # structures have `Wires` that do not contain array data.
             leaves = [
                 _to_python_scalar(leaf) if is_wire else leaf
                 for leaf, is_wire in zip(leaves, _wire_leaf_flags(structure), strict=True)
