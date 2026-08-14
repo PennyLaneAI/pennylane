@@ -341,7 +341,7 @@ class QuantumMonteCarlo(Operation):
 
     grad_method = None
 
-    resource_keys = {"num_target_wires", "num_estimation_wires", "q"}
+    resource_keys = {"num_target_wires", "num_estimation_wires", "q_shape"}
 
     @classmethod
     def _primitive_bind_call(
@@ -370,7 +370,7 @@ class QuantumMonteCarlo(Operation):
         return {
             "num_target_wires": len(self.hyperparameters["target_wires"]),
             "num_estimation_wires": len(self.hyperparameters["estimation_wires"]),
-            "q": self.hyperparameters["q"],
+            "q_shape": self.hyperparameters["q_shape"],
         }
 
     def __init__(self, probs, func, target_wires, estimation_wires):
@@ -403,7 +403,7 @@ class QuantumMonteCarlo(Operation):
         self._hyperparameters = {
             "estimation_wires": estimation_wires,
             "target_wires": target_wires,
-            "q": Q,
+            "q_shape": Q.shape,
         }
 
         super().__init__(A, R, Q, wires=wires)
@@ -465,7 +465,7 @@ if QuantumMonteCarlo._primitive is not None:
         return type.__call__(QuantumMonteCarlo, probs, func, target_wires, estimation_wires)
 
 
-def _quantum_monte_carlo_resources(num_target_wires, num_estimation_wires, q):
+def _quantum_monte_carlo_resources(num_target_wires, num_estimation_wires, q_shape):
     return {
         QubitUnitary(
             Complex[2 ** (num_target_wires - 1), 2 ** (num_target_wires - 1)],
@@ -476,7 +476,7 @@ def _quantum_monte_carlo_resources(num_target_wires, num_estimation_wires, q):
         ): 1,
         resource_rep(
             QuantumPhaseEstimation,
-            base=QubitUnitary(q, wires=Wire[num_target_wires]),
+            base=QubitUnitary(Complex[*q_shape], wires=Wire[num_target_wires]),
             num_estimation_wires=num_estimation_wires,
         ): 1,
     }

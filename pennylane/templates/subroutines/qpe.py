@@ -176,7 +176,9 @@ class QuantumPhaseEstimation(Operation):
     @property
     def resource_params(self) -> dict:
         return {
-            "base": QubitUnitary(self.hyperparameters["unitary"].matrix(), wires=self.target_wires),
+            "base": abstractify(
+                QubitUnitary(self.hyperparameters["unitary"].matrix(), wires=self.target_wires)
+            ),
             "num_estimation_wires": len(self.estimation_wires),
         }
 
