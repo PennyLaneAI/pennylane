@@ -295,11 +295,11 @@ def _single_ctrl_decomp_zyz_resources(**__):
 # Resources are not exact because rotations might be skipped for zero angles
 @register_condition(_single_ctrl_decomp_zyz_condition)
 @register_resources(_single_ctrl_decomp_zyz_resources, exact=False)
-def single_ctrl_decomp_zyz_rule(U, wires, **__):
+def single_ctrl_decomp_zyz_rule(base, wires, **__):
     """The decomposition rule for ControlledQubitUnitary from Lemma 5.1 of
     https://arxiv.org/pdf/quant-ph/9503016"""
 
-    phi, theta, omega, phase = math.decomposition.zyz_rotation_angles(U)
+    phi, theta, omega, phase = math.decomposition.zyz_rotation_angles(base)
     _single_control_zyz(phi, theta, omega, wires=wires)
     ops.cond(_not_zero(phase), _ctrl_global_phase)(phase, wires[:-1])
 
@@ -310,7 +310,7 @@ def _multi_ctrl_decomp_zyz_condition(wires, control_values, **__):
     return num_target_wires == 1 and num_control_wires > 1
 
 
-def _multi_ctrl_decomp_zyz_resources(U, wires, control_values, work_wires, work_wire_type, **__):
+def _multi_ctrl_decomp_zyz_resources(base, wires, control_values, work_wires, work_wire_type, **__):
     num_control_wires = len(control_values)
     num_work_wires = len(work_wires)
     return {
@@ -369,7 +369,7 @@ def _controlled_two_qubit_unitary_resource(wires, control_values, work_wires, wo
 # Resources are not exact because rotations might be skipped for zero angle(s)
 @register_condition(lambda wires, control_values, **_: len(wires) - len(control_values) == 2)
 @register_resources(_controlled_two_qubit_unitary_resource, exact=False)
-def controlled_two_qubit_unitary_rule(U, wires, control_values, work_wires, work_wire_type, **__):
+def controlled_two_qubit_unitary_rule(base, wires, control_values, work_wires, work_wire_type, **__):
     """A controlled two-qubit unitary is decomposed by applying ctrl to the base decomposition."""
     zero_control_wires = [w for w, val in zip(wires[:-2], control_values, strict=True) if not val]
     for w in zero_control_wires:
@@ -379,7 +379,7 @@ def controlled_two_qubit_unitary_rule(U, wires, control_values, work_wires, work
         control=wires[:-2],
         work_wires=work_wires,
         work_wire_type=work_wire_type,
-    )(U, wires=wires[-2:])
+    )(base, wires=wires[-2:])
     for w in zero_control_wires:
         ops.PauliX(w)
 

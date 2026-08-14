@@ -376,13 +376,14 @@ def _qubit_unitary_resource(base, **_):
 
 
 @register_resources(_qubit_unitary_resource)
-def _adjoint_qubit_unitary(U, wires, **_):
+def _adjoint_qubit_unitary(base, **_):
+    U = base.U
     U = (
         U.conjugate().transpose()
         if sp.sparse.issparse(U)
         else qp.math.moveaxis(qp.math.conj(U), -2, -1)
     )
-    QubitUnitary(U, wires=wires)
+    QubitUnitary(U, wires=base.wires)
 
 
 add_decomps("Adjoint(QubitUnitary)", _adjoint_qubit_unitary)
@@ -412,10 +413,10 @@ def _controlled_qubit_unitary_resource(base, **_):
 
 
 @register_resources(_controlled_qubit_unitary_resource)
-def _controlled_qubit_unitary(U, wires, control_values, work_wires, work_wire_type, **_):
+def _controlled_qubit_unitary(base, control_wires, control_values, work_wires, work_wire_type, **_):
     qp.ControlledQubitUnitary(
-        U,
-        wires,
+        base.U,
+        control_wires + base.wires,
         control_values=control_values,
         work_wires=work_wires,
         work_wire_type=work_wire_type,
