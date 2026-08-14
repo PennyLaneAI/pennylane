@@ -119,7 +119,7 @@ class TestInspectDecompGraph:
             5: ─╰●─╰●────────╰●─┤  
             Estimated First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool, weak_type=True)): 1, MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool, weak_type=True)): 2, PauliX: 3}
             Actual First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool)): 2}
-            Full Expansion Gates: {CNOT: 160, GlobalPhase: 129, RX: 41, RY: 28, RZ: 144}
+            Full Expansion Gates: {CNOT: 160, GlobalPhase: 129, RX: 49, RY: 28, RZ: 136}
             Weighted Cost: 373.0
             """).strip()
 
@@ -151,9 +151,9 @@ class TestInspectDecompGraph:
             | :--- | :--- |
             | CNOT | 160 |
             | GlobalPhase | 129 |
-            | RX | 41 |
+            | RX | 49 |
             | RY | 28 |
-            | RZ | 144 |
+            | RZ | 136 |
             | **Weighted Cost** | 373.0 |
             </details>
             """).strip()
@@ -423,14 +423,14 @@ class TestInspectDecompGraph:
             Full Expansion Gates: {GlobalPhase: 1, RX: 3, RZ: 2}
             Weighted Cost: 6.0
 
-            Decomposition 4 (name: xzx)
+            CHOSEN: Decomposition 4 (name: xzx)
             0: ──RX(0.00)──RZ(0.00)──RX(0.00)─┤  
             Estimated First-Level Expansion Gates: {GlobalPhase: 1, RX: 2, RZ: 1}
             Actual First-Level Expansion Gates: {RX: 2, RZ: 1}
             Full Expansion Gates: {GlobalPhase: 1, RX: 2, RZ: 1}
             Weighted Cost: 4.0
 
-            CHOSEN: Decomposition 5 (name: zxz)
+            Decomposition 5 (name: zxz)
             0: ──RZ(0.00)──RX(0.00)──RZ(0.00)─┤  
             Estimated First-Level Expansion Gates: {GlobalPhase: 1, RX: 1, RZ: 2}
             Actual First-Level Expansion Gates: {RX: 1, RZ: 2}
@@ -504,7 +504,7 @@ class TestInspectDecompGraph:
 
             ---
 
-            #### Decomposition 4 (name: xzx)
+            #### **CHOSEN:** Decomposition 4 (name: xzx)
 
             ```
             0: ──RX(0.00)──RZ(0.00)──RX(0.00)─┤  
@@ -527,7 +527,7 @@ class TestInspectDecompGraph:
 
             ---
 
-            #### **CHOSEN:** Decomposition 5 (name: zxz)
+            #### Decomposition 5 (name: zxz)
 
             ```
             0: ──RZ(0.00)──RX(0.00)──RZ(0.00)─┤  
