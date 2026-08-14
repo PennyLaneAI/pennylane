@@ -14,9 +14,7 @@
 """
 Tests for the TrotterFragmented template.
 
-There are no independent-physics-reference tests here (e.g. no Trotter-error-scaling
-checks against an independently reconstructed Hamiltonian matrix). Instead, the private
-helper functions for both the CDF (electronic-structure) and CGF (vibrational) branches
+The private helper functions for both the CDF (electronic-structure) and CGF (vibrational) branches
 are unit tested directly, and the full registered decomposition rule is checked for
 self-consistency: its output is compared against calling the very same private helpers
 directly in plain Python.

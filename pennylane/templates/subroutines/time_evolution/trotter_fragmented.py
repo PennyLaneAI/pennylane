@@ -14,6 +14,7 @@
 """Contains the TrotterFragmented template for fragmented Hamiltonians."""
 
 from collections import defaultdict
+from typing import override
 
 import numpy as np
 
@@ -155,6 +156,21 @@ class TrotterFragmented(Operator2):
         self._frag_scheme = _frag_scheme(hamiltonian)
         control_wires = () if control_wires is None else control_wires
         super().__init__(evolution_time, num_trotter_steps, hamiltonian, wires, control_wires)
+
+    @override
+    # pylint: disable-next=arguments-differ
+    def __abstract_init__(
+        self, evolution_time, num_trotter_steps, hamiltonian, wires, control_wires=None
+    ):
+        # OperatorMeta.__call__ dispatches straight to __abstract_init__ (bypassing
+        # __init__) whenever any argument is abstract, so the None -> () default
+        # normalization from __init__ above must be repeated here for the abstract
+        # (wire-based) representation. See e.g. TemporaryAND/QROM for the same pattern.
+        if control_wires is None:
+            control_wires = Wire[0]
+        super().__abstract_init__(
+            evolution_time, num_trotter_steps, hamiltonian, wires, control_wires
+        )
 
 
 def _trotter_step(step_idx, second_order_time_step, hamiltonian, wires, control_wires, frag_scheme):
