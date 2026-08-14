@@ -231,13 +231,7 @@ def _hadamard_to_rz_ry(wires: WiresLike, **__):
 
 
 def _hadamard_ppm_resources(wires: WiresLike):
-    return {
-        PauliMeasure("YY", wires=Wire[2]): 1,
-        PauliMeasure("X", wires=Wire[1]): 1,
-        qp.Y: 1,
-        qp.Z: 2,
-        qp.GlobalPhase: 1,
-    }
+    return {qp.resource_rep(PauliMeasure): 2, qp.Y: 1, qp.Z: 2, qp.GlobalPhase: 1}
 
 
 @qp.register_resources(_hadamard_ppm_resources, work_wires={"burnable": 1})

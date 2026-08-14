@@ -27,7 +27,6 @@ import pennylane as qp
 from pennylane.core.operator import Operation
 from pennylane.decomposition.decomposition_rule import null_decomp
 from pennylane.ops import Conditional, MidMeasure, PauliMeasure
-from pennylane.typing import Wire
 
 jax = pytest.importorskip("jax")
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
@@ -417,11 +416,8 @@ class TestDecomposeInterpreterGraphEnabled:
                 return {}
 
         measure_obj_class = MidMeasure if m_type == "mcm" else PauliMeasure
-        # ``PauliMeasure`` is an ``Operator2`` with a compilable ``pauli_word``, so it cannot be
-        # abstractified from its bare type; an abstract instance is used as the resource key.
-        measure_resource = MidMeasure if m_type == "mcm" else PauliMeasure("XY", wires=Wire[2])
 
-        @qp.register_resources({qp.H: 1, qp.X: 1, measure_resource: 1})
+        @qp.register_resources({qp.H: 1, qp.X: 1, measure_obj_class: 1})
         def _custom_decomp(wires, **_):
             qp.H(wires[0])
             m0 = (

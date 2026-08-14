@@ -192,7 +192,7 @@ def _(op: qtemps.state_preparations.QROMStatePreparation):
     def _add_qrom_and_adjoint(gate_types, bitstrings, control_wires):
         """Helper to create a QROM, count it and its adjoint."""
         qrom_op = qtemps.QROM(
-            bitstrings=bitstrings,
+            data=bitstrings,
             target_wires=precision_wires,
             control_wires=control_wires,
             work_wires=work_wires,

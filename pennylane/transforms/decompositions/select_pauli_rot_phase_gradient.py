@@ -190,7 +190,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
 
         # 1. QROM compressed rep
         qrom_rep = qp.QROM(
-            bitstrings=Int[2**num_control_wires, len(angle_wires)],
+            data=Int[2**num_control_wires, len(angle_wires)],
             control_wires=Wire[num_control_wires],
             target_wires=Wire[len(angle_wires)],
             work_wires=Wire[num_control_wires - 1],

@@ -199,7 +199,7 @@ def _(op: qops.PauliRot):
 
 @_map_to_resource_op.register
 def _(op: qops.PCPhase):
-    dim = op.dim
+    dim = op.hyperparameters["dimension"][0]
     return re_ops.PCPhase(num_wires=len(op.wires), dim=dim, wires=op.wires)
 
 

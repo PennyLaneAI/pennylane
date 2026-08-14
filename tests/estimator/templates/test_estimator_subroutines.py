@@ -310,7 +310,7 @@ class TestHybridQRAM:
         @qp.qnode(dev)
         def circuit():
             HybridQRAM(
-                bitstrings=data,
+                data=data,
                 control_wires=range(num_control_wires),
                 target_wires=range(num_control_wires, num_control_wires + data.shape[1]),
                 work_wires=range(
@@ -547,7 +547,7 @@ class TestSelectOnlyQRAM:
         @qp.qnode(dev)
         def circuit():
             SelectOnlyQRAM(
-                bitstrings=data,
+                data=data,
                 control_wires=range(num_control_wires),
                 target_wires=range(num_control_wires, num_control_wires + data.shape[1]),
                 select_wires=range(
