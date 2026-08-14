@@ -74,7 +74,8 @@ def _wire_leaf_flags(structure) -> list:
     """Return, in leaf order, whether each leaf is a wire label (i.e. lives under a ``Wires`` node).
 
     The traversal order matches ``unflatten``'s depth-first consumption of the leaves, so the
-    returned flags line up one-to-one with the stored leaves.
+    returned flags line up one-to-one with the stored leaves. This information is necessary so
+    that any ``Wires`` present in the Pytree are not constructed with array data.
     """
     flags: list = []
 
