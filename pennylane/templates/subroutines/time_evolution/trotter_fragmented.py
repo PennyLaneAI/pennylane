@@ -30,7 +30,7 @@ from pennylane.typing import Complex, Wire
 has_jax = True
 try:
     import jax
-except ImportError:
+except ImportError:  # pragma: no cover
     has_jax = False
 
 
@@ -157,7 +157,7 @@ def _trotter_step(step_idx, second_order_time_step, hamiltonian, wires, control_
     if not has_jax:
         raise ImportError(
             "jax is required for TrotterFragmented. Install it with: pip install jax jaxlib"
-        )
+        )  # pragma: no cover
 
     if compiler.active():
         wires = math.array(wires, like="jax")

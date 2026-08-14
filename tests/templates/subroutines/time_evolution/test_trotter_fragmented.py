@@ -12,10 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the TrotterFragmented template (CGF scheme only).
+Tests for the TrotterFragmented template.
+
+The CGF (vibrational) numerical tests check physical correctness (Trotter error
+scaling). The CDF (electronic-structure) tests are structural unit tests of the
+private helper functions instead, since a from-scratch independent numerical
+reference for CDF would itself be a nontrivial physics derivation.
 """
 
-# pylint: disable=too-many-arguments, too-many-nested-blocks, redefined-outer-name, too-few-public-methods, wrong-import-position
+# pylint: disable=too-many-arguments, too-many-nested-blocks, redefined-outer-name, too-few-public-methods, wrong-import-position, protected-access
 import itertools
 import math
 
@@ -26,6 +31,17 @@ from scipy.linalg import expm
 jax = pytest.importorskip("jax")
 
 import pennylane as qp
+from pennylane.decomposition.resources import Resources
+from pennylane.templates.subroutines.time_evolution.trotter_fragmented import (
+    _apply_one_body_diagonal,
+    _apply_system_basis_rotation,
+    _apply_two_body_diagonal,
+    _energy_shift,
+    _frag_scheme,
+    _merge_leaves,
+    _transpose_leaf,
+)
+from pennylane.typing import Wire
 
 pytestmark = pytest.mark.jax
 
@@ -64,6 +80,32 @@ def toy_hamiltonian():
         "nuc_constant": 0.7,
     }
     return hamiltonian, num_modes, n_states
+
+
+@pytest.fixture(scope="module")
+def toy_hamiltonian_cdf():
+    """Synthetic CDF (electronic-structure) Hamiltonian: 2 spatial orbitals
+    (4 qubits, alpha/beta interleaved), 1 two-body fragment. Used only for
+    structural unit tests of the CDF branch, not numerical convergence checks."""
+    rng = np.random.default_rng(7)
+    num_orbitals = 2
+
+    eps = rng.normal(size=num_orbitals) * 0.4
+    one_body_core = np.diag(eps)
+    one_body_leaf = _random_orthogonal(num_orbitals, rng)
+
+    lam = rng.normal(size=(num_orbitals, num_orbitals)) * 0.3
+    core_2b = np.expand_dims(lam, axis=0)
+    leaf_2b = np.expand_dims(_random_orthogonal(num_orbitals, rng), axis=0)
+
+    core_tensors = np.concatenate([np.expand_dims(one_body_core, axis=0), core_2b], axis=0)
+    leaf_tensors = np.concatenate([np.expand_dims(one_body_leaf, axis=0), leaf_2b], axis=0)
+    hamiltonian = {
+        "core_tensors": core_tensors,
+        "leaf_tensors": leaf_tensors,
+        "nuc_constant": 0.6,
+    }
+    return hamiltonian, num_orbitals
 
 
 # Helper functions
@@ -242,6 +284,191 @@ class TestGlobalPhase:
         expected_phase = 0
 
         assert np.isclose(measured_phase, expected_phase)
+
+
+class TestCDFScheme:
+    """Structural unit tests for the CDF-format (electronic structure) branch of
+    the private helper functions, called directly and in isolation."""
+
+    def test_frag_scheme_detects_cdf(self, toy_hamiltonian_cdf):
+        """Test that a (3, 3) core/leaf tensor pair is detected as CDF."""
+        ham, _ = toy_hamiltonian_cdf
+        assert _frag_scheme(ham) == "cdf"
+
+    def test_merge_leaves_cdf(self):
+        """Test the CDF merge rule: U_prev^dagger @ U_curr."""
+        rng = np.random.default_rng(0)
+        U_prev = _random_orthogonal(3, rng)
+        U_curr = _random_orthogonal(3, rng)
+        assert np.allclose(_merge_leaves(U_prev, U_curr, "cdf"), U_prev.T @ U_curr)
+
+    def test_transpose_leaf_cdf(self):
+        """Test the CDF leaf transpose."""
+        U = _random_orthogonal(3, np.random.default_rng(0))
+        assert np.allclose(_transpose_leaf(U, "cdf"), U.T)
+
+    def test_apply_system_basis_rotation_cdf_concrete(self):
+        """Test that a non-identity rotation is applied to both spin channels."""
+        num_cas = 2
+        wires = list(range(2 * num_cas))
+        U = _random_orthogonal(num_cas, np.random.default_rng(1))
+        with qp.queuing.AnnotatedQueue() as q:
+            _apply_system_basis_rotation(U, wires, "cdf")
+        tape = qp.tape.QuantumScript.from_queue(q)
+        assert [type(op) for op in tape.operations] == [qp.BasisRotation, qp.BasisRotation]
+        assert list(tape.operations[0].wires) == wires[::2]
+        assert list(tape.operations[1].wires) == wires[1::2]
+
+    def test_apply_system_basis_rotation_cdf_identity_skipped(self):
+        """Test that an identity rotation is skipped for concrete (non-traced) data."""
+        num_cas = 2
+        wires = list(range(2 * num_cas))
+        with qp.queuing.AnnotatedQueue() as q:
+            _apply_system_basis_rotation(np.eye(num_cas), wires, "cdf")
+        tape = qp.tape.QuantumScript.from_queue(q)
+        assert len(tape.operations) == 0
+
+    def test_apply_system_basis_rotation_cdf_abstract(self):
+        """Test that the identity-skip optimization does not apply under jax tracing."""
+        num_cas = 2
+        wires = list(range(2 * num_cas))
+        captured = {}
+
+        def _fn(U):
+            with qp.queuing.AnnotatedQueue() as q:
+                _apply_system_basis_rotation(U, wires, "cdf")
+            captured["ops"] = list(q.queue)
+            return U
+
+        jax.jit(_fn)(jax.numpy.eye(num_cas))
+        assert [type(op) for op in captured["ops"]] == [qp.BasisRotation, qp.BasisRotation]
+
+    def test_apply_two_body_diagonal_cdf(self):
+        """Test the CDF two-body diagonal IsingZZ gates (all spin-orbital pairs)."""
+        num_cas = 2
+        wires = list(range(2 * num_cas))
+        Z = np.array([[0.0, 0.5], [0.5, 0.0]])
+        t = 0.3
+        with qp.queuing.AnnotatedQueue() as q:
+            _apply_two_body_diagonal(Z, wires, t, [], "cdf")
+        tape = qp.tape.QuantumScript.from_queue(q)
+        ising_ops = [op for op in tape.operations if isinstance(op, qp.IsingZZ)]
+        expected_pairs = [(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)]
+        assert len(ising_ops) == len(expected_pairs)
+        for op, (i, j) in zip(ising_ops, expected_pairs):
+            assert list(op.wires) == [wires[i], wires[j]]
+            assert np.isclose(op.parameters[0], -0.25 * Z[i // 2, j // 2] * t)
+
+    def test_apply_two_body_diagonal_cdf_with_control(self):
+        """Test that CNOTs sandwich the IsingZZ block when control_wires is set."""
+        wires = [0, 1]
+        control_wires = [10]
+        Z = np.array([[0.0]])
+        with qp.queuing.AnnotatedQueue() as q:
+            _apply_two_body_diagonal(Z, wires, 0.3, control_wires, "cdf")
+        tape = qp.tape.QuantumScript.from_queue(q)
+        cnots = [op for op in tape.operations if isinstance(op, qp.CNOT)]
+        assert len(cnots) == 2
+        assert all(list(op.wires) == [10, 0] for op in cnots)
+
+    def test_apply_one_body_diagonal_cdf(self):
+        """Test the CDF one-body diagonal RZ gates."""
+        num_cas = 2
+        wires = list(range(2 * num_cas))
+        Z = np.diag([0.3, -0.2])
+        t = 0.1
+        with qp.queuing.AnnotatedQueue() as q:
+            _apply_one_body_diagonal(Z, wires, t, [], "cdf")
+        tape = qp.tape.QuantumScript.from_queue(q)
+        rz_ops = [op for op in tape.operations if isinstance(op, qp.RZ)]
+        assert len(rz_ops) == 2 * num_cas
+        for wire_idx, op in enumerate(rz_ops):
+            assert list(op.wires) == [wires[wire_idx]]
+            assert np.isclose(op.parameters[0], Z[wire_idx // 2, wire_idx // 2] * t)
+
+    def test_apply_one_body_diagonal_cdf_with_control(self):
+        """Test that CNOTs sandwich each RZ when control_wires is set."""
+        wires = [0, 1]
+        control_wires = [10]
+        Z = np.diag([0.3])
+        with qp.queuing.AnnotatedQueue() as q:
+            _apply_one_body_diagonal(Z, wires, 0.1, control_wires, "cdf")
+        tape = qp.tape.QuantumScript.from_queue(q)
+        cnots = [op for op in tape.operations if isinstance(op, qp.CNOT)]
+        assert len(cnots) == 2 * len(wires)
+        assert all(op.wires[0] == 10 for op in cnots)
+
+    def test_energy_shift_cdf(self):
+        """Test the CDF zero-of-energy shift formula (Eq. A29, first line)."""
+        rng = np.random.default_rng(3)
+        num_cas = 2
+        Z0 = np.diag(rng.normal(size=num_cas))
+        Z_frag = rng.normal(size=(1, num_cas, num_cas))
+        core_tensors = np.concatenate([Z0[np.newaxis], Z_frag], axis=0)
+        ham = {"core_tensors": core_tensors, "nuc_constant": 0.42}
+
+        shift = _energy_shift(ham, "cdf")
+        expected = (
+            0.42
+            + np.trace(Z0)
+            + (-np.sum(Z_frag) / 2 + np.sum(np.trace(Z_frag, axis1=1, axis2=2)) / 4)
+        )
+        assert np.isclose(shift, expected)
+
+
+class TestResourceRule:
+    """Direct unit tests for the registered TrotterFragmented resource function,
+    following the graph-based decomposition testing convention."""
+
+    def test_num_trotter_steps_zero_has_no_resources(self, toy_hamiltonian):
+        """Test that zero Trotter steps require zero resources."""
+        ham, num_modes, n_states = toy_hamiltonian
+        wires = list(range(num_modes * n_states))
+        rule = qp.list_decomps(qp.TrotterFragmented)[0]
+
+        resources = rule.compute_resources(
+            evolution_time=1.0,
+            num_trotter_steps=0,
+            hamiltonian=ham,
+            wires=wires,
+            control_wires=(),
+        )
+        assert resources == Resources({})
+
+    def test_cdf_resources_no_control(self, toy_hamiltonian_cdf):
+        """Test that CDF resource estimation runs and reports a GlobalPhase (no control)."""
+        ham, num_orbitals = toy_hamiltonian_cdf
+        wires = list(range(2 * num_orbitals))
+        rule = qp.list_decomps(qp.TrotterFragmented)[0]
+
+        resources = rule.compute_resources(
+            evolution_time=1.0,
+            num_trotter_steps=2,
+            hamiltonian=ham,
+            wires=wires,
+            control_wires=(),
+        )
+        assert resources.num_gates > 0
+        assert qp.resource_rep(qp.GlobalPhase) in resources.gate_counts
+        assert qp.CNOT(wires=Wire[2]) not in resources.gate_counts
+
+    def test_cdf_resources_with_control(self, toy_hamiltonian_cdf):
+        """Test that CDF resource estimation with control_wires reports CNOTs
+        instead of a GlobalPhase."""
+        ham, num_orbitals = toy_hamiltonian_cdf
+        wires = list(range(2 * num_orbitals))
+        rule = qp.list_decomps(qp.TrotterFragmented)[0]
+
+        resources = rule.compute_resources(
+            evolution_time=1.0,
+            num_trotter_steps=2,
+            hamiltonian=ham,
+            wires=wires,
+            control_wires=(99,),
+        )
+        assert resources.num_gates > 0
+        assert qp.resource_rep(qp.GlobalPhase) not in resources.gate_counts
+        assert qp.CNOT(wires=Wire[2]) in resources.gate_counts
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
