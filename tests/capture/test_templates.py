@@ -317,7 +317,8 @@ def test_temporaryand(args, kwargs):
 tested_modified_templates = [
     qp.AmplitudeEmbedding,
     qp.BasisEmbedding,
-    qp.TrotterFragmented,
+    qp.TrotterCDF,
+    qp.TrotterCGF,
     qp.TrotterProduct,
     qp.AllSinglesDoubles,
     qp.AmplitudeAmplification,
@@ -1624,18 +1625,18 @@ class TestModifiedTemplates:
 
         qp.assert_equal(op, qp.GQSP(unitary, angles, control=0))
 
-    def test_trotter_fragmented(self):
-        """Test TrotterFragmented with program capture."""
+    def test_trotter_cdf(self):
+        """Test TrotterCDF with program capture."""
 
         hamiltonian = {
-            "core_tensors": np.random.rand(2, 2, 2, 2, 2),
-            "leaf_tensors": np.random.rand(2, 2, 2, 2),
+            "core_tensors": np.random.rand(2, 2, 2),
+            "leaf_tensors": np.random.rand(2, 2, 2),
             "nuc_constant": 0.5,
         }
         wires = [0, 1, 2, 3]
 
         def qfunc(evolution_time):
-            return qp.TrotterFragmented(evolution_time, 3, hamiltonian, wires).tracer
+            return qp.TrotterCDF(evolution_time, 3, hamiltonian, wires).tracer
 
         # Validate inputs
         qfunc(1.0)
@@ -1645,10 +1646,36 @@ class TestModifiedTemplates:
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        assert_eqn_matches_op(eqn, qp.TrotterFragmented)
+        assert_eqn_matches_op(eqn, qp.TrotterCDF)
 
         [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.0)
-        qp.assert_equal(op, qp.TrotterFragmented(1.0, 3, hamiltonian, wires))
+        qp.assert_equal(op, qp.TrotterCDF(1.0, 3, hamiltonian, wires))
+
+    def test_trotter_cgf(self):
+        """Test TrotterCGF with program capture."""
+
+        hamiltonian = {
+            "core_tensors": np.random.rand(2, 2, 2, 2, 2),
+            "leaf_tensors": np.random.rand(2, 2, 2, 2),
+            "nuc_constant": 0.5,
+        }
+        wires = [0, 1, 2, 3]
+
+        def qfunc(evolution_time):
+            return qp.TrotterCGF(evolution_time, 3, hamiltonian, wires).tracer
+
+        # Validate inputs
+        qfunc(1.0)
+
+        # Actually test primitive bind
+        jaxpr = jax.make_jaxpr(qfunc)(1.0)
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert_eqn_matches_op(eqn, qp.TrotterCGF)
+
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.0)
+        qp.assert_equal(op, qp.TrotterCGF(1.0, 3, hamiltonian, wires))
 
     @pytest.mark.xfail(reason="operators of operators not yet supported with Operator2")
     def test_reflection(self):
