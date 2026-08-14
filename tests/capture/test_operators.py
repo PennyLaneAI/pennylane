@@ -207,7 +207,6 @@ def test_parametrized_op():
 
 
 class TestSpecialOps:
-
     def test_diagonal_qubit_unitary(self):
         """Test Operator2 capture and list canonicalization for DiagonalQubitUnitary."""
 
@@ -248,7 +247,7 @@ class TestSpecialOps:
         assert len(collector.state["ops"]) == 1
         qp.assert_equal(collector.state["ops"][0], qp.PauliRot(2.5, "XY", (3, 4)))
 
-    def test_GlobalPhase(self):
+    def test_globalphase_with_no_wires_can_be_captured(self):
         """Test that a global phase on no wires can be captured."""
 
         def qfunc(phi):
@@ -257,15 +256,16 @@ class TestSpecialOps:
         jaxpr = jax.make_jaxpr(qfunc)(0.5)
         assert len(jaxpr.eqns) == 1
 
-        assert jaxpr.eqns[0].primitive == qp.GlobalPhase._primitive
-        assert len(jaxpr.eqns[0].invars) == 1
-        assert jaxpr.eqns[0].params == {"n_wires": 0}
+        gp_eqn = jaxpr.eqns[0]
+        assert_eqn_matches_op(gp_eqn, qp.GlobalPhase)
+        assert len(gp_eqn.invars) == 1
+        assert gp_eqn.params["wire_lens"] == (0,)
 
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.2)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, 1.2)
 
-        assert len(q.queue) == 1
-        qp.assert_equal(q.queue[0], qp.GlobalPhase(1.2))
+        assert len(collector.state["ops"]) == 1
+        qp.assert_equal(collector.state["ops"][0], qp.GlobalPhase(1.2))
 
     def test_identity_no_wires(self):
         """Test that an identity on no wires can be captured."""
@@ -285,7 +285,6 @@ class TestSpecialOps:
 
 
 class TestTemplates:
-
     def test_variable_wire_non_parametrized_template(self):
         """Test capturing a variable wire count, non-parametrized template like GroverOperator."""
 

@@ -186,7 +186,7 @@ class GroverOperator(Operation):
         for wire in wires[:-1]:
             op_list.append(Hadamard(wire))
 
-        op_list.append(GlobalPhase(np.pi, wires))
+        op_list.append(GlobalPhase(np.pi))
 
         return op_list
 
@@ -251,7 +251,7 @@ def _grover_decomposition(wires, work_wires, n_wires):
 
     apply_hadamards()  # pylint: disable=no-value-for-parameter
 
-    GlobalPhase(np.pi, wires=wires[0])
+    GlobalPhase(np.pi)
 
 
 add_decomps(GroverOperator, _grover_decomposition)
