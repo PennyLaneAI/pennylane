@@ -29,6 +29,7 @@ import numpy as np
 from pennylane import math
 
 from .device import active_placement
+from .placement import DEFAULT_MESSAGE_BYTES
 from .runtime import runtime_call
 
 # In-process ``__call`` adapters from TransportCAPI.h, named verbatim by a local runtime_call.
@@ -51,29 +52,29 @@ ROLE_COPROCESSOR = 1
 _DEFAULT_WORK_ITEM = 0
 
 _PACKED_U64_BITS = 64
-_PACKED_U64_BYTES = 8
+_PACKED_U64_BYTES = DEFAULT_MESSAGE_BYTES
 
 
 def _session_key(coprocessor, coprocessors=()) -> str:
     """The key the controller's session for this round is registered under.
 
     ``inject-transport-session`` keys one controller session per coprocessor by *that coprocessor's*
-    ``label``, falling back to ``"coprocessor.0"``; a placement with no coprocessor is
-    ``"controller"``. With several coprocessors that fallback would send every unlabelled one to the
-    same session, so a label is required.
+    ``name``, falling back to ``"coprocessor.0"``; a placement with no coprocessor is
+    ``"controller"``. With several coprocessors that fallback would send every unnamed one to the
+    same session, so a name is required.
 
     Raises:
-        ValueError: if the round targets an unlabelled coprocessor and the placement holds more
+        ValueError: if the round targets an unnamed coprocessor and the placement holds more
             than one, which no key can tell apart
     """
     if coprocessor is None:
         return "controller"
-    label = getattr(coprocessor, "label", None)
-    if label:
-        return label
+    name = getattr(coprocessor, "name", None)
+    if name:
+        return name
     if len(coprocessors) > 1:
         raise ValueError(
-            f"decode: this round targets a coprocessor with no label, and the placement has "
+            f"decode: this round targets a coprocessor with no name, and the placement has "
             f"{len(coprocessors)}. Pass coprocessor= to choose one directly."
         )
     return "coprocessor.0"
@@ -97,18 +98,11 @@ def _byte_count(array) -> int:
 def _resolve_out_bytes(controller, out_bytes) -> int:
     """How many bytes the correction reply occupies.
 
-    Explicit ``out_bytes`` wins; otherwise the controller's committed ``out_bytes``, the reply size
-    the round was set up for.
+    Explicit ``out_bytes`` wins; otherwise use the controller's committed reply size.
     """
     if out_bytes is not None:
         return int(out_bytes)
-    init = getattr(controller, "init_args", None) or {}
-    if "out_bytes" in init:
-        return int(init["out_bytes"])
-    raise ValueError(
-        "decode: could not determine the correction size. Pass out_bytes=, or set "
-        "'out_bytes' in the controller's init_args."
-    )
+    return int(getattr(controller, "out_bytes", DEFAULT_MESSAGE_BYTES))
 
 
 def _resolve_nodes(controller, coprocessor):
@@ -218,12 +212,12 @@ def decode(  # pylint: disable=too-many-arguments
             shape and dtype at compile time. With ``bitpack=True``, this must be a 1D bit vector
             with at most 64 entries.
         controller (Controller): The :class:`~.Controller` whose session drives the round, and whose
-            ``init_args`` supply the default reply size.
+            :attr:`~.Controller.out_bytes` supplies the default reply size.
         coprocessor (Coprocessor | None): The :class:`~.Coprocessor` the round targets. Selects the
             session key; which coprocessor serves the round is otherwise fixed by the session's
             configuration. Defaults to ``None``.
         out_bytes (int | None): The correction reply size in bytes. Defaults to the controller's
-            committed ``out_bytes``.
+            :attr:`~.Controller.out_bytes`.
         in_bytes (int | None): How many bytes of ``syndrome`` to send, at most what the round was
             committed to carry. Defaults to ``syndrome``'s full byte length.
         decoder_id (int): Which coprocessor-side decoder handles this round. Defaults to ``0``.
@@ -239,7 +233,7 @@ def decode(  # pylint: disable=too-many-arguments
         bit vector when ``bitpack=True``.
 
     Raises:
-        ValueError: if the round targets an unlabelled coprocessor while the placement holds more
+        ValueError: if the round targets an unnamed coprocessor while the placement holds more
         than one.
 
     .. warning::
@@ -263,12 +257,11 @@ def decode(  # pylint: disable=too-many-arguments
         con = qp.Controller(
             device=qp.device("null.qubit", wires=2),
             executor_options={"host": "192.168.3.15"},
-            init_args={"out_bytes": 8},
         )
         coproc = qp.Coprocessor(
             coprocessor_fn="decoder",
-            label="decoder-0",
-            backend="gpu_verbs",
+            name="decoder-0",
+            hardware="gpu",
             comm_host="192.168.1.3",
             oob_port=18590,
         )

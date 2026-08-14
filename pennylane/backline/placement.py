@@ -16,7 +16,7 @@
 
 from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from pennylane.devices.device_constructor import device as _make_device
 
@@ -28,30 +28,31 @@ if TYPE_CHECKING:
 
 # Wires given to the ``null.qubit`` device a :class:`~.Controller` falls back to.
 DEFAULT_WIRES = 32
+DEFAULT_MESSAGE_BYTES = 8
+Hardware = Literal["cpu", "gpu", "fpga"]
+"""Hardware on which a backline node executes."""
+
+_SUPPORTED_HARDWARE = frozenset(("cpu", "gpu", "fpga"))
 
 
 @dataclass(frozen=True, kw_only=True)
 class Node:
     """A node in a backline fabric.
 
-    Base class for :class:`~.Controller` and :class:`~.Coprocessor`. It carries the node's label and
-    backend implementation, how its code is deployed, and any backend-specific initialization
-    arguments. Nodes are assembled into a device with :class:`~pennylane.Backline`.
+    Base class for :class:`~.Controller` and :class:`~.Coprocessor`. It carries the node's name and
+    hardware, how its code is deployed, and any backend-specific initialization arguments. Nodes
+    are assembled into a device with :class:`~pennylane.Backline`.
 
     See the Attributes section to learn more about the available options.
     """
 
-    label: str | None = None
-    """A name for this node, used to identify its transport session and to label its executor's
-    logs. Defaults to ``None``, in which case the compiler derives one from the node's role
-    (``"controller"``, ``"coprocessor.0"``, ...). This does not select a backend — see
-    :attr:`backend`."""
+    name: str | None = None
+    """An optional name used to reference this node."""
 
-    backend: str | None = None
-    """The transport backend this node uses, by name, e.g. ``"cpu_verbs"`` or ``"gpu_verbs"``. The
-    compiler resolves the name together with the node's role to the installed backend library, so the
-    backend only has to be available to the compiler. Defaults to ``None``, letting the compiler pick
-    its default. A ``"backend_lib"`` path in :attr:`init_args` takes precedence."""
+    hardware: Hardware = "cpu"
+    """The hardware this node executes on: ``"cpu"``, ``"gpu"``, or ``"fpga"``. The compiler
+    combines this with the placement's :class:`~.Transport` to select the runtime backend. Defaults
+    to ``"cpu"``."""
 
     executor_options: dict | None = None
     """Options for the executor to launch for this node, passed to the compiler's executor
@@ -67,6 +68,12 @@ class Node:
     init_args: dict = field(default_factory=dict)
     """Backend-specific initialization arguments; empty by default (never ``None``). TODO: add what is recognized here
     """
+
+    def __post_init__(self):
+        if self.hardware not in _SUPPORTED_HARDWARE:
+            raise ValueError(
+                f"hardware must be one of {sorted(_SUPPORTED_HARDWARE)}, got {self.hardware!r}"
+            )
 
     @property
     def remote(self) -> bool:
@@ -99,7 +106,14 @@ class Controller(Node):
     Defaults to ``None``, which builds a ``null.qubit`` over :data:`DEFAULT_WIRES` wires.
     A controller needing more wires or an actual simulation, should pass a device of its own."""
 
+    in_bytes: int = DEFAULT_MESSAGE_BYTES
+    """The transport's input-message capacity in bytes. Defaults to 8."""
+
+    out_bytes: int = DEFAULT_MESSAGE_BYTES
+    """The transport's reply-message capacity in bytes. Defaults to 8."""
+
     def __post_init__(self):
+        super().__post_init__()
         if self.device is None:
             object.__setattr__(self, "device", _make_device("null.qubit", wires=DEFAULT_WIRES))
 
@@ -136,6 +150,7 @@ class Coprocessor(Node):
     data path. Defaults to ``None``, leaving the choice to the compiled runtime."""
 
     def __post_init__(self):
+        super().__post_init__()
         if isinstance(self.coprocessor_fn, str):
             object.__setattr__(self, "coprocessor_fn", CoprocessorFunction(self.coprocessor_fn))
         if self.oob_port is not None:

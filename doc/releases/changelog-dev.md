@@ -347,12 +347,10 @@
   con = qp.Controller(
       device=qp.device("null.qubit", wires=2),
       executor_options={"host": address_controller},
-      init_args={"out_bytes": 8},
   )
   coproc = qp.Coprocessor(
       coprocessor_fn="decoder",
-      label="decoder-0",
-      backend="gpu_verbs",
+      hardware="gpu",
       comm_host=address_coproc,
       oob_port=18590,
   )
@@ -366,7 +364,7 @@
       return qp.expval(qp.Z(0))
   ```
 
-  The round is resolved from the device being traced, so the program has to be captured (`qp.qjit(capture=True)`). The correction comes back as a `uint8` buffer of the controller's committed `out_bytes`. Pass `controller=` / `coprocessor=` to choose the nodes explicitly, and `decoder_id=` to select which coprocessor-side decoder handles the round.
+  The round is resolved from the device being traced, so the program has to be captured (`qp.qjit(capture=True)`). The controller's `in_bytes` and `out_bytes` capacities both default to 8 bytes, and the correction comes back as an `out_bytes`-sized `uint8` buffer. Pass `controller=` / `coprocessor=` to choose the nodes explicitly, `out_bytes=` to override the reply size, and `decoder_id=` to select which coprocessor-side decoder handles the round.
 
 <h3>Improvements 🛠</h3>
 

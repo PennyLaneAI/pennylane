@@ -35,25 +35,20 @@ A backline device is built with :class:`~pennylane.Backline` from a
     import pennylane as qp
 
     cpu_controller = qp.Controller(
-        label="cpu-controller",
-        backend="cpu_verbs",
+        name="cpu-controller",
+        hardware="cpu",
         executor_options={"host": "192.0.2.10", "port": 7810},
-        init_args={
-            "config": "dev=mlx5_0;gid=1",
-            "data_path": "cpu_verbs",
-            "in_bytes": 8,
-            "out_bytes": 8,
-        },
+        init_args={"config": "dev=mlx5_0;gid=1"},
     )
 
     gpu_coprocessor = qp.Coprocessor(
-        label="gpu-coprocessor",
+        name="gpu-coprocessor",
         coprocessor_fn="decoder",
-        backend="gpu_verbs",
+        hardware="gpu",
         comm_host="198.51.100.2",
         oob_port=7760,
         executor_options={"host": "192.0.2.11", "port": 7813},
-        init_args={"config": "dev=mlx5_0;gid=3", "data_path": "cpu_verbs"},
+        init_args={"config": "dev=mlx5_0;gid=3"},
     )
 
     dev = qp.Backline(
@@ -153,9 +148,10 @@ the placement it was built from as :attr:`~.Backline.placement`.
 Transports
 ~~~~~~~~~~
 
-A :class:`~.Transport` selects, by name, how messages transfer between nodes. Names are resolved with
-:func:`~.get_transport` and new ones added with :func:`~.register_transport`; the implementation itself
-lives in the compiled runtime.
+A :class:`~.Transport` selects, by name, how messages transfer between nodes. The compiler combines
+it with each node's hardware to choose a concrete runtime backend. The built-in transports are
+``"rdma"`` and ``"memcpy"``. Names are resolved with :func:`~.get_transport` and new ones added
+with :func:`~.register_transport`; the implementation itself lives in the compiled runtime.
 
 .. autosummary::
     :toctree: api

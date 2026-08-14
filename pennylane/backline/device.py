@@ -58,13 +58,13 @@ class Backline(Device):
 
         con = qp.Controller(
             device=qp.device("null.qubit", wires=4),
-            label="cpu-controller",
+            name="cpu-controller",
             executor_options={"host": "192.168.3.15", "port": 7810},
         )
         coproc = qp.Coprocessor(
             coprocessor_fn="decoder",
-            label="decoder-0",
-            backend="gpu_verbs",
+            name="decoder-0",
+            hardware="gpu",
             comm_host="198.51.100.2",
             oob_port=7760,
             executor_options={"host": "192.0.2.11", "port": 7813},
