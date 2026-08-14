@@ -53,12 +53,28 @@ class Node:
     backend only has to be available to the compiler. Defaults to ``None``, letting the compiler pick
     its default. A ``"backend_lib"`` path in :attr:`init_args` takes precedence."""
 
+    remote: bool = False
+    """Whether this node runs on another machine, so that the libraries it loads are the ones
+    installed beside it there rather than the ones in this installation. Defaults to ``False``.
+
+    This is about the machine, not the process: it says where the node's libraries are resolved, and
+    :attr:`executor_options` independently says whether its code runs in a process of its own. The
+    three combinations that mean something are
+
+    * ``remote=True`` with :attr:`executor_options`: out-of-process on another machine, reached by
+      deploying an executor there. A remote node cannot be reached without one.
+    * ``remote=False`` with :attr:`executor_options`: out-of-process on this machine, in an
+      executor subprocess whose libraries still resolve from this installation.
+    * ``remote=False`` with no :attr:`executor_options`: in-process, the default.
+    """
+
     executor_options: dict | None = None
     """Options for the executor to launch for this node, passed to the compiler's executor
-    builder. ``None`` (the default) requests no executor, leaving the node in this process; ``{}``
-    requests one with all defaults. Asking for an executor is what makes a node :attr:`remote`. The
-    launched executor also determines the node's cross-compilation target triple, detecting it on
-    the target host when not given explicitly. TODO: add what is recognized here"""
+    builder. ``None`` (the default) requests no executor, leaving the node in this process. Options
+    naming a ``host`` deploy one there over ssh; options naming neither a host nor an ``address``
+    ask for one on this machine, as a subprocess. The launched executor also determines the node's
+    cross-compilation target triple, detecting it on the target host when not given explicitly.
+    TODO: add what is recognized here"""
 
     executor: object | None = None
     """The launched executor this node runs on. Created automatically by the compiler from
