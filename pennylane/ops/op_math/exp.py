@@ -50,7 +50,7 @@ def _get_has_generator_types(num_wires):
     any_wires_types = []
     for op_name in qp.ops.qubit.__all__:
         op_class = getattr(qp.ops.qubit, op_name)
-        if op_class not in {qp.PauliRot, qp.PCPhase, qp.GlobalPhase} and op_class.has_generator:
+        if op_class not in {qp.PauliRot, qp.PCPhase} and op_class.has_generator:
             if op_class.num_wires == num_wires:
                 has_generator_types.append(op_class)
             elif op_class.num_wires is None:
@@ -68,6 +68,15 @@ def _find_equal_generator(base, coeff):
         # which doesn't depend on coeff. The coefficient is cast to real during construction anyways down below.
         probe_coeff = math.real(coeff)
         g, c = qp.generator(op_class)(probe_coeff, base.wires)
+
+        # NOTE: Operators that can act on all wires (e.g. GlobalPhase), produce generators that
+        # also act on all wires and cannot be mapped 1:1 to the base's wires. Therefore,
+        # they can never be an equal generator for a wire-carrying base. Skip them rather than failing
+        # the zip strict check below.
+        candidate_wires_can_be_mapped = len(g.wires) == len(base.wires)
+        if not candidate_wires_can_be_mapped:
+            continue
+
         # Some generators are not wire-ordered (e.g. OrbitalRotation)
         mapped_wires_g = qp.map_wires(g, dict(zip(g.wires, base.wires, strict=True)))
 
