@@ -16,7 +16,7 @@
 
 from dataclasses import dataclass
 
-import numpy as np
+from numpy.typing import ArrayLike
 
 
 @dataclass(frozen=True)
@@ -31,7 +31,7 @@ class CoprocessorFunction:
 
     See the Attributes section to learn more about the available options.
 
-    .. seealso:: :class:`~.Coprocessor`, :func:`~.css_decoder`
+    .. seealso:: :class:`~.Coprocessor`, :func:`~.css_bp_decoder`, :func:`~.triton_decoder`
     """
 
     name: str
@@ -47,26 +47,135 @@ class CoprocessorFunction:
         return self.name
 
 
-def css_decoder(Hx: np.ndarray, Hz: np.ndarray) -> CoprocessorFunction:
+def triton_decoder(
+    decoder_fns: tuple[object, ...],
+    **build_options,
+) -> CoprocessorFunction:
+    """Compile Triton decoder functions into a coprocessor decode function.
+
+    Accepts a tuple of Triton decoder functions and compiles them into a shared library that can be
+    used as a :class:`~.CoprocessorFunction`.
+
+    Args:
+        decoder_fns (tuple[object, ...]): Triton decoder functions. ``decoder_id`` selects the
+            tuple index at runtime.
+
+    Keyword Args:
+        platform (str): Required Triton platform string of the form ``"backend:arch:warp_size"``.
+            For example, ``"hip:gfx942:64"`` or ``"cuda:80:32"``.
+        grid (tuple[int, int, int]): Triton kernel launch grid dimensions.
+            Defaults to ``(1, 1, 1)``.
+        num_warps (int): Triton kernel launch warp count. Defaults to ``1``.
+        num_stages (int): Triton pipeline stage count. Defaults to ``1``.
+        compiler (str): Optional compiler executable override. Defaults to ``""``.
+        cflags (tuple[str, ...]): Extra compiler flags. Defaults to ``()``.
+
+    Returns:
+        CoprocessorFunction: The compiled decode function, ready to pass as a
+            :class:`~.Coprocessor`'s ``coprocessor_fn``.
+
+    Raises:
+        ImportError: If Triton decoder support is unavailable.
+        ValueError: If the decoder build options are invalid.
+
+    .. seealso:: :class:`~.CoprocessorFunction`, :class:`~.Coprocessor`,
+        :func:`~.css_bp_decoder`
+
+    **Example**
+
+    >>> import pennylane as qp
+    >>> import triton
+    >>> import triton.language as tl
+    >>> @triton.jit
+    ... def steane_lookup(syndrome):
+    ...     one = tl.cast(1, tl.uint64)
+    ...     zero = tl.cast(0, tl.uint64)
+    ...     return tl.where(syndrome != 0, one << (syndrome - 1), zero)
+    >>> decoder = qp.backline.triton_decoder(  # doctest: +SKIP
+    ...     (steane_lookup, steane_lookup),
+    ...     platform="hip:gfx942:64",
+    ... )
+    """
+    try:
+        from pennylane.backline.decoders.triton.decoder_frontend import (  # pylint: disable=import-outside-toplevel
+            _build_triton_decoder,
+        )
+    except ImportError as exc:
+        raise ImportError("Triton decoders require installed `triton` Python package.") from exc
+
+    so_path, symbol_name = _build_triton_decoder(decoder_fns, **build_options)
+    return CoprocessorFunction(name=symbol_name, lib_path=str(so_path))
+
+
+def css_bp_decoder(
+    Hx: ArrayLike,
+    Hz: ArrayLike,
+    *,
+    postprocess: str = "osd",
+    num_iters: int = 10,
+    prob: float = 0.1,
+    **build_options,
+) -> CoprocessorFunction:
     """Compile a CSS code's Tanner graph into a coprocessor decode function.
 
     Accepts the X- and Z-type parity-check matrices of a CSS code and compiles a decoder down to a
     shared library that can be used as a :class:`~.CoprocessorFunction`.
 
-    .. note::
-        Not yet implemented — this is a placeholder for the Triton-based decoder compiler.
-
     Args:
-        Hx (np.ndarray): The X parity-check matrix.
-        Hz (np.ndarray): The Z parity-check matrix.
+        Hx (ArrayLike): X parity-check matrix.
+        Hz (ArrayLike): Z parity-check matrix.
+
+    Keyword Args:
+        postprocess (str): Postprocessing step applied after belief propagation. Use
+            ``"hard"`` for hard-decision output or ``"osd"`` for ordered-statistics decoding.
+            Defaults to ``"osd"``.
+        num_iters (int): Number of belief-propagation iterations. Defaults to ``10``.
+        prob (float): Uniform prior error probability across qubits. Defaults to ``0.1``.
+        platform (str): Required Triton platform string of the form ``"backend:arch:warp_size"``.
+            For example, ``"hip:gfx942:64"`` or ``"cuda:80:32"``.
+        grid (tuple[int, int, int]): Triton kernel launch grid dimensions.
+            Defaults to ``(1, 1, 1)``.
+        num_warps (int): Triton kernel launch warp count. Defaults to ``1``.
+        num_stages (int): Triton pipeline stage count. Defaults to ``1``.
+        compiler (str): Optional compiler executable override. Defaults to ``""``.
+        cflags (tuple[str, ...]): Extra compiler flags. Defaults to ``()``.
 
     Returns:
         CoprocessorFunction: The compiled decode function, ready to pass as a
-        :class:`~.Coprocessor`'s ``coprocessor_fn``.
+            :class:`~.Coprocessor`'s ``coprocessor_fn``.
 
-    .. seealso:: :class:`~.CoprocessorFunction`, :class:`~.Coprocessor`
+    Raises:
+        ImportError: If Triton decoder support is unavailable.
+        ValueError: If the decoder options or parity-check matrices are invalid.
+
+    .. seealso:: :class:`~.CoprocessorFunction`, :class:`~.Coprocessor`,
+        :func:`~.triton_decoder`
+
+    **Example**
+
+    >>> import numpy as np
+    >>> import pennylane as qp
+    >>> Hz = Hx = np.array([
+    ...     [1, 0, 1, 0, 1, 0, 1],
+    ...     [0, 1, 1, 0, 0, 1, 1],
+    ...     [0, 0, 0, 1, 1, 1, 1],
+    ... ])
+    >>> decoder = qp.backline.css_bp_decoder(  # doctest: +SKIP
+    ...     Hx,
+    ...     Hz,
+    ...     postprocess="hard",
+    ...     num_iters=5,
+    ...     platform="hip:gfx942:64",
+    ... )
     """
-    raise NotImplementedError(
-        "css_decoder is not yet implemented; it will compile a CSS code's Tanner graph "
-        "into a CoprocessorFunction via Triton."
+    try:
+        from pennylane.backline.decoders.triton.decoder_frontend import (  # pylint: disable=import-outside-toplevel
+            _build_css_bp_decoder,
+        )
+    except ImportError as exc:
+        raise ImportError("Triton decoders require installed `triton` Python package.") from exc
+
+    so_path, symbol_name = _build_css_bp_decoder(
+        Hx, Hz, postprocess=postprocess, num_iters=num_iters, prob=prob, **build_options
     )
+    return CoprocessorFunction(name=symbol_name, lib_path=str(so_path))

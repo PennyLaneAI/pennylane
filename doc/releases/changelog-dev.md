@@ -2,6 +2,44 @@
 
 <h3>New features since last release</h3>
 
+* Added :func:`~pennylane.backline.triton_decoder` and
+  :func:`~pennylane.backline.css_bp_decoder` for compiling Triton-based coprocessor decoders.
+  :func:`~pennylane.backline.triton_decoder` wraps user-provided Triton decoder tuples, while
+  :func:`~pennylane.backline.css_bp_decoder` builds a CSS belief-propagation decoder from X- and Z-type parity-check
+  matrices. In both cases, syndromes and corrections are packed into ``u64`` bitmasks.
+
+  ```py
+  import numpy as np
+  import pennylane as qp
+  import triton
+  import triton.language as tl
+
+  @triton.jit
+  def steane_lookup(syndrome):
+      one = tl.cast(1, tl.uint64)
+      zero = tl.cast(0, tl.uint64)
+      return tl.where(syndrome != 0, one << (syndrome - 1), zero)
+
+  custom_decoder = qp.backline.triton_decoder(
+      (steane_lookup, steane_lookup),
+      platform="hip:gfx942:64",
+  )
+
+  Hz = Hx = np.array([
+      [1, 0, 1, 0, 1, 0, 1],
+      [0, 1, 1, 0, 0, 1, 1],
+      [0, 0, 0, 1, 1, 1, 1],
+  ])
+  css_decoder = qp.backline.css_bp_decoder(
+      Hx,
+      Hz,
+      postprocess="osd",
+      num_iters=10,
+      platform="hip:gfx942:64",
+  )
+  ```
+  [(#9975)](https://github.com/PennyLaneAI/pennylane/pull/9975)
+
 * (Experimental) A new `ftqc.heterogeneous` device is added for heterogeneous compilation and execution.
   [(#9772)](https://github.com/PennyLaneAI/pennylane/pull/9772)
 
@@ -318,7 +356,7 @@
       comm_host=address_coproc,
       oob_port=18590,
   )
-  dev = qp.backline(controller=con, coprocessors=[coproc], transport="rdma")
+  dev = qp.Backline(controller=con, coprocessors=[coproc], transport="rdma")
 
   @qp.qjit(capture=True)
   @qp.qnode(dev)
