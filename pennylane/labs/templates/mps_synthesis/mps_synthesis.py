@@ -742,12 +742,8 @@ def mps_preparation(mps_tensors, wires):
         :title: Usage Details
 
         **Wire register.** The matrix product state is prepared on the full ``wires`` register,
-        whose length equals the number of MPS tensors. The register splits into two groups: the
-        first :math:`\lceil \log_2 \chi \rceil` wires are the *auxiliary* (bond) wires and the
-        remaining wires are the *physical* wires, where :math:`\chi` is the maximal bond
-        dimension (inferred from ``mps_tensors``).
-
-        The auxiliary wires do double duty. While the circuit runs they are re-used as the bond
+        whose length equals the number of MPS tensors. In principle, there are two groups for the preparation: the
+        the *physical* wires and :math:`\lceil \log_2 \chi \rceil` bond wires, where :math:`\chi` is the maximal bond dimension (inferred from ``mps_tensors``). However, our synthesis method allows us to temporarily use part of the physical wires as the bond wires. While the circuit runs they are re-used as the bond
         register that carries the correlations along the chain; by the end they no longer hold
         any bond information and instead encode the physical state of the last
         :math:`\lceil \log_2 \chi \rceil` sites. Concretely, the left-boundary and bulk sites are
