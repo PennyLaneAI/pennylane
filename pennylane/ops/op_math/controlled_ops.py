@@ -234,6 +234,15 @@ class ControlledQubitUnitary(Controlled2):
         # ``QubitUnitary`` base cannot be decomposed (mirrors ``QubitUnitary.has_decomposition``).
         return self.base.has_decomposition and super().has_decomposition
 
+    def decomposition(self) -> list[Operator]:
+        # Guard against decomposition rules (selected purely by wire counts) being run on a sparse
+        # base matrix they cannot handle, e.g. a controlled two-qubit sparse ``QubitUnitary``.
+        if not self.has_decomposition:
+            raise qp.operation.DecompositionUndefinedError(
+                "The decomposition of a controlled sparse multi-qubit QubitUnitary is undefined."
+            )
+        return super().decomposition()
+
 
 def _to_general_c_qu_resource(wires, control_values, work_wires, work_wire_type, **_):
     num_control_wires = len(control_values)
@@ -254,14 +263,14 @@ def _to_general_c_qu_resource(wires, control_values, work_wires, work_wire_type,
 @qp.register_condition(lambda wires, control_values, **_: len(wires) - len(control_values) > 2)
 @qp.register_resources(_to_general_c_qu_resource)
 # pylint: disable=too-many-arguments
-def _to_general_c_qu(base, wires, control_wires, control_values, work_wires, work_wire_type, **_):
+def _to_general_c_qu(base, wires, control_values, work_wires, work_wire_type, **_):
     """Convert a ControlledQubitUnitary to a general Controlled(QubitUnitary) so that
     the graph finds the general decomposition rule of applying control to the decomposition
     of the base QubitUnitary."""
     num_target_wires = len(wires) - len(control_values)
     qp.ops.Controlled(
-        qp.QubitUnitary(base.U, wires=wires[-num_target_wires:]),
-        control_wires=control_wires,
+        qp.QubitUnitary(base, wires=wires[-num_target_wires:]),
+        control_wires=wires[:-num_target_wires],
         control_values=control_values,
         work_wires=work_wires,
         work_wire_type=work_wire_type,

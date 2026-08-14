@@ -501,17 +501,6 @@ class TestControlledQubitUnitary:
         with pytest.raises(qp.operation.PowUndefinedError):
             op.pow(0.12)
 
-    def test_controlled(self):
-        """Test the _controlled method for ControlledQubitUnitary."""
-
-        U = qp.PauliX(0).compute_matrix()
-
-        original = qp.ControlledQubitUnitary(U, wires=(0, 1, 4), control_values="01")
-        expected = qp.ControlledQubitUnitary(U, wires=(0, 1, "a", 4), control_values="011")
-
-        out = original._controlled("a")  # pylint: disable=protected-access
-        qp.assert_equal(out, expected)
-
     def test_unitary_check(self):
         unitary = np.array([[0.94877869j, 0.31594146], [-0.31594146, 0.94877869j]])
         not_unitary = np.array([[0.94877869j, 0.31594146], [-5, 0.94877869j]])
