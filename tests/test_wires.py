@@ -642,3 +642,5 @@ class TestAbstractWiresIntegration:
 
         assert Wires([0]) + Wire[4] == Wire[5]
         assert Wire[10] + Wires([0, 1]) == Wire[12]
+
+        assert Wire[-1] + Wire[2] == Wire[-1]

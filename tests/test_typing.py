@@ -560,7 +560,7 @@ class TestAbstractWires:
             _ = Wire[2] + 1
 
     def test_iteration(self):
-        """Test that AbstractWires can't be iterated over."""
+        """Test that AbstractWires can be iterated over."""
 
         assert list(Wire[4]) == [Wire, Wire, Wire, Wire]
 

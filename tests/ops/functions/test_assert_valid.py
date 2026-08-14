@@ -818,7 +818,7 @@ class TestOperator2AssertValid:
                 skip_pickle=True,
             )
 
-    def test_cant_handle_AbstsractArray_inputs(self):
+    def test_cant_handle_AbstractArray_inputs(self):
         """Test an Operator that can't handle AbstractArray inputs."""
 
         class NoAAOp(qp.core.Operator2):

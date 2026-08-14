@@ -729,7 +729,7 @@ def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
             if not op1.control_wires == op2.control_wires:
                 return f"Different numbers of abstract control_wires. Got {op1.control_wires} and {op2.control_wires}"
         elif isinstance(op2.control_wires, AbstractWires):
-            return f"Mismatched representations for control_wires. Got {op1.control_wires} and {op2.contorl_wires}."
+            return f"Mismatched representations for control_wires. Got {op1.control_wires} and {op2.control_wires}."
         else:
             # both control wires are concrete
             if isinstance(op1.control_values, AbstractArray):
