@@ -431,6 +431,7 @@ def _qrom_decomposition(
 ):  # pylint: disable=unused-argument, too-many-arguments
     if len(control_wires) == 0:
         BasisState(bitstrings[0, :], wires=target_wires)
+        return
 
     n_select_work_wires = _calculate_n_select_work_wires(
         len(bitstrings), len(control_wires), len(target_wires), len(work_wires)
