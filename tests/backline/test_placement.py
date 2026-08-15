@@ -41,6 +41,25 @@ def test_controller_owns_message_sizes():
     assert controller.out_bytes == 8
 
 
+def test_memcpy_coprocessor_allows_missing_comm_host():
+    """Memcpy placements do not require a network endpoint on the coprocessor."""
+    controller = qp.Controller()
+    coprocessor = qp.Coprocessor(coprocessor_fn="decoder")
+
+    dev = qp.Backline(controller=controller, coprocessors=[coprocessor], transport="memcpy")
+
+    assert dev.placement.coprocessors[0].comm_host is None
+
+
+def test_rdma_coprocessor_requires_comm_host():
+    """RDMA placements require every coprocessor to expose a connection endpoint."""
+    controller = qp.Controller()
+    coprocessor = qp.Coprocessor(coprocessor_fn="decoder")
+
+    with pytest.raises(ValueError, match="transport='rdma' requires every coprocessor to set comm_host"):
+        qp.Backline(controller=controller, coprocessors=[coprocessor], transport="rdma")
+
+
 @pytest.mark.parametrize("hardware", ["cpu", "gpu", "fpga"])
 def test_node_accepts_supported_hardware(hardware):
     """Every public hardware kind can be represented by a node."""

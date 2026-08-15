@@ -140,10 +140,11 @@ class Coprocessor(Node):
     """The function for processing the received message. A string is resolved to a
     :class:`~.CoprocessorFunction` by name."""
 
-    comm_host: str
+    comm_host: str | None = None
     """This coprocessor's address, which the controller connects to in order to bring up the
-    connection. Must be reachable from the host the controller runs on, and is required for every
-    coprocessor. For one co-located with the controller, use localhost (``"127.0.0.1"``)."""
+    connection. Some transports, such as ``"rdma"``, require it; others, such as ``"memcpy"``, do
+    not use a network endpoint and may leave it unset. For one co-located with the controller on a
+    transport that does require it, use localhost (``"127.0.0.1"``)."""
 
     oob_port: int | None = None
     """The port this coprocessor listens on for the out-of-band connection handshake. This is the handshake channel that exchanges the information needed to set up the
@@ -153,6 +154,11 @@ class Coprocessor(Node):
         super().__post_init__()
         if isinstance(self.coprocessor_fn, str):
             object.__setattr__(self, "coprocessor_fn", CoprocessorFunction(self.coprocessor_fn))
+        if self.comm_host is not None and not isinstance(self.comm_host, str):
+            raise TypeError(
+                f"comm_host must be a str when given, got {type(self.comm_host).__name__}: "
+                f"{self.comm_host!r}"
+            )
         if self.oob_port is not None:
             if not isinstance(self.oob_port, int):
                 raise TypeError(
@@ -199,3 +205,12 @@ class Placement:
             object.__setattr__(self, "coprocessors", tuple(self.coprocessors))
         if isinstance(self.transport, str):
             object.__setattr__(self, "transport", get_transport(self.transport))
+
+        if self.transport.name == "rdma":
+            for coprocessor in self.coprocessors:
+                # TODO: how should we handle when these fields are provided for `memcpy`
+                if not coprocessor.comm_host:
+                    raise ValueError(
+                        "transport='rdma' requires every coprocessor to set comm_host; "
+                        "memcpy does not require it"
+                    )
