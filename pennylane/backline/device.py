@@ -47,7 +47,7 @@ class HeterogeneousDevice(Device):
             executor_options={"host": "192.0.2.11", "port": 7813},
         )
 
-        dev = qp.backline(
+        dev = qp.Backline(
             controller=cpu_controller, coprocessors=[gpu_coprocessor], transport="rdma"
         )
 
@@ -177,7 +177,7 @@ def backline(
             init_args={"config": "dev=mlx5_1;gid=3;gpu=0", "data_path": "cpu_verbs"},
         )
 
-        dev = qp.backline(
+        dev = qp.Backline(
             controller=con, coprocessors=[coproc], transport="rdma", qec_code="steane"
         )
 

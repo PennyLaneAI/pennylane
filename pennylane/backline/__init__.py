@@ -58,7 +58,7 @@ A backline device is built with :func:`~pennylane.backline` from a
         init_args={"config": "dev=mlx5_0;gid=3", "data_path": "cpu_verbs"},
     )
 
-    dev = qp.backline(
+    dev = qp.Backline(
         controller=cpu_controller, coprocessors=[gpu_coprocessor], transport="rdma"
     )
 
