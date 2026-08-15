@@ -178,7 +178,7 @@ def active_placement() -> "Placement | None":
             init_args={"config": "dev=mlx5_1;gid=3;gpu=0", "data_path": "cpu_verbs"},
         )
 
-        dev = qp.backline(
+        dev = qp.Backline(
             controller=con, coprocessors=[coproc], transport="rdma", qec_code="steane"
         )
 
