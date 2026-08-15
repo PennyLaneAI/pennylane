@@ -56,7 +56,9 @@ def test_rdma_coprocessor_requires_comm_host():
     controller = qp.Controller()
     coprocessor = qp.Coprocessor(coprocessor_fn="decoder")
 
-    with pytest.raises(ValueError, match="transport='rdma' requires every coprocessor to set comm_host"):
+    with pytest.raises(
+        ValueError, match="transport='rdma' requires every coprocessor to set comm_host"
+    ):
         qp.Backline(controller=controller, coprocessors=[coprocessor], transport="rdma")
 
 
