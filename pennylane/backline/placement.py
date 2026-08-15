@@ -84,14 +84,6 @@ class Node:
     """Backend-specific initialization arguments; empty by default (never ``None``). TODO: add what is recognized here
     """
 
-    @property
-    def remote(self) -> bool:
-        """bool: Whether this node's code is dispatched to an executor rather than run in the
-        present process, so that the libraries it loads live beside that executor rather than in
-        this installation. A node is remote exactly when it has an executor to run on, whether still
-        requested through :attr:`executor_options` or already launched."""
-        return self.executor_options is not None or self.executor is not None
-
 
 @dataclass(frozen=True, kw_only=True)
 class Controller(Node):
