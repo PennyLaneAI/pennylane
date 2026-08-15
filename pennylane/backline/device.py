@@ -88,10 +88,14 @@ class Backline(Device):
         controller: Controller,
         coprocessors: Sequence[Coprocessor] = (),
         transport,
+        qec_code: str | None = None,
         shots=None,
     ):
         self._placement = Placement(
-            controller=controller, coprocessors=coprocessors, transport=transport
+            controller=controller,
+            coprocessors=coprocessors,
+            transport=transport,
+            qec_code=qec_code,
         )
         self._device = cast(Device, controller.device)
         super().__init__(wires=self._device.wires, shots=shots)
