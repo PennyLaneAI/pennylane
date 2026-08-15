@@ -281,6 +281,8 @@ def decode(  # pylint: disable=too-many-arguments
     ``out_bytes`` bytes. Pass ``controller=`` / ``coprocessor=`` to choose the nodes explicitly, and
     ``decoder_id=`` to select which coprocessor-side decoder handles the round.
     """
+    from catalyst import debug_assert  # pylint: disable=import-outside-toplevel
+
     controller, coprocessor = _resolve_nodes(controller, coprocessor)
     placement = active_placement()
     key = _session_key(coprocessor, placement.coprocessors if placement is not None else ())
@@ -296,9 +298,11 @@ def decode(  # pylint: disable=too-many-arguments
     session = runtime_call(
         _GET_SESSION, ROLE_CONTROLLER, key, signature=_SIG_GET_SESSION, library=library
     )
+    # WARN: failed session returns a `nullptr`, is the check against 0 safe here
+    debug_assert(session != 0, f"decode: no transport session registered for key {key!r}")
 
     # Copy `nbytes` into the outbound slot and stamp `decoder_id`, then start the round trip.
-    runtime_call(
+    stage_status = runtime_call(
         _STAGE_PAYLOAD,
         session,
         syndrome,
@@ -307,12 +311,14 @@ def decode(  # pylint: disable=too-many-arguments
         signature=_SIG_STAGE_PAYLOAD,
         library=library,
     )
+    debug_assert(stage_status == 0, f"decode: stage_payload failed for key {key!r}")
 
     # Start the round trip
-    runtime_call(_POST, session, work_item, signature=_SIG_POST, library=library)
+    post_status = runtime_call(_POST, session, work_item, signature=_SIG_POST, library=library)
+    debug_assert(post_status == 0, f"decode: post failed for key {key!r}")
 
     # Wait for the reply
-    _status, correction = runtime_call(
+    collect_status, correction = runtime_call(
         _COLLECT,
         session,
         reply_bytes,
@@ -320,4 +326,5 @@ def decode(  # pylint: disable=too-many-arguments
         out_bytes=reply_bytes,
         library=library,
     )
+    debug_assert(collect_status == 0, f"decode: collect failed for key {key!r}")
     return _unpack(correction) if bitpack else correction
