@@ -453,7 +453,7 @@ class TestSingleShotGradientIntegration:
 class TestQNodeWeightedRandomSampling:
     """Tests for weighted random Hamiltonian term sampling"""
 
-    def test_wrs_qnode(self, mocker):
+    def test_wrs_qnode(self, mocker, seed):
         """Checks that cost functions that are qnodes can make use of weighted random sampling"""
         coeffs = [0.2, 0.1]
         dev = qp.device("default.qubit", wires=2)
@@ -467,7 +467,8 @@ class TestQNodeWeightedRandomSampling:
             qp.CNOT([0, 1])
             return qp.expval(H)
 
-        weights = np.random.random(qp.templates.StronglyEntanglingLayers.shape(3, 2))
+        rng = np.random.default_rng(seed)
+        weights = rng.random(qp.templates.StronglyEntanglingLayers.shape(3, 2))
         x = np.array(1.1)
 
         opt = qp.ShotAdaptiveOptimizer(min_shots=10, term_sampling="weighted_random_sampling")
@@ -480,7 +481,7 @@ class TestQNodeWeightedRandomSampling:
         assert len(grads) == 1
         assert grads[0].shape == (10, *weights.shape)
 
-    def test_wrs_qnode_multiple_args(self, mocker):
+    def test_wrs_qnode_multiple_args(self, mocker, seed):
         """Checks that cost functions that are qnodes works with multiple args"""
         coeffs = [0.2, 0.1]
         dev = qp.device("default.qubit", wires=2)
@@ -494,7 +495,8 @@ class TestQNodeWeightedRandomSampling:
             qp.CNOT([0, 1])
             return qp.expval(H)
 
-        weights = np.random.random(qp.templates.StronglyEntanglingLayers.shape(3, 2))
+        rng = np.random.default_rng(seed)
+        weights = rng.random(qp.templates.StronglyEntanglingLayers.shape(3, 2))
         x = np.array(1.1)
 
         opt = qp.ShotAdaptiveOptimizer(min_shots=10, term_sampling="weighted_random_sampling")
@@ -509,7 +511,7 @@ class TestQNodeWeightedRandomSampling:
         assert weight_grad.shape == (10, *weights.shape)
         assert x_grad.shape == (10,)
 
-    def test_wrs_disabled(self, mocker):
+    def test_wrs_disabled(self, mocker, seed):
         """Checks that cost functions that are qnodes can
 
         disable use of weighted random sampling"""
@@ -523,7 +525,8 @@ class TestQNodeWeightedRandomSampling:
             qp.StronglyEntanglingLayers(weights, wires=range(2))
             return qp.expval(H)
 
-        weights = np.random.random(qp.templates.StronglyEntanglingLayers.shape(3, 2))
+        rng = np.random.default_rng(seed)
+        weights = rng.random(qp.templates.StronglyEntanglingLayers.shape(3, 2))
 
         opt = qp.ShotAdaptiveOptimizer(min_shots=10, term_sampling=None)
         spy = mocker.spy(opt, "qnode_weighted_random_sampling")
@@ -531,7 +534,7 @@ class TestQNodeWeightedRandomSampling:
         opt.step(circuit, weights)
         spy.assert_not_called()
 
-    def test_unknown_term_sampling_method(self):
+    def test_unknown_term_sampling_method(self, seed):
         """Checks that an exception is raised if the term sampling method is unknown"""
         coeffs = [0.2, 0.1]
         dev = qp.device("default.qubit", wires=2)
@@ -543,14 +546,15 @@ class TestQNodeWeightedRandomSampling:
             qp.StronglyEntanglingLayers(weights, wires=range(2))
             return qp.expval(H)
 
-        weights = np.random.random(qp.templates.StronglyEntanglingLayers.shape(3, 2))
+        rng = np.random.default_rng(seed)
+        weights = rng.random(qp.templates.StronglyEntanglingLayers.shape(3, 2))
 
         opt = qp.ShotAdaptiveOptimizer(min_shots=10, term_sampling="uniform_random_sampling")
 
         with pytest.raises(ValueError, match="Unknown Hamiltonian term sampling method"):
             opt.step(circuit, weights)
 
-    def test_zero_shots(self, mocker):
+    def test_zero_shots(self, mocker, seed):
         """Test that, if the shot budget for a single term is 0,
         that the jacobian computation is skipped"""
         coeffs = [0.2, 0.1, 0.1]
@@ -563,7 +567,8 @@ class TestQNodeWeightedRandomSampling:
             qp.StronglyEntanglingLayers(weights, wires=range(2))
             return qp.expval(H)
 
-        weights = np.random.random(qp.templates.StronglyEntanglingLayers.shape(3, 2))
+        rng = np.random.default_rng(seed)
+        weights = rng.random(qp.templates.StronglyEntanglingLayers.shape(3, 2))
 
         opt = qp.ShotAdaptiveOptimizer(min_shots=10)
 
@@ -577,7 +582,7 @@ class TestQNodeWeightedRandomSampling:
         assert len(grads) == 1
         assert grads[0].shape == (10, *weights.shape)
 
-    def test_single_shots(self, mocker):
+    def test_single_shots(self, mocker, seed):
         """Test that, if the shot budget for a single term is 1,
         that the number of dimensions for the returned Jacobian is expanded"""
         coeffs = [0.2, 0.1, 0.1]
@@ -590,7 +595,8 @@ class TestQNodeWeightedRandomSampling:
             qp.StronglyEntanglingLayers(weights, wires=range(2))
             return qp.expval(H)
 
-        weights = np.random.random(qp.templates.StronglyEntanglingLayers.shape(3, 2))
+        rng = np.random.default_rng(seed)
+        weights = rng.random(qp.templates.StronglyEntanglingLayers.shape(3, 2))
 
         opt = qp.ShotAdaptiveOptimizer(min_shots=10)
 
