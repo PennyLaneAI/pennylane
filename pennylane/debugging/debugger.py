@@ -406,8 +406,10 @@ def debug_probs(wires=None, op=None):
         array([0.33355943, 0.33355943, 0.16644057, 0.16644057])
 
     """
-    if op:
-        QueuingManager.active_context().remove(op)  # ensure we didn't accidentally queue op
+    if op is not None:
+       active_context = QueuingManager.active_context()
+       if active_context is not None:
+          active_context.remove(op)
 
     with QueuingManager.stop_recording():
         m = probs(wires, op)
