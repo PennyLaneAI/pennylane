@@ -840,9 +840,16 @@ class DefaultClifford(Device):
         tableau = tableau_simulator.current_inverse_tableau().inverse()
         z_stabs = math.array([tableau.z_output(wire) for wire in range(len(wires))])
         indices0, indices1 = getattr(meas, "_wires")
-        return self._measure_stabilizer_entropy(
-            z_stabs, list(indices0), meas.log_base
-        ) + self._measure_stabilizer_entropy(z_stabs, list(indices1), meas.log_base)
+        # Mutual information is I(A:B) = S(A) + S(B) - S(AB); the joint-subsystem
+        # entropy S(AB) must be subtracted (previously omitted, so the result was
+        # double the correct value for maximally correlated subsystems).
+        return (
+            self._measure_stabilizer_entropy(z_stabs, list(indices0), meas.log_base)
+            + self._measure_stabilizer_entropy(z_stabs, list(indices1), meas.log_base)
+            - self._measure_stabilizer_entropy(
+                z_stabs, list(indices0) + list(indices1), meas.log_base
+            )
+        )
 
     def _measure_purity(self, meas, tableau_simulator, **kwargs):
         r"""Measure the purity of the state of simulator device.
