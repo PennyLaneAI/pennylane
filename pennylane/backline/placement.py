@@ -51,8 +51,7 @@ class Node:
 
     hardware: Hardware = "cpu"
     """The hardware this node executes on: ``"cpu"``, ``"gpu"``, or ``"fpga"``. The compiler
-    combines this with the placement's :class:`~.Transport` to select the runtime backend. Defaults
-    to ``"cpu"``."""
+    combines this with the placement's :class:`~.Transport` to select the runtime backend."""
 
     executor_options: dict | None = None
     """Options for the executor to launch for this node, passed to the compiler's executor
@@ -107,10 +106,10 @@ class Controller(Node):
     A controller needing more wires or an actual simulation, should pass a device of its own."""
 
     in_bytes: int = DEFAULT_MESSAGE_BYTES
-    """The transport's input-message capacity in bytes. Defaults to 8."""
+    """The transport's input-message capacity in bytes."""
 
     out_bytes: int = DEFAULT_MESSAGE_BYTES
-    """The transport's reply-message capacity in bytes. Defaults to 8."""
+    """The transport's reply-message capacity in bytes."""
 
     def __post_init__(self):
         super().__post_init__()

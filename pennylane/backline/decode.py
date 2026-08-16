@@ -215,15 +215,14 @@ def decode(  # pylint: disable=too-many-arguments
             :attr:`~.Controller.out_bytes` supplies the default reply size.
         coprocessor (Coprocessor | None): The :class:`~.Coprocessor` the round targets. Selects the
             session key; which coprocessor serves the round is otherwise fixed by the session's
-            configuration. Defaults to ``None``.
+            configuration.
         out_bytes (int | None): The correction reply size in bytes. Defaults to the controller's
             :attr:`~.Controller.out_bytes`.
         in_bytes (int | None): How many bytes of ``syndrome`` to send, at most what the round was
             committed to carry. Defaults to ``syndrome``'s full byte length.
-        decoder_id (int): Which coprocessor-side decoder handles this round. Defaults to ``0``.
-        work_item (int): The committed work-item index to post. Defaults to ``0``.
+        decoder_id (int): Which coprocessor-side decoder handles this round.
+        work_item (int): The committed work-item index to post.
         bitpack (bool): Pack syndrome bits into 8-byte payload and unpack reply to 64-bit vector.
-            Defaults to ``True``.
         library (str | None): Shared library exporting the transport symbols, recorded so the
             compiler links it. Defaults to ``None``, relying on ``librt_transport`` already being
             loaded.

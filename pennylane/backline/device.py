@@ -37,7 +37,6 @@ class Backline(Device):
     Keyword Args:
         controller (Controller): The :class:`~.Controller` that drives the QPU and runs the QNode.
         coprocessors (Sequence[Coprocessor]): Zero or more :class:`~.Coprocessor` accelerators.
-            Defaults to ``()``.
         transport (str | Transport): The transfer protocol between nodes, by registry name (e.g.
             ``"rdma"``) or a :class:`~.Transport`.
         shots (int | None): Number of shots. Defaults to ``None`` (analytic); set shots on the

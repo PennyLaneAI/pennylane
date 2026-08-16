@@ -128,9 +128,8 @@ def css_bp_decoder(
     Keyword Args:
         postprocess (str): Postprocessing step applied after belief propagation. Use
             ``"hard"`` for hard-decision output or ``"osd"`` for ordered-statistics decoding.
-            Defaults to ``"osd"``.
-        num_iters (int): Number of belief-propagation iterations. Defaults to ``10``.
-        prob (float): Uniform prior error probability across qubits. Defaults to ``0.1``.
+        num_iters (int): Number of belief-propagation iterations.
+        prob (float): Uniform prior error probability across qubits.
         platform (str): Required Triton platform string of the form ``"backend:arch:warp_size"``.
             For example, ``"hip:gfx942:64"`` or ``"cuda:80:32"``.
         grid (tuple[int, int, int]): Triton kernel launch grid dimensions.
