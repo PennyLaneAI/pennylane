@@ -125,6 +125,24 @@ class TestDecomposition:
 
         assert rotation in [type(gate) for gate in queue]
 
+    def test_multiple_rotations(self):
+        """Checks that a sequence of rotation gates is supported (#2673)."""
+
+        weights = np.arange(1, 7, dtype=float).reshape(1, 6)
+        op = qp.BasicEntanglerLayers(weights, wires=range(3), rotation=[qp.RX, qp.RZ])
+        queue = op.decomposition()
+
+        # RX on each wire, then RZ on each wire, then CNOT ring
+        assert [type(gate) for gate in queue[:6]] == [qp.RX, qp.RX, qp.RX, qp.RZ, qp.RZ, qp.RZ]
+        assert all(isinstance(gate, qp.CNOT) for gate in queue[6:])
+        assert qp.math.allclose(queue[0].parameters[0], 1.0)
+        assert qp.math.allclose(queue[3].parameters[0], 4.0)
+
+    def test_shape_with_multiple_rotations(self):
+        """Checks shape helper accounts for multiple rotations."""
+
+        assert qp.BasicEntanglerLayers.shape(2, 3, n_rots=2) == (2, 6)
+
     DECOMP_PARAMS = [
         ([[np.pi]], range(1), qp.RX),
         ([[np.pi] * 2], range(2), qp.RY),
