@@ -34,15 +34,13 @@ A backline device is built with :class:`~pennylane.Backline` from a
 
     import pennylane as qp
 
-    cpu_controller = qp.Controller(
-        name="cpu-controller",
+    controller = qp.Controller(
         hardware="cpu",
         executor_options={"host": "192.0.2.10", "port": 7810},
         init_args={"config": "dev=mlx5_0;gid=1"},
     )
 
-    gpu_coprocessor = qp.Coprocessor(
-        name="gpu-coprocessor",
+    coprocessor = qp.Coprocessor(
         coprocessor_fn="decoder",
         hardware="gpu",
         endpoint=qp.Endpoint("198.51.100.2", 7760),
@@ -51,7 +49,7 @@ A backline device is built with :class:`~pennylane.Backline` from a
     )
 
     dev = qp.Backline(
-        controller=cpu_controller, coprocessors=[gpu_coprocessor], transport="rdma"
+        controller=controller, coprocessors=[coprocessor], transport="rdma"
     )
 
     @qp.qjit
