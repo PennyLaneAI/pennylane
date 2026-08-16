@@ -261,8 +261,7 @@ def decode(  # pylint: disable=too-many-arguments
             coprocessor_fn="decoder",
             name="decoder-0",
             hardware="gpu",
-            comm_host="192.168.1.3",
-            oob_port=18590,
+            endpoint=qp.Endpoint("192.168.1.3", 18590),
         )
         dev = qp.Backline(controller=con, coprocessors=[coproc], transport="rdma")
 

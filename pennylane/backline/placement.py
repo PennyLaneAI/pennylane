@@ -35,6 +35,40 @@ Hardware = Literal["cpu", "gpu", "fpga"]
 _SUPPORTED_HARDWARE = frozenset(("cpu", "gpu", "fpga"))
 
 
+@dataclass(frozen=True)
+class Endpoint:
+    """The address the controller dials to bring up a connection to a coprocessor.
+
+    The coprocessor listens on :attr:`port`; the controller connects to :attr:`host`\\ ``:``\\
+    :attr:`port`. Some transports, such as ``"rdma"``, require an endpoint on every coprocessor;
+    others, such as ``"memcpy"``, do not use a network endpoint. For a coprocessor co-located with
+    the controller on a transport that does require one, use localhost (``"127.0.0.1"``).
+
+    .. seealso:: :class:`~.Coprocessor`
+    """
+
+    host: str
+    """The address the controller connects to, e.g. ``"192.0.2.11"`` or ``"127.0.0.1"``."""
+
+    port: int | None = None
+    """The port the coprocessor listens on for the out-of-band connection handshake. This is the
+    handshake channel that exchanges the information needed to set up the data path. Defaults to
+    ``None``, leaving the choice to the compiled runtime."""
+
+    def __post_init__(self):
+        if not isinstance(self.host, str):
+            raise TypeError(f"host must be a str, got {type(self.host).__name__}: {self.host!r}")
+        if not self.host:
+            raise ValueError("host must be a non-empty str")
+        if self.port is not None:
+            if not isinstance(self.port, int):
+                raise TypeError(
+                    f"port must be an int, got {type(self.port).__name__}: {self.port!r}"
+                )
+            if not 1 <= self.port <= 65535:
+                raise ValueError(f"port must be in 1..65535, got {self.port}")
+
+
 @dataclass(frozen=True, kw_only=True)
 class Node:
     """A node in a backline fabric.
@@ -132,12 +166,13 @@ class Coprocessor(Node):
     corrections). Depending on the connection type, a :attr:`coprocessor_fn` may be a persistent
     kernel. Pass coprocessors to :class:`~pennylane.Backline` to build a device.
 
-    The coprocessor owns the connection endpoint: it listens on :attr:`oob_port`, and the controller
-    dials :attr:`comm_host`\\ ``:``\\ :attr:`oob_port` to bring the connection up.
+    The coprocessor owns the connection :attr:`endpoint`: it listens on :attr:`Endpoint.port`, and
+    the controller dials :attr:`Endpoint.host`\\ ``:``\\ :attr:`Endpoint.port` to bring the
+    connection up.
 
     See the Attributes section to learn more about the available options.
 
-    .. seealso:: :class:`~.Controller`, :class:`~.CoprocessorFunction`,
+    .. seealso:: :class:`~.Controller`, :class:`~.CoprocessorFunction`, :class:`~.Endpoint`,
         :class:`~pennylane.Backline`
     """
 
@@ -145,33 +180,15 @@ class Coprocessor(Node):
     """The function for processing the received message. A string is resolved to a
     :class:`~.CoprocessorFunction` by name."""
 
-    comm_host: str | None = None
-    """This coprocessor's address, which the controller connects to in order to bring up the
-    connection. Some transports, such as ``"rdma"``, require it; others, such as ``"memcpy"``, do
-    not use a network endpoint and may leave it unset. For one co-located with the controller on a
-    transport that does require it, use localhost (``"127.0.0.1"``)."""
-
-    oob_port: int | None = None
-    """The port this coprocessor listens on for the out-of-band connection handshake. This is the handshake channel that exchanges the information needed to set up the
-    data path. Defaults to ``None``, leaving the choice to the compiled runtime."""
+    endpoint: Endpoint | None = None
+    """The address the controller dials to reach this coprocessor. Some transports, such as
+    ``"rdma"``, require it; others, such as ``"memcpy"``, do not use a network endpoint and may
+    leave it unset."""
 
     def __post_init__(self):
         super().__post_init__()
         if isinstance(self.coprocessor_fn, str):
             object.__setattr__(self, "coprocessor_fn", CoprocessorFunction(self.coprocessor_fn))
-        if self.comm_host is not None and not isinstance(self.comm_host, str):
-            raise TypeError(
-                f"comm_host must be a str when given, got {type(self.comm_host).__name__}: "
-                f"{self.comm_host!r}"
-            )
-        if self.oob_port is not None:
-            if not isinstance(self.oob_port, int):
-                raise TypeError(
-                    f"oob_port must be an int, got {type(self.oob_port).__name__}: "
-                    f"{self.oob_port!r}"
-                )
-            if not 1 <= self.oob_port <= 65535:
-                raise ValueError(f"oob_port must be in 1..65535, got {self.oob_port}")
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -214,8 +231,8 @@ class Placement:
         if self.transport.name == "rdma":
             for coprocessor in self.coprocessors:
                 # TODO: how should we handle when these fields are provided for `memcpy`
-                if not coprocessor.comm_host:
+                if coprocessor.endpoint is None:
                     raise ValueError(
-                        "transport='rdma' requires every coprocessor to set comm_host; "
+                        "transport='rdma' requires every coprocessor to set endpoint; "
                         "memcpy does not require it"
                     )

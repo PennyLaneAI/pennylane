@@ -27,7 +27,7 @@ UNKNOWN_HARDWARE: Any = "tpu"
 def test_nodes_default_to_cpu_hardware():
     """Controllers and coprocessors execute on CPUs by default."""
     controller = qp.Controller()
-    coprocessor = qp.Coprocessor(coprocessor_fn="decoder", comm_host="127.0.0.1")
+    coprocessor = qp.Coprocessor(coprocessor_fn="decoder", endpoint=qp.Endpoint("127.0.0.1"))
 
     assert controller.hardware == "cpu"
     assert coprocessor.hardware == "cpu"
@@ -65,25 +65,57 @@ def test_controller_rejects_non_positive_message_size(name, value):
         qp.Controller(**{name: value})
 
 
-def test_memcpy_coprocessor_allows_missing_comm_host():
+def test_memcpy_coprocessor_allows_missing_endpoint():
     """Memcpy placements do not require a network endpoint on the coprocessor."""
     controller = qp.Controller()
     coprocessor = qp.Coprocessor(coprocessor_fn="decoder")
 
     dev = qp.Backline(controller=controller, coprocessors=[coprocessor], transport="memcpy")
 
-    assert dev.placement.coprocessors[0].comm_host is None
+    assert dev.placement.coprocessors[0].endpoint is None
 
 
-def test_rdma_coprocessor_requires_comm_host():
+def test_rdma_coprocessor_requires_endpoint():
     """RDMA placements require every coprocessor to expose a connection endpoint."""
     controller = qp.Controller()
     coprocessor = qp.Coprocessor(coprocessor_fn="decoder")
 
     with pytest.raises(
-        ValueError, match="transport='rdma' requires every coprocessor to set comm_host"
+        ValueError, match="transport='rdma' requires every coprocessor to set endpoint"
     ):
         qp.Backline(controller=controller, coprocessors=[coprocessor], transport="rdma")
+
+
+def test_coprocessor_stores_endpoint():
+    """A coprocessor keeps the endpoint it was constructed with."""
+    endpoint = qp.Endpoint("192.0.2.11", 7760)
+    coprocessor = qp.Coprocessor(coprocessor_fn="decoder", endpoint=endpoint)
+
+    assert coprocessor.endpoint is endpoint
+    assert coprocessor.endpoint.host == "192.0.2.11"
+    assert coprocessor.endpoint.port == 7760
+
+
+def test_endpoint_requires_a_host():
+    """An endpoint host must be a non-empty string."""
+    with pytest.raises(TypeError, match="host must be a str"):
+        qp.Endpoint(None)
+    with pytest.raises(ValueError, match="host must be a non-empty str"):
+        qp.Endpoint("")
+
+
+@pytest.mark.parametrize("port", [7.5, "7760"])
+def test_endpoint_rejects_non_int_port(port):
+    """An endpoint port must be an int when given."""
+    with pytest.raises(TypeError, match="port must be an int"):
+        qp.Endpoint("127.0.0.1", port)
+
+
+@pytest.mark.parametrize("port", [0, -8, 65536])
+def test_endpoint_rejects_port_outside_range(port):
+    """An endpoint port must be a valid TCP port."""
+    with pytest.raises(ValueError, match="port must be in 1..65535"):
+        qp.Endpoint("127.0.0.1", port)
 
 
 @pytest.mark.parametrize("hardware", ["cpu", "gpu", "fpga"])
@@ -97,7 +129,7 @@ def test_node_accepts_supported_hardware(hardware):
     [
         lambda: qp.Controller(hardware=UNKNOWN_HARDWARE),
         lambda: qp.Coprocessor(
-            coprocessor_fn="decoder", comm_host="127.0.0.1", hardware=UNKNOWN_HARDWARE
+            coprocessor_fn="decoder", endpoint=qp.Endpoint("127.0.0.1"), hardware=UNKNOWN_HARDWARE
         ),
     ],
 )

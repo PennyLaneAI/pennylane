@@ -45,8 +45,7 @@ A backline device is built with :class:`~pennylane.Backline` from a
         name="gpu-coprocessor",
         coprocessor_fn="decoder",
         hardware="gpu",
-        comm_host="198.51.100.2",
-        oob_port=7760,
+        endpoint=qp.Endpoint("198.51.100.2", 7760),
         executor_options={"host": "192.0.2.11", "port": 7813},
         init_args={"config": "dev=mlx5_0;gid=3"},
     )
@@ -75,6 +74,7 @@ and returned. Both share the options on :class:`~.Node`.
 
     ~Controller
     ~Coprocessor
+    ~Endpoint
     ~Node
 
 .. currentmodule:: pennylane.backline
@@ -198,13 +198,14 @@ from . import runtime
 from .decode import decode
 from .device import Backline
 from .functions import CoprocessorFunction, css_bp_decoder, triton_decoder
-from .placement import Controller, Coprocessor, Node, Placement
+from .placement import Controller, Coprocessor, Endpoint, Node, Placement
 from .transports import Transport, get_transport, register_transport
 
 __all__ = [
     "Node",
     "Controller",
     "Coprocessor",
+    "Endpoint",
     "Placement",
     "Backline",
     "decode",

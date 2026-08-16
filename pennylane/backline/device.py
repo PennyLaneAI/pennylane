@@ -64,8 +64,7 @@ class Backline(Device):
             coprocessor_fn="decoder",
             name="decoder-0",
             hardware="gpu",
-            comm_host="198.51.100.2",
-            oob_port=7760,
+            endpoint=qp.Endpoint("198.51.100.2", 7760),
             executor_options={"host": "192.0.2.11", "port": 7813},
         )
 
