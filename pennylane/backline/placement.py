@@ -83,8 +83,8 @@ class Node:
     """An optional name used to reference this node."""
 
     hardware: Hardware = "cpu"
-    """The hardware this node executes on: ``"cpu"``, ``"gpu"``, or ``"fpga"``. The compiler
-    combines this with the placement's :class:`~.Transport` to select the runtime backend."""
+    """The hardware this node executes on. The compiler combines this with the placement's
+    :class:`~.Transport` to select the runtime backend."""
 
     executor_options: dict | None = None
     """Options for the executor to launch for this node, passed to the compiler's executor
