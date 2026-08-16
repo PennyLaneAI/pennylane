@@ -116,6 +116,12 @@ class Controller(Node):
         super().__post_init__()
         if self.device is None:
             object.__setattr__(self, "device", _make_device("null.qubit", wires=DEFAULT_WIRES))
+        for name in ("in_bytes", "out_bytes"):
+            value = getattr(self, name)
+            if not isinstance(value, int):
+                raise TypeError(f"{name} must be an int, got {type(value).__name__}: {value!r}")
+            if value < 1:
+                raise ValueError(f"{name} must be a positive int, got {value}")
 
 
 @dataclass(frozen=True, kw_only=True)

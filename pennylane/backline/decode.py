@@ -172,8 +172,8 @@ def _pack(syndrome):
     else:
         xp = np
     packed = xp.packbits(syndrome, bitorder="little")
-    # ``packbits`` returns the minimal byte width, but transport payloads are always exactly 8 bytes,
-    # so pad and slice to get the right size
+    # HACK: ``packbits`` returns the minimal byte width, but for bitpack=True transport payloads
+    # are always exactly 8 bytes, so pad and slice to get the right size
     packed = xp.pad(packed, (0, _PACKED_U64_BYTES))[:_PACKED_U64_BITS]
     return packed
 
