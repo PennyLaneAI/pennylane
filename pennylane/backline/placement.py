@@ -16,7 +16,7 @@
 
 from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, get_args
 
 from pennylane.devices.device_constructor import device as _make_device
 
@@ -31,8 +31,7 @@ DEFAULT_WIRES = 32
 DEFAULT_MESSAGE_BYTES = 8
 Hardware = Literal["cpu", "gpu", "fpga"]
 """Hardware on which a backline node executes."""
-
-_SUPPORTED_HARDWARE = frozenset(("cpu", "gpu", "fpga"))
+_SUPPORTED_HARDWARE = frozenset(get_args(Hardware))
 
 
 @dataclass(frozen=True)
