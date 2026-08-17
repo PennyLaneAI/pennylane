@@ -16,6 +16,7 @@
 
 from pennylane import compiler, math
 from pennylane.control_flow import for_loop
+from pennylane.ops import CNOT, RZ, IsingZZ
 
 # pylint: disable=too-many-arguments
 
@@ -26,12 +27,58 @@ except ImportError:  # pragma: no cover
     has_jax = False
 
 
+def _emit_one_body_rz(angle, target_wire, control_wires, double_phase):
+    """Emit a one-body ``RZ`` rotation for the base, double-phase, or genuine controlled circuit.
+
+    * No control wire: a plain ``RZ(angle)``.
+    * Controlled, ``double_phase=True``: the Fig. 6 CNOT-sandwich
+      ``CNOT · RZ(angle) · CNOT`` (the halved angle is supplied by the caller by feeding
+      ``evolution_time / 2``), giving the ``e^{\\mp i H t / 2}`` double-phase branches.
+    * Controlled, ``double_phase=False``: a genuine controlled-``RZ`` (the standard ``CRZ``
+      decomposition) at the full ``angle``, so the control-0 branch is the identity.
+    """
+    if len(control_wires) == 0:
+        RZ(angle, target_wire)
+        return
+    control_wire = control_wires[0]
+    if double_phase:
+        CNOT([control_wire, target_wire])
+        RZ(angle, target_wire)
+        CNOT([control_wire, target_wire])
+        return
+    RZ(angle / 2, target_wire)
+    CNOT([control_wire, target_wire])
+    RZ(-angle / 2, target_wire)
+    CNOT([control_wire, target_wire])
+
+
+def _emit_two_body_isingzz(angle, wire_a, wire_b, control_wires, double_phase):
+    """Emit a single two-body ``IsingZZ`` for the base, double-phase, or genuine circuit.
+
+    For the double-phase circuit the shared ``CNOT`` sandwich is applied once per diagonal
+    block by the caller, so here we only emit the bare ``IsingZZ(angle)``. For the genuine
+    controlled circuit every ``IsingZZ`` is individually controlled (a genuine
+    controlled-``IsingZZ``) at the full ``angle``, so the control-0 branch is the identity.
+    """
+    if len(control_wires) == 0 or double_phase:
+        IsingZZ(angle, [wire_a, wire_b])
+        return
+    control_wire = control_wires[0]
+    CNOT([wire_a, wire_b])
+    RZ(angle / 2, wire_b)
+    CNOT([control_wire, wire_b])
+    RZ(-angle / 2, wire_b)
+    CNOT([control_wire, wire_b])
+    CNOT([wire_a, wire_b])
+
+
 def _run_trotter_steps(
     evolution_time,
     num_trotter_steps,
     hamiltonian,
     wires,
     control_wires,
+    double_phase=False,
     *,
     apply_system_basis_rotation,
     apply_two_body_diagonal,
@@ -45,11 +92,18 @@ def _run_trotter_steps(
     :class:`~.TrotterCGF`. The scheme-specific behaviour (tensor ranks, loop
     nesting, angle prefactors) is injected through the keyword-only callables.
 
-    The diagonal-rotation angles are linear in ``evolution_time`` while the basis
-    rotations are time-independent. The controlled (double-phase, Fig. 6 of
-    `arXiv:2506.15784 <https://arxiv.org/abs/2506.15784>`__) decompositions
-    therefore obtain their halved sandwiched angles simply by passing
-    ``evolution_time / 2`` here; nothing else about the circuit changes.
+    The basis rotations are always uncontrolled and are time-independent; only the
+    diagonal-rotation angles (linear in ``evolution_time``) and the way each diagonal
+    rotation is controlled depend on ``control_wires``/``double_phase``:
+
+    * Base (``control_wires`` empty): the plain :math:`e^{-iHt}` circuit.
+    * Genuine controlled (``double_phase=False``): every diagonal rotation is
+      individually controlled at the full angle, so the control-0 branch is the
+      identity and the circuit is a genuine controlled-:math:`e^{-iHt}`.
+    * Double-phase controlled (``double_phase=True``, Fig. 6 of `arXiv:2506.15784
+      <https://arxiv.org/abs/2506.15784>`__): each diagonal block is CNOT-sandwiched by
+      the control wire and its angle is halved (obtained by passing ``evolution_time / 2``
+      here), giving the :math:`e^{\mp i H t / 2}` Hadamard-test branches.
 
     Args:
         evolution_time (float): total evolution time ``t`` (pass ``t / 2`` for the
@@ -58,12 +112,14 @@ def _run_trotter_steps(
         hamiltonian (dict): fragmented Hamiltonian data.
         wires (Wires): system wires.
         control_wires (Wires): control wires. Empty for the base (uncontrolled)
-            circuit; a single wire for the CNOT-sandwiched controlled circuit.
+            circuit; a single wire for the controlled circuits.
+        double_phase (bool): whether the controlled circuit is the double-phase
+            (Fig. 6) construction (``True``) or a genuine controlled unitary (``False``).
         apply_system_basis_rotation (callable): ``(U, wires) -> None``.
         apply_two_body_diagonal (callable):
-            ``(Z, wires, first_order_time_step, control_wires) -> None``.
+            ``(Z, wires, first_order_time_step, control_wires, double_phase) -> None``.
         apply_one_body_diagonal (callable):
-            ``(Z, wires, first_order_time_step, control_wires) -> None``.
+            ``(Z, wires, first_order_time_step, control_wires, double_phase) -> None``.
         merge_leaves (callable): ``(U_prev, U_curr) -> U``.
         transpose_leaf (callable): ``(U) -> U``.
     """
@@ -101,14 +157,16 @@ def _run_trotter_steps(
             )
             Z = Z_tensor[fragment_idx]
             apply_system_basis_rotation(U, wires)
-            apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires)
+            apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, double_phase)
             return fragment_idx
 
         def one_body_fragment():
             U_one = U_tensor[0]
             U = merge_leaves(U_tensor[num_two_body_fragments], U_one)
             apply_system_basis_rotation(U, wires)
-            apply_one_body_diagonal(Z_tensor[0], wires, first_order_time_step, control_wires)
+            apply_one_body_diagonal(
+                Z_tensor[0], wires, first_order_time_step, control_wires, double_phase
+            )
 
         prev_fragment_idx_forward = math.sign(2 * step_idx - 1)
         for_loop(1, num_two_body_fragments + 1)(two_body_fragments)(prev_fragment_idx_forward)

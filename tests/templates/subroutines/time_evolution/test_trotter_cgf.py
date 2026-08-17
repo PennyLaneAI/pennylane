@@ -15,15 +15,17 @@
 Tests for the TrotterCGF template.
 
 The private CGF helper functions are unit tested directly, the registered base and
-controlled (double-phase Hadamard-test) decomposition rules are checked for
-self-consistency, and the controlled construction is validated numerically against
-``qp.matrix`` of the base operator.
+controlled decomposition rules are checked for self-consistency, and the controlled
+constructions are validated numerically against ``qp.matrix`` of the base operator.
+There are two controlled variants selected by the ``double_phase`` flag: the default
+(``False``) genuine controlled unitary and the (``True``) double-phase Hadamard-test
+circuit of Fig. 6 of arXiv:2506.15784.
 """
 
 # pylint: disable=too-many-arguments, redefined-outer-name, too-few-public-methods, wrong-import-position, protected-access
 import numpy as np
 import pytest
-from scipy.linalg import expm
+from scipy.linalg import block_diag, expm
 
 jax = pytest.importorskip("jax")
 
@@ -34,6 +36,7 @@ from pennylane.templates.subroutines.time_evolution.trotter_cgf import (
     _apply_one_body_diagonal,
     _apply_system_basis_rotation,
     _apply_two_body_diagonal,
+    _cgf_resource_counts,
     _energy_shift,
     _merge_leaves,
     _transpose_leaf,
@@ -83,8 +86,8 @@ def toy_hamiltonian_cgf():
 @pytest.fixture(scope="module")
 def diagonal_hamiltonian_cgf():
     """CGF Hamiltonian with identity leaf tensors. All gates are diagonal (and thus
-    commute), so both the base circuit and the double-phase controlled construction
-    are Trotter-exact, enabling a machine-precision correctness check."""
+    commute), so the base circuit and both controlled constructions are Trotter-exact,
+    enabling a machine-precision correctness check."""
     rng = np.random.default_rng(12)
     num_modes = 2
     n_states = 3
@@ -107,6 +110,11 @@ class TestInitialization:
         assert op.arguments["num_trotter_steps"] == 5
         assert op.arguments["hamiltonian"] is ham
         assert op.wires == Wires(wires)
+        # double_phase defaults to False and only affects the controlled decomposition.
+        assert op.arguments["double_phase"] is False
+        assert (
+            qp.TrotterCGF(0.3, 5, ham, wires, double_phase=True).arguments["double_phase"] is True
+        )
 
     def test_abstract_init(self, toy_hamiltonian_cgf):
         """Test that an abstract instance (e.g. for resource-rep purposes) is built."""
@@ -187,7 +195,7 @@ class TestCGFScheme:
         Z[1, 0] = np.array([[0.1, 0.2], [0.3, 0.4]])
         t = 0.25
         with qp.queuing.AnnotatedQueue() as q:
-            _apply_two_body_diagonal(Z, wires, t, [])
+            _apply_two_body_diagonal(Z, wires, t, [], False)
         tape = qp.tape.QuantumScript.from_queue(q)
         ising_ops = [op for op in tape.operations if isinstance(op, qp.IsingZZ)]
         expected = [
@@ -200,20 +208,36 @@ class TestCGFScheme:
             assert list(op.wires) == [w0, w1]
             assert np.isclose(op.parameters[0], angle)
 
-    def test_apply_two_body_diagonal_with_control(self):
-        """Test that CNOTs sandwich each (l, p) IsingZZ block when control_wires is set."""
+    def test_apply_two_body_diagonal_double_phase_control(self):
+        """Test that CNOTs sandwich each (l, p) IsingZZ block for the double-phase control."""
         num_modes, n_states = 2, 1
         wires = [0, 1]
         control_wires = [10]
         Z = np.zeros((num_modes, num_modes, n_states, n_states))
         Z[1, 0, 0, 0] = 0.3
         with qp.queuing.AnnotatedQueue() as q:
-            _apply_two_body_diagonal(Z, wires, 0.2, control_wires)
+            _apply_two_body_diagonal(Z, wires, 0.2, control_wires, True)
         tape = qp.tape.QuantumScript.from_queue(q)
         cnots = [op for op in tape.operations if isinstance(op, qp.CNOT)]
         # A single (l=1, m=0) mode pair with n_states=1 -> a single (l, p) block -> 2 CNOTs.
         assert len(cnots) == 2
         assert all(list(op.wires) == [10, wires[1]] for op in cnots)
+        assert any(isinstance(op, qp.IsingZZ) for op in tape.operations)
+
+    def test_apply_two_body_diagonal_genuine_control(self):
+        """Test that the genuine control emits controlled-IsingZZ (CNOT+RZ, no bare IsingZZ)."""
+        num_modes, n_states = 2, 1
+        wires = [0, 1]
+        control_wires = [10]
+        Z = np.zeros((num_modes, num_modes, n_states, n_states))
+        Z[1, 0, 0, 0] = 0.3
+        with qp.queuing.AnnotatedQueue() as q:
+            _apply_two_body_diagonal(Z, wires, 0.2, control_wires, False)
+        tape = qp.tape.QuantumScript.from_queue(q)
+        # A single IsingZZ becomes a controlled-IsingZZ = 4 CNOT + 2 RZ.
+        assert not any(isinstance(op, qp.IsingZZ) for op in tape.operations)
+        assert sum(isinstance(op, qp.CNOT) for op in tape.operations) == 4
+        assert sum(isinstance(op, qp.RZ) for op in tape.operations) == 2
 
     def test_apply_one_body_diagonal(self):
         """Test the CGF one-body diagonal RZ gates."""
@@ -225,7 +249,7 @@ class TestCGFScheme:
                 Z[l, l, p, p] = 0.1 * (l + 1) * (p + 1)
         t = 0.2
         with qp.queuing.AnnotatedQueue() as q:
-            _apply_one_body_diagonal(Z, wires, t, [])
+            _apply_one_body_diagonal(Z, wires, t, [], False)
         tape = qp.tape.QuantumScript.from_queue(q)
         rz_ops = [op for op in tape.operations if isinstance(op, qp.RZ)]
         assert len(rz_ops) == num_modes * n_states
@@ -237,19 +261,33 @@ class TestCGFScheme:
                 assert np.isclose(rz_ops[idx].parameters[0], -2.0 * Z[l, l, p, p] * t)
                 idx += 1
 
-    def test_apply_one_body_diagonal_with_control(self):
-        """Test that CNOTs sandwich each RZ when control_wires is set."""
+    def test_apply_one_body_diagonal_double_phase_control(self):
+        """Test that CNOTs sandwich each RZ for the double-phase control."""
         num_modes, n_states = 1, 2
         wires = [0, 1]
         control_wires = [10]
         Z = np.zeros((num_modes, num_modes, n_states, n_states))
         Z[0, 0] = np.diag([0.3, -0.1])
         with qp.queuing.AnnotatedQueue() as q:
-            _apply_one_body_diagonal(Z, wires, 0.1, control_wires)
+            _apply_one_body_diagonal(Z, wires, 0.1, control_wires, True)
         tape = qp.tape.QuantumScript.from_queue(q)
         cnots = [op for op in tape.operations if isinstance(op, qp.CNOT)]
         assert len(cnots) == 2 * len(wires)
         assert all(op.wires[0] == 10 for op in cnots)
+
+    def test_apply_one_body_diagonal_genuine_control(self):
+        """Test that the genuine control emits controlled-RZ (2 CNOT + 2 RZ per rotation)."""
+        num_modes, n_states = 1, 2
+        wires = [0, 1]
+        control_wires = [10]
+        Z = np.zeros((num_modes, num_modes, n_states, n_states))
+        Z[0, 0] = np.diag([0.3, -0.1])
+        with qp.queuing.AnnotatedQueue() as q:
+            _apply_one_body_diagonal(Z, wires, 0.1, control_wires, False)
+        tape = qp.tape.QuantumScript.from_queue(q)
+        # Two one-body RZ rotations -> 2 x (2 CNOT + 2 RZ).
+        assert sum(isinstance(op, qp.CNOT) for op in tape.operations) == 4
+        assert sum(isinstance(op, qp.RZ) for op in tape.operations) == 4
 
     def test_energy_shift(self):
         """Test the CGF zero-of-energy shift formula (one-body diagonal only)."""
@@ -274,21 +312,38 @@ class TestResourceRule:
         wires = list(range(num_modes * n_states))
         rule = qp.list_decomps(qp.TrotterCGF)[0]
         resources = rule.compute_resources(
-            evolution_time=1.0, num_trotter_steps=0, hamiltonian=ham, wires=wires
+            evolution_time=1.0,
+            num_trotter_steps=0,
+            hamiltonian=ham,
+            wires=wires,
+            double_phase=False,
         )
         assert resources == Resources({})
 
     def test_base_resources_report_global_phase(self, toy_hamiltonian_cgf):
         """Test that the base (uncontrolled) resources report a GlobalPhase, not CNOTs."""
-        ham, num_modes, n_states = toy_hamiltonian_cgf
-        wires = list(range(num_modes * n_states))
-        rule = qp.list_decomps(qp.TrotterCGF)[0]
-        resources = rule.compute_resources(
-            evolution_time=1.0, num_trotter_steps=2, hamiltonian=ham, wires=wires
-        )
-        assert resources.num_gates > 0
-        assert qp.resource_rep(qp.GlobalPhase) in resources.gate_counts
-        assert qp.CNOT(wires=Wire[2]) not in resources.gate_counts
+        ham, _, _ = toy_hamiltonian_cgf
+        counts = _cgf_resource_counts(2, ham, has_control=False)
+        assert qp.GlobalPhase in counts
+        assert qp.CNOT not in counts
+        assert qp.IsingZZ in counts
+
+    def test_genuine_controlled_resources_have_no_isingzz(self, toy_hamiltonian_cgf):
+        """The default (genuine) controlled resources report PhaseShift + CNOT/RZ, no IsingZZ."""
+        ham, _, _ = toy_hamiltonian_cgf
+        counts = _cgf_resource_counts(2, ham, has_control=True, double_phase=False)
+        assert qp.PhaseShift in counts
+        assert qp.CNOT in counts
+        assert qp.IsingZZ not in counts
+        assert qp.GlobalPhase not in counts
+
+    def test_double_phase_controlled_resources_have_isingzz(self, toy_hamiltonian_cgf):
+        """The double-phase controlled resources report IsingZZ + sandwiching CNOTs."""
+        ham, _, _ = toy_hamiltonian_cgf
+        counts = _cgf_resource_counts(2, ham, has_control=True, double_phase=True)
+        assert qp.IsingZZ in counts
+        assert qp.CNOT in counts
+        assert qp.PhaseShift not in counts
 
 
 class TestDecomposition:
@@ -303,20 +358,54 @@ class TestDecomposition:
             _test_decomposition_rule(op, rule)
 
 
+_GATE_SET = {
+    "Hadamard",
+    "PauliX",
+    "BasisRotation",
+    "RZ",
+    "IsingZZ",
+    "CNOT",
+    "GlobalPhase",
+    "PhaseShift",
+    "StatePrep",
+}
+
+
+def _phase_free_close(A, B, atol=1e-8):
+    """Compare two matrices up to a global phase."""
+    tr = np.trace(A.conj().T @ B)
+    phase = tr / abs(tr) if abs(tr) > 1e-12 else 1.0
+    return np.allclose(A, phase * B, atol=atol)
+
+
+def _hadamard_test(ham, sys_wires, t, steps, double_phase):
+    """Return (measured <X_anc>, Re<psi|matrix(base)|psi>) for a random |psi>."""
+    anc = "anc"
+    dev = qp.device("default.qubit", wires=[anc] + list(sys_wires))
+    rng = np.random.default_rng(2024)
+    dim = 2 ** len(sys_wires)
+    psi = rng.standard_normal(dim) + 1j * rng.standard_normal(dim)
+    psi /= np.linalg.norm(psi)
+
+    @qp.qnode(dev)
+    @qp.transforms.decompose(gate_set=_GATE_SET)
+    def circ():
+        qp.StatePrep(psi, wires=sys_wires)
+        qp.H(anc)
+        qp.ctrl(
+            qp.TrotterCGF(t, steps, ham, wires=sys_wires, double_phase=double_phase), control=[anc]
+        )
+        return qp.expval(qp.X(anc))
+
+    measured = float(circ())
+    U = qp.matrix(qp.TrotterCGF(t, steps, ham, wires=sys_wires), wire_order=sys_wires)
+    ref = float(np.real(psi.conj() @ (U @ psi)))
+    return measured, ref
+
+
 @pytest.mark.usefixtures("enable_graph_decomposition")
 class TestControlledDecomposition:
-    """Tests for the double-phase C(TrotterCGF) controlled decomposition."""
-
-    _GATE_SET = {
-        "Hadamard",
-        "PauliX",
-        "BasisRotation",
-        "RZ",
-        "IsingZZ",
-        "CNOT",
-        "GlobalPhase",
-        "StatePrep",
-    }
+    """Tests for the default (genuine) C(TrotterCGF) controlled decomposition."""
 
     def test_controlled_decomposition_self_consistent(self, toy_hamiltonian_cgf):
         """The registered C(TrotterCGF) rule is self-consistent with its resources."""
@@ -326,54 +415,97 @@ class TestControlledDecomposition:
         for rule in qp.list_decomps("C(TrotterCGF)"):
             _test_decomposition_rule(op, rule)
 
-    def _hadamard_test(self, ham, sys_wires, t, steps):
-        """Return (measured <X_anc>, Re<psi|matrix(base)|psi>) for a random |psi>."""
+    def test_genuine_controlled_block_structure(self, toy_hamiltonian_cgf):
+        """By default ctrl(TrotterCGF) is a genuine controlled unitary: its matrix is
+        block-diagonal with the identity on the control-0 block and matrix(base) on the
+        control-1 block."""
+        ham, num_modes, n_states = toy_hamiltonian_cgf
+        sys_wires = list(range(num_modes * n_states))
         anc = "anc"
-        dev = qp.device("default.qubit", wires=[anc] + list(sys_wires))
-        rng = np.random.default_rng(2024)
+        t, steps = 0.5, 2
+        op = qp.ctrl(qp.TrotterCGF(t, steps, ham, sys_wires), control=[anc])
+        [tape], _ = qp.transforms.decompose([qp.tape.QuantumScript([op], [])], gate_set=_GATE_SET)
+        matrix = qp.matrix(tape, wire_order=[anc] + sys_wires)
+        u_base = qp.matrix(qp.TrotterCGF(t, steps, ham, wires=sys_wires), wire_order=sys_wires)
         dim = 2 ** len(sys_wires)
-        psi = rng.standard_normal(dim) + 1j * rng.standard_normal(dim)
-        psi /= np.linalg.norm(psi)
-
-        @qp.qnode(dev)
-        @qp.transforms.decompose(gate_set=self._GATE_SET)
-        def circ():
-            qp.StatePrep(psi, wires=sys_wires)
-            qp.H(anc)
-            qp.ctrl(qp.TrotterCGF(t, steps, ham, wires=sys_wires), control=[anc])
-            return qp.expval(qp.X(anc))
-
-        measured = float(circ())
-        U = qp.matrix(qp.TrotterCGF(t, steps, ham, wires=sys_wires), wire_order=sys_wires)
-        ref = float(np.real(psi.conj() @ (U @ psi)))
-        return measured, ref
+        assert np.allclose(matrix, block_diag(np.eye(dim), u_base), atol=1e-9)
 
     def test_controlled_hadamard_test_exact_diagonal(self, diagonal_hamiltonian_cgf):
-        """For a diagonal (commuting) Hamiltonian the double-phase Hadamard test
-        reproduces Re<psi|e^{-iHt}|psi> = Re<psi|matrix(base)|psi> exactly, pinning
-        both the angle halving and the (positive) global-phase sign."""
+        """For a diagonal (commuting) Hamiltonian the genuine controlled Hadamard test
+        reproduces Re<psi|e^{-iHt}|psi> = Re<psi|matrix(base)|psi> exactly."""
         ham, num_modes, n_states = diagonal_hamiltonian_cgf
-        measured, ref = self._hadamard_test(ham, list(range(num_modes * n_states)), 0.9, 3)
+        measured, ref = _hadamard_test(ham, list(range(num_modes * n_states)), 0.9, 3, False)
         assert np.isclose(measured, ref, atol=1e-9)
 
     def test_controlled_hadamard_test_generic(self, toy_hamiltonian_cgf):
-        """For a generic Hamiltonian the double-phase Hadamard test agrees with
-        Re<psi|matrix(base)|psi> up to (small) Trotter error."""
+        """The genuine controlled operation is an exact controlled-matrix(base), so the
+        Hadamard test matches Re<psi|matrix(base)|psi> to machine precision."""
         ham, num_modes, n_states = toy_hamiltonian_cgf
-        measured, ref = self._hadamard_test(ham, list(range(num_modes * n_states)), 0.7, 12)
-        assert np.isclose(measured, ref, atol=1e-2)
+        measured, ref = _hadamard_test(ham, list(range(num_modes * n_states)), 0.7, 12, False)
+        assert np.isclose(measured, ref, atol=1e-9)
 
-    def test_controlled_global_phase_sign(self, toy_hamiltonian_cgf):
-        """The trailing controlled global phase is a genuine controlled-GlobalPhase,
-        i.e. RZ(+phi) on the control wire (not RZ(-phi))."""
+    def test_genuine_global_phase_is_phaseshift(self, toy_hamiltonian_cgf):
+        """The genuine controlled global phase is a PhaseShift(-phi) on the control wire
+        (controlled-GlobalPhase), not an RZ."""
         ham, num_modes, n_states = toy_hamiltonian_cgf
         sys_wires = list(range(num_modes * n_states))
         anc = 99
         t = 0.5
         op = qp.ctrl(qp.TrotterCGF(t, 1, ham, sys_wires), control=[anc])
-        [tape], _ = qp.transforms.decompose(
-            [qp.tape.QuantumScript([op], [])], gate_set=self._GATE_SET
-        )
+        [tape], _ = qp.transforms.decompose([qp.tape.QuantumScript([op], [])], gate_set=_GATE_SET)
+        phase_shifts = [
+            o for o in tape.operations if isinstance(o, qp.PhaseShift) and list(o.wires) == [anc]
+        ]
+        assert len(phase_shifts) == 1
+        phi = float((_energy_shift(ham) * t) % (4 * np.pi))
+        assert np.isclose(phase_shifts[0].parameters[0], -phi)
+
+
+@pytest.mark.usefixtures("enable_graph_decomposition")
+class TestDoublePhaseControlledDecomposition:
+    """Tests for the opt-in double-phase (Fig. 6) C(TrotterCGF) controlled decomposition."""
+
+    def test_controlled_decomposition_self_consistent(self, toy_hamiltonian_cgf):
+        """The double-phase C(TrotterCGF) rule is self-consistent with its resources."""
+        ham, num_modes, n_states = toy_hamiltonian_cgf
+        wires = list(range(num_modes * n_states))
+        op = qp.ctrl(qp.TrotterCGF(0.4, 2, ham, wires, double_phase=True), control=[99])
+        for rule in qp.list_decomps("C(TrotterCGF)"):
+            _test_decomposition_rule(op, rule)
+
+    def test_double_phase_branches(self, diagonal_hamiltonian_cgf):
+        """The double-phase control-0 / control-1 blocks evolve by e^{-iHt/2} / e^{+iHt/2},
+        which for a diagonal (Trotter-exact) Hamiltonian equal matrix(TrotterCGF(+/-t/2))."""
+        ham, num_modes, n_states = diagonal_hamiltonian_cgf
+        sys_wires = list(range(num_modes * n_states))
+        anc = "anc"
+        t, steps = 0.9, 3
+        op = qp.ctrl(qp.TrotterCGF(t, steps, ham, sys_wires, double_phase=True), control=[anc])
+        [tape], _ = qp.transforms.decompose([qp.tape.QuantumScript([op], [])], gate_set=_GATE_SET)
+        matrix = qp.matrix(tape, wire_order=[anc] + sys_wires)
+        dim = 2 ** len(sys_wires)
+        block0, block1 = matrix[:dim, :dim], matrix[dim:, dim:]
+        v_half = qp.matrix(qp.TrotterCGF(t / 2, steps, ham, wires=sys_wires), wire_order=sys_wires)
+        v_neg = qp.matrix(qp.TrotterCGF(-t / 2, steps, ham, wires=sys_wires), wire_order=sys_wires)
+        assert not np.allclose(block0, np.eye(dim))  # not a genuine controlled unitary
+        assert _phase_free_close(block0, v_half)
+        assert _phase_free_close(block1, v_neg)
+
+    def test_double_phase_hadamard_test_exact_diagonal(self, diagonal_hamiltonian_cgf):
+        """The double-phase Hadamard test also recovers Re<psi|e^{-iHt}|psi> exactly for a
+        diagonal Hamiltonian (the real part is invariant to the branch convention)."""
+        ham, num_modes, n_states = diagonal_hamiltonian_cgf
+        measured, ref = _hadamard_test(ham, list(range(num_modes * n_states)), 0.9, 3, True)
+        assert np.isclose(measured, ref, atol=1e-9)
+
+    def test_double_phase_global_phase_is_rz(self, toy_hamiltonian_cgf):
+        """The double-phase controlled global phase is an RZ(+phi) on the control wire."""
+        ham, num_modes, n_states = toy_hamiltonian_cgf
+        sys_wires = list(range(num_modes * n_states))
+        anc = 99
+        t = 0.5
+        op = qp.ctrl(qp.TrotterCGF(t, 1, ham, sys_wires, double_phase=True), control=[anc])
+        [tape], _ = qp.transforms.decompose([qp.tape.QuantumScript([op], [])], gate_set=_GATE_SET)
         rz_on_control = [
             o for o in tape.operations if isinstance(o, qp.RZ) and list(o.wires) == [anc]
         ]
@@ -410,7 +542,7 @@ class TestIntegration:
             "nuc_constant": 0.5,
         }
         registers = qp.registers({"hadamard": 1, "system": M * N})
-        target_gates = {"Hadamard", "BasisRotation", "RZ", "IsingZZ", "CNOT", "ForLoop"}
+        target_gates = {"Hadamard", "BasisRotation", "RZ", "CNOT", "PhaseShift", "ForLoop"}
 
         @qp.qjit
         @qp.transforms.decompose(gate_set=target_gates)

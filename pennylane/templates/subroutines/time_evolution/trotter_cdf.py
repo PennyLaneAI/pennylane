@@ -21,12 +21,12 @@ from pennylane import math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_condition, register_resources
-from pennylane.ops import CNOT, RZ, GlobalPhase, IsingZZ
+from pennylane.ops import CNOT, RZ, GlobalPhase, IsingZZ, PhaseShift
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.templates.subroutines.qchem.basis_rotation import BasisRotation
 from pennylane.typing import Complex, Wire
 
-from ._trotter_utils import _run_trotter_steps
+from ._trotter_utils import _emit_one_body_rz, _emit_two_body_isingzz, _run_trotter_steps
 
 # pylint: disable=too-many-arguments, no-value-for-parameter, unused-argument
 
@@ -39,15 +39,21 @@ class TrotterCDF(Operator2):
     <https://arxiv.org/abs/2506.15784>`__.
 
     Controlling this operator with :func:`~pennylane.ctrl` (a single control wire)
-    produces the double-phase Hadamard-test circuit of `Fig. 6 of arXiv:2506.15784
-    <https://arxiv.org/abs/2506.15784>`__: each diagonal rotation is sandwiched by a
-    pair of ``CNOT`` gates from the control wire (an ancilla-system ``ZZ`` coupling)
-    and its angle is halved.
+    produces, by default (``double_phase=False``), a **genuine** controlled evolution:
+    each diagonal rotation is individually controlled at its full angle (the basis
+    rotations remain uncontrolled), so the control-0 branch is the identity and the
+    circuit implements :math:`|0\rangle\langle 0| \otimes I + |1\rangle\langle 1| \otimes e^{-iHt}`.
+
+    With ``double_phase=True`` it instead produces the double-phase Hadamard-test circuit
+    of `Fig. 6 of arXiv:2506.15784 <https://arxiv.org/abs/2506.15784>`__: each diagonal
+    rotation is sandwiched by a pair of ``CNOT`` gates from the control wire (an
+    ancilla-system ``ZZ`` coupling) and its angle is halved, so the control-0 and
+    control-1 branches evolve by :math:`e^{-iHt/2}` and :math:`e^{+iHt/2}` respectively.
 
     .. code-block::
 
-            c: ─╭●───────╭●─┤
-        wires: ─╰X──U(ϕ)─╰X─┤
+        double_phase=True:  c: ─╭●───────╭●─┤
+                        wires: ─╰X──U(ϕ)─╰X─┤
 
     Args:
         evolution_time (float): Total evolution time ``t``.
@@ -58,6 +64,10 @@ class TrotterCDF(Operator2):
             ``leaf_tensors: (L+1, N, N)``, where ``N`` is the number of orbitals and
             ``L`` is the number of two-body fragments.
         wires (Wires): The system wires. CDF expects ``2N`` wires (alpha / beta interleaved).
+        double_phase (bool): Only affects the controlled decomposition. If ``False`` (default),
+            :func:`~pennylane.ctrl` produces a genuine controlled unitary. If ``True``, it
+            produces the double-phase (Fig. 6) Hadamard-test circuit. Has no effect on the
+            uncontrolled operator.
 
     **Example**
 
@@ -103,9 +113,9 @@ class TrotterCDF(Operator2):
     # `hybrid_argnames` and `compilable_argnames` cannot both be non-empty on the same
     # operator, so `num_trotter_steps` (a plain Python int that drives Python-level
     # control flow) is treated as `static_argnames` instead.
-    static_argnames = ("num_trotter_steps",)
+    static_argnames = ("num_trotter_steps", "double_phase")
 
-    def __init__(self, evolution_time, num_trotter_steps, hamiltonian, wires):
+    def __init__(self, evolution_time, num_trotter_steps, hamiltonian, wires, double_phase=False):
         Z = hamiltonian["core_tensors"]
         U = hamiltonian["leaf_tensors"]
         if not (Z.ndim == 3 and U.ndim == 3):
@@ -114,7 +124,7 @@ class TrotterCDF(Operator2):
                 f"leaf_tensors.ndim == 3. Got core_tensors.ndim={Z.ndim}, "
                 f"leaf_tensors.ndim={U.ndim}. For vibrational (CGF) Hamiltonians, use TrotterCGF."
             )
-        super().__init__(evolution_time, num_trotter_steps, hamiltonian, wires)
+        super().__init__(evolution_time, num_trotter_steps, hamiltonian, wires, double_phase)
 
 
 def _apply_system_basis_rotation(U, wires):
@@ -134,9 +144,12 @@ def _transpose_leaf(U):
     return U.T
 
 
-def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires):
-    """Apply the two-body ``IsingZZ`` layer, optionally CNOT-sandwiched by the control."""
+def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, double_phase):
+    """Apply the two-body ``IsingZZ`` layer (base / double-phase / genuine controlled)."""
     num_cas = Z.shape[0]
+    # The shared CNOT sandwich is only used by the double-phase construction; the genuine
+    # controlled circuit controls each IsingZZ individually inside ``_emit_two_body_isingzz``.
+    sandwich = len(control_wires) > 0 and double_phase
 
     def zz_rotations(wire_idx0):
 
@@ -149,22 +162,22 @@ def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires):
             #                             (k,sigma)<->(l,tau) for sigma!=tau)
             #   => 1/2, times the second-order Trotter split -> 1/4 with a sign.
             angle = -0.25 * Z[wire_idx0 // 2, wire_idx1 // 2] * first_order_time_step
-            IsingZZ(angle, [wires[wire_idx0], wires[wire_idx1]])
+            _emit_two_body_isingzz(
+                angle, wires[wire_idx0], wires[wire_idx1], control_wires, double_phase
+            )
 
-        # A single control wire wraps each diagonal block in a CNOT pair; the halved
-        # angle is supplied upstream by feeding evolution_time / 2 into the steps.
-        if len(control_wires) > 0:
+        if sandwich:
             CNOT([control_wires[0], wires[wire_idx0]])
         _zz_rotations()
-        if len(control_wires) > 0:
+        if sandwich:
             CNOT([control_wires[0], wires[wire_idx0]])
 
     for wire_idx0 in range(2 * num_cas - 1):
         zz_rotations(wire_idx0)
 
 
-def _apply_one_body_diagonal(Z_one_body, wires, first_order_time_step, control_wires):
-    """Apply the one-body ``RZ`` layer, optionally CNOT-sandwiched by the control."""
+def _apply_one_body_diagonal(Z_one_body, wires, first_order_time_step, control_wires, double_phase):
+    """Apply the one-body ``RZ`` layer (base / double-phase / genuine controlled)."""
     num_cas = Z_one_body.shape[0]
 
     @for_loop(2 * num_cas)
@@ -176,12 +189,7 @@ def _apply_one_body_diagonal(Z_one_body, wires, first_order_time_step, control_w
         #        Trotter formula
         #   => 1
         angle = Z_one_body[wire_idx // 2, wire_idx // 2] * first_order_time_step
-
-        if len(control_wires) > 0:
-            CNOT([control_wires[0], wires[wire_idx]])
-        RZ(angle, wires[wire_idx])
-        if len(control_wires) > 0:
-            CNOT([control_wires[0], wires[wire_idx]])
+        _emit_one_body_rz(angle, wires[wire_idx], control_wires, double_phase)
 
     z_rotations()
 
@@ -208,7 +216,7 @@ _CDF_HELPERS = {
 }
 
 
-def _cdf_resource_counts(num_trotter_steps, hamiltonian, has_control):
+def _cdf_resource_counts(num_trotter_steps, hamiltonian, has_control, double_phase=False):
     """Shared (upper-bound) gate counts for the base and controlled CDF circuits.
 
     The exact gate count can be lower at runtime because fragments whose basis rotation
@@ -226,30 +234,43 @@ def _cdf_resource_counts(num_trotter_steps, hamiltonian, has_control):
     num_sysrot_calls = num_trotter_steps * (2 * num_two_body_fragments + 1) + 1
     num_twobody_blocks = num_trotter_steps * 2 * num_two_body_fragments
     num_onebody_blocks = num_trotter_steps
+    num_twobody_rotations = num_twobody_blocks * num_cas * (2 * num_cas - 1)
+    num_onebody_rotations = num_onebody_blocks * 2 * num_cas
 
     sysrot_key = BasisRotation(Complex[num_cas, num_cas], wires=Wire[num_cas])
     resources[sysrot_key] += 2 * num_sysrot_calls
 
-    resources[IsingZZ] += num_twobody_blocks * num_cas * (2 * num_cas - 1)
-    resources[RZ] += num_onebody_blocks * 2 * num_cas
-
-    if has_control:
+    if not has_control:
+        resources[IsingZZ] += num_twobody_rotations
+        resources[RZ] += num_onebody_rotations
+        resources[GlobalPhase] += 1
+    elif double_phase:
+        # Double-phase (Fig. 6): bare IsingZZ / RZ rotations, plus one CNOT pair around
+        # each diagonal block, plus an RZ on the control wire for the global phase.
+        resources[IsingZZ] += num_twobody_rotations
+        resources[RZ] += num_onebody_rotations
         resources[CNOT] += num_twobody_blocks * 2 * (2 * num_cas - 1)
         resources[CNOT] += num_onebody_blocks * 4 * num_cas
-        # Controlled global phase -> RZ on the control wire.
         resources[RZ] += 1
     else:
-        resources[GlobalPhase] += 1
+        # Genuine controlled: each IsingZZ -> controlled-IsingZZ (4 CNOT + 2 RZ) and each
+        # RZ -> controlled-RZ (2 CNOT + 2 RZ); the global phase becomes a PhaseShift on
+        # the control wire. There are no bare IsingZZ gates.
+        resources[RZ] += 2 * num_twobody_rotations + 2 * num_onebody_rotations
+        resources[CNOT] += 4 * num_twobody_rotations + 2 * num_onebody_rotations
+        resources[PhaseShift] += 1
 
     return dict(resources)
 
 
-def _trotter_cdf_resources(evolution_time, num_trotter_steps, hamiltonian, wires):
+def _trotter_cdf_resources(evolution_time, num_trotter_steps, hamiltonian, wires, double_phase):
     return _cdf_resource_counts(num_trotter_steps, hamiltonian, has_control=False)
 
 
 @register_resources(_trotter_cdf_resources, exact=False)
-def _trotter_cdf_decomposition(evolution_time, num_trotter_steps, hamiltonian, wires):
+def _trotter_cdf_decomposition(evolution_time, num_trotter_steps, hamiltonian, wires, double_phase):
+    # ``double_phase`` only affects the controlled decomposition; the base operator is
+    # always the plain (uncontrolled) e^{-iHt} circuit.
     if num_trotter_steps > 0:
         _run_trotter_steps(
             evolution_time, num_trotter_steps, hamiltonian, wires, (), **_CDF_HELPERS
@@ -265,7 +286,10 @@ def _controlled_trotter_cdf_resource(
     base, control_wires, control_values, work_wires, work_wire_type
 ):
     return _cdf_resource_counts(
-        base.arguments["num_trotter_steps"], base.arguments["hamiltonian"], has_control=True
+        base.arguments["num_trotter_steps"],
+        base.arguments["hamiltonian"],
+        has_control=True,
+        double_phase=base.arguments["double_phase"],
     )
 
 
@@ -276,18 +300,42 @@ def _controlled_trotter_cdf_decomp(base, control_wires, control_values, work_wir
     num_trotter_steps = base.arguments["num_trotter_steps"]
     hamiltonian = base.arguments["hamiltonian"]
     wires = base.arguments["wires"]
+    double_phase = base.arguments["double_phase"]
 
-    if num_trotter_steps > 0:
-        # The double-phase (Fig. 6) controlled circuit is identical to the base circuit
-        # with each diagonal block CNOT-sandwiched by the control wire; the sandwiched
-        # angles are halved, which is achieved by evolving for evolution_time / 2.
+    if num_trotter_steps == 0:
+        return
+
+    phi = (_energy_shift(hamiltonian) * evolution_time) % (4 * np.pi)
+
+    if double_phase:
+        # Double-phase (Fig. 6) circuit: each diagonal block is CNOT-sandwiched by the
+        # control wire with its angle halved (achieved by evolving for evolution_time / 2),
+        # and the global phase becomes RZ(phi) on the control wire.
         _run_trotter_steps(
-            evolution_time / 2, num_trotter_steps, hamiltonian, wires, control_wires, **_CDF_HELPERS
+            evolution_time / 2,
+            num_trotter_steps,
+            hamiltonian,
+            wires,
+            control_wires,
+            True,
+            **_CDF_HELPERS,
         )
-        # A genuine controlled global phase at the full time: controlled-GlobalPhase(phi)
-        # equals RZ(phi) on the control wire (up to an unobservable global phase).
-        phi = (_energy_shift(hamiltonian) * evolution_time) % (4 * np.pi)
         RZ(phi, control_wires)
+        return
+
+    # Genuine controlled unitary: control each diagonal rotation at the full angle (basis
+    # rotations stay uncontrolled and telescope to the identity in the control-0 branch),
+    # and apply the global phase as controlled-GlobalPhase(phi) = PhaseShift(-phi).
+    _run_trotter_steps(
+        evolution_time,
+        num_trotter_steps,
+        hamiltonian,
+        wires,
+        control_wires,
+        False,
+        **_CDF_HELPERS,
+    )
+    PhaseShift(-phi, control_wires)
 
 
 add_decomps("C(TrotterCDF)", flip_zero_control2(_controlled_trotter_cdf_decomp))
