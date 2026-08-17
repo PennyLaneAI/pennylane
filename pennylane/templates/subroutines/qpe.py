@@ -18,7 +18,7 @@ Contains the QuantumPhaseEstimation template.
 import copy
 
 from pennylane import ops
-from pennylane.core.operator import Operation, Operator, abstractify
+from pennylane.core.operator import Operation, Operator, Operator2, abstractify
 from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import (
     add_decomps,
@@ -166,8 +166,16 @@ class QuantumPhaseEstimation(Operation):
         return data, metadata
 
     @classmethod
-    def _primitive_bind_call(cls, *args, **kwargs):
-        return cls._primitive.bind(*args, **kwargs)
+    def _primitive_bind_call(cls, unitary, *args, **kwargs):
+        def _get_tracer(op):
+            if isinstance(op, Operator2):
+                if op.tracer is None:
+                    # pylint: disable-next=protected-access
+                    op._bind_primitive()  # pragma: no cover
+                return op.tracer if op.tracer is not None else op
+            return op
+        unitary = _get_tracer(unitary)
+        return cls._primitive.bind(unitary, *args, **kwargs)
 
     @classmethod
     def _unflatten(cls, data, metadata) -> "QuantumPhaseEstimation":
