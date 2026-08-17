@@ -345,7 +345,7 @@ class TestSupportedConfs:
         measurements for all interfaces"""
 
         # somehow the test still passes for autograd
-        if diff_interfaces != "autograd":
+        if interface != "autograd":
             pytest.xfail(reason="adjoint state differentiation is not to be supported in pl2")
 
         circuit = get_qnode(interface, "adjoint", return_type, shots, wire_specs)
