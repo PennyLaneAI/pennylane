@@ -1432,10 +1432,11 @@ def test_jax_pytree_integration(qscript_type):
 
     data, _ = jax.tree_util.tree_flatten(tape)
     assert data[0] == 0.5
-    assert data[1] == 1.2
-    assert data[2] == 2.3
-    assert data[3] == 3.4
-    assert data[4] == 0  # the wires of Rot
-    assert data[5] == 2.0
-    assert data[6] == 0  # the wire of `PauliX`
+    assert data[1] == 0  # the wire of Adj(RY)
+    assert data[2] == 1.2
+    assert data[3] == 2.3
+    assert data[4] == 3.4
+    assert data[5] == 0  # the wire of Rot
+    assert data[6] == 2.0
+    assert data[7] == 0  # the wire of `PauliX`
     assert qp.math.allclose(data[7], eye_mat)
