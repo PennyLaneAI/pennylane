@@ -83,10 +83,14 @@ class Backline(Device):
         controller: Controller,
         coprocessors: Sequence[Coprocessor] = (),
         transport,
+        qec_code: str | None = None,
         shots=None,
     ):
         self._placement = Placement(
-            controller=controller, coprocessors=coprocessors, transport=transport
+            controller=controller,
+            coprocessors=coprocessors,
+            transport=transport,
+            qec_code=qec_code,
         )
         self._device = cast(Device, controller.device)
         super().__init__(wires=self._device.wires, shots=shots)
@@ -148,6 +152,41 @@ def active_placement() -> "Placement | None":
     ``None`` when there is no trace in progress, or when the device being traced did not come from
     :class:`Backline`.
 
+        import pennylane as qp
+
+        con = qp.Controller(
+            label="cpu-controller",
+            backend="cpu_verbs",
+            remote=True,
+            executor_options={"host": "192.0.2.10", "port": 7810},
+            init_args={
+                "config": "dev=mlx5_1;gid=3",
+                "data_path": "cpu_verbs",
+                "in_bytes": 8,
+                "out_bytes": 8,
+            },
+        )
+        coproc = qp.Coprocessor(
+            label="decoder-0",
+            coprocessor_fn="decoder",
+            backend="gpu_verbs",
+            comm_host="198.51.100.2",
+            oob_port=7760,
+            remote=True,
+            executor_options={"host": "192.0.2.11", "port": 7813},
+            init_args={"config": "dev=mlx5_1;gid=3;gpu=0", "data_path": "cpu_verbs"},
+        )
+
+        dev = qp.Backline(
+            controller=con, coprocessors=[coproc], transport="rdma", qec_code="steane"
+        )
+
+        @qp.qjit
+        @qp.qnode(dev)
+        def circuit():
+            ...
+        
     .. seealso:: :func:`~pennylane.backline.decode`
+ 
     """
     return getattr(get_tracing_device(), "placement", None)
