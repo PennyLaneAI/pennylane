@@ -576,11 +576,6 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
     def _get_controlled_decompositions(self, op: AbstractOperatorLike) -> list[DecompositionRule]:
         """Adds a controlled decomposition node to the graph."""
 
-        # Imported lazily to avoid a circular import: importing ``controlled2`` at module scope
-        # pulls in ``pennylane.ops``/``pennylane.templates``, which import back from
-        # ``pennylane.decomposition`` before it has finished initializing.
-        from pennylane.ops.op_math.controlled2 import to_controlled_unitary
-
         base_class, base_params = op.params["base_class"], op.params["base_params"]
 
         # Special case: control of an adjoint
@@ -604,10 +599,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
         # There's always the option of turning the controlled operator into a controlled
         # qubit unitary if the base operator has a matrix form.
-        if isinstance(op, Operator2):
-            rules.append(to_controlled_unitary)
-        else:
-            rules.append(to_controlled_qubit_unitary)
+        rules.append(to_controlled_qubit_unitary)
 
         # There's always Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016.
         rules.append(ctrl_single_work_wire)

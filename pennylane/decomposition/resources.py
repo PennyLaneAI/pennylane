@@ -325,17 +325,6 @@ def controlled_resource_rep(  # pylint: disable=too-many-arguments, too-many-pos
         num_control_wires = base_class.num_wires - 1 + num_control_wires
         base_class = custom_ctrl_op_to_base()[base_class]
 
-    # Special case for controlled qubit unitaries
-    if base_class in (qp.QubitUnitary, qp.ControlledQubitUnitary):
-        return _controlled_qubit_unitary_rep(
-            base_class,
-            base_params,
-            num_control_wires,
-            num_zero_control_values,
-            num_work_wires,
-            work_wire_type,
-        )
-
     return CompressedResourceOp(
         qp.ops.Controlled,
         {
@@ -438,47 +427,6 @@ def resolve_work_wire_type(base_work_wires, base_work_wire_type, work_wires, wor
         return "borrowed"
 
     return "zeroed"
-
-
-def _controlled_qubit_unitary_rep(  # pylint: disable=too-many-arguments, too-many-positional-arguments, unused-argument
-    base_class,
-    base_params,
-    num_control_wires,
-    num_zero_control_values,
-    num_work_wires,
-    work_wire_type,
-) -> Operator2:
-    """Helper function that handles the custom logic for controlled qubit unitaries.
-
-    Note: ``num_zero_control_values`` is no longer part of the resulting representation. In the
-    ``Operator2`` model, ``control_values`` is a dynamic argument, so zero-controls are handled
-    separately (e.g. via ``flip_zero_control``) rather than encoded in the resource key.
-    """
-
-    if base_class is qp.QubitUnitary:
-        num_target_wires = base_params["num_wires"]
-        return qp.ControlledQubitUnitary(
-            Complex[2**num_target_wires, 2**num_target_wires],
-            wires=Wire[num_control_wires + num_target_wires],
-            control_values=Bool[num_control_wires],
-            work_wires=Wire[num_work_wires],
-            work_wire_type=work_wire_type,
-        )
-
-    # base_class is qp.ControlledQubitUnitary
-    num_target_wires = base_params["num_target_wires"]
-    num_control_wires += base_params["num_control_wires"]
-    work_wire_type = resolve_work_wire_type(
-        base_params["num_work_wires"], base_params["work_wire_type"], num_work_wires, work_wire_type
-    )
-    num_work_wires += base_params["num_work_wires"]
-    return qp.ControlledQubitUnitary(
-        Complex[2**num_target_wires, 2**num_target_wires],
-        wires=Wire[num_control_wires + num_target_wires],
-        control_values=Bool[num_control_wires],
-        work_wires=Wire[num_work_wires],
-        work_wire_type=work_wire_type,
-    )
 
 
 @to_name.register
