@@ -24,7 +24,6 @@ from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
     change_op_basis_resource_rep,
-    controlled_resource_rep,
     register_condition,
     register_resources,
 )
