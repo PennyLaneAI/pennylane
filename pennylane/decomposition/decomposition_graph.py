@@ -573,7 +573,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         # General case: repeat the operator z times
         return [repeat_pow_base]
 
-    def _get_controlled_decompositions(self, op: AbstractOperatorLike) -> list[DecompositionRule]:
+    def _get_controlled_decompositions(self, op: CompressedResourceOp) -> list[DecompositionRule]:
         """Adds a controlled decomposition node to the graph."""
 
         base_class, base_params = op.params["base_class"], op.params["base_params"]
