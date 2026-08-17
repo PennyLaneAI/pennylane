@@ -47,7 +47,7 @@ from pennylane.ops.identity import GlobalPhase
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure, pauli_measure
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
-from pennylane.ops.op_math.controlled2 import Controlled2, _ctrl_abstract
+from pennylane.ops.op_math.controlled2 import Controlled2, ControlledOp2, _ctrl_abstract
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
@@ -249,13 +249,14 @@ def _to_general_c_qu_resource(wires, control_values, work_wires, work_wire_type,
     num_target_wires = len(wires) - num_control_wires
     num_work_wires = len(work_wires)
     return {
-        _ctrl_abstract(
+        ControlledOp2(
             qp.QubitUnitary(
                 Complex[2**num_target_wires, 2**num_target_wires], wires=Wire[num_target_wires]
             ),
-            Wire[num_control_wires],
-            Wire[num_work_wires],
-            work_wire_type,
+            control_wires=Wire[num_control_wires],
+            control_values=Bool[num_control_wires],
+            work_wires=Wire[num_work_wires],
+            work_wire_type=work_wire_type,
         ): 1
     }
 
@@ -268,7 +269,7 @@ def _to_general_c_qu(base, wires, control_values, work_wires, work_wire_type, **
     the graph finds the general decomposition rule of applying control to the decomposition
     of the base QubitUnitary."""
     num_target_wires = len(wires) - len(control_values)
-    qp.ops.Controlled(
+    ControlledOp2(
         qp.QubitUnitary(base, wires=wires[-num_target_wires:]),
         control_wires=wires[:-num_target_wires],
         control_values=control_values,

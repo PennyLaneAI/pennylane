@@ -72,9 +72,7 @@ class TestControlledQubitUnitary:
         [
             qp.ControlledQubitUnitary(np.eye(2), wires=(1, 2, 3)),
             qp.ControlledQubitUnitary(np.eye(4), wires=(1, 2, 3, 4)),
-            # NOTE: this case will fail since it will resolve to a Controlled(QubitUnitary...) via _to_general_c_qu,
-            # which is equal to a ControlledQubitUnitary, after we removed compute_decomposition from QubitUnitary.
-            # qp.ControlledQubitUnitary(np.eye(8), wires=(1, 2, 3, 4, 5)),
+            qp.ControlledQubitUnitary(np.eye(8), wires=(1, 2, 3, 4, 5)),
         ],
     )
     def test_standard_validity(self, op):
