@@ -344,9 +344,9 @@ class TestSupportedConfs:
         """Test diff_method=adjoint raises an error for non-"Expectation"
         measurements for all interfaces"""
 
-        # somehow the test still passes for autograd
-        if interface != "autograd":
-            pytest.xfail(reason="adjoint state differentiation is not to be supported in pl2")
+        # when shots are present, the expected error is actually raised
+        if shots is None:
+            pytest.xfail("adjoint state differentiation is not to be supported in pl2")
 
         circuit = get_qnode(interface, "adjoint", return_type, shots, wire_specs)
         x = get_variable(interface, wire_specs, complex=True)
