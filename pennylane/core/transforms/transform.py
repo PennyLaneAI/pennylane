@@ -409,7 +409,6 @@ class Transform:  # pylint: disable=too-many-instance-attributes
         ...     qp.X(0)
         ...     return qp.expval(qp.Z(0))
         ...
-        >>> c()
         Traceback (most recent call last):
             ...
         ValueError: <cancel-inverses()> without a tape definition occurs before tape transform <defer_measurements()>.
