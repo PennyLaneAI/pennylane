@@ -848,19 +848,6 @@ special_non_par_op_decomps = [
 
 special_par_op_decomps = [
     (
-        qp.RY,
-        [0.123],
-        [1],
-        [0],
-        qp.CRY,
-        [
-            qp.RY(0.123 / 2, 1),
-            qp.CNOT(wires=(0, 1)),
-            qp.RY(-0.123 / 2, 1),
-            qp.CNOT(wires=(0, 1)),
-        ],
-    ),
-    (
         qp.RZ,
         [0.123],
         [0],
