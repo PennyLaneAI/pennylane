@@ -164,10 +164,10 @@ class TestDecompositions:
         assert res[0].data[0] == np.pi
 
         assert res[1].name == "GlobalPhase"
-        assert res[1].wires == Wires([0])
+        assert res[1].wires == Wires([])
         assert res[1].data[0] == -np.pi / 2
 
-        decomposed_matrix = np.linalg.multi_dot([i.matrix() for i in reversed(res)])
+        decomposed_matrix = np.linalg.multi_dot([i.matrix(wire_order=[0]) for i in reversed(res)])
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
     def test_y_decomposition(self, tol):
@@ -182,10 +182,10 @@ class TestDecompositions:
         assert res[0].data[0] == np.pi
 
         assert res[1].name == "GlobalPhase"
-        assert res[1].wires == Wires([0])
+        assert res[1].wires == Wires([])
         assert res[1].data[0] == -np.pi / 2
 
-        decomposed_matrix = np.linalg.multi_dot([i.matrix() for i in reversed(res)])
+        decomposed_matrix = np.linalg.multi_dot([i.matrix(wire_order=[0]) for i in reversed(res)])
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
     def test_z_decomposition(self, tol):
@@ -241,9 +241,9 @@ class TestDecompositions:
         assert len(res) == 2
 
         qp.assert_equal(res[0], qp.RX(np.pi / 2, wires=0))
-        qp.assert_equal(res[1], qp.GlobalPhase(-np.pi / 4, wires=0))
+        qp.assert_equal(res[1], qp.GlobalPhase(-np.pi / 4))
 
-        decomposed_matrix = np.linalg.multi_dot([i.matrix() for i in reversed(res)])
+        decomposed_matrix = np.linalg.multi_dot([i.matrix(wire_order=[0]) for i in reversed(res)])
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
     def test_hadamard_decomposition(self, tol):
@@ -268,7 +268,7 @@ class TestDecompositions:
 
         assert res[3].name == "GlobalPhase"
 
-        decomposed_matrix = np.linalg.multi_dot([i.matrix() for i in reversed(res)])
+        decomposed_matrix = np.linalg.multi_dot([i.matrix(wire_order=[0]) for i in reversed(res)])
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
     @pytest.mark.catalyst
@@ -1122,9 +1122,7 @@ class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods
 
         decomps = qp.list_decomps(f"Pow({op.name})")
         for rule in decomps:
-
             if rule.is_applicable(**pow_op.arguments):
-
                 with qp.queuing.AnnotatedQueue() as q:
                     rule(**pow_op.arguments)
 

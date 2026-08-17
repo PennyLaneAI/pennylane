@@ -41,6 +41,8 @@ def _trotterize_qfunc_dummy(time, theta, phi, wires, flip=False):
 
 
 _INSTANCES_TO_TEST = [
+    # GlobalPhase acts on no wires, so `_check_differentiation`'s `qp.probs(wires=op.wires)` cannot be constructed
+    (qp.GlobalPhase(1.1), {"skip_differentiation": True}),
     (LabelledOp(qp.X(0), "my-x"), {}),
     (MarkedOp(qp.X(0), "my-x"), {}),
     (qp.ops.MidMeasure(wires=0), {"skip_capture": True}),
@@ -154,10 +156,6 @@ _INSTANCES_TO_FAIL = [
     (
         qp.ops.Conditional(qp.measure(1), qp.S(0)),
         AssertionError,  # needs flattening helpers to be updated, also cannot be pickled
-    ),
-    (
-        qp.GlobalPhase(1.1),
-        AssertionError,  # empty decomposition, matrix differs from decomp's matrix
     ),
     (
         qp.pulse.ParametrizedEvolution(qp.PauliX(0) + sum * qp.PauliZ(0)),
