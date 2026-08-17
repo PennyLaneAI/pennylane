@@ -87,9 +87,9 @@ class OutSquare(Operation):
         def circuit(output_wires):
             # Create a uniform superposition between integers 3 and 7
             qp.H(wires["x"][0]) # Superposition between 0 and 4
-            qp.BasisEmbedding(3, wires=wires["x"][1:]) # Add 3, by preparing lower-precision wires
+            qp.BasisState(3, wires=wires["x"][1:]) # Add 3, by preparing lower-precision wires
             # Prepare initial state on output wires
-            qp.BasisEmbedding(5, wires=output_wires)
+            qp.BasisState(5, wires=output_wires)
             # Square
             qp.OutSquare(wires["x"], output_wires, wires["work"])
             return qp.counts(wires=output_wires)
@@ -137,7 +137,7 @@ class OutSquare(Operation):
             @qp.decompose(max_expansion=1) # To see resources easily
             @qp.qnode(dev, shots=1_000)
             def circuit(zeroed):
-                qp.BasisEmbedding(13, wires=x_wires)
+                qp.BasisState(13, wires=x_wires)
                 qp.OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed=zeroed)
                 return qp.counts(wires=output_wires)
 
@@ -146,7 +146,7 @@ class OutSquare(Operation):
 
         >>> specs_false = qp.specs(circuit)(False).resources.quantum_operations  # doctest: +SKIP
         >>> print(specs_false)  # doctest: +SKIP
-        {'BasisEmbedding': 1, 'CNOT': 8, 'C(SemiAdder)': 4}
+        {'BasisState': 1, 'CNOT': 8, 'C(SemiAdder)': 4}
 
         When we do pass the information, we replace one controlled :class:`~.SemiAdder` by
         some :class:`~.TemporaryAND` gates and some of
@@ -154,7 +154,7 @@ class OutSquare(Operation):
 
         >>> specs_true = qp.specs(circuit)(True).resources.quantum_operations  # doctest: +SKIP
         >>> print(specs_true)  # doctest: +SKIP
-        {'BasisEmbedding': 1, 'CNOT': 7, 'TemporaryAND': 3, 'C(SemiAdder)': 3}
+        {'BasisState': 1, 'CNOT': 7, 'TemporaryAND': 3, 'C(SemiAdder)': 3}
 
         Of course, both decompositions are correctly implementing the squaring operation:
 

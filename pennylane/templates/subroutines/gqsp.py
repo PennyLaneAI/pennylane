@@ -15,13 +15,11 @@
 Contains the GQSP template.
 """
 
-from typing import override
-
-from pennylane import capture, ops
+from pennylane import capture, math, ops
 from pennylane.core.operator import Operator2, abstractify
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-from pennylane.typing import Wire
+from pennylane.typing import Float, Wire
 
 has_jax = True
 try:
@@ -93,13 +91,12 @@ class GQSP(Operator2):
     hybrid_argnames = ("unitary",)
     wire_argnames = ("control",)
 
-    def __init__(self, unitary, angles, control):
-        super().__init__(unitary, angles, control)
+    arg_specs = {"angles": Float[3, -1], "control": Wire[1]}
 
-    @property
-    @override
-    def wires(self):
-        return self.control + self.unitary.wires
+    def __init__(self, unitary, angles, control):
+        if isinstance(angles, (list, tuple)):
+            angles = math.stack(angles)
+        super().__init__(unitary, angles, control)
 
 
 def _GQSP_resources(unitary, angles, **_):
@@ -114,18 +111,18 @@ def _GQSP_resources(unitary, angles, **_):
 
 @register_resources(_GQSP_resources)
 def _GQSP_decomposition(unitary, angles, control):
-    thetas, phis, lambds = angles[0], angles[1], angles[2]
+    thetas, phis, lambdas = angles[0], angles[1], angles[2]
 
     if has_jax and capture.enabled():
-        thetas, phis, lambds = jnp.array(thetas), jnp.array(phis), jnp.array(lambds)
+        thetas, phis, lambdas = jnp.array(thetas), jnp.array(phis), jnp.array(lambdas)
 
     # These four gates adapt PennyLane's ops.U3 to the chosen U3 format in the GQSP paper.
     ops.X(control)
-    ops.U3(2 * thetas[0], phis[0], lambds[0], wires=control)
+    ops.U3(2 * thetas[0], phis[0], lambdas[0], wires=control)
     ops.X(control)
     ops.Z(control)
 
-    for theta, phi, lamb in zip(thetas[1:], phis[1:], lambds[1:], strict=True):
+    for theta, phi, lamb in zip(thetas[1:], phis[1:], lambdas[1:], strict=True):
         ops.ctrl(unitary, control=control, control_values=[0])
 
         ops.X(control)

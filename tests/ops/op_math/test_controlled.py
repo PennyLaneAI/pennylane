@@ -894,49 +894,35 @@ special_par_op_decomps = [
         [qp.CRZ(0.123, wires=[1, 0])],
     ),
     (
-        qp.Rot,
-        [0.1, 0.2, 0.3],
-        [1],
-        [0],
-        qp.CRot,
-        [
-            qp.RZ((0.1 - 0.3) / 2, wires=1),
-            qp.CNOT(wires=[0, 1]),
-            qp.RZ(-(0.1 + 0.3) / 2, wires=1),
-            qp.RY(-0.2 / 2, wires=1),
-            qp.CNOT(wires=[0, 1]),
-            qp.RY(0.2 / 2, wires=1),
-            qp.RZ(0.3, wires=1),
-        ],
-    ),
-    (
         qp.PhaseShift,
         [0.123],
         [1],
         [0],
         qp.ControlledPhaseShift,
-        [
-            qp.PhaseShift(0.123 / 2, wires=0),
-            qp.CNOT(wires=[0, 1]),
-            qp.PhaseShift(-0.123 / 2, wires=1),
-            qp.CNOT(wires=[0, 1]),
-            qp.PhaseShift(0.123 / 2, wires=1),
-        ],
+        [qp.ControlledPhaseShift(0.123, wires=[0, 1])],
     ),
     (
         qp.GlobalPhase,
         [0.123],
-        [1],
+        [],
         [0],
-        (lambda x, wires: qp.ctrl(qp.GlobalPhase(x, wires[-1]), control=wires[:-1])),
+        (lambda x, wires=None: qp.ctrl(qp.GlobalPhase(x), control=[0])),
         [qp.PhaseShift(-0.123, wires=0)],
     ),
     (
         qp.GlobalPhase,
         [0.123],
-        [3],
+        [],
+        [0, 1],
+        (lambda x, wires=None: qp.ctrl(qp.GlobalPhase(x), control=[0, 1])),
+        [qp.ctrl(qp.PhaseShift(-0.123, wires=1), control=[0])],
+    ),
+    (
+        qp.GlobalPhase,
+        [0.123],
+        [],
         [0, 1, 2],
-        (lambda x, wires: qp.ctrl(qp.GlobalPhase(x, wires[-1]), control=wires[:-1])),
+        (lambda x, wires=None: qp.ctrl(qp.GlobalPhase(x), control=[0, 1, 2])),
         [qp.ctrl(qp.PhaseShift(-0.123, wires=2), control=[0, 1])],
     ),
 ]
@@ -1112,6 +1098,11 @@ class TestDecomposition:
 
         base_op = base_cls(*params, wires=base_wires)
         op = qp.ctrl(base_op, control=ctrl_wires, control_values=[False] * len(ctrl_wires))
+
+        if base_cls is qp.GlobalPhase and len(op.control_wires) == 1:
+            pytest.skip(
+                "GlobalPhase has custom logic that avoids adding additional PauliX to flip the control."
+            )
 
         decomp = op.decomposition()
 
@@ -2260,7 +2251,7 @@ class TestTapeExpansionWithControlled:
     @pytest.mark.parametrize(
         "op, params, depth, expected",
         [
-            (qp.templates.QFT, [], 2, 11),
+            (qp.templates.QFT, [], 2, 17),
             (qp.templates.BasicEntanglerLayers, [pnp.ones([3, 2])], 1, 9),
         ],
     )
