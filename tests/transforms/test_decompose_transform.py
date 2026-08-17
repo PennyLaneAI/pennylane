@@ -340,7 +340,7 @@ class TestPrivateHelpers:
                 return [qp.RY(0.5, wires=wires), qp.RX(0.5, wires=wires)]
 
         def stopping_condition(op):
-            return op.name in {"RX", "RY", "RZ", "CNOT"}
+            return op.name in {"RX", "RY", "RZ", "CNOT", "GlobalPhase"}
 
         op = qp.ctrl(_DecomposingOp(wires=[1]), control=0)
         with AnnotatedQueue() as q:
