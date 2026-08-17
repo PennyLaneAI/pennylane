@@ -25,6 +25,9 @@ from pennylane.templates.subroutines.arithmetic.semi_adder import _controlled_se
 
 @pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
+@pytest.mark.pl2do(
+    reason="PL 2.0: blocked on supporting wires as arguments to captured workflows [sc-127789]."
+)
 def test_standard_validity_SemiAdder():
     """Check the operation using the assert_valid function."""
     x_wires = [0, 1, 2]
@@ -55,6 +58,14 @@ class TestSemiAdder:
             ([0, 1, 2], [3, 4, 5, 6], [7, 8, 9], 6, 5),
             ([0], [3, 4, 5, 6], [7, 8, 9], 1, 5),
             ([0, 1, 2, 3, 4], [5, 6], [7], 11, 2),
+            # work_wires are optional: the missing ones are allocated dynamically
+            ([0, 1], [2, 3, 4], [5], 3, 2),
+            ([0, 1, 2], [3, 4, 5], [6], 5, 6),
+            ([0, 1], [2, 3], None, 2, 0),
+            ([0, 1], [2, 3, 4], None, 3, 2),
+            ([0, 1, 2], [3, 4, 5], None, 5, 6),
+            ([0, 1, 2, 3, 4], [5, 6], None, 11, 2),
+            (["a", "b", "d"], ["e", "h", "p"], None, 4, 2),
             (["a", "b", "d"], ["e", "h", "p"], ["f", "z"], 4, 2),
             (["a", "b", "d"], ["e", "h", "p"], ["f", "z", "u", "q"], 4, 2),
             (["a", "b", "d"], ["e", "h", "p"], ["f", "z", "u", "q", "v"], 4, 2),
@@ -92,12 +103,6 @@ class TestSemiAdder:
     @pytest.mark.parametrize(
         ("x_wires", "y_wires", "work_wires", "msg_match"),
         [
-            (
-                [0, 1, 2],
-                [3, 4, 5],
-                [1],
-                "At least 2 work_wires should be provided.",
-            ),
             (
                 [0, 1, 2],
                 [3, 4, 5],
@@ -150,21 +155,15 @@ class TestSemiAdder:
         assert names.count("Adjoint(TemporaryAND)") == 4
         assert names.count("CNOT") == 21
 
-    @pytest.mark.parametrize(
-        ("x_wires"),
-        [
-            [0, 1, 2],
-            [0, 1],
-            [0, 1, 2, 3],
-        ],
-    )
     @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
-    def test_decomposition_rule(self, x_wires):
+    @pytest.mark.parametrize("work_wires", [[9, 10, 11], None])
+    @pytest.mark.parametrize(("x_wires"), [[0, 1, 2], [0, 1], [0, 1, 2, 3]])
+    def test_decomposition_rule(self, x_wires, work_wires):
         """Tests that SemiAdder is decomposed properly."""
 
         for rule in qp.list_decomps(qp.SemiAdder):
-            _test_decomposition_rule(qp.SemiAdder(x_wires, [5, 6, 7, 8], [9, 10, 11]), rule)
+            _test_decomposition_rule(qp.SemiAdder(x_wires, [5, 6, 7, 8], work_wires), rule)
 
     @pytest.mark.jax
     def test_jit_compatible(self):
@@ -222,6 +221,11 @@ class TestSemiAdder:
             ([0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 12, 13], [11], 3, 4, [0]),
             ([0], [1], None, [2], 1, 1, [1]),
             ([0], [1], None, [2], 1, 1, [0]),
+            # work_wires are optional: when not provided, they are allocated dynamically
+            ([0, 1], [2, 3], None, [4], 3, 1, [1]),
+            ([0, 1], [2, 3], None, [4], 3, 1, [0]),
+            ([0, 1, 2], [3, 4, 5], None, [6], 5, 6, [1]),
+            ([0, 1, 2], [3, 4, 5], None, [6, 7], 5, 6, [1, 0]),
             ([1, 2], [3, 4], [5, 6, 7], [0, 8], 3, 0, [0, 1]),
             ([3], [0, 1, 2], [6, 7], [8, 4], 1, 0, [1, 1]),
             ([3], [0, 1, 2], [6, 7, 9, 10], [8, 4, 5], 1, 0, [1, 0, 1]),
