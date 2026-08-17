@@ -294,8 +294,8 @@ def _(op: qtemps.OutMultiplier):
 
 @_map_to_resource_op.register
 def _(op: qtemps.SemiAdder):
-    x_wires = op.hyperparameters["x_wires"]
-    y_wires = op.hyperparameters["y_wires"]
+    x_wires = op.x_wires
+    y_wires = op.y_wires
 
     return re_temps.SemiAdder(
         max_register_size=max(len(x_wires), len(y_wires)),
