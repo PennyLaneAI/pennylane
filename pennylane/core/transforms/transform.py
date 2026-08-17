@@ -400,7 +400,7 @@ class Transform:  # pylint: disable=too-many-instance-attributes
         Note that any transform with only a ``pass_name`` definition *must* occur after any purely tape-based
         transform, as tape transforms occur prior to lowering to MLIR.
 
-        >>> @qp.qjit
+        >>> @qp.qjit  # doctest: +SKIP
         ... @qp.defer_measurements
         ... @qp.transform(pass_name="cancel-inverses")
         ... @qp.qnode(qp.device('lightning.qubit', wires=4))

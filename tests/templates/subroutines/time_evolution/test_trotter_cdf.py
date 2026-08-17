@@ -301,6 +301,14 @@ class TestResourceRule:
         )
         assert resources == Resources({})
 
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_controlled_zero_steps_empty_decomposition(self, toy_hamiltonian_cdf):
+        """Test that C(TrotterCDF) with zero steps emits no gates."""
+        ham, num_orbitals = toy_hamiltonian_cdf
+        wires = list(range(2 * num_orbitals))
+        op = qp.TrotterCDF(1.0, 0, ham, wires=wires)
+        assert qp.ctrl(op, control=[99]).decomposition() == []
+
     def test_base_resources_report_global_phase(self, toy_hamiltonian_cdf):
         """Test that the base (uncontrolled) resources report a GlobalPhase, not CNOTs."""
         ham, _ = toy_hamiltonian_cdf
