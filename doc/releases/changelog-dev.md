@@ -882,11 +882,14 @@
   [(#10004)](https://github.com/PennyLaneAI/pennylane/pull/10004)
   - Parametric operators are ported:
     - :class:`~.RZ`, :class:`~.CRZ`, :class:`~.DiagonalQubitUnitary`, :class:`~.PauliRot`, :class:`~.MultiRZ`, :class:`~.PhaseShift`,
-      :class:`~.ControlledPhaseShift`, :class:`~.Rot`, :class:`~.CRot`, :class:`~.U1`, :class:`~.U2`, :class:`~.U3`, :class:`~.PCPhase`
+      :class:`~.ControlledPhaseShift`, :class:`~.Rot`, :class:`~.CRot`, :class:`~.U1`, :class:`~.U2`, :class:`~.U3`, :class:`~.PCPhase`,
+      :class:`~.GlobalPhase`, :class:`~.IsingXX`, :class:`~.IsingYY`, :class:`~.IsingZZ`, :class:`~.IsingXY`
   [(#9857)](https://github.com/PennyLaneAI/pennylane/pull/9857)
   [(#9941)](https://github.com/PennyLaneAI/pennylane/pull/9941)
   [(#9897)](https://github.com/PennyLaneAI/pennylane/pull/9897)
   [(#9936)](https://github.com/PennyLaneAI/pennylane/pull/9936)
+  [(#9964)](https://github.com/PennyLaneAI/pennylane/pull/9964)
+  [(#10006)](https://github.com/PennyLaneAI/pennylane/pull/10006)
   [(#9977)](https://github.com/PennyLaneAI/pennylane/pull/9977)
   [(#9951)](https://github.com/PennyLaneAI/pennylane/pull/9951)
   [(#9923)](https://github.com/PennyLaneAI/pennylane/pull/9923)
@@ -910,6 +913,10 @@
   [(#9995)](https://github.com/PennyLaneAI/pennylane/pull/9995)
   [(#10015)](https://github.com/PennyLaneAI/pennylane/pull/10015)
   [(#10015)](https://github.com/PennyLaneAI/pennylane/pull/10015)
+  [(#10018)](https://github.com/PennyLaneAI/pennylane/pull/10018)
+  - Quantum chemistry operators are ported:
+    - :class:`~.SingleExcitation`
+  [(#9944)](https://github.com/PennyLaneAI/pennylane/pull/9944)
   - Miscelleneous operators are ported:
     - :class:`~.PauliMeasure`
   [(#10005)](https://github.com/PennyLaneAI/pennylane/pull/10005)

@@ -36,6 +36,7 @@ from pennylane.ops import (
 )
 from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.ops.op_math.controlled2 import ControlledOp2
+from pennylane.ops.op_math.symbolicop2 import SymbolicOp2
 from pennylane.templates.embeddings import AngleEmbedding
 from pennylane.templates.subroutines import (
     QSVT,
@@ -219,6 +220,15 @@ def bind_new_parameters_symbolic_op(op: SymbolicOp, params: Sequence[TensorLike]
     _ = new_hyperparameters.pop("base")
 
     return op.__class__(new_base, **new_hyperparameters)
+
+
+@bind_new_parameters.register
+def bind_new_parameters_symbolic_op2(op: SymbolicOp2, params: Sequence[TensorLike]):
+    # Copy op.arguments so we don't pop "base" from it
+    kwargs = dict(op.arguments)
+    _ = kwargs.pop("base")
+    new_base = bind_new_parameters(op.base, params)
+    return op.__class__(new_base, **kwargs)
 
 
 @bind_new_parameters.register
