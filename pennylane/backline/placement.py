@@ -246,7 +246,8 @@ class Coprocessor(Node):
 
     Keyword Args:
         coprocessor_fn (str | CoprocessorFunction): The function that processes each received
-            message. A string is resolved to a :class:`~.CoprocessorFunction` by name.
+            message. A string is wrapped in a :class:`~.CoprocessorFunction` naming that symbol, so
+            reading the attribute back always gives a :class:`~.CoprocessorFunction`.
         comm_host (str): This coprocessor's address, which the controller uses to connect. Required.
         oob_port (int | None): The port it listens on for the connection handshake. Must be in
             ``1..65535``. Defaults to ``None``, leaving the choice to the compiled runtime.
@@ -290,8 +291,10 @@ class Coprocessor(Node):
     """
 
     coprocessor_fn: str | CoprocessorFunction
-    """The function for processing each received message. A string is resolved to a
-    :class:`~.CoprocessorFunction` by name."""
+    """The function for processing each received message. Accepts a
+    :class:`~.CoprocessorFunction`, or a string naming the symbol, which is wrapped in one on
+    construction - so this attribute always reads back as a :class:`~.CoprocessorFunction`. The
+    symbol itself is resolved later, by the runtime."""
 
     comm_host: str
     """This coprocessor's address, which the controller connects to in order to bring the connection

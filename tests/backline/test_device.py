@@ -27,7 +27,10 @@ def _nodes(n_coprocessors=1):
     ctrl = qp.Controller(label="controller-1")
     cops = tuple(
         qp.Coprocessor(
-            label=f"coproc-{i}", coprocessor_fn=f"decoder-{i}", comm_host="192.168.1.3", oob_port=18590
+            label=f"coproc-{i}",
+            coprocessor_fn=f"decoder-{i}",
+            comm_host="192.168.1.3",
+            oob_port=18590,
         )
         for i in range(n_coprocessors)
     )
@@ -80,9 +83,7 @@ class TestPublicUsagePattern:
     def test_top_level_qp_backline(self):
         """import pennylane as qp; qp.Backline(...) builds a device."""
         con = qp.Controller(device=qp.device("default.qubit", wires=2))
-        cop = qp.Coprocessor(
-            coprocessor_fn="decoder", label="gpu-verbs", comm_host="192.168.1.3"
-        )
+        cop = qp.Coprocessor(coprocessor_fn="decoder", label="gpu-verbs", comm_host="192.168.1.3")
         dev = qp.Backline(controller=con, coprocessors=[cop], transport="rdma")
         assert isinstance(dev, Backline)
 
@@ -133,7 +134,7 @@ class TestAccessors:
 
     def test_coprocessors(self):
         dev = _device(n_coprocessors=3)
-        assert tuple(c.label for c in dev.coprocessors) == ("gpu-0", "gpu-1", "gpu-2")
+        assert tuple(c.label for c in dev.coprocessors) == ("coproc-0", "coproc-1", "coproc-2")
 
     def test_no_coprocessors(self):
         assert _device(n_coprocessors=0).coprocessors == ()

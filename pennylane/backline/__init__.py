@@ -68,6 +68,8 @@ A backline device is built with :class:`~pennylane.Backline` from a
         qp.RX(x, wires=0)
         return qp.expval(qp.Z(0))
 
+.. currentmodule:: pennylane
+
 Nodes
 ~~~~~
 
@@ -86,6 +88,8 @@ their own --- they are passed to :class:`~pennylane.Backline`, which assembles t
     ~Coprocessor
     ~Node
 
+.. currentmodule:: pennylane.backline
+
 Coprocessor functions
 ~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -97,11 +101,15 @@ refers to it through a :class:`~.CoprocessorFunction`, which names the symbol an
 shared library it lives in. Passing a plain string as a coprocessor's ``coprocessor_fn`` builds one
 for you.
 
+.. currentmodule:: pennylane
+
 .. autosummary::
     :toctree: api
 
     ~CoprocessorFunction
     ~css_decoder
+
+.. currentmodule:: pennylane.backline
 
 Placement
 ~~~~~~~~~
@@ -129,10 +137,14 @@ circuit says. It has no Python execution path: the device carries the placement 
 Catalyst compiler, so a QNode using it must be :func:`~pennylane.qjit`-compiled, and calling it
 directly raises ``NotImplementedError``.
 
+.. currentmodule:: pennylane
+
 .. autosummary::
     :toctree: api
 
     ~Backline
+
+.. currentmodule:: pennylane.backline
 
 Transports
 ~~~~~~~~~~

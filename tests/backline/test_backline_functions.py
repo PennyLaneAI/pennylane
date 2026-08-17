@@ -16,10 +16,7 @@
 
 # pylint: disable=too-few-public-methods
 
-import numpy as np
-import pytest
-
-from pennylane.backline import CoprocessorFunction, css_decoder
+from pennylane.backline import CoprocessorFunction
 
 
 class TestCoprocessorFunction:
