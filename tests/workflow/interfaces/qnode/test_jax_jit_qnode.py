@@ -525,6 +525,7 @@ class TestVectorValuedQNode:
         assert np.allclose(res[0], expected.T[0], atol=tol, rtol=0)
         assert np.allclose(res[1], expected.T[1], atol=tol, rtol=0)
 
+    # pylint: disable-next = too-many-statements
     def test_diff_multi_probs(
         self, dev_name, diff_method, grad_on_execution, device_vjp, interface, tol, seed
     ):
@@ -621,6 +622,7 @@ class TestVectorValuedQNode:
         assert jac[1][1].shape == (4,)
         assert np.allclose(jac[1][1], expected_1[1], atol=tol, rtol=0)
 
+    # pylint: disable-next = too-many-statements
     def test_diff_expval_probs(
         self, dev_name, diff_method, grad_on_execution, device_vjp, interface, tol, seed
     ):

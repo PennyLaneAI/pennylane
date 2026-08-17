@@ -38,9 +38,7 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.decomposition_rule import DecompCollection, list_decomps
 from pennylane.decomposition.symbolic_decomposition import (
-    adjoint_rotation,
     flip_zero_control,
-    pow_rotation,
     self_adjoint,
 )
 from pennylane.ops.identity import GlobalPhase
