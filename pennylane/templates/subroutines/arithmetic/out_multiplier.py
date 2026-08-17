@@ -280,15 +280,6 @@ class OutMultiplier(Operator2):
         work_wires: AbstractWires | WiresLike = (),
         output_wires_zeroed: bool = False,
     ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
-        if not isinstance(x_wires, AbstractWires):
-            x_wires = Wire[len(x_wires)]
-        if not isinstance(y_wires, AbstractWires):
-            y_wires = Wire[len(y_wires)]
-        if not isinstance(output_wires, AbstractWires):
-            output_wires = Wire[len(output_wires)]
-        if not isinstance(work_wires, AbstractWires):
-            work_wires = Wire[len(work_wires)]
-
         num_output_wires = len(output_wires)
         num_work_wires = len(work_wires)
         max_mod = 2**num_output_wires

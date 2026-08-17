@@ -152,34 +152,6 @@ def test_abstract_init(
 
 
 @pytest.mark.parametrize(
-    "abstract_register",
-    ["x_wires", "y_wires", "output_wires", "work_wires"],
-)
-def test_abstract_init_wires_like(abstract_register):
-    """Test that abstract init converts concrete wire registers to abstract wires."""
-    x_wires = [0, 1]
-    y_wires = [2, 3]
-    output_wires = [4, 5]
-    work_wires = [6, 7]
-
-    def _as_arg(name, value):
-        return Wire[len(value)] if name == abstract_register else value
-
-    abstract_op = OutMultiplier(
-        _as_arg("x_wires", x_wires),
-        _as_arg("y_wires", y_wires),
-        _as_arg("output_wires", output_wires),
-        mod=3,
-        work_wires=_as_arg("work_wires", work_wires),
-    )
-    assert abstract_op.arguments["mod"] == 3
-    assert len(abstract_op.work_wires) == 2
-
-    concrete_op = OutMultiplier(x_wires, y_wires, output_wires, 3, work_wires)
-    assert abstractify(concrete_op) == abstract_op
-
-
-@pytest.mark.parametrize(
     ("mod", "work_wires", "msg_match"),
     [
         (3, [6], "at least two work wires"),
@@ -187,7 +159,7 @@ def test_abstract_init_wires_like(abstract_register):
     ],
 )
 def test_abstract_init_validation(mod, work_wires, msg_match):
-    """Test that abstract init mirrors concrete validation for mod and work wires."""
+    """Test that abstract init validates mod and work wires."""
     with pytest.raises(ValueError, match=msg_match):
         OutMultiplier(
             Wire[2],
@@ -196,9 +168,6 @@ def test_abstract_init_validation(mod, work_wires, msg_match):
             mod=mod,
             work_wires=Wire[len(work_wires)],
         )
-
-    with pytest.raises(ValueError, match=msg_match):
-        OutMultiplier([0, 1], [2, 3], [4, 5], mod, work_wires)
 
 
 @pytest.mark.jax
