@@ -200,12 +200,12 @@ def test_catalyst_integration():
     @qp.transforms.combine_global_phases
     @qp.qnode(dev)
     def circuit():
-        qp.GlobalPhase(0.1, wires=2)
+        qp.GlobalPhase(0.1)
         qp.X(n - 1)
-        qp.GlobalPhase(0.1, wires=1)
+        qp.GlobalPhase(0.1)
         qp.H(n - 2)
-        qp.GlobalPhase(0.1, wires=0)
-        qp.GlobalPhase(0.1, wires=0)
+        qp.GlobalPhase(0.1)
+        qp.GlobalPhase(0.1)
 
         return qp.expval(qp.Z(0))
 
