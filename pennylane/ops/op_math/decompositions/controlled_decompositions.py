@@ -224,7 +224,7 @@ def _ctrl_decomp_bisect_resources(wires, control_values, **__):
             ops.QubitUnitary(
                 Complex[2**num_target_wires, 2**num_target_wires], wires=Wire[num_target_wires]
             ): 4,
-            _adjoint_abstract(
+            qp.adjoint(
                 ops.QubitUnitary(
                     Complex[2**num_target_wires, 2**num_target_wires],
                     wires=Wire[num_target_wires],
@@ -239,7 +239,7 @@ def _ctrl_decomp_bisect_resources(wires, control_values, **__):
         ops.QubitUnitary(
             Complex[2**num_target_wires, 2**num_target_wires], wires=Wire[num_target_wires]
         ): 4,
-        _adjoint_abstract(
+        qp.adjoint(
             ops.QubitUnitary(
                 Complex[2**num_target_wires, 2**num_target_wires], wires=Wire[num_target_wires]
             )
@@ -711,7 +711,7 @@ def _decompose_mcx_no_worker_resource(wires, **_):
             ops.Hadamard: 2,
             ops.QubitUnitary(Complex[2, 2], wires=Wire[1]): 2,
             _ctrl_abstract(ops.X, Wire[len_k2], Wire[len_k1]): 4,
-            _adjoint_abstract(ops.QubitUnitary(Complex[2, 2], wires=Wire[1])): 2,
+            qp.adjoint(ops.QubitUnitary(Complex[2, 2], wires=Wire[1])): 2,
             ops.ctrl(ops.GlobalPhase(Float), Wire[num_control_wires]): 1,
         }
     return {
@@ -719,7 +719,7 @@ def _decompose_mcx_no_worker_resource(wires, **_):
         ops.QubitUnitary(Complex[2, 2], wires=Wire[1]): 2,
         _ctrl_abstract(ops.X, Wire[len_k2], Wire[len_k1]): 2,
         _ctrl_abstract(ops.X, Wire[len_k1], Wire[len_k2]): 2,
-        _adjoint_abstract(ops.QubitUnitary(Complex[2, 2], wires=Wire[1])): 2,
+        qp.adjoint(ops.QubitUnitary(Complex[2, 2], wires=Wire[1])): 2,
         ops.ctrl(ops.GlobalPhase(Float), Wire[num_control_wires]): 1,
     }
 
