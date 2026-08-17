@@ -300,14 +300,10 @@ class SignedOutSquare(Operation):
 
 def _c_subtract_then_add_one_resources(n, m, num_work_wires, output_wires_zeroed):
     size = min(m - n, n) if output_wires_zeroed else m - n
-    add_base_params = {"num_x_wires": n - 1, "num_y_wires": size, "num_work_wires": size - 1}
-    cadd_params = {
-        "num_control_wires": 1,
-        "num_zero_control_values": 0,
-        "num_work_wires": num_work_wires - size + 1,
-        "work_wire_type": "zeroed",
-    }
-    cadd_resources = _controlled_semi_adder_resource(add_base_params, SemiAdder, **cadd_params)
+    add_base = SemiAdder(Wire[n - 1], Wire[size], Wire[size - 1])
+    cadd_resources = _controlled_semi_adder_resource(
+        add_base, Wire[1], None, Wire[num_work_wires - size + 1], "zeroed"
+    )
 
     # Bit flips on input register
     if n - 1 > 1:
@@ -383,9 +379,7 @@ def _signed_out_square_resources(
             # Subtract x_s 2^{2n-2}
             size = min(m - (2 * n - 2), 2) if output_wires_zeroed else m - (2 * n - 2)
             resources[X] += 2 * size
-            add_rep = resource_rep(
-                SemiAdder, num_x_wires=1, num_y_wires=size, num_work_wires=num_work_wires
-            )
+            add_rep = SemiAdder(Wire[1], Wire[size], Wire[num_work_wires])
             resources[add_rep] += 1
 
     return dict(resources)

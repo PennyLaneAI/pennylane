@@ -414,18 +414,7 @@ def _out_multiplier_with_adder_resources(
             size = min(k - i, m + 1)
         else:
             size = k - i
-        resources[
-            controlled_resource_rep(
-                base_class=SemiAdder,
-                base_params={
-                    "num_x_wires": m,
-                    "num_y_wires": size,
-                    "num_work_wires": num_work_wires,
-                },
-                num_control_wires=1,
-                num_zero_control_values=0,
-            )
-        ] += 1
+        resources[ctrl(SemiAdder(Wire[m], Wire[size], Wire[num_work_wires]), Wire[1])] += 1
     return dict(resources)
 
 
@@ -510,7 +499,7 @@ def _out_multiplier_with_caddsub_resources(
 
     # Add 2^m(x+1)
     if k > m:
-        adder_resources = _semi_adder_resources(num_x_wires=n, num_y_wires=k - m)
+        adder_resources = _semi_adder_resources(Wire[n], Wire[k - m])
         for key, value in adder_resources.items():
             resources[key] += value
         # bit flips corresponding to input carry activated. Accounts for the fact that
@@ -522,7 +511,7 @@ def _out_multiplier_with_caddsub_resources(
     # First negation
     resources[X] += k
     # Add y
-    add_rep = resource_rep(SemiAdder, num_x_wires=m, num_y_wires=k, num_work_wires=num_passed_ww)
+    add_rep = SemiAdder(Wire[m], Wire[k], Wire[num_passed_ww])
     resources[add_rep] += 1
 
     # increment 2^(n+m) bit
@@ -535,9 +524,7 @@ def _out_multiplier_with_caddsub_resources(
 
     # Add 2^n y
     if k > n:
-        resources[
-            resource_rep(SemiAdder, num_x_wires=m, num_y_wires=k - n, num_work_wires=num_passed_ww)
-        ] += 1
+        resources[SemiAdder(Wire[m], Wire[k - n], Wire[num_passed_ww])] += 1
 
     return dict(resources)
 
@@ -609,7 +596,7 @@ def _c_add_sub_resources(num_x_wires, num_y_wires):
     cnot_on_0_rep = _ctrl_abstract(X, Wire[1], num_zero_control_values=1)
     resources[cnot_on_0_rep] += 2 * (1 + int(num_y_wires > 1))
 
-    for key, value in _semi_adder_resources(num_x_wires, num_y_wires).items():
+    for key, value in _semi_adder_resources(Wire[num_x_wires], Wire[num_y_wires]).items():
         resources[key] += value
 
     return dict(resources)
@@ -751,14 +738,10 @@ def _out_multiplier_with_cache_resources(
         "mod": mod,
         "output_wires_zeroed": True,
     }
-    adder_params = {
-        "num_x_wires": num_output_wires,
-        "num_y_wires": num_output_wires,
-        "num_work_wires": new_num_work_wires,
-    }
+    adder_rep = SemiAdder(Wire[num_output_wires], Wire[num_output_wires], Wire[new_num_work_wires])
     return {
         resource_rep(OutMultiplier, **mult_params): 1,
-        resource_rep(SemiAdder, **adder_params): 1,
+        adder_rep: 1,
         adjoint_resource_rep(OutMultiplier, base_params=mult_params): 1,
     }
 

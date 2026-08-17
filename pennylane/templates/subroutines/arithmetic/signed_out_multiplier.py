@@ -31,6 +31,7 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.ops import CNOT, Controlled
+from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
 
 from .incrementer import Incrementer
@@ -442,12 +443,7 @@ def _not_zeroed_signed_out_multiplier_resources(
     ] = 1
 
     resources[
-        resource_rep(
-            SemiAdder,
-            num_x_wires=num_output_wires,
-            num_y_wires=num_output_wires,
-            num_work_wires=num_output_wires - 1,
-        )
+        SemiAdder(Wire[num_output_wires], Wire[num_output_wires], Wire[num_output_wires - 1])
     ] = 1
 
     return resources
