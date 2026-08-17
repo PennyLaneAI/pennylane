@@ -117,7 +117,7 @@ guarantee an optimal decomposition to the desired target gate set:
         qp.CRX(0.5, wires=[0, 1])
 
     tape = qp.tape.QuantumScript.from_queue(q)
-    [new_tape], _ = qp.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ"})
+    [new_tape], _ = qp.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ", "GlobalPhase"})
 
 >>> pprint(new_tape.operations)
 [RZ(1.5707963267948966, wires=[1]),
@@ -125,18 +125,22 @@ guarantee an optimal decomposition to the desired target gate set:
  RZ(1.5707963267948966, wires=[1]),
  RX(1.5707963267948966, wires=[1]),
  RZ(1.5707963267948966, wires=[1]),
+ GlobalPhase(-1.5707963267948966, wires=[]),
  CZ(wires=[0, 1]),
  RZ(1.5707963267948966, wires=[1]),
  RX(1.5707963267948966, wires=[1]),
  RZ(1.5707963267948966, wires=[1]),
+ GlobalPhase(-1.5707963267948966, wires=[]),
  RY(-0.25, wires=[1]),
  RZ(1.5707963267948966, wires=[1]),
  RX(1.5707963267948966, wires=[1]),
  RZ(1.5707963267948966, wires=[1]),
+ GlobalPhase(-1.5707963267948966, wires=[]),
  CZ(wires=[0, 1]),
  RZ(1.5707963267948966, wires=[1]),
  RX(1.5707963267948966, wires=[1]),
  RZ(1.5707963267948966, wires=[1]),
+ GlobalPhase(-1.5707963267948966, wires=[]),
  RZ(-1.5707963267948966, wires=[1])]
 
 With the new system enabled, the transform produces a much more efficient outcome.
