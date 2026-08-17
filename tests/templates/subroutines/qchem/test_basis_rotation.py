@@ -48,6 +48,7 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
         ),  # unitary matrix
     ],
 )
+@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity(rotation):
     """Run standard tests of operation validity."""
@@ -180,6 +181,7 @@ class TestDecomposition:
             assert np.allclose(_op.parameters[0], gate_angles[idx])  # gate parameter
             assert list(_op.wires) == gate_wires[idx]  # gate wires
 
+    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(
         ("num_wires", "unitary_matrix"), [(case[0], case[1]) for case in _COMPLEX_CASES]
@@ -192,6 +194,7 @@ class TestDecomposition:
         for rule in qp.list_decomps(qp.BasisRotation):
             _test_decomposition_rule(op, rule)
 
+    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(
         ("num_wires", "ortho_matrix"), [(case[0], case[1]) for case in _REAL_CASES]
@@ -218,6 +221,7 @@ class TestDecomposition:
             ),
         ],
     )
+    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_basis_rotation_operations_real_without_jax(self, num_wires, ortho_matrix):

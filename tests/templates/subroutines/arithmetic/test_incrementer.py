@@ -34,6 +34,7 @@ from pennylane.templates import BasisEmbedding, TemporaryAND
         ((0, 1, 2), []),  # no work wires
     ],
 )
+@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_assert_valid(wires, work_wires):
     op = Incrementer(wires, work_wires)
@@ -48,6 +49,7 @@ def test_assert_valid(wires, work_wires):
         ((0, 1, 2), []),  # no work wires
     ],
 )
+@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_decomposition_new(wires, work_wires):
     op = Incrementer(wires, work_wires)
@@ -244,6 +246,7 @@ def test_controlled_allocates_work_wires(
         ((0, 1, 2), tuple(), (3, 4)),
     ],
 )
+@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_controlled_decomposition_new(wires, work_wires, controls):
     """Tests the decomposition rule implemented with the new system."""

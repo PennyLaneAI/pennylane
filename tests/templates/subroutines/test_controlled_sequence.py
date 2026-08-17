@@ -26,6 +26,7 @@ from pennylane.wires import Wires
 # pylint: disable=unidiomatic-typecheck, cell-var-from-loop
 
 
+@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
@@ -158,6 +159,7 @@ class TestMethods:
         for op1, op2 in zip(decomp, expected_decomp):
             assert op1 == op2
 
+    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_new(self):
         """Tests the decomposition rule implemented with the new system."""

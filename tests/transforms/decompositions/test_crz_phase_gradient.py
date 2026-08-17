@@ -25,6 +25,7 @@ from pennylane.transforms.decompose import DecomposeInterpreter
 from pennylane.transforms.decompositions import make_crz_to_phase_gradient_decomp
 
 
+@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize("phi", [0.5, 0.3, 1 / 2 + 1 / 4 + 1 / 8, 1.0])
 @pytest.mark.parametrize("p", [2, 3, 4])

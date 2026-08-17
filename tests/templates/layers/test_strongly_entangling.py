@@ -28,6 +28,7 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from tests.capture.capture_utils import assert_eqn_matches_op
 
 
+@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.external
 def test_standard_validity():
@@ -67,6 +68,7 @@ class TestDecomposition:
     @pytest.mark.parametrize(
         "n_wires, imprimitive", [(2, qp_ops.CNOT), (3, qp_ops.CZ), (4, qp_ops.CY)]
     )
+    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_new(
         self, n_wires, imprimitive, batch_dim

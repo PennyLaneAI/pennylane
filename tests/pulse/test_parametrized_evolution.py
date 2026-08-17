@@ -90,6 +90,7 @@ class TestPytree:
 
 
 @pytest.mark.xfail
+@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Run standard validity checks on the parametrized evolution."""

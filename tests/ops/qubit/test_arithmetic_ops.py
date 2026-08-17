@@ -432,6 +432,7 @@ class TestIntegerComparator:
         equivalent_matrix = qp.matrix(equivalent_tape, wire_order=[0, 1, 2, 3])
         assert qp.math.allclose(matrix, equivalent_matrix)
 
+    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("geq", [True, False])
     @pytest.mark.parametrize("value", list(range(9)))

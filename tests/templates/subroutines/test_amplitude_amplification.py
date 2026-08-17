@@ -66,6 +66,7 @@ class TestInitialization:
         with pytest.raises(ValueError, match="work_wire must be different from the wires of O."):
             qp.AmplitudeAmplification(U, O, iters=3, fixed_point=fixed_point, work_wire=work_wire)
 
+    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_standard_validity(self):
         """Test standard validity using assert_valid."""
@@ -358,6 +359,7 @@ def test_fixed_point_angles_function(iters, p_min):
         (5, [0, 1, 2, 3, 4], 4, False),
     ),
 )
+@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_decomposition_new(n_wires, items, iters, fixed):
     """Tests the decomposition rule implemented with the new system."""

@@ -23,6 +23,7 @@ from pennylane import numpy as pnp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
+@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
@@ -156,6 +157,7 @@ class TestDecomposition:
         ),
     ]
 
+    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(("features", "wires", "num_repeats", "pattern"), DECOMP_PARAMS)
     def test_decomposition_new(self, features, wires, num_repeats, pattern):

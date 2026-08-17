@@ -537,6 +537,7 @@ class TestHermitian:  # pylint: disable=too-many-public-methods
 class TestProjector:
     """Tests for the projector observable."""
 
+    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_basisstate_projector(self):
         """Tests that we obtain a _BasisStateProjector when input is a basis state."""
@@ -550,6 +551,7 @@ class TestProjector:
 
         qp.ops.functions.assert_valid(basis_state_projector, skip_differentiation=True)
 
+    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_statevector_projector(self):
         """Test that we obtain a _StateVectorProjector when input is a state vector."""

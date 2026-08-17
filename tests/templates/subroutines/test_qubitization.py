@@ -77,6 +77,7 @@ def test_operator_definition_qpe(hamiltonian):
         (qp.PauliX("a") @ qp.PauliZ(1) @ qp.PauliY(2), [0]),
     ],
 )
+@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity(lcu, control):
     """Check the operation using the assert_valid function."""
@@ -129,6 +130,7 @@ def test_decomposition(hamiltonian, expected_decomposition):
         (qp.PauliX("a") @ qp.PauliZ(1) @ qp.PauliY(2), [0]),
     ],
 )
+@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_decomposition_new(hamiltonian, control):  # pylint: disable=unused-argument
     """Tests the decomposition rule implemented with the new system."""

@@ -603,6 +603,7 @@ class SingleRZ(Operator2):
         return qp.Hamiltonian([-0.5], [qp.PauliZ(wires=self.wires)])
 
 
+@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 class TestOperator2AssertValid:
     """Tests showing that ``assert_valid`` works on :class:`~.core.Operator2` instances thanks to
@@ -845,6 +846,7 @@ def create_op_instance(c):
     return c(*params, wires=wires) if wires else c(*params)
 
 
+@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_generated_list_of_ops(class_to_validate):
     """Test every auto-generated operator instance."""
@@ -868,6 +870,7 @@ def test_generated_list_of_ops(class_to_validate):
     assert_valid(op)
 
 
+@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_explicit_list_of_ops(valid_instance_and_kwargs):
     """Test the validity of operators that could not be auto-generated."""
@@ -875,6 +878,7 @@ def test_explicit_list_of_ops(valid_instance_and_kwargs):
     assert_valid(valid_instance, **kwargs)
 
 
+@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_explicit_list_of_failing_ops(invalid_instance_and_error):
     """Test instances of ops that fail validation."""

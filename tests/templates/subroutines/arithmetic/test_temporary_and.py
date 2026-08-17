@@ -90,6 +90,7 @@ class TestTemporaryAND:
         op2 = qp.Elbow(wires=[0, "a", 2], control_values=(0, 0))
         qp.assert_equal(op1, op2)
 
+    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_standard_validity(self):
         """Check the operation using the assert_valid function."""
@@ -152,6 +153,7 @@ class TestTemporaryAND:
         self.compare_to_toffoli_on_zero(matrix_and, "input")
         self.compare_to_toffoli_on_zero(matrix_and_adj, "output")
 
+    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("cvals", [(0, 0), (0, 1), (1, 0), (1, 1)])
     def test_temporary_and_decompositions(self, cvals):

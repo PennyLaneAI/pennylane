@@ -261,6 +261,7 @@ class TestQuantumMonteCarlo:
     def func(i):
         return np.sin(i) ** 2
 
+    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_standard_validity(self):
         """Test standard validity criteria with assert_valid."""
@@ -276,6 +277,7 @@ class TestQuantumMonteCarlo:
         (np.ones(2) / 2, Wires(range(2)), Wires(range(2, 4))),
     ]
 
+    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(("p", "target_wires", "estimation_wires"), DECOMP_PARAMS)
     def test_decomposition_new(self, p, target_wires, estimation_wires):

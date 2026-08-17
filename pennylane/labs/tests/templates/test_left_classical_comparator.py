@@ -23,6 +23,7 @@ from pennylane.labs.templates.left_classical_comparator import LeftClassicalComp
 from pennylane.ops.functions.assert_valid import assert_valid
 
 
+@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity_left_comparator():
     """Check the operation using the assert_valid function."""

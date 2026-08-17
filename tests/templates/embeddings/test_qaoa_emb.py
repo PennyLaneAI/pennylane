@@ -25,6 +25,7 @@ from pennylane import numpy as pnp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
+@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
@@ -239,6 +240,7 @@ class TestDecomposition:
         ([[0, 0]], [[[0, 0, 0, 0, 0, np.pi / 2]]], range(3), "X"),
     ]
 
+    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.pl2do(reason="Involves broadcasting with Operator2")
     @pytest.mark.parametrize(("features", "weights", "wires", "local_field"), DECOMP_PARAMS)

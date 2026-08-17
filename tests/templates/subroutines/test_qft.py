@@ -24,6 +24,7 @@ from pennylane.capture import run_autograph
 from tests.capture.capture_utils import assert_eqn_matches_op
 
 
+@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Check the operation using the assert_valid function."""

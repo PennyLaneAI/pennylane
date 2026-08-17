@@ -26,6 +26,7 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.transforms import decompose
 
 
+@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
@@ -51,6 +52,7 @@ class TestDecomposition:
             ([2, 3, 0, 1], [0, 1, 2, 3]),
         ],
     )
+    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_new(self, permutation_order, wire_order):
         """Tests the decomposition rule implemented with the new system."""

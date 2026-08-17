@@ -36,6 +36,7 @@ class TestRotXZX:
         assert op.wires == Wires(wires)
         assert op.data == (phi, theta, omega)
 
+    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_is_valid_op(self):
         """Assert RotXZX is a valid operator"""

@@ -28,6 +28,7 @@ from pennylane.templates.subroutines.arithmetic.out_square import (
 )
 
 
+@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize("output_wires_zeroed", [False, True])
 def test_standard_validity_out_square(output_wires_zeroed):
@@ -213,6 +214,7 @@ class TestOutSquare:
             ([0, 1], [3, 4, 5, 6, 7], [9, 10, 11, 12, 13, 14, 15], False, [0, 1]),
         ],
     )
+    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("use_jit", [pytest.param(True, marks=(pytest.mark.catalyst,)), False])
     def test_decomposition_new(

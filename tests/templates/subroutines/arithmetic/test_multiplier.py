@@ -22,6 +22,7 @@ import pennylane as qp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
+@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity_Multiplier():
     """Check the operation using the assert_valid function."""
@@ -172,6 +173,7 @@ class TestMultiplierUnit:
     @pytest.mark.parametrize(
         ("k", "x_wire", "mod", "work_wires"), [(3, [1], 1, [2, 3, 4]), (3, [1], 2, [2, 3, 4])]
     )
+    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_new(
         self, k, x_wire, mod, work_wires
