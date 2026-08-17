@@ -250,63 +250,6 @@ class QubitUnitary(Operator2):
             "U is a dense matrix. Use matrix method instead"
         )
 
-    @staticmethod
-    def compute_decomposition(
-        U: TensorLike, wires: WiresLike, unitary_check: bool = False
-    ):  # pylint: disable=unused-argument
-        r"""Representation of the operator as a product of other operators (static method).
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-        See :func:`~.ops.one_qubit_decomposition`, :func:`~.ops.two_qubit_decomposition`
-        and :func:`~.ops.multi_qubit_decomposition` for more information on how the decompositions are computed.
-
-        .. seealso:: :meth:`~.QubitUnitary.decomposition`.
-
-        Args:
-            U (array[complex]): square unitary matrix
-            wires (Iterable[Any] or Wires): the wire(s) the operation acts on
-
-        Returns:
-            list[Operator]: decomposition of the operator
-
-        **Example:**
-
-        >>> U = 1 / np.sqrt(2) * np.array([[1, 1], [1, -1]])
-        >>> decomp = qp.QubitUnitary.compute_decomposition(U, 0)
-        >>> from pprint import pprint
-        >>> pprint(decomp)
-        [RZ(3.141..., wires=[0]),
-        RY(np.float64(1.570...), wires=[0]),
-        RZ(0.0, wires=[0]),
-        GlobalPhase(-1.570..., wires=[])]
-
-        """
-        # Decomposes arbitrary single-qubit unitaries as Rot gates (RZ - RY - RZ format),
-        # or a single RZ for diagonal matrices.
-        shape = qp.math.shape(U)
-
-        is_batched = len(shape) == 3
-        shape_without_batch_dim = shape[1:] if is_batched else shape
-
-        if shape_without_batch_dim == (2, 2):
-            return qp.ops.one_qubit_decomposition(U, Wires(wires)[0], return_global_phase=True)
-
-        if shape_without_batch_dim == (4, 4):
-            # TODO[dwierichs]: Implement decomposition of broadcasted unitary
-            if is_batched:
-                raise DecompositionUndefinedError(
-                    "The decomposition of a two-qubit QubitUnitary does not support broadcasting."
-                )
-            if sp.sparse.issparse(U):
-                raise DecompositionUndefinedError(
-                    "The decomposition of a two-qubit sparse QubitUnitary is undefined."
-                )
-
-            return qp.ops.two_qubit_decomposition(U, Wires(wires))
-
-        return qp.ops.op_math.decompositions.multi_qubit_decomposition(U, Wires(wires))
-
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_sparse_matrix(self) -> bool:
