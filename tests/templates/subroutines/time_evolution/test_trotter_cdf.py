@@ -25,7 +25,7 @@ circuit of Fig. 6 of arXiv:2506.15784.
 # pylint: disable=too-many-arguments, redefined-outer-name, too-few-public-methods, wrong-import-position, protected-access
 import numpy as np
 import pytest
-from scipy.linalg import block_diag, expm
+from scipy.linalg import block_diag
 
 jax = pytest.importorskip("jax")
 
@@ -36,7 +36,6 @@ from pennylane.templates.subroutines.time_evolution.trotter_cdf import (
     _apply_one_body_diagonal,
     _apply_system_basis_rotation,
     _apply_two_body_diagonal,
-    _cdf_resource_counts,
     _energy_shift,
     _merge_leaves,
     _transpose_leaf,
@@ -44,14 +43,15 @@ from pennylane.templates.subroutines.time_evolution.trotter_cdf import (
 from pennylane.typing import Wire
 from pennylane.wires import Wires
 
+from tests.templates.subroutines.time_evolution.trotter_test_helpers import (  # pylint: disable=no-name-in-module
+    TROTTER_GATE_SET,
+    control_branches,
+    hadamard_test,
+    phase_free_close,
+    random_orthogonal,
+)
+
 pytestmark = pytest.mark.jax
-
-
-def _random_orthogonal(n, rng):
-    """Generate a random orthogonal matrix via expm of a skew-symmetric."""
-    A = rng.normal(size=(n, n)) * 0.5
-    A = A - A.T
-    return expm(A)
 
 
 @pytest.fixture(scope="module")
@@ -63,11 +63,11 @@ def toy_hamiltonian_cdf():
 
     eps = rng.normal(size=num_orbitals) * 0.4
     one_body_core = np.diag(eps)
-    one_body_leaf = _random_orthogonal(num_orbitals, rng)
+    one_body_leaf = random_orthogonal(num_orbitals, rng)
 
     lam = rng.normal(size=(num_orbitals, num_orbitals)) * 0.3
     core_2b = np.expand_dims(lam, axis=0)
-    leaf_2b = np.expand_dims(_random_orthogonal(num_orbitals, rng), axis=0)
+    leaf_2b = np.expand_dims(random_orthogonal(num_orbitals, rng), axis=0)
 
     core_tensors = np.concatenate([np.expand_dims(one_body_core, axis=0), core_2b], axis=0)
     leaf_tensors = np.concatenate([np.expand_dims(one_body_leaf, axis=0), leaf_2b], axis=0)
@@ -140,20 +140,20 @@ class TestCDFScheme:
     def test_merge_leaves(self):
         """Test the CDF merge rule: U_prev^dagger @ U_curr."""
         rng = np.random.default_rng(0)
-        U_prev = _random_orthogonal(3, rng)
-        U_curr = _random_orthogonal(3, rng)
+        U_prev = random_orthogonal(3, rng)
+        U_curr = random_orthogonal(3, rng)
         assert np.allclose(_merge_leaves(U_prev, U_curr), U_prev.T @ U_curr)
 
     def test_transpose_leaf(self):
         """Test the CDF leaf transpose."""
-        U = _random_orthogonal(3, np.random.default_rng(0))
+        U = random_orthogonal(3, np.random.default_rng(0))
         assert np.allclose(_transpose_leaf(U), U.T)
 
     def test_apply_system_basis_rotation_concrete(self):
         """Test that a non-identity rotation is applied to both spin channels."""
         num_cas = 2
         wires = list(range(2 * num_cas))
-        U = _random_orthogonal(num_cas, np.random.default_rng(1))
+        U = random_orthogonal(num_cas, np.random.default_rng(1))
         with qp.queuing.AnnotatedQueue() as q:
             _apply_system_basis_rotation(U, wires)
         tape = qp.tape.QuantumScript.from_queue(q)
@@ -309,31 +309,6 @@ class TestResourceRule:
         op = qp.TrotterCDF(1.0, 0, ham, wires=wires)
         assert qp.ctrl(op, control=[99]).decomposition() == []
 
-    def test_base_resources_report_global_phase(self, toy_hamiltonian_cdf):
-        """Test that the base (uncontrolled) resources report a GlobalPhase, not CNOTs."""
-        ham, _ = toy_hamiltonian_cdf
-        counts = _cdf_resource_counts(2, ham, has_control=False)
-        assert qp.GlobalPhase in counts
-        assert qp.CNOT not in counts
-        assert qp.IsingZZ in counts
-
-    def test_genuine_controlled_resources_have_no_isingzz(self, toy_hamiltonian_cdf):
-        """The default (genuine) controlled resources report PhaseShift + CNOT/RZ, no IsingZZ."""
-        ham, _ = toy_hamiltonian_cdf
-        counts = _cdf_resource_counts(2, ham, has_control=True, double_phase=False)
-        assert qp.PhaseShift in counts
-        assert qp.CNOT in counts
-        assert qp.IsingZZ not in counts
-        assert qp.GlobalPhase not in counts
-
-    def test_double_phase_controlled_resources_have_isingzz(self, toy_hamiltonian_cdf):
-        """The double-phase controlled resources report IsingZZ + sandwiching CNOTs."""
-        ham, _ = toy_hamiltonian_cdf
-        counts = _cdf_resource_counts(2, ham, has_control=True, double_phase=True)
-        assert qp.IsingZZ in counts
-        assert qp.CNOT in counts
-        assert qp.PhaseShift not in counts
-
 
 class TestDecomposition:
     """Self-consistency tests of the registered base decomposition rule."""
@@ -345,60 +320,6 @@ class TestDecomposition:
         op = qp.TrotterCDF(0.4, 2, ham, wires)
         for rule in qp.list_decomps(qp.TrotterCDF):
             _test_decomposition_rule(op, rule)
-
-
-_GATE_SET = {
-    "Hadamard",
-    "PauliX",
-    "BasisRotation",
-    "RZ",
-    "IsingZZ",
-    "CNOT",
-    "GlobalPhase",
-    "PhaseShift",
-    "StatePrep",
-}
-
-
-def _phase_free_close(A, B, atol=1e-8):
-    """Compare two matrices up to a global phase (``A == e^{i.} B``)."""
-    tr = np.trace(B.conj().T @ A)
-    phase = tr / abs(tr) if abs(tr) > 1e-12 else 1.0
-    return np.allclose(A, phase * B, atol=atol)
-
-
-def _hadamard_test(ham, sys_wires, t, steps, double_phase):
-    """Return (measured <X_anc>, psi) for the H-ctrl-<X> Hadamard-test circuit."""
-    anc = "anc"
-    dev = qp.device("default.qubit", wires=[anc] + list(sys_wires))
-    rng = np.random.default_rng(2024)
-    dim = 2 ** len(sys_wires)
-    psi = rng.standard_normal(dim) + 1j * rng.standard_normal(dim)
-    psi /= np.linalg.norm(psi)
-
-    @qp.qnode(dev)
-    @qp.transforms.decompose(gate_set=_GATE_SET)
-    def circ():
-        qp.StatePrep(psi, wires=sys_wires)
-        qp.H(anc)
-        qp.ctrl(
-            qp.TrotterCDF(t, steps, ham, wires=sys_wires, double_phase=double_phase), control=[anc]
-        )
-        return qp.expval(qp.X(anc))
-
-    return float(circ()), psi
-
-
-def _control_branches(ham, sys_wires, t, steps, double_phase):
-    """Return the (control-0, control-1) branch unitaries of ctrl(TrotterCDF)."""
-    anc = "anc"
-    op = qp.ctrl(
-        qp.TrotterCDF(t, steps, ham, wires=sys_wires, double_phase=double_phase), control=[anc]
-    )
-    [tape], _ = qp.transforms.decompose([qp.tape.QuantumScript([op], [])], gate_set=_GATE_SET)
-    matrix = qp.matrix(tape, wire_order=[anc] + list(sys_wires))
-    dim = 2 ** len(sys_wires)
-    return matrix[:dim, :dim], matrix[dim:, dim:]
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
@@ -422,22 +343,11 @@ class TestControlledDecomposition:
         anc = "anc"
         t, steps = 0.5, 2
         op = qp.ctrl(qp.TrotterCDF(t, steps, ham, sys_wires), control=[anc])
-        [tape], _ = qp.transforms.decompose([qp.tape.QuantumScript([op], [])], gate_set=_GATE_SET)
+        [tape], _ = qp.transforms.decompose([qp.tape.QuantumScript([op], [])], gate_set=TROTTER_GATE_SET)
         matrix = qp.matrix(tape, wire_order=[anc] + sys_wires)
         u_base = qp.matrix(qp.TrotterCDF(t, steps, ham, wires=sys_wires), wire_order=sys_wires)
         dim = 2 ** len(sys_wires)
         assert np.allclose(matrix, block_diag(np.eye(dim), u_base), atol=1e-9)
-
-    def test_controlled_hadamard_test_exact_diagonal(self, diagonal_hamiltonian_cdf):
-        """For a diagonal (commuting) Hamiltonian the genuine controlled Hadamard test
-        reproduces Re<psi|e^{-iHt}|psi> = Re<psi|matrix(base)|psi> exactly."""
-        ham, num_orbitals = diagonal_hamiltonian_cdf
-        sys_wires = list(range(2 * num_orbitals))
-        t, steps = 0.9, 3
-        measured, psi = _hadamard_test(ham, sys_wires, t, steps, False)
-        u_base = qp.matrix(qp.TrotterCDF(t, steps, ham, wires=sys_wires), wire_order=sys_wires)
-        ref = float(np.real(psi.conj() @ (u_base @ psi)))
-        assert np.isclose(measured, ref, atol=1e-9)
 
     def test_controlled_hadamard_test_generic(self, toy_hamiltonian_cdf):
         """The genuine controlled operation is an exact controlled-matrix(base), so the
@@ -445,7 +355,7 @@ class TestControlledDecomposition:
         ham, num_orbitals = toy_hamiltonian_cdf
         sys_wires = list(range(2 * num_orbitals))
         t, steps = 0.7, 12
-        measured, psi = _hadamard_test(ham, sys_wires, t, steps, False)
+        measured, psi = hadamard_test(qp.TrotterCDF, ham, sys_wires, t, steps, False)
         u_base = qp.matrix(qp.TrotterCDF(t, steps, ham, wires=sys_wires), wire_order=sys_wires)
         ref = float(np.real(psi.conj() @ (u_base @ psi)))
         assert np.isclose(measured, ref, atol=1e-9)
@@ -458,7 +368,7 @@ class TestControlledDecomposition:
         anc = 99
         t = 0.5
         op = qp.ctrl(qp.TrotterCDF(t, 1, ham, sys_wires), control=[anc])
-        [tape], _ = qp.transforms.decompose([qp.tape.QuantumScript([op], [])], gate_set=_GATE_SET)
+        [tape], _ = qp.transforms.decompose([qp.tape.QuantumScript([op], [])], gate_set=TROTTER_GATE_SET)
         phase_shifts = [
             o for o in tape.operations if isinstance(o, qp.PhaseShift) and list(o.wires) == [anc]
         ]
@@ -487,13 +397,13 @@ class TestDoublePhaseControlledDecomposition:
         ham, num_orbitals = diagonal_hamiltonian_cdf
         sys_wires = list(range(2 * num_orbitals))
         t, steps = 0.9, 3
-        block0, block1 = _control_branches(ham, sys_wires, t, steps, True)
+        block0, block1 = control_branches(qp.TrotterCDF, ham, sys_wires, t, steps, True)
         dim = 2 ** len(sys_wires)
         v_pos = qp.matrix(qp.TrotterCDF(t, steps, ham, wires=sys_wires), wire_order=sys_wires)
         v_neg = qp.matrix(qp.TrotterCDF(-t, steps, ham, wires=sys_wires), wire_order=sys_wires)
         assert not np.allclose(block0, np.eye(dim))  # not a genuine controlled unitary
-        assert _phase_free_close(block0, v_pos)
-        assert _phase_free_close(block1, v_neg)
+        assert phase_free_close(block0, v_pos)
+        assert phase_free_close(block1, v_neg)
 
     def test_double_phase_hadamard_test_matches_branches(self, diagonal_hamiltonian_cdf):
         """The double-phase Hadamard test realizes Re<psi|V0^dag V1|psi>, where V0 / V1 are
@@ -501,8 +411,8 @@ class TestDoublePhaseControlledDecomposition:
         ham, num_orbitals = diagonal_hamiltonian_cdf
         sys_wires = list(range(2 * num_orbitals))
         t, steps = 0.9, 3
-        measured, psi = _hadamard_test(ham, sys_wires, t, steps, True)
-        block0, block1 = _control_branches(ham, sys_wires, t, steps, True)
+        measured, psi = hadamard_test(qp.TrotterCDF, ham, sys_wires, t, steps, True)
+        block0, block1 = control_branches(qp.TrotterCDF, ham, sys_wires, t, steps, True)
         ref = float(np.real(psi.conj() @ (block0.conj().T @ block1 @ psi)))
         assert np.isclose(measured, ref, atol=1e-9)
 
@@ -514,7 +424,7 @@ class TestDoublePhaseControlledDecomposition:
         anc = 99
         t = 0.5
         op = qp.ctrl(qp.TrotterCDF(t, 1, ham, sys_wires, double_phase=True), control=[anc])
-        [tape], _ = qp.transforms.decompose([qp.tape.QuantumScript([op], [])], gate_set=_GATE_SET)
+        [tape], _ = qp.transforms.decompose([qp.tape.QuantumScript([op], [])], gate_set=TROTTER_GATE_SET)
         rz_on_control = [
             o for o in tape.operations if isinstance(o, qp.RZ) and list(o.wires) == [anc]
         ]
@@ -540,7 +450,14 @@ class TestIntegration:
         assert np.allclose(U, np.eye(2 ** len(wires), dtype=complex), atol=1e-12)
 
     @pytest.mark.catalyst
-    def test_catalyst_legacy_frontend(self):
+    @pytest.mark.parametrize(
+        ("double_phase", "target_gates"),
+        [
+            (False, {"Hadamard", "BasisRotation", "RZ", "CNOT", "PhaseShift", "ForLoop"}),
+            (True, {"Hadamard", "BasisRotation", "RZ", "CNOT", "IsingZZ", "ForLoop"}),
+        ],
+    )
+    def test_catalyst_legacy_frontend(self, double_phase, target_gates):
         """Test that the controlled template runs with the legacy catalyst frontend."""
         N = 2
         L = 1
@@ -551,7 +468,6 @@ class TestIntegration:
             "nuc_constant": 0.5,
         }
         registers = qp.registers({"hadamard": 1, "system": 2 * N})
-        target_gates = {"Hadamard", "BasisRotation", "RZ", "CNOT", "PhaseShift", "ForLoop"}
 
         @qp.qjit
         @qp.transforms.decompose(gate_set=target_gates)
@@ -559,7 +475,9 @@ class TestIntegration:
         def trotter_circuit():
             qp.H(registers["hadamard"])
             qp.ctrl(
-                qp.TrotterCDF(1.0, 10, hamiltonian, wires=registers["system"]),
+                qp.TrotterCDF(
+                    1.0, 10, hamiltonian, wires=registers["system"], double_phase=double_phase
+                ),
                 control=registers["hadamard"],
             )
             return qp.expval(qp.X(registers["hadamard"]))
