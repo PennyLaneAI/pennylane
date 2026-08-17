@@ -97,7 +97,7 @@ def test_basic_validity():
     """Run basic validity checks on a prod operator."""
     op1 = qp.PauliZ(0)
     op2 = qp.Rot(1.2, 2.3, 3.4, wires=0)
-    op3 = qp.IsingZZ(4.32, wires=("a", "b"))
+    op3 = qp.IsingZZ(4.32, wires=(1, 2))
     op = qp.prod(op1, op2, op3)
     qp.ops.functions.assert_valid(op)
 
@@ -1727,10 +1727,7 @@ class TestDecomposition:
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.catalyst
-    @pytest.mark.parametrize(
-        "num_control_wires, num_work_wires",
-        [(3, 1), (3, 2), (4, 1), (5, 3)],
-    )
+    @pytest.mark.parametrize("num_control_wires, num_work_wires", [(3, 1), (3, 2), (4, 1), (5, 3)])
     @pytest.mark.parametrize("work_wire_type", ["zeroed"])
     def test_controlled_prod_qjit(self, num_control_wires, num_work_wires, work_wire_type):
         """Test that the ``C(Prod)`` decompositions* is QJIT-compatible with JAX-traced wires.

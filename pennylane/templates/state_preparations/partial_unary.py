@@ -707,7 +707,7 @@ def _pui_state_prep_resources(num_entries, num_wires, num_work_wires):
 
     qrom_reps = {
         p: qp.QROM(
-            data=Int[p, p],
+            bitstrings=Int[p, p],
             control_wires=Wire[n_subspace],
             target_wires=Wire[p],
             work_wires=Wire[n_subspace - 1],
@@ -730,11 +730,8 @@ def _pui_state_prep_resources(num_entries, num_wires, num_work_wires):
     resources[qp.SWAP] += num_wires
 
     num_toffolis = int(num_wires / 10) + 1
-    toffoli_params = {"num_control_wires": 2, "num_work_wires": 1, "work_wire_type": "zeroed"}
-    mcx_rep_0 = qp.resource_rep(qp.MultiControlledX, num_zero_control_values=0, **toffoli_params)
-    resources[mcx_rep_0] += max(num_toffolis // 2, 1)
-    mcx_rep_1 = qp.resource_rep(qp.MultiControlledX, num_zero_control_values=1, **toffoli_params)
-    resources[mcx_rep_1] += max(num_toffolis - num_toffolis // 2, 1)
+    mcx_rep = qp.MultiControlledX(Wire[3], work_wires=Wire[1], work_wire_type="zeroed")
+    resources[mcx_rep] += num_toffolis
 
     return resources
 
@@ -781,7 +778,7 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
             qp.BasisState(k_start, subspace_wires)
             b = k - k_start
             qp.QROM(
-                data=np.eye(b, dtype=np.int64),
+                bitstrings=np.eye(b, dtype=np.int64),
                 control_wires=subspace_wires,
                 target_wires=nonsubspace_wires[:b],
                 work_wires=work_wires[: n_subspace - 1],

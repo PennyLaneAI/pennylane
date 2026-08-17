@@ -22,7 +22,7 @@ from typing import Literal, override
 from scipy import sparse
 
 import pennylane as qp
-from pennylane import allocation, math
+from pennylane import allocation, capture, compiler, math
 from pennylane.core.operator import Operator, abstractify
 from pennylane.core.operator.operator2 import operator_p, pop_op_eqns  # tach-ignore
 from pennylane.decomposition.decomposition_rule import (
@@ -104,7 +104,6 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
     """Arguments that the operator is initialized with."""
 
     def __new__(cls, *args, **kwargs):
-
         obj = super().__new__(cls)
 
         # NOTE: If called without arguments (during a __copy__)
@@ -132,11 +131,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         work_wires: WiresLike | None = None,
         work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
     ):
-        if qp.QueuingManager.recording():
-            qp.QueuingManager.remove(base)
-
-        if qp.capture.enabled():
-            pop_op_eqns((base,))
+        _remove_from_program(base)
 
         control_wires = Wires(control_wires)
         work_wires = Wires([] if work_wires is None else work_wires)
@@ -191,7 +186,6 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         work_wires: WiresLike | AbstractWires | None = None,
         work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
     ):
-
         # abstractify the wires
         if work_wires is None:
             work_wires = Wire[0]
@@ -240,6 +234,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
             @staticmethod
             def _compute_matrix(*args, **kwargs):
                 op = cls(*args, **kwargs)
+                _remove_from_program(op)
                 return Controlled2.compute_matrix(op.base, op.control_wires, op.control_values)
 
             cls.compute_matrix = _compute_matrix
@@ -249,6 +244,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
             @staticmethod
             def _compute_sparse_matrix(*args, format="csr", **kwargs):
                 op = cls(*args, **kwargs)
+                _remove_from_program(op)
                 return Controlled2.compute_sparse_matrix(
                     op.base,
                     op.control_wires,
@@ -263,7 +259,8 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
             @staticmethod
             def _compute_eigvals(*args, **kwargs):
                 op = cls(*args, **kwargs)
-                return Controlled2.compute_eigvals(op.base, op.control_wires)
+                _remove_from_program(op)
+                return Controlled2.compute_eigvals(op.base, op.control_wires, op.control_values)
 
             cls.compute_eigvals = _compute_eigvals
 
@@ -272,6 +269,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
             @staticmethod
             def _compute_diagonalizing_gates(*args, **kwargs):
                 op = cls(*args, **kwargs)
+                _remove_from_program(op)
                 return Controlled2.compute_diagonalizing_gates(op.base)
 
             cls.compute_diagonalizing_gates = _compute_diagonalizing_gates
@@ -368,13 +366,44 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
     @staticmethod
     @override
     # pylint: disable=arguments-differ
-    def compute_eigvals(base, control_wires, **_):
-        base_eigvals = base.eigvals()
+    def compute_eigvals(base, control_wires, control_values=None, **_):
+        base_eigvals = math.asarray(base.eigvals())
         num_target_wires = len(base.wires)
         num_control_wires = len(control_wires)
-        total = 2 ** (num_target_wires + num_control_wires)
-        ones = math.ones(total - len(base_eigvals))
-        return math.concatenate([ones, base_eigvals])
+        num_wires = num_target_wires + num_control_wires
+
+        if control_values is None:
+            control_values = math.ones_like(control_wires)
+
+        # The purpose of the following process is so that when control values are present,
+        # the matrix reconstruction test (M = U_d^\dagger D U_d, where U_d is the matrix
+        # of the diagonalizing gates, and D is the diagonal matrix generated from the list
+        # of eigenvalues) still passes. Courtesy of Gemini 3.1 Pro
+
+        # Calculate the integer index of the control state
+        control_values = math.cast(control_values, int)
+        powers = 2 ** math.arange(num_control_wires - 1, -1, -1)
+        control_int = math.sum(control_values * powers)
+
+        # The size of the base operator's eigenvalue block and the entire eigvals array
+        target_dim = 2**num_target_wires
+        total_dim = 2**num_wires
+
+        # Find the indices
+        indices = math.arange(total_dim)
+        control_indices = indices // target_dim
+        target_indices = indices % target_dim
+
+        # Create the mask for the active block
+        mask = control_indices == control_int
+
+        # Tile the base eigenvalues across the whole space using advanced indexing
+        tiled_base = base_eigvals[target_indices]
+
+        # Select between base eigenvalues and 1s based on the mask
+        ones_array = math.ones(total_dim, dtype=base_eigvals.dtype)
+
+        return math.where(mask, tiled_base, ones_array)
 
     @property
     @override
@@ -534,6 +563,14 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
     def name(self):
         return f"C({self.base.name})"
 
+    @property
+    def data(self) -> tuple:
+        """The trainable parameters of a generic controlled operator are those of its base. The
+        wrapper's own arguments (``control_values``/``control_wires``) are not trainable, so the
+        legacy ``data`` view must expose the base parameters.
+        """
+        return self.base.data
+
     def __repr__(self):
         params = [f"control_wires={self.control_wires}"]
         if self.work_wires:
@@ -591,6 +628,14 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
             self.tracer = res
 
 
+def _remove_from_program(op):
+    """Removes an operator from the captured/queued program."""
+    if qp.QueuingManager.recording():
+        qp.QueuingManager.remove(op)
+    if qp.capture.enabled():
+        pop_op_eqns((op,))
+
+
 @list_decomps.register
 def _list_controlled_decomps(op: ControlledOp2) -> DecompCollection:
     """Get all the decomposition rules applicable to this operator."""
@@ -630,7 +675,6 @@ def _list_controlled_decomps(op: ControlledOp2) -> DecompCollection:
 
 
 def _make_controlled_decomp(base_rule: DecompositionRule):
-
     def _condition_fn(base, **_):
         return base_rule.is_applicable(**base.arguments)
 
@@ -653,7 +697,6 @@ def _make_controlled_decomp(base_rule: DecompositionRule):
         name=f"controlled({base_rule.name})",
     )
     def _impl(base, control_wires, control_values, work_wires, work_wire_type):
-
         @qp.for_loop(0, len(control_values))
         def _x_flips(i):
             qp.cond(qp.math.logical_not(control_values[i]), qp.X)(control_wires[i])
@@ -754,7 +797,6 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
         name=name or f"flip_zero_ctrl_values({rule.name})",
     )
     def _impl(**arguments):
-
         control_values = arguments.pop("control_values")
         arguments["control_values"] = None
 
@@ -764,7 +806,7 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
         wires = arguments.get("control_wires", arguments.get("wires", None))
         assert wires is not None
 
-        if qp.compiler.active() and not qp.capture.enabled():
+        if compiler.active() and not capture.enabled():
             control_values = math.array(control_values, like="jax")
             wires = math.array(wires, like="jax")
 

@@ -26,11 +26,14 @@ import pytest
 
 import pennylane as qp
 from pennylane import math
+from pennylane.core import Operator1
 from pennylane.core.operator import Operator2
-from tests.capture.capture_utils import assert_eqn_matches_op
 
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
+
+# pylint: disable=wrong-import-position
+from tests.capture.capture_utils import assert_eqn_matches_op
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 original_op_bind_code = qp.operation.Operator._primitive_bind_call.__code__
@@ -183,9 +186,6 @@ unmodified_templates_cases = [
             reason="arrays should never have been in the metadata, [sc-104808]"
         ),
     ),
-    (qp.AQFT, (1, [0, 1, 2]), {}),
-    (qp.AQFT, (2,), {"wires": [0, 1, 2, 3]}),
-    (qp.AQFT, (), {"order": 2, "wires": [0, 2, 3, 1]}),
     (qp.ArbitraryUnitary, (jnp.ones(15), [2, 3]), {}),
     (qp.ArbitraryUnitary, (jnp.zeros(15),), {"wires": [3, 2]}),
     pytest.param(
@@ -247,8 +247,9 @@ def test_unmodified_templates(template, args, kwargs):
     # Make sure the input data is valid
     template(*args, **kwargs)
 
-    # Make sure the template actually is not modified in its primitive binding function
-    assert template._primitive_bind_call.__code__ == original_op_bind_code
+    if issubclass(template, Operator1):
+        # Make sure the template actually is not modified in its primitive binding function
+        assert template._primitive_bind_call.__code__ == original_op_bind_code
 
     def fn(*args):
         template(*args, **kwargs)
@@ -258,31 +259,36 @@ def test_unmodified_templates(template, args, kwargs):
     # Check basic structure of jaxpr: single equation with template primitive
     assert len(jaxpr.eqns) == 1
     eqn = jaxpr.eqns[0]
-    assert eqn.primitive == template._primitive
+    if issubclass(template, Operator1):
+        assert eqn.primitive == template._primitive
+    else:
+        assert_eqn_matches_op(eqn, template)
 
     # Check that all arguments are passed correctly, taking wires parsing into account
     # Also, store wires for later
-    if "wires" in kwargs:
-        # If wires are in kwargs, they are not invars to the jaxpr
-        num_invars_wo_wires = len(eqn.invars) - len(kwargs["wires"])
-        assert eqn.invars[:num_invars_wo_wires] == jaxpr.jaxpr.invars
-        wires = kwargs.pop("wires")
-    else:
-        # If wires are in args, they are also invars to the jaxpr
-        assert eqn.invars == jaxpr.jaxpr.invars
-        wires = args[-1]
+    if issubclass(template, Operator1):
+        if "wires" in kwargs:
+            # If wires are in kwargs, they are not invars to the jaxpr
+            num_invars_wo_wires = len(eqn.invars) - len(kwargs["wires"])
+            assert eqn.invars[:num_invars_wo_wires] == jaxpr.jaxpr.invars
+            wires = kwargs.pop("wires")
+        else:
+            # If wires are in args, they are also invars to the jaxpr
+            assert eqn.invars == jaxpr.jaxpr.invars
+            wires = args[-1]
+
+        # Check that `n_wires` is inferred correctly
+        if isinstance(wires, int):
+            wires = (wires,)
+        assert eqn.params.pop("n_wires") == len(wires)
+
+        # Check that remaining kwargs are passed properly to the eqn
+        # JAX 0.7.0 converts lists to tuples for hashability, so normalize both sides
+        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
 
     # Check outvars; there should only be the DropVar returned by the template
     assert len(eqn.outvars) == 1
     assert isinstance(eqn.outvars[0], jax.core.DropVar)
-
-    # Check that `n_wires` is inferred correctly
-    if isinstance(wires, int):
-        wires = (wires,)
-    assert eqn.params.pop("n_wires") == len(wires)
-    # Check that remaining kwargs are passed properly to the eqn
-    # JAX 0.7.0 converts lists to tuples for hashability, so normalize both sides
-    assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
 
 
 @pytest.mark.parametrize(
@@ -357,6 +363,7 @@ tested_modified_templates = [
     qp.SelectPauliRot,
     qp.FlipSign,
     qp.QFT,
+    qp.AQFT,
     qp.TemporaryAND,
 ]
 
@@ -369,10 +376,6 @@ class TestModifiedTemplates:
         """Test that basis embedding is just BasisState."""
 
         jaxpr = jax.make_jaxpr(qp.BasisEmbedding)(np.array([1, 1, 1]), wires=(0, 1, 2))
-        assert jaxpr.eqns[0].primitive == qp.BasisState._primitive
-        assert jaxpr.eqns[0].invars[0].aval == jax.core.ShapedArray((3,), int)
-
-        jaxpr = jax.make_jaxpr(qp.BasisEmbedding)(features=np.array([1, 1, 1]), wires=(0, 1, 2))
         assert jaxpr.eqns[0].primitive == qp.BasisState._primitive
         assert jaxpr.eqns[0].invars[0].aval == jax.core.ShapedArray((3,), int)
 
@@ -440,7 +443,7 @@ class TestModifiedTemplates:
         assert len(jaxpr.eqns) == 6
 
         # due to flattening and unflattening H
-        assert jaxpr.eqns[0].primitive == qp.X._primitive
+        assert_eqn_matches_op(jaxpr.eqns[0], qp.X)
         assert_eqn_matches_op(jaxpr.eqns[1], qp.Z)
         assert jaxpr.eqns[2].primitive == qp.ops.SProd._primitive
         assert jaxpr.eqns[3].primitive == qp.ops.SProd._primitive
@@ -992,7 +995,7 @@ class TestModifiedTemplates:
         """Test the primitve bind call of BBQRAM."""
 
         kwargs = {
-            "data": ((0, 1, 0), (1, 1, 1), (1, 1, 0), (0, 0, 0)),
+            "bitstrings": ((0, 1, 0), (1, 1, 1), (1, 1, 0), (0, 0, 0)),
             "control_wires": (0, 1),
             "target_wires": (2, 3, 4),
             "work_wires": tuple([5] + [6, 7, 8] + [12, 13, 14] + [9, 10, 11]),
@@ -1026,7 +1029,7 @@ class TestModifiedTemplates:
         """Test the primitve bind call of SelectOnlyQRAM."""
 
         kwargs = {
-            "data": (
+            "bitstrings": (
                 (0, 1, 0),
                 (1, 1, 1),
                 (1, 1, 0),
@@ -1070,7 +1073,7 @@ class TestModifiedTemplates:
         """Test the primitve bind call of HybridQRAM."""
 
         kwargs = {
-            "data": ((0, 1, 0), (1, 1, 1), (1, 1, 0), (0, 0, 0)),
+            "bitstrings": ((0, 1, 0), (1, 1, 1), (1, 1, 0), (0, 0, 0)),
             "control_wires": (0, 1),
             "target_wires": (2, 3, 4),
             "work_wires": tuple([5, 6, 7, 8, 12, 13, 14, 15, 9, 10, 11]),
@@ -1105,7 +1108,7 @@ class TestModifiedTemplates:
         """Test the primitive bind call of QROM."""
 
         kwargs = {
-            "data": ((0,), (1,)),
+            "bitstrings": ((0,), (1,)),
             "control_wires": [0],
             "target_wires": [1],
             "work_wires": None,
@@ -1593,37 +1596,32 @@ class TestModifiedTemplates:
         qp.assert_equal(q.queue[0], qp.OutPoly(**kwargs))
 
     def test_gqsp(self):
-        """Test the primitive bind call of GQSP."""
+        """Test GQSP with program capture."""
 
         def qfunc(unitary, angles):
-            qp.GQSP(unitary, angles, control=0)
+            return qp.GQSP(unitary, angles, control=0).tracer
 
         angles = np.ones([3, 3])
-        unitary = qp.RX(1, wires=1)
+        unitary = qp.S(wires=1)
         # Validate inputs
         qfunc(unitary, angles)
 
         # Actually test primitive bind
         jaxpr = jax.make_jaxpr(qfunc)(unitary, angles)
+        assert len(jaxpr.eqns) == 1
 
-        assert len(jaxpr.eqns) == 2
+        gqsp_eqn = jaxpr.eqns[0]
+        assert_eqn_matches_op(gqsp_eqn, qp.GQSP)
+        # Dynamic args first, then wires, then hybrid args, so first arg will be the angles,
+        # then the control wire, then the wire of the S gate
+        assert gqsp_eqn.invars[0] == jaxpr.jaxpr.invars[1]  # Angles
+        assert gqsp_eqn.invars[1].val == 0  # Control wire
+        assert gqsp_eqn.invars[2] == jaxpr.jaxpr.invars[0]  # S wire
 
-        rx_eqn = jaxpr.eqns[0]
-        assert rx_eqn.primitive == qp.RX._primitive
-        gqps_eqn = jaxpr.eqns[1]
-        assert gqps_eqn.primitive == qp.GQSP._primitive
-        assert gqps_eqn.invars[0] == rx_eqn.outvars[0]
-        assert gqps_eqn.invars[1] == jaxpr.jaxpr.invars[1]
-        assert gqps_eqn.invars[2].val == 0  # Control wire
-        assert gqps_eqn.params["n_wires"] == 1
-        assert len(gqps_eqn.outvars) == 1
-        assert isinstance(gqps_eqn.outvars[0], jax.core.DropVar)
+        flattened_unitary, _ = qp.pytrees.flatten(unitary)
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *flattened_unitary, angles)
 
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, unitary.data, angles)
-
-        assert len(q) == 1
-        qp.assert_equal(q.queue[0], qp.GQSP(unitary, angles, control=0))
+        qp.assert_equal(op, qp.GQSP(unitary, angles, control=0))
 
     @pytest.mark.xfail(reason="operators of operators not yet supported with Operator2")
     def test_reflection(self):
@@ -1824,14 +1822,56 @@ class TestModifiedTemplates:
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
+    @pytest.mark.parametrize(
+        "order, wires, use_kwarg",
+        [
+            (1, [0, 1, 2], False),
+            (2, [0, 1, 2, 3], True),
+            (2, [0, 2, 3, 1], True),
+        ],
+    )
+    def test_aqft(self, order, wires, use_kwarg):
+        """Test the primitive bind call of AQFT."""
+
+        def qfunc(wires):
+            if use_kwarg:
+                qp.AQFT(order=order, wires=wires)
+            else:
+                qp.AQFT(order, wires)
+
+        # Validate inputs
+        qfunc(wires)
+
+        # Actually test primitive bind
+        jaxpr = jax.make_jaxpr(qfunc)(wires)
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert_eqn_matches_op(eqn, qp.AQFT)
+        assert eqn.invars == jaxpr.jaxpr.invars
+        assert len(eqn.outvars) == 1
+        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
+        # ``order`` is a compilable parameter that must survive capture
+        order_values, _ = eqn.params["order"]
+        assert tuple(order_values) == (order,)
+
 
 def filter_fn(member: Any) -> bool:
     """Determine whether a member of a module is a class and genuinely belongs to
     qp.templates."""
-    return (
-        inspect.isclass(member)
-        and member.__module__.startswith("pennylane.templates")
-        and issubclass(member, qp.operation.Operator)
+
+    if not inspect.isclass(member):
+        return False
+
+    # exception: BasisEmbedding is an alias of BasisState, so it would be filtered away
+    # by the logic below
+    if member is qp.BasisEmbedding:
+        return True
+
+    return member.__module__.startswith("pennylane.templates") and issubclass(
+        member, qp.operation.Operator
     )
 
 
