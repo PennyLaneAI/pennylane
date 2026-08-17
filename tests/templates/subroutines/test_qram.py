@@ -73,7 +73,7 @@ def bb_quantum(bitstrings, control_wires, target_wires, work_wires, address):
             [0, 1],
             [2, 3, 4],
             [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
-            2,  # addressed from the left
+            [1, 0],  # addressed from the left
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0],  # |110>
         ),
         (
@@ -88,7 +88,7 @@ def bb_quantum(bitstrings, control_wires, target_wires, work_wires, address):
             np.array([0, 1]),
             np.array([2, 3, 4]),
             np.array([5, 11, 10, 9, 6, 7, 8, 12, 13, 14]),
-            1,
+            [0, 1],
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0],  # |111>
         ),
         (
@@ -101,7 +101,7 @@ def bb_quantum(bitstrings, control_wires, target_wires, work_wires, address):
             [0, 1],
             [2, 3, 4],
             [5, 6, 7, 8, 12, 13, 14, 9, 10, 11],
-            0,
+            [0, 0],
             [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0],  # |010>
         ),
     ],
@@ -114,7 +114,6 @@ def test_bb_quantum(
     address,
     probabilities,
 ):  # pylint: disable=too-many-arguments
-
     if has_jax and not isinstance(bitstrings[0], str) and not isinstance(bitstrings, np.ndarray):
         bitstrings, control_wires, target_wires, work_wires = (
             jnp.array(bitstrings),
@@ -507,7 +506,6 @@ def test_hybrid_quantum(
     probabilities,
     expected_circuit,
 ):  # pylint: disable=too-many-arguments
-
     if has_jax and not isinstance(bitstrings[0], str) and not isinstance(bitstrings, np.ndarray):
         bitstrings, control_wires, target_wires, work_wires = (
             jnp.array(bitstrings),
@@ -1006,7 +1004,6 @@ def test_select_only_quantum(
     probabilities,
     expected_circuit,
 ):  # pylint: disable=too-many-arguments
-
     if has_jax and not isinstance(bitstrings[0], str) and not isinstance(bitstrings, np.ndarray):
         bitstrings, control_wires, target_wires, select_wires = (
             jnp.array(bitstrings),
