@@ -14,23 +14,27 @@
 
 """Tests for ``qp.transforms.decompositions.make_crz_to_phase_gradient_decomp``"""
 
-import numpy as np
-
 # pylint: disable=no-value-for-parameter, disable=too-many-arguments
+
+import numpy as np
 import pytest
 
 import pennylane as qp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.transforms.decompositions import make_crz_to_phase_gradient_decomp
+from pennylane.wires import Wires
 
 
+@pytest.mark.capture
+@pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize("phi", [0.5, 0.3, 1 / 2 + 1 / 4 + 1 / 8, 1.0])
-@pytest.mark.parametrize("p", [2, 3, 4])
+@pytest.mark.parametrize("p", [1, 2, 3, 4])
 def test_valid_decomp(phi, p):
     """Test that ``make_crz_to_phase_gradient_decomp`` yields a valid decomposition"""
-    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(p)])
-    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(p)])
-    work_wires = qp.wires.Wires([f"work_{i}" for i in range(p - 1)])
+
+    angle_wires = Wires(list(range(2, 2 + p)))
+    phase_grad_wires = Wires(list(range(2 + p, 2 + 2 * p)))
+    work_wires = Wires(list(range(2 + 2 * p, 2 + 3 * p - 1)))
 
     kwargs = {
         "angle_wires": angle_wires,
@@ -41,56 +45,6 @@ def test_valid_decomp(phi, p):
     custom_decomp = make_crz_to_phase_gradient_decomp(**kwargs)
     op = qp.CRZ(phi, [0, 1])
     _test_decomposition_rule(op, custom_decomp, skip_decomp_matrix_check=True)
-
-
-@pytest.mark.capture
-@pytest.mark.parametrize("phi", [0.5, 0.3, 1 / 2 + 1 / 4 + 1 / 8, 1.0])
-@pytest.mark.parametrize("p", [1, 2, 3, 4])
-def test_capture(phi, p):
-    """Test that the rule from ``make_crz_to_phase_gradient_decomp`` produces the expected
-    operators when traced under program capture.
-
-    Note that under capture, ``ChangeOpBasis`` is unrolled into its ``compute_op``,
-    ``target_op``, and ``uncompute_op`` operators, so the collected ops are the two controlled
-    fanouts, the ``SemiAdder``, and then the two fanouts again (``uncompute_op`` is the same
-    callable as ``compute_op`` here), rather than a single ``ChangeOpBasis`` operator as in the
-    non-capture case (see ``test_valid_decomp``).
-    """
-    import jax  # pylint: disable=import-outside-toplevel
-
-    from pennylane.tape.plxpr_conversion import (  # pylint: disable=import-outside-toplevel
-        CollectOpsandMeas,
-    )
-
-    angle_wires = list(range(2, 2 + p))
-    phase_grad_wires = list(range(2 + p, 2 + 2 * p))
-    work_wires = list(range(2 + 2 * p, 2 + 2 * p + p - 1))
-
-    custom_decomp = make_crz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
-
-    jaxpr = jax.make_jaxpr(custom_decomp)(phi, wires=[0, 1])
-    collector = CollectOpsandMeas()
-    collector.eval(jaxpr.jaxpr, jaxpr.consts, phi, 0, 1)
-    decomp_ops = collector.state["ops"]
-
-    # binary_int is computed from the traced (jax-interface) phi, matching what the
-    # captured decomp_ops[0]/[3] will contain, since it depends on phi
-    binary_int = qp.math.binary_decimals(jax.numpy.array(phi), p, unit=4 * np.pi)
-    expected_angle_fanout = qp.ctrl(qp.BasisState(binary_int, angle_wires), control=0)
-    # the all-ones state doesn't depend on phi, so it stays a plain (numpy-interface) constant
-    expected_phase_grad_fanout = qp.ctrl(
-        qp.BasisState([1] * p, phase_grad_wires), control=1, control_values=[0]
-    )
-    expected_target = qp.SemiAdder(angle_wires, phase_grad_wires, work_wires=work_wires)
-
-    # ChangeOpBasis is unrolled under capture into compute_op, target_op, uncompute_op, with
-    # uncompute_op being identical to compute_op here
-    assert len(decomp_ops) == 5
-    qp.assert_equal(decomp_ops[0], expected_angle_fanout)
-    qp.assert_equal(decomp_ops[1], expected_phase_grad_fanout)
-    qp.assert_equal(decomp_ops[2], expected_target)
-    qp.assert_equal(decomp_ops[3], expected_angle_fanout)
-    qp.assert_equal(decomp_ops[4], expected_phase_grad_fanout)
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")

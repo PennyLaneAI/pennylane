@@ -112,11 +112,7 @@ def make_crz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
     def _resource_fn(phi, wires):  # pylint: disable=unused-argument
         precision = len(angle_wires)
         # decomposition costs, using information about angle_wires etc from the outer scope
-        target_op = qp.SemiAdder(
-            Wire[precision],
-            Wire[precision],
-            Wire[len(work_wires)],
-        )
+        target_op = qp.SemiAdder(Wire[precision], Wire[precision], Wire[len(work_wires)])
         fanout_angle = controlled_resource_rep(
             qp.BasisState, {"num_wires": precision}, num_control_wires=1, num_zero_control_values=0
         )
@@ -142,9 +138,10 @@ def make_crz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
                 control_values=[0],
             )
 
-        def target_fn():
-            qp.SemiAdder(angle_wires, phase_grad_wires, work_wires=work_wires)
-
-        qp.change_op_basis(compute_fn, target_fn, compute_fn)
+        qp.change_op_basis(
+            compute_fn,
+            qp.SemiAdder(angle_wires, phase_grad_wires, work_wires=work_wires),
+            compute_fn,
+        )
 
     return _decomp_fn
