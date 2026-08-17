@@ -93,6 +93,26 @@ def _convert_to_prod(op_or_func):
     )
 
 
+def _validate_operands(*operands):
+    """Validate the operator operands accepted across concrete and abstract construction."""
+    # pylint: disable=import-outside-toplevel
+    from pennylane.ops.mid_measure import MidMeasure, PauliMeasure
+
+    def _is_mid_measure(op):
+        if isinstance(op, (MidMeasure, PauliMeasure)):
+            return True
+        return isinstance(op, CompressedResourceOp) and issubclass(
+            op.op_type, (MidMeasure, PauliMeasure)
+        )
+
+    if any(_is_mid_measure(op) for op in operands):
+        raise ValueError("Composite operators of mid-circuit measurements are not supported.")
+
+    valid_operands = (Operator, CompressedResourceOp)
+    if not all(isinstance(op, valid_operands) or _is_abstract_operator(op) for op in operands):
+        raise TypeError("ChangeOpBasis operands must be operators.")
+
+
 # pylint: disable=inconsistent-return-statements
 def change_op_basis(
     compute_op: Operator | Callable,
@@ -249,8 +269,6 @@ class ChangeOpBasis(Operator2):
     wire_argnames = ()
     hybrid_argnames = ("compute_op", "target_op", "uncompute_op")
     arg_specs = {}
-    # Compatibility for compressed representations returned by change_op_basis_resource_rep.
-    resource_keys = frozenset(hybrid_argnames)
 
     def __init__(self, compute_op: Operator, target_op: Operator, uncompute_op: Operator = None):
         if uncompute_op is None:
@@ -260,21 +278,7 @@ class ChangeOpBasis(Operator2):
                 else adjoint(compute_op)
             )
 
-        # pylint: disable=import-outside-toplevel
-        from pennylane.ops.mid_measure import MidMeasure, PauliMeasure
-
-        if any(
-            isinstance(op, (MidMeasure, PauliMeasure))
-            for op in (compute_op, target_op, uncompute_op)
-        ):
-            raise ValueError("Composite operators of mid-circuit measurements are not supported.")
-
-        valid_operands = (Operator, CompressedResourceOp)
-        if not all(
-            isinstance(op, valid_operands) or _is_abstract_operator(op)
-            for op in (compute_op, target_op, uncompute_op)
-        ):
-            raise TypeError("ChangeOpBasis operands must be operators.")
+        _validate_operands(compute_op, target_op, uncompute_op)
 
         super().__init__(compute_op, target_op, uncompute_op)
 
@@ -295,6 +299,7 @@ class ChangeOpBasis(Operator2):
             bound_args.arguments["uncompute_op"] = _adjoint_abstract(
                 bound_args.arguments["compute_op"]
             )
+        _validate_operands(*bound_args.arguments.values())
         super().__abstract_init__(*bound_args.args, **bound_args.kwargs)
         if isinstance(self._wires, Wires):
             self._wires = Wire[0]
@@ -354,7 +359,7 @@ class ChangeOpBasis(Operator2):
     @property
     @handle_recursion_error
     def num_params(self):
-        return sum(op.num_params for op in self)
+        return len(self.data)
 
     grad_method = None
 
