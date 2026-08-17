@@ -38,23 +38,6 @@ class TrotterCDF(Operator2):
     Compressed Double Factorization form, see `arXiv:2506.15784, Sec. III A
     <https://arxiv.org/abs/2506.15784>`__.
 
-    Controlling this operator with :func:`~pennylane.ctrl` (a single control wire)
-    produces, by default (``double_phase=False``), a **genuine** controlled evolution:
-    each diagonal rotation is individually controlled at its full angle (the basis
-    rotations remain uncontrolled), so the control-0 branch is the identity and the
-    circuit implements :math:`|0\rangle\langle 0| \otimes I + |1\rangle\langle 1| \otimes e^{-iHt}`.
-
-    With ``double_phase=True`` it instead produces the double-phase Hadamard-test circuit
-    of `Fig. 6 of arXiv:2506.15784 <https://arxiv.org/abs/2506.15784>`__: each diagonal
-    rotation is sandwiched by a pair of ``CNOT`` gates from the control wire (an
-    ancilla-system ``ZZ`` coupling) and its angle is halved, so the control-0 and
-    control-1 branches evolve by :math:`e^{-iHt/2}` and :math:`e^{+iHt/2}` respectively.
-
-    .. code-block::
-
-        double_phase=True:  c: ─╭●───────╭●─┤
-                        wires: ─╰X──U(ϕ)─╰X─┤
-
     Args:
         evolution_time (float): Total evolution time ``t``.
         num_trotter_steps (int): Number of second-order Trotter steps.
@@ -67,7 +50,7 @@ class TrotterCDF(Operator2):
         double_phase (bool): Only affects the controlled decomposition. If ``False`` (default),
             :func:`~pennylane.ctrl` produces a genuine controlled unitary. If ``True``, it
             produces the double-phase (Fig. 6) Hadamard-test circuit. Has no effect on the
-            uncontrolled operator.
+            uncontrolled operator. See usage details below.
 
     **Example**
 
@@ -106,6 +89,26 @@ class TrotterCDF(Operator2):
 
     The :class:`~.PhaseShift` and :class:`~.SingleExcitation` gates are due to
     :class:`~.BasisRotation` decomposing further on ``lightning.qubit``.
+
+    .. details ::
+        :title: Usage Details
+
+        Controlling this operator with :func:`~pennylane.ctrl` (a single control wire)
+        produces, by default (``double_phase=False``), a genuine controlled evolution.
+        In particular,each diagonal rotation is individually controlled at its full angle (the basis
+        rotations remain uncontrolled), so the control-0 branch is the identity and the
+        circuit implements :math:`|0\rangle\langle 0| \otimes I + |1\rangle\langle 1| \otimes e^{-iHt}`.
+
+        With ``double_phase=True`` it instead produces the double-phase Hadamard-test circuit
+        of `Fig. 6 of arXiv:2506.15784 <https://arxiv.org/abs/2506.15784>`__: each diagonal
+        rotation is sandwiched by a pair of ``CNOT`` gates from the control wire (an
+        ancilla-system ``ZZ`` coupling) and its angle is halved, so the control-0 and
+        control-1 branches evolve by :math:`e^{-iHt/2}` and :math:`e^{+iHt/2}` respectively.
+
+        .. code-block::
+
+            double_phase=True:  c: ─╭●───────╭●─┤
+                            wires: ─╰X──U(ϕ)─╰X─┤
     """
 
     dynamic_argnames = ("evolution_time",)
