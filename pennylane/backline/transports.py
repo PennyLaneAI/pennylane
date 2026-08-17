@@ -30,9 +30,25 @@ class Transport:
     Passed to :class:`~pennylane.Backline` as the ``transport`` argument to select how messages move
     between the :class:`~.Controller` and its :class:`coprocessors <.Coprocessor>`.
 
-    See the Attributes section to learn more about the available options.
+    .. warning::
+
+        Backline is experimental. Its API may change without notice, and it is only usable through
+        the Catalyst compiler.
+
+    Args:
+        name (str): The registry name of the transport, e.g. ``"rdma"``.
 
     .. seealso:: :func:`~.get_transport`, :func:`~.register_transport`
+
+    **Example**
+
+    Transports are normally selected by name, and :class:`~pennylane.Backline` resolves the string:
+
+    >>> dev = qp.Backline(controller=qp.Controller(), transport="rdma")
+    >>> dev.transport
+    Transport(name='rdma')
+
+    Passing a :class:`~.Transport` instance directly is equivalent.
     """
 
     name: str

@@ -687,7 +687,12 @@ class TestGeneralOperations:
     def test_global_phase(self, input_wires, show_all_wires, cls):
         """Test that `GlobalPhase` and `Identity` works properly with `tape_mpl`."""
 
-        data = [0.3625][: cls.num_params]
+        num_params = 1 if cls is qp.GlobalPhase else 0
+        data = [0.3625][:num_params]
+
+        if cls is qp.GlobalPhase and input_wires:
+            pytest.skip("PL 2.0: GlobalPhase no longer acts on wires.")
+
         tape = QuantumScript([cls(*data, wires=input_wires), qp.X(0)])
         fig, ax = tape_mpl(tape, show_all_wires=show_all_wires, wire_order=[0, 1, 2, 3, 4])
 
@@ -708,11 +713,9 @@ class TestGeneralOperations:
 
         plt.close()
 
-    @pytest.mark.parametrize("cls", [qp.GlobalPhase, qp.Identity])
-    def test_multiple_global_ops(self, cls):
+    def test_multiple_global_ops(self):
         """Test that global ops correctly reserve layers for themselves."""
-        data = [0.3625][: cls.num_params]
-        tape = QuantumScript([cls(*data, wires=wires) for wires in [[], [0], [1, 2]]])
+        tape = QuantumScript([qp.Identity(wires=wires) for wires in [[], [0], [1, 2]]])
 
         fig, ax = tape_mpl(tape)
 
@@ -747,7 +750,12 @@ class TestGeneralOperations:
     def test_ctrl_global_op(self, input_wires, control_wires, show_all_wires, cls):
         """Test that controlled `GlobalPhase` and `Identity` works properly with `tape_mpl`."""
 
-        data = [0.3625][: cls.num_params]
+        num_params = 1 if cls is qp.GlobalPhase else 0
+        data = [0.3625][:num_params]
+
+        if cls is qp.GlobalPhase and input_wires:
+            pytest.skip("PL 2.0: GlobalPhase no longer acts on wires.")
+
         op = qp.ctrl(cls(*data, wires=input_wires), control=control_wires)
         tape = QuantumScript([op, qp.X(0), qp.X(1)])
         with warnings.catch_warnings():
@@ -800,7 +808,8 @@ class TestGeneralOperations:
         """Test that an error is raised if a controlled GlobalPhase is present that can
         not infer any target wires."""
 
-        data = [0.251][: cls.num_params]
+        num_params = 1 if cls is qp.GlobalPhase else 0
+        data = [0.251][:num_params]
         op = qp.ctrl(cls(*data, wires=[]), control=(0, 4))
         tape = QuantumScript([op])
         with pytest.raises(ValueError, match="controlled global gate with unknown"):
