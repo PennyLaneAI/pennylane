@@ -59,7 +59,9 @@
   available for running second-order Trotter time evolution of fragmented Hamiltonians (CDF for electronic structure,
   CGF for vibrational structure), as used in modern quantum chemistry algorithms. Controlling either template with
   :func:`~pennylane.ctrl` produces a genuine controlled evolution by default; passing ``double_phase=True`` instead
-  produces the double-phase Hadamard-test circuit. These templates are promoted from
+  produces the full-time double-phase Hadamard-test circuit of Fig. 6 of `arXiv:2506.15784
+  <https://arxiv.org/abs/2506.15784>`__ (control-0 / control-1 branches :math:`e^{-iHt}` / :math:`e^{+iHt}`), which
+  reproduces the original decomposition. These templates are promoted from
   `pennylane.labs.templates.trotter_fragmented`.
   [(#9459)](https://github.com/PennyLaneAI/pennylane/pull/9459)
   [(#9789)](https://github.com/PennyLaneAI/pennylane/pull/9789)

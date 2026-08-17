@@ -32,8 +32,8 @@ def _emit_one_body_rz(angle, target_wire, control_wires, double_phase):
 
     * No control wire: a plain ``RZ(angle)``.
     * Controlled, ``double_phase=True``: the Fig. 6 CNOT-sandwich
-      ``CNOT · RZ(angle) · CNOT`` (the halved angle is supplied by the caller by feeding
-      ``evolution_time / 2``), giving the ``e^{\\mp i H t / 2}`` double-phase branches.
+      ``CNOT · RZ(angle) · CNOT`` at the full angle, giving the full-time
+      ``e^{\\mp i H t}`` double-phase branches.
     * Controlled, ``double_phase=False``: a genuine controlled-``RZ`` (the standard ``CRZ``
       decomposition) at the full ``angle``, so the control-0 branch is the identity.
     """
@@ -102,12 +102,11 @@ def _run_trotter_steps(
       identity and the circuit is a genuine controlled-:math:`e^{-iHt}`.
     * Double-phase controlled (``double_phase=True``, Fig. 6 of `arXiv:2506.15784
       <https://arxiv.org/abs/2506.15784>`__): each diagonal block is CNOT-sandwiched by
-      the control wire and its angle is halved (obtained by passing ``evolution_time / 2``
-      here), giving the :math:`e^{\mp i H t / 2}` Hadamard-test branches.
+      the control wire at the full angle, giving the full-time :math:`e^{\mp i H t}`
+      Hadamard-test branches (this reproduces the original ``trotter_fragmented`` circuit).
 
     Args:
-        evolution_time (float): total evolution time ``t`` (pass ``t / 2`` for the
-            controlled double-phase decomposition).
+        evolution_time (float): total evolution time ``t``.
         num_trotter_steps (int): number of second-order Trotter steps (``> 0``).
         hamiltonian (dict): fragmented Hamiltonian data.
         wires (Wires): system wires.

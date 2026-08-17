@@ -120,9 +120,14 @@ class TrotterCGF(Operator2):
 
         With ``double_phase=True`` it instead produces the double-phase Hadamard-test circuit
         of `Fig. 6 of arXiv:2506.15784 <https://arxiv.org/abs/2506.15784>`__: each diagonal
-        rotation is sandwiched by a pair of ``CNOT`` gates from the control wire (an
-        ancilla-system ``ZZ`` coupling) and its angle is halved, so the control-0 and
-        control-1 branches evolve by :math:`e^{-iHt/2}` and :math:`e^{+iHt/2}` respectively.
+        rotation block is sandwiched by ``CNOT`` gates from the control wire (an
+        ancilla-system ``ZZ`` coupling), so the control-0 and control-1 branches evolve by
+        the full-time :math:`e^{-iHt}` and :math:`e^{+iHt}` respectively (up to a global
+        phase per branch), i.e. :math:`|0\rangle\langle 0| \otimes e^{-iHt} +
+        |1\rangle\langle 1| \otimes e^{+iHt}`. This is exactly the decomposition used by
+        the (now removed) ``pennylane.labs.templates.trotter_fragmented`` and is intended
+        for Hadamard-test workflows; the ancilla is left entangled with the system in both
+        branches rather than acting as a genuine control.
 
         .. code-block::
 
@@ -349,11 +354,14 @@ def _controlled_trotter_cgf_decomp(base, control_wires, control_values, work_wir
     phi = (_energy_shift(hamiltonian) * evolution_time) % (4 * np.pi)
 
     if double_phase:
-        # Double-phase (Fig. 6) circuit: each diagonal block is CNOT-sandwiched by the
-        # control wire with its angle halved (achieved by evolving for evolution_time / 2),
-        # and the global phase becomes RZ(phi) on the control wire.
+        # Double-phase (Fig. 6) circuit, identical to the original ``trotter_fragmented``
+        # decomposition: each full-time diagonal block is CNOT-sandwiched by the control
+        # wire, giving control-0 / control-1 branches e^{-iHt} / e^{+iHt}. The controlled
+        # global phase becomes RZ(-phi) on the control wire under the double-phase trick
+        # (it differs from a genuine controlled-GlobalPhase only by an unobservable global
+        # phase, but we keep it exact for bookkeeping).
         _run_trotter_steps(
-            evolution_time / 2,
+            evolution_time,
             num_trotter_steps,
             hamiltonian,
             wires,
@@ -361,7 +369,7 @@ def _controlled_trotter_cgf_decomp(base, control_wires, control_values, work_wir
             True,
             **_CGF_HELPERS,
         )
-        RZ(phi, control_wires)
+        RZ(-phi, control_wires)
         return
 
     # Genuine controlled unitary: control each diagonal rotation at the full angle (basis

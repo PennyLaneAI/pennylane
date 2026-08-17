@@ -372,14 +372,14 @@ _GATE_SET = {
 
 
 def _phase_free_close(A, B, atol=1e-8):
-    """Compare two matrices up to a global phase."""
-    tr = np.trace(A.conj().T @ B)
+    """Compare two matrices up to a global phase (``A == e^{i.} B``)."""
+    tr = np.trace(B.conj().T @ A)
     phase = tr / abs(tr) if abs(tr) > 1e-12 else 1.0
     return np.allclose(A, phase * B, atol=atol)
 
 
 def _hadamard_test(ham, sys_wires, t, steps, double_phase):
-    """Return (measured <X_anc>, Re<psi|matrix(base)|psi>) for a random |psi>."""
+    """Return (measured <X_anc>, psi) for the H-ctrl-<X> Hadamard-test circuit."""
     anc = "anc"
     dev = qp.device("default.qubit", wires=[anc] + list(sys_wires))
     rng = np.random.default_rng(2024)
@@ -397,10 +397,19 @@ def _hadamard_test(ham, sys_wires, t, steps, double_phase):
         )
         return qp.expval(qp.X(anc))
 
-    measured = float(circ())
-    U = qp.matrix(qp.TrotterCGF(t, steps, ham, wires=sys_wires), wire_order=sys_wires)
-    ref = float(np.real(psi.conj() @ (U @ psi)))
-    return measured, ref
+    return float(circ()), psi
+
+
+def _control_branches(ham, sys_wires, t, steps, double_phase):
+    """Return the (control-0, control-1) branch unitaries of ctrl(TrotterCGF)."""
+    anc = "anc"
+    op = qp.ctrl(
+        qp.TrotterCGF(t, steps, ham, wires=sys_wires, double_phase=double_phase), control=[anc]
+    )
+    [tape], _ = qp.transforms.decompose([qp.tape.QuantumScript([op], [])], gate_set=_GATE_SET)
+    matrix = qp.matrix(tape, wire_order=[anc] + list(sys_wires))
+    dim = 2 ** len(sys_wires)
+    return matrix[:dim, :dim], matrix[dim:, dim:]
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
@@ -434,14 +443,22 @@ class TestControlledDecomposition:
         """For a diagonal (commuting) Hamiltonian the genuine controlled Hadamard test
         reproduces Re<psi|e^{-iHt}|psi> = Re<psi|matrix(base)|psi> exactly."""
         ham, num_modes, n_states = diagonal_hamiltonian_cgf
-        measured, ref = _hadamard_test(ham, list(range(num_modes * n_states)), 0.9, 3, False)
+        sys_wires = list(range(num_modes * n_states))
+        t, steps = 0.9, 3
+        measured, psi = _hadamard_test(ham, sys_wires, t, steps, False)
+        u_base = qp.matrix(qp.TrotterCGF(t, steps, ham, wires=sys_wires), wire_order=sys_wires)
+        ref = float(np.real(psi.conj() @ (u_base @ psi)))
         assert np.isclose(measured, ref, atol=1e-9)
 
     def test_controlled_hadamard_test_generic(self, toy_hamiltonian_cgf):
         """The genuine controlled operation is an exact controlled-matrix(base), so the
         Hadamard test matches Re<psi|matrix(base)|psi> to machine precision."""
         ham, num_modes, n_states = toy_hamiltonian_cgf
-        measured, ref = _hadamard_test(ham, list(range(num_modes * n_states)), 0.7, 12, False)
+        sys_wires = list(range(num_modes * n_states))
+        t, steps = 0.7, 12
+        measured, psi = _hadamard_test(ham, sys_wires, t, steps, False)
+        u_base = qp.matrix(qp.TrotterCGF(t, steps, ham, wires=sys_wires), wire_order=sys_wires)
+        ref = float(np.real(psi.conj() @ (u_base @ psi)))
         assert np.isclose(measured, ref, atol=1e-9)
 
     def test_genuine_global_phase_is_phaseshift(self, toy_hamiltonian_cgf):
@@ -474,32 +491,35 @@ class TestDoublePhaseControlledDecomposition:
             _test_decomposition_rule(op, rule)
 
     def test_double_phase_branches(self, diagonal_hamiltonian_cgf):
-        """The double-phase control-0 / control-1 blocks evolve by e^{-iHt/2} / e^{+iHt/2},
-        which for a diagonal (Trotter-exact) Hamiltonian equal matrix(TrotterCGF(+/-t/2))."""
+        """The double-phase control-0 / control-1 blocks evolve by the full-time e^{-iHt} /
+        e^{+iHt} (up to a per-branch global phase), which for a diagonal (Trotter-exact)
+        Hamiltonian equal matrix(TrotterCGF(+/-t)). This matches the original
+        ``trotter_fragmented`` decomposition."""
         ham, num_modes, n_states = diagonal_hamiltonian_cgf
         sys_wires = list(range(num_modes * n_states))
-        anc = "anc"
         t, steps = 0.9, 3
-        op = qp.ctrl(qp.TrotterCGF(t, steps, ham, sys_wires, double_phase=True), control=[anc])
-        [tape], _ = qp.transforms.decompose([qp.tape.QuantumScript([op], [])], gate_set=_GATE_SET)
-        matrix = qp.matrix(tape, wire_order=[anc] + sys_wires)
+        block0, block1 = _control_branches(ham, sys_wires, t, steps, True)
         dim = 2 ** len(sys_wires)
-        block0, block1 = matrix[:dim, :dim], matrix[dim:, dim:]
-        v_half = qp.matrix(qp.TrotterCGF(t / 2, steps, ham, wires=sys_wires), wire_order=sys_wires)
-        v_neg = qp.matrix(qp.TrotterCGF(-t / 2, steps, ham, wires=sys_wires), wire_order=sys_wires)
+        v_pos = qp.matrix(qp.TrotterCGF(t, steps, ham, wires=sys_wires), wire_order=sys_wires)
+        v_neg = qp.matrix(qp.TrotterCGF(-t, steps, ham, wires=sys_wires), wire_order=sys_wires)
         assert not np.allclose(block0, np.eye(dim))  # not a genuine controlled unitary
-        assert _phase_free_close(block0, v_half)
+        assert _phase_free_close(block0, v_pos)
         assert _phase_free_close(block1, v_neg)
 
-    def test_double_phase_hadamard_test_exact_diagonal(self, diagonal_hamiltonian_cgf):
-        """The double-phase Hadamard test also recovers Re<psi|e^{-iHt}|psi> exactly for a
-        diagonal Hamiltonian (the real part is invariant to the branch convention)."""
+    def test_double_phase_hadamard_test_matches_branches(self, diagonal_hamiltonian_cgf):
+        """The double-phase Hadamard test realizes Re<psi|V0^dag V1|psi>, where V0 / V1 are
+        the (full-time) control-0 / control-1 branch unitaries."""
         ham, num_modes, n_states = diagonal_hamiltonian_cgf
-        measured, ref = _hadamard_test(ham, list(range(num_modes * n_states)), 0.9, 3, True)
+        sys_wires = list(range(num_modes * n_states))
+        t, steps = 0.9, 3
+        measured, psi = _hadamard_test(ham, sys_wires, t, steps, True)
+        block0, block1 = _control_branches(ham, sys_wires, t, steps, True)
+        ref = float(np.real(psi.conj() @ (block0.conj().T @ block1 @ psi)))
         assert np.isclose(measured, ref, atol=1e-9)
 
     def test_double_phase_global_phase_is_rz(self, toy_hamiltonian_cgf):
-        """The double-phase controlled global phase is an RZ(+phi) on the control wire."""
+        """The double-phase controlled global phase is an RZ(-phi) on the control wire
+        (matching the original ``trotter_fragmented`` decomposition)."""
         ham, num_modes, n_states = toy_hamiltonian_cgf
         sys_wires = list(range(num_modes * n_states))
         anc = 99
@@ -511,7 +531,7 @@ class TestDoublePhaseControlledDecomposition:
         ]
         assert len(rz_on_control) == 1
         phi = float((_energy_shift(ham) * t) % (4 * np.pi))
-        assert np.isclose(rz_on_control[0].parameters[0], phi)
+        assert np.isclose(rz_on_control[0].parameters[0], -phi)
 
 
 class TestIntegration:
