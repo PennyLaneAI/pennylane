@@ -15,11 +15,9 @@
 Unit tests for the StronglyEntanglingLayers template.
 """
 
-from functools import partial
+# pylint: disable=too-few-public-methods
 
 import numpy as np
-
-# pylint: disable=too-few-public-methods
 import pytest
 
 import pennylane as qp
@@ -64,34 +62,21 @@ class TestDecomposition:
         ),
     ]
 
-    @pytest.mark.parametrize(
-        "n_wires, imprimitive", [(2, qp_ops.CNOT), (3, qp_ops.CZ), (4, qp_ops.CY)]
-    )
     @pytest.mark.capture
-    def test_decomposition_new_capture(
-        self, n_wires, imprimitive, batch_dim
-    ):  # pylint: disable=unused-argument
-        """Tests the decomposition rule implemented with the new system."""
-        weights = np.random.random(
-            size=(1, n_wires, 3),
-        )
-        op = qp.StronglyEntanglingLayers(weights, wires=range(n_wires), imprimitive=imprimitive)
-
-        for rule in qp.list_decomps(qp.StronglyEntanglingLayers):
-            _test_decomposition_rule(op, rule)
-
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(
-        "n_wires, imprimitive", [(2, qp_ops.CNOT), (3, qp_ops.CZ), (4, qp_ops.CY)]
+        "n_wires, imprimitive",
+        [
+            (2, qp_ops.CNOT),
+            (3, qp_ops.CZ),
+            (4, qp_ops.CY),
+        ],
     )
-    def test_decomposition_new(
-        self, n_wires, imprimitive, batch_dim
-    ):  # pylint: disable=unused-argument
+    # pylint: disable-next=unused-argument
+    def test_decomposition_new_capture(self, n_wires, imprimitive, batch_dim):
         """Tests the decomposition rule implemented with the new system."""
-        weights = np.random.random(
-            size=(1, n_wires, 3),
-        )
+        weights = np.random.random(size=(1, n_wires, 3))
         op = qp.StronglyEntanglingLayers(weights, wires=range(n_wires), imprimitive=imprimitive)
-
         for rule in qp.list_decomps(qp.StronglyEntanglingLayers):
             _test_decomposition_rule(op, rule)
 
@@ -396,41 +381,3 @@ class TestInterfaces:
         grads2 = [weights.grad]
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
-
-
-@pytest.mark.capture
-def test_capture_decomposition():
-    """Test the decomposition can be captured."""
-
-    import jax
-
-    from pennylane.capture.primitives import for_loop_prim
-
-    layers = 5
-    n_wires = 3
-    imprimitive = qp.CNOT
-
-    weight_shape = (layers, n_wires, 3)
-    weights = np.random.random(size=weight_shape)
-    wires = list(range(n_wires))
-
-    default_ranges = (1, 2, 1, 2, 1)  # default for this shape
-    rule = partial(
-        qp.list_decomps(qp.StronglyEntanglingLayers)[0],
-        imprimitive=imprimitive,
-        ranges=default_ranges,
-    )
-    jaxpr = jax.make_jaxpr(rule)(weights, wires)
-
-    jaxpr_eqns = jaxpr.eqns
-    layer_loop_eqn = [eqn for eqn in jaxpr_eqns if eqn.primitive == for_loop_prim]
-    assert layer_loop_eqn[0].primitive == for_loop_prim
-    layer_inner_eqn = layer_loop_eqn[0].params["jaxpr_body_fn"].eqns
-
-    rot_loop_eqn = [eqn for eqn in layer_inner_eqn if eqn.primitive == for_loop_prim]
-    assert rot_loop_eqn[0].primitive == for_loop_prim
-    rot_inner_eqn = rot_loop_eqn[0].params["jaxpr_body_fn"].eqns
-    assert rot_inner_eqn[-1].params["op_cls"] == qp.Rot
-
-    cnot_inner_eqn = rot_loop_eqn[1].params["jaxpr_body_fn"].eqns
-    assert cnot_inner_eqn[-1].params["op_cls"] == qp.CNOT

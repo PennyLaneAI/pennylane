@@ -20,6 +20,7 @@ import pytest
 from gate_data import QFT
 
 import pennylane as qp
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
 @pytest.mark.jax
@@ -57,6 +58,15 @@ class TestQFT:
         expected_unitary = qp.QFT(wires=range(n_qubits)).matrix()
 
         assert np.allclose(reconstructed_unitary, expected_unitary)
+
+    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("wires", [[0], [0, 1], [0, 1, 2], [0, 1, 2, 3]])
+    def test_QFT_decomposition_new(self, wires):
+        """Tests that QFT's decomposition rules are correct."""
+        op = qp.QFT(wires=wires)
+        for rule in qp.list_decomps(op):
+            _test_decomposition_rule(op, rule)
 
     @pytest.mark.parametrize("n_qubits", range(2, 10))
     def test_QFT_adjoint_identity(self, n_qubits, tol):
