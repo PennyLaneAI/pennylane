@@ -450,7 +450,7 @@ def decompose(
 
     .. code-block:: python
 
-        @qp.decompose(gate_set={qp.Toffoli, "RX", "RZ"})
+        @qp.decompose(gate_set={qp.Toffoli, "RX", "RZ", "GlobalPhase"})
         @qp.qnode(qp.device("default.qubit"))
         def circuit():
             qp.Hadamard(wires=[0])
@@ -460,9 +460,9 @@ def decompose(
     Since the Hadamard gate is not defined in our gate set, it will be decomposed into rotations:
 
     >>> print(qp.draw(circuit)())
-    0: ──RZ(1.57)──RX(1.57)──RZ(1.57)─╭●─┤  <Z>
-    1: ───────────────────────────────├●─┤
-    2: ───────────────────────────────╰X─┤
+    0: ──RZ(1.57)──RX(1.57)──RZ(1.57)─╭GlobalPhase(-1.57)─╭●─┤  <Z>
+    1: ───────────────────────────────├GlobalPhase(-1.57)─├●─┤
+    2: ───────────────────────────────╰GlobalPhase(-1.57)─╰X─┤
 
     You can also provide a function as the ``stopping_condition`` in addition to providing a ``gate_set``. In this case
     the operator decomposition will stop once either it is given in terms of the gates in the ``gate_set`` or
@@ -470,7 +470,7 @@ def decompose(
 
     .. code-block:: python
 
-        @qp.decompose(gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
+        @qp.decompose(gate_set={"H", "T", "CNOT", "GlobalPhase"}, stopping_condition=lambda op: len(op.wires) <= 2)
         @qp.qnode(qp.device("default.qubit"))
         def circuit():
             qp.Hadamard(wires=[0])
