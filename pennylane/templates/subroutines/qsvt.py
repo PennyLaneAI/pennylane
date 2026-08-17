@@ -800,6 +800,13 @@ def _compute_qsp_angle(poly_coeffs):
 
     complementary = _complementary_poly(P)
 
+    if len(P) != len(complementary):
+        smaller, bigger = (P, complementary) if len(P) < len(complementary) else (complementary, P)
+        num_zeros_to_append = len(bigger) - len(smaller)
+        smaller = np.concatenate((smaller, np.array([0.0]*num_zeros_to_append)))
+
+        P, complementary = (smaller, bigger) if len(P) < len(complementary) else (bigger, smaller)
+
     polynomial_matrix = np.array([P, complementary])
     num_terms = polynomial_matrix.shape[1]
     rotation_angles = np.zeros(num_terms)
