@@ -25,9 +25,10 @@ from pennylane.core.operator import Operation, abstractify
 from pennylane.decomposition import DecompositionGraph, resource_rep
 from pennylane.decomposition.decomposition_graph import _DecompositionNode
 from pennylane.decomposition.decomposition_rule import DecompCollection, _fix_decomp
+from pennylane.decomposition.utils import _get_decomp_args
 from pennylane.exceptions import DecompositionError, DecompositionWarning
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.ops.op_math.controlled2 import ControlledOp2, _ctrl_abstract
+from pennylane.ops.op_math.controlled2 import ControlledOp2, _ctrl_abstract, flip_control_adjoint
 from pennylane.ops.op_math.pow2 import _pow_abstract
 from pennylane.typing import Float, Wire
 from tests.core.operator.operator2_utils import (
@@ -864,18 +865,24 @@ class TestControlledDecompositions:
 
         op1 = qp.ctrl(qp.GlobalPhase(0.5), control=[1])
         op2 = qp.ctrl(qp.GlobalPhase(0.5), control=[1, 2])
-        graph = DecompositionGraph([op1, op2], gate_set={"ControlledPhaseShift", "PhaseShift"})
-        # 4 op nodes and 2 decomposition nodes, and 1 dummy starting node.
-        assert len(graph._graph.nodes()) == 7
-        # 2 edges from decompositions to ops and 2 edges from ops to decompositions,
-        # and 2 edges from the dummy starting node to the target gate set.
-        assert len(graph._graph.edges()) == 6
+        # The decomposition rule conditionally applies X gates (and, for a single control
+        # wire, a GlobalPhase) depending on the control values, which are not concrete at
+        # resource-estimation time. Both must therefore be in the target gate set.
+        graph = DecompositionGraph(
+            [op1, op2],
+            gate_set={"ControlledPhaseShift", "PhaseShift", "GlobalPhase", "X"},
+        )
+        # 6 op nodes and 2 decomposition nodes, and 1 dummy starting node.
+        assert len(graph._graph.nodes()) == 9
+        # 2 edges from decompositions to ops and 4 edges from ops to decompositions,
+        # and 4 edges from the dummy starting node to the target gate set.
+        assert len(graph._graph.edges()) == 10
 
         # Verify the decompositions
         solution = graph.solve()
         with qp.queuing.AnnotatedQueue() as q:
-            solution.decomposition(op1)(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
-            solution.decomposition(op2)(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
+            solution.decomposition(op1)(**op1.arguments)
+            solution.decomposition(op2)(**op2.arguments)
 
         assert q.queue == [
             qp.PhaseShift(-0.5, wires=[1]),
@@ -922,9 +929,11 @@ class TestControlledDecompositions:
         )
         # 18 op nodes and 24 decomposition nodes, and the dummy starting node
         assert len(graph._graph.nodes()) == 43
-        # 24 edges from decompositions to ops and 36 edges from ops to decompositions
-        # and 6 edge from the dummy starting node to the target gate set.
-        assert len(graph._graph.edges()) == 66
+        # 24 edges from decompositions to ops and 38 edges from ops to decompositions
+        # and 6 edge from the dummy starting node to the target gate set. The controlled
+        # GlobalPhase rule now always reports X gates for flipping zero control values,
+        # which adds two edges.
+        assert len(graph._graph.edges()) == 68
 
         solution = graph.solve()
 
@@ -940,10 +949,9 @@ class TestControlledDecompositions:
         """Tests that the controlled form of an adjoint operator is decomposed properly."""
 
         op = qp.ctrl(qp.adjoint(qp.U1(0.5, wires=0)), control=[1])
-        graph = DecompositionGraph(operations=[op], gate_set={"ControlledPhaseShift"})
-        solution = graph.solve()
         with qp.queuing.AnnotatedQueue() as q:
-            solution.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
+            _, args, kwargs = _get_decomp_args(op)
+            flip_control_adjoint(*args, **kwargs)
         assert q.queue == [qp.adjoint(qp.ops.Controlled(qp.U1(0.5, wires=0), control_wires=[1]))]
 
     def test_decompose_with_single_work_wire(self):
@@ -951,11 +959,12 @@ class TestControlledDecompositions:
 
         op = qp.ctrl(qp.Rot(0.123, 0.234, 0.345, wires=0), control=[1, 2, 3])
 
-        graph = DecompositionGraph(operations=[op], gate_set={"MultiControlledX", "CRot"})
+        graph = DecompositionGraph(operations=[op], gate_set={"MultiControlledX", "CRot", "PauliX"})
         solution = graph.solve(num_work_wires=1)
         with qp.queuing.AnnotatedQueue() as q:
             rule = solution.decomposition(op, num_work_wires=1)
-            rule(*op.parameters, wires=op.wires, **op.hyperparameters)
+            rule(**op.arguments)
+
         tape = qp.tape.QuantumScript.from_queue(q)
         [tape], _ = qp.transforms.resolve_dynamic_wires([tape], min_int=4)
         assert tape.operations == [
@@ -964,7 +973,7 @@ class TestControlledDecompositions:
             qp.MultiControlledX(wires=[1, 2, 3, 4]),
         ]
         assert solution.resource_estimate(op, num_work_wires=1) == to_resources(
-            {_ctrl_abstract(qp.X, Wire[3]): 2, qp.CRot: 1}
+            {_ctrl_abstract(qp.X, Wire[3]): 2, qp.CRot: 1, qp.X: 3}
         )
 
     def test_base_decomp_contains_mcms(self):
