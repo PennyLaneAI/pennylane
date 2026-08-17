@@ -174,6 +174,7 @@ class QuantumPhaseEstimation(Operation):
                     op._bind_primitive()  # pragma: no cover
                 return op.tracer if op.tracer is not None else op
             return op
+
         unitary = _get_tracer(unitary)
         return cls._primitive.bind(unitary, *args, **kwargs)
 
