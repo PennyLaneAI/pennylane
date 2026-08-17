@@ -202,11 +202,11 @@ from pennylane.devices import Tracker
 from pennylane.devices.device_constructor import device, refresh_devices
 
 from pennylane.backline import (
+    Backline,
     Controller,
     Coprocessor,
     CoprocessorFunction,
     Node,
-    backline,
     css_decoder,
 )
 

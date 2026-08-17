@@ -2,8 +2,26 @@
 
 <h3>New features since last release</h3>
 
-* (Experimental) A new `ftqc.heterogeneous` device is added for heterogeneous compilation and execution.
+* (Experimental) A new `qp.backline` module is added for heterogeneous compilation and execution.
+  `qp.Backline` builds a device from a controller, zero or more coprocessors, and a transport,
+  describing where each part of a workload runs and how the parts communicate. The resulting device
+  binds to a QNode, and requires the Catalyst compiler to execute.
   [(#9772)](https://github.com/PennyLaneAI/pennylane/pull/9772)
+
+  ```python
+  import pennylane as qp
+
+  controller = qp.Controller(device=qp.device("lightning.qubit", wires=4), label="cpu-controller")
+  decoder = qp.Coprocessor(coprocessor_fn="decoder", comm_host="198.51.100.2", oob_port=7760)
+
+  dev = qp.Backline(controller=controller, coprocessors=[decoder], transport="rdma")
+
+  @qp.qjit
+  @qp.qnode(dev)
+  def circuit(x):
+      qp.RX(x, wires=0)
+      return qp.expval(qp.Z(0))
+  ```
 
 * ``qp.allocate`` now supports ``state="magic-T"`` and ``state="magic-T-adj"`` for requesting
   magic-state dynamic wires (:math:`|m\rangle = TH|0\rangle` and :math:`|m̄\rangle = T^\dagger H|0\rangle`).
@@ -883,7 +901,7 @@
   [(#9951)](https://github.com/PennyLaneAI/pennylane/pull/9951)
   - Templates are ported:
     - :class:`~.BasisRotation`, :class:`~.MultiplexerStatePreparation`, :class:`~.QROM`, :class:`~.QFT`, :class:`~.FlipSign`
-      :class:`~.TemporaryAND`, :class:`~.SelectPauliRot`, :class:`~.GQSP`, :class:`~.AQFT`, 
+      :class:`~.TemporaryAND`, :class:`~.SelectPauliRot`, :class:`~.GQSP`, :class:`~.AQFT`,
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
   [(#9925)](https://github.com/PennyLaneAI/pennylane/pull/9925)
   [(#9918)](https://github.com/PennyLaneAI/pennylane/pull/9918)
@@ -1264,12 +1282,13 @@ Yushao Chen,
 Diksha Dhawan,
 Marcus Edwards,
 Austin Huang,
+Anton Naim Ibrahim,
 Harshal Janjani,
 Jacob Kitchen,
 Korbinian Kottmann,
 Christina Lee,
-William Maxwell
-Anton Naim Ibrahim,
+Joseph Lee,
+William Maxwell,
 Mudit Pandey,
 Andrija Paurevic,
 Francesco Pernice Botta,

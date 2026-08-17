@@ -25,21 +25,48 @@ class CoprocessorFunction:
     :class:`~.Controller`.
 
     This is a thin handle over a precompiled library symbol. It contains the information needed to
-    locate and dispatch the function (its symbol name, and the library it lives in).
-    The compiled artifact is produced separately (cross-compiled or built on
-    the same host, e.g., via Triton) and loaded by the runtime.
+    locate and dispatch the function - its symbol name, and the library it lives in. The compiled
+    artifact is produced separately (cross-compiled, or built on the same host, e.g. via Triton) and
+    loaded by the runtime.
 
-    See the Attributes section to learn more about the available options.
+    .. warning::
+
+        Backline is experimental. Its API may change without notice, and it is only usable through
+        the Catalyst compiler.
+
+    Args:
+        name (str): The name the function is known by, used to resolve the precompiled symbol.
+        lib_path (str | None): Path to the shared library providing the symbol. Defaults to
+            ``None``, in which case the runtime resolves ``name`` from the symbols already loaded
+            on the host.
 
     .. seealso:: :class:`~.Coprocessor`, :func:`~.css_decoder`
+
+    **Example**
+
+    A coprocessor function is usually named rather than constructed --- passing a string to
+    :class:`~.Coprocessor` resolves it:
+
+    >>> coproc = qp.Coprocessor(coprocessor_fn="decoder", comm_host="127.0.0.1")
+    >>> coproc.coprocessor_fn
+    CoprocessorFunction(name='decoder', lib_path=None)
+
+    Construct one directly to point at a symbol in a specific shared library. The path is what the
+    coprocessor's node passes to the runtime as its backend library:
+
+    >>> fn = qp.CoprocessorFunction(
+    ...     name="decode_syndrome", lib_path="/opt/backline/libdecoder.so"
+    ... )
+    >>> fn.symbol_name
+    'decode_syndrome'
     """
 
     name: str
     """The name the function is known by; used to resolve the precompiled symbol."""
 
     lib_path: str | None = None
-    """Optional path to the shared library that provides the symbol. When ``None``, the runtime
-    resolves ``name`` from the symbols already loaded on the host."""
+    """Path to the shared library that provides the symbol. Defaults to ``None``, in which case the
+    runtime resolves :attr:`name` from the symbols already loaded on the host."""
 
     @property
     def symbol_name(self) -> str:

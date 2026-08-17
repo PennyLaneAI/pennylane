@@ -16,18 +16,18 @@ r"""
 .. currentmodule:: pennylane.backline
 
 This module contains experimental features for compilation and execution on heterogeneous devices.
-The :func:`~pennylane.backline` function builds a device from a :class:`~.Placement`, which specifies
-where each part of the workload runs and the :class:`~.Transport` protocol between them.
+The :class:`~pennylane.Backline` device is built from a :class:`~.Placement`, which specifies where
+each part of the workload runs and the :class:`~.Transport` protocol between them.
 
 .. warning::
 
     Backline is experimental. Its API may change without notice, and it is only usable through
     the Catalyst compiler.
 
-A backline device is built with :func:`~pennylane.backline` from a
+A backline device is built with :class:`~pennylane.Backline` from a
 :class:`controller <.Controller>` (which wraps the PennyLane device the QNode runs on, such as
 ``lightning.qubit`` or ``null.qubit``), zero or more :class:`coprocessors <.Coprocessor>`, and a
-:class:`transport <.Transport>`. The resulting :class:`~.HeterogeneousDevice` is passed into a
+:class:`transport <.Transport>`. The resulting device is passed into a
 :func:`~pennylane.qnode`:
 
 .. code-block:: python
@@ -64,15 +64,20 @@ A backline device is built with :func:`~pennylane.backline` from a
 
     @qp.qjit
     @qp.qnode(dev)
-    def circuit():
-        ...
+    def circuit(x):
+        qp.RX(x, wires=0)
+        return qp.expval(qp.Z(0))
 
 Nodes
 ~~~~~
 
-A node is a participant in the backline fabric. It is either a :class:`~.Controller`, where the QNode
-executes and which issues messages, or a :class:`~.Coprocessor`, where those messages are processed
-and returned. Both share the options on :class:`~.Node`.
+A node is a participant in the backline fabric. It is either a :class:`~.Controller`, where the
+QNode executes and which issues messages, or a :class:`~.Coprocessor`, where those messages are
+processed and returned. Both share the options on :class:`~.Node`: a ``label`` to identify the
+node, the transport ``backend`` it uses, whether it runs ``remote``, and how its code is deployed
+there. A
+placement has exactly one controller and zero or more coprocessors, and nodes are never used on
+their own --- they are passed to :class:`~pennylane.Backline`, which assembles them into a device.
 
 .. autosummary::
     :toctree: api
@@ -84,10 +89,13 @@ and returned. Both share the options on :class:`~.Node`.
 Coprocessor functions
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-A :class:`~.Coprocessor` applies a precompiled function to each message it receives (e.g., decoding a
-syndrome). Coprocessor functions can be defined directly in C++ as a runtime function, or in Python
-through helper functions such as :func:`~.css_decoder`. Either way they are referenced by a
-:class:`~.CoprocessorFunction`.
+A :class:`~.Coprocessor` applies a precompiled function to each message it receives, for example
+decoding a syndrome into a correction. Because that function runs inside the real-time loop it is
+compiled ahead of time rather than traced: it can be written directly in C++ as a runtime function,
+or generated from Python by a helper such as :func:`~.css_decoder`. Either way the coprocessor
+refers to it through a :class:`~.CoprocessorFunction`, which names the symbol and, optionally, the
+shared library it lives in. Passing a plain string as a coprocessor's ``coprocessor_fn`` builds one
+for you.
 
 .. autosummary::
     :toctree: api
@@ -98,36 +106,43 @@ through helper functions such as :func:`~.css_decoder`. Either way they are refe
 Placement
 ~~~~~~~~~
 
-A :class:`~.Placement` groups the :class:`~.Controller`, its :class:`coprocessors <.Coprocessor>`, and
-the :class:`~.Transport`. :func:`~pennylane.backline` assembles them into a device that can be bound to
-a QNode, so a :class:`~.Placement` is normally created by calling :func:`~pennylane.backline` rather
-than constructed directly.
+A :class:`~.Placement` is the complete declarative description of where the workload runs: the
+:class:`~.Controller`, its :class:`coprocessors <.Coprocessor>`, the :class:`~.Transport` between
+them, and optionally the ``qec_code`` the circuit is encoded for. It is what the compiler
+consumes --- everything it contains ends up in the compiled program, and nothing else about the
+deployment does.
+You normally do not construct one directly: :class:`~pennylane.Backline` takes the same arguments,
+builds the placement, and carries it as the device's ``placement`` attribute.
 
 .. autosummary::
     :toctree: api
 
-    ~backline
     ~Placement
 
 Device
 ~~~~~~
 
-:func:`~pennylane.backline` returns a :class:`~.HeterogeneousDevice` that carries the
-:class:`~.Placement` and can be bound directly to a :func:`~pennylane.qnode`. It requires the Catalyst
-compiler for execution, and exposes the placement it was built from as
-:attr:`~.HeterogeneousDevice.placement`.
+:class:`~pennylane.Backline` is a device that is bound to a :func:`~pennylane.qnode` like any other
+PennyLane device. Its wires come from the controller's own device, so the QNode is written exactly
+as it would be against that device alone --- the placement changes where the work runs, not what the
+circuit says. It has no Python execution path: the device carries the placement through to the
+Catalyst compiler, so a QNode using it must be :func:`~pennylane.qjit`-compiled, and calling it
+directly raises ``NotImplementedError``.
 
 .. autosummary::
     :toctree: api
 
-    ~HeterogeneousDevice
+    ~Backline
 
 Transports
 ~~~~~~~~~~
 
-A :class:`~.Transport` selects, by name, how messages transfer between nodes. Names are resolved with
-:func:`~.get_transport` and new ones added with :func:`~.register_transport`; the implementation itself
-lives in the compiled runtime.
+A :class:`~.Transport` selects, by name, how messages move between nodes --- ``"rdma"`` is the one
+registered today. Names keep the placement independent of the implementation, which lives in the
+compiled runtime rather than in Python: :func:`~.get_transport` resolves a name to a
+:class:`~.Transport`, and :func:`~.register_transport` adds new ones. Passing a string as the
+``transport`` argument of :class:`~pennylane.Backline` resolves it for you, so most code never calls
+either function directly.
 
 .. autosummary::
     :toctree: api
@@ -137,7 +152,7 @@ lives in the compiled runtime.
     ~register_transport
 """
 
-from .device import HeterogeneousDevice, backline
+from .device import Backline
 from .functions import CoprocessorFunction, css_decoder
 from .placement import Controller, Coprocessor, Node, Placement
 from .transports import Transport, get_transport, register_transport
@@ -147,8 +162,7 @@ __all__ = [
     "Controller",
     "Coprocessor",
     "Placement",
-    "backline",
-    "HeterogeneousDevice",
+    "Backline",
     "CoprocessorFunction",
     "css_decoder",
     "Transport",
