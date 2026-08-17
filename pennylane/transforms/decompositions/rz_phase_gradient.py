@@ -18,6 +18,7 @@ Decomposition rule for RZ in terms of `phase gradient states <https://pennylane.
 import pennylane as qp
 from pennylane.decomposition import change_op_basis_resource_rep
 from pennylane.transforms.rz_phase_gradient import _rz_phase_gradient
+from pennylane.typing import Wire
 from pennylane.wires import WireError, Wires
 
 
@@ -123,11 +124,10 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
 
     def _resource_fn(phi, wires):  # pylint: disable=unused-argument
         # rz decomposition costs, using information about angle_wires etc from the outer scope
-        target_op = qp.resource_rep(
-            qp.SemiAdder,
-            num_x_wires=len(angle_wires),
-            num_y_wires=len(phase_grad_wires),
-            num_work_wires=len(work_wires),
+        target_op = qp.SemiAdder(
+            Wire[len(angle_wires)],
+            Wire[len(phase_grad_wires)],
+            Wire[len(work_wires)],
         )
         compute_op = uncompute_op = qp.resource_rep(
             qp.ops.Controlled,
