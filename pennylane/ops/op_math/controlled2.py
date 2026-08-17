@@ -648,6 +648,11 @@ def _list_controlled_decomps(op: ControlledOp2) -> DecompCollection:
     # Get custom rules registered for this controlled operator.
     custom_rules = list_decomps.dispatch(object)(op)
 
+    # The specialized ChangeOpBasis rule leaves the compute and uncompute operations
+    # uncontrolled, so it must always take precedence over general controlled fallbacks.
+    if isinstance(op.base, qp.ops.ChangeOpBasis):
+        return custom_rules
+
     # Get general fallback rules.
     general_rules = DecompCollection([])
     if op.base.has_matrix and len(op.base.wires) == 1:
