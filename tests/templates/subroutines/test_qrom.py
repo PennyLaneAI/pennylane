@@ -598,10 +598,14 @@ class TestMeasurementQROM:
     def test_resources_small_cases(self):
         """Test resource estimates for the L <= 1 and L == 2 edge cases."""
 
-        res_one = _qrom_measurement_resources(num_bitstrings=1, num_target_wires=3)
+        res_one = _qrom_measurement_resources(
+            bitstrings=Int[1, 3], control_wires=Wire[1], target_wires=Wire[3], work_wires=Wire[1]
+        )
         assert res_one[qp.BasisState(Bool[3], Wire[3])] == 1
 
-        res_two = _qrom_measurement_resources(num_bitstrings=2, num_target_wires=3)
+        res_two = _qrom_measurement_resources(
+            bitstrings=Int[2, 3], control_wires=Wire[1], target_wires=Wire[3], work_wires=Wire[1]
+        )
         assert res_two[qp.BasisState(Bool[3], Wire[3])] == 1
         assert res_two[qp.ctrl(qp.BasisState(Bool[3], Wire[3]), Wire[1])] == 1
 
