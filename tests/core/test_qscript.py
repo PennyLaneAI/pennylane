@@ -1439,4 +1439,4 @@ def test_jax_pytree_integration(qscript_type):
     assert data[5] == 0  # the wire of Rot
     assert data[6] == 2.0
     assert data[7] == 0  # the wire of `PauliX`
-    assert qp.math.allclose(data[7], eye_mat)
+    assert qp.math.allclose(data[8], eye_mat)
