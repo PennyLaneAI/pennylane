@@ -118,7 +118,7 @@ flexible decompositions towards any target gate set.
         qp.CRX(0.5, wires=[0, 1])
 
     tape = qp.tape.QuantumScript.from_queue(q)
-    [new_tape], _ = qp.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ"})
+    [new_tape], _ = qp.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ", "GlobalPhase"})
 
 >>> pprint(new_tape.operations)
 [RX(0.25, wires=[1]), CZ(wires=[0, 1]), RX(-0.25, wires=[1]), CZ(wires=[0, 1])]

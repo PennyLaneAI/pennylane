@@ -373,7 +373,7 @@ class Select(Operation):
                     # pylint: disable-next=protected-access
                     op._bind_primitive()  # pragma: no cover
                 return op.tracer if op.tracer is not None else op
-            return op
+            return op  # pragma: no cover
 
         ops = (_get_tracer(op) for op in ops)
         return super()._primitive_bind_call(*ops, wires=control, **kwargs)
