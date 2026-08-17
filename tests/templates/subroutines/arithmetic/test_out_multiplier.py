@@ -213,6 +213,15 @@ def test_standard_validity_out_multiplier():
     qp.ops.functions.assert_valid(op)
 
 
+def test_wires_property():
+    """Test that wires includes all registers, including work wires."""
+    op = OutMultiplier([0, 1], [2, 3], [4, 5, 6], mod=8, work_wires=[7, 8])
+    assert op.wires == qp.wires.Wires([0, 1, 2, 3, 4, 5, 6, 7, 8])
+
+    truncated_op = OutMultiplier([0, 1], [2, 3], [4, 5, 6], mod=5, work_wires=[7, 8, 9])
+    assert truncated_op.wires == qp.wires.Wires([0, 1, 2, 3, 4, 5, 6, 7, 8])
+
+
 def test_map_wires_preserves_output_wires_zeroed():
     """Test that wire mapping preserves the output register state metadata."""
     op = OutMultiplier([0], [1], [2, 3], output_wires_zeroed=True)

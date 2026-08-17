@@ -906,6 +906,8 @@
   [(#9900)](https://github.com/PennyLaneAI/pennylane/pull/9900)
   [(#9994)](https://github.com/PennyLaneAI/pennylane/pull/9994)
   [(#9995)](https://github.com/PennyLaneAI/pennylane/pull/9995)
+  - :class:`~.OutMultiplier` and :class:`~.SignedOutMultiplier` now include work wires in ``wires``, matching :class:`~.QROM` and legacy arithmetic templates.
+  [(#9994)](https://github.com/PennyLaneAI/pennylane/pull/9994)
   [(#10018)](https://github.com/PennyLaneAI/pennylane/pull/10018)
   - Quantum chemistry operators are ported:
     - :class:`~.SingleExcitation`
