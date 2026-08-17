@@ -29,7 +29,7 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.ops import CNOT, Controlled
-from pennylane.typing import AbstractWires, Wire
+from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
 
 from .incrementer import Incrementer
@@ -347,31 +347,6 @@ class SignedOutMultiplier(Operator2):
             output_wires_zeroed=output_wires_zeroed,
         )
 
-    # pylint: disable=arguments-differ
-    def __abstract_init__(
-        self,
-        x_wires: AbstractWires | WiresLike,
-        y_wires: AbstractWires | WiresLike,
-        output_wires: AbstractWires | WiresLike,
-        work_wires: AbstractWires | WiresLike,
-        output_wires_zeroed: bool = False,
-    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
-        if not isinstance(x_wires, AbstractWires):
-            x_wires = Wire[len(x_wires)]
-        if not isinstance(y_wires, AbstractWires):
-            y_wires = Wire[len(y_wires)]
-        if not isinstance(output_wires, AbstractWires):
-            output_wires = Wire[len(output_wires)]
-        if not isinstance(work_wires, AbstractWires):
-            work_wires = Wire[len(work_wires)]
-        super().__abstract_init__(
-            x_wires,
-            y_wires,
-            output_wires,
-            work_wires,
-            output_wires_zeroed=output_wires_zeroed,
-        )
-
 
 def _zeroed_signed_out_multiplier_resources(
     x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=False, **_
@@ -474,7 +449,9 @@ def _twos_complement_helper(input_reg, aux_wire, work_wires):
     Controlled(
         Incrementer(
             wires=Wires(input_reg),
-            work_wires=Wires(work_wires),
+            work_wires=Wires(
+                work_wires
+            ),  # we can use the work wires since they are returned in a clean state
         ),
         control_wires=aux_wire,
         control_values=(1,),

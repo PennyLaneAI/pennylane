@@ -28,6 +28,7 @@ from pennylane.measurements import sample, state
 from pennylane.ops import CNOT
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
 from pennylane.templates import BasisEmbedding
+from pennylane.templates.subroutines.arithmetic.out_multiplier import OutMultiplier
 from pennylane.templates.subroutines.arithmetic.signed_out_multiplier import (
     _not_zeroed_signed_out_multiplier_resources,
     _twos_complement_helper,
@@ -135,16 +136,29 @@ def test_not_zeroed_decomposition_without_capture():
 
 
 def test_signed_out_multiplier_resources():
-    """Test resource functions use abstract operator instances as keys."""
+    """Test resource functions declare expected abstract operator and gate counts."""
     x_wires = [0, 1]
     y_wires = [2, 3]
     output_wires = [4, 5, 6]
     work_wires = [7, 8, 9, 10]
 
-    assert _zeroed_signed_out_multiplier_resources(
+    zeroed_resources = _zeroed_signed_out_multiplier_resources(
         x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=True
     )
-    assert _not_zeroed_signed_out_multiplier_resources(x_wires, y_wires, output_wires, work_wires)
+    mult_ops = [key for key in zeroed_resources if isinstance(key, OutMultiplier)]
+    assert len(mult_ops) == 1
+    mult_op = mult_ops[0]
+    assert mult_op.arguments["mod"] == 2 ** (len(output_wires) - 1)
+    assert len(mult_op.work_wires) == len(work_wires) - 2
+    assert mult_op.arguments["output_wires_zeroed"] is True
+    assert zeroed_resources[CNOT] == 6 + (len(x_wires) + len(y_wires)) * 2 + (len(output_wires) - 1)
+
+    not_zeroed_resources = _not_zeroed_signed_out_multiplier_resources(
+        x_wires, y_wires, output_wires, work_wires
+    )
+    nested_ops = [key for key in not_zeroed_resources if isinstance(key, SignedOutMultiplier)]
+    assert len(nested_ops) == 1
+    assert nested_ops[0].arguments["output_wires_zeroed"] is True
 
 
 def test_map_wires_preserves_output_wires_zeroed():
