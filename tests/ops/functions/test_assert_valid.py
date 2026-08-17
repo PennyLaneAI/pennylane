@@ -15,11 +15,11 @@
 This module contains unit tests for ``qp.ops.functions.assert_valid``.
 """
 
+# pylint: disable=too-few-public-methods,unused-argument
+
 from pickle import PicklingError
 
 import numpy as np
-
-# pylint: disable=too-few-public-methods, unused-argument
 import pytest
 import scipy.sparse
 

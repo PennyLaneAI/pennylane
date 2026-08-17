@@ -21,13 +21,12 @@ import itertools
 import pickle
 from collections import defaultdict
 from functools import partial
-from string import ascii_lowercase
 
 import numpy as np
 import scipy.sparse
 
 import pennylane as qp
-from pennylane import math
+from pennylane import capture, math
 from pennylane.core.operator import Operator, Operator1, Operator2, abstractify
 from pennylane.decomposition import DecompositionRule
 from pennylane.decomposition.decomposition_rule import _decomp_contains_mcm
@@ -131,9 +130,11 @@ def _check_decomposition(op, skip_wire_mapping):
 
     if skip_wire_mapping:
         return
+
     # Check that mapping wires transitions to the decomposition
-    wire_map = {w: ascii_lowercase[i] for i, w in enumerate(op.wires)}
+    wire_map = {w: w + len(op.wires) for w in op.wires}
     mapped_op = op.map_wires(wire_map)
+
     # calling `map_wires` on a Controlled operator generates a new `op` from the controls and
     # base, so may return a different class of operator. We only compare decomps of `op` and
     # `mapped_op` if `mapped_op` **has** a decomposition.
@@ -661,9 +662,9 @@ def _check_wires(op, skip_wire_mapping):
     assert isinstance(op.wires, qp.wires.Wires), "wires must be a wires instance"
     if skip_wire_mapping:
         return
-    wire_map = {w: ascii_lowercase[i] for i, w in enumerate(op.wires)}
+    wire_map = {w: w + len(op.wires) for w in op.wires}
     mapped_op = op.map_wires(wire_map)
-    new_wires = qp.wires.Wires(list(ascii_lowercase[: len(op.wires)]))
+    new_wires = qp.wires.Wires([w + len(op.wires) for w in op.wires])
     assert mapped_op.wires == new_wires, "wires must be mappable with map_wires"
 
 
@@ -858,7 +859,7 @@ def assert_valid(
     _check_sparse_matrix(op)
     _check_eigendecomposition(op)
     _check_generator(op)
-    if not skip_differentiation:
+    if not skip_differentiation and not capture.enabled():
         _check_differentiation(op)
     if not skip_capture:
         _check_capture(op)
