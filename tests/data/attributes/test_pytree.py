@@ -155,6 +155,31 @@ class TestDatasetPyTree:
 
         assert _storable_as_array([leaf]) is False
 
+    @pytest.mark.parametrize(
+        "op, expected_wires, expected_types",
+        [
+            (qp.RZ(0.5, wires=0), [0], [int]),
+            (qp.RZ(0.5, wires="a"), ["a"], [str]),
+            (qp.CNOT(wires=[0, 1]), [0, 1], [int, int]),
+            (qp.Rot(0.1, 0.2, 0.3, wires=2), [2], [int]),
+        ],
+    )
+    def test_wire_labels_are_native_python(self, op, expected_wires, expected_types):
+        """Test that wire labels round-trip as native Python scalars rather than numpy types."""
+        result = DatasetPyTree(op).get_value()
+
+        qp.assert_equal(result, op)
+        assert list(result.wires) == expected_wires
+        assert [type(w) for w in result.wires] == expected_types
+
+    def test_integer_wire_not_promoted_by_float_parameter(self):
+        """Test that an integer wire label is not dtype-promoted to a float by a float parameter
+        sharing the leaf storage."""
+        result = DatasetPyTree(qp.RZ(0.5, wires=0)).get_value()
+
+        assert result.wires[0] == 0
+        assert isinstance(result.wires[0], int)
+
 
 @pytest.mark.parametrize("shots", [None, 1, [1, 2]])
 def test_quantum_scripts(shots):

@@ -443,11 +443,15 @@ def _check_generator(op):
     if op.has_generator:
         gen = op.generator()
         assert isinstance(gen, qp.operation.Operator)
-        new_op = (
-            qp.exp(gen, 1j * list(op.dynamic_args.values())[0])
-            if isinstance(op, Operator2)
-            else qp.exp(gen, 1j * op.data[0])
-        )
+
+        if isinstance(op, qp.ops.op_math.symbolicop2.SymbolicOp2):
+            op_data = list(op.base.dynamic_args.values())[0]
+        elif isinstance(op, Operator2):
+            op_data = list(op.dynamic_args.values())[0]
+        else:
+            op_data = op.data[0]
+
+        new_op = qp.exp(gen, 1j * op_data)
         assert qp.math.allclose(
             qp.matrix(op, wire_order=op.wires), qp.matrix(new_op, wire_order=op.wires)
         )
@@ -606,6 +610,21 @@ def _check_bind_new_parameters_op2(op):
         assert qp.math.allclose(op_to_check.arguments[name], val), failure_comment
 
 
+def _check_bind_new_parameters_symbolicop2(op):
+    """Check that bind new parameters can create a new op with different bound arguments."""
+    new_dyn_args = {
+        k: math.cast_like(v * 0.0, v)
+        for k, v in op.base.arguments.items()
+        if k in op.base.dynamic_argnames
+    }
+    new_data_op = qp.ops.functions.bind_new_parameters(op, new_dyn_args.values())
+    failure_comment = (
+        "bind_new_parameters must be able to update the symbolicop2 with new arguments."
+    )
+    for name, val in new_dyn_args.items():
+        assert qp.math.allclose(new_data_op.base.arguments[name], val), failure_comment
+
+
 def _check_differentiation(op):
     """Checks that the operator can be executed and differentiated correctly."""
 
@@ -739,7 +758,10 @@ def _assert_valid_operator2(
                 )
 
     if not skip_bind_new_parameters:
-        _check_bind_new_parameters_op2(op)
+        if isinstance(op, qp.ops.op_math.symbolicop2.SymbolicOp2):
+            _check_bind_new_parameters_symbolicop2(op)
+        else:
+            _check_bind_new_parameters_op2(op)
 
 
 # pylint: disable=too-many-arguments
