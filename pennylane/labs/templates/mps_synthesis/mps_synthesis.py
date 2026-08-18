@@ -741,9 +741,7 @@ def mps_preparation(mps_tensors, wires):
         as the bond wires. While the circuit runs they are re-used as the bond register that
         carries the correlations along the chain; by the end they no longer hold any bond
         information and instead encode the physical state of the last
-        :math:`\lceil \log_2 \chi \rceil` sites. Concretely, the left-boundary and bulk sites are
-        written directly onto the physical wires, while the right-boundary sites end up on the
-        auxiliary wires — so the entire register holds the prepared state, as shown below.
+        :math:`\lceil \log_2 \chi \rceil` sites.
 
         Consider an MPS with three left-/right-boundary tensors of increasing/decreasing bond
         dimensions and two bulk tensors of bond dimension χ in between:
