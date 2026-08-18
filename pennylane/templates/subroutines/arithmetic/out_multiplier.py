@@ -580,7 +580,7 @@ def _c_add_sub_resources(num_x_wires, num_y_wires):
             )
         ] += 2
 
-    cnot_on_0_rep = ctrl(X(Wire[0]), control=Wire[0], control_values=[0])
+    cnot_on_0_rep = ctrl(X(Wire[1]), control=Wire[1], control_values=[0])
     resources[cnot_on_0_rep] += 2 * (1 + int(num_y_wires > 1))
 
     for key, value in _semi_adder_resources(Wire[num_x_wires], Wire[num_y_wires]).items():
