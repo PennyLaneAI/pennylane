@@ -51,8 +51,8 @@ def _verify_jax_installation():
 
 
 def _make_switches() -> tuple[Callable[[], None], Callable[[], None], Callable[[], bool], Callable]:
-    r"""Create four functions, corresponding to an activation switch, a deactivation switch
-    and a status query, and a context manager, in that order.
+    r"""Create four functions, corresponding to an activation switch, a deactivation switch,
+    a status query, and a context manager, in that order.
 
     .. note::
 
