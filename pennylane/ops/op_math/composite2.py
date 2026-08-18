@@ -47,6 +47,9 @@ class CompositeOp2(Operator2, is_baseclass=True):
     :meth:`~.operation.Operator.matrix` and :meth:`~.operation.Operator.decomposition`.
     """
 
+    hybrid_argnames = ("operands", "_init_pauli_rep")
+    wire_argnames = ()
+
     _eigs = {}  # cache eigen vectors and values like in qp.Hermitian
 
     def __init__(

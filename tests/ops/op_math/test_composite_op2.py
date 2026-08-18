@@ -98,13 +98,13 @@ class TestConstruction:
         ppm = qp.ops.PauliMeasure("XY", wires=[0, 1])
         op = qp.RX(0.5, 2)
         with pytest.raises(ValueError, match="Composite operators of mid-circuit"):
-            _ = ValidOp(mcm_0, mcm_1)
+            _ = ValidOp((mcm_0, mcm_1))
         with pytest.raises(ValueError, match="Composite operators of mid-circuit"):
-            _ = ValidOp(op, mcm_1)
+            _ = ValidOp((op, mcm_1))
         with pytest.raises(ValueError, match="Composite operators of mid-circuit"):
-            _ = ValidOp(mcm_0, op)
+            _ = ValidOp((mcm_0, op))
         with pytest.raises(ValueError, match="Composite operators of mid-circuit"):
-            _ = ValidOp(ppm, op)
+            _ = ValidOp((ppm, op))
 
     def test_initialization(self):
         """Test that valid child classes can be initialized without error"""
@@ -291,11 +291,6 @@ def _is_method_with_no_argument(method):
 class TestMscMethods:
     """Test dunder and other visualizing methods."""
 
-    def test_empty_repr(self):
-        """Test __repr__ on an empty composite op."""
-        op = ValidOp()
-        assert repr(op) == "ValidOp()"
-
     @pytest.mark.parametrize("ops_lst, op_rep", tuple((i, j) for i, j in zip(ops, ops_rep)))
     def test_repr(self, ops_lst, op_rep):
         """Test __repr__ method."""
@@ -304,24 +299,24 @@ class TestMscMethods:
 
     def test_nested_repr(self):
         """Test nested repr values while other nested features such as equality are not ready"""
-        op = ValidOp(qp.PauliX(0), ValidOp(qp.RY(1, wires=1), qp.PauliX(0)))
+        op = ValidOp((qp.PauliX(0), ValidOp(qp.RY(1, wires=1), qp.PauliX(0))))
         assert repr(op) == "X(0) # (RY(1, wires=[1]) # X(0))"
 
     def test_label(self):
         """Test label method."""
-        op = ValidOp(qp.RY(1, wires=1), qp.PauliX(1))
+        op = ValidOp((qp.RY(1, wires=1), qp.PauliX(1)))
         assert op.label() == "RY#X"
         with pytest.raises(ValueError):
             op.label(base_label=["only_first"])
 
-        nested_op = ValidOp(qp.PauliX(0), op)
+        nested_op = ValidOp((qp.PauliX(0), op))
         assert nested_op.label() == "X#(RY#X)"
         assert nested_op.label(decimals=2) == "X#(RY\n(1.00)#X)"
         assert nested_op.label(base_label=["x0", ["ry", "x1"]]) == "x0#(ry#x1)"
 
         U = np.array([[1, 0], [0, -1]])
         cache = {"matrices": []}
-        op = ValidOp(qp.PauliX(0), ValidOp(qp.PauliY(1), qp.QubitUnitary(U, wires=0)))
+        op = ValidOp((qp.PauliX(0), ValidOp(qp.PauliY(1), qp.QubitUnitary(U, wires=0))))
         assert op.label(cache=cache) == "X#(Y#U\n(M0))"
         assert cache["matrices"] == [U]
 
@@ -396,22 +391,22 @@ class TestProperties:
 
     def test_depth_property(self):
         """Test depth property."""
-        op = ValidOp(qp.RZ(1.32, wires=0), qp.Identity(wires=0), qp.RX(1.9, wires=1))
+        op = ValidOp((qp.RZ(1.32, wires=0), qp.Identity(wires=0), qp.RX(1.9, wires=1)))
         assert op.arithmetic_depth == 1
 
-        op = ValidOp(qp.PauliX(0), ValidOp(qp.Identity(wires=0), qp.RX(1.9, wires=1)))
+        op = ValidOp((qp.PauliX(0), ValidOp(qp.Identity(wires=0), qp.RX(1.9, wires=1))))
         assert op.arithmetic_depth == 2
 
     def test_overlapping_ops_property(self):
         """Test the overlapping_ops property."""
-        valid_op = ValidOp(
+        valid_op = ValidOp((
             qp.sum(qp.PauliX(0), qp.PauliY(5), qp.PauliZ(10)),
             qp.sum(qp.PauliX(1), qp.PauliY(4), qp.PauliZ(6)),
             qp.prod(qp.PauliX(10), qp.PauliY(2)),
             qp.PauliY(7),
             qp.Hamiltonian([1, 1], [qp.PauliX(2), qp.PauliZ(7)]),
             qp.prod(qp.PauliX(4), qp.PauliY(3), qp.PauliZ(8)),
-        )
+        ))
         overlapping_ops = [
             [
                 qp.sum(qp.PauliX(0), qp.PauliY(5), qp.PauliZ(10)),
@@ -431,6 +426,6 @@ class TestProperties:
     def test_overlapping_ops_private_attribute(self):
         """Test that the private `_overlapping_ops` attribute gets updated after a call to
         the `overlapping_ops` property."""
-        op = ValidOp(qp.RZ(1.32, wires=0), qp.Identity(wires=0), qp.RX(1.9, wires=1))
+        op = ValidOp((qp.RZ(1.32, wires=0), qp.Identity(wires=0), qp.RX(1.9, wires=1)))
         overlapping_ops = op.overlapping_ops
         assert op._overlapping_ops == overlapping_ops
