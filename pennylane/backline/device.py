@@ -31,14 +31,18 @@ class Backline(Device):
     """A device for heterogeneous compilation and execution over a backline placement.
 
     The device stores the :class:`~.Placement` consisting of a :class:`transport <.Transport>`,
-    :class:`controller <.Controller>`, and :class:`coprocessors <.Coprocessor>`. This device
-    requires the Catalyst compiler.
+    :class:`controller <.Controller>`, and :class:`coprocessors <.Coprocessor>`. Its wires are taken
+    from the controller's device, so a QNode is written exactly as it would be against that device
+    alone. This device requires the Catalyst compiler.
 
     Keyword Args:
         controller (Controller): The :class:`~.Controller` that drives the QPU and runs the QNode.
         coprocessors (Sequence[Coprocessor]): Zero or more :class:`~.Coprocessor` accelerators.
         transport (str | Transport): The transfer protocol between nodes, by registry name (e.g.
             ``"rdma"``) or a :class:`~.Transport`.
+        qec_code (str | None): The quantum error-correcting code to implicitly encode the circuit.
+            Currently the only supported option is ``"steane"``. Defaults to ``None``, leaving the
+            circuit unencoded.
         shots (int | None): Number of shots. Defaults to ``None`` (analytic); set shots on the
             QNode with :func:`~pennylane.set_shots` instead.
 
@@ -50,6 +54,14 @@ class Backline(Device):
     .. seealso:: :class:`~.Controller`, :class:`~.Coprocessor`, :class:`~.Placement`
 
     **Example**
+
+    The minimal device runs everything in this process, on a default ``null.qubit`` controller:
+
+    >>> dev = qp.Backline(controller=qp.Controller(), transport="rdma")
+    >>> dev.transport
+    Transport(name='rdma')
+
+    A real placement names where each node runs and how the compiler reaches it:
 
     .. code-block:: python
 
@@ -68,7 +80,9 @@ class Backline(Device):
             executor_options={"host": "192.0.2.11", "port": 7813},
         )
 
-        dev = qp.Backline(controller=con, coprocessors=[coproc], transport="rdma")
+        dev = qp.Backline(
+            controller=con, coprocessors=[coproc], transport="rdma", qec_code="steane"
+        )
 
         @qp.qjit
         @qp.qnode(dev)
