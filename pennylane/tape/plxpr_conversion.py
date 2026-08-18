@@ -270,10 +270,8 @@ def _convert_element_type(self, operand, **kwargs):
 
 @CollectOpsandMeas.register_primitive(jax.lax.eq_p)
 def _equal(self, lhs, rhs):
-    if isinstance(lhs, MeasurementValue):
+    if isinstance(lhs, MeasurementValue) or isinstance(rhs, MeasurementValue):
         return lhs == rhs
-    if isinstance(rhs, MeasurementValue):
-        return rhs == lhs
     return jax.lax.eq_p.bind(lhs, rhs)
 
 
