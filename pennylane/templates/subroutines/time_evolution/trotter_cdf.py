@@ -34,9 +34,25 @@ from ._trotter_utils import _emit_one_body_rz, _emit_two_body_isingzz, _run_trot
 class TrotterCDF(Operator2):
     r"""Second-order Trotter time evolution for a Compressed Double Factorization (CDF) Hamiltonian.
 
-    Implements :math:`e^{-iHt}` for an electronic-structure Hamiltonian in the
-    Compressed Double Factorization form, see `arXiv:2506.15784, Sec. III A
-    <https://arxiv.org/abs/2506.15784>`__.
+    This template realizes :math:`U \approx e^{-iHt}` for an electronic-structure Hamiltonian
+    given in the Compressed Double Factorization (CDF) form (see `arXiv:2506.15784, Sec. III A
+    <https://arxiv.org/abs/2506.15784>`__), i.e. a sum of one- and two-body fragments that are
+    each diagonal in their own orbital basis:
+
+    .. math::
+
+        H = E_0 + \sum_{p} Z^{(0)}_{pp}\, \tilde{n}^{(0)}_{p}
+            + \sum_{l=1}^{L} \sum_{p,q} Z^{(l)}_{pq}\, \tilde{n}^{(l)}_{p} \tilde{n}^{(l)}_{q} ,
+
+    where :math:`\tilde{n}^{(l)}_{p} = \mathcal{U}^{(l)} n_{p} \mathcal{U}^{(l)\dagger}` is the
+    number operator of spin orbital :math:`p` rotated into the basis of fragment :math:`l`. The
+    leaf tensors ``leaf_tensors[l]`` are the :math:`N \times N` orbital rotations
+    :math:`\mathcal{U}^{(l)}` (applied to both spin sectors via :class:`~.BasisRotation`), and
+    the core tensors ``core_tensors[l]`` hold the fragment coefficients :math:`Z^{(l)}`
+    (:math:`Z^{(0)}` the diagonal one-body energies, :math:`Z^{(l\geq 1)}` the symmetric two-body
+    couplings). The constant is :math:`E_0 =` ``nuc_constant``. Under the mapping
+    :math:`n_{p} = (I - Z_{p})/2`, each fragment reduces to the ``RZ`` / ``IsingZZ`` rotations
+    applied by the second-order Trotter product formula.
 
     Args:
         evolution_time (float): Total evolution time ``t``.
@@ -50,7 +66,7 @@ class TrotterCDF(Operator2):
         double_phase (bool): Only affects the controlled decomposition. If ``False`` (default),
             :func:`~pennylane.ctrl` produces a genuine controlled unitary
             :math:`\text{diag}(1, U)` where :math:`U = e^{-iHt}` is the Trotter evolution.
-            If ``True``, it produces :math:`\text{diag}(U^\dagger, U)` instead, leading to the
+            If ``True``, it produces :math:`\text{diag}(U, U^\dagger)` instead, leading to the
             double phase trick for Hadamard test circuits (see `Fig. 6 <https://arxiv.org/abs/2506.15784>`__ and usage details below).
 
     **Example**

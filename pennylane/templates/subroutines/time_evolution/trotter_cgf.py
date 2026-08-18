@@ -34,8 +34,27 @@ from ._trotter_utils import _emit_one_body_rz, _emit_two_body_isingzz, _run_trot
 class TrotterCGF(Operator2):
     r"""Second-order Trotter time evolution for a Christiansen Greedy Fragmentation (CGF) Hamiltonian.
 
-    Implements :math:`e^{-iHt}` for a vibrational Hamiltonian in the Christiansen Greedy
-    Fragmentation form, see `arXiv:2508.11865, Sec. III C <https://arxiv.org/abs/2508.11865>`__.
+    This template realizes :math:`U \approx e^{-iHt}` for a vibrational Hamiltonian given in the
+    Christiansen Greedy Fragmentation (CGF) form (see `arXiv:2508.11865, Sec. III C
+    <https://arxiv.org/abs/2508.11865>`__), i.e. a sum of one- and two-body fragments that are
+    each diagonal in their own per-mode basis:
+
+    .. math::
+
+        H = E_0 + \sum_{l,p} Z^{(0)}_{llpp}\, \tilde{n}^{(0)}_{lp}
+            + \sum_{\nu=1}^{L} \sum_{l>m} \sum_{p,q} Z^{(\nu)}_{lmpq}\,
+              \tilde{n}^{(\nu)}_{lp} \tilde{n}^{(\nu)}_{mq} ,
+
+    where :math:`\tilde{n}^{(\nu)}_{lp} = \mathcal{U}^{(\nu,l)} n_{lp} \mathcal{U}^{(\nu,l)\dagger}`
+    is the number operator of modal :math:`p` of mode :math:`l` rotated into the basis of fragment
+    :math:`\nu`. The leaf tensors ``leaf_tensors[nu][l]`` are the per-mode :math:`N \times N`
+    rotations :math:`\mathcal{U}^{(\nu,l)}` (applied via :class:`~.BasisRotation` on each mode's
+    modal register), and the core tensors ``core_tensors[nu]`` hold the fragment coefficients
+    :math:`Z^{(\nu)}` (:math:`Z^{(0)}` the one-body energies, :math:`Z^{(\nu \geq 1)}` the two-body
+    couplings). The constant is :math:`E_0 =` ``nuc_constant``. Two-body fragments couple distinct
+    modes (:math:`l > m`) only, with the linear terms absorbed into the one-body fragment
+    (regrouped form). Under the mapping :math:`n_{lp} = (I - Z_{lp})/2`, each fragment reduces to
+    the ``RZ`` / ``IsingZZ`` rotations applied by the second-order Trotter product formula.
 
     Args:
         evolution_time (float): Total evolution time ``t``.
@@ -50,7 +69,7 @@ class TrotterCGF(Operator2):
         double_phase (bool): Only affects the controlled decomposition. If ``False`` (default),
             :func:`~pennylane.ctrl` produces a genuine controlled unitary
             :math:`\text{diag}(1, U)` where :math:`U = e^{-iHt}` is the Trotter evolution.
-            If ``True``, it produces :math:`\text{diag}(U^\dagger, U)` instead, leading to the
+            If ``True``, it produces :math:`\text{diag}(U, U^\dagger)` instead, leading to the
             double phase trick for Hadamard test circuits (see `Fig. 6 <https://arxiv.org/abs/2506.15784>`__ and usage details below).
 
     **Example**
