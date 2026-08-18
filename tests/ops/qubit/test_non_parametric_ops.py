@@ -835,7 +835,6 @@ class TestMultiControlledX:
         op_repr = qp.MultiControlledX(wires=wires, control_values=control_values).__repr__()
         assert op_repr == f"MultiControlledX(wires={wires}, control_values={control_values})"
 
-    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("num_work_wires", [0, 1, 2, 3])
     @pytest.mark.parametrize("num_control_wires", [2, 3, 4, 5, 6])

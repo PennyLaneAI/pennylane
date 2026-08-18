@@ -23,7 +23,6 @@ from pennylane import numpy as pnp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
-@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Run standard tests of operation validity."""
@@ -209,7 +208,6 @@ class TestDecomposition:
         ),
     ]
 
-    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(("hamiltonian", "time", "steps"), DECOMP_PARAMS)
     def test_decomposition_new(self, hamiltonian, time, steps):

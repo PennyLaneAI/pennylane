@@ -22,7 +22,6 @@ import pennylane as qp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
-@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
@@ -87,7 +86,6 @@ class TestAQFT:
 
         assert np.allclose(m1, m2)
 
-    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("order,wires", [(o, w) for w in range(2, 10) for o in range(1, w)])
     def test_decomposition_new(self, order, wires):

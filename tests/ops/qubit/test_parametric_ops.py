@@ -165,7 +165,6 @@ SKIP_ASSERT_VALID = {
 
 class TestOperations:
 
-    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("op", ALL_OPERATIONS)
     def test_assert_valid(self, op):
@@ -717,7 +716,6 @@ class TestDecompositions:
         for expected_mat, decomp_mat in zip(expected_mats, decomp_mats):
             assert np.allclose(expected_mat, decomp_mat)
 
-    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.unit
     @pytest.mark.parametrize("dim, wires", two_wire_pcphases + five_wire_pcphases + other_pcphases)
@@ -2839,7 +2837,6 @@ PAULI_ROT_MATRIX_TEST_DATA = [
 class TestPauliRot:
     """Test the PauliRot operation."""
 
-    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_assert_valid(self):
         """Tests that a PauliRot is valid"""
@@ -3338,7 +3335,6 @@ class TestMultiRZ:
         assert decomp_ops[4].name == "CNOT"
         assert decomp_ops[4].wires == Wires([3, 2])
 
-    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_MultiRZ_assert_valid(self):
         """Tests that MultiRZ is valid."""

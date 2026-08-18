@@ -41,7 +41,6 @@ from pennylane.core.operator import abstractify
         ),
     ],
 )
-@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_checks(lcu, control, skip_diff):
     """Run standard validity tests."""

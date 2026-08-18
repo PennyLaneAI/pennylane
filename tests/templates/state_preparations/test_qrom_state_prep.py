@@ -42,7 +42,6 @@ def test_float_to_binary(val, num_bits, expected):
 
 class TestQROMStatePreparation:
 
-    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_standard_validity(self):
         """Check the operation using the assert_valid function."""

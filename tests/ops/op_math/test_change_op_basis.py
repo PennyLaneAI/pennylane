@@ -45,7 +45,6 @@ ops = (
 )
 
 
-@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_basic_validity():
     """Run basic validity checks on a change_op_basis operator."""
@@ -441,7 +440,6 @@ class TestDecomposition:
         for op1, op2 in zip(decomposition, true_decomposition):
             qp.assert_equal(op1, op2)
 
-    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("ops_lst", ops)
     def test_decomposition_new(self, ops_lst):
@@ -461,7 +459,6 @@ class TestDecomposition:
 
         assert tape.operations == list(ops_lst)
 
-    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("ops_lst", ops)
     def test_controlled_decomposition_new(self, ops_lst):

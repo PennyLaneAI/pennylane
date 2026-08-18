@@ -29,7 +29,6 @@ from pennylane.templates.state_preparations.state_prep_mps import (
 
 class TestMPSPrep:
 
-    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_standard_validity(self):
         """Check the template using the `assert_valid` function."""
@@ -624,7 +623,6 @@ class TestMPSPrep:
             ),
         ],
     )
-    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_new(self, mps, num_wires):
         """Tests the decomposition rule implemented with the new system."""

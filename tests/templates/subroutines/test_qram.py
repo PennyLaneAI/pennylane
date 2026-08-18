@@ -249,7 +249,6 @@ def test_raises(params, error, match):
         ),
     ],
 )
-@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_bbqram_decomposition_new(
     bitstrings,
@@ -584,7 +583,6 @@ def test_hybrid_quantum(
         ),
     ],
 )
-@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_hybrid_decomposition_new(
     bitstrings,
@@ -1191,7 +1189,6 @@ def test_select_only_raises(params, error, match):
         ),
     ],
 )
-@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_select_decomposition_new(
     bitstrings, control_wires, target_wires, select_wires, select_value
@@ -1208,7 +1205,6 @@ def test_select_decomposition_new(
         _test_decomposition_rule(op, rule)
 
 
-@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_ffqram_standard_validity():
     """Check the operation using the assert_valid function."""
@@ -1385,7 +1381,6 @@ class TestFFQRAMDecomposition:
 
         assert np.allclose(circuit(), expected_state)
 
-    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_new(self):
         """Tests the decomposition rule implemented with the new system."""

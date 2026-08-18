@@ -23,7 +23,6 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.wires import Wires
 
 
-@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_checks():
     """Run standard checks with the assert_valid function."""
@@ -179,7 +178,6 @@ class TestFlipSign:
             ([1, 0, 1, 0], [0, 1, 5, 4]),
         ],
     )
-    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_new(self, state, wires):
         """Tests the decomposition rule implemented with the new system."""

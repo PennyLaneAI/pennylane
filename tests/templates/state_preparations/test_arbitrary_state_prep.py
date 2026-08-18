@@ -72,7 +72,6 @@ class TestHelpers:
     ],
 )
 # No capture test as JAX does not support indexing into arrays of strings
-@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_decomposition_new(weights, wires):
     """Tests the decomposition rule implemented with the new system."""
@@ -84,7 +83,6 @@ def test_decomposition_new(weights, wires):
         _test_decomposition_rule(op, rule)
 
 
-@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Check the operation using the assert_valid function."""

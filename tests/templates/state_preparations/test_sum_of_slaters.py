@@ -476,7 +476,6 @@ class TestSumOfSlatersPrep:
         indices = tuple(rng.choice(2**num_wires, size=num_entries, replace=False))
         return coefficients, indices
 
-    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(
         "num_wires, num_entries",
@@ -489,7 +488,6 @@ class TestSumOfSlatersPrep:
         op = SumOfSlatersPrep(coefficients, wires, indices=indices)
         assert_valid(op, skip_differentiation=True)
 
-    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("n", [7, 9, 15, 16, 17])
     def test_standard_validity_non_id_encoding(self, n, seed):

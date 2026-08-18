@@ -31,7 +31,6 @@ class PlainOperator(qp.operation.Operator):
     """just an operator."""
 
 
-@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize("target", (qp.PauliZ(0), qp.Rot(1.2, 2.3, 3.4, wires=0)))
 def test_basic_validity(target):

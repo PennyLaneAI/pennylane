@@ -25,7 +25,6 @@ from pennylane import numpy as pnp
 from pennylane.core.operator import abstractify
 
 
-@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize("init_state", [np.array([1, 1, 0]), None])
 def test_standard_validity(init_state):

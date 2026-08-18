@@ -25,7 +25,6 @@ from pennylane import numpy as pnp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
-@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Run standard checks with the assert_valid function."""
@@ -166,7 +165,6 @@ class TestDecomposition:
         ([np.pi] * 4, [[[np.pi] * 2] * 3], range(4)),
     ]
 
-    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(("initial_layer_weights", "weights", "wires"), DECOMP_PARAMS)
     def test_decomposition_new(self, initial_layer_weights, weights, wires):

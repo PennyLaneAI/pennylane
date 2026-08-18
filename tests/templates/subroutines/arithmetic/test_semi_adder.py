@@ -23,7 +23,6 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arithmetic.semi_adder import _controlled_semi_adder
 
 
-@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.pl2do(
     reason="PL 2.0: blocked on supporting wires as arguments to captured workflows [sc-127789]."
@@ -155,7 +154,6 @@ class TestSemiAdder:
         assert names.count("Adjoint(TemporaryAND)") == 4
         assert names.count("CNOT") == 21
 
-    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("work_wires", [[9, 10, 11], None])
     @pytest.mark.parametrize(("x_wires"), [[0, 1, 2], [0, 1], [0, 1, 2, 3]])

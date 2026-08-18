@@ -84,7 +84,6 @@ def _full_state(M, N, n):
         (7, 3, 3),
     ],
 )
-@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity(M, N, n):
     """Check the operation using the assert_valid function.

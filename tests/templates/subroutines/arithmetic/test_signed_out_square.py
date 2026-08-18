@@ -25,7 +25,6 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arithmetic.signed_out_square import SignedOutSquare
 
 
-@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize("output_wires_zeroed", [False, True])
 def test_standard_validity_signed_out_square(output_wires_zeroed):
@@ -256,7 +255,6 @@ class TestSignedOutSquare:
             ([0, 1, 2, 3], [4, 5, 6, 7], [9, 10, 11, 12, 13], False),
         ],
     )
-    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("use_jit", [pytest.param(True, marks=pytest.mark.jax), False])
     def test_decomposition_new(

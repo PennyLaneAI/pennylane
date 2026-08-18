@@ -41,7 +41,6 @@ def pow_using_dunder_method(base, z):
     return base**z
 
 
-@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_basic_validity():
     """Run basic operator validity checks."""

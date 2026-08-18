@@ -48,7 +48,6 @@ class TestSumOfSlatersPrep2:
         "num_wires, num_entries",
         [(2, 1), (2, 2), (2, 4), (4, 3), (4, 6), (10, 3), (10, 10), (10, 137), (13, 1421)],
     )
-    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_standard_validity(self, num_wires, num_entries, seed):
         """Test that SumOfSlatersPrep2 is a valid PennyLane operator."""
@@ -57,7 +56,6 @@ class TestSumOfSlatersPrep2:
         op = SumOfSlatersPrep2(coefficients, **all_wires, indices=indices)
         assert_valid(op, skip_differentiation=True)
 
-    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("n", [7, 9, 15, 16, 17])
     def test_standard_validity_non_id_encoding(self, n, seed):

@@ -48,7 +48,6 @@ def test_wires_error_decomp_fun():
         rule(angles, control_wires, target_wire, "X")
 
 
-@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize("prec", [2, 3, 5])
 @pytest.mark.parametrize("num_controls", [1, 2])
@@ -226,7 +225,6 @@ def test_integration_multi_wire(rot_axis, seed):
     assert np.allclose(out_state, expected), f"decomposition wrong for rot_axis={rot_axis}"
 
 
-@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_capture_compatibility():
     """Ensures capture compatibility."""
@@ -267,7 +265,6 @@ def test_capture_compatibility():
         ("Z", qp.RZ),
     ],
 )
-@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_rot_axis_zero_controls(rot_axis, expected_op):
     """Test the 0-control-wire edge case for all rotation axes."""

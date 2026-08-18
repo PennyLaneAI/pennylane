@@ -28,7 +28,6 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 class TestGQSP:
     """Test the qp.GQSP template."""
 
-    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_standard_validity(self):
         """Test standard validity criteria with assert_valid."""
@@ -183,7 +182,6 @@ class TestGQSP:
         for op1, op2 in zip(decomposition, expected):
             qp.assert_equal(op1, op2)
 
-    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_new(self):
         """Tests the decomposition rule implemented with the new system."""
