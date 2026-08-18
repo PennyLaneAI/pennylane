@@ -121,8 +121,8 @@ class ControlledQubitUnitary(Controlled2):
 
     >>> U = np.array([[ 0.94877869,  0.31594146], [-0.31594146,  0.94877869]])
     >>> qp.ControlledQubitUnitary(U, wires=[0, 1, 2])
-    Controlled(QubitUnitary(array([[ 0.948...,  0.3159...],
-        [-0.3159...,  0.948...]]), wires=[2]), control_wires=[0, 1])
+    ControlledQubitUnitary(base=[[ 0.94877869  0.31594146]
+     [-0.31594146  0.94877869]], wires=[0, 1, 2], control_values=[ True  True], unitary_check=False, work_wires=[], work_wire_type=borrowed)
 
     Typically, controlled operations apply a desired gate if the control qubits
     are all in the state :math:`\vert 1\rangle`. However, there are some situations where
@@ -135,14 +135,14 @@ class ControlledQubitUnitary(Controlled2):
     second is in state ``1``, and the third in state ``1``, we can write:
 
     >>> qp.ControlledQubitUnitary(U, wires=[0, 1, 2, 3], control_values=[0, 1, 1])
-    Controlled(QubitUnitary(array([[ 0.948...,  0.3159...],
-           [-0.3159...,  0.948...]]), wires=[3]), control_wires=[0, 1, 2], control_values=[False, True, True])
-
+    ControlledQubitUnitary(base=[[ 0.94877869  0.31594146]
+     [-0.31594146  0.94877869]], wires=[0, 1, 2, 3], control_values=[False  True  True], unitary_check=False, work_wires=[], work_wire_type=borrowed)
+    
     or
 
     >>> qp.ControlledQubitUnitary(U, wires=[0, 1, 2, 3], control_values=[False, True, True])
-    Controlled(QubitUnitary(array([[ 0.948...,  0.3159...],
-           [-0.3159...,  0.948...]]), wires=[3]), control_wires=[0, 1, 2], control_values=[False, True, True])
+    ControlledQubitUnitary(base=[[ 0.94877869  0.31594146]
+     [-0.31594146  0.94877869]], wires=[0, 1, 2, 3], control_values=[False  True  True], unitary_check=False, work_wires=[], work_wire_type=borrowed)
     """
 
     dynamic_argnames = ("base", "control_values")

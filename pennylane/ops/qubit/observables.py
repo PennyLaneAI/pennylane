@@ -843,8 +843,8 @@ class StateVectorProjector(Projector):
 
         >>> state_vector = np.array([1., 1j])/np.sqrt(2)
         >>> StateVectorProjector.compute_diagonalizing_gates(state_vector, wires=[0])
-        [QubitUnitary(array([[ 0.70710678+0.j        ,  0.        -0.70710678j],
-                             [ 0.        +0.70710678j, -0.70710678+0.j        ]]), wires=[0])]
+        [QubitUnitary(U=[[ 0.70710678+0.j          0.        -0.70710678j]
+         [ 0.        +0.70710678j -0.70710678+0.j        ]], wires=[0], unitary_check=False)]
         """
         # Adapting the approach discussed in the link below to work with arbitrary complex-valued state vectors.
         # Alternatively, we could take the adjoint of the Mottonen decomposition for the state vector.

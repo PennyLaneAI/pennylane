@@ -663,8 +663,8 @@ class SpecialUnitary(Operation):
 
         >>> theta = np.array([0.5, 0.1, -0.3])
         >>> qp.SpecialUnitary(theta, wires=[0]).decomposition()
-        [QubitUnitary(array([[ 0.83004499-0.28280371j,  0.0942679 +0.47133952j],
-            [-0.0942679 +0.47133952j,  0.83004499+0.28280371j]]), wires=[0])]
+        [QubitUnitary(U=[[ 0.83004499-0.28280371j  0.0942679 +0.47133952j]
+         [-0.0942679 +0.47133952j  0.83004499+0.28280371j]], wires=[0], unitary_check=False)]
         """
         theta = self.data[0]
         if qp.math.requires_grad(theta):
