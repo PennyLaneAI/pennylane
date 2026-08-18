@@ -68,9 +68,7 @@ def test_units_select_pauli_rot_phase_gradient(p):
     for g, exp_name in zip(op, ["Prod", "SemiAdder", "Prod"], strict=True):
         assert g.name == exp_name
 
-    for g, exp_name in zip(
-        op.hyperparameters["operands"][-1], ["MultiControlledX"] * p + ["QROM"], strict=True
-    ):
+    for g, exp_name in zip(op.compute_op, ["MultiControlledX"] * p + ["QROM"], strict=True):
         assert g.name == exp_name
 
 
