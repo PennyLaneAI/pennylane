@@ -197,8 +197,6 @@ from typing import Optional
 from pennylane import capture, pytrees  # tach-ignore
 from pennylane.exceptions import QueuingError
 
-from .operator.operator2 import pop_op_eqns  # tach-ignore
-
 
 class WrappedObj:
     """Wraps an object to make its hash dependent on its identity"""
@@ -577,6 +575,9 @@ def remove_from_program(op):
     if QueuingManager.recording():
         QueuingManager.remove(op)
     if capture.enabled():
+        # pylint: disable-next=import-outside-toplevel
+        from .operator.operator2 import pop_op_eqns  # tach-ignore
+
         pop_op_eqns((op,))
 
 
