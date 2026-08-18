@@ -42,7 +42,6 @@ from pennylane.templates.subroutines.time_evolution.trotter_cgf import (
 )
 from pennylane.typing import Wire
 from pennylane.wires import Wires
-
 from tests.templates.subroutines.time_evolution.trotter_test_helpers import (  # pylint: disable=no-name-in-module
     TROTTER_GATE_SET,
     control_branches,
@@ -362,7 +361,9 @@ class TestControlledDecomposition:
         anc = "anc"
         t, steps = 0.5, 2
         op = qp.ctrl(qp.TrotterCGF(t, steps, ham, sys_wires), control=[anc])
-        [tape], _ = qp.transforms.decompose([qp.tape.QuantumScript([op], [])], gate_set=TROTTER_GATE_SET)
+        [tape], _ = qp.transforms.decompose(
+            [qp.tape.QuantumScript([op], [])], gate_set=TROTTER_GATE_SET
+        )
         matrix = qp.matrix(tape, wire_order=[anc] + sys_wires)
         u_base = qp.matrix(qp.TrotterCGF(t, steps, ham, wires=sys_wires), wire_order=sys_wires)
         dim = 2 ** len(sys_wires)
@@ -387,7 +388,9 @@ class TestControlledDecomposition:
         anc = 99
         t = 0.5
         op = qp.ctrl(qp.TrotterCGF(t, 1, ham, sys_wires), control=[anc])
-        [tape], _ = qp.transforms.decompose([qp.tape.QuantumScript([op], [])], gate_set=TROTTER_GATE_SET)
+        [tape], _ = qp.transforms.decompose(
+            [qp.tape.QuantumScript([op], [])], gate_set=TROTTER_GATE_SET
+        )
         phase_shifts = [
             o for o in tape.operations if isinstance(o, qp.PhaseShift) and list(o.wires) == [anc]
         ]
@@ -443,7 +446,9 @@ class TestDoublePhaseControlledDecomposition:
         anc = 99
         t = 0.5
         op = qp.ctrl(qp.TrotterCGF(t, 1, ham, sys_wires, double_phase=True), control=[anc])
-        [tape], _ = qp.transforms.decompose([qp.tape.QuantumScript([op], [])], gate_set=TROTTER_GATE_SET)
+        [tape], _ = qp.transforms.decompose(
+            [qp.tape.QuantumScript([op], [])], gate_set=TROTTER_GATE_SET
+        )
         rz_on_control = [
             o for o in tape.operations if isinstance(o, qp.RZ) and list(o.wires) == [anc]
         ]

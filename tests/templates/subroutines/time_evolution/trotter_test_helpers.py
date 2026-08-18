@@ -45,7 +45,9 @@ def phase_free_close(A, B, atol=1e-8):
     return np.allclose(A, phase * B, atol=atol)
 
 
-def hadamard_test(trotter_cls, ham, sys_wires, t, steps, double_phase):  # pylint: disable=too-many-arguments
+def hadamard_test(
+    trotter_cls, ham, sys_wires, t, steps, double_phase
+):  # pylint: disable=too-many-arguments
     """Return (measured <X_anc>, psi) for the H-ctrl-<X> Hadamard-test circuit."""
     anc = "anc"
     dev = qp.device("default.qubit", wires=[anc] + list(sys_wires))
@@ -67,7 +69,9 @@ def hadamard_test(trotter_cls, ham, sys_wires, t, steps, double_phase):  # pylin
     return float(circ()), psi
 
 
-def control_branches(trotter_cls, ham, sys_wires, t, steps, double_phase):  # pylint: disable=too-many-arguments
+def control_branches(
+    trotter_cls, ham, sys_wires, t, steps, double_phase
+):  # pylint: disable=too-many-arguments
     """Return the (control-0, control-1) branch unitaries of ctrl(Trotter*)."""
     anc = "anc"
     op = qp.ctrl(
