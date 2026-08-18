@@ -155,11 +155,16 @@ class SProd(ScalarSymbolicOp):
     @handle_recursion_error
     def label(self, decimals=None, base_label=None, cache=None):
         """The label produced for the SProd op."""
-        scalar_val = (
-            f"{self.scalar}"
-            if decimals is None
-            else format(math.toarray(self.scalar), f".{decimals}f")
-        )
+        scalar_arr = math.toarray(self.scalar)
+        if decimals is None:
+            scalar_val = f"{self.scalar}"
+        elif getattr(scalar_arr, "shape", ()) == ():
+            scalar_val = format(scalar_arr, f".{decimals}f")
+        else:
+            # Batched coefficients cannot use the scalar float format mini-language.
+            flat = scalar_arr.reshape(-1)
+            formatted = ", ".join(format(x, f".{decimals}f") for x in flat)
+            scalar_val = f"[{formatted}]"
 
         return base_label or f"{scalar_val}*{self.base.label(decimals=decimals, cache=cache)}"
 
