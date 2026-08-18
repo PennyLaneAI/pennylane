@@ -359,7 +359,7 @@ class QubitUnitary(Operator2):
 @custom_ctrl_dispatch.register
 def _ctrl_qu(base: QubitUnitary, control, control_values, work_wires, work_wire_type):
     return qp.ControlledQubitUnitary(
-        base=base.U,
+        U=base.U,
         wires=control + base.wires,
         control_values=control_values,
         work_wires=work_wires,

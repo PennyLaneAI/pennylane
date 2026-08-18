@@ -86,7 +86,7 @@ class TestControlledQubitUnitary:
         def base_op(x):
             return 1 if x == 0 else 0  # pauliX as a mapping
 
-        with pytest.raises(ValueError, match="Base must be a matrix"):
+        with pytest.raises(ValueError, match="U must be a matrix"):
             qp.ControlledQubitUnitary(base_op, wires=[0, 1])
 
     def test_wires_is_none(self):

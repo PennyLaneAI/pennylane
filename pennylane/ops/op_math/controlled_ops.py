@@ -100,7 +100,7 @@ class ControlledQubitUnitary(Controlled2):
     * Gradient recipe: None
 
     Args:
-        base (array[complex]): a square unitary matrix that will be used to construct a QubitUnitary
+        U (array[complex]): a square unitary matrix that will be used to construct a QubitUnitary
             operator, used as the base operator.
         wires (Union[Wires, Sequence[int], or int]): the wires the full
             controlled unitary acts on, composed of the controlled wires followed
@@ -119,7 +119,7 @@ class ControlledQubitUnitary(Controlled2):
 
     >>> U = np.array([[ 0.94877869,  0.31594146], [-0.31594146,  0.94877869]])
     >>> qp.ControlledQubitUnitary(U, wires=[0, 1, 2])
-    ControlledQubitUnitary(base=[[ 0.94877869  0.31594146]
+    ControlledQubitUnitary(U=[[ 0.94877869  0.31594146]
      [-0.31594146  0.94877869]], wires=[0, 1, 2], control_values=[ True  True], unitary_check=False, work_wires=[], work_wire_type=borrowed)
 
     Typically, controlled operations apply a desired gate if the control qubits
@@ -133,21 +133,21 @@ class ControlledQubitUnitary(Controlled2):
     second is in state ``1``, and the third in state ``1``, we can write:
 
     >>> qp.ControlledQubitUnitary(U, wires=[0, 1, 2, 3], control_values=[0, 1, 1])
-    ControlledQubitUnitary(base=[[ 0.94877869  0.31594146]
+    ControlledQubitUnitary(U=[[ 0.94877869  0.31594146]
      [-0.31594146  0.94877869]], wires=[0, 1, 2, 3], control_values=[False  True  True], unitary_check=False, work_wires=[], work_wire_type=borrowed)
 
     or
 
     >>> qp.ControlledQubitUnitary(U, wires=[0, 1, 2, 3], control_values=[False, True, True])
-    ControlledQubitUnitary(base=[[ 0.94877869  0.31594146]
+    ControlledQubitUnitary(U=[[ 0.94877869  0.31594146]
      [-0.31594146  0.94877869]], wires=[0, 1, 2, 3], control_values=[False  True  True], unitary_check=False, work_wires=[], work_wire_type=borrowed)
     """
 
-    dynamic_argnames = ("base", "control_values")
+    dynamic_argnames = ("U", "control_values")
     wire_argnames = ("wires", "work_wires")
     compilable_argnames = ("unitary_check", "work_wire_type")
     arg_specs = {
-        "base": Complex[-1, -1],
+        "U": Complex[-1, -1],
         "wires": Wire[-1],
         "control_values": Bool[-1],
         "work_wires": Wire[-1],
@@ -155,7 +155,7 @@ class ControlledQubitUnitary(Controlled2):
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        base: TensorLike,
+        U: TensorLike,
         wires: WiresLike,
         control_values=None,
         unitary_check=False,
@@ -165,18 +165,18 @@ class ControlledQubitUnitary(Controlled2):
         if wires is None:
             raise TypeError("Must specify a set of wires. None is not a valid `wires` label.")
 
-        if not isinstance(base, Iterable):
-            raise ValueError("Base must be a matrix.")
+        if not isinstance(U, Iterable):
+            raise ValueError("U must be a matrix.")
 
         work_wires = Wires(() if work_wires is None else work_wires)
 
-        num_base_wires = int(qp.math.log2(qp.math.shape(base)[-1]))
+        num_base_wires = int(qp.math.log2(qp.math.shape(U)[-1]))
         target_wires = wires[-num_base_wires:]
         control_wires = wires[:-num_base_wires]
 
         # We use type.__call__ instead of calling the class directly so that we don't bind the
         # operator primitive when new program capture is enabled
-        base = type.__call__(qp.QubitUnitary, base, wires=target_wires, unitary_check=unitary_check)
+        base = type.__call__(qp.QubitUnitary, U, wires=target_wires, unitary_check=unitary_check)
 
         super().__init__(
             base,
@@ -191,18 +191,18 @@ class ControlledQubitUnitary(Controlled2):
     @override
     def __abstract_init__(  # pylint: disable=too-many-arguments, arguments-differ
         self,
-        base: TensorLike | AbstractArray,
+        U: TensorLike | AbstractArray,
         wires: WiresLike | AbstractWires,
         control_values=None,
         unitary_check=False,  # pylint: disable=unused-argument
         work_wires: WiresLike | AbstractWires = (),
         work_wire_type: str | None = "borrowed",
     ):
-        num_base_wires = int(qp.math.log2(base.shape[-1]))
+        num_base_wires = int(qp.math.log2(U.shape[-1]))
         num_control_wires = len(wires) - num_base_wires
 
         super().__abstract_init__(
-            base=base,
+            base=U,
             control_wires=Wire[num_control_wires],
             control_values=control_values,
             work_wires=work_wires,
@@ -242,8 +242,8 @@ class ControlledQubitUnitary(Controlled2):
         return super().decomposition()
 
 
-def _to_general_c_qu_resource(base, wires, work_wires, work_wire_type, **_):
-    num_target_wires = int(qp.math.log2(qp.math.shape(base)[-1]))
+def _to_general_c_qu_resource(U, wires, work_wires, work_wire_type, **_):
+    num_target_wires = int(qp.math.log2(qp.math.shape(U)[-1]))
     num_control_wires = len(wires) - num_target_wires
     num_work_wires = len(work_wires)
     return {
@@ -262,13 +262,13 @@ def _to_general_c_qu_resource(base, wires, work_wires, work_wire_type, **_):
 @qp.register_condition(lambda wires, control_values, **_: len(wires) - len(control_values) > 2)
 @qp.register_resources(_to_general_c_qu_resource)
 # pylint: disable=too-many-arguments
-def _to_general_c_qu(base, wires, control_values, work_wires, work_wire_type, **_):
+def _to_general_c_qu(U, wires, control_values, work_wires, work_wire_type, **_):
     """Convert a ControlledQubitUnitary to a general Controlled(QubitUnitary) so that
     the graph finds the general decomposition rule of applying control to the decomposition
     of the base QubitUnitary."""
     num_target_wires = len(wires) - len(control_values)
     ControlledOp2(
-        qp.QubitUnitary(base, wires=wires[-num_target_wires:]),
+        qp.QubitUnitary(U, wires=wires[-num_target_wires:]),
         control_wires=wires[:-num_target_wires],
         control_values=control_values,
         work_wires=work_wires,
