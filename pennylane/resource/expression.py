@@ -32,7 +32,7 @@ def _cast_if_constant(
         skip_normalization (bool): Whether to skip normalization when creating the Expression.
 
     Returns:
-        Expression | int: An int if the result is a constant, otherwise a new :class:`Expression` instance.
+        Expression | int: An int if the result is a constant, otherwise a new :class:`~.resource.Expression` instance.
     """
     if len(new_data) == 0:
         return 0

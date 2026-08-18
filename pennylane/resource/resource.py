@@ -87,17 +87,17 @@ def _flatten_dict(data: dict, prefix: str = "", sep: str = ".") -> dict:
 
 
 def _collect_vars(obj: Any) -> Generator[str]:
-    """Collect the symbolic variables of every :class:`Expression` within an arbitrary pytree.
+    """Collect the symbolic variables of every :class:`~.resource.Expression` within an arbitrary pytree.
 
     Uses :func:`~pennylane.pytrees.flatten` to traverse any registered container type (``dict``,
-    ``list``, ``tuple``, ...) to arbitrary depth, yielding the variables of every :class:`Expression`
+    ``list``, ``tuple``, ...) to arbitrary depth, yielding the variables of every :class:`~.resource.Expression`
     leaf. Non-``Expression`` leaves are ignored.
 
     Args:
         obj (Any): The (possibly nested) object to search.
 
     Yields:
-        str: Each symbolic variable found across every :class:`Expression` leaf.
+        str: Each symbolic variable found across every :class:`~.resource.Expression` leaf.
     """
     leaves, _ = flatten(obj)
     for leaf_val in leaves:
@@ -106,11 +106,11 @@ def _collect_vars(obj: Any) -> Generator[str]:
 
 
 def _subs_pytree(obj: Any, substitutions: dict) -> Any:
-    """Substitute symbolic variables within every :class:`Expression` leaf of an arbitrary pytree.
+    """Substitute symbolic variables within every :class:`~.resource.Expression` leaf of an arbitrary pytree.
 
     Uses :func:`~pennylane.pytrees.flatten`/:func:`~pennylane.pytrees.unflatten` to traverse any
     registered container type (``dict``, ``list``, ``tuple``, ...) to arbitrary depth, substituting
-    into every :class:`Expression` leaf while preserving the original structure. Non-``Expression``
+    into every :class:`~.resource.Expression` leaf while preserving the original structure. Non-``Expression``
     leaves are left untouched.
 
     Args:
@@ -169,8 +169,8 @@ class Resources:
     .. details::
         :title: Symbolic Resource Information
 
-        Attributes in this class can be of type :class:`Expression`, allowing for symbolic
-        manipulation and substitution of variables. When variables of type :class:`Expression` are
+        Attributes in this class can be of type :class:`~.resource.Expression`, allowing for symbolic
+        manipulation and substitution of variables. When variables of type :class:`~.resource.Expression` are
         present as top-level fields or as values within (possibly nested) dictionaries of arbitrary
         depth, the :attr:`vars` attribute will contain the set of all symbolic variables used in the
         resource counts. This includes fields introduced in derived classes. Similarly, the
@@ -202,7 +202,7 @@ class Resources:
         object.__setattr__(self, "vars", frozenset(all_vars))
 
     def to_pretty_str(self, preindent: int = 0) -> str:
-        """Convert a :class:`Resources` object into a human-readable string representation.
+        """Convert a :class:`~.resource.Resources` object into a human-readable string representation.
 
         Automatically iterates over all fields of the dataclass and formats them into a string,
         including any nested dictionaries.
@@ -324,7 +324,7 @@ class Resources:
 
         .. note::
 
-            Every :class:`Expression` leaf is substituted, including those nested to arbitrary
+            Every :class:`~.resource.Expression` leaf is substituted, including those nested to arbitrary
             depth within registered pytree containers (``dict``, ``list``, ``tuple``, ...). The
             original container structure is preserved.
 
@@ -403,7 +403,7 @@ class SpecsResources(Resources):
 
     .. seealso::
 
-        :class:`Resources` for the base class and its fields.
+        :class:`~.resource.Resources` for the base class and its fields.
 
     .. warning::
 
@@ -495,7 +495,7 @@ class SpecsResources(Resources):
 
     def to_pretty_str(self, preindent: int = 0) -> str:
         """
-        Pretty string representation of this :class:`SpecsResources` object.
+        Pretty string representation of this :class:`~.resource.SpecsResources` object.
 
         Args:
             preindent (int): Number of spaces to prepend to each line.
@@ -542,7 +542,7 @@ class SpecsResources(Resources):
 
     def _repr_markdown_(self) -> str:
         """
-        Return a Markdown table representation of the :class:`SpecsResources` for Jupyter notebook display.
+        Return a Markdown table representation of the :class:`~.resource.SpecsResources` for Jupyter notebook display.
 
         .. seealso::
 
@@ -586,7 +586,7 @@ class SpecsResources(Resources):
         return "\n".join(lines)
 
     def to_dict(self) -> dict[str, Any]:
-        """Convert this :class:`SpecsResources` to a dictionary."""
+        """Convert this :class:`~.resource.SpecsResources` to a dictionary."""
 
         # Need to explicitly include properties
         d = asdict(self)
@@ -606,7 +606,7 @@ class PBCSpecsResources(SpecsResources):
 
     .. seealso::
 
-        :class:`SpecsResources` for the base class and its fields.
+        :class:`~.resource.SpecsResources` for the base class and its fields.
 
     .. warning::
 
@@ -625,7 +625,7 @@ class PBCSpecsResources(SpecsResources):
 
     def to_pretty_str(self, preindent: int = 0) -> str:
         """
-        Pretty string representation of this :class:`PBCSpecsResources` object.
+        Pretty string representation of this :class:`~.resource.PBCSpecsResources` object.
 
         Args:
             preindent (int): Number of spaces to prepend to each line.
@@ -648,7 +648,7 @@ class PBCSpecsResources(SpecsResources):
 
     def _repr_markdown_(self) -> str:
         """
-        Return a Markdown table representation of the :class:`PBCSpecsResources` for Jupyter notebook display.
+        Return a Markdown table representation of the :class:`~.resource.PBCSpecsResources` for Jupyter notebook display.
 
         .. seealso::
 
@@ -683,8 +683,8 @@ class CircuitSpecs:
         level (Any): The level of the specs (see :func:`~pennylane.specs` for more details).
         resources (SpecsResources | list[SpecsResources] | \
             dict[int | str, SpecsResources | list[SpecsResources]]): The resource specifications.
-            Depending on the ``level`` chosen, this may be a single :class:`.SpecsResources` object,
-            a list of :class:`.SpecsResources` objects, or a dictionary mapping levels to their
+            Depending on the ``level`` chosen, this may be a single :class:`~.resource.SpecsResources` object,
+            a list of :class:`~.resource.SpecsResources` objects, or a dictionary mapping levels to their
             corresponding outputs.
 
     .. details::
@@ -964,7 +964,7 @@ class CircuitSpecs:
 
     def to_pretty_str(self, tabular: bool = True) -> str:
         """
-        Pretty string representation of the :class:`CircuitSpecs` object.
+        Pretty string representation of the :class:`~.resource.CircuitSpecs` object.
 
         Args:
             tabular (bool): Whether to display the resources in a tabular format.
@@ -1104,7 +1104,7 @@ class CircuitSpecs:
 
     def _repr_markdown_(self, collapsible: bool = True) -> str:
         """
-        Return a Markdown representation of the :class:`CircuitSpecs` for Jupyter notebook display.
+        Return a Markdown representation of the :class:`~.resource.CircuitSpecs` for Jupyter notebook display.
 
         Args:
             collapsible (bool): Whether to display the resources in collapsible sections.

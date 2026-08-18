@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Functions for parsing Catalyst resource JSON data into :class:`SpecsResources` objects.
+Functions for parsing Catalyst resource JSON data into :class:`~.resource.SpecsResources` objects.
 
 .. warning::
 
@@ -69,7 +69,7 @@ def _mlir_resources_to_specs_resources(
     display_names: dict[str, str],
 ) -> None:
     """
-    Helper function to convert Catalyst resource JSON data into :class:`SpecsResources` objects.
+    Helper function to convert Catalyst resource JSON data into :class:`~.resource.SpecsResources` objects.
 
     Recursively resolves the resources for a given function call, combining subroutine resources
     with the appropriate multiplicative factors. Builds out `fn_resources`, a mapping from
@@ -77,7 +77,7 @@ def _mlir_resources_to_specs_resources(
 
     .. warning::
 
-        The resulting :class:`SpecsResources` objects will always be of the :class:`SpecsResources`
+        The resulting :class:`~.resource.SpecsResources` objects will always be of the :class:`~.resource.SpecsResources`
         type, even if they should be instances of a subclass. This is necessary to preserve the
         format of the ``extended_fields`` attribute, which may contain additional fields from the
         original JSON.
@@ -89,7 +89,7 @@ def _mlir_resources_to_specs_resources(
         all_data (dict[str, Any]): the full JSON representation of the resource data
         focus (str): the name of the function to resolve resources for in this call
         fn_resources (dict[str, SpecsResources | None]): the mapping from function name to
-            resolved :class:`SpecsResources` objects. (modified in-place by this function)
+            resolved :class:`~.resource.SpecsResources` objects. (modified in-place by this function)
         display_names (dict[str, str]): a mapping from symbolic variable names to their display
             names in the output. (modified in-place by this function)
     """
@@ -246,13 +246,13 @@ def _convert_to_subclass(res: SpecsResources) -> SpecsResources:
 def parse_resources_json(
     all_data: dict[str, Any],
 ) -> list[SpecsResources]:
-    """Converts JSON resource data from Catalyst into :class:`SpecsResources` objects.
+    """Converts JSON resource data from Catalyst into :class:`~.resource.SpecsResources` objects.
 
     Args:
         all_data (dict[str, Any]): The full JSON representation of the resource data.
 
     Returns:
-        list[SpecsResources]: A list of :class:`SpecsResources` objects corresponding to the QNodes in the JSON data.
+        list[SpecsResources]: A list of :class:`~.resource.SpecsResources` objects corresponding to the QNodes in the JSON data.
     """
     resource_data = {}
 
