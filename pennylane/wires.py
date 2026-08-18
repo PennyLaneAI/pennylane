@@ -836,3 +836,10 @@ def is_abstract_qubit(v):
     if not jax_available:
         return False
     return math.is_abstract(v) and isinstance(v.val.aval, AbstractQubit)
+
+
+def is_abstract_or_traced(v):
+    """Returns ``True`` if the provided value is abstract or traced."""
+    if isinstance(v, AbstractWires):
+        return True
+    return any(math.is_abstract(w) for w in v)

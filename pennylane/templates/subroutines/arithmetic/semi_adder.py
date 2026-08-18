@@ -13,14 +13,13 @@
 # limitations under the License.
 """Contains the SemiAdder template for performing the semi-out-place addition."""
 
-from pennylane import math
 from pennylane.allocation import allocate
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import CNOT, adjoint, ctrl
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.typing import Wire
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import Wires, WiresLike, is_abstract_or_traced
 
 from .temporary_and import TemporaryAND
 
@@ -232,22 +231,16 @@ class SemiAdder(Operator2):
         y_wires = Wires(y_wires)
         work_wires = Wires(work_wires if work_wires is not None else [])
 
-        _wires_are_traced = any(
-            math.is_abstract(w) for ws in (x_wires, y_wires, work_wires) for w in ws
-        )
+        wire_args = (x_wires, y_wires, work_wires)
+        _abstract_or_traced_wires = any(is_abstract_or_traced(w) for w in wire_args)
 
         # Wire overlap/length validation must be skipped when wires are JAX tracers,
         # as their concrete values are not available during tracing.
-        if not _wires_are_traced:
-            if work_wires:
-                if work_wires.intersection(x_wires):
-                    raise ValueError(
-                        "None of the wires in work_wires should be included in x_wires."
-                    )
-                if work_wires.intersection(y_wires):
-                    raise ValueError(
-                        "None of the wires in work_wires should be included in y_wires."
-                    )
+        if not _abstract_or_traced_wires:
+            if work_wires.intersection(x_wires):
+                raise ValueError("None of the wires in work_wires should be included in x_wires.")
+            if work_wires.intersection(y_wires):
+                raise ValueError("None of the wires in work_wires should be included in y_wires.")
             if x_wires.intersection(y_wires):
                 raise ValueError("None of the wires in y_wires should be included in x_wires.")
 

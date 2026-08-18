@@ -18,7 +18,6 @@ Contains the OutMultiplier template.
 from collections import defaultdict
 from itertools import combinations
 
-from pennylane import math
 from pennylane.core.operator import Operator2, abstractify
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.decomposition import (
@@ -31,7 +30,7 @@ from pennylane.decomposition import (
 from pennylane.decomposition.resources import resource_rep
 from pennylane.ops import BasisState, H, Prod, X, adjoint, change_op_basis, ctrl, prod
 from pennylane.typing import Wire
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import Wires, WiresLike, is_abstract_or_traced
 
 from ..controlled_sequence import ControlledSequence
 from ..qft import QFT
@@ -249,16 +248,15 @@ class OutMultiplier(Operator2):
         if mod != max_mod:
             work_wires = Wires(work_wires[:num_work_wires])
 
-        wires_list = [x_wires, y_wires, output_wires, work_wires]
-        wires_name = ["x_wires", "y_wires", "output_wires", "work_wires"]
+        wire_args = [x_wires, y_wires, output_wires, work_wires]
+        wire_argnames = ["x_wires", "y_wires", "output_wires", "work_wires"]
+        _abstract_or_traced_wires = any(is_abstract_or_traced(w) for w in wire_args)
 
-        _wires_are_traced = any(math.is_abstract(w) for ws in wires_list for w in ws)
-
-        if not _wires_are_traced:
-            wires_dict = dict(zip(wires_name, wires_list, strict=True))
-            for name0, name1 in combinations(wires_name, r=2):
-                if wires_dict[name0].intersection(wires_dict[name1]):
-                    raise ValueError(f"None of the wires in {name1} should be included in {name0}.")
+        if not _abstract_or_traced_wires:
+            wire_args_and_names = zip(wire_args, wire_argnames, strict=True)
+            for (w1, n1), (w2, n2) in combinations(wire_args_and_names, r=2):
+                if w1.intersection(w2):
+                    raise ValueError(f"None of the wires in {n2} should be included in {n1}.")
 
         super().__init__(
             x_wires,
