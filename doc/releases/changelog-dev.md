@@ -1167,6 +1167,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug where :func:`~.tape.plxpr_to_tape` raised an error when a captured
+  conditional compared mid-circuit measurement values for equality.
+  [(#10028)](https://github.com/PennyLaneAI/pennylane/pull/10028)
+
 * Updated :class:`~.Wires` to allow unflattening pytrees with scalar JAX arrays as wire indices.
   [(#9852)](https://github.com/PennyLaneAI/pennylane/pull/9852)
 

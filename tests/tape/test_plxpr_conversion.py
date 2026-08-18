@@ -529,6 +529,30 @@ class TestPlxprToTape:
         assert mp.mv.measurements[0] is tape.operations[0]
         qp.assert_equal(tape.operations[1], qp.ops.Conditional(mp.mv, qp.RX(x, 2)))
 
+    def test_cond_mcm_comparison(self):
+        """Test capturing a conditional that compares two mid-circuit measurements."""
+
+        def f():
+            m0 = qp.measure(0)
+            m1 = qp.measure(1)
+            qp.cond(m0 == m1, qp.X)(0)
+
+        jaxpr = jax.make_jaxpr(f)()
+        tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
+
+        assert len(tape.operations) == 3
+        assert isinstance(tape.operations[0], MidMeasure)
+        assert isinstance(tape.operations[1], MidMeasure)
+        conditional = tape.operations[2]
+        assert isinstance(conditional, Conditional)
+        assert conditional.meas_val.branches == {
+            (0, 0): True,
+            (0, 1): False,
+            (1, 0): False,
+            (1, 1): True,
+        }
+        qp.assert_equal(conditional.base, qp.X(0))
+
     def test_elif_mcm(self):
         """Test that an elif mcm can be caputured."""
 
