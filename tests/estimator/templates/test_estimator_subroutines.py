@@ -304,7 +304,7 @@ class TestHybridQRAM:
         )
         assert decomp == expected_res
 
-        dev = qp.device("default.qubit")
+        dev = qp.device("lightning.qubit", wires=8)
 
         @qp.transforms.decompose(max_expansion=1)
         @qp.qnode(dev)
@@ -323,19 +323,21 @@ class TestHybridQRAM:
                 k=num_select_wires,
             )
 
-        specs = qp.specs(circuit)()
+        specs = qp.specs(qp.qjit(circuit), level="user")()
 
         def _match_controlled(name, op):
             if (
                 # pylint: disable=too-many-boolean-expressions
                 name == "MultiControlledX"
                 and op.name.startswith("C(X")
-                or name == "CH"
+                or name == "C(Hadamard)"
                 and op.name.startswith("C(H")
-                or name == "C(SWAP)"  # C(C(SWAPs are now merged
+                or name == "2C(SWAP)"  # C(C(SWAPs are now merged
                 and (op.name.startswith("C(C(SWAP") or op.name.startswith("C(CSWAP"))
                 or name == "CZ"
                 and op.name.startswith("C(Z")
+                or name == "C(X)"
+                and op.name.startswith("C(X")
             ):
                 return True
             return name == op.name
@@ -344,10 +346,9 @@ class TestHybridQRAM:
             found = False
             i = 0
             total = 0
+            ty = ty.replace("Pauli", "")
             while i < len(expected_res):
-                if expected_res[i].gate.op_type.__name__ == ty.replace(
-                    "Pauli", ""
-                ) or _match_controlled(ty, expected_res[i].gate):
+                if _match_controlled(ty, expected_res[i].gate):
                     total += expected_res[i].count
                     found = True
                 i += 1
@@ -541,7 +542,7 @@ class TestSelectOnlyQRAM:
             == expected
         )
 
-        dev = qp.device("default.qubit")
+        dev = qp.device("lightning.qubit")
 
         @qp.transforms.decompose
         @qp.qnode(dev)
@@ -557,7 +558,7 @@ class TestSelectOnlyQRAM:
                 select_value=select_value,
             )
 
-        specs = qp.specs(circuit)()
+        specs = qp.specs(qp.qjit(circuit), level="user")()
 
         for ty, count in specs.resources.quantum_operations.items():
             found = False
@@ -565,8 +566,10 @@ class TestSelectOnlyQRAM:
             while not found and i < len(expected):
                 if (
                     expected[i].gate.op_type.__name__ == ty.replace("Pauli", "")
-                    or ty == "MultiControlledX"
+                    or "C(PauliX)" in ty
                     and "Controlled" == expected[i].gate.op_type.__name__
+                    or ty == "SetBasisState"
+                    and expected[i].gate.op_type.__name__ == "BasisState"
                 ):
                     assert expected[i].count == count
                     found = True
