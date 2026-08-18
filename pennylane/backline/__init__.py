@@ -148,8 +148,8 @@ Catalyst compiler, so a QNode using it must be :func:`~pennylane.qjit`-compiled.
 Transports
 ~~~~~~~~~~
 
-A :class:`~.Transport` selects, by name, how messages move between nodes. Passing a string as 
-the ``transport`` argument of :class:`~pennylane.Backline` resolves it for you, so most code never 
+A :class:`~.Transport` selects, by name, how messages move between nodes. Passing a string as
+the ``transport`` argument of :class:`~pennylane.Backline` resolves it for you, so most code never
 calls either function directly.
 
 .. autosummary::
