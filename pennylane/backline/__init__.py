@@ -27,8 +27,8 @@ each part of the workload runs and the :class:`~.Transport` protocol between the
 A backline device is built with :class:`~pennylane.Backline` from a
 :class:`controller <.Controller>` (which wraps the PennyLane device the QNode runs on, such as
 ``lightning.qubit`` or ``null.qubit``), zero or more :class:`coprocessors <.Coprocessor>`, and a
-:class:`transport <.Transport>`. The resulting device is passed into a
-:func:`~pennylane.qnode`:
+:class:`transport <.Transport>`, selected by name (e.g. ``transport="rdma"``) and resolved to a
+:class:`~.Transport`. The resulting device is passed into a :func:`~pennylane.qnode`:
 
 .. code-block:: python
 
@@ -77,9 +77,9 @@ A node is a participant in the backline fabric. It is either a :class:`~.Control
 QNode executes and which issues messages, or a :class:`~.Coprocessor`, where those messages are
 processed and returned. Both share the options on :class:`~.Node`: a ``label`` to identify the
 node, the transport ``backend`` it uses, whether it runs ``remote``, and how its code is deployed
-there. A
-placement has exactly one controller and zero or more coprocessors, and nodes are never used on
-their own --- they are passed to :class:`~pennylane.Backline`, which assembles them into a device.
+there. A placement has exactly one controller and zero or more coprocessors, and nodes are never
+used on their own --- they are passed to :class:`~pennylane.Backline`, which assembles them into a
+device.
 
 .. autosummary::
     :toctree: api
