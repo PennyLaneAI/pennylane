@@ -362,9 +362,10 @@ def _controlled_two_qubit_unitary_resource(U, wires, work_wires, work_wire_type,
         for base_op_rep, count in base_resources.gate_counts.items()
     }
     # The impl applies X gates in pairs to flip any zero control values. With abstract inputs the
-    # concrete control values (and thus the exact number of X gates) are unknown, so we declare an
-    # upper bound of two X gates per control wire. This keeps X in the estimated gate set (required
-    # even for exact=False rules) while the actual count is allowed to be lower.
+    # concrete control values (and thus the exact number of X gates) are unknown, so we declare a
+    # heuristic of half the control wires using zero as their control values. This equates to
+    # X_count = (num_control_wires // 2) * 2 ~= num_control_wires. This keeps X in the estimated
+    # gate set (required even for exact=False rules) while the actual count is allowed to be lower.
     if num_control_wires:
         gate_counts[ops.X] = num_control_wires
     return gate_counts
