@@ -200,7 +200,7 @@ class NullQubit(Device):
       - CNOT: 5,000
     Measurement processes:
     - expval(PauliZ): 100
-    Wire allocations: 100
+    Total wires: 100
     Circuit Depth: 502
 
 

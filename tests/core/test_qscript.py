@@ -655,7 +655,7 @@ class TestInfomationProperties:
         assert qs._specs is None
 
         assert qs.specs["resources"] == qp.resource.SpecsResources(
-            num_allocs=0,
+            num_wires=0,
             counts={},
             measurement_processes={},
             circuit_depth=0,
@@ -673,7 +673,7 @@ class TestInfomationProperties:
 
         counts = {"RX": 2, "Rot": 1, "CNOT": 1}
         expected_resources = qp.resource.SpecsResources(
-            num_allocs=3,
+            num_wires=3,
             counts=counts,
             measurement_processes={"expval(PauliX)": 1, "probs(2 wires)": 1},
             circuit_depth=3,

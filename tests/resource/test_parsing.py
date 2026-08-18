@@ -11,26 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit tests for the MLIR helpers for the specs transform"""
+"""Unit tests for the JSON parsing helpers for the specs transform"""
 
 import pytest
 
 from pennylane.resource import PBCSpecsResources, SpecsResources
 from pennylane.resource.expression import Expression
-from pennylane.resource.mlir_specs import (
+from pennylane.resource.parsing import (
     _generate_display_name_for_symbolic_var,
-    _get_resources_from_analysis_pass,
     _mlir_resources_to_specs_resources,
-    make_level_name_unique,
+    parse_resources_json,
 )
-
-
-def test_make_level_name_unique():
-    existing_levels = {"foo", "foo-2", "bar"}
-
-    assert make_level_name_unique("foo", existing_levels) == "foo-3"
-    assert make_level_name_unique("bar", existing_levels) == "bar-2"
-    assert make_level_name_unique("baz", existing_levels) == "baz"
 
 
 def test_generate_display_name_for_symbolic_var():
@@ -137,8 +128,8 @@ class TestAnalysisPassConversion:
             },
         }
 
-    def test_get_resources_from_analysis_pass(self, example_loop_analysis_pass_result):
-        actual = _get_resources_from_analysis_pass(example_loop_analysis_pass_result)
+    def test_parse_resources_json(self, example_loop_analysis_pass_result):
+        actual = parse_resources_json(example_loop_analysis_pass_result)
 
         var = _generate_display_name_for_symbolic_var("a", {})
 
@@ -146,28 +137,24 @@ class TestAnalysisPassConversion:
             SpecsResources(
                 counts={"Hadamard": 3, "PauliX": Expression({(var,): 2}), "PauliZ": 6},
                 measurement_processes={"expval(PauliZ)": 1},
-                num_allocs=10,
+                num_wires=10,
                 circuit_depth=None,
             ),
         ]
 
-    def test_get_resources_from_analysis_pass_warns_for_branches(
-        self, example_loop_analysis_pass_result
-    ):
+    def test_parse_resources_json_warns_for_branches(self, example_loop_analysis_pass_result):
         example_loop_analysis_pass_result["circuit"]["metadata"]["has_branches"] = True
 
         with pytest.warns(UserWarning, match="branches"):
-            _get_resources_from_analysis_pass(example_loop_analysis_pass_result)
+            parse_resources_json(example_loop_analysis_pass_result)
 
-    def test_get_resources_from_analysis_pass_warns_for_self_recursion(
-        self, example_loop_analysis_pass_result
-    ):
+    def test_parse_resources_json_warns_for_self_recursion(self, example_loop_analysis_pass_result):
         example_loop_analysis_pass_result["circuit"]["function_calls"]["static"]["circuit"] = 1
 
         with pytest.warns(UserWarning, match="recursion"):
-            _get_resources_from_analysis_pass(example_loop_analysis_pass_result)
+            parse_resources_json(example_loop_analysis_pass_result)
 
-    def test_get_resources_from_analysis_pass_warns_for_paired_recursion(
+    def test_parse_resources_json_warns_for_paired_recursion(
         self, example_loop_analysis_pass_result
     ):
         example_loop_analysis_pass_result["for_loop_1"]["function_calls"]["static"][
@@ -178,17 +165,17 @@ class TestAnalysisPassConversion:
         ] = 1
 
         with pytest.warns(UserWarning, match="recursion"):
-            _get_resources_from_analysis_pass(example_loop_analysis_pass_result)
+            parse_resources_json(example_loop_analysis_pass_result)
 
-    def test_get_resources_from_analysis_pass_warns_for_auto_management(
+    def test_parse_resources_json_warns_for_auto_management(
         self, example_loop_analysis_pass_result
     ):
         example_loop_analysis_pass_result["circuit"]["metadata"]["auto_qubit_management"] = True
 
         with pytest.warns(UserWarning, match="automatic qubit management"):
-            _get_resources_from_analysis_pass(example_loop_analysis_pass_result)
+            parse_resources_json(example_loop_analysis_pass_result)
 
-    def test_get_resources_from_analysis_pass_misc(self, example_loop_analysis_pass_result):
+    def test_parse_resources_json_misc(self, example_loop_analysis_pass_result):
         """Extra tests for features that aren't tested in the main test"""
 
         # Force both a PPR and PPM to exist
@@ -203,7 +190,7 @@ class TestAnalysisPassConversion:
         ] = 1
 
         var = _generate_display_name_for_symbolic_var("a", {})
-        actual = _get_resources_from_analysis_pass(example_loop_analysis_pass_result)
+        actual = parse_resources_json(example_loop_analysis_pass_result)
 
         assert actual == [
             SpecsResources(
@@ -215,7 +202,7 @@ class TestAnalysisPassConversion:
                     "PauliZ": 6,
                 },
                 measurement_processes={"expval(PauliZ)": Expression({(var,): 2, (): 1})},
-                num_allocs=10,
+                num_wires=10,
                 circuit_depth=None,
             ),
         ]
@@ -223,7 +210,7 @@ class TestAnalysisPassConversion:
     def test_same_op_name_multiple_widths(self):
         """A single op name at multiple qubit widths must accumulate in counts,
         not overwrite. Regression for the 'Inconsistent counts' ValueError."""
-        actual = _get_resources_from_analysis_pass(
+        actual = parse_resources_json(
             {
                 "circuit": {
                     "classical_instructions": {},
@@ -254,7 +241,7 @@ class TestAnalysisPassConversion:
             SpecsResources(
                 counts={"Hadamard": 2, "MultiControlledX": 12},
                 measurement_processes={},
-                num_allocs=4,
+                num_wires=4,
                 circuit_depth=None,
             )
         ]
@@ -271,7 +258,7 @@ class TestAnalysisPassConversion:
         assert fn_resources["dyn_for_loop_1"] == SpecsResources(
             counts={"PauliX": 1},
             measurement_processes={},
-            num_allocs=0,
+            num_wires=0,
             circuit_depth=None,
         )
 
@@ -286,7 +273,7 @@ class TestAnalysisPassConversion:
         assert fn_resources["for_loop_1"] == SpecsResources(
             counts={"PauliZ": 1},
             measurement_processes={},
-            num_allocs=0,
+            num_wires=0,
             circuit_depth=None,
         )
 
@@ -297,7 +284,7 @@ class TestAnalysisPassConversion:
         b = SpecsResources(
             counts={"PauliZ": 3, "Hadamard": 1, "PauliX": Expression({(var_name,): 1})},
             measurement_processes={},
-            num_allocs=0,
+            num_wires=0,
             circuit_depth=None,
         )
 
@@ -314,16 +301,41 @@ class TestAnalysisPassConversion:
             "qubit_disjoint_depth": 3,
         }
 
-        actual = _get_resources_from_analysis_pass(example_loop_analysis_pass_result)
+        actual = parse_resources_json(example_loop_analysis_pass_result)
 
         var = _generate_display_name_for_symbolic_var("a", {})
 
-        assert actual == [
+        expected = [
             PBCSpecsResources(
                 counts={"Hadamard": 3, "PauliX": Expression({(var,): 2}), "PauliZ": 6},
                 measurement_processes={"expval(PauliZ)": 1},
-                num_allocs=10,
+                num_wires=10,
                 any_commuting_depth=22,
                 qubit_disjoint_depth=18,
             ),
         ]
+
+        assert actual == expected
+
+    def test_unknown_extended_fields(self, example_loop_analysis_pass_result):
+        """Test that unknown extended fields are ignored with a warning."""
+        example_loop_analysis_pass_result["for_loop_2"]["extended_fields"]["unknown_field"] = {
+            "some_key": 42
+        }
+        example_loop_analysis_pass_result["circuit"]["extended_fields"]["unknown_field"] = {
+            "foo": 15
+        }
+
+        with pytest.warns(
+            UserWarning, match="Specs detected unknown extended fields in the resource data:"
+        ):
+            res = parse_resources_json(example_loop_analysis_pass_result)
+
+        assert "unknown_field" in res[0].extra
+
+        # The sub-function call is not expected to propagate since how to do this is undefined
+        assert "some_key" not in res[0].extra["unknown_field"]
+
+        # The top-level unknown field should be preserved
+        assert "foo" in res[0].extra["unknown_field"]
+        assert res[0].extra["unknown_field"]["foo"] == 15
