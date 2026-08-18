@@ -312,20 +312,26 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
 def _unroll_change_op_basis(gate_counts):
     """Unroll any resource reps of ChangeOpBasis."""
     new_gate_counts = defaultdict(int)
+
+    def _add_operand(op_rep, count):
+        if isinstance(op_rep, tuple):
+            for inner_op in op_rep:
+                _add_operand(inner_op, count)
+        elif isinstance(op_rep, qp.ops.ChangeOpBasis):
+            for inner_op in (op_rep.compute_op, op_rep.target_op, op_rep.uncompute_op):
+                _add_operand(inner_op, count)
+        elif isinstance(op_rep, CompressedResourceOp) and op_rep.op_type is qp.ops.ChangeOpBasis:
+            for p in ("compute_op", "target_op", "uncompute_op"):
+                _add_operand(op_rep.params[p], count)
+        elif isinstance(op_rep, CompressedResourceOp) and op_rep.op_type is qp.ops.Prod:
+            for inner_op, inner_count in op_rep.params["resources"].items():
+                _add_operand(inner_op, count * inner_count)
+        else:
+            new_gate_counts[op_rep] += count
+
     for k, count in gate_counts.items():
-        if not isinstance(k, CompressedResourceOp):
-            new_gate_counts[k] += count
-            continue
-        if k.op_type is not qp.ops.ChangeOpBasis:
-            new_gate_counts[k] += count
-            continue
-        for p in ("compute_op", "target_op", "uncompute_op"):
-            op_rep = k.params[p]
-            if isinstance(op_rep, CompressedResourceOp) and op_rep.op_type is qp.ops.Prod:
-                for inner_op, inner_count in op_rep.params["resources"].items():
-                    new_gate_counts[inner_op] += count * inner_count
-            else:
-                new_gate_counts[op_rep] += count
+        _add_operand(k, count)
+
     return new_gate_counts
 
 
