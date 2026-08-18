@@ -203,18 +203,18 @@ def ctrl_decomp_zyz(
 #######################
 
 
-def _ctrl_decomp_bisect_condition(wires, control_values, **__):
-    num_control_wires = len(control_values)
-    num_target_wires = len(wires) - num_control_wires
+def _ctrl_decomp_bisect_condition(base, wires, control_values, **__):
+    num_target_wires = int(qp.math.log2(qp.math.shape(base)[-1]))
+    num_control_wires = len(wires) - num_target_wires
     # This decomposition rule is only applicable when the target is a single-qubit unitary.
     # Also, it is not helpful when there's only a single control wire.
     return num_target_wires == 1 and num_control_wires > 1
 
 
-def _ctrl_decomp_bisect_resources(wires, control_values, **__):
+def _ctrl_decomp_bisect_resources(base, wires, **__):
 
-    num_control_wires = len(control_values)
-    num_target_wires = len(wires) - num_control_wires
+    num_target_wires = int(qp.math.log2(qp.math.shape(base)[-1]))
+    num_control_wires = len(wires) - num_target_wires
 
     len_k1 = (num_control_wires + 1) // 2
     len_k2 = num_control_wires - len_k1
@@ -277,9 +277,9 @@ def ctrl_decomp_bisect_rule(base, wires, **__):
     ops.cond(_not_zero(phase), _ctrl_global_phase)(phase, wires[:-1], wires[-1], "borrowed")
 
 
-def _single_ctrl_decomp_zyz_condition(wires, control_values, **__):
-    num_control_wires = len(control_values)
-    num_target_wires = len(wires) - num_control_wires
+def _single_ctrl_decomp_zyz_condition(base, wires, **__):
+    num_target_wires = int(qp.math.log2(qp.math.shape(base)[-1]))
+    num_control_wires = len(wires) - num_target_wires
     return num_target_wires == 1 and num_control_wires == 1
 
 
@@ -304,15 +304,16 @@ def single_ctrl_decomp_zyz_rule(base, wires, **__):
     ops.cond(_not_zero(phase), _ctrl_global_phase)(phase, wires[:-1])
 
 
-def _multi_ctrl_decomp_zyz_condition(wires, control_values, **__):
-    num_control_wires = len(control_values)
-    num_target_wires = len(wires) - num_control_wires
+def _multi_ctrl_decomp_zyz_condition(base, wires, **__):
+    num_target_wires = int(qp.math.log2(qp.math.shape(base)[-1]))
+    num_control_wires = len(wires) - num_target_wires
     return num_target_wires == 1 and num_control_wires > 1
 
 
 # pylint: disable-next=unused-argument
-def _multi_ctrl_decomp_zyz_resources(base, wires, control_values, work_wires, work_wire_type, **__):
-    num_control_wires = len(control_values)
+def _multi_ctrl_decomp_zyz_resources(base, wires, work_wires, work_wire_type, **__):
+    num_target_wires = int(qp.math.log2(qp.math.shape(base)[-1]))
+    num_control_wires = len(wires) - num_target_wires
     num_work_wires = len(work_wires)
     return {
         ops.CRZ: 3,
@@ -346,9 +347,9 @@ def multi_control_decomp_zyz_rule(base, wires, work_wires, work_wire_type, **__)
     ops.cond(_not_zero(phase), _ctrl_global_phase)(phase, wires[:-1], wires[-1], "borrowed")
 
 
-def _controlled_two_qubit_unitary_resource(wires, control_values, work_wires, work_wire_type, **__):
-    num_control_wires = len(control_values)
-    num_target_wires = len(wires) - num_control_wires
+def _controlled_two_qubit_unitary_resource(base, wires, work_wires, work_wire_type, **__):
+    num_target_wires = int(qp.math.log2(qp.math.shape(base)[-1]))
+    num_control_wires = len(wires) - num_target_wires
     num_work_wires = len(work_wires)
     base_resources = two_qubit_decomp_rule.compute_resources(num_wires=num_target_wires)
     gate_counts = {
