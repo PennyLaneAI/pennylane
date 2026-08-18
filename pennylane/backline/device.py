@@ -155,26 +155,19 @@ def active_placement() -> "Placement | None":
         import pennylane as qp
 
         con = qp.Controller(
-            label="cpu-controller",
-            backend="cpu_verbs",
+            name="cpu-controller",
             remote=True,
             executor_options={"host": "192.0.2.10", "port": 7810},
-            init_args={
-                "config": "dev=mlx5_1;gid=3",
-                "data_path": "cpu_verbs",
-                "in_bytes": 8,
-                "out_bytes": 8,
-            },
+            init_args={"config": "dev=mlx5_1;gid=3"},
         )
         coproc = qp.Coprocessor(
-            label="decoder-0",
+            name="decoder-0",
             coprocessor_fn="decoder",
-            backend="gpu_verbs",
-            comm_host="198.51.100.2",
-            oob_port=7760,
+            hardware="gpu",
+            endpoint=qp.Endpoint("198.51.100.2", 7760),
             remote=True,
             executor_options={"host": "192.0.2.11", "port": 7813},
-            init_args={"config": "dev=mlx5_1;gid=3;gpu=0", "data_path": "cpu_verbs"},
+            init_args={"config": "dev=mlx5_1;gid=3;gpu=0"},
         )
 
         dev = qp.Backline(
