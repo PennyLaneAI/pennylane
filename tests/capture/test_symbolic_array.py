@@ -49,7 +49,7 @@ def test_error_if_bad_dimesion(bad_dimension):
     def f():
         qp.capture.symbolic_array((2, bad_dimension), float)
 
-    with pytest.raises(ValueError, match="must be integers greater than zero"):
+    with pytest.raises(ValueError, match="tuple of positive integers"):
         jax.make_jaxpr(f)()
 
 

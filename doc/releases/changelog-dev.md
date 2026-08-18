@@ -992,6 +992,7 @@
     [(#9646)](https://github.com/PennyLaneAI/pennylane/pull/9646)
     [(#9694)](https://github.com/PennyLaneAI/pennylane/pull/9694)
     [(#9744)](https://github.com/PennyLaneAI/pennylane/pull/9744)
+    [(#9788)](https://github.com/PennyLaneAI/pennylane/pull/9788)
   - Some backwards compatibility with the legacy operator interface.
     [(#9596)](https://github.com/PennyLaneAI/pennylane/pull/9596)
     [(#9674)](https://github.com/PennyLaneAI/pennylane/pull/9674)

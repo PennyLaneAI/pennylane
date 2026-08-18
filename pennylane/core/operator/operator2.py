@@ -438,6 +438,12 @@ class Operator2(metaclass=OperatorMeta):
     # ------------------------------------------------------------------------
 
     @property
+    def is_abstract(self) -> bool:
+        """Whether this operator contains only abstract data."""
+        leaves, _ = flatten(self)
+        return all(isinstance(l, (AbstractArray, AbstractWires, NoneType)) for l in leaves)
+
+    @property
     def arguments(self) -> dict[str, Any]:
         """Dictionary mapping argument names to their values."""
         return self._bound_args.arguments
@@ -1253,10 +1259,7 @@ class Operator2(metaclass=OperatorMeta):
         return f"{self.name}({inputs})"
 
     def __str__(self) -> str:
-        if self.has_fixed_sig and all(
-            isinstance(a, (AbstractArray, AbstractWires, NoneType)) for a in flatten(self)[0]
-        ):
-            # all leaves abstract
+        if self.has_fixed_sig and self.is_abstract:
             return self.name
         return repr(self)
 

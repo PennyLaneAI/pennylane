@@ -29,9 +29,10 @@ def _symbolic_array_primitive():
     if not has_jax:
         raise ImportError("jax is required for creating a jax primitive.")  # pragma: no cover
 
-    import jax  # pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
+    import jax
 
-    import pennylane  # pylint: disable=import-outside-toplevel
+    import pennylane
 
     symbolic_array_p = pennylane.capture.custom_primitives.QpPrimitive("symbolic_array")
 
@@ -93,10 +94,10 @@ def symbolic_array(shape: tuple[int, ...], dtype: type):
     """
     if not enabled():
         raise NotImplementedError("symbolic_array requires program capture to be enabled.")
+
     from jax.numpy import dtype as jnp_dtype  # pylint: disable=import-outside-toplevel
 
     if not all(isinstance(s, int) and s > 0 for s in shape):
-        raise ValueError(
-            f"All shape dimensions must be integers greater than zero. Got shape {shape}."
-        )
+        raise ValueError(f"The shape must be a tuple of positive integers. Got shape {shape}.")
+
     return _symbolic_array_primitive().bind(shape=shape, dtype=jnp_dtype(dtype))
