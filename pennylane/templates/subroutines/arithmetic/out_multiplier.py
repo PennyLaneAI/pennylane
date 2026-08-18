@@ -47,7 +47,7 @@ def _resolve_mod_and_num_work_wires(num_output_wires, mod, num_work_wires):
     if mod is None:
         mod = max_mod
     elif mod != max_mod:
-        num_work_wires = min(2, num_work_wires)
+        num_work_wires = 2 # After the ≥2 work-wire guard in __init__/__abstract_init__, the truncated count is always 2
     return mod, num_work_wires
 
 
