@@ -1108,6 +1108,8 @@ def _is_abstract_and_fixed(val):
     """Checks whether `val` is (or only contains) abstract data of fixed shapes."""
     # We don't actually need to check whether val is abstract, since the Resources class
     # already abstractifies everything. We only need to make sure that it's fixed.
+    if isinstance(val, CompressedResourceOp):
+        return True
     if isinstance(val, (AbstractArray, AbstractWires)):
         return val.shape_fixed
     leaves, _ = flatten(val, is_leaf=lambda op: isinstance(op, Wires))

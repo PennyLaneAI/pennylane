@@ -255,8 +255,6 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
         return adjoint_resource_rep(**params)
     if issubclass(op_type, qp.ops.Pow):
         return pow_resource_rep(**params)
-    if issubclass(op_type, qp.ops.ChangeOpBasis):
-        return change_op_basis_resource_rep(**params)
     if op_type is qp.ops.ControlledOp:
         op_type = qp.ops.Controlled
     if op_type is qp.ops.Controlled:
@@ -363,13 +361,19 @@ def change_op_basis_resource_rep(
     target_op: type[Operator] | CompressedResourceOp,
     uncompute_op: type[Operator] | CompressedResourceOp | None = None,
 ):
-    """Creates a ``CompressedResourceOp`` representation of the compute-uncompute pattern
-    :class:`~.ChangeOpBasis` of operators.
+    """Creates an abstract :class:`~.ChangeOpBasis` representing the compute-uncompute
+    pattern of operators.
+
+    Since :class:`~.ChangeOpBasis` is an :class:`~.Operator2`, its resource representation
+    is an abstract instance rather than a ``CompressedResourceOp``. Legacy operator types
+    and compressed representations are accepted as operands and stored in their compressed
+    form.
 
     Args:
-        compute_op: the compressed resource representation of the compute operator
-        target_op: the compressed resource representation of target operator
-        uncompute_op: the compressed resource representation of the uncompute operator
+        compute_op: the compute operator, or its type or compressed resource representation
+        target_op: the target operator, or its type or compressed resource representation
+        uncompute_op: the optional uncompute operator, or its type or compressed resource
+            representation; defaults to the adjoint of ``compute_op``
 
     """
     # pylint: disable=import-outside-toplevel
@@ -377,16 +381,12 @@ def change_op_basis_resource_rep(
 
     compute_op = abstractify(compute_op)
     target_op = abstractify(target_op)
-    uncompute_op = uncompute_op or _adjoint_abstract(compute_op)
-    uncompute_op = abstractify(uncompute_op)
-    return CompressedResourceOp(
-        qp.ops.ChangeOpBasis,
-        {
-            "compute_op": compute_op,
-            "target_op": target_op,
-            "uncompute_op": uncompute_op,
-        },
+    uncompute_op = (
+        _adjoint_abstract(compute_op) if uncompute_op is None else abstractify(uncompute_op)
     )
+    abstract_op = qp.ops.ChangeOpBasis.__new__(qp.ops.ChangeOpBasis)
+    abstract_op.__abstract_init__(compute_op, target_op, uncompute_op)
+    return abstract_op
 
 
 def pow_resource_rep(base_class, base_params, z):
