@@ -20,12 +20,15 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as np
 from pennylane.core.operator import abstractify
+from pennylane.ops import adjoint
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arithmetic.out_multiplier import (
     OutMultiplier,
     _add_plus_one,
+    _out_multiplier_with_cache_resources,
     _out_multiplier_with_qft,
 )
+from pennylane.templates.subroutines.arithmetic.semi_adder import SemiAdder
 from pennylane.typing import Wire
 
 
@@ -197,6 +200,41 @@ def test_map_wires_preserves_output_wires_zeroed():
     mapped_op = op.map_wires({0: 4, 1: 5, 2: 6, 3: 7})
 
     assert mapped_op.arguments["output_wires_zeroed"] is True
+
+
+@pytest.mark.parametrize(
+    ("mod", "work_wires", "expected_mod", "expected_num_work_wires"),
+    [
+        (None, [7, 8, 9, 10, 11, 12], 8, 3),
+        (5, [7, 8, 9, 10, 11, 12, 13], 5, 2),
+    ],
+)
+def test_out_multiplier_with_cache_resources(
+    mod, work_wires, expected_mod, expected_num_work_wires
+):
+    """Test cache decomposition resource function declares expected abstract operators."""
+    x_wires = [0, 1]
+    y_wires = [2, 3]
+    output_wires = [4, 5, 6]
+
+    resources = _out_multiplier_with_cache_resources(
+        x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
+    )
+
+    mult_ops = [key for key in resources if isinstance(key, OutMultiplier)]
+    assert len(mult_ops) == 1
+    mult_op = mult_ops[0]
+    assert mult_op.arguments["mod"] == expected_mod
+    assert len(mult_op.work_wires) == expected_num_work_wires
+    assert mult_op.arguments["output_wires_zeroed"] is True
+
+    semi_adder_rep = SemiAdder(
+        Wire[len(output_wires)],
+        Wire[len(output_wires)],
+        Wire[expected_num_work_wires],
+    )
+    assert resources[semi_adder_rep] == 1
+    assert resources[adjoint(mult_op)] == 1
 
 
 def _test_mult_correctness(all_wires, mod, rule, seed, output_wires_zeroed=False):
