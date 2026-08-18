@@ -570,23 +570,12 @@ def bulk_sequential_step(cells, delta, aux_wires, phys_wires):
 def mps_synthesis(mps_tensors, wires):
     r"""Synthesize a right-canonical matrix product state into a list of operations.
 
-    The builder underlying :func:`mps_preparation`: it returns the flag circuit and the
-    residual global phase without queuing anything.
+    The non-queuing builder used by :func:`~.mps_preparation`. Returns the flag circuit
+    and residual global phase without recording operations on the tape. Apply the
+    operations with :func:`~pennylane.apply` and the residual phase with
+    :class:`~pennylane.GlobalPhase` (this is exactly what :func:`~.mps_preparation` does).
 
-
-    The input ``mps_tensors`` must satisfy the following conditions:
-
-    * **Right-canonical:** Each tensor :math:`A` of shape ``(chi_L, d, chi_R)`` must be an
-      isometry from the physical and right virtual bonds to the left virtual bond.
-      Specifically, if you reshape the tensor into a matrix of shape ``(chi_L, d * chi_R)``,
-      its rows must form an orthonormal set such that :math:`A A^\dagger = \mathbb{I}`.
-    * **Arbitrary bond dimension:** The maximal bond dimension can be any integer, including
-      non-powers-of-2.
-    * **Power-of-two boundaries:** The bond dimensions must grow and shrink by the factor
-      of the physical dimension (:math:`d=2`) per site at the boundaries. For example, the
-      bond dimension profile must start at 1 and double at each step from the left,
-      and similarly halve at each step towards the right boundary (e.g.,
-      :math:`1 \rightarrow 2 \rightarrow 4 \dots 4 \rightarrow 2 \rightarrow 1`).
+    For tensor constraints, wire layout, and a complete example, see :func:`~.mps_preparation`.
 
     Args:
         mps_tensors (Sequence[np.ndarray]): right-canonical MPS tensors, each of shape
@@ -604,98 +593,6 @@ def mps_synthesis(mps_tensors, wires):
             or if ``wires`` does not contain exactly one distinct wire per MPS tensor.
 
     .. seealso:: :func:`~.mps_preparation`
-
-    **Example**
-
-    Build the preparation circuit and residual phase for a right-canonical MPS, without
-    queuing any operations:
-
-    .. code-block:: python
-
-        import numpy as np
-
-        rng = np.random.default_rng(0)
-
-        # Helper to generate a random right-canonical (rc) tensor
-        def generate_rc_tensor(chi_l, chi_r, d=2):
-            g = rng.standard_normal((d * chi_r, chi_l)) + 1j * rng.standard_normal((d * chi_r, chi_l))
-            q, _ = np.linalg.qr(g)
-            return q.conj().T.reshape(chi_l, d, chi_r)
-
-        # Right-canonical MPS with bond dimension chi = 2 (three tensors).
-        mps = [
-            generate_rc_tensor(1, 2),
-            generate_rc_tensor(2, 2),
-            generate_rc_tensor(2, 1)
-        ]
-
-        # One wire per MPS tensor.
-        wires = [0, 1, 2]
-
-        # Returns the operations and residual phase without queuing anything.
-        circuit, global_phase = mps_synthesis(mps, wires)
-
-    The returned ``circuit`` and ``global_phase`` can then be applied inside a QNode to prepare
-    the encoded state on ``wires`` (this is exactly what :func:`mps_preparation` does):
-
-    .. code-block:: python
-
-        dev = qp.device("default.qubit", wires=wires)
-
-        @qp.qnode(dev)
-        def qnode():
-            for op in circuit:
-                qp.apply(op)
-            qp.GlobalPhase(-qp.math.angle(global_phase))
-            return qp.state()
-
-    .. details::
-        :title: Usage Details
-
-        **Wire register.** The synthesized matrix product state circuit acts on the full ``wires`` register,
-        whose length equals the number of MPS tensors. The register splits into two groups: the
-        first :math:`\lceil \log_2 \chi \rceil` wires are the *auxiliary* (bond) wires and the
-        remaining wires are the *physical* wires, where :math:`\chi` is the maximal bond
-        dimension (inferred from ``mps_tensors``).
-
-        The auxiliary wires do double duty. While the synthesized circuit runs, they are re-used as the bond
-        register that carries the correlations along the chain; by the end they no longer hold
-        any bond information and instead encode the physical state of the last
-        :math:`\lceil \log_2 \chi \rceil` sites. Concretely, the left-boundary and bulk sites are
-        written directly onto the physical wires, while the right-boundary sites end up on the
-        auxiliary wires — so the entire register holds the prepared state, as shown below.
-
-        Consider an MPS with three left/ rightboundary tensors of increasing/ decreasing bond
-        dimensions and two bulk tensors of bond dimension χ in between:
-
-        .. code-block::
-
-             │     │     │     │     │     │     │     │      physical indices (d = 2)
-            ┌┴┐   ┌┴┐   ┌┴┐   ┌┴┐   ┌┴┐   ┌┴┐   ┌┴┐   ┌┴┐
-            │ │───│ │═══│ │≡≡≡│ │≡≡≡│ │≡≡≡│ │═══│ │───│ │
-            └─┘   └─┘   └─┘   └─┘   └─┘   └─┘   └─┘   └─┘
-                2     4     χ     χ     χ     4     2         virtual bond dimension
-            └──── left ───┘   └─ bulk ┘   └─── right ───┘
-
-        The corresponding circuit synthesized to prepare this state is:
-
-        .. code-block::
-
-                            ┌─┐│        │        │        │        │        │        │        │
-                      {|0> ─┤ ├┘     ┌─┐│        │        │        │        │        │        │
-            physical  {     │ │ |0> ─┤ ├┘     ┌─┐│        │        │        │        │        │
-            register  {     │ │      │ │ |0> ─┤ ├┘     ┌─┐│        │        │        │        │
-                      {     │ │      │ │      │ │ |0> ─┤ ├┘     ┌─┐│        │        │        │
-                      {     │ │      │ │      │ │      │ │ |0> ─┤ ├┘     ┌─┐│        │        │
-                 aux {      │ │      │ │ |0> ─┤ ├──────┤ ├──────┤ ├──────┤ ├┘     ┌─┐│        │
-              (bond) {      │ │ |0> ─┤ ├──────┤ ├──────┤ ├──────┤ ├──────┤ ├──────┤ ├┘     ┌─┐│
-            register { |0> ─┤ ├──────┤ ├──────┤ ├──────┤ ├──────┤ ├──────┤ ├──────┤ ├──────┤ ├┘
-                            └─┘      └─┘      └─┘      └─┘      └─┘      └─┘      └─┘      └─┘
-                            \___________________/      \__________/      \___________________/
-                                left boundary              bulk             right boundary
-
-        Note how the right boundary tensors do not take any additional auxiliary wires initialized
-        in the |0>-state, different than the left boundary and bulk tensors.
     """
     if not is_right_canonical(mps_tensors):
         raise ValueError("MPS tensors must be right-canonical")
@@ -759,8 +656,8 @@ def mps_preparation(mps_tensors, wires):
     r"""Prepare a right-canonical matrix product state on a quantum register.
 
     Queues the flag circuit that maps :math:`\lvert 0 \rangle` to the state encoded by
-    ``mps_tensors``, spanning the entire ``wires`` register. See :func:`mps_synthesis`
-    for the underlying builder.
+    ``mps_tensors``, spanning the entire ``wires`` register. The underlying non-queuing
+    builder is :func:`~.mps_synthesis`.
 
     **Tensor Constraints**
 
@@ -802,6 +699,7 @@ def mps_preparation(mps_tensors, wires):
     .. code-block:: python
 
         import numpy as np
+        from pennylane.labs.templates import mps_preparation
 
         rng = np.random.default_rng(0)
 
@@ -811,13 +709,14 @@ def mps_preparation(mps_tensors, wires):
             q, _ = np.linalg.qr(g)
             return q.conj().T.reshape(chi_l, d, chi_r)
 
-        # Right-canonical MPS with bond dimension chi = 8 (eight tensors): the bond dimension
-        # doubles 1 -> 2 -> 4 -> 8 across the left boundary, stays at 8 through the bulk, and
-        # halves 8 -> 4 -> 2 -> 1 across the right boundary.
+        chi = 6
+        # Right-canonical MPS with bond dimension chi = 6 (eight tensors): the bond dimension
+        # doubles 1 -> 2 -> 4 -> 6 across the left boundary, stays at 6 through the bulk, and
+        # halves 6 -> 4 -> 2 -> 1 across the right boundary.
         mps = [
             generate_rc_tensor(1, 2), generate_rc_tensor(2, 4),
-            generate_rc_tensor(4, 8), generate_rc_tensor(8, 8),
-            generate_rc_tensor(8, 8), generate_rc_tensor(8, 4),
+            generate_rc_tensor(4, chi), generate_rc_tensor(chi, chi),
+            generate_rc_tensor(chi, chi), generate_rc_tensor(chi, 4),
             generate_rc_tensor(4, 2), generate_rc_tensor(2, 1)
         ]
 
@@ -835,15 +734,18 @@ def mps_preparation(mps_tensors, wires):
         :title: Usage Details
 
         **Wire register.** The matrix product state is prepared on the full ``wires`` register,
-        whose length equals the number of MPS tensors. In principle, there are two groups for the preparation: the
-        the *physical* wires and :math:`\lceil \log_2 \chi \rceil` bond wires, where :math:`\chi` is the maximal bond dimension (inferred from ``mps_tensors``). However, our synthesis method allows us to temporarily use part of the physical wires as the bond wires. While the circuit runs they are re-used as the bond
-        register that carries the correlations along the chain; by the end they no longer hold
-        any bond information and instead encode the physical state of the last
+        whose length equals the number of MPS tensors. In principle, there are two groups for
+        the preparation: the *physical* wires and :math:`\lceil \log_2 \chi \rceil` bond wires,
+        where :math:`\chi` is the maximal bond dimension (inferred from ``mps_tensors``).
+        However, our synthesis method allows us to temporarily use part of the physical wires
+        as the bond wires. While the circuit runs they are re-used as the bond register that
+        carries the correlations along the chain; by the end they no longer hold any bond
+        information and instead encode the physical state of the last
         :math:`\lceil \log_2 \chi \rceil` sites. Concretely, the left-boundary and bulk sites are
         written directly onto the physical wires, while the right-boundary sites end up on the
         auxiliary wires — so the entire register holds the prepared state, as shown below.
 
-        Consider an MPS with three left/ rightboundary tensors of increasing/ decreasing bond
+        Consider an MPS with three left-/right-boundary tensors of increasing/decreasing bond
         dimensions and two bulk tensors of bond dimension χ in between:
 
         .. code-block::
@@ -872,8 +774,25 @@ def mps_preparation(mps_tensors, wires):
                             \___________________/      \__________/      \___________________/
                                 left boundary              bulk             right boundary
 
-        Note how the right boundary tensors do not take any additional auxiliary wires initialized
-        in the |0>-state, different than the left boundary and bulk tensors.
+        Note how the right boundary tensors do not take (or return) any additional auxiliary
+        wires initialized in the |0>-state, different than the left boundary and bulk tensors.
+        This way we can completely merge them into the right-most bulk unitary:
+
+        .. code-block::
+
+                            ┌─┐│        │        │        │        │        │        │        │
+                      {|0> ─┤ ├┘     ┌─┐│        │        │        │        │        │        │
+            physical  {     │ │ |0> ─┤ ├┘     ┌─┐│        │        │        │        │        │
+            register  {     │ │      │ │ |0> ─┤ ├┘     ┌─┐│        │        │        │        │
+                      {     │ │      │ │      │ │ |0> ─┤ ├┘     ┌─┐│        │        │        │
+                      {     │ │      │ │      │ │      │ │ |0> ─┤ ├┘        │        │        │
+                 aux {      │ │      │ │ |0> ─┤ ├──────┤ ├──────┤ ├─────────┘        │        │
+              (bond) {      │ │ |0> ─┤ ├──────┤ ├──────┤ ├──────┤ ├──────────────────┘        │
+            register { |0> ─┤ ├──────┤ ├──────┤ ├──────┤ ├──────┤ ├───────────────────────────┘
+                            └─┘      └─┘      └─┘      └─┘      └─┘
+                            \___________________/      \__________/      \___________________/
+                                left boundary              bulk             right boundary
+
     """
     # Build the circuit with queuing suspended: mps_synthesis instantiates many
     # intermediate operators that would otherwise auto-queue onto the tape.
