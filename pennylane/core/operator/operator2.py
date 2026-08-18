@@ -2053,6 +2053,8 @@ def _canonicalize_dynamic(d, op_name=None) -> Hashable:
     if op_name is not None and op_name in ("RX", "RY", "RZ", "PhaseShift", "Rot", "U1", "U2", "U3"):
         mod_val = 2 * np.pi
     elif op_name is not None and op_name in ("CRX", "CRY", "CRZ", "CRot"):
+        # Rot(θ) ∈ SU(2) double-covers SO(3) via center {-I, I}, so θ ↦ θ+2π is global phase -I;
+        # in CRot, -I becomes a relative phase on |1⟩, breaking 2π periodicity to 4π.
         mod_val = 4 * np.pi
     else:
         mod_val = None
