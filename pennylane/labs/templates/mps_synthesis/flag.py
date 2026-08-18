@@ -22,7 +22,11 @@ import itertools
 import numpy as np
 
 import pennylane as qp
+from pennylane.core.operator import Operator2, abstractify
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.math.decomposition import zyz_rotation_angles
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.typing import Float, Wire
 
 from .linalg import (
     control_bits_to_ints,
@@ -41,7 +45,16 @@ from .linalg import (
 # ============================================================================
 
 
-class PartiallyMultiplexedFlag(qp.operation.Operation):
+def _angle_arrays(rz_angles, ry_angles):
+    r"""Flatten the ``R_z``/``R_y`` angles to 1D arrays, requiring equal length."""
+    phi = qp.math.flatten(qp.math.atleast_1d(rz_angles))
+    theta = qp.math.flatten(qp.math.atleast_1d(ry_angles))
+    if len(phi) != len(theta):
+        raise ValueError("rz_angles and ry_angles must have the same length")
+    return phi, theta
+
+
+class PartiallyMultiplexedFlag(Operator2):
     r"""A partially multiplexed sequence of single-qubit flags.
 
     Applies ``R_z(phi) R_y(theta)`` to the target wire (``wires[-1]``), multi-controlled by
@@ -50,22 +63,16 @@ class PartiallyMultiplexedFlag(qp.operation.Operation):
     uncontrolled flag uses ``control_values=[]``.
     """
 
-    num_params = 2
+    dynamic_argnames = ("rz_angles", "ry_angles")
+    compilable_argnames = ("control_values",)
 
-    @staticmethod
-    def _angle_arrays(rz_angles, ry_angles):
-        r"""Flatten the ``R_z``/``R_y`` angles to 1D arrays, requiring equal length."""
-        phi = qp.math.flatten(qp.math.atleast_1d(rz_angles))
-        theta = qp.math.flatten(qp.math.atleast_1d(ry_angles))
-        if len(phi) != len(theta):
-            raise ValueError("rz_angles and ry_angles must have the same length")
-        return phi, theta
+    arg_specs = {"rz_angles": Float[-1], "ry_angles": Float[-1], "wires": Wire[-1]}
 
     def __init__(self, rz_angles, ry_angles, wires, control_values=None):
         wires = qp.wires.Wires(wires)
         control_wires = wires[:-1]
 
-        phi, theta = self._angle_arrays(rz_angles, ry_angles)
+        phi, theta = _angle_arrays(rz_angles, ry_angles)
         num_patterns = len(phi)
 
         if control_values is None:
@@ -84,13 +91,11 @@ class PartiallyMultiplexedFlag(qp.operation.Operation):
             if control_wires and len(control_values) != num_patterns:
                 raise ValueError("len(control_values) must equal the number of patterns ")
 
-        # Store as a tuple of tuples so the hyperparameter is hashable.
-        control_values = tuple(tuple(int(b) for b in pattern) for pattern in control_values)
+        # Canonicalize to a tuple of int tuples so that it is hashable, matching the
+        # convention used by other compilable arguments (e.g. FlipSign.state).
+        control_values = tuple(tuple(int(bit) for bit in state) for state in control_values)
 
-        self._hyperparameters = {
-            "control_values": control_values,
-        }
-        super().__init__(phi, theta, wires=wires)
+        super().__init__(phi, theta, wires=wires, control_values=control_values)
 
     def __repr__(self):
         """Custom string representation to display control structure."""
@@ -129,26 +134,48 @@ class PartiallyMultiplexedFlag(qp.operation.Operation):
             control_values=new_control_values,
         )
 
-    @staticmethod
-    def compute_decomposition(
-        rz_angles, ry_angles, wires, control_values=None, **_
-    ):  # pylint: disable=arguments-differ
-        """Decompose into per-pattern multi-controlled ``R_z(phi)`` and ``R_y(theta)`` gates."""
-        wires = qp.wires.Wires(wires)
-        target_wire = wires[-1]
-        control_wires = list(wires[:-1])
 
-        phi, theta = PartiallyMultiplexedFlag._angle_arrays(rz_angles, ry_angles)
+# pylint: disable-next=unused-argument
+def _partially_multiplexed_flag_resources(rz_angles, ry_angles, wires, control_values):
+    """Compute the resources of a ``PartiallyMultiplexedFlag`` decomposition."""
+    # ``wires`` may be a concrete ``Wires`` or an ``AbstractWires`` (during resource
+    # estimation); both support ``len()`` directly, so avoid re-wrapping it.
+    num_control_wires = len(wires) - 1
 
-        ops = []
-        for p, (phi_p, theta_p) in enumerate(zip(phi, theta)):
-            for angle, gate in ((phi_p, qp.RZ), (theta_p, qp.RY)):
-                op = gate(angle, wires=target_wire)
-                if control_wires:
-                    op = qp.ctrl(op, control=control_wires, control_values=list(control_values[p]))
-                ops.append(op)
+    if num_control_wires == 0:
+        return {abstractify(qp.RZ): 1, abstractify(qp.RY): 1}
 
-        return ops
+    resources = {}
+    for pattern in control_values:
+        num_zero = len(pattern) - sum(pattern)
+        for gate in (qp.RZ, qp.RY):
+            rep = _ctrl_abstract(gate, Wire[num_control_wires], num_zero_control_values=num_zero)
+            resources[rep] = resources.get(rep, 0) + 1
+    return resources
+
+
+@register_resources(_partially_multiplexed_flag_resources)
+def _partially_multiplexed_flag_decomp(rz_angles, ry_angles, wires, control_values):
+    """Decompose into per-pattern multi-controlled ``R_z(phi)`` and ``R_y(theta)`` gates."""
+    wires = qp.wires.Wires(wires)
+    target_wire = wires[-1]
+    control_wires = list(wires[:-1])
+
+    phi, theta = _angle_arrays(rz_angles, ry_angles)
+
+    for p, (phi_p, theta_p) in enumerate(zip(phi, theta)):
+        for angle, gate in ((phi_p, qp.RZ), (theta_p, qp.RY)):
+            if control_wires:
+                qp.ctrl(
+                    gate(angle, wires=target_wire),
+                    control=control_wires,
+                    control_values=list(control_values[p]),
+                )
+            else:
+                gate(angle, wires=target_wire)
+
+
+add_decomps(PartiallyMultiplexedFlag, _partially_multiplexed_flag_decomp)
 
 
 def merge_partially_multiplexed_flags(flags):
