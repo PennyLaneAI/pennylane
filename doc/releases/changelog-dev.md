@@ -892,9 +892,10 @@
   [(#9923)](https://github.com/PennyLaneAI/pennylane/pull/9923)
   [(#9952)](https://github.com/PennyLaneAI/pennylane/pull/9952)
   [(#9978)](https://github.com/PennyLaneAI/pennylane/pull/9978)
+  [(#9981)](https://github.com/PennyLaneAI/pennylane/pull/9981)
   - Templates are ported:
     - :class:`~.BasisRotation`, :class:`~.MultiplexerStatePreparation`, :class:`~.QROM`, :class:`~.QFT`, :class:`~.FlipSign`
-      :class:`~.TemporaryAND`, :class:`~.SelectPauliRot`, :class:`~.GQSP`, :class:`~.AQFT`, `~.SumOfSlatersPrep`
+      :class:`~.TemporaryAND`, :class:`~.SelectPauliRot`, :class:`~.GQSP`, :class:`~.AQFT`, :class:`~.SumOfSlatersPrep`, :class:`~.SemiAdder`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
   [(#9925)](https://github.com/PennyLaneAI/pennylane/pull/9925)
   [(#9918)](https://github.com/PennyLaneAI/pennylane/pull/9918)
@@ -906,6 +907,7 @@
   [(#9950)](https://github.com/PennyLaneAI/pennylane/pull/9950)
   [(#9987)](https://github.com/PennyLaneAI/pennylane/pull/9987)
   [(#9900)](https://github.com/PennyLaneAI/pennylane/pull/9900)
+  [(#9997)](https://github.com/PennyLaneAI/pennylane/pull/9997)
   [(#9995)](https://github.com/PennyLaneAI/pennylane/pull/9995)
   [(#10018)](https://github.com/PennyLaneAI/pennylane/pull/10018)
   - Quantum chemistry operators are ported:
