@@ -30,6 +30,12 @@ TROTTER_GATE_SET = {
     "StatePrep",
 }
 
+# Gate sets used by the catalyst integration tests of both templates. The genuine control
+# compiles the controlled evolution into (controlled) PhaseShift/RZ rotations, while the
+# double-phase variant keeps bare IsingZZ rotations sandwiched by CNOTs.
+CATALYST_GATE_SET_GENUINE = {"Hadamard", "BasisRotation", "RZ", "CNOT", "PhaseShift", "ForLoop"}
+CATALYST_GATE_SET_DOUBLE_PHASE = {"Hadamard", "BasisRotation", "RZ", "CNOT", "IsingZZ", "ForLoop"}
+
 
 def random_orthogonal(n, rng):
     """Generate a random orthogonal matrix via expm of a skew-symmetric matrix."""
@@ -125,12 +131,12 @@ def cgf_reference_hamiltonian(ham):
 
 
 def hadamard_test(
-    trotter_cls, ham, sys_wires, t, steps, double_phase
+    trotter_cls, ham, sys_wires, t, steps, double_phase, seed
 ):  # pylint: disable=too-many-arguments
     """Return (measured <X_anc>, psi) for the H-ctrl-<X> Hadamard-test circuit."""
     anc = "anc"
     dev = qp.device("default.qubit", wires=[anc] + list(sys_wires))
-    rng = np.random.default_rng(2024)
+    rng = np.random.default_rng(seed)
     dim = 2 ** len(sys_wires)
     psi = rng.standard_normal(dim) + 1j * rng.standard_normal(dim)
     psi /= np.linalg.norm(psi)

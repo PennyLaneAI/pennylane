@@ -310,11 +310,11 @@ Other useful templates which do not belong to the previous categories can be fou
 
 .. gallery-item::
   :description: :doc:`TrotterCDF <../code/api/pennylane.TrotterCDF>`
-  :figure: _static/templates/subroutines/trotter_cdf.png
+  :figure: _static/templates/subroutines/trotter_product.png
 
 .. gallery-item::
   :description: :doc:`TrotterCGF <../code/api/pennylane.TrotterCGF>`
-  :figure: _static/templates/subroutines/trotter_cgf.png
+  :figure: _static/templates/subroutines/trotter_product.png
 
 .. gallery-item::
   :description: :doc:`Permute <../code/api/pennylane.Permute>`

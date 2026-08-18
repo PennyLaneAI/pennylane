@@ -14,12 +14,12 @@
 """
 Tests for the TrotterCDF template.
 
-The private CDF helper functions are unit tested directly, the registered base and
-controlled decomposition rules are checked for self-consistency, and the controlled
-constructions are validated numerically against ``qp.matrix`` of the base operator.
-There are two controlled variants selected by the ``double_phase`` flag: the default
-(``False``) genuine controlled unitary and the (``True``) double-phase Hadamard-test
-circuit of Fig. 6 of arXiv:2506.15784.
+Correctness is checked definitionally: for an identity-leaf (Trotter-exact) Hamiltonian the
+base and both controlled constructions are compared against ``expm(-i H t)`` of the
+Hamiltonian implied by the CDF definition. Only the leaf-handling helpers, which those
+identity-leaf checks do not exercise, are additionally unit tested. There are two controlled
+variants selected by the ``double_phase`` flag: the default (``False``) genuine controlled
+unitary and the (``True``) double-phase Hadamard-test circuit of Fig. 6 of arXiv:2506.15784.
 """
 
 # pylint: disable=too-many-arguments, redefined-outer-name, too-few-public-methods, wrong-import-position, protected-access
@@ -33,16 +33,14 @@ import pennylane as qp
 from pennylane.decomposition.resources import Resources
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.time_evolution.trotter_cdf import (
-    _apply_one_body_diagonal,
     _apply_system_basis_rotation,
-    _apply_two_body_diagonal,
-    _energy_shift,
     _merge_leaves,
-    _transpose_leaf,
 )
 from pennylane.typing import Wire
 from pennylane.wires import Wires
 from tests.templates.subroutines.time_evolution.trotter_test_helpers import (  # pylint: disable=no-name-in-module
+    CATALYST_GATE_SET_DOUBLE_PHASE,
+    CATALYST_GATE_SET_GENUINE,
     cdf_reference_hamiltonian,
     control_branches,
     hadamard_test,
@@ -52,11 +50,11 @@ from tests.templates.subroutines.time_evolution.trotter_test_helpers import (  #
 pytestmark = pytest.mark.jax
 
 
-@pytest.fixture(scope="module")
-def toy_hamiltonian_cdf():
+@pytest.fixture
+def toy_hamiltonian_cdf(seed):
     """Synthetic CDF (electronic-structure) Hamiltonian: 2 spatial orbitals
     (4 qubits, alpha/beta interleaved), 1 two-body fragment."""
-    rng = np.random.default_rng(7)
+    rng = np.random.default_rng(seed)
     num_orbitals = 2
 
     eps = rng.normal(size=num_orbitals) * 0.4
@@ -77,12 +75,12 @@ def toy_hamiltonian_cdf():
     return hamiltonian, num_orbitals
 
 
-@pytest.fixture(scope="module")
-def diagonal_hamiltonian_cdf():
+@pytest.fixture
+def diagonal_hamiltonian_cdf(seed):
     """CDF Hamiltonian with identity leaf tensors. All gates are diagonal (and thus
     commute), so the base circuit and both controlled constructions are Trotter-exact,
     enabling a machine-precision correctness check."""
-    rng = np.random.default_rng(11)
+    rng = np.random.default_rng(seed)
     num_orbitals = 2
     L = 2
     core = rng.normal(size=(L + 1, num_orbitals, num_orbitals)) * 0.4
@@ -132,153 +130,26 @@ class TestValidity:
 
 
 class TestCDFScheme:
-    """Structural unit tests for the CDF-format private helper functions, called
-    directly and in isolation."""
+    """Unit tests for the leaf-handling helpers, which the identity-leaf definitional
+    tests below do not exercise numerically (angles, pair enumeration, the energy shift,
+    and both controlled structures are all covered by the ``*_matches_expm`` tests)."""
 
-    def test_merge_leaves(self):
-        """Test the CDF merge rule: U_prev^dagger @ U_curr."""
-        rng = np.random.default_rng(0)
+    def test_merge_leaves(self, seed):
+        """Test the CDF merge rule that combines consecutive fragment rotations."""
+        rng = np.random.default_rng(seed)
         U_prev = random_orthogonal(3, rng)
         U_curr = random_orthogonal(3, rng)
         assert np.allclose(_merge_leaves(U_prev, U_curr), U_prev.T @ U_curr)
 
-    def test_transpose_leaf(self):
-        """Test the CDF leaf transpose."""
-        U = random_orthogonal(3, np.random.default_rng(0))
-        assert np.allclose(_transpose_leaf(U), U.T)
-
-    def test_apply_system_basis_rotation_concrete(self):
-        """Test that a non-identity rotation is applied to both spin channels."""
+    def test_apply_system_basis_rotation(self, seed):
+        """Test that a non-identity leaf is applied as a BasisRotation on both spin channels."""
         num_cas = 2
         wires = list(range(2 * num_cas))
-        U = random_orthogonal(num_cas, np.random.default_rng(1))
-        with qp.queuing.AnnotatedQueue() as q:
-            _apply_system_basis_rotation(U, wires)
-        tape = qp.tape.QuantumScript.from_queue(q)
+        U = random_orthogonal(num_cas, np.random.default_rng(seed))
+        tape = qp.tape.make_qscript(_apply_system_basis_rotation)(U, wires)
         assert [type(op) for op in tape.operations] == [qp.BasisRotation, qp.BasisRotation]
         assert list(tape.operations[0].wires) == wires[::2]
         assert list(tape.operations[1].wires) == wires[1::2]
-
-    def test_apply_system_basis_rotation_identity_skipped(self):
-        """Test that an identity rotation is skipped for concrete (non-traced) data."""
-        num_cas = 2
-        wires = list(range(2 * num_cas))
-        with qp.queuing.AnnotatedQueue() as q:
-            _apply_system_basis_rotation(np.eye(num_cas), wires)
-        tape = qp.tape.QuantumScript.from_queue(q)
-        assert len(tape.operations) == 0
-
-    def test_apply_system_basis_rotation_abstract(self):
-        """Test that the identity-skip optimization does not apply under jax tracing."""
-        num_cas = 2
-        wires = list(range(2 * num_cas))
-        captured = {}
-
-        def _fn(U):
-            with qp.queuing.AnnotatedQueue() as q:
-                _apply_system_basis_rotation(U, wires)
-            captured["ops"] = list(q.queue)
-            return U
-
-        jax.jit(_fn)(jax.numpy.eye(num_cas))
-        assert [type(op) for op in captured["ops"]] == [qp.BasisRotation, qp.BasisRotation]
-
-    def test_apply_two_body_diagonal(self):
-        """Test the CDF two-body diagonal IsingZZ gates (all spin-orbital pairs)."""
-        num_cas = 2
-        wires = list(range(2 * num_cas))
-        Z = np.array([[0.0, 0.5], [0.5, 0.0]])
-        t = 0.3
-        with qp.queuing.AnnotatedQueue() as q:
-            _apply_two_body_diagonal(Z, wires, t, [], False)
-        tape = qp.tape.QuantumScript.from_queue(q)
-        ising_ops = [op for op in tape.operations if isinstance(op, qp.IsingZZ)]
-        expected_pairs = [(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)]
-        assert len(ising_ops) == len(expected_pairs)
-        for op, (i, j) in zip(ising_ops, expected_pairs):
-            assert list(op.wires) == [wires[i], wires[j]]
-            assert np.isclose(op.parameters[0], 0.5 * Z[i // 2, j // 2] * t)
-
-    def test_apply_two_body_diagonal_double_phase_control(self):
-        """Test that CNOTs sandwich the IsingZZ block for the double-phase control."""
-        wires = [0, 1]
-        control_wires = [10]
-        Z = np.array([[0.0]])
-        with qp.queuing.AnnotatedQueue() as q:
-            _apply_two_body_diagonal(Z, wires, 0.3, control_wires, True)
-        tape = qp.tape.QuantumScript.from_queue(q)
-        cnots = [op for op in tape.operations if isinstance(op, qp.CNOT)]
-        assert len(cnots) == 2
-        assert all(list(op.wires) == [10, 0] for op in cnots)
-        assert any(isinstance(op, qp.IsingZZ) for op in tape.operations)
-
-    def test_apply_two_body_diagonal_genuine_control(self):
-        """Test that the genuine control emits controlled-IsingZZ (CNOT+RZ, no bare IsingZZ)."""
-        wires = [0, 1]
-        control_wires = [10]
-        Z = np.array([[0.5]])
-        with qp.queuing.AnnotatedQueue() as q:
-            _apply_two_body_diagonal(Z, wires, 0.3, control_wires, False)
-        tape = qp.tape.QuantumScript.from_queue(q)
-        # No bare IsingZZ; each rotation becomes a controlled-IsingZZ = 4 CNOT + 2 RZ.
-        assert not any(isinstance(op, qp.IsingZZ) for op in tape.operations)
-        assert sum(isinstance(op, qp.CNOT) for op in tape.operations) == 4
-        assert sum(isinstance(op, qp.RZ) for op in tape.operations) == 2
-
-    def test_apply_one_body_diagonal(self):
-        """Test the CDF one-body diagonal RZ gates."""
-        num_cas = 2
-        wires = list(range(2 * num_cas))
-        Z = np.diag([0.3, -0.2])
-        t = 0.1
-        with qp.queuing.AnnotatedQueue() as q:
-            _apply_one_body_diagonal(Z, wires, t, [], False)
-        tape = qp.tape.QuantumScript.from_queue(q)
-        rz_ops = [op for op in tape.operations if isinstance(op, qp.RZ)]
-        assert len(rz_ops) == 2 * num_cas
-        for wire_idx, op in enumerate(rz_ops):
-            assert list(op.wires) == [wires[wire_idx]]
-            assert np.isclose(op.parameters[0], -2.0 * Z[wire_idx // 2, wire_idx // 2] * t)
-
-    def test_apply_one_body_diagonal_double_phase_control(self):
-        """Test that CNOTs sandwich each RZ for the double-phase control."""
-        wires = [0, 1]
-        control_wires = [10]
-        Z = np.diag([0.3])
-        with qp.queuing.AnnotatedQueue() as q:
-            _apply_one_body_diagonal(Z, wires, 0.1, control_wires, True)
-        tape = qp.tape.QuantumScript.from_queue(q)
-        cnots = [op for op in tape.operations if isinstance(op, qp.CNOT)]
-        assert len(cnots) == 2 * len(wires)
-        assert all(op.wires[0] == 10 for op in cnots)
-
-    def test_apply_one_body_diagonal_genuine_control(self):
-        """Test that the genuine control emits controlled-RZ (2 CNOT + 2 RZ per rotation)."""
-        wires = [0, 1]
-        control_wires = [10]
-        Z = np.diag([0.3])  # num_cas == 1 -> 2 * num_cas == 2 one-body RZ rotations
-        with qp.queuing.AnnotatedQueue() as q:
-            _apply_one_body_diagonal(Z, wires, 0.1, control_wires, False)
-        tape = qp.tape.QuantumScript.from_queue(q)
-        assert sum(isinstance(op, qp.CNOT) for op in tape.operations) == 4
-        assert sum(isinstance(op, qp.RZ) for op in tape.operations) == 4
-
-    def test_energy_shift(self):
-        """Test the CDF zero-of-energy shift formula (Eq. A29, first line)."""
-        rng = np.random.default_rng(3)
-        num_cas = 2
-        Z0 = np.diag(rng.normal(size=num_cas))
-        Z_frag = rng.normal(size=(1, num_cas, num_cas))
-        core_tensors = np.concatenate([Z0[np.newaxis], Z_frag], axis=0)
-        ham = {"core_tensors": core_tensors, "nuc_constant": 0.42}
-
-        shift = _energy_shift(ham)
-        expected = (
-            0.42
-            + np.trace(Z0)
-            + (-np.sum(Z_frag) / 2 + np.sum(np.trace(Z_frag, axis1=1, axis2=2)) / 4)
-        )
-        assert np.isclose(shift, expected)
 
 
 class TestResourceRule:
@@ -380,13 +251,13 @@ class TestDoublePhaseControlledDecomposition:
         assert np.allclose(block0, u, atol=1e-9)
         assert np.allclose(block1, u.conj().T, atol=1e-9)
 
-    def test_double_phase_hadamard_invariant(self, diagonal_hamiltonian_cdf):
+    def test_double_phase_hadamard_invariant(self, diagonal_hamiltonian_cdf, seed):
         """The double-phase Hadamard test measures <X> = Re<psi|block0^dag block1|psi>, which
         for the exact blocks equals Re<psi|expm(+2 i H t)|psi>."""
         ham, num_orbitals = diagonal_hamiltonian_cdf
         sys_wires = list(range(2 * num_orbitals))
         t, steps = 0.9, 3
-        measured, psi = hadamard_test(qp.TrotterCDF, ham, sys_wires, t, steps, True)
+        measured, psi = hadamard_test(qp.TrotterCDF, ham, sys_wires, t, steps, True, seed)
         block0, block1 = control_branches(qp.TrotterCDF, ham, sys_wires, t, steps, True)
         ref_blocks = float(np.real(psi.conj() @ (block0.conj().T @ block1 @ psi)))
         ref_expm = float(
@@ -416,15 +287,15 @@ class TestIntegration:
     @pytest.mark.parametrize(
         ("double_phase", "target_gates"),
         [
-            (False, {"Hadamard", "BasisRotation", "RZ", "CNOT", "PhaseShift", "ForLoop"}),
-            (True, {"Hadamard", "BasisRotation", "RZ", "CNOT", "IsingZZ", "ForLoop"}),
+            (False, CATALYST_GATE_SET_GENUINE),
+            (True, CATALYST_GATE_SET_DOUBLE_PHASE),
         ],
     )
-    def test_catalyst_legacy_frontend(self, double_phase, target_gates):
+    def test_catalyst_legacy_frontend(self, double_phase, target_gates, seed):
         """Test that the controlled template runs with the legacy catalyst frontend."""
         N = 2
         L = 1
-        rng = np.random.default_rng(0)
+        rng = np.random.default_rng(seed)
         hamiltonian = {
             "core_tensors": rng.random((L + 1, N, N)),
             "leaf_tensors": rng.random((L + 1, N, N)),
