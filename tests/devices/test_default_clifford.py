@@ -529,7 +529,7 @@ def test_tracker():
     }
     assert np.allclose(tracker.history.pop("results")[0], 0.0)
     assert tracker.history.pop("resources")[0] == qp.resource.SpecsResources(
-        num_allocs=2,
+        num_wires=2,
         counts={"Hadamard": 1, "CNOT": 1},
         measurement_processes={"expval(PauliZ)": 1},
         circuit_depth=2,

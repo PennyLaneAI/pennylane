@@ -524,7 +524,7 @@ class TestResourceEstimation:
         tape = make_empty_tape
 
         expected_resources = qp.resource.SpecsResources(
-            num_allocs=2,
+            num_wires=2,
             counts={},
             measurement_processes={"probs(all wires)": 1},
             circuit_depth=0,
@@ -538,7 +538,7 @@ class TestResourceEstimation:
         specs = tape.specs
 
         expected_resources = qp.resource.SpecsResources(
-            num_allocs=3,
+            num_wires=3,
             counts={"RX": 2, "Rot": 1, "CNOT": 1},
             measurement_processes={"expval(PauliX)": 1, "probs(2 wires)": 1},
             circuit_depth=3,
@@ -552,7 +552,7 @@ class TestResourceEstimation:
         specs1 = tape.specs
 
         expected_resources = qp.resource.SpecsResources(
-            num_allocs=3,
+            num_wires=3,
             counts={"RX": 2, "Rot": 1, "CNOT": 1},
             measurement_processes={},
             circuit_depth=3,
@@ -568,7 +568,7 @@ class TestResourceEstimation:
         specs2 = tape.specs
 
         expected_resources = qp.resource.SpecsResources(
-            num_allocs=5,
+            num_wires=5,
             counts={"RX": 2, "Rot": 1, "CNOT": 2, "RZ": 1},
             measurement_processes={"expval(PauliX)": 1, "probs(2 wires)": 1},
             circuit_depth=4,
