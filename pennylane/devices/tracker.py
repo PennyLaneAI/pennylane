@@ -79,7 +79,7 @@ class Tracker:
     {'executions': 1,
      'resources': SpecsResources(counts={'RX': 1},
                                  measurement_processes={'expval(PauliZ)': 1},
-                                 num_allocs=1,
+                                 num_wires=1,
                                  circuit_depth=1,
                                  total_quantum_operations=1),
      'results': np.float64(0.12),
@@ -95,7 +95,7 @@ class Tracker:
       - RX: 1
     Measurement processes:
     - expval(PauliZ): 1
-    Wire allocations: 1
+    Total wires: 1
     Circuit Depth: 1
 
     We can see that calculating the gradient of ``circuit`` takes three total evaluations: one
@@ -160,7 +160,7 @@ class Tracker:
           - RX: 1
         Measurement processes:
         - expval(PauliZ): 1
-        Wire allocations: 1
+        Total wires: 1
         Circuit Depth: 1
     """
 
@@ -209,7 +209,7 @@ class Tracker:
          'executions': [1],
          'resources': [SpecsResources(counts={'RX': 1},
                                       measurement_processes={'expval(PauliZ)': 1},
-                                      num_allocs=1,
+                                      num_wires=1,
                                       circuit_depth=1,
                                       total_quantum_operations=1)],
          'results': [array(0.)],
