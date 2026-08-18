@@ -512,7 +512,8 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
     def test_add_global_op(self, wires, wire_map, cls, label):
         """Test that adding a global op works as expected."""
         data = (0.5124,) if cls is qp.GlobalPhase else ()
-        op = cls(*data, wires=wires)
+        kwargs = {} if cls is qp.GlobalPhase else {"wires": wires}
+        op = cls(*data, **kwargs)
         # Expected output does not depend on the wires of GlobalPhase but just
         # on the number of drawn wires as dictated by the config!
         n_wires = len(wire_map)
