@@ -82,7 +82,7 @@ def marker(obj: QNode | None = None, label: str | None = None) -> QNode | Callab
       - RX: 2
     Measurement processes:
     - probs(all wires): 1
-    Wire allocations: 0
+    Total wires: 0
     Circuit Depth: Not computed
 
     Similarly, we can print the circuit after the ``merge_rotations`` transform has been applied by passing ``level="after-merge-rotations"`` to :func:`~.draw`:

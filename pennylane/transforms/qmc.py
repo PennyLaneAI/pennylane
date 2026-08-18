@@ -354,7 +354,7 @@ def quantum_monte_carlo(
                                                      'RY': 6325,
                                                      'SWAP': 3},
                                              measurement_processes={'probs(6 wires)': 1},
-                                             num_allocs=12,
+                                             num_wires=12,
                                              circuit_depth=21502,
                                              total_quantum_operations=22797))
     """

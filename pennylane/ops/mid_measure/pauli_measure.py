@@ -220,7 +220,7 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
     - PauliX: 1
     Measurement processes:
     - expval(PauliZ): 1
-    Wire allocations: 3
+    Total wires: 3
     PBC Depths:
     - Any commuting depth: 1
     - Qubit disjoint depth: 1

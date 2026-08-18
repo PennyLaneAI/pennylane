@@ -18,6 +18,7 @@ import pytest
 import pennylane as qp
 from pennylane.resource._utils import (
     get_marker_level_map,
+    make_level_name_unique,
     preprocess_level_input,
 )
 

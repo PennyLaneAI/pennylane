@@ -33,8 +33,19 @@ pytestmark = pytest.mark.catalyst
 class TestSpecsTransform:
     """Tests for the transform specs using the QNode"""
 
-    @pytest.mark.catalyst
-    @pytest.mark.parametrize("level", [0, "device"])
+    @pytest.mark.parametrize(
+        "level",
+        [
+            pytest.param(
+                0,
+                marks=pytest.mark.xfail(
+                    reason="Needs changes from https://github.com/PennyLaneAI/catalyst/pull/3076 in order to pass.",
+                    strict=True,
+                ),
+            ),
+            "device",
+        ],
+    )
     def test_qjit_partial(self, level):
         """Test specs for a partial-wrapped Catalyst jitted QNode."""
 
@@ -51,6 +62,10 @@ class TestSpecsTransform:
         assert resources.counts == {"RX": 1, "RY": 1, "RZ": 1}
         assert resources.total_quantum_operations == 3
 
+    @pytest.mark.xfail(
+        reason="Needs changes from https://github.com/PennyLaneAI/catalyst/pull/3076 in order to pass.",
+        strict=True,
+    )
     @pytest.mark.catalyst
     def test_qjit_partial_all_levels(self):
         """Test all-level specs for a partial-wrapped Catalyst jitted QNode."""
@@ -126,7 +141,7 @@ class TestDeviceLevelSpecs:
             resources=SpecsResources(
                 counts={"Hadamard": 1},
                 measurement_processes={"expval(PauliZ)": 1},
-                num_allocs=1,
+                num_wires=1,
                 circuit_depth=1,
             ),
         )
@@ -173,7 +188,7 @@ class TestDeviceLevelSpecs:
                     "Adjoint(QubitUnitary)": 1,
                 },
                 measurement_processes={"probs(all wires)": 1},
-                num_allocs=4,
+                num_wires=4,
                 circuit_depth=10,
             ),
         )
@@ -330,17 +345,17 @@ class TestPassByPassSpecs:
                 "Before MLIR Passes": SpecsResources(
                     counts={"RX": 2, "RZ": 2, "Hadamard": 2, "CNOT": 2},
                     measurement_processes={"probs(all wires)": 1},
-                    num_allocs=2,
+                    num_wires=2,
                 ),
                 "cancel-inverses": SpecsResources(
                     counts={"RX": 2, "RZ": 2},
                     measurement_processes={"probs(all wires)": 1},
-                    num_allocs=2,
+                    num_wires=2,
                 ),
                 "merge-rotations": SpecsResources(
                     counts={"RX": 1, "RZ": 1},
                     measurement_processes={"probs(all wires)": 1},
-                    num_allocs=2,
+                    num_wires=2,
                 ),
             },
         )
@@ -366,7 +381,7 @@ class TestPassByPassSpecs:
         assert specs.resources == SpecsResources(
             counts={"RX": 1, "RZ": 1},
             measurement_processes={"probs(all wires)": 1},
-            num_allocs=2,
+            num_wires=2,
         )
 
     def test_duplicate_level_names(self, simple_circuit):
@@ -379,13 +394,13 @@ class TestPassByPassSpecs:
         before_res = SpecsResources(
             counts={"RX": 2, "RZ": 2, "Hadamard": 2, "CNOT": 2},
             measurement_processes={"probs(all wires)": 1},
-            num_allocs=2,
+            num_wires=2,
         )
 
         canceled_res = SpecsResources(
             counts={"RX": 2, "RZ": 2},
             measurement_processes={"probs(all wires)": 1},
-            num_allocs=2,
+            num_wires=2,
         )
 
         expected = CircuitSpecs(
@@ -450,17 +465,17 @@ class TestPassByPassSpecs:
                 "Before MLIR Passes": SpecsResources(
                     counts={"CNOT": 2, "Hadamard": 2, "RX": 2, "RZ": 2},
                     measurement_processes={"probs(all wires)": 1},
-                    num_allocs=2,
+                    num_wires=2,
                 ),
                 "cancel-inverses": SpecsResources(
                     counts={"RX": 2, "RZ": 2},
                     measurement_processes={"probs(all wires)": 1},
-                    num_allocs=2,
+                    num_wires=2,
                 ),
                 "merge-rotations": SpecsResources(
                     counts={"RX": 1, "RZ": 1},
                     measurement_processes={"probs(all wires)": 1},
-                    num_allocs=2,
+                    num_wires=2,
                 ),
             },
         )
@@ -528,7 +543,7 @@ class TestPassByPassSpecs:
             resources=SpecsResources(
                 counts={"Hadamard": 1, "PauliX": 2, "PauliZ": 1},
                 measurement_processes={"expval(PauliX)": 1},
-                num_allocs=1,
+                num_wires=1,
             ),
         )
 
@@ -557,7 +572,7 @@ class TestPassByPassSpecs:
             resources=SpecsResources(
                 counts={"Hadamard": 15, "PauliX": 5},
                 measurement_processes={"expval(PauliX)": 1},
-                num_allocs=1,
+                num_wires=1,
             ),
         )
 
@@ -586,34 +601,34 @@ class TestPassByPassSpecs:
                     SpecsResources(
                         counts={"Hadamard": 1, "PauliX": 2},
                         measurement_processes={"expval(PauliX)": 1},
-                        num_allocs=3,
+                        num_wires=3,
                     ),
                     SpecsResources(
                         counts={"Hadamard": 1, "PauliX": 2},
                         measurement_processes={"expval(PauliY)": 1},
-                        num_allocs=3,
+                        num_wires=3,
                     ),
                     SpecsResources(
                         counts={"Hadamard": 1, "PauliX": 2},
                         measurement_processes={"expval(PauliZ)": 1},
-                        num_allocs=3,
+                        num_wires=3,
                     ),
                 ],
                 "cancel-inverses": [  # The split should remain throughout subsequent passes
                     SpecsResources(
                         counts={"Hadamard": 1},
                         measurement_processes={"expval(PauliX)": 1},
-                        num_allocs=3,
+                        num_wires=3,
                     ),
                     SpecsResources(
                         counts={"Hadamard": 1},
                         measurement_processes={"expval(PauliY)": 1},
-                        num_allocs=3,
+                        num_wires=3,
                     ),
                     SpecsResources(
                         counts={"Hadamard": 1},
                         measurement_processes={"expval(PauliZ)": 1},
-                        num_allocs=3,
+                        num_wires=3,
                     ),
                 ],
             },
@@ -649,7 +664,7 @@ class TestPassByPassSpecs:
             resources=SpecsResources(
                 counts={"Hadamard": 3, "PauliX": 1},
                 measurement_processes={"probs(all wires)": 1},
-                num_allocs=3,
+                num_wires=3,
             ),
         )
 
@@ -727,7 +742,7 @@ class TestSpecsWithPPR:
             resources=PBCSpecsResources(
                 counts={"GlobalPhase": 2, "PPR-pi/4-w1": 3, "PPR-pi/8-w1": 1},
                 measurement_processes={},
-                num_allocs=2,
+                num_wires=2,
                 any_commuting_depth=3,
                 qubit_disjoint_depth=4,
             ),
@@ -762,7 +777,7 @@ class TestSpecsWithPPR:
                     "PPR-Phi-w1": 1,
                 },
                 measurement_processes={},
-                num_allocs=4,
+                num_wires=4,
                 any_commuting_depth=4,
                 qubit_disjoint_depth=4,
             ),
@@ -801,7 +816,7 @@ class TestSymbolicSpecs:
         expected_res = SpecsResources(
             counts={"Hadamard": 1, "PauliX": 6},
             measurement_processes={"expval(PauliX)": 1},
-            num_allocs=1,
+            num_wires=1,
         )
         assert concrete_res == expected_res
 
@@ -840,7 +855,7 @@ class TestSymbolicSpecs:
         expected_res = SpecsResources(
             counts={"Hadamard": 1, "PauliX": 6, "PauliY": 15, "PauliZ": 25},
             measurement_processes={"expval(PauliX)": 1},
-            num_allocs=1,
+            num_wires=1,
         )
         assert concrete_res == expected_res
 
@@ -877,7 +892,7 @@ class TestSymbolicSpecs:
         expected_res = SpecsResources(
             counts={"Hadamard": 1, "PauliX": 16, "PauliZ": 3},
             measurement_processes={"expval(PauliX)": 1},
-            num_allocs=1,
+            num_wires=1,
         )
         assert concrete_res == expected_res
 
@@ -908,7 +923,7 @@ class TestSymbolicSpecs:
             expected_res = SpecsResources(
                 counts={"Hadamard": 1 + n * n, "PauliX": n},
                 measurement_processes={"expval(PauliX)": 1},
-                num_allocs=1,
+                num_wires=1,
             )
             assert concrete_res == expected_res
 
@@ -945,7 +960,7 @@ class TestSymbolicSpecs:
                 assert concrete_res == SpecsResources(
                     counts={"Hadamard": n * n + n + 1, "PauliX": n},
                     measurement_processes={"expval(PauliX)": 1},
-                    num_allocs=1,
+                    num_wires=1,
                 )
 
     @pytest.mark.capture
@@ -1035,17 +1050,17 @@ class TestMarkerIntegration:
                 "before": SpecsResources(
                     counts={"RX": 2, "RZ": 2, "Hadamard": 2, "CNOT": 2},
                     measurement_processes={"probs(all wires)": 1},
-                    num_allocs=2,
+                    num_wires=2,
                 ),
                 "between": SpecsResources(
                     counts={"RX": 2, "RZ": 2},
                     measurement_processes={"probs(all wires)": 1},
-                    num_allocs=2,
+                    num_wires=2,
                 ),
                 "after": SpecsResources(
                     counts={"RX": 1, "RZ": 1},
                     measurement_processes={"probs(all wires)": 1},
-                    num_allocs=2,
+                    num_wires=2,
                 ),
             },
         )
@@ -1076,17 +1091,17 @@ class TestMarkerIntegration:
                 "before": SpecsResources(
                     counts={"RX": 2, "RZ": 2, "Hadamard": 2, "CNOT": 2},
                     measurement_processes={"probs(all wires)": 1},
-                    num_allocs=2,
+                    num_wires=2,
                 ),
                 "between": SpecsResources(
                     counts={"RX": 2, "RZ": 2},
                     measurement_processes={"probs(all wires)": 1},
-                    num_allocs=2,
+                    num_wires=2,
                 ),
                 "after": SpecsResources(
                     counts={"RX": 1, "RZ": 1},
                     measurement_processes={"probs(all wires)": 1},
-                    num_allocs=2,
+                    num_wires=2,
                 ),
             },
         )
@@ -1115,12 +1130,12 @@ class TestMarkerIntegration:
                 "m0": SpecsResources(
                     counts={"RX": 2, "RZ": 2, "Hadamard": 2, "CNOT": 2},
                     measurement_processes={"probs(all wires)": 1},
-                    num_allocs=2,
+                    num_wires=2,
                 ),
                 "m1, m1-duplicate": SpecsResources(
                     counts={"RX": 2, "RZ": 2},
                     measurement_processes={"probs(all wires)": 1},
-                    num_allocs=2,
+                    num_wires=2,
                 ),
             },
         )
@@ -1155,17 +1170,17 @@ class TestMarkerIntegration:
                 "m0": SpecsResources(
                     counts={"RX": 2, "RZ": 2, "Hadamard": 2, "CNOT": 2},
                     measurement_processes={"probs(all wires)": 1},
-                    num_allocs=2,
+                    num_wires=2,
                 ),
                 "m1": SpecsResources(
                     counts={"RX": 2, "RZ": 2},
                     measurement_processes={"probs(all wires)": 1},
-                    num_allocs=2,
+                    num_wires=2,
                 ),
                 "m2": SpecsResources(
                     counts={"RX": 1, "RZ": 1},
                     measurement_processes={"probs(all wires)": 1},
-                    num_allocs=2,
+                    num_wires=2,
                 ),
             },
         )
