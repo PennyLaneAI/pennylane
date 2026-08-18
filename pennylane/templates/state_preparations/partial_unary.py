@@ -629,7 +629,7 @@ class PartialUnaryStatePreparation(Operation):
       - SWAP: 1
     Measurement processes:
     - state(all wires): 1
-    Wire allocations: 26
+    Total wires: 26
     Circuit Depth: Not computed
 
     Note that passing more work wires than the needed :math:`\max(\lceil \log_2(|L|)\rceil-1, 1)`
@@ -648,7 +648,7 @@ class PartialUnaryStatePreparation(Operation):
       - SWAP: 16
     Measurement processes:
     - state(all wires): 1
-    Wire allocations: 48
+    Total wires: 48
     Circuit Depth: Not computed
 
     We used just ``160`` ``QROM``\ s instead of ``1207``, and as their size is dictated only by the
