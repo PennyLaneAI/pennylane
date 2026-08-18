@@ -7,7 +7,7 @@
   [Motlagh et al, arXiv:2411.13669](https://arxiv.org/abs/2411.13669). The vibronic Hamiltonian is
   provided as a dictionary of dense coefficient tensors, and the vibrational-mode wires are provided
   as a single flattened register.
-  [(#10047)](https://github.com/PennyLaneAI/pennylane/pull/10047)
+  [(#10029)](https://github.com/PennyLaneAI/pennylane/pull/10029)
 
 * ``qp.allocate`` now supports ``state="magic-T"`` and ``state="magic-T-adj"`` for requesting
   magic-state dynamic wires (:math:`|m\rangle = TH|0\rangle` and :math:`|m̄\rangle = T^\dagger H|0\rangle`).
