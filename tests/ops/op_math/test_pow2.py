@@ -19,7 +19,7 @@ import pytest
 from scipy.linalg import fractional_matrix_power
 
 import pennylane as qp
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator2, abstractify
 from pennylane.decomposition.resources import Resources
 from pennylane.exceptions import (
     AdjointUndefinedError,
@@ -30,7 +30,7 @@ from pennylane.exceptions import (
 from pennylane.ops import ISWAP, Identity, PhaseShift, S, T, Z
 from pennylane.ops.op_math.controlled2 import ControlledOp2
 from pennylane.ops.op_math.pow import pow
-from pennylane.ops.op_math.pow2 import Pow2, pow_rotation
+from pennylane.ops.op_math.pow2 import Pow2, _pow_abstract, pow_rotation
 from pennylane.typing import Float, Wire
 from tests.core.operator.operator2_utils import DynOp, OneWireDynOp
 from tests.ops.op_math.test_adjoint2 import RX2, SX2
@@ -332,3 +332,27 @@ def test_pow_rotation2():
     assert pow_rotation.compute_resources(**op.arguments) == Resources(
         {OneWireDynOp(Float, wires=Wire[1]): 1}
     )
+
+
+@pytest.mark.capture
+def test_pow_abstract_does_not_bind_with_compressed_leaves():
+    """Test that a legacy-only ChangeOpBasis resource does not create a capture equation."""
+    import jax  # pylint: disable=import-outside-toplevel
+
+    prod_rep = qp.resource_rep(
+        qp.ops.Prod, resources={abstractify(qp.S): 1, abstractify(qp.Hadamard): 1}
+    )
+    base = qp.decomposition.change_op_basis_resource_rep(prod_rep, prod_rep, prod_rep)
+    leaves, _ = qp.pytrees.flatten(base)
+    assert leaves == [prod_rep] * 3
+
+    rep = _pow_abstract(base, 2)
+    assert isinstance(rep, Pow2)
+    assert rep.base is base
+    assert rep.z == 2
+
+    def f():
+        _pow_abstract(base, 2)
+
+    jaxpr = jax.make_jaxpr(f)()
+    assert not jaxpr.eqns
