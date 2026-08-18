@@ -323,26 +323,25 @@ class TestHybridQRAM:
                 k=num_select_wires,
             )
 
-        specs = qp.specs(qp.qjit(circuit), level="user")()
+        tape = qp.workflow.construct_batch(circuit)()[0][0]
+        resources = qp.resource.resources_from_tape(tape)
 
         def _match_controlled(name, op):
             if (
                 # pylint: disable=too-many-boolean-expressions
                 name == "MultiControlledX"
                 and op.name.startswith("C(X")
-                or name == "C(Hadamard)"
+                or name == "CH"
                 and op.name.startswith("C(H")
-                or name == "2C(SWAP)"  # C(C(SWAPs are now merged
+                or name == "C(SWAP)"  # C(C(SWAPs are now merged
                 and (op.name.startswith("C(C(SWAP") or op.name.startswith("C(CSWAP"))
                 or name == "CZ"
                 and op.name.startswith("C(Z")
-                or name == "C(X)"
-                and op.name.startswith("C(X")
             ):
                 return True
             return name == op.name
 
-        for ty, count in specs.resources.quantum_operations.items():
+        for ty, count in resources.quantum_operations.items():
             found = False
             i = 0
             total = 0
