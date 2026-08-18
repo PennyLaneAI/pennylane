@@ -1291,7 +1291,7 @@ class TestModifiedTemplates:
         }
 
         def qfunc():
-            qp.SemiAdder(**kwargs)
+            return qp.SemiAdder(**kwargs).tracer
 
         # Validate inputs
         qfunc()
@@ -1302,17 +1302,10 @@ class TestModifiedTemplates:
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        assert eqn.primitive == qp.SemiAdder._primitive
-        assert eqn.invars == jaxpr.jaxpr.invars
-        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
-        assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        assert_eqn_matches_op(eqn, qp.SemiAdder)
 
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-
-        assert len(q) == 1
-        qp.assert_equal(q.queue[0], qp.SemiAdder(**kwargs))
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        qp.assert_equal(op, qp.SemiAdder(**kwargs))
 
     def test_multiplier(self):
         """Test the primitive bind call of Multiplier."""
@@ -1383,51 +1376,49 @@ class TestModifiedTemplates:
     def test_signed_out_multiplier(self):
         """Test the primitive bind call of SignedOutMultiplier."""
 
-        x_wires = [0, 1]
-        y_wires = [2, 3]
-        output_wires = [4, 5]
-        work_wires = []
+        kwargs = {
+            "x_wires": [0, 1],
+            "y_wires": [2, 3],
+            "output_wires": [4, 5],
+            "work_wires": [],
+        }
 
-        def qfunc(x_wires, y_wires, output_wires, work_wires):
-            qp.SignedOutMultiplier(x_wires, y_wires, output_wires, work_wires=work_wires)
+        def qfunc():
+            return qp.SignedOutMultiplier(**kwargs).tracer
 
-        # Validate inputs
-        qfunc(x_wires, y_wires, output_wires, work_wires)
-
-        # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)(x_wires, y_wires, output_wires, work_wires)
+        jaxpr = jax.make_jaxpr(qfunc)()
 
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
         assert_eqn_matches_op(eqn, qp.SignedOutMultiplier)
-        assert eqn.invars == jaxpr.jaxpr.invars
-        assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        qp.assert_equal(op, qp.SignedOutMultiplier(**kwargs))
 
     def test_out_multiplier(self):
         """Test the primitive bind call of OutMultiplier."""
 
-        x_wires = [0, 1]
-        y_wires = [2, 3]
-        output_wires = [4, 5]
+        kwargs = {
+            "x_wires": [0, 1],
+            "y_wires": [2, 3],
+            "output_wires": [4, 5],
+            "mod": None,
+            "work_wires": None,
+        }
 
-        def qfunc(x_wires, y_wires, output_wires):
-            qp.OutMultiplier(x_wires, y_wires, output_wires, mod=None, work_wires=None)
+        def qfunc():
+            return qp.OutMultiplier(**kwargs).tracer
 
-        # Validate inputs
-        qfunc(x_wires, y_wires, output_wires)
-
-        # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)(x_wires, y_wires, output_wires)
+        jaxpr = jax.make_jaxpr(qfunc)()
 
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
         assert_eqn_matches_op(eqn, qp.OutMultiplier)
-        assert eqn.invars == jaxpr.jaxpr.invars
-        assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        qp.assert_equal(op, qp.OutMultiplier(**kwargs))
 
     def test_out_adder(self):
         """Test the primitive bind call of OutAdder."""

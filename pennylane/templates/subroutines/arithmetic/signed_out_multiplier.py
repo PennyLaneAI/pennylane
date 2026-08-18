@@ -26,7 +26,6 @@ from pennylane.decomposition import (
     controlled_resource_rep,
     register_condition,
     register_resources,
-    resource_rep,
 )
 from pennylane.ops import CNOT, Controlled
 from pennylane.typing import Wire
@@ -354,7 +353,7 @@ class SignedOutMultiplier(Operator2):
 
 
 def _zeroed_signed_out_multiplier_resources(
-    x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=False, **_
+    x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=False
 ):  # pylint: disable=unused-argument
     """
     Computes the resources for the SignedOutMultiplier.
@@ -402,7 +401,7 @@ def _zeroed_signed_out_multiplier_resources(
 
 
 def _not_zeroed_signed_out_multiplier_resources(
-    x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=False, **_
+    x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=False
 ):  # pylint: disable=unused-argument
     """
     Computes the resources for the SignedOutMultiplier.
@@ -424,12 +423,7 @@ def _not_zeroed_signed_out_multiplier_resources(
     ] = 1
 
     resources[
-        resource_rep(
-            SemiAdder,
-            num_x_wires=num_output_wires,
-            num_y_wires=num_output_wires,
-            num_work_wires=num_output_wires - 1,
-        )
+        SemiAdder(Wire[num_output_wires], Wire[num_output_wires], Wire[num_output_wires - 1])
     ] = 1
 
     return resources
@@ -463,19 +457,27 @@ def _twos_complement_helper(input_reg, aux_wire, work_wires):
     )
 
 
-def _not_zeroed_work_wire_condition(work_wires, output_wires, **_):
+def _not_zeroed_work_wire_condition(
+    x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=False
+):  # pylint: disable=unused-argument
     return len(work_wires) >= 2 * len(output_wires) + 1
 
 
-def _zeroed_work_wire_condition(work_wires, **_):
+def _zeroed_work_wire_condition(
+    x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=False
+):  # pylint: disable=unused-argument
     return len(work_wires) >= 2
 
 
-def _zeroed_condition(output_wires_zeroed, **_):
+def _zeroed_condition(
+    x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=False
+):  # pylint: disable=unused-argument
     return output_wires_zeroed
 
 
-def _not_zeroed_condition(output_wires_zeroed, **_):
+def _not_zeroed_condition(
+    x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=False
+):  # pylint: disable=unused-argument
     return not output_wires_zeroed
 
 
@@ -487,7 +489,7 @@ def _signed_out_multiplier_decomposition_zeroed(
     y_wires: WiresLike,
     output_wires: WiresLike,
     work_wires: WiresLike,
-    **_,
+    output_wires_zeroed=False,  # pylint: disable=unused-argument
 ):
     """Computes the decomposition of the operator as a product of other operators when the output wires are zeroed."""
     if capture.enabled():
@@ -544,7 +546,7 @@ def _signed_out_multiplier_decomposition_not_zeroed(
     y_wires: WiresLike,
     output_wires: WiresLike,
     work_wires: WiresLike,
-    **_,
+    output_wires_zeroed=False,  # pylint: disable=unused-argument
 ):
     """Computes the decomposition of the operator as a product of other operators."""
 
