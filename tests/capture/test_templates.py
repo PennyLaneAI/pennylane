@@ -377,7 +377,7 @@ class TestModifiedTemplates:
 
         jaxpr = jax.make_jaxpr(qp.BasisEmbedding)(np.array([1, 1, 1]), wires=(0, 1, 2))
         # eqns[0] is for converting to bool
-        assert jaxpr.eqns[1].params["op_cls"] == qp.BasisState
+        assert_eqn_matches_op(jaxpr.eqns[1], qp.BasisState)
         assert jaxpr.eqns[1].invars[0].aval == jax.core.ShapedArray((3,), bool)
 
     @pytest.mark.parametrize(
