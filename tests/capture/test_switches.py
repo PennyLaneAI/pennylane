@@ -71,7 +71,7 @@ def test_switches_without_jax():
     except ImportError:
 
         assert qp.capture.enabled() is False
-        with pytest.raises(ImportError, match="plxpr requires JAX to be installed."):
+        with pytest.raises(ImportError, match="capture requires JAX to be installed."):
             qp.capture.enable()
         assert qp.capture.enabled() is False
         assert qp.capture.disable() is None

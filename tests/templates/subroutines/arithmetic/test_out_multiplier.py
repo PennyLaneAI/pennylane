@@ -19,8 +19,17 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.core.operator import abstractify
+from pennylane.ops import adjoint
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.templates.subroutines.arithmetic.out_multiplier import OutMultiplier, _add_plus_one
+from pennylane.templates.subroutines.arithmetic.out_multiplier import (
+    OutMultiplier,
+    _add_plus_one,
+    _out_multiplier_with_cache_resources,
+    _out_multiplier_with_qft,
+)
+from pennylane.templates.subroutines.arithmetic.semi_adder import SemiAdder
+from pennylane.typing import Wire
 
 
 class TestBuildingBlocks:
@@ -111,6 +120,59 @@ class TestBuildingBlocks:
         assert np.allclose(probs[1:], 0.0)
 
 
+@pytest.mark.parametrize(
+    (
+        "x_wires",
+        "y_wires",
+        "output_wires",
+        "mod",
+        "work_wires",
+        "expected_mod",
+        "expected_num_work_wires",
+    ),
+    [
+        ([0, 1], [2, 3], [4, 5, 6], None, [], 8, 0),
+        ([0, 1], [2, 3], [4, 5], 3, [6, 7, 8], 3, 2),
+        ([0, 1, 2], [3, 4, 5], [6, 7, 8], 8, [9], 8, 1),
+    ],
+)
+def test_abstract_init(
+    x_wires, y_wires, output_wires, mod, work_wires, expected_mod, expected_num_work_wires
+):  # pylint: disable=too-many-arguments
+    """Test that abstract init mirrors concrete init for mod defaulting and work wire truncation."""
+    abstract_op = OutMultiplier(
+        Wire[len(x_wires)],
+        Wire[len(y_wires)],
+        Wire[len(output_wires)],
+        mod=mod,
+        work_wires=Wire[len(work_wires)],
+    )
+    assert abstract_op.arguments["mod"] == expected_mod
+    assert len(abstract_op.work_wires) == expected_num_work_wires
+
+    concrete_op = OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
+    assert abstractify(concrete_op) == abstract_op
+
+
+@pytest.mark.parametrize(
+    ("mod", "work_wires", "msg_match"),
+    [
+        (3, [6], "at least two work wires"),
+        (99, [6, 7], "enough wires to represent mod"),
+    ],
+)
+def test_abstract_init_validation(mod, work_wires, msg_match):
+    """Test that abstract init validates mod and work wires."""
+    with pytest.raises(ValueError, match=msg_match):
+        OutMultiplier(
+            Wire[2],
+            Wire[2],
+            Wire[2],
+            mod=mod,
+            work_wires=Wire[len(work_wires)],
+        )
+
+
 @pytest.mark.jax
 def test_standard_validity_out_multiplier():
     """Check the operation using the assert_valid function."""
@@ -123,12 +185,56 @@ def test_standard_validity_out_multiplier():
     qp.ops.functions.assert_valid(op)
 
 
+def test_wires_property():
+    """Test that wires includes all registers, including work wires."""
+    op = OutMultiplier([0, 1], [2, 3], [4, 5, 6], mod=8, work_wires=[7, 8])
+    assert op.wires == qp.wires.Wires([0, 1, 2, 3, 4, 5, 6, 7, 8])
+
+    truncated_op = OutMultiplier([0, 1], [2, 3], [4, 5, 6], mod=5, work_wires=[7, 8, 9])
+    assert truncated_op.wires == qp.wires.Wires([0, 1, 2, 3, 4, 5, 6, 7, 8])
+
+
 def test_map_wires_preserves_output_wires_zeroed():
     """Test that wire mapping preserves the output register state metadata."""
     op = OutMultiplier([0], [1], [2, 3], output_wires_zeroed=True)
     mapped_op = op.map_wires({0: 4, 1: 5, 2: 6, 3: 7})
 
-    assert mapped_op.hyperparameters["output_wires_zeroed"] is True
+    assert mapped_op.arguments["output_wires_zeroed"] is True
+
+
+@pytest.mark.parametrize(
+    ("mod", "work_wires", "expected_mod", "expected_num_work_wires"),
+    [
+        (None, [7, 8, 9, 10, 11, 12], 8, 3),
+        (5, [7, 8, 9, 10, 11, 12, 13], 5, 2),
+    ],
+)
+def test_out_multiplier_with_cache_resources(
+    mod, work_wires, expected_mod, expected_num_work_wires
+):
+    """Test cache decomposition resource function declares expected abstract operators."""
+    x_wires = [0, 1]
+    y_wires = [2, 3]
+    output_wires = [4, 5, 6]
+
+    resources = _out_multiplier_with_cache_resources(
+        x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
+    )
+
+    mult_ops = [key for key in resources if isinstance(key, OutMultiplier)]
+    assert len(mult_ops) == 1
+    mult_op = mult_ops[0]
+    assert mult_op.arguments["mod"] == expected_mod
+    assert len(mult_op.work_wires) == expected_num_work_wires
+    assert mult_op.arguments["output_wires_zeroed"] is True
+
+    semi_adder_rep = SemiAdder(
+        Wire[len(output_wires)],
+        Wire[len(output_wires)],
+        Wire[expected_num_work_wires],
+    )
+    assert resources[semi_adder_rep] == 1
+    assert resources[adjoint(mult_op)] == 1
 
 
 def _test_mult_correctness(all_wires, mod, rule, seed, output_wires_zeroed=False):
@@ -200,7 +306,7 @@ class TestOutMultiplier:
         """Test the correctness of the OutMultiplier template output."""
         # pylint: disable=too-many-arguments
         all_wires = (x_wires, y_wires, output_wires, work_wires)
-        _test_mult_correctness(all_wires, mod, OutMultiplier.compute_decomposition, seed)
+        _test_mult_correctness(all_wires, mod, _out_multiplier_with_qft, seed)
 
     @pytest.mark.parametrize(
         ("x_wires", "y_wires", "output_wires", "mod", "work_wires", "msg_match"),
@@ -293,8 +399,9 @@ class TestOutMultiplier:
                 work_wires=work_wires,
             )
 
+    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_decomposition(self):
-        """Test that compute_decomposition and decomposition work as expected."""
+        """Test that the QFT decomposition rule produces the expected structure."""
         x_wires, y_wires, output_wires, mod, work_wires = (
             [0, 1, 2],
             [3, 5],
@@ -304,9 +411,7 @@ class TestOutMultiplier:
         )
         multiplier_decomposition = (
             OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
-            .compute_decomposition(
-                x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
-            )[0]
+            .decomposition()[0]
             .decomposition()
         )
 
@@ -367,7 +472,7 @@ class TestOutMultiplier:
             x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=True
         )
         for j, rule in enumerate(qp.list_decomps(qp.OutMultiplier)):
-            applicable = rule.is_applicable(**op.resource_params)
+            applicable = rule.is_applicable(**op.arguments)
             assert applicable is (j in applicable_rules)
             _test_decomposition_rule(op, rule)
             if applicable:
@@ -411,7 +516,7 @@ class TestOutMultiplier:
         with output_wires_zeroed=False (default)."""
         op = qp.OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
         for j, rule in enumerate(qp.list_decomps(qp.OutMultiplier)):
-            applicable = rule.is_applicable(**op.resource_params)
+            applicable = rule.is_applicable(**op.arguments)
             assert applicable is (j in applicable_rules)
             _test_decomposition_rule(op, rule)
             if applicable:
