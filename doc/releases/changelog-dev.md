@@ -1168,6 +1168,12 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug where decomposing an :class:`~.Operator2` with graph-based decomposition
+  enabled inside a :class:`~.Subroutine` with program capture leaked JAX tracers and
+  caused Catalyst compilation to fail.
+  operations.
+  [(#10023)](https://github.com/PennyLaneAI/pennylane/pull/10023)
+
 * Updated :class:`~.Wires` to allow unflattening pytrees with scalar JAX arrays as wire indices.
   [(#9852)](https://github.com/PennyLaneAI/pennylane/pull/9852)
 
