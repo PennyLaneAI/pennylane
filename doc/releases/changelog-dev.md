@@ -1156,6 +1156,12 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug where graph-decomposing an :class:`~.Operator2` inside a
+  :class:`~.Subroutine` with program capture leaked JAX tracers and caused Catalyst compilation
+  to fail. Abstract dynamic arguments are now canonicalized without introducing unnecessary copy
+  operations.
+  [(#10023)](https://github.com/PennyLaneAI/pennylane/pull/10023)
+
 * Updated :class:`~.Wires` to allow unflattening pytrees with scalar JAX arrays as wire indices.
   [(#9852)](https://github.com/PennyLaneAI/pennylane/pull/9852)
 
