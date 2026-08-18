@@ -20,8 +20,33 @@ import pytest
 
 from pennylane.resource.expression import (
     Expression,
+    _cast_if_constant,
     _term_to_str,
 )
+
+
+def test_cast_if_constant():
+    """Test that _cast_if_constant returns the expected type based on the input data."""
+    zero = _cast_if_constant({}, set(), skip_copy=True, skip_normalization=False)
+    assert zero == 0
+    assert isinstance(zero, int)
+
+    # Check for literal 0
+    lit_zero = _cast_if_constant({(): 0}, set(), skip_copy=True, skip_normalization=False)
+    assert lit_zero == 0
+    assert isinstance(lit_zero, int)
+
+    three = _cast_if_constant({(): 3}, set(), skip_copy=True, skip_normalization=False)
+    assert three == 3
+    assert isinstance(three, int)
+
+    nega = _cast_if_constant({(): -1}, set(), skip_copy=True, skip_normalization=False)
+    assert nega == -1
+    assert isinstance(nega, int)
+
+    exp = _cast_if_constant({("x",): 1}, set(), skip_copy=True, skip_normalization=False)
+    assert isinstance(exp, Expression)
+    assert exp == Expression({("x",): 1})
 
 
 @pytest.mark.parametrize(
@@ -226,6 +251,27 @@ class TestExpressionMath:
         assert new_expr._data == {("x",): 1, (): 5}
         assert expr + 3 == 3 + expr
 
+    def test_add_cancels(self):
+        expr1 = Expression({("x",): 1, (): 1})
+        expr2 = Expression({("x",): -1, (): 2})
+        expr3 = Expression({("x",): -1, (): -1})
+
+        assert expr1 + expr2 == 3
+        assert isinstance(expr1 + expr2, int)
+
+        assert expr1 + expr3 == 0
+        assert isinstance(expr1 + expr3, int)
+
+    def test_add_casts_to_int(self):
+        expr = Expression({(): 2})
+        new_expr = expr + 3
+        assert isinstance(new_expr, int)
+        assert new_expr == 5
+
+        new_expr = expr + Expression({(): 3})
+        assert isinstance(new_expr, int)
+        assert new_expr == 5
+
     def test_add_invalid(self, sample_expr):
         # pylint: disable=pointless-statement
         with pytest.raises(TypeError):
@@ -256,8 +302,18 @@ class TestExpressionMath:
     def test_mul_zero(self):
         expr = Expression({("x",): 1, (): 2})
         new_expr = expr * 0
-        assert new_expr._data == {}
-        assert expr * 0 == 0 * expr == Expression({})
+        assert isinstance(new_expr, int)
+        assert expr * 0 == 0 * expr == 0
+
+    def test_mul_casts_to_int(self):
+        expr = Expression({(): 2})
+        new_expr = expr * 3
+        assert isinstance(new_expr, int)
+        assert new_expr == 6
+
+        new_expr = expr * Expression({(): 3})
+        assert isinstance(new_expr, int)
+        assert new_expr == 6
 
     def test_mul_invalid(self, sample_expr):
         # pylint: disable=pointless-statement
