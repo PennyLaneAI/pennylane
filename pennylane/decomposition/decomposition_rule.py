@@ -1111,6 +1111,8 @@ def _is_abstract_and_fixed(val):
     # already abstractifies everything. We only need to make sure that it's fixed.
     if isinstance(val, (AbstractArray, AbstractWires)):
         return val.shape_fixed
+    if isinstance(val, Wires):
+        return False  # base case to avoid infinite recursion
     leaves, _ = flatten(val, is_leaf=lambda op: isinstance(op, Wires))
     return all(_is_abstract_and_fixed(leaf) for leaf in leaves)
 

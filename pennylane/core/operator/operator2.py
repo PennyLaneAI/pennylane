@@ -2172,7 +2172,8 @@ def _abstractify_operator_type(op_type: type[Operator2]) -> Operator2:
 @QueuingManager.stop_recording()
 def _abstractify_operator(op: Operator2) -> Operator2:
     """Abstractify an operator."""
-
+    if op.is_abstract:
+        return op
     op_cls = type(op)
     target_args = op_cls.dynamic_argnames + op_cls.hybrid_argnames + op_cls.wire_argnames
     new_args = dict(op.arguments)
