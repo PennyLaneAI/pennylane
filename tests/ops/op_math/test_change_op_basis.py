@@ -29,6 +29,7 @@ from pennylane.core.operator import Operator2, abstractify
 from pennylane.exceptions import DeviceError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math import ChangeOpBasis, change_op_basis
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis import _validate_callable
 from pennylane.templates import Subroutine
 from pennylane.typing import Float, Wire
@@ -221,6 +222,66 @@ def test_change_op_basis_with_mixed_types():
     qp.assert_equal(cob.operands[0], qp.adjoint(f)(0.1, Wires([0]), Wires([1])))
 
 
+def test_change_op_basis_records_callable_as_region():
+    """A multi-operation callable is retained as an ordered region, not a Prod."""
+
+    def compute():
+        qp.S(0)
+        qp.H(0)
+
+    cob = qp.change_op_basis(compute, qp.RZ(0.2, 0))
+
+    assert isinstance(cob.compute_op, tuple)
+    assert isinstance(cob.uncompute_op, tuple)
+    assert not any(
+        isinstance(op, qp.ops.Prod)
+        for region in cob.operands
+        for op in (region if isinstance(region, tuple) else (region,))
+    )
+    expected = [
+        qp.S(0),
+        qp.H(0),
+        qp.RZ(0.2, 0),
+        qp.adjoint(qp.H(0)),
+        qp.adjoint(qp.S(0)),
+    ]
+    for actual, target in zip(cob.decomposition(), expected, strict=True):
+        qp.assert_equal(actual, target)
+
+
+def test_change_op_basis_legacy_callable_uses_prod_compatibility():
+    """A region containing legacy operations retains the Prod compatibility boundary."""
+
+    def compute():
+        qp.ctrl(qp.BasisState([0], wires=0), control=1)
+        qp.ctrl(qp.BasisState([1], wires=2), control=3)
+
+    cob = qp.change_op_basis(compute, qp.X(4), compute)
+
+    assert isinstance(cob.compute_op, qp.ops.Prod)
+    assert isinstance(cob.uncompute_op, qp.ops.Prod)
+
+
+@pytest.mark.capture
+def test_change_op_basis_region_capture():
+    """Ordered regions emit their operations directly under capture."""
+
+    def circuit(phi):
+        qp.change_op_basis(
+            (qp.adjoint(qp.S(0)), qp.H(0)),
+            qp.RZ(phi, 0),
+            (qp.H(0), qp.S(0)),
+        )
+
+    jaxpr = qp.capture.make_plxpr(circuit)(0.2)
+    tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.3)
+    expected = [qp.adjoint(qp.S(0)), qp.H(0), qp.RZ(0.3, 0), qp.H(0), qp.S(0)]
+
+    assert len(tape.operations) == len(expected)
+    for actual, target in zip(tape.operations, expected, strict=True):
+        qp.assert_equal(actual, target)
+
+
 @pytest.mark.parametrize(
     "compute_op, target_op, uncompute_op",
     (
@@ -304,12 +365,35 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         qp.assert_equal(new_op.target_op, qp.RX(0.5, 1))
         qp.assert_equal(new_op.uncompute_op, qp.RZ(0.4, 2))
 
+    def test_bind_new_parameters_with_regions(self):
+        """Test rebinding parameters across ordered regions."""
+        op = ChangeOpBasis(
+            (qp.RZ(0.1, 0), qp.PhaseShift(0.2, 1)),
+            qp.RZ(0.3, 2),
+            (qp.PhaseShift(0.4, 1), qp.RZ(0.5, 0)),
+        )
+
+        new_op = qp.ops.functions.bind_new_parameters(op, [5.0, 4.0, 3.0, 2.0, 1.0])
+
+        expected = ChangeOpBasis(
+            (qp.RZ(1.0, 0), qp.PhaseShift(2.0, 1)),
+            qp.RZ(3.0, 2),
+            (qp.PhaseShift(4.0, 1), qp.RZ(5.0, 0)),
+        )
+        qp.assert_equal(new_op, expected)
+
     def test_hash(self):
         """Testing some situations for the hash property."""
         # test not the same hash if different order
         op1 = qp.change_op_basis(qp.PauliX("a"), qp.PauliY("a"), qp.PauliX(1))
         op2 = qp.change_op_basis(qp.PauliY("a"), qp.PauliX("a"), qp.PauliX(1))
         assert hash(op1) != hash(op2)
+
+    def test_label_with_region_base_label(self):
+        """A base label can name an ordered region as one logical unit."""
+        op = ChangeOpBasis((qp.S(0), qp.H(0)), qp.RX(0.2, 1), (qp.H(0), qp.S(0)))
+
+        assert op.label(base_label=("U†", "V", "U")) == "U†@V@U"
 
     @pytest.mark.pl2do(reason="PL 2.0: Parameter broadcasting will be re-visited.")
     def test_batch_size(self):
@@ -450,6 +534,16 @@ class TestDecomposition:
             "uncompute_op": abstractify(qp.X),
         }
 
+    def test_abstract_resource_representation_with_regions(self):
+        """Resource representations retain ordered regions as native operator tuples."""
+        compute = (_adjoint_abstract(qp.S), abstractify(qp.H))
+        op = qp.decomposition.change_op_basis_resource_rep(compute, qp.RZ)
+
+        assert op.compute_op == compute
+        assert isinstance(op.uncompute_op, tuple)
+        qp.assert_equal(op.uncompute_op[0], _adjoint_abstract(compute[1]))
+        qp.assert_equal(op.uncompute_op[1], _adjoint_abstract(compute[0]))
+
     def test_mixed_abstract_hash_and_equality(self):
         """Test abstract resources containing both Operator1 and Operator2 operands."""
         op = ChangeOpBasis(qp.X(0), NonParametricOp(1), qp.RX(0.2, 2))
@@ -537,6 +631,30 @@ class TestDecomposition:
             _test_decomposition_rule(op, rule)
 
         assert len(qp.list_decomps(op)) == 1
+
+    def test_controlled_decomposition_with_regions(self):
+        """Only operations in the target region are controlled."""
+        base = ChangeOpBasis(
+            (qp.S(0), qp.H(0)),
+            (qp.RZ(0.1, 1), qp.PhaseShift(0.2, 1)),
+            (qp.H(0), qp.adjoint(qp.S(0))),
+        )
+        op = qp.ctrl(base, control=2)
+        [rule] = qp.list_decomps("C(ChangeOpBasis)")
+
+        with qp.queuing.AnnotatedQueue() as q:
+            rule(**op.arguments)
+
+        expected = [
+            qp.S(0),
+            qp.H(0),
+            qp.CRZ(0.1, wires=[2, 1]),
+            qp.ControlledPhaseShift(0.2, wires=[2, 1]),
+            qp.H(0),
+            qp.adjoint(qp.S(0)),
+        ]
+        for actual, target in zip(q.queue, expected, strict=True):
+            qp.assert_equal(actual, target)
 
     def test_adjoint_decomposition_with_explicit_uncompute(self):
         """Test the generated adjoint rule with an asymmetric explicit uncompute operator."""
