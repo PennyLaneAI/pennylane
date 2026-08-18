@@ -276,8 +276,8 @@ def pytest_collection_modifyitems(items, config):
     rootdir = pathlib.Path(config.rootdir)
     for item in items:
         rel_path = pathlib.Path(item.fspath).relative_to(rootdir)
-        _auto_assign_markers(item, rel_path)
         _handle_capture_marker(item)
+        _auto_assign_markers(item, rel_path)
         if pl2do_marker := item.get_closest_marker("pl2do"):
             reason = _get_pl2do_reason(pl2do_marker)
             item.add_marker(pytest.mark.xfail(reason=reason, strict=False))
