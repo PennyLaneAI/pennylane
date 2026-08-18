@@ -323,7 +323,7 @@ class TestHybridQRAM:
                 k=num_select_wires,
             )
 
-        tape = qp.workflow.construct_batch(circuit)()[0][0]
+        tape = qp.workflow.construct_tape(circuit)()
         resources = qp.resource.resources_from_tape(tape)
 
         def _match_controlled(name, op):

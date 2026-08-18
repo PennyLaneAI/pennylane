@@ -118,7 +118,7 @@ def test_as_fixed_decomps(prec, num_controls):
         qp.SelectPauliRot(angles, control_wires=range(num_controls), target_wire=num_controls)
         return qp.state()
 
-    tape = qp.workflow.construct_batch(circuit)(angles)[0][0]
+    tape = qp.workflow.construct_tape(circuit)(angles)
     specs = qp.resource.resources_from_tape(tape).quantum_operations
     expected_specs = {
         "QROM": 2,
