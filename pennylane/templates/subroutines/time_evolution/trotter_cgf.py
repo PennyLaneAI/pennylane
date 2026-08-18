@@ -48,9 +48,10 @@ class TrotterCGF(Operator2):
         wires (Wires): The system wires. CGF expects ``M*N`` wires arranged mode-major:
             wire ``l*N + p`` corresponds to modal ``p`` of mode ``l`` (unary/SBE layout).
         double_phase (bool): Only affects the controlled decomposition. If ``False`` (default),
-            :func:`~pennylane.ctrl` produces a genuine controlled unitary. If ``True``, it
-            produces the double-phase (Fig. 6) Hadamard-test circuit. Has no effect on the
-            uncontrolled operator. See usage details below.
+            :func:`~pennylane.ctrl` produces a genuine controlled unitary
+            :math:`\text{diag}(1, U)` where :math:`U = e^{-iHt}` is the Trotter evolution.
+            If ``True``, it produces :math:`\text{diag}(U^\dagger, U)` instead, leading to the
+            double phase trick for Hadamard test circuits (see `Fig. 6 <https://arxiv.org/abs/2506.15784>`__ and usage details below).
 
     **Example**
 
@@ -112,27 +113,25 @@ class TrotterCGF(Operator2):
     .. details ::
         :title: Usage Details
 
-        Controlling this operator with :func:`~pennylane.ctrl` (a single control wire)
-        produces, by default (``double_phase=False``), a genuine controlled evolution.
-        In particular,each diagonal rotation is individually controlled at its full angle (the basis
-        rotations remain uncontrolled), so the control-0 branch is the identity and the
-        circuit implements :math:`|0\rangle\langle 0| \otimes I + |1\rangle\langle 1| \otimes e^{-iHt}`.
+        Controlling this operator with :func:`~pennylane.ctrl` produces by default a genuine
+        controlled evolution :math:`\text{diag}(1, U)` (assuming a single control wire),
+        where :math:`U = e^{-iHt}` is the Trotter evolution.
 
-        With ``double_phase=True`` it instead produces the double-phase Hadamard-test circuit
-        of `Fig. 6 of arXiv:2506.15784 <https://arxiv.org/abs/2506.15784>`__: each diagonal
-        rotation block is sandwiched by ``CNOT`` gates from the control wire (an
-        ancilla-system ``ZZ`` coupling), so the control-0 and control-1 branches evolve by
-        the full-time :math:`e^{-iHt}` and :math:`e^{+iHt}` respectively (up to a global
-        phase per branch), i.e. :math:`|0\rangle\langle 0| \otimes e^{-iHt} +
-        |1\rangle\langle 1| \otimes e^{+iHt}`. This is exactly the decomposition used by
-        the (now removed) ``pennylane.labs.templates.trotter_fragmented`` and is intended
-        for Hadamard-test workflows; the ancilla is left entangled with the system in both
-        branches rather than acting as a genuine control.
+        With ``double_phase=True``, :func:`~pennylane.ctrl` instead produces the double-phase Hadamard-test circuit
+        of `Fig. 6 of arXiv:2506.15784 <https://arxiv.org/abs/2506.15784>`__, whichrealizes
+        :math:`\text{diag}(U^\dagger, U)`.
+
+        In this decomposition, each diagonal rotation block is sandwiched by ``CNOT`` gates from the control wire (an
+        ancilla-system ``ZZ`` coupling).
 
         .. code-block::
 
-            double_phase=True:  c: ─╭●───────╭●─┤
-                            wires: ─╰X──U(ϕ)─╰X─┤
+            double_phase=True:
+
+                c: ─╭●──────┤ ->        c: ─╭●────────╭●─┤
+            wires: ─╰RZ(2ϕ)─┤       wires: ─╰X──RZ(ϕ)─╰X─┤
+
+        This is not a true controlled operation, but can be used to reduce the cost in Hadamard test circuits instead of the controlled evolution.
     """
 
     dynamic_argnames = ("evolution_time",)
