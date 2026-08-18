@@ -164,6 +164,7 @@ class AbstractArray:
 
     shape: tuple[int, ...] | EllipsisType
     dtype: np.dtype
+    _type_name: str | None = None
     shape_fixed: bool = field(init=False)
     _weak_type: bool = field(init=False)
 
@@ -333,6 +334,12 @@ class AbstractArray:
         args = f"{shape_repr}, {self.dtype.name}"
         if self._weak_type:
             args += ", weak_type=True"
+        if self._type_name:
+            if isinstance(self.shape, tuple):
+                shape = ", ".join(map(str, self.shape))
+            else:
+                shape = str(shape_repr)
+            return f"{self._type_name}" + (f"[{shape}]" if shape else "")
         return f"AbstractArray({args})"
 
     __str__ = __repr__
@@ -367,8 +374,9 @@ class _AbstractTypeFactory(AbstractArray):
     using an override of the __getitem__ method.
     """
 
-    def __init__(self, dtype):
-        super().__init__((), dtype)
+    def __init__(self, dtype, name: str | None = None):
+        self.name = name
+        super().__init__((), dtype, _type_name=self.name)
 
     def __getitem__(self, shape):
         """
@@ -394,10 +402,11 @@ class _AbstractTypeFactory(AbstractArray):
 
         res = AbstractArray(shape, self.dtype)
         object.__setattr__(res, "_weak_type", self._weak_type)
+        object.__setattr__(res, "_type_name", self.name)
         return res
 
 
-Int = _AbstractTypeFactory(int)
+Int = _AbstractTypeFactory(int, name="Int")
 """An :class:`~.AbstractArray` of ``dtype=int``. On its own, it corresponds to a single scalar, but
 can be indexed into to create the :class:`~.AbstractArray` with arbitrary dimensions.
 
@@ -411,7 +420,7 @@ AbstractArray((-1, 10), int64, weak_type=True)
 """
 
 
-Float = _AbstractTypeFactory(float)
+Float = _AbstractTypeFactory(float, name="Float")
 """An :class:`~.AbstractArray` of ``dtype=float``. On its own, it corresponds to a single scalar, but
 can be indexed into to create the :class:`~.AbstractArray` with arbitrary dimensions.
 
@@ -424,7 +433,7 @@ AbstractArray((-1, 10), float64, weak_type=True)
 
 """
 
-Bool = _AbstractTypeFactory(bool)
+Bool = _AbstractTypeFactory(bool, name="Bool")
 """An :class:`~.AbstractArray` of ``dtype=bool``. On its own, it corresponds to a single scalar, but
 can be indexed into to create the :class:`~.AbstractArray` with arbitrary dimensions.
 
@@ -438,7 +447,7 @@ AbstractArray((-1, 10), bool, weak_type=True)
 """
 
 
-Complex = _AbstractTypeFactory(complex)
+Complex = _AbstractTypeFactory(complex, name="Complex")
 """An :class:`~.AbstractArray` of ``dtype=complex``. On its own, it corresponds to a single scalar, but
 can be indexed into to create the :class:`~.AbstractArray` with arbitrary dimensions.
 
@@ -463,6 +472,7 @@ class AbstractWires:
 
     num_wires: int
     shape_fixed: bool = field(init=False)
+    _type_name: str | None = None
 
     def __post_init__(self):
         if not isinstance(self.num_wires, int):
@@ -512,6 +522,10 @@ class AbstractWires:
         return AbstractWires(self.num_wires + other.num_wires)
 
     def __repr__(self):
+        if self._type_name:
+            if self.num_wires == 1:
+                return self._type_name
+            return f"{self._type_name}[{self.num_wires}]"
         return f"AbstractWires({self.num_wires})"
 
     __str__ = __repr__
@@ -530,8 +544,9 @@ class _AbstractWireTypeFactory(AbstractWires):
     using an override of the __getitem__ method.
     """
 
-    def __init__(self):
-        super().__init__(1)
+    def __init__(self, name: str | None = None):
+        self.name = name
+        super().__init__(1, _type_name=name)
 
     def __getitem__(self, shape):
         """
@@ -548,10 +563,12 @@ class _AbstractWireTypeFactory(AbstractWires):
 
         if not isinstance(shape, int):
             raise TypeError("_AbstractWireTypeFactory's can only be subscripted with integers.")
-        return AbstractWires(shape)
+        res = AbstractWires(shape)
+        object.__setattr__(res, "_type_name", self.name)
+        return res
 
 
-Wire = _AbstractWireTypeFactory()
+Wire = _AbstractWireTypeFactory(name="Wire")
 """An :class:`~.AbstractWires` subclass. On it's own, it corresponds to a single wire, but
 can be indexed to create :class:`~.AbstractWires` with a fixed or dynamic wire count.
 

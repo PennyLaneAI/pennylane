@@ -463,6 +463,42 @@ class TestAbstractArray:
         assert not aa.is_compatible_with(torch.ones(2, dtype=torch.float64))
 
 
+@pytest.mark.parametrize(
+    "type_cls, expected_name",
+    [(Float, "Float"), (Int, "Int"), (Complex, "Complex"), (Bool, "Bool")],
+)
+@pytest.mark.parametrize(
+    "shape, expected_shape",
+    [
+        (..., "..."),
+        ((1, 2), "1, 2"),
+        ((1,), "1"),
+        ((), ""),
+    ],
+)
+def test_custom_abstract_type_factory_repr(type_cls, expected_name, shape, expected_shape):
+    """Tests that our types have readable reprs."""
+
+    obj = type_cls[shape]
+
+    if expected_shape:
+        assert repr(obj) == f"{expected_name}[{expected_shape}]"
+    else:
+        assert repr(obj) == expected_name
+
+
+@pytest.mark.parametrize("num_wires", [-1, 1, 4, None])
+def test_custom_abstract_wire_factory_repr(num_wires):
+    """Tests that our types have readable reprs."""
+
+    if num_wires and num_wires != 1:
+        obj = Wire[num_wires]
+        assert repr(obj) == f"Wire[{num_wires}]"
+    else:
+        obj = Wire
+        assert repr(obj) == "Wire"
+
+
 class TestAbstractWires:
     """Test for the AbstractWires class."""
 
