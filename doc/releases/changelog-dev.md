@@ -16,9 +16,7 @@
 
   @triton.jit
   def steane_lookup(syndrome):
-      one = tl.cast(1, tl.uint64)
-      zero = tl.cast(0, tl.uint64)
-      return tl.where(syndrome != 0, one << (syndrome - 1), zero)
+      return tl.where(syndrome != 0, 1 << (syndrome - 1), 0)
 
   custom_decoder = qp.backline.triton_decoder(
       (steane_lookup, steane_lookup),
