@@ -337,22 +337,12 @@ class TestPrepSelPrep:
         assert resource_obj.num_gates == 1
 
         expected_counts = {
-            qp.resource_rep(
-                qp.Select, op_reps=op_reps, num_control_wires=2, partial=True, num_work_wires=0
-            ): 1,
-            qp.resource_rep(qp.StatePrep, num_wires=2): 1,
-            qp.resource_rep(
-                qp.ops.Adjoint, base_class=qp.StatePrep, base_params={"num_wires": 2}
-            ): 1,
-        }
-        expected_counts = {
-            qp.resource_rep(
-                qp.ops.ChangeOpBasis,
-                compute_op=qp.resource_rep(qp.StatePrep, num_wires=2),
-                target_op=qp.resource_rep(
+            qp.decomposition.change_op_basis_resource_rep(
+                qp.resource_rep(qp.StatePrep, num_wires=2),
+                qp.resource_rep(
                     qp.Select, op_reps=op_reps, num_control_wires=2, partial=True, num_work_wires=0
                 ),
-                uncompute_op=qp.resource_rep(
+                qp.resource_rep(
                     qp.ops.Adjoint, base_class=qp.StatePrep, base_params={"num_wires": 2}
                 ),
             ): 1,
