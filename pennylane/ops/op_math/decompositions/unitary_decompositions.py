@@ -290,7 +290,7 @@ def multi_qubit_decomposition(U, wires):
 def make_one_qubit_unitary_decomposition(su2_rule, su2_resource, name=""):
     """Wrapper around a naive one-qubit decomposition rule that adds a global phase."""
 
-    def _resource_fn(U, wires, **_):  # pylint: disable=unused-argument
+    def _resource_fn(**_):
         return su2_resource() | {ops.GlobalPhase: 1}
 
     name = name or su2_rule.name
