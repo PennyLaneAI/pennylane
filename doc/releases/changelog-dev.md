@@ -877,7 +877,9 @@
   - Parametric operators are ported:
     - :class:`~.RZ`, :class:`~.CRZ`, :class:`~.DiagonalQubitUnitary`, :class:`~.PauliRot`, :class:`~.MultiRZ`, :class:`~.PhaseShift`,
       :class:`~.ControlledPhaseShift`, :class:`~.Rot`, :class:`~.CRot`, :class:`~.U1`, :class:`~.U2`, :class:`~.U3`, :class:`~.PCPhase`,
-      :class:`~.GlobalPhase`, :class:`~.IsingXX`, :class:`~.IsingYY`, :class:`~.IsingZZ`, :class:`~.IsingXY`, :class:`~.RX`, :class:`~.CRX`, :class:`~.RY`, :class:`~.CRY`,
+      :class:`~.GlobalPhase`, :class:`~.IsingXX`, :class:`~.IsingYY`, :class:`~.IsingZZ`, :class:`~.IsingXY`, :class:`~.RX`, :class:`~.CRX`,
+      :class:`~.RY`, :class:`~.CRY`
+  [(#9998)](https://github.com/PennyLaneAI/pennylane/pull/9998)
   [(#9857)](https://github.com/PennyLaneAI/pennylane/pull/9857)
   [(#9941)](https://github.com/PennyLaneAI/pennylane/pull/9941)
   [(#9897)](https://github.com/PennyLaneAI/pennylane/pull/9897)
