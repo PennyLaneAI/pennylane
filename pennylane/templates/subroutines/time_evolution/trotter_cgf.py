@@ -47,14 +47,24 @@ class TrotterCGF(Operator2):
 
     where :math:`\tilde{n}^{(\nu)}_{lp} = \mathcal{U}^{(\nu,l)} n_{lp} \mathcal{U}^{(\nu,l)\dagger}`
     is the number operator of modal :math:`p` of mode :math:`l` rotated into the basis of fragment
-    :math:`\nu`. The leaf tensors ``leaf_tensors[nu][l]`` are the per-mode :math:`N \times N`
-    rotations :math:`\mathcal{U}^{(\nu,l)}` (applied via :class:`~.BasisRotation` on each mode's
-    modal register), and the core tensors ``core_tensors[nu]`` hold the fragment coefficients
-    :math:`Z^{(\nu)}` (:math:`Z^{(0)}` the one-body energies, :math:`Z^{(\nu \geq 1)}` the two-body
-    couplings). The constant is :math:`E_0 =` ``nuc_constant``. Two-body fragments couple distinct
-    modes (:math:`l > m`) only, with the linear terms absorbed into the one-body fragment
-    (regrouped form). Under the mapping :math:`n_{lp} = (I - Z_{lp})/2`, each fragment reduces to
-    the ``RZ`` / ``IsingZZ`` rotations applied by the second-order Trotter product formula.
+    :math:`\nu`, so the :math:`\nu = 0` term is a one-body fragment (:math:`\propto n_{lp}`) and
+    the :math:`\nu \geq 1` terms are two-body fragments (:math:`\propto n_{lp} n_{mq}`, coupling
+    distinct modes :math:`l > m`). The leaf tensors ``leaf_tensors[nu][l]`` are the per-mode
+    :math:`N \times N` rotations :math:`\mathcal{U}^{(\nu,l)}` (applied via :class:`~.BasisRotation`
+    on each mode's modal register), the core tensors ``core_tensors[nu]`` hold the coefficients
+    :math:`Z^{(\nu)}`, and :math:`E_0 =` ``nuc_constant``.
+
+    .. note::
+
+        "One-body" and "two-body" here count the number of number operators (:math:`n_{lp}`,
+        :math:`n_{lp} n_{mq}`), *not* the Pauli weight. Under :math:`n_{lp} = (I - Z_{lp})/2`, a
+        two-body term :math:`n_{lp} n_{mq} = \tfrac{1}{4}(I - Z_{lp} - Z_{mq} + Z_{lp} Z_{mq})`
+        produces a constant, *single-site* terms (:math:`Z_{lp}, Z_{mq}`), and a *two-site* term
+        (:math:`Z_{lp} Z_{mq}`). The input is expected in *regrouped* form, where the single-site
+        contributions of the two-body fragments are folded into the one-body fragment and the
+        constants into :math:`E_0`. Consequently the one-body fragment is realized by single-site
+        :class:`~.RZ` rotations and each two-body fragment by two-site :class:`~.IsingZZ` rotations
+        of the second-order Trotter product formula.
 
     Args:
         evolution_time (float): Total evolution time ``t``.
