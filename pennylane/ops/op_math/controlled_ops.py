@@ -242,7 +242,7 @@ class ControlledQubitUnitary(Controlled2):
         return super().decomposition()
 
 
-def _to_general_c_qu_resource(base, wires, control_values, work_wires, work_wire_type, **_):
+def _to_general_c_qu_resource(base, wires, work_wires, work_wire_type, **_):
     num_target_wires = int(qp.math.log2(qp.math.shape(base)[-1]))
     num_control_wires = len(wires) - num_target_wires
     num_work_wires = len(work_wires)

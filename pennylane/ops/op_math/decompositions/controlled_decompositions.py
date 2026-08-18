@@ -203,7 +203,7 @@ def ctrl_decomp_zyz(
 #######################
 
 
-def _ctrl_decomp_bisect_condition(base, wires, control_values, **__):
+def _ctrl_decomp_bisect_condition(base, wires, **__):
     num_target_wires = int(qp.math.log2(qp.math.shape(base)[-1]))
     num_control_wires = len(wires) - num_target_wires
     # This decomposition rule is only applicable when the target is a single-qubit unitary.
