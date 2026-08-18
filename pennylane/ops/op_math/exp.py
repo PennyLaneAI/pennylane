@@ -72,7 +72,7 @@ def _find_equal_generator(base, coeff):
         probe_coeff = math.real(coeff)
         g, c = (
             qp.generator(op_class)(probe_coeff, base.wires)
-            if op_class.num_wires
+            if op_class.num_wires is not None
             else qp.generator(op_class)(probe_coeff)
         )
 
