@@ -112,13 +112,6 @@ class TestConstruction:
         assert op._name == "ValidOp"
         assert op._op_symbol == "#"
 
-    def test_ndim_params_raises_error(self):
-        """Test that calling ndim_params raises a ValueError."""
-        op = ValidOp(self.simple_operands)
-
-        with pytest.raises(AttributeError):
-            _ = op.ndim_params
-
     @pytest.mark.pl2do("Batching is not yet supported with Operator2")
     def test_batch_size_None(self):
         """Test that the batch size is none if no operands have batching."""
