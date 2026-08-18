@@ -46,12 +46,13 @@ class CompositeOp2(Operator2):
     :meth:`~.operation.Operator.matrix` and :meth:`~.operation.Operator.decomposition`.
     """
 
-    hybrid_argnames = ("operands", "_pauli_rep")
+    hybrid_argnames = ("operands", "_init_pauli_rep")
+    wire_argnames = ()
 
     _eigs = {}  # cache eigen vectors and values like in qp.Hermitian
 
     def __init__(
-        self, *operands: Operator, _pauli_rep=None
+        self, *operands: Operator, _init_pauli_rep=None
     ):  # pylint: disable=super-init-not-called
         self._name = self.__class__.__name__
         if any(isinstance(op, (qp.ops.MidMeasure, qp.ops.PauliMeasure)) for op in operands):
@@ -60,9 +61,10 @@ class CompositeOp2(Operator2):
         self._hash = None
         self._has_overlapping_wires = None
         self._overlapping_ops = None
-        self._pauli_rep = self._build_pauli_rep() if _pauli_rep is None else _pauli_rep
+        self._pauli_rep = self._build_pauli_rep() if _init_pauli_rep is None else _init_pauli_rep
         self.queue()
         self._batch_size = _UNSET_BATCH_SIZE
+        super().__init__(*operands, _init_pauli_rep=_init_pauli_rep)
 
     @handle_recursion_error
     def _check_batching(self):
