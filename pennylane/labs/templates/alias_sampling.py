@@ -212,7 +212,7 @@ def alias_sampling(probs, mu, target_wires, temp_wires, work_wires):
 
         ``temp_wires`` come out entangled with ``|l>`` (the "temp" register of the
         paper) and are not returned to :math:`|0\rangle`. In a prepare/select/prepare
-        pattern, ``qml.adjoint(alias_sampling)`` (``prepare``-dagger) uncomputes
+        pattern, ``qp.adjoint(alias_sampling)`` (``prepare``-dagger) uncomputes
         them. ``work_wires`` are returned to :math:`|0\rangle` and may be reused.
 
     Args:
