@@ -17,6 +17,7 @@ This submodule defines a base class for composite operations.
 """
 
 # pylint: disable=invalid-sequence-index
+from typing import Sequence
 from pennylane.ops.op_math.composite import handle_recursion_error
 import abc
 import copy
@@ -35,7 +36,7 @@ from pennylane.wires import Wires
 # pylint: disable=too-many-instance-attributes
 
 
-class CompositeOp2(Operator2):
+class CompositeOp2(Operator2, is_baseclass=True):
     """A base class for operators that are composed of other operators.
 
     Args:
@@ -46,13 +47,10 @@ class CompositeOp2(Operator2):
     :meth:`~.operation.Operator.matrix` and :meth:`~.operation.Operator.decomposition`.
     """
 
-    hybrid_argnames = ("operands", "_init_pauli_rep")
-    wire_argnames = ()
-
     _eigs = {}  # cache eigen vectors and values like in qp.Hermitian
 
     def __init__(
-        self, *operands: Operator, _init_pauli_rep=None
+        self, operands: Sequence[Operator], _init_pauli_rep=None
     ):  # pylint: disable=super-init-not-called
         self._name = self.__class__.__name__
         if any(isinstance(op, (qp.ops.MidMeasure, qp.ops.PauliMeasure)) for op in operands):
@@ -64,7 +62,7 @@ class CompositeOp2(Operator2):
         self._pauli_rep = self._build_pauli_rep() if _init_pauli_rep is None else _init_pauli_rep
         self.queue()
         self._batch_size = _UNSET_BATCH_SIZE
-        super().__init__(*operands, _init_pauli_rep=_init_pauli_rep)
+        super().__init__(operands, _init_pauli_rep=_init_pauli_rep)
 
     @handle_recursion_error
     def _check_batching(self):

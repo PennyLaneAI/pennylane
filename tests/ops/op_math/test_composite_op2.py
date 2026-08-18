@@ -54,8 +54,8 @@ class ValidOp(CompositeOp2):
     hybrid_argnames = ("operands", "_init_pauli_rep")
     wire_argnames = ()
 
-    def __init__(self, *operands: Operator, _init_pauli_rep=None):
-        super().__init__(*operands, _init_pauli_rep=_init_pauli_rep)
+    def __init__(self, operands: Operator, _init_pauli_rep=None):
+        super().__init__(operands, _init_pauli_rep=_init_pauli_rep)
 
     def _build_pauli_rep(self):
         return qp.pauli.PauliSentence({})
@@ -83,7 +83,7 @@ class TestConstruction:
     def test_direct_initialization_fails(self):
         """Test directly initializing a CompositeOp2 fails"""
         with pytest.raises(TypeError, match="Can't instantiate abstract class CompositeOp2"):
-            _ = CompositeOp2(*self.simple_operands)  # pylint:disable=abstract-class-instantiated
+            _ = CompositeOp2(self.simple_operands)  # pylint:disable=abstract-class-instantiated
 
     @pytest.mark.xfail
     def test_raise_error_fewer_than_2_operands(self):
@@ -108,13 +108,13 @@ class TestConstruction:
 
     def test_initialization(self):
         """Test that valid child classes can be initialized without error"""
-        op = ValidOp(*self.simple_operands)
+        op = ValidOp(self.simple_operands)
         assert op._name == "ValidOp"
         assert op._op_symbol == "#"
 
     def test_ndim_params_raises_error(self):
         """Test that calling ndim_params raises a ValueError."""
-        op = ValidOp(*self.simple_operands)
+        op = ValidOp(self.simple_operands)
 
         with pytest.raises(AttributeError):
             _ = op.ndim_params
@@ -151,7 +151,7 @@ class TestConstruction:
 
     def test_decomposition_raises_error(self):
         """Test that calling decomposition() raises a ValueError."""
-        op = ValidOp(*self.simple_operands)
+        op = ValidOp(self.simple_operands)
 
         with pytest.raises(DecompositionUndefinedError):
             op.decomposition()
@@ -175,7 +175,7 @@ class TestConstruction:
 
     def test_eigen_caching(self):
         """Test that the eigendecomposition is stored in cache."""
-        diag_op = ValidOp(*self.simple_operands)
+        diag_op = ValidOp(self.simple_operands)
         eig_decomp = diag_op.eigendecomposition
 
         eig_vecs = eig_decomp["eigvec"]
@@ -194,7 +194,7 @@ class TestConstruction:
     )
     def test_map_wires(self, construct_overlapping_ops, expected_overlapping_ops):
         """Test the map_wires method."""
-        diag_op = ValidOp(*self.simple_operands)
+        diag_op = ValidOp(self.simple_operands)
         # pylint:disable=attribute-defined-outside-init
         diag_op._pauli_rep = qp.pauli.PauliSentence({qp.pauli.PauliWord({0: "X", 1: "Y"}): 1})
         if construct_overlapping_ops:
@@ -214,7 +214,7 @@ class TestConstruction:
 
     def test_build_pauli_rep(self):
         """Test the build_pauli_rep"""
-        op = ValidOp(*self.simple_operands)
+        op = ValidOp(self.simple_operands)
         assert op._build_pauli_rep() == qp.pauli.PauliSentence({})
 
 
@@ -299,7 +299,7 @@ class TestMscMethods:
     @pytest.mark.parametrize("ops_lst, op_rep", tuple((i, j) for i, j in zip(ops, ops_rep)))
     def test_repr(self, ops_lst, op_rep):
         """Test __repr__ method."""
-        op = ValidOp(*ops_lst)
+        op = ValidOp(ops_lst)
         assert op_rep == repr(op)
 
     def test_nested_repr(self):
@@ -328,7 +328,7 @@ class TestMscMethods:
     @pytest.mark.parametrize("ops_lst", ops)
     def test_copy(self, ops_lst):
         """Test __copy__ method."""
-        op = ValidOp(*ops_lst)
+        op = ValidOp(ops_lst)
         copied_op = copy(op)
 
         assert op.data == copied_op.data
@@ -341,27 +341,27 @@ class TestMscMethods:
     @pytest.mark.parametrize("ops_lst", ops)
     def test_len(self, ops_lst):
         """Test __len__ method."""
-        op = ValidOp(*ops_lst)
+        op = ValidOp(ops_lst)
         assert len(op) == len(ops_lst)
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_iter(self, ops_lst):
         """Test __iter__ method."""
-        op = ValidOp(*ops_lst)
+        op = ValidOp(ops_lst)
         for i, j in zip(op, ops_lst):
             assert i == j
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_getitem(self, ops_lst):
         """Test __getitem__ method."""
-        op = ValidOp(*ops_lst)
+        op = ValidOp(ops_lst)
         for i, operand in enumerate(ops_lst):
             assert op[i] == operand
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_flatten_unflatten(self, ops_lst):
         """Test _flatten and _unflatten."""
-        op = ValidOp(*ops_lst)
+        op = ValidOp(ops_lst)
         data, metadata = op._flatten()
         for data_op, input_op in zip(data, ops_lst):
             assert data_op is input_op
@@ -378,7 +378,7 @@ class TestProperties:
     @pytest.mark.parametrize("ops_lst", ops)
     def test_num_params(self, ops_lst):
         """Test num_params property updates correctly."""
-        op = ValidOp(*ops_lst)
+        op = ValidOp(ops_lst)
         true_num_params = sum(op.num_params for op in ops_lst)
 
         assert op.num_params == true_num_params
@@ -386,7 +386,7 @@ class TestProperties:
     @pytest.mark.parametrize("ops_lst", ops)
     def test_num_wires(self, ops_lst):
         """Test num_wires property updates correctly."""
-        valid_op = ValidOp(*ops_lst)
+        valid_op = ValidOp(ops_lst)
         true_wires = set()
 
         for op in ops_lst:
