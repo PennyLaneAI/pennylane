@@ -136,7 +136,10 @@ def enable_capture():
         yield
 
 
-@pytest.fixture(params=[False, True], ids=["capture_disabled", "capture_enabled"])
+@pytest.fixture(
+    params=[False, pytest.param(True, marks=(pytest.mark.capture, pytest.mark.jax))],
+    ids=["capture_disabled", "capture_enabled"],
+)
 def enable_and_disable_capture(request):
     """
     A fixture that parametrizes a test to run twice: once with program capture
@@ -276,8 +279,8 @@ def pytest_collection_modifyitems(items, config):
     rootdir = pathlib.Path(config.rootdir)
     for item in items:
         rel_path = pathlib.Path(item.fspath).relative_to(rootdir)
-        _auto_assign_markers(item, rel_path)
         _handle_capture_marker(item)
+        _auto_assign_markers(item, rel_path)
         if pl2do_marker := item.get_closest_marker("pl2do"):
             reason = _get_pl2do_reason(pl2do_marker)
             item.add_marker(pytest.mark.xfail(reason=reason, strict=False))
@@ -313,16 +316,15 @@ def _handle_capture_marker(item):
     # Get all existing marker names
     marker_names = {mark.name for mark in item.iter_markers()}
 
-    # Check for existing capture-related prefixes
-    capture_fixtures = ("enable_capture", "enable_and_disable_capture")
-    has_capture_fixture = any(fx in item.fixturenames for fx in capture_fixtures)
+    # Check for existing capture-related prefix
+    capture_enabled = "enable_capture" in item.fixturenames
 
     # Make sure that capture-enabled tests have capture markers
-    if has_capture_fixture and "capture" not in marker_names:
+    if capture_enabled and "capture" not in marker_names:
         item.add_marker(pytest.mark.capture)
 
     # Automatically add enable_capture fixture for capture tests
-    if "capture" in marker_names and not has_capture_fixture:
+    if "capture" in marker_names and not capture_enabled:
         item.fixturenames = [*item.fixturenames, "enable_capture"]
 
     # Automatically add jax marker for capture tests
