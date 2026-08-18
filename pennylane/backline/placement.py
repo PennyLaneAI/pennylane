@@ -163,8 +163,6 @@ class Node:
       takes ``sq_mem=``/``data_mem=``/``reply_mem=``).
     * ``"data_path"`` (str) - which wire format carries the data, e.g. ``"cpu_verbs"``.
     * ``"in_bytes"`` / ``"out_bytes"`` (int) - the fixed message sizes exchanged with this node.
-
-    Keys outside this set are dropped rather than rejected, so a misspelling is silent.
     """
 
 
