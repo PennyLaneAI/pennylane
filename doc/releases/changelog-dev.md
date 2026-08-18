@@ -49,8 +49,8 @@
   ```python
   import pennylane as qp
 
-  controller = qp.Controller(device=qp.device("lightning.qubit", wires=4), label="cpu-controller")
-  decoder = qp.Coprocessor(coprocessor_fn="decoder", comm_host="198.51.100.2", oob_port=7760)
+  controller = qp.Controller(device=qp.device("lightning.qubit", wires=4), name="cpu-controller")
+  decoder = qp.Coprocessor(coprocessor_fn="decoder", endpoint=qp.Endpoint("198.51.100.2", 7760))
 
   dev = qp.Backline(controller=controller, coprocessors=[decoder], transport="rdma")
 

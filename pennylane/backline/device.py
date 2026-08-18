@@ -81,7 +81,7 @@ class Backline(Device):
         )
 
         dev = qp.Backline(
-            controller=con, coprocessors=[coproc], transport="rdma", qec_code="steane"
+            controller=ctrl, coprocessors=[coproc], transport="rdma", qec_code="steane"
         )
 
         @qp.qjit
@@ -185,7 +185,7 @@ def active_placement() -> "Placement | None":
         )
 
         dev = qp.Backline(
-            controller=con, coprocessors=[coproc], transport="rdma", qec_code="steane"
+            controller=ctrl, coprocessors=[coproc], transport="rdma", qec_code="steane"
         )
 
         @qp.qjit

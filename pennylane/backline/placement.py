@@ -78,10 +78,10 @@ class Node:
         the Catalyst compiler.
 
     Keyword Args:
-        label (str | None): A name identifying this node. Defaults to ``None``, letting the compiler
+        name (str | None): A name identifying this node. Defaults to ``None``, letting the compiler
             derive one from the node's role.
-        backend (str | None): The transport backend this node uses, by name. Defaults to ``None``,
-            letting the compiler pick its default.
+        hardware (Hardware): The hardware this node executes on. Defaults to ``"cpu"``. The compiler
+            combines this with the placement's :class:`~.Transport` to select the runtime backend.
         remote (bool): Whether this node runs on another machine. Defaults to ``False``.
         executor_options (dict | None): Options for the executor to launch for this node.
             Defaults to ``None``, which runs the node in this process. See the
@@ -164,10 +164,10 @@ class Node:
     * ``"triple"`` (str) - the LLVM target triple to compile this node's code for. Omit it and the
       executor detects it from the target's ``uname``, which requires reaching the host.
     * ``"name"`` (str) - the executor's own label, used in its log filenames. Defaults to this
-      node's :attr:`label`.
+      node's :attr:`name`.
 
     Note that ``"port"`` here is the executor's, on the channel that ships compiled code. It is
-    unrelated to :attr:`~.Coprocessor.oob_port`, which is the transport's handshake port. An
+    unrelated to :attr:`~.Endpoint.port`, which is the transport's handshake port. An
     unrecognized key raises.
 
     .. warning::
@@ -185,13 +185,11 @@ class Node:
     default (never ``None``). The keys the compiler forwards are
 
     * ``"backend_lib"`` (str) - explicit path to the transport backend library, taking precedence
-      over :attr:`backend` and over a :class:`~.CoprocessorFunction`'s ``lib_path``.
+      over :attr:`hardware` and over a :class:`~.CoprocessorFunction`'s ``lib_path``.
     * ``"config"`` (str) - a ``;``-separated ``key=value`` string configuring the backend on this
       machine, e.g. ``"dev=mlx5_0;gid=3"``. ``dev`` and ``gid`` select the RDMA device and GID
       index; the remaining keys are backend-specific (a GPU backend takes ``gpu=``, an FPGA engine
       takes ``sq_mem=``/``data_mem=``/``reply_mem=``).
-    * ``"data_path"`` (str) - which wire format carries the data, e.g. ``"cpu_verbs"``.
-    * ``"in_bytes"`` / ``"out_bytes"`` (int) - the fixed message sizes exchanged with this node.
 
     Keys outside this set are dropped rather than rejected, so a misspelling is silent.
     """
@@ -238,11 +236,11 @@ class Controller(Node):
 
         con = qp.Controller(
             device=qp.device("lightning.qubit", wires=4),
-            label="cpu-controller",
-            backend="cpu_verbs",
+            name="cpu-controller",
+            hardware="cpu",
             remote=True,
             executor_options={"host": "192.0.2.10", "port": 7810},
-            init_args={"config": "dev=mlx5_0;gid=1", "data_path": "cpu_verbs", "out_bytes": 8},
+            init_args={"config": "dev=mlx5_0;gid=1"},
         )
 
     Either way, the controller is passed to :class:`~pennylane.Backline` to build a device:
@@ -293,41 +291,41 @@ class Coprocessor(Node):
         coprocessor_fn (str | CoprocessorFunction): The function that processes each received
             message. A string is wrapped in a :class:`~.CoprocessorFunction` naming that symbol, so
             reading the attribute back always gives a :class:`~.CoprocessorFunction`.
-        TODO: switch to Endpoint
-        comm_host (str): This coprocessor's address, which the controller uses to connect. Required.
-        oob_port (int | None): The port it listens on for the connection handshake. Must be in
-            ``1..65535``. Defaults to ``None``, leaving the choice to the compiled runtime.
+        endpoint (Endpoint | None): The address the controller dials to reach this coprocessor.
+            Some transports, such as ``"rdma"``, require it; others, such as ``"memcpy"``, do not
+            use a network endpoint and may leave it unset.
 
     See :class:`~.Node` for the options every node shares.
 
-    .. seealso:: :class:`~.Controller`, :class:`~.CoprocessorFunction`, :class:`~pennylane.Backline`
+    .. seealso:: :class:`~.Controller`, :class:`~.CoprocessorFunction`, :class:`~.Endpoint`,
+        :class:`~pennylane.Backline`
 
     **Example**
 
-    A coprocessor co-located with the controller needs only a function and a loopback address:
+    A coprocessor co-located with the controller needs only a function (and, for ``"rdma"``, a
+    loopback endpoint):
 
-    >>> coproc = qp.Coprocessor(coprocessor_fn="decoder", comm_host="127.0.0.1")
+    >>> coproc = qp.Coprocessor(coprocessor_fn="decoder", endpoint=qp.Endpoint("127.0.0.1", 7760))
     >>> coproc.coprocessor_fn.name
     'decoder'
 
-    A remote GPU decoder names its port, its transport backend, and how to deploy to it:
+    A remote GPU decoder names its endpoint, its hardware, and how to deploy to it:
 
     .. code-block:: python
 
         coproc = qp.Coprocessor(
-            label="gpu-decoder",
+            name="gpu-decoder",
             coprocessor_fn="decoder",
-            backend="gpu_verbs",
-            comm_host="198.51.100.2",
-            oob_port=7760,
+            hardware="gpu",
+            endpoint=qp.Endpoint("198.51.100.2", 7760),
             remote=True,
             executor_options={"host": "192.0.2.11", "port": 7813},
-            init_args={"config": "dev=mlx5_0;gid=3;gpu=0", "data_path": "cpu_verbs"},
+            init_args={"config": "dev=mlx5_0;gid=3;gpu=0"},
         )
 
-    Note that ``comm_host`` and ``executor_options["host"]`` are two addresses for the *same*
-    machine: the first is the interface the transport's data path uses, the second is how the
-    compiler reaches it to deploy code.
+    Note that :attr:`Endpoint.host` and ``executor_options["host"]`` are two addresses for the
+    *same* machine: the first is the interface the transport's data path uses, the second is how
+    the compiler reaches it to deploy code.
 
     Coprocessors are passed to :class:`~pennylane.Backline` as a sequence:
 
@@ -384,12 +382,12 @@ class Placement:
 
     A placement is built for you by :class:`~pennylane.Backline` and read back off the device:
 
-    >>> con = qp.Controller(label="cpu-controller")
-    >>> coproc = qp.Coprocessor(coprocessor_fn="decoder", comm_host="127.0.0.1")
+    >>> con = qp.Controller(name="cpu-controller")
+    >>> coproc = qp.Coprocessor(coprocessor_fn="decoder", endpoint=qp.Endpoint("127.0.0.1", 7760))
     >>> dev = qp.Backline(controller=con, coprocessors=[coproc], transport="rdma")
     >>> dev.placement.transport
     Transport(name='rdma')
-    >>> dev.placement.controller.label
+    >>> dev.placement.controller.name
     'cpu-controller'
     >>> len(dev.placement.coprocessors)
     1

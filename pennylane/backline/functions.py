@@ -47,7 +47,7 @@ class CoprocessorFunction:
     A coprocessor function is usually named rather than constructed --- passing a string to
     :class:`~.Coprocessor` resolves it:
 
-    >>> coproc = qp.Coprocessor(coprocessor_fn="decoder", comm_host="127.0.0.1")
+    >>> coproc = qp.Coprocessor(coprocessor_fn="decoder")
     >>> coproc.coprocessor_fn
     CoprocessorFunction(name='decoder', lib_path=None)
 
@@ -115,7 +115,7 @@ def triton_decoder(
     >>> import triton.language as tl
     >>> @triton.jit
     ... def steane_lookup(syndrome):
-    ...     return tl.where(s != 0, 1 << (s - 1), 0)
+    ...     return tl.where(syndrome != 0, 1 << (syndrome - 1), 0)
     >>> decoder = qp.backline.triton_decoder(  # doctest: +SKIP
     ...     (steane_lookup, steane_lookup),
     ...     platform="hip:gfx942:64",

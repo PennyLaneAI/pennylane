@@ -65,8 +65,8 @@ Nodes
 
 A node is a participant in the backline fabric. It is either a :class:`~.Controller`, where the
 QNode executes and which issues messages, or a :class:`~.Coprocessor`, where those messages are
-processed and returned. Both share the options on :class:`~.Node`: a ``label`` to identify the
-node, the transport ``backend`` it uses, whether it runs ``remote``, and how its code is deployed
+processed and returned. Both share the options on :class:`~.Node`: a ``name`` to identify the
+node, the ``hardware`` it executes on, whether it runs ``remote``, and how its code is deployed
 there. A
 placement has exactly one controller and zero or more coprocessors, and nodes are never used on
 their own --- they are passed to :class:`~pennylane.Backline`, which assembles them into a device.
