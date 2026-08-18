@@ -193,11 +193,18 @@ def bind_new_parameters_change_op_basis(op: ops.ChangeOpBasis, params: Sequence[
     if not params:
         return type(op)(**op.arguments)
 
-    new_operands = []
-    for operand in op.operands:
-        operand_num_params = len(operand.data)
-        new_operands.append(bind_new_parameters(operand, params[:operand_num_params]))
-        params = params[operand_num_params:]
+    def _bind_region(region):
+        nonlocal params
+        region_ops = region if isinstance(region, tuple) else (region,)
+        new_ops = []
+        for operand in reversed(region_ops):
+            operand_num_params = len(operand.data)
+            new_ops.append(bind_new_parameters(operand, params[:operand_num_params]))
+            params = params[operand_num_params:]
+        new_ops.reverse()
+        return tuple(new_ops) if isinstance(region, tuple) else new_ops[0]
+
+    new_operands = [_bind_region(region) for region in op.operands]
 
     # ``operands`` is in matrix-product order: (uncompute_op, target_op, compute_op).
     return type(op)(

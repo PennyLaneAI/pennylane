@@ -24,7 +24,6 @@ from pennylane.decomposition import (
     add_decomps,
     change_op_basis_resource_rep,
     register_resources,
-    resource_rep,
 )
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.typing import AbstractArray, AbstractWires, Bool, Wire
@@ -218,18 +217,21 @@ _number_xs = 2
 
 
 def _temporary_and_resources(**_):
-    prod_rep = resource_rep(
-        ops.Prod,
-        resources={
-            abstractify(ops.Hadamard): 1,
-            abstractify(ops.T): 1,
-            abstractify(ops.CNOT): 1,
-            _adjoint_abstract(ops.T): 1,
-        },
+    compute_region = (
+        abstractify(ops.Hadamard),
+        abstractify(ops.T),
+        abstractify(ops.CNOT),
+        _adjoint_abstract(ops.T),
+    )
+    uncompute_region = (
+        abstractify(ops.T),
+        abstractify(ops.CNOT),
+        _adjoint_abstract(ops.T),
+        abstractify(ops.Hadamard),
     )
     return {
         ops.X: _number_xs,
-        change_op_basis_resource_rep(prod_rep, ops.CNOT, prod_rep): 1,
+        change_op_basis_resource_rep(compute_region, ops.CNOT, uncompute_region): 1,
         _adjoint_abstract(ops.S): 1,
     }
 
@@ -240,18 +242,18 @@ def _temporary_and(wires: WiresLike, control_values: Sequence[bool]):
     ops.cond(math.logical_not(control_values[1]), ops.X)(wires[1])
 
     ops.change_op_basis(
-        ops.prod(
-            ops.adjoint(ops.T(wires=wires[2])),
-            ops.CNOT(wires=[wires[1], wires[2]]),
-            ops.T(wires=wires[2]),
+        (
             ops.H(wires[2]),
+            ops.T(wires=wires[2]),
+            ops.CNOT(wires=[wires[1], wires[2]]),
+            ops.adjoint(ops.T(wires=wires[2])),
         ),
         ops.CNOT(wires=[wires[0], wires[2]]),
-        ops.prod(
-            ops.H(wires[2]),
-            ops.adjoint(ops.T(wires=wires[2])),
-            ops.CNOT(wires=[wires[1], wires[2]]),
+        (
             ops.T(wires=wires[2]),
+            ops.CNOT(wires=[wires[1], wires[2]]),
+            ops.adjoint(ops.T(wires=wires[2])),
+            ops.H(wires[2]),
         ),
     )
     ops.adjoint(ops.S(wires=wires[2]))

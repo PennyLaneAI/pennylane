@@ -26,6 +26,7 @@ from pennylane import capture, math
 from pennylane.core import queuing
 from pennylane.core.operator import Operator, Operator2
 from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
+from pennylane.core.qscript import make_qscript
 from pennylane.decomposition import CompressedResourceOp, add_decomps, register_resources
 from pennylane.ops.op_math import adjoint, ctrl, prod
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
@@ -62,10 +63,33 @@ def _is_abstract_operator(op) -> bool:
     return math.is_abstract(op) and isinstance(op.aval, capture.AbstractOperator)
 
 
+def _region_ops(region):
+    """Return the operators in a region in execution order."""
+    return region if isinstance(region, tuple) else (region,)
+
+
+def _map_region(fn, region, *, reverse=False):
+    """Apply ``fn`` to a region while retaining single-operator regions as operators."""
+    ops = _region_ops(region)
+    if reverse:
+        ops = reversed(ops)
+    mapped = tuple(fn(op) for op in ops)
+    return mapped[0] if not isinstance(region, tuple) and len(mapped) == 1 else mapped
+
+
+def _adjoint_region(region, *, abstract=False):
+    """Return the adjoint of an ordered operator region."""
+    adjoint_fn = _adjoint_abstract if abstract else adjoint
+    return _map_region(adjoint_fn, region, reverse=True)
+
+
 def _apply_op_or_func(op_or_func):
     if callable(op_or_func):
         _validate_callable(op_or_func)
         op_or_func()
+    elif isinstance(op_or_func, tuple):
+        for op in op_or_func:
+            _apply_op_or_func(op)
     elif isinstance(op_or_func, Operator2):
         # NOTE: An Operator2 built outside the trace context has no equation
         # so we need to emit one.
@@ -82,10 +106,23 @@ def _apply_op_or_func(op_or_func):
         )
 
 
-def _convert_to_prod(op_or_func):
+def _convert_to_region(op_or_func):
     if callable(op_or_func):
         _validate_callable(op_or_func)
-        return prod(op_or_func)()
+        operations = tuple(make_qscript(op_or_func)().operations)
+        if len(operations) == 1:
+            return operations[0]
+
+        # Legacy operations are not supported as leaves of an Operator2 hybrid pytree. Retain
+        # the old Prod compatibility shell only for those regions until the contained operations
+        # are migrated.
+        if not all(isinstance(op, Operator2) for op in operations):
+            return prod(*reversed(operations))
+        return operations
+    if isinstance(op_or_func, tuple):
+        if not all(isinstance(op, Operator2) for op in op_or_func):
+            return prod(*reversed(op_or_func))
+        return op_or_func
     if isinstance(op_or_func, Operator):
         return op_or_func
     raise TypeError(
@@ -105,28 +142,40 @@ def _validate_operands(*operands):
             op.op_type, (MidMeasure, PauliMeasure)
         )
 
-    if any(_is_mid_measure(op) for op in operands):
+    operators = tuple(op for region in operands for op in _region_ops(region))
+
+    if any(
+        isinstance(region, tuple)
+        and not all(isinstance(op, Operator2) or _is_abstract_operator(op) for op in region)
+        for region in operands
+    ):
+        raise TypeError("ChangeOpBasis regions can only contain Operator2 operators.")
+
+    if any(_is_mid_measure(op) for op in operators):
         raise ValueError("Composite operators of mid-circuit measurements are not supported.")
 
     valid_operands = (Operator, CompressedResourceOp)
-    if not all(isinstance(op, valid_operands) or _is_abstract_operator(op) for op in operands):
+    if not all(isinstance(op, valid_operands) or _is_abstract_operator(op) for op in operators):
         raise TypeError("ChangeOpBasis operands must be operators.")
 
 
 # pylint: disable=inconsistent-return-statements
 def change_op_basis(
-    compute_op: Operator | Callable,
-    target_op: Operator | Callable,
-    uncompute_op: Operator | Callable | None = None,
+    compute_op: Operator | tuple[Operator, ...] | Callable,
+    target_op: Operator | tuple[Operator, ...] | Callable,
+    uncompute_op: Operator | tuple[Operator, ...] | Callable | None = None,
 ):
-    """Construct an operator that represents the product of the
-    operators provided; particularly a compute-uncompute pattern.
+    """Construct an operator representing a compute-target-uncompute pattern.
 
     Args:
-        compute_op (:class:`~.Operator` | Callable): A single operator or ``Callable`` with no inputs that applies quantum operations.
-        target_op (:class:`~.Operator` | Callable): A single operator or ``Callable`` with no inputs that applies quantum operations.
-        uncompute_op (None | :class:`~.Operator` | Callable): An optional single operator or ``Callable`` with no inputs that applies quantum
-            operations. ``None`` corresponds to ``uncompute_op=qp.adjoint(compute_op)``.
+        compute_op (:class:`~.Operator` | tuple[Operator2, ...] | Callable): An operator, an
+            ordered tuple of Operator2 operators, or a no-input callable that applies quantum
+            operations.
+        target_op (:class:`~.Operator` | tuple[Operator2, ...] | Callable): An operator, an ordered
+            tuple of Operator2 operators, or a no-input callable that applies quantum operations.
+        uncompute_op (None | :class:`~.Operator` | tuple[Operator2, ...] | Callable): An optional
+            operator region. ``None`` applies the adjoint of ``compute_op``. Callable regions that
+            still contain legacy operators use a temporary :class:`~.Prod` compatibility shell.
 
     Returns:
         ~ops.op_math.ChangeOpBasis: the operator representing the compute-uncompute pattern.
@@ -219,29 +268,37 @@ def change_op_basis(
         # Operator2 constructors retain Python wrappers whose ``tracer`` attributes point to
         # their equations. If any operand is already an AbstractOperator tracer, preserve the
         # constructor order instead of moving only the Operator2 equations.
-        if not any(_is_abstract_operator(op) for op in operands):
-            for _op in operands:
+        if not any(
+            _is_abstract_operator(op)
+            for region in operands
+            if region is not None
+            for op in _region_ops(region)
+        ):
+            for _op in (
+                op for region in operands if region is not None for op in _region_ops(region)
+            ):
                 if isinstance(_op, Operator2) and _op.tracer is not None:
                     pop_op_eqns((_op,))
         _apply_op_or_func(compute_op)
         _apply_op_or_func(target_op)
         if uncompute_op is not None:
             _apply_op_or_func(uncompute_op)
-        elif isinstance(compute_op, Operator2):
-            # NOTE: The new Adjoint2 will consume compute_op as a hybrid pytree argument
-            # and will pop its jaxpr equation (see pop_op_eqns). To prevent this from happening,
-            # we can feed a copy of the op to adjoint and detach its tracer as if it was
-            # removed from the jaxpr.
-            dummy = copy.copy(compute_op)
-            dummy.tracer = None
-            _apply_op_or_func(adjoint(dummy))
+        elif isinstance(compute_op, (Operator2, tuple)):
+            for op in reversed(_region_ops(compute_op)):
+                if isinstance(op, Operator2):
+                    # NOTE: The new Adjoint2 will consume the operator as a hybrid pytree
+                    # argument. Feed it a detached copy because its equation has already been
+                    # moved into execution order above.
+                    op = copy.copy(op)
+                    op.tracer = None
+                _apply_op_or_func(adjoint(op))
         else:
             _apply_op_or_func(adjoint(compute_op))
     else:
         return ChangeOpBasis(
-            _convert_to_prod(compute_op),
-            _convert_to_prod(target_op),
-            _convert_to_prod(uncompute_op) if uncompute_op is not None else None,
+            _convert_to_region(compute_op),
+            _convert_to_region(target_op),
+            _convert_to_region(uncompute_op) if uncompute_op is not None else None,
         )
 
 
@@ -251,17 +308,20 @@ class ChangeOpBasis(Operator2):
     which an operator is applied.
 
     Args:
-        compute_op (:class:`~.Operator`): A single operator or product that applies quantum operations.
-        target_op (:class:`~.Operator`): A single operator or a product that applies quantum operations.
-        uncompute_op (:class:`~.Operator`): A single operator or a product that applies quantum operations.
-            Default is uncompute_op=qp.adjoint(compute_op).
+        compute_op (:class:`~.Operator` | tuple[Operator2, ...]): The compute region, in execution
+            order.
+        target_op (:class:`~.Operator` | tuple[Operator2, ...]): The target region, in execution
+            order.
+        uncompute_op (:class:`~.Operator` | tuple[Operator2, ...]): The uncompute region, in
+            execution order. Defaults to the adjoint of ``compute_op``.
 
     Returns:
         (Operator): Returns an Operator which is the change_op_basis of the provided Operators: compute_op, target_op, uncompute_op.
 
     .. note::
-        When a ``ChangeOpBasis`` operator is iterated over, its factors are iterated in the reverse order. This is to
-        have a similar behaviour to ``Prod`` which applies its factors in reverse order.
+        Iterating over a ``ChangeOpBasis`` yields its three regions in matrix-product order:
+        uncompute, target, then compute. Operators inside a tuple region are stored and applied in
+        execution order.
 
     .. seealso:: :func:`~.change_op_basis`
     """
@@ -270,12 +330,19 @@ class ChangeOpBasis(Operator2):
     hybrid_argnames = ("compute_op", "target_op", "uncompute_op")
     arg_specs = {}
 
-    def __init__(self, compute_op: Operator, target_op: Operator, uncompute_op: Operator = None):
+    def __init__(
+        self,
+        compute_op: Operator | tuple[Operator, ...],
+        target_op: Operator | tuple[Operator, ...],
+        uncompute_op: Operator | tuple[Operator, ...] | None = None,
+    ):
         if uncompute_op is None:
-            uncompute_op = (
-                _adjoint_abstract(compute_op)
-                if isinstance(compute_op, CompressedResourceOp)
-                else adjoint(compute_op)
+            uncompute_op = _map_region(
+                lambda op: (
+                    _adjoint_abstract(op) if isinstance(op, CompressedResourceOp) else adjoint(op)
+                ),
+                compute_op,
+                reverse=True,
             )
 
         _validate_operands(compute_op, target_op, uncompute_op)
@@ -284,8 +351,9 @@ class ChangeOpBasis(Operator2):
 
         # Operator2 automatically collects wires from Operator2-valued hybrid arguments. Retain
         # support for legacy Operator operands until their own migrations are complete.
-        if all(isinstance(op, Operator) for op in self.operands):
-            self._wires = Wires.all_wires([op.wires for op in self.operands])
+        flat_operands = tuple(op for region in self.operands for op in _region_ops(region))
+        if all(isinstance(op, Operator) for op in flat_operands):
+            self._wires = Wires.all_wires([op.wires for op in flat_operands])
             self._pauli_rep = self._build_pauli_rep()
         else:
             self._wires = Wire[0]
@@ -296,8 +364,8 @@ class ChangeOpBasis(Operator2):
         bound_args = self._sig.bind(*args, **kwargs)
         bound_args.apply_defaults()
         if bound_args.arguments["uncompute_op"] is None:
-            bound_args.arguments["uncompute_op"] = _adjoint_abstract(
-                bound_args.arguments["compute_op"]
+            bound_args.arguments["uncompute_op"] = _adjoint_region(
+                bound_args.arguments["compute_op"], abstract=True
             )
         _validate_operands(*bound_args.arguments.values())
         super().__abstract_init__(*bound_args.args, **bound_args.kwargs)
@@ -324,19 +392,44 @@ class ChangeOpBasis(Operator2):
         return len(self.wires)
 
     def __repr__(self):
-        return " @ ".join(
-            f"({op})" if getattr(op, "arithmetic_depth", 0) > 0 else f"{op}" for op in self.operands
-        )
+        def _repr_region(region):
+            return " @ ".join(
+                f"({op})" if getattr(op, "arithmetic_depth", 0) > 0 else f"{op}"
+                for op in reversed(_region_ops(region))
+            )
+
+        return " @ ".join(_repr_region(region) for region in self.operands)
 
     @handle_recursion_error
     def __hash__(self):
-        return hash((self.name, tuple(hash(op) for op in self.operands)))
+        return hash(
+            (
+                self.name,
+                tuple(tuple(hash(op) for op in _region_ops(region)) for region in self.operands),
+            )
+        )
 
     @handle_recursion_error
     def label(self, decimals=None, base_label=None, cache=None):
-        def _label(op, operand_label):
+        def _label_op(op, operand_label):
             sub_label = op.label(decimals, operand_label, cache)
             return f"({sub_label})" if op.arithmetic_depth > 0 else sub_label
+
+        def _label_region(region, operand_label):
+            if not isinstance(region, tuple):
+                return _label_op(region, operand_label)
+            if isinstance(region, tuple) and isinstance(operand_label, str):
+                return operand_label
+
+            labels = reversed(operand_label) if isinstance(operand_label, tuple) else None
+            return "@".join(
+                _label_op(op, label)
+                for op, label in zip(
+                    reversed(_region_ops(region)),
+                    labels or (None for _ in _region_ops(region)),
+                    strict=True,
+                )
+            )
 
         if base_label is not None:
             if isinstance(base_label, str) or len(base_label) != len(self):
@@ -345,16 +438,18 @@ class ChangeOpBasis(Operator2):
                     "as operands."
                 )
             return "@".join(
-                _label(op, operand_label)
-                for op, operand_label in zip(self, base_label, strict=True)
+                _label_region(region, operand_label)
+                for region, operand_label in zip(self, base_label, strict=True)
             )
 
-        return "@".join(_label(op, None) for op in self)
+        return "@".join(_label_region(region, None) for region in self)
 
     @property
     @handle_recursion_error
     def data(self):
-        return tuple(data for op in self for data in op.data)
+        return tuple(
+            data for region in self for op in reversed(_region_ops(region)) for data in op.data
+        )
 
     @property
     @handle_recursion_error
@@ -366,7 +461,10 @@ class ChangeOpBasis(Operator2):
     @property
     @override
     def arithmetic_depth(self):
-        return 1 + max(getattr(op, "arithmetic_depth", 0) for op in self)
+        return 1 + max(
+            (getattr(op, "arithmetic_depth", 0) for region in self for op in _region_ops(region)),
+            default=0,
+        )
 
     @property
     @override
@@ -377,33 +475,40 @@ class ChangeOpBasis(Operator2):
         yields false, which ARE hermitian. So a false result only implies that a more explicit check
         must be performed.
         """
-        return self[1].is_verified_hermitian
+        target_ops = _region_ops(self.target_op)
+        return len(target_ops) == 1 and target_ops[0].is_verified_hermitian
 
     @override
     def adjoint(self):
-        return ChangeOpBasis(*(adjoint(factor, lazy=False) for factor in self))
+        return ChangeOpBasis(
+            _map_region(lambda op: adjoint(op, lazy=False), self.uncompute_op, reverse=True),
+            _map_region(lambda op: adjoint(op, lazy=False), self.target_op, reverse=True),
+            _map_region(lambda op: adjoint(op, lazy=False), self.compute_op, reverse=True),
+        )
 
     @override
     def queue(self, context=queuing.QueuingManager):
         if self.is_abstract:
             return self
         if context.recording():
-            for op in self:
-                context.remove(op)
+            for region in self:
+                for op in _region_ops(region):
+                    context.remove(op)
             context.append(self)
         return self
 
     @override
     def map_wires(self, wire_map):
         return type(self)(
-            self.compute_op.map_wires(wire_map),
-            self.target_op.map_wires(wire_map),
-            self.uncompute_op.map_wires(wire_map),
+            _map_region(lambda op: op.map_wires(wire_map), self.compute_op),
+            _map_region(lambda op: op.map_wires(wire_map), self.target_op),
+            _map_region(lambda op: op.map_wires(wire_map), self.uncompute_op),
         )
 
     def _build_pauli_rep(self):
         """PauliSentence representation of the Product of operations."""
-        if all(operand_pauli_reps := [op.pauli_rep for op in self.operands[::-1]]):
+        matrix_order_ops = [op for region in self.operands for op in reversed(_region_ops(region))]
+        if all(operand_pauli_reps := [op.pauli_rep for op in matrix_order_ops]):
             return reduce(lambda a, b: a @ b, operand_pauli_reps) if operand_pauli_reps else None
         return None
 
@@ -411,9 +516,8 @@ class ChangeOpBasis(Operator2):
 def _change_op_basis_resources(compute_op, target_op, uncompute_op):
     resources = Counter()
 
-    resources[compute_op] += 1
-    resources[target_op] += 1
-    resources[uncompute_op] += 1
+    for region in (compute_op, target_op, uncompute_op):
+        resources.update(_region_ops(region))
 
     return resources
 
@@ -426,16 +530,19 @@ def _controlled_change_op_basis_resources(
     work_wire_type,
 ):  # pylint: disable=unused-argument
     resources = defaultdict(int)
-    resources[base.compute_op] += 1
-    resources[
-        _ctrl_abstract(
-            base.target_op,
-            Wire[len(control_wires)],
-            Wire[len(work_wires)],
-            work_wire_type,
-        )
-    ] += 1
-    resources[base.uncompute_op] += 1
+    for op in _region_ops(base.compute_op):
+        resources[op] += 1
+    for op in _region_ops(base.target_op):
+        resources[
+            _ctrl_abstract(
+                op,
+                Wire[len(control_wires)],
+                Wire[len(work_wires)],
+                work_wire_type,
+            )
+        ] += 1
+    for op in _region_ops(base.uncompute_op):
+        resources[op] += 1
     return resources
 
 
@@ -447,22 +554,25 @@ def _controlled_change_op_basis_decomposition(
     work_wires,
     work_wire_type,
 ):
-    queuing.apply(base.compute_op)
-    ctrl(
-        queuing.apply(base.target_op),
-        control=control_wires,
-        control_values=control_values,
-        work_wires=work_wires,
-        work_wire_type=work_wire_type,
-    )
-    queuing.apply(base.uncompute_op)
+    for op in _region_ops(base.compute_op):
+        queuing.apply(op)
+    for op in _region_ops(base.target_op):
+        ctrl(
+            queuing.apply(op),
+            control=control_wires,
+            control_values=control_values,
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
+        )
+    for op in _region_ops(base.uncompute_op):
+        queuing.apply(op)
 
 
 @register_resources(_change_op_basis_resources)
 def _change_op_basis_decomp(compute_op, target_op, uncompute_op):
-    queuing.apply(compute_op)
-    queuing.apply(target_op)
-    queuing.apply(uncompute_op)
+    for region in (compute_op, target_op, uncompute_op):
+        for op in _region_ops(region):
+            queuing.apply(op)
 
 
 add_decomps(ChangeOpBasis, _change_op_basis_decomp)

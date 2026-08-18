@@ -357,9 +357,9 @@ def adjoint_resource_rep(base_class: type[Operator], base_params: dict = None):
 
 
 def change_op_basis_resource_rep(
-    compute_op: type[Operator] | CompressedResourceOp,
-    target_op: type[Operator] | CompressedResourceOp,
-    uncompute_op: type[Operator] | CompressedResourceOp | None = None,
+    compute_op: type[Operator] | CompressedResourceOp | tuple,
+    target_op: type[Operator] | CompressedResourceOp | tuple,
+    uncompute_op: type[Operator] | CompressedResourceOp | tuple | None = None,
 ):
     """Creates an abstract :class:`~.ChangeOpBasis` representing the compute-uncompute
     pattern of operators.
@@ -370,20 +370,17 @@ def change_op_basis_resource_rep(
     form.
 
     Args:
-        compute_op: the compute operator, or its type or compressed resource representation
-        target_op: the target operator, or its type or compressed resource representation
-        uncompute_op: the optional uncompute operator, or its type or compressed resource
-            representation; defaults to the adjoint of ``compute_op``
+        compute_op: the compute operator or ordered tuple of operators, using types or compressed
+            resource representations where needed
+        target_op: the target operator or ordered tuple of operators
+        uncompute_op: the optional uncompute operator or ordered tuple of operators; defaults to
+            the adjoint of ``compute_op``
 
     """
-    # pylint: disable=import-outside-toplevel
-    from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-
     compute_op = abstractify(compute_op)
     target_op = abstractify(target_op)
-    uncompute_op = (
-        _adjoint_abstract(compute_op) if uncompute_op is None else abstractify(uncompute_op)
-    )
+    if uncompute_op is not None:
+        uncompute_op = abstractify(uncompute_op)
     abstract_op = qp.ops.ChangeOpBasis.__new__(qp.ops.ChangeOpBasis)
     abstract_op.__abstract_init__(compute_op, target_op, uncompute_op)
     return abstract_op
