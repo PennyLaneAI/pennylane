@@ -522,6 +522,11 @@ class TestDecomposition:
                 "`PCPhase` decompositions not currently possible due to different signature."
             )
 
+        if op_class is qp.GlobalPhase:
+            pytest.skip(
+                "'GlobalPhase' does not act on any wires. Wire based decompositions therefore do not make sense."
+            )
+
         phi = 1.23
 
         try:
@@ -549,10 +554,6 @@ class TestDecomposition:
                 and qp.math.isclose(dec[0].data[0], phi)
                 and dec[0].wires == op.wires
             )
-        elif op_class is qp.GlobalPhase:
-            # exp(qp.GlobalPhase.generator(), phi) decomposes to PauliRot
-            # cannot compare GlobalPhase and PauliRot with qp.equal
-            assert np.allclose(op.matrix(wire_order=op.wires), dec[0].matrix(wire_order=op.wires))
         elif op_class is qp.FermionicSWAP:
             expected = op.map_wires(dict(zip(op.wires, reversed(op.wires))))
             # simplifying the generator changes the wire order

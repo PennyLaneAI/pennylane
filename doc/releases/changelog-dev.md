@@ -174,7 +174,7 @@
     - PauliX: a + 1
   Measurement processes:
   - expval(PauliX): 1
-  Wire allocations: 1
+  Total wires: 1
   Circuit Depth: Not computed
 
   ```
@@ -190,7 +190,7 @@
     - PauliX: 6
   Measurement processes:
   - expval(PauliX): 1
-  Wire allocations: 1
+  Total wires: 1
   Circuit Depth: Not computed
 
   ```
@@ -660,6 +660,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Renamed the `data` argument of :class:`~pennylane.QROM`, :class:`~pennylane.BBQRAM`, :class:`~pennylane.HybridQRAM`,
+  and :class:`~pennylane.SelectOnlyQRAM` to `bitstrings`.
+  [(#10010)](https://github.com/PennyLaneAI/pennylane/pull/10010)
+
 * :class:`~.BasisEmbedding` is now a direct alias of :class:`~.BasisState`.
   [(#9980)](https://github.com/PennyLaneAI/pennylane/pull/9980)
 
@@ -839,6 +843,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* The resource module JSON parser used by :func:`~.specs` to read Catalyst data has been revamped to match the new JSON structure produced by Catalyst.
+  [(#9942)](https://github.com/PennyLaneAI/pennylane/pull/9942)
+  [(#9969)](https://github.com/PennyLaneAI/pennylane/pull/9969)
+
 * Adds an `AGENTS.md` file providing guidelines and repository conventions for AI coding agents.
   [(#9929)](https://github.com/PennyLaneAI/pennylane/pull/9929)
 
@@ -868,33 +876,48 @@
   [(#9854)](https://github.com/PennyLaneAI/pennylane/pull/9854)
   [(#9858)](https://github.com/PennyLaneAI/pennylane/pull/9858)
   [(#9960)](https://github.com/PennyLaneAI/pennylane/pull/9960)
+  [(#10004)](https://github.com/PennyLaneAI/pennylane/pull/10004)
   - Parametric operators are ported:
     - :class:`~.RZ`, :class:`~.CRZ`, :class:`~.DiagonalQubitUnitary`, :class:`~.PauliRot`, :class:`~.MultiRZ`, :class:`~.PhaseShift`,
-      :class:`~.ControlledPhaseShift`, :class:`~.Rot`, :class:`~.CRot`
+      :class:`~.ControlledPhaseShift`, :class:`~.Rot`, :class:`~.CRot`, :class:`~.U1`, :class:`~.U2`, :class:`~.U3`, :class:`~.PCPhase`,
+      :class:`~.GlobalPhase`, :class:`~.IsingXX`, :class:`~.IsingYY`, :class:`~.IsingZZ`, :class:`~.IsingXY`
   [(#9857)](https://github.com/PennyLaneAI/pennylane/pull/9857)
   [(#9941)](https://github.com/PennyLaneAI/pennylane/pull/9941)
   [(#9897)](https://github.com/PennyLaneAI/pennylane/pull/9897)
   [(#9936)](https://github.com/PennyLaneAI/pennylane/pull/9936)
+  [(#9964)](https://github.com/PennyLaneAI/pennylane/pull/9964)
+  [(#10006)](https://github.com/PennyLaneAI/pennylane/pull/10006)
   [(#9977)](https://github.com/PennyLaneAI/pennylane/pull/9977)
   [(#9951)](https://github.com/PennyLaneAI/pennylane/pull/9951)
+  [(#9923)](https://github.com/PennyLaneAI/pennylane/pull/9923)
+  [(#9952)](https://github.com/PennyLaneAI/pennylane/pull/9952)
+  [(#9978)](https://github.com/PennyLaneAI/pennylane/pull/9978)
+  [(#9981)](https://github.com/PennyLaneAI/pennylane/pull/9981)
   - Templates are ported:
-    - :class:`~.BasisRotation`, :class:`~.MultiplexerStatePreparation`, :class:`~.QROM`, :class:`~.QFT`, :class:`~.FlipSign`
-      :class:`~.TemporaryAND`, :class:`~.SelectPauliRot`, :class:`~.GQSP`, :class:`~.AQFT`, 
+    - :class:`~.BasisRotation`, :class:`~.MultiplexerStatePreparation`, :class:`~.QROM`, :class:`~.QFT`, :class:`~.FlipSign`,
+      :class:`~.TemporaryAND`, :class:`~.SelectPauliRot`, :class:`~.GQSP`, :class:`~.AQFT`, :class:`~.SumOfSlatersPrep`,
+      :class:`~.SemiAdder`, :class:`~.OutMultiplier`, :class:`~.SignedOutMultiplier`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
   [(#9925)](https://github.com/PennyLaneAI/pennylane/pull/9925)
   [(#9918)](https://github.com/PennyLaneAI/pennylane/pull/9918)
   [(#9932)](https://github.com/PennyLaneAI/pennylane/pull/9932)
   [(#9924)](https://github.com/PennyLaneAI/pennylane/pull/9924)
   [(#9910)](https://github.com/PennyLaneAI/pennylane/pull/9910)
+  [(#9965)](https://github.com/PennyLaneAI/pennylane/pull/9965)
   [(#9943)](https://github.com/PennyLaneAI/pennylane/pull/9943)
   [(#9950)](https://github.com/PennyLaneAI/pennylane/pull/9950)
   [(#9987)](https://github.com/PennyLaneAI/pennylane/pull/9987)
   [(#9900)](https://github.com/PennyLaneAI/pennylane/pull/9900)
+  [(#9994)](https://github.com/PennyLaneAI/pennylane/pull/9994)
+  [(#9997)](https://github.com/PennyLaneAI/pennylane/pull/9997)
   [(#9995)](https://github.com/PennyLaneAI/pennylane/pull/9995)
-  - Single-qubit parametric operators are ported:
-    - `~.U1`, `~.U2`, `~.U3`
-  [(#9923)](https://github.com/PennyLaneAI/pennylane/pull/9923)
-  [(#9952)](https://github.com/PennyLaneAI/pennylane/pull/9952)
+  [(#10018)](https://github.com/PennyLaneAI/pennylane/pull/10018)
+  - Quantum chemistry operators are ported:
+    - :class:`~.SingleExcitation`
+  [(#9944)](https://github.com/PennyLaneAI/pennylane/pull/9944)
+  - Miscelleneous operators are ported:
+    - :class:`~.PauliMeasure`
+  [(#10005)](https://github.com/PennyLaneAI/pennylane/pull/10005)
 
 * The `cond` primitive no longer adds an artificial `True` Literal for the predicate of the default
   else branch.
@@ -1034,6 +1057,8 @@
     [(#9866)](https://github.com/PennyLaneAI/pennylane/pull/9866)
     [(#9897)](https://github.com/PennyLaneAI/pennylane/pull/9897)
     [(#9973)](https://github.com/PennyLaneAI/pennylane/pull/9973)
+  - The way that :class:`~.Wires` arguments in pytree leaves are read out of HDF5 was changed to be compatible with :class:`~.Operator2` in the data module.
+    [(#10012)](https://github.com/PennyLaneAI/pennylane/pull/10012)
 
 * Adds a new `pennylane/core` module.
   Moves the abstractions from `pennylane/operation` into `pennylane/core/operator`.
@@ -1104,6 +1129,10 @@
   from `qp.ctrl(qp.X(0), control=[1, 2])` to `Toffoli(wires=[1, 2, 0])`) is re-written to use a
   singledispatch function `custom_ctrl_dispatch` as opposed to relying on hard-coded logic.
   [(#9798)](https://github.com/PennyLaneAI/pennylane/pull/9798)
+
+* `capture.enable()`, `capture.disable()` are updated to use `ContextVar` for thread safety. A `capture.toggle_ctx` 
+  context manager that temporarily enables or disables capture is added.
+  [(#10016)](https://github.com/PennyLaneAI/pennylane/pull/10016)
 
 <h3>Documentation 📝</h3>
 
@@ -1263,6 +1292,7 @@ Austin Huang,
 Harshal Janjani,
 Jacob Kitchen,
 Korbinian Kottmann,
+Isabel Nha Minh Le,
 Christina Lee,
 William Maxwell
 Anton Naim Ibrahim,

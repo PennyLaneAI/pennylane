@@ -216,7 +216,7 @@ def _hadamard_to_rz_rx(wires: WiresLike, **__):
     qp.RZ(np.pi / 2, wires=wires)
     qp.RX(np.pi / 2, wires=wires)
     qp.RZ(np.pi / 2, wires=wires)
-    qp.GlobalPhase(-np.pi / 2, wires=wires)
+    qp.GlobalPhase(-np.pi / 2)
 
 
 def _hadamard_rz_ry_resources(wires: WiresLike):
@@ -231,7 +231,13 @@ def _hadamard_to_rz_ry(wires: WiresLike, **__):
 
 
 def _hadamard_ppm_resources(wires: WiresLike):
-    return {qp.resource_rep(PauliMeasure): 2, qp.Y: 1, qp.Z: 2, qp.GlobalPhase: 1}
+    return {
+        PauliMeasure("YY", wires=Wire[2]): 1,
+        PauliMeasure("X", wires=Wire[1]): 1,
+        qp.Y: 1,
+        qp.Z: 2,
+        qp.GlobalPhase: 1,
+    }
 
 
 @qp.register_resources(_hadamard_ppm_resources, work_wires={"burnable": 1})
@@ -482,7 +488,7 @@ def _paulix_to_rx_resources(wires: AbstractWires):
 @register_resources(_paulix_to_rx_resources)
 def _paulix_to_rx(wires: WiresLike):
     qp.RX(np.pi, wires=wires)
-    qp.GlobalPhase(-np.pi / 2, wires=wires)
+    qp.GlobalPhase(-np.pi / 2)
 
 
 @register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 2, 0.5))
@@ -495,7 +501,7 @@ def _pow_x_to_sx(base, z):
 def _pow_x_to_rx(base, z):
     z_mod2 = qp.math.array(z) % 2
     qp.RX(np.pi * z_mod2, wires=base.wires)
-    qp.GlobalPhase(-np.pi / 2 * z_mod2, wires=base.wires)
+    qp.GlobalPhase(-np.pi / 2 * z_mod2)
 
 
 add_decomps(PauliX, _paulix_to_rx)
@@ -685,14 +691,14 @@ def _pauliy_to_ry_gp_resources(wires: AbstractWires):
 @register_resources(_pauliy_to_ry_gp_resources)
 def _pauliy_to_ry_gp(wires: WiresLike):
     qp.RY(np.pi, wires=wires)
-    qp.GlobalPhase(-np.pi / 2, wires=wires)
+    qp.GlobalPhase(-np.pi / 2)
 
 
 @register_resources(lambda **_: {qp.RY: 1, qp.GlobalPhase: 1})
 def _pow_y(base, z):
     z_mod2 = qp.math.array(z) % 2
     qp.RY(np.pi * z_mod2, wires=base.wires)
-    qp.GlobalPhase(-np.pi / 2 * z_mod2, wires=base.wires)
+    qp.GlobalPhase(-np.pi / 2 * z_mod2)
 
 
 add_decomps(PauliY, _pauliy_to_ry_gp)
@@ -1375,7 +1381,7 @@ def _sx_to_rx_resources(wires: WiresLike = None):
 @register_resources(_sx_to_rx_resources)
 def _sx_to_rx(wires: WiresLike | None = None):
     qp.RX(np.pi / 2, wires=wires)
-    qp.GlobalPhase(-np.pi / 4, wires=wires)
+    qp.GlobalPhase(-np.pi / 4)
 
 
 add_decomps(SX, _sx_to_rx)
@@ -1391,7 +1397,7 @@ def _pow_sx_to_x(base, z):
 def _pow_sx(base, z):
     z_mod4 = qp.math.array(z) % 4
     qp.RX(np.pi / 2 * z_mod4, wires=base.wires)
-    qp.GlobalPhase(-np.pi / 4 * z_mod4, wires=base.wires)
+    qp.GlobalPhase(-np.pi / 4 * z_mod4)
 
 
 add_decomps("Pow(SX)", make_pow_decomp_with_period2(4), _pow_sx_to_x, _pow_sx)

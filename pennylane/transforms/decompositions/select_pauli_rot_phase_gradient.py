@@ -190,7 +190,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
 
         # 1. QROM compressed rep
         qrom_rep = qp.QROM(
-            data=Int[2**num_control_wires, len(angle_wires)],
+            bitstrings=Int[2**num_control_wires, len(angle_wires)],
             control_wires=Wire[num_control_wires],
             target_wires=Wire[len(angle_wires)],
             work_wires=Wire[num_control_wires - 1],
@@ -206,11 +206,10 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
         prod_rep = resource_rep(Prod, resources=prod_res)
 
         # 4. SemiAdder as the target_op
-        semi_adder_rep = resource_rep(
-            qp.SemiAdder,
-            num_x_wires=len(angle_wires),
-            num_y_wires=len(phase_grad_wires),
-            num_work_wires=len(work_wires),
+        semi_adder_rep = qp.SemiAdder(
+            Wire[len(angle_wires)],
+            Wire[len(phase_grad_wires)],
+            Wire[len(work_wires)],
         )
 
         # 5. change_op_basis(compute_op, target_op)

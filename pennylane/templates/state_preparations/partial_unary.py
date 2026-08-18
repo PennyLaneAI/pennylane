@@ -630,7 +630,7 @@ class PartialUnaryStatePreparation(Operation):
       - SWAP: 1
     Measurement processes:
     - state(all wires): 1
-    Wire allocations: 26
+    Total wires: 26
     Circuit Depth: Not computed
 
     Note that passing more work wires than the needed :math:`\max(\lceil \log_2(|L|)\rceil-1, 1)`
@@ -649,7 +649,7 @@ class PartialUnaryStatePreparation(Operation):
       - SWAP: 16
     Measurement processes:
     - state(all wires): 1
-    Wire allocations: 48
+    Total wires: 48
     Circuit Depth: Not computed
 
     We used just ``160`` ``QROM``\ s instead of ``1207``, and as their size is dictated only by the
@@ -707,7 +707,7 @@ def _pui_state_prep_resources(num_entries, num_wires, num_work_wires):
 
     qrom_reps = {
         p: qp.QROM(
-            data=Int[p, p],
+            bitstrings=Int[p, p],
             control_wires=Wire[n_subspace],
             target_wires=Wire[p],
             work_wires=Wire[n_subspace - 1],
@@ -778,7 +778,7 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
             qp.BasisState(k_start, subspace_wires)
             b = k - k_start
             qp.QROM(
-                data=np.eye(b, dtype=np.int64),
+                bitstrings=np.eye(b, dtype=np.int64),
                 control_wires=subspace_wires,
                 target_wires=nonsubspace_wires[:b],
                 work_wires=work_wires[: n_subspace - 1],

@@ -226,7 +226,7 @@ def cancel_inverses(
           - RX: 1
         Measurement processes:
         - expval(PauliZ): 1
-        Wire allocations: 1
+        Total wires: 1
         Circuit Depth: Not computed
 
         Additionally, the ``cancel_inverses`` transform with ``qjit`` supports
