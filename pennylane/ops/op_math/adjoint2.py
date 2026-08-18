@@ -253,7 +253,12 @@ def _adjoint_abstract(op: AbstractOperatorLike | type[Operator]):
     op = abstractify(op)
     if isinstance(op, CompressedResourceOp):
         return adjoint_resource_rep(op.op_type, op.params)
-    return qp.adjoint(op)
+    # The result is a resource representation, not a circuit instruction, so it must never
+    # bind a capture primitive. The metaclass's abstract-argument guard cannot detect an
+    # abstract base whose flattened leaves are all CompressedResourceOps (e.g. a
+    # ChangeOpBasis of legacy operands), so pause capture explicitly.
+    with qp.capture.pause():
+        return qp.adjoint(op)
 
 
 def _cancel_adjoint_resources(base):
