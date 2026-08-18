@@ -73,6 +73,20 @@ def test_composite_ops(op, new_params, expected_op):
     assert all(no is not o for no, o in zip(new_op.operands, op.operands))
 
 
+def test_change_op_basis_default_uncompute():
+    """Test rebinding the compatibility data view when uncompute defaults to an adjoint."""
+    op = qp.ops.ChangeOpBasis(qp.RZ(0.1, 0), qp.MultiRZ(0.2, wires=[1]))
+    tape = qp.tape.QuantumScript([op])
+    assert op.num_params == len(op.data) == 3
+
+    new_tape = tape.bind_new_parameters([0.3, 0.4, 0.5], [0, 1, 2])
+
+    expected = qp.ops.ChangeOpBasis(
+        qp.RZ(0.5, 0), qp.MultiRZ(0.4, wires=[1]), qp.adjoint(qp.RZ(0.3, 0))
+    )
+    qp.assert_equal(new_tape.operations[0], expected)
+
+
 @pytest.mark.parametrize(
     "op, new_params, expected_op",
     [
