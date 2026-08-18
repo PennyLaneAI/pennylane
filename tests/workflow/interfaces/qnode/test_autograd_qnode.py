@@ -540,7 +540,7 @@ class TestQubitIntegration:
         """Tests correct output shape and evaluation for a tape
         with a single prob output"""
         if diff_method == "adjoint":
-            pytest.xfail("adjoint state differentiation to be removed")  # pl2do
+            pytest.skip("adjoint state differentiation is not supported in pl2")
         if "lightning" in getattr(dev, "name", "").lower():
             pytest.xfail("lightning does not support measuring probabilities with adjoint.")
         if diff_method == "adjoint":
@@ -584,7 +584,7 @@ class TestQubitIntegration:
         """Tests correct output shape and evaluation for a tape
         with multiple prob outputs"""
         if diff_method == "adjoint":
-            pytest.xfail("adjoint state differentiation to be removed")  # pl2do
+            pytest.skip("adjoint state differentiation is not supported in pl2")
         if "lightning" in getattr(dev, "name", "").lower():
             pytest.xfail("lightning does not support measuring probabilities with adjoint.")
         if diff_method == "adjoint":
@@ -657,7 +657,7 @@ class TestQubitIntegration:
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
         if diff_method == "adjoint":
-            pytest.xfail("adjoint state differentiation to be removed")  # pl2do
+            pytest.skip("adjoint state differentiation is not supported in pl2")
         if "lightning" in getattr(dev, "name", "").lower():
             pytest.xfail("lightning does not support measuring probabilities with adjoint.")
         if diff_method == "adjoint":
@@ -716,7 +716,7 @@ class TestQubitIntegration:
         """Tests correct output shape and evaluation for a tape
         with prob and variance outputs"""
         if diff_method == "adjoint":
-            pytest.xfail("adjoint state differentiation to be removed")  # pl2do
+            pytest.skip("adjoint state differentiation is not supported in pl2")
         if "lightning" in getattr(dev, "name", "").lower():
             pytest.xfail("lightning does not support measuring probabilities with adjoint.")
         if diff_method == "adjoint":
@@ -1328,7 +1328,7 @@ class TestQubitIntegration:
         """Test that the state can be returned and differentiated"""
 
         if diff_method == "adjoint":
-            pytest.xfail("adjoint state differentiation to be removed")  # pl2do
+            pytest.skip("adjoint state differentiation is not supported in pl2")
         if "lightning" in getattr(dev, "name", "").lower():
             pytest.xfail("Lightning does not support state adjoint diff.")
         if diff_method == "adjoint":
@@ -1883,7 +1883,7 @@ class TestReturn:
         """For a multi dimensional measurement (probs), check that a single array is returned with the correct
         dimension"""
         if diff_method == "adjoint":
-            pytest.xfail("adjoint state differentiation to be removed")  # pl2do
+            pytest.skip("adjoint state differentiation is not supported in pl2")
         gradient_kwargs = {}
         if diff_method == "hadamard":
             gradient_kwargs["aux_wire"] = 2
@@ -1914,7 +1914,7 @@ class TestReturn:
         """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
         the correct dimension"""
         if diff_method == "adjoint":
-            pytest.xfail("adjoint state differentiation to be removed")  # pl2do
+            pytest.skip("adjoint state differentiation is not supported in pl2")
         gradient_kwargs = {}
         if diff_method == "hadamard":
             gradient_kwargs["aux_wire"] = 2
@@ -1952,7 +1952,7 @@ class TestReturn:
     ):
         """For a multi dimensional measurement (probs), check that a single array is returned."""
         if diff_method == "adjoint":
-            pytest.xfail("adjoint state differentiation to be removed")  # pl2do
+            pytest.skip("adjoint state differentiation is not supported in pl2")
         gradient_kwargs = {}
         if diff_method == "hadamard":
             gradient_kwargs["aux_wire"] = 2
@@ -1983,7 +1983,7 @@ class TestReturn:
     ):
         """The jacobian of multiple measurements with a single params return an array."""
         if diff_method == "adjoint":
-            pytest.xfail("adjoint state differentiation to be removed")  # pl2do
+            pytest.skip("adjoint state differentiation is not supported in pl2")
         gradient_kwargs = {}
         if diff_method == "hadamard":
             gradient_kwargs["aux_wire"] = 2
@@ -2016,7 +2016,7 @@ class TestReturn:
     ):
         """The jacobian of multiple measurements with a multiple params return a tuple of arrays."""
         if diff_method == "adjoint":
-            pytest.xfail("adjoint state differentiation to be removed")  # pl2do
+            pytest.skip("adjoint state differentiation is not supported in pl2")
         gradient_kwargs = {}
         if diff_method == "hadamard":
             gradient_kwargs["aux_wire"] = 2
@@ -2056,7 +2056,7 @@ class TestReturn:
     ):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
         if diff_method == "adjoint":
-            pytest.xfail("adjoint state differentiation to be removed")  # pl2do
+            pytest.skip("adjoint state differentiation is not supported in pl2")
 
         gradient_kwargs = {}
         if diff_method == "hadamard":

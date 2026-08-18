@@ -469,7 +469,7 @@ class TestVectorValuedQNode:
         with a single prob output"""
 
         if diff_method == "adjoint":
-            pytest.xfail("adjoint state differentiation to be removed")  # pl2do
+            pytest.skip("adjoint state differentiation is not supported in pl2")
         if dev_name == "param_shift.qubit":
             pytest.xfail("gradient transforms have a different vjp shape convention.")
 
@@ -533,7 +533,7 @@ class TestVectorValuedQNode:
         with multiple prob outputs"""
 
         if diff_method == "adjoint":
-            pytest.xfail("adjoint state differentiation to be removed")  # pl2do
+            pytest.skip("adjoint state differentiation is not supported in pl2")
         if dev_name == "param_shift.qubit":
             pytest.xfail("gradient transforms have a different vjp shape convention.")
 
@@ -630,7 +630,7 @@ class TestVectorValuedQNode:
         with prob and expval outputs"""
 
         if diff_method == "adjoint":
-            pytest.xfail("adjoint state differentiation to be removed")  # pl2do
+            pytest.skip("adjoint state differentiation is not supported in pl2")
         if dev_name == "param_shift.qubit":
             pytest.xfail("gradient transforms have a different vjp shape convention.")
 
@@ -716,7 +716,7 @@ class TestVectorValuedQNode:
         trainable parameters (argnums) than parameters."""
 
         if diff_method == "adjoint":
-            pytest.xfail("adjoint state differentiation to be removed")  # pl2do
+            pytest.skip("adjoint state differentiation is not supported in pl2")
         if dev_name == "param_shift.qubit":
             pytest.xfail("gradient transforms have a different vjp shape convention.")
 
@@ -781,7 +781,7 @@ class TestVectorValuedQNode:
         with prob and variance outputs"""
 
         if diff_method == "adjoint":
-            pytest.xfail("adjoint state differentiation to be removed")  # pl2do
+            pytest.skip("adjoint state differentiation is not supported in pl2")
         if dev_name == "param_shift.qubit":
             pytest.xfail("gradient transforms have a different vjp shape convention.")
 
@@ -1565,7 +1565,7 @@ class TestQubitIntegrationHigherOrder:
         """Test that the state can be returned and differentiated"""
 
         if diff_method == "adjoint":
-            pytest.xfail("adjoint state differentiation to be removed")  # pl2do
+            pytest.skip("adjoint state differentiation is not supported in pl2")
         if dev_name == "lightning.qubit" and diff_method == "adjoint":
             pytest.xfail("lightning.qubit does not support adjoint with the state.")
 
@@ -1947,7 +1947,7 @@ class TestTapeExpansion:
         vectorized=True is specified for the callback when caching is disabled and when multiple output values
         are returned."""
         if diff_method == "adjoint":
-            pytest.xfail("adjoint state differentiation to be removed")  # pl2do
+            pytest.skip("adjoint state differentiation is not supported in pl2")
         if (
             dev_name == "default.qubit"
             and diff_method == "adjoint"
@@ -2157,7 +2157,7 @@ class TestJIT:
         uses the output of a vector-valued QNode"""
 
         if diff_method == "adjoint":
-            pytest.xfail("adjoint state differentiation to be removed")  # pl2do
+            pytest.skip("adjoint state differentiation is not supported in pl2")
         gradient_kwargs = {}
 
         if dev_name == "param_shift.qubit":
@@ -2406,7 +2406,7 @@ class TestReturn:
         with the correct dimension"""
 
         if diff_method == "adjoint":
-            pytest.xfail("adjoint state differentiation to be removed")  # pl2do
+            pytest.skip("adjoint state differentiation is not supported in pl2")
         if dev_name == "param_shift.qubit":
             pytest.xfail("gradient transforms have a different vjp shape convention.")
 
@@ -2451,7 +2451,7 @@ class TestReturn:
         containing arrays with the correct dimension"""
 
         if diff_method == "adjoint":
-            pytest.xfail("adjoint state differentiation to be removed")  # pl2do
+            pytest.skip("adjoint state differentiation is not supported in pl2")
         if dev_name == "param_shift.qubit":
             pytest.xfail("gradient transforms have a different vjp shape convention.")
 
@@ -2505,7 +2505,7 @@ class TestReturn:
         containing arrays with the correct dimension"""
 
         if diff_method == "adjoint":
-            pytest.xfail("adjoint state differentiation to be removed")  # pl2do
+            pytest.skip("adjoint state differentiation is not supported in pl2")
         if dev_name == "param_shift.qubit":
             pytest.xfail("gradient transforms have a different vjp shape convention.")
 
@@ -2758,7 +2758,7 @@ class TestReturn:
         """The jacobian of multiple measurements with a single params return an array."""
 
         if diff_method == "adjoint":
-            pytest.xfail("adjoint state differentiation to be removed")  # pl2do
+            pytest.skip("adjoint state differentiation is not supported in pl2")
         if dev_name == "param_shift.qubit":
             pytest.xfail("gradient transforms have a different vjp shape convention")
 
@@ -2808,7 +2808,7 @@ class TestReturn:
         """The jacobian of multiple measurements with a multiple params return a tuple of arrays."""
 
         if diff_method == "adjoint":
-            pytest.xfail("adjoint state differentiation to be removed")  # pl2do
+            pytest.skip("adjoint state differentiation is not supported in pl2")
         if dev_name == "param_shift.qubit":
             pytest.xfail("gradient transforms have a different vjp shape convention.")
 
@@ -2867,7 +2867,7 @@ class TestReturn:
         """The jacobian of multiple measurements with a multiple params array return a single array."""
 
         if diff_method == "adjoint":
-            pytest.xfail("adjoint state differentiation to be removed")  # pl2do
+            pytest.skip("adjoint state differentiation is not supported in pl2")
         if dev_name == "param_shift.qubit":
             pytest.xfail("gradient transforms have a different vjp shape convention.")
 

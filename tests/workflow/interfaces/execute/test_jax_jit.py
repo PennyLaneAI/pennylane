@@ -791,7 +791,7 @@ class TestVectorValuedJIT:
             )
             for r in ret
         ):
-            pytest.xfail("adjoint state differentiation to be removed")  # pl2do
+            pytest.skip("adjoint state differentiation is not supported in pl2")
 
         def cost(a, cache):
             with qp.queuing.AnnotatedQueue() as q:

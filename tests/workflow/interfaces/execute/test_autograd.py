@@ -293,7 +293,7 @@ class TestAutogradExecuteIntegration:
         ignored during the gradient computation"""
 
         if execute_kwargs.get("diff_method") == "adjoint":
-            pytest.xfail("adjoint state differentiation to be removed")  # pl2do
+            pytest.skip("adjoint state differentiation is not supported in pl2")
 
         device = get_device(device_name, seed=seed)
 
