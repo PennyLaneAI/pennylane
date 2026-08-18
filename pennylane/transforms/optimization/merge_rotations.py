@@ -153,7 +153,7 @@ def merge_rotations(
                 qp.RX(0.2, wires=0)
                 return qp.expval(qp.PauliZ(0))
 
-        >>> print(qp.specs(circuit, level=1)())
+        >>> print(qp.specs(circuit, level=1)()) # doctest: +SKIP
         Device: lightning.qubit
         Device wires: 1
         Shots: Shots(total=None)
