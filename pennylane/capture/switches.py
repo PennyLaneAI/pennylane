@@ -39,7 +39,7 @@ except ImportError:  # pragma: no cover
     is_jax_compatible = False
 
 
-def _make_switches() -> tuple[Callable, Callable, Callable[[], bool], Callable]:
+def _make_switches() -> tuple[Callable[[], None], Callable[[], None], Callable[[], bool], Callable]:
     r"""Create four functions, corresponding to an activation switch, a deactivation switch
     and a status query, and a context manager, in that order.
 
