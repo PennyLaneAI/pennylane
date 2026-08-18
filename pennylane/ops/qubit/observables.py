@@ -255,8 +255,8 @@ class Hermitian(Operator):
         >>> evecs = evecs + 0 # add 0 to normalize signed zeros before printing
         >>> with np.printoptions(precision=4): # easier to read the matrix
         ...     print(qp.Hermitian.compute_diagonalizing_gates(evecs, wires=[0]))
-        [QubitUnitary(array([[-0.9492-0.j    ,  0.2816+0.1408j],
-               [ 0.3148-0.j    ,  0.8489+0.4245j]]), wires=[0])]
+        [QubitUnitary(U=[[-0.9492-0.j      0.2816+0.1408j]
+         [ 0.3148-0.j      0.8489+0.4245j]], wires=[0], unitary_check=False)]
 
         """
         return [QubitUnitary(eigenvectors.conj().T, wires=wires)]
