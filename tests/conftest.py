@@ -136,7 +136,10 @@ def enable_capture():
         yield
 
 
-@pytest.fixture(params=[False, True], ids=["capture_disabled", "capture_enabled"])
+@pytest.fixture(
+    params=[False, pytest.param(True, marks=(pytest.mark.capture, pytest.mark.jax))],
+    ids=["capture_disabled", "capture_enabled"],
+)
 def enable_and_disable_capture(request):
     """
     A fixture that parametrizes a test to run twice: once with program capture
