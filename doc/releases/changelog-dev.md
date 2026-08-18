@@ -2,6 +2,7 @@
 
 <h3>New features since last release</h3>
 
+<<<<<<< HEAD
 * Added :func:`~pennylane.backline.triton_decoder` and
   :func:`~pennylane.backline.css_bp_decoder` for compiling Triton-based coprocessor decoders.
   :func:`~pennylane.backline.triton_decoder` wraps user-provided Triton decoder tuples, while
@@ -56,6 +57,13 @@
       qp.RX(x, wires=0)
       return qp.expval(qp.Z(0))
   ```
+
+* Added a new template :class:`~.TrotterVibronic` that implements a second-order Trotter circuit for
+  vibronic Hamiltonian simulation using phase-gradient arithmetic, based on
+  [Motlagh et al, arXiv:2411.13669](https://arxiv.org/abs/2411.13669). The vibronic Hamiltonian is
+  provided as a dictionary of dense coefficient tensors, and the vibrational-mode wires are provided
+  as a single flattened register.
+  [(#10029)](https://github.com/PennyLaneAI/pennylane/pull/10029)
 
 * ``qp.allocate`` now supports ``state="magic-T"`` and ``state="magic-T-adj"`` for requesting
   magic-state dynamic wires (:math:`|m\rangle = TH|0\rangle` and :math:`|m̄\rangle = T^\dagger H|0\rangle`).
