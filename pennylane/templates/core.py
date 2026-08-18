@@ -482,7 +482,7 @@ class Subroutine:
       - MyTemplate: 1
     Measurement processes:
     - state(all wires): 1
-    Wire allocations: 1
+    Total wires: 1
     Circuit Depth: 1
 
     For multiple wire register inputs or use of a different name than ``"wires"``, the

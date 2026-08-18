@@ -157,12 +157,11 @@
       for _ in range(x):
           qp.PauliX(0)
       return qp.expval(qp.PauliX(0))
-
-  specs_result = qp.specs(circuit, level=0)(5)
   ```
 
   ```pycon
-  >>> print(specs_result)
+  >>> specs_result = qp.specs(circuit, level=0)(5) # doctest: +SKIP
+  >>> print(specs_result) # doctest: +SKIP
   Device: lightning.qubit
   Device wires: 1
   Shots: Shots(total=None)
@@ -175,7 +174,7 @@
     - PauliX: a + 1
   Measurement processes:
   - expval(PauliX): 1
-  Wire allocations: 1
+  Total wires: 1
   Circuit Depth: Not computed
 
   ```
@@ -183,15 +182,15 @@
   These symbolic resources include expressions with variables which can substituted for concrete values to compute the associated resources for a circuit, via the ``subs`` method.
 
   ```pycon
-  >>> res = specs_result.resources
-  >>> print(res.subs(a=5))
+  >>> res = specs_result.resources # doctest: +SKIP
+  >>> print(res.subs(a=5)) # doctest: +SKIP
   Quantum operations:
   - Total: 7
     - Hadamard: 1
     - PauliX: 6
   Measurement processes:
   - expval(PauliX): 1
-  Wire allocations: 1
+  Total wires: 1
   Circuit Depth: Not computed
 
   ```
@@ -844,6 +843,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* The resource module JSON parser used by :func:`~.specs` to read Catalyst data has been revamped to match the new JSON structure produced by Catalyst.
+  [(#9942)](https://github.com/PennyLaneAI/pennylane/pull/9942)
+  [(#9969)](https://github.com/PennyLaneAI/pennylane/pull/9969)
+
 * Adds an `AGENTS.md` file providing guidelines and repository conventions for AI coding agents.
   [(#9929)](https://github.com/PennyLaneAI/pennylane/pull/9929)
 
@@ -1126,6 +1129,10 @@
   from `qp.ctrl(qp.X(0), control=[1, 2])` to `Toffoli(wires=[1, 2, 0])`) is re-written to use a
   singledispatch function `custom_ctrl_dispatch` as opposed to relying on hard-coded logic.
   [(#9798)](https://github.com/PennyLaneAI/pennylane/pull/9798)
+
+* `capture.enable()`, `capture.disable()` are updated to use `ContextVar` for thread safety. A `capture.toggle_ctx` 
+  context manager that temporarily enables or disables capture is added.
+  [(#10016)](https://github.com/PennyLaneAI/pennylane/pull/10016)
 
 <h3>Documentation 📝</h3>
 
