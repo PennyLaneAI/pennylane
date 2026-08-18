@@ -25,6 +25,7 @@ from pennylane.core.operator import Operation, abstractify
 from pennylane.decomposition import DecompositionGraph, resource_rep
 from pennylane.decomposition.decomposition_graph import _DecompositionNode
 from pennylane.decomposition.decomposition_rule import DecompCollection, _fix_decomp
+from pennylane.decomposition.symbolic_decomposition import self_adjoint
 from pennylane.decomposition.utils import _get_decomp_args
 from pennylane.exceptions import DecompositionError, DecompositionWarning
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
@@ -949,10 +950,47 @@ class TestControlledDecompositions:
         """Tests that the controlled form of an adjoint operator is decomposed properly."""
 
         op = qp.ctrl(qp.adjoint(qp.U1(0.5, wires=0)), control=[1])
+        # Applying ``flip_control_adjoint`` rewrites ``C(Adjoint(U1))`` as ``Adjoint(C(U1))``.
+        # With the eager ``C(U1) -> ControlledPhaseShift`` lowering, the inner ``C(U1)`` is lowered
+        # directly to ``ControlledPhaseShift``, so the result is an adjoint of a
+        # ``ControlledPhaseShift``.
         with qp.queuing.AnnotatedQueue() as q:
             _, args, kwargs = _get_decomp_args(op)
             flip_control_adjoint(*args, **kwargs)
-        assert q.queue == [qp.adjoint(qp.ops.Controlled(qp.U1(0.5, wires=0), control_wires=[1]))]
+        assert q.queue == [qp.adjoint(qp.ControlledPhaseShift(0.5, wires=[1, 0]))]
+
+    def test_flip_controlled_adjoint_full_solve(self):
+        """Tests that a full graph solve resolves C(Adjoint(U1)) down to
+        Adjoint(ControlledPhaseShift), without any decomposition rule registered
+        specifically for ``C(U1)``.
+
+        The controlled U1 node only appears once ``flip_control_adjoint`` is applied, and
+        it already resolves to ``ControlledPhaseShift`` through the generic mechanism that
+        applies control to U1's own (unconditional) decomposition into ``PhaseShift``,
+        combined with the pre-existing ``(PhaseShift, 1) -> ControlledPhaseShift`` mapping.
+        ``PauliX`` must be included in the target gate set because the resource estimate for
+        a controlled operator conservatively accounts for a potential zero-control flip, even
+        though none is required for this concrete, all-``True`` control case. ``self_adjoint``
+        must be supplied for ``PauliX`` via ``alt_decomps`` since the test-local decomposition
+        registry (unlike the real one) doesn't register it for ``Adjoint(PauliX)``, which is
+        pulled in when adjointing the same zero-control-flip resource estimate.
+        """
+
+        op = qp.ctrl(qp.adjoint(qp.U1(0.5, wires=0)), control=[1])
+        graph = DecompositionGraph(
+            operations=[op],
+            gate_set={"ControlledPhaseShift", "PauliX"},
+            alt_decomps={
+                "Adjoint(PauliX)": [self_adjoint]
+            },  # this is necessary because all tests are patched with specific decompositions that dont include Adjoint(PauliX)
+        )
+        solution = graph.solve()
+
+        with qp.queuing.AnnotatedQueue() as q:
+            _, args, kwargs = _get_decomp_args(op)
+            solution.decomposition(op)(*args, **kwargs)
+
+        assert q.queue == [qp.adjoint(qp.ControlledPhaseShift(0.5, wires=[1, 0]))]
 
     def test_decompose_with_single_work_wire(self):
         """Tests that the Lemma 7.11 decomposition from https://arxiv.org/pdf/quant-ph/9503016 is applied correctly."""

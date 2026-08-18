@@ -62,6 +62,8 @@ def _get_has_generator_types(num_wires):
 
 
 def _find_equal_generator(base, coeff):
+    val = -1j * coeff
+    coeff = math.real(val) if math.is_real_obj_or_close(val) else val
     for op_class in _get_has_generator_types(len(base.wires)):
         # NOTE: Use a real probe coeff so that constructing the candidate does not fail for operators that do not support
         # complex angles (like RZ). This should be fine as any op_class in _get_has_generator_types has a generator
@@ -82,14 +84,13 @@ def _find_equal_generator(base, coeff):
 
         if qp.equal(mapped_wires_g, base):
             # Cancel the coefficients added by the generator
-            coeff = math.real(-1j / c * coeff)
+            coeff = math.real(1 / c * coeff)
             return op_class(coeff, g.wires)
 
         # could have absorbed the coefficient.
         simplified_g = qp.simplify(qp.s_prod(c, mapped_wires_g))
 
         if qp.equal(simplified_g, base):
-            coeff = math.real(-1j * coeff)
             return op_class(coeff, g.wires)
 
     return None
