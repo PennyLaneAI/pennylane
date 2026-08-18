@@ -297,7 +297,7 @@ def decode(  # pylint: disable=too-many-arguments
     )
 
     # Copy `nbytes` into the outbound slot and stamp `decoder_id`, then start the round trip.
-    stage_status = runtime_call(
+    _ = runtime_call(
         _STAGE_PAYLOAD,
         session,
         syndrome,
@@ -308,10 +308,10 @@ def decode(  # pylint: disable=too-many-arguments
     )
 
     # Start the round trip
-    post_status = runtime_call(_POST, session, work_item, signature=_SIG_POST, library=library)
+    _ = runtime_call(_POST, session, work_item, signature=_SIG_POST, library=library)
 
     # Wait for the reply
-    collect_status, correction = runtime_call(
+    _, correction = runtime_call(
         _COLLECT,
         session,
         reply_bytes,

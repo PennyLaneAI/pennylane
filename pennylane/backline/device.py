@@ -91,6 +91,7 @@ class Backline(Device):
             return qp.expval(qp.Z(0))
     """
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         *,
