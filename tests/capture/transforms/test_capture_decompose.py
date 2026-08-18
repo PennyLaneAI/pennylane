@@ -151,9 +151,9 @@ class TestDecomposeInterpreter:
         for eqn in [eqn1, eqn2]:
             assert eqn.primitive == qp.capture.primitives.quantum_subroutine_prim
             j = eqn.params["jaxpr"]
-            assert_eqn_matches_op(j.eqns[4], qp.CNOT)
-            assert j.eqns[5].primitive == qp.RX._primitive
-            assert_eqn_matches_op(j.eqns[6], qp.CNOT)
+            assert_eqn_matches_op(j.eqns[8], qp.CNOT)
+            assert_eqn_matches_op(j.eqns[9], qp.RX)
+            assert_eqn_matches_op(j.eqns[10], qp.CNOT)
 
         assert eqn1.params["jaxpr"] is eqn2.params["jaxpr"]
 
