@@ -524,8 +524,8 @@ class TestHigherOrderPrimitiveRegistrations:
         def f(n):
             @qp.for_loop(n)
             def g(i):
-                exponent = add_3.bind(0)
-                _ = qp.adjoint(qp.X(i)) ** exponent
+                theta = add_3.bind(0)
+                qp.Rot(i, theta, i, 0)  # pylint: disable=expression-not-assigned
 
             g()
 
@@ -562,8 +562,8 @@ class TestHigherOrderPrimitiveRegistrations:
         def f(n):
             @qp.while_loop(lambda i: i < add_3.bind(n))
             def g(i):
-                exponent = add_3.bind(0)
-                _ = qp.adjoint(qp.Z(i)) ** exponent
+                theta = add_3.bind(0)
+                qp.Rot(i, theta, i, 0)  # pylint: disable=expression-not-assigned
                 return i + 1
 
             g(0)
@@ -617,9 +617,9 @@ class TestHigherOrderPrimitiveRegistrations:
 
         @qp.qnode(dev, diff_method="backprop", grad_on_execution=False)
         def f():
-            exponent = add_3.bind(0)
-            _ = qp.X(0) ** exponent
-            _ = qp.I(0)
+            theta = add_3.bind(0)
+            qp.Rot(1, theta, 1, 0)  # pylint: disable=expression-not-assigned
+            qp.I(0)
             return qp.probs(wires=0)
 
         jaxpr = jax.make_jaxpr(f)()
