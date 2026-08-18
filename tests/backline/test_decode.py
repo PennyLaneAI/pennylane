@@ -52,7 +52,9 @@ class TestDecodeBitpack:
     @staticmethod
     def _nodes():
         controller = qp.Controller()
-        coprocessor = qp.Coprocessor(coprocessor_fn="decoder", endpoint=qp.Endpoint("127.0.0.1"))
+        coprocessor = qp.Coprocessor(
+            coprocessor_fn="decoder", endpoint=qp.Endpoint("127.0.0.1", 7760)
+        )
         return controller, coprocessor
 
     def test_bitpack_decode_returns_64_bits(self, x64):
@@ -114,7 +116,9 @@ class TestDecodeBitpack:
 
 def a_coprocessor(name=None):
     """A coprocessor"""
-    return qp.Coprocessor(coprocessor_fn="decoder", name=name, endpoint=qp.Endpoint("127.0.0.1"))
+    return qp.Coprocessor(
+        coprocessor_fn="decoder", name=name, endpoint=qp.Endpoint("127.0.0.1", 7760)
+    )
 
 
 def a_device(coprocessors=()):

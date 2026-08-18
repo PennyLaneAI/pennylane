@@ -26,7 +26,7 @@ UNKNOWN_HARDWARE: Any = "tpu"
 def test_nodes_default_to_cpu_hardware():
     """Controllers and coprocessors execute on CPUs by default."""
     controller = qp.Controller()
-    coprocessor = qp.Coprocessor(coprocessor_fn="decoder", endpoint=qp.Endpoint("127.0.0.1"))
+    coprocessor = qp.Coprocessor(coprocessor_fn="decoder", endpoint=qp.Endpoint("127.0.0.1", 7760))
 
     assert controller.hardware == "cpu"
     assert coprocessor.hardware == "cpu"
@@ -89,14 +89,20 @@ def test_coprocessor_stores_endpoint():
 def test_endpoint_requires_a_host():
     """An endpoint host must be a non-empty string."""
     with pytest.raises(TypeError, match="host must be a str"):
-        qp.Endpoint(None)
+        qp.Endpoint(None, 7760)
     with pytest.raises(ValueError, match="host must be a non-empty str"):
-        qp.Endpoint("")
+        qp.Endpoint("", 7760)
+
+
+def test_endpoint_requires_a_port():
+    """An endpoint requires a port."""
+    with pytest.raises(TypeError, match="missing 1 required positional argument: 'port'"):
+        qp.Endpoint("127.0.0.1")
 
 
 @pytest.mark.parametrize("port", [7.5, "7760"])
 def test_endpoint_rejects_non_int_port(port):
-    """An endpoint port must be an int when given."""
+    """An endpoint port must be an int."""
     with pytest.raises(TypeError, match="port must be an int"):
         qp.Endpoint("127.0.0.1", port)
 
@@ -119,7 +125,9 @@ def test_node_accepts_supported_hardware(hardware):
     [
         lambda: qp.Controller(hardware=UNKNOWN_HARDWARE),
         lambda: qp.Coprocessor(
-            coprocessor_fn="decoder", endpoint=qp.Endpoint("127.0.0.1"), hardware=UNKNOWN_HARDWARE
+            coprocessor_fn="decoder",
+            endpoint=qp.Endpoint("127.0.0.1", 7760),
+            hardware=UNKNOWN_HARDWARE,
         ),
     ],
 )

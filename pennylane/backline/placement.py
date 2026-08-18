@@ -49,23 +49,19 @@ class Endpoint:
     host: str
     """The address the controller connects to, e.g. ``"192.0.2.11"`` or ``"127.0.0.1"``."""
 
-    port: int | None = None
+    port: int
     """The port the coprocessor listens on for the out-of-band connection handshake. This is the
-    handshake channel that exchanges the information needed to set up the data path. Defaults to
-    ``None``, leaving the choice to the compiled runtime."""
+    handshake channel that exchanges the information needed to set up the data path."""
 
     def __post_init__(self):
         if not isinstance(self.host, str):
             raise TypeError(f"host must be a str, got {type(self.host).__name__}: {self.host!r}")
         if not self.host:
             raise ValueError("host must be a non-empty str")
-        if self.port is not None:
-            if not isinstance(self.port, int):
-                raise TypeError(
-                    f"port must be an int, got {type(self.port).__name__}: {self.port!r}"
-                )
-            if not 1 <= self.port <= 65535:
-                raise ValueError(f"port must be in 1..65535, got {self.port}")
+        if not isinstance(self.port, int):
+            raise TypeError(f"port must be an int, got {type(self.port).__name__}: {self.port!r}")
+        if not 1 <= self.port <= 65535:
+            raise ValueError(f"port must be in 1..65535, got {self.port}")
 
 
 @dataclass(frozen=True, kw_only=True)
