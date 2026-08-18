@@ -179,7 +179,7 @@ def test_tracking():
         "execute_and_vjp_batches": [1],
         "resources": [
             qp.resource.SpecsResources(
-                num_allocs=2,
+                num_wires=2,
                 counts={"Hadamard": 1, "FlipSign": 1},
                 measurement_processes={"expval(PauliZ)": 1},
                 circuit_depth=2,
