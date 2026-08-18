@@ -345,14 +345,14 @@ class TestRecordedRound:
         jaxpr = a_round(x64, a_device(coprocessors=[a_coprocessor()]), in_bytes=2)
         assert scalars_of(jaxpr, calls_of(jaxpr)[1])[2] == 2
 
-    def test_the_posted_work_item_is_the_one_asked_for(self, x64):
+    def test_the_posted_work_item_idx_is_the_one_asked_for(self, x64):
         """The caller's choice, defaulting to the first."""
         dev = a_device(coprocessors=[a_coprocessor()])
 
         default = a_round(x64, dev)
         assert scalars_of(default, calls_of(default)[2])[1] == 0
 
-        asked = a_round(x64, dev, work_item=3)
+        asked = a_round(x64, dev, work_item_idx=3)
         assert scalars_of(asked, calls_of(asked)[2])[1] == 3
 
     def test_the_correction_is_the_committed_size(self, x64):

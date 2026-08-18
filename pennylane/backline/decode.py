@@ -49,7 +49,7 @@ _SIG_COLLECT = "(ptr, out, u64) -> i32"  # session, reply(out), reply_bytes
 ROLE_CONTROLLER = 0
 ROLE_COPROCESSOR = 1
 
-_DEFAULT_WORK_ITEM = 0
+_DEFAULT_WORK_ITEM_IDX = 0
 
 _PACKED_U64_BITS = 64
 _PACKED_U64_BYTES = DEFAULT_MESSAGE_BYTES
@@ -197,7 +197,7 @@ def decode(  # pylint: disable=too-many-arguments
     out_bytes=None,
     in_bytes=None,
     decoder_id=0,
-    work_item=_DEFAULT_WORK_ITEM,
+    work_item_idx=_DEFAULT_WORK_ITEM_IDX,
     bitpack=True,
     library=None,
 ):
@@ -221,7 +221,7 @@ def decode(  # pylint: disable=too-many-arguments
         in_bytes (int | None): How many bytes of ``syndrome`` to send, at most what the round was
             committed to carry. Defaults to ``syndrome``'s full byte length.
         decoder_id (int): Which coprocessor-side decoder handles this round.
-        work_item (int): The committed work-item index to post.
+        work_item_idx (int): The committed work-item index to post.
         bitpack (bool): Pack syndrome bits into 8-byte payload and unpack reply to 64-bit vector.
         library (str | None): Shared library exporting the transport symbols, recorded so the
             compiler links it. Defaults to ``None``, relying on ``librt_transport`` already being
@@ -308,7 +308,7 @@ def decode(  # pylint: disable=too-many-arguments
     )
 
     # Start the round trip
-    _ = runtime_call(_POST, session, work_item, signature=_SIG_POST, library=library)
+    _ = runtime_call(_POST, session, work_item_idx, signature=_SIG_POST, library=library)
 
     # Wait for the reply
     _, correction = runtime_call(

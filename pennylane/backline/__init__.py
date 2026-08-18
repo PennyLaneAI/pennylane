@@ -27,8 +27,8 @@ each part of the workload runs and the :class:`~.Transport` protocol between the
 A backline device is built with :class:`~pennylane.Backline` from a
 :class:`controller <.Controller>` (which wraps the PennyLane device the QNode runs on, such as
 ``lightning.qubit`` or ``null.qubit``), zero or more :class:`coprocessors <.Coprocessor>`, and a
-:class:`transport <.Transport>`. The resulting device is passed into a
-:func:`~pennylane.qnode`:
+transport name (``"rdma"`` or ``"memcpy"``), or a :class:`~.Transport`. The resulting device is
+passed into a :func:`~pennylane.qnode`:
 
 .. code-block:: python
 
