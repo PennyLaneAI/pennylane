@@ -23,6 +23,7 @@ from .time_evolution import (
     QDrift,
     TrotterizedQfunc,
     TrotterProduct,
+    TrotterVibronic,
     trotterize,
 )
 from .permute import Permute
@@ -81,6 +82,7 @@ __all__ = [
     "QDrift",
     "TrotterizedQfunc",
     "TrotterProduct",
+    "TrotterVibronic",
     "trotterize",
     "Incrementer",
     "IQP",
