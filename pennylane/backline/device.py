@@ -55,7 +55,7 @@ class Backline(Device):
 
         import pennylane as qp
 
-        con = qp.Controller(
+        ctrl = qp.Controller(
             device=qp.device("null.qubit", wires=4),
             name="cpu-controller",
             executor_options={"host": "192.168.3.15", "port": 7810},
@@ -154,7 +154,7 @@ def active_placement() -> "Placement | None":
 
         import pennylane as qp
 
-        con = qp.Controller(
+        ctrl = qp.Controller(
             name="cpu-controller",
             remote=True,
             executor_options={"host": "192.0.2.10", "port": 7810},
@@ -178,8 +178,8 @@ def active_placement() -> "Placement | None":
         @qp.qnode(dev)
         def circuit():
             ...
-        
+
     .. seealso:: :func:`~pennylane.backline.decode`
- 
+
     """
     return getattr(get_tracing_device(), "placement", None)

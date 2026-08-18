@@ -123,6 +123,7 @@ class Node:
                 f"hardware must be one of {sorted(_SUPPORTED_HARDWARE)}, got {self.hardware!r}"
             )
 
+
 @dataclass(frozen=True, kw_only=True)
 class Controller(Node):
     """The node that controls the QPU and initiates data transfers.
@@ -145,22 +146,18 @@ class Controller(Node):
     Defaults to ``None``, which builds a ``null.qubit`` over :data:`DEFAULT_WIRES` wires.
     A controller needing more wires or an actual simulation, should pass a device of its own."""
 
-    in_bytes: int = DEFAULT_MESSAGE_BYTES
-    """The transport's input-message capacity in bytes."""
+    in_bytes: int = field(default=DEFAULT_MESSAGE_BYTES, init=False, repr=False)
+    """The transport's input-message capacity in bytes. Always :data:`DEFAULT_MESSAGE_BYTES`;
+    provided for the compiler, not a constructor argument."""
 
-    out_bytes: int = DEFAULT_MESSAGE_BYTES
-    """The transport's reply-message capacity in bytes."""
+    out_bytes: int = field(default=DEFAULT_MESSAGE_BYTES, init=False, repr=False)
+    """The transport's reply-message capacity in bytes. Always :data:`DEFAULT_MESSAGE_BYTES`;
+    provided for the compiler, not a constructor argument."""
 
     def __post_init__(self):
         super().__post_init__()
         if self.device is None:
             object.__setattr__(self, "device", _make_device("null.qubit", wires=DEFAULT_WIRES))
-        for name in ("in_bytes", "out_bytes"):
-            value = getattr(self, name)
-            if not isinstance(value, int):
-                raise TypeError(f"{name} must be an int, got {type(value).__name__}: {value!r}")
-            if value < 1:
-                raise ValueError(f"{name} must be a positive int, got {value}")
 
 
 @dataclass(frozen=True, kw_only=True)

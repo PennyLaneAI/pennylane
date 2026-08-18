@@ -88,9 +88,7 @@ def triton_decoder(
     >>> import triton.language as tl
     >>> @triton.jit
     ... def steane_lookup(syndrome):
-    ...     one = tl.cast(1, tl.uint64)
-    ...     zero = tl.cast(0, tl.uint64)
-    ...     return tl.where(syndrome != 0, one << (syndrome - 1), zero)
+    ...     return tl.where(s != 0, 1 << (s - 1), 0)
     >>> decoder = qp.backline.triton_decoder(  # doctest: +SKIP
     ...     (steane_lookup, steane_lookup),
     ...     platform="hip:gfx942:64",

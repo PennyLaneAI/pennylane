@@ -19,7 +19,6 @@ from typing import Any
 import pytest
 
 import pennylane as qp
-from pennylane.backline import get_transport
 
 UNKNOWN_HARDWARE: Any = "tpu"
 
@@ -41,28 +40,19 @@ def test_controller_owns_message_sizes():
     assert controller.out_bytes == 8
 
 
-def test_controller_accepts_positive_int_message_sizes():
-    """Controllers keep explicit positive integer message sizes."""
-    controller = qp.Controller(in_bytes=1, out_bytes=16)
-
-    assert controller.in_bytes == 1
-    assert controller.out_bytes == 16
-
-
 @pytest.mark.parametrize("name", ["in_bytes", "out_bytes"])
-@pytest.mark.parametrize("value", [7.5, "8"])
-def test_controller_rejects_non_int_message_size(name, value):
-    """Controller message sizes must be ints."""
-    with pytest.raises(TypeError, match=f"{name} must be an int"):
-        qp.Controller(**{name: value})
+def test_controller_message_sizes_are_not_constructor_arguments(name):
+    """Message sizes are fixed on the instance and cannot be passed to the constructor."""
+    with pytest.raises(TypeError, match="unexpected keyword argument"):
+        qp.Controller(**{name: 16})
 
 
-@pytest.mark.parametrize("name", ["in_bytes", "out_bytes"])
-@pytest.mark.parametrize("value", [0, -8])
-def test_controller_rejects_non_positive_message_size(name, value):
-    """Controller message sizes must be positive."""
-    with pytest.raises(ValueError, match=f"{name} must be a positive int"):
-        qp.Controller(**{name: value})
+def test_controller_hides_message_sizes_from_repr():
+    """Message sizes exist on the instance but are omitted from repr."""
+    text = repr(qp.Controller())
+
+    assert "in_bytes" not in text
+    assert "out_bytes" not in text
 
 
 def test_memcpy_coprocessor_allows_missing_endpoint():

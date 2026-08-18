@@ -117,9 +117,9 @@ def a_coprocessor(name=None):
     return qp.Coprocessor(coprocessor_fn="decoder", name=name, endpoint=qp.Endpoint("127.0.0.1"))
 
 
-def a_device(coprocessors=(), out_bytes=8):
-    """A backline device whose controller needs ``out_bytes``-byte correction."""
-    controller = qp.Controller(device=qp.device("null.qubit", wires=2), out_bytes=out_bytes)
+def a_device(coprocessors=()):
+    """A backline device for decode rounds."""
+    controller = qp.Controller(device=qp.device("null.qubit", wires=2))
     return qp.Backline(controller=controller, coprocessors=coprocessors, transport="rdma")
 
 
@@ -221,12 +221,12 @@ class TestOutBytes:
 
     def test_an_explicit_size_wins(self):
         """The call site's override wins."""
-        controller = qp.Controller(out_bytes=8)
+        controller = qp.Controller()
         assert _resolve_out_bytes(controller, 16) == 16
 
     def test_the_committed_size_is_the_default(self):
         """The committed size is the default."""
-        assert _resolve_out_bytes(qp.Controller(out_bytes=8), None) == 8
+        assert _resolve_out_bytes(qp.Controller(), None) == 8
 
     @pytest.mark.parametrize("controller", [qp.Controller(), object()])
     def test_the_transport_default_is_eight_bytes(self, controller):
@@ -353,12 +353,12 @@ class TestRecordedRound:
 
     def test_the_correction_is_the_committed_size(self, x64):
         """The correction is the committed size."""
-        jaxpr = a_round(x64, a_device(coprocessors=[a_coprocessor()], out_bytes=16))
+        jaxpr = a_round(x64, a_device(coprocessors=[a_coprocessor()]))
         collect = calls_of(jaxpr)[3]
 
-        assert collect.params["out_bytes"] == (16,)
+        assert collect.params["out_bytes"] == (8,)
         (correction,) = jaxpr.jaxpr.outvars
-        assert correction.aval.shape == (16,)
+        assert correction.aval.shape == (8,)
         assert str(correction.aval.dtype) == "uint8"
 
     def test_an_unconfigured_correction_uses_the_transport_default(self, x64):
@@ -391,6 +391,6 @@ class TestRecordedRound:
         with pytest.raises(RuntimeError, match="outside a compiled program"):
             decode(
                 np.zeros(4, dtype=np.uint8),
-                controller=qp.Controller(out_bytes=8),
+                controller=qp.Controller(),
                 coprocessor=a_coprocessor(),
             )
