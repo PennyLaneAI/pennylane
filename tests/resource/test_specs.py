@@ -1173,3 +1173,26 @@ class TestMarkerIntegration:
         actual = qp.specs(simple_circuit, level=["m0", "m1", "m2"])()
 
         assert actual == expected
+
+@pytest.mark.capture
+def test_abstract_array_inputs():
+    """Test that AbstractArray and AbstractWires can be used with specs when level!= device."""
+
+    @qp.qjit
+    @qp.qnode(qp.device("lightning.qubit", wires=4))
+    def c(x, wires):
+        @qp.for_loop(x.shape[0])
+        def loop(i):
+            qp.RX(x[i], wires[i])
+
+        @qp.for_loop(wires.shape[0])
+        def loop2(i):
+            qp.X(i)
+
+        loop()
+        loop2()
+        return qp.expval(qp.Z(0))
+
+    s = qp.specs(c, level=0)(qp.typing.AbstractArray((3,), float), qp.typing.Wire[3])
+    assert s.resources.quantum_operations["PauliX"] == 3
+    assert s.resources.quantum_operations["RX"] == 3
