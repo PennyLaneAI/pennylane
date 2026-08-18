@@ -1174,6 +1174,7 @@ class TestMarkerIntegration:
 
         assert actual == expected
 
+
 @pytest.mark.capture
 def test_abstract_array_inputs():
     """Test that AbstractArray and AbstractWires can be used with specs when level!= device."""
