@@ -221,7 +221,7 @@ class TestValidation:
             "batch_len": [1],
             "resources": [
                 SpecsResources(
-                    num_allocs=1,
+                    num_wires=1,
                     counts={"RX": 1},
                     measurement_processes={"expval(PauliZ)": 1},
                     circuit_depth=1,
