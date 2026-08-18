@@ -87,17 +87,17 @@ def _flatten_dict(data: dict, prefix: str = "", sep: str = ".") -> dict:
 
 
 def _collect_vars(obj: Any) -> Generator[str]:
-    """Collect the symbolic variables of every :class:`Expression` within an arbitrary pytree.
+    """Collect the symbolic variables of every :class:`~.resource.Expression` within an arbitrary pytree.
 
     Uses :func:`~pennylane.pytrees.flatten` to traverse any registered container type (``dict``,
-    ``list``, ``tuple``, ...) to arbitrary depth, yielding the variables of every :class:`Expression`
+    ``list``, ``tuple``, ...) to arbitrary depth, yielding the variables of every :class:`~.resource.Expression`
     leaf. Non-``Expression`` leaves are ignored.
 
     Args:
         obj (Any): The (possibly nested) object to search.
 
     Yields:
-        str: Each symbolic variable found across every :class:`Expression` leaf.
+        str: Each symbolic variable found across every :class:`~.resource.Expression` leaf.
     """
     leaves, _ = flatten(obj)
     for leaf_val in leaves:
@@ -106,11 +106,11 @@ def _collect_vars(obj: Any) -> Generator[str]:
 
 
 def _subs_pytree(obj: Any, substitutions: dict) -> Any:
-    """Substitute symbolic variables within every :class:`Expression` leaf of an arbitrary pytree.
+    """Substitute symbolic variables within every :class:`~.resource.Expression` leaf of an arbitrary pytree.
 
     Uses :func:`~pennylane.pytrees.flatten`/:func:`~pennylane.pytrees.unflatten` to traverse any
     registered container type (``dict``, ``list``, ``tuple``, ...) to arbitrary depth, substituting
-    into every :class:`Expression` leaf while preserving the original structure. Non-``Expression``
+    into every :class:`~.resource.Expression` leaf while preserving the original structure. Non-``Expression``
     leaves are left untouched.
 
     Args:
@@ -169,8 +169,8 @@ class Resources:
     .. details::
         :title: Symbolic Resource Information
 
-        Attributes in this class can be of type :class:`Expression`, allowing for symbolic
-        manipulation and substitution of variables. When variables of type :class:`Expression` are
+        Attributes in this class can be of type :class:`~.resource.Expression`, allowing for symbolic
+        manipulation and substitution of variables. When variables of type :class:`~.resource.Expression` are
         present as top-level fields or as values within (possibly nested) dictionaries of arbitrary
         depth, the :attr:`vars` attribute will contain the set of all symbolic variables used in the
         resource counts. This includes fields introduced in derived classes. Similarly, the
@@ -202,7 +202,7 @@ class Resources:
         object.__setattr__(self, "vars", frozenset(all_vars))
 
     def to_pretty_str(self, preindent: int = 0) -> str:
-        """Convert a :class:`Resources` object into a human-readable string representation.
+        """Convert a :class:`~.resource.Resources` object into a human-readable string representation.
 
         Automatically iterates over all fields of the dataclass and formats them into a string,
         including any nested dictionaries.
@@ -324,7 +324,7 @@ class Resources:
 
         .. note::
 
-            Every :class:`Expression` leaf is substituted, including those nested to arbitrary
+            Every :class:`~.resource.Expression` leaf is substituted, including those nested to arbitrary
             depth within registered pytree containers (``dict``, ``list``, ``tuple``, ...). The
             original container structure is preserved.
 
@@ -340,7 +340,7 @@ class Resources:
             >>> res = SpecsResources(
             ...     counts={"CNOT": Expression({("x",): 1})},
             ...     measurement_processes={"expval(PauliX)": 1},
-            ...     num_allocs=2,
+            ...     num_wires=2,
             ...     circuit_depth=1,
             ... )
 
@@ -349,10 +349,10 @@ class Resources:
             A substitution may either use a dictionary or keyword arguments:
 
             >>> res.subs({"x": 3})
-            SpecsResources(counts={'CNOT': 3}, measurement_processes={'expval(PauliX)': 1}, num_allocs=2, circuit_depth=1, total_quantum_operations=3)
+            SpecsResources(counts={'CNOT': 3}, measurement_processes={'expval(PauliX)': 1}, num_wires=2, circuit_depth=1, total_quantum_operations=3)
 
             >>> res.subs(x=3)
-            SpecsResources(counts={'CNOT': 3}, measurement_processes={'expval(PauliX)': 1}, num_allocs=2, circuit_depth=1, total_quantum_operations=3)
+            SpecsResources(counts={'CNOT': 3}, measurement_processes={'expval(PauliX)': 1}, num_wires=2, circuit_depth=1, total_quantum_operations=3)
         """
         if substitutions is None:
             substitutions = {}
@@ -388,7 +388,7 @@ class Resources:
 class SpecsResources(Resources):
     """
     Class for storing resource information for a quantum circuit. Contains attributes which store
-    key resources such as gate counts, number of wire allocations, measurement processes, and
+    key resources such as gate counts, total wires, measurement processes, and
     circuit depth.
 
     Note that this class is intended to be immutable. Modifying the attributes after creation may
@@ -397,13 +397,13 @@ class SpecsResources(Resources):
     Args:
         counts (dict[str, int]): A dictionary mapping gate names to their counts.
         measurement_processes (dict[str, int]): A dictionary mapping measurement processes to their counts.
-        num_allocs (int): The number of unique wire allocations. For circuits that do not use
+        num_wires (int): The number of unique wires. For circuits that do not use
           dynamic wires, this should be equal to the number of device wires.
         circuit_depth (int | None): The depth of the circuit, or None if not computed. Defaults to ``None``.
 
     .. seealso::
 
-        :class:`Resources` for the base class and its fields.
+        :class:`~.resource.Resources` for the base class and its fields.
 
     .. warning::
 
@@ -421,7 +421,7 @@ class SpecsResources(Resources):
         >>> res = SpecsResources(
         ...     counts={'Hadamard': 1, 'CNOT': 1},
         ...     measurement_processes={'expval(PauliZ)': 1},
-        ...     num_allocs=2,
+        ...     num_wires=2,
         ...     circuit_depth=2
         ... )
 
@@ -438,15 +438,15 @@ class SpecsResources(Resources):
           - CNOT: 1
         Measurement processes:
         - expval(PauliZ): 1
-        Wire allocations: 2
+        Total wires: 2
         Circuit Depth: 2
     """
 
     measurement_processes: dict[str, int | Expression] = field(
-        metadata={"display_name": "Measurement Processes"}
+        metadata={"display_name": "Measurement processes"}
     )
 
-    num_allocs: int | Expression = field(metadata={"display_name": "Wire allocations"})
+    num_wires: int | Expression = field(metadata={"display_name": "Total wires"})
     circuit_depth: int | Expression | None = field(
         default=None, metadata={"display_name": "Circuit depth"}
     )
@@ -477,8 +477,6 @@ class SpecsResources(Resources):
                 return self.quantum_operations
             case "depth":
                 return self.depth
-            case "num_wires":
-                return self.num_wires
 
         # NOTE: Have to use explicit class arguments in super calls due to a bug with slots in
         # dataclasses in Python 3.12 and earlier (https://github.com/python/cpython/issues/90562)
@@ -495,14 +493,9 @@ class SpecsResources(Resources):
         """The circuit depth (alias for ``circuit_depth``)."""
         return self.circuit_depth
 
-    @property
-    def num_wires(self):
-        """The number of wires (alias for ``num_allocs``)."""
-        return self.num_allocs
-
     def to_pretty_str(self, preindent: int = 0) -> str:
         """
-        Pretty string representation of this :class:`SpecsResources` object.
+        Pretty string representation of this :class:`~.resource.SpecsResources` object.
 
         Args:
             preindent (int): Number of spaces to prepend to each line.
@@ -531,7 +524,7 @@ class SpecsResources(Resources):
             for meas, count in _flatten_dict(self.measurement_processes).items():
                 lines.append(f"{prefix}- {meas}: {_count_to_str(count)}")
 
-        lines.append(f"{prefix}Wire allocations: {_count_to_str(self.num_allocs)}")
+        lines.append(f"{prefix}Total wires: {_count_to_str(self.num_wires)}")
 
         if (
             self.circuit_depth is not None
@@ -549,7 +542,7 @@ class SpecsResources(Resources):
 
     def _repr_markdown_(self) -> str:
         """
-        Return a Markdown table representation of the :class:`SpecsResources` for Jupyter notebook display.
+        Return a Markdown table representation of the :class:`~.resource.SpecsResources` for Jupyter notebook display.
 
         .. seealso::
 
@@ -576,9 +569,7 @@ class SpecsResources(Resources):
             for meas, count in _flatten_dict(self.measurement_processes).items():
                 lines.append(f"| {meas} | {_count_to_str(count, markdown_safe=True)} |")
 
-        lines.append(
-            f"| **Wire allocations** | {_count_to_str(self.num_allocs, markdown_safe=True)} |"
-        )
+        lines.append(f"| **Total wires** | {_count_to_str(self.num_wires, markdown_safe=True)} |")
 
         if (
             self.circuit_depth is not None
@@ -595,7 +586,7 @@ class SpecsResources(Resources):
         return "\n".join(lines)
 
     def to_dict(self) -> dict[str, Any]:
-        """Convert this :class:`SpecsResources` to a dictionary."""
+        """Convert this :class:`~.resource.SpecsResources` to a dictionary."""
 
         # Need to explicitly include properties
         d = asdict(self)
@@ -615,7 +606,7 @@ class PBCSpecsResources(SpecsResources):
 
     .. seealso::
 
-        :class:`SpecsResources` for the base class and its fields.
+        :class:`~.resource.SpecsResources` for the base class and its fields.
 
     .. warning::
 
@@ -634,7 +625,7 @@ class PBCSpecsResources(SpecsResources):
 
     def to_pretty_str(self, preindent: int = 0) -> str:
         """
-        Pretty string representation of this :class:`PBCSpecsResources` object.
+        Pretty string representation of this :class:`~.resource.PBCSpecsResources` object.
 
         Args:
             preindent (int): Number of spaces to prepend to each line.
@@ -657,7 +648,7 @@ class PBCSpecsResources(SpecsResources):
 
     def _repr_markdown_(self) -> str:
         """
-        Return a Markdown table representation of the :class:`PBCSpecsResources` for Jupyter notebook display.
+        Return a Markdown table representation of the :class:`~.resource.PBCSpecsResources` for Jupyter notebook display.
 
         .. seealso::
 
@@ -692,8 +683,8 @@ class CircuitSpecs:
         level (Any): The level of the specs (see :func:`~pennylane.specs` for more details).
         resources (SpecsResources | list[SpecsResources] | \
             dict[int | str, SpecsResources | list[SpecsResources]]): The resource specifications.
-            Depending on the ``level`` chosen, this may be a single :class:`.SpecsResources` object,
-            a list of :class:`.SpecsResources` objects, or a dictionary mapping levels to their
+            Depending on the ``level`` chosen, this may be a single :class:`~.resource.SpecsResources` object,
+            a list of :class:`~.resource.SpecsResources` objects, or a dictionary mapping levels to their
             corresponding outputs.
 
     .. details::
@@ -712,7 +703,7 @@ class CircuitSpecs:
         ...     resources=SpecsResources(
         ...         counts={"RX": 2, "CNOT": 1},
         ...         measurement_processes={"expval(PauliZ)": 1},
-        ...         num_allocs=2,
+        ...         num_wires=2,
         ...         circuit_depth=3,
         ...     ),
         ... )
@@ -735,7 +726,7 @@ class CircuitSpecs:
           - CNOT: 1
         Measurement processes:
         - expval(PauliZ): 1
-        Wire allocations: 2
+        Total wires: 2
         Circuit Depth: 3
     """
 
@@ -858,7 +849,7 @@ class CircuitSpecs:
                 )
             max_column_size = max(
                 max_column_size,
-                len(_count_to_str(res.num_allocs, extra_compact=True)) + 1,
+                len(_count_to_str(res.num_wires, extra_compact=True)) + 1,
                 len(_count_to_str(res.total_quantum_operations, extra_compact=True)) + 1,
             )
 
@@ -920,10 +911,10 @@ class CircuitSpecs:
             )
 
         lines.append(
-            "Wire allocations".ljust(max_metric_length)
+            "Total wires".ljust(max_metric_length)
             + " |"
             + " |".join(
-                _count_to_str(res.num_allocs, extra_compact=True).rjust(max_column_size)
+                _count_to_str(res.num_wires, extra_compact=True).rjust(max_column_size)
                 for res in flat_resources.values()
             )
         )
@@ -973,7 +964,7 @@ class CircuitSpecs:
 
     def to_pretty_str(self, tabular: bool = True) -> str:
         """
-        Pretty string representation of the :class:`CircuitSpecs` object.
+        Pretty string representation of the :class:`~.resource.CircuitSpecs` object.
 
         Args:
             tabular (bool): Whether to display the resources in a tabular format.
@@ -1060,8 +1051,8 @@ class CircuitSpecs:
 
         lines.append(
             data_row(
-                "**Wire allocations**",
-                [_count_to_str(r.num_allocs, markdown_safe=True) for r in flat_resources.values()],
+                "**Total wires**",
+                [_count_to_str(r.num_wires, markdown_safe=True) for r in flat_resources.values()],
             )
         )
 
@@ -1113,7 +1104,7 @@ class CircuitSpecs:
 
     def _repr_markdown_(self, collapsible: bool = True) -> str:
         """
-        Return a Markdown representation of the :class:`CircuitSpecs` for Jupyter notebook display.
+        Return a Markdown representation of the :class:`~.resource.CircuitSpecs` for Jupyter notebook display.
 
         Args:
             collapsible (bool): Whether to display the resources in collapsible sections.
@@ -1270,6 +1261,6 @@ def _count_resources(tape: QuantumScript, compute_depth: bool = True) -> SpecsRe
     return SpecsResources(
         counts=dict(quantum_operations),
         measurement_processes=dict(measurement_processes),
-        num_allocs=num_wires,
+        num_wires=num_wires,
         circuit_depth=depth,
     )
