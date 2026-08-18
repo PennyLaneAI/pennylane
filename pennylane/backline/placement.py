@@ -43,15 +43,24 @@ class Endpoint:
     others, such as ``"memcpy"``, do not use a network endpoint. For a coprocessor co-located with
     the controller on a transport that does require one, use localhost (``"127.0.0.1"``).
 
+    Args:
+        host (str): The address the controller connects to, e.g. ``"192.0.2.11"`` or
+            ``"127.0.0.1"``.
+        port (int): The port the coprocessor listens on for the out-of-band connection handshake.
+            This is the handshake channel that exchanges the information needed to set up the data
+            path.
+
     .. seealso:: :class:`~.Coprocessor`
+
+    **Example**
+
+    >>> ep = qp.Endpoint("127.0.0.1", 7760)
+    >>> (ep.host, ep.port)
+    ('127.0.0.1', 7760)
     """
 
     host: str
-    """The address the controller connects to, e.g. ``"192.0.2.11"`` or ``"127.0.0.1"``."""
-
     port: int
-    """The port the coprocessor listens on for the out-of-band connection handshake. This is the
-    handshake channel that exchanges the information needed to set up the data path."""
 
     def __post_init__(self):
         if not isinstance(self.host, str):
