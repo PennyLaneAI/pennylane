@@ -253,15 +253,6 @@ class SemiAdder(Operator2):
 
         super().__init__(x_wires=x_wires, y_wires=y_wires, work_wires=work_wires)
 
-    # pylint: disable=arguments-differ
-    def __abstract_init__(self, x_wires, y_wires, work_wires=None):
-        work_wires = work_wires if work_wires is not None else []
-        super().__abstract_init__(
-            x_wires=Wire[len(x_wires)],
-            y_wires=Wire[len(y_wires)],
-            work_wires=Wire[len(work_wires)],
-        )
-
     @property
     def wires(self):
         """All wires involved in the operation."""

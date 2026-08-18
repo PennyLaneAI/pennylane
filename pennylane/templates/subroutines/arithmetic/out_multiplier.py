@@ -30,7 +30,7 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.resources import resource_rep
 from pennylane.ops import BasisState, H, Prod, X, adjoint, change_op_basis, ctrl, prod
-from pennylane.typing import AbstractWires, Wire
+from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
 
 from ..controlled_sequence import ControlledSequence
@@ -47,7 +47,8 @@ def _resolve_mod_and_num_work_wires(num_output_wires, mod, num_work_wires):
     if mod is None:
         mod = max_mod
     elif mod != max_mod:
-        num_work_wires = 2  # After the ≥2 work-wire guard in __init__/__abstract_init__, the truncated count is always 2
+        # After the ≥2 work-wire guard in __init__, the truncated count is always 2
+        num_work_wires = 2
     return mod, num_work_wires
 
 
@@ -260,44 +261,6 @@ class OutMultiplier(Operator2):
                     raise ValueError(f"None of the wires in {name1} should be included in {name0}.")
 
         super().__init__(
-            x_wires,
-            y_wires,
-            output_wires,
-            mod=mod,
-            work_wires=work_wires,
-            output_wires_zeroed=output_wires_zeroed,
-        )
-
-    # pylint: disable=arguments-differ
-    def __abstract_init__(
-        self,
-        x_wires: AbstractWires | WiresLike,
-        y_wires: AbstractWires | WiresLike,
-        output_wires: AbstractWires | WiresLike,
-        mod=None,
-        work_wires: AbstractWires | WiresLike = (),
-        output_wires_zeroed: bool = False,
-    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
-        num_output_wires = len(output_wires)
-        num_work_wires = len(work_wires)
-        max_mod = 2**num_output_wires
-
-        if mod is not None and mod != max_mod:
-            if num_work_wires < 2:
-                raise ValueError(
-                    f"If mod is not 2^{num_output_wires}, at least two work wires should be provided."
-                )
-            if mod > max_mod:
-                raise ValueError(
-                    "OutMultiplier must have enough wires to represent mod. The maximum mod "
-                    f"with len(output_wires)={num_output_wires} is {max_mod}, but received {mod}."
-                )
-
-        mod, num_work_wires = _resolve_mod_and_num_work_wires(num_output_wires, mod, num_work_wires)
-        if mod != 2**num_output_wires:
-            work_wires = Wire[num_work_wires]
-
-        super().__abstract_init__(
             x_wires,
             y_wires,
             output_wires,
