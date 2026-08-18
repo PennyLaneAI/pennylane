@@ -31,6 +31,7 @@ quantum-classical programs.
     ~disable
     ~enable
     ~enabled
+    ~toggle_ctx
     ~pause
     ~determine_abstracted_axes
     ~eval_jaxpr
@@ -170,7 +171,7 @@ If needed, developers can also override the implementation method of the primiti
 from typing import Type, TYPE_CHECKING
 from collections.abc import Callable
 
-from .switches import disable, enable, enabled, pause
+from .switches import disable, enable, enabled, pause, toggle_ctx
 from .capture_meta import CaptureMeta, ABCCaptureMeta
 from .flatfn import FlatFn
 from .make_plxpr import make_plxpr
@@ -231,6 +232,8 @@ __all__ = (
     "disable",
     "enable",
     "enabled",
+    "toggle_ctx",
+    "pause",
     "eval_jaxpr",
     "CaptureMeta",
     "ABCCaptureMeta",
