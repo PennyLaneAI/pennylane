@@ -216,9 +216,9 @@ class Controller(Node):
     """
 
     device: "Device | None" = None
-    """The PennyLane device the controller executes, e.g. one built with :func:`~pennylane.device`.
-    Defaults to ``None``, which builds a ``null.qubit`` over :data:`DEFAULT_WIRES` wires. A
-    controller needing more wires, or an actual simulation, should pass a device of its own."""
+    """The PennyLane device the controller executes. Defaults to ``None``, which builds a 
+    ``null.qubit`` over :data:`DEFAULT_WIRES` wires. A controller needing more wires, or 
+    an actual simulation, should pass a device of its own."""
 
     def __post_init__(self):
         if self.device is None:
@@ -358,12 +358,6 @@ class Placement:
     'cpu-controller'
     >>> len(dev.placement.coprocessors)
     1
-
-    ``coprocessors`` accepts any sequence and is normalized to a tuple, and ``transport`` accepts
-    either a registry name or a :class:`~.Transport`:
-
-    >>> isinstance(dev.placement.coprocessors, tuple)
-    True
     """
 
     controller: Controller
