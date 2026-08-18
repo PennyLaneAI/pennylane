@@ -380,12 +380,12 @@ class RY(Operator2):
 
     @override
     def simplify(self) -> "RY":
-        phi = self.phi % (4 * np.pi)
+        theta = self.phi % (4 * np.pi)
 
-        if _can_replace(phi, 0):
+        if _can_replace(theta, 0):
             return qp.Identity(wires=self.wires)
 
-        return RY(phi, wires=self.wires)
+        return RY(theta, wires=self.wires)
 
 
 @custom_ctrl_dispatch.register
