@@ -55,15 +55,9 @@
 
   ```
 
-* Two new templates :class:`~.TrotterCDF` and :class:`~.TrotterCGF`, built on the new `~.Operator2` base class, are now
-  available for running second-order Trotter time evolution of fragmented Hamiltonians (CDF for electronic structure,
-  CGF for vibrational structure), as used in modern quantum chemistry algorithms. Both templates realize the exact
-  :math:`e^{-iHt}` evolution for a diagonal (Trotter-exact) fragmented Hamiltonian. Controlling either template with
-  :func:`~pennylane.ctrl` produces a genuine controlled evolution :math:`\text{diag}(1, e^{-iHt})` by default; passing
-  ``double_phase=True`` instead produces the double-phase Hadamard-test circuit of Fig. 6 of `arXiv:2506.15784
-  <https://arxiv.org/abs/2506.15784>`__, which realizes :math:`\text{diag}(e^{-iHt}, e^{+iHt})` with the energy-shift
-  global phase applied explicitly on the control wire. These templates are promoted from
-  `pennylane.labs.templates.trotter_fragmented`.
+* Added :class:`~.TrotterCDF` and :class:`~.TrotterCGF`, templates for second-order Trotter time evolution of
+  fragmented Hamiltonians (CDF for electronic structure, CGF for vibrational structure) as used in modern quantum
+  chemistry algorithms.
   [(#9459)](https://github.com/PennyLaneAI/pennylane/pull/9459)
   [(#9789)](https://github.com/PennyLaneAI/pennylane/pull/9789)
   [(#10015)](https://github.com/PennyLaneAI/pennylane/pull/10015)
@@ -898,8 +892,10 @@
   [(#9978)](https://github.com/PennyLaneAI/pennylane/pull/9978)
   [(#9981)](https://github.com/PennyLaneAI/pennylane/pull/9981)
   - Templates are ported:
-    - :class:`~.BasisRotation`, :class:`~.MultiplexerStatePreparation`, :class:`~.QROM`, :class:`~.QFT`, :class:`~.FlipSign`
-      :class:`~.TemporaryAND`, :class:`~.SelectPauliRot`, :class:`~.GQSP`, :class:`~.AQFT`, :class:`~.SumOfSlatersPrep`, :class:`~.SemiAdder`, :class:`~.TrotterCDF`, :class:`~.TrotterCGF`
+    - :class:`~.BasisRotation`, :class:`~.MultiplexerStatePreparation`, :class:`~.QROM`, :class:`~.QFT`, :class:`~.FlipSign`,
+      :class:`~.TemporaryAND`, :class:`~.SelectPauliRot`, :class:`~.GQSP`, :class:`~.AQFT`, :class:`~.SumOfSlatersPrep`,
+      :class:`~.SemiAdder`, :class:`~.OutMultiplier`, :class:`~.SignedOutMultiplier`, :class:`~.TrotterCDF`,
+      :class:`~.TrotterCGF`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
   [(#9925)](https://github.com/PennyLaneAI/pennylane/pull/9925)
   [(#9918)](https://github.com/PennyLaneAI/pennylane/pull/9918)
@@ -911,6 +907,7 @@
   [(#9950)](https://github.com/PennyLaneAI/pennylane/pull/9950)
   [(#9987)](https://github.com/PennyLaneAI/pennylane/pull/9987)
   [(#9900)](https://github.com/PennyLaneAI/pennylane/pull/9900)
+  [(#9994)](https://github.com/PennyLaneAI/pennylane/pull/9994)
   [(#9997)](https://github.com/PennyLaneAI/pennylane/pull/9997)
   [(#9995)](https://github.com/PennyLaneAI/pennylane/pull/9995)
   [(#10015)](https://github.com/PennyLaneAI/pennylane/pull/10015)
@@ -1133,6 +1130,10 @@
   from `qp.ctrl(qp.X(0), control=[1, 2])` to `Toffoli(wires=[1, 2, 0])`) is re-written to use a
   singledispatch function `custom_ctrl_dispatch` as opposed to relying on hard-coded logic.
   [(#9798)](https://github.com/PennyLaneAI/pennylane/pull/9798)
+
+* `capture.enable()`, `capture.disable()` are updated to use `ContextVar` for thread safety. A `capture.toggle_ctx` 
+  context manager that temporarily enables or disables capture is added.
+  [(#10016)](https://github.com/PennyLaneAI/pennylane/pull/10016)
 
 <h3>Documentation 📝</h3>
 
