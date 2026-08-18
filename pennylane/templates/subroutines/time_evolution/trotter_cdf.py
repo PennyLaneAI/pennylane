@@ -99,8 +99,8 @@ class TrotterCDF(Operator2):
         where :math:`U = e^{-iHt}` is the Trotter evolution.
 
         With ``double_phase=True``, :func:`~pennylane.ctrl` instead produces the double-phase Hadamard-test circuit
-        of `Fig. 6 of arXiv:2506.15784 <https://arxiv.org/abs/2506.15784>`__, whichrealizes
-        :math:`\text{diag}(U^\dagger, U)`.
+        of `Fig. 6 of arXiv:2506.15784 <https://arxiv.org/abs/2506.15784>`__, which realizes
+        :math:`\text{diag}(U, U^\dagger)` (control-0 branch :math:`U = e^{-iHt}`, control-1 branch :math:`U^\dagger = e^{+iHt}`).
 
         In this decomposition, each diagonal rotation block is sandwiched by ``CNOT`` gates from the control wire (an
         ancilla-system ``ZZ`` coupling).
@@ -163,13 +163,16 @@ def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, dou
 
         @for_loop(wire_idx0 + 1, 2 * num_cas)
         def _zz_rotations(wire_idx1):
-            # Prefactor breakdown:
-            #   1/8  from (A29)
-            #   2    from exp(-i H t) -> IsingZZ(phi) = exp(-i phi Z Z / 2)
-            #   2    from symmetrization (k<->l for sigma=tau,
-            #                             (k,sigma)<->(l,tau) for sigma!=tau)
-            #   => 1/2, times the second-order Trotter split -> 1/4 with a sign.
-            angle = -0.25 * Z[wire_idx0 // 2, wire_idx1 // 2] * first_order_time_step
+            # Two-body prefactor derivation. A fragment's two-body term is a sum of
+            # number-operator products lambda_{kl} n_p n_q with n_p = (I - Z_p)/2, whose
+            # Z_p Z_q piece is (lambda/4) Z_p Z_q. The target exp(-i (lambda/4) Z_p Z_q t)
+            # equals IsingZZ(lambda t / 2) since IsingZZ(theta) = exp(-i theta Z Z / 2).
+            # Each two-body fragment is visited TWICE per Trotter step (forward + backward)
+            # at duration first_order_time_step = dt_trotter / 2, so to accumulate the total
+            # IsingZZ angle lambda * dt_trotter we need angle-per-visit
+            #   = lambda * dt_trotter / 2 = lambda * first_order_time_step.
+            # With the extra 1/2 from IsingZZ (lambda t / 2) this gives beta_twoB = +0.5.
+            angle = 0.5 * Z[wire_idx0 // 2, wire_idx1 // 2] * first_order_time_step
             _emit_two_body_isingzz(
                 angle, wires[wire_idx0], wires[wire_idx1], control_wires, double_phase
             )
@@ -190,13 +193,14 @@ def _apply_one_body_diagonal(Z_one_body, wires, first_order_time_step, control_w
 
     @for_loop(2 * num_cas)
     def z_rotations(wire_idx):
-        # Prefactor breakdown:
-        #   -1/2 from (A29)
-        #   2    from exp(-i H t) -> RZ(phi) = exp(-i phi Z / 2)
-        #   2    from merging forward+backward occurrences of the 2nd-order
-        #        Trotter formula
-        #   => 1
-        angle = Z_one_body[wire_idx // 2, wire_idx // 2] * first_order_time_step
+        # One-body prefactor derivation (identical to CGF).
+        #   n_p = (I - Z_p) / 2  ->  the Z-piece of eps n_p has coefficient -eps/2.
+        #   target operator exp(-i eps n_p t) has Z-piece exp(+i eps t / 2 Z) = RZ(-eps t).
+        #   The one-body fragment is visited ONCE per Trotter step, at duration
+        #   first_order_time_step = dt_trotter / 2, so to accumulate a total RZ angle of
+        #   -eps * dt_trotter we need angle-per-step = -2 * eps * first_order_time_step,
+        #   i.e. alpha_oneB = -2.
+        angle = -2.0 * Z_one_body[wire_idx // 2, wire_idx // 2] * first_order_time_step
         _emit_one_body_rz(angle, wires[wire_idx], control_wires, double_phase)
 
     z_rotations()
@@ -316,12 +320,12 @@ def _controlled_trotter_cdf_decomp(base, control_wires, control_values, work_wir
     phi = (_energy_shift(hamiltonian) * evolution_time) % (4 * np.pi)
 
     if double_phase:
-        # Double-phase (Fig. 6) circuit, identical to the original ``trotter_fragmented``
-        # decomposition: each full-time diagonal block is CNOT-sandwiched by the control
-        # wire, giving control-0 / control-1 branches e^{-iHt} / e^{+iHt}. The controlled
-        # global phase becomes RZ(-phi) on the control wire under the double-phase trick
-        # (it differs from a genuine controlled-GlobalPhase only by an unobservable global
-        # phase, but we keep it exact for bookkeeping).
+        # Double-phase (Fig. 6) circuit: each full-time diagonal block is CNOT-sandwiched by
+        # the control wire, so the bare rotations give control-0 / control-1 branches
+        # e^{-i(H - s)t} / e^{+i(H - s)t}, where s = _energy_shift is the identity part of H.
+        # We apply the energy shift explicitly and symmetrically as RZ(2*phi) on the control
+        # wire (= diag(e^{-i s t}, e^{+i s t})), making the branches exactly the full-time
+        # e^{-iHt} / e^{+iHt}.
         _run_trotter_steps(
             evolution_time,
             num_trotter_steps,
@@ -331,7 +335,7 @@ def _controlled_trotter_cdf_decomp(base, control_wires, control_values, work_wir
             True,
             **_CDF_HELPERS,
         )
-        RZ(-phi, control_wires)
+        RZ(2 * phi, control_wires)
         return
 
     # Genuine controlled unitary: control each diagonal rotation at the full angle (basis

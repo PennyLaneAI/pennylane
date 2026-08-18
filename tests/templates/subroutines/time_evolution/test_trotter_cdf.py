@@ -25,7 +25,7 @@ circuit of Fig. 6 of arXiv:2506.15784.
 # pylint: disable=too-many-arguments, redefined-outer-name, too-few-public-methods, wrong-import-position, protected-access
 import numpy as np
 import pytest
-from scipy.linalg import block_diag
+from scipy.linalg import expm
 
 jax = pytest.importorskip("jax")
 
@@ -43,10 +43,9 @@ from pennylane.templates.subroutines.time_evolution.trotter_cdf import (
 from pennylane.typing import Wire
 from pennylane.wires import Wires
 from tests.templates.subroutines.time_evolution.trotter_test_helpers import (  # pylint: disable=no-name-in-module
-    TROTTER_GATE_SET,
+    cdf_reference_hamiltonian,
     control_branches,
     hadamard_test,
-    phase_free_close,
     random_orthogonal,
 )
 
@@ -198,7 +197,7 @@ class TestCDFScheme:
         assert len(ising_ops) == len(expected_pairs)
         for op, (i, j) in zip(ising_ops, expected_pairs):
             assert list(op.wires) == [wires[i], wires[j]]
-            assert np.isclose(op.parameters[0], -0.25 * Z[i // 2, j // 2] * t)
+            assert np.isclose(op.parameters[0], 0.5 * Z[i // 2, j // 2] * t)
 
     def test_apply_two_body_diagonal_double_phase_control(self):
         """Test that CNOTs sandwich the IsingZZ block for the double-phase control."""
@@ -239,7 +238,7 @@ class TestCDFScheme:
         assert len(rz_ops) == 2 * num_cas
         for wire_idx, op in enumerate(rz_ops):
             assert list(op.wires) == [wires[wire_idx]]
-            assert np.isclose(op.parameters[0], Z[wire_idx // 2, wire_idx // 2] * t)
+            assert np.isclose(op.parameters[0], -2.0 * Z[wire_idx // 2, wire_idx // 2] * t)
 
     def test_apply_one_body_diagonal_double_phase_control(self):
         """Test that CNOTs sandwich each RZ for the double-phase control."""
@@ -310,7 +309,7 @@ class TestResourceRule:
 
 
 class TestDecomposition:
-    """Self-consistency tests of the registered base decomposition rule."""
+    """Tests of the registered base decomposition rule."""
 
     def test_decomposition_self_consistent(self, toy_hamiltonian_cdf):
         """The registered base rule is self-consistent with its resource function."""
@@ -319,6 +318,17 @@ class TestDecomposition:
         op = qp.TrotterCDF(0.4, 2, ham, wires)
         for rule in qp.list_decomps(qp.TrotterCDF):
             _test_decomposition_rule(op, rule)
+
+    def test_base_matches_expm(self, diagonal_hamiltonian_cdf):
+        """For an identity-leaf (Trotter-exact) Hamiltonian, matrix(TrotterCDF) equals the
+        exact evolution expm(-i H t) of the Hamiltonian implied by the CDF definition. This
+        is the definitional check on the Trotter angle prefactors (and the energy shift)."""
+        ham, num_orbitals = diagonal_hamiltonian_cdf
+        sys_wires = list(range(2 * num_orbitals))
+        t, steps = 0.9, 3
+        u = qp.matrix(qp.TrotterCDF(t, steps, ham, wires=sys_wires), wire_order=sys_wires)
+        expected = expm(-1j * cdf_reference_hamiltonian(ham) * t)
+        assert np.allclose(u, expected, atol=1e-9)
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
@@ -333,51 +343,17 @@ class TestControlledDecomposition:
         for rule in qp.list_decomps("C(TrotterCDF)"):
             _test_decomposition_rule(op, rule)
 
-    def test_genuine_controlled_block_structure(self, toy_hamiltonian_cdf):
-        """By default ctrl(TrotterCDF) is a genuine controlled unitary: its matrix is
-        block-diagonal with the identity on the control-0 block and matrix(base) on the
-        control-1 block."""
-        ham, num_orbitals = toy_hamiltonian_cdf
+    def test_genuine_controlled_matches_expm(self, diagonal_hamiltonian_cdf):
+        """By default ctrl(TrotterCDF) is a genuine controlled unitary: for an identity-leaf
+        (Trotter-exact) Hamiltonian its matrix is exactly block_diag(I, expm(-i H t))."""
+        ham, num_orbitals = diagonal_hamiltonian_cdf
         sys_wires = list(range(2 * num_orbitals))
-        anc = "anc"
-        t, steps = 0.5, 2
-        op = qp.ctrl(qp.TrotterCDF(t, steps, ham, sys_wires), control=[anc])
-        [tape], _ = qp.transforms.decompose(
-            [qp.tape.QuantumScript([op], [])], gate_set=TROTTER_GATE_SET
-        )
-        matrix = qp.matrix(tape, wire_order=[anc] + sys_wires)
-        u_base = qp.matrix(qp.TrotterCDF(t, steps, ham, wires=sys_wires), wire_order=sys_wires)
+        t, steps = 0.9, 3
+        block0, block1 = control_branches(qp.TrotterCDF, ham, sys_wires, t, steps, False)
         dim = 2 ** len(sys_wires)
-        assert np.allclose(matrix, block_diag(np.eye(dim), u_base), atol=1e-9)
-
-    def test_controlled_hadamard_test_generic(self, toy_hamiltonian_cdf):
-        """The genuine controlled operation is an exact controlled-matrix(base), so the
-        Hadamard test matches Re<psi|matrix(base)|psi> to machine precision."""
-        ham, num_orbitals = toy_hamiltonian_cdf
-        sys_wires = list(range(2 * num_orbitals))
-        t, steps = 0.7, 12
-        measured, psi = hadamard_test(qp.TrotterCDF, ham, sys_wires, t, steps, False)
-        u_base = qp.matrix(qp.TrotterCDF(t, steps, ham, wires=sys_wires), wire_order=sys_wires)
-        ref = float(np.real(psi.conj() @ (u_base @ psi)))
-        assert np.isclose(measured, ref, atol=1e-9)
-
-    def test_genuine_global_phase_is_phaseshift(self, toy_hamiltonian_cdf):
-        """The genuine controlled global phase is a PhaseShift(-phi) on the control wire
-        (controlled-GlobalPhase), not an RZ."""
-        ham, num_orbitals = toy_hamiltonian_cdf
-        sys_wires = list(range(2 * num_orbitals))
-        anc = 99
-        t = 0.5
-        op = qp.ctrl(qp.TrotterCDF(t, 1, ham, sys_wires), control=[anc])
-        [tape], _ = qp.transforms.decompose(
-            [qp.tape.QuantumScript([op], [])], gate_set=TROTTER_GATE_SET
-        )
-        phase_shifts = [
-            o for o in tape.operations if isinstance(o, qp.PhaseShift) and list(o.wires) == [anc]
-        ]
-        assert len(phase_shifts) == 1
-        phi = float((_energy_shift(ham) * t) % (4 * np.pi))
-        assert np.isclose(phase_shifts[0].parameters[0], -phi)
+        expected = expm(-1j * cdf_reference_hamiltonian(ham) * t)
+        assert np.allclose(block0, np.eye(dim), atol=1e-9)
+        assert np.allclose(block1, expected, atol=1e-9)
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
@@ -392,50 +368,32 @@ class TestDoublePhaseControlledDecomposition:
         for rule in qp.list_decomps("C(TrotterCDF)"):
             _test_decomposition_rule(op, rule)
 
-    def test_double_phase_branches(self, diagonal_hamiltonian_cdf):
-        """The double-phase control-0 / control-1 blocks evolve by the full-time e^{-iHt} /
-        e^{+iHt} (up to a per-branch global phase), which for a diagonal (Trotter-exact)
-        Hamiltonian equal matrix(TrotterCDF(+/-t)). This matches the original
-        ``trotter_fragmented`` decomposition."""
+    def test_double_phase_controlled_matches_expm(self, diagonal_hamiltonian_cdf):
+        """With double_phase=True, ctrl(TrotterCDF) realizes diag(U, U^dagger): for an
+        identity-leaf (Trotter-exact) Hamiltonian the control-0 / control-1 blocks are
+        exactly expm(-i H t) / expm(+i H t) (explicit global phases, no per-block phase)."""
         ham, num_orbitals = diagonal_hamiltonian_cdf
         sys_wires = list(range(2 * num_orbitals))
         t, steps = 0.9, 3
         block0, block1 = control_branches(qp.TrotterCDF, ham, sys_wires, t, steps, True)
-        dim = 2 ** len(sys_wires)
-        v_pos = qp.matrix(qp.TrotterCDF(t, steps, ham, wires=sys_wires), wire_order=sys_wires)
-        v_neg = qp.matrix(qp.TrotterCDF(-t, steps, ham, wires=sys_wires), wire_order=sys_wires)
-        assert not np.allclose(block0, np.eye(dim))  # not a genuine controlled unitary
-        assert phase_free_close(block0, v_pos)
-        assert phase_free_close(block1, v_neg)
+        u = expm(-1j * cdf_reference_hamiltonian(ham) * t)
+        assert np.allclose(block0, u, atol=1e-9)
+        assert np.allclose(block1, u.conj().T, atol=1e-9)
 
-    def test_double_phase_hadamard_test_matches_branches(self, diagonal_hamiltonian_cdf):
-        """The double-phase Hadamard test realizes Re<psi|V0^dag V1|psi>, where V0 / V1 are
-        the (full-time) control-0 / control-1 branch unitaries."""
+    def test_double_phase_hadamard_invariant(self, diagonal_hamiltonian_cdf):
+        """The double-phase Hadamard test measures <X> = Re<psi|block0^dag block1|psi>, which
+        for the exact blocks equals Re<psi|expm(+2 i H t)|psi>."""
         ham, num_orbitals = diagonal_hamiltonian_cdf
         sys_wires = list(range(2 * num_orbitals))
         t, steps = 0.9, 3
         measured, psi = hadamard_test(qp.TrotterCDF, ham, sys_wires, t, steps, True)
         block0, block1 = control_branches(qp.TrotterCDF, ham, sys_wires, t, steps, True)
-        ref = float(np.real(psi.conj() @ (block0.conj().T @ block1 @ psi)))
-        assert np.isclose(measured, ref, atol=1e-9)
-
-    def test_double_phase_global_phase_is_rz(self, toy_hamiltonian_cdf):
-        """The double-phase controlled global phase is an RZ(-phi) on the control wire
-        (matching the original ``trotter_fragmented`` decomposition)."""
-        ham, num_orbitals = toy_hamiltonian_cdf
-        sys_wires = list(range(2 * num_orbitals))
-        anc = 99
-        t = 0.5
-        op = qp.ctrl(qp.TrotterCDF(t, 1, ham, sys_wires, double_phase=True), control=[anc])
-        [tape], _ = qp.transforms.decompose(
-            [qp.tape.QuantumScript([op], [])], gate_set=TROTTER_GATE_SET
+        ref_blocks = float(np.real(psi.conj() @ (block0.conj().T @ block1 @ psi)))
+        ref_expm = float(
+            np.real(psi.conj() @ (expm(2j * cdf_reference_hamiltonian(ham) * t) @ psi))
         )
-        rz_on_control = [
-            o for o in tape.operations if isinstance(o, qp.RZ) and list(o.wires) == [anc]
-        ]
-        assert len(rz_on_control) == 1
-        phi = float((_energy_shift(ham) * t) % (4 * np.pi))
-        assert np.isclose(rz_on_control[0].parameters[0], -phi)
+        assert np.isclose(measured, ref_blocks, atol=1e-9)
+        assert np.isclose(measured, ref_expm, atol=1e-9)
 
 
 class TestIntegration:
