@@ -573,7 +573,6 @@ def mps_synthesis(mps_tensors, wires):
     The builder underlying :func:`mps_preparation`: it returns the flag circuit and the
     residual global phase without queuing anything.
 
-    **Tensor Constraints**
 
     The input ``mps_tensors`` must satisfy the following conditions:
 
