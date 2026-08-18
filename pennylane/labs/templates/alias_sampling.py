@@ -171,7 +171,7 @@ def alias_sampling_wires(n_states, mu):
 
         The reported ``work_wires`` is the minimum required by :func:`alias_sampling`.
         More work_wires can be added to be forwarded to the internal
-        ``qml.QROM``, which uses them for a ``SelectSwap`` decomposition that lowers
+        ``qp.QROM``, which uses them for a ``SelectSwap`` decomposition that lowers
         the T-gate count at the cost of the additional qubits. At exactly the
         minimum, ``QROM`` uses its unary decomposition (more T-gates, fewer qubits).
         ``target_wires`` and ``temp_wires`` are exact and must be matched exactly.
