@@ -39,7 +39,6 @@ from pennylane.decomposition.resources import (
     CompressedResourceOp,
     controlled_resource_rep,
     resolve_work_wire_type,
-    resource_rep,
 )
 from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.ops.op_math.adjoint2 import Adjoint2

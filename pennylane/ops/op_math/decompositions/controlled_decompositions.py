@@ -310,6 +310,7 @@ def _multi_ctrl_decomp_zyz_condition(wires, control_values, **__):
     return num_target_wires == 1 and num_control_wires > 1
 
 
+# pylint: disable-next=unused-argument
 def _multi_ctrl_decomp_zyz_resources(base, wires, control_values, work_wires, work_wire_type, **__):
     num_control_wires = len(control_values)
     num_work_wires = len(work_wires)

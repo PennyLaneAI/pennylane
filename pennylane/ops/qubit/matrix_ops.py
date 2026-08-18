@@ -28,7 +28,7 @@ import pennylane as qp
 from pennylane import math
 from pennylane import numpy as pnp
 from pennylane.core.operator import Operation, Operator2, abstractify
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.symbolic_decomposition import is_integer
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.ops.op_math.controlled import custom_ctrl_dispatch

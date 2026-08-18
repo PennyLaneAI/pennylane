@@ -22,7 +22,6 @@ from pennylane.core.operator import Operation, Operator, Operator2, abstractify
 from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import (
     add_decomps,
-    controlled_resource_rep,
     register_resources,
 )
 from pennylane.exceptions import QuantumFunctionError

@@ -21,7 +21,6 @@ import pytest
 import pennylane as qp
 from pennylane.core import Operator, Operator1, queuing
 from pennylane.core.operator import abstractify
-from pennylane.core.operator.operator2 import Operator2
 from pennylane.decomposition.decomposition_rule import (
     _fix_decomp,
     list_decomps,

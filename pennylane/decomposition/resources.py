@@ -23,7 +23,6 @@ from functools import cached_property
 
 import pennylane as qp
 from pennylane.core.operator import Operator, Operator2, abstractify
-from pennylane.typing import Bool, Complex, Wire
 
 from .utils import to_name
 

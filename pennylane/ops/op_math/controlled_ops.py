@@ -34,12 +34,10 @@ from pennylane.decomposition import (
     add_decomps,
     change_op_basis_resource_rep,
     register_resources,
-    resource_rep,
 )
 from pennylane.decomposition.decomposition_rule import DecompCollection, list_decomps
 from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
-    flip_zero_control,
     pow_rotation,
     self_adjoint,
 )
@@ -47,7 +45,7 @@ from pennylane.ops.identity import GlobalPhase
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure, pauli_measure
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
-from pennylane.ops.op_math.controlled2 import Controlled2, ControlledOp2, _ctrl_abstract
+from pennylane.ops.op_math.controlled2 import Controlled2, ControlledOp2
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
@@ -137,7 +135,7 @@ class ControlledQubitUnitary(Controlled2):
     >>> qp.ControlledQubitUnitary(U, wires=[0, 1, 2, 3], control_values=[0, 1, 1])
     ControlledQubitUnitary(base=[[ 0.94877869  0.31594146]
      [-0.31594146  0.94877869]], wires=[0, 1, 2, 3], control_values=[False  True  True], unitary_check=False, work_wires=[], work_wire_type=borrowed)
-    
+
     or
 
     >>> qp.ControlledQubitUnitary(U, wires=[0, 1, 2, 3], control_values=[False, True, True])
