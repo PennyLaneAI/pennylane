@@ -39,9 +39,20 @@ except ImportError:  # pragma: no cover
     is_jax_compatible = False
 
 
-def _make_switches() -> tuple[Callable, Callable, Callable[[], bool], Callable]:
-    r"""Create four functions, corresponding to an activation switch, a deactivation switch
-    and a status query, and a context manager, in that order.
+def _verify_jax_installation():
+    if not has_jax:
+        raise ImportError("capture requires JAX to be installed.")
+    if not is_jax_compatible:  # pragma: no cover
+        raise ImportError(
+            f"PennyLane's program capture requires JAX=={REQUIRED_JAX_VERSION} to be installed to "
+            f"ensure functionality. You have JAX {jax.__version__} installed. Please pin JAX by "
+            f"running: pip install --upgrade jax=={REQUIRED_JAX_VERSION} jaxlib=={REQUIRED_JAX_VERSION}"
+        )
+
+
+def _make_switches() -> tuple[Callable[[], None], Callable[[], None], Callable[[], bool], Callable]:
+    r"""Create four functions, corresponding to an activation switch, a deactivation switch,
+    a status query, and a context manager, in that order.
 
     .. note::
 
@@ -56,14 +67,7 @@ def _make_switches() -> tuple[Callable, Callable, Callable[[], bool], Callable]:
     def enable_fn() -> None:
         """Enable the capturing mechanism of hybrid quantum-classical programs
         in a PennyLane Program Representation (plxpr)."""
-        if not has_jax:
-            raise ImportError("plxpr requires JAX to be installed.")
-        if not is_jax_compatible:  # pragma: no cover
-            raise ImportError(
-                f"PennyLane's program capture requires JAX=={REQUIRED_JAX_VERSION} to be installed to ensure functionality. "
-                f"You have JAX {jax.__version__} installed. "
-                f"Please pin JAX by running: pip install --upgrade jax=={REQUIRED_JAX_VERSION} jaxlib=={REQUIRED_JAX_VERSION}"
-            )
+        _verify_jax_installation()
         _FEATURE_ENABLED.set(True)
 
     def disable_fn() -> None:
@@ -79,6 +83,11 @@ def _make_switches() -> tuple[Callable, Callable, Callable[[], bool], Callable]:
     @contextmanager
     def toggle_ctx_fn(new_state: bool):
         """A context manager in which capture is enabled or disabled temporarily."""
+
+        # Verify that the correct jax version is installed
+        if new_state:
+            _verify_jax_installation()
+
         token = _FEATURE_ENABLED.set(new_state)
         try:
             yield
