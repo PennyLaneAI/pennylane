@@ -365,7 +365,7 @@ def _controlled_two_qubit_unitary_resource(wires, control_values, work_wires, wo
     # upper bound of two X gates per control wire. This keeps X in the estimated gate set (required
     # even for exact=False rules) while the actual count is allowed to be lower.
     if num_control_wires:
-        gate_counts[ops.X] = 2 * num_control_wires
+        gate_counts[ops.X] = num_control_wires
     return gate_counts
 
 
