@@ -35,25 +35,36 @@ def x64_fixture():
 
 
 class TestTextBytes:
-    """Building the fixed-width byte field for a ``str`` argument."""
+    """Building the fixed-width byte field for a ``str`` argument.
 
-    @pytest.mark.usefixtures("x64")
+    ``text_bytes`` reaches JAX only through ``_is_tracer``, which has an ``except ImportError``
+    fallback. So these tests do not need a JAX-enabled environment.
+    """
+
+    def test_str_input_is_padded(self):
+        """A plain ``str`` value is encoded and padded."""
+        raw = operands.text_bytes(CType.STR, "hello", "sym", 0)
+        assert raw == b"hello".ljust(operands.STR_OPERAND_BYTES, b"\x00")
+
     def test_bytes_input_is_accepted(self):
         """A ``bytes`` value is padded like a ``str``."""
         raw = operands.text_bytes(CType.STR, b"hello", "sym", 0)
         assert raw == b"hello".ljust(operands.STR_OPERAND_BYTES, b"\x00")
 
-    @pytest.mark.usefixtures("x64")
     def test_bytearray_input_is_accepted(self):
         """A ``bytearray`` value is copied to bytes and padded."""
         raw = operands.text_bytes(CType.STR, bytearray(b"hello"), "sym", 0)
         assert raw == b"hello".ljust(operands.STR_OPERAND_BYTES, b"\x00")
 
-    @pytest.mark.usefixtures("x64")
     def test_wrong_type_is_refused(self):
         """A non-string, non-bytes value is refused rather than coerced."""
         with pytest.raises(TypeError, match=r"argument 0 is a str, got int"):
             operands.text_bytes(CType.STR, 42, "sym", 0)
+
+    def test_a_string_that_does_not_fit_is_refused(self):
+        """A payload the full width of the field leaves no NUL terminator."""
+        with pytest.raises(ValueError, match="does not fit"):
+            operands.text_bytes(CType.STR, "x" * operands.STR_OPERAND_BYTES, "sym", 0)
 
 
 class TestOperandFor:
@@ -139,8 +150,23 @@ class TestResultAvals:
         assert operands.result_avals(signature, 0) == ()
 
 
+class TestCheckWidthNarrowReturn:
+    """Narrow-scalar early return in ``check_width`` — does not consult JAX."""
+
+    @pytest.mark.parametrize("ctype", [CType.I32, CType.U8, CType.F32, CType.VOID, CType.STR])
+    def test_a_narrow_or_dtypeless_ctype_returns_early(self, ctype):
+        """A scalar type below 8 bytes, or with no dtype at all, returns before checking x64."""
+        # Does not raise: the itemsize < 8 (or None) branch returns before calling _narrows_64_bit.
+        operands.check_width(ctype, "sym", "the value")
+
+
 class TestCheckBufferWidth:
     """The 64-bit narrowing check for buf arguments."""
+
+    def test_a_narrow_buffer_returns_early(self):
+        """A dtype with itemsize < 8 returns before consulting JAX."""
+        # Does not raise: uint8 is 1 byte, so the < 8 branch fires and JAX is never touched.
+        operands.check_buffer_width(np.zeros(4, dtype=np.uint8), "sym", 0)
 
     def test_a_python_list_is_measured_via_asarray(self):
         """A list has no ``.dtype``, so its dtype is measured by wrapping it in an ndarray."""
@@ -156,3 +182,22 @@ class TestCheckBufferWidth:
         with jax.experimental.disable_x64():
             # Does not raise; nothing to narrow.
             operands.check_buffer_width(np.zeros(4, dtype=np.uint8), "sym", 0)
+
+
+class TestOperandsForNoJax:
+    """``operands_for`` paths that do not reach ``operand_for`` (which imports JAX).
+
+    A dispatched call with a ``buf`` parameter raises before the list comprehension, and an
+    empty-parameter signature returns immediately with an empty list.
+    """
+
+    def test_a_dispatched_buf_is_refused_before_operand_for_runs(self):
+        """A ``buf`` in a dispatched (``local=False``) call is rejected before any operand is built."""
+        signature = CSignature.parse("sym", "(buf, u64) -> i32")
+        with pytest.raises(TypeError, match="cannot be read out of the flat buffer"):
+            operands.operands_for(signature, (np.zeros(4, dtype=np.uint8), 4))
+
+    def test_a_zero_argument_signature_returns_an_empty_list(self):
+        """No parameters means no operands to build, and no JAX import is ever needed."""
+        signature = CSignature.parse("sym", "() -> i32")
+        assert operands.operands_for(signature, ()) == []

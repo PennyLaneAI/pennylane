@@ -33,6 +33,7 @@ def x64_fixture():
         yield jax
 
 
+@pytest.mark.all_interfaces
 class TestCSignature:
     """Parsing and inspecting a signature."""
 
@@ -89,6 +90,7 @@ class TestCSignature:
             signature.check_arity((0, None, 8))
 
 
+@pytest.mark.all_interfaces
 class TestDeclare:
     """Declaring a symbol's signature."""
 
@@ -125,6 +127,7 @@ class TestDeclare:
             qp.runtime_declare("clashing_result", "(ptr) -> i32")
 
 
+@pytest.mark.all_interfaces
 class TestRecordedCalls:
     """Recording a dispatched call, and the operands it becomes."""
 
@@ -257,6 +260,7 @@ class TestRecordedCalls:
             x64.make_jaxpr(lambda: qp.runtime_call("fire_and_forget", 0, address="h:1"))()
 
 
+@pytest.mark.all_interfaces
 class TestLocalCalls:
     """A call with no address, invoked in-process instead of dispatched to an executor."""
 
@@ -331,6 +335,7 @@ class TestLocalCalls:
         assert calls[0].params["dispatch"] is None
 
 
+@pytest.mark.all_interfaces
 class TestResolveSignature:
     """Which signature :func:`~.runtime_call` calls a symbol with."""
 
@@ -369,6 +374,7 @@ class TestResolveSignature:
         assert qp.backline.runtime.signature_of("declared_via_call").symbol == "declared_via_call"
 
 
+@pytest.mark.all_interfaces
 class TestOutsideATrace:
     """A recorded call belongs in a compiled program."""
 

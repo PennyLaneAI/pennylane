@@ -14,7 +14,7 @@
 
 """Tests for the Triton shared-library builder."""
 
-# pylint: disable=protected-access,wrong-import-position,broad-exception-caught
+# pylint: disable=protected-access,wrong-import-position,broad-exception-caught,too-few-public-methods
 
 import ctypes
 import shutil
