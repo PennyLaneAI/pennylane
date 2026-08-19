@@ -274,10 +274,11 @@ def test_adjoint_abstract_does_not_bind_with_compressed_leaves():
 
     rep = _adjoint_abstract(base)
     assert isinstance(rep, Adjoint2)
+    assert rep.is_abstract
     assert rep.base is base
 
     def f():
-        _adjoint_abstract(base)
+        abstractify(_adjoint_abstract(base))
 
     jaxpr = jax.make_jaxpr(f)()
     assert not jaxpr.eqns
