@@ -52,7 +52,7 @@ ops_rep = (
 class ValidOp(CompositeOp2):
     # pylint:disable=unused-argument
     _op_symbol = "#"
-    _math_op = None
+    _math_op = math.prod
 
     hybrid_argnames = ("operands", "_init_pauli_rep")
     wire_argnames = ()
@@ -83,9 +83,6 @@ class ValidOp(CompositeOp2):
                 i += 1
             acc = acc @ sub_mat
         return acc
-
-    def eigvals(self):
-        return self.eigendecomposition["eigval"]
 
     @classmethod
     # pylint: disable-next=unused-argument
@@ -292,9 +289,8 @@ class TestMscMethods:
             (qp.S(0),),
             (qp.S(0), qp.T(1)),
             (qp.T(0), qp.S(1)),
-            (qp.PauliX(0), qp.PauliY(1)),
-            (qp.PauliZ(0), qp.PauliY(1)),
-            (qp.PauliX(1), qp.PauliX(0), qp.PauliX(1)),
+            (qp.Identity(0), qp.Hadamard(1)),
+            (qp.T(0), qp.Identity(1)),
         ],
     )
     def test_eigvals(self, operators):
