@@ -74,8 +74,10 @@ class ModExp(Operation):
 
         @qp.qnode(dev, shots=1)
         def circuit():
-            qp.BasisEmbedding(x, wires = x_wires)
-            qp.BasisEmbedding(b, wires = output_wires)
+            x_bin = qp.math.int_to_binary(x, len(x_wires))
+            b_bin = qp.math.int_to_binary(b, len(output_wires))
+            qp.BasisEmbedding(x_bin, wires = x_wires)
+            qp.BasisEmbedding(b_bin, wires = output_wires)
             qp.ModExp(x_wires, output_wires, base, mod, work_wires)
             return qp.sample(wires = output_wires)
 

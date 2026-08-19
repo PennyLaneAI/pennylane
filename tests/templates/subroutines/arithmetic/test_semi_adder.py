@@ -79,8 +79,10 @@ class TestSemiAdder:
         @qp.set_shots(1)
         @qp.qnode(dev)
         def circuit(x, y):
-            qp.BasisEmbedding(x, wires=x_wires)
-            qp.BasisEmbedding(y, wires=y_wires)
+            x_bin = qp.math.int_to_binary(x, len(x_wires))
+            y_bin = qp.math.int_to_binary(y, len(y_wires))
+            qp.BasisEmbedding(x_bin, wires=x_wires)
+            qp.BasisEmbedding(y_bin, wires=y_wires)
             qp.SemiAdder(x_wires, y_wires, work_wires)
             return qp.sample(wires=y_wires), qp.probs(wires=work_wires)
 
@@ -182,8 +184,10 @@ class TestSemiAdder:
         @qp.set_shots(1)
         @qp.qnode(dev)
         def circuit():
-            qp.BasisEmbedding(x, wires=x_wires)
-            qp.BasisEmbedding(y, wires=y_wires)
+            x_bin = qp.math.int_to_binary(x, len(x_wires))
+            y_bin = qp.math.int_to_binary(y, len(y_wires))
+            qp.BasisEmbedding(x_bin, wires=x_wires)
+            qp.BasisEmbedding(y_bin, wires=y_wires)
             qp.SemiAdder(x_wires, y_wires, work_wires)
             return qp.sample(wires=y_wires)
 
@@ -266,9 +270,12 @@ class TestSemiAdder:
         @qp.set_shots(1)
         @qp.qnode(dev)
         def circuit(c_value):
-            qp.BasisState(x_value, x_wires)
-            qp.BasisState(y_value, y_wires)
-            qp.BasisState(c_value, control_wires)
+            x_value_bin = qp.math.int_to_binary(x_value, len(x_wires))
+            y_value_bin = qp.math.int_to_binary(y_value, len(y_wires))
+            c_value_bin = qp.math.int_to_binary(c_value, len(control_wires))
+            qp.BasisState(x_value_bin, x_wires)
+            qp.BasisState(y_value_bin, y_wires)
+            qp.BasisState(c_value_bin, control_wires)
             _controlled_semi_adder(
                 op, control_wires, control_values, work_wires_ctrl, work_wire_type="zeroed"
             )

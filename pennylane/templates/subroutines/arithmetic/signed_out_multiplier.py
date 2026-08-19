@@ -84,8 +84,10 @@ class SignedOutMultiplier(Operator2):
 
         @qp.qnode(dev, shots=1)
         def circuit():
-            qp.BasisEmbedding(x, wires=x_wires)
-            qp.BasisEmbedding(y, wires=y_wires)
+            x_bin = qp.math.int_to_binary(x, len(x_wires))
+            y_bin = qp.math.int_to_binary(y, len(y_wires))
+            qp.BasisState(x_bin, wires=x_wires)
+            qp.BasisState(y_bin, wires=y_wires)
             qp.SignedOutMultiplier(
                 x_wires,
                 y_wires,
