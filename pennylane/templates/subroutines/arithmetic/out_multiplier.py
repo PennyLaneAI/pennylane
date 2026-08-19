@@ -332,12 +332,11 @@ def _out_multiplier_with_qft_resources(
     uncompute_rep = adjoint(QFT(Wire[num_qft_wires]))
     target_rep = resource_rep(
         ControlledSequence,
-        base_class=ControlledSequence,
-        base_params={
-            "base_class": PhaseAdder,
-            "base_params": {"num_x_wires": num_qft_wires, "mod": mod},
-            "num_control_wires": num_x_wires,
-        },
+        base_rep=resource_rep(
+            ControlledSequence,
+            base_rep=resource_rep(PhaseAdder, num_x_wires=num_qft_wires, mod=mod),
+            num_control_wires=num_x_wires,
+        ),
         num_control_wires=num_y_wires,
     )
     return {change_op_basis_resource_rep(compute_rep, target_rep, uncompute_rep): 1}

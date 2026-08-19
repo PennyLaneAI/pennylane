@@ -18,6 +18,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.ops.mid_measure import MeasurementValue, MidMeasure
+from tests.capture.capture_utils import assert_eqn_matches_op
 
 jax = pytest.importorskip("jax")
 import jax.numpy as jnp
@@ -278,8 +279,7 @@ class TestMidMeasureCapture:
 
         mcm = jaxpr.eqns[1].outvars[0]
 
-        # qp.RX(m, 0)
-        assert jaxpr.eqns[2].primitive.name == "RX"
+        assert_eqn_matches_op(jaxpr.eqns[2], qp.RX)
         assert jaxpr.eqns[2].invars[0] == mcm
         assert isinstance(jaxpr.eqns[2].outvars[0].aval, AbstractOperator)
 
