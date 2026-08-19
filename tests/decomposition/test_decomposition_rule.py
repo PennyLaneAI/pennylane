@@ -434,9 +434,7 @@ class TestDecompositionRule:
         "rep",
         [
             ParametrizedHybridOp(Float[-1], Wire[3], DynOp(Float[3], Wire[3])),  # data not fixed
-            ParametrizedHybridOp(Float[3], Wire[-1], DynOp(Float[1], Wire[1])),  # wire is not fixed
             ParametrizedHybridOp(Float[3], Wire[3], DynOp(Float[...], Wire[3])),  # hybrid not fixed
-            ParametrizedHybridOp(Float[3], Wire[3], DynOp(Float[2], Wire[-1])),  # hybrid not fixed
         ],
     )
     def test_verify_operator2_is_abstract_and_fixed(self, rep):

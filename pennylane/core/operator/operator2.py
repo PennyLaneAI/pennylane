@@ -27,6 +27,7 @@ from numbers import Number
 from typing import TYPE_CHECKING, Any, ClassVar, TypeAlias
 
 import numpy as np
+from jax._src.core import Value
 from scipy.sparse import spmatrix
 
 import pennylane as qp
@@ -1651,7 +1652,11 @@ def _init_wires(op: Operator2):
         ops = filter(_is_op, leaves)
         all_algorithmic_wires.extend(op.wires for op in ops)
 
-    if any(isinstance(w, AbstractWires) for w in all_algorithmic_wires):
+    abstract_wires = [w for w in all_algorithmic_wires if isinstance(w, AbstractWires)]
+    if abstract_wires:
+        if any(not aw.shape_fixed for aw in abstract_wires):
+            raise ValueError("Operator2 instances must be constructed with wires of fixed length.")
+
         total_wires = sum(len(w) for w in all_algorithmic_wires)
         op._wires = AbstractWires(total_wires)
     else:
