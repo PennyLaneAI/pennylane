@@ -1301,6 +1301,13 @@ add_decomps("Adjoint(U1)", adjoint_rotation2)
 add_decomps("Pow(U1)", pow_rotation2)
 
 
+@custom_ctrl_dispatch.register
+def _ctrl_u1(base: U1, control, control_values, *_):
+    if len(control) == 1 and _is_empty_or_all_true(control_values):
+        return qp.ControlledPhaseShift(base.phi, wires=control + base.wires)
+    return NotImplemented
+
+
 class U2(Operator2):
     r"""
     U2 gate.

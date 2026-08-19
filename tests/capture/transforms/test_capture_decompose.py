@@ -252,7 +252,7 @@ class TestDecomposeInterpreter:
     @pytest.mark.parametrize("decompose", [True, False])
     def test_decompose_ctrl(self, decompose):
         """Test that a function containing `Controlled` can be decomposed correctly."""
-        gate_set = [qp.RX, qp.RY, qp.RZ, qp.CNOT]
+        gate_set = [qp.RX, qp.RY, qp.RZ, qp.CNOT, qp.GlobalPhase]
         if not decompose:
             gate_set.extend([f"C({op.__name__})" for op in gate_set])
         interpreter = DecomposeInterpreter(gate_set=gate_set)

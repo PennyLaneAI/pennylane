@@ -1213,5 +1213,6 @@ def base_to_custom_ctrl_op():
         (qp.Hadamard, 1): qp.CH,
         (qp.RY, 1): qp.CRY,
         (qp.PhaseShift, 1): qp.ControlledPhaseShift,
+        (qp.U1, 1): qp.ControlledPhaseShift,
     }
     return ops_with_custom_ctrl_ops
