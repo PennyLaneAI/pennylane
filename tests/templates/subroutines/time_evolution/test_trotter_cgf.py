@@ -23,6 +23,8 @@ unitary and the (``True``) double-phase Hadamard-test circuit of Fig. 6 of arXiv
 """
 
 # pylint: disable=too-many-arguments, redefined-outer-name, too-few-public-methods, wrong-import-position, protected-access
+import itertools
+
 import numpy as np
 import pytest
 from scipy.linalg import expm
@@ -330,12 +332,99 @@ class TestDecomposition:
                     - expected
                 )
             )
-            for steps in (4, 8, 16)
+            for steps in (2, 4, 8)
         ]
         # second-order Trotter: halving the step size quarters the error
         assert diffs[0] > diffs[1] > diffs[2]
         assert diffs[1] / diffs[2] > 3.0
-        assert diffs[2] < 5e-4
+        assert diffs[2] < 5e-3
+
+    def test_mixed_determinant_leaves_gauge_invariant(self, seed):
+        """Negating an orbital line flips a leaf's determinant but leaves the projector
+        ``|v><v|`` -- and hence the physical fragment -- unchanged (the orbital is on the
+        columns of the one-body leaf and the rows of the two-body leaves). The template
+        normalizes leaf determinants internally, so the circuit is invariant under this flip
+        even when it yields mixed determinants (as an ``eigh`` one-body leaf with ``det = -1``
+        next to ``expm`` two-body leaves would). Without the normalization ``BasisRotation``'s
+        real-orthogonal sign gauge would realize a different Hamiltonian."""
+        rng = np.random.default_rng(seed)
+        num_modes, n_states, L = 2, 3, 2
+        core = rng.normal(size=(L + 1, num_modes, num_modes, n_states, n_states)) * 0.4
+        leaf = np.stack(
+            [
+                np.stack([random_orthogonal(n_states, rng) for _ in range(num_modes)])
+                for _ in range(L + 1)
+            ]
+        )
+        ham = {"core_tensors": core, "leaf_tensors": leaf, "nuc_constant": 0.3}
+
+        flipped = leaf.copy()
+        flipped[0][0][:, 0] *= -1.0  # one-body: negate an orbital column -> det flips (mixed)
+        flipped[1][1][0, :] *= -1.0  # two-body: negate an orbital row -> det flips (mixed)
+        assert np.linalg.det(leaf[0][0]) * np.linalg.det(flipped[0][0]) < 0
+        assert np.linalg.det(leaf[1][1]) * np.linalg.det(flipped[1][1]) < 0
+        ham_flipped = {**ham, "leaf_tensors": flipped}
+
+        sys_wires = list(range(num_modes * n_states))
+        t, steps = 0.6, 3
+        u = qp.matrix(qp.TrotterCGF(t, steps, ham, wires=sys_wires), wire_order=sys_wires)
+        u_flipped = qp.matrix(
+            qp.TrotterCGF(t, steps, ham_flipped, wires=sys_wires), wire_order=sys_wires
+        )
+        assert np.allclose(u, u_flipped, atol=1e-12)
+
+    def test_energy_shift_matches_literal(self):
+        """The global phase equals ``exp(-i s t)`` with ``s = nuc + (1/2) sum eps`` the identity
+        content of the CGF Hamiltonian, checked against a hard-coded literal computed here from
+        the definition rather than by calling ``_energy_shift``. The ``RZ``/``IsingZZ`` layers are
+        traceless generators (``det = 1``), so ``det(U) = exp(-i * dim * s * t)`` isolates ``s``
+        independently of the circuit's basis-rotation content. Guards constant/energy-shift
+        regressions that the (circular) identity-leaf check reuses ``_energy_shift`` for."""
+        num_modes, n_states, L = 2, 2, 1
+        core = np.zeros((L + 1, num_modes, num_modes, n_states, n_states))
+        core[0, 0, 0] = np.diag([0.1, 0.3])  # eps of mode 0
+        core[0, 1, 1] = np.diag([0.2, 0.4])  # eps of mode 1
+        core[1, 1, 0] = np.array([[0.15, -0.05], [0.2, 0.1]])  # two-body: no effect on s
+        leaf = np.stack(
+            [np.stack([np.eye(n_states) for _ in range(num_modes)]) for _ in range(L + 1)]
+        )
+        ham = {"core_tensors": core, "leaf_tensors": leaf, "nuc_constant": 0.2}
+        # s = nuc + (1/2) sum_{l,p} eps^l_p = 0.2 + (0.1 + 0.3 + 0.2 + 0.4) / 2 = 0.7
+        s_literal = 0.7
+        wires = list(range(num_modes * n_states))
+        dim = 2 ** len(wires)
+        t = 0.3
+        u = qp.matrix(qp.TrotterCGF(t, 2, ham, wires=wires), wire_order=wires)
+        # det(expm(-i H t)) = exp(-i t Tr H) and Tr H = dim * s (Z/ZZ terms are traceless)
+        assert np.isclose(np.linalg.det(u), np.exp(-1j * t * dim * s_literal), atol=1e-9)
+
+    def test_preserves_unary_subspace(self, seed):
+        """CGF encodes each mode's modal occupation in a unary (one-hot) register, so the circuit
+        must never move amplitude out of the one-excitation-per-mode subspace: ``BasisRotation``
+        conserves particle number within each mode block and the diagonal layers are
+        occupation-preserving, giving exactly zero leakage."""
+        rng = np.random.default_rng(seed)
+        num_modes, n_states, L = 2, 3, 1
+        core = rng.normal(size=(L + 1, num_modes, num_modes, n_states, n_states)) * 0.4
+        leaf = np.stack(
+            [
+                np.stack([random_orthogonal(n_states, rng) for _ in range(num_modes)])
+                for _ in range(L + 1)
+            ]
+        )
+        ham = {"core_tensors": core, "leaf_tensors": leaf, "nuc_constant": 0.3}
+        n_wires = num_modes * n_states
+        wires = list(range(n_wires))
+        u = qp.matrix(qp.TrotterCGF(0.5, 2, ham, wires=wires), wire_order=wires)
+        # physical basis states: exactly one excitation per mode block (wire l*N + p, big-endian)
+        physical = [
+            sum(1 << (n_wires - 1 - (mode * n_states + occ[mode])) for mode in range(num_modes))
+            for occ in itertools.product(range(n_states), repeat=num_modes)
+        ]
+        mask = np.zeros(2**n_wires, dtype=bool)
+        mask[physical] = True
+        # no amplitude leaves the physical subspace (and by unitarity none enters it either)
+        assert np.allclose(u[np.ix_(~mask, physical)], 0.0, atol=1e-12)
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")

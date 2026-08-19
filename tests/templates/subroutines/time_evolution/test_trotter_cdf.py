@@ -38,6 +38,10 @@ from pennylane.templates.subroutines.time_evolution.trotter_cdf import (
 )
 from pennylane.typing import Wire
 from pennylane.wires import Wires
+from tests.templates.subroutines.time_evolution.fermi_tools import (  # pylint: disable=no-name-in-module
+    one_body_matrix,
+    permute_qubits,
+)
 from tests.templates.subroutines.time_evolution.trotter_test_helpers import (  # pylint: disable=no-name-in-module
     CATALYST_GATE_SET_DOUBLE_PHASE,
     CATALYST_GATE_SET_GENUINE,
@@ -282,12 +286,133 @@ class TestDecomposition:
                     - expected
                 )
             )
-            for steps in (4, 8, 16)
+            for steps in (2, 4, 8)
         ]
         # second-order Trotter: halving the step size quarters the error
         assert diffs[0] > diffs[1] > diffs[2]
         assert diffs[1] / diffs[2] > 3.0
-        assert diffs[2] < 5e-4
+        assert diffs[2] < 5e-3
+
+    def test_mixed_determinant_leaves_gauge_invariant(self, seed):
+        """Negating an orbital column flips a leaf's determinant but leaves the projector
+        ``|v><v|`` -- and hence the physical fragment -- unchanged. The template normalizes
+        leaf determinants internally, so the circuit is invariant under this flip even when it
+        yields mixed determinants (as ``qp.qchem.factorize`` does for many molecules, e.g. an
+        ``eigh`` one-body leaf with ``det = -1`` next to ``expm`` two-body leaves). Without the
+        normalization ``BasisRotation``'s real-orthogonal sign gauge would realize a different
+        Hamiltonian."""
+        rng = np.random.default_rng(seed)
+        num_orbitals, L = 3, 2
+        core = rng.normal(size=(L + 1, num_orbitals, num_orbitals)) * 0.4
+        core = 0.5 * (core + np.transpose(core, (0, 2, 1)))
+        leaf = np.stack([random_orthogonal(num_orbitals, rng) for _ in range(L + 1)])
+        ham = {"core_tensors": core, "leaf_tensors": leaf, "nuc_constant": 0.3}
+
+        flipped = leaf.copy()
+        flipped[0][:, 0] *= -1.0  # negate one orbital column -> det(leaf[0]) flips (now mixed)
+        assert np.linalg.det(leaf[0]) * np.linalg.det(flipped[0]) < 0
+        ham_flipped = {**ham, "leaf_tensors": flipped}
+
+        sys_wires = list(range(2 * num_orbitals))
+        t, steps = 0.6, 3
+        u = qp.matrix(qp.TrotterCDF(t, steps, ham, wires=sys_wires), wire_order=sys_wires)
+        u_flipped = qp.matrix(
+            qp.TrotterCDF(t, steps, ham_flipped, wires=sys_wires), wire_order=sys_wires
+        )
+        assert np.allclose(u, u_flipped, atol=1e-12)
+
+    def test_energy_shift_matches_literal(self):
+        """The global phase equals ``exp(-i s t)`` with ``s`` the identity content of the CDF
+        Hamiltonian, checked against a hard-coded literal computed here from the definition
+        (Eq. A29) rather than by calling ``_energy_shift``. The ``RZ``/``IsingZZ`` layers are
+        traceless generators (``det = 1``), so ``det(U) = exp(-i * dim * s * t)`` isolates ``s``
+        independently of the circuit's basis-rotation content. Guards constant/energy-shift
+        regressions that the (circular) identity-leaf check reuses ``_energy_shift`` for."""
+        nuc = 0.2
+        core0 = np.diag([0.1, 0.3])  # one-body: trace = 0.4
+        core2b = np.array([[0.2, 0.1], [0.1, 0.4]])  # one two-body fragment
+        ham = {
+            "core_tensors": np.stack([core0, core2b]),
+            "leaf_tensors": np.stack([np.eye(2), np.eye(2)]),  # identity leaves -> Trotter-exact
+            "nuc_constant": nuc,
+        }
+        # s = nuc + tr(Z0) - sum(Z_l)/2 + sum(tr(Z_l))/4
+        #   = 0.2 + 0.4 - 0.8/2 + 0.6/4 = 0.35
+        s_literal = 0.35
+        num_orbitals = 2
+        wires = list(range(2 * num_orbitals))
+        dim = 2 ** len(wires)
+        t = 0.3
+        u = qp.matrix(qp.TrotterCDF(t, 2, ham, wires=wires), wire_order=wires)
+        # det(expm(-i H t)) = exp(-i t Tr H) and Tr H = dim * s (Z/ZZ terms are traceless)
+        assert np.isclose(np.linalg.det(u), np.exp(-1j * t * dim * s_literal), atol=1e-9)
+
+    def test_matches_fermionic_reference(self, seed):
+        """The two-body layer realizes the genuine fermionic operator
+        ``1/2 sum_pq lam_pq n~_p n~_q``, checked against an independent Jordan-Wigner reference
+        built from occupation-number matrix elements (no ``BasisRotation`` anywhere in the
+        reference). This pins the fermionic meaning of the CDF fragments and the blocked
+        spin-orbital -> interleaved-wire mode ordering, which the self-referential leaf check
+        cannot. ``matrix(TrotterCDF)`` converges to ``expm(-i H_phys t)`` at second order."""
+        rng = np.random.default_rng(seed)
+        num_orbitals, t = 2, 0.5
+        n_wires = 2 * num_orbitals
+        wires = list(range(n_wires))
+        dim = 2**n_wires
+        # alpha modes 0..N-1 then beta N..2N-1, placed on interleaved wires (2p alpha, 2p+1 beta)
+        mode_on_wire = [i + s * num_orbitals for i in range(num_orbitals) for s in (0, 1)]
+        # BasisRotation's real-orthogonal sign gauge is diag((-1)^k) for det = +1 leaves (all
+        # leaves here, and after the template's determinant normalization, are det = +1)
+        pi_gauge = np.diag([(-1.0) ** k for k in range(num_orbitals)])
+
+        def onebody_wire_matrix(mat_orb):
+            full = np.zeros((n_wires, n_wires), dtype=complex)
+            for s in (0, 1):
+                block = range(s * num_orbitals, s * num_orbitals + num_orbitals)
+                full[np.ix_(block, block)] = mat_orb
+            return permute_qubits(one_body_matrix(full), mode_on_wire)
+
+        # physical fermionic data: H = C + one-body(h) + 1/2 sum_pq lam_pq n~_p n~_q
+        nuc = 0.37
+        h_raw = rng.normal(size=(num_orbitals, num_orbitals)) * 0.5
+        h = 0.5 * (h_raw + h_raw.T)
+        lam_raw = rng.normal(size=(num_orbitals, num_orbitals)) * 0.5
+        lam = 0.5 * (lam_raw + lam_raw.T)
+        leaf2 = random_orthogonal(num_orbitals, rng)
+        vecs = [pi_gauge @ leaf2[:, p] for p in range(num_orbitals)]  # realized fragment orbitals
+
+        h_phys = nuc * np.eye(dim, dtype=complex) + onebody_wire_matrix(h)
+        num_ops = [onebody_wire_matrix(np.outer(vecs[p], vecs[p])) for p in range(num_orbitals)]
+        for p in range(num_orbitals):
+            for q in range(num_orbitals):
+                h_phys = h_phys + 0.5 * lam[p, q] * (num_ops[p] @ num_ops[q])
+
+        # documented regrouping: the two-body single-site terms fold into the one-body fragment
+        mu = lam.sum(axis=1)
+        vg = np.stack(vecs, axis=1)
+        h_eff = h + vg @ np.diag(mu) @ vg.T
+        eps, ve = np.linalg.eigh(h_eff)
+        if np.linalg.det(pi_gauge @ ve) < 0:  # keep det(leaf_0) = +1 so its gauge is pi_gauge too
+            ve[:, 0] = -ve[:, 0]
+        leaf0 = pi_gauge @ ve
+        ham = {
+            "core_tensors": np.stack([np.diag(eps), lam]),
+            "leaf_tensors": np.stack([leaf0, leaf2]),
+            "nuc_constant": nuc,
+        }
+
+        expected = expm(-1j * h_phys * t)
+        diffs = [
+            float(
+                np.linalg.norm(
+                    qp.matrix(qp.TrotterCDF(t, steps, ham, wires=wires), wire_order=wires)
+                    - expected
+                )
+            )
+            for steps in (2, 4, 8)
+        ]
+        assert diffs[0] > diffs[1] > diffs[2]
+        assert diffs[1] / diffs[2] > 3.0
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")

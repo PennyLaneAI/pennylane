@@ -84,7 +84,12 @@ class TrotterCDF(Operator2):
             number of orbitals and ``L`` is the number of two-body fragments. Only the diagonal of
             ``core_tensors[0]`` is used (one-body), while ``core_tensors[l]`` for :math:`l \geq 1`
             are the symmetric two-body coupling tensors; ``leaf_tensors`` must be real orthogonal.
-        wires (Wires): The system wires. CDF expects ``2N`` wires (alpha / beta interleaved).
+        wires (Wires): The system wires. CDF expects ``2N`` wires (alpha / beta interleaved), i.e.
+            wire ``2i + s`` holds spin-orbital ``(i, s)`` under the *blocked* Jordan-Wigner mode
+            ordering ``m = i + s * N`` (all alpha modes, then all beta modes). The per-channel
+            :class:`~.BasisRotation` factors on ``wires[::2]`` and ``wires[1::2]`` realize a fermionic
+            Gaussian rotation only under this layout; mapping integrals with an interleaved mode
+            order yields a different operator.
         double_phase (bool): Only affects the controlled decomposition. If ``False`` (default),
             :func:`~pennylane.ctrl` produces a genuine controlled unitary
             :math:`\text{diag}(1, U)` where :math:`U = e^{-iHt}` is the Trotter evolution.
@@ -93,17 +98,22 @@ class TrotterCDF(Operator2):
 
     **Example**
 
-    Let us create mock CDF Hamiltonian data with the correct tensor shapes and evolve
-    with a few Trotter steps.
+    Let us create mock CDF Hamiltonian data with the correct tensor shapes and real
+    orthogonal leaves, and evolve with a few Trotter steps.
 
     .. code-block:: python
 
         rng = np.random.default_rng(42)
         N = 2  # orbitals
         L = 1  # two-body fragments
+
+        def random_orthogonal(dim):
+            q, r = np.linalg.qr(rng.standard_normal((dim, dim)))
+            return q * np.sign(np.diag(r))
+
         hamiltonian = {
-            "core_tensors": rng.random((L + 1, N, N)),
-            "leaf_tensors": rng.random((L + 1, N, N)),
+            "core_tensors": rng.standard_normal((L + 1, N, N)),
+            "leaf_tensors": np.stack([random_orthogonal(N) for _ in range(L + 1)]),
             "nuc_constant": 0.5,
         }
 
@@ -124,10 +134,10 @@ class TrotterCDF(Operator2):
 
     >>> specs = qp.specs(trotter_circuit)()["resources"].quantum_operations
     >>> dict(sorted(specs.items()))
-    {'GlobalPhase': 1, 'IsingZZ': 120, 'PhaseShift': 62, 'RZ': 40, 'SingleExcitation': 62}
+    {'GlobalPhase': 1, 'IsingZZ': 120, 'RZ': 40, 'SingleExcitation': 62}
 
-    The :class:`~.PhaseShift` and :class:`~.SingleExcitation` gates are due to
-    :class:`~.BasisRotation` decomposing further on ``lightning.qubit``.
+    The :class:`~.SingleExcitation` gates are due to :class:`~.BasisRotation` decomposing
+    further on ``lightning.qubit``.
 
     .. details ::
         :title: Usage Details
@@ -217,7 +227,10 @@ class TrotterCDF(Operator2):
         (see steps 3-4 below), and the inverse rotation :math:`\mathcal{U}^{(l)\dagger}`. Consecutive
         fragment rotations are merged as :math:`\mathcal{U}^{(l-1)\dagger}\mathcal{U}^{(l)}`, so only
         one basis rotation is emitted per fragment boundary, plus a single trailing
-        :math:`\mathcal{U}^{(1)\dagger}` after the last step.
+        :math:`\mathcal{U}^{(1)\dagger}` after the last step. Each leaf is first normalized to
+        determinant :math:`+1` (negating one orbital column, a no-op on :math:`\tilde{n}_p`) so that
+        :class:`~.BasisRotation`'s real-orthogonal sign gauge is consistent across fragments;
+        otherwise leaves with mixed determinants realize a different Hamiltonian.
 
         **3. One-body diagonal**
         In the fragment basis the one-body generator is :math:`D_0 = \sum_w \epsilon_p\, n_w`, summed
@@ -313,6 +326,25 @@ def _merge_leaves(U_prev, U_curr):
 def _transpose_leaf(U):
     """Conjugate transpose (adjoint) of a leaf rotation."""
     return U.conj().T
+
+
+def _normalize_leaf_determinant(hamiltonian):
+    r"""Force every leaf to determinant ``+1`` so :class:`~.BasisRotation`'s real-orthogonal sign
+    gauge is identical across fragments.
+
+    :class:`~.BasisRotation` realizes a real orthogonal ``leaf`` only up to a determinant-dependent
+    :math:`\pm 1` gauge, so leaves with *mixed* determinants -- e.g. an ``eigh`` one-body leaf with
+    ``det = -1`` next to ``expm`` two-body leaves with ``det = +1``, as produced by
+    :func:`~pennylane.qchem.factorize` for many molecules -- would be rotated into inconsistent bases
+    and realize a different Hamiltonian. Negating one orbital column leaves the projector
+    :math:`|v\rangle\langle v|`, and hence the fragment, unchanged, so this is a physical no-op.
+    """
+    leaves = hamiltonian["leaf_tensors"]
+    signs = math.sign(math.linalg.det(leaves))  # (num_fragments,)
+    col_scale = math.concatenate(
+        [signs[..., None], math.ones_like(leaves[..., 0, 1:])], axis=-1
+    )  # (num_fragments, N): +/-1 in the first column slot, 1 elsewhere
+    return {**hamiltonian, "leaf_tensors": leaves * col_scale[..., None, :]}
 
 
 def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, double_phase):
@@ -448,7 +480,12 @@ def _trotter_cdf_decomposition(evolution_time, num_trotter_steps, hamiltonian, w
     # always the plain (uncontrolled) e^{-iHt} circuit.
     if num_trotter_steps > 0:
         _run_trotter_steps(
-            evolution_time, num_trotter_steps, hamiltonian, wires, (), **_CDF_HELPERS
+            evolution_time,
+            num_trotter_steps,
+            _normalize_leaf_determinant(hamiltonian),
+            wires,
+            (),
+            **_CDF_HELPERS,
         )
         phi = (_energy_shift(hamiltonian) * evolution_time) % (4 * np.pi)
         GlobalPhase(phi)
@@ -481,6 +518,7 @@ def _controlled_trotter_cdf_decomp(base, control_wires, control_values, work_wir
         return
 
     phi = (_energy_shift(hamiltonian) * evolution_time) % (4 * np.pi)
+    hamiltonian = _normalize_leaf_determinant(hamiltonian)
 
     if double_phase:
         # Double-phase (Fig. 6) circuit: each full-time diagonal block is CNOT-sandwiched by
