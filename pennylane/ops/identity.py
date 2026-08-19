@@ -285,7 +285,6 @@ class GlobalPhase(Operator2):
     wire_argnames = ()
     arg_specs = {"phi": Float}
 
-    grad_method = "A"
 
     def __init__(self, phi):  # pylint: disable=unused-argument
         super().__init__(phi)
