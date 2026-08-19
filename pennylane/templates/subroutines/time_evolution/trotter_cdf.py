@@ -144,6 +144,113 @@ class TrotterCDF(Operator2):
 
         This is not a true controlled operation, but can be used to reduce the cost in Hadamard test circuits instead of the controlled evolution.
 
+    .. details ::
+        :title: Implementation Details
+
+        This section shows how the CDF Hamiltonian is turned into the concrete gate angles, making
+        every numerical prefactor explicit. Throughout we use :math:`n_p = (I - Z_p)/2`
+        and the PennyLane conventions
+        :math:`RZ(\theta) = e^{-i\theta Z/2}` and
+        :math:`IsingZZ(\theta) = e^{-i\theta\, Z\otimes Z/2}`.
+
+        **1. Fragment splitting and second-order Trotter.**
+        The Hamiltonian splits into :math:`L+1` fragments, :math:`H = C + \sum_{l=0}^{L} H_l`, the
+        one-body fragment :math:`H_0` and :math:`L` two-body fragments :math:`H_l`,
+
+        .. math::
+
+            H_0 = \sum_{p} \epsilon_{p}\, \tilde{n}^{(0)}_{p} ,
+            \qquad
+            H_l = \sum_{p,q} \lambda^{(l)}_{pq}\, \tilde{n}^{(l)}_{p} \tilde{n}^{(l)}_{q}
+            \quad (l \ge 1) ,
+
+        with :math:`\tilde{n}^{(l)}_{p} = \mathcal{U}^{(l)} n_p \mathcal{U}^{(l)\dagger}` and the scalar
+        :math:`C =` ``nuc_constant`` (handled in step 5). With :math:`n =` ``num_trotter_steps`` and
+        step duration :math:`\Delta t = t/n`, :math:`e^{-iHt}` is approximated by :math:`n` repetitions
+        of the second-order (Strang) step
+
+        .. math::
+
+            S_2(\Delta t) = \Big(\prod_{l=1}^{L} e^{-i H_l \Delta t/2}\Big)\,
+                            e^{-i H_0 \Delta t}\,
+                            \Big(\prod_{l=L}^{1} e^{-i H_l \Delta t/2}\Big) ,
+
+        which visits each two-body fragment *twice* per step (at the half-step duration
+        ``first_order_time_step`` :math:`= \Delta t/2`) and the central one-body fragment *once* (at the
+        full :math:`\Delta t`). The next steps derive :math:`e^{-i H_l \tau}` for a single fragment and
+        duration :math:`\tau`.
+
+        **2. Evolving a fragment**
+        The fragments are optimized and derived via :doc:`compressed double factorization <demos/tutorial_how_to_build_compressed_double_factorized_hamiltonians>`.
+        Here, each fragment is diagonal in its own orbital basis,
+        :math:`H_l = \mathcal{U}^{(l)} D_l\, \mathcal{U}^{(l)\dagger}`, where
+        :math:`\mathcal{U}^{(l)} =` ``leaf_tensors[l]`` and :math:`D_l` is diagonal, so
+
+        .. math::
+
+            e^{-i H_l \tau} = \mathcal{U}^{(l)}\, e^{-i D_l \tau}\, \mathcal{U}^{(l)\dagger} .
+
+        This is implemented as a :class:`~.BasisRotation` :math:`\mathcal{U}^{(l)}` (applied to the
+        :math:`\alpha` and :math:`\beta` spin channels separately), the diagonal rotations for :math:`e^{-i D_l \tau}`
+        (see steps 3-4 below), and the inverse rotation. Consecutive fragment rotations are merged as
+        :math:`\mathcal{U}^{(l-1)\dagger}\mathcal{U}^{(l)}`, so only one basis rotation is emitted per
+        fragment boundary.
+
+        **3. One-body diagonal.**
+        The one-body generator is :math:`D_0 = \sum_p \epsilon_p\, n_p`, with
+        :math:`\epsilon_p =` ``core_tensors[0][p, p]``. Using :math:`n_p=(I-Z_p)/2`,
+
+        .. math::
+
+            \epsilon_p\, n_p = \frac{\epsilon_p}{2}\, I - \frac{\epsilon_p}{2}\, Z_p ,
+
+        so the :math:`Z_p` piece over duration :math:`\tau` is
+        :math:`e^{+i(\epsilon_p/2) Z_p \tau} = RZ(-\epsilon_p \tau)`. The one-body fragment is the
+        central full :math:`\Delta t` term (visited once per step), so the emitted angle is
+        :math:`-\epsilon_p \Delta t = -2 \epsilon_p \Delta t/2`, accumulating :math:`RZ(-\epsilon_p t)`
+        over the :math:`n` steps. The constant :math:`\epsilon_p/2` is deferred to the global phase (step 5).
+
+        **4. Two-body diagonal.**
+        A two-body generator is :math:`D_l = \sum_{p,q}\lambda_{pq}\, n_p n_q`, with
+        :math:`\lambda_{pq} =` ``core_tensors[l][p, q]``. Using :math:`n=(I-Z)/2`,
+
+        .. math::
+
+            \lambda_{pq}\, n_p n_q =
+                \frac{\lambda_{pq}}{4}\left(I - Z_p - Z_q + Z_p Z_q\right) ,
+
+        a constant :math:`\lambda_{pq}/4`, single-site terms
+        :math:`-\tfrac{\lambda_{pq}}{4}(Z_p + Z_q)`, and the two-site term
+        :math:`\tfrac{\lambda_{pq}}{4} Z_p Z_q`. In the *regrouped* input the single-site terms are
+        already absorbed into ``core_tensors[0]`` and the constants into the global phase, so each
+        two-body layer implements only the two-site term
+
+        .. math::
+
+            e^{-i(\lambda_{pq}/4) Z_p Z_q\, \tau} = \text{IsingZZ} \left(\lambda_{pq} \tfrac{\tau}{2}\right).
+
+        Each two-body fragment is visited twice per step at :math:`\tau = \Delta t/2`, so the emitted
+        angle is :math:`\tfrac{1}{2}\,\lambda_{pq}\,(\Delta t/2)` (the ``0.5`` prefactor in the code),
+        accumulating :math:`IsingZZ(\lambda_{pq}\, t/2)` over the :math:`n` steps.
+
+        **5. Constant terms (global phase / energy shift).**
+        All identity contributions -- ``nuc_constant`` :math:`C`, the :math:`\epsilon_p/2` pieces from
+        the one-body expansion (one per spin channel, i.e. :math:`\epsilon_p` per orbital), and the
+        constants bookkept while regrouping the two-body fragments -- are collected into a single
+        scalar :math:`s` and applied as one :class:`~.GlobalPhase` with angle :math:`s\,t`, i.e.
+        :math:`e^{-ist}`, matching the :math:`I`-part of :math:`e^{-iHt}`. Following Eq. (A29) of
+        `arXiv:2506.15784 <https://arxiv.org/abs/2506.15784>`__,
+
+        .. math::
+
+            s = C + \sum_p \epsilon_p
+                  - \frac{1}{2}\sum_{l\ge 1}\sum_{p,q} \lambda^{(l)}_{pq}
+                  + \frac{1}{4}\sum_{l\ge 1}\sum_{p} \lambda^{(l)}_{pp} ,
+
+        which is what the code accumulates as the energy shift (``trace(core_tensors[0])`` for the
+        one-body part and ``-sum(core_tensors[1:])/2 + trace(core_tensors[1:])/4`` for the two-body
+        part).
+
     """
 
     dynamic_argnames = ("evolution_time",)
