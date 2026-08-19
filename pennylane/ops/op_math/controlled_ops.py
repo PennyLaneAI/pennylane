@@ -203,6 +203,7 @@ class ControlledQubitUnitary(Controlled2):
             control_values=control_values,
             work_wires=work_wires,
             work_wire_type=work_wire_type,
+            unitary_check=False,
         )
 
         self._name = "ControlledQubitUnitary"

@@ -170,10 +170,11 @@ class QubitUnitary(Operator2):
 
         super().__init__(U, wires=wires)
 
+    # pylint: disable-next=unused-argument
     def __abstract_init__(self, U, wires, unitary_check=False):  # pylint: disable=arguments-differ
         # Abstract instances are never backed by a concrete (sparse) matrix.
         self._issparse = False
-        super().__abstract_init__(U, wires=wires, unitary_check=unitary_check)
+        super().__abstract_init__(U, wires=wires, unitary_check=False)
 
     @staticmethod
     def _unitary_check(U, dim):
