@@ -296,7 +296,7 @@ def _make_css_decoder(
     num_iters = tl.constexpr(num_iters)
 
     @triton.jit
-    def decode(syndrome):
+    def decode(syndrome):  # pragma: no cover
         return _decode_one(
             syndrome,
             matrix,

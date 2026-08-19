@@ -67,6 +67,7 @@ class TestTextBytes:
             operands.text_bytes(CType.STR, "x" * operands.STR_OPERAND_BYTES, "sym", 0)
 
 
+@pytest.mark.jax
 class TestOperandFor:
     """Building the single-parameter operand."""
 
@@ -132,6 +133,7 @@ class TestOutSizes:
             operands.out_sizes(signature, -4)
 
 
+@pytest.mark.jax
 class TestResultAvals:
     """The shapes a call returns."""
 
@@ -168,6 +170,7 @@ class TestCheckBufferWidth:
         # Does not raise: uint8 is 1 byte, so the < 8 branch fires and JAX is never touched.
         operands.check_buffer_width(np.zeros(4, dtype=np.uint8), "sym", 0)
 
+    @pytest.mark.jax
     def test_a_python_list_is_measured_via_asarray(self):
         """A list has no ``.dtype``, so its dtype is measured by wrapping it in an ndarray."""
         jax = pytest.importorskip("jax")
@@ -176,6 +179,7 @@ class TestCheckBufferWidth:
             with pytest.raises(TypeError, match="narrowed to 32 bits"):
                 operands.check_buffer_width([1, 2, 3], "sym", 0)
 
+    @pytest.mark.jax
     def test_a_narrow_scalar_needs_no_x64(self):
         """A value whose dtype is already 32-bit passes without ``x64``."""
         jax = pytest.importorskip("jax")

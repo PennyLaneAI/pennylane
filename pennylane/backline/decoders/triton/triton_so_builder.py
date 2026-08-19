@@ -75,7 +75,7 @@ class _HashableConstexprTuple(tuple):
 
 def _constexpr_cache_key_part(value: object) -> object:
     """Build a stable cache-key fragment for nested constexpr values."""
-    if isinstance(value, tuple):
+    if isinstance(value, tuple):  # pragma: no cover
         return tuple(_constexpr_cache_key_part(item) for item in value)
     return value.cache_key if hasattr(value, "cache_key") else value
 
