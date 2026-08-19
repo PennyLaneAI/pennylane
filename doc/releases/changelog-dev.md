@@ -93,8 +93,10 @@
 
   @qp.qnode(dev, shots=1)
   def circuit():
-      qp.BasisEmbedding(x, wires=x_wires)
-      qp.BasisEmbedding(y, wires=y_wires)
+      x_bin = qp.math.int_to_binary(x, len(x_wires))
+      y_bin = qp.math.int_to_binary(y, len(y_wires))
+      qp.BasisEmbedding(x_bin, wires=x_wires)
+      qp.BasisEmbedding(y_bin, wires=y_wires)
       qp.SignedOutMultiplier(
           x_wires,
           y_wires,
@@ -534,8 +536,10 @@
     x_wires = [0, 3, 6, 9]
     y_wires = [1, 4, 7, 10]
     work_wires = [2, 5, 8]
-    qp.BasisState(a, wires=x_wires)
-    qp.BasisState(b, wires=y_wires)
+    a_bin = qp.math.int_to_binary(a, len(x_wires))
+    b_bin = qp.math.int_to_binary(b, len(x_wires))
+    qp.BasisState(a_bin, wires=x_wires)
+    qp.BasisState(b_bin, wires=y_wires)
     LeftQuantumComparator(x_wires, y_wires, 11, work_wires, comparator)
     qp.CNOT(wires=[11, 12])
     qp.adjoint(LeftQuantumComparator(x_wires, y_wires, 11, work_wires, comparator))
@@ -563,7 +567,8 @@
   @qp.set_shots(shots=1)
   @qp.qnode(dev)
   def circuit(x_val, L_val):
-    qp.BasisState(x_val, wires=[0, 1, 2])
+    x_val_bin = qp.math.int_to_binary(x_val, 3)
+    qp.BasisState(x_val_bin, wires=[0, 1, 2])
 
     LeftClassicalComparator(
         x_wires=[0, 1, 2],
@@ -922,7 +927,7 @@
   - Templates are ported:
     - :class:`~.BasisRotation`, :class:`~.MultiplexerStatePreparation`, :class:`~.QROM`, :class:`~.QFT`, :class:`~.FlipSign`,
       :class:`~.TemporaryAND`, :class:`~.SelectPauliRot`, :class:`~.GQSP`, :class:`~.AQFT`, :class:`~.SumOfSlatersPrep`,
-      :class:`~.SemiAdder`, :class:`~.OutMultiplier`, :class:`~.SignedOutMultiplier`
+      :class:`~.SemiAdder`, :class:`~.OutMultiplier`, :class:`~.SignedOutMultiplier`, :class:`~.BasisState`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
   [(#9925)](https://github.com/PennyLaneAI/pennylane/pull/9925)
   [(#9918)](https://github.com/PennyLaneAI/pennylane/pull/9918)
@@ -938,6 +943,7 @@
   [(#9997)](https://github.com/PennyLaneAI/pennylane/pull/9997)
   [(#9995)](https://github.com/PennyLaneAI/pennylane/pull/9995)
   [(#10018)](https://github.com/PennyLaneAI/pennylane/pull/10018)
+  [(#9933)](https://github.com/PennyLaneAI/pennylane/pull/9933)
   - Quantum chemistry operators are ported:
     - :class:`~.SingleExcitation`
   [(#9944)](https://github.com/PennyLaneAI/pennylane/pull/9944)
