@@ -16,7 +16,15 @@
 
 # pylint: disable=too-few-public-methods
 
-from pennylane.backline import CoprocessorFunction
+import sys
+
+import numpy as np
+import pytest
+
+import pennylane as qp
+from pennylane.backline import CoprocessorFunction, css_bp_decoder, triton_decoder
+
+_DECODER_FRONTEND = "pennylane.backline.decoders.triton.decoder_frontend"
 
 
 class TestCoprocessorFunction:
@@ -31,3 +39,44 @@ class TestCoprocessorFunction:
     def test_lib_path(self):
         fn = CoprocessorFunction("decode", lib_path="/opt/lib/libdecode.so")
         assert fn.lib_path == "/opt/lib/libdecode.so"
+
+    def test_the_dataclass_is_frozen(self):
+        """Attribute assignment on a coprocessor function is refused."""
+        fn = CoprocessorFunction("decode")
+        with pytest.raises(Exception):
+            fn.name = "renamed"  # type: ignore[misc]
+
+    def test_two_equal_handles_compare_equal(self):
+        """Same name and library means same handle."""
+        assert CoprocessorFunction("decode", lib_path="/a.so") == CoprocessorFunction(
+            "decode", lib_path="/a.so"
+        )
+
+
+class TestTritonDecoder:
+    """The Triton decoder compilation entry point."""
+
+    def test_missing_triton_raises_import_error(self, monkeypatch):
+        """The message points the user at installing triton, and wraps the original cause."""
+        monkeypatch.setitem(sys.modules, _DECODER_FRONTEND, None)
+        with pytest.raises(ImportError, match="Triton decoders require installed"):
+            triton_decoder((object(),))
+
+    def test_the_wrapper_reexports_from_backline(self):
+        """The public name is exported from pennylane.backline."""
+        assert qp.backline.triton_decoder is triton_decoder
+
+
+class TestCssBpDecoder:
+    """The CSS belief-propagation decoder compilation entry point."""
+
+    def test_missing_triton_raises_import_error(self, monkeypatch):
+        """The message points the user at installing triton, and wraps the original cause."""
+        monkeypatch.setitem(sys.modules, _DECODER_FRONTEND, None)
+        Hx = Hz = np.array([[1, 0, 1], [0, 1, 1]], dtype=np.uint8)
+        with pytest.raises(ImportError, match="Triton decoders require installed"):
+            css_bp_decoder(Hx, Hz)
+
+    def test_the_wrapper_reexports_from_backline(self):
+        """The public name is exported from pennylane.backline."""
+        assert qp.backline.css_bp_decoder is css_bp_decoder

@@ -331,5 +331,63 @@ class TestLocalCalls:
         assert calls[0].params["dispatch"] is None
 
 
+class TestResolveSignature:
+    """Which signature :func:`~.runtime_call` calls a symbol with."""
+
+    def test_a_csignature_target_needs_no_signature_kwarg(self, x64):
+        """Passing the signature as the target is enough to record the call."""
+        signature = CSignature.parse("resolved_by_target", "(u64) -> i32")
+        jaxpr = x64.make_jaxpr(lambda: qp.runtime_call(signature, 1, address="h:1"))()
+        calls = [eqn for eqn in jaxpr.eqns if str(eqn.primitive) == "runtime_call"]
+        assert calls[0].params["symbol"] == "resolved_by_target"
+
+    def test_both_target_and_signature_is_refused(self):
+        """Two ways to say the same thing invite disagreement, so both is refused."""
+        pytest.importorskip("jax")
+        signature = CSignature.parse("clashing_target", "(u64) -> i32")
+        with pytest.raises(ValueError, match="either a CSignature or signature="):
+            qp.runtime_call(signature, 1, signature=signature, address="h:1")
+
+    def test_a_csignature_kwarg_is_used_as_given(self, x64):
+        """A signature= kwarg with a CSignature is used verbatim; no declaration is inferred."""
+        signature = CSignature.parse("resolved_by_kwarg", "(u64) -> i32")
+
+        def program():
+            return qp.runtime_call("resolved_by_kwarg", 1, signature=signature, address="h:1")
+
+        jaxpr = x64.make_jaxpr(program)()
+        calls = [eqn for eqn in jaxpr.eqns if str(eqn.primitive) == "runtime_call"]
+        assert calls[0].params["signature"] is signature
+
+    def test_a_signature_spec_string_is_declared_on_first_call(self, x64):
+        """A signature= kwarg as a string declares the symbol and uses that declaration."""
+
+        def program():
+            return qp.runtime_call(
+                "declared_via_call", 1, signature="(u64) -> i32", address="h:1"
+            )
+
+        x64.make_jaxpr(program)()
+        assert qp.backline.runtime.signature_of("declared_via_call").symbol == "declared_via_call"
+
+
+class TestOutsideATrace:
+    """A recorded call belongs in a compiled program."""
+
+    def test_a_local_call_outside_a_trace_is_refused(self):
+        """Without a JAX trace, no jaxpr can record the call, so it is refused eagerly."""
+        pytest.importorskip("jax")
+        qp.runtime_declare("outside_trace_local", "(u64) -> i32", library="/opt/libx.so")
+        with pytest.raises(RuntimeError, match="outside a compiled program"):
+            qp.runtime_call("outside_trace_local", 0)
+
+    def test_a_dispatched_call_outside_a_trace_is_refused(self):
+        """The dispatched form is refused the same way; the ``address`` is beside the point."""
+        pytest.importorskip("jax")
+        qp.runtime_declare("outside_trace_dispatched", "(u64) -> i32")
+        with pytest.raises(RuntimeError, match="outside a compiled program"):
+            qp.runtime_call("outside_trace_dispatched", 0, address="h:1")
+
+
 if __name__ == "__main__":
     pytest.main(["-x", __file__])

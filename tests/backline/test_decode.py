@@ -23,9 +23,12 @@ import pennylane as qp
 from pennylane.backline.decode import (
     ROLE_CONTROLLER,
     _byte_count,
+    _pack,
     _resolve_nodes,
     _resolve_out_bytes,
     _session_key,
+    _unpack,
+    _validate_packed,
     decode,
 )
 from pennylane.backline.runtime import operands
@@ -398,3 +401,59 @@ class TestRecordedRound:
                 controller=qp.Controller(),
                 coprocessor=a_coprocessor(),
             )
+
+
+class TestPackedHelpersNumpy:
+    """The packed-mode helpers on plain numpy inputs, without a JAX trace open.
+
+    The traced path is covered above via :class:`TestDecodeBitpack`; these tests exercise the numpy
+    fallback that runs when :func:`decode` is called on a concrete syndrome (which happens outside a
+    compiled program, so it goes on to raise a :exc:`RuntimeError` -- we assert on the ``_pack``
+    output that has already been produced by then).
+    """
+
+    def test_validate_accepts_a_numpy_syndrome(self):
+        """A numpy syndrome takes the numpy branch and comes back as a ``uint8`` array."""
+        out = _validate_packed(np.array([1, 0, 1], dtype=np.uint8), None, None)
+        assert isinstance(out, np.ndarray)
+        assert out.dtype == np.uint8
+        assert list(out) == [1, 0, 1]
+
+    def test_validate_accepts_a_python_list(self):
+        """A Python list is treated as numpy, since ``math.get_interface`` reports so."""
+        out = _validate_packed([1, 0, 1, 1], None, None)
+        assert isinstance(out, np.ndarray)
+        assert out.dtype == np.uint8
+
+    def test_validate_still_rejects_non_1d_numpy_inputs(self):
+        """Shape validation runs after the numpy conversion, and still catches a 2D input."""
+        with pytest.raises(ValueError, match="1D bit vector"):
+            _validate_packed(np.zeros((2, 3), dtype=np.uint8), None, None)
+
+    def test_pack_numpy_pads_to_eight_bytes(self):
+        """The numpy branch of ``_pack`` produces exactly eight little-endian bytes."""
+        packed = _pack(np.array([1, 0, 1], dtype=np.uint8))
+        assert isinstance(packed, np.ndarray)
+        assert packed.shape == (8,)
+        # bits [1, 0, 1] little-endian pack to 0b101 == 5 in the low byte, then zeros
+        assert packed[0] == 0b101
+        assert list(packed[1:]) == [0] * 7
+
+    def test_unpack_numpy_returns_a_64_entry_bool_vector(self):
+        """The numpy branch of ``_unpack`` returns a 64-entry boolean vector."""
+        payload = np.zeros(8, dtype=np.uint8)
+        payload[0] = 0b101
+        bits = _unpack(payload)
+        assert bits.shape == (64,)
+        assert bits.dtype == np.dtype(bool)
+        assert bool(bits[0]) is True
+        assert bool(bits[1]) is False
+        assert bool(bits[2]) is True
+        assert not bits[3:].any()
+
+    def test_pack_then_unpack_round_trips(self):
+        """``_unpack(_pack(x))`` returns the input padded up to 64 entries."""
+        original = np.array([1, 0, 1, 1, 0, 0, 1], dtype=np.uint8)
+        recovered = _unpack(_pack(original))
+        assert list(recovered[: original.size].astype(np.uint8)) == list(original)
+        assert not recovered[original.size :].any()
