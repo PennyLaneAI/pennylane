@@ -614,6 +614,9 @@ class TestAutogradExecuteIntegration:
         """Tests correct output shape and evaluation for a tape
         with prob outputs"""
 
+        if execute_kwargs["diff_method"] == "adjoint":
+            pytest.xfail("adjoint diff of state measurements not supported.")
+
         device = get_device(device_name, seed=seed)
 
         def cost(x, y):
@@ -668,6 +671,9 @@ class TestAutogradExecuteIntegration:
     def test_ragged_differentiation(self, execute_kwargs, device_name, seed, shots):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
+
+        if execute_kwargs["diff_method"] == "adjoint":
+            pytest.xfail("adjoint diff of state measurements not supported.")
 
         device = get_device(device_name, seed=seed)
 

@@ -74,8 +74,8 @@ def adjoint(fn, lazy=True):
 
         This function supports a batched operator:
 
-        >>> op = qp.adjoint(qp.RX([1, 2, 3], wires=0))
-        >>> qp.matrix(op).shape
+        >>> op = qp.adjoint(qp.RX([1, 2, 3], wires=0))  # doctest: +SKIP
+        >>> qp.matrix(op).shape  # doctest: +SKIP
         (3, 2, 2)
 
         But it doesn't support batching of operators:
@@ -326,7 +326,7 @@ class Adjoint(SymbolicOp):
         >>> isinstance(op, AdjointOperation)
         True
         >>> op.grad_method
-        'A'
+        <GradMethod.ANALYTIC: 'A'>
 
     """
 

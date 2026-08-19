@@ -25,6 +25,7 @@ import pennylane as qp
 from pennylane import allocation, capture, compiler, math
 from pennylane.core.operator import Operator, abstractify
 from pennylane.core.operator.operator2 import operator_p, pop_op_eqns  # tach-ignore
+from pennylane.core.queuing import remove_from_program
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
     DecompositionRule,
@@ -131,7 +132,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         work_wires: WiresLike | None = None,
         work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
     ):
-        _remove_from_program(base)
+        remove_from_program(base)
 
         control_wires = Wires(control_wires)
         work_wires = Wires([] if work_wires is None else work_wires)
@@ -234,7 +235,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
             @staticmethod
             def _compute_matrix(*args, **kwargs):
                 op = cls(*args, **kwargs)
-                _remove_from_program(op)
+                remove_from_program(op)
                 return Controlled2.compute_matrix(op.base, op.control_wires, op.control_values)
 
             cls.compute_matrix = _compute_matrix
@@ -244,7 +245,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
             @staticmethod
             def _compute_sparse_matrix(*args, format="csr", **kwargs):
                 op = cls(*args, **kwargs)
-                _remove_from_program(op)
+                remove_from_program(op)
                 return Controlled2.compute_sparse_matrix(
                     op.base,
                     op.control_wires,
@@ -259,7 +260,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
             @staticmethod
             def _compute_eigvals(*args, **kwargs):
                 op = cls(*args, **kwargs)
-                _remove_from_program(op)
+                remove_from_program(op)
                 return Controlled2.compute_eigvals(op.base, op.control_wires, op.control_values)
 
             cls.compute_eigvals = _compute_eigvals
@@ -269,7 +270,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
             @staticmethod
             def _compute_diagonalizing_gates(*args, **kwargs):
                 op = cls(*args, **kwargs)
-                _remove_from_program(op)
+                remove_from_program(op)
                 return Controlled2.compute_diagonalizing_gates(op.base)
 
             cls.compute_diagonalizing_gates = _compute_diagonalizing_gates
@@ -626,14 +627,6 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         # `res`` will be a concrete operator, not an abstract tracer, so we don't save it.
         if math.is_abstract(res):
             self.tracer = res
-
-
-def _remove_from_program(op):
-    """Removes an operator from the captured/queued program."""
-    if qp.QueuingManager.recording():
-        qp.QueuingManager.remove(op)
-    if qp.capture.enabled():
-        pop_op_eqns((op,))
 
 
 @list_decomps.register
