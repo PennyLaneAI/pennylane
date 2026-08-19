@@ -160,8 +160,8 @@
   ```
 
   ```pycon
-  >>> specs_result = qp.specs(circuit, level=0)(5) # doctest: +SKIP
-  >>> print(specs_result) # doctest: +SKIP
+  >>> specs_result = qp.specs(circuit, level=0)(5) 
+  >>> print(specs_result) 
   Device: lightning.qubit
   Device wires: 1
   Shots: Shots(total=None)
@@ -182,8 +182,8 @@
   These symbolic resources include expressions with variables which can substituted for concrete values to compute the associated resources for a circuit, via the ``subs`` method.
 
   ```pycon
-  >>> res = specs_result.resources # doctest: +SKIP
-  >>> print(res.subs(a=5)) # doctest: +SKIP
+  >>> res = specs_result.resources 
+  >>> print(res.subs(a=5)) 
   Quantum operations:
   - Total: 7
     - Hadamard: 1
@@ -846,6 +846,7 @@
 * The resource module JSON parser used by :func:`~.specs` to read Catalyst data has been revamped to match the new JSON structure produced by Catalyst.
   [(#9942)](https://github.com/PennyLaneAI/pennylane/pull/9942)
   [(#9969)](https://github.com/PennyLaneAI/pennylane/pull/9969)
+  [(#10011)](https://github.com/PennyLaneAI/pennylane/pull/10011)
 
 * Adds an `AGENTS.md` file providing guidelines and repository conventions for AI coding agents.
   [(#9929)](https://github.com/PennyLaneAI/pennylane/pull/9929)
@@ -1167,6 +1168,12 @@
   [(#9621)](https://github.com/PennyLaneAI/pennylane/pull/9621)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed a bug where decomposing an :class:`~.Operator2` with graph-based decomposition
+  enabled inside a :class:`~.Subroutine` with program capture leaked JAX tracers and
+  caused Catalyst compilation to fail.
+  operations.
+  [(#10023)](https://github.com/PennyLaneAI/pennylane/pull/10023)
 
 * Updated :class:`~.Wires` to allow unflattening pytrees with scalar JAX arrays as wire indices.
   [(#9852)](https://github.com/PennyLaneAI/pennylane/pull/9852)
