@@ -202,7 +202,7 @@ class ControlledQubitUnitary(Controlled2):
         num_control_wires = len(wires) - num_base_wires
 
         super().__abstract_init__(
-            base=U,
+            base=qp.QubitUnitary(abstractify(U), wires=Wire[num_base_wires]),
             control_wires=Wire[num_control_wires],
             control_values=control_values,
             work_wires=work_wires,
