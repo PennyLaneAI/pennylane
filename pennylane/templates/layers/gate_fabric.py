@@ -21,8 +21,9 @@ import numpy as np
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import BasisState, DoubleExcitation, OrbitalRotation, cond
+from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires
 
 has_jax = True
@@ -274,7 +275,7 @@ class GateFabric(Operation):
 
         >>> weights = torch.tensor([[[0.3, 1.]]])
         >>> qp.GateFabric.compute_decomposition(weights, wires=["a", "b", "c", "d"], init_state=[0, 1, 0, 1], include_pi=False)
-        [BasisState(array([0, 1, 0, 1]), wires=['a', 'b', 'c', 'd']), DoubleExcitation(tensor(0.3000), wires=['a', 'b', 'c', 'd']), OrbitalRotation(tensor(1.), wires=['a', 'b', 'c', 'd'])]
+        [BasisState([0 1 0 1], wires=['a', 'b', 'c', 'd']), DoubleExcitation(tensor(0.3000), wires=['a', 'b', 'c', 'd']), OrbitalRotation(tensor(1.), wires=['a', 'b', 'c', 'd'])]
 
         """
         op_list = []
@@ -327,7 +328,7 @@ class GateFabric(Operation):
 def _gate_fabric_resources(n_layers, num_wires, len_wire_pattern, include_pi):
     rotation_count = 2 * n_layers * len_wire_pattern if include_pi else n_layers * len_wire_pattern
     return {
-        resource_rep(BasisState, num_wires=num_wires): 1,
+        BasisState(Bool[num_wires], Wire[num_wires]): 1,
         DoubleExcitation: n_layers * len_wire_pattern,
         OrbitalRotation: rotation_count,
     }
