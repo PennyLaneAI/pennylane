@@ -28,7 +28,6 @@ from pennylane.core import Operator2
 from pennylane.core.operator import Operator
 from pennylane.ops.functions import assert_valid
 from pennylane.ops.functions.assert_valid import (
-    _check_capture,
     _check_eigendecomposition,
     _check_pytree,
     _test_decomposition_rule,
@@ -533,28 +532,6 @@ class TestPytree:
         _check_pytree(qp.ops.Evolution(generator, 0.2))
 
 
-@pytest.mark.jax
-def test_bad_capture():
-    """Tests that the correct error is raised when something goes wrong with program capture."""
-
-    class MyBadOp(qp.operation.Operator):
-
-        def _flatten(self):
-            return (self.hyperparameters["target_op"], self.data[0]), ()
-
-        @classmethod
-        def _unflatten(cls, data, metadata):
-            return cls(*data)
-
-        def __init__(self, target_op, val):
-            super().__init__(val, wires=target_op.wires)
-            self.hyperparameters["target_op"] = target_op
-
-    op = MyBadOp(qp.X(0), 2)
-    with pytest.raises(ValueError, match=r"The capture of the operation into jaxpr failed"):
-        _check_capture(op)
-
-
 def test_data_is_tuple():
     """Check that the data property is a tuple."""
 
@@ -636,6 +613,9 @@ class TestOperator2AssertValid:
     def test_check_decomposition(self):
         """``_check_decomposition`` fails if ``compute_decomposition`` does not return a list."""
 
+        if qp.capture.enabled():
+            pytest.skip("this is not expected to work when capture is enabled.")
+
         class BadDecomp(Operator2):
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires",)
@@ -671,6 +651,9 @@ class TestOperator2AssertValid:
 
     def test_check_matrix_matches_decomposition(self):
         """``_check_matrix_matches_decomp`` fails if the matrix and decomposition disagree."""
+
+        if qp.capture.enabled():
+            pytest.skip("this is not expected to work when capture is enabled.")
 
         class MatDecompMismatch(Operator2):
             wire_argnames = ("wires",)

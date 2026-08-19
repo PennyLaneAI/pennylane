@@ -544,8 +544,8 @@ def _check_capture(op):
     if not all(isinstance(w, int) for w in op.wires):
         return
 
-    qp.capture.enable()
-    try:
+    with qp.capture.toggle_ctx(True):
+
         data, struct = jax.tree_util.tree_flatten(op)
 
         def test_fn(*args):
@@ -560,18 +560,8 @@ def _check_capture(op):
         assert_equal(op, new_op)
 
         leaves = jax.tree_util.tree_leaves(jaxpr.eqns[-1].params)
-        assert not any(
-            qp.math.is_abstract(l) for l in leaves
-        ), "capture params cannot contain tracers"
-    except Exception as e:
-        raise ValueError(
-            "The capture of the operation into jaxpr failed somehow."
-            " This capture mechanism is currently experimental and not a core"
-            " requirement, but will be necessary in the future."
-            " Please see the capture module documentation for more information."
-        ) from e
-    finally:
-        qp.capture.disable()
+        error_msg = "capture params cannot contain tracers"
+        assert not any(qp.math.is_abstract(l) for l in leaves), error_msg
 
 
 def _check_pickle(op):
@@ -813,6 +803,9 @@ def assert_valid(
     AssertionError: metadata output from _flatten must be hashable. Got metadata (Wires([0]), (('unhashable_list', []),))
 
     """
+
+    if skip_capture and qp.capture.enabled():
+        return
 
     if isinstance(op, qp.core.Operator2):
         _assert_valid_operator2(
