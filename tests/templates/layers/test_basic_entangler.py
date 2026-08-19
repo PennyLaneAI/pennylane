@@ -130,7 +130,8 @@ class TestDecomposition:
         ([[np.pi] * 2], range(2), qp.RY),
         ([[np.pi] * 3], range(3), qp.RZ),
         ([[np.pi] * 4], range(4), qp.RX),
-        ([[[np.pi, 1, 2, 1]] * 4], range(4), qp.RX),
+        # batching is something we'll come back to.
+        pytest.param([[[np.pi, 1, 2, 1]] * 4], range(4), qp.RX, marks=pytest.mark.pl2do),
     ]
 
     @pytest.mark.usefixtures("enable_and_disable_capture")

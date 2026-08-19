@@ -1496,7 +1496,7 @@ class Operator2(metaclass=OperatorMeta):
         expected numbers of dimensions, allowing to infer a batch size.
         """
         self._batch_size = None
-        dynamic_args = tuple(self.dynamic_args.values())
+        dynamic_args = self.data
 
         ndims = tuple(math.ndim(arg) for arg in dynamic_args)
         if any(len(math.shape(arg)) >= 1 and math.shape(arg)[0] is None for arg in dynamic_args):
@@ -2054,6 +2054,10 @@ def _canonicalize_dynamic(d, op_name=None) -> Hashable:
     # valued QNode (one that returns qp.state) requires complex typed inputs.
     if op_name is not None and op_name in ("RX", "RY", "RZ", "PhaseShift", "Rot", "U1", "U2", "U3"):
         mod_val = 2 * np.pi
+    elif op_name is not None and op_name in ("CRX", "CRY", "CRZ", "CRot"):
+        # Rot(θ) ∈ SU(2) double-covers SO(3) via center {-I, I}, so θ ↦ θ+2π is global phase -I;
+        # in CRot, -I becomes a relative phase on |1⟩, breaking 2π periodicity to 4π.
+        mod_val = 4 * np.pi
     else:
         mod_val = None
 
