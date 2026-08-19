@@ -13,8 +13,6 @@
 # limitations under the License.
 """Tests for the ``TrotterVibronic`` template."""
 
-from itertools import combinations_with_replacement
-
 import numpy as np
 import pytest
 
@@ -25,7 +23,7 @@ from pennylane.templates.subroutines.arithmetic import (
     SignedOutMultiplier,
     SignedOutSquare,
 )
-from pennylane.templates.subroutines.time_evolution._trotter_vibronic_utils import (
+from pennylane.templates.subroutines.time_evolution.trotter_vibronic import (
     _derive_diag_keys,
     _diagonalization_matrix,
     _diagonalize_vibronic_circuit,
@@ -34,49 +32,82 @@ from pennylane.templates.subroutines.time_evolution._trotter_vibronic_utils impo
     _position_coefficients,
 )
 
-vibronic_fragments = pytest.importorskip(
-    "pennylane.labs.trotter_error.fragments"
-).vibronic_fragments
-
-
 # ---------------------------------------------------------------------------
 # --------------------------- Test data helpers -----------------------------
 # ---------------------------------------------------------------------------
+#
+# The dense vibronic Hamiltonians used throughout these tests are exactly the data that
+# ``pennylane.labs.trotter_error.vibronic_fragments`` (with the default "blocks" fragmentation
+# scheme) followed by a dense conversion would produce. They are reconstructed here directly in
+# NumPy so the test suite does not depend on ``pennylane.labs``. Each "fragment" is a dictionary
+# of dense coefficient tensors; ``build_hamiltonian`` stacks the position fragments and appends
+# the kinetic fragment, matching the stacked dense output the template consumes.
 
 
-def fragment_to_dense(fragment, op_type):
-    """Convert the ``op_type`` coefficients of a ``RealspaceMatrix`` fragment to a dense array."""
-    n_states, n_modes, order = fragment.states, fragment.modes, len(op_type)
-    dense = np.zeros((n_states, n_states) + (n_modes,) * order)
-    for elec_key, val in fragment.get_coefficients().items():
-        terms = val.get(op_type, None)
-        if terms is None:
-            continue
-        if order == 0:
-            dense[elec_key] = terms.get((), 0.0)
-            continue
-        for modes in combinations_with_replacement(range(n_modes), r=order):
-            dense[elec_key][modes] = terms.get(modes, 0.0)
-    return dense
+def _next_pow_2(k):
+    """Return the smallest power of 2 greater than or equal to ``k``."""
+    return 2 ** (k - 1).bit_length()
+
+
+def _zero_fragment(n_states, n_modes):
+    """Return a fragment of all-zero dense coefficient tensors."""
+    return {
+        "constant": np.zeros((n_states, n_states)),
+        "linear": np.zeros((n_states, n_states, n_modes)),
+        "quadratic": np.zeros((n_states, n_states, n_modes, n_modes)),
+        "kinetic": np.zeros((n_states, n_states, n_modes, n_modes)),
+    }
 
 
 def build_hamiltonian(fragments):
-    """Build the dense vibronic Hamiltonian dictionary from a list of fragments."""
+    """Build the dense vibronic Hamiltonian dictionary from a list of dense fragments.
+
+    The leading ``fragments[:-1]`` are the position fragments (stacked along a new leading
+    fragment axis) and the last entry contributes the single kinetic fragment.
+    """
     position, kinetic = fragments[:-1], fragments[-1]
     return {
-        "constant": np.stack([fragment_to_dense(f, ()) for f in position]),
-        "linear": np.stack([fragment_to_dense(f, ("Q",)) for f in position]),
-        "quadratic": np.stack([fragment_to_dense(f, ("Q", "Q")) for f in position]),
-        "kinetic": fragment_to_dense(kinetic, ("P", "P")),
+        "constant": np.stack([f["constant"] for f in position]),
+        "linear": np.stack([f["linear"] for f in position]),
+        "quadratic": np.stack([f["quadratic"] for f in position]),
+        "kinetic": kinetic["kinetic"],
     }
 
 
 def fragment_list(n_states=2, n_modes=2, seed=42):
-    """Create a list of vibronic fragments with random coefficients."""
+    """Create the position + kinetic fragments of a random vibronic Hamiltonian.
+
+    Reproduces the "blocks" fragmentation scheme: the harmonic frequencies and the constant and
+    linear Taylor coefficients are drawn from a seeded generator, position fragment ``i`` collects
+    the ``(j, i ^ j)`` electronic blocks, and the diagonal blocks additionally carry the harmonic
+    ``diag(freqs) / 2`` quadratic term (which also forms the kinetic fragment).
+    """
     rng = np.random.default_rng(seed)
     freqs = rng.random(n_modes)
-    coeffs = [rng.random((n_states, n_states)), rng.random((n_states, n_states, n_modes))]
-    return vibronic_fragments(n_states, n_modes, freqs, coeffs)
+    constant_coeffs = rng.random((n_states, n_states))
+    linear_coeffs = rng.random((n_states, n_states, n_modes))
+
+    num_fragments = _next_pow_2(n_states)
+    harmonic = np.diag(freqs) / 2
+
+    fragments = []
+    for i in range(num_fragments):
+        fragment = _zero_fragment(n_states, n_modes)
+        for j in range(num_fragments):
+            col = i ^ j
+            if j >= n_states or col >= n_states:
+                continue
+            fragment["constant"][j, col] = constant_coeffs[j, col]
+            fragment["linear"][j, col] = linear_coeffs[j, col]
+            if j == col:
+                fragment["quadratic"][j, j] = harmonic
+        fragments.append(fragment)
+
+    kinetic = _zero_fragment(n_states, n_modes)
+    for i in range(n_states):
+        kinetic["kinetic"][i, i] = harmonic
+    fragments.append(kinetic)
+    return fragments
 
 
 def make_wires(n_states, n_modes, k=2, b=3):
@@ -383,6 +414,20 @@ class TestDecomposition:
         queue = decomposition_queue(make_op(hamiltonian, make_wires(2, 3), evolution_time=0.1))
         assert count_ops(queue, SignedOutMultiplier) > 0
 
+    def test_resource_function_is_graph_compatible(self):
+        """Test that the registered decomposition's resource keys can be abstractified.
+
+        This guards the resource function against regressing to bare operator classes (which the
+        decomposition graph cannot abstractify for :class:`~.Operator2` sub-operations such as QROM).
+        """
+        hamiltonian = build_hamiltonian(fragment_list(seed=1))
+        op = make_op(hamiltonian, make_wires(2, 2))
+        rule = qp.list_decomps(qp.TrotterVibronic)[0]
+        # ``compute_resources`` abstractifies every key internally and raises for bare Operator2
+        # classes, so a successful call with positive gate count is the assertion of interest.
+        resources = rule.compute_resources(**op.arguments)
+        assert resources.num_gates > 0
+
 
 # ---------------------------------------------------------------------------
 # ------------------------------- Execution ---------------------------------
@@ -428,34 +473,32 @@ def test_default_qubit_execution():
 
 
 def _single_fragment(n_states, n_modes, include_op_types, seed=0, skip_quadratic=False):
-    """Build a single random position or kinetic fragment for targeted tests."""
-    # pylint: disable=import-outside-toplevel
-    from pennylane.labs.trotter_error.realspace import (
-        RealspaceCoeffs,
-        RealspaceMatrix,
-        RealspaceOperator,
-        RealspaceSum,
-    )
+    """Build a single random position or kinetic dense fragment for targeted tests.
 
+    This mirrors the fragments the labs ``vibronic_fragments`` helpers would produce for the
+    requested operator types: a diagonal kinetic fragment for ``[("P", "P")]``, otherwise a
+    position fragment populating the ``(i, i ^ m)`` electronic blocks (and their transpose) with
+    the requested constant/linear/quadratic coefficients. Quadratic tensors keep only the strict
+    upper triangle (``skip_quadratic=True``) or the upper triangle including the diagonal.
+    """
     rng = np.random.default_rng(seed)
+    fragment = _zero_fragment(n_states, n_modes)
 
     if include_op_types == [("P", "P")]:
-        op = RealspaceOperator(
-            n_modes, ("P", "P"), RealspaceCoeffs(np.diag(rng.random(n_modes)), "label")
-        )
-        blocks = {(i, i): RealspaceSum(n_modes, [op]) for i in range(n_states)}
-        return RealspaceMatrix(n_states, n_modes, blocks)
+        diagonal = np.diag(rng.random(n_modes))
+        for i in range(n_states):
+            fragment["kinetic"][i, i] = diagonal
+        return fragment
 
-    blocks = {}
-    m = rng.integers(0, n_states)
-    elec_ids = [(i, int(i ^ m)) for i in range(n_states) if i ^ m < n_states]
-    for elec_idx in elec_ids:
-        ops = []
+    op_type_to_key = {(): "constant", ("Q",): "linear", ("Q", "Q"): "quadratic"}
+    m = int(rng.integers(0, n_states))
+    elec_ids = [(i, i ^ m) for i in range(n_states) if i ^ m < n_states]
+    for i, j in elec_ids:
         for op_type in include_op_types:
             tensor = rng.random((n_modes,) * len(op_type))
             if len(op_type) == 2:
-                diagonal = 0 if skip_quadratic else -1
-                tensor[np.tril_indices(n_modes, k=diagonal)] = 0.0
-            ops.append(RealspaceOperator(n_modes, op_type, RealspaceCoeffs(tensor, "label")))
-        blocks[elec_idx] = blocks[elec_idx[::-1]] = RealspaceSum(n_modes, ops)
-    return RealspaceMatrix(n_states, n_modes, blocks)
+                tril = 0 if skip_quadratic else -1
+                tensor[np.tril_indices(n_modes, k=tril)] = 0.0
+            key = op_type_to_key[op_type]
+            fragment[key][i, j] = fragment[key][j, i] = tensor
+    return fragment
