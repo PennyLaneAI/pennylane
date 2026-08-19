@@ -287,7 +287,7 @@ class TestMscMethods:
         assert op.has_diagonalizing_gates is True
 
     @pytest.mark.parametrize(
-        "ops",
+        "operators",
         [
             (qp.S(0),),
             (qp.S(0), qp.T(1)),
