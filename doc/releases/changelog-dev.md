@@ -2,6 +2,27 @@
 
 <h3>New features since last release</h3>
 
+* (Experimental) A new `qp.backline` module is added for heterogeneous compilation and execution.
+  `qp.Backline` builds a device from a controller, zero or more coprocessors, and a transport,
+  describing where each part of a workload runs and how the parts communicate. The resulting device
+  binds to a QNode, and requires the Catalyst compiler to execute.
+  [(#9772)](https://github.com/PennyLaneAI/pennylane/pull/9772)
+
+  ```python
+  import pennylane as qp
+
+  controller = qp.Controller(device=qp.device("lightning.qubit", wires=4), label="cpu-controller")
+  decoder = qp.Coprocessor(coprocessor_fn="decoder", comm_host="198.51.100.2", oob_port=7760)
+
+  dev = qp.Backline(controller=controller, coprocessors=[decoder], transport="rdma")
+
+  @qp.qjit
+  @qp.qnode(dev)
+  def circuit(x):
+      qp.RX(x, wires=0)
+      return qp.expval(qp.Z(0))
+  ```
+
 * ``qp.allocate`` now supports ``state="magic-T"`` and ``state="magic-T-adj"`` for requesting
   magic-state dynamic wires (:math:`|m\rangle = TH|0\rangle` and :math:`|m̄\rangle = T^\dagger H|0\rangle`).
   These states are currently supported when compiling with Catalyst; device simulators raise an
@@ -79,8 +100,10 @@
 
   @qp.qnode(dev, shots=1)
   def circuit():
-      qp.BasisEmbedding(x, wires=x_wires)
-      qp.BasisEmbedding(y, wires=y_wires)
+      x_bin = qp.math.int_to_binary(x, len(x_wires))
+      y_bin = qp.math.int_to_binary(y, len(y_wires))
+      qp.BasisEmbedding(x_bin, wires=x_wires)
+      qp.BasisEmbedding(y_bin, wires=y_wires)
       qp.SignedOutMultiplier(
           x_wires,
           y_wires,
@@ -520,8 +543,10 @@
     x_wires = [0, 3, 6, 9]
     y_wires = [1, 4, 7, 10]
     work_wires = [2, 5, 8]
-    qp.BasisState(a, wires=x_wires)
-    qp.BasisState(b, wires=y_wires)
+    a_bin = qp.math.int_to_binary(a, len(x_wires))
+    b_bin = qp.math.int_to_binary(b, len(x_wires))
+    qp.BasisState(a_bin, wires=x_wires)
+    qp.BasisState(b_bin, wires=y_wires)
     LeftQuantumComparator(x_wires, y_wires, 11, work_wires, comparator)
     qp.CNOT(wires=[11, 12])
     qp.adjoint(LeftQuantumComparator(x_wires, y_wires, 11, work_wires, comparator))
@@ -549,7 +574,8 @@
   @qp.set_shots(shots=1)
   @qp.qnode(dev)
   def circuit(x_val, L_val):
-    qp.BasisState(x_val, wires=[0, 1, 2])
+    x_val_bin = qp.math.int_to_binary(x_val, 3)
+    qp.BasisState(x_val_bin, wires=[0, 1, 2])
 
     LeftClassicalComparator(
         x_wires=[0, 1, 2],
@@ -882,7 +908,7 @@
   - Parametric operators are ported:
     - :class:`~.RZ`, :class:`~.CRZ`, :class:`~.DiagonalQubitUnitary`, :class:`~.PauliRot`, :class:`~.MultiRZ`, :class:`~.PhaseShift`,
       :class:`~.ControlledPhaseShift`, :class:`~.Rot`, :class:`~.CRot`, :class:`~.U1`, :class:`~.U2`, :class:`~.U3`, :class:`~.PCPhase`,
-      :class:`~.GlobalPhase`, :class:`~.IsingXX`, :class:`~.IsingYY`, :class:`~.IsingZZ`, :class:`~.IsingXY`
+      :class:`~.GlobalPhase`, :class:`~.IsingXX`, :class:`~.IsingYY`, :class:`~.IsingZZ`, :class:`~.IsingXY`, :class:`~.RX`, :class:`~.CRX`
   [(#9857)](https://github.com/PennyLaneAI/pennylane/pull/9857)
   [(#9941)](https://github.com/PennyLaneAI/pennylane/pull/9941)
   [(#9897)](https://github.com/PennyLaneAI/pennylane/pull/9897)
@@ -890,6 +916,7 @@
   [(#9964)](https://github.com/PennyLaneAI/pennylane/pull/9964)
   [(#10006)](https://github.com/PennyLaneAI/pennylane/pull/10006)
   [(#9977)](https://github.com/PennyLaneAI/pennylane/pull/9977)
+  [(#9984)](https://github.com/PennyLaneAI/pennylane/pull/9984)
   [(#9951)](https://github.com/PennyLaneAI/pennylane/pull/9951)
   [(#9923)](https://github.com/PennyLaneAI/pennylane/pull/9923)
   [(#9952)](https://github.com/PennyLaneAI/pennylane/pull/9952)
@@ -898,7 +925,7 @@
   - Templates are ported:
     - :class:`~.BasisRotation`, :class:`~.MultiplexerStatePreparation`, :class:`~.QROM`, :class:`~.QFT`, :class:`~.FlipSign`,
       :class:`~.TemporaryAND`, :class:`~.SelectPauliRot`, :class:`~.GQSP`, :class:`~.AQFT`, :class:`~.SumOfSlatersPrep`,
-      :class:`~.SemiAdder`, :class:`~.OutMultiplier`, :class:`~.SignedOutMultiplier`, :class:`~.TrotterCDF`,
+      :class:`~.SemiAdder`, :class:`~.OutMultiplier`, :class:`~.SignedOutMultiplier`, :class:`~.BasisState`, :class:`~.TrotterCDF`,
       :class:`~.TrotterCGF`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
   [(#9925)](https://github.com/PennyLaneAI/pennylane/pull/9925)
@@ -916,6 +943,7 @@
   [(#9995)](https://github.com/PennyLaneAI/pennylane/pull/9995)
   [(#10015)](https://github.com/PennyLaneAI/pennylane/pull/10015)
   [(#10018)](https://github.com/PennyLaneAI/pennylane/pull/10018)
+  [(#9933)](https://github.com/PennyLaneAI/pennylane/pull/9933)
   - Quantum chemistry operators are ported:
     - :class:`~.SingleExcitation`
   [(#9944)](https://github.com/PennyLaneAI/pennylane/pull/9944)
@@ -1171,6 +1199,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug where :func:`~.tape.plxpr_to_tape` raised an error when the program contains
+  arithmetic operations performed on mid-circuit measurement values.
+  [(#10028)](https://github.com/PennyLaneAI/pennylane/pull/10028)
+
 * Fixed a bug where decomposing an :class:`~.Operator2` with graph-based decomposition
   enabled inside a :class:`~.Subroutine` with program capture leaked JAX tracers and
   caused Catalyst compilation to fail.
@@ -1304,7 +1336,8 @@ Jacob Kitchen,
 Korbinian Kottmann,
 Isabel Nha Minh Le,
 Christina Lee,
-William Maxwell
+Joseph Lee,
+William Maxwell,
 Anton Naim Ibrahim,
 Mudit Pandey,
 Andrija Paurevic,
