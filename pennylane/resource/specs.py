@@ -693,7 +693,7 @@ def specs(
                     qp.PauliZ(0)
                 return qp.expval(qp.PauliZ(0))
 
-        >>> specs_result = qp.specs(circuit, level=0)(5, 3) # doctest: +SKIP
+        >>> specs_result = qp.specs(circuit, level=0)(5, 3)
 
         If we attempt to get pass-by-pass specs for this circuit, the resource information will be
         symbolic due to the dependence on the input parameters ``x`` and ``z``:

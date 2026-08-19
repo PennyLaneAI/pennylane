@@ -2124,6 +2124,8 @@ def _canonicalize_abstract_type(val, kind: _ArgType):
                     "specifiers found in pennylane.typing."
                 )
             # Ensure it behaves like a clean array/scalar leaf before abstractifying
+            if math.is_abstract(val):
+                return abstractify(val)
             return abstractify(math.asarray(val))
 
         case _ArgType.HYBRID:
