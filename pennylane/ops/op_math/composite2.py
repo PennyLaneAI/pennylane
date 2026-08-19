@@ -21,13 +21,10 @@ from collections.abc import Callable
 
 # pylint: disable=invalid-sequence-index
 from typing import Sequence
-from warnings import warn
 
 import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operator, Operator2
-from pennylane.core.operator.base import _UNSET_BATCH_SIZE  # tach-ignore
-from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.ops.op_math.composite import handle_recursion_error
 from pennylane.wires import Wires
 

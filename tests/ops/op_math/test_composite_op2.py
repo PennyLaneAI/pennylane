@@ -240,6 +240,17 @@ def _is_method_with_no_argument(method):
 class TestMscMethods:
     """Test dunder and other visualizing methods."""
 
+    def test_has_overlapping_wires(self):
+        """Test that the has_overlapping_wires property is correct."""
+        op = ValidOp((qp.PauliX(0), qp.PauliX(0)))
+        assert op.has_overlapping_wires == True
+
+        op = ValidOp((qp.PauliX(0), qp.PauliY(1)))
+        assert op.has_overlapping_wires == False
+
+        op = ValidOp((qp.PauliX(0), qp.PauliY(0)))
+        assert op.has_overlapping_wires == True
+
     @pytest.mark.parametrize("ops_lst, op_rep", tuple((i, j) for i, j in zip(ops, ops_rep)))
     def test_repr(self, ops_lst, op_rep):
         """Test __repr__ method."""
