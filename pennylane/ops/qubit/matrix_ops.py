@@ -136,7 +136,6 @@ class QubitUnitary(Operator2):
     ndim_params = (2,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    grad_method = None
 
     def __init__(
         self,
