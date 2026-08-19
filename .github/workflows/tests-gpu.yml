@@ -115,7 +115,23 @@ jobs:
         run: uv pip install -i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade
 
       - name: Run tests
-        run: python -m pytest -m "${{ env.SUITE }}" tests
+        run: python -m pytest -m "${{ env.SUITE }}" tests --cov-config=.coveragerc --cov=pennylane --cov-append --cov-report=xml --no-flaky-report --tb=native
+
+      - name: Adjust coverage file for Codecov
+        run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
+
+      - name: Upload Coverage File
+        uses: actions/upload-artifact@v6
+        with:
+          name: gpu-tests-coverage-${{ matrix.python-version }}
+          path: coverage.xml
+
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v7
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.xml
+          fail_ci_if_error: true
 
       # Cleans up the working directory so subsequent jobs on same runner get a clean working directory
       # This step runs even if any of the previous steps fail
