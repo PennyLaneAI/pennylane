@@ -45,6 +45,11 @@ class MultiX(Operator2):
 
         super().__init__(bitstring, wires)
 
+    @property
+    def num_wires(self):
+        """Returns the number of wires the operation acts on."""
+        return len(self.wires)
+
     @staticmethod
     def _canonicalize_inputs(bitstring, wires):
         """Canonicalize types for arguments bitstring and wires."""

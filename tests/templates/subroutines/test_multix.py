@@ -31,6 +31,7 @@ def test_input_arguments_parsed_correctly():
     assert multix_op.wires == Wires(wires_input)
     assert multix_op.dynamic_args == {"bitstring": multix_op.bitstring}
     assert multix_op.wire_args == {"wires": Wires(wires_input)}
+    assert multix_op.num_wires == len(wires_input)
 
 
 @pytest.mark.parametrize(
