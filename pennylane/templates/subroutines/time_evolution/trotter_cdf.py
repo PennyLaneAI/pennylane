@@ -188,7 +188,7 @@ class TrotterCDF(Operator2):
         duration :math:`\tau`.
 
         **2. Evolving a fragment**
-        The fragments are optimized and derived via :doc:`compressed double factorization <demos/tutorial_how_to_build_compressed_double_factorized_hamiltonians>`.
+        The fragments are optimized and derived via :doc:`compressed double factorization <demo:demos/tutorial_how_to_build_compressed_double_factorized_hamiltonians>`.
         Here, each fragment is diagonal in its own orbital basis,
         :math:`H_l = \mathcal{U}^{(l)} D_l\, \mathcal{U}^{(l)\dagger}`, where
         :math:`\mathcal{U}^{(l)} =` ``leaf_tensors[l]`` and :math:`D_l` is diagonal, so
