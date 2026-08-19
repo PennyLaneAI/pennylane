@@ -13,7 +13,8 @@
 # limitations under the License.
 """Contains the MultiX template."""
 
-from pennylane import math
+from pennylane import compiler, math
+from pennylane.capture import enabled
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
@@ -143,6 +144,9 @@ def _multix_resources(bitstring: TensorLike, wires: WiresLike):  # pylint: disab
 # Decomposition function for MultiX
 @register_resources(_multix_resources, exact=False)
 def _multix_decomposition(bitstring: TensorLike, wires: WiresLike) -> None:
+
+    if compiler.active() or enabled():
+        wires = math.array(wires, like="jax")
 
     @for_loop(0, len(wires), 1)
     def locally_apply_paulix(i):

@@ -104,6 +104,28 @@ def test_jit_matrix():
     assert qp.math.allclose(matrix_fn(bitstring), expected)
 
 
+@pytest.mark.jax
+@pytest.mark.capture
+def test_decomposition_capture_with_tuple_wires():
+    """Tests graph capture with tuple wires and a dynamically traced loop index."""
+
+    import jax  # pylint: disable=import-outside-toplevel
+
+    from pennylane.capture.primitives import (  # pylint: disable=import-outside-toplevel
+        for_loop_prim,
+    )
+
+    bitstring = jax.numpy.array([1, 0, 1])
+    wires = (0, 1, 2)
+    decomposition = qp.list_decomps(qp.MultiX)[0]
+
+    # The loop index is a JAX tracer. This call fails if the python tuple wires is
+    # not converted to a JAX array before the decomposition for MultiX calls wires[i].
+    jaxpr = jax.make_jaxpr(lambda bits: decomposition(bits, wires))(bitstring)
+
+    assert any(eqn.primitive == for_loop_prim for eqn in jaxpr.eqns)
+
+
 def test_adjoint():
     """Tests that the adjoint is a distinct, equivalent MultiX instance."""
     op = qp.MultiX([1, 0, 1], wires=["a", "b", "c"])
