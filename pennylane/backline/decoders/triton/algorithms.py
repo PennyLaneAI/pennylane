@@ -24,7 +24,7 @@ except ImportError as exc:
 
 
 @triton.jit
-def _decode_one(
+def _decode_one(  # pragma: no cover
     syndrome,
     H: tl.constexpr,
     postprocess: tl.constexpr,
@@ -53,7 +53,7 @@ def _decode_one(
 
 
 @triton.jit
-def _hard_decision(posterior_llrs):
+def _hard_decision(posterior_llrs):  # pragma: no cover
     """Pack negative posterior log-likelihood ratios (LLRs) into a correction mask.
 
     Args:
@@ -71,7 +71,7 @@ def _hard_decision(posterior_llrs):
 
 
 @triton.jit
-def _osd(posterior_llrs, syndrome):
+def _osd(posterior_llrs, syndrome):  # pragma: no cover
     """Build an order-zero one-bit correction for a nonzero syndrome.
 
     Args:

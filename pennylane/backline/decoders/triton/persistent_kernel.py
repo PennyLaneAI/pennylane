@@ -25,7 +25,7 @@ _HANDOFF_SLOT_WORDS = tl.constexpr(2)  # sizeof(HandoffSlot) / sizeof(u64)
 
 
 @triton.jit
-def _persistent_decoder_kernel(  # pylint: disable=too-many-arguments
+def _persistent_decoder_kernel(  # pylint: disable=too-many-arguments  # pragma: no cover
     ring_u64_ptr,
     handoff_u64_ptr,
     stop_u32_ptr,

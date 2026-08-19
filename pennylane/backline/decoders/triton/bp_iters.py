@@ -24,7 +24,7 @@ except ImportError as exc:
 
 
 @triton.jit
-def _sum_product_posteriors(  # pylint: disable=too-many-branches,too-many-nested-blocks
+def _sum_product_posteriors(  # pylint: disable=too-many-branches,too-many-nested-blocks  # pragma: no cover
     syndrome,
     H: tl.constexpr,
     prob: tl.constexpr,
@@ -100,7 +100,7 @@ def _sum_product_posteriors(  # pylint: disable=too-many-branches,too-many-neste
 
 
 @triton.jit
-def _get_syndrome_signs(syndrome, num_checks: tl.constexpr):
+def _get_syndrome_signs(syndrome, num_checks: tl.constexpr):  # pragma: no cover
     """Convert syndrome bits into bipolar check signs.
 
     Args:
@@ -118,7 +118,7 @@ def _get_syndrome_signs(syndrome, num_checks: tl.constexpr):
 
 
 @triton.jit
-def _tanh_half(value):
+def _tanh_half(value):  # pragma: no cover
     """Compute ``tanh(value / 2)`` for a Triton scalar.
 
     Args:
@@ -144,7 +144,7 @@ def _tanh_half(value):
 
 
 @triton.jit
-def _bp_c2v_msg(syndrome_sign, message_product):
+def _bp_c2v_msg(syndrome_sign, message_product):  # pragma: no cover
     """Compute a bounded check-to-variable message.
 
     Args:
