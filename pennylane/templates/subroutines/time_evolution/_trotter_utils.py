@@ -144,6 +144,12 @@ def _run_trotter_steps(
         Z_tensor = hamiltonian["core_tensors"]
 
         def two_body_fragments(fragment_idx, prev_fragment_idx):
+            # The first fragment of a step (prev_fragment_idx < 0) uses its own leaf; later
+            # fragments merge with the previous fragment's leaf so consecutive basis rotations
+            # telescope into a single one. ``jax.lax.cond`` (with the loop-carried indices passed
+            # as explicit operands) is used rather than ``qp.cond`` because the latter traces its
+            # branches through ``jax.make_jaxpr``, which does not compose with the enclosing
+            # ``for_loop`` structured capture (it forces concretization of the loop carry).
             U = jax.lax.cond(
                 prev_fragment_idx < 0,
                 lambda U_tensor, fragment_idx, prev_fragment_idx: U_tensor[fragment_idx],

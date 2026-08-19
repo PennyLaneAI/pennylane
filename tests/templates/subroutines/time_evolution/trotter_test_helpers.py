@@ -134,7 +134,7 @@ def hadamard_test(
     trotter_cls, ham, sys_wires, t, steps, double_phase, seed
 ):  # pylint: disable=too-many-arguments
     """Return (measured <X_anc>, psi) for the H-ctrl-<X> Hadamard-test circuit."""
-    anc = "anc"
+    anc = max(sys_wires) + 1
     dev = qp.device("default.qubit", wires=[anc] + list(sys_wires))
     rng = np.random.default_rng(seed)
     dim = 2 ** len(sys_wires)
@@ -158,7 +158,7 @@ def control_branches(
     trotter_cls, ham, sys_wires, t, steps, double_phase
 ):  # pylint: disable=too-many-arguments
     """Return the (control-0, control-1) branch unitaries of ctrl(Trotter*)."""
-    anc = "anc"
+    anc = max(sys_wires) + 1
     op = qp.ctrl(
         trotter_cls(t, steps, ham, wires=sys_wires, double_phase=double_phase), control=[anc]
     )

@@ -334,6 +334,16 @@ class TrotterCGF(Operator2):
     static_argnames = ("num_trotter_steps", "double_phase")
 
     def __init__(self, evolution_time, num_trotter_steps, hamiltonian, wires, double_phase=False):
+        # ``hamiltonian`` is a hybrid argument: its array-like leaves must be arrays (or scalars)
+        # to be captured and lowered correctly. Cast only list/tuple inputs, leaving array inputs
+        # as-is so the hybrid argument survives the capture round-trip unchanged.
+        core, leaf = hamiltonian["core_tensors"], hamiltonian["leaf_tensors"]
+        if not (hasattr(core, "ndim") and hasattr(leaf, "ndim")):
+            hamiltonian = {
+                **hamiltonian,
+                "core_tensors": math.asarray(core),
+                "leaf_tensors": math.asarray(leaf),
+            }
         Z = hamiltonian["core_tensors"]
         U = hamiltonian["leaf_tensors"]
         if not (Z.ndim == 5 and U.ndim == 4):
