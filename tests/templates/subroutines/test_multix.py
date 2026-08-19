@@ -36,6 +36,13 @@ def test_input_arguments_parsed_correctly():
     assert multix_op.grad_method is None
 
 
+@pytest.mark.jax
+def test_standard_checks():
+    """Runs the standard Operator2 validity checks for MultiX."""
+    op = qp.MultiX([1, 0, 1], wires=[0, 1, 2])
+    qp.ops.functions.assert_valid(op, skip_differentiation=True)
+
+
 def test_abstract_init():
     """Tests that MultiX can be initialized from abstract argument metadata."""
     bitstring = Int[3]
