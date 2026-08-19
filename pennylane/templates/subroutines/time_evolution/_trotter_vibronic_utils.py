@@ -11,18 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Scheme-specific scaffolding for the :class:`~.TrotterVibronic` template.
-
-This module ports the circuit-level machinery from the ``pennylane.labs``
-``trotter_vibronic`` prototype into ``pennylane`` proper. The key differences to
-the prototype are:
-
-* the vibronic Hamiltonian is provided as a dictionary of *dense* coefficient
-  tensors (the stacked output of ``fragment_to_dense``) rather than as a list of
-  ``RealspaceMatrix`` fragments, and
-* the vibrational-mode wires are provided as a single flattened ``vib_wires``
-  register that is reshaped internally into one register per mode.
-"""
+"""Utility functions for the :class:`~.TrotterVibronic` template."""
 
 from functools import reduce
 
