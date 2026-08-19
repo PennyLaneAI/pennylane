@@ -263,6 +263,21 @@ def _is_method_with_no_argument(method):
 class TestMscMethods:
     """Test dunder and other miscellaneous methods."""
 
+    def test_has_diagonalizing_gates(self):
+        """Test that the has_diagonalizing_gates property is correct."""
+        # has overlapping wires and no diag gates case
+        op = ValidOp((NoMatrixOp(0), qp.PauliX(0)))
+        assert op.has_diagonalizing_gates == False
+        # has overlapping wires and diag gates case
+        op = ValidOp((qp.PauliZ(0), qp.PauliX(0)))
+        assert op.has_diagonalizing_gates == True
+        # no overlapping wires and no diag gates case
+        op = ValidOp((NoMatrixOp(0), NoMatrixOp(1)))
+        assert op.has_diagonalizing_gates == False
+        # no overlapping wires and diag gates case
+        op = ValidOp((qp.PauliZ(0), qp.PauliX(1)))
+        assert op.has_diagonalizing_gates == True
+
     @pytest.mark.parametrize("ops",
     [
         (qp.S(0), qp.T(1)),
