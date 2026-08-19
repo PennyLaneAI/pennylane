@@ -41,6 +41,7 @@ from pennylane.wires import Wires
 from tests.templates.subroutines.time_evolution.trotter_test_helpers import (  # pylint: disable=no-name-in-module
     CATALYST_GATE_SET_DOUBLE_PHASE,
     CATALYST_GATE_SET_GENUINE,
+    _single_z,
     cgf_reference_hamiltonian,
     control_branches,
     hadamard_test,
@@ -48,6 +49,72 @@ from tests.templates.subroutines.time_evolution.trotter_test_helpers import (  #
 )
 
 pytestmark = pytest.mark.jax
+
+
+def _cgf_basis_rotation_matrix(A, n_states):
+    """Matrix of a fragment's per-mode ``BasisRotation``\\ s ``A[l]`` on the mode-major
+    unary register (mode ``l`` occupies wires ``[l * n_states : (l + 1) * n_states]``)."""
+    num_modes = A.shape[0]
+    n_wires = num_modes * n_states
+    ops = [
+        qp.BasisRotation(unitary_matrix=A[l], wires=range(l * n_states, (l + 1) * n_states))
+        for l in range(num_modes)
+    ]
+    return qp.matrix(qp.tape.QuantumScript(ops), wire_order=range(n_wires))
+
+
+def cgf_reference_hamiltonian_leaves(ham):
+    """Exact Hamiltonian matrix implied by a CGF Hamiltonian dict with arbitrary (real
+    orthogonal) leaves, built independently from the template.
+
+    Each fragment is diagonal in its own per-mode basis, so its lab-frame generator is
+    ``B_frag^dag D_frag B_frag`` with ``B_frag`` the product of the per-mode
+    :class:`~.BasisRotation`\\ s and ``D_frag`` the diagonal generator from the Implementation
+    Details. The one-body and two-body leaves follow *opposite* modal conventions: the one-body
+    leaf stores its eigenvectors as columns, so ``B_0`` uses ``leaf_tensors[0][l]`` directly,
+    while each two-body leaf stores the modal index on its rows, so ``B_frag`` uses
+    ``leaf_tensors[frag][l]^T``. The diagonal generators are
+    ``D_0 = sum_{l,p} (-Z0[l,l,p,p] / 2) Z_{lp}`` for the one-body fragment and
+    ``D_frag = sum_{l>m} sum_{p,q} (Z[frag][l,m][p,q] / 4) Z_{lp} Z_{mq}`` for the two-body
+    fragments, with wire index ``l * n_states + p``. The scalar identity part is basis
+    independent and equals ``s = _energy_shift(ham)``. Unlike the identity-leaf case this is only
+    reproduced by ``matrix(TrotterCGF)`` in the many-step limit (second-order Trotter error
+    ``~ 1 / steps^2``).
+    """
+    from pennylane.templates.subroutines.time_evolution.trotter_cgf import (  # pylint: disable=import-outside-toplevel
+        _energy_shift,
+    )
+
+    Z = np.asarray(ham["core_tensors"], dtype=float)
+    U = np.asarray(ham["leaf_tensors"], dtype=float)
+    num_modes = Z.shape[1]
+    n_states = Z.shape[-1]
+    n_wires = num_modes * n_states
+    dim = 2**n_wires
+
+    def wire(l, p):
+        return l * n_states + p
+
+    z_ops = [_single_z(w, n_wires) for w in range(n_wires)]
+    H = _energy_shift(ham) * np.eye(dim, dtype=complex)
+
+    B0 = _cgf_basis_rotation_matrix(U[0], n_states)
+    D0 = np.zeros((dim, dim), dtype=complex)
+    for l in range(num_modes):
+        for p in range(n_states):
+            D0 += (-Z[0][l, l, p, p] / 2) * z_ops[wire(l, p)]
+    H += B0.conj().T @ D0 @ B0
+
+    for frag in range(1, Z.shape[0]):
+        Bl = _cgf_basis_rotation_matrix(np.swapaxes(U[frag], -2, -1), n_states)
+        Dl = np.zeros((dim, dim), dtype=complex)
+        for l in range(num_modes):
+            for m in range(l):
+                for p in range(n_states):
+                    for q in range(n_states):
+                        Dl += (Z[frag][l, m][p, q] / 4) * (z_ops[wire(l, p)] @ z_ops[wire(m, q)])
+        H += Bl.conj().T @ Dl @ Bl
+    return H
 
 
 @pytest.fixture
@@ -139,13 +206,39 @@ class TestCGFScheme:
     and both controlled structures are all covered by the ``*_matches_expm`` tests)."""
 
     def test_merge_leaves(self, seed):
-        """Test the CGF per-mode merge rule that combines consecutive fragment rotations."""
+        """Test the CGF per-mode merge rule ``U_curr @ U_prev^T`` that combines consecutive
+        fragment rotations, so the ``leaf_prev`` un-rotation and ``leaf_curr`` rotation
+        telescope into a single (transposed) BasisRotation per mode."""
         rng = np.random.default_rng(seed)
         num_modes, n_states = 2, 3
         U_prev = np.stack([random_orthogonal(n_states, rng) for _ in range(num_modes)])
         U_curr = np.stack([random_orthogonal(n_states, rng) for _ in range(num_modes)])
-        expected = np.stack([U_prev[l].T @ U_curr[l] for l in range(num_modes)])
+        expected = np.stack([U_curr[l] @ U_prev[l].T for l in range(num_modes)])
         assert np.allclose(_merge_leaves(U_prev, U_curr), expected)
+
+    def test_align_one_body_leaf(self, seed):
+        """The one-body leaf (eigenvectors stored as columns) is transposed per mode to match
+        the two-body row convention; the two-body leaves are returned untouched."""
+        from pennylane.templates.subroutines.time_evolution.trotter_cgf import (  # pylint: disable=import-outside-toplevel
+            _align_one_body_leaf,
+        )
+
+        rng = np.random.default_rng(seed)
+        num_modes, n_states, L = 2, 3, 2
+        leaf = np.stack(
+            [
+                np.stack([random_orthogonal(n_states, rng) for _ in range(num_modes)])
+                for _ in range(L + 1)
+            ]
+        )
+        ham = {
+            "core_tensors": np.zeros((L + 1, num_modes, num_modes, n_states, n_states)),
+            "leaf_tensors": leaf,
+            "nuc_constant": 0.0,
+        }
+        aligned = _align_one_body_leaf(ham)["leaf_tensors"]
+        assert np.allclose(aligned[0], np.swapaxes(leaf[0], -2, -1))
+        assert np.allclose(aligned[1:], leaf[1:])
 
     def test_apply_system_basis_rotation(self, seed):
         """Test that per-mode leaves are applied as (transposed) BasisRotations and that a
@@ -207,6 +300,42 @@ class TestDecomposition:
         u = qp.matrix(qp.TrotterCGF(t, steps, ham, wires=sys_wires), wire_order=sys_wires)
         expected = expm(-1j * cgf_reference_hamiltonian(ham) * t)
         assert np.allclose(u, expected, atol=1e-9)
+
+    @pytest.mark.slow
+    def test_base_matches_expm_nonidentity_leaves(self, seed):
+        """With random real-orthogonal leaves the circuit is no longer Trotter-exact, but
+        matrix(TrotterCGF) converges to the exact expm(-i H t) at second order (error
+        ~ 1 / steps^2). Here H is built independently from the fragment basis rotations,
+        H = sum_frag B_frag^dag D_frag B_frag, which pins down the (opposite) one-body /
+        two-body leaf conventions and the consecutive-fragment merge that the identity-leaf
+        checks do not exercise."""
+        rng = np.random.default_rng(seed)
+        num_modes, n_states, L = 2, 2, 2
+        core = rng.normal(size=(L + 1, num_modes, num_modes, n_states, n_states)) * 0.4
+        leaf = np.stack(
+            [
+                np.stack([random_orthogonal(n_states, rng) for _ in range(num_modes)])
+                for _ in range(L + 1)
+            ]
+        )
+        ham = {"core_tensors": core, "leaf_tensors": leaf, "nuc_constant": 0.3}
+        sys_wires = list(range(num_modes * n_states))
+        t = 0.6
+        expected = expm(-1j * cgf_reference_hamiltonian_leaves(ham) * t)
+
+        diffs = [
+            float(
+                np.linalg.norm(
+                    qp.matrix(qp.TrotterCGF(t, steps, ham, wires=sys_wires), wire_order=sys_wires)
+                    - expected
+                )
+            )
+            for steps in (4, 8, 16)
+        ]
+        # second-order Trotter: halving the step size quarters the error
+        assert diffs[0] > diffs[1] > diffs[2]
+        assert diffs[1] / diffs[2] > 3.0
+        assert diffs[2] < 5e-4
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")

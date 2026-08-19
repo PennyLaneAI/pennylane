@@ -41,14 +41,65 @@ from pennylane.wires import Wires
 from tests.templates.subroutines.time_evolution.trotter_test_helpers import (  # pylint: disable=no-name-in-module
     CATALYST_GATE_SET_DOUBLE_PHASE,
     CATALYST_GATE_SET_GENUINE,
+    _single_z,
     cdf_reference_hamiltonian,
-    cdf_reference_hamiltonian_leaves,
     control_branches,
     hadamard_test,
     random_orthogonal,
 )
 
 pytestmark = pytest.mark.jax
+
+
+def _basis_rotation_matrix(U, n_wires):
+    """Matrix of ``BasisRotation(U)`` applied to the alpha and beta spin channels."""
+    ops = [
+        qp.BasisRotation(unitary_matrix=U, wires=range(0, n_wires, 2)),
+        qp.BasisRotation(unitary_matrix=U, wires=range(1, n_wires, 2)),
+    ]
+    return qp.matrix(qp.tape.QuantumScript(ops), wire_order=range(n_wires))
+
+
+def cdf_reference_hamiltonian_leaves(ham):
+    """Exact Hamiltonian matrix implied by a CDF Hamiltonian dict with arbitrary (real
+    orthogonal) leaves, built independently from the template.
+
+    Each fragment is diagonal in its own orbital basis, so its lab-frame generator is
+    ``B_l^dag D_l B_l`` with ``B_l = BasisRotation(leaf_tensors[l])`` (applied on both spin
+    channels) and ``D_l`` the diagonal generator from the Implementation Details:
+    ``D_0 = sum_wire (-Z0[p, p] / 2) Z_wire`` for the one-body fragment and
+    ``D_l = sum_{i<j} (Z[l][p, q] / 4) Z_i Z_j`` for the two-body fragments. The scalar identity
+    part is basis independent and equals ``s = _energy_shift(ham)``. Unlike the identity-leaf case
+    this is only reproduced by ``matrix(TrotterCDF)`` in the many-step limit (second-order Trotter
+    error ``~ 1 / steps^2``).
+    """
+    from pennylane.templates.subroutines.time_evolution.trotter_cdf import (  # pylint: disable=import-outside-toplevel
+        _energy_shift,
+    )
+
+    Z = np.asarray(ham["core_tensors"], dtype=float)
+    U = np.asarray(ham["leaf_tensors"], dtype=float)
+    num_cas = Z.shape[-1]
+    n_wires = 2 * num_cas
+    dim = 2**n_wires
+
+    z_ops = [_single_z(w, n_wires) for w in range(n_wires)]
+    H = _energy_shift(ham) * np.eye(dim, dtype=complex)
+
+    B0 = _basis_rotation_matrix(U[0], n_wires)
+    D0 = np.zeros((dim, dim), dtype=complex)
+    for wire in range(n_wires):
+        D0 += (-Z[0][wire // 2, wire // 2] / 2) * z_ops[wire]
+    H += B0.conj().T @ D0 @ B0
+
+    for frag in range(1, Z.shape[0]):
+        Bl = _basis_rotation_matrix(U[frag], n_wires)
+        Dl = np.zeros((dim, dim), dtype=complex)
+        for i in range(n_wires):
+            for j in range(i + 1, n_wires):
+                Dl += (Z[frag][i // 2, j // 2] / 4) * (z_ops[i] @ z_ops[j])
+        H += Bl.conj().T @ Dl @ Bl
+    return H
 
 
 @pytest.fixture
