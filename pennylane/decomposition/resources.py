@@ -361,18 +361,13 @@ def change_op_basis_resource_rep(
     target_op: type[Operator] | AbstractOperatorLike,
     uncompute_op: type[Operator] | AbstractOperatorLike | None = None,
 ):
-    """Creates an abstract :class:`~.ChangeOpBasis` representing the compute-uncompute
+    """Creates an abstract :class:`~.ChangeOpBasis` representation of the compute-uncompute
     pattern of operators.
 
-    Since :class:`~.ChangeOpBasis` is an :class:`~.Operator2`, its resource representation
-    is an abstract instance rather than a ``CompressedResourceOp``. Legacy operator types
-    and compressed representations are accepted as operands and stored in their compressed
-    form.
-
     Args:
-        compute_op: the compute operator, using its type or abstract resource representation
-        target_op: the target operator, using its type or abstract resource representation
-        uncompute_op: the optional uncompute operator; defaults to the adjoint of ``compute_op``
+        compute_op: the compressed resource representation of the compute operator
+        target_op: the compressed resource representation of target operator
+        uncompute_op: the compressed resource representation of the uncompute operator
 
     """
     compute_op = abstractify(compute_op)

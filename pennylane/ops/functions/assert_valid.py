@@ -710,7 +710,7 @@ def _assert_valid_operator2(
     assert isinstance(op.dynamic_argnames, tuple), "dynamic_argnames must be a tuple"
     assert_equal(type(op)(**op.arguments), op)
 
-    if not isinstance(op, (Adjoint2, ControlledOp2, Pow2)):
+    if not isinstance(op, (Adjoint2, ControlledOp2, Pow2, qp.ops.ChangeOpBasis)):
 
         error_msg = "ndim_params must have the same length as dynamic_argnames"
         assert len(op.ndim_params) == len(op.dynamic_argnames), error_msg

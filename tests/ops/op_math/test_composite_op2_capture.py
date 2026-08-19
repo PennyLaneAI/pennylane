@@ -126,7 +126,7 @@ def test_change_op_basis_public_api(defined_outside):
 
 @pytest.mark.parametrize("defined_outside", (True, False))
 def test_change_op_basis_operator(defined_outside):
-    """Tests that ChangeOpBasis captures as one Operator2 equation."""
+    """Tests that change_op_basis captures correctly."""
 
     outside_op = NonParametricOp(0) if defined_outside else None
 

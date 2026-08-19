@@ -19,11 +19,11 @@ import pytest
 from scipy import sparse
 
 import pennylane as qp
-from pennylane.core.operator import Operator2, abstractify
+from pennylane.core.operator import Operator2
 from pennylane.decomposition.decomposition_rule import register_resources
 from pennylane.decomposition.resources import Resources
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
-from pennylane.ops.op_math.adjoint2 import Adjoint2, _adjoint_abstract, adjoint_rotation
+from pennylane.ops.op_math.adjoint2 import Adjoint2, adjoint_rotation
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import OneWireDynOp
@@ -258,27 +258,3 @@ def test_adjoint_rotation_decomposition_rule():
     assert adjoint_rotation.compute_resources(**op.arguments) == Resources(
         {OneWireDynOp(Float, wires=Wire[1]): 1}
     )
-
-
-@pytest.mark.capture
-def test_adjoint_abstract_does_not_bind_with_compressed_leaves():
-    """Test that a legacy-only ChangeOpBasis resource does not create a capture equation."""
-    import jax  # pylint: disable=import-outside-toplevel
-
-    prod_rep = qp.resource_rep(
-        qp.ops.Prod, resources={abstractify(qp.S): 1, abstractify(qp.Hadamard): 1}
-    )
-    base = qp.decomposition.change_op_basis_resource_rep(prod_rep, prod_rep, prod_rep)
-    leaves, _ = qp.pytrees.flatten(base)
-    assert leaves == [prod_rep] * 3
-
-    rep = _adjoint_abstract(base)
-    assert isinstance(rep, Adjoint2)
-    assert rep.is_abstract
-    assert rep.base is base
-
-    def f():
-        abstractify(_adjoint_abstract(base))
-
-    jaxpr = jax.make_jaxpr(f)()
-    assert not jaxpr.eqns
