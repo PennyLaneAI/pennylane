@@ -15,7 +15,6 @@ r"""
 Contains the SelectPauliRot template.
 """
 
-from collections import Counter
 from functools import partial
 
 from pennylane import capture, math
@@ -24,8 +23,10 @@ from pennylane.decomposition import (
     add_decomps,
     change_op_basis_resource_rep,
     register_resources,
+    resource_rep,
 )
 from pennylane.ops import CNOT, RZ, Hadamard, S, adjoint, change_op_basis
+from pennylane.ops.op_math import Prod
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.templates.state_preparations.mottonen import _apply_uniform_rotation_dagger
 from pennylane.typing import Float, Wire
@@ -142,25 +143,26 @@ def _select_pauli_rot_resource(angles, control_wires, target_wire, rot_axis):
 
     num_wires = len(control_wires) + 1
 
-    num_rotations = 2 ** (num_wires - 1)
-    target_region = tuple(
-        op
-        for _ in range(num_rotations)
-        for op in ((abstractify(RZ), abstractify(CNOT)) if num_wires > 1 else (abstractify(RZ),))
-    )
+    prod_res = {
+        abstractify(RZ): 2 ** (num_wires - 1),
+        abstractify(CNOT): 2 ** (num_wires - 1) if num_wires > 1 else 0,
+    }
     if rot_axis == "Z":
-        return dict(Counter(target_region))
+        return prod_res
 
     if rot_axis == "X":
         return {
-            change_op_basis_resource_rep(Hadamard, target_region, Hadamard): 1,
+            change_op_basis_resource_rep(
+                Hadamard, resource_rep(Prod, resources=prod_res), Hadamard
+            ): 1,
         }
+
+    prod_rep1 = resource_rep(Prod, resources={abstractify(Hadamard): 1, _adjoint_abstract(S): 1})
+    prod_rep2 = resource_rep(Prod, resources={abstractify(S): 1, abstractify(Hadamard): 1})
 
     return {
         change_op_basis_resource_rep(
-            (_adjoint_abstract(S), abstractify(Hadamard)),
-            target_region,
-            (abstractify(Hadamard), abstractify(S)),
+            prod_rep1, resource_rep(Prod, resources=prod_res), prod_rep2
         ): 1,
     }
 

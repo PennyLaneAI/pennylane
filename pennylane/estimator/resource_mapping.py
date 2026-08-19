@@ -549,16 +549,11 @@ def _(op: qtemps.GQSP):
 # Symbolic Ops:
 @_map_to_resource_op.register
 def _(op: qops.ChangeOpBasis):
-    def map_region(region):
-        if isinstance(region, tuple):
-            return re_ops.Prod(tuple(_map_to_resource_op(factor) for factor in region))
-        return _map_to_resource_op(region)
-
     uncompute, target, compute = op.operands
     return re_ops.ChangeOpBasis(
-        map_region(compute),
-        map_region(target),
-        map_region(uncompute),
+        _map_to_resource_op(compute),
+        _map_to_resource_op(target),
+        _map_to_resource_op(uncompute),
         wires=op.wires,
     )
 

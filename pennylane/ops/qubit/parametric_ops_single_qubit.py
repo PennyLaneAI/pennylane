@@ -34,6 +34,7 @@ from pennylane.decomposition import (
     add_decomps,
     change_op_basis_resource_rep,
     register_resources,
+    resource_rep,
 )
 from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
@@ -434,9 +435,15 @@ def _ry_to_rx_cliff(phi, wires: WiresLike, **__):
 def _ry_to_rz_cliff_resources():
     return {
         change_op_basis_resource_rep(
-            (_adjoint_abstract(qp.S), abstractify(qp.Hadamard)),
+            resource_rep(
+                qp.ops.op_math.Prod,
+                resources={_adjoint_abstract(qp.S): 1, abstractify(qp.Hadamard): 1},
+            ),
             qp.RZ,
-            (abstractify(qp.Hadamard), abstractify(qp.S)),
+            resource_rep(
+                qp.ops.op_math.Prod,
+                resources={abstractify(qp.S): 1, abstractify(qp.Hadamard): 1},
+            ),
         ): 1
     }
 
@@ -444,9 +451,9 @@ def _ry_to_rz_cliff_resources():
 @register_resources(_ry_to_rz_cliff_resources)
 def _ry_to_rz_cliff(phi, wires: WiresLike, **__):
     qp.change_op_basis(
-        (qp.adjoint(qp.S(wires)), qp.Hadamard(wires)),
+        qp.Hadamard(wires) @ qp.adjoint(qp.S(wires)),
         qp.RZ(phi, wires),
-        (qp.Hadamard(wires), qp.S(wires)),
+        qp.S(wires) @ qp.Hadamard(wires),
     )
 
 
@@ -699,9 +706,15 @@ def _rz_to_rx_cliff(phi, wires: WiresLike):
 def _rz_to_ry_cliff_resources(phi, wires):
     return {
         change_op_basis_resource_rep(
-            (abstractify(qp.Hadamard), abstractify(qp.S)),
+            resource_rep(
+                qp.ops.op_math.Prod,
+                resources={abstractify(qp.S): 1, abstractify(qp.Hadamard): 1},
+            ),
             qp.RY,
-            (_adjoint_abstract(qp.S), abstractify(qp.Hadamard)),
+            resource_rep(
+                qp.ops.op_math.Prod,
+                resources={_adjoint_abstract(qp.S): 1, abstractify(qp.Hadamard): 1},
+            ),
         ): 1
     }
 
@@ -709,9 +722,9 @@ def _rz_to_ry_cliff_resources(phi, wires):
 @register_resources(_rz_to_ry_cliff_resources)
 def _rz_to_ry_cliff(phi, wires: WiresLike):
     qp.change_op_basis(
-        (qp.Hadamard(wires), qp.S(wires)),
+        qp.S(wires) @ qp.Hadamard(wires),
         qp.RY(phi, wires),
-        (qp.adjoint(qp.S(wires)), qp.Hadamard(wires)),
+        qp.Hadamard(wires) @ qp.adjoint(qp.S(wires)),
     )
 
 

@@ -471,34 +471,14 @@ def _equal_operator2(
 @_equal_dispatch.register
 def _equal_change_op_basis(op1: ChangeOpBasis, op2: ChangeOpBasis, **kwargs):
     """Check equality of ChangeOpBasis instances across Operator1/Operator2 boundaries."""
-    if type(op1) is not type(op2):
-        return f"op1 and op2 are of different types. Got {type(op1)} and {type(op2)}."
-
     for name in ChangeOpBasis.hybrid_argnames:
         operand1, operand2 = op1.arguments[name], op2.arguments[name]
-        if isinstance(operand1, tuple) != isinstance(operand2, tuple):
-            return f"op1 and op2 have different region structures for '{name}'."
-
-        region1 = operand1 if isinstance(operand1, tuple) else (operand1,)
-        region2 = operand2 if isinstance(operand2, tuple) else (operand2,)
-        if len(region1) != len(region2):
-            return f"op1 and op2 have different region lengths for '{name}'."
-
-        for region_op1, region_op2 in zip(region1, region2, strict=True):
-            if isinstance(region_op1, Operator) and isinstance(region_op2, Operator):
-                result = _equal(region_op1, region_op2, **kwargs)
-                if isinstance(result, str):
-                    return f"op1 and op2 have different values for '{name}'.\n{result}"
-            elif math.is_abstract(region_op1) or math.is_abstract(region_op2):
-                return (
-                    f"At least one of op1 or op2 has a tracer value for '{name}'. Abstract "
-                    "tracers are assumed to be unique."
-                )
-            elif region_op1 != region_op2:
-                return (
-                    f"op1 and op2 have different values for '{name}'.\n"
-                    f"Got {region_op1} and {region_op2}."
-                )
+        if isinstance(operand1, Operator) and isinstance(operand2, Operator):
+            result = _equal(operand1, operand2, **kwargs)
+            if isinstance(result, str):
+                return f"op1 and op2 have different values for '{name}'.\n{result}"
+        elif operand1 != operand2:
+            return f"op1 and op2 have different values for '{name}'."
 
     return True
 

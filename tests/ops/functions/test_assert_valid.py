@@ -25,13 +25,14 @@ import scipy.sparse
 
 import pennylane as qp
 from pennylane.core import Operator2
-from pennylane.core.operator import Operator
+from pennylane.core.operator import Operator, abstractify
 from pennylane.ops.functions import assert_valid
 from pennylane.ops.functions.assert_valid import (
     _check_capture,
     _check_eigendecomposition,
     _check_pytree,
     _test_decomposition_rule,
+    _unroll_change_op_basis,
 )
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import DynOp, OneWireDynOp
@@ -39,6 +40,20 @@ from tests.core.operator.operator2_utils import DynOp, OneWireDynOp
 
 class TestDecompositionErrors:
     """Test assertions involving decompositions."""
+
+    def test_unroll_change_op_basis_resources(self):
+        """ChangeOpBasis resource keys are expanded without recursively rewriting other keys."""
+        x_rep, y_rep, z_rep = (abstractify(op) for op in (qp.X, qp.Y, qp.Z))
+        prod_rep = qp.resource_rep(qp.ops.Prod, resources={x_rep: 2})
+        native_cob = qp.decomposition.change_op_basis_resource_rep(prod_rep, y_rep, x_rep)
+        compressed_cob = qp.decomposition.CompressedResourceOp(
+            qp.ops.ChangeOpBasis,
+            {"compute_op": z_rep, "target_op": prod_rep, "uncompute_op": y_rep},
+        )
+
+        result = _unroll_change_op_basis({native_cob: 2, compressed_cob: 3, z_rep: 4})
+
+        assert result == {x_rep: 12, y_rep: 5, z_rep: 7}
 
     def test_bad_decomposition_output(self):
         """Test that an error is raised if decomposition output is not a list."""
