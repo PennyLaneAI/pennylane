@@ -153,8 +153,15 @@ class TrotterCDF(Operator2):
         :math:`RZ(\theta) = e^{-i\theta Z/2}` and
         :math:`IsingZZ(\theta) = e^{-i\theta\, Z\otimes Z/2}`.
 
+        Recall that we start from the Hamiltonian
+
+        .. math::
+
+            H = C + \sum_{p} \epsilon_{p}\, \tilde{n}^{(0)}_{p}
+                + \sum_{l=1}^{L} \sum_{p,q} \lambda^{(l)}_{pq}\, \tilde{n}^{(l)}_{p} \tilde{n}^{(l)}_{q} ,
+
         **1. Fragment splitting and second-order Trotter**
-        The Hamiltonian splits into :math:`L+1` fragments, :math:`H = C + \sum_{l=0}^{L} H_l`, the
+        The Hamiltonian splits into :math:`L+1` fragments, :math:`H = C + H_0 + \sum_{l=1}^{L} H_l`, the
         one-body fragment :math:`H_0` and :math:`L` two-body fragments :math:`H_l`,
 
         .. math::
