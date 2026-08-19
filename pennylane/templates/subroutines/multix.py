@@ -18,7 +18,7 @@ from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import PauliX, cond
-from pennylane.typing import TensorLike
+from pennylane.typing import AbstractArray, AbstractWires, Int, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 
@@ -35,8 +35,13 @@ class MultiX(Operator2):
                must match the length of ``bitstring``.
     """
 
-    dynamic_argnames = "bitstring"
-    wire_argnames = "wires"
+    dynamic_argnames = ("bitstring",)
+    wire_argnames = ("wires",)
+
+    arg_specs = {
+        "bitstring": Int[-1],
+        "wires": Wire[-1],
+    }
 
     def __init__(self, bitstring: TensorLike, wires: WiresLike) -> None:
 
@@ -45,6 +50,14 @@ class MultiX(Operator2):
         MultiX._validate_inputs(bitstring, wires)
 
         super().__init__(bitstring, wires)
+
+    # pylint: disable-next=arguments-differ
+    def __abstract_init__(
+        self, bitstring: AbstractArray | TensorLike, wires: AbstractWires | WiresLike
+    ) -> None:
+        super().__abstract_init__(bitstring, wires)
+
+        MultiX._validate_inputs(self.bitstring, self.wires)
 
     @property
     def num_wires(self) -> int:
@@ -62,7 +75,9 @@ class MultiX(Operator2):
         return (bitstring, wires)
 
     @staticmethod
-    def _validate_inputs(bitstring: TensorLike, wires: WiresLike) -> None:
+    def _validate_inputs(
+        bitstring: AbstractArray | TensorLike, wires: AbstractWires | WiresLike
+    ) -> None:
         """Validate the bitstring shapes, values, and length matching the length of wires."""
 
         if math.ndim(bitstring) != 1:
@@ -75,8 +90,12 @@ class MultiX(Operator2):
         if bitstring_length != len(wires):
             raise ValueError("The bitstring and wires arguments must have equal lengths.")
 
-        if not math.all(math.logical_or(bitstring == 0, bitstring == 1)):
-            raise ValueError("The bitstring must contain only binary 0 and 1 values.")
+        # ensure bitstring is either abstract or has binary entries
+        is_bitstring_abstract = isinstance(bitstring, AbstractArray) or math.is_abstract(bitstring)
+        if not is_bitstring_abstract:
+            is_bitstring_binary = math.all(math.logical_or(bitstring == 0, bitstring == 1))
+            if not is_bitstring_binary:
+                raise ValueError("The bitstring must contain only binary 0 and 1 values.")
 
     @staticmethod
     # pylint: disable-next=arguments-differ

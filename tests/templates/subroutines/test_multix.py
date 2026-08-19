@@ -17,6 +17,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.typing import Int, Wire
 from pennylane.wires import Wires
 
 
@@ -32,6 +33,24 @@ def test_input_arguments_parsed_correctly():
     assert multix_op.dynamic_args == {"bitstring": multix_op.bitstring}
     assert multix_op.wire_args == {"wires": Wires(wires_input)}
     assert multix_op.num_wires == len(wires_input)
+
+
+def test_abstract_init():
+    """Tests that MultiX can be initialized from abstract argument metadata."""
+    bitstring = Int[3]
+    wires = Wire[3]
+
+    op = qp.MultiX(bitstring, wires)
+
+    assert op.is_abstract
+    assert op.bitstring == bitstring
+    assert op.wires == wires
+
+
+def test_abstract_init_rejects_mismatched_lengths():
+    """Tests that validation using statically known abstract lengths is retained."""
+    with pytest.raises(ValueError, match="equal lengths"):
+        qp.MultiX(Int[2], Wire[3])
 
 
 @pytest.mark.parametrize(
