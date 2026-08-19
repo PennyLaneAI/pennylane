@@ -359,7 +359,7 @@ def decompose(  # pylint: disable = too-many-positional-arguments
     >>> tape = qp.tape.QuantumScript([qp.BasisState([1], wires=0), qp.BasisState([1], wires=1)])
     >>> batch, fn = decompose(tape, stopping_condition)
     >>> batch[0].circuit
-    [BasisState(array([1]), wires=[0]), RX(3.141592653589793, wires=[1]), GlobalPhase(-1.5707963267948966)]
+    [BasisState([1], wires=[0]), RX(3.141592653589793, wires=[1]), GlobalPhase(-1.5707963267948966, wires=[])]
     >>> batch, fn = decompose(tape, stopping_condition, skip_initial_state_prep=False)
     >>> batch[0].circuit
     [RX(3.141592653589793, wires=[0]), GlobalPhase(-1.5707963267948966), RX(3.141592653589793, wires=[1]), GlobalPhase(-1.5707963267948966)]
