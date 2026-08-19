@@ -153,7 +153,7 @@ class TrotterCDF(Operator2):
         :math:`RZ(\theta) = e^{-i\theta Z/2}` and
         :math:`IsingZZ(\theta) = e^{-i\theta\, Z\otimes Z/2}`.
 
-        **1. Fragment splitting and second-order Trotter.**
+        **1. Fragment splitting and second-order Trotter**
         The Hamiltonian splits into :math:`L+1` fragments, :math:`H = C + \sum_{l=0}^{L} H_l`, the
         one-body fragment :math:`H_0` and :math:`L` two-body fragments :math:`H_l`,
 
@@ -196,7 +196,7 @@ class TrotterCDF(Operator2):
         :math:`\mathcal{U}^{(l-1)\dagger}\mathcal{U}^{(l)}`, so only one basis rotation is emitted per
         fragment boundary.
 
-        **3. One-body diagonal.**
+        **3. One-body diagonal**
         The one-body generator is :math:`D_0 = \sum_p \epsilon_p\, n_p`, with
         :math:`\epsilon_p =` ``core_tensors[0][p, p]``. Using :math:`n_p=(I-Z_p)/2`,
 
@@ -210,7 +210,7 @@ class TrotterCDF(Operator2):
         :math:`-\epsilon_p \Delta t = -2 \epsilon_p \Delta t/2`, accumulating :math:`RZ(-\epsilon_p t)`
         over the :math:`n` steps. The constant :math:`\epsilon_p/2` is deferred to the global phase (step 5).
 
-        **4. Two-body diagonal.**
+        **4. Two-body diagonal**
         A two-body generator is :math:`D_l = \sum_{p,q}\lambda_{pq}\, n_p n_q`, with
         :math:`\lambda_{pq} =` ``core_tensors[l][p, q]``. Using :math:`n=(I-Z)/2`,
 
@@ -233,10 +233,8 @@ class TrotterCDF(Operator2):
         angle is :math:`\tfrac{1}{2}\,\lambda_{pq}\,(\Delta t/2)` (the ``0.5`` prefactor in the code),
         accumulating :math:`IsingZZ(\lambda_{pq}\, t/2)` over the :math:`n` steps.
 
-        **5. Constant terms (global phase / energy shift).**
-        All identity contributions -- ``nuc_constant`` :math:`C`, the :math:`\epsilon_p/2` pieces from
-        the one-body expansion (one per spin channel, i.e. :math:`\epsilon_p` per orbital), and the
-        constants bookkept while regrouping the two-body fragments -- are collected into a single
+        **5. Constant terms (global phase / energy shift)**
+        All identity contributions are collected into a single
         scalar :math:`s` and applied as one :class:`~.GlobalPhase` with angle :math:`s\,t`, i.e.
         :math:`e^{-ist}`, matching the :math:`I`-part of :math:`e^{-iHt}`. Following Eq. (A29) of
         `arXiv:2506.15784 <https://arxiv.org/abs/2506.15784>`__,
@@ -245,9 +243,9 @@ class TrotterCDF(Operator2):
 
             s = C + \sum_p \epsilon_p
                   - \frac{1}{2}\sum_{l\ge 1}\sum_{p,q} \lambda^{(l)}_{pq}
-                  + \frac{1}{4}\sum_{l\ge 1}\sum_{p} \lambda^{(l)}_{pp} ,
+                  + \frac{1}{4}\sum_{l\ge 1}\sum_{p} \lambda^{(l)}_{pp}.
 
-        which is what the code accumulates as the energy shift (``trace(core_tensors[0])`` for the
+        Here, we got the energy shift (``trace(core_tensors[0])`` for the
         one-body part and ``-sum(core_tensors[1:])/2 + trace(core_tensors[1:])/4`` for the two-body
         part).
 
