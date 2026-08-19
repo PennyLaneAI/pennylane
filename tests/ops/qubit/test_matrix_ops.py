@@ -214,7 +214,7 @@ class TestQubitUnitaryCSR:
         op = qp.pow(qp.QubitUnitary(U, wires=[0]), 2)
         rule = qp.list_decomps("Pow(QubitUnitary)")[0]
         with qp.queuing.AnnotatedQueue() as q:
-            rule(*op.parameters, wires=op.wires, **op.hyperparameters)
+            rule(**op.arguments)
 
         tape = qp.tape.QuantumScript.from_queue(q)
         actual_mat = qp.matrix(tape)
