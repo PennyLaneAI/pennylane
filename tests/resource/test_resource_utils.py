@@ -22,6 +22,8 @@ from pennylane.resource._utils import (
     preprocess_level_input,
 )
 
+# pylint: disable=redefined-outer-name
+
 
 @pytest.fixture
 def example_pipeline():
