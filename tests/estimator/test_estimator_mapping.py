@@ -439,6 +439,63 @@ class TestMapToResourceOp:
         assert mapped_op == expected_res_op
         assert mapped_op.wires == expected_res_op.wires
 
+    def test_map_to_resource_op_trotter_vibronic(self):
+        """Test that _map_to_resource_op maps a TrotterVibronic template to its resource operator,
+        reading the mode/state/grid sizes, precisions and wires off the operator arguments."""
+        n_states, n_modes, k, b = 4, 2, 3, 2
+        n = int(qp.math.ceil_log2(n_states))
+        hamiltonian = {
+            "constant": np.zeros((1, n_states, n_states)),
+            "linear": np.zeros((1, n_states, n_states, n_modes)),
+            "quadratic": np.zeros((1, n_states, n_states, n_modes, n_modes)),
+            "kinetic": np.einsum("ab,cd->abcd", np.eye(n_states), np.diag(0.3 * np.ones(n_modes))),
+        }
+        wires = qp.registers(
+            {
+                "electronic": n,
+                "vib_wires": n_modes * k,
+                "cache": 2 * k,
+                "coefficients": b,
+                "phase_gradient": b,
+                "work": max(n - 1, 2 * k, 2 * b + 2),
+            }
+        )
+        operator = qp.TrotterVibronic(
+            evolution_time=0.5,
+            num_trotter_steps=3,
+            hamiltonian=hamiltonian,
+            electronic=wires["electronic"],
+            vib_wires=wires["vib_wires"],
+            cache=wires["cache"],
+            coefficients=wires["coefficients"],
+            phase_gradient=wires["phase_gradient"],
+            work=wires["work"],
+            aqft_order=1,
+        )
+
+        expected_res_op = re_temps.TrotterVibronic(
+            vibronic_ham=re_ops.VibronicHamiltonian(
+                num_modes=n_modes, num_states=n_states, grid_size=k, taylor_degree=2
+            ),
+            num_steps=3,
+            order=2,
+            phase_grad_precision=2.0**-b,
+            coeff_precision=2.0**-b,
+            wires=qp.wires.Wires([*wires["electronic"], *wires["vib_wires"]]),
+        )
+
+        mapped_op = _map_to_resource_op(operator)
+        assert mapped_op == expected_res_op
+        assert mapped_op.wires == expected_res_op.wires
+        # The vibronic Hamiltonian metadata is read off the dense tensors / wire registers.
+        assert mapped_op.vibronic_ham.num_states == n_states
+        assert mapped_op.vibronic_ham.num_modes == n_modes
+        assert mapped_op.vibronic_ham.grid_size == k
+        assert mapped_op.num_steps == 3
+        assert mapped_op.order == 2
+        assert mapped_op.phase_grad_precision == 2.0**-b
+        assert mapped_op.coeff_precision == 2.0**-b
+
     @pytest.mark.parametrize(
         "operator, expected_res_op",
         (

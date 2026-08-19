@@ -30,7 +30,9 @@ from pennylane.templates.subroutines.time_evolution.trotter_vibronic import (
     _half_signed_out_multiplier,
     _momentum_coefficients,
     _position_coefficients,
+    _validate_registers,
 )
+from pennylane.typing import AbstractWires
 
 # ---------------------------------------------------------------------------
 # --------------------------- Test data helpers -----------------------------
@@ -357,6 +359,77 @@ class TestConstruction:
         with pytest.raises(ValueError, match=match):
             op.compute_decomposition(**op.arguments)
 
+    def test_rejects_unequal_mode_register_sizes(self):
+        """Test that _validate_registers rejects vibrational-mode registers of differing sizes."""
+        registers = {
+            "electronic": [0],
+            "cache": [1, 2, 3, 4],
+            "coefficients": [5],
+            "phase gradient": [6],
+            "work": [7, 8, 9, 10],
+        }
+        # The first mode has two wires while the second has one, which is invalid.
+        mode_registers = [[11, 12], [13]]
+        with pytest.raises(ValueError, match="same size"):
+            _validate_registers(registers, mode_registers, n_modes=2, n_states=2)
+
+    def test_abstract_init_derives_diag_keys(self):
+        """Test that abstract construction (here triggered by an abstract wire register) derives
+        the diagonalization keys from the concrete Hamiltonian via ``__abstract_init__``."""
+        hamiltonian = build_hamiltonian(fragment_list())
+        wires = make_wires(2, 2)
+        op = qp.TrotterVibronic(
+            evolution_time=0.5,
+            num_trotter_steps=1,
+            hamiltonian=hamiltonian,
+            electronic=AbstractWires(len(wires["electronic"])),
+            vib_wires=wires["vib_wires"],
+            cache=wires["cache"],
+            coefficients=wires["coefficients"],
+            phase_gradient=wires["phase_gradient"],
+            work=wires["work"],
+            aqft_order=1,
+        )
+        assert op.is_abstract
+        assert op.arguments["diag_keys"] == _derive_diag_keys(hamiltonian)
+
+    @pytest.mark.capture
+    def test_abstract_init_requires_diag_keys_for_traced_hamiltonian(self):
+        """Test that abstract construction with a traced Hamiltonian and no ``diag_keys`` errors,
+        since the diagonalization keys cannot be derived from an abstract Hamiltonian."""
+        jax = pytest.importorskip("jax")
+        wires = make_wires(2, 1)
+
+        def make_traced(constant, linear, quadratic, kinetic):
+            hamiltonian = {
+                "constant": constant,
+                "linear": linear,
+                "quadratic": quadratic,
+                "kinetic": kinetic,
+            }
+            return qp.TrotterVibronic(
+                evolution_time=0.5,
+                num_trotter_steps=1,
+                hamiltonian=hamiltonian,
+                electronic=AbstractWires(len(wires["electronic"])),
+                vib_wires=wires["vib_wires"],
+                cache=wires["cache"],
+                coefficients=wires["coefficients"],
+                phase_gradient=wires["phase_gradient"],
+                work=wires["work"],
+                aqft_order=1,
+                diag_keys=None,
+            )
+
+        hamiltonian = build_hamiltonian(fragment_list(n_states=2, n_modes=1))
+        with pytest.raises(ValueError, match="diag_keys"):
+            jax.make_jaxpr(make_traced)(
+                hamiltonian["constant"],
+                hamiltonian["linear"],
+                hamiltonian["quadratic"],
+                hamiltonian["kinetic"],
+            )
+
 
 # ---------------------------------------------------------------------------
 # ------------------------------ Decomposition ------------------------------
@@ -427,6 +500,17 @@ class TestDecomposition:
         # classes, so a successful call with positive gate count is the assertion of interest.
         resources = rule.compute_resources(**op.arguments)
         assert resources.num_gates > 0
+
+    @pytest.mark.capture
+    def test_decomposition_captures_into_plxpr(self, seed):
+        """Test that the decomposition can be captured into plxpr, exercising the program-capture
+        branches that build jax arrays for the mode registers and Hamiltonian coefficients."""
+        jax = pytest.importorskip("jax")
+        # Two modes so the bilinear terms (and thus every coefficient branch) are traced.
+        hamiltonian = build_hamiltonian(fragment_list(n_states=2, n_modes=2, seed=seed))
+        op = make_op(hamiltonian, make_wires(2, 2), evolution_time=0.7)
+        jaxpr = jax.make_jaxpr(lambda: op.compute_decomposition(**op.arguments))()
+        assert len(jaxpr.eqns) > 0
 
 
 # ---------------------------------------------------------------------------
