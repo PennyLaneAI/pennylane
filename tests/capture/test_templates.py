@@ -318,6 +318,7 @@ tested_modified_templates = [
     qp.AmplitudeEmbedding,
     qp.BasisEmbedding,
     qp.TrotterProduct,
+    qp.TrotterVibronic,
     qp.AllSinglesDoubles,
     qp.AmplitudeAmplification,
     qp.ApproxTimeEvolution,
@@ -466,6 +467,63 @@ class TestModifiedTemplates:
         ops = [qp.X(0), qp.Z(0)]
         H = qp.dot(coeffs, ops)
         assert q.queue[0] == template(H, time=2.4, **kwargs)
+
+    def test_trotter_vibronic(self):
+        """Test the primitive bind call of TrotterVibronic."""
+
+        # Smallest valid instantiation: 2 electronic states, 1 vibrational mode, with a single
+        # diagonal position fragment and a diagonal kinetic fragment (mirrors the smallest data
+        # used in test_trotter_vibronic.py).
+        n_states, n_modes, k, b = 2, 1, 2, 2
+        n = int(math.ceil_log2(n_states))
+        hamiltonian = {
+            "constant": np.zeros((1, n_states, n_states)),
+            "linear": np.zeros((1, n_states, n_states, n_modes)),
+            "quadratic": np.zeros((1, n_states, n_states, n_modes, n_modes)),
+            "kinetic": np.einsum("ab,cd->abcd", np.eye(n_states), np.diag(0.3 * np.ones(n_modes))),
+        }
+        wires = qp.registers(
+            {
+                "electronic": n,
+                "vib_wires": n_modes * k,
+                "cache": 2 * k,
+                "coefficients": b,
+                "phase_gradient": b,
+                "work": max(n - 1, 2 * k, 2 * b + 2),
+            }
+        )
+
+        def make(evolution_time):
+            return qp.TrotterVibronic(
+                evolution_time=evolution_time,
+                num_trotter_steps=1,
+                hamiltonian=hamiltonian,
+                electronic=wires["electronic"],
+                vib_wires=wires["vib_wires"],
+                cache=wires["cache"],
+                coefficients=wires["coefficients"],
+                phase_gradient=wires["phase_gradient"],
+                work=wires["work"],
+                aqft_order=1,
+            )
+
+        def qfunc(evolution_time):
+            return make(evolution_time).tracer
+
+        # Validate inputs
+        qfunc(0.5)
+
+        # Actually test primitive bind
+        jaxpr = jax.make_jaxpr(qfunc)(0.5)
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert_eqn_matches_op(eqn, qp.TrotterVibronic)
+        assert len(eqn.outvars) == 1
+
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.5)
+        qp.assert_equal(op, make(0.5))
 
     @pytest.mark.xfail(reason="operators of operators not yet supported with Operator2")
     def test_amplitude_amplification(self):
