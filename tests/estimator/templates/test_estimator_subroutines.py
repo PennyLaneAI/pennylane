@@ -557,18 +557,17 @@ class TestSelectOnlyQRAM:
                 select_value=select_value,
             )
 
-        specs = qp.specs(qp.qjit(circuit), level="user")()
+        tape = qp.workflow.construct_tape(circuit)()
+        resources = qp.resource.resources_from_tape(tape)
 
-        for ty, count in specs.resources.quantum_operations.items():
+        for ty, count in resources.quantum_operations.items():
             found = False
             i = 0
             while not found and i < len(expected):
                 if (
                     expected[i].gate.op_type.__name__ == ty.replace("Pauli", "")
-                    or "C(PauliX)" in ty
+                    or "MultiControlledX" in ty
                     and "Controlled" == expected[i].gate.op_type.__name__
-                    or ty == "SetBasisState"
-                    and expected[i].gate.op_type.__name__ == "BasisState"
                 ):
                     assert expected[i].count == count
                     found = True
