@@ -16,6 +16,7 @@
 
 # pylint: disable=too-few-public-methods
 
+import importlib
 import sys
 
 import numpy as np
@@ -80,3 +81,30 @@ class TestCssBpDecoder:
     def test_the_wrapper_reexports_from_backline(self):
         """The public name is exported from pennylane.backline."""
         assert qp.backline.css_bp_decoder is css_bp_decoder
+
+
+class TestTritonSubmoduleImportGuards:
+    """Each triton submodule raises a helpful ImportError when triton is missing.
+
+    Every submodule under ``pennylane.backline.decoders.triton`` wraps its
+    ``import triton`` in a try/except that re-raises with a message directing the user to install
+    the package. On a system without triton, an accidental import should hit that branch.
+    """
+
+    @pytest.mark.parametrize(
+        "module_name",
+        [
+            "pennylane.backline.decoders.triton.algorithms",
+            "pennylane.backline.decoders.triton.bp_iters",
+            "pennylane.backline.decoders.triton.decoder_frontend",
+            "pennylane.backline.decoders.triton.persistent_kernel",
+            "pennylane.backline.decoders.triton.triton_so_builder",
+        ],
+    )
+    def test_missing_triton_re_raises_with_install_hint(self, monkeypatch, module_name):
+        """Importing the module without triton points at installing it."""
+        # Force ``import triton`` to fail from a fresh import of the target submodule.
+        monkeypatch.setitem(sys.modules, "triton", None)
+        monkeypatch.delitem(sys.modules, module_name, raising=False)
+        with pytest.raises(ImportError, match="Triton decoders require installed"):
+            importlib.import_module(module_name)

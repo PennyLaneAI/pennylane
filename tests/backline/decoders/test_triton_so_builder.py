@@ -213,3 +213,77 @@ class TestBuildSo:
         assert func_name == "decoder_kernel_abcdef123456"
         assert func_name in generated_c.read_text(encoding="utf-8")
         generated_c.unlink(missing_ok=True)
+
+
+class TestCatalystWrapperSource:
+    """The wrapper source builder for the Catalyst launcher ABI."""
+
+    def test_an_unknown_backend_is_refused(self):
+        """A backend outside {cuda, hip} does not have a known Catalyst ABI mapping."""
+        with pytest.raises(ValueError, match="unsupported backend for Catalyst wrapper: cpu"):
+            builder._make_catalyst_wrapper_source("cpu", "sym")
+
+
+class TestCompileKernelTemplateMissing:
+    """The generated launcher source has to come from Triton's compile templates."""
+
+    def test_missing_c_template_is_reported(self, tmp_path, monkeypatch):
+        """Without a ``.c`` template on disk, the missing launcher source is flagged.
+
+        This defends against a broken or stripped-down triton install: the loop over
+        ``template_dir.glob("compile.*")`` finds nothing and ``generated_c`` stays ``None``.
+        """
+        # Point ``triton_compile_tool.__file__`` at a fake tools module whose ``extra/<backend>``
+        # directory holds no ``compile.c`` template.
+        fake_tools = tmp_path / "tools" / "__init__.py"
+        fake_tools.parent.mkdir(parents=True)
+        fake_tools.write_text("", encoding="utf-8")
+        (tmp_path / "tools" / "extra" / "cuda").mkdir(parents=True)
+
+        monkeypatch.setattr(builder.triton_compile_tool, "__file__", str(fake_tools), raising=False)
+
+        # Reuse the mocking approach from the AST-hash test above so triton.compile is stubbed.
+        def _ast_source_init(self, fn, constexprs, signature, attrs):
+            self.fn = fn
+            self.constants = constexprs
+            self.signature = signature
+            self.attrs = attrs
+
+        fake_ast_source = type(
+            "FakeASTSource",
+            (),
+            {"__init__": _ast_source_init, "hash": lambda _self: "0" * 16},
+        )
+        fake_kernel = type(
+            "FakeKernel",
+            (),
+            {
+                "__name__": "decoder_kernel",
+                "arg_names": ["ring_u64_ptr"],
+                "ASTSource": fake_ast_source,
+                "create_binder": lambda _self: None,
+            },
+        )()
+        fake_backend = type(
+            "FakeBackend",
+            (),
+            {"binary_ext": "cubin", "parse_options": lambda _self, _: SimpleNamespace()},
+        )()
+        compile_result = SimpleNamespace(
+            metadata=SimpleNamespace(shared=0, profile_scratch_size=0, global_scratch_size=0),
+            asm={"cubin": b"\x00\x01"},
+        )
+
+        monkeypatch.setattr(builder.triton.compiler, "make_backend", lambda _: fake_backend)
+        monkeypatch.setattr(builder.triton, "compile", lambda *args, **kwargs: compile_result)
+
+        with pytest.raises(RuntimeError, match="expected Triton compile templates to generate .c"):
+            builder._compile_kernel(
+                fake_kernel,
+                signature={"ring_u64_ptr": "*u64"},
+                constexpr={},
+                grid=(1, 1, 1),
+                platform="cuda:80:32",
+                num_warps=1,
+                num_stages=1,
+            )

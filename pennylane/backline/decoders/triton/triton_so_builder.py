@@ -121,7 +121,7 @@ def _make_catalyst_wrapper_source(backend: str, raw_symbol: str) -> str:
     if backend == "cuda":
         stream_type = "CUstream"
         deviceptr_type = "CUdeviceptr"
-    elif backend == "hip":
+    elif backend == "hip":  # pragma: no cover
         stream_type = "hipStream_t"
         deviceptr_type = "hipDeviceptr_t"
     else:
@@ -233,7 +233,7 @@ def _build_so(  # pylint: disable=too-many-arguments
         hip_include_dir = None
         if backend == "cuda":
             compiler = compiler or os.environ.get("NVCC", "nvcc")
-        elif backend == "hip":
+        elif backend == "hip":  # pragma: no cover
             compiler = compiler or os.environ.get("HIPCC", "hipcc")
             candidate = Path(triton.__file__).resolve().parent / "backends" / "amd" / "include"
             if (candidate / "hip" / "hip_runtime.h").exists():
@@ -252,7 +252,7 @@ def _build_so(  # pylint: disable=too-many-arguments
             cmd.insert(1, "-Xcompiler")
         if backend == "cuda":
             cmd.append("-lcuda")
-        elif hip_include_dir is not None:
+        elif hip_include_dir is not None:  # pragma: no cover
             cmd.append(f"-I{hip_include_dir}")
         cmd.extend(cflags)
         subprocess.run(cmd, check=True)
@@ -330,7 +330,7 @@ def _compile_kernel(  # pylint: disable=too-many-arguments
         from triton.backends.nvidia.driver import (  # pylint: disable=import-outside-toplevel,no-name-in-module
             ty_to_cpp,
         )
-    elif backend == "hip":
+    elif backend == "hip":  # pragma: no cover
         from triton.backends.amd.driver import (  # pylint: disable=import-outside-toplevel,no-name-in-module
             ty_to_cpp,
         )
