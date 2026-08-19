@@ -14,20 +14,20 @@
 """
 Unit tests for the composite operator class of qubit operations
 """
-from pennylane import math
-from pennylane.wires import WiresLike
-from typing import Sequence
-from pennylane.queuing import AnnotatedQueue
 
 import inspect
+from typing import Sequence
 
 import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane import math
 from pennylane.core.operator import Operator, Operator2
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.ops.op_math import CompositeOp2
+from pennylane.queuing import AnnotatedQueue
+from pennylane.wires import WiresLike
 
 # pylint:disable=protected-access, use-implicit-booleaness-not-comparison
 
@@ -88,11 +88,12 @@ class ValidOp(CompositeOp2):
         return self.eigendecomposition["eigval"]
 
     @classmethod
-    #pylint: disable-next=unused-argument
+    # pylint: disable-next=unused-argument
     def _sort(cls, op_list, wire_map: dict = None):
         return op_list
 
 
+# pylint: disable-next=too-few-public-methods
 class NoMatrixOp(Operator2):
 
     def __init__(self, wires: WiresLike):
@@ -274,61 +275,69 @@ class TestMscMethods:
         """Test that the has_diagonalizing_gates property is correct."""
         # has overlapping wires and no diag gates case
         op = ValidOp((NoMatrixOp(0), qp.PauliX(0)))
-        assert op.has_diagonalizing_gates == False
+        assert op.has_diagonalizing_gates is False
         # has overlapping wires and diag gates case
         op = ValidOp((qp.PauliZ(0), qp.PauliX(0)))
-        assert op.has_diagonalizing_gates == True
+        assert op.has_diagonalizing_gates is True
         # no overlapping wires and no diag gates case
         op = ValidOp((NoMatrixOp(0), NoMatrixOp(1)))
-        assert op.has_diagonalizing_gates == False
+        assert op.has_diagonalizing_gates is False
         # no overlapping wires and diag gates case
         op = ValidOp((qp.PauliZ(0), qp.PauliX(1)))
-        assert op.has_diagonalizing_gates == True
+        assert op.has_diagonalizing_gates is True
 
-    @pytest.mark.parametrize("ops",
-    [
-        (qp.S(0),),
-        (qp.S(0), qp.T(1)),
-        (qp.T(0), qp.S(1)),
-        (qp.PauliX(0), qp.PauliY(1)),
-        (qp.PauliZ(0), qp.PauliY(1)),
-        (qp.PauliX(1), qp.PauliX(0), qp.PauliX(1)),
-    ])
-    def test_eigvals(self, ops):
+    @pytest.mark.parametrize(
+        "ops",
+        [
+            (qp.S(0),),
+            (qp.S(0), qp.T(1)),
+            (qp.T(0), qp.S(1)),
+            (qp.PauliX(0), qp.PauliY(1)),
+            (qp.PauliZ(0), qp.PauliY(1)),
+            (qp.PauliX(1), qp.PauliX(0), qp.PauliX(1)),
+        ],
+    )
+    def test_eigvals(self, operators):
         """Test that the eigvals method is correct."""
-        op = ValidOp(ops)
+        op = ValidOp(operators)
         vals = op.eigvals()
+
         def _expand_two(sub_op):
-            return np.kron(sub_op.matrix(), np.eye(2)) if sub_op.wires == (0,) else np.kron(np.eye(2), sub_op.matrix())
-        if len(ops) > 1:
-            sub_mat = _expand_two(ops[0])
-            for sub in ops[1:]:
+            return (
+                np.kron(sub_op.matrix(), np.eye(2))
+                if sub_op.wires == (0,)
+                else np.kron(np.eye(2), sub_op.matrix())
+            )
+
+        if len(operators) > 1:
+            sub_mat = _expand_two(operators[0])
+            for sub in operators[1:]:
                 sub_mat = sub_mat @ _expand_two(sub)
             assert np.allclose(vals, math.linalg.eig(sub_mat)[0])
         else:
-            assert np.allclose(vals, math.linalg.eig(ops[0].matrix())[0])
+            assert np.allclose(vals, math.linalg.eig(operators[0].matrix())[0])
 
     def test_has_matrix(self):
         """Test that the has_matrix property is correct."""
         op = ValidOp((NoMatrixOp(0), NoMatrixOp(1)))
-        assert op.has_matrix == False
+        assert op.has_matrix is False
         op = ValidOp((qp.PauliX(0), qp.PauliX(0)))
-        assert op.has_matrix == True
+        assert op.has_matrix is True
         op = ValidOp((qp.PauliX(0), qp.PauliY(1)))
-        assert op.has_matrix == True
+        assert op.has_matrix is True
         op = ValidOp((qp.PauliX(0), NoMatrixOp(1)))
-        assert op.has_matrix == False
+        assert op.has_matrix is False
 
     def test_has_overlapping_wires(self):
         """Test that the has_overlapping_wires property is correct."""
         op = ValidOp((qp.PauliX(0), qp.PauliX(0)))
-        assert op.has_overlapping_wires == True
+        assert op.has_overlapping_wires is True
 
         op = ValidOp((qp.PauliX(0), qp.PauliY(1)))
-        assert op.has_overlapping_wires == False
+        assert op.has_overlapping_wires is False
 
         op = ValidOp((qp.PauliX(0), qp.PauliY(0)))
-        assert op.has_overlapping_wires == True
+        assert op.has_overlapping_wires is True
 
     @pytest.mark.parametrize("ops_lst, op_rep", tuple((i, j) for i, j in zip(ops, ops_rep)))
     def test_repr(self, ops_lst, op_rep):
