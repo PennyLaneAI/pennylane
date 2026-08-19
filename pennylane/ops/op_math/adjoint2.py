@@ -38,7 +38,7 @@ from pennylane.decomposition.resources import (
 )
 from pennylane.decomposition.symbolic_decomposition import self_adjoint
 
-from .symbolicop2 import SymbolicOp2, _remove_from_program
+from .symbolicop2 import SymbolicOp2
 
 
 class Adjoint2(SymbolicOp2):
