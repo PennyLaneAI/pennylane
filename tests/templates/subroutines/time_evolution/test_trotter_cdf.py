@@ -42,6 +42,7 @@ from tests.templates.subroutines.time_evolution.trotter_test_helpers import (  #
     CATALYST_GATE_SET_DOUBLE_PHASE,
     CATALYST_GATE_SET_GENUINE,
     cdf_reference_hamiltonian,
+    cdf_reference_hamiltonian_leaves,
     control_branches,
     hadamard_test,
     random_orthogonal,
@@ -135,11 +136,16 @@ class TestCDFScheme:
     and both controlled structures are all covered by the ``*_matches_expm`` tests)."""
 
     def test_merge_leaves(self, seed):
-        """Test the CDF merge rule that combines consecutive fragment rotations."""
+        """Test the CDF merge rule that combines consecutive fragment rotations as the
+        conjugate transpose of the previous leaf times the current one."""
         rng = np.random.default_rng(seed)
         U_prev = random_orthogonal(3, rng)
         U_curr = random_orthogonal(3, rng)
-        assert np.allclose(_merge_leaves(U_prev, U_curr), U_prev.T @ U_curr)
+        assert np.allclose(_merge_leaves(U_prev, U_curr), U_prev.conj().T @ U_curr)
+        # complex leaves use the adjoint (conj().T), not the plain transpose
+        C_prev = rng.normal(size=(3, 3)) + 1j * rng.normal(size=(3, 3))
+        C_curr = rng.normal(size=(3, 3)) + 1j * rng.normal(size=(3, 3))
+        assert np.allclose(_merge_leaves(C_prev, C_curr), C_prev.conj().T @ C_curr)
 
     def test_apply_system_basis_rotation(self, seed):
         """Test that a non-identity leaf is applied as a BasisRotation on both spin channels."""
@@ -200,6 +206,37 @@ class TestDecomposition:
         u = qp.matrix(qp.TrotterCDF(t, steps, ham, wires=sys_wires), wire_order=sys_wires)
         expected = expm(-1j * cdf_reference_hamiltonian(ham) * t)
         assert np.allclose(u, expected, atol=1e-9)
+
+    @pytest.mark.slow
+    def test_base_matches_expm_nonidentity_leaves(self, seed):
+        """With random real-orthogonal leaves the circuit is no longer Trotter-exact, but
+        matrix(TrotterCDF) converges to the exact expm(-i H t) at second order (error
+        ~ 1 / steps^2). Here H is built independently from the fragment basis rotations,
+        H = sum_l B_l^dag D_l B_l, which pins down the leaf conjugation direction and the
+        consecutive-fragment merge that the identity-leaf checks do not exercise."""
+        rng = np.random.default_rng(seed)
+        num_orbitals, L = 2, 2
+        core = rng.normal(size=(L + 1, num_orbitals, num_orbitals)) * 0.4
+        core = 0.5 * (core + np.transpose(core, (0, 2, 1)))
+        leaf = np.stack([random_orthogonal(num_orbitals, rng) for _ in range(L + 1)])
+        ham = {"core_tensors": core, "leaf_tensors": leaf, "nuc_constant": 0.3}
+        sys_wires = list(range(2 * num_orbitals))
+        t = 0.6
+        expected = expm(-1j * cdf_reference_hamiltonian_leaves(ham) * t)
+
+        diffs = [
+            float(
+                np.linalg.norm(
+                    qp.matrix(qp.TrotterCDF(t, steps, ham, wires=sys_wires), wire_order=sys_wires)
+                    - expected
+                )
+            )
+            for steps in (4, 8, 16)
+        ]
+        # second-order Trotter: halving the step size quarters the error
+        assert diffs[0] > diffs[1] > diffs[2]
+        assert diffs[1] / diffs[2] > 3.0
+        assert diffs[2] < 5e-4
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
