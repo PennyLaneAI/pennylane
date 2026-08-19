@@ -164,6 +164,121 @@ class TrotterCGF(Operator2):
             wires: ─╰RZ(2ϕ)─┤       wires: ─╰X──RZ(ϕ)─╰X─┤
 
         This is not a true controlled operation, but can be used to reduce the cost in Hadamard test circuits instead of the controlled evolution.
+
+    .. details ::
+        :title: Implementation Details
+
+        This section shows how the CGF Hamiltonian is turned into the concrete gate angles, making
+        every numerical prefactor explicit. Throughout we use :math:`n_{lp} = (I - Z_{lp})/2`
+        and the PennyLane conventions
+        :math:`RZ(\theta) = e^{-i\theta Z/2}` and
+        :math:`IsingZZ(\theta) = e^{-i\theta\, Z\otimes Z/2}`.
+
+        Recall that we start from the Hamiltonian
+
+        .. math::
+
+            H = C + \sum_{l,p} \epsilon_{lp}\, \tilde{n}^{(0)}_{lp}
+                + \sum_{\nu=1}^{L} \sum_{l>m} \sum_{p,q} \lambda^{(\nu)}_{lmpq}\,
+                  \tilde{n}^{(\nu)}_{lp} \tilde{n}^{(\nu)}_{mq} ,
+
+        **1. Fragment splitting and second-order Trotter**
+        The Hamiltonian splits into :math:`L+1` fragments, :math:`H = C + H_0 + \sum_{\nu=1}^{L} H_\nu`,
+        the one-body fragment :math:`H_0` and :math:`L` two-body fragments :math:`H_\nu`,
+
+        .. math::
+
+            H_0 = \sum_{l,p} \epsilon_{lp}\, \tilde{n}^{(0)}_{lp} ,
+            \qquad
+            H_\nu = \sum_{l>m} \sum_{p,q} \lambda^{(\nu)}_{lmpq}\,
+                    \tilde{n}^{(\nu)}_{lp} \tilde{n}^{(\nu)}_{mq}
+            \quad (\nu \ge 1) ,
+
+        with :math:`\tilde{n}^{(\nu)}_{lp} = \mathcal{U}^{(\nu,l)} n_{lp} \mathcal{U}^{(\nu,l)\dagger}`
+        and the scalar :math:`C =` ``nuc_constant`` (handled in step 5). With
+        :math:`n =` ``num_trotter_steps`` and step duration :math:`\Delta t = t/n`, :math:`e^{-iHt}` is
+        approximated by :math:`n` repetitions of the second-order (Strang) step
+
+        .. math::
+
+            S_2(\Delta t) = \Big(\prod_{\nu=1}^{L} e^{-i H_\nu \Delta t/2}\Big)\,
+                            e^{-i H_0 \Delta t}\,
+                            \Big(\prod_{\nu=L}^{1} e^{-i H_\nu \Delta t/2}\Big) ,
+
+        which visits each two-body fragment *twice* per step (at the half-step duration
+        ``first_order_time_step`` :math:`= \Delta t/2`) and the central one-body fragment *once* (at the
+        full :math:`\Delta t`). The next steps derive :math:`e^{-i H_\nu \tau}` for a single fragment and
+        duration :math:`\tau`.
+
+        **2. Evolving a fragment**
+        The fragments are obtained via Christiansen greedy fragmentation (see `arXiv:2508.11865
+        <https://arxiv.org/abs/2508.11865>`__). Each fragment is diagonal in its own per-mode basis,
+        :math:`H_\nu = \mathcal{U}^{(\nu)} D_\nu\, \mathcal{U}^{(\nu)\dagger}`, where
+        :math:`\mathcal{U}^{(\nu)} = \prod_l \mathcal{U}^{(\nu,l)}` is the product of the per-mode
+        rotations :math:`\mathcal{U}^{(\nu,l)} =` ``leaf_tensors[nu][l]`` and :math:`D_\nu` is diagonal,
+        so
+
+        .. math::
+
+            e^{-i H_\nu \tau} = \mathcal{U}^{(\nu)}\, e^{-i D_\nu \tau}\, \mathcal{U}^{(\nu)\dagger} .
+
+        This is implemented as a per-mode :class:`~.BasisRotation` :math:`\mathcal{U}^{(\nu,l)}` (one on
+        each mode's modal register), the diagonal rotations for :math:`e^{-i D_\nu \tau}` (see steps 3-4
+        below), and the inverse rotations. Consecutive fragment rotations are merged per mode as
+        :math:`\mathcal{U}^{(\nu-1,l)\dagger}\mathcal{U}^{(\nu,l)}`, so only one basis rotation is emitted
+        per mode per fragment boundary.
+
+        **3. One-body diagonal**
+        The one-body generator is :math:`D_0 = \sum_{l,p} \epsilon_{lp}\, n_{lp}`, with
+        :math:`\epsilon_{lp} =` ``core_tensors[0][l, l, p, p]``. Using :math:`n_{lp}=(I-Z_{lp})/2`,
+
+        .. math::
+
+            \epsilon_{lp}\, n_{lp} = \frac{\epsilon_{lp}}{2}\, I - \frac{\epsilon_{lp}}{2}\, Z_{lp} ,
+
+        so the :math:`Z_{lp}` piece over duration :math:`\tau` is
+        :math:`e^{+i(\epsilon_{lp}/2) Z_{lp} \tau} = RZ(-\epsilon_{lp} \tau)`. The one-body fragment is
+        the central full :math:`\Delta t` term (visited once per step), so the emitted angle is
+        :math:`-\epsilon_{lp} \Delta t = -2 \epsilon_{lp} \Delta t/2`, accumulating
+        :math:`RZ(-\epsilon_{lp} t)` over the :math:`n` steps. The constant :math:`\epsilon_{lp}/2` is
+        deferred to the global phase (step 5).
+
+        **4. Two-body diagonal**
+        A two-body generator is :math:`D_\nu = \sum_{l>m}\sum_{p,q}\lambda_{lmpq}\, n_{lp} n_{mq}`, with
+        :math:`\lambda_{lmpq} =` ``core_tensors[nu][l, m, p, q]``. Using :math:`n=(I-Z)/2`,
+
+        .. math::
+
+            \lambda_{lmpq}\, n_{lp} n_{mq} =
+                \frac{\lambda_{lmpq}}{4}\left(I - Z_{lp} - Z_{mq} + Z_{lp} Z_{mq}\right) ,
+
+        a constant :math:`\lambda_{lmpq}/4`, single-site terms
+        :math:`-\tfrac{\lambda_{lmpq}}{4}(Z_{lp} + Z_{mq})`, and the two-site term
+        :math:`\tfrac{\lambda_{lmpq}}{4} Z_{lp} Z_{mq}`. In the *regrouped* input the single-site terms
+        are already absorbed into ``core_tensors[0]`` and the constants into the global phase, so each
+        two-body layer implements only the two-site term
+
+        .. math::
+
+            e^{-i(\lambda_{lmpq}/4) Z_{lp} Z_{mq}\, \tau}
+                = \text{IsingZZ} \left(\lambda_{lmpq} \tfrac{\tau}{2}\right).
+
+        Each two-body fragment is visited twice per step at :math:`\tau = \Delta t/2`, so the emitted
+        angle is :math:`\tfrac{1}{2}\,\lambda_{lmpq}\,(\Delta t/2)` (the ``0.5`` prefactor in the code),
+        accumulating :math:`IsingZZ(\lambda_{lmpq}\, t/2)` over the :math:`n` steps.
+
+        **5. Constant terms (global phase / energy shift)**
+        All identity contributions are collected into a single scalar :math:`s` and applied as one
+        :class:`~.GlobalPhase` with angle :math:`s\,t`, i.e. :math:`e^{-ist}`, matching the :math:`I`-part
+        of :math:`e^{-iHt}`. For the regrouped CGF input the two-body constants are already contained in
+        :math:`C`, so
+
+        .. math::
+
+            s = C + \frac{1}{2}\sum_{l,p} \epsilon_{lp} ,
+
+        which is what the code accumulates as the energy shift (``nuc_constant`` plus
+        ``trace(trace(core_tensors[0]))/2`` for the one-body part).
     """
 
     dynamic_argnames = ("evolution_time",)
