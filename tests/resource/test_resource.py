@@ -1671,9 +1671,9 @@ class TestCircuitSpecs:
         expected += "\n\n" + "-" * 60 + "\n\n"
 
         expected += "Level = 2:\n"
-        expected += "    Batched tape a:\n"
+        expected += "    Batched qnode a:\n"
         expected += r.resources[2][0].to_pretty_str(preindent=8)
-        expected += "\n\n    Batched tape b:\n"
+        expected += "\n\n    Batched qnode b:\n"
         expected += r.resources[2][1].to_pretty_str(preindent=8)
 
         assert r.to_pretty_str(tabular=False) == expected
@@ -1877,7 +1877,7 @@ class TestIPythonDisplays:
 
             **Resources:**
 
-            **Batched tape a:**
+            **Batched qnode a:**
 
             | **Metric** | **Value** |
             | :--- | ---: |
@@ -1890,7 +1890,7 @@ class TestIPythonDisplays:
             | **Total wires** | 2 |
             | **Circuit depth** | 2 |
 
-            **Batched tape b:**
+            **Batched qnode b:**
 
             | **Metric** | **Value** |
             | :--- | ---: |
@@ -1932,7 +1932,7 @@ class TestIPythonDisplays:
             <summary>Resources</summary>
 
             <details open>
-            <summary>Batched tape a</summary>
+            <summary>Batched qnode a</summary>
 
             | **Metric** | **Value** |
             | :--- | ---: |
@@ -1947,7 +1947,7 @@ class TestIPythonDisplays:
 
             </details>
             <details open>
-            <summary>Batched tape b</summary>
+            <summary>Batched qnode b</summary>
 
             | **Metric** | **Value** |
             | :--- | ---: |

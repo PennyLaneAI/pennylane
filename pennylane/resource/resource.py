@@ -792,7 +792,7 @@ class CircuitSpecs:
         elif isinstance(res, list):
             prefix = preindent * " "
             for i, r in enumerate(res):
-                lines.append(f"{prefix}Batched tape {num_to_letters(i)}:")
+                lines.append(f"{prefix}Batched qnode {num_to_letters(i)}:")
                 lines.append(r.to_pretty_str(preindent=preindent + 4))
                 lines.append("")  # Blank line
         else:
@@ -1154,9 +1154,9 @@ class CircuitSpecs:
             for i, r in enumerate(self.resources):
                 if collapsible:
                     lines.append("<details open>")
-                    lines.append(f"<summary>Batched tape {num_to_letters(i)}</summary>")
+                    lines.append(f"<summary>Batched qnode {num_to_letters(i)}</summary>")
                 else:
-                    lines.append(f"**Batched tape {num_to_letters(i)}:**")
+                    lines.append(f"**Batched qnode {num_to_letters(i)}:**")
                 lines.append("")
                 lines.append(r._repr_markdown_())  # pylint: disable=protected-access
                 lines.append("")

@@ -730,7 +730,7 @@ def decompose(
                 return qp.state()
 
         >>> qp.specs(qp.qjit(circuit))().resources.quantum_operations
-        {'GlobalPhase': 6, 'CZ': 3,  'RX': 7, 'RZ': 12}
+        {'GlobalPhase': 6, 'CZ': 3, 'RX': 7, 'RZ': 12}
         >>> qp.decomposition.disable_graph()
 
         **Degenerate Graph Solutions**

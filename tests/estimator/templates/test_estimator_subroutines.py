@@ -566,7 +566,7 @@ class TestSelectOnlyQRAM:
             while not found and i < len(expected):
                 if (
                     expected[i].gate.op_type.__name__ == ty.replace("Pauli", "")
-                    or "MultiControlledX" in ty
+                    or ty == "MultiControlledX"
                     and "Controlled" == expected[i].gate.op_type.__name__
                 ):
                     assert expected[i].count == count

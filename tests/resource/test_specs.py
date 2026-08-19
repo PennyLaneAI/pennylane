@@ -28,7 +28,6 @@ catalyst = pytest.importorskip("catalyst")
 pytestmark = pytest.mark.catalyst
 
 
-@pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 class TestSpecsTransform:
     """Tests for the transform specs using the QNode"""
 
@@ -73,6 +72,17 @@ class TestSpecsTransform:
         resources = specs["resources"]["Before MLIR Passes"]
         assert resources.counts == {"RX": 1, "RY": 1, "RZ": 1}
         assert resources.total_quantum_operations == 3
+
+    def test_error_with_non_qjit(self):
+        """Test that a helpful error message is raised if the input is not QJIT'd."""
+
+        @qp.qnode(qp.device("default.qubit"))
+        def circuit():
+            qp.Hadamard(0)
+            return qp.expval(qp.PauliZ(0))
+
+        with pytest.raises(ValueError, match="qp.specs can only be applied to a qjit'd QNode"):
+            qp.specs(circuit)()
 
     def test_error_with_non_qnode(self):
         """Test that a helpful error message is raised if the input is not a QNode."""

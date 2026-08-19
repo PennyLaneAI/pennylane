@@ -57,6 +57,7 @@ def test_make_level_name_unique():
         ((1, "foo", "baz", 4, "bar"), [1, 2, 3, 4, 5], True),
         ("all", [0, 1, 2, 3, 4, 5, 6], False),
         ("user", [6], False),
+        ("top", [0], False),
     ],
 )
 def test_preprocess_levels(level, output, expect_warnings, example_pipeline):
