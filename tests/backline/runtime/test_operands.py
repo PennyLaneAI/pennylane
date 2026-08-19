@@ -18,6 +18,8 @@ The happy paths are covered by ``test_runtime_call.py``; this file targets the b
 only fire on odd inputs and would otherwise stay uncovered.
 """
 
+# pylint: disable=too-few-public-methods
+
 import numpy as np
 import pytest
 

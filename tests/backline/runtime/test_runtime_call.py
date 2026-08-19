@@ -363,9 +363,7 @@ class TestResolveSignature:
         """A signature= kwarg as a string declares the symbol and uses that declaration."""
 
         def program():
-            return qp.runtime_call(
-                "declared_via_call", 1, signature="(u64) -> i32", address="h:1"
-            )
+            return qp.runtime_call("declared_via_call", 1, signature="(u64) -> i32", address="h:1")
 
         x64.make_jaxpr(program)()
         assert qp.backline.runtime.signature_of("declared_via_call").symbol == "declared_via_call"
