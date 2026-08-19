@@ -549,7 +549,7 @@ class TestModifiedTemplates:
         jaxpr = jax.make_jaxpr(fn)(base)
 
         assert len(jaxpr.eqns) == 2
-        assert jaxpr.eqns[0].primitive == qp.RX._primitive
+        assert_eqn_matches_op(jaxpr.eqns[0], qp.RX)
 
         eqn = jaxpr.eqns[1]
         assert eqn.primitive == qp.ControlledSequence._primitive
@@ -562,7 +562,7 @@ class TestModifiedTemplates:
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
         with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.5)
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.5, 0)
 
         assert len(q) == 1  # One for each control
         assert q.queue[0] == qp.ControlledSequence(base, control)
@@ -653,7 +653,7 @@ class TestModifiedTemplates:
         assert_eqn_matches_op(jaxpr.eqns[0], qp.H)
         assert_eqn_matches_op(jaxpr.eqns[1], qp.H)
         assert_eqn_matches_op(jaxpr.eqns[-5], qp.RZ)
-        assert jaxpr.eqns[-2].primitive == qp.RX._primitive
+        assert_eqn_matches_op(jaxpr.eqns[-2], qp.RX)
 
         eqn = jaxpr.eqns[-1]
         assert eqn.primitive == template._primitive
@@ -1614,7 +1614,7 @@ class TestModifiedTemplates:
 
         assert len(jaxpr.eqns) == 4
 
-        assert jaxpr.eqns[0].primitive == qp.RX._primitive
+        assert_eqn_matches_op(jaxpr.eqns[0], qp.RX)
         assert_eqn_matches_op(jaxpr.eqns[1], qp.H)
         assert jaxpr.eqns[2].primitive == qp.ops.op_math.Prod._primitive
 
@@ -1652,7 +1652,7 @@ class TestModifiedTemplates:
 
         assert len(jaxpr.eqns) == 4
 
-        assert jaxpr.eqns[0].primitive == qp.RX._primitive
+        assert_eqn_matches_op(jaxpr.eqns[0], qp.RX)
         assert_eqn_matches_op(jaxpr.eqns[1], qp.H)
         assert jaxpr.eqns[2].primitive == qp.ops.op_math.Prod._primitive
 

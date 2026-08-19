@@ -110,7 +110,7 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "core"
 
 [[interfaces]]
-expose = ["QueuingManager", "AnnotatedQueue", "apply"]
+expose = ["QueuingManager", "AnnotatedQueue", "apply", "remove_from_program"]
 from = ["pennylane.core.queuing"]
 
 [[modules]]
