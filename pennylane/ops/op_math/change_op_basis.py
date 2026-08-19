@@ -20,7 +20,6 @@ import inspect
 from collections import Counter, defaultdict
 from collections.abc import Callable
 from functools import reduce
-from typing import override
 
 from pennylane import capture, math
 from pennylane.core import queuing
@@ -34,6 +33,7 @@ from pennylane.typing import Wire
 from pennylane.wires import Wires
 
 from .composite import handle_recursion_error
+from .composite2 import CompositeOp2
 
 
 def _validate_callable(func: Callable) -> None:
@@ -94,18 +94,16 @@ def _convert_to_prod(op_or_func):
 
 
 def _validate_operands(*operands):
-    """Validate the operator operands accepted across concrete and abstract construction."""
     # pylint: disable=import-outside-toplevel
     from pennylane.ops.mid_measure import MidMeasure, PauliMeasure
 
-    def _is_mid_measure(op):
-        if isinstance(op, (MidMeasure, PauliMeasure)):
-            return True
-        return isinstance(op, CompressedResourceOp) and issubclass(
-            op.op_type, (MidMeasure, PauliMeasure)
-        )
-
-    if any(_is_mid_measure(op) for op in operands):
+    mcm_types = (MidMeasure, PauliMeasure)
+    if any(
+        isinstance(op, mcm_types)
+        or isinstance(op, CompressedResourceOp)
+        and issubclass(op.op_type, mcm_types)
+        for op in operands
+    ):
         raise ValueError("Composite operators of mid-circuit measurements are not supported.")
 
     valid_operands = (Operator, CompressedResourceOp)
@@ -119,15 +117,14 @@ def change_op_basis(
     target_op: Operator | Callable,
     uncompute_op: Operator | Callable | None = None,
 ):
-    """Construct an operator representing a compute-target-uncompute pattern.
+    """Construct an operator that represents the product of the
+    operators provided; particularly a compute-uncompute pattern.
 
     Args:
-        compute_op (:class:`~.Operator` | Callable): An operator or a no-input callable that
-            applies quantum operations.
-        target_op (:class:`~.Operator` | Callable): An operator or a no-input callable that applies
-            quantum operations.
-        uncompute_op (None | :class:`~.Operator` | Callable): An optional operator or no-input
-            callable. ``None`` applies the adjoint of ``compute_op``.
+        compute_op (:class:`~.Operator` | Callable): A single operator or ``Callable`` with no inputs that applies quantum operations.
+        target_op (:class:`~.Operator` | Callable): A single operator or ``Callable`` with no inputs that applies quantum operations.
+        uncompute_op (None | :class:`~.Operator` | Callable): An optional single operator or ``Callable`` with no inputs that applies quantum
+            operations. ``None`` corresponds to ``uncompute_op=qp.adjoint(compute_op)``.
 
     Returns:
         ~ops.op_math.ChangeOpBasis: the operator representing the compute-uncompute pattern.
@@ -229,8 +226,10 @@ def change_op_basis(
         if uncompute_op is not None:
             _apply_op_or_func(uncompute_op)
         elif isinstance(compute_op, Operator2):
-            # NOTE: The new Adjoint2 will consume compute_op as a hybrid pytree argument. Feed it a
-            # detached copy because its equation has already been moved into execution order above.
+            # NOTE: The new Adjoint2 will consume compute_op as a hybrid pytree argument
+            # and will pop its jaxpr equation (see pop_op_eqns). To prevent this from happening,
+            # we can feed a copy of the op to adjoint and detach its tracer as if it was
+            # removed from the jaxpr.
             dummy = copy.copy(compute_op)
             dummy.tracer = None
             _apply_op_or_func(adjoint(dummy))
@@ -244,30 +243,37 @@ def change_op_basis(
         )
 
 
-class ChangeOpBasis(Operator2):
+class ChangeOpBasis(CompositeOp2):
     """
     Composite operator representing a compute-uncompute pattern of operators, which constitutes changing the basis in
     which an operator is applied.
 
     Args:
-        compute_op (:class:`~.Operator`): The compute operator.
-        target_op (:class:`~.Operator`): The target operator.
-        uncompute_op (:class:`~.Operator`): The uncompute operator. Defaults to the adjoint of
-            ``compute_op``.
+        compute_op (:class:`~.Operator`): A single operator or product that applies quantum operations.
+        target_op (:class:`~.Operator`): A single operator or a product that applies quantum operations.
+        uncompute_op (:class:`~.Operator`): A single operator or a product that applies quantum operations.
+            Default is uncompute_op=qp.adjoint(compute_op).
 
     Returns:
         (Operator): Returns an Operator which is the change_op_basis of the provided Operators: compute_op, target_op, uncompute_op.
 
     .. note::
-        Iterating over a ``ChangeOpBasis`` yields its three operands in matrix-product order:
-        uncompute, target, then compute.
+        When a ``ChangeOpBasis`` operator is iterated over, its factors are iterated in the reverse order. This is to
+        have a similar behaviour to ``Prod`` which applies its factors in reverse order.
 
     .. seealso:: :func:`~.change_op_basis`
     """
 
-    wire_argnames = ()
     hybrid_argnames = ("compute_op", "target_op", "uncompute_op")
-    arg_specs = {}
+
+    _op_symbol = "@"
+    _math_op = staticmethod(math.prod)
+
+    has_matrix = False
+    has_diagonalizing_gates = False
+    matrix = Operator2.matrix
+    eigvals = Operator2.eigvals
+    diagonalizing_gates = Operator2.diagonalizing_gates
 
     def __init__(
         self,
@@ -276,26 +282,15 @@ class ChangeOpBasis(Operator2):
         uncompute_op: Operator | None = None,
     ):
         if uncompute_op is None:
-            uncompute_op = (
-                _adjoint_abstract(compute_op)
-                if isinstance(compute_op, CompressedResourceOp)
-                else adjoint(compute_op)
-            )
+            uncompute_op = adjoint(compute_op)
 
         _validate_operands(compute_op, target_op, uncompute_op)
 
-        super().__init__(compute_op, target_op, uncompute_op)
+        super().__init__((uncompute_op, target_op, compute_op))
 
-        # Operator2 automatically collects wires from Operator2-valued hybrid arguments. Retain
-        # support for legacy Operator operands until their own migrations are complete.
-        if all(isinstance(op, Operator) for op in self.operands):
-            self._wires = Wires.all_wires([op.wires for op in self.operands])
-            self._pauli_rep = self._build_pauli_rep()
-        else:
-            self._wires = Wire[0]
-            self._is_abstract = True
+    def _operator2_args(self, operands, _init_pauli_rep):
+        return tuple(reversed(operands))
 
-    @override
     def __abstract_init__(self, *args, **kwargs):
         bound_args = self._sig.bind(*args, **kwargs)
         bound_args.apply_defaults()
@@ -310,50 +305,17 @@ class ChangeOpBasis(Operator2):
 
     @property
     def operands(self):
-        """The factors in matrix-product order."""
+        """The operators in matrix-product order."""
         return self.uncompute_op, self.target_op, self.compute_op
-
-    def __iter__(self):
-        return iter(self.operands)
-
-    @property
-    def num_wires(self):
-        """Number of wires the operator acts on."""
-        return len(self.wires)
-
-    def __repr__(self):
-        return " @ ".join(
-            f"({op})" if getattr(op, "arithmetic_depth", 0) > 0 else f"{op}" for op in self.operands
-        )
-
-    @handle_recursion_error
-    def __hash__(self):
-        return hash(
-            (
-                self.name,
-                tuple(hash(op) for op in self.operands),
-            )
-        )
 
     @property
     @handle_recursion_error
     def data(self):
         return tuple(data for op in self for data in op.data)
 
-    @property
-    @handle_recursion_error
-    def num_params(self):
-        return len(self.data)
-
     grad_method = None
 
     @property
-    @override
-    def arithmetic_depth(self):
-        return 1 + max(getattr(op, "arithmetic_depth", 0) for op in self)
-
-    @property
-    @override
     def is_verified_hermitian(self):
         """Check if the product operator is hermitian.
 
@@ -363,33 +325,30 @@ class ChangeOpBasis(Operator2):
         """
         return self.target_op.is_verified_hermitian
 
-    @override
     def adjoint(self):
         return ChangeOpBasis(*(adjoint(op, lazy=False) for op in self))
-
-    @override
-    def queue(self, context=queuing.QueuingManager):
-        if self.is_abstract:
-            return self
-        if context.recording():
-            for op in self:
-                context.remove(op)
-            context.append(self)
-        return self
-
-    @override
-    def map_wires(self, wire_map):
-        return type(self)(
-            self.compute_op.map_wires(wire_map),
-            self.target_op.map_wires(wire_map),
-            self.uncompute_op.map_wires(wire_map),
-        )
 
     def _build_pauli_rep(self):
         """PauliSentence representation of the Product of operations."""
         if all(operand_pauli_reps := [op.pauli_rep for op in self.operands]):
             return reduce(lambda a, b: a @ b, operand_pauli_reps) if operand_pauli_reps else None
         return None
+
+    @classmethod
+    def _sort(cls, op_list: list, wire_map: dict = None) -> list[Operator]:
+        """
+        We do not sort the ops. The order is guaranteed to matter since if the compute operator
+        and the base operator commute, the pattern would simplify to just being the base operator.
+
+        Args:
+            op_list (List[.Operator]): list of operators to be sorted
+            wire_map (dict): Dictionary containing the wire values as keys and its indexes as values.
+                Defaults to None.
+
+        Returns:
+            List[.Operator]: sorted list of operators
+        """
+        return op_list
 
 
 def _change_op_basis_resources(compute_op, target_op, uncompute_op):
