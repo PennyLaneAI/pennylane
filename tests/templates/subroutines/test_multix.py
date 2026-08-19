@@ -49,6 +49,22 @@ def test_invalid_arguments(bitstring, wires, error_match):
 
 
 @pytest.mark.parametrize(
+    ("bitstring", "expected_matrix"),
+    [
+        ([0], np.eye(2)),
+        ([1], qp.X.compute_matrix()),
+        ([1, 0], np.kron(qp.X.compute_matrix(), np.eye(2))),
+        ([0, 1, 1], np.kron(np.eye(2), np.kron(qp.X.compute_matrix(), qp.X.compute_matrix()))),
+    ],
+)
+def test_matrix(bitstring, expected_matrix):
+    """Tests that MultiX computes the tensor product selected by the bitstring."""
+    op = qp.MultiX(bitstring, wires=range(len(bitstring)))
+
+    assert np.allclose(op.matrix(), expected_matrix)
+
+
+@pytest.mark.parametrize(
     ("bitstring", "wires", "expected_index"),
     [
         ([0], [0], 0),

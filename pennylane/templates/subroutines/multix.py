@@ -39,13 +39,21 @@ class MultiX(Operator2):
 
     def __init__(self, bitstring, wires):
 
-        if isinstance(bitstring, (list, tuple)):
-            bitstring = math.array(bitstring)
-        wires = Wires(wires)
+        bitstring, wires = MultiX._canonicalize_inputs(bitstring, wires)
 
         MultiX._validate_inputs(bitstring, wires)
 
         super().__init__(bitstring, wires)
+
+    @staticmethod
+    def _canonicalize_inputs(bitstring, wires):
+        """Canonicalize types for arguments bitstring and wires."""
+
+        if isinstance(bitstring, (list, tuple)):
+            bitstring = math.array(bitstring)
+        wires = Wires(wires)
+
+        return (bitstring, wires)
 
     @staticmethod
     def _validate_inputs(bitstring, wires):
@@ -63,6 +71,32 @@ class MultiX(Operator2):
 
         if not math.all(math.logical_or(bitstring == 0, bitstring == 1)):
             raise ValueError("The bitstring must contain only binary 0 and 1 values.")
+
+    @staticmethod
+    # pylint: disable-next=arguments-differ
+    def compute_matrix(bitstring, wires):
+        r"""
+        Representation of a MultiX operator as a concrete matrix in the computational basis.
+
+        Args:
+            bitstring: A one-dimensional array containing either `1` or `0` entries.
+            wires: The wires onto which ``MultiX`` acts. The number of wires used
+                   must match the length of ``bitstring``.
+        Returns:
+            Concrete matrix representing the operator MultiX(bitstring, wires).
+        """
+        bitstring, wires = MultiX._canonicalize_inputs(bitstring, wires)
+        MultiX._validate_inputs(bitstring, wires)
+
+        identity = math.eye(2, like=bitstring)
+        pauli_x = math.convert_like(PauliX.compute_matrix(), bitstring)
+
+        matrix = math.ones((1, 1), like=bitstring)
+        for i in range(len(wires)):
+            local_matrix = pauli_x if bitstring[i] == 1 else identity
+            matrix = math.kron(matrix, local_matrix)
+
+        return matrix
 
 
 # Resources function for MultiX
