@@ -58,19 +58,19 @@ class TestTracking:
             "results": [1.0, 1.0, 1.0],
             "resources": [
                 SpecsResources(
-                    num_allocs=1,
+                    num_wires=1,
                     counts={},
                     measurement_processes={"expval(PauliZ)": 1},
                     circuit_depth=0,
                 ),
                 SpecsResources(
-                    num_allocs=1,
+                    num_wires=1,
                     counts={},
                     measurement_processes={"expval(PauliZ)": 1},
                     circuit_depth=0,
                 ),
                 SpecsResources(
-                    num_allocs=1,
+                    num_wires=1,
                     counts={},
                     measurement_processes={"expval(PauliZ)": 1},
                     circuit_depth=0,
@@ -92,7 +92,7 @@ class TestTracking:
             "simulations": 1,
             "results": 1,
             "resources": SpecsResources(
-                num_allocs=1,
+                num_wires=1,
                 counts={},
                 measurement_processes={"expval(PauliZ)": 1},
                 circuit_depth=0,
@@ -128,7 +128,7 @@ class TestTracking:
             "execute_and_vjp_batches": [1],
             "resources": [
                 SpecsResources(
-                    num_allocs=1,
+                    num_wires=1,
                     counts={},
                     measurement_processes={"expval(PauliZ)": 1},
                     circuit_depth=0,
@@ -152,7 +152,7 @@ class TestTracking:
         )
 
         expected_resources = SpecsResources(
-            num_allocs=3,
+            num_wires=3,
             counts={"Hadamard": 3, "CNOT": 2, "RZ": 1},
             measurement_processes={"expval(PauliZ)": 1, "expval(PauliY)": 1},
             circuit_depth=3,

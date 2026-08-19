@@ -204,6 +204,7 @@ class Node:
       index; the remaining keys are backend-specific (a GPU backend takes ``gpu=``, an FPGA engine
       takes ``sq_mem=``/``data_mem=``/``reply_mem=``).
 
+
     Keys outside this set are dropped rather than rejected, so a misspelling is silent.
     """
 
@@ -264,9 +265,9 @@ class Controller(Node):
     """
 
     device: "Device | None" = None
-    """The PennyLane device the controller executes, e.g. one built with :func:`~pennylane.device`.
-    Defaults to ``None``, which builds a ``null.qubit`` over :data:`DEFAULT_WIRES` wires. A
-    controller needing more wires, or an actual simulation, should pass a device of its own."""
+    """The PennyLane device the controller executes. Defaults to ``None``, which builds a
+    ``null.qubit`` over :data:`DEFAULT_WIRES` wires. A controller needing more wires, or an actual
+    simulation, should pass a device of its own."""
 
     in_bytes: int = field(default=DEFAULT_MESSAGE_BYTES, init=False, repr=False)
     """The transport's input-message capacity in bytes. Always :data:`DEFAULT_MESSAGE_BYTES`;
@@ -383,8 +384,9 @@ class Placement:
         controller (Controller): The :class:`~.Controller` running the QNode.
         coprocessors (Sequence[Coprocessor]): The
             :class:`coprocessing accelerators <.Coprocessor>`. Defaults to ``()``.
-        transport (str | Transport): How bytes move between nodes, by registry name (e.g.
-            ``"rdma"``) or a :class:`~.Transport`.
+        transport (str | Transport): Which transport carries data between nodes, as a
+            :class:`~.Transport` or its registry name (e.g. ``"rdma"``). A name is resolved on
+            construction, so this reads back as a :class:`~.Transport`.
         qec_code (str | None): The quantum error-correcting code the circuit is encoded for.
             Defaults to ``None``, which leaves the circuit unencoded.
 
@@ -405,6 +407,7 @@ class Placement:
     >>> len(dev.placement.coprocessors)
     1
 
+
     :attr:`coprocessors` accepts any sequence and is normalized to a tuple, and :attr:`transport`
     accepts either a registry name or a :class:`~.Transport`:
 
@@ -420,11 +423,13 @@ class Placement:
     stored as a tuple."""
 
     transport: str | Transport
-    """How bytes move between nodes, by registry name (e.g. ``"rdma"``) or a :class:`~.Transport`. A
-    name is resolved to a :class:`~.Transport` on construction with :func:`~.get_transport`."""
+    """Which transport carries data between nodes. Accepts a :class:`~.Transport`, or its registry
+    name (e.g. ``"rdma"``), which is resolved with :func:`~.get_transport` on construction - so
+    this attribute always reads back as a :class:`~.Transport`. The transport itself is implemented
+    in the compiled runtime."""
 
     qec_code: str | None = None
-    """The quantum error-correcting code the circuit is encoded for, e.g. ``"steane"``. Naming it
+    """The quantum error-correcting code for logical qubit encoding, e.g. ``"steane"``. Naming it
     here lets the compiler encode the circuit, and no separate lowering step is needed. Defaults to
     ``None``, which leaves the circuit unencoded."""
 
