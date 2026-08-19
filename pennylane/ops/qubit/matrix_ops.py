@@ -188,6 +188,10 @@ class QubitUnitary(Operator2):
             atol=1e-6,
         )
 
+    def __repr__(self):
+        """Representation of the operator, hiding the unitary check."""
+        return f"QubitUnitary(U={self.U}, wires={self.wires})"
+
     @staticmethod
     def compute_matrix(
         U: TensorLike, wires: WiresLike, unitary_check: bool = False
