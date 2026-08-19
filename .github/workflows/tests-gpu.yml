@@ -114,8 +114,11 @@ jobs:
       - name: Install Lightning-master
         run: uv pip install -i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade
 
-      - name: Run tests
-        run: python -m pytest -m "${{ env.SUITE }}" tests --cov-config=.coveragerc --cov=pennylane --cov-append --cov-report=xml --no-flaky-report --tb=native
+      - name: Run non-triton GPU tests
+        run: python -m pytest -m "${{ env.SUITE }}" tests --ignore=tests/backline/decoders --no-flaky-report --tb=native
+
+      - name: Run triton GPU tests
+        run: python -m pytest -m "${{ env.SUITE }}" tests/backline/decoders --cov-config=.coveragerc --cov=pennylane.backline.decoders.triton --cov-report=xml --no-flaky-report --tb=native
 
       - name: Adjust coverage file for Codecov
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
@@ -123,7 +126,7 @@ jobs:
       - name: Upload Coverage File
         uses: actions/upload-artifact@v6
         with:
-          name: gpu-tests-coverage-${{ matrix.python-version }}
+          name: gpu-triton-tests-coverage-${{ matrix.python-version }}
           path: coverage.xml
 
       - name: Upload to Codecov
