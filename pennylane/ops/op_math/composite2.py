@@ -16,13 +16,13 @@
 This submodule defines a base class for composite operations.
 """
 
-# pylint: disable=invalid-sequence-index
-from typing import Sequence
-from pennylane.ops.op_math.composite import handle_recursion_error
 import abc
 import copy
 from collections.abc import Callable
 from functools import wraps
+
+# pylint: disable=invalid-sequence-index
+from typing import Sequence
 from warnings import warn
 
 import pennylane as qp
@@ -30,6 +30,7 @@ from pennylane import math
 from pennylane.core.operator import Operator, Operator2
 from pennylane.core.operator.base import _UNSET_BATCH_SIZE  # tach-ignore
 from pennylane.exceptions import PennyLaneDeprecationWarning
+from pennylane.ops.op_math.composite import handle_recursion_error
 from pennylane.pytrees import flatten, unflatten
 from pennylane.wires import Wires
 
@@ -67,34 +68,12 @@ class CompositeOp2(Operator2, is_baseclass=True):
         self._batch_size = _UNSET_BATCH_SIZE
         super().__init__(operands, _init_pauli_rep=_init_pauli_rep)
 
-    @handle_recursion_error
-    def _check_batching(self):
-        batch_sizes = {op.batch_size for op in self if op.batch_size is not None}
-        if len(batch_sizes) > 1:
-            raise ValueError(
-                "Broadcasting was attempted but the broadcasted dimensions "
-                f"do not match: {batch_sizes}."
-            )
-        self._batch_size = batch_sizes.pop() if batch_sizes else None
-
     def __repr__(self):
         if len(self) == 0:
             return f"{type(self).__name__}()"
         return f" {self._op_symbol} ".join(
             [f"({op})" if op.arithmetic_depth > 0 else f"{op}" for op in self]
         )
-
-    @handle_recursion_error
-    def __copy__(self):
-        cls = self.__class__
-        copied_op = cls.__new__(cls)
-        copied_op.operands = tuple(s.__copy__() for s in self)
-
-        for attr, value in vars(self).items():
-            if attr not in {"operands"}:
-                setattr(copied_op, attr, value)
-
-        return copied_op
 
     def __iter__(self):
         """Return the iterator over the underlying operands."""
@@ -279,7 +258,7 @@ class CompositeOp2(Operator2, is_baseclass=True):
             if len(ops) == 1:
                 diag_gates.extend(ops[0].diagonalizing_gates())
             else:
-                tmp_sum = self.__class__(*ops)
+                tmp_sum = self.__class__(ops)
                 eigvecs = tmp_sum.eigendecomposition["eigvec"]
                 diag_gates.append(
                     qp.QubitUnitary(math.transpose(math.conj(eigvecs)), wires=tmp_sum.wires)
