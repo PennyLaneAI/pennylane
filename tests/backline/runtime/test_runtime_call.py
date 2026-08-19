@@ -126,6 +126,11 @@ class TestDeclare:
         with pytest.raises(ValueError, match="already declared"):
             qp.runtime_declare("clashing_result", "(ptr) -> i32")
 
+    def test_signature_of_an_undeclared_symbol_points_at_runtime_declare(self):
+        """Looking up a symbol that was never declared raises with an actionable message."""
+        with pytest.raises(KeyError, match="has no declared signature"):
+            qp.backline.runtime.signature_of("never_declared_symbol")
+
 
 @pytest.mark.all_interfaces
 class TestRecordedCalls:

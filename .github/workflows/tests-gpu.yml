@@ -118,7 +118,7 @@ jobs:
         run: python -m pytest -m "${{ env.SUITE }}" tests --ignore=tests/backline/decoders --no-flaky-report --tb=native
 
       - name: Run triton GPU tests
-        run: python -m pytest -m "${{ env.SUITE }}" tests/backline/decoders --cov-config=.coveragerc --cov=pennylane.backline.decoders.triton --cov-report=xml --no-flaky-report --tb=native
+        run: python -m pytest -m "${{ env.SUITE }}" tests/backline/decoders --cov-config=.coveragerc --cov=pennylane.backline.decoders.triton --cov=pennylane.backline.functions --cov-report=xml --no-flaky-report --tb=native
 
       - name: Adjust coverage file for Codecov
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)

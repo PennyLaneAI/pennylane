@@ -49,6 +49,7 @@ def x64_fixture():
         yield jax
 
 
+@pytest.mark.jax
 class TestDecodeBitpack:
     """Checks for decode(..., bitpack=True)."""
 
@@ -198,6 +199,7 @@ class TestSessionKey:
         assert _session_key(None, [a_coprocessor(), a_coprocessor()]) == "controller"
 
 
+@pytest.mark.jax
 class TestByteCount:
     """The byte count."""
 
@@ -241,6 +243,7 @@ class TestOutBytes:
         assert _resolve_out_bytes(controller, None) == 8
 
 
+@pytest.mark.jax
 class TestNodeResolution:
     """Which nodes a round runs between."""
 
@@ -288,6 +291,7 @@ class TestNodeResolution:
                 _resolve_nodes(None, None)
 
 
+@pytest.mark.jax
 class TestRecordedRound:
     """The four transport calls a round is recorded as."""
 
