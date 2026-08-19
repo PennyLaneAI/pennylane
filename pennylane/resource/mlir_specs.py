@@ -55,7 +55,7 @@ def _execute_analysis_pass(
         ) from e
 
     new_qjit = QJIT(new_qnode, compile_options=compile_options)
-    
+
     # Signal to capture the diagnostic output from the compiler
     new_qjit.stderr_return = True
 
