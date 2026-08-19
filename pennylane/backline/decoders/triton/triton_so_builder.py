@@ -334,7 +334,8 @@ def _compile_kernel(  # pylint: disable=too-many-arguments
         from triton.backends.amd.driver import (  # pylint: disable=import-outside-toplevel,no-name-in-module
             ty_to_cpp,
         )
-    else:
+    else:  # pragma: no cover
+        # Unreachable: _validate_platform already rejects backends outside {"cuda", "hip"}.
         raise ValueError(f"unsupported backend for type mapping: {backend}")
     runtime_signature = ", ".join(
         f"{ty_to_cpp(signature[name].split(':', 1)[0].strip())} {name}"

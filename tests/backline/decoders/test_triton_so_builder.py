@@ -67,6 +67,8 @@ class TestBuildSo:
             ((1, 1), "hip:gfx942:64", "exactly 3 dimensions"),
             ((1, 1, 1), "hip:gfx942", "backend:arch:warp"),
             ((1, 1, 1), "cpu:80:32", "backend must be 'cuda' or 'hip'"),
+            ((1, 1, 1), "cuda::32", "arch must be non-empty"),
+            ((1, 1, 1), "cuda:80:abc", "warp size must be an integer"),
             ((1, 1, 1), "cuda:80:64", "warp size must be 32 for cuda"),
             ((1, 1, 1), "hip:gfx942:32", "warp size must be 64 for hip"),
         ],
@@ -278,6 +280,72 @@ class TestCompileKernelTemplateMissing:
         monkeypatch.setattr(builder.triton, "compile", lambda *args, **kwargs: compile_result)
 
         with pytest.raises(RuntimeError, match="expected Triton compile templates to generate .c"):
+            builder._compile_kernel(
+                fake_kernel,
+                signature={"ring_u64_ptr": "*u64"},
+                constexpr={},
+                grid=(1, 1, 1),
+                platform="cuda:80:32",
+                num_warps=1,
+                num_stages=1,
+            )
+
+
+class TestCompileKernelScratchLimits:
+    """AOT compilation refuses kernels that need scratch space.
+
+    Global- and profile-scratch requirements are reported by Triton on the compile result. The
+    launcher wrapper has no place to allocate that memory, so ``_compile_kernel`` refuses the
+    kernel rather than emit a launcher that would trap on use.
+    """
+
+    @pytest.mark.parametrize(
+        ("scratch_field", "message"),
+        [
+            ("global_scratch_size", "global scratch requirements"),
+            ("profile_scratch_size", "profile scratch requirements"),
+        ],
+    )
+    def test_a_kernel_with_scratch_is_refused(self, monkeypatch, scratch_field, message):
+        """A non-zero scratch size on the compile result is reported, not silently dropped."""
+
+        def _ast_source_init(self, fn, constexprs, signature, attrs):
+            self.fn = fn
+            self.constants = constexprs
+            self.signature = signature
+            self.attrs = attrs
+
+        fake_ast_source = type(
+            "FakeASTSource",
+            (),
+            {"__init__": _ast_source_init, "hash": lambda _self: "0" * 16},
+        )
+        fake_kernel = type(
+            "FakeKernel",
+            (),
+            {
+                "__name__": "decoder_kernel",
+                "arg_names": ["ring_u64_ptr"],
+                "ASTSource": fake_ast_source,
+                "create_binder": lambda _self: None,
+            },
+        )()
+        fake_backend = type(
+            "FakeBackend",
+            (),
+            {"binary_ext": "cubin", "parse_options": lambda _self, _: SimpleNamespace()},
+        )()
+        metadata_kwargs = {"shared": 0, "profile_scratch_size": 0, "global_scratch_size": 0}
+        metadata_kwargs[scratch_field] = 1
+        compile_result = SimpleNamespace(
+            metadata=SimpleNamespace(**metadata_kwargs),
+            asm={"cubin": b"\x00\x01"},
+        )
+
+        monkeypatch.setattr(builder.triton.compiler, "make_backend", lambda _: fake_backend)
+        monkeypatch.setattr(builder.triton, "compile", lambda *args, **kwargs: compile_result)
+
+        with pytest.raises(RuntimeError, match=message):
             builder._compile_kernel(
                 fake_kernel,
                 signature={"ring_u64_ptr": "*u64"},
