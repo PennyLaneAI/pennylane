@@ -174,12 +174,8 @@ class ControlledQubitUnitary(Controlled2):
         target_wires = wires[-num_base_wires:]
         control_wires = wires[:-num_base_wires]
 
-        # We use type.__call__ instead of calling the class directly so that we don't bind the
-        # operator primitive when new program capture is enabled
-        base = type.__call__(qp.QubitUnitary, U, wires=target_wires, unitary_check=unitary_check)
-
         super().__init__(
-            base,
+            qp.QubitUnitary(U, wires=target_wires, unitary_check=unitary_check),
             control_wires,
             control_values=control_values,
             work_wires=work_wires,
