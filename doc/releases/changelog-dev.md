@@ -1017,6 +1017,7 @@
   [(#9920)](https://github.com/PennyLaneAI/pennylane/pull/9920)
   [(#9937)](https://github.com/PennyLaneAI/pennylane/pull/9937)
   [(#9950)](https://github.com/PennyLaneAI/pennylane/pull/9950)
+  [(#9926)](https://github.com/PennyLaneAI/pennylane/pull/9926)
 
   This is an internal, work-in-progress effort that is being incrementally integrated into the PennyLane
   ecosystem. Supported functionality so far:
@@ -1196,6 +1197,10 @@
   [(#9621)](https://github.com/PennyLaneAI/pennylane/pull/9621)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed a bug where :func:`~.tape.plxpr_to_tape` raised an error when the program contains
+  arithmetic operations performed on mid-circuit measurement values.
+  [(#10028)](https://github.com/PennyLaneAI/pennylane/pull/10028)
 
 * Fixed a bug where decomposing an :class:`~.Operator2` with graph-based decomposition
   enabled inside a :class:`~.Subroutine` with program capture leaked JAX tracers and
