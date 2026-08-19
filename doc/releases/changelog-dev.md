@@ -911,7 +911,6 @@
   [(#9997)](https://github.com/PennyLaneAI/pennylane/pull/9997)
   [(#9995)](https://github.com/PennyLaneAI/pennylane/pull/9995)
   [(#10015)](https://github.com/PennyLaneAI/pennylane/pull/10015)
-  [(#10015)](https://github.com/PennyLaneAI/pennylane/pull/10015)
   [(#10018)](https://github.com/PennyLaneAI/pennylane/pull/10018)
   - Quantum chemistry operators are ported:
     - :class:`~.SingleExcitation`
