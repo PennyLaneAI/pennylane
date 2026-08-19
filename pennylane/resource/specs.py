@@ -43,7 +43,7 @@ _RESOURCE_TRACKING_PREFIX = "pennylane_specs_qjit_resources"
 
 def _specs_qjit_device_level_tracking(
     qjit, original_qnode, compute_depth, *args, **kwargs
-) -> SpecsResources:  # pragma: no cover
+) -> SpecsResources:
     # pylint: disable=import-outside-toplevel
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
     from catalyst import QJIT
@@ -90,9 +90,15 @@ def _specs_qjit_device_level_tracking(
 def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs) -> tuple[
     SpecsResources | list[SpecsResources] | dict[str, SpecsResources | list[SpecsResources]],
     str | dict[int, str],
-]:  # pragma: no cover
+]:
     # Note that this only gets transforms manually applied by the user
     compile_pipeline = original_qnode.compile_pipeline
+
+    if trans := [pass_ for pass_ in compile_pipeline if pass_.pass_name is None]:
+        raise ValueError(
+            f"Specs encountered the following tape transforms: {trans}."
+            " Tape transforms are no longer supported by specs."
+        )
 
     # Map to convert back and forth between marker name and int level
     marker_to_level = get_marker_level_map(compile_pipeline)
@@ -129,9 +135,7 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
     return resources, level_to_name
 
 
-def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:  # pragma: no cover
-    # Integration tests for this function are within the Catalyst frontend tests, it is not covered by unit tests
-
+def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:
     # pylint: disable=import-outside-toplevel
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
     try:

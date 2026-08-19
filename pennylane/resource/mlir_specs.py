@@ -35,7 +35,7 @@ def _execute_analysis_pass(
     compile_options,
     *args,
     **kwargs,
-):  # pragma: no cover
+):
     """
     Helper function to compile the QNode with the resource analysis pass inserted, which will output
     the necessary JSON files for MLIR analysis.
@@ -43,8 +43,6 @@ def _execute_analysis_pass(
     This function will stop compilation before lowering to LLVM, avoiding the typical Catalyst
     compilation strategy.
     """
-    # Integration tests for this function are within the Catalyst frontend tests, it is not covered by unit tests
-
     # pylint: disable=import-outside-toplevel,protected-access
     try:
         from catalyst import QJIT
@@ -85,8 +83,7 @@ def resources_from_analysis_pass(
     level_to_name: dict[int, str],
     *args,
     **kwargs,
-) -> dict[str, SpecsResources | list[SpecsResources]]:  # pragma: no cover
-    # Integration tests for this function are within the Catalyst frontend tests, it is not covered by unit tests
+) -> dict[str, SpecsResources | list[SpecsResources]]:
     """
     Helper function to get specs information from MLIR analysis passes inserted at the specified
     levels.

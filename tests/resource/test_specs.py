@@ -310,6 +310,23 @@ class TestPassByPassSpecs:
         ):
             qp.specs(no_passes, level=[10, 11])()
 
+    def test_warns_for_tape_transforms(self, simple_circuit):
+        """Test that a warning is raised if the user has applied tape transforms to the QNode."""
+
+        @qp.transform
+        def dummy_transform(tape):
+            """Returns a tape-only transform that can be used for testing"""
+            return (tape,), lambda res: res[0]
+
+        simple_circuit = dummy_transform(simple_circuit)
+        simple_circuit = qjit(simple_circuit)
+
+        with pytest.raises(
+            ValueError,
+            match=r"Specs encountered the following tape transforms: .*dummy_transform.*\. Tape transforms are no longer supported by specs.",
+        ):
+            qp.specs(simple_circuit, level="all")()
+
     def test_basic_passes_multi_level(self, simple_circuit):
         """Test that when passes are applied, the circuit resources are updated accordingly."""
 
