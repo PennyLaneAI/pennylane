@@ -120,6 +120,7 @@ class TestConstruction:
             assert op._name == "ValidOp"
             assert op._op_symbol == "#"
         assert op in q.queue
+        assert len(q.queue) == 1
 
     def test_decomposition_raises_error(self):
         """Test that calling decomposition() raises a ValueError."""
