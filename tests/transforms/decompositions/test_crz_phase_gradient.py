@@ -22,19 +22,18 @@ import pytest
 import pennylane as qp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.transforms.decompositions import make_crz_to_phase_gradient_decomp
-from pennylane.wires import Wires
 
 
-@pytest.mark.capture
 @pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize("phi", [0.5, 0.3, 1 / 2 + 1 / 4 + 1 / 8, 1.0])
 @pytest.mark.parametrize("p", [1, 2, 3, 4])
 def test_valid_decomp(phi, p):
     """Test that ``make_crz_to_phase_gradient_decomp`` yields a valid decomposition"""
 
-    angle_wires = Wires(list(range(2, 2 + p)))
-    phase_grad_wires = Wires(list(range(2 + p, 2 + 2 * p)))
-    work_wires = Wires(list(range(2 + 2 * p, 2 + 3 * p - 1)))
+    first_free = 2
+    angle_wires = list(range(first_free, first_free + p))
+    phase_grad_wires = list(range(first_free + p, first_free + 2 * p))
+    work_wires = list(range(first_free + 2 * p, first_free + 3 * p - 1))
 
     kwargs = {
         "angle_wires": angle_wires,

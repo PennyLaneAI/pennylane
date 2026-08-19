@@ -25,7 +25,7 @@ from pennylane.transforms.decompositions import (
     make_rz_to_phase_gradient_decomp,
     validate_phase_gradient_wires,
 )
-from pennylane.wires import WireError, Wires
+from pennylane.wires import WireError
 
 
 @pytest.mark.parametrize(
@@ -46,16 +46,16 @@ def test_validate_phase_gradient_wires(n_angle_wires, n_phase_grad_wires, n_work
         _ = validate_phase_gradient_wires(angle_wires, phase_grad_wires, work_wires)
 
 
-@pytest.mark.capture
 @pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize("phi", [0.5, 0.3, 1 / 2 + 1 / 4 + 1 / 8, 1.0])
 @pytest.mark.parametrize("p", [1, 2, 3, 4])
 def test_valid_decomp(phi, p):
     """Test that ``make_rz_to_phase_gradient_decomp`` yields a valid decomposition"""
 
-    angle_wires = Wires(list(range(1, 1 + p)))
-    phase_grad_wires = Wires(list(range(1 + p, 1 + 2 * p)))
-    work_wires = Wires(list(range(1 + 2 * p, 1 + 3 * p - 1)))
+    first_free = 1
+    angle_wires = list(range(first_free, first_free + p))
+    phase_grad_wires = list(range(first_free + p, first_free + 2 * p))
+    work_wires = list(range(first_free + 2 * p, first_free + 3 * p - 1))
 
     kwargs = {
         "angle_wires": angle_wires,
