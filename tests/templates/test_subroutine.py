@@ -1060,7 +1060,7 @@ class TestGraphDecomposition:
         qp.assert_equal(tape_ry[1], qp.RY(1.0, 1))
         qp.assert_equal(tape_ry[2], qp.RY(2.0, 2))
 
-    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.usefixtures("disable_capture")
     def test_inexact_resources_testing(self):
         """Test that assert_valid will work on a Subroutine with inexact resources."""
 
@@ -1072,7 +1072,7 @@ class TestGraphDecomposition:
             qp.X(wires)
 
         op = f.operator(0)
-        qp.ops.functions.assert_valid(op, skip_pickle=True, skip_capture=True)
+        qp.ops.functions.assert_valid(op, skip_pickle=True)
 
     def test_compute_resources_fallback(self):
         """Test that the compute_resources fallback allows integration with decomps by default."""

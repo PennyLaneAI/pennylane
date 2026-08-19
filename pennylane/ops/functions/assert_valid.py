@@ -230,10 +230,39 @@ def _assert_counts_match(counts_0, counts_1):
     raise AssertionError(assertion_error_string)
 
 
+def _decomp_rule_to_tape(rule, op):
+    _, args, kwargs = _get_decomp_args(op)
+    with qp.queuing.AnnotatedQueue() as q:
+        rule(*args, **kwargs)
+    return qp.tape.QuantumScript.from_queue(q)
+
+
+def _capture_decomp_rule_to_tape(rule, op):
+
+    import jax  # pylint: disable=import-outside-toplevel
+
+    # Match each operator model's capture boundary: legacy hyperparameters remain
+    # closed over, while Operator2 exposes its dynamic, wire, and hybrid arguments.
+    if isinstance(op, Operator1):
+        decomposition = partial(rule, **op.hyperparameters)
+        capture_args = op.data
+        capture_kwargs = {"wires": op.wires}
+    else:
+        # TODO: tracing Operator2 hybrid args is not supported due to [sc-127789], move
+        # op.hybrid_args to capture_kwargs when the issue with wires is fixed.
+        decomposition = partial(rule, **op.static_args, **op.compilable_args, **op.hybrid_args)
+        capture_args = ()
+        capture_kwargs = {**op.dynamic_args, **op.wire_args}
+
+    plxpr = qp.capture.make_plxpr(decomposition, autograph=False)(*capture_args, **capture_kwargs)
+    flat_capture_args = jax.tree.leaves((capture_args, capture_kwargs))
+    return qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, *flat_capture_args)
+
+
 def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_check: bool = False):
     """Tests that a decomposition rule is consistent with the operator."""
 
-    params, args, kwargs = _get_decomp_args(op)
+    params, _, __ = _get_decomp_args(op)
 
     if not rule.is_applicable(**params):
         return
@@ -241,33 +270,11 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
     # Test that the resource function is correct
     resources = rule.compute_resources(**params)
     estimated_gate_counts = resources.gate_counts
-
-    if qp.capture.enabled():
-        import jax  # pylint: disable=import-outside-toplevel
-
-        # Match each operator model's capture boundary: legacy hyperparameters remain
-        # closed over, while Operator2 exposes its dynamic, wire, and hybrid arguments.
-        if isinstance(op, Operator1):
-            decomposition = partial(rule, **op.hyperparameters)
-            capture_args = op.data
-            capture_kwargs = {"wires": op.wires}
-        else:
-            # TODO: tracing Operator2 hybrid args is not supported due to [sc-127789], move
-            # op.hybrid_args to capture_kwargs when the issue with wires is fixed.
-            decomposition = partial(rule, **op.static_args, **op.compilable_args, **op.hybrid_args)
-            capture_args = ()
-            capture_kwargs = {**op.dynamic_args, **op.wire_args}
-
-        plxpr = qp.capture.make_plxpr(decomposition, autograph=False)(
-            *capture_args, **capture_kwargs
-        )
-        flat_capture_args = jax.tree.leaves((capture_args, capture_kwargs))
-        tape = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, *flat_capture_args)
-    else:
-        with qp.queuing.AnnotatedQueue() as q:
-            rule(*args, **kwargs)
-
-        tape = qp.tape.QuantumScript.from_queue(q)
+    tape = (
+        _capture_decomp_rule_to_tape(rule, op)
+        if qp.capture.enabled()
+        else _decomp_rule_to_tape(rule, op)
+    )
 
     total_work_wires = rule.get_work_wire_spec(**params).total
     if total_work_wires:
@@ -471,6 +478,7 @@ def _check_copy(op, skip_deepcopy):
 # pylint: disable=import-outside-toplevel, protected-access
 def _check_pytree(op):
     """Check that the operator is a pytree."""
+
     data, metadata = op._flatten()
     try:
         assert hash(metadata), "metadata must be hashable"
@@ -478,6 +486,7 @@ def _check_pytree(op):
         raise AssertionError(
             f"metadata output from _flatten must be hashable. Got metadata {metadata}"
         ) from e
+
     try:
         new_op = type(op)._unflatten(data, metadata)
     except Exception as e:
@@ -487,18 +496,16 @@ def _check_pytree(op):
             f"\nFor local testing, try type(op)._unflatten(*op._flatten())"
         )
         raise AssertionError(message) from e
+
     try:
         assert_equal(op, new_op)
     except AssertionError as e:
         raise AssertionError(
             "metadata and data must be able to reproduce the original operation"
         ) from e
-    try:
-        import jax
-    except ImportError:
-        return
-    leaves, struct = jax.tree_util.tree_flatten(op)
-    unflattened_op = jax.tree_util.tree_unflatten(struct, leaves)
+
+    leaves, struct = qp.pytrees.flatten(op)
+    unflattened_op = qp.pytrees.unflatten(leaves, struct)
     assert unflattened_op == op, f"op must be a valid pytree. Got {unflattened_op} instead of {op}."
 
     if isinstance(op, Operator1):
@@ -530,38 +537,31 @@ def _check_pytree(op):
 
 
 def _check_capture(op):
+
     if isinstance(op, qp.templates.SubroutineOp):
         return
-    try:
-        import jax
-    except ImportError as e:  # pragma: no cover
-        raise ImportError(
-            "assert_valid(..., skip_capture=False) requires JAX to validate program capture. "
-            "To skip the capture test, set skip_capture=True. "
-            "To remove this error, install JAX (for local testing) or mark the test with @pytest.mark.jax (for CI)."
-        ) from e
 
     if not all(isinstance(w, int) for w in op.wires):
         return
 
-    with qp.capture.toggle_ctx(True):
+    import jax  # pylint: disable=import-outside-toplevel
 
-        data, struct = jax.tree_util.tree_flatten(op)
+    data, struct = jax.tree_util.tree_flatten(op)
 
-        def test_fn(*args):
-            op = jax.tree_util.tree_unflatten(struct, args)
-            if isinstance(op, Operator2):
-                op._bind_primitive()
-                return op.tracer
-            return op
+    def test_fn(*args):
+        op = jax.tree_util.tree_unflatten(struct, args)
+        if isinstance(op, Operator2):
+            op._bind_primitive()
+            return op.tracer
+        return op
 
-        jaxpr = jax.make_jaxpr(test_fn)(*data)
-        new_op = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *data)[0]
-        assert_equal(op, new_op)
+    jaxpr = jax.make_jaxpr(test_fn)(*data)
+    new_op = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *data)[0]
+    assert_equal(op, new_op)
 
-        leaves = jax.tree_util.tree_leaves(jaxpr.eqns[-1].params)
-        error_msg = "capture params cannot contain tracers"
-        assert not any(qp.math.is_abstract(l) for l in leaves), error_msg
+    leaves = jax.tree_util.tree_leaves(jaxpr.eqns[-1].params)
+    error_msg = "capture params cannot contain tracers"
+    assert not any(qp.math.is_abstract(l) for l in leaves), error_msg
 
 
 def _check_pickle(op):
@@ -665,7 +665,6 @@ def _assert_valid_operator2(
     skip_decomp_matrix_check=False,
     skip_pickle=False,
     skip_wire_mapping=False,
-    skip_capture=False,
     skip_bind_new_parameters=False,
 ) -> None:
     """
@@ -679,7 +678,6 @@ def _assert_valid_operator2(
         skip_decomp_matrix_check: If ``True``, the decomposition matrix check will be skipped.
         skip_pickle: If ``True``, the pickle test will be skipped.
         skip_wire_mapping: If ``True``, the wire mapping test will be skipped.
-        skip_capture: If ``True``, the program capture test will be skipped.
         skip_bind_new_parameters: If ``True``, the ``bind_new_parameters`` test will be skipped.
     """
 
@@ -725,7 +723,6 @@ def _assert_valid_operator2(
                     skip_decomp_matrix_check=skip_decomp_matrix_check,
                     skip_pickle=skip_pickle,
                     skip_wire_mapping=skip_wire_mapping,
-                    skip_capture=skip_capture,
                     skip_bind_new_parameters=skip_bind_new_parameters,
                 )
 
@@ -746,7 +743,6 @@ def assert_valid(
     skip_decomp_matrix_check=False,
     skip_pickle=False,
     skip_wire_mapping=False,
-    skip_capture=False,
     skip_bind_new_parameters=False,
 ) -> None:
     """Runs basic validation checks on an :class:`~.core.Operator` or :class:`~.core.Operator2` to make
@@ -766,7 +762,6 @@ def assert_valid(
         skip_pickle=False : If ``True``, pickling tests are not run. Set to ``True`` when
             testing a locally defined operator, as pickle cannot handle local objects
         skip_wire_mapping : If ``True``, the operator will not be tested for wire mapping.
-        skip_capture: If ``True``, the program capture tests will be skipped.
         skip_bind_new_parameters: If ``True``, the ``bind_new_parameters`` tests will be skipped.
 
     **Examples:**
@@ -803,10 +798,6 @@ def assert_valid(
     AssertionError: metadata output from _flatten must be hashable. Got metadata (Wires([0]), (('unhashable_list', []),))
 
     """
-
-    if skip_capture and qp.capture.enabled():
-        return
-
     if isinstance(op, qp.core.Operator2):
         _assert_valid_operator2(
             op,
@@ -816,7 +807,6 @@ def assert_valid(
             skip_decomp_matrix_check,
             skip_pickle,
             skip_wire_mapping,
-            skip_capture,
             skip_bind_new_parameters,
         )
     else:
@@ -846,5 +836,5 @@ def assert_valid(
     _check_generator(op)
     if not skip_differentiation and not capture.enabled():
         _check_differentiation(op)
-    if not skip_capture:
+    if qp.capture.enabled():
         _check_capture(op)
