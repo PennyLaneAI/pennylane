@@ -16,9 +16,7 @@
 
 from typing import override
 
-from pennylane import capture
 from pennylane.core.operator import Operator2
-from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
 from pennylane.core.queuing import QueuingManager
 
 
@@ -53,11 +51,3 @@ class SymbolicOp2(Operator2, is_baseclass=True):
         context.remove(self.base)
         context.append(self)
         return self
-
-
-def _remove_from_program(op):
-    """Removes an operator from the captured/queued program."""
-    if QueuingManager.recording():
-        QueuingManager.remove(op)
-    if capture.enabled():
-        pop_op_eqns((op,))
