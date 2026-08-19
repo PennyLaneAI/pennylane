@@ -339,9 +339,9 @@ def adjoint_resource_rep(base_class: type[Operator], base_params: dict = None):
 
 
 def change_op_basis_resource_rep(
-    compute_op: type[Operator] | CompressedResourceOp | tuple,
-    target_op: type[Operator] | CompressedResourceOp | tuple,
-    uncompute_op: type[Operator] | CompressedResourceOp | tuple | None = None,
+    compute_op: type[Operator] | AbstractOperatorLike,
+    target_op: type[Operator] | AbstractOperatorLike,
+    uncompute_op: type[Operator] | AbstractOperatorLike | None = None,
 ):
     """Creates an abstract :class:`~.ChangeOpBasis` representing the compute-uncompute
     pattern of operators.
@@ -352,11 +352,9 @@ def change_op_basis_resource_rep(
     form.
 
     Args:
-        compute_op: the compute operator or ordered tuple of operators, using types or compressed
-            resource representations where needed
-        target_op: the target operator or ordered tuple of operators
-        uncompute_op: the optional uncompute operator or ordered tuple of operators; defaults to
-            the adjoint of ``compute_op``
+        compute_op: the compute operator, using its type or abstract resource representation
+        target_op: the target operator, using its type or abstract resource representation
+        uncompute_op: the optional uncompute operator; defaults to the adjoint of ``compute_op``
 
     """
     compute_op = abstractify(compute_op)

@@ -267,11 +267,9 @@ class TestPhaseAdder:
             op_list.append(qp.ctrl(qp.PauliX(work_wire), control=aux_k, control_values=1))
             op_list.append(qp.QFT(wires=x_wires))
             op_list.extend(qp.ctrl(op, control=work_wire) for op in _add_k_fourier(mod, x_wires))
-            op_list.extend(reversed(base_list_ops1))
-            op_list.append(qp.X(aux_k))
+            op_list.append(qp.prod(qp.X(aux_k), *base_list_ops1))
             op_list.append(qp.CNOT(wires=[aux_k, work_wire[0]]))
-            op_list.append(qp.X(aux_k))
-            op_list.extend(reversed(base_list_ops2))
+            op_list.append(qp.prod(*base_list_ops2, qp.X(aux_k)))
 
         for op1, op2 in zip(phase_adder_decomposition, op_list):
             qp.assert_equal(op1, op2)
