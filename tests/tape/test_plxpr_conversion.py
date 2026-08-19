@@ -16,6 +16,7 @@ Tests for CollectOpsandMeas and plxpr_to_tape
 """
 
 from functools import partial
+from operator import eq, ne
 
 import pytest
 
@@ -528,6 +529,40 @@ class TestPlxprToTape:
         mp = tape.measurements[0]
         assert mp.mv.measurements[0] is tape.operations[0]
         qp.assert_equal(tape.operations[1], qp.ops.Conditional(mp.mv, qp.RX(x, 2)))
+
+    @pytest.mark.parametrize(
+        ("comparison", "expected_branches"),
+        (
+            pytest.param(
+                eq,
+                {(0, 0): True, (0, 1): False, (1, 0): False, (1, 1): True},
+                id="equal",
+            ),
+            pytest.param(
+                ne,
+                {(0, 0): False, (0, 1): True, (1, 0): True, (1, 1): False},
+                id="not-equal",
+            ),
+        ),
+    )
+    def test_cond_mcm_comparison(self, comparison, expected_branches):
+        """Test capturing a conditional that compares two mid-circuit measurements."""
+
+        def f():
+            m0 = qp.measure(0)
+            m1 = qp.measure(1)
+            qp.cond(comparison(m0, m1), qp.X)(0)
+
+        jaxpr = jax.make_jaxpr(f)()
+        tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
+
+        assert len(tape.operations) == 3
+        assert isinstance(tape.operations[0], MidMeasure)
+        assert isinstance(tape.operations[1], MidMeasure)
+        conditional = tape.operations[2]
+        assert isinstance(conditional, Conditional)
+        assert conditional.meas_val.branches == expected_branches
+        qp.assert_equal(conditional.base, qp.X(0))
 
     def test_elif_mcm(self):
         """Test that an elif mcm can be caputured."""
