@@ -455,6 +455,18 @@ class TestMapToResourceOp:
             ),
             (
                 qops.ChangeOpBasis(
+                    compute_op=(qops.T(wires=0), qops.Hadamard(wires=1)),
+                    target_op=(qops.Z(wires=0), qops.X(wires=1)),
+                    uncompute_op=(qops.S(wires=0), qops.Y(wires=1)),
+                ),
+                re_ops.ChangeOpBasis(
+                    compute_op=re_ops.Prod((re_ops.T(wires=0), re_ops.Hadamard(wires=1))),
+                    target_op=re_ops.Prod((re_ops.Z(wires=0), re_ops.X(wires=1))),
+                    uncompute_op=re_ops.Prod((re_ops.S(wires=0), re_ops.Y(wires=1))),
+                ),
+            ),
+            (
+                qops.ChangeOpBasis(
                     compute_op=qtemps.QFT(wires=[0, 1, 2]),
                     target_op=qtemps.ControlledSequence(qops.S(wires=2), control=[0, 1]),
                     uncompute_op=qops.adjoint(qtemps.AQFT(order=3, wires=[0, 1, 2, 3, 4])),
