@@ -373,8 +373,8 @@ class TestHigherOrderPrimitiveRegistrations:
         def f(x):
             def g(y):
                 # One new const
-                exponent = add_3.bind(0)
-                _ = qp.RX(y, 0) ** exponent
+                theta = add_3.bind(0)
+                qp.Rot(y, theta, y, 0)  # pylint: disable=expression-not-assigned
 
             qp.adjoint(g, lazy=lazy)(x)
 
@@ -410,8 +410,8 @@ class TestHigherOrderPrimitiveRegistrations:
         def f(x, control):
             def g(y):
                 # One new const
-                exponent = add_3.bind(0)
-                _ = qp.RX(y, 0) ** exponent
+                theta = add_3.bind(0)
+                qp.Rot(y, theta, y, 0)  # pylint: disable=expression-not-assigned
 
             qp.ctrl(g, control)(x)
 
