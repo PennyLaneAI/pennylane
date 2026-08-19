@@ -268,6 +268,20 @@ def _convert_element_type(self, operand, **kwargs):
     return jax.lax.convert_element_type_p.bind(operand, **kwargs)
 
 
+@CollectOpsandMeas.register_primitive(jax.lax.eq_p)
+def _equal(self, lhs, rhs):
+    if isinstance(lhs, MeasurementValue) or isinstance(rhs, MeasurementValue):
+        return lhs == rhs
+    return jax.lax.eq_p.bind(lhs, rhs)
+
+
+@CollectOpsandMeas.register_primitive(jax.lax.ne_p)
+def _not_equal(self, lhs, rhs):
+    if isinstance(lhs, MeasurementValue) or isinstance(rhs, MeasurementValue):
+        return lhs != rhs
+    return jax.lax.ne_p.bind(lhs, rhs)
+
+
 def plxpr_to_tape(plxpr: "jax.extend.core.Jaxpr", consts, *args, shots=None) -> QuantumScript:
     """Convert a plxpr into a tape.
 
