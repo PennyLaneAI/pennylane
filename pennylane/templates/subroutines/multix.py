@@ -120,7 +120,7 @@ class MultiX(Operator2):
 
         matrix = math.ones((1, 1), like=bitstring)
         for i in range(len(wires)):
-            local_matrix = pauli_x if bitstring[i] == 1 else identity
+            local_matrix = identity + bitstring[i] * (pauli_x - identity)
             matrix = math.kron(matrix, local_matrix)
 
         return matrix

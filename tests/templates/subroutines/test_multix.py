@@ -85,6 +85,18 @@ def test_matrix(bitstring, expected_matrix):
     assert np.allclose(op.matrix(), expected_matrix)
 
 
+@pytest.mark.jax
+def test_jit_matrix():
+    """Tests that MultiX matrix computation supports a dynamically traced bitstring."""
+
+    import jax  # pylint: disable=import-outside-toplevel
+
+    bitstring = jax.numpy.array([1, 0])
+    matrix_fn = jax.jit(lambda bits: qp.MultiX.compute_matrix(bits, wires=[0, 1]))
+    expected = np.kron(qp.X.compute_matrix(), np.eye(2))
+    assert qp.math.allclose(matrix_fn(bitstring), expected)
+
+
 @pytest.mark.parametrize(
     ("bitstring", "wires", "expected_index"),
     [
