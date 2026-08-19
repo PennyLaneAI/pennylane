@@ -720,6 +720,7 @@
   [(#9786)](https://github.com/PennyLaneAI/pennylane/pull/9786)
 
 * Support for tapes and tape transforms has been removed from :func:`~.specs`.
+  Moving forward, the :mod:`~.resource` module will support circuits compiled using :func:`~.qjit`.
   [(#9988)](https://github.com/PennyLaneAI/pennylane/pull/9988)
 
 * Plxpr transforms and associated infrastructure have been removed.
