@@ -70,11 +70,11 @@ def _find_equal_generator(base, coeff):
         # complex angles (like RZ). This should be fine as any op_class in _get_has_generator_types has a generator
         # which doesn't depend on coeff. The coefficient is cast to real during construction anyways down below.
         probe_coeff = math.real(coeff)
-        g, c = (
-            qp.generator(op_class)(probe_coeff, base.wires)
-            if op_class.num_wires is not None
-            else qp.generator(op_class)(probe_coeff)
-        )
+        if issubclass(op_class, qp.GlobalPhase):
+            # NOTE: GlobalPhase doesn't act on any wires
+            g, c = (qp.I(), -1)
+        else:
+            g, c = qp.generator(op_class)(probe_coeff, base.wires)
 
         # NOTE: Operators that can act on all wires (e.g. GlobalPhase), produce generators that
         # also act on all wires and cannot be mapped 1:1 to the base's wires. Therefore,
