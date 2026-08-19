@@ -1676,8 +1676,9 @@ def _init_arg_types(op: Operator2) -> None:
             # This branch is effectively unreachable since a mismatch between the actual
             # and expected length for a wire argument is validated in __init_wires. We will
             # only ever reach this branch if __validate_arg_types is called manually.
-            msg = f"Expected '{name}' to have length {exp_type._num_wires}, but got {argval}."
-            assert exp_type._num_wires == -1 or exp_type._num_wires == len(argval), msg
+            if exp_type.shape_fixed:
+                msg = f"Expected '{name}' to have length {len(exp_type)}, but got {argval}."
+                assert len(exp_type) == len(argval), msg
             continue
 
         # Dynamic argument
@@ -1832,14 +1833,21 @@ def _init_subclass_wire_sizes_setup(cls: type[Operator2]) -> None:
         # If the wire argument is in arg_specs, the entries in arg_specs
         # and wire_sizes must match. Arbitrary number of wires is denoted by ``None`` and
         # ``-1`` in wire_sizes and arg_specs respectively.
-        if (et := arg_specs.get(wname, None)) is not None:
-            nwires = et._num_wires
-            if (nwires == -1 and wsize is not None) or (nwires not in (-1, wsize)):
+        if (expected_type := arg_specs.get(wname, None)) is not None:
+            if not expected_type.shape_fixed:
+                # Dynamic wire count, wire_sizes must be specify arbitary wires (None)
+                mismatch = wsize is not None
+            else:
+                # Fixed wire count: wire count must match size
+                mismatch = len(expected_type) != wsize
+
+            if mismatch:
                 cname = cls.__name__
+                declared_num = len(expected_type) if expected_type.shape_fixed else -1
                 raise TypeError(
                     f"Number of wires specified for '{wname}' does not match the declared "
                     f"type in {cname}.arg_specs and {cname}.wire_sizes. Got "
-                    f"{nwires} and {wsize} respectively."
+                    f"{declared_num} and {wsize} respectively."
                 )
 
 
