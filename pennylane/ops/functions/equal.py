@@ -471,7 +471,6 @@ def _equal_operator2(
 
 @_equal_dispatch.register
 def _equal_change_op_basis(op1: ChangeOpBasis, op2: ChangeOpBasis, **kwargs):
-    """Check equality of ChangeOpBasis instances across Operator1/Operator2 boundaries."""
     for name in ChangeOpBasis.hybrid_argnames:
         operand1, operand2 = op1.arguments[name], op2.arguments[name]
         if isinstance(operand1, Operator) and isinstance(operand2, Operator):

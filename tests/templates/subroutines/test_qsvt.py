@@ -162,8 +162,7 @@ class TestQSVTBasics:
             jaxpr = qp.capture.make_plxpr(circuit)()
             tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
 
-            # NOTE: Capture-mode change_op_basis applies the operands individually,
-            # so flatten COB into compute/target/uncompute before comparing.
+            # NOTE: Need to flatten COB before comparing.
             flat_expected = []
             for op in expected:
                 if isinstance(op, qp.ops.op_math.ChangeOpBasis):

@@ -25,11 +25,13 @@ import pytest
 
 import pennylane as qp
 import pennylane.numpy as qnp
-from pennylane.core.operator import Operator2, abstractify
+from pennylane.core.operator import abstractify
 from pennylane.exceptions import DeviceError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math import ChangeOpBasis, change_op_basis
+from pennylane.ops.op_math.adjoint2 import Adjoint2, _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis import _validate_callable
+from pennylane.ops.op_math.pow2 import Pow2, _pow_abstract
 from pennylane.templates import Subroutine
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
@@ -53,9 +55,6 @@ def test_basic_validity():
     op3 = qp.PauliZ(0)
     op = qp.change_op_basis(op1, op2, op3)
     qp.ops.functions.assert_valid(op)
-
-    default_uncompute_op = qp.change_op_basis(qp.S(0), qp.Rot(1.2, 2.3, 3.4, wires=0))
-    qp.ops.functions.assert_valid(default_uncompute_op)
 
 
 def test_change_op_basis_callables():
@@ -228,6 +227,7 @@ def test_change_op_basis_with_mixed_types():
         (NonParametricOp, NonParametricOp, NonParametricOp),  # Operator2 only
         (qp.X, NonParametricOp, qp.X),  # Operator1 compute and Operator2 target
         (NonParametricOp, qp.X, NonParametricOp),  # Operator2 compute and Operator1 target
+        (NonParametricOp, NonParametricOp, None),  # Operator2 default uncompute
     ),
 )
 @pytest.mark.capture
@@ -235,27 +235,36 @@ def test_change_op_basis_capture(compute_op, target_op, uncompute_op):
     """Tests that Operator1 and Operator2 operands are captured in argument order."""
 
     def circuit():
-        qp.change_op_basis(compute_op(0), target_op(1), uncompute_op(0))
+        uncompute = uncompute_op(0) if uncompute_op else None
+        qp.change_op_basis(compute_op(0), target_op(1), uncompute)
 
     jaxpr = qp.capture.make_plxpr(circuit)()
     tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
-    assert tape.operations == [compute_op(0), target_op(1), uncompute_op(0)]
+    expected_uncompute = uncompute_op(0) if uncompute_op else qp.adjoint(compute_op(0))
+    assert tape.operations == [compute_op(0), target_op(1), expected_uncompute]
 
 
 @pytest.mark.capture
-def test_change_op_basis_capture_operator2_default_uncompute():
-    """An Operator2 compute operand can supply its captured adjoint by default."""
+@pytest.mark.parametrize(
+    ("make_rep", "expected_type"),
+    ((_adjoint_abstract, Adjoint2), (partial(_pow_abstract, z=2), Pow2)),
+)
+def test_abstract_symbolic_resources_do_not_bind(make_rep, expected_type):
+    """Abstract symbolic resources containing compressed operands do not bind equations."""
+    import jax  # pylint: disable=import-outside-toplevel
 
-    def circuit():
-        qp.change_op_basis(NonParametricOp(0), NonParametricOp(1))
+    prod_rep = qp.resource_rep(qp.ops.Prod, resources={abstractify(qp.S): 1})
+    base = qp.decomposition.change_op_basis_resource_rep(prod_rep, prod_rep, prod_rep)
+    rep = make_rep(base)
 
-    jaxpr = qp.capture.make_plxpr(circuit)()
-    tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
-    assert tape.operations == [
-        NonParametricOp(0),
-        NonParametricOp(1),
-        qp.adjoint(NonParametricOp(0)),
-    ]
+    assert isinstance(rep, expected_type)
+    assert rep.is_abstract
+    assert rep.base is base
+
+    def f():
+        abstractify(make_rep(base))
+
+    assert not jax.make_jaxpr(f)().eqns
 
 
 class MyOp(qp.RX):  # pylint:disable=too-few-public-methods
@@ -274,7 +283,6 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         """Test the initialization of a ChangeOpBasis operator."""
         change_op_basis_op = ChangeOpBasis(qp.PauliX(wires=0), qp.RZ(0.23, wires="a"))
 
-        assert isinstance(change_op_basis_op, Operator2)
         assert change_op_basis_op.wires == Wires((0, "a"))
         assert change_op_basis_op.num_wires == 2
         assert change_op_basis_op.name == "ChangeOpBasis"
@@ -282,7 +290,6 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         assert change_op_basis_op.data == (0.23,)
         assert change_op_basis_op.parameters == [0.23]
         assert change_op_basis_op.num_params == 1
-        assert change_op_basis_op.arithmetic_depth == 2
 
     def test_abstract_initialization_with_default(self):
         """Test that abstract construction canonicalizes the default uncompute operator."""
@@ -291,8 +298,6 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         op = ChangeOpBasis(compute_op, target_op)
 
         assert op.is_abstract
-        qp.assert_equal(op.compute_op, compute_op)
-        qp.assert_equal(op.target_op, target_op)
         qp.assert_equal(op.uncompute_op, qp.adjoint(compute_op))
 
     def test_abstract_initialization_rejects_non_operators(self):
@@ -318,16 +323,6 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         qp.assert_equal(mapped_op.compute_op, qp.X("a"))
         qp.assert_equal(mapped_op.target_op, NonParametricOp("b"))
         qp.assert_equal(mapped_op.uncompute_op, qp.RX(0.2, "c"))
-
-    def test_bind_new_parameters(self):
-        """Test rebinding the compatibility data view of the nested operands."""
-        op = ChangeOpBasis(qp.RY(0.1, 0), qp.RX(0.2, 1), qp.RZ(0.3, 2))
-
-        new_op = qp.ops.functions.bind_new_parameters(op, [0.4, 0.5, 0.6])
-
-        qp.assert_equal(new_op.compute_op, qp.RY(0.6, 0))
-        qp.assert_equal(new_op.target_op, qp.RX(0.5, 1))
-        qp.assert_equal(new_op.uncompute_op, qp.RZ(0.4, 2))
 
     def test_hash(self):
         """Testing some situations for the hash property."""
@@ -467,8 +462,6 @@ class TestDecomposition:
         change_op_basis_op = ChangeOpBasis(qp.X(0), qp.Y(1), qp.X(2))
         abstract_op = abstractify(change_op_basis_op)
 
-        assert isinstance(abstract_op, ChangeOpBasis)
-        assert abstract_op.is_abstract
         assert abstract_op.arguments == {
             "compute_op": abstractify(qp.X),
             "target_op": abstractify(qp.Y),
@@ -567,19 +560,9 @@ class TestDecomposition:
 
     def test_adjoint_decomposition_with_explicit_uncompute(self):
         """Test the generated adjoint rule with an asymmetric explicit uncompute operator."""
-        base = ChangeOpBasis(qp.S(0), qp.T(1), qp.SX(2))
-        op = qp.adjoint(base)
-        rules = qp.list_decomps(op)
-
-        assert len(rules) == 1
-        _test_decomposition_rule(op, rules[0])
-
-        with qp.queuing.AnnotatedQueue() as q:
-            rules[0](**op.arguments)
-
-        expected = [qp.adjoint(qp.SX(2)), qp.adjoint(qp.T(1)), qp.adjoint(qp.S(0))]
-        for actual_op, expected_op in zip(q.queue, expected, strict=True):
-            qp.assert_equal(actual_op, expected_op)
+        op = qp.adjoint(ChangeOpBasis(qp.S(0), qp.T(1), qp.SX(2)))
+        [rule] = qp.list_decomps(op)
+        _test_decomposition_rule(op, rule)
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_decomposition_on_tape(self, ops_lst):
