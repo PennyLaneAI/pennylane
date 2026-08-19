@@ -27,8 +27,8 @@ each part of the workload runs and the :class:`~.Transport` protocol between the
 A backline device is built with :class:`~pennylane.Backline` from a
 :class:`controller <.Controller>` (which wraps the PennyLane device the QNode runs on, such as
 ``lightning.qubit`` or ``null.qubit``), zero or more :class:`coprocessors <.Coprocessor>`, and a
-:class:`transport <.Transport>`. The resulting device is passed into a
-:func:`~pennylane.qnode`:
+:class:`transport <.Transport>`, selected by name (e.g. ``transport="rdma"``) and resolved to a
+:class:`~.Transport`. The resulting device is passed into a :func:`~pennylane.qnode`:
 
 .. code-block:: python
 
@@ -77,9 +77,9 @@ A node is a participant in the backline fabric. It is either a :class:`~.Control
 QNode executes and which issues messages, or a :class:`~.Coprocessor`, where those messages are
 processed and returned. Both share the options on :class:`~.Node`: a ``label`` to identify the
 node, the transport ``backend`` it uses, whether it runs ``remote``, and how its code is deployed
-there. A
-placement has exactly one controller and zero or more coprocessors, and nodes are never used on
-their own --- they are passed to :class:`~pennylane.Backline`, which assembles them into a device.
+there. A placement has exactly one controller and zero or more coprocessors, and nodes are never
+used on their own --- they are passed to :class:`~pennylane.Backline`, which assembles them into a
+device.
 
 .. autosummary::
     :toctree: api
@@ -123,7 +123,7 @@ Placement
 A :class:`~.Placement` is the complete declarative description of where the workload runs: the
 :class:`~.Controller`, its :class:`coprocessors <.Coprocessor>`, the :class:`~.Transport` between
 them, and optionally the ``qec_code`` the circuit is encoded for. It is what the compiler
-consumes --- everything it contains ends up in the compiled program, and nothing else about the
+consumes - everything it contains ends up in the compiled program, and nothing else about the
 deployment does.
 You normally do not construct one directly: :class:`~pennylane.Backline` takes the same arguments,
 builds the placement, and carries it as the device's ``placement`` attribute.
@@ -152,10 +152,9 @@ Device
 
 :class:`~pennylane.Backline` is a device that is bound to a :func:`~pennylane.qnode` like any other
 PennyLane device. Its wires come from the controller's own device, so the QNode is written exactly
-as it would be against that device alone --- the placement changes where the work runs, not what the
-circuit says. It has no Python execution path: the device carries the placement through to the
-Catalyst compiler, so a QNode using it must be :func:`~pennylane.qjit`-compiled, and calling it
-directly raises ``NotImplementedError``.
+as it would be against that device alone - the placement changes where the work runs, not the content
+of the circuit. It has no Python execution path: the device carries the placement through to the
+Catalyst compiler, so a QNode using it must be :func:`~pennylane.qjit`-compiled.
 
 .. autosummary::
     :toctree: api
@@ -167,12 +166,9 @@ directly raises ``NotImplementedError``.
 Transports
 ~~~~~~~~~~
 
-A :class:`~.Transport` selects, by name, how messages move between nodes --- ``"rdma"`` is the one
-registered today. Names keep the placement independent of the implementation, which lives in the
-compiled runtime rather than in Python: :func:`~.get_transport` resolves a name to a
-:class:`~.Transport`, and :func:`~.register_transport` adds new ones. Passing a string as the
-``transport`` argument of :class:`~pennylane.Backline` resolves it for you, so most code never calls
-either function directly.
+A :class:`~.Transport` selects, by name, how messages move between nodes. Passing a string as
+the ``transport`` argument of :class:`~pennylane.Backline` resolves it for you, so most code never
+calls either function directly.
 
 .. autosummary::
     :toctree: api

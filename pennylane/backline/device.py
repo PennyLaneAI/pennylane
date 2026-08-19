@@ -25,6 +25,7 @@ from pennylane.capture import get_tracing_device
 from pennylane.devices import Device
 
 from .placement import Controller, Coprocessor, Placement
+from .transports import Transport
 
 
 class Backline(Device):
@@ -101,9 +102,9 @@ class Backline(Device):
         *,
         controller: Controller,
         coprocessors: Sequence[Coprocessor] = (),
-        transport,
+        transport: str | Transport,
         qec_code: str | None = None,
-        shots=None,
+        shots: int | None = None,
     ):
         self._placement = Placement(
             controller=controller,
@@ -142,7 +143,7 @@ class Backline(Device):
 
     @property
     def qec_code(self):
-        """str | None: The quantum error-correcting code circuits on this device are encoded for."""
+        """str | None: The quantum error-correcting code used for logical qubit encoding."""
         return self._placement.qec_code
 
     @property
