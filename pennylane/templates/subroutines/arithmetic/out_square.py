@@ -22,13 +22,12 @@ from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
-    controlled_resource_rep,
     register_condition,
     register_resources,
 )
 from pennylane.ops import CNOT, BasisState, X, adjoint, ctrl
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-from pennylane.typing import Wire
+from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .incrementer import Incrementer
@@ -86,9 +85,9 @@ class OutSquare(Operation):
         def circuit(output_wires):
             # Create a uniform superposition between integers 3 and 7
             qp.H(wires["x"][0]) # Superposition between 0 and 4
-            qp.BasisState(3, wires=wires["x"][1:]) # Add 3, by preparing lower-precision wires
+            qp.BasisState(qp.math.int_to_binary(3, len(wires["x"][1:])), wires=wires["x"][1:]) # Add 3, by preparing lower-precision wires
             # Prepare initial state on output wires
-            qp.BasisState(5, wires=output_wires)
+            qp.BasisState(qp.math.int_to_binary(5, len(output_wires)), wires=output_wires)
             # Square
             qp.OutSquare(wires["x"], output_wires, wires["work"])
             return qp.counts(wires=output_wires)
@@ -136,7 +135,7 @@ class OutSquare(Operation):
             @qp.decompose(max_expansion=1) # To see resources easily
             @qp.qnode(dev, shots=1_000)
             def circuit(zeroed):
-                qp.BasisState(13, wires=x_wires)
+                qp.BasisState(qp.math.int_to_binary(13, len(x_wires)), wires=x_wires)
                 qp.OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed=zeroed)
                 return qp.counts(wires=output_wires)
 
@@ -219,7 +218,6 @@ class OutSquare(Operation):
         work_wires: WiresLike,
         output_wires_zeroed: bool = False,
     ):
-
         x_wires = Wires(x_wires)
         output_wires = Wires(output_wires)
         work_wires = Wires(work_wires)
@@ -410,12 +408,7 @@ def _out_square_with_caddsub_resources(
     loop_size = min(m, n)
     # Bit flips on the y_wires, controlled on |0>: two per ctrl-add-subtract
     if n > 1:
-        c_flips = controlled_resource_rep(
-            BasisState,
-            base_params={"num_wires": n - 1},
-            num_control_wires=1,
-            num_zero_control_values=1,
-        )
+        c_flips = ctrl(BasisState(Bool[n - 1], Wire[n - 1]), Wire[1])
         resources[c_flips] += 2 * loop_size
 
     # Caching of bit in x onto c_wire, to control on it.
