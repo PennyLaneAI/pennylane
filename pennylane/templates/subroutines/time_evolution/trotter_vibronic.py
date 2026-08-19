@@ -19,7 +19,7 @@ import numpy as np
 
 from pennylane import capture, compiler, math
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.ops import CNOT, BasisState, Hadamard
 from pennylane.typing import Wire
 from pennylane.wires import WiresLike
@@ -243,35 +243,82 @@ def _trotter_vibronic_resources(
     """Coarse (upper-bound) gate counts for the vibronic Trotter circuit.
 
     This estimate is intentionally inexact (``exact=False``): terms whose coefficients happen to
-    vanish are skipped at runtime, and the sub-operations are counted at their top level.
+    vanish are skipped at runtime, and the sub-operations are counted at their top level. The keys
+    are abstractifiable operator instances / resource representations sized from the actual wire
+    registers, so the estimate can drive the decomposition graph.
     """
     num_fragments = hamiltonian["constant"].shape[0]
+    n_states = hamiltonian["constant"].shape[1]
     n_modes = hamiltonian["linear"].shape[-1]
     n_elec = len(electronic)
+    b = len(coefficients)
+    n_pg = len(phase_gradient)
+    n_work = len(work)
+    k = len(vib_wires) // n_modes
     num_pairs = n_modes * (n_modes - 1) // 2
+
+    # Disjoint dummy-wire allocator: only the wire *counts* survive abstractification, so the
+    # concrete labels are irrelevant as long as each operator instance is internally consistent.
+    _next = [0]
+
+    def ww(size):
+        size = max(size, 0)
+        wires = list(range(_next[0], _next[0] + size))
+        _next[0] += size
+        return wires
 
     # Each Trotter step visits every position fragment twice (forward + backward).
     position_visits = 2 * num_fragments * num_trotter_steps
 
+    # Data loading (QROM) and the arithmetic primitives, sized to match ``_extract_registers``.
+    qrom = QROM(
+        np.zeros((n_states, b), dtype=int),
+        control_wires=ww(n_elec),
+        target_wires=ww(b),
+        work_wires=ww(max(n_elec - 1, 0)),
+    )
+    semi_adder = SemiAdder(x_wires=ww(b), y_wires=ww(n_pg), work_wires=ww(n_work))
+    out_mult_linear = OutMultiplier(
+        x_wires=ww(b), y_wires=ww(k), output_wires=ww(n_pg), work_wires=ww(max(n_work - 1, 0))
+    )
+    out_mult_quad = OutMultiplier(
+        x_wires=ww(b), y_wires=ww(max(2 * k - 1, 1)), output_wires=ww(n_pg), work_wires=ww(n_work)
+    )
+    signed_out_mult = SignedOutMultiplier(
+        x_wires=ww(k), y_wires=ww(k), output_wires=ww(2 * k), work_wires=ww(n_work)
+    )
+    signed_square = resource_rep(
+        SignedOutSquare,
+        num_x_wires=k,
+        num_output_wires=max(2 * k - 1, 1),
+        num_work_wires=n_work,
+        output_wires_zeroed=True,
+    )
+    aqft = AQFT(order=(aqft_order if aqft_order is not None else max(k - 1, 1)), wires=ww(k))
+    basis_pg = resource_rep(BasisState, num_wires=n_pg)
+    basis_coeff = resource_rep(BasisState, num_wires=b)
+
     resources = defaultdict(int)
     # Electronic diagonalization (forward + adjoint per visit).
-    resources[Hadamard] += 2 * position_visits
-    resources[CNOT] += 2 * position_visits * max(n_elec - 1, 0)
+    resources[Hadamard(wires=ww(1))] += 2 * position_visits
+    resources[CNOT(wires=ww(2))] += 2 * position_visits * max(n_elec - 1, 0)
     # Data loading: constant + each linear/quadratic/bilinear term + final unload.
-    resources[QROM] += position_visits * (2 + 2 * n_modes + num_pairs)
-    resources[SemiAdder] += position_visits
+    resources[qrom] += position_visits * (2 + 2 * n_modes + num_pairs)
+    resources[semi_adder] += position_visits
     # Linear terms use a half-signed multiplier (one OutMultiplier + broadcasted BasisState).
-    resources[OutMultiplier] += position_visits * (n_modes + n_modes)
-    resources[BasisState] += position_visits * 2 * (n_modes + num_pairs)
+    resources[out_mult_linear] += position_visits * n_modes
+    resources[basis_pg] += position_visits * 2 * (n_modes + num_pairs)
     # Quadratic terms use two SignedOutSquares and one OutMultiplier.
-    resources[SignedOutSquare] += position_visits * 2 * n_modes
+    resources[signed_square] += position_visits * 2 * n_modes
+    resources[out_mult_quad] += position_visits * n_modes
     # Bilinear terms use two SignedOutMultipliers and one half-signed multiplier.
-    resources[SignedOutMultiplier] += position_visits * 2 * num_pairs
+    resources[signed_out_mult] += position_visits * 2 * num_pairs
+    resources[out_mult_quad] += position_visits * num_pairs
     # Kinetic fragment (once per Trotter step).
-    resources[AQFT] += num_trotter_steps * 2 * n_modes
-    resources[SignedOutSquare] += num_trotter_steps * 2 * n_modes
-    resources[OutMultiplier] += num_trotter_steps * n_modes
-    resources[BasisState] += num_trotter_steps * 2 * n_modes
+    resources[aqft] += num_trotter_steps * 2 * n_modes
+    resources[signed_square] += num_trotter_steps * 2 * n_modes
+    resources[out_mult_quad] += num_trotter_steps * n_modes
+    resources[basis_coeff] += num_trotter_steps * 2 * n_modes
 
     return dict(resources)
 
