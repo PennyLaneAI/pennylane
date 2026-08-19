@@ -27,13 +27,42 @@ class MultiX(Operator2):
     r"""
     Conditionally applies PauliX gates according to a bitstring.
 
-    ``MultiX`` applies ``PauliX'' wire `i` when the `i`-th bit of ``bitstring``
-    is :math:`b_i=1`, and otherwise applies the identity to wire `i`.
+    For a bitstring :math:`\mathbf{b} = (b_0, \ldots, b_{n-1})`,
+    ``MultiX`` applies the operator
+
+    .. math::
+
+        \operatorname{MultiX}(\mathbf{b}) = X^{b_1} \otimes X^{b_2} \otimes
+        \cdots \otimes X^{b_{n-1}}, \qquad b_i \in \{0, 1\},
+
+    where :math:`X^0 = I` and :math:`X^1 = X`.
+    The position of each bit corresponds to the wire at the same position in ``wires``.
 
     Args:
-        bitstring: A one-dimensional array containing either `1` or `0` entries.
-        wires: The wires onto which ``MultiX`` acts. The number of wires used
-               must match the length of ``bitstring``.
+        bitstring (TensorLike): A one-dimensional array containing only ``0`` or ``1`` entries.
+        wires (WiresLike): The wires on which ``MultiX`` acts. The number of wires must
+            match the length of ``bitstring``.
+
+    **Examples**
+
+    The bitstring ``[1, 0, 1]`` applies a :class:`~.PauliX` gate to the first and third
+    wires. This can be seen directly from the decomposition:
+
+    >>> import pennylane as qp
+    >>> op = qp.MultiX([1, 0, 1], wires=["a", "b", "c"])
+    >>> op.decomposition()
+    [X('a'), X('c')]
+
+    Applying the same operation to :math:`|000\rangle` produces the computational basis
+    state :math:`|101\rangle`:
+
+    >>> dev = qp.device("default.qubit", wires=3)
+    >>> @qp.qnode(dev)
+    ... def circuit():
+    ...     qp.MultiX([1, 0, 1], wires=range(3))
+    ...     return qp.probs(wires=range(3))
+    >>> circuit()
+    array([0., 0., 0., 0., 0., 1., 0., 0.])
     """
 
     dynamic_argnames = ("bitstring",)
@@ -64,12 +93,12 @@ class MultiX(Operator2):
 
     @property
     def num_wires(self) -> int:
-        """Returns the number of wires the operation acts on."""
+        """Return the number of wires on which the operation acts."""
         return len(self.wires)
 
     @staticmethod
     def _canonicalize_inputs(bitstring: TensorLike, wires: WiresLike) -> tuple[TensorLike, Wires]:
-        """Canonicalize types for arguments bitstring and wires."""
+        """Canonicalize the ``bitstring`` and ``wires`` arguments."""
 
         if isinstance(bitstring, (list, tuple)):
             bitstring = math.array(bitstring)
@@ -81,7 +110,7 @@ class MultiX(Operator2):
     def _validate_inputs(
         bitstring: AbstractArray | TensorLike, wires: AbstractWires | WiresLike
     ) -> None:
-        """Validate the bitstring shapes, values, and length matching the length of wires."""
+        """Validate the bitstring's shape and values and its length relative to the wires."""
 
         if math.ndim(bitstring) != 1:
             raise ValueError("The bitstring argument must be a one-dimensional array.")
@@ -104,18 +133,21 @@ class MultiX(Operator2):
     # pylint: disable-next=arguments-differ
     def compute_matrix(bitstring: TensorLike, wires: WiresLike) -> TensorLike:
         r"""
-        Representation of a MultiX operator as a concrete matrix in the computational basis.
+        Representation of the operator as a canonical matrix in the computational basis.
+        Assumes the wire order is the order provided by ``wires``.
 
         Args:
-            bitstring: A one-dimensional array containing either `1` or `0` entries.
-            wires: The wires onto which ``MultiX`` acts. The number of wires used
-                   must match the length of ``bitstring``.
+            bitstring (TensorLike): A one-dimensional array containing only ``0`` or ``1`` entries.
+            wires (WiresLike): The wires on which ``MultiX`` acts. The number of wires must
+                match the length of ``bitstring``.
+
         Returns:
-            Concrete matrix representing the operator MultiX(bitstring, wires).
+            TensorLike: The canonical matrix representing ``MultiX(bitstring, wires)``.
         """
         bitstring, wires = MultiX._canonicalize_inputs(bitstring, wires)
         MultiX._validate_inputs(bitstring, wires)
 
+        # The local matrices are either identity or pauli_x matrices
         identity = math.eye(2, like=bitstring)
         pauli_x = math.convert_like(PauliX.compute_matrix(), bitstring)
 
@@ -127,7 +159,7 @@ class MultiX(Operator2):
         return matrix
 
     def adjoint(self) -> "MultiX":
-        """Returns the adjoint of the operator."""
+        """Return the adjoint of the operator."""
         return MultiX(self.bitstring, wires=self.wires)
 
 
