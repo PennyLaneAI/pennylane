@@ -27,7 +27,6 @@ from numbers import Number
 from typing import TYPE_CHECKING, Any, ClassVar, TypeAlias
 
 import numpy as np
-from jax._src.core import Value
 from scipy.sparse import spmatrix
 
 import pennylane as qp
