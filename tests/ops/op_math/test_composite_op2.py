@@ -14,6 +14,7 @@
 """
 Unit tests for the composite operator class of qubit operations
 """
+from pennylane.wires import WiresLike
 from typing import Sequence
 from pennylane.queuing import AnnotatedQueue
 
@@ -23,7 +24,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.core.operator import Operator
+from pennylane.core.operator import Operator, Operator2
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.ops.op_math import CompositeOp2
 
@@ -74,6 +75,12 @@ class ValidOp(CompositeOp2):
     @classmethod
     def _sort(cls, op_list, wire_map: dict = None):
         return op_list
+
+
+class NoMatrixOp(Operator2):
+
+    def __init__(self, wires: WiresLike):
+        super().__init__(wires=wires)
 
 
 class TestConstruction:
@@ -239,6 +246,17 @@ def _is_method_with_no_argument(method):
 
 class TestMscMethods:
     """Test dunder and other visualizing methods."""
+
+    def test_has_matrix(self):
+        """Test that the has_matrix property is correct."""
+        op = ValidOp((NoMatrixOp(0), NoMatrixOp(1)))
+        assert op.has_matrix == False
+        op = ValidOp((qp.PauliX(0), qp.PauliX(0)))
+        assert op.has_matrix == True
+        op = ValidOp((qp.PauliX(0), qp.PauliY(1)))
+        assert op.has_matrix == True
+        op = ValidOp((qp.PauliX(0), NoMatrixOp(1)))
+        assert op.has_matrix == False
 
     def test_has_overlapping_wires(self):
         """Test that the has_overlapping_wires property is correct."""
