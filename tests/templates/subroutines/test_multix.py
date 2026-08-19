@@ -97,6 +97,17 @@ def test_jit_matrix():
     assert qp.math.allclose(matrix_fn(bitstring), expected)
 
 
+def test_adjoint():
+    """Tests that the adjoint is a distinct, equivalent MultiX instance."""
+    op = qp.MultiX([1, 0, 1], wires=["a", "b", "c"])
+
+    adjoint_op = op.adjoint()
+
+    assert op.has_adjoint
+    assert adjoint_op is not op
+    qp.assert_equal(adjoint_op, op)
+
+
 @pytest.mark.parametrize(
     ("bitstring", "wires", "expected_index"),
     [

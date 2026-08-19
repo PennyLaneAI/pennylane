@@ -125,6 +125,10 @@ class MultiX(Operator2):
 
         return matrix
 
+    def adjoint(self) -> "MultiX":
+        """Returns the adjoint of the operator."""
+        return MultiX(self.bitstring, wires=self.wires)
+
 
 # Resources function for MultiX
 def _multix_resources(bitstring: TensorLike, wires: WiresLike):  # pylint: disable=unused-argument
