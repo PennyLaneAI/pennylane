@@ -27,6 +27,7 @@ import pennylane.templates as qtemps
 from pennylane import math as pl_math
 from pennylane.core.operator import Operation
 from pennylane.core.queuing import QueuingManager
+from pennylane.estimator.compact_hamiltonian import VibronicHamiltonian
 from pennylane.ops.functions import simplify
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp
@@ -480,6 +481,36 @@ def _(op: qtemps.TrotterProduct):
         num_steps=op.hyperparameters["n"],
         order=op.hyperparameters["order"],
         wires=op.wires,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qtemps.TrotterVibronic):
+    # The dense vibronic Hamiltonian carries the number of electronic states ``N`` and
+    # vibrational modes ``M``; the grid size (qubits per mode) is read off the flattened
+    # vibrational register, and the coefficient/phase-gradient register sizes ``b`` fix the
+    # loading and phase-gradient precisions as ``2 ** -b``. The template is always a
+    # second-order (``order=2``), degree-two (position + kinetic) Trotter circuit.
+    hamiltonian = op.arguments["hamiltonian"]
+    num_states = hamiltonian["constant"].shape[1]
+    num_modes = hamiltonian["linear"].shape[-1]
+    grid_size = len(op.arguments["vib_wires"]) // num_modes
+    coeff_wires = len(op.arguments["coefficients"])
+    phase_grad_wires = len(op.arguments["phase_gradient"])
+
+    vibronic_ham = VibronicHamiltonian(
+        num_modes=num_modes,
+        num_states=num_states,
+        grid_size=grid_size,
+        taylor_degree=2,
+    )
+    return re_temps.TrotterVibronic(
+        vibronic_ham=vibronic_ham,
+        num_steps=op.arguments["num_trotter_steps"],
+        order=2,
+        phase_grad_precision=2.0**-phase_grad_wires,
+        coeff_precision=2.0**-coeff_wires,
+        wires=Wires.all_wires([op.arguments["electronic"], op.arguments["vib_wires"]]),
     )
 
 
