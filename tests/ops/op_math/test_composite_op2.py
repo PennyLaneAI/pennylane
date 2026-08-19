@@ -14,6 +14,7 @@
 """
 Unit tests for the composite operator class of qubit operations
 """
+from pennylane import math
 from pennylane.wires import WiresLike
 from typing import Sequence
 from pennylane.queuing import AnnotatedQueue
@@ -67,12 +68,27 @@ class ValidOp(CompositeOp2):
         return False
 
     def matrix(self, wire_order=None):
-        return np.eye(2**self.num_wires)
+        if wire_order is None:
+            wire_order = self.wires.tolist()
+        acc = np.eye(2**self.num_wires)
+        for o in wire_order:
+            sub_mat = self[o].matrix()
+            i = 0
+            while i < o:
+                sub_mat = np.kron(np.eye(2), sub_mat)
+                i += 1
+            i += 1
+            while i < self.num_wires:
+                sub_mat = np.kron(sub_mat, np.eye(2))
+                i += 1
+            acc = acc @ sub_mat
+        return acc
 
     def eigvals(self):
         return self.eigendecomposition["eigval"]
 
     @classmethod
+    #pylint: disable-next=unused-argument
     def _sort(cls, op_list, wire_map: dict = None):
         return op_list
 
@@ -245,7 +261,26 @@ def _is_method_with_no_argument(method):
 
 
 class TestMscMethods:
-    """Test dunder and other visualizing methods."""
+    """Test dunder and other miscellaneous methods."""
+
+    @pytest.mark.parametrize("ops",
+    [
+        (qp.S(0), qp.T(1)),
+        (qp.T(0), qp.S(1)),
+        (qp.PauliX(0), qp.PauliY(1)),
+        (qp.PauliZ(0), qp.PauliY(1)),
+        (qp.PauliX(1), qp.PauliX(0), qp.PauliX(1)),
+    ])
+    def test_eigvals(self, ops):
+        """Test that the eigvals method is correct."""
+        op = ValidOp(ops)
+        vals = op.eigvals()
+        def _expand_two(sub_op):
+            return np.kron(sub_op.matrix(), np.eye(2)) if sub_op.wires == (0,) else np.kron(np.eye(2),sub_op.matrix())
+        sub_mat = _expand_two(ops[0])
+        for sub in ops[1:]:
+            sub_mat = sub_mat @ _expand_two(sub)
+        assert np.allclose(vals, math.linalg.eig(sub_mat)[0])
 
     def test_has_matrix(self):
         """Test that the has_matrix property is correct."""

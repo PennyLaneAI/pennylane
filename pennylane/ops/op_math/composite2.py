@@ -129,7 +129,7 @@ class CompositeOp2(Operator2, is_baseclass=True):
                     math.expand_vector(ops[0].eigvals(), list(ops[0].wires), list(self.wires))
                 )
             else:
-                tmp_composite = self.__class__(*ops)
+                tmp_composite = self.__class__(ops)
                 eigvals.append(
                     math.expand_vector(
                         tmp_composite.eigendecomposition["eigval"],
