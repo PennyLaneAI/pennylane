@@ -41,18 +41,36 @@ class MultiX(Operator2):
 
         if isinstance(bitstring, (list, tuple)):
             bitstring = math.array(bitstring)
-
         wires = Wires(wires)
 
+        MultiX._validate_inputs(bitstring, wires)
+
         super().__init__(bitstring, wires)
+
+    @staticmethod
+    def _validate_inputs(bitstring, wires):
+        """Validate the bitstring shapes, values, and length matching the length of wires."""
+
+        if math.ndim(bitstring) != 1:
+            raise ValueError("The bitstring argument must be a one-dimensional array.")
+
+        if len(wires) == 0:
+            raise ValueError("The wires arugment must contain at least one wire.")
+
+        bitstring_length = math.shape(bitstring)[0]
+        if bitstring_length != len(wires):
+            raise ValueError("The bitstring and wires arguments must have equal lengths.")
+
+        if not math.all(math.logical_or(bitstring == 0, bitstring == 1)):
+            raise ValueError("The bitstring must contain only binary 0 and 1 values.")
 
 
 # Resources function for MultiX
 def _multix_resources(bitstring, wires):  # pylint: disable=unused-argument
-    # The total number of PauliX gates used depends on the bitstring
-    # Specifically, sum(bitstring) gates are used, not len(bitstring).
+    # The total number of PauliX gates used depends on the bitstring.
+    # Specifically, sum(bitstring) gates are used by MultiX, not len(bitstring).
     # However, if bitrsring is an AbstractArray, only the shape of bitstring is known.
-    # Therefore, the resource count needs to supply the worst-case scenario instead.
+    # Therefore, the resource count can only supply the *worst-case* scenario instead.
     # Hence why exact=False is used when registering the resource.
     return {PauliX: len(wires)}
 

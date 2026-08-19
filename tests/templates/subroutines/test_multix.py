@@ -20,7 +20,7 @@ import pennylane as qp
 from pennylane.wires import Wires
 
 
-def test_input_arguments():
+def test_input_arguments_parsed_correctly():
     """Tests that MultiX handles and sanitizes its input arguments correctly."""
     bitstring_input = [0, 1, 1, 0]
     wires_input = ("a", "b", "c", "d")
@@ -31,6 +31,21 @@ def test_input_arguments():
     assert multix_op.wires == Wires(wires_input)
     assert multix_op.dynamic_args == {"bitstring": multix_op.bitstring}
     assert multix_op.wire_args == {"wires": Wires(wires_input)}
+
+
+@pytest.mark.parametrize(
+    ("bitstring", "wires", "error_match"),
+    [
+        ([0, 1, 1, 0], ["a", "b", "c"], "length"),
+        ([0, 1, 2], ["a", "b", "c"], "binary"),
+        ([[0, 1, 0]], ["a", "b", "c"], "dimension"),
+        ([0], [], "wire"),
+    ],
+)
+def test_invalid_arguments(bitstring, wires, error_match):
+    """Tests that MultiX raises clear errors when input arguments are invalid."""
+    with pytest.raises(ValueError, match=error_match):
+        qp.MultiX(bitstring, wires=wires)
 
 
 @pytest.mark.parametrize(
@@ -76,12 +91,9 @@ def test_decomposition(bitstring, wires):
     """Tests that MultiX decomposition contains X gates at the locations in the bitstring marked by 1."""
 
     multix_op = qp.MultiX(bitstring, wires=wires)
-
     assert multix_op.has_decomposition
-
     decomp = multix_op.decomposition()
-
-    assert len(decomp) == sum(bitstring)
+    assert len(decomp) == sum(bitstring)  # each bit contributes one X gate
 
     # checking that the decomposed PauliX gates have the correct wire indices
     decomp_idx = 0
