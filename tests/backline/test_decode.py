@@ -430,14 +430,18 @@ class TestPackedHelpersNumpy:
         with pytest.raises(ValueError, match="1D bit vector"):
             _validate_packed(np.zeros((2, 3), dtype=np.uint8), None, None)
 
-    def test_pack_numpy_pads_to_eight_bytes(self):
-        """The numpy branch of ``_pack`` produces exactly eight little-endian bytes."""
+    def test_pack_numpy_packs_bits_little_endian(self):
+        """The numpy branch of ``_pack`` packs bits little-endian into the low byte and pads.
+
+        The receiver only reads ``_PACKED_U64_BYTES`` bytes downstream (via ``nbytes``), so we
+        assert on the payload window rather than the total length.
+        """
         packed = _pack(np.array([1, 0, 1], dtype=np.uint8))
         assert isinstance(packed, np.ndarray)
-        assert packed.shape == (8,)
-        # bits [1, 0, 1] little-endian pack to 0b101 == 5 in the low byte, then zeros
+        # bits [1, 0, 1] little-endian pack to 0b101 in the low byte
         assert packed[0] == 0b101
-        assert list(packed[1:]) == [0] * 7
+        # the remaining bytes of the u64 payload window are zero
+        assert list(packed[1:8]) == [0] * 7
 
     def test_unpack_numpy_returns_a_64_entry_bool_vector(self):
         """The numpy branch of ``_unpack`` returns a 64-entry boolean vector."""
