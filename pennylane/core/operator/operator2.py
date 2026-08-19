@@ -1652,9 +1652,7 @@ def _init_wires(op: Operator2):
         all_algorithmic_wires.extend(op.wires for op in ops)
 
     if any(isinstance(w, AbstractWires) for w in all_algorithmic_wires):
-        total_wires = sum(
-            w.num_wires if isinstance(w, AbstractWires) else len(w) for w in all_algorithmic_wires
-        )
+        total_wires = sum(len(w) for w in all_algorithmic_wires)
         op._wires = AbstractWires(total_wires)
     else:
         op._wires = Wires.all_wires(all_algorithmic_wires)
