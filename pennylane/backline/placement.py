@@ -16,7 +16,7 @@
 
 from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal, get_args
 
 from pennylane.devices.device_constructor import device as _make_device
 
@@ -28,15 +28,62 @@ if TYPE_CHECKING:
 
 # Wires given to the ``null.qubit`` device a :class:`~.Controller` falls back to.
 DEFAULT_WIRES = 32
+DEFAULT_MESSAGE_BYTES = 8
+Hardware = Literal["cpu", "gpu", "fpga"]
+"""Hardware on which a backline node executes."""
+_SUPPORTED_HARDWARE = frozenset(get_args(Hardware))
+
+
+@dataclass(frozen=True)
+class Endpoint:
+    """The address the controller dials to bring up a connection to a coprocessor.
+
+    The coprocessor listens on :attr:`port`; the controller connects to :attr:`host`\\ ``:``\\
+    :attr:`port`. Some transports, such as ``"rdma"``, require an endpoint on every coprocessor;
+    others, such as ``"memcpy"``, do not use a network endpoint. For a coprocessor co-located with
+    the controller on a transport that does require one, use localhost (``"127.0.0.1"``).
+
+    Args:
+        host (str): The address the controller connects to, e.g. ``"192.0.2.11"`` or
+            ``"127.0.0.1"``.
+        port (int): The port the coprocessor listens on for the out-of-band connection handshake.
+            This is the handshake channel that exchanges the information needed to set up the data
+            path.
+
+    .. seealso:: :class:`~.Coprocessor`
+
+    **Example**
+
+    >>> ep = qp.Endpoint("127.0.0.1", 7760)
+    >>> (ep.host, ep.port)
+    ('127.0.0.1', 7760)
+    """
+
+    host: str
+    """The address the controller connects to, e.g. ``"192.0.2.11"`` or ``"127.0.0.1"``."""
+
+    port: int
+    """The port the coprocessor listens on for the out-of-band connection handshake. This is the
+    handshake channel that exchanges the information needed to set up the data path."""
+
+    def __post_init__(self):
+        if not isinstance(self.host, str):
+            raise TypeError(f"host must be a str, got {type(self.host).__name__}: {self.host!r}")
+        if not self.host:
+            raise ValueError("host must be a non-empty str")
+        if not isinstance(self.port, int):
+            raise TypeError(f"port must be an int, got {type(self.port).__name__}: {self.port!r}")
+        if not 1 <= self.port <= 65535:
+            raise ValueError(f"port must be in 1..65535, got {self.port}")
 
 
 @dataclass(frozen=True, kw_only=True)
 class Node:
     """A node in a backline fabric.
 
-    Base class for :class:`~.Controller` and :class:`~.Coprocessor`. It carries the node's label and
-    backend implementation, how its code is deployed, and any backend-specific initialization
-    arguments. Nodes are assembled into a device with :class:`~pennylane.Backline`.
+    Base class for :class:`~.Controller` and :class:`~.Coprocessor`. It carries the node's name and
+    hardware, how its code is deployed, and any backend-specific initialization arguments. Nodes
+    are assembled into a device with :class:`~pennylane.Backline`.
 
     .. warning::
 
@@ -44,33 +91,28 @@ class Node:
         the Catalyst compiler.
 
     Keyword Args:
-        label (str | None): A name identifying this node. Defaults to ``None``, letting the compiler
+        name (str | None): A name identifying this node. Defaults to ``None``, letting the compiler
             derive one from the node's role.
-        backend (str | None): The transport backend this node uses, by name. Defaults to ``None``,
-            letting the compiler pick its default.
+        hardware (Hardware): The hardware this node executes on. Defaults to ``"cpu"``. The compiler
+            combines this with the placement's :class:`~.Transport` to select the runtime backend.
         remote (bool): Whether this node runs on another machine. Defaults to ``False``.
         executor_options (dict | None): Options for the executor to launch for this node.
             Defaults to ``None``, which runs the node in this process. See the
             :attr:`~.Node.executor_options` attribute below for every option it accepts.
         executor (object | None): An already-launched executor to attach. Defaults to ``None``, in
-            which case the compiler builds one from ``executor_options``.
+            which case the compiler builds one from :attr:`executor_options`.
         init_args (dict): Backend-specific initialization arguments. Empty by default. See the
             :attr:`~.Node.init_args` attribute below for the keys it accepts.
 
     .. seealso:: :class:`~.Controller`, :class:`~.Coprocessor`, :class:`~pennylane.Backline`
     """
 
-    label: str | None = None
-    """A name for this node, used to identify its transport session and to label its executor's
-    logs. Defaults to ``None``, in which case the compiler derives one from the node's role
-    (``"controller"``, ``"coprocessor.0"``, ...). This does not select a backend - see
-    :attr:`backend`."""
+    name: str | None = None
+    """An optional name used to reference this node."""
 
-    backend: str | None = None
-    """The transport backend this node uses, by name, e.g. ``"cpu_verbs"`` or ``"gpu_verbs"``. The
-    compiler resolves the name together with the node's role to the installed backend library, so
-    the backend only has to be available to the compiler. Defaults to ``None``, letting the compiler
-    pick its default. A ``"backend_lib"`` path in :attr:`init_args` takes precedence."""
+    hardware: Hardware = "cpu"
+    """The hardware this node executes on. The compiler combines this with the placement's
+    :class:`~.Transport` to select the runtime backend."""
 
     remote: bool = False
     """Whether this node runs on another machine, so that the libraries it loads are the ones
@@ -135,10 +177,10 @@ class Node:
     * ``"triple"`` (str) - the LLVM target triple to compile this node's code for. Omit it and the
       executor detects it from the target's ``uname``, which requires reaching the host.
     * ``"name"`` (str) - the executor's own label, used in its log filenames. Defaults to this
-      node's :attr:`label`.
+      node's :attr:`name`.
 
     Note that ``"port"`` here is the executor's, on the channel that ships compiled code. It is
-    unrelated to :attr:`~.Coprocessor.oob_port`, which is the transport's handshake port. An
+    unrelated to :attr:`~.Endpoint.port`, which is the transport's handshake port. An
     unrecognized key raises.
 
     .. warning::
@@ -156,14 +198,21 @@ class Node:
     default (never ``None``). The keys the compiler forwards are
 
     * ``"backend_lib"`` (str) - explicit path to the transport backend library, taking precedence
-      over :attr:`backend` and over a :class:`~.CoprocessorFunction`'s ``lib_path``.
+      over :attr:`hardware` and over :attr:`~.CoprocessorFunction.lib_path`.
     * ``"config"`` (str) - a ``;``-separated ``key=value`` string configuring the backend on this
       machine, e.g. ``"dev=mlx5_0;gid=3"``. ``dev`` and ``gid`` select the RDMA device and GID
       index; the remaining keys are backend-specific (a GPU backend takes ``gpu=``, an FPGA engine
       takes ``sq_mem=``/``data_mem=``/``reply_mem=``).
-    * ``"data_path"`` (str) - which wire format carries the data, e.g. ``"cpu_verbs"``.
-    * ``"in_bytes"`` / ``"out_bytes"`` (int) - the fixed message sizes exchanged with this node.
+
+
+    Keys outside this set are dropped rather than rejected, so a misspelling is silent.
     """
+
+    def __post_init__(self):
+        if self.hardware not in _SUPPORTED_HARDWARE:
+            raise ValueError(
+                f"hardware must be one of {sorted(_SUPPORTED_HARDWARE)}, got {self.hardware!r}"
+            )
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -201,11 +250,11 @@ class Controller(Node):
 
         con = qp.Controller(
             device=qp.device("lightning.qubit", wires=4),
-            label="cpu-controller",
-            backend="cpu_verbs",
+            name="cpu-controller",
+            hardware="cpu",
             remote=True,
             executor_options={"host": "192.0.2.10", "port": 7810},
-            init_args={"config": "dev=mlx5_0;gid=1", "data_path": "cpu_verbs", "out_bytes": 8},
+            init_args={"config": "dev=mlx5_0;gid=1"},
         )
 
     Either way, the controller is passed to :class:`~pennylane.Backline` to build a device:
@@ -216,11 +265,20 @@ class Controller(Node):
     """
 
     device: "Device | None" = None
-    """The PennyLane device the controller executes. Defaults to ``None``, which builds a 
-    ``null.qubit`` over :data:`DEFAULT_WIRES` wires. A controller needing more wires, or 
-    an actual simulation, should pass a device of its own."""
+    """The PennyLane device the controller executes. Defaults to ``None``, which builds a
+    ``null.qubit`` over :data:`DEFAULT_WIRES` wires. A controller needing more wires, or an actual
+    simulation, should pass a device of its own."""
+
+    in_bytes: int = field(default=DEFAULT_MESSAGE_BYTES, init=False, repr=False)
+    """The transport's input-message capacity in bytes. Always :data:`DEFAULT_MESSAGE_BYTES`;
+    provided for the compiler, not a constructor argument."""
+
+    out_bytes: int = field(default=DEFAULT_MESSAGE_BYTES, init=False, repr=False)
+    """The transport's reply-message capacity in bytes. Always :data:`DEFAULT_MESSAGE_BYTES`;
+    provided for the compiler, not a constructor argument."""
 
     def __post_init__(self):
+        super().__post_init__()
         if self.device is None:
             object.__setattr__(self, "device", _make_device("null.qubit", wires=DEFAULT_WIRES))
 
@@ -230,12 +288,13 @@ class Coprocessor(Node):
     """The node that runs a coprocessor function per received message.
 
     A coprocessor receives messages from the :class:`controller <.Controller>` (e.g., syndromes).
-    The ``coprocessor_fn`` is used to process the message, and sends the result back (e.g.,
-    corrections). Depending on the connection type, a ``coprocessor_fn`` may be a persistent
+    The :attr:`coprocessor_fn` is used to process the message, and sends the result back (e.g.,
+    corrections). Depending on the connection type, a :attr:`coprocessor_fn` may be a persistent
     kernel. Pass coprocessors to :class:`~pennylane.Backline` to build a device.
 
-    The coprocessor owns the connection endpoint: it listens on ``oob_port``, and the controller
-    connects via ``comm_host``\\ ``:``\\ ``oob_port`` to bring the connection up.
+    The coprocessor owns the connection :attr:`endpoint`: it listens on :attr:`Endpoint.port`, and
+    the controller dials :attr:`Endpoint.host`\\ ``:``\\ :attr:`Endpoint.port` to bring the
+    connection up.
 
     .. warning::
 
@@ -246,40 +305,41 @@ class Coprocessor(Node):
         coprocessor_fn (str | CoprocessorFunction): The function that processes each received
             message. A string is wrapped in a :class:`~.CoprocessorFunction` naming that symbol, so
             reading the attribute back always gives a :class:`~.CoprocessorFunction`.
-        comm_host (str): This coprocessor's address, which the controller uses to connect. Required.
-        oob_port (int | None): The port it listens on for the connection handshake. Must be in
-            ``1..65535``. Defaults to ``None``, leaving the choice to the compiled runtime.
+        endpoint (Endpoint | None): The address the controller dials to reach this coprocessor.
+            Some transports, such as ``"rdma"``, require it; others, such as ``"memcpy"``, do not
+            use a network endpoint and may leave it unset.
 
     See :class:`~.Node` for the options every node shares.
 
-    .. seealso:: :class:`~.Controller`, :class:`~.CoprocessorFunction`, :class:`~pennylane.Backline`
+    .. seealso:: :class:`~.Controller`, :class:`~.CoprocessorFunction`, :class:`~.Endpoint`,
+        :class:`~pennylane.Backline`
 
     **Example**
 
-    A coprocessor co-located with the controller needs only a function and a loopback address:
+    A coprocessor co-located with the controller needs only a function (and, for ``"rdma"``, a
+    loopback endpoint):
 
-    >>> coproc = qp.Coprocessor(coprocessor_fn="decoder", comm_host="127.0.0.1")
+    >>> coproc = qp.Coprocessor(coprocessor_fn="decoder", endpoint=qp.Endpoint("127.0.0.1", 7760))
     >>> coproc.coprocessor_fn.name
     'decoder'
 
-    A remote GPU decoder names its port, its transport backend, and how to deploy to it:
+    A remote GPU decoder names its endpoint, its hardware, and how to deploy to it:
 
     .. code-block:: python
 
         coproc = qp.Coprocessor(
-            label="gpu-decoder",
+            name="gpu-decoder",
             coprocessor_fn="decoder",
-            backend="gpu_verbs",
-            comm_host="198.51.100.2",
-            oob_port=7760,
+            hardware="gpu",
+            endpoint=qp.Endpoint("198.51.100.2", 7760),
             remote=True,
             executor_options={"host": "192.0.2.11", "port": 7813},
-            init_args={"config": "dev=mlx5_0;gid=3;gpu=0", "data_path": "cpu_verbs"},
+            init_args={"config": "dev=mlx5_0;gid=3;gpu=0"},
         )
 
-    Note that ``comm_host`` and ``executor_options["host"]`` are two addresses for the *same*
-    machine: the first is the interface the transport's data path uses, the second is how the
-    compiler reaches it to deploy code.
+    Note that :attr:`Endpoint.host` and ``executor_options["host"]`` are two addresses for the
+    *same* machine: the first is the interface the transport's data path uses, the second is how
+    the compiler reaches it to deploy code.
 
     Coprocessors are passed to :class:`~pennylane.Backline` as a sequence:
 
@@ -294,27 +354,15 @@ class Coprocessor(Node):
     construction - so this attribute always reads back as a :class:`~.CoprocessorFunction`. The
     symbol itself is resolved later, by the runtime."""
 
-    comm_host: str
-    """This coprocessor's address, which the controller connects to in order to bring the connection
-    up. Must be reachable from the host the controller runs on, and is required for every
-    coprocessor. For one co-located with the controller, use localhost (``"127.0.0.1"``)."""
-
-    oob_port: int | None = None
-    """The port this coprocessor listens on for the out-of-band connection handshake - the channel
-    that exchanges the information needed to set up the data path. Must be in ``1..65535``. Defaults
-    to ``None``, leaving the choice to the compiled runtime."""
+    endpoint: Endpoint | None = None
+    """The address the controller dials to reach this coprocessor. Some transports, such as
+    ``"rdma"``, require it; others, such as ``"memcpy"``, do not use a network endpoint and may
+    leave it unset."""
 
     def __post_init__(self):
+        super().__post_init__()
         if isinstance(self.coprocessor_fn, str):
             object.__setattr__(self, "coprocessor_fn", CoprocessorFunction(self.coprocessor_fn))
-        if self.oob_port is not None:
-            if not isinstance(self.oob_port, int):
-                raise TypeError(
-                    f"oob_port must be an int, got {type(self.oob_port).__name__}: "
-                    f"{self.oob_port!r}"
-                )
-            if not 1 <= self.oob_port <= 65535:
-                raise ValueError(f"oob_port must be in 1..65535, got {self.oob_port}")
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -324,8 +372,8 @@ class Placement:
     Contains a :class:`controller <.Controller>` node, any :class:`coprocessor <.Coprocessor>`
     nodes, and the :class:`transport <.Transport>` that carries data between them. Rather than
     constructing this directly, use :class:`~pennylane.Backline` to assemble a controller,
-    coprocessors, and transport into a device; the resulting placement is available as the
-    device's ``placement`` attribute.
+    coprocessors, and transport into a device; the resulting placement is available as
+    :attr:`~pennylane.Backline.placement`.
 
     .. warning::
 
@@ -349,15 +397,22 @@ class Placement:
 
     A placement is built for you by :class:`~pennylane.Backline` and read back off the device:
 
-    >>> con = qp.Controller(label="cpu-controller")
-    >>> coproc = qp.Coprocessor(coprocessor_fn="decoder", comm_host="127.0.0.1")
+    >>> con = qp.Controller(name="cpu-controller")
+    >>> coproc = qp.Coprocessor(coprocessor_fn="decoder", endpoint=qp.Endpoint("127.0.0.1", 7760))
     >>> dev = qp.Backline(controller=con, coprocessors=[coproc], transport="rdma")
     >>> dev.placement.transport
     Transport(name='rdma')
-    >>> dev.placement.controller.label
+    >>> dev.placement.controller.name
     'cpu-controller'
     >>> len(dev.placement.coprocessors)
     1
+
+
+    :attr:`coprocessors` accepts any sequence and is normalized to a tuple, and :attr:`transport`
+    accepts either a registry name or a :class:`~.Transport`:
+
+    >>> isinstance(dev.placement.coprocessors, tuple)
+    True
     """
 
     controller: Controller
@@ -383,3 +438,12 @@ class Placement:
             object.__setattr__(self, "coprocessors", tuple(self.coprocessors))
         if isinstance(self.transport, str):
             object.__setattr__(self, "transport", get_transport(self.transport))
+
+        if self.transport.name == "rdma":
+            for coprocessor in self.coprocessors:
+                # TODO: how should we handle when these fields are provided for `memcpy`
+                if coprocessor.endpoint is None:
+                    raise ValueError(
+                        "transport='rdma' requires every coprocessor to set endpoint; "
+                        "memcpy does not require it"
+                    )

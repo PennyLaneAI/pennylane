@@ -16,9 +16,7 @@
 
   @triton.jit
   def steane_lookup(syndrome):
-      one = tl.cast(1, tl.uint64)
-      zero = tl.cast(0, tl.uint64)
-      return tl.where(syndrome != 0, one << (syndrome - 1), zero)
+      return tl.where(syndrome != 0, 1 << (syndrome - 1), 0)
 
   custom_decoder = qp.backline.triton_decoder(
       (steane_lookup, steane_lookup),
@@ -49,8 +47,8 @@
   ```python
   import pennylane as qp
 
-  controller = qp.Controller(device=qp.device("lightning.qubit", wires=4), label="cpu-controller")
-  decoder = qp.Coprocessor(coprocessor_fn="decoder", comm_host="198.51.100.2", oob_port=7760)
+  controller = qp.Controller(device=qp.device("lightning.qubit", wires=4), name="cpu-controller")
+  decoder = qp.Coprocessor(coprocessor_fn="decoder", endpoint=qp.Endpoint("198.51.100.2", 7760))
 
   dev = qp.Backline(controller=controller, coprocessors=[decoder], transport="rdma")
 
@@ -365,14 +363,11 @@
       device=qp.device("null.qubit", wires=2),
       remote=True,
       executor_options={"host": address_controller, "port": 7810},
-      init_args={"out_bytes": 8},
   )
   coproc = qp.Coprocessor(
       coprocessor_fn="decoder",
-      label="decoder-0",
-      backend="gpu_verbs",
-      comm_host=address_coproc,
-      oob_port=18590,
+      hardware="gpu",
+      endpoint=qp.Endpoint(address_coproc, 18590),
   )
   dev = qp.Backline(controller=con, coprocessors=[coproc], transport="rdma")
 
@@ -384,9 +379,12 @@
       return qp.expval(qp.Z(0))
   ```
 
-  The round is resolved from the device being traced, so the program has to be captured (`qp.qjit(capture=True)`). The correction comes back as a `uint8` buffer of the controller's committed `out_bytes`. Pass `controller=` / `coprocessor=` to choose the nodes explicitly, and `decoder_id=` to select which coprocessor-side decoder handles the round.
+  The round is resolved from the device being traced, so the program has to be captured (`qp.qjit(capture=True)`). The controller's `in_bytes` and `out_bytes` capacities both default to 8 bytes, and the correction comes back as an `out_bytes`-sized `uint8` buffer. Pass `controller=` / `coprocessor=` to choose the nodes explicitly, `out_bytes=` to override the reply size, and `decoder_id=` to select which coprocessor-side decoder handles the round.
 
 <h3>Improvements 🛠</h3>
+
+* Coprocessor connection addresses are grouped on :class:`~pennylane.Endpoint` as ``endpoint=qp.Endpoint(host, port)``, replacing the separate ``comm_host`` and ``oob_port`` fields.
+  [(#10017)](https://github.com/PennyLaneAI/pennylane/pull/10017)
 
 * Added decompositions of `CNOT`, `CZ`, `CY`, and `Hadamard` directly to PPMs.
   [(#9865)](https://github.com/PennyLaneAI/pennylane/pull/9865)

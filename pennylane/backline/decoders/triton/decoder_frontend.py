@@ -55,11 +55,10 @@ def _build_triton_decoder(  # pylint: disable=too-many-arguments
             ``"backend:arch:warp_size"``. For example, ``"hip:gfx942:64"`` or
             ``"cuda:80:32"``.
         grid (tuple[int, int, int]): Triton kernel launch grid dimensions.
-            Defaults to ``(1, 1, 1)``.
-        num_warps (int): Triton kernel launch warp count. Defaults to ``1``.
-        num_stages (int): Triton pipeline stage count. Defaults to ``1``.
-        compiler (str): Optional compiler executable override. Defaults to ``""``.
-        cflags (tuple[str, ...]): Extra compiler flags. Defaults to ``()``.
+        num_warps (int): Triton kernel launch warp count.
+        num_stages (int): Triton pipeline stage count.
+        compiler (str): Optional compiler executable override.
+        cflags (tuple[str, ...]): Extra compiler flags.
 
     Returns:
         tuple[Path, str]: Path to the compiled shared library in a temporary location and the
@@ -152,11 +151,10 @@ def _build_css_bp_decoder(  # pylint: disable=too-many-arguments
             ``"backend:arch:warp_size"``. For example, ``"hip:gfx942:64"`` or
             ``"cuda:80:32"``.
         grid (tuple[int, int, int]): Triton kernel launch grid dimensions.
-            Defaults to ``(1, 1, 1)``.
-        num_warps (int): Triton kernel launch warp count. Defaults to ``1``.
-        num_stages (int): Triton pipeline stage count. Defaults to ``1``.
-        compiler (str): Optional compiler executable override. Defaults to ``""``.
-        cflags (tuple[str, ...]): Extra compiler flags. Defaults to ``()``.
+        num_warps (int): Triton kernel launch warp count.
+        num_stages (int): Triton pipeline stage count.
+        compiler (str): Optional compiler executable override.
+        cflags (tuple[str, ...]): Extra compiler flags.
 
     Returns:
         tuple[Path, str]: Path to the compiled shared library in a temporary location and the

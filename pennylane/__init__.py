@@ -206,6 +206,7 @@ from pennylane.backline import (
     Controller,
     Coprocessor,
     CoprocessorFunction,
+    Endpoint,
     Node,
 )
 from pennylane.backline.runtime import declare as runtime_declare

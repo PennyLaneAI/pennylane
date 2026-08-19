@@ -52,7 +52,9 @@ class TestDecodeBitpack:
     @staticmethod
     def _nodes():
         controller = qp.Controller()
-        coprocessor = qp.Coprocessor(coprocessor_fn="decoder", comm_host="127.0.0.1")
+        coprocessor = qp.Coprocessor(
+            coprocessor_fn="decoder", endpoint=qp.Endpoint("127.0.0.1", 7760)
+        )
         return controller, coprocessor
 
     def test_bitpack_decode_returns_64_bits(self, x64):
@@ -112,16 +114,16 @@ class TestDecodeBitpack:
             )
 
 
-def a_coprocessor(label=None):
+def a_coprocessor(name=None):
     """A coprocessor"""
-    return qp.Coprocessor(coprocessor_fn="decoder", label=label, comm_host="127.0.0.1")
-
-
-def a_device(coprocessors=(), out_bytes=8):
-    """A backline device whose controller needs ``out_bytes``-byte correction."""
-    controller = qp.Controller(
-        device=qp.device("null.qubit", wires=2), init_args={"out_bytes": out_bytes}
+    return qp.Coprocessor(
+        coprocessor_fn="decoder", name=name, endpoint=qp.Endpoint("127.0.0.1", 7760)
     )
+
+
+def a_device(coprocessors=()):
+    """A backline device for decode rounds."""
+    controller = qp.Controller(device=qp.device("null.qubit", wires=2))
     return qp.Backline(controller=controller, coprocessors=coprocessors, transport="rdma")
 
 
@@ -166,26 +168,26 @@ class TestSessionKey:
         """The only session is the controller's own."""
         assert _session_key(None) == "controller"
 
-    def test_a_labelled_coprocessor_names_the_session(self):
-        """One session per coprocessor, by that coprocessor's label."""
-        assert _session_key(a_coprocessor(label="decoder-0")) == "decoder-0"
+    def test_a_named_coprocessor_names_the_session(self):
+        """One session per coprocessor, by that coprocessor's name."""
+        assert _session_key(a_coprocessor(name="decoder-0")) == "decoder-0"
 
-    @pytest.mark.parametrize("label", [None, ""])
-    def test_an_unlabelled_coprocessor_falls_back(self, label):
-        """Without a label there is one conventional key."""
-        coprocessor = a_coprocessor(label=label)
+    @pytest.mark.parametrize("name", [None, ""])
+    def test_an_unnamed_coprocessor_falls_back(self, name):
+        """Without a name there is one conventional key."""
+        coprocessor = a_coprocessor(name=name)
         assert _session_key(coprocessor) == "coprocessor.0"
         assert _session_key(coprocessor, [coprocessor]) == "coprocessor.0"
 
-    def test_an_unlabelled_coprocessor_among_several_is_refused(self):
-        """Unlabelled coprocessors among several cannot be routed."""
+    def test_an_unnamed_coprocessor_among_several_is_refused(self):
+        """Unnamed coprocessors among several cannot be routed."""
         coprocessors = [a_coprocessor(), a_coprocessor()]
-        with pytest.raises(ValueError, match="no label, and the placement has 2"):
+        with pytest.raises(ValueError, match="no name, and the placement has 2"):
             _session_key(coprocessors[1], coprocessors)
 
-    def test_a_label_is_enough_to_route_several(self):
-        """A label is enough to route several coprocessors."""
-        coprocessors = [a_coprocessor(label="decoder-0"), a_coprocessor(label="decoder-1")]
+    def test_a_name_is_enough_to_route_several(self):
+        """A name is enough to route several coprocessors."""
+        coprocessors = [a_coprocessor(name="decoder-0"), a_coprocessor(name="decoder-1")]
         assert _session_key(coprocessors[1], coprocessors) == "decoder-1"
 
     def test_a_controller_only_placement_is_unaffected(self):
@@ -223,18 +225,17 @@ class TestOutBytes:
 
     def test_an_explicit_size_wins(self):
         """The call site's override wins."""
-        controller = qp.Controller(init_args={"out_bytes": 8})
+        controller = qp.Controller()
         assert _resolve_out_bytes(controller, 16) == 16
 
     def test_the_committed_size_is_the_default(self):
         """The committed size is the default."""
-        assert _resolve_out_bytes(qp.Controller(init_args={"out_bytes": 8}), None) == 8
+        assert _resolve_out_bytes(qp.Controller(), None) == 8
 
     @pytest.mark.parametrize("controller", [qp.Controller(), object()])
-    def test_an_unknown_size_is_refused(self, controller):
-        """An unknown size cannot be allocated."""
-        with pytest.raises(ValueError, match="could not determine the correction size"):
-            _resolve_out_bytes(controller, None)
+    def test_the_transport_default_is_eight_bytes(self, controller):
+        """An unconfigured reply uses the transport's default message size."""
+        assert _resolve_out_bytes(controller, None) == 8
 
 
 class TestNodeResolution:
@@ -247,7 +248,7 @@ class TestNodeResolution:
 
     def test_the_nodes_come_from_the_traced_device(self):
         """The placement supplies both nodes."""
-        dev = a_device(coprocessors=[a_coprocessor(label="decoder-0")])
+        dev = a_device(coprocessors=[a_coprocessor(name="decoder-0")])
         with qp.capture.tracing_device(dev):
             controller, coprocessor = _resolve_nodes(None, None)
 
@@ -256,7 +257,7 @@ class TestNodeResolution:
 
     def test_an_explicit_coprocessor_selects_the_node(self):
         """An explicit coprocessor picks the transport session."""
-        coprocs = [a_coprocessor(label="decoder-0"), a_coprocessor(label="decoder-1")]
+        coprocs = [a_coprocessor(name="decoder-0"), a_coprocessor(name="decoder-1")]
         with qp.capture.tracing_device(a_device(coprocessors=coprocs)):
             _, coprocessor = _resolve_nodes(None, coprocs[1])
 
@@ -264,7 +265,7 @@ class TestNodeResolution:
 
     def test_multiple_coprocessors_need_an_explicit_node(self):
         """A decoder ID does not select among transport sessions."""
-        coprocs = [a_coprocessor(label="decoder-0"), a_coprocessor(label="decoder-1")]
+        coprocs = [a_coprocessor(name="decoder-0"), a_coprocessor(name="decoder-1")]
         with qp.capture.tracing_device(a_device(coprocessors=coprocs)):
             with pytest.raises(ValueError, match="with multiple coprocessors"):
                 _resolve_nodes(None, None)
@@ -289,7 +290,7 @@ class TestRecordedRound:
 
     def test_a_round_is_four_calls_in_order(self, x64):
         """The calls are in order."""
-        jaxpr = a_round(x64, a_device(coprocessors=[a_coprocessor(label="decoder-0")]))
+        jaxpr = a_round(x64, a_device(coprocessors=[a_coprocessor(name="decoder-0")]))
         assert [call.params["symbol"] for call in calls_of(jaxpr)] == TRANSPORT_CALLS
 
     def test_every_call_is_local(self, x64):
@@ -299,7 +300,7 @@ class TestRecordedRound:
 
     def test_the_session_is_claimed_as_the_controller(self, x64):
         """The controller is the data initiator."""
-        jaxpr = a_round(x64, a_device(coprocessors=[a_coprocessor(label="decoder-0")]))
+        jaxpr = a_round(x64, a_device(coprocessors=[a_coprocessor(name="decoder-0")]))
         role, _key = scalars_of(jaxpr, calls_of(jaxpr)[0])
 
         assert role == ROLE_CONTROLLER
@@ -308,7 +309,7 @@ class TestRecordedRound:
     @pytest.mark.parametrize(
         "coprocessors, key",
         [
-            ([a_coprocessor(label="decoder-1")], "decoder-1"),
+            ([a_coprocessor(name="decoder-1")], "decoder-1"),
             ([a_coprocessor()], "coprocessor.0"),
         ],
     )
@@ -317,15 +318,15 @@ class TestRecordedRound:
         jaxpr = a_round(x64, a_device(coprocessors=coprocessors))
         assert session_key_of(jaxpr) == key
 
-    def test_a_second_decoder_needs_a_label(self, x64):
-        """A second decoder needs a label to choose it."""
+    def test_a_second_decoder_needs_a_name(self, x64):
+        """A second decoder needs a name to choose it."""
         dev = a_device(coprocessors=[a_coprocessor(), a_coprocessor()])
-        with pytest.raises(ValueError, match="no label, and the placement has 2"):
+        with pytest.raises(ValueError, match="no name, and the placement has 2"):
             a_round(x64, dev, coprocessor=dev.coprocessors[1], decoder_id=1)
 
     def test_the_staged_payload_carries_its_length_and_decoder(self, x64):
         """The length and decoder are stamped alongside the payload."""
-        coprocs = [a_coprocessor(label="decoder-0"), a_coprocessor(label="decoder-1")]
+        coprocs = [a_coprocessor(name="decoder-0"), a_coprocessor(name="decoder-1")]
         dev = a_device(coprocessors=coprocs)
         jaxpr = a_round(
             x64,
@@ -344,25 +345,36 @@ class TestRecordedRound:
         jaxpr = a_round(x64, a_device(coprocessors=[a_coprocessor()]), in_bytes=2)
         assert scalars_of(jaxpr, calls_of(jaxpr)[1])[2] == 2
 
-    def test_the_posted_work_item_is_the_one_asked_for(self, x64):
+    def test_the_posted_work_item_idx_is_the_one_asked_for(self, x64):
         """The caller's choice, defaulting to the first."""
         dev = a_device(coprocessors=[a_coprocessor()])
 
         default = a_round(x64, dev)
         assert scalars_of(default, calls_of(default)[2])[1] == 0
 
-        asked = a_round(x64, dev, work_item=3)
+        asked = a_round(x64, dev, work_item_idx=3)
         assert scalars_of(asked, calls_of(asked)[2])[1] == 3
 
     def test_the_correction_is_the_committed_size(self, x64):
         """The correction is the committed size."""
-        jaxpr = a_round(x64, a_device(coprocessors=[a_coprocessor()], out_bytes=16))
+        jaxpr = a_round(x64, a_device(coprocessors=[a_coprocessor()]))
         collect = calls_of(jaxpr)[3]
 
-        assert collect.params["out_bytes"] == (16,)
+        assert collect.params["out_bytes"] == (8,)
         (correction,) = jaxpr.jaxpr.outvars
-        assert correction.aval.shape == (16,)
+        assert correction.aval.shape == (8,)
         assert str(correction.aval.dtype) == "uint8"
+
+    def test_an_unconfigured_correction_uses_the_transport_default(self, x64):
+        """The Python return shape agrees with the transport dialect's 8-byte default."""
+        dev = qp.Backline(
+            controller=qp.Controller(device=qp.device("null.qubit", wires=2)),
+            coprocessors=[a_coprocessor()],
+            transport="rdma",
+        )
+        jaxpr = a_round(x64, dev)
+
+        assert calls_of(jaxpr)[3].params["out_bytes"] == (8,)
 
     def test_an_explicit_size_overrides_the_committed_one(self, x64):
         """The call site's override wins."""
@@ -383,6 +395,6 @@ class TestRecordedRound:
         with pytest.raises(RuntimeError, match="outside a compiled program"):
             decode(
                 np.zeros(4, dtype=np.uint8),
-                controller=qp.Controller(init_args={"out_bytes": 8}),
+                controller=qp.Controller(),
                 coprocessor=a_coprocessor(),
             )

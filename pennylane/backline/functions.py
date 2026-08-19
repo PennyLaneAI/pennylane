@@ -37,8 +37,8 @@ class CoprocessorFunction:
     Args:
         name (str): The name the function is known by, used to resolve the precompiled symbol.
         lib_path (str | None): Path to the shared library providing the symbol. Defaults to
-            ``None``, in which case the runtime resolves ``name`` from the symbols already loaded
-            on the host.
+            ``None``, in which case the runtime resolves :attr:`name` from the symbols already
+            loaded on the host.
 
     .. seealso:: :class:`~.Coprocessor`, :func:`~.css_bp_decoder`, :func:`~.triton_decoder`
 
@@ -47,7 +47,7 @@ class CoprocessorFunction:
     A coprocessor function is usually named rather than constructed --- passing a string to
     :class:`~.Coprocessor` resolves it:
 
-    >>> coproc = qp.Coprocessor(coprocessor_fn="decoder", comm_host="127.0.0.1")
+    >>> coproc = qp.Coprocessor(coprocessor_fn="decoder")
     >>> coproc.coprocessor_fn
     CoprocessorFunction(name='decoder', lib_path=None)
 
@@ -98,8 +98,8 @@ def triton_decoder(
         cflags (tuple[str, ...]): Extra compiler flags. Defaults to ``()``.
 
     Returns:
-        CoprocessorFunction: The compiled decode function, ready to pass as a
-            :class:`~.Coprocessor`'s ``coprocessor_fn``.
+        CoprocessorFunction: The compiled decode function, ready to pass as
+            :attr:`~.Coprocessor.coprocessor_fn`.
 
     Raises:
         ImportError: If Triton decoder support is unavailable.
@@ -115,9 +115,7 @@ def triton_decoder(
     >>> import triton.language as tl
     >>> @triton.jit
     ... def steane_lookup(syndrome):
-    ...     one = tl.cast(1, tl.uint64)
-    ...     zero = tl.cast(0, tl.uint64)
-    ...     return tl.where(syndrome != 0, one << (syndrome - 1), zero)
+    ...     return tl.where(syndrome != 0, 1 << (syndrome - 1), 0)
     >>> decoder = qp.backline.triton_decoder(  # doctest: +SKIP
     ...     (steane_lookup, steane_lookup),
     ...     platform="hip:gfx942:64",
@@ -155,9 +153,8 @@ def css_bp_decoder(
     Keyword Args:
         postprocess (str): Postprocessing step applied after belief propagation. Use
             ``"hard"`` for hard-decision output or ``"osd"`` for ordered-statistics decoding.
-            Defaults to ``"osd"``.
-        num_iters (int): Number of belief-propagation iterations. Defaults to ``10``.
-        prob (float): Uniform prior error probability across qubits. Defaults to ``0.1``.
+        num_iters (int): Number of belief-propagation iterations.
+        prob (float): Uniform prior error probability across qubits.
         platform (str): Required Triton platform string of the form ``"backend:arch:warp_size"``.
             For example, ``"hip:gfx942:64"`` or ``"cuda:80:32"``.
         grid (tuple[int, int, int]): Triton kernel launch grid dimensions.
@@ -168,8 +165,8 @@ def css_bp_decoder(
         cflags (tuple[str, ...]): Extra compiler flags. Defaults to ``()``.
 
     Returns:
-        CoprocessorFunction: The compiled decode function, ready to pass as a
-            :class:`~.Coprocessor`'s ``coprocessor_fn``.
+        CoprocessorFunction: The compiled decode function, ready to pass as
+            :attr:`~.Coprocessor.coprocessor_fn`.
 
     Raises:
         ImportError: If Triton decoder support is unavailable.

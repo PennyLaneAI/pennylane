@@ -27,18 +27,19 @@ class CType(Enum):
 
     Most of these are plain fixed-width scalars. The last four are special:
 
-    * ``PTR`` is an address the runtime hands out and takes back, such as a session handle.
-    * ``STR`` is a ``const char *``. It ends up as a constant in the compiled module, so its
+    * :attr:`PTR` is an address the runtime hands out and takes back, such as a session handle.
+    * :attr:`STR` is a ``const char *``. It ends up as a constant in the compiled module, so its
       value has to be known at trace time and cannot come from a traced value.
-    * ``BUF`` is the data pointer of an array argument. The length is not implied: if the entry
+    * :attr:`BUF` is the data pointer of an array argument. The length is not implied: if the entry
       point wants a byte count, declare it as a separate scalar parameter.
-    * ``OUT`` is a buffer the entry point writes. The caller does not pass one: it gives the size
-      with ``out_bytes=`` and gets the filled buffer back alongside the result.
+    * :attr:`OUT` is a buffer the entry point writes. The caller does not pass one: it gives the
+      size with ``out_bytes=`` and gets the filled buffer back alongside the result.
 
     .. note::
 
-        The 64-bit types like ``PTR``, ``I64``, ``U64``, ``F64``, and a ``BUF`` of 64-bit elements
-        need ``jax_enable_x64``, which Catalyst turns on when it is imported.
+        The 64-bit types like :attr:`PTR`, :attr:`I64`, :attr:`U64`, :attr:`F64`, and a
+        :attr:`BUF` of 64-bit elements need ``jax_enable_x64``, which Catalyst turns on when it is
+        imported.
     """
 
     VOID = "void"
@@ -65,7 +66,8 @@ class CType(Enum):
     def dtype(self) -> np.dtype | None:
         """The numpy dtype a value of this type has in a traced program.
 
-        ``None`` for the types that never show up as a traced scalar (``VOID``, ``STR``, ``BUF``).
+        ``None`` for the types that never show up as a traced scalar (:attr:`VOID`, :attr:`STR`,
+        :attr:`BUF`).
         """
         return _DTYPES.get(self)
 
@@ -117,7 +119,7 @@ class CSignature:
     Args:
         symbol (str): the C symbol name, as exported by the runtime library
         params (tuple[CType]): parameter types, in the order the C entry point takes them
-        result (CType): the return type; ``CType.VOID`` if the entry point returns nothing
+        result (CType): the return type; :attr:`CType.VOID` if the entry point returns nothing
         library (str | None): the shared library exporting this symbol, for a local in-process
             call. It is recorded on the compiled module so the driver links against it. ``None``
             for a dispatched symbol, or one already loaded in the calling process.
@@ -188,7 +190,7 @@ class CSignature:
         return tuple(p for p in self.params if not p.is_out)
 
     def check_arity(self, args) -> None:
-        """Raise a ``TypeError`` if ``args`` doesn't match :attr:`caller_params`."""
+        """Raise a :exc:`TypeError` if ``args`` doesn't match :attr:`caller_params`."""
         expected = self.caller_params
         if len(args) != len(expected):
             spelled = ", ".join(str(p) for p in expected)
