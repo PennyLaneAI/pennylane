@@ -195,8 +195,8 @@ class OutPoly(Operation):
             @qp.qnode(qp.device("default.qubit"), shots=1)
             def circuit():
                 # load values of x and y
-                qp.BasisEmbedding(3, wires=wires["x"])
-                qp.BasisEmbedding(2, wires=wires["y"])
+                qp.BasisState(qp.math.int_to_binary(3, len(wires["x"])), wires=wires["x"])
+                qp.BasisState(qp.math.int_to_binary(2, len(wires["y"])), wires=wires["y"])
 
                 # apply the polynomial
                 qp.OutPoly(
@@ -236,9 +236,9 @@ class OutPoly(Operation):
             @qp.qnode(qp.device("default.qubit"), shots=1)
             def circuit():
                 # loading values for x and y
-                qp.BasisEmbedding(3, wires=x_wires)
-                qp.BasisEmbedding(2, wires=y_wires)
-                qp.BasisEmbedding(1, wires=output_wires)
+                qp.BasisEmbedding([0, 1, 1], wires=x_wires) # 3
+                qp.BasisEmbedding([0, 1, 0], wires=y_wires) # 2
+                qp.BasisEmbedding([0, 0, 1], wires=output_wires) # 1
 
                 # applying the polynomial
                 qp.OutPoly(
