@@ -20,7 +20,6 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane import qjit
 from pennylane.core.shots import Shots
 from pennylane.resource import CircuitSpecs, PBCSpecsResources, SpecsResources
 
@@ -93,7 +92,7 @@ class TestDeviceLevelSpecs:
 
         dev = qp.device("lightning.qubit", wires=2)
 
-        @qjit
+        @qp.qjit
         @qp.transforms.merge_rotations
         @qp.transforms.cancel_inverses
         @qp.qnode(dev)
@@ -121,7 +120,7 @@ class TestDeviceLevelSpecs:
             qp.Hadamard(wires=0)
             return qp.expval(qp.PauliZ(0))
 
-        specs = qp.specs(qjit(circuit), level="device")()
+        specs = qp.specs(qp.qjit(circuit), level="device")()
 
         assert specs == CircuitSpecs(
             device_name="lightning.qubit",
@@ -158,7 +157,7 @@ class TestDeviceLevelSpecs:
 
             return qp.probs()
 
-        specs = qp.specs(qjit(circuit), level="device")()
+        specs = qp.specs(qp.qjit(circuit), level="device")()
 
         assert specs == CircuitSpecs(
             device_name="lightning.qubit",
@@ -189,7 +188,7 @@ class TestDeviceLevelSpecs:
 
         dev = qp.device("null.qubit", wires=2)
 
-        @qjit
+        @qp.qjit
         @qp.qnode(dev)
         def circuit():
             qp.PauliRot(0.42, pauli_word="Y", wires=0)  # arbitrary angle
@@ -225,7 +224,7 @@ class TestDeviceLevelSpecs:
                 qp.counts(wires=[1]),
             )
 
-        specs = qp.specs(qjit(circuit), level="device")()
+        specs = qp.specs(qp.qjit(circuit), level="device")()
 
         expected_measurements = {
             "expval(PauliX)": 1,
@@ -254,7 +253,7 @@ class TestDeviceLevelSpecs:
                 qp.var(qp.PauliX(0) @ qp.PauliY(1) @ qp.PauliZ(2)),
             )
 
-        specs = qp.specs(qjit(circuit_complex), level="device")()
+        specs = qp.specs(qp.qjit(circuit_complex), level="device")()
         expected_measurements = {
             "expval(Prod(num_terms=2))": 1,
             "expval(Hamiltonian(num_terms=2))": 1,
@@ -288,7 +287,7 @@ class TestPassByPassSpecs:
     def test_invalid_levels(self, simple_circuit):
         """Test invalid inputs."""
 
-        no_passes = qjit(simple_circuit)
+        no_passes = qp.qjit(simple_circuit)
         with pytest.raises(
             ValueError,
             match=r"The 'level' argument to .*\.specs for QJIT'd QNodes is out of "
@@ -319,7 +318,7 @@ class TestPassByPassSpecs:
             return (tape,), lambda res: res[0]
 
         simple_circuit = dummy_transform(simple_circuit)
-        simple_circuit = qjit(simple_circuit)
+        simple_circuit = qp.qjit(simple_circuit)
 
         with pytest.raises(
             ValueError,
@@ -333,7 +332,7 @@ class TestPassByPassSpecs:
         simple_circuit = qp.transforms.cancel_inverses(simple_circuit)
         simple_circuit = qp.transforms.merge_rotations(simple_circuit)
 
-        simple_circuit = qjit(simple_circuit)
+        simple_circuit = qp.qjit(simple_circuit)
 
         expected = CircuitSpecs(
             device_name="lightning.qubit",
@@ -396,7 +395,7 @@ class TestPassByPassSpecs:
 
         simple_circuit = qp.transforms.cancel_inverses(simple_circuit)
         simple_circuit = qp.transform(pass_name="cancel-inverses")(simple_circuit)
-        simple_circuit = qjit(simple_circuit)
+        simple_circuit = qp.qjit(simple_circuit)
 
         before_res = SpecsResources(
             counts={"RX": 2, "RZ": 2, "Hadamard": 2, "CNOT": 2},
@@ -452,7 +451,7 @@ class TestPassByPassSpecs:
         circ = qp.transforms.cancel_inverses(circ)
         circ = qp.transforms.merge_rotations(circ)  # Can be applied as an MLIR pass
 
-        circ = qjit(circ)
+        circ = qp.qjit(circ)
 
         actual = qp.specs(circ, level="all")(3)
         expected = CircuitSpecs(
@@ -494,7 +493,7 @@ class TestPassByPassSpecs:
 
         dev = qp.device("lightning.qubit", wires=7)
 
-        @qjit
+        @qp.qjit
         @qp.qnode(dev, shots=10)
         def circ():
             coeffs = [0.2, -0.543]
@@ -597,7 +596,7 @@ class TestPassByPassSpecs:
             qp.X(0)
             return qp.expval(qp.X(0)), qp.expval(qp.Y(0)), qp.expval(qp.Z(0))
 
-        actual = qp.specs(qjit(circuit), level=[1, 2])()
+        actual = qp.specs(qp.qjit(circuit), level=[1, 2])()
         expected = CircuitSpecs(
             device_name="null.qubit",
             num_device_wires=3,
@@ -1126,7 +1125,7 @@ class TestMarkerIntegration:
         simple_circuit = partial(qp.marker, label="m1")(simple_circuit)
         simple_circuit = partial(qp.marker, label="m1-duplicate")(simple_circuit)
 
-        simple_circuit = qjit(simple_circuit)
+        simple_circuit = qp.qjit(simple_circuit)
 
         expected = CircuitSpecs(
             device_name="lightning.qubit",
@@ -1166,7 +1165,7 @@ class TestMarkerIntegration:
         simple_circuit = qp.transforms.merge_rotations(simple_circuit)
         simple_circuit = partial(qp.marker, label="m2")(simple_circuit)
 
-        simple_circuit = qjit(simple_circuit)
+        simple_circuit = qp.qjit(simple_circuit)
 
         expected = CircuitSpecs(
             device_name="lightning.qubit",

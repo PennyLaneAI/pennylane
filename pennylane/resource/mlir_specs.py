@@ -47,6 +47,7 @@ def _execute_analysis_pass(
     try:
         from catalyst import QJIT
     except ImportError as e:
+        # pragma: no cover
         raise ImportError(
             "Catalyst must be installed to use specs with QJIT-compiled QNodes. "
             "Please install Catalyst and try again."
@@ -60,6 +61,7 @@ def _execute_analysis_pass(
         new_qjit.workspace = new_qjit._get_workspace()
         new_qjit.jaxed_function = None
         if new_qjit.compiled_function and new_qjit.compiled_function.shared_object:
+            # pragma: no cover
             new_qjit.compiled_function.shared_object.close()
 
         new_qjit.jaxpr, new_qjit.out_type, new_qjit.out_treedef, new_qjit.c_sig = new_qjit.capture(
@@ -70,6 +72,7 @@ def _execute_analysis_pass(
 
     # Force resolution of this property to finish going through all MLIR passes
     if new_qjit.mlir_opt is None:
+        # pragma: no cover
         raise ValueError(
             "Specs failed to compile the QNode with the specified passes for MLIR analysis."
         )
@@ -116,18 +119,20 @@ def resources_from_analysis_pass(
     iter_pipeline = copy.deepcopy(original_qnode._compile_pipeline)
     new_compile_pipeline = qp.CompilePipeline()
 
-    max_level = max(level) if isinstance(level, (list, tuple)) else level
+    if isinstance(level, int):
+        level = [level]
+    max_level = max(level)
     max_legal_level = len(iter_pipeline)
     fname_to_level = {}
+
+    if max_level > max_legal_level:
+        bad_levels = ", ".join(str(lvl) for lvl in level if lvl > max_legal_level)
+        raise ValueError(f"Requested specs levels {bad_levels} not found in MLIR pass list.")
 
     with tempfile.TemporaryDirectory(
         prefix=f"{_RESOURCE_ANALYSIS_PREFIX}_{os.getpid()}_"
     ) as tmpdirname:
         fname_prefix = f"{tmpdirname}/{_RESOURCE_ANALYSIS_PREFIX}_{time.time_ns()}_level_"
-
-        if max_level > max_legal_level:
-            bad_levels = ", ".join(str(lvl) for lvl in level if lvl > max_legal_level)
-            raise ValueError(f"Requested specs levels {bad_levels} not found in MLIR pass list.")
 
         if 0 in level:
             fname = f"{fname_prefix}before.json"

@@ -94,12 +94,6 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
     # Note that this only gets transforms manually applied by the user
     compile_pipeline = original_qnode.compile_pipeline
 
-    if trans := [pass_ for pass_ in compile_pipeline if pass_.pass_name is None]:
-        raise ValueError(
-            f"Specs encountered the following tape transforms: {trans}."
-            " Tape transforms are no longer supported by specs."
-        )
-
     # Map to convert back and forth between marker name and int level
     marker_to_level = get_marker_level_map(compile_pipeline)
     level_to_markers = defaultdict(list)  # Multiple markers can correspond to the same level
@@ -109,7 +103,7 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
     return_single_level: bool = isinstance(level, (int, str)) and level != "all"
 
     # Easier to assume level is always a sorted list of int levels
-    level = preprocess_level_input(level, marker_to_level, len(compile_pipeline))
+    level = preprocess_level_input(level, compile_pipeline)
     level_to_name: dict[int, str] = {}
 
     resources = {}
@@ -141,6 +135,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:
     try:
         from catalyst import QJIT
     except ImportError as exc:
+        # pragma: no cover
         raise ValueError(
             f"qp.specs can only be applied to a qjit'd QNode, instead got: {qjit}"
         ) from exc

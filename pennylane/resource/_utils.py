@@ -53,8 +53,7 @@ def apply_partial_args(fn, args, kwargs):
 
 def preprocess_level_input(
     level: str | int | list[int | str],
-    marker_to_level: dict[str, int],
-    pipeline_len: int,
+    compile_pipeline: "CompilePipeline",
 ) -> list[int]:
     """Preprocesses a level input to always return a sorted list of integers.
 
@@ -64,27 +63,36 @@ def preprocess_level_input(
 
     Args:
         level (str | int | iter[int | str]): The level input to preprocess
-        marker_to_level (dict[str, int]): Mapping from marker names to their associated level numbers.
-        pipeline_len (int): The length of the compilation pipeline (the number of transforms)
+        compile_pipeline ("CompilePipeline"): The compilation pipeline (the sequence of transforms)
     Returns:
         list[int]: The preprocessed level input
 
     Examples:
-        >>> marker_to_level = {"before": 0, "after": 1}
-        >>> preprocess_level_input("before", marker_to_level, 2)
+        >>> pipeline = qp.CompilePipeline([qp.transforms.cancel_inverses, qp.transforms.merge_rotations])
+        >>> pipeline.add_marker("before", 0)
+        >>> pipeline.add_marker("after", 1)
+        >>> preprocess_level_input("before", pipeline)
         [0]
-        >>> preprocess_level_input([0, "after"], marker_to_level, 2)
+        >>> preprocess_level_input([0, "after"], pipeline)
         [0, 1]
-        >>> preprocess_level_input("all", marker_to_level, 2)
+        >>> preprocess_level_input("all", pipeline)
         [0, 1, 2]
     """
+    if trans := [pass_ for pass_ in compile_pipeline if pass_.pass_name is None]:
+        raise ValueError(
+            f"Specs encountered the following tape transforms: {trans}."
+            " Tape transforms are no longer supported by specs."
+        )
+
+    marker_to_level = get_marker_level_map(compile_pipeline)
+
     # Account for "Before MLIR passes" level
-    total_levels = pipeline_len + 1
+    total_levels = len(compile_pipeline) + 1
 
     default_level_map = {
         "top": [0],
+        "user": [len(compile_pipeline)],
         "all": list(range(0, total_levels)),
-        "user": [pipeline_len],
     }
     if isinstance(level, str) and level in default_level_map:
         return default_level_map[level]

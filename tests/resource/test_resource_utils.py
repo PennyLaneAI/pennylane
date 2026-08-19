@@ -23,6 +23,17 @@ from pennylane.resource._utils import (
 )
 
 
+@pytest.fixture
+def example_pipeline():
+    pipeline = qp.CompilePipeline([qp.transforms.cancel_inverses for _ in range(6)])
+
+    pipeline.add_marker("foo", 2)
+    pipeline.add_marker("bar", 3)
+    pipeline.add_marker("baz", 5)
+
+    return pipeline
+
+
 def test_make_level_name_unique():
     existing_levels = {"foo", "foo-2", "bar"}
 
@@ -46,15 +57,10 @@ def test_make_level_name_unique():
         ("user", [6], False),
     ],
 )
-def test_preprocess_levels(level, output, expect_warnings):
+def test_preprocess_levels(level, output, expect_warnings, example_pipeline):
     """Test that _preprocess_level_input works correctly"""
-    marker_to_level = {
-        "foo": 2,
-        "bar": 3,
-        # Assume unnamed level at 4
-        "baz": 5,
-    }
-    # Assume that there are 6 passes in the pipeline total
+
+    # 6 total transforms, with markers at levels 2, 3, and 5
 
     if expect_warnings:
         with pytest.warns(
@@ -62,23 +68,43 @@ def test_preprocess_levels(level, output, expect_warnings):
             match="The 'level' argument to qp.specs for QJIT'd QNodes has been sorted to be in ascending "
             "order with no duplicate levels.",
         ):
-            assert preprocess_level_input(level, marker_to_level, 6) == output
+            assert preprocess_level_input(level, example_pipeline) == output
     else:
-        assert preprocess_level_input(level, marker_to_level, 6) == output
+        assert preprocess_level_input(level, example_pipeline) == output
 
 
-def test_preprocess_levels_invalid():
+def test_preprocess_levels_invalid(example_pipeline):
     with pytest.raises(ValueError, match="out of bounds"):
-        preprocess_level_input(-10, {}, 5)
+        preprocess_level_input(1, qp.CompilePipeline())
 
     with pytest.raises(ValueError, match="out of bounds"):
-        preprocess_level_input(10, {}, 5)
+        preprocess_level_input(-10, example_pipeline)
+
+    with pytest.raises(ValueError, match="out of bounds"):
+        preprocess_level_input(10, example_pipeline)
 
     with pytest.raises(ValueError, match="Invalid level"):
-        preprocess_level_input([1, 2, 3.14], {}, 5)
+        preprocess_level_input([1, 2, 3.14], example_pipeline)
 
-    with pytest.raises(ValueError, match="Marker name 'foo' not found"):
-        preprocess_level_input("foo", {}, 5)
+    with pytest.raises(ValueError, match="Marker name 'potato' not found"):
+        preprocess_level_input("potato", example_pipeline)
+
+
+def test_preprocess_levels_tape_transforms():
+    """Test that a warning is raised if the user has applied tape transforms."""
+
+    @qp.transform
+    def dummy_transform(tape):
+        """Returns a tape-only transform that can be used for testing"""
+        return (tape,), lambda res: res[0]
+
+    pipeline = qp.CompilePipeline([dummy_transform, qp.transforms.cancel_inverses])
+
+    with pytest.raises(
+        ValueError,
+        match=r"Specs encountered the following tape transforms: .*dummy_transform.*\. Tape transforms are no longer supported by specs.",
+    ):
+        preprocess_level_input("all", pipeline)
 
 
 def test_get_marker_level_map():
