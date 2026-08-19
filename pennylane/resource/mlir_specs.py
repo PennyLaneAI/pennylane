@@ -46,8 +46,7 @@ def _execute_analysis_pass(
     # pylint: disable=import-outside-toplevel,protected-access
     try:
         from catalyst import QJIT
-    except ImportError as e:
-        # pragma: no cover
+    except ImportError as e:  # pragma: no cover
         raise ImportError(
             "Catalyst must be installed to use specs with QJIT-compiled QNodes. "
             "Please install Catalyst and try again."
@@ -60,8 +59,9 @@ def _execute_analysis_pass(
     if new_qjit.mlir_module is None:
         new_qjit.workspace = new_qjit._get_workspace()
         new_qjit.jaxed_function = None
-        if new_qjit.compiled_function and new_qjit.compiled_function.shared_object:
-            # pragma: no cover
+        if (
+            new_qjit.compiled_function and new_qjit.compiled_function.shared_object
+        ):  # pragma: no cover
             new_qjit.compiled_function.shared_object.close()
 
         new_qjit.jaxpr, new_qjit.out_type, new_qjit.out_treedef, new_qjit.c_sig = new_qjit.capture(
@@ -71,8 +71,7 @@ def _execute_analysis_pass(
         new_qjit.mlir_module = new_qjit.generate_ir()
 
     # Force resolution of this property to finish going through all MLIR passes
-    if new_qjit.mlir_opt is None:
-        # pragma: no cover
+    if new_qjit.mlir_opt is None:  # pragma: no cover
         raise ValueError(
             "Specs failed to compile the QNode with the specified passes for MLIR analysis."
         )

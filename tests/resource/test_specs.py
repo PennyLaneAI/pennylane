@@ -93,6 +93,21 @@ class TestSpecsTransform:
         with pytest.raises(ValueError, match="qp.specs can only be applied to a qjit'd QNode"):
             qp.specs(f)()
 
+    def test_invalid_level(self):
+        """Test that a helpful error message is raised if the level is invalid."""
+
+        @qp.qjit
+        @qp.qnode(qp.device("lightning.qubit"))
+        def circuit():
+            qp.Hadamard(0)
+            return qp.expval(qp.PauliZ(0))
+
+        with pytest.raises(
+            NotImplementedError,
+            match="Unsupported level argument '11.17'.",
+        ):
+            qp.specs(circuit, level=11.17)()
+
 
 class TestDeviceLevelSpecs:
     """Test qp.specs() at device level"""
@@ -319,8 +334,8 @@ class TestPassByPassSpecs:
         ):
             qp.specs(no_passes, level=[10, 11])()
 
-    def test_warns_for_tape_transforms(self, simple_circuit):
-        """Test that a warning is raised if the user has applied tape transforms to the QNode."""
+    def test_error_for_tape_transforms(self, simple_circuit):
+        """Test that an error is raised if the user has applied tape transforms to the QNode."""
 
         @qp.transform
         def dummy_transform(tape):
@@ -335,6 +350,16 @@ class TestPassByPassSpecs:
             match=r"Specs encountered the following tape transforms: .*dummy_transform.*\. Tape transforms are no longer supported by specs.",
         ):
             qp.specs(simple_circuit, level="all")()
+
+    def test_depth_warning(self, simple_circuit):
+        """Test that a warning is raised if the user has requested circuit depth but the QNode has not been compiled."""
+        simple_circuit = qp.qjit(simple_circuit)
+
+        with pytest.warns(
+            UserWarning,
+            match="Cannot calculate circuit depth before applying all transforms",
+        ):
+            qp.specs(simple_circuit, level="all", compute_depth=True)()
 
     def test_basic_passes_multi_level(self, simple_circuit):
         """Test that when passes are applied, the circuit resources are updated accordingly."""

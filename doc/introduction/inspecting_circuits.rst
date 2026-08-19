@@ -13,7 +13,7 @@ PennyLane offers functionality to inspect, visualize or analyze quantum circuits
 
 Most of these tools are implemented as **transforms**.  Transforms take a :class:`~pennylane.QNode` instance and return a function:
 
->>> @qp.qnode(dev, diff_method='parameter-shift')
+>>> @qp.qnode(dev)
 ... def my_qnode(x, a=True):
 ...     # ...
 >>> new_func = my_transform(qnode)
@@ -42,7 +42,7 @@ For example:
     dev = qp.device('lightning.qubit', wires=4)
 
     @qp.qjit
-    @qp.qnode(dev, diff_method='parameter-shift')
+    @qp.qnode(dev)
     def circuit(x, y):
         qp.RX(x[0], wires=0)
         qp.Toffoli(wires=(0, 1, 2))

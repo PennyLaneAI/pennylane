@@ -134,8 +134,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:
     # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
     try:
         from catalyst import QJIT
-    except ImportError as exc:
-        # pragma: no cover
+    except ImportError as exc:  # pragma: no cover
         raise ValueError(
             f"qp.specs can only be applied to a qjit'd QNode, instead got: {qjit}"
         ) from exc
@@ -168,7 +167,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:
         )
 
     else:
-        raise NotImplementedError(f"Unsupported level argument '{level}' for QJIT'd code.")
+        raise NotImplementedError(f"Unsupported level argument '{level}'.")
 
     return CircuitSpecs(
         resources=resources,
