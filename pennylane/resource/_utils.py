@@ -65,7 +65,7 @@ def preprocess_level_input(
     Args:
         level (str | int | iter[int | str]): The level input to preprocess
         marker_to_level (dict[str, int]): Mapping from marker names to their associated level numbers.
-        pipeline_len (int): The length of the compile pipeline (number of passes)
+        pipeline_len (int): The length of the compilation pipeline (the number of transforms)
     Returns:
         list[int]: The preprocessed level input
 
