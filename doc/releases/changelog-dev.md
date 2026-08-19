@@ -460,6 +460,10 @@
   giving order-of-magnitude speedups for sparse and structured operators.
   [(#9728)](https://github.com/PennyLaneAI/pennylane/pull/9728)
 
+* Added the ``MultiX`` template which conditionally applies ``PauliX`` gates across target wires according 
+  to a bitstring array.
+  [(#9993)](https://github.com/PennyLaneAI/pennylane/issues/9993)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Added an arithmetic function ``labs.templates.half_signed_out_multiplier`` that multiplies
@@ -1295,6 +1299,7 @@ Miguel Cárdenas,
 Yushao Chen,
 Diksha Dhawan,
 Marcus Edwards,
+Thomas C. Fraser,
 Austin Huang,
 Harshal Janjani,
 Jacob Kitchen,
