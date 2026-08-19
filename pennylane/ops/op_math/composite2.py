@@ -50,24 +50,19 @@ class CompositeOp2(Operator2, is_baseclass=True):
 
     _eigs = {}  # cache eigen vectors and values like in qp.Hermitian
 
-    def __init__(
-        self, operands: Sequence[Operator], _init_pauli_rep=None
-    ):  # pylint: disable=super-init-not-called
-        self._name = self.__class__.__name__
+    def __init__(self, operands: Sequence[Operator], _init_pauli_rep=None):
         if any(isinstance(op, (qp.ops.MidMeasure, qp.ops.PauliMeasure)) for op in operands):
             raise ValueError("Composite operators of mid-circuit measurements are not supported.")
+        super().__init__(operands, _init_pauli_rep=_init_pauli_rep)
+        self._name = self.__class__.__name__
         self._wires = Wires.all_wires([op.wires for op in operands])
         self._hash = None
         self._has_overlapping_wires = None
         self._overlapping_ops = None
         self._pauli_rep = self._build_pauli_rep() if _init_pauli_rep is None else _init_pauli_rep
         self.queue()
-        self._batch_size = _UNSET_BATCH_SIZE
-        super().__init__(operands, _init_pauli_rep=_init_pauli_rep)
 
     def __repr__(self):
-        if len(self) == 0:
-            return f"{type(self).__name__}()"
         return f" {self._op_symbol} ".join(
             [f"({op})" if op.arithmetic_depth > 0 else f"{op}" for op in self]
         )
@@ -88,12 +83,6 @@ class CompositeOp2(Operator2, is_baseclass=True):
     @abc.abstractmethod
     def _op_symbol(self) -> str:
         """The symbol used when visualizing the composite operator"""
-
-    @property
-    @handle_recursion_error
-    def data(self):
-        """Create data property"""
-        return tuple(d for op in self for d in op.data)
 
     @property
     def num_wires(self):
@@ -322,16 +311,6 @@ class CompositeOp2(Operator2, is_baseclass=True):
                 (str(self.name), str([hash(factor) for factor in self._sort(self.operands)]))
             )
         return self._hash
-
-    # pylint:disable = missing-function-docstring, useless-return
-    @property
-    def basis(self):
-        warn(
-            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
-            "qp.is_commuting should be used instead to check commutivity.",
-            PennyLaneDeprecationWarning,
-        )
-        return None
 
     @property
     @handle_recursion_error

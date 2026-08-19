@@ -14,6 +14,8 @@
 """
 Unit tests for the composite operator class of qubit operations
 """
+from typing import Sequence
+from pennylane.queuing import AnnotatedQueue
 
 import inspect
 
@@ -53,7 +55,7 @@ class ValidOp(CompositeOp2):
     hybrid_argnames = ("operands", "_init_pauli_rep")
     wire_argnames = ()
 
-    def __init__(self, operands: Operator, _init_pauli_rep=None):
+    def __init__(self, operands: Sequence[Operator], _init_pauli_rep=None):
         super().__init__(operands, _init_pauli_rep=_init_pauli_rep)
 
     def _build_pauli_rep(self):
@@ -110,6 +112,14 @@ class TestConstruction:
         op = ValidOp(self.simple_operands)
         assert op._name == "ValidOp"
         assert op._op_symbol == "#"
+
+    def test_initialization_in_queuing_context(self):
+        """Test that valid child classes can be initialized in a queuing context"""
+        with AnnotatedQueue() as q:
+            op = ValidOp(self.simple_operands)
+            assert op._name == "ValidOp"
+            assert op._op_symbol == "#"
+        assert op in q.queue
 
     def test_decomposition_raises_error(self):
         """Test that calling decomposition() raises a ValueError."""
