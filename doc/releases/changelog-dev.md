@@ -1196,6 +1196,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug where :func:`~.tape.plxpr_to_tape` raised an error when the program contains
+  arithmetic operations performed on mid-circuit measurement values.
+  [(#10028)](https://github.com/PennyLaneAI/pennylane/pull/10028)
+
 * Fixed a bug where decomposing an :class:`~.Operator2` with graph-based decomposition
   enabled inside a :class:`~.Subroutine` with program capture leaked JAX tracers and
   caused Catalyst compilation to fail.
