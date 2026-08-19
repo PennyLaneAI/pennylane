@@ -21,6 +21,7 @@ import itertools
 import pickle
 from collections import defaultdict
 from functools import partial
+from importlib.util import find_spec
 from string import ascii_lowercase
 
 import numpy as np
@@ -149,13 +150,12 @@ def _check_decomposition(op, skip_wire_mapping):
             ), "Operators in decomposition of wire-mapped operator must have mapped wires."
 
 
-def _check_decomposition_new(op, skip_decomp_matrix_check=False):
+def _check_decomposition_new(op, skip_decomp_matrix_check=False, skip_capture=False):
     """Checks involving the new system of decompositions."""
 
     op_type = type(op)
 
     if isinstance(op, Operator1):
-
         err_msg = "resource_params must have the same keys as specified by resource_keys"
         assert set(op.resource_params.keys()) == set(op_type.resource_keys), err_msg
 
@@ -164,16 +164,16 @@ def _check_decomposition_new(op, skip_decomp_matrix_check=False):
             assert not qp.decomposition.has_decomp(op_type), err_msg
 
     for rule in qp.list_decomps(op):
-        _test_decomposition_rule(op, rule, skip_decomp_matrix_check)
+        _test_decomposition_rule(op, rule, skip_decomp_matrix_check, skip_capture)
 
     for rule in qp.list_decomps(f"Adjoint({op.name})"):
         adj_op = qp.adjoint(op)
-        _test_decomposition_rule(adj_op, rule, skip_decomp_matrix_check)
+        _test_decomposition_rule(adj_op, rule, skip_decomp_matrix_check, skip_capture)
 
     for rule in qp.list_decomps(f"Pow({op.name})"):
         for z in [2, 3, 4, 8, 9]:
             pow_op = qp.pow(op, z)
-            _test_decomposition_rule(pow_op, rule, skip_decomp_matrix_check)
+            _test_decomposition_rule(pow_op, rule, skip_decomp_matrix_check, skip_capture)
 
     for rule in qp.list_decomps(f"C({op.name})"):
         for n_ctrl_wires, c_value, n_workers in itertools.product([1, 2, 3], [0, 1], [0, 1, 2]):
@@ -184,7 +184,7 @@ def _check_decomposition_new(op, skip_decomp_matrix_check=False):
             control_values = [c_value] * n_ctrl_wires
             work_wires = [i + max(control_wires) + 1 for i in range(n_workers)]
             ctrl_op = ctrl(op, control_wires, control_values, work_wires)
-            _test_decomposition_rule(ctrl_op, rule, skip_decomp_matrix_check)
+            _test_decomposition_rule(ctrl_op, rule, skip_decomp_matrix_check, skip_capture)
 
 
 def _assert_counts_match(counts_0, counts_1):
@@ -220,7 +220,9 @@ def _assert_counts_match(counts_0, counts_1):
     raise AssertionError(assertion_error_string)
 
 
-def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_check: bool = False):
+def _test_decomposition_rule(
+    op, rule: DecompositionRule, skip_decomp_matrix_check: bool = False, skip_capture: bool = False
+):
     """Tests that a decomposition rule is consistent with the operator."""
 
     params, args, kwargs = _get_decomp_args(op)
@@ -232,7 +234,10 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
     resources = rule.compute_resources(**params)
     estimated_gate_counts = resources.gate_counts
 
-    if qp.capture.enabled():
+    if not skip_capture and find_spec("jax") is None:
+        skip_capture = True
+
+    if not skip_capture:
         import jax  # pylint: disable=import-outside-toplevel
 
         # Match each operator model's capture boundary: legacy hyperparameters remain
@@ -246,11 +251,17 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
             capture_args = ()
             capture_kwargs = {**op.dynamic_args, **op.wire_args, **op.hybrid_args}
 
-        plxpr = qp.capture.make_plxpr(decomposition, autograph=False)(
-            *capture_args, **capture_kwargs
-        )
-        flat_capture_args = jax.tree.leaves((capture_args, capture_kwargs))
-        tape = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, *flat_capture_args)
+        was_enabled = qp.capture.enabled()
+        qp.capture.enable()
+        try:
+            plxpr = qp.capture.make_plxpr(decomposition, autograph=False)(
+                *capture_args, **capture_kwargs
+            )
+            flat_capture_args = jax.tree.leaves((capture_args, capture_kwargs))
+            tape = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, *flat_capture_args)
+        finally:
+            if not was_enabled:
+                qp.capture.disable()
     else:
         with qp.queuing.AnnotatedQueue() as q:
             rule(*args, **kwargs)
@@ -269,7 +280,7 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
         actual_gate_counts[op_rep] += 1
     actual_gate_counts = dict(sorted(actual_gate_counts.items(), key=lambda item: str(item[0])))
 
-    if qp.capture.enabled():
+    if not skip_capture:
         # When capture is enabled, ChangeOpBasis is unrolled. The resource functions are typically
         # not aware of that, and still produce resource reps of ChangeOpBasis. Therefore, we unroll
         # the ChangeOpBasis in the resources manually so that it will match the reality.
@@ -753,7 +764,7 @@ def _assert_valid_operator2(
             _check_bind_new_parameters_op2(op)
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable-next=too-many-arguments
 def assert_valid(
     op: qp.core.Operator,
     *,
@@ -852,7 +863,9 @@ def assert_valid(
         _check_pickle(op)
     _check_decomposition(op, skip_wire_mapping=skip_wire_mapping)
     if not skip_new_decomp:
-        _check_decomposition_new(op, skip_decomp_matrix_check=skip_decomp_matrix_check)
+        _check_decomposition_new(
+            op, skip_decomp_matrix_check=skip_decomp_matrix_check, skip_capture=skip_capture
+        )
     _check_matrix(op)
     _check_matrix_matches_decomp(op)
     _check_sparse_matrix(op)
