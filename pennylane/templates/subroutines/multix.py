@@ -43,6 +43,8 @@ class MultiX(Operator2):
         "wires": Wire[-1],
     }
 
+    grad_method = None
+
     def __init__(self, bitstring: TensorLike, wires: WiresLike) -> None:
 
         bitstring, wires = MultiX._canonicalize_inputs(bitstring, wires)
