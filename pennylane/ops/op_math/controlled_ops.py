@@ -211,20 +211,6 @@ class ControlledQubitUnitary(Controlled2):
 
         self._name = "ControlledQubitUnitary"
 
-    @property
-    @override
-    def base(self) -> Operator:
-        # For concrete operators ``__init__`` already wraps the matrix in a ``QubitUnitary``.
-        # For abstract operators ``_base`` is the raw unitary matrix (kept as a dynamic arg for
-        # ``arg_specs``/serialization), so expose it as an (abstract) ``QubitUnitary`` operator
-        # here to keep the symbolic ``Controlled2`` machinery (equality, ``arithmetic_depth``,
-        # ``target_wires``, etc.) working.
-        if isinstance(self._base, AbstractArray):
-            num_target_wires = int(qp.math.log2(self._base.shape[-1]))
-            return qp.QubitUnitary(
-                Complex[2**num_target_wires, 2**num_target_wires], wires=Wire[num_target_wires]
-            )
-        return self._base
 
     @property
     def has_decomposition(self) -> bool:  # pylint: disable=invalid-overridden-method
