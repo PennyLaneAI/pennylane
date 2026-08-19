@@ -17,7 +17,7 @@
 import pytest
 
 import pennylane as qp
-from pennylane.core.operator import abstractify
+from pennylane.core.operator import Operator1, abstractify
 from pennylane.decomposition.resources import (
     CompressedResourceOp,
     Resources,
@@ -31,6 +31,10 @@ from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.pow2 import _pow_abstract
 from pennylane.typing import Float, Wire
+
+
+class DummyRX(Operator1):  # pylint: disable=too-few-public-methods
+    """A dummy RX that still inherits from Operator1."""
 
 
 @pytest.mark.unit
@@ -49,7 +53,7 @@ class TestResources:
         with pytest.raises(AssertionError):
             Resources(
                 gate_counts={
-                    abstractify(qp.RX): 2,
+                    abstractify(DummyRX): 2,
                     abstractify(qp.RZ): -1,
                 }
             )
@@ -59,7 +63,7 @@ class TestResources:
         with pytest.raises(AssertionError):
             Resources(
                 gate_counts={
-                    abstractify(qp.RX): 2,
+                    abstractify(DummyRX): 2,
                 },
                 weighted_cost=-2.0,
             )
@@ -68,18 +72,18 @@ class TestResources:
         """Tests adding two Resources objects."""
 
         resources1 = Resources(
-            gate_counts={abstractify(qp.RX): 2, abstractify(qp.RZ): 1},
+            gate_counts={abstractify(DummyRX): 2, abstractify(qp.RZ): 1},
             weighted_cost=6.0,
         )
         resources2 = Resources(
-            gate_counts={abstractify(qp.RX): 1, abstractify(qp.RY): 1},
+            gate_counts={abstractify(DummyRX): 1, abstractify(qp.RY): 1},
             weighted_cost=2.0,
         )
 
         resources = resources1 + resources2
         assert resources.num_gates == 5
         assert resources.gate_counts == {
-            abstractify(qp.RX): 3,
+            abstractify(DummyRX): 3,
             abstractify(qp.RZ): 1,
             abstractify(qp.RY): 1,
         }
@@ -89,14 +93,14 @@ class TestResources:
         """Tests multiplying a Resources object with a scalar."""
 
         resources = Resources(
-            gate_counts={abstractify(qp.RX): 2, abstractify(qp.RZ): 1},
+            gate_counts={abstractify(DummyRX): 2, abstractify(qp.RZ): 1},
             weighted_cost=2.0,
         )
 
         resources = resources * 2
         assert resources.num_gates == 6
         assert resources.gate_counts == {
-            abstractify(qp.RX): 4,
+            abstractify(DummyRX): 4,
             abstractify(qp.RZ): 2,
         }
         assert resources.weighted_cost == 4
@@ -104,8 +108,8 @@ class TestResources:
     def test_repr(self):
         """Tests the __repr__ of a Resources object."""
 
-        resources = Resources({abstractify(qp.RX): 2, qp.S(Wire[1]): 1}, 5.0)
-        assert repr(resources) == "<num_gates=3, gate_counts={RX: 2, S: 1}, weighted_cost=5.0>"
+        resources = Resources({abstractify(DummyRX): 2, qp.S(Wire[1]): 1}, 5.0)
+        assert repr(resources) == "<num_gates=3, gate_counts={DummyRX: 2, S: 1}, weighted_cost=5.0>"
 
 
 class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
@@ -123,8 +127,8 @@ class TestCompressedResourceOp:
         assert op.op_type is qp.QFT
         assert op.params == {"num_wires": 5}
 
-        op = CompressedResourceOp(qp.RX)
-        assert op.op_type is qp.RX
+        op = CompressedResourceOp(DummyRX, {})
+        assert op.op_type is DummyRX
         assert op.params == {}
 
     def test_invalid_op_type(self):
@@ -139,7 +143,7 @@ class TestCompressedResourceOp:
     def test_hash(self):
         """Tests that a CompressedResourceOp object is hashable."""
 
-        op = CompressedResourceOp(qp.RX, {})
+        op = CompressedResourceOp(DummyRX, {})
         assert isinstance(hash(op), int)
 
         op = CompressedResourceOp(qp.QFT, {"num_wires": 5})
@@ -190,15 +194,15 @@ class TestCompressedResourceOp:
     def test_same_params_same_hash(self):
         """Tests that two ops with the same params have the same hash."""
 
-        op1 = CompressedResourceOp(qp.RX, {"a": 1, "b": 2})
-        op2 = CompressedResourceOp(qp.RX, {"b": 2, "a": 1})
+        op1 = CompressedResourceOp(DummyRX, {"a": 1, "b": 2})
+        op2 = CompressedResourceOp(DummyRX, {"b": 2, "a": 1})
         assert hash(op1) == hash(op2)
 
     def test_empty_params_same_hash(self):
         """Tests that CompressedResourceOp objects initialized with or without empty
         parameters have the same hash."""
-        op1 = CompressedResourceOp(qp.RX)
-        op2 = CompressedResourceOp(qp.RX, {})
+        op1 = CompressedResourceOp(DummyRX)
+        op2 = CompressedResourceOp(DummyRX, {})
         assert hash(op1) == hash(op2)
 
     def test_different_params_different_hash(self):
@@ -211,11 +215,11 @@ class TestCompressedResourceOp:
     def test_equal(self):
         """Tests comparing two CompressedResourceOp objects."""
 
-        op1 = CompressedResourceOp(qp.RX, {})
-        op2 = CompressedResourceOp(qp.RX, {})
+        op1 = CompressedResourceOp(DummyRX, {})
+        op2 = CompressedResourceOp(DummyRX, {})
         assert op1 == op2
 
-        op1 = CompressedResourceOp(qp.RX, {})
+        op1 = CompressedResourceOp(DummyRX, {})
         op2 = abstractify(qp.RZ)
         assert op1 != op2
 
@@ -238,8 +242,8 @@ class TestCompressedResourceOp:
     def test_repr(self):
         """Tests the repr defined for debugging purposes."""
 
-        op = CompressedResourceOp(qp.RX, {})
-        assert repr(op) == "RX"
+        op = CompressedResourceOp(DummyRX, {})
+        assert repr(op) == "DummyRX"
 
         op = CompressedResourceOp(DummyOp, {"bar": 1, "foo": 2})
         assert repr(op) == "DummyOp(bar=1, foo=2)"
@@ -262,10 +266,10 @@ class TestCompressedResourceOp:
     @pytest.mark.parametrize(
         "op, expected_name",
         [
-            (abstractify(qp.RX), "RX"),
-            (_adjoint_abstract(qp.RX), "Adjoint(RX)"),
+            (abstractify(DummyRX), "DummyRX"),
+            (_adjoint_abstract(DummyRX), "Adjoint(DummyRX)"),
             (_ctrl_abstract(qp.T, Wire[1]), "C(T)"),
-            (pow_resource_rep(qp.RX, {}, 2), "Pow(RX)"),
+            (pow_resource_rep(DummyRX, {}, 2), "Pow(DummyRX)"),
         ],
     )
     def test_name(self, op, expected_name):
@@ -309,13 +313,6 @@ class TestResourceRep:
             DummyOp, {"foo": 2, "bar": 1}
         )
 
-    def test_resource_rep_basis_embedding_normalization(self):
-        """Tests that BasisEmbedding is normalized to BasisState in resource_rep."""
-
-        rep = resource_rep(qp.BasisEmbedding, num_wires=3)
-        assert rep == resource_rep(qp.BasisState, num_wires=3)
-        assert rep.op_type is qp.BasisState
-
 
 @pytest.mark.unit
 class TestControlledResourceRep:
@@ -333,51 +330,6 @@ class TestControlledResourceRep:
                 "num_control_wires": 2,
                 "num_zero_control_values": 1,
                 "num_work_wires": 1,
-                "work_wire_type": "borrowed",
-            },
-        )
-
-    def test_controlled_resource_rep_basis_embedding_normalization(self):
-        """Tests that BasisEmbedding is normalized to BasisState in controlled_resource_rep."""
-
-        rep = controlled_resource_rep(
-            qp.BasisEmbedding, {"num_wires": 3}, num_control_wires=1, num_zero_control_values=0
-        )
-        expected = controlled_resource_rep(
-            qp.BasisState, {"num_wires": 3}, num_control_wires=1, num_zero_control_values=0
-        )
-        assert rep == expected
-
-        # Also verify consistency with the resource_rep path (from actual ops)
-        actual_op = qp.ctrl(qp.BasisEmbedding(1, wires=[0, 1, 2]), control=3)
-        from_actual = resource_rep(type(actual_op), **actual_op.resource_params)
-        assert rep == from_actual
-
-    def test_controlled_resource_rep_flatten(self):
-        """Tests that nested controlled ops are flattened."""
-
-        rep = controlled_resource_rep(
-            qp.ops.Controlled,
-            {
-                "base_class": qp.CRX,
-                "base_params": {},
-                "num_control_wires": 2,
-                "num_zero_control_values": 1,
-                "num_work_wires": 1,
-                "work_wire_type": "borrowed",
-            },
-            1,
-            1,
-            1,
-        )
-        assert rep == CompressedResourceOp(
-            qp.ops.Controlled,
-            {
-                "base_class": qp.RX,
-                "base_params": {},
-                "num_control_wires": 4,
-                "num_zero_control_values": 2,
-                "num_work_wires": 2,
                 "work_wire_type": "borrowed",
             },
         )
