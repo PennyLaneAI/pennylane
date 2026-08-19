@@ -17,9 +17,6 @@ Unit tests for the composite operator class of qubit operations
 
 import inspect
 
-# pylint:disable=protected-access, use-implicit-booleaness-not-comparison
-from copy import copy
-
 import numpy as np
 import pytest
 
@@ -27,7 +24,9 @@ import pennylane as qp
 from pennylane.core.operator import Operator
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.ops.op_math import CompositeOp2
-from pennylane.wires import Wires
+
+# pylint:disable=protected-access, use-implicit-booleaness-not-comparison
+
 
 ops = (
     (qp.PauliX(wires=0), qp.PauliZ(wires=0), qp.Hadamard(wires=0)),

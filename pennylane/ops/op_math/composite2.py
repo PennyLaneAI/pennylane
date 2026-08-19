@@ -17,9 +17,7 @@ This submodule defines a base class for composite operations.
 """
 
 import abc
-import copy
 from collections.abc import Callable
-from functools import wraps
 
 # pylint: disable=invalid-sequence-index
 from typing import Sequence
@@ -31,7 +29,6 @@ from pennylane.core.operator import Operator, Operator2
 from pennylane.core.operator.base import _UNSET_BATCH_SIZE  # tach-ignore
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.ops.op_math.composite import handle_recursion_error
-from pennylane.pytrees import flatten, unflatten
 from pennylane.wires import Wires
 
 # pylint: disable=too-many-instance-attributes
@@ -123,7 +120,7 @@ class CompositeOp2(Operator2, is_baseclass=True):
     def is_verified_hermitian(self):
         """This property determines if the composite operator is hermitian."""
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
+    # pylint: disable=arguments-renamed, invalid-overridden-method, arguments-differ
     @property
     @handle_recursion_error
     def has_matrix(self):
@@ -224,6 +221,7 @@ class CompositeOp2(Operator2, is_baseclass=True):
 
         return self._eigs[self]
 
+    # pylint: disable-next=arguments-differ
     @property
     def has_diagonalizing_gates(self):
         if self.has_overlapping_wires:
