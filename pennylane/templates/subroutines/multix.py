@@ -18,7 +18,8 @@ from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import PauliX, cond
-from pennylane.wires import Wires
+from pennylane.typing import TensorLike
+from pennylane.wires import Wires, WiresLike
 
 
 class MultiX(Operator2):
@@ -37,7 +38,7 @@ class MultiX(Operator2):
     dynamic_argnames = "bitstring"
     wire_argnames = "wires"
 
-    def __init__(self, bitstring, wires):
+    def __init__(self, bitstring: TensorLike, wires: WiresLike) -> None:
 
         bitstring, wires = MultiX._canonicalize_inputs(bitstring, wires)
 
@@ -46,12 +47,12 @@ class MultiX(Operator2):
         super().__init__(bitstring, wires)
 
     @property
-    def num_wires(self):
+    def num_wires(self) -> int:
         """Returns the number of wires the operation acts on."""
         return len(self.wires)
 
     @staticmethod
-    def _canonicalize_inputs(bitstring, wires):
+    def _canonicalize_inputs(bitstring: TensorLike, wires: WiresLike) -> tuple[TensorLike, Wires]:
         """Canonicalize types for arguments bitstring and wires."""
 
         if isinstance(bitstring, (list, tuple)):
@@ -61,7 +62,7 @@ class MultiX(Operator2):
         return (bitstring, wires)
 
     @staticmethod
-    def _validate_inputs(bitstring, wires):
+    def _validate_inputs(bitstring: TensorLike, wires: WiresLike) -> None:
         """Validate the bitstring shapes, values, and length matching the length of wires."""
 
         if math.ndim(bitstring) != 1:
@@ -79,7 +80,7 @@ class MultiX(Operator2):
 
     @staticmethod
     # pylint: disable-next=arguments-differ
-    def compute_matrix(bitstring, wires):
+    def compute_matrix(bitstring: TensorLike, wires: WiresLike) -> TensorLike:
         r"""
         Representation of a MultiX operator as a concrete matrix in the computational basis.
 
@@ -105,7 +106,7 @@ class MultiX(Operator2):
 
 
 # Resources function for MultiX
-def _multix_resources(bitstring, wires):  # pylint: disable=unused-argument
+def _multix_resources(bitstring: TensorLike, wires: WiresLike):  # pylint: disable=unused-argument
     # The total number of PauliX gates used depends on the bitstring.
     # Specifically, sum(bitstring) gates are used by MultiX, not len(bitstring).
     # However, if bitrsring is an AbstractArray, only the shape of bitstring is known.
@@ -116,7 +117,7 @@ def _multix_resources(bitstring, wires):  # pylint: disable=unused-argument
 
 # Decomposition function for MultiX
 @register_resources(_multix_resources, exact=False)
-def _multix_decomposition(bitstring, wires):
+def _multix_decomposition(bitstring: TensorLike, wires: WiresLike) -> None:
 
     @for_loop(0, len(wires), 1)
     def locally_apply_paulix(i):
