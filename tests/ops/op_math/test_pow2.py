@@ -348,11 +348,12 @@ def test_pow_abstract_does_not_bind_with_compressed_leaves():
 
     rep = _pow_abstract(base, 2)
     assert isinstance(rep, Pow2)
+    assert rep.is_abstract
     assert rep.base is base
     assert rep.z == 2
 
     def f():
-        _pow_abstract(base, 2)
+        abstractify(_pow_abstract(base, 2))
 
     jaxpr = jax.make_jaxpr(f)()
     assert not jaxpr.eqns

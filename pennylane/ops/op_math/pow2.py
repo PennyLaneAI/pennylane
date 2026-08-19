@@ -329,12 +329,9 @@ def _pow_abstract(op: AbstractOperatorLike | type[Operator], z: int | float = 1)
     op = abstractify(op)
     if isinstance(op, CompressedResourceOp):
         return pow_resource_rep(op.op_type, op.params, z)
-    # The result is a resource representation, not a circuit instruction, so it must never
-    # bind a capture primitive. The metaclass's abstract-argument guard cannot detect an
-    # abstract base whose flattened leaves are all CompressedResourceOps (e.g. a
-    # ChangeOpBasis of legacy operands), so pause capture explicitly.
-    with capture.pause():
-        return qp.pow(op, z)
+    abstract_op = Pow2.__new__(Pow2)
+    abstract_op.__abstract_init__(op, z)
+    return abstract_op
 
 
 # pylint: disable=protected-access,unused-argument
