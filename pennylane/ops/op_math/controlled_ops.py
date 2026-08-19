@@ -225,6 +225,21 @@ class ControlledQubitUnitary(Controlled2):
         return super().decomposition()
 
 
+@custom_ctrl_dispatch.register
+def _ctrl_c_qu(base: ControlledQubitUnitary, control, control_values, work_wires, work_wire_type):
+    return ControlledQubitUnitary(
+        base.U,
+        control + base.wires,
+        control_values=_resolve_ctrl_values(control_values, base.control_values, len(control)),
+        work_wires=work_wires + base.work_wires,
+        work_wire_type=(
+            "borrowed"
+            if work_wire_type == "borrowed" or base.work_wire_type == "borrowed"
+            else "zeroed"
+        ),
+    )
+
+
 def _to_general_c_qu_resource(U, wires, work_wires, work_wire_type, **_):
     num_target_wires = int(qp.math.log2(qp.math.shape(U)[-1]))
     num_control_wires = len(wires) - num_target_wires
