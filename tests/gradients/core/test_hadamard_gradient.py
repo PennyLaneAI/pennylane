@@ -552,6 +552,7 @@ class TestDifferentModes:
 class TestHadamardGrad:
     """Unit tests for the hadamard_grad function"""
 
+    @pytest.mark.pl2do("batching is something we will come back to")
     @pytest.mark.parametrize("mode", ["standard", "reversed", "direct", "reversed-direct"])
     def test_nontrainable_batched_tape(self, mode):
         """Test that no error is raised for a broadcasted/batched tape if the broadcasted

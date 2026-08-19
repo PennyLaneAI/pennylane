@@ -549,8 +549,7 @@ def decompose(
 
         This transform takes advantage of the new graph-based decomposition algorithm when
         ``qp.decomposition.enable_graph()`` is present, which allows for more flexible
-        decompositions towards any target gate set. For example, the current system does not
-        guarantee a decomposition to the desired target gate set:
+        decompositions towards any target gate set.
 
         .. code-block:: python
 
@@ -559,22 +558,11 @@ def decompose(
             with qp.queuing.AnnotatedQueue() as q:
                 qp.CRX(0.5, wires=[0, 1])
 
+            qp.decomposition.enable_graph()
+
             tape = qp.tape.QuantumScript.from_queue(q)
             [new_tape], _ = qp.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ", "CNOT"})
 
-        >>> from pprint import pprint
-        >>> pprint(new_tape.operations)
-        [RZ(1.57079..., wires=[1]),
-         RY(0.25, wires=[1]),
-         CNOT(wires=[0, 1]),
-         RY(-0.25, wires=[1]),
-         CNOT(wires=[0, 1]),
-         RZ(-1.57079..., wires=[1])]
-
-        With the new system enabled, the transform produces the expected outcome.
-
-        >>> qp.decomposition.enable_graph()
-        >>> [new_tape], _ = qp.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ"})
         >>> new_tape.operations
         [RX(0.25, wires=[1]), CZ(wires=[0, 1]), RX(-0.25, wires=[1]), CZ(wires=[0, 1])]
 

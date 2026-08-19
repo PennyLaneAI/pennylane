@@ -1128,10 +1128,10 @@ class TestControlledDecomposition:
     def test_controlled_decomp_with_work_wire_not_applicable(self):
         """Tests that the controlled_decomp_with_work_wire is not applicable sometimes."""
 
-        op = qp.ctrl(qp.RX(0.5, wires=0), control=[1], control_values=[0], work_wires=[3])
+        op = qp.ctrl(DummyHadamard(wires=0), control=[1], control_values=[0], work_wires=[3])
         assert not ctrl_single_work_wire.is_applicable(**op.resource_params)
 
-        op = qp.ctrl(qp.RX(0.5, wires=0), control=[1, 2])
+        op = qp.ctrl(DummyHadamard(wires=0), control=[1, 2])
         assert not ctrl_single_work_wire.is_applicable(**op.resource_params)
 
     @pytest.mark.unit

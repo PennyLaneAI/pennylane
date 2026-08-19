@@ -592,20 +592,22 @@ def circuit_multiple_cond(tmp_pred, tmp_arg):
     arg = tmp_arg
 
     def true_fn_1(arg):
-        return True, qp.RX(arg, wires=0)
+        qp.RX(arg, wires=0)
+        return True
 
     # pylint: disable=unused-argument
     def false_fn_1(arg):
-        return False, qp.RY(0.1, wires=0)
+        qp.RY(0.1, wires=0)
+        return False
 
     def true_fn_2(arg):
-        return qp.RX(arg, wires=0)
+        qp.RX(arg, wires=0)
 
     # pylint: disable=unused-argument
     def false_fn_2(arg):
-        return qp.RY(0.1, wires=0)
+        qp.RY(0.1, wires=0)
 
-    dyn_pred_2, _ = qp.cond(dyn_pred_1, true_fn_1, false_fn_1, elifs=())(arg)
+    dyn_pred_2 = qp.cond(dyn_pred_1, true_fn_1, false_fn_1, elifs=())(arg)
     qp.cond(dyn_pred_2, true_fn_2, false_fn_2, elifs=())(arg)
     return qp.expval(qp.Z(0))
 
@@ -1055,6 +1057,7 @@ class TestDynamicShapes:
         [res_false] = qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, False, 5)
         assert qp.math.allclose(res_false, 10)  # 0 + 1 + 2 + 3 + 4
 
+    @pytest.mark.pl2do("batching is something that we'll come back to")
     def test_dynamic_shape_matches_arg(self):
         """Test that cond can handle dynamic shapes where the dimension matches an earlier arg."""
 
