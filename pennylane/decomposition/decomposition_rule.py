@@ -595,7 +595,7 @@ _fixed_decomps_private = {}
 _fixed_decomps_var = ContextVar("_fixed_decomps", default=_fixed_decomps_private)
 
 
-def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> None:
+def add_decomps(op_type: type[Operator | Operator2] | str, *decomps: DecompositionRule) -> None:
     """Globally registers new decomposition rules with an operator class.
 
     .. note::
