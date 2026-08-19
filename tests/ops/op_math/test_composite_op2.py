@@ -99,6 +99,13 @@ class NoMatrixOp(Operator2):
         super().__init__(wires=wires)
 
 
+class NonOverlappingOp(ValidOp):
+
+    def __init__(self, operands: Sequence[Operator], _init_pauli_rep=None):
+        super().__init__(operands, _init_pauli_rep=_init_pauli_rep)
+        self._overlapping_ops = []
+
+
 class TestConstruction:
     """Test the construction of composite ops."""
 
@@ -280,6 +287,7 @@ class TestMscMethods:
 
     @pytest.mark.parametrize("ops",
     [
+        (qp.S(0),),
         (qp.S(0), qp.T(1)),
         (qp.T(0), qp.S(1)),
         (qp.PauliX(0), qp.PauliY(1)),
@@ -291,11 +299,14 @@ class TestMscMethods:
         op = ValidOp(ops)
         vals = op.eigvals()
         def _expand_two(sub_op):
-            return np.kron(sub_op.matrix(), np.eye(2)) if sub_op.wires == (0,) else np.kron(np.eye(2),sub_op.matrix())
-        sub_mat = _expand_two(ops[0])
-        for sub in ops[1:]:
-            sub_mat = sub_mat @ _expand_two(sub)
-        assert np.allclose(vals, math.linalg.eig(sub_mat)[0])
+            return np.kron(sub_op.matrix(), np.eye(2)) if sub_op.wires == (0,) else np.kron(np.eye(2), sub_op.matrix())
+        if len(ops) > 1:
+            sub_mat = _expand_two(ops[0])
+            for sub in ops[1:]:
+                sub_mat = sub_mat @ _expand_two(sub)
+            assert np.allclose(vals, math.linalg.eig(sub_mat)[0])
+        else:
+            assert np.allclose(vals, math.linalg.eig(ops[0].matrix())[0])
 
     def test_has_matrix(self):
         """Test that the has_matrix property is correct."""
@@ -433,3 +444,6 @@ class TestProperties:
         op = ValidOp((qp.RZ(1.32, wires=0), qp.Identity(wires=0), qp.RX(1.9, wires=1)))
         overlapping_ops = op.overlapping_ops
         assert op._overlapping_ops == overlapping_ops
+
+        op = NonOverlappingOp((qp.RZ(1.32, wires=0),))
+        assert op.overlapping_ops == []
