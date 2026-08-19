@@ -27,9 +27,10 @@ _TRANSPORTS = {}
 class Transport:
     """A named data transport.
 
-    Passed to :class:`~pennylane.Backline` as the ``transport`` argument to select how messages move
-    between the :class:`~.Controller` and its :class:`coprocessors <.Coprocessor>`. The compiler
-    combines the transport with each node's hardware to select a concrete runtime backend.
+    A :class:`~pennylane.Backline` uses a transport to select how messages move between the
+    :class:`~.Controller` and its :class:`coprocessors <.Coprocessor>`, and exposes it as
+    :attr:`~pennylane.Backline.transport`. The compiler combines the transport with each node's
+    hardware to select a concrete runtime backend.
 
     .. warning::
 

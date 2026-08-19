@@ -37,8 +37,8 @@ class CoprocessorFunction:
     Args:
         name (str): The name the function is known by, used to resolve the precompiled symbol.
         lib_path (str | None): Path to the shared library providing the symbol. Defaults to
-            ``None``, in which case the runtime resolves ``name`` from the symbols already loaded
-            on the host.
+            ``None``, in which case the runtime resolves :attr:`name` from the symbols already
+            loaded on the host.
 
     .. seealso:: :class:`~.Coprocessor`, :func:`~.css_bp_decoder`, :func:`~.triton_decoder`
 
@@ -98,8 +98,8 @@ def triton_decoder(
         cflags (tuple[str, ...]): Extra compiler flags. Defaults to ``()``.
 
     Returns:
-        CoprocessorFunction: The compiled decode function, ready to pass as a
-            :class:`~.Coprocessor`'s ``coprocessor_fn``.
+        CoprocessorFunction: The compiled decode function, ready to pass as
+            :attr:`~.Coprocessor.coprocessor_fn`.
 
     Raises:
         ImportError: If Triton decoder support is unavailable.
@@ -165,8 +165,8 @@ def css_bp_decoder(
         cflags (tuple[str, ...]): Extra compiler flags. Defaults to ``()``.
 
     Returns:
-        CoprocessorFunction: The compiled decode function, ready to pass as a
-            :class:`~.Coprocessor`'s ``coprocessor_fn``.
+        CoprocessorFunction: The compiled decode function, ready to pass as
+            :attr:`~.Coprocessor.coprocessor_fn`.
 
     Raises:
         ImportError: If Triton decoder support is unavailable.

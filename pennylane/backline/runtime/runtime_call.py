@@ -35,7 +35,7 @@ def _tracing() -> bool:
 
 @functools.lru_cache(maxsize=1)
 def get_runtime_call_prim():
-    """Get the ``runtime_call`` primitive, creating it on the first call."""
+    """Get the primitive that backs :func:`runtime_call`, creating it on the first call."""
 
     # pylint: disable=import-outside-toplevel
     from pennylane.capture.custom_primitives import QpPrimitive
@@ -55,7 +55,7 @@ def runtime_call(target, *args, signature=None, out_bytes=0, address=None, libra
     r"""Call a declared runtime symbol, in-process or on the executor it is addressed to.
 
     A symbol is declared once with :func:`~.runtime_declare`, then called by name from inside a
-    ``qjit`` program.
+    :func:`~pennylane.qjit` program.
 
     Passing ``address`` dispatches the call: it is recorded into the program and sent to that
     executor, which invokes the symbol on the machine the runtime lives on. Omitting ``address``

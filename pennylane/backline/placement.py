@@ -60,7 +60,11 @@ class Endpoint:
     """
 
     host: str
+    """The address the controller connects to, e.g. ``"192.0.2.11"`` or ``"127.0.0.1"``."""
+
     port: int
+    """The port the coprocessor listens on for the out-of-band connection handshake. This is the
+    handshake channel that exchanges the information needed to set up the data path."""
 
     def __post_init__(self):
         if not isinstance(self.host, str):
@@ -96,7 +100,7 @@ class Node:
             Defaults to ``None``, which runs the node in this process. See the
             :attr:`~.Node.executor_options` attribute below for every option it accepts.
         executor (object | None): An already-launched executor to attach. Defaults to ``None``, in
-            which case the compiler builds one from ``executor_options``.
+            which case the compiler builds one from :attr:`executor_options`.
         init_args (dict): Backend-specific initialization arguments. Empty by default. See the
             :attr:`~.Node.init_args` attribute below for the keys it accepts.
 
@@ -194,7 +198,7 @@ class Node:
     default (never ``None``). The keys the compiler forwards are
 
     * ``"backend_lib"`` (str) - explicit path to the transport backend library, taking precedence
-      over :attr:`hardware` and over a :class:`~.CoprocessorFunction`'s ``lib_path``.
+      over :attr:`hardware` and over :attr:`~.CoprocessorFunction.lib_path`.
     * ``"config"`` (str) - a ``;``-separated ``key=value`` string configuring the backend on this
       machine, e.g. ``"dev=mlx5_0;gid=3"``. ``dev`` and ``gid`` select the RDMA device and GID
       index; the remaining keys are backend-specific (a GPU backend takes ``gpu=``, an FPGA engine
@@ -283,8 +287,8 @@ class Coprocessor(Node):
     """The node that runs a coprocessor function per received message.
 
     A coprocessor receives messages from the :class:`controller <.Controller>` (e.g., syndromes).
-    The ``coprocessor_fn`` is used to process the message, and sends the result back (e.g.,
-    corrections). Depending on the connection type, a ``coprocessor_fn`` may be a persistent
+    The :attr:`coprocessor_fn` is used to process the message, and sends the result back (e.g.,
+    corrections). Depending on the connection type, a :attr:`coprocessor_fn` may be a persistent
     kernel. Pass coprocessors to :class:`~pennylane.Backline` to build a device.
 
     The coprocessor owns the connection :attr:`endpoint`: it listens on :attr:`Endpoint.port`, and
@@ -367,8 +371,8 @@ class Placement:
     Contains a :class:`controller <.Controller>` node, any :class:`coprocessor <.Coprocessor>`
     nodes, and the :class:`transport <.Transport>` that carries data between them. Rather than
     constructing this directly, use :class:`~pennylane.Backline` to assemble a controller,
-    coprocessors, and transport into a device; the resulting placement is available as the
-    device's ``placement`` attribute.
+    coprocessors, and transport into a device; the resulting placement is available as
+    :attr:`~pennylane.Backline.placement`.
 
     .. warning::
 
@@ -401,8 +405,8 @@ class Placement:
     >>> len(dev.placement.coprocessors)
     1
 
-    ``coprocessors`` accepts any sequence and is normalized to a tuple, and ``transport`` accepts
-    either a registry name or a :class:`~.Transport`:
+    :attr:`coprocessors` accepts any sequence and is normalized to a tuple, and :attr:`transport`
+    accepts either a registry name or a :class:`~.Transport`:
 
     >>> isinstance(dev.placement.coprocessors, tuple)
     True

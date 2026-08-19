@@ -118,7 +118,7 @@ class Backline(Device):
 
     @property
     def backline(self):
-        """Placement: Alias of :attr:`placement` for Catalyst (``device.backline``)."""
+        """Placement: Alias of :attr:`placement` for Catalyst."""
         return self._placement
 
     @property

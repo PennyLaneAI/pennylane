@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""``qp.backline.decode`` -- the explicit per-round syndrome->correction decode.
+""":func:`~pennylane.backline.decode` -- the explicit per-round syndrome->correction decode.
 
 :func:`decode` emits one transport round from inside a captured QNode: resolve the controller's
 session, stage the syndrome, post the round, collect the reply.
@@ -58,10 +58,10 @@ _PACKED_U64_BYTES = DEFAULT_MESSAGE_BYTES
 def _session_key(coprocessor, coprocessors=()) -> str:
     """The key the controller's session for this round is registered under.
 
-    ``inject-transport-session`` keys one controller session per coprocessor by *that coprocessor's*
-    ``name``, falling back to ``"coprocessor.0"``; a placement with no coprocessor is
-    ``"controller"``. With several coprocessors that fallback would send every unnamed one to the
-    same session, so a name is required.
+    ``inject-transport-session`` keys one controller session per coprocessor by
+    :attr:`~.Coprocessor.name`, falling back to ``"coprocessor.0"``; a placement with no
+    coprocessor is ``"controller"``. With several coprocessors that fallback would send every
+    unnamed one to the same session, so a name is required.
 
     Raises:
         ValueError: if the round targets an unnamed coprocessor and the placement holds more
@@ -274,10 +274,11 @@ def decode(  # pylint: disable=too-many-arguments
             return qp.expval(qp.Z(0))
 
     The round is resolved from the device being traced, so the program has to be captured
-    (``qp.qjit(capture=True)``). ``syndrome`` is sent by data pointer, so its byte length is fixed
-    by its shape and dtype at compile time; ``correction`` comes back as a ``uint8`` buffer of
-    ``out_bytes`` bytes. Pass ``controller=`` / ``coprocessor=`` to choose the nodes explicitly, and
-    ``decoder_id=`` to select which coprocessor-side decoder handles the round.
+    (:func:`~pennylane.qjit` with ``capture=True``). ``syndrome`` is sent by data pointer, so its
+    byte length is fixed by its shape and dtype at compile time; ``correction`` comes back as a
+    ``uint8`` buffer of ``out_bytes`` bytes. Pass ``controller=`` / ``coprocessor=`` to choose the
+    nodes explicitly, and ``decoder_id=`` to select which coprocessor-side decoder handles the
+    round.
     """
 
     controller, coprocessor = _resolve_nodes(controller, coprocessor)

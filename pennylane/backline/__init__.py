@@ -28,7 +28,7 @@ A backline device is built with :class:`~pennylane.Backline` from a
 :class:`controller <.Controller>` (which wraps the PennyLane device the QNode runs on, such as
 ``lightning.qubit`` or ``null.qubit``), zero or more :class:`coprocessors <.Coprocessor>`, and a
 transport name (``"rdma"`` or ``"memcpy"``), or a :class:`~.Transport`. The resulting device is
-passed into a :func:`~pennylane.qnode`:
+bound to a quantum function through :class:`~pennylane.QNode`:
 
 .. code-block:: python
 
@@ -65,9 +65,9 @@ Nodes
 
 A node is a participant in the backline fabric. It is either a :class:`~.Controller`, where the
 QNode executes and which issues messages, or a :class:`~.Coprocessor`, where those messages are
-processed and returned. Both share the options on :class:`~.Node`: a ``name`` to identify the
-node, the ``hardware`` it executes on, whether it runs ``remote``, and how its code is deployed
-there. A
+processed and returned. Both share the options on :class:`~.Node`: a :attr:`~.Node.name` to
+identify the node, the :attr:`~.Node.hardware` it executes on, whether it runs
+:attr:`~.Node.remote`, and how its code is deployed there. A
 placement has exactly one controller and zero or more coprocessors, and nodes are never used on
 their own --- they are passed to :class:`~pennylane.Backline`, which assembles them into a device.
 
@@ -90,8 +90,8 @@ compiled ahead of time rather than traced: it can be written directly in C++ as 
 or generated from Python by :func:`~.triton_decoder`, which compiles user-defined Triton decoders,
 and :func:`~.css_bp_decoder`, which builds a CSS belief-propagation decoder from parity-check
 matrices. Either way the coprocessor refers to it through a :class:`~.CoprocessorFunction`, which
-names the symbol and, optionally, the shared library it lives in. Passing a plain string as a
-coprocessor's ``coprocessor_fn`` builds one for you.
+names the symbol and, optionally, the shared library it lives in. Passing a plain string as
+:attr:`~pennylane.Coprocessor.coprocessor_fn` builds one for you.
 
 .. currentmodule:: pennylane
 
@@ -113,11 +113,11 @@ Placement
 
 A :class:`~.Placement` is the complete declarative description of where the workload runs: the
 :class:`~.Controller`, its :class:`coprocessors <.Coprocessor>`, the :class:`~.Transport` between
-them, and optionally the ``qec_code`` the circuit is encoded for. It is what the compiler
-consumes --- everything it contains ends up in the compiled program, and nothing else about the
-deployment does.
+them, and optionally the :attr:`~.Placement.qec_code` the circuit is encoded for. It is what the
+compiler consumes --- everything it contains ends up in the compiled program, and nothing else
+about the deployment does.
 You normally do not construct one directly: :class:`~pennylane.Backline` takes the same arguments,
-builds the placement, and carries it as the device's ``placement`` attribute.
+builds the placement, and carries it as :attr:`~pennylane.Backline.placement`.
 
 .. autosummary::
     :toctree: api
@@ -141,12 +141,12 @@ replies with.
 Device
 ~~~~~~
 
-:class:`~pennylane.Backline` is a device that is bound to a :func:`~pennylane.qnode` like any other
+:class:`~pennylane.Backline` is a device that is bound to a :class:`~pennylane.QNode` like any other
 PennyLane device. Its wires come from the controller's own device, so the QNode is written exactly
-as it would be against that device alone --- the placement changes where the work runs, not what the
-circuit says. It has no Python execution path: the device carries the placement through to the
+as it would be against that device alone --- the placement changes where the work runs, not what
+the circuit says. It has no Python execution path: the device carries the placement through to the
 Catalyst compiler, so a QNode using it must be :func:`~pennylane.qjit`-compiled, and calling it
-directly raises ``NotImplementedError``.
+directly raises :exc:`NotImplementedError`.
 
 .. autosummary::
     :toctree: api
