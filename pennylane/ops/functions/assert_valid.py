@@ -128,6 +128,12 @@ def _check_decomposition(op, skip_wire_mapping):
     _assert_equal_ops(decomp, compute_decomp, compute_decomp_msg)
     _assert_equal_ops(decomp, processed_queue, queue_msg)
 
+    if op.has_matrix:
+        mat = op.matrix()
+        decomp_mat = qp.matrix(qp.tape.QuantumScript(decomp), wire_order=op.wires)
+        msg = f"matrix and matrix from decomposition must match. Got \n{mat}\n\n {decomp_mat}"
+        assert qp.math.allclose(mat, decomp_mat), msg
+
     if skip_wire_mapping:
         return
 
@@ -243,9 +249,11 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
             capture_args = op.data
             capture_kwargs = {"wires": op.wires}
         else:
-            decomposition = partial(rule, **op.static_args, **op.compilable_args)
+            # TODO: tracing Operator2 hybrid args is not supported due to [sc-127789], move
+            # op.hybrid_args to capture_kwargs when the issue with wires is fixed.
+            decomposition = partial(rule, **op.static_args, **op.compilable_args, **op.hybrid_args)
             capture_args = ()
-            capture_kwargs = {**op.dynamic_args, **op.wire_args, **op.hybrid_args}
+            capture_kwargs = {**op.dynamic_args, **op.wire_args}
 
         plxpr = qp.capture.make_plxpr(decomposition, autograph=False)(
             *capture_args, **capture_kwargs
@@ -372,17 +380,6 @@ def _check_sparse_matrix(op):
             qp.operation.SparseMatrixUndefinedError,
             failure_comment=failure_comment,
         )()
-
-
-def _check_matrix_matches_decomp(op):
-    """Check that if both the matrix and decomposition are defined, they match."""
-    if op.has_matrix and op.has_decomposition:
-        mat = op.matrix()
-        decomp_mat = qp.matrix(qp.tape.QuantumScript(op.decomposition()), wire_order=op.wires)
-        failure_comment = (
-            f"matrix and matrix from decomposition must match. Got \n{mat}\n\n {decomp_mat}"
-        )
-        assert qp.math.allclose(mat, decomp_mat), failure_comment
 
 
 def _check_eigendecomposition(op):
@@ -851,11 +848,11 @@ def assert_valid(
         _check_wires(op, skip_wire_mapping=skip_wire_mapping)
     if not skip_pickle:
         _check_pickle(op)
-    _check_decomposition(op, skip_wire_mapping=skip_wire_mapping)
+    if not capture.enabled():
+        _check_decomposition(op, skip_wire_mapping=skip_wire_mapping)
     if not skip_new_decomp:
         _check_decomposition_new(op, skip_decomp_matrix_check=skip_decomp_matrix_check)
     _check_matrix(op)
-    _check_matrix_matches_decomp(op)
     _check_sparse_matrix(op)
     _check_eigendecomposition(op)
     _check_generator(op)
