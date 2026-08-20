@@ -14,6 +14,7 @@
 
 """Tests the decomposition rules defined for symbolic operations other than controlled."""
 
+import warnings
 from textwrap import dedent
 
 import pytest
@@ -1070,6 +1071,46 @@ class TestControlledDecomposition:
 
         specs = qp.specs(circuit, level="device")([1, 1, 0])
         assert specs.resources.quantum_operations == {"CNOT": 3, "Hadamard": 2, "PauliX": 2}
+
+    @pytest.mark.capture
+    def test_flip_zero_control_capture(self):
+        """Tests flip_zero_control is capture-compatible: the ``_x_flips`` for-loop indexes the
+        control wires with a traced loop variable, which requires the wires to be promoted to a
+        jax array so structured capture does not raise ``TracerIntegerConversionError``."""
+
+        from pennylane.exceptions import CaptureWarning
+        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+
+        @qp.register_resources({qp.CNOT: 3, qp.H: 2})
+        def _custom_controlled_rule(base, control_wires, **_):
+            qp.CNOT(control_wires[:2])
+            qp.H(control_wires[2])
+            qp.CNOT([control_wires[-1], base.wires[0]])
+            qp.H(control_wires[2])
+            qp.CNOT(control_wires[:2])
+
+        custom_rule = flip_zero_control2(_custom_controlled_rule, "custom_rule")
+        op = NonParametricOp(wires=[0])
+
+        def circuit():
+            custom_rule(base=op, control_wires=[1, 2, 3], control_values=[1, 1, 0])
+
+        # Structured capture must succeed (no fallback to an unrolled Python loop).
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", CaptureWarning)
+            plxpr = qp.capture.make_plxpr(circuit)()
+
+        collector = CollectOpsandMeas()
+        collector.eval(plxpr.jaxpr, plxpr.consts)
+        assert collector.state["ops"] == [
+            qp.X(3),
+            qp.CNOT([1, 2]),
+            qp.H(3),
+            qp.CNOT([3, 0]),
+            qp.H(3),
+            qp.CNOT([1, 2]),
+            qp.X(3),
+        ]
 
     @pytest.mark.unit
     def test_controlled_decomp_with_work_wire(self):

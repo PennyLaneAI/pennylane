@@ -24,13 +24,12 @@ from pennylane.devices import ExecutionConfig
 
 
 def _nodes(n_coprocessors=1):
-    ctrl = qp.Controller(label="controller-1")
+    ctrl = qp.Controller(name="controller-1")
     cops = tuple(
         qp.Coprocessor(
-            label=f"coproc-{i}",
+            name=f"coproc-{i}",
             coprocessor_fn=f"decoder-{i}",
-            comm_host="192.168.1.3",
-            oob_port=18590,
+            endpoint=qp.Endpoint("192.168.1.3", 18590),
         )
         for i in range(n_coprocessors)
     )
@@ -51,6 +50,11 @@ class TestConstruction:
         assert isinstance(dev.placement, Placement)
         assert dev.transport.name == "rdma"
 
+    def test_backline_property_is_an_alias_of_placement(self):
+        """``dev.backline`` is the Catalyst-facing alias for :attr:`placement`."""
+        dev = _device()
+        assert dev.backline is dev.placement
+
     def test_all_arguments_are_keyword_only(self):
         """No argument may be passed positionally, so ordering can never be confused, and a
         controller is never mistaken for wires."""
@@ -64,7 +68,7 @@ class TestConstruction:
 
     def test_wires_taken_from_controller_device(self):
         """The device's wires come from the controller's device."""
-        ctrl = qp.Controller(device=qp.device("default.qubit", wires=3), label="fpga")
+        ctrl = qp.Controller(device=qp.device("default.qubit", wires=3), name="fpga")
         dev = Backline(controller=ctrl, transport="rdma")
         assert len(dev.wires) == 3
 
@@ -83,7 +87,11 @@ class TestPublicUsagePattern:
     def test_top_level_qp_backline(self):
         """import pennylane as qp; qp.Backline(...) builds a device."""
         con = qp.Controller(device=qp.device("default.qubit", wires=2))
-        cop = qp.Coprocessor(coprocessor_fn="decoder", label="gpu-verbs", comm_host="192.168.1.3")
+        cop = qp.Coprocessor(
+            coprocessor_fn="decoder",
+            name="gpu-verbs",
+            endpoint=qp.Endpoint("192.168.1.3", 18590),
+        )
         dev = qp.Backline(controller=con, coprocessors=[cop], transport="rdma")
         assert isinstance(dev, Backline)
 
@@ -92,7 +100,11 @@ class TestPublicUsagePattern:
         from pennylane.backline import Controller, Coprocessor
 
         con = Controller(device=qp.device("default.qubit", wires=2))
-        cop = Coprocessor(coprocessor_fn="decoder", label="gpu-libibverbs", comm_host="192.168.1.3")
+        cop = Coprocessor(
+            coprocessor_fn="decoder",
+            name="gpu-libibverbs",
+            endpoint=qp.Endpoint("192.168.1.3", 18590),
+        )
         dev = qp.Backline(controller=con, coprocessors=[cop], transport="rdma")
         assert dev.controller is con
         assert dev.coprocessors == (cop,)
@@ -108,15 +120,17 @@ class TestPublicUsagePattern:
 
     def test_coprocessors_accepts_any_sequence(self):
         """A list or tuple of coprocessors both work, and are normalized to a tuple."""
-        con = qp.Controller(label="c")
-        cop = qp.Coprocessor(coprocessor_fn="decoder", label="gpu", comm_host="192.168.1.3")
+        con = qp.Controller(name="c")
+        cop = qp.Coprocessor(
+            coprocessor_fn="decoder", name="gpu", endpoint=qp.Endpoint("192.168.1.3", 18590)
+        )
         for seq in ([cop], (cop,)):
             dev = qp.Backline(controller=con, coprocessors=seq, transport="rdma")
             assert dev.coprocessors == (cop,)
 
     def test_coprocessors_defaults_to_empty(self):
         """coprocessors may be omitted entirely."""
-        con = qp.Controller(label="c")
+        con = qp.Controller(name="c")
         dev = qp.Backline(controller=con, transport="rdma")
         assert dev.coprocessors == ()
 
@@ -130,11 +144,11 @@ class TestAccessors:
     """Tests for the controller / coprocessors accessors."""
 
     def test_controller(self):
-        assert _device().controller.label == "controller-1"
+        assert _device().controller.name == "controller-1"
 
     def test_coprocessors(self):
         dev = _device(n_coprocessors=3)
-        assert tuple(c.label for c in dev.coprocessors) == ("coproc-0", "coproc-1", "coproc-2")
+        assert tuple(c.name for c in dev.coprocessors) == ("coproc-0", "coproc-1", "coproc-2")
 
     def test_no_coprocessors(self):
         assert _device(n_coprocessors=0).coprocessors == ()
