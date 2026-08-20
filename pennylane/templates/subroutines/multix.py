@@ -258,7 +258,7 @@ class MultiX(Operator2):
         return MultiX(self.bitstring, wires=self.wires)
 
     def pow(self, z: int | float) -> list[Operator2]:
-        # Only encodes the involutive property: MultiX^2 = MultiX
+        # Only encodes the involutive property: MultiX^2 = I
         return super().pow(z % 2)
 
 
