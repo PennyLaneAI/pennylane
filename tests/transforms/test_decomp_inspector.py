@@ -158,12 +158,6 @@ class TestInspectDecompGraph:
             </details>
             """).strip()
 
-    @pytest.mark.xfail(
-        reason="The expected gate counts pin one of several equal-cost graph solutions, and "
-        "the winner depends on graph node insertion order; porting ChangeOpBasis to Operator2 "
-        "flipped an equal-cost tie (weighted costs unchanged). Re-enable once the decomposition "
-        "graph selects among equal-cost decompositions deterministically."
-    )
     def test_work_wires_available(self):
         """Tests that the correct output is produced when there are available work wires."""
 
@@ -295,7 +289,7 @@ class TestInspectDecompGraph:
             Full Expansion Gates: {CNOT: 24, GlobalPhase: 39, RX: 3, RY: 8, RZ: 36}
             Weighted Cost: 71.0
 
-            Decomposition 2 (name: one_zeroed_worker)
+            CHOSEN: Decomposition 2 (name: one_zeroed_worker)
             0: ───────╭●─────●╮────┤  
             1: ───────├●─────●┤────┤  
             2: ───────│──╭●───│────┤  
@@ -325,7 +319,7 @@ class TestInspectDecompGraph:
             Full Expansion Gates: {CNOT: 24, GlobalPhase: 39, RX: 3, RY: 8, RZ: 36}
             Weighted Cost: 71.0
 
-            CHOSEN: Decomposition 6 (name: many_zeroed_workers)
+            Decomposition 6 (name: many_zeroed_workers)
             0: ──────────╭●────────┤  
             1: ───────╭●─│───●╮────┤  
             2: ───────├●─│───●┤────┤  
