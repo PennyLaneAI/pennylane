@@ -327,7 +327,7 @@ def _left_inequalities(
     # To do so, we use the fact that a MultiControlledX with control_values = 0 detects if
     # the register is in state 0, and we shift that state with BasisState before and after.
     # (We don't include the 'after' operation here since it will be uncomputed later.)
-    BasisState(M, wires=nu_wires)
+    BasisState(math.int_to_binary(M, len(nu_wires)), wires=nu_wires)
 
     # TODO: replace this zero-controlled MultiControlledX with MultiTemporaryAND.
     if not keep_eq:
