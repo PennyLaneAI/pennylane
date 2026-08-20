@@ -251,7 +251,7 @@ class TestOneBodyWalk:
 
     @pytest.mark.parametrize("n_powers", [2, 3])
     def test_chebyshev_recursion(self, n_powers):
-        r"""Test that applying the walk n times block-encodes the :math:`n^{th}` Chebyshev polynomial of the operator it encodes"""
+        r"""Test that applying the walk n times block-encodes the :math:`n^{th}` Chebyshev polynomial of the operator it encodes."""
         rng = np.random.default_rng(n_powers)
         a = rng.standard_normal((2, 2))
         op_matrix = (a + a.T) / 2

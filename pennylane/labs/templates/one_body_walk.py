@@ -59,7 +59,7 @@ def one_body_walk(op_matrix, alias_sampling_precision, prep_wires, system_wires,
     Args:
         op_matrix (array): The real symmetric one-body matrix, shape ``(N, N)``, where N is the number
             of spatial orbitals.
-        alias_sampling_precision (int): alias-sampling coefficient precision
+        alias_sampling_precision (int): number of bits needed for alias-sampling coefficient precision.
         prep_wires (Sequence[int]): the full PREP register, reflected by ``R``
         system_wires (Sequence[int]): wires for representing the ``2 N`` system spin-orbitals
         work_wires (Sequence[int]): clean scratch returned to ``|0>``
