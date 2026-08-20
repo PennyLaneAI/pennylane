@@ -14,15 +14,11 @@
 """Scheme-agnostic scaffolding shared by the fragmented-Hamiltonian Trotter templates
 (:class:`~.TrotterCDF` and :class:`~.TrotterCGF`)."""
 
-import importlib.util
-
 from pennylane import compiler, math
 from pennylane.control_flow import for_loop
 from pennylane.ops import CNOT, RZ, IsingZZ, cond
 
 # pylint: disable=too-many-arguments
-
-has_jax = importlib.util.find_spec("jax") is not None
 
 
 def _emit_one_body_rz(angle, target_wire, control_wires, double_phase):
@@ -120,11 +116,6 @@ def _run_trotter_steps(
         merge_leaves (callable): ``(U_prev, U_curr) -> U``.
         transpose_leaf (callable): ``(U) -> U``.
     """
-    if not has_jax:
-        raise ImportError(
-            "jax is required for TrotterCDF/TrotterCGF. Install it with: pip install jax jaxlib"
-        )  # pragma: no cover
-
     if compiler.active():
         wires = math.array(wires, like="jax")
         if len(control_wires) > 0:
