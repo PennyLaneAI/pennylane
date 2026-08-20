@@ -757,7 +757,7 @@ class TestGeneralOperations:
         if cls is qp.GlobalPhase and input_wires:
             pytest.skip("PL 2.0: GlobalPhase no longer acts on wires.")
 
-        base_op = cls(*data, wires=input_wires) if cls is qp.Identity else cls(*data)
+        base_op = cls(*data) if cls is qp.GlobalPhase else cls(*data, wires=input_wires)
         op = qp.ctrl(base_op, control=control_wires)
         tape = QuantumScript([op, qp.X(0), qp.X(1)])
         with warnings.catch_warnings():
