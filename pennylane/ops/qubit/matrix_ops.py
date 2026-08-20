@@ -226,7 +226,7 @@ class QubitUnitary(Operator2):
 
     @staticmethod
     def compute_sparse_matrix(
-        U: TensorLike, wires: WiresLike, unitary_check: bool = False, format="csr"
+        U: TensorLike, wires: WiresLike | None = None, unitary_check: bool = False, format="csr"
     ):  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a sparse matrix.
 

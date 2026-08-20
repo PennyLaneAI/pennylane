@@ -183,6 +183,7 @@ from .patching import Patcher
 from .jax_patches import get_jax_patches
 from .subroutine import subroutine
 from .symbolic_array import symbolic_array
+from .tracing_device import get_tracing_device, tracing_device
 
 if TYPE_CHECKING:
     # pylint: disable=import-outside-toplevel, unused-import
@@ -249,4 +250,6 @@ __all__ = (
     "Patcher",
     "get_jax_patches",
     "symbolic_array",
+    "tracing_device",
+    "get_tracing_device",
 )
