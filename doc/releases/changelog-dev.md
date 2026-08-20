@@ -1308,6 +1308,7 @@
 * Fixed a bug where :func:`~.tape.plxpr_to_tape` raised an error when the program contains
   arithmetic operations performed on mid-circuit measurement values.
   [(#10028)](https://github.com/PennyLaneAI/pennylane/pull/10028)
+
 * Fixed :func:`~pennylane.backline.css_bp_decoder` so the X- and Z-specialized Triton decoders
   stay distinct when bundled behind one dispatcher, and, for the same reason, updated
   :func:`~pennylane.backline.triton_decoder` to own jitting of the raw Triton decoder functions.
