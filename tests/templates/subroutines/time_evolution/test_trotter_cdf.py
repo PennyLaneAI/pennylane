@@ -243,6 +243,7 @@ class TestResourceRule:
 class TestDecomposition:
     """Tests of the registered base decomposition rule."""
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_self_consistent(self, toy_hamiltonian_cdf):
         """The registered base rule is self-consistent with its resource function."""
         ham, num_orbitals = toy_hamiltonian_cdf

@@ -14,7 +14,7 @@
 """Scheme-agnostic scaffolding shared by the fragmented-Hamiltonian Trotter templates
 (:class:`~.TrotterCDF` and :class:`~.TrotterCGF`)."""
 
-from pennylane import compiler, math
+from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
 from pennylane.ops import CNOT, RZ, IsingZZ, cond
 
@@ -116,7 +116,11 @@ def _run_trotter_steps(
         merge_leaves (callable): ``(U_prev, U_curr) -> U``.
         transpose_leaf (callable): ``(U) -> U``.
     """
-    if compiler.active():
+    # Under program capture / compilation the diagonal layers index ``wires`` with traced
+    # ``for_loop`` variables (e.g. ``wires[wire_idx]``). Plain Python sequences raise
+    # ``TracerIntegerConversionError`` on such indexing, so promote the wire labels to a jax
+    # array, turning the lookups into dynamic gathers that structured capture can trace.
+    if compiler.active() or capture.enabled():
         wires = math.array(wires, like="jax")
         if len(control_wires) > 0:
             control_wires = math.array(control_wires, like="jax")
