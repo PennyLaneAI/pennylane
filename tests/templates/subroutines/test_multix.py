@@ -131,6 +131,25 @@ def test_matrix(bitstring, expected_matrix):
     assert np.allclose(op.matrix(), expected_matrix)
 
 
+@pytest.mark.parametrize("sparse_format", ["csr", "csc", "lil", "coo"])
+@pytest.mark.parametrize(
+    "bitstring", [[0], [1], [1, 0], [0, 1, 1], [1, 0, 1, 1], [False, False, True, True]]
+)
+def test_sparse_matrix(bitstring, sparse_format):
+    """Tests that MultiX computes its sparse matrix in the requested format."""
+    wires = range(len(bitstring))
+    op = qp.MultiX(bitstring, wires=wires)
+
+    static_matrix = qp.MultiX.compute_sparse_matrix(bitstring, wires, format=sparse_format)
+    instance_matrix = op.sparse_matrix(format=sparse_format)
+
+    assert qp.MultiX.has_sparse_matrix
+    assert static_matrix.format == sparse_format
+    assert instance_matrix.format == sparse_format
+    assert np.allclose(static_matrix.toarray(), op.matrix())
+    assert np.allclose(instance_matrix.toarray(), op.matrix())
+
+
 @pytest.mark.parametrize(
     ("bitstring", "expected_eigvals"),
     [

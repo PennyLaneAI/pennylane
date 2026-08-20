@@ -14,6 +14,7 @@
 """Contains the MultiX template."""
 
 import numpy as np
+from scipy import sparse
 
 from pennylane import compiler, math
 from pennylane.capture import enabled
@@ -196,6 +197,40 @@ class MultiX(Operator2):
             matrix = math.kron(matrix, _local_matrix(i))
 
         return matrix
+
+    @staticmethod
+    # pylint: disable-next=arguments-differ
+    def compute_sparse_matrix(
+        bitstring: TensorLike, wires: WiresLike, format: str = "csr"
+    ) -> sparse.spmatrix:
+        r"""
+        Representation of the operator as a canonical sparse matrix in the computational basis.
+
+        Args:
+            bitstring (TensorLike): A one-dimensional Boolean array. Integer arrays containing only
+                ``0`` or ``1`` entries are accepted and cast to Boolean.
+            wires (WiresLike): The wires on which ``MultiX`` acts. The number of wires must
+                match the length of ``bitstring``.
+            format (str): Format of the returned SciPy sparse matrix, for example ``"csr"``.
+
+        Returns:
+            scipy.sparse.spmatrix: The canonical sparse matrix representing
+            ``MultiX(bitstring, wires)``.
+        """
+        # MultiX(bitstring) is always a permutation matrix sending |x> to |x (+) b>
+        # where x = (x0, ..., xn-1) is a basis state and b = (b0, ..., bn-1) is the bitstring.
+        bitstring, wires = MultiX._canonicalize_validate_and_cast_inputs(bitstring, wires)
+
+        dimension = 2 ** len(wires)
+        bit_mask = sum(int(bit) << (len(wires) - index - 1) for index, bit in enumerate(bitstring))
+
+        basis_states = np.arange(0, dimension, 1, dtype=int)
+        flipped_states = basis_states ^ bit_mask
+        matrix = sparse.csr_matrix(
+            (np.ones(dimension, dtype=int), (basis_states, flipped_states)),
+            shape=(dimension, dimension),
+        )
+        return matrix.asformat(format)
 
     @staticmethod
     # pylint: disable-next=arguments-differ
