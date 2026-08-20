@@ -158,6 +158,32 @@ class MultiX(Operator2):
 
         return matrix
 
+    @staticmethod
+    # pylint: disable-next=arguments-differ
+    def compute_eigvals(bitstring: TensorLike, wires: WiresLike) -> TensorLike:
+        r"""Eigenvalues of the operator.
+
+        Args:
+            bitstring (TensorLike): A one-dimensional array containing only ``0`` or ``1`` entries.
+            wires (WiresLike): The wires on which ``MultiX`` acts. The number of wires must
+                match the length of ``bitstring``.
+
+        Returns:
+            TensorLike: The eigenvalues of ``MultiX(bitstring, wires)``.
+        """
+        bitstring, wires = MultiX._canonicalize_inputs(bitstring, wires)
+        MultiX._validate_inputs(bitstring, wires)
+
+        identity_eigvals = math.convert_like([1, 1], bitstring)
+        pauli_x_eigvals = math.convert_like([1, -1], bitstring)
+
+        eigvals = math.ones(1, like=bitstring)
+        for i in range(len(wires)):
+            local_eigvals = identity_eigvals + bitstring[i] * (pauli_x_eigvals - identity_eigvals)
+            eigvals = math.kron(eigvals, local_eigvals)
+
+        return eigvals
+
     def adjoint(self) -> "MultiX":
         """Return the adjoint of the operator."""
         return MultiX(self.bitstring, wires=self.wires)

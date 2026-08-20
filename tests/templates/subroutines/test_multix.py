@@ -92,9 +92,41 @@ def test_matrix(bitstring, expected_matrix):
     assert np.allclose(op.matrix(), expected_matrix)
 
 
+@pytest.mark.parametrize(
+    ("bitstring", "expected_eigvals"),
+    [
+        ([0], [1, 1]),
+        ([1], [1, -1]),
+        ([1, 0], [1, 1, -1, -1]),
+        ([0, 1], [1, -1, 1, -1]),
+        ([0, 1, 1], [1, -1, -1, 1, 1, -1, -1, 1]),
+    ],
+)
+def test_eigvals(bitstring, expected_eigvals):
+    """Tests that MultiX computes the eigenvalues correctly."""
+    wires = range(len(bitstring))
+    op = qp.MultiX(bitstring, wires=wires)
+
+    computed_eigvals = qp.MultiX.compute_eigvals(bitstring, wires)
+
+    assert qp.math.allclose(computed_eigvals, expected_eigvals)
+    assert qp.math.allclose(op.eigvals(), expected_eigvals)
+
+
+@pytest.mark.jax
+def test_jit_eigvals():
+    """Tests that MultiX eigenvalue computations work with JAX bitstrings."""
+
+    import jax  # pylint: disable=import-outside-toplevel
+
+    bitstring = jax.numpy.array([1, 0])
+    eigvals_fn = jax.jit(lambda bits: qp.MultiX.compute_eigvals(bits, wires=[0, 1]))
+    assert qp.math.allclose(eigvals_fn(bitstring), [1, 1, -1, -1])
+
+
 @pytest.mark.jax
 def test_jit_matrix():
-    """Tests that MultiX matrix computation supports a dynamically traced bitstring."""
+    """Tests that MultiX matrix computations work with JAX bitstrings."""
 
     import jax  # pylint: disable=import-outside-toplevel
 
