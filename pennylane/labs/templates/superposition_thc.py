@@ -378,7 +378,7 @@ def _superposition_thc_resources(num_mu_wires, num_work_wires, M, N):
     def _add(rep, count):
         resources[rep] = resources.get(rep, 0) + count
 
-    _add(resource_rep(GlobalPhase), 1)
+    _add(GlobalPhase, 1)
     _add(Hadamard, 6 * n)
     _add(X, 4 * n + 4)
     _add(resource_rep(RY), 3)
