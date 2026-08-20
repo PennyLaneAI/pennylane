@@ -506,11 +506,11 @@ class TestOperatorInit:
     def test_operators_without_fixed_shape_wires_raise_error_on_construction(self):
         """Tests that operators cannot be constructed with wires of unbound length."""
 
-        with pytest.raises(ValueError, match=""):
+        with pytest.raises(ValueError, match="must be constructed with wires of fixed length"):
             _ = ParametrizedHybridOp(
                 Float[3], Wire[-1], DynOp(Float[1], Wire[1])
             )  # wire is not fixed
-        with pytest.raises(ValueError, match=""):
+        with pytest.raises(ValueError, match="must be constructed with wires of fixed length"):
             _ = ParametrizedHybridOp(
                 Float[3], Wire[3], DynOp(Float[2], Wire[-1])
             )  # hybrid wire is not fixed
