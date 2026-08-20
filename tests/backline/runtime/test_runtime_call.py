@@ -18,6 +18,8 @@ Declared symbols land in a process-wide registry that is never cleared, so every
 here has a name of its own.
 """
 
+# pylint: disable=too-few-public-methods
+
 import numpy as np
 import pytest
 
@@ -383,19 +385,19 @@ class TestResolveSignature:
 class TestOutsideATrace:
     """A recorded call belongs in a compiled program."""
 
-    def test_a_local_call_outside_a_trace_is_refused(self):
-        """Without a JAX trace, no jaxpr can record the call, so it is refused eagerly."""
+    @pytest.mark.parametrize(
+        ("symbol", "declare_kwargs", "call_kwargs"),
+        [
+            ("outside_trace_local", {"library": "/opt/libx.so"}, {}),
+            ("outside_trace_dispatched", {}, {"address": "h:1"}),
+        ],
+    )
+    def test_a_call_outside_a_trace_is_refused(self, symbol, declare_kwargs, call_kwargs):
+        """Local and dispatched calls both refuse eagerly outside a JAX trace."""
         pytest.importorskip("jax")
-        qp.runtime_declare("outside_trace_local", "(u64) -> i32", library="/opt/libx.so")
+        qp.runtime_declare(symbol, "(u64) -> i32", **declare_kwargs)
         with pytest.raises(RuntimeError, match="outside a compiled program"):
-            qp.runtime_call("outside_trace_local", 0)
-
-    def test_a_dispatched_call_outside_a_trace_is_refused(self):
-        """The dispatched form is refused the same way; the ``address`` is beside the point."""
-        pytest.importorskip("jax")
-        qp.runtime_declare("outside_trace_dispatched", "(u64) -> i32")
-        with pytest.raises(RuntimeError, match="outside a compiled program"):
-            qp.runtime_call("outside_trace_dispatched", 0, address="h:1")
+            qp.runtime_call(symbol, 0, **call_kwargs)
 
 
 if __name__ == "__main__":

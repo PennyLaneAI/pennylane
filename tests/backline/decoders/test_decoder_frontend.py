@@ -37,6 +37,7 @@ pytestmark = [
     pytest.mark.skipif(not _has_cuda_target(), reason="Triton decoder tests require a CUDA device"),
 ]
 
+from pennylane.backline import CoprocessorFunction, css_bp_decoder, triton_decoder
 from pennylane.backline.decoders.triton import decoder_frontend as frontend
 
 
@@ -190,17 +191,14 @@ class TestBuildCssBpDecoder:
             frontend._to_numpy(H)
 
 
+@pytest.mark.skipif(shutil.which("nvcc") is None, reason="nvcc compiler not available")
 class TestPublicDecoderWrappers:
     """The public ``triton_decoder`` / ``css_bp_decoder`` entry points wrap the internal builders
-    and return a :class:`~.CoprocessorFunction` handle. Kept separate from the internal-builder
-    tests so the wrapping behavior (not the compilation) is what's under assertion.
+    and return a :class:`~.CoprocessorFunction` handle.
     """
 
-    @pytest.mark.skipif(shutil.which("nvcc") is None, reason="nvcc compiler not available")
     def test_triton_decoder_returns_a_coprocessor_function(self):
         """``qp.backline.triton_decoder`` compiles and wraps the result in a CoprocessorFunction."""
-        from pennylane.backline import CoprocessorFunction, triton_decoder
-
         fn = triton_decoder(
             (_echo_decoder,),
             platform=_cuda_platform(),
@@ -212,11 +210,8 @@ class TestPublicDecoderWrappers:
         assert fn.lib_path is not None
         assert fn.lib_path.endswith(".so")
 
-    @pytest.mark.skipif(shutil.which("nvcc") is None, reason="nvcc compiler not available")
     def test_css_bp_decoder_returns_a_coprocessor_function(self):
         """``qp.backline.css_bp_decoder`` compiles and wraps the result in a CoprocessorFunction."""
-        from pennylane.backline import CoprocessorFunction, css_bp_decoder
-
         hx = np.array([[1, 0], [0, 1]], dtype=int)
         hz = np.array([[1, 1], [0, 1]], dtype=int)
 
