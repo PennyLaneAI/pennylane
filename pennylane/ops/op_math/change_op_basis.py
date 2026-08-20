@@ -25,7 +25,7 @@ from pennylane import capture, math
 from pennylane.core import queuing
 from pennylane.core.operator import Operator, Operator2
 from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
-from pennylane.decomposition import CompressedResourceOp, add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops.op_math import adjoint, ctrl, prod
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract, flip_zero_control
@@ -91,24 +91,6 @@ def _convert_to_prod(op_or_func):
     raise TypeError(
         f"The parameters to change_op_basis must be Operator or Callable, not {type(op_or_func)}"
     )
-
-
-def _validate_operands(*operands):
-    # pylint: disable=import-outside-toplevel
-    from pennylane.ops.mid_measure import MidMeasure, PauliMeasure
-
-    mcm_types = (MidMeasure, PauliMeasure)
-    if any(
-        isinstance(op, mcm_types)
-        or isinstance(op, CompressedResourceOp)
-        and issubclass(op.op_type, mcm_types)
-        for op in operands
-    ):
-        raise ValueError("Composite operators of mid-circuit measurements are not supported.")
-
-    valid_operands = (Operator, CompressedResourceOp)
-    if not all(isinstance(op, valid_operands) or _is_abstract_operator(op) for op in operands):
-        raise TypeError("ChangeOpBasis operands must be operators.")
 
 
 # pylint: disable=inconsistent-return-statements
@@ -284,8 +266,6 @@ class ChangeOpBasis(CompositeOp2):
         if uncompute_op is None:
             uncompute_op = adjoint(compute_op)
 
-        _validate_operands(compute_op, target_op, uncompute_op)
-
         super().__init__((uncompute_op, target_op, compute_op))
 
     def _operator2_args(self, operands, _init_pauli_rep):
@@ -298,7 +278,6 @@ class ChangeOpBasis(CompositeOp2):
             bound_args.arguments["uncompute_op"] = _adjoint_abstract(
                 bound_args.arguments["compute_op"]
             )
-        _validate_operands(*bound_args.arguments.values())
         super().__abstract_init__(*bound_args.args, **bound_args.kwargs)
         if isinstance(self._wires, Wires):
             self._wires = Wire[0]
