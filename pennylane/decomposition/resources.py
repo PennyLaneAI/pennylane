@@ -22,67 +22,9 @@ from dataclasses import dataclass, field
 from functools import cached_property
 
 import pennylane as qp
-from pennylane.core.operator import Operator
+from pennylane.core.operator import Operator, Operator2, abstractify
 
 from .utils import to_name
-
-
-@dataclass(frozen=False)
-class Resources:
-    r"""Stores resource estimates.
-
-    Args:
-        gate_counts (dict): dictionary mapping operator types to their number of occurrences.
-        weighted_cost (float): the cumulative weight of the gates.
-    """
-
-    gate_counts: dict[CompressedResourceOp, int] = field(default_factory=dict)
-    weighted_cost: float = field(default=None)
-
-    def __post_init__(self):
-        """Verify that all gate counts are non-zero."""
-        assert all(v > 0 for v in self.gate_counts.values())
-        if self.weighted_cost is None:
-            self.weighted_cost = sum(count for _, count in self.gate_counts.items())
-        assert self.weighted_cost >= 0.0
-
-    @cached_property
-    def num_gates(self) -> int:
-        """The total number of gates."""
-        return sum(self.gate_counts.values())
-
-    def __add__(self, other: Resources):
-        return Resources(
-            _combine_dict(self.gate_counts, other.gate_counts),
-            weighted_cost=self.weighted_cost + other.weighted_cost,
-        )
-
-    def __mul__(self, scalar: int):
-        return Resources(
-            _scale_dict(self.gate_counts, scalar), weighted_cost=self.weighted_cost * scalar
-        )
-
-    __rmul__ = __mul__
-
-    def __repr__(self):
-        return f"<num_gates={self.num_gates}, gate_counts={self.gate_counts}, weighted_cost={self.weighted_cost}>"
-
-
-def _combine_dict(dict1: dict, dict2: dict):
-    r"""Combines two dictionaries and adds values of common keys."""
-
-    combined_dict = dict1.copy()
-
-    for k, v in dict2.items():
-        combined_dict[k] = combined_dict.get(k, 0) + v
-
-    return combined_dict
-
-
-def _scale_dict(dict1: dict, scalar: int):
-    r"""Scales the values in a dictionary with a scalar."""
-
-    return {key: scalar * value for key, value in dict1.items()}
 
 
 class CompressedResourceOp:
@@ -166,11 +108,85 @@ class CompressedResourceOp:
         return f"{self.op_type.__name__}({params})" if self.params else self.op_type.__name__
 
 
+AbstractOperatorLike = CompressedResourceOp | Operator2
+
+
+@abstractify.register(CompressedResourceOp)
+def _abstractify_resource_rep(op_rep: CompressedResourceOp):
+    return op_rep
+
+
+@dataclass(frozen=False)
+class Resources:
+    r"""Stores resource estimates.
+
+    Args:
+        gate_counts (dict): dictionary mapping operator types to their number of occurrences.
+        weighted_cost (float): the cumulative weight of the gates.
+    """
+
+    gate_counts: dict[AbstractOperatorLike, int] = field(default_factory=dict)
+    weighted_cost: float = field(default=None)
+
+    def __post_init__(self):
+        """Verify that all gate counts are non-zero."""
+        assert all(v > 0 for v in self.gate_counts.values())
+        if self.weighted_cost is None:
+            self.weighted_cost = sum(count for _, count in self.gate_counts.items())
+        assert self.weighted_cost >= 0.0
+
+    @cached_property
+    def num_gates(self) -> int:
+        """The total number of gates."""
+        return sum(self.gate_counts.values())
+
+    def __add__(self, other: Resources):
+        return Resources(
+            _combine_dict(self.gate_counts, other.gate_counts),
+            weighted_cost=self.weighted_cost + other.weighted_cost,
+        )
+
+    def __mul__(self, scalar: int):
+        return Resources(
+            _scale_dict(self.gate_counts, scalar), weighted_cost=self.weighted_cost * scalar
+        )
+
+    __rmul__ = __mul__
+
+    def __repr__(self):
+        gate_counts = _gate_count_dict_to_str(self.gate_counts)
+        return f"<num_gates={self.num_gates}, gate_counts={gate_counts}, weighted_cost={self.weighted_cost}>"
+
+
+def _combine_dict(dict1: dict, dict2: dict):
+    r"""Combines two dictionaries and adds values of common keys."""
+
+    combined_dict = dict1.copy()
+
+    for k, v in dict2.items():
+        combined_dict[k] = combined_dict.get(k, 0) + v
+
+    return combined_dict
+
+
+def _gate_count_dict_to_str(gate_counts):
+    str_op = ((str(op), count) for op, count in gate_counts.items())
+    inner = ", ".join(f"{op}: {count}" for op, count in sorted(str_op))
+    return f"{{{inner}}}"
+
+
+def _scale_dict(dict1: dict, scalar: int):
+    r"""Scales the values in a dictionary with a scalar."""
+
+    return {key: scalar * value for key, value in dict1.items()}
+
+
 def _make_hashable(d):
     if isinstance(d, dict):
         return tuple(
             sorted(
-                ((_make_hashable(k), _make_hashable(v)) for k, v in d.items()), key=lambda x: x[0]
+                ((_make_hashable(k), _make_hashable(v)) for k, v in d.items()),
+                key=lambda x: repr(x[0]),
             )
         )
     if isinstance(d, CompressedResourceOp):
@@ -231,72 +247,7 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
     Returns:
         pennylane.decomposition.resources.CompressedResourceOp: a lightweight representation of the operator.
 
-    **Example**
-
-    The resource parameters of an operator are a minimal set of information required to determine
-    the resource estimate of its decompositions. To check the required set of keyword arguments
-    for an operator type, refer to the ``resource_keys`` attribute of the operator class:
-
-    >>> qp.MultiRZ.resource_keys
-    {'num_wires'}
-
-    When calling ``resource_rep`` for ``MultiRZ``, ``num_wires`` must be provided as a keyword argument.
-
-    >>> rep = resource_rep(qp.MultiRZ, num_wires=3)
-    >>> rep
-    MultiRZ(num_wires=3)
-    >>> type(rep)
-    <class 'pennylane.decomposition.resources.CompressedResourceOp'>
-
-    .. seealso:: See how this function is used in the context of defining a decomposition rule using :func:`~pennylane.register_resources`
-
-    .. details::
-        :title: Usage Details
-
-        The same approach applies also to symbolic operators. For example, if the decomposition
-        of an operator contains a controlled operation:
-
-        .. code-block:: python
-
-            def my_decomp(wires):
-                qp.ctrl(
-                    qp.MultiRZ(wires=wires[:3]),
-                    control=wires[3:5],
-                    control_values=[0, 1],
-                    work_wires=wires[5]
-                )
-
-        To declare this controlled operator in the resource function, we find the resource keys
-        of ``qp.ops.Controlled``:
-
-        >>> print(sorted(qp.ops.Controlled.resource_keys))
-        ['base_class', 'base_params', 'num_control_wires', 'num_work_wires', 'num_zero_control_values', 'work_wire_type']
-
-        Then the resource representation can be created as follows:
-
-        >>> qp.resource_rep(
-        ...     qp.ops.Controlled,
-        ...     base_class=qp.ops.MultiRZ,
-        ...     base_params={'num_wires': 3},
-        ...     num_control_wires=2,
-        ...     num_zero_control_values=1,
-        ...     num_work_wires=1,
-        ...     work_wire_type='borrowed'
-        ... )
-        Controlled(MultiRZ(num_wires=3), num_control_wires=2, num_work_wires=1, num_zero_control_values=1, work_wire_type=borrowed)
-
-        Alternatively, use the utility function :func:`~pennylane.decomposition.controlled_resource_rep`:
-
-        >>> qp.decomposition.controlled_resource_rep(
-        ...     base_class=qp.ops.MultiRZ,
-        ...     base_params={'num_wires': 3},
-        ...     num_control_wires=2,
-        ...     num_zero_control_values=1,
-        ...     num_work_wires=1
-        ... )
-        Controlled(MultiRZ(num_wires=3), num_control_wires=2, num_work_wires=1, num_zero_control_values=1, work_wire_type=borrowed)
-
-        .. seealso:: :func:`~pennylane.decomposition.controlled_resource_rep`, :func:`~pennylane.decomposition.adjoint_resource_rep`, :func:`~pennylane.decomposition.pow_resource_rep`
+    .. seealso:: :func:`~pennylane.decomposition.controlled_resource_rep`, :func:`~pennylane.decomposition.adjoint_resource_rep`, :func:`~pennylane.decomposition.pow_resource_rep`
 
     """
     _validate_resource_rep(op_type, params)
@@ -312,8 +263,6 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
         base_rep = resource_rep(params["base_class"], **params["base_params"])
         params["base_class"] = base_rep.op_type
         params["base_params"] = base_rep.params
-    if op_type is qp.BasisEmbedding:
-        op_type = qp.BasisState
     return CompressedResourceOp(op_type, params)
 
 
@@ -344,10 +293,6 @@ def controlled_resource_rep(  # pylint: disable=too-many-arguments, too-many-pos
 
     _validate_resource_rep(base_class, base_params)
 
-    # Normalize base class aliases (e.g., BasisEmbedding -> BasisState)
-    if base_class is qp.BasisEmbedding:
-        base_class = qp.BasisState
-
     # Flattens nested controlled structures.
     if base_class in (qp.ops.Controlled, qp.ops.ControlledOp):
         num_control_wires += base_params["num_control_wires"]
@@ -376,17 +321,6 @@ def controlled_resource_rep(  # pylint: disable=too-many-arguments, too-many-pos
     # Special case for controlled qubit unitaries
     if base_class in (qp.QubitUnitary, qp.ControlledQubitUnitary):
         return _controlled_qubit_unitary_rep(
-            base_class,
-            base_params,
-            num_control_wires,
-            num_zero_control_values,
-            num_work_wires,
-            work_wire_type,
-        )
-
-    # Special case for when the base class is X
-    if base_class in (qp.X, qp.MultiControlledX):
-        return _controlled_x_rep(
             base_class,
             base_params,
             num_control_wires,
@@ -438,10 +372,13 @@ def change_op_basis_resource_rep(
         uncompute_op: the compressed resource representation of the uncompute operator
 
     """
-    compute_op = auto_wrap(compute_op)
-    target_op = auto_wrap(target_op)
-    uncompute_op = uncompute_op or adjoint_resource_rep(compute_op.op_type, compute_op.params)
-    uncompute_op = auto_wrap(uncompute_op)
+    # pylint: disable=import-outside-toplevel
+    from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+
+    compute_op = abstractify(compute_op)
+    target_op = abstractify(target_op)
+    uncompute_op = uncompute_op or _adjoint_abstract(compute_op)
+    uncompute_op = abstractify(uncompute_op)
     return CompressedResourceOp(
         qp.ops.ChangeOpBasis,
         {
@@ -473,18 +410,7 @@ def custom_ctrl_op_to_base():
     """The set of custom controlled operations."""
 
     return {
-        qp.CNOT: qp.X,
-        qp.Toffoli: qp.X,
-        qp.CZ: qp.Z,
-        qp.CCZ: qp.Z,
-        qp.CY: qp.Y,
-        qp.CSWAP: qp.SWAP,
-        qp.CH: qp.H,
-        qp.CRX: qp.RX,
         qp.CRY: qp.RY,
-        qp.CRZ: qp.RZ,
-        qp.CRot: qp.Rot,
-        qp.ControlledPhaseShift: qp.PhaseShift,
     }
 
 
@@ -541,63 +467,6 @@ def _controlled_qubit_unitary_rep(  # pylint: disable=too-many-arguments, too-ma
         num_work_wires=num_work_wires,
         work_wire_type=work_wire_type,
     )
-
-
-def _controlled_x_rep(  # pylint: disable=too-many-arguments, too-many-positional-arguments
-    base_class,
-    base_params,
-    num_control_wires,
-    num_zero_control_values,
-    num_work_wires,
-    work_wire_type="borrowed",
-) -> CompressedResourceOp | None:
-    """Helper function that handles custom logic for controlled X gates."""
-
-    if base_class is qp.X:
-        if num_control_wires == 1 and num_zero_control_values == 0:
-            return resource_rep(qp.CNOT)
-        if num_control_wires == 2 and num_zero_control_values == 0 and num_work_wires == 0:
-            return resource_rep(qp.Toffoli)
-        return resource_rep(
-            qp.MultiControlledX,
-            num_control_wires=num_control_wires,
-            num_zero_control_values=num_zero_control_values,
-            num_work_wires=num_work_wires,
-            work_wire_type=work_wire_type,
-        )
-
-    # base_class is qp.MultiControlledX:
-    num_control_wires += base_params["num_control_wires"]
-    num_zero_control_values += base_params["num_zero_control_values"]
-    work_wire_type = resolve_work_wire_type(
-        base_params["num_work_wires"], base_params["work_wire_type"], num_work_wires, work_wire_type
-    )
-    num_work_wires += base_params["num_work_wires"]
-    return resource_rep(
-        qp.MultiControlledX,
-        num_control_wires=num_control_wires,
-        num_zero_control_values=num_zero_control_values,
-        num_work_wires=num_work_wires,
-        work_wire_type=work_wire_type,
-    )
-
-
-def auto_wrap(op_type):
-    """Conveniently wrap an operator type in a resource representation."""
-    if isinstance(op_type, CompressedResourceOp):
-        return op_type
-    if not issubclass(op_type, Operator):
-        raise TypeError(
-            "The keys of the dictionary returned by the resource function must be a subclass of "
-            "Operator or a CompressedResourceOp constructed with qp.resource_rep"
-        )
-    try:
-        return resource_rep(op_type)
-    except TypeError as e:
-        raise TypeError(
-            f"Operator {op_type.__name__} has non-empty resource_keys. A resource "
-            f"representation must be explicitly constructed using qp.resource_rep"
-        ) from e
 
 
 @to_name.register

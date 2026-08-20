@@ -24,13 +24,13 @@ from functools import lru_cache
 import numpy as np
 
 from pennylane import capture
+from pennylane.core.queuing import QueuingManager
 from pennylane.drawer.tape_mpl import _add_operation_to_drawer
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.math import is_abstract, isscalar, ndim, unwrap
 from pennylane.ops.mid_measure import MeasurementValue, MidMeasure, measure
 from pennylane.ops.op_math import Conditional, adjoint
 from pennylane.ops.qubit import RX, RY, H, PhaseShift, S
-from pennylane.queuing import QueuingManager
 from pennylane.transforms import transform
 from pennylane.wires import Wires
 
@@ -420,7 +420,7 @@ class ParametricMidMeasure(MidMeasure):
 
     def __repr__(self):
         """Representation of this class."""
-        return f"{self._shortname}_{self.plane.lower()}(wires={self.wires.tolist()}, angle={self.angle})"
+        return f"{self._shortname}_{self.plane.lower()}(wires={self.wires}, angle={self.angle})"
 
     def diagonalizing_gates(self):
         """Decompose to a diagonalizing gate and a standard MCM in the computational basis"""
@@ -499,7 +499,7 @@ class XMidMeasure(ParametricMidMeasure):
 
     def __repr__(self):
         """Representation of this class."""
-        return f"{self._shortname}(wires={self.wires.tolist()})"
+        return f"{self._shortname}(wires={self.wires})"
 
     def label(self, decimals: int = None, base_label: Iterable[str] = None, cache: dict = None):
         r"""How the mid-circuit measurement is represented in diagrams and drawings.
@@ -563,7 +563,7 @@ class YMidMeasure(ParametricMidMeasure):
 
     def __repr__(self):
         """Representation of this class."""
-        return f"{self._shortname}(wires={self.wires.tolist()})"
+        return f"{self._shortname}(wires={self.wires})"
 
     def label(self, decimals: int = None, base_label: str = None, cache: dict = None):
         r"""How the mid-circuit measurement is represented in diagrams and drawings.

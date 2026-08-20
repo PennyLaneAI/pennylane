@@ -103,7 +103,7 @@ def trotter_fragmented(evolution_time, num_trotter_steps, hamiltonian, wires, co
 
     Or check the quantum resources required for this task:
 
-    >>> specs = qp.specs(trotter_circuit)()["resources"].gate_types
+    >>> specs = qp.specs(trotter_circuit)()["resources"].quantum_operations
     >>> specs
     {'PhaseShift': 1,
      'IsingZZ': 180,
@@ -263,7 +263,6 @@ def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, fra
     if frag_scheme == "cdf":
         num_cas = Z.shape[0]
 
-        @qp.for_loop(2 * num_cas - 1)
         def zz_rotations(wire_idx0):
 
             @qp.for_loop(wire_idx0 + 1, 2 * num_cas)
@@ -285,7 +284,8 @@ def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, fra
             if control_wires is not None:
                 qp.CNOT([control_wires[0], wires[wire_idx0]])
 
-        zz_rotations()
+        for wire_idx0 in range(2 * num_cas - 1):
+            zz_rotations(wire_idx0)
     else:
         num_modes = Z.shape[0]
         n_states = Z.shape[2]

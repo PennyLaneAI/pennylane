@@ -84,7 +84,7 @@ Changing to ``shots=None`` allows computing the analytic gradient:
 >>> print_grad()
 [-0.09983342]
 
-.. _Adjoint differentation:
+.. _Adjoint differentiation:
 
 Adjoint differentiation
 ~~~~~~~~~~~~~~~~~~~~~~~

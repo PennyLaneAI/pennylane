@@ -22,9 +22,9 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane import queuing
-from pennylane.measurements import MeasurementValue
+from pennylane.core import queuing
 from pennylane.ops import RX
+from pennylane.ops.mid_measure import MeasurementValue
 from pennylane.wires import Wires
 
 has_openqasm = True

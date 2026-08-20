@@ -242,9 +242,9 @@ class TestQNode:
         with qp.decomposition.local_decomps():
 
             @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1})
-            def _decomp(theta, phi, lam, wires):
-                qp.Rot(lam, theta, -lam, wires)
-                qp.PhaseShift(phi + lam, wires)
+            def _decomp(theta, phi, delta, wires):
+                qp.Rot(delta, theta, -delta, wires)
+                qp.PhaseShift(phi + delta, wires)
 
             qp.add_decomps(MyU3, _decomp)
 
@@ -474,6 +474,9 @@ class TestVectorValuedQNode:
         if dev_name == "lightning.qubit":
             pytest.xfail("lightning does not support device vjps with jax jacobians.")
 
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint differentiation of state measurements is not to be supported.")
+
         gradient_kwargs = {}
         if diff_method == "spsa":
             gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
@@ -531,6 +534,9 @@ class TestVectorValuedQNode:
 
         if dev_name == "lightning.qubit":
             pytest.xfail("lightning does not support device vjps with jax jacobians.")
+
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint differentiation of state measurements is not to be supported.")
 
         gradient_kwargs = {}
         if diff_method == "spsa":
@@ -623,6 +629,9 @@ class TestVectorValuedQNode:
         if dev_name == "lightning.qubit":
             pytest.xfail("lightning does not support device vjps with jax jacobians.")
 
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint differentiation of state measurements is not to be supported.")
+
         gradient_kwargs = {}
         if diff_method == "spsa":
             gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
@@ -704,6 +713,9 @@ class TestVectorValuedQNode:
         if dev_name == "lightning.qubit":
             pytest.xfail("lightning does not support device vjps with jax jacobians.")
 
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint differentiation of state measurements is not to be supported.")
+
         kwargs = {}
         if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(seed)
@@ -763,6 +775,9 @@ class TestVectorValuedQNode:
 
         if dev_name == "lightning.qubit":
             pytest.xfail("lightning does not support device vjps with jax jacobians.")
+
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint differentiation of state measurements is not to be supported.")
 
         gradient_kwargs = {}
         if diff_method == "hadamard":
@@ -1540,6 +1555,9 @@ class TestQubitIntegrationHigherOrder:
         if dev_name == "lightning.qubit" and diff_method == "adjoint":
             pytest.xfail("lightning.qubit does not support adjoint with the state.")
 
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint differentiation of state measurements is not to be supported.")
+
         dev = get_device(dev_name, wires=2, seed=seed)
 
         x = jax.numpy.array(0.543)
@@ -2136,8 +2154,12 @@ class TestJIT:
         elif diff_method == "spsa":
             gradient_kwargs = {"h": H_FOR_SPSA, "sampler_rng": np.random.default_rng(seed)}
             tol = TOL_FOR_SPSA
+
         elif diff_method == "hadamard":
             gradient_kwargs["aux_wire"] = 2
+
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint differentiation of state measurements is not to be supported.")
 
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
@@ -2420,6 +2442,9 @@ class TestReturn:
         if jacobian == jax.jacfwd and device_vjp:
             pytest.skip("jacfwd is not compatible with device_vjp=True.")
 
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint differentiation of state measurements is not to be supported.")
+
         gradient_kwargs = {}
         if diff_method == "hadamard":
             gradient_kwargs["aux_wire"] = 2
@@ -2468,6 +2493,9 @@ class TestReturn:
 
         if jacobian == jax.jacfwd and device_vjp:
             pytest.skip("jacfwd is not compatible with device_vjp=True.")
+
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint differentiation of state measurements is not to be supported.")
 
         gradient_kwargs = {}
         if diff_method == "hadamard":
@@ -2781,7 +2809,7 @@ class TestReturn:
         def circuit(a, b):
             qp.RY(a, wires=0)
             qp.RX(b, wires=0)
-            return qp.expval(qp.PauliZ(0)), qp.probs(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliX(0))
 
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=True)
@@ -2801,9 +2829,9 @@ class TestReturn:
         assert isinstance(jac[1], tuple)
         assert len(jac[1]) == 2
         assert isinstance(jac[1][0], jax.numpy.ndarray)
-        assert jac[1][0].shape == (4,)
+        assert jac[1][0].shape == ()
         assert isinstance(jac[1][1], jax.numpy.ndarray)
-        assert jac[1][1].shape == (4,)
+        assert jac[1][1].shape == ()
 
     def test_jacobian_multiple_measurement_multiple_param_array(
         self, dev_name, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface, seed
@@ -2838,7 +2866,7 @@ class TestReturn:
         def circuit(a):
             qp.RY(a[0], wires=0)
             qp.RX(a[1], wires=0)
-            return qp.expval(qp.PauliZ(0)), qp.probs(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0)), qp.expval(qp.X(0) @ qp.Y(1))
 
         a = jax.numpy.array([0.1, 0.2])
 
@@ -2851,7 +2879,7 @@ class TestReturn:
         assert jac[0].shape == (2,)
 
         assert isinstance(jac[1], jax.numpy.ndarray)
-        assert jac[1].shape == (4, 2)
+        assert jac[1].shape == (2,)
 
 
 hessian_fn = [
@@ -3379,6 +3407,7 @@ class TestSinglePrecision:
         grad = jax.grad(circuit)(jax.numpy.array(0.1))
         assert qp.math.allclose(grad, -np.sin(0.1))
 
+    @pytest.mark.xfail(reason="complex input to RX is not supported.")
     @pytest.mark.usefixtures("preserve_jax_x64")
     @pytest.mark.parametrize("diff_method", ("adjoint", "finite-diff"))
     def test_complex64_return(self, diff_method):

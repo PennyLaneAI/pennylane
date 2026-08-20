@@ -60,7 +60,7 @@ class TestMutualInfoUnitTests:
         assert repr(m1) == "MutualInfo(wires0=[0], wires1=[1], log_base=None)"
 
     def test_hash(self):
-        """Test the hash property includes the log_base property and the separation of the wires into two subsytems."""
+        """Test the hash property includes the log_base property and the separation of the wires into two subsystems."""
         m1 = MutualInfoMP(wires=[Wires(0), Wires(1)], log_base=2)
         m2 = MutualInfoMP(wires=[Wires(0), Wires(1)], log_base=10)
         assert hash(m1) != hash(m2)
@@ -205,7 +205,9 @@ class TestIntegration:
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed", "lightning.qubit"])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
-    @pytest.mark.parametrize("params", zip(np.linspace(0, np.pi, 8), np.linspace(0, 2 * np.pi, 8)))
+    @pytest.mark.parametrize(
+        "params", list(zip(np.linspace(0, np.pi, 8), np.linspace(0, 2 * np.pi, 8)))
+    )
     def test_qnode_mutual_info(self, device, interface, params):
         """Test that the measurement process for mutual information works for QNodes
         by comparing against the mutual information transform"""
@@ -262,7 +264,9 @@ class TestIntegration:
         assert np.allclose(actual, expected)
 
     @pytest.mark.jax
-    @pytest.mark.parametrize("params", zip(np.linspace(0, np.pi, 8), np.linspace(0, 2 * np.pi, 8)))
+    @pytest.mark.parametrize(
+        "params", list(zip(np.linspace(0, np.pi, 8), np.linspace(0, 2 * np.pi, 8)))
+    )
     @pytest.mark.parametrize("interface", ["jax-jit"])
     def test_qnode_mutual_info_jax_jit(self, params, interface):
         """Test that the measurement process for mutual information works for QNodes

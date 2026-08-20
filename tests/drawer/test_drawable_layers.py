@@ -20,13 +20,13 @@ import sys
 import pytest
 
 import pennylane as qp
+from pennylane.core.queuing import AnnotatedQueue
 from pennylane.drawer.drawable_layers import (
     _recursive_find_layer,
     _recursive_find_mcm_stats_layer,
     drawable_layers,
 )
 from pennylane.ops import MidMeasure
-from pennylane.queuing import AnnotatedQueue
 
 
 class TestRecursiveFindLayer:

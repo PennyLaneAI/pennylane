@@ -21,7 +21,8 @@ from itertools import combinations
 import numpy as np
 import pytest
 
-from pennylane import math, qnode, queuing
+from pennylane import math, qnode
+from pennylane.core import queuing
 from pennylane.decomposition import list_decomps
 from pennylane.devices import device
 from pennylane.measurements import probs

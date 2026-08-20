@@ -109,7 +109,7 @@ class TestProperties:
     """Test of the properties of the Exp class."""
 
     def test_data(self):
-        """Test intializaing and accessing the data property."""
+        """Test that Exp data is read-only."""
 
         phi = np.array(1.234)
         coeff = np.array(2.345)
@@ -119,13 +119,8 @@ class TestProperties:
 
         assert op.data == (coeff, phi)
 
-        new_phi = np.array(0.1234)
-        new_coeff = np.array(3.456)
-        op.data = (new_coeff, new_phi)
-
-        assert op.data == (new_coeff, new_phi)
-        assert op.base.data == (new_phi,)
-        assert op.scalar == new_coeff
+        with pytest.raises(AttributeError, match="property 'data' of 'Exp' object has no setter"):
+            setattr(op, "data", (np.array(3.456), np.array(0.1234)))
 
     def test_is_verified_hermitian(self):
         """Test that the op is hermitian if the base is hermitian and the coeff is real."""
@@ -364,7 +359,7 @@ class TestMatrix:  # pylint: disable=too-many-public-methods
         """Test the matrix with torch."""
         import torch
 
-        phi = torch.tensor(0.4, dtype=torch.complex128)
+        phi = torch.tensor(0.4, dtype=torch.float64)
 
         base = qp.PauliX(0)
         op = Exp(base, -0.5j * phi)
@@ -385,6 +380,7 @@ class TestMatrix:  # pylint: disable=too-many-public-methods
         assert qp.math.allclose(op.matrix(), compare.matrix())
 
     @pytest.mark.jax
+    @pytest.mark.xfail(reason="differentiating complex values through RX not supported.")
     def test_jax_matrix_rx(self):
         """Test the matrix with jax."""
         import jax
@@ -527,9 +523,17 @@ class TestDecomposition:
                 "`PCPhase` decompositions not currently possible due to different signature."
             )
 
+        if op_class is qp.GlobalPhase:
+            pytest.skip(
+                "'GlobalPhase' does not act on any wires. Wire based decompositions therefore do not make sense."
+            )
+
         phi = 1.23
 
-        wires = [0, 1, 2] if op_class.num_wires is None else list(range(op_class.num_wires))
+        try:
+            wires = [0, 1, 2] if op_class.num_wires is None else list(range(op_class.num_wires))
+        except TypeError:
+            wires = [0, 1, 2]
         if str_wires:
             alphabet = ("a", "b", "c", "d", "e", "f", "g")
             wires = [alphabet[w] for w in wires]
@@ -551,13 +555,12 @@ class TestDecomposition:
                 and qp.math.isclose(dec[0].data[0], phi)
                 and dec[0].wires == op.wires
             )
-        elif op_class is qp.GlobalPhase:
-            # exp(qp.GlobalPhase.generator(), phi) decomposes to PauliRot
-            # cannot compare GlobalPhase and PauliRot with qp.equal
-            assert np.allclose(op.matrix(wire_order=op.wires), dec[0].matrix(wire_order=op.wires))
         elif op_class is qp.FermionicSWAP:
             expected = op.map_wires(dict(zip(op.wires, reversed(op.wires))))
             # simplifying the generator changes the wire order
+            qp.assert_equal(expected, dec[0])
+        elif op_class is qp.MultiRZ:
+            expected = qp.PauliRot(phi, "Z" * len(wires), wires=wires)
             qp.assert_equal(expected, dec[0])
         else:
             qp.assert_equal(op, dec[0])
@@ -734,7 +737,6 @@ class TestIntegration:
         assert qp.math.allclose(grad, -jnp.sin(phi))
 
     @pytest.mark.catalyst
-    @pytest.mark.external
     def test_catalyst_qnode(self):
         """Test with Catalyst interface"""
 

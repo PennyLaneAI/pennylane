@@ -22,6 +22,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.operator import abstractify
 
 
 @pytest.mark.jax
@@ -57,7 +58,7 @@ def test_repr():
 
     op = qp.PrepSelPrep(lcu, control)
     with np.printoptions(legacy="1.21"):
-        assert repr(op) == "PrepSelPrep(lcu=0.25 * Z(2) + 0.75 * (X(1) @ X(2)), control=Wires([0]))"
+        assert repr(op) == "PrepSelPrep(lcu=0.25 * Z(2) + 0.75 * (X(1) @ X(2)), control=[0])"
 
 
 def _get_new_terms(lcu):
@@ -308,8 +309,8 @@ class TestPrepSelPrep:
         op = qp.PrepSelPrep(lcu, (3, 4))
 
         op_reps = (
-            qp.resource_rep(qp.X),
-            qp.resource_rep(qp.X),
+            abstractify(qp.X),
+            abstractify(qp.X),
             qp.resource_rep(qp.ops.Prod, **ops[-1].resource_params),
         )
         assert op.resource_params == {"num_control": 2, "op_reps": op_reps}
@@ -318,9 +319,9 @@ class TestPrepSelPrep:
         """Test that the decomposition is registered into the new pipeline."""
 
         ops = [qp.X(0), qp.X(1), qp.X(0) @ qp.Y(1)]
-        grep = qp.resource_rep(qp.GlobalPhase)
-        xrep = qp.resource_rep(qp.X)
-        yrep = qp.resource_rep(qp.Y)
+        grep = abstractify(qp.GlobalPhase)
+        xrep = abstractify(qp.X)
+        yrep = abstractify(qp.Y)
         prodrep = qp.resource_rep(qp.ops.Prod, resources={xrep: 1, yrep: 1})
         op_reps = (
             qp.resource_rep(qp.ops.Prod, resources={grep: 1, xrep: 1}),

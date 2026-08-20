@@ -18,10 +18,10 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.qscript import QuantumScript
+from pennylane.core.queuing import AnnotatedQueue
 from pennylane.ftqc.operations import RotXZX
 from pennylane.ops.functions import assert_valid
-from pennylane.queuing import AnnotatedQueue
-from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
 

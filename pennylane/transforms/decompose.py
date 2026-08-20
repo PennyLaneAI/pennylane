@@ -22,17 +22,13 @@ from collections import ChainMap
 from collections.abc import Callable, Generator, Iterable, Sequence
 from functools import lru_cache, partial
 
-from pennylane import math, ops, queuing
+from pennylane import math, ops
 from pennylane.allocation import Allocate, Deallocate
+from pennylane.core import queuing
 from pennylane.core.operator import Operator
-from pennylane.decomposition import (
-    DecompositionGraph,
-    GateSet,
-    enabled_graph,
-    gate_sets,
-)
+from pennylane.decomposition import DecompositionGraph, GateSet, enabled_graph, gate_sets
 from pennylane.decomposition.decomposition_graph import DecompGraphSolution
-from pennylane.decomposition.reconstruct import get_decomp_kwargs
+from pennylane.decomposition.utils import _get_decomp_args
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.ops import Conditional, GlobalPhase
 from pennylane.templates import SubroutineOp
@@ -201,8 +197,7 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
 
             args = (*op.parameters, *op.wires)
 
-            kwargs = get_decomp_kwargs(op)
-            decomp_fn = partial(compute_qfunc_decomposition, **kwargs)
+            decomp_fn = partial(compute_qfunc_decomposition, **op.hyperparameters)
             jaxpr_decomp = make_plxpr(decomp_fn)(*args)
 
             self._current_depth += 1
@@ -356,7 +351,7 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
 DecomposeInterpreter, decompose_plxpr_to_plxpr = _get_plxpr_decompose()
 
 
-@partial(transform, plxpr_transform=decompose_plxpr_to_plxpr)
+@transform
 def decompose(
     tape,
     *,
@@ -455,7 +450,7 @@ def decompose(
 
     .. code-block:: python
 
-        @qp.decompose(gate_set={qp.Toffoli, "RX", "RZ"})
+        @qp.decompose(gate_set={qp.Toffoli, "RX", "RZ", "GlobalPhase"})
         @qp.qnode(qp.device("default.qubit"))
         def circuit():
             qp.Hadamard(wires=[0])
@@ -465,9 +460,9 @@ def decompose(
     Since the Hadamard gate is not defined in our gate set, it will be decomposed into rotations:
 
     >>> print(qp.draw(circuit)())
-    0: ──RZ(1.57)──RX(1.57)──RZ(1.57)─╭●─┤  <Z>
-    1: ───────────────────────────────├●─┤
-    2: ───────────────────────────────╰X─┤
+    0: ──RZ(1.57)──RX(1.57)──RZ(1.57)─╭GlobalPhase(-1.57)─╭●─┤  <Z>
+    1: ───────────────────────────────├GlobalPhase(-1.57)─├●─┤
+    2: ───────────────────────────────╰GlobalPhase(-1.57)─╰X─┤
 
     You can also provide a function as the ``stopping_condition`` in addition to providing a ``gate_set``. In this case
     the operator decomposition will stop once either it is given in terms of the gates in the ``gate_set`` or
@@ -475,7 +470,7 @@ def decompose(
 
     .. code-block:: python
 
-        @qp.decompose(gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
+        @qp.decompose(gate_set={"H", "T", "CNOT", "GlobalPhase"}, stopping_condition=lambda op: len(op.wires) <= 2)
         @qp.qnode(qp.device("default.qubit"))
         def circuit():
             qp.Hadamard(wires=[0])
@@ -554,8 +549,7 @@ def decompose(
 
         This transform takes advantage of the new graph-based decomposition algorithm when
         ``qp.decomposition.enable_graph()`` is present, which allows for more flexible
-        decompositions towards any target gate set. For example, the current system does not
-        guarantee a decomposition to the desired target gate set:
+        decompositions towards any target gate set.
 
         .. code-block:: python
 
@@ -564,22 +558,11 @@ def decompose(
             with qp.queuing.AnnotatedQueue() as q:
                 qp.CRX(0.5, wires=[0, 1])
 
+            qp.decomposition.enable_graph()
+
             tape = qp.tape.QuantumScript.from_queue(q)
             [new_tape], _ = qp.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ", "CNOT"})
 
-        >>> from pprint import pprint
-        >>> pprint(new_tape.operations)
-        [RZ(np.float64(1.57...), wires=[1]),
-         RY(0.25, wires=[1]),
-         CNOT(wires=[0, 1]),
-         RY(-0.25, wires=[1]),
-         CNOT(wires=[0, 1]),
-         RZ(np.float64(-1.57...), wires=[1])]
-
-        With the new system enabled, the transform produces the expected outcome.
-
-        >>> qp.decomposition.enable_graph()
-        >>> [new_tape], _ = qp.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ"})
         >>> new_tape.operations
         [RX(0.25, wires=[1]), CZ(wires=[0, 1]), RX(-0.25, wires=[1]), CZ(wires=[0, 1])]
 
@@ -734,7 +717,7 @@ def decompose(
                 qp.IsingXX(0.5, wires=[0, 1])
                 return qp.state()
 
-        >>> qp.specs(circuit)()["resources"].gate_types
+        >>> qp.specs(circuit)().resources.quantum_operations
         {'RZ': 12, 'RX': 7, 'GlobalPhase': 6, 'CZ': 3}
         >>> qp.decomposition.disable_graph()
 
@@ -870,12 +853,12 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments,too-many-
 
         elif graph_solution and graph_solution.is_solved_for(op, num_work_wires):
             op_rule = graph_solution.decomposition(op, num_work_wires)
-            kwargs = get_decomp_kwargs(op)
+            params, args, kwargs = _get_decomp_args(op)
             with queuing.AnnotatedQueue() as decomposed_ops:
-                op_rule(*op.parameters, wires=op.wires, **kwargs)
+                op_rule(*args, **kwargs)
             decomp = decomposed_ops.queue
             if num_work_wires is not None:
-                num_work_wires -= op_rule.get_work_wire_spec(**op.resource_params).total
+                num_work_wires -= op_rule.get_work_wire_spec(**params).total
 
         elif enabled_graph() and isinstance(op, GlobalPhase):
             warnings.warn(

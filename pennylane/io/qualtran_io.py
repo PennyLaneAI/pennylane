@@ -25,11 +25,11 @@ import pennylane.ops as qops
 import pennylane.templates as qtemps
 from pennylane import math
 from pennylane.core.operator import Operation, Operator
+from pennylane.core.qscript import make_qscript
+from pennylane.core.queuing import AnnotatedQueue, QueuingManager
 from pennylane.estimator.estimate import estimate
 from pennylane.exceptions import DecompositionUndefinedError, MatrixUndefinedError
-from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.registers import registers
-from pennylane.tape import make_qscript
 from pennylane.templates.state_preparations.superposition import order_states
 from pennylane.wires import WiresLike
 from pennylane.workflow import construct_tape
@@ -192,7 +192,7 @@ def _(op: qtemps.state_preparations.QROMStatePreparation):
     def _add_qrom_and_adjoint(gate_types, bitstrings, control_wires):
         """Helper to create a QROM, count it and its adjoint."""
         qrom_op = qtemps.QROM(
-            data=bitstrings,
+            bitstrings=bitstrings,
             target_wires=precision_wires,
             control_wires=control_wires,
             work_wires=work_wires,
@@ -267,10 +267,10 @@ def _(op: qtemps.subroutines.QROM):
 
     num_bit_flips = math.sum(bitstrings)
 
-    num_work_wires = len(op.hyperparameters["work_wires"])
-    size_bitstring = len(op.hyperparameters["target_wires"])
-    num_control_wires = len(op.hyperparameters["control_wires"])
-    clean = op.hyperparameters["clean"]
+    num_work_wires = len(op.work_wires)
+    size_bitstring = len(op.target_wires)
+    num_control_wires = len(op.control_wires)
+    clean = op.clean
 
     if num_control_wires == 0:
         gate_types[qt_gates.XGate()] = num_bit_flips
@@ -280,7 +280,7 @@ def _(op: qtemps.subroutines.QROM):
     hadamard = qt_gates.Hadamard()
     num_parallel_computations = (num_work_wires + size_bitstring) // size_bitstring
 
-    square_fact = math.floor(math.sqrt(num_bitstrings))  # use a square scheme for rows and cloumns
+    square_fact = math.floor(math.sqrt(num_bitstrings))  # use a square scheme for rows and columns
     num_parallel_computations = min(num_parallel_computations, square_fact)
 
     num_swap_wires = math.floor(math.log2(num_parallel_computations))

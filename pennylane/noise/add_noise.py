@@ -17,13 +17,14 @@ from functools import lru_cache
 
 from pennylane import math, templates
 from pennylane.core.operator import Operator
+from pennylane.core.qscript import make_qscript
+from pennylane.core.transforms import BoundTransform
 from pennylane.decomposition import gate_sets
 from pennylane.devices.preprocess import decompose, null_postprocessing
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.ops.functions import equal
 from pennylane.ops.op_math import Adjoint
-from pennylane.tape import make_qscript
-from pennylane.transforms.core import BoundTransform, transform
+from pennylane.transforms.core import transform
 from pennylane.workflow import construct_execution_config, resolution
 from pennylane.workflow.qnode import _make_execution_config
 
@@ -146,12 +147,12 @@ def add_noise(tape, noise_model, level="user"):
           [1] cancel_inverses(),
           [2] merge_rotations(),
           [3] undo_swaps(),
-          [4] _expand_metric_tensor(device_wires=Wires([0, 1, 2])),
-          [5] metric_tensor(device_wires=Wires([0, 1, 2])),
+          [4] _expand_metric_tensor(device_wires=[0, 1, 2]),
+          [5] metric_tensor(device_wires=[0, 1, 2]),
           [6] defer_measurements(allow_postselect=False),
           [7] decompose(target_gates=..., stopping_condition=<function stopping_condition at 0x...>, name=default.mixed),
           [8] no_sampling(name=backprop + default.mixed),
-          [9] validate_device_wires(Wires([0, 1, 2]), name=default.mixed),
+          [9] validate_device_wires([0, 1, 2], name=default.mixed),
           [10] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.mixed),
           [11] validate_observables(stopping_condition=..., name=default.mixed)
         )
@@ -161,13 +162,13 @@ def add_noise(tape, noise_model, level="user"):
           [1] cancel_inverses(),
           [2] merge_rotations(),
           [3] undo_swaps(),
-          [4] _expand_metric_tensor(device_wires=Wires([0, 1, 2])),
-          [5] metric_tensor(device_wires=Wires([0, 1, 2])),
+          [4] _expand_metric_tensor(device_wires=[0, 1, 2]),
+          [5] metric_tensor(device_wires=[0, 1, 2]),
           [6] add_noise(...),
           [7] defer_measurements(allow_postselect=False),
           [8] decompose(target_gates=..., stopping_condition=<function stopping_condition at 0x...>, name=default.mixed),
           [9] no_sampling(name=backprop + default.mixed),
-          [10] validate_device_wires(Wires([0, 1, 2]), name=default.mixed),
+          [10] validate_device_wires([0, 1, 2], name=default.mixed),
           [11] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.mixed),
           [12] validate_observables(stopping_condition=..., name=default.mixed)
         )
@@ -181,12 +182,12 @@ def add_noise(tape, noise_model, level="user"):
           [1] cancel_inverses(),
           [2] merge_rotations(),
           [3] undo_swaps(),
-          [4] _expand_metric_tensor(device_wires=Wires([0, 1, 2])),
-          [5] metric_tensor(device_wires=Wires([0, 1, 2])),
+          [4] _expand_metric_tensor(device_wires=[0, 1, 2]),
+          [5] metric_tensor(device_wires=[0, 1, 2]),
           [6] defer_measurements(allow_postselect=False),
           [7] decompose(target_gates=..., stopping_condition=<function stopping_condition at 0x...>, name=default.mixed),
           [8] no_sampling(name=backprop + default.mixed),
-          [9] validate_device_wires(Wires([0, 1, 2]), name=default.mixed),
+          [9] validate_device_wires([0, 1, 2], name=default.mixed),
           [10] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.mixed),
           [11] validate_observables(stopping_condition=..., name=default.mixed),
           [12] add_noise(..., level=device)
@@ -206,8 +207,8 @@ def add_noise(tape, noise_model, level="user"):
           [1] cancel_inverses(),
           [2] merge_rotations(),
           [3] undo_swaps(),
-          [4] _expand_metric_tensor(device_wires=Wires([0, 1, 2])),
-          [5] metric_tensor(device_wires=Wires([0, 1, 2])),
+          [4] _expand_metric_tensor(device_wires=[0, 1, 2]),
+          [5] metric_tensor(device_wires=[0, 1, 2]),
           [6] add_noise(..., level=user)
         )
 
@@ -216,12 +217,12 @@ def add_noise(tape, noise_model, level="user"):
           [1] cancel_inverses(),
           [2] merge_rotations(),
           [3] undo_swaps(),
-          [4] _expand_metric_tensor(device_wires=Wires([0, 1, 2])),
-          [5] metric_tensor(device_wires=Wires([0, 1, 2])),
+          [4] _expand_metric_tensor(device_wires=[0, 1, 2]),
+          [5] metric_tensor(device_wires=[0, 1, 2]),
           [6] defer_measurements(allow_postselect=False),
           [7] decompose(target_gates=..., stopping_condition=<function stopping_condition at 0x...>, name=default.mixed),
           [8] no_sampling(name=backprop + default.mixed),
-          [9] validate_device_wires(Wires([0, 1, 2]), name=default.mixed),
+          [9] validate_device_wires([0, 1, 2], name=default.mixed),
           [10] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.mixed),
           [11] validate_observables(stopping_condition=..., name=default.mixed),
           [12] add_noise(..., level=device)

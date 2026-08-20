@@ -21,8 +21,8 @@ from collections.abc import Sequence
 from pennylane import math
 from pennylane.core.measurements import SampleMeasurement, StateMeasurement
 from pennylane.core.operator import Operator
+from pennylane.core.queuing import QueuingManager
 from pennylane.ops import MeasurementValue
-from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 

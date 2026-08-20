@@ -123,7 +123,7 @@ class TestSpsaGradient:
             assert spy.call_args_list[i][0][2].shape == (2, 1)
 
     def test_no_trainable_params_tape(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
         dev = qp.device("default.qubit", wires=2)
 
@@ -147,7 +147,7 @@ class TestSpsaGradient:
             assert res.shape == (0,)
 
     def test_no_trainable_params_multiple_return_tape(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters with multiple returns."""
         dev = qp.device("default.qubit", wires=2)
 
@@ -175,7 +175,7 @@ class TestSpsaGradient:
 
     @pytest.mark.autograd
     def test_no_trainable_params_qnode_autograd(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
         dev = qp.device("default.qubit", wires=2)
 
@@ -192,7 +192,7 @@ class TestSpsaGradient:
 
     @pytest.mark.torch
     def test_no_trainable_params_qnode_torch(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
         dev = qp.device("default.qubit", wires=2)
 
@@ -209,7 +209,7 @@ class TestSpsaGradient:
 
     @pytest.mark.tf
     def test_no_trainable_params_qnode_tf(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
         dev = qp.device("default.qubit", wires=2)
 
@@ -226,7 +226,7 @@ class TestSpsaGradient:
 
     @pytest.mark.jax
     def test_no_trainable_params_qnode_jax(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
         dev = qp.device("default.qubit", wires=2)
 

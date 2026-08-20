@@ -30,6 +30,7 @@ from functools import singledispatch
 from pennylane.allocation import Allocate, Deallocate, DynamicWire
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.operator import Operator
+from pennylane.core.qscript import QuantumScript
 from pennylane.measurements import (
     CountsMP,
     DensityMatrixMP,
@@ -50,7 +51,6 @@ from pennylane.ops import (
     PauliMeasure,
 )
 from pennylane.pytrees import flatten
-from pennylane.tape import QuantumScript
 from pennylane.templates import SubroutineOp
 from pennylane.templates.subroutines import QROM, SelectPauliRot, TemporaryAND
 
@@ -214,7 +214,7 @@ def _add_controlled_global_op(obj, layer_str, config):
 
 
 def _add_elbow_core(obj, layer_str, config):
-    cvals = obj.hyperparameters["control_values"]
+    cvals = obj.control_values
     mapped_wires = [config.wire_map[w] for w in obj.wires]
     layer_str[mapped_wires[0]] += "●" if cvals[0] else "○"
     layer_str[mapped_wires[1]] += "●" if cvals[1] else "○"
@@ -253,14 +253,14 @@ def _add_select_pauli_rot(
     if not skip_grouping_symbols:
         layer_str = _add_grouping_symbols(obj.wires, layer_str, config)
 
-    for w in obj.hyperparameters["control_wires"]:
+    for w in obj.control_wires:
         layer_str[config.wire_map[w]] += "◑"
 
-    base_label = f"R{obj.hyperparameters['rot_axis']}"
+    base_label = f"R{obj.rot_axis}"
     target_label = obj.label(
         decimals=config.decimals, base_label=base_label, cache=config.cache
     ).replace("\n", "")
-    for w in obj.hyperparameters["target_wire"]:
+    for w in obj.target_wire:
         layer_str[config.wire_map[w]] += target_label
 
     return layer_str

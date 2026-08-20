@@ -22,8 +22,8 @@ import numpy as np
 
 from pennylane import math
 from pennylane.core.operator import Operator
+from pennylane.core.qscript import QuantumScript
 from pennylane.ops import CNOT, RZ, H, I, S, X, Y, Z
-from pennylane.tape import QuantumScript
 
 from .decomposition import _cnot_xz_corrections, _single_xz_corrections
 from .operations import RotXZX
@@ -263,7 +263,7 @@ def _parse_mid_measurements(tape: QuantumScript, mid_meas: list):
         for wire in op.wires:
             _wires_used[wire] += 1
 
-        gate_offset = 4 if op.num_wires == 1 else 13
+        gate_offset = 4 if len(op.wires) == 1 else 13
         ms = mid_meas[mid_meas_offset : mid_meas_offset + gate_offset]
         by_op = []
         if isinstance(op, (S, H)):

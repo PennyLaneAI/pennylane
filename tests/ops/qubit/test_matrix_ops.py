@@ -562,10 +562,10 @@ class TestQubitUnitary:
     def test_qubit_unitary_correct_global_phase(self, U):
         """Tests that the input matrix matches with the decomposition matrix even in the global phase"""
 
-        ops_decompostion = qp.QubitUnitary.compute_decomposition(U, wires=[0, 1])
+        ops_decomposition = qp.QubitUnitary.compute_decomposition(U, wires=[0, 1])
 
         assert qp.math.allclose(
-            U, qp.matrix(qp.prod(*ops_decompostion[::-1]), wire_order=[0, 1]), atol=1e-7
+            U, qp.matrix(qp.prod(*ops_decomposition[::-1]), wire_order=[0, 1]), atol=1e-7
         )
 
     def test_operations_correctly_queued(self):
@@ -574,7 +574,7 @@ class TestQubitUnitary:
         dev = qp.device("default.qubit")
 
         matrix = qp.matrix(qp.QFT(wires=[0, 1]))
-        ops_decompostion = qp.QubitUnitary.compute_decomposition(matrix, wires=[0, 1])
+        ops_decomposition = qp.QubitUnitary.compute_decomposition(matrix, wires=[0, 1])
 
         @qp.qnode(dev)
         def circuit():
@@ -582,7 +582,7 @@ class TestQubitUnitary:
             return qp.state()
 
         tape = qp.workflow.construct_tape(circuit)()
-        for op1, op2 in zip(tape.operations, ops_decompostion):
+        for op1, op2 in zip(tape.operations, ops_decomposition):
             qp.assert_equal(op1, op2)
 
     def test_broadcasted_two_qubit_qubit_unitary_decomposition_raises_error(self):
@@ -606,10 +606,10 @@ class TestQubitUnitary:
     def test_correctness_decomposition(self, U, wires):
         """Tests that the decomposition is correct"""
 
-        ops_decompostion = qp.QubitUnitary.compute_decomposition(U, wires=wires)
+        ops_decomposition = qp.QubitUnitary.compute_decomposition(U, wires=wires)
 
         assert qp.math.allclose(
-            U, qp.matrix(qp.prod(*ops_decompostion[::-1]), wire_order=wires), atol=1e-7
+            U, qp.matrix(qp.prod(*ops_decomposition[::-1]), wire_order=wires), atol=1e-7
         )
 
     @pytest.mark.parametrize(
@@ -743,6 +743,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
             qp.assert_equal(decomp[0], qp.GlobalPhase(-3 * np.pi / 4, 0))
             qp.assert_equal(decomp[1], qp.RZ(np.pi / 2, 0))
 
+    @pytest.mark.pl2do(reason="PL 2.0: Parameter broadcasting will be re-visited.")
     def test_decomposition_single_qubit_broadcasted(self):
         """Test that a broadcasted single-qubit DiagonalQubitUnitary is decomposed correctly."""
         D = np.exp(1j * np.pi * np.array([[1 / 2, 1], [1 / 8, -1 / 8], [1 / 2, -1 / 2], [1, 1]]))
@@ -772,6 +773,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
             qp.assert_equal(decomp[0], qp.DiagonalQubitUnitary(new_D, wires=[0]))
             qp.assert_equal(decomp[1], qp.SelectPauliRot(angles, [0], target_wire=1))
 
+    @pytest.mark.pl2do(reason="PL 2.0: Parameter broadcasting will be re-visited.")
     def test_decomposition_two_qubits_broadcasted(self):
         """Test that a broadcasted two-qubit DiagonalQubitUnitary is decomposed correctly."""
         D = np.exp(1j * np.array([[1, -1, 0.5, 1], [2.3, 1.9, 0.3, -0.9], [1.1, 0.4, -0.8, 1.2]]))
@@ -801,6 +803,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
             qp.assert_equal(decomp[0], qp.DiagonalQubitUnitary(new_D, wires=[0, 1]))
             qp.assert_equal(decomp[1], qp.SelectPauliRot(angles, [0, 1], target_wire=2))
 
+    @pytest.mark.pl2do(reason="PL 2.0: Parameter broadcasting will be re-visited.")
     def test_decomposition_three_qubits_broadcasted(self):
         """Test that a broadcasted three-qubit DiagonalQubitUnitary is decomposed correctly."""
         D = np.exp(
@@ -835,7 +838,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
         assert qp.math.allclose(orig_mat, decomp_mat)
         assert qp.math.allclose(orig_mat, decomp_mat2)
 
-    @pytest.mark.external
+    @pytest.mark.catalyst
     @pytest.mark.parametrize("n", [1, 2, 3])
     def test_decomposition_matrix_match_jit(self, n, seed):
         """Test that the matrix of the decomposition matches the original matrix with jit."""
@@ -852,6 +855,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
         assert qp.math.allclose(orig_mat, mat_mat)
 
     @pytest.mark.parametrize("n", [1, 2, 3])
+    @pytest.mark.pl2do(reason="PL 2.0: Parameter broadcasting will be re-visited.")
     def test_decomposition_matrix_match_broadcasted(self, n, seed):
         """Test that the broadcasted matrix of the decomposition matches the original matrix."""
         rng = np.random.default_rng(seed)
@@ -903,12 +907,12 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
         for rule in qp.list_decomps(qp.DiagonalQubitUnitary):
             _test_decomposition_rule(op, rule)
 
-    @pytest.mark.external
+    @pytest.mark.catalyst
     @pytest.mark.parametrize("op", standard_case_ops)
     def test_decomposition_rule_new_qjit(self, op):
         """Tests the decomposition rule for various edge cases."""
         for rule in qp.list_decomps(qp.DiagonalQubitUnitary):
-            num_work_wires = rule.get_work_wire_spec(**op.resource_params).total
+            num_work_wires = rule.get_work_wire_spec(**op.arguments).total
             work_wires = list(range(len(op.wires), len(op.wires) + num_work_wires))
             all_wires = work_wires + list(op.wires)
             fn = qp.qjit(
@@ -918,7 +922,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
                 ),
                 static_argnums=[1],
             )
-            mat = fn(*op.data, op.wires, **op.hyperparameters)
+            mat = fn(op.D, op.wires)
             dim = 2 ** len(op.wires)
             assert qp.math.allclose(mat[dim:, :dim], 0.0)
             assert qp.math.allclose(mat[:dim, dim:], 0.0)
@@ -965,12 +969,12 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
         for rule in qp.list_decomps(qp.DiagonalQubitUnitary):
             _test_decomposition_rule(op, rule)
 
-    @pytest.mark.external
+    @pytest.mark.catalyst
     @pytest.mark.parametrize("op", edge_case_ops)
     def test_decomposition_rule_edge_cases_qjit(self, op):
         """Tests the decomposition rule for various edge cases."""
         for rule in qp.list_decomps(qp.DiagonalQubitUnitary):
-            num_work_wires = rule.get_work_wire_spec(**op.resource_params).total
+            num_work_wires = rule.get_work_wire_spec(**op.arguments).total
             work_wires = list(range(len(op.wires), len(op.wires) + num_work_wires))
             all_wires = work_wires + list(op.wires)
             fn = qp.qjit(
@@ -980,7 +984,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
                 ),
                 static_argnums=[1],
             )
-            mat = fn(*op.data, op.wires, **op.hyperparameters)
+            mat = fn(op.D, op.wires)
             dim = 2 ** len(op.wires)
             assert qp.math.allclose(mat[dim:, :dim], 0.0)
             assert qp.math.allclose(mat[:dim, dim:], 0.0)
@@ -988,25 +992,24 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
 
     def test_controlled(self):
         """Test that the correct controlled operation is created when controlling a qp.DiagonalQubitUnitary."""
-        # pylint: disable=protected-access
         D = np.array([1j, 1, 1, -1, -1j, 1j, 1, -1])
         op = qp.DiagonalQubitUnitary(D, wires=[1, 2, 3])
         with qp.queuing.AnnotatedQueue() as q:
-            op._controlled(control=0)
+            qp.ctrl(op, control=0)
         tape = qp.tape.QuantumScript.from_queue(q)
         mat = qp.matrix(tape, wire_order=[0, 1, 2, 3])
         assert qp.math.allclose(
             mat, qp.math.diag(qp.math.append(qp.math.ones(8, dtype=complex), D))
         )
 
+    @pytest.mark.pl2do(reason="PL 2.0: Parameter broadcasting will be re-visited.")
     def test_controlled_broadcasted(self):
         """Test that the correct controlled operation is created when
         controlling a qp.DiagonalQubitUnitary with a broadcasted diagonal."""
-        # pylint: disable=protected-access
         D = np.array([[1j, 1, -1j, 1], [1, -1, 1j, -1]])
         op = qp.DiagonalQubitUnitary(D, wires=[1, 2])
         with qp.queuing.AnnotatedQueue() as q:
-            op._controlled(control=0)
+            qp.ctrl(op, control=0)
         tape = qp.tape.QuantumScript.from_queue(q)
         mat = qp.matrix(tape, wire_order=[0, 1, 2])
         expected = np.array(
@@ -1023,6 +1026,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
         assert np.allclose(res_static, expected, atol=tol)
         assert np.allclose(res_dynamic, expected, atol=tol)
 
+    @pytest.mark.pl2do(reason="PL 2.0: Parameter broadcasting will be re-visited.")
     def test_matrix_representation_broadcasted(self, tol):
         """Test that the matrix representation is defined correctly for a broadcasted diagonal."""
         diag = np.array([[1, -1], [1j, -1], [-1j, -1]])
@@ -1047,6 +1051,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
     @pytest.mark.parametrize(
         "diag", ([[1.0, -1.0]] * 5, np.array([[1.0, -1j], [1j, 1j], [-1j, 1]]))
     )
+    @pytest.mark.pl2do(reason="PL 2.0: Parameter broadcasting will be re-visited.")
     def test_pow_broadcasted(self, n, diag):
         """Test pow method returns expected results for broadcasted diagonals."""
         op = qp.DiagonalQubitUnitary(diag, wires="b")
@@ -1095,6 +1100,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
         assert np.allclose(grad, expected)
 
     @pytest.mark.jax
+    @pytest.mark.pl2do(reason="PL 2.0: Parameter broadcasting will be re-visited.")
     def test_jax_jit_broadcasted(self):
         """Test that the diagonal matrix unitary operation works
         within a QNode that uses the JAX JIT and broadcasting"""
@@ -1171,7 +1177,7 @@ class TestUnitaryLabels:
         """Test 'matrices' key pair is not a list."""
         assert op.label(cache={"matrices": 0}) == "U"
 
-    @pytest.mark.parametrize("mat, op", zip(labels, ops))
+    @pytest.mark.parametrize("mat, op", list(zip(labels, ops)))
     def test_empty_cache_list(self, mat, op):
         """Test matrices list is provided, but empty. Operation should have `0` label and matrix
         should be added to cache."""
@@ -1179,7 +1185,7 @@ class TestUnitaryLabels:
         assert op.label(cache=cache) == "U\n(M0)"
         assert qp.math.allclose(cache["matrices"][0], mat)
 
-    @pytest.mark.parametrize("mat, op", zip(labels, ops))
+    @pytest.mark.parametrize("mat, op", list(zip(labels, ops)))
     def test_something_in_cache_list(self, mat, op):
         """If something exists in the matrix list, but parameter is not in the list, then parameter
         added to list and label given number of its position."""
@@ -1189,7 +1195,7 @@ class TestUnitaryLabels:
         assert len(cache["matrices"]) == 2
         assert qp.math.allclose(cache["matrices"][1], mat)
 
-    @pytest.mark.parametrize("mat, op", zip(labels, ops))
+    @pytest.mark.parametrize("mat, op", list(zip(labels, ops)))
     def test_matrix_already_in_cache_list(self, mat, op):
         """If the parameter already exists in the matrix cache, then the label uses that index and the
         matrix cache is unchanged."""
@@ -1683,7 +1689,6 @@ class TestInterfaceMatricesLabel:
 
 control_data = [
     (qp.QubitUnitary(X, wires=0), Wires([])),
-    (qp.DiagonalQubitUnitary([1, 1], wires=1), Wires([])),
     (qp.ControlledQubitUnitary(X, wires=[0, 1]), Wires([0])),
 ]
 

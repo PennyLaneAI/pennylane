@@ -18,9 +18,9 @@ This submodule contains a transform for resolving dynamic wires into real wires.
 from collections.abc import Hashable, Sequence
 
 from pennylane.allocation import AllocateState
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.exceptions import AllocationError
 from pennylane.ops import measure
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn, Result, ResultBatch
 
 from .core import transform
@@ -96,6 +96,12 @@ def _new_ops(operations, manager, wire_map, deallocated):
     for op in operations:
         # check name faster than isinstance
         if op.name == "Allocate":
+            state = op.hyperparameters["state"]
+            if state in (AllocateState.MAGIC_T, AllocateState.MAGIC_T_ADJ):
+                raise AllocationError(
+                    f"Magic state allocation (state={state!r}) is not supported by "
+                    "resolve_dynamic_wires. Use Catalyst compilation for magic state allocation."
+                )
             for w in op.wires:
                 wire, ops = manager.get_wire(**op.hyperparameters)
                 yield from ops

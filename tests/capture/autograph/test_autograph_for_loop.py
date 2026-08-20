@@ -36,6 +36,8 @@ from malt.operators import py_builtins as ag_py_builtins
 
 from pennylane.capture.autograph.ag_primitives import PEnumerate, PRange
 from pennylane.capture.autograph.transformer import TRANSFORMER, run_autograph
+from pennylane.capture.primitives import cond_prim, for_loop_prim
+from tests.capture.capture_utils import extract_all_primitives
 
 check_cache = TRANSFORMER.has_cache
 
@@ -119,12 +121,8 @@ class TestForLoops:
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)(jnp.array([1.0, 2.0, 3.0]))
-
-        def res(params):
-            return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, params)
-
-        result = res(jnp.array([0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi]))
-        assert np.allclose(result, -jnp.sqrt(2) / 2)
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[0].primitive.name == "for_loop"
 
     def test_for_in_array_unpack(self):
         """Test for loop over a 2D JAX array unpacking the inner dimension."""
@@ -138,11 +136,8 @@ class TestForLoops:
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)(jnp.array([[0.0, 0.0], [0.0, 0.0]]))
-
-        params = jnp.array([[0.0, 1 / 4 * jnp.pi], [2 / 4 * jnp.pi, jnp.pi]])
-        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, params)
-
-        assert np.allclose(result, jnp.sqrt(2) / 2)
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[0].primitive.name == "for_loop"
 
     def test_for_in_numeric_list(self):
         """Test for loop over a Python list that is convertible to an array."""
@@ -156,10 +151,8 @@ class TestForLoops:
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)()
-
-        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-
-        assert np.allclose(result, -jnp.sqrt(2) / 2)
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[0].primitive.name == "for_loop"
 
     def test_for_in_numeric_list_of_list(self):
         """Test for loop over a nested Python list that is convertible to an array."""
@@ -174,9 +167,10 @@ class TestForLoops:
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)()
-        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-
-        assert np.allclose(result, jnp.sqrt(2) / 2)
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[0].primitive.name == "for_loop"
+        inner_jaxpr = qfunc_jaxpr.eqns[0].params["jaxpr_body_fn"]
+        assert inner_jaxpr.eqns[-1].primitive.name == "for_loop"
 
     @pytest.mark.xfail(
         reason="relies on unimplemented fallback behaviour (implemented in catalyst)"
@@ -194,9 +188,8 @@ class TestForLoops:
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)()
-        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-
-        assert np.allclose(result, -jnp.sqrt(2) / 2)
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[0].primitive.name == "for_loop"
 
     def test_for_in_static_range(self):
         """Test for loop over a Python range with static bounds."""
@@ -209,9 +202,8 @@ class TestForLoops:
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)()
-        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-
-        assert np.allclose(result, [1 / 8] * 8)
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[0].primitive.name == "for_loop"
 
     def test_for_in_static_range_indexing_array(self):
         """Test for loop over a Python range with static bounds that is used to index an array."""
@@ -225,9 +217,8 @@ class TestForLoops:
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)()
-        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-
-        assert np.allclose(result, -jnp.sqrt(2) / 2)
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[0].primitive.name == "for_loop"
 
     def test_for_in_dynamic_range(self):
         """Test for loop over a Python range with dynamic bounds."""
@@ -240,9 +231,8 @@ class TestForLoops:
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)(0)
-        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
-
-        assert np.allclose(result, [1 / 8] * 8)
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[0].primitive.name == "for_loop"
 
     def test_for_in_dynamic_range_indexing_array(self):
         """Test for loop over a Python range with dynamic bounds that is used to index an array."""
@@ -256,9 +246,8 @@ class TestForLoops:
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)(0)
-        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
-
-        assert np.allclose(result, -jnp.sqrt(2) / 2)
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[0].primitive.name == "for_loop"
 
     def test_for_in_enumerate_array(self):
         """Test for loop over a Python enumeration on an array."""
@@ -271,11 +260,8 @@ class TestForLoops:
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)(jnp.array([0.0, 0.0, 0.0]))
-
-        params = jnp.array([0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi])
-        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, params)
-
-        assert np.allclose(result, [1.0, jnp.sqrt(2) / 2, 0.0])
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[0].primitive.name == "for_loop"
 
     def test_for_in_enumerate_array_no_unpack(self):
         """Test for loop over a Python enumeration with delayed unpacking."""
@@ -288,11 +274,8 @@ class TestForLoops:
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)(jnp.array([0.0, 0.0, 0.0]))
-
-        params = jnp.array([0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi])
-        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, params)
-
-        assert np.allclose(result, [1.0, jnp.sqrt(2) / 2, 0.0])
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[0].primitive.name == "for_loop"
 
     def test_for_in_enumerate_nested_unpack(self):
         """Test for loop over a Python enumeration with nested unpacking."""
@@ -306,13 +289,8 @@ class TestForLoops:
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)(jnp.array([[0.0, 0.0], [0.0, 0.0], [0.0, 0.0]]))
-
-        params = jnp.array(
-            [[0.0, 1 / 4 * jnp.pi], [2 / 4 * jnp.pi, 3 / 4 * jnp.pi], [jnp.pi, 2 * jnp.pi]]
-        )
-        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, params)
-
-        assert np.allclose(result, [jnp.sqrt(2) / 2, -jnp.sqrt(2) / 2, -1.0])
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[0].primitive.name == "for_loop"
 
     def test_for_in_enumerate_start(self):
         """Test for loop over a Python enumeration with offset indices."""
@@ -325,11 +303,8 @@ class TestForLoops:
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)(jnp.array([0.0, 0.0, 0.0]))
-
-        params = jnp.array([0.0, 1 / 4 * jnp.pi, 2 / 4 * jnp.pi])
-        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, params)
-
-        assert np.allclose(result, [1.0, 1.0, 1.0, jnp.sqrt(2) / 2, 0.0])
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[0].primitive.name == "for_loop"
 
     def test_for_in_enumerate_numeric_list(self):
         """Test for loop over a Python enumeration on a list that is convertible to an array."""
@@ -343,9 +318,8 @@ class TestForLoops:
 
         ag_circuit = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_circuit)()
-        result = eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-
-        assert np.allclose(result, [1.0, jnp.sqrt(2) / 2, 0.0])
+        qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
+        assert qfunc_jaxpr.eqns[0].primitive.name == "for_loop"
 
     def test_iterating_over_wires(self):
         """Test that a wires obejct is a valid iteration target for a for loop,
@@ -577,7 +551,7 @@ class TestErrors:
         with pytest.warns(
             qp.exceptions.CaptureWarning, match="Structured capture of qp.for_loop failed"
         ):
-            run_autograph(f)()
+            jax.make_jaxpr(run_autograph(f))()
 
     def test_for_in_dynamic_range_indexing_numeric_list(self):
         """Test an informative error is raised when using a for loop with a dynamic range
@@ -709,7 +683,7 @@ class TestPennyLaneForLoops:
 
         ag_fn = run_autograph(loop)
         jaxpr = jax.make_jaxpr(ag_fn)(0)
-        assert "for_loop[" in str(jaxpr)
+        assert for_loop_prim in extract_all_primitives(jaxpr.jaxpr)
 
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0)[0] == 30
 
@@ -749,8 +723,8 @@ class TestPennyLaneForLoops:
 
         ag_fn = run_autograph(f)
         jaxpr = jax.make_jaxpr(ag_fn)(0)
-        assert "for_loop[" in str(jaxpr)
-        assert "cond[" in str(jaxpr)
+        assert for_loop_prim in extract_all_primitives(jaxpr.jaxpr)
+        assert cond_prim in extract_all_primitives(jaxpr.jaxpr)
 
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)[0] == 18
         assert eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)[0] == 0

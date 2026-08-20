@@ -1,4 +1,4 @@
-# Copyright 2025 Xanadu Quantum Technologies Inc.
+# Copyright 2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,108 +11,116 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Module containing functionality for computing Trotter error.
+r"""
+This module contains tools for estimating the Trotter
+error of product formulas used in Hamiltonian simulation.
 
 .. warning::
 
     This module is experimental. Frequent changes will occur,
     with no guarantees of stability or backwards compatibility.
 
+
+Abstract Base Classes
+~~~~~~~~~~~~~~~~~~~~~~~
+
 .. currentmodule:: pennylane.labs.trotter_error
 
-Trotter Base Classes
-~~~~~~~~~~~~~~~~~~~~
-Abstract classes specifying the methods needed for implementing fragments and states in the Trotter error workflow.
-
 .. autosummary::
     :toctree: api
 
-    ~AbstractState
     ~Fragment
+    ~TrotterState
 
-Fragment Classes
-~~~~~~~~~~~~~~~~
-Classes representing fragments of different types of Hamiltonians.
+Fragments
+~~~~~~~~~
 
-.. autosummary::
-    :toctree: api
-
-    ~GenericFragment
-    ~RealspaceMatrix
-    ~RealspaceSum
-
-Realspace Hamiltonian Classes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Classes used to store representations of realspace Hamiltonians.
+.. currentmodule:: pennylane.labs.trotter_error
 
 .. autosummary::
     :toctree: api
 
-    ~RealspaceCoeffs
-    ~RealspaceOperator
-
-Fragment Functions
-~~~~~~~~~~~~~~~~~~
-Functions used to retrieve fragments of various Hamiltonians.
-
-.. autosummary::
-    :toctree: api
-
-    ~generic_fragments
+    ~NumpyFragment
+    ~NumpyState
+    ~SparseFragment
+    ~SparseState
     ~vibrational_fragments
     ~vibronic_fragments
-    ~sparse_fragments
 
-Harmonic Oscillator Classes
+Product Formulas
+~~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.labs.trotter_error
+
+.. autosummary::
+    :toctree: api
+
+    ~ProductFormula
+    ~ImportanceConfig
+    ~bch_expansion
+    ~effective_hamiltonian
+    ~perturbation_error
+
+Realspace Representations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Classes used to construct the representation of harmonic oscillator states.
+
+.. currentmodule:: pennylane.labs.trotter_error
 
 .. autosummary::
     :toctree: api
 
     ~HOState
     ~VibronicHO
+    ~RealspaceCoeffs
+    ~RealspaceMatrix
+    ~RealspaceOperator
+    ~RealspaceSum
 
-Error Estimation Functions
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-Functions for computing Trotter error estimates.
-
-.. autosummary::
-    :toctree: api
-
-    ~bch_expansion
-    ~effective_hamiltonian
-    ~perturbation_error
-
-Product Formula Classes
-~~~~~~~~~~~~~~~~~~~~~~~
-Classes for representing product formulas.
-
-.. autosummary::
-    :toctree: api
-
-    ~ProductFormula
 """
 
-from .abstract import AbstractState, Fragment
+from .abstract import TrotterState, Fragment
 from .fragments import (
-    GenericFragment,
-    generic_fragments,
+    NumpyFragment,
+    NumpyState,
+    SparseFragment,
+    SparseState,
     vibrational_fragments,
     vibronic_fragments,
-    sparse_fragments,
 )
 from .product_formulas import (
+    ImportanceConfig,
     ProductFormula,
     bch_expansion,
     effective_hamiltonian,
     perturbation_error,
 )
 from .realspace import (
+    HOState,
     RealspaceCoeffs,
     RealspaceMatrix,
     RealspaceOperator,
     RealspaceSum,
-    HOState,
     VibronicHO,
 )
+
+__all__ = [
+    "TrotterState",
+    "Fragment",
+    "NumpyFragment",
+    "NumpyState",
+    "SparseFragment",
+    "SparseState",
+    "vibrational_fragments",
+    "vibronic_fragments",
+    "bch_expansion",
+    "ImportanceConfig",
+    "effective_hamiltonian",
+    "perturbation_error",
+    "ProductFormula",
+    "HOState",
+    "VibronicHO",
+    "RealspaceCoeffs",
+    "RealspaceMatrix",
+    "RealspaceOperator",
+    "RealspaceSum",
+]

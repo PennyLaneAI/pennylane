@@ -20,7 +20,7 @@ from copy import copy
 import jax
 import numpy as np
 
-from pennylane import ops, queuing
+from pennylane import ops
 from pennylane.allocation import Allocate, Deallocate, allocate_prim, deallocate_prim
 from pennylane.capture import pause
 from pennylane.capture.base_interpreter import FlattenedInterpreter
@@ -37,7 +37,9 @@ from pennylane.capture.primitives import (
     value_and_grad_prim,
     vjp_prim,
 )
+from pennylane.core import queuing
 from pennylane.core.operator import Operator
+from pennylane.core.qscript import QuantumScript
 from pennylane.ops.mid_measure import (
     MeasurementValue,
     MidMeasure,
@@ -48,8 +50,6 @@ from pennylane.ops.mid_measure import (
 )
 from pennylane.templates.core import CollectedSubroutine
 from pennylane.wires import DynamicWire
-
-from .qscript import QuantumScript
 
 
 class CollectOpsandMeas(FlattenedInterpreter):
@@ -76,7 +76,7 @@ class CollectOpsandMeas(FlattenedInterpreter):
     >>> collector.eval(plxpr.jaxpr, plxpr.consts, 1.2)
     [probs(wires=[0]), expval(Z(1))]
     >>> collector.state
-    {'ops': [X(0), X(1), X(2), Adjoint(S(0)), MidMeasure(wires=[0], postselect=None, reset=False), RX(Array(2.4, dtype=float..., weak_type=True), wires=[0])], 'measurements': [probs(wires=[0]), expval(Z(1))], 'dynamic_wire_map': {}}
+    {'ops': [X(0), X(1), X(2), Adjoint(S(0)), MidMeasure(wires=[0], postselect=None, reset=False), RX(2.4, wires=[0])], 'measurements': [probs(wires=[0]), expval(Z(1))], 'dynamic_wire_map': {}}
 
     After execution, the collected operations and measurements are available in the ``state``
     property.
@@ -86,9 +86,11 @@ class CollectOpsandMeas(FlattenedInterpreter):
 
     >>> collector = CollectOpsandMeas()
     >>> collector(qp.T)(0)
+    T(0)
     >>> collector.state['ops']
     [T(0)]
     >>> collector(qp.S)(0)
+    S(0)
     >>> collector.state['ops']
     [T(0), S(0)]
 
@@ -148,19 +150,20 @@ def _ctrl_transform_prim(self, *invals, n_control, jaxpr, n_consts, **params):
 @CollectOpsandMeas.register_primitive(cond_prim)
 def _cond_primitive(self, *all_args, jaxpr_branches, consts_slices, args_slice):
     n_branches = len(jaxpr_branches)
-    conditions = all_args[:n_branches]
+    conditions = all_args[: n_branches - 1]
     args = all_args[slice(*args_slice)]
 
-    # Find predicates that use mid-circuit measurements. We don't check the last
-    # condition as that is always `True`.
-    mcm_conditions = tuple(pred for pred in conditions[:-1] if isinstance(pred, MeasurementValue))
+    # Find predicates that use mid-circuit measurements
+    mcm_conditions = tuple(pred for pred in conditions if isinstance(pred, MeasurementValue))
     if mcm_conditions:
-        if len(mcm_conditions) != len(conditions) - 1:
+        if len(mcm_conditions) != len(conditions):
             raise ValueError(
                 "Cannot use qp.cond with a combination of mid-circuit measurements "
                 "and other classical conditions as predicates."
             )
         conditions = get_mcm_predicates(mcm_conditions)
+    else:
+        conditions = (*conditions, True)
 
     for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices, strict=True):
         consts = all_args[slice(*const_slice)]
@@ -263,6 +266,20 @@ def _convert_element_type(self, operand, **kwargs):
     if isinstance(operand, MeasurementValue):
         return operand
     return jax.lax.convert_element_type_p.bind(operand, **kwargs)
+
+
+@CollectOpsandMeas.register_primitive(jax.lax.eq_p)
+def _equal(self, lhs, rhs):
+    if isinstance(lhs, MeasurementValue) or isinstance(rhs, MeasurementValue):
+        return lhs == rhs
+    return jax.lax.eq_p.bind(lhs, rhs)
+
+
+@CollectOpsandMeas.register_primitive(jax.lax.ne_p)
+def _not_equal(self, lhs, rhs):
+    if isinstance(lhs, MeasurementValue) or isinstance(rhs, MeasurementValue):
+        return lhs != rhs
+    return jax.lax.ne_p.bind(lhs, rhs)
 
 
 def plxpr_to_tape(plxpr: "jax.extend.core.Jaxpr", consts, *args, shots=None) -> QuantumScript:

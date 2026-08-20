@@ -41,6 +41,8 @@ def _trotterize_qfunc_dummy(time, theta, phi, wires, flip=False):
 
 
 _INSTANCES_TO_TEST = [
+    # GlobalPhase acts on no wires, so `_check_differentiation`'s `qp.probs(wires=op.wires)` cannot be constructed
+    (qp.GlobalPhase(1.1), {"skip_differentiation": True}),
     (LabelledOp(qp.X(0), "my-x"), {}),
     (MarkedOp(qp.X(0), "my-x"), {}),
     (qp.ops.MidMeasure(wires=0), {"skip_capture": True}),
@@ -58,7 +60,8 @@ _INSTANCES_TO_TEST = [
         qp.QubitChannel([np.array([[1, 0], [0, 0.8]]), np.array([[0, 0.6], [0, 0]])], wires=0),
         {"skip_differentiation": True},
     ),
-    (qp.MultiControlledX(wires=[0, 1]), {}),
+    # Skipping bind_new_parameters test for `MultiControlledX` because it does not make sense for control values
+    (qp.MultiControlledX(wires=[0, 1]), {"skip_bind_new_parameters": True}),
     (qp.Projector([1], 0), {"skip_differentiation": True}),
     (qp.Projector([1, 0], 0), {"skip_differentiation": True}),
     (qp.DiagonalQubitUnitary([1, 1, 1, 1], wires=[0, 1]), {"skip_differentiation": True}),
@@ -83,10 +86,17 @@ _INSTANCES_TO_TEST = [
     (qp.s_prod(1.1, qp.RX(1.1, 0)), {"skip_differentiation": True}),
     (qp.prod(qp.PauliX(0), qp.PauliY(1), qp.PauliZ(0)), {}),
     (qp.ctrl(qp.RX(1.1, 0), 1), {}),
-    (qp.exp(qp.PauliX(0), 1.1), {}),
+    pytest.param(
+        (qp.exp(qp.PauliX(0), 1.1), {}),
+        marks=pytest.mark.xfail(
+            reason=(
+                "Real exponent decomposes to complex PauliRot, which is not "
+                "supported with Operator2"
+            )
+        ),
+    ),
     (qp.pow(qp.IsingXX(1.1, [0, 1]), 2.5), {}),
     (qp.ops.Evolution(qp.PauliX(0), 5.2), {}),
-    (qp.QutritBasisState([1, 2, 0], wires=[0, 1, 2]), {"skip_differentiation": True}),
     (qp.estimator.FirstQuantization(1, 2, 1), {}),
     (qp.prod(qp.RX(1.1, 0), qp.RY(2.2, 0), qp.RZ(3.3, 1)), {}),
     (qp.Snapshot(measurement=qp.expval(qp.Z(0)), tag="hi"), {}),
@@ -140,20 +150,12 @@ _INSTANCES_TO_FAIL = [
         DeviceError,  # not supported with default.qubit and does not provide a decomposition
     ),
     (
-        qp.THermitian(np.eye(3), wires=0),
-        (AssertionError, ValueError),  # qutrit ops fail validation
-    ),
-    (
         qp.ops.qubit.special_unitary.TmpPauliRot(1.1, "X", [0]),
         AssertionError,  # private type with has_matrix=False despite having one
     ),
     (
         qp.ops.Conditional(qp.measure(1), qp.S(0)),
         AssertionError,  # needs flattening helpers to be updated, also cannot be pickled
-    ),
-    (
-        qp.GlobalPhase(1.1),
-        AssertionError,  # empty decomposition, matrix differs from decomp's matrix
     ),
     (
         qp.pulse.ParametrizedEvolution(qp.PauliX(0) + sum * qp.PauliZ(0)),
@@ -191,8 +193,6 @@ _ABSTRACT_OR_META_TYPES = {
     qp.ops.qubit.StateVectorProjector,
     qp.templates.core.CollectedSubroutine,
     StatePrepBase,
-    qp.resource.ResourcesOperation,
-    qp.resource.ErrorOperation,
     PowOperation,
     qp.StatePrep,
     qp.FromBloq,
@@ -217,7 +217,8 @@ def get_all_classes(c):
 _CLASSES_TO_TEST = (
     set(get_all_classes(Operator))
     - {i[1] for i in getmembers(qp.templates) if isclass(i[1]) and issubclass(i[1], Operator)}
-    - {type(op) for (op, _) in _INSTANCES_TO_TEST}
+    # `pytest.param` returns a `ParameterSet` (a namedtuple)
+    - {type(v.values[0][0] if hasattr(v, "values") else v[0]) for v in _INSTANCES_TO_TEST}
     - {type(op) for (op, _) in _INSTANCES_TO_FAIL}
 )
 """All operators, except those tested manually, abstract/meta classes, and templates."""

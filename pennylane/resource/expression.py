@@ -17,7 +17,30 @@ Helper classes and functions for symbolic resource expressions.
 
 from collections import defaultdict
 from functools import lru_cache
-from typing import Any, Union
+from typing import Union
+
+
+def _cast_if_constant(
+    new_data: dict[tuple[str, ...], int], vars: set[str], skip_copy: bool, skip_normalization: bool
+) -> Union["Expression", int]:
+    """Collapse the new data for creating an Expression into an int if possible.
+
+    Args:
+        new_data (dict[tuple[str, ...], int]): The new data for the Expression.
+        vars (set[str]): The set of variables in the Expression.
+        skip_copy (bool): Whether to skip copying the new data when creating the Expression.
+        skip_normalization (bool): Whether to skip normalization when creating the Expression.
+
+    Returns:
+        Expression | int: An int if the result is a constant, otherwise a new :class:`~.resource.Expression` instance.
+    """
+    if len(new_data) == 0:
+        return 0
+    if len(new_data) == 1 and () in new_data:
+        return new_data[()]  # Return as int rather than Expression if the result is a constant
+    return Expression(
+        new_data, vars=vars, _skip_copy=skip_copy, _skip_normalization=skip_normalization
+    )
 
 
 def _term_to_str(vars: tuple[str, ...], coeff: int) -> str:
@@ -38,7 +61,7 @@ class Expression:
     .. warning::
 
         This class is intended to be immutable. Do not modify the internal state of an expression
-        after it is created, as this may lead to incorrect behavior.
+        after it is created, as this may lead to incorrect behaviour.
     """
 
     __slots__ = ("_hashval", "_data", "_vars")
@@ -138,15 +161,17 @@ class Expression:
         """
         if substitutions is None:
             substitutions = {}
-        substitutions.update(kwargs)
+
+        # NOTE: don't mutate incoming dict
+        substitutions_copy = {**substitutions, **kwargs}
 
         new_data = defaultdict(int)
         for vars, coeff in self._data.items():
             new_k = []
             mult = 1
             for var in vars:
-                if var in substitutions:
-                    mult *= substitutions[var]
+                if var in substitutions_copy:
+                    mult *= substitutions_copy[var]
                 else:
                     new_k.append(var)
 
@@ -157,7 +182,7 @@ class Expression:
             return 0
         if len(new_data) == 1 and () in new_data:
             return new_data[()]  # Return as int rather than Expression if the result is a constant
-        return Expression(new_data, vars=self._vars.difference(substitutions.keys()))
+        return Expression(new_data, vars=self._vars.difference(substitutions_copy.keys()))
 
     @lru_cache
     def __str__(self) -> str:
@@ -193,7 +218,13 @@ class Expression:
     def __hash__(self) -> int:
         # NOTE: `lru_cache` and related methods can't be used here since they rely on a hash value existing
         if self._hashval is None:
-            self._hashval = hash(frozenset(self._data.items()))
+            # Need to make sure that int hashes are consistent with Expression hashes
+            if len(self._data) == 0:
+                self._hashval = hash(0)
+            elif len(self._data) == 1 and () in self._data:
+                self._hashval = hash(self._data[()])
+            else:
+                self._hashval = hash(frozenset(self._data.items()))
 
         return self._hashval
 
@@ -206,53 +237,50 @@ class Expression:
             raise ValueError("Expression cannot be converted to int, contains variables")
         return self._data[()]
 
-    def __mul__(self, other) -> "Expression":
+    def __mul__(self, other) -> Union["Expression", int]:
         if not isinstance(other, (int, Expression)):
             return NotImplemented
 
         if isinstance(other, int):
             if other == 0:
-                return Expression({})
-            return Expression(
+                return 0
+            return _cast_if_constant(
                 {vars: coeff * other for vars, coeff in self._data.items()},
-                _skip_copy=True,
-                _skip_normalization=True,
                 vars=self._vars,
+                skip_copy=True,
+                skip_normalization=True,
             )
 
         new_data = defaultdict(int)
         for vars1, coeff1 in self._data.items():
             for vars2, coeff2 in other._data.items():
                 new_data[vars1 + vars2] += coeff1 * coeff2
-        return Expression(new_data, vars=self._vars.union(other._vars))
+        return _cast_if_constant(
+            new_data, self._vars.union(other._vars), skip_copy=False, skip_normalization=False
+        )
 
-    def __rmul__(self, other) -> "Expression":
+    def __rmul__(self, other) -> Union["Expression", int]:
         return self.__mul__(other)
 
-    def __add__(self, other) -> "Expression":
+    def __add__(self, other) -> Union["Expression", int]:
         if not isinstance(other, (int, Expression)):
             return NotImplemented
 
-        if isinstance(other, int):
-            new_data = self._data.copy()
-            new_data[()] = new_data.get((), 0) + other
-            return Expression(new_data, _skip_copy=True, vars=self._vars)
-
+        vars = self._vars
         new_data = self._data.copy()
-        for vars, coeff in other._data.items():
-            new_data[vars] = new_data.get(vars, 0) + coeff
-        return Expression(new_data, _skip_copy=True, vars=self._vars.union(other._vars))
 
-    def __radd__(self, other) -> "Expression":
+        if isinstance(other, int):
+            new_data[()] = new_data.get((), 0) + other
+        else:
+            for other_vars, coeff in other._data.items():
+                new_val = new_data.get(other_vars, 0) + coeff
+                if new_val == 0:
+                    del new_data[other_vars]
+                else:
+                    new_data[other_vars] = new_val
+            vars = vars.union(other._vars)
+
+        return _cast_if_constant(new_data, vars, skip_copy=True, skip_normalization=False)
+
+    def __radd__(self, other) -> Union["Expression", int]:
         return self.__add__(other)
-
-
-def convert_int_vals_to_expression(data: dict[Any, Any]):
-    """Replaces all integer values in a dictionary with Expression objects.
-
-    Args:
-        data (dict[Any, Any]): The dictionary to convert.
-    """
-    for key, count in data.items():
-        if isinstance(count, int):
-            data[key] = Expression(count)

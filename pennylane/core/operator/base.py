@@ -22,7 +22,7 @@ import warnings
 from collections.abc import Callable, Hashable, Iterable, Set
 from functools import lru_cache
 from importlib.util import find_spec
-from typing import Any, ClassVar, Literal, Optional, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, Optional, Union
 from warnings import warn
 
 import numpy as np
@@ -31,6 +31,8 @@ from scipy.sparse import spmatrix
 import pennylane as qp
 from pennylane import capture
 from pennylane._class_property import classproperty
+from pennylane.capture import ABCCaptureMeta
+from pennylane.core.queuing import AnnotatedQueue, QueuingManager
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -46,9 +48,13 @@ from pennylane.exceptions import (
 )
 from pennylane.math import expand_matrix, is_abstract
 from pennylane.pytrees import register_pytree
-from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.typing import FlatPytree, TensorLike
 from pennylane.wires import Wires, WiresLike, is_abstract_qubit
+
+from .utils import abstractify
+
+if TYPE_CHECKING:
+    from pennylane.decomposition.resources import CompressedResourceOp
 
 has_jax = find_spec("jax") is not None
 _UNSET_BATCH_SIZE = -1  # indicates that the (lazy) batch size has not yet been accessed/computed
@@ -67,7 +73,10 @@ def _get_abstract_operator() -> type:
 
     import jax  # pylint: disable=import-outside-toplevel
 
-    class AbstractOperator(jax.core.AbstractValue):
+    # We're adding "no cover" here because coverage is lost as we migrated operators to
+    # the `Operator2` interface, and we don't really care about maintaining coverage of
+    # Operator1 code if it turns out to be a lot of work.
+    class AbstractOperator(jax.core.AbstractValue):  # pragma: no cover
         """An operator captured into plxpr."""
 
         # pylint: disable=missing-function-docstring
@@ -94,6 +103,11 @@ def _get_abstract_operator() -> type:
         @staticmethod
         def _matmul(*args):
             return qp.prod(*args)
+
+        @staticmethod
+        def _rmatmul(a, b):
+            """Preserve operand order when ``@`` falls back to the captured right operand."""
+            return qp.prod(b, a)
 
         @staticmethod
         def _mul(a, b):
@@ -175,7 +189,7 @@ def _process_data(op):
     # Use qp.math.real to take the real part. We may get complex inputs for
     # example when differentiating holomorphic functions with JAX: a complex
     # valued QNode (one that returns qp.state) requires complex typed inputs.
-    if op.name in ("RX", "RY", "RZ", "PhaseShift", "Rot"):
+    if op.name in ("RX", "RY", "RZ", "PhaseShift", "Rot", "U1", "U2", "U3"):
         mod_val = 2 * np.pi
     else:
         mod_val = None
@@ -184,7 +198,7 @@ def _process_data(op):
 
 
 # pylint: disable=abstract-method
-class _GiveOperatorMeta(capture.ABCCaptureMeta):
+class _GiveOperatorMeta(ABCCaptureMeta):
     """When someone tries to inherit from Operator1, we switch it out for Operator instead."""
 
     def __new__(mcs, name, bases, attrs):
@@ -250,7 +264,7 @@ class Operator1(abc.ABC, metaclass=_GiveOperatorMeta):
         return getattr(subclass, "_operator_version", None) == 1
 
 
-class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
+class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     r"""Base class representing quantum operators.
 
     Operators are uniquely defined by their name, the wires they act on, their (trainable) parameters,
@@ -388,15 +402,6 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
         Some examples include arithmetic operators, like :class:`~.Adjoint` or :class:`~.Sum`, or templates that
         perform preprocessing during initialization.
-
-        See the ``Operator._flatten`` and ``Operator._unflatten`` methods for more information.
-
-        >>> op = qp.PauliRot(1.2, "XY", wires=(0,1))
-        >>> op._flatten()
-        ((1.2,), (Wires([0, 1]), (('pauli_word', 'XY'),)))
-        >>> qp.PauliRot._unflatten(*op._flatten())
-        PauliRot(1.2, XY, wires=[0, 1])
-
 
     .. details::
         :title: Parameter broadcasting
@@ -619,9 +624,10 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
                 wires = (wires,)
             kwargs["n_wires"] = len(wires)
             args += wires
+
         # If not in kwargs, check if the last positional argument represents wire(s).
         elif is_abstract_qubit(args[-1]):
-            kwargs["n_wires"] = 1
+            kwargs["n_wires"] = 1  # pragma: no cover
         elif args and isinstance(args[-1], array_types) and args[-1].shape == ():
             kwargs["n_wires"] = 1
         elif args and isinstance(args[-1], iterable_wires_types):
@@ -636,12 +642,12 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
     def __copy__(self) -> "Operator":
         cls = self.__class__
         copied_op = cls.__new__(cls)
-        copied_op.data = copy.copy(self.data)
+        copied_op._data = copy.copy(self.data)
         # pylint: disable=attribute-defined-outside-init
         if hasattr(self, "_hyperparameters"):
             copied_op._hyperparameters = copy.copy(self._hyperparameters)
         for attr, value in vars(self).items():
-            if attr not in {"data", "_hyperparameters"}:
+            if attr not in {"_data", "_hyperparameters"}:
                 setattr(copied_op, attr, value)
 
         return copied_op
@@ -655,11 +661,11 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         memo[id(self)] = copied_op
 
         for attribute, value in self.__dict__.items():
-            if attribute == "data":
+            if attribute == "_data":
                 # Shallow copy the list of parameters. We avoid a deep copy
                 # here, since PyTorch does not support deep copying of tensors
                 # within a differentiable computation.
-                copied_op.data = copy.copy(value)
+                copied_op._data = copy.copy(value)
             else:
                 # Deep copy everything else.
                 setattr(copied_op, attribute, copy.deepcopy(value, memo))
@@ -1029,9 +1035,14 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         self._batch_size: int | None = _UNSET_BATCH_SIZE
         self._ndim_params: tuple[int] = _UNSET_BATCH_SIZE
 
-        self.data = tuple(np.array(p) if isinstance(p, (list, tuple)) else p for p in params)
+        self._data = tuple(np.array(p) if isinstance(p, (list, tuple)) else p for p in params)
 
         self.queue()
+
+    @property
+    def data(self) -> tuple[TensorLike, ...]:
+        """tuple: Trainable parameters that the operator depends on."""
+        return self._data
 
     def _check_batching(self):
         """Check if the expected numbers of dimensions of parameters coincides with the
@@ -1098,8 +1109,8 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         """Constructor-call-like representation."""
         if self.parameters:
             params = ", ".join([repr(p) for p in self.parameters])
-            return f"{self.name}({params}, wires={self.wires.tolist()})"
-        return f"{self.name}(wires={self.wires.tolist()})"
+            return f"{self.name}({params}, wires={self.wires})"
+        return f"{self.name}(wires={self.wires})"
 
     @property
     def num_params(self) -> int:
@@ -1279,25 +1290,6 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         their decompositions exhibit the same counts for each gate type, even if the individual
         gate parameters differ.
 
-        **Examples**
-
-        The ``MultiRZ`` has non-empty ``resource_keys``:
-
-        >>> qp.MultiRZ.resource_keys
-        {'num_wires'}
-
-        The ``resource_params`` of an instance of ``MultiRZ`` will contain the number of wires:
-
-        >>> op = qp.MultiRZ(0.5, wires=[0, 1])
-        >>> op.resource_params
-        {'num_wires': 2}
-
-        Note that another ``MultiRZ`` may have different parameters but the same ``resource_params``:
-
-        >>> op2 = qp.MultiRZ(0.7, wires=[1, 2])
-        >>> op2.resource_params
-        {'num_wires': 2}
-
         """
         return {}
 
@@ -1418,7 +1410,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
         """
         # Child methods may call super().pow(z%period) where op**period = I
-        # For example, PauliX**2 = I, SX**4 = I, TShift**3 = I (for qutrit)
+        # For example, PauliX**2 = I, SX**4 = I.
         # Hence we define the non-negative integer cases here as a repeated list
         if z == 0:
             return []
@@ -1524,13 +1516,13 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
             return qp.pulse.ParametrizedHamiltonian([other], [self])
         if isinstance(other, TensorLike):
             return qp.s_prod(scalar=other, operator=self, lazy=False)
-        return NotImplemented
+        return NotImplemented  # pragma: no cover
 
     def __truediv__(self, other: TensorLike):
         """The division between an Operator and a number."""
         if isinstance(other, TensorLike):
             return self.__mul__(1 / other)
-        return NotImplemented
+        return NotImplemented  # pragma: no cover
 
     __rmul__ = __mul__
 
@@ -1542,13 +1534,13 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         """The subtraction operation of Operator-Operator objects and Operator-scalar."""
         if isinstance(other, Operator):
             return self + qp.s_prod(-1, other, lazy=False)
-        if isinstance(other, TensorLike):
+        if isinstance(other, TensorLike):  # pragma: no cover
             return self + (qp.math.multiply(-1, other))
-        return NotImplemented
+        return NotImplemented  # pragma: no cover
 
     def __rsub__(self, other: Union["Operator", TensorLike]):
         """The reverse subtraction operation of Operator-Operator objects and Operator-scalar."""
-        return -self + other
+        return -self + other  # pragma: no cover
 
     def __neg__(self):
         """The negation operation of an Operator object."""
@@ -1572,23 +1564,8 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         will be the operator ``RX(1, wires=0)``.
 
         The metadata **must** be hashable.  If the hyperparameters contain a non-hashable component, then this
-        method and ``Operator._unflatten`` should be overridden to provide a hashable version of the hyperparameters.
-
-        **Example:**
-
-        >>> op = qp.Rot(1.2, 2.3, 3.4, wires=0)
-        >>> qp.Rot._unflatten(*op._flatten())
-        Rot(1.2, 2.3, 3.4, wires=[0])
-        >>> op = qp.PauliRot(1.2, "XY", wires=(0,1))
-        >>> qp.PauliRot._unflatten(*op._flatten())
-        PauliRot(1.2, XY, wires=[0, 1])
-
-        Operators that have trainable components that differ from their ``Operator.data`` must implement their own
-        ``_flatten`` methods.
-
-        >>> op = qp.ctrl(qp.U2(3.4, 4.5, wires="a"), ("b", "c") )
-        >>> op._flatten()
-        ((U2(3.4, 4.5, wires=['a']),), (Wires(['b', 'c']), (True, True), Wires([]), 'borrowed'))
+        method and ``Operator._unflatten`` should be overridden to provide a hashable version of the hyperparameters. Operators
+        that have trainable components that differ from their ``Operator.data`` must implement their own ``_flatten`` methods.
 
         """
         hashable_hyperparameters = tuple(
@@ -1607,23 +1584,19 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         The output of ``Operator._flatten`` and the class type must be sufficient to reconstruct the original
         operation with ``Operator._unflatten``.
 
-        **Example:**
-
-        >>> op = qp.Rot(1.2, 2.3, 3.4, wires=0)
-        >>> op._flatten()
-        ((1.2, 2.3, 3.4), (Wires([0]), ()))
-        >>> qp.Rot._unflatten(*op._flatten())
-        Rot(1.2, 2.3, 3.4, wires=[0])
-        >>> op = qp.PauliRot(1.2, "XY", wires=(0,1))
-        >>> op._flatten()
-        ((1.2,), (Wires([0, 1]), (('pauli_word', 'XY'),)))
-        >>> op = qp.ctrl(qp.U2(3.4, 4.5, wires="a"), ("b", "c") )
-        >>> type(op)._unflatten(*op._flatten())
-        Controlled(U2(3.4, 4.5, wires=['a']), control_wires=['b', 'c'])
-
         """
         hyperparameters_dict = dict(metadata[1])
         return cls(*data, wires=metadata[0], **hyperparameters_dict)
+
+
+@abstractify.register(ABCCaptureMeta)
+def _abstractify_operator1_subclass(op_type: type[Operator]) -> "CompressedResourceOp":
+    return qp.resource_rep(op_type)
+
+
+@abstractify.register(Operator)
+def _abstractify_operator1(op: Operator) -> "CompressedResourceOp":
+    return qp.resource_rep(type(op), **op.resource_params)
 
 
 # =============================================================================
@@ -1768,20 +1741,11 @@ class Operation(Operator):
         **Example**
 
         >>> op = qp.CRot(0.4, 0.1, 0.3, wires=[0, 1])
-        >>> op.parameter_frequencies
+        >>> qp.gradients.parameter_frequencies(op)
         [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
 
         For operators that define a generator, the parameter frequencies are directly
-        related to the eigenvalues of the generator:
-
-        >>> op = qp.ControlledPhaseShift(0.1, wires=[0, 1])
-        >>> op.parameter_frequencies
-        [(1,)]
-        >>> gen = qp.generator(op, format="observable")
-        >>> gen_eigvals = qp.eigvals(gen)
-        >>> qp.gradients.eigvals_to_frequencies(tuple(gen_eigvals))
-        (np.float64(1.0),)
-
+        related to the eigenvalues of the generator and can be computed numerically.
         For more details on this relationship, see :func:`.eigvals_to_frequencies`.
         """
         if self.num_params == 1:

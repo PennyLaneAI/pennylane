@@ -103,7 +103,7 @@ please consult their respective documentation pages for information on gradient 
         def circuit(_x):
             qp.RX(_x, wires=0)
             return qp.expval(qp.Z(0))
-        
+
         return qp.grad(circuit)(x)
 
 >>> x = jnp.array(jnp.pi / 4)

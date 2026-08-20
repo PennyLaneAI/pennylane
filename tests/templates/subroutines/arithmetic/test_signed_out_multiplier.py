@@ -15,18 +15,30 @@
 Tests for the SignedOutMultiplier template.
 """
 
+from collections import Counter
 from functools import reduce
 
 import numpy as np
 import pytest
 
+import pennylane as qp
 from pennylane import SignedOutMultiplier, device, qnode
+from pennylane.core.operator import abstractify
 from pennylane.decomposition import list_decomps
+from pennylane.decomposition.resources import controlled_resource_rep
 from pennylane.measurements import sample, state
 from pennylane.ops import CNOT
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
 from pennylane.templates import BasisEmbedding
-from pennylane.templates.subroutines.arithmetic.signed_out_multiplier import _twos_complement_helper
+from pennylane.templates.subroutines.arithmetic.incrementer import Incrementer
+from pennylane.templates.subroutines.arithmetic.out_multiplier import OutMultiplier
+from pennylane.templates.subroutines.arithmetic.semi_adder import SemiAdder
+from pennylane.templates.subroutines.arithmetic.signed_out_multiplier import (
+    _not_zeroed_signed_out_multiplier_resources,
+    _twos_complement_helper,
+    _zeroed_signed_out_multiplier_resources,
+)
+from pennylane.typing import Wire
 
 
 def bin_to_int(bits):
@@ -50,6 +62,95 @@ def twos_complement_value(bits):
         sum += (2**i) * bit
     sum -= (2 ** (len(bits) - 1)) * bits[0]
     return sum
+
+
+@pytest.mark.parametrize(
+    (
+        "x_wires",
+        "y_wires",
+        "output_wires",
+        "work_wires",
+        "output_wires_zeroed",
+        "expected_num_work_wires",
+    ),
+    [
+        ((0, 1, 2), (3, 4, 5), (10, 11, 12, 13, 14, 15), (6, 7, 8, 9), True, 4),
+    ],
+)
+def test_abstract_init(
+    x_wires, y_wires, output_wires, work_wires, output_wires_zeroed, expected_num_work_wires
+):  # pylint: disable=too-many-arguments
+    """Test that abstract init mirrors concrete init."""
+    abstract_op = SignedOutMultiplier(
+        Wire[len(x_wires)],
+        Wire[len(y_wires)],
+        Wire[len(output_wires)],
+        Wire[len(work_wires)],
+        output_wires_zeroed=output_wires_zeroed,
+    )
+    assert abstract_op.arguments["output_wires_zeroed"] is output_wires_zeroed
+    assert len(abstract_op.work_wires) == expected_num_work_wires
+
+    concrete_op = SignedOutMultiplier(
+        x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=output_wires_zeroed
+    )
+    assert abstractify(concrete_op) == abstract_op
+
+
+def test_wires_property():
+    """Test that wires includes all registers, including work wires."""
+    op = SignedOutMultiplier([0], [1], [2, 3], [4, 5])
+    assert op.wires == qp.wires.Wires([0, 1, 2, 3, 4, 5])
+
+
+def test_signed_out_multiplier_resources():
+    """Test resource functions declare expected abstract operator and gate counts."""
+    x_wires = [0, 1]
+    y_wires = [2, 3]
+    output_wires = [4, 5, 6]
+    work_wires = [7, 8, 9, 10]
+    num_incrementer_work_wires = len(work_wires) - 2
+
+    zeroed_resources = _zeroed_signed_out_multiplier_resources(
+        x_wires, y_wires, output_wires, work_wires, output_wires_zeroed=True
+    )
+    mult_ops = [key for key in zeroed_resources if isinstance(key, OutMultiplier)]
+    assert len(mult_ops) == 1
+    mult_op = mult_ops[0]
+    assert mult_op.arguments["mod"] == 2 ** (len(output_wires) - 1)
+    assert len(mult_op.work_wires) == num_incrementer_work_wires
+    assert mult_op.arguments["output_wires_zeroed"] is True
+    assert zeroed_resources[CNOT] == 6 + (len(x_wires) + len(y_wires)) * 2 + (len(output_wires) - 1)
+
+    expected_incrementers = Counter()
+    for num_wires, count in (
+        (len(x_wires), 2),
+        (len(output_wires) - 1, 1),
+        (len(y_wires), 2),
+    ):
+        inc_rep = controlled_resource_rep(
+            Incrementer,
+            {"num_wires": num_wires, "num_work_wires": num_incrementer_work_wires},
+            num_control_wires=1,
+        )
+        expected_incrementers[inc_rep] += count
+
+    for inc_rep, count in expected_incrementers.items():
+        assert zeroed_resources[inc_rep] == count
+
+    not_zeroed_resources = _not_zeroed_signed_out_multiplier_resources(
+        x_wires, y_wires, output_wires, work_wires
+    )
+    nested_ops = [key for key in not_zeroed_resources if isinstance(key, SignedOutMultiplier)]
+    assert len(nested_ops) == 1
+    assert nested_ops[0].arguments["output_wires_zeroed"] is True
+
+    semi_adder_rep = SemiAdder(
+        Wire[len(output_wires)],
+        Wire[len(output_wires)],
+        Wire[len(output_wires) - 1],
+    )
+    assert not_zeroed_resources[semi_adder_rep] == 1
 
 
 @pytest.mark.jax
@@ -94,14 +195,14 @@ def test_assert_valid(x_wires, y_wires, work_wires, output_wires, zeroed):
             [3, 7, 5],
             [6, 7, 8],
             [9, 10],
-            "None of the wires in y_wires should be included in output_wires.",
+            "None of the wires in output_wires should be included in y_wires.",
         ),
         (
             [0, 1, 7],
             [3, 4, 5],
             [6, 7, 8],
             [9, 10],
-            "None of the wires in x_wires should be included in output_wires.",
+            "None of the wires in output_wires should be included in x_wires.",
         ),
     ],
 )
@@ -124,6 +225,47 @@ def test_decomposition(x_wires, y_wires, work_wires, output_wires, zeroed):
 
     for rule in list_decomps(SignedOutMultiplier):
         _test_decomposition_rule(op, rule)
+
+
+@pytest.mark.capture
+@pytest.mark.parametrize(
+    "rule_name, registers, expected_primitives",
+    [
+        (
+            "_signed_out_multiplier_decomposition_zeroed",
+            ([0, 1, 2], [3, 4, 5], [10, 11, 12, 13, 14, 15], [6, 7, 8, 9]),
+            {"for_loop": 5, "OutMultiplier": 1},
+        ),
+        (
+            "_signed_out_multiplier_decomposition_not_zeroed",
+            ([0, 1], [2, 3], [9, 10], [4, 5, 6, 7, 8]),
+            {"concatenate": 2, "SignedOutMultiplier": 1},
+        ),
+    ],
+)
+def test_decomposition_with_abstract_wires(rule_name, registers, expected_primitives):
+    """Test the decomposition rules with every register passed as an abstract wire argument."""
+    jnp = pytest.importorskip("jax.numpy")
+    rule = list_decomps(SignedOutMultiplier)[rule_name]
+
+    def decomposition(x_wires, y_wires, output_wires, work_wires):
+        rule(
+            x_wires=x_wires,
+            y_wires=y_wires,
+            output_wires=output_wires,
+            work_wires=work_wires,
+        )
+
+    plxpr = qp.capture.make_plxpr(decomposition, autograph=False)(
+        *(jnp.array(register) for register in registers)
+    )
+    primitive_names = [eqn.primitive.name for eqn in plxpr.jaxpr.eqns]
+    for eqn in plxpr.jaxpr.eqns:
+        if eqn.primitive.name == "operator":
+            primitive_names.append(eqn.params["op_cls"].__name__)
+
+    for primitive, expected_count in expected_primitives.items():
+        assert primitive_names.count(primitive) == expected_count
 
 
 @pytest.mark.parametrize(

@@ -20,9 +20,9 @@ import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qp
+from pennylane.core.qscript import QuantumScript
+from pennylane.core.transforms import BoundTransform, CompilePipeline
 from pennylane.noise.add_noise import _get_transform_program, add_noise
-from pennylane.tape import QuantumScript
-from pennylane.transforms.core import BoundTransform, CompilePipeline
 
 # pylint:disable = no-member
 

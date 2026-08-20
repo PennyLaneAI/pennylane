@@ -16,7 +16,7 @@
 import warnings
 from collections.abc import MutableMapping
 
-from pennylane.tape import QuantumScript
+from pennylane.core.qscript import QuantumScript
 from pennylane.transforms import transform
 from pennylane.typing import Result, ResultBatch
 

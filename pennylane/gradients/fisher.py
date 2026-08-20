@@ -18,11 +18,11 @@ from functools import partial
 
 from pennylane import math
 from pennylane._grad import jacobian
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.devices import DefaultQubit
 from pennylane.gradients import adjoint_metric_tensor
 from pennylane.gradients.metric_tensor import _contract_metric_tensor_with_cjac
 from pennylane.measurements import probs
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.workflow import execute

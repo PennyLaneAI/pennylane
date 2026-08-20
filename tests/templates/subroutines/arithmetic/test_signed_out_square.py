@@ -21,8 +21,6 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
-
-# from pennylane.ops import Controlled
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arithmetic.signed_out_square import SignedOutSquare
 
@@ -52,9 +50,9 @@ def _test_square_correctness(all_wires, rule, seed, output_wires_zeroed, use_jit
     @qp.set_shots(10)
     @qp.qnode(dev)
     def circuit(x_sign, x_u, b):
-        qp.BasisEmbedding(x_sign, wires=x_wires[:1])
-        qp.BasisEmbedding(x_u, wires=x_wires[1:])
-        qp.BasisEmbedding(b, wires=output_wires)
+        qp.BasisEmbedding(qp.math.int_to_binary(x_sign, 1), wires=x_wires[:1])
+        qp.BasisEmbedding(qp.math.int_to_binary(x_u, len(x_wires) - 1), wires=x_wires[1:])
+        qp.BasisEmbedding(qp.math.int_to_binary(b, len(output_wires)), wires=output_wires)
         rule(x_wires, output_wires, work_wires, output_wires_zeroed)
         return (
             qp.sample(wires=x_wires),
@@ -92,7 +90,6 @@ class TestSignedOutSquare:
     """Test the SignedOutSquare template."""
 
     @pytest.mark.catalyst
-    @pytest.mark.external
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("output_wires_zeroed", [False, True])
     def test_qjit_dynamic_wires(self, output_wires_zeroed):
@@ -127,8 +124,8 @@ class TestSignedOutSquare:
         @qp.decompose(gate_set=gate_set, max_expansion=3)
         @qp.qnode(dev)
         def circuit(x, z, x_wires, work_wires):
-            qp.BasisEmbedding(x, wires=x_wires)
-            qp.BasisEmbedding(z, wires=output_wires)
+            qp.BasisEmbedding(qp.math.int_to_binary(x, len(x_wires)), wires=x_wires)
+            qp.BasisEmbedding(qp.math.int_to_binary(z, len(output_wires)), wires=output_wires)
             SignedOutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
             return (
                 qp.sample(wires=x_wires),

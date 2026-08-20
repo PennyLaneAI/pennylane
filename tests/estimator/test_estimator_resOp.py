@@ -24,9 +24,9 @@ import pytest
 
 import pennylane as qp
 import pennylane.estimator.ops as qre_ops
+from pennylane.core.queuing import AnnotatedQueue
 from pennylane.estimator import CompressedResourceOp, ResourceOperator, Resources
 from pennylane.estimator.resource_operator import GateCount, _dequeue, _make_hashable, resource_rep
-from pennylane.queuing import AnnotatedQueue
 
 # pylint: disable=protected-access, too-few-public-methods, no-self-use, unused-argument, disable=arguments-differ, no-member, comparison-with-itself, too-many-arguments, too-many-public-methods
 
@@ -132,7 +132,9 @@ class TestCompressedResourceOp:
         assert CmprssedQSVT1 == CmprssedQSVT3  # compare swapped parameters
         assert CmprssedQSVT1 != Other
 
-    @pytest.mark.parametrize("args, name", zip(compressed_ops_and_params_lst, compressed_op_names))
+    @pytest.mark.parametrize(
+        "args, name", list(zip(compressed_ops_and_params_lst, compressed_op_names))
+    )
     def test_name(self, args, name):
         """Test that the name method behaves as expected."""
         _, op_type, num_wires, parameters, name_param = args

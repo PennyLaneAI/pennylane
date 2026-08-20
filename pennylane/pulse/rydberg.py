@@ -19,11 +19,11 @@ from dataclasses import dataclass
 import numpy as np
 
 from pennylane import math
+from pennylane.core.queuing import QueuingManager
 from pennylane.ops import Identity, Projector, Z
 from pennylane.ops.op_math import prod
 from pennylane.pulse import HardwareHamiltonian, HardwarePulse, drive
 from pennylane.pulse.hardware_hamiltonian import _reorder_parameters
-from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
 

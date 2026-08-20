@@ -7,19 +7,18 @@ name = "pennylane"
 description = "PennyLane is a cross-platform Python library for quantum computing, quantum machine learning, and quantum chemistry. Train a quantum computer the same way as a neural network."
 readme = "README.md"
 license =  "Apache-2.0"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dynamic = ["version"]
 dependencies = [
     "scipy",
     "networkx",
     "rustworkx>=0.14.0",
-    "autograd",
+    "autograd<1.9",
     "appdirs",
     "autoray==0.8.10",
     "cachetools",
     "pennylane-lightning>=0.45",
     "requests",
-    "tomlkit",
     "typing_extensions",
     "packaging",
     "diastatic-malt",
@@ -37,7 +36,6 @@ classifiers = [
     "Operating System :: Microsoft :: Windows",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
@@ -64,7 +62,6 @@ dev = [
     "flaky>=3.7.0",
     "pytest-forked>=1.4.0",
     "pytest-split",
-    "tomlkit~=0.13",
     "rich>=13.7.1",
     "tach==0.32.2",
     "build",
@@ -87,9 +84,9 @@ docs = [
     "numpy>=2.0,<=2.2",
     "pygments-github-lexers",
     "pyzx",
-    "docutils==0.20",
-    "sphinx==8.1",
-    "sphinx-automodapi==0.19",
+    "docutils==0.22",
+    "sphinx==9.0",
+    "sphinx-automodapi==0.22",
     "sphinx-copybutton",
     "sphinxcontrib-bibtex==2.6.3",
     "sphinxcontrib-applehelp==2.0.0",
@@ -118,6 +115,7 @@ external-libraries = [
     "stim",
     "quimb",
     "optax",
+    "kahypar==1.3.5",
     "scipy-openblas32>=0.3.26",
     "qualtran",
     "openqasm3",
@@ -148,6 +146,7 @@ doctest = [
     "jaxlib==0.7.1",
     "stim",
     "quimb",
+    "triton==3.5.1; platform_system == 'Linux' and platform_machine == 'x86_64'",
 ]
 
 [[project.maintainers]]
@@ -167,13 +166,10 @@ pl-device-test = "pennylane.devices.tests:cli"
 # This requires a rename in the setup file of all devices, and is best done during another refactor
 [project.entry-points."pennylane.plugins"]
 "default.qubit" = "pennylane.devices:DefaultQubit"
-"default.gaussian" = "pennylane.devices:DefaultGaussian"
 "default.mixed" = "pennylane.devices.default_mixed:DefaultMixed"
 "reference.qubit" = "pennylane.devices.reference_qubit:ReferenceQubit"
 "null.qubit" = "pennylane.devices.null_qubit:NullQubit"
-"default.qutrit" = "pennylane.devices.default_qutrit:DefaultQutrit"
 "default.clifford" = "pennylane.devices.default_clifford:DefaultClifford"
-"default.qutrit.mixed" = "pennylane.devices.default_qutrit_mixed:DefaultQutritMixed"
 "default.tensor" = "pennylane.devices.default_tensor:DefaultTensor"
 
 [project.entry-points."console_scripts"]
@@ -196,11 +192,11 @@ pennylane = ["devices/tests/pytest.ini", "drawer/plot.mplstyle", "transforms/sig
 
 [tool.black]
 line-length = 100
-target-version = ["py311", "py312", "py313"]
+target-version = ["py312", "py313", "py314"]
 include = '\.pyi?$'
 
 [tool.isort]
-py_version = 311
+py_version = 312
 profile = "black"
 line_length = 100
 known_third_party = ["autoray"]

@@ -25,9 +25,10 @@ from pennylane import pytrees
 from pennylane.capture.autograph import wraps
 from pennylane.compiler import compiler
 from pennylane.core.operator import Operation, Operator, Operator2
+from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
+from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.math import conj, moveaxis, transpose
-from pennylane.queuing import QueuingManager
 
 from .adjoint2 import Adjoint2
 from .symbolicop import SymbolicOp
@@ -73,8 +74,8 @@ def adjoint(fn, lazy=True):
 
         This function supports a batched operator:
 
-        >>> op = qp.adjoint(qp.RX([1, 2, 3], wires=0))
-        >>> qp.matrix(op).shape
+        >>> op = qp.adjoint(qp.RX([1, 2, 3], wires=0))  # doctest: +SKIP
+        >>> qp.matrix(op).shape  # doctest: +SKIP
         (3, 2, 2)
 
         But it doesn't support batching of operators:
@@ -259,7 +260,6 @@ def _adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
 
     @wraps(qfunc)
     def wrapper(*args, **kwargs):
-
         if qp.capture.enabled():
             return _capture_adjoint_transform(qfunc, lazy=lazy)(*args, **kwargs)
 
@@ -279,6 +279,8 @@ def _single_op_eager(op: Operator, update_queue: bool = False) -> Operator:
     if op.has_adjoint:
         adj = op.adjoint()
         if update_queue:
+            if isinstance(op, Operator2):
+                _ = pop_op_eqns((op,))
             QueuingManager.remove(op)
             QueuingManager.append(adj)
         return adj
@@ -324,7 +326,7 @@ class Adjoint(SymbolicOp):
         >>> isinstance(op, AdjointOperation)
         True
         >>> op.grad_method
-        'A'
+        <GradMethod.ANALYTIC: 'A'>
 
     """
 
@@ -351,7 +353,6 @@ class Adjoint(SymbolicOp):
         If the ``base`` is an ``Operation``, this will return an instance of ``AdjointOperation``.
 
         """
-
         if isinstance(base, Operation):
             # not an observable
             return object.__new__(AdjointOperation)
@@ -414,7 +415,7 @@ class Adjoint(SymbolicOp):
         if self.base.has_adjoint:
             return [self.base.adjoint()]
         base_decomp = self.base.decomposition()
-        return [Adjoint(op) for op in reversed(base_decomp)]
+        return [qp.adjoint(op) for op in reversed(base_decomp)]
 
     def eigvals(self):
         # Cannot define ``compute_eigvals`` because Hermitian only defines ``eigvals``
@@ -494,7 +495,10 @@ class AdjointOperation(Adjoint, Operation):
 
     @property
     def parameter_frequencies(self):
-        return self.base.parameter_frequencies
+        # pylint: disable=import-outside-toplevel
+        from pennylane.gradients.parameter_shift import parameter_frequencies
+
+        return parameter_frequencies(self.base)
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
@@ -506,7 +510,11 @@ class AdjointOperation(Adjoint, Operation):
 
 
 def _make_adjoint_op(op: Operator) -> Adjoint | Adjoint2:
-    return Adjoint2(op) if isinstance(op, Operator2) else Adjoint(op)
+    if isinstance(op, Operator2):
+        _ = pop_op_eqns((op,))
+        return Adjoint2(op)
+
+    return Adjoint(op)
 
 
 AdjointOperation._primitive = Adjoint._primitive  # pylint: disable=protected-access

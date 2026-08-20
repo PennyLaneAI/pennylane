@@ -1736,7 +1736,7 @@ class TestSampleMeasurement:
         with pytest.raises((ValueError, DeviceError)):
             circuit()
 
-    def test_method_overriden_by_device(self, device, shots):
+    def test_method_overridden_by_device(self, device, shots):
         """Test that the device can override a measurement process."""
         dev = device(2)
         if isinstance(dev, qp.devices.Device):
@@ -1819,7 +1819,7 @@ class TestStateMeasurement:
         ):
             circuit()
 
-    def test_method_overriden_by_device(self, device, shots):
+    def test_method_overridden_by_device(self, device, shots):
         """Test that the device can override a measurement process."""
         dev = device(2)
 
@@ -1867,7 +1867,7 @@ class TestCustomMeasurement:
 
         assert circuit() == 1
 
-    def test_method_overriden_by_device(self, device, shots):
+    def test_method_overridden_by_device(self, device, shots):
         """Test that the device can override a measurement process."""
         dev = device(2)
         if isinstance(dev, qp.devices.Device):

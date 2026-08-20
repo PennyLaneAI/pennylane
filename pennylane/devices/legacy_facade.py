@@ -25,7 +25,9 @@ from dataclasses import replace
 
 from pennylane import math, ops
 from pennylane.core.operator import Operator
+from pennylane.core.qscript import QuantumScript
 from pennylane.core.shots import Shots
+from pennylane.core.transforms import CompilePipeline, transform
 from pennylane.decomposition.gate_sets import ROTATIONS_PLUS_CNOT
 from pennylane.devices.capabilities import DeviceCapabilities
 from pennylane.exceptions import (
@@ -37,9 +39,7 @@ from pennylane.exceptions import (
 from pennylane.math import Interface, requires_grad
 from pennylane.measurements import ExpectationMP
 from pennylane.ops import MidMeasure
-from pennylane.tape import QuantumScript
 from pennylane.transforms import broadcast_expand, defer_measurements, dynamic_one_shot
-from pennylane.transforms.core import CompilePipeline, transform
 from pennylane.wires import Wires
 
 from ._legacy_device import Device as LegacyDevice
@@ -154,41 +154,6 @@ class LegacyDeviceFacade(Device):
 
     Args:
         device (qp.device.LegacyDevice): a device that follows the legacy device interface.
-
-    >>> import pennylane as qp
-    >>> from pennylane.devices import DefaultQutrit, LegacyDeviceFacade
-    >>> legacy_dev = DefaultQutrit(wires=2)
-    >>> new_dev = LegacyDeviceFacade(legacy_dev)
-    >>> pipeline, config = new_dev.preprocess()
-    >>> print(pipeline)
-    CompilePipeline(
-      [1] defer_measurements(allow_postselect=False),
-      [2] legacy_device_batch_transform(device=...),
-      [3] legacy_device_expand_fn(device=...)
-    )
-    >>> import pprint
-    >>> pprint.pprint(config)
-    ExecutionConfig(grad_on_execution=None,
-                    use_device_gradient=None,
-                    use_device_jacobian_product=None,
-                    gradient_method=None,
-                    gradient_keyword_arguments={},
-                    device_options={},
-                    interface=<Interface.NUMPY: 'numpy'>,
-                    derivative_order=1,
-                    mcm_config=MCMConfig(mcm_method='deferred', postselect_mode=None),
-                    convert_to_numpy=True,
-                    executor_backend=<class 'pennylane.concurrency.executors.native.multiproc.MPPoolExec'>)
-    >>> new_dev.shots
-    Shots(total_shots=None, shot_vector=())
-    >>> tape = qp.tape.QuantumScript([], [qp.sample(wires=0)], shots=5)
-    >>> new_dev.execute(tape)
-    array([[0],
-       [0],
-       [0],
-       [0],
-       [0]])
-
     """
 
     # pylint: disable=super-init-not-called
@@ -265,7 +230,7 @@ class LegacyDeviceFacade(Device):
 
     @_debugger.setter
     def _debugger(self, new_debugger):
-        self._device._debugger = new_debugger
+        self._device._debugger = new_debugger  # pragma: no cover
 
     def preprocess_transforms(
         self, execution_config: ExecutionConfig | None = None

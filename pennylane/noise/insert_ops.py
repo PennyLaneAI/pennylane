@@ -20,11 +20,11 @@ from types import FunctionType
 
 from pennylane import templates
 from pennylane.core.operator import Operation, Operator
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch, make_qscript
 from pennylane.decomposition import gate_sets
 from pennylane.devices.preprocess import decompose
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.ops.op_math import Adjoint
-from pennylane.tape import QuantumScript, QuantumScriptBatch, make_qscript
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
@@ -79,7 +79,7 @@ def insert(
             acting on a single qubit, to be inserted into the circuit
         op_args (tuple or float): the arguments fed to the operation, either as a tuple or a single
             float
-        position (str or PennyLane operation or list of operations): Specification of where to add the operation.
+        position (str or PennyLane operator or list of operators): Specification of where to add the operation.
             Should be one of: ``"all"`` to add the operation after all gates (except state preparations);
             ``"start"`` to add the operation to all wires at the start of the circuit (but after state preparations);
             ``"end"`` to add the operation to all wires at the end of the circuit;

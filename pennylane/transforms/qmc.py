@@ -18,8 +18,8 @@ Contains the quantum_monte_carlo transform.
 from copy import copy
 
 import pennylane as qp
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.ops import CZ, Hadamard, MultiControlledX, PauliX, adjoint
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.templates import QFT
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
@@ -345,22 +345,19 @@ def quantum_monte_carlo(
                      num_device_wires=12,
                      shots=Shots(total_shots=None, shot_vector=()),
                      level='device',
-                     resources=SpecsResources(gate_types={'Adjoint(CNOT)': 7812,
-                                                          'Adjoint(QFT)': 1,
-                                                          'Adjoint(RY)': 3150,
-                                                          'CNOT': 7874,
-                                                          'CZ': 126,
-                                                          'Hadamard': 258,
-                                                          'MultiControlledX': 126,
-                                                          'PauliX': 252,
-                                                          'RY': 3175},
-                                              gate_sizes={1: 6835,
-                                                          2: 15812,
-                                                          6: 1,
-                                                          7: 126},
-                                              measurements={'probs(6 wires)': 1},
-                                              num_allocs=12,
-                                              depth=21502))
+                     resources=SpecsResources(counts={'Adjoint(CNOT)': 7812,
+                                                      'Adjoint(QFT)': 1,
+                                                      'Adjoint(RY)': 3150,
+                                                      'CNOT': 7874,
+                                                      'CZ': 126,
+                                                      'Hadamard': 258,
+                                                      'MultiControlledX': 126,
+                                                      'PauliX': 252,
+                                                      'RY': 3175},
+                                              measurement_processes={'probs(6 wires)': 1},
+                                              num_wires=12,
+                                              circuit_depth=21502,
+                                              total_quantum_operations=22774))
     """
     operations = tape.operations.copy()
     wires = Wires(wires)

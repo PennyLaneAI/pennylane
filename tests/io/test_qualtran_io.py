@@ -76,7 +76,7 @@ class TestFromBloq:
 
         from qualtran.bloqs.basic_gates import XGate
 
-        assert repr(qp.FromBloq(XGate(), 1)) == "FromBloq(X, wires=Wires([1]))"
+        assert repr(qp.FromBloq(XGate(), 1)) == "FromBloq(X, wires=[1])"
         with pytest.raises(TypeError, match="bloq must be an instance of"):
             qp.FromBloq("123", 1)
 
@@ -664,7 +664,7 @@ class TestToBloqDecomposition:
                 {
                     (
                         qp.QROM(
-                            data=[[0, 0, 1]],
+                            bitstrings=[[0, 0, 1]],
                             control_wires=[],
                             target_wires=[1, 2, 3],
                             work_wires=[0],
@@ -675,7 +675,7 @@ class TestToBloqDecomposition:
                     (
                         qp.adjoint(
                             qp.QROM(
-                                data=[[0, 0, 1]],
+                                bitstrings=[[0, 0, 1]],
                                 control_wires=[],
                                 target_wires=[1, 2, 3],
                                 work_wires=[0],
@@ -686,7 +686,7 @@ class TestToBloqDecomposition:
                     ): 1,
                     (
                         qp.QROM(
-                            data=[[0, 0, 0], [0, 0, 1]],
+                            bitstrings=[[0, 0, 0], [0, 0, 1]],
                             control_wires=[4],
                             target_wires=[1, 2, 3],
                             work_wires=[0],
@@ -697,7 +697,7 @@ class TestToBloqDecomposition:
                     (
                         qp.adjoint(
                             qp.QROM(
-                                data=[[0, 0, 0], [0, 0, 1]],
+                                bitstrings=[[0, 0, 0], [0, 0, 1]],
                                 control_wires=[4],
                                 target_wires=[1, 2, 3],
                                 work_wires=[0],
@@ -711,7 +711,7 @@ class TestToBloqDecomposition:
             ),
             (
                 qp.QROM(
-                    data=[[0, 0, 0], [0, 0, 1]],
+                    bitstrings=[[0, 0, 0], [0, 0, 1]],
                     control_wires=[4],
                     target_wires=[1, 2, 3],
                     work_wires=[0],
@@ -732,7 +732,7 @@ class TestToBloqDecomposition:
             ),
             (
                 qp.QROM(
-                    data=[[0, 0, 1]],
+                    bitstrings=[[0, 0, 1]],
                     control_wires=[],
                     target_wires=[1, 2, 3],
                     work_wires=[0],
@@ -745,7 +745,7 @@ class TestToBloqDecomposition:
             ),
             (
                 qp.QROM(
-                    data=[[0, 0, 0], [0, 0, 1]],
+                    bitstrings=[[0, 0, 0], [0, 0, 1]],
                     control_wires=[4],
                     target_wires=[1, 2, 3],
                     work_wires=[0],
@@ -770,7 +770,7 @@ class TestToBloqDecomposition:
                 {
                     (
                         qp.QROM(
-                            data=[[0, 0, 1]],
+                            bitstrings=[[0, 0, 1]],
                             control_wires=[],
                             target_wires=[1, 2, 3],
                             work_wires=[0],
@@ -781,7 +781,7 @@ class TestToBloqDecomposition:
                     (
                         qp.adjoint(
                             qp.QROM(
-                                data=[[0, 0, 1]],
+                                bitstrings=[[0, 0, 1]],
                                 control_wires=[],
                                 target_wires=[1, 2, 3],
                                 work_wires=[0],
@@ -792,7 +792,7 @@ class TestToBloqDecomposition:
                     ): 1,
                     (
                         qp.QROM(
-                            data=[[0, 0, 0], [0, 0, 1]],
+                            bitstrings=[[0, 0, 0], [0, 0, 1]],
                             control_wires=[4],
                             target_wires=[1, 2, 3],
                             work_wires=[0],
@@ -803,7 +803,7 @@ class TestToBloqDecomposition:
                     (
                         qp.adjoint(
                             qp.QROM(
-                                data=[[0, 0, 0], [0, 0, 1]],
+                                bitstrings=[[0, 0, 0], [0, 0, 1]],
                                 control_wires=[4],
                                 target_wires=[1, 2, 3],
                                 work_wires=[0],
@@ -814,7 +814,7 @@ class TestToBloqDecomposition:
                     ): 1,
                     (
                         qp.QROM(
-                            data=[[0, 0, 0], [0, 0, 0], [0, 0, 1], [0, 0, 1]],
+                            bitstrings=[[0, 0, 0], [0, 0, 0], [0, 0, 1], [0, 0, 1]],
                             control_wires=[4, 5],
                             target_wires=[1, 2, 3],
                             work_wires=[0],
@@ -825,7 +825,7 @@ class TestToBloqDecomposition:
                     (
                         qp.adjoint(
                             qp.QROM(
-                                data=[[0, 0, 0], [0, 0, 0], [0, 0, 1], [0, 0, 1]],
+                                bitstrings=[[0, 0, 0], [0, 0, 0], [0, 0, 1], [0, 0, 1]],
                                 control_wires=[4, 5],
                                 target_wires=[1, 2, 3],
                                 work_wires=[0],
@@ -939,7 +939,7 @@ class TestToBloqDecomposition:
         ],
     )
     def test_build_call_graph(self, op, qp_call_graph):
-        """ "Tests that the defined call_graphs match the expected decompostions"""
+        """ "Tests that the defined call_graphs match the expected decompositions"""
         bloq_call_graph = {}
 
         for k, v in qp_call_graph.items():  # k is a tuple of (op, bool)
@@ -973,7 +973,7 @@ class TestToBloqDecomposition:
             ),
             (
                 qp.QROM(
-                    data=((0, 1, 0), (1, 1, 1), (1, 1, 0), (0, 0, 0)),
+                    bitstrings=((0, 1, 0), (1, 1, 1), (1, 1, 0), (0, 0, 0)),
                     control_wires=[0, 1],
                     target_wires=[2, 3, 4],
                     work_wires=[5, 6, 7],
@@ -982,7 +982,7 @@ class TestToBloqDecomposition:
             ),
             (
                 qp.QROM(
-                    data=((0, 1, 0), (1, 1, 1), (1, 1, 0), (0, 0, 0)),
+                    bitstrings=((0, 1, 0), (1, 1, 1), (1, 1, 0), (0, 0, 0)),
                     control_wires=[0, 1],
                     target_wires=[2, 3, 4],
                     work_wires=[5, 6, 7],
@@ -1054,7 +1054,7 @@ class TestToBloqDecomposition:
             ),
             (
                 qp.QROM(
-                    data=[[0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0]],
+                    bitstrings=[[0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0]],
                     control_wires=[0, 1],
                     target_wires=[2, 3, 4],
                     work_wires=[5, 6, 7],
@@ -1139,7 +1139,7 @@ class TestToBloqDecomposition:
                 },
                 "qrom_custom_mapping": {
                     qp.QROM(
-                        data=[[0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0]],
+                        bitstrings=[[0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0]],
                         control_wires=[0, 1],
                         target_wires=[2, 3, 4],
                         work_wires=[5, 6, 7],
@@ -1348,7 +1348,7 @@ class TestToBloqEstimator:
             ),
             (
                 qp.QROM(
-                    data=[[0, 0, 0], [0, 0, 1]],
+                    bitstrings=[[0, 0, 0], [0, 0, 1]],
                     control_wires=[4],
                     target_wires=[1, 2, 3],
                     work_wires=[0],
@@ -1363,7 +1363,7 @@ class TestToBloqEstimator:
             ),
             (
                 qp.QROM(
-                    data=[[0, 0, 1]],
+                    bitstrings=[[0, 0, 1]],
                     control_wires=[],
                     target_wires=[1, 2, 3],
                     work_wires=[0],
@@ -1375,7 +1375,7 @@ class TestToBloqEstimator:
             ),
             (
                 qp.QROM(
-                    data=[[0, 0, 0], [0, 0, 1]],
+                    bitstrings=[[0, 0, 0], [0, 0, 1]],
                     control_wires=[4],
                     target_wires=[1, 2, 3],
                     work_wires=[0],
@@ -1499,7 +1499,7 @@ class TestToBloqEstimator:
         ],
     )
     def test_build_call_graph(self, op, qp_call_graph):
-        """ "Tests that the defined call_graphs match the expected decompostions"""
+        """ "Tests that the defined call_graphs match the expected decompositions"""
         bloq_call_graph = {}
 
         for k, v in qp_call_graph.items():  # k is a tuple of (op, bool)

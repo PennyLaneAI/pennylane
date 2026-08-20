@@ -25,6 +25,7 @@ jax = pytest.importorskip("jax")
 
 # pylint: disable=wrong-import-position
 from pennylane.capture.primitives import jacobian_prim, qnode_prim
+from tests.capture.capture_utils import assert_eqn_matches_op
 
 jnp = jax.numpy
 
@@ -260,9 +261,9 @@ class TestGrad:
 
         qfunc_jaxpr = qnode_eqn.params["qfunc_jaxpr"]
         # Skipping a few equations related to indexing and preprocessing
-        assert qfunc_jaxpr.eqns[2].primitive == qp.RX._primitive
+        assert_eqn_matches_op(qfunc_jaxpr.eqns[2], qp.RX)
         assert qfunc_jaxpr.eqns[6].primitive == qp.RY._primitive
-        assert qfunc_jaxpr.eqns[7].primitive == qp.Z._primitive
+        assert_eqn_matches_op(qfunc_jaxpr.eqns[7], qp.Z)
         assert qfunc_jaxpr.eqns[8].primitive == qp.measurements.ExpectationMP._obs_primitive
 
         assert len(qnode_eqn.outvars) == 1
@@ -565,9 +566,9 @@ class TestJacobian:
 
         qfunc_jaxpr = qnode_eqn.params["qfunc_jaxpr"]
         # Skipping a few equations related to indexing
-        assert qfunc_jaxpr.eqns[2].primitive == qp.RX._primitive
+        assert_eqn_matches_op(qfunc_jaxpr.eqns[2], qp.RX)
         assert qfunc_jaxpr.eqns[5].primitive == qp.RY._primitive
-        assert qfunc_jaxpr.eqns[6].primitive == qp.Z._primitive
+        assert_eqn_matches_op(qfunc_jaxpr.eqns[6], qp.Z)
         assert qfunc_jaxpr.eqns[7].primitive == qp.measurements.ExpectationMP._obs_primitive
 
         assert len(qnode_eqn.outvars) == 2

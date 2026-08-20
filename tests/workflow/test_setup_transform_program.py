@@ -19,9 +19,8 @@ from unittest.mock import MagicMock
 from cachetools import LRUCache
 
 import pennylane as qp
+from pennylane.core.transforms import BoundTransform, CompilePipeline
 from pennylane.devices import ExecutionConfig
-from pennylane.transforms.core import CompilePipeline
-from pennylane.transforms.core.transform import BoundTransform
 from pennylane.workflow._setup_transform_program import _setup_transform_program
 
 

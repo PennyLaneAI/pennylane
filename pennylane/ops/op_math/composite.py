@@ -24,9 +24,10 @@ from warnings import warn
 
 import pennylane as qp
 from pennylane import math
-from pennylane.core.operator import Operator
+from pennylane.core.operator import Operator, Operator2
 from pennylane.core.operator.base import _UNSET_BATCH_SIZE  # tach-ignore
 from pennylane.exceptions import PennyLaneDeprecationWarning
+from pennylane.pytrees import flatten, unflatten
 from pennylane.wires import Wires
 
 # pylint: disable=too-many-instance-attributes
@@ -66,8 +67,22 @@ class CompositeOp(Operator):
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
-        # needs to be overwritten because it doesnt take wires
-        return cls._primitive.bind(*args, **kwargs)
+        leaves, structure = flatten((args, kwargs), is_leaf=lambda x: isinstance(x, Operator))
+
+        new_leaves = []
+        for leaf in leaves:
+            if isinstance(leaf, Operator2):
+                if leaf.tracer is None:
+                    # pylint: disable-next=protected-access
+                    leaf._bind_primitive()
+                new_leaves.append(leaf if leaf.tracer is None else leaf.tracer)
+            else:
+                new_leaves.append(leaf)
+
+        new_args, new_kwargs = unflatten(new_leaves, structure)
+
+        # has no wires, so doesn't need any wires processing
+        return cls._primitive.bind(*new_args, **new_kwargs)
 
     def _flatten(self):
         return tuple(self.operands), tuple()
@@ -85,7 +100,7 @@ class CompositeOp(Operator):
         if any(isinstance(op, (qp.ops.MidMeasure, qp.ops.PauliMeasure)) for op in operands):
             raise ValueError("Composite operators of mid-circuit measurements are not supported.")
         self.operands = operands
-        self._wires = qp.wires.Wires.all_wires([op.wires for op in operands])
+        self._wires = Wires.all_wires([op.wires for op in operands])
         self._hash = None
         self._has_overlapping_wires = None
         self._overlapping_ops = None
@@ -145,15 +160,6 @@ class CompositeOp(Operator):
     def data(self):
         """Create data property"""
         return tuple(d for op in self for d in op.data)
-
-    @data.setter
-    def data(self, new_data):
-        """Set the data property"""
-        for op in self:
-            op_num_params = op.num_params
-            if op_num_params > 0:
-                op.data = new_data[:op_num_params]
-                new_data = new_data[op_num_params:]
 
     @property
     def num_wires(self):
@@ -409,7 +415,6 @@ class CompositeOp(Operator):
         new_op = cls.__new__(cls)
         new_op.operands = tuple(op.map_wires(wire_map=wire_map) for op in self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        new_op.data = copy.copy(self.data)
         if self._overlapping_ops is not None:
             new_op._overlapping_ops = [
                 [o.map_wires(wire_map) for o in _ops] for _ops in self._overlapping_ops
@@ -420,6 +425,8 @@ class CompositeOp(Operator):
         for attr, value in vars(self).items():
             if attr not in {"data", "operands", "_wires", "_overlapping_ops"}:
                 setattr(new_op, attr, value)
+        new_op._hyperparameters = copy.copy(self._hyperparameters)
+        new_op._hyperparameters["operands"] = new_op.operands
         if (p_rep := new_op.pauli_rep) is not None:
             new_op._pauli_rep = p_rep.map_wires(wire_map)
 

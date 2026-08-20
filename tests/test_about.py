@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :mod:`pennylane` configuration classe :class:`Configuration`.
+Unit tests for `qp.about`.
 """
 
 # pylint: disable=protected-access
@@ -47,7 +47,6 @@ def test_about():
     assert "Numpy version" in out
     assert "Scipy version" in out
     assert "default.qubit" in out
-    assert "default.gaussian" in out
 
 
 def test_about_prints_core_fields(capsys):

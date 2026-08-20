@@ -39,6 +39,11 @@ class AllocateState(StrEnum):
 
     ZERO = "zero"
     ANY = "any"
+    MAGIC_T = "magic-T"  # |m⟩ = TH|0⟩
+    MAGIC_T_ADJ = "magic-T-adj"  # |m̄⟩ = T†H|0⟩
+
+
+_MAGIC_STATES = frozenset({AllocateState.MAGIC_T, AllocateState.MAGIC_T_ADJ})
 
 
 if not has_jax:
@@ -81,7 +86,7 @@ class Allocate(Operator):
         wires (list[DynamicWire]): a list of dynamic wire values.
 
     Keyword Args:
-        state (Literal["any", "zero"]): the state that the wires need to start in.
+        state (Literal["any", "zero", "magic-T", "magic-T-adj"]): the state that the wires need to start in.
         restored (bool): Whether or not the qubit will be restored to the original state before being deallocated.
 
     ..see-also:: :func:`~.allocate`.
@@ -94,7 +99,7 @@ class Allocate(Operator):
 
     @property
     def state(self) -> AllocateState:
-        """Whether or not the allocated wires are required to be in the zero state."""
+        """The initial state requested for the allocated wires."""
         return self.hyperparameters["state"]
 
     @property
@@ -203,10 +208,10 @@ class DynamicRegister(Wires):
 
 def allocate(
     num_wires: int,
-    state: Literal["any", "zero"] | AllocateState = AllocateState.ZERO,
+    state: Literal["any", "zero", "magic-T", "magic-T-adj"] | AllocateState = AllocateState.ZERO,
     restored: bool = False,
 ) -> DynamicRegister:
-    """Dynamically allocates new wires in-line,
+    r"""Dynamically allocates new wires in-line,
     or as a context manager which also safely deallocates the new wires upon exiting the context.
 
     Args:
@@ -214,9 +219,12 @@ def allocate(
             The number of wires to dynamically allocate.
 
     Keyword Args:
-        state (Literal["any", "zero"]):
-            Specifies whether to allocate ``num_wires`` in the all-zeros state (``"zero"``) or in
-            any arbitrary state (``"any"``). The default value is ``state="zero"``.
+        state (Literal["any", "zero", "magic-T", "magic-T-adj"]):
+            Specifies the initial state of the allocated wires. ``"zero"`` and ``"any"`` request
+            wires in the all-zeros state or an arbitrary state, respectively. ``"magic-T"`` and
+            ``"magic-T-adj"`` request magic states with :math:`|m\rangle = TH|0\rangle` or
+            :math:`|\bar{m}\rangle = T^\dagger H|0\rangle`. For ``num_wires > 1``, a product
+            state is created. The default value is ``state="zero"``.
 
         restored (bool):
             Whether or not the dynamically allocated wires are returned to the same state they
@@ -366,6 +374,11 @@ def allocate(
         1: ──H──┤↗│  │0⟩──X─┤
     """
     state = AllocateState(state)
+    if state in _MAGIC_STATES and restored:
+        raise ValueError(
+            "restored=True is not supported for magic state allocations "
+            f"(state={state!r}). Magic states cannot be restored to their initial state."
+        )
     if capture_enabled():
         if is_abstract(num_wires):
             raise NotImplementedError(

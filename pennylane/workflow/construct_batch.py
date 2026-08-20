@@ -19,15 +19,15 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, Literal
 
 from pennylane import math
-from pennylane.tape import make_qscript
+from pennylane.core.qscript import make_qscript
 
 from ._setup_transform_program import _setup_transform_program
 from .qnode import _make_execution_config
 from .resolution import _resolve_execution_config
 
 if TYPE_CHECKING:
+    from pennylane.core.qscript import QuantumScriptBatch
     from pennylane.qnn.torch import TorchLayer
-    from pennylane.tape import QuantumScriptBatch
     from pennylane.typing import PostprocessingFn
 
     from .qnode import QNode
@@ -197,9 +197,7 @@ def construct_batch(
 
         >>> batch, fn = construct_batch(circuit, level="gradient")(1.23)
         >>> batch[0].circuit
-        [RY(tensor(1., requires_grad=True), wires=[1]),
-         RX(tensor(2., requires_grad=True), wires=[0]),
-         expval(X(0) + Y(0))]
+        [RY(tensor(1., requires_grad=True), wires=[1]), RX(2.0, wires=[0]), expval(X(0) + Y(0))]
 
         We can inspect what was directly captured from the qfunc with ``level=0``.
 

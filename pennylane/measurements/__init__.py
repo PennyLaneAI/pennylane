@@ -222,7 +222,7 @@ obtained of a given state:
 
 .. note::
 
-    The ``__copy__`` method needs to be overriden when new arguments are added into the ``__init__``
+    The ``__copy__`` method needs to be overridden when new arguments are added into the ``__init__``
     method.
 
 The measurement process in this example uses the :func:`~pennylane.counts` function, which is a
@@ -294,7 +294,7 @@ When :math:`\theta = 1.23`, :math:`\frac{\partial r}{\partial \theta} = 4712.444
     >>> type(mp)._unflatten(*mp._flatten())
     expval(2.0 * X(0))
     >>> jax.tree_util.tree_leaves(mp)
-    [2.0]
+    [2.0, 0]
 
 Adding your new measurement to PennyLane
 ----------------------------------------

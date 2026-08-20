@@ -1233,7 +1233,6 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
 
     @pytest.mark.jax
     @pytest.mark.catalyst
-    @pytest.mark.external
     def test_two_qubit_decomposition_2_cnots_qjit(self):
         """Test that two_qubit_decomposition does not raise TracerArrayConversionError
         under qjit. Regression test for #9016."""
@@ -1471,7 +1470,7 @@ class TestTwoQubitDecompositionWarnings:
     "U, n_wires",
     [
         (qp.matrix(qp.CRX(0.123, [0, 2]) @ qp.CRY(0.456, [1, 3])), 4),
-        (qp.QFT.compute_matrix(5), 5),
+        (qp.QFT.compute_matrix(tuple(range(5))), 5),
         (qp.GroverOperator.compute_matrix(6, []), 6),
     ],
 )
@@ -1623,10 +1622,10 @@ class TestQubitUnitaryDecompositionGraph:
     @pytest.mark.parametrize(
         "U, n_wires",
         [
-            (qp.QFT.compute_matrix(2), 2),
+            (qp.QFT.compute_matrix(tuple(range(2))), 2),
             (qp.matrix(qp.CRX(0.123, [0, 2]) @ qp.CRY(0.456, [2, 0])), 2),
             (qp.matrix(qp.CRX(0.123, [0, 2]) @ qp.CRY(0.456, [1, 3])), 4),
-            (qp.QFT.compute_matrix(5), 5),
+            (qp.QFT.compute_matrix(tuple(range(5))), 5),
             (qp.GroverOperator.compute_matrix(6, []), 6),
         ],
     )

@@ -19,6 +19,7 @@ from functools import singledispatch, wraps
 
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.operator import Operation, Operator
+from pennylane.core.queuing import AnnotatedQueue, QueuingManager
 from pennylane.estimator.ops import X
 from pennylane.estimator.ops.op_math.symbolic import (
     Adjoint,
@@ -27,7 +28,6 @@ from pennylane.estimator.ops.op_math.symbolic import (
     apply_adj,
     apply_controlled,
 )
-from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.wires import Wires
 from pennylane.workflow.qnode import QNode
 

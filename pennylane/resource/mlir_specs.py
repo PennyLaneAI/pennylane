@@ -14,183 +14,20 @@
 """Helper functions for converting MLIR resource analysis output into SpecsResources objects."""
 
 import copy
-import itertools
 import json
 import os
-import re
 import tempfile
 import time
-import warnings
-from collections import defaultdict
-from collections.abc import Iterable
 from pathlib import Path
-from typing import Any
 
 import pennylane as qp
 
-from .expression import Expression
-from .resource import SpecsResources, SymbolicSpecsResources, num_to_letters
+from ._utils import make_level_name_unique
+from .parsing import parse_resources_json
+from .resource import SpecsResources
 
 # Used for MLIR analysis pass JSON filenames with pass-by-pass specs
 _RESOURCE_ANALYSIS_PREFIX = "pennylane_specs_analysis_pass"
-
-
-def make_level_name_unique(level_name: str, existing_names: Iterable[str]) -> str:
-    """Helper function to make a level name unique by appending a suffix if necessary.
-
-    .. warning::
-
-        This function is intended for internal use and may be subject to change without deprecation.
-
-    Args:
-        level_name (str): The original level name
-        existing_names (Iterable[str]): The set of existing level names to check against
-
-    Returns:
-        str: A unique level name
-
-    Example:
-        >>> existing = {"cancel-inverses", "merge-rotations", "cancel-inverses-2"}
-        >>> make_level_name_unique("cancel-inverses", existing)
-        'cancel-inverses-3'
-    """
-    unique_name = level_name
-    counter = 1
-    while unique_name in existing_names:
-        counter += 1
-        unique_name = f"{level_name}-{counter}"
-    return unique_name
-
-
-def _generate_display_name_for_symbolic_var(var: str, display_names: dict[str, str]) -> str:
-    if var not in display_names:
-        display_names[var] = num_to_letters(len(display_names))
-    return display_names[var]
-
-
-def _mlir_resources_to_specs_resources(
-    all_data: dict[str, Any],
-    focus: str,
-    fn_resources: dict[str, SymbolicSpecsResources | None],
-    display_names: dict[str, str],
-) -> None:
-    """
-    Helper function to convert the output of the resource analysis pass into ``SpecsResources`` objects.
-
-    Recursively resolves the resources for a given function call, combining subroutine resources
-    with the appropriate multiplicative factors. Builds out `fn_resources`, a mapping from
-    function name to the corresponding :class:`~pennylane.resource.SymbolicSpecsResources` object.
-
-    .. note::
-
-        All resources are stored within :class:`~pennylane.resource.SymbolicSpecsResources` objects
-        as symbolic expressions, even if all values are concrete and knowable at compile time.
-        It is the responsibility of the caller to upcast these to concrete valued
-        :class:`~pennylane.resource.SpecsResources` objects if desired.
-
-    Args:
-        all_data (dict[str, Any]): the full data output from the MLIR resource analysis
-        focus (str): the name of the function to resolve resources for in this call
-        fn_resources (dict[str, SymbolicSpecsResources | None]): the mapping from function name to
-            resolved `SymbolicSpecsResources` objects. (modified in-place by this function)
-        display_names (dict[str, str]): a mapping from symbolic variable names to their display
-            names in the output. (modified in-place by this function)
-    """
-
-    if focus in fn_resources:
-        return
-
-    # Set to None to mark that we are currently resolving this function, which helps with detecting recursion
-    fn_resources[focus] = None
-    resources = all_data[focus]
-
-    operations = {k: resources["operations"][k] for k in resources["operations"].keys()}
-
-    measurements = defaultdict(
-        int, {k: resources["measurements"][k] for k in resources["measurements"].keys()}
-    )
-    gate_types = defaultdict(int)
-    gate_sizes = defaultdict(int)
-    num_allocs = resources["num_qubits"]
-
-    if resources.get("auto_qubit_management", False):
-        warnings.warn(
-            f"Specs detected that function '{focus}' uses automatic qubit management. "
-            "The number of qubits allocated by this function will not be known at this time, so "
-            "the final allocation counts may be inaccurate.",
-        )
-
-    for res_name, count in operations.items():
-        match = re.match(r"(.+)\((\d+)\)", res_name)  # Parse out the number of gates from the key
-        gate_name, gate_size = match.groups() if match else (res_name, 0)
-
-        if gate_name in ("PPM", "PPR-pi/2", "PPR-pi/4", "PPR-pi/8", "PPR-Phi"):
-            # Separate out PPMs and PPRs by weight
-            gate_name += f"-w{gate_size}"
-
-        gate_types[gate_name] += count
-        gate_sizes[int(gate_size)] += count
-
-    # Recurse through all function calls and combine resources with the appropriate multiplicative factors
-    for called_fn, call_count in itertools.chain(
-        resources["function_calls"].items(), resources["var_function_calls"].items()
-    ):
-        if not isinstance(call_count, int):
-            # If there is no integer call count, we have to treat this as a symbolic variable
-            var_name = _generate_display_name_for_symbolic_var(call_count, display_names)
-
-            call_count = Expression({(var_name,): 1})
-        if called_fn not in fn_resources:
-            _mlir_resources_to_specs_resources(all_data, called_fn, fn_resources, display_names)
-
-        called_fn_resources = fn_resources[called_fn]
-        if called_fn_resources is None:
-            warnings.warn(
-                f"Specs detected recursion during resolution of MLIR resource analysis results. "
-                f"Function '{focus}' calls '{called_fn}' which is already being resolved. "
-                "This recursive call will not be counted, so final results may be inaccurate."
-            )
-            continue
-
-        num_allocs += call_count * called_fn_resources.num_allocs
-        for gate, gate_count in called_fn_resources.gate_types.items():
-            gate_types[gate] += call_count * gate_count
-        for size, size_count in called_fn_resources.gate_sizes.items():
-            gate_sizes[size] += call_count * size_count
-        for meas, meas_count in called_fn_resources.measurements.items():
-            measurements[meas] += call_count * meas_count
-
-    # Sorting these dicts by key ensures that the resulting SymbolicSpecsResources objects have a deterministic order,
-    # which is helpful for testing and readability
-    fn_resources[focus] = SymbolicSpecsResources(
-        gate_types={k: gate_types[k] for k in sorted(gate_types.keys())},
-        gate_sizes={k: gate_sizes[k] for k in sorted(gate_sizes.keys())},
-        measurements={k: measurements[k] for k in sorted(measurements.keys())},
-        num_allocs=num_allocs,
-        depth=None,  # Can't get depth from MLIR pass results
-    )
-
-
-def _get_resources_from_analysis_pass(
-    all_data: dict[str, Any],
-) -> list[SpecsResources]:
-    resource_data = {}
-
-    for fn_name in all_data.keys():
-        _mlir_resources_to_specs_resources(
-            all_data, focus=fn_name, fn_resources=resource_data, display_names={}
-        )
-
-    if any(resources["has_branches"] for resources in all_data.values()):
-        warnings.warn(
-            "Specs was unable to determine the branch of a conditional or switch statement."
-            " The results will take the maximum resources across all possible branches, serving as an upper bound.",
-            UserWarning,
-        )
-
-    # Only include information about qnodes, ignoring any extra functions
-    # The blank substitution will return a concrete SpecsResources if no symbolic variables remain
-    return [resource_data[fn].subs() for fn, data in all_data.items() if data["qnode"]]
 
 
 def _execute_analysis_pass(
@@ -358,7 +195,7 @@ def resources_from_analysis_pass(
             with res_file.open("r", encoding="utf-8") as f:
                 data = json.load(f)
 
-            cur_level_resources = _get_resources_from_analysis_pass(data)
+            cur_level_resources = parse_resources_json(data)
 
             if len(cur_level_resources) == 1:
                 cur_level_resources = cur_level_resources[0]

@@ -36,9 +36,6 @@ trainable parameters, and they may be constructed from repeated layers.
     :description: :doc:`BasisEmbedding <../code/api/pennylane.BasisEmbedding>`
     :figure: _static/templates/embeddings/basis.png
 
-.. gallery-item::
-    :description: :doc:`DisplacementEmbedding <../code/api/pennylane.DisplacementEmbedding>`
-    :figure: _static/templates/embeddings/displacement.png
 
 .. gallery-item::
     :description: :doc:`IQPEmbedding <../code/api/pennylane.IQPEmbedding>`
@@ -47,10 +44,6 @@ trainable parameters, and they may be constructed from repeated layers.
 .. gallery-item::
     :description: :doc:`QAOAEmbedding <../code/api/pennylane.QAOAEmbedding>`
     :figure: _static/templates/embeddings/qaoa.png
-
-.. gallery-item::
-    :description: :doc:`SqueezingEmbedding <../code/api/pennylane.SqueezingEmbedding>`
-    :figure: _static/templates/embeddings/squeezing.png
 
 .. raw:: html
 
@@ -64,10 +57,6 @@ Layer templates
 Layer architectures define sequences of trainable gates that are repeated like the layers in a
 neural network. Note that arbitrary templates or operations can also be repeated using the
 :func:`~pennylane.layer` function.
-
-.. gallery-item::
-    :description: :doc:`CVNeuralNetLayers <../code/api/pennylane.CVNeuralNetLayers>`
-    :figure: _static/templates/layers/cvqnn.png
 
 .. gallery-item::
     :description: :doc:`RandomLayers <../code/api/pennylane.RandomLayers>`
@@ -99,10 +88,6 @@ state. In contrast to embeddings that can in principle be used anywhere in a cir
 state preparation is typically used as the first operation.
 
 .. gallery-item::
-    :description: :doc:`QutritBasisStatePreparation <../code/api/pennylane.QutritBasisStatePreparation>`
-    :figure: _static/templates/state_preparations/basis_qutrit.png
-
-.. gallery-item::
     :description: :doc:`MottonenStatePreparation <../code/api/pennylane.MottonenStatePreparation>`
     :figure: _static/templates/state_preparations/mottonen.png
 
@@ -130,6 +115,10 @@ state preparation is typically used as the first operation.
     :description: :doc:`SumOfSlatersPrep <../code/api/pennylane.SumOfSlatersPrep>`
     :figure: _static/templates/state_preparations/sumofslatersprep_template.png
 
+.. gallery-item::
+    :description: :doc:`PartialUnaryStatePreparation <../code/api/pennylane.PartialUnaryStatePreparation>`
+    :figure: _static/templates/state_preparations/partialunarystatepreparation_template.png
+
 
 .. raw:: html
 
@@ -140,7 +129,7 @@ state preparation is typically used as the first operation.
 Arithmetic templates
 --------------------
 
-Quantum arithmetic templates enable in-place and out-place modular operations such 
+Quantum arithmetic templates enable in-place and out-place modular operations such
 as addition, multiplication and exponentiation.
 
 .. gallery-item::
@@ -294,10 +283,6 @@ Other useful templates which do not belong to the previous categories can be fou
 .. gallery-item::
     :description: :doc:`Amplitude Amplification <../code/api/pennylane.AmplitudeAmplification>`
     :figure: _static/templates/subroutines/ampamp.png
-
-.. gallery-item::
-    :description: :doc:`Interferometer <../code/api/pennylane.Interferometer>`
-    :figure: _static/templates/subroutines/interferometer.png
 
 .. gallery-item::
     :description: :doc:`FermionicSingleExcitation <../code/api/pennylane.FermionicSingleExcitation>`

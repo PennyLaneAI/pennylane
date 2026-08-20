@@ -19,12 +19,14 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.operator import abstractify
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arithmetic.temporary_and import (
     _adjoint_temporary_and,
     _adjoint_temporary_and_to_toffoli,
     _temporary_and_to_toffoli,
 )
+from pennylane.typing import Bool, Wire
 
 
 class TestTemporaryAND:
@@ -55,13 +57,32 @@ class TestTemporaryAND:
 
         assert qp.math.allclose(isometry, isometry_toffoli)
 
-    def test_repr(self):
-        """Test the repr of TemporaryAND."""
-        assert repr(qp.TemporaryAND(wires=[0, "a", 2])) == "TemporaryAND(wires=Wires([0, 'a', 2]))"
+    def test_repr_and_str(self):
+        """Test the repr and str of TemporaryAND."""
+        assert repr(qp.TemporaryAND(wires=[0, "a", 2])) == "TemporaryAND(wires=[0, 'a', 2])"
+        assert str(qp.TemporaryAND(wires=[0, "a", 2])) == "TemporaryAND(wires=[0, 'a', 2])"
         assert (
             repr(qp.TemporaryAND(wires=[0, "a", 2], control_values=(0, 1)))
-            == "TemporaryAND(wires=Wires([0, 'a', 2]), control_values=(0, 1))"
+            == "TemporaryAND(wires=[0, 'a', 2], control_values=[False, True])"
         )
+        assert (
+            repr(qp.TemporaryAND(wires=Wire[3], control_values=Bool[2]))
+            == "TemporaryAND(wires=AbstractWires(3), control_values=AbstractArray((2,), bool, weak_type=True))"
+        )
+        assert str(qp.TemporaryAND(wires=Wire[3], control_values=Bool[2])) == "TemporaryAND"
+
+    def test_abstract(self):
+        """Tests that abstract TemporaryAND can be created."""
+
+        full = qp.TemporaryAND(Wire[3], Bool[2])
+        assert full.wires == Wire[3]
+        assert full.control_values == Bool[2]
+
+        op = abstractify(qp.TemporaryAND)
+        assert op == full
+
+        op2 = qp.TemporaryAND(Wire[3])
+        assert op2 == full
 
     def test_alias(self):
         """Test that Elbow is an alias of TemporaryAND"""
@@ -74,8 +95,13 @@ class TestTemporaryAND:
         """Check the operation using the assert_valid function."""
         op = qp.TemporaryAND(wires=[0, "a", 2], control_values=(0, 0))
         # Skip matrix check because the decomposition to Toffoli,and the adjoint decomposition
-        # to mcm + cond(CZ) do not reproduce the matrix of the op.
-        qp.ops.functions.assert_valid(op, skip_decomp_matrix_check=True)
+        # to mcm + cond(CZ) do not reproduce the matrix of the op. Skip bind_new_parameters
+        # now that control_values is part of dynamic data
+        qp.ops.functions.assert_valid(
+            op,
+            skip_decomp_matrix_check=True,
+            skip_bind_new_parameters=True,
+        )
 
     def test_correctness(self):
         """Tests the correctness of the TemporaryAND operator.
@@ -152,7 +178,7 @@ class TestTemporaryAND:
             # Prepare control state
             qp.StatePrep(state, wires=sys_wires[:2])
             op = qp.TemporaryAND(wires=sys_wires, control_values=control_values)
-            rule(sys_wires, base=op)
+            rule(op)
             # Unprepare control state
             qp.adjoint(qp.StatePrep)(state, wires=sys_wires[:2])
             return qp.probs(wires=sys_wires)
@@ -287,7 +313,7 @@ class TestTemporaryAND:
         assert qp.math.allclose(circuit(), jit_circuit())
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
-    @pytest.mark.external
+    @pytest.mark.catalyst
     @pytest.mark.parametrize("cvals", [(0, 0), (0, 1), (1, 1), (True, False)])
     def test_jax_qjit_control_values(self, cvals):
         """Tests that TemporaryAND works with jax and jit"""

@@ -54,6 +54,7 @@ Symbolic Classes
     ~Sum
     ~SProd
     ~SymbolicOp
+    ~SymbolicOp2
     ~ScalarSymbolicOp
 
 Controlled Operator Classes
@@ -104,13 +105,23 @@ Control Decompositions
     ~ctrl_decomp_zyz
     ~ctrl_decomp_bisect
 
+Other Functions
+~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.ops.op_math
+
+.. autosummary::
+    :toctree: api
+
+    ~custom_ctrl_dispatch
+
 """
 
 from .adjoint import Adjoint, adjoint
 from .adjoint2 import Adjoint2
 from .composite import CompositeOp
 from .condition import Conditional, cond
-from .controlled import Controlled, ControlledOp, ctrl
+from .controlled import Controlled, ControlledOp, ctrl, custom_ctrl_dispatch
 from .controlled2 import Controlled2, ControlledOp2
 from .controlled_ops import (
     CCZ,
@@ -147,6 +158,7 @@ from .change_op_basis import ChangeOpBasis, change_op_basis
 from .sprod import SProd, s_prod
 from .sum import Sum, sum
 from .symbolicop import ScalarSymbolicOp, SymbolicOp
+from .symbolicop2 import SymbolicOp2
 
 controlled_qubit_ops = {
     "ControlledQubitUnitary",

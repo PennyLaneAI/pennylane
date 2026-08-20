@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING, Literal
 
 from pennylane import math
 from pennylane.allocation import DynamicWire
-from pennylane.tape import make_qscript
+from pennylane.core.qscript import make_qscript
 from pennylane.workflow import construct_batch
 
 from .tape_mpl import tape_mpl
@@ -125,16 +125,6 @@ def draw(
         >>> print(qp.draw(circuit, decimals=None)(a=2.3, w=[1.2, 3.2, 0.7]))
         0: ──H─╭●────────────────────╭●──┤ ╭<Z@Z>
         1: ────╰RX──Rot("arbitrary")─╰RX─┤ ╰<Z@Z>
-
-        If the parameters are not acted upon by classical processing like ``-a``, then
-        ``qp.draw`` can handle string-valued parameters as well:
-
-        >>> @qp.qnode(qp.device('lightning.qubit', wires=1))
-        ... def circuit2(x):
-        ...     qp.RX(x, wires=0)
-        ...     return qp.expval(qp.Z(0))
-        >>> print(qp.draw(circuit2)("x"))
-        0: ──RX(x)─┤  <Z>
 
         When requested with ``show_matrices=True`` (the default), matrix valued parameters
         are printed below the circuit. For ``show_matrices=False``, they are not printed:

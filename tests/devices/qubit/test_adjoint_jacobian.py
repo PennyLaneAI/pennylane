@@ -17,8 +17,8 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.qscript import QuantumScript
 from pennylane.devices.qubit import adjoint_jacobian, adjoint_jvp, adjoint_vjp
-from pennylane.tape import QuantumScript
 
 
 def adjoint_ops(op: qp.operation.Operator) -> bool:
@@ -780,8 +780,8 @@ class TestAdjointVJP:
     def test_multi_param_state_batched(self, cotangents, tol):
         """Test that computing the VJP with batched cotangents for state measurements
         gives the correct results for multiple trainable parameters."""
-        x = np.array(0.654 + 0j)
-        y = np.array(1.221 + 0j)
+        x = np.array(0.654)
+        y = np.array(1.221)
 
         obs = [qp.state()]
         qs = QuantumScript([qp.RY(x, wires=[0]), qp.RX(y, wires=[1])], obs, trainable_params=[0, 1])
