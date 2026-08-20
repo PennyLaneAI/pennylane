@@ -43,6 +43,7 @@ def test_input_arguments_parsed_correctly(bitstring_input, wires_input):
     assert op.dynamic_args == {"bitstring": op.bitstring}
     assert op.wire_args == {"wires": Wires(wires_input)}
     assert op.num_wires == len(wires_input)
+    assert op.num_params == 0
     assert op.grad_method is None
 
 
@@ -59,16 +60,17 @@ def test_boolean_bitstring_accepted():
 def test_canonicalize_inputs_does_not_validate_or_cast():
     """Tests that canonicalization changes input containers but does not validate or cast."""
     bitstring = np.array([0.0, 1.0])
+    wires = ("a", "b")
 
     # pylint: disable-next=protected-access
-    canonical_bitstring, canonical_wires = qp.MultiX._canonicalize_inputs(bitstring, ("a", "b"))
+    canonical_bitstring, canonical_wires = qp.MultiX._canonicalize_inputs(bitstring, wires)
 
     assert canonical_bitstring is bitstring
     assert canonical_bitstring.dtype == float
-    assert canonical_wires == Wires(("a", "b"))
+    assert canonical_wires == Wires(wires)
 
 
-@pytest.mark.capture
+@pytest.mark.jax
 def test_standard_checks():
     """Runs the standard Operator2 validity checks for MultiX."""
     op = qp.MultiX([1, 0, 1], wires=[0, 1, 2])

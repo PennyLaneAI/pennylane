@@ -27,7 +27,7 @@ from pennylane.wires import Wires, WiresLike
 
 class MultiX(Operator2):
     r"""
-    Conditionally applies PauliX gates according to a bitstring.
+    Conditionally applies PauliX gates according to a non-empty bitstring.
 
     For a bitstring :math:`\mathbf{b} = (b_0, \ldots, b_{n-1})`,
     ``MultiX`` applies the operator
@@ -76,7 +76,10 @@ class MultiX(Operator2):
         "wires": Wire[-1],
     }
 
-    grad_method = None
+    is_verified_hermitian = True
+
+    num_params = 0
+    """int: Number of trainable parameters that the operator depends on."""
 
     def __init__(self, bitstring: TensorLike, wires: WiresLike) -> None:
         bitstring, wires = MultiX._canonicalize_validate_and_cast_inputs(bitstring, wires)
