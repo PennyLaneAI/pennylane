@@ -130,11 +130,7 @@ def _compute_single_mmd(
     m = target_data.shape[0]
 
     result = model_expvals**2 - model_expvals_variances
-    result = (
-        result
-        - 2 * model_expvals * tr_train
-        + (tr_train * tr_train * m - 1) / (m - 1)
-    )
+    result = result - 2 * model_expvals * tr_train + (tr_train * tr_train * m - 1) / (m - 1)
 
     reduced = jnp.mean(result)
     return jnp.sqrt(jnp.abs(reduced)) if sqrt_loss else reduced

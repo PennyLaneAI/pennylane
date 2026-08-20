@@ -198,9 +198,7 @@ class TestComputeSingleMmd:
         gt = jnp.array(rng.binomial(1, 0.5, (m, n_q)), dtype=jnp.float64)
         tr_train = jnp.mean(1 - 2 * ((gt @ vis.T) % 2), axis=0)
 
-        result = _compute_single_mmd(
-            tr_train, jnp.zeros(n_ops), gt, vis, sqrt_loss=False
-        )
+        result = _compute_single_mmd(tr_train, jnp.zeros(n_ops), gt, vis, sqrt_loss=False)
         assert abs(float(result)) < 0.05
 
     def test_sqrt_loss_flag(self):
@@ -231,10 +229,7 @@ class TestComputeSingleMmd:
         variances = jnp.array(rng.uniform(0, 0.1, n_ops))
         tr_train = jnp.mean(1 - 2 * ((gt @ vis.T) % 2), axis=0)
         expected = jnp.mean(
-            tr_iqp**2
-            - variances
-            - 2 * tr_iqp * tr_train
-            + (tr_train**2 * m - 1) / (m - 1)
+            tr_iqp**2 - variances - 2 * tr_iqp * tr_train + (tr_train**2 * m - 1) / (m - 1)
         )
 
         result = _compute_single_mmd(tr_iqp, variances, gt, vis, False)
