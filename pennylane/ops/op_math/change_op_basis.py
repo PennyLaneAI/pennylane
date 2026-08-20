@@ -246,17 +246,6 @@ class ChangeOpBasis(CompositeOp2):
     .. seealso:: :func:`~.change_op_basis`
     """
 
-    hybrid_argnames = ("compute_op", "target_op", "uncompute_op")
-
-    _op_symbol = "@"
-    _math_op = staticmethod(math.prod)
-
-    has_matrix = False
-    has_diagonalizing_gates = False
-    matrix = Operator2.matrix
-    eigvals = Operator2.eigvals
-    diagonalizing_gates = Operator2.diagonalizing_gates
-
     def __init__(
         self,
         compute_op: Operator,
@@ -265,7 +254,6 @@ class ChangeOpBasis(CompositeOp2):
     ):
         if uncompute_op is None:
             uncompute_op = adjoint(compute_op)
-
         super().__init__((uncompute_op, target_op, compute_op))
 
     def _operator2_args(self, operands, _init_pauli_rep):
@@ -282,6 +270,18 @@ class ChangeOpBasis(CompositeOp2):
         if isinstance(self._wires, Wires):
             self._wires = Wire[0]
 
+    hybrid_argnames = ("compute_op", "target_op", "uncompute_op")
+
+    has_matrix = False
+    has_diagonalizing_gates = False
+
+    _op_symbol = "@"
+    _math_op = staticmethod(math.prod)
+
+    matrix = Operator2.matrix
+    diagonalizing_gates = Operator2.diagonalizing_gates
+    eigvals = Operator2.eigvals
+
     @property
     def operands(self):
         """The operators in matrix-product order."""
@@ -293,25 +293,6 @@ class ChangeOpBasis(CompositeOp2):
         return tuple(data for op in self for data in op.data)
 
     grad_method = None
-
-    @property
-    def is_verified_hermitian(self):
-        """Check if the product operator is hermitian.
-
-        Note, this check is not exhaustive. There can be hermitian operators for which this check
-        yields false, which ARE hermitian. So a false result only implies that a more explicit check
-        must be performed.
-        """
-        return self.target_op.is_verified_hermitian
-
-    def adjoint(self):
-        return ChangeOpBasis(*(adjoint(op, lazy=False) for op in self))
-
-    def _build_pauli_rep(self):
-        """PauliSentence representation of the Product of operations."""
-        if all(operand_pauli_reps := [op.pauli_rep for op in self.operands]):
-            return reduce(lambda a, b: a @ b, operand_pauli_reps) if operand_pauli_reps else None
-        return None
 
     @classmethod
     def _sort(cls, op_list: list, wire_map: dict = None) -> list[Operator]:
@@ -328,6 +309,25 @@ class ChangeOpBasis(CompositeOp2):
             List[.Operator]: sorted list of operators
         """
         return op_list
+
+    @property
+    def is_verified_hermitian(self):
+        """Check if the product operator is hermitian.
+
+        Note, this check is not exhaustive. There can be hermitian operators for which this check
+        yields false, which ARE hermitian. So a false result only implies that a more explicit check
+        must be performed.
+        """
+        return self.target_op.is_verified_hermitian
+
+    def adjoint(self):
+        return ChangeOpBasis(*(adjoint(factor, lazy=False) for factor in self))
+
+    def _build_pauli_rep(self):
+        """PauliSentence representation of the Product of operations."""
+        if all(operand_pauli_reps := [op.pauli_rep for op in self.operands]):
+            return reduce(lambda a, b: a @ b, operand_pauli_reps) if operand_pauli_reps else None
+        return None
 
 
 def _change_op_basis_resources(compute_op, target_op, uncompute_op):
