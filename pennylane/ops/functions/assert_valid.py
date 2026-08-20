@@ -34,6 +34,9 @@ from pennylane.decomposition.decomposition_rule import _decomp_contains_mcm
 from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.decomposition.utils import _get_decomp_args
 from pennylane.exceptions import EigvalsUndefinedError
+from pennylane.ops.op_math.adjoint2 import Adjoint2
+from pennylane.ops.op_math.controlled2 import ControlledOp2
+from pennylane.ops.op_math.pow2 import Pow2
 from pennylane.ops.op_math.symbolicop2 import SymbolicOp2
 from pennylane.pytrees import flatten
 from pennylane.wires import Wires
@@ -441,11 +444,7 @@ def _check_generator(op):
     if op.has_generator:
         gen = op.generator()
         assert isinstance(gen, qp.operation.Operator)
-        new_op = (
-            qp.exp(gen, 1j * list(op.dynamic_args.values())[0])
-            if isinstance(op, Operator2)
-            else qp.exp(gen, 1j * op.data[0])
-        )
+        new_op = qp.exp(gen, 1j * op.data[0])
         assert qp.math.allclose(
             qp.matrix(op, wire_order=op.wires), qp.matrix(new_op, wire_order=op.wires)
         )
@@ -604,6 +603,21 @@ def _check_bind_new_parameters_op2(op):
         assert qp.math.allclose(op_to_check.arguments[name], val), failure_comment
 
 
+def _check_bind_new_parameters_symbolicop2(op):
+    """Check that bind new parameters can create a new op with different bound arguments."""
+    new_dyn_args = {
+        k: math.cast_like(v * 0.0, v)
+        for k, v in op.base.arguments.items()
+        if k in op.base.dynamic_argnames
+    }
+    new_data_op = qp.ops.functions.bind_new_parameters(op, new_dyn_args.values())
+    failure_comment = (
+        "bind_new_parameters must be able to update the symbolicop2 with new arguments."
+    )
+    for name, val in new_dyn_args.items():
+        assert qp.math.allclose(new_data_op.base.arguments[name], val), failure_comment
+
+
 def _check_differentiation(op):
     """Checks that the operator can be executed and differentiated correctly."""
 
@@ -692,17 +706,17 @@ def _assert_valid_operator2(
     assert isinstance(op.wire_argnames, tuple), "wire_argnames must be a tuple"
     assert isinstance(op.static_argnames, tuple), "static_argnames must be a tuple"
     assert isinstance(op.dynamic_argnames, tuple), "dynamic_argnames must be a tuple"
-
-    assert len(op.ndim_params) == len(
-        op.dynamic_argnames
-    ), "ndim_params must have the same length as dynamic_argnames"
-
     assert_equal(type(op)(**op.arguments), op)
 
-    for (name, val), dim in zip(op.dynamic_args.items(), op.ndim_params, strict=True):
-        # make sure that the bound args are not outside the allowed dimensions
-        shape = qp.math.shape(val)
-        assert len(shape) == dim, f"shape of {name} is not equal to dimension in ndim_params"
+    if not isinstance(op, (Adjoint2, ControlledOp2, Pow2)):
+
+        error_msg = "ndim_params must have the same length as dynamic_argnames"
+        assert len(op.ndim_params) == len(op.dynamic_argnames), error_msg
+
+        for (name, val), dim in zip(op.dynamic_args.items(), op.ndim_params, strict=True):
+            # make sure that the bound args are not outside the allowed dimensions
+            error_msg = f"shape of {name} is not equal to dimension in ndim_params"
+            assert len(qp.math.shape(val)) == dim, error_msg
 
     for (name, val), dim in zip(op.wire_args.items(), op.wire_sizes, strict=True):
         # make sure wires have the right sizes
@@ -728,7 +742,10 @@ def _assert_valid_operator2(
                 )
 
     if not skip_bind_new_parameters:
-        _check_bind_new_parameters_op2(op)
+        if isinstance(op, qp.ops.op_math.symbolicop2.SymbolicOp2):
+            _check_bind_new_parameters_symbolicop2(op)
+        else:
+            _check_bind_new_parameters_op2(op)
 
 
 # pylint: disable=too-many-arguments

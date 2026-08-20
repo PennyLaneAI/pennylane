@@ -24,6 +24,7 @@ from pennylane.data.base.hdf5 import HDF5Group
 from pennylane.data.base.mapper import AttributeTypeMapper
 from pennylane.math import get_interface
 from pennylane.pytrees import flatten, unflatten
+from pennylane.wires import Wires
 
 T = TypeVar("T")
 
@@ -38,10 +39,18 @@ class DatasetPyTree(DatasetAttribute[HDF5Group, T, T]):
 
     def hdf5_to_value(self, bind: HDF5Group) -> T:
         with queuing.QueuingManager.stop_recording():
-            return unflatten(
-                AttributeTypeMapper(bind)["leaves"].get_value(),
-                serialization.pytree_structure_load(bind["treedef"][()].tobytes()),
-            )
+            structure = serialization.pytree_structure_load(bind["treedef"][()].tobytes())
+            leaves = list(AttributeTypeMapper(bind)["leaves"].get_value())
+
+            # Wires are leaves but are distinct from other array-like data. So, we
+            # cast them to Python integers explicitly to ensure that the unflattened
+            # structures have `Wires` that do not contain array data.
+            leaves = [
+                _to_python_scalar(leaf) if is_wire else leaf
+                for leaf, is_wire in zip(leaves, _wire_leaf_flags(structure), strict=True)
+            ]
+
+            return unflatten(leaves, structure)
 
     def value_to_hdf5(self, bind_parent: HDF5Group, key: str, value: T) -> HDF5Group:
         bind = bind_parent.create_group(key)
@@ -57,6 +66,34 @@ class DatasetPyTree(DatasetAttribute[HDF5Group, T, T]):
         return bind
 
 
+def _to_python_scalar(leaf):
+    """Convert a 0-d numpy leaf back to a native Python scalar, leaving other leaves untouched."""
+    if isinstance(leaf, (np.generic, np.ndarray)) and np.ndim(leaf) == 0:
+        return leaf.item()
+    return leaf
+
+
+def _wire_leaf_flags(structure) -> list:
+    """Return, in leaf order, whether each leaf is a wire label (i.e. lives under a ``Wires`` node).
+
+    The traversal order matches ``unflatten``'s depth-first consumption of the leaves, so the
+    returned flags line up one-to-one with the stored leaves. This information is necessary so
+    that any ``Wires`` present in the Pytree are not constructed with array data.
+    """
+    flags: list = []
+
+    def _walk(node, in_wires: bool) -> None:
+        if node.is_leaf:
+            flags.append(in_wires)
+            return
+        in_wires = in_wires or node.type_ is Wires
+        for child in node.children:
+            _walk(child, in_wires)
+
+    _walk(structure, False)
+    return flags
+
+
 def _storable_as_array(leaves: list) -> bool:
     """Whether ``leaves`` can be stored as a single array, which is more efficient than a
     list; otherwise they are stored leaf-by-leaf as a list.
@@ -69,11 +106,21 @@ def _storable_as_array(leaves: list) -> bool:
     use the array path, as they did before string leaves were special-cased. ``"biufcS"`` are the
     numpy dtype ``kind`` codes that round-trip safely through an HDF5 array: boolean, signed and
     unsigned integer, float, complex, and byte string.
+
+    Also returns ``False`` when the leaves do not all share the same dtype ``kind``. Stacking
+    leaves of different kinds into one array promotes them to a common dtype, which silently
+    changes a leaf's type (e.g. an integer wire label ``0`` (kind ``"i"``) stored alongside a
+    float parameter ``0.5`` (kind ``"f"``) comes back as ``0.0``). Comparing the ``kind`` rather
+    than the full dtype still allows losslessly stackable leaves that only differ in width, such
+    as byte strings of different lengths (``"S2"`` and ``"S3"``, both kind ``"S"``) or integers of
+    different sizes, to use the efficient array path.
     """
     if any(get_interface(leaf) not in ("numpy", "autograd") for leaf in leaves):
         return False
 
     leaf_arrays = [np.asarray(leaf) for leaf in leaves]
-    return all(arr.dtype.kind in "biufcS" for arr in leaf_arrays) and (
-        len({arr.shape for arr in leaf_arrays}) <= 1
+    return (
+        all(arr.dtype.kind in "biufcS" for arr in leaf_arrays)
+        and (len({arr.shape for arr in leaf_arrays}) <= 1)
+        and (len({arr.dtype.kind for arr in leaf_arrays}) <= 1)
     )

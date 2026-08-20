@@ -450,7 +450,7 @@ def decompose(
 
     .. code-block:: python
 
-        @qp.decompose(gate_set={qp.Toffoli, "RX", "RZ"})
+        @qp.decompose(gate_set={qp.Toffoli, "RX", "RZ", "GlobalPhase"})
         @qp.qnode(qp.device("default.qubit"))
         def circuit():
             qp.Hadamard(wires=[0])
@@ -460,9 +460,9 @@ def decompose(
     Since the Hadamard gate is not defined in our gate set, it will be decomposed into rotations:
 
     >>> print(qp.draw(circuit)())
-    0: ──RZ(1.57)──RX(1.57)──RZ(1.57)─╭●─┤  <Z>
-    1: ───────────────────────────────├●─┤
-    2: ───────────────────────────────╰X─┤
+    0: ──RZ(1.57)──RX(1.57)──RZ(1.57)─╭GlobalPhase(-1.57)─╭●─┤  <Z>
+    1: ───────────────────────────────├GlobalPhase(-1.57)─├●─┤
+    2: ───────────────────────────────╰GlobalPhase(-1.57)─╰X─┤
 
     You can also provide a function as the ``stopping_condition`` in addition to providing a ``gate_set``. In this case
     the operator decomposition will stop once either it is given in terms of the gates in the ``gate_set`` or
@@ -470,7 +470,7 @@ def decompose(
 
     .. code-block:: python
 
-        @qp.decompose(gate_set={"H", "T", "CNOT"}, stopping_condition=lambda op: len(op.wires) <= 2)
+        @qp.decompose(gate_set={"H", "T", "CNOT", "GlobalPhase"}, stopping_condition=lambda op: len(op.wires) <= 2)
         @qp.qnode(qp.device("default.qubit"))
         def circuit():
             qp.Hadamard(wires=[0])
@@ -549,8 +549,7 @@ def decompose(
 
         This transform takes advantage of the new graph-based decomposition algorithm when
         ``qp.decomposition.enable_graph()`` is present, which allows for more flexible
-        decompositions towards any target gate set. For example, the current system does not
-        guarantee a decomposition to the desired target gate set:
+        decompositions towards any target gate set.
 
         .. code-block:: python
 
@@ -559,22 +558,11 @@ def decompose(
             with qp.queuing.AnnotatedQueue() as q:
                 qp.CRX(0.5, wires=[0, 1])
 
+            qp.decomposition.enable_graph()
+
             tape = qp.tape.QuantumScript.from_queue(q)
             [new_tape], _ = qp.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ", "CNOT"})
 
-        >>> from pprint import pprint
-        >>> pprint(new_tape.operations)
-        [RZ(1.57079..., wires=[1]),
-         RY(0.25, wires=[1]),
-         CNOT(wires=[0, 1]),
-         RY(-0.25, wires=[1]),
-         CNOT(wires=[0, 1]),
-         RZ(-1.57079..., wires=[1])]
-
-        With the new system enabled, the transform produces the expected outcome.
-
-        >>> qp.decomposition.enable_graph()
-        >>> [new_tape], _ = qp.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ"})
         >>> new_tape.operations
         [RX(0.25, wires=[1]), CZ(wires=[0, 1]), RX(-0.25, wires=[1]), CZ(wires=[0, 1])]
 

@@ -179,7 +179,7 @@ def test_tracking():
         "execute_and_vjp_batches": [1],
         "resources": [
             qp.resource.SpecsResources(
-                num_allocs=2,
+                num_wires=2,
                 counts={"Hadamard": 1, "FlipSign": 1},
                 measurement_processes={"expval(PauliZ)": 1},
                 circuit_depth=2,
@@ -305,7 +305,8 @@ class TestBasicCircuit:
 
         def f(x):
             qs = qp.tape.QuantumScript(
-                [qp.RX(x, wires=0)], [qp.expval(qp.PauliY(0)), qp.expval(qp.PauliZ(0))]
+                [qp.RX(qp.math.cast(x, "float64"), wires=0)],
+                [qp.expval(qp.PauliY(0)), qp.expval(qp.PauliZ(0))],
             )
             return dev.execute(qs, ExecutionConfig(interface="torch", gradient_method="backprop"))
 
