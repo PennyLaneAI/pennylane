@@ -16,8 +16,10 @@
 
 from __future__ import annotations
 
+import hashlib
 import shutil
 import tempfile
+import types
 from pathlib import Path
 
 import numpy as np
@@ -34,6 +36,33 @@ except ImportError as exc:
     raise ImportError("Triton decoders require installed `triton` Python package.") from exc
 
 
+def _clone_with_name(fn: object, name: str) -> object:
+    """Clone a Python function object while overriding its name metadata."""
+    cloned = types.FunctionType(fn.__code__, fn.__globals__, name, fn.__defaults__, fn.__closure__)
+    cloned.__kwdefaults__ = getattr(fn, "__kwdefaults__", None)
+    cloned.__annotations__ = dict(getattr(fn, "__annotations__", {}))
+    cloned.__doc__ = getattr(fn, "__doc__", None)
+    cloned.__module__ = getattr(fn, "__module__", None)
+    cloned.__qualname__ = name
+    cloned.__dict__.update(getattr(fn, "__dict__", {}))
+    return cloned
+
+
+def _triton_jit_with_unique_names(decoder_fns: tuple[object, ...]) -> tuple[object, ...]:
+    """Return Triton JIT kernels with unique names from un-jitted Triton functions."""
+    normalized = []
+    for i, decoder_fn in enumerate(decoder_fns):
+        if not isinstance(decoder_fn, types.FunctionType):
+            raise TypeError(
+                "decoder_fns must contain Python function objects; "
+                "already-jitted Triton functions fail this check, so pass undecorated "
+                "functions to triton_decoder"
+            )
+        unique_name = f"{decoder_fn.__name__}_{i}"
+        normalized.append(triton.jit(_clone_with_name(decoder_fn, unique_name)))
+    return tuple(normalized)
+
+
 def _build_triton_decoder(  # pylint: disable=too-many-arguments
     decoder_fns: tuple[object, ...],
     *,
@@ -44,11 +73,12 @@ def _build_triton_decoder(  # pylint: disable=too-many-arguments
     compiler: str = "",
     cflags: tuple[str, ...] = (),
 ) -> tuple[Path, str]:
-    """Build a shared library based on the triton functions provided.
+    """Build a shared library based on the decoder functions provided.
 
     Args:
-        decoder_fns (tuple[object, ...]): Tuple of Triton decoder functions.
-            ``decoder_id`` is used to select the appropriate decoder function at runtime.
+        decoder_fns (tuple[object, ...]): Tuple of un-jitted Triton decoder functions. Each
+            entry is jitted with a unique generated name, and ``decoder_id`` selects the
+            appropriate decoder function at runtime.
 
     Keyword Args:
         platform (str): Required Triton platform string of the form
@@ -66,15 +96,14 @@ def _build_triton_decoder(  # pylint: disable=too-many-arguments
             returned shared library's lifetime and cleanup.
 
     Raises:
+        TypeError: If ``decoder_fns`` contains entries other than un-jitted Triton functions.
         ValueError: If the build options are invalid.
 
     **Example**
 
-    >>> import triton
     >>> import triton.language as tl
     >>> from pennylane.backline.decoders.triton.decoder_frontend import _build_triton_decoder
-    >>> @triton.jit
-    ... def steane_lookup(syndrome):
+    >>> def steane_lookup(syndrome):
     ...     one = tl.cast(1, tl.uint64)
     ...     zero = tl.cast(0, tl.uint64)
     ...     return tl.where(syndrome != 0, one << (syndrome - 1), zero)
@@ -89,6 +118,7 @@ def _build_triton_decoder(  # pylint: disable=too-many-arguments
         num_stages=num_stages,
         platform=platform,
     )
+    decoder_fns = _triton_jit_with_unique_names(decoder_fns)
     tmpdir = Path(tempfile.mkdtemp(prefix="pl_triton_decoder_"))
     out = tmpdir / "librdma_triton_decoder.so"
     try:
@@ -233,7 +263,7 @@ def _validate_build_options(
     """Validate generic Triton decoder build options.
 
     Args:
-        decoder_fns (tuple[object, ...]): Triton decoder functions to dispatch.
+        decoder_fns (tuple[object, ...]): Un-jitted Triton decoder functions to dispatch.
         num_warps (int): Triton kernel launch warp count.
         num_stages (int): Triton pipeline stage count.
         platform (str): Triton platform string of the form
@@ -243,7 +273,9 @@ def _validate_build_options(
         ValueError: If any option falls outside the supported range or format.
     """
     if not decoder_fns:
-        raise ValueError("decoder_fns must be a non-empty tuple of Triton decoder functions")
+        raise ValueError(
+            "decoder_fns must be a non-empty tuple of un-jitted Triton decoder functions"
+        )
     if num_warps <= 0:
         raise ValueError("num_warps must be > 0")
     if num_stages <= 0:
@@ -278,7 +310,7 @@ def _validate_css_options(*, postprocess: str, num_iters: int, prob: float) -> N
 def _make_css_decoder(
     matrix: np.ndarray, *, postprocess: str, num_iters: int, prob: float
 ) -> object:
-    """Specialize one Triton decoder kernel for a fixed parity-check matrix.
+    """Specialize one un-jitted Triton decoder function for a fixed parity-check matrix.
 
     Args:
         matrix (np.ndarray): Binary parity-check matrix.
@@ -287,16 +319,22 @@ def _make_css_decoder(
         prob (float): Uniform prior error probability.
 
     Returns:
-        object: Triton JIT function that maps one packed syndrome to one packed
-            correction mask.
+        object: Un-jitted Triton function that maps one packed syndrome to one packed correction
+            mask.
     """
+    kernel_key = hashlib.sha1()
+    kernel_key.update(matrix.astype(np.uint8, copy=False).tobytes())
+    kernel_key.update(postprocess.encode("utf-8"))
+    kernel_key.update(str(num_iters).encode("utf-8"))
+    kernel_key.update(repr(prob).encode("utf-8"))
+    kernel_name = f"decode_{kernel_key.hexdigest()[:12]}"
+
     matrix = tl.constexpr(tuple(tuple(int(value) for value in row) for row in matrix.tolist()))
     postprocess = tl.constexpr(postprocess)
     prob = tl.constexpr(prob)
     num_iters = tl.constexpr(num_iters)
 
-    @triton.jit
-    def decode(syndrome):  # pragma: no cover
+    def decode_impl(syndrome):  # pragma: no cover
         return _decode_one(
             syndrome,
             matrix,
@@ -305,4 +343,6 @@ def _make_css_decoder(
             num_iters=num_iters,
         )
 
-    return decode
+    decode_impl.__name__ = kernel_name
+    decode_impl.__qualname__ = kernel_name
+    return decode_impl

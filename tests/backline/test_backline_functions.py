@@ -18,6 +18,7 @@
 
 import importlib
 import sys
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -67,6 +68,42 @@ class TestTritonDecoder:
         """The public name is exported from pennylane.backline."""
         assert qp.backline.triton_decoder is triton_decoder
 
+    def test_accepts_plain_python_functions_and_unique_names_them(self, monkeypatch):
+        """Un-jitted Triton functions are jitted internally under unique generated names."""
+        pytest.importorskip("triton")
+        from pennylane.backline.decoders.triton import decoder_frontend as frontend
+
+        captured = {}
+
+        def fake_build_so(*_args, **kwargs):
+            captured["names"] = [fn.fn.__name__ for fn in kwargs["constexpr"]["decoder_fns"]]
+            return Path("/tmp/fake.so"), "fake_symbol"
+
+        monkeypatch.setattr(frontend, "_build_so", fake_build_so)
+
+        def make_decoder():
+            def decode(syndrome):
+                return syndrome
+
+            return decode
+
+        fn = triton_decoder((make_decoder(), make_decoder()), platform="cuda:80:32")
+
+        assert isinstance(fn, CoprocessorFunction)
+        assert captured["names"] == ["decode_0", "decode_1"]
+
+    def test_rejects_already_jitted_functions(self):
+        """The public API owns jitting and rejects pre-jitted kernels."""
+        triton = pytest.importorskip("triton")
+        import triton.language as tl
+
+        @triton.jit
+        def decode(syndrome):
+            return tl.where(syndrome != 0, 1 << (syndrome - 1), 0)
+
+        with pytest.raises(TypeError, match="already-jitted Triton functions"):
+            triton_decoder((decode,), platform="cuda:80:32")
+
 
 class TestCssBpDecoder:
     """The CSS belief-propagation decoder compilation entry point."""
@@ -81,6 +118,27 @@ class TestCssBpDecoder:
     def test_the_wrapper_reexports_from_backline(self):
         """The public name is exported from pennylane.backline."""
         assert qp.backline.css_bp_decoder is css_bp_decoder
+
+    def test_same_shape_matrices_get_distinct_decoder_names(self, monkeypatch):
+        """Hx and Hz specializations stay distinct even when their shapes match."""
+        pytest.importorskip("triton")
+        from pennylane.backline.decoders.triton import decoder_frontend as frontend
+
+        captured = {}
+
+        def fake_build_so(*_args, **kwargs):
+            captured["names"] = [fn.fn.__name__ for fn in kwargs["constexpr"]["decoder_fns"]]
+            return Path("/tmp/fake.so"), "fake_symbol"
+
+        monkeypatch.setattr(frontend, "_build_so", fake_build_so)
+
+        hx = np.array([[1, 0, 1], [0, 1, 1]], dtype=np.uint8)
+        hz = np.array([[1, 1, 0], [1, 0, 1]], dtype=np.uint8)
+
+        fn = css_bp_decoder(hx, hz, platform="cuda:80:32")
+
+        assert isinstance(fn, CoprocessorFunction)
+        assert len(set(captured["names"])) == 2
 
 
 class TestTritonSubmoduleImportGuards:
