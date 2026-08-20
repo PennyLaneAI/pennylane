@@ -18,7 +18,7 @@ from pennylane.capture import enabled
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.ops import PauliX, cond
+from pennylane.ops import Hadamard, PauliX, cond
 from pennylane.typing import AbstractArray, AbstractWires, Int, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
@@ -161,7 +161,8 @@ class MultiX(Operator2):
     @staticmethod
     # pylint: disable-next=arguments-differ
     def compute_eigvals(bitstring: TensorLike, wires: WiresLike) -> TensorLike:
-        r"""Eigenvalues of the operator.
+        r"""
+        Eigenvalues of the operator.
 
         Args:
             bitstring (TensorLike): A one-dimensional array containing only ``0`` or ``1`` entries.
@@ -183,6 +184,25 @@ class MultiX(Operator2):
             eigvals = math.kron(eigvals, local_eigvals)
 
         return eigvals
+
+    @staticmethod
+    # pylint: disable-next=arguments-differ
+    def compute_diagonalizing_gates(bitstring: TensorLike, wires: WiresLike):
+        r"""
+        A sequence of local Hadamard gates that diagonalizes a sequence of local PauliX gates.
+
+        Args:
+            bitstring (TensorLike): A one-dimensional array containing only ``0`` or ``1`` entries.
+            wires (WiresLike): The wires on which ``MultiX`` acts. The number of wires must
+                match the length of ``bitstring``.
+
+        Returns:
+            A Hadamard gate for each position in ``bitstring`` containing a 1.
+        """
+        bitstring, wires = MultiX._canonicalize_inputs(bitstring, wires)
+        MultiX._validate_inputs(bitstring, wires)
+
+        return [Hadamard(wire) for wire in wires]
 
     def adjoint(self) -> "MultiX":
         """Return the adjoint of the operator."""

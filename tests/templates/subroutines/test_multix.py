@@ -25,15 +25,15 @@ def test_input_arguments_parsed_correctly():
     """Tests that MultiX handles and sanitizes its input arguments correctly."""
     bitstring_input = [0, 1, 1, 0]
     wires_input = ("a", "b", "c", "d")
-    multix_op = qp.MultiX(bitstring_input, wires=wires_input)
+    op = qp.MultiX(bitstring_input, wires=wires_input)
 
-    assert isinstance(multix_op.bitstring, np.ndarray)
-    assert np.all(multix_op.bitstring == np.array(bitstring_input))
-    assert multix_op.wires == Wires(wires_input)
-    assert multix_op.dynamic_args == {"bitstring": multix_op.bitstring}
-    assert multix_op.wire_args == {"wires": Wires(wires_input)}
-    assert multix_op.num_wires == len(wires_input)
-    assert multix_op.grad_method is None
+    assert isinstance(op.bitstring, np.ndarray)
+    assert np.all(op.bitstring == np.array(bitstring_input))
+    assert op.wires == Wires(wires_input)
+    assert op.dynamic_args == {"bitstring": op.bitstring}
+    assert op.wire_args == {"wires": Wires(wires_input)}
+    assert op.num_wires == len(wires_input)
+    assert op.grad_method is None
 
 
 @pytest.mark.jax
@@ -124,6 +124,33 @@ def test_jit_eigvals():
     assert qp.math.allclose(eigvals_fn(bitstring), [1, 1, -1, -1])
 
 
+@pytest.mark.parametrize(
+    ("bitstring", "wires"),
+    [
+        ([0], [0]),
+        ([1], [1]),
+        ([1, 0], [0, 1]),
+        ([0, 1, 1], [0, 1, 2]),
+    ],
+)
+def test_diagonalizing_gates(bitstring, wires):
+    """Tests that MultiX is diagonalized by its diagonalizing gates."""
+    op = qp.MultiX(bitstring, wires=wires)
+
+    assert op.has_diagonalizing_gates
+
+    diag_gates = qp.MultiX.compute_diagonalizing_gates(bitstring, wires)
+    diag_gates_from_instance = op.diagonalizing_gates()
+    diag_gates_expected = [qp.H(wire) for wire in wires]
+
+    assert len(diag_gates) == len(diag_gates_from_instance)
+    assert len(diag_gates) == len(diag_gates_expected)
+
+    for i, gate in enumerate(diag_gates):
+        qp.assert_equal(gate, diag_gates_from_instance[i])
+        qp.assert_equal(gate, diag_gates_expected[i])
+
+
 @pytest.mark.jax
 def test_jit_matrix():
     """Tests that MultiX matrix computations work with JAX bitstrings."""
@@ -211,9 +238,9 @@ def test_evalutation(bitstring, wires, expected_index):
 def test_decomposition(bitstring, wires):
     """Tests that MultiX decomposition contains X gates at the locations in the bitstring marked by 1."""
 
-    multix_op = qp.MultiX(bitstring, wires=wires)
-    assert multix_op.has_decomposition
-    decomp = multix_op.decomposition()
+    op = qp.MultiX(bitstring, wires=wires)
+    assert op.has_decomposition
+    decomp = op.decomposition()
     assert len(decomp) == sum(bitstring)  # each bit contributes one X gate
 
     # checking that the decomposed PauliX gates have the correct wire indices
