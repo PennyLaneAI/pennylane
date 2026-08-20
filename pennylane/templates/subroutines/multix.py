@@ -32,7 +32,7 @@ class MultiX(Operator2):
 
     .. math::
 
-        \operatorname{MultiX}(\mathbf{b}) = X^{b_1} \otimes X^{b_2} \otimes
+        \operatorname{MultiX}(\mathbf{b}) = X^{b_0} \otimes X^{b_1} \otimes
         \cdots \otimes X^{b_{n-1}}, \qquad b_i \in \{0, 1\},
 
     where :math:`X^0 = I` and :math:`X^1 = X`.
