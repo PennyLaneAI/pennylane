@@ -712,7 +712,6 @@ class TestQubitUnitaryDecompositions:
             _test_decomposition_rule(op, rule)
 
     @pytest.mark.parametrize("num_wires", [3, 4, 5])
-    @pytest.mark.usefixtures("disable_capture")
     def test_multi_qubit_decomposition(self, num_wires):
         """Test the multi-qubit rule with AnnotatedQueue."""
 
