@@ -384,6 +384,7 @@ def _all_bitstrings(n_qubits):
     return jnp.array([[int(b) for b in format(k, f"0{n_qubits}b")] for k in range(2**n_qubits)])
 
 
+#pylint: disable=too-many-arguments
 def _taylor_control_on_samples(
     params, samples, obs_data, generators, param_map, elems=None, amps=None
 ):
@@ -482,9 +483,7 @@ class TestControlVariate:
         control = _taylor_control_on_samples(
             params, _all_bitstrings(n_qubits), obs_data, generators, param_map, elems, amps
         )
-        tau = _control_variate_expected_value(
-            params, obs_data, generators, param_map, elems, amps
-        )
+        tau = _control_variate_expected_value(params, obs_data, generators, param_map, elems, amps)
 
         assert np.allclose(np.array(jnp.mean(control, axis=1)), np.array(tau), atol=1e-6)
 
@@ -588,20 +587,18 @@ class TestControlVariate:
         obs_data = self._obs_data(obs_batch)
 
         base_kwargs = {
-           "gates": gates,
-           "observables": obs_batch,
-           "n_samples": 5000,
-           "key": jax.random.PRNGKey(3),
-           "n_qubits": n_qubits,
+            "gates": gates,
+            "observables": obs_batch,
+            "n_samples": 5000,
+            "key": jax.random.PRNGKey(3),
+            "n_qubits": n_qubits,
         }
 
         plain_mean, plain_err = build_expval_func(CircuitConfig(**base_kwargs))(params)
         cv_mean, cv_err = build_expval_func(CircuitConfig(control_variate=True, **base_kwargs))(
             params
         )
-        tau = _control_variate_expected_value(
-            params, obs_data, generators, param_map, None, None
-        )
+        tau = _control_variate_expected_value(params, obs_data, generators, param_map, None, None)
 
         assert np.all(np.isfinite(np.array(cv_mean)))
         assert np.all(np.isfinite(np.array(cv_err)))
@@ -634,9 +631,7 @@ class TestControlVariate:
         cv = _taylor_control_on_samples(
             params, samples, obs_data, generators, param_map, elems, amps
         )
-        tau = _control_variate_expected_value(
-            params, obs_data, generators, param_map, elems, amps
-        )
+        tau = _control_variate_expected_value(params, obs_data, generators, param_map, elems, amps)
 
         assert cv.shape == (len(obs_batch), n_samples)
         assert tau.shape == (len(obs_batch),)
