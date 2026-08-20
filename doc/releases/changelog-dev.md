@@ -1012,7 +1012,7 @@
     - :class:`~.RZ`, :class:`~.CRZ`, :class:`~.DiagonalQubitUnitary`, :class:`~.PauliRot`, :class:`~.MultiRZ`, :class:`~.PhaseShift`,
       :class:`~.ControlledPhaseShift`, :class:`~.Rot`, :class:`~.CRot`, :class:`~.U1`, :class:`~.U2`, :class:`~.U3`, :class:`~.PCPhase`,
       :class:`~.GlobalPhase`, :class:`~.IsingXX`, :class:`~.IsingYY`, :class:`~.IsingZZ`, :class:`~.IsingXY`, :class:`~.RX`, :class:`~.CRX`,
-      :class:`~.RY`, :class:`~.CRY`
+      :class:`~.RY`, :class:`~.CRY`, :class:`~.QubitUnitary`, :class:`~.ControlledQubitUnitary`
   [(#9998)](https://github.com/PennyLaneAI/pennylane/pull/9998)
   [(#9857)](https://github.com/PennyLaneAI/pennylane/pull/9857)
   [(#9941)](https://github.com/PennyLaneAI/pennylane/pull/9941)
@@ -1028,6 +1028,7 @@
   [(#9978)](https://github.com/PennyLaneAI/pennylane/pull/9978)
   [(#9981)](https://github.com/PennyLaneAI/pennylane/pull/9981)
   [(#10026)](https://github.com/PennyLaneAI/pennylane/pull/10026)
+  [(#9990)](https://github.com/PennyLaneAI/pennylane/pull/9990)
   - Templates are ported:
     - :class:`~.BasisRotation`, :class:`~.MultiplexerStatePreparation`, :class:`~.QROM`, :class:`~.QFT`, :class:`~.FlipSign`,
       :class:`~.TemporaryAND`, :class:`~.SelectPauliRot`, :class:`~.GQSP`, :class:`~.AQFT`, :class:`~.SumOfSlatersPrep`,
