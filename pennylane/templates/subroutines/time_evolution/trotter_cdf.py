@@ -90,7 +90,7 @@ class TrotterCDF(Operator2):
             :class:`~.BasisRotation` factors on ``wires[::2]`` and ``wires[1::2]`` realize a fermionic
             Gaussian rotation only under this layout; mapping integrals with an interleaved mode
             order yields a different operator.
-        double_phase (bool): Only affects the controlled decomposition. If ``False`` (default),
+        double_phase (bool): Only affects a single-control decomposition. If ``False`` (default),
             :func:`~pennylane.ctrl` produces a genuine controlled unitary
             :math:`\text{diag}(1, U)` where :math:`U = e^{-iHt}` is the Trotter evolution.
             If ``True``, it produces :math:`\text{diag}(U, U^\dagger)` instead, leading to the

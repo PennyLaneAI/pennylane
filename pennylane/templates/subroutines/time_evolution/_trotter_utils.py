@@ -14,17 +14,15 @@
 """Scheme-agnostic scaffolding shared by the fragmented-Hamiltonian Trotter templates
 (:class:`~.TrotterCDF` and :class:`~.TrotterCGF`)."""
 
+import importlib.util
+
 from pennylane import compiler, math
 from pennylane.control_flow import for_loop
-from pennylane.ops import CNOT, RZ, IsingZZ
+from pennylane.ops import CNOT, RZ, IsingZZ, cond
 
 # pylint: disable=too-many-arguments
 
-has_jax = True
-try:
-    import jax
-except ImportError:  # pragma: no cover
-    has_jax = False
+has_jax = importlib.util.find_spec("jax") is not None
 
 
 def _emit_one_body_rz(angle, target_wire, control_wires, double_phase):
@@ -144,22 +142,15 @@ def _run_trotter_steps(
         Z_tensor = hamiltonian["core_tensors"]
 
         def two_body_fragments(fragment_idx, prev_fragment_idx):
-            # The first fragment of a step (prev_fragment_idx < 0) uses its own leaf; later
+            # The first fragment of the circuit (prev_fragment_idx < 0) uses its own leaf; later
             # fragments merge with the previous fragment's leaf so consecutive basis rotations
-            # telescope into a single one. ``jax.lax.cond`` (with the loop-carried indices passed
-            # as explicit operands) is used rather than ``qp.cond`` because the latter traces its
-            # branches through ``jax.make_jaxpr``, which does not compose with the enclosing
-            # ``for_loop`` structured capture (it forces concretization of the loop carry).
-            U = jax.lax.cond(
+            # telescope into a single one. This is classical array selection (no quantum ops in
+            # either branch), branching on the loop-carried ``prev_fragment_idx``.
+            U = cond(
                 prev_fragment_idx < 0,
-                lambda U_tensor, fragment_idx, prev_fragment_idx: U_tensor[fragment_idx],
-                lambda U_tensor, fragment_idx, prev_fragment_idx: merge_leaves(
-                    U_tensor[prev_fragment_idx], U_tensor[fragment_idx]
-                ),
-                U_tensor,
-                fragment_idx,
-                prev_fragment_idx,
-            )
+                lambda: U_tensor[fragment_idx],
+                lambda: merge_leaves(U_tensor[prev_fragment_idx], U_tensor[fragment_idx]),
+            )()
             Z = Z_tensor[fragment_idx]
             apply_system_basis_rotation(U, wires)
             apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, double_phase)

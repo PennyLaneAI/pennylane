@@ -96,7 +96,7 @@ class TrotterCGF(Operator2):
             ``leaf_tensors`` must be real orthogonal.
         wires (Wires): The system wires. CGF expects ``M*N`` wires arranged mode-major:
             wire ``l*N + p`` corresponds to modal ``p`` of mode ``l`` (unary/SBE layout).
-        double_phase (bool): Only affects the controlled decomposition. If ``False`` (default),
+        double_phase (bool): Only affects a single-control decomposition. If ``False`` (default),
             :func:`~pennylane.ctrl` produces a genuine controlled unitary
             :math:`\text{diag}(1, U)` where :math:`U = e^{-iHt}` is the Trotter evolution.
             If ``True``, it produces :math:`\text{diag}(U, U^\dagger)` instead, leading to the
