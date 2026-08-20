@@ -191,6 +191,22 @@ class TestInitialization:
         op = qp.TrotterCGF(Float, 5, ham, Wire[num_modes * n_states])
         assert op.is_abstract
 
+    def test_list_hamiltonian_cast_to_arrays(self, toy_hamiltonian_cgf):
+        """List (or tuple) ``core_tensors``/``leaf_tensors`` are cast to arrays by the constructor."""
+        ham, num_modes, n_states = toy_hamiltonian_cgf
+        list_ham = {
+            **ham,
+            "core_tensors": ham["core_tensors"].tolist(),
+            "leaf_tensors": ham["leaf_tensors"].tolist(),
+        }
+        stored = qp.TrotterCGF(0.3, 2, list_ham, list(range(num_modes * n_states))).arguments[
+            "hamiltonian"
+        ]
+        assert hasattr(stored["core_tensors"], "ndim") and stored["core_tensors"].ndim == 5
+        assert hasattr(stored["leaf_tensors"], "ndim") and stored["leaf_tensors"].ndim == 4
+        assert np.allclose(stored["core_tensors"], ham["core_tensors"])
+        assert np.allclose(stored["leaf_tensors"], ham["leaf_tensors"])
+
 
 class TestValidity:
     """Basic structural validity tests for the TrotterCGF operator."""

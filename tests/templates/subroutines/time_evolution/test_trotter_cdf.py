@@ -175,6 +175,22 @@ class TestInitialization:
         op = qp.TrotterCDF(Float, 5, ham, Wire[2 * num_orbitals])
         assert op.is_abstract
 
+    def test_list_hamiltonian_cast_to_arrays(self, toy_hamiltonian_cdf):
+        """List (or tuple) ``core_tensors``/``leaf_tensors`` are cast to arrays by the constructor."""
+        ham, num_orbitals = toy_hamiltonian_cdf
+        list_ham = {
+            **ham,
+            "core_tensors": ham["core_tensors"].tolist(),
+            "leaf_tensors": ham["leaf_tensors"].tolist(),
+        }
+        stored = qp.TrotterCDF(0.3, 2, list_ham, list(range(2 * num_orbitals))).arguments[
+            "hamiltonian"
+        ]
+        assert hasattr(stored["core_tensors"], "ndim") and stored["core_tensors"].ndim == 3
+        assert hasattr(stored["leaf_tensors"], "ndim") and stored["leaf_tensors"].ndim == 3
+        assert np.allclose(stored["core_tensors"], ham["core_tensors"])
+        assert np.allclose(stored["leaf_tensors"], ham["leaf_tensors"])
+
 
 class TestValidity:
     """Basic structural validity tests for the TrotterCDF operator."""
