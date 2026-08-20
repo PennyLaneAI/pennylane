@@ -897,9 +897,13 @@ class TestShowMatrices:
     def test_default_shows_matrix_parameters(self):
         """Test matrices numbered but not included by default."""
 
+        # fmt: off
         expected = (
-            "0: ─╭|Ψ⟩──U(M0)─┤  <𝓗(M0)>\n1: ─╰|Ψ⟩────────┤         \nM0 = \n[[1. 0.]\n [0. 1.]]"
+            "0: ─╭|Ψ⟩──U(M0)─┤  <𝓗(M0)>\n"
+            "1: ─╰|Ψ⟩────────┤         \n"
+            "M0 = \n[[1. 0.]\n [0. 1.]]"
         )
+        # fmt: on
 
         assert tape_text(tape_matrices) == expected
 
