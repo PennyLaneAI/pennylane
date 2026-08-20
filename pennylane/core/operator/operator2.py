@@ -1835,7 +1835,7 @@ def _init_subclass_wire_sizes_setup(cls: type[Operator2]) -> None:
         # ``-1`` in wire_sizes and arg_specs respectively.
         if (expected_type := arg_specs.get(wname, None)) is not None:
             if not expected_type.shape_fixed:
-                # Dynamic wire count, wire_sizes must be specify arbitary wires (None)
+                # Dynamic wire count, wire_sizes must specify arbitrary wires (None)
                 mismatch = wsize is not None
             else:
                 # Fixed wire count: wire count must match size
