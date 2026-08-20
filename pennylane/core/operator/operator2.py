@@ -1835,7 +1835,7 @@ def _init_subclass_wire_sizes_setup(cls: type[Operator2]) -> None:
         # ``-1`` in wire_sizes and arg_specs respectively.
         if (expected_type := arg_specs.get(wname, None)) is not None:
             if not expected_type.shape_fixed:
-                # Dynamic wire count, wire_sizes must be specify arbitary wires (None)
+                # Dynamic wire count, wire_sizes must specify arbitrary wires (None)
                 mismatch = wsize is not None
             else:
                 # Fixed wire count: wire count must match size
@@ -1922,7 +1922,9 @@ if has_jax:
             i += len_
 
         if n_ctrls:
-            control_wires = all_args[i : i + n_ctrls]
+            control_wires = Wires(
+                tuple(w if math.is_abstract(w) else int(w) for w in all_args[i : i + n_ctrls])
+            )
             i += n_ctrls
             control_values = all_args[i:]
             assert len(control_wires) == len(control_values)

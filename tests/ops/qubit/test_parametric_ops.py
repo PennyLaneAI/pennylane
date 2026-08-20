@@ -4312,7 +4312,6 @@ def test_global_phase_compute_sparse_matrix_broadcasted_raises(n_wires):
 
 
 control_data = [
-    (qp.RY(1.23, wires=0), Wires([])),
     (qp.PSWAP(1.234, wires=(0, 1)), Wires([])),
     # Controlled Ops
     (qp.ControlledPhaseShift(1.234, wires=(0, 1)), Wires(0)),

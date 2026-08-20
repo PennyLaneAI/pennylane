@@ -390,10 +390,10 @@ class MottonenStatePreparation(Operation):
         >>> ops = qp.MottonenStatePreparation.compute_decomposition(state_vector, wires=["a", "b"])
         >>> from pprint import pprint
         >>> pprint(ops)
-        [RY(tensor(1.5708, dtype=torch.float64), wires=['a']),
-        RY(tensor(1.5708, dtype=torch.float64), wires=['b']),
-        CNOT(wires=['a', 'b']),
-        CNOT(wires=['a', 'b'])]
+        [RY(1.5707..., wires=['a']),
+         RY(1.5707..., wires=['b']),
+         CNOT(wires=['a', 'b']),
+         CNOT(wires=['a', 'b'])]
 
         """
         omega = qp.math.angle(state_vector)
