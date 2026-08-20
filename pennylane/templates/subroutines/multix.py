@@ -259,6 +259,10 @@ class MultiX(Operator2):
         """Return the adjoint of the operator."""
         return MultiX(self.bitstring, wires=self.wires)
 
+    def pow(self, z: int | float) -> list[Operator2]:
+        # Only encodes the involutive property: MultiX^2 = MultiX
+        return super().pow(z % 2)
+
 
 # Resources function for MultiX
 def _multix_resources(bitstring: TensorLike, wires: WiresLike):  # pylint: disable=unused-argument

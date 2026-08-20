@@ -253,6 +253,25 @@ def test_adjoint():
     qp.assert_equal(adjoint_op, op)
 
 
+@pytest.mark.parametrize("exponent", [-5, -3, -1, 1, 3, 5])
+def test_pow_odd_integer(exponent):
+    """Tests that MultiX raised to an odd integer is equivalent to itself."""
+    op = qp.MultiX([1, 0, 1], wires=["a", "b", "c"])
+    pow_ops = op.pow(exponent)
+
+    assert len(pow_ops) == 1
+    qp.assert_equal(pow_ops[0], op)
+
+
+@pytest.mark.parametrize("exponent", [-6, -4, -2, 0, 2, 4, 6])
+def test_pow_even_integer(exponent):
+    """Tests that MultiX raised to an even integer is the identity."""
+    op = qp.MultiX([1, 0, 1], wires=["a", "b", "c"])
+    pow_ops = op.pow(exponent)
+
+    assert len(pow_ops) == 0
+
+
 @pytest.mark.parametrize(
     ("bitstring", "wires", "expected_index"),
     [
