@@ -311,6 +311,7 @@ def _supports_adjoint(circuit, device_wires, device_name):
         DecompositionUndefinedError,
         DeviceError,
         AttributeError,
+        ValueError,
     ):
         return False
     return True

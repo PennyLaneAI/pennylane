@@ -1651,8 +1651,12 @@ def _init_wires(op: Operator2):
         ops = filter(_is_op, leaves)
         all_algorithmic_wires.extend(op.wires for op in ops)
 
-    if all_algorithmic_wires and isinstance(all_algorithmic_wires[0], AbstractWires):
-        total_wires = sum(w.num_wires for w in all_algorithmic_wires)
+    abstract_wires = [w for w in all_algorithmic_wires if isinstance(w, AbstractWires)]
+    if abstract_wires:
+        if any(not aw.shape_fixed for aw in abstract_wires):
+            raise ValueError("Operator2 instances must be constructed with wires of fixed length.")
+
+        total_wires = sum(len(w) for w in all_algorithmic_wires)
         op._wires = AbstractWires(total_wires)
     else:
         op._wires = Wires.all_wires(all_algorithmic_wires)
@@ -1672,8 +1676,9 @@ def _init_arg_types(op: Operator2) -> None:
             # This branch is effectively unreachable since a mismatch between the actual
             # and expected length for a wire argument is validated in __init_wires. We will
             # only ever reach this branch if __validate_arg_types is called manually.
-            msg = f"Expected '{name}' to have length {exp_type.num_wires}, but got {argval}."
-            assert exp_type.num_wires == -1 or exp_type.num_wires == len(argval), msg
+            if exp_type.shape_fixed:
+                msg = f"Expected '{name}' to have length {len(exp_type)}, but got {argval}."
+                assert len(exp_type) == len(argval), msg
             continue
 
         # Dynamic argument
@@ -1798,8 +1803,8 @@ def _init_subclass_wire_sizes_setup(cls: type[Operator2]) -> None:
         cls.wire_sizes = tuple(
             (
                 None
-                if name not in arg_specs or arg_specs[name].num_wires == -1
-                else arg_specs[name].num_wires
+                if name not in arg_specs or not arg_specs[name].shape_fixed
+                else len(arg_specs[name])
             )
             for name in cls.wire_argnames
         )
@@ -1828,14 +1833,21 @@ def _init_subclass_wire_sizes_setup(cls: type[Operator2]) -> None:
         # If the wire argument is in arg_specs, the entries in arg_specs
         # and wire_sizes must match. Arbitrary number of wires is denoted by ``None`` and
         # ``-1`` in wire_sizes and arg_specs respectively.
-        if (et := arg_specs.get(wname, None)) is not None:
-            nwires = et.num_wires
-            if (nwires == -1 and wsize is not None) or (nwires not in (-1, wsize)):
+        if (expected_type := arg_specs.get(wname, None)) is not None:
+            if not expected_type.shape_fixed:
+                # Dynamic wire count, wire_sizes must specify arbitrary wires (None)
+                mismatch = wsize is not None
+            else:
+                # Fixed wire count: wire count must match size
+                mismatch = len(expected_type) != wsize
+
+            if mismatch:
                 cname = cls.__name__
+                declared_num = len(expected_type) if expected_type.shape_fixed else -1
                 raise TypeError(
                     f"Number of wires specified for '{wname}' does not match the declared "
                     f"type in {cname}.arg_specs and {cname}.wire_sizes. Got "
-                    f"{nwires} and {wsize} respectively."
+                    f"{declared_num} and {wsize} respectively."
                 )
 
 
@@ -1910,7 +1922,9 @@ if has_jax:
             i += len_
 
         if n_ctrls:
-            control_wires = all_args[i : i + n_ctrls]
+            control_wires = Wires(
+                tuple(w if math.is_abstract(w) else int(w) for w in all_args[i : i + n_ctrls])
+            )
             i += n_ctrls
             control_values = all_args[i:]
             assert len(control_wires) == len(control_values)
