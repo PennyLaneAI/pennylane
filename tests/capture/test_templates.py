@@ -26,12 +26,13 @@ import pytest
 
 import pennylane as qp
 from pennylane import math
+from pennylane.core import Operator1
 from pennylane.core.operator import Operator2
 
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
 
-# pylint: disable=wrong-import-position
+# pylint: disable=wrong-import-position,no-name-in-module
 from tests.capture.capture_utils import assert_eqn_matches_op
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
@@ -246,8 +247,9 @@ def test_unmodified_templates(template, args, kwargs):
     # Make sure the input data is valid
     template(*args, **kwargs)
 
-    # Make sure the template actually is not modified in its primitive binding function
-    assert template._primitive_bind_call.__code__ == original_op_bind_code
+    if issubclass(template, Operator1):
+        # Make sure the template actually is not modified in its primitive binding function
+        assert template._primitive_bind_call.__code__ == original_op_bind_code
 
     def fn(*args):
         template(*args, **kwargs)
@@ -257,31 +259,36 @@ def test_unmodified_templates(template, args, kwargs):
     # Check basic structure of jaxpr: single equation with template primitive
     assert len(jaxpr.eqns) == 1
     eqn = jaxpr.eqns[0]
-    assert eqn.primitive == template._primitive
+    if issubclass(template, Operator1):
+        assert eqn.primitive == template._primitive
+    else:
+        assert_eqn_matches_op(eqn, template)
 
     # Check that all arguments are passed correctly, taking wires parsing into account
     # Also, store wires for later
-    if "wires" in kwargs:
-        # If wires are in kwargs, they are not invars to the jaxpr
-        num_invars_wo_wires = len(eqn.invars) - len(kwargs["wires"])
-        assert eqn.invars[:num_invars_wo_wires] == jaxpr.jaxpr.invars
-        wires = kwargs.pop("wires")
-    else:
-        # If wires are in args, they are also invars to the jaxpr
-        assert eqn.invars == jaxpr.jaxpr.invars
-        wires = args[-1]
+    if issubclass(template, Operator1):
+        if "wires" in kwargs:
+            # If wires are in kwargs, they are not invars to the jaxpr
+            num_invars_wo_wires = len(eqn.invars) - len(kwargs["wires"])
+            assert eqn.invars[:num_invars_wo_wires] == jaxpr.jaxpr.invars
+            wires = kwargs.pop("wires")
+        else:
+            # If wires are in args, they are also invars to the jaxpr
+            assert eqn.invars == jaxpr.jaxpr.invars
+            wires = args[-1]
+
+        # Check that `n_wires` is inferred correctly
+        if isinstance(wires, int):
+            wires = (wires,)
+        assert eqn.params.pop("n_wires") == len(wires)
+
+        # Check that remaining kwargs are passed properly to the eqn
+        # JAX 0.7.0 converts lists to tuples for hashability, so normalize both sides
+        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
 
     # Check outvars; there should only be the DropVar returned by the template
     assert len(eqn.outvars) == 1
     assert isinstance(eqn.outvars[0], jax.core.DropVar)
-
-    # Check that `n_wires` is inferred correctly
-    if isinstance(wires, int):
-        wires = (wires,)
-    assert eqn.params.pop("n_wires") == len(wires)
-    # Check that remaining kwargs are passed properly to the eqn
-    # JAX 0.7.0 converts lists to tuples for hashability, so normalize both sides
-    assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
 
 
 @pytest.mark.parametrize(
@@ -369,8 +376,9 @@ class TestModifiedTemplates:
         """Test that basis embedding is just BasisState."""
 
         jaxpr = jax.make_jaxpr(qp.BasisEmbedding)(np.array([1, 1, 1]), wires=(0, 1, 2))
-        assert jaxpr.eqns[0].primitive == qp.BasisState._primitive
-        assert jaxpr.eqns[0].invars[0].aval == jax.core.ShapedArray((3,), int)
+        # eqns[0] is for converting to bool
+        assert_eqn_matches_op(jaxpr.eqns[1], qp.BasisState)
+        assert jaxpr.eqns[1].invars[0].aval == jax.core.ShapedArray((3,), bool)
 
     @pytest.mark.parametrize(
         "container", [tuple, list, jnp.array], ids=["tuple", "list", "jnp.array"]
@@ -541,7 +549,7 @@ class TestModifiedTemplates:
         jaxpr = jax.make_jaxpr(fn)(base)
 
         assert len(jaxpr.eqns) == 2
-        assert jaxpr.eqns[0].primitive == qp.RX._primitive
+        assert_eqn_matches_op(jaxpr.eqns[0], qp.RX)
 
         eqn = jaxpr.eqns[1]
         assert eqn.primitive == qp.ControlledSequence._primitive
@@ -554,7 +562,7 @@ class TestModifiedTemplates:
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
         with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.5)
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.5, 0)
 
         assert len(q) == 1  # One for each control
         assert q.queue[0] == qp.ControlledSequence(base, control)
@@ -645,7 +653,7 @@ class TestModifiedTemplates:
         assert_eqn_matches_op(jaxpr.eqns[0], qp.H)
         assert_eqn_matches_op(jaxpr.eqns[1], qp.H)
         assert_eqn_matches_op(jaxpr.eqns[-5], qp.RZ)
-        assert jaxpr.eqns[-2].primitive == qp.RX._primitive
+        assert_eqn_matches_op(jaxpr.eqns[-2], qp.RX)
 
         eqn = jaxpr.eqns[-1]
         assert eqn.primitive == template._primitive
@@ -988,7 +996,7 @@ class TestModifiedTemplates:
         """Test the primitve bind call of BBQRAM."""
 
         kwargs = {
-            "data": ((0, 1, 0), (1, 1, 1), (1, 1, 0), (0, 0, 0)),
+            "bitstrings": ((0, 1, 0), (1, 1, 1), (1, 1, 0), (0, 0, 0)),
             "control_wires": (0, 1),
             "target_wires": (2, 3, 4),
             "work_wires": tuple([5] + [6, 7, 8] + [12, 13, 14] + [9, 10, 11]),
@@ -1022,7 +1030,7 @@ class TestModifiedTemplates:
         """Test the primitve bind call of SelectOnlyQRAM."""
 
         kwargs = {
-            "data": (
+            "bitstrings": (
                 (0, 1, 0),
                 (1, 1, 1),
                 (1, 1, 0),
@@ -1066,7 +1074,7 @@ class TestModifiedTemplates:
         """Test the primitve bind call of HybridQRAM."""
 
         kwargs = {
-            "data": ((0, 1, 0), (1, 1, 1), (1, 1, 0), (0, 0, 0)),
+            "bitstrings": ((0, 1, 0), (1, 1, 1), (1, 1, 0), (0, 0, 0)),
             "control_wires": (0, 1),
             "target_wires": (2, 3, 4),
             "work_wires": tuple([5, 6, 7, 8, 12, 13, 14, 15, 9, 10, 11]),
@@ -1101,7 +1109,7 @@ class TestModifiedTemplates:
         """Test the primitive bind call of QROM."""
 
         kwargs = {
-            "data": ((0,), (1,)),
+            "bitstrings": ((0,), (1,)),
             "control_wires": [0],
             "target_wires": [1],
             "work_wires": None,
@@ -1284,7 +1292,7 @@ class TestModifiedTemplates:
         }
 
         def qfunc():
-            qp.SemiAdder(**kwargs)
+            return qp.SemiAdder(**kwargs).tracer
 
         # Validate inputs
         qfunc()
@@ -1295,17 +1303,10 @@ class TestModifiedTemplates:
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        assert eqn.primitive == qp.SemiAdder._primitive
-        assert eqn.invars == jaxpr.jaxpr.invars
-        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
-        assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        assert_eqn_matches_op(eqn, qp.SemiAdder)
 
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-
-        assert len(q) == 1
-        qp.assert_equal(q.queue[0], qp.SemiAdder(**kwargs))
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        qp.assert_equal(op, qp.SemiAdder(**kwargs))
 
     def test_multiplier(self):
         """Test the primitive bind call of Multiplier."""
@@ -1384,28 +1385,17 @@ class TestModifiedTemplates:
         }
 
         def qfunc():
-            qp.SignedOutMultiplier(**kwargs)
+            return qp.SignedOutMultiplier(**kwargs).tracer
 
-        # Validate inputs
-        qfunc()
-
-        # Actually test primitive bind
         jaxpr = jax.make_jaxpr(qfunc)()
 
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        assert eqn.primitive == qp.SignedOutMultiplier._primitive
-        assert eqn.invars == jaxpr.jaxpr.invars
-        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
-        assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        assert_eqn_matches_op(eqn, qp.SignedOutMultiplier)
 
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-
-        assert len(q) == 1
-        qp.assert_equal(q.queue[0], qp.SignedOutMultiplier(**kwargs))
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        qp.assert_equal(op, qp.SignedOutMultiplier(**kwargs))
 
     def test_out_multiplier(self):
         """Test the primitive bind call of OutMultiplier."""
@@ -1419,28 +1409,17 @@ class TestModifiedTemplates:
         }
 
         def qfunc():
-            qp.OutMultiplier(**kwargs)
+            return qp.OutMultiplier(**kwargs).tracer
 
-        # Validate inputs
-        qfunc()
-
-        # Actually test primitive bind
         jaxpr = jax.make_jaxpr(qfunc)()
 
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        assert eqn.primitive == qp.OutMultiplier._primitive
-        assert eqn.invars == jaxpr.jaxpr.invars
-        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
-        assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        assert_eqn_matches_op(eqn, qp.OutMultiplier)
 
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-
-        assert len(q) == 1
-        qp.assert_equal(q.queue[0], qp.OutMultiplier(**kwargs))
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        qp.assert_equal(op, qp.OutMultiplier(**kwargs))
 
     def test_out_adder(self):
         """Test the primitive bind call of OutAdder."""
@@ -1635,7 +1614,7 @@ class TestModifiedTemplates:
 
         assert len(jaxpr.eqns) == 4
 
-        assert jaxpr.eqns[0].primitive == qp.RX._primitive
+        assert_eqn_matches_op(jaxpr.eqns[0], qp.RX)
         assert_eqn_matches_op(jaxpr.eqns[1], qp.H)
         assert jaxpr.eqns[2].primitive == qp.ops.op_math.Prod._primitive
 
@@ -1673,7 +1652,7 @@ class TestModifiedTemplates:
 
         assert len(jaxpr.eqns) == 4
 
-        assert jaxpr.eqns[0].primitive == qp.RX._primitive
+        assert_eqn_matches_op(jaxpr.eqns[0], qp.RX)
         assert_eqn_matches_op(jaxpr.eqns[1], qp.H)
         assert jaxpr.eqns[2].primitive == qp.ops.op_math.Prod._primitive
 
@@ -1854,13 +1833,12 @@ class TestModifiedTemplates:
 def filter_fn(member: Any) -> bool:
     """Determine whether a member of a module is a class and genuinely belongs to
     qp.templates."""
-
     if not inspect.isclass(member):
         return False
 
     # exception: BasisEmbedding is an alias of BasisState, so it would be filtered away
     # by the logic below
-    if member is qp.BasisEmbedding:
+    if member is getattr(qp.templates, "BasisEmbedding", None):
         return True
 
     return member.__module__.startswith("pennylane.templates") and issubclass(
@@ -1881,6 +1859,7 @@ unsupported_templates = [
 modified_templates = [
     t for t in all_templates if t not in unmodified_templates + unsupported_templates
 ]
+migrated_templates = [qp.BasisRotation, qp.BasisEmbedding]
 
 
 @pytest.mark.parametrize("template", modified_templates)

@@ -79,8 +79,210 @@ ARGNAME_CATEGORIES = (
 
 
 class Operator2(metaclass=OperatorMeta):
-    r"""Base class representing quantum operators.
-    TODO: [sc-120453] Fill docstring
+    r"""Base class representing quantum operators that are designed for compatibility with
+    :func:`~.qjit`.
+
+    Child classes of ``Operator2`` are defined by their name and argument types, of which there are
+    five categories that are designated as class variables. These arguments dictate how ``Operator2``
+    child classes are handled when compiling with :func:`~.qjit`.
+
+    * :attr:`wire_argnames <Operator2.wire_argnames>` : The names of arguments corresponding to
+      wires. Values for these arguments are automatically wrapped in
+      :class:`~.Wires` objects by the ``Operator2`` constructor.
+
+    .. note::
+
+        ``Operator2.wire_argnames`` defaults to ``("wires",)``. Thus, if an operator one
+        has one wire argument and it is called ``wires``, ``wire_argnames`` does not need
+        to be overridden.
+
+    * :attr:`dynamic_argnames <Operator2.dynamic_argnames>` : The names of arguments that are
+      treated as dynamic. Inputs for these arguments must be scalars,
+      arrays, or castable to arrays.
+
+    * :attr:`static_argnames <Operator2.static_argnames>` : The names of arguments that are
+      treated as static but are **not compilable** (see below).
+
+    * :attr:`compilable_argnames <Operator2.compilable_argnames>` : The names of arguments that are
+      treated as **compilable** static arguments. Compilable static arguments include numeric values,
+      strings, lists, tuples, and dictionaries. This feature is opt-in; if any static arguments are
+      not guaranteed to be compilable, it is safer to place them in
+      :attr:`static_argnames <Operator2.static_argnames>`.
+
+    .. note::
+
+        An operator can only specify :attr:`static_argnames <Operator2.static_argnames>` or
+        :attr:`compilable_argnames <Operator2.compilable_argnames>`, but not both; if **any**
+        static arguments cannot be lowered to the IR, then all static arguments must be treated as
+        not lowerable.
+
+    * :attr:`hybrid_argnames <Operator2.hybrid_argnames>` : The names of arguments that represent
+      dynamic data wrapped in static structures (known as Pytrees). Names in this category may only
+      overlap with :attr:`wire_argnames <Operator2.wire_argnames>` when those arguments contain
+      nested structures of wires.
+
+    Args:
+        *args (tuple[...]): positional arguments
+        **kwargs (dict[str, Any]): Key-word arguments
+
+    .. details::
+        :title: Defining Custom Operators
+
+        Custom ``Operator2`` instances **must** designate all their arguments to
+        one of the aforementioned categories. This means that the union of all the
+        designated arguments must cover the full set of arguments.
+
+        As an example, consider the following custom operator:
+
+        .. code-block:: python
+
+            import pennylane as qp
+            from pennylane.core import Operator2
+            import jax.numpy as jnp
+
+            class MyOp(Operator2):
+                wire_argnames = ("wires", "rot_wire")
+                compilable_argnames = ("pauli_string")
+                dynamic_argnames = ("angle_array")
+
+                def __init__(self, pauli_string, angle_array, wires, rot_wire):
+                    super().__init__(pauli_string, angle_array, wires, rot_wire)
+
+                @staticmethod
+                def compute_matrix(pauli_string, angle_array, wires, rot_wire):
+                    wire_map = {wires[i]: i for i in range(len(wires))}
+                    pauli_op = qp.pauli.string_to_pauli_word(pauli_string, wire_map=wire_map)
+                    rot_op = qp.Rot(*angle_array, wires=rot_wire)
+                    return qp.matrix(qp.prod(pauli_op, rot_op))
+
+        The ``wires`` and ``rot_wire`` arguments will be a part of
+        :attr:`wire_argnames <Operator2.wire_argnames>`, and ``pauli_string`` and ``angle_array``
+        will belong to :attr:`compilable_argnames <Operator2.compilable_argnames>` and
+        :attr:`dynamic_argnames <Operator2.dynamic_argnames>`, respectively.
+
+        >>> from jax import numpy as jnp
+        >>> angle_array = jnp.array([0.1, 0.2, 0.3])
+        >>> op = MyOp("XYZ", angle_array, wires=(0, 1, 2), rot_wire=(3,))
+        >>> op
+        MyOp(pauli_string=XYZ, angle_array=[0.1 0.2 0.3], wires=[0, 1, 2], rot_wire=[3])
+
+        For optimal functionality, ``MyOp`` should define a decomposition using :func:`~pennylane.add_decomps`,
+        which is covered in the following section.
+
+        **Decomposing Operators**
+
+        More information and specifics on how to define decomposition rules for operators is found
+        in the :mod:`pennylane.decomposition` module. A brief synopsis is offered here.
+
+        Adding a decomposition rule to an existing or a custom operator can be done by defining two
+        functions:
+
+        * A "resource" function, which contains the resources comprising the decomposition rule.
+        * The decomposition rule itself, structured as a quantum function.
+
+        Both the resource function and the decomposition rule **must** have the same call signature
+        as the operator.
+
+        Consider this example using the custom operator ``MyOp``.
+
+        .. code-block:: python
+
+            from collections import defaultdict
+
+            def _my_op_resources(pauli_string, angle_array, wires, rot_wire):
+                resources = defaultdict(int)
+
+                for char in pauli_string:
+                    resources[getattr(qp, char)] += 1
+
+                resources[qp.Rot] = 1
+                return resources
+
+            @qp.register_resources(_my_op_resources)
+            def _my_op_decomp(pauli_string, angle_array, wires, rot_wire):
+                wire_map = {wires[i]: i for i in range(len(wires))}
+                for wire, pauli in zip(wires, pauli_string):
+                    getattr(qp, pauli)(wire)
+                qp.Rot(*angle_array, wires=rot_wire)
+
+            qp.add_decomps(MyOp, _my_op_decomp)
+
+        Resource functions are "registered" to the decomposition rule by decorating with
+        :func:`~pennylane.register_resources`. Adding the decomposition rule to the operator officially is
+        done via :func:`~pennylane.add_decomps`. To verify, we can inspect that the decomposition rule
+        created as been added to ``MyOp`` as follows.
+
+        .. code-block:: python
+
+            num_wires = 4
+            @qp.qnode(qp.device("null.qubit", wires=4))
+            def f():
+                MyOp("XYY", jnp.array([0.1, 0.2, 0.3]), wires=(0, 1, 2), rot_wire=(3,))
+                return qp.expval(qp.Z(0))
+
+        >>> qp.decomposition.enable_graph()
+        >>> inspector = qp.decomp_inspector(f)()
+        >>> inspector.inspect_decomps(MyOp("XYY", jnp.array([0.1, 0.2, 0.3]), wires=(0, 1, 2), rot_wire=(3,)))
+        CHOSEN: Decomposition 0 (name: _my_op_decomp)
+        0: ──X───────────────────┤
+        1: ──Y───────────────────┤
+        2: ──Y───────────────────┤
+        3: ──Rot(0.10,0.20,0.30)─┤
+        First-Level Expansion Gates: {PauliX: 1, PauliY: 2, Rot: 1}
+        Full Expansion Gates: {PauliX: 1, PauliY: 2, Rot: 1}
+        Weighted Cost: 4.0
+        >>> qp.decomposition.disable_graph()
+
+        **Downstream effects of static_argnames, compilable_argnames**
+
+        Static and *compilable static* arguments are similar, but have key differences to note that
+        dictate how certain arguments are treated when compiled down to MLIR.
+
+        Both ``static_argnames`` and ``compilable_argnames`` denote data that cannot be dynamic. In
+        other words, they both represent concrete data whose values are known when tracing the
+        program. The distinction in their behaviour comes at compile-time.
+
+        Arguments in ``compilable_argnames`` denote data that *can* be concretely accessed and
+        inspected at compile-time (it can be compiled and represented concretely in MLIR), including
+        numeric values, strings, lists, tuples, and dictionaries.
+
+        In the example above with ``MyOp``, the ``pauli_string`` argument is part of
+        ``compilable_argnames``. Its concrete (static) value will be accessible at compile time,
+        being represented at the MLIR level as follows, where the concrete value of
+        ``pauli_string`` is captured in the ``static_data`` attribute in MLIR:
+
+        >>> op = MyOp("XYZ", angle_array, wires=(0, 1, 2), rot_wire=(3,)) # doctest: +SKIP
+
+        .. code-block::
+
+            %out_qubits:4 = quantum.operator "MyOp"(%arg0: tensor<3xf64>) qubits(%q0, %q1, %q2, %q3)
+              static_data = {pauli_string = "XYZ"}
+              param_map = {angle_array = [0]} qubit_map = {rot_wires = [1, 2, 3], wires = [0]}
+
+        Arguments in ``static_argnames`` denote data that *cannot* be concretely accessed and
+        inspected at compile-time (it cannot be compiled and represented concretely in MLIR),
+        including arbitrary Python objects, Python functions, and custom classes. Static data will
+        be reduced to a Unique Identifier (UID) at the MLIR level.
+
+        In the example above with ``MyOp``, if the ``pauli_string`` argument was part of
+        ``static_argnames``, ``MyOp`` would be represented in MLIR as follows, where the concrete
+        value of ``pauli_string`` is reduced to a UID in MLIR:
+
+        .. code-block::
+
+            %out_qreg = quantum.operator "MyOp"(%arg0: tensor<3xf64>)
+              UID(278653)
+              quregs(%arg3) indices(%arg1: tensor<3xi64>, %arg2: tensor<1xi64>)
+
+            %out_qubits:4 = quantum.operator "MyOp"(%arg0: tensor<3xf64>) qubits(%arg4, %arg5, %arg6, %arg7)
+              UID(234567)
+              param_map = {angle_array = [0]} qubit_map = {rot_wires = [1, 2, 3], wires = [0]}
+
+        .. note::
+
+            If ``hybrid_argnames`` is not empty, the above behaviour also occurs
+            downstream; the dynamic data stored within the Pytree is lowered correctly,
+            and the static structure of the Pytree is reduced to a UID in MLIR.
     """
 
     # pylint: disable=too-many-public-methods, too-many-instance-attributes
@@ -1294,7 +1496,7 @@ class Operator2(metaclass=OperatorMeta):
         expected numbers of dimensions, allowing to infer a batch size.
         """
         self._batch_size = None
-        dynamic_args = tuple(self.dynamic_args.values())
+        dynamic_args = self.data
 
         ndims = tuple(math.ndim(arg) for arg in dynamic_args)
         if any(len(math.shape(arg)) >= 1 and math.shape(arg)[0] is None for arg in dynamic_args):
@@ -1848,8 +2050,12 @@ def _canonicalize_dynamic(d, op_name=None) -> Hashable:
     # Use qp.math.real to take the real part. We may get complex inputs for
     # example when differentiating holomorphic functions with JAX: a complex
     # valued QNode (one that returns qp.state) requires complex typed inputs.
-    if op_name is not None and op_name in ("RX", "RY", "RZ", "PhaseShift", "Rot"):
+    if op_name is not None and op_name in ("RX", "RY", "RZ", "PhaseShift", "Rot", "U1", "U2", "U3"):
         mod_val = 2 * np.pi
+    elif op_name is not None and op_name in ("CRX", "CRY", "CRZ", "CRot"):
+        # Rot(θ) ∈ SU(2) double-covers SO(3) via center {-I, I}, so θ ↦ θ+2π is global phase -I;
+        # in CRot, -I becomes a relative phase on |1⟩, breaking 2π periodicity to 4π.
+        mod_val = 4 * np.pi
     else:
         mod_val = None
 
@@ -1918,6 +2124,8 @@ def _canonicalize_abstract_type(val, kind: _ArgType):
                     "specifiers found in pennylane.typing."
                 )
             # Ensure it behaves like a clean array/scalar leaf before abstractifying
+            if math.is_abstract(val):
+                return abstractify(val)
             return abstractify(math.asarray(val))
 
         case _ArgType.HYBRID:

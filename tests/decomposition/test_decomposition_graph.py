@@ -21,13 +21,15 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.core.operator import Operation, abstractify
+from pennylane.core.operator import Operation, Operator1, abstractify
 from pennylane.decomposition import DecompositionGraph, resource_rep
 from pennylane.decomposition.decomposition_graph import _DecompositionNode
 from pennylane.decomposition.decomposition_rule import DecompCollection, _fix_decomp
+from pennylane.decomposition.symbolic_decomposition import self_adjoint
+from pennylane.decomposition.utils import _get_decomp_args
 from pennylane.exceptions import DecompositionError, DecompositionWarning
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.ops.op_math.controlled2 import ControlledOp2, _ctrl_abstract
+from pennylane.ops.op_math.controlled2 import ControlledOp2, _ctrl_abstract, flip_control_adjoint
 from pennylane.ops.op_math.pow2 import _pow_abstract
 from pennylane.typing import Float, Wire
 from tests.core.operator.operator2_utils import (
@@ -864,18 +866,24 @@ class TestControlledDecompositions:
 
         op1 = qp.ctrl(qp.GlobalPhase(0.5), control=[1])
         op2 = qp.ctrl(qp.GlobalPhase(0.5), control=[1, 2])
-        graph = DecompositionGraph([op1, op2], gate_set={"ControlledPhaseShift", "PhaseShift"})
-        # 4 op nodes and 2 decomposition nodes, and 1 dummy starting node.
-        assert len(graph._graph.nodes()) == 7
-        # 2 edges from decompositions to ops and 2 edges from ops to decompositions,
-        # and 2 edges from the dummy starting node to the target gate set.
-        assert len(graph._graph.edges()) == 6
+        # The decomposition rule conditionally applies X gates (and, for a single control
+        # wire, a GlobalPhase) depending on the control values, which are not concrete at
+        # resource-estimation time. Both must therefore be in the target gate set.
+        graph = DecompositionGraph(
+            [op1, op2],
+            gate_set={"ControlledPhaseShift", "PhaseShift", "GlobalPhase", "X"},
+        )
+        # 6 op nodes and 2 decomposition nodes, and 1 dummy starting node.
+        assert len(graph._graph.nodes()) == 9
+        # 2 edges from decompositions to ops and 4 edges from ops to decompositions,
+        # and 4 edges from the dummy starting node to the target gate set.
+        assert len(graph._graph.edges()) == 10
 
         # Verify the decompositions
         solution = graph.solve()
         with qp.queuing.AnnotatedQueue() as q:
-            solution.decomposition(op1)(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
-            solution.decomposition(op2)(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
+            solution.decomposition(op1)(**op1.arguments)
+            solution.decomposition(op2)(**op2.arguments)
 
         assert q.queue == [
             qp.PhaseShift(-0.5, wires=[1]),
@@ -922,9 +930,11 @@ class TestControlledDecompositions:
         )
         # 18 op nodes and 24 decomposition nodes, and the dummy starting node
         assert len(graph._graph.nodes()) == 43
-        # 24 edges from decompositions to ops and 36 edges from ops to decompositions
-        # and 6 edge from the dummy starting node to the target gate set.
-        assert len(graph._graph.edges()) == 66
+        # 24 edges from decompositions to ops and 38 edges from ops to decompositions
+        # and 6 edge from the dummy starting node to the target gate set. The controlled
+        # GlobalPhase rule now always reports X gates for flipping zero control values,
+        # which adds two edges.
+        assert len(graph._graph.edges()) == 68
 
         solution = graph.solve()
 
@@ -940,22 +950,59 @@ class TestControlledDecompositions:
         """Tests that the controlled form of an adjoint operator is decomposed properly."""
 
         op = qp.ctrl(qp.adjoint(qp.U1(0.5, wires=0)), control=[1])
-        graph = DecompositionGraph(operations=[op], gate_set={"ControlledPhaseShift"})
-        solution = graph.solve()
+        # Applying ``flip_control_adjoint`` rewrites ``C(Adjoint(U1))`` as ``Adjoint(C(U1))``.
+        # With the eager ``C(U1) -> ControlledPhaseShift`` lowering, the inner ``C(U1)`` is lowered
+        # directly to ``ControlledPhaseShift``, so the result is an adjoint of a
+        # ``ControlledPhaseShift``.
         with qp.queuing.AnnotatedQueue() as q:
-            solution.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
-        assert q.queue == [qp.adjoint(qp.ops.Controlled(qp.U1(0.5, wires=0), control_wires=[1]))]
+            _, args, kwargs = _get_decomp_args(op)
+            flip_control_adjoint(*args, **kwargs)
+        assert q.queue == [qp.adjoint(qp.ControlledPhaseShift(0.5, wires=[1, 0]))]
+
+    def test_flip_controlled_adjoint_full_solve(self):
+        """Tests that a full graph solve resolves C(Adjoint(U1)) down to
+        Adjoint(ControlledPhaseShift), without any decomposition rule registered
+        specifically for ``C(U1)``.
+
+        The controlled U1 node only appears once ``flip_control_adjoint`` is applied, and
+        it already resolves to ``ControlledPhaseShift`` through the generic mechanism that
+        applies control to U1's own (unconditional) decomposition into ``PhaseShift``,
+        combined with the pre-existing ``(PhaseShift, 1) -> ControlledPhaseShift`` mapping.
+        ``PauliX`` must be included in the target gate set because the resource estimate for
+        a controlled operator conservatively accounts for a potential zero-control flip, even
+        though none is required for this concrete, all-``True`` control case. ``self_adjoint``
+        must be supplied for ``PauliX`` via ``alt_decomps`` since the test-local decomposition
+        registry (unlike the real one) doesn't register it for ``Adjoint(PauliX)``, which is
+        pulled in when adjointing the same zero-control-flip resource estimate.
+        """
+
+        op = qp.ctrl(qp.adjoint(qp.U1(0.5, wires=0)), control=[1])
+        graph = DecompositionGraph(
+            operations=[op],
+            gate_set={"ControlledPhaseShift", "PauliX"},
+            alt_decomps={
+                "Adjoint(PauliX)": [self_adjoint]
+            },  # this is necessary because all tests are patched with specific decompositions that dont include Adjoint(PauliX)
+        )
+        solution = graph.solve()
+
+        with qp.queuing.AnnotatedQueue() as q:
+            _, args, kwargs = _get_decomp_args(op)
+            solution.decomposition(op)(*args, **kwargs)
+
+        assert q.queue == [qp.adjoint(qp.ControlledPhaseShift(0.5, wires=[1, 0]))]
 
     def test_decompose_with_single_work_wire(self):
         """Tests that the Lemma 7.11 decomposition from https://arxiv.org/pdf/quant-ph/9503016 is applied correctly."""
 
         op = qp.ctrl(qp.Rot(0.123, 0.234, 0.345, wires=0), control=[1, 2, 3])
 
-        graph = DecompositionGraph(operations=[op], gate_set={"MultiControlledX", "CRot"})
+        graph = DecompositionGraph(operations=[op], gate_set={"MultiControlledX", "CRot", "PauliX"})
         solution = graph.solve(num_work_wires=1)
         with qp.queuing.AnnotatedQueue() as q:
             rule = solution.decomposition(op, num_work_wires=1)
-            rule(*op.parameters, wires=op.wires, **op.hyperparameters)
+            rule(**op.arguments)
+
         tape = qp.tape.QuantumScript.from_queue(q)
         [tape], _ = qp.transforms.resolve_dynamic_wires([tape], min_int=4)
         assert tape.operations == [
@@ -964,7 +1011,7 @@ class TestControlledDecompositions:
             qp.MultiControlledX(wires=[1, 2, 3, 4]),
         ]
         assert solution.resource_estimate(op, num_work_wires=1) == to_resources(
-            {_ctrl_abstract(qp.X, Wire[3]): 2, qp.CRot: 1}
+            {_ctrl_abstract(qp.X, Wire[3]): 2, qp.CRot: 1, qp.X: 3}
         )
 
     def test_base_decomp_contains_mcms(self):
@@ -984,6 +1031,15 @@ class TestControlledDecompositions:
         assert all("_custom_rule" not in rule.name for rule in rules)
 
 
+class LegacyRX(Operator1):  # pylint: disable=too-few-public-methods
+    pass
+
+
+decompositions.get()["LegacyRX"] = decompositions.get()["RX"]
+decompositions.get()["Adjoint(LegacyRX)"] = decompositions.get()["Adjoint(RX)"]
+decompositions.get()["C(LegacyRX)"] = decompositions.get()["C(RX)"]
+
+
 @patch("pennylane.decomposition.decomposition_rule._decompositions_var", decompositions)
 class TestSymbolicDecompositions:
     """Tests decompositions of symbolic ops."""
@@ -991,9 +1047,9 @@ class TestSymbolicDecompositions:
     def test_cancel_adjoint(self):
         """Tests that a nested adjoint operator is flattened properly."""
 
-        op = qp.adjoint(qp.adjoint(qp.RX(0.5, wires=[0])))
+        op = qp.adjoint(qp.adjoint(LegacyRX(0.5, wires=[0])))
 
-        graph = DecompositionGraph(operations=[op], gate_set={"RX"})
+        graph = DecompositionGraph(operations=[op], gate_set={"LegacyRX"})
         # 2 operator nodes (Adjoint(Adjoint(RX)) and RX), and 1 decomposition node.
         # and the dummy starting node
         assert len(graph._graph.nodes()) == 4
@@ -1004,15 +1060,15 @@ class TestSymbolicDecompositions:
         with qp.queuing.AnnotatedQueue() as q:
             solution.decomposition(op)(*op.parameters, wires=op.wires, **kwargs)
 
-        assert q.queue == [qp.RX(0.5, wires=[0])]
-        assert solution.resource_estimate(op) == to_resources({qp.RX: 1})
+        assert q.queue == [LegacyRX(0.5, wires=[0])]
+        assert solution.resource_estimate(op) == to_resources({LegacyRX: 1})
 
-    def test_adjoint_custom(self):
+    def test_adjoint_custom(self, mocker):
         """Tests adjoint of an operator that defines its own adjoint."""
 
-        op = qp.adjoint(qp.RX(0.5, wires=[0]))
+        op = qp.adjoint(LegacyRX(0.5, wires=[0]))
 
-        graph = DecompositionGraph(operations=[op], gate_set={"RX"})
+        graph = DecompositionGraph(operations=[op], gate_set={"LegacyRX"})
         # 2 operator nodes (Adjoint(RX) and RX), and 1 decomposition node, and 1 dummy starting node
         assert len(graph._graph.nodes()) == 4
         assert len(graph._graph.edges()) == 3
@@ -1022,24 +1078,24 @@ class TestSymbolicDecompositions:
         with qp.queuing.AnnotatedQueue() as q:
             solution.decomposition(op)(*op.parameters, wires=op.wires, **kwargs)
 
-        assert q.queue == [qp.RX(-0.5, wires=[0])]
-        assert solution.resource_estimate(op) == to_resources({qp.RX: 1})
+        assert q.queue == [LegacyRX(-0.5, wires=[0])]
+        assert solution.resource_estimate(op) == to_resources({LegacyRX: 1})
 
-    def test_adjoint_general(self):
+    def test_adjoint_general(self, mocker):
         """Tests decomposition of a generalized adjoint operation."""
 
-        @qp.register_resources({qp.H: 1, qp.CNOT: 2, qp.RX: 1, qp.T: 1})
+        @qp.register_resources({qp.H: 1, qp.CNOT: 2, LegacyRX: 1, qp.T: 1})
         def custom_decomp(phi, wires):
             qp.H(wires[0])
             qp.CNOT(wires=wires[:2])
-            qp.RX(phi, wires=wires[1])
+            LegacyRX(phi, wires=wires[1])
             qp.CNOT(wires=wires[1:3])
             qp.T(wires[2])
 
         op = qp.adjoint(CustomOp(0.5, wires=[0, 1, 2]))
         graph = DecompositionGraph(
             operations=[op],
-            gate_set={"H", "CNOT", "RX", "PhaseShift"},
+            gate_set={"H", "CNOT", "LegacyRX", "PhaseShift"},
             alt_decomps={CustomOp: [custom_decomp]},
         )
         # 12 operator nodes: A(CustomOp), A(H), A(CNOT), A(RX), A(T), H, CNOT, RX,
@@ -1059,12 +1115,12 @@ class TestSymbolicDecompositions:
         assert q.queue == [
             qp.adjoint(qp.T(2)),
             qp.adjoint(qp.CNOT(wires=[1, 2])),
-            qp.adjoint(qp.RX(0.5, wires=1)),
+            qp.adjoint(LegacyRX(0.5, wires=1)),
             qp.adjoint(qp.CNOT(wires=[0, 1])),
             qp.adjoint(qp.H(wires=0)),
         ]
         assert solution.resource_estimate(op) == to_resources(
-            {qp.H: 1, qp.CNOT: 2, qp.RX: 1, qp.PhaseShift: 1},
+            {qp.H: 1, qp.CNOT: 2, LegacyRX: 1, qp.PhaseShift: 1},
         )
 
     def test_nested_powers(self):

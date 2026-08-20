@@ -199,7 +199,7 @@ def _(op: qops.PauliRot):
 
 @_map_to_resource_op.register
 def _(op: qops.PCPhase):
-    dim = op.hyperparameters["dimension"][0]
+    dim = op.dim
     return re_ops.PCPhase(num_wires=len(op.wires), dim=dim, wires=op.wires)
 
 
@@ -285,16 +285,16 @@ def _(op: qops.Toffoli):
 @_map_to_resource_op.register
 def _(op: qtemps.OutMultiplier):
     return re_temps.OutMultiplier(
-        a_num_wires=len(op.hyperparameters["x_wires"]),
-        b_num_wires=len(op.hyperparameters["y_wires"]),
+        a_num_wires=len(op.x_wires),
+        b_num_wires=len(op.y_wires),
         wires=op.wires,
     )
 
 
 @_map_to_resource_op.register
 def _(op: qtemps.SemiAdder):
-    x_wires = op.hyperparameters["x_wires"]
-    y_wires = op.hyperparameters["y_wires"]
+    x_wires = op.x_wires
+    y_wires = op.y_wires
 
     return re_temps.SemiAdder(
         max_register_size=max(len(x_wires), len(y_wires)),

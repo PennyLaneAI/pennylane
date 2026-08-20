@@ -19,7 +19,7 @@ from textwrap import dedent
 import pytest
 
 import pennylane as qp
-from pennylane.core import Operator1, queuing
+from pennylane.core import Operator, Operator1, queuing
 from pennylane.core.operator import abstractify
 from pennylane.decomposition.decomposition_rule import (
     _fix_decomp,
@@ -1122,16 +1122,22 @@ class TestControlledDecomposition:
     def test_controlled_decomp_with_work_wire_not_applicable(self):
         """Tests that the controlled_decomp_with_work_wire is not applicable sometimes."""
 
-        op = qp.ctrl(qp.RX(0.5, wires=0), control=[1], control_values=[0], work_wires=[3])
+        op = qp.ctrl(DummyHadamard(wires=0), control=[1], control_values=[0], work_wires=[3])
         assert not ctrl_single_work_wire.is_applicable(**op.resource_params)
 
-        op = qp.ctrl(qp.RX(0.5, wires=0), control=[1, 2])
+        op = qp.ctrl(DummyHadamard(wires=0), control=[1, 2])
         assert not ctrl_single_work_wire.is_applicable(**op.resource_params)
 
     def test_decompose_to_controlled_unitary(self):
         """Tests the decomposition to controlled qubit unitary"""
 
-        op = qp.ctrl(qp.Rot(0.1, 0.2, 0.3, wires=0), control=[1, 2, 3], work_wires=[4, 5])
+        class CustomRot(Operator):  # pylint: disable=too-few-public-methods
+
+            @staticmethod
+            def compute_matrix(*params):
+                return qp.Rot.compute_matrix(*params)
+
+        op = qp.ctrl(CustomRot(0.1, 0.2, 0.3, wires=0), control=[1, 2, 3], work_wires=[4, 5])
         with queuing.AnnotatedQueue() as q:
             to_controlled_qubit_unitary(*op.parameters, wires=op.wires, **op.hyperparameters)
 

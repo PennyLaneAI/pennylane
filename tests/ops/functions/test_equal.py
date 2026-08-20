@@ -28,7 +28,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as npp
-from pennylane.core.operator import Operator
+from pennylane.core.operator import Operator, Operator2
 from pennylane.drawer.label import LabelledOp
 from pennylane.fourier.mark import MarkedOp
 from pennylane.measurements import ExpectationMP
@@ -354,7 +354,14 @@ class TestEqual:
             )
             is False
         )
-        with pytest.raises(AssertionError, match="op1 and op2 have different wires."):
+        with pytest.raises(
+            AssertionError,
+            match=(
+                r"op1 and op2 have different wires for"
+                if issubclass(op1, Operator2)
+                else "op1 and op2 have different wires."
+            ),
+        ):
             assert_equal(
                 test_operator,
                 test_operator_diff_wire,
@@ -2325,7 +2332,7 @@ class TestSymbolicOpComparison:
         assert qp.equal(op1, op2, check_interface=True, check_trainability=False) is False
 
         assert_equal(op1, op2, check_interface=False, check_trainability=False)
-        with pytest.raises(AssertionError, match="Parameters have different interface"):
+        with pytest.raises(AssertionError, match="different interface"):
             assert_equal(op1, op2, check_interface=True, check_trainability=False)
 
     def test_exp_base_op_comparison_with_trainability(self):
@@ -3094,7 +3101,7 @@ def test_ops_with_abstract_parameters_not_equal():
     import jax
 
     assert not jax.jit(qp.equal)(qp.RX(0.1, 0), qp.RX(0.1, 0))
-    with pytest.raises(AssertionError, match="Data contains a tracer"):
+    with pytest.raises(AssertionError, match="has one or more tracer values"):
         jax.jit(assert_equal)(qp.RX(0.1, 0), qp.RX(0.1, 0))
 
     assert not jax.jit(qp.equal)(qp.exp(qp.X(0), 0.5), qp.exp(qp.X(0), 0.5))

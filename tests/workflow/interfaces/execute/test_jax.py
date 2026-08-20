@@ -513,9 +513,9 @@ class TestJaxExecuteIntegration:
         with qp.decomposition.local_decomps():
 
             @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1})
-            def _decomp(theta, phi, lam, wires):
-                qp.Rot(lam, theta, -lam, wires)
-                qp.PhaseShift(phi + lam, wires)
+            def _decomp(theta, phi, delta, wires):
+                qp.Rot(delta, theta, -delta, wires)
+                qp.PhaseShift(phi + delta, wires)
 
             qp.add_decomps(MyU3, _decomp)
 
@@ -549,6 +549,9 @@ class TestJaxExecuteIntegration:
     def test_probability_differentiation(self, execute_kwargs, device_name, seed, shots):
         """Tests correct output shape and evaluation for a tape
         with prob outputs"""
+
+        if execute_kwargs.get("diff_method", "") == "adjoint":
+            pytest.xfail("adjoint differentiation of state measurement is not to be supported.")
 
         device = get_device(device_name, seed)
 
@@ -614,6 +617,9 @@ class TestJaxExecuteIntegration:
     def test_ragged_differentiation(self, execute_kwargs, device_name, seed, shots):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
+
+        if execute_kwargs.get("diff_method", "") == "adjoint":
+            pytest.xfail("adjoint differentiation of state measurement is not to be supported.")
 
         device = get_device(device_name, seed)
 

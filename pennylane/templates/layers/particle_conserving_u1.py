@@ -20,8 +20,9 @@ import numpy as np
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import CNOT, CZ, BasisState, CRot, PhaseShift
+from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires, WiresLike
 
 
@@ -316,23 +317,23 @@ class ParticleConservingU1(Operation):
         >>> ops = qp.ParticleConservingU1.compute_decomposition(weights, wires=["a", "b"], init_state=[0, 1])
         >>> from pprint import pprint
         >>> pprint(ops)
-        [BasisState(array([0, 1]), wires=['a', 'b']),
-        CZ(wires=['a', 'b']),
-        CRot(tensor(-0.3000), 3.141592653589793, tensor(0.3000), wires=['a', 'b']),
-        PhaseShift(-0.300..., wires=['b']),
-        CNOT(wires=['a', 'b']),
-        PhaseShift(0.300..., wires=['b']),
-        CNOT(wires=['a', 'b']),
-        PhaseShift(-0.300..., wires=['a']),
-        CZ(wires=['b', 'a']),
-        CRot(0, tensor(2.), 0, wires=['b', 'a']),
-        CZ(wires=['a', 'b']),
-        CRot(tensor(0.3000), 3.141592653589793, tensor(-0.3000), wires=['a', 'b']),
-        PhaseShift(0.300..., wires=['b']),
-        CNOT(wires=['a', 'b']),
-        PhaseShift(-0.300..., wires=['b']),
-        CNOT(wires=['a', 'b']),
-        PhaseShift(0.300..., wires=['a'])]
+        [BasisState([0 1], wires=['a', 'b']),
+         CZ(wires=['a', 'b']),
+         CRot(-0.30000001192092896, 3.141592653589793, 0.30000001192092896, wires=['a', 'b']),
+         PhaseShift(-0.30000001192092896, wires=['b']),
+         CNOT(wires=['a', 'b']),
+         PhaseShift(0.30000001192092896, wires=['b']),
+         CNOT(wires=['a', 'b']),
+         PhaseShift(-0.30000001192092896, wires=['a']),
+         CZ(wires=['b', 'a']),
+         CRot(0, 2.0, 0, wires=['b', 'a']),
+         CZ(wires=['a', 'b']),
+         CRot(0.30000001192092896, 3.141592653589793, -0.30000001192092896, wires=['a', 'b']),
+         PhaseShift(0.30000001192092896, wires=['b']),
+         CNOT(wires=['a', 'b']),
+         PhaseShift(-0.30000001192092896, wires=['b']),
+         CNOT(wires=['a', 'b']),
+         PhaseShift(0.30000001192092896, wires=['a'])]
 
         """
 
@@ -370,7 +371,7 @@ class ParticleConservingU1(Operation):
 def _particle_conserving_u1_resources(n_layers: int, num_wires: int):
     num_nm_wires = num_wires - 1  # number of pairs of even-indexed of wires
     return {
-        resource_rep(BasisState, num_wires=num_wires): 1,
+        BasisState(Bool[num_wires], Wire[num_wires]): 1,
         CZ: 3 * num_nm_wires * n_layers,
         CRot: 3 * num_nm_wires * n_layers,
         PhaseShift: 6 * num_nm_wires * n_layers,
