@@ -1141,7 +1141,8 @@ def _ctrl_rot(base: Rot, control, control_values, *_):
     return NotImplemented
 
 
-def _rot_to_rz_ry_rz_resources(**_):
+# pylint: disable-next=unused-argument
+def _rot_to_rz_ry_rz_resources(phi, theta, omega, wires):
     return {qp.RZ: 2, qp.RY: 1}
 
 
