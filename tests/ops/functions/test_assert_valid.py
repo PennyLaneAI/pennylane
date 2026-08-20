@@ -15,6 +15,7 @@
 This module contains unit tests for ``qp.ops.functions.assert_valid``.
 """
 
+from functools import partial
 from pickle import PicklingError
 
 import numpy as np
@@ -34,6 +35,7 @@ from pennylane.ops.functions.assert_valid import (
     _test_decomposition_rule,
     _unroll_change_op_basis,
 )
+from pennylane.typing import Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import DynOp, OneWireDynOp
 
@@ -54,6 +56,23 @@ class TestDecompositionErrors:
         result = _unroll_change_op_basis({native_cob: 2, compressed_cob: 3, z_rep: 4})
 
         assert result == {x_rep: 12, y_rep: 5, z_rep: 7}
+
+    @pytest.mark.parametrize(
+        "wrapper",
+        (
+            pytest.param(qp.adjoint, id="adjoint"),
+            pytest.param(partial(qp.ctrl, control=Wire[1]), id="controlled"),
+        ),
+    )
+    def test_unroll_symbolic_change_op_basis_resources(self, wrapper):
+        """ChangeOpBasis resource keys are expanded through symbolic wrappers."""
+        x_rep, y_rep, z_rep = (abstractify(op) for op in (qp.X, qp.Y, qp.Z))
+        cob = qp.decomposition.change_op_basis_resource_rep(x_rep, y_rep, x_rep)
+        wrapped_z = wrapper(z_rep)
+
+        result = _unroll_change_op_basis({wrapper(cob): 2, wrapped_z: 3})
+
+        assert result == {wrapper(x_rep): 4, wrapper(y_rep): 2, wrapped_z: 3}
 
     def test_bad_decomposition_output(self):
         """Test that an error is raised if decomposition output is not a list."""
