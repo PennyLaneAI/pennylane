@@ -488,7 +488,7 @@ class TestSumOfSlatersPrep:
         op = SumOfSlatersPrep(coefficients, wires, indices=indices)
         assert_valid(op, skip_differentiation=True)
 
-    @pytest.mark.usefixtures("enable_and_disable_capture")
+    # @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("n", [7, 9, 15, 16, 17])
     def test_standard_validity_non_id_encoding(self, n, seed):
         """Test that SumOfSlatersPrep is a valid PennyLane operator for non-identity

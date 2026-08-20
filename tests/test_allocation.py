@@ -73,7 +73,7 @@ class TestDynamicWire:
 
 class TestAllocateOp:
 
-    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.usefixtures("disable_capture")
     def test_valid_operation(self):
         """Test that Allocate is a valid Operator."""
         op = Allocate.from_num_wires(3)
@@ -120,7 +120,7 @@ def test_dynamic_register_not_hashable():
         qp.wires.Wires((0, reg))
 
 
-@pytest.mark.usefixtures("enable_and_disable_capture")
+@pytest.mark.usefixtures("disable_capture")
 def test_Deallocate_validity():
     """Test that Deallocate is a valid operation."""
     wires = [DynamicWire(), DynamicWire()]

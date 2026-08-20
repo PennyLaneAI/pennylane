@@ -255,7 +255,8 @@ class TestSubroutineOp:
         # pylint: disable=isinstance-second-argument-not-valid-type
         assert isinstance(self.op1, Example1Subroutine)
 
-    @pytest.mark.usefixtures("enable_and_disable_capture")
+    # SubroutineOp exists for the tape pipeline only. It does not need to be capture compatible.
+    @pytest.mark.usefixtures("disable_capture")
     def test_basic_validity(self):
         """Test that subroutine op passes basic validity checks."""
         qp.ops.functions.assert_valid(self.op1, skip_pickle=True)

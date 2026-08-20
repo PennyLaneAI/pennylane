@@ -140,10 +140,10 @@ def _check_decomposition(op, skip_wire_mapping):
     if skip_wire_mapping:
         return
 
-    # Check that mapping wires transitions to the decomposition. We use 5 * len(op.wires)
+    # Check that mapping wires transitions to the decomposition. We use 10 * len(op.wires)
     # here because op.wires often does not contain the work wires, which may cause the mapped
     # wires to overlap with the work wires, so we space it out to be safe.
-    wire_map = {w: w + 5 * len(op.wires) for w in op.wires}
+    wire_map = {w: i + 10 * len(op.wires) for i, w in enumerate(op.wires)}
     mapped_op = op.map_wires(wire_map)
 
     # calling `map_wires` on a Controlled operator generates a new `op` from the controls and
@@ -646,9 +646,9 @@ def _check_wires(op, skip_wire_mapping):
     assert isinstance(op.wires, qp.wires.Wires), "wires must be a wires instance"
     if skip_wire_mapping:
         return
-    wire_map = {w: w + 5 * len(op.wires) for w in op.wires}
+    wire_map = {w: i + 10 * len(op.wires) for i, w in enumerate(op.wires)}
     mapped_op = op.map_wires(wire_map)
-    new_wires = qp.wires.Wires([w + 5 * len(op.wires) for w in op.wires])
+    new_wires = qp.wires.Wires([i + 10 * len(op.wires) for i in range(len(op.wires))])
     assert mapped_op.wires == new_wires, "wires must be mappable with map_wires"
 
 
