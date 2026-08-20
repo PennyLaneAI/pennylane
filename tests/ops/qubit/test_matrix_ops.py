@@ -56,14 +56,14 @@ class TestQubitUnitaryCSR:
         """Test that the compute_sparse_matrix method works correctly."""
         U = np.array([[0, 1], [1, 0]])
         U = csr_matrix(U)
-        op = qp.QubitUnitary.compute_sparse_matrix(U, wires=0)
+        op = qp.QubitUnitary.compute_sparse_matrix(U)
         assert isinstance(op, csr_matrix)
         assert np.allclose(op.toarray(), U.toarray())
 
         # Test that the sparse matrix accepts the format parameter.
-        op_csc = qp.QubitUnitary.compute_sparse_matrix(U, wires=0, format="csc")
-        op_lil = qp.QubitUnitary.compute_sparse_matrix(U, wires=0, format="lil")
-        op_coo = qp.QubitUnitary.compute_sparse_matrix(U, wires=0, format="coo")
+        op_csc = qp.QubitUnitary.compute_sparse_matrix(U, format="csc")
+        op_lil = qp.QubitUnitary.compute_sparse_matrix(U, format="lil")
+        op_coo = qp.QubitUnitary.compute_sparse_matrix(U, format="coo")
         assert isinstance(op_csc, csc_matrix)
         assert isinstance(op_lil, lil_matrix)
         assert isinstance(op_coo, coo_matrix)
