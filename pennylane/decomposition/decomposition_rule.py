@@ -1115,7 +1115,7 @@ def _is_abstract_and_fixed(val):
         )
     if isinstance(val, (AbstractArray, AbstractWires)):
         return val.shape_fixed
-    leaves, _ = flatten(val, is_leaf=lambda op: isinstance(op, Wires))
+    leaves, _ = flatten(val, is_leaf=lambda op: isinstance(op, (Wires, qp.ops.ChangeOpBasis)))
     return all(_is_abstract_and_fixed(leaf) for leaf in leaves)
 
 
