@@ -480,8 +480,8 @@ class TestHigherOrderPrimitiveRegistrations:
             @qp.cond(control)
             def cond_fn(y):
                 # One new const
-                exponent = add_3.bind(0)
-                _ = qp.RY(y, 0) ** exponent
+                theta = add_3.bind(0)
+                _ = qp.Rot(y, theta, y, 0)  # pylint: disable=expression-not-assigned
 
             @cond_fn.otherwise
             def _(y):
