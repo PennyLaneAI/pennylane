@@ -473,7 +473,7 @@ def _mcx_many_workers(wires, work_wires, work_wire_type, **_):
     https://arxiv.org/abs/quant-ph/9503016, which requires a suitably large register of
     work wires"""
 
-    if compiler.active() and not capture.enabled():
+    if compiler.active() or capture.enabled():
         wires = math.array(wires, like="jax")
         work_wires = math.array(work_wires, like="jax")
 

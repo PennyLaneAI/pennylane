@@ -852,7 +852,8 @@ class TestMCXDecomposition:
             if work_wire_type == "zeroed":
                 qp.Projector([0] * len(work_wires), wires=work_wires)
             # pylint: disable=missing-kwoa
-            decompose_mcx_many_workers(**mcx.arguments)
+            with qp.capture.pause():
+                decompose_mcx_many_workers(**mcx.arguments)
 
         # Verify that the resource estimate is correct.
         _test_decomposition_rule(mcx, decompose_mcx_many_workers, skip_decomp_matrix_check=True)
@@ -922,7 +923,8 @@ class TestMCXDecomposition:
             if work_wire_type == "zeroed":
                 qp.Projector([0], wires=work_wire)
             # pylint: disable=missing-kwoa
-            decompose_mcx_one_worker(**mcx.arguments)
+            with qp.capture.pause():
+                decompose_mcx_one_worker(**mcx.arguments)
 
         # Verify that the resource estimate is correct.
         _test_decomposition_rule(mcx, decompose_mcx_one_worker, skip_decomp_matrix_check=True)
@@ -959,7 +961,8 @@ class TestMCXDecomposition:
         with qp.queuing.AnnotatedQueue() as q:
             if work_wire_type == "zeroed":
                 qp.Projector([0, 0], wires=work_wires)
-            _mcx_two_workers(**mcx.arguments)
+            with qp.capture.pause():
+                _mcx_two_workers(**mcx.arguments)
 
         # Verify that the resource estimate is correct.
         _test_decomposition_rule(mcx, _mcx_two_workers, skip_decomp_matrix_check=True)
