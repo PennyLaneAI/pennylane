@@ -177,20 +177,20 @@ class SimplifiedTwoDesign(Operation):
         >>> from pprint import pprint
         >>> pprint(ops)
         [RY(3.141592653589793, wires=['a']),
-        RY(3.141592653589793, wires=['b']),
-        RY(3.141592653589793, wires=['c']),
-        CZ(wires=['a', 'b']),
-        RY(np.float64(0.0), wires=['a']),
-        RY(np.float64(3.141592653589793), wires=['b']),
-        CZ(wires=['b', 'c']),
-        RY(np.float64(0.0), wires=['b']),
-        RY(np.float64(3.141592653589793), wires=['c']),
-        CZ(wires=['a', 'b']),
-        RY(np.float64(3.141592653589793), wires=['a']),
-        RY(np.float64(0.0), wires=['b']),
-        CZ(wires=['b', 'c']),
-        RY(np.float64(3.141592653589793), wires=['b']),
-        RY(np.float64(0.0), wires=['c'])]
+         RY(3.141592653589793, wires=['b']),
+         RY(3.141592653589793, wires=['c']),
+         CZ(wires=['a', 'b']),
+         RY(0.0, wires=['a']),
+         RY(3.141592653589793, wires=['b']),
+         CZ(wires=['b', 'c']),
+         RY(0.0, wires=['b']),
+         RY(3.141592653589793, wires=['c']),
+         CZ(wires=['a', 'b']),
+         RY(3.141592653589793, wires=['a']),
+         RY(0.0, wires=['b']),
+         CZ(wires=['b', 'c']),
+         RY(3.141592653589793, wires=['b']),
+         RY(0.0, wires=['c'])]
 
         """
 
