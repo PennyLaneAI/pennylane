@@ -43,7 +43,7 @@ class TestQubitUnitaryCSR:
             qp.operation.MatrixUndefinedError,
             match="U is sparse matrix",
         ):
-            qp.QubitUnitary.compute_matrix(U, wires=[0])
+            qp.QubitUnitary.compute_matrix(U)
 
         with pytest.raises(
             qp.operation.MatrixUndefinedError,

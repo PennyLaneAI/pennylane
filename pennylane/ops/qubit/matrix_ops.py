@@ -214,7 +214,7 @@ class QubitUnitary(Operator2):
         **Example**
 
         >>> U = np.array([[0.98877108+0.j, 0.-0.14943813j], [0.-0.14943813j, 0.98877108+0.j]])
-        >>> qp.QubitUnitary.compute_matrix(U, wires=[0])
+        >>> qp.QubitUnitary.compute_matrix(U)
          array([[0.988...+0.j        , 0.        -0.149...j],
                 [0.        -0.149...j, 0.988...+0.j        ]])
         """
@@ -245,7 +245,7 @@ class QubitUnitary(Operator2):
         ...     [0, 0, 1, 0]
         ... ])
         >>> U = sp.sparse.csr_matrix(U)
-        >>> qp.QubitUnitary.compute_sparse_matrix(U, wires=[0, 1])
+        >>> qp.QubitUnitary.compute_sparse_matrix(U)
         <Compressed Sparse Row sparse matrix of dtype 'int64'
             with 4 stored elements and shape (4, 4)>
         """
