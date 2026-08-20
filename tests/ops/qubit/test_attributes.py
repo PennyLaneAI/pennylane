@@ -271,7 +271,7 @@ class TestSupportsBroadcasting:
         op = qp.QubitUnitary(U, wires=wires)
 
         mat1 = op.matrix()
-        mat2 = qp.QubitUnitary.compute_matrix(U)
+        mat2 = qp.QubitUnitary.compute_matrix(U, wires=wires)
         single_mats = [qp.QubitUnitary(_U, wires=wires).matrix() for _U in U]
 
         assert qp.math.allclose(mat1, single_mats)
