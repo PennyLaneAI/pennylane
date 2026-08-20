@@ -35,7 +35,6 @@ def ffft(wires, input=None):
     return state()
 
 
-@pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize(
     "wires",
     [

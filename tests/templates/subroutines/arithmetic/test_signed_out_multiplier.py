@@ -153,7 +153,6 @@ def test_signed_out_multiplier_resources():
     assert not_zeroed_resources[semi_adder_rep] == 1
 
 
-@pytest.mark.jax
 @pytest.mark.parametrize(
     "x_wires, y_wires, work_wires, output_wires, zeroed",
     [
