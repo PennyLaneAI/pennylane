@@ -213,7 +213,7 @@ class MultiX(Operator2):
 def _multix_resources(bitstring: TensorLike, wires: WiresLike):  # pylint: disable=unused-argument
     # The total number of PauliX gates used depends on the bitstring.
     # Specifically, sum(bitstring) gates are used by MultiX, not len(bitstring).
-    # However, if bitrsring is an AbstractArray, only the shape of bitstring is known.
+    # However, if bitstring is an AbstractArray, only the shape of bitstring is known.
     # Therefore, the resource count can only supply the *worst-case* scenario instead.
     # Hence why exact=False is used when registering the resource.
     return {PauliX: len(wires)}
