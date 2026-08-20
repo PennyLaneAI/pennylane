@@ -15,9 +15,9 @@
 Unit tests for the StronglyEntanglingLayers template.
 """
 
-import numpy as np
-
 # pylint: disable=too-few-public-methods
+
+import numpy as np
 import pytest
 
 import pennylane as qp
@@ -62,34 +62,21 @@ class TestDecomposition:
         ),
     ]
 
-    @pytest.mark.parametrize(
-        "n_wires, imprimitive", [(2, qp_ops.CNOT), (3, qp_ops.CZ), (4, qp_ops.CY)]
-    )
     @pytest.mark.capture
-    def test_decomposition_new_capture(
-        self, n_wires, imprimitive, batch_dim
-    ):  # pylint: disable=unused-argument
-        """Tests the decomposition rule implemented with the new system."""
-        weights = np.random.random(
-            size=(1, n_wires, 3),
-        )
-        op = qp.StronglyEntanglingLayers(weights, wires=range(n_wires), imprimitive=imprimitive)
-
-        for rule in qp.list_decomps(qp.StronglyEntanglingLayers):
-            _test_decomposition_rule(op, rule)
-
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(
-        "n_wires, imprimitive", [(2, qp_ops.CNOT), (3, qp_ops.CZ), (4, qp_ops.CY)]
+        "n_wires, imprimitive",
+        [
+            (2, qp_ops.CNOT),
+            (3, qp_ops.CZ),
+            (4, qp_ops.CY),
+        ],
     )
-    def test_decomposition_new(
-        self, n_wires, imprimitive, batch_dim
-    ):  # pylint: disable=unused-argument
+    # pylint: disable-next=unused-argument
+    def test_decomposition_new_capture(self, n_wires, imprimitive, batch_dim):
         """Tests the decomposition rule implemented with the new system."""
-        weights = np.random.random(
-            size=(1, n_wires, 3),
-        )
+        weights = np.random.random(size=(1, n_wires, 3))
         op = qp.StronglyEntanglingLayers(weights, wires=range(n_wires), imprimitive=imprimitive)
-
         for rule in qp.list_decomps(qp.StronglyEntanglingLayers):
             _test_decomposition_rule(op, rule)
 

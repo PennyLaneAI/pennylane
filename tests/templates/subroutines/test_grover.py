@@ -205,18 +205,11 @@ def test_expand(wires):
 
 
 @pytest.mark.capture
-def test_decomposition_new_capture():
+@pytest.mark.parametrize("wires, work_wires", [([0, 1, 2], None), ([0, 1, 2, 3], [4, 5])])
+@pytest.mark.usefixtures("enable_and_disable_capture")
+def test_decomposition_new(wires, work_wires):
     """Tests the decomposition rule implemented with the new system."""
-    op = qp.GroverOperator(wires=(0, 1, 2))
-
-    for rule in qp.list_decomps(qp.GroverOperator):
-        _test_decomposition_rule(op, rule)
-
-
-def test_decomposition_new():
-    """Tests the decomposition rule implemented with the new system."""
-    op = qp.GroverOperator(wires=(0, 1, 2))
-
+    op = qp.GroverOperator(wires=wires, work_wires=work_wires)
     for rule in qp.list_decomps(qp.GroverOperator):
         _test_decomposition_rule(op, rule)
 

@@ -20,8 +20,7 @@ import numpy as np
 import pennylane as qp
 from pennylane import allocate, math
 from pennylane.core.operator import Operation
-from pennylane.decomposition import controlled_resource_rep
-from pennylane.typing import Complex, Int, Wire
+from pennylane.typing import Bool, Complex, Int, Wire
 from pennylane.wires import Wires
 
 _U64 = np.uint64
@@ -697,7 +696,7 @@ def _pui_state_prep_resources(num_entries, num_wires, num_work_wires):
     These resource counts are numerically obtained heuristics, extended to guarantee all
     resource reps that may appear are included at least once."""
     if num_entries == 1:
-        return {qp.resource_rep(qp.BasisState, num_wires=num_wires): 1}
+        return {qp.BasisState(Bool[num_wires], Wire[num_wires]): 1}
 
     n_subspace = max(math.ceil_log2(num_entries), 1)
     resources = defaultdict(int)
@@ -725,11 +724,10 @@ def _pui_state_prep_resources(num_entries, num_wires, num_work_wires):
     for p in range(1, main_pui_batch_size):
         resources[qrom_reps[p]] += 1
 
-    resources[
-        controlled_resource_rep(qp.BasisState, {"num_wires": num_wires - 1}, num_control_wires=1)
-    ] += num_entries
+    ctrl_basis_rep = qp.ctrl(qp.BasisState(Bool[num_wires - 1], Wire[num_wires - 1]), Wire[1])
+    resources[ctrl_basis_rep] += num_entries
 
-    embed_rep = qp.resource_rep(qp.BasisState, num_wires=n_subspace)
+    embed_rep = qp.BasisState(Bool[num_wires], Wire[n_subspace])
     resources[embed_rep] += 2 * (num_entries // main_pui_batch_size + 1)
 
     resources[qp.SWAP] += num_wires
@@ -747,7 +745,7 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
     wire management."""
     num_entries = len(indices)
     if num_entries == 1:
-        qp.BasisState(indices[0], wires)
+        qp.BasisState(math.int_to_binary(indices[0], len(wires)), wires)
         return
 
     n_subspace = max(math.ceil_log2(num_entries), 1)
@@ -780,7 +778,7 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
     for _type, *data in reversed(circuit):
         if _type == "PUI":
             k_start, k = data
-            qp.BasisState(k_start, subspace_wires)
+            qp.BasisState(math.int_to_binary(k_start, len(subspace_wires)), subspace_wires)
             b = k - k_start
             qp.QROM(
                 bitstrings=np.eye(b, dtype=np.int64),
@@ -788,7 +786,7 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
                 target_wires=nonsubspace_wires[:b],
                 work_wires=work_wires[: n_subspace - 1],
             )
-            qp.BasisState(k_start, subspace_wires)
+            qp.BasisState(math.int_to_binary(k_start, len(subspace_wires)), subspace_wires)
             continue
         if _type == "Fanout":
             control, bits = data

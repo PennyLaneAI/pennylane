@@ -25,6 +25,7 @@ import pennylane as qp
 from pennylane import allocation, capture, compiler, math
 from pennylane.core.operator import Operator, abstractify
 from pennylane.core.operator.operator2 import operator_p, pop_op_eqns  # tach-ignore
+from pennylane.core.queuing import remove_from_program
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
     DecompositionRule,
@@ -151,7 +152,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         work_wires: WiresLike | None = None,
         work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
     ):
-        _remove_from_program(base)
+        remove_from_program(base)
 
         control_wires = Wires(control_wires)
         work_wires = Wires([] if work_wires is None else work_wires)
@@ -201,7 +202,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
             @staticmethod
             def _compute_matrix(*args, **kwargs):
                 op = cls(*args, **kwargs)
-                _remove_from_program(op)
+                remove_from_program(op)
                 return Controlled2.compute_matrix(op.base, op.control_wires, op.control_values)
 
             cls.compute_matrix = _compute_matrix
@@ -211,7 +212,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
             @staticmethod
             def _compute_sparse_matrix(*args, format="csr", **kwargs):
                 op = cls(*args, **kwargs)
-                _remove_from_program(op)
+                remove_from_program(op)
                 return Controlled2.compute_sparse_matrix(
                     op.base,
                     op.control_wires,
@@ -226,7 +227,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
             @staticmethod
             def _compute_eigvals(*args, **kwargs):
                 op = cls(*args, **kwargs)
-                _remove_from_program(op)
+                remove_from_program(op)
                 return Controlled2.compute_eigvals(op.base, op.control_wires, op.control_values)
 
             cls.compute_eigvals = _compute_eigvals
@@ -236,7 +237,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
             @staticmethod
             def _compute_diagonalizing_gates(*args, **kwargs):
                 op = cls(*args, **kwargs)
-                _remove_from_program(op)
+                remove_from_program(op)
                 return Controlled2.compute_diagonalizing_gates(op.base)
 
             cls.compute_diagonalizing_gates = _compute_diagonalizing_gates
@@ -595,14 +596,6 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
             self.tracer = res
 
 
-def _remove_from_program(op):
-    """Removes an operator from the captured/queued program."""
-    if qp.QueuingManager.recording():
-        qp.QueuingManager.remove(op)
-    if qp.capture.enabled():
-        pop_op_eqns((op,))
-
-
 @list_decomps.register
 @QueuingManager.stop_recording()
 def _list_controlled_decomps(op: ControlledOp2) -> DecompCollection:
@@ -665,9 +658,16 @@ def _make_controlled_decomp(base_rule: DecompositionRule):
         name=f"controlled({base_rule.name})",
     )
     def _impl(base, control_wires, control_values, work_wires, work_wire_type):
+
+        _cvals = control_values
+        _cwires = control_wires
+        if qp.capture.enabled() or qp.compiler.active():
+            _cvals = qp.math.array(control_values, like="jax")
+            _cwires = qp.math.array(control_wires, like="jax")
+
         @qp.for_loop(0, len(control_values))
         def _x_flips(i):
-            qp.cond(qp.math.logical_not(control_values[i]), qp.X)(control_wires[i])
+            qp.cond(qp.math.logical_not(_cvals[i]), qp.X)(_cwires[i])
 
         _x_flips()
         qp.ctrl(
@@ -774,7 +774,7 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
         wires = arguments.get("control_wires", arguments.get("wires", None))
         assert wires is not None
 
-        if compiler.active() and not capture.enabled():
+        if compiler.active() or capture.enabled():
             control_values = math.array(control_values, like="jax")
             wires = math.array(wires, like="jax")
 

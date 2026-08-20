@@ -21,6 +21,8 @@ from abc import ABCMeta
 from inspect import Signature, signature
 
 from pennylane.capture import enabled
+from pennylane.math import is_abstract
+from pennylane.pytrees import flatten
 
 
 def _stop_autograph(f):
@@ -55,9 +57,21 @@ class OperatorMeta(ABCMeta):
 
     @_stop_autograph
     def __call__(cls, *args, **kwargs):
-
         bound = cls._sig.bind(*args, **kwargs)
         bound.apply_defaults()
+        arguments: dict = bound.arguments
+
+        # NOTE: Detect if static / compilable argument received a tracer
+        # indicating it is incorrectly being used as a dynamic argument.
+        if enabled():
+            for name in cls.static_argnames + cls.compilable_argnames:
+                leaves, _ = flatten(arguments[name])
+                if any(is_abstract(l) for l in leaves):
+                    raise ValueError(
+                        f"Argument '{name}' of operator '{cls.__name__}' must be a concrete, "
+                        f"compile-time constant. A dynamic/traced variable was provided instead. "
+                    )
+
         # This method is called everytime we want to create an instance of the class.
         # default behavior uses __new__ then __init__
         op = type.__call__(cls, *args, **kwargs)

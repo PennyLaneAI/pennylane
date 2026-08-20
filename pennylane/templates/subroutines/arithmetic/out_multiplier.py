@@ -23,13 +23,12 @@ from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.decomposition import (
     add_decomps,
     change_op_basis_resource_rep,
-    controlled_resource_rep,
     register_condition,
     register_resources,
 )
 from pennylane.decomposition.resources import resource_rep
 from pennylane.ops import BasisState, H, Prod, X, adjoint, change_op_basis, ctrl, prod
-from pennylane.typing import Wire
+from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires, WiresLike, is_abstract_or_traced
 
 from ..controlled_sequence import ControlledSequence
@@ -104,8 +103,10 @@ class OutMultiplier(Operator2):
 
         @qp.qnode(dev, shots=1)
         def circuit():
-            qp.BasisEmbedding(x, wires=x_wires)
-            qp.BasisEmbedding(y, wires=y_wires)
+            x_bin = qp.math.int_to_binary(x, len(x_wires))
+            y_bin = qp.math.int_to_binary(y, len(y_wires))
+            qp.BasisState(x_bin, wires=x_wires)
+            qp.BasisState(y_bin, wires=y_wires)
             qp.OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
             return qp.sample(wires=output_wires)
 
@@ -156,9 +157,12 @@ class OutMultiplier(Operator2):
 
             @qp.qnode(dev, shots=1)
             def circuit():
-                qp.BasisEmbedding(x, wires=x_wires)
-                qp.BasisEmbedding(y, wires=y_wires)
-                qp.BasisEmbedding(z, wires=output_wires)
+                x_bin = qp.math.int_to_binary(x, len(x_wires))
+                qp.BasisState(x_bin, wires=x_wires)
+                y_bin = qp.math.int_to_binary(y, len(y_wires))
+                qp.BasisState(y_bin, wires=y_wires)
+                z_bin = qp.math.int_to_binary(z, len(output_wires))
+                qp.BasisState(z_bin, wires=output_wires)
                 qp.OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
                 return qp.sample(wires=output_wires)
 
@@ -289,12 +293,11 @@ def _out_multiplier_with_qft_resources(
     uncompute_rep = adjoint(QFT(Wire[num_qft_wires]))
     target_rep = resource_rep(
         ControlledSequence,
-        base_class=ControlledSequence,
-        base_params={
-            "base_class": PhaseAdder,
-            "base_params": {"num_x_wires": num_qft_wires, "mod": mod},
-            "num_control_wires": num_x_wires,
-        },
+        base_rep=resource_rep(
+            ControlledSequence,
+            base_rep=resource_rep(PhaseAdder, num_x_wires=num_qft_wires, mod=mod),
+            num_control_wires=num_x_wires,
+        ),
         num_control_wires=num_y_wires,
     )
     return {change_op_basis_resource_rep(compute_rep, target_rep, uncompute_rep): 1}
@@ -532,14 +535,8 @@ def _c_add_sub_resources(num_x_wires, num_y_wires):
     """Resources for _c_add_sub."""
     resources = defaultdict(int)
     if num_x_wires > 1:
-        resources[
-            controlled_resource_rep(
-                BasisState,
-                base_params={"num_wires": num_x_wires - 1},
-                num_control_wires=1,
-                num_zero_control_values=1,
-            )
-        ] += 2
+        ctrl_basis_rep = ctrl(BasisState(Bool[num_x_wires - 1], Wire[num_x_wires - 1]), Wire[1])
+        resources[ctrl_basis_rep] += 2
 
     cnot_on_0_rep = ctrl(X(Wire[1]), control=Wire[1], control_values=[0])
     resources[cnot_on_0_rep] += 2 * (1 + int(num_y_wires > 1))

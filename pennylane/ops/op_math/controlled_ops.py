@@ -37,9 +37,7 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.decomposition_rule import DecompCollection, list_decomps
 from pennylane.decomposition.symbolic_decomposition import (
-    adjoint_rotation,
     flip_zero_control,
-    pow_rotation,
     self_adjoint,
 )
 from pennylane.ops.identity import GlobalPhase
@@ -1514,7 +1512,7 @@ add_decomps("Adjoint(MultiControlledX)", self_adjoint)
 add_decomps("Pow(MultiControlledX)", pow_involutory2)
 
 
-class CRX(ControlledOp):
+class CRX(Controlled2):
     r"""The controlled-RX operator
 
     .. math::
@@ -1561,40 +1559,21 @@ class CRX(ControlledOp):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
+    dynamic_argnames = ("phi",)
 
-    name = "CRX"
-    parameter_frequencies = [(0.5, 1.0)]
+    arg_specs = {"phi": Float, "wires": Wire[2]}
 
     def __init__(self, phi, wires: WiresLike):
-        # We use type.__call__ instead of calling the class directly so that we don't bind the
-        # operator primitive when new program capture is enabled
-        base = type.__call__(qp.RX, phi, wires=wires[1:])
-        super().__init__(base, control_wires=wires[:1])
+        super().__init__(qp.RX(phi, wires=wires[-1]), control_wires=wires[:-1])
 
-    def __repr__(self):
-        return f"CRX({self.data[0]}, wires={self.wires})"
-
-    def _flatten(self):
-        return self.data, (self.wires,)
-
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        return cls(*data, wires=metadata[0])
-
-    @classmethod
-    def _primitive_bind_call(cls, phi, wires: WiresLike):
-        return cls._primitive.bind(phi, *wires, n_wires=len(wires))
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
+    @override
     def adjoint(self):
-        return CRX(-self.data[0], wires=self.wires)
+        return CRX(-self.phi, wires=self.wires)
 
     @staticmethod
-    def compute_matrix(theta):
+    @override
+    # pylint: disable-next=unused-argument
+    def compute_matrix(phi, wires: WiresLike | None = None):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1603,7 +1582,7 @@ class CRX(ControlledOp):
         .. seealso:: :meth:`~.CRX.matrix`
 
         Args:
-            theta (tensor_like or float): rotation angle
+            phi (tensor_like or float): rotation angle
 
         Returns:
             tensor_like: canonical matrix
@@ -1617,10 +1596,10 @@ class CRX(ControlledOp):
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.0000-0.2474j, 0.9689+0.0000j]])
         """
 
-        interface = qp.math.get_interface(theta)
+        interface = qp.math.get_interface(phi)
 
-        c = qp.math.cos(theta / 2)
-        s = qp.math.sin(theta / 2)
+        c = qp.math.cos(phi / 2)
+        s = qp.math.sin(phi / 2)
 
         if (
             interface == "tensorflow"
@@ -1642,45 +1621,13 @@ class CRX(ControlledOp):
 
         return qp.math.stack([stack_last(row) for row in matrix], axis=-2)
 
-    @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list[qp.operation.Operator]:
-        r"""Representation of the operator as a product of other operators (static method). :
 
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.CRot.decomposition`.
-
-        Args:
-            phi (TensorLike): rotation angle :math:`\phi`
-            wires (Iterable, Wires): the wires the operation acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.CRX.compute_decomposition(1.2, wires=(0,1))
-        [RZ(1.5707963267948966, wires=[1]), RY(0.6, wires=[1]), CNOT(wires=[0, 1]), RY(-0.6, wires=[1]), CNOT(wires=[0, 1]), RZ(-1.5707963267948966, wires=[1])]
-
-        """
-        pi_half = qp.math.ones_like(phi) * (np.pi / 2)
-        return [
-            qp.RZ(pi_half, wires=wires[1]),
-            qp.RY(phi / 2, wires=wires[1]),
-            qp.CNOT(wires=wires),
-            qp.RY(-phi / 2, wires=wires[1]),
-            qp.CNOT(wires=wires),
-            qp.RZ(-pi_half, wires=wires[1]),
-        ]
-
-
-def _crx_to_rz_ry_resources():
+def _crx_to_rz_ry_resources(**_):
     return {qp.RZ: 2, qp.RY: 2, qp.CNOT: 2}
 
 
 @register_resources(_crx_to_rz_ry_resources)
-def _crx_to_rz_ry(phi: TensorLike, wires: WiresLike, **__):
+def _crx_to_rz_ry(phi: TensorLike, wires: WiresLike):
     qp.RZ(np.pi / 2, wires=wires[1])
     qp.RY(phi / 2, wires=wires[1])
     qp.CNOT(wires=wires)
@@ -1689,30 +1636,30 @@ def _crx_to_rz_ry(phi: TensorLike, wires: WiresLike, **__):
     qp.RZ(-np.pi / 2, wires=wires[1])
 
 
-def _crx_to_rx_cz_resources():
+def _crx_to_rx_cz_resources(**_):
     return {qp.RX: 2, qp.CZ: 2}
 
 
 @register_resources(_crx_to_rx_cz_resources)
-def _crx_to_rx_cz(phi: TensorLike, wires: WiresLike, **__):
+def _crx_to_rx_cz(phi: TensorLike, wires: WiresLike):
     qp.RX(phi / 2, wires=wires[1])
     qp.CZ(wires=wires)
     qp.RX(-phi / 2, wires=wires[1])
     qp.CZ(wires=wires)
 
 
-def _crx_to_h_crz_resources():
+def _crx_to_h_crz_resources(**_):
     return {qp.Hadamard: 2, qp.CRZ: 1}
 
 
 @register_resources(_crx_to_h_crz_resources)
-def _crx_to_h_crz(phi: TensorLike, wires: WiresLike, **__):
+def _crx_to_h_crz(phi: TensorLike, wires: WiresLike):
     qp.Hadamard(wires=wires[1])
     qp.CRZ(phi, wires=wires)
     qp.Hadamard(wires=wires[1])
 
 
-def _crx_to_ppr_resources():
+def _crx_to_ppr_resources(**_):
     return {
         qp.PauliRot(Float, pauli_word="ZX", wires=Wire[2]): 1,
         qp.PauliRot(Float, pauli_word="X", wires=Wire[1]): 1,
@@ -1720,17 +1667,17 @@ def _crx_to_ppr_resources():
 
 
 @register_resources(_crx_to_ppr_resources)
-def _crx_to_ppr(phi: TensorLike, wires: WiresLike, **__):
+def _crx_to_ppr(phi: TensorLike, wires: WiresLike):
     qp.PauliRot(phi / 2, "X", wires=wires[1])
     qp.PauliRot(-phi / 2, "ZX", wires=wires)
 
 
 add_decomps(CRX, _crx_to_rx_cz, _crx_to_rz_ry, _crx_to_h_crz, _crx_to_ppr)
-add_decomps("Adjoint(CRX)", adjoint_rotation)
-add_decomps("Pow(CRX)", pow_rotation)
+add_decomps("Adjoint(CRX)", adjoint_rotation2)
+add_decomps("Pow(CRX)", pow_rotation2)
 
 
-class CRY(ControlledOp):
+class CRY(Controlled2):
     r"""The controlled-RY operator
 
     .. math::
@@ -1777,40 +1724,21 @@ class CRY(ControlledOp):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
+    dynamic_argnames = ("phi",)
 
-    name = "CRY"
-    parameter_frequencies = [(0.5, 1.0)]
+    arg_specs = {"phi": Float, "wires": Wire[2]}
 
-    def __init__(self, phi, wires):
-        # We use type.__call__ instead of calling the class directly so that we don't bind the
-        # operator primitive when new program capture is enabled
-        base = type.__call__(qp.RY, phi, wires=wires[1:])
-        super().__init__(base, control_wires=wires[:1])
+    def __init__(self, phi, wires: WiresLike):
+        super().__init__(qp.RY(phi, wires=wires[-1]), control_wires=wires[:-1])
 
-    def __repr__(self):
-        return f"CRY({self.data[0]}, wires={self.wires}))"
-
-    def _flatten(self):
-        return self.data, (self.wires,)
-
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        return cls(*data, wires=metadata[0])
-
-    @classmethod
-    def _primitive_bind_call(cls, phi, wires):
-        return cls._primitive.bind(phi, *wires, n_wires=len(wires))
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
+    @override
     def adjoint(self):
-        return CRY(-self.data[0], wires=self.wires)
+        return CRY(-self.phi, wires=self.wires)
 
     @staticmethod
-    def compute_matrix(theta):
+    @override
+    # pylint: disable-next=unused-argument
+    def compute_matrix(phi, wires: WiresLike | None = None):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1820,7 +1748,7 @@ class CRY(ControlledOp):
 
 
         Args:
-            theta (tensor_like or float): rotation angle
+            phi (tensor_like or float): rotation angle
 
         Returns:
             tensor_like: canonical matrix
@@ -1833,10 +1761,10 @@ class CRY(ControlledOp):
                 [ 0.0000+0.j,  0.0000+0.j,  0.9689+0.j, -0.2474-0.j],
                 [ 0.0000+0.j,  0.0000+0.j,  0.2474+0.j,  0.9689+0.j]])
         """
-        interface = qp.math.get_interface(theta)
+        interface = qp.math.get_interface(phi)
 
-        c = qp.math.cos(theta / 2)
-        s = qp.math.sin(theta / 2)
+        c = qp.math.cos(phi / 2)
+        s = qp.math.sin(phi / 2)
 
         if (
             interface == "tensorflow"
@@ -1858,52 +1786,20 @@ class CRY(ControlledOp):
 
         return qp.math.stack([stack_last(row) for row in matrix], axis=-2)
 
-    @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list[qp.operation.Operator]:
-        r"""Representation of the operator as a product of other operators (static method). :
 
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.CRY.decomposition`.
-
-        Args:
-            phi (TensorLike): rotation angle :math:`\phi`
-            wires (Iterable, Wires): wires that the operator acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.CRY.compute_decomposition(1.2, wires=(0,1))
-        [RY(0.6, wires=[1]),
-        CNOT(wires=[0, 1]),
-        RY(-0.6, wires=[1]),
-        CNOT(wires=[0, 1])]
-
-        """
-        return [
-            qp.RY(phi / 2, wires=wires[1]),
-            qp.CNOT(wires=wires),
-            qp.RY(-phi / 2, wires=wires[1]),
-            qp.CNOT(wires=wires),
-        ]
-
-
-def _cry_resources():
+def _cry_resources(**_):
     return {qp.RY: 2, qp.CNOT: 2}
 
 
 @register_resources(_cry_resources)
-def _cry(phi: TensorLike, wires: WiresLike, **__):
+def _cry(phi: TensorLike, wires: WiresLike):
     qp.RY(phi / 2, wires=wires[1])
     qp.CNOT(wires=wires)
     qp.RY(-phi / 2, wires=wires[1])
     qp.CNOT(wires=wires)
 
 
-def _cry_to_ppr_resources():
+def _cry_to_ppr_resources(**_):
     return {
         qp.PauliRot(Float, pauli_word="ZY", wires=Wire[2]): 1,
         qp.PauliRot(Float, pauli_word="Y", wires=Wire[1]): 1,
@@ -1911,14 +1807,14 @@ def _cry_to_ppr_resources():
 
 
 @register_resources(_cry_to_ppr_resources)
-def _cry_to_ppr(phi: TensorLike, wires: WiresLike, **__):
+def _cry_to_ppr(phi: TensorLike, wires: WiresLike):
     qp.PauliRot(phi / 2, "Y", wires=wires[1])
     qp.PauliRot(-phi / 2, "ZY", wires=wires)
 
 
 add_decomps(CRY, _cry, _cry_to_ppr)
-add_decomps("Adjoint(CRY)", adjoint_rotation)
-add_decomps("Pow(CRY)", pow_rotation)
+add_decomps("Adjoint(CRY)", adjoint_rotation2)
+add_decomps("Pow(CRY)", pow_rotation2)
 
 
 class CRZ(Controlled2):

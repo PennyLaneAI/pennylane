@@ -461,24 +461,24 @@ class AbstractWires:
         num_wires (int): The number of wires. Use ``-1`` when the wire count is unknown.
     """
 
-    num_wires: int
+    _num_wires: int
     shape_fixed: bool = field(init=False)
 
     def __post_init__(self):
-        if not isinstance(self.num_wires, int):
+        if not isinstance(self._num_wires, int):
             raise TypeError(
-                f"'num_wires' must be an integer, but got {type(self.num_wires).__name__}."
+                f"'num_wires' must be an integer, but got {type(self._num_wires).__name__}."
             )
-        if self.num_wires < -1:
+        if self._num_wires < -1:
             raise ValueError(
-                f"'num_wires' must be a non-negative integer or -1, but got {self.num_wires}. "
+                f"'num_wires' must be a non-negative integer or -1, but got {self._num_wires}. "
                 "For a dynamic number of wires, use -1."
             )
-        object.__setattr__(self, "shape_fixed", self.num_wires != -1)
+        object.__setattr__(self, "shape_fixed", self._num_wires != -1)
 
     def __eq__(self, other) -> bool:
         if isinstance(other, AbstractWires):
-            return self.num_wires == other.num_wires
+            return self._num_wires == other._num_wires
 
         raise TypeError(
             "Cannot check equality between AbstractWires and an object of type "
@@ -489,7 +489,7 @@ class AbstractWires:
     @property
     def shape(self) -> tuple[int]:
         """The number of wires expressed as shape ``(num_wires,)``."""
-        return (self.num_wires,)
+        return (self._num_wires,)
 
     @property
     def dtype(self):
@@ -497,46 +497,46 @@ class AbstractWires:
         return np.int64
 
     def __hash__(self):
-        return hash(("AbstractWires", self.num_wires))
+        return hash(("AbstractWires", self._num_wires))
 
     def __len__(self) -> int:
-        if self.num_wires < 0:
+        if self._num_wires < 0:
             raise TypeError(f"len() is undefined for {self} with unknown number of wires.")
-        return self.num_wires
+        return self._num_wires
 
     def __add__(self, other) -> AbstractWires:
         if not isinstance(other, AbstractWires):
             return NotImplemented
         if not self.shape_fixed or not other.shape_fixed:
             return AbstractWires(-1)
-        return AbstractWires(self.num_wires + other.num_wires)
+        return AbstractWires(self._num_wires + other._num_wires)
 
     def __repr__(self):
-        return f"AbstractWires({self.num_wires})"
+        return f"AbstractWires({self._num_wires})"
 
     __str__ = __repr__
 
     def __instancecheck__(self, instance):
         if instance.__class__.__name__ != "Wires":
             return False
-        if self.num_wires == -1:
+        if self._num_wires == -1:
             return True
-        return len(instance) == self.num_wires
+        return len(instance) == self._num_wires
 
     def __iter__(self):
         # without this, list(Wire[4]) gives infinite loop
-        for _ in range(self.num_wires):
+        for _ in range(self._num_wires):
             yield AbstractWires(1)
 
     def __getitem__(self, item):
-        if self.num_wires < 0:
+        if self._num_wires < 0:
             raise IndexError("Cannot index into an AbstractWires with unknown number of wires.")
         if isinstance(item, int):
-            if item >= self.num_wires:
+            if item >= self._num_wires:
                 raise IndexError(f"{item} out of bounds for {self}.")
             return AbstractWires(1)
         if isinstance(item, slice):
-            new_start_stop_step = item.indices(self.num_wires)
+            new_start_stop_step = item.indices(self._num_wires)
             return AbstractWires(len(range(*new_start_stop_step)))
         raise IndexError(f"Cannot index into an AbstractWires with {item}.")
 

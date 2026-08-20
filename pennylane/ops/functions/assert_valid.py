@@ -35,6 +35,9 @@ from pennylane.decomposition.decomposition_rule import _decomp_contains_mcm
 from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.decomposition.utils import _get_decomp_args
 from pennylane.exceptions import EigvalsUndefinedError
+from pennylane.ops.op_math.adjoint2 import Adjoint2
+from pennylane.ops.op_math.controlled2 import ControlledOp2
+from pennylane.ops.op_math.pow2 import Pow2
 from pennylane.ops.op_math.symbolicop2 import SymbolicOp2
 from pennylane.pytrees import flatten
 from pennylane.typing import AbstractArray, AbstractWires
@@ -443,15 +446,7 @@ def _check_generator(op):
     if op.has_generator:
         gen = op.generator()
         assert isinstance(gen, qp.operation.Operator)
-
-        if isinstance(op, qp.ops.op_math.symbolicop2.SymbolicOp2):
-            op_data = list(op.base.dynamic_args.values())[0]
-        elif isinstance(op, Operator2):
-            op_data = list(op.dynamic_args.values())[0]
-        else:
-            op_data = op.data[0]
-
-        new_op = qp.exp(gen, 1j * op_data)
+        new_op = qp.exp(gen, 1j * op.data[0])
         assert qp.math.allclose(
             qp.matrix(op, wire_order=op.wires), qp.matrix(new_op, wire_order=op.wires)
         )
@@ -713,11 +708,6 @@ def _assert_valid_operator2(
     assert isinstance(op.wire_argnames, tuple), "wire_argnames must be a tuple"
     assert isinstance(op.static_argnames, tuple), "static_argnames must be a tuple"
     assert isinstance(op.dynamic_argnames, tuple), "dynamic_argnames must be a tuple"
-
-    assert len(op.ndim_params) == len(
-        op.dynamic_argnames
-    ), "ndim_params must have the same length as dynamic_argnames"
-
     assert_equal(type(op)(**op.arguments), op)
 
     # check abstractify
@@ -729,17 +719,21 @@ def _assert_valid_operator2(
                 f"Op not properly abstractified. {abstractified_op} had non-abstract leaf {l}."
             )
 
-    for (name, val), dim in zip(op.dynamic_args.items(), op.ndim_params, strict=True):
-        # make sure that the bound args are not outside the allowed dimensions
-        shape = qp.math.shape(val)
-        assert len(shape) == dim, f"shape of {name} is not equal to dimension in ndim_params"
+    if not isinstance(op, (Adjoint2, ControlledOp2, Pow2)):
+
+        error_msg = "ndim_params must have the same length as dynamic_argnames"
+        assert len(op.ndim_params) == len(op.dynamic_argnames), error_msg
+
+        for (name, val), dim in zip(op.dynamic_args.items(), op.ndim_params, strict=True):
+            # make sure that the bound args are not outside the allowed dimensions
+            error_msg = f"shape of {name} is not equal to dimension in ndim_params"
+            assert len(qp.math.shape(val)) == dim, error_msg
 
     for (name, val), dim in zip(op.wire_args.items(), op.wire_sizes, strict=True):
         # make sure wires have the right sizes
         if op.wire_sizes:
-            assert (dim is None) or (
-                len(val) == dim
-            ), f"Wires argument {name} has an invalid dimension."
+            error_msg = f"Wires argument {name} has an invalid dimension."
+            assert dim is None or len(val) == dim, error_msg
 
     for name, val in op.hybrid_args.items():
         leaves, _ = flatten(val, is_leaf=lambda l: isinstance(l, Operator))

@@ -596,7 +596,7 @@ _fixed_decomps_private = {}
 _fixed_decomps_var = ContextVar("_fixed_decomps", default=_fixed_decomps_private)
 
 
-def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> None:
+def add_decomps(op_type: type[Operator | Operator2] | str, *decomps: DecompositionRule) -> None:
     """Globally registers new decomposition rules with an operator class.
 
     .. note::
@@ -720,7 +720,7 @@ def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
     DecompositionRule(name=_crx_to_ppr)
     >>> print(qp.list_decomps(qp.CRX)[0])
     @register_resources(_crx_to_rx_cz_resources)
-    def _crx_to_rx_cz(phi: TensorLike, wires: WiresLike, **__):
+    def _crx_to_rx_cz(phi: TensorLike, wires: WiresLike):
         qp.RX(phi / 2, wires=wires[1])
         qp.CZ(wires=wires)
         qp.RX(-phi / 2, wires=wires[1])

@@ -183,8 +183,10 @@ class SemiAdder(Operator2):
         @qp.set_shots(1)
         @qp.qnode(dev)
         def circuit():
-            qp.BasisEmbedding(x, wires=wires["x"])
-            qp.BasisEmbedding(y, wires=wires["y"])
+            x_bin = qp.math.int_to_binary(x, len(wires["x"]))
+            y_bin = qp.math.int_to_binary(y, len(wires["y"]))
+            qp.BasisEmbedding(x_bin, wires=wires["x"])
+            qp.BasisEmbedding(y_bin, wires=wires["y"])
             qp.SemiAdder(wires["x"], wires["y"], wires["work"])
             return qp.sample(wires=wires["y"])
 
@@ -209,8 +211,10 @@ class SemiAdder(Operator2):
         @qp.set_shots(1)
         @qp.qnode(dev)
         def circuit():
-            qp.BasisEmbedding(x, wires=wires["x"])
-            qp.BasisEmbedding(y, wires=wires["y"])
+            x_bin = qp.math.int_to_binary(x, len(wires["x"]))
+            y_bin = qp.math.int_to_binary(y, len(wires["y"]))
+            qp.BasisEmbedding(x_bin, wires=wires["x"])
+            qp.BasisEmbedding(y_bin, wires=wires["y"])
             qp.SemiAdder(wires["x"], wires["y"], wires["work"])
             return qp.sample(wires=wires["y"])
 
