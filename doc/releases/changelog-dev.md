@@ -454,6 +454,7 @@
   a new method of having compressed operators for resource estimation and decomposition.
   [(#9385)](https://github.com/PennyLaneAI/pennylane/pull/9385)
   [(#9712)](https://github.com/PennyLaneAI/pennylane/pull/9712)
+  [(#10032)](https://github.com/PennyLaneAI/pennylane/pull/10032)
 
 * `Tracker` now has a readable `__repr__` that displays all relevant internals
   (`active`, `totals`, `history`, `latest`, `persistent`, `callback`).
