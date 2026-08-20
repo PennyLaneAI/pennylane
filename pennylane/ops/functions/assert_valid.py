@@ -232,8 +232,7 @@ def _assert_counts_match(counts_0, counts_1):
     raise AssertionError(assertion_error_string)
 
 
-def _decomp_rule_to_tape(rule, op):
-    _, args, kwargs = _get_decomp_args(op)
+def _decomp_rule_to_tape(rule, args, kwargs):
     with qp.queuing.AnnotatedQueue() as q:
         rule(*args, **kwargs)
     return qp.tape.QuantumScript.from_queue(q)
@@ -264,7 +263,7 @@ def _capture_decomp_rule_to_tape(rule, op):
 def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_check: bool = False):
     """Tests that a decomposition rule is consistent with the operator."""
 
-    params, _, __ = _get_decomp_args(op)
+    params, args, kwargs = _get_decomp_args(op)
 
     if not rule.is_applicable(**params):
         return
@@ -275,7 +274,7 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
     tape = (
         _capture_decomp_rule_to_tape(rule, op)
         if qp.capture.enabled()
-        else _decomp_rule_to_tape(rule, op)
+        else _decomp_rule_to_tape(rule, args, kwargs)
     )
 
     total_work_wires = rule.get_work_wire_spec(**params).total
