@@ -128,8 +128,8 @@ def triton_decoder(
     except ImportError as exc:
         raise ImportError("Triton decoders require installed `triton` Python package.") from exc
 
-    so_path, symbol_name = _build_triton_decoder(decoder_fns, **build_options)
-    return CoprocessorFunction(name=symbol_name, lib_path=str(so_path))
+    so_path, symbol_name = _build_triton_decoder(decoder_fns, **build_options)  # pragma: no cover
+    return CoprocessorFunction(name=symbol_name, lib_path=str(so_path))  # pragma: no cover
 
 
 def css_bp_decoder(
@@ -199,7 +199,7 @@ def css_bp_decoder(
     except ImportError as exc:
         raise ImportError("Triton decoders require installed `triton` Python package.") from exc
 
-    so_path, symbol_name = _build_css_bp_decoder(
+    so_path, symbol_name = _build_css_bp_decoder(  # pragma: no cover
         Hx, Hz, postprocess=postprocess, num_iters=num_iters, prob=prob, **build_options
     )
-    return CoprocessorFunction(name=symbol_name, lib_path=str(so_path))
+    return CoprocessorFunction(name=symbol_name, lib_path=str(so_path))  # pragma: no cover
