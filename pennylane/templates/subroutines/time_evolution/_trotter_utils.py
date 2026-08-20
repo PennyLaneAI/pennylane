@@ -116,10 +116,6 @@ def _run_trotter_steps(
         merge_leaves (callable): ``(U_prev, U_curr) -> U``.
         transpose_leaf (callable): ``(U) -> U``.
     """
-    # Under program capture / compilation the diagonal layers index ``wires`` with traced
-    # ``for_loop`` variables (e.g. ``wires[wire_idx]``). Plain Python sequences raise
-    # ``TracerIntegerConversionError`` on such indexing, so promote the wire labels to a jax
-    # array, turning the lookups into dynamic gathers that structured capture can trace.
     if compiler.active() or capture.enabled():
         wires = math.array(wires, like="jax")
         if len(control_wires) > 0:
