@@ -20,7 +20,9 @@ from pennylane.capture import enabled
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition.symbolic_decomposition import self_adjoint
 from pennylane.ops import Hadamard, PauliX, cond
+from pennylane.ops.op_math.pow2 import pow_involutory
 from pennylane.typing import AbstractArray, AbstractWires, Bool, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
@@ -258,7 +260,7 @@ class MultiX(Operator2):
         return MultiX(self.bitstring, wires=self.wires)
 
     def pow(self, z: int | float) -> list[Operator2]:
-        # Only encodes the involutive property: MultiX^2 = I
+        # Only encodes the involutive property: MultiX^2 = MultiX
         return super().pow(z % 2)
 
 
@@ -288,3 +290,5 @@ def _multix_decomposition(bitstring: TensorLike, wires: WiresLike) -> None:
 
 
 add_decomps(MultiX, _multix_decomposition)
+add_decomps("Adjoint(MultiX)", self_adjoint)
+add_decomps("Pow(MultiX)", pow_involutory)
