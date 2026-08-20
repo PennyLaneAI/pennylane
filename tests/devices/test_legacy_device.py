@@ -565,7 +565,7 @@ class TestInternalFunctions:  # pylint:disable=too-many-public-methods
         """Test that default_expand_fn works with an invalid op and some measurement."""
         invalid_tape = qp.tape.QuantumScript([qp.S(0)], [qp.expval(qp.PauliZ(0))])
         expected_tape = qp.tape.QuantumScript(
-            [qp.RZ(np.pi / 2, 0), qp.GlobalPhase(-0.7853981633974483)],
+            [qp.RZ(np.pi / 2, 0), qp.GlobalPhase(-np.pi / 4)],
             [qp.expval(qp.PauliZ(0))],
         )
         dev = mock_device_supporting_paulis(wires=1)
