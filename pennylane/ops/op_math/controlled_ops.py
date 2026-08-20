@@ -53,7 +53,6 @@ from pennylane.wires import Wires, WiresLike
 from .adjoint2 import _adjoint_abstract
 from .controlled import (
     Controlled2,
-    ControlledOp,
     _is_empty_or_all_true,
     _resolve_ctrl_values,
     custom_ctrl_dispatch,
