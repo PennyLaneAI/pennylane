@@ -13,8 +13,6 @@
 # limitations under the License.
 """Qubitization walk operator for block-encoding of a one-particle operator."""
 
-import numpy as np
-
 import pennylane as qp
 from pennylane.labs.templates import alias_sampling, alias_sampling_wires
 
@@ -23,8 +21,8 @@ def one_body_walk_wires(norbs, alias_sampling_precision):
     r"""Sizes of the three wire registers required by :func:`one_body_walk`.
 
     The registers are:
-        * ``prep_wires``: the full PREP register that the reflection acts on.
-        * ``system_wires``: the state register ``|\psi>`` the operator acts on.
+        * ``prep_wires``: the full PREP register that the reflection acts on
+        * ``system_wires``: the state register :math:`|\psi\rangle` the operator acts on
         * ``work_wires``: clean scratch that returns to ``|0>``
 
     Args:
@@ -45,21 +43,30 @@ def one_body_walk_wires(norbs, alias_sampling_precision):
 def one_body_walk(op_matrix, alias_sampling_precision, prep_wires, system_wires, work_wires):
     r"""Walk operator for the block-encoding of a one-particle operator.
 
-    Implements :math:`\hat{\mathcal{W}} = \text{PREP} \cdot
-    \text{SEL} \cdot \text{PREP}^\dagger \cdot \hat{\mathcal{R}}` (Fig. 12 of
-    `arXiv:2602.20270 <https://arxiv.org/abs/2602.20270>`_), block-encoding the
-    non-identity part of a one-body operator
+    Implements :math:`\hat{\mathcal{W}} = \hat{\mathcal{R}} \cdot \text{PREP}^\dagger \cdot
+    \text{SEL} \cdot \text{PREP}`, with :math:`\hat{\mathcal{R}} = \hat 1 - 2|0\rangle\langle 0|`
+    the reflection on ``prep_wires``, following `arXiv:2602.20270
+    <https://arxiv.org/abs/2602.20270>`_ (Fig. 12 for the block-encoding, Sec. III A for the
+    walk operator). The :math:`|\vec 0\rangle` block of the walk is :math:`\hat O / \lambda`,
+    where :math:`\hat O` is the non-identity part of a one-body operator
 
     .. math::
 
-        \hat{O} = \sum_{p,\sigma} \frac{\mu_p}{2}\, \hat V^\dagger \hat z_{p\sigma} \hat V ,
+        \hat{O} = \sum_{pq,\sigma} o_{pq}\, \hat c^\dagger_{p\sigma} \hat c_{q\sigma}
+        - \Big( \sum_p \mu_p \Big) \hat 1
+        = -\sum_{p,\sigma} \frac{\mu_p}{2}\, \hat V^\dagger \hat Z_{p\sigma} \hat V ,
 
-    where :math:`o_{pq} = V \operatorname{diag}(\mu) V^T` and :math:`\lambda = \sum_p |\mu_p|`.
+    where :math:`o_{pq} = V \operatorname{diag}(\mu) V^T` and :math:`\hat V` is the orbital
+    rotation diagonalizing ``op_matrix``. The minus sign in the Pauli form is the Jordan-Wigner
+    convention used in PennyLane, :math:`\hat n_{p\sigma} = (\hat 1 - \hat Z_{p\sigma})/2`; it
+    cancels against the sign of :math:`\hat{\mathcal{R}}`.
+
+    The normalization of the block-encoding is :math:`\lambda = \sum_p |\mu_p|`.
 
     Args:
         op_matrix (array): The real symmetric one-body matrix, shape ``(N, N)``, where N is the number
             of spatial orbitals.
-        alias_sampling_precision (int): number of bits needed for alias-sampling coefficient precision.
+        alias_sampling_precision (int): number of bits needed for alias-sampling coefficient precision
         prep_wires (Sequence[int]): the full PREP register, reflected by ``R``
         system_wires (Sequence[int]): wires for representing the ``2 N`` system spin-orbitals
         work_wires (Sequence[int]): clean scratch returned to ``|0>``
@@ -86,7 +93,9 @@ def one_body_walk(op_matrix, alias_sampling_precision, prep_wires, system_wires,
             f"alias_sampling_precision={alias_sampling_precision}; got {len(work_wires)}."
         )
 
-    prep_wires, system_wires, work_wires = list(prep_wires), list(system_wires), list(work_wires)
+    prep_wires = qp.wires.Wires(prep_wires)
+    system_wires = qp.wires.Wires(system_wires)
+    work_wires = qp.wires.Wires(work_wires)
 
     # Split prep_wires: index |p> (na) + spin |sigma> (1) + temp register.
     na = alias_sampling_wires(norbs, alias_sampling_precision)["target_wires"]
@@ -94,9 +103,9 @@ def one_body_walk(op_matrix, alias_sampling_precision, prep_wires, system_wires,
     spin_wire = prep_wires[na]
     garbage_wires = prep_wires[na + 1 :]
 
-    mu, vmat = np.linalg.eigh(op_matrix)  # o = vmat diag(mu) vmat.T
-    if np.linalg.det(vmat) < 0:
-        vmat[:, 0] *= -1
+    mu, vmat = qp.math.linalg.eigh(op_matrix)  # o = vmat diag(mu) vmat.T
+    if qp.math.linalg.det(vmat) < 0:
+        vmat = qp.math.concatenate([-vmat[:, :1], vmat[:, 1:]], axis=1)
 
     dmat = qp.math.diag([(-1.0) ** i for i in range(norbs)])
     unitary_matrix = dmat @ vmat @ dmat
@@ -120,7 +129,10 @@ def one_body_walk(op_matrix, alias_sampling_precision, prep_wires, system_wires,
     ops = [
         qp.s_prod(signs[p], qp.Z(system_wires[s * norbs + p])) for p in range(norbs) for s in (0, 1)
     ]
-    qp.Select(ops, control=index_wires + [spin_wire], work_wires=work_wires)
+    # PREP puts amplitude only on |p> with p < norbs, so the control register has no support on
+    # basis states with no matching op and the cheaper partial-Select decomposition is valid.
+    qp.Select(ops, control=index_wires + [spin_wire], work_wires=work_wires, partial=True)
+
     for s in (0, 1):
         qp.adjoint(qp.BasisRotation)(
             wires=[system_wires[s * norbs + p] for p in range(norbs)], unitary_matrix=unitary_matrix
@@ -138,8 +150,15 @@ def one_body_walk(op_matrix, alias_sampling_precision, prep_wires, system_wires,
     # R = I - 2|0><0| on the PREP register (index + spin + garbage).
     for w in prep_wires:
         qp.X(w)
+
+    # alias_sampling returns work_wires to |0>, so they are available here as clean ancillas for
+    # a much cheaper multi-controlled Z.
     qp.ctrl(
-        qp.Z(prep_wires[-1]), control=prep_wires[:-1], control_values=[1] * (len(prep_wires) - 1)
+        qp.Z(prep_wires[-1]),
+        control=prep_wires[:-1],
+        control_values=[1] * (len(prep_wires) - 1),
+        work_wires=work_wires,
+        work_wire_type="zeroed",
     )
     for w in prep_wires:
         qp.X(w)

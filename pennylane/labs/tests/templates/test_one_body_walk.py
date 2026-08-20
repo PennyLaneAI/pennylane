@@ -91,9 +91,7 @@ def _reference_block_matrix(op_matrix, system_wires, mu_bits=None):
     return -0.5 * total
 
 
-def _apply_walk(  # pylint: disable=too-many-arguments
-    op_matrix, mu_bits, state, n_powers=1, system_wires=None
-):
+def _apply_walk(op_matrix, mu_bits, state, n_powers=1, system_wires=None):
     r"""Helper function to apply the walk to one system state and return the :math:`|\vec 0\rangle` block."""
     norbs = qp.math.shape(op_matrix)[0]
     req = one_body_walk_wires(norbs, mu_bits)
@@ -179,6 +177,10 @@ class TestOneBodyWalk:
         assert np.allclose(block_encoded_state, expected, atol=1e-8)
         assert work_scratch < 1e-10
 
+        # the discretized block also stays within the alias bound of the exact operator
+        exact = _reference_block_matrix(op_matrix, system) @ state
+        assert np.allclose(block_encoded_state, exact, atol=np.linalg.norm(state) / 2**mu_bits)
+
     def test_encodes_operator_full_block(self):
         """Test that the full block matches column by column, not just on one vector."""
 
@@ -247,7 +249,7 @@ class TestOneBodyWalk:
         block = _walk_block(op_matrix, mu_bits)
 
         error = np.abs(block - _reference_block_matrix(op_matrix, system_wires=system)).max()
-        assert error <= 2.0 * 2 / 2**mu_bits
+        assert error <= 1 / 2**mu_bits
 
     @pytest.mark.parametrize("n_powers", [2, 3])
     def test_chebyshev_recursion(self, n_powers):

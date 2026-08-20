@@ -28,6 +28,8 @@ This module contains templates, which are pre-coded routines that can be used in
     ~uniform_prep_ops
     ~alias_sampling
     ~alias_sampling_wires
+    ~one_body_walk
+    ~one_body_walk_wires
 """
 
 from .left_classical_comparator import LeftClassicalComparator
