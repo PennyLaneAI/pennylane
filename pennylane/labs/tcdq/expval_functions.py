@@ -63,6 +63,9 @@ class CircuitConfig:  # pylint: disable=too-many-instance-attributes
         phase_fn (Callable | None): Optional custom phase function
             ``phase_fn(params, bitstring)`` applied as an extra diagonal layer.
             Defaults to ``None``.
+        control_variate (bool): If ``True``, reduces the Monte Carlo variance using an
+            order-2 Taylor-expansion control variate: the integrand expanded to second
+            order in the rotation angles about ``theta = 0``. Defaults to ``False``.
 
     **Example**
 
@@ -98,6 +101,8 @@ class CircuitConfig:  # pylint: disable=too-many-instance-attributes
     init_state_amps: ArrayLike | None = None
     #: Optional custom phase function applied as an extra diagonal layer.
     phase_fn: Callable | None = None
+    #: If ``True``, use the order-2 Taylor-expansion control variate.
+    control_variate: bool = False
 
 
 def _parse_generator_dict(circuit_def: dict[int, list[list[int]]], n_qubits: int):
@@ -167,8 +172,15 @@ def _core_expval_execution(
     generators: jnp.ndarray,
     param_map: jnp.ndarray,
     vmapped_phase_func: Callable | None,
-) -> tuple[jnp.ndarray, jnp.ndarray]:
-    """Evaluate the Monte Carlo integrand and return means with standard errors."""
+) -> tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray]:
+    """Evaluate the Monte Carlo integrand.
+
+    Returns:
+        tuple: ``(expvals, phases, E, H)`` where ``expvals`` is the per-sample
+        integrand of shape ``(n_observables, n_samples)``, ``phases`` and ``E``
+        are the circuit phase factor and phase argument, and ``H`` is the state
+        factor.
+    """
     bitflips, mask_XY, y_phase = obs_data
 
     s_f = samples.astype(jnp.float32)
@@ -188,6 +200,7 @@ def _core_expval_execution(
         E += vmapped_phase_func(phase_fn_params, samples, bitflips)
 
     if init_state_elems is None or init_state_amps is None:
+        H = jnp.ones_like(phases)
         expvals = jnp.real(phases) * jnp.cos(E) - jnp.imag(phases) * jnp.sin(E)
     else:
         M = phases * jnp.exp(1j * E)
@@ -200,9 +213,7 @@ def _core_expval_execution(
         M = M * H
         expvals = jnp.real(M)
 
-    std_err = jnp.std(expvals, axis=-1, ddof=1) / jnp.sqrt(samples.shape[0])
-
-    return jnp.mean(expvals, axis=1), std_err
+    return expvals, phases, E, H
 
 
 def build_expval_func(
@@ -263,6 +274,10 @@ def build_expval_func(
         :class:`~pennylane.labs.tcdq.CircuitConfig`,
         `IQPopt: Fast optimization of instantaneous quantum polynomial circuits in JAX <https://arxiv.org/abs/2501.04776>`_
     """
+
+    if config.control_variate and config.phase_fn is not None:
+        raise ValueError("Phase layers are not compatible with control variates.")
+
     generators, param_map = _parse_generator_dict(config.gates, config.n_qubits)
 
     vmapped_phase_func = None
@@ -335,7 +350,7 @@ def build_expval_func(
         state_elems = config.init_state_elems if init_state_elems is None else init_state_elems
         state_amps = config.init_state_amps if init_state_amps is None else init_state_amps
 
-        return _core_expval_execution(
+        expvals, phases, E, H = _core_expval_execution(
             gates_params,
             phase_fn_params,
             samples,
@@ -347,4 +362,119 @@ def build_expval_func(
             vmapped_phase_func,
         )
 
+        if not config.control_variate:
+            mean = jnp.mean(expvals, axis=1)
+            std_err = jnp.std(expvals, axis=-1, ddof=1) / jnp.sqrt(samples.shape[0])
+            return mean, std_err
+
+        cv = _control_variate_expval_execution(phases, E, H)
+        cv_ev = _control_variate_expected_value(
+            gates_params, obs_data, generators, param_map, state_elems, state_amps
+        )
+
+        expvals_centered = expvals - jnp.mean(expvals, axis=-1, keepdims=True)
+        cv_centered = cv - jnp.mean(cv, axis=-1, keepdims=True)
+
+        cov = jnp.sum(expvals_centered * cv_centered, axis=-1)
+        var_cv = jnp.sum(cv_centered**2, axis=-1)
+
+        c = jnp.where(var_cv > 0, -cov / var_cv, 0.0)
+
+        expvals_cv = expvals + c[..., None] * (cv - cv_ev[..., None])
+        mean_cv = jnp.mean(expvals_cv, axis=-1)
+        std_err_cv = jnp.std(expvals_cv, axis=-1, ddof=1) / jnp.sqrt(samples.shape[0])
+
+        return mean_cv, std_err_cv
+
     return expval_execution
+
+
+def _control_variate_expval_execution(
+    phases: jnp.ndarray,
+    E: jnp.ndarray,
+    H: jnp.ndarray,
+) -> jnp.ndarray:
+    """Order-2 Taylor appxroximation control variate.
+
+    Args:
+        phases (jnp.ndarray): Circuit phase factor, shape ``(n_obs, n_samples)``.
+        E (jnp.ndarray): Phase argument, shape ``(n_obs, n_samples)``.
+        H (jnp.ndarray): State factor, shape ``(n_obs, n_samples)``.
+
+    Returns:
+        jnp.ndarray: shape (n_observables, n_samples), matching `expvals`.
+    """
+    taylor = 1.0 + 1j * E - 0.5 * E**2
+    return jnp.real(phases * taylor * H)
+
+
+def _control_variate_expected_value(
+    gates_params: ArrayLike,
+    obs_data: tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray],
+    generators: jnp.ndarray,
+    param_map: jnp.ndarray,
+    init_state_elems: ArrayLike | None,
+    init_state_amps: ArrayLike | None,
+) -> jnp.ndarray:
+    """Analytic expectation value of the order-2 Taylor control variate.
+
+    Returns:
+        jnp.ndarray: shape (n_observables,), the exact control mean.
+    """
+
+    bitflips, mask_XY, y_phase = obs_data
+    G = generators.astype(jnp.int32)
+    a_full = jnp.asarray(gates_params)[param_map]
+
+    # a_g = 2[(b.g) mod 2] * theta_g, per observable: shape (n_obs, n_gates)
+    Cg = 2 * ((bitflips @ G.T) % 2)  # (n_obs, n_gates)
+    a = Cg * a_full[jnp.newaxis, :]  # (n_obs, n_gates)
+
+    if init_state_elems is None or init_state_amps is None:
+        m = mask_XY.astype(jnp.int32)  # (n_obs, n_qubits)
+        S0 = jnp.all(m == 0, axis=1).astype(jnp.complex128)  # (n_obs,)
+
+        g_eq_m = jnp.all(G[jnp.newaxis, :, :] == m[:, jnp.newaxis, :], axis=2)  # (n_obs, n_gates)
+        S1 = jnp.sum(a * g_eq_m, axis=1).astype(jnp.complex128)  # (n_obs,)
+
+        gh_xor = (G[jnp.newaxis, :, :] + G[:, jnp.newaxis, :]) % 2  # (n_gates, n_gates, n_qubits)
+        gh_match = jnp.all(
+            gh_xor[jnp.newaxis] == m[:, jnp.newaxis, jnp.newaxis, :], axis=3
+        )  # (n_obs, n_gates, n_gates)
+        S2 = jnp.sum(a[:, :, jnp.newaxis] * a[:, jnp.newaxis, :] * gh_match, axis=(1, 2))
+        S2 = S2.astype(jnp.complex128)
+
+        series = S0 + 1j * S1 + (1j**2) / 2.0 * S2
+        return jnp.real(y_phase[:, 0] * series)
+
+    X = jnp.asarray(init_state_elems).astype(jnp.int32)  # (N, n_qubits)
+    amps = jnp.asarray(init_state_amps)  # (N,)
+    m = mask_XY.astype(jnp.int32)  # (n_obs, n_qubits)
+
+    xkl = (X[:, None, :] + X[None, :, :]) % 2  # (N, N, n_qubits)
+    target = (m[:, None, None, :] + xkl[None]) % 2  # (n_obs, N, N, n_qubits)
+
+    ## constant term
+    S0 = jnp.all(target == 0, axis=-1).astype(jnp.complex128)  # (n_obs, N, N)
+
+    ## linear term
+    g_eq = jnp.all(
+        G[None, None, None, :, :] == target[:, :, :, None, :], axis=-1
+    )  # (n_obs, N, N, n_gates)
+    S1 = jnp.sum(a[:, None, None, :] * g_eq, axis=-1).astype(jnp.complex128)
+
+    ## quadratic term
+    gh_xor = (G[None, :, :] + G[:, None, :]) % 2  # (n_gates, n_gates, n_qubits)
+    gh_eq = jnp.all(
+        gh_xor[None, None, None] == target[:, :, :, None, None, :], axis=-1
+    )  # (n_obs, N, N, n_gates, n_gates)
+    aa = a[:, None, None, :, None] * a[:, None, None, None, :]  # (n_obs,1,1,n_gates,n_gates)
+    S2 = jnp.sum(aa * gh_eq, axis=(-1, -2)).astype(jnp.complex128)
+
+    series = S0 + 1j * S1 + (1j**2) / 2.0 * S2  # (n_obs, N, N)
+
+    sign_k = 1 - 2 * ((bitflips @ X.T) % 2)  # (n_obs, N) = (-1)^{b.x_k}
+    amp_outer = amps[:, None] * jnp.conj(amps)[None, :]  # (N, N)
+    term = sign_k[:, :, None] * amp_outer[None, :, :] * series  # (n_obs, N, N)
+    s = jnp.sum(term, axis=(1, 2))  # (n_obs,)
+    return jnp.real(y_phase[:, 0] * s)
