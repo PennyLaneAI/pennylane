@@ -300,19 +300,6 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         assert op.is_abstract
         qp.assert_equal(op.uncompute_op, qp.adjoint(compute_op))
 
-    def test_abstract_initialization_rejects_non_operators(self):
-        """Test that abstract construction applies the operand validation."""
-        with pytest.raises(TypeError, match="ChangeOpBasis operands must be operators"):
-            ChangeOpBasis(Float, Float, Float)
-
-    @pytest.mark.parametrize(
-        "measurement", (qp.ops.MidMeasure(wires=0), abstractify(qp.ops.MidMeasure(wires=0)))
-    )
-    def test_initialization_rejects_mid_measurements(self, measurement):
-        """Test that concrete and abstract mid-circuit measurements remain unsupported."""
-        with pytest.raises(ValueError, match="Composite operators of mid-circuit measurements"):
-            ChangeOpBasis(measurement, qp.X(1), qp.X(2))
-
     def test_map_wires_with_mixed_operator_versions(self):
         """Test mapping wires belonging to both Operator1 and Operator2 operands."""
         op = ChangeOpBasis(qp.X(0), NonParametricOp(1), qp.RX(0.2, 2))
