@@ -421,6 +421,8 @@ class TestVectorValuedQNode:
     ):
         """Tests correct output shape and evaluation for a tape
         with a single prob output"""
+        if diff_method == "adjoint":
+            pytest.skip("adjoint state differentiation is not supported in pl2")
         kwargs = {
             "diff_method": diff_method,
             "interface": interface,
@@ -474,6 +476,8 @@ class TestVectorValuedQNode:
     ):
         """Tests correct output shape and evaluation for a tape
         with multiple prob outputs"""
+        if diff_method == "adjoint":
+            pytest.skip("adjoint state differentiation is not supported in pl2")
         kwargs = {
             "diff_method": diff_method,
             "interface": interface,
@@ -561,6 +565,8 @@ class TestVectorValuedQNode:
     ):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
+        if diff_method == "adjoint":
+            pytest.skip("adjoint state differentiation is not supported in pl2")
         kwargs = {
             "diff_method": diff_method,
             "interface": interface,
@@ -636,6 +642,8 @@ class TestVectorValuedQNode:
     ):
         """Tests correct output shape and evaluation for a tape with prob and expval outputs with less
         trainable parameters (argnums) than parameters."""
+        if diff_method == "adjoint":
+            pytest.skip("adjoint state differentiation is not supported in pl2")
         kwargs = {}
         if diff_method == "spsa":
             kwargs["sampler_rng"] = np.random.default_rng(seed)
@@ -694,6 +702,8 @@ class TestVectorValuedQNode:
     ):
         """Tests correct output shape and evaluation for a tape
         with prob and variance outputs"""
+        if diff_method == "adjoint":
+            pytest.skip("adjoint state differentiation is not supported in pl2")
         kwargs = {
             "diff_method": diff_method,
             "interface": interface,
@@ -2062,6 +2072,8 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         self, dev_name, diff_method, grad_on_execution, jacobian, device_vjp, shots, interface, seed
     ):
         """The jacobian of multiple measurements with a single params return an array."""
+        if diff_method == "adjoint":
+            pytest.skip("adjoint state differentiation is not supported in pl2")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
         if "lightning" in dev_name:
@@ -2105,6 +2117,8 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         self, dev_name, diff_method, grad_on_execution, jacobian, device_vjp, shots, interface, seed
     ):
         """The jacobian of multiple measurements with a multiple params return a tuple of arrays."""
+        if diff_method == "adjoint":
+            pytest.skip("adjoint state differentiation is not supported in pl2")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
         if "lightning" in dev_name:
@@ -2159,6 +2173,8 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         self, dev_name, diff_method, grad_on_execution, jacobian, device_vjp, shots, interface, seed
     ):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
+        if diff_method == "adjoint":
+            pytest.skip("adjoint state differentiation is not supported in pl2")
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
         if "lightning" in dev_name:

@@ -262,6 +262,9 @@ class TestJaxExecuteIntegration:
         """Test that a tape with no parameters is correctly
         ignored during the gradient computation"""
 
+        if execute_kwargs.get("diff_method") == "adjoint":
+            pytest.skip("adjoint state differentiation is not supported in pl2")
+
         device = get_device(device_name, seed)
 
         def cost(params):

@@ -244,7 +244,7 @@ class TestControlledDecompositionZYZ:
         import torch
 
         target_op1 = qp.RY(torch.Tensor([1.2]), 0)
-        target_op2 = qp.RY(1.2, 0)
+        target_op2 = qp.RY(np.array([1.2]), 0)
 
         torch_decomp = ctrl_decomp_zyz(target_op1, 1)
         decomp = ctrl_decomp_zyz(target_op2, 1)
