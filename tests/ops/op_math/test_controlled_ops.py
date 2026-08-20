@@ -533,9 +533,7 @@ class TestControlledQubitUnitary:
 
         # The merged op is equivalent to constructing the ControlledQubitUnitary directly.
         wire_order = [2, 3, 0, 1]
-        expected = qp.ControlledQubitUnitary(
-            U, wires=wire_order, control_values=[0, 1, 1]
-        )
+        expected = qp.ControlledQubitUnitary(U, wires=wire_order, control_values=[0, 1, 1])
         assert qp.math.allclose(
             op.matrix(wire_order=wire_order), expected.matrix(wire_order=wire_order)
         )

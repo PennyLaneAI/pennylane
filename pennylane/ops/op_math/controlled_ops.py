@@ -36,6 +36,7 @@ from pennylane.decomposition import (
     register_resources,
 )
 from pennylane.decomposition.decomposition_rule import DecompCollection, list_decomps
+from pennylane.decomposition.resources import resolve_work_wire_type
 from pennylane.decomposition.symbolic_decomposition import (
     adjoint_rotation,
     pow_rotation,
@@ -207,7 +208,6 @@ class ControlledQubitUnitary(Controlled2):
 
         self._name = "ControlledQubitUnitary"
 
-
     @property
     def has_decomposition(self) -> bool:  # pylint: disable=invalid-overridden-method
         # A controlled *sparse* multi-qubit unitary has no decomposition, because the underlying
@@ -231,10 +231,8 @@ def _ctrl_c_qu(base: ControlledQubitUnitary, control, control_values, work_wires
         control + base.wires,
         control_values=_resolve_ctrl_values(control_values, base.control_values, len(control)),
         work_wires=work_wires + base.work_wires,
-        work_wire_type=(
-            "borrowed"
-            if work_wire_type == "borrowed" or base.work_wire_type == "borrowed"
-            else "zeroed"
+        work_wire_type=resolve_work_wire_type(
+            base.work_wires, base.work_wire_type, work_wires, work_wire_type
         ),
     )
 

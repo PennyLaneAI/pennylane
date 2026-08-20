@@ -370,7 +370,7 @@ class QuantumMonteCarlo(Operation):
         return {
             "num_target_wires": len(self.hyperparameters["target_wires"]),
             "num_estimation_wires": len(self.hyperparameters["estimation_wires"]),
-            "q_shape": math.shape(self.data[2])
+            "q_shape": math.shape(self.data[2]),
         }
 
     def __init__(self, probs, func, target_wires, estimation_wires):
