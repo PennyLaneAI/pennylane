@@ -1198,6 +1198,12 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug where the ``flip_zero_control`` decomposition modifier raised a
+  ``TracerIntegerConversionError`` under program capture, because the control-value flipping
+  loop indexed the control wires with a traced loop variable without first promoting them to a
+  JAX array.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
 * Fixed a bug where :func:`~.tape.plxpr_to_tape` raised an error when the program contains
   arithmetic operations performed on mid-circuit measurement values.
   [(#10028)](https://github.com/PennyLaneAI/pennylane/pull/10028)

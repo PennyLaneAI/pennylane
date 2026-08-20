@@ -806,7 +806,11 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
         wires = arguments.get("control_wires", arguments.get("wires", None))
         assert wires is not None
 
-        if compiler.active() and not capture.enabled():
+        # ``_x_flips`` indexes ``control_values`` and ``wires`` with the traced ``for_loop``
+        # variable ``i``. Plain Python sequences raise ``TracerIntegerConversionError`` on such
+        # indexing, so under program capture or compilation promote them to jax arrays (turning
+        # the lookups into dynamic gathers). This matches ``_make_controlled_decomp``.
+        if compiler.active() or capture.enabled():
             control_values = math.array(control_values, like="jax")
             wires = math.array(wires, like="jax")
 
