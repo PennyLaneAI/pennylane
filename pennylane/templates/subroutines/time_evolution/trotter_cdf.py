@@ -302,9 +302,11 @@ class TrotterCDF(Operator2):
     def __init__(self, evolution_time, num_trotter_steps, hamiltonian, wires, double_phase=False):
         # ``hamiltonian`` is a hybrid argument: its array-like leaves must be arrays (or scalars)
         # to be captured and lowered correctly. Cast only list/tuple inputs, leaving array inputs
-        # as-is so the hybrid argument survives the capture round-trip unchanged.
+        # as-is so the hybrid argument survives the capture round-trip unchanged. Abstract capture
+        # placeholders (which are neither list/tuple nor real arrays) are left untouched and skip
+        # the ``ndim`` validation below, so the operator can be reconstructed during capture.
         core, leaf = hamiltonian["core_tensors"], hamiltonian["leaf_tensors"]
-        if not (hasattr(core, "ndim") and hasattr(leaf, "ndim")):
+        if isinstance(core, (list, tuple)) or isinstance(leaf, (list, tuple)):
             hamiltonian = {
                 **hamiltonian,
                 "core_tensors": math.asarray(core),
@@ -312,7 +314,7 @@ class TrotterCDF(Operator2):
             }
         Z = hamiltonian["core_tensors"]
         U = hamiltonian["leaf_tensors"]
-        if not (Z.ndim == 3 and U.ndim == 3):
+        if hasattr(Z, "ndim") and hasattr(U, "ndim") and not (Z.ndim == 3 and U.ndim == 3):
             raise ValueError(
                 "TrotterCDF expects a CDF Hamiltonian with core_tensors.ndim == 3 and "
                 f"leaf_tensors.ndim == 3. Got core_tensors.ndim={Z.ndim}, "
