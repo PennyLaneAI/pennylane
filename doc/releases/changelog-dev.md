@@ -1202,7 +1202,7 @@
   ``TracerIntegerConversionError`` under program capture, because the control-value flipping
   loop indexed the control wires with a traced loop variable without first promoting them to a
   JAX array.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#10036)](https://github.com/PennyLaneAI/pennylane/pull/10036)
 
 * Fixed a bug where :func:`~.tape.plxpr_to_tape` raised an error when the program contains
   arithmetic operations performed on mid-circuit measurement values.
