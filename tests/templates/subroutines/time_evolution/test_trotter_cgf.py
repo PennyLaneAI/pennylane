@@ -24,6 +24,7 @@ unitary and the (``True``) double-phase Hadamard-test circuit of Fig. 6 of arXiv
 
 # pylint: disable=too-many-arguments, redefined-outer-name, too-few-public-methods, wrong-import-position, protected-access
 import itertools
+import warnings
 
 import numpy as np
 import pytest
@@ -33,6 +34,7 @@ jax = pytest.importorskip("jax")
 
 import pennylane as qp
 from pennylane.decomposition.resources import Resources
+from pennylane.exceptions import CaptureWarning
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.time_evolution.trotter_cgf import (
     _apply_system_basis_rotation,
@@ -440,6 +442,34 @@ class TestControlledDecomposition:
         for rule in qp.list_decomps("C(TrotterCGF)"):
             _test_decomposition_rule(op, rule)
 
+    @pytest.mark.capture
+    def test_controlled_decomposition_capture(self, toy_hamiltonian_cgf):
+        """The C(TrotterCGF) rule captures cleanly. Operators can't be passed as capture inputs
+        yet - they surface as ``ArgInfo`` wires (the "ArgInfo issue" tracked by ``test_Controlled``
+        in ``tests/capture/test_operators.py``) - so the base is built inside the traced function.
+        Once that is resolved this can use ``_test_decomposition_rule`` under capture directly."""
+        ham, num_modes, n_states = toy_hamiltonian_cgf
+        n = num_modes * n_states
+        rule = qp.list_decomps("C(TrotterCGF)")[0]
+
+        def circuit(t, *wires):
+            with qp.capture.pause():  # the base itself should not be captured
+                base = qp.TrotterCGF(t, 2, ham, wires=list(wires[:n]))
+            rule(
+                base=base,
+                control_wires=list(wires[n:]),
+                control_values=[1],
+                work_wires=[],
+                work_wire_type="borrowed",
+            )
+
+        with warnings.catch_warnings():  # no fall back to an unrolled Python loop
+            warnings.simplefilter("error", CaptureWarning)
+            jaxpr = jax.make_jaxpr(circuit)(jax.numpy.array(0.4), *range(n + 1))
+
+        ops = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.4, *range(n + 1)).operations
+        assert {type(op).__name__ for op in ops} == {"BasisRotation", "CNOT", "RZ", "PhaseShift"}
+
     def test_genuine_controlled_matches_expm(self, diagonal_hamiltonian_cgf):
         """By default ctrl(TrotterCGF) is a genuine controlled unitary: for an identity-leaf
         (Trotter-exact) Hamiltonian its matrix is exactly block_diag(I, expm(-i H t))."""
@@ -464,6 +494,34 @@ class TestDoublePhaseControlledDecomposition:
         op = qp.ctrl(qp.TrotterCGF(0.4, 2, ham, wires, double_phase=True), control=[99])
         for rule in qp.list_decomps("C(TrotterCGF)"):
             _test_decomposition_rule(op, rule)
+
+    @pytest.mark.capture
+    def test_controlled_decomposition_capture(self, toy_hamiltonian_cgf):
+        """The double-phase C(TrotterCGF) rule captures cleanly. Operators can't be passed as
+        capture inputs yet - they surface as ``ArgInfo`` wires (the "ArgInfo issue" tracked by
+        ``test_Controlled`` in ``tests/capture/test_operators.py``) - so the base is built inside
+        the traced function; once resolved this can use ``_test_decomposition_rule`` directly."""
+        ham, num_modes, n_states = toy_hamiltonian_cgf
+        n = num_modes * n_states
+        rule = qp.list_decomps("C(TrotterCGF)")[0]
+
+        def circuit(t, *wires):
+            with qp.capture.pause():  # the base itself should not be captured
+                base = qp.TrotterCGF(t, 2, ham, wires=list(wires[:n]), double_phase=True)
+            rule(
+                base=base,
+                control_wires=list(wires[n:]),
+                control_values=[1],
+                work_wires=[],
+                work_wire_type="borrowed",
+            )
+
+        with warnings.catch_warnings():  # no fall back to an unrolled Python loop
+            warnings.simplefilter("error", CaptureWarning)
+            jaxpr = jax.make_jaxpr(circuit)(jax.numpy.array(0.4), *range(n + 1))
+
+        ops = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.4, *range(n + 1)).operations
+        assert {type(op).__name__ for op in ops} == {"BasisRotation", "CNOT", "RZ", "IsingZZ"}
 
     def test_double_phase_controlled_matches_expm(self, diagonal_hamiltonian_cgf):
         """With double_phase=True, ctrl(TrotterCGF) realizes diag(U, U^dagger): for an
