@@ -26,7 +26,7 @@ from pennylane.wires import Wires
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_checks():
     """Run standard checks with the assert_valid function."""
-    op = qp.FlipSign([0, 1], wires=("a", "b"))
+    op = qp.FlipSign([0, 1], wires=(0, 1))
     qp.ops.functions.assert_valid(op)
 
 

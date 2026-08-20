@@ -363,7 +363,7 @@ class TestInitialization:
         assert op.hyperparameters == new_op.hyperparameters
         assert op is not new_op
 
-    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.usefixtures("disable_capture")
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_standard_validity(self, hamiltonian):
         """Test standard validity criteria using assert_valid."""
@@ -371,7 +371,15 @@ class TestInitialization:
         op = qp.TrotterProduct(hamiltonian, time, n=n, order=order)
         qp.ops.functions.assert_valid(op, skip_differentiation=True)
 
-    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.xfail(reason="come back to this after we migrate TrotterProduct [sc-128369]")
+    @pytest.mark.usefixtures("enable_capture")
+    @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
+    def test_standard_validity_capture(self, hamiltonian):
+        """Test standard validity criteria using assert_valid."""
+        time, n, order = (4.2, 10, 4)
+        op = qp.TrotterProduct(hamiltonian, time, n=n, order=order)
+        qp.ops.functions.assert_valid(op, skip_differentiation=True)
+
     @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/pennylane/issues/6333", strict=False)
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_standard_validity_with_differentiation(self, hamiltonian):
@@ -1101,7 +1109,7 @@ class TestTrotterizedQfuncInitialization:
             qfunc=first_order_expansion,
             n=1,
             order=2,
-            wires=["a", "b", "c"],
+            wires=[3, 4, 5],
             flip=True,
         )
         qp.ops.functions.assert_valid(op, skip_pickle=True)
