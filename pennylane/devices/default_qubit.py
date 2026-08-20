@@ -307,12 +307,7 @@ def _supports_adjoint(circuit, device_wires, device_name):
 
     try:
         program((circuit,))
-    except (
-        DecompositionUndefinedError,
-        DeviceError,
-        AttributeError,
-        ValueError,
-    ):
+    except (DecompositionUndefinedError, DeviceError, AttributeError):
         return False
     return True
 
