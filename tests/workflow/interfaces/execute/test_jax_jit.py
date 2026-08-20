@@ -786,11 +786,12 @@ class TestVectorValuedJIT:
                     qp.measurements.ProbabilityMP,
                     qp.measurements.StateMP,
                     qp.measurements.VarianceMP,
+                    qp.measurements.DensityMatrixMP,
                 ),
             )
             for r in ret
         ):
-            pytest.skip("Adjoint does not support probs")
+            pytest.skip("adjoint state differentiation is not supported in pl2")
 
         def cost(a, cache):
             with qp.queuing.AnnotatedQueue() as q:
