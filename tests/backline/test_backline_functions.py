@@ -84,7 +84,9 @@ class TestTritonDecoder:
             return str(scratch) if prefix == "pl_triton_decoder_" else real_mkdtemp(*args, **kwargs)
 
         def fake_build_so(*_args, **kwargs):
-            captured["names"] = [fn.fn.__name__ for fn in kwargs["constexpr"]["decoder_fns"]]
+            captured["qualnames"] = [
+                fn.fn.__qualname__ for fn in kwargs["constexpr"]["decoder_fns"]
+            ]
             return scratch / "fake.so", "fake_symbol"
 
         monkeypatch.setattr(frontend.tempfile, "mkdtemp", fake_mkdtemp)
@@ -99,7 +101,7 @@ class TestTritonDecoder:
         fn = triton_decoder((make_decoder(), make_decoder()), platform="cuda:80:32")
 
         assert isinstance(fn, CoprocessorFunction)
-        assert captured["names"] == ["decode_0", "decode_1"]
+        assert captured["qualnames"] == ["decode_0", "decode_1"]
 
     def test_rejects_already_jitted_functions(self):
         """The public API owns jitting and rejects pre-jitted kernels."""
@@ -145,7 +147,9 @@ class TestCssBpDecoder:
             return str(scratch) if prefix == "pl_triton_decoder_" else real_mkdtemp(*args, **kwargs)
 
         def fake_build_so(*_args, **kwargs):
-            captured["names"] = [fn.fn.__name__ for fn in kwargs["constexpr"]["decoder_fns"]]
+            captured["qualnames"] = [
+                fn.fn.__qualname__ for fn in kwargs["constexpr"]["decoder_fns"]
+            ]
             return scratch / "fake.so", "fake_symbol"
 
         monkeypatch.setattr(frontend.tempfile, "mkdtemp", fake_mkdtemp)
@@ -157,7 +161,7 @@ class TestCssBpDecoder:
         fn = css_bp_decoder(hx, hz, platform="cuda:80:32")
 
         assert isinstance(fn, CoprocessorFunction)
-        assert len(set(captured["names"])) == 2
+        assert len(set(captured["qualnames"])) == 2
 
 
 class TestTritonSubmoduleImportGuards:
