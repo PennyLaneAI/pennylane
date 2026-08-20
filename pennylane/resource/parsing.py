@@ -49,13 +49,14 @@ def _generate_display_name_for_symbolic_var(var: str, display_names: dict[str, s
 
 
 def _update_resource_dict(
-    result_dict: dict[str, Any], call_count: int | Expression, fn_resources: dict[str, Any]
+    result_dict: dict[str, Any], call_count: int | float | Expression, fn_resources: dict[str, Any]
 ) -> None:
     """Helper function to update a resource dictionary with the resources from a called function.
 
     Args:
         result_dict (dict[str, Any]): The resource dictionary to update
-        call_count (int | Expression): The number of times the called function is invoked
+        call_count (int | float | Expression): The number of times the called function is invoked.
+            For floating point values, this is the average number of times the function is called.
         fn_resources (dict[str, Any]): The resources of the called function
     """
     for label, value in fn_resources.items():
@@ -130,8 +131,8 @@ def _mlir_resources_to_specs_resources(
     for called_fn, call_count in itertools.chain(
         function_calls["static"].items(), function_calls["dynamic"].items()
     ):
-        if not isinstance(call_count, int):
-            # If there is no integer call count, we have to treat this as a symbolic variable
+        if not isinstance(call_count, (int, float)):
+            # If there is no numeric call count, we have to treat this as a symbolic variable
             var_name = _generate_display_name_for_symbolic_var(call_count, display_names)
 
             call_count = Expression({(var_name,): 1})
@@ -175,7 +176,7 @@ def _mlir_resources_to_specs_resources(
 
 def _handle_extended_fields(
     extended_fields: dict[str, Any],
-    call_count: int | Expression,
+    call_count: int | float | Expression,
     called_fn_resources: SpecsResources,
 ) -> None:
     """Helper function to handle extended fields in the resource data.
@@ -186,7 +187,8 @@ def _handle_extended_fields(
     Args:
         extended_fields (dict[str, Any]): The extended fields from the resource data (modified by function)
         called_fn_resources (SpecsResources): The resources of the called function
-        call_count (int | Expression): The number of times the called function is invoked
+        call_count (int | float | Expression): The number of times the called function is invoked.
+            For float values, this is the average number of times the function is invoked.
     """
 
     unknown_fields = []
