@@ -188,7 +188,7 @@ class MultiX(Operator2):
         matrix = math.ones((1, 1), like=interface)
         for i in range(len(wires)):
             numerical_bit = math.cast(bitstring[i], int)
-            local_matrix = (numerical_bit) * pauli_x + (1 - numerical_bit) * identity
+            local_matrix = numerical_bit * pauli_x + (1 - numerical_bit) * identity
             matrix = math.kron(matrix, local_matrix)
 
         return matrix
