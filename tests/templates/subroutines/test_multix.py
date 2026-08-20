@@ -68,7 +68,7 @@ def test_canonicalize_inputs_does_not_validate_or_cast():
     assert canonical_wires == Wires(("a", "b"))
 
 
-@pytest.mark.jax
+@pytest.mark.capture
 def test_standard_checks():
     """Runs the standard Operator2 validity checks for MultiX."""
     op = qp.MultiX([1, 0, 1], wires=[0, 1, 2])

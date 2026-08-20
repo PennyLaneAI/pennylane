@@ -116,7 +116,7 @@ class MultiX(Operator2):
             raise ValueError("The bitstring argument must be a one-dimensional array.")
 
         if len(wires) == 0:
-            raise ValueError("The wires arugment must contain at least one wire.")
+            raise ValueError("The wires argument must contain at least one wire.")
 
         bitstring_length = math.shape(bitstring)[0]
         if bitstring_length != len(wires):
