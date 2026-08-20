@@ -23,6 +23,7 @@ import copy
 import itertools
 import warnings
 from collections import defaultdict
+from math import ceil
 from typing import Any
 
 from .expression import Expression
@@ -223,26 +224,41 @@ def _handle_extended_fields(
 
 
 def _convert_to_subclass(res: SpecsResources) -> SpecsResources:
+    """
+    Converts a :class:`~.resource.SpecsResources` object to a subclass if possible.
+
+    Ensures that all counts are rounded up to the nearest integer, as required by the
+    :class:`~.resource.SpecsResources` class.
+
+    Args:
+        res (SpecsResources): The :class:`~.resource.SpecsResources` object to convert.
+
+    Returns:
+        SpecsResources: A :class:`~.resource.SpecsResources` object, potentially of
+            a subclass type if the original object contained the appropriate extra data.
+    """
     kwargs = {
-        "counts": res.counts,
-        "measurement_processes": res.measurement_processes,
-        "num_wires": res.num_wires,
-        "circuit_depth": res.circuit_depth,
+        "counts": {op: ceil(count) for op, count in res.counts.items()},
+        "measurement_processes": {
+            meas: ceil(count) for meas, count in res.measurement_processes.items()
+        },
+        "num_wires": ceil(res.num_wires) if res.num_wires is not None else None,
+        "circuit_depth": ceil(res.circuit_depth) if res.circuit_depth is not None else None,
     }
     # Copy the extra fields to avoid mutating the original object
     extra = copy.deepcopy(res.extra)
 
     if "pbc_depth" in extra:
         pbc_depth = extra.pop("pbc_depth")
-        kwargs["any_commuting_depth"] = pbc_depth.pop("any_commuting_depth")
-        kwargs["qubit_disjoint_depth"] = pbc_depth.pop("qubit_disjoint_depth")
+        kwargs["any_commuting_depth"] = ceil(pbc_depth.pop("any_commuting_depth"))
+        kwargs["qubit_disjoint_depth"] = ceil(pbc_depth.pop("qubit_disjoint_depth"))
         # Pylint gets confused by the dynamic updates to kwargs here
         # pylint: disable=missing-kwoa
         return PBCSpecsResources(
             **kwargs,
             extra=extra,
         )
-    return res
+    return SpecsResources(**kwargs, extra=extra)
 
 
 def parse_resources_json(

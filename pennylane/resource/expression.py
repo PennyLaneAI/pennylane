@@ -17,6 +17,7 @@ Helper classes and functions for symbolic resource expressions.
 
 from collections import defaultdict
 from functools import lru_cache
+from math import ceil, floor, trunc
 from typing import Union
 
 
@@ -284,3 +285,38 @@ class Expression:
 
     def __radd__(self, other) -> Union["Expression", int]:
         return self.__add__(other)
+
+    def _builtin_to_int_helper(self, func) -> Union["Expression", int]:
+        """Helper function to implement floor, ceil, round, and trunc for Expression objects.
+
+        Since the contents of the object are symbolic, it is not possible to fully cast to an int.
+        Instead, the chosen function is applied only to the constant term of the expression, if it
+        exists. If the expression has no constant term, the function has no effect.
+
+        Args:
+            func (Callable[[int], int]): The function to apply to the constant term.
+
+        Returns:
+            Expression | int: An int if the result is a constant, otherwise a
+            :class:`~.resource.Expression` instance where the constant term is integral.
+        """
+        if () not in self._data:
+            return self
+
+        new_data = self._data.copy()
+        new_data[()] = func(new_data[()])
+        return _cast_if_constant(
+            new_data, vars=self._vars, skip_copy=True, skip_normalization=False
+        )
+
+    def __ceil__(self) -> Union["Expression", int]:
+        return self._builtin_to_int_helper(ceil)
+
+    def __floor__(self) -> Union["Expression", int]:
+        return self._builtin_to_int_helper(floor)
+
+    def __round__(self) -> Union["Expression", int]:
+        return self._builtin_to_int_helper(round)
+
+    def __trunc__(self) -> Union["Expression", int]:
+        return self._builtin_to_int_helper(trunc)
