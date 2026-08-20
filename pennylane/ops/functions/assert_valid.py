@@ -320,7 +320,8 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
             tape.operations.insert(0, qp.Projector([0] * len(work_wires), wires=work_wires))
 
         op_matrix = op.matrix(wire_order=all_wires)
-        decomp_matrix = qp.matrix(tape, wire_order=all_wires)
+        with qp.capture.pause():
+            decomp_matrix = qp.matrix(tape, wire_order=all_wires)
         assert qp.math.allclose(
             op_matrix, decomp_matrix
         ), "decomposition must produce the same matrix as the operator."

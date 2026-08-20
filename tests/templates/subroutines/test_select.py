@@ -34,7 +34,8 @@ from pennylane.templates.subroutines.select import (
 from pennylane.typing import Bool, Wire
 
 
-@pytest.mark.usefixtures("enable_and_disable_capture")
+# address capture compatibility of select as we migrate it [sc-127463]
+@pytest.mark.usefixtures("disable_capture")
 @pytest.mark.parametrize(
     "num_ops, num_controls",
     [(0, 1), (1, 1), (2, 1), (1, 2), (4, 2), (3, 4), (10, 4), (15, 4), (16, 4)],

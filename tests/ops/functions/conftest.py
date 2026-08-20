@@ -56,9 +56,11 @@ _INSTANCES_TO_TEST = [
     (qp.GlobalPhase(1.1), {"skip_differentiation": True}),
     (LabelledOp(qp.X(0), "my-x"), {}),
     (MarkedOp(qp.X(0), "my-x"), {}),
-    (qp.ops.MidMeasure(wires=0), {}),
-    (qp.ops.PauliMeasure("X", wires=0), {}),
-    (ChangeOpBasis(qp.T(0), qp.PauliZ(0)), {}),
+    # MidMeasure and PauliMeasure are only operators in the tape-based pipeline.
+    (qp.ops.MidMeasure(wires=0), {"skip_capture": True}),
+    (qp.ops.PauliMeasure("X", wires=0), {"skip_capture": True}),
+    # ChangeOpBasis as an operator is only used in the tape-based pipeline. It is unrolled when capture is enabled
+    (ChangeOpBasis(qp.T(0), qp.PauliZ(0)), {"skip_capture": True}),
     (qp.sum(qp.PauliX(0), qp.PauliZ(0)), {}),
     (qp.sum(qp.X(0), qp.X(0), qp.Z(0), qp.Z(0)), {}),
     (qp.BasisState([1], wires=[0]), {"skip_differentiation": True}),
@@ -69,7 +71,7 @@ _INSTANCES_TO_TEST = [
     ),
     (
         qp.QubitChannel([np.array([[1, 0], [0, 0.8]]), np.array([[0, 0.6], [0, 0]])], wires=0),
-        {"skip_differentiation": True},
+        {"skip_differentiation": True, "skip_capture": True},
     ),
     # Skipping bind_new_parameters test for `MultiControlledX` because it does not make sense for control values
     (qp.MultiControlledX(wires=[0, 1]), {"skip_bind_new_parameters": True}),
