@@ -196,7 +196,7 @@ class QubitUnitary(Operator2):
 
     @staticmethod
     def compute_matrix(
-        U: TensorLike, wires: WiresLike, unitary_check: bool = False
+        U: TensorLike, wires: WiresLike | None = None, unitary_check: bool = False
     ):  # pylint: disable=unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
