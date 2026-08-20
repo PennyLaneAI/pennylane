@@ -246,12 +246,7 @@ class ChangeOpBasis(CompositeOp2):
     .. seealso:: :func:`~.change_op_basis`
     """
 
-    def __init__(
-        self,
-        compute_op: Operator,
-        target_op: Operator,
-        uncompute_op: Operator | None = None,
-    ):
+    def __init__(self, compute_op: Operator, target_op: Operator, uncompute_op: Operator = None):
         if uncompute_op is None:
             uncompute_op = adjoint(compute_op)
         super().__init__((uncompute_op, target_op, compute_op))
@@ -318,7 +313,7 @@ class ChangeOpBasis(CompositeOp2):
         yields false, which ARE hermitian. So a false result only implies that a more explicit check
         must be performed.
         """
-        return self.target_op.is_verified_hermitian
+        return self[1].is_verified_hermitian
 
     def adjoint(self):
         return ChangeOpBasis(*(adjoint(factor, lazy=False) for factor in self))

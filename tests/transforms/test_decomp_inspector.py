@@ -158,12 +158,6 @@ class TestInspectDecompGraph:
             </details>
             """).strip()
 
-    @pytest.mark.xfail(
-        reason="The expected gate counts pin one of several equal-cost graph solutions, and "
-        "the winner depends on graph node insertion order; porting ChangeOpBasis to Operator2 "
-        "flipped an equal-cost tie (weighted costs unchanged). Re-enable once the decomposition "
-        "graph selects among equal-cost decompositions deterministically."
-    )
     def test_work_wires_available(self):
         """Tests that the correct output is produced when there are available work wires."""
 
@@ -280,7 +274,7 @@ class TestInspectDecompGraph:
              [ 5.34910791e-34+0.j          9.23879533e-01-0.38268343j]]
             Estimated First-Level Expansion Gates: {Adjoint(QubitUnitary(num_wires=1)): 2, CNOT: 2, Controlled(GlobalPhase, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool, weak_type=True)): 1, Hadamard: 2, MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool, weak_type=True)): 2, PauliX: 3, QubitUnitary(num_wires=1): 2}
             Actual First-Level Expansion Gates: {Adjoint(QubitUnitary(num_wires=1)): 2, CNOT: 2, Controlled(GlobalPhase, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, Hadamard: 2, MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool)): 2, QubitUnitary(num_wires=1): 2}
-            Full Expansion Gates: {CNOT: 24, GlobalPhase: 37, RX: 16, RY: 10, RZ: 31}
+            Full Expansion Gates: {CNOT: 24, GlobalPhase: 37, RX: 18, RY: 8, RZ: 31}
             Weighted Cost: 81.0
 
             Decomposition 1 (name: one_borrowed_worker)
@@ -295,7 +289,7 @@ class TestInspectDecompGraph:
             Full Expansion Gates: {CNOT: 24, GlobalPhase: 39, RX: 3, RY: 8, RZ: 36}
             Weighted Cost: 71.0
 
-            Decomposition 2 (name: one_zeroed_worker)
+            CHOSEN: Decomposition 2 (name: one_zeroed_worker)
             0: ───────╭●─────●╮────┤  
             1: ───────├●─────●┤────┤  
             2: ───────│──╭●───│────┤  
@@ -325,7 +319,7 @@ class TestInspectDecompGraph:
             Full Expansion Gates: {CNOT: 24, GlobalPhase: 39, RX: 3, RY: 8, RZ: 36}
             Weighted Cost: 71.0
 
-            CHOSEN: Decomposition 6 (name: many_zeroed_workers)
+            Decomposition 6 (name: many_zeroed_workers)
             0: ──────────╭●────────┤  
             1: ───────╭●─│───●╮────┤  
             2: ───────├●─│───●┤────┤  
