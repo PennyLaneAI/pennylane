@@ -686,6 +686,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* :class:`~.GlobalPhase` no longer accepts the `wires` argument in order to mirror its MLIR lowered operation.
+  [(#9992)](https://github.com/PennyLaneAI/pennylane/pull/9992)
+
 * Renamed the `data` argument of :class:`~pennylane.QROM`, :class:`~pennylane.BBQRAM`, :class:`~pennylane.HybridQRAM`,
   and :class:`~pennylane.SelectOnlyQRAM` to `bitstrings`.
   [(#10010)](https://github.com/PennyLaneAI/pennylane/pull/10010)
