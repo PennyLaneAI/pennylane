@@ -41,7 +41,7 @@ from pennylane.ops.op_math.decompositions.unitary_decompositions import (
     zxz_decomp_rule,
     zyz_decomp_rule,
 )
-from pennylane.typing import Complex, FlatPytree, TensorLike, Wire
+from pennylane.typing import Complex, FlatPytree, Float, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 _walsh_hadamard_matrix = np.array([[1, 1], [1, -1]]) / 2
@@ -271,7 +271,7 @@ class QubitUnitary(Operation):
         [RZ(3.141..., wires=[0]),
         RY(np.float64(1.570...), wires=[0]),
         RZ(0.0, wires=[0]),
-        GlobalPhase(np.float64(-1.570...), wires=[])]
+        GlobalPhase(-1.570..., wires=[])]
 
         """
         # Decomposes arbitrary single-qubit unitaries as Rot gates (RZ - RY - RZ format),
@@ -563,7 +563,12 @@ def _diagonal_qu_resource(D, wires):
 
     return {
         DiagonalQubitUnitary(Complex[2 ** (num_wires - 1)], wires=Wire[num_wires - 1]): 1,
-        resource_rep(qp.SelectPauliRot, num_wires=num_wires, rot_axis="Z"): 1,
+        qp.SelectPauliRot(
+            Float[2 ** (num_wires - 1)],
+            control_wires=Wire[num_wires - 1],
+            target_wire=Wire[1],
+            rot_axis="Z",
+        ): 1,
     }
 
 
@@ -573,7 +578,7 @@ def _diagonal_qu_decomp(D, wires):
     diff = angles[..., 1::2] - angles[..., ::2]
     mean = (angles[..., ::2] + angles[..., 1::2]) / 2
     if len(wires) == 1:
-        qp.GlobalPhase(-qp.math.squeeze(mean, axis=-1), wires=wires)
+        qp.GlobalPhase(-qp.math.squeeze(mean, axis=-1))
         qp.RZ(qp.math.squeeze(diff, axis=-1), wires=wires)
     else:
         qp.DiagonalQubitUnitary(qp.math.exp(1j * mean), wires=wires[:-1])
@@ -583,7 +588,14 @@ def _diagonal_qu_decomp(D, wires):
 # pylint: disable=unused-argument
 def _diagonal_mux_on_aux_resources(D, wires):
     num_wires = len(wires)
-    return {resource_rep(qp.SelectPauliRot, num_wires=num_wires + 1, rot_axis="Z"): 1}
+    return {
+        qp.SelectPauliRot(
+            Float[2**num_wires],
+            control_wires=Wire[num_wires],
+            target_wire=Wire[1],
+            rot_axis="Z",
+        ): 1
+    }
 
 
 @register_resources(_diagonal_mux_on_aux_resources, work_wires={"zeroed": 1})

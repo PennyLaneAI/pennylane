@@ -20,17 +20,19 @@ import re
 import pytest
 
 import pennylane as qp
+from pennylane.measurements import ExpectationMP
 from pennylane.pytrees import PyTreeStructure, flatten, leaf, register_pytree, unflatten
 from pennylane.pytrees.pytrees import get_typename, get_typename_type
+from pennylane.wires import Wires
 
 
 def test_structure_repr_str():
     """Test the repr of the structure class."""
     op = qp.RX(0.1, wires=0)
     _, structure = qp.pytrees.flatten(op)
-    expected = "PyTreeStructure(RX, (Wires([0]), ()), (PyTreeStructure(),))"
+    expected = "PyTreeStructure(RX, (), (PyTreeStructure(list, None, (PyTreeStructure(),)), PyTreeStructure(list, None, (PyTreeStructure(Wires, (), (PyTreeStructure(),)),)), PyTreeStructure(list, None, ())))"
     assert repr(structure) == expected
-    expected_str = "PyTree(RX, (Wires([0]), ()), (Leaf,))"
+    expected_str = "PyTree(RX, (), (PyTree(list, None, (Leaf,)), PyTree(list, None, (PyTree(Wires, (), (Leaf,)),)), PyTree(list, None, ())))"
     assert str(structure) == expected_str
 
 
@@ -117,33 +119,41 @@ def test_nested_pl_object():
     )
 
     data, structure = flatten(tape)
-    assert data == [0.1, 2, None]
+    assert data == [0.1, 0, 2, 0, None]
 
-    wires0 = qp.wires.Wires(0)
-    op_structure = PyTreeStructure(
-        tape[0].__class__, (), (PyTreeStructure(qp.RX, (wires0, ()), (leaf,)),)
-    )
-    list_op_struct = PyTreeStructure(list, None, (op_structure,))
+    list_struct = PyTreeStructure(list, None, ())
+    leaf_struct = PyTreeStructure(list, None, (leaf,))
+    wire_struct = PyTreeStructure(Wires, (), (leaf,))
+    wire_args_struct = PyTreeStructure(list, None, (wire_struct,))
 
-    sprod_structure = PyTreeStructure(
-        qp.ops.SProd, (), (leaf, PyTreeStructure(qp.X, (wires0, ()), ()))
+    rx_struct = PyTreeStructure(qp.RX, (), (leaf_struct, wire_args_struct, list_struct))
+    adjoint_rx_struct = PyTreeStructure(
+        qp.ops.Adjoint2,
+        (),
+        (
+            list_struct,
+            list_struct,
+            PyTreeStructure(list, None, (rx_struct,)),
+        ),
     )
-    meas_structure = PyTreeStructure(
-        qp.measurements.ExpectationMP, (("wires", None),), (sprod_structure, leaf)
-    )
-    list_meas_struct = PyTreeStructure(list, None, (meas_structure,))
-    tape_structure = PyTreeStructure(
+    operations_struct = PyTreeStructure(list, None, (adjoint_rx_struct,))
+
+    paulix_struct = PyTreeStructure(qp.PauliX, (), (list_struct, wire_args_struct, list_struct))
+    sprod_struct = PyTreeStructure(qp.ops.SProd, (), (leaf, paulix_struct))
+    expval_struct = PyTreeStructure(ExpectationMP, (("wires", None),), (sprod_struct, leaf))
+    measurements_struct = PyTreeStructure(list, None, (expval_struct,))
+
+    tape_struct = PyTreeStructure(
         qp.tape.QuantumScript,
         (tape.shots, tape.trainable_params),
-        (list_op_struct, list_meas_struct),
+        (operations_struct, measurements_struct),
     )
+    assert structure == tape_struct
 
-    assert structure == tape_structure
-
-    new_tape = unflatten([3, 4, None], structure)
+    new_tape = unflatten([3, 2, 4, 1, None], structure)
     expected_new_tape = qp.tape.QuantumScript(
-        [qp.adjoint(qp.RX(3, wires=0))],
-        [qp.expval(4 * qp.X(0))],
+        [qp.adjoint(qp.RX(3, wires=2))],
+        [qp.expval(4 * qp.X(1))],
         shots=50,
         trainable_params=(0, 1),
     )

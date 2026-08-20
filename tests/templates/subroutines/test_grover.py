@@ -55,11 +55,11 @@ def test_work_wires():
 
     op = qp.GroverOperator(wires=wires, work_wires=work_wire)
 
-    assert op.hyperparameters["work_wires"] == work_wire
+    assert op.work_wires == work_wire
 
     ops = op.decomposition()
 
-    assert ops[2].hyperparameters["work_wires"] == work_wire
+    assert ops[2].work_wires == work_wire
 
 
 def test_work_wires_None():
@@ -201,7 +201,8 @@ def test_expand(wires):
 
     for actual_op, expected_class, expected_wire in zip(decomp, decomp_3wires, expected_wires):
         assert isinstance(actual_op, expected_class)
-        assert actual_op.wires == qp.wires.Wires(expected_wire)
+        if expected_class is not qp.GlobalPhase:
+            assert actual_op.wires == qp.wires.Wires(expected_wire)
 
 
 @pytest.mark.capture

@@ -203,7 +203,8 @@ def assert_equal(
     >>> qp.assert_equal(op1, op2)
     Traceback (most recent call last):
         ...
-    AssertionError: op1 and op2 have different values. Got (array(0.12),) and (array(1.23),)
+    AssertionError: op1 and op2 have different values for 'phi'.
+    Got 0.12 and 1.23.
 
     >>> h1 = qp.Hamiltonian([1, 2], [qp.PauliX(0), qp.PauliY(1)])
     >>> h2 = qp.Hamiltonian([1, 1], [qp.PauliX(0), qp.PauliY(1)])
@@ -389,8 +390,9 @@ def _equal_operator2(
     atol=1e-9,
 ):
     """Check equality between Operator2 instances."""
+
     if type(op1) is not type(op2):
-        return f"op1 and op2 are of different types. Got {type(op1)} and {type(op2)}."
+        return f"op1 and op2 have different types. Got {type(op1)} and {type(op2)}."
 
     # Check static arguments
     for (sname, sval1), (_, sval2) in zip(

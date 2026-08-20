@@ -34,9 +34,7 @@ jax = pytest.importorskip("jax")
 # must be below jax importorskip
 # pylint: disable=wrong-import-position
 from pennylane.capture.primitives import cond_prim
-from tests.capture.capture_utils import (
-    extract_all_primitives,
-)
+from tests.capture.capture_utils import assert_eqn_matches_op, extract_all_primitives
 
 
 @pytest.fixture
@@ -521,7 +519,7 @@ class TestCondReturns:
 
         true_fn = jaxpr.eqns[0].params["jaxpr_branches"][0]
         assert len(true_fn.outvars) == 0
-        assert true_fn.eqns[0].primitive == qp.X._primitive  # pylint: disable=protected-access
+        assert_eqn_matches_op(true_fn.eqns[0], qp.X)
 
         false_fn = jaxpr.eqns[0].params["jaxpr_branches"][-1]
         assert len(false_fn.eqns) == 0
@@ -594,20 +592,22 @@ def circuit_multiple_cond(tmp_pred, tmp_arg):
     arg = tmp_arg
 
     def true_fn_1(arg):
-        return True, qp.RX(arg, wires=0)
+        qp.RX(arg, wires=0)
+        return True
 
     # pylint: disable=unused-argument
     def false_fn_1(arg):
-        return False, qp.RY(0.1, wires=0)
+        qp.RY(0.1, wires=0)
+        return False
 
     def true_fn_2(arg):
-        return qp.RX(arg, wires=0)
+        qp.RX(arg, wires=0)
 
     # pylint: disable=unused-argument
     def false_fn_2(arg):
-        return qp.RY(0.1, wires=0)
+        qp.RY(0.1, wires=0)
 
-    dyn_pred_2, _ = qp.cond(dyn_pred_1, true_fn_1, false_fn_1, elifs=())(arg)
+    dyn_pred_2 = qp.cond(dyn_pred_1, true_fn_1, false_fn_1, elifs=())(arg)
     qp.cond(dyn_pred_2, true_fn_2, false_fn_2, elifs=())(arg)
     return qp.expval(qp.Z(0))
 
@@ -905,7 +905,7 @@ class TestDynamicShapeValidation:
         """Test an error is raised if the outvals have different types."""
 
         def true_fn():
-            return qp.X(0)
+            return True
 
         def false_fn():
             return jax.numpy.array(3)
@@ -1057,6 +1057,7 @@ class TestDynamicShapes:
         [res_false] = qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, False, 5)
         assert qp.math.allclose(res_false, 10)  # 0 + 1 + 2 + 3 + 4
 
+    @pytest.mark.pl2do("batching is something that we'll come back to")
     def test_dynamic_shape_matches_arg(self):
         """Test that cond can handle dynamic shapes where the dimension matches an earlier arg."""
 

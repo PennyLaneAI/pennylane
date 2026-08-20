@@ -14,12 +14,13 @@
 
 """Tests the decomposition rules defined for symbolic operations other than controlled."""
 
+import warnings
 from textwrap import dedent
 
 import pytest
 
 import pennylane as qp
-from pennylane.core import Operator1, queuing
+from pennylane.core import Operator, Operator1, queuing
 from pennylane.core.operator import abstractify
 from pennylane.decomposition.decomposition_rule import (
     _fix_decomp,
@@ -545,13 +546,7 @@ def _custom_resource(num_wires):
         qp.X: 1,
         qp.CNOT: 1,
         qp.Toffoli: 1,
-        qp.resource_rep(
-            qp.MultiControlledX,
-            num_control_wires=3,
-            num_zero_control_values=1,
-            num_work_wires=1,
-            work_wire_type="zeroed",
-        ): 1,
+        qp.MultiControlledX(Wire[4], work_wires=Wire[1], work_wire_type="zeroed"): 1,
         qp.RX: 1,
         qp.Rot: 1,
         qp.CRZ: 1,
@@ -633,27 +628,9 @@ class TestControlledDecomposition:
         assert actual_resources == Resources(
             {
                 abstractify(qp.CNOT): 1,
-                qp.resource_rep(
-                    qp.MultiControlledX,
-                    num_control_wires=2,
-                    num_zero_control_values=0,
-                    num_work_wires=1,
-                    work_wire_type="borrowed",
-                ): 1,
-                qp.resource_rep(
-                    qp.MultiControlledX,
-                    num_control_wires=3,
-                    num_zero_control_values=0,
-                    num_work_wires=1,
-                    work_wire_type="borrowed",
-                ): 1,
-                qp.resource_rep(
-                    qp.MultiControlledX,
-                    num_control_wires=4,
-                    num_zero_control_values=1,
-                    num_work_wires=2,
-                    work_wire_type="borrowed",
-                ): 1,
+                qp.MultiControlledX(Wire[3], work_wires=Wire[1]): 1,
+                qp.MultiControlledX(Wire[4], work_wires=Wire[1]): 1,
+                qp.MultiControlledX(Wire[5], work_wires=Wire[2]): 1,
                 abstractify(qp.CRX): 1,
                 abstractify(qp.CRot): 1,
                 _ctrl_abstract(qp.RZ, Wire[2], Wire[1]): 1,
@@ -778,34 +755,10 @@ class TestControlledDecomposition:
         assert actual_resources == Resources(
             {
                 abstractify(qp.X): 2,
-                qp.resource_rep(
-                    qp.MultiControlledX,
-                    num_control_wires=2,
-                    num_zero_control_values=0,
-                    num_work_wires=1,
-                    work_wire_type="borrowed",
-                ): 1,
-                qp.resource_rep(
-                    qp.MultiControlledX,
-                    num_control_wires=3,
-                    num_zero_control_values=0,
-                    num_work_wires=1,
-                    work_wire_type="borrowed",
-                ): 1,
-                qp.resource_rep(
-                    qp.MultiControlledX,
-                    num_control_wires=4,
-                    num_zero_control_values=0,
-                    num_work_wires=1,
-                    work_wire_type="borrowed",
-                ): 1,
-                qp.resource_rep(
-                    qp.MultiControlledX,
-                    num_control_wires=5,
-                    num_zero_control_values=1,
-                    num_work_wires=2,
-                    work_wire_type="borrowed",
-                ): 1,
+                qp.MultiControlledX(Wire[3], work_wires=Wire[1]): 1,
+                qp.MultiControlledX(Wire[4], work_wires=Wire[1]): 1,
+                qp.MultiControlledX(Wire[5], work_wires=Wire[1]): 1,
+                qp.MultiControlledX(Wire[6], work_wires=Wire[2]): 1,
                 _ctrl_abstract(qp.RX, Wire[2], Wire[1]): 1,
                 _ctrl_abstract(qp.Rot, Wire[2], Wire[1]): 1,
                 _ctrl_abstract(qp.RZ, Wire[3], Wire[1]): 1,
@@ -889,34 +842,10 @@ class TestControlledDecomposition:
         assert actual_resources == Resources(
             {
                 abstractify(qp.X): 4,
-                qp.resource_rep(
-                    qp.MultiControlledX,
-                    num_control_wires=3,
-                    num_zero_control_values=0,
-                    num_work_wires=1,
-                    work_wire_type="borrowed",
-                ): 1,
-                qp.resource_rep(
-                    qp.MultiControlledX,
-                    num_control_wires=4,
-                    num_zero_control_values=0,
-                    num_work_wires=1,
-                    work_wire_type="borrowed",
-                ): 1,
-                qp.resource_rep(
-                    qp.MultiControlledX,
-                    num_control_wires=5,
-                    num_zero_control_values=0,
-                    num_work_wires=1,
-                    work_wire_type="borrowed",
-                ): 1,
-                qp.resource_rep(
-                    qp.MultiControlledX,
-                    num_control_wires=6,
-                    num_zero_control_values=1,
-                    num_work_wires=2,
-                    work_wire_type="borrowed",
-                ): 1,
+                qp.MultiControlledX(Wire[4], work_wires=Wire[1]): 1,
+                qp.MultiControlledX(Wire[5], work_wires=Wire[1]): 1,
+                qp.MultiControlledX(Wire[6], work_wires=Wire[1]): 1,
+                qp.MultiControlledX(Wire[7], work_wires=Wire[2]): 1,
                 _ctrl_abstract(qp.RX, Wire[3], Wire[1]): 1,
                 _ctrl_abstract(qp.Rot, Wire[3], Wire[1]): 1,
                 _ctrl_abstract(qp.RZ, Wire[4], Wire[1]): 1,
@@ -1143,6 +1072,46 @@ class TestControlledDecomposition:
         specs = qp.specs(circuit, level="device")([1, 1, 0])
         assert specs.resources.quantum_operations == {"CNOT": 3, "Hadamard": 2, "PauliX": 2}
 
+    @pytest.mark.capture
+    def test_flip_zero_control_capture(self):
+        """Tests flip_zero_control is capture-compatible: the ``_x_flips`` for-loop indexes the
+        control wires with a traced loop variable, which requires the wires to be promoted to a
+        jax array so structured capture does not raise ``TracerIntegerConversionError``."""
+
+        from pennylane.exceptions import CaptureWarning
+        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+
+        @qp.register_resources({qp.CNOT: 3, qp.H: 2})
+        def _custom_controlled_rule(base, control_wires, **_):
+            qp.CNOT(control_wires[:2])
+            qp.H(control_wires[2])
+            qp.CNOT([control_wires[-1], base.wires[0]])
+            qp.H(control_wires[2])
+            qp.CNOT(control_wires[:2])
+
+        custom_rule = flip_zero_control2(_custom_controlled_rule, "custom_rule")
+        op = NonParametricOp(wires=[0])
+
+        def circuit():
+            custom_rule(base=op, control_wires=[1, 2, 3], control_values=[1, 1, 0])
+
+        # Structured capture must succeed (no fallback to an unrolled Python loop).
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", CaptureWarning)
+            plxpr = qp.capture.make_plxpr(circuit)()
+
+        collector = CollectOpsandMeas()
+        collector.eval(plxpr.jaxpr, plxpr.consts)
+        assert collector.state["ops"] == [
+            qp.X(3),
+            qp.CNOT([1, 2]),
+            qp.H(3),
+            qp.CNOT([3, 0]),
+            qp.H(3),
+            qp.CNOT([1, 2]),
+            qp.X(3),
+        ]
+
     @pytest.mark.unit
     def test_controlled_decomp_with_work_wire(self):
         """Tests the controlled decomposition with a single work wire (Lemma 7.11 from https://arxiv.org/pdf/quant-ph/9503016)."""
@@ -1194,16 +1163,22 @@ class TestControlledDecomposition:
     def test_controlled_decomp_with_work_wire_not_applicable(self):
         """Tests that the controlled_decomp_with_work_wire is not applicable sometimes."""
 
-        op = qp.ctrl(qp.RX(0.5, wires=0), control=[1], control_values=[0], work_wires=[3])
+        op = qp.ctrl(DummyHadamard(wires=0), control=[1], control_values=[0], work_wires=[3])
         assert not ctrl_single_work_wire.is_applicable(**op.resource_params)
 
-        op = qp.ctrl(qp.RX(0.5, wires=0), control=[1, 2])
+        op = qp.ctrl(DummyHadamard(wires=0), control=[1, 2])
         assert not ctrl_single_work_wire.is_applicable(**op.resource_params)
 
     def test_decompose_to_controlled_unitary(self):
         """Tests the decomposition to controlled qubit unitary"""
 
-        op = qp.ctrl(qp.Rot(0.1, 0.2, 0.3, wires=0), control=[1, 2, 3], work_wires=[4, 5])
+        class CustomRot(Operator):  # pylint: disable=too-few-public-methods
+
+            @staticmethod
+            def compute_matrix(*params):
+                return qp.Rot.compute_matrix(*params)
+
+        op = qp.ctrl(CustomRot(0.1, 0.2, 0.3, wires=0), control=[1, 2, 3], work_wires=[4, 5])
         with queuing.AnnotatedQueue() as q:
             to_controlled_qubit_unitary(*op.parameters, wires=op.wires, **op.hyperparameters)
 
