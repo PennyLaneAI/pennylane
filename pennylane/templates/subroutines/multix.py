@@ -185,11 +185,15 @@ class MultiX(Operator2):
         identity = math.eye(2, like=interface)
         pauli_x = math.asarray(PauliX.compute_matrix(), like=interface)
 
-        matrix = math.ones((1, 1), like=interface)
-        for i in range(len(wires)):
+        def _local_matrix(i):
+            # helper function for computing the i-th local matrix according to the bitstring
             numerical_bit = math.cast(bitstring[i], int)
-            local_matrix = numerical_bit * pauli_x + (1 - numerical_bit) * identity
-            matrix = math.kron(matrix, local_matrix)
+            return numerical_bit * pauli_x + (1 - numerical_bit) * identity
+
+        # Here we require len(bitstring) >= 1 as validated on input above
+        matrix = _local_matrix(0)
+        for i in range(1, len(wires)):
+            matrix = math.kron(matrix, _local_matrix(i))
 
         return matrix
 
@@ -214,11 +218,15 @@ class MultiX(Operator2):
         identity_eigvals = math.asarray([1, 1], like=interface)
         pauli_x_eigvals = math.asarray([1, -1], like=interface)
 
-        eigvals = math.ones(1, like=interface)
-        for i in range(len(wires)):
+        def _local_eigvals(i):
+            # helper function for computing the i-th local eigvals according to the bitstring
             numerical_bit = math.cast(bitstring[i], int)
-            local_eigvals = numerical_bit * pauli_x_eigvals + (1 - numerical_bit) * identity_eigvals
-            eigvals = math.kron(eigvals, local_eigvals)
+            return numerical_bit * pauli_x_eigvals + (1 - numerical_bit) * identity_eigvals
+
+        # Here we require len(bitstring) >= 1 as validated on input above
+        eigvals = _local_eigvals(0)
+        for i in range(1, len(wires)):
+            eigvals = math.kron(eigvals, _local_eigvals(i))
 
         return eigvals
 
