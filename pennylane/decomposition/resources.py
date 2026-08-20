@@ -352,13 +352,17 @@ def change_op_basis_resource_rep(
         uncompute_op: the compressed resource representation of the uncompute operator
 
     """
+    # pylint: disable=import-outside-toplevel
+    from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+
     compute_op = abstractify(compute_op)
     target_op = abstractify(target_op)
-    if uncompute_op is not None:
+    if uncompute_op is None:
+        uncompute_op = _adjoint_abstract(compute_op)
+    else:
         uncompute_op = abstractify(uncompute_op)
-    abstract_op = qp.ops.ChangeOpBasis.__new__(qp.ops.ChangeOpBasis)
-    abstract_op.__abstract_init__(compute_op, target_op, uncompute_op)
-    return abstract_op
+    with qp.capture.pause(), qp.QueuingManager.stop_recording():
+        return qp.ops.ChangeOpBasis(compute_op, target_op, uncompute_op)
 
 
 def pow_resource_rep(base_class, base_params, z):
