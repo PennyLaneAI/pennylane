@@ -203,7 +203,7 @@ class TestOneBodyWalk:
 
     @pytest.mark.parametrize("norbs", [2, 3])
     def test_negative_definite_spectrum(self, norbs):
-        """Test that a negative spectrum works: sign lives in SEL, magnitude in PREP."""
+        """Test a negative spectrum: signs phase the index register, magnitude in PREP."""
         rng = np.random.default_rng(1000 * norbs)
         a = rng.standard_normal((norbs, norbs))
         op_matrix = (a + a.T) / 2
@@ -221,7 +221,7 @@ class TestOneBodyWalk:
         assert np.allclose(got, _reference_block_matrix(op_matrix, system, 2) @ state, atol=1e-8)
 
     def test_singular_matrix(self):
-        """Test that a zero eigenvalue doesn't produce a non-unitary ``s_prod(0, Z)`` in SEL."""
+        """Test that a zero eigenvalue is encoded correctly: zero weight and no sign phase."""
         op_matrix = np.array([[1.0, 1.0], [1.0, 1.0]])
 
         req = one_body_walk_wires(2, 2)

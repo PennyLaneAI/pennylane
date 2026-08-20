@@ -52,14 +52,19 @@ def one_body_walk(op_matrix, alias_sampling_precision, prep_wires, system_wires,
 
     .. math::
 
-        \hat{O} = \sum_{pq,\sigma} o_{pq}\, \hat c^\dagger_{p\sigma} \hat c_{q\sigma}
-        - \Big( \sum_p \mu_p \Big) \hat 1
-        = -\sum_{p,\sigma} \frac{\mu_p}{2}\, \hat V^\dagger \hat Z_{p\sigma} \hat V ,
+        \begin{align}
+            \hat{O} &= \sum_{pq,\sigma} o_{pq}\, \hat c^\dagger_{p\sigma} \hat c_{q\sigma}
+            - \Big( \sum_p \mu_p \Big) \hat 1 \\
+            &= \sum_{p,\sigma} \mu_p\, \hat V^\dagger \hat n_{p\sigma} \hat V
+            - \Big( \sum_p \mu_p \Big) \hat 1 \\
+            &= -\sum_{p,\sigma} \frac{\mu_p}{2}\, \hat V^\dagger \hat Z_{p\sigma} \hat V ,
+        \end{align}
 
-    where :math:`o_{pq} = V \operatorname{diag}(\mu) V^T` and :math:`\hat V` is the orbital
-    rotation diagonalizing ``op_matrix``. The minus sign in the Pauli form is the Jordan-Wigner
-    convention used in PennyLane, :math:`\hat n_{p\sigma} = (\hat 1 - \hat Z_{p\sigma})/2`; it
-    cancels against the sign of :math:`\hat{\mathcal{R}}`.
+    where :math:`o_{pq} = V \operatorname{diag}(\mu) V^T`, :math:`\hat V` is the orbital rotation
+    diagonalizing ``op_matrix``, and :math:`\hat n_{p\sigma} = (\hat 1 - \hat Z_{p\sigma})/2` is
+    the occupation convention shared with ``qp.fermi.jordan_wigner`` and ``qp.qchem.hf_state``,
+    in which :math:`|1\rangle` is occupied. The paper's version of the last line carries
+    :math:`+\mu_p/2` because it uses :math:`\hat n = (\hat 1 + \hat z)/2` instead.
 
     The normalization of the block-encoding is :math:`\lambda = \sum_p |\mu_p|`.
 
@@ -121,14 +126,34 @@ def one_body_walk(op_matrix, alias_sampling_precision, prep_wires, system_wires,
         work_wires=work_wires,
     )
     qp.Hadamard(spin_wire)
-    # SEL = V . (signed multiplexed Z_{p,sigma}) . V^dagger
+    # SEL = V . (multiplexed Z_{p,sigma}) . V^dagger, with the signs of mu_p phased in first
     for s in (0, 1):
         qp.BasisRotation(
             wires=[system_wires[s * norbs + p] for p in range(norbs)], unitary_matrix=unitary_matrix
         )
-    ops = [
-        qp.s_prod(signs[p], qp.Z(system_wires[s * norbs + p])) for p in range(norbs) for s in (0, 1)
-    ]
+
+    # Carry the sign of mu_p as a -1 phase on |p> rather than scaling the multiplexed Z: Select
+    # controls a bare Pauli far more cheaply than a scaled SProd.
+    n_index = len(index_wires)
+    for p, sign in enumerate(signs):
+        if sign >= 0:
+            continue
+        zeros = [w for w, b in zip(index_wires, format(p, f"0{n_index}b")) if b == "0"]
+        for w in zeros:
+            qp.X(w)
+        if n_index == 1:
+            qp.Z(index_wires[0])
+        else:
+            qp.ctrl(
+                qp.Z(index_wires[-1]),
+                control=index_wires[:-1],
+                work_wires=work_wires,
+                work_wire_type="zeroed",
+            )
+        for w in zeros:
+            qp.X(w)
+
+    ops = [qp.Z(system_wires[s * norbs + p]) for p in range(norbs) for s in (0, 1)]
     # PREP puts amplitude only on |p> with p < norbs, so the control register has no support on
     # basis states with no matching op and the cheaper partial-Select decomposition is valid.
     qp.Select(ops, control=index_wires + [spin_wire], work_wires=work_wires, partial=True)
@@ -147,7 +172,8 @@ def one_body_walk(op_matrix, alias_sampling_precision, prep_wires, system_wires,
     )
     qp.Hadamard(spin_wire)
 
-    # R = I - 2|0><0| on the PREP register (index + spin + garbage).
+    # R = I - 2|0><0| on the PREP register (index + spin + garbage). R|0> = -|0> is what makes
+    # the |0> block of the walk +O/lambda rather than -O/lambda.
     for w in prep_wires:
         qp.X(w)
 
