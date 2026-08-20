@@ -1311,7 +1311,7 @@
 * Fixed :func:`~pennylane.backline.css_bp_decoder` so the X- and Z-specialized Triton decoders
   stay distinct when bundled behind one dispatcher, and, for the same reason, updated
   :func:`~pennylane.backline.triton_decoder` to own jitting of the raw Triton decoder functions.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#10040)](https://github.com/PennyLaneAI/pennylane/pull/10040)
 
 * Fixed a bug where decomposing an :class:`~.Operator2` with graph-based decomposition
   enabled inside a :class:`~.Subroutine` with program capture leaked JAX tracers and
