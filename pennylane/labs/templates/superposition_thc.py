@@ -27,7 +27,7 @@ from pennylane.decomposition import (
 from pennylane.labs.templates import LeftClassicalComparator, LeftQuantumComparator
 from pennylane.ops import RY, BasisState, GlobalPhase, Hadamard, MultiControlledX, X, Z
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
-from pennylane.typing import Wire
+from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires, WiresLike
 
 
@@ -327,7 +327,7 @@ def _left_inequalities(
     # To do so, we use the fact that a MultiControlledX with control_values = 0 detects if
     # the register is in state 0, and we shift that state with BasisState before and after.
     # (We don't include the 'after' operation here since it will be uncomputed later.)
-    BasisState(M, wires=nu_wires)
+    BasisState(math.int_to_binary(M, len(nu_wires)), wires=nu_wires)
 
     # TODO: replace this zero-controlled MultiControlledX with MultiTemporaryAND.
     if not keep_eq:
@@ -370,7 +370,7 @@ def _superposition_thc_resources(num_mu_wires, num_work_wires, M, N):
     lcc_le = resource_rep(LeftClassicalComparator, num_x_wires=n, L=M, comparator="<=")
     lcc_gt = resource_rep(LeftClassicalComparator, num_x_wires=n, L=N // 2, comparator=">=")
     lqc = resource_rep(LeftQuantumComparator, num_y_wires=n, comparator="<=")
-    basis = resource_rep(BasisState, num_wires=n)
+    basis = BasisState(Bool[n], Wire[n])
     mcx = _controlled_x(n, mcx_work, control_values=[0] * n)
 
     resources = {}
@@ -395,7 +395,7 @@ def _superposition_thc_resources(num_mu_wires, num_work_wires, M, N):
     _add(adjoint_resource_rep(LeftClassicalComparator, lcc_le.params), 2)
     _add(adjoint_resource_rep(LeftClassicalComparator, lcc_gt.params), 2)
     _add(adjoint_resource_rep(LeftQuantumComparator, lqc.params), 2)
-    _add(adjoint_resource_rep(BasisState, basis.params), 2)
+    _add(adjoint(basis), 2)
     _add(mcx, 2)
     _add(adjoint(mcx), 1)
 
