@@ -275,7 +275,7 @@ class TestOneBodyWalk:
             one_body_walk(np.zeros((2, 3)), 2, prep, system, work)
 
     def test_complex_raises(self):
-        """A complex op_matrix is rejected."""
+        """Test that a complex op_matrix is rejected."""
         req = one_body_walk_wires(2, 2)
         n_prep, n_sys, n_work = req["prep_wires"], req["system_wires"], req["work_wires"]
         prep = list(range(n_prep))
