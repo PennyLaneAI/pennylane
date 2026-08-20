@@ -327,7 +327,6 @@ def _unroll_change_op_basis(gate_counts):
                     new_gate_counts[inner_op] += count * inner_count
             else:
                 new_gate_counts[op_rep] += count
-
     return new_gate_counts
 
 
