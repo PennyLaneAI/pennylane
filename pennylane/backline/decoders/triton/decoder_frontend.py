@@ -16,7 +16,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import shutil
 import tempfile
 import types
@@ -322,13 +321,6 @@ def _make_css_decoder(
         object: Un-jitted Triton function that maps one packed syndrome to one packed correction
             mask.
     """
-    kernel_key = hashlib.sha1()
-    kernel_key.update(matrix.astype(np.uint8, copy=False).tobytes())
-    kernel_key.update(postprocess.encode("utf-8"))
-    kernel_key.update(str(num_iters).encode("utf-8"))
-    kernel_key.update(repr(prob).encode("utf-8"))
-    kernel_name = f"decode_{kernel_key.hexdigest()[:12]}"
-
     matrix = tl.constexpr(tuple(tuple(int(value) for value in row) for row in matrix.tolist()))
     postprocess = tl.constexpr(postprocess)
     prob = tl.constexpr(prob)
@@ -343,6 +335,4 @@ def _make_css_decoder(
             num_iters=num_iters,
         )
 
-    decode_impl.__name__ = kernel_name
-    decode_impl.__qualname__ = kernel_name
     return decode_impl
