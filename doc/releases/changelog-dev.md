@@ -266,6 +266,7 @@
   decomposed recursively into :class:`~.FermionicSWAP` and :class:`~.TwoWireFFT` operations
   (two-site Fermionic Fourier transforms).
 
+
 <h3>Improvements 🛠</h3>
 
 * Added decompositions of `CNOT`, `CZ`, `CY`, and `Hadamard` directly to PPMs.
@@ -658,6 +659,10 @@
   :func:`~.pennylane.labs.estimator_beta.mark_subroutine` which allow users to easily define their own
   resource operators from their quantum functions.
   [(#9764)](https://github.com/PennyLaneAI/pennylane/pull/9764)
+
+* Added two new functions for uniform state preparation and alias sampling called :class:`~.pennylane.labs.templates.uniform_prep_ops` and
+  `~.pennylane.labs.templates.alias_sampling`.
+  [(#9913)](https://github.com/PennyLaneAI/pennylane/pull/9913)
 
 <h3>Breaking changes 💔</h3>
 

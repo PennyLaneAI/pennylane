@@ -161,7 +161,9 @@ def test_alias_sampling_wires(L, mu):
     assert req["target_wires"] == logL
     # sigma(mu) + alt(logL) + keep(mu) + flag(1) + comparator scratch(mu-1)
     assert req["temp_wires"] == mu + logL + mu + 1 + max(mu - 1, 0)
-    assert req["work_wires"] == 1 + max(logL - 1, 1)
+    assert req["work_wires"] == logL - (
+        (L & -L).bit_length() - 1
+    )  # ceil(log2(L)) - k, where L = 2**k * L_odd
 
 
 class TestAliasSampling:
@@ -191,7 +193,7 @@ class TestAliasSampling:
         probs = np.asarray(circuit())
 
         target = w / w.sum()
-        assert np.allclose(probs[:L], target, atol=L / 2**mu)
+        assert np.allclose(probs[:L], target, atol=1 / 2**mu)
         assert np.allclose(probs[:L], recon, atol=1e-9)
 
     @pytest.mark.parametrize("L", [2, 3, 4, 5, 6])

@@ -58,7 +58,7 @@ def uniform_prep_ops(n_states, target_wires, work_wires):
     if L == 1:
         return
 
-    expected_work = 1 + max(logL - 1, 1)
+    expected_work = logL  # flag + (logL - 1) comparator scratch
     if len(work_wires) < expected_work:
         raise ValueError(
             f"work_wires must have at least {expected_work} wires for n_states={n_states} "
@@ -91,7 +91,7 @@ def _build_alias_tables(probs, mu):
     O(L) iterative matching (Walker/Vose) for the coherent alias sampling of
     `arXiv:1805.03662 <https://arxiv.org/abs/1805.03662>`_. Returns integers
     :math:`\mathrm{alt}_\ell \in [0, L)` and :math:`\mathrm{keep}_\ell \in [0, 2^\mu)`
-    satisfying the normalization constraint (Eq. requirekl):
+    satisfying the normalization constraint (Eq. 39):
 
     .. math::
 
@@ -113,8 +113,9 @@ def _build_alias_tables(probs, mu):
         constraint above and capping at :math:`2^\mu - 1` is exact.
     """
     probs = np.asarray(probs, dtype=float)
-    if np.any(probs < 0):
-        raise ValueError("probs must be non-negative")
+    if np.any(probs < 0) or not np.all(np.isfinite(probs)):
+        raise ValueError("probs must be non-negative and finite")
+
     L = len(probs)
 
     total = probs.sum()
@@ -163,9 +164,10 @@ def alias_sampling_wires(n_states, mu):
         * ``temp_wires`` (``3*mu + ceil(log2 L)``): sigma + alt + keep + flag +
           comparator scratch (``mu - 1`` wires that the comparator leaves dirty);
           left entangled with ``|l>`` and uncomputed by :math:`prepare^{\dagger}`.
-        * ``work_wires`` (``1+max(log(L) - 1, 1)``): minimum clean
-          scratch (UNIFORM_L flag + work, reused by QROM), returned to
-          :math:`|0\rangle`.
+        * ``work_wires`` (``ceil(log2 L) - k``, where ``k`` is the number of trailing
+          zero bits of ``L``): minimum clean scratch, returned to :math:`|0\rangle`. Only the odd part ``L / 2**k``
+          needs amplitude amplification, so this is zero whenever ``L`` is a power
+          of two.
 
     .. note::
 
@@ -185,7 +187,11 @@ def alias_sampling_wires(n_states, mu):
     n_target = logL
     # sigma(mu) + alt(logL) + keep(mu) + flag(1) + comparator scratch(mu-1)
     n_temp = mu + logL + mu + 1 + max(mu - 1, 0)
-    n_work = 1 + max(logL - 1, 1)
+
+    # uniform_prep_ops only amplifies the odd part L of n_states = 2**k * L, which
+    # costs ceil_log2(L) = logL - k wires (zero when n_states is a power of two).
+    k = (n_states & -n_states).bit_length() - 1
+    n_work = logL - k
     return {"target_wires": n_target, "temp_wires": n_temp, "work_wires": n_work}
 
 
@@ -250,6 +256,12 @@ def alias_sampling(probs, mu, target_wires, temp_wires, work_wires):
             f"work_wires must have at least {req['work_wires']} entries for L={L}, mu={mu}; "
             f"got {len(work_wires)}."
         )
+
+    if (
+        len(target_wires) + len(temp_wires) + len(work_wires)
+        != req["target_wires"] + req["temp_wires"] + req["work_wires"]
+    ):
+        raise ValueError("target_wires, temp_wires and work_wires must be disjoint.")
 
     # Split temp_wires: sigma (mu), alt (logL), keep (mu), flag (1),
     # comparator scratch (mu-1).
