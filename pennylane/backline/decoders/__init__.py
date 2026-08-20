@@ -1,4 +1,4 @@
-# Copyright 2018-2021 Xanadu Quantum Technologies Inc.
+# Copyright 2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-Version number (major.minor.patch[-label])
-"""
+"""Decoder builders for :mod:`pennylane.backline`."""
 
-__version__ = "0.46.0-dev78"
+__all__: list[str] = []
