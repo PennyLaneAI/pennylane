@@ -18,7 +18,6 @@
 
 import importlib
 import sys
-from pathlib import Path
 
 import numpy as np
 import pytest
@@ -68,17 +67,27 @@ class TestTritonDecoder:
         """The public name is exported from pennylane.backline."""
         assert qp.backline.triton_decoder is triton_decoder
 
-    def test_accepts_plain_python_functions_and_unique_names_them(self, monkeypatch):
+    def test_accepts_plain_python_functions_and_unique_names_them(self, monkeypatch, tmp_path):
         """Un-jitted Triton functions are jitted internally under unique generated names."""
         pytest.importorskip("triton")
         from pennylane.backline.decoders.triton import decoder_frontend as frontend
 
         captured = {}
+        scratch = tmp_path / "scratch"
+        scratch.mkdir()
+        real_mkdtemp = frontend.tempfile.mkdtemp
+
+        def fake_mkdtemp(*args, **kwargs):
+            prefix = kwargs.get("prefix")
+            if prefix is None and len(args) >= 2:
+                prefix = args[1]
+            return str(scratch) if prefix == "pl_triton_decoder_" else real_mkdtemp(*args, **kwargs)
 
         def fake_build_so(*_args, **kwargs):
             captured["names"] = [fn.fn.__name__ for fn in kwargs["constexpr"]["decoder_fns"]]
-            return Path("/tmp/fake.so"), "fake_symbol"
+            return scratch / "fake.so", "fake_symbol"
 
+        monkeypatch.setattr(frontend.tempfile, "mkdtemp", fake_mkdtemp)
         monkeypatch.setattr(frontend, "_build_so", fake_build_so)
 
         def make_decoder():
@@ -119,17 +128,27 @@ class TestCssBpDecoder:
         """The public name is exported from pennylane.backline."""
         assert qp.backline.css_bp_decoder is css_bp_decoder
 
-    def test_same_shape_matrices_get_distinct_decoder_names(self, monkeypatch):
+    def test_same_shape_matrices_get_distinct_decoder_names(self, monkeypatch, tmp_path):
         """Hx and Hz specializations stay distinct even when their shapes match."""
         pytest.importorskip("triton")
         from pennylane.backline.decoders.triton import decoder_frontend as frontend
 
         captured = {}
+        scratch = tmp_path / "scratch"
+        scratch.mkdir()
+        real_mkdtemp = frontend.tempfile.mkdtemp
+
+        def fake_mkdtemp(*args, **kwargs):
+            prefix = kwargs.get("prefix")
+            if prefix is None and len(args) >= 2:
+                prefix = args[1]
+            return str(scratch) if prefix == "pl_triton_decoder_" else real_mkdtemp(*args, **kwargs)
 
         def fake_build_so(*_args, **kwargs):
             captured["names"] = [fn.fn.__name__ for fn in kwargs["constexpr"]["decoder_fns"]]
-            return Path("/tmp/fake.so"), "fake_symbol"
+            return scratch / "fake.so", "fake_symbol"
 
+        monkeypatch.setattr(frontend.tempfile, "mkdtemp", fake_mkdtemp)
         monkeypatch.setattr(frontend, "_build_so", fake_build_so)
 
         hx = np.array([[1, 0, 1], [0, 1, 1]], dtype=np.uint8)
