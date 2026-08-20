@@ -667,6 +667,8 @@ class TestQubitIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
+        if diff_method == "adjoint":
+            pytest.skip("adjoint state differentiation is not supported in pl2")
         if "lightning" in getattr(dev, "name", "").lower():
             pytest.xfail("lightning does not support measureing probabilities with adjoint.")
         if diff_method == "adjoint":

@@ -1062,21 +1062,18 @@ class TestDynamicShapes:
         """Test that cond can handle dynamic shapes where the dimension matches an earlier arg."""
 
         def t(i, x):
-            return qp.RX(x, i)
+            qp.RX(x, i)
 
         def f(i, x):
-            return qp.RY(x, i)
+            qp.RY(x, i)
 
         def w(val, i):
-            return qp.cond(val, t, f)(i, jax.numpy.arange(i))
+            qp.cond(val, t, f)(i, jax.numpy.arange(i))
 
         jaxpr = jax.make_jaxpr(w)(True, 3)
 
-        [res_true] = qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, True, 2)
+        cond_eqn = next(eqn for eqn in jaxpr.eqns if eqn.primitive == cond_prim)
+        true_branch, false_branch = cond_eqn.params["jaxpr_branches"][:2]
 
-        expected = qp.RX(jax.numpy.arange(2), 2)
-        qp.assert_equal(res_true, expected)
-
-        [res_false] = qp.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, False, 3)
-        expected_false = qp.RY(jax.numpy.arange(3), 3)
-        qp.assert_equal(res_false, expected_false)
+        assert_eqn_matches_op(true_branch.eqns[-1], qp.RX)
+        assert_eqn_matches_op(false_branch.eqns[-1], qp.RY)

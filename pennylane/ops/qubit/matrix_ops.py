@@ -282,9 +282,9 @@ class QubitUnitary(Operator2):
         >>> from pprint import pprint
         >>> pprint(decomp)
         [RZ(3.141..., wires=[0]),
-        RY(np.float64(1.570...), wires=[0]),
-        RZ(0.0, wires=[0]),
-        GlobalPhase(-1.570..., wires=[])]
+         RY(1.570..., wires=[0]),
+         RZ(0.0, wires=[0]),
+         GlobalPhase(-1.570..., wires=[])]
 
         """
         # Decomposes arbitrary single-qubit unitaries as Rot gates (RZ - RY - RZ format),
