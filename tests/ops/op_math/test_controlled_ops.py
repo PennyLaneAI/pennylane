@@ -435,7 +435,7 @@ class TestControlledQubitUnitary:
 
         assert pow_ops[0].target_wires == op.target_wires
         assert pow_ops[0].control_wires == op.control_wires
-        assert np.all(pow_ops[0].control_values == op.control_values)
+        assert np.array_equal(pow_ops[0].control_values, op.control_values)
 
         op_mat_to_pow = qp.math.linalg.matrix_power(op.data[0], n)
         assert qp.math.allclose(pow_ops[0].data[0], op_mat_to_pow)

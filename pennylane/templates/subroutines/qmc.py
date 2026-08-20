@@ -423,7 +423,7 @@ class QuantumMonteCarlo(Operation):
 
     @staticmethod
     def compute_decomposition(
-        A, R, Q, wires, estimation_wires, target_wires, **_
+        A, R, Q, wires, estimation_wires, target_wires
     ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
