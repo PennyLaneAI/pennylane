@@ -75,6 +75,11 @@ class TestCSignature:
         signature = CSignature.parse("sym", "(ptr) -> i32")
         assert {signature: 1}[signature] == 1
 
+    def test_repr_names_the_symbol_and_shows_the_signature(self):
+        """The repr carries enough information to identify the symbol and its ABI."""
+        signature = CSignature.parse("connect", "(ptr, u32) -> i32")
+        assert repr(signature) == "CSignature('connect', (ptr, u32) -> i32)"
+
     def test_the_wrong_number_of_arguments_is_refused(self):
         """A call with too few arguments is reported, not truncated."""
         signature = CSignature.parse("sym", "(ptr, u32) -> i32")
