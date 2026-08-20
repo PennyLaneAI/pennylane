@@ -27,8 +27,10 @@ _TRANSPORTS = {}
 class Transport:
     """A named data transport.
 
-    Passed to :class:`~pennylane.Backline` as the ``transport`` argument to select how messages move
-    between the :class:`~.Controller` and its :class:`coprocessors <.Coprocessor>`.
+    A :class:`~pennylane.Backline` uses a transport to select how messages move between the
+    :class:`~.Controller` and its :class:`coprocessors <.Coprocessor>`, and exposes it as
+    :attr:`~pennylane.Backline.transport`. The compiler combines the transport with each node's
+    hardware to select a concrete runtime backend.
 
     .. warning::
 
@@ -101,3 +103,8 @@ def get_transport(name):
 @register_transport("rdma")
 def _rdma():
     return Transport("rdma")
+
+
+@register_transport("memcpy")
+def _memcpy():
+    return Transport("memcpy")
