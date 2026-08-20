@@ -204,7 +204,6 @@ def test_expand(wires):
             assert actual_op.wires == qp.wires.Wires(expected_wire)
 
 
-@pytest.mark.capture
 @pytest.mark.parametrize("wires, work_wires", [([0, 1, 2], None), ([0, 1, 2, 3], [4, 5])])
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_decomposition_new(wires, work_wires):

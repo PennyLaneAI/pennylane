@@ -123,7 +123,7 @@ def make_crz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
         precision = len(angle_wires)
         binary_int = qp.math.binary_decimals(phi, precision, unit=4 * np.pi)
 
-        def compute_fn():
+        def _compute_fn():
             qp.ctrl(qp.BasisState(binary_int, angle_wires), control=wires[0])
             qp.ctrl(
                 qp.BasisState([1] * precision, phase_grad_wires),
@@ -131,10 +131,7 @@ def make_crz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
                 control_values=[0],
             )
 
-        qp.change_op_basis(
-            compute_fn,
-            qp.SemiAdder(angle_wires, phase_grad_wires, work_wires=work_wires),
-            compute_fn,
-        )
+        target_op = qp.SemiAdder(angle_wires, phase_grad_wires, work_wires=work_wires)
+        qp.change_op_basis(_compute_fn, target_op, _compute_fn)
 
     return _decomp_fn

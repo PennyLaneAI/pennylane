@@ -59,7 +59,6 @@ class TestQFT:
 
         assert np.allclose(reconstructed_unitary, expected_unitary)
 
-    @pytest.mark.capture
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("wires", [[0], [0, 1], [0, 1, 2], [0, 1, 2, 3]])
     def test_QFT_decomposition_new(self, wires):
