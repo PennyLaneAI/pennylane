@@ -56,14 +56,14 @@ class TestQubitUnitaryCSR:
         """Test that the compute_sparse_matrix method works correctly."""
         U = np.array([[0, 1], [1, 0]])
         U = csr_matrix(U)
-        op = qp.QubitUnitary.compute_sparse_matrix(U)
+        op = qp.QubitUnitary.compute_sparse_matrix(U, wires=0)
         assert isinstance(op, csr_matrix)
         assert np.allclose(op.toarray(), U.toarray())
 
         # Test that the sparse matrix accepts the format parameter.
-        op_csc = qp.QubitUnitary.compute_sparse_matrix(U, format="csc")
-        op_lil = qp.QubitUnitary.compute_sparse_matrix(U, format="lil")
-        op_coo = qp.QubitUnitary.compute_sparse_matrix(U, format="coo")
+        op_csc = qp.QubitUnitary.compute_sparse_matrix(U, wires=0, format="csc")
+        op_lil = qp.QubitUnitary.compute_sparse_matrix(U, wires=0, format="lil")
+        op_coo = qp.QubitUnitary.compute_sparse_matrix(U, wires=0, format="coo")
         assert isinstance(op_csc, csc_matrix)
         assert isinstance(op_lil, lil_matrix)
         assert isinstance(op_coo, coo_matrix)
@@ -214,7 +214,7 @@ class TestQubitUnitaryCSR:
         op = qp.pow(qp.QubitUnitary(U, wires=[0]), 2)
         rule = qp.list_decomps("Pow(QubitUnitary)")[0]
         with qp.queuing.AnnotatedQueue() as q:
-            rule(*op.parameters, wires=op.wires, **op.hyperparameters)
+            rule(**op.arguments)
 
         tape = qp.tape.QuantumScript.from_queue(q)
         actual_mat = qp.matrix(tape)
@@ -468,7 +468,7 @@ class TestQubitUnitary:
 
         @qp.qnode(dev)
         def circuit(matrix):
-            qp.QubitUnitary.compute_decomposition(matrix, wires=[0, 1, 2])
+            qp.QubitUnitary(matrix, wires=[0, 1, 2]).decomposition()
             return qp.state()
 
         state_expected = circuit(matrix)
@@ -649,7 +649,7 @@ class TestQubitUnitary:
         U = np.array(
             [[0.98877108 + 0.0j, 0.0 - 0.14943813j], [0.0 - 0.14943813j, 0.98877108 + 0.0j]]
         )
-        res_static = qp.QubitUnitary.compute_matrix(U)
+        res_static = qp.QubitUnitary.compute_matrix(U, wires=0)
         res_dynamic = qp.QubitUnitary(U, wires=0).matrix()
         expected = U
         assert np.allclose(res_static, expected, atol=tol)
@@ -661,22 +661,11 @@ class TestQubitUnitary:
             [[0.98877108 + 0.0j, 0.0 - 0.14943813j], [0.0 - 0.14943813j, 0.98877108 + 0.0j]]
         )
         U = np.tensordot([1j, -1.0, (1 + 1j) / np.sqrt(2)], U, axes=0)
-        res_static = qp.QubitUnitary.compute_matrix(U)
+        res_static = qp.QubitUnitary.compute_matrix(U, wires=0)
         res_dynamic = qp.QubitUnitary(U, wires=0).matrix()
         expected = U
         assert np.allclose(res_static, expected, atol=tol)
         assert np.allclose(res_dynamic, expected, atol=tol)
-
-    def test_controlled(self):
-        """Test QubitUnitary's controlled method."""
-        # pylint: disable=protected-access
-        U = qp.PauliX.compute_matrix()
-        base = qp.QubitUnitary(U, wires=0)
-
-        expected = qp.ControlledQubitUnitary(U, wires=["a", 0])
-
-        out = base._controlled("a")
-        qp.assert_equal(out, expected)
 
 
 class TestWalshHadamardTransform:
@@ -1687,15 +1676,3 @@ class TestInterfaceMatricesLabel:
         mat = jnp.array([[1, 0], [0, -1]])
 
         self.check_interface(mat)
-
-
-control_data = [
-    (qp.QubitUnitary(X, wires=0), Wires([])),
-    (qp.ControlledQubitUnitary(X, wires=[0, 1]), Wires([0])),
-]
-
-
-@pytest.mark.parametrize("op, control_wires", control_data)
-def test_control_wires(op, control_wires):
-    """Test ``control_wires`` attribute for matrix operations."""
-    assert op.control_wires == control_wires

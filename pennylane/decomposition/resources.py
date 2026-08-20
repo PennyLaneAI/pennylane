@@ -311,17 +311,6 @@ def controlled_resource_rep(  # pylint: disable=too-many-arguments, too-many-pos
     if num_zero_control_values == 0 and custom_ctrl:
         return resource_rep(custom_ctrl)  # handles direct dispatch to custom controlled ops.
 
-    # Special case for controlled qubit unitaries
-    if base_class in (qp.QubitUnitary, qp.ControlledQubitUnitary):
-        return _controlled_qubit_unitary_rep(
-            base_class,
-            base_params,
-            num_control_wires,
-            num_zero_control_values,
-            num_work_wires,
-            work_wire_type,
-        )
-
     return CompressedResourceOp(
         qp.ops.Controlled,
         {
@@ -414,43 +403,6 @@ def resolve_work_wire_type(base_work_wires, base_work_wire_type, work_wires, wor
         return "borrowed"
 
     return "zeroed"
-
-
-def _controlled_qubit_unitary_rep(  # pylint: disable=too-many-arguments, too-many-positional-arguments
-    base_class,
-    base_params,
-    num_control_wires,
-    num_zero_control_values,
-    num_work_wires,
-    work_wire_type,
-) -> CompressedResourceOp:
-    """Helper function that handles the custom logic for controlled qubit unitaries."""
-
-    if base_class is qp.QubitUnitary:
-        return resource_rep(
-            qp.ControlledQubitUnitary,
-            num_target_wires=base_params["num_wires"],
-            num_control_wires=num_control_wires,
-            num_zero_control_values=num_zero_control_values,
-            num_work_wires=num_work_wires,
-            work_wire_type=work_wire_type,
-        )
-
-    # base_class is qp.ControlledQubitUnitary
-    num_control_wires += base_params["num_control_wires"]
-    num_zero_control_values += base_params["num_zero_control_values"]
-    work_wire_type = resolve_work_wire_type(
-        base_params["num_work_wires"], base_params["work_wire_type"], num_work_wires, work_wire_type
-    )
-    num_work_wires += base_params["num_work_wires"]
-    return resource_rep(
-        qp.ControlledQubitUnitary,
-        num_target_wires=base_params["num_target_wires"],
-        num_control_wires=num_control_wires,
-        num_zero_control_values=num_zero_control_values,
-        num_work_wires=num_work_wires,
-        work_wire_type=work_wire_type,
-    )
 
 
 @to_name.register
