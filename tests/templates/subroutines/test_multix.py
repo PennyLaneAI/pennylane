@@ -74,7 +74,7 @@ def test_canonicalize_inputs_does_not_validate_or_cast():
 def test_standard_checks():
     """Runs the standard Operator2 validity checks for MultiX."""
     op = qp.MultiX([1, 0, 1], wires=[0, 1, 2])
-    qp.ops.functions.assert_valid(op, skip_differentiation=True)
+    qp.ops.functions.assert_valid(op)
 
 
 def test_abstract_init():
