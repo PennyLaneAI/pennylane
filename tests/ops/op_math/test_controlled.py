@@ -1074,10 +1074,6 @@ class TestDecomposition:
         kwargs = {} if base_cls is qp.GlobalPhase else {"wires": base_wires}
         base_op = base_cls(*params, **kwargs)
         op = qp.ctrl(base_op, control=ctrl_wires, control_values=[False] * len(ctrl_wires))
-        if base_cls is qp.GlobalPhase and len(op.control_wires) == 1:
-            pytest.skip(
-                "GlobalPhase has custom logic that avoids adding additional PauliX to flip the control."
-            )
 
         if base_cls is qp.GlobalPhase and len(op.control_wires) == 1:
             pytest.skip(
