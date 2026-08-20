@@ -261,14 +261,14 @@ class TestQuantumMonteCarlo:
     def func(i):
         return np.sin(i) ** 2
 
-    @pytest.mark.usefixtures("enable_and_disable_capture")
+    # Skip capture test because the _unflatten method of QMC is not compatible with capture
+    @pytest.mark.usefixtures("disable_capture")
     def test_standard_validity(self):
         """Test standard validity criteria with assert_valid."""
         p = np.ones(4) / 4
         target_wires, estimation_wires = Wires(range(3)), Wires(range(3, 5))
 
         op = QuantumMonteCarlo(p, self.func, target_wires, estimation_wires)
-        # Skip capture test because the _unflatten method of QMC is not compatible with capture
         qp.ops.functions.assert_valid(op, skip_differentiation=True)
 
     DECOMP_PARAMS = [

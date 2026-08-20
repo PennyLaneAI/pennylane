@@ -21,7 +21,7 @@ import copy
 import numpy as np
 
 from pennylane import ops
-from pennylane.core.operator import Operation, abstractify
+from pennylane.core.operator import Operation, Operator2, abstractify
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
@@ -120,6 +120,15 @@ class Reflection(Operation):
     # pylint: disable=arguments-differ
     @classmethod
     def _primitive_bind_call(cls, U, alpha, reflection_wires, **kwargs):
+        def _get_tracer(op):
+            if isinstance(op, Operator2):
+                if op.tracer is None:
+                    # pylint: disable-next=protected-access
+                    op._bind_primitive()  # pragma: no cover
+                return op.tracer if op.tracer is not None else op
+            return op
+
+        U = _get_tracer(U)
         return super()._primitive_bind_call(U, alpha, wires=reflection_wires, **kwargs)
 
     @classmethod
