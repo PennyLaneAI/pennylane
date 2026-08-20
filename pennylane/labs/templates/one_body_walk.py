@@ -24,7 +24,7 @@ def one_body_walk_wires(norbs, alias_sampling_precision):
 
     The registers are:
         * ``prep_wires``: the full PREP register that the reflection acts on.
-        * ``system_wires``: the state register ``|psi>`` the operator acts on.
+        * ``system_wires``: the state register ``|\psi>`` the operator acts on.
         * ``work_wires``: clean scratch that returns to ``|0>``
 
     Args:
