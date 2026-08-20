@@ -17,23 +17,55 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.typing import Int, Wire
+from pennylane.typing import Bool, Float, Int, Wire
 from pennylane.wires import Wires
 
 
-def test_input_arguments_parsed_correctly():
+@pytest.mark.parametrize(
+    ("bitstring_input", "wires_input"),
+    [
+        ([0, 1, 1, 0], ("a", "b", "c", "d")),
+        ([False, True, True, False], ("a", "b", "c", "d")),
+        ((False, True, False), ("a", "b", "c")),
+        ([False, True], (0, 1)),
+        (np.array([0, 0]), ["Alice", "Bob"]),
+        (np.array([False, True]), ["Alice", "Bob"]),
+    ],
+)
+def test_input_arguments_parsed_correctly(bitstring_input, wires_input):
     """Tests that MultiX handles and sanitizes its input arguments correctly."""
-    bitstring_input = [0, 1, 1, 0]
-    wires_input = ("a", "b", "c", "d")
     op = qp.MultiX(bitstring_input, wires=wires_input)
 
     assert isinstance(op.bitstring, np.ndarray)
-    assert np.all(op.bitstring == np.array(bitstring_input))
+    assert op.bitstring.dtype == bool
+    assert np.all(op.bitstring == np.array(bitstring_input, dtype=bool))
     assert op.wires == Wires(wires_input)
     assert op.dynamic_args == {"bitstring": op.bitstring}
     assert op.wire_args == {"wires": Wires(wires_input)}
     assert op.num_wires == len(wires_input)
     assert op.grad_method is None
+
+
+def test_boolean_bitstring_accepted():
+    """Tests that Boolean input is accepted and remains Boolean after initialization."""
+    bitstring = np.array([True, False, True])
+
+    op = qp.MultiX(bitstring, wires=[0, 1, 2])
+
+    assert op.bitstring.dtype == bool
+    assert np.array_equal(op.bitstring, bitstring)
+
+
+def test_canonicalize_inputs_does_not_validate_or_cast():
+    """Tests that canonicalization changes input containers but does not validate or cast."""
+    bitstring = np.array([0.0, 1.0])
+
+    # pylint: disable-next=protected-access
+    canonical_bitstring, canonical_wires = qp.MultiX._canonicalize_inputs(bitstring, ("a", "b"))
+
+    assert canonical_bitstring is bitstring
+    assert canonical_bitstring.dtype == float
+    assert canonical_wires == Wires(("a", "b"))
 
 
 @pytest.mark.jax
@@ -51,22 +83,27 @@ def test_abstract_init():
     op = qp.MultiX(bitstring, wires)
 
     assert op.is_abstract
-    assert op.bitstring == bitstring
+    assert op.bitstring == Bool[3]
     assert op.wires == wires
 
 
-def test_abstract_init_rejects_mismatched_lengths():
-    """Tests that validation using statically known abstract lengths is retained."""
-    with pytest.raises(ValueError, match="equal lengths"):
-        qp.MultiX(Int[2], Wire[3])
+def test_custom_repr_override():
+    """Tests that the Boolean bitstring is represented with integer values."""
+    op = qp.MultiX([True, False, True], wires=["a", "b", "c"])
+
+    assert repr(op) == "MultiX([1 0 1], wires=['a', 'b', 'c'])"
 
 
 @pytest.mark.parametrize(
     ("bitstring", "wires", "error_match"),
     [
         ([0, 1, 1, 0], ["a", "b", "c"], "length"),
+        (Int[2], Wire[3], "length"),
         ([0, 1, 2], ["a", "b", "c"], "binary"),
         ([[0, 1, 0]], ["a", "b", "c"], "dimension"),
+        (Int[1, 3], Wire[1], "dimension"),
+        (np.array([0.0, 1.0]), ["a", "b"], "boolean"),
+        (Float[3], Wire[3], "boolean"),
         ([0], [], "wire"),
     ],
 )
@@ -163,7 +200,6 @@ def test_jit_matrix():
     assert qp.math.allclose(matrix_fn(bitstring), expected)
 
 
-@pytest.mark.jax
 @pytest.mark.capture
 def test_decomposition_capture_with_tuple_wires():
     """Tests graph capture with tuple wires and a dynamically traced loop index."""
@@ -181,6 +217,25 @@ def test_decomposition_capture_with_tuple_wires():
     # The loop index is a JAX tracer. This call fails if the python tuple wires is
     # not converted to a JAX array before the decomposition for MultiX calls wires[i].
     jaxpr = jax.make_jaxpr(lambda bits: decomposition(bits, wires))(bitstring)
+
+    assert any(eqn.primitive == for_loop_prim for eqn in jaxpr.eqns)
+
+
+@pytest.mark.capture
+def test_decomposition_capture_with_tuple_bitstring():
+    """Tests that a tuple bitstring can be indexed by a dynamically traced loop index."""
+
+    import jax  # pylint: disable=import-outside-toplevel
+
+    from pennylane.capture.primitives import (  # pylint: disable=import-outside-toplevel
+        for_loop_prim,
+    )
+
+    bitstring = (True, False, True)
+    wires = jax.numpy.array([0, 1, 2])
+    decomposition = qp.list_decomps(qp.MultiX)[0]
+
+    jaxpr = jax.make_jaxpr(lambda: decomposition(bitstring, wires))()
 
     assert any(eqn.primitive == for_loop_prim for eqn in jaxpr.eqns)
 
@@ -232,6 +287,7 @@ def test_evalutation(bitstring, wires, expected_index):
         ([1], [0]),
         ([1, 0], [0, 1]),
         ([0, 1, 1], [0, 1, 2]),
+        ([False, True, False], [0, 1, 2]),
         ([1, 0, 1, 1], [0, 1, 2, 3]),
     ],
 )

@@ -13,13 +13,15 @@
 # limitations under the License.
 """Contains the MultiX template."""
 
+import numpy as np
+
 from pennylane import compiler, math
 from pennylane.capture import enabled
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import Hadamard, PauliX, cond
-from pennylane.typing import AbstractArray, AbstractWires, Int, TensorLike, Wire
+from pennylane.typing import AbstractArray, AbstractWires, Bool, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 
@@ -39,7 +41,8 @@ class MultiX(Operator2):
     The position of each bit corresponds to the wire at the same position in ``wires``.
 
     Args:
-        bitstring (TensorLike): A one-dimensional array containing only ``0`` or ``1`` entries.
+        bitstring (TensorLike): A one-dimensional Boolean array. Integer arrays containing only
+            ``0`` or ``1`` entries are accepted and cast to Boolean.
         wires (WiresLike): The wires on which ``MultiX`` acts. The number of wires must
             match the length of ``bitstring``.
 
@@ -69,27 +72,24 @@ class MultiX(Operator2):
     wire_argnames = ("wires",)
 
     arg_specs = {
-        "bitstring": Int[-1],
+        "bitstring": Bool[-1],
         "wires": Wire[-1],
     }
 
     grad_method = None
 
     def __init__(self, bitstring: TensorLike, wires: WiresLike) -> None:
-
-        bitstring, wires = MultiX._canonicalize_inputs(bitstring, wires)
-
-        MultiX._validate_inputs(bitstring, wires)
-
+        bitstring, wires = MultiX._canonicalize_validate_and_cast_inputs(bitstring, wires)
         super().__init__(bitstring, wires)
 
     # pylint: disable-next=arguments-differ
     def __abstract_init__(
         self, bitstring: AbstractArray | TensorLike, wires: AbstractWires | WiresLike
     ) -> None:
-        super().__abstract_init__(bitstring, wires)
+        # We skip the canonicalizing and casting steps here for abstract inputs
+        MultiX._validate_inputs(bitstring, wires)
 
-        MultiX._validate_inputs(self.bitstring, self.wires)
+        super().__abstract_init__(Bool[len(bitstring)], wires)
 
     @property
     def num_wires(self) -> int:
@@ -122,12 +122,41 @@ class MultiX(Operator2):
         if bitstring_length != len(wires):
             raise ValueError("The bitstring and wires arguments must have equal lengths.")
 
+        bitstring_dtype = (
+            bitstring.dtype
+            if isinstance(bitstring, AbstractArray)
+            else math.get_dtype_name(bitstring)
+        )
+
+        is_bitstring_integer_or_bool = np.issubdtype(bitstring_dtype, np.integer) or np.issubdtype(
+            bitstring_dtype, bool
+        )
+
+        if not is_bitstring_integer_or_bool:
+            raise ValueError("The bitstring must be an integer or boolean array.")
+
         # ensure bitstring is either abstract or has binary entries
         is_bitstring_abstract = isinstance(bitstring, AbstractArray) or math.is_abstract(bitstring)
         if not is_bitstring_abstract:
             is_bitstring_binary = math.all(math.logical_or(bitstring == 0, bitstring == 1))
+            # is_bitstring_binary evaluates to True at least when all entries belong to (0, 1, False, True)
             if not is_bitstring_binary:
-                raise ValueError("The bitstring must contain only binary 0 and 1 values.")
+                raise ValueError(
+                    "The bitstring must contain only integer or boolean binary (0,1,False,True) values."
+                )
+
+    @staticmethod
+    def _canonicalize_validate_and_cast_inputs(
+        bitstring: TensorLike, wires: WiresLike
+    ) -> tuple[TensorLike, Wires]:
+        """Runs the full pipeline for handling input the input arguments ``bitstring`` and ``wires`` arguments."""
+        # canonicalize (standardize formats/containers)
+        bitstring, wires = MultiX._canonicalize_inputs(bitstring, wires)
+        # validate (throw error if inputs have problems)
+        MultiX._validate_inputs(bitstring, wires)
+        # cast (convert bitstring to Boolean dtype)
+        bitstring = math.cast(bitstring, bool)
+        return (bitstring, wires)
 
     @staticmethod
     # pylint: disable-next=arguments-differ
@@ -137,23 +166,26 @@ class MultiX(Operator2):
         Assumes the wire order is the order provided by ``wires``.
 
         Args:
-            bitstring (TensorLike): A one-dimensional array containing only ``0`` or ``1`` entries.
+            bitstring (TensorLike): A one-dimensional Boolean array. Integer arrays containing only
+                ``0`` or ``1`` entries are accepted and cast to Boolean.
             wires (WiresLike): The wires on which ``MultiX`` acts. The number of wires must
                 match the length of ``bitstring``.
 
         Returns:
             TensorLike: The canonical matrix representing ``MultiX(bitstring, wires)``.
         """
-        bitstring, wires = MultiX._canonicalize_inputs(bitstring, wires)
-        MultiX._validate_inputs(bitstring, wires)
+
+        bitstring, wires = MultiX._canonicalize_validate_and_cast_inputs(bitstring, wires)
 
         # The local matrices are either identity or pauli_x matrices
-        identity = math.eye(2, like=bitstring)
-        pauli_x = math.convert_like(PauliX.compute_matrix(), bitstring)
+        interface = math.get_interface(bitstring)
+        identity = math.eye(2, like=interface)
+        pauli_x = math.asarray(PauliX.compute_matrix(), like=interface)
 
-        matrix = math.ones((1, 1), like=bitstring)
+        matrix = math.ones((1, 1), like=interface)
         for i in range(len(wires)):
-            local_matrix = identity + bitstring[i] * (pauli_x - identity)
+            numerical_bit = math.cast(bitstring[i], int)
+            local_matrix = (numerical_bit) * pauli_x + (1 - numerical_bit) * identity
             matrix = math.kron(matrix, local_matrix)
 
         return matrix
@@ -165,22 +197,24 @@ class MultiX(Operator2):
         Eigenvalues of the operator.
 
         Args:
-            bitstring (TensorLike): A one-dimensional array containing only ``0`` or ``1`` entries.
+            bitstring (TensorLike): A one-dimensional Boolean array. Integer arrays containing only
+                ``0`` or ``1`` entries are accepted and cast to Boolean.
             wires (WiresLike): The wires on which ``MultiX`` acts. The number of wires must
                 match the length of ``bitstring``.
 
         Returns:
             TensorLike: The eigenvalues of ``MultiX(bitstring, wires)``.
         """
-        bitstring, wires = MultiX._canonicalize_inputs(bitstring, wires)
-        MultiX._validate_inputs(bitstring, wires)
+        bitstring, wires = MultiX._canonicalize_validate_and_cast_inputs(bitstring, wires)
 
-        identity_eigvals = math.convert_like([1, 1], bitstring)
-        pauli_x_eigvals = math.convert_like([1, -1], bitstring)
+        interface = math.get_interface(bitstring)
+        identity_eigvals = math.asarray([1, 1], like=interface)
+        pauli_x_eigvals = math.asarray([1, -1], like=interface)
 
-        eigvals = math.ones(1, like=bitstring)
+        eigvals = math.ones(1, like=interface)
         for i in range(len(wires)):
-            local_eigvals = identity_eigvals + bitstring[i] * (pauli_x_eigvals - identity_eigvals)
+            numerical_bit = math.cast(bitstring[i], int)
+            local_eigvals = numerical_bit * pauli_x_eigvals + (1 - numerical_bit) * identity_eigvals
             eigvals = math.kron(eigvals, local_eigvals)
 
         return eigvals
@@ -192,7 +226,8 @@ class MultiX(Operator2):
         A sequence of local Hadamard gates that diagonalizes a sequence of local PauliX gates.
 
         Args:
-            bitstring (TensorLike): A one-dimensional array containing only ``0`` or ``1`` entries.
+            bitstring (TensorLike): A one-dimensional Boolean array. Integer arrays containing only
+                ``0`` or ``1`` entries are accepted and cast to Boolean.
             wires (WiresLike): The wires on which ``MultiX`` acts. The number of wires must
                 match the length of ``bitstring``.
 
@@ -204,6 +239,11 @@ class MultiX(Operator2):
 
         return [Hadamard(wire) for wire in wires]
 
+    def __repr__(self) -> str:
+        if not (isinstance(self.bitstring, AbstractArray) or isinstance(self.wires, AbstractWires)):
+            return f"MultiX({math.cast(self.bitstring, int)}, wires={self.wires})"
+        return super().__repr__()
+
     def adjoint(self) -> "MultiX":
         """Return the adjoint of the operator."""
         return MultiX(self.bitstring, wires=self.wires)
@@ -213,7 +253,7 @@ class MultiX(Operator2):
 def _multix_resources(bitstring: TensorLike, wires: WiresLike):  # pylint: disable=unused-argument
     # The total number of PauliX gates used depends on the bitstring.
     # Specifically, sum(bitstring) gates are used by MultiX, not len(bitstring).
-    # However, if bitrsring is an AbstractArray, only the shape of bitstring is known.
+    # However, if bitstring is an AbstractArray, only the shape of bitstring is known.
     # Therefore, the resource count can only supply the *worst-case* scenario instead.
     # Hence why exact=False is used when registering the resource.
     return {PauliX: len(wires)}
@@ -224,6 +264,7 @@ def _multix_resources(bitstring: TensorLike, wires: WiresLike):  # pylint: disab
 def _multix_decomposition(bitstring: TensorLike, wires: WiresLike) -> None:
 
     if compiler.active() or enabled():
+        bitstring = math.array(bitstring, like="jax")
         wires = math.array(wires, like="jax")
 
     @for_loop(0, len(wires), 1)
