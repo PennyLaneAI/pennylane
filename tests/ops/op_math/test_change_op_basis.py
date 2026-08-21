@@ -291,15 +291,6 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         assert change_op_basis_op.parameters == [0.23]
         assert change_op_basis_op.num_params == 1
 
-    def test_abstract_initialization_with_default(self):
-        """Test that abstract construction canonicalizes the default uncompute operator."""
-        compute_op = NonParametricOp(Wire[1])
-        target_op = DynOp(Float, Wire[1])
-        op = ChangeOpBasis(compute_op, target_op)
-
-        assert op.is_abstract
-        qp.assert_equal(op.uncompute_op, qp.adjoint(compute_op))
-
     def test_map_wires_with_mixed_operator_versions(self):
         """Test mapping wires belonging to both Operator1 and Operator2 operands."""
         op = ChangeOpBasis(qp.X(0), NonParametricOp(1), qp.RX(0.2, 2))

@@ -27,10 +27,8 @@ from pennylane.core.operator import Operator, Operator2
 from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops.op_math import adjoint, ctrl, prod
-from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract, flip_zero_control
 from pennylane.typing import Wire
-from pennylane.wires import Wires
 
 from .composite import handle_recursion_error
 from .composite2 import CompositeOp2
@@ -253,17 +251,6 @@ class ChangeOpBasis(CompositeOp2):
 
     def _operator2_args(self, operands, _init_pauli_rep):
         return tuple(reversed(operands))
-
-    def __abstract_init__(self, *args, **kwargs):
-        bound_args = self._sig.bind(*args, **kwargs)
-        bound_args.apply_defaults()
-        if bound_args.arguments["uncompute_op"] is None:
-            bound_args.arguments["uncompute_op"] = _adjoint_abstract(
-                bound_args.arguments["compute_op"]
-            )
-        super().__abstract_init__(*bound_args.args, **bound_args.kwargs)
-        if isinstance(self._wires, Wires):
-            self._wires = Wire[0]
 
     hybrid_argnames = ("compute_op", "target_op", "uncompute_op")
 
