@@ -634,7 +634,7 @@ def add_decomps(op_type: type[Operator | Operator2] | str, *decomps: Decompositi
             qp.RZ(np.pi / 2, wires=wires)
             qp.RX(np.pi / 2, wires=wires)
             qp.RZ(np.pi / 2, wires=wires)
-            qp.GlobalPhase(-np.pi / 2, wires=wires)
+            qp.GlobalPhase(-np.pi / 2)
 
         @qp.register_resources({qp.RZ: 1, qp.RY: 1, qp.GlobalPhase: 1})
         def my_hadamard2(wires):

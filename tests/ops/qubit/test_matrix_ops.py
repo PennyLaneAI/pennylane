@@ -538,15 +538,15 @@ class TestQubitUnitary:
     @pytest.mark.parametrize(
         "U",
         [
-            (qp.matrix(qp.GlobalPhase(12, wires=0) @ qp.CRX(2, wires=[1, 0]))),  # 2 cnots
+            (qp.matrix(qp.GlobalPhase(12) @ qp.CRX(2, wires=[1, 0]))),  # 2 cnots
             (qp.matrix(qp.CRX(2, wires=[1, 0]))),  # 2 cnots
             (qp.matrix(qp.TrotterProduct(qp.X(0) + 0.3 * qp.Y(1), time=1, n=5))),  # 0 cnots
             (qp.matrix(qp.TrotterProduct(qp.X(0) @ qp.Z(1) - 0.3 * qp.Y(1), time=1))),  # 2 cnots
             (qp.matrix(qp.CRY(1, wires=[0, 1]))),  # 2 cnots
             (qp.matrix(qp.QFT(wires=[0, 1]))),  # 3 cnots
-            (qp.matrix(qp.GlobalPhase(12, wires=0) @ qp.QFT(wires=[0, 1]))),  # 3 cnots
+            (qp.matrix(qp.GlobalPhase(12) @ qp.QFT(wires=[0, 1]))),  # 3 cnots
             (qp.matrix(qp.RZ(1, wires=0) @ qp.GroverOperator(wires=[0, 1]))),  # 1 cnot
-            (qp.matrix(qp.GlobalPhase(12, wires=0) @ qp.GroverOperator(wires=[0, 1]))),  # 1 cnot
+            (qp.matrix(qp.GlobalPhase(12) @ qp.GroverOperator(wires=[0, 1]))),  # 1 cnot
             (qp.matrix(qp.CRY(-1, wires=[0, 1]))),  # 2 cnots
             (qp.matrix(qp.SWAP(wires=[0, 1]))),  # 3 cnots
             (qp.matrix(qp.SWAP(wires=[0, 1]) @ qp.GlobalPhase(3))),  # 3 cnots
@@ -729,7 +729,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
 
         for dec in (decomp, decomp2):
             assert len(dec) == 2
-            qp.assert_equal(decomp[0], qp.GlobalPhase(-3 * np.pi / 4, 0))
+            qp.assert_equal(decomp[0], qp.GlobalPhase(-3 * np.pi / 4))
             qp.assert_equal(decomp[1], qp.RZ(np.pi / 2, 0))
 
     @pytest.mark.pl2do(reason="PL 2.0: Parameter broadcasting will be re-visited.")
@@ -744,7 +744,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
         global_angles = np.array([3 / 4, 0, 0, 1]) * np.pi
         for dec in (decomp, decomp2):
             assert len(dec) == 2
-            qp.assert_equal(decomp[0], qp.GlobalPhase(-global_angles, 0))
+            qp.assert_equal(decomp[0], qp.GlobalPhase(-global_angles))
             qp.assert_equal(decomp[1], qp.RZ(angles, 0))
 
     def test_decomposition_two_qubits(self):

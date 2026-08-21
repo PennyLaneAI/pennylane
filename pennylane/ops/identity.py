@@ -244,7 +244,6 @@ class GlobalPhase(Operator2):
 
     Args:
         phi (TensorLike): the global phase
-        wires (Iterable[Any] or Any): unused argument - the operator is applied to all wires
 
     **Example**
 
@@ -283,12 +282,11 @@ class GlobalPhase(Operator2):
     num_wires = None
 
     dynamic_argnames = ("phi",)
-    arg_specs = {"phi": Float, "wires": Wire[0]}
+    wire_argnames = ()
+    arg_specs = {"phi": Float}
 
-    def __init__(self, phi, wires: WiresLike = ()):  # pylint: disable=unused-argument
-        # NOTE: Pass empty wires to mimic MLIR counterpart
-        # TODO: Remove 'wires' argument eventually, only here for backwards compatibility, [sc-127745]
-        super().__init__(phi, ())
+    def __init__(self, phi):  # pylint: disable=unused-argument
+        super().__init__(phi)
 
     @staticmethod
     def compute_eigvals(phi, wires=()):  # pylint: disable=arguments-differ
@@ -399,8 +397,8 @@ class GlobalPhase(Operator2):
     def sparse_matrix(self, wire_order: WiresLike | None = None, format: str = "csr"):
         return self.compute_sparse_matrix(self.phi, wires=wire_order or (), format=format)
 
-    def eigvals(self) -> TensorLike:
-        return self.compute_eigvals(self.phi, wires=self.wires)
+    def eigvals(self, wire_order: WiresLike | None = None) -> TensorLike:
+        return self.compute_eigvals(self.phi, wires=wire_order or ())
 
     def adjoint(self):
         return GlobalPhase(-1 * self.phi)

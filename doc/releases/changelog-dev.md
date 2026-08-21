@@ -783,6 +783,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* :class:`~.GlobalPhase` no longer accepts the `wires` argument in order to mirror its MLIR lowered operation.
+  [(#9992)](https://github.com/PennyLaneAI/pennylane/pull/9992)
+  
 * :class:`~.BasisState` no longer allows integers as input. Instead, `~.math.int_to_binary` should be used to preprocess
   the input in order to convert it to a binary array.
   [(#9933)](https://github.com/PennyLaneAI/pennylane/pull/9933)
