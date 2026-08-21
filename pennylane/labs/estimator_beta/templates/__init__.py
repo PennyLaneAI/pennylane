@@ -40,3 +40,7 @@ from .state_prep import (
     LabsMottonenStatePreparation,
     LabsSumOfSlatersPrep,
 )
+
+from .qubitize import (
+    QubitizeDF,
+)

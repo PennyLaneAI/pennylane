@@ -15,6 +15,7 @@ r"""This module contains the LabsResourceConfig class, which tracks the configur
 
 import pennylane.labs.estimator_beta as qre
 from pennylane.estimator.resource_config import ResourceConfig
+from pennylane.labs.estimator_beta.templates.qubitize import QubitizeDF
 
 from .ops import (
     ch_resource_decomp,
@@ -104,6 +105,15 @@ class LabsResourceConfig(ResourceConfig):
 
     def __init__(self):
         super().__init__()
+        _AMPLITUDE_AMPLIFICATION_PRECISION = 7
+        _DEFAULT_BIT_PRECISION = 15
+
+        # Add new precisions here:
+        self.resource_op_precisions[QubitizeDF] = {
+            "amplitude_amplification_precision": _AMPLITUDE_AMPLIFICATION_PRECISION,
+            "coeff_precision": _DEFAULT_BIT_PRECISION,
+            "rotation_precision": _DEFAULT_BIT_PRECISION,
+        }
 
         # Add modified decomps here:
         custom_decomps = {

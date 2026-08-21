@@ -148,6 +148,7 @@ from .templates import (
     qrom_state_preparation_phase_grad_resource_decomp,
     select_thc_resource_decomp,
     select_thc_controlled_resource_decomp,
+    QubitizeDF,
 )
 
 from .ops import (
@@ -162,6 +163,8 @@ from .ops import (
     mark_subroutine,
     ResourceQfunc,
 )
+
+from .compact_hamiltonian import DFHamiltonian
 
 Adder = LabsAdder
 OutAdder = LabsOutAdder
