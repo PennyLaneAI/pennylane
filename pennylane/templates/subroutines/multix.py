@@ -16,8 +16,7 @@
 import numpy as np
 from scipy import sparse
 
-from pennylane import compiler, math
-from pennylane.capture import enabled
+from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
@@ -313,7 +312,7 @@ def _multix_resources(bitstring: TensorLike, wires: WiresLike):  # pylint: disab
 @register_resources(_multix_resources, exact=False)
 def _multix_decomposition(bitstring: TensorLike, wires: WiresLike) -> None:
 
-    if compiler.active() or enabled():
+    if compiler.active() or capture.enabled():
         bitstring = math.array(bitstring, like="jax")
         wires = math.array(wires, like="jax")
 
