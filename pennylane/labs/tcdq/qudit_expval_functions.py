@@ -150,7 +150,7 @@ def _dims_to_numpy(d: int | Sequence[int], n_qudits: int) -> np.ndarray:
     Raises:
         ValueError: If ``d`` is a sequence whose length is not ``n_qudits``.
     """
-    if np.ndim(d) == 0:
+    if isinstance(d, int):
         return np.full((n_qudits,), int(d), dtype=int)
 
     dims = np.asarray(d, dtype=int)
