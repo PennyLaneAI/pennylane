@@ -108,7 +108,7 @@ def test_dict():
     assert new_x == {"a": 5, "b": {"c": 6, "d": 7}}
 
 
-def test_none():
+def test_none_is_an_empty_pytree_node():
     """Test that pennylane treats ``None`` as an empty pytree node rather than a leaf."""
 
     data, structure = flatten(None)
