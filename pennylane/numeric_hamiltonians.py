@@ -78,8 +78,6 @@ class NumericHamiltonian:
 
     Subclasses are registered as pytrees whose leaves are the three tensors, so the data
     flows through program capture and lowering with no per-representation special-casing.
-
-    .. seealso:: :class:`~.CDFHamiltonian`, :class:`~.CGFHamiltonian`
     """
 
     core_shape: ClassVar[tuple[str, ...]]
@@ -250,8 +248,6 @@ class CDFHamiltonian(NumericHamiltonian):
     Raises:
         ValueError: if the tensor ranks or shared dimensions are inconsistent
 
-    .. seealso:: :class:`~.CGFHamiltonian`, :class:`~.NumericHamiltonian`
-
     **Example**
 
     >>> import numpy as np
@@ -311,8 +307,6 @@ class CGFHamiltonian(NumericHamiltonian):
 
     Raises:
         ValueError: if the tensor ranks or shared dimensions are inconsistent
-
-    .. seealso:: :class:`~.CDFHamiltonian`, :class:`~.NumericHamiltonian`
 
     **Example**
 
