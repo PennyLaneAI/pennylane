@@ -22,29 +22,35 @@ from typing import Union
 
 
 def _cast_if_constant(
-    new_data: dict[tuple[str, ...], int], vars: set[str], skip_copy: bool, skip_normalization: bool
-) -> Union["Expression", int]:
-    """Collapse the new data for creating an Expression into an int if possible.
+    new_data: dict[tuple[str, ...], int | float],
+    vars: set[str],
+    skip_copy: bool,
+    skip_normalization: bool,
+) -> Union["Expression", int, float]:
+    """Collapse the new data for creating an Expression into a number if possible.
 
     Args:
-        new_data (dict[tuple[str, ...], int]): The new data for the Expression.
+        new_data (dict[tuple[str, ...], int | float]): The new data for the Expression.
         vars (set[str]): The set of variables in the Expression.
         skip_copy (bool): Whether to skip copying the new data when creating the Expression.
         skip_normalization (bool): Whether to skip normalization when creating the Expression.
 
     Returns:
-        Expression | int: An int if the result is a constant, otherwise a new :class:`~.resource.Expression` instance.
+        Expression | int | float: An int or float if the result is a constant, otherwise a new
+        :class:`~.resource.Expression` instance. The type of a constant result matches the type of
+        the corresponding coefficient.
     """
     if len(new_data) == 0:
         return 0
     if len(new_data) == 1 and () in new_data:
-        return new_data[()]  # Return as int rather than Expression if the result is a constant
+        # Return as int/float rather than Expression if the result is a constant
+        return new_data[()]
     return Expression(
         new_data, vars=vars, _skip_copy=skip_copy, _skip_normalization=skip_normalization
     )
 
 
-def _term_to_str(vars: tuple[str, ...], coeff: int) -> str:
+def _term_to_str(vars: tuple[str, ...], coeff: int | float) -> str:
     if not vars:
         return str(coeff)
     if coeff == 1:
@@ -55,9 +61,15 @@ def _term_to_str(vars: tuple[str, ...], coeff: int) -> str:
 class Expression:
     """
     Internal class for representing symbolic expressions of resources.
-    Specifically, each expression is an integral polynomial in the variables, where the variables
-    represent symbolic parameters of the resources. The expressions are represented as a dictionary
-    mapping tuples of variable names to their coefficients.
+    Specifically, each expression is a polynomial in the variables with numeric (``int`` or
+    ``float``) coefficients, where the variables represent symbolic parameters of the resources.
+    The expressions are represented as a dictionary mapping tuples of variable names to their
+    coefficients.
+
+    ``float`` coefficients are supported in exactly the same manner as ``int`` coefficients, and the
+    two can be freely mixed within a single expression. Note that a constant expression collapses to
+    a plain ``int`` or ``float`` (matching the type of its coefficient) rather than an
+    ``Expression``.
 
     .. warning::
 
@@ -67,12 +79,12 @@ class Expression:
 
     __slots__ = ("_hashval", "_data", "_vars")
 
-    _data: dict[tuple[str, ...], int]
+    _data: dict[tuple[str, ...], int | float]
     _vars: set[str]
 
     def __init__(
         self,
-        data: dict[tuple[str, ...], int] | int,
+        data: dict[tuple[str, ...], int | float] | int | float,
         vars: set[str] | None = None,
         _skip_copy: bool = False,
         _skip_normalization: bool = False,
@@ -81,19 +93,19 @@ class Expression:
         Initializes the expression with the given data.
 
         Args:
-            data (dict[tuple[str, ...], int] | int): A dictionary mapping tuples of variable names
-                to their coefficients, or an integer for a constant expression.
+            data (dict[tuple[str, ...], int | float] | int | float): A dictionary mapping tuples of
+                variable names to their coefficients, or a number for a constant expression.
             vars (set[str] | None): An optional set of variables that appear in the expression.
                 These must be a superset of the variables that appear in the keys of the data
                 dictionary. If not provided, the variables will be inferred from the keys of the
                 data dictionary.
         """
-        if not isinstance(data, (dict, int)):
-            raise TypeError("Expression data must be a dictionary of tuples or an integer")
+        if not isinstance(data, (dict, int, float)):
+            raise TypeError("Expression data must be a dictionary of tuples or a real number")
 
         self._hashval = None
 
-        if isinstance(data, int):
+        if isinstance(data, (int, float)):
             if data == 0:
                 self._data = {}
             else:
@@ -147,18 +159,19 @@ class Expression:
         return self._vars
 
     def subs(
-        self, substitutions: dict[str, int] | None = None, **kwargs
-    ) -> Union["Expression", int]:
+        self, substitutions: dict[str, int | float] | None = None, **kwargs
+    ) -> Union["Expression", int, float]:
         """
         Substitutes the given values for the variables in the expression.
 
         Args:
-            substitutions (dict[str, int] | None): A dictionary mapping variable names to their values.
-                If None, an empty dictionary is used. Additional keyword arguments can also be provided
-                as substitutions.
+            substitutions (dict[str, int | float] | None): A dictionary mapping variable names to
+                their values. If None, an empty dictionary is used. Additional keyword arguments can
+                also be provided as substitutions.
 
         Returns:
-            Expression | int: A new expression with the variables substituted, or an int if the result is a constant.
+            Expression | int | float: A new expression with the variables substituted, or a number if
+            the result is a constant.
         """
         if substitutions is None:
             substitutions = {}
@@ -182,7 +195,8 @@ class Expression:
         if len(new_data) == 0:
             return 0
         if len(new_data) == 1 and () in new_data:
-            return new_data[()]  # Return as int rather than Expression if the result is a constant
+            # Return as int/float rather than Expression if the result is a constant
+            return new_data[()]
         return Expression(new_data, vars=self._vars.difference(substitutions_copy.keys()))
 
     @lru_cache
@@ -204,9 +218,9 @@ class Expression:
         return f"Expression({self._data})"
 
     def __eq__(self, other) -> bool:
-        if not isinstance(other, (int, Expression)):
+        if not isinstance(other, (int, float, Expression)):
             return NotImplemented
-        if isinstance(other, int):
+        if isinstance(other, (int, float)):
             match len(self._data):
                 case 0:
                     return other == 0
@@ -219,7 +233,7 @@ class Expression:
     def __hash__(self) -> int:
         # NOTE: `lru_cache` and related methods can't be used here since they rely on a hash value existing
         if self._hashval is None:
-            # Need to make sure that int hashes are consistent with Expression hashes
+            # Need to make sure that int/float hashes are consistent with Expression hashes
             if len(self._data) == 0:
                 self._hashval = hash(0)
             elif len(self._data) == 1 and () in self._data:
@@ -236,17 +250,34 @@ class Expression:
             raise ValueError("Expression cannot be converted to int, more than one term")
         if () not in self._data:
             raise ValueError("Expression cannot be converted to int, contains variables")
-        return self._data[()]
+        # A float constant term is truncated towards zero, matching the behaviour of ``int(float)``
+        return int(self._data[()])
 
-    def __mul__(self, other) -> Union["Expression", int]:
-        if not isinstance(other, (int, Expression)):
+    def __float__(self) -> float:
+        if len(self._data) == 0:
+            return 0.0
+        if len(self._data) > 1:
+            raise ValueError("Expression cannot be converted to float, more than one term")
+        if () not in self._data:
+            raise ValueError("Expression cannot be converted to float, contains variables")
+        return float(self._data[()])
+
+    def __mul__(self, other) -> Union["Expression", int, float]:
+        if not isinstance(other, (int, float, Expression)):
             return NotImplemented
 
-        if isinstance(other, int):
+        if isinstance(other, (int, float)):
             if other == 0:
                 return 0
+            # Scaling by a non-zero int can never zero out a coefficient, but float
+            # multiplication can underflow to zero. Such terms are dropped here to preserve the
+            # invariant that zero coefficients are never stored.
             return _cast_if_constant(
-                {vars: coeff * other for vars, coeff in self._data.items()},
+                {
+                    vars: new_coeff
+                    for vars, coeff in self._data.items()
+                    if (new_coeff := coeff * other) != 0
+                },
                 vars=self._vars,
                 skip_copy=True,
                 skip_normalization=True,
@@ -260,17 +291,17 @@ class Expression:
             new_data, self._vars.union(other._vars), skip_copy=False, skip_normalization=False
         )
 
-    def __rmul__(self, other) -> Union["Expression", int]:
+    def __rmul__(self, other) -> Union["Expression", int, float]:
         return self.__mul__(other)
 
-    def __add__(self, other) -> Union["Expression", int]:
-        if not isinstance(other, (int, Expression)):
+    def __add__(self, other) -> Union["Expression", int, float]:
+        if not isinstance(other, (int, float, Expression)):
             return NotImplemented
 
         vars = self._vars
         new_data = self._data.copy()
 
-        if isinstance(other, int):
+        if isinstance(other, (int, float)):
             new_data[()] = new_data.get((), 0) + other
         else:
             for other_vars, coeff in other._data.items():
@@ -283,7 +314,7 @@ class Expression:
 
         return _cast_if_constant(new_data, vars, skip_copy=True, skip_normalization=False)
 
-    def __radd__(self, other) -> Union["Expression", int]:
+    def __radd__(self, other) -> Union["Expression", int, float]:
         return self.__add__(other)
 
     def _builtin_to_int_helper(self, func) -> Union["Expression", int]:
@@ -294,7 +325,7 @@ class Expression:
         exists. If the expression has no constant term, the function has no effect.
 
         Args:
-            func (Callable[[int], int]): The function to apply to the constant term.
+            func (Callable[[int | float], int]): The function to apply to the constant term.
 
         Returns:
             Expression | int: An int if the result is a constant, otherwise a
