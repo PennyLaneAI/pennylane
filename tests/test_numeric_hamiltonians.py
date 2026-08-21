@@ -15,7 +15,6 @@
 
 from dataclasses import dataclass
 
-import numpy as np
 import pytest
 
 import pennylane as qp
@@ -38,6 +37,7 @@ def cgf_specs(num_fragments=L, num_modes=M, num_modals=N):
         "leaf_tensors": Float[num_fragments + 1, num_modes, num_modals, num_modals],
         "nuc_constant": Float,
     }
+
 
 class TestAbstract:
     """Tests for Hamiltonians built from ``qp.typing.Float[...]`` specifications."""
@@ -98,3 +98,60 @@ class TestAbstract:
         """Test that shape unification applies to abstract input identically."""
         with pytest.raises(ValueError, match="inconsistent 'num_modals'"):
             CGFHamiltonian(Float[L + 1, M, M, N, N], Float[L + 1, M, N, N + 1])
+
+    def test_inconsistent_fragment_count(self):
+        """Test that the leading axis must agree for abstract input too."""
+        with pytest.raises(ValueError, match="inconsistent 'num_fragments'"):
+            CDFHamiltonian(Float[L + 1, N, N], Float[L + 2, N, N])
+
+    def test_wrong_rank(self):
+        """Test that the rank check applies to abstract input too."""
+        with pytest.raises(ValueError, match="'core_tensors' must have 5 dimensions"):
+            CGFHamiltonian(Float[L + 1, N, N], Float[L + 1, M, N, N])
+
+    def test_hash_matches_concrete_counterpart(self):
+        """Test that hashing on shapes makes an abstract Hamiltonian hash equal to the
+        concrete one it describes."""
+        concrete = CGFHamiltonian(**cgf_tensors())
+
+        assert hash(CGFHamiltonian(**cgf_specs())) == hash(concrete)
+        assert hash(qp.core.abstractify(concrete)) == hash(concrete)
+
+    def test_equality_ignores_values(self):
+        """Test that comparing abstract to concrete compares shapes only."""
+        assert CGFHamiltonian(**cgf_specs()) == CGFHamiltonian(**cgf_tensors(seed=7))
+
+    def test_repr_shows_specs(self):
+        """Test that an abstract Hamiltonian reports its ``AbstractArray`` specs."""
+        assert "AbstractArray" in repr(CGFHamiltonian(**cgf_specs()))
+
+    @pytest.mark.jax
+    def test_jax_roundtrip(self):
+        """Test that an abstract Hamiltonian survives a ``jax.tree_util`` round-trip."""
+        import jax
+
+        ham = CGFHamiltonian(**cgf_specs())
+        leaves, treedef = jax.tree_util.tree_flatten(ham)
+
+        assert jax.tree_util.tree_unflatten(treedef, leaves) == ham
+
+    def test_new_subclass_supports_abstract_data(self):
+        """Test that a new representation gets abstract construction for free."""
+
+        # pylint: disable=too-few-public-methods
+        @dataclass(frozen=True, eq=False, repr=False)
+        class THCHamiltonian(NumericHamiltonian):
+            """Tensor-hypercontracted shape family, for this test only."""
+
+            core_shape = ("R", "R")
+            leaf_shape = ("R", "N")
+            symbol_metadata = {"R": ("tensor_rank", 0), "N": ("num_orbitals", 0)}
+
+            core_tensors: object
+            leaf_tensors: object
+            nuc_constant: object = None
+
+        ham = THCHamiltonian(Float[7, 7], Float[7, 4])
+
+        assert ham.is_abstract
+        assert ham.dimensions == {"tensor_rank": 7, "num_orbitals": 4}
