@@ -54,6 +54,7 @@ from pathlib import Path
 try:
     import triton
     from triton.backends.compiler import GPUTarget
+    from triton.compiler import ASTSource
     from triton.tools import compile as triton_compile_tool
 except ImportError as exc:
     raise ImportError("Triton decoders require installed `triton` Python package.") from exc
@@ -304,9 +305,17 @@ def _compile_kernel(  # pylint: disable=too-many-arguments
     # Wrap tuples so nested JIT functions contribute their own cache keys.
     constants = {name: _wrap_constexpr(value) for name, value in constexpr.items()}
 
-    # Adapted from Triton's python/triton/tools/compile.py:compile_kernel
-    kernel.create_binder()
-    ast_source = kernel.ASTSource(fn=kernel, constexprs=constants, signature=signature, attrs={})
+    # Adapted from Triton's python/triton/tools/compile.py:compile_kernel, but without
+    # JITFunction.create_binder(). That call asks the local machine for a target, through
+    # driver.active.get_current_target(), which requires a usable GPU on the machine doing
+    # the compiling and fails with "0 active drivers" where there is none. It contributes
+    # nothing else that is used here: it assigns JITFunction.ASTSource, which is exactly
+    # triton.compiler.ASTSource imported above, and the target and binder it computes are
+    # discarded, because the target below comes from the caller's platform string instead.
+    #
+    # Compiling ahead of time for a card the local machine does not have is the point of
+    # taking an explicit platform, so this build must not depend on one being present.
+    ast_source = ASTSource(fn=kernel, constexprs=constants, signature=signature, attrs={})
 
     target_arch = int(arch) if backend == "cuda" and arch.isdigit() else arch
     target_obj = GPUTarget(backend, target_arch, warp_size)
