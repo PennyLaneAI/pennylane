@@ -19,9 +19,9 @@ See ``explanations.md`` for technical explanations of how this works.
 
 from abc import ABCMeta
 from inspect import Signature, signature
+from typing import ClassVar
 
-from pennylane.capture import enabled
-from pennylane.math import is_abstract
+from pennylane import capture, math
 from pennylane.pytrees import flatten
 
 
@@ -46,6 +46,9 @@ class OperatorMeta(ABCMeta):
     TODO: [sc-120453] Fill docstring
     """
 
+    _sig: ClassVar[Signature]
+    """The signature of the operator. Internal use only."""
+
     @property
     def __signature__(cls):
         # __signature__ must be overridden because using custom metaclasses causes
@@ -57,29 +60,34 @@ class OperatorMeta(ABCMeta):
 
     @_stop_autograph
     def __call__(cls, *args, **kwargs):
+
         bound = cls._sig.bind(*args, **kwargs)
         bound.apply_defaults()
         arguments: dict = bound.arguments
 
         # NOTE: Detect if static / compilable argument received a tracer
         # indicating it is incorrectly being used as a dynamic argument.
-        if enabled():
-            for name in cls.static_argnames + cls.compilable_argnames:
-                leaves, _ = flatten(arguments[name])
-                if any(is_abstract(l) for l in leaves):
-                    raise ValueError(
-                        f"Argument '{name}' of operator '{cls.__name__}' must be a concrete, "
-                        f"compile-time constant. A dynamic/traced variable was provided instead. "
-                    )
+        if capture.enabled():
+            _verify_no_traced_static_args(cls, arguments)
 
-        # This method is called everytime we want to create an instance of the class.
-        # default behavior uses __new__ then __init__
-        op = type.__call__(cls, *args, **kwargs)
+        # default behaviour calls __new__ and then __init__
+        op = super().__call__(*args, **kwargs)
+
+        # adds the operator to the program
         op.queue()
-
-        if enabled():
-            # When tracing is enabled, we want to use bind to construct the class
-            # if we want class construction to add it to the jaxpr
+        if capture.enabled():
+            # binding the operator primitive adds it to the jaxpr
             op._bind_primitive()
 
         return op
+
+
+def _verify_no_traced_static_args(cls, arguments):
+    """Verify that no static/compilable arguments received a tracer."""
+    for arg_name in cls.static_argnames + cls.compilable_argnames:
+        leaves, _ = flatten(arguments[arg_name])
+        if any(math.is_abstract(l) for l in leaves):
+            raise ValueError(
+                f"Argument '{arg_name}' of operator '{cls.__name__}' must be a concrete, "
+                f"compile-time constant. A dynamic/traced variable was provided instead. "
+            )
