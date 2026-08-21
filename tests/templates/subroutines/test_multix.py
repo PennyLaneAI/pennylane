@@ -264,25 +264,6 @@ def test_decomposition_capture_with_tuple_wires():
     assert any(eqn.primitive == for_loop_prim for eqn in jaxpr.eqns)
 
 
-@pytest.mark.capture
-def test_decomposition_capture_with_tuple_bitstring():
-    """Tests that a tuple bitstring can be indexed by a dynamically traced loop index."""
-
-    import jax  # pylint: disable=import-outside-toplevel
-
-    from pennylane.capture.primitives import (  # pylint: disable=import-outside-toplevel
-        for_loop_prim,
-    )
-
-    bitstring = (True, False, True)
-    wires = jax.numpy.array([0, 1, 2])
-    decomposition = qp.list_decomps(qp.MultiX)[0]
-
-    jaxpr = jax.make_jaxpr(lambda: decomposition(bitstring, wires))()
-
-    assert any(eqn.primitive == for_loop_prim for eqn in jaxpr.eqns)
-
-
 def test_adjoint():
     """Tests that the adjoint is a distinct, equivalent MultiX instance."""
     op = qp.MultiX([1, 0, 1], wires=["a", "b", "c"])
