@@ -17,6 +17,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.typing import Bool, Float, Int, Wire
 from pennylane.wires import Wires
 
@@ -70,23 +71,24 @@ def test_canonicalize_inputs_does_not_validate_or_cast():
     assert canonical_wires == Wires(wires)
 
 
-@pytest.mark.parametrize(
-    "skip_wire_mapping",
-    (
-        True,
-        pytest.param(
-            False,
-            marks=pytest.mark.xfail(
-                reason="Wire mapping issue between Operator2 and assert_valid."
-            ),
-        ),
-    ),
-)
-@pytest.mark.capture
-def test_standard_checks(skip_wire_mapping):
+@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
+def test_standard_checks():
     """Runs the standard Operator2 validity checks for MultiX."""
+    if qp.capture.enabled():
+        pytest.xfail("assert_valid is not yet compatible with capture-enabled Operator2 instances.")
+
     op = qp.MultiX([1, 0, 1], wires=[0, 1, 2])
-    qp.ops.functions.assert_valid(op, skip_wire_mapping=skip_wire_mapping)
+    qp.ops.functions.assert_valid(op)
+
+
+@pytest.mark.usefixtures("enable_and_disable_capture")
+def test_decomposition_capture_compatibility():
+    """Tests that the MultiX decomposition rule is capture compatible."""
+    op = qp.MultiX([1, 0, 1], wires=[0, 1, 2])
+
+    for rule in qp.list_decomps(qp.MultiX):
+        _test_decomposition_rule(op, rule)
 
 
 def test_abstract_init():
