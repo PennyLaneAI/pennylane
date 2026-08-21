@@ -25,7 +25,7 @@ from functools import lru_cache, partial
 from pennylane import math, ops
 from pennylane.allocation import Allocate, Deallocate
 from pennylane.core import queuing
-from pennylane.core.operator import Operator
+from pennylane.core.operator import Operator, Operator2
 from pennylane.decomposition import DecompositionGraph, GateSet, enabled_graph, gate_sets
 from pennylane.decomposition.decomposition_graph import DecompGraphSolution
 from pennylane.decomposition.utils import _get_decomp_args
@@ -187,18 +187,39 @@ def _get_plxpr_decompose():  # pylint: disable=too-many-statements
             rule = self._decomp_graph_solution.decomposition(
                 op, num_work_wires=self._num_work_wires
             )
-            num_wires = len(op.wires)
 
-            def compute_qfunc_decomposition(*_args, **_kwargs):
-                wires = _args[-num_wires:]
-                if not any(is_abstract_qubit(w) for w in wires):
-                    wires = math.array(wires, like="jax")
-                rule(*_args[:-num_wires], wires=wires, **_kwargs)
+            if isinstance(op, Operator2):
+                # ``Operator2`` decomposition rules are invoked with the operator's own
+                # arguments by name (the canonical ``rule(**op.arguments)`` convention, see
+                # ``Operator2.compute_decomposition``). This covers rules with structured wire
+                # arguments (e.g. ``SelectPauliRot``'s ``control_wires``/``target_wire``) and
+                # symbolic operators that take a nested ``base`` (e.g. ``Controlled``), neither
+                # of which fits a single flat ``wires`` argument. Flatten the operator to its
+                # traceable leaves (all wires and dynamic data, including those of a nested
+                # ``base``) so the decomposition is captured against freshly-traced wires, then
+                # rebuild the operator inside the trace and dispatch on its arguments.
+                leaves, treedef = jax.tree_util.tree_flatten(op)
 
-            args = (*op.parameters, *op.wires)
+                def compute_qfunc_decomposition(*_leaves):
+                    traced_op = jax.tree_util.tree_unflatten(treedef, _leaves)
+                    rule(**traced_op.arguments)
 
-            decomp_fn = partial(compute_qfunc_decomposition, **op.hyperparameters)
-            jaxpr_decomp = make_plxpr(decomp_fn)(*args)
+                args = leaves
+            else:
+                num_wires = len(op.wires)
+
+                def compute_qfunc_decomposition(*_args, **_kwargs):
+                    wires = _args[-num_wires:]
+                    if not any(is_abstract_qubit(w) for w in wires):
+                        wires = math.array(wires, like="jax")
+                    rule(*_args[:-num_wires], wires=wires, **_kwargs)
+
+                args = (*op.parameters, *op.wires)
+                compute_qfunc_decomposition = partial(
+                    compute_qfunc_decomposition, **op.hyperparameters
+                )
+
+            jaxpr_decomp = make_plxpr(compute_qfunc_decomposition)(*args)
 
             self._current_depth += 1
             # We don't need to copy the interpreter here, as the jaxpr of the decomposition
