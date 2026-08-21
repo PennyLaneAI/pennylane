@@ -24,7 +24,7 @@ import pennylane as qp
 from pennylane import allocation, math
 from pennylane.core import Operator2
 from pennylane.core.operator import abstractify
-from pennylane.typing import Wire
+from pennylane.typing import Bool, Complex, Wire
 
 from .decomposition_rule import DecompositionRule, register_condition, register_resources
 from .resources import adjoint_resource_rep, controlled_resource_rep, pow_resource_rep, resource_rep
@@ -403,12 +403,11 @@ def _to_controlled_qu_resource(
     num_control_wires, num_zero_control_values, num_work_wires, work_wire_type, **__
 ):
     return {
-        resource_rep(
-            qp.ControlledQubitUnitary,
-            num_target_wires=1,
-            num_control_wires=num_control_wires,
-            num_zero_control_values=num_zero_control_values,
-            num_work_wires=num_work_wires,
+        qp.ControlledQubitUnitary(
+            Complex[2, 2],
+            wires=Wire[num_control_wires + 1],
+            control_values=Bool[num_control_wires],
+            work_wires=Wire[num_work_wires],
             work_wire_type=work_wire_type,
         ): 1
     }
