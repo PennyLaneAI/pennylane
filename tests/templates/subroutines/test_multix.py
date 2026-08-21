@@ -23,405 +23,428 @@ from pennylane.typing import AbstractArray, AbstractWires, Bool, Float, Int, Wir
 from pennylane.wires import Wires
 
 
-@pytest.mark.parametrize(
-    ("bitstring_input", "wires_input"),
-    [
-        ([0, 1, 1, 0], ("a", "b", "c", "d")),
-        ([False, True, True, False], ("a", "b", "c", "d")),
-        ((False, True, False), ("a", "b", "c")),
-        ([False, True], (0, 1)),
-        (np.array([0, 0]), ["Alice", "Bob"]),
-        (np.array([False, True]), ["Alice", "Bob"]),
-        (Int[3], Wire[3]),
-        (Bool[2], Wire[2]),
-    ],
-)
-def test_input_arguments_parsed_correctly(bitstring_input, wires_input):
-    """Tests that MultiX handles and sanitizes its input arguments correctly."""
-    op = qp.MultiX(bitstring_input, wires=wires_input)
+class TestInitialization:
+    """Tests for MultiX initialization and input canonicalization."""
 
-    assert isinstance(op.bitstring, (np.ndarray, AbstractArray))
-    assert isinstance(op.wires, (Wires, AbstractWires))
-    assert op.is_abstract == (
-        isinstance(bitstring_input, AbstractArray) or isinstance(wires_input, AbstractWires)
+    @pytest.mark.parametrize(
+        ("bitstring_input", "wires_input"),
+        [
+            ([0, 1, 1, 0], ("a", "b", "c", "d")),
+            ([False, True, True, False], ("a", "b", "c", "d")),
+            ((False, True, False), ("a", "b", "c")),
+            ([False, True], (0, 1)),
+            (np.array([0, 0]), ["Alice", "Bob"]),
+            (np.array([False, True]), ["Alice", "Bob"]),
+            (Int[3], Wire[3]),
+            (Bool[2], Wire[2]),
+        ],
     )
-    assert op.bitstring.dtype == bool
-    if not isinstance(bitstring_input, AbstractArray):
-        assert np.all(op.bitstring == np.array(bitstring_input, dtype=bool))
-    if not isinstance(wires_input, AbstractWires):
-        assert op.wires == Wires(wires_input)
+    def test_input_arguments_parsed_correctly(self, bitstring_input, wires_input):
+        """Tests that MultiX handles and sanitizes its input arguments correctly."""
+        op = qp.MultiX(bitstring_input, wires=wires_input)
 
-    assert op.dynamic_args == {"bitstring": op.bitstring}
-    assert op.wire_args == {"wires": op.wires}
-    assert op.num_wires == len(wires_input)
-    assert op.num_params == 0
-    assert op.grad_method is None
+        assert isinstance(op.bitstring, (np.ndarray, AbstractArray))
+        assert isinstance(op.wires, (Wires, AbstractWires))
+        assert op.is_abstract == (
+            isinstance(bitstring_input, AbstractArray) or isinstance(wires_input, AbstractWires)
+        )
+        assert op.bitstring.dtype == bool
+        if not isinstance(bitstring_input, AbstractArray):
+            assert np.all(op.bitstring == np.array(bitstring_input, dtype=bool))
+        if not isinstance(wires_input, AbstractWires):
+            assert op.wires == Wires(wires_input)
 
+        assert op.dynamic_args == {"bitstring": op.bitstring}
+        assert op.wire_args == {"wires": op.wires}
+        assert op.num_wires == len(wires_input)
+        assert op.num_params == 0
+        assert op.grad_method is None
 
-def test_canonicalize_inputs_does_not_validate_or_cast():
-    """Tests that canonicalization changes input containers but does not validate or cast."""
-    bitstring = np.array([0.0, 1.0])
-    wires = ("a", "b")
+    def test_canonicalize_inputs_does_not_validate_or_cast(self):
+        """Tests that canonicalization changes input containers but does not validate or cast."""
+        bitstring = np.array([0.0, 1.0])
+        wires = ("a", "b")
 
-    # pylint: disable-next=protected-access
-    canonical_bitstring, canonical_wires = qp.MultiX._canonicalize_inputs(bitstring, wires)
+        # pylint: disable-next=protected-access
+        canonical_bitstring, canonical_wires = qp.MultiX._canonicalize_inputs(bitstring, wires)
 
-    assert canonical_bitstring is bitstring
-    assert canonical_bitstring.dtype == float
-    assert canonical_wires == Wires(wires)
+        assert canonical_bitstring is bitstring
+        assert canonical_bitstring.dtype == float
+        assert canonical_wires == Wires(wires)
 
+    def test_custom_repr_override(self):
+        """Tests that the Boolean bitstring is represented with integer values."""
+        op = qp.MultiX([True, False, True], wires=["a", "b", "c"])
 
-@pytest.mark.jax
-@pytest.mark.usefixtures("enable_and_disable_capture")
-def test_standard_checks():
-    """Runs the standard Operator2 validity checks for MultiX."""
-    if qp.capture.enabled():
-        pytest.xfail("assert_valid is not yet compatible with capture-enabled Operator2 instances.")
-
-    op = qp.MultiX([1, 0, 1], wires=[0, 1, 2])
-    qp.ops.functions.assert_valid(op)
-
-
-@pytest.mark.usefixtures("enable_and_disable_capture")
-def test_decomposition_capture_compatibility():
-    """Tests that the MultiX decomposition rule is capture compatible."""
-    op = qp.MultiX([1, 0, 1], wires=[0, 1, 2])
-
-    for rule in qp.list_decomps(qp.MultiX):
-        _test_decomposition_rule(op, rule)
+        assert repr(op) == "MultiX([1 0 1], wires=['a', 'b', 'c'])"
 
 
-def test_custom_repr_override():
-    """Tests that the Boolean bitstring is represented with integer values."""
-    op = qp.MultiX([True, False, True], wires=["a", "b", "c"])
+class TestValidation:
+    """Tests for MultiX input and operator validation."""
 
-    assert repr(op) == "MultiX([1 0 1], wires=['a', 'b', 'c'])"
+    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_standard_checks(self):
+        """Runs the standard Operator2 validity checks for MultiX."""
+        if qp.capture.enabled():
+            pytest.xfail(
+                "assert_valid is not yet compatible with capture-enabled Operator2 instances."
+            )
 
+        op = qp.MultiX([1, 0, 1], wires=[0, 1, 2])
+        qp.ops.functions.assert_valid(op)
 
-@pytest.mark.parametrize(
-    ("bitstring", "wires", "error_match"),
-    [
-        ([0, 1, 1, 0], ["a", "b", "c"], "length"),
-        (Int[2], Wire[3], "length"),
-        ([0, 1, 2], ["a", "b", "c"], "binary"),
-        ([[0, 1, 0]], ["a", "b", "c"], "dimension"),
-        (Int[1, 3], Wire[1], "dimension"),
-        (np.array([0.0, 1.0]), ["a", "b"], "boolean"),
-        (Float[3], Wire[3], "boolean"),
-        ([0], [], "wire"),
-    ],
-)
-def test_invalid_arguments(bitstring, wires, error_match):
-    """Tests that MultiX raises clear errors when input arguments are invalid."""
-    with pytest.raises(ValueError, match=error_match):
-        qp.MultiX(bitstring, wires=wires)
-
-
-@pytest.mark.parametrize(
-    ("bitstring", "expected_matrix"),
-    [
-        ([0], np.eye(2)),
-        ([1], qp.X.compute_matrix()),
-        ([1, 0], np.kron(qp.X.compute_matrix(), np.eye(2))),
-        ([0, 1, 1], np.kron(np.eye(2), np.kron(qp.X.compute_matrix(), qp.X.compute_matrix()))),
-    ],
-)
-def test_matrix(bitstring, expected_matrix):
-    """Tests that MultiX computes the tensor product selected by the bitstring."""
-    op = qp.MultiX(bitstring, wires=range(len(bitstring)))
-
-    assert np.allclose(op.matrix(), expected_matrix)
+    @pytest.mark.parametrize(
+        ("bitstring", "wires", "error_match"),
+        [
+            ([0, 1, 1, 0], ["a", "b", "c"], "length"),
+            (Int[2], Wire[3], "length"),
+            ([0, 1, 2], ["a", "b", "c"], "binary"),
+            ([[0, 1, 0]], ["a", "b", "c"], "dimension"),
+            (Int[1, 3], Wire[1], "dimension"),
+            (np.array([0.0, 1.0]), ["a", "b"], "boolean"),
+            (Float[3], Wire[3], "boolean"),
+            ([0], [], "wire"),
+        ],
+    )
+    def test_invalid_arguments(self, bitstring, wires, error_match):
+        """Tests that MultiX raises clear errors when input arguments are invalid."""
+        with pytest.raises(ValueError, match=error_match):
+            qp.MultiX(bitstring, wires=wires)
 
 
-@pytest.mark.parametrize("sparse_format", ["csr", "csc", "lil", "coo"])
-@pytest.mark.parametrize(
-    ("bitstring", "expected_matrix"),
-    [
-        ([0], sparse.csr_matrix(np.eye(2))),
-        ([1], sparse.csr_matrix(qp.X.compute_matrix())),
-        ([1, 0], sparse.csr_matrix(np.kron(qp.X.compute_matrix(), np.eye(2)))),
-        (
-            [0, 1, 1],
-            sparse.csr_matrix(
-                np.kron(np.eye(2), np.kron(qp.X.compute_matrix(), qp.X.compute_matrix()))
+class TestMatrixGeneration:
+    """Tests for dense and sparse matrix representations."""
+
+    @pytest.mark.parametrize(
+        ("bitstring", "expected_matrix"),
+        [
+            ([0], np.eye(2)),
+            ([1], qp.X.compute_matrix()),
+            ([1, 0], np.kron(qp.X.compute_matrix(), np.eye(2))),
+            ([0, 1, 1], np.kron(np.eye(2), np.kron(qp.X.compute_matrix(), qp.X.compute_matrix()))),
+        ],
+    )
+    def test_matrix(self, bitstring, expected_matrix):
+        """Tests that MultiX computes the tensor product selected by the bitstring."""
+        op = qp.MultiX(bitstring, wires=range(len(bitstring)))
+
+        assert np.allclose(op.matrix(), expected_matrix)
+
+    @pytest.mark.parametrize("sparse_format", ["csr", "csc", "lil", "coo"])
+    @pytest.mark.parametrize(
+        ("bitstring", "expected_matrix"),
+        [
+            ([0], sparse.csr_matrix(np.eye(2))),
+            ([1], sparse.csr_matrix(qp.X.compute_matrix())),
+            ([1, 0], sparse.csr_matrix(np.kron(qp.X.compute_matrix(), np.eye(2)))),
+            (
+                [0, 1, 1],
+                sparse.csr_matrix(
+                    np.kron(np.eye(2), np.kron(qp.X.compute_matrix(), qp.X.compute_matrix()))
+                ),
             ),
-        ),
-    ],
-)
-def test_sparse_matrix(bitstring, expected_matrix, sparse_format):
-    """Tests that MultiX computes its sparse matrix in the requested format."""
-    wires = range(len(bitstring))
-    op = qp.MultiX(bitstring, wires=wires)
-
-    expected_matrix_correct_format = expected_matrix.asformat(sparse_format)
-    sparse_matrix = op.sparse_matrix(format=sparse_format)
-    dense_matrix = op.matrix()
-
-    assert qp.MultiX.has_sparse_matrix
-    assert sparse_matrix.format == sparse_format
-    assert (sparse_matrix - expected_matrix_correct_format).nnz == 0
-    assert np.allclose(sparse_matrix.toarray(), dense_matrix)
-
-
-@pytest.mark.parametrize(
-    ("bitstring", "expected_eigvals"),
-    [
-        ([0], [1, 1]),
-        ([1], [1, -1]),
-        ([1, 0], [1, 1, -1, -1]),
-        ([0, 1], [1, -1, 1, -1]),
-        ([0, 1, 1], [1, -1, -1, 1, 1, -1, -1, 1]),
-    ],
-)
-def test_eigvals(bitstring, expected_eigvals):
-    """Tests that MultiX computes the eigenvalues correctly."""
-    wires = range(len(bitstring))
-    op = qp.MultiX(bitstring, wires=wires)
-
-    computed_eigvals = qp.MultiX.compute_eigvals(bitstring, wires)
-
-    assert qp.math.allclose(computed_eigvals, expected_eigvals)
-    assert qp.math.allclose(op.eigvals(), expected_eigvals)
-
-
-@pytest.mark.jax
-def test_jit_eigvals():
-    """Tests that MultiX eigenvalue computations work with JAX bitstrings."""
-
-    import jax  # pylint: disable=import-outside-toplevel
-
-    bitstring = jax.numpy.array([1, 0])
-    eigvals_fn = jax.jit(lambda bits: qp.MultiX.compute_eigvals(bits, wires=[0, 1]))
-    assert qp.math.allclose(eigvals_fn(bitstring), [1, 1, -1, -1])
-
-
-@pytest.mark.parametrize(
-    ("bitstring", "wires", "gates_expected"),
-    [
-        ([0], [0], []),
-        ([1], [1], [qp.H(1)]),
-        ([1, 0], [0, 1], [qp.H(0)]),
-        ([0, 1, 1], [0, 1, 2], [qp.H(1), qp.H(2)]),
-    ],
-)
-def test_diagonalizing_gates(bitstring, wires, gates_expected):
-    """Tests that MultiX is diagonalized by its diagonalizing gates."""
-    op = qp.MultiX(bitstring, wires=wires)
-
-    assert op.has_diagonalizing_gates
-
-    diag_gates = op.diagonalizing_gates()
-
-    assert len(diag_gates) == len(gates_expected)
-
-    for i, gate in enumerate(diag_gates):
-        qp.assert_equal(gate, gates_expected[i])
-
-
-@pytest.mark.jax
-def test_jit_matrix():
-    """Tests that MultiX matrix computations work with JAX bitstrings."""
-
-    import jax  # pylint: disable=import-outside-toplevel
-
-    bitstring = jax.numpy.array([1, 0])
-    matrix_fn = jax.jit(lambda bits: qp.MultiX.compute_matrix(bits, wires=[0, 1]))
-    expected = np.kron(qp.X.compute_matrix(), np.eye(2))
-    assert qp.math.allclose(matrix_fn(bitstring), expected)
-
-
-@pytest.mark.capture
-def test_decomposition_capture_with_tuple_wires():
-    """Tests graph capture with tuple wires and a dynamically traced loop index."""
-
-    import jax  # pylint: disable=import-outside-toplevel
-
-    from pennylane.capture.primitives import (  # pylint: disable=import-outside-toplevel
-        for_loop_prim,
+        ],
     )
+    def test_sparse_matrix(self, bitstring, expected_matrix, sparse_format):
+        """Tests that MultiX computes its sparse matrix in the requested format."""
+        wires = range(len(bitstring))
+        op = qp.MultiX(bitstring, wires=wires)
 
-    bitstring = jax.numpy.array([1, 0, 1])
-    wires = (0, 1, 2)
-    decomposition = qp.list_decomps(qp.MultiX)[0]
+        expected_matrix_correct_format = expected_matrix.asformat(sparse_format)
+        sparse_matrix = op.sparse_matrix(format=sparse_format)
+        dense_matrix = op.matrix()
 
-    # The loop index is a JAX tracer. This call fails if the python tuple wires is
-    # not converted to a JAX array before the decomposition for MultiX calls wires[i].
-    jaxpr = jax.make_jaxpr(lambda bits: decomposition(bits, wires))(bitstring)
+        assert qp.MultiX.has_sparse_matrix
+        assert sparse_matrix.format == sparse_format
+        assert (sparse_matrix - expected_matrix_correct_format).nnz == 0
+        assert np.allclose(sparse_matrix.toarray(), dense_matrix)
 
-    # Ensures exactly one for loop primitive appears in the jaxpr
-    loop_eqns = [eqn for eqn in jaxpr.eqns if eqn.primitive == for_loop_prim]
-    assert len(loop_eqns) == 1
+    @pytest.mark.jax
+    def test_jit_matrix(self):
+        """Tests that MultiX matrix computations work with JAX bitstrings."""
 
-    # Check that the only constants are the wires
-    assert len(jaxpr.consts) == 1
-    assert np.all(jaxpr.consts[0] == wires)
+        import jax  # pylint: disable=import-outside-toplevel
 
-    # Validate the produced tape
-    tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, bitstring)
-    expected = [qp.X(0), qp.X(2)]
-
-    assert len(tape.operations) == len(expected)
-    assert tape.wires == Wires([0, 2])
-
-    # Ensure the tape matches what is expected
-    for i, expected_op in enumerate(expected):
-        qp.assert_equal(tape.operations[i], expected_op)
+        bitstring = jax.numpy.array([1, 0])
+        matrix_fn = jax.jit(lambda bits: qp.MultiX.compute_matrix(bits, wires=[0, 1]))
+        expected = np.kron(qp.X.compute_matrix(), np.eye(2))
+        assert qp.math.allclose(matrix_fn(bitstring), expected)
 
 
-def test_adjoint():
-    """Tests that the adjoint is a distinct, equivalent MultiX instance."""
-    op = qp.MultiX([1, 0, 1], wires=["a", "b", "c"])
+class TestEigvalDiagonalization:
+    """Tests for eigenvalues and diagonalizing gates."""
 
-    adjoint_op = op.adjoint()
+    @pytest.mark.parametrize(
+        ("bitstring", "expected_eigvals"),
+        [
+            ([0], [1, 1]),
+            ([1], [1, -1]),
+            ([1, 0], [1, 1, -1, -1]),
+            ([0, 1], [1, -1, 1, -1]),
+            ([0, 1, 1], [1, -1, -1, 1, 1, -1, -1, 1]),
+        ],
+    )
+    def test_eigvals(self, bitstring, expected_eigvals):
+        """Tests that MultiX computes the eigenvalues correctly."""
+        wires = range(len(bitstring))
+        op = qp.MultiX(bitstring, wires=wires)
 
-    assert op.has_adjoint
-    assert adjoint_op is not op
-    qp.assert_equal(adjoint_op, op)
+        computed_eigvals = qp.MultiX.compute_eigvals(bitstring, wires)
+
+        assert qp.math.allclose(computed_eigvals, expected_eigvals)
+        assert qp.math.allclose(op.eigvals(), expected_eigvals)
+
+    @pytest.mark.jax
+    def test_jit_eigvals(self):
+        """Tests that MultiX eigenvalue computations work with JAX bitstrings."""
+
+        import jax  # pylint: disable=import-outside-toplevel
+
+        bitstring = jax.numpy.array([1, 0])
+        eigvals_fn = jax.jit(lambda bits: qp.MultiX.compute_eigvals(bits, wires=[0, 1]))
+        assert qp.math.allclose(eigvals_fn(bitstring), [1, 1, -1, -1])
+
+    @pytest.mark.parametrize(
+        ("bitstring", "wires", "gates_expected"),
+        [
+            ([0], [0], []),
+            ([1], [1], [qp.H(1)]),
+            ([1, 0], [0, 1], [qp.H(0)]),
+            ([0, 1, 1], [0, 1, 2], [qp.H(1), qp.H(2)]),
+        ],
+    )
+    def test_diagonalizing_gates(self, bitstring, wires, gates_expected):
+        """Tests that MultiX is diagonalized by its diagonalizing gates."""
+        op = qp.MultiX(bitstring, wires=wires)
+
+        assert op.has_diagonalizing_gates
+
+        diag_gates = op.diagonalizing_gates()
+
+        assert len(diag_gates) == len(gates_expected)
+
+        for i, gate in enumerate(diag_gates):
+            qp.assert_equal(gate, gates_expected[i])
+
+    @pytest.mark.parametrize("bitstring", ([0], [1], [1, 0], [0, 1, 1]))
+    def test_diagonalizing_gates_match_eigvals(self, bitstring):
+        """Tests that the diagonalizing gates produce the diagonal eigenvalue matrix."""
+        wires = range(len(bitstring))
+        op = qp.MultiX(bitstring, wires=wires)
+
+        unitary = np.eye(2 ** len(op.wires))
+        for gate in op.diagonalizing_gates():
+            gate_matrix = qp.matrix(gate, wire_order=op.wires)
+            unitary = gate_matrix @ unitary
+
+        diagonalized_matrix = unitary @ op.matrix() @ unitary.conj().T
+        expected_matrix = np.diag(op.eigvals())
+
+        assert np.allclose(diagonalized_matrix, expected_matrix)
 
 
-@pytest.mark.usefixtures("enable_and_disable_capture")
-def test_adjoint_decomposition_capture_compatibility():
-    """Tests that the MultiX decomposition rule is capture compatible."""
-    op = qp.MultiX([1, 0, 1], wires=[0, 1, 2])
-    adjoint_op = qp.adjoint(op)
+class TestOperatorArithmetic:
+    """Tests for adjoint and power operations."""
 
-    if qp.capture.enabled():
-        pytest.xfail(
-            "When capture is enabled, ends up passing identical `ArgInfo` placeholder leaves into MultiX's`__init__` as wires since `ArgInfo` are not recognized as abstract. Since they are not unique, we get an error comparing them."
+    def test_adjoint(self):
+        """Tests that the adjoint is a distinct, equivalent MultiX instance."""
+        op = qp.MultiX([1, 0, 1], wires=["a", "b", "c"])
+
+        adjoint_op = op.adjoint()
+
+        assert op.has_adjoint
+        assert adjoint_op is not op
+        qp.assert_equal(adjoint_op, op)
+
+    @pytest.mark.parametrize("exponent", [-5, -3, -1, 1, 3, 5])
+    def test_pow_odd_integer(self, exponent):
+        """Tests that MultiX raised to an odd integer is equivalent to itself."""
+        op = qp.MultiX([1, 0, 1], wires=["a", "b", "c"])
+        pow_ops = op.pow(exponent)
+
+        assert len(pow_ops) == 1
+        qp.assert_equal(pow_ops[0], op)
+
+    @pytest.mark.parametrize("exponent", [-6, -4, -2, 0, 2, 4, 6])
+    def test_pow_even_integer(self, exponent):
+        """Tests that MultiX raised to an even integer is the identity."""
+        op = qp.MultiX([1, 0, 1], wires=["a", "b", "c"])
+        pow_ops = op.pow(exponent)
+
+        assert len(pow_ops) == 0
+
+
+class TestDecomposition:
+    """Tests for registered and operator-level decompositions."""
+
+    @pytest.mark.parametrize(
+        ("bitstring", "wires"),
+        [
+            ([0], [0]),
+            ([1], [0]),
+            ([1, 0], [0, 1]),
+            ([0, 1, 1], [0, 1, 2]),
+            ([False, True, False], [0, 1, 2]),
+            ([1, 0, 1, 1], [0, 1, 2, 3]),
+        ],
+    )
+    def test_decomposition(self, bitstring, wires):
+        """Tests that MultiX decomposition contains X gates at the locations in the bitstring marked by 1."""
+
+        op = qp.MultiX(bitstring, wires=wires)
+        assert op.has_decomposition
+        decomp = op.decomposition()
+        assert len(decomp) == sum(bitstring)  # each bit contributes one X gate
+
+        # checking that the decomposed PauliX gates have the correct wire indices
+        decomp_idx = 0
+        for i, bit in enumerate(bitstring):
+            if bit == 1:
+                qp.assert_equal(decomp[decomp_idx], qp.X(wires[i]))
+                decomp_idx += 1
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_decomposition_capture_compatibility(self):
+        """Tests that the MultiX decomposition rule is capture compatible."""
+        op = qp.MultiX([1, 0, 1], wires=[0, 1, 2])
+
+        for rule in qp.list_decomps(qp.MultiX):
+            _test_decomposition_rule(op, rule)
+
+    @pytest.mark.capture
+    def test_decomposition_capture_with_tuple_wires(self):
+        """Tests graph capture with tuple wires and a dynamically traced loop index."""
+
+        import jax  # pylint: disable=import-outside-toplevel
+
+        from pennylane.capture.primitives import (  # pylint: disable=import-outside-toplevel
+            for_loop_prim,
         )
 
-    for rule in qp.list_decomps("Adjoint(MultiX)"):
-        _test_decomposition_rule(adjoint_op, rule)
+        bitstring = jax.numpy.array([1, 0, 1])
+        wires = (0, 1, 2)
+        decomposition = qp.list_decomps(qp.MultiX)[0]
 
+        # The loop index is a JAX tracer. This call fails if the python tuple wires is
+        # not converted to a JAX array before the decomposition for MultiX calls wires[i].
+        jaxpr = jax.make_jaxpr(lambda bits: decomposition(bits, wires))(bitstring)
 
-def test_adjoint_decomposition():
-    """Tests that Adjoint(MultiX) decomposes to MultiX."""
-    op = qp.MultiX([1, 0, 1], wires=[0, 1, 2])
+        # Ensures exactly one for loop primitive appears in the jaxpr
+        loop_eqns = [eqn for eqn in jaxpr.eqns if eqn.primitive == for_loop_prim]
+        assert len(loop_eqns) == 1
 
-    decomposition = qp.adjoint(op).decomposition()
+        # Check that the only constants are the wires
+        assert len(jaxpr.consts) == 1
+        assert np.all(jaxpr.consts[0] == wires)
 
-    assert len(decomposition) == 1
-    qp.assert_equal(decomposition[0], op)
+        # Validate the produced tape
+        tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, bitstring)
+        expected = [qp.X(0), qp.X(2)]
 
+        assert len(tape.operations) == len(expected)
+        assert tape.wires == Wires([0, 2])
 
-@pytest.mark.parametrize("exponent", [-5, -3, -1, 1, 3, 5])
-def test_pow_odd_integer(exponent):
-    """Tests that MultiX raised to an odd integer is equivalent to itself."""
-    op = qp.MultiX([1, 0, 1], wires=["a", "b", "c"])
-    pow_ops = op.pow(exponent)
+        # Ensure the tape matches what is expected
+        for i, expected_op in enumerate(expected):
+            qp.assert_equal(tape.operations[i], expected_op)
 
-    assert len(pow_ops) == 1
-    qp.assert_equal(pow_ops[0], op)
+    def test_adjoint_decomposition(self):
+        """Tests that Adjoint(MultiX) decomposes to MultiX."""
+        op = qp.MultiX([1, 0, 1], wires=[0, 1, 2])
 
+        decomposition = qp.adjoint(op).decomposition()
 
-@pytest.mark.parametrize("exponent", [-6, -4, -2, 0, 2, 4, 6])
-def test_pow_even_integer(exponent):
-    """Tests that MultiX raised to an even integer is the identity."""
-    op = qp.MultiX([1, 0, 1], wires=["a", "b", "c"])
-    pow_ops = op.pow(exponent)
-
-    assert len(pow_ops) == 0
-
-
-@pytest.mark.parametrize("exponent", [0, 1, 2, 3, 4, 5])
-def test_pow_decomposition(exponent):
-    """Tests non-negative integer powers for Pow(MultiX)."""
-    op = qp.MultiX([1, 0, 1], wires=[0, 1, 2])
-
-    decomposition = qp.pow(op, exponent).decomposition()
-    if exponent % 2 == 0:  # even
-        assert len(decomposition) == 0
-    else:  # odd
         assert len(decomposition) == 1
         qp.assert_equal(decomposition[0], op)
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_adjoint_decomposition_capture_compatibility(self):
+        """Tests that the MultiX decomposition rule is capture compatible."""
+        op = qp.MultiX([1, 0, 1], wires=[0, 1, 2])
+        adjoint_op = qp.adjoint(op)
 
-@pytest.mark.usefixtures("enable_and_disable_capture")
-def test_pow_decomposition_capture_compatibility():
-    """Tests that the MultiX decomposition rule is capture compatible."""
-    op = qp.MultiX([1, 0, 1], wires=[0, 1, 2])
-    pow_op = qp.pow(op, 3)
+        if qp.capture.enabled():
+            pytest.xfail(
+                "When capture is enabled, ends up passing identical `ArgInfo` placeholder leaves into MultiX's`__init__` as wires since `ArgInfo` are not recognized as abstract. Since they are not unique, we get an error comparing them."
+            )
 
-    if qp.capture.enabled():
-        pytest.xfail(
-            "When capture is enabled, ends up passing identical `ArgInfo` placeholder leaves into MultiX's`__init__` as wires since `ArgInfo` are not recognized as abstract. Since they are not unique, we get an error comparing them."
-        )
+        for rule in qp.list_decomps("Adjoint(MultiX)"):
+            _test_decomposition_rule(adjoint_op, rule)
 
-    for rule in qp.list_decomps("Pow(MultiX)"):
-        _test_decomposition_rule(pow_op, rule)
+    @pytest.mark.parametrize("exponent", [0, 1, 2, 3, 4, 5])
+    def test_pow_decomposition(self, exponent):
+        """Tests non-negative integer powers for Pow(MultiX)."""
+        op = qp.MultiX([1, 0, 1], wires=[0, 1, 2])
 
+        decomposition = qp.pow(op, exponent).decomposition()
+        if exponent % 2 == 0:  # even
+            assert len(decomposition) == 0
+        else:  # odd
+            assert len(decomposition) == 1
+            qp.assert_equal(decomposition[0], op)
 
-@pytest.mark.parametrize(
-    ("bitstring", "wires", "expected_index"),
-    [
-        ([0], [0], 0),
-        ([1], [0], 1),
-        ([1, 0], [0, 1], 2),
-        ([0, 1, 1], [0, 1, 2], 3),
-        ([1, 0, 1, 1], [0, 1, 2, 3], 11),
-    ],
-)
-def test_evalutation(bitstring, wires, expected_index):
-    """Tests that MultiX works correctly on 'default.qubit' device and |0...0> input state."""
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_pow_decomposition_capture_compatibility(self):
+        """Tests that the MultiX decomposition rule is capture compatible."""
+        op = qp.MultiX([1, 0, 1], wires=[0, 1, 2])
+        pow_op = qp.pow(op, 3)
 
-    dev = qp.device("default.qubit")
+        if qp.capture.enabled():
+            pytest.xfail(
+                "When capture is enabled, ends up passing identical `ArgInfo` placeholder leaves into MultiX's`__init__` as wires since `ArgInfo` are not recognized as abstract. Since they are not unique, we get an error comparing them."
+            )
 
-    @qp.qnode(dev)
-    def circuit():
-        qp.MultiX(bitstring, wires=wires)
-        return qp.probs(wires=wires)
-
-    # qp.MultiX( bitstring, ... ) should set |0...0> to |bitstring>
-    expected_result = np.zeros(2 ** len(wires))
-    expected_result[expected_index] = 1
-
-    obtained_result = circuit()
-
-    assert np.allclose(obtained_result, expected_result)
+        for rule in qp.list_decomps("Pow(MultiX)"):
+            _test_decomposition_rule(pow_op, rule)
 
 
-@pytest.mark.parametrize(
-    ("bitstring", "wires"),
-    [
-        ([0], [0]),
-        ([1], [0]),
-        ([1, 0], [0, 1]),
-        ([0, 1, 1], [0, 1, 2]),
-        ([False, True, False], [0, 1, 2]),
-        ([1, 0, 1, 1], [0, 1, 2, 3]),
-    ],
-)
-def test_decomposition(bitstring, wires):
-    """Tests that MultiX decomposition contains X gates at the locations in the bitstring marked by 1."""
+class TestExecution:
+    """Tests execution on PennyLane devices and compilation interfaces."""
 
-    op = qp.MultiX(bitstring, wires=wires)
-    assert op.has_decomposition
-    decomp = op.decomposition()
-    assert len(decomp) == sum(bitstring)  # each bit contributes one X gate
+    @pytest.mark.parametrize(
+        ("bitstring", "wires", "expected_index"),
+        [
+            ([0], [0], 0),
+            ([1], [0], 1),
+            ([1, 0], [0, 1], 2),
+            ([0, 1, 1], [0, 1, 2], 3),
+            ([1, 0, 1, 1], [0, 1, 2, 3], 11),
+        ],
+    )
+    def test_evalutation(self, bitstring, wires, expected_index):
+        """Tests that MultiX works correctly on 'default.qubit' device and |0...0> input state."""
 
-    # checking that the decomposed PauliX gates have the correct wire indices
-    decomp_idx = 0
-    for i, bit in enumerate(bitstring):
-        if bit == 1:
-            qp.assert_equal(decomp[decomp_idx], qp.X(wires[i]))
-            decomp_idx += 1
+        dev = qp.device("default.qubit")
 
+        @qp.qnode(dev)
+        def circuit():
+            qp.MultiX(bitstring, wires=wires)
+            return qp.probs(wires=wires)
 
-@pytest.mark.catalyst
-def test_qjit_circuit():
-    """Tests that a circuit containing MultiX compiles and runs correctly under qjit."""
-    pytest.importorskip("catalyst")
+        # qp.MultiX( bitstring, ... ) should set |0...0> to |bitstring>
+        expected_result = np.zeros(2 ** len(wires))
+        expected_result[expected_index] = 1
 
-    wires = (0, 1, 2)
-    bitstring = np.array([True, False, True])
+        obtained_result = circuit()
 
-    @qp.qjit
-    @qp.qnode(qp.device("lightning.qubit", wires=len(wires)))
-    def circuit(bits):
-        qp.MultiX(bits, wires=wires)
-        return qp.state()
+        assert np.allclose(obtained_result, expected_result)
 
-    expected_state = np.zeros(2 ** len(wires), dtype=complex)
-    expected_state[5] = 1
+    @pytest.mark.catalyst
+    def test_qjit_circuit(self):
+        """Tests that a circuit containing MultiX compiles and runs correctly under qjit."""
+        pytest.importorskip("catalyst")
 
-    assert np.allclose(circuit(bitstring), expected_state)
+        wires = (0, 1, 2)
+        bitstring = np.array([True, False, True])
+
+        @qp.qjit
+        @qp.qnode(qp.device("lightning.qubit", wires=len(wires)))
+        def circuit(bits):
+            qp.MultiX(bits, wires=wires)
+            return qp.state()
+
+        expected_state = np.zeros(2 ** len(wires), dtype=complex)
+        expected_state[5] = 1
+
+        assert np.allclose(circuit(bitstring), expected_state)
