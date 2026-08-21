@@ -344,6 +344,8 @@ class Expression:
             Expression | int: An int if the result is a constant, otherwise a
             :class:`~.resource.Expression` instance where the constant term is integral.
         """
+        if len(self._data) == 0:
+            return 0
         if () not in self._data:
             return self
 
@@ -359,7 +361,7 @@ class Expression:
     def __floor__(self) -> Union["Expression", int]:
         return self._builtin_to_int_helper(floor)
 
-    def __round__(self, ndigits=None) -> Union["Expression", int]:
+    def __round__(self, ndigits=None) -> Union["Expression", int, float]:
         return self._builtin_to_int_helper(lambda x: round(x, ndigits))
 
     def __trunc__(self) -> Union["Expression", int]:

@@ -22,6 +22,7 @@ from collections.abc import Generator
 from dataclasses import asdict, dataclass, field, fields
 from decimal import Decimal
 from functools import lru_cache
+from math import ceil
 from string import ascii_lowercase
 from typing import Any
 
@@ -53,8 +54,13 @@ def _count_to_str(
             if extra_compact:
                 retval = retval.replace(" ", "")  # Remove spaces from expressions for compactness
             return retval
-        count = int(count)
-    if isinstance(count, float) or count >= 100_000:
+        count = ceil(count)
+    if isinstance(count, float):
+        if count.is_integer():
+            count = int(count)
+        else:
+            return f"{Decimal(count):.3E}"
+    if count >= 100_000:
         return f"{Decimal(count):.3E}"
     return f"{count:,}"  # Return as integer if count is small
 
@@ -236,21 +242,25 @@ class Resources:
                 # Flatten nested dictionaries into dotted keys of arbitrary depth
                 dict_items = _flatten_dict(getattr(self, obj_field.name))
                 for k, v in dict_items.items():
-                    value_str = _count_to_str(v) if isinstance(v, (int, Expression)) else str(v)
+                    value_str = (
+                        _count_to_str(v) if isinstance(v, (int, float, Expression)) else str(v)
+                    )
                     lines.append(f"{prefix}- {k}: {value_str}")
                 if len(dict_items) == 0:
                     lines.append(f"{prefix}- None present.")
             else:
                 value = getattr(self, obj_field.name)
                 value_str = (
-                    _count_to_str(value) if isinstance(value, (int, Expression)) else str(value)
+                    _count_to_str(value)
+                    if isinstance(value, (int, float, Expression))
+                    else str(value)
                 )
                 lines.append(f"{prefix}{field_name}: {value_str}")
 
         if self.extra:
             lines.append(f"{prefix}Extra fields:")
             for k, v in _flatten_dict(self.extra).items():
-                value_str = _count_to_str(v) if isinstance(v, (int, Expression)) else str(v)
+                value_str = _count_to_str(v) if isinstance(v, (int, float, Expression)) else str(v)
                 lines.append(f"{prefix}- {k}: {value_str}")
 
         return "\n".join(lines)
@@ -288,21 +298,25 @@ class Resources:
                 # Flatten nested dictionaries into dotted keys of arbitrary depth
                 dict_items = _flatten_dict(getattr(self, obj_field.name))
                 for k, v in dict_items.items():
-                    value_str = _count_to_str(v) if isinstance(v, (int, Expression)) else str(v)
+                    value_str = (
+                        _count_to_str(v) if isinstance(v, (int, float, Expression)) else str(v)
+                    )
                     lines.append(f"| {k} | {value_str} |")
                 if len(dict_items) == 0:
                     lines.append("| *None present* | |")
             else:
                 value = getattr(self, obj_field.name)
                 value_str = (
-                    _count_to_str(value) if isinstance(value, (int, Expression)) else str(value)
+                    _count_to_str(value)
+                    if isinstance(value, (int, float, Expression))
+                    else str(value)
                 )
                 lines.append(f"| **{field_name}** | {value_str} |")
 
         if self.extra:
             lines.append("| **Extra Fields** | |")
             for k, v in _flatten_dict(self.extra).items():
-                value_str = _count_to_str(v) if isinstance(v, (int, Expression)) else str(v)
+                value_str = _count_to_str(v) if isinstance(v, (int, float, Expression)) else str(v)
                 lines.append(f"| {k} | {value_str} |")
 
         return "\n".join(lines)

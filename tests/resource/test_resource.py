@@ -2046,6 +2046,8 @@ class TestIPythonDisplays:
 def test_count_to_str():
     """Test the _count_to_str helper function."""
     assert _count_to_str(0) == "0"
+    assert _count_to_str(0.0) == "0"
+    assert _count_to_str(3.0) == "3"
     assert _count_to_str(999) == "999"
     assert _count_to_str(1_000) == "1,000"
     assert _count_to_str(10_000) == "10,000"
