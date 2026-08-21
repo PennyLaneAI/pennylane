@@ -29,7 +29,7 @@ from pennylane.transforms import decompose
 
 
 # pylint: disable=protected-access
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize("op_type", (qp.HilbertSchmidt, qp.LocalHilbertSchmidt))
 def test_flatten_unflatten_standard_checks(op_type):
     """Test the flatten and unflatten methods."""
@@ -440,7 +440,7 @@ class TestHilbertSchmidt:
         ),
     ]
 
-    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(("U", "V"), DECOMP_PARAMS)
     def test_decomposition_new(self, U, V):
         op = qp.HilbertSchmidt(V, U)
@@ -607,7 +607,7 @@ class TestLocalHilbertSchmidt:
         ),
     ]
 
-    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(("U", "V"), DECOMP_PARAMS)
     def test_local_decomposition_new(self, U, V):
         op = qp.LocalHilbertSchmidt(V, U)

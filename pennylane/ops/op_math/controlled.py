@@ -169,6 +169,15 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
             work_wire_type=work_wire_type,
         )
     if isinstance(op, Operator2):
+
+        if qp.capture.enabled():
+            # TODO: work wires are currently not represented in the operator_p primitive,
+            # so we manually set work wires to None when capture is enabled so that even
+            # when we use qp.ctrl to create an abstract controlled operator, work_wires
+            # is set to `None`. This way the gate count produced by a resource function
+            # is consistent with tha captured program. [sc-128262]
+            work_wires = None
+
         return create_controlled_op2(
             op,
             control_wires=control,

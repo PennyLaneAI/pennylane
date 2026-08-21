@@ -40,7 +40,7 @@ def test_work_wire_property():
     assert op.work_wires == expected
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Test the standard criteria for a valid operation."""
     work_wires = qp.wires.Wires((3, 4))
@@ -205,15 +205,7 @@ def test_expand(wires):
             assert actual_op.wires == qp.wires.Wires(expected_wire)
 
 
-@pytest.mark.capture
-def test_decomposition_new_capture():
-    """Tests the decomposition rule implemented with the new system."""
-    op = qp.GroverOperator(wires=(0, 1, 2))
-
-    for rule in qp.list_decomps(qp.GroverOperator):
-        _test_decomposition_rule(op, rule)
-
-
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_decomposition_new():
     """Tests the decomposition rule implemented with the new system."""
     op = qp.GroverOperator(wires=(0, 1, 2))

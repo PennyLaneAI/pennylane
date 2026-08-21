@@ -23,10 +23,10 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arithmetic.semi_adder import _controlled_semi_adder
 
 
+@pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.pl2do(
     reason="PL 2.0: blocked on supporting wires as arguments to captured workflows [sc-127789]."
 )
-@pytest.mark.capture
 def test_standard_validity_SemiAdder():
     """Check the operation using the assert_valid function."""
     x_wires = [0, 1, 2]
@@ -156,34 +156,11 @@ class TestSemiAdder:
         assert names.count("Adjoint(TemporaryAND)") == 4
         assert names.count("CNOT") == 21
 
-    # work_wires=None checks the decomposition that allocates work wires dynamically
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("work_wires", [[9, 10, 11], None])
-    @pytest.mark.parametrize(
-        ("x_wires"),
-        [
-            [0, 1, 2],
-            [0, 1],
-            [0, 1, 2, 3],
-        ],
-    )
+    @pytest.mark.parametrize(("x_wires"), [[0, 1, 2], [0, 1], [0, 1, 2, 3]])
     def test_decomposition_rule(self, x_wires, work_wires):
         """Tests that SemiAdder is decomposed properly."""
-
-        for rule in qp.list_decomps(qp.SemiAdder):
-            _test_decomposition_rule(qp.SemiAdder(x_wires, [5, 6, 7, 8], work_wires), rule)
-
-    @pytest.mark.capture
-    @pytest.mark.parametrize("work_wires", [[9, 10, 11], None])
-    @pytest.mark.parametrize(
-        ("x_wires"),
-        [
-            [0, 1, 2],
-            [0, 1],
-            [0, 1, 2, 3],
-        ],
-    )
-    def test_decomposition_rule_capture(self, x_wires, work_wires):
-        """Tests that SemiAdder is decomposed properly with program capture enabled."""
 
         for rule in qp.list_decomps(qp.SemiAdder):
             _test_decomposition_rule(qp.SemiAdder(x_wires, [5, 6, 7, 8], work_wires), rule)

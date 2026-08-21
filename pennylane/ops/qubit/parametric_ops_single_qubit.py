@@ -441,12 +441,17 @@ def _ry_to_rz_cliff_resources(**_):
 
 
 @register_resources(_ry_to_rz_cliff_resources)
-def _ry_to_rz_cliff(phi, wires: WiresLike):
-    qp.change_op_basis(
-        qp.Hadamard(wires) @ qp.adjoint(qp.S(wires)),
-        qp.RZ(phi, wires),
-        qp.S(wires) @ qp.Hadamard(wires),
-    )
+def _ry_to_rz_cliff(phi, wires: WiresLike, **__):
+
+    def _compute():
+        qp.adjoint(qp.S(wires))
+        qp.Hadamard(wires)
+
+    def _uncompute():
+        qp.Hadamard(wires)
+        qp.S(wires)
+
+    qp.change_op_basis(_compute, qp.RZ(phi, wires), _uncompute)
 
 
 def _ry_to_ppr_resources(**_):
@@ -716,11 +721,16 @@ def _rz_to_ry_cliff_resources(phi, wires):
 
 @register_resources(_rz_to_ry_cliff_resources)
 def _rz_to_ry_cliff(phi, wires: WiresLike):
-    qp.change_op_basis(
-        qp.S(wires) @ qp.Hadamard(wires),
-        qp.RY(phi, wires),
-        qp.Hadamard(wires) @ qp.adjoint(qp.S(wires)),
-    )
+
+    def _compute():
+        qp.H(wires)
+        qp.S(wires)
+
+    def _uncompute():
+        qp.adjoint(qp.S(wires))
+        qp.H(wires)
+
+    qp.change_op_basis(_compute, qp.RY(phi, wires), _uncompute)
 
 
 def _rz_to_ppr_resources(phi, wires):

@@ -153,7 +153,6 @@ def test_signed_out_multiplier_resources():
     assert not_zeroed_resources[semi_adder_rep] == 1
 
 
-@pytest.mark.jax
 @pytest.mark.parametrize(
     "x_wires, y_wires, work_wires, output_wires, zeroed",
     [
@@ -161,6 +160,7 @@ def test_signed_out_multiplier_resources():
         ((0, 1), (2, 3), (4, 5, 6, 7, 8), (9, 10), False),
     ],
 )
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_assert_valid(x_wires, y_wires, work_wires, output_wires, zeroed):
     op = SignedOutMultiplier(x_wires, y_wires, output_wires, work_wires, zeroed)
     assert_valid(op)
@@ -212,7 +212,6 @@ def test_wires_error(x_wires, y_wires, output_wires, work_wires, msg_match):
         SignedOutMultiplier(x_wires, y_wires, output_wires, work_wires)
 
 
-@pytest.mark.capture
 @pytest.mark.parametrize(
     "x_wires, y_wires, work_wires, output_wires, zeroed",
     [
@@ -220,6 +219,7 @@ def test_wires_error(x_wires, y_wires, output_wires, work_wires, msg_match):
         ((0, 1), (2, 3), (4, 5, 6, 7, 8), (9, 10), False),
     ],
 )
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_decomposition(x_wires, y_wires, work_wires, output_wires, zeroed):
     op = SignedOutMultiplier(x_wires, y_wires, output_wires, work_wires, zeroed)
 

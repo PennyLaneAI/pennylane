@@ -45,7 +45,8 @@ ops = (
 )
 
 
-@pytest.mark.jax
+# ChangeOpBasis as an operator only exists in the tape-based pipeline
+@pytest.mark.usefixtures("disable_capture")
 def test_basic_validity():
     """Run basic validity checks on a change_op_basis operator."""
     op1 = qp.PauliZ(0)
@@ -440,6 +441,8 @@ class TestDecomposition:
         for op1, op2 in zip(decomposition, true_decomposition):
             qp.assert_equal(op1, op2)
 
+    # ChangeOpBasis as an operator only exists in the tape-based pipeline
+    @pytest.mark.usefixtures("disable_capture")
     @pytest.mark.parametrize("ops_lst", ops)
     def test_decomposition_new(self, ops_lst):
         """Test the qfunc decomposition."""
@@ -458,6 +461,8 @@ class TestDecomposition:
 
         assert tape.operations == list(ops_lst)
 
+    # ChangeOpBasis as an operator only exists in the tape-based pipeline
+    @pytest.mark.usefixtures("disable_capture")
     @pytest.mark.parametrize("ops_lst", ops)
     def test_controlled_decomposition_new(self, ops_lst):
         """Tests the decomposition rule implemented with the new system."""

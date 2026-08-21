@@ -15,9 +15,9 @@
 Unit tests for the QROMStatePreparation template.
 """
 
-import numpy as np
-
 # pylint: disable=too-many-arguments,too-few-public-methods
+
+import numpy as np
 import pytest
 
 import pennylane as qp
@@ -42,7 +42,7 @@ def test_float_to_binary(val, num_bits, expected):
 
 class TestQROMStatePreparation:
 
-    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_standard_validity(self):
         """Check the operation using the assert_valid function."""
 
@@ -57,7 +57,6 @@ class TestQROMStatePreparation:
             precision_wires=wires["precision_wires"],
             work_wires=wires["work_wires"],
         )
-
         qp.ops.functions.assert_valid(op, skip_differentiation=True)
 
     @pytest.mark.parametrize(

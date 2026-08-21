@@ -66,13 +66,24 @@ class TestInitialization:
         with pytest.raises(ValueError, match="work_wire must be different from the wires of O."):
             qp.AmplitudeAmplification(U, O, iters=3, fixed_point=fixed_point, work_wire=work_wire)
 
-    @pytest.mark.jax
+    # Once AmplitudeAmplification works with and without capture, this and the test below
+    # can be combined into a single test with an "enable_and_disable_capture" fixture.
+    @pytest.mark.xfail(reason="come back to this as we migrate AmplitudeAmplification [sc-128366]")
+    @pytest.mark.usefixtures("enable_capture")
+    def test_standard_validity_capture(self):
+        """Test standard validity using assert_valid."""
+        U = generator(wires=range(3))
+        O = oracle([0, 2], wires=range(3))
+        op = qp.AmplitudeAmplification(U, O, iters=3, fixed_point=False)
+        qp.ops.functions.assert_valid(op)
+
+    @pytest.mark.usefixtures("disable_capture")
     def test_standard_validity(self):
         """Test standard validity using assert_valid."""
         U = generator(wires=range(3))
         O = oracle([0, 2], wires=range(3))
         op = qp.AmplitudeAmplification(U, O, iters=3, fixed_point=False)
-        qp.ops.functions.assert_valid(op, skip_capture=True)
+        qp.ops.functions.assert_valid(op)
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
@@ -358,12 +369,31 @@ def test_fixed_point_angles_function(iters, p_min):
         (5, [0, 1, 2, 3, 4], 4, False),
     ),
 )
+@pytest.mark.usefixtures("disable_capture")
 def test_decomposition_new(n_wires, items, iters, fixed):
     """Tests the decomposition rule implemented with the new system."""
     U = generator(wires=range(n_wires))
     O = oracle(items, wires=range(n_wires))
-
     op = qp.AmplitudeAmplification(U, O, iters, work_wire=n_wires, fixed_point=fixed)
+    for rule in qp.list_decomps(qp.AmplitudeAmplification):
+        _test_decomposition_rule(op, rule)
 
+
+@pytest.mark.xfail(reason="come back to this as we migrate AmplitudeAmplification [sc-128366]")
+@pytest.mark.parametrize(
+    "n_wires, items, iters, fixed",
+    (
+        # (3, [0, 2], 1, True),  # this one is simple enough that it XPASS
+        (3, [1, 2], 2, False),
+        (5, [4, 5, 7, 12], 3, True),
+        (5, [0, 1, 2, 3, 4], 4, False),
+    ),
+)
+@pytest.mark.usefixtures("enable_capture")
+def test_decomposition_new_capture(n_wires, items, iters, fixed):
+    """Tests the decomposition rule implemented with the new system."""
+    U = generator(wires=range(n_wires))
+    O = oracle(items, wires=range(n_wires))
+    op = qp.AmplitudeAmplification(U, O, iters, work_wire=n_wires, fixed_point=fixed)
     for rule in qp.list_decomps(qp.AmplitudeAmplification):
         _test_decomposition_rule(op, rule)

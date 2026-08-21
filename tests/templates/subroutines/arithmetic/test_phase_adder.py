@@ -23,7 +23,7 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arithmetic.phase_adder import _add_k_fourier
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity_Phase_Adder():
     """Check the operation using the assert_valid function."""
     k = 6
@@ -34,7 +34,7 @@ def test_standard_validity_Phase_Adder():
     qp.ops.functions.assert_valid(op)
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_falsy_zero_as_work_wire():
     """Test that work wire is not treated as a falsy zero."""
     k = 6
@@ -274,6 +274,7 @@ class TestPhaseAdder:
         for op1, op2 in zip(phase_adder_decomposition, op_list):
             qp.assert_equal(op1, op2)
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("mod", [7, 8])
     def test_decomposition_new(self, mod):
         """Tests the decomposition rule implemented with the new system."""

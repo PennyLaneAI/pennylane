@@ -136,6 +136,13 @@ def enable_capture():
         yield
 
 
+@pytest.fixture(scope="function")
+def disable_capture():
+    """make sure capture is disabled around each test."""
+    with qp.capture.toggle_ctx(False):
+        yield
+
+
 @pytest.fixture(
     params=[False, pytest.param(True, marks=(pytest.mark.capture, pytest.mark.jax))],
     ids=["capture_disabled", "capture_enabled"],

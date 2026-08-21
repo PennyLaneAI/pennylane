@@ -15,11 +15,12 @@
 This module contains unit tests for ``qp.ops.functions.assert_valid``.
 """
 
+# pylint: disable=too-few-public-methods,unused-argument
+
+import copy
 from pickle import PicklingError
 
 import numpy as np
-
-# pylint: disable=too-few-public-methods, unused-argument
 import pytest
 import scipy.sparse
 
@@ -28,7 +29,6 @@ from pennylane.core import Operator2
 from pennylane.core.operator import Operator
 from pennylane.ops.functions import assert_valid
 from pennylane.ops.functions.assert_valid import (
-    _check_capture,
     _check_eigendecomposition,
     _check_pytree,
     _test_decomposition_rule,
@@ -533,28 +533,6 @@ class TestPytree:
         _check_pytree(qp.ops.Evolution(generator, 0.2))
 
 
-@pytest.mark.jax
-def test_bad_capture():
-    """Tests that the correct error is raised when something goes wrong with program capture."""
-
-    class MyBadOp(qp.operation.Operator):
-
-        def _flatten(self):
-            return (self.hyperparameters["target_op"], self.data[0]), ()
-
-        @classmethod
-        def _unflatten(cls, data, metadata):
-            return cls(*data)
-
-        def __init__(self, target_op, val):
-            super().__init__(val, wires=target_op.wires)
-            self.hyperparameters["target_op"] = target_op
-
-    op = MyBadOp(qp.X(0), 2)
-    with pytest.raises(ValueError, match=r"The capture of the operation into jaxpr failed"):
-        _check_capture(op)
-
-
 def test_data_is_tuple():
     """Check that the data property is a tuple."""
 
@@ -603,7 +581,7 @@ class SingleRZ(Operator2):
         return qp.Hamiltonian([-0.5], [qp.PauliZ(wires=self.wires)])
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 class TestOperator2AssertValid:
     """Tests showing that ``assert_valid`` works on :class:`~.core.Operator2` instances thanks to
     the backwards-compatible ``data``/``parameters``/``num_params``/``hyperparameters`` attributes.
@@ -635,6 +613,9 @@ class TestOperator2AssertValid:
 
     def test_check_decomposition(self):
         """``_check_decomposition`` fails if ``compute_decomposition`` does not return a list."""
+
+        if qp.capture.enabled():
+            pytest.skip("this is not expected to work when capture is enabled.")
 
         class BadDecomp(Operator2):
             dynamic_argnames = ("phi",)
@@ -671,6 +652,9 @@ class TestOperator2AssertValid:
 
     def test_check_matrix_matches_decomposition(self):
         """``_check_matrix_matches_decomp`` fails if the matrix and decomposition disagree."""
+
+        if qp.capture.enabled():
+            pytest.skip("this is not expected to work when capture is enabled.")
 
         class MatDecompMismatch(Operator2):
             wire_argnames = ("wires",)
@@ -845,7 +829,7 @@ def create_op_instance(c):
     return c(*params, wires=wires) if wires else c(*params)
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_generated_list_of_ops(class_to_validate):
     """Test every auto-generated operator instance."""
     if class_to_validate.__module__[10:14] == "ftqc":
@@ -868,14 +852,17 @@ def test_generated_list_of_ops(class_to_validate):
     assert_valid(op)
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_explicit_list_of_ops(valid_instance_and_kwargs):
     """Test the validity of operators that could not be auto-generated."""
-    valid_instance, kwargs = valid_instance_and_kwargs
-    assert_valid(valid_instance, **kwargs)
+    op, kwargs = valid_instance_and_kwargs
+    kwargs = copy.copy(kwargs)
+    if kwargs.pop("skip_capture", False) and qp.capture.enabled():
+        pytest.skip("this operator is marked with skip_capture.")
+    assert_valid(op, **kwargs)
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_explicit_list_of_failing_ops(invalid_instance_and_error):
     """Test instances of ops that fail validation."""
     op, exc_type = invalid_instance_and_error

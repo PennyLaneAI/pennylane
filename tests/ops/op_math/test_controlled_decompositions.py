@@ -831,6 +831,7 @@ class TestMCXDecomposition:
                 work_wire_type="blah",
             )
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.unit
     @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
     @pytest.mark.parametrize("n_ctrl_wires", [3, 4, 5])
@@ -851,7 +852,8 @@ class TestMCXDecomposition:
             if work_wire_type == "zeroed":
                 qp.Projector([0] * len(work_wires), wires=work_wires)
             # pylint: disable=missing-kwoa
-            decompose_mcx_many_workers(**mcx.arguments)
+            with qp.capture.pause():
+                decompose_mcx_many_workers(**mcx.arguments)
 
         # Verify that the resource estimate is correct.
         _test_decomposition_rule(mcx, decompose_mcx_many_workers, skip_decomp_matrix_check=True)
@@ -900,6 +902,7 @@ class TestMCXDecomposition:
         ).T
         assert np.allclose(u, np.eye(2 ** (n_ctrl_wires + 1)))
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
     @pytest.mark.parametrize("n_ctrl_wires", [3, 4, 5, 6, 7, 8, 9])
     def test_decomposition_with_one_worker(self, n_ctrl_wires, work_wire_type):
@@ -920,7 +923,8 @@ class TestMCXDecomposition:
             if work_wire_type == "zeroed":
                 qp.Projector([0], wires=work_wire)
             # pylint: disable=missing-kwoa
-            decompose_mcx_one_worker(**mcx.arguments)
+            with qp.capture.pause():
+                decompose_mcx_one_worker(**mcx.arguments)
 
         # Verify that the resource estimate is correct.
         _test_decomposition_rule(mcx, decompose_mcx_one_worker, skip_decomp_matrix_check=True)
@@ -937,6 +941,7 @@ class TestMCXDecomposition:
 
         assert qp.math.allclose(matrix, expected_matrix)
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
     @pytest.mark.parametrize("n_ctrl_wires", [3, 4, 5, 6, 7, 8, 9, 10])
     def test_decomposition_with_two_workers(self, n_ctrl_wires, work_wire_type):
@@ -956,7 +961,8 @@ class TestMCXDecomposition:
         with qp.queuing.AnnotatedQueue() as q:
             if work_wire_type == "zeroed":
                 qp.Projector([0, 0], wires=work_wires)
-            _mcx_two_workers(**mcx.arguments)
+            with qp.capture.pause():
+                _mcx_two_workers(**mcx.arguments)
 
         # Verify that the resource estimate is correct.
         _test_decomposition_rule(mcx, _mcx_two_workers, skip_decomp_matrix_check=True)
@@ -973,6 +979,7 @@ class TestMCXDecomposition:
 
         assert qp.math.allclose(matrix, expected_matrix)
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("n_ctrl_wires", [4, 5, 6, 7, 8, 9, 10])
     def test_decomposition_with_no_workers(self, n_ctrl_wires):
         """Test that the decomposed MCX gate using 2 work wires produce the correct matrix."""
@@ -1048,6 +1055,7 @@ class TestMCXDecomposition:
             },
         ],
     )
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_mcx_decompositions(self, params):
         """Tests that MCX can be resolved into CNOT and Toffoli properly."""
 

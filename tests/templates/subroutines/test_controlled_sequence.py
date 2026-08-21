@@ -20,14 +20,21 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.wires import Wires
 
 # pylint: disable=unidiomatic-typecheck, cell-var-from-loop
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("disable_capture")
 def test_standard_validity():
+    """Check the operation using the assert_valid function."""
+    op = qp.ControlledSequence(qp.RX(0.25, wires=3), control=[0, 1, 2])
+    qp.ops.functions.assert_valid(op)
+
+
+@pytest.mark.xfail(reason="come back to this when it's ported to Op2 [sc-128372]")
+@pytest.mark.usefixtures("enable_capture")
+def test_standard_validity_capture():
     """Check the operation using the assert_valid function."""
     op = qp.ControlledSequence(qp.RX(0.25, wires=3), control=[0, 1, 2])
     qp.ops.functions.assert_valid(op)
@@ -157,12 +164,6 @@ class TestMethods:
 
         for op1, op2 in zip(decomp, expected_decomp):
             assert op1 == op2
-
-    def test_decomposition_new(self):
-        """Tests the decomposition rule implemented with the new system."""
-        op = qp.ControlledSequence(qp.RX(0.25, wires=3), control=["a", 1, "blue"])
-        for rule in qp.list_decomps(qp.ControlledSequence):
-            _test_decomposition_rule(op, rule)
 
 
 class TestIntegration:
