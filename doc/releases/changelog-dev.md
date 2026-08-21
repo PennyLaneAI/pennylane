@@ -1432,6 +1432,12 @@
   one of its subclasses returned ``True`` if they shared the same data and wires.
   [(#9749)](https://github.com/PennyLaneAI/pennylane/pull/9749)
 
+* Qubit TCDQ expval function now returns the variance rather than standard deviation 
+  of the estimator. Qubit and qudit MMD loss functions now have unbiased gradients.
+  [(#10025)](https://github.com/PennyLaneAI/pennylane/pull/10025)
+
+
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -1440,6 +1446,7 @@ Usman Ahmed,
 Guillermo Alonso,
 Abdullah Al Omar Galib,
 Gabriel Bottrill,
+Joseph Bowles,
 Astral Cai,
 Daniel Casota,
 Miguel Cárdenas,
