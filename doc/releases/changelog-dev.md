@@ -18,6 +18,7 @@
   ... )
   >>> ham.num_modes, ham.num_modals, ham.num_fragments
   (2, 3, 2)
+
   ```
 
   The same Hamiltonian can be described abstractly, which is what the compile-time typing and
@@ -27,6 +28,7 @@
   >>> from pennylane.typing import Float
   >>> qp.CGFHamiltonian(Float[L + 1, M, M, N, N], Float[L + 1, M, N, N]).leaf_tensors
   AbstractArray((3, 2, 3, 3), float64, weak_type=True)
+
   ```
 
 * Added :func:`~pennylane.backline.triton_decoder` and
