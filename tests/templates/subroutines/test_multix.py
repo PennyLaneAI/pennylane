@@ -345,3 +345,23 @@ def test_decomposition(bitstring, wires):
         if bit == 1:
             qp.assert_equal(decomp[decomp_idx], qp.X(wires[i]))
             decomp_idx += 1
+
+
+@pytest.mark.catalyst
+def test_qjit_circuit():
+    """Tests that a circuit containing MultiX compiles and runs correctly under qjit."""
+    pytest.importorskip("catalyst")
+
+    wires = (0, 1, 2)
+    bitstring = np.array([True, False, True])
+
+    @qp.qjit
+    @qp.qnode(qp.device("lightning.qubit", wires=len(wires)))
+    def circuit(bits):
+        qp.MultiX(bits, wires=wires)
+        return qp.state()
+
+    expected_state = np.zeros(2 ** len(wires), dtype=complex)
+    expected_state[5] = 1
+
+    assert np.allclose(circuit(bitstring), expected_state)
