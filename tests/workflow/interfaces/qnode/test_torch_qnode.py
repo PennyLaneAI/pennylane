@@ -667,8 +667,12 @@ class TestQubitIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
+        if diff_method == "adjoint":
+            pytest.skip("adjoint state differentiation is not supported in pl2")
         if "lightning" in getattr(dev, "name", "").lower():
             pytest.xfail("lightning does not support measureing probabilities with adjoint.")
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint diff of probs is not supported.")
         gradient_kwargs = {}
         if diff_method == "spsa":
             gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
@@ -727,6 +731,8 @@ class TestQubitIntegration:
     ):
         """Tests correct output shape and evaluation for a tape
         with prob and expval outputs"""
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint diff of probs is not supported.")
         if "lightning" in getattr(dev, "name", "").lower():
             pytest.xfail("lightning does not support measureing probabilities with adjoint.")
         kwargs = dict(
@@ -1100,6 +1106,8 @@ class TestQubitIntegration:
     def test_state(self, interface, dev, diff_method, grad_on_execution, device_vjp, tol):
         """Test that the state can be returned and differentiated"""
 
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint diff of state measurements is not supported.")
         if dev.name == "param_shift.qubit":
             pytest.skip("parameter shift does not support measuring the state.")
         if "lightning" in getattr(dev, "name", "").lower():

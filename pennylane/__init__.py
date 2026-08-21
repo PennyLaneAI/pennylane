@@ -206,9 +206,11 @@ from pennylane.backline import (
     Controller,
     Coprocessor,
     CoprocessorFunction,
+    Endpoint,
     Node,
-    css_decoder,
 )
+from pennylane.backline.runtime import declare as runtime_declare
+from pennylane.backline.runtime import runtime_call
 
 from pennylane import spin
 

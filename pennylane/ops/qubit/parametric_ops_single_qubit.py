@@ -29,19 +29,14 @@ import numpy as np
 import scipy as sp
 
 import pennylane as qp
-from pennylane.core.operator import Operation, Operator2, abstractify
+from pennylane.core.operator import Operator2, abstractify
 from pennylane.decomposition import (
     add_decomps,
     change_op_basis_resource_rep,
     register_resources,
     resource_rep,
 )
-from pennylane.decomposition.symbolic_decomposition import (
-    adjoint_rotation,
-    flip_zero_control,
-    pow_rotation,
-)
-from pennylane.exceptions import DecompositionUndefinedError, PennyLaneDeprecationWarning
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.ops.identity import I
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
@@ -64,7 +59,7 @@ def _can_replace(x, y):
     return not qp.math.is_abstract(x) and not qp.math.requires_grad(x) and qp.math.allclose(x, y)
 
 
-class RX(Operation):
+class RX(Operator2):
     r"""
     The single qubit X rotation
 
@@ -87,15 +82,24 @@ class RX(Operation):
     """
 
     num_wires = 1
+    """int: Number of wires that the operation acts on."""
+
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
+    dynamic_argnames = ("phi",)
+
+    arg_specs = {"phi": Float, "wires": Wire[1]}
+
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
 
     @property
+    @override
+    # pylint: disable-next=missing-function-docstring
     def basis(self) -> Literal["X", "Y", "Z", None]:
         warn(
             "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
@@ -104,29 +108,13 @@ class RX(Operation):
         )
         return "X"
 
-    grad_method = "A"
-    parameter_frequencies = [(1,)]
-    resource_keys = set()
-
     def generator(self) -> "qp.Hamiltonian":
         return qp.Hamiltonian([-0.5], [PauliX(wires=self.wires)])
 
-    def __init__(self, phi: TensorLike, wires: WiresLike):
-        super().__init__(phi, wires=wires)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
-    has_decomposition = False
-
     @staticmethod
-    def compute_decomposition(phi, wires):
-        # dont use graph decomposition for RX-> Rot
-        raise DecompositionUndefinedError
-
-    @staticmethod
-    def compute_matrix(theta: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    @override
+    # pylint: disable-next=arguments-differ,unused-argument
+    def compute_matrix(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -135,7 +123,7 @@ class RX(Operation):
         .. seealso:: :meth:`~.RX.matrix`
 
         Args:
-            theta (tensor_like or float): rotation angle
+            phi (tensor_like or float): rotation angle
 
         Returns:
             tensor_like: canonical matrix
@@ -146,11 +134,11 @@ class RX(Operation):
         tensor([[0.9689+0.0000j, 0.0000-0.2474j],
                 [0.0000-0.2474j, 0.9689+0.0000j]])
         """
-        c = qp.math.cos(theta / 2)
-        s = qp.math.sin(theta / 2)
+        c = qp.math.cos(phi / 2)
+        s = qp.math.sin(phi / 2)
 
         if (
-            qp.math.get_interface(theta) == "tensorflow"
+            qp.math.get_interface(phi) == "tensorflow"
         ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             c = qp.math.cast_like(c, 1j)
             s = qp.math.cast_like(s, 1j)
@@ -161,123 +149,128 @@ class RX(Operation):
         return qp.math.stack([stack_last([c, js]), stack_last([js, c])], axis=-2)
 
     @staticmethod
-    def compute_sparse_matrix(theta, format="csr"):
+    @override
+    # pylint: disable-next=unused-argument
+    def compute_sparse_matrix(phi, wires: WiresLike | None = None, format="csr"):
         return sp.sparse.csr_matrix(
             [
-                [qp.math.cos(theta / 2), -1j * qp.math.sin(theta / 2)],
-                [-1j * qp.math.sin(theta / 2), qp.math.cos(theta / 2)],
+                [qp.math.cos(phi / 2), -1j * qp.math.sin(phi / 2)],
+                [-1j * qp.math.sin(phi / 2), qp.math.cos(phi / 2)],
             ]
         ).asformat(format)
 
+    @override
     def adjoint(self) -> "RX":
-        return RX(-self.data[0], wires=self.wires)
+        return RX(-self.phi, wires=self.wires)
 
+    @override
     def pow(self, z: int | float) -> list["qp.operation.Operator"]:
-        return [RX(self.data[0] * z, wires=self.wires)]
+        return [RX(self.phi * z, wires=self.wires)]
 
-    def _controlled(self, wire: WiresLike) -> "qp.CRX":
-        return qp.CRX(*self.parameters, wires=wire + self.wires)
-
+    @override
     def simplify(self) -> "RX":
-        theta = self.data[0] % (4 * np.pi)
+        phi = self.phi % (4 * np.pi)
 
-        if _can_replace(theta, 0):
+        if _can_replace(phi, 0):
             return qp.Identity(wires=self.wires)
 
-        return RX(theta, wires=self.wires)
+        return RX(phi, wires=self.wires)
 
 
 @custom_ctrl_dispatch.register
 def _ctrl_rx(base: RX, control, control_values, *_):
     if len(control) == 1 and _is_empty_or_all_true(control_values):
-        return qp.CRX(base.data[0], wires=control + base.wires)
+        return qp.CRX(base.phi, wires=control + base.wires)
     return NotImplemented
 
 
-def _rx_to_rot_resources():
+def _rx_to_rot_resources(**_):
     return {qp.Rot: 1}
 
 
 @register_resources(_rx_to_rot_resources)
-def _rx_to_rot(phi, wires: WiresLike, **__):
+def _rx_to_rot(phi, wires: WiresLike):
     qp.Rot(np.pi / 2, phi, 3.5 * np.pi, wires=wires)
 
 
-def _rx_to_rz_ry_resources():
+def _rx_to_rz_ry_resources(**_):
     return {qp.RZ: 2, qp.RY: 1}
 
 
 @register_resources(_rx_to_rz_ry_resources)
-def _rx_to_rz_ry(phi, wires: WiresLike, **__):
+def _rx_to_rz_ry(phi, wires: WiresLike):
     qp.RZ(np.pi / 2, wires=wires)
     qp.RY(phi, wires=wires)
     qp.RZ(-np.pi / 2, wires=wires)
 
 
-def _rx_to_ry_cliff_resources():
+def _rx_to_ry_cliff_resources(**_):
     return {change_op_basis_resource_rep(qp.S, qp.RY): 1}
 
 
 @register_resources(_rx_to_ry_cliff_resources)
-def _rx_to_ry_cliff(phi, wires: WiresLike, **__):
+def _rx_to_ry_cliff(phi, wires: WiresLike):
     qp.change_op_basis(qp.S(wires), qp.RY(phi, wires))
 
 
-def _rx_to_rz_cliff_resources():
+def _rx_to_rz_cliff_resources(**_):
     return {change_op_basis_resource_rep(qp.Hadamard, qp.RZ, qp.Hadamard): 1}
 
 
 @register_resources(_rx_to_rz_cliff_resources)
-def _rx_to_rz_cliff(phi, wires: WiresLike, **__):
+def _rx_to_rz_cliff(phi, wires: WiresLike):
     qp.change_op_basis(qp.Hadamard(wires), qp.RZ(phi, wires), qp.Hadamard(wires))
 
 
-def _rx_to_ppr_resources():
+def _rx_to_ppr_resources(**_):
     return {qp.PauliRot(Float, pauli_word="X", wires=Wire[1]): 1}
 
 
 @register_resources(_rx_to_ppr_resources)
-def _rx_to_ppr(phi, wires, **_):
+def _rx_to_ppr(phi, wires):
     qp.PauliRot(phi, "X", wires=wires)
 
 
 add_decomps(RX, _rx_to_rot, _rx_to_rz_ry, _rx_to_ppr, _rx_to_ry_cliff, _rx_to_rz_cliff)
-add_decomps("Adjoint(RX)", adjoint_rotation)
-add_decomps("Pow(RX)", pow_rotation)
+add_decomps("Adjoint(RX)", adjoint_rotation2)
+add_decomps("Pow(RX)", pow_rotation2)
 
 
-def _controlled_rx_resource(*_, num_control_wires, num_work_wires, work_wire_type, **__):
-    if num_control_wires == 1:
+# pylint: disable-next=unused-argument
+def _controlled_rx_resource(base, control_wires, control_values, work_wires, work_wire_type):
+    if len(control_wires) == 1:
         return {qp.CRX: 1}
     return {
         qp.H: 2,
         qp.RZ: 2,
         qp.MultiControlledX(
-            Wire[num_control_wires + 1],
-            work_wires=Wire[num_work_wires],
+            Wire[len(control_wires) + 1],
+            work_wires=Wire[len(work_wires)],
             work_wire_type=work_wire_type,
         ): 2,
     }
 
 
 @register_resources(_controlled_rx_resource)
-def _controlled_rx_decomp(*params, wires, control_wires, work_wires, work_wire_type, **__):
+# pylint: disable-next=unused-argument
+def _controlled_rx_decomp(base, control_wires, control_values, work_wires, work_wire_type):
+    wires = control_wires + base.wires
     if len(control_wires) == 1:
-        qp.CRX(*params, wires=wires)
+        qp.CRX(base.phi, wires=wires)
         return
 
     qp.H(wires=wires[-1])
-    qp.RZ(params[0] / 2, wires=wires[-1])
+    qp.RZ(base.phi / 2, wires=wires[-1])
     qp.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
-    qp.RZ(-params[0] / 2, wires=wires[-1])
+    qp.RZ(-base.phi / 2, wires=wires[-1])
     qp.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
     qp.H(wires=wires[-1])
 
 
-add_decomps("C(RX)", flip_zero_control(_controlled_rx_decomp))
+add_decomps("C(RX)", flip_zero_control2(_controlled_rx_decomp))
 
 
-class RY(Operation):
+class RY(Operator2):
     r"""
     The single qubit Y rotation
 
@@ -300,13 +293,24 @@ class RY(Operation):
     """
 
     num_wires = 1
+    """int: Number of wires that the operation acts on."""
+
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    dynamic_argnames = ("phi",)
+
+    arg_specs = {"phi": Float, "wires": Wire[1]}
+
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
+
     @property
+    @override
+    # pylint: disable-next=missing-function-docstring
     def basis(self) -> Literal["X", "Y", "Z", None]:
         warn(
             "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
@@ -315,29 +319,13 @@ class RY(Operation):
         )
         return "Y"
 
-    grad_method = "A"
-    parameter_frequencies = [(1,)]
-    resource_keys = set()
-
     def generator(self) -> "qp.Hamiltonian":
         return qp.Hamiltonian([-0.5], [PauliY(wires=self.wires)])
 
-    def __init__(self, phi: TensorLike, wires: WiresLike):
-        super().__init__(phi, wires=wires)
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
-    has_decomposition = False
-
     @staticmethod
-    def compute_decomposition(phi, wires):
-        # dont use graph decomposition for RY-> Rot
-        raise DecompositionUndefinedError
-
-    @staticmethod
-    def compute_matrix(theta: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    @override
+    # pylint: disable-next=arguments-differ,unused-argument
+    def compute_matrix(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -347,7 +335,7 @@ class RY(Operation):
 
 
         Args:
-            theta (tensor_like or float): rotation angle
+            phi (tensor_like or float): rotation angle
 
         Returns:
             tensor_like: canonical matrix
@@ -359,10 +347,10 @@ class RY(Operation):
                 [ 0.2474+0.j,  0.9689+0.j]])
         """
 
-        c = qp.math.cos(theta / 2)
-        s = qp.math.sin(theta / 2)
+        c = qp.math.cos(phi / 2)
+        s = qp.math.sin(phi / 2)
         if (
-            qp.math.get_interface(theta) == "tensorflow"
+            qp.math.get_interface(phi) == "tensorflow"
         ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             c = qp.math.cast_like(c, 1j)
             s = qp.math.cast_like(s, 1j)
@@ -372,25 +360,27 @@ class RY(Operation):
         return qp.math.stack([stack_last([c, -s]), stack_last([s, c])], axis=-2)
 
     @staticmethod
-    def compute_sparse_matrix(theta, format="csr"):
+    @override
+    # pylint: disable-next=unused-argument
+    def compute_sparse_matrix(phi, wires: WiresLike | None = None, format="csr"):
         return sp.sparse.csr_matrix(
             [
-                [qp.math.cos(theta / 2), -qp.math.sin(theta / 2)],
-                [qp.math.sin(theta / 2), qp.math.cos(theta / 2)],
+                [qp.math.cos(phi / 2), -qp.math.sin(phi / 2)],
+                [qp.math.sin(phi / 2), qp.math.cos(phi / 2)],
             ]
         ).asformat(format)
 
+    @override
     def adjoint(self) -> "RY":
-        return RY(-self.data[0], wires=self.wires)
+        return RY(-self.phi, wires=self.wires)
 
+    @override
     def pow(self, z: int | float) -> list["qp.operation.Operator"]:
-        return [RY(self.data[0] * z, wires=self.wires)]
+        return [RY(self.phi * z, wires=self.wires)]
 
-    def _controlled(self, wire: WiresLike) -> "qp.CRY":
-        return qp.CRY(*self.parameters, wires=wire + self.wires)
-
+    @override
     def simplify(self) -> "RY":
-        theta = self.data[0] % (4 * np.pi)
+        theta = self.phi % (4 * np.pi)
 
         if _can_replace(theta, 0):
             return qp.Identity(wires=self.wires)
@@ -401,40 +391,40 @@ class RY(Operation):
 @custom_ctrl_dispatch.register
 def _ctrl_ry(base: RY, control, control_values, *_):
     if len(control) == 1 and _is_empty_or_all_true(control_values):
-        return qp.CRY(base.data[0], wires=control + base.wires)
+        return qp.CRY(base.phi, wires=control + base.wires)
     return NotImplemented
 
 
-def _ry_to_rot_resources():
+def _ry_to_rot_resources(**_):
     return {qp.Rot: 1}
 
 
 @register_resources(_ry_to_rot_resources)
-def _ry_to_rot(phi, wires: WiresLike, **__):
+def _ry_to_rot(phi, wires: WiresLike):
     qp.Rot(0, phi, 0, wires=wires)
 
 
-def _ry_to_rz_rx_resources():
+def _ry_to_rz_rx_resources(**_):
     return {qp.RZ: 2, qp.RX: 1}
 
 
 @register_resources(_ry_to_rz_rx_resources)
-def _ry_to_rz_rx(phi, wires: WiresLike, **__):
+def _ry_to_rz_rx(phi, wires: WiresLike):
     qp.RZ(-np.pi / 2, wires=wires)
     qp.RX(phi, wires=wires)
     qp.RZ(np.pi / 2, wires=wires)
 
 
-def _ry_to_rx_cliff_resources():
+def _ry_to_rx_cliff_resources(**_):
     return {change_op_basis_resource_rep(_adjoint_abstract(qp.S), qp.RX, qp.S): 1}
 
 
 @register_resources(_ry_to_rx_cliff_resources)
-def _ry_to_rx_cliff(phi, wires: WiresLike, **__):
+def _ry_to_rx_cliff(phi, wires: WiresLike):
     qp.change_op_basis(qp.adjoint(qp.S(wires)), qp.RX(phi, wires), qp.S(wires))
 
 
-def _ry_to_rz_cliff_resources():
+def _ry_to_rz_cliff_resources(**_):
     return {
         change_op_basis_resource_rep(
             resource_rep(
@@ -451,7 +441,7 @@ def _ry_to_rz_cliff_resources():
 
 
 @register_resources(_ry_to_rz_cliff_resources)
-def _ry_to_rz_cliff(phi, wires: WiresLike, **__):
+def _ry_to_rz_cliff(phi, wires: WiresLike):
     qp.change_op_basis(
         qp.Hadamard(wires) @ qp.adjoint(qp.S(wires)),
         qp.RZ(phi, wires),
@@ -459,46 +449,49 @@ def _ry_to_rz_cliff(phi, wires: WiresLike, **__):
     )
 
 
-def _ry_to_ppr_resources():
+def _ry_to_ppr_resources(**_):
     return {qp.PauliRot(Float, pauli_word="Y", wires=Wire[1]): 1}
 
 
 @register_resources(_ry_to_ppr_resources)
-def _ry_to_ppr(phi, wires, **_):
+def _ry_to_ppr(phi, wires):
     qp.PauliRot(phi, "Y", wires=wires)
 
 
 add_decomps(RY, _ry_to_rot, _ry_to_rz_rx, _ry_to_ppr, _ry_to_rx_cliff, _ry_to_rz_cliff)
-add_decomps("Adjoint(RY)", adjoint_rotation)
-add_decomps("Pow(RY)", pow_rotation)
+add_decomps("Adjoint(RY)", adjoint_rotation2)
+add_decomps("Pow(RY)", pow_rotation2)
 
 
-def _controlled_ry_resource(*_, num_control_wires, num_work_wires, work_wire_type, **__):
-    if num_control_wires == 1:
+# pylint: disable-next=unused-argument
+def _controlled_ry_resource(base, control_wires, control_values, work_wires, work_wire_type):
+    if len(control_wires) == 1:
         return {qp.CRY: 1}
     return {
         qp.RY: 2,
         qp.MultiControlledX(
-            Wire[num_control_wires + 1],
-            work_wires=Wire[num_work_wires],
+            Wire[len(control_wires) + 1],
+            work_wires=Wire[len(work_wires)],
             work_wire_type=work_wire_type,
         ): 2,
     }
 
 
 @register_resources(_controlled_ry_resource)
-def _controlled_ry_decomp(*params, wires, control_wires, work_wires, work_wire_type, **__):
+# pylint: disable-next=unused-argument
+def _controlled_ry_decomp(base, control_wires, control_values, work_wires, work_wire_type):
+    wires = control_wires + base.wires
     if len(control_wires) == 1:
-        qp.CRY(*params, wires=wires)
+        qp.CRY(base.phi, wires=wires)
         return
 
-    qp.RY(params[0] / 2, wires=wires[-1])
+    qp.RY(base.phi / 2, wires=wires[-1])
     qp.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
-    qp.RY(-params[0] / 2, wires=wires[-1])
+    qp.RY(-base.phi / 2, wires=wires[-1])
     qp.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
 
 
-add_decomps("C(RY)", flip_zero_control(_controlled_ry_decomp))
+add_decomps("C(RY)", flip_zero_control2(_controlled_ry_decomp))
 
 
 class RZ(Operator2):
@@ -749,8 +742,9 @@ def _controlled_rz_resource(base, control_wires, control_values, work_wires, wor
         return {qp.CRZ: 1}
     return {
         qp.RZ: 2,
-        qp.MultiControlledX(
-            Wire[len(control_wires) + 1],
+        qp.ctrl(
+            qp.X(Wire[1]),
+            control=Wire[len(control_wires)],
             work_wires=Wire[len(work_wires)],
             work_wire_type=work_wire_type,
         ): 2,
@@ -759,15 +753,25 @@ def _controlled_rz_resource(base, control_wires, control_values, work_wires, wor
 
 @register_resources(_controlled_rz_resource)
 def _controlled_rz_decomp(base, control_wires, control_values, work_wires, work_wire_type):
-    wires = control_wires + base.wires
+
     if len(control_wires) == 1:
-        qp.CRZ(base.phi, wires=wires)
+        qp.CRZ(base.phi, wires=control_wires + base.wires)
         return
 
-    qp.RZ(base.phi / 2, wires=wires[-1])
-    qp.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
-    qp.RZ(-base.phi / 2, wires=wires[-1])
-    qp.MultiControlledX(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
+    qp.RZ(base.phi / 2, wires=base.wires)
+    qp.ctrl(
+        qp.X(base.wires),
+        control=control_wires,
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
+    )
+    qp.RZ(-base.phi / 2, wires=base.wires)
+    qp.ctrl(
+        qp.X(base.wires),
+        control=control_wires,
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
+    )
 
 
 add_decomps("C(RZ)", flip_zero_control2(_controlled_rz_decomp))
