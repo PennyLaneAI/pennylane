@@ -248,7 +248,24 @@ def test_decomposition_capture_with_tuple_wires():
     # not converted to a JAX array before the decomposition for MultiX calls wires[i].
     jaxpr = jax.make_jaxpr(lambda bits: decomposition(bits, wires))(bitstring)
 
-    assert any(eqn.primitive == for_loop_prim for eqn in jaxpr.eqns)
+    # Ensures exactly one for loop primitive appears in the jaxpr
+    loop_eqns = [eqn for eqn in jaxpr.eqns if eqn.primitive == for_loop_prim]
+    assert len(loop_eqns) == 1
+
+    # Check that the only constants are the wires
+    assert len(jaxpr.consts) == 1
+    assert np.all(jaxpr.consts[0] == wires)
+
+    # Validate the produced tape
+    tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, bitstring)
+    expected = [qp.X(0), qp.X(2)]
+
+    assert len(tape.operations) == len(expected)
+    assert tape.wires == Wires([0, 2])
+
+    # Ensure the tape matches what is expected
+    for i, expected_op in enumerate(expected):
+        qp.assert_equal(tape.operations[i], expected_op)
 
 
 def test_adjoint():
