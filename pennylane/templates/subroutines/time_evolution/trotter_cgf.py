@@ -538,7 +538,7 @@ def _cgf_resource_counts(num_trotter_steps, hamiltonian, has_control, double_pha
         resources[RZ] += num_onebody_rotations
         resources[GlobalPhase] += 1
     elif double_phase:
-        # Double-phase (Fig. 6): bare IsingZZ / RZ rotations, plus one CNOT pair around
+        # Double-phase (Fig. 6 https://arxiv.org/abs/2506.15784): bare IsingZZ / RZ rotations, plus one CNOT pair around
         # each diagonal block, plus an RZ on the control wire for the global phase.
         resources[IsingZZ] += num_twobody_rotations
         resources[RZ] += num_onebody_rotations
@@ -607,7 +607,7 @@ def _controlled_trotter_cgf_decomp(base, control_wires, control_values, work_wir
     hamiltonian = _align_one_body_leaf(_normalize_leaf_determinant(hamiltonian))
 
     if double_phase:
-        # Double-phase (Fig. 6) circuit: each full-time diagonal block is CNOT-sandwiched by
+        # Double-phase (Fig. 6 https://arxiv.org/abs/2506.15784) circuit: each full-time diagonal block is CNOT-sandwiched by
         # the control wire, so the bare rotations give control-0 / control-1 branches
         # e^{-i(H - s)t} / e^{+i(H - s)t}, where s = _energy_shift is the identity part of H.
         # We apply the energy shift explicitly and symmetrically as RZ(2*phi) on the control
