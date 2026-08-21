@@ -113,13 +113,19 @@ def _run_trotter_steps(
         double_phase (bool): whether the controlled circuit is the double-phase
             (Fig. 6 in `arXiv:2506.15784 <https://arxiv.org/abs/2506.15784>`__)
             construction (``True``) or a genuine controlled unitary (``False``).
-        apply_system_basis_rotation (callable): ``(U, wires) -> None``.
+        apply_system_basis_rotation (callable): Qfunc with inputs ``(U, wires)`` that applies
+            a fragment's leaf tensor as :class:`~.BasisRotation`.
         apply_two_body_diagonal (callable):
-            ``(Z, wires, first_order_time_step, control_wires, double_phase) -> None``.
+            Qfunc with inputs ``(Z, wires, first_order_time_step, control_wires, double_phase)`` that applies the
+            two-body :class:`~.IsingZZ` layer.
         apply_one_body_diagonal (callable):
-            ``(Z, wires, first_order_time_step, control_wires, double_phase) -> None``.
-        merge_leaves (callable): ``(U_prev, U_curr) -> U``.
-        transpose_leaf (callable): ``(U) -> U``.
+            Qfunc with inputs ``(Z, wires, first_order_time_step, control_wires, double_phase)`` that applies the
+            one-body :class:`~.RZ` layer, one per wire, from the diagonal of ``Z``.
+        merge_leaves (callable): Function that merges the current unitary basis change
+            with the previous: ``(U_prev, U_curr) -> U``. Combines consecutive leaves so their
+            basis rotations telescope into one.
+        transpose_leaf (callable): ``(U) -> U``. Inverse of a leaf, for the trailing basis
+            rotation that closes the final fragment.
     """
     if compiler.active() or capture.enabled():
         wires = math.array(wires, like="jax")

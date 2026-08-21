@@ -360,7 +360,7 @@ def _normalize_leaf_determinant(hamiltonian):
 
 
 def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, double_phase):
-    """Apply the two-body ``IsingZZ`` layer (base / double-phase / genuine controlled)."""
+    r"""Apply the two-body ``IsingZZ`` layer (base / double-phase / genuine controlled)."""
     num_cas = Z.shape[0]
     # The shared CNOT sandwich is only used by the double-phase construction; the genuine
     # controlled circuit controls each IsingZZ individually inside ``_emit_two_body_isingzz``.
