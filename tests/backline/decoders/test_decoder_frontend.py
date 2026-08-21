@@ -41,7 +41,6 @@ from pennylane.backline import CoprocessorFunction, css_bp_decoder, triton_decod
 from pennylane.backline.decoders.triton import decoder_frontend as frontend
 
 
-@triton.jit
 def _echo_decoder(syndrome):
     return syndrome
 

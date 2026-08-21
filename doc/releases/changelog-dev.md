@@ -11,10 +11,8 @@
   ```py
   import numpy as np
   import pennylane as qp
-  import triton
   import triton.language as tl
 
-  @triton.jit
   def steane_lookup(syndrome):
       return tl.where(syndrome != 0, 1 << (syndrome - 1), 0)
 
@@ -461,6 +459,7 @@
   a new method of having compressed operators for resource estimation and decomposition.
   [(#9385)](https://github.com/PennyLaneAI/pennylane/pull/9385)
   [(#9712)](https://github.com/PennyLaneAI/pennylane/pull/9712)
+  [(#10032)](https://github.com/PennyLaneAI/pennylane/pull/10032)
 
 * `Tracker` now has a readable `__repr__` that displays all relevant internals
   (`active`, `totals`, `history`, `latest`, `persistent`, `callback`).
@@ -1011,7 +1010,9 @@
   - Parametric operators are ported:
     - :class:`~.RZ`, :class:`~.CRZ`, :class:`~.DiagonalQubitUnitary`, :class:`~.PauliRot`, :class:`~.MultiRZ`, :class:`~.PhaseShift`,
       :class:`~.ControlledPhaseShift`, :class:`~.Rot`, :class:`~.CRot`, :class:`~.U1`, :class:`~.U2`, :class:`~.U3`, :class:`~.PCPhase`,
-      :class:`~.GlobalPhase`, :class:`~.IsingXX`, :class:`~.IsingYY`, :class:`~.IsingZZ`, :class:`~.IsingXY`, :class:`~.RX`, :class:`~.CRX`
+      :class:`~.GlobalPhase`, :class:`~.IsingXX`, :class:`~.IsingYY`, :class:`~.IsingZZ`, :class:`~.IsingXY`, :class:`~.RX`, :class:`~.CRX`,
+      :class:`~.RY`, :class:`~.CRY`, :class:`~.QubitUnitary`, :class:`~.ControlledQubitUnitary`
+  [(#9998)](https://github.com/PennyLaneAI/pennylane/pull/9998)
   [(#9857)](https://github.com/PennyLaneAI/pennylane/pull/9857)
   [(#9941)](https://github.com/PennyLaneAI/pennylane/pull/9941)
   [(#9897)](https://github.com/PennyLaneAI/pennylane/pull/9897)
@@ -1026,6 +1027,8 @@
   [(#9978)](https://github.com/PennyLaneAI/pennylane/pull/9978)
   [(#9981)](https://github.com/PennyLaneAI/pennylane/pull/9981)
   [(#10026)](https://github.com/PennyLaneAI/pennylane/pull/10026)
+  [(#9990)](https://github.com/PennyLaneAI/pennylane/pull/9990)
+  [(#10041)](https://github.com/PennyLaneAI/pennylane/pull/10041)
   - Templates are ported:
     - :class:`~.BasisRotation`, :class:`~.MultiplexerStatePreparation`, :class:`~.QROM`, :class:`~.QFT`, :class:`~.FlipSign`,
       :class:`~.TemporaryAND`, :class:`~.SelectPauliRot`, :class:`~.GQSP`, :class:`~.AQFT`, :class:`~.SumOfSlatersPrep`,
@@ -1313,6 +1316,11 @@
 * Fixed a bug where :func:`~.tape.plxpr_to_tape` raised an error when the program contains
   arithmetic operations performed on mid-circuit measurement values.
   [(#10028)](https://github.com/PennyLaneAI/pennylane/pull/10028)
+
+* Fixed :func:`~pennylane.backline.css_bp_decoder` so the X- and Z-specialized Triton decoders
+  stay distinct when bundled behind one dispatcher, and, for the same reason, updated
+  :func:`~pennylane.backline.triton_decoder` to own jitting of the raw Triton decoder functions.
+  [(#10040)](https://github.com/PennyLaneAI/pennylane/pull/10040)
 
 * Fixed a bug where decomposing an :class:`~.Operator2` with graph-based decomposition
   enabled inside a :class:`~.Subroutine` with program capture leaked JAX tracers and

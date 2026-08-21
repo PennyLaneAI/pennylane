@@ -401,7 +401,7 @@ class TestHigherOrderPrimitiveRegistrations:
         assert jaxpr.eqns[0].primitive == ctrl_transform_prim
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         # first eqn mul, second RY
-        assert inner_jaxpr.eqns[1].primitive == qp.RY._primitive
+        assert_eqn_matches_op(inner_jaxpr.eqns[1], qp.RY)
         assert len(inner_jaxpr.eqns) == 2
 
     def test_ctrl_consts(self):
@@ -441,7 +441,7 @@ class TestHigherOrderPrimitiveRegistrations:
 
         branch1 = jaxpr.eqns[0].params["jaxpr_branches"][0]
         assert len(branch1.eqns) == 2
-        assert branch1.eqns[1].primitive == qp.RY._primitive
+        assert_eqn_matches_op(branch1.eqns[1], qp.RY)
 
         branch2 = jaxpr.eqns[0].params["jaxpr_branches"][1]
         assert len(branch2.eqns) == 4
@@ -480,8 +480,8 @@ class TestHigherOrderPrimitiveRegistrations:
             @qp.cond(control)
             def cond_fn(y):
                 # One new const
-                exponent = add_3.bind(0)
-                _ = qp.RY(y, 0) ** exponent
+                theta = add_3.bind(0)
+                _ = qp.Rot(y, theta, y, 0)  # pylint: disable=expression-not-assigned
 
             @cond_fn.otherwise
             def _(y):
