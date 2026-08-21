@@ -15,6 +15,7 @@
 
 import numpy as np
 import pytest
+from scipy import sparse
 
 import pennylane as qp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
@@ -147,21 +148,32 @@ def test_matrix(bitstring, expected_matrix):
 
 @pytest.mark.parametrize("sparse_format", ["csr", "csc", "lil", "coo"])
 @pytest.mark.parametrize(
-    "bitstring", [[0], [1], [1, 0], [0, 1, 1], [1, 0, 1, 1], [False, False, True, True]]
+    ("bitstring", "expected_matrix"),
+    [
+        ([0], sparse.csr_matrix(np.eye(2))),
+        ([1], sparse.csr_matrix(qp.X.compute_matrix())),
+        ([1, 0], sparse.csr_matrix(np.kron(qp.X.compute_matrix(), np.eye(2)))),
+        (
+            [0, 1, 1],
+            sparse.csr_matrix(
+                np.kron(np.eye(2), np.kron(qp.X.compute_matrix(), qp.X.compute_matrix()))
+            ),
+        ),
+    ],
 )
-def test_sparse_matrix(bitstring, sparse_format):
+def test_sparse_matrix(bitstring, expected_matrix, sparse_format):
     """Tests that MultiX computes its sparse matrix in the requested format."""
     wires = range(len(bitstring))
     op = qp.MultiX(bitstring, wires=wires)
 
-    static_matrix = qp.MultiX.compute_sparse_matrix(bitstring, wires, format=sparse_format)
-    instance_matrix = op.sparse_matrix(format=sparse_format)
+    expected_matrix_correct_format = expected_matrix.asformat(sparse_format)
+    sparse_matrix = op.sparse_matrix(format=sparse_format)
+    dense_matrix = op.matrix()
 
     assert qp.MultiX.has_sparse_matrix
-    assert static_matrix.format == sparse_format
-    assert instance_matrix.format == sparse_format
-    assert np.allclose(static_matrix.toarray(), op.matrix())
-    assert np.allclose(instance_matrix.toarray(), op.matrix())
+    assert sparse_matrix.format == sparse_format
+    assert (sparse_matrix - expected_matrix_correct_format).nnz == 0
+    assert np.allclose(sparse_matrix.toarray(), dense_matrix)
 
 
 @pytest.mark.parametrize(
