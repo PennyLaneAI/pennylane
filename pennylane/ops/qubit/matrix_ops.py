@@ -577,31 +577,44 @@ class DiagonalQubitUnitary(Operator2):
 # pylint: disable=unused-argument
 def _diagonal_qu_resource(D, wires):
     num_wires = len(wires)
-    if num_wires == 1:
-        return {qp.RZ: 1, qp.GlobalPhase: 1}
-
-    return {
-        DiagonalQubitUnitary(Complex[2 ** (num_wires - 1)], wires=Wire[num_wires - 1]): 1,
-        qp.SelectPauliRot(
-            Float[2 ** (num_wires - 1)],
-            control_wires=Wire[num_wires - 1],
-            target_wire=Wire[1],
-            rot_axis="Z",
-        ): 1,
-    }
+    resources = {qp.RZ: 1, qp.GlobalPhase: 1}
+    for num_control_wires in range(1, num_wires):
+        resources[
+            qp.SelectPauliRot(
+                Float[2**num_control_wires],
+                control_wires=Wire[num_control_wires],
+                target_wire=Wire[1],
+                rot_axis="Z",
+            )
+        ] = 1
+    return resources
 
 
 @register_resources(_diagonal_qu_resource)
 def _diagonal_qu_decomp(D, wires):
+    """Fully decompose a diagonal unitary by iterating over successively smaller diagonals."""
+    rotations = []
+    for _ in range(len(wires) - 1):
+        angles = qp.math.angle(D)
+        diff = angles[..., 1::2] - angles[..., ::2]
+        mean = (angles[..., ::2] + angles[..., 1::2]) / 2
+        rotations.append((diff, wires[:-1], wires[-1]))
+        D = qp.math.exp(1j * mean)
+        wires = wires[:-1]
+
     angles = qp.math.angle(D)
     diff = angles[..., 1::2] - angles[..., ::2]
     mean = (angles[..., ::2] + angles[..., 1::2]) / 2
-    if len(wires) == 1:
-        qp.GlobalPhase(-qp.math.squeeze(mean, axis=-1))
-        qp.RZ(qp.math.squeeze(diff, axis=-1), wires=wires)
-    else:
-        qp.DiagonalQubitUnitary(qp.math.exp(1j * mean), wires=wires[:-1])
-        qp.SelectPauliRot(diff, control_wires=wires[:-1], target_wire=wires[-1])
+    qp.GlobalPhase(-qp.math.squeeze(mean, axis=-1))
+    qp.RZ(qp.math.squeeze(diff, axis=-1), wires=wires)
+
+    for diff, control_wires, target_wire in reversed(rotations):
+        qp.SelectPauliRot(
+            diff,
+            control_wires=control_wires,
+            target_wire=target_wire,
+            rot_axis="Z",
+        )
 
 
 # pylint: disable=unused-argument
