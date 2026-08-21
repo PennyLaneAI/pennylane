@@ -245,9 +245,11 @@ def test_half_signed_out_multiplier(x, y, z, expected):
 
     @qp.qnode(dev)
     def circuit():
-        qp.BasisEmbedding(x, wires=x_wires)
-        qp.BasisEmbedding(y % (2 ** len(y_wires)), wires=y_wires)
-        qp.BasisEmbedding(z, wires=output_wires)
+        # ``BasisState`` (aka ``BasisEmbedding``) is now an ``Operator2`` that requires an explicit
+        # binary array rather than an integer, so encode each input with ``int_to_binary``.
+        qp.BasisState(qp.math.int_to_binary(x, len(x_wires)), wires=x_wires)
+        qp.BasisState(qp.math.int_to_binary(y % (2 ** len(y_wires)), len(y_wires)), wires=y_wires)
+        qp.BasisState(qp.math.int_to_binary(z, len(output_wires)), wires=output_wires)
         _half_signed_out_multiplier(x_wires, y_wires, output_wires, work_wires)
         return qp.probs(wires=output_wires)
 
