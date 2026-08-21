@@ -210,19 +210,20 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
     2: ──H─╰┤↗Y├──║─┤
              ╚════╝
 
-    Additionally, the number of PPM operations in a circuit can be easily inspected with :func:`~.specs`
-    where they are denoted as a :class:`~.ops.mid_measure.pauli_measure.PauliMeasure` gate type:
+    Additionally, the number of PPM operations in a circuit can be easily inspected with :func:`~.specs`:
 
-    >>> print(qp.specs(circuit)()['resources'])
+    >>> print(qp.specs(qp.qjit(circuit), level="top")()['resources'])
     Quantum operations:
     - Total: 4
-      - Hadamard: 2
-      - PauliMeasure: 1
-      - Conditional(PauliX): 1
+    - Hadamard: 2
+    - PPM-w2: 1
+    - PauliX: 1
     Measurement processes:
     - expval(PauliZ): 1
     Total wires: 3
-    Circuit Depth: 3
+    PBC Depths:
+    - Any commuting depth: 1
+    - Qubit disjoint depth: 1
     """
 
     if capture_enabled():

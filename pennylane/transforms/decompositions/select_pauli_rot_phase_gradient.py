@@ -144,16 +144,12 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
             qp.SelectPauliRot(angles, control_wires=range(3), target_wire=3)
             return qp.state()
 
-        specs = qp.specs(circuit)(angles)["resources"].quantum_operations
-
     The resulting circuit corresponds to the
     `phase gradient decomposition <https://pennylane.ai/compilation/phase-gradient/d-multiplex-rotations>`__
     of ``SelectPauliRot``, containing two static CNOT fanouts that toggle between addition and
     subtraction based on the target wire state, two QROMs that load the binary representation of
     the rotation angles, and the :class:`~.SemiAdder`:
 
-    >>> specs
-    {'QROM': 2, 'MultiControlledX': 6, 'SemiAdder': 1}
     >>> wire_order = [0, 1, 2, 3] + angle_wires + phase_grad_wires + work_wires
     >>> print(qp.draw(circuit, wire_order=wire_order, show_matrices=False)(angles))
          0: ─╭◑────────────────────────────╭◑─────────────────┤ ╭State

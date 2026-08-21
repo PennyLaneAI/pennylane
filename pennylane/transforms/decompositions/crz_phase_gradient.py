@@ -84,14 +84,11 @@ def make_crz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
             qp.CRZ(phi, [0, 1])
             return qp.state()
 
-        specs = qp.specs(circuit)()["resources"].quantum_operations
 
     The resulting circuit corresponds to the phase gradient decomposition
     of ``CRZ``, containing four fanouts corresponding to the binary representation
     of the angle (111 in this case), the :class:`~.SemiAdder`, and a :class:`~.GlobalPhase`.
 
-    >>> specs
-    {'C(BasisState)': 4, 'SemiAdder': 1}
     >>> print(qp.draw(circuit, wire_order=[0, 1])())
          0: ─╭●───────────────────╭●────────┤ ╭State
          1: ─│────╭○──────────────│────╭○───┤ ├State

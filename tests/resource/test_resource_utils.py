@@ -17,11 +17,23 @@ import pytest
 
 import pennylane as qp
 from pennylane.resource._utils import (
-    get_last_tape_transform_level,
     get_marker_level_map,
     make_level_name_unique,
     preprocess_level_input,
 )
+
+# pylint: disable=redefined-outer-name
+
+
+@pytest.fixture
+def example_pipeline():
+    pipeline = qp.CompilePipeline([qp.transforms.cancel_inverses for _ in range(6)])
+
+    pipeline.add_marker("foo", 2)
+    pipeline.add_marker("bar", 3)
+    pipeline.add_marker("baz", 5)
+
+    return pipeline
 
 
 def test_make_level_name_unique():
@@ -32,19 +44,10 @@ def test_make_level_name_unique():
     assert make_level_name_unique("baz", existing_levels) == "baz"
 
 
-@qp.transform
-def dummy_transform(qnode):
-    return qnode, lambda res: res
-
-
 @pytest.mark.parametrize(
     "level,output,expect_warnings",
     [
         (0, [0], False),
-        (slice(3), [0, 1, 2], False),
-        (slice(3, None), [3, 4, 5, 6], False),
-        (slice(1, 3), [1, 2], False),
-        (slice(1, 4, 2), [1, 3], False),
         ([0, 1], [0, 1], False),
         ([0, 1, 1, 1], [0, 1], True),
         ((0, 1), [0, 1], False),
@@ -53,18 +56,14 @@ def dummy_transform(qnode):
         (["foo", "bar"], [2, 3], False),
         ((1, "foo", "baz", 4, "bar"), [1, 2, 3, 4, 5], True),
         ("all", [0, 1, 2, 3, 4, 5, 6], False),
-        ("all-mlir", [4, 5, 6], False),
         ("user", [6], False),
+        ("top", [0], False),
     ],
 )
-def test_preprocess_levels(level, output, expect_warnings):
+def test_preprocess_levels(level, output, expect_warnings, example_pipeline):
     """Test that _preprocess_level_input works correctly"""
-    marker_to_level = {
-        "foo": 2,
-        "bar": 3,
-        # Treat MLIR lowering as level 4
-        "baz": 5,
-    }
+
+    # 6 total transforms, with markers at levels 2, 3, and 5
 
     if expect_warnings:
         with pytest.warns(
@@ -72,58 +71,43 @@ def test_preprocess_levels(level, output, expect_warnings):
             match="The 'level' argument to qp.specs for QJIT'd QNodes has been sorted to be in ascending "
             "order with no duplicate levels.",
         ):
-            assert preprocess_level_input(level, marker_to_level, 5, 4) == output
+            assert preprocess_level_input(level, example_pipeline) == output
     else:
-        assert preprocess_level_input(level, marker_to_level, 5, 4) == output
+        assert preprocess_level_input(level, example_pipeline) == output
 
 
-@pytest.mark.parametrize(
-    "num_tapes, expected",
-    [
-        (  # If there are no tape transforms, the "Before Tape Transforms" level should be skipped
-            0,
-            list(range(5)),
-        ),
-        (2, list(range(6))),
-        (5, list(range(6))),
-    ],
-)
-def test_preprocess_levels_all(num_tapes, expected):
-    # Assume there are always 4 transforms in the pipeline
-    assert preprocess_level_input("all", {}, 4, num_tapes) == expected
-
-
-def test_preprocess_levels_invalid():
+def test_preprocess_levels_invalid(example_pipeline):
     with pytest.raises(ValueError, match="out of bounds"):
-        preprocess_level_input(-10, {}, 5, 0)
+        preprocess_level_input(1, qp.CompilePipeline())
 
     with pytest.raises(ValueError, match="out of bounds"):
-        preprocess_level_input(10, {}, 5, 0)
+        preprocess_level_input(-10, example_pipeline)
+
+    with pytest.raises(ValueError, match="out of bounds"):
+        preprocess_level_input(10, example_pipeline)
 
     with pytest.raises(ValueError, match="Invalid level"):
-        preprocess_level_input([1, 2, 3.14], {}, 5, 0)
+        preprocess_level_input([1, 2, 3.14], example_pipeline)
 
-    with pytest.raises(ValueError, match="Marker name 'foo' not found"):
-        preprocess_level_input("foo", {}, 5, 0)
+    with pytest.raises(ValueError, match="Marker name 'potato' not found"):
+        preprocess_level_input("potato", example_pipeline)
 
 
-def test_get_last_tape_transform_level():
-    """Test that _get_last_tape_transform_level works correctly"""
+def test_preprocess_levels_tape_transforms():
+    """Test that a warning is raised if the user has applied tape transforms."""
 
-    # If there are no transforms, the last transform level should be 0
-    assert get_last_tape_transform_level(qp.CompilePipeline()) == 0
-    # If there are *any* tape transforms, this should return the number of tape transforms
-    # since there is an implied level 0 for "Before Tape Transforms"
-    assert get_last_tape_transform_level(qp.CompilePipeline(dummy_transform)) == 1
-    assert get_last_tape_transform_level(qp.CompilePipeline(dummy_transform, dummy_transform)) == 2
+    @qp.transform
+    def dummy_transform(tape):
+        """Returns a tape-only transform that can be used for testing"""
+        return (tape,), lambda res: res[0]
 
-    # MLIR passes should not be counted
-    assert (
-        get_last_tape_transform_level(
-            qp.CompilePipeline(dummy_transform, qp.transform(pass_name="cancel_inverses"))
-        )
-        == 1
-    )
+    pipeline = qp.CompilePipeline([dummy_transform, qp.transforms.cancel_inverses])
+
+    with pytest.raises(
+        ValueError,
+        match=r"Specs encountered the following tape transforms: .*dummy_transform.*\. Tape transforms are no longer supported by specs.",
+    ):
+        preprocess_level_input("all", pipeline)
 
 
 def test_get_marker_level_map():
@@ -131,22 +115,18 @@ def test_get_marker_level_map():
     pipeline = qp.CompilePipeline()
 
     pipeline.add_marker("m0")
-    pipeline += dummy_transform
+    pipeline += qp.transform(pass_name="cancel_inverses")
     pipeline.add_marker("m1")
-    pipeline += qp.transform(pass_name="cancel_inverses")
     pipeline.add_marker("m2")
+    pipeline += qp.transform(pass_name="cancel_inverses")
+    pipeline += qp.transform(pass_name="cancel_inverses")
     pipeline.add_marker("m3")
-    pipeline += qp.transform(pass_name="cancel_inverses")
-    pipeline += qp.transform(pass_name="cancel_inverses")
-    pipeline.add_marker("m4")
 
     expected_mapping = {
         "m0": 0,
         "m1": 1,
-        # MLIR happens at level 2
-        "m2": 3,
+        "m2": 1,
         "m3": 3,
-        "m4": 5,
     }
 
     assert get_marker_level_map(pipeline) == expected_mapping
