@@ -823,8 +823,8 @@ def _trotter_step_second_order(
                 SignedOutSquare(**square_wires, output_wires_zeroed=True)
                 OutMultiplier(**mult_wires)
                 adjoint(SignedOutSquare(**square_wires, output_wires_zeroed=True))
-                adjoint(AQFT)(order=aqft_order, wires=mode_registers[k])
-                adjoint(BasisState)(bitstring, registers["coefficients"])
+                adjoint(AQFT(order=aqft_order, wires=mode_registers[k]))
+                adjoint(BasisState(bitstring, registers["coefficients"]))
 
             cond(math.allclose(_coeffs, 0.0), skip_fn, actual_fn)()
 
