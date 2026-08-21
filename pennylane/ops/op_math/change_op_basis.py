@@ -28,7 +28,6 @@ from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops.op_math import adjoint, ctrl, prod
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract, flip_zero_control
-from pennylane.typing import Wire
 
 from .composite import handle_recursion_error
 from .composite2 import CompositeOp2
@@ -255,7 +254,6 @@ class ChangeOpBasis(CompositeOp2):
     hybrid_argnames = ("compute_op", "target_op", "uncompute_op")
 
     has_matrix = False
-    has_diagonalizing_gates = False
 
     _op_symbol = "@"
     _math_op = staticmethod(math.prod)
@@ -334,8 +332,8 @@ def _controlled_change_op_basis_resources(
     resources[
         _ctrl_abstract(
             base.target_op,
-            Wire[len(control_wires)],
-            Wire[len(work_wires)],
+            control_wires,
+            work_wires,
             work_wire_type,
         )
     ] += 1
