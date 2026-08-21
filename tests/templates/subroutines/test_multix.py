@@ -288,12 +288,12 @@ def test_adjoint():
 
 def test_adjoint_decomposition():
     """Tests that Adjoint(MultiX) decomposes to MultiX."""
-    base = qp.MultiX([1, 0, 1], wires=[0, 1, 2])
+    op = qp.MultiX([1, 0, 1], wires=[0, 1, 2])
 
-    decomposition = qp.adjoint(base).decomposition()
+    decomposition = qp.adjoint(op).decomposition()
 
     assert len(decomposition) == 1
-    qp.assert_equal(decomposition[0], base)
+    qp.assert_equal(decomposition[0], op)
 
 
 @pytest.mark.parametrize("exponent", [-5, -3, -1, 1, 3, 5])
