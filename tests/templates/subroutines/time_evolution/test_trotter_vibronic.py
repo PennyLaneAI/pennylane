@@ -346,7 +346,6 @@ class TestConstruction:
     @pytest.mark.parametrize(
         "register, match",
         [
-            ("electronic", "electronic states"),
             ("cache", "cache qubits"),
             ("phase_gradient", "phase-gradient"),
             ("work", "work qubits"),
@@ -360,6 +359,24 @@ class TestConstruction:
         op = make_op(hamiltonian, wires)
         with pytest.raises(ValueError, match=match):
             op.compute_decomposition(**op.arguments)
+
+    def test_rejects_bad_electronic_size_at_construction(self):
+        """Test that a wrongly-sized electronic register is rejected at construction time (with a
+        clear error) rather than surfacing later from the decomposition or resource estimator."""
+        hamiltonian = build_hamiltonian(fragment_list(n_states=4, n_modes=2))
+        wires = make_wires(4, 2)
+        wires["electronic"] = wires["electronic"][:-1]
+        with pytest.raises(ValueError, match="electronic states"):
+            make_op(hamiltonian, wires)
+
+    def test_rejects_non_divisible_vib_wires(self):
+        """Test that a vibrational register not divisible by the number of modes is rejected at
+        construction time."""
+        hamiltonian = build_hamiltonian(fragment_list(n_states=2, n_modes=2))
+        wires = make_wires(2, 2)
+        wires["vib_wires"] = wires["vib_wires"][:-1]  # 3 wires, 2 modes -> not divisible
+        with pytest.raises(ValueError, match="divisible by the number of modes"):
+            make_op(hamiltonian, wires)
 
     def test_rejects_unequal_mode_register_sizes(self):
         """Test that _validate_registers rejects vibrational-mode registers of differing sizes."""
@@ -375,62 +392,62 @@ class TestConstruction:
         with pytest.raises(ValueError, match="same size"):
             _validate_registers(registers, mode_registers, n_modes=2, n_states=2)
 
-    def test_abstract_init_derives_diag_keys(self):
-        """Test that abstract construction (here triggered by an abstract wire register) derives
-        the diagonalization keys from the concrete Hamiltonian via ``__abstract_init__``."""
+    def test_init_derives_diag_keys_with_abstract_wires(self):
+        """Test that ``__init__`` derives the diagonalization keys from the concrete Hamiltonian
+        even when a wire register is abstract (traced).
+
+        The abstract-input handling lives directly in ``__init__`` (rather than in an
+        ``__abstract_init__`` override). ``__init__`` is invoked directly here because on this
+        branch the metaclass still routes abstract construction to the base ``__abstract_init__``;
+        once the #proj-operator2 change routes abstract construction through ``__init__`` (PR
+        #9788), ordinary construction will hit this path.
+        """
         hamiltonian = build_hamiltonian(fragment_list())
         wires = make_wires(2, 2)
-        op = qp.TrotterVibronic(
+        op = object.__new__(qp.TrotterVibronic)
+        qp.TrotterVibronic.__init__(
+            op,
             evolution_time=0.5,
             num_trotter_steps=1,
             hamiltonian=hamiltonian,
             electronic=AbstractWires(len(wires["electronic"])),
             vib_wires=wires["vib_wires"],
-            cache=wires["cache"],
             coefficients=wires["coefficients"],
             phase_gradient=wires["phase_gradient"],
+            cache=wires["cache"],
             work=wires["work"],
             aqft_order=1,
         )
-        assert op.is_abstract
         assert op.arguments["diag_keys"] == _derive_diag_keys(hamiltonian)
 
-    @pytest.mark.capture
-    def test_abstract_init_requires_diag_keys_for_traced_hamiltonian(self):
-        """Test that abstract construction with a traced Hamiltonian and no ``diag_keys`` errors,
-        since the diagonalization keys cannot be derived from an abstract Hamiltonian."""
+    def test_init_requires_diag_keys_for_traced_hamiltonian(self):
+        """Test that ``__init__`` raises when the Hamiltonian is traced (abstract) and no
+        ``diag_keys`` are given, since the keys cannot be derived from an abstract Hamiltonian."""
         jax = pytest.importorskip("jax")
+        hamiltonian = build_hamiltonian(fragment_list(n_states=2, n_modes=1))
         wires = make_wires(2, 1)
 
-        def make_traced(constant, linear, quadratic, kinetic):
-            hamiltonian = {
-                "constant": constant,
-                "linear": linear,
-                "quadratic": quadratic,
-                "kinetic": kinetic,
-            }
-            return qp.TrotterVibronic(
+        def make_traced(constant):
+            traced = dict(hamiltonian)
+            traced["constant"] = constant
+            op = object.__new__(qp.TrotterVibronic)
+            qp.TrotterVibronic.__init__(
+                op,
                 evolution_time=0.5,
                 num_trotter_steps=1,
-                hamiltonian=hamiltonian,
-                electronic=AbstractWires(len(wires["electronic"])),
+                hamiltonian=traced,
+                electronic=wires["electronic"],
                 vib_wires=wires["vib_wires"],
-                cache=wires["cache"],
                 coefficients=wires["coefficients"],
                 phase_gradient=wires["phase_gradient"],
+                cache=wires["cache"],
                 work=wires["work"],
                 aqft_order=1,
-                diag_keys=None,
             )
+            return 0
 
-        hamiltonian = build_hamiltonian(fragment_list(n_states=2, n_modes=1))
         with pytest.raises(ValueError, match="diag_keys"):
-            jax.make_jaxpr(make_traced)(
-                hamiltonian["constant"],
-                hamiltonian["linear"],
-                hamiltonian["quadratic"],
-                hamiltonian["kinetic"],
-            )
+            jax.make_jaxpr(make_traced)(np.asarray(hamiltonian["constant"]))
 
 
 # ---------------------------------------------------------------------------
@@ -469,15 +486,33 @@ class TestDecomposition:
         queue = decomposition_queue(make_op(hamiltonian, make_wires(2, 2), evolution_time=0.1))
         assert count_ops(queue, SemiAdder) > 0
 
-    def test_kinetic_queues_aqft_and_basisstate(self, seed):
-        """Test that BasisState and AQFT appear only at non-zero evolution time."""
+    def test_kinetic_queues_aqft_no_basisstate(self, seed):
+        """Test that the kinetic fragment (marked by AQFT) appears only at non-zero evolution
+        time, and that it does not use ``BasisState``. The momentum coefficients are loaded with a
+        conditional ``PauliX`` per wire instead (see ``test_basis_loading_uses_pauli_x``)."""
         hamiltonian = build_hamiltonian(fragment_list(seed=seed))
         wires = make_wires(2, 2)
         zero = decomposition_queue(make_op(hamiltonian, wires, evolution_time=0.0))
         assert count_ops(zero, AQFT) == 0
         nonzero = decomposition_queue(make_op(hamiltonian, wires, evolution_time=0.1))
         assert count_ops(nonzero, AQFT) > 0
-        assert count_ops(nonzero, qp.BasisState) > 0
+        # No BasisState (or its adjoint/controlled forms) should be used in the decomposition.
+        assert count_ops(nonzero, qp.BasisState) == 0
+
+    def test_basis_loading_uses_pauli_x(self):
+        """Test that loading a non-zero momentum coefficient bitstring emits conditional
+        ``PauliX`` gates (the ``BasisState``-free replacement) rather than a ``BasisState``."""
+        # A large kinetic coefficient guarantees a non-zero coefficient bitstring, so at least one
+        # ``PauliX`` is emitted by the basis-loading step.
+        n_states, n_modes = 2, 1
+        position = _zero_fragment(n_states, n_modes)
+        kinetic = _zero_fragment(n_states, n_modes)
+        for i in range(n_states):
+            kinetic["kinetic"][i, i] = np.diag([3.0] * n_modes)
+        hamiltonian = build_hamiltonian([position, kinetic])
+        queue = decomposition_queue(make_op(hamiltonian, make_wires(n_states, n_modes), 1.0))
+        assert count_ops(queue, qp.BasisState) == 0
+        assert count_ops(queue, qp.X) > 0
 
     def test_bilinear_queues_signed_out_multiplier(self):
         """Test that a bilinear fragment queues a SignedOutMultiplier."""
@@ -502,6 +537,59 @@ class TestDecomposition:
         # classes, so a successful call with positive gate count is the assertion of interest.
         resources = rule.compute_resources(**op.arguments)
         assert resources.num_gates > 0
+
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
+    def test_assert_valid(self):
+        """Test that ``TrotterVibronic`` passes ``assert_valid``.
+
+        This guards the pytree round-trip (the Hamiltonian dict key ordering) and the
+        resource/decomposition consistency under graph-based decomposition -- i.e. that every
+        gate emitted by the decomposition (including the ``adjoint``/``controlled`` wrappers) is
+        declared by the resource function.
+
+        ``skip_differentiation`` is set because differentiating the fully decomposed circuit
+        requires simulating a 20+ wire statevector, which is impractical in a unit test (execution
+        and program capture are exercised by dedicated tests). ``skip_decomp_matrix_check`` is set
+        because the template does not define a dense matrix.
+        """
+        hamiltonian = build_hamiltonian(fragment_list(n_states=2, n_modes=2, seed=1))
+        op = make_op(hamiltonian, make_wires(2, 2), evolution_time=0.5)
+        qp.ops.functions.assert_valid(op, skip_differentiation=True, skip_decomp_matrix_check=True)
+
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
+    def test_optional_work_wires_are_allocated(self):
+        """Test that ``cache`` and ``work`` are optional and dynamically allocated when omitted."""
+        from pennylane.allocation import Allocate, Deallocate
+
+        hamiltonian = build_hamiltonian(fragment_list(n_states=2, n_modes=2, seed=1))
+        wires = make_wires(2, 2)
+        op = qp.TrotterVibronic(
+            evolution_time=0.5,
+            num_trotter_steps=1,
+            hamiltonian=hamiltonian,
+            electronic=wires["electronic"],
+            vib_wires=wires["vib_wires"],
+            coefficients=wires["coefficients"],
+            phase_gradient=wires["phase_gradient"],
+            aqft_order=1,
+        )
+        assert len(op.arguments["cache"]) == 0
+        assert len(op.arguments["work"]) == 0
+
+        queue = decomposition_queue(op)
+        assert count_ops(queue, Allocate) == 1
+        assert count_ops(queue, Deallocate) == 1
+
+        qp.ops.functions.assert_valid(op, skip_differentiation=True, skip_decomp_matrix_check=True)
+
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
+    def test_explicit_work_wires_are_not_allocated(self):
+        """Test that providing ``cache``/``work`` explicitly skips the dynamic allocation."""
+        from pennylane.allocation import Allocate
+
+        hamiltonian = build_hamiltonian(fragment_list(n_states=2, n_modes=2, seed=1))
+        op = make_op(hamiltonian, make_wires(2, 2))
+        assert count_ops(decomposition_queue(op), Allocate) == 0
 
     @pytest.mark.capture
     def test_decomposition_captures_into_plxpr(self, seed):
