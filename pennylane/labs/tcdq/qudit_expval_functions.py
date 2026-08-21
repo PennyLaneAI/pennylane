@@ -451,14 +451,13 @@ def _compute_initial_state_correction(
 
 def _compute_mc_statistics(
     integrand: jnp.ndarray, n_samples: int
-) -> tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
-    """Compute Monte Carlo mean, covariance, and mean squared magnitude from the integrand.
+) -> tuple[jnp.ndarray, jnp.ndarray]:
+    """Compute the Monte Carlo mean and covariance from the integrand.
 
-    Returns ``(expvals, cov, mean_y_sq)`` where ``cov`` is the per-observable
-    covariance matrix of the mean estimator, shape ``(n_obs, 2, 2)``.
+    Returns ``(expvals, cov)`` where ``cov`` is the per-observable covariance
+    matrix of the mean estimator, shape ``(n_obs, 2, 2)``.
     """
     expvals = jnp.mean(integrand, axis=1)
-    mean_y_sq = jnp.mean(jnp.abs(integrand) ** 2, axis=1)  # (n_obs,)
 
     re = jnp.real(integrand)
     im = jnp.imag(integrand)
@@ -474,7 +473,7 @@ def _compute_mc_statistics(
         ],
         axis=-2,
     )  # (n_obs, 2, 2)
-    return expvals, cov, mean_y_sq
+    return expvals, cov
 
 
 def build_qudit_expval_func(  # pylint: disable=too-many-statements
@@ -506,15 +505,12 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements
                 observables=None,
                 init_state_elems=None,
                 init_state_amps=None,
-                return_mean_y_sq=False,
-            ) -> (expvals, cov) or (expvals, cov, mean_y_sq)
+            ) -> (expvals, cov)
 
         where ``expvals`` is a complex array of shape ``(n_obs,)`` containing
         the estimated moments, and ``cov`` has shape ``(n_obs, 2, 2)``
         providing the real/imaginary covariance matrix of the mean estimator
-        for each observable. When ``return_mean_y_sq=True``, also returns the
-        per-observable mean of :math:`|y|^2` (needed internally by the MMD
-        loss).
+        for each observable.
 
         When ``config.phase_fn`` is set, the returned callable requires ``phase_fn_params`` to be
         passed as the second argument (the trainable parameters of the phase layer).
@@ -599,10 +595,7 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements
         observables: tuple[ArrayLike, ArrayLike] | None = None,
         init_state_elems: ArrayLike | None = None,
         init_state_amps: ArrayLike | None = None,
-        return_mean_y_sq: bool = False,
-    ) -> (
-        tuple[jnp.ndarray, jnp.ndarray] | tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]
-    ):  # pylint: disable=too-many-arguments
+    ) -> tuple[jnp.ndarray, jnp.ndarray]:  # pylint: disable=too-many-arguments
         """Compute batched expectation values for the configured circuit.
 
         Args:
@@ -622,19 +615,12 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements
             init_state_amps (ArrayLike | None, optional): Runtime override for the
                 complex amplitudes of the initial state. Array of shape ``(N,)``.
                 Defaults to None.
-            return_mean_y_sq (bool, optional): If ``True``, also return the
-                per-observable mean of ``|y_r|^2``. Defaults to ``False``.
 
         Returns:
-            tuple[jnp.ndarray, jnp.ndarray] | tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
-            By default returns ``(expvals, cov)`` where ``expvals`` are the estimated
-            complex expectation values, shape ``(n_obs,)``, and ``cov`` stores the
-            real-imaginary covariance matrices of the mean estimator, shape
-            ``(n_obs, 2, 2)``.
-
-            When ``return_mean_y_sq=True``, also returns ``mean_y_sq`` with shape
-            ``(n_obs,)``. This equals 1 when the per-sample integrand has unit
-            modulus (default input state, diagonal observables).
+            tuple[jnp.ndarray, jnp.ndarray]: Returns ``(expvals, cov)`` where
+            ``expvals`` are the estimated complex expectation values, shape
+            ``(n_obs,)``, and ``cov`` stores the real-imaginary covariance matrices
+            of the mean estimator, shape ``(n_obs, 2, 2)``.
         """
         if observables is not None:
             l_vecs = jnp.array(observables[0], dtype=jnp.int32)
@@ -679,10 +665,6 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements
             H = _compute_initial_state_correction(samples, l_f, state_elems, state_amps, dims)
             integrand = integrand * H
 
-        expvals, cov, mean_y_sq = _compute_mc_statistics(integrand, _n)
-
-        if return_mean_y_sq:
-            return expvals, cov, mean_y_sq
-        return expvals, cov
+        return _compute_mc_statistics(integrand, _n)
 
     return qudit_expval_batched
