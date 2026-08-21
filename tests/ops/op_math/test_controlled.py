@@ -1939,19 +1939,17 @@ class _Rot(Operation):
 
 
 unitaries = (
-    [
-        qp.PauliX.compute_matrix(),
-        qp.PauliY.compute_matrix(),
-        qp.PauliZ.compute_matrix(),
-        qp.Hadamard.compute_matrix(),
-        pnp.array(
-            [
-                [1 + 2j, -3 + 4j],
-                [3 + 4j, 1 - 2j],
-            ]
-        )
-        * 30**-0.5,
-    ],
+    qp.PauliX.compute_matrix(),
+    qp.PauliY.compute_matrix(),
+    qp.PauliZ.compute_matrix(),
+    qp.Hadamard.compute_matrix(),
+    pnp.array(
+        [
+            [1 + 2j, -3 + 4j],
+            [3 + 4j, 1 - 2j],
+        ]
+    )
+    * 30**-0.5,
 )
 
 

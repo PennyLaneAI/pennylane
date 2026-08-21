@@ -19,7 +19,8 @@ import numpy as np
 
 import pennylane as qp
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition import add_decomps, register_resources
+from pennylane.typing import Complex, Wire
 from pennylane.wires import Wires
 
 
@@ -507,7 +508,12 @@ if MPSPrep._primitive is not None:  # pylint: disable=protected-access
 def _mps_prep_decomposition_resources(
     bond_dimensions, num_sites, num_work_wires
 ):  # pylint: disable=unused-argument
-    return {resource_rep(qp.QubitUnitary, num_wires=1 + num_work_wires): num_sites}
+    return {
+        qp.QubitUnitary(
+            Complex[2 ** (1 + num_work_wires), 2 ** (1 + num_work_wires)],
+            wires=Wire[1 + num_work_wires],
+        ): num_sites
+    }
 
 
 def _work_wires_bond_dimension_condition(

@@ -86,7 +86,7 @@ class TestControlledQubitUnitary:
         def base_op(x):
             return 1 if x == 0 else 0  # pauliX as a mapping
 
-        with pytest.raises(ValueError, match="Base must be a matrix"):
+        with pytest.raises(ValueError, match="U must be a matrix"):
             qp.ControlledQubitUnitary(base_op, wires=[0, 1])
 
     def test_wires_is_none(self):
@@ -428,14 +428,14 @@ class TestControlledQubitUnitary:
             ]
         )
 
-        op = qp.ControlledQubitUnitary(U1, wires=("b", "c", "a"), control_values="01")
+        op = qp.ControlledQubitUnitary(U1, wires=("b", "c", "a"), control_values=[0, 1])
 
         pow_ops = op.pow(n)
         assert len(pow_ops) == 1
 
         assert pow_ops[0].target_wires == op.target_wires
         assert pow_ops[0].control_wires == op.control_wires
-        assert pow_ops[0].control_values == op.control_values
+        assert np.array_equal(pow_ops[0].control_values, op.control_values)
 
         op_mat_to_pow = qp.math.linalg.matrix_power(op.data[0], n)
         assert qp.math.allclose(pow_ops[0].data[0], op_mat_to_pow)
@@ -501,16 +501,55 @@ class TestControlledQubitUnitary:
         with pytest.raises(qp.operation.PowUndefinedError):
             op.pow(0.12)
 
-    def test_controlled(self):
-        """Test the _controlled method for ControlledQubitUnitary."""
+    def test_ctrl_of_controlled_qubit_unitary(self):
+        """Test that controlling a ControlledQubitUnitary (``_ctrl_c_qu``) merges into a single
+        ControlledQubitUnitary with the combined control wires, control values and work wires."""
+        U = np.array(
+            [
+                [0.73708696 + 0.61324932j, 0.27034258 + 0.08685028j],
+                [-0.24979544 - 0.1350197j, 0.95278437 + 0.1075819j],
+            ]
+        )
+        base = qp.ControlledQubitUnitary(
+            U, wires=(0, 1), control_values=[1], work_wires=[4], work_wire_type="zeroed"
+        )
 
-        U = qp.PauliX(0).compute_matrix()
+        op = qp.ctrl(
+            base,
+            control=[2, 3],
+            control_values=[0, 1],
+            work_wires=[5],
+            work_wire_type="borrowed",
+        )
 
-        original = qp.ControlledQubitUnitary(U, wires=(0, 1, 4), control_values="01")
-        expected = qp.ControlledQubitUnitary(U, wires=(0, 1, "a", 4), control_values="011")
+        assert isinstance(op, qp.ControlledQubitUnitary)
+        assert op.wires == Wires([2, 3, 0, 1])
+        assert op.control_wires == Wires([2, 3, 0])
+        assert op.target_wires == Wires([1])
+        assert list(op.control_values) == [False, True, True]
+        assert op.work_wires == Wires([5, 4])
+        assert op.work_wire_type == "borrowed"
+        assert qp.math.allclose(op.data[0], U)
 
-        out = original._controlled("a")  # pylint: disable=protected-access
-        qp.assert_equal(out, expected)
+        # The merged op is equivalent to constructing the ControlledQubitUnitary directly.
+        wire_order = [2, 3, 0, 1]
+        expected = qp.ControlledQubitUnitary(U, wires=wire_order, control_values=[0, 1, 1])
+        assert qp.math.allclose(
+            op.matrix(wire_order=wire_order), expected.matrix(wire_order=wire_order)
+        )
+
+    def test_ctrl_of_controlled_qubit_unitary_defaults(self):
+        """Test ``_ctrl_c_qu`` with default control values and merging of zeroed work wire types."""
+        U = qp.RX.compute_matrix(0.5)
+        base = qp.ControlledQubitUnitary(U, wires=(0, 1), work_wire_type="zeroed")
+
+        op = qp.ctrl(base, control=[2], work_wires=[5], work_wire_type="zeroed")
+        assert isinstance(op, qp.ControlledQubitUnitary)
+        assert op.control_wires == Wires([2, 0])
+        assert list(op.control_values) == [True, True]
+        assert op.work_wires == Wires([5])
+        # zeroed + zeroed stays zeroed; borrowed anywhere makes it borrowed.
+        assert op.work_wire_type == "zeroed"
 
     def test_unitary_check(self):
         unitary = np.array([[0.94877869j, 0.31594146], [-0.31594146, 0.94877869j]])

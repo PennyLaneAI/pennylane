@@ -80,12 +80,12 @@ def triton_decoder(
 ) -> CoprocessorFunction:
     """Compile Triton decoder functions into a coprocessor decode function.
 
-    Accepts a tuple of Triton decoder functions and compiles them into a shared library that can be
-    used as a :class:`~.CoprocessorFunction`.
+    Accepts a tuple of un-jitted Triton decoder functions and compiles them into a shared library
+    that can be used as a :class:`~.CoprocessorFunction`.
 
     Args:
-        decoder_fns (tuple[object, ...]): Triton decoder functions. ``decoder_id`` selects the
-            tuple index at runtime.
+        decoder_fns (tuple[object, ...]): Un-jitted Triton decoder functions. Each entry is
+            jit compiled internally, and ``decoder_id`` selects the tuple index at runtime.
 
     Keyword Args:
         platform (str): Required Triton platform string of the form ``"backend:arch:warp_size"``.
@@ -103,6 +103,7 @@ def triton_decoder(
 
     Raises:
         ImportError: If Triton decoder support is unavailable.
+        TypeError: If ``decoder_fns`` contains already jit compiled Triton functions.
         ValueError: If the decoder build options are invalid.
 
     .. seealso:: :class:`~.CoprocessorFunction`, :class:`~.Coprocessor`,
@@ -111,10 +112,8 @@ def triton_decoder(
     **Example**
 
     >>> import pennylane as qp
-    >>> import triton
     >>> import triton.language as tl
-    >>> @triton.jit
-    ... def steane_lookup(syndrome):
+    >>> def steane_lookup(syndrome):
     ...     return tl.where(syndrome != 0, 1 << (syndrome - 1), 0)
     >>> decoder = qp.backline.triton_decoder(  # doctest: +SKIP
     ...     (steane_lookup, steane_lookup),
