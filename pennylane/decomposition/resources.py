@@ -254,8 +254,6 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
         return adjoint_resource_rep(**params)
     if issubclass(op_type, qp.ops.Pow):
         return pow_resource_rep(**params)
-    if issubclass(op_type, qp.ops.ChangeOpBasis):
-        return change_op_basis_resource_rep(**params)
     if op_type is qp.ops.ControlledOp:
         op_type = qp.ops.Controlled
     if op_type is qp.ops.Controlled:
@@ -341,12 +339,12 @@ def adjoint_resource_rep(base_class: type[Operator], base_params: dict = None):
 
 
 def change_op_basis_resource_rep(
-    compute_op: type[Operator] | CompressedResourceOp,
-    target_op: type[Operator] | CompressedResourceOp,
-    uncompute_op: type[Operator] | CompressedResourceOp | None = None,
+    compute_op: type[Operator] | AbstractOperatorLike,
+    target_op: type[Operator] | AbstractOperatorLike,
+    uncompute_op: type[Operator] | AbstractOperatorLike | None = None,
 ):
-    """Creates a ``CompressedResourceOp`` representation of the compute-uncompute pattern
-    :class:`~.ChangeOpBasis` of operators.
+    """Creates an abstract :class:`~.ChangeOpBasis` representation of the compute-uncompute
+    pattern of operators.
 
     Args:
         compute_op: the compressed resource representation of the compute operator
@@ -359,16 +357,12 @@ def change_op_basis_resource_rep(
 
     compute_op = abstractify(compute_op)
     target_op = abstractify(target_op)
-    uncompute_op = uncompute_op or _adjoint_abstract(compute_op)
-    uncompute_op = abstractify(uncompute_op)
-    return CompressedResourceOp(
-        qp.ops.ChangeOpBasis,
-        {
-            "compute_op": compute_op,
-            "target_op": target_op,
-            "uncompute_op": uncompute_op,
-        },
-    )
+    if uncompute_op is None:
+        uncompute_op = _adjoint_abstract(compute_op)
+    else:
+        uncompute_op = abstractify(uncompute_op)
+    with qp.capture.pause(), qp.QueuingManager.stop_recording():
+        return qp.ops.ChangeOpBasis(compute_op, target_op, uncompute_op)
 
 
 def pow_resource_rep(base_class, base_params, z):

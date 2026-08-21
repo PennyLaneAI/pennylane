@@ -253,7 +253,9 @@ def _adjoint_abstract(op: AbstractOperatorLike | type[Operator]):
     op = abstractify(op)
     if isinstance(op, CompressedResourceOp):
         return adjoint_resource_rep(op.op_type, op.params)
-    return qp.adjoint(op)
+    abstract_op = Adjoint2.__new__(Adjoint2)
+    abstract_op.__abstract_init__(op)
+    return abstract_op
 
 
 def _cancel_adjoint_resources(base):

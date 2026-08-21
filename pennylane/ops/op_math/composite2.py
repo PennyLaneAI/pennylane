@@ -26,6 +26,7 @@ import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operator, Operator2
 from pennylane.ops.op_math.composite import handle_recursion_error
+from pennylane.typing import Wire
 from pennylane.wires import Wires
 
 # pylint: disable=too-many-instance-attributes
@@ -46,22 +47,32 @@ class CompositeOp2(Operator2, is_baseclass=True):
     wire_argnames = ()
 
     _eigs = {}  # cache eigen vectors and values like in qp.Hermitian
+    _hash = None
 
     def __init__(self, operands: Sequence[Operator], _init_pauli_rep=None):
         if any(isinstance(op, (qp.ops.MidMeasure, qp.ops.PauliMeasure)) for op in operands):
             raise ValueError("Composite operators of mid-circuit measurements are not supported.")
-        super().__init__(operands, _init_pauli_rep=_init_pauli_rep)
+        super().__init__(*self._operator2_args(operands, _init_pauli_rep))
         self._name = self.__class__.__name__
-        self._wires = Wires.all_wires([op.wires for op in operands])
         self._hash = None
         self._has_overlapping_wires = None
         self._overlapping_ops = None
-        self._pauli_rep = self._build_pauli_rep() if _init_pauli_rep is None else _init_pauli_rep
+        if all(isinstance(op, Operator) for op in operands):
+            self._wires = Wires.all_wires([op.wires for op in operands])
+            self._pauli_rep = (
+                self._build_pauli_rep() if _init_pauli_rep is None else _init_pauli_rep
+            )
+        else:
+            self._wires = Wire[0]
+            self._is_abstract = True
         self.queue()
+
+    def _operator2_args(self, operands, _init_pauli_rep):
+        return operands, _init_pauli_rep
 
     def __repr__(self):
         return f" {self._op_symbol} ".join(
-            [f"({op})" if op.arithmetic_depth > 0 else f"{op}" for op in self]
+            [f"({op})" if getattr(op, "arithmetic_depth", 0) > 0 else f"{op}" for op in self]
         )
 
     def __iter__(self):
@@ -318,7 +329,7 @@ class CompositeOp2(Operator2, is_baseclass=True):
     @property
     @handle_recursion_error
     def arithmetic_depth(self) -> int:
-        return 1 + max(op.arithmetic_depth for op in self)
+        return 1 + max(getattr(op, "arithmetic_depth", 0) for op in self)
 
     @property
     @abc.abstractmethod

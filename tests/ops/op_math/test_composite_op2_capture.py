@@ -138,23 +138,10 @@ def test_change_op_basis_operator(defined_outside):
 
     eqns = cjaxpr.eqns
 
-    assert len(eqns) == 4  # Op1 + Op2 + Adjoint(Op1) + ChangeOpBasis
-
-    assert eqns[2].primitive.name == "operator"
-    assert eqns[2].params["op_cls"] is NonParametricOp
-    assert eqns[2].params["adjoint"] is False
-
+    assert len(eqns) == 1
     assert eqns[0].primitive.name == "operator"
-    assert eqns[0].params["op_cls"] is DynOp
-    assert eqns[0].params["adjoint"] is False
-
-    assert eqns[1].primitive.name == "operator"
-    assert eqns[1].params["op_cls"] is NonParametricOp
-    assert eqns[1].params["adjoint"] is True
-
-    assert eqns[3].invars[0] == eqns[2].outvars[0]  # compute_op
-    assert eqns[3].invars[1] == eqns[0].outvars[0]  # target
-    assert eqns[3].invars[2] == eqns[1].outvars[0]  # uncompute_op
+    assert eqns[0].params["op_cls"] is ChangeOpBasis
+    assert eqns[0].params["hybrid_lens"] == (1, 2, 1)
 
 
 def test_linear_combination():

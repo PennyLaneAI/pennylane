@@ -34,8 +34,8 @@ from pennylane.decomposition.decomposition_rule import _decomp_contains_mcm
 from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.decomposition.utils import _get_decomp_args
 from pennylane.exceptions import EigvalsUndefinedError
-from pennylane.ops.op_math.adjoint2 import Adjoint2
-from pennylane.ops.op_math.controlled2 import ControlledOp2
+from pennylane.ops.op_math.adjoint2 import Adjoint2, _adjoint_abstract
+from pennylane.ops.op_math.controlled2 import ControlledOp2, _ctrl_abstract
 from pennylane.ops.op_math.pow2 import Pow2
 from pennylane.ops.op_math.symbolicop2 import SymbolicOp2
 from pennylane.pytrees import flatten
@@ -313,19 +313,36 @@ def _unroll_change_op_basis(gate_counts):
     """Unroll any resource reps of ChangeOpBasis."""
     new_gate_counts = defaultdict(int)
     for k, count in gate_counts.items():
-        if not isinstance(k, CompressedResourceOp):
+        if isinstance(k, (Adjoint2, ControlledOp2)):
+            unrolled_base = _unroll_change_op_basis({k.base: count})
+            if unrolled_base != {k.base: count}:
+                for op_rep, inner_count in unrolled_base.items():
+                    if isinstance(k, Adjoint2):
+                        wrapped_op = _adjoint_abstract(op_rep)
+                    else:
+                        wrapped_op = _ctrl_abstract(
+                            op_rep, k.control_wires, k.work_wires, k.work_wire_type
+                        )
+                    new_gate_counts[wrapped_op] += inner_count
+                continue
+
+        if isinstance(k, qp.ops.ChangeOpBasis):
+            operands = (k.compute_op, k.target_op, k.uncompute_op)
+        elif isinstance(k, CompressedResourceOp) and k.op_type is qp.ops.ChangeOpBasis:
+            operands = tuple(k.params[p] for p in ("compute_op", "target_op", "uncompute_op"))
+        else:
             new_gate_counts[k] += count
             continue
-        if k.op_type is not qp.ops.ChangeOpBasis:
-            new_gate_counts[k] += count
-            continue
-        for p in ("compute_op", "target_op", "uncompute_op"):
-            op_rep = k.params[p]
-            if isinstance(op_rep, CompressedResourceOp) and op_rep.op_type is qp.ops.Prod:
-                for inner_op, inner_count in op_rep.params["resources"].items():
-                    new_gate_counts[inner_op] += count * inner_count
-            else:
-                new_gate_counts[op_rep] += count
+
+        for op_rep in operands:
+            operand_counts = (
+                op_rep.params["resources"]
+                if isinstance(op_rep, CompressedResourceOp) and op_rep.op_type is qp.ops.Prod
+                else {op_rep: 1}
+            )
+            for inner_op, inner_count in _unroll_change_op_basis(operand_counts).items():
+                new_gate_counts[inner_op] += count * inner_count
+
     return new_gate_counts
 
 
@@ -708,7 +725,7 @@ def _assert_valid_operator2(
     assert isinstance(op.dynamic_argnames, tuple), "dynamic_argnames must be a tuple"
     assert_equal(type(op)(**op.arguments), op)
 
-    if not isinstance(op, (Adjoint2, ControlledOp2, Pow2)):
+    if not isinstance(op, (Adjoint2, ControlledOp2, Pow2, qp.ops.ChangeOpBasis)):
 
         error_msg = "ndim_params must have the same length as dynamic_argnames"
         assert len(op.ndim_params) == len(op.dynamic_argnames), error_msg

@@ -166,7 +166,7 @@ class TestQSVTBasics:
             flat_expected = []
             for op in expected:
                 if isinstance(op, qp.ops.op_math.ChangeOpBasis):
-                    flat_expected.extend(op.decomposition())
+                    flat_expected.extend([op.compute_op, op.target_op, op.uncompute_op])
                 else:
                     flat_expected.append(op)
 
