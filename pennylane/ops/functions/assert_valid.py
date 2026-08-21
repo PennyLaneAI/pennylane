@@ -311,7 +311,6 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
 
 def _unroll_change_op_basis(gate_counts):
     """Unroll any resource reps of ChangeOpBasis."""
-
     new_gate_counts = defaultdict(int)
     for k, count in gate_counts.items():
         if isinstance(k, (Adjoint2, ControlledOp2)):
