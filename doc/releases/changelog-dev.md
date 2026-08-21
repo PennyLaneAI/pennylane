@@ -1335,6 +1335,12 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed :func:`~pennylane.backline.css_bp_decoder` and the other Triton decoders so they can be
+  compiled on a machine with no usable GPU. The ahead-of-time build called
+  ``JITFunction.create_binder()``, which asks the local machine for a target through
+  ``driver.active.get_current_target()`` and fails with ``0 active drivers`` where there is none.
+  [(#10046)](https://github.com/PennyLaneAI/pennylane/pull/10046)
+
 * Fixed a bug where the ``flip_zero_control`` decomposition modifier raised a
   ``TracerIntegerConversionError`` under program capture, because the control-value flipping
   loop indexed the control wires with a traced loop variable without first promoting them to a
