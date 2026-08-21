@@ -256,7 +256,6 @@ def _unbiased_mmd_squared(  # pylint: disable=too-many-arguments
     X_data: jnp.ndarray,
     L_visible: jnp.ndarray,
     dims_visible: tuple[int, ...],
-    n_samples: int,
     sqrt_loss: bool,
 ) -> jnp.ndarray:
     """Combine PP, PQ, and QQ terms into the unbiased MMD² estimator."""
@@ -319,10 +318,8 @@ def _compute_qudit_loss_for_bandwidth(  # pylint: disable=too-many-arguments
 
     L_visible = l_obs[:, list(wire_tuple)]
     dims_visible = tuple(int(dims[w]) for w in wire_tuple)
-    return _unbiased_mmd_squared(
-        mu_q_hat, mean_y_sq, target_data, L_visible, dims_visible, n_samples, sqrt_loss
-    )
-    return _unbiased_mmd_squared(mu_q_hat, cov, target_data, L_visible, d, sqrt_loss)
+
+    return _unbiased_mmd_squared(mu_q_hat, cov, target_data, L_visible, dims_visible, sqrt_loss)
 
 
 def build_qudit_mmd_loss(
