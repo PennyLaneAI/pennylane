@@ -15,7 +15,7 @@
 Test Expression class and its associated methods
 """
 
-# pylint: disable=unnecessary-dunder-call,protected-access
+# pylint: disable=unnecessary-dunder-call,protected-access,too-many-public-methods
 import math
 
 import pytest
