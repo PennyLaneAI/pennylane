@@ -424,7 +424,7 @@ def build_qudit_mmd_loss(
         key=circuit_config.key,
         init_state_elems=circuit_config.init_state_elems,
         init_state_amps=circuit_config.init_state_amps,
-        phase_fn=circuit_config.phase_fn
+        phase_fn=circuit_config.phase_fn,
     )
     expval_func = build_qudit_expval_func(expval_config)
 
