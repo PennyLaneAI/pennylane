@@ -16,6 +16,18 @@ r"""Lightweight containers for Hamiltonians expressed as a bundle of per-fragmen
 These classes wrap pre-computed numeric data in a named type so that it can be passed
 around, validated, and used as operator input data consistently, whether the data is
 concrete or only known abstractly at compile time.
+
+Adding a new representation requires only a shape family:
+
+.. code-block:: python
+
+    class THCHamiltonian(NumericHamiltonian):
+        core_shape = ("R", "R")
+        leaf_shape = ("R", "N")
+        symbol_metadata = {"R": ("tensor_rank", 0), "N": ("num_orbitals", 0)}
+
+Symbols repeated within or across the two templates must take the same size; the base
+class derives the named dimensions from the shapes and reports them as attributes.
 """
 
 from __future__ import annotations
@@ -27,9 +39,13 @@ from typing import Any, ClassVar
 import numpy as np
 
 from pennylane import math
+from pennylane.pytrees import register_pytree
 from pennylane.typing import AbstractArray
 
 __all__ = ["NumericHamiltonian", "CDFHamiltonian", "CGFHamiltonian"]
+
+_TENSOR_NAMES = ("core_tensors", "leaf_tensors", "nuc_constant")
+"""The tensor fields every fragmented Hamiltonian carries, in pytree leaf order."""
 
 
 def _shape_of(tensor):
@@ -82,6 +98,66 @@ class NumericHamiltonian:
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
 
+        # IT's required for Catalyst to treat the Hamiltonian as a pytree, so that it can be
+        # passed as an argument to a decomposition rule and reconstructed from abstract avals
+        register_pytree(cls, cls._flatten, cls._unflatten)
+
+    def _unify_shapes(self):
+        """Check both tensors against their templates and unify the shared symbols."""
+        sizes: dict[str, int] = {}
+
+        for name, template in (
+            ("core_tensors", self.core_shape),
+            ("leaf_tensors", self.leaf_shape),
+        ):
+            shape = _shape_of(getattr(self, name))
+
+            if shape is Ellipsis or len(shape) != len(template):
+                raise ValueError(
+                    f"'{name}' must have {len(template)} dimensions {template}, "
+                    f"got shape {shape}."
+                )
+
+            for size, symbol in zip(shape, template, strict=True):
+                # ``-1`` marks an axis whose size is unknown. It is permissive and does
+                # not pin the symbol.
+                if size == -1:
+                    sizes.setdefault(symbol, -1)
+                    continue
+
+                if symbol in sizes and sizes[symbol] not in (size, -1):
+                    meta_name, _ = self.symbol_metadata[symbol]
+                    raise ValueError(
+                        f"inconsistent '{meta_name}' ({symbol}): {sizes[symbol]} vs {size}."
+                    )
+
+                sizes[symbol] = size
+
+        for symbol, size in sizes.items():
+            meta_name, offset = self.symbol_metadata[symbol]
+            if size != -1 and size - offset < 1:
+                raise ValueError(f"'{meta_name}' must be at least 1, got {size - offset}.")
+
+        return sizes
+
+    def __post_init__(self):
+        if self.nuc_constant is None:
+            zero = AbstractArray((), float) if self.is_abstract else np.asarray(0.0)
+            object.__setattr__(self, "nuc_constant", zero)
+        elif isinstance(self.nuc_constant, Number):
+            # Stored as an array so the pytree leaf has a stable shape and dtype,
+            # Note it's important when a Hamiltonian is used as a control-flow carry.
+            object.__setattr__(self, "nuc_constant", np.asarray(self.nuc_constant))
+
+        nuc_shape = _shape_of(self.nuc_constant)
+        if nuc_shape != ():
+            raise ValueError(f"'nuc_constant' must be a scalar, got shape {nuc_shape}.")
+
+        sizes = self._unify_shapes()
+        for symbol, (name, offset) in self.symbol_metadata.items():
+            size = sizes[symbol]
+            object.__setattr__(self, name, size - offset if size >= 0 else None)
+
     @property
     def is_abstract(self) -> bool:
         """bool: Whether the tensors are abstract specifications rather than data.
@@ -99,23 +175,45 @@ class NumericHamiltonian:
 
     @property
     def dimensions(self) -> dict[str, int | None]:
-        """The named dimensions derived from the tensor shapes."""
+        """dict: The named dimensions derived from the tensor shapes."""
         return {name: getattr(self, name) for name, _ in self.symbol_metadata.values()}
 
     def _flatten(self):
-        """Split into tensor leaves and hashable metadata."""
+        """Split into tensor leaves and hashable metadata.
+
+        The derived dimensions travel in the metadata so that ``_unflatten`` does not
+        have to re-derive them.
+        """
         return self.tensors, tuple(self.dimensions.values())
 
     @classmethod
     def _unflatten(cls, data, metadata):
         """Rebuild from leaves and metadata, bypassing validation."""
         obj = cls.__new__(cls)
-        tensor_names = ("core_tensors", "leaf_tensors", "nuc_constant")
-        for name, value in zip(tensor_names, data, strict=True):
+        for name, value in zip(_TENSOR_NAMES, data, strict=True):
             object.__setattr__(obj, name, value)
         for value, (name, _) in zip(metadata, cls.symbol_metadata.values(), strict=True):
             object.__setattr__(obj, name, value)
         return obj
+
+    def _shape_key(self):
+        return tuple((_shape_of(t), _dtype_of(t)) for t in self.tensors)
+
+    def __hash__(self):
+        # Deliberately keyed on shapes rather than values: this is the information that
+        # matters for compilation and resource analysis, and it makes an abstract
+        # Hamiltonian hash equal to the concrete one it was derived from.
+        return hash((type(self).__name__, self._shape_key()))
+
+    def __eq__(self, other):
+        if type(other) is not type(self):
+            return NotImplemented
+        if self._shape_key() != other._shape_key():
+            return False
+        if self.is_abstract or other.is_abstract:
+            # Shapes and dtypes already match and there are no values to compare.
+            return True
+        return all(math.allclose(a, b) for a, b in zip(self.tensors, other.tensors, strict=True))
 
     def __repr__(self):
         def render(tensor):
@@ -125,9 +223,8 @@ class NumericHamiltonian:
                 return repr(tensor)
             return f"tensor(shape={_shape_of(tensor)})"
 
-        tensor_names = ("core_tensors", "leaf_tensors", "nuc_constant")
         dims = ", ".join(f"{k}={v}" for k, v in self.dimensions.items())
-        body = ", ".join(f"{n}={render(getattr(self, n))}" for n in tensor_names)
+        body = ", ".join(f"{n}={render(getattr(self, n))}" for n in _TENSOR_NAMES)
         return f"{type(self).__name__}({dims}, {body})"
 
 
@@ -234,7 +331,7 @@ class CGFHamiltonian(NumericHamiltonian):
     >>> qp.CGFHamiltonian(np.zeros((3, 2, 2, 3, 3)), np.zeros((3, 2, 4, 4)))
     Traceback (most recent call last):
         ...
-    ValueError: CGFHamiltonian has an inconsistent 'num_modals' (N): 'core_tensors' axis 4 has size 3 but 'leaf_tensors' axis 2 has size 4. Expected core_tensors (L+1, M, M, N, N) and leaf_tensors (L+1, M, N, N).
+    ValueError: inconsistent 'num_modals' (N): 3 vs 4.
     """
 
     core_shape: ClassVar[tuple[str, ...]] = ("L1", "M", "M", "N", "N")
