@@ -1,0 +1,330 @@
+# Copyright 2018-2026 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""
+This submodule defines a base class for composite operations.
+"""
+
+import abc
+from collections.abc import Callable
+
+# pylint: disable=invalid-sequence-index
+from typing import Sequence
+
+import pennylane as qp
+from pennylane import math
+from pennylane.core.operator import Operator, Operator2
+from pennylane.ops.op_math.composite import handle_recursion_error
+from pennylane.wires import Wires
+
+# pylint: disable=too-many-instance-attributes
+
+
+class CompositeOp2(Operator2, is_baseclass=True):
+    """A base class for operators that are composed of other operators.
+
+    Args:
+        operands: (tuple[~.operation.Operator]): a tuple of operators which will be combined.
+
+    The child composite operator should define the `_op_symbol` property
+    during initialization and define any relevant representations, such as
+    :meth:`~.operation.Operator.matrix` and :meth:`~.operation.Operator.decomposition`.
+    """
+
+    hybrid_argnames = ("operands", "_init_pauli_rep")
+    wire_argnames = ()
+
+    _eigs = {}  # cache eigen vectors and values like in qp.Hermitian
+
+    def __init__(self, operands: Sequence[Operator], _init_pauli_rep=None):
+        if any(isinstance(op, (qp.ops.MidMeasure, qp.ops.PauliMeasure)) for op in operands):
+            raise ValueError("Composite operators of mid-circuit measurements are not supported.")
+        super().__init__(operands, _init_pauli_rep=_init_pauli_rep)
+        self._name = self.__class__.__name__
+        self._wires = Wires.all_wires([op.wires for op in operands])
+        self._hash = None
+        self._has_overlapping_wires = None
+        self._overlapping_ops = None
+        self._pauli_rep = self._build_pauli_rep() if _init_pauli_rep is None else _init_pauli_rep
+        self.queue()
+
+    def __repr__(self):
+        return f" {self._op_symbol} ".join(
+            [f"({op})" if op.arithmetic_depth > 0 else f"{op}" for op in self]
+        )
+
+    def __iter__(self):
+        """Return the iterator over the underlying operands."""
+        return iter(self.operands)
+
+    def __getitem__(self, idx):
+        """Return the operand at position ``idx`` of the composition."""
+        return self.operands[idx]
+
+    def __len__(self):
+        """Return the number of operators in this composite operator"""
+        return len(self.operands)
+
+    @property
+    @abc.abstractmethod
+    def _op_symbol(self) -> str:
+        """The symbol used when visualizing the composite operator"""
+
+    @property
+    def num_wires(self):
+        """Number of wires the operator acts on."""
+        return len(self.wires)
+
+    @property
+    @handle_recursion_error
+    def num_params(self):
+        return sum(op.num_params for op in self)
+
+    @property
+    def has_overlapping_wires(self) -> bool:
+        """Boolean expression that indicates if the factors have overlapping wires."""
+        if self._has_overlapping_wires is None:
+            wires = []
+            for op in self:
+                wires.extend(list(op.wires))
+            self._has_overlapping_wires = len(wires) != len(set(wires))
+        return self._has_overlapping_wires
+
+    @property
+    @abc.abstractmethod
+    def is_verified_hermitian(self):
+        """This property determines if the composite operator is hermitian."""
+
+    # pylint: disable=arguments-renamed, invalid-overridden-method, arguments-differ
+    @property
+    @handle_recursion_error
+    def has_matrix(self):
+        return all(op.has_matrix for op in self)
+
+    @property
+    @handle_recursion_error
+    def data(self):
+        """Create data property"""
+        return tuple(d for op in self for d in op.data)
+
+    @handle_recursion_error
+    def eigvals(self):
+        """Return the eigenvalues of the specified operator.
+
+        This method uses pre-stored eigenvalues for standard observables where
+        possible and stores the corresponding eigenvectors from the eigendecomposition.
+
+        Returns:
+            array: array containing the eigenvalues of the operator
+        """
+        eigvals = []
+        for ops in self.overlapping_ops:
+            if len(ops) == 1:
+                eigvals.append(
+                    math.expand_vector(ops[0].eigvals(), list(ops[0].wires), list(self.wires))
+                )
+            else:
+                tmp_composite = self.__class__(ops)
+                eigvals.append(
+                    math.expand_vector(
+                        tmp_composite.eigendecomposition["eigval"],
+                        list(tmp_composite.wires),
+                        list(self.wires),
+                    )
+                )
+        framework = math.get_deep_interface(eigvals)
+        eigvals = [math.asarray(ei, like=framework) for ei in eigvals]
+        return self._math_op(math.vstack(eigvals), axis=0)
+
+    @abc.abstractmethod
+    def matrix(self, wire_order=None):
+        """Representation of the operator as a matrix in the computational basis."""
+
+    @property
+    def overlapping_ops(self) -> list[list[Operator]]:
+        """Groups all operands of the composite operator that act on overlapping wires.
+
+        Returns:
+            List[List[Operator]]: List of lists of operators that act on overlapping wires. All the
+            inner lists commute with each other.
+        """
+
+        if self._overlapping_ops is not None:
+            return self._overlapping_ops
+
+        groups = []
+        for op in self:
+            # For every op, find all groups that have overlapping wires with it.
+            i = 0
+            first_group_idx = None
+            while i < len(groups):
+                if first_group_idx is None and any(wire in op.wires for wire in groups[i][1]):
+                    # Found the first group that has overlapping wires with this op
+                    groups[i][1] = groups[i][1] + op.wires
+                    first_group_idx = i  # record the index of this group
+                    i += 1
+                elif first_group_idx is not None and any(wire in op.wires for wire in groups[i][1]):
+                    # If the op has already been added to the first group, every subsequent
+                    # group that overlaps with this op is merged into the first group
+                    ops, wires = groups.pop(i)
+                    groups[first_group_idx][0].extend(ops)
+                    groups[first_group_idx][1] = groups[first_group_idx][1] + wires
+                else:
+                    i += 1
+            if first_group_idx is not None:
+                groups[first_group_idx][0].append(op)
+            else:
+                # Create new group
+                groups.append([[op], op.wires])
+
+        self._overlapping_ops = [group[0] for group in groups]
+        return self._overlapping_ops
+
+    @property
+    def eigendecomposition(self):
+        r"""Return the eigendecomposition of the matrix specified by the operator.
+
+        This method uses pre-stored eigenvalues for standard observables where
+        possible and stores the corresponding eigenvectors from the eigendecomposition.
+
+        It transforms the input operator according to the wires specified.
+
+        Returns:
+            dict[str, array]: dictionary containing the eigenvalues and the
+                eigenvectors of the operator.
+        """
+        eigen_func = math.linalg.eigh if self.is_verified_hermitian else math.linalg.eig
+
+        if self not in self._eigs:
+            mat = self.matrix()
+            w, U = eigen_func(mat)
+            self._eigs[self] = {"eigvec": U, "eigval": w}
+
+        return self._eigs[self]
+
+    # pylint: disable-next=arguments-differ
+    @property
+    def has_diagonalizing_gates(self):
+        if self.has_overlapping_wires:
+            for ops in self.overlapping_ops:
+                # if any of the single ops doesn't have diagonalizing gates, the overall operator doesn't either
+                if len(ops) == 1 and not ops[0].has_diagonalizing_gates:
+                    return False
+            # the lists of ops with multiple operators can be handled if there is a matrix
+            return self.has_matrix
+
+        return all(op.has_diagonalizing_gates for op in self)
+
+    def diagonalizing_gates(self):
+        r"""Sequence of gates that diagonalize the operator in the computational basis.
+
+        Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
+        :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
+        the sequence of diagonalizing gates implements the unitary :math:`U^{\dagger}`.
+
+        The diagonalizing gates rotate the state into the eigenbasis
+        of the operator.
+
+        A ``DiagGatesUndefinedError`` is raised if no representation by decomposition is defined.
+
+        .. seealso:: :meth:`~.Operator.compute_diagonalizing_gates`.
+
+        Returns:
+            list[.Operator] or None: a list of operators
+        """
+        diag_gates = []
+        for ops in self.overlapping_ops:
+            if len(ops) == 1:
+                diag_gates.extend(ops[0].diagonalizing_gates())
+            else:
+                tmp_sum = self.__class__(ops)
+                eigvecs = tmp_sum.eigendecomposition["eigvec"]
+                diag_gates.append(
+                    qp.QubitUnitary(math.transpose(math.conj(eigvecs)), wires=tmp_sum.wires)
+                )
+        return diag_gates
+
+    @handle_recursion_error
+    def label(self, decimals=None, base_label=None, cache=None):
+        r"""How the composite operator is represented in diagrams and drawings.
+
+        Args:
+            decimals (int): If ``None``, no parameters are included. Else,
+                how to round the parameters. Defaults to ``None``.
+            base_label (Iterable[str]): Overwrite the non-parameter component of the label.
+                Must be same length as ``operands`` attribute. Defaults to ``None``.
+            cache (dict): Dictionary that carries information between label calls
+                in the same drawing. Defaults to ``None``.
+
+        Returns:
+            str: label to use in drawings
+
+        **Example (using the Sum composite operator)**
+
+        >>> op = qp.S(0) + qp.X(0) + qp.Rot(1,2,3, wires=[1])
+        >>> op.label()
+        '𝓗'
+
+        """
+
+        def _label(op, decimals, base_label, cache):
+            sub_label = op.label(decimals, base_label, cache)
+            return f"({sub_label})" if op.arithmetic_depth > 0 else sub_label
+
+        if base_label is not None:
+            if isinstance(base_label, str) or len(base_label) != len(self):
+                raise ValueError(
+                    "Composite operator labels require ``base_label`` keyword to be same length as operands."
+                )
+            return self._op_symbol.join(
+                _label(op, decimals, lbl, cache) for op, lbl in zip(self, base_label, strict=True)
+            )
+
+        return self._op_symbol.join(_label(op, decimals, None, cache) for op in self)
+
+    def queue(self, context=qp.QueuingManager):
+        """Updates each operator's owner to self, this ensures
+        that the operators are not applied to the circuit repeatedly."""
+        if qp.QueuingManager.recording():
+            for op in self:
+                context.remove(op)
+            context.append(self)
+        return self
+
+    @classmethod
+    @abc.abstractmethod
+    def _sort(cls, op_list, wire_map: dict = None) -> list[Operator]:
+        """Sort composite operands by their wire indices."""
+
+    @handle_recursion_error
+    def __hash__(self):
+        if self._hash is None:
+            self._hash = hash(
+                (str(self.name), str([hash(factor) for factor in self._sort(self.operands)]))
+            )
+        return self._hash
+
+    @property
+    @handle_recursion_error
+    def arithmetic_depth(self) -> int:
+        return 1 + max(op.arithmetic_depth for op in self)
+
+    @property
+    @abc.abstractmethod
+    def _math_op(self) -> Callable:
+        """The function used when combining the operands of the composite operator"""
+
+    @abc.abstractmethod
+    def _build_pauli_rep(self):
+        """The function to generate the pauli representation for the composite operator."""
