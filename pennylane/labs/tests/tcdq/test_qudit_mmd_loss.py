@@ -68,8 +68,13 @@ def _flatten_gates(gates, n_qudits):
     return flat_gens, flat_pidx
 
 
-def _qudit_circuit_probs(gates, params, n_qudits, d):
-    """Return the exact circuit output distribution by exhaustive enumeration."""
+def _qudit_circuit_probs(gates, params, n_qudits, d, phase_fn=None, phase_params=None):
+    """Return the exact circuit output distribution by exhaustive enumeration.
+
+    When ``phase_fn`` is given, the extra diagonal phase layer
+    :math:`D'(\\xi)|z\\rangle = e^{i f_\\xi(z)}|z\\rangle` is applied after the
+    gate layer, matching ``QuditCircuitConfig.phase_fn``.
+    """
     params = np.asarray(params, dtype=float)
     flat_gens, flat_pidx = _flatten_gates(gates, n_qudits)
     dims = _dims_to_numpy(d, n_qudits)
@@ -83,6 +88,8 @@ def _qudit_circuit_probs(gates, params, n_qudits, d):
         phase = sum(
             params[pidx] * _qudit_phi_g_z(g, z_arr, dims) for g, pidx in zip(flat_gens, flat_pidx)
         )
+        if phase_fn is not None:
+            phase += float(phase_fn(phase_params, jnp.array(z_arr)))
         gammas[k] = np.exp(1j * phase)
 
     probs = np.zeros(n_states)
@@ -976,3 +983,106 @@ class TestBuildQuditMMDLoss:
         mmd_cfg = QuditMMDConfig(bandwidth=1.0, n_ops=5)
         with pytest.raises(ValueError, match="n_samples must be greater than 1"):
             build_qudit_mmd_loss(config, mmd_cfg)
+
+
+class TestQuditMMDLossPhaseLayer:
+    """The phase layer in ``circuit_config`` must reach the underlying expval function."""
+
+    Z_THRESHOLD = 4.0
+    N_TRIALS = 80
+    N_OPS = 30
+    N_SAMPLES = 200
+
+    @staticmethod
+    def _phase_fn(_params, z):
+        """Non-trivial diagonal phase layer f(z), independent of trainable params."""
+        return 2.0 * jnp.cos(2.0 * jnp.pi * jnp.sum(z.astype(jnp.float64)) / 3.0)
+
+    @staticmethod
+    def _zero_phase_fn(_params, z):
+        """Phase layer that is identically zero, i.e. a no-op."""
+        return 0.0 * jnp.sum(z.astype(jnp.float64))
+
+    @staticmethod
+    def _make_config(phase_fn):
+        return QuditCircuitConfig(
+            d=3,
+            n_qudits=2,
+            gates={0: [[1, 0]], 1: [[0, 1]], 2: [[1, 1]]},
+            n_samples=200,
+            key=jax.random.PRNGKey(42),
+            phase_fn=phase_fn,
+        )
+
+    def test_zero_phase_layer_matches_no_phase_layer(self):
+        """A phase layer that returns 0 must not change the loss value."""
+        data = jnp.array([[0, 1], [1, 0], [2, 2], [1, 1], [0, 2]])
+        params = jnp.array([0.3, 0.5, 0.1])
+        mmd_cfg = QuditMMDConfig(bandwidth=1.0, n_ops=50)
+
+        without = build_qudit_mmd_loss(self._make_config(None), mmd_cfg)(params, data)
+        with_zero = build_qudit_mmd_loss(self._make_config(self._zero_phase_fn), mmd_cfg)(
+            params, data
+        )
+        assert np.isclose(float(without), float(with_zero), atol=1e-12)
+
+    def test_nontrivial_phase_layer_changes_loss(self):
+        """A non-trivial phase layer must be forwarded and change the loss value."""
+        data = jnp.array([[0, 1], [1, 0], [2, 2], [1, 1], [0, 2]])
+        params = jnp.array([0.3, 0.5, 0.1])
+        mmd_cfg = QuditMMDConfig(bandwidth=1.0, n_ops=50)
+
+        without = build_qudit_mmd_loss(self._make_config(None), mmd_cfg)(params, data)
+        with_phase = build_qudit_mmd_loss(self._make_config(self._phase_fn), mmd_cfg)(params, data)
+        assert float(without) != float(with_phase)
+
+    def test_phase_layer_matches_exact_mmd(self):
+        """The estimator with a phase layer must be unbiased w.r.t. exact MMD^2."""
+        gates = {0: [[1, 0]], 1: [[0, 1]], 2: [[1, 1]]}
+        params = [0.37, 0.95, 0.73]
+        n_qudits, d, bandwidth, graph_type = 2, 3, 0.5, "cycle"
+
+        rng = np.random.default_rng(42)
+        X = rng.integers(0, d, (80, n_qudits))
+
+        probs, _ = _qudit_circuit_probs(gates, params, n_qudits, d, phase_fn=self._phase_fn)
+        exact = _exact_qudit_mmd2_kernel(probs, X, d, bandwidth, graph_type, n_qudits)
+
+        config = QuditCircuitConfig(
+            d=d,
+            n_qudits=n_qudits,
+            gates=gates,
+            n_samples=self.N_SAMPLES,
+            key=jax.random.PRNGKey(0),
+            phase_fn=self._phase_fn,
+        )
+        mmd_cfg = QuditMMDConfig(bandwidth=bandwidth, n_ops=self.N_OPS, graph_type=graph_type)
+        loss_fn = build_qudit_mmd_loss(config, mmd_cfg)
+
+        X_jnp = jnp.array(X)
+        params_jnp = jnp.array(params)
+        master_key = jax.random.PRNGKey(42)
+        estimates = []
+        for _ in range(self.N_TRIALS):
+            master_key, loss_key, sample_key = jax.random.split(master_key, 3)
+            idx = jax.random.choice(sample_key, len(X), shape=(40,), replace=False)
+            estimates.append(float(loss_fn(params_jnp, X_jnp[idx], key=loss_key)))
+
+        estimates = np.array(estimates)
+        mean_est = np.mean(estimates)
+        se = np.std(estimates, ddof=1) / np.sqrt(self.N_TRIALS)
+        z = abs(exact - mean_est) / se if se > 1e-15 else 0.0
+        assert (
+            z < self.Z_THRESHOLD
+        ), f"Z-test FAILED: z={z:.2f}, exact={exact:.6f}, mean={mean_est:.6f}, se={se:.6f}"
+
+    def test_phase_layer_gradient_flows(self):
+        """Gradients w.r.t. the gate parameters stay finite with a phase layer."""
+        data = jnp.array([[0, 1], [1, 2], [2, 0]])
+        params = jnp.array([0.5, 0.3, 0.1])
+        mmd_cfg = QuditMMDConfig(bandwidth=1.0, n_ops=50)
+        loss_fn = build_qudit_mmd_loss(self._make_config(self._phase_fn), mmd_cfg)
+
+        grad = jax.grad(loss_fn)(params, data, key=jax.random.PRNGKey(0))
+        assert grad.shape == params.shape
+        assert jnp.all(jnp.isfinite(grad))
