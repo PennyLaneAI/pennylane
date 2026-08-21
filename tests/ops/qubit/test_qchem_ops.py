@@ -388,7 +388,7 @@ class TestSingleExcitationDecompositions:
             {
                 qp.Hadamard(Wire[1]): 2,
                 qp.CNOT(Wire[2]): 2,
-                qp.resource_rep(qp.RY): 2,
+                qp.RY(Float, Wire[1]): 2,
             }
         )
         assert rule.compute_resources(**op.arguments) == expected

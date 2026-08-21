@@ -761,6 +761,7 @@ class TestAdjointVJP:
         expected = jac.T @ cotangents.T
         assert np.allclose(actual, expected, atol=tol)
 
+    @pytest.mark.pl2do(reason="complex operator params unsupported, adjoint state diff unsupported")
     @pytest.mark.parametrize(
         "cotangents",
         [

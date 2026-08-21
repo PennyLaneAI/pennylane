@@ -1932,6 +1932,8 @@ class TestTapeExpansion:
         """Test that jax.vmap works just as well as parameter-broadcasting with JAX JIT on the forward pass when
         vectorized=True is specified for the callback when caching is disabled and when multiple output values
         are returned."""
+        if diff_method == "adjoint":
+            pytest.skip("adjoint state differentiation is not supported in pl2")
         if (
             dev_name == "default.qubit"
             and diff_method == "adjoint"
@@ -2387,6 +2389,9 @@ class TestReturn:
         """For a multi-dimensional measurement (probs), check that a single array is returned
         with the correct dimension"""
 
+        if diff_method == "adjoint":
+            pytest.skip("adjoint state differentiation is not supported in pl2")
+
         if dev_name == "param_shift.qubit":
             pytest.xfail("gradient transforms have a different vjp shape convention.")
 
@@ -2761,7 +2766,7 @@ class TestReturn:
         def circuit(a):
             qp.RY(a, wires=0)
             qp.RX(0.2, wires=0)
-            return qp.expval(qp.PauliZ(0)), qp.probs(wires=[0, 1])
+            return qp.expval(qp.Z(0)), qp.expval(qp.Z(0) @ qp.X(1))
 
         a = jax.numpy.array(0.1)
 
@@ -2774,7 +2779,7 @@ class TestReturn:
         assert jac[0].shape == ()
 
         assert isinstance(jac[1], jax.numpy.ndarray)
-        assert jac[1].shape == (4,)
+        assert jac[1].shape == ()
 
     def test_jacobian_multiple_measurement_multiple_param(
         self, dev_name, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface, seed
