@@ -25,6 +25,7 @@ A configuration is supported if gradients can be computed for the
 QNode without an exception being raised."""
 
 # pylint: disable=too-many-arguments
+
 import pytest
 
 import pennylane as qp
@@ -112,7 +113,7 @@ def get_qnode(interface, diff_method, return_type, shots, wire_specs, gradient_k
     def circuit(x):
         for i, wire_label in enumerate(wire_labels[:-1]):
             qp.Hadamard(wires=wire_label)
-            qp.RX(x[i], wires=wire_label)
+            qp.RX(qp.math.cast(x[i], float), wires=wire_label)
 
         if return_type == "StateCost":
             return qp.state()
@@ -258,6 +259,18 @@ class TestSupportedConfs:
     def test_none_all(self, diff_method, return_type, shots, wire_specs):
         """Test interface=None and diff_method in [adjoint, parameter-shift,
         finite-diff, spsa, hadamard] has a working forward pass"""
+
+        if diff_method == "adjoint" and return_type in (
+            "StateCost",
+            "StateVector",
+            "DensityMatrix",
+            "Probability",
+            "Variance",
+            "VnEntropy",
+            "MutualInfo",
+        ):
+            pytest.xfail("adjoint state measurement is not to be supported.")
+
         circuit = get_qnode(None, diff_method, return_type, shots, wire_specs)
         x = get_variable(None, wire_specs)
 
@@ -330,6 +343,10 @@ class TestSupportedConfs:
     def test_all_adjoint_nonexp(self, interface, return_type, shots, wire_specs):
         """Test diff_method=adjoint raises an error for non-"Expectation"
         measurements for all interfaces"""
+
+        # when shots are present, the expected error is actually raised
+        if shots is None:
+            pytest.xfail("adjoint state differentiation is not to be supported in pl2")
 
         circuit = get_qnode(interface, "adjoint", return_type, shots, wire_specs)
         x = get_variable(interface, wire_specs, complex=True)

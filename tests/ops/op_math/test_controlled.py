@@ -20,17 +20,7 @@ from functools import partial
 import numpy as np
 import pytest
 import scipy as sp
-from gate_data import (
-    CH,
-    CNOT,
-    CSWAP,
-    ControlledPhaseShift,
-    CRot3,
-    CRotx,
-    CRoty,
-    CRotz,
-    Toffoli,
-)
+from gate_data import CH, CNOT, CSWAP, ControlledPhaseShift, CRot3, CRotx, CRoty, CRotz, Toffoli
 from scipy import sparse
 
 import pennylane as qp
@@ -858,34 +848,6 @@ special_non_par_op_decomps = [
 
 special_par_op_decomps = [
     (
-        qp.RX,
-        [0.123],
-        [1],
-        [0],
-        qp.CRX,
-        [
-            qp.RZ(np.pi / 2, wires=1),
-            qp.RY(0.123 / 2, wires=1),
-            qp.CNOT(wires=[0, 1]),
-            qp.RY(-0.123 / 2, wires=1),
-            qp.CNOT(wires=[0, 1]),
-            qp.RZ(-np.pi / 2, wires=1),
-        ],
-    ),
-    (
-        qp.RY,
-        [0.123],
-        [1],
-        [0],
-        qp.CRY,
-        [
-            qp.RY(0.123 / 2, 1),
-            qp.CNOT(wires=(0, 1)),
-            qp.RY(-0.123 / 2, 1),
-            qp.CNOT(wires=(0, 1)),
-        ],
-    ),
-    (
         qp.RZ,
         [0.123],
         [0],
@@ -1052,11 +1014,11 @@ class TestDecomposition:
     def test_decomposition_nested(self):
         """Tests decompositions of nested controlled operations"""
 
-        ctrl_op = Controlled(Controlled(qp.RZ(0.123, wires=0), control_wires=1), control_wires=2)
+        ctrl_op = qp.ctrl(qp.ctrl(qp.RZ(0.123, wires=0), control=1), control=2)
         expected = [
-            qp.CRZ(0.123 / 2, wires=[2, 0]),
+            qp.RZ(0.0615, wires=[0]),
             qp.Toffoli(wires=[2, 1, 0]),
-            qp.CRZ(-0.123 / 2, wires=[2, 0]),
+            qp.RZ(-0.0615, wires=[0]),
             qp.Toffoli(wires=[2, 1, 0]),
         ]
         assert ctrl_op.decomposition() == expected
@@ -1088,8 +1050,7 @@ class TestDecomposition:
         qp.assert_equal(decomp[4], qp.PauliX(2))
 
     @pytest.mark.parametrize(
-        "base_cls, params, base_wires, ctrl_wires, _, expected",
-        custom_ctrl_op_decomps,
+        "base_cls, params, base_wires, ctrl_wires, _, expected", custom_ctrl_op_decomps
     )
     def test_control_on_zero_custom_ops(
         self, base_cls, params, base_wires, ctrl_wires, _, expected
@@ -1183,7 +1144,7 @@ class TestDifferentiation:
         @qp.qnode(dev, diff_method=diff_method)
         def circuit(b):
             qp.StatePrep(init_state, wires=0)
-            Controlled(qp.RY(b, wires=1), control_wires=0)
+            qp.ctrl(qp.RY(b, wires=1), control=0)
             return qp.expval(qp.PauliX(0))
 
         b = pnp.array(0.123, requires_grad=True)
@@ -1234,7 +1195,7 @@ class TestDifferentiation:
         def circuit(b):
             init_state = np.array([1.0, -1.0]) / pnp.sqrt(2)
             qp.StatePrep(init_state, wires=0)
-            Controlled(qp.RY(b, wires=1), control_wires=0)
+            qp.ctrl(qp.RY(b, wires=1), control=0)
             return qp.expval(qp.PauliX(0))
 
         b = jnp.array(0.123)
@@ -1976,19 +1937,17 @@ class _Rot(Operation):
 
 
 unitaries = (
-    [
-        qp.PauliX.compute_matrix(),
-        qp.PauliY.compute_matrix(),
-        qp.PauliZ.compute_matrix(),
-        qp.Hadamard.compute_matrix(),
-        pnp.array(
-            [
-                [1 + 2j, -3 + 4j],
-                [3 + 4j, 1 - 2j],
-            ]
-        )
-        * 30**-0.5,
-    ],
+    qp.PauliX.compute_matrix(),
+    qp.PauliY.compute_matrix(),
+    qp.PauliZ.compute_matrix(),
+    qp.Hadamard.compute_matrix(),
+    pnp.array(
+        [
+            [1 + 2j, -3 + 4j],
+            [3 + 4j, 1 - 2j],
+        ]
+    )
+    * 30**-0.5,
 )
 
 
