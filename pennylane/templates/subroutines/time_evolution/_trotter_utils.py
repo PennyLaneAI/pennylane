@@ -22,14 +22,18 @@ from pennylane.ops import CNOT, RZ, IsingZZ, cond
 
 
 def _emit_one_body_rz(angle, target_wire, control_wires, double_phase):
-    """Emit a one-body ``RZ`` rotation for the base, double-phase, or genuine controlled circuit.
+    r"""Emit a one-body ``RZ`` rotation for the base, double-phase, or genuine controlled circuit.
 
     * No control wire: a plain ``RZ(angle)``.
-    * Controlled, ``double_phase=True``: the Fig. 6 CNOT-sandwich
-      ``CNOT · RZ(angle) · CNOT`` at the full angle, giving the full-time
-      ``e^{\\mp i H t}`` double-phase branches.
+    * Controlled, ``double_phase=True``: the CNOT-sandwich
+        .. code-block::
+
+                c: ─╭●────────╭●─┤
+            wires: ─╰X──RZ(ϕ)─╰X─┤
+
+      at the full angle (see Fig. 6 in https://arxiv.org/abs/2506.15784). This results in :math:`\text{diag}(U, U^\dagger)` overall, such that the relative phase between both branches is 2t (hence "double-phase").
     * Controlled, ``double_phase=False``: a genuine controlled-``RZ`` (the standard ``CRZ``
-      decomposition) at the full ``angle``, so the control-0 branch is the identity.
+      decomposition), leading to a genuine controlled evolution :math:`\text{diag}(1, U)`.
     """
     if len(control_wires) == 0:
         RZ(angle, target_wire)
