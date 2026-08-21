@@ -216,15 +216,38 @@ class MultiX(Operator2):
             scipy.sparse.spmatrix: The canonical sparse matrix representing
             ``MultiX(bitstring, wires)``.
         """
-        # MultiX(bitstring) is always a permutation matrix sending |x> to |x (+) b>
+        # Example: MultiX([1,1], wires=[0,1]) is the operator X @ X
+        # In the computational basis, X @ X performs the map
+        #
+        #     |00>,|01>,|10>,|11> --- X @ X ---> |11>,|10>,|01>,|00>
+        #
+        # which just permutes the computational basis states.
+        # The canonical matrix representation is therefore
+        #              [[0 0 0 1],
+        #      X @ X =  [0 0 1 0],
+        #               [0 1 0 0],
+        #               [1 0 0 0]]
+
+        # Note MultiX(bitstring) is always a permutation matrix sending |x> to |x (+) b>
         # where x = (x0, ..., xn-1) is a basis state and b = (b0, ..., bn-1) is the bitstring.
+        #
+        # The only indices (row,col) where the canonical matrix for MultiX(bitstring) contains
+        # a non-zero entry of '1' are when the 'column index' is the bit-wise OR '^' between
+        # the 'row index' and the provided 'bitstring'. Hence the operation below
+        #    flipped_states = bit_mask ^ basis_states
+        #
+        # Also note MultiX(bitstring) is not only Hermitian but symmetric meaning the canonical
+        # matrix will equal its own transpose.
+        # Therefore, row and column indices, respectively 'basis_states' and 'flipped_states',
+        # can safely be considered interchangable.
+
         bitstring, wires = MultiX._canonicalize_validate_and_cast_inputs(bitstring, wires)
 
         dimension = 2 ** len(wires)
         bit_mask = sum(int(bit) << (len(wires) - index - 1) for index, bit in enumerate(bitstring))
 
         basis_states = np.arange(0, dimension, 1, dtype=int)
-        flipped_states = basis_states ^ bit_mask
+        flipped_states = bit_mask ^ basis_states
         matrix = sparse.csr_matrix(
             (np.ones(dimension, dtype=int), (basis_states, flipped_states)),
             shape=(dimension, dimension),
