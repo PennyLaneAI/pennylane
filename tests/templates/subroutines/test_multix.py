@@ -262,6 +262,21 @@ def test_adjoint():
     qp.assert_equal(adjoint_op, op)
 
 
+@pytest.mark.usefixtures("enable_and_disable_capture")
+def test_adjoint_decomposition_capture_compatibility():
+    """Tests that the MultiX decomposition rule is capture compatible."""
+    op = qp.MultiX([1, 0, 1], wires=[0, 1, 2])
+    adjoint_op = qp.adjoint(op)
+
+    if qp.capture.enabled():
+        pytest.xfail(
+            "When capture is enabled, _test_decomposition_rule ends up passing the base operator in Adjoint(base) as a wire producing an 'ArgInfo' error."
+        )
+
+    for rule in qp.list_decomps("Adjoint(MultiX)"):
+        _test_decomposition_rule(adjoint_op, rule)
+
+
 def test_adjoint_decomposition():
     """Tests that Adjoint(MultiX) decomposes to MultiX."""
     op = qp.MultiX([1, 0, 1], wires=[0, 1, 2])
@@ -302,6 +317,21 @@ def test_pow_decomposition(exponent):
     else:  # odd
         assert len(decomposition) == 1
         qp.assert_equal(decomposition[0], op)
+
+
+@pytest.mark.usefixtures("enable_and_disable_capture")
+def test_pow_decomposition_capture_compatibility():
+    """Tests that the MultiX decomposition rule is capture compatible."""
+    op = qp.MultiX([1, 0, 1], wires=[0, 1, 2])
+    pow_op = qp.pow(op, 3)
+
+    if qp.capture.enabled():
+        pytest.xfail(
+            "When capture is enabled, _test_decomposition_rule ends up passing the base operator in Pow(base) as a wire producing an 'ArgInfo' error."
+        )
+
+    for rule in qp.list_decomps("Pow(MultiX)"):
+        _test_decomposition_rule(pow_op, rule)
 
 
 @pytest.mark.parametrize(
