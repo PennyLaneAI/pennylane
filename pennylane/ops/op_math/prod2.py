@@ -67,9 +67,10 @@ class Prod2(CompositeOp2):
     _math_op = staticmethod(math.prod)
 
     def __init__(self, operands, _init_pauli_rep=None):
-
         # pylint: disable=import-outside-toplevel
         from pennylane.ops.mid_measure import MidMeasure, PauliMeasure
+
+        operands = tuple(operands)
 
         if any(isinstance(op, (MidMeasure, PauliMeasure)) for op in operands):
             raise ValueError("Composite operators of mid-circuit measurements are not supported.")
@@ -224,6 +225,4 @@ def _prod2_decomp(operands, _init_pauli_rep=None):  # pylint: disable=unused-arg
         apply(op)
 
 
-# The controlled version of ``Prod2`` is obtained automatically by the ``Controlled2`` machinery,
-# which wraps this base decomposition rule (controlling each operand in turn).
 add_decomps(Prod2, _prod2_decomp)
