@@ -294,8 +294,10 @@ def _trotter_vibronic_resources(
         output_wires_zeroed=True,
     )
     aqft = AQFT(order=(aqft_order if aqft_order is not None else max(k - 1, 1)), wires=ww(k))
-    basis_pg = resource_rep(BasisState, num_wires=n_pg)
-    basis_coeff = resource_rep(BasisState, num_wires=b)
+    # ``BasisState`` is an ``Operator2`` and has no ``resource_keys``, so (like ``QROM``/``AQFT``
+    # above) it is represented by an abstractifiable instance rather than a ``resource_rep``.
+    basis_pg = BasisState([0] * n_pg, wires=ww(n_pg))
+    basis_coeff = BasisState([0] * b, wires=ww(b))
 
     resources = defaultdict(int)
     # Electronic diagonalization (forward + adjoint per visit).
