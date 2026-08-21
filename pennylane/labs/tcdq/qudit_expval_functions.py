@@ -69,8 +69,7 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
         d (int | Sequence[int]): Local qudit dimension(s). Either a single
             ``int`` (e.g., 2 for qubits, 3 for qutrits), which is broadcast to
             every qudit, or a sequence of length ``n_qudits`` giving a distinct
-            dimension :math:`d_j` per qudit. All
-            per-qudit index sets are then :math:`\{0, \ldots, d_j - 1\}`.
+            dimension :math:`d_j` per qudit.
         n_qudits (int): Number of qudits in the circuit.
         gates (dict[int, list[list[int]]]): Circuit structure mapping each
             trainable-parameter index to a list of generator vectors. Each
@@ -120,7 +119,7 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
     ... )
     """
 
-    #: Local qudit dimension: an int (uniform) or per-qudit sequence.
+    #: Local qudit dimension(s): an int (uniform) or list (per-qudit sequence).
     d: int | Sequence[int] = None
     #: Number of qudits in the circuit.
     n_qudits: int = None

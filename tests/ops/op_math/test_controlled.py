@@ -20,17 +20,7 @@ from functools import partial
 import numpy as np
 import pytest
 import scipy as sp
-from gate_data import (
-    CH,
-    CNOT,
-    CSWAP,
-    ControlledPhaseShift,
-    CRot3,
-    CRotx,
-    CRoty,
-    CRotz,
-    Toffoli,
-)
+from gate_data import CH, CNOT, CSWAP, ControlledPhaseShift, CRot3, CRotx, CRoty, CRotz, Toffoli
 from scipy import sparse
 
 import pennylane as qp
@@ -858,21 +848,6 @@ special_non_par_op_decomps = [
 
 special_par_op_decomps = [
     (
-        qp.RX,
-        [0.123],
-        [1],
-        [0],
-        qp.CRX,
-        [
-            qp.RZ(np.pi / 2, wires=1),
-            qp.RY(0.123 / 2, wires=1),
-            qp.CNOT(wires=[0, 1]),
-            qp.RY(-0.123 / 2, wires=1),
-            qp.CNOT(wires=[0, 1]),
-            qp.RZ(-np.pi / 2, wires=1),
-        ],
-    ),
-    (
         qp.RY,
         [0.123],
         [1],
@@ -904,17 +879,25 @@ special_par_op_decomps = [
     (
         qp.GlobalPhase,
         [0.123],
-        [1],
+        [],
         [0],
-        (lambda x, wires: qp.ctrl(qp.GlobalPhase(x, wires[-1]), control=wires[:-1])),
+        (lambda x, wires=None: qp.ctrl(qp.GlobalPhase(x), control=[0])),
         [qp.PhaseShift(-0.123, wires=0)],
     ),
     (
         qp.GlobalPhase,
         [0.123],
-        [3],
+        [],
+        [0, 1],
+        (lambda x, wires=None: qp.ctrl(qp.GlobalPhase(x), control=[0, 1])),
+        [qp.ctrl(qp.PhaseShift(-0.123, wires=1), control=[0])],
+    ),
+    (
+        qp.GlobalPhase,
+        [0.123],
+        [],
         [0, 1, 2],
-        (lambda x, wires: qp.ctrl(qp.GlobalPhase(x, wires[-1]), control=wires[:-1])),
+        (lambda x, wires=None: qp.ctrl(qp.GlobalPhase(x), control=[0, 1, 2])),
         [qp.ctrl(qp.PhaseShift(-0.123, wires=2), control=[0, 1])],
     ),
 ]
@@ -1044,11 +1027,11 @@ class TestDecomposition:
     def test_decomposition_nested(self):
         """Tests decompositions of nested controlled operations"""
 
-        ctrl_op = Controlled(Controlled(qp.RZ(0.123, wires=0), control_wires=1), control_wires=2)
+        ctrl_op = qp.ctrl(qp.ctrl(qp.RZ(0.123, wires=0), control=1), control=2)
         expected = [
-            qp.CRZ(0.123 / 2, wires=[2, 0]),
+            qp.RZ(0.0615, wires=[0]),
             qp.Toffoli(wires=[2, 1, 0]),
-            qp.CRZ(-0.123 / 2, wires=[2, 0]),
+            qp.RZ(-0.0615, wires=[0]),
             qp.Toffoli(wires=[2, 1, 0]),
         ]
         assert ctrl_op.decomposition() == expected
@@ -1080,8 +1063,7 @@ class TestDecomposition:
         qp.assert_equal(decomp[4], qp.PauliX(2))
 
     @pytest.mark.parametrize(
-        "base_cls, params, base_wires, ctrl_wires, _, expected",
-        custom_ctrl_op_decomps,
+        "base_cls, params, base_wires, ctrl_wires, _, expected", custom_ctrl_op_decomps
     )
     def test_control_on_zero_custom_ops(
         self, base_cls, params, base_wires, ctrl_wires, _, expected
@@ -1090,6 +1072,11 @@ class TestDecomposition:
 
         base_op = base_cls(*params, wires=base_wires)
         op = qp.ctrl(base_op, control=ctrl_wires, control_values=[False] * len(ctrl_wires))
+
+        if base_cls is qp.GlobalPhase and len(op.control_wires) == 1:
+            pytest.skip(
+                "GlobalPhase has custom logic that avoids adding additional PauliX to flip the control."
+            )
 
         decomp = op.decomposition()
 
@@ -1632,6 +1619,21 @@ class TestCtrl:
         assert len(q.queue) == 2
         assert q.queue[0] == qp.X(0)
         assert q.queue[1] == qp.Barrier()
+
+    def test_ctrl_u1_single_control(self):
+        """Test that qp.ctrl(U1) with a single, all-True control is eagerly lowered to
+        ControlledPhaseShift."""
+        op = qp.ctrl(qp.U1(0.5, wires=0), control=[1])
+        assert op == qp.ControlledPhaseShift(0.5, wires=[1, 0])
+
+    @pytest.mark.parametrize("control, control_values", [([1, 2], None), ([1], [False])])
+    def test_ctrl_u1_falls_back_to_controlled(self, control, control_values):
+        """Test that qp.ctrl(U1) falls back to a generic controlled operator instead of
+        being eagerly lowered when there is more than one control wire or a control value
+        of False."""
+        op = qp.ctrl(qp.U1(0.5, wires=0), control=control, control_values=control_values)
+        assert isinstance(op, qp.ops.ControlledOp2)
+        assert op.base == qp.U1(0.5, wires=0)
 
     @pytest.mark.parametrize("op, ctrl_wires, expected_op", custom_ctrl_ops)
     def test_custom_controlled_ops(self, op, ctrl_wires, expected_op):

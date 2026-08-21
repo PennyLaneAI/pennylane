@@ -20,14 +20,13 @@ import numpy as np
 
 import pennylane as qp
 from pennylane import math
-from pennylane.decomposition.resources import resource_rep
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.templates.state_preparations.sum_of_slaters import (
     _preprocess,
     _sos_state_prep_with_wires,
     select_sos_rows,
 )
-from pennylane.typing import Complex, Int, Wire
+from pennylane.typing import Bool, Complex, Int, Wire
 from pennylane.wires import Wires
 
 
@@ -397,7 +396,7 @@ def _sos_state_prep_resources(num_entries, num_bits, num_wires):
     """Compute the resources for _sos_state_prep. It is an upper bound due to
     conditionally applied CNOT and X gates."""
     if num_entries == 1:
-        return {resource_rep(qp.BasisState, num_wires=num_wires): 1}
+        return {qp.BasisState(Bool[num_wires], Wire[num_wires]): 1}
     d = math.ceil_log2(num_entries)
     m = min(num_bits, 2 * d - 1)
 
@@ -411,7 +410,7 @@ def _sos_state_prep_resources(num_entries, num_bits, num_wires):
     # Step 2 in paper (p.7)
     resources[
         qp.QROM(
-            data=Int[num_entries, num_wires],
+            bitstrings=Int[num_entries, num_wires],
             control_wires=Wire[d],
             target_wires=Wire[num_wires],
             work_wires=Wire[d - 1],
