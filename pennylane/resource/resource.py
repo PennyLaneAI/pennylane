@@ -35,13 +35,13 @@ from .expression import Expression
 
 
 def _count_to_str(
-    count: int | Expression, extra_compact: bool = False, markdown_safe: bool = False
+    count: int | float | Expression, extra_compact: bool = False, markdown_safe: bool = False
 ) -> str:
     """
     Helper for printing counts, converts large counts to scientific notation and standardizes printing of expressions.
 
     Args:
-        count (int | Expression): the count to convert to a string
+        count (int | float | Expression): the count to convert to a string
         extra_compact (bool): whether to remove spaces from expressions for compactness
         markdown_safe (bool): whether to escape asterisks for markdown tables
     """
@@ -54,7 +54,9 @@ def _count_to_str(
                 retval = retval.replace(" ", "")  # Remove spaces from expressions for compactness
             return retval
         count = int(count)
-    return f"{count:,}" if count < 100_000 else f"{Decimal(count):.3E}"
+    if isinstance(count, float) or count >= 100_000:
+        return f"{Decimal(count):.3E}"
+    return f"{count:,}"  # Return as integer if count is small
 
 
 def _flatten_dict(data: dict, prefix: str = "", sep: str = ".") -> dict:
@@ -115,7 +117,7 @@ def _subs_pytree(obj: Any, substitutions: dict) -> Any:
 
     Args:
         obj (Any): The (possibly nested) object to substitute into.
-        substitutions (dict): A mapping from variable names to their concrete integer values.
+        substitutions (dict): A mapping from variable names to their concrete values.
 
     Returns:
         Any: A new object of the same structure with substitutions applied.
@@ -174,8 +176,7 @@ class Resources:
         present as top-level fields or as values within (possibly nested) dictionaries of arbitrary
         depth, the :attr:`vars` attribute will contain the set of all symbolic variables used in the
         resource counts. This includes fields introduced in derived classes. Similarly, the
-        :meth:`subs` method can be used to substitute symbolic variables with concrete integer
-        values.
+        :meth:`subs` method can be used to substitute symbolic variables with concrete values.
     """
 
     counts: dict
@@ -314,9 +315,9 @@ class Resources:
             f"key '{key}' not available. Options are {[obj_field.name for obj_field in fields(self)]}"
         )
 
-    def subs(self, substitutions: dict[str, int] | None = None, **kwargs) -> Resources:
+    def subs(self, substitutions: dict[str, int | float] | None = None, **kwargs) -> Resources:
         """
-        Substitute symbolic variables in the object with concrete integer values.
+        Substitute symbolic variables in the object with concrete values.
 
         Automatically iterates over all fields of the dataclass and applies substitutions to any
         Expression instances, so derived classes do not have to explicitly implement this method
@@ -329,7 +330,7 @@ class Resources:
             original container structure is preserved.
 
         Args:
-            substitutions (dict[str, int] | None): A dictionary mapping variable names to their values.
+            substitutions (dict[str, int | float] | None): A dictionary mapping variable names to their values.
                 If None, an empty dictionary is used. Additional keyword arguments can also be provided.
 
         .. details::

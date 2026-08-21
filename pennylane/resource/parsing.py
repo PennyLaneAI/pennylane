@@ -225,7 +225,7 @@ def _handle_extended_fields(
 
 def _convert_to_subclass(res: SpecsResources) -> SpecsResources:
     """
-    Converts a :class:`~.resource.SpecsResources` object to a subclass if possible.
+    Converts a :class:`~.resource.SpecsResources` instance to a subclass if possible.
 
     Ensures that all counts are rounded up to the nearest integer, as required by the
     :class:`~.resource.SpecsResources` class.

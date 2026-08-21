@@ -2051,6 +2051,7 @@ def test_count_to_str():
     assert _count_to_str(10_000) == "10,000"
     assert _count_to_str(100_000) == "1.000E+5"
     assert _count_to_str(12_345_678) == "1.235E+7"
+    assert _count_to_str(3.14) == "3.140E+0"
     assert _count_to_str(Expression(0)) == "0"
     assert _count_to_str(Expression(15)) == "15"
     assert _count_to_str(Expression(100_000)) == "1.000E+5"

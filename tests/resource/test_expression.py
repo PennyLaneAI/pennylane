@@ -76,14 +76,15 @@ def test_cast_if_constant_floats():
     "vars, coeff, expected",
     [
         ((), 0, "0"),
-        ((), 0.0, "0.0"),
+        ((), 0.0, "0"),
         ((), 1, "1"),
-        ((), 1.0, "1.0"),
+        ((), 1.0, "1"),
         ((), 5, "5"),
         ((), -0.5, "-0.5"),
         (("x",), 1, "x"),
         (("x",), 1.0, "x"),
         (("x",), 3, "3*x"),
+        (("x",), 3.0, "3*x"),
         (("x",), 2.5, "2.5*x"),
         (("x", "x"), 1, "x*x"),
         (("x", "y"), 1, "x*y"),
@@ -214,6 +215,19 @@ class TestExpression:
             (): 4.0,
         }
 
+    @pytest.mark.parametrize("val", [1j, "foo", None])
+    def test_normalize_invalid(self, val):
+        """Test that _normalize raises on invalid coefficients."""
+        expr = Expression(
+            {
+                ("x",): val,
+            },
+            _skip_normalization=True,
+        )
+
+        with pytest.raises(TypeError, match="Expression coefficients must be int or float"):
+            expr._normalize()
+
     def test_vars(self, sample_expr):
         """Test that the vars property returns the expected set of variables."""
         assert sample_expr.vars == {"x", "y", "z"}
@@ -295,7 +309,7 @@ class TestExpression:
 
     def test_str3(self, sample_float_expr):
         # Needs to be separate since a fixture can't be used within parametrize
-        assert str(sample_float_expr) == "1.5*z*z + x*y + 2.5*x + 5.0"
+        assert str(sample_float_expr) == "1.5*z*z + x*y + 2.5*x + 5"
 
     def test_repr(self, sample_expr):
         assert repr(sample_expr) == f"Expression({sample_expr._data})"
@@ -460,6 +474,12 @@ class TestExpressionMath:
         expr = Expression({("x",): 2, (): 3})
         result = func(expr)
         assert result._data == {("x",): 2, (): 3}
+
+    def test_round_ndigits(self):
+        """Test that rounding an int-valued expression with ndigits is unaffected."""
+        expr = Expression({("x",): 2, (): 3.14159})
+        result = round(expr, ndigits=2)
+        assert result._data == {("x",): 2, (): 3.14}
 
 
 class TestExpressionFloatMath:

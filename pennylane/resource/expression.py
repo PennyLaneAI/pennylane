@@ -50,7 +50,10 @@ def _cast_if_constant(
     )
 
 
+@lru_cache
 def _term_to_str(vars: tuple[str, ...], coeff: int | float) -> str:
+    if isinstance(coeff, float) and coeff.is_integer():
+        coeff = int(coeff)
     if not vars:
         return str(coeff)
     if coeff == 1:
@@ -77,7 +80,7 @@ class Expression:
         after it is created, as this may lead to incorrect behaviour.
     """
 
-    __slots__ = ("_hashval", "_data", "_vars")
+    __slots__ = ("_hashval", "_str", "_repr", "_data", "_vars")
 
     _data: dict[tuple[str, ...], int | float]
     _vars: set[str]
@@ -104,6 +107,8 @@ class Expression:
             raise TypeError("Expression data must be a dictionary of tuples or a real number")
 
         self._hashval = None
+        self._str = None
+        self._repr = None
 
         if isinstance(data, (int, float)):
             if data == 0:
@@ -138,6 +143,8 @@ class Expression:
         Also removes any terms with a zero coefficient.
         """
         for vars in list(self._data.keys()):
+            if not isinstance(self._data[vars], (int, float)):
+                raise TypeError("Expression coefficients must be int or float")
             if self._data[vars] == 0:
                 del self._data[vars]
                 continue
@@ -199,7 +206,6 @@ class Expression:
             return new_data[()]
         return Expression(new_data, vars=self._vars.difference(substitutions_copy.keys()))
 
-    @lru_cache
     def __str__(self) -> str:
         """
         Returns a string representation of the expression.
@@ -209,13 +215,20 @@ class Expression:
         If a term has a coefficient of 1, the coefficient is omitted.
         If the expression is zero, it is "0".
         """
+        if self._str is not None:
+            return self._str
         if len(self._data) == 0:
-            return "0"
-        return " + ".join([_term_to_str(vars, coeff) for vars, coeff in self._data.items()])
+            self._str = "0"
+        else:
+            self._str = " + ".join(
+                [_term_to_str(vars, coeff) for vars, coeff in self._data.items()]
+            )
+        return self._str
 
-    @lru_cache
     def __repr__(self) -> str:
-        return f"Expression({self._data})"
+        if self._repr is None:
+            self._repr = f"Expression({self._data})"
+        return self._repr
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, (int, float, Expression)):
@@ -346,8 +359,8 @@ class Expression:
     def __floor__(self) -> Union["Expression", int]:
         return self._builtin_to_int_helper(floor)
 
-    def __round__(self) -> Union["Expression", int]:
-        return self._builtin_to_int_helper(round)
+    def __round__(self, ndigits=None) -> Union["Expression", int]:
+        return self._builtin_to_int_helper(lambda x: round(x, ndigits))
 
     def __trunc__(self) -> Union["Expression", int]:
         return self._builtin_to_int_helper(trunc)
