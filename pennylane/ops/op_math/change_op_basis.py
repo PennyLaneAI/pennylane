@@ -26,6 +26,12 @@ from pennylane.core import queuing
 from pennylane.core.operator import Operator, Operator2
 from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
 from pennylane.decomposition import add_decomps, register_resources
+from pennylane.exceptions import (
+    DiagGatesUndefinedError,
+    EigvalsUndefinedError,
+    MatrixUndefinedError,
+    SparseMatrixUndefinedError,
+)
 from pennylane.ops.op_math import adjoint, ctrl, prod
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract, flip_zero_control
 
@@ -254,13 +260,22 @@ class ChangeOpBasis(CompositeOp2):
     hybrid_argnames = ("compute_op", "target_op", "uncompute_op")
 
     has_matrix = False
+    has_sparse_matrix = False
 
     _op_symbol = "@"
     _math_op = staticmethod(math.prod)
 
-    matrix = Operator2.matrix
-    diagonalizing_gates = Operator2.diagonalizing_gates
-    eigvals = Operator2.eigvals
+    def matrix(self, wire_order=None):
+        raise MatrixUndefinedError
+
+    def sparse_matrix(self, wire_order=None, format="csr"):
+        raise SparseMatrixUndefinedError
+
+    def diagonalizing_gates(self):
+        raise DiagGatesUndefinedError
+
+    def eigvals(self):
+        raise EigvalsUndefinedError
 
     @property
     def operands(self):
