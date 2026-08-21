@@ -29,7 +29,11 @@ from pennylane import numpy as pnp
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math.decompositions.unitary_decompositions import _compute_udv
-from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform, fractional_matrix_power
+from pennylane.ops.qubit.matrix_ops import (
+    _diagonal_qu_decomp,
+    _walsh_hadamard_transform,
+    fractional_matrix_power,
+)
 from pennylane.wires import Wires
 
 
@@ -755,12 +759,11 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
         decomp2 = qp.DiagonalQubitUnitary(D, wires=[0, 1]).decomposition()
 
         angles = np.array([-2, 0.5])
-        new_D = np.exp(1j * np.array([0, 3 / 4]))
-
         for dec in (decomp, decomp2):
-            assert len(dec) == 2
-            qp.assert_equal(decomp[0], qp.DiagonalQubitUnitary(new_D, wires=[0]))
-            qp.assert_equal(decomp[1], qp.SelectPauliRot(angles, [0], target_wire=1))
+            assert len(dec) == 3
+            qp.assert_equal(dec[0], qp.GlobalPhase(-3 / 8))
+            qp.assert_equal(dec[1], qp.RZ(3 / 4, wires=0))
+            qp.assert_equal(dec[2], qp.SelectPauliRot(angles, [0], target_wire=1))
 
     @pytest.mark.pl2do(reason="PL 2.0: Parameter broadcasting will be re-visited.")
     def test_decomposition_two_qubits_broadcasted(self):
@@ -771,12 +774,12 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
         decomp2 = qp.DiagonalQubitUnitary(D, wires=[0, 1]).decomposition()
 
         angles = np.array([[-2, 0.5], [-0.4, -1.2], [-0.7, 2.0]])
-        new_D = np.exp(1j * np.array([[0, 3 / 4], [2.1, -0.3], [0.75, 0.2]]))
 
         for dec in (decomp, decomp2):
-            assert len(dec) == 2
-            qp.assert_equal(decomp[0], qp.DiagonalQubitUnitary(new_D, wires=[0]))
-            qp.assert_equal(decomp[1], qp.SelectPauliRot(angles, [0], target_wire=1))
+            assert len(dec) == 3
+            qp.assert_equal(dec[0], qp.GlobalPhase([-0.375, -0.9, -0.475]))
+            qp.assert_equal(dec[1], qp.RZ([0.75, -2.4, -0.55], wires=0))
+            qp.assert_equal(dec[2], qp.SelectPauliRot(angles, [0], target_wire=1))
 
     def test_decomposition_three_qubits(self):
         """Test that a three-qubit DiagonalQubitUnitary is decomposed correctly."""
@@ -786,11 +789,12 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
         decomp2 = qp.DiagonalQubitUnitary(D, wires=[0, 1, 2]).decomposition()
 
         angles = np.array([-2, 0.5, -0.1, 1.7])
-        new_D = np.exp(1j * np.array([0, 3 / 4, 0.15, 1.45]))
         for dec in (decomp, decomp2):
-            assert len(dec) == 2
-            qp.assert_equal(decomp[0], qp.DiagonalQubitUnitary(new_D, wires=[0, 1]))
-            qp.assert_equal(decomp[1], qp.SelectPauliRot(angles, [0, 1], target_wire=2))
+            assert len(dec) == 4
+            qp.assert_equal(dec[0], qp.GlobalPhase(-0.5875))
+            qp.assert_equal(dec[1], qp.RZ(0.425, wires=0))
+            qp.assert_equal(dec[2], qp.SelectPauliRot([0.75, 1.3], [0], target_wire=1))
+            qp.assert_equal(dec[3], qp.SelectPauliRot(angles, [0, 1], target_wire=2))
 
     @pytest.mark.pl2do(reason="PL 2.0: Parameter broadcasting will be re-visited.")
     def test_decomposition_three_qubits_broadcasted(self):
@@ -806,11 +810,14 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
         decomp2 = qp.DiagonalQubitUnitary(D, wires=[0, 1, 2]).decomposition()
 
         angles = np.array([[-2, 0.5, -0.1, 1.7], [-0.8, 0.5, -1.8, -0.1]])
-        new_D = np.exp(1j * np.array([[0, 3 / 4, 0.15, 1.45], [0.6, 0.35, 1.4, 0.15]]))
         for dec in (decomp, decomp2):
-            assert len(dec) == 2
-            qp.assert_equal(decomp[0], qp.DiagonalQubitUnitary(new_D, wires=[0, 1]))
-            qp.assert_equal(decomp[1], qp.SelectPauliRot(angles, [0, 1], target_wire=2))
+            assert len(dec) == 4
+            qp.assert_equal(dec[0], qp.GlobalPhase([-0.5875, -0.625]))
+            qp.assert_equal(dec[1], qp.RZ([0.425, 0.3], wires=0))
+            qp.assert_equal(
+                dec[2], qp.SelectPauliRot([[0.75, 1.3], [-0.25, -1.25]], [0], target_wire=1)
+            )
+            qp.assert_equal(dec[3], qp.SelectPauliRot(angles, [0, 1], target_wire=2))
 
     @pytest.mark.parametrize("n", [1, 2, 3])
     def test_decomposition_matrix_match(self, n, seed):
@@ -862,7 +869,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
     @pytest.mark.parametrize(
         "dtype", [np.float64, np.float32, np.int64, np.int32, np.int16, np.complex128, np.complex64]
     )
-    def test_decomposition_cast_to_complex128(self, dtype):
+    def test_decomposition_parameter_dtype(self, dtype):
         """Test that the parameters of decomposed operations are of the correct dtype."""
         D = np.array([1, 1, -1, -1]).astype(dtype)
         wires = [0, 1]
@@ -872,15 +879,8 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
         r_dtype = (
             np.float64 if dtype in [np.float64, np.int64, np.int32, np.complex128] else np.float32
         )
-        c_dtype = (
-            np.complex128
-            if dtype in [np.float64, np.int64, np.int32, np.complex128]
-            else np.complex64
-        )
-        assert decomp1[0].data[0].dtype == c_dtype
-        assert decomp2[0].data[0].dtype == c_dtype
-        assert decomp1[1].data[0].dtype == r_dtype
-        assert decomp2[1].data[0].dtype == r_dtype
+        assert all(op.data[0].dtype == r_dtype for op in decomp1)
+        assert all(op.data[0].dtype == r_dtype for op in decomp2)
 
     standard_case_ops = [
         qp.DiagonalQubitUnitary(np.array([1j, -1]), wires=[0]),
@@ -895,6 +895,24 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
         """Tests the decomposition rule compatible with the graph-based interface."""
         for rule in qp.list_decomps(qp.DiagonalQubitUnitary):
             _test_decomposition_rule(op, rule)
+
+    def test_iterative_decomposition_rule(self):
+        """Test that the rule and its resources contain no recursive diagonal unitary."""
+        op = qp.DiagonalQubitUnitary(np.exp(1j * np.arange(16)), wires=range(4))
+
+        _test_decomposition_rule(op, _diagonal_qu_decomp)
+        resources = _diagonal_qu_decomp.compute_resources(**op.arguments)
+
+        assert not any(isinstance(rep, qp.DiagonalQubitUnitary) for rep in resources.gate_counts)
+        select_reps = [rep for rep in resources.gate_counts if isinstance(rep, qp.SelectPauliRot)]
+        assert [len(rep.control_wires) for rep in select_reps] == [1, 2, 3]
+
+    @pytest.mark.capture
+    def test_iterative_decomposition_rule_capture(self):
+        """Test the fully iterative rule with native program capture."""
+        op = qp.DiagonalQubitUnitary(np.exp(1j * np.arange(16)), wires=range(4))
+
+        _test_decomposition_rule(op, _diagonal_qu_decomp, skip_decomp_matrix_check=True)
 
     @pytest.mark.catalyst
     @pytest.mark.parametrize("op", standard_case_ops)
