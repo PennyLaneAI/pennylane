@@ -2,6 +2,11 @@
 
 <h3>New features since last release</h3>
 
+* Added a new template :class:`~.TrotterVibronic` that implements a second-order Trotter circuit for
+  vibronic Hamiltonian simulation using phase-gradient arithmetic, based on
+  [Motlagh et al, arXiv:2411.13669](https://arxiv.org/abs/2411.13669).
+  [(#10029)](https://github.com/PennyLaneAI/pennylane/pull/10029)
+
 * Added :func:`~pennylane.backline.triton_decoder` and
   :func:`~pennylane.backline.css_bp_decoder` for compiling Triton-based coprocessor decoders.
   :func:`~pennylane.backline.triton_decoder` wraps user-provided Triton decoder tuples, while
