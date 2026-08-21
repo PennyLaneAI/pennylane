@@ -39,7 +39,6 @@ def cgf_specs(num_fragments=L, num_modes=M, num_modals=N):
         "nuc_constant": Float,
     }
 
-
 class TestAbstract:
     """Tests for Hamiltonians built from ``qp.typing.Float[...]`` specifications."""
 
