@@ -31,9 +31,9 @@ from pennylane.typing import AbstractArray
 
 __all__ = ["NumericHamiltonian", "CDFHamiltonian", "CGFHamiltonian"]
 
+
 def _shape_of(tensor):
-    """Return the shape of a concrete tensor or of an :class:`~.AbstractArray` spec.
-    """
+    """Return the shape of a concrete tensor or of an :class:`~.AbstractArray` spec."""
     if isinstance(tensor, AbstractArray):
         return tensor.shape
     return tuple(math.shape(tensor))
@@ -102,16 +102,13 @@ class NumericHamiltonian:
         """The named dimensions derived from the tensor shapes."""
         return {name: getattr(self, name) for name, _ in self.symbol_metadata.values()}
 
-
     def _flatten(self):
-        """Split into tensor leaves and hashable metadata.
-        """
+        """Split into tensor leaves and hashable metadata."""
         return self.tensors, tuple(self.dimensions.values())
 
     @classmethod
     def _unflatten(cls, data, metadata):
-        """Rebuild from leaves and metadata, bypassing validation.
-        """
+        """Rebuild from leaves and metadata, bypassing validation."""
         obj = cls.__new__(cls)
         tensor_names = ("core_tensors", "leaf_tensors", "nuc_constant")
         for name, value in zip(tensor_names, data, strict=True):
