@@ -23,6 +23,7 @@ import copy
 import itertools
 import warnings
 from collections import defaultdict
+from math import ceil
 from typing import Any
 
 from .expression import Expression
@@ -49,13 +50,14 @@ def _generate_display_name_for_symbolic_var(var: str, display_names: dict[str, s
 
 
 def _update_resource_dict(
-    result_dict: dict[str, Any], call_count: int | Expression, fn_resources: dict[str, Any]
+    result_dict: dict[str, Any], call_count: int | float | Expression, fn_resources: dict[str, Any]
 ) -> None:
     """Helper function to update a resource dictionary with the resources from a called function.
 
     Args:
         result_dict (dict[str, Any]): The resource dictionary to update
-        call_count (int | Expression): The number of times the called function is invoked
+        call_count (int | float | Expression): The number of times the called function is invoked.
+            For floating point values, this is the average number of times the function is called.
         fn_resources (dict[str, Any]): The resources of the called function
     """
     for label, value in fn_resources.items():
@@ -130,8 +132,8 @@ def _mlir_resources_to_specs_resources(
     for called_fn, call_count in itertools.chain(
         function_calls["static"].items(), function_calls["dynamic"].items()
     ):
-        if not isinstance(call_count, int):
-            # If there is no integer call count, we have to treat this as a symbolic variable
+        if not isinstance(call_count, (int, float)):
+            # If there is no numeric call count, we have to treat this as a symbolic variable
             var_name = _generate_display_name_for_symbolic_var(call_count, display_names)
 
             call_count = Expression({(var_name,): 1})
@@ -175,7 +177,7 @@ def _mlir_resources_to_specs_resources(
 
 def _handle_extended_fields(
     extended_fields: dict[str, Any],
-    call_count: int | Expression,
+    call_count: int | float | Expression,
     called_fn_resources: SpecsResources,
 ) -> None:
     """Helper function to handle extended fields in the resource data.
@@ -186,7 +188,8 @@ def _handle_extended_fields(
     Args:
         extended_fields (dict[str, Any]): The extended fields from the resource data (modified by function)
         called_fn_resources (SpecsResources): The resources of the called function
-        call_count (int | Expression): The number of times the called function is invoked
+        call_count (int | float | Expression): The number of times the called function is invoked.
+            For float values, this is the average number of times the function is invoked.
     """
 
     unknown_fields = []
@@ -221,26 +224,41 @@ def _handle_extended_fields(
 
 
 def _convert_to_subclass(res: SpecsResources) -> SpecsResources:
+    """
+    Converts a :class:`~.resource.SpecsResources` instance to a subclass if possible.
+
+    Ensures that all counts are rounded up to the nearest integer, as required by the
+    :class:`~.resource.SpecsResources` class.
+
+    Args:
+        res (SpecsResources): The :class:`~.resource.SpecsResources` object to convert.
+
+    Returns:
+        SpecsResources: A :class:`~.resource.SpecsResources` object, potentially of
+            a subclass type if the original object contained the appropriate extra data.
+    """
     kwargs = {
-        "counts": res.counts,
-        "measurement_processes": res.measurement_processes,
-        "num_wires": res.num_wires,
-        "circuit_depth": res.circuit_depth,
+        "counts": {op: ceil(count) for op, count in res.counts.items()},
+        "measurement_processes": {
+            meas: ceil(count) for meas, count in res.measurement_processes.items()
+        },
+        "num_wires": ceil(res.num_wires) if res.num_wires is not None else None,
+        "circuit_depth": ceil(res.circuit_depth) if res.circuit_depth is not None else None,
     }
     # Copy the extra fields to avoid mutating the original object
     extra = copy.deepcopy(res.extra)
 
     if "pbc_depth" in extra:
         pbc_depth = extra.pop("pbc_depth")
-        kwargs["any_commuting_depth"] = pbc_depth.pop("any_commuting_depth")
-        kwargs["qubit_disjoint_depth"] = pbc_depth.pop("qubit_disjoint_depth")
+        kwargs["any_commuting_depth"] = ceil(pbc_depth.pop("any_commuting_depth"))
+        kwargs["qubit_disjoint_depth"] = ceil(pbc_depth.pop("qubit_disjoint_depth"))
         # Pylint gets confused by the dynamic updates to kwargs here
         # pylint: disable=missing-kwoa
         return PBCSpecsResources(
             **kwargs,
             extra=extra,
         )
-    return res
+    return SpecsResources(**kwargs, extra=extra)
 
 
 def parse_resources_json(
