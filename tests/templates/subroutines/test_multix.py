@@ -287,7 +287,7 @@ def test_adjoint_decomposition_capture_compatibility():
 
     if qp.capture.enabled():
         pytest.xfail(
-            "When capture is enabled, _test_decomposition_rule ends up passing the base operator in Adjoint(base) as a wire producing an 'ArgInfo' error."
+            "When capture is enabled, ends up passing identical `ArgInfo` placeholder leaves into MultiX's`__init__` as wires since `ArgInfo` are not recognized as abstract. Since they are not unique, we get an error comparing them."
         )
 
     for rule in qp.list_decomps("Adjoint(MultiX)"):
