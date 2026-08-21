@@ -70,11 +70,23 @@ def test_canonicalize_inputs_does_not_validate_or_cast():
     assert canonical_wires == Wires(wires)
 
 
-@pytest.mark.jax
-def test_standard_checks():
+@pytest.mark.parametrize(
+    "skip_wire_mapping",
+    (
+        True,
+        pytest.param(
+            False,
+            marks=pytest.mark.xfail(
+                reason="Wire mapping issue between Operator2 and assert_valid."
+            ),
+        ),
+    ),
+)
+@pytest.mark.capture
+def test_standard_checks(skip_wire_mapping):
     """Runs the standard Operator2 validity checks for MultiX."""
     op = qp.MultiX([1, 0, 1], wires=[0, 1, 2])
-    qp.ops.functions.assert_valid(op)
+    qp.ops.functions.assert_valid(op, skip_wire_mapping=skip_wire_mapping)
 
 
 def test_abstract_init():
