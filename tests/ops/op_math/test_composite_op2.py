@@ -141,6 +141,21 @@ class TestConstruction:
         assert op._name == "ValidOp"
         assert op._op_symbol == "#"
 
+    def test_data(self):
+        """Test that the data property flattens the data of all operands in order."""
+        op = ValidOp((qp.RX(9.87, wires=0), qp.Rot(1.23, 4.0, 5.67, wires=1), qp.PauliX(0)))
+        assert op.data == (9.87, 1.23, 4.0, 5.67)
+
+    def test_data_is_read_only(self):
+        """Test that composite operator data is read-only."""
+        op = ValidOp((qp.RX(9.87, wires=0), qp.Rot(1.23, 4.0, 5.67, wires=1), qp.PauliX(0)))
+        assert op.data == (9.87, 1.23, 4.0, 5.67)
+
+        with pytest.raises(
+            AttributeError, match="property 'data' of 'ValidOp' object has no setter"
+        ):
+            op.data = (1.23, 0.0, -1.0, -2.0)
+
     def test_initialization_in_queuing_context(self):
         """Test that valid child classes can be initialized in a queuing context"""
         with AnnotatedQueue() as q:

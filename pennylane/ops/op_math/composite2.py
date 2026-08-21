@@ -112,6 +112,12 @@ class CompositeOp2(Operator2, is_baseclass=True):
     def has_matrix(self):
         return all(op.has_matrix for op in self)
 
+    @property
+    @handle_recursion_error
+    def data(self):
+        """Create data property"""
+        return tuple(d for op in self for d in op.data)
+
     @handle_recursion_error
     def eigvals(self):
         """Return the eigenvalues of the specified operator.
