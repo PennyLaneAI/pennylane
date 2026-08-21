@@ -1308,7 +1308,7 @@
   compiled on a machine with no usable GPU. The ahead-of-time build called
   ``JITFunction.create_binder()``, which asks the local machine for a target through
   ``driver.active.get_current_target()`` and fails with ``0 active drivers`` where there is none.
-  [(#XXXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXXX)
+  [(#10046)](https://github.com/PennyLaneAI/pennylane/pull/10046)
 
 * Fixed a bug where the ``flip_zero_control`` decomposition modifier raised a
   ``TracerIntegerConversionError`` under program capture, because the control-value flipping
