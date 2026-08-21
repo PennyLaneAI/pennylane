@@ -19,7 +19,7 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.typing import Bool, Float, Int, Wire
+from pennylane.typing import AbstractArray, AbstractWires, Bool, Float, Int, Wire
 from pennylane.wires import Wires
 
 
@@ -32,31 +32,30 @@ from pennylane.wires import Wires
         ([False, True], (0, 1)),
         (np.array([0, 0]), ["Alice", "Bob"]),
         (np.array([False, True]), ["Alice", "Bob"]),
+        (Int[3], Wire[3]),
+        (Bool[2], Wire[2]),
     ],
 )
 def test_input_arguments_parsed_correctly(bitstring_input, wires_input):
     """Tests that MultiX handles and sanitizes its input arguments correctly."""
     op = qp.MultiX(bitstring_input, wires=wires_input)
 
-    assert isinstance(op.bitstring, np.ndarray)
+    assert isinstance(op.bitstring, (np.ndarray, AbstractArray))
+    assert isinstance(op.wires, (Wires, AbstractWires))
+    assert op.is_abstract == (
+        isinstance(bitstring_input, AbstractArray) or isinstance(wires_input, AbstractWires)
+    )
     assert op.bitstring.dtype == bool
-    assert np.all(op.bitstring == np.array(bitstring_input, dtype=bool))
-    assert op.wires == Wires(wires_input)
+    if not isinstance(bitstring_input, AbstractArray):
+        assert np.all(op.bitstring == np.array(bitstring_input, dtype=bool))
+    if not isinstance(wires_input, AbstractWires):
+        assert op.wires == Wires(wires_input)
+
     assert op.dynamic_args == {"bitstring": op.bitstring}
-    assert op.wire_args == {"wires": Wires(wires_input)}
+    assert op.wire_args == {"wires": op.wires}
     assert op.num_wires == len(wires_input)
     assert op.num_params == 0
     assert op.grad_method is None
-
-
-def test_boolean_bitstring_accepted():
-    """Tests that Boolean input is accepted and remains Boolean after initialization."""
-    bitstring = np.array([True, False, True])
-
-    op = qp.MultiX(bitstring, wires=[0, 1, 2])
-
-    assert op.bitstring.dtype == bool
-    assert np.array_equal(op.bitstring, bitstring)
 
 
 def test_canonicalize_inputs_does_not_validate_or_cast():
@@ -90,18 +89,6 @@ def test_decomposition_capture_compatibility():
 
     for rule in qp.list_decomps(qp.MultiX):
         _test_decomposition_rule(op, rule)
-
-
-def test_abstract_init():
-    """Tests that MultiX can be initialized from abstract argument metadata."""
-    bitstring = Int[3]
-    wires = Wire[3]
-
-    op = qp.MultiX(bitstring, wires)
-
-    assert op.is_abstract
-    assert op.bitstring == Bool[3]
-    assert op.wires == wires
 
 
 def test_custom_repr_override():
