@@ -286,6 +286,16 @@ def test_adjoint():
     qp.assert_equal(adjoint_op, op)
 
 
+def test_adjoint_decomposition():
+    """Tests that Adjoint(MultiX) decomposes to MultiX."""
+    base = qp.MultiX([1, 0, 1], wires=[0, 1, 2])
+
+    decomposition = qp.adjoint(base).decomposition()
+
+    assert len(decomposition) == 1
+    qp.assert_equal(decomposition[0], base)
+
+
 @pytest.mark.parametrize("exponent", [-5, -3, -1, 1, 3, 5])
 def test_pow_odd_integer(exponent):
     """Tests that MultiX raised to an odd integer is equivalent to itself."""
@@ -303,6 +313,19 @@ def test_pow_even_integer(exponent):
     pow_ops = op.pow(exponent)
 
     assert len(pow_ops) == 0
+
+
+@pytest.mark.parametrize("exponent", [0, 1, 2, 3, 4, 5])
+def test_pow_decomposition(exponent):
+    """Tests non-negative integer powers for Pow(MultiX)."""
+    op = qp.MultiX([1, 0, 1], wires=[0, 1, 2])
+
+    decomposition = qp.pow(op, exponent).decomposition()
+    if exponent % 2 == 0:  # even
+        assert len(decomposition) == 0
+    else:  # odd
+        assert len(decomposition) == 1
+        qp.assert_equal(decomposition[0], op)
 
 
 @pytest.mark.parametrize(
