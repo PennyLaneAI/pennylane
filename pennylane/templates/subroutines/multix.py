@@ -305,7 +305,7 @@ class MultiX(Operator2):
         bitstring, wires = MultiX._canonicalize_inputs(bitstring, wires)
         MultiX._validate_inputs(bitstring, wires)
 
-        return [Hadamard(wire) for wire in wires]
+        return [Hadamard(wire) for i, wire in enumerate(wires) if bitstring[i]]
 
     def __repr__(self) -> str:
         if not (isinstance(self.bitstring, AbstractArray) or isinstance(self.wires, AbstractWires)):

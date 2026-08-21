@@ -209,30 +209,26 @@ def test_jit_eigvals():
 
 
 @pytest.mark.parametrize(
-    ("bitstring", "wires"),
+    ("bitstring", "wires", "gates_expected"),
     [
-        ([0], [0]),
-        ([1], [1]),
-        ([1, 0], [0, 1]),
-        ([0, 1, 1], [0, 1, 2]),
+        ([0], [0], []),
+        ([1], [1], [qp.H(1)]),
+        ([1, 0], [0, 1], [qp.H(0)]),
+        ([0, 1, 1], [0, 1, 2], [qp.H(1), qp.H(2)]),
     ],
 )
-def test_diagonalizing_gates(bitstring, wires):
+def test_diagonalizing_gates(bitstring, wires, gates_expected):
     """Tests that MultiX is diagonalized by its diagonalizing gates."""
     op = qp.MultiX(bitstring, wires=wires)
 
     assert op.has_diagonalizing_gates
 
-    diag_gates = qp.MultiX.compute_diagonalizing_gates(bitstring, wires)
-    diag_gates_from_instance = op.diagonalizing_gates()
-    diag_gates_expected = [qp.H(wire) for wire in wires]
+    diag_gates = op.diagonalizing_gates()
 
-    assert len(diag_gates) == len(diag_gates_from_instance)
-    assert len(diag_gates) == len(diag_gates_expected)
+    assert len(diag_gates) == len(gates_expected)
 
     for i, gate in enumerate(diag_gates):
-        qp.assert_equal(gate, diag_gates_from_instance[i])
-        qp.assert_equal(gate, diag_gates_expected[i])
+        qp.assert_equal(gate, gates_expected[i])
 
 
 @pytest.mark.jax
