@@ -111,7 +111,8 @@ def _run_trotter_steps(
         control_wires (Wires): control wires. Empty for the base (uncontrolled)
             circuit; a single wire for the controlled circuits.
         double_phase (bool): whether the controlled circuit is the double-phase
-            (Fig. 6) construction (``True``) or a genuine controlled unitary (``False``).
+            (Fig. 6 in `arXiv:2506.15784 <https://arxiv.org/abs/2506.15784>`__)
+            construction (``True``) or a genuine controlled unitary (``False``).
         apply_system_basis_rotation (callable): ``(U, wires) -> None``.
         apply_two_body_diagonal (callable):
             ``(Z, wires, first_order_time_step, control_wires, double_phase) -> None``.
