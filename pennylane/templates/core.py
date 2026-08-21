@@ -163,7 +163,7 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
         from functools import partial
 
         def S_resources(params, wires, rotation):
-            return {qp.resource_rep(rotation): params.shape[0]}
+            return {rotation: params.shape[0]}
 
         @partial(qp.templates.Subroutine, static_argnames="rotation", compute_resources=S_resources)
         def S(params, wires, rotation):
@@ -482,7 +482,7 @@ class Subroutine:
       - MyTemplate: 1
     Measurement processes:
     - state(all wires): 1
-    Wire allocations: 1
+    Total wires: 1
     Circuit Depth: 1
 
     For multiple wire register inputs or use of a different name than ``"wires"``, the

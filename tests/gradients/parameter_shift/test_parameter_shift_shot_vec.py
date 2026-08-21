@@ -464,9 +464,13 @@ class TestParamShift:
         """Test that an error is raised if no grad_recipe, no parameter_frequencies
         and no generator are found."""
 
-        class RX(qp.RX):
+        class LegacyRX(qp.operation.Operation):
             """This copy of RX overwrites parameter_frequencies to report
             missing information, disabling its differentiation."""
+
+            num_params = 1
+            grad_method = "A"
+            num_wires = 1
 
             @property
             def parameter_frequencies(self):
@@ -484,7 +488,7 @@ class TestParamShift:
         x = np.array(0.654, requires_grad=True)
         shot_vec = many_shots_shot_vector
 
-        for op in [RX, NewOp]:
+        for op in [LegacyRX, NewOp]:
             with qp.queuing.AnnotatedQueue() as q:
                 op(x, wires=0)
                 qp.expval(qp.PauliZ(0))

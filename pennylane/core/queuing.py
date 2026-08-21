@@ -194,8 +194,7 @@ from contextlib import contextmanager
 from threading import RLock
 from typing import Optional
 
-from pennylane import pytrees
-from pennylane.capture import enabled  # tach-ignore
+from pennylane import capture, pytrees  # tach-ignore
 from pennylane.exceptions import QueuingError
 
 
@@ -534,7 +533,7 @@ def apply(op, context: type[QueuingManager] | AnnotatedQueue = QueuingManager):
 
     """
 
-    if enabled():
+    if capture.enabled():
         return _capture_apply(op)
 
     if not QueuingManager.recording():
@@ -571,4 +570,15 @@ def _capture_apply(op):
     return pytrees.unflatten(*pytrees.flatten(op))
 
 
-__all__ = ["QueuingManager", "AnnotatedQueue", "apply"]
+def remove_from_program(op):
+    """Removes an operator from the captured/queued program."""
+    if QueuingManager.recording():
+        QueuingManager.remove(op)
+    if capture.enabled():
+        # pylint: disable-next=import-outside-toplevel
+        from .operator.operator2 import pop_op_eqns  # tach-ignore
+
+        pop_op_eqns((op,))
+
+
+__all__ = ["QueuingManager", "AnnotatedQueue", "apply", "remove_from_program"]
