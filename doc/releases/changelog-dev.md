@@ -781,6 +781,10 @@
   resource operators from their quantum functions.
   [(#9764)](https://github.com/PennyLaneAI/pennylane/pull/9764)
 
+* Added two new functions for uniform state preparation and alias sampling called :class:`~.pennylane.labs.templates.uniform_prep_ops` and
+  `~.pennylane.labs.templates.alias_sampling`.
+  [(#9913)](https://github.com/PennyLaneAI/pennylane/pull/9913)
+
 <h3>Breaking changes 💔</h3>
 
 * :class:`~.BasisState` no longer allows integers as input. Instead, `~.math.int_to_binary` should be used to preprocess
