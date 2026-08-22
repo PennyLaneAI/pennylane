@@ -26,7 +26,9 @@ import pennylane as qp
 from pennylane import math
 from pennylane.capture import enabled as capture_enabled
 from pennylane.compiler import compiler
-from pennylane.core.operator import Operator2
+from pennylane.core import QueuingManager
+from pennylane.core.operator import Operator2, abstractify
+from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
 
 from .measurement_value import MeasurementValue
@@ -66,19 +68,6 @@ class PauliMeasure(Operator2):
             )
 
     @override
-    def __abstract_init__(
-        self,
-        pauli_word: str,
-        wires: WiresLike,
-        postselect: int | None = None,
-        meas_uid: str | None = None,
-    ):  # pylint: disable=arguments-differ,unused-argument
-        # meas_uid and postselect are irrelevant to abstract operators and will be ignored
-        super().__abstract_init__(
-            pauli_word=pauli_word, wires=wires, postselect=None, meas_uid=None
-        )
-
-    @override
     def label(self, decimals=None, base_label=None, cache=None, wire=None) -> str:
         """How the pauli-product measurement is represented in diagrams and drawings."""
         postselect = "" if self.postselect is None else ("₁" if self.postselect == 1 else "₀")
@@ -89,6 +78,12 @@ class PauliMeasure(Operator2):
     @override
     def __repr__(self) -> str:
         return f"PauliMeasure('{self.pauli_word}', wires={self.wires})"
+
+
+@abstractify.register
+@QueuingManager.stop_recording()
+def _abstractify_pauli_measure(op: PauliMeasure):
+    return PauliMeasure(op.pauli_word, Wire[len(op.wires)], postselect=op.postselect, meas_uid=None)
 
 
 def _pauli_measure_impl(wires: WiresLike, pauli_word: str, postselect: int | None = None):

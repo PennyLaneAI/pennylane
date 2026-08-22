@@ -93,10 +93,10 @@ class TestAbstractifyBasics:
             _ = abstractify(input)
 
     def test_abstractify_already_abstract_op(self):
-        """Tests that the original op is returned iff it is already abstract."""
+        """Tests that abstractify works on an abstract op."""
         op = DynOp(Float, wires=Wire[2])
         result = abstractify(op)
-        assert result is op
+        assert result == op
 
         op = DynOp(1.2, wires=(0, 1))
         result = abstractify(op)

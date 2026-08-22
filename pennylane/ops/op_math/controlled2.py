@@ -43,12 +43,32 @@ from pennylane.decomposition.resources import (
 )
 from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.ops.op_math.adjoint2 import Adjoint2
+from pennylane.queuing import QueuingManager
 from pennylane.typing import AbstractArray, AbstractWires, Bool, Complex, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .symbolicop2 import SymbolicOp2
 
 # pylint: disable=unused-argument,protected-access,no-value-for-parameter
+
+
+def _setup_control_values(control_values, num_control_wires):
+    if control_values is None:
+        control_values = [True] * num_control_wires
+
+    if isinstance(control_values, (int, bool)):
+        control_values = [bool(control_values)]
+
+    if len(control_values) != num_control_wires:
+        raise ValueError("control_values should be the same length as control_wires")
+
+    if isinstance(control_values, (list, tuple)):
+        control_values = qp.math.asarray(control_values, like=control_values[0])
+
+    if not isinstance(control_values, AbstractArray):
+        control_values = qp.math.cast(control_values, dtype=bool)
+
+    return control_values
 
 
 class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-public-methods
@@ -136,29 +156,21 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         control_wires = Wires(control_wires)
         work_wires = Wires([] if work_wires is None else work_wires)
 
-        if Wires.shared_wires([base.wires, control_wires]):
+        if not any(
+            isinstance(w, AbstractWires) for w in (base.wires, control_wires)
+        ) and Wires.shared_wires([base.wires, control_wires]):
             raise ValueError("control_wires must not overlap with the base operator.")
 
-        if Wires.shared_wires([work_wires, base.wires + control_wires]):
+        if not any(
+            isinstance(w, AbstractWires) for w in (work_wires, base.wires, control_wires)
+        ) and Wires.shared_wires([work_wires, base.wires + control_wires]):
             raise ValueError("work_wires must not overlap with the operator or control_wires.")
 
         accepted = ("zeroed", "borrowed")
         if work_wire_type not in accepted:
             raise ValueError(f"work_wire_type must be one of {accepted}. Got '{work_wire_type}'.")
 
-        if control_values is None:
-            control_values = [True] * len(control_wires)
-
-        if isinstance(control_values, (int, bool)):
-            control_values = [bool(control_values)]
-
-        if len(control_values) != len(control_wires):
-            raise ValueError("control_values should be the same length as control_wires")
-
-        if isinstance(control_values, (list, tuple)):
-            control_values = qp.math.asarray(control_values, like=control_values[0])
-
-        control_values = qp.math.cast(control_values, dtype=bool)
+        control_values = _setup_control_values(control_values, len(control_wires))
 
         self._base = base
         self._control_wires = control_wires
@@ -176,51 +188,6 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
             self._init_args["work_wires"] = work_wires
 
         super().__init__(**self._init_args)
-
-    @override
-    def __abstract_init__(  # pylint: disable=too-many-arguments,arguments-differ
-        self,
-        base: Operator,
-        control_wires: WiresLike | AbstractWires,
-        control_values: int | bool | Sequence[int | bool] | AbstractArray | None = None,
-        work_wires: WiresLike | AbstractWires | None = None,
-        work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
-    ):
-        # abstractify the wires
-        if work_wires is None:
-            work_wires = Wire[0]
-        if not isinstance(work_wires, AbstractWires):
-            work_wires = abstractify(Wires(work_wires))
-        if not isinstance(control_wires, AbstractWires):
-            control_wires = abstractify(Wires(control_wires))
-
-        # abstractify control values
-        if not isinstance(control_values, AbstractArray):
-            control_values = Bool[len(control_wires)]
-
-        # abstractify the base
-        base = abstractify(base)
-
-        # initialize the interface properties
-        self._base = base
-        self._control_wires = control_wires
-        self._control_values = control_values
-        self._work_wires = work_wires
-        self._work_wire_type = work_wire_type
-
-        if "base" in self._init_args:
-            self._init_args["base"] = base
-
-        if "control_wires" in self._init_args:
-            self._init_args["control_wires"] = control_wires
-
-        if "control_values" in self._init_args:
-            self._init_args["control_values"] = control_values
-
-        if "work_wires" in self._init_args:
-            self._init_args["work_wires"] = work_wires
-
-        super().__abstract_init__(**self._init_args)
 
     def __init_subclass__(cls, is_baseclass=False) -> None:
         super().__init_subclass__(is_baseclass)
@@ -629,6 +596,7 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
 
 
 @list_decomps.register
+@QueuingManager.stop_recording()
 def _list_controlled_decomps(op: ControlledOp2) -> DecompCollection:
     """Get all the decomposition rules applicable to this operator."""
 
@@ -872,18 +840,14 @@ def _ctrl_abstract(
             work_wire_type=work_wire_type,
         )
 
-    if not num_zero_control_values:
-        return qp.ctrl(
-            op,
-            control=control_wires,
-            work_wires=work_wires,
-            work_wire_type=work_wire_type,
-        )
-
-    return qp.ctrl(
+    # if control values are all zeroes, first see if we can dispatch to a special type
+    # then run abstractify to promote control values to being boolean if it wasn't
+    # turned into a special type.
+    op = qp.ctrl(
         op,
         control=control_wires,
-        control_values=Bool[len(control_wires)],
+        control_values=None if num_zero_control_values == 0 else Bool[len(control_wires)],
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )
+    return abstractify(op)

@@ -523,6 +523,23 @@ class AbstractWires:
             return True
         return len(instance) == self._num_wires
 
+    def __iter__(self):
+        # without this, list(Wire[4]) gives infinite loop
+        for _ in range(self._num_wires):
+            yield AbstractWires(1)
+
+    def __getitem__(self, item):
+        if self._num_wires < 0:
+            raise IndexError("Cannot index into an AbstractWires with unknown number of wires.")
+        if isinstance(item, int):
+            if item >= self._num_wires:
+                raise IndexError(f"{item} out of bounds for {self}.")
+            return AbstractWires(1)
+        if isinstance(item, slice):
+            new_start_stop_step = item.indices(self._num_wires)
+            return AbstractWires(len(range(*new_start_stop_step)))
+        raise IndexError(f"Cannot index into an AbstractWires with {item}.")
+
 
 class _AbstractWireTypeFactory(AbstractWires):
     """

@@ -35,7 +35,7 @@ from pennylane.math import ceil_log2
 from pennylane.ops import CNOT, CZ, BasisState, X, cond, ctrl, pauli_measure
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.typing import AbstractArray, Bool, Int, TensorLike, Wire
+from pennylane.typing import AbstractArray, AbstractWires, Bool, Int, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .arithmetic import TemporaryAND
@@ -218,7 +218,7 @@ class QROM(Operator2):
         control_wires = Wires(control_wires)
         target_wires = Wires(target_wires)
 
-        if isinstance(bitstrings[0], str):
+        if not isinstance(bitstrings, AbstractArray) and isinstance(bitstrings[0], str):
             bitstrings = np.array(
                 list(map(lambda bitstring: [int(bit) for bit in bitstring], bitstrings))
             )
@@ -227,14 +227,14 @@ class QROM(Operator2):
             bitstrings = math.array(bitstrings)
 
         work_wires = Wires(() if work_wires is None else work_wires)
-
-        _wires_are_traced = any(
+        _wires_are_abstract = any(
+            isinstance(ws, AbstractWires) for ws in (control_wires, target_wires, work_wires)
+        )
+        _wires_are_traced = (not _wires_are_abstract) and any(
             math.is_abstract(w) for ws in (control_wires, target_wires, work_wires) for w in ws
         )
 
-        # Wire overlap validation must be skipped when wires are JAX tracers,
-        # as their concrete values are not available during tracing.
-        if not _wires_are_traced:
+        if not _wires_are_traced and not _wires_are_abstract:
             if len(work_wires) != 0:
                 if any(wire in work_wires for wire in control_wires):
                     raise ValueError("Control wires should be different from work wires.")
@@ -252,29 +252,10 @@ class QROM(Operator2):
                 "control wires are required."
             )
 
-        if bitstrings[0].shape[0] != len(target_wires):
+        if bitstrings.shape[1] != len(target_wires):
             raise ValueError("Bitstring length must match the number of target wires.")
 
         super().__init__(bitstrings, control_wires, target_wires, work_wires, clean)
-
-    # pylint: disable-next=arguments-differ, too-many-arguments
-    def __abstract_init__(
-        self,
-        bitstrings: AbstractArray | TensorLike | Sequence[str],
-        control_wires: AbstractArray | WiresLike,
-        target_wires: AbstractArray | WiresLike,
-        work_wires: AbstractArray | WiresLike,
-        clean=True,
-    ):
-        if isinstance(bitstrings, Sequence) and isinstance(bitstrings[0], str):
-            bitstrings = AbstractArray(shape=(len(bitstrings), len(bitstrings[0])), dtype=np.int64)
-        super().__abstract_init__(
-            bitstrings,
-            control_wires=Wire[len(control_wires)],
-            target_wires=Wire[len(target_wires)],
-            work_wires=Wire[len(work_wires)],
-            clean=clean,
-        )
 
     @property
     def wires(self):

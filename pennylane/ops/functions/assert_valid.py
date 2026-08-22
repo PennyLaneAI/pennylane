@@ -22,6 +22,7 @@ import pickle
 from collections import defaultdict
 from functools import partial
 from string import ascii_lowercase
+from types import NoneType
 
 import numpy as np
 import scipy.sparse
@@ -39,6 +40,7 @@ from pennylane.ops.op_math.controlled2 import ControlledOp2
 from pennylane.ops.op_math.pow2 import Pow2
 from pennylane.ops.op_math.symbolicop2 import SymbolicOp2
 from pennylane.pytrees import flatten
+from pennylane.typing import AbstractArray, AbstractWires
 from pennylane.wires import Wires
 
 from .equal import assert_equal
@@ -708,6 +710,15 @@ def _assert_valid_operator2(
     assert isinstance(op.dynamic_argnames, tuple), "dynamic_argnames must be a tuple"
     assert_equal(type(op)(**op.arguments), op)
 
+    # check abstractify
+    abstractified_op = abstractify(op)
+    leaves = flatten(abstractified_op)[0]
+    for l in leaves:
+        if not isinstance(l, (AbstractArray, AbstractWires, NoneType, CompressedResourceOp)):
+            raise AssertionError(
+                f"Op not properly abstractified. {abstractified_op} had non-abstract leaf {l}."
+            )
+
     if not isinstance(op, (Adjoint2, ControlledOp2, Pow2)):
 
         error_msg = "ndim_params must have the same length as dynamic_argnames"
@@ -721,9 +732,8 @@ def _assert_valid_operator2(
     for (name, val), dim in zip(op.wire_args.items(), op.wire_sizes, strict=True):
         # make sure wires have the right sizes
         if op.wire_sizes:
-            assert (dim is None) or (
-                len(val) == dim
-            ), f"Wires argument {name} has an invalid dimension."
+            error_msg = f"Wires argument {name} has an invalid dimension."
+            assert dim is None or len(val) == dim, error_msg
 
     for name, val in op.hybrid_args.items():
         leaves, _ = flatten(val, is_leaf=lambda l: isinstance(l, Operator))

@@ -27,7 +27,7 @@ from textwrap import dedent
 from typing import overload
 
 import pennylane as qp
-from pennylane.core import queuing
+from pennylane.core import QueuingManager, queuing
 from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.pytrees import flatten
 from pennylane.typing import AbstractArray, AbstractWires
@@ -395,6 +395,7 @@ class DecompositionRule:
     def __repr__(self):
         return f"DecompositionRule(name={self.name})"
 
+    @QueuingManager.stop_recording()
     def compute_resources(self, *args, **kwargs) -> Resources:
         """Computes the resources required to implement this decomposition rule."""
         if self._compute_resources is None:
@@ -1110,6 +1111,8 @@ def _is_abstract_and_fixed(val):
     # already abstractifies everything. We only need to make sure that it's fixed.
     if isinstance(val, (AbstractArray, AbstractWires)):
         return val.shape_fixed
+    if isinstance(val, Wires):
+        return False  # base case to avoid infinite recursion
     leaves, _ = flatten(val, is_leaf=lambda op: isinstance(op, Wires))
     return all(_is_abstract_and_fixed(leaf) for leaf in leaves)
 

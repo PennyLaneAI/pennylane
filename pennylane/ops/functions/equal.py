@@ -521,13 +521,13 @@ def _check_dynamic_value(
     is_aa1 = isinstance(dval1, AbstractArray)
     is_aa2 = isinstance(dval2, AbstractArray)
 
-    # Note: A mixed state (is_aa1 != is_aa2) is structurally impossible under normal
-    # execution because Operator2's metaclass ensures abstract operators are fully abstract
-    # and so the wires check would fail first
     if is_aa1 and is_aa2:
         if dval1 == dval2:
             return True
         return f"op1 and op2 have different AbstractArray type specifiers for {dname}: Got {dval1} and {dval2}."
+
+    if is_aa1 != is_aa2:
+        return f"Unmatched representations for {dname}. Got {dval1} and {dval2}."
 
     if math.is_abstract(dval1) or math.is_abstract(dval2):
         return (
@@ -716,20 +716,38 @@ def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
         return f"op1 and op2 have different arithmetic depths. Got {op1.arithmetic_depth} and {op2.arithmetic_depth}"
 
     # op.base.wires compared in return
-    if op1.work_wires != op2.work_wires:
-        return f"op1 and op2 have different work wires. Got {op1.work_wires} and {op2.work_wires}"
+    wire_comparison = _check_wire_value("work_wires", op1.work_wires, op2.work_wires)
+    if isinstance(wire_comparison, str):
+        return wire_comparison
 
     if op1.work_wire_type != op2.work_wire_type:
         return f"op1 and op2 have different work wire types. Got {op1.work_wire_type} and {op2.work_wire_type}"
 
-    # for abstract operators, only check the length of control values and wires
-    if isinstance(op1, Controlled2) and op1.is_abstract:
+    if isinstance(op1, Controlled2):
+        if isinstance(op1.control_wires, AbstractWires):
+            if not isinstance(op2.control_wires, AbstractWires):
+                return f"Mismatched representations for control_wires. Got {op1.control_wires} and {op2.control_wires}"
+            if not op1.control_wires == op2.control_wires:
+                return f"Different numbers of abstract control_wires. Got {op1.control_wires} and {op2.control_wires}"
+        elif isinstance(op2.control_wires, AbstractWires):
+            return f"Mismatched representations for control_wires. Got {op1.control_wires} and {op2.control_wires}."
+        else:
+            # both control wires are concrete
+            if isinstance(op1.control_values, AbstractArray):
+                if (
+                    isinstance(op2.control_values, AbstractArray)
+                    and op1.control_values != op2.control_values
+                ):
+                    return f"op1 and op2 have different control values. Got {op1.control_values} and {op2.control_values}."
+            elif isinstance(op2.control_values, AbstractArray):
+                return f"op1 and op2 have different control values. Got {op1.control_values} and {op2.control_values}."
+            else:
+                # Check equivalence of concrete controlled values
+                op1_control_dict = dict(zip(op1.control_wires, op1.control_values, strict=True))
+                op2_control_dict = dict(zip(op2.control_wires, op2.control_values, strict=True))
 
-        if op1.control_wires != op2.control_wires:
-            return f"op1 and op2 have different control wires. Got {op1.control_wires} and {op2.control_wires}"
-
-        if op1.control_values != op2.control_values:
-            return f"op1 and op2 have different control values. Got {op1.control_values} and {op2.control_values}"
+                if op1_control_dict != op2_control_dict:
+                    return f"op1 and op2 have different control dictionaries. Got {op1_control_dict} and {op2_control_dict}"
 
     else:
         # Check equivalence of concrete controlled values

@@ -781,7 +781,11 @@ class TestOperator2AssertValid:
             wire_argnames = ("wires",)
 
             def __init__(self, phi, wires):  # pylint: disable=unused-argument
-                super().__init__(1.0, wires=wires)  # always 1.0, ignores ``phi``
+                if isinstance(phi, qp.typing.AbstractArray):
+                    # so abstractify check isn't triggered
+                    super().__init__(phi, wires)
+                else:
+                    super().__init__(1.0, wires=wires)  # always 1.0, ignores ``phi``
 
         op = IgnoresParams(0.5, wires=0)
         with pytest.raises(AssertionError, match=r"bind_new_parameters must be able to update"):
@@ -813,6 +817,36 @@ class TestOperator2AssertValid:
                 HybridOp(np.pi, wires=0, ops=[0.2, NoCopyOp(0.25, 1), SingleRZ(0.5, 0)]),
                 skip_pickle=True,
             )
+
+    def test_cant_handle_AbstractArray_inputs(self):
+        """Test an Operator that can't handle AbstractArray inputs."""
+
+        class NoAAOp(qp.core.Operator2):
+
+            dynamic_argnames = "x"
+
+            def __init__(self, x, wires):
+                _ = qp.math.allclose(x, 1)
+                # 2 * AA will cause an error
+                super().__init__(x, wires)
+
+        op = NoAAOp(0.5, 0)
+        with pytest.raises(AttributeError, match="'AbstractArray' object has no attribute 'numpy'"):
+            assert_valid(op)
+
+    def test_improperly_abstractified(self):
+        """Test an error will be raised in an operator isn't properly abstractified."""
+
+        class BadAAOp(qp.core.Operator2):
+
+            dynamic_argnames = "x"
+
+            def __init__(self, x, wires):
+                super().__init__(1, wires)
+
+        op = BadAAOp(0.5, 0)
+        with pytest.raises(AssertionError, match="Op not properly abstractified. "):
+            assert_valid(op)
 
 
 def create_op_instance(c):

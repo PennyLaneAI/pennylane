@@ -2068,18 +2068,18 @@ class TestSymbolicOpComparison:
         op2 = Controlled(base2, control_wires=2, work_wires=wire2, work_wire_type=wwt2)
         # res is given by the wire parametrization, but is overwritten to False if the work
         # wire types differ. match is only used if res=False, and is adjusted if res was True
-        match = "op1 and op2 have different work wires."
+        match = "op1 and op2 have different wires for 'work_wires'."
         if res and wwt1 != wwt2:
             match = "op1 and op2 have different work wire types."
             res = False
-
-        assert qp.equal(op1, op2) is res
 
         if res:
             assert_equal(op1, op2)
         else:
             with pytest.raises(AssertionError, match=match):
                 assert_equal(op1, op2)
+
+        assert qp.equal(op1, op2) is res
 
     def test_controlled_arithmetic_depth(self):
         """The depths of controlled operators are different due to nesting"""

@@ -141,6 +141,7 @@ def test_abstract_init(
     x_wires, y_wires, output_wires, mod, work_wires, expected_mod, expected_num_work_wires
 ):  # pylint: disable=too-many-arguments
     """Test that abstract init mirrors concrete init for mod defaulting and work wire truncation."""
+
     abstract_op = OutMultiplier(
         Wire[len(x_wires)],
         Wire[len(y_wires)],

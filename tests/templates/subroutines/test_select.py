@@ -224,8 +224,8 @@ class TestSelect:
         assert resource_obj.num_gates == 4
 
         expected_counts = {
-            qp.ctrl(qp.X(Wire[1]), Wire[2], control_values=Bool[2]): 3,
-            _ctrl_abstract(qp.Y, Wire[2], num_zero_control_values=0): 1,
+            qp.ctrl(qp.X(Wire[1]), Wire[2], control_values=Bool[2], work_wires=Wire[0]): 3,
+            qp.ctrl(qp.Y(Wire[1]), Wire[2], control_values=Bool[2], work_wires=Wire[0]): 1,
         }
         assert resource_obj.gate_counts == expected_counts
 
@@ -261,13 +261,13 @@ class TestSelect:
 
         if partial:
             expected_counts = {
-                qp.ctrl(qp.X(Wire[1]), Wire[2], control_values=Bool[2]): 1,
-                qp.ctrl(qp.X(Wire[1]), Wire[1]): 1,
+                qp.ctrl(qp.X(Wire[1]), Wire[2], control_values=Bool[2], work_wires=Wire[0]): 1,
+                qp.ctrl(qp.X(Wire[1]), Wire[1], work_wires=Wire[0]): 1,
                 _ctrl_abstract(qp.SWAP, Wire[1]): 1,
             }
         else:
             expected_counts = {
-                qp.ctrl(qp.X(Wire[1]), Wire[2], control_values=Bool[2]): 2,
+                qp.ctrl(qp.X(Wire[1]), Wire[2], control_values=Bool[2], work_wires=Wire[0]): 2,
                 _ctrl_abstract(qp.SWAP, Wire[2], num_zero_control_values=1): 1,
             }
         assert resource_obj.gate_counts == expected_counts

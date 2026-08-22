@@ -95,10 +95,6 @@ class FlipSign(Operator2):
         state = self._canonicalize_state(state, num_wires)
         super().__init__(state, wires)
 
-    def __abstract_init__(self, state, wires):  # pylint: disable=arguments-differ
-        state = self._canonicalize_state(state, len(wires))
-        super().__abstract_init__(state, wires)
-
 
 def _flip_sign_resources(state: tuple[int], wires: WiresLike):
     num_wires = len(wires)
