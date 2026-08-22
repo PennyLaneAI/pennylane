@@ -54,6 +54,7 @@ from pathlib import Path
 try:
     import triton
     from triton.backends.compiler import GPUTarget
+    from triton.compiler import ASTSource
     from triton.tools import compile as triton_compile_tool
 except ImportError as exc:
     raise ImportError("Triton decoders require installed `triton` Python package.") from exc
@@ -305,8 +306,7 @@ def _compile_kernel(  # pylint: disable=too-many-arguments
     constants = {name: _wrap_constexpr(value) for name, value in constexpr.items()}
 
     # Adapted from Triton's python/triton/tools/compile.py:compile_kernel
-    kernel.create_binder()
-    ast_source = kernel.ASTSource(fn=kernel, constexprs=constants, signature=signature, attrs={})
+    ast_source = ASTSource(fn=kernel, constexprs=constants, signature=signature, attrs={})
 
     target_arch = int(arch) if backend == "cuda" and arch.isdigit() else arch
     target_obj = GPUTarget(backend, target_arch, warp_size)

@@ -217,8 +217,8 @@
   ```
 
   ```pycon
-  >>> specs_result = qp.specs(circuit, level=0)(5) 
-  >>> print(specs_result) 
+  >>> specs_result = qp.specs(circuit, level=0)(5)
+  >>> print(specs_result)
   Device: lightning.qubit
   Device wires: 1
   Shots: Shots(total=None)
@@ -239,8 +239,8 @@
   These symbolic resources include expressions with variables which can substituted for concrete values to compute the associated resources for a circuit, via the ``subs`` method.
 
   ```pycon
-  >>> res = specs_result.resources 
-  >>> print(res.subs(a=5)) 
+  >>> res = specs_result.resources
+  >>> print(res.subs(a=5))
   Quantum operations:
   - Total: 7
     - Hadamard: 1
@@ -971,8 +971,11 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Removes `pennylane.transforms.decompose.DecomposeInterpreter`
+* Removes `pennylane.transforms.decompose.DecomposeInterpreter`. Decompositions are no longer supported for the capture-without-qjit workflow.
   [(#9915)](https://github.com/PennyLaneAI/pennylane/pull/9915)
+
+* Updated :mod:`pennylane.pytrees` to consider `None` a Pytree. This makes PennyLane Pytrees more consistent with JAX Pytrees.
+  [(#10045)](https://github.com/PennyLaneAI/pennylane/pull/10045)
 
 * The resource module JSON parser used by :func:`~.specs` to read Catalyst data has been revamped to match the new JSON structure produced by Catalyst.
   [(#9942)](https://github.com/PennyLaneAI/pennylane/pull/9942)
@@ -1270,7 +1273,7 @@
   singledispatch function `custom_ctrl_dispatch` as opposed to relying on hard-coded logic.
   [(#9798)](https://github.com/PennyLaneAI/pennylane/pull/9798)
 
-* `capture.enable()`, `capture.disable()` are updated to use `ContextVar` for thread safety. A `capture.toggle_ctx` 
+* `capture.enable()`, `capture.disable()` are updated to use `ContextVar` for thread safety. A `capture.toggle_ctx`
   context manager that temporarily enables or disables capture is added.
   [(#10016)](https://github.com/PennyLaneAI/pennylane/pull/10016)
 
@@ -1306,6 +1309,12 @@
   [(#9621)](https://github.com/PennyLaneAI/pennylane/pull/9621)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed :func:`~pennylane.backline.css_bp_decoder` and the other Triton decoders so they can be
+  compiled on a machine with no usable GPU. The ahead-of-time build called
+  ``JITFunction.create_binder()``, which asks the local machine for a target through
+  ``driver.active.get_current_target()`` and fails with ``0 active drivers`` where there is none.
+  [(#10046)](https://github.com/PennyLaneAI/pennylane/pull/10046)
 
 * Fixed a bug where the ``flip_zero_control`` decomposition modifier raised a
   ``TracerIntegerConversionError`` under program capture, because the control-value flipping
@@ -1435,7 +1444,7 @@
   one of its subclasses returned ``True`` if they shared the same data and wires.
   [(#9749)](https://github.com/PennyLaneAI/pennylane/pull/9749)
 
-* Qubit TCDQ expval function now returns the variance rather than standard deviation 
+* Qubit TCDQ expval function now returns the variance rather than standard deviation
   of the estimator. Qubit and qudit MMD loss functions now have unbiased gradients.
   [(#10025)](https://github.com/PennyLaneAI/pennylane/pull/10025)
 
