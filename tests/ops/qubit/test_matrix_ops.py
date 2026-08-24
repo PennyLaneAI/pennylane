@@ -30,6 +30,7 @@ from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math.decompositions.unitary_decompositions import _compute_udv
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform, fractional_matrix_power
+from pennylane.typing import Complex, Wire
 from pennylane.wires import Wires
 
 
@@ -666,6 +667,69 @@ class TestQubitUnitary:
         expected = U
         assert np.allclose(res_static, expected, atol=tol)
         assert np.allclose(res_dynamic, expected, atol=tol)
+
+
+class TestQubitUnitaryDecompositions:
+    """Unit tests for decomposition rules registered for QubitUnitary."""
+
+    def test_conditions(self):
+        """Test the registered applicability conditions for each rule."""
+
+        rules = qp.list_decomps(qp.QubitUnitary)
+        for name in ("zyz", "zxz", "xzx", "xyx", "rot"):
+            rule = rules[name]
+            assert rule.is_applicable(Complex[2, 2], Wire[1])
+            assert not rule.is_applicable(Complex[4, 4], Wire[2])
+            assert not rule.is_applicable(Complex[8, 8], Wire[3])
+
+        rule = rules["two_qubit_decomp_rule"]
+        assert not rule.is_applicable(Complex[2, 2], Wire[1])
+        assert rule.is_applicable(Complex[4, 4], Wire[2])
+        assert not rule.is_applicable(Complex[8, 8], Wire[3])
+
+        rule = rules["multi_qubit_decomp_rule"]
+        assert not rule.is_applicable(Complex[2, 2], Wire[1])
+        assert not rule.is_applicable(Complex[4, 4], Wire[2])
+        assert rule.is_applicable(Complex[8, 8], Wire[3])
+        assert rule.is_applicable(Complex[32, 32], Wire[5])
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_single_qubit_decomposition_rule(self):
+        """Tests that single-qubit decomposition rules work."""
+
+        U = unitary_group.rvs(2, random_state=0)
+        op = qp.QubitUnitary(U, wires=[0])
+        for rule in qp.list_decomps(op):
+            _test_decomposition_rule(op, rule)
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_two_qubit_decomposition_rule(self):
+        """Tests that two-qubit decomposition rules work."""
+
+        U = unitary_group.rvs(4, random_state=1)
+        op = qp.QubitUnitary(U, wires=[0, 1])
+        for rule in qp.list_decomps(op):
+            _test_decomposition_rule(op, rule)
+
+    @pytest.mark.parametrize("num_wires", [3, 4, 5])
+    def test_multi_qubit_decomposition(self, num_wires):
+        """Test the multi-qubit rule with AnnotatedQueue."""
+
+        U = qp.QFT.compute_matrix(range(num_wires))
+        op = qp.QubitUnitary(U, wires=range(num_wires))
+        for rule in qp.list_decomps(op):
+            _test_decomposition_rule(op, rule)
+
+    @pytest.mark.xfail(reason="investigating... [sc-128410]")
+    @pytest.mark.parametrize("num_wires", [3, 4, 5])
+    @pytest.mark.usefixtures("enable_capture")
+    def test_multi_qubit_decomposition_capture(self, num_wires):
+        """Test the multi-qubit rule with AnnotatedQueue."""
+
+        U = qp.QFT.compute_matrix(range(num_wires))
+        op = qp.QubitUnitary(U, wires=range(num_wires))
+        for rule in qp.list_decomps(op):
+            _test_decomposition_rule(op, rule)
 
 
 class TestWalshHadamardTransform:
