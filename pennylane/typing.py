@@ -477,7 +477,7 @@ class AbstractWires:
     def __eq__(self, other) -> bool:
         if isinstance(other, AbstractWires):
             return self._num_wires == other._num_wires
-        return NotImplemented
+        return NotImplemented  # pragma: no cover
 
     @property
     def shape_fixed(self) -> bool:
