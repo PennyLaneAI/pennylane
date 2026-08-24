@@ -412,7 +412,7 @@ class TestPartialUnaryStatePreparation:
         applicable_rule = int(provide_work_wires) if num_entries > 1 else 1
 
         for j, rule in enumerate(list_decomps(PartialUnaryStatePreparation)):
-            applicable = rule.is_applicable(num_entries, num_wires, num_work_wires)
+            applicable = rule.is_applicable(coefficients, wires, indices, work_wires)
             assert applicable is (j == applicable_rule)
             if not applicable:
                 continue
@@ -438,7 +438,7 @@ class TestPartialUnaryStatePreparation:
         rng.shuffle(work_wires)
 
         for j, rule in enumerate(list_decomps(PartialUnaryStatePreparation)):
-            applicable = rule.is_applicable(num_entries, num_wires, num_work_wires)
+            applicable = rule.is_applicable(coefficients, wires, indices, work_wires)
             assert applicable is (j == 1)
             if not applicable:
                 continue
