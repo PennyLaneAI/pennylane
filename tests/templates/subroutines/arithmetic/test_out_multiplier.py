@@ -437,6 +437,58 @@ class TestOutMultiplier:
         for op1, op2 in zip(multiplier_decomposition, op_list):
             qp.assert_equal(op1, op2)
 
+    @pytest.mark.capture
+    def test_qft_decomposition_rule_capture(self):
+        """Test that the QFT rule supports an empty work-wire register under capture."""
+        jnp = pytest.importorskip("jax.numpy")
+
+        def decomposition(x_wires, y_wires, output_wires, work_wires):
+            _out_multiplier_with_qft(
+                x_wires,
+                y_wires,
+                output_wires,
+                mod=16,
+                work_wires=work_wires,
+                output_wires_zeroed=False,
+            )
+
+        plxpr = qp.capture.make_plxpr(decomposition, autograph=False)(
+            jnp.array([0, 1]),
+            jnp.array([2, 3]),
+            jnp.array([4, 5, 6, 7]),
+            jnp.array([8, 9]),
+        )
+        assert any(eqn.primitive.name == "PhaseAdder" for eqn in plxpr.jaxpr.eqns)
+
+    @pytest.mark.catalyst
+    def test_qft_decomposition_rule_qjit(self):
+        """Test that Catalyst lowers the captured QFT decomposition rule to MLIR."""
+        jnp = pytest.importorskip("jax.numpy")
+
+        def decomposition(x_wires, y_wires, output_wires, work_wires):
+            _out_multiplier_with_qft(
+                x_wires,
+                y_wires,
+                output_wires,
+                mod=16,
+                work_wires=work_wires,
+                output_wires_zeroed=False,
+            )
+
+        registers = (
+            jnp.array([0, 1]),
+            jnp.array([2, 3]),
+            jnp.array([4, 5, 6, 7]),
+            jnp.array([8, 9]),
+        )
+
+        @qp.qjit(capture=True, target="mlir")
+        @qp.qnode(qp.device("null.qubit", wires=10))
+        def circuit():
+            decomposition(*registers)
+
+        assert 'qref.custom "ControlledSequence"' in circuit.mlir
+
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
         ("x_wires", "y_wires", "output_wires", "mod", "work_wires", "applicable_rules"),
