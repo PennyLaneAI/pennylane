@@ -222,6 +222,12 @@ class TrotterCDF(Operator2):
 
             e^{-i H_l \tau} = \mathcal{U}^{(l)\dagger}\, e^{-i D_l \tau}\, \mathcal{U}^{(l)} .
 
+        The Givens-rotation network used to synthesize :math:`\mathcal{U}^{(l)}` is not hand-rolled
+        here; :class:`~.BasisRotation` decomposes any orthogonal/unitary single-particle rotation
+        into a sequence of :class:`~.SingleExcitation`/:class:`~.PhaseShift` gates on its own (see
+        its ``compute_decomposition``), so this template only supplies the leaf and lets
+        :class:`~.BasisRotation` handle the gate-level realization.
+
         This is implemented by applying :math:`\mathcal{U}^{(l)}` (to the :math:`\alpha` and
         :math:`\beta` spin channels separately), the diagonal rotations for :math:`e^{-i D_l \tau}`
         (see steps 3-4 below), and the inverse rotation :math:`\mathcal{U}^{(l)\dagger}`. Consecutive
@@ -332,7 +338,7 @@ def _apply_system_basis_rotation(U, wires):
 
 def _merge_leaves(U_prev, U_curr):
     """Fragment-rotation merge rule: conjugate-transpose of ``U_prev`` times ``U_curr``."""
-    return U_prev.conj().T @ U_curr
+    return _transpose_leaf(U_prev) @ U_curr
 
 
 def _transpose_leaf(U):
@@ -348,8 +354,12 @@ def _normalize_leaf_determinant(hamiltonian):
     :math:`\pm 1` gauge, so leaves with *mixed* determinants -- e.g. an ``eigh`` one-body leaf with
     ``det = -1`` next to ``expm`` two-body leaves with ``det = +1``, as produced by
     :func:`~pennylane.qchem.factorize` for many molecules -- would be rotated into inconsistent bases
-    and realize a different Hamiltonian. Negating one orbital column leaves the projector
-    :math:`|v\rangle\langle v|`, and hence the fragment, unchanged, so this is a physical no-op.
+    and realize a different Hamiltonian. Here :math:`v` is a single column of the leaf, i.e. one of
+    the fragment's diagonalizing orbitals; the fragment only depends on it through the projector
+    :math:`|v\rangle\langle v|` (the number operator built from that orbital), and negating the
+    column leaves this projector unchanged since :math:`|-v\rangle\langle -v| = |v\rangle\langle v|`.
+    So flipping one column's sign is a physical no-op on the fragment -- it only flips the leaf's
+    determinant.
     """
     leaves = hamiltonian["leaf_tensors"]
     signs = math.sign(math.linalg.det(leaves))  # (num_fragments,)
@@ -379,6 +389,9 @@ def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, dou
             #   IsingZZ(lambda tau / 2) = IsingZZ(0.5 * lambda * first_order_time_step),
             # i.e. beta_twoB = 0.5. The two visits per Trotter step accumulate
             # IsingZZ(lambda * dt_trotter / 2), i.e. IsingZZ(lambda t / 2) over the full evolution.
+            # ``angle`` below is already the *complete* IsingZZ rotation angle. Any further halving
+            # inside ``_emit_two_body_isingzz`` (for the genuine-controlled CRZ-style synthesis) is
+            # an unrelated gate-decomposition detail, not a second physics prefactor.
             angle = 0.5 * Z[wire_idx0 // 2, wire_idx1 // 2] * first_order_time_step
             _emit_two_body_isingzz(
                 angle, wires[wire_idx0], wires[wire_idx1], control_wires, double_phase
@@ -414,11 +427,23 @@ def _apply_one_body_diagonal(Z_one_body, wires, first_order_time_step, control_w
 
 
 def _energy_shift(hamiltonian):
-    """Zero-of-energy shift applied as a ``GlobalPhase`` (or control ``RZ``)."""
+    r"""Zero-of-energy shift applied as a ``GlobalPhase`` (or control ``RZ``).
+
+    Collects ``nuc_constant`` (:math:`C`) and every identity contribution produced by the
+    :math:`n = (I - Z)/2` substitutions into a single scalar :math:`s` (see "Implementation
+    Details", step 5, in :class:`~.TrotterCDF`'s docstring for the full derivation):
+
+    .. math::
+
+        s = C + \sum_p \epsilon_p - \frac{1}{2}\sum_{l\ge 1}\sum_{p,q} \lambda^{(l)}_{pq}
+              + \frac{1}{4}\sum_{l\ge 1}\sum_{p} \lambda^{(l)}_{pp} ,
+
+    where :math:`\epsilon_p =` ``core_tensors[0][p, p]`` and :math:`\lambda^{(l)}_{pq} =`
+    ``core_tensors[l][p, q]``. Below, ``phase_from_mod_one_body`` is :math:`\sum_p \epsilon_p`
+    and ``phase_from_two_body`` is the two-body sum/trace pair.
+    """
     nuc_constant = hamiltonian.get("nuc_constant", 0.0)
     Z_tensor = hamiltonian["core_tensors"]
-    # Eq. (A29) first line: nuc + sum_k Z^(0)_{k,k}
-    #   - (sum_{l,k,l'} Z^(l)_{k,l'}) / 2 + (sum_{l,k} Z^(l)_{k,k}) / 4
     phase_from_mod_one_body = math.trace(Z_tensor[0])
     phase_from_two_body = (
         -math.sum(Z_tensor[1:]) / 2 + math.sum(math.trace(Z_tensor[1:], axis1=1, axis2=2)) / 4

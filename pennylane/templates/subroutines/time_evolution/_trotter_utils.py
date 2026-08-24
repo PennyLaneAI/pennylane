@@ -57,6 +57,11 @@ def _emit_two_body_isingzz(angle, wire_a, wire_b, control_wires, double_phase):
     block by the caller, so here we only emit the bare ``IsingZZ(angle)``. For the genuine
     controlled circuit every ``IsingZZ`` is individually controlled (a genuine
     controlled-``IsingZZ``) at the full ``angle``, so the control-0 branch is the identity.
+
+    ``angle`` is already the complete rotation angle. The ``angle / 2`` below is unrelated: it's the standard
+    controlled-RZ synthesis (``CNOT``; ``RZ(angle/2)``; ``CNOT``; ``RZ(-angle/2)``; ``CNOT``)
+    used to turn the bare ``CNOT; RZ(angle); CNOT`` realization of ``IsingZZ(angle)`` into a
+    genuinely controlled version.
     """
     if len(control_wires) == 0 or double_phase:
         IsingZZ(angle, [wire_a, wire_b])
@@ -171,6 +176,8 @@ def _run_trotter_steps(
 
         one_body_fragment()
 
+        # Second half of the symmetric second-order Suzuki step: revisits each
+        # two-body fragment in reverse order, still at forward time (first_order_time_step).
         prev_fragment_idx_backward = 0
         for_loop(num_two_body_fragments, 0, -1)(two_body_fragments)(prev_fragment_idx_backward)
 
