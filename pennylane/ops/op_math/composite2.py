@@ -20,7 +20,7 @@ import abc
 from collections.abc import Callable
 
 # pylint: disable=invalid-sequence-index
-from typing import Sequence
+from typing import Sequence, override
 
 import pennylane as qp
 from pennylane import math
@@ -58,6 +58,13 @@ class CompositeOp2(Operator2, is_baseclass=True):
         self._overlapping_ops = None
         self._pauli_rep = self._build_pauli_rep() if _init_pauli_rep is None else _init_pauli_rep
         self.queue()
+
+    @override
+    def __abstract_init__(self, operands, _init_pauli_rep=None):  # pylint: disable=arguments-differ
+        super().__abstract_init__(operands, _init_pauli_rep=None)
+        self._hash = None
+        self._has_overlapping_wires = None
+        self._overlapping_ops = None
 
     def __repr__(self):
         return f" {self._op_symbol} ".join(
