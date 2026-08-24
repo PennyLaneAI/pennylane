@@ -18,10 +18,10 @@ Tests for the Incrementer template.
 import numpy as np
 import pytest
 
-from pennylane import Incrementer, decompose, device, qnode
+from pennylane import Incrementer, ctrl, decompose, device, qnode
 from pennylane.decomposition import list_decomps
 from pennylane.measurements import state
-from pennylane.ops import CNOT, Controlled, PauliX
+from pennylane.ops import CNOT, PauliX
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
 from pennylane.templates import BasisEmbedding, TemporaryAND
 
@@ -30,8 +30,8 @@ from pennylane.templates import BasisEmbedding, TemporaryAND
 @pytest.mark.parametrize(
     "wires, work_wires",
     [
-        ((0, 1, 2, 3, 4), (3, 4)),  # enough work wires for work wire decomp
-        ((0, 1, 2, 3), (3,)),  # not enough work wires... uses fallback
+        ((0, 1, 2), (3, 4)),  # enough work wires for work wire decomp
+        ((0, 1, 2), (3,)),  # not enough work wires... uses fallback
         ((0, 1, 2), []),  # no work wires
     ],
 )
@@ -163,7 +163,7 @@ def test_controlled_enough_work_wires(
         for control_wire, control_value in zip(control_wires, control_values, strict=True):
             if control_value:
                 PauliX(control_wire)
-        Controlled(Incrementer(wires, work_wires), control_wires)
+        ctrl(Incrementer(wires, work_wires), control_wires)
         return state()
 
     result = np.array(
@@ -204,7 +204,7 @@ def test_controlled_allocates_work_wires(
         for control_wire, control_value in zip(control_wires, control_values, strict=True):
             if control_value:
                 PauliX(control_wire)
-        Controlled(Incrementer(wires, work_wires), control_wires)
+        ctrl(Incrementer(wires, work_wires), control_wires)
         return state()
 
     result = np.array(
@@ -231,7 +231,15 @@ def test_controlled_allocates_work_wires(
     [
         # 1 control
         # enough work wires for work wire decomp
-        ((0, 1, 2, 3, 4, 5), (6, 7, 8, 9, 10, 11), (12,)),
+        pytest.param(
+            (0, 1, 2, 3, 4, 5),
+            (6, 7, 8, 9, 10, 11),
+            (12,),
+            marks=pytest.mark.pl2do(
+                reason="PL 2.0: blocked on supporting wires as arguments to captured "
+                "workflows [sc-127789]."
+            ),
+        ),
         # not enough work wires... uses fallback
         ((0, 1, 2, 3, 4, 5), (6, 7), (8,)),
         # no work wires
@@ -248,12 +256,12 @@ def test_controlled_allocates_work_wires(
 def test_controlled_decomposition_new(wires, work_wires, controls):
     """Tests the decomposition rule implemented with the new system."""
     # Work wires only in incrementer
-    op = Controlled(Incrementer(wires, work_wires), controls, control_values=[1] * len(controls))
+    op = ctrl(Incrementer(wires, work_wires), controls, control_values=[1] * len(controls))
     for rule in list_decomps("C(Incrementer)"):
         _test_decomposition_rule(op, rule)
     # Split work wires between incrementer and control
     split = len(work_wires) // 2
-    op = Controlled(
+    op = ctrl(
         Incrementer(wires, work_wires[:split]),
         controls,
         control_values=[1] * len(controls),
@@ -264,7 +272,7 @@ def test_controlled_decomposition_new(wires, work_wires, controls):
         _test_decomposition_rule(op, rule)
 
     # Work wires only in control
-    op = Controlled(
+    op = ctrl(
         Incrementer(wires, []),
         controls,
         control_values=[1] * len(controls),
