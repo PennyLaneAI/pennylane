@@ -372,7 +372,6 @@ class TestPartialUnaryStatePreparation:
         assert_valid(op, skip_differentiation=True)
 
     @pytest.mark.catalyst
-    @pytest.mark.external
     @pytest.mark.parametrize("provide_work_wires", [False, True])
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
@@ -422,7 +421,6 @@ class TestPartialUnaryStatePreparation:
             assert_pui_correctness(rule, coefficients, indices, wire_specs)
 
     @pytest.mark.catalyst
-    @pytest.mark.external
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
         "num_wires, num_entries, num_work_wires", [(7, 5, 15), (3, 2, 6), (4, 14, 8)]
