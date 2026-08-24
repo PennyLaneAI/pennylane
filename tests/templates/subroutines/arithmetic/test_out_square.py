@@ -318,13 +318,10 @@ class TestOutSquare:
         """Test that the decomposition rules are consistent with the operator, with program
         capture enabled and disabled."""
         if qp.capture.enabled():
-            # qp.ctrl(..., work_wires=...) currently drops the outer Controlled op's own
-            # work_wires when captured and round-tripped through plxpr. This is a pre-existing
-            # capture/ControlledOp2 limitation unrelated to the OutSquare decomposition rules
-            # themselves.
+            # https://github.com/PennyLaneAI/pennylane/issues/10065
             pytest.xfail(
-                "Known issue: qp.ctrl(..., work_wires=...) loses the outer Controlled op's "
-                "work_wires under program capture."
+                "qp.ctrl(..., work_wires=...) loses the outer Controlled op's work_wires "
+                "under program capture (see #10065)."
             )
         op = OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
         for rule in qp.list_decomps(OutSquare):

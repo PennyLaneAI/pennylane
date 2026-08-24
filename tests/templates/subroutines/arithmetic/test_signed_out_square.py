@@ -360,14 +360,10 @@ class TestSignedOutSquare:
         """Test that the decomposition rule is consistent with the operator, with program
         capture enabled and disabled."""
         if qp.capture.enabled():
-            # qp.ctrl(..., work_wires=...) currently drops the outer Controlled op's own
-            # work_wires when captured and round-tripped through plxpr, which desyncs the
-            # gate counts predicted by the resource function from the actual decomposition.
-            # This is a pre-existing capture/ControlledOp2 limitation unrelated to the
-            # SignedOutSquare decomposition rule itself.
+            # https://github.com/PennyLaneAI/pennylane/issues/10065
             pytest.xfail(
-                "Known issue: qp.ctrl(..., work_wires=...) loses the outer Controlled op's "
-                "work_wires under program capture."
+                "qp.ctrl(..., work_wires=...) loses the outer Controlled op's work_wires "
+                "under program capture (see #10065)."
             )
         x_wires, output_wires, work_wires = [0, 1, 2], [3, 4, 5, 6, 7], [8, 9, 10, 11, 12]
         op = SignedOutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
