@@ -51,20 +51,14 @@ def _emit_one_body_rz(angle, target_wire, control_wires, double_phase):
 
 
 def _emit_two_body_isingzz(angle, wire_a, wire_b, control_wires):
-    """Emit a single two-body ``IsingZZ``, bare (no control) or genuinely controlled.
+    """Emit a single, individually genuinely-controlled two-body ``IsingZZ``.
 
-    The double-phase construction does *not* call this function: it also emits a bare
-    ``IsingZZ(angle)``, but wraps a whole *group* of them in one shared ``CNOT`` sandwich at the
-    caller (see ``_apply_two_body_diagonal``) instead of individually sandwiching each one here.
-    So this function only ever needs to distinguish "no control" from "genuine control".
+    Not used for double-phase (see ``_apply_two_body_diagonal``), which shares one ``CNOT``
+    sandwich across a whole group of bare ``IsingZZ`` calls instead of calling this function.
 
-    For genuine control, every ``IsingZZ`` is individually controlled (a genuine
-    controlled-``IsingZZ``) at the full ``angle``, so the control-0 branch is the identity.
-
-    ``angle`` is already the complete rotation angle. The ``angle / 2`` below is unrelated: it's the standard
-    controlled-RZ synthesis (``CNOT``; ``RZ(angle/2)``; ``CNOT``; ``RZ(-angle/2)``; ``CNOT``)
-    used to turn the bare ``CNOT; RZ(angle); CNOT`` realization of ``IsingZZ(angle)`` into a
-    genuinely controlled version.
+    ``angle`` is already the complete rotation angle; the ``angle / 2`` below is just the
+    standard controlled-RZ synthesis used to make the ``CNOT; RZ(angle); CNOT`` realization of
+    ``IsingZZ(angle)`` genuinely controlled.
     """
     if len(control_wires) == 0:
         IsingZZ(angle, [wire_a, wire_b])

@@ -446,22 +446,28 @@ def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, dou
             def _p_loop(p, Z_lm=Z_lm, l=l, m=m):
                 wire_lp = wires[l * n_states + p]
 
-                @for_loop(n_states)
-                def _q_loop(q, Z_lm=Z_lm, p=p, wire_lp=wire_lp, l=l, m=m):
-                    # Symmetrization is already taken into account here.
-                    wire_mq = wires[m * n_states + q]
-                    lam = Z_lm[p, q]
-                    angle = 0.5 * lam * first_order_time_step
-                    if is_double_phase:
-                        IsingZZ(angle, [wire_lp, wire_mq])
-                    else:
-                        _emit_two_body_isingzz(angle, wire_lp, wire_mq, control_wires)
+                # Symmetrization is already taken into account here.
+                def _angle(q):
+                    return 0.5 * Z_lm[p, q] * first_order_time_step
 
                 if is_double_phase:
+
+                    @for_loop(n_states)
+                    def _q_loop(q, wire_lp=wire_lp, m=m):
+                        wire_mq = wires[m * n_states + q]
+                        IsingZZ(_angle(q), [wire_lp, wire_mq])
+
                     CNOT([control_wires[0], wire_lp])
-                _q_loop()
-                if is_double_phase:
+                    _q_loop()
                     CNOT([control_wires[0], wire_lp])
+                else:
+
+                    @for_loop(n_states)
+                    def _q_loop(q, wire_lp=wire_lp, m=m):
+                        wire_mq = wires[m * n_states + q]
+                        _emit_two_body_isingzz(_angle(q), wire_lp, wire_mq, control_wires)
+
+                    _q_loop()
 
             _p_loop()
 

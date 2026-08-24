@@ -382,33 +382,40 @@ def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, dou
     # Double-phase assumes a single control wire; ``register_condition`` below enforces this.
     is_double_phase = len(control_wires) == 1 and double_phase
 
+    def _angle(wire_idx0, wire_idx1):
+        # Two-body prefactor. In the fragment basis the generator is a sum over distinct wire
+        # pairs (w, w') with coupling lambda = core_tensors[l][p, q] for their orbitals p, q.
+        # With n = (I - Z)/2, the Z_w Z_w' piece of lambda n_w n_w' is (lambda/4) Z_w Z_w', and
+        # exp(-i (lambda/4) Z_w Z_w' tau) = IsingZZ(lambda tau / 2) since
+        # IsingZZ(theta) = exp(-i theta Z Z / 2). Each fragment is visited at
+        # tau = first_order_time_step = dt_trotter / 2, so the angle per visit is
+        #   IsingZZ(lambda tau / 2) = IsingZZ(0.5 * lambda * first_order_time_step),
+        # i.e. beta_twoB = 0.5. The two visits per Trotter step accumulate
+        # IsingZZ(lambda * dt_trotter / 2), i.e. IsingZZ(lambda t / 2) over the full evolution.
+        # This is already the *complete* IsingZZ rotation angle. Any further halving inside
+        # ``_emit_two_body_isingzz`` (for the genuine-controlled CRZ-style synthesis) is an
+        # unrelated gate-decomposition detail, not a second physics prefactor.
+        return 0.5 * Z[wire_idx0 // 2, wire_idx1 // 2] * first_order_time_step
+
     def zz_rotations(wire_idx0):
-
-        @for_loop(wire_idx0 + 1, 2 * num_cas)
-        def _zz_rotations(wire_idx1):
-            # Two-body prefactor. In the fragment basis the generator is a sum over distinct wire
-            # pairs (w, w') with coupling lambda = core_tensors[l][p, q] for their orbitals p, q.
-            # With n = (I - Z)/2, the Z_w Z_w' piece of lambda n_w n_w' is (lambda/4) Z_w Z_w', and
-            # exp(-i (lambda/4) Z_w Z_w' tau) = IsingZZ(lambda tau / 2) since
-            # IsingZZ(theta) = exp(-i theta Z Z / 2). Each fragment is visited at
-            # tau = first_order_time_step = dt_trotter / 2, so the angle per visit is
-            #   IsingZZ(lambda tau / 2) = IsingZZ(0.5 * lambda * first_order_time_step),
-            # i.e. beta_twoB = 0.5. The two visits per Trotter step accumulate
-            # IsingZZ(lambda * dt_trotter / 2), i.e. IsingZZ(lambda t / 2) over the full evolution.
-            # ``angle`` below is already the *complete* IsingZZ rotation angle. Any further halving
-            # inside ``_emit_two_body_isingzz`` (for the genuine-controlled CRZ-style synthesis) is
-            # an unrelated gate-decomposition detail, not a second physics prefactor.
-            angle = 0.5 * Z[wire_idx0 // 2, wire_idx1 // 2] * first_order_time_step
-            if is_double_phase:
-                IsingZZ(angle, [wires[wire_idx0], wires[wire_idx1]])
-            else:
-                _emit_two_body_isingzz(angle, wires[wire_idx0], wires[wire_idx1], control_wires)
-
         if is_double_phase:
+
+            @for_loop(wire_idx0 + 1, 2 * num_cas)
+            def _zz_rotations(wire_idx1):
+                IsingZZ(_angle(wire_idx0, wire_idx1), [wires[wire_idx0], wires[wire_idx1]])
+
             CNOT([control_wires[0], wires[wire_idx0]])
-        _zz_rotations()
-        if is_double_phase:
+            _zz_rotations()
             CNOT([control_wires[0], wires[wire_idx0]])
+        else:
+
+            @for_loop(wire_idx0 + 1, 2 * num_cas)
+            def _zz_rotations(wire_idx1):
+                _emit_two_body_isingzz(
+                    _angle(wire_idx0, wire_idx1), wires[wire_idx0], wires[wire_idx1], control_wires
+                )
+
+            _zz_rotations()
 
     for wire_idx0 in range(2 * num_cas - 1):
         zz_rotations(wire_idx0)
