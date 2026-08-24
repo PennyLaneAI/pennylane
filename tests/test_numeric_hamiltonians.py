@@ -342,19 +342,17 @@ class TestConcrete:
         with pytest.raises(AttributeError):
             ham.core_tensors = None
 
-    def test_shared_base_and_module_scoping(self):
-        """Test that both classes share a base and are reachable on the module namespace.
+    def test_shared_base_and_exports(self):
+        """Test that both classes share a base and are exported at the top level.
 
-        They are deliberately *not* exported at the top level: ``qp.Hamiltonian`` and
-        ``qp.SparseHamiltonian`` are operators, so a bare ``qp.CDFHamiltonian`` would
-        read like something applicable in a circuit rather than inert input data.
+        The base is reachable on the module namespace rather than at the top level, since
+        it is only needed for subclassing and ``isinstance`` checks.
         """
         assert issubclass(CDFHamiltonian, NumericHamiltonian)
         assert issubclass(CGFHamiltonian, NumericHamiltonian)
-        assert qp.numeric_hamiltonians.CDFHamiltonian is CDFHamiltonian
-        assert qp.numeric_hamiltonians.CGFHamiltonian is CGFHamiltonian
-        assert not hasattr(qp, "CDFHamiltonian")
-        assert not hasattr(qp, "CGFHamiltonian")
+        assert qp.CDFHamiltonian is CDFHamiltonian
+        assert qp.CGFHamiltonian is CGFHamiltonian
+        assert qp.numeric_hamiltonians.NumericHamiltonian is NumericHamiltonian
 
     def test_new_subclass_from_shape_family_alone(self):
         """Test that defining a new representation needs only a shape family, with no

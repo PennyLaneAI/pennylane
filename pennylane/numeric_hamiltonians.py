@@ -251,7 +251,7 @@ class CDFHamiltonian(NumericHamiltonian):
 
     >>> import numpy as np
     >>> L, N = 2, 3
-    >>> ham = qp.numeric_hamiltonians.CDFHamiltonian(
+    >>> ham = qp.CDFHamiltonian(
     ...     core_tensors=np.random.rand(L + 1, N, N),
     ...     leaf_tensors=np.random.rand(L + 1, N, N),
     ...     nuc_constant=0.5,
@@ -268,7 +268,7 @@ class CDFHamiltonian(NumericHamiltonian):
     typing and resource-analysis paths consume:
 
     >>> from pennylane.typing import Float
-    >>> qp.numeric_hamiltonians.CDFHamiltonian(Float[L + 1, N, N], Float[L + 1, N, N]).core_tensors
+    >>> qp.CDFHamiltonian(Float[L + 1, N, N], Float[L + 1, N, N]).core_tensors
     AbstractArray((3, 3, 3), float64, weak_type=True)
     """
 
@@ -311,7 +311,7 @@ class CGFHamiltonian(NumericHamiltonian):
 
     >>> import numpy as np
     >>> L, M, N = 2, 2, 3
-    >>> ham = qp.numeric_hamiltonians.CGFHamiltonian(
+    >>> ham = qp.CGFHamiltonian(
     ...     core_tensors=np.random.rand(L + 1, M, M, N, N),
     ...     leaf_tensors=np.random.rand(L + 1, M, N, N),
     ...     nuc_constant=0.5,
@@ -321,7 +321,7 @@ class CGFHamiltonian(NumericHamiltonian):
 
     Inconsistent shapes are reported against the named dimension:
 
-    >>> qp.numeric_hamiltonians.CGFHamiltonian(np.zeros((3, 2, 2, 3, 3)), np.zeros((3, 2, 4, 4)))
+    >>> qp.CGFHamiltonian(np.zeros((3, 2, 2, 3, 3)), np.zeros((3, 2, 4, 4)))
     Traceback (most recent call last):
         ...
     ValueError: inconsistent 'num_modals' (N): 3 vs 4.

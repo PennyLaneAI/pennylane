@@ -6,7 +6,7 @@
   with both concrete numeric data or abstract data (using ``qp.typing.Float[...]``).
   [(#10048)](https://github.com/PennyLaneAI/pennylane/pull/10048)
 
-  ```py
+  ```python
   import numpy as np
   import pennylane as qp
 
@@ -21,7 +21,7 @@
   The same Hamiltonian can be described abstractly, which is what the compile-time typing and
   resource-analysis paths consume:
 
-  ```py
+  ```python
   import pennylane as qp
   from pennylane.typing import Float
   qp.numeric_hamiltonians.CGFHamiltonian(Float[L + 1, M, M, N, N], Float[L + 1, M, N, N]).leaf_tensors
