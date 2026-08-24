@@ -472,8 +472,7 @@ class TestModifiedTemplates:
         """Test the primitive bind call of TrotterVibronic."""
 
         # Smallest valid instantiation: 2 electronic states, 1 vibrational mode, with a single
-        # diagonal position fragment and a diagonal kinetic fragment (mirrors the smallest data
-        # used in test_trotter_vibronic.py).
+        # diagonal position fragment and a diagonal kinetic fragment.
         n_states, n_modes, k, b = 2, 1, 2, 2
         n = int(math.ceil_log2(n_states))
         hamiltonian = {

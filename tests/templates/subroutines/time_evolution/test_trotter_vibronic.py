@@ -677,17 +677,6 @@ class TestDecomposition:
         assert count_ops(decomposition_queue(op), Allocate) == 0
 
     @pytest.mark.capture
-    def test_decomposition_captures_into_plxpr(self, seed):
-        """Test that the decomposition can be captured into plxpr, exercising the program-capture
-        branches that build jax arrays for the mode registers and Hamiltonian coefficients."""
-        jax = pytest.importorskip("jax")
-        # Two modes so the bilinear terms (and thus every coefficient branch) are traced.
-        hamiltonian = build_hamiltonian(fragment_list(n_states=2, n_modes=2, seed=seed))
-        op = make_op(hamiltonian, make_wires(2, 2), evolution_time=0.7)
-        jaxpr = jax.make_jaxpr(lambda: op.compute_decomposition(**op.arguments))()
-        assert len(jaxpr.eqns) > 0
-
-    @pytest.mark.capture
     @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_decomposition_resource_consistency_under_capture(self, seed):
         """Test that the decomposition rule is resource-consistent under program capture.
@@ -699,8 +688,7 @@ class TestDecomposition:
         not round-trip through capture) would otherwise go undetected. This directly exercises
         ``_test_decomposition_rule`` -- the same helper ``assert_valid`` uses internally, and the
         same one used by e.g. ``test_incrementer.py::test_decomposition_capture`` -- with capture
-        enabled (via the ``capture`` marker), which ``test_decomposition_captures_into_plxpr``
-        (only asserting ``len(jaxpr.eqns) > 0``) does not.
+        enabled (via the ``capture`` marker).
         """
         from pennylane.ops.functions.assert_valid import (  # pylint: disable=import-outside-toplevel
             _test_decomposition_rule,
