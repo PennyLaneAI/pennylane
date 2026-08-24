@@ -1525,7 +1525,7 @@ class Operator2(metaclass=OperatorMeta):
     def _bind_primitive(self):
         """Bind the operator plxpr primitive."""
 
-        # Skip if program capture is disabled or if we're in a tracing context.
+        # Skip if program capture is disabled or if we're not in a tracing context.
         if not enabled() or not _is_tracing():
             return
 

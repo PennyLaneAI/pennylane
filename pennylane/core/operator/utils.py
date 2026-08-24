@@ -19,7 +19,6 @@ from numbers import Number
 from typing import TYPE_CHECKING
 
 from pennylane import math
-from pennylane.core.queuing import QueuingManager
 from pennylane.pytrees import flatten, leaf, unflatten
 from pennylane.typing import AbstractArray, AbstractWires
 from pennylane.wires import Wires
@@ -31,7 +30,6 @@ if TYPE_CHECKING:
 
 
 @singledispatch
-@QueuingManager.stop_recording()
 def abstractify(val) -> AbstractArray | AbstractWires | Operator | CompressedResourceOp:
     """Convert the provided object into its abstract form.
 
