@@ -28,6 +28,7 @@ from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.ops.op_math import CompositeOp2
 from pennylane.queuing import AnnotatedQueue
 from pennylane.wires import WiresLike
+from tests.capture.capture_utils import assert_eqn_matches_op
 
 # pylint:disable=protected-access, use-implicit-booleaness-not-comparison
 
@@ -467,3 +468,27 @@ class TestProperties:
 
         op = NonOverlappingOp((qp.RZ(1.32, wires=0),))
         assert op.overlapping_ops == []
+
+
+@pytest.mark.capture
+class TestCapture:
+    """Test that a CompositeOp2 subclass integrates with program capture."""
+
+    def test_capture_valid_op(self):
+        """Test that a ValidOp can be captured into and reconstructed from jaxpr."""
+        import jax
+        
+        def qfunc():
+            return ValidOp((qp.RX(1.2, wires=0), qp.PauliZ(0)))
+
+        jaxpr = jax.make_jaxpr(qfunc)()
+
+        assert len(jaxpr.eqns) == 1
+        eqn = jaxpr.eqns[0]
+        assert_eqn_matches_op(eqn, ValidOp)
+
+        with AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+        assert len(q.queue) == 1
+        qp.assert_equal(q.queue[0], ValidOp((qp.RX(1.2, wires=0), qp.PauliZ(0))))

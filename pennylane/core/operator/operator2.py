@@ -994,7 +994,6 @@ class Operator2(metaclass=OperatorMeta):
 
         Returns:
             scipy.sparse._csr.csr_matrix: sparse matrix representation
-
         """
         canonical_sparse_matrix = self.compute_sparse_matrix(**self.arguments, format=format)
         return self._expand_canonical_matrix(canonical_sparse_matrix, wire_order).asformat(format)
