@@ -16,21 +16,18 @@ Contains the SignedOutSquare template.
 """
 
 from collections import defaultdict
-from itertools import combinations
 
-from pennylane import math
-from pennylane.core.operator import Operator2
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import BasisState, X
 from pennylane.templates.subroutines.arithmetic import OutSquare, SemiAdder
-from pennylane.typing import AbstractWires, Bool, Wire
-from pennylane.wires import Wires, WiresLike
+from pennylane.typing import Bool, Wire
+from pennylane.wires import WiresLike
 
 from .semi_adder import _controlled_semi_adder, _controlled_semi_adder_resource
 
 
-class SignedOutSquare(Operator2):
+class SignedOutSquare(OutSquare):
     r"""Performs out-of-place squaring of a signed integer.
 
     This operator performs the squaring of a signed integer :math:`x` in 2s complement
@@ -214,91 +211,12 @@ class SignedOutSquare(Operator2):
 
     """
 
-    wire_argnames = ("x_wires", "output_wires", "work_wires")
-    compilable_argnames = ("output_wires_zeroed",)
-
-    arg_specs = {
-        "x_wires": Wire[-1],
-        "output_wires": Wire[-1],
-        "work_wires": Wire[-1],
-    }
-
-    def __init__(
-        self,
-        x_wires: WiresLike,
-        output_wires: WiresLike,
-        work_wires: WiresLike,
-        output_wires_zeroed: bool = False,
-    ):
-
-        x_wires = Wires(x_wires)
-        output_wires = Wires(output_wires)
-        work_wires = Wires(work_wires)
-
-        n = len(x_wires)
-        m = len(output_wires)
-
+    @staticmethod
+    def _min_work_wires(n, m, output_wires_zeroed):
         # Work wires required for the unsigned square (its input is reduced by one)
-        num_required_work_wires = min(n, m) if output_wires_zeroed else m
         # Work wires required for the first correction adder are `min(m-n, n)-1`, which is smaller
         # than `m` and smaller than `n`, so that the unsigned square always needs more work wires.
-        if len(work_wires) < num_required_work_wires:
-            raise ValueError(
-                f"SignedOutSquare requires at least {num_required_work_wires} work wires for "
-                f"{n} input wires, {m} output wires and {output_wires_zeroed=}. "
-                f"Got {len(work_wires)} work wires instead."
-            )
-
-        wires_list = [x_wires, output_wires, work_wires]
-
-        _wires_are_traced = any(math.is_abstract(w) for ws in wires_list for w in ws)
-
-        if not _wires_are_traced:
-            wires_dict = dict(zip(self.wire_argnames, wires_list, strict=True))
-            for name0, name1 in combinations(self.wire_argnames, r=2):
-                if wires_dict[name0].intersection(wires_dict[name1]):
-                    raise ValueError(f"None of the wires in {name1} should be included in {name0}.")
-
-        super().__init__(
-            x_wires,
-            output_wires,
-            work_wires,
-            output_wires_zeroed=output_wires_zeroed,
-        )
-
-    # pylint: disable=arguments-differ
-    def __abstract_init__(
-        self,
-        x_wires: AbstractWires | WiresLike,
-        output_wires: AbstractWires | WiresLike,
-        work_wires: AbstractWires | WiresLike,
-        output_wires_zeroed: bool = False,
-    ):
-        n = len(x_wires)
-        m = len(output_wires)
-
-        # Work wires required for the unsigned square (its input is reduced by one)
-        num_required_work_wires = min(n, m) if output_wires_zeroed else m
-        # Work wires required for the first correction adder are `min(m-n, n)-1`, which is smaller
-        # than `m` and smaller than `n`, so that the unsigned square always needs more work wires.
-        if len(work_wires) < num_required_work_wires:
-            raise ValueError(
-                f"SignedOutSquare requires at least {num_required_work_wires} work wires for "
-                f"{n} input wires, {m} output wires and {output_wires_zeroed=}. "
-                f"Got {len(work_wires)} work wires instead."
-            )
-
-        super().__abstract_init__(
-            x_wires,
-            output_wires,
-            work_wires,
-            output_wires_zeroed=output_wires_zeroed,
-        )
-
-    @property
-    def wires(self):
-        """All wires involved in the operation."""
-        return self.x_wires + self.output_wires + self.work_wires
+        return min(n, m) if output_wires_zeroed else m
 
 
 def _c_subtract_then_add_one_resources(n, m, num_work_wires, output_wires_zeroed):

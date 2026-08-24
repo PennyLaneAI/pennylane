@@ -216,6 +216,11 @@ class OutSquare(Operator2):
         "work_wires": Wire[-1],
     }
 
+    @staticmethod
+    def _min_work_wires(n, m, output_wires_zeroed):
+        """The minimum number of work wires required for the given register sizes."""
+        return min(n + 1, m) if output_wires_zeroed else m
+
     def __init__(
         self,
         x_wires: WiresLike,
@@ -230,11 +235,12 @@ class OutSquare(Operator2):
         n = len(x_wires)
         m = len(output_wires)
 
-        num_required_work_wires = min(n + 1, m) if output_wires_zeroed else m
+        num_required_work_wires = self._min_work_wires(n, m, output_wires_zeroed)
         if len(work_wires) < num_required_work_wires:
             raise ValueError(
-                f"OutSquare requires at least {num_required_work_wires} work wires for "
-                f"{n} input wires, {m} output wires and {output_wires_zeroed=}."
+                f"{type(self).__name__} requires at least {num_required_work_wires} work wires "
+                f"for {n} input wires, {m} output wires and {output_wires_zeroed=}. "
+                f"Got {len(work_wires)} work wires instead."
             )
 
         wires_list = [x_wires, output_wires, work_wires]
@@ -265,11 +271,12 @@ class OutSquare(Operator2):
         n = len(x_wires)
         m = len(output_wires)
 
-        num_required_work_wires = min(n + 1, m) if output_wires_zeroed else m
+        num_required_work_wires = self._min_work_wires(n, m, output_wires_zeroed)
         if len(work_wires) < num_required_work_wires:
             raise ValueError(
-                f"OutSquare requires at least {num_required_work_wires} work wires for "
-                f"{n} input wires, {m} output wires and {output_wires_zeroed=}."
+                f"{type(self).__name__} requires at least {num_required_work_wires} work wires "
+                f"for {n} input wires, {m} output wires and {output_wires_zeroed=}. "
+                f"Got {len(work_wires)} work wires instead."
             )
 
         super().__abstract_init__(
