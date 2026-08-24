@@ -214,6 +214,7 @@ unmodified_templates_cases = [
     ),
     (qp.Permute, (np.array([1, 2, 0]), [0, 1, 2]), {}),
     (qp.Permute, (np.array([1, 2, 0]),), {"wires": [0, 1, 2]}),
+    (qp.MultiX, (jnp.array([True, False, True]), [0, 1, 2]), {}),
     (
         qp.TwoLocalSwapNetwork,
         ([0, 1, 2, 3, 4],),
