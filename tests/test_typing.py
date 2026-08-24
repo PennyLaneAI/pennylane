@@ -482,6 +482,14 @@ class TestAbstractWires:
         with pytest.raises(ValueError, match="'num_wires' must be"):
             _ = AbstractWires(-3)
 
+    def test_comparison(self):
+        """Test for equality and comparison."""
+        a = AbstractWires(3)
+        assert a == AbstractWires(3)
+        assert a != AbstractWires(4)
+        assert hash(a) == hash(AbstractWires(3))
+        assert hash(a) != hash(AbstractWires(4))
+
     def test_repr(self):
         """Test that the repr of AbstractWires is correct."""
         a0 = AbstractWires(2)
