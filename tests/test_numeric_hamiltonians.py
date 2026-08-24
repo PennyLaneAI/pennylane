@@ -21,7 +21,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane import CDFHamiltonian, CGFHamiltonian, NumericHamiltonian
+from pennylane.numeric_hamiltonians import CDFHamiltonian, CGFHamiltonian, NumericHamiltonian
 from pennylane.typing import AbstractArray, Float
 
 L, M, N = 2, 2, 3
@@ -342,12 +342,19 @@ class TestConcrete:
         with pytest.raises(AttributeError):
             ham.core_tensors = None
 
-    def test_shared_base_and_top_level_exports(self):
-        """Test that both classes share a base and are on the ``pennylane`` namespace."""
+    def test_shared_base_and_module_scoping(self):
+        """Test that both classes share a base and are reachable on the module namespace.
+
+        They are deliberately *not* exported at the top level: ``qp.Hamiltonian`` and
+        ``qp.SparseHamiltonian`` are operators, so a bare ``qp.CDFHamiltonian`` would
+        read like something applicable in a circuit rather than inert input data.
+        """
         assert issubclass(CDFHamiltonian, NumericHamiltonian)
         assert issubclass(CGFHamiltonian, NumericHamiltonian)
-        assert qp.CDFHamiltonian is CDFHamiltonian
-        assert qp.CGFHamiltonian is CGFHamiltonian
+        assert qp.numeric_hamiltonians.CDFHamiltonian is CDFHamiltonian
+        assert qp.numeric_hamiltonians.CGFHamiltonian is CGFHamiltonian
+        assert not hasattr(qp, "CDFHamiltonian")
+        assert not hasattr(qp, "CGFHamiltonian")
 
     def test_new_subclass_from_shape_family_alone(self):
         """Test that defining a new representation needs only a shape family, with no

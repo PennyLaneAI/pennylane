@@ -76,11 +76,7 @@ from pennylane.qchem import (
     from_openfermion,
     to_openfermion,
 )
-from pennylane.numeric_hamiltonians import (
-    CDFHamiltonian,
-    CGFHamiltonian,
-    NumericHamiltonian,
-)
+from pennylane import numeric_hamiltonians
 from pennylane._grad import grad, jacobian, vjp, jvp, value_and_grad
 from pennylane._version import __version__
 from pennylane.about import about
