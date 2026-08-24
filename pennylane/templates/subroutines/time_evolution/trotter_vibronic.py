@@ -600,15 +600,7 @@ def _half_signed_out_multiplier(x_wires, y_wires, output_wires, work_wires):
     computed controlled on that cached bit, the (unsigned) magnitudes are multiplied into the
     output register with a :class:`~.OutMultiplier` (with the output wires flipped before and
     after the multiplication if ``y`` is negative), and finally the two's complement and the
-    cached sign bit are uncomputed. See the ``pennylane.labs`` prototype for the full
-    derivation.
-
-    .. note::
-        This is logically identical to
-        ``pennylane.labs.templates.half_signed_out_multiplier``. ``tach`` forbids importing that
-        labs helper from core, so the logic is duplicated here. The two copies should be
-        consolidated (e.g. by promoting the helper into
-        ``pennylane.templates.subroutines.arithmetic``) to avoid drift.
+    cached sign bit are uncomputed.
     """
     y_aux, work_wires = work_wires[0], work_wires[1:]
 

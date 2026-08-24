@@ -473,7 +473,6 @@ class TestMapToResourceOp:
             coefficients=wires["coefficients"],
             phase_gradient=wires["phase_gradient"],
             work=wires["work"],
-            aqft_order=1,
         )
 
         expected_res_op = re_temps.TrotterVibronic(
@@ -534,7 +533,6 @@ class TestMapToResourceOp:
             coefficients=wires["coefficients"],
             phase_gradient=wires["phase_gradient"],
             work=wires["work"],
-            aqft_order=1,
         )
         with pytest.raises(ValueError, match="fragment"):
             _map_to_resource_op(operator)

@@ -473,7 +473,7 @@ class TestModifiedTemplates:
 
         # Smallest valid instantiation: 2 electronic states, 1 vibrational mode, with a single
         # diagonal position fragment and a diagonal kinetic fragment.
-        n_states, n_modes, k, b = 2, 1, 2, 2
+        n_states, n_modes, k, b = 2, 1, 3, 2
         n = int(math.ceil_log2(n_states))
         hamiltonian = {
             "constant": np.zeros((1, n_states, n_states)),
