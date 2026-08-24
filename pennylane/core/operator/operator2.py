@@ -1524,16 +1524,13 @@ class Operator2(metaclass=OperatorMeta):
 
     def _bind_primitive(self):
         """Bind the operator plxpr primitive."""
-        # Skip if program capture is disabled
-        if not enabled():
+
+        # Skip if program capture is disabled or if we're in a tracing context.
+        if not enabled() or not _is_tracing():
             return
 
-        # if AbstractArray *not* promoted to a tracer but left as is by symbolic_array
-        # we are not tracing, but just have capture enabled.
-        # no need to bind tracer, we can leave early
-        abstract_array_remained = _abstract_args_to_symbolic_arrays(self._bound_args)
-        if abstract_array_remained:
-            return
+        # In place substitute AbstractArray and AbstractWires for symbolic arrays.
+        _abstract_args_to_symbolic_arrays(self._bound_args)
         pos_args = [self.arguments[d] for d in self.dynamic_argnames]
 
         wire_lens = []
@@ -1994,33 +1991,31 @@ def _op_arg_forward_mask(op: Operator2) -> list[bool]:
 
 
 def _abstract_args_to_symbolic_arrays(bound_args):
-    """This function in-place mutates the bound args, substituting any AbstractArray or AbstractWires
-    found to be tracers without associated values.  This allows us to capture them for
-    resource estimation in catalyst.
-
-    If we are not tracing, symbolic_array just returns another AbstractArray. These are not compatible
-    with jax, and *cannot*  be passed to operator_p.bind .  So instead, we exit early and do not
-    call operator_p.bind if any concrete  AbstractArray's are left.
-
+    """
+    This function in-place mutates the bound args, substituting any AbstractArray or
+    AbstractWires found for tracers without associated values. This allows us to capture
+    abstract operators for resource estimation in catalyst.
     """
     for name, value in bound_args.arguments.items():
         partial_leaves, _ = flatten(value, is_leaf=_is_op)
         _ = pop_op_eqns(filter(_is_op, partial_leaves))
         leaves, struct = flatten(value)
-        leaves = list(leaves)
-        for i, l in enumerate(leaves):
-            if isinstance(l, AbstractWires):
-                new_wires = [symbolic_array((), int) for _ in range(l.num_wires)]
-                if new_wires and isinstance(new_wires[0], AbstractArray):
-                    return True
-                leaves[i] = new_wires
-            elif isinstance(l, AbstractArray):
-                new_arg = symbolic_array(l.shape, l.dtype)
-                if isinstance(new_arg, AbstractArray):
-                    return True
-                leaves[i] = new_arg
-        bound_args.arguments[name] = unflatten(leaves, struct)
-    return False
+        new_leaves = [_to_symbolic_array(l) for l in leaves]
+        bound_args.arguments[name] = unflatten(new_leaves, struct)
+
+
+def _to_symbolic_array(arg):
+    if isinstance(arg, AbstractWires):
+        return [symbolic_array((), int) for _ in range(len(arg))]
+    if isinstance(arg, AbstractArray):
+        return symbolic_array(arg.shape, arg.dtype)
+    return arg
+
+
+def _is_tracing() -> bool:
+    """Returns True iff called inside a tracing context."""
+    test_array = symbolic_array((), int)
+    return not isinstance(test_array, AbstractArray)
 
 
 def _process_bind_hybrid_arg(hybrid_val, is_wire_arg: bool) -> tuple[list, Any, list[bool]]:
