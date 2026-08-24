@@ -498,6 +498,20 @@ def _(op: qtemps.TrotterVibronic):
     coeff_wires = len(op.arguments["coefficients"])
     phase_grad_wires = len(op.arguments["phase_gradient"])
 
+    # ``VibronicHamiltonian``/``re_temps.TrotterVibronic`` assume the "full binary tree" XOR
+    # fragmentation of arXiv:2411.13669 (one position fragment per electronic-index pair,
+    # ``F == 2 ** ceil_log2(N)``) and derive their gate counts purely from ``num_states``. A
+    # differently-fragmented Hamiltonian (fewer/more position fragments) would silently map to
+    # the same resource estimate, so that assumption is checked explicitly here.
+    num_fragments = hamiltonian["constant"].shape[0]
+    expected_fragments = 2 ** pl_math.ceil_log2(num_states)
+    if num_fragments != expected_fragments:
+        raise ValueError(
+            "The resource estimate for TrotterVibronic assumes the standard XOR fragmentation "
+            f"with {expected_fragments} position fragments for {num_states} electronic states "
+            f"(arXiv:2411.13669), but the given Hamiltonian has {num_fragments} fragments."
+        )
+
     vibronic_ham = VibronicHamiltonian(
         num_modes=num_modes,
         num_states=num_states,

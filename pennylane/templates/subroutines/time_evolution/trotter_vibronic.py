@@ -22,13 +22,7 @@ from pennylane import capture, compiler, math
 from pennylane.allocation import allocate
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import (
-    add_decomps,
-    adjoint_resource_rep,
-    controlled_resource_rep,
-    register_resources,
-    resource_rep,
-)
+from pennylane.decomposition import add_decomps, controlled_resource_rep, register_resources
 from pennylane.ops import CNOT, Hadamard, X, adjoint, cond
 from pennylane.typing import AbstractWires, Float, Wire
 from pennylane.wires import Wires, WiresLike
@@ -151,14 +145,21 @@ class TrotterVibronic(Operator2):
             "electronic": n, "vib_wires": n_modes * k, "cache": 2 * k,
             "coefficients": b, "phase_gradient": b, "work": max(n - 1, 2 * k, 2 * b + 2),
         })
+        all_wires = qp.wires.Wires.all_wires(list(wires.values()))
 
-        op = qp.TrotterVibronic(
-            evolution_time=1.0, num_trotter_steps=1, hamiltonian=hamiltonian,
-            electronic=wires["electronic"], vib_wires=wires["vib_wires"],
-            cache=wires["cache"], coefficients=wires["coefficients"],
-            phase_gradient=wires["phase_gradient"], work=wires["work"], aqft_order=1,
-        )
+        @qp.decompose(max_expansion=1)  # to see the top-level sub-templates
+        @qp.qnode(qp.device("default.qubit", wires=all_wires))
+        def circuit():
+            qp.TrotterVibronic(
+                evolution_time=1.0, num_trotter_steps=1, hamiltonian=hamiltonian,
+                electronic=wires["electronic"], vib_wires=wires["vib_wires"],
+                cache=wires["cache"], coefficients=wires["coefficients"],
+                phase_gradient=wires["phase_gradient"], work=wires["work"], aqft_order=1,
+            )
+            return qp.probs(wires=wires["electronic"])
 
+    >>> qp.specs(circuit)().resources.quantum_operations
+    {'QROM': 2, 'AQFT': 1, 'SignedOutSquare': 1, 'OutMultiplier': 1, 'Adjoint(SignedOutSquare)': 1, 'Adjoint(AQFT)': 1}
     """
 
     dynamic_argnames = ("evolution_time",)
@@ -195,7 +196,7 @@ class TrotterVibronic(Operator2):
         aqft_order=None,
         diag_keys=None,
     ):
-        _validate_hamiltonian(hamiltonian)
+        hamiltonian = _validate_hamiltonian(hamiltonian)
         # Canonicalize the key order to match how ``jax.tree_util`` flattens dicts (sorted keys),
         # so the operator round-trips through its pytree registration (required by ``assert_valid``).
         hamiltonian = {key: hamiltonian[key] for key in sorted(hamiltonian)}
@@ -329,28 +330,26 @@ def _trotter_vibronic_resources(
         work_wires=ww(n_work),
         output_wires_zeroed=True,
     )
-    # ``SignedOutSquare`` is a legacy ``Operation`` (no abstractifiable instance form), so it is
-    # declared via ``resource_rep``; every other primitive is an ``Operator2`` declared by instance.
-    signed_square_params = {
-        "num_x_wires": k,
-        "num_output_wires": max(2 * k - 1, 1),
-        "num_work_wires": n_work,
-        "output_wires_zeroed": True,
-    }
-    signed_square = resource_rep(SignedOutSquare, **signed_square_params)
+    signed_square = SignedOutSquare(
+        x_wires=ww(k),
+        output_wires=ww(max(2 * k - 1, 1)),
+        work_wires=ww(n_work),
+        output_wires_zeroed=True,
+    )
     # Mirror the decomposition's resolution of ``aqft_order`` (``k - 1`` when unset) so the
     # resource estimate and the emitted circuit agree.
     aqft = AQFT(order=(aqft_order if aqft_order is not None else k - 1), wires=ww(k))
 
     # The compute/uncompute pairs are emitted as ``adjoint(...)`` wrappers in the decomposition, so
     # they must be declared as such (not as their bare base ops) for the graph to find a path.
-    adj_signed_square = adjoint_resource_rep(SignedOutSquare, signed_square_params)
+    adj_signed_square = adjoint(signed_square)
     adj_signed_out_mult = adjoint(signed_out_mult)
     adj_aqft = adjoint(aqft)
 
-    # The half-signed multiplier takes the two's complement of its signed input via a
-    # sign-bit-controlled ``Incrementer`` (twice per call: compute + uncompute). It acts on the
-    # ``k``-wire mode register (linear terms) and the ``2k``-wire cache register (bilinear terms).
+    # ``Incrementer`` is still a legacy ``Operation`` (no ``Operator2`` port yet -- tracked
+    # separately), so its controlled form is declared via ``controlled_resource_rep``. The
+    # sign-bit-controlled two's complement (compute + uncompute) acts on the ``k``-wire mode
+    # register (linear terms) and the ``2k``-wire cache register (bilinear terms).
     ctrl_incrementer_linear = controlled_resource_rep(
         Incrementer,
         {"num_wires": k, "num_work_wires": max(n_work - 1, 0)},
@@ -464,7 +463,7 @@ def _trotter_vibronic_decomposition(
             "electronic": electronic,
             "cache": cache,
             "coefficients": coefficients,
-            "phase gradient": phase_gradient,
+            "phase_gradient": phase_gradient,
             "work": work,
         }
         _validate_registers(registers, mode_registers, n_modes, n_states)
@@ -810,7 +809,7 @@ def _extract_registers(registers, mode_registers, term, *mode_ids):
         mult_wires = {
             "x_wires": "coefficients",
             "y_wires": "cache",
-            "output_wires": "phase gradient",
+            "output_wires": "phase_gradient",
             "work_wires": "work",
         }
         mult_wires = {new: registers[old] for new, old in mult_wires.items()}
@@ -831,7 +830,7 @@ def _extract_registers(registers, mode_registers, term, *mode_ids):
         coeff_mult_wires = {
             "x_wires": "coefficients",
             "y_wires": "cache",
-            "output_wires": "phase gradient",
+            "output_wires": "phase_gradient",
             "work_wires": "work",
         }
         coeff_mult_wires = {new: registers[old] for new, old in coeff_mult_wires.items()}
@@ -849,7 +848,7 @@ def _extract_registers(registers, mode_registers, term, *mode_ids):
         # The signed register for _half_signed_out_multiplier must be the _second_ input
         reg = {
             "x_wires": "coefficients",
-            "output_wires": "phase gradient",
+            "output_wires": "phase_gradient",
             "work_wires": "work",
         }
         mult_wires = {new: registers[old] for new, old in reg.items()}
@@ -857,7 +856,7 @@ def _extract_registers(registers, mode_registers, term, *mode_ids):
         return mult_wires
 
     if term == "constant":
-        reg = {"x_wires": "coefficients", "y_wires": "phase gradient", "work_wires": "work"}
+        reg = {"x_wires": "coefficients", "y_wires": "phase_gradient", "work_wires": "work"}
     return {new: registers[old] for new, old in reg.items()}
 
 
@@ -877,7 +876,7 @@ def _trotter_step_second_order(
     position fragment we iterate over the linear, quadratic and bilinear terms; within each of
     these we iterate over the modes (or mode pairs) using ``for_loop``\ s.
     """
-    precision = len(registers["phase gradient"])
+    precision = len(registers["phase_gradient"])
     all_coeffs, bilinear_indices = _preprocess_data(
         time, hamiltonian, diag_keys, n_elec, n_states, n_modes
     )
@@ -1098,7 +1097,10 @@ def _wires_are_concrete(wires):
 
 
 def _validate_hamiltonian(hamiltonian):
-    """Light validation of the dense vibronic Hamiltonian dictionary."""
+    """Light validation of the dense vibronic Hamiltonian dictionary. Returns the Hamiltonian
+    with its leaves cast to arrays: hybrid-argument leaves must be arrays or scalars to be
+    captured and lowered correctly, so plain lists/tuples are coerced here rather than failing
+    opaquely later (e.g. ``AttributeError`` from a missing ``.shape``)."""
     if not isinstance(hamiltonian, dict):
         raise ValueError(
             f"Expected `hamiltonian` to be a dictionary, got {type(hamiltonian).__name__}."
@@ -1108,6 +1110,10 @@ def _validate_hamiltonian(hamiltonian):
             f"Expected the keys in `hamiltonian` to be {set(HAMILTONIAN_KEYS)}, "
             f"but got {set(hamiltonian)}."
         )
+    hamiltonian = {
+        key: np.asarray(value) if isinstance(value, (list, tuple)) else value
+        for key, value in hamiltonian.items()
+    }
     expected_ndim = {"constant": 3, "linear": 4, "quadratic": 5, "kinetic": 4}
     for key, ndim in expected_ndim.items():
         if math.ndim(hamiltonian[key]) != ndim:
@@ -1115,6 +1121,17 @@ def _validate_hamiltonian(hamiltonian):
                 f"Expected `hamiltonian['{key}']` to be a {ndim}-dimensional array, "
                 f"but got {math.ndim(hamiltonian[key])} dimensions."
             )
+    # The electronic diagonalization (see ``_diagonalization_matrix``) embeds each fragment's
+    # 2x2 Clifford circuit into a ``2 ** n``-dimensional matrix and then slices it down to
+    # ``n_states``. That slice is only guaranteed to stay orthogonal (i.e. a valid change of
+    # basis) when it spans the full space, i.e. when ``n_states`` is itself a power of 2.
+    n_states = math.shape(hamiltonian["constant"])[1]
+    if n_states & (n_states - 1) != 0:
+        raise ValueError(
+            f"`hamiltonian` implies {n_states} electronic states, but TrotterVibronic currently "
+            "only supports a number of electronic states that is a power of 2."
+        )
+    return hamiltonian
 
 
 def _validate_registers(registers, mode_registers, n_modes, n_states):
@@ -1129,15 +1146,15 @@ def _validate_registers(registers, mode_registers, n_modes, n_states):
             f"Expected {n} qubits for {n_states} electronic states, but got "
             f"{len(registers['electronic'])}."
         )
-    if len(registers["cache"]) < 2 * k:
+    if len(registers["cache"]) != 2 * k:
         raise ValueError(
-            f"Expected at least {2 * k} cache qubits for {k} qubits per vibrational mode, "
+            f"Expected exactly {2 * k} cache qubits for {k} qubits per vibrational mode, "
             f"but got {len(registers['cache'])}."
         )
-    if len(registers["phase gradient"]) < b:
+    if len(registers["phase_gradient"]) < b:
         raise ValueError(
             "Expected the phase-gradient register to have at least as many qubits as the "
-            f"coefficients register ({b} qubits), but got {len(registers['phase gradient'])}."
+            f"coefficients register ({b} qubits), but got {len(registers['phase_gradient'])}."
         )
     if len(registers["work"]) < needed_work_wires:
         raise ValueError(

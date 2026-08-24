@@ -31,7 +31,9 @@ from pennylane.templates.subroutines.time_evolution.trotter_vibronic import (
     _momentum_coefficients,
     _position_coefficients,
     _validate_registers,
+    _wires_are_concrete,
 )
+from pennylane.typing import AbstractWires
 
 # ---------------------------------------------------------------------------
 # --------------------------- Test data helpers -----------------------------
@@ -85,8 +87,12 @@ def fragment_list(n_states=2, n_modes=2, seed=42):
     """
     rng = np.random.default_rng(seed)
     freqs = rng.random(n_modes)
+    # A physical (Hermitian, here real-valued) Hamiltonian must be symmetric in the electronic
+    # indices, which is what the Clifford diagonalization below relies on.
     constant_coeffs = rng.random((n_states, n_states))
+    constant_coeffs = (constant_coeffs + constant_coeffs.T) / 2
     linear_coeffs = rng.random((n_states, n_states, n_modes))
+    linear_coeffs = (linear_coeffs + linear_coeffs.transpose(1, 0, 2)) / 2
 
     num_fragments = _next_pow_2(n_states)
     harmonic = np.diag(freqs) / 2
@@ -198,19 +204,26 @@ class TestCoefficientReadout:
     """Tests for the dense coefficient-extraction helpers."""
 
     def test_position_coefficients(self, seed):
-        """Test position coefficient extraction against a direct reference computation."""
-        fragments = fragment_list(n_states=3, n_modes=2, seed=seed)
+        """Test position coefficient extraction against a direct reference computation.
+
+        Uses ``n_states=4`` (a power of 2, see ``test_rejects_non_power_of_2_n_states``) and
+        fragment 1 of the "blocks" scheme, whose off-diagonal electronic pairs are ``(0, 1)`` and
+        ``(2, 3)`` (see :func:`fragment_list`), so the reference check below exercises a real
+        change of basis rather than the identity.
+        """
+        fragments = fragment_list(n_states=4, n_modes=2, seed=seed)
         hamiltonian = build_hamiltonian(fragments)
         diag_keys = _derive_diag_keys(hamiltonian)
+        assert diag_keys[1] != (0, 0)  # fragment 1 is genuinely off-diagonal, not trivial
 
-        n_states, n_modes = 3, 2
+        n_states, n_modes = 4, 2
         n = int(qp.math.ceil_log2(n_states))
-        matrix = _diagonalization_matrix(diag_keys[0], n)[:n_states, :n_states]
+        matrix = _diagonalization_matrix(diag_keys[1], n)[:n_states, :n_states]
         constant, linear, quadratic, bilinear = _position_coefficients(
             matrix,
-            hamiltonian["constant"][0],
-            hamiltonian["linear"][0],
-            hamiltonian["quadratic"][0],
+            hamiltonian["constant"][1],
+            hamiltonian["linear"][1],
+            hamiltonian["quadratic"][1],
             n_states,
             n_modes,
         )
@@ -219,9 +232,11 @@ class TestCoefficientReadout:
         assert quadratic.shape == (n_modes, n_states)
         assert bilinear.shape == (n_modes * (n_modes - 1) // 2, n_states)
 
-        # Reference: constant diagonal of M^T C M
-        ref_constant = np.diag(matrix.T @ hamiltonian["constant"][0] @ matrix)
-        assert np.allclose(constant, ref_constant)
+        # ``matrix`` must actually diagonalize the fragment: check the off-diagonal elements of
+        # the rotated constant term vanish (not just that the diagonal matches itself).
+        rotated_constant = matrix.T @ hamiltonian["constant"][1] @ matrix
+        assert np.allclose(rotated_constant, np.diag(np.diag(rotated_constant)))
+        assert np.allclose(constant, np.diag(rotated_constant))
 
     def test_momentum_coefficients(self, seed):
         """Test momentum coefficient extraction against the injected diagonal values."""
@@ -359,6 +374,26 @@ class TestConstruction:
         with pytest.raises(ValueError, match=match):
             op.compute_decomposition(**op.arguments)
 
+    def test_rejects_oversized_cache(self):
+        """Test that an over-sized ``cache`` register is rejected, since the resource function
+        hard-codes the exact ``2k`` size (matching the docs), and would otherwise silently
+        under-count resources relative to the wires actually used."""
+        hamiltonian = build_hamiltonian(fragment_list(n_states=4, n_modes=2))
+        wires = make_wires(4, 2)
+        wires["cache"] = list(wires["cache"]) + [max(wires["work"]) + 1]  # 2k + 1 wires
+        op = make_op(hamiltonian, wires)
+        with pytest.raises(ValueError, match="cache qubits"):
+            op.compute_decomposition(**op.arguments)
+
+    def test_accepts_list_hamiltonian(self):
+        """Test that a Hamiltonian given as nested lists/tuples (rather than arrays) is accepted,
+        since hybrid-argument leaves must be arrays or scalars to be captured and lowered
+        correctly."""
+        hamiltonian = build_hamiltonian(fragment_list(n_states=2, n_modes=2))
+        hamiltonian = {key: value.tolist() for key, value in hamiltonian.items()}
+        op = make_op(hamiltonian, make_wires(2, 2))
+        assert all(isinstance(v, np.ndarray) for v in op.arguments["hamiltonian"].values())
+
     def test_rejects_bad_electronic_size_at_construction(self):
         """Test that a wrongly-sized electronic register is rejected at construction time (with a
         clear error) rather than surfacing later from the decomposition or resource estimator."""
@@ -377,19 +412,66 @@ class TestConstruction:
         with pytest.raises(ValueError, match="divisible by the number of modes"):
             make_op(hamiltonian, wires)
 
+    def test_rejects_non_power_of_2_n_states(self):
+        """Test that a Hamiltonian implying a non-power-of-2 number of electronic states is
+        rejected at construction time.
+
+        The electronic diagonalization (see ``_diagonalization_matrix``) embeds each fragment's
+        Clifford circuit into a ``2 ** n``-dimensional matrix and slices it down to ``n_states``;
+        that slice is only orthogonal when ``n_states`` spans the full sliced space, i.e. when it
+        is itself a power of 2.
+        """
+        hamiltonian = build_hamiltonian(fragment_list(n_states=3, n_modes=2))
+        wires = make_wires(3, 2)
+        with pytest.raises(ValueError, match="power of 2"):
+            make_op(hamiltonian, wires)
+
     def test_rejects_unequal_mode_register_sizes(self):
         """Test that _validate_registers rejects vibrational-mode registers of differing sizes."""
         registers = {
             "electronic": [0],
             "cache": [1, 2, 3, 4],
             "coefficients": [5],
-            "phase gradient": [6],
+            "phase_gradient": [6],
             "work": [7, 8, 9, 10],
         }
         # The first mode has two wires while the second has one, which is invalid.
         mode_registers = [[11, 12], [13]]
         with pytest.raises(ValueError, match="same size"):
             _validate_registers(registers, mode_registers, n_modes=2, n_states=2)
+
+    def test_wires_are_concrete_rejects_abstract_wires(self):
+        """Test that ``_wires_are_concrete`` recognizes an ``AbstractWires`` structural
+        placeholder as not concrete.
+
+        This is exercised directly rather than through the public constructor: passing an
+        ``AbstractWires`` argument for a ``wire_argnames`` entry is detected by the operator
+        metaclass itself (``_contains_abstract_type``), which dispatches straight to
+        ``__abstract_init__`` and never reaches ``TrotterVibronic.__init__`` (and hence never
+        reaches ``_wires_are_concrete``) in the first place. Without this explicit check,
+        ``Wires(AbstractWires(n))`` would wrap the placeholder as a single, non-abstract-looking
+        wire label, so ``_wires_are_concrete`` would otherwise incorrectly return ``True``.
+        """
+        assert _wires_are_concrete(AbstractWires(2)) is False
+        assert _wires_are_concrete([0, 1, 2]) is True
+
+    def test_validate_registers_rejects_bad_electronic_size(self):
+        """Test that _validate_registers itself rejects a wrongly-sized electronic register.
+
+        ``__init__`` already checks this eagerly (see ``test_rejects_bad_electronic_size_at_
+        construction``) whenever the wires are concrete, so this exercises the check inside
+        ``_validate_registers`` directly (as called from ``compute_decomposition``) instead.
+        """
+        registers = {
+            "electronic": [0],  # 1 wire, but n_states=4 needs 2
+            "cache": [1, 2, 3, 4],
+            "coefficients": [5],
+            "phase_gradient": [6],
+            "work": [7, 8, 9, 10],
+        }
+        mode_registers = [[11, 12], [13, 14]]
+        with pytest.raises(ValueError, match="electronic states"):
+            _validate_registers(registers, mode_registers, n_modes=2, n_states=4)
 
     def test_init_derives_diag_keys_with_traced_wire_label(self):
         """Test that ``__init__`` derives the diagonalization keys from the concrete Hamiltonian,
@@ -604,6 +686,30 @@ class TestDecomposition:
         op = make_op(hamiltonian, make_wires(2, 2), evolution_time=0.7)
         jaxpr = jax.make_jaxpr(lambda: op.compute_decomposition(**op.arguments))()
         assert len(jaxpr.eqns) > 0
+
+    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
+    def test_decomposition_resource_consistency_under_capture(self, seed):
+        """Test that the decomposition rule is resource-consistent under program capture.
+
+        ``assert_valid`` alone does not exercise this: its decomposition-consistency check runs
+        before capture is (internally, temporarily) enabled by its own capture check, so a
+        decomposition rule that is only consistent without capture (e.g. because one of its
+        sub-operations is a legacy :class:`~.Operation` whose wire/hyperparameter structure does
+        not round-trip through capture) would otherwise go undetected. This directly exercises
+        ``_test_decomposition_rule`` -- the same helper ``assert_valid`` uses internally, and the
+        same one used by e.g. ``test_incrementer.py::test_decomposition_capture`` -- with capture
+        enabled (via the ``capture`` marker), which ``test_decomposition_captures_into_plxpr``
+        (only asserting ``len(jaxpr.eqns) > 0``) does not.
+        """
+        from pennylane.ops.functions.assert_valid import (  # pylint: disable=import-outside-toplevel
+            _test_decomposition_rule,
+        )
+
+        hamiltonian = build_hamiltonian(fragment_list(n_states=2, n_modes=2, seed=seed))
+        op = make_op(hamiltonian, make_wires(2, 2), evolution_time=0.7)
+        rule = qp.list_decomps(qp.TrotterVibronic)[0]
+        _test_decomposition_rule(op, rule, skip_decomp_matrix_check=True)
 
 
 # ---------------------------------------------------------------------------

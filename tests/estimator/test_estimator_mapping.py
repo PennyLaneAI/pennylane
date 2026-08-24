@@ -444,10 +444,13 @@ class TestMapToResourceOp:
         reading the mode/state/grid sizes, precisions and wires off the operator arguments."""
         n_states, n_modes, k, b = 4, 2, 3, 2
         n = int(qp.math.ceil_log2(n_states))
+        # The mapping assumes the standard XOR fragmentation (arXiv:2411.13669), which has
+        # ``num_fragments == n_states`` position fragments when ``n_states`` is a power of 2.
+        num_fragments = n_states
         hamiltonian = {
-            "constant": np.zeros((1, n_states, n_states)),
-            "linear": np.zeros((1, n_states, n_states, n_modes)),
-            "quadratic": np.zeros((1, n_states, n_states, n_modes, n_modes)),
+            "constant": np.zeros((num_fragments, n_states, n_states)),
+            "linear": np.zeros((num_fragments, n_states, n_states, n_modes)),
+            "quadratic": np.zeros((num_fragments, n_states, n_states, n_modes, n_modes)),
             "kinetic": np.einsum("ab,cd->abcd", np.eye(n_states), np.diag(0.3 * np.ones(n_modes))),
         }
         wires = qp.registers(
@@ -495,6 +498,46 @@ class TestMapToResourceOp:
         assert mapped_op.order == 2
         assert mapped_op.phase_grad_precision == 2.0**-b
         assert mapped_op.coeff_precision == 2.0**-b
+
+    def test_map_to_resource_op_trotter_vibronic_rejects_nonstandard_fragmentation(self):
+        """Test that _map_to_resource_op raises when the Hamiltonian's number of position
+        fragments does not match the standard XOR fragmentation assumed by the resource model
+        (``VibronicHamiltonian`` derives its cost purely from ``num_states``, so a Hamiltonian
+        with a different number of fragments would otherwise silently map to the same, wrong,
+        resource estimate)."""
+        n_states, n_modes, k, b = 4, 2, 3, 2
+        n = int(qp.math.ceil_log2(n_states))
+        num_fragments = 1  # standard fragmentation requires num_fragments == n_states == 4
+        hamiltonian = {
+            "constant": np.zeros((num_fragments, n_states, n_states)),
+            "linear": np.zeros((num_fragments, n_states, n_states, n_modes)),
+            "quadratic": np.zeros((num_fragments, n_states, n_states, n_modes, n_modes)),
+            "kinetic": np.einsum("ab,cd->abcd", np.eye(n_states), np.diag(0.3 * np.ones(n_modes))),
+        }
+        wires = qp.registers(
+            {
+                "electronic": n,
+                "vib_wires": n_modes * k,
+                "cache": 2 * k,
+                "coefficients": b,
+                "phase_gradient": b,
+                "work": max(n - 1, 2 * k, 2 * b + 2),
+            }
+        )
+        operator = qp.TrotterVibronic(
+            evolution_time=0.5,
+            num_trotter_steps=3,
+            hamiltonian=hamiltonian,
+            electronic=wires["electronic"],
+            vib_wires=wires["vib_wires"],
+            cache=wires["cache"],
+            coefficients=wires["coefficients"],
+            phase_gradient=wires["phase_gradient"],
+            work=wires["work"],
+            aqft_order=1,
+        )
+        with pytest.raises(ValueError, match="fragment"):
+            _map_to_resource_op(operator)
 
     @pytest.mark.parametrize(
         "operator, expected_res_op",
