@@ -370,11 +370,17 @@ def _normalize_leaf_determinant(hamiltonian):
 
 
 def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, double_phase):
-    r"""Apply the two-body ``IsingZZ`` layer (base / double-phase / genuine controlled)."""
+    r"""Apply the two-body ``IsingZZ`` layer (base / double-phase / genuine controlled).
+
+    Genuine control and double-phase are mutually exclusive constructions for a controlled
+    ``IsingZZ``, chosen once here via ``is_double_phase``: genuine control sandwiches each
+    ``IsingZZ`` individually (inside :func:`~._emit_two_body_isingzz`); double-phase instead
+    shares *one* ``CNOT`` sandwich across every term touching a given ``wire_idx0``, which is
+    cheaper since ``IsingZZ`` itself stays uncontrolled either way.
+    """
     num_cas = Z.shape[0]
-    # The shared CNOT sandwich is only used by the double-phase construction; the genuine
-    # controlled circuit controls each IsingZZ individually inside ``_emit_two_body_isingzz``.
-    sandwich = len(control_wires) > 0 and double_phase
+    # Double-phase assumes a single control wire; ``register_condition`` below enforces this.
+    is_double_phase = len(control_wires) == 1 and double_phase
 
     def zz_rotations(wire_idx0):
 
@@ -393,14 +399,15 @@ def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, dou
             # inside ``_emit_two_body_isingzz`` (for the genuine-controlled CRZ-style synthesis) is
             # an unrelated gate-decomposition detail, not a second physics prefactor.
             angle = 0.5 * Z[wire_idx0 // 2, wire_idx1 // 2] * first_order_time_step
-            _emit_two_body_isingzz(
-                angle, wires[wire_idx0], wires[wire_idx1], control_wires, double_phase
-            )
+            if is_double_phase:
+                IsingZZ(angle, [wires[wire_idx0], wires[wire_idx1]])
+            else:
+                _emit_two_body_isingzz(angle, wires[wire_idx0], wires[wire_idx1], control_wires)
 
-        if sandwich:
+        if is_double_phase:
             CNOT([control_wires[0], wires[wire_idx0]])
         _zz_rotations()
-        if sandwich:
+        if is_double_phase:
             CNOT([control_wires[0], wires[wire_idx0]])
 
     for wire_idx0 in range(2 * num_cas - 1):

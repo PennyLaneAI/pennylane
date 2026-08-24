@@ -425,12 +425,18 @@ def _normalize_leaf_determinant(hamiltonian):
 
 
 def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, double_phase):
-    """Apply the two-body ``IsingZZ`` layer (base / double-phase / genuine controlled)."""
+    """Apply the two-body ``IsingZZ`` layer (base / double-phase / genuine controlled).
+
+    Genuine control and double-phase are mutually exclusive constructions for a controlled
+    ``IsingZZ``, chosen once here via ``is_double_phase``: genuine control sandwiches each
+    ``IsingZZ`` individually (inside :func:`~._emit_two_body_isingzz`); double-phase instead
+    shares *one* ``CNOT`` sandwich across every term touching a given ``wire_lp``, which is
+    cheaper since ``IsingZZ`` itself stays uncontrolled either way.
+    """
     num_modes = Z.shape[0]
     n_states = Z.shape[2]
-    # The shared CNOT sandwich is only used by the double-phase construction; the genuine
-    # controlled circuit controls each IsingZZ individually inside ``_emit_two_body_isingzz``.
-    sandwich = len(control_wires) > 0 and double_phase
+    # Double-phase assumes a single control wire; ``register_condition`` below enforces this.
+    is_double_phase = len(control_wires) == 1 and double_phase
 
     for l in range(1, num_modes):
         for m in range(l):  # strict lower triangle: l > m
@@ -446,12 +452,15 @@ def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, dou
                     wire_mq = wires[m * n_states + q]
                     lam = Z_lm[p, q]
                     angle = 0.5 * lam * first_order_time_step
-                    _emit_two_body_isingzz(angle, wire_lp, wire_mq, control_wires, double_phase)
+                    if is_double_phase:
+                        IsingZZ(angle, [wire_lp, wire_mq])
+                    else:
+                        _emit_two_body_isingzz(angle, wire_lp, wire_mq, control_wires)
 
-                if sandwich:
+                if is_double_phase:
                     CNOT([control_wires[0], wire_lp])
                 _q_loop()
-                if sandwich:
+                if is_double_phase:
                     CNOT([control_wires[0], wire_lp])
 
             _p_loop()
