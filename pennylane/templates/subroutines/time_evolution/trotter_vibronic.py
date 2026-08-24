@@ -22,8 +22,8 @@ from pennylane import capture, compiler, math
 from pennylane.allocation import allocate
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, controlled_resource_rep, register_resources
-from pennylane.ops import CNOT, Hadamard, X, adjoint, cond
+from pennylane.decomposition import add_decomps, register_resources
+from pennylane.ops import CNOT, Hadamard, X, adjoint, cond, ctrl
 from pennylane.typing import AbstractWires, Float, Wire
 from pennylane.wires import Wires, WiresLike
 
@@ -346,20 +346,10 @@ def _trotter_vibronic_resources(
     adj_signed_out_mult = adjoint(signed_out_mult)
     adj_aqft = adjoint(aqft)
 
-    # ``Incrementer`` is still a legacy ``Operation`` (no ``Operator2`` port yet -- tracked
-    # separately), so its controlled form is declared via ``controlled_resource_rep``. The
-    # sign-bit-controlled two's complement (compute + uncompute) acts on the ``k``-wire mode
+    # The sign-bit-controlled two's complement (compute + uncompute) acts on the ``k``-wire mode
     # register (linear terms) and the ``2k``-wire cache register (bilinear terms).
-    ctrl_incrementer_linear = controlled_resource_rep(
-        Incrementer,
-        {"num_wires": k, "num_work_wires": max(n_work - 1, 0)},
-        num_control_wires=1,
-    )
-    ctrl_incrementer_bilinear = controlled_resource_rep(
-        Incrementer,
-        {"num_wires": 2 * k, "num_work_wires": max(n_work - 1, 0)},
-        num_control_wires=1,
-    )
+    ctrl_incrementer_linear = ctrl(Incrementer(Wire[k], Wire[max(n_work - 1, 0)]), Wire[1])
+    ctrl_incrementer_bilinear = ctrl(Incrementer(Wire[2 * k], Wire[max(n_work - 1, 0)]), Wire[1])
 
     resources = defaultdict(int)
 
