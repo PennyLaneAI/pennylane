@@ -286,7 +286,7 @@ def _not_equal(self, lhs, rhs):
 def _not_equal(self, lhs, rhs):
     if isinstance(lhs, MeasurementValue) or isinstance(rhs, MeasurementValue):
         return lhs & rhs
-    return jax.lax.ne_p.bind(lhs, rhs)
+    return jax.lax.and_p.bind(lhs, rhs)
 
 
 def plxpr_to_tape(plxpr: "jax.extend.core.Jaxpr", consts, *args, shots=None) -> QuantumScript:
