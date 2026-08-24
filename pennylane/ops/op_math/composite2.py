@@ -20,7 +20,7 @@ import abc
 from collections.abc import Callable, Sequence
 
 # pylint: disable=invalid-sequence-index
-from typing import override
+from typing import Sequence, override
 
 import pennylane as qp
 from pennylane import math
