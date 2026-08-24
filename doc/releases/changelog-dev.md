@@ -1054,16 +1054,13 @@
   [(#10018)](https://github.com/PennyLaneAI/pennylane/pull/10018)
   [(#9933)](https://github.com/PennyLaneAI/pennylane/pull/9933)
   [(#10052)](https://github.com/PennyLaneAI/pennylane/pull/10052)
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
   - Quantum chemistry operators are ported:
     - :class:`~.SingleExcitation`
   [(#9944)](https://github.com/PennyLaneAI/pennylane/pull/9944)
   - Miscelleneous operators are ported:
     - :class:`~.PauliMeasure`
   [(#10005)](https://github.com/PennyLaneAI/pennylane/pull/10005)
-
-* `OutSquare` and `SignedOutSquare` now share a private `_SquareArithmeticOp` base class,
-  removing duplicated wire-validation boilerplate between the two templates.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
 
 * The `cond` primitive no longer adds an artificial `True` Literal for the predicate of the default
   else branch.
