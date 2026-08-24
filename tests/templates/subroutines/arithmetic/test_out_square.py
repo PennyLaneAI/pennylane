@@ -61,10 +61,23 @@ def test_abstract_init(x_wires, output_wires, work_wires, output_wires_zeroed):
     assert abstractify(concrete_op) == abstract_op
 
 
-def test_abstract_init_validation():
+def test_abstract_init_mixed_concrete_and_abstract_wires():
+    """Test that __abstract_init__ is triggered and behaves correctly when only some of
+    the wire registers are abstract, while others are concrete."""
+    x_wires = [0, 1]
+    output_wires = [2, 3, 4]
+    op = OutSquare(x_wires, output_wires, Wire[3], output_wires_zeroed=False)
+    assert op.is_abstract
+    assert len(op.x_wires) == len(x_wires)
+    assert len(op.output_wires) == len(output_wires)
+    assert len(op.work_wires) == 3
+
+
+@pytest.mark.parametrize("output_wires_zeroed", [False, True])
+def test_abstract_init_validation(output_wires_zeroed):
     """Test that abstract init validates the number of work wires."""
     with pytest.raises(ValueError, match="OutSquare requires at least"):
-        OutSquare(Wire[3], Wire[3], Wire[1], output_wires_zeroed=False)
+        OutSquare(Wire[3], Wire[3], Wire[1], output_wires_zeroed=output_wires_zeroed)
 
 
 def test_wires_property():

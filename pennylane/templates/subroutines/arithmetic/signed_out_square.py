@@ -244,7 +244,7 @@ class SignedOutSquare(Operator2):
         if len(work_wires) < num_required_work_wires:
             raise ValueError(
                 f"SignedOutSquare requires at least {num_required_work_wires} work wires for "
-                f"{n} input wires, {m} output wires and {output_wires_zeroed=}."
+                f"{n} input wires, {m} output wires and {output_wires_zeroed=}. "
                 f"Got {len(work_wires)} work wires instead."
             )
 
@@ -277,11 +277,14 @@ class SignedOutSquare(Operator2):
         n = len(x_wires)
         m = len(output_wires)
 
+        # Work wires required for the unsigned square (its input is reduced by one)
         num_required_work_wires = min(n, m) if output_wires_zeroed else m
+        # Work wires required for the first correction adder are `min(m-n, n)-1`, which is smaller
+        # than `m` and smaller than `n`, so that the unsigned square always needs more work wires.
         if len(work_wires) < num_required_work_wires:
             raise ValueError(
                 f"SignedOutSquare requires at least {num_required_work_wires} work wires for "
-                f"{n} input wires, {m} output wires and {output_wires_zeroed=}."
+                f"{n} input wires, {m} output wires and {output_wires_zeroed=}. "
                 f"Got {len(work_wires)} work wires instead."
             )
 
