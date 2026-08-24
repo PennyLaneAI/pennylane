@@ -506,9 +506,19 @@ def _check_pytree(op):
             "metadata and data must be able to reproduce the original operation"
         ) from e
 
+    try:
+        import jax
+
+        leaves, struct = jax.tree_util.tree_flatten(op)
+        unflattened = jax.tree_util.tree_unflatten(struct, leaves)
+        assert unflattened == op, f"op must be a valid pytree. Got {unflattened} instead of {op}."
+
+    except ImportError:
+        pass
+
     leaves, struct = qp.pytrees.flatten(op)
-    unflattened_op = qp.pytrees.unflatten(leaves, struct)
-    assert unflattened_op == op, f"op must be a valid pytree. Got {unflattened_op} instead of {op}."
+    unflattened = qp.pytrees.unflatten(leaves, struct)
+    assert unflattened == op, f"op must be a valid pytree. Got {unflattened} instead of {op}."
 
     if isinstance(op, Operator1):
         # Nested operators can contribute parameters or structural leaves (such as Operator2
