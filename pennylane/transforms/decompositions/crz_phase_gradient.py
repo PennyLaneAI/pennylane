@@ -19,10 +19,11 @@ Factory that produces a decomposition rule for CRZ in terms of
 import numpy as np
 
 import pennylane as qp
-from pennylane.decomposition import change_op_basis_resource_rep, controlled_resource_rep
+from pennylane.decomposition import change_op_basis_resource_rep
 from pennylane.ops import Prod
+from pennylane.typing import Bool, Wire
 
-from .decomp_rz_phase_gradient import validate_phase_gradient_wires
+from .rz_phase_gradient import validate_phase_gradient_wires
 
 
 def make_crz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
@@ -58,7 +59,7 @@ def make_crz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
     .. code-block:: python
 
         import pennylane as qp
-        from pennylane.labs.transforms import make_crz_to_phase_gradient_decomp
+        from pennylane.transforms.decompositions import make_crz_to_phase_gradient_decomp
         import numpy as np
 
         qp.decomposition.enable_graph()
@@ -108,31 +109,23 @@ def make_crz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
         angle_wires, phase_grad_wires, work_wires
     )
 
-    def _resource_fn():
+    def _resource_fn(phi, wires):  # pylint: disable=unused-argument
         precision = len(angle_wires)
         # decomposition costs, using information about angle_wires etc from the outer scope
-        target_op = qp.resource_rep(
-            qp.SemiAdder,
-            num_x_wires=precision,
-            num_y_wires=precision,
-            num_work_wires=len(work_wires),
+        target_op = qp.SemiAdder(
+            Wire[precision],
+            Wire[precision],
+            Wire[len(work_wires)],
         )
-        fanout_angle = controlled_resource_rep(
-            qp.BasisState, {"num_wires": precision}, num_control_wires=1, num_zero_control_values=0
-        )
-        fanout_addsub = controlled_resource_rep(
-            qp.BasisState, {"num_wires": precision}, num_control_wires=1, num_zero_control_values=1
-        )
-        compute_op = uncompute_op = qp.resource_rep(
-            Prod, resources={fanout_angle: 1, fanout_addsub: 1}
-        )
+        fanout = qp.ctrl(qp.BasisState(Bool[precision], Wire[precision]), control=Wire[1])
+        compute_op = uncompute_op = qp.resource_rep(Prod, resources={fanout: 2})
         change_basis_rep = change_op_basis_resource_rep(compute_op, target_op, uncompute_op)
         return {change_basis_rep: 1}
 
     @qp.register_resources(_resource_fn)
-    def _decomp_fn(angle, wires, **_):
+    def _decomp_fn(phi, wires):  # pylint: disable=unused-argument
         precision = len(angle_wires)
-        binary_int = qp.math.binary_decimals(angle, precision, unit=4 * np.pi)
+        binary_int = qp.math.binary_decimals(phi, precision, unit=4 * np.pi)
 
         def compute_fn():
             qp.ctrl(qp.BasisState(binary_int, angle_wires), control=wires[0])

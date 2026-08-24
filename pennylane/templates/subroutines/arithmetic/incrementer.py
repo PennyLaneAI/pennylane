@@ -17,14 +17,10 @@ from pennylane import compiler, math
 from pennylane.capture import enabled
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator
-from pennylane.decomposition import (
-    add_decomps,
-    register_condition,
-    register_resources,
-    resource_rep,
-)
+from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.ops import CNOT, MultiControlledX, PauliX, X, adjoint, cond
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
 
 from .temporary_and import TemporaryAND
@@ -281,15 +277,7 @@ def _incrementer_fallback_resources(num_wires, num_work_wires, **_):
     resources = {}
 
     for i in range(num_wires - 1, 1, -1):
-        resources[
-            resource_rep(
-                MultiControlledX,
-                num_control_wires=i - 1,
-                num_zero_control_values=0,
-                num_work_wires=num_work_wires,
-                work_wire_type="borrowed",
-            )
-        ] = 1
+        resources[MultiControlledX(Wire[i], work_wires=Wire[num_work_wires])] = 1
 
     resources[PauliX] = 1
 

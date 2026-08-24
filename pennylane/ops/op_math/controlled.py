@@ -107,11 +107,11 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
             qp.ctrl(qp.RX, (1,2,3), control_values=(0,1,0))(x, wires=0)
             return qp.expval(qp.Z(0))
 
-    >>> print(qp.draw(circuit)("x"))
-    0: ────╭RX(x)─┤  <Z>
-    1: ────├○─────┤
-    2: ──X─├●─────┤
-    3: ────╰○─────┤
+    >>> print(qp.draw(circuit)(0.5))
+    0: ────╭RX(0.50)─┤  <Z>
+    1: ────├○────────┤
+    2: ──X─├●────────┤
+    3: ────╰○────────┤
     >>> x = qp.numpy.array(1.2, requires_grad=True)
     >>> circuit(x)
     tensor(0.362..., requires_grad=True)
@@ -158,9 +158,7 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
     Array([0.25      , 0.25      , 0.03661165, 0.46338835], dtype=float64)
     """
 
-    if (active_jit := compiler.active_compiler()) and not (
-        isinstance(op, Operator2) and op.is_abstract
-    ):
+    if (active_jit := compiler.active_compiler()) and not isinstance(op, Operator2):
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
         return ops_loader.ctrl(
@@ -256,7 +254,8 @@ def _resolve_ctrl_values(control_values, base_ctrl_values, num_control: int):
     if isinstance(base_ctrl_values, AbstractArray):
         return Bool[len(control_values) + len(base_ctrl_values)]
 
-    return math.concatenate([control_values, base_ctrl_values])
+    control_values = math.array(control_values)
+    return math.array(math.concatenate([control_values, base_ctrl_values]), dtype=bool)
 
 
 def _is_empty_or_all_true(control_values):
@@ -301,7 +300,8 @@ def custom_ctrl_dispatch(base, control, control_values, work_wires, work_wire_ty
 def create_controlled_op(op, control, control_values, work_wires, work_wire_type):
     """Default ``qp.ctrl`` implementation, allowing other implementations to call it when needed."""
 
-    control = Wires(control)
+    if not isinstance(control, AbstractWires):
+        control = Wires(control)
     if isinstance(control_values, (int, bool)):
         control_values = [bool(control_values)]
     elif isinstance(control_values, tuple):
@@ -1034,39 +1034,16 @@ def _is_single_qubit_special_unitary(op):
     return math.allclose(det, 1)
 
 
-def _decompose_pauli_x_based_no_control_values(op: Controlled):
-    """Decomposes a PauliX-based operation"""
-
-    if isinstance(op.base, qp.PauliX) and len(op.control_wires) == 1:
-        return [qp.CNOT(wires=op.wires)]
-
-    if isinstance(op.base, qp.PauliX) and len(op.control_wires) == 2:
-        return qp.Toffoli.compute_decomposition(wires=op.wires)
-
-    if isinstance(op.base, qp.CNOT) and len(op.control_wires) == 1:
-        return qp.Toffoli.compute_decomposition(wires=op.wires)
-
-    return qp.MultiControlledX.compute_decomposition(
-        wires=op.wires,
-        work_wires=op.work_wires,
-        work_wire_type=op.work_wire_type,
-    )
-
-
 # pylint: disable=too-many-return-statements
 def _decompose_custom_ops(op: Controlled) -> list[Operator] | None:
     """Custom handling for decomposing a controlled operation"""
 
-    pauli_x_based_ctrl_ops = _get_pauli_x_based_ops()
     ops_with_custom_ctrl_ops = base_to_custom_ctrl_op()
 
     custom_key = (type(op.base), len(op.control_wires))
     if custom_key in ops_with_custom_ctrl_ops:
         custom_op_cls = ops_with_custom_ctrl_ops[custom_key]
         return custom_op_cls.compute_decomposition(*op.data, op.wires)
-    if isinstance(op.base, pauli_x_based_ctrl_ops):
-        # has some special case handling of its own for further decomposition
-        return _decompose_pauli_x_based_no_control_values(op)
 
     if isinstance(op.base, qp.GlobalPhase):
         # A singly-controlled global phase is the same as a phase shift on the control wire
@@ -1232,26 +1209,10 @@ def base_to_custom_ctrl_op():
     """
 
     ops_with_custom_ctrl_ops = {
-        (qp.PauliZ, 1): qp.CZ,
-        (qp.PauliZ, 2): qp.CCZ,
-        (qp.PauliY, 1): qp.CY,
-        (qp.CZ, 1): qp.CCZ,
         (qp.SWAP, 1): qp.CSWAP,
         (qp.Hadamard, 1): qp.CH,
-        (qp.RX, 1): qp.CRX,
         (qp.RY, 1): qp.CRY,
-        (qp.RZ, 1): qp.CRZ,
-        (qp.Rot, 1): qp.CRot,
         (qp.PhaseShift, 1): qp.ControlledPhaseShift,
+        (qp.U1, 1): qp.ControlledPhaseShift,
     }
     return ops_with_custom_ctrl_ops
-
-
-@functools.lru_cache(maxsize=1)
-def _get_pauli_x_based_ops():
-    """Gets a list of pauli-x based operations
-
-    This is placed inside a function to avoid circular imports.
-
-    """
-    return qp.X, qp.CNOT, qp.Toffoli, qp.MultiControlledX

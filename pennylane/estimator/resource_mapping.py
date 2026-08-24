@@ -199,7 +199,7 @@ def _(op: qops.PauliRot):
 
 @_map_to_resource_op.register
 def _(op: qops.PCPhase):
-    dim = op.hyperparameters["dimension"][0]
+    dim = op.dim
     return re_ops.PCPhase(num_wires=len(op.wires), dim=dim, wires=op.wires)
 
 
@@ -285,16 +285,16 @@ def _(op: qops.Toffoli):
 @_map_to_resource_op.register
 def _(op: qtemps.OutMultiplier):
     return re_temps.OutMultiplier(
-        a_num_wires=len(op.hyperparameters["x_wires"]),
-        b_num_wires=len(op.hyperparameters["y_wires"]),
+        a_num_wires=len(op.x_wires),
+        b_num_wires=len(op.y_wires),
         wires=op.wires,
     )
 
 
 @_map_to_resource_op.register
 def _(op: qtemps.SemiAdder):
-    x_wires = op.hyperparameters["x_wires"]
-    y_wires = op.hyperparameters["y_wires"]
+    x_wires = op.x_wires
+    y_wires = op.y_wires
 
     return re_temps.SemiAdder(
         max_register_size=max(len(x_wires), len(y_wires)),
@@ -439,7 +439,7 @@ def _(op: qops.BasisState):
 
 @_map_to_resource_op.register
 def _(op: qtemps.BasisEmbedding):
-    return re_temps.BasisEmbedding(num_wires=len(op.wires), wires=op.wires)
+    return re_ops.BasisState(num_wires=len(op.wires), wires=op.wires)
 
 
 @_map_to_resource_op.register
@@ -534,10 +534,10 @@ def _(op: qtemps.Reflection):
 
 @_map_to_resource_op.register
 def _(op: qtemps.GQSP):
-    be_op = op.hyperparameters["unitary"]
+    be_op = op.unitary
     mapped_be_op = _map_to_resource_op(be_op)
 
-    ctrl_wire = op.hyperparameters["control"]
+    ctrl_wire = op.control
     target_wires = mapped_be_op.wires
     total_wires = target_wires + Wires(ctrl_wire)
 

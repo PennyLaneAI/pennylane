@@ -21,7 +21,15 @@ from typing import override
 
 import numpy as np
 import pytest
-from operator2_utils import CompilableOp, DynOp, FullOp, HybridWireOp, NonParametricOp
+from operator2_utils import (
+    CompilableOp,
+    DynOp,
+    FullOp,
+    HybridOp,
+    HybridWireOp,
+    NonParametricOp,
+    ParametrizedHybridOp,
+)
 from scipy.sparse import csr_matrix
 
 import pennylane as qp
@@ -70,7 +78,6 @@ class TestInitSubclass:
         """Test that argnames are automatically sorted to be in signature order."""
 
         class DummyOp(qp.core.Operator2):
-
             wire_argnames = ("reg2", "reg1")
             dynamic_argnames = ("b", "a")
             static_argnames = ("s2", "s1")
@@ -86,7 +93,6 @@ class TestInitSubclass:
         assert DummyOp.hybrid_argnames == ("h1", "h2")
 
         class DummyOp2(qp.core.Operator2):
-
             compilable_argnames = ("c3", "c2", "c1")
 
             # pylint: disable=useless-parent-delegation
@@ -497,6 +503,18 @@ class TestInitSubclass:
 class TestOperatorInit:
     """Tests for ``Operator2.__init__``."""
 
+    def test_operators_without_fixed_shape_wires_raise_error_on_construction(self):
+        """Tests that operators cannot be constructed with wires of unbound length."""
+
+        with pytest.raises(ValueError, match="must be constructed with wires of fixed length"):
+            _ = ParametrizedHybridOp(
+                Float[3], Wire[-1], DynOp(Float[1], Wire[1])
+            )  # wire is not fixed
+        with pytest.raises(ValueError, match="must be constructed with wires of fixed length"):
+            _ = ParametrizedHybridOp(
+                Float[3], Wire[3], DynOp(Float[2], Wire[-1])
+            )  # hybrid wire is not fixed
+
     def test_arguments_bound(self):
         """Test that constructor positional/keyword arguments are bound into ``arguments``."""
 
@@ -688,6 +706,19 @@ class TestOperatorInit:
         with AnnotatedQueue() as q:
             op = DynOp(0.5, wires=0)
 
+        assert len(q) == 1
+        assert list(q.keys())[0].obj is op
+
+    def test_hybrid_operator_arguments_dequeued_on_init(self):
+        """Test that operator arguments to a hybrid op are removed from the queue,
+        for both ``Operator2`` and legacy ``Operator`` leaves."""
+
+        with AnnotatedQueue() as q:
+            op2_leaf = DynOp(0.5, wires=0)
+            op1_leaf = qp.PauliZ(1)
+            op = HybridOp([op2_leaf, op1_leaf], wires=[0, 1])
+
+        # Both operator leaves are dequeued, leaving only the hybrid op behind.
         assert len(q) == 1
         assert list(q.keys())[0].obj is op
 
