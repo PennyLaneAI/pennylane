@@ -32,7 +32,6 @@ from pennylane.templates.subroutines.time_evolution.trotter_vibronic import (
     _position_coefficients,
     _validate_registers,
 )
-from pennylane.typing import AbstractWires
 
 # ---------------------------------------------------------------------------
 # --------------------------- Test data helpers -----------------------------
@@ -392,33 +391,37 @@ class TestConstruction:
         with pytest.raises(ValueError, match="same size"):
             _validate_registers(registers, mode_registers, n_modes=2, n_states=2)
 
-    def test_init_derives_diag_keys_with_abstract_wires(self):
-        """Test that ``__init__`` derives the diagonalization keys from the concrete Hamiltonian
-        even when a wire register is abstract (traced).
+    def test_init_derives_diag_keys_with_traced_wire_label(self):
+        """Test that ``__init__`` derives the diagonalization keys from the concrete Hamiltonian,
+        and skips register-size validation, when a wire register contains a traced wire label.
 
-        The abstract-input handling lives directly in ``__init__`` (rather than in an
-        ``__abstract_init__`` override). ``__init__`` is invoked directly here because on this
-        branch the metaclass still routes abstract construction to the base ``__abstract_init__``;
-        once the #proj-operator2 change routes abstract construction through ``__init__`` (PR
-        #9788), ordinary construction will hit this path.
+        A genuinely traced wire label (as opposed to an ``AbstractWires`` structural placeholder)
+        does not trip the metaclass's abstract-construction detection, so this goes through the
+        ordinary public constructor and exercises ``__init__``'s abstract-wire handling directly.
+        An invalid ``vib_wires`` size is used to confirm that register validation (which would
+        otherwise reject it) is genuinely skipped, not merely coincidentally satisfied.
         """
+        jax = pytest.importorskip("jax")
         hamiltonian = build_hamiltonian(fragment_list())
         wires = make_wires(2, 2)
-        op = object.__new__(qp.TrotterVibronic)
-        qp.TrotterVibronic.__init__(
-            op,
-            evolution_time=0.5,
-            num_trotter_steps=1,
-            hamiltonian=hamiltonian,
-            electronic=AbstractWires(len(wires["electronic"])),
-            vib_wires=wires["vib_wires"],
-            coefficients=wires["coefficients"],
-            phase_gradient=wires["phase_gradient"],
-            cache=wires["cache"],
-            work=wires["work"],
-            aqft_order=1,
-        )
-        assert op.arguments["diag_keys"] == _derive_diag_keys(hamiltonian)
+
+        def make_traced(w0):
+            op = qp.TrotterVibronic(
+                evolution_time=0.5,
+                num_trotter_steps=1,
+                hamiltonian=hamiltonian,
+                electronic=[w0],
+                vib_wires=wires["vib_wires"][:-1],  # invalid size, skipped since w0 is traced
+                coefficients=wires["coefficients"],
+                phase_gradient=wires["phase_gradient"],
+                cache=wires["cache"],
+                work=wires["work"],
+                aqft_order=1,
+            )
+            assert op.arguments["diag_keys"] == _derive_diag_keys(hamiltonian)
+            return 0
+
+        jax.make_jaxpr(make_traced)(np.asarray(wires["electronic"][0]))
 
     def test_init_requires_diag_keys_for_traced_hamiltonian(self):
         """Test that ``__init__`` raises when the Hamiltonian is traced (abstract) and no
@@ -430,9 +433,7 @@ class TestConstruction:
         def make_traced(constant):
             traced = dict(hamiltonian)
             traced["constant"] = constant
-            op = object.__new__(qp.TrotterVibronic)
-            qp.TrotterVibronic.__init__(
-                op,
+            qp.TrotterVibronic(
                 evolution_time=0.5,
                 num_trotter_steps=1,
                 hamiltonian=traced,
@@ -538,6 +539,7 @@ class TestDecomposition:
         resources = rule.compute_resources(**op.arguments)
         assert resources.num_gates > 0
 
+    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_assert_valid(self):
         """Test that ``TrotterVibronic`` passes ``assert_valid``.
@@ -556,6 +558,7 @@ class TestDecomposition:
         op = make_op(hamiltonian, make_wires(2, 2), evolution_time=0.5)
         qp.ops.functions.assert_valid(op, skip_differentiation=True, skip_decomp_matrix_check=True)
 
+    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_optional_work_wires_are_allocated(self):
         """Test that ``cache`` and ``work`` are optional and dynamically allocated when omitted."""
