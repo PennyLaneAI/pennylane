@@ -26,7 +26,7 @@ import numpy as np
 from pennylane import math
 from pennylane.exceptions import WireError
 from pennylane.pytrees import register_pytree
-from pennylane.typing import AbstractWires
+from pennylane.typing import AbstractWires, _AbstractWireTypeFactory
 
 if util.find_spec("jax") is not None:
     jax = import_module("jax")
@@ -134,6 +134,11 @@ class Wires(Sequence):
     def __new__(cls, wires=None, _override=False):
         if isinstance(wires, AbstractWires):
             return wires
+        if isinstance(wires, _AbstractWireTypeFactory):
+            raise TypeError(
+                "'Wire' cannot be used on its own to represent a single wire, "
+                "Use 'Wire[1]' instead."
+            )
         return super().__new__(cls)
 
     def _flatten(self):

@@ -563,6 +563,9 @@ class _AbstractWireTypeFactory:
             raise TypeError("_AbstractWireTypeFactory's can only be subscripted with integers.")
         return AbstractWires(shape)
 
+    def __iter__(self):
+        raise TypeError("'Wire' object is not iterable. Use 'Wire[1]' to represent a single wire.")
+
 
 Wire = _AbstractWireTypeFactory()
 """An :class:`~.AbstractWires` subclass. It can be indexed to create :class:`~.AbstractWires` 
