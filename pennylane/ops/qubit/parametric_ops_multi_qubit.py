@@ -36,6 +36,7 @@ from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.math.decomposition import decomp_int_to_powers_of_two
 from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
 from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
@@ -1520,6 +1521,35 @@ def _isingzz_to_ppr(phi: TensorLike, wires: WiresLike, **_):
 add_decomps(IsingZZ, _isingzz_to_cnot_rz_cnot, _isingzz_to_ppr)
 add_decomps("Adjoint(IsingZZ)", adjoint_rotation2)
 add_decomps("Pow(IsingZZ)", pow_rotation2)
+
+
+# pylint: disable-next=unused-argument
+def _controlled_isingzz_resource(base, control_wires, control_values, work_wires, work_wire_type):
+    return {
+        qp.CNOT: 2,
+        _ctrl_abstract(RZ, Wire[len(control_wires)], Wire[len(work_wires)], work_wire_type): 1,
+    }
+
+
+@register_resources(_controlled_isingzz_resource)
+def _controlled_isingzz_decomp(base, control_wires, control_values, work_wires, work_wire_type):
+    r"""Controlled ``IsingZZ`` via the ctrl(compute-uncompute) pattern: ``IsingZZ(phi, [a, b])``
+    is itself ``CNOT(a, b); RZ(phi, b); CNOT(a, b)``, and only the ``RZ`` inside needs to become
+    controlled -- the conjugating ``CNOT``'s stay bare, since a controlled identity is the
+    identity."""
+    wire_a, wire_b = base.wires
+    qp.CNOT([wire_a, wire_b])
+    qp.ctrl(
+        RZ(base.phi, wires=wire_b),
+        control=control_wires,
+        control_values=control_values,
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
+    )
+    qp.CNOT([wire_a, wire_b])
+
+
+add_decomps("C(IsingZZ)", flip_zero_control2(_controlled_isingzz_decomp))
 
 
 class IsingXY(Operator2):
