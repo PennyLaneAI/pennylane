@@ -192,8 +192,8 @@ class SignedOutSquare(Operator2):
         Overall, we arrive at the following decomposition:
 
         >>> op = qp.SignedOutSquare(range(3), range(3, 10), range(10, 16), True)
-        >>> rule = qp.list_decomps(op)["signed_square_from_unsigned_square"]
-        >>> print(qp.draw(rule)(**op.arguments))
+        >>> qp.inspect_decomps(op, "signed_square_from_unsigned_square")
+        Decomposition 0 (name: signed_square_from_unsigned_square)
          0: ───────────────────────────────────╭●────────╭●──────────────╭●──────╭SemiAdder────┤
          1: ─╭OutSquare──|Ψ⟩───────╭X────╭●────│──────●╮─├●────╭X────────│───|Ψ⟩─│─────────────┤
          2: ─├OutSquare──────╭●────│─────│─────│───────│─│─────│──────●╮─├●──────│─────────────┤
@@ -210,6 +210,7 @@ class SignedOutSquare(Operator2):
         13: ─├OutSquare──────────────────────────────────────────────────────────├SemiAdder────┤
         14: ─├OutSquare──────────────────────────────────────────────────────────├SemiAdder────┤
         15: ─╰OutSquare──────────────────────────────────────────────────────────╰SemiAdder────┤
+        Gate Count: {Adjoint(TemporaryAND): 2, BasisState(AbstractArray((1,), bool, weak_type=True), wires=AbstractWires(1)): 2, CNOT: 6, MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool, weak_type=True)): 3, OutSquare(x_wires=AbstractWires(2), output_wires=AbstractWires(7), work_wires=AbstractWires(6), output_wires_zeroed=True): 1, PauliX: 8, SemiAdder(x_wires=AbstractWires(1), y_wires=AbstractWires(2), work_wires=AbstractWires(6)): 1, TemporaryAND: 2}
 
     """
 
@@ -249,13 +250,12 @@ class SignedOutSquare(Operator2):
             )
 
         wires_list = [x_wires, output_wires, work_wires]
-        wires_name = ["x_wires", "output_wires", "work_wires"]
 
         _wires_are_traced = any(math.is_abstract(w) for ws in wires_list for w in ws)
 
         if not _wires_are_traced:
-            wires_dict = dict(zip(wires_name, wires_list, strict=True))
-            for name0, name1 in combinations(wires_name, r=2):
+            wires_dict = dict(zip(self.wire_argnames, wires_list, strict=True))
+            for name0, name1 in combinations(self.wire_argnames, r=2):
                 if wires_dict[name0].intersection(wires_dict[name1]):
                     raise ValueError(f"None of the wires in {name1} should be included in {name0}.")
 

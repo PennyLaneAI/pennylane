@@ -238,13 +238,12 @@ class OutSquare(Operator2):
             )
 
         wires_list = [x_wires, output_wires, work_wires]
-        wires_name = ["x_wires", "output_wires", "work_wires"]
 
         _wires_are_traced = any(math.is_abstract(w) for ws in wires_list for w in ws)
 
         if not _wires_are_traced:
-            wires_dict = dict(zip(wires_name, wires_list, strict=True))
-            for name0, name1 in combinations(wires_name, r=2):
+            wires_dict = dict(zip(self.wire_argnames, wires_list, strict=True))
+            for name0, name1 in combinations(self.wire_argnames, r=2):
                 if wires_dict[name0].intersection(wires_dict[name1]):
                     raise ValueError(f"None of the wires in {name1} should be included in {name0}.")
 
