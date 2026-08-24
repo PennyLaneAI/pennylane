@@ -634,6 +634,12 @@ class TestAbstractWiresIntegration:
 
         assert Wires(qp.typing.Wire[4]) == qp.typing.Wire[4]
 
+    def test_unsubscripted_wire_raises(self):
+        """Test that unsubscripted ``Wire`` cannot be used as a wire argument."""
+
+        with pytest.raises(TypeError, match="'Wire' cannot be used on its own"):
+            _ = Wires(Wire)
+
     def test_addition(self):
         """Test for addition with AbstractWires."""
 
