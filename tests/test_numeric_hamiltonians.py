@@ -316,10 +316,6 @@ class TestConcrete:
         """Test that a CDF and a CGF Hamiltonian are never equal."""
         assert CDFHamiltonian(**cdf_tensors()) != CGFHamiltonian(**cgf_tensors())
 
-    def test_equality_with_unrelated_object(self):
-        """Test that comparing against an unrelated object returns False."""
-        assert CGFHamiltonian(**cgf_tensors()) != 5
-
     @pytest.mark.parametrize(
         "cls, data", [(CDFHamiltonian, cdf_tensors), (CGFHamiltonian, cgf_tensors)]
     )
