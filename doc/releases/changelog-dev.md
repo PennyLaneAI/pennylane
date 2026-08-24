@@ -11,7 +11,7 @@
   import pennylane as qp
 
   L, M, N = 2, 2, 3
-  ham = qp.numeric_hamiltonians.CGFHamiltonian(
+  ham = qp.CGFHamiltonian(
       core_tensors=np.random.rand(L + 1, M, M, N, N),
       leaf_tensors=np.random.rand(L + 1, M, N, N),
       nuc_constant=0.5,
@@ -24,7 +24,7 @@
   ```python
   import pennylane as qp
   from pennylane.typing import Float
-  qp.numeric_hamiltonians.CGFHamiltonian(Float[L + 1, M, M, N, N], Float[L + 1, M, N, N]).leaf_tensors
+  qp.CGFHamiltonian(Float[L + 1, M, M, N, N], Float[L + 1, M, N, N]).leaf_tensors
   ```
 
 * Added :func:`~pennylane.backline.triton_decoder` and
