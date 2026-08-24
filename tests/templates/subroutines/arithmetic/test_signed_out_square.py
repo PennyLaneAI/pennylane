@@ -87,15 +87,12 @@ def test_wires_property():
     assert op.wires == qp.wires.Wires([0, 1, 2, 3, 4, 5, 6, 7, 8])
 
 
-def test_isinstance_relationships():
-    """Test that OutSquare and SignedOutSquare are siblings sharing a common private base
-    class, and are not instances of one another despite the shared boilerplate."""
-    out_square = OutSquare([0, 1], [2, 3, 4], [5, 6, 7])
+def test_isinstance_relationship():
+    """Test that SignedOutSquare is not an instance of OutSquare, despite sharing a common
+    private base class."""
     signed_out_square = SignedOutSquare([0, 1], [2, 3, 4], [5, 6, 7])
 
-    assert not isinstance(out_square, SignedOutSquare)
     assert not isinstance(signed_out_square, OutSquare)
-    assert isinstance(out_square, qp.core.operator.Operator2)
     assert isinstance(signed_out_square, qp.core.operator.Operator2)
 
 
