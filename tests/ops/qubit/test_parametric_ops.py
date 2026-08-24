@@ -632,7 +632,9 @@ class TestDecompositions:
         """Tests that the decomposition of the IsingZZ gate is correct"""
         param = 0.1234
         op = qp.IsingZZ(param, wires=[3, 2])
-        res = op.decomposition()
+        # IsingZZ decomposes into a single ChangeOpBasis (so that its controlled version is
+        # efficient "for free"); expand one more level to get at the three underlying gates.
+        res = op.decomposition()[0].decomposition()
 
         assert len(res) == 3
 
@@ -660,7 +662,9 @@ class TestDecompositions:
         """Tests that the decomposition of the broadcasted IsingZZ gate is correct"""
         param = np.array([-0.1, 0.2, 0.5])
         op = qp.IsingZZ(param, wires=[3, 2])
-        res = op.decomposition()
+        # IsingZZ decomposes into a single ChangeOpBasis (so that its controlled version is
+        # efficient "for free"); expand one more level to get at the three underlying gates.
+        res = op.decomposition()[0].decomposition()
 
         assert len(res) == 3
 
@@ -686,6 +690,57 @@ class TestDecompositions:
 
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
+    def test_controlled_isingzz_decomposition_gates(self):
+        r"""Controlling ``IsingZZ`` should control only the inner ``RZ``, leaving the two
+        conjugating ``CNOT``'s bare. There's no dedicated ``C(IsingZZ)`` rule for this: writing
+        the bare decomposition as a ``change_op_basis`` (see ``_isingzz_to_cnot_rz_cnot``) lets
+        PennyLane's generic ``C(ChangeOpBasis)`` rule produce this automatically, since
+        ``IsingZZ`` is itself a compute-uncompute pattern:
+
+        .. code-block::
+
+            a: ─╭●───────────╭●─┤   =   IsingZZ(angle, [a, b])
+            b: ─╰X──RZ(angle)╰X─┤
+
+        so controlling it only requires controlling the ``RZ`` inside, via the standard
+        controlled-``RZ`` decomposition:
+
+        .. code-block::
+
+               b: ─RZ(angle/2)─╭X──RZ(-angle/2)─╭X─┤   =   Ctrl-RZ(angle, b)
+            ctrl: ─────────────╰●───────────────╰●─┤
+
+        Substituting the second diagram's four gates for the single ``RZ(angle, b)`` box in the
+        first gives the final six-gate circuit checked below.
+        """
+        op = qp.ctrl(qp.IsingZZ(0.6931, wires=[2, 3]), control=[4])
+
+        rule = qp.list_decomps(op)["controlled(_isingzz_to_cnot_rz_cnot)"]
+        with qp.queuing.AnnotatedQueue() as q:
+            rule(
+                base=op.base,
+                control_wires=op.control_wires,
+                control_values=op.control_values,
+                work_wires=op.work_wires,
+                work_wire_type=op.work_wire_type,
+            )
+        controlled_change_of_basis = q.queue[0]
+
+        rule = qp.list_decomps(controlled_change_of_basis)[0]
+        with qp.queuing.AnnotatedQueue() as q:
+            rule(
+                base=controlled_change_of_basis.base,
+                control_wires=controlled_change_of_basis.control_wires,
+                control_values=controlled_change_of_basis.control_values,
+                work_wires=controlled_change_of_basis.work_wires,
+                work_wire_type=controlled_change_of_basis.work_wire_type,
+            )
+        gates = q.queue
+
+        assert [g.name for g in gates] == ["CNOT", "CRZ", "CNOT"]
+        assert gates[0].wires == gates[2].wires == Wires([2, 3])
+        assert gates[1].wires == Wires([4, 3])
+
     @pytest.mark.parametrize(
         "control_wires, control_values, work_wires",
         [
@@ -696,15 +751,15 @@ class TestDecompositions:
         ],
     )
     def test_controlled_isingzz_decomposition(self, control_wires, control_values, work_wires):
-        """Test the registered ``C(IsingZZ)`` decomposition rule for one and two control wires,
-        including zero-valued control wires (exercising the ``flip_zero_control`` wrapping)."""
+        """Self-consistency of the (auto-generated) controlled ``IsingZZ`` decomposition rules
+        for one and two control wires, including zero-valued control wires."""
         op = qp.ctrl(
             qp.IsingZZ(0.6931, wires=[2, 3]),
             control=control_wires,
             control_values=control_values,
             work_wires=work_wires,
         )
-        for rule in qp.list_decomps("C(IsingZZ)"):
+        for rule in qp.list_decomps(op):
             _test_decomposition_rule(op, rule)
 
     two_wire_pcphases = [(0, [0, 1]), (1, [1, 0]), (2, ["a", 2]), (3, [1, 3]), (4, [9, 0])]

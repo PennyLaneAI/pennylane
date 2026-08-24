@@ -22,6 +22,7 @@ from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.ops import CNOT, RZ, GlobalPhase, IsingZZ, PhaseShift
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.templates.subroutines.qchem.basis_rotation import BasisRotation
 from pennylane.typing import Complex, Wire
@@ -561,11 +562,13 @@ def _cgf_resource_counts(num_trotter_steps, hamiltonian, has_control, double_pha
         resources[CNOT] += num_onebody_blocks * 2 * num_modes * n_states
         resources[RZ] += 1
     else:
-        # Genuine controlled: each IsingZZ -> controlled-IsingZZ (4 CNOT + 2 RZ) and each
-        # RZ -> controlled-RZ (2 CNOT + 2 RZ); the global phase becomes a PhaseShift on
-        # the control wire. There are no bare IsingZZ gates.
-        resources[RZ] += 2 * num_twobody_rotations + 2 * num_onebody_rotations
-        resources[CNOT] += 4 * num_twobody_rotations + 2 * num_onebody_rotations
+        # Genuine controlled: each RZ -> controlled-RZ (2 CNOT + 2 RZ, from ``_emit_one_body_rz``);
+        # each IsingZZ -> a genuinely controlled ``IsingZZ`` (from ``_emit_two_body_isingzz``,
+        # which lets PennyLane's registered ``C(IsingZZ)`` decomposition handle it); the global
+        # phase becomes a PhaseShift on the control wire. There are no bare IsingZZ gates.
+        resources[RZ] += 2 * num_onebody_rotations
+        resources[CNOT] += 2 * num_onebody_rotations
+        resources[_ctrl_abstract(IsingZZ, Wire[1])] += num_twobody_rotations
         resources[PhaseShift] += 1
 
     return dict(resources)

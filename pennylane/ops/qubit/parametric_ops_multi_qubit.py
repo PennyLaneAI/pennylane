@@ -29,14 +29,13 @@ import numpy as np
 import pennylane as qp
 from pennylane import compiler, math
 from pennylane.capture.autograph import disable_autograph
-from pennylane.core.operator import Operation, Operator, Operator2
+from pennylane.core.operator import Operation, Operator, Operator2, abstractify
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.math.decomposition import decomp_int_to_powers_of_two
 from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
 from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
@@ -1498,14 +1497,22 @@ class IsingZZ(Operator2):
 
 # pylint: disable-next=unused-argument
 def _isingzz_to_cnot_rz_cnot_resources(phi: TensorLike, wires: WiresLike | None = None):
-    return {qp.CNOT: 2, RZ: 1}
+    cob = abstractify(
+        qp.ops.op_math.ChangeOpBasis(
+            qp.CNOT(wires=Wire[2]), RZ(Float, wires=Wire[1]), qp.CNOT(wires=Wire[2])
+        )
+    )
+    return {cob: 1}
 
 
 @register_resources(_isingzz_to_cnot_rz_cnot_resources)
 def _isingzz_to_cnot_rz_cnot(phi: TensorLike, wires: WiresLike, **__):
-    qp.CNOT(wires=wires)
-    RZ(phi, wires=[wires[1]])
-    qp.CNOT(wires=wires)
+    r"""``IsingZZ`` as a compute-uncompute pattern: the two ``CNOT``'s move into/out of the basis
+    where the interaction is diagonal, and the ``RZ`` applies the only genuinely two-body-dependent
+    phase. Expressing it via :func:`~.change_op_basis` (instead of three bare gates) lets
+    PennyLane's generic ``C(ChangeOpBasis)`` rule automatically control only the ``RZ`` -- for any
+    number of control wires -- without a dedicated ``C(IsingZZ)`` rule."""
+    qp.change_op_basis(qp.CNOT(wires=wires), RZ(phi, wires=[wires[1]]), qp.CNOT(wires=wires))
 
 
 # pylint: disable-next=unused-argument
@@ -1521,35 +1528,6 @@ def _isingzz_to_ppr(phi: TensorLike, wires: WiresLike, **_):
 add_decomps(IsingZZ, _isingzz_to_cnot_rz_cnot, _isingzz_to_ppr)
 add_decomps("Adjoint(IsingZZ)", adjoint_rotation2)
 add_decomps("Pow(IsingZZ)", pow_rotation2)
-
-
-# pylint: disable-next=unused-argument
-def _controlled_isingzz_resource(base, control_wires, control_values, work_wires, work_wire_type):
-    return {
-        qp.CNOT: 2,
-        _ctrl_abstract(RZ, Wire[len(control_wires)], Wire[len(work_wires)], work_wire_type): 1,
-    }
-
-
-@register_resources(_controlled_isingzz_resource)
-def _controlled_isingzz_decomp(base, control_wires, control_values, work_wires, work_wire_type):
-    r"""Controlled ``IsingZZ`` via the ctrl(compute-uncompute) pattern: ``IsingZZ(phi, [a, b])``
-    is itself ``CNOT(a, b); RZ(phi, b); CNOT(a, b)``, and only the ``RZ`` inside needs to become
-    controlled -- the conjugating ``CNOT``'s stay bare, since a controlled identity is the
-    identity."""
-    wire_a, wire_b = base.wires
-    qp.CNOT([wire_a, wire_b])
-    qp.ctrl(
-        RZ(base.phi, wires=wire_b),
-        control=control_wires,
-        control_values=control_values,
-        work_wires=work_wires,
-        work_wire_type=work_wire_type,
-    )
-    qp.CNOT([wire_a, wire_b])
-
-
-add_decomps("C(IsingZZ)", flip_zero_control2(_controlled_isingzz_decomp))
 
 
 class IsingXY(Operator2):

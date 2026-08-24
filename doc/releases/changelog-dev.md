@@ -390,10 +390,10 @@
 
 <h3>Improvements 🛠</h3>
 
-* Added an efficient decomposition rule for a controlled :class:`~.IsingZZ`, controlling only the
-  ``RZ`` inside its ``CNOT; RZ; CNOT`` decomposition rather than every gate. This uses fewer gates
-  than the previous default of naively controlling the full decomposition, for any number of
-  control wires.
+* :class:`~.IsingZZ`'s decomposition is now expressed as a :func:`~.change_op_basis` (``CNOT``
+  compute/uncompute around the ``RZ``) instead of three bare gates. This lets PennyLane's generic
+  ``C(ChangeOpBasis)`` rule automatically control only the ``RZ`` for any number of control wires,
+  using fewer gates than the previous default of naively controlling every gate.
   [(#10059)](https://github.com/PennyLaneAI/pennylane/pull/10059)
 
 * Coprocessor connection addresses are grouped on :class:`~pennylane.Endpoint` as ``endpoint=qp.Endpoint(host, port)``, replacing the separate ``comm_host`` and ``oob_port`` fields.

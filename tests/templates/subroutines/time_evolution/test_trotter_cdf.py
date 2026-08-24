@@ -473,7 +473,15 @@ class TestControlledDecomposition:
             jaxpr = jax.make_jaxpr(circuit)(jax.numpy.array(0.4), *range(n + 1))
 
         ops = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.4, *range(n + 1)).operations
-        assert {type(op).__name__ for op in ops} == {"BasisRotation", "CNOT", "RZ", "PhaseShift"}
+        # ``ControlledOp2`` is a genuinely-controlled ``IsingZZ`` (see ``_emit_two_body_isingzz``);
+        # PennyLane's registered ``C(IsingZZ)`` decomposition handles it further.
+        assert {type(op).__name__ for op in ops} == {
+            "BasisRotation",
+            "CNOT",
+            "RZ",
+            "PhaseShift",
+            "ControlledOp2",
+        }
 
     def test_genuine_controlled_matches_expm(self, diagonal_hamiltonian_cdf):
         """By default ctrl(TrotterCDF) is a genuine controlled unitary: for an identity-leaf
