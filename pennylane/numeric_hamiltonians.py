@@ -221,9 +221,8 @@ class NumericHamiltonian:
                 return repr(tensor)
             return f"tensor(shape={_shape_of(tensor)})"
 
-        dims = ", ".join(f"{k}={v}" for k, v in self.dimensions.items())
         body = ", ".join(f"{n}={render(getattr(self, n))}" for n in _TENSOR_NAMES)
-        return f"{type(self).__name__}({dims}, {body})"
+        return f"{type(self).__name__}({body})"
 
 
 @dataclass(frozen=True, eq=False, repr=False)
@@ -235,9 +234,9 @@ class CDFHamiltonian(NumericHamiltonian):
 
     Args:
         core_tensors (TensorLike | AbstractArray): the core tensors, of shape
-            ``(L+1, N, N)``. Index ``0`` along the leading axis is the one-body fragment.
+            ``(L+1, N, N)``. The leading dimension's `0` index is the one-body core tensor, while the rest represent the two-body cores.
         leaf_tensors (TensorLike | AbstractArray): the leaf tensors, of shape
-            ``(L+1, N, N)``
+            ``(L+1, N, N)``. The leading dimension's `0` index represents the one-body leaf tensor, while the rest represents the two-body leaves.
         nuc_constant (float | AbstractArray | None): the nuclear constant energy offset.
             Defaults to ``0.0``.
 
@@ -306,7 +305,7 @@ class CGFHamiltonian(NumericHamiltonian):
     :attr:`num_modes`, :attr:`num_modals`, and :attr:`num_fragments`.
 
     Raises:
-        ValueError: if the tensor ranks or shared dimensions are inconsistent
+        ValueError: if the tensor ranks or shared dimensions are inconsistent.
 
     **Example**
 

@@ -2,10 +2,8 @@
 
 <h3>New features since last release</h3>
 
-* Added :class:`~pennylane.numeric_hamiltonians.NumericHamiltonian`, a lightweight container
-  class for Hamiltonians expressed as a dictionary of tensors. These Hamiltonians can be defined
-  with both concrete numeric data or abstract ``qp.typing.Float[...]``, and are registered as pytrees
-  so they can be supported through program capture and lowering as operator arguments.
+* Two new numeric Hamiltonians have been added called `:class:`~pennylane.CDFHamiltonian` (based on `arXiv:2506.15784, Sec. III A <https://arxiv.org/abs/2506.15784>`) and `:class:`~pennylane.CGFHamiltonian` (based on `arXiv:2508.11865, Sec. III C <https://arxiv.org/abs/2508.11865>`), which define compressed double-factorized (CDF) and Christiansen greedy-fragmentation Hamiltonians, respectively. These Hamiltonians can be defined
+  with both concrete numeric data or abstract data (using ``qp.typing.Float[...]``).
   [(#10048)](https://github.com/PennyLaneAI/pennylane/pull/10048)
 
   ```py
