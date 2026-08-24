@@ -53,11 +53,12 @@ class TestConstexprCacheKeys:
             "total": "u64",
         }
 
-        _persistent_decoder_kernel.create_binder()
-
         def ast_hash(decoder_fns):
             wrapped = builder._wrap_constexpr(decoder_fns)
-            src = _persistent_decoder_kernel.ASTSource(
+            # builder.ASTSource, not kernel.ASTSource via create_binder(): the latter asks
+            # the local machine for a target and so needs a usable GPU, which hashing an
+            # AST does not.
+            src = builder.ASTSource(
                 fn=_persistent_decoder_kernel,
                 constexprs={"decoder_fns": wrapped},
                 signature=signature,

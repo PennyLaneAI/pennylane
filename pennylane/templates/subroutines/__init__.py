@@ -38,6 +38,7 @@ from .fable import FABLE
 from .ffft import FFFT, TwoWireFFT
 from .select import Select
 from .prepselprep import PrepSelPrep
+from .multix import MultiX
 from .reflection import Reflection
 from .qubitization import Qubitization
 from .controlled_sequence import ControlledSequence
@@ -104,6 +105,7 @@ __all__ = [
     "Select",
     "SelectOnlyQRAM",
     "PrepSelPrep",
+    "MultiX",
     "Reflection",
     "Qubitization",
     "ControlledSequence",
