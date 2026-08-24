@@ -971,6 +971,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Updated the decomposition of :class:`~.SumOfSlatersPrep` to replace a recursive by an iterative
+  helper function to enable tracing it.
+  [(#10055)](https://github.com/PennyLaneAI/pennylane/pull/10055)
+
 * Updated :mod:`pennylane.pytrees` to consider `None` a Pytree. This makes PennyLane Pytrees more
   consistent with JAX Pytrees.
   [(#10045)](https://github.com/PennyLaneAI/pennylane/pull/10045)
