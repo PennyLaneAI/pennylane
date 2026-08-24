@@ -97,8 +97,6 @@ def stub_triton_compile_fixture(monkeypatch):
             {
                 "__name__": "decoder_kernel",
                 "arg_names": ["ring_u64_ptr"],
-                "ASTSource": fake_ast_source,
-                "create_binder": lambda _self: None,
             },
         )()
         fake_backend = type(
@@ -112,6 +110,7 @@ def stub_triton_compile_fixture(monkeypatch):
             metadata=SimpleNamespace(**metadata_kwargs),
             asm={"cubin": b"\x00\x01"},
         )
+        monkeypatch.setattr(builder, "ASTSource", fake_ast_source)
         monkeypatch.setattr(builder.triton.compiler, "make_backend", lambda _: fake_backend)
         monkeypatch.setattr(builder.triton, "compile", lambda *args, **kwargs: compile_result)
         return fake_kernel
