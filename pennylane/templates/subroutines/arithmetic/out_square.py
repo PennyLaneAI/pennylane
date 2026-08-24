@@ -48,9 +48,20 @@ class _SquareArithmeticOp(Operator2, is_baseclass=True):
         "work_wires": Wire[-1],
     }
 
-    def _check_work_wires(self, n, m, work_wires, output_wires_zeroed):
-        """Validate the number of work wires. Must be overridden by subclasses."""
+    @staticmethod
+    def _min_work_wires(n, m, output_wires_zeroed):
+        """The minimum number of work wires required for the given register sizes. Must be
+        overridden by subclasses."""
         raise NotImplementedError
+
+    def _check_work_wires(self, n, m, work_wires, output_wires_zeroed):
+        num_required_work_wires = self._min_work_wires(n, m, output_wires_zeroed)
+        if len(work_wires) < num_required_work_wires:
+            raise ValueError(
+                f"{type(self).__name__} requires at least {num_required_work_wires} work wires "
+                f"for {n} input wires, {m} output wires and {output_wires_zeroed=}. "
+                f"Got {len(work_wires)} work wires instead."
+            )
 
     def __init__(
         self,
@@ -276,13 +287,9 @@ class OutSquare(_SquareArithmeticOp):
 
     """
 
-    def _check_work_wires(self, n, m, work_wires, output_wires_zeroed):
-        num_required_work_wires = min(n + 1, m) if output_wires_zeroed else m
-        if len(work_wires) < num_required_work_wires:
-            raise ValueError(
-                f"OutSquare requires at least {num_required_work_wires} work wires for "
-                f"{n} input wires, {m} output wires and {output_wires_zeroed=}."
-            )
+    @staticmethod
+    def _min_work_wires(n, m, output_wires_zeroed):
+        return min(n + 1, m) if output_wires_zeroed else m
 
 
 def _out_square_with_adder_condition(

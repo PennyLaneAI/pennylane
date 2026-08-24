@@ -212,17 +212,12 @@ class SignedOutSquare(_SquareArithmeticOp):
 
     """
 
-    def _check_work_wires(self, n, m, work_wires, output_wires_zeroed):
+    @staticmethod
+    def _min_work_wires(n, m, output_wires_zeroed):
         # Work wires required for the unsigned square (its input is reduced by one)
-        num_required_work_wires = min(n, m) if output_wires_zeroed else m
         # Work wires required for the first correction adder are `min(m-n, n)-1`, which is smaller
         # than `m` and smaller than `n`, so that the unsigned square always needs more work wires.
-        if len(work_wires) < num_required_work_wires:
-            raise ValueError(
-                f"SignedOutSquare requires at least {num_required_work_wires} work wires for "
-                f"{n} input wires, {m} output wires and {output_wires_zeroed=}. "
-                f"Got {len(work_wires)} work wires instead."
-            )
+        return min(n, m) if output_wires_zeroed else m
 
 
 def _c_subtract_then_add_one_resources(n, m, num_work_wires, output_wires_zeroed):
