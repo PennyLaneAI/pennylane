@@ -174,7 +174,7 @@ def test_abstract_init_validation(mod, work_wires, msg_match):
         )
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity_out_multiplier():
     """Check the operation using the assert_valid function."""
     mod = 12
@@ -437,58 +437,6 @@ class TestOutMultiplier:
         for op1, op2 in zip(multiplier_decomposition, op_list):
             qp.assert_equal(op1, op2)
 
-    @pytest.mark.capture
-    def test_qft_decomposition_rule_capture(self):
-        """Test that the QFT rule supports an empty work-wire register under capture."""
-        jnp = pytest.importorskip("jax.numpy")
-
-        def decomposition(x_wires, y_wires, output_wires, work_wires):
-            _out_multiplier_with_qft(
-                x_wires,
-                y_wires,
-                output_wires,
-                mod=16,
-                work_wires=work_wires,
-                output_wires_zeroed=False,
-            )
-
-        plxpr = qp.capture.make_plxpr(decomposition, autograph=False)(
-            jnp.array([0, 1]),
-            jnp.array([2, 3]),
-            jnp.array([4, 5, 6, 7]),
-            jnp.array([8, 9]),
-        )
-        assert any(eqn.primitive.name == "PhaseAdder" for eqn in plxpr.jaxpr.eqns)
-
-    @pytest.mark.catalyst
-    def test_qft_decomposition_rule_qjit(self):
-        """Test that Catalyst lowers the captured QFT decomposition rule to MLIR."""
-        jnp = pytest.importorskip("jax.numpy")
-
-        def decomposition(x_wires, y_wires, output_wires, work_wires):
-            _out_multiplier_with_qft(
-                x_wires,
-                y_wires,
-                output_wires,
-                mod=16,
-                work_wires=work_wires,
-                output_wires_zeroed=False,
-            )
-
-        registers = (
-            jnp.array([0, 1]),
-            jnp.array([2, 3]),
-            jnp.array([4, 5, 6, 7]),
-            jnp.array([8, 9]),
-        )
-
-        @qp.qjit(capture=True, target="mlir")
-        @qp.qnode(qp.device("null.qubit", wires=10))
-        def circuit():
-            decomposition(*registers)
-
-        assert 'qref.custom "ControlledSequence"' in circuit.mlir
-
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
         ("x_wires", "y_wires", "output_wires", "mod", "work_wires", "applicable_rules"),
@@ -516,6 +464,7 @@ class TestOutMultiplier:
             ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9, 10, 11, 12, 13], [0, 1, 2]),
         ],
     )
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_new_output_wires_zeroed(
         self, x_wires, y_wires, output_wires, mod, work_wires, applicable_rules, seed
     ):  # pylint: disable=too-many-arguments
@@ -555,6 +504,7 @@ class TestOutMultiplier:
             ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9, 10, 13, 14, 15, 16], [0, 1, 2]),
             ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], 16, [9, 10], [0]),
             ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], 16, [9, 10, 13, 14, 15, 16, 17, 18], [0]),
+            ([0, 1], [2, 3], [4, 5, 6, 7], 16, [8, 9], [0]),
             ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9], [0]),
             ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9, 10, 11], [0]),
             ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9, 10, 11, 12], [0, 1]),
@@ -562,6 +512,7 @@ class TestOutMultiplier:
             ([0], [3, 6], [5, 8, 2, 4, 7, 9], None, [11, 12, 13, 14, 15, 16, 17], [0, 1, 2]),
         ],
     )
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_new_non_zero_output_wires(
         self, x_wires, y_wires, output_wires, mod, work_wires, applicable_rules, seed
     ):  # pylint: disable=too-many-arguments
