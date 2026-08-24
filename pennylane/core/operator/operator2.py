@@ -1770,16 +1770,16 @@ def _init_subclass_arg_specs_setup(cls: type[Operator2]) -> None:
 
     arg_specs = cls.arg_specs or {}
     argnames_in_specs = set(arg_specs.keys())
-    non_traced_argnames = set(cls.hybrid_argnames + cls.compilable_argnames + cls.static_argnames)
+    illegal_args_in_specs = set(cls.hybrid_argnames + cls.compilable_argnames + cls.static_argnames)
     traced_argnames = set(cls.dynamic_argnames + cls.wire_argnames)
 
-    if non_traced_argnames_in_specs := argnames_in_specs & non_traced_argnames:
+    if illegal_argnames := argnames_in_specs & illegal_args_in_specs:
         raise TypeError(
             f"{cls.__name__}.arg_specs can only contain dynamic and wire "
-            f"arguments, but got {non_traced_argnames_in_specs}."
+            f"arguments, but got {illegal_argnames}."
         )
 
-    cls.has_fixed_sig = argnames_in_specs == traced_argnames and len(non_traced_argnames) == 0
+    cls.has_fixed_sig = argnames_in_specs == traced_argnames and len(illegal_args_in_specs) == 0
 
     for name, exp_type in arg_specs.items():
         if isinstance(exp_type, _AbstractWireTypeFactory):
