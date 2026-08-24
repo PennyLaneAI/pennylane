@@ -242,6 +242,7 @@ __all__ = (
     "toggle_ctx",
     "pause",
     "eval_jaxpr",
+    "primitives",
     "CaptureMeta",
     "ABCCaptureMeta",
     "determine_abstracted_axes",
