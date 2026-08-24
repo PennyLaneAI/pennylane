@@ -19,6 +19,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.core.operator import abstractify
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math import Adjoint, Controlled
 from pennylane.templates.subroutines.arithmetic.out_square import (
@@ -26,6 +27,7 @@ from pennylane.templates.subroutines.arithmetic.out_square import (
     _out_square_with_adder,
     _out_square_with_caddsub,
 )
+from pennylane.typing import Wire
 
 
 @pytest.mark.parametrize("output_wires_zeroed", [False, True])
@@ -37,6 +39,38 @@ def test_standard_validity_out_square(output_wires_zeroed):
     work_wires = [11, 12, 13, 14, 15, 16, 17, 18, 19]
     op = OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
     qp.ops.functions.assert_valid(op)
+
+
+@pytest.mark.parametrize("output_wires_zeroed", [False, True])
+@pytest.mark.parametrize(
+    ("x_wires", "output_wires", "work_wires"),
+    [
+        ([0, 1], [2, 3, 4], [5, 6, 7]),
+        ([0, 1, 2], [3, 4], [5, 6]),
+    ],
+)
+def test_abstract_init(x_wires, output_wires, work_wires, output_wires_zeroed):
+    """Test that abstract init mirrors concrete init."""
+    abstract_op = OutSquare(
+        Wire[len(x_wires)],
+        Wire[len(output_wires)],
+        Wire[len(work_wires)],
+        output_wires_zeroed=output_wires_zeroed,
+    )
+    concrete_op = OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
+    assert abstractify(concrete_op) == abstract_op
+
+
+def test_abstract_init_validation():
+    """Test that abstract init validates the number of work wires."""
+    with pytest.raises(ValueError, match="OutSquare requires at least"):
+        OutSquare(Wire[3], Wire[3], Wire[1], output_wires_zeroed=False)
+
+
+def test_wires_property():
+    """Test that wires includes all registers, including work wires."""
+    op = OutSquare([0, 1, 2], [3, 4, 5], [6, 7, 8])
+    assert op.wires == qp.wires.Wires([0, 1, 2, 3, 4, 5, 6, 7, 8])
 
 
 def _test_square_correctness(all_wires, rule, seed, output_wires_zeroed, use_jit):
@@ -227,7 +261,7 @@ class TestOutSquare:
         """Tests the decomposition rule implemented with the new system."""
         op = OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
         for j, rule in enumerate(qp.list_decomps(OutSquare)):
-            applicable = rule.is_applicable(**op.resource_params)
+            applicable = rule.is_applicable(**op.arguments)
             assert applicable is (j in applicable_rules)
             _test_decomposition_rule(op, rule)
             if applicable:

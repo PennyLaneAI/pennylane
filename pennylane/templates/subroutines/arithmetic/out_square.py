@@ -18,7 +18,8 @@ Contains the OutSquare template.
 from collections import defaultdict
 from itertools import combinations
 
-from pennylane.core.operator import Operation
+from pennylane import math
+from pennylane.core.operator import Operator2
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -26,8 +27,7 @@ from pennylane.decomposition import (
     register_resources,
 )
 from pennylane.ops import CNOT, BasisState, X, adjoint, ctrl
-from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-from pennylane.typing import Bool, Wire
+from pennylane.typing import AbstractWires, Bool, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .incrementer import Incrementer
@@ -36,7 +36,7 @@ from .semi_adder import SemiAdder, _semi_adder_resources
 from .temporary_and import TemporaryAND
 
 
-class OutSquare(Operation):
+class OutSquare(Operator2):
     r"""Performs out-of-place squaring.
 
     This operator performs the squaring of an :math:`n`-qubit integer :math:`x` modulo
@@ -207,9 +207,14 @@ class OutSquare(Operation):
 
     """
 
-    grad_method = None
+    wire_argnames = ("x_wires", "output_wires", "work_wires")
+    compilable_argnames = ("output_wires_zeroed",)
 
-    resource_keys = {"num_x_wires", "num_output_wires", "num_work_wires", "output_wires_zeroed"}
+    arg_specs = {
+        "x_wires": Wire[-1],
+        "output_wires": Wire[-1],
+        "work_wires": Wire[-1],
+    }
 
     def __init__(
         self,
@@ -232,81 +237,73 @@ class OutSquare(Operation):
                 f"{n} input wires, {m} output wires and {output_wires_zeroed=}."
             )
 
-        registers = [
-            (work_wires, "work_wires"),
-            (output_wires, "output_wires"),
-            (x_wires, "x_wires"),
-        ]
-        for (reg0, reg0_name), (reg1, reg1_name) in combinations(registers, r=2):
-            if reg0.intersection(reg1):
-                raise ValueError(
-                    f"None of the wires in {reg0_name} should be included in {reg1_name}."
-                )
+        wires_list = [x_wires, output_wires, work_wires]
+        wires_name = ["x_wires", "output_wires", "work_wires"]
 
-        for wires, name in registers:
-            self.hyperparameters[name] = wires
+        _wires_are_traced = any(math.is_abstract(w) for ws in wires_list for w in ws)
 
-        self.hyperparameters["output_wires_zeroed"] = output_wires_zeroed
-        all_wires = x_wires + output_wires + work_wires
-        super().__init__(wires=all_wires)
+        if not _wires_are_traced:
+            wires_dict = dict(zip(wires_name, wires_list, strict=True))
+            for name0, name1 in combinations(wires_name, r=2):
+                if wires_dict[name0].intersection(wires_dict[name1]):
+                    raise ValueError(f"None of the wires in {name1} should be included in {name0}.")
 
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "num_x_wires": len(self.hyperparameters["x_wires"]),
-            "num_output_wires": len(self.hyperparameters["output_wires"]),
-            "num_work_wires": len(self.hyperparameters["work_wires"]),
-            "output_wires_zeroed": self.hyperparameters["output_wires_zeroed"],
-        }
-
-    @property
-    def num_params(self):
-        return 0
-
-    def _flatten(self):
-        metadata = tuple((key, value) for key, value in self.hyperparameters.items())
-        return tuple(), metadata
-
-    @classmethod
-    def _unflatten(cls, _, metadata):
-        hyperparams_dict = dict(metadata)
-        return cls(**hyperparams_dict)
-
-    def map_wires(self, wire_map: dict):
-        new_dict = {
-            key: [wire_map.get(w, w) for w in self.hyperparameters[key]]
-            for key in ["x_wires", "output_wires", "work_wires"]
-        }
-
-        return OutSquare(
-            new_dict["x_wires"],
-            new_dict["output_wires"],
-            new_dict["work_wires"],
-            self.hyperparameters["output_wires_zeroed"],
+        super().__init__(
+            x_wires,
+            output_wires,
+            work_wires,
+            output_wires_zeroed=output_wires_zeroed,
         )
 
-    @classmethod
-    def _primitive_bind_call(cls, *args, **kwargs):
-        return cls._primitive.bind(*args, **kwargs)
+    # pylint: disable=arguments-differ
+    def __abstract_init__(
+        self,
+        x_wires: AbstractWires | WiresLike,
+        output_wires: AbstractWires | WiresLike,
+        work_wires: AbstractWires | WiresLike,
+        output_wires_zeroed: bool = False,
+    ):
+        n = len(x_wires)
+        m = len(output_wires)
+
+        num_required_work_wires = min(n + 1, m) if output_wires_zeroed else m
+        if len(work_wires) < num_required_work_wires:
+            raise ValueError(
+                f"OutSquare requires at least {num_required_work_wires} work wires for "
+                f"{n} input wires, {m} output wires and {output_wires_zeroed=}."
+            )
+
+        super().__abstract_init__(
+            x_wires,
+            output_wires,
+            work_wires,
+            output_wires_zeroed=output_wires_zeroed,
+        )
+
+    @property
+    def wires(self):
+        """All wires involved in the operation."""
+        return self.x_wires + self.output_wires + self.work_wires
 
 
 def _out_square_with_adder_condition(
-    num_x_wires, num_output_wires, num_work_wires, output_wires_zeroed
+    x_wires, output_wires, work_wires, output_wires_zeroed=False
 ) -> bool:
-    n = num_x_wires
-    m = num_output_wires
+    n = len(x_wires)
+    m = len(output_wires)
     largest_adder = min(m, n + 1) if output_wires_zeroed else m
     # work wires: one for control cache, largest_adder-1 for adder
     min_num_work_wires = 1 + (largest_adder - 1)
-    return num_work_wires >= min_num_work_wires
+    return len(work_wires) >= min_num_work_wires
 
 
 def _out_square_with_adder_resources(
-    num_x_wires, num_output_wires, num_work_wires, output_wires_zeroed
+    x_wires, output_wires, work_wires, output_wires_zeroed=False
 ) -> dict:
     # pylint: disable=unused-argument
-    n = num_x_wires
-    m = num_output_wires
+    n = len(x_wires)
+    m = len(output_wires)
+    num_work_wires = len(work_wires)
     resources = defaultdict(int)
     if output_wires_zeroed:
         # Copying of first bit is a CNOT, all other bits require a TemporaryAND
@@ -335,7 +332,6 @@ def _out_square_with_adder(
     output_wires: WiresLike,
     work_wires: WiresLike,
     output_wires_zeroed: bool,
-    **_,
 ):
     n = len(x_wires)
     m = len(output_wires)
@@ -378,10 +374,10 @@ def _out_square_with_adder(
 
 
 def _out_square_with_caddsub_condition(
-    num_x_wires, num_output_wires, num_work_wires, output_wires_zeroed
+    x_wires, output_wires, work_wires, output_wires_zeroed=False
 ) -> bool:
-    n = num_x_wires
-    m = num_output_wires + 1
+    n = len(x_wires)
+    m = len(output_wires) + 1
     # We have a series of controlled adders, each of which has a control cache qubit, an
     # output augmentation qubit, and (output size - 1) work wires. Note that while the controlled
     # adder needs one more work wire to decompose Toffolis to elbows, this is not strictly needed
@@ -391,18 +387,19 @@ def _out_square_with_caddsub_condition(
     # There are multiple correction steps, the largest work wire demand is by the addition of
     # 2^n-x, which uses an adder of size m+1 and thus needs m work wires.
     min_num_work_wires = max(min(m, n + 1) + 1, m) if output_wires_zeroed else m + 1
-    return num_work_wires >= min_num_work_wires
+    return len(work_wires) >= min_num_work_wires
 
 
 def _out_square_with_caddsub_resources(
-    num_x_wires, num_output_wires, num_work_wires, output_wires_zeroed
+    x_wires, output_wires, work_wires, output_wires_zeroed=False
 ) -> dict:
     # pylint: disable=unused-argument
-    n = num_x_wires
-    m = num_output_wires + 1
+    n = len(x_wires)
+    m = len(output_wires) + 1
+    num_work_wires = len(work_wires)
     resources = defaultdict(int)
 
-    cnot_on_0_rep = _ctrl_abstract(X, Wire[1], num_zero_control_values=1)
+    cnot_on_0_rep = ctrl(X(Wire[1]), control=Wire[1], control_values=[0])
 
     # Controlled add-subtract loop
     loop_size = min(m, n)
@@ -427,7 +424,7 @@ def _out_square_with_caddsub_resources(
             resources[key] += value
 
     # Subtract 2^(2n)
-    if num_output_wires + 1 > 2 * n:
+    if m > 2 * n:
         resources[
             adjoint_resource_rep(
                 Incrementer,
@@ -456,7 +453,6 @@ def _out_square_with_caddsub(
     output_wires: WiresLike,
     work_wires: WiresLike,
     output_wires_zeroed: bool,
-    **_,
 ):
     r"""This decomposition uses controlled add-subtract blocks.
     We start with augmenting the output register by one auxiliary qubit that we add as the new
