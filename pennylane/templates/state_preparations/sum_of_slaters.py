@@ -293,7 +293,8 @@ def _find_single_w(bits):
 
 def _step_3_in_find_w(bits_basis, other_bits):
     """Step 3 of _find_w, which finds the single remaining vector w_1 once all other basis
-    vectors have been peeled off iteratively (i.e. the reduced problem has t=1)."""
+    vectors have been peeled off iteratively (i.e. the reduced problem has t=1). Returns the
+    vector with shape ``(r,)``."""
     r = bits_basis.shape[0]
     all_bits = np.concatenate([bits_basis, other_bits], axis=1)
     # Compute set(V) ∪ (set(V) - set(V)). We will skip 0 by starting our search at 1 below
@@ -310,7 +311,7 @@ def _step_3_in_find_w(bits_basis, other_bits):
         w_bits_in_basis = math.int_to_binary(i, width=bits_basis.shape[1] - 1)
         w = (bits_basis[:, :-1] @ w_bits_in_basis) % 2
         if not np.any(np.all(w[:, None] == all_bitstrings_to_avoid, axis=0)):
-            return w[:, None]
+            return w
 
     raise ValueError("Unexpected exception: There should always be a w found.")  # pragma: no cover
 
@@ -325,9 +326,9 @@ def _find_w(bits_basis, other_bits, t):
     force in ``_step_3_in_find_w``. The recorded vectors are then assembled into ``W`` with
     columns ordered as ``[w_1, w_2, ..., w_t]``.
     """
-    # Replacement vectors w_t, w_{t-1}, ..., w_2 collected in the order they are found (i.e. with
-    # decreasing index). They are assembled after the loop, together with w_1.
-    trailing_w = []
+    # Vectors w_t, w_{t-1}, ..., w_1 collected in the order they are found, i.e. with decreasing
+    # index. They are reversed and stacked into W after the loop.
+    w_vectors = []
 
     # We peel off one basis vector per iteration, reducing the problem from t to t-1, until a
     # single vector w_1 remains.
@@ -354,7 +355,7 @@ def _find_w(bits_basis, other_bits, t):
         #         bits_basis[:, :-1], which is processed in the next iteration to find the next
         #         replacement vector.
         w_t = (v_r + ell) % 2
-        trailing_w.append(w_t)
+        w_vectors.append(w_t)
         _set_N = (set_N + w_t[:, None]) % 2
         sub_bits = np.concatenate([set_M, ell[:, None], _set_N], axis=1)
 
@@ -363,11 +364,11 @@ def _find_w(bits_basis, other_bits, t):
         bits_basis = bits_basis[:, :-1]
 
     # Step 3: brute-force search of the single remaining vector w_1
-    w_1 = _step_3_in_find_w(bits_basis, other_bits)
+    w_vectors.append(_step_3_in_find_w(bits_basis, other_bits))
 
-    # Step 8: Stack w_1 and the replacement vectors w_2, ..., w_t (reversing ``trailing_w`` back
-    #         into increasing index order) into W with columns ordered as [w_1, w_2, ..., w_t].
-    return np.column_stack([w_1, *reversed(trailing_w)])
+    # Step 8: Reverse back into increasing index order and stack the vectors as the columns of W,
+    #         i.e. ordered as [w_1, w_2, ..., w_t].
+    return np.stack(w_vectors[::-1], axis=1)
 
 
 def _find_U_from_W(W):
