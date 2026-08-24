@@ -245,7 +245,7 @@ class CDFHamiltonian(NumericHamiltonian):
     :attr:`num_orbitals` and :attr:`num_fragments`.
 
     Raises:
-        ValueError: if the tensor ranks or shared dimensions are inconsistent
+        ValueError: if the tensor ranks or shared dimensions are inconsistent.
 
     **Example**
 
