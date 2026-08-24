@@ -20,8 +20,8 @@ import numpy as np
 import pennylane as qp
 from pennylane import allocate, math
 from pennylane.core.operator import Operator2
-from pennylane.typing import Bool, Complex, Int, Wire
-from pennylane.wires import Wires
+from pennylane.typing import AbstractWires, Bool, Complex, Int, TensorLike, Wire
+from pennylane.wires import Wires, WiresLike
 
 _U64 = np.uint64
 
@@ -676,7 +676,13 @@ class PartialUnaryStatePreparation(Operator2):
     compilable_argnames = ("indices",)
     arg_specs = {"coefficients": Complex[-1], "wires": Wire[-1]}
 
-    def __init__(self, coefficients, wires, indices, work_wires):
+    def __init__(
+        self,
+        coefficients: TensorLike,
+        wires: AbstractWires | WiresLike,
+        indices: tuple,
+        work_wires: AbstractWires | WiresLike,
+    ):
         num_entries = len(indices)
         if len(set(indices)) != num_entries:
             raise ValueError("The state indices must be unique.")
@@ -889,6 +895,7 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
 
 
 def _pui_state_prep_provided_work_wires_condition(coefficients, wires, indices, work_wires):
+    # pylint: disable=unused-argument
     num_entries = len(indices)
     if num_entries == 1:
         return True
@@ -907,10 +914,12 @@ def _pui_state_prep_provided_work_wires(coefficients, wires, indices, work_wires
 
 
 def _pui_state_prep_work_wires(coefficients, wires, indices, work_wires):
+    # pylint: disable=unused-argument
     return {"zeroed": max(math.ceil_log2(len(indices)) - 1, 1)}
 
 
 def _pui_state_prep_dyn_work_wires_condition(coefficients, wires, indices, work_wires):
+    # pylint: disable=unused-argument
     num_entries = len(indices)
     if num_entries == 1:
         return False  # Just use _pui_state_prep_provided_work_wires, we don't need work wires
@@ -925,11 +934,12 @@ def _pui_state_prep_dyn_work_wires(coefficients, wires, indices, work_wires):
     """Compute the decomposition of the partial unary iteration state preparation technique.
     This decomposition dynamically allocates work wires. If PartialUnaryStatePreparation
     has work_wires but too few of them, they will **not** be used here."""
+    # pylint: disable=unused-argument
     # The case num_entries=1 is excluded via _pui_state_prep_dyn_work_wires_condition, so
     # we know that we want to allocate at least one work wire.
     need_to_allocate = max(math.ceil_log2(len(indices)) - 1, 1)
-    with allocate(need_to_allocate, state="zero", restored=True) as work_wires:
-        _pui_state_prep_core(coefficients, wires, indices, work_wires)
+    with allocate(need_to_allocate, state="zero", restored=True) as _work_wires:
+        _pui_state_prep_core(coefficients, wires, indices, _work_wires)
 
 
 qp.add_decomps(
