@@ -26,6 +26,7 @@ from pennylane.templates.subroutines.arithmetic.out_square import (
     OutSquare,
     _out_square_with_adder,
     _out_square_with_caddsub,
+    _SquareArithmeticOp,
 )
 from pennylane.templates.subroutines.arithmetic.signed_out_square import SignedOutSquare
 from pennylane.typing import Wire
@@ -94,6 +95,12 @@ def test_isinstance_relationship():
 
     assert not isinstance(out_square, SignedOutSquare)
     assert isinstance(out_square, qp.core.operator.Operator2)
+
+
+def test_square_arithmetic_op_min_work_wires_not_implemented():
+    """Test that _SquareArithmeticOp._min_work_wires must be overridden by subclasses."""
+    with pytest.raises(NotImplementedError):
+        _SquareArithmeticOp._min_work_wires(1, 1, False)  # pylint: disable=protected-access
 
 
 def _test_square_correctness(all_wires, rule, seed, output_wires_zeroed, use_jit):
