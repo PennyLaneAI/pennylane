@@ -15,6 +15,7 @@
 This module contains unit tests for ``qp.ops.functions.assert_valid``.
 """
 
+import copy
 from pickle import PicklingError
 
 import numpy as np
@@ -871,8 +872,11 @@ def test_generated_list_of_ops(class_to_validate):
 @pytest.mark.jax
 def test_explicit_list_of_ops(valid_instance_and_kwargs):
     """Test the validity of operators that could not be auto-generated."""
-    valid_instance, kwargs = valid_instance_and_kwargs
-    assert_valid(valid_instance, **kwargs)
+    op, kwargs = valid_instance_and_kwargs
+    kwargs = copy.copy(kwargs)
+    if kwargs.pop("skip_capture", False) and qp.capture.enabled():
+        pytest.skip("this operator is marked with skip_capture.")
+    assert_valid(op, **kwargs)
 
 
 @pytest.mark.jax
