@@ -198,9 +198,9 @@ if TYPE_CHECKING:
 # pylint: disable=import-outside-toplevel, redefined-outer-name, too-many-return-statements
 def __getattr__(key):
     if key == "primitives":
-        import importlib
+        import importlib  # pragma: no cover
 
-        return importlib.import_module(".primitives", __name__)
+        return importlib.import_module(".primitives", __name__)  # pragma: no cover
 
     if key == "QpPrimitive":
         from .custom_primitives import QpPrimitive
