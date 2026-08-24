@@ -325,8 +325,12 @@ def _out_adder_decomposition(x_wires, y_wires, output_wires, mod, work_wires, **
         work_wire = ()
 
     def _target_fn():
-        ControlledSequence(PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=x_wires)
-        ControlledSequence(PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=y_wires)
+        ControlledSequence(
+            PhaseAdder(1, qft_new_output_wires, mod, work_wire=work_wire), control=x_wires
+        )
+        ControlledSequence(
+            PhaseAdder(1, qft_new_output_wires, mod, work_wire=work_wire), control=y_wires
+        )
 
     change_op_basis(QFT(wires=qft_new_output_wires), _target_fn)
 
