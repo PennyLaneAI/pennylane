@@ -36,7 +36,76 @@ from .semi_adder import SemiAdder, _semi_adder_resources
 from .temporary_and import TemporaryAND
 
 
-class OutSquare(Operator2):
+class _SquareArithmeticOp(Operator2, is_baseclass=True):
+    """Shared ``Operator2`` boilerplate for :class:`~.OutSquare` and :class:`~.SignedOutSquare`."""
+
+    wire_argnames = ("x_wires", "output_wires", "work_wires")
+    compilable_argnames = ("output_wires_zeroed",)
+
+    arg_specs = {
+        "x_wires": Wire[-1],
+        "output_wires": Wire[-1],
+        "work_wires": Wire[-1],
+    }
+
+    def _check_work_wires(self, n, m, work_wires, output_wires_zeroed):
+        """Validate the number of work wires. Must be overridden by subclasses."""
+        raise NotImplementedError
+
+    def __init__(
+        self,
+        x_wires: WiresLike,
+        output_wires: WiresLike,
+        work_wires: WiresLike,
+        output_wires_zeroed: bool = False,
+    ):
+        x_wires = Wires(x_wires)
+        output_wires = Wires(output_wires)
+        work_wires = Wires(work_wires)
+
+        self._check_work_wires(len(x_wires), len(output_wires), work_wires, output_wires_zeroed)
+
+        wires_list = [x_wires, output_wires, work_wires]
+
+        _wires_are_traced = any(math.is_abstract(w) for ws in wires_list for w in ws)
+
+        if not _wires_are_traced:
+            wires_dict = dict(zip(self.wire_argnames, wires_list, strict=True))
+            for name0, name1 in combinations(self.wire_argnames, r=2):
+                if wires_dict[name0].intersection(wires_dict[name1]):
+                    raise ValueError(f"None of the wires in {name1} should be included in {name0}.")
+
+        super().__init__(
+            x_wires,
+            output_wires,
+            work_wires,
+            output_wires_zeroed=output_wires_zeroed,
+        )
+
+    # pylint: disable=arguments-differ
+    def __abstract_init__(
+        self,
+        x_wires: AbstractWires | WiresLike,
+        output_wires: AbstractWires | WiresLike,
+        work_wires: AbstractWires | WiresLike,
+        output_wires_zeroed: bool = False,
+    ):
+        self._check_work_wires(len(x_wires), len(output_wires), work_wires, output_wires_zeroed)
+
+        super().__abstract_init__(
+            x_wires,
+            output_wires,
+            work_wires,
+            output_wires_zeroed=output_wires_zeroed,
+        )
+
+    @property
+    def wires(self):
+        """All wires involved in the operation."""
+        return self.x_wires + self.output_wires + self.work_wires
+
+
+class OutSquare(_SquareArithmeticOp):
     r"""Performs out-of-place squaring.
 
     This operator performs the squaring of an :math:`n`-qubit integer :math:`x` modulo
@@ -207,89 +276,13 @@ class OutSquare(Operator2):
 
     """
 
-    wire_argnames = ("x_wires", "output_wires", "work_wires")
-    compilable_argnames = ("output_wires_zeroed",)
-
-    arg_specs = {
-        "x_wires": Wire[-1],
-        "output_wires": Wire[-1],
-        "work_wires": Wire[-1],
-    }
-
-    @staticmethod
-    def _min_work_wires(n, m, output_wires_zeroed):
-        """The minimum number of work wires required for the given register sizes."""
-        return min(n + 1, m) if output_wires_zeroed else m
-
-    def __init__(
-        self,
-        x_wires: WiresLike,
-        output_wires: WiresLike,
-        work_wires: WiresLike,
-        output_wires_zeroed: bool = False,
-    ):
-        x_wires = Wires(x_wires)
-        output_wires = Wires(output_wires)
-        work_wires = Wires(work_wires)
-
-        n = len(x_wires)
-        m = len(output_wires)
-
-        num_required_work_wires = self._min_work_wires(n, m, output_wires_zeroed)
+    def _check_work_wires(self, n, m, work_wires, output_wires_zeroed):
+        num_required_work_wires = min(n + 1, m) if output_wires_zeroed else m
         if len(work_wires) < num_required_work_wires:
             raise ValueError(
-                f"{type(self).__name__} requires at least {num_required_work_wires} work wires "
-                f"for {n} input wires, {m} output wires and {output_wires_zeroed=}. "
-                f"Got {len(work_wires)} work wires instead."
+                f"OutSquare requires at least {num_required_work_wires} work wires for "
+                f"{n} input wires, {m} output wires and {output_wires_zeroed=}."
             )
-
-        wires_list = [x_wires, output_wires, work_wires]
-
-        _wires_are_traced = any(math.is_abstract(w) for ws in wires_list for w in ws)
-
-        if not _wires_are_traced:
-            wires_dict = dict(zip(self.wire_argnames, wires_list, strict=True))
-            for name0, name1 in combinations(self.wire_argnames, r=2):
-                if wires_dict[name0].intersection(wires_dict[name1]):
-                    raise ValueError(f"None of the wires in {name1} should be included in {name0}.")
-
-        super().__init__(
-            x_wires,
-            output_wires,
-            work_wires,
-            output_wires_zeroed=output_wires_zeroed,
-        )
-
-    # pylint: disable=arguments-differ
-    def __abstract_init__(
-        self,
-        x_wires: AbstractWires | WiresLike,
-        output_wires: AbstractWires | WiresLike,
-        work_wires: AbstractWires | WiresLike,
-        output_wires_zeroed: bool = False,
-    ):
-        n = len(x_wires)
-        m = len(output_wires)
-
-        num_required_work_wires = self._min_work_wires(n, m, output_wires_zeroed)
-        if len(work_wires) < num_required_work_wires:
-            raise ValueError(
-                f"{type(self).__name__} requires at least {num_required_work_wires} work wires "
-                f"for {n} input wires, {m} output wires and {output_wires_zeroed=}. "
-                f"Got {len(work_wires)} work wires instead."
-            )
-
-        super().__abstract_init__(
-            x_wires,
-            output_wires,
-            work_wires,
-            output_wires_zeroed=output_wires_zeroed,
-        )
-
-    @property
-    def wires(self):
-        """All wires involved in the operation."""
-        return self.x_wires + self.output_wires + self.work_wires
 
 
 def _out_square_with_adder_condition(
