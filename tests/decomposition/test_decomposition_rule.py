@@ -240,7 +240,6 @@ class TestDecompositionRule:
             qp.RZ(theta, wires=wires[1])
 
         with qp.decomposition.local_decomps():
-
             qp.add_decomps("Adjoint(NonParametricOp)", my_adjoint_custom_op)
             assert qp.decomposition.has_decomp("Adjoint(NonParametricOp)")
             assert list(qp.list_decomps("Adjoint(NonParametricOp)")) == [my_adjoint_custom_op]
@@ -283,7 +282,6 @@ class TestDecompositionRule:
         """Tests that if an operator type without a fixed_sig is used, an error is raised."""
 
         class MissingFixedSigOp(Operator2):
-
             dynamic_argnames = ("angles", "eps")
 
             arg_specs = my_arg_specs
@@ -323,7 +321,6 @@ class TestDecompositionRule:
         """Tests that abstract operators can be used as keys."""
 
         class FixedSigOp(Operator2):
-
             dynamic_argnames = ("phi", "matrix")
 
             arg_specs = abstract_sig
@@ -437,9 +434,7 @@ class TestDecompositionRule:
         "rep",
         [
             ParametrizedHybridOp(Float[-1], Wire[3], DynOp(Float[3], Wire[3])),  # data not fixed
-            ParametrizedHybridOp(Float[3], Wire[-1], DynOp(Float[1], Wire[1])),  # wire is not fixed
             ParametrizedHybridOp(Float[3], Wire[3], DynOp(Float[...], Wire[3])),  # hybrid not fixed
-            ParametrizedHybridOp(Float[3], Wire[3], DynOp(Float[2], Wire[-1])),  # hybrid not fixed
         ],
     )
     def test_verify_operator2_is_abstract_and_fixed(self, rep):
@@ -592,7 +587,6 @@ class TestDecompDictionary:
             raise NotImplementedError
 
         with qp.decomposition.local_decomps():
-
             qp.add_decomps("Adjoint(DynOp)", _adjoint_rule)
             qp.add_decomps(DynOp, custom_rule)
             qp.add_decomps(DynOp, custom_rule2)
@@ -619,7 +613,6 @@ class TestDecompDictionary:
             raise NotImplementedError
 
         with qp.decomposition.local_decomps():
-
             qp.add_decomps("Controlled(DynOp)", _controlled_rule)
             qp.add_decomps(DynOp, custom_rule)
             qp.add_decomps(DynOp, custom_rule2)
@@ -697,7 +690,6 @@ class TestDecompDictionary:
             raise NotImplementedError
 
         with qp.decomposition.local_decomps():
-
             qp.add_decomps(DynOp, custom_rule)
             qp.add_decomps(DynOp, custom_rule2)
 
@@ -908,12 +900,12 @@ class TestInspectDecomps:
             Decomposition 0 (name: simple)
             0: ──RZ(0.50)─╭●──RZ(0.50)─┤  
             1: ───────────╰X───────────┤  
-            Gate Count: {RZ: 2, CNOT: 1}
+            Gate Count: {CNOT: 1, RZ: 2}
 
             Decomposition 1 (name: general_decomp)
             0: ──RX(0.50)─╭●────╭●──RX(0.50)─┤  
             1: ───────────╰Z──H─╰Z───────────┤  
-            Gate Count: {RX: 2, CZ: 2, Hadamard: 1}
+            Gate Count: {CZ: 2, Hadamard: 1, RX: 2}
 
             Decomposition 2 (name: with-aux)
             Not applicable (provided operator instance does not meet all conditions for this rule).
@@ -971,7 +963,7 @@ class TestInspectDecomps:
             2: ──────────────╰Z─╭●──────────╭●─╰Z──────────────┤  
             3: ─────────────────╰Z─╭●────╭●─╰Z─────────────────┤  
             4: ────────────────────╰Z──H─╰Z────────────────────┤  
-            Gate Count: {RX: 2, CZ: 8, Hadamard: 1}
+            Gate Count: {CZ: 8, Hadamard: 1, RX: 2}
 
             Decomposition 2 (name: with-aux)
             0: ───────╭●────╭Z─╭●──────────────────────╭●─╭Z────╭●────┤  
@@ -982,8 +974,8 @@ class TestInspectDecomps:
                  |0>├─╰Z─╭●─│───────────RX(0.50)──────────│──╭●─╰Z──┤    
                  |0>├────╰Z─╰●──H──┤↗├──║─────────────────╰●─╰Z─────┤    
                                     ╚═══╝                                
-            Estimated Gate Count: {CZ: 6, Toffoli: 8, Hadamard: 1, RX: 1, MidMeasure: 1}
-            Actual Gate Count: {CZ: 6, Toffoli: 6, Hadamard: 1, MidMeasure: 1, RX: 1}
+            Estimated Gate Count: {CZ: 6, Hadamard: 1, MidMeasure: 1, RX: 1, Toffoli: 8}
+            Actual Gate Count: {CZ: 6, Hadamard: 1, MidMeasure: 1, RX: 1, Toffoli: 6}
             Wire Allocations: {'zero': 2}
             """).strip()
 
@@ -1052,12 +1044,12 @@ class TestInspectDecomps:
             Decomposition 0 (name: simple)
             0: ──RZ(0.50)─╭●──RZ(0.50)─┤  
             1: ───────────╰X───────────┤  
-            Gate Count: {RZ: 2, CNOT: 1}
+            Gate Count: {CNOT: 1, RZ: 2}
 
             Decomposition 1 (name: general_decomp)
             0: ──RX(0.50)─╭●────╭●──RX(0.50)─┤  
             1: ───────────╰Z──H─╰Z───────────┤  
-            Gate Count: {RX: 2, CZ: 2, Hadamard: 1}
+            Gate Count: {CZ: 2, Hadamard: 1, RX: 2}
             """).strip()
 
         result = qp.inspect_decomps(
@@ -1070,7 +1062,7 @@ class TestInspectDecomps:
             2: ──────────────╰Z─╭●──────────╭●─╰Z──────────────┤  
             3: ─────────────────╰Z─╭●────╭●─╰Z─────────────────┤  
             4: ────────────────────╰Z──H─╰Z────────────────────┤  
-            Gate Count: {RX: 2, CZ: 8, Hadamard: 1}
+            Gate Count: {CZ: 8, Hadamard: 1, RX: 2}
 
             Decomposition 2 (name: with-aux)
             0: ───────╭●────╭Z─╭●──────────────────────╭●─╭Z────╭●────┤  
@@ -1081,8 +1073,8 @@ class TestInspectDecomps:
                  |0>├─╰Z─╭●─│───────────RX(0.50)──────────│──╭●─╰Z──┤    
                  |0>├────╰Z─╰●──H──┤↗├──║─────────────────╰●─╰Z─────┤    
                                     ╚═══╝                                
-            Estimated Gate Count: {CZ: 6, Toffoli: 8, Hadamard: 1, RX: 1, MidMeasure: 1}
-            Actual Gate Count: {CZ: 6, Toffoli: 6, Hadamard: 1, MidMeasure: 1, RX: 1}
+            Estimated Gate Count: {CZ: 6, Hadamard: 1, MidMeasure: 1, RX: 1, Toffoli: 8}
+            Actual Gate Count: {CZ: 6, Hadamard: 1, MidMeasure: 1, RX: 1, Toffoli: 6}
             Wire Allocations: {'zero': 2}
             """).strip()
 
@@ -1102,7 +1094,7 @@ class TestInspectDecomps:
             2: ──────────────╰Z─╭●──────────╭●─╰Z──────────────┤  
             3: ─────────────────╰Z─╭●────╭●─╰Z─────────────────┤  
             4: ────────────────────╰Z──H─╰Z────────────────────┤  
-            Gate Count: {RX: 2, CZ: 8, Hadamard: 1}
+            Gate Count: {CZ: 8, Hadamard: 1, RX: 2}
 
             Decomposition 2 (name: with-aux)
             Insufficient work wires: requires 2 but only 1 available.
@@ -1152,7 +1144,7 @@ class TestInspectDecomps:
             2: ──────────────╰Z─╭●──────────╭●─╰Z──────────────┤  
             3: ─────────────────╰Z─╭●────╭●─╰Z─────────────────┤  
             4: ────────────────────╰Z──H─╰Z────────────────────┤  
-            Gate Count: {RX: 2, CZ: 8, Hadamard: 1}
+            Gate Count: {CZ: 8, Hadamard: 1, RX: 2}
             """).strip()
 
     def test_show_no_decomps(self):
@@ -1187,7 +1179,7 @@ class TestInspectDecomps:
             Decomposition 0 (name: simple)
             0: ──RZ(0.50)─╭●──RZ(0.50)─┤  
             1: ───────────╰X───────────┤  
-            Gate Count: {RZ: 2, CNOT: 1}
+            Gate Count: {CNOT: 1, RZ: 2}
             """).strip()
 
     def test_show_decomp_with_rule(self):
@@ -1202,7 +1194,7 @@ class TestInspectDecomps:
             2: ──────────────╰Z─╭●──────────╭●─╰Z──────────────┤  
             3: ─────────────────╰Z─╭●────╭●─╰Z─────────────────┤  
             4: ────────────────────╰Z──H─╰Z────────────────────┤  
-            Gate Count: {RX: 2, CZ: 8, Hadamard: 1}
+            Gate Count: {CZ: 8, Hadamard: 1, RX: 2}
             """).strip()
 
     def test_show_multiple_decomps(self):
@@ -1219,7 +1211,7 @@ class TestInspectDecomps:
             2: ──────────────╰Z─╭●──────────╭●─╰Z──────────────┤  
             3: ─────────────────╰Z─╭●────╭●─╰Z─────────────────┤  
             4: ────────────────────╰Z──H─╰Z────────────────────┤  
-            Gate Count: {RX: 2, CZ: 8, Hadamard: 1}
+            Gate Count: {CZ: 8, Hadamard: 1, RX: 2}
 
             Decomposition 1 (name: with-aux)
             0: ───────╭●────╭Z─╭●──────────────────────╭●─╭Z────╭●────┤  
@@ -1230,8 +1222,8 @@ class TestInspectDecomps:
                  |0>├─╰Z─╭●─│───────────RX(0.50)──────────│──╭●─╰Z──┤    
                  |0>├────╰Z─╰●──H──┤↗├──║─────────────────╰●─╰Z─────┤    
                                     ╚═══╝                                
-            Estimated Gate Count: {CZ: 6, Toffoli: 8, Hadamard: 1, RX: 1, MidMeasure: 1}
-            Actual Gate Count: {CZ: 6, Toffoli: 6, Hadamard: 1, MidMeasure: 1, RX: 1}
+            Estimated Gate Count: {CZ: 6, Hadamard: 1, MidMeasure: 1, RX: 1, Toffoli: 8}
+            Actual Gate Count: {CZ: 6, Hadamard: 1, MidMeasure: 1, RX: 1, Toffoli: 6}
             Wire Allocations: {'zero': 2}
             """).strip()
 

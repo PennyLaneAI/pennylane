@@ -10,6 +10,7 @@ from unittest.mock import MagicMock
 import numpy as np
 import pytest
 
+import pennylane as qp
 from pennylane import (
     CH,
     CNOT,
@@ -52,6 +53,7 @@ from pennylane.ops import (
     MultiControlledX,
 )
 from pennylane.ops.op_math.pow import PowOperation
+from pennylane.ops.op_math.pow2 import Pow2
 from pennylane.wires import Wires
 
 try:
@@ -316,13 +318,12 @@ class TestMeasurementReset:
             assert context.vars["a"].val[i].wires == Wires([f"q[{i}]"])
 
     def test_post_processing_measurement(self, mocker):
-        import pennylane
 
         # parse the QASM
         ast = parse(open("tests/io/qasm_interpreter/post_processing.qasm").read(), permissive=True)
 
         # setup mocks
-        eval_binary = mocker.spy(pennylane.io.qasm_interpreter, "_eval_binary_op")
+        eval_binary = mocker.spy(qp.io.qasm_interpreter, "_eval_binary_op")
 
         mock_one = MagicMock(return_value=1)
         mock_zero = MagicMock(return_value=0)
@@ -1260,8 +1261,8 @@ class TestGates:
             Toffoli(wires=["q2", "q1", "q0"]),
             Adjoint(CNOT(wires=["q0", "q1"])),
             (CNOT(wires=["q1", "q0"])) ** 2,
-            (Adjoint(PauliY("q0"))) ** 2,
-            Adjoint((CY(wires=["q0", "q1"])) ** 2),
+            qp.pow(qp.adjoint(PauliY("q0")), 2),
+            qp.adjoint(qp.pow(CY(wires=["q0", "q1"]), 2)),
         ]
 
     def test_integer_wire_maps(self):
@@ -1485,7 +1486,7 @@ class TestGates:
             RX(0.5, wires=["q0"]),
             RY(0.2, wires=["q0"]),
             Adjoint(RX(0.5, wires=["q0"])),
-            PowOperation(PauliX(wires=["q0"]), 2),
+            Pow2(PauliX(wires=["q0"]), 2),
             CNOT(wires=["q1", "q0"]),
         ]
 

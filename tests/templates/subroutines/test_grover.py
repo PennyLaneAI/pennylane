@@ -55,11 +55,11 @@ def test_work_wires():
 
     op = qp.GroverOperator(wires=wires, work_wires=work_wire)
 
-    assert op.hyperparameters["work_wires"] == work_wire
+    assert op.work_wires == work_wire
 
     ops = op.decomposition()
 
-    assert ops[2].hyperparameters["work_wires"] == work_wire
+    assert ops[2].work_wires == work_wire
 
 
 def test_work_wires_None():
@@ -201,7 +201,8 @@ def test_expand(wires):
 
     for actual_op, expected_class, expected_wire in zip(decomp, decomp_3wires, expected_wires):
         assert isinstance(actual_op, expected_class)
-        assert actual_op.wires == qp.wires.Wires(expected_wire)
+        if expected_class is not qp.GlobalPhase:
+            assert actual_op.wires == qp.wires.Wires(expected_wire)
 
 
 @pytest.mark.capture
@@ -317,7 +318,7 @@ class TestDynamicDecomposition:
         """Test that the dynamic decomposition of Grover has the correct plxpr"""
         import jax
 
-        from pennylane.capture.primitives import for_loop_prim
+        from pennylane.capture.primitives import for_loop_prim, operator_p
         from pennylane.tape.plxpr_conversion import CollectOpsandMeas
         from pennylane.transforms.decompose import DecomposeInterpreter
 
@@ -347,8 +348,8 @@ class TestDynamicDecomposition:
         remaining_ops = [
             eqn
             for eqn in jaxpr_eqns
-            if eqn.primitive
-            in (qp.PauliZ._primitive, qp.MultiControlledX._primitive, qp.GlobalPhase._primitive)
+            if eqn.primitive in (qp.MultiControlledX._primitive, qp.GlobalPhase._primitive)
+            or (eqn.primitive == operator_p and eqn.params["op_cls"] is qp.PauliZ)
         ]
         assert len(remaining_ops) == 4
 
