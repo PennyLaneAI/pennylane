@@ -2,33 +2,31 @@
 
 <h3>New features since last release</h3>
 
-* Added :class:`~pennylane.NumericHamiltonian`, a lightweight container class for Hamiltonians
-  expressed as a dictionary of tensors. These Hamiltonians can be defined with both concrete
-  numeric data or abstract ``qp.typing.Float[...]``, and are registered as pytrees so they can
-  be supported through program capture and lowering as operator arguments.
+* Added :class:`~pennylane.numeric_hamiltonians.NumericHamiltonian`, a lightweight container
+  class for Hamiltonians expressed as a dictionary of tensors. These Hamiltonians can be defined
+  with both concrete numeric data or abstract ``qp.typing.Float[...]``, and are registered as pytrees
+  so they can be supported through program capture and lowering as operator arguments.
   [(#10048)](https://github.com/PennyLaneAI/pennylane/pull/10048)
 
-  ```pycon
-  >>> import numpy as np
-  >>> L, M, N = 2, 2, 3
-  >>> ham = qp.CGFHamiltonian(
-  ...     core_tensors=np.random.rand(L + 1, M, M, N, N),
-  ...     leaf_tensors=np.random.rand(L + 1, M, N, N),
-  ...     nuc_constant=0.5,
-  ... )
-  >>> ham.num_modes, ham.num_modals, ham.num_fragments
-  (2, 3, 2)
+  ```py
+  import numpy as np
+  import pennylane as qp
 
+  L, M, N = 2, 2, 3
+  ham = qp.numeric_hamiltonians.CGFHamiltonian(
+      core_tensors=np.random.rand(L + 1, M, M, N, N),
+      leaf_tensors=np.random.rand(L + 1, M, N, N),
+      nuc_constant=0.5,
+      )
   ```
 
   The same Hamiltonian can be described abstractly, which is what the compile-time typing and
   resource-analysis paths consume:
 
-  ```pycon
-  >>> from pennylane.typing import Float
-  >>> qp.CGFHamiltonian(Float[L + 1, M, M, N, N], Float[L + 1, M, N, N]).leaf_tensors
-  AbstractArray((3, 2, 3, 3), float64, weak_type=True)
-
+  ```py
+  import pennylane as qp
+  from pennylane.typing import Float
+  qp.numeric_hamiltonians.CGFHamiltonian(Float[L + 1, M, M, N, N], Float[L + 1, M, N, N]).leaf_tensors
   ```
 
 * Added :func:`~pennylane.backline.triton_decoder` and
