@@ -27,6 +27,7 @@ from pennylane.templates.subroutines.arithmetic.out_square import (
     _out_square_with_adder,
     _out_square_with_caddsub,
 )
+from pennylane.templates.subroutines.arithmetic.signed_out_square import SignedOutSquare
 from pennylane.typing import Wire
 
 
@@ -84,6 +85,15 @@ def test_wires_property():
     """Test that wires includes all registers, including work wires."""
     op = OutSquare([0, 1, 2], [3, 4, 5], [6, 7, 8])
     assert op.wires == qp.wires.Wires([0, 1, 2, 3, 4, 5, 6, 7, 8])
+
+
+def test_isinstance_relationship():
+    """Test that OutSquare is not an instance of SignedOutSquare, despite sharing a common
+    private base class."""
+    out_square = OutSquare([0, 1], [2, 3, 4], [5, 6, 7])
+
+    assert not isinstance(out_square, SignedOutSquare)
+    assert isinstance(out_square, qp.core.operator.Operator2)
 
 
 def _test_square_correctness(all_wires, rule, seed, output_wires_zeroed, use_jit):
