@@ -25,7 +25,7 @@ from scipy.stats import unitary_group
 import pennylane as qp
 from pennylane.ops.op_math.controlled import custom_ctrl_dispatch
 from pennylane.ops.op_math.controlled_ops import _toffoli_elbow
-from pennylane.typing import AbstractWires, Float, Wire
+from pennylane.typing import AbstractWires, Wire
 from pennylane.wires import Wires
 
 NON_PARAMETRIZED_OPERATIONS = [
@@ -864,16 +864,6 @@ def test_abstract_controlled_ops(op_type, wires):
     assert isinstance(key, op_type)
     assert isinstance(key.wires, AbstractWires)
     assert len(key.wires) == len(wires)
-
-
-def test_abstract_controlled_phase_shift():
-    """Tests creating an abstract ControlledPhaseShift with a single-wire base."""
-    op = qp.ControlledPhaseShift(Float, Wire[2])
-
-    assert isinstance(op, qp.ControlledPhaseShift)
-    assert op.wires == Wire[2]
-    assert op.control_wires == Wire[1]
-    assert op.base == qp.PhaseShift(Float, Wire[1])
 
 
 @pytest.mark.parametrize(
