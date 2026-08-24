@@ -315,8 +315,8 @@ class TrotterCDF(Operator2):
         if isinstance(core, (list, tuple)) or isinstance(leaf, (list, tuple)):
             hamiltonian = {
                 **hamiltonian,
-                "core_tensors": math.asarray(core),
-                "leaf_tensors": math.asarray(leaf),
+                "core_tensors": math.asarray(core) if isinstance(core, (list, tuple)) else core,
+                "leaf_tensors": math.asarray(leaf) if isinstance(leaf, (list, tuple)) else leaf,
             }
         Z = hamiltonian["core_tensors"]
         U = hamiltonian["leaf_tensors"]
