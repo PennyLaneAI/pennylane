@@ -559,6 +559,12 @@ class TestAbstractWires:
 
         assert list(Wire[4]) == [Wire[1], Wire[1], Wire[1], Wire[1]]
 
+        with pytest.raises(TypeError, match="Cannot iterate over an AbstractWires of unfixed"):
+            list(Wire[-1])
+
+        with pytest.raises(TypeError, match="'Wire' object is not iterable"):
+            list(Wire)
+
     def test_indexing(self):
         """Test indexing into AbstractWires."""
 
