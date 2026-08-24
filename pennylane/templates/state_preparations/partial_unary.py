@@ -748,6 +748,7 @@ def _pui_state_prep_resources(num_entries, num_wires, num_work_wires):
     num_toffolis = int(num_wires / 10) + 1
     mcx_rep = qp.MultiControlledX(Wire[3], work_wires=Wire[1], work_wire_type="zeroed")
     resources[mcx_rep] += num_toffolis
+    resources[qp.BasisState(Bool[1], Wire[1])] += 2 * num_toffolis
 
     return resources
 
@@ -838,7 +839,7 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
 
             @qp.cond(b == 1)
             def qrom_branches():
-                qp.QROM(np.eye(1), subspace_wires, nonsubspace_wires[:1], _work_wires)
+                qp.QROM(np.eye(1, dtype=int), subspace_wires, nonsubspace_wires[:1], _work_wires)
 
             for case_b in range(2, iso_finder.m + 1):
                 # Register an additional branch to ``qrom_branches`` for each possible batch size.
@@ -847,12 +848,13 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
                 @qrom_branches.else_if(b == case_b)
                 def _(case_b=case_b):
                     target_wires = nonsubspace_wires[:case_b]
-                    qp.QROM(np.eye(case_b), subspace_wires, target_wires, _work_wires)
+                    qp.QROM(np.eye(case_b, dtype=int), subspace_wires, target_wires, _work_wires)
 
             # Realize PUI via QROM, shifted by k_start
-            qp.BasisState(k_start, subspace_wires)
+            k_start_bits = math.int_to_binary(k_start, n_subspace)
+            qp.BasisState(k_start_bits, subspace_wires)
             qrom_branches()
-            qp.BasisState(k_start, subspace_wires)
+            qp.BasisState(k_start_bits, subspace_wires)
 
         @branches.else_if(_type == 1)
         def fanout():
