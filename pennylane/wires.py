@@ -26,6 +26,7 @@ import numpy as np
 from pennylane import math
 from pennylane.exceptions import WireError
 from pennylane.pytrees import register_pytree
+from pennylane.typing import AbstractWires
 
 if util.find_spec("jax") is not None:
     jax = import_module("jax")
@@ -130,6 +131,11 @@ class Wires(Sequence):
          wires (Any): the wire label(s)
     """
 
+    def __new__(cls, wires=None, _override=False):
+        if isinstance(wires, AbstractWires):
+            return wires
+        return super().__new__(cls)
+
     def _flatten(self):
         """Serialize Wires into a flattened representation according to the PyTree convention."""
         return self._labels, ()
@@ -223,6 +229,8 @@ class Wires(Sequence):
         >>> wires1 + wires2
         Wires([4, 0, 1, 2])
         """
+        if isinstance(other, AbstractWires):
+            return AbstractWires(len(self)) + other
         other = Wires(other)
         return Wires.all_wires([self, other])
 
@@ -235,6 +243,8 @@ class Wires(Sequence):
         Returns:
             Wires: all wires appearing in either object
         """
+        if isinstance(other, AbstractWires):
+            return AbstractWires(len(self)) + other
         other = Wires(other)
         return Wires.all_wires([other, self])
 
@@ -822,3 +832,10 @@ def is_abstract_qubit(v):
     if not jax_available:
         return False
     return math.is_abstract(v) and isinstance(v.val.aval, AbstractQubit)
+
+
+def is_abstract_or_traced(v):
+    """Returns ``True`` if the provided value is abstract or traced."""
+    if isinstance(v, AbstractWires):
+        return True
+    return any(math.is_abstract(w) for w in v)

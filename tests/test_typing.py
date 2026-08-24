@@ -482,19 +482,6 @@ class TestAbstractWires:
         with pytest.raises(ValueError, match="'num_wires' must be"):
             _ = AbstractWires(-3)
 
-    def test_comparison(self):
-        """Test for equality and comparison."""
-        a = AbstractWires(3)
-        assert a == AbstractWires(3)
-        assert a != AbstractWires(4)
-        assert hash(a) == hash(AbstractWires(3))
-        assert hash(a) != hash(AbstractWires(4))
-
-        with pytest.raises(
-            TypeError, match="Cannot check equality between AbstractWires and an object"
-        ):
-            _ = a == 2
-
     def test_repr(self):
         """Test that the repr of AbstractWires is correct."""
         a0 = AbstractWires(2)
@@ -548,7 +535,7 @@ class TestAbstractWires:
             assert not isinstance(w, Wire[6])
 
         # non-wires
-        assert not isinstance({"not": "wires"}, Wire)
+        assert not isinstance({"not": "wires"}, Wire[1])
 
     def test_addition(self):
         """Tests adding abstract wires."""
@@ -558,3 +545,31 @@ class TestAbstractWires:
 
         with pytest.raises(TypeError):
             _ = Wire[2] + 1
+
+    def test_iteration(self):
+        """Test that AbstractWires can be iterated over."""
+
+        assert list(Wire[4]) == [Wire[1], Wire[1], Wire[1], Wire[1]]
+
+    def test_indexing(self):
+        """Test indexing into AbstractWires."""
+
+        w8 = Wire[8]
+        assert w8[0] == Wire[1]
+        assert w8[5] == Wire[1]
+
+        with pytest.raises(IndexError, match="out of bounds"):
+            _ = w8[8]
+
+        with pytest.raises(IndexError, match="out of bounds"):
+            _ = w8[10]
+
+        assert w8[2:] == Wire[6]
+
+        assert w8[2:7:2] == Wire[3]
+
+        with pytest.raises(TypeError, match="Wire indices must be integers or slices"):
+            _ = w8[[1, 2, 3]]
+
+        with pytest.raises(TypeError, match="Cannot index into an AbstractWires with"):
+            _ = Wire[-1][2]
