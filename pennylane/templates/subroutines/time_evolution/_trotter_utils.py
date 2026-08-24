@@ -51,14 +51,37 @@ def _emit_one_body_rz(angle, target_wire, control_wires, double_phase):
 
 
 def _emit_two_body_isingzz(angle, wire_a, wire_b, control_wires):
-    """Emit a single, individually genuinely-controlled two-body ``IsingZZ``.
+    r"""Emit the two-site ``IsingZZ``.
 
-    Not used for double-phase (see ``_apply_two_body_diagonal``), which shares one ``CNOT``
-    sandwich across a whole group of bare ``IsingZZ`` calls instead of calling this function.
+    Not used for double-phase (see ``_apply_two_body_diagonal``).
 
-    ``angle`` is already the complete rotation angle; the ``angle / 2`` below is just the
-    standard controlled-RZ synthesis used to make the ``CNOT; RZ(angle); CNOT`` realization of
-    ``IsingZZ(angle)`` genuinely controlled.
+    Goal: ``Controlled(IsingZZ(angle, [a, b]))``
+
+    ``IsingZZ`` can be decomposed into the following:
+
+    .. code-block::
+
+        a: ─╭●───────────╭●─┤   =   IsingZZ(angle, [a, b])
+        b: ─╰X──RZ(angle)╰X─┤
+
+    This is a change_op_basis pattern, so in order to control it, we only need to control the
+    ``RZ`` inside. For that, we use the standard controlled-``RZ`` decomposition:
+
+    .. code-block::
+
+           b: ─RZ(angle/2)─╭X──RZ(-angle/2)─╭X─┤   =   Ctrl-RZ(angle, b)
+        ctrl: ─────────────╰●───────────────╰●─┤
+
+    Substituting the second diagram's four gates for the single ``RZ(angle, b)`` box in the
+    first gives us the final circuit.
+
+    .. code-block::
+
+           a: ─╭●────────────────────────────────╭●─┤
+           b: ─╰X─RZ(angle/2)─╭X─RZ(-angle/2)─╭X─╰X─┤
+        ctrl: ────────────────╰●──────────────╰●────┤
+
+    which is exactly the six gates below.
     """
     if len(control_wires) == 0:
         IsingZZ(angle, [wire_a, wire_b])
