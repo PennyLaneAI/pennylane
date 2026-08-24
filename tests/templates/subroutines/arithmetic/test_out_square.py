@@ -26,7 +26,6 @@ from pennylane.templates.subroutines.arithmetic.out_square import (
     OutSquare,
     _out_square_with_adder,
     _out_square_with_caddsub,
-    _SquareArithmeticOp,
 )
 from pennylane.templates.subroutines.arithmetic.signed_out_square import SignedOutSquare
 from pennylane.typing import Wire
@@ -97,10 +96,16 @@ def test_isinstance_relationship():
     assert isinstance(out_square, qp.core.operator.Operator2)
 
 
-def test_square_arithmetic_op_min_work_wires_not_implemented():
-    """Test that _SquareArithmeticOp._min_work_wires must be overridden by subclasses."""
+@pytest.mark.parametrize("cls", [OutSquare, SignedOutSquare])
+def test_min_work_wires_not_implemented_in_base_class(cls):
+    """Test that the shared base class's default _min_work_wires implementation raises
+    NotImplementedError."""
+    # Accessed via super() on each public class (rather than importing the
+    # private base class directly) since both OutSquare and SignedOutSquare override this method
+    # and would otherwise never reach the base class's placeholder implementation.
     with pytest.raises(NotImplementedError):
-        _SquareArithmeticOp._min_work_wires(1, 1, False)  # pylint: disable=protected-access
+        # pylint: disable=protected-access
+        super(cls, cls)._min_work_wires(1, 1, False)
 
 
 def _test_square_correctness(all_wires, rule, seed, output_wires_zeroed, use_jit):
@@ -297,6 +302,33 @@ class TestOutSquare:
             if applicable:
                 all_wires = (x_wires, output_wires, work_wires)
                 _test_square_correctness(all_wires, rule, seed, output_wires_zeroed, use_jit)
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("output_wires_zeroed", [False, True])
+    @pytest.mark.parametrize(
+        ("x_wires", "output_wires", "work_wires"),
+        [
+            ([0, 1, 2, 3], [4, 5, 6], [9, 10, 11]),
+            ([0, 1, 2, 3], [4, 5, 6], [9, 10, 11, 12, 13]),
+        ],
+    )
+    def test_decomposition_rules_with_capture(
+        self, x_wires, output_wires, work_wires, output_wires_zeroed
+    ):
+        """Test that the decomposition rules are consistent with the operator, with program
+        capture enabled and disabled."""
+        if qp.capture.enabled():
+            # qp.ctrl(..., work_wires=...) currently drops the outer Controlled op's own
+            # work_wires when captured and round-tripped through plxpr. This is a pre-existing
+            # capture/ControlledOp2 limitation unrelated to the OutSquare decomposition rules
+            # themselves.
+            pytest.xfail(
+                "Known issue: qp.ctrl(..., work_wires=...) loses the outer Controlled op's "
+                "work_wires under program capture."
+            )
+        op = OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
+        for rule in qp.list_decomps(OutSquare):
+            _test_decomposition_rule(op, rule)
 
     def test_adder_decomposition_output_wires_zeroed(self):
         """Test that the controlled adder decomposition has the expected structure with
