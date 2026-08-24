@@ -172,7 +172,7 @@ def select_sos_rows(bits: np.ndarray) -> tuple[list[int], np.ndarray]:
 
 def _find_ell(bits_basis: np.ndarray, set_M: np.ndarray, set_N: np.ndarray) -> np.ndarray:
     r"""Find replacement vector :math:`\ell` to construct lower-rank set of bit strings during
-    recursive computation of kernel space :math:`\mathcal{W}` in ``_get_w_vectors``.
+    iterative computation of kernel space :math:`\mathcal{W}` in ``_find_w``.
 
     In more general terms, we get as input a basis ``bits_basis``,
     a set ``set_M`` of bitstrings that are spanned by all but the last bitstring in that basis
@@ -292,7 +292,8 @@ def _find_single_w(bits):
 
 
 def _step_3_in_find_w(bits_basis, other_bits):
-    """Step 3 of _find_w, which is triggered when t=1 in the recursion but initially we had t>1."""
+    """Step 3 of _find_w, which finds the single remaining vector w_1 once all other basis
+    vectors have been peeled off iteratively (i.e. the reduced problem has t=1)."""
     r = bits_basis.shape[0]
     all_bits = np.concatenate([bits_basis, other_bits], axis=1)
     # Compute set(V) ∪ (set(V) - set(V)). We will skip 0 by starting our search at 1 below
@@ -315,41 +316,58 @@ def _step_3_in_find_w(bits_basis, other_bits):
 
 
 def _find_w(bits_basis, other_bits, t):
-    """Compute the kernel space W from the original bit strings, including a basis for their
+    r"""Compute the kernel space W from the original bit strings, including a basis for their
     column space. See the documentation of ``compute_sos_encoding`` for details.
+
+    The vectors :math:`\{w_k\}` are constructed iteratively: in each iteration we peel off the
+    last basis vector, reducing the problem from ``t`` to ``t-1``, and record one replacement
+    vector ``w_t``. This continues until a single vector ``w_1`` remains, which is found by brute
+    force in ``_step_3_in_find_w``. The recorded vectors are then assembled into ``W`` with
+    columns ordered as ``[w_1, w_2, ..., w_t]``.
     """
-    if t == 1:
-        # Step 3: brute-force search of a single vector w_1
-        return _step_3_in_find_w(bits_basis, other_bits)
+    # Replacement vectors w_t, w_{t-1}, ..., w_2 collected in the order they are found (i.e. with
+    # decreasing index). They are assembled after the loop, together with w_1.
+    trailing_w = []
 
-    v_r = bits_basis[:, -1]
-    bits_without_v_r = np.concatenate([bits_basis[:, :-1], other_bits], axis=1)
+    # We peel off one basis vector per iteration, reducing the problem from t to t-1, until a
+    # single vector w_1 remains.
+    for _ in range(t - 1):
+        v_r = bits_basis[:, -1]
+        bits_without_v_r = np.concatenate([bits_basis[:, :-1], other_bits], axis=1)
 
-    # Step 4: Split the set of bitstrings into three sets:
-    #  - set_M <> \mathcal{M}
-    #  - v_r <> \{v_l\}
-    #  - set_N <> \mathcal{N}
-    indep_of_reduced_basis = np.array(
-        [math.binary_is_independent(vec, bits_basis[:, :-1]) for vec in bits_without_v_r.T]
-    )
+        # Step 4: Split the set of bitstrings into three sets:
+        #  - set_M <> \mathcal{M}
+        #  - v_r <> \{v_l\}
+        #  - set_N <> \mathcal{N}
+        indep_of_reduced_basis = np.array(
+            [math.binary_is_independent(vec, bits_basis[:, :-1]) for vec in bits_without_v_r.T]
+        )
 
-    # Note that the first t-1 columns of set_M are guaranteed to match bits_basis[:, :-1]
-    set_M = bits_without_v_r[:, np.where(~indep_of_reduced_basis)[0]]
-    set_N = bits_without_v_r[:, np.where(indep_of_reduced_basis)[0]]
+        # Note that the first columns of set_M are guaranteed to match bits_basis[:, :-1]
+        set_M = bits_without_v_r[:, np.where(~indep_of_reduced_basis)[0]]
+        set_N = bits_without_v_r[:, np.where(indep_of_reduced_basis)[0]]
 
-    # Step 6: Brute-force search bitstring ell to replace v_l. Step 5 is included in _find_ell
-    ell = _find_ell(bits_basis, set_M, set_N)
+        # Step 6: Brute-force search bitstring ell to replace v_l. Step 5 is included in _find_ell
+        ell = _find_ell(bits_basis, set_M, set_N)
 
-    # Step 7: Compute new set sub_bits <> \mathcal{V}' of bitstrings in span of bits_basis[:, :-1]
-    #         and call _find_w recursively on the sub_bits to compute sub_W <> \mathcal{W}'
-    w_t = (v_r + ell) % 2
-    _set_N = (set_N + w_t[:, None]) % 2
-    sub_bits = np.concatenate([set_M, ell[:, None], _set_N], axis=1)
-    sub_W = _find_w(bits_basis[:, :-1], sub_bits[:, bits_basis.shape[1] - 1 :], t - 1)
+        # Step 7: Compute new set sub_bits <> \mathcal{V}' of bitstrings in span of
+        #         bits_basis[:, :-1], which is processed in the next iteration to find the next
+        #         replacement vector.
+        w_t = (v_r + ell) % 2
+        trailing_w.append(w_t)
+        _set_N = (set_N + w_t[:, None]) % 2
+        sub_bits = np.concatenate([set_M, ell[:, None], _set_N], axis=1)
 
-    # Step 8: Append the replacement vector w_t to sub_W
-    W = np.concatenate([sub_W, w_t[:, None]], axis=1)
-    return W
+        # Peel off the last basis vector and continue with the reduced problem.
+        other_bits = sub_bits[:, bits_basis.shape[1] - 1 :]
+        bits_basis = bits_basis[:, :-1]
+
+    # Step 3: brute-force search of the single remaining vector w_1
+    w_1 = _step_3_in_find_w(bits_basis, other_bits)
+
+    # Step 8: Stack w_1 and the replacement vectors w_2, ..., w_t (reversing ``trailing_w`` back
+    #         into increasing index order) into W with columns ordered as [w_1, w_2, ..., w_t].
+    return np.column_stack([w_1, *reversed(trailing_w)])
 
 
 def _find_U_from_W(W):
@@ -558,7 +576,7 @@ def compute_sos_encoding(bits):
 
         **Case 2b:** :math:`t>1`
 
-        If :math:`t>1`, we recursively construct the :math:`\{w_k\}`, which is implemented in
+        If :math:`t>1`, we iteratively construct the :math:`\{w_k\}`, which is implemented in
         ``_find_w``.
         We proceed in the following steps, thinking of ordered sets whenever we speak of sets.
 
@@ -568,8 +586,8 @@ def compute_sos_encoding(bits):
            the indices :math:`\{1,\dots, r\}`, i.e. the basis is :math:`\mathcal{B}=\{v_1,\dots,v_r\}`.
            This is implemented in ``qp.math.binary_select_basis``, which returns the basis and
            the remaining columns separately. This step will only ever be executed once.
-        2. If :math:`t=1` (which can happen despite :math:`t>1` initially, because we will use
-           recursion), go to step 3. Else go to step 4.
+        2. If :math:`t=1` (which can happen despite :math:`t>1` initially, because we reduce
+           :math:`t` by one in each iteration), go to step 3. Else go to step 4.
         3. Brute-force search a linear combination :math:`w_1` of the basis vectors
            :math:`\mathcal{B}` that is not contained in the set
            :math:`\mathcal{V}\cup(\mathcal{V}-\mathcal{V})\cup \{0\}`, where the set difference
