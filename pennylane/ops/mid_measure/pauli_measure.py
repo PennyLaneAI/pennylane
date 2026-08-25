@@ -83,6 +83,7 @@ class PauliMeasure(Operator2):
 @abstractify.register
 @QueuingManager.stop_recording()
 def _abstractify_pauli_measure(op: PauliMeasure):
+    # This is necessary so that an abstractified PauliMeasure would not have meas_uid
     return PauliMeasure(op.pauli_word, Wire[len(op.wires)], postselect=op.postselect, meas_uid=None)
 
 
@@ -128,14 +129,7 @@ def _get_array_types():
 
 @lru_cache
 def _get_non_array_iterables():
-    return (
-        list,
-        tuple,
-        Wires,
-        range,
-        qp.capture.autograph.ag_primitives.PRange,
-        set,
-    )
+    return list, tuple, Wires, range, qp.capture.autograph.ag_primitives.PRange, set
 
 
 def _setup_wires(wires):

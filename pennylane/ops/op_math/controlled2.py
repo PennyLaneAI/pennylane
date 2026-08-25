@@ -43,7 +43,6 @@ from pennylane.decomposition.resources import (
 )
 from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.ops.op_math.adjoint2 import Adjoint2
-from pennylane.queuing import QueuingManager
 from pennylane.typing import AbstractArray, AbstractWires, Bool, Complex, Wire
 from pennylane.wires import Wires, WiresLike
 
@@ -53,6 +52,7 @@ from .symbolicop2 import SymbolicOp2
 
 
 def _setup_control_values(control_values, num_control_wires):
+
     if control_values is None:
         control_values = [True] * num_control_wires
 
@@ -156,15 +156,10 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         control_wires = Wires(control_wires)
         work_wires = Wires([] if work_wires is None else work_wires)
 
-        if not any(
-            isinstance(w, AbstractWires) for w in (base.wires, control_wires)
-        ) and Wires.shared_wires([base.wires, control_wires]):
-            raise ValueError("control_wires must not overlap with the base operator.")
-
-        if not any(
-            isinstance(w, AbstractWires) for w in (work_wires, base.wires, control_wires)
-        ) and Wires.shared_wires([work_wires, base.wires + control_wires]):
-            raise ValueError("work_wires must not overlap with the operator or control_wires.")
+        all_wire_args = (base.wires, control_wires, work_wires)
+        concrete_wires = [w for w in all_wire_args if not isinstance(w, AbstractWires)]
+        if Wires.shared_wires(concrete_wires):
+            raise ValueError("control_wires, work_wires, and the base operator must not overlap")
 
         accepted = ("zeroed", "borrowed")
         if work_wire_type not in accepted:
@@ -596,7 +591,6 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
 
 
 @list_decomps.register
-@QueuingManager.stop_recording()
 def _list_controlled_decomps(op: ControlledOp2) -> DecompCollection:
     """Get all the decomposition rules applicable to this operator."""
 
