@@ -517,10 +517,10 @@ class TestControlledOp2:
 
         base = qp.H(0)
 
-        with pytest.raises(ValueError, match="control_wires must not overlap with the base"):
+        with pytest.raises(ValueError, match="must not overlap"):
             _ = ControlledOp2(base, control_wires=[0, 1])
 
-        with pytest.raises(ValueError, match="work_wires must not overlap"):
+        with pytest.raises(ValueError, match="must not overlap"):
             _ = ControlledOp2(base, control_wires=[1, 2], work_wires=[2, 3])
 
         with pytest.raises(ValueError, match="work_wire_type must be"):
@@ -593,7 +593,10 @@ class TestControlledOp2:
         """Tests creating an abstract operator."""
 
         op = ControlledOp2(
-            OneWireDynOp(Float, Wire), Wire[2], work_wires=Wire[0], control_values=Bool[2]
+            OneWireDynOp(Float, Wire[1]),
+            control_wires=Wire[2],
+            work_wires=Wire[0],
+            control_values=Bool[2],
         )
         assert op.control_wires == Wire[2]
         assert op.target_wires == Wire[1]
@@ -601,7 +604,7 @@ class TestControlledOp2:
         assert op.work_wires == Wire[0]
         assert op.wires == Wire[3]
 
-        op = ControlledOp2(OneWireDynOp, Wire[2], control_values=[0, 1])
+        op = ControlledOp2(OneWireDynOp(Float, Wire[1]), Wire[2], control_values=[0, 1])
         assert qp.math.allclose(op.control_values, [0, 1])
 
     def test_create_controlled_op2(self):

@@ -20,6 +20,7 @@ import itertools
 import uuid
 from collections.abc import Hashable, Iterable, Sequence
 from importlib import import_module, util
+from itertools import combinations
 
 import numpy as np
 
@@ -849,5 +850,6 @@ def is_abstract_or_traced(v):
 def validate_no_wire_overlaps(wire_args, error_msg):
     """Validate that the given wires do not overlap."""
     concrete_wires = [w for w in wire_args if not is_abstract_or_traced(w)]
-    if len(concrete_wires) > 1 and Wires.shared_wires(concrete_wires):
-        raise ValueError(error_msg)
+    for wire_arg1, wire_arg2 in combinations(concrete_wires, r=2):
+        if Wires.shared_wires([wire_arg1, wire_arg2]):
+            raise ValueError(error_msg)
