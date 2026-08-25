@@ -103,13 +103,8 @@ class BasisState(StatePrepBase2):
         self, state: TensorLike | Sequence[int | bool] | AbstractArray, num_wires: int
     ) -> Sequence[bool] | AbstractArray:
 
-        if isinstance(state, AbstractArray):
-            return Bool[num_wires]
-
         if isinstance(state, (list, tuple)):
             state = qp.math.stack(state)
-
-        abstract_state = qp.math.is_abstract(state)
 
         shape = math.shape(state)
         if not shape:
@@ -121,14 +116,16 @@ class BasisState(StatePrepBase2):
         if len(shape) != 1:
             raise ValueError(f"State must be one-dimensional; got shape {shape}.")
 
-        n_states = shape[0]
-        if n_states != num_wires:
+        if shape[0] != num_wires:
             raise ValueError(
                 f"State and wires must have the same length; got {num_wires} wires but "
-                f"a state of length {n_states} ({state=})."
+                f"a state of length {shape[0]} ({state=})."
             )
 
-        if not abstract_state:
+        if isinstance(state, AbstractArray):
+            return state
+
+        if not qp.math.is_abstract(state):
             state_list = list(qp.math.toarray(state))
             if not set(state_list).issubset({0, 1}):
                 raise ValueError(f"Basis state must only consist of 0s and 1s; got {state_list}")
