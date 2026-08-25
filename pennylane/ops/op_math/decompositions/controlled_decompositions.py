@@ -20,6 +20,7 @@ import numpy as np
 
 import pennylane as qp
 from pennylane import capture, compiler, control_flow, math, ops
+from pennylane.control_flow.for_loop import for_loop
 from pennylane.core import queuing
 from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition import (
@@ -27,6 +28,7 @@ from pennylane.decomposition import (
     register_resources,
 )
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.condition import cond
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract, flip_zero_control
 from pennylane.ops.op_math.decompositions.unitary_decompositions import two_qubit_decomp_rule
 from pennylane.typing import Complex, Float, Wire
@@ -376,17 +378,25 @@ def _controlled_two_qubit_unitary_resource(U, wires, work_wires, work_wire_type,
 @register_resources(_controlled_two_qubit_unitary_resource, exact=False)
 def controlled_two_qubit_unitary_rule(U, wires, control_values, work_wires, work_wire_type, **__):
     """A controlled two-qubit unitary is decomposed by applying ctrl to the base decomposition."""
-    zero_control_wires = [w for w, val in zip(wires[:-2], control_values, strict=True) if not val]
-    for w in zero_control_wires:
-        ops.PauliX(w)
+
+    if compiler.active() or capture.enabled():
+        control_values = math.array(control_values, like="jax")
+        wires = math.array(wires, like="jax")
+
+    @for_loop(0, len(wires) - 2)
+    def _zero_control_wires(i):
+        cond(control_values[i], ops.PauliX)(wires[i])
+
+    _zero_control_wires()  # pylint: disable=no-value-for-parameter
+
     ops.ctrl(
         two_qubit_decomp_rule._impl,  # pylint: disable=protected-access
         control=wires[:-2],
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )(U, wires=wires[-2:])
-    for w in zero_control_wires:
-        ops.PauliX(w)
+
+    _zero_control_wires()  # pylint: disable=no-value-for-parameter
 
 
 def augment_with_allocation(base_rule, num_work_wires, work_wire_type, name=""):
