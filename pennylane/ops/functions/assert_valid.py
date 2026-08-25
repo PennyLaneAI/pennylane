@@ -22,7 +22,6 @@ import pickle
 from collections import defaultdict
 from functools import partial
 from string import ascii_lowercase
-from types import NoneType
 
 import numpy as np
 import scipy.sparse
@@ -712,9 +711,9 @@ def _assert_valid_operator2(
 
     # check abstractify
     abstractified_op = abstractify(op)
-    leaves = flatten(abstractified_op)[0]
+    leaves, _ = flatten(abstractified_op)
     for l in leaves:
-        if not isinstance(l, (AbstractArray, AbstractWires, NoneType, CompressedResourceOp)):
+        if not isinstance(l, (AbstractArray, AbstractWires, CompressedResourceOp)):
             raise AssertionError(
                 f"Op not properly abstractified. {abstractified_op} had non-abstract leaf {l}."
             )
