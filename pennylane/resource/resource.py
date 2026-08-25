@@ -34,6 +34,10 @@ from pennylane.pytrees import flatten, unflatten
 
 from .expression import Expression
 
+# The threshold after which integers in the resource class are displayed in scientific notation.
+# This is used in the __str__ and _repr_markdown_ methods of the Resources class.
+_SCIENTIFIC_NOTATION_THRESHOLD = 100_000
+
 
 def _count_to_str(
     count: int | float | Expression, extra_compact: bool = False, markdown_safe: bool = False
@@ -58,10 +62,10 @@ def _count_to_str(
     if isinstance(count, float) and not count.is_integer():
         # NOTE: stringify the count in order to bypass Decimal precision issues
         return f"{Decimal(str(count)):.3E}"
-        
+
     if count >= _SCIENTIFIC_NOTATION_THRESHOLD:
         return f"{Decimal(count):.3E}"
-        
+
     return f"{int(count):,}"  # Return as integer if count is small
 
 
