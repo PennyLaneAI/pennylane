@@ -16,7 +16,6 @@ Contains the SignedOutMultiplier template.
 """
 
 from collections import defaultdict
-from itertools import combinations
 
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
@@ -28,8 +27,9 @@ from pennylane.decomposition import (
     register_resources,
 )
 from pennylane.ops import CNOT, Controlled
+from pennylane.ops.op_math.controlled2 import _validate_no_wire_overlaps
 from pennylane.typing import Wire
-from pennylane.wires import Wires, WiresLike, is_abstract_or_traced
+from pennylane.wires import Wires, WiresLike
 
 from .incrementer import Incrementer
 from .out_multiplier import OutMultiplier
@@ -324,20 +324,16 @@ class SignedOutMultiplier(Operator2):
         work_wires: WiresLike,
         output_wires_zeroed: bool = False,
     ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+
         x_wires = Wires(x_wires)
         y_wires = Wires(y_wires)
         output_wires = Wires(output_wires)
         work_wires = Wires(work_wires)
 
-        wire_args = (x_wires, y_wires, output_wires, work_wires)
-        wire_argnames = ("x_wires", "y_wires", "output_wires", "work_wires")
-        _abstract_or_traced_wires = any(is_abstract_or_traced(w) for w in wire_args)
-
-        if not _abstract_or_traced_wires:
-            wire_args_and_names = zip(wire_args, wire_argnames, strict=True)
-            for (w1, n1), (w2, n2) in combinations(wire_args_and_names, r=2):
-                if w1.intersection(w2):
-                    raise ValueError(f"None of the wires in {n2} should be included in {n1}.")
+        _validate_no_wire_overlaps(
+            (x_wires, y_wires, output_wires, work_wires),
+            "x_wires, y_wires, output_wires, work_wires must not overlap.",
+        )
 
         super().__init__(
             x_wires,

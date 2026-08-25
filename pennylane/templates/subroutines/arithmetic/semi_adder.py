@@ -17,9 +17,10 @@ from pennylane.allocation import allocate
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import CNOT, adjoint, ctrl
+from pennylane.ops.op_math.controlled2 import _validate_no_wire_overlaps
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.typing import Wire
-from pennylane.wires import Wires, WiresLike, is_abstract_or_traced
+from pennylane.wires import Wires, WiresLike
 
 from .temporary_and import TemporaryAND
 
@@ -235,18 +236,10 @@ class SemiAdder(Operator2):
         y_wires = Wires(y_wires)
         work_wires = Wires(work_wires if work_wires is not None else [])
 
-        wire_args = (x_wires, y_wires, work_wires)
-        _abstract_or_traced_wires = any(is_abstract_or_traced(w) for w in wire_args)
-
-        # Wire overlap/length validation must be skipped when wires are JAX tracers,
-        # as their concrete values are not available during tracing.
-        if not _abstract_or_traced_wires:
-            if work_wires.intersection(x_wires):
-                raise ValueError("None of the wires in work_wires should be included in x_wires.")
-            if work_wires.intersection(y_wires):
-                raise ValueError("None of the wires in work_wires should be included in y_wires.")
-            if x_wires.intersection(y_wires):
-                raise ValueError("None of the wires in y_wires should be included in x_wires.")
+        _validate_no_wire_overlaps(
+            (x_wires, y_wires, work_wires),
+            "x_wires, y_wires, work_wires must not overlap",
+        )
 
         super().__init__(x_wires=x_wires, y_wires=y_wires, work_wires=work_wires)
 

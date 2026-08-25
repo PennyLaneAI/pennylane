@@ -16,7 +16,6 @@ Contains the OutMultiplier template.
 """
 
 from collections import defaultdict
-from itertools import combinations
 
 from pennylane.core.operator import Operator2, abstractify
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
@@ -28,11 +27,12 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.resources import resource_rep
 from pennylane.ops import BasisState, H, Prod, X, adjoint, change_op_basis, ctrl, prod
+from pennylane.ops.op_math.controlled2 import _validate_no_wire_overlaps
+from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
+from pennylane.templates.subroutines.qft import QFT
 from pennylane.typing import Bool, Wire
-from pennylane.wires import Wires, WiresLike, is_abstract_or_traced
+from pennylane.wires import Wires, WiresLike
 
-from ..controlled_sequence import ControlledSequence
-from ..qft import QFT
 from .incrementer import Incrementer
 from .phase_adder import PhaseAdder
 from .semi_adder import SemiAdder, _semi_adder, _semi_adder_resources
@@ -252,15 +252,10 @@ class OutMultiplier(Operator2):
         if mod != max_mod:
             work_wires = Wires(work_wires[:num_work_wires])
 
-        wire_args = [x_wires, y_wires, output_wires, work_wires]
-        wire_argnames = ["x_wires", "y_wires", "output_wires", "work_wires"]
-        _abstract_or_traced_wires = any(is_abstract_or_traced(w) for w in wire_args)
-
-        if not _abstract_or_traced_wires:
-            wire_args_and_names = zip(wire_args, wire_argnames, strict=True)
-            for (w1, n1), (w2, n2) in combinations(wire_args_and_names, r=2):
-                if w1.intersection(w2):
-                    raise ValueError(f"None of the wires in {n2} should be included in {n1}.")
+        _validate_no_wire_overlaps(
+            [x_wires, y_wires, output_wires, work_wires],
+            "x_wires, y_wires, output_wires, and work_wires should not overlap",
+        )
 
         super().__init__(
             x_wires,
