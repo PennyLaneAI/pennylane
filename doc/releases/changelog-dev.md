@@ -1318,6 +1318,12 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug where the adjoint of an :class:`~.Operator2` failed to lower under program capture /
+  Catalyst when its decomposition branched on a ``static_argnames`` or ``compilable_argnames``
+  argument (such as ``output_wires_zeroed``). The adjoint decomposition rule traced those arguments,
+  triggering a ``TracerBoolConversionError``; the non-dynamic arguments are now kept concrete.
+  [(#10069)](https://github.com/PennyLaneAI/pennylane/pull/10069)
+
 * Fixed :func:`~pennylane.backline.css_bp_decoder` and the other Triton decoders so they can be
   compiled on a machine with no usable GPU. The ahead-of-time build called
   ``JITFunction.create_binder()``, which asks the local machine for a target through
