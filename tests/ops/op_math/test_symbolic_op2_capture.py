@@ -284,8 +284,8 @@ class TestControlledCapture:
         eqn = _single_op_eqn(jaxpr)
 
         assert eqn.params["n_ctrls"] == 1
-        assert eqn.params["n_work_wires"] == 1
-        assert eqn.params["work_wire_type"] == "zeroed"
+        assert eqn.params["n_ctrl_work_wires"] == 1
+        assert eqn.params["ctrl_work_wire_type"] == "zeroed"
 
         # pylint: disable=unbalanced-tuple-unpacking
         [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.7)
@@ -301,7 +301,7 @@ class TestControlledCapture:
         )(0.5, 5)
         eqn = _single_op_eqn(jaxpr)
 
-        assert eqn.params["n_work_wires"] == 1
+        assert eqn.params["n_ctrl_work_wires"] == 1
         assert jaxpr.jaxpr.invars[1] in eqn.invars
 
         # pylint: disable=unbalanced-tuple-unpacking
@@ -335,8 +335,8 @@ class TestControlledCapture:
         eqn = _single_op_eqn(jaxpr)
 
         assert eqn.params["n_ctrls"] == 2
-        assert eqn.params["n_work_wires"] == 2
-        assert eqn.params["work_wire_type"] == expected_type
+        assert eqn.params["n_ctrl_work_wires"] == 2
+        assert eqn.params["ctrl_work_wire_type"] == expected_type
 
         # pylint: disable=unbalanced-tuple-unpacking
         [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.7)

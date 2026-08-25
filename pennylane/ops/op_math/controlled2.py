@@ -605,7 +605,7 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         assert len(eqns) == 1, f"Expected exactly one plxpr equation for {self.base}."
         params = eqns[0].params
         n_ctrls = params["n_ctrls"]
-        n_work_wires = params.get("n_work_wires", 0)
+        n_work_wires = params.get("n_ctrl_work_wires", 0)
 
         # `eqns` contains `TracingEqns`, not `JaxprEqns`, so invars during tracing will just
         # be tracers, not `Var`s wrapping abstract values. invars are ordered as
@@ -626,14 +626,16 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         invars = other_args + work_wires + control_wires + control_values
 
         params["n_ctrls"] = n_ctrls + len(self.control_wires)
-        params["n_work_wires"] = n_work_wires + len(self.work_wires)
+        # These params are namespaced (`n_ctrl_`/`ctrl_`) so they never collide with an operator's
+        # own static/compilable argnames when reconstructed in `_op_impl`.
+        params["n_ctrl_work_wires"] = n_work_wires + len(self.work_wires)
         if n_ctrls:
             # Merging into an already-controlled base equation: mirror the merge convention
             # used by `simplify()`, resolving the old (base) work wires/type together with the
             # new (outer) ones being added now.
-            params["work_wire_type"] = resolve_work_wire_type(
+            params["ctrl_work_wire_type"] = resolve_work_wire_type(
                 old_work_wires,
-                params.get("work_wire_type", "borrowed"),
+                params.get("ctrl_work_wire_type", "borrowed"),
                 self.work_wires,
                 self.work_wire_type,
             )
@@ -641,7 +643,7 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
             # Fresh single wrap: preserve `work_wire_type` verbatim, matching eager
             # `ControlledOp2.__init__`. `resolve_work_wire_type` must not be applied here, as
             # it would collapse an empty-work-wires `"zeroed"` down to the `"borrowed"` default.
-            params["work_wire_type"] = self.work_wire_type
+            params["ctrl_work_wire_type"] = self.work_wire_type
         res = operator_p.bind(*invars, **params)
 
         self.base.tracer = None
