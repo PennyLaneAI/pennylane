@@ -231,12 +231,17 @@ class CDFHamiltonian(NumericHamiltonian):
 
     The form of this Hamiltonian is described in
     `arXiv:2506.15784, Sec. III A <https://arxiv.org/abs/2506.15784>`__.
+    Briefly, this Hamiltonian form makes approximations to the
+    two-body term in an electronic Hamiltonian in the molecular
+    orbital basis via a sum of :math:`L` fragments, each parameterized
+    by orthogonal rotation matrices (`leaf_tensors`) and a diagonal
+    interaction core (`core_tensors`).
 
     Args:
         core_tensors (TensorLike | AbstractArray): the core tensors, of shape
-            ``(L+1, N, N)``. The leading dimension's `0` index is the one-body core tensor, while the rest represent the two-body cores.
+            ``(L+1, N, N)``. The leading dimension's ``0`` index is the one-body core tensor, while the rest represent the two-body cores.
         leaf_tensors (TensorLike | AbstractArray): the leaf tensors, of shape
-            ``(L+1, N, N)``. The leading dimension's `0` index represents the one-body leaf tensor, while the rest represents the two-body leaves.
+            ``(L+1, N, N)``. The leading dimension's ``0`` index represents the one-body leaf tensor, while the rest represents the two-body leaves.
         nuc_constant (float | AbstractArray | None): the nuclear constant energy offset.
             Defaults to ``0.0``.
 
@@ -302,13 +307,21 @@ class CGFHamiltonian(NumericHamiltonian):
 
     The form of this Hamiltonian is described in
     `arXiv:2508.11865, Sec. III C <https://arxiv.org/abs/2508.11865>`__.
+    Briefly, this Hamiltonian form makes approximations to the two-mode
+    terms of a vibrational Hamiltonian in the vibrational self-consistent 
+    field (VSCF)-rotated modal basis via a sum of :math:`L` fragments, 
+    each parameterized by orthogonal rotation matrices (`leaf_tensors`) 
+    and a diagonal interaction core (`core_tensors`).
 
     Args:
-        core_tensors (TensorLike | AbstractArray): the core tensors, of shape
-            ``(L+1, M, M, N, N)``. Index ``0`` along the leading axis is the one-body
-            fragment.
-        leaf_tensors (TensorLike | AbstractArray): the leaf tensors, of shape
-            ``(L+1, M, N, N)``
+        core_tensors (TensorLike | AbstractArray): The core tensors of shape
+            ``(L+1, M, M, N, N)``. Index ``0`` along the leading dimension represents
+            the one-body core tensor, while indices ``1`` through ``L`` represent the 
+            two-mode interaction cores.
+        leaf_tensors (TensorLike | AbstractArray): The leaf tensors of shape
+            ``(L+1, M, N, N)``. Index ``0`` along the leading dimension represents 
+            the one-body leaf tensor, while indices ``1`` through ``L`` represent the 
+            two-mode rotation leaves.
         nuc_constant (float | AbstractArray | None): the nuclear constant energy offset.
             Defaults to ``0.0``.
 
