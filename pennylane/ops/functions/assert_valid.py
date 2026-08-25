@@ -314,8 +314,8 @@ def _unroll_change_op_basis(gate_counts):
     new_gate_counts = defaultdict(int)
     for k, count in gate_counts.items():
         if isinstance(k, (Adjoint2, ControlledOp2)):
-            unrolled_base = _unroll_change_op_basis({k.base: count})
-            if unrolled_base != {k.base: count}:
+            unrolled_base = _unroll_change_op_basis({k.base: 1})
+            if unrolled_base != {k.base: 1}:
                 for op_rep, inner_count in unrolled_base.items():
                     if isinstance(k, Adjoint2):
                         wrapped_op = _adjoint_abstract(op_rep)
@@ -323,7 +323,7 @@ def _unroll_change_op_basis(gate_counts):
                         wrapped_op = _ctrl_abstract(
                             op_rep, k.control_wires, k.work_wires, k.work_wire_type
                         )
-                    new_gate_counts[wrapped_op] += inner_count
+                    new_gate_counts[wrapped_op] += count * inner_count
                 continue
 
         if isinstance(k, qp.ops.ChangeOpBasis):
@@ -335,13 +335,11 @@ def _unroll_change_op_basis(gate_counts):
             continue
 
         for op_rep in operands:
-            operand_counts = (
-                op_rep.params["resources"]
-                if isinstance(op_rep, CompressedResourceOp) and op_rep.op_type is qp.ops.Prod
-                else {op_rep: 1}
-            )
-            for inner_op, inner_count in _unroll_change_op_basis(operand_counts).items():
-                new_gate_counts[inner_op] += count * inner_count
+            if isinstance(op_rep, CompressedResourceOp) and op_rep.op_type is qp.ops.Prod:
+                for inner_op, inner_count in op_rep.params["resources"].items():
+                    new_gate_counts[inner_op] += count * inner_count
+            else:
+                new_gate_counts[op_rep] += count
 
     return new_gate_counts
 
@@ -725,7 +723,7 @@ def _assert_valid_operator2(
     assert isinstance(op.dynamic_argnames, tuple), "dynamic_argnames must be a tuple"
     assert_equal(type(op)(**op.arguments), op)
 
-    if not isinstance(op, (Adjoint2, ControlledOp2, Pow2, qp.ops.ChangeOpBasis)):
+    if not isinstance(op, (Adjoint2, ControlledOp2, Pow2)):
 
         error_msg = "ndim_params must have the same length as dynamic_argnames"
         assert len(op.ndim_params) == len(op.dynamic_argnames), error_msg
