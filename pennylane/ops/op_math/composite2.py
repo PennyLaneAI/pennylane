@@ -333,6 +333,16 @@ class CompositeOp2(Operator2, is_baseclass=True):
     def _math_op(self) -> Callable:
         """The function used when combining the operands of the composite operator"""
 
+    @handle_recursion_error
+    def map_wires(self, wire_map: dict):
+        # pylint:disable=protected-access
+        if self._init_pauli_rep:
+            rep = self._init_pauli_rep.map_wires(wire_map=wire_map)
+        else:
+            rep = None
+        new = self.__class__([op.map_wires(wire_map=wire_map) for op in self], rep)
+        return new
+
     @abc.abstractmethod
     def _build_pauli_rep(self):
         """The function to generate the pauli representation for the composite operator."""

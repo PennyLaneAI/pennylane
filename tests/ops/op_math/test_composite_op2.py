@@ -26,8 +26,9 @@ from pennylane import math
 from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.ops.op_math import CompositeOp2
+from pennylane.pauli.pauli_arithmetic import PauliWord
 from pennylane.queuing import AnnotatedQueue
-from pennylane.wires import WiresLike
+from pennylane.wires import Wires, WiresLike
 
 # pylint:disable=protected-access, use-implicit-booleaness-not-comparison
 
@@ -145,6 +146,15 @@ class TestConstruction:
         assert op._hash is None
         assert op._has_overlapping_wires is None
         assert op._overlapping_ops is None
+
+    def test_map_wires(self):
+        """Test the map_wires method."""
+        pr = PauliWord({0: "Y"}) + PauliWord({1: "Y"})
+        op = ValidOp([qp.X(0), qp.Z(1)], _init_pauli_rep=pr)
+        op_mapped = op.map_wires({0: 40, 1: 41})
+        assert op_mapped.wires == (40, 41)
+        assert op_mapped.operands == [qp.X(40), qp.Z(41)]
+        assert op_mapped.pauli_rep.wires == (40, 41)
 
     def test_data(self):
         """Test that the data property flattens the data of all operands in order."""
