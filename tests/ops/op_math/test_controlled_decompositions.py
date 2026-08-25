@@ -43,6 +43,7 @@ from pennylane.ops.op_math.decompositions.controlled_decompositions import (
     _ctrl_decomp_bisect_od,
     _decompose_mcx_with_no_worker,
     _mcx_two_workers,
+    controlled_two_qubit_unitary_rule,
     decompose_mcx_many_workers,
     decompose_mcx_one_worker,
 )
@@ -809,6 +810,41 @@ class TestControlledUnitaryRecursive:
         expected = expected_op.matrix()
 
         assert np.allclose(res, expected, atol=tol, rtol=tol)
+
+
+class TestControlledTwoQubitUnitary:
+
+    @pytest.mark.capture
+    def test_controlled_two_qubit_unitary_rule_capture(self):
+        """Test that the controlled two qubit unitary rule is captured correctly."""
+        from jax import make_jaxpr
+        from jax import numpy as jnp
+
+        kwargs = {
+            "wires": jnp.array([0, 1, 2]),
+            "U": jnp.eye(4),
+            "control_values": jnp.array([False], dtype=bool),
+            "work_wires": jnp.array([]),
+            "work_wire_type": "borrowed",
+        }
+
+        jaxpr = make_jaxpr(controlled_two_qubit_unitary_rule, static_argnums=(4,))(
+            kwargs["U"],
+            kwargs["wires"],
+            kwargs["control_values"],
+            kwargs["work_wires"],
+            kwargs["work_wire_type"],
+        )
+
+        assert len(jaxpr.jaxpr.invars) == 4
+
+        loop_count = sum([1 for eqn in jaxpr.eqns if eqn.primitive.name == "for_loop"])
+        assert loop_count == 2
+
+        ctrl_count = sum([1 for eqn in jaxpr.eqns if eqn.primitive.name == "ctrl_transform"])
+        assert ctrl_count == 1
+
+        assert len(jaxpr.jaxpr.outvars) == 0
 
 
 class TestMCXDecomposition:
