@@ -25,7 +25,7 @@ from typing import Sequence, override
 import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operator, Operator2
-from pennylane.ops.op_math.composite import handle_recursion_error
+from .composite import handle_recursion_error
 from pennylane.wires import Wires
 
 # pylint: disable=too-many-instance-attributes
