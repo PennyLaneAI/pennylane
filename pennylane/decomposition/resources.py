@@ -343,7 +343,7 @@ def change_op_basis_resource_rep(
     target_op: type[Operator] | AbstractOperatorLike,
     uncompute_op: type[Operator] | AbstractOperatorLike | None = None,
 ):
-    """Creates an abstract :class:`~.ChangeOpBasis` representation of the compute-uncompute
+    """Creates an abstract :class:`~.ChangeOpBasis` representation of the compute-target-uncompute
     pattern of operators.
 
     Args:
@@ -361,8 +361,7 @@ def change_op_basis_resource_rep(
         uncompute_op = _adjoint_abstract(compute_op)
     else:
         uncompute_op = abstractify(uncompute_op)
-    with qp.capture.pause(), qp.QueuingManager.stop_recording():
-        return qp.ops.ChangeOpBasis(compute_op, target_op, uncompute_op)
+    return qp.ops.ChangeOpBasis(compute_op, target_op, uncompute_op)
 
 
 def pow_resource_rep(base_class, base_params, z):
