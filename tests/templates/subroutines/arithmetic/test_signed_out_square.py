@@ -391,12 +391,6 @@ class TestSignedOutSquare:
     def test_decomposition_rule_with_capture(self, output_wires_zeroed):
         """Test that the decomposition rule is consistent with the operator, with program
         capture enabled and disabled."""
-        if qp.capture.enabled():
-            # https://github.com/PennyLaneAI/pennylane/issues/10065
-            pytest.xfail(
-                "qp.ctrl(..., work_wires=...) loses the outer Controlled op's work_wires "
-                "under program capture (see #10065)."
-            )
         x_wires, output_wires, work_wires = [0, 1, 2], [3, 4, 5, 6, 7], [8, 9, 10, 11, 12]
         op = SignedOutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
         for rule in qp.list_decomps(SignedOutSquare):
