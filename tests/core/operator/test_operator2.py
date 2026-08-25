@@ -49,7 +49,7 @@ from pennylane.exceptions import (
 from pennylane.operation import _UNSET_BATCH_SIZE
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pytrees.pytrees import flatten_registrations, unflatten_registrations
-from pennylane.typing import AbstractArray, AbstractWires, Float, Wire
+from pennylane.typing import AbstractArray, AbstractWires, Complex, Float, Int, Wire
 from pennylane.wires import Wires
 
 
@@ -925,6 +925,21 @@ class TestProperties:
 
         op = Op([0, 1], [2, 3, 4])
         assert op.wires == Wires([0, 1, 2, 3, 4])
+
+    @pytest.mark.parametrize(
+        "args, expected",
+        [
+            ((Float, Float[2], [Float, Int, Complex], Wire[1]), True),
+            ((Float, Float[2], [Float, Int, Complex], [0]), False),
+            ((np.pi, Float[2], [np.pi, 7, 5 + 2j], Wire[1]), False),
+            ((Float, Float[2], [np.pi, 7, 5 + 2j], (0,)), False),
+            ((np.pi, np.array([1.5, 1.25]), [np.pi, 7, 5 + 2j], (0,)), False),
+        ],
+    )
+    def test_is_abstract(self, args, expected):
+        """Tests that is_abstract is correct."""
+        op = FullOp(*args)
+        assert op.is_abstract == expected
 
 
 class TestBroadcasting:

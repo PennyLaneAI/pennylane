@@ -166,7 +166,7 @@ class ControlledQubitUnitary(Controlled2):
         if wires is None:
             raise TypeError("Must specify a set of wires. None is not a valid `wires` label.")
 
-        if not isinstance(U, Iterable):
+        if not isinstance(U, (Iterable, AbstractArray)):
             raise ValueError("U must be a matrix.")
 
         work_wires = Wires(() if work_wires is None else work_wires)

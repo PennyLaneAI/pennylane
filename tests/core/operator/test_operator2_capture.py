@@ -191,7 +191,6 @@ class TestCaptureAbstractInputs:
             assert len(jaxpr.eqns[i].outvars) == 1
             assert jaxpr.eqns[i].outvars[0].aval.shape == ()
             assert jaxpr.eqns[i].outvars[0].aval.dtype == jax.numpy.int64
-
             assert jaxpr.eqns[-1].invars[1 + i] == jaxpr.eqns[i].outvars[0]
 
     @pytest.mark.parametrize(
@@ -212,7 +211,6 @@ class TestCaptureAbstractInputs:
         assert len(jaxpr.eqns[0].outvars) == 1
         assert jaxpr.eqns[0].outvars[0].aval.shape == abstract_type.shape
         assert jaxpr.eqns[0].outvars[0].aval.dtype == abstract_type.dtype
-
         assert jaxpr.eqns[1].invars[0] == jaxpr.eqns[0].outvars[0]
 
     def test_hybrid_op(self):

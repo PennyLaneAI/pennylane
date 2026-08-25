@@ -625,30 +625,22 @@ class TestControlledDecomposition:
             qp.assert_equal(actual, expected)
 
         actual_resources = rule.compute_resources(**op.resource_params)
-        expected_non_abstracitfied = {
-            abstractify(qp.CNOT): 1,
-            qp.MultiControlledX(Wire[3], work_wires=Wire[1]): 1,
-            qp.MultiControlledX(Wire[4], work_wires=Wire[1]): 1,
-            qp.MultiControlledX(Wire[5], work_wires=Wire[2]): 1,
-            abstractify(qp.CRX): 1,
-            abstractify(qp.CRot): 1,
-            _ctrl_abstract(qp.RZ, Wire[2], Wire[1]): 1,
-            _ctrl_abstract(
-                qp.MultiRZ(Float, Wire[6]),
-                control_wires=Wire[1],
-                work_wires=Wire[1],
-            ): 1,
-            _ctrl_abstract(
-                qp.MultiRZ(Float, Wire[5]),
-                control_wires=Wire[2],
-                work_wires=Wire[1],
-            ): 1,
-            _ctrl_abstract(qp.PauliRot(Float, "XYX", wires=Wire[3]), Wire[1], Wire[1]): 1,
-            abstractify(qp.CZ): 1,
-            abstractify(qp.CCZ): 1,
-        }
-        expected = {abstractify(op): val for op, val in expected_non_abstracitfied.items()}
-        assert actual_resources == Resources(expected)
+        assert actual_resources == to_resources(
+            {
+                qp.CNOT: 1,
+                qp.MultiControlledX(Wire[3], work_wires=Wire[1]): 1,
+                qp.MultiControlledX(Wire[4], work_wires=Wire[1]): 1,
+                qp.MultiControlledX(Wire[5], work_wires=Wire[2]): 1,
+                qp.CRX: 1,
+                qp.CRot: 1,
+                qp.ctrl(qp.RZ(Float, Wire[1]), Wire[2], work_wires=Wire[1]): 1,
+                qp.ctrl(qp.MultiRZ(Float, Wire[6]), Wire[1], work_wires=Wire[1]): 1,
+                qp.ctrl(qp.MultiRZ(Float, Wire[5]), Wire[2], work_wires=Wire[1]): 1,
+                qp.ctrl(qp.PauliRot(Float, "XYX", wires=Wire[3]), Wire[1], work_wires=Wire[1]): 1,
+                qp.CZ: 1,
+                qp.CCZ: 1,
+            }
+        )
 
     def test_double_control_wire(self):
         """Tests two control wires."""
@@ -752,31 +744,23 @@ class TestControlledDecomposition:
             qp.assert_equal(actual, expected)
 
         actual_resources = rule.compute_resources(**op.resource_params)
-        expected_non_abstracitfied = {
-            abstractify(qp.X): 2,
-            qp.MultiControlledX(Wire[3], work_wires=Wire[1]): 1,
-            qp.MultiControlledX(Wire[4], work_wires=Wire[1]): 1,
-            qp.MultiControlledX(Wire[5], work_wires=Wire[1]): 1,
-            qp.MultiControlledX(Wire[6], work_wires=Wire[2]): 1,
-            _ctrl_abstract(qp.RX, Wire[2], Wire[1]): 1,
-            _ctrl_abstract(qp.Rot, Wire[2], Wire[1]): 1,
-            _ctrl_abstract(qp.RZ, Wire[3], Wire[1]): 1,
-            _ctrl_abstract(
-                qp.MultiRZ(Float, Wire[6]),
-                control_wires=Wire[2],
-                work_wires=Wire[1],
-            ): 1,
-            _ctrl_abstract(
-                qp.MultiRZ(Float, Wire[5]),
-                control_wires=Wire[3],
-                work_wires=Wire[1],
-            ): 1,
-            _ctrl_abstract(qp.PauliRot(Float, "XYX", wires=Wire[3]), Wire[2], Wire[1]): 1,
-            abstractify(qp.CCZ): 1,
-            _ctrl_abstract(qp.CZ, Wire[2], Wire[1]): 1,
-        }
-        expected = {abstractify(op): val for op, val in expected_non_abstracitfied.items()}
-        assert actual_resources == Resources(expected)
+        assert actual_resources == to_resources(
+            {
+                qp.X: 2,
+                qp.MultiControlledX(Wire[3], work_wires=Wire[1]): 1,
+                qp.MultiControlledX(Wire[4], work_wires=Wire[1]): 1,
+                qp.MultiControlledX(Wire[5], work_wires=Wire[1]): 1,
+                qp.MultiControlledX(Wire[6], work_wires=Wire[2]): 1,
+                qp.ctrl(qp.RX(Float, Wire[1]), Wire[2], work_wires=Wire[1]): 1,
+                qp.ctrl(abstractify(qp.Rot), Wire[2], work_wires=Wire[1]): 1,
+                qp.ctrl(qp.RZ(Float, Wire[1]), Wire[3], work_wires=Wire[1]): 1,
+                qp.ctrl(qp.MultiRZ(Float, Wire[6]), Wire[2], work_wires=Wire[1]): 1,
+                qp.ctrl(qp.MultiRZ(Float, Wire[5]), Wire[3], work_wires=Wire[1]): 1,
+                qp.ctrl(qp.PauliRot(Float, "XYX", wires=Wire[3]), Wire[2], work_wires=Wire[1]): 1,
+                qp.CCZ: 1,
+                qp.ctrl(qp.CZ(Wire[2]), Wire[2], work_wires=Wire[1]): 1,
+            }
+        )
 
     def test_multi_control_wires(self):
         """Tests with multiple (more than 2) control wires."""
@@ -839,31 +823,23 @@ class TestControlledDecomposition:
             actual_resources = rule.compute_resources(**op.resource_params)
         else:
             actual_resources = rule.compute_resources(**op.arguments)
-        expected_non_abstracitfied = {
-            abstractify(qp.X): 4,
-            qp.MultiControlledX(Wire[4], work_wires=Wire[1]): 1,
-            qp.MultiControlledX(Wire[5], work_wires=Wire[1]): 1,
-            qp.MultiControlledX(Wire[6], work_wires=Wire[1]): 1,
-            qp.MultiControlledX(Wire[7], work_wires=Wire[2]): 1,
-            _ctrl_abstract(qp.RX, Wire[3], Wire[1]): 1,
-            _ctrl_abstract(qp.Rot, Wire[3], Wire[1]): 1,
-            _ctrl_abstract(qp.RZ, Wire[4], Wire[1]): 1,
-            _ctrl_abstract(
-                qp.MultiRZ(Float, Wire[6]),
-                control_wires=Wire[3],
-                work_wires=Wire[1],
-            ): 1,
-            _ctrl_abstract(
-                qp.MultiRZ(Float, Wire[5]),
-                control_wires=Wire[4],
-                work_wires=Wire[1],
-            ): 1,
-            _ctrl_abstract(qp.PauliRot(Float, "XYX", wires=Wire[3]), Wire[3], Wire[1]): 1,
-            _ctrl_abstract(qp.Z, Wire[3], Wire[1]): 1,
-            _ctrl_abstract(qp.CZ, Wire[3], Wire[1]): 1,
-        }
-        expected = {abstractify(op): val for op, val in expected_non_abstracitfied.items()}
-        assert actual_resources == Resources(expected)
+        assert actual_resources == to_resources(
+            {
+                qp.X: 4,
+                qp.MultiControlledX(Wire[4], work_wires=Wire[1]): 1,
+                qp.MultiControlledX(Wire[5], work_wires=Wire[1]): 1,
+                qp.MultiControlledX(Wire[6], work_wires=Wire[1]): 1,
+                qp.MultiControlledX(Wire[7], work_wires=Wire[2]): 1,
+                qp.ctrl(qp.RX(Float, Wire[1]), Wire[3], work_wires=Wire[1]): 1,
+                qp.ctrl(abstractify(qp.Rot), Wire[3], work_wires=Wire[1]): 1,
+                qp.ctrl(qp.RZ(Float, Wire[1]), Wire[4], work_wires=Wire[1]): 1,
+                qp.ctrl(qp.MultiRZ(Float, Wire[6]), Wire[3], work_wires=Wire[1]): 1,
+                qp.ctrl(qp.MultiRZ(Float, Wire[5]), Wire[4], work_wires=Wire[1]): 1,
+                qp.ctrl(qp.PauliRot(Float, "XYX", wires=Wire[3]), Wire[3], work_wires=Wire[1]): 1,
+                qp.ctrl(qp.Z(Wire[1]), Wire[3], work_wires=Wire[1]): 1,
+                qp.ctrl(qp.CZ(Wire[2]), Wire[3], work_wires=Wire[1]): 1,
+            }
+        )
 
     def test_make_controlled_decomp2(self):
         """Tests the controlled decomp wrapper for ControlledOp2."""
@@ -907,9 +883,12 @@ class TestControlledDecomposition:
             qp.Toffoli([3, 1, 2]),
         ]
 
-        a_cop = abstractify(ControlledOp2(abstractify(OneWireDynOp), control_wires=Wire[1]))
         assert ctrl_rule.compute_resources(**op.arguments) == to_resources(
-            {a_cop: 3, qp.Toffoli: 2, qp.X: 1}
+            {
+                ControlledOp2(abstractify(OneWireDynOp), control_wires=Wire[1]): 3,
+                qp.Toffoli: 2,
+                qp.X: 1,
+            }
         )
 
     def test_flip_control_adjoint(self):
@@ -944,8 +923,9 @@ class TestControlledDecomposition:
             flip_control_adjoint2(**op.arguments)
 
         assert q.queue == [qp.adjoint(qp.ctrl(DynOp(0.5, wires=[0, 1]), 2))]
-        aop = abstractify(Adjoint2(ControlledOp2(DynOp(Float, Wire[2]), control_wires=Wire[1])))
-        assert flip_control_adjoint2.compute_resources(**op.arguments) == Resources({aop: 1})
+        assert flip_control_adjoint2.compute_resources(**op.arguments) == to_resources(
+            {Adjoint2(ControlledOp2(DynOp(Float, Wire[2]), control_wires=Wire[1])): 1}
+        )
 
     def test_flip_zero_control(self):
         """Tests the `flip_zero_control` modifier."""
