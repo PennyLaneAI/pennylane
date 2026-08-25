@@ -1108,14 +1108,11 @@ def _is_abstract_and_fixed(val):
     """Checks whether `val` is (or only contains) abstract data of fixed shapes."""
     # We don't actually need to check whether val is abstract, since the Resources class
     # already abstractifies everything. We only need to make sure that it's fixed.
-    if isinstance(val, qp.ops.ChangeOpBasis):
-        return all(
-            isinstance(operand, CompressedResourceOp) or _is_abstract_and_fixed(operand)
-            for operand in val.operands
-        )
+    if isinstance(val, CompressedResourceOp):  # can remove once everything ported
+        return True
     if isinstance(val, (AbstractArray, AbstractWires)):
         return val.shape_fixed
-    leaves, _ = flatten(val, is_leaf=lambda op: isinstance(op, (Wires, qp.ops.ChangeOpBasis)))
+    leaves, _ = flatten(val, is_leaf=lambda op: isinstance(op, Wires))
     return all(_is_abstract_and_fixed(leaf) for leaf in leaves)
 
 
@@ -1125,8 +1122,6 @@ def _verify_is_abstract_and_fixed(op: AbstractOperatorLike):
         return
     target_argnames = op.dynamic_argnames + op.wire_argnames + op.hybrid_argnames
     target_args = [val for name, val in op.arguments.items() if name in target_argnames]
-    if isinstance(op, qp.ops.ChangeOpBasis):
-        target_args = [op]
     if any(not _is_abstract_and_fixed(val) for val in target_args):
         raise TypeError(
             "The resources of a decomposition rule cannot contain operators with "
