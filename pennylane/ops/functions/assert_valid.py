@@ -271,7 +271,7 @@ def _capture_decomp_rule_to_tape(rule, op):
         capture_args = ()
         capture_kwargs = {**op.dynamic_args, **op.wire_args}  # hybrid args will be added below
         # TODO: tracing Operator2 hybrid args is not supported out of the box due to [sc-127789].
-        # For now we manually flatten the hybrid args and assembles them within the wrapper rule,
+        # For now we manually flatten the hybrid args and reassemble them within the wrapper rule,
         # but ideally we want to be able to pass hybrid args directly.
         decomposition = _make_wrapped_decomp_rule(decomposition, op, capture_kwargs)
 

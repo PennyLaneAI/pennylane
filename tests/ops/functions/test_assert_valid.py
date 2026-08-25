@@ -26,7 +26,7 @@ import scipy.sparse
 
 import pennylane as qp
 from pennylane.core import Operator2
-from pennylane.core.operator import Operator, Operator1
+from pennylane.core.operator import Operator
 from pennylane.ops.functions import assert_valid
 from pennylane.ops.functions.assert_valid import (
     _check_eigendecomposition,
@@ -803,7 +803,7 @@ class TestOperator2AssertValid:
 def test_op1_assert_valid_capture():
     """Tests calling assert_valid on Operator1 with capture enabled."""
 
-    class CustomOp(Operator1):
+    class CustomOp(Operator):
         pass
 
     assert_valid(CustomOp(0.5, wires=[0, 1]), skip_pickle=True)
