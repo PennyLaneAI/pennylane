@@ -29,6 +29,7 @@ from operator2_utils import (
 
 import pennylane as qp
 from pennylane import apply
+from pennylane.typing import Wire
 
 jax = pytest.importorskip("jax")
 from pennylane.capture import PlxprInterpreter
@@ -104,8 +105,8 @@ class TestCaptureBasics:
 
     def test_simple_op_eqn(self):
         """Test that capturing an operator produces a single operator equation."""
-        jaxpr = jax.make_jaxpr(lambda x: DynOp(x, wires=0))(0.5)
 
+        jaxpr = jax.make_jaxpr(lambda x: DynOp(x, wires=0))(0.5)
         assert len(jaxpr.eqns) == 1
         eqn = jaxpr.eqns[0]
         assert eqn.primitive is operator_p
@@ -164,7 +165,7 @@ class TestCaptureAbstractInputs:
         """Test that abstract wires are promoted to integers."""
 
         def f():
-            DynOp(0.5, qp.typing.Wire)
+            DynOp(0.5, Wire[1])
 
         jaxpr = jax.make_jaxpr(f)()
         assert jaxpr.eqns[0].primitive == symbolic_array_prim
@@ -173,7 +174,6 @@ class TestCaptureAbstractInputs:
         assert len(jaxpr.eqns[0].outvars) == 1
         assert jaxpr.eqns[0].outvars[0].aval.shape == ()
         assert jaxpr.eqns[0].outvars[0].aval.dtype == jax.numpy.int64
-
         assert jaxpr.eqns[1].invars[1] == jaxpr.eqns[0].outvars[0]
 
     def test_abstract_multi_wire(self):

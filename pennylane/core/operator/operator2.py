@@ -1524,18 +1524,25 @@ class Operator2(metaclass=OperatorMeta):
     def _bind_primitive(self):
         """Bind the operator plxpr primitive."""
 
-        # Skip if program capture is disabled or if we're not in a tracing context.
-        if not enabled() or not _is_tracing():
+        # Skip if program capture is disabled
+        if not enabled():
             return
 
         # In place substitute AbstractArray and AbstractWires for symbolic arrays.
         _abstract_args_to_symbolic_arrays(self._bound_args)
-        pos_args = [self.arguments[d] for d in self.dynamic_argnames]
+        positional_args = [self.arguments[d] for d in self.dynamic_argnames]
+
+        # In _abstract_args_to_symbolic_arrays we explicitly replace AbstractArray and
+        # AbstractWires with bindings of the symbolic_array primitive. If any of them
+        # still remain in the arguments, it would indicate that we're currently not in
+        # a tracing context, in which case we can exit early.
+        if any(isinstance(arg, (AbstractArray, AbstractWires)) for arg in positional_args):
+            return
 
         wire_lens = []
         for name, value in self.wire_args.items():
             if name not in self.hybrid_argnames:
-                pos_args.extend(value)
+                positional_args.extend(value)
                 wire_lens.append(len(value))
 
         hybrid_lens, hybrid_trees = [], []
@@ -1545,7 +1552,7 @@ class Operator2(metaclass=OperatorMeta):
                 self.arguments[name], is_wire_arg=name in self.wire_argnames
             )
             forward_mask.extend(mask)
-            pos_args.extend(leaves)
+            positional_args.extend(leaves)
             hybrid_lens.append(len(leaves))
             hybrid_trees.append(tree)
 
@@ -1557,7 +1564,7 @@ class Operator2(metaclass=OperatorMeta):
             static_args[name] = (tuple(leaves), tree)
 
         res = operator_p.bind(
-            *pos_args,
+            *positional_args,
             op_cls=type(self),
             wire_lens=wire_lens,
             hybrid_lens=hybrid_lens,
@@ -2005,12 +2012,6 @@ def _to_symbolic_array(arg):
     if isinstance(arg, AbstractArray):
         return symbolic_array(arg.shape, arg.dtype)
     return arg
-
-
-def _is_tracing() -> bool:
-    """Returns True iff called inside a tracing context."""
-    test_array = symbolic_array((), int)
-    return not isinstance(test_array, AbstractArray)
 
 
 def _process_bind_hybrid_arg(hybrid_val, is_wire_arg: bool) -> tuple[list, Any, list[bool]]:
