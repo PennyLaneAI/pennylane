@@ -159,7 +159,7 @@ class TestConstruction:
         with pytest.raises(
             AttributeError, match="property 'data' of 'ValidOp' object has no setter"
         ):
-            op.data = (1.23, 0.0, -1.0, -2.0)
+            op.data = (1.23, 0.0, -1.0, -2.0)  # pylint:disable=attribute-defined-outside-init
 
     def test_initialization_in_queuing_context(self):
         """Test that valid child classes can be initialized in a queuing context"""
@@ -481,6 +481,7 @@ class TestProperties:
 
 
 @pytest.mark.capture
+# pylint: disable-next=too-few-public-methods
 class TestCapture:
     """Test that a CompositeOp2 subclass integrates with program capture."""
 
