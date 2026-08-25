@@ -35,6 +35,8 @@ from pennylane.exceptions import (
 from pennylane.ops.op_math import adjoint, ctrl, prod
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract, flip_zero_control
+from pennylane.typing import Wire
+from pennylane.wires import Wires
 
 from .composite import handle_recursion_error
 from .composite2 import CompositeOp2
@@ -251,12 +253,25 @@ class ChangeOpBasis(CompositeOp2):
     """
 
     def __init__(self, compute_op: Operator, target_op: Operator, uncompute_op: Operator = None):
+        # pylint: disable=import-outside-toplevel
+        from pennylane.ops.mid_measure import MidMeasure, PauliMeasure
+
         if uncompute_op is None:
             uncompute_op = adjoint(compute_op)
-        super().__init__((uncompute_op, target_op, compute_op))
-
-    def _operator2_args(self, operands, _init_pauli_rep):
-        return tuple(reversed(operands))
+        operands = (uncompute_op, target_op, compute_op)
+        if any(isinstance(op, (MidMeasure, PauliMeasure)) for op in operands):
+            raise ValueError("Composite operators of mid-circuit measurements are not supported.")
+        super(CompositeOp2, self).__init__(compute_op, target_op, uncompute_op)
+        self._hash = None
+        self._has_overlapping_wires = None
+        self._overlapping_ops = None
+        if all(isinstance(op, Operator) for op in operands):
+            self._wires = Wires.all_wires([op.wires for op in operands])
+            self._pauli_rep = self._build_pauli_rep()
+        else:
+            self._wires = Wire[0]
+            self._is_abstract = True
+        self.queue()
 
     # pylint: disable=arguments-renamed
     def __abstract_init__(self, compute_op, target_op, uncompute_op=None):
@@ -276,6 +291,16 @@ class ChangeOpBasis(CompositeOp2):
 
     _op_symbol = "@"
     _math_op = staticmethod(math.prod)
+
+    def __repr__(self):
+        return f" {self._op_symbol} ".join(
+            [f"({op})" if getattr(op, "arithmetic_depth", 0) > 0 else f"{op}" for op in self]
+        )
+
+    @property
+    @handle_recursion_error
+    def arithmetic_depth(self) -> int:
+        return 1 + max(getattr(op, "arithmetic_depth", 0) for op in self)
 
     def matrix(self, wire_order=None):
         raise MatrixUndefinedError
