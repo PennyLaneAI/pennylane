@@ -259,13 +259,25 @@ class CDFHamiltonian(NumericHamiltonian):
     >>> ham.num_orbitals, ham.num_fragments
     (3, 2)
 
-    The numeric data is directly accessible:
+    The numeric data is directly accessible as follows:
 
+    >>> ham.core_tensors
+    [[[0.64802025 0.95386448 0.11136268]
+      [0.88427299 0.58857237 0.53700801]
+      [0.35173898 0.12138759 0.47111399]]
+
+      [[0.68631588 0.84076158 0.36662062]
+      [0.19717996 0.93036626 0.11301994]
+      [0.26807399 0.95233277 0.82618421]]
+
+      [[0.57044606 0.45226683 0.05633304]
+      [0.52556644 0.89509444 0.61496006]
+      [0.46116526 0.00961253 0.76209455]]]
     >>> ham.core_tensors.shape
     (3, 3, 3)
 
-    The same Hamiltonian can be described abstractly, which is what the compile-time
-    typing and resource-analysis paths consume:
+    The same Hamiltonian can be described with abstract data for the purposes of fast, low-fidelity
+    resource-estimation workflows where only shape information is available:
 
     >>> from pennylane.typing import Float
     >>> qp.CDFHamiltonian(Float[L + 1, N, N], Float[L + 1, N, N]).core_tensors
@@ -319,12 +331,28 @@ class CGFHamiltonian(NumericHamiltonian):
     >>> ham.num_modes, ham.num_modals, ham.num_fragments
     (2, 3, 2)
 
-    Inconsistent shapes are reported against the named dimension:
+    The numeric data is directly accessible as follows:
 
-    >>> qp.CGFHamiltonian(np.zeros((3, 2, 2, 3, 3)), np.zeros((3, 2, 4, 4)))
-    Traceback (most recent call last):
-        ...
-    ValueError: inconsistent 'num_modals' (N): 3 vs 4.
+    >>> ham.core_tensors
+    [[[[[0.52647802 0.6745666  0.75871195]
+        [0.35488798 0.57475679 0.03297282]
+        [0.1474766  0.98545009 0.46460839]]
+    ...
+    [[0.44653284 0.59616813 0.38200794]
+        [0.82417981 0.10830979 0.02445802]
+        [0.00291485 0.50705334 0.01542304]]]]]
+    >>> ham.core_shape
+    (3, 2, 2, 3, 3)
+
+    The same Hamiltonian can be described with abstract data for the purposes of fast, low-fidelity
+    resource-estimation workflows where only shape information is available:
+
+    >>> from pennylane.typing import Float
+    >>> qp.CGFHamiltonian(
+    ...     core_tensors=qp.typing.Float[L + 1, M, M, N, N],
+    ...     leaf_tensors=qp.typing.Float[L + 1, M, N, N],
+    ... ).core_tensors
+    AbstractArray((3, 2, 2, 3, 3), float64, weak_type=True)
     """
 
     core_shape: ClassVar[tuple[str, ...]] = ("L1", "M", "M", "N", "N")
