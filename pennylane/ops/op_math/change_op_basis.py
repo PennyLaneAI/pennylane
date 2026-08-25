@@ -38,6 +38,7 @@ from pennylane.ops.op_math.controlled2 import _ctrl_abstract, flip_zero_control
 from pennylane.typing import Wire
 from pennylane.wires import Wires
 
+from .composite import handle_recursion_error
 from .composite2 import CompositeOp2
 
 
@@ -342,6 +343,16 @@ class ChangeOpBasis(CompositeOp2):
 
     def adjoint(self):
         return ChangeOpBasis(*(adjoint(factor, lazy=False) for factor in self))
+
+    @handle_recursion_error
+    def map_wires(self, wire_map: dict):
+        # ``CompositeOp2.map_wires`` rebuilds via ``cls(operands, _init_pauli_rep)``, which does
+        # not match this operator's three-argument constructor.
+        return ChangeOpBasis(
+            self.compute_op.map_wires(wire_map=wire_map),
+            self.target_op.map_wires(wire_map=wire_map),
+            self.uncompute_op.map_wires(wire_map=wire_map),
+        )
 
     def _build_pauli_rep(self):
         """PauliSentence representation of the Product of operations."""
