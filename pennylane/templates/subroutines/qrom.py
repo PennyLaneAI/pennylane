@@ -926,7 +926,9 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires):
 
         # 2a. right-elbow ladder: uncompute levels c-2 .. max(a,1) (top-down)
         # Once resource hints are merged, use those estimates:
-        @for_loop(c - 2, max(a - 1, 0), -1)
+        lower_bound = math.max(math.array([a, 1], like=a))
+
+        @for_loop(c - 2, lower_bound - 1, -1)
         # @for_loop(c - 2, max(a - 1, 0), -1, estimated_iterations=est_ladder_len)
         def uncompute(i):
             qp_ops.adjoint(TemporaryAND)(wires=triples[i])
@@ -954,7 +956,7 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires):
 
         # 2c. left-elbow ladder: recompute levels max(a,1) .. c-2 (bottom-up)
         # Once resource hints are merged, use those estimates:
-        @for_loop(max(a, 1), c - 1)
+        @for_loop(lower_bound, c - 1)
         # @for_loop(max(a, 1), c - 1, estimated_iterations=est_ladder_len)
         def recompute(i):
             TemporaryAND(triples[i], (1, 0))

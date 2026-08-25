@@ -323,11 +323,11 @@ class TestQROM:
         for op1, op2 in zip(qrom_decomposition, expected_gates):
             qp.assert_equal(op1, op2)
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(
         ("num_bitstrings", "control_wires", "target_wires", "work_wires", "clean"),
         [
             (1, [], [0], [1], True),
-            (1, [0, 1, 2, 6], [3, 4, 5], [7, 8, 9], True),
             (1, [0], [1], [], True),
             (1, [0], [1], [], False),
             (2, [0], [1], [], True),
@@ -344,13 +344,18 @@ class TestQROM:
             (5, [0, 1, 2], [3, 4], [5], True),
             (2, [0, 1, 2], [3, 4], [5, 6], True),
             (6, [0, 1, 2], [3, 4], [5, 6], False),
+            (1, [0, 1, 2, 6], [3, 4, 5], [7, 8, 9], True),
+            (1, [0, 1, 2, 6], [3, 4, 5], [7, 8, 9], False),
         ],  # pylint: disable=too-many-arguments
     )
+    @pytest.mark.parametrize("rule", qp.list_decomps(qp.QROM))
     def test_decomposition_new(
-        self, num_bitstrings, control_wires, target_wires, work_wires, clean, seed
+        self, num_bitstrings, control_wires, target_wires, work_wires, clean, rule, seed
     ):  # pylint: disable=too-many-arguments
         """Tests the decomposition rule implemented with the new system."""
         rng = np.random.default_rng(seed)
+        if rule == qp.list_decomps(qp.QROM)[0] and qp.capture.enabled():
+            pytest.xfail("Select does not de-queue its inputs correctly with capture enabled.")
         bitstrings = rng.integers(0, 2, size=(num_bitstrings, len(target_wires)))
         op = qp.QROM(
             bitstrings,
@@ -359,8 +364,7 @@ class TestQROM:
             work_wires=work_wires,
             clean=clean,
         )
-        for rule in qp.list_decomps(qp.QROM):
-            _test_decomposition_rule(op, rule)
+        _test_decomposition_rule(op, rule)
 
     def test_zero_control_wires(self):
         """Test that the edge case of zero control wires works"""
