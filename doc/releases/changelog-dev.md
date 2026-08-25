@@ -1318,7 +1318,7 @@
 <h3>Bug fixes 🐛</h3>
 
 * Fixed capture compatibility of the decomposition rule of `SemiAdder`.
-  [(#10___)](https://github.com/PennyLaneAI/pennylane/pull/10___)
+  [(#10068)](https://github.com/PennyLaneAI/pennylane/pull/10068)
 
 * Fixed :func:`~pennylane.backline.css_bp_decoder` and the other Triton decoders so they can be
   compiled on a machine with no usable GPU. The ahead-of-time build called
