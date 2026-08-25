@@ -560,20 +560,16 @@ def _cgf_resource_counts(num_trotter_steps, hamiltonian, has_control, double_pha
         resources[RZ] += num_onebody_rotations
         resources[GlobalPhase] += 1
     elif double_phase:
-        # Double-phase (Fig. 6 https://arxiv.org/abs/2506.15784): bare IsingZZ / RZ rotations, plus one CNOT pair around
-        # each diagonal block, plus an RZ on the control wire for the global phase.
-        resources[IsingZZ] += num_twobody_rotations
-        resources[RZ] += num_onebody_rotations
+        # Double-phase (Fig. 6 https://arxiv.org/abs/2506.15784): ``IsingZZ`` on every diagonal
+        # term (one- and two-body), plus one CNOT pair around each *two-body* block, plus an RZ on
+        # the control wire for the global phase.
+        resources[IsingZZ] += num_twobody_rotations + num_onebody_rotations
         resources[CNOT] += num_twobody_blocks * num_pairs * 2 * n_states
-        resources[CNOT] += num_onebody_blocks * 2 * num_modes * n_states
         resources[RZ] += 1
     else:
-        # Genuine controlled: each RZ -> controlled-RZ (2 CNOT + 2 RZ, from ``_emit_one_body_rz``);
-        # each IsingZZ -> ``ctrl(IsingZZ(...))`` (PennyLane's ``C(IsingZZ)`` decomposition handles
-        # it); the global phase becomes a PhaseShift on the control wire. There are no bare
-        # IsingZZ gates.
-        resources[RZ] += 2 * num_onebody_rotations
-        resources[CNOT] += 2 * num_onebody_rotations
+        # Genuine controlled: one-body ``ctrl(RZ(...))``, two-body ``ctrl(IsingZZ(...))``; the
+        # global phase becomes a PhaseShift on the control wire. There are no bare IsingZZ/RZ gates.
+        resources[_ctrl_abstract(RZ, Wire[1])] += num_onebody_rotations
         resources[_ctrl_abstract(IsingZZ, Wire[1])] += num_twobody_rotations
         resources[PhaseShift] += 1
 

@@ -473,12 +473,11 @@ class TestControlledDecomposition:
             jaxpr = jax.make_jaxpr(circuit)(jax.numpy.array(0.4), *range(n + 1))
 
         ops = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.4, *range(n + 1)).operations
-        # ``ControlledOp2`` is a genuinely-controlled ``IsingZZ`` (from ``ctrl(IsingZZ(...))``);
-        # PennyLane's registered ``C(IsingZZ)`` decomposition handles it further.
+        # One-body terms emit ``CRZ`` (PennyLane's single-control shortcut for ``ctrl(RZ)``);
+        # two-body terms emit ``ControlledOp2`` wrapping ``IsingZZ``.
         assert {type(op).__name__ for op in ops} == {
             "BasisRotation",
-            "CNOT",
-            "RZ",
+            "CRZ",
             "PhaseShift",
             "ControlledOp2",
         }

@@ -16,7 +16,8 @@
 
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
-from pennylane.ops import CNOT, RZ, cond
+from pennylane.ops import RZ, IsingZZ, cond
+from pennylane.ops.op_math import ctrl
 
 # pylint: disable=too-many-arguments
 
@@ -25,29 +26,19 @@ def _emit_one_body_rz(angle, target_wire, control_wires, double_phase):
     r"""Emit a one-body ``RZ`` rotation for the base, double-phase, or genuine controlled circuit.
 
     * No control wire: a plain ``RZ(angle)``.
-    * Controlled, ``double_phase=True``: the CNOT-sandwich
-        .. code-block::
-
-                c: ─╭●────────╭●─┤
-            wires: ─╰X──RZ(ϕ)─╰X─┤
-
-      at the full angle (see Fig. 6 in https://arxiv.org/abs/2506.15784). This results in :math:`\text{diag}(U, U^\dagger)` overall, such that the relative phase between both branches is 2t (hence "double-phase").
-    * Controlled, ``double_phase=False``: a genuine controlled-``RZ`` (the standard ``CRZ``
-      decomposition), leading to a genuine controlled evolution :math:`\text{diag}(1, U)`.
+    * Controlled, ``double_phase=True``: ``IsingZZ(angle, [control, target])``, i.e. the same
+      ``CNOT; RZ; CNOT`` sandwich as Fig. 6 in https://arxiv.org/abs/2506.15784.
+    * Controlled, ``double_phase=False``: ``ctrl(RZ(angle, target))`` for a genuine
+      controlled-:math:`e^{-iHt}` (``diag(1, U)`` on the control/target subspace).
     """
     if len(control_wires) == 0:
         RZ(angle, target_wire)
         return
     control_wire = control_wires[0]
     if double_phase:
-        CNOT([control_wire, target_wire])
-        RZ(angle, target_wire)
-        CNOT([control_wire, target_wire])
+        IsingZZ(angle, [control_wire, target_wire])
         return
-    RZ(angle / 2, target_wire)
-    CNOT([control_wire, target_wire])
-    RZ(-angle / 2, target_wire)
-    CNOT([control_wire, target_wire])
+    ctrl(RZ(angle, target_wire), control=[control_wire])
 
 
 def _run_trotter_steps(
