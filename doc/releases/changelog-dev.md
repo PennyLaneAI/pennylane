@@ -591,6 +591,7 @@
 * Added the ``MultiX`` template which conditionally applies ``PauliX`` gates across target wires according 
   to a bitstring array.
   [(#10033)](https://github.com/PennyLaneAI/pennylane/pull/10033)
+  [(#10073)](https://github.com/PennyLaneAI/pennylane/pull/10073)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -1064,6 +1065,7 @@
   [(#10018)](https://github.com/PennyLaneAI/pennylane/pull/10018)
   [(#9933)](https://github.com/PennyLaneAI/pennylane/pull/9933)
   [(#10042)](https://github.com/PennyLaneAI/pennylane/pull/10042)
+  [(#10073)](https://github.com/PennyLaneAI/pennylane/pull/10073)
   - Quantum chemistry operators are ported:
     - :class:`~.SingleExcitation`
   [(#9944)](https://github.com/PennyLaneAI/pennylane/pull/9944)
@@ -1164,6 +1166,7 @@
     [(#9659)](https://github.com/PennyLaneAI/pennylane/pull/9659)
     [(#9842)](https://github.com/PennyLaneAI/pennylane/pull/9842)
     [(#9898)](https://github.com/PennyLaneAI/pennylane/pull/9898)
+    [(#10058)](https://github.com/PennyLaneAI/pennylane/pull/10058)
   - :class:`~.StatePrepBase2`, based on :class:`~.Operator2`, is added.
     [(#9562)](https://github.com/PennyLaneAI/pennylane/pull/9562)
   - :meth:`~.Operator2.decomposition` falls back to registered graph decomposition rules when ``compute_decomposition`` is not overridden.
