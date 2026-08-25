@@ -128,28 +128,14 @@ class TestInputs:
 class TestStandardValidityBasisState:
     """Test `BasisState` validity, including its decomposition in JIT contexts."""
 
-    @pytest.mark.capture
-    @pytest.mark.parametrize(
-        "skip_wire_mapping",
-        (
-            True,
-            pytest.param(
-                False,
-                marks=pytest.mark.xfail(
-                    reason="Doesn't work with capture + Operator2", strict=True
-                ),
-            ),
-        ),
-    )
-    def test_assert_valid(self, skip_wire_mapping):
+    @pytest.mark.jax
+    def test_assert_valid(self):
         """Test standard validity."""
         # pylint: disable=import-outside-toplevel
         state = np.array([0, 1])
         wires = qp.wires.Wires([0, 1])
         op = qp.BasisState(state, wires=wires)
-        qp.ops.functions.assert_valid(
-            op, skip_differentiation=True, skip_wire_mapping=skip_wire_mapping
-        )
+        qp.ops.functions.assert_valid(op, skip_differentiation=True)
 
     @staticmethod
     def make_abstract_check(state_traced, wires_traced, closure_state, closure_wires):
