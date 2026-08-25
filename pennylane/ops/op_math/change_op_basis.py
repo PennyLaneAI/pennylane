@@ -33,6 +33,7 @@ from pennylane.exceptions import (
     SparseMatrixUndefinedError,
 )
 from pennylane.ops.op_math import adjoint, ctrl, prod
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract, flip_zero_control
 
 from .composite import handle_recursion_error
@@ -256,6 +257,17 @@ class ChangeOpBasis(CompositeOp2):
 
     def _operator2_args(self, operands, _init_pauli_rep):
         return tuple(reversed(operands))
+
+    # pylint: disable=arguments-renamed
+    def __abstract_init__(self, compute_op, target_op, uncompute_op=None):
+        # ``CompositeOp2.__abstract_init__`` expects a single ``operands`` tuple; ChangeOpBasis
+        # binds its three named hybrid arguments directly instead.
+        if uncompute_op is None:
+            uncompute_op = _adjoint_abstract(compute_op)
+        Operator2.__abstract_init__(self, compute_op, target_op, uncompute_op)
+        self._hash = None
+        self._has_overlapping_wires = None
+        self._overlapping_ops = None
 
     hybrid_argnames = ("compute_op", "target_op", "uncompute_op")
 

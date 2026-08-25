@@ -17,7 +17,7 @@ This submodule defines a base class for composite operations.
 """
 
 import abc
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 
 # pylint: disable=invalid-sequence-index
 from typing import Sequence, override
