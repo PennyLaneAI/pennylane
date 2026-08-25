@@ -1192,7 +1192,7 @@
   - Fixed ``work_wires`` and ``work_wire_type`` being silently dropped (reverting to the
     ``"borrowed"`` default) when a controlled :class:`~.Operator2` is captured and round-tripped
     through plxpr.
-    [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+    [(#10066)](https://github.com/PennyLaneAI/pennylane/pull/10066)
   - Integration with measurements.
     [(#9753)](https://github.com/PennyLaneAI/pennylane/pull/9753)
   - Integration with :func:`pennylane.apply`.

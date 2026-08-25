@@ -1923,13 +1923,12 @@ if has_jax:
             args[name] = unflatten(leaves, tree)
             i += len_
 
-        if n_work_wires:
-            work_wires = Wires(
-                tuple(w if math.is_abstract(w) else int(w) for w in all_args[i : i + n_work_wires])
-            )
-            i += n_work_wires
-        else:
-            work_wires = Wires([])
+        # `n_work_wires` is only ever set (non-zero) alongside `n_ctrls` by
+        # `ControlledOp2._bind_primitive`; it is silently unused below if `n_ctrls == 0`.
+        work_wires = Wires(
+            tuple(w if math.is_abstract(w) else int(w) for w in all_args[i : i + n_work_wires])
+        )
+        i += n_work_wires
 
         if n_ctrls:
             control_wires = Wires(

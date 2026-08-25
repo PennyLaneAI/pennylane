@@ -292,30 +292,78 @@ class TestControlledCapture:
         expected = ControlledOp2(RX2(0.7, 1), [0], work_wires=[5], work_wire_type="zeroed")
         qp.assert_equal(op, expected)
 
-    def test_nested_controlled_merges_work_wires(self, ctrl_fn):
+    def test_traced_work_wires_recorded(self, ctrl_fn):
+        """Test that abstract (traced) work wires survive plxpr encode/decode."""
+        jaxpr = jax.make_jaxpr(
+            lambda x, w: ctrl_fn(
+                RX2(x, wires=1), [0], work_wires=[w], work_wire_type="zeroed"
+            ).tracer
+        )(0.5, 5)
+        eqn = _single_op_eqn(jaxpr)
+
+        assert eqn.params["n_work_wires"] == 1
+        assert jaxpr.jaxpr.invars[1] in eqn.invars
+
+        # pylint: disable=unbalanced-tuple-unpacking
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.7, 5)
+        expected = ControlledOp2(RX2(0.7, 1), [0], work_wires=[5], work_wire_type="zeroed")
+        qp.assert_equal(op, expected)
+
+    @pytest.mark.parametrize(
+        "inner_type, outer_type, expected_type",
+        [
+            ("zeroed", "zeroed", "zeroed"),
+            ("borrowed", "zeroed", "borrowed"),
+            ("zeroed", "borrowed", "borrowed"),
+        ],
+    )
+    def test_nested_controlled_merges_work_wires(
+        self, ctrl_fn, inner_type, outer_type, expected_type
+    ):
         """Test that nested controlled operators merge work_wires/work_wire_type into the
-        single collapsed equation the same way eager ``simplify()`` does. Both work wires are
-        ``zeroed`` here so that a silent fallback to the (borrowed) default would be caught."""
+        single collapsed equation the same way eager ``simplify()`` (i.e. ``resolve_work_wire_type``)
+        does. The borrowed/zeroed mix discriminates the merge rule from a naive
+        ``work_wire_type = outer.work_wire_type`` (which would also pass the zeroed/zeroed case)."""
         jaxpr = jax.make_jaxpr(
             lambda x: ctrl_fn(
-                ctrl_fn(RX2(x, wires=2), [1], work_wires=[8], work_wire_type="zeroed"),
+                ctrl_fn(RX2(x, wires=2), [1], work_wires=[8], work_wire_type=inner_type),
                 [0],
                 work_wires=[9],
-                work_wire_type="zeroed",
+                work_wire_type=outer_type,
             ).tracer
         )(0.5)
         eqn = _single_op_eqn(jaxpr)
 
         assert eqn.params["n_ctrls"] == 2
         assert eqn.params["n_work_wires"] == 2
-        assert eqn.params["work_wire_type"] == "zeroed"
+        assert eqn.params["work_wire_type"] == expected_type
 
         # pylint: disable=unbalanced-tuple-unpacking
         [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.7)
         expected = ControlledOp2(
-            RX2(0.7, wires=2), control_wires=[0, 1], work_wires=[9, 8], work_wire_type="zeroed"
+            RX2(0.7, wires=2),
+            control_wires=[0, 1],
+            work_wires=[9, 8],
+            work_wire_type=expected_type,
         )
         qp.assert_equal(op, expected)
+
+    def test_work_wires_survive_plxpr_to_tape(self, ctrl_fn):
+        """End-to-end regression test for the reported reproducer (#10065): work_wires must
+        survive the full ``qp.capture.make_plxpr`` -> :func:`~.tape.plxpr_to_tape` round trip,
+        not just a bare ``jax.core.eval_jaxpr`` call."""
+
+        def f(x):
+            ctrl_fn(RX2(x, wires=1), [0], work_wires=[5], work_wire_type="zeroed")
+
+        plxpr = qp.capture.make_plxpr(f)(0.7)
+        tape = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, 0.7)
+
+        assert len(tape.operations) == 1
+        op = tape.operations[0]
+        assert isinstance(op, ControlledOp2)
+        assert list(op.work_wires) == [5]
+        assert op.work_wire_type == "zeroed"
 
 
 @pytest.mark.parametrize("adjoint_fn", [qp.adjoint, Adjoint2])
