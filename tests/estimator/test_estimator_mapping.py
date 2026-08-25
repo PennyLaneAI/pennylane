@@ -591,11 +591,11 @@ class TestMapToResourceOp:
         from pennylane.estimator.compact_hamiltonian import CDFHamiltonian
 
         num_orbitals, num_two_body = 2, 1
-        hamiltonian = {
-            "core_tensors": np.zeros((num_two_body + 1, num_orbitals, num_orbitals)),
-            "leaf_tensors": np.zeros((num_two_body + 1, num_orbitals, num_orbitals)),
-            "nuc_constant": 0.0,
-        }
+        hamiltonian = CDFHamiltonian(
+            core_tensors=np.zeros((num_two_body + 1, num_orbitals, num_orbitals)),
+            leaf_tensors=np.zeros((num_two_body + 1, num_orbitals, num_orbitals)),
+            nuc_constant=0.0,
+        )
         op = qp.TrotterCDF(1.0, 3, hamiltonian, wires=range(2 * num_orbitals))
 
         expected = re_temps.TrotterCDF(
