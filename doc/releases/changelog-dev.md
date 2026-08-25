@@ -136,6 +136,13 @@
 
   ```
 
+* Added :class:`~.TrotterCDF` and :class:`~.TrotterCGF`, templates for second-order Trotter time evolution of
+  fragmented Hamiltonians (CDF for electronic structure, CGF for vibrational structure) as used in modern quantum
+  chemistry algorithms.
+  [(#9459)](https://github.com/PennyLaneAI/pennylane/pull/9459)
+  [(#9789)](https://github.com/PennyLaneAI/pennylane/pull/9789)
+  [(#10015)](https://github.com/PennyLaneAI/pennylane/pull/10015)
+
 * A new arithmetic template called :class:`~.SignedOutMultiplier` has been added that multiplies numbers encoded in the
   input registers using a two's complement.
   [(#9458)](https://github.com/PennyLaneAI/pennylane/pull/9458)
@@ -426,6 +433,7 @@
   abstract type notation.
   [(#9701)](https://github.com/PennyLaneAI/pennylane/pull/9701)
   [(#9724)](https://github.com/PennyLaneAI/pennylane/pull/9724)
+  [(#10056)](https://github.com/PennyLaneAI/pennylane/pull/10056)
 
   ```python
   from pennylane.typing import Int, Float, Complex, Bool, Wire
@@ -433,7 +441,7 @@
   Float           # Float scalar
   Complex[...]    # Abstract complex array with any shape
   Bool[-1, 3, 4]  # Abstract bool array with dynamic size for the first axis
-  Wire            # Single abstract wire
+  Wire[1]         # Single abstract wire
   Wire[4]         # Four abstract wires
   Wire[-1]        # Wire sequence with dynamic size
   ```
@@ -789,12 +797,6 @@
 
   ```
 
-* Created a :func:`~.pennylane.labs.templates.trotter_fragmented` function to run specialized
-  Trotter circuits for fragmented Hamiltonians. This is used in modern quantum chemistry
-  application algorithms.
-  [(#9459)](https://github.com/PennyLaneAI/pennylane/pull/9459)
-  [(#9789)](https://github.com/PennyLaneAI/pennylane/pull/9789)
-
 * Performance of the Trotter error module is improved by introducing a novel algorithm for
   computing the Baker-Campbell-Hausdorff formula.
   [(#9608)][https://github.com/PennyLaneAI/pennylane/pull/9608]
@@ -1001,8 +1003,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Updated :mod:`pennylane.pytrees` to consider `None` a Pytree. This makes PennyLane Pytrees more
-  consistent with JAX Pytrees.
+* Removes `pennylane.transforms.decompose.DecomposeInterpreter`. Decompositions are no longer supported for the capture-without-qjit workflow.
+  [(#9915)](https://github.com/PennyLaneAI/pennylane/pull/9915)
+
+* Updated :mod:`pennylane.pytrees` to consider `None` a Pytree. This makes PennyLane Pytrees more consistent with JAX Pytrees.
   [(#10045)](https://github.com/PennyLaneAI/pennylane/pull/10045)
 
 * The resource module JSON parser used by :func:`~.specs` to read Catalyst data has been revamped to match the new JSON structure produced by Catalyst.
@@ -1065,7 +1069,8 @@
   - Templates are ported:
     - :class:`~.BasisRotation`, :class:`~.MultiplexerStatePreparation`, :class:`~.QROM`, :class:`~.QFT`, :class:`~.FlipSign`,
       :class:`~.TemporaryAND`, :class:`~.SelectPauliRot`, :class:`~.GQSP`, :class:`~.AQFT`, :class:`~.SumOfSlatersPrep`,
-      :class:`~.SemiAdder`, :class:`~.OutMultiplier`, :class:`~.SignedOutMultiplier`, :class:`~.BasisState`
+      :class:`~.SemiAdder`, :class:`~.OutMultiplier`, :class:`~.SignedOutMultiplier`, :class:`~.BasisState`, :class:`~.TrotterCDF`,
+      :class:`~.TrotterCGF`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
   [(#9925)](https://github.com/PennyLaneAI/pennylane/pull/9925)
   [(#9918)](https://github.com/PennyLaneAI/pennylane/pull/9918)
@@ -1080,8 +1085,10 @@
   [(#9994)](https://github.com/PennyLaneAI/pennylane/pull/9994)
   [(#9997)](https://github.com/PennyLaneAI/pennylane/pull/9997)
   [(#9995)](https://github.com/PennyLaneAI/pennylane/pull/9995)
+  [(#10015)](https://github.com/PennyLaneAI/pennylane/pull/10015)
   [(#10018)](https://github.com/PennyLaneAI/pennylane/pull/10018)
   [(#9933)](https://github.com/PennyLaneAI/pennylane/pull/9933)
+  [(#10042)](https://github.com/PennyLaneAI/pennylane/pull/10042)
   - Quantum chemistry operators are ported:
     - :class:`~.SingleExcitation`
   [(#9944)](https://github.com/PennyLaneAI/pennylane/pull/9944)
