@@ -61,7 +61,7 @@ def compute_indices(wires, n_block_wires):
         )
 
     # number of layers in MERA
-    n_layers = np.floor(np.log2(n_wires / n_block_wires)).astype(int) * 2 + 1
+    n_layers = math.floor_log2(n_wires / n_block_wires) * 2 + 1
     wires_list = []
     wires_list.append(list(wires[0:n_block_wires]))
     highest_index = n_block_wires
@@ -208,7 +208,7 @@ class MERA(Operation):
         ind_gates = compute_indices(wires, n_block_wires)
         n_wires = len(wires)
         shape = math.shape(template_weights)  # (n_params_block, n_blocks)
-        n_blocks = int(2 ** (np.floor(np.log2(n_wires / n_block_wires)) + 2) - 3)
+        n_blocks = 2 ** (math.floor_log2(n_wires / n_block_wires) + 2) - 3
 
         if shape == ():
             template_weights = np.random.rand(n_params_block, n_blocks)
@@ -279,5 +279,5 @@ class MERA(Operation):
                 f"n_block_wires must be smaller than or equal to the number of wires; got n_block_wires = {n_block_wires} and number of wires = {n_wires}"
             )
 
-        n_blocks = 2 ** (np.floor(np.log2(n_wires / n_block_wires)) + 2) - 3
+        n_blocks = 2 ** (math.floor_log2(n_wires / n_block_wires) + 2) - 3
         return int(n_blocks)

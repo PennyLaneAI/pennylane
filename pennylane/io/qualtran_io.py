@@ -283,10 +283,10 @@ def _(op: qtemps.subroutines.QROM):
     square_fact = math.floor(math.sqrt(num_bitstrings))  # use a square scheme for rows and columns
     num_parallel_computations = min(num_parallel_computations, square_fact)
 
-    num_swap_wires = math.floor(math.log2(num_parallel_computations))
-    num_select_wires = math.ceil_log2(math.ceil(num_bitstrings / (2**num_swap_wires)))
+    num_swap_states = 2 ** math.floor_log2(num_parallel_computations)
+    num_select_wires = math.ceil_log2(math.ceil(num_bitstrings / num_swap_states))
 
-    swap_work_wires = (int(2**num_swap_wires) - 1) * size_bitstring
+    swap_work_wires = (num_swap_states - 1) * size_bitstring
     free_work_wires = num_work_wires - swap_work_wires
 
     swap_clean_prefactor = 1
@@ -320,7 +320,7 @@ def _(op: qtemps.subroutines.QROM):
     )
     # SWAP cost:
     ctrl_swap = qt_gates.TwoBitCSwap()
-    gate_types[ctrl_swap] = swap_clean_prefactor * ((2**num_swap_wires) - 1) * size_bitstring
+    gate_types[ctrl_swap] = swap_clean_prefactor * (num_swap_states - 1) * size_bitstring
 
     return gate_types
 
