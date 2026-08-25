@@ -1893,9 +1893,16 @@ if has_jax:
         hybrid_trees,
         forward_mask,
         n_ctrls=0,
+        n_ctrl_work_wires=0,
+        ctrl_work_wire_type="borrowed",
         adjoint=False,
         **static_args,
     ):
+        # NOTE: every explicit keyword above shadows an operator argname of the same name, so the
+        # controlled-specific params injected by `ControlledOp2._bind_primitive` are namespaced
+        # with a `ctrl_`/`n_ctrl_` prefix. Otherwise an operator declaring e.g. `work_wire_type`
+        # as a static/compilable arg (`MultiControlledX`, `ControlledQubitUnitary`) would have its
+        # own value swallowed here and silently replaced by the controlled default.
         args = {name: unflatten(*value) for name, value in static_args.items()}
         i = 0
 
@@ -1921,6 +1928,13 @@ if has_jax:
             args[name] = unflatten(leaves, tree)
             i += len_
 
+        # `n_ctrl_work_wires` is only ever set (non-zero) alongside `n_ctrls` by
+        # `ControlledOp2._bind_primitive`; it is silently unused below if `n_ctrls == 0`.
+        work_wires = Wires(
+            tuple(w if math.is_abstract(w) else int(w) for w in all_args[i : i + n_ctrl_work_wires])
+        )
+        i += n_ctrl_work_wires
+
         if n_ctrls:
             control_wires = Wires(
                 tuple(w if math.is_abstract(w) else int(w) for w in all_args[i : i + n_ctrls])
@@ -1940,6 +1954,8 @@ if has_jax:
                 op,
                 control_wires=control_wires,
                 control_values=control_values,
+                work_wires=work_wires,
+                work_wire_type=ctrl_work_wire_type,
             )
         return op
 

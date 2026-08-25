@@ -16,7 +16,9 @@ Contains the SignedOutSquare template.
 """
 
 from collections import defaultdict
+from contextlib import nullcontext
 
+from pennylane import capture
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import BasisState, X
@@ -245,25 +247,31 @@ def _c_subtract_then_add_one(c_wire, x_wires, y_wires, work_wires):
     # Flip LSB of output register, due to input carry being set
     X(y_wires[-1])
 
-    # Create C(SemiAdder) decomposition and inject work wire bit flips required for input carry
+    # Create C(SemiAdder) decomposition and inject work wire bit flips required for input carry.
+    # Collect the sub-ops without emitting them, then replay in the intended order. capture.pause()
+    # prevents primitive binding under program capture: otherwise the scratch ``base = SemiAdder``
+    # would leak into the plxpr, the reordering below would be lost, and the reused
+    # ``work_wire_flip`` instance would appear only once.
     m = len(y_wires)
-    with QueuingManager.stop_recording():
-        base = SemiAdder(x_wires, y_wires, work_wires[: m - 1])
-    with AnnotatedQueue() as q:
-        _controlled_semi_adder(
-            base, control_wires=[c_wire], work_wires=work_wires[m - 1 :], work_wire_type="zeroed"
-        )
-    cadder_ops = q.queue
-
-    if work_wires:
-        # We insert work wire bit flips where a carry-in qubit would cause them,
-        # i.e., after the very first left elbow and before the last right elbow
+    with capture.pause() if capture.enabled() else nullcontext():
         with QueuingManager.stop_recording():
-            work_wire_flip = X(work_wires[m - 2])
-        cadder_ops.insert(1, work_wire_flip)
-        cadder_ops.insert(-2, work_wire_flip)
-
-    if QueuingManager.recording():
+            base = SemiAdder(x_wires, y_wires, work_wires[: m - 1])
+        with AnnotatedQueue() as q:
+            _controlled_semi_adder(
+                base,
+                control_wires=[c_wire],
+                work_wires=work_wires[m - 1 :],
+                work_wire_type="zeroed",
+            )
+        cadder_ops = q.queue
+        if work_wires:
+            # We insert work wire bit flips where a carry-in qubit would cause them,
+            # i.e., after the very first left elbow and before the last right elbow
+            with QueuingManager.stop_recording():
+                work_wire_flip = X(work_wires[m - 2])
+            cadder_ops.insert(1, work_wire_flip)
+            cadder_ops.insert(-2, work_wire_flip)
+    if QueuingManager.recording() or capture.enabled():
         for op in cadder_ops:
             apply(op)
 

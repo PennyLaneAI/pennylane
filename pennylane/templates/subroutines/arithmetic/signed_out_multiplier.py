@@ -360,7 +360,9 @@ def _zeroed_signed_out_multiplier_resources(
     num_output_wires = len(output_wires)
     num_work_wires = len(work_wires)
     resources = defaultdict(int)
-    resources[ctrl(Incrementer(Wire[num_x_wires], Wire[num_work_wires - 2]), Wire[1])] += 2
+    resources[
+        ctrl(Incrementer(Wire[num_x_wires], work_wires=Wire[num_work_wires - 2]), Wire[1])
+    ] += 2
     resources[
         OutMultiplier(
             Wire[num_x_wires],
@@ -371,8 +373,12 @@ def _zeroed_signed_out_multiplier_resources(
             output_wires_zeroed=True,
         )
     ] += 1
-    resources[ctrl(Incrementer(Wire[num_output_wires - 1], Wire[num_work_wires - 2]), Wire[1])] += 1
-    resources[ctrl(Incrementer(Wire[num_y_wires], Wire[num_work_wires - 2]), Wire[1])] += 2
+    resources[
+        ctrl(Incrementer(Wire[num_output_wires - 1], work_wires=Wire[num_work_wires - 2]), Wire[1])
+    ] += 1
+    resources[
+        ctrl(Incrementer(Wire[num_y_wires], work_wires=Wire[num_work_wires - 2]), Wire[1])
+    ] += 2
     resources[CNOT] = 6 + (num_x_wires + num_y_wires) * 2 + (num_output_wires - 1)
     # Convert to a builtin dict so downstream lookups of missing gates
     # don't accidentally insert them with a value of 0

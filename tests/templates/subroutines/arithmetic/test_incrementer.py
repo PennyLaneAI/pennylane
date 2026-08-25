@@ -66,6 +66,12 @@ def test_decomposition_capture(wires, work_wires):
         ([0, 1, 2], [1, 0, 1], [1, 1, 0], []),
         ([0, 1, 2, 3], [1, 0, 1, 1], [1, 1, 0, 0], []),
         ([0, 1, 2, 3], [0, 0, 1, 1], [0, 1, 0, 0], []),
+        # without work wires, carry propagating into the most significant bit (fallback path)
+        ([0, 1, 2], [0, 1, 1], [1, 0, 0], []),  # 3 -> 4
+        ([0, 1, 2], [1, 1, 1], [0, 0, 0], []),  # 7 -> 0
+        ([0, 1, 2, 3], [0, 1, 1, 1], [1, 0, 0, 0], []),  # 7 -> 8
+        # insufficient work wires, carry propagating into the most significant bit (fallback path)
+        ([0, 1, 2, 3], [0, 1, 1, 1], [1, 0, 0, 0], [4]),  # 7 -> 8
         # with work wires
         ([0, 1, 2], [1, 1, 0], [1, 1, 1], [3, 4]),  # enough work wires for our rule
         ([0, 1, 2], [1, 0, 1], [1, 1, 0], [3, 4, 5]),  # more than enough work wires
@@ -225,38 +231,42 @@ def test_controlled_allocates_work_wires(
     assert np.allclose(result, 0)
 
 
-@pytest.mark.capture
+# The applicable ``C(Incrementer)`` work-wire rule is currently blocked under program capture on
+# passing wires as arguments to captured workflows [sc-127789], so the applicable shapes are marked
+# with ``pl2do`` (a non-strict xfail). Under capture they xfail; without capture they still run the
+# rule and are reported as xpassed.
+_CAPTURE_PL2DO = pytest.mark.pl2do(
+    reason="PL 2.0: blocked on supporting wires as arguments to captured workflows [sc-127789]."
+)
+
+
+@pytest.mark.usefixtures("enable_and_disable_capture")
+@pytest.mark.parametrize("control_value", [0, 1])
 @pytest.mark.parametrize(
     "wires, work_wires, controls",
     [
-        # 1 control
-        # enough work wires for work wire decomp
-        pytest.param(
-            (0, 1, 2, 3, 4, 5),
-            (6, 7, 8, 9, 10, 11),
-            (12,),
-            marks=pytest.mark.pl2do(
-                reason="PL 2.0: blocked on supporting wires as arguments to captured "
-                "workflows [sc-127789]."
-            ),
-        ),
-        # not enough work wires... uses fallback
+        # 1 control, enough work wires for the work-wire decomposition (applicable)
+        pytest.param((0, 1, 2, 3, 4, 5), (6, 7, 8, 9, 10, 11), (12,), marks=_CAPTURE_PL2DO),
+        # 2 controls, enough work wires for the work-wire decomposition (applicable, needs 7)
+        pytest.param((0, 1, 2, 3, 4, 5), (6, 7, 8, 9, 10, 11, 12), (13, 14), marks=_CAPTURE_PL2DO),
+        # 1 control, not enough work wires... uses fallback (inapplicable)
         ((0, 1, 2, 3, 4, 5), (6, 7), (8,)),
-        # no work wires
+        # 1 control, no work wires (inapplicable)
         ((0, 1, 2), tuple(), (3,)),
-        # 2 controls
-        # enough work wires for work wire decomp
-        ((0, 1, 2, 3, 4, 5), (6, 7, 8, 9, 10, 11), (12, 13)),
-        # not enough work wires... uses fallback
+        # 2 controls, not enough work wires... uses fallback (inapplicable)
         ((0, 1, 2, 3, 4, 5), (6, 7), (8, 9)),
-        # no work wires
+        # 2 controls, no work wires (inapplicable)
         ((0, 1, 2), tuple(), (3, 4)),
     ],
 )
-def test_controlled_decomposition_new(wires, work_wires, controls):
-    """Tests the decomposition rule implemented with the new system."""
+def test_controlled_decomposition_new(wires, work_wires, controls, control_value):
+    """Tests the ``C(Incrementer)`` decomposition rule with the new system for single- and
+    multi-control shapes and both trivial (``1``) and flipped (``0``) control values, with and
+    without program capture."""
+    control_values = [control_value] * len(controls)
+
     # Work wires only in incrementer
-    op = ctrl(Incrementer(wires, work_wires), controls, control_values=[1] * len(controls))
+    op = ctrl(Incrementer(wires, work_wires), controls, control_values=control_values)
     for rule in list_decomps("C(Incrementer)"):
         _test_decomposition_rule(op, rule)
     # Split work wires between incrementer and control
@@ -264,7 +274,7 @@ def test_controlled_decomposition_new(wires, work_wires, controls):
     op = ctrl(
         Incrementer(wires, work_wires[:split]),
         controls,
-        control_values=[1] * len(controls),
+        control_values=control_values,
         work_wires=work_wires[split:],
         work_wire_type="zeroed",
     )
@@ -275,7 +285,7 @@ def test_controlled_decomposition_new(wires, work_wires, controls):
     op = ctrl(
         Incrementer(wires, []),
         controls,
-        control_values=[1] * len(controls),
+        control_values=control_values,
         work_wires=work_wires,
         work_wire_type="zeroed",
     )

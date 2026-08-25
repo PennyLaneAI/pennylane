@@ -16,9 +16,10 @@ Contains the OutMultiplier template.
 """
 
 from collections import defaultdict
+from contextlib import nullcontext
 from itertools import combinations
 
-from pennylane import math
+from pennylane import capture, math
 from pennylane.core.operator import Operator2, abstractify
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.decomposition import (
@@ -499,7 +500,7 @@ def _out_multiplier_with_caddsub_resources(
     # increment 2^(n+m) bit
     if k > n + m:
         size = k - n - m
-        resources[Incrementer(Wire[size], Wire[num_work_wires - 1])] = 1
+        resources[Incrementer(Wire[size], work_wires=Wire[num_work_wires - 1])] = 1
 
     # Second negation
     resources[X] += k
@@ -534,21 +535,28 @@ def _adder_flipped_first_work_wire(x_wires, y_wires, work_wires, flip_control=No
     or a tuple ``(c_wire, c_val)`` for a single control wire.
     """
 
-    with AnnotatedQueue() as q:
-        _semi_adder(x_wires, y_wires, work_wires)
-    adder_ops = q.queue
-    if work_wires:
-        # We insert work wire bit flips where a carry-in qubit would cause them,
-        # i.e., after the very first left elbow and before the last right elbow
-        with QueuingManager.stop_recording():
-            if flip_control is None:
-                work_wire_flip = X(work_wires[-1])
-            else:
-                c_wire, c_val = flip_control
-                work_wire_flip = ctrl(X(work_wires[-1]), control=c_wire, control_values=[c_val])
-        adder_ops.insert(1, work_wire_flip)
-        adder_ops.insert(-2, work_wire_flip)
-    if QueuingManager.recording():
+    # Collect the sub-ops without emitting them, then replay in the intended order. Queuing is
+    # suppressed by the surrounding ``AnnotatedQueue`` and primitive binding by ``capture.pause()``.
+    # The pause is essential under program capture: operators are otherwise bound to the plxpr at
+    # construction time, so the reordering below would be lost and the reused ``work_wire_flip``
+    # instance would only appear once (``QueuingManager.stop_recording()`` does not suppress
+    # capture binding).
+    with capture.pause() if capture.enabled() else nullcontext():
+        with AnnotatedQueue() as q:
+            _semi_adder(x_wires, y_wires, work_wires)
+        adder_ops = q.queue
+        if work_wires:
+            # We insert work wire bit flips where a carry-in qubit would cause them,
+            # i.e., after the very first left elbow and before the last right elbow
+            with QueuingManager.stop_recording():
+                if flip_control is None:
+                    work_wire_flip = X(work_wires[-1])
+                else:
+                    c_wire, c_val = flip_control
+                    work_wire_flip = ctrl(X(work_wires[-1]), control=c_wire, control_values=[c_val])
+            adder_ops.insert(1, work_wire_flip)
+            adder_ops.insert(-2, work_wire_flip)
+    if QueuingManager.recording() or capture.enabled():
         for op in adder_ops:
             apply(op)
 

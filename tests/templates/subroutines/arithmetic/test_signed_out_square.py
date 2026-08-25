@@ -117,6 +117,38 @@ def test_signed_out_square_resources(output_wires_zeroed):
     assert resources[square_op] == 1
 
 
+def test_c_subtract_then_add_one_capture_matches_eager():
+    """Regression test (#10065): ``_c_subtract_then_add_one`` collects a controlled semi-adder in
+    a queue, inserts work-wire bit flips at fixed positions and replays the reordered list. Under
+    program capture operators bind at construction time, so without ``capture.pause()`` the
+    reordering was lost, the reused flip appeared only once, and the scratch ``base`` semi-adder
+    leaked into the plxpr. The captured op sequence must match eager exactly."""
+    pytest.importorskip("jax")
+    # pylint: disable=import-outside-toplevel
+    from pennylane.templates.subroutines.arithmetic.signed_out_square import (
+        _c_subtract_then_add_one,
+    )
+
+    def circuit():
+        _c_subtract_then_add_one(9, [0, 1, 2], [4, 5, 6], [10, 11, 12])
+
+    def seq(tape):
+        return [(type(op).__name__, tuple(op.wires)) for op in tape.operations]
+
+    with qp.queuing.AnnotatedQueue() as q:
+        circuit()
+    eager = seq(qp.tape.QuantumScript.from_queue(q))
+
+    qp.capture.enable()
+    try:
+        plxpr = qp.capture.make_plxpr(circuit)()
+        captured = seq(qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts))
+    finally:
+        qp.capture.disable()
+
+    assert captured == eager
+
+
 def _test_square_correctness(all_wires, rule, seed, output_wires_zeroed, use_jit):
     """Test the correctness of a decomposition rule for ``SignedOutSquare``."""
     if use_jit:
@@ -353,3 +385,13 @@ class TestSignedOutSquare:
             assert rule.is_applicable(**op.arguments)
             all_wires = (x_wires, output_wires, work_wires)
             _test_square_correctness(all_wires, rule, seed, output_wires_zeroed, use_jit)
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("output_wires_zeroed", [False, True])
+    def test_decomposition_rule_with_capture(self, output_wires_zeroed):
+        """Test that the decomposition rule is consistent with the operator, with program
+        capture enabled and disabled."""
+        x_wires, output_wires, work_wires = [0, 1, 2], [3, 4, 5, 6, 7], [8, 9, 10, 11, 12]
+        op = SignedOutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
+        for rule in qp.list_decomps(SignedOutSquare):
+            _test_decomposition_rule(op, rule)
