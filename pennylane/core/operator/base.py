@@ -100,6 +100,11 @@ def _get_abstract_operator() -> type:
         def __hash__(self):
             return hash("AbstractOperator")
 
+        @property
+        def arithmetic_depth(self) -> int:
+            """Arithmetic depth of the operator."""
+            return 0
+
         @staticmethod
         def _matmul(*args):
             return qp.prod(*args)

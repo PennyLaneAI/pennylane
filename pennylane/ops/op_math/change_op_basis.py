@@ -38,7 +38,6 @@ from pennylane.ops.op_math.controlled2 import _ctrl_abstract, flip_zero_control
 from pennylane.typing import Wire
 from pennylane.wires import Wires
 
-from .composite import handle_recursion_error
 from .composite2 import CompositeOp2
 
 
@@ -291,16 +290,6 @@ class ChangeOpBasis(CompositeOp2):
 
     _op_symbol = "@"
     _math_op = staticmethod(math.prod)
-
-    def __repr__(self):
-        return f" {self._op_symbol} ".join(
-            [f"({op})" if getattr(op, "arithmetic_depth", 0) > 0 else f"{op}" for op in self]
-        )
-
-    @property
-    @handle_recursion_error
-    def arithmetic_depth(self) -> int:
-        return 1 + max(getattr(op, "arithmetic_depth", 0) for op in self)
 
     def matrix(self, wire_order=None):
         raise MatrixUndefinedError
