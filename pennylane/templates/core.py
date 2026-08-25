@@ -46,6 +46,7 @@ from pennylane.decomposition import (
     CompressedResourceOp,
     add_decomps,
     adjoint_resource_rep,
+    change_op_basis_resource_rep,
     register_resources,
     resource_rep,
 )
@@ -83,8 +84,8 @@ def change_op_basis_subroutine_resource_rep(
     compute: "Operator | CompressedResourceOp | Subroutine",
     target: "Operator | CompressedResourceOp | Subroutine",
     uncompute: "Operator | CompressedResourceOp | Subroutine" = None,
-) -> CompressedResourceOp:
-    """Generate a :class:`~pennylane.decomposition.CompressedResourceOp` similar to :func:`~.change_op_basis_resource_rep` that is more
+) -> ChangeOpBasis:
+    """Generate an abstract :class:`~pennylane.ops.ChangeOpBasis` resource representation that is more
     specifically targeted for use with :class:`~.Subroutine` instances.
 
     If any of `compute`, `target`, or `uncompute` are subroutines, they should be provided as partials, with any parameters bound
@@ -95,7 +96,7 @@ def change_op_basis_subroutine_resource_rep(
         target (Operator | pennylane.decomposition.resources.CompressedResourceOp | Subroutine): the target operator or subroutine.
         uncompute (Operator | pennylane.decomposition.resources.CompressedResourceOp | Subroutine | None): the optional uncompute operator or subroutine.
     Returns:
-        pennylane.decomposition.CompressedResourceOp: a condensed representation of the :func:`~.change_op_basis` involving a subroutine that can be
+        pennylane.ops.ChangeOpBasis: an abstract representation of :func:`~.change_op_basis` involving a subroutine that can be
         used in specifying the resources of another operator, template or subroutine.
 
     .. note::
@@ -109,14 +110,7 @@ def change_op_basis_subroutine_resource_rep(
         uncompute_rep = _get_adjoint_rep(compute)
     else:
         uncompute_rep = _get_non_adjoint_rep(uncompute)
-    return CompressedResourceOp(
-        ChangeOpBasis,
-        {
-            "compute_op": compute_rep,
-            "target_op": target_rep,
-            "uncompute_op": uncompute_rep,
-        },
-    )
+    return change_op_basis_resource_rep(compute_rep, target_rep, uncompute_rep)
 
 
 def adjoint_subroutine_resource_rep(

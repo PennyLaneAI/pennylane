@@ -20,7 +20,7 @@ import copy
 import itertools
 import pickle
 from collections import defaultdict
-from functools import partial
+from functools import partial, singledispatch
 from string import ascii_lowercase
 
 import numpy as np
@@ -309,38 +309,64 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
         ), "decomposition must produce the same matrix as the operator."
 
 
-def _unroll_change_op_basis(gate_counts):
-    """Unroll any resource reps of ChangeOpBasis."""
-    new_gate_counts = defaultdict(int)
-    for k, count in gate_counts.items():
-        if isinstance(k, (Adjoint2, ControlledOp2)):
-            unrolled_base = _unroll_change_op_basis({k.base: 1})
-            if unrolled_base != {k.base: 1}:
-                for op_rep, inner_count in unrolled_base.items():
-                    if isinstance(k, Adjoint2):
-                        wrapped_op = _adjoint_abstract(op_rep)
-                    else:
-                        wrapped_op = _ctrl_abstract(
-                            op_rep, k.control_wires, k.work_wires, k.work_wire_type
-                        )
-                    new_gate_counts[wrapped_op] += count * inner_count
-                continue
-
-        if isinstance(k, qp.ops.ChangeOpBasis):
-            operands = (k.compute_op, k.target_op, k.uncompute_op)
-        elif isinstance(k, CompressedResourceOp) and k.op_type is qp.ops.ChangeOpBasis:
-            operands = tuple(k.params[p] for p in ("compute_op", "target_op", "uncompute_op"))
+def _unroll_change_op_basis_operands(operands):
+    gate_counts = defaultdict(int)
+    for operand in operands:
+        if isinstance(operand, CompressedResourceOp) and operand.op_type is qp.ops.Prod:
+            for inner_op, count in operand.params["resources"].items():
+                gate_counts[inner_op] += count
         else:
-            new_gate_counts[k] += count
-            continue
+            gate_counts[operand] += 1
+    return gate_counts
 
-        for op_rep in operands:
-            if isinstance(op_rep, CompressedResourceOp) and op_rep.op_type is qp.ops.Prod:
-                for inner_op, inner_count in op_rep.params["resources"].items():
-                    new_gate_counts[inner_op] += count * inner_count
-            else:
-                new_gate_counts[op_rep] += count
 
+@singledispatch
+def _unroll_change_op_basis_resource(op_rep):
+    """Leave resource keys without a ChangeOpBasis unchanged."""
+    return {op_rep: 1}
+
+
+@_unroll_change_op_basis_resource.register
+def _unroll_native_change_op_basis(op_rep: qp.ops.ChangeOpBasis):
+    return _unroll_change_op_basis_operands(
+        (op_rep.compute_op, op_rep.target_op, op_rep.uncompute_op)
+    )
+
+
+def _unroll_symbolic_change_op_basis(op_rep, wrapper):
+    """Unroll ChangeOpBasis inside one symbolic resource key and reapply its wrapper."""
+    unrolled_base = _unroll_change_op_basis_resource(op_rep.base)
+    if unrolled_base == {op_rep.base: 1}:
+        return {op_rep: 1}
+
+    gate_counts = defaultdict(int)
+    for base_rep, count in unrolled_base.items():
+        gate_counts[wrapper(base_rep)] += count
+    return gate_counts
+
+
+@_unroll_change_op_basis_resource.register
+def _unroll_adjoint_change_op_basis(op_rep: Adjoint2):
+    return _unroll_symbolic_change_op_basis(op_rep, _adjoint_abstract)
+
+
+@_unroll_change_op_basis_resource.register
+def _unroll_controlled_change_op_basis(op_rep: ControlledOp2):
+    wrapper = partial(
+        _ctrl_abstract,
+        control_wires=op_rep.control_wires,
+        work_wires=op_rep.work_wires,
+        work_wire_type=op_rep.work_wire_type,
+    )
+    return _unroll_symbolic_change_op_basis(op_rep, wrapper)
+
+
+def _unroll_change_op_basis(gate_counts):
+    """Unroll ChangeOpBasis resource keys, including those inside symbolic operators."""
+    new_gate_counts = defaultdict(int)
+    for op_rep, count in gate_counts.items():
+        for unrolled_rep, inner_count in _unroll_change_op_basis_resource(op_rep).items():
+            new_gate_counts[unrolled_rep] += count * inner_count
     return new_gate_counts
 
 
