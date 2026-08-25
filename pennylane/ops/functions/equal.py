@@ -691,9 +691,6 @@ def _equal_paulisentence(
 # pylint: disable=protected-access
 def _equal_prod_and_sum(op1, op2, **kwargs):
     """Determine whether two Prod, Sum or Prod2 objects are equal"""
-    if not isinstance(op2, type(op1)):
-        return f"op1 and op2 are of different types. Got {type(op1)} and {type(op2)}."
-
     if op1.pauli_rep is not None and (op1.pauli_rep == op2.pauli_rep):  # shortcut check
         return True
 

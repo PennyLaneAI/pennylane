@@ -63,7 +63,7 @@ class TestInitialization:
     def test_legacy_operands_raise(self):
         """Test that legacy (op1) operands raise a ``TypeError``."""
 
-        class LegacyOp(qp.core.Operator):
+        class LegacyOp(qp.core.Operator):  # pylint: disable=too-few-public-methods
             """Dummy operator for testing."""
 
         with pytest.raises(TypeError, match="Legacy operators"):
@@ -190,7 +190,7 @@ class TestValidity:  # pylint: disable=too-few-public-methods
         if qp.capture.enabled():
             kwargs = {"skip_wire_mapping": True, "skip_new_decomp": True}
         else:
-            kwargs = {}
+            kwargs = {"skip_capture": True}
 
         qp.ops.functions.assert_valid(
             Prod2([qp.RZ(0.5, 0), qp.Z(1)]), skip_differentiation=True, **kwargs
