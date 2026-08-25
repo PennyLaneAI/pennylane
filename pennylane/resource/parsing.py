@@ -21,13 +21,18 @@ Functions for parsing Catalyst resource JSON data into :class:`~.resource.SpecsR
 
 import copy
 import itertools
+import math
 import warnings
 from collections import defaultdict
-from math import ceil
 from typing import Any
 
 from .expression import Expression
 from .resource import PBCSpecsResources, SpecsResources, num_to_letters
+
+
+def ceil(value: int | float | Expression) -> int | Expression:
+    """Rounds a value up to the nearest integer. Accounts for precision issues."""
+    return math.ceil(round(value, 12))  # Tolerance of 12 decimal places
 
 
 def _generate_display_name_for_symbolic_var(var: str, display_names: dict[str, str]) -> str:

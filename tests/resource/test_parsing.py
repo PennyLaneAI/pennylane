@@ -378,7 +378,7 @@ class TestConvertToSubclass:
         res = SpecsResources(
             counts={"Hadamard": Expression({("x",): 1.2, (): 1.5}), "PauliX": 2.2, "PauliZ": 6.9},
             measurement_processes={"expval(PauliZ)": 1.5},
-            num_wires=10.1,
+            num_wires=10.00000000000001,  # Test that precision errors don't ceil
             circuit_depth=5.9,
         )
 
@@ -391,5 +391,5 @@ class TestConvertToSubclass:
             "PauliZ": 7,
         }
         assert converted.measurement_processes == {"expval(PauliZ)": 2}
-        assert converted.num_wires == 11
+        assert converted.num_wires == 10
         assert converted.circuit_depth == 6
