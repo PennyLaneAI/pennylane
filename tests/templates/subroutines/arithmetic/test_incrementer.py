@@ -18,7 +18,6 @@ Tests for the Incrementer template.
 import numpy as np
 import pytest
 
-import pennylane as qp
 from pennylane import Incrementer, ctrl, decompose, device, qnode
 from pennylane.decomposition import list_decomps
 from pennylane.measurements import state
@@ -232,10 +231,13 @@ def test_controlled_allocates_work_wires(
     assert np.allclose(result, 0)
 
 
-def _controlled_rule_applicable(wires, work_wires, controls):
-    """The ``C(Incrementer)`` work-wire rule applies iff there are enough work wires to cover the
-    increment wires together with the control wires (mirrors ``_base_work_wire_condition``)."""
-    return (len(work_wires) + 1) >= (len(wires) + len(controls))
+# The applicable ``C(Incrementer)`` work-wire rule is currently blocked under program capture on
+# passing wires as arguments to captured workflows [sc-127789], so the applicable shapes are marked
+# with ``pl2do`` (a non-strict xfail). Under capture they xfail; without capture they still run the
+# rule and are reported as xpassed.
+_CAPTURE_PL2DO = pytest.mark.pl2do(
+    reason="PL 2.0: blocked on supporting wires as arguments to captured workflows [sc-127789]."
+)
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -244,9 +246,9 @@ def _controlled_rule_applicable(wires, work_wires, controls):
     "wires, work_wires, controls",
     [
         # 1 control, enough work wires for the work-wire decomposition (applicable)
-        ((0, 1, 2, 3, 4, 5), (6, 7, 8, 9, 10, 11), (12,)),
+        pytest.param((0, 1, 2, 3, 4, 5), (6, 7, 8, 9, 10, 11), (12,), marks=_CAPTURE_PL2DO),
         # 2 controls, enough work wires for the work-wire decomposition (applicable, needs 7)
-        ((0, 1, 2, 3, 4, 5), (6, 7, 8, 9, 10, 11, 12), (13, 14)),
+        pytest.param((0, 1, 2, 3, 4, 5), (6, 7, 8, 9, 10, 11, 12), (13, 14), marks=_CAPTURE_PL2DO),
         # 1 control, not enough work wires... uses fallback (inapplicable)
         ((0, 1, 2, 3, 4, 5), (6, 7), (8,)),
         # 1 control, no work wires (inapplicable)
@@ -261,14 +263,6 @@ def test_controlled_decomposition_new(wires, work_wires, controls, control_value
     """Tests the ``C(Incrementer)`` decomposition rule with the new system for single- and
     multi-control shapes and both trivial (``1``) and flipped (``0``) control values, with and
     without program capture."""
-    if qp.capture.enabled() and _controlled_rule_applicable(wires, work_wires, controls):
-        # The applicable work-wire rule is blocked under capture on passing wires as arguments to
-        # captured workflows [sc-127789]. Scoped to the capture-enabled variant via pytest.xfail,
-        # matching the convention in test_signed_out_square.py.
-        pytest.xfail(
-            "PL 2.0: blocked on supporting wires as arguments to captured workflows [sc-127789]."
-        )
-
     control_values = [control_value] * len(controls)
 
     # Work wires only in incrementer
