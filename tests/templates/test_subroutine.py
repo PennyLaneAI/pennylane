@@ -25,6 +25,7 @@ import pytest
 import pennylane as qp
 from pennylane.core.operator import abstractify
 from pennylane.ops import CNOT, Adjoint, PauliX
+from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.templates import Subroutine, SubroutineOp, subroutine_resource_rep
 from pennylane.templates.core import (
     CollectedSubroutine,
@@ -672,6 +673,7 @@ class TestGraphDecomposition:
         assert rr.name == "ChangeOpBasis"
 
         assert isinstance(rr.params["target_op"], PauliX)
+        assert rr.params["target_op"].is_abstract
 
         assert isinstance(rr.params["compute_op"], qp.decomposition.CompressedResourceOp)
         assert rr.params["compute_op"].name == "SubroutineOp"
@@ -710,9 +712,12 @@ class TestGraphDecomposition:
         rr = change_op_basis_subroutine_resource_rep(qp.PauliZ(0), abstractify(qp.PauliX))
         assert isinstance(rr, qp.decomposition.CompressedResourceOp)
         assert rr.name == "ChangeOpBasis"
-        assert rr.params["compute_op"] == qp.Z(AbstractWires(1))
-        assert rr.params["target_op"] == qp.X(Wire)
-        assert rr.params["uncompute_op"] == qp.adjoint(qp.Z(AbstractWires(1)))
+        assert rr.params["compute_op"] == qp.Z(Wire[1])
+        assert rr.params["compute_op"].is_abstract
+        assert rr.params["target_op"] == qp.X(Wire[1])
+        assert rr.params["target_op"].is_abstract
+        assert rr.params["uncompute_op"] == qp.adjoint(qp.Z(Wire[1]))
+        assert rr.params["uncompute_op"].is_abstract
 
     def test_change_op_basis_subroutine_resource_rep_with_a_resource_rep_and_a_subroutine(self):
         """Test creating a CompressedResourceRep specific to templates within change_op_basis with a subroutine and a nested resource_rep."""
@@ -737,11 +742,16 @@ class TestGraphDecomposition:
         assert rr.params["target_op"].params == {
             "subroutine": f,
             "signature_key": _make_signature_key(
-                f, "X", AbstractWires(0), x=x, reg2=AbstractWires(2)
+                f,
+                "X",
+                AbstractWires(0),
+                x=x,
+                reg2=AbstractWires(2),
             ),
         }
 
-        assert rr.params["uncompute_op"] == qp.adjoint(qp.X(Wire))
+        assert isinstance(rr.params["uncompute_op"], Adjoint2)
+        assert rr.params["uncompute_op"].name == "Adjoint(PauliX)"
         assert rr.params["uncompute_op"].is_abstract
 
     def test_change_op_basis_subroutine_resource_rep_with_a_subroutine_uncompute(self):
