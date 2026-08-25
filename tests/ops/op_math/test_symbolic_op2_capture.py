@@ -276,6 +276,47 @@ class TestControlledCapture:
         op_eqns = tuple(eqn for eqn in jaxpr.eqns if eqn.primitive is operator_p)
         assert len(op_eqns) == 0
 
+    def test_work_wires_recorded(self, ctrl_fn):
+        """Test that work_wires and work_wire_type survive plxpr encode/decode (#10065)."""
+        jaxpr = jax.make_jaxpr(
+            lambda x: ctrl_fn(RX2(x, wires=1), [0], work_wires=[5], work_wire_type="zeroed").tracer
+        )(0.5)
+        eqn = _single_op_eqn(jaxpr)
+
+        assert eqn.params["n_ctrls"] == 1
+        assert eqn.params["n_work_wires"] == 1
+        assert eqn.params["work_wire_type"] == "zeroed"
+
+        # pylint: disable=unbalanced-tuple-unpacking
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.7)
+        expected = ControlledOp2(RX2(0.7, 1), [0], work_wires=[5], work_wire_type="zeroed")
+        qp.assert_equal(op, expected)
+
+    def test_nested_controlled_merges_work_wires(self, ctrl_fn):
+        """Test that nested controlled operators merge work_wires/work_wire_type into the
+        single collapsed equation the same way eager ``simplify()`` does. Both work wires are
+        ``zeroed`` here so that a silent fallback to the (borrowed) default would be caught."""
+        jaxpr = jax.make_jaxpr(
+            lambda x: ctrl_fn(
+                ctrl_fn(RX2(x, wires=2), [1], work_wires=[8], work_wire_type="zeroed"),
+                [0],
+                work_wires=[9],
+                work_wire_type="zeroed",
+            ).tracer
+        )(0.5)
+        eqn = _single_op_eqn(jaxpr)
+
+        assert eqn.params["n_ctrls"] == 2
+        assert eqn.params["n_work_wires"] == 2
+        assert eqn.params["work_wire_type"] == "zeroed"
+
+        # pylint: disable=unbalanced-tuple-unpacking
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.7)
+        expected = ControlledOp2(
+            RX2(0.7, wires=2), control_wires=[0, 1], work_wires=[9, 8], work_wire_type="zeroed"
+        )
+        qp.assert_equal(op, expected)
+
 
 @pytest.mark.parametrize("adjoint_fn", [qp.adjoint, Adjoint2])
 @pytest.mark.parametrize("lazy", [True, False])

@@ -1893,6 +1893,8 @@ if has_jax:
         hybrid_trees,
         forward_mask,
         n_ctrls=0,
+        n_work_wires=0,
+        work_wire_type="borrowed",
         adjoint=False,
         **static_args,
     ):
@@ -1921,6 +1923,14 @@ if has_jax:
             args[name] = unflatten(leaves, tree)
             i += len_
 
+        if n_work_wires:
+            work_wires = Wires(
+                tuple(w if math.is_abstract(w) else int(w) for w in all_args[i : i + n_work_wires])
+            )
+            i += n_work_wires
+        else:
+            work_wires = Wires([])
+
         if n_ctrls:
             control_wires = Wires(
                 tuple(w if math.is_abstract(w) else int(w) for w in all_args[i : i + n_ctrls])
@@ -1940,6 +1950,8 @@ if has_jax:
                 op,
                 control_wires=control_wires,
                 control_values=control_values,
+                work_wires=work_wires,
+                work_wire_type=work_wire_type,
             )
         return op
 
