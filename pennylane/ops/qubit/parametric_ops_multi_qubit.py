@@ -1507,11 +1507,8 @@ def _isingzz_to_cnot_rz_cnot_resources(phi: TensorLike, wires: WiresLike | None 
 
 @register_resources(_isingzz_to_cnot_rz_cnot_resources)
 def _isingzz_to_cnot_rz_cnot(phi: TensorLike, wires: WiresLike, **__):
-    r"""``IsingZZ`` as a compute-uncompute pattern: the two ``CNOT``'s move into/out of the basis
-    where the interaction is diagonal, and the ``RZ`` applies the only genuinely two-body-dependent
-    phase. Expressing it via :func:`~.change_op_basis` (instead of three bare gates) lets
-    PennyLane's generic ``C(ChangeOpBasis)`` rule automatically control only the ``RZ`` -- for any
-    number of control wires -- without a dedicated ``C(IsingZZ)`` rule."""
+    r"""Expressing ``IsingZZ``  via :func:`~.change_op_basis` (instead of three bare gates) lets
+    PennyLane's generic ``C(ChangeOpBasis)`` rule automatically control it in an efficient way."""
     qp.change_op_basis(qp.CNOT(wires=wires), RZ(phi, wires=[wires[1]]), qp.CNOT(wires=wires))
 
 
