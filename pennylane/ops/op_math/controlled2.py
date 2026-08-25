@@ -605,20 +605,45 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         assert len(eqns) == 1, f"Expected exactly one plxpr equation for {self.base}."
         params = eqns[0].params
         n_ctrls = params["n_ctrls"]
+        n_work_wires = params.get("n_ctrl_work_wires", 0)
 
         # `eqns` contains `TracingEqns`, not `JaxprEqns`, so invars during tracing will just
-        # be tracers, not `Var`s wrapping abstract values.
-        if n_ctrls == 0:
-            invars = eqns[0].invars + self.control_wires.tolist() + list(self.control_values)
-        else:
-            # invars are ordered as (*other_args, *control_wires, *control_values), so we
-            # need to insert the new control wires before the old ones, and do the same
-            # for control values too.
-            control_wires = self.control_wires.tolist() + eqns[0].invars[-2 * n_ctrls : -n_ctrls]
-            control_values = list(self.control_values) + eqns[0].invars[-n_ctrls:]
-            invars = eqns[0].invars[: -2 * n_ctrls] + control_wires + control_values
+        # be tracers, not `Var`s wrapping abstract values. invars are ordered as
+        # (*other_args, *work_wires, *control_wires, *control_values), so we need to insert
+        # the new work wires/control wires/control values before any existing ones from a
+        # previous merge (e.g. from nested/repeated controlling of the same base equation).
+        n_other = len(eqns[0].invars) - (2 * n_ctrls + n_work_wires)
+        other_args = eqns[0].invars[:n_other]
+        old_work_wires = eqns[0].invars[n_other : n_other + n_work_wires]
+        old_control_wires = eqns[0].invars[
+            n_other + n_work_wires : n_other + n_work_wires + n_ctrls
+        ]
+        old_control_values = eqns[0].invars[n_other + n_work_wires + n_ctrls :]
 
-        params["n_ctrls"] += len(self.control_wires)
+        work_wires = self.work_wires.tolist() + old_work_wires
+        control_wires = self.control_wires.tolist() + old_control_wires
+        control_values = list(self.control_values) + old_control_values
+        invars = other_args + work_wires + control_wires + control_values
+
+        params["n_ctrls"] = n_ctrls + len(self.control_wires)
+        # These params are namespaced (`n_ctrl_`/`ctrl_`) so they never collide with an operator's
+        # own static/compilable argnames when reconstructed in `_op_impl`.
+        params["n_ctrl_work_wires"] = n_work_wires + len(self.work_wires)
+        if n_ctrls:
+            # Merging into an already-controlled base equation: mirror the merge convention
+            # used by `simplify()`, resolving the old (base) work wires/type together with the
+            # new (outer) ones being added now.
+            params["ctrl_work_wire_type"] = resolve_work_wire_type(
+                old_work_wires,
+                params.get("ctrl_work_wire_type", "borrowed"),
+                self.work_wires,
+                self.work_wire_type,
+            )
+        else:
+            # Fresh single wrap: preserve `work_wire_type` verbatim, matching eager
+            # `ControlledOp2.__init__`. `resolve_work_wire_type` must not be applied here, as
+            # it would collapse an empty-work-wires `"zeroed"` down to the `"borrowed"` default.
+            params["ctrl_work_wire_type"] = self.work_wire_type
         res = operator_p.bind(*invars, **params)
 
         self.base.tracer = None

@@ -1192,6 +1192,15 @@
     [(#9808)](https://github.com/PennyLaneAI/pennylane/pull/9808)
     [(#9834)](https://github.com/PennyLaneAI/pennylane/pull/9834)
     [(#9908)](https://github.com/PennyLaneAI/pennylane/pull/9908)
+  - Fixed ``work_wires`` and ``work_wire_type`` being silently dropped (reverting to the
+    ``"borrowed"`` default) when a controlled :class:`~.Operator2` is captured and round-tripped
+    through plxpr, including operators that declare ``work_wire_type`` as their own argument such
+    as :class:`~.MultiControlledX` and :class:`~.ControlledQubitUnitary`.
+    [(#10066)](https://github.com/PennyLaneAI/pennylane/pull/10066)
+  - Fixed arithmetic templates whose decompositions build a sub-circuit in a queue and replay it
+    in a reordered sequence (:class:`~.OutMultiplier` and :class:`~.SignedOutSquare` via their
+    adder helpers) producing an incorrect circuit under program capture.
+    [(#10066)](https://github.com/PennyLaneAI/pennylane/pull/10066)
   - Integration with measurements.
     [(#9753)](https://github.com/PennyLaneAI/pennylane/pull/9753)
   - Integration with :func:`pennylane.apply`.
