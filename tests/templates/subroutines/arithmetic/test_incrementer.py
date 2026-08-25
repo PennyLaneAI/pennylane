@@ -232,10 +232,10 @@ def test_controlled_allocates_work_wires(
     assert np.allclose(result, 0)
 
 
-# Only the "1 control, enough work wires" shape has an applicable ``C(Incrementer)`` rule. Under
-# program capture that rule is currently blocked on passing wires as arguments to captured
-# workflows [sc-127789], so we xfail only that combination when capture is enabled.
-_CAPTURE_XFAIL_CASE = ((0, 1, 2, 3, 4, 5), (6, 7, 8, 9, 10, 11), (12,))
+def _controlled_rule_applicable(wires, work_wires, controls):
+    """The ``C(Incrementer)`` work-wire rule applies iff there are enough work wires to cover the
+    increment wires together with the control wires (mirrors ``_base_work_wire_condition``)."""
+    return (len(work_wires) + 1) >= (len(wires) + len(controls))
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -243,32 +243,30 @@ _CAPTURE_XFAIL_CASE = ((0, 1, 2, 3, 4, 5), (6, 7, 8, 9, 10, 11), (12,))
 @pytest.mark.parametrize(
     "wires, work_wires, controls",
     [
-        # 1 control
-        # enough work wires for work wire decomp (the only applicable shape)
+        # 1 control, enough work wires for the work-wire decomposition (applicable)
         ((0, 1, 2, 3, 4, 5), (6, 7, 8, 9, 10, 11), (12,)),
-        # not enough work wires... uses fallback
+        # 2 controls, enough work wires for the work-wire decomposition (applicable, needs 7)
+        ((0, 1, 2, 3, 4, 5), (6, 7, 8, 9, 10, 11, 12), (13, 14)),
+        # 1 control, not enough work wires... uses fallback (inapplicable)
         ((0, 1, 2, 3, 4, 5), (6, 7), (8,)),
-        # no work wires
+        # 1 control, no work wires (inapplicable)
         ((0, 1, 2), tuple(), (3,)),
-        # 2 controls
-        # not enough work wires for work wire decomp (needs 7)... uses fallback
-        ((0, 1, 2, 3, 4, 5), (6, 7, 8, 9, 10, 11), (12, 13)),
-        # not enough work wires... uses fallback
+        # 2 controls, not enough work wires... uses fallback (inapplicable)
         ((0, 1, 2, 3, 4, 5), (6, 7), (8, 9)),
-        # no work wires
+        # 2 controls, no work wires (inapplicable)
         ((0, 1, 2), tuple(), (3, 4)),
     ],
 )
-def test_controlled_decomposition_new(request, wires, work_wires, controls, control_value):
-    """Tests the decomposition rule implemented with the new system, with and without capture,
-    for both trivial (``1``) and flipped (``0``) control values."""
-    if qp.capture.enabled() and (wires, work_wires, controls) == _CAPTURE_XFAIL_CASE:
-        request.applymarker(
-            pytest.mark.xfail(
-                reason="PL 2.0: blocked on supporting wires as arguments to captured "
-                "workflows [sc-127789].",
-                strict=False,
-            )
+def test_controlled_decomposition_new(wires, work_wires, controls, control_value):
+    """Tests the ``C(Incrementer)`` decomposition rule with the new system for single- and
+    multi-control shapes and both trivial (``1``) and flipped (``0``) control values, with and
+    without program capture."""
+    if qp.capture.enabled() and _controlled_rule_applicable(wires, work_wires, controls):
+        # The applicable work-wire rule is blocked under capture on passing wires as arguments to
+        # captured workflows [sc-127789]. Scoped to the capture-enabled variant via pytest.xfail,
+        # matching the convention in test_signed_out_square.py.
+        pytest.xfail(
+            "PL 2.0: blocked on supporting wires as arguments to captured workflows [sc-127789]."
         )
 
     control_values = [control_value] * len(controls)
