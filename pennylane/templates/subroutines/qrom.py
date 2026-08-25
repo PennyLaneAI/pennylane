@@ -35,8 +35,8 @@ from pennylane.math import ceil_log2
 from pennylane.ops import CNOT, CZ, BasisState, X, cond, ctrl, pauli_measure
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.typing import AbstractArray, AbstractWires, Bool, Int, TensorLike, Wire
-from pennylane.wires import Wires, WiresLike
+from pennylane.typing import AbstractArray, Bool, Int, TensorLike, Wire
+from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
 from .arithmetic import TemporaryAND
 from .select import Select
@@ -99,6 +99,10 @@ def _swap_ops(control_wires, depth, swap_wires, target_wires):
             _wires0 = swap_wires[j * num_targets : (j + 1) * num_targets]
             _wires1 = swap_wires[(j + 2**i) * num_targets : (j + 2**i + 1) * num_targets]
             qp_ops.ctrl(_multi_swap, control=control_swap_wires[-i - 1])(_wires0, _wires1)
+
+
+def _to_int_array(bitstring):
+    return [int(bit) for bit in bitstring]
 
 
 class QROM(Operator2):
@@ -215,35 +219,21 @@ class QROM(Operator2):
         work_wires: WiresLike,
         clean=True,
     ):  # pylint: disable=too-many-arguments,disable=too-many-positional-arguments
+
         control_wires = Wires(control_wires)
         target_wires = Wires(target_wires)
+        work_wires = Wires(() if work_wires is None else work_wires)
 
         if not isinstance(bitstrings, AbstractArray) and isinstance(bitstrings[0], str):
-            bitstrings = np.array(
-                list(map(lambda bitstring: [int(bit) for bit in bitstring], bitstrings))
-            )
+            bitstrings = list(map(_to_int_array, bitstrings))
 
         if isinstance(bitstrings, (list, tuple)):
             bitstrings = math.array(bitstrings)
 
-        work_wires = Wires(() if work_wires is None else work_wires)
-        _wires_are_abstract = any(
-            isinstance(ws, AbstractWires) for ws in (control_wires, target_wires, work_wires)
+        validate_no_wire_overlaps(
+            (control_wires, target_wires, work_wires),
+            "control_wires, work_wires, and target_wires must not overlap.",
         )
-        _wires_are_traced = (not _wires_are_abstract) and any(
-            math.is_abstract(w) for ws in (control_wires, target_wires, work_wires) for w in ws
-        )
-
-        if not _wires_are_traced and not _wires_are_abstract:
-            if len(work_wires) != 0:
-                if any(wire in work_wires for wire in control_wires):
-                    raise ValueError("Control wires should be different from work wires.")
-
-                if any(wire in work_wires for wire in target_wires):
-                    raise ValueError("Target wires should be different from work wires.")
-
-            if any(wire in control_wires for wire in target_wires):
-                raise ValueError("Target wires should be different from control wires.")
 
         if 2 ** len(control_wires) < bitstrings.shape[0]:
             raise ValueError(
