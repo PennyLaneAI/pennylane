@@ -55,14 +55,14 @@ def _count_to_str(
                 retval = retval.replace(" ", "")  # Remove spaces from expressions for compactness
             return retval
         count = ceil(count)
-    if isinstance(count, float):
-        if count.is_integer():
-            count = int(count)
-        else:
-            return f"{Decimal(count):.3E}"
-    if count >= 100_000:
+    if isinstance(count, float) and not count.is_integer():
+        # NOTE: stringify the count in order to bypass Decimal precision issues
+        return f"{Decimal(str(count)):.3E}"
+        
+    if count >= _SCIENTIFIC_NOTATION_THRESHOLD:
         return f"{Decimal(count):.3E}"
-    return f"{count:,}"  # Return as integer if count is small
+        
+    return f"{int(count):,}"  # Return as integer if count is small
 
 
 def _flatten_dict(data: dict, prefix: str = "", sep: str = ".") -> dict:
