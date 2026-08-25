@@ -304,7 +304,8 @@ class TestMscMethods:
         # no overlapping wires and diag gates case
         op = ValidOp((qp.PauliZ(0), qp.PauliX(1)))
         assert op.has_diagonalizing_gates is True
-        op = ValidOp((NoMatrixOp(0),))
+        # One sub op with no diagonalizing gates
+        op = ValidOp((NoMatrixOp(0), qp.PauliZ(1), qp.PauliX(1)))
         assert op.has_diagonalizing_gates is False
 
     @pytest.mark.parametrize(
