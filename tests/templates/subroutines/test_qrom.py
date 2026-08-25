@@ -324,58 +324,34 @@ class TestQROM:
             qp.assert_equal(op1, op2)
 
     @pytest.mark.parametrize(
-        ("bitstrings", "control_wires", "target_wires", "work_wires", "clean"),
+        ("num_bitstrings", "control_wires", "target_wires", "work_wires", "clean"),
         [
-            (
-                [[1, 1], [0, 1], [0, 0], [1, 0]],
-                [2, 3],
-                [0, 1],
-                [4, 5, 6, 7, 8, 9],
-                True,
-            ),
-            ([[1], [0], [0], [1]], [0, 1], [2], [3], True),
-            ([[1]], [], [0], [1], True),
-            ([[1, 0, 1]], [0, 1, 2, 6], [3, 4, 5], [7, 8, 9], True),
-            (
-                [
-                    [1, 0],
-                    [0, 0],
-                    [0, 0],
-                    [0, 1],
-                    [0, 1],
-                    [0, 0],
-                    [0, 0],
-                    [0, 1],
-                ],
-                [0, 1, 2],
-                [3, 4],
-                [5],
-                False,
-            ),
-            (
-                [
-                    [0, 1],
-                    [0, 0],
-                    [0, 0],
-                    [1, 0],
-                    [1, 0],
-                    [0, 0],
-                    [0, 0],
-                    [0, 1],
-                ],
-                [0, 1, 2],
-                [3, 4],
-                [5],
-                True,
-            ),
-            ([[1], [0], [0], [1]], [0, 1], [2], [], False),
-            ([[1], [0], [0], [1]], [0, 1], [2], [3, 4], False),
+            (1, [], [0], [1], True),
+            (1, [0, 1, 2, 6], [3, 4, 5], [7, 8, 9], True),
+            (1, [0], [1], [], True),
+            (1, [0], [1], [], False),
+            (2, [0], [1], [], True),
+            (2, [0], [1], [], False),
+            (4, [2, 3], [0, 1], [4, 5, 6, 7, 8, 9], True),
+            (3, [0, 1], [2], [3], True),
+            (4, [0, 1], [2], [], False),
+            (3, [0, 1], [2], [3, 4], False),
+            (8, [0, 1, 2], [3, 4], [5, 6, 7, 8, 9, 10, 11], False),
+            (8, [0, 1, 2], [3, 4], [5], True),
+            (8, [0, 1, 2], [3, 4], [5, 6], True),
+            (8, [0, 1, 2], [3, 4], [5, 6], False),
+            (7, [0, 1, 2], [3, 4], [5, 6, 7, 8, 9, 10, 11], False),
+            (5, [0, 1, 2], [3, 4], [5], True),
+            (2, [0, 1, 2], [3, 4], [5, 6], True),
+            (6, [0, 1, 2], [3, 4], [5, 6], False),
         ],  # pylint: disable=too-many-arguments
     )
     def test_decomposition_new(
-        self, bitstrings, control_wires, target_wires, work_wires, clean
+        self, num_bitstrings, control_wires, target_wires, work_wires, clean, seed
     ):  # pylint: disable=too-many-arguments
         """Tests the decomposition rule implemented with the new system."""
+        rng = np.random.default_rng(seed)
+        bitstrings = rng.integers(0, 2, size=(num_bitstrings, len(target_wires)))
         op = qp.QROM(
             bitstrings,
             control_wires=control_wires,

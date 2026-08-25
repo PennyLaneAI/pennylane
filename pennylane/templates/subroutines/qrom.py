@@ -346,7 +346,7 @@ def _qrom_decomposition_resources(
     ops = [
         BasisState(Bool[num_target_wires], Wire[num_target_wires]) for _ in range(num_bitstrings)
     ]
-    ops_identity = ops + [qp_ops.I] * int(2**num_control_wires - num_bitstrings)
+    ops_identity = ops + [resource_rep(qp_ops.I)] * int(2**num_control_wires - num_bitstrings)
 
     n_columns = (
         num_bitstrings // depth if num_bitstrings % depth == 0 else num_bitstrings // depth + 1
@@ -863,6 +863,8 @@ def _qrom_unary_iteration_resources(
     if c == 0:
         return {basis_rep: 1}
     if c == 1:
+        if K == 1:
+            return {cbasis_rep: 1}
         return {cbasis_rep: 1, basis_rep: 1}
 
     # The number of elbows required for non-partial unary iteration is given by
@@ -987,7 +989,11 @@ def _qrom_unary_iteration(
         return
 
     if num_controls == 1:
-        # Two bit strings to be applies. Load the first unconditionally and control-load the diff
+        if len(bitstrings) == 1:
+            # One bit string to be applied
+            ctrl(BasisState(bitstrings[0], target_wires), control=control_wires, control_values=[0])
+            return
+        # Two bit strings to be applied. Load the first unconditionally and control-load the diff
         BasisState(bitstrings[0], target_wires)
         ctrl(BasisState((bitstrings[0] + bitstrings[1]) % 2, target_wires), control=control_wires)
         return
