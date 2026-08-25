@@ -238,6 +238,24 @@ def _decomp_rule_to_tape(rule, args, kwargs):
     return qp.tape.QuantumScript.from_queue(q)
 
 
+def _make_wrapped_decomp_rule(rule, op, capture_kwargs):
+    """Makes a wrapper around a decomposition rule that manually flattens and unflattens
+    the hybrid arguments around the input boundary."""
+
+    hybrid_trees = {}
+    for k, v in op.hybrid_args.items():
+        leaves, tree = qp.pytrees.flatten(v)
+        capture_kwargs[k] = leaves
+        hybrid_trees[k] = tree
+
+    def _wrapped(*args, **kwargs):
+        for k in op.hybrid_args:
+            kwargs[k] = qp.pytrees.unflatten(kwargs[k], hybrid_trees[k])
+        rule(*args, **kwargs)
+
+    return _wrapped
+
+
 def _capture_decomp_rule_to_tape(rule, op):
 
     import jax  # pylint: disable=import-outside-toplevel
@@ -249,11 +267,13 @@ def _capture_decomp_rule_to_tape(rule, op):
         capture_args = op.data
         capture_kwargs = {"wires": op.wires}
     else:
-        # TODO: tracing Operator2 hybrid args is not supported due to [sc-127789], move
-        # op.hybrid_args to capture_kwargs when the issue with wires is fixed.
-        decomposition = partial(rule, **op.static_args, **op.compilable_args, **op.hybrid_args)
+        decomposition = partial(rule, **op.static_args, **op.compilable_args)
         capture_args = ()
-        capture_kwargs = {**op.dynamic_args, **op.wire_args}
+        capture_kwargs = {**op.dynamic_args, **op.wire_args}  # hybrid args will be added below
+        # TODO: tracing Operator2 hybrid args is not supported out of the box due to [sc-127789].
+        # For now we manually flatten the hybrid args and assembles them within the wrapper rule,
+        # but ideally we want to be able to pass hybrid args directly.
+        decomposition = _make_wrapped_decomp_rule(decomposition, op, capture_kwargs)
 
     plxpr = qp.capture.make_plxpr(decomposition, autograph=False)(*capture_args, **capture_kwargs)
     flat_capture_args = jax.tree.leaves((capture_args, capture_kwargs))
@@ -506,9 +526,19 @@ def _check_pytree(op):
             "metadata and data must be able to reproduce the original operation"
         ) from e
 
+    try:
+        import jax
+
+        leaves, struct = jax.tree_util.tree_flatten(op)
+        unflattened = jax.tree_util.tree_unflatten(struct, leaves)
+        assert unflattened == op, f"op must be a valid pytree. Got {unflattened} instead of {op}."
+
+    except ImportError:
+        pass
+
     leaves, struct = qp.pytrees.flatten(op)
-    unflattened_op = qp.pytrees.unflatten(leaves, struct)
-    assert unflattened_op == op, f"op must be a valid pytree. Got {unflattened_op} instead of {op}."
+    unflattened = qp.pytrees.unflatten(leaves, struct)
+    assert unflattened == op, f"op must be a valid pytree. Got {unflattened} instead of {op}."
 
     if isinstance(op, Operator1):
         # Nested operators can contribute parameters or structural leaves (such as Operator2
