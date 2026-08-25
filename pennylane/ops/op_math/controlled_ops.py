@@ -42,7 +42,13 @@ from pennylane.ops.identity import GlobalPhase
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure, pauli_measure
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
-from pennylane.ops.op_math.controlled2 import Controlled2, ControlledOp2
+from pennylane.ops.op_math.controlled2 import (
+    Controlled2,
+    ControlledOp2,
+    _setup_control_values,
+    _validate_no_wire_overlaps,
+    _validate_work_wire_type,
+)
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
@@ -1375,30 +1381,18 @@ def _setup_inputs_mcx(
     wires = Wires(wires)
     if len(wires) < 2:
         raise ValueError(f"MultiControlledX acts on at least 2 wires, {len(wires)} given.")
+
     work_wires = Wires([] if work_wires is None else work_wires)
-    if (
-        not isinstance(work_wires, AbstractWires)
-        and not isinstance(wires, AbstractWires)
-        and Wires.shared_wires([work_wires, wires])
-    ):
-        raise ValueError("work_wires must not overlap with the operator wires.")
+    _validate_no_wire_overlaps(
+        (wires, work_wires),
+        "work_wires must not overlap with the operator wires.",
+    )
 
     # Validate and canonicalize control values
-    if control_values is None:
-        control_values = [True] * (len(wires) - 1)
-    if isinstance(control_values, (int, bool)):
-        control_values = [bool(control_values)]
-    if len(control_values) != len(wires) - 1:
-        raise ValueError("control_values should be the same length as control_wires")
-    if isinstance(control_values, (list, tuple)):
-        control_values = qp.math.asarray(control_values, like=control_values[0])
-    if not isinstance(control_values, AbstractArray):
-        control_values = qp.math.cast(control_values, dtype=bool)
+    control_values = _setup_control_values(control_values, len(wires) - 1)
 
     # Validate work_wire_type
-    accepted = ("zeroed", "borrowed")
-    if work_wire_type not in accepted:
-        raise ValueError(f"work_wire_type must be one of {accepted}. Got '{work_wire_type}'.")
+    _validate_work_wire_type(work_wire_type)
 
     # Return processed inputs
     return {

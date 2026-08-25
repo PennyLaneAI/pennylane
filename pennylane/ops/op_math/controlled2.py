@@ -71,6 +71,18 @@ def _setup_control_values(control_values, num_control_wires):
     return control_values
 
 
+def _validate_work_wire_type(work_wire_type):
+    accepted = ("zeroed", "borrowed")
+    if work_wire_type not in accepted:
+        raise ValueError(f"work_wire_type must be one of {accepted}. Got '{work_wire_type}'.")
+
+
+def _validate_no_wire_overlaps(wire_args, error_msg):
+    concrete_wires = [w for w in wire_args if not isinstance(w, AbstractWires)]
+    if len(concrete_wires) > 1 and Wires.shared_wires(concrete_wires):
+        raise ValueError(error_msg)
+
+
 class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-public-methods
     """The base class for controlled operators.
 
@@ -156,15 +168,11 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         control_wires = Wires(control_wires)
         work_wires = Wires([] if work_wires is None else work_wires)
 
-        all_wire_args = (base.wires, control_wires, work_wires)
-        concrete_wires = [w for w in all_wire_args if not isinstance(w, AbstractWires)]
-        if Wires.shared_wires(concrete_wires):
-            raise ValueError("control_wires, work_wires, and the base operator must not overlap")
-
-        accepted = ("zeroed", "borrowed")
-        if work_wire_type not in accepted:
-            raise ValueError(f"work_wire_type must be one of {accepted}. Got '{work_wire_type}'.")
-
+        _validate_no_wire_overlaps(
+            (base.wires, control_wires, work_wires),
+            "control_wires, work_wires, and the base operator must not overlap",
+        )
+        _validate_work_wire_type(work_wire_type)
         control_values = _setup_control_values(control_values, len(control_wires))
 
         self._base = base
@@ -837,10 +845,11 @@ def _ctrl_abstract(
     # if control values are all zeroes, first see if we can dispatch to a special type
     # then run abstractify to promote control values to being boolean if it wasn't
     # turned into a special type.
+    empty_cvals = num_zero_control_values == 0
     op = qp.ctrl(
         op,
         control=control_wires,
-        control_values=None if num_zero_control_values == 0 else Bool[len(control_wires)],
+        control_values=None if empty_cvals else Bool[len(control_wires)],
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )
