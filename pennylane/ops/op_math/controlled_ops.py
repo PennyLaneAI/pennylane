@@ -2262,7 +2262,7 @@ class ControlledPhaseShift(Controlled2):
 
     @override
     def __abstract_init__(self, phi, wires):  # pylint: disable=arguments-differ,unused-argument
-        super().__abstract_init__(qp.PhaseShift(Float, Wire), Wire)
+        super().__abstract_init__(qp.PhaseShift(Float, Wire[1]), Wire[1])
 
     @override
     def adjoint(self):
