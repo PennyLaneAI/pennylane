@@ -222,6 +222,19 @@ class TestConcrete:
         assert jax.tree_util.tree_unflatten(treedef, leaves).dimensions == ham.dimensions
 
     @pytest.mark.jax
+    @pytest.mark.parametrize("leaf", [0.5, 3, True, complex(1, 2)])
+    def test_tree_map_to_python_scalars(self, seed, leaf):
+        """Test that a ``tree_map`` producing plain Python scalars stays usable."""
+        import jax
+
+        ham = CGFHamiltonian(**cgf_tensors(seed))
+        mapped = jax.tree_util.tree_map(lambda _: leaf, ham)
+
+        assert all(isinstance(t, type(leaf)) for t in mapped.tensors)
+        assert isinstance(hash(mapped), int)
+        assert mapped == jax.tree_util.tree_map(lambda _: leaf, ham)
+
+    @pytest.mark.jax
     def test_traces_as_tracers(self, seed):
         """Test that concrete data becomes tracers when passed as a runtime argument,
         while the shape metadata stays statically available."""
@@ -317,6 +330,27 @@ class TestConcrete:
     def test_equality_across_representations(self, seed):
         """Test that a CDF and a CGF Hamiltonian are never equal."""
         assert CDFHamiltonian(**cdf_tensors(seed)) != CGFHamiltonian(**cgf_tensors(seed))
+
+    def test_equality_differing_shapes(self, seed):
+        """Test that same-type Hamiltonians with different shapes are unequal."""
+        small = CGFHamiltonian(**cgf_tensors(seed))
+        large = CGFHamiltonian(**cgf_tensors(seed, num_fragments=L + 1))
+
+        assert small != large
+        # Confirm the guard is load-bearing rather than merely redundant.
+        with pytest.raises(ValueError, match="could not be broadcast"):
+            np.allclose(small.core_tensors, large.core_tensors)
+
+    def test_equality_differing_dtypes(self):
+        """Test that same-shape Hamiltonians with different dtypes are unequal."""
+        shapes = ((L + 1, M, M, N, N), (L + 1, M, N, N))
+        f64 = CGFHamiltonian(*(np.zeros(s, np.float64) for s in shapes))
+        f32 = CGFHamiltonian(*(np.zeros(s, np.float32) for s in shapes))
+
+        assert f64 != f32
+        assert hash(f64) != hash(f32)
+        # The values are identical, so only the dtype can be distinguishing them.
+        assert qp.math.allclose(f64.core_tensors, f32.core_tensors)
 
     @pytest.mark.parametrize(
         "cls, data", [(CDFHamiltonian, cdf_tensors), (CGFHamiltonian, cgf_tensors)]
