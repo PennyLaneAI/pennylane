@@ -28,7 +28,6 @@ from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.ops.op_math import CompositeOp2
 from pennylane.queuing import AnnotatedQueue
 from pennylane.wires import WiresLike
-from tests.capture.capture_utils import assert_eqn_matches_op
 
 # pylint:disable=protected-access, use-implicit-booleaness-not-comparison
 
@@ -474,10 +473,11 @@ class TestProperties:
 class TestCapture:
     """Test that a CompositeOp2 subclass integrates with program capture."""
 
+    @pytest.mark.jax
     def test_capture_valid_op(self):
         """Test that a ValidOp can be captured into and reconstructed from jaxpr."""
-        import jax
-        
+        from tests.capture.capture_utils import assert_eqn_matches_op
+
         def qfunc():
             return ValidOp((qp.RX(1.2, wires=0), qp.PauliZ(0)))
 
