@@ -1070,7 +1070,7 @@ class TestGraphDecomposition:
             qp.X(wires)
 
         op = f.operator(0)
-        qp.ops.functions.assert_valid(op, skip_pickle=True, skip_capture=True)
+        qp.ops.functions.assert_valid(op, skip_pickle=True)
 
     def test_compute_resources_fallback(self):
         """Test that the compute_resources fallback allows integration with decomps by default."""

@@ -20,13 +20,14 @@ import abc
 from collections.abc import Callable, Sequence
 
 # pylint: disable=invalid-sequence-index
-from typing import Sequence, override
+from typing import override
 
 import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operator, Operator2
-from pennylane.ops.op_math.composite import handle_recursion_error
 from pennylane.wires import Wires
+
+from .composite import handle_recursion_error
 
 # pylint: disable=too-many-instance-attributes
 
@@ -331,6 +332,16 @@ class CompositeOp2(Operator2, is_baseclass=True):
     @abc.abstractmethod
     def _math_op(self) -> Callable:
         """The function used when combining the operands of the composite operator"""
+
+    @handle_recursion_error
+    def map_wires(self, wire_map: dict):
+        # pylint:disable=protected-access
+        if self._init_pauli_rep:
+            rep = self._init_pauli_rep.map_wires(wire_map=wire_map)
+        else:
+            rep = None
+        new = self.__class__([op.map_wires(wire_map=wire_map) for op in self], rep)
+        return new
 
     @abc.abstractmethod
     def _build_pauli_rep(self):

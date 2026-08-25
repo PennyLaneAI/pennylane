@@ -16,19 +16,19 @@ Unit tests for the composite operator class of qubit operations
 """
 
 import inspect
-from typing import Sequence
+from collections.abc import Sequence
 
 import numpy as np
 import pytest
 
 import pennylane as qp
 from pennylane import math
-from pennylane.core.operator import Operator, Operator2
+from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.ops.op_math import CompositeOp2
+from pennylane.pauli.pauli_arithmetic import PauliWord
 from pennylane.queuing import AnnotatedQueue
 from pennylane.wires import WiresLike
-from tests.capture.capture_utils import assert_eqn_matches_op
 
 # pylint:disable=protected-access, use-implicit-booleaness-not-comparison
 
@@ -70,20 +70,11 @@ class ValidOp(CompositeOp2):
 
     def matrix(self, wire_order=None):
         if wire_order is None:
-            wire_order = self.wires.tolist()
-        acc = np.eye(2**self.num_wires)
-        for o in wire_order:
-            sub_mat = self[o].matrix()
-            i = 0
-            while i < o:
-                sub_mat = np.kron(np.eye(2), sub_mat)
-                i += 1
-            i += 1
-            while i < self.num_wires:
-                sub_mat = np.kron(sub_mat, np.eye(2))
-                i += 1
-            acc = acc @ sub_mat
-        return acc
+            wire_order = self.wires
+        mat = np.eye(2 ** len(wire_order))
+        for op in self:
+            mat = mat @ math.expand_matrix(op.matrix(), op.wires, wire_order=wire_order)
+        return mat
 
     @classmethod
     # pylint: disable-next=unused-argument
@@ -142,6 +133,29 @@ class TestConstruction:
         assert op._name == "ValidOp"
         assert op._op_symbol == "#"
 
+    def test_abstract_init(self):
+        """Test that building a composite op from abstract operands routes through
+        ``__abstract_init__`` rather than the concrete ``__init__``."""
+        operands = (abstractify(qp.X(0)), abstractify(qp.PauliZ(1)))
+        op = ValidOp(operands)
+
+        assert op.operands[0] == abstractify(qp.X(0))
+        assert op.operands[1] == abstractify(qp.PauliZ(1))
+        assert op._pauli_rep is None
+
+        assert op._hash is None
+        assert op._has_overlapping_wires is None
+        assert op._overlapping_ops is None
+
+    def test_map_wires(self):
+        """Test the map_wires method."""
+        pr = PauliWord({0: "Y"}) + PauliWord({1: "Y"})
+        op = ValidOp([qp.X(0), qp.Z(1)], _init_pauli_rep=pr)
+        op_mapped = op.map_wires({0: 40, 1: 41})
+        assert op_mapped.wires == (40, 41)
+        assert op_mapped.operands == [qp.X(40), qp.Z(41)]
+        assert op_mapped.pauli_rep.wires == (40, 41)
+
     def test_data(self):
         """Test that the data property flattens the data of all operands in order."""
         op = ValidOp((qp.RX(9.87, wires=0), qp.Rot(1.23, 4.0, 5.67, wires=1), qp.PauliX(0)))
@@ -155,7 +169,7 @@ class TestConstruction:
         with pytest.raises(
             AttributeError, match="property 'data' of 'ValidOp' object has no setter"
         ):
-            op.data = (1.23, 0.0, -1.0, -2.0)
+            op.data = (1.23, 0.0, -1.0, -2.0)  # pylint:disable=attribute-defined-outside-init
 
     def test_initialization_in_queuing_context(self):
         """Test that valid child classes can be initialized in a queuing context"""
@@ -184,11 +198,13 @@ class TestConstruction:
         diagonalizing_gates = diag_op.diagonalizing_gates()
 
         assert len(diagonalizing_gates) == 1
-        diagonalizing_mat = diagonalizing_gates[0].matrix()
+        u = diagonalizing_gates[0].matrix()
 
-        true_mat = np.eye(2)
-
-        assert np.allclose(diagonalizing_mat, true_mat)
+        # The diagonalizing gate rotates the (overlapping) operator into its eigenbasis, so the
+        # rotated matrix must be diagonal.
+        rotated = u @ diag_op.matrix() @ np.conj(u.T)
+        off_diagonal = rotated - np.diag(np.diagonal(rotated))
+        assert np.allclose(off_diagonal, 0)
 
     def test_eigen_caching(self):
         """Test that the eigendecomposition is stored in cache."""
@@ -298,6 +314,9 @@ class TestMscMethods:
         # no overlapping wires and diag gates case
         op = ValidOp((qp.PauliZ(0), qp.PauliX(1)))
         assert op.has_diagonalizing_gates is True
+        # One sub op with no diagonalizing gates
+        op = ValidOp((NoMatrixOp(0), qp.PauliZ(1), qp.PauliX(1)))
+        assert op.has_diagonalizing_gates is False
 
     @pytest.mark.parametrize(
         "operators",
@@ -307,6 +326,7 @@ class TestMscMethods:
             (qp.T(0), qp.S(1)),
             (qp.Identity(0), qp.Hadamard(1)),
             (qp.T(0), qp.Identity(1)),
+            (qp.T(0), qp.Identity(1), qp.S(1)),
         ],
     )
     def test_eigvals(self, operators):
@@ -471,13 +491,17 @@ class TestProperties:
 
 
 @pytest.mark.capture
+# pylint: disable-next=too-few-public-methods
 class TestCapture:
     """Test that a CompositeOp2 subclass integrates with program capture."""
 
+    @pytest.mark.jax
     def test_capture_valid_op(self):
         """Test that a ValidOp can be captured into and reconstructed from jaxpr."""
         import jax
-        
+
+        from tests.capture.capture_utils import assert_eqn_matches_op
+
         def qfunc():
             return ValidOp((qp.RX(1.2, wires=0), qp.PauliZ(0)))
 
