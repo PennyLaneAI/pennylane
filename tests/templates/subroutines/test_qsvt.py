@@ -329,7 +329,7 @@ class TestQSVTIntegration:
         with qp.tape.QuantumTape() as tape:
             qp.QSVT(U_A, lst_projectors)
 
-        [tape], _ = decompose(tape, gate_set={"PCPhase", "BlockEncode", "RZ", "Z"})
+        [tape], _ = decompose(tape, gate_set={"PCPhase", "BlockEncode", "RZ", "RY", "Z"})
         for idx, val in enumerate(tape.operations):
             assert val.name == results[idx].name
             assert val.parameters == results[idx].parameters

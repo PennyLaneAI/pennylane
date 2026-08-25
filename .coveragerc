@@ -6,6 +6,7 @@ omit =
     pennylane/labs/*
     pennylane/workflow/interfaces/tensorflow.py
     pennylane/workflow/interfaces/tensorflow_autograph.py
+    pennylane/backline/decoders/triton/*
 
 [report]
 # Regexes for lines to exclude from consideration

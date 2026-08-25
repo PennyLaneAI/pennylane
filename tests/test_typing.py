@@ -251,11 +251,11 @@ class TestAbstractArray:
 
         b = a[2]
         assert isinstance(b, AbstractWires)
-        assert b.num_wires == 2
+        assert b._num_wires == 2
 
         c = a[-1]
         assert isinstance(c, AbstractWires)
-        assert c.num_wires == -1
+        assert c._num_wires == -1
 
     def test_type_factory(self):
         """Test that we can index into a type factory to produce a new hint with a size."""
@@ -470,7 +470,7 @@ class TestAbstractWires:
         """Basic tests for the AbstractWires class."""
 
         a = AbstractWires(3)
-        assert a.num_wires == 3
+        assert a._num_wires == 3
         assert len(a) == 3
         assert a.shape_fixed is True
 
@@ -514,7 +514,7 @@ class TestAbstractWires:
     def test_unknown_num_wires(self):
         """Test that -1 marks an unknown number of wires."""
         a = AbstractWires(-1)
-        assert a.num_wires == -1
+        assert a._num_wires == -1
         assert a.shape == (-1,)
         assert a.shape_fixed is False
 

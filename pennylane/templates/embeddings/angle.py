@@ -142,8 +142,7 @@ class AngleEmbedding(Operation):
 
         >>> features = torch.tensor([1., 2.])
         >>> qp.AngleEmbedding.compute_decomposition(features, wires=["a", "b"], rotation=qp.RX)
-        [RX(tensor(1.), wires=['a']),
-         RX(tensor(2.), wires=['b'])]
+        [RX(1.0, wires=['a']), RX(2.0, wires=['b'])]
         """
         batched = math.ndim(features) > 1
         # We will iterate over the first axis of `features` together with iterating over the wires.

@@ -203,7 +203,8 @@ def assert_equal(
     >>> qp.assert_equal(op1, op2)
     Traceback (most recent call last):
         ...
-    AssertionError: op1 and op2 have different values. Got (array(0.12),) and (array(1.23),)
+    AssertionError: op1 and op2 have different values for 'phi'.
+    Got 0.12 and 1.23.
 
     >>> h1 = qp.Hamiltonian([1, 2], [qp.PauliX(0), qp.PauliY(1)])
     >>> h2 = qp.Hamiltonian([1, 1], [qp.PauliX(0), qp.PauliY(1)])

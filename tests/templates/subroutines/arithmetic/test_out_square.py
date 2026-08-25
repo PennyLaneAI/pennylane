@@ -119,8 +119,8 @@ class TestOutSquare:
         @qp.decompose(max_expansion=2, fixed_decomps=fixed_decomps)
         @qp.qnode(dev)
         def circuit(x, y, x_wires, work_wires):
-            qp.BasisEmbedding(x, wires=x_wires)
-            qp.BasisEmbedding(y, wires=output_wires)
+            qp.BasisEmbedding(qp.math.int_to_binary(x, len(x_wires)), wires=x_wires)
+            qp.BasisEmbedding(qp.math.int_to_binary(y, len(output_wires)), wires=output_wires)
             OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
             return (
                 qp.sample(wires=x_wires),

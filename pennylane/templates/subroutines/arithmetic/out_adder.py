@@ -79,8 +79,10 @@ class OutAdder(Operation):
 
         @qp.qnode(dev, shots=1)
         def circuit():
-            qp.BasisEmbedding(x, wires=x_wires)
-            qp.BasisEmbedding(y, wires=y_wires)
+            x_bin = qp.math.int_to_binary(x, len(x_wires))
+            y_bin = qp.math.int_to_binary(y, len(y_wires))
+            qp.BasisEmbedding(x_bin, wires=x_wires)
+            qp.BasisEmbedding(y_bin, wires=y_wires)
             qp.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
             return qp.sample(wires=output_wires)
 
@@ -125,9 +127,12 @@ class OutAdder(Operation):
 
             @qp.qnode(dev, shots=1)
             def circuit():
-                qp.BasisEmbedding(x, wires=x_wires)
-                qp.BasisEmbedding(y, wires=y_wires)
-                qp.BasisEmbedding(b, wires=output_wires)
+                x_bin = qp.math.int_to_binary(x, len(x_wires))
+                y_bin = qp.math.int_to_binary(y, len(y_wires))
+                b_bin = qp.math.int_to_binary(b, len(output_wires))
+                qp.BasisEmbedding(x_bin, wires=x_wires)
+                qp.BasisEmbedding(y_bin, wires=y_wires)
+                qp.BasisEmbedding(b_bin, wires=output_wires)
                 qp.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
                 return qp.sample(wires=output_wires)
 
@@ -291,16 +296,14 @@ def _out_adder_decomposition_resources(num_output_wires, num_x_wires, num_y_wire
     target_resources[
         resource_rep(
             ControlledSequence,
-            base_class=PhaseAdder,
-            base_params={"num_x_wires": num_qft_wires, "mod": mod},
+            base_rep=resource_rep(PhaseAdder, num_x_wires=num_qft_wires, mod=mod),
             num_control_wires=num_x_wires,
         )
     ] += 1
     target_resources[
         resource_rep(
             ControlledSequence,
-            base_class=PhaseAdder,
-            base_params={"num_x_wires": num_qft_wires, "mod": mod},
+            base_rep=resource_rep(PhaseAdder, num_x_wires=num_qft_wires, mod=mod),
             num_control_wires=num_y_wires,
         )
     ] += 1

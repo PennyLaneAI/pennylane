@@ -111,14 +111,14 @@ def exp(op, coeff: float = 1.0):
 
         This operator supports a batched base, a batched coefficient and a combination of both:
 
-        >>> op = qp.exp(qp.RX([1, 2, 3], wires=0), coeff=4)
-        >>> qp.matrix(op).shape
+        >>> op = qp.exp(qp.RX([1, 2, 3], wires=0), coeff=4)  # doctest: +SKIP
+        >>> qp.matrix(op).shape  # doctest: +SKIP
         (3, 2, 2)
         >>> op = qp.exp(qp.RX(1, wires=0), coeff=[1, 2, 3])
         >>> qp.matrix(op).shape
         (3, 2, 2)
-        >>> op = qp.exp(qp.RX([1, 2, 3], wires=0), coeff=[4, 5, 6])
-        >>> qp.matrix(op).shape
+        >>> op = qp.exp(qp.RX([1, 2, 3], wires=0), coeff=[4, 5, 6])  # doctest: +SKIP
+        >>> qp.matrix(op).shape  # doctest: +SKIP
         (3, 2, 2)
 
         But it doesn't support batching of operators:

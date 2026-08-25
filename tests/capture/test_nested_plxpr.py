@@ -201,7 +201,7 @@ class TestAdjointQfunc:
         assert qnode_eqn.primitive == qnode_prim
         adjoint_eqn = qnode_eqn.params["qfunc_jaxpr"].eqns[1]
         assert adjoint_eqn.primitive == adjoint_transform_prim
-        assert adjoint_eqn.params["jaxpr"].eqns[0].primitive == qp.RX._primitive
+        assert_eqn_matches_op(adjoint_eqn.params["jaxpr"].eqns[0], qp.RX)
 
 
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
@@ -481,7 +481,7 @@ class TestCtrlQfunc:
         assert qnode_eqn.primitive == qnode_prim
         ctrl_eqn = qnode_eqn.params["qfunc_jaxpr"].eqns[2]
         assert ctrl_eqn.primitive == ctrl_transform_prim
-        assert ctrl_eqn.params["jaxpr"].eqns[0].primitive == qp.RX._primitive
+        assert_eqn_matches_op(ctrl_eqn.params["jaxpr"].eqns[0], qp.RX)
 
     def test_pytree_input(self):
         """Test that ctrl can accept pytree inputs."""

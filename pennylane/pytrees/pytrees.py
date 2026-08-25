@@ -49,10 +49,16 @@ def flatten_dict(obj: dict):
     return obj.values(), tuple(obj.keys())
 
 
+def flatten_none(obj: None):  # pylint: disable=unused-argument
+    """Flatten a None value."""
+    return [], None
+
+
 flatten_registrations: dict[type, FlattenFn] = {
     list: flatten_list,
     tuple: flatten_tuple,
     dict: flatten_dict,
+    type(None): flatten_none,
 }
 
 
@@ -71,16 +77,23 @@ def unflatten_dict(data, metadata) -> dict:
     return dict(zip(metadata, data, strict=True))
 
 
+def unflatten_none(data, metadata) -> None:  # pylint: disable=unused-argument
+    """Unflatten a None value."""
+    return None
+
+
 unflatten_registrations: dict[type, UnflattenFn] = {
     list: unflatten_list,
     tuple: unflatten_tuple,
     dict: unflatten_dict,
+    type(None): unflatten_none,
 }
 
 type_to_typename: dict[type, str] = {
     list: "builtins.list",
     dict: "builtins.dict",
     tuple: "builtins.tuple",
+    type(None): "builtins.NoneType",
 }
 
 typename_to_type: dict[str, type] = {name: type_ for type_, name in type_to_typename.items()}
@@ -184,7 +197,7 @@ class PyTreeStructure:
     >>> op = qp.adjoint(qp.RX(0.1, 0))
     >>> data, structure = qp.pytrees.flatten(op)
     >>> structure
-    PyTreeStructure(AdjointOperation, (), (PyTreeStructure(RX, (Wires([0]), ()), (PyTreeStructure(),)),))
+    PyTreeStructure(Adjoint2, (), (PyTreeStructure(list, None, ()), PyTreeStructure(list, None, ()), PyTreeStructure(list, None, (PyTreeStructure(RX, (), (PyTreeStructure(list, None, (PyTreeStructure(),)), PyTreeStructure(list, None, (PyTreeStructure(Wires, (), (PyTreeStructure(),)),)), PyTreeStructure(list, None, ()))),))))
 
     A leaf is defined as just a ``PyTreeStructure`` with ``type_=None``.
     """

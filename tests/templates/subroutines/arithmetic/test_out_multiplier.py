@@ -33,7 +33,6 @@ from pennylane.typing import Wire
 
 
 class TestBuildingBlocks:
-
     @pytest.mark.parametrize(
         "num_x_wires, num_y_wires, num_work_wires",
         [(1, 1, 0), (1, 1, 1), (2, 1, 3), (4, 1, 0), (2, 2, 1), (2, 4, 8)],
@@ -49,8 +48,10 @@ class TestBuildingBlocks:
         @qp.set_shots(10)
         @qp.qnode(qp.device("default.qubit"))
         def node(x, y):
-            qp.BasisEmbedding(x, x_wires)
-            qp.BasisEmbedding(y, y_wires)
+            x_bin = qp.math.int_to_binary(x, len(x_wires))
+            y_bin = qp.math.int_to_binary(y, len(y_wires))
+            qp.BasisEmbedding(x_bin, x_wires)
+            qp.BasisEmbedding(y_bin, y_wires)
             _add_plus_one(x_wires, y_wires, work_wires)
             if work_wires:
                 return (

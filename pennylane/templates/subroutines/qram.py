@@ -20,22 +20,11 @@ from dataclasses import dataclass
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.ops import (
-    CNOT,
-    CSWAP,
-    RY,
-    SWAP,
-    BasisState,
-    Hadamard,
-    PauliX,
-    PauliZ,
-    adjoint,
-    cond,
-    ctrl,
-)
+from pennylane.decomposition import add_decomps, register_resources
+from pennylane.ops import CNOT, CSWAP, RY, SWAP, Hadamard, PauliX, PauliZ, adjoint, cond, ctrl
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-from pennylane.typing import TensorLike, Wire
+from pennylane.ops.qubit import BasisState
+from pennylane.typing import Bool, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=consider-using-generator
@@ -177,7 +166,8 @@ class BBQRAM(Operation):  # pylint: disable=too-many-instance-attributes
         @qp.qnode(dev)
         def bb_quantum():
             # prepare an address, e.g., |10> (index 2)
-            qp.BasisState(2, wires=reg["control"])
+            two_bin = qp.math.int_to_binary(2, len(reg["control"]))
+            qp.BasisState(two_bin, wires=reg["control"])
 
             qp.BBQRAM(
                 bitstrings,
@@ -456,7 +446,8 @@ class HybridQRAM(Operation):
         @qp.qnode(dev)
         def hybrid_qram():
             # prepare an address, e.g., |010> (index 2)
-            qp.BasisState(2, wires=reg["control"])
+            two_bin = qp.math.int_to_binary(2, len(reg["control"]))
+            qp.BasisState(two_bin, wires=reg["control"])
 
             qp.HybridQRAM(
                 bitstrings,
@@ -866,7 +857,8 @@ class SelectOnlyQRAM(Operation):
         @qp.qnode(dev)
         def select_only_qram():
             # prepare an address, e.g., |010> (index 2)
-            qp.BasisState(2, wires=reg["control"])
+            two_bin = qp.math.int_to_binary(2, len(reg["control"]))
+            qp.BasisState(two_bin, wires=reg["control"])
 
             qp.SelectOnlyQRAM(
                 bitstrings,
@@ -975,7 +967,7 @@ def _select_only_qram_resources(
     n_total = num_control_wires + num_select_wires
 
     if select_value is not None and num_select_wires > 0:
-        resources[resource_rep(BasisState, num_wires=num_select_wires)] += 1
+        resources[BasisState(Bool[num_select_wires], Wire[num_select_wires])] += 1
 
     for addr in range(2 ** (num_select_wires + num_control_wires)):
         if (
@@ -1009,7 +1001,7 @@ def _select_only_qram_decomposition(
     n_total = num_select + len(control_wires)
 
     if select_value is not None and num_select > 0:
-        BasisState(select_value, wires=select_wires)
+        BasisState(math.int_to_binary(select_value, num_select), wires=select_wires)
 
     # Loop over all addresses (0 .. 2^(num_select+num_controls)-1)
     for addr, bits in enumerate(bitstrings):

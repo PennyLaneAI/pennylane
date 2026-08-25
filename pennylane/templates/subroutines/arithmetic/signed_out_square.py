@@ -23,7 +23,7 @@ from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.ops import BasisState, X
 from pennylane.templates.subroutines.arithmetic import OutSquare, SemiAdder
-from pennylane.typing import Wire
+from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .semi_adder import _controlled_semi_adder, _controlled_semi_adder_resource
@@ -89,9 +89,9 @@ class SignedOutSquare(Operation):
             # - Flip 4's bit if sign bit=0 (=> superposition of -8 and 4)
             qp.ctrl(qp.X(x_wires[1]), x_wires[0], control_values=[0])
             # - Add 3 (x_wires[2:] are zeroed, can just do bit flips) => superposition of -5 and 7
-            qp.BasisEmbedding(3, wires=x_wires[2:])
+            qp.BasisEmbedding(qp.math.int_to_binary(3, len(x_wires[2:])), wires=x_wires[2:])
             # Prepare initial state on output wires
-            qp.BasisEmbedding(5, wires=output_wires)
+            qp.BasisEmbedding(qp.math.int_to_binary(5, len(output_wires)), wires=output_wires)
             # Signed square
             qp.SignedOutSquare(x_wires, output_wires, work_wires)
             return qp.counts(wires=output_wires)
@@ -307,7 +307,7 @@ def _c_subtract_then_add_one_resources(n, m, num_work_wires, output_wires_zeroed
 
     # Bit flips on input register
     if n - 1 > 1:
-        basis_rep = resource_rep(BasisState, num_wires=n - 2)
+        basis_rep = BasisState(Bool[n - 2], Wire[n - 2])
         cadd_resources[basis_rep] = cadd_resources.get(basis_rep, 0) + 2
 
     # Bit flips on output and work registers

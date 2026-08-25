@@ -36,7 +36,7 @@ from pennylane.ops import (
 )
 from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.ops.op_math.controlled2 import ControlledOp2
-from pennylane.ops.op_math.symbolicop2 import SymbolicOp2
+from pennylane.ops.op_math.pow2 import Pow2
 from pennylane.templates.embeddings import AngleEmbedding
 from pennylane.templates.subroutines import (
     QSVT,
@@ -223,15 +223,6 @@ def bind_new_parameters_symbolic_op(op: SymbolicOp, params: Sequence[TensorLike]
 
 
 @bind_new_parameters.register
-def bind_new_parameters_symbolic_op2(op: SymbolicOp2, params: Sequence[TensorLike]):
-    # Copy op.arguments so we don't pop "base" from it
-    kwargs = dict(op.arguments)
-    _ = kwargs.pop("base")
-    new_base = bind_new_parameters(op.base, params)
-    return op.__class__(new_base, **kwargs)
-
-
-@bind_new_parameters.register
 def bind_new_parameters_controlled_sequence(op: ControlledSequence, params: Sequence[TensorLike]):
     new_base = bind_new_parameters(op.base, params)
     return op.__class__(new_base, control=op.control)
@@ -347,6 +338,11 @@ def bind_new_parameters_pow(op: Pow, params: Sequence[TensorLike]):
     # signature results in a call to `Pow.__new__` which doesn't raise an
     # error but does return an unusable object.
     return Pow(bind_new_parameters(op.base, params), op.scalar)
+
+
+@bind_new_parameters.register
+def bind_new_parameters_pow2(op: Pow2, params: Sequence[TensorLike]):
+    return Pow2(bind_new_parameters(op.base, params), z=op.z)
 
 
 @bind_new_parameters.register

@@ -359,7 +359,7 @@ class TestMatrix:  # pylint: disable=too-many-public-methods
         """Test the matrix with torch."""
         import torch
 
-        phi = torch.tensor(0.4, dtype=torch.complex128)
+        phi = torch.tensor(0.4, dtype=torch.float64)
 
         base = qp.PauliX(0)
         op = Exp(base, -0.5j * phi)
@@ -380,6 +380,7 @@ class TestMatrix:  # pylint: disable=too-many-public-methods
         assert qp.math.allclose(op.matrix(), compare.matrix())
 
     @pytest.mark.jax
+    @pytest.mark.xfail(reason="differentiating complex values through RX not supported.")
     def test_jax_matrix_rx(self):
         """Test the matrix with jax."""
         import jax

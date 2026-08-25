@@ -309,6 +309,14 @@ Other useful templates which do not belong to the previous categories can be fou
   :figure: _static/templates/subroutines/trotter_product.png
 
 .. gallery-item::
+  :description: :doc:`TrotterCDF <../code/api/pennylane.TrotterCDF>`
+  :figure: _static/templates/subroutines/trotter_product.png
+
+.. gallery-item::
+  :description: :doc:`TrotterCGF <../code/api/pennylane.TrotterCGF>`
+  :figure: _static/templates/subroutines/trotter_product.png
+
+.. gallery-item::
   :description: :doc:`Permute <../code/api/pennylane.Permute>`
   :figure: _static/templates/subroutines/permute.png
 

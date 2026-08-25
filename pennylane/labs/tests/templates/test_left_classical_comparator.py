@@ -63,13 +63,13 @@ class TestLeftClassicalComparator:
 
         @qp.qnode(qp.device("lightning.qubit", wires=range(13)), shots=1)
         def circuit(x_wires, L):
-            qp.BasisState(x, wires=x_wires)
+            qp.BasisState(qp.math.int_to_binary(x, len(x_wires)), wires=x_wires)
             LeftClassicalComparator(x_wires, L, target_wire, work_wires, comparator)
             qp.CNOT([11, 12])
             qp.adjoint(
                 lambda: LeftClassicalComparator(x_wires, L, target_wire, work_wires, comparator)
             )()
-            qp.BasisState(x, wires=x_wires)
+            qp.BasisState(qp.math.int_to_binary(x, len(x_wires)), wires=x_wires)
             return qp.sample(wires=[12]), qp.sample(wires=work_wires), qp.sample(wires=x_wires)
 
         if qjit:
@@ -188,7 +188,7 @@ class TestLeftClassicalComparator:
 
         @qp.qnode(dev)
         def circuit(x):
-            qp.BasisState(x, wires=x_wires)
+            qp.BasisState(qp.math.int_to_binary(x, len(x_wires)), wires=x_wires)
             LeftClassicalComparator(x_wires, L, target_wire, work_wires, comparator)
             return qp.probs(wires=[target_wire])
 
