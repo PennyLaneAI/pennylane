@@ -46,7 +46,6 @@ from pennylane.exceptions import (
     SparseMatrixUndefinedError,
 )
 from pennylane.ops.op_math import adjoint
-from pennylane.queuing import QueuingManager
 
 from .adjoint import Adjoint
 from .adjoint2 import Adjoint2
@@ -410,7 +409,6 @@ def pow_rotation(base, z):
 
 
 @list_decomps.register
-@QueuingManager.stop_recording()
 def _list_pow_decomps(op: Pow2) -> DecompCollection:
     abs_op = abstractify(op)
 
