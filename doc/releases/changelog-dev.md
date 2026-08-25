@@ -2,7 +2,7 @@
 
 <h3>New features since last release</h3>
 
-* Two new numeric Hamiltonians have been added called `:class:`~pennylane.CDFHamiltonian` (based on `arXiv:2506.15784, Sec. III A <https://arxiv.org/abs/2506.15784>`) and `:class:`~pennylane.CGFHamiltonian` (based on `arXiv:2508.11865, Sec. III C <https://arxiv.org/abs/2508.11865>`), which define compressed double-factorized (CDF) and Christiansen greedy-fragmentation Hamiltonians, respectively. These Hamiltonians can be defined
+* Two new numeric Hamiltonians have been added called `:class:`pennylane.CDFHamiltonian` (based on `arXiv:2506.15784, Sec. III A <https://arxiv.org/abs/2506.15784>`) and `:class:`pennylane.CGFHamiltonian` (based on `arXiv:2508.11865, Sec. III C <https://arxiv.org/abs/2508.11865>`), which define compressed double-factorized (CDF) and Christiansen greedy-fragmentation Hamiltonians, respectively. These Hamiltonians can be defined
   with both concrete numeric data or abstract data (using ``qp.typing.Float[...]``).
   [(#10048)](https://github.com/PennyLaneAI/pennylane/pull/10048)
 
@@ -15,16 +15,16 @@
       core_tensors=np.random.rand(L + 1, M, M, N, N),
       leaf_tensors=np.random.rand(L + 1, M, N, N),
       nuc_constant=0.5,
-      )
+  )
   ```
 
-  The same Hamiltonian can be described abstractly, which is what the compile-time typing and
-  resource-analysis paths consume:
+  The same Hamiltonian can be described with abstract data for the purposes of fast, low-fidelity
+  resource-estimation workflows where only shape information is available:
 
-  ```python
-  import pennylane as qp
-  from pennylane.typing import Float
-  qp.CGFHamiltonian(Float[L + 1, M, M, N, N], Float[L + 1, M, N, N]).leaf_tensors
+  ```pycon
+  >>> from pennylane.typing import Float
+  >>> qp.CGFHamiltonian(Float[L + 1, M, M, N, N], Float[L + 1, M, N, N]).leaf_tensors
+  AbstractArray((3, 2, 3, 3), float64, weak_type=True)
   ```
 
 * Added :func:`~pennylane.backline.triton_decoder` and
@@ -605,7 +605,7 @@
   giving order-of-magnitude speedups for sparse and structured operators.
   [(#9728)](https://github.com/PennyLaneAI/pennylane/pull/9728)
 
-* Added the ``MultiX`` template which conditionally applies ``PauliX`` gates across target wires according 
+* Added the ``MultiX`` template which conditionally applies ``PauliX`` gates across target wires according
   to a bitstring array.
   [(#10033)](https://github.com/PennyLaneAI/pennylane/pull/10033)
 
