@@ -17,10 +17,10 @@ This submodule defines a base class for composite operations.
 """
 
 import abc
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 # pylint: disable=invalid-sequence-index
-from typing import Sequence, override
+from typing import override
 
 import pennylane as qp
 from pennylane import math
