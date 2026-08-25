@@ -747,7 +747,7 @@ class TmpPauliRot(PauliRot):
 
 
 # pylint: disable-next=unused-argument
-def _tmp_paulirot_decomp_resources(theta: TensorLike, wires: WiresLike, pauli_word: str, **__):
+def _tmp_paulirot_decomp_resources(theta: TensorLike, wires: WiresLike, pauli_word: str):
     return {qp.PauliRot(Float, pauli_word=pauli_word, wires=Wire[len(pauli_word)]): 1}
 
 

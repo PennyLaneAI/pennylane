@@ -1037,7 +1037,6 @@ def _sos_state_prep_resources(  # pylint: disable=unused-argument,too-many-argum
     identification_wires=(),
     qrom_work_wires=(),
     mcx_cache_wires=(),
-    **_,
 ):
     """Compute the resources for _sos_state_prep. It is an upper bound due to
     conditionally applied CNOT and X gates."""
