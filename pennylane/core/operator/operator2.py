@@ -24,7 +24,6 @@ from functools import partial
 from importlib.util import find_spec
 from inspect import BoundArguments, Signature, signature
 from numbers import Number
-from types import NoneType
 from typing import TYPE_CHECKING, Any, ClassVar, TypeAlias
 
 import numpy as np
@@ -446,8 +445,8 @@ class Operator2(metaclass=OperatorMeta):
     @property
     def is_abstract(self) -> bool:
         """Whether this operator contains only abstract data."""
-        leaves, _ = flatten(self)
-        return all(isinstance(l, (AbstractArray, AbstractWires, NoneType)) for l in leaves)
+        leaves, _ = flatten(self, is_leaf=lambda l: isinstance(l, Wires))
+        return all(isinstance(l, (AbstractArray, AbstractWires)) for l in leaves)
 
     @property
     def arguments(self) -> dict[str, Any]:
