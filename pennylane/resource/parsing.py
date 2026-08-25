@@ -29,10 +29,13 @@ from typing import Any
 from .expression import Expression
 from .resource import PBCSpecsResources, SpecsResources, num_to_letters
 
+# Tolerance (in number of decimal digits) for floating point precision issues
+_FLOAT_PRECISION_PLACES = 12
 
-def ceil(value: int | float | Expression) -> int | Expression:
+
+def _safe_ceil(value: int | float | Expression) -> int | Expression:
     """Rounds a value up to the nearest integer. Accounts for precision issues."""
-    return math.ceil(round(value, 12))  # Tolerance of 12 decimal places
+    return math.ceil(round(value, _FLOAT_PRECISION_PLACES))
 
 
 def _generate_display_name_for_symbolic_var(var: str, display_names: dict[str, str]) -> str:
@@ -243,20 +246,20 @@ def _convert_to_subclass(res: SpecsResources) -> SpecsResources:
             a subclass type if the original object contained the appropriate extra data.
     """
     kwargs = {
-        "counts": {op: ceil(count) for op, count in res.counts.items()},
+        "counts": {op: _safe_ceil(count) for op, count in res.counts.items()},
         "measurement_processes": {
-            meas: ceil(count) for meas, count in res.measurement_processes.items()
+            meas: _safe_ceil(count) for meas, count in res.measurement_processes.items()
         },
-        "num_wires": ceil(res.num_wires) if res.num_wires is not None else None,
-        "circuit_depth": ceil(res.circuit_depth) if res.circuit_depth is not None else None,
+        "num_wires": _safe_ceil(res.num_wires) if res.num_wires is not None else None,
+        "circuit_depth": _safe_ceil(res.circuit_depth) if res.circuit_depth is not None else None,
     }
     # Copy the extra fields to avoid mutating the original object
     extra = copy.deepcopy(res.extra)
 
     if "pbc_depth" in extra:
         pbc_depth = extra.pop("pbc_depth")
-        kwargs["any_commuting_depth"] = ceil(pbc_depth.pop("any_commuting_depth"))
-        kwargs["qubit_disjoint_depth"] = ceil(pbc_depth.pop("qubit_disjoint_depth"))
+        kwargs["any_commuting_depth"] = _safe_ceil(pbc_depth.pop("any_commuting_depth"))
+        kwargs["qubit_disjoint_depth"] = _safe_ceil(pbc_depth.pop("qubit_disjoint_depth"))
         # Pylint gets confused by the dynamic updates to kwargs here
         # pylint: disable=missing-kwoa
         return PBCSpecsResources(
