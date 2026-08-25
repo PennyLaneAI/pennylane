@@ -1382,10 +1382,8 @@ def _setup_inputs_mcx(
         raise ValueError(f"MultiControlledX acts on at least 2 wires, {len(wires)} given.")
 
     work_wires = Wires([] if work_wires is None else work_wires)
-    validate_no_wire_overlaps(
-        (wires, work_wires),
-        "work_wires must not overlap with the operator wires.",
-    )
+    wire_args = {"wires": wires, "work_wires": work_wires}
+    validate_no_wire_overlaps(wire_args)
 
     # Validate and canonicalize control values
     control_values = _setup_control_values(control_values, len(wires) - 1)

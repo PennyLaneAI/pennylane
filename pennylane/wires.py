@@ -847,9 +847,9 @@ def is_abstract_or_traced(v):
     return any(math.is_abstract(w) for w in v)
 
 
-def validate_no_wire_overlaps(wire_args, error_msg):
+def validate_no_wire_overlaps(wire_args: dict):
     """Validate that the given wires do not overlap."""
-    concrete_wires = [w for w in wire_args if not is_abstract_or_traced(w)]
-    for wire_arg1, wire_arg2 in combinations(concrete_wires, r=2):
-        if Wires.shared_wires([wire_arg1, wire_arg2]):
-            raise ValueError(error_msg)
+    concrete_wire_args = {n: w for n, w in wire_args.items() if not is_abstract_or_traced(w)}
+    for n1, n2 in combinations(concrete_wire_args, r=2):
+        if Wires.shared_wires([concrete_wire_args[n1], concrete_wire_args[n2]]):
+            raise ValueError(f"{n1} and {n2} must not overlap")

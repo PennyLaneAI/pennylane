@@ -230,10 +230,12 @@ class QROM(Operator2):
         if isinstance(bitstrings, (list, tuple)):
             bitstrings = math.array(bitstrings)
 
-        validate_no_wire_overlaps(
-            (control_wires, target_wires, work_wires),
-            "control_wires, work_wires, and target_wires must not overlap.",
-        )
+        wire_args = {
+            "control_wires": control_wires,
+            "target_wires": target_wires,
+            "work_wires": work_wires,
+        }
+        validate_no_wire_overlaps(wire_args)
 
         if 2 ** len(control_wires) < bitstrings.shape[0]:
             raise ValueError(

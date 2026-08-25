@@ -235,10 +235,8 @@ class SemiAdder(Operator2):
         y_wires = Wires(y_wires)
         work_wires = Wires(work_wires if work_wires is not None else [])
 
-        validate_no_wire_overlaps(
-            (x_wires, y_wires, work_wires),
-            "x_wires, y_wires, work_wires must not overlap",
-        )
+        wire_args = {"x_wires": x_wires, "y_wires": y_wires, "work_wires": work_wires}
+        validate_no_wire_overlaps(wire_args)
 
         super().__init__(x_wires=x_wires, y_wires=y_wires, work_wires=work_wires)
 

@@ -162,10 +162,12 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         control_wires = Wires(control_wires)
         work_wires = Wires([] if work_wires is None else work_wires)
 
-        validate_no_wire_overlaps(
-            (base.wires, control_wires, work_wires),
-            "control_wires, work_wires, and the base operator must not overlap",
-        )
+        wire_args = {
+            "base.wires": base.wires,
+            "control_wires": control_wires,
+            "work_wires": work_wires,
+        }
+        validate_no_wire_overlaps(wire_args)
         _validate_work_wire_type(work_wire_type)
         control_values = _setup_control_values(control_values, len(control_wires))
 
