@@ -16,8 +16,7 @@
 
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
-from pennylane.ops import CNOT, RZ, IsingZZ, cond
-from pennylane.ops.op_math import ctrl
+from pennylane.ops import CNOT, RZ, cond
 
 # pylint: disable=too-many-arguments
 
@@ -49,20 +48,6 @@ def _emit_one_body_rz(angle, target_wire, control_wires, double_phase):
     CNOT([control_wire, target_wire])
     RZ(-angle / 2, target_wire)
     CNOT([control_wire, target_wire])
-
-
-def _emit_two_body_isingzz(angle, wire_a, wire_b, control_wires):
-    """Emit the two-site ``IsingZZ``, bare or genuinely controlled.
-
-    Not used for double-phase (see ``_apply_two_body_diagonal``). PennyLane's registered
-    ``C(IsingZZ)`` decomposition already controls only the inner ``RZ`` (not the two conjugating
-    ``CNOT``'s) for any number of control wires -- see the circuit-identity derivation and
-    gate-level check in ``tests/ops/qubit/test_parametric_ops.py``.
-    """
-    if len(control_wires) == 0:
-        IsingZZ(angle, [wire_a, wire_b])
-    else:
-        ctrl(IsingZZ(angle, [wire_a, wire_b]), control=control_wires)
 
 
 def _run_trotter_steps(

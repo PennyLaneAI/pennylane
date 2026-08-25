@@ -22,12 +22,13 @@ from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.ops import CNOT, RZ, GlobalPhase, IsingZZ, PhaseShift
+from pennylane.ops.op_math import ctrl
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.templates.subroutines.qchem.basis_rotation import BasisRotation
 from pennylane.typing import Complex, Wire
 
-from ._trotter_utils import _emit_one_body_rz, _emit_two_body_isingzz, _run_trotter_steps
+from ._trotter_utils import _emit_one_body_rz, _run_trotter_steps
 
 # pylint: disable=too-many-arguments, no-value-for-parameter, unused-argument
 
@@ -429,10 +430,10 @@ def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, dou
     """Apply the two-body ``IsingZZ`` layer (base / double-phase / genuine controlled).
 
     Genuine control and double-phase are mutually exclusive constructions for a controlled
-    ``IsingZZ``, chosen once here via ``is_double_phase``: genuine control sandwiches each
-    ``IsingZZ`` individually (inside :func:`~._emit_two_body_isingzz`); double-phase instead
-    shares *one* ``CNOT`` sandwich across every term touching a given ``wire_lp``, which is
-    cheaper since ``IsingZZ`` itself stays uncontrolled either way.
+    ``IsingZZ``, chosen once here via ``is_double_phase``: genuine control uses
+    ``ctrl(IsingZZ(...))`` on each term; double-phase instead shares *one* ``CNOT`` sandwich
+    across every term touching a given ``wire_lp``, which is cheaper since ``IsingZZ`` itself
+    stays uncontrolled either way.
     """
     num_modes = Z.shape[0]
     n_states = Z.shape[2]
@@ -466,7 +467,12 @@ def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, dou
                     @for_loop(n_states)
                     def _q_loop(q, wire_lp=wire_lp, m=m):
                         wire_mq = wires[m * n_states + q]
-                        _emit_two_body_isingzz(_angle(q), wire_lp, wire_mq, control_wires)
+                        angle = _angle(q)
+                        zz_wires = [wire_lp, wire_mq]
+                        if len(control_wires) == 0:
+                            IsingZZ(angle, zz_wires)
+                        else:
+                            ctrl(IsingZZ(angle, zz_wires), control=control_wires)
 
                     _q_loop()
 
@@ -563,9 +569,9 @@ def _cgf_resource_counts(num_trotter_steps, hamiltonian, has_control, double_pha
         resources[RZ] += 1
     else:
         # Genuine controlled: each RZ -> controlled-RZ (2 CNOT + 2 RZ, from ``_emit_one_body_rz``);
-        # each IsingZZ -> a genuinely controlled ``IsingZZ`` (from ``_emit_two_body_isingzz``,
-        # which lets PennyLane's registered ``C(IsingZZ)`` decomposition handle it); the global
-        # phase becomes a PhaseShift on the control wire. There are no bare IsingZZ gates.
+        # each IsingZZ -> ``ctrl(IsingZZ(...))`` (PennyLane's ``C(IsingZZ)`` decomposition handles
+        # it); the global phase becomes a PhaseShift on the control wire. There are no bare
+        # IsingZZ gates.
         resources[RZ] += 2 * num_onebody_rotations
         resources[CNOT] += 2 * num_onebody_rotations
         resources[_ctrl_abstract(IsingZZ, Wire[1])] += num_twobody_rotations
