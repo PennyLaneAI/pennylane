@@ -185,16 +185,7 @@ class TestValidity:  # pylint: disable=too-few-public-methods
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_assert_valid(self):
         """Test that ``Prod2`` is defined correctly."""
-        # Due to incompatibilities with program capture + assert_valid + Operator2,
-        # we skip some checks when program capture is enabled
-        if qp.capture.enabled():
-            kwargs = {"skip_wire_mapping": True, "skip_new_decomp": True}
-        else:
-            kwargs = {"skip_capture": True}
-
-        qp.ops.functions.assert_valid(
-            Prod2([qp.RZ(0.5, 0), qp.Z(1)]), skip_differentiation=True, **kwargs
-        )
+        qp.ops.functions.assert_valid(Prod2([qp.RX(0.5, 0), qp.Z(1)]), skip_differentiation=True)
 
 
 class TestIntegration:
