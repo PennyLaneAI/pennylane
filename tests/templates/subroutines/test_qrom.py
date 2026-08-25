@@ -355,7 +355,7 @@ class TestQROM:
         """Tests the decomposition rule implemented with the new system."""
         rng = np.random.default_rng(seed)
         if rule == qp.list_decomps(qp.QROM)[0] and qp.capture.enabled():
-            pytest.xfail("Select does not de-queue its inputs correctly with capture enabled.")
+            pytest.xfail("Select does not work correctly with capture enabled yet.")
         bitstrings = rng.integers(0, 2, size=(num_bitstrings, len(target_wires)))
         op = qp.QROM(
             bitstrings,

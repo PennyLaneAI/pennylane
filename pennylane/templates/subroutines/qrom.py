@@ -17,7 +17,7 @@ This submodule contains the template for QROM.
 
 from collections import Counter
 from collections.abc import Sequence
-from functools import reduce
+from functools import partial, reduce
 
 import numpy as np
 
@@ -52,8 +52,9 @@ def _multi_swap(wires1, wires2):
 def _new_ops(depth, target_wires, capacity, swap_wires, bitstrings):
 
     with QueuingManager.stop_recording():
-        ops_new = [BasisState(bits, wires=target_wires) for bits in bitstrings]
-        ops_identity_new = ops_new + [qp_ops.I(target_wires)] * (capacity - len(ops_new))
+        with capture.pause():
+            ops_new = [BasisState(bits, wires=target_wires) for bits in bitstrings]
+            ops_identity_new = ops_new + [qp_ops.I(target_wires)] * (capacity - len(ops_new))
 
     n_columns = int(np.ceil(bitstrings.shape[0] / depth))
     num_targets = len(target_wires)
@@ -448,7 +449,9 @@ def _qrom_decomposition(
         for _ in range(2):
             for w in target_wires:
                 qp_ops.Hadamard(wires=w)
-            qp_ops.adjoint(_swap_ops, lazy=False)(control_wires, depth, swap_wires, target_wires)
+            qp_ops.adjoint(
+                partial(_swap_ops, control_wires, depth, swap_wires, target_wires), lazy=False
+            )()
             _select_ops(
                 control_wires, depth, target_wires, swap_wires, bitstrings, select_work_wires
             )
