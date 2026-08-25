@@ -324,7 +324,7 @@ class TrotterCDF(Operator2):
         # placeholders (which are neither list/tuple nor real arrays) are left untouched and skip
         # the ``ndim`` validation below, so the operator can be reconstructed during capture.
 
-        if type(hamiltonian) != CDFHamiltonian:
+        if not isinstance(hamiltonian, CDFHamiltonian):
             raise ValueError(
                 "TrotterCDF expects a CDFHamiltonian for the hamiltonian argument. Got "
                 f"{type(hamiltonian)}."

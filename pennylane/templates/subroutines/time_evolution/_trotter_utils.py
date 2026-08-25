@@ -16,7 +16,6 @@
 
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
-from pennylane.numeric_hamiltonians import CDFHamiltonian
 from pennylane.ops import CNOT, RZ, IsingZZ, cond
 
 # pylint: disable=too-many-arguments

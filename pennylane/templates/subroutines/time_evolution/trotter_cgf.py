@@ -335,14 +335,21 @@ class TrotterCGF(Operator2):
     # control flow) is treated as `static_argnames` instead.
     static_argnames = ("num_trotter_steps", "double_phase")
 
-    def __init__(self, evolution_time, num_trotter_steps, hamiltonian, wires, double_phase=False):
+    def __init__(
+        self,
+        evolution_time: int | AbstractArray,
+        num_trotter_steps: float | AbstractArray,
+        hamiltonian: CGFHamiltonian,
+        wires: WiresLike | AbstractWires,
+        double_phase=False,
+    ):
         # ``hamiltonian`` is a hybrid argument: its array-like leaves must be arrays (or scalars)
         # to be captured and lowered correctly. Cast only list/tuple inputs, leaving array inputs
         # as-is so the hybrid argument survives the capture round-trip unchanged. Abstract capture
         # placeholders (which are neither list/tuple nor real arrays) are left untouched and skip
         # the ``ndim`` validation below, so the operator can be reconstructed during capture.
 
-        if type(hamiltonian) != CGFHamiltonian:
+        if not isinstance(hamiltonian, CGFHamiltonian):
             raise ValueError(
                 "TrotterCDF expects a CGFHamiltonian for the hamiltonian argument. Got "
                 f"{type(hamiltonian)}."
