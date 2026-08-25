@@ -194,19 +194,19 @@ class NumericHamiltonian:
             object.__setattr__(obj, name, value)
         return obj
 
-    def _shape_key(self):
+    def _hash_key(self):
         return tuple((_shape_of(t), _dtype_of(t)) for t in self.tensors)
 
     def __hash__(self):
         # Deliberately keyed on shapes rather than values: this is the information that
         # matters for compilation and resource analysis, and it makes an abstract
         # Hamiltonian hash equal to the concrete one it was derived from.
-        return hash((type(self).__name__, self._shape_key()))
+        return hash((type(self).__name__, self._hash_key()))
 
     def __eq__(self, other):
         if type(other) is not type(self):
             return NotImplemented
-        if self._shape_key() != other._shape_key():
+        if self._hash_key() != other._hash_key():
             return False
         if self.is_abstract or other.is_abstract:
             # Shapes and dtypes already match and there are no values to compare.
@@ -231,7 +231,7 @@ class CDFHamiltonian(NumericHamiltonian):
 
     The form of this Hamiltonian is described in
     `arXiv:2506.15784, Sec. III A <https://arxiv.org/abs/2506.15784>`__.
-    Briefly, this Hamiltonian form makes approximations to the
+    Briefly, this Hamiltonian form makes approximations to the
     two-body term in an electronic Hamiltonian in the molecular
     orbital basis via a sum of :math:`L` fragments, each parameterized
     by orthogonal rotation matrices (`leaf_tensors`) and a diagonal
@@ -266,20 +266,10 @@ class CDFHamiltonian(NumericHamiltonian):
 
     The numeric data is directly accessible as follows:
 
-    >>> ham.core_tensors
-    array([[[0.64802025 0.95386448 0.11136268]
-            [0.88427299 0.58857237 0.53700801]
-            [0.35173898 0.12138759 0.47111399]]
-    <BLANKLINE>
-            [[0.68631588 0.84076158 0.36662062]
-            [0.19717996 0.93036626 0.11301994]
-            [0.26807399 0.95233277 0.82618421]]
-    <BLANKLINE>
-            [[0.57044606 0.45226683 0.05633304]
-            [0.52556644 0.89509444 0.61496006]
-            [0.46116526 0.00961253 0.76209455]]])
     >>> ham.core_tensors.shape
     (3, 3, 3)
+    >>> ham.nuc_constant
+    array(0.5)
 
     The same Hamiltonian can be described with abstract data for the purposes of fast, low-fidelity
     resource-estimation workflows where only shape information is available:
@@ -308,19 +298,19 @@ class CGFHamiltonian(NumericHamiltonian):
     The form of this Hamiltonian is described in
     `arXiv:2508.11865, Sec. III C <https://arxiv.org/abs/2508.11865>`__.
     Briefly, this Hamiltonian form makes approximations to the two-mode
-    terms of a vibrational Hamiltonian in the vibrational self-consistent 
-    field (VSCF)-rotated modal basis via a sum of :math:`L` fragments, 
-    each parameterized by orthogonal rotation matrices (`leaf_tensors`) 
+    terms of a vibrational Hamiltonian in the vibrational self-consistent
+    field (VSCF)-rotated modal basis via a sum of :math:`L` fragments,
+    each parameterized by orthogonal rotation matrices (`leaf_tensors`)
     and a diagonal interaction core (`core_tensors`).
 
     Args:
         core_tensors (TensorLike | AbstractArray): The core tensors of shape
             ``(L+1, M, M, N, N)``. Index ``0`` along the leading dimension represents
-            the one-body core tensor, while indices ``1`` through ``L`` represent the 
+            the one-body core tensor, while indices ``1`` through ``L`` represent the
             two-mode interaction cores.
         leaf_tensors (TensorLike | AbstractArray): The leaf tensors of shape
-            ``(L+1, M, N, N)``. Index ``0`` along the leading dimension represents 
-            the one-body leaf tensor, while indices ``1`` through ``L`` represent the 
+            ``(L+1, M, N, N)``. Index ``0`` along the leading dimension represents
+            the one-body leaf tensor, while indices ``1`` through ``L`` represent the
             two-mode rotation leaves.
         nuc_constant (float | AbstractArray | None): the nuclear constant energy offset.
             Defaults to ``0.0``.
@@ -346,16 +336,16 @@ class CGFHamiltonian(NumericHamiltonian):
 
     The numeric data is directly accessible as follows:
 
-    >>> ham.core_tensors # doctest: +SKIP
-    [[[[[0.52647802 0.6745666  0.75871195]
-        [0.35488798 0.57475679 0.03297282]
-        [0.1474766  0.98545009 0.46460839]]
-    ...
-    [[0.44653284 0.59616813 0.38200794]
-        [0.82417981 0.10830979 0.02445802]
-        [0.00291485 0.50705334 0.01542304]]]]]
-    >>> ham.core_shape
+    >>> ham.core_tensors.shape
     (3, 2, 2, 3, 3)
+    >>> ham.leaf_tensors.shape
+    (3, 2, 3, 3)
+
+    Note that ``core_shape`` is the *symbolic* shape family shared by every instance of the
+    class, not the shape of this instance's data:
+
+    >>> ham.core_shape
+    ('L1', 'M', 'M', 'N', 'N')
 
     The same Hamiltonian can be described with abstract data for the purposes of fast, low-fidelity
     resource-estimation workflows where only shape information is available:

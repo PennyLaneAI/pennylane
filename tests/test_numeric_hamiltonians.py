@@ -27,7 +27,7 @@ from pennylane.typing import AbstractArray, Float
 L, M, N = 2, 2, 3
 
 
-def cdf_tensors(num_fragments=L, num_orbitals=N, seed=42):
+def cdf_tensors(seed, num_fragments=L, num_orbitals=N):
     """Concrete CDF tensor data: core and leaf both ``(L+1, N, N)``."""
     rng = np.random.default_rng(seed)
     shape = (num_fragments + 1, num_orbitals, num_orbitals)
@@ -38,7 +38,7 @@ def cdf_tensors(num_fragments=L, num_orbitals=N, seed=42):
     }
 
 
-def cgf_tensors(num_fragments=L, num_modes=M, num_modals=N, seed=42):
+def cgf_tensors(seed, num_fragments=L, num_modes=M, num_modals=N):
     """Concrete CGF tensor data: core ``(L+1, M, M, N, N)``, leaf ``(L+1, M, N, N)``."""
     rng = np.random.default_rng(seed)
     return {
@@ -79,19 +79,19 @@ class TestConcrete:
             ),
         ],
     )
-    def test_dimensions_derived_from_shapes(self, cls, data, expected):
+    def test_dimensions_derived_from_shapes(self, cls, data, expected, seed):
         """Test that the named dimensions are derived from the tensor shapes."""
-        ham = cls(**data())
+        ham = cls(**data(seed))
 
         assert ham.dimensions == expected
         for name, size in expected.items():
             assert getattr(ham, name) == size
         assert not ham.is_abstract
 
-    def test_direct_attribute_access(self):
+    def test_direct_attribute_access(self, seed):
         """Test that the numeric data is readable off the instance, and that the tensors
         are the positional arguments."""
-        data = cgf_tensors()
+        data = cgf_tensors(seed)
         ham = CGFHamiltonian(data["core_tensors"], data["leaf_tensors"], data["nuc_constant"])
 
         assert qp.math.allclose(ham.core_tensors, data["core_tensors"])
@@ -99,11 +99,11 @@ class TestConcrete:
         assert qp.math.allclose(ham.nuc_constant, data["nuc_constant"])
         assert ham.tensors == (ham.core_tensors, ham.leaf_tensors, ham.nuc_constant)
 
-    def test_nuc_constant_defaults_to_zero_array(self):
+    def test_nuc_constant_defaults_to_zero_array(self, seed):
         """Test that omitting ``nuc_constant`` gives a rank-0 array of zero. It is stored
         as an array so the pytree leaf has a stable shape and dtype, which matters when
         the Hamiltonian is used as a control-flow carry."""
-        data = cgf_tensors()
+        data = cgf_tensors(seed)
         del data["nuc_constant"]
         nuc = CGFHamiltonian(**data).nuc_constant
 
@@ -112,11 +112,11 @@ class TestConcrete:
         assert hasattr(nuc, "dtype")
 
     @pytest.mark.jax
-    def test_jax_arrays_accepted(self):
+    def test_jax_arrays_accepted(self, seed):
         """Test that jax arrays work as tensor data."""
         import jax
 
-        data = cgf_tensors()
+        data = cgf_tensors(seed)
         ham = CGFHamiltonian(
             jax.numpy.array(data["core_tensors"]),
             jax.numpy.array(data["leaf_tensors"]),
@@ -141,10 +141,10 @@ class TestConcrete:
         with pytest.raises(ValueError, match="'core_tensors' must have 5 dimensions"):
             CGFHamiltonian(np.zeros((L + 1, N, N)), np.zeros((L + 1, M, N, N)))
 
-    def test_cdf_and_cgf_ranks_are_distinguished(self):
+    def test_cdf_and_cgf_ranks_are_distinguished(self, seed):
         """Test that CGF-shaped data is rejected by CDF and vice versa: the class, not
         the rank, decides the representation."""
-        cgf, cdf = cgf_tensors(), cdf_tensors()
+        cgf, cdf = cgf_tensors(seed), cdf_tensors(seed)
 
         with pytest.raises(ValueError, match="must have 3 dimensions"):
             CDFHamiltonian(cgf["core_tensors"], cgf["leaf_tensors"])
@@ -166,9 +166,9 @@ class TestConcrete:
         with pytest.raises(ValueError, match=f"'{dimension}' must be at least 1"):
             CDFHamiltonian(np.zeros(shape), np.zeros(shape))
 
-    def test_non_scalar_nuc_constant(self):
+    def test_non_scalar_nuc_constant(self, seed):
         """Test that ``nuc_constant`` must be a scalar."""
-        data = cgf_tensors()
+        data = cgf_tensors(seed)
         data["nuc_constant"] = np.zeros(4)
 
         with pytest.raises(ValueError, match="'nuc_constant' must be a scalar"):
@@ -182,25 +182,25 @@ class TestConcrete:
     @pytest.mark.parametrize(
         "cls, data", [(CDFHamiltonian, cdf_tensors), (CGFHamiltonian, cgf_tensors)]
     )
-    def test_registered_with_pennylane_pytrees(self, cls, data):
+    def test_registered_with_pennylane_pytrees(self, cls, data, seed):
         """Test that both classes are registered with PennyLane's own pytree backend, not
         only with jax, so ``qp.pytrees.flatten`` sees them."""
         assert qp.pytrees.is_pytree(cls)
 
-        leaves, structure = qp.pytrees.flatten(cls(**data()))
+        leaves, structure = qp.pytrees.flatten(cls(**data(seed)))
 
         assert len(leaves) == 3
-        assert qp.pytrees.unflatten(leaves, structure) == cls(**data())
+        assert qp.pytrees.unflatten(leaves, structure) == cls(**data(seed))
 
     @pytest.mark.jax
     @pytest.mark.parametrize(
         "cls, data", [(CDFHamiltonian, cdf_tensors), (CGFHamiltonian, cgf_tensors)]
     )
-    def test_jax_roundtrip_preserves_values_and_structure(self, cls, data):
+    def test_jax_roundtrip_preserves_values_and_structure(self, cls, data, seed):
         """Test that a ``jax.tree_util`` round-trip preserves values and structure."""
         import jax
 
-        ham = cls(**data())
+        ham = cls(**data(seed))
         leaves, treedef = jax.tree_util.tree_flatten(ham)
         rebuilt = jax.tree_util.tree_unflatten(treedef, leaves)
 
@@ -211,18 +211,18 @@ class TestConcrete:
         assert rebuilt == ham
 
     @pytest.mark.jax
-    def test_derived_dimensions_survive_roundtrip(self):
+    def test_derived_dimensions_survive_roundtrip(self, seed):
         """Test that the dimensions travel in the treedef, since unflattening skips
         validation and cannot re-derive them."""
         import jax
 
-        ham = CGFHamiltonian(**cgf_tensors())
+        ham = CGFHamiltonian(**cgf_tensors(seed))
         leaves, treedef = jax.tree_util.tree_flatten(ham)
 
         assert jax.tree_util.tree_unflatten(treedef, leaves).dimensions == ham.dimensions
 
     @pytest.mark.jax
-    def test_traces_as_tracers(self):
+    def test_traces_as_tracers(self, seed):
         """Test that concrete data becomes tracers when passed as a runtime argument,
         while the shape metadata stays statically available."""
         import jax
@@ -235,7 +235,7 @@ class TestConcrete:
             seen["num_modes"] = h.num_modes
             return h.core_tensors.sum() + h.nuc_constant
 
-        jax.make_jaxpr(f)(CGFHamiltonian(**cgf_tensors()))
+        jax.make_jaxpr(f)(CGFHamiltonian(**cgf_tensors(seed)))
 
         assert qp.math.is_abstract(seen["core"])
         assert qp.math.is_abstract(seen["nuc"])
@@ -243,12 +243,12 @@ class TestConcrete:
         assert seen["num_modes"] == M
 
     @pytest.mark.jax
-    def test_constructed_from_tracers(self):
+    def test_constructed_from_tracers(self, seed):
         """Test that a Hamiltonian built inside a trace is concrete, not abstract: a
         tracer has a known shape and dtype."""
         import jax
 
-        data = cgf_tensors()
+        data = cgf_tensors(seed)
         seen = {}
 
         def f(core, leaf, nuc):
@@ -263,11 +263,11 @@ class TestConcrete:
         assert seen["dimensions"] == {"num_fragments": L, "num_modes": M, "num_modals": N}
 
     @pytest.mark.jax
-    def test_validation_applies_to_tracers(self):
+    def test_validation_applies_to_tracers(self, seed):
         """Test that shape validation still fires for traced data."""
         import jax
 
-        data = cgf_tensors()
+        data = cgf_tensors(seed)
 
         def f(core, leaf):
             return CGFHamiltonian(core, leaf).core_tensors.sum()
@@ -276,52 +276,54 @@ class TestConcrete:
             jax.make_jaxpr(f)(data["leaf_tensors"], data["leaf_tensors"])
 
     @pytest.mark.jax
-    def test_differently_shaped_hamiltonians_have_distinct_structures(self):
+    def test_differently_shaped_hamiltonians_have_distinct_structures(self, seed):
         """Test that the derived dimensions are part of the treedef, so differently
         shaped data does not silently share a structure, and hence a compiled
         signature."""
         import jax
 
-        _, tree_a = jax.tree_util.tree_flatten(CGFHamiltonian(**cgf_tensors()))
-        _, tree_b = jax.tree_util.tree_flatten(CGFHamiltonian(**cgf_tensors(num_fragments=L + 1)))
+        _, tree_a = jax.tree_util.tree_flatten(CGFHamiltonian(**cgf_tensors(seed)))
+        _, tree_b = jax.tree_util.tree_flatten(
+            CGFHamiltonian(**cgf_tensors(seed, num_fragments=L + 1))
+        )
 
         assert tree_a != tree_b
 
     @pytest.mark.jax
-    def test_cdf_and_cgf_structures_differ(self):
+    def test_cdf_and_cgf_structures_differ(self, seed):
         """Test that a CDF and a CGF payload are never conflated."""
         import jax
 
-        _, cdf_tree = jax.tree_util.tree_flatten(CDFHamiltonian(**cdf_tensors()))
-        _, cgf_tree = jax.tree_util.tree_flatten(CGFHamiltonian(**cgf_tensors()))
+        _, cdf_tree = jax.tree_util.tree_flatten(CDFHamiltonian(**cdf_tensors(seed)))
+        _, cgf_tree = jax.tree_util.tree_flatten(CGFHamiltonian(**cgf_tensors(seed)))
 
         assert cdf_tree != cgf_tree
 
-    def test_hashable_with_array_data(self):
+    def test_hashable_with_array_data(self, seed):
         """Test that a tensor-backed Hamiltonian is hashable despite holding arrays."""
-        assert isinstance(hash(CGFHamiltonian(**cgf_tensors())), int)
+        assert isinstance(hash(CGFHamiltonian(**cgf_tensors(seed))), int)
 
-    def test_hash_distinguishes_shapes(self):
+    def test_hash_distinguishes_shapes(self, seed):
         """Test that different shape families do not collide."""
-        assert hash(CGFHamiltonian(**cgf_tensors())) != hash(
-            CGFHamiltonian(**cgf_tensors(num_modes=M + 1))
+        assert hash(CGFHamiltonian(**cgf_tensors(seed))) != hash(
+            CGFHamiltonian(**cgf_tensors(seed, num_modes=M + 1))
         )
 
-    def test_equality_compares_values(self):
+    def test_equality_compares_values(self, seed):
         """Test that two Hamiltonians differing only in values are not equal."""
-        assert CGFHamiltonian(**cgf_tensors(seed=1)) == CGFHamiltonian(**cgf_tensors(seed=1))
-        assert CGFHamiltonian(**cgf_tensors(seed=1)) != CGFHamiltonian(**cgf_tensors(seed=2))
+        assert CGFHamiltonian(**cgf_tensors(seed)) == CGFHamiltonian(**cgf_tensors(seed))
+        assert CGFHamiltonian(**cgf_tensors(seed)) != CGFHamiltonian(**cgf_tensors(seed + 1))
 
-    def test_equality_across_representations(self):
+    def test_equality_across_representations(self, seed):
         """Test that a CDF and a CGF Hamiltonian are never equal."""
-        assert CDFHamiltonian(**cdf_tensors()) != CGFHamiltonian(**cgf_tensors())
+        assert CDFHamiltonian(**cdf_tensors(seed)) != CGFHamiltonian(**cgf_tensors(seed))
 
     @pytest.mark.parametrize(
         "cls, data", [(CDFHamiltonian, cdf_tensors), (CGFHamiltonian, cgf_tensors)]
     )
-    def test_repr_does_not_dump_arrays(self, cls, data):
+    def test_repr_does_not_dump_arrays(self, cls, data, seed):
         """Test that the repr stays readable, summarizing arrays by shape."""
-        text = repr(cls(**data()))
+        text = repr(cls(**data(seed)))
 
         assert text.startswith(f"{cls.__name__}(")
         assert "tensor(shape=" in text
@@ -330,10 +332,10 @@ class TestConcrete:
     @pytest.mark.parametrize(
         "cls, data", [(CDFHamiltonian, cdf_tensors), (CGFHamiltonian, cgf_tensors)]
     )
-    def test_immutable(self, cls, data):
+    def test_immutable(self, cls, data, seed):
         """Test that instances are frozen dataclasses."""
         assert cls.__dataclass_params__.frozen is True
-        ham = cls(**data())
+        ham = cls(**data(seed))
 
         with pytest.raises(AttributeError):
             ham.core_tensors = None
@@ -414,9 +416,11 @@ class TestAbstract:
         assert ham.is_abstract
         assert ham.nuc_constant == AbstractArray((), float)
 
-    def test_abstractify_matches_abstract_construction(self):
+    def test_abstractify_matches_abstract_construction(self, seed):
         """Test that ``abstractify`` on concrete data reproduces the abstract instance."""
-        assert qp.core.abstractify(CGFHamiltonian(**cgf_tensors())) == CGFHamiltonian(**cgf_specs())
+        assert qp.core.abstractify(CGFHamiltonian(**cgf_tensors(seed))) == CGFHamiltonian(
+            **cgf_specs()
+        )
 
     def test_unknown_axis_size_permitted(self):
         """Test that ``-1`` marks an axis of unknown size without pinning the symbol."""
@@ -447,17 +451,17 @@ class TestAbstract:
         with pytest.raises(ValueError, match="'core_tensors' must have 5 dimensions"):
             CGFHamiltonian(Float[L + 1, N, N], Float[L + 1, M, N, N])
 
-    def test_hash_matches_concrete_counterpart(self):
+    def test_hash_matches_concrete_counterpart(self, seed):
         """Test that hashing on shapes makes an abstract Hamiltonian hash equal to the
         concrete one it describes."""
-        concrete = CGFHamiltonian(**cgf_tensors())
+        concrete = CGFHamiltonian(**cgf_tensors(seed))
 
         assert hash(CGFHamiltonian(**cgf_specs())) == hash(concrete)
         assert hash(qp.core.abstractify(concrete)) == hash(concrete)
 
-    def test_equality_ignores_values(self):
+    def test_equality_ignores_values(self, seed):
         """Test that comparing abstract to concrete compares shapes only."""
-        assert CGFHamiltonian(**cgf_specs()) == CGFHamiltonian(**cgf_tensors(seed=7))
+        assert CGFHamiltonian(**cgf_specs()) == CGFHamiltonian(**cgf_tensors(seed))
 
     def test_repr_shows_specs(self):
         """Test that an abstract Hamiltonian reports its ``AbstractArray`` specs."""
