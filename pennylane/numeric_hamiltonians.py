@@ -96,7 +96,7 @@ class NumericHamiltonian:
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
 
-        # IT's required for Catalyst to treat the Hamiltonian as a pytree, so that it can be
+        # It's required for Catalyst to treat the Hamiltonian as a pytree, so that it can be
         # passed as an argument to a decomposition rule and reconstructed from abstract avals
         register_pytree(cls, cls._flatten, cls._unflatten)
 
@@ -112,7 +112,7 @@ class NumericHamiltonian:
 
             if shape is Ellipsis or len(shape) != len(template):
                 raise ValueError(
-                    f"'{name}' must have {len(template)} dimensions {template}, "
+                    f"'{name}' must have {len(template)} dimensions with shape {template}, "
                     f"got shape {shape}."
                 )
 

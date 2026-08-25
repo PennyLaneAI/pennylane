@@ -272,7 +272,7 @@ class TestConcrete:
         def f(core, leaf):
             return CGFHamiltonian(core, leaf).core_tensors.sum()
 
-        with pytest.raises(ValueError, match="must have 5 dimensions"):
+        with pytest.raises(ValueError, match="must have 5 dimensions with shape"):
             jax.make_jaxpr(f)(data["leaf_tensors"], data["leaf_tensors"])
 
     @pytest.mark.jax
