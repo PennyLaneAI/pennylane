@@ -115,7 +115,7 @@ class TestAbstractifyOperatorInstances:
         assert abs_op.phi == Int[3]
         assert abs_op.wires == Wire[1]
 
-        assert op.phi == [1, 2, 3]
+        assert np.array_equal(op.phi, np.array([1, 2, 3]))
         assert op.wires == Wires([0])
 
     def test_dynamic_operator(self):
