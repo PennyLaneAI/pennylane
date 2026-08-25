@@ -187,21 +187,6 @@ def bind_new_parameters_composite_op(op: CompositeOp, params: Sequence[TensorLik
     return op.__class__(*new_operands)
 
 
-@bind_new_parameters.register(ops.ChangeOpBasis)
-def bind_new_parameters_change_op_basis(op: ops.ChangeOpBasis, params: Sequence[TensorLike]):
-    params = tuple(params)
-    if not params:
-        return type(op)(**op.arguments)
-
-    new_operands = []
-    for operand in op.operands:
-        operand_num_params = len(operand.data)
-        new_operands.append(bind_new_parameters(operand, params[:operand_num_params]))
-        params = params[operand_num_params:]
-
-    return type(op)(*reversed(new_operands))
-
-
 @bind_new_parameters.register(ops.CY)
 @bind_new_parameters.register(ops.CZ)
 @bind_new_parameters.register(ops.CH)
