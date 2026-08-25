@@ -17,6 +17,7 @@ Test Expression class and its associated methods
 
 # pylint: disable=unnecessary-dunder-call,protected-access,too-many-public-methods
 import math
+from fractions import Fraction
 
 import pytest
 
@@ -225,7 +226,7 @@ class TestExpression:
             _skip_normalization=True,
         )
 
-        with pytest.raises(TypeError, match="Expression coefficients must be int or float"):
+        with pytest.raises(TypeError, match="Expression coefficients must be real numbers, got"):
             expr._normalize()
 
     def test_vars(self, sample_expr):
@@ -669,3 +670,13 @@ class TestExpressionFloatMath:
         result = func(expr)
         assert isinstance(result, Expression)
         assert result._data == {("x",): 1.5}
+
+    def test_math_with_numeric_types(self):
+        """Test that arithmetic with non-int, non-float numeric types works as expected."""
+        expr = Expression({("x",): 1.5, (): 2.5})
+        expr2 = Expression({("y",): Fraction(3, 2), (): Fraction(2, 3)})
+
+        assert expr + Fraction(1, 2) == Expression({("x",): 1.5, (): 3})
+        assert expr2 * 6 == Expression({("y",): 9, (): 4})
+        assert expr2.subs(y=2) == Fraction(11, 3)
+        assert round(expr2) == Expression({("y",): Fraction(3, 2), (): 1})
