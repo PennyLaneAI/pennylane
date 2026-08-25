@@ -1921,9 +1921,7 @@ if has_jax:
                 # TODO: impl is being used here for reconstruction while the interpreter itself is
                 # under JAX tracing. Need to separate this logic from such scenario. For now,
                 # we can use the fact that wires are always integers and cast them to int.
-                args[name] = Wires(
-                    tuple(w if math.is_abstract(w) else int(w) for w in all_args[i : i + len_])
-                )
+                args[name] = _to_int_wires(all_args[i : i + len_])
                 i += len_
 
         # Reorder hybrid args such that hybrid wire args are first
@@ -1933,9 +1931,7 @@ if has_jax:
             i += len_
 
         if n_ctrls:
-            control_wires = Wires(
-                tuple(w if math.is_abstract(w) else int(w) for w in all_args[i : i + n_ctrls])
-            )
+            control_wires = _to_int_wires(all_args[i : i + n_ctrls])
             i += n_ctrls
             control_values = all_args[i:]
             assert len(control_wires) == len(control_values)
@@ -2095,6 +2091,11 @@ def _is_hash_leaf(l) -> bool:
     """Check whether a value is a pytree leaf for hashing. For the purpose of
     hashing, wires and operators are considered leaves."""
     return _is_op(l) or _is_wires(l)
+
+
+def _to_int_wires(wires):
+    """Cast all wires to integers."""
+    return Wires(tuple(w if math.is_abstract(w) else int(w) for w in wires))
 
 
 class _ArgType(Enum):

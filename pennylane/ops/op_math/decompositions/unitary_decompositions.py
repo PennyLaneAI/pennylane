@@ -446,7 +446,7 @@ def _multi_qubit_decomp_resource(U, wires, **_):  # pylint: disable=unused-argum
     }
 
 
-@register_condition(lambda U, wires, **_: len(wires) > 2)  # pylint: disable=-unused-argument
+@register_condition(lambda U, wires, **_: len(wires) > 2)  # pylint: disable=unused-argument
 @register_resources(_multi_qubit_decomp_resource)
 def multi_qubit_decomp_rule(U, wires, **__):
     """The decomposition rule for a multi-qubit unitary."""
