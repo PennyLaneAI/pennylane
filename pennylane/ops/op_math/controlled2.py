@@ -627,14 +627,21 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
 
         params["n_ctrls"] = n_ctrls + len(self.control_wires)
         params["n_work_wires"] = n_work_wires + len(self.work_wires)
-        # Mirrors the merge convention used by `simplify()`: the old (base) work wires/type
-        # are resolved together with the new (outer) ones being added now.
-        params["work_wire_type"] = resolve_work_wire_type(
-            old_work_wires,
-            params.get("work_wire_type", "borrowed"),
-            self.work_wires,
-            self.work_wire_type,
-        )
+        if n_ctrls:
+            # Merging into an already-controlled base equation: mirror the merge convention
+            # used by `simplify()`, resolving the old (base) work wires/type together with the
+            # new (outer) ones being added now.
+            params["work_wire_type"] = resolve_work_wire_type(
+                old_work_wires,
+                params.get("work_wire_type", "borrowed"),
+                self.work_wires,
+                self.work_wire_type,
+            )
+        else:
+            # Fresh single wrap: preserve `work_wire_type` verbatim, matching eager
+            # `ControlledOp2.__init__`. `resolve_work_wire_type` must not be applied here, as
+            # it would collapse an empty-work-wires `"zeroed"` down to the `"borrowed"` default.
+            params["work_wire_type"] = self.work_wire_type
         res = operator_p.bind(*invars, **params)
 
         self.base.tracer = None
