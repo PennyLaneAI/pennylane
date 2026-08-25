@@ -426,7 +426,7 @@ def _out_square_with_caddsub_resources(
 
     # Subtract 2^(2n)
     if m > 2 * n:
-        resources[adjoint(Incrementer(Wire[m - 2 * n], Wire[num_work_wires - 1]))] = 1
+        resources[adjoint(Incrementer(Wire[m - 2 * n], work_wires=Wire[num_work_wires - 1]))] = 1
 
     # Add (2^n-1-x) + 1
 

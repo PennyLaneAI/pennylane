@@ -13,7 +13,6 @@
 # limitations under the License.
 """Contains the implementation of the Incrementer template."""
 
-from pennylane.capture import enabled
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.ops import CNOT, MultiControlledX, PauliX, X, adjoint
@@ -203,10 +202,6 @@ def _base_work_wire_condition(base, control_wires, work_wires, **_):
     return (num_work_wires + 1) >= num_wires
 
 
-def _capture_disabled_condition(*_, **__):
-    return not enabled()
-
-
 def _work_wire_inverse_condition(wires, work_wires, **_):
     return not _work_wire_condition(wires, work_wires)
 
@@ -246,7 +241,7 @@ def _incrementer_fallback_resources(wires, work_wires, **_):
     num_work_wires = len(work_wires)
     resources = {}
 
-    for i in range(num_wires - 1, 1, -1):
+    for i in range(num_wires, 1, -1):
         resources[MultiControlledX(Wire[i], work_wires=Wire[num_work_wires])] = 1
 
     resources[PauliX] = 1
@@ -254,13 +249,12 @@ def _incrementer_fallback_resources(wires, work_wires, **_):
     return resources
 
 
-@register_condition(_capture_disabled_condition)
 @register_condition(_work_wire_inverse_condition)
 @register_resources(_incrementer_fallback_resources)
 def _incrementer_fallback_decomposition(wires, work_wires, **_):
     num_wires = len(wires)
 
-    for i in range(num_wires - 1, 1, -1):
+    for i in range(num_wires, 1, -1):
         MultiControlledX(
             wires[num_wires - i :][::-1],
             [1 for _ in range(i - 1)],
