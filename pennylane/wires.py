@@ -844,3 +844,10 @@ def is_abstract_or_traced(v):
     if isinstance(v, AbstractWires):
         return True
     return any(math.is_abstract(w) for w in v)
+
+
+def validate_no_wire_overlaps(wire_args, error_msg):
+    """Validate that the given wires do not overlap."""
+    concrete_wires = [w for w in wire_args if not isinstance(w, AbstractWires)]
+    if len(concrete_wires) > 1 and Wires.shared_wires(concrete_wires):
+        raise ValueError(error_msg)

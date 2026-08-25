@@ -44,7 +44,7 @@ from pennylane.decomposition.resources import (
 from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.typing import AbstractArray, AbstractWires, Bool, Complex, Wire
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
 from .symbolicop2 import SymbolicOp2
 
@@ -75,12 +75,6 @@ def _validate_work_wire_type(work_wire_type):
     accepted = ("zeroed", "borrowed")
     if work_wire_type not in accepted:
         raise ValueError(f"work_wire_type must be one of {accepted}. Got '{work_wire_type}'.")
-
-
-def _validate_no_wire_overlaps(wire_args, error_msg):
-    concrete_wires = [w for w in wire_args if not isinstance(w, AbstractWires)]
-    if len(concrete_wires) > 1 and Wires.shared_wires(concrete_wires):
-        raise ValueError(error_msg)
 
 
 class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-public-methods
@@ -168,7 +162,7 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         control_wires = Wires(control_wires)
         work_wires = Wires([] if work_wires is None else work_wires)
 
-        _validate_no_wire_overlaps(
+        validate_no_wire_overlaps(
             (base.wires, control_wires, work_wires),
             "control_wires, work_wires, and the base operator must not overlap",
         )

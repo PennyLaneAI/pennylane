@@ -17,10 +17,9 @@ from pennylane.allocation import allocate
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import CNOT, adjoint, ctrl
-from pennylane.ops.op_math.controlled2 import _validate_no_wire_overlaps
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.typing import Wire
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
 from .temporary_and import TemporaryAND
 
@@ -236,7 +235,7 @@ class SemiAdder(Operator2):
         y_wires = Wires(y_wires)
         work_wires = Wires(work_wires if work_wires is not None else [])
 
-        _validate_no_wire_overlaps(
+        validate_no_wire_overlaps(
             (x_wires, y_wires, work_wires),
             "x_wires, y_wires, work_wires must not overlap",
         )

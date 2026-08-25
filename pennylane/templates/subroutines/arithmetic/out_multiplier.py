@@ -27,11 +27,10 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.resources import resource_rep
 from pennylane.ops import BasisState, H, Prod, X, adjoint, change_op_basis, ctrl, prod
-from pennylane.ops.op_math.controlled2 import _validate_no_wire_overlaps
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.typing import Bool, Wire
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
 from .incrementer import Incrementer
 from .phase_adder import PhaseAdder
@@ -252,7 +251,7 @@ class OutMultiplier(Operator2):
         if mod != max_mod:
             work_wires = Wires(work_wires[:num_work_wires])
 
-        _validate_no_wire_overlaps(
+        validate_no_wire_overlaps(
             [x_wires, y_wires, output_wires, work_wires],
             "x_wires, y_wires, output_wires, and work_wires should not overlap",
         )

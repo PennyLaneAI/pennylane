@@ -27,9 +27,8 @@ from pennylane.decomposition import (
     register_resources,
 )
 from pennylane.ops import CNOT, Controlled
-from pennylane.ops.op_math.controlled2 import _validate_no_wire_overlaps
 from pennylane.typing import Wire
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
 from .incrementer import Incrementer
 from .out_multiplier import OutMultiplier
@@ -330,7 +329,7 @@ class SignedOutMultiplier(Operator2):
         output_wires = Wires(output_wires)
         work_wires = Wires(work_wires)
 
-        _validate_no_wire_overlaps(
+        validate_no_wire_overlaps(
             (x_wires, y_wires, output_wires, work_wires),
             "x_wires, y_wires, output_wires, work_wires must not overlap.",
         )

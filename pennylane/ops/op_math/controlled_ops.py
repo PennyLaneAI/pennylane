@@ -46,7 +46,6 @@ from pennylane.ops.op_math.controlled2 import (
     Controlled2,
     ControlledOp2,
     _setup_control_values,
-    _validate_no_wire_overlaps,
     _validate_work_wire_type,
 )
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
@@ -54,7 +53,7 @@ from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
 from pennylane.ops.qubit import X, Y, Z
 from pennylane.typing import AbstractArray, AbstractWires, Bool, Complex, Float, TensorLike, Wire
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
 from .adjoint2 import _adjoint_abstract
 from .controlled import (
@@ -1383,7 +1382,7 @@ def _setup_inputs_mcx(
         raise ValueError(f"MultiControlledX acts on at least 2 wires, {len(wires)} given.")
 
     work_wires = Wires([] if work_wires is None else work_wires)
-    _validate_no_wire_overlaps(
+    validate_no_wire_overlaps(
         (wires, work_wires),
         "work_wires must not overlap with the operator wires.",
     )
