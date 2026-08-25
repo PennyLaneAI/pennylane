@@ -2,7 +2,7 @@
 
 <h3>New features since last release</h3>
 
-* Two new numeric Hamiltonians called `:class:`pennylane.CDFHamiltonian` (based on `arXiv:2506.15784, Sec. III A <https://arxiv.org/abs/2506.15784>`) and `:class:`pennylane.CGFHamiltonian` have been added (based on `arXiv:2508.11865, Sec. III C <https://arxiv.org/abs/2508.11865>`), which define compressed double-factorized (CDF) and Christiansen greedy-fragmentation Hamiltonians, respectively. These Hamiltonians can be defined
+* Two new numeric Hamiltonians called :class:`pennylane.CDFHamiltonian` (based on `arXiv:2506.15784, Sec. III A <https://arxiv.org/abs/2506.15784>`) and :class:`pennylane.CGFHamiltonian` have been added (based on `arXiv:2508.11865, Sec. III C <https://arxiv.org/abs/2508.11865>`), which define compressed double-factorized (CDF) and Christiansen greedy-fragmentation Hamiltonians, respectively. These Hamiltonians can be defined
   with both concrete numeric data or abstract data (using ``qp.typing.Float[...]``).
   [(#10048)](https://github.com/PennyLaneAI/pennylane/pull/10048)
 
@@ -25,7 +25,7 @@
   >>> from pennylane.typing import Float
   >>> qp.CGFHamiltonian(Float[L + 1, M, M, N, N], Float[L + 1, M, N, N]).leaf_tensors
   AbstractArray((3, 2, 3, 3), float64, weak_type=True)
-  
+
   ```
 
 * Added :func:`~pennylane.backline.triton_decoder` and
