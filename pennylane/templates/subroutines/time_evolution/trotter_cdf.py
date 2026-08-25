@@ -21,10 +21,12 @@ from pennylane import math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_condition, register_resources
+from pennylane.numeric_hamiltonians import CDFHamiltonian
 from pennylane.ops import CNOT, RZ, GlobalPhase, IsingZZ, PhaseShift
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.templates.subroutines.qchem.basis_rotation import BasisRotation
-from pennylane.typing import Complex, Wire
+from pennylane.typing import Complex, Wire, AbstractArray, AbstractWires
+from pennylane.wires import WiresLike
 
 from ._trotter_utils import _emit_one_body_rz, _emit_two_body_isingzz, _run_trotter_steps
 
@@ -303,26 +305,36 @@ class TrotterCDF(Operator2):
     # `hybrid_argnames` and `compilable_argnames` cannot both be non-empty on the same
     # operator, so `num_trotter_steps` (a plain Python int that drives Python-level
     # control flow) is treated as `static_argnames` instead.
-    static_argnames = ("num_trotter_steps", "double_phase")
+    static_argnames = (
+        "num_trotter_steps",
+        "double_phase",
+    )
 
-    def __init__(self, evolution_time, num_trotter_steps, hamiltonian, wires, double_phase=False):
+    def __init__(
+        self,
+        evolution_time: int | AbstractArray,
+        num_trotter_steps: float | AbstractArray,
+        hamiltonian: CDFHamiltonian,
+        wires: WiresLike | AbstractWires,
+        double_phase=False,
+    ):
         # ``hamiltonian`` is a hybrid argument: its array-like leaves must be arrays (or scalars)
         # to be captured and lowered correctly. Cast only list/tuple inputs, leaving array inputs
         # as-is so the hybrid argument survives the capture round-trip unchanged. Abstract capture
         # placeholders (which are neither list/tuple nor real arrays) are left untouched and skip
         # the ``ndim`` validation below, so the operator can be reconstructed during capture.
-        core, leaf = hamiltonian["core_tensors"], hamiltonian["leaf_tensors"]
-        if isinstance(core, (list, tuple)) or isinstance(leaf, (list, tuple)):
-            hamiltonian = {
-                **hamiltonian,
-                "core_tensors": math.asarray(core) if isinstance(core, (list, tuple)) else core,
-                "leaf_tensors": math.asarray(leaf) if isinstance(leaf, (list, tuple)) else leaf,
-            }
-        Z = hamiltonian["core_tensors"]
-        U = hamiltonian["leaf_tensors"]
+
+        if type(hamiltonian) != CDFHamiltonian:
+            raise ValueError(
+                "TrotterCDF expects a CDFHamiltonian for the hamiltonian argument. Got "
+                f"{type(hamiltonian)}."
+            )
+
+        Z = hamiltonian.core_tensors
+        U = hamiltonian.leaf_tensors
         if hasattr(Z, "ndim") and hasattr(U, "ndim") and not (Z.ndim == 3 and U.ndim == 3):
             raise ValueError(
-                "TrotterCDF expects a CDF Hamiltonian with core_tensors.ndim == 3 and "
+                "TrotterCDF expects a CDFHamiltonian with core_tensors.ndim == 3 and "
                 f"leaf_tensors.ndim == 3. Got core_tensors.ndim={Z.ndim}, "
                 f"leaf_tensors.ndim={U.ndim}. For vibrational (CGF) Hamiltonians, use TrotterCGF."
             )
@@ -361,12 +373,18 @@ def _normalize_leaf_determinant(hamiltonian):
     So flipping one column's sign is a physical no-op on the fragment -- it only flips the leaf's
     determinant.
     """
-    leaves = hamiltonian["leaf_tensors"]
+    leaves = hamiltonian.leaf_tensors
     signs = math.sign(math.linalg.det(leaves))  # (num_fragments,)
     col_scale = math.concatenate(
         [signs[..., None], math.ones_like(leaves[..., 0, 1:])], axis=-1
     )  # (num_fragments, N): +/-1 in the first column slot, 1 elsewhere
-    return {**hamiltonian, "leaf_tensors": leaves * col_scale[..., None, :]}
+    leaf_tensors = leaves * col_scale[..., None, :]
+    new_hamiltonian = CDFHamiltonian(
+        core_tensors=hamiltonian.core_tensors,
+        leaf_tensors=leaf_tensors,
+        nuc_constant=hamiltonian.nuc_constant,
+    )
+    return new_hamiltonian
 
 
 def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, double_phase):
@@ -456,8 +474,8 @@ def _energy_shift(hamiltonian):
     ``core_tensors[l][p, q]``. Below, ``phase_from_mod_one_body`` is :math:`\sum_p \epsilon_p`
     and ``phase_from_two_body`` is the two-body sum/trace pair.
     """
-    nuc_constant = hamiltonian.get("nuc_constant", 0.0)
-    Z_tensor = hamiltonian["core_tensors"]
+    nuc_constant = hamiltonian.nuc_constant
+    Z_tensor = hamiltonian.core_tensors
     phase_from_mod_one_body = math.trace(Z_tensor[0])
     phase_from_two_body = (
         -math.sum(Z_tensor[1:]) / 2 + math.sum(math.trace(Z_tensor[1:], axis1=1, axis2=2)) / 4
@@ -484,7 +502,7 @@ def _cdf_resource_counts(num_trotter_steps, hamiltonian, has_control, double_pha
     if num_trotter_steps <= 0:
         return {}
 
-    leaf_tensors = hamiltonian["leaf_tensors"]
+    leaf_tensors = hamiltonian.leaf_tensors
     num_two_body_fragments = leaf_tensors.shape[0] - 1
     num_cas = leaf_tensors.shape[-1]
 

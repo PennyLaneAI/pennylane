@@ -21,10 +21,12 @@ from pennylane import math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_condition, register_resources
+from pennylane.numeric_hamiltonians import CGFHamiltonian
 from pennylane.ops import CNOT, RZ, GlobalPhase, IsingZZ, PhaseShift
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.templates.subroutines.qchem.basis_rotation import BasisRotation
-from pennylane.typing import Complex, Wire
+from pennylane.typing import Complex, Wire, AbstractArray, AbstractWires
+from pennylane.wires import WiresLike
 
 from ._trotter_utils import _emit_one_body_rz, _emit_two_body_isingzz, _run_trotter_steps
 
@@ -339,15 +341,15 @@ class TrotterCGF(Operator2):
         # as-is so the hybrid argument survives the capture round-trip unchanged. Abstract capture
         # placeholders (which are neither list/tuple nor real arrays) are left untouched and skip
         # the ``ndim`` validation below, so the operator can be reconstructed during capture.
-        core, leaf = hamiltonian["core_tensors"], hamiltonian["leaf_tensors"]
-        if isinstance(core, (list, tuple)) or isinstance(leaf, (list, tuple)):
-            hamiltonian = {
-                **hamiltonian,
-                "core_tensors": math.asarray(core) if isinstance(core, (list, tuple)) else core,
-                "leaf_tensors": math.asarray(leaf) if isinstance(leaf, (list, tuple)) else leaf,
-            }
-        Z = hamiltonian["core_tensors"]
-        U = hamiltonian["leaf_tensors"]
+
+        if type(hamiltonian) != CGFHamiltonian:
+            raise ValueError(
+                "TrotterCDF expects a CGFHamiltonian for the hamiltonian argument. Got "
+                f"{type(hamiltonian)}."
+            )
+
+        Z = hamiltonian.core_tensors
+        U = hamiltonian.leaf_tensors
         if hasattr(Z, "ndim") and hasattr(U, "ndim") and not (Z.ndim == 5 and U.ndim == 4):
             raise ValueError(
                 "TrotterCGF expects a CGF Hamiltonian with core_tensors.ndim == 5 and "
@@ -397,9 +399,13 @@ def _align_one_body_leaf(hamiltonian):
     as *columns*, so it is transposed here to match. Leaves are (special) orthogonal, so this
     is the inverse rotation.
     """
-    leaves = hamiltonian["leaf_tensors"]
+    leaves = hamiltonian.leaf_tensors
     leaves = math.concatenate([math.swapaxes(leaves[:1], -2, -1), leaves[1:]], axis=0)
-    return {**hamiltonian, "leaf_tensors": leaves}
+    return CGFHamiltonian(
+        core_tensors=hamiltonian.core_tensors,
+        leaf_tensors=leaves,
+        nuc_constant=hamiltonian.nuc_constant,
+    )
 
 
 def _normalize_leaf_determinant(hamiltonian):
@@ -414,14 +420,18 @@ def _normalize_leaf_determinant(hamiltonian):
     no-op. The orbital is stored on the *columns* of the one-body leaf and on the *rows* of the
     two-body leaves, so the two sectors negate a column and a row respectively.
     """
-    leaves = hamiltonian["leaf_tensors"]
+    leaves = hamiltonian.leaf_tensors
     signs = math.sign(math.linalg.det(leaves))  # (L+1, M)
     line = math.concatenate(
         [signs[..., None], math.ones_like(leaves[..., 0, 1:])], axis=-1
     )  # (L+1, M, N): +/-1 in the first slot, 1 elsewhere
     one_body = leaves[:1] * line[:1][..., None, :]  # eigenvectors on columns -> scale column 0
     two_body = leaves[1:] * line[1:][..., :, None]  # modal index on rows -> scale row 0
-    return {**hamiltonian, "leaf_tensors": math.concatenate([one_body, two_body], axis=0)}
+    return CGFHamiltonian(
+        core_tensors=hamiltonian.core_tensors,
+        leaf_tensors=math.concatenate([one_body, two_body], axis=0),
+        nuc_constant=hamiltonian.nuc_constant,
+    )
 
 
 def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, double_phase):
@@ -501,8 +511,8 @@ def _apply_one_body_diagonal(Z_one_body, wires, first_order_time_step, control_w
 
 def _energy_shift(hamiltonian):
     """Zero-of-energy shift applied as a ``GlobalPhase`` (or control ``RZ``)."""
-    nuc_constant = hamiltonian.get("nuc_constant", 0.0)
-    Z_tensor = hamiltonian["core_tensors"]
+    nuc_constant = hamiltonian.nuc_constant
+    Z_tensor = hamiltonian.core_tensors
     # One-body diagonal: nested traces over axes (-2, -1) twice pick out the
     # (l == m, p == q) entries and sum eps^l_p.
     one_body_diag = math.trace(
@@ -532,7 +542,7 @@ def _cgf_resource_counts(num_trotter_steps, hamiltonian, has_control, double_pha
     if num_trotter_steps <= 0:
         return {}
 
-    leaf_tensors = hamiltonian["leaf_tensors"]
+    leaf_tensors = hamiltonian.leaf_tensors
     num_two_body_fragments = leaf_tensors.shape[0] - 1
     num_modes = leaf_tensors.shape[1]
     n_states = leaf_tensors.shape[2]
