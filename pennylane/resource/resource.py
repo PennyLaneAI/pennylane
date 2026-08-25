@@ -58,7 +58,7 @@ def _count_to_str(
             if extra_compact:
                 retval = retval.replace(" ", "")  # Remove spaces from expressions for compactness
             return retval
-        count = ceil(count)
+        count = float(count)
     if isinstance(count, float) and not count.is_integer():
         # NOTE: stringify the count in order to bypass Decimal precision issues
         return f"{Decimal(str(count)):.3E}"

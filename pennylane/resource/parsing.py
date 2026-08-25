@@ -30,11 +30,14 @@ from .expression import Expression
 from .resource import PBCSpecsResources, SpecsResources, num_to_letters
 
 # Tolerance (in number of decimal digits) for floating point precision issues
-_FLOAT_PRECISION_PLACES = 12
+_FLOAT_PRECISION_PLACES = 4
 
 
 def _safe_ceil(value: int | float | Expression) -> int | Expression:
     """Rounds a value up to the nearest integer. Accounts for precision issues."""
+    # NOTE: This function only uses absolute tolerance and not relative tolerance.
+    # For extremely high values, this may result in off-by-one errors due to float precision
+    # artifacts, however, these errors are negligible for these extremely high resource counts.
     return math.ceil(round(value, _FLOAT_PRECISION_PLACES))
 
 
