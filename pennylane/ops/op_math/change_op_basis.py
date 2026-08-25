@@ -261,10 +261,9 @@ class ChangeOpBasis(CompositeOp2):
         operands = (uncompute_op, target_op, compute_op)
         if any(isinstance(op, (MidMeasure, PauliMeasure)) for op in operands):
             raise ValueError("Composite operators of mid-circuit measurements are not supported.")
+        # Skip ``CompositeOp2.__init__``, whose single operand tuple is incompatible with
+        # ChangeOpBasis's three named hybrid arguments.
         super(CompositeOp2, self).__init__(compute_op, target_op, uncompute_op)
-        self._hash = None
-        self._has_overlapping_wires = None
-        self._overlapping_ops = None
         if all(isinstance(op, Operator) for op in operands):
             self._wires = Wires.all_wires([op.wires for op in operands])
             self._pauli_rep = self._build_pauli_rep()
@@ -280,11 +279,12 @@ class ChangeOpBasis(CompositeOp2):
         if uncompute_op is None:
             uncompute_op = _adjoint_abstract(compute_op)
         Operator2.__abstract_init__(self, compute_op, target_op, uncompute_op)
-        self._hash = None
-        self._has_overlapping_wires = None
-        self._overlapping_ops = None
 
     hybrid_argnames = ("compute_op", "target_op", "uncompute_op")
+
+    _hash = None
+    _has_overlapping_wires = None
+    _overlapping_ops = None
 
     has_matrix = False
     has_sparse_matrix = False
@@ -319,10 +319,9 @@ class ChangeOpBasis(CompositeOp2):
         """The operators in matrix-product order."""
         return self.uncompute_op, self.target_op, self.compute_op
 
-    @property
-    @handle_recursion_error
-    def data(self):
-        return tuple(data for op in self for data in op.data)
+    def _check_batching(self):
+        self._batch_size = None
+        self._ndim_params = ()
 
     grad_method = None
 
