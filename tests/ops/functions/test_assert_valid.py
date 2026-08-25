@@ -581,7 +581,7 @@ class SingleRZ(Operator2):
         return qp.Hamiltonian([-0.5], [qp.PauliZ(wires=self.wires)])
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 class TestOperator2AssertValid:
     """Tests showing that ``assert_valid`` works on :class:`~.core.Operator2` instances thanks to
     the backwards-compatible ``data``/``parameters``/``num_params``/``hyperparameters`` attributes.
@@ -613,6 +613,9 @@ class TestOperator2AssertValid:
 
     def test_check_decomposition(self):
         """``_check_decomposition`` fails if ``compute_decomposition`` does not return a list."""
+
+        if qp.capture.enabled():
+            pytest.skip("this is not expected to work when capture is enabled.")
 
         class BadDecomp(Operator2):
             dynamic_argnames = ("phi",)
@@ -649,6 +652,9 @@ class TestOperator2AssertValid:
 
     def test_check_matrix_matches_decomposition(self):
         """``_check_matrix_matches_decomp`` fails if the matrix and decomposition disagree."""
+
+        if qp.capture.enabled():
+            pytest.skip("this is not expected to work when capture is enabled.")
 
         class MatDecompMismatch(Operator2):
             wire_argnames = ("wires",)
@@ -791,6 +797,16 @@ class TestOperator2AssertValid:
                 HybridOp(np.pi, wires=0, ops=[0.2, NoCopyOp(0.25, 1), SingleRZ(0.5, 0)]),
                 skip_pickle=True,
             )
+
+
+@pytest.mark.capture
+def test_op1_assert_valid_capture():
+    """Tests calling assert_valid on Operator1 with capture enabled."""
+
+    class CustomOp(Operator):
+        pass
+
+    assert_valid(CustomOp(0.5, wires=[0, 1]), skip_pickle=True)
 
 
 def create_op_instance(c):
