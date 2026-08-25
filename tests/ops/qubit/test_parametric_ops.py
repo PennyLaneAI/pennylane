@@ -711,7 +711,14 @@ class TestDecompositions:
             ctrl: ─────────────╰●───────────────╰●─┤
 
         Substituting the second diagram's four gates for the single ``RZ(angle, b)`` box in the
-        first gives the final six-gate circuit checked below.
+        first gives the final six-gate circuit.
+
+    .. code-block::
+
+           a: ─╭●────────────────────────────────╭●─┤
+           b: ─╰X─RZ(angle/2)─╭X─RZ(-angle/2)─╭X─╰X─┤
+        ctrl: ────────────────╰●──────────────╰●────┤
+
         """
         op = qp.ctrl(qp.IsingZZ(0.6931, wires=[2, 3]), control=[4])
 
