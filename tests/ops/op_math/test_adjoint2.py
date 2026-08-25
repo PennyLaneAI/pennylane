@@ -258,3 +258,33 @@ def test_adjoint_rotation_decomposition_rule():
     assert adjoint_rotation.compute_resources(**op.arguments) == Resources(
         {OneWireDynOp(Float, wires=Wire[1]): 1}
     )
+
+
+@pytest.mark.catalyst
+@pytest.mark.usefixtures("enable_graph_decomposition")
+def test_adjoint_decomp_keeps_static_args_concrete_under_capture():
+    """Regression test for ``_make_adjoint_decomp``: ``static_argnames``/``compilable_argnames``
+    must stay concrete through the adjoint decomposition rule. Otherwise decompositions that
+    branch on them with Python ``if`` (here the ``output_wires_zeroed`` flag of
+    :class:`~.OutMultiplier`) get their flag traced and fail to lower under program capture /
+    Catalyst with a ``TracerBoolConversionError``."""
+    pytest.importorskip("catalyst")
+
+    n, m = 3, 6
+    x_wires = list(range(n))
+    y_wires = list(range(n, 2 * n))
+    output_wires = list(range(2 * n, 2 * n + m))
+    work_wires = list(range(2 * n + m, 2 * n + 2 * m))
+
+    @qp.qjit
+    @qp.qnode(qp.device("lightning.qubit", wires=2 * n + 2 * m))
+    def circuit():
+        qp.adjoint(
+            qp.OutMultiplier(
+                x_wires, y_wires, output_wires, work_wires=work_wires, output_wires_zeroed=True
+            )
+        )
+        return qp.state()
+
+    # Before the fix, static-arg tracing aborts the AOT capture and ``.mlir`` is ``None``.
+    assert circuit.mlir is not None

@@ -13,6 +13,7 @@
 # limitations under the License.
 """Defines the base class for the adjoint of operators."""
 
+from functools import partial
 from textwrap import dedent
 from typing import override
 
@@ -238,7 +239,14 @@ def _make_adjoint_decomp(base_rule: DecompositionRule):
     )
     def _impl(base):
         # pylint: disable=protected-access
-        qp.adjoint(base_rule._impl)(**base.arguments)
+        # Static/compilable args are concrete at compile time and often gate the decomposition
+        # structure (e.g. Python ``if`` branches). Close over them rather than forwarding them
+        # through ``qp.adjoint(...)``, which would otherwise trace them (breaking capture/MLIR).
+        non_dynamic = base.static_argnames + base.compilable_argnames
+        static = {k: base.arguments[k] for k in non_dynamic if k in base.arguments}
+        dynamic = {k: v for k, v in base.arguments.items() if k not in static}
+        impl = partial(base_rule._impl, **static) if static else base_rule._impl
+        qp.adjoint(impl)(**dynamic)
 
     _impl._source = (
         dedent(_impl._source).strip()
