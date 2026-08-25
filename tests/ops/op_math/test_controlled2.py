@@ -193,9 +193,6 @@ class TestControlled2:
             def __init__(self, phi, theta, omega, wires):
                 super().__init__(Rot2(phi, theta, omega, wires=wires[1]), control_wires=wires[0])
 
-            def __abstract_init__(self, phi, theta, omega, wires):
-                super().__abstract_init__(Rot2(phi, theta, omega, wires[1]), wires[0])
-
         op = CRot2(Float, 0.5, 0.2, wires=[0, 1])
         assert op.phi == Float
         assert op.theta == 0.5

@@ -99,12 +99,13 @@ class BasisState(StatePrepBase2):
         canonicalized_state = self._canonicalize_state(state, len(wires))
         super().__init__(canonicalized_state, wires=wires)
 
-    def __abstract_init__(self, state, wires):  # pylint: disable=unused-argument
-        super().__abstract_init__(Bool[len(wires)], wires)
-
     def _canonicalize_state(
-        self, state: TensorLike | Sequence[int | bool], num_wires: int
-    ) -> Sequence[bool]:
+        self, state: TensorLike | Sequence[int | bool] | AbstractArray, num_wires: int
+    ) -> Sequence[bool] | AbstractArray:
+
+        if isinstance(state, AbstractArray):
+            return Bool[num_wires]
+
         if isinstance(state, (list, tuple)):
             state = qp.math.stack(state)
 

@@ -86,15 +86,6 @@ class MultiX(Operator2):
         bitstring, wires = MultiX._canonicalize_validate_and_cast_inputs(bitstring, wires)
         super().__init__(bitstring, wires)
 
-    # pylint: disable-next=arguments-differ
-    def __abstract_init__(
-        self, bitstring: AbstractArray | TensorLike, wires: AbstractWires | WiresLike
-    ) -> None:
-        # We skip the canonicalizing and casting steps here for abstract inputs
-        MultiX._validate_inputs(bitstring, wires)
-
-        super().__abstract_init__(Bool[len(bitstring)], wires)
-
     @property
     def num_wires(self) -> int:
         """Return the number of wires on which the operation acts."""
@@ -107,8 +98,7 @@ class MultiX(Operator2):
         if isinstance(bitstring, (list, tuple)):
             bitstring = math.array(bitstring)
         wires = Wires(wires)
-
-        return (bitstring, wires)
+        return bitstring, wires
 
     @staticmethod
     def _validate_inputs(
