@@ -120,6 +120,40 @@ class TestBuildingBlocks:
         assert np.isclose(probs[0], 1.0)
         assert np.allclose(probs[1:], 0.0)
 
+    @pytest.mark.parametrize("flip_control", [None, ([9], 0), ([9], 1)])
+    def test_adder_flipped_first_work_wire_capture_matches_eager(self, flip_control):
+        """Regression test (#10065): ``_adder_flipped_first_work_wire`` collects a semi-adder in a
+        queue, inserts work-wire bit flips at fixed positions and replays the reordered list. Under
+        program capture operators bind at construction time, so without ``capture.pause()`` the
+        reordering was lost and the reused flip appeared only once. The captured op sequence must
+        match eager exactly."""
+        pytest.importorskip("jax")
+        # pylint: disable=import-outside-toplevel
+        from pennylane.templates.subroutines.arithmetic.out_multiplier import (
+            _adder_flipped_first_work_wire,
+        )
+
+        x_wires, y_wires, work_wires = [0, 1, 2, 3], [4, 5, 6], [10, 11]
+
+        def circuit():
+            _adder_flipped_first_work_wire(x_wires, y_wires, work_wires, flip_control=flip_control)
+
+        def seq(tape):
+            return [(type(op).__name__, tuple(op.wires)) for op in tape.operations]
+
+        with qp.queuing.AnnotatedQueue() as q:
+            circuit()
+        eager = seq(qp.tape.QuantumScript.from_queue(q))
+
+        qp.capture.enable()
+        try:
+            plxpr = qp.capture.make_plxpr(circuit)()
+            captured = seq(qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts))
+        finally:
+            qp.capture.disable()
+
+        assert captured == eager
+
 
 @pytest.mark.parametrize(
     (

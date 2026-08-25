@@ -365,6 +365,59 @@ class TestControlledCapture:
         assert list(op.work_wires) == [5]
         assert op.work_wire_type == "zeroed"
 
+    def test_single_wrap_empty_work_wires_preserves_zeroed(self, ctrl_fn):
+        """A fresh single control wrap with no work wires must preserve ``work_wire_type="zeroed"``
+        verbatim rather than collapsing it to the ``"borrowed"`` default (#10065). This
+        discriminates the single-wrap branch of ``_bind_primitive`` from the nested-merge branch:
+        ``resolve_work_wire_type`` over two empty work-wire sets returns ``"borrowed"``, which must
+        not be applied to a fresh wrap."""
+
+        def f(x):
+            ctrl_fn(RX2(x, wires=1), [0], work_wire_type="zeroed")
+
+        plxpr = qp.capture.make_plxpr(f)(0.7)
+        tape = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, 0.7)
+
+        op = tape.operations[0]
+        assert op.work_wire_type == "zeroed"
+        qp.assert_equal(op, ControlledOp2(RX2(0.7, 1), [0], work_wire_type="zeroed"))
+
+
+@pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
+class TestControlledStaticWorkWireTypeRoundTrip:
+    """Regression tests for the primitive-param name collision (#10065). Operators that declare
+    ``work_wire_type`` as their own static argument (e.g. ``MultiControlledX``,
+    ``ControlledQubitUnitary``) must not have it silently swallowed and reset to the default by
+    the controlled-specific primitive param of the same name during capture."""
+
+    def test_multi_controlled_x(self, work_wire_type):
+        """``MultiControlledX.work_wire_type`` survives the full plxpr round trip."""
+
+        def f():
+            qp.MultiControlledX(
+                wires=[0, 1, 2],
+                control_values=[1, 1],
+                work_wires=[3, 4, 5, 6],
+                work_wire_type=work_wire_type,
+            )
+
+        plxpr = qp.capture.make_plxpr(f)()
+        tape = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts)
+        assert tape.operations[0].work_wire_type == work_wire_type
+
+    def test_controlled_qubit_unitary(self, work_wire_type):
+        """``ControlledQubitUnitary.work_wire_type`` survives the full plxpr round trip."""
+        U = qp.math.array([[0.0, 1.0], [1.0, 0.0]])
+
+        def f():
+            qp.ControlledQubitUnitary(
+                U, wires=[0, 1], work_wires=[3, 4], work_wire_type=work_wire_type
+            )
+
+        plxpr = qp.capture.make_plxpr(f)()
+        tape = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts)
+        assert tape.operations[0].work_wire_type == work_wire_type
+
 
 @pytest.mark.parametrize("adjoint_fn", [qp.adjoint, Adjoint2])
 @pytest.mark.parametrize("lazy", [True, False])
