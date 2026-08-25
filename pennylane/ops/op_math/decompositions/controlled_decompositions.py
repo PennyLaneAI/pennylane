@@ -283,7 +283,8 @@ def _single_ctrl_decomp_zyz_condition(U, wires, **__):
     return num_target_wires == 1 and num_control_wires == 1
 
 
-def _single_ctrl_decomp_zyz_resources(**__):
+# pylint: disable-next=unused-argument
+def _single_ctrl_decomp_zyz_resources(U, wires, **__):
     return {
         ops.RZ: 3,
         ops.RY: 2,
@@ -347,7 +348,9 @@ def multi_control_decomp_zyz_rule(U, wires, work_wires, work_wire_type, **__):
     ops.cond(_not_zero(phase), _ctrl_global_phase)(phase, wires[:-1], wires[-1], "borrowed")
 
 
-def _controlled_two_qubit_unitary_resource(U, wires, work_wires, work_wire_type, **__):
+def _controlled_two_qubit_unitary_resource(
+    U, wires, control_values, work_wires, work_wire_type, **__  # pylint: disable=unused-argument
+):
     num_target_wires = int(qp.math.log2(qp.math.shape(U)[-1]))
     num_control_wires = len(wires) - num_target_wires
     num_work_wires = len(work_wires)
@@ -447,7 +450,8 @@ def mcx_to_cnot_or_toffoli(wires, control_values, *_, **__):
     _x_flips()  # pylint: disable=no-value-for-parameter
 
 
-def _2cx_elbow_explicit_resources(**_):
+# pylint: disable-next=unused-argument
+def _2cx_elbow_explicit_resources(wires, control_values, work_wires, **_):
     return {qp.Elbow: 1, qp.CNOT: 1, _adjoint_abstract(qp.Elbow): 1}
 
 

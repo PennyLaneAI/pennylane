@@ -272,7 +272,8 @@ class SemiAdder(Operator2):
         return self.x_wires + self.y_wires + self.work_wires
 
 
-def _semi_adder_resources(x_wires, y_wires, **_):
+# pylint: disable-next=unused-argument
+def _semi_adder_resources(x_wires, y_wires, work_wires=None, **_):
     num_x_wires = len(x_wires)
     num_y_wires = len(y_wires)
     if num_y_wires == 1:

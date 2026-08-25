@@ -1318,6 +1318,11 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed decomposition resource functions across the codebase to accept their decomposition
+  rule's arguments positionally, mirroring the rule's signature instead of using a
+  keyword-only catch-all.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
 * Fixed :func:`~pennylane.backline.css_bp_decoder` and the other Triton decoders so they can be
   compiled on a machine with no usable GPU. The ahead-of-time build called
   ``JITFunction.create_binder()``, which asks the local machine for a target through
