@@ -495,8 +495,8 @@ def _(op: qtemps.TrotterVibronic):
     num_states = hamiltonian["constant"].shape[1]
     num_modes = hamiltonian["linear"].shape[-1]
     grid_size = len(op.arguments["vib_wires"]) // num_modes
-    coeff_wires = len(op.arguments["coefficients"])
-    phase_grad_wires = len(op.arguments["phase_gradient"])
+    coeff_wires = len(op.arguments["coefficient_wires"])
+    phase_grad_wires = len(op.arguments["phase_gradient_wires"])
 
     # ``VibronicHamiltonian``/``re_temps.TrotterVibronic`` assume the "full binary tree" XOR
     # fragmentation of arXiv:2411.13669 (one position fragment per electronic-index pair,
@@ -524,7 +524,7 @@ def _(op: qtemps.TrotterVibronic):
         order=2,
         phase_grad_precision=2.0**-phase_grad_wires,
         coeff_precision=2.0**-coeff_wires,
-        wires=Wires.all_wires([op.arguments["electronic"], op.arguments["vib_wires"]]),
+        wires=Wires.all_wires([op.arguments["electronic_wires"], op.arguments["vib_wires"]]),
     )
 
 

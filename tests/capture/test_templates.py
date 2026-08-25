@@ -497,12 +497,12 @@ class TestModifiedTemplates:
                 evolution_time=evolution_time,
                 num_trotter_steps=1,
                 hamiltonian=hamiltonian,
-                electronic=wires["electronic"],
+                electronic_wires=wires["electronic"],
                 vib_wires=wires["vib_wires"],
-                cache=wires["cache"],
-                coefficients=wires["coefficients"],
-                phase_gradient=wires["phase_gradient"],
-                work=wires["work"],
+                cache_wires=wires["cache"],
+                coefficient_wires=wires["coefficients"],
+                phase_gradient_wires=wires["phase_gradient"],
+                work_wires=wires["work"],
                 aqft_order=1,
             )
 

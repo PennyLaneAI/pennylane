@@ -467,12 +467,12 @@ class TestMapToResourceOp:
             evolution_time=0.5,
             num_trotter_steps=3,
             hamiltonian=hamiltonian,
-            electronic=wires["electronic"],
+            electronic_wires=wires["electronic"],
             vib_wires=wires["vib_wires"],
-            cache=wires["cache"],
-            coefficients=wires["coefficients"],
-            phase_gradient=wires["phase_gradient"],
-            work=wires["work"],
+            cache_wires=wires["cache"],
+            coefficient_wires=wires["coefficients"],
+            phase_gradient_wires=wires["phase_gradient"],
+            work_wires=wires["work"],
         )
 
         expected_res_op = re_temps.TrotterVibronic(
@@ -527,12 +527,12 @@ class TestMapToResourceOp:
             evolution_time=0.5,
             num_trotter_steps=3,
             hamiltonian=hamiltonian,
-            electronic=wires["electronic"],
+            electronic_wires=wires["electronic"],
             vib_wires=wires["vib_wires"],
-            cache=wires["cache"],
-            coefficients=wires["coefficients"],
-            phase_gradient=wires["phase_gradient"],
-            work=wires["work"],
+            cache_wires=wires["cache"],
+            coefficient_wires=wires["coefficients"],
+            phase_gradient_wires=wires["phase_gradient"],
+            work_wires=wires["work"],
         )
         with pytest.raises(ValueError, match="fragment"):
             _map_to_resource_op(operator)

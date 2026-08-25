@@ -148,12 +148,12 @@ def make_op(
         evolution_time=evolution_time,
         num_trotter_steps=num_trotter_steps,
         hamiltonian=hamiltonian,
-        electronic=wires["electronic"],
+        electronic_wires=wires["electronic"],
         vib_wires=wires["vib_wires"],
-        cache=wires["cache"],
-        coefficients=wires["coefficients"],
-        phase_gradient=wires["phase_gradient"],
-        work=wires["work"],
+        cache_wires=wires["cache"],
+        coefficient_wires=wires["coefficients"],
+        phase_gradient_wires=wires["phase_gradient"],
+        work_wires=wires["work"],
         aqft_order=aqft_order,
         **kwargs,
     )
@@ -255,7 +255,7 @@ class TestCoefficientReadout:
         rng = np.random.default_rng(seed)
         p_quad = rng.random(n_modes)
         kinetic = np.einsum("ab,cd->abcd", np.eye(n_states), np.diag(p_quad))
-        assert np.allclose(_momentum_coefficients(kinetic, n_modes), p_quad)
+        assert np.allclose(_momentum_coefficients(kinetic), p_quad)
 
 
 @pytest.mark.parametrize(
@@ -320,26 +320,25 @@ class TestConstruction:
         assert op.arguments["num_trotter_steps"] == 1
         assert "hamiltonian" in op.hybrid_args
         assert "evolution_time" in op.dynamic_args
-        # every register wire is part of op.wires
-        all_wires = set()
-        for reg in wires.values():
-            all_wires |= set(reg)
-        assert set(op.wires) == all_wires
+        # Every register wire is part of op.wires, except the ``work_wires`` register, which
+        # Operator2 treats as auxiliary scratch and excludes from the operator's wires.
+        algorithmic_wires = set()
+        for name, reg in wires.items():
+            if name != "work":
+                algorithmic_wires |= set(reg)
+        assert set(op.wires) == algorithmic_wires
+        assert set(wires["work"]).isdisjoint(op.wires)
 
-    def test_diag_keys_derived(self):
-        """Test that diag_keys are derived from the Hamiltonian when not provided."""
+    def test_diag_keys_derived_internally(self):
+        """Test that the diagonalization keys are derived from the Hamiltonian and are not a
+        public constructor argument (so they cannot silently disagree with the coefficients)."""
         fragments = fragment_list()
         hamiltonian = build_hamiltonian(fragments)
         op = make_op(hamiltonian, make_wires(2, 2))
         assert op.arguments["diag_keys"] == _derive_diag_keys(hamiltonian)
-
-    def test_diag_keys_explicit(self):
-        """Test that explicit diag_keys are respected."""
-        fragments = fragment_list()
-        hamiltonian = build_hamiltonian(fragments)
-        diag_keys = ((0, 0), (0, 0))
-        op = make_op(hamiltonian, make_wires(2, 2), diag_keys=diag_keys)
-        assert op.arguments["diag_keys"] == diag_keys
+        # ``diag_keys`` is internally derived: setting it explicitly is rejected.
+        with pytest.raises(ValueError, match="derived internally"):
+            make_op(hamiltonian, make_wires(2, 2), diag_keys=((0, 0), (0, 0)))
 
     @pytest.mark.parametrize(
         "hamiltonian, match",
@@ -361,12 +360,20 @@ class TestConstruction:
         with pytest.raises(ValueError, match="3-dimensional"):
             make_op(hamiltonian, make_wires(2, 2))
 
-    @pytest.mark.parametrize("num_steps", [0, -1, 1.5])
+    @pytest.mark.parametrize("num_steps", [0, -1, 1.5, True, np.int64(0)])
     def test_rejects_invalid_num_trotter_steps(self, num_steps):
-        """Test that an invalid number of Trotter steps raises an error."""
+        """Test that an invalid number of Trotter steps raises an error. ``bool`` is rejected even
+        though it is an ``int`` subclass (``True`` would otherwise sneak through as one step)."""
         hamiltonian = build_hamiltonian(fragment_list())
         with pytest.raises(ValueError, match="positive integer"):
             make_op(hamiltonian, make_wires(2, 2), num_trotter_steps=num_steps)
+
+    @pytest.mark.parametrize("num_steps", [np.int64(2), np.int32(3)])
+    def test_accepts_numpy_integer_num_trotter_steps(self, num_steps):
+        """Test that numpy integers (the natural output of ``len()`` arithmetic) are accepted."""
+        hamiltonian = build_hamiltonian(fragment_list())
+        op = make_op(hamiltonian, make_wires(2, 2), num_trotter_steps=num_steps)
+        assert op.arguments["num_trotter_steps"] == num_steps
 
     @pytest.mark.parametrize(
         "register, match",
@@ -484,9 +491,9 @@ class TestConstruction:
         with pytest.raises(ValueError, match="electronic states"):
             _validate_registers(registers, mode_registers, n_modes=2, n_states=4)
 
-    def test_init_derives_diag_keys_with_traced_wire_label(self):
-        """Test that ``__init__`` derives the diagonalization keys from the concrete Hamiltonian,
-        and skips register-size validation, when a wire register contains a traced wire label.
+    def test_init_skips_validation_with_traced_wire_label(self):
+        """Test that ``__init__`` skips register-size validation when a wire register contains a
+        traced wire label.
 
         A genuinely traced wire label (as opposed to an ``AbstractWires`` structural placeholder)
         does not trip the metaclass's abstract-construction detection, so this goes through the
@@ -503,21 +510,22 @@ class TestConstruction:
                 evolution_time=0.5,
                 num_trotter_steps=1,
                 hamiltonian=hamiltonian,
-                electronic=[w0],
+                electronic_wires=[w0],
                 vib_wires=wires["vib_wires"][:-1],  # invalid size, skipped since w0 is traced
-                coefficients=wires["coefficients"],
-                phase_gradient=wires["phase_gradient"],
-                cache=wires["cache"],
-                work=wires["work"],
+                coefficient_wires=wires["coefficients"],
+                phase_gradient_wires=wires["phase_gradient"],
+                cache_wires=wires["cache"],
+                work_wires=wires["work"],
             )
-            assert op.arguments["diag_keys"] == _derive_diag_keys(hamiltonian)
+            assert op.name == "TrotterVibronic"
             return 0
 
         jax.make_jaxpr(make_traced)(np.asarray(wires["electronic"][0]))
 
-    def test_init_requires_diag_keys_for_traced_hamiltonian(self):
-        """Test that ``__init__`` raises when the Hamiltonian is traced (abstract) and no
-        ``diag_keys`` are given, since the keys cannot be derived from an abstract Hamiltonian."""
+    def test_init_accepts_traced_hamiltonian(self):
+        """Test that ``__init__`` accepts a traced (abstract) Hamiltonian: the fragment ``(0, j)``
+        diagonalization structure is imposed, and the concreteness-gated structure check is
+        skipped for abstract coefficients."""
         jax = pytest.importorskip("jax")
         hamiltonian = build_hamiltonian(fragment_list(n_states=2, n_modes=1))
         wires = make_wires(2, 1)
@@ -525,21 +533,22 @@ class TestConstruction:
         def make_traced(constant):
             traced = dict(hamiltonian)
             traced["constant"] = constant
-            qp.TrotterVibronic(
+            op = qp.TrotterVibronic(
                 evolution_time=0.5,
                 num_trotter_steps=1,
                 hamiltonian=traced,
-                electronic=wires["electronic"],
+                electronic_wires=wires["electronic"],
                 vib_wires=wires["vib_wires"],
-                coefficients=wires["coefficients"],
-                phase_gradient=wires["phase_gradient"],
-                cache=wires["cache"],
-                work=wires["work"],
+                coefficient_wires=wires["coefficients"],
+                phase_gradient_wires=wires["phase_gradient"],
+                cache_wires=wires["cache"],
+                work_wires=wires["work"],
             )
+            assert op.name == "TrotterVibronic"
             return 0
 
-        with pytest.raises(ValueError, match="diag_keys"):
-            jax.make_jaxpr(make_traced)(np.asarray(hamiltonian["constant"]))
+        # No error: the structure check is gated on concreteness, so a traced Hamiltonian is fine.
+        jax.make_jaxpr(make_traced)(np.asarray(hamiltonian["constant"]))
 
 
 # ---------------------------------------------------------------------------
@@ -663,14 +672,14 @@ class TestDecomposition:
             evolution_time=0.5,
             num_trotter_steps=1,
             hamiltonian=hamiltonian,
-            electronic=wires["electronic"],
+            electronic_wires=wires["electronic"],
             vib_wires=wires["vib_wires"],
-            coefficients=wires["coefficients"],
-            phase_gradient=wires["phase_gradient"],
+            coefficient_wires=wires["coefficients"],
+            phase_gradient_wires=wires["phase_gradient"],
             aqft_order=1,
         )
-        assert len(op.arguments["cache"]) == 0
-        assert len(op.arguments["work"]) == 0
+        assert len(op.arguments["cache_wires"]) == 0
+        assert len(op.arguments["work_wires"]) == 0
 
         queue = decomposition_queue(op)
         assert count_ops(queue, Allocate) == 1
@@ -749,6 +758,89 @@ def test_default_qubit_execution():
     state = circuit()
     assert np.all(np.isfinite(state))
     assert np.isclose(np.linalg.norm(state), 1.0)
+
+
+def _binary_decimals_int(value, precision):
+    """Integer that ``binary_decimals(value, precision, unit=2*pi)`` encodes (big-endian)."""
+    bits = qp.math.binary_decimals(value, precision, unit=2 * np.pi)
+    return int(np.dot(np.asarray(bits), 2 ** np.arange(precision)[::-1]))
+
+
+def _phase_gradient_int(hamiltonian, wires, mode_value=0, electronic_state=0, evolution_time=1.0):
+    """Run ``TrotterVibronic`` with the phase-gradient register prepared in ``|0>`` and return the
+    integer it holds afterwards.
+
+    Preparing the phase-gradient register (and everything else) in a computational basis state
+    turns the phase-gradient arithmetic into an exact integer accumulation: every sub-operation
+    permutes basis states, so the final register content is a single basis state whose integer can
+    be predicted exactly from ``binary_decimals`` -- no phase-gradient resource state, no
+    truncation error, no statevector comparison (see `Motlagh et al, arXiv:2411.13669`).
+    """
+    k = len(wires["vib_wires"])
+    n = len(wires["electronic"])
+    num_wires = max(w for reg in wires.values() for w in reg) + 1
+    dev = qp.device("default.qubit", wires=num_wires)
+
+    @qp.qnode(dev)
+    def circuit():
+        if mode_value:
+            qp.BasisState(qp.math.int_to_binary(mode_value, k), wires=wires["vib_wires"])
+        if electronic_state:
+            qp.BasisState(qp.math.int_to_binary(electronic_state, n), wires=wires["electronic"])
+        make_op(hamiltonian, wires, evolution_time=evolution_time, num_trotter_steps=1)
+        return qp.probs(wires=wires["phase_gradient"])
+
+    probs = circuit()
+    return int(np.argmax(probs))
+
+
+class TestNumericalCorrectness:
+    """Exact numerical checks of the accumulated phase-gradient integer (mod ``2**b``).
+
+    A symmetric second-order Trotter step visits every position fragment twice (forward and
+    backward), so each position term is accumulated twice per step; the tests below predict the
+    resulting integer from ``binary_decimals`` and assert it exactly. These would fail for a
+    circuit that applies the wrong phases (or none), unlike a finite/normalized state check.
+    """
+
+    @pytest.mark.parametrize("electronic_state, m", [(0, 5), (1, 3)])
+    def test_constant_term_phase(self, electronic_state, m):
+        """A diagonal constant fragment adds ``binary_decimals(c/2)`` per pass (twice per step)."""
+        n_states, n_modes, k, b = 2, 1, 3, 4
+        # Choose the constant as an exact fraction of 2*pi so ``binary_decimals`` is exact:
+        # ``c / 2 = 2*pi * m / 2**b``.
+        c = 2 * np.pi * m / 2 ** (b - 1)
+        constant = np.zeros((1, n_states, n_states))
+        constant[0, electronic_state, electronic_state] = c
+        hamiltonian = {
+            "constant": constant,
+            "linear": np.zeros((1, n_states, n_states, n_modes)),
+            "quadratic": np.zeros((1, n_states, n_states, n_modes, n_modes)),
+            "kinetic": np.zeros((n_states, n_states, n_modes, n_modes)),
+        }
+        wires = make_wires(n_states, n_modes, k=k, b=b)
+        got = _phase_gradient_int(hamiltonian, wires, electronic_state=electronic_state)
+        expected = (2 * _binary_decimals_int(c / 2, b)) % (2**b)
+        assert got == expected == (2 * m) % (2**b)
+
+    def test_linear_term_phase(self):
+        """A linear fragment multiplies ``binary_decimals(lambda/2)`` by the (signed) mode value,
+        exercising the half-signed multiplier."""
+        n_states, n_modes, k, b = 2, 1, 3, 5
+        m, q = 2, 3  # linear coefficient -> bd integer ``m``; positive mode value ``q``
+        lam = 2 * np.pi * m / 2 ** (b - 1)
+        linear = np.zeros((1, n_states, n_states, n_modes))
+        linear[0, 0, 0, 0] = lam
+        hamiltonian = {
+            "constant": np.zeros((1, n_states, n_states)),
+            "linear": linear,
+            "quadratic": np.zeros((1, n_states, n_states, n_modes, n_modes)),
+            "kinetic": np.zeros((n_states, n_states, n_modes, n_modes)),
+        }
+        wires = make_wires(n_states, n_modes, k=k, b=b)
+        got = _phase_gradient_int(hamiltonian, wires, mode_value=q, electronic_state=0)
+        expected = (2 * _binary_decimals_int(lam / 2, b) * q) % (2**b)
+        assert got == expected == (2 * m * q) % (2**b)
 
 
 # ---------------------------------------------------------------------------
