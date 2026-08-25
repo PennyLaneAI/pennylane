@@ -1163,6 +1163,7 @@
     [(#9659)](https://github.com/PennyLaneAI/pennylane/pull/9659)
     [(#9842)](https://github.com/PennyLaneAI/pennylane/pull/9842)
     [(#9898)](https://github.com/PennyLaneAI/pennylane/pull/9898)
+    [(#10058)](https://github.com/PennyLaneAI/pennylane/pull/10058)
   - :class:`~.StatePrepBase2`, based on :class:`~.Operator2`, is added.
     [(#9562)](https://github.com/PennyLaneAI/pennylane/pull/9562)
   - :meth:`~.Operator2.decomposition` falls back to registered graph decomposition rules when ``compute_decomposition`` is not overridden.
