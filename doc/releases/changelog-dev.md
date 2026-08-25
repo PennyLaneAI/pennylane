@@ -1322,7 +1322,10 @@
 
 * Fixed decomposition resource functions across the codebase to accept their decomposition
   rule's arguments positionally, mirroring the rule's signature instead of using a
-  keyword-only catch-all.
+  keyword-only catch-all. This signature is now mandatory: registering a rule for an
+  ``Operator2`` (via ``qp.add_decomps`` or the ``fixed_decomps``/``alt_decomps`` arguments)
+  raises a ``TypeError`` if the rule's resource function cannot accept the rule's arguments
+  passed positionally.
   [(#10071)](https://github.com/PennyLaneAI/pennylane/pull/10071)
 
 * Fixed :func:`~pennylane.backline.css_bp_decoder` and the other Triton decoders so they can be

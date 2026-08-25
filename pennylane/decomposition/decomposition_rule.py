@@ -17,6 +17,7 @@
 from __future__ import annotations
 
 import inspect
+import re
 from collections import Counter, defaultdict
 from collections.abc import Callable, Sequence
 from contextlib import contextmanager
@@ -39,7 +40,7 @@ from .resources import (
     Resources,
     _gate_count_dict_to_str,
 )
-from .utils import _get_decomp_args, to_name
+from .utils import _get_decomp_args, to_name, translate_op_alias
 
 
 @dataclass(frozen=True)
@@ -300,7 +301,7 @@ def register_resources(
           def _condition_fn(control_wires, **_):
               return len(control_wires) > 1
 
-          def _ops_fn(control_wires, **_):
+          def _ops_fn(base, control_wires, **_):
               return {
                   qp.ctrl(qp.X(Wire[1]), control_wires): 2,
                   qp.CRot: 1
@@ -417,6 +418,26 @@ class DecompositionRule:
             if count > 0:
                 gate_counter.update({op: count})
         return Resources(dict(gate_counter))
+
+    def validate_resource_signature(self) -> None:
+        """Validates that the resource function accepts the rule's arguments positionally.
+
+        Raises:
+            TypeError: if the resource function cannot accept the same positional
+                arguments as the decomposition rule itself.
+        """
+        if self._compute_resources is None:
+            return
+        params = inspect.signature(self._impl).parameters.values()
+        num_args = sum(p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD) for p in params)
+        try:
+            inspect.signature(self._compute_resources).bind(*([None] * num_args))
+        except TypeError as e:
+            raise TypeError(
+                f"The resource function of decomposition rule '{self.name}' does not accept "
+                f"the rule's {num_args} argument(s) passed positionally. Give the resource "
+                f"function the same signature as the rule instead of a keyword-only catch-all."
+            ) from e
 
     def is_applicable(self, *args, **kwargs) -> bool:
         """Checks whether this decomposition rule is applicable."""
@@ -595,6 +616,29 @@ _fixed_decomps_private = {}
 _fixed_decomps_var = ContextVar("_fixed_decomps", default=_fixed_decomps_private)
 
 
+_SYMBOLIC_TARGET = re.compile(r"(?:Adjoint|C|Pow)\((\w+)\)")
+
+
+def _is_operator2_target(op_type: type[Operator | Operator2] | str) -> bool:
+    """Whether a decomposition target refers to an ``Operator2``, directly or symbolically."""
+    if isinstance(op_type, type):
+        return issubclass(op_type, Operator2)
+    if not isinstance(op_type, str):
+        return isinstance(op_type, Operator2)
+    name = to_name(op_type)
+    if match := _SYMBOLIC_TARGET.fullmatch(name):
+        name = match.group(1)
+    seen, stack = set(), [Operator2]
+    while stack:
+        for sub in stack.pop().__subclasses__():
+            if sub not in seen:
+                seen.add(sub)
+                if translate_op_alias(sub.__name__) == name:
+                    return True
+                stack.append(sub)
+    return False
+
+
 def add_decomps(op_type: type[Operator | Operator2] | str, *decomps: DecompositionRule) -> None:
     """Globally registers new decomposition rules with an operator class.
 
@@ -616,7 +660,9 @@ def add_decomps(op_type: type[Operator | Operator2] | str, *decomps: Decompositi
             For symbolic operators, use strings such as ``"Adjoint(RY)"``, ``"Pow(H)"``, ``"C(RX)"``, etc.
         decomps (DecompositionRule): new decomposition rules to add to the given ``op_type``.
             A decomposition is a quantum function registered with a resource estimate using
-            ``qp.register_resources``.
+            ``qp.register_resources``. For operators of the new ``Operator2`` type, a rule's
+            resource function must accept the rule's arguments passed positionally, mirroring
+            the rule's signature; registration raises a ``TypeError`` otherwise.
 
     .. seealso:: :func:`~pennylane.register_resources` and :class:`~pennylane.list_decomps`
 
@@ -668,7 +714,22 @@ def add_decomps(op_type: type[Operator | Operator2] | str, *decomps: Decompositi
             "A decomposition rule must be a qfunc with a resource estimate "
             "registered using qp.register_resources"
         )
-    _decompositions_var.get()[to_name(op_type)].extend(decomps)
+    if _is_operator2_target(op_type):
+        for d in decomps:
+            d.validate_resource_signature()
+    _extend_decomps(to_name(op_type), *decomps)
+
+
+def _extend_decomps(op_name: str, *decomps: DecompositionRule) -> None:
+    """Extends the registry with already-validated rules.
+
+    This is a developer-facing function meant to be used when the rules have already been
+    validated against their original registration target, e.g. by ``DecompositionGraph``.
+    Going through ``add_decomps`` instead would re-validate by name, which can wrongly
+    reject a legacy operator's rules when an ``Operator2`` class shares its name.
+
+    """
+    _decompositions_var.get()[op_name].extend(decomps)
 
 
 @singledispatch

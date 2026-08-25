@@ -43,8 +43,9 @@ from .decomposition_rule import (
     DecompositionRule,
     WorkWireSpec,
     _decomp_contains_mcm,
+    _extend_decomps,
     _fix_decomp,
-    add_decomps,
+    _is_operator2_target,
     list_decomps,
     local_decomps,
     null_decomp,
@@ -274,8 +275,8 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         # Stores the library of custom decomposition rules
         fixed_decomps = fixed_decomps or {}
         alt_decomps = alt_decomps or {}
-        self._fixed_decomps = {to_name(k): _validate_rule(v) for k, v in fixed_decomps.items()}
-        self._alt_decomps = {to_name(k): _validate_rule(v) for k, v in alt_decomps.items()}
+        self._fixed_decomps = {to_name(k): _validate_rule(v, k) for k, v in fixed_decomps.items()}
+        self._alt_decomps = {to_name(k): _validate_rule(v, k) for k, v in alt_decomps.items()}
 
         # Initializes the graph.
         self._graph = rx.PyDiGraph()
@@ -300,7 +301,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         with local_decomps():
 
             for op, decomps in self._alt_decomps.items():
-                add_decomps(op, *decomps)
+                _extend_decomps(op, *decomps)
 
             for op, decomp in self._fixed_decomps.items():
                 _fix_decomp(op, decomp)
@@ -671,14 +672,16 @@ def _get_base_and_n_ctrls(op: AbstractOperatorLike) -> tuple[AbstractOperatorLik
     return None
 
 
-def _validate_rule(rule):
+def _validate_rule(rule, op_type):
     if isinstance(rule, Iterable):
-        return [_validate_rule(r) for r in rule]
+        return [_validate_rule(r, op_type) for r in rule]
     if not isinstance(rule, DecompositionRule):
         raise TypeError(
             f"{rule.__name__} is missing a resource estimate! A quantum function must be "
             "decorated with @qp.register_resources to be used as a decomposition rule."
         )
+    if _is_operator2_target(op_type):
+        rule.validate_resource_signature()
     return rule
 
 
