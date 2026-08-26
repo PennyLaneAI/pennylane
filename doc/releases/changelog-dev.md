@@ -421,6 +421,7 @@
   ``C(ChangeOpBasis)`` rule automatically control only the ``RZ`` for any number of control wires,
   using fewer gates than the previous default of naively controlling every gate.
   [(#10059)](https://github.com/PennyLaneAI/pennylane/pull/10059)
+  [(#10059)](https://github.com/PennyLaneAI/pennylane/pull/10015)
 
 * Coprocessor connection addresses are grouped on :class:`~pennylane.Endpoint` as ``endpoint=qp.Endpoint(host, port)``, replacing the separate ``comm_host`` and ``oob_port`` fields.
   [(#10017)](https://github.com/PennyLaneAI/pennylane/pull/10017)
