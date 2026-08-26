@@ -724,8 +724,12 @@ class TestSumOfSlatersPrep:
             _sos_state_prep_with_wires(data, **dynamic_wires)
 
         jaxpr = jax.make_jaxpr(subroutine)(*(jnp.asarray(wires) for wires in all_wires.values()))
-        
-        jaxpr_text = str(jaxpr.eqns[0].params["jaxpr"])
+
+        subroutine_eqn = jaxpr.eqns[0]
+        assert subroutine_eqn.primitive == qp.capture.primitives.quantum_subroutine_prim
+
+        subroutine_jaxpr = subroutine_eqn.params["jaxpr"]
+        jaxpr_text = str(subroutine_jaxpr)
         assert "MultiplexerStatePreparation" in jaxpr_text
         assert "QROM" in jaxpr_text
         assert "TemporaryAND" in jaxpr_text
