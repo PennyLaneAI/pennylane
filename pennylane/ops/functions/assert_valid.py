@@ -347,17 +347,6 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
         ), "decomposition must produce the same matrix as the operator."
 
 
-def _unroll_change_op_basis_operands(operands):
-    gate_counts = defaultdict(int)
-    for operand in operands:
-        if isinstance(operand, CompressedResourceOp) and operand.op_type is qp.ops.Prod:
-            for inner_op, count in operand.params["resources"].items():
-                gate_counts[inner_op] += count
-        else:
-            gate_counts[operand] += 1
-    return gate_counts
-
-
 @singledispatch
 def _unroll_change_op_basis_resource(op_rep):
     """Leave resource keys without a ChangeOpBasis unchanged."""
@@ -373,7 +362,13 @@ def _unroll_native_change_op_basis(op_rep: qp.ops.ChangeOpBasis):
 
 def _unroll_symbolic_change_op_basis(op_rep, wrapper):
     """Unroll ChangeOpBasis inside one symbolic resource key and reapply its wrapper."""
-    unrolled_base = _unroll_change_op_basis_resource(op_rep.base)
+    unrolled_base = defaultdict(int)
+    for operand in op_rep.base:
+        if isinstance(operand, CompressedResourceOp) and operand.op_type is qp.ops.Prod:
+            for inner_op, count in operand.params["resources"].items():
+                unrolled_base[inner_op] += count
+        else:
+            unrolled_base[operand] += 1
     if unrolled_base == {op_rep.base: 1}:
         return {op_rep: 1}
 
