@@ -291,6 +291,7 @@ def test_unmodified_templates(template, args, kwargs):
     assert len(eqn.outvars) == 1
     assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
+
 @pytest.mark.parametrize(
     "args, kwargs",
     (
