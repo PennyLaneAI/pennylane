@@ -16,7 +16,6 @@ Contains the OutMultiplier template.
 """
 
 from collections import defaultdict
-from contextlib import nullcontext
 from itertools import combinations
 
 from pennylane import capture, math
@@ -541,7 +540,7 @@ def _adder_flipped_first_work_wire(x_wires, y_wires, work_wires, flip_control=No
     # construction time, so the reordering below would be lost and the reused ``work_wire_flip``
     # instance would only appear once (``QueuingManager.stop_recording()`` does not suppress
     # capture binding).
-    with capture.pause() if capture.enabled() else nullcontext():
+    with capture.pause():
         with AnnotatedQueue() as q:
             _semi_adder(x_wires, y_wires, work_wires)
         adder_ops = q.queue

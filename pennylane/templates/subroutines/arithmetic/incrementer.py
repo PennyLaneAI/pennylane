@@ -184,8 +184,8 @@ class Incrementer(Operator2):
 
 
 def _core_incrementer_resources(num_wires):
-    """Resources of the work-wire decomposition, as a function of the (bare) number of wires
-    that are incremented (i.e. excluding any control or work wires)."""
+    """Resources of the incrementer's core MCX ladder, as a function of the number of wires in
+    the ladder (excluding work wires)."""
     resources = {X: 1}
     if num_wires > 1:
         # Forward ladder
@@ -204,7 +204,7 @@ def _work_wire_condition(wires, work_wires):
     return (len(work_wires) + 1) >= len(wires)
 
 
-def _base_work_wire_condition(base, control_wires, work_wires, **_):
+def _ctrl_work_wire_condition(base, control_wires, work_wires, **_):
     num_wires = len(base.increment_wires) + len(control_wires)
     num_work_wires = len(base.work_wires) + len(work_wires)
     return (num_work_wires + 1) >= num_wires
@@ -290,7 +290,7 @@ def _incrementer_fallback_decomposition(wires, work_wires, **_):
     for i in range(num_wires, 1, -1):
         MultiControlledX(
             wires[num_wires - i :][::-1],
-            [1 for _ in range(i - 1)],
+            [1] * (i - 1),
             work_wires=work_wires,
         )
 
@@ -317,7 +317,7 @@ def _controlled_incrementer_resources(base, control_wires, **_):
     return resources
 
 
-@register_condition(_base_work_wire_condition)
+@register_condition(_ctrl_work_wire_condition)
 @register_resources(_controlled_incrementer_resources)
 def _controlled_incrementer_decomposition(
     *_,
@@ -337,9 +337,8 @@ def _controlled_incrementer_decomposition(
         )
         base_work_wires = math.array(base_work_wires, like="jax")
         if base_work_wires.shape[0] > 0 and work_wires.shape[0] > 0:
-            work_wires = math.concatenate(
-                [math.atleast_1d(base_work_wires), math.atleast_1d(work_wires)]
-            )
+            # Both arrays are already 1D at this point, guaranteed by the ``shape[0]`` check
+            work_wires = math.concatenate([base_work_wires, work_wires])
         elif base_work_wires.shape[0] > 0 and work_wires.shape[0] == 0:
             work_wires = base_work_wires
     else:

@@ -2,6 +2,32 @@
 
 <h3>New features since last release</h3>
 
+* Two new numeric Hamiltonians called :class:`pennylane.CDFHamiltonian` (based on `arXiv:2506.15784, Sec. III A <https://arxiv.org/abs/2506.15784>`) and :class:`pennylane.CGFHamiltonian` have been added (based on `arXiv:2508.11865, Sec. III C <https://arxiv.org/abs/2508.11865>`), which define compressed double-factorized (CDF) and Christiansen greedy-fragmentation Hamiltonians, respectively. These Hamiltonians can be defined
+  with both concrete numeric data or abstract data (using ``qp.typing.Float[...]``).
+  [(#10048)](https://github.com/PennyLaneAI/pennylane/pull/10048)
+
+  ```python
+  import numpy as np
+  import pennylane as qp
+
+  L, M, N = 2, 2, 3
+  ham = qp.CGFHamiltonian(
+      core_tensors=np.random.rand(L + 1, M, M, N, N),
+      leaf_tensors=np.random.rand(L + 1, M, N, N),
+      nuc_constant=0.5,
+  )
+  ```
+
+  The same Hamiltonian can be described with abstract data for the purposes of fast, low-fidelity
+  resource-estimation workflows where only shape information is available:
+
+  ```pycon
+  >>> from pennylane.typing import Float
+  >>> qp.CGFHamiltonian(Float[L + 1, M, M, N, N], Float[L + 1, M, N, N]).leaf_tensors
+  AbstractArray((3, 2, 3, 3), float64, weak_type=True)
+
+  ```
+
 * Added :func:`~pennylane.backline.triton_decoder` and
   :func:`~pennylane.backline.css_bp_decoder` for compiling Triton-based coprocessor decoders.
   :func:`~pennylane.backline.triton_decoder` wraps user-provided Triton decoder tuples, while
@@ -412,6 +438,7 @@
   abstract type notation.
   [(#9701)](https://github.com/PennyLaneAI/pennylane/pull/9701)
   [(#9724)](https://github.com/PennyLaneAI/pennylane/pull/9724)
+  [(#10056)](https://github.com/PennyLaneAI/pennylane/pull/10056)
 
   ```python
   from pennylane.typing import Int, Float, Complex, Bool, Wire
@@ -419,7 +446,7 @@
   Float           # Float scalar
   Complex[...]    # Abstract complex array with any shape
   Bool[-1, 3, 4]  # Abstract bool array with dynamic size for the first axis
-  Wire            # Single abstract wire
+  Wire[1]         # Single abstract wire
   Wire[4]         # Four abstract wires
   Wire[-1]        # Wire sequence with dynamic size
   ```
@@ -592,9 +619,10 @@
   giving order-of-magnitude speedups for sparse and structured operators.
   [(#9728)](https://github.com/PennyLaneAI/pennylane/pull/9728)
 
-* Added the ``MultiX`` template which conditionally applies ``PauliX`` gates across target wires according 
+* Added the ``MultiX`` template which conditionally applies ``PauliX`` gates across target wires according
   to a bitstring array.
   [(#10033)](https://github.com/PennyLaneAI/pennylane/pull/10033)
+  [(#10073)](https://github.com/PennyLaneAI/pennylane/pull/10073)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -1066,10 +1094,12 @@
   [(#10015)](https://github.com/PennyLaneAI/pennylane/pull/10015)
   [(#10018)](https://github.com/PennyLaneAI/pennylane/pull/10018)
   [(#9933)](https://github.com/PennyLaneAI/pennylane/pull/9933)
+  [(#10042)](https://github.com/PennyLaneAI/pennylane/pull/10042)
   [(#10052)](https://github.com/PennyLaneAI/pennylane/pull/10052)
   [(#10054)](https://github.com/PennyLaneAI/pennylane/pull/10054)
-  [(#10062)](https://github.com/PennyLaneAI/pennylane/pull/10062)
   [(#10029)](https://github.com/PennyLaneAI/pennylane/pull/10029)
+  [(#10062)](https://github.com/PennyLaneAI/pennylane/pull/10062)
+  [(#10073)](https://github.com/PennyLaneAI/pennylane/pull/10073)
   - Quantum chemistry operators are ported:
     - :class:`~.SingleExcitation`
   [(#9944)](https://github.com/PennyLaneAI/pennylane/pull/9944)
@@ -1170,6 +1200,7 @@
     [(#9659)](https://github.com/PennyLaneAI/pennylane/pull/9659)
     [(#9842)](https://github.com/PennyLaneAI/pennylane/pull/9842)
     [(#9898)](https://github.com/PennyLaneAI/pennylane/pull/9898)
+    [(#10058)](https://github.com/PennyLaneAI/pennylane/pull/10058)
   - :class:`~.StatePrepBase2`, based on :class:`~.Operator2`, is added.
     [(#9562)](https://github.com/PennyLaneAI/pennylane/pull/9562)
   - :meth:`~.Operator2.decomposition` falls back to registered graph decomposition rules when ``compute_decomposition`` is not overridden.
@@ -1482,6 +1513,7 @@ This release contains contributions from (in alphabetical order):
 Usman Ahmed,
 Guillermo Alonso,
 Abdullah Al Omar Galib,
+Ali Asadi,
 Gabriel Bottrill,
 Joseph Bowles,
 Astral Cai,
