@@ -13,15 +13,14 @@
 # limitations under the License.
 
 """This submodule defines functions to decompose controlled operations."""
-from functools import partial
 
+from functools import partial
 from typing import Literal
 
 import numpy as np
 
 import pennylane as qp
 from pennylane import capture, compiler, control_flow, math, ops
-from pennylane.control_flow.for_loop import for_loop
 from pennylane.core import queuing
 from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition import (

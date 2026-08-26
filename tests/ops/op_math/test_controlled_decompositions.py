@@ -812,6 +812,7 @@ class TestControlledUnitaryRecursive:
         assert np.allclose(res, expected, atol=tol, rtol=tol)
 
 
+# pylint: disable-next=too-few-public-methods
 class TestControlledTwoQubitUnitary:
 
     @pytest.mark.capture
