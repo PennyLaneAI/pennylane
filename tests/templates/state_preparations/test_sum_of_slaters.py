@@ -570,7 +570,7 @@ class TestSumOfSlatersPrep:
         )
 
         # Ensure they are Python integers, not other (NumPy) integers.
-        assert all(type(count) is int for count in resources.gate_counts.values())
+        assert all(isinstance(count, int) for count in resources.gate_counts.values())
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
