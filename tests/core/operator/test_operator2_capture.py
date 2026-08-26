@@ -23,6 +23,7 @@ from operator2_utils import (
     MixedHybridOp,
     MultiWireOp,
     NonParametricOp,
+    OpBuildsNestedOp,
     StaticOp,
     TwoDynOp,
 )
@@ -65,15 +66,16 @@ def _eval(jaxpr, *args):
 class TestCaptureBasics:
     """Tests for capturing operators into a single primitive equation."""
 
-    def test_multi_wire_operator_can_be_used_as_argument(self):
+    @pytest.mark.parametrize("op", (NonParametricOp([0, 1]), OpBuildsNestedOp([0, 1])))
+    def test_multi_wire_operator_can_be_used_as_argument(self, op):
         """Test that multi-wire operators can be used as input arguments"""
 
-        def fn(op):
-            qp.apply(op)
+        def fn(op_):
+            qp.apply(op_)
 
-        cjaxpr = jax.make_jaxpr(fn)(NonParametricOp([0, 1]))
+        cjaxpr = jax.make_jaxpr(fn)(op)
         assert len(cjaxpr.eqns) == 1
-        assert cjaxpr.eqns[0].params["op_cls"] is NonParametricOp
+        assert cjaxpr.eqns[0].params["op_cls"] is type(op)
 
     def test_tracer_none_without_capture(self):
         """Test that the tracer attribute is ``None`` when capture is disabled."""
