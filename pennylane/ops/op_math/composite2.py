@@ -155,9 +155,6 @@ class CompositeOp2(Operator2, is_baseclass=True):
         eigvals = [math.asarray(ei, like=framework) for ei in eigvals]
         return self._math_op(math.vstack(eigvals), axis=0)
 
-    @abc.abstractmethod
-    def matrix(self, wire_order=None):
-        """Representation of the operator as a matrix in the computational basis."""
 
     @property
     def overlapping_ops(self) -> list[list[Operator]]:
