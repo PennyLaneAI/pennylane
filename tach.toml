@@ -191,7 +191,7 @@ layer = "core"
 [[modules]]
 path = "pennylane.numeric_hamiltonians"
 depends_on = []
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs", "pennylane.math", "pennylane.pytrees", "pennylane.typing"]
 layer = "core"
 
 [[modules]]
