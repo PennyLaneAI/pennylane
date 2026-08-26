@@ -316,7 +316,7 @@ def _semi_adder(x_wires, y_wires, work_wires=None, **_):
         CNOT([x_wires[-1], y_wires[0]])
         return
 
-    work_wires = list(work_wires or [])
+    work_wires = [] if work_wires is None else list(work_wires)
     if len(work_wires) < num_y_wires - 1:
         # The right ladder restores the work wires to zero, so they can be borrowed and returned.
         work_wires += list(allocate(num_y_wires - 1 - len(work_wires), restored=True))
