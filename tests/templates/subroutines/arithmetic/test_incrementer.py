@@ -40,7 +40,7 @@ def test_assert_valid(wires, work_wires):
     assert_valid(op)
 
 
-@pytest.mark.capture
+@pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize(
     "wires, work_wires",
     [
@@ -49,7 +49,9 @@ def test_assert_valid(wires, work_wires):
         ((0, 1, 2), []),  # no work wires
     ],
 )
-def test_decomposition_capture(wires, work_wires):
+def test_decomposition_rules_with_capture(wires, work_wires):
+    """Test that the decomposition rules are consistent with the operator, with program
+    capture enabled and disabled."""
     op = Incrementer(wires, work_wires)
 
     for rule in list_decomps(Incrementer):
@@ -231,24 +233,15 @@ def test_controlled_allocates_work_wires(
     assert np.allclose(result, 0)
 
 
-# The applicable ``C(Incrementer)`` work-wire rule is currently blocked under program capture on
-# passing wires as arguments to captured workflows [sc-127789], so the applicable shapes are marked
-# with ``pl2do`` (a non-strict xfail). Under capture they xfail; without capture they still run the
-# rule and are reported as xpassed.
-_CAPTURE_PL2DO = pytest.mark.pl2do(
-    reason="PL 2.0: blocked on supporting wires as arguments to captured workflows [sc-127789]."
-)
-
-
 @pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize("control_value", [0, 1])
 @pytest.mark.parametrize(
     "wires, work_wires, controls",
     [
         # 1 control, enough work wires for the work-wire decomposition (applicable)
-        pytest.param((0, 1, 2, 3, 4, 5), (6, 7, 8, 9, 10, 11), (12,), marks=_CAPTURE_PL2DO),
+        ((0, 1, 2, 3, 4, 5), (6, 7, 8, 9, 10, 11), (12,)),
         # 2 controls, enough work wires for the work-wire decomposition (applicable, needs 7)
-        pytest.param((0, 1, 2, 3, 4, 5), (6, 7, 8, 9, 10, 11, 12), (13, 14), marks=_CAPTURE_PL2DO),
+        ((0, 1, 2, 3, 4, 5), (6, 7, 8, 9, 10, 11, 12), (13, 14)),
         # 1 control, not enough work wires... uses fallback (inapplicable)
         ((0, 1, 2, 3, 4, 5), (6, 7), (8,)),
         # 1 control, no work wires (inapplicable)
