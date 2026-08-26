@@ -1004,6 +1004,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* The resource module JSON parser can now handle floating point values received from the Catalyst backend.
+  [(#10044)](https://github.com/PennyLaneAI/pennylane/pull/10044)
+
 * Removes `pennylane.transforms.decompose.DecomposeInterpreter`. Decompositions are no longer supported for the capture-without-qjit workflow.
   [(#9915)](https://github.com/PennyLaneAI/pennylane/pull/9915)
 
