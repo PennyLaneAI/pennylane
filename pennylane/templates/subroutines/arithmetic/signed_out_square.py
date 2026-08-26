@@ -16,7 +16,6 @@ Contains the SignedOutSquare template.
 """
 
 from collections import defaultdict
-from contextlib import nullcontext
 from itertools import combinations
 
 from pennylane import capture
@@ -331,7 +330,7 @@ def _c_subtract_then_add_one(c_wire, x_wires, y_wires, work_wires):
     # would leak into the plxpr, the reordering below would be lost, and the reused
     # ``work_wire_flip`` instance would appear only once.
     m = len(y_wires)
-    with capture.pause() if capture.enabled() else nullcontext():
+    with capture.pause():
         with QueuingManager.stop_recording():
             base = SemiAdder(x_wires, y_wires, work_wires[: m - 1])
         with AnnotatedQueue() as q:
