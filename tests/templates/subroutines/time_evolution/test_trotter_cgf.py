@@ -220,6 +220,17 @@ class TestInitialization:
         op = qp.TrotterCGF(Float, 5, abs_ham, Wire[num_modes * n_states])
         assert op.is_abstract
 
+    def test_input_hamiltonian_type(self):
+        """Test that anything but a CGFHamiltonian being given to the hamiltonian argument throws
+        an error."""
+        ham = [0.1, 0.2, 0.3, 0.4]
+        match = (
+            f"TrotterCGF expects a CGFHamiltonian for the hamiltonian argument. Got {type(ham)}."
+        )
+
+        with pytest.raises(ValueError, match=match):
+            qp.TrotterCGF(evolution_time=0.1, num_trotter_steps=123, hamiltonian=ham, wires=(0, 1))
+
 
 class TestValidity:
     """Basic structural validity tests for the TrotterCGF operator."""

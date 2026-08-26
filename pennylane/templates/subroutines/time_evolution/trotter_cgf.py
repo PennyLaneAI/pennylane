@@ -311,7 +311,7 @@ class TrotterCGF(Operator2):
 
         if not isinstance(hamiltonian, CGFHamiltonian):
             raise ValueError(
-                "TrotterCDF expects a CGFHamiltonian for the hamiltonian argument. Got "
+                "TrotterCGF expects a CGFHamiltonian for the hamiltonian argument. Got "
                 f"{type(hamiltonian)}."
             )
 
