@@ -359,8 +359,8 @@ def _out_multiplier_with_qft(
     output_wires_zeroed: bool,
 ):  # pylint: disable=too-many-arguments, unused-argument
     if mod != 2 ** len(output_wires):
-        qft_output_wires = work_wires[:1] + output_wires
-        work_wire = work_wires[1:2]
+        qft_output_wires = [work_wires[0]] + output_wires
+        work_wire = work_wires[1]
     else:
         qft_output_wires = output_wires
         # Keep the empty register traceable instead of passing a literal tuple to JAX.

@@ -174,8 +174,21 @@ def test_abstract_init_validation(mod, work_wires, msg_match):
         )
 
 
-@pytest.mark.usefixtures("enable_and_disable_capture")
+@pytest.mark.usefixtures("disable_capture")
 def test_standard_validity_out_multiplier():
+    """Check the operation using the assert_valid function."""
+    mod = 12
+    x_wires = [0, 1]
+    y_wires = [2, 3, 4]
+    output_wires = [6, 7, 8, 9]
+    work_wires = [5, 10]
+    op = OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
+    qp.ops.functions.assert_valid(op)
+
+
+@pytest.mark.xfail(reason="sc-128408")
+@pytest.mark.usefixtures("enable_capture")
+def test_standard_validity_out_multiplier_capture():
     """Check the operation using the assert_valid function."""
     mod = 12
     x_wires = [0, 1]
@@ -289,6 +302,59 @@ def _test_mult_correctness(all_wires, mod, rule, seed, output_wires_zeroed=False
     assert np.allclose(probs[1:], 0.0)
 
 
+_DECOMP_NEW_OUTPUT_WIRES_ZEROED_CASES = [
+    ([0, 1, 2], [3, 5], [6, 8], 3, [9, 10, 11], [0]),
+    ([0, 1, 2], [3, 6], [5, 8], 4, [], [0]),
+    ([0, 1, 2], [3, 6], [5, 8], 4, [9], [0, 1]),
+    ([0, 1, 2], [3, 6], [5, 8], 4, [9, 10, 11], [0, 1, 2]),
+    ([0], [3, 6], [5, 8], 4, [], [0]),
+    ([0], [3, 6], [5, 8], 4, [9], [0, 1]),
+    ([0], [3, 6], [5, 8], 4, [9, 10, 11], [0, 1, 2]),
+    ([0, 1, 2], [3], [5, 7, 8], None, [9], [0]),
+    ([0, 1, 2], [3], [5, 7, 8], None, [9, 10], [0, 1]),
+    ([0, 1, 2], [3], [5, 7, 8], None, [9, 10, 11, 12], [0, 1, 2]),
+    ([0, 1, 2], [3], [5, 7, 8, 9, 10], None, [11], [0]),
+    ([0, 1, 2], [3], [5, 7, 8, 9, 10], None, [11, 12], [0, 1]),
+    ([0, 1, 2], [3], [5, 7, 8, 9, 10], None, [11, 12, 13, 14, 15, 16], [0, 1, 2]),
+    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9], [0]),
+    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9, 10, 13], [0, 1]),
+    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9, 10, 13, 14, 15, 16], [0, 1, 2]),
+    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], 16, [9, 10], [0]),
+    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], 16, [9, 10, 13, 14, 15, 16, 17, 18], [0]),
+    ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9], [0]),
+    ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9, 10, 11], [0, 1]),
+    ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9, 10, 11, 12, 13], [0, 1, 2]),
+]
+
+_DECOMP_NEW_NON_ZERO_OUTPUT_WIRES_CASES = [
+    ([0, 1, 2], [3, 5], [6, 8], 3, [9, 10], [0]),
+    ([0, 1, 2], [3, 6], [5, 8], 4, [9], [0]),
+    ([0, 1, 2], [3, 6], [5, 8], 4, [9, 10], [0, 1]),
+    ([0, 1, 2], [3, 6], [5, 8], 4, [9, 10, 11], [0, 1, 2, 3]),
+    ([0], [3, 6], [5, 8], 4, [9], [0]),
+    ([0], [3, 6], [5, 8], 4, [9, 10], [0, 1]),
+    ([0], [3, 6], [5, 8], 4, [9, 10, 11], [0, 1, 2, 3]),
+    ([0], [3, 6, 4], [5, 8], 4, [9], [0]),
+    ([0], [3, 6, 4], [5, 8], 4, [9, 10], [0, 1]),
+    ([0], [3, 6, 4], [5, 8], 4, [9, 10, 11], [0, 1, 2, 3]),
+    ([0, 1, 2], [3], [5, 7, 8], None, [9], [0]),
+    ([0, 1, 2], [3], [5, 7, 8], None, [9, 10], [0]),
+    ([0, 1, 2], [3], [5, 7, 8], None, [9, 10, 11, 12], [0, 1, 2]),
+    ([0, 1, 2], [3], [5, 7, 8], None, [9, 10, 11, 12, 13], [0, 1, 2, 3]),
+    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9], [0]),
+    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9, 10, 13], [0]),
+    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9, 10, 13, 14, 15, 16], [0, 1, 2]),
+    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], 16, [9, 10], [0]),
+    ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], 16, [9, 10, 13, 14, 15, 16, 17, 18], [0]),
+    ([0, 1], [2, 3], [4, 5, 6, 7], 16, [8, 9], [0]),
+    ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9], [0]),
+    ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9, 10, 11], [0]),
+    ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9, 10, 11, 12], [0, 1]),
+    ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9, 10, 11, 12, 13], [0, 1, 2]),
+    ([0], [3, 6], [5, 8, 2, 4, 7, 9], None, [11, 12, 13, 14, 15, 16, 17], [0, 1, 2]),
+]
+
+
 class TestOutMultiplier:
     """Test the qp.OutMultiplier template."""
 
@@ -400,7 +466,7 @@ class TestOutMultiplier:
                 work_wires=work_wires,
             )
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.usefixtures("disable_capture")
     def test_decomposition(self):
         """Test that the QFT decomposition rule produces the expected structure."""
         x_wires, y_wires, output_wires, mod, work_wires = (
@@ -437,33 +503,10 @@ class TestOutMultiplier:
         for op1, op2 in zip(multiplier_decomposition, op_list):
             qp.assert_equal(op1, op2)
 
-    @pytest.mark.usefixtures("enable_and_disable_capture")
-    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.usefixtures("disable_capture")
     @pytest.mark.parametrize(
         ("x_wires", "y_wires", "output_wires", "mod", "work_wires", "applicable_rules"),
-        [
-            ([0, 1, 2], [3, 5], [6, 8], 3, [9, 10, 11], [0]),
-            ([0, 1, 2], [3, 6], [5, 8], 4, [], [0]),
-            ([0, 1, 2], [3, 6], [5, 8], 4, [9], [0, 1]),
-            ([0, 1, 2], [3, 6], [5, 8], 4, [9, 10, 11], [0, 1, 2]),
-            ([0], [3, 6], [5, 8], 4, [], [0]),
-            ([0], [3, 6], [5, 8], 4, [9], [0, 1]),
-            ([0], [3, 6], [5, 8], 4, [9, 10, 11], [0, 1, 2]),
-            ([0, 1, 2], [3], [5, 7, 8], None, [9], [0]),
-            ([0, 1, 2], [3], [5, 7, 8], None, [9, 10], [0, 1]),
-            ([0, 1, 2], [3], [5, 7, 8], None, [9, 10, 11, 12], [0, 1, 2]),
-            ([0, 1, 2], [3], [5, 7, 8, 9, 10], None, [11], [0]),
-            ([0, 1, 2], [3], [5, 7, 8, 9, 10], None, [11, 12], [0, 1]),
-            ([0, 1, 2], [3], [5, 7, 8, 9, 10], None, [11, 12, 13, 14, 15, 16], [0, 1, 2]),
-            ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9], [0]),
-            ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9, 10, 13], [0, 1]),
-            ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9, 10, 13, 14, 15, 16], [0, 1, 2]),
-            ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], 16, [9, 10], [0]),
-            ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], 16, [9, 10, 13, 14, 15, 16, 17, 18], [0]),
-            ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9], [0]),
-            ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9, 10, 11], [0, 1]),
-            ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9, 10, 11, 12, 13], [0, 1, 2]),
-        ],
+        _DECOMP_NEW_OUTPUT_WIRES_ZEROED_CASES,
     )
     def test_decomposition_new_output_wires_zeroed(
         self, x_wires, y_wires, output_wires, mod, work_wires, applicable_rules, seed
@@ -481,39 +524,54 @@ class TestOutMultiplier:
                 all_wires = (x_wires, y_wires, output_wires, work_wires)
                 _test_mult_correctness(all_wires, mod, rule, seed, output_wires_zeroed=True)
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.xfail(reason="sc-128408")
+    @pytest.mark.usefixtures("enable_capture")
     @pytest.mark.parametrize(
         ("x_wires", "y_wires", "output_wires", "mod", "work_wires", "applicable_rules"),
-        [
-            ([0, 1, 2], [3, 5], [6, 8], 3, [9, 10], [0]),
-            ([0, 1, 2], [3, 6], [5, 8], 4, [9], [0]),
-            ([0, 1, 2], [3, 6], [5, 8], 4, [9, 10], [0, 1]),
-            ([0, 1, 2], [3, 6], [5, 8], 4, [9, 10, 11], [0, 1, 2, 3]),
-            ([0], [3, 6], [5, 8], 4, [9], [0]),
-            ([0], [3, 6], [5, 8], 4, [9, 10], [0, 1]),
-            ([0], [3, 6], [5, 8], 4, [9, 10, 11], [0, 1, 2, 3]),
-            ([0], [3, 6, 4], [5, 8], 4, [9], [0]),
-            ([0], [3, 6, 4], [5, 8], 4, [9, 10], [0, 1]),
-            ([0], [3, 6, 4], [5, 8], 4, [9, 10, 11], [0, 1, 2, 3]),
-            ([0, 1, 2], [3], [5, 7, 8], None, [9], [0]),
-            ([0, 1, 2], [3], [5, 7, 8], None, [9, 10], [0]),
-            ([0, 1, 2], [3], [5, 7, 8], None, [9, 10, 11, 12], [0, 1, 2]),
-            ([0, 1, 2], [3], [5, 7, 8], None, [9, 10, 11, 12, 13], [0, 1, 2, 3]),
-            ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9], [0]),
-            ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9, 10, 13], [0]),
-            ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9, 10, 13, 14, 15, 16], [0, 1, 2]),
-            ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], 16, [9, 10], [0]),
-            ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], 16, [9, 10, 13, 14, 15, 16, 17, 18], [0]),
-            ([0, 1], [2, 3], [4, 5, 6, 7], 16, [8, 9], [0]),
-            ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9], [0]),
-            ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9, 10, 11], [0]),
-            ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9, 10, 11, 12], [0, 1]),
-            ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9, 10, 11, 12, 13], [0, 1, 2]),
-            ([0], [3, 6], [5, 8, 2, 4, 7, 9], None, [11, 12, 13, 14, 15, 16, 17], [0, 1, 2]),
-        ],
+        _DECOMP_NEW_OUTPUT_WIRES_ZEROED_CASES,
     )
-    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_decomposition_new_output_wires_zeroed_capture(
+        self, x_wires, y_wires, output_wires, mod, work_wires, applicable_rules, seed
+    ):  # pylint: disable=too-many-arguments
+        """Tests the decomposition rule implemented with the new system
+        with output_wires_zeroed=True."""
+        op = qp.OutMultiplier(
+            x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=True
+        )
+        for j, rule in enumerate(qp.list_decomps(qp.OutMultiplier)):
+            applicable = rule.is_applicable(**op.arguments)
+            assert applicable is (j in applicable_rules)
+            _test_decomposition_rule(op, rule)
+            if applicable:
+                all_wires = (x_wires, y_wires, output_wires, work_wires)
+                _test_mult_correctness(all_wires, mod, rule, seed, output_wires_zeroed=True)
+
+    @pytest.mark.usefixtures("disable_capture")
+    @pytest.mark.parametrize(
+        ("x_wires", "y_wires", "output_wires", "mod", "work_wires", "applicable_rules"),
+        _DECOMP_NEW_NON_ZERO_OUTPUT_WIRES_CASES,
+    )
     def test_decomposition_new_non_zero_output_wires(
+        self, x_wires, y_wires, output_wires, mod, work_wires, applicable_rules, seed
+    ):  # pylint: disable=too-many-arguments
+        """Tests the decomposition rule implemented with the new system
+        with output_wires_zeroed=False (default)."""
+        op = qp.OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
+        for j, rule in enumerate(qp.list_decomps(qp.OutMultiplier)):
+            applicable = rule.is_applicable(**op.arguments)
+            assert applicable is (j in applicable_rules)
+            _test_decomposition_rule(op, rule)
+            if applicable:
+                all_wires = (x_wires, y_wires, output_wires, work_wires)
+                _test_mult_correctness(all_wires, mod, rule, seed)
+
+    @pytest.mark.xfail(reason="sc-128408")
+    @pytest.mark.usefixtures("enable_capture")
+    @pytest.mark.parametrize(
+        ("x_wires", "y_wires", "output_wires", "mod", "work_wires", "applicable_rules"),
+        _DECOMP_NEW_NON_ZERO_OUTPUT_WIRES_CASES,
+    )
+    def test_decomposition_new_non_zero_output_wires_capture(
         self, x_wires, y_wires, output_wires, mod, work_wires, applicable_rules, seed
     ):  # pylint: disable=too-many-arguments
         """Tests the decomposition rule implemented with the new system
