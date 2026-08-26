@@ -440,12 +440,9 @@ class TestMapToResourceOp:
         assert mapped_op.wires == expected_res_op.wires
 
     def test_map_to_resource_op_trotter_vibronic(self):
-        """Test that _map_to_resource_op maps a TrotterVibronic template to its resource operator,
-        reading the mode/state/grid sizes, precisions and wires off the operator arguments."""
+        """Test mapping ``TrotterVibronic`` to its resource operator."""
         n_states, n_modes, k, b = 4, 2, 3, 2
         n = int(qp.math.ceil_log2(n_states))
-        # The mapping assumes the standard XOR fragmentation (arXiv:2411.13669), which has
-        # ``num_fragments == n_states`` position fragments when ``n_states`` is a power of 2.
         num_fragments = n_states
         hamiltonian = {
             "constant": np.zeros((num_fragments, n_states, n_states)),
@@ -489,7 +486,6 @@ class TestMapToResourceOp:
         mapped_op = _map_to_resource_op(operator)
         assert mapped_op == expected_res_op
         assert mapped_op.wires == expected_res_op.wires
-        # The vibronic Hamiltonian metadata is read off the dense tensors / wire registers.
         assert mapped_op.vibronic_ham.num_states == n_states
         assert mapped_op.vibronic_ham.num_modes == n_modes
         assert mapped_op.vibronic_ham.grid_size == k
@@ -499,11 +495,10 @@ class TestMapToResourceOp:
         assert mapped_op.coeff_precision == 2.0**-b
 
     def test_map_to_resource_op_trotter_vibronic_rejects_nonstandard_fragmentation(self):
-        """Test that _map_to_resource_op raises when the Hamiltonian's number of position
-        fragments does not match the standard XOR fragmentation assumed by the resource model
-        (``VibronicHamiltonian`` derives its cost purely from ``num_states``, so a Hamiltonian
-        with a different number of fragments would otherwise silently map to the same, wrong,
-        resource estimate)."""
+        """Test that non-standard XOR fragmentation is rejected by the resource mapping.
+
+        ``VibronicHamiltonian`` derives its cost from ``num_states`` only.
+        """
         n_states, n_modes, k, b = 4, 2, 3, 2
         n = int(qp.math.ceil_log2(n_states))
         num_fragments = 1  # standard fragmentation requires num_fragments == n_states == 4

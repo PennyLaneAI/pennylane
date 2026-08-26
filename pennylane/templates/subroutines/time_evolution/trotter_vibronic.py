@@ -185,16 +185,11 @@ class TrotterVibronic(Operator2):
         "cache_wires",
         "work_wires",
     )
-    # ``num_trotter_steps`` sets the number of Trotter steps and ``aqft_order`` the AQFT
-    # approximation order; both fix compile-time circuit structure. ``diag_keys`` holds the
-    # per-fragment electronic-diagonalization keys: it is derived internally (never public, see
-    # ``__init__``), but is still a formal static argument so it can be stored and threaded to the
-    # decomposition, where a traced Hamiltonian can no longer be inspected.
+    # ``diag_keys`` is derived in ``__init__`` but stored as a static arg so it can be threaded
+    # through decomposition when the Hamiltonian is traced.
     static_argnames = ("num_trotter_steps", "aqft_order", "diag_keys")
 
-    # ``cache_wires`` and ``work_wires`` are optional work registers: when omitted they are
-    # dynamically allocated in the decomposition (see ``sum_of_slaters`` for the same pattern), so
-    # they are not part of the declared ``arg_specs``.
+    # ``cache_wires`` and ``work_wires`` are optional and dynamically allocated when omitted.
     arg_specs = {
         "evolution_time": Float,
         "electronic_wires": Wire[-1],
@@ -219,11 +214,9 @@ class TrotterVibronic(Operator2):
         diag_keys=None,
     ):
         hamiltonian = _validate_hamiltonian(hamiltonian)
-        # Canonicalize the key order to match how ``jax.tree_util`` flattens dicts (sorted keys),
-        # so the operator round-trips through its pytree registration (required by ``assert_valid``).
+        # Sort dict keys for stable pytree round-trip.
         hamiltonian = {key: hamiltonian[key] for key in sorted(hamiltonian)}
-        # ``bool`` is a subclass of ``int`` (so ``True`` would sneak through as "1 step"); accept
-        # any integer (including ``numpy`` integers from ``len()`` arithmetic) but reject bools.
+        # Reject ``bool`` (subclass of ``int``); accept numpy integers.
         if (
             isinstance(num_trotter_steps, bool)
             or not isinstance(num_trotter_steps, (int, np.integer))
@@ -234,13 +227,9 @@ class TrotterVibronic(Operator2):
                 f"but got {num_trotter_steps}."
             )
 
-        # Abstract inputs are handled here (rather than in an ``__abstract_init__`` override): the
-        # register-size validation only needs the wire *counts* (skipped for abstract/traced wire
-        # registers), and the diagonalization-structure check needs concrete Hamiltonian values.
+        # When wires are concrete, check register sizes against the Hamiltonian shape here
+        # rather than later in decomposition/estimation.
         if _wires_are_concrete(vib_wires) and _wires_are_concrete(electronic_wires):
-            # Validate the register sizes fixed by the Hamiltonian shape at construction time, so
-            # the failure is clear and attributed to ``TrotterVibronic`` (rather than surfacing
-            # later as an opaque reshape/wire-count error from the decomposition or estimator).
             n_states = hamiltonian["constant"].shape[1]
             n_modes = hamiltonian["linear"].shape[-1]
             num_vib_wires = len(Wires(vib_wires))
@@ -256,11 +245,9 @@ class TrotterVibronic(Operator2):
                     f"states, but got {len(Wires(electronic_wires))}."
                 )
 
-        # Derive the per-fragment diagonalization keys: from the Hamiltonian's non-zero structure
-        # when concrete, or the XOR ("blocks") fallback ``(0, j)`` when abstract (traced), whose
-        # structure cannot be inspected. An explicitly supplied key is only an internal escape
-        # hatch and is validated against the derived keys (concrete case) so inconsistent keys,
-        # which would silently drop electronic coupling, are rejected.
+        # Per-fragment diagonalization keys: from coefficient structure when concrete, or the
+        # ``(0, j)`` blocks fallback when traced. Reject supplied keys that disagree with the
+        # derived ones -- inconsistent keys silently drop electronic coupling.
         hamiltonian_is_abstract = any(math.is_abstract(v) for v in hamiltonian.values())
         if hamiltonian_is_abstract:
             num_fragments = hamiltonian["constant"].shape[0]
@@ -310,10 +297,8 @@ def _trotter_vibronic_resources(
 ):
     """Coarse (upper-bound) gate counts for the vibronic Trotter circuit.
 
-    This estimate is intentionally inexact (``exact=False``): terms whose coefficients happen to
-    vanish are skipped at runtime, and the sub-operations are counted at their top level. The keys
-    are abstractifiable operator instances / resource representations sized from the actual wire
-    registers, so the estimate can drive the decomposition graph.
+    Terms whose coefficients vanish are skipped at runtime (``exact=False``). Sub-operations are
+    counted at top level with wire-sized operator/resource keys for the decomposition graph.
     """
     # ``evolution_time``, ``cache_wires`` and ``diag_keys`` are part of the shared
     # resource/decomposition signature but do not affect the (structural) gate counts.
@@ -330,8 +315,7 @@ def _trotter_vibronic_resources(
     n_work = len(work_wires) if len(work_wires) > 0 else max(n_elec - 1, 2 * k, 2 * b + 2)
     num_pairs = n_modes * (n_modes - 1) // 2
 
-    # Disjoint dummy-wire allocator: only the wire *counts* survive abstractification, so the
-    # concrete labels are irrelevant as long as each operator instance is internally consistent.
+    # Dummy wire labels; only counts matter after abstractification.
     _next = [0]
 
     def ww(size):
@@ -485,6 +469,7 @@ def _trotter_vibronic_decomposition(
     n_elec = len(electronic_wires)
 
     vib = list(vib_wires)
+    # Reshape flat ``vib_wires`` into per-mode registers for dynamic-index access.
     if compiler.active() or capture.enabled():
         mode_registers = math.array(vib, like="jax").reshape(n_modes, -1)
     else:
@@ -514,8 +499,7 @@ def _trotter_vibronic_decomposition(
             n_elec,
         )
 
-    # ``cache_wires`` and ``work_wires`` are optional: when omitted they are dynamically allocated
-    # here (as zeroed, restored wires) instead of being required as explicit register arguments.
+    # Dynamically allocate ``cache_wires``/``work_wires`` when omitted.
     cache_size, work_size = _required_work_wire_sizes(hamiltonian, vib_wires, coefficient_wires)
     cache = cache_wires
     work = work_wires
@@ -646,9 +630,7 @@ def _half_signed_out_multiplier(x_wires, y_wires, output_wires, work_wires):
         output_arr = list(output_wires)
 
     def _flip_outputs():
-        # Broadcast a ``PauliX`` across the output register controlled on the cached sign bit,
-        # i.e. a ``CNOT`` from ``y_aux`` onto every output wire. (A controlled ``BasisState`` would
-        # be a state-prep operation whose controlled form is ill-defined under program capture.)
+        # CNOT from the cached sign bit onto every output wire.
         @for_loop(len(output_wires))
         def _flip(w):
             CNOT([y_aux, output_arr[w]])
@@ -677,10 +659,8 @@ def _load_basis(bitstring, wires):
     r"""Prepare the computational basis state ``bitstring`` on ``wires`` (assumed to start in
     :math:`|0\rangle`).
 
-    Replaces ``BasisState(bitstring, wires)`` with an explicit conditional :class:`~.PauliX` per
-    wire (applied iff the corresponding bit is set). Each conditional ``X`` is self-inverse, so
-    this loader is its own adjoint -- unlike ``BasisState``, whose adjoint/controlled forms are
-    state-prep operations that behave inconsistently between the tape and program-capture paths.
+    Applies a conditional :class:`~.PauliX` on each wire whose bit is set. Self-inverse, so the
+    same call unloads the state.
     """
     if compiler.active() or capture.enabled():
         bitstring = math.array(bitstring, like="jax")
@@ -762,7 +742,7 @@ def _preprocess_data(time, hamiltonian, diag_keys, n_elec, n_states, n_modes):
     Returns the tuple ``((constant, linear, quadratic, bilinear), bilinear_indices)`` where the
     coefficient tensors are stacked over the position fragments and scaled by ``time / 2`` (the
     first-order time step of the symmetric second-order Trotter step). Fragment ``i`` is
-    diagonalized with its (internally derived) key ``diag_keys[i]``.
+    diagonalized with its key ``diag_keys[i]``.
     """
     first_order_time_step = time / 2
     constant_dense = hamiltonian["constant"]
@@ -790,6 +770,8 @@ def _preprocess_data(time, hamiltonian, diag_keys, n_elec, n_states, n_modes):
     all_linear = math.stack(all_linear)
     all_quadratic = math.stack(all_quadratic)
     all_bilinear = math.stack(all_bilinear)
+    # Reshape the bilinear data into a flattened structure with respect to mode pairs.
+    # ``k < ell`` matches bilinear_coeffs, populated only in the upper triangle.
     bilinear_indices = np.array(np.triu_indices(n_modes, 1))
 
     if compiler.active() or capture.enabled():
@@ -998,9 +980,7 @@ def _trotter_step_second_order(
         prev_bitstrings = linear_terms(prev_bitstrings)
         # pylint: disable-next=no-value-for-parameter
         prev_bitstrings = quadratic_terms(prev_bitstrings)
-        # The number of mode pairs is static; skip the bilinear loop entirely when there are none
-        # (a zero-iteration ``for_loop`` is still traced once under program capture, which would
-        # index into an empty coefficient array).
+        # Skip empty bilinear loop: zero-iteration ``for_loop`` still traces under capture.
         if bilinear_indices.shape[1] > 0:
             # pylint: disable-next=no-value-for-parameter
             prev_bitstrings = bilinear_terms(prev_bitstrings)
@@ -1010,8 +990,8 @@ def _trotter_step_second_order(
         _diagonalize_vibronic_circuit(key=diag_key, wires=registers["electronic"])
 
     def kinetic_fragment():
-        # Use ``time`` (not the first-order time step): the kinetic fragment is the middle one in
-        # the symmetric second-order step, so the two neighbouring first-order steps merge.
+        # use ``time``, not ``first_order_time_step`` because the kinetic fragment is the
+        # middle one in second-order Trotter, so the two neighbouring first-order steps merge.
         kinetic_coeffs = _momentum_coefficients(hamiltonian["kinetic"]) * time
         if compiler.active() or capture.enabled():
             kinetic_coeffs = math.array(kinetic_coeffs, like="jax")
@@ -1034,7 +1014,7 @@ def _trotter_step_second_order(
                 OutMultiplier(**mult_wires)
                 adjoint(SignedOutSquare(**square_wires, output_wires_zeroed=True))
                 adjoint(_aqft(order=aqft_order, wires=mode_registers[k]))
-                # ``_load_basis`` is self-inverse, so the unload is the same call (no ``adjoint``).
+                # ``_load_basis`` is self-inverse, so the unload is the same call.
                 _load_basis(bitstring, registers["coefficients"])
 
             cond(math.allclose(_coeffs, 0.0), skip_fn, actual_fn)()
@@ -1042,11 +1022,7 @@ def _trotter_step_second_order(
         # pylint: disable-next=no-value-for-parameter
         kinetic_terms()
 
-    # The number of position fragments is static, so we iterate over them with a plain Python
-    # loop (unrolled in the circuit). This keeps the per-fragment diagonalization keys concrete,
-    # so the electronic-diagonalization circuit structure is fixed at compile time (a traced
-    # fragment loop would require dynamic wire labels, which program capture does not support on
-    # ``default.qubit``).
+    # Unroll position fragments so per-fragment diagonalization keys stay concrete at compile time.
     for i in range(num_position_fragments):
         position_fragments(i)
     kinetic_fragment()
@@ -1071,8 +1047,7 @@ def _run_trotter_vibronic(
     trotter_time_step = evolution_time / num_trotter_steps
 
     def _step(_step_idx, hamiltonian):
-        # ``hamiltonian`` is carried through the for-loop (rather than closed over) so the
-        # traced tensors remain valid loop-body inputs under program capture.
+        # Carry ``hamiltonian`` through the loop for valid traced loop-body inputs.
         _trotter_step_second_order(
             trotter_time_step,
             hamiltonian,
@@ -1128,10 +1103,7 @@ def _wires_are_concrete(wires):
 
 
 def _validate_hamiltonian(hamiltonian):
-    """Light validation of the dense vibronic Hamiltonian dictionary. Returns the Hamiltonian
-    with its leaves cast to arrays: hybrid-argument leaves must be arrays or scalars to be
-    captured and lowered correctly, so plain lists/tuples are coerced here rather than failing
-    opaquely later (e.g. ``AttributeError`` from a missing ``.shape``)."""
+    """Validate the vibronic Hamiltonian dict; coerce list/tuple leaves to arrays."""
     if not isinstance(hamiltonian, dict):
         raise ValueError(
             f"Expected `hamiltonian` to be a dictionary, got {type(hamiltonian).__name__}."
@@ -1141,10 +1113,7 @@ def _validate_hamiltonian(hamiltonian):
             f"Expected the keys in `hamiltonian` to be {set(HAMILTONIAN_KEYS)}, "
             f"but got {set(hamiltonian)}."
         )
-    # Coerce plain list/tuple leaves to arrays with ``np.asarray`` (not ``math.asarray``) on
-    # purpose: a hybrid-argument leaf must be a concrete array/scalar to be captured and lowered,
-    # so it is deliberately materialized on the host rather than routed through the (interface-
-    # dispatching) ``qp.math`` layer. Existing array leaves are left untouched.
+    # Materialize list/tuple leaves on the host with ``np.asarray`` (not ``math.asarray``).
     hamiltonian = {
         key: np.asarray(value) if isinstance(value, (list, tuple)) else value
         for key, value in hamiltonian.items()

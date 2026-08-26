@@ -39,12 +39,9 @@ from pennylane.typing import AbstractWires
 # --------------------------- Test data helpers -----------------------------
 # ---------------------------------------------------------------------------
 #
-# The dense vibronic Hamiltonians used throughout these tests are exactly the data that
-# ``pennylane.labs.trotter_error.vibronic_fragments`` (with the default "blocks" fragmentation
-# scheme) followed by a dense conversion would produce. They are reconstructed here directly in
-# NumPy so the test suite does not depend on ``pennylane.labs``. Each "fragment" is a dictionary
-# of dense coefficient tensors; ``build_hamiltonian`` stacks the position fragments and appends
-# the kinetic fragment, matching the stacked dense output the template consumes.
+# Dense vibronic Hamiltonians matching the labs "blocks" fragmentation output
+# (``pennylane.labs.trotter_error.vibronic_fragments`` + ``fragment_to_dense``), built here in
+# NumPy without importing ``pennylane.labs``.
 
 
 def _next_pow_2(k):
@@ -217,15 +214,12 @@ class TestCoefficientReadout:
     def test_position_coefficients(self, seed):
         """Test position coefficient extraction against a direct reference computation.
 
-        Uses ``n_states=4`` (a power of 2, see ``test_rejects_non_power_of_2_n_states``) and
-        fragment 1 of the "blocks" scheme, whose off-diagonal electronic pairs are ``(0, 1)`` and
-        ``(2, 3)`` (see :func:`fragment_list`), so the reference check below exercises a real
-        change of basis rather than the identity.
+        Uses fragment 1 of the blocks scheme, which is genuinely off-diagonal.
         """
         fragments = fragment_list(n_states=4, n_modes=2, seed=seed)
         hamiltonian = build_hamiltonian(fragments)
         diag_keys = _derive_diag_keys(hamiltonian)
-        assert diag_keys[1] != (0, 0)  # fragment 1 is genuinely off-diagonal, not trivial
+        assert diag_keys[1] != (0, 0)  # off-diagonal fragment, not the identity change of basis
 
         n_states, n_modes = 4, 2
         n = int(qp.math.ceil_log2(n_states))
@@ -243,8 +237,7 @@ class TestCoefficientReadout:
         assert quadratic.shape == (n_modes, n_states)
         assert bilinear.shape == (n_modes * (n_modes - 1) // 2, n_states)
 
-        # ``matrix`` must actually diagonalize the fragment: check the off-diagonal elements of
-        # the rotated constant term vanish (not just that the diagonal matches itself).
+        # Check the rotated constant term is diagonal, not just that the diagonal matches itself.
         rotated_constant = matrix.T @ hamiltonian["constant"][1] @ matrix
         assert np.allclose(rotated_constant, np.diag(np.diag(rotated_constant)))
         assert np.allclose(constant, np.diag(rotated_constant))
@@ -270,8 +263,6 @@ def test_half_signed_out_multiplier(x, y, z, expected):
 
     @qp.qnode(dev)
     def circuit():
-        # ``BasisState`` (aka ``BasisEmbedding``) is now an ``Operator2`` that requires an explicit
-        # binary array rather than an integer, so encode each input with ``int_to_binary``.
         qp.BasisState(qp.math.int_to_binary(x, len(x_wires)), wires=x_wires)
         qp.BasisState(qp.math.int_to_binary(y % (2 ** len(y_wires)), len(y_wires)), wires=y_wires)
         qp.BasisState(qp.math.int_to_binary(z, len(output_wires)), wires=output_wires)
@@ -320,8 +311,7 @@ class TestConstruction:
         assert op.arguments["num_trotter_steps"] == 1
         assert "hamiltonian" in op.hybrid_args
         assert "evolution_time" in op.dynamic_args
-        # Every register wire is part of op.wires, except the ``work_wires`` register, which
-        # Operator2 treats as auxiliary scratch and excludes from the operator's wires.
+        # ``work_wires`` are auxiliary scratch and excluded from ``op.wires``.
         algorithmic_wires = set()
         for name, reg in wires.items():
             if name != "work":
@@ -336,7 +326,6 @@ class TestConstruction:
         hamiltonian = build_hamiltonian(fragments)
         op = make_op(hamiltonian, make_wires(2, 2))
         assert op.arguments["diag_keys"] == _derive_diag_keys(hamiltonian)
-        # ``diag_keys`` is internally derived: setting it explicitly is rejected.
         with pytest.raises(ValueError, match="derived internally"):
             make_op(hamiltonian, make_wires(2, 2), diag_keys=((0, 0), (0, 0)))
 
@@ -362,8 +351,7 @@ class TestConstruction:
 
     @pytest.mark.parametrize("num_steps", [0, -1, 1.5, True, np.int64(0)])
     def test_rejects_invalid_num_trotter_steps(self, num_steps):
-        """Test that an invalid number of Trotter steps raises an error. ``bool`` is rejected even
-        though it is an ``int`` subclass (``True`` would otherwise sneak through as one step)."""
+        """Test that invalid ``num_trotter_steps`` values are rejected (including ``bool``)."""
         hamiltonian = build_hamiltonian(fragment_list())
         with pytest.raises(ValueError, match="positive integer"):
             make_op(hamiltonian, make_wires(2, 2), num_trotter_steps=num_steps)
@@ -393,9 +381,7 @@ class TestConstruction:
             op.compute_decomposition(**op.arguments)
 
     def test_rejects_oversized_cache(self):
-        """Test that an over-sized ``cache`` register is rejected, since the resource function
-        hard-codes the exact ``2k`` size (matching the docs), and would otherwise silently
-        under-count resources relative to the wires actually used."""
+        """Test that an over-sized ``cache`` register is rejected (resource fn assumes ``2k``)."""
         hamiltonian = build_hamiltonian(fragment_list(n_states=4, n_modes=2))
         wires = make_wires(4, 2)
         wires["cache"] = list(wires["cache"]) + [max(wires["work"]) + 1]  # 2k + 1 wires
@@ -404,17 +390,14 @@ class TestConstruction:
             op.compute_decomposition(**op.arguments)
 
     def test_accepts_list_hamiltonian(self):
-        """Test that a Hamiltonian given as nested lists/tuples (rather than arrays) is accepted,
-        since hybrid-argument leaves must be arrays or scalars to be captured and lowered
-        correctly."""
+        """Test that nested list/tuple Hamiltonian leaves are coerced to arrays."""
         hamiltonian = build_hamiltonian(fragment_list(n_states=2, n_modes=2))
         hamiltonian = {key: value.tolist() for key, value in hamiltonian.items()}
         op = make_op(hamiltonian, make_wires(2, 2))
         assert all(isinstance(v, np.ndarray) for v in op.arguments["hamiltonian"].values())
 
     def test_rejects_bad_electronic_size_at_construction(self):
-        """Test that a wrongly-sized electronic register is rejected at construction time (with a
-        clear error) rather than surfacing later from the decomposition or resource estimator."""
+        """Test that a wrongly-sized electronic register is rejected at construction time."""
         hamiltonian = build_hamiltonian(fragment_list(n_states=4, n_modes=2))
         wires = make_wires(4, 2)
         wires["electronic"] = wires["electronic"][:-1]
@@ -431,14 +414,7 @@ class TestConstruction:
             make_op(hamiltonian, wires)
 
     def test_rejects_non_power_of_2_n_states(self):
-        """Test that a Hamiltonian implying a non-power-of-2 number of electronic states is
-        rejected at construction time.
-
-        The electronic diagonalization (see ``_diagonalization_matrix``) embeds each fragment's
-        Clifford circuit into a ``2 ** n``-dimensional matrix and slices it down to ``n_states``;
-        that slice is only orthogonal when ``n_states`` spans the full sliced space, i.e. when it
-        is itself a power of 2.
-        """
+        """Test that a non-power-of-2 number of electronic states is rejected."""
         hamiltonian = build_hamiltonian(fragment_list(n_states=3, n_modes=2))
         wires = make_wires(3, 2)
         with pytest.raises(ValueError, match="power of 2"):
@@ -459,27 +435,15 @@ class TestConstruction:
             _validate_registers(registers, mode_registers, n_modes=2, n_states=2)
 
     def test_wires_are_concrete_rejects_abstract_wires(self):
-        """Test that ``_wires_are_concrete`` recognizes an ``AbstractWires`` structural
-        placeholder as not concrete.
+        """Test that ``_wires_are_concrete`` rejects ``AbstractWires`` placeholders.
 
-        This is exercised directly rather than through the public constructor: passing an
-        ``AbstractWires`` argument for a ``wire_argnames`` entry is detected by the operator
-        metaclass itself (``_contains_abstract_type``), which dispatches straight to
-        ``__abstract_init__`` and never reaches ``TrotterVibronic.__init__`` (and hence never
-        reaches ``_wires_are_concrete``) in the first place. Without this explicit check,
-        ``Wires(AbstractWires(n))`` would wrap the placeholder as a single, non-abstract-looking
-        wire label, so ``_wires_are_concrete`` would otherwise incorrectly return ``True``.
+        ``Wires(AbstractWires(n))`` would otherwise look concrete.
         """
         assert _wires_are_concrete(AbstractWires(2)) is False
         assert _wires_are_concrete([0, 1, 2]) is True
 
     def test_validate_registers_rejects_bad_electronic_size(self):
-        """Test that _validate_registers itself rejects a wrongly-sized electronic register.
-
-        ``__init__`` already checks this eagerly (see ``test_rejects_bad_electronic_size_at_
-        construction``) whenever the wires are concrete, so this exercises the check inside
-        ``_validate_registers`` directly (as called from ``compute_decomposition``) instead.
-        """
+        """Test that ``_validate_registers`` rejects a wrongly-sized electronic register."""
         registers = {
             "electronic": [0],  # 1 wire, but n_states=4 needs 2
             "cache": [1, 2, 3, 4],
@@ -492,14 +456,9 @@ class TestConstruction:
             _validate_registers(registers, mode_registers, n_modes=2, n_states=4)
 
     def test_init_skips_validation_with_traced_wire_label(self):
-        """Test that ``__init__`` skips register-size validation when a wire register contains a
-        traced wire label.
+        """Test that register-size validation is skipped when a wire label is traced.
 
-        A genuinely traced wire label (as opposed to an ``AbstractWires`` structural placeholder)
-        does not trip the metaclass's abstract-construction detection, so this goes through the
-        ordinary public constructor and exercises ``__init__``'s abstract-wire handling directly.
-        An invalid ``vib_wires`` size is used to confirm that register validation (which would
-        otherwise reject it) is genuinely skipped, not merely coincidentally satisfied.
+        Uses an invalid ``vib_wires`` size to confirm the check is genuinely skipped.
         """
         jax = pytest.importorskip("jax")
         hamiltonian = build_hamiltonian(fragment_list())
@@ -523,9 +482,7 @@ class TestConstruction:
         jax.make_jaxpr(make_traced)(np.asarray(wires["electronic"][0]))
 
     def test_init_accepts_traced_hamiltonian(self):
-        """Test that ``__init__`` accepts a traced (abstract) Hamiltonian: the fragment ``(0, j)``
-        diagonalization structure is imposed, and the concreteness-gated structure check is
-        skipped for abstract coefficients."""
+        """Test that a traced Hamiltonian is accepted and uses the ``(0, j)`` blocks structure."""
         jax = pytest.importorskip("jax")
         hamiltonian = build_hamiltonian(fragment_list(n_states=2, n_modes=1))
         wires = make_wires(2, 1)
@@ -547,7 +504,6 @@ class TestConstruction:
             assert op.name == "TrotterVibronic"
             return 0
 
-        # No error: the structure check is gated on concreteness, so a traced Hamiltonian is fine.
         jax.make_jaxpr(make_traced)(np.asarray(hamiltonian["constant"]))
 
 
@@ -588,23 +544,17 @@ class TestDecomposition:
         assert count_ops(queue, SemiAdder) > 0
 
     def test_kinetic_queues_aqft_no_basisstate(self, seed):
-        """Test that the kinetic fragment (marked by AQFT) appears only at non-zero evolution
-        time, and that it does not use ``BasisState``. The momentum coefficients are loaded with a
-        conditional ``PauliX`` per wire instead (see ``test_basis_loading_uses_pauli_x``)."""
+        """Test that the kinetic fragment queues an AQFT only at non-zero evolution time."""
         hamiltonian = build_hamiltonian(fragment_list(seed=seed))
         wires = make_wires(2, 2)
         zero = decomposition_queue(make_op(hamiltonian, wires, evolution_time=0.0))
         assert count_ops(zero, AQFT) == 0
         nonzero = decomposition_queue(make_op(hamiltonian, wires, evolution_time=0.1))
         assert count_ops(nonzero, AQFT) > 0
-        # No BasisState (or its adjoint/controlled forms) should be used in the decomposition.
-        assert count_ops(nonzero, qp.BasisState) == 0
+        assert count_ops(nonzero, qp.BasisState) == 0  # momentum coeffs loaded via ``PauliX``
 
     def test_basis_loading_uses_pauli_x(self):
-        """Test that loading a non-zero momentum coefficient bitstring emits conditional
-        ``PauliX`` gates (the ``BasisState``-free replacement) rather than a ``BasisState``."""
-        # A large kinetic coefficient guarantees a non-zero coefficient bitstring, so at least one
-        # ``PauliX`` is emitted by the basis-loading step.
+        """Test that non-zero momentum coefficients are loaded with conditional ``PauliX`` gates."""
         n_states, n_modes = 2, 1
         position = _zero_fragment(n_states, n_modes)
         kinetic = _zero_fragment(n_states, n_modes)
@@ -626,34 +576,17 @@ class TestDecomposition:
         assert count_ops(queue, SignedOutMultiplier) > 0
 
     def test_resource_function_is_graph_compatible(self):
-        """Test that the registered decomposition's resource keys can be abstractified.
-
-        This guards the resource function against regressing to bare operator classes (which the
-        decomposition graph cannot abstractify for :class:`~.Operator2` sub-operations such as QROM).
-        """
+        """Test that ``compute_resources`` succeeds with abstractifiable operator keys."""
         hamiltonian = build_hamiltonian(fragment_list(seed=1))
         op = make_op(hamiltonian, make_wires(2, 2))
         rule = qp.list_decomps(qp.TrotterVibronic)[0]
-        # ``compute_resources`` abstractifies every key internally and raises for bare Operator2
-        # classes, so a successful call with positive gate count is the assertion of interest.
         resources = rule.compute_resources(**op.arguments)
         assert resources.num_gates > 0
 
     @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_assert_valid(self):
-        """Test that ``TrotterVibronic`` passes ``assert_valid``.
-
-        This guards the pytree round-trip (the Hamiltonian dict key ordering) and the
-        resource/decomposition consistency under graph-based decomposition -- i.e. that every
-        gate emitted by the decomposition (including the ``adjoint``/``controlled`` wrappers) is
-        declared by the resource function.
-
-        ``skip_differentiation`` is set because differentiating the fully decomposed circuit
-        requires simulating a 20+ wire statevector, which is impractical in a unit test (execution
-        and program capture are exercised by dedicated tests). ``skip_decomp_matrix_check`` is set
-        because the template does not define a dense matrix.
-        """
+        """Test that ``TrotterVibronic`` passes ``assert_valid``."""
         hamiltonian = build_hamiltonian(fragment_list(n_states=2, n_modes=2, seed=1))
         op = make_op(hamiltonian, make_wires(2, 2), evolution_time=0.5)
         qp.ops.functions.assert_valid(
@@ -701,17 +634,7 @@ class TestDecomposition:
     @pytest.mark.capture
     @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_decomposition_resource_consistency_under_capture(self, seed):
-        """Test that the decomposition rule is resource-consistent under program capture.
-
-        ``assert_valid`` alone does not exercise this: its decomposition-consistency check runs
-        before capture is (internally, temporarily) enabled by its own capture check, so a
-        decomposition rule that is only consistent without capture (e.g. because one of its
-        sub-operations is a legacy :class:`~.Operation` whose wire/hyperparameter structure does
-        not round-trip through capture) would otherwise go undetected. This directly exercises
-        ``_test_decomposition_rule`` -- the same helper ``assert_valid`` uses internally, and the
-        same one used by e.g. ``test_incrementer.py::test_decomposition_capture`` -- with capture
-        enabled (via the ``capture`` marker).
-        """
+        """Test resource/decomposition consistency under capture via ``_test_decomposition_rule``."""
         from pennylane.ops.functions.assert_valid import (  # pylint: disable=import-outside-toplevel
             _test_decomposition_rule,
         )
@@ -795,12 +718,9 @@ def _phase_gradient_int(hamiltonian, wires, mode_value=0, electronic_state=0, ev
 
 
 class TestNumericalCorrectness:
-    """Exact numerical checks of the accumulated phase-gradient integer (mod ``2**b``).
+    """Exact checks of the accumulated phase-gradient integer (mod ``2**b``).
 
-    A symmetric second-order Trotter step visits every position fragment twice (forward and
-    backward), so each position term is accumulated twice per step; the tests below predict the
-    resulting integer from ``binary_decimals`` and assert it exactly. These would fail for a
-    circuit that applies the wrong phases (or none), unlike a finite/normalized state check.
+    Predicts the result from ``binary_decimals``; fails if the wrong phases are applied.
     """
 
     @pytest.mark.parametrize("electronic_state, m", [(0, 5), (1, 3)])
@@ -851,11 +771,7 @@ class TestNumericalCorrectness:
 def _single_fragment(n_states, n_modes, include_op_types, seed=0, skip_quadratic=False):
     """Build a single random position or kinetic dense fragment for targeted tests.
 
-    This mirrors the fragments the labs ``vibronic_fragments`` helpers would produce for the
-    requested operator types: a diagonal kinetic fragment for ``[("P", "P")]``, otherwise a
-    position fragment populating the ``(i, i ^ m)`` electronic blocks (and their transpose) with
-    the requested constant/linear/quadratic coefficients. Quadratic tensors keep only the strict
-    upper triangle (``skip_quadratic=True``) or the upper triangle including the diagonal.
+    Mirrors the labs ``vibronic_fragments`` layout for the requested operator types.
     """
     rng = np.random.default_rng(seed)
     fragment = _zero_fragment(n_states, n_modes)

@@ -486,11 +486,6 @@ def _(op: qtemps.TrotterProduct):
 
 @_map_to_resource_op.register
 def _(op: qtemps.TrotterVibronic):
-    # The dense vibronic Hamiltonian carries the number of electronic states ``N`` and
-    # vibrational modes ``M``; the grid size (qubits per mode) is read off the flattened
-    # vibrational register, and the coefficient/phase-gradient register sizes ``b`` fix the
-    # loading and phase-gradient precisions as ``2 ** -b``. The template is always a
-    # second-order (``order=2``), degree-two (position + kinetic) Trotter circuit.
     hamiltonian = op.arguments["hamiltonian"]
     num_states = hamiltonian["constant"].shape[1]
     num_modes = hamiltonian["linear"].shape[-1]
@@ -498,11 +493,8 @@ def _(op: qtemps.TrotterVibronic):
     coeff_wires = len(op.arguments["coefficient_wires"])
     phase_grad_wires = len(op.arguments["phase_gradient_wires"])
 
-    # ``VibronicHamiltonian``/``re_temps.TrotterVibronic`` assume the "full binary tree" XOR
-    # fragmentation of arXiv:2411.13669 (one position fragment per electronic-index pair,
-    # ``F == 2 ** ceil_log2(N)``) and derive their gate counts purely from ``num_states``. A
-    # differently-fragmented Hamiltonian (fewer/more position fragments) would silently map to
-    # the same resource estimate, so that assumption is checked explicitly here.
+    # ``VibronicHamiltonian`` assumes the standard XOR ("blocks") fragmentation
+    # (``F == 2 ** ceil_log2(N)``); reject others so the estimate cannot silently disagree.
     num_fragments = hamiltonian["constant"].shape[0]
     expected_fragments = 2 ** pl_math.ceil_log2(num_states)
     if num_fragments != expected_fragments:
