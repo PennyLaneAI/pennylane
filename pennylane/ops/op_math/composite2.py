@@ -326,7 +326,7 @@ class CompositeOp2(Operator2, is_baseclass=True):
     @property
     @handle_recursion_error
     def arithmetic_depth(self) -> int:
-        return 1 + max(op.arithmetic_depth for op in self)
+        return 1 + max(getattr(op, "arithmetic_depth", 0) for op in self)
 
     @property
     @abc.abstractmethod
