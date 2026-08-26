@@ -357,10 +357,7 @@ def change_op_basis_resource_rep(
 
     compute_op = abstractify(compute_op)
     target_op = abstractify(target_op)
-    if uncompute_op is None:
-        uncompute_op = _adjoint_abstract(compute_op)
-    else:
-        uncompute_op = abstractify(uncompute_op)
+    uncompute_op = abstractify(uncompute_op) if uncompute_op else _adjoint_abstract(compute_op)
     return qp.ops.ChangeOpBasis(compute_op, target_op, uncompute_op)
 
 
