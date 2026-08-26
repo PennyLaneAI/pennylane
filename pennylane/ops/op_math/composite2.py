@@ -25,6 +25,7 @@ from typing import override
 import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operator, Operator2
+from pennylane.queuing import remove_from_program
 from pennylane.wires import Wires
 
 from .composite import handle_recursion_error
@@ -58,7 +59,8 @@ class CompositeOp2(Operator2, is_baseclass=True):
         self._has_overlapping_wires = None
         self._overlapping_ops = None
         self._pauli_rep = self._build_pauli_rep() if _init_pauli_rep is None else _init_pauli_rep
-        self.queue()
+        for op in self:
+            remove_from_program(op)
 
     @override
     def __abstract_init__(self, operands, _init_pauli_rep=None):  # pylint: disable=arguments-differ
@@ -127,7 +129,8 @@ class CompositeOp2(Operator2, is_baseclass=True):
         return tuple(d for op in self for d in op.data)
 
     @handle_recursion_error
-    def eigvals(self):
+    # pylint: disable-next=unused-argument
+    def compute_eigvals(self, ops=None, _init_pauli_rep=None):
         """Return the eigenvalues of the specified operator.
 
         This method uses pre-stored eigenvalues for standard observables where
@@ -300,15 +303,6 @@ class CompositeOp2(Operator2, is_baseclass=True):
             )
 
         return self._op_symbol.join(_label(op, decimals, None, cache) for op in self)
-
-    def queue(self, context=qp.QueuingManager):
-        """Updates each operator's owner to self, this ensures
-        that the operators are not applied to the circuit repeatedly."""
-        if qp.QueuingManager.recording():
-            for op in self:
-                context.remove(op)
-            context.append(self)
-        return self
 
     @classmethod
     @abc.abstractmethod
