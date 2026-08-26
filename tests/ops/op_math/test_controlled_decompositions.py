@@ -48,7 +48,6 @@ from pennylane.ops.op_math.decompositions.controlled_decompositions import (
     decompose_mcx_one_worker,
 )
 from pennylane.wires import Wires
-from pennylane.capture.primitives import cond_prim, ctrl_transform_prim
 
 cw5 = tuple(list(range(1, 1 + n)) for n in range(2, 6))
 
@@ -821,6 +820,7 @@ class TestControlledTwoQubitUnitary:
         """Test that the controlled two qubit unitary rule is captured correctly."""
         from jax import make_jaxpr
         from jax import numpy as jnp
+        from pennylane.capture.primitives import cond_prim, ctrl_transform_prim
 
         kwargs = {
             "wires": jnp.array([0, 1, 2]),
