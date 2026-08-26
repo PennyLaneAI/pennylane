@@ -290,7 +290,7 @@ def _incrementer_fallback_decomposition(wires, work_wires, **_):
     for i in range(num_wires, 1, -1):
         MultiControlledX(
             wires[num_wires - i :][::-1],
-            [1 for _ in range(i - 1)],
+            [1] * (i - 1),
             work_wires=work_wires,
         )
 
