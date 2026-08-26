@@ -314,9 +314,10 @@ def test_sum_of_slaters_subroutine_with_dynamic_wires():
 
     jaxpr = jax.make_jaxpr(subroutine)(*(jnp.asarray(wires) for wires in all_wires.values()))
 
-    assert [var.aval.shape for var in jaxpr.jaxpr.invars] == [
-        (len(wires),) for wires in all_wires.values()
-    ]
+    jaxpr_text = str(jaxpr)
+    assert "MultiplexerStatePreparation" in jaxpr_text
+    assert "QROM" in jaxpr_text
+    assert "TemporaryAND" in jaxpr_text
 
 
 @pytest.mark.parametrize(
