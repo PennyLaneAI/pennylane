@@ -4,7 +4,7 @@
 
 * :func:`~.cond` now accepts an ``estimated_probability`` resource hint indicating the expected
   probability with which each branch is triggered. The hint is passed through to Catalyst and used
-  by func:`~.specs` to produce scalable yet accurate resource accounting for
+  by :func:`~.specs` to produce scalable yet accurate resource accounting for
   :func:`~.qjit`-compiled functions.
   [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
 
