@@ -355,20 +355,21 @@ def _unroll_change_op_basis_resource(op_rep):
 
 @_unroll_change_op_basis_resource.register
 def _unroll_native_change_op_basis(op_rep: qp.ops.ChangeOpBasis):
-    return _unroll_change_op_basis_operands(
-        (op_rep.compute_op, op_rep.target_op, op_rep.uncompute_op)
-    )
+    gate_counts = defaultdict(int)
+    for operand in (op_rep.compute_op, op_rep.target_op, op_rep.uncompute_op):
+        if (
+            isinstance(operand, CompressedResourceOp) and operand.op_type is qp.ops.Prod
+        ):  # legacy compat branch
+            for inner_op, count in operand.params["resources"].items():
+                gate_counts[inner_op] += count
+        else:
+            gate_counts[operand] += 1
+    return gate_counts
 
 
 def _unroll_symbolic_change_op_basis(op_rep, wrapper):
     """Unroll ChangeOpBasis inside one symbolic resource key and reapply its wrapper."""
-    unrolled_base = defaultdict(int)
-    for operand in op_rep.base:
-        if isinstance(operand, CompressedResourceOp) and operand.op_type is qp.ops.Prod:
-            for inner_op, count in operand.params["resources"].items():
-                unrolled_base[inner_op] += count
-        else:
-            unrolled_base[operand] += 1
+    unrolled_base = _unroll_change_op_basis_resource(op_rep.base)
     if unrolled_base == {op_rep.base: 1}:
         return {op_rep: 1}
 

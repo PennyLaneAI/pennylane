@@ -250,10 +250,10 @@ def test_change_op_basis_capture(compute_op, target_op, uncompute_op):
     ((_adjoint_abstract, Adjoint2), (partial(_pow_abstract, z=2), Pow2)),
 )
 def test_abstract_symbolic_resources_do_not_bind(make_rep, expected_type):
-    """Abstract symbolic resources containing compressed operands do not bind equations."""
+    """Abstract symbolic resources containing native operators do not bind equations."""
     import jax  # pylint: disable=import-outside-toplevel
 
-    prod_rep = qp.resource_rep(qp.ops.Prod, resources={abstractify(qp.S): 1})
+    prod_rep = qp.ops.Prod2((qp.S(Wire[1]),))
     base = qp.decomposition.change_op_basis_resource_rep(prod_rep, prod_rep, prod_rep)
     rep = make_rep(base)
 
