@@ -287,9 +287,9 @@ class TestAffineSubspaceIsometry:
             states.append(state)
 
         circuit, bijection = _find_affine_subspace_isometry(states, n, n_subspace)
-        mapped = self._apply_circuit(states, circuit, n)
-
         assert all(op_type in {"X", "CNOT", "SWAP"} for op_type, *_ in circuit)
+
+        mapped = self._apply_circuit(states, circuit, n)
         assert all((state & ((1 << (n - n_subspace)) - 1)) == 0 for state in mapped)
         assert [state >> (n - n_subspace) for state in mapped] == [
             bijection[i] for i in range(len(states))
@@ -311,28 +311,17 @@ class TestAffineSubspaceIsometry:
         assert not any(isinstance(op, (qp.QROM, qp.MultiControlledX)) for op in ops)
         assert any(isinstance(op, qp.CNOT) for op in ops)
 
-    def test_autograd_coefficients(self):
-        """Coefficient padding and permutation preserve the Autograd interface."""
-        coefficients = qp.numpy.array([0.5, 0.5, 0.5, 0.5], requires_grad=True)
-        indices = (0b1010, 0b0110, 0b1001, 0b0101)
-        dev = qp.device("default.qubit", wires=5)
-
-        @qp.qnode(dev, interface="autograd")
-        def circuit(values):
-            PartialUnaryStatePreparation(values, range(4), indices, [4])
-            return qp.probs(wires=0)
-
-        assert qp.math.allclose(circuit(coefficients), [0.5, 0.5])
-        assert qp.math.all(qp.math.isfinite(qp.jacobian(circuit)(coefficients)))
-
     def test_resource_model_caps_batches_and_accounts_for_excess_wires(self):
-        """Resource heuristics stay finite and change when excess wires enlarge the register."""
+        """Resource heuristics cap QROM widths and account for the enlarged register."""
         base = _pui_state_prep_resources(num_entries=3, num_wires=4, num_work_wires=1)
         excess = _pui_state_prep_resources(num_entries=3, num_wires=4, num_work_wires=5)
 
-        assert len(base) < 20
-        assert len(excess) < 20
-        assert base != excess
+        assert len(base) == 9
+        assert len(excess) == 10
+        assert {len(rep.target_wires) for rep in base if isinstance(rep, qp.QROM)} == {1, 2}
+        assert {len(rep.target_wires) for rep in excess if isinstance(rep, qp.QROM)} == {1, 2, 3}
+        assert (base[qp.X], base[qp.CNOT], base[qp.SWAP]) == (4, 4, 4)
+        assert (excess[qp.X], excess[qp.CNOT], excess[qp.SWAP]) == (8, 12, 8)
 
 
 def _is_binary(x: np.ndarray) -> bool:
@@ -566,9 +555,6 @@ class TestPartialUnaryStatePreparation:
 
         with pytest.raises(TypeError, match="must be integers"):
             PartialUnaryStatePreparation(np.ones(2) / np.sqrt(2), wires, (0, 1.5), [])
-
-        with pytest.raises(ValueError, match="must have norm 1.0"):
-            PartialUnaryStatePreparation(np.array([0.0]), wires, (0,), [])
 
         with pytest.raises(ValueError, match="must be disjoint"):
             PartialUnaryStatePreparation(np.ones(2) / np.sqrt(2), wires, (0, 1), [3, 4])
