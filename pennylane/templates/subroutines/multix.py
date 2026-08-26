@@ -72,10 +72,7 @@ class MultiX(Operator2):
 
     dynamic_argnames = ("bitstring",)
 
-    arg_specs = {
-        "bitstring": Bool[-1],
-        "wires": Wire[-1],
-    }
+    arg_specs = {"bitstring": Bool[-1], "wires": Wire[-1]}
 
     is_verified_hermitian = True
 
@@ -148,8 +145,12 @@ class MultiX(Operator2):
         # validate (throw error if inputs have problems)
         MultiX._validate_inputs(bitstring, wires)
         # cast (convert bitstring to Boolean dtype)
-        bitstring = math.cast(bitstring, bool)
-        return (bitstring, wires)
+        bitstring = (
+            Bool[len(bitstring)]
+            if isinstance(bitstring, AbstractArray)
+            else math.cast(bitstring, bool)
+        )
+        return bitstring, wires
 
     @staticmethod
     # pylint: disable-next=arguments-differ

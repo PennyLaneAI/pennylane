@@ -46,7 +46,7 @@ from pennylane.exceptions import (
     SparseMatrixUndefinedError,
     TermsUndefinedError,
 )
-from pennylane.pytrees import flatten, register_pytree, unflatten
+from pennylane.pytrees import flatten, leaf, register_pytree, unflatten
 from pennylane.typing import (
     AbstractArray,
     AbstractWires,
@@ -847,16 +847,14 @@ class Operator2(metaclass=OperatorMeta):
         for n, wires in self.wire_args.items():
             # Flattening/unflattening allows mapping hybrid wire arguments
             leaves, tree = flatten(wires, is_leaf=lambda w: isinstance(w, Wires))
-            mapped_leaves = [Wires([wire_map.get(w, w) for w in leaf]) for leaf in leaves]
+            mapped_leaves = [Wires([wire_map.get(w, w) for w in l]) for l in leaves]
             new_args[n] = unflatten(mapped_leaves, tree)
 
         for n, arg in self.hybrid_args.items():
             if n in self.wire_argnames:
                 continue
             leaves, tree = flatten(arg, is_leaf=_is_op)
-            leaves = [
-                leaf.map_wires(wire_map) if isinstance(leaf, Operator) else leaf for leaf in leaves
-            ]
+            leaves = [l.map_wires(wire_map) if isinstance(l, Operator) else l for l in leaves]
             new_args[n] = unflatten(leaves, tree)
 
         return type(self)(**new_args)
@@ -1528,28 +1526,29 @@ class Operator2(metaclass=OperatorMeta):
         if not enabled():
             return
 
-        # In place substitute AbstractArray and AbstractWires for symbolic arrays.
-        _abstract_args_to_symbolic_arrays(self._bound_args)
-        positional_args = [self.arguments[d] for d in self.dynamic_argnames]
+        # Substitute AbstractArray and AbstractWires for symbolic arrays.
+        arguments = {k: _to_symbolic_array(v) for k, v in self.arguments.items()}
+        positional_args = [arguments[d] for d in self.dynamic_argnames]
 
-        # In _abstract_args_to_symbolic_arrays we explicitly replace AbstractArray and
-        # AbstractWires with bindings of the symbolic_array primitive. If any of them
-        # still remain in the arguments, it would indicate that we're currently not in
-        # a tracing context, in which case we can exit early.
-        if any(isinstance(arg, (AbstractArray, AbstractWires)) for arg in positional_args):
+        # In _to_symbolic_array, we explicitly replace AbstractWires and AbstractArray
+        # with bindings of the symbolic_array primitive. If the arguments still contain
+        # instances of AbstractArray, it indicates that we're not in a tracing context,
+        # in which case we can exit early.
+        new_argument_leaves, _ = flatten(arguments)
+        if any(isinstance(l, (AbstractArray, AbstractWires)) for l in new_argument_leaves):
             return
 
         wire_lens = []
-        for name, value in self.wire_args.items():
-            if name not in self.hybrid_argnames:
-                positional_args.extend(value)
-                wire_lens.append(len(value))
+        pure_wire_argnames = (n for n in self.wire_argnames if n not in self.hybrid_argnames)
+        for name in pure_wire_argnames:
+            positional_args.extend(arguments[name])
+            wire_lens.append(len(arguments[name]))
 
         hybrid_lens, hybrid_trees = [], []
         forward_mask = []
         for name in self.hybrid_argnames:
             leaves, tree, mask = _process_bind_hybrid_arg(
-                self.arguments[name], is_wire_arg=name in self.wire_argnames
+                arguments[name], is_wire_arg=name in self.wire_argnames
             )
             forward_mask.extend(mask)
             positional_args.extend(leaves)
@@ -1992,30 +1991,41 @@ def _op_arg_forward_mask(op: Operator2) -> list[bool]:
     return hybrid_mask
 
 
-def _abstract_args_to_symbolic_arrays(bound_args):
-    """
-    This function in-place mutates the bound args, substituting any AbstractArray or
-    AbstractWires found for tracers without associated values. This allows us to capture
-    abstract operators for resource estimation in catalyst.
-    """
-    for name, value in bound_args.arguments.items():
-        partial_leaves, _ = flatten(value, is_leaf=_is_op)
-        _ = pop_op_eqns(filter(_is_op, partial_leaves))
-        leaves, struct = flatten(value)
-        new_leaves = [_to_symbolic_array(l) for l in leaves]
-        bound_args.arguments[name] = unflatten(new_leaves, struct)
+def _to_symbolic_array(value):
+
+    if isinstance(value, AbstractWires):
+        wire_array = [symbolic_array((), int) for _ in range(len(value))]
+        if any(isinstance(w, AbstractArray) for w in value):
+            return value  # if we're not in a tracing context, do nothing
+        return wire_array
+
+    if isinstance(value, AbstractArray):
+        return symbolic_array(value.shape, value.dtype)
+
+    leaves, struct = flatten(value)
+    if struct == leaf:
+        return value  # return pytree leaves as is
+
+    # before using unflatten to reconstruct the hybrid args which would bind new
+    # operator primitives, we remove the old operator primitives from the program.
+    _prune_op_primitives(value)
+
+    new_leaves = [_to_symbolic_array(l) for l in leaves]
+    return unflatten(new_leaves, struct)
 
 
-def _to_symbolic_array(arg):
-    if isinstance(arg, AbstractWires):
-        return [symbolic_array((), int) for _ in range(len(arg))]
-    if isinstance(arg, AbstractArray):
-        return symbolic_array(arg.shape, arg.dtype)
-    return arg
+def _prune_op_primitives(value):
+    partial_leaves, struct = flatten(value, is_leaf=_is_op)
+    op_leaves = list(filter(_is_op, partial_leaves))
+    _ = pop_op_eqns(op_leaves)
+    if struct != leaf:
+        for l in op_leaves:
+            _prune_op_primitives(l)
 
 
 def _process_bind_hybrid_arg(hybrid_val, is_wire_arg: bool) -> tuple[list, Any, list[bool]]:
     """Process a hybrid argument for binding an operator primitive."""
+
     # We don't use is_leaf=_is_op because we're deliberately not supporting program
     # capture with legacy operators mixed with new operators
     partial_leaves, _ = flatten(hybrid_val, is_leaf=lambda h: isinstance(h, Operator2))
