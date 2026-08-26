@@ -380,8 +380,6 @@ def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, dou
     stays uncontrolled either way.
     """
     num_cas = Z.shape[0]
-    # Double-phase assumes a single control wire; ``register_condition`` below enforces this.
-    double_phase = len(control_wires) == 1 and double_phase
 
     def _angle(wire_idx0, wire_idx1):
         # Two-body prefactor. In the fragment basis the generator is a sum over distinct wire

@@ -436,8 +436,6 @@ def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, dou
     """
     num_modes = Z.shape[0]
     n_states = Z.shape[2]
-    # Double-phase assumes a single control wire; ``register_condition`` below enforces this.
-    double_phase = len(control_wires) == 1 and double_phase
 
     for l in range(1, num_modes):
         for m in range(l):  # strict lower triangle: l > m
