@@ -144,7 +144,7 @@ class CompositeOp2(Operator2, is_baseclass=True):
 
     @handle_recursion_error
     # pylint: disable-next=unused-argument
-    def compute_eigvals(self, ops=None, _init_pauli_rep=None):
+    def compute_eigvals(self, operands=None, _init_pauli_rep=None):
         """Return the eigenvalues of the specified operator.
 
         This method uses pre-stored eigenvalues for standard observables where
