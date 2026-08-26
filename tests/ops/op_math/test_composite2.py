@@ -97,6 +97,7 @@ class NonOverlappingOp(ValidOp):
         self._overlapping_ops = []
 
 
+@pytest.mark.capture
 @pytest.mark.parametrize(
     "ops",
     [
