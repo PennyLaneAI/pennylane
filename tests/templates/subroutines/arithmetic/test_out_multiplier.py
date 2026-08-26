@@ -31,7 +31,6 @@ from pennylane.templates.subroutines.arithmetic.out_multiplier import (
 from pennylane.templates.subroutines.arithmetic.semi_adder import SemiAdder
 from pennylane.typing import Wire
 
-
 PL2DO_QFT_CAPTURE = pytest.mark.parametrize(
     "enable_and_disable_capture",
     [
