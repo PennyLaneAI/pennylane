@@ -21,7 +21,7 @@ from functools import reduce
 from typing import override
 
 import pennylane as qp
-from pennylane import capture, math
+from pennylane import math
 from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.core.queuing import apply
 from pennylane.decomposition import add_decomps, register_resources
@@ -31,11 +31,6 @@ from pennylane.wires import Wires
 from .composite import handle_recursion_error
 from .composite2 import CompositeOp2
 from .prod import MAX_NUM_WIRES_KRON_PRODUCT, _swappable_ops
-
-
-def _is_abstract_operator(op) -> bool:
-    """Return whether ``op`` is an operator-valued JAX tracer."""
-    return math.is_abstract(op) and isinstance(op.aval, capture.AbstractOperator)
 
 
 class Prod2(CompositeOp2):

@@ -25,6 +25,7 @@ import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.exceptions import DecompositionUndefinedError
+from pennylane.ops.functions.assert_valid import assert_valid
 from pennylane.ops.op_math import CompositeOp2
 from pennylane.pauli.pauli_arithmetic import PauliWord
 from pennylane.queuing import AnnotatedQueue
@@ -94,6 +95,22 @@ class NonOverlappingOp(ValidOp):
     def __init__(self, operands: Sequence[Operator], _init_pauli_rep=None):
         super().__init__(operands, _init_pauli_rep=_init_pauli_rep)
         self._overlapping_ops = []
+
+
+@pytest.mark.capture
+@pytest.mark.parametrize(
+    "ops",
+    [
+        (qp.S(0),),
+        (qp.S(0), qp.T(1)),
+        (qp.S(0), qp.T(1), qp.S(2)),
+        (qp.S(0), qp.T(1), qp.S(2), qp.T(3)),
+    ],
+)
+def test_standard_validity(ops):
+    """Run standard validity checks on a valid op."""
+    op = ValidOp(ops)
+    assert_valid(op)
 
 
 class TestConstruction:

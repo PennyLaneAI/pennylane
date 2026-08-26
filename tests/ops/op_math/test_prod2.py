@@ -15,11 +15,19 @@
 
 # pylint: disable=import-outside-toplevel
 
+from functools import reduce
+
 import numpy as np
 import pytest
 
 import pennylane as qp
 from pennylane.ops.op_math.prod2 import Prod2
+
+
+def _product_matrix(factors, wire_order):
+    """Independent reference matrix: the ordered matrix product of the factors."""
+    mats = [qp.matrix(f, wire_order=wire_order) for f in factors]
+    return reduce(np.matmul, mats)
 
 
 class TestInitialization:
@@ -96,7 +104,7 @@ class TestParameters:
 
 
 class TestMatrix:
-    """Test the matrix representations against the legacy ``Prod``."""
+    """Test the matrix representations of a product."""
 
     @pytest.mark.parametrize(
         "factors",
@@ -106,19 +114,39 @@ class TestMatrix:
             [qp.Hadamard(0), qp.CNOT([0, 1])],
         ],
     )
-    def test_matrix_matches_prod(self, factors):
-        """Test that the matrix matches that of the legacy ``Prod``."""
+    def test_matrix(self, factors):
+        """Test that the matrix is the ordered matrix product of the factors."""
         wire_order = qp.wires.Wires.all_wires([f.wires for f in factors])
-        p2 = qp.matrix(Prod2(factors), wire_order=wire_order)
-        p1 = qp.matrix(qp.prod(*factors), wire_order=wire_order)
-        assert np.allclose(p2, p1)
+        mat = qp.matrix(Prod2(factors), wire_order=wire_order)
+        assert np.allclose(mat, _product_matrix(factors, wire_order))
 
-    def test_sparse_matrix_matches_prod(self):
-        """Test that the sparse matrix matches that of the legacy ``Prod``."""
+    def test_matrix_batched(self):
+        """Test that a broadcasted product's matrix is the per-element Kronecker product."""
+        x = np.array([0.1, 0.2, 0.3])
+        y = np.array([0.4, 0.5, 0.6])
+        mat = qp.matrix(Prod2([qp.RX(x, 0), qp.RY(y, 1)]), wire_order=[0, 1])
+        # operands act on distinct wires, so each broadcasted matrix is a Kronecker product
+        expected = np.stack(
+            [np.kron(qp.matrix(qp.RX(xi, 0)), qp.matrix(qp.RY(yi, 1))) for xi, yi in zip(x, y)]
+        )
+        assert mat.shape == (3, 4, 4)
+        assert np.allclose(mat, expected)
+
+    def test_sparse_matrix(self):
+        """Test that the sparse matrix is the ordered matrix product of the factors."""
         factors = [qp.X(0), qp.Z(1)]
-        p2 = Prod2(factors).sparse_matrix(wire_order=[0, 1]).todense()
-        p1 = qp.prod(*factors).sparse_matrix(wire_order=[0, 1]).todense()
-        assert np.allclose(p2, p1)
+        mat = Prod2(factors).sparse_matrix(wire_order=[0, 1]).todense()
+        assert np.allclose(mat, _product_matrix(factors, [0, 1]))
+
+    def test_sparse_matrix_overlapping(self):
+        """Test the sparse matrix of non-Pauli operands sharing a wire (overlapping branch)."""
+        op = Prod2([qp.RX(0.5, 0), qp.RX(0.3, 0)])
+        # forces the overlapping-wires branch: no Pauli rep and shared wires
+        assert op.pauli_rep is None
+        assert op.has_overlapping_wires
+        # RX(0.5) @ RX(0.3) composes to a single RX(0.8) rotation on the shared wire
+        mat = op.sparse_matrix(wire_order=[0]).todense()
+        assert np.allclose(mat, qp.matrix(qp.RX(0.8, 0)))
 
     def test_pauli_rep(self):
         """Test the Pauli representation of a product."""
@@ -136,14 +164,12 @@ class TestActions:
         assert op.decomposition() == [qp.Z(1), qp.X(0)]
 
     def test_adjoint(self):
-        """Test that the adjoint is a ``Prod2`` with the correct matrix."""
+        """Test that the adjoint is a ``Prod2`` whose matrix is the conjugate transpose."""
         op = Prod2([qp.RZ(0.5, 0), qp.PhaseShift(0.3, 1)])
         adj = op.adjoint()
         assert isinstance(adj, Prod2)
-        assert np.allclose(
-            qp.matrix(adj, wire_order=[0, 1]),
-            qp.matrix(qp.adjoint(qp.prod(qp.RZ(0.5, 0), qp.PhaseShift(0.3, 1))), wire_order=[0, 1]),
-        )
+        expected = qp.matrix(op, wire_order=[0, 1]).conj().T
+        assert np.allclose(qp.matrix(adj, wire_order=[0, 1]), expected)
 
     def test_map_wires(self):
         """Test that ``map_wires`` relabels the operands' wires."""
@@ -158,12 +184,33 @@ class TestActions:
         assert q.queue == [op]
 
 
+class TestHermitian:  # pylint: disable=too-few-public-methods
+    """Test the non-exhaustive Hermiticity check."""
+
+    def test_hermitian_non_overlapping(self):
+        """Test that a product of Hermitian operators on distinct wires is Hermitian."""
+        assert Prod2([qp.X(0), qp.Z(1)]).is_verified_hermitian is True
+
+    def test_not_hermitian_overlapping_wires(self):
+        """Test that operands sharing wires are not verified Hermitian."""
+        assert Prod2([qp.X(0), qp.Z(0)]).is_verified_hermitian is False
+
+    def test_not_hermitian_non_hermitian_operand(self):
+        """Test that a non-Hermitian operand makes the product not verified Hermitian."""
+        assert Prod2([qp.RX(0.5, 0), qp.Z(1)]).is_verified_hermitian is False
+
+
 class TestEqualityAndHash:
     """Test equality and hashing, including commuting operands."""
 
     def test_equal(self):
         """Test that equal products compare equal."""
         assert Prod2([qp.X(0), qp.Z(1)]) == Prod2([qp.X(0), qp.Z(1)])
+
+    def test_qp_equal_dispatch(self):
+        """Test that ``qp.equal`` dispatches correctly for two ``Prod2`` operators."""
+        assert qp.equal(Prod2([qp.X(0), qp.Z(1)]), Prod2([qp.X(0), qp.Z(1)]))
+        assert not qp.equal(Prod2([qp.X(0), qp.Z(1)]), Prod2([qp.X(0), qp.Y(1)]))
 
     def test_equal_commuting_operands(self):
         """Test that products of commuting operands compare equal."""
@@ -185,16 +232,7 @@ class TestValidity:  # pylint: disable=too-few-public-methods
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_assert_valid(self):
         """Test that ``Prod2`` is defined correctly."""
-        # Due to incompatibilities with program capture + assert_valid + Operator2,
-        # we skip some checks when program capture is enabled
-        if qp.capture.enabled():
-            kwargs = {"skip_wire_mapping": True, "skip_new_decomp": True}
-        else:
-            kwargs = {"skip_capture": True}
-
-        qp.ops.functions.assert_valid(
-            Prod2([qp.RZ(0.5, 0), qp.Z(1)]), skip_differentiation=True, **kwargs
-        )
+        qp.ops.functions.assert_valid(Prod2([qp.RX(0.5, 0), qp.Z(1)]), skip_differentiation=True)
 
 
 class TestIntegration:
