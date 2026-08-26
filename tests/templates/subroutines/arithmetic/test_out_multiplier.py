@@ -26,6 +26,7 @@ from pennylane.templates.subroutines.arithmetic.out_multiplier import (
     OutMultiplier,
     _add_plus_one,
     _out_multiplier_with_cache_resources,
+    _out_multiplier_with_caddsub,
     _out_multiplier_with_qft,
 )
 from pennylane.templates.subroutines.arithmetic.semi_adder import SemiAdder
@@ -119,40 +120,6 @@ class TestBuildingBlocks:
         probs = node(x_state, y_state, transformed_state)
         assert np.isclose(probs[0], 1.0)
         assert np.allclose(probs[1:], 0.0)
-
-    @pytest.mark.parametrize("flip_control", [None, ([9], 0), ([9], 1)])
-    def test_adder_flipped_first_work_wire_capture_matches_eager(self, flip_control):
-        """Regression test (#10065): ``_adder_flipped_first_work_wire`` collects a semi-adder in a
-        queue, inserts work-wire bit flips at fixed positions and replays the reordered list. Under
-        program capture operators bind at construction time, so without ``capture.pause()`` the
-        reordering was lost and the reused flip appeared only once. The captured op sequence must
-        match eager exactly."""
-        pytest.importorskip("jax")
-        # pylint: disable=import-outside-toplevel
-        from pennylane.templates.subroutines.arithmetic.out_multiplier import (
-            _adder_flipped_first_work_wire,
-        )
-
-        x_wires, y_wires, work_wires = [0, 1, 2, 3], [4, 5, 6], [10, 11]
-
-        def circuit():
-            _adder_flipped_first_work_wire(x_wires, y_wires, work_wires, flip_control=flip_control)
-
-        def seq(tape):
-            return [(type(op).__name__, tuple(op.wires)) for op in tape.operations]
-
-        with qp.queuing.AnnotatedQueue() as q:
-            circuit()
-        eager = seq(qp.tape.QuantumScript.from_queue(q))
-
-        qp.capture.enable()
-        try:
-            plxpr = qp.capture.make_plxpr(circuit)()
-            captured = seq(qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts))
-        finally:
-            qp.capture.disable()
-
-        assert captured == eager
 
 
 @pytest.mark.parametrize(
@@ -557,6 +524,29 @@ class TestOutMultiplier:
             if applicable:
                 all_wires = (x_wires, y_wires, output_wires, work_wires)
                 _test_mult_correctness(all_wires, mod, rule, seed)
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize(
+        ("x_wires", "y_wires", "output_wires", "mod", "work_wires", "output_wires_zeroed"),
+        [
+            ([0, 1, 2], [3, 6], [5, 8], 4, [9, 10, 11], False),
+            ([0, 1, 2], [3, 6], [5, 8], 4, [9, 10, 11], True),
+            ([0, 1, 2], [3], [5, 7, 8], None, [9, 10, 11, 12], False),
+            ([0], [3, 6], [5, 8], 4, [9, 10, 11], True),
+        ],
+    )
+    def test_decomposition_caddsub_rule_capture(
+        self, x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed
+    ):  # pylint: disable=too-many-arguments
+        """Regression test (#10065): ``_out_multiplier_with_caddsub`` relies internally on
+        ``_adder_flipped_first_work_wire``, whose collect-reorder-replay strategy used to be
+        capture-unsafe. Verify the rule still decomposes correctly with program capture
+        enabled."""
+        op = OutMultiplier(
+            x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=output_wires_zeroed
+        )
+        assert _out_multiplier_with_caddsub.is_applicable(**op.arguments)
+        _test_decomposition_rule(op, _out_multiplier_with_caddsub)
 
     def test_work_wires_added_correctly(self):
         """Test that no work wires are added if work_wire = None"""

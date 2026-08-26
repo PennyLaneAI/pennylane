@@ -276,36 +276,34 @@ class TestControlledCapture:
         op_eqns = tuple(eqn for eqn in jaxpr.eqns if eqn.primitive is operator_p)
         assert len(op_eqns) == 0
 
-    def test_work_wires_recorded(self, ctrl_fn):
-        """Test that work_wires and work_wire_type survive plxpr encode/decode (#10065)."""
-        jaxpr = jax.make_jaxpr(
-            lambda x: ctrl_fn(RX2(x, wires=1), [0], work_wires=[5], work_wire_type="zeroed").tracer
-        )(0.5)
+    @pytest.mark.parametrize("traced_work_wire", [False, True])
+    def test_work_wires_recorded(self, ctrl_fn, traced_work_wire):
+        """Test that work_wires and work_wire_type survive plxpr encode/decode (#10065),
+        whether the work wire is a concrete literal or an abstract (traced) value."""
+        if traced_work_wire:
+            jaxpr = jax.make_jaxpr(
+                lambda x, w: ctrl_fn(
+                    RX2(x, wires=1), [0], work_wires=[w], work_wire_type="zeroed"
+                ).tracer
+            )(0.5, 5)
+            args = (0.7, 5)
+        else:
+            jaxpr = jax.make_jaxpr(
+                lambda x: ctrl_fn(
+                    RX2(x, wires=1), [0], work_wires=[5], work_wire_type="zeroed"
+                ).tracer
+            )(0.5)
+            args = (0.7,)
         eqn = _single_op_eqn(jaxpr)
 
         assert eqn.params["n_ctrls"] == 1
         assert eqn.params["n_ctrl_work_wires"] == 1
         assert eqn.params["ctrl_work_wire_type"] == "zeroed"
+        if traced_work_wire:
+            assert jaxpr.jaxpr.invars[1] in eqn.invars
 
         # pylint: disable=unbalanced-tuple-unpacking
-        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.7)
-        expected = ControlledOp2(RX2(0.7, 1), [0], work_wires=[5], work_wire_type="zeroed")
-        qp.assert_equal(op, expected)
-
-    def test_traced_work_wires_recorded(self, ctrl_fn):
-        """Test that abstract (traced) work wires survive plxpr encode/decode."""
-        jaxpr = jax.make_jaxpr(
-            lambda x, w: ctrl_fn(
-                RX2(x, wires=1), [0], work_wires=[w], work_wire_type="zeroed"
-            ).tracer
-        )(0.5, 5)
-        eqn = _single_op_eqn(jaxpr)
-
-        assert eqn.params["n_ctrl_work_wires"] == 1
-        assert jaxpr.jaxpr.invars[1] in eqn.invars
-
-        # pylint: disable=unbalanced-tuple-unpacking
-        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.7, 5)
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
         expected = ControlledOp2(RX2(0.7, 1), [0], work_wires=[5], work_wire_type="zeroed")
         qp.assert_equal(op, expected)
 
@@ -365,30 +363,30 @@ class TestControlledCapture:
         assert list(op.work_wires) == [5]
         assert op.work_wire_type == "zeroed"
 
-    def test_single_wrap_empty_work_wires_preserves_zeroed(self, ctrl_fn):
-        """A fresh single control wrap with no work wires must preserve ``work_wire_type="zeroed"``
-        verbatim rather than collapsing it to the ``"borrowed"`` default (#10065). This
-        discriminates the single-wrap branch of ``_bind_primitive`` from the nested-merge branch:
-        ``resolve_work_wire_type`` over two empty work-wire sets returns ``"borrowed"``, which must
-        not be applied to a fresh wrap."""
+    @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
+    def test_single_wrap_empty_work_wires_preserves_work_wire_type(self, ctrl_fn, work_wire_type):
+        """A fresh single control wrap with no work wires must preserve the specified
+        ``work_wire_type`` verbatim rather than collapsing it to the ``"borrowed"`` default
+        (#10065). This discriminates the single-wrap branch of ``_bind_primitive`` from the
+        nested-merge branch: ``resolve_work_wire_type`` over two empty work-wire sets returns
+        ``"borrowed"``, which must not be applied to a fresh wrap."""
 
         def f(x):
-            ctrl_fn(RX2(x, wires=1), [0], work_wire_type="zeroed")
+            ctrl_fn(RX2(x, wires=1), [0], work_wire_type=work_wire_type)
 
         plxpr = qp.capture.make_plxpr(f)(0.7)
         tape = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, 0.7)
 
         op = tape.operations[0]
-        assert op.work_wire_type == "zeroed"
-        qp.assert_equal(op, ControlledOp2(RX2(0.7, 1), [0], work_wire_type="zeroed"))
+        assert op.work_wire_type == work_wire_type
+        qp.assert_equal(op, ControlledOp2(RX2(0.7, 1), [0], work_wire_type=work_wire_type))
 
 
 @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
 class TestControlledStaticWorkWireTypeRoundTrip:
-    """Regression tests for the primitive-param name collision (#10065). Operators that declare
-    ``work_wire_type`` as their own static argument (e.g. ``MultiControlledX``,
-    ``ControlledQubitUnitary``) must not have it silently swallowed and reset to the default by
-    the controlled-specific primitive param of the same name during capture."""
+    """Regression tests for verifying that primitive parameters containing work wire
+    specs for controlled operators do not collide with the parameters of custom
+    controlled operators."""
 
     def test_multi_controlled_x(self, work_wire_type):
         """``MultiControlledX.work_wire_type`` survives the full plxpr round trip."""
