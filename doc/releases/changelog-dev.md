@@ -1095,6 +1095,7 @@
   [(#9933)](https://github.com/PennyLaneAI/pennylane/pull/9933)
   [(#10042)](https://github.com/PennyLaneAI/pennylane/pull/10042)
   [(#10073)](https://github.com/PennyLaneAI/pennylane/pull/10073)
+  [(#10078)](https://github.com/PennyLaneAI/pennylane/pull/10078)
   - Quantum chemistry operators are ported:
     - :class:`~.SingleExcitation`
   [(#9944)](https://github.com/PennyLaneAI/pennylane/pull/9944)
@@ -1351,10 +1352,6 @@
   [(#9621)](https://github.com/PennyLaneAI/pennylane/pull/9621)
 
 <h3>Bug fixes 🐛</h3>
-
-* Fixed :class:`~.SumOfSlatersPrep` so its decomposition supports dynamic wire arguments and
-  returns Python integer resource counts, allowing it to be compiled with Catalyst.
-  [(#10078)](https://github.com/PennyLaneAI/pennylane/pull/10078)
 
 * Fixed the QFT-based decomposition of :class:`~.OutMultiplier` so it can be captured and
   compiled with Catalyst when ``mod = 2 ** len(output_wires)``.
