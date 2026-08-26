@@ -69,7 +69,7 @@ class CompositeOp2(Operator2, is_baseclass=True):
 
     def __repr__(self):
         return f" {self._op_symbol} ".join(
-            [f"({op})" if op.arithmetic_depth > 0 else f"{op}" for op in self]
+            [f"({op})" if getattr(op, "arithmetic_depth", 0) > 0 else f"{op}" for op in self]
         )
 
     def __iter__(self):
