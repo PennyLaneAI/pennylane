@@ -49,13 +49,13 @@ def _generate_display_name_for_symbolic_var(var: str, display_names: dict[str, s
 
 
 def _update_resource_dict(
-    result_dict: dict[str, Any], call_count: int | Expression, fn_resources: dict[str, Any]
+    result_dict: dict[str, Any], call_count: int | float | Expression, fn_resources: dict[str, Any]
 ) -> None:
     """Helper function to update a resource dictionary with the resources from a called function.
 
     Args:
         result_dict (dict[str, Any]): The resource dictionary to update
-        call_count (int | Expression): The number of times the called function is invoked
+        call_count (int | float | Expression): The number of times the called function is invoked
         fn_resources (dict[str, Any]): The resources of the called function
     """
     for label, value in fn_resources.items():
@@ -130,11 +130,14 @@ def _mlir_resources_to_specs_resources(
     for called_fn, call_count in itertools.chain(
         function_calls["static"].items(), function_calls["dynamic"].items()
     ):
-        if not isinstance(call_count, int):
-            # If there is no integer call count, we have to treat this as a symbolic variable
+        if isinstance(call_count, str):
+            # Dynamic loop bodies use a hash string as a symbolic trip-count variable.
             var_name = _generate_display_name_for_symbolic_var(call_count, display_names)
-
             call_count = Expression({(var_name,): 1})
+        elif not isinstance(call_count, (int, float)):
+            raise TypeError(
+                f"Unexpected function call count type {type(call_count).__name__} for '{called_fn}'."
+            )
         if called_fn not in fn_resources:
             _mlir_resources_to_specs_resources(all_data, called_fn, fn_resources, display_names)
 
@@ -175,7 +178,7 @@ def _mlir_resources_to_specs_resources(
 
 def _handle_extended_fields(
     extended_fields: dict[str, Any],
-    call_count: int | Expression,
+    call_count: int | float | Expression,
     called_fn_resources: SpecsResources,
 ) -> None:
     """Helper function to handle extended fields in the resource data.

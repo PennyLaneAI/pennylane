@@ -35,13 +35,13 @@ from .expression import Expression
 
 
 def _count_to_str(
-    count: int | Expression, extra_compact: bool = False, markdown_safe: bool = False
+    count: int | float | Expression, extra_compact: bool = False, markdown_safe: bool = False
 ) -> str:
     """
     Helper for printing counts, converts large counts to scientific notation and standardizes printing of expressions.
 
     Args:
-        count (int | Expression): the count to convert to a string
+        count (int | float | Expression): the count to convert to a string
         extra_compact (bool): whether to remove spaces from expressions for compactness
         markdown_safe (bool): whether to escape asterisks for markdown tables
     """
@@ -54,6 +54,12 @@ def _count_to_str(
                 retval = retval.replace(" ", "")  # Remove spaces from expressions for compactness
             return retval
         count = int(count)
+    if isinstance(count, float):
+        # Fractional counts arise from probabilistic branch weighting (resource-estimation hints).
+        if count.is_integer():
+            count = int(count)
+        else:
+            return str(count)
     return f"{count:,}" if count < 100_000 else f"{Decimal(count):.3E}"
 
 
@@ -467,7 +473,7 @@ class SpecsResources(Resources):
         # NOTE: Have to use explicit class arguments in super calls due to a bug with slots in
         # dataclasses in Python 3.12 and earlier (https://github.com/python/cpython/issues/90562)
         # pylint: disable=super-with-arguments
-        super(SpecsResources, self).__post_init__()  # Fall through to parent post init
+        super().__post_init__()  # Fall through to parent post init
 
     def __getitem__(self, key):
         # Need to match
@@ -481,7 +487,7 @@ class SpecsResources(Resources):
         # NOTE: Have to use explicit class arguments in super calls due to a bug with slots in
         # dataclasses in Python 3.12 and earlier (https://github.com/python/cpython/issues/90562)
         # pylint: disable=super-with-arguments
-        return super(SpecsResources, self).__getitem__(key)
+        return super().__getitem__(key)
 
     @property
     def quantum_operations(self):
@@ -636,7 +642,7 @@ class PBCSpecsResources(SpecsResources):
         # NOTE: Have to use explicit class arguments in super calls due to a bug with slots in
         # dataclasses in Python 3.12 and earlier (https://github.com/python/cpython/issues/90562)
         # pylint: disable=super-with-arguments
-        s = super(PBCSpecsResources, self).to_pretty_str(preindent=preindent)
+        s = super().to_pretty_str(preindent=preindent)
 
         s += (
             "\nPBC Depths:\n"
@@ -658,7 +664,7 @@ class PBCSpecsResources(SpecsResources):
         # NOTE: Have to use explicit class arguments in super calls due to a bug with slots in
         # dataclasses in Python 3.12 and earlier (https://github.com/python/cpython/issues/90562)
         # pylint: disable=super-with-arguments
-        s = super(PBCSpecsResources, self)._repr_markdown_()
+        s = super()._repr_markdown_()
 
         s += (
             "\n"

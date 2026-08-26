@@ -51,6 +51,37 @@ def _term_to_str(vars: tuple[str, ...], coeff: int) -> str:
     return f"{coeff}*{'*'.join(vars)}"
 
 
+def _coerce_float_operand(value: float, op: str) -> int:
+    """Coerce a float operand to ``int`` for use in symbolic ``Expression`` arithmetic.
+
+    ``Expression`` represents *symbolic* resource counts (for example, the trip count of a
+    dynamic loop). Its coefficients are integers throughout, so only whole-number floats can
+    participate in symbolic arithmetic. Genuine fractional values, which arise from
+    probabilistic branch weighting via ``estimated_probability`` resource hints, cannot be
+    represented symbolically and are rejected with an explanatory error.
+
+    Args:
+        value (float): the float operand to coerce.
+        op (str): the arithmetic operation being attempted (e.g. ``"multiply"``), used only
+            for the error message.
+
+    Returns:
+        int: the equivalent integer value.
+
+    Raises:
+        TypeError: if ``value`` is not a whole number.
+    """
+    if not value.is_integer():
+        raise TypeError(
+            f"Cannot {op} a symbolic resource count and the fractional value {value}. "
+            "Symbolic counts arise from dynamic control flow (such as a dynamic loop), while "
+            "fractional counts arise from probabilistic branch weighting via the "
+            "'estimated_probability' resource hint. These two modes are incompatible: a "
+            "resource count currently cannot be both symbolic and fractional."
+        )
+    return int(value)
+
+
 class Expression:
     """
     Internal class for representing symbolic expressions of resources.
@@ -238,6 +269,9 @@ class Expression:
         return self._data[()]
 
     def __mul__(self, other) -> Union["Expression", int]:
+        if isinstance(other, float):
+            other = _coerce_float_operand(other, "multiply")
+
         if not isinstance(other, (int, Expression)):
             return NotImplemented
 
@@ -263,6 +297,9 @@ class Expression:
         return self.__mul__(other)
 
     def __add__(self, other) -> Union["Expression", int]:
+        if isinstance(other, float):
+            other = _coerce_float_operand(other, "add")
+
         if not isinstance(other, (int, Expression)):
             return NotImplemented
 

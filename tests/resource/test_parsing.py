@@ -246,6 +246,83 @@ class TestAnalysisPassConversion:
             )
         ]
 
+    def test_fractional_operation_counts_from_branch_probabilities(self):
+        """Probabilistic branch weighting (from cond ``estimated_probability`` hints) can
+        produce fractional operation counts, which must be preserved."""
+        with pytest.warns(UserWarning, match="branch"):
+            actual = parse_resources_json(
+                {
+                    "circuit": {
+                        "classical_instructions": {},
+                        "extended_fields": {},
+                        "function_calls": {"dynamic": {}, "static": {}},
+                        "measurement_processes": {"probs()": 1},
+                        "metadata": {
+                            "auto_qubit_management": False,
+                            "device_name": "NullQubit",
+                            "has_branches": True,
+                            "qnode": True,
+                        },
+                        "num_qubits": {"alloc": 4, "arg": 0, "total": 4},
+                        "quantum_operations": {"1": {"RY": 0.3, "RX": 0.2}},
+                    }
+                }
+            )
+
+        assert actual == [
+            SpecsResources(
+                counts={"RX": 0.2, "RY": 0.3},
+                measurement_processes={"probs()": 1},
+                num_wires=4,
+                circuit_depth=None,
+            )
+        ]
+
+    def test_fractional_function_call_count(self):
+        """A float call count (e.g. a probability-weighted branch) must be treated as a
+        numeric factor, not as a symbolic trip-count variable."""
+        actual = parse_resources_json(
+            {
+                "circuit": {
+                    "classical_instructions": {},
+                    "extended_fields": {},
+                    "function_calls": {"dynamic": {}, "static": {"sub": 2.5}},
+                    "measurement_processes": {},
+                    "metadata": {
+                        "auto_qubit_management": False,
+                        "device_name": "NullQubit",
+                        "has_branches": False,
+                        "qnode": True,
+                    },
+                    "num_qubits": {"alloc": 4, "arg": 0, "total": 4},
+                    "quantum_operations": {"1": {"Hadamard": 1}},
+                },
+                "sub": {
+                    "classical_instructions": {},
+                    "extended_fields": {},
+                    "function_calls": {"dynamic": {}, "static": {}},
+                    "measurement_processes": {},
+                    "metadata": {
+                        "auto_qubit_management": None,
+                        "device_name": "",
+                        "has_branches": False,
+                        "qnode": False,
+                    },
+                    "num_qubits": {"alloc": 0, "arg": 0, "total": 0},
+                    "quantum_operations": {"1": {"RX": 1}, "2": {"CNOT": 1}},
+                },
+            }
+        )
+
+        assert actual == [
+            SpecsResources(
+                counts={"CNOT": 2.5, "Hadamard": 1, "RX": 2.5},
+                measurement_processes={},
+                num_wires=4,
+                circuit_depth=None,
+            )
+        ]
+
     def test_mlir_resources_to_specs_resources(self, example_loop_analysis_pass_result):
         fn_resources = {}
         display_names = {}

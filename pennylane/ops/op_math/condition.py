@@ -183,6 +183,47 @@ class Conditional(SymbolicOp, Operation):
         return Conditional(self.meas_val, self.base.adjoint())
 
 
+def _validate_estimated_probability(value: float | None) -> float | None:
+    """Validate a single ``cond`` branch probability hint.
+
+    ``None`` (no hint) passes through unchanged; otherwise the value must be a float in
+    ``[0, 1]``.
+    """
+    if value is None:
+        return None
+    if not isinstance(value, float):
+        raise TypeError(
+            f"'estimated_probability' must be a float in [0, 1], but got {type(value).__name__}."
+        )
+    if not 0.0 <= value <= 1.0:
+        raise ValueError(f"'estimated_probability' must be in [0, 1], but got {value}.")
+    return value
+
+
+def _collect_estimated_probabilities(branch_probs) -> tuple[float, ...] | None:
+    """Collect and validate per-branch probability hints for a ``cond``.
+
+    The entries are the expected unconditional probabilities of each non-default branch (in
+    branch order); the default branch probability is ``1 - sum(branch_probs)``. Hints are
+    all-or-nothing: they must be provided for every non-default branch or for none of them.
+
+    Returns ``None`` if no hints were provided, else the validated probabilities as a tuple.
+    """
+    if all(p is None for p in branch_probs):
+        return None
+    if any(p is None for p in branch_probs):
+        raise ValueError(
+            "'estimated_probability' must be provided for every non-default branch when "
+            "using resource-estimation hints."
+        )
+    probs = tuple(_validate_estimated_probability(p) for p in branch_probs)
+    if sum(probs) > 1.0 + 1e-10:
+        raise ValueError(
+            f"'estimated_probability' entries must sum to at most 1, but got {sum(probs)}."
+        )
+    return probs
+
+
 class CondCallable:
     """Base class to represent a conditional function with boolean predicates.
 
@@ -191,6 +232,8 @@ class CondCallable:
         true_fn (callable): The function to apply if ``condition`` is ``True``
         false_fn (callable): The function to apply if ``condition`` is ``False``
         elifs (List(Tuple(bool, callable))): A list of (bool, elif_fn) clauses.
+        estimated_probability (float): Estimated probability with which the condition will be true.
+            Not supported if ``elifs`` are provided.
 
     Passing ``false_fn`` and ``elifs`` on initialization
     is optional; these functions can be registered post-initialization
@@ -217,10 +260,11 @@ class CondCallable:
     [2.25, -2, -0.5]
     """
 
-    def __init__(self, condition, true_fn, false_fn=None, elifs=()):
+    def __init__(self, condition, true_fn, false_fn=None, elifs=(), estimated_probability=None):
         self.preds = [condition]
         self.branch_fns = [true_fn]
         self.otherwise_fn = false_fn
+        self.branch_probabilities = [estimated_probability]
 
         if (
             len(elifs) == 2
@@ -233,13 +277,18 @@ class CondCallable:
             elif_preds, elif_fns = list(zip(*elifs, strict=True))
             self.preds.extend(elif_preds)
             self.branch_fns.extend(elif_fns)
+            self.branch_probabilities.extend([None] * len(elif_preds))
 
-    def else_if(self, pred):
+    def else_if(self, pred, *, estimated_probability: float | None = None):
         """Decorator that allows else-if functions to be registered with a corresponding
         boolean predicate.
 
         Args:
             pred (bool): The predicate that will determine if this branch is executed.
+            estimated_probability (float): Optional hint for :func:`~.specs` giving the
+                expected unconditional probability of this branch. If the probability is provided
+                for any non-default branch, it must be provided for every non-default branch.
+                Only used with :func:`~.qjit` and Catalyst's resource analysis.
 
         Returns:
             callable: decorator that is applied to the else-if function
@@ -248,6 +297,7 @@ class CondCallable:
         def decorator(branch_fn):
             self.preds.append(pred)
             self.branch_fns.append(branch_fn)
+            self.branch_probabilities.append(estimated_probability)
             return self
 
         return decorator
@@ -343,6 +393,8 @@ class CondCallable:
             end_const_ind += len(jaxpr.consts)
 
         _validate_jaxpr_returns(jaxpr_branches, self.otherwise_fn)
+        estimated_probabilities = _collect_estimated_probabilities(self.branch_probabilities)
+
         flat_args, _ = jax.tree_util.tree_flatten((args, kwargs))
         results = cond_prim.bind(
             *conditions,
@@ -352,6 +404,7 @@ class CondCallable:
             jaxpr_branches=jaxpr_branches,
             consts_slices=consts_slices,
             args_slice=slice(end_const_ind, None),
+            estimated_probabilities=estimated_probabilities,
         )
         assert flat_true_fn.out_tree is not None, "out_tree of flat_true_fn should exist"
         results = results[-flat_true_fn.out_tree.num_leaves :]
@@ -369,6 +422,8 @@ def cond(
     true_fn: Callable | None = None,
     false_fn: Callable | None = None,
     elifs: Sequence = (),
+    *,
+    estimated_probability: float | None = None,
 ):
     """Quantum-compatible if-else conditionals --- condition quantum operations
     on parameters such as the results of mid-circuit qubit measurements.
@@ -415,6 +470,13 @@ def cond(
         elifs (Sequence(Tuple(bool, callable))): A sequence of (bool, elif_fn) clauses. Can only
             be used when decorated by :func:`~.qjit` or if the condition is not
             a mid-circuit measurement.
+        estimated_probability (float): Optional hint for :func:`~.specs` giving the
+            expected probability of the conditional branch. If not ``None``, every other
+            non-default branch must also be given a probability by passing
+            ``estimated_probability`` to its :meth:`~.CondCallable.else_if` call; the
+            default branch probability is computed as the remaining mass.
+            Estimated probabilities are not supported with the ``elifs`` argument.
+            Only used with :func:`~.qjit` and Catalyst's resource analysis.
 
     Returns:
         function: A new function that applies the conditional equivalent of ``true_fn``. The returned
@@ -642,14 +704,16 @@ def cond(
         np.float64(-0.3092...)
     """
 
+    estimated_probability = _validate_estimated_probability(estimated_probability)
+
     if active_jit := compiler.active_compiler():
         available_eps = compiler.AvailableCompilers.names_entrypoints
         ops_loader = available_eps[active_jit]["ops"].load()
 
         if true_fn is None:
-            return ops_loader.cond(condition)
+            return ops_loader.cond(condition, estimated_probability=estimated_probability)
 
-        cond_func = ops_loader.cond(condition)(true_fn)
+        cond_func = ops_loader.cond(condition, estimated_probability=estimated_probability)(true_fn)
 
         # Optional 'elif' branches
         for cond_val, elif_fn in elifs:
@@ -665,9 +729,13 @@ def cond(
         # The condition is not a mid-circuit measurement. This will also work
         # when the condition is a mid-circuit measurement but qp.capture.enabled()
         if true_fn is None:
-            return lambda fn: CondCallable(condition, fn)
+            return lambda fn: CondCallable(
+                condition, fn, estimated_probability=estimated_probability
+            )
 
-        return CondCallable(condition, true_fn, false_fn, elifs)
+        return CondCallable(
+            condition, true_fn, false_fn, elifs, estimated_probability=estimated_probability
+        )
 
     if true_fn is None:
         raise TypeError(
@@ -815,7 +883,8 @@ def _get_cond_qfunc_prim():
         return [out.aval for out in jaxpr_branches[0].outvars]
 
     @cond_prim.def_impl
-    def _impl(*all_args, jaxpr_branches, consts_slices, args_slice):
+    def _impl(*all_args, jaxpr_branches, consts_slices, args_slice, estimated_probabilities=None):
+        # pylint: disable=unused-argument
         args_slice = slice(*args_slice)
         consts_slices = [slice(*s) for s in consts_slices]
 

@@ -148,7 +148,11 @@ def _ctrl_transform_prim(self, *invals, n_control, jaxpr, n_consts, **params):
 
 
 @CollectOpsandMeas.register_primitive(cond_prim)
-def _cond_primitive(self, *all_args, jaxpr_branches, consts_slices, args_slice):
+def _cond_primitive(  # pylint: disable=unused-argument
+    self, *all_args, jaxpr_branches, consts_slices, args_slice, estimated_probabilities=None
+):
+    # ``estimated_probabilities`` is a Catalyst resource-estimation hint that is irrelevant to
+    # tape construction, so it is accepted and ignored here.
     n_branches = len(jaxpr_branches)
     conditions = all_args[: n_branches - 1]
     args = all_args[slice(*args_slice)]

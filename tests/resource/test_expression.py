@@ -321,3 +321,27 @@ class TestExpressionMath:
             sample_expr * "not an expression"
         with pytest.raises(TypeError):
             "not an expression" * sample_expr
+
+    def test_integer_valued_float_operand(self):
+        """Whole-number floats are accepted and behave like ints."""
+        expr = Expression({("x",): 1, (): 2})
+        assert (expr * 3.0)._data == {("x",): 3, (): 6}
+        assert (3.0 * expr)._data == {("x",): 3, (): 6}
+        assert (expr + 3.0)._data == {("x",): 1, (): 5}
+        assert (3.0 + expr)._data == {("x",): 1, (): 5}
+
+    @pytest.mark.parametrize("op", ["mul", "rmul", "add", "radd"])
+    def test_fractional_float_operand_raises(self, sample_expr, op):
+        """A genuine fractional float cannot be combined with a symbolic Expression, and the
+        error explains the symbolic/fractional incompatibility."""
+        # pylint: disable=pointless-statement
+        with pytest.raises(TypeError, match="symbolic and fractional"):
+            match op:
+                case "mul":
+                    sample_expr * 0.3
+                case "rmul":
+                    0.3 * sample_expr
+                case "add":
+                    sample_expr + 0.3
+                case "radd":
+                    0.3 + sample_expr
