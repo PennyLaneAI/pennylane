@@ -32,7 +32,7 @@ from pennylane.templates.subroutines.arithmetic.semi_adder import SemiAdder
 from pennylane.typing import Wire
 
 
-XFAIL_QFT_CAPTURE = pytest.mark.parametrize(
+PL2DO_QFT_CAPTURE = pytest.mark.parametrize(
     "enable_and_disable_capture",
     [
         False,
@@ -41,8 +41,8 @@ XFAIL_QFT_CAPTURE = pytest.mark.parametrize(
             marks=(
                 pytest.mark.capture,
                 pytest.mark.jax,
-                pytest.mark.xfail(
-                    reason="ChangeOpBasis mishandles the QFT rule's Prod operand during capture."
+                pytest.mark.pl2do(
+                    reason="PL 2.0: ChangeOpBasis mishandles Prod operands during capture."
                 ),
             ),
         ),
@@ -194,7 +194,7 @@ def test_abstract_init_validation(mod, work_wires, msg_match):
         )
 
 
-@XFAIL_QFT_CAPTURE
+@PL2DO_QFT_CAPTURE
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity_out_multiplier():
     """Check the operation using the assert_valid function."""
@@ -485,7 +485,7 @@ class TestOutMultiplier:
             ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9, 10, 11, 12, 13], [0, 1, 2]),
         ],
     )
-    @XFAIL_QFT_CAPTURE
+    @PL2DO_QFT_CAPTURE
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_new_output_wires_zeroed(
         self, x_wires, y_wires, output_wires, mod, work_wires, applicable_rules, seed
@@ -534,7 +534,7 @@ class TestOutMultiplier:
             ([0], [3, 6], [5, 8, 2, 4, 7, 9], None, [11, 12, 13, 14, 15, 16, 17], [0, 1, 2]),
         ],
     )
-    @XFAIL_QFT_CAPTURE
+    @PL2DO_QFT_CAPTURE
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_new_non_zero_output_wires(
         self, x_wires, y_wires, output_wires, mod, work_wires, applicable_rules, seed
