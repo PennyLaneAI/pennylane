@@ -87,9 +87,6 @@ ARGNAME_CATEGORIES = (
 def _is_pytree_placeholder(obj):
     if not has_jax:
         return False
-    # pylint: disable-next=unidiomatic-typecheck
-    if type(obj) is object:
-        return True
 
     cls = type(obj)
     return cls.__name__ == "ArgInfo" and cls.__module__.partition(".")[0] == "jax"
