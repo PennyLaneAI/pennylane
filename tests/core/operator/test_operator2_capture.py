@@ -22,6 +22,7 @@ from operator2_utils import (
     HybridOp,
     MixedHybridOp,
     MultiWireOp,
+    NonParametricOp,
     StaticOp,
     TwoDynOp,
 )
@@ -70,8 +71,9 @@ class TestCaptureBasics:
         def fn(op):
             qp.apply(op)
 
-        cjaxpr = jax.make_jaxpr(fn)(MultiWireOp(wires=[0, 1], ctrl_wires=[2, 3]))
+        cjaxpr = jax.make_jaxpr(fn)(NonParametricOp([0, 1]))
         assert len(cjaxpr.eqns) == 1
+        assert cjaxpr.eqns[0].params["op_cls"] is NonParametricOp
 
     def test_tracer_none_without_capture(self):
         """Test that the tracer attribute is ``None`` when capture is disabled."""
