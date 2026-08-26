@@ -24,7 +24,11 @@ from scipy import sparse
 import pennylane as qp
 from pennylane import allocation, capture, compiler, math
 from pennylane.core.operator import Operator, abstractify
-from pennylane.core.operator.operator2 import operator_p, pop_op_eqns  # tach-ignore
+from pennylane.core.operator.operator2 import (  # tach-ignore
+    _to_symbolic_array,
+    operator_p,
+    pop_op_eqns,
+)
 from pennylane.core.queuing import remove_from_program
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
@@ -556,6 +560,7 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
     def _bind_primitive(self):
         """Bind the operator primitive. ``ControlledOp2`` has to override the method of
         the base ``Operator2`` class so that we can "edit" the original primitive."""
+
         if not qp.capture.enabled():
             return
 
@@ -572,19 +577,25 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         params = eqns[0].params
         n_ctrls = params["n_ctrls"]
 
+        arguments = {k: _to_symbolic_array(v) for k, v in self.arguments.items()}
+
+        control_wires, control_values = arguments["control_wires"], arguments["control_values"]
+        if isinstance(control_wires, Wires):
+            control_wires = control_wires.tolist()
+
         # `eqns` contains `TracingEqns`, not `JaxprEqns`, so invars during tracing will just
         # be tracers, not `Var`s wrapping abstract values.
         if n_ctrls == 0:
-            invars = eqns[0].invars + self.control_wires.tolist() + list(self.control_values)
+            invars = eqns[0].invars + control_wires + list(control_values)
         else:
             # invars are ordered as (*other_args, *control_wires, *control_values), so we
             # need to insert the new control wires before the old ones, and do the same
             # for control values too.
-            control_wires = self.control_wires.tolist() + eqns[0].invars[-2 * n_ctrls : -n_ctrls]
-            control_values = list(self.control_values) + eqns[0].invars[-n_ctrls:]
+            control_wires = control_wires + eqns[0].invars[-2 * n_ctrls : -n_ctrls]
+            control_values = list(control_values) + eqns[0].invars[-n_ctrls:]
             invars = eqns[0].invars[: -2 * n_ctrls] + control_wires + control_values
 
-        params["n_ctrls"] += len(self.control_wires)
+        params["n_ctrls"] += len(control_wires)
         res = operator_p.bind(*invars, **params)
 
         self.base.tracer = None
