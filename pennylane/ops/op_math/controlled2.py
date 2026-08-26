@@ -40,11 +40,10 @@ from pennylane.decomposition.resources import (
     CompressedResourceOp,
     controlled_resource_rep,
     resolve_work_wire_type,
-    resource_rep,
 )
 from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.ops.op_math.adjoint2 import Adjoint2
-from pennylane.typing import AbstractArray, AbstractWires, Bool, Wire
+from pennylane.typing import AbstractArray, AbstractWires, Bool, Complex, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .symbolicop2 import SymbolicOp2
@@ -748,15 +747,13 @@ def flip_control_adjoint(base, control_wires, control_values, work_wires, work_w
 
 
 def _to_controlled_qu_resource(base, control_wires, control_values, work_wires, work_wire_type):
+    num_control_wires = len(control_wires)
     return {
-        resource_rep(
-            qp.ControlledQubitUnitary,
-            num_target_wires=1,
-            num_control_wires=len(control_wires),
-            # TODO: again assuming that half the control values are 0s, fix
-            #       when we have a better solution here.
-            num_zero_control_values=len(control_wires) // 2,
-            num_work_wires=len(work_wires),
+        qp.ControlledQubitUnitary(
+            Complex[2, 2],
+            wires=Wire[num_control_wires + 1],
+            control_values=Bool[num_control_wires],
+            work_wires=Wire[len(work_wires)],
             work_wire_type=work_wire_type,
         ): 1
     }
@@ -806,7 +803,7 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
         wires = arguments.get("control_wires", arguments.get("wires", None))
         assert wires is not None
 
-        if compiler.active() and not capture.enabled():
+        if compiler.active() or capture.enabled():
             control_values = math.array(control_values, like="jax")
             wires = math.array(wires, like="jax")
 

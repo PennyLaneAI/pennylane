@@ -28,7 +28,7 @@ import pennylane as qp
 from pennylane import math
 from pennylane import numpy as pnp
 from pennylane.core.operator import Operation, Operator2, abstractify
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.symbolic_decomposition import is_integer
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.ops.op_math.controlled import custom_ctrl_dispatch
@@ -41,7 +41,7 @@ from pennylane.ops.op_math.decompositions.unitary_decompositions import (
     zxz_decomp_rule,
     zyz_decomp_rule,
 )
-from pennylane.typing import Complex, FlatPytree, Float, TensorLike, Wire
+from pennylane.typing import Bool, Complex, FlatPytree, Float, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 _walsh_hadamard_matrix = np.array([[1, 1], [1, -1]]) / 2
@@ -88,7 +88,7 @@ def _walsh_hadamard_transform(D: TensorLike, n: int | None = None):
     return qp.math.reshape(qp.math.transpose(D), orig_shape)
 
 
-class QubitUnitary(Operation):
+class QubitUnitary(Operator2):
     r"""QubitUnitary(U, wires)
     Apply an arbitrary unitary matrix with a dimension that is a power of two.
 
@@ -126,16 +126,17 @@ class QubitUnitary(Operation):
     0.0
     """
 
+    dynamic_argnames = ("U",)
+    compilable_argnames = ("unitary_check",)
+    arg_specs = {"U": Complex[-1, -1], "wires": Wire[-1]}
+
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
     ndim_params = (2,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = {"num_wires"}
-
     grad_method = None
-    """Gradient computation method."""
 
     def __init__(
         self,
@@ -171,6 +172,12 @@ class QubitUnitary(Operation):
 
         super().__init__(U, wires=wires)
 
+    # pylint: disable-next=unused-argument
+    def __abstract_init__(self, U, wires, unitary_check=False):  # pylint: disable=arguments-differ
+        # Abstract instances are never backed by a concrete (sparse) matrix.
+        self._issparse = False
+        super().__abstract_init__(U, wires=wires, unitary_check=False)
+
     @staticmethod
     def _unitary_check(U, dim):
         if isinstance(U, csr_matrix):
@@ -183,12 +190,14 @@ class QubitUnitary(Operation):
             atol=1e-6,
         )
 
-    @property
-    def resource_params(self) -> dict:
-        return {"num_wires": len(self.wires)}
+    def __repr__(self):
+        """Representation of the operator, hiding the unitary check."""
+        return f"QubitUnitary(U={self.U}, wires={self.wires})"
 
     @staticmethod
-    def compute_matrix(U: TensorLike):  # pylint: disable=arguments-differ
+    def compute_matrix(
+        U: TensorLike, wires: WiresLike | None = None, unitary_check: bool = False
+    ):  # pylint: disable=unused-argument
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -216,7 +225,9 @@ class QubitUnitary(Operation):
         return U
 
     @staticmethod
-    def compute_sparse_matrix(U: TensorLike, format="csr"):  # pylint: disable=arguments-differ
+    def compute_sparse_matrix(
+        U: TensorLike, wires: WiresLike | None = None, unitary_check: bool = False, format="csr"
+    ):  # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a sparse matrix.
 
         Args:
@@ -245,7 +256,9 @@ class QubitUnitary(Operation):
         )
 
     @staticmethod
-    def compute_decomposition(U: TensorLike, wires: WiresLike):
+    def compute_decomposition(
+        U: TensorLike, wires: WiresLike, unitary_check: bool = False
+    ):  # pylint: disable=unused-argument
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -269,9 +282,9 @@ class QubitUnitary(Operation):
         >>> from pprint import pprint
         >>> pprint(decomp)
         [RZ(3.141..., wires=[0]),
-        RY(np.float64(1.570...), wires=[0]),
-        RZ(0.0, wires=[0]),
-        GlobalPhase(-1.570..., wires=[])]
+         RY(1.570..., wires=[0]),
+         RZ(0.0, wires=[0]),
+         GlobalPhase(-1.570..., wires=[])]
 
         """
         # Decomposes arbitrary single-qubit unitaries as Rot gates (RZ - RY - RZ format),
@@ -312,7 +325,7 @@ class QubitUnitary(Operation):
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_decomposition(self) -> bool:
-        # We are unable to decompose sparse matrices larger than 1 qubit.
+        # Sparse matrices on more than one wire cannot be decomposed.
         return self.has_matrix or len(self.wires) == 1
 
     def adjoint(self) -> "QubitUnitary":
@@ -339,9 +352,6 @@ class QubitUnitary(Operation):
             pow_mat = qp.math.convert_like(fractional_matrix_power(mat, z), mat)
         return [QubitUnitary(pow_mat, wires=self.wires)]
 
-    def _controlled(self, wire):
-        return qp.ControlledQubitUnitary(*self.parameters, wires=wire + self.wires)
-
     def label(
         self,
         decimals: int | None = None,
@@ -354,7 +364,7 @@ class QubitUnitary(Operation):
 @custom_ctrl_dispatch.register
 def _ctrl_qu(base: QubitUnitary, control, control_values, work_wires, work_wire_type):
     return qp.ControlledQubitUnitary(
-        *base.data,
+        U=base.U,
         wires=control + base.wires,
         control_values=control_values,
         work_wires=work_wires,
@@ -374,18 +384,19 @@ add_decomps(
 )
 
 
-def _qubit_unitary_resource(base_class, base_params, **_):
-    return {resource_rep(base_class, **base_params): 1}
+def _qubit_unitary_resource(base, **_):
+    return {abstractify(base): 1}
 
 
 @register_resources(_qubit_unitary_resource)
-def _adjoint_qubit_unitary(U, wires, **_):
+def _adjoint_qubit_unitary(base, **_):
+    U = base.U
     U = (
         U.conjugate().transpose()
         if sp.sparse.issparse(U)
         else qp.math.moveaxis(qp.math.conj(U), -2, -1)
     )
-    QubitUnitary(U, wires=wires)
+    QubitUnitary(U, wires=base.wires)
 
 
 add_decomps("Adjoint(QubitUnitary)", _adjoint_qubit_unitary)
@@ -400,27 +411,35 @@ def _matrix_pow(U, z):
 
 
 @register_resources(_qubit_unitary_resource)
-def _pow_qubit_unitary(U, wires, z, **_):
-    QubitUnitary(_matrix_pow(U, z), wires=wires)
+def _pow_qubit_unitary(base, z, **_):
+    QubitUnitary(_matrix_pow(base.U, z), wires=base.wires)
 
 
 add_decomps("Pow(QubitUnitary)", _pow_qubit_unitary)
 
 
 # pylint: disable=unused-argument
-def _controlled_qubit_unitary_resource(base_class, base_params, **kwargs):
+def _controlled_qubit_unitary_resource(
+    base, control_wires, control_values, work_wires, work_wire_type, **_
+):
+    num_target_wires = len(base.wires)
+    num_control_wires = len(control_wires)
     return {
-        resource_rep(
-            qp.ControlledQubitUnitary, num_target_wires=base_params["num_wires"], **kwargs
-        ): 1,
+        qp.ControlledQubitUnitary(
+            Complex[2**num_target_wires, 2**num_target_wires],
+            wires=Wire[num_control_wires + num_target_wires],
+            control_values=Bool[num_control_wires],
+            work_wires=Wire[len(work_wires)],
+            work_wire_type=work_wire_type,
+        ): 1
     }
 
 
 @register_resources(_controlled_qubit_unitary_resource)
-def _controlled_qubit_unitary(U, wires, control_values, work_wires, work_wire_type, **__):
+def _controlled_qubit_unitary(base, control_wires, control_values, work_wires, work_wire_type, **_):
     qp.ControlledQubitUnitary(
-        U,
-        wires,
+        base.U,
+        control_wires + base.wires,
         control_values=control_values,
         work_wires=work_wires,
         work_wire_type=work_wire_type,

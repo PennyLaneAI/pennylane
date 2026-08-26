@@ -14,6 +14,7 @@
 
 """This submodule defines functions to decompose controlled operations."""
 
+from functools import partial
 from typing import Literal
 
 import numpy as np
@@ -23,15 +24,14 @@ from pennylane import capture, compiler, control_flow, math, ops
 from pennylane.core import queuing
 from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition import (
-    adjoint_resource_rep,
     register_condition,
     register_resources,
-    resource_rep,
 )
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.condition import cond
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract, flip_zero_control
 from pennylane.ops.op_math.decompositions.unitary_decompositions import two_qubit_decomp_rule
-from pennylane.typing import Float, Wire
+from pennylane.typing import Complex, Float, Wire
 from pennylane.wires import Wires
 
 
@@ -205,29 +205,47 @@ def ctrl_decomp_zyz(
 #######################
 
 
-def _ctrl_decomp_bisect_condition(num_target_wires, num_control_wires, **__):
+def _ctrl_decomp_bisect_condition(U, wires, **__):
+    num_target_wires = int(qp.math.log2(qp.math.shape(U)[-1]))
+    num_control_wires = len(wires) - num_target_wires
     # This decomposition rule is only applicable when the target is a single-qubit unitary.
     # Also, it is not helpful when there's only a single control wire.
     return num_target_wires == 1 and num_control_wires > 1
 
 
-def _ctrl_decomp_bisect_resources(num_target_wires, num_control_wires, **__):
+def _ctrl_decomp_bisect_resources(U, wires, **__):
+
+    num_target_wires = int(qp.math.log2(qp.math.shape(U)[-1]))
+    num_control_wires = len(wires) - num_target_wires
 
     len_k1 = (num_control_wires + 1) // 2
     len_k2 = num_control_wires - len_k1
     # this is a general overestimate based on the resource requirement of the general case.
     if len_k1 == len_k2:
         return {
-            resource_rep(ops.QubitUnitary, num_wires=num_target_wires): 4,
-            adjoint_resource_rep(ops.QubitUnitary, {"num_wires": num_target_wires}): 4,
+            ops.QubitUnitary(
+                Complex[2**num_target_wires, 2**num_target_wires], wires=Wire[num_target_wires]
+            ): 4,
+            qp.adjoint(
+                ops.QubitUnitary(
+                    Complex[2**num_target_wires, 2**num_target_wires],
+                    wires=Wire[num_target_wires],
+                )
+            ): 4,
             _ctrl_abstract(ops.X, Wire[len_k2], Wire[len_k1]): 6,
             # we only need Hadamard for the main diagonal case (see _ctrl_decomp_bisect_md), but it still needs to be accounted for.
             ops.Hadamard: 2,
             ops.ctrl(ops.GlobalPhase(Float), Wire[num_control_wires], work_wires=Wire[1]): 1,
         }
     return {
-        resource_rep(ops.QubitUnitary, num_wires=num_target_wires): 4,
-        adjoint_resource_rep(ops.QubitUnitary, {"num_wires": num_target_wires}): 4,
+        ops.QubitUnitary(
+            Complex[2**num_target_wires, 2**num_target_wires], wires=Wire[num_target_wires]
+        ): 4,
+        qp.adjoint(
+            ops.QubitUnitary(
+                Complex[2**num_target_wires, 2**num_target_wires], wires=Wire[num_target_wires]
+            )
+        ): 4,
         _ctrl_abstract(ops.X, Wire[len_k2], Wire[len_k1]): 4,
         _ctrl_abstract(ops.X, Wire[len_k1], Wire[len_k2]): 2,
         # we only need Hadamard for the main diagonal case (see _ctrl_decomp_bisect_md), but it still needs to be accounted for.
@@ -242,8 +260,8 @@ def _ctrl_decomp_bisect_resources(num_target_wires, num_control_wires, **__):
 def ctrl_decomp_bisect_rule(U, wires, **__):
     """The decomposition rule for ControlledQubitUnitary from
     `Vale et al. (2023) <https://arxiv.org/abs/2302.06377>`_."""
-    U, phase = math.convert_to_su2(U)
-    imag_U = math.imag(U)
+    su2_U, phase = math.convert_to_su2(U)
+    imag_U = math.imag(su2_U)
     ops.cond(
         math.allclose(imag_U[1, 0], 0) & math.allclose(imag_U[0, 1], 0),
         # Real off-diagonal specialized algorithm - 16n+O(1) CNOTs
@@ -257,11 +275,14 @@ def ctrl_decomp_bisect_rule(U, wires, **__):
                 _ctrl_decomp_bisect_md,
             )
         ],
-    )(U, wires)
-    ops.cond(_not_zero(phase), _ctrl_global_phase)(phase, wires[:-1], wires[-1], "borrowed")
+    )(su2_U, wires)
+    fn = partial(_ctrl_global_phase, work_wire_type="borrowed")
+    ops.cond(_not_zero(phase), fn)(phase, wires[:-1], wires[-1])
 
 
-def _single_ctrl_decomp_zyz_condition(num_target_wires, num_control_wires, **__):
+def _single_ctrl_decomp_zyz_condition(U, wires, **__):
+    num_target_wires = int(qp.math.log2(qp.math.shape(U)[-1]))
+    num_control_wires = len(wires) - num_target_wires
     return num_target_wires == 1 and num_control_wires == 1
 
 
@@ -286,11 +307,17 @@ def single_ctrl_decomp_zyz_rule(U, wires, **__):
     ops.cond(_not_zero(phase), _ctrl_global_phase)(phase, wires[:-1])
 
 
-def _multi_ctrl_decomp_zyz_condition(num_target_wires, num_control_wires, **__):
+def _multi_ctrl_decomp_zyz_condition(U, wires, **__):
+    num_target_wires = int(qp.math.log2(qp.math.shape(U)[-1]))
+    num_control_wires = len(wires) - num_target_wires
     return num_target_wires == 1 and num_control_wires > 1
 
 
-def _multi_ctrl_decomp_zyz_resources(num_control_wires, num_work_wires, work_wire_type, **__):
+# pylint: disable-next=unused-argument
+def _multi_ctrl_decomp_zyz_resources(U, wires, work_wires, work_wire_type, **__):
+    num_target_wires = int(qp.math.log2(qp.math.shape(U)[-1]))
+    num_control_wires = len(wires) - num_target_wires
+    num_work_wires = len(work_wires)
     return {
         ops.CRZ: 3,
         ops.CRY: 2,
@@ -320,17 +347,14 @@ def multi_control_decomp_zyz_rule(U, wires, work_wires, work_wire_type, **__):
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )
-    ops.cond(_not_zero(phase), _ctrl_global_phase)(phase, wires[:-1], wires[-1], "borrowed")
+    fn = partial(_ctrl_global_phase, work_wire_type="borrowed")
+    ops.cond(_not_zero(phase), fn)(phase, wires[:-1], wires[-1])
 
 
-def _controlled_two_qubit_unitary_resource(
-    num_target_wires,
-    num_control_wires,
-    num_zero_control_values,
-    num_work_wires,
-    work_wire_type,
-    **__,
-):
+def _controlled_two_qubit_unitary_resource(U, wires, work_wires, work_wire_type, **__):
+    num_target_wires = int(qp.math.log2(qp.math.shape(U)[-1]))
+    num_control_wires = len(wires) - num_target_wires
+    num_work_wires = len(work_wires)
     base_resources = two_qubit_decomp_rule.compute_resources(num_wires=num_target_wires)
     gate_counts = {
         _ctrl_abstract(
@@ -341,26 +365,39 @@ def _controlled_two_qubit_unitary_resource(
         ): count
         for base_op_rep, count in base_resources.gate_counts.items()
     }
-    gate_counts[ops.X] = num_zero_control_values * 2
+    # The impl applies X gates in pairs to flip any zero control values. With abstract inputs the
+    # concrete control values (and thus the exact number of X gates) are unknown, so we declare a
+    # heuristic of half the control wires using zero as their control values. This equates to
+    # X_count = (num_control_wires // 2) * 2 ~= num_control_wires. This keeps X in the estimated
+    # gate set (required even for exact=False rules) while the actual count is allowed to be lower.
+    if num_control_wires:
+        gate_counts[ops.X] = num_control_wires
     return gate_counts
 
 
 # Resources are not exact because rotations might be skipped for zero angle(s)
-@register_condition(lambda num_target_wires, **_: num_target_wires == 2)
+@register_condition(lambda wires, control_values, **_: len(wires) - len(control_values) == 2)
 @register_resources(_controlled_two_qubit_unitary_resource, exact=False)
 def controlled_two_qubit_unitary_rule(U, wires, control_values, work_wires, work_wire_type, **__):
     """A controlled two-qubit unitary is decomposed by applying ctrl to the base decomposition."""
-    zero_control_wires = [w for w, val in zip(wires[:-2], control_values, strict=True) if not val]
-    for w in zero_control_wires:
-        ops.PauliX(w)
+
+    if compiler.active() or capture.enabled():
+        control_values = math.array(control_values, like="jax")
+
+    def _zero_control_wires():
+        for i in range(len(wires) - 2):
+            cond(control_values[i], ops.PauliX)(wires[i])
+
+    _zero_control_wires()
+
     ops.ctrl(
         two_qubit_decomp_rule._impl,  # pylint: disable=protected-access
         control=wires[:-2],
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )(U, wires=wires[-2:])
-    for w in zero_control_wires:
-        ops.PauliX(w)
+
+    _zero_control_wires()
 
 
 def augment_with_allocation(base_rule, num_work_wires, work_wire_type, name=""):
@@ -684,17 +721,17 @@ def _decompose_mcx_no_worker_resource(wires, **_):
     if len_k1 == len_k2:
         return {
             ops.Hadamard: 2,
-            resource_rep(ops.QubitUnitary, num_wires=1): 2,
+            ops.QubitUnitary(Complex[2, 2], wires=Wire[1]): 2,
             _ctrl_abstract(ops.X, Wire[len_k2], Wire[len_k1]): 4,
-            adjoint_resource_rep(ops.QubitUnitary, {"num_wires": 1}): 2,
+            qp.adjoint(ops.QubitUnitary(Complex[2, 2], wires=Wire[1])): 2,
             ops.ctrl(ops.GlobalPhase(Float), Wire[num_control_wires]): 1,
         }
     return {
         ops.Hadamard: 2,
-        resource_rep(ops.QubitUnitary, num_wires=1): 2,
+        ops.QubitUnitary(Complex[2, 2], wires=Wire[1]): 2,
         _ctrl_abstract(ops.X, Wire[len_k2], Wire[len_k1]): 2,
         _ctrl_abstract(ops.X, Wire[len_k1], Wire[len_k2]): 2,
-        adjoint_resource_rep(ops.QubitUnitary, {"num_wires": 1}): 2,
+        qp.adjoint(ops.QubitUnitary(Complex[2, 2], wires=Wire[1])): 2,
         ops.ctrl(ops.GlobalPhase(Float), Wire[num_control_wires]): 1,
     }
 

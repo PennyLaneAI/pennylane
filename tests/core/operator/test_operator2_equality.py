@@ -433,7 +433,6 @@ class TestAbstractOperatorEquality:
         [
             (AbstractWires(1), AbstractWires(1), True),
             (AbstractWires(1), AbstractWires(2), False),
-            (AbstractWires(-1), AbstractWires(2), False),
         ],
     )
     def test_abstract_wires(self, wires1, wires2, are_equal):

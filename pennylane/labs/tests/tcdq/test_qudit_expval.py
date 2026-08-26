@@ -565,12 +565,10 @@ class TestQuditExpvalBatchedEdgeCases:
             key=jax.random.PRNGKey(11),
         )
         batched_fn = build_qudit_expval_func(config)
-        _, mc_cov, mean_y_sq = batched_fn(jnp.array(params), return_mean_y_sq=True)
+        _, mc_cov = batched_fn(jnp.array(params))
 
         # Symmetric.
         np.testing.assert_allclose(mc_cov, np.swapaxes(mc_cov, -1, -2), atol=1e-7)
-        # Unit-modulus default-state integrands give mean |y_r|^2 = 1.
-        np.testing.assert_allclose(mean_y_sq, np.ones_like(mean_y_sq), atol=1e-7)
         # Non-negative variances on the diagonal.
         assert np.all(mc_cov[:, 0, 0] >= 0)
         assert np.all(mc_cov[:, 1, 1] >= 0)

@@ -14,6 +14,7 @@
 
 """Tests the decomposition rules defined for symbolic operations other than controlled."""
 
+import warnings
 from textwrap import dedent
 
 import pytest
@@ -64,7 +65,7 @@ from pennylane.ops.op_math.pow2 import flip_pow_adjoint as flip_pow_adjoint2
 from pennylane.ops.op_math.pow2 import merge_powers as merge_powers2
 from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
 from pennylane.ops.op_math.pow2 import repeat_pow_base as repeat_pow_base2
-from pennylane.typing import Float, Wire
+from pennylane.typing import Bool, Complex, Float, Wire
 
 # pylint: disable=no-name-in-module
 from tests.core.operator.operator2_utils import (
@@ -1071,12 +1072,58 @@ class TestControlledDecomposition:
         specs = qp.specs(circuit, level="device")([1, 1, 0])
         assert specs.resources.quantum_operations == {"CNOT": 3, "Hadamard": 2, "PauliX": 2}
 
+    @pytest.mark.capture
+    def test_flip_zero_control_capture(self):
+        """Tests flip_zero_control is capture-compatible: the ``_x_flips`` for-loop indexes the
+        control wires with a traced loop variable, which requires the wires to be promoted to a
+        jax array so structured capture does not raise ``TracerIntegerConversionError``."""
+
+        from pennylane.exceptions import CaptureWarning
+        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+
+        @qp.register_resources({qp.CNOT: 3, qp.H: 2})
+        def _custom_controlled_rule(base, control_wires, **_):
+            qp.CNOT(control_wires[:2])
+            qp.H(control_wires[2])
+            qp.CNOT([control_wires[-1], base.wires[0]])
+            qp.H(control_wires[2])
+            qp.CNOT(control_wires[:2])
+
+        custom_rule = flip_zero_control2(_custom_controlled_rule, "custom_rule")
+        op = NonParametricOp(wires=[0])
+
+        def circuit():
+            custom_rule(base=op, control_wires=[1, 2, 3], control_values=[1, 1, 0])
+
+        # Structured capture must succeed (no fallback to an unrolled Python loop).
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", CaptureWarning)
+            plxpr = qp.capture.make_plxpr(circuit)()
+
+        collector = CollectOpsandMeas()
+        collector.eval(plxpr.jaxpr, plxpr.consts)
+        assert collector.state["ops"] == [
+            qp.X(3),
+            qp.CNOT([1, 2]),
+            qp.H(3),
+            qp.CNOT([3, 0]),
+            qp.H(3),
+            qp.CNOT([1, 2]),
+            qp.X(3),
+        ]
+
     @pytest.mark.unit
     def test_controlled_decomp_with_work_wire(self):
         """Tests the controlled decomposition with a single work wire (Lemma 7.11 from https://arxiv.org/pdf/quant-ph/9503016)."""
 
-        U = qp.Rot.compute_matrix(0.123, 0.234, 0.345)
-        op = qp.ctrl(qp.QubitUnitary(U, wires=0), control=[1, 2])
+        class CustomRot(Operator):  # pylint: disable=too-few-public-methods
+            """A dummy legacy (Operator1) single-qubit op with a defined matrix."""
+
+            @staticmethod
+            def compute_matrix(*params):
+                return qp.Rot.compute_matrix(*params)
+
+        op = qp.ctrl(CustomRot(0.123, 0.234, 0.345, wires=0), control=[1, 2])
 
         with queuing.AnnotatedQueue() as q:
             qp.Projector([0], wires=3)
@@ -1128,7 +1175,8 @@ class TestControlledDecomposition:
         op = qp.ctrl(DummyHadamard(wires=0), control=[1, 2])
         assert not ctrl_single_work_wire.is_applicable(**op.resource_params)
 
-    def test_decompose_to_controlled_unitary(self):
+    @pytest.mark.unit
+    def test_decompose_to_controlled_qubit_unitary(self):
         """Tests the decomposition to controlled qubit unitary"""
 
         class CustomRot(Operator):  # pylint: disable=too-few-public-methods
@@ -1148,17 +1196,17 @@ class TestControlledDecomposition:
         ]
         assert to_controlled_qubit_unitary.compute_resources(**op.resource_params) == Resources(
             {
-                resource_rep(
-                    qp.ControlledQubitUnitary,
-                    num_target_wires=1,
-                    num_control_wires=3,
-                    num_zero_control_values=0,
-                    num_work_wires=2,
+                qp.ControlledQubitUnitary(
+                    Complex[2, 2],
+                    wires=Wire[3 + 1],
+                    control_values=Bool[3],
+                    work_wires=Wire[2],
                     work_wire_type="borrowed",
                 ): 1
             }
         )
 
+    @pytest.mark.unit
     def test_decompose_to_controlled_unitary2(self):
         """Tests the decomposition to controlled qubit unitary."""
 
@@ -1173,12 +1221,11 @@ class TestControlledDecomposition:
         ]
         assert to_controlled_unitary.compute_resources(**op.arguments) == Resources(
             {
-                resource_rep(
-                    qp.ControlledQubitUnitary,
-                    num_target_wires=1,
-                    num_control_wires=3,
-                    num_zero_control_values=1,
-                    num_work_wires=2,
+                qp.ControlledQubitUnitary(
+                    Complex[2, 2],
+                    wires=Wire[3 + 1],
+                    control_values=Bool[3],
+                    work_wires=Wire[2],
                     work_wire_type="borrowed",
                 ): 1
             }

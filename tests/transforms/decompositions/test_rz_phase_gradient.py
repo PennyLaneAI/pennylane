@@ -14,9 +14,9 @@
 
 """Tests for ``qp.transforms.decompositions.make_rz_to_phase_gradient_decomp``"""
 
-import numpy as np
+# pylint: disable=no-value-for-parameter,disable=too-many-arguments
 
-# pylint: disable=no-value-for-parameter, disable=too-many-arguments
+import numpy as np
 import pytest
 
 import pennylane as qp
@@ -46,12 +46,12 @@ def test_validate_phase_gradient_wires(n_angle_wires, n_phase_grad_wires, n_work
         _ = validate_phase_gradient_wires(angle_wires, phase_grad_wires, work_wires)
 
 
-@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize("phi", [0.5, 0.3, 1 / 2 + 1 / 4 + 1 / 8, 1.0])
-@pytest.mark.parametrize("p", [2, 3, 4])
+@pytest.mark.parametrize("p", [1, 2, 3, 4])
 def test_valid_decomp(phi, p):
     """Test that ``make_rz_to_phase_gradient_decomp`` yields a valid decomposition"""
+
     first_free = 1
     angle_wires = list(range(first_free, first_free + p))
     phase_grad_wires = list(range(first_free + p, first_free + 2 * p))
