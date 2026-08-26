@@ -13,7 +13,6 @@
 # limitations under the License.
 """Unit tests for the specs transform"""
 
-# pylint: disable=invalid-sequence-index
 from functools import partial
 
 import pytest
@@ -22,6 +21,9 @@ import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.core.shots import Shots
 from pennylane.resource import SpecsResources
+
+# pylint: disable=invalid-sequence-index
+from pennylane.typing import Float, Wire
 
 devices_list = [
     (qp.device("default.qubit"), None),
@@ -731,7 +733,7 @@ class TestSpecsAbstractArrayIntegartion:
         @qp.qjit(capture=True, target="mlir")
         @qp.qnode(qp.device("null.qubit", wires=1))
         def c():
-            HybridOp(qp.RZ(qp.typing.Float, qp.typing.Wire))
+            HybridOp(qp.RZ(Float, Wire[1]))
             return qp.probs(wires=0)
 
         r = qp.specs(c, level=0)().resources

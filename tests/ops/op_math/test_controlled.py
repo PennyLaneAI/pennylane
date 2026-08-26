@@ -1893,16 +1893,16 @@ class TestCtrl:
         assert isinstance(op, ControlledOp2)
         assert op.base == DynOp(Float, Wire[2])
         assert op.wires == Wire[3]
-        assert op.control_wires == qp.wires.Wires([0])
+        assert op.control_wires == Wires([0])
         assert op.control_values == [1]
 
         new_op = qp.ctrl(op, control=[3, 4], work_wires=[5])
         assert isinstance(new_op, ControlledOp2)
         assert new_op.base == DynOp(Float, Wire[2])
         assert new_op.wires == Wire[5]
-        assert new_op.control_wires == qp.wires.Wires([3, 4, 0])
+        assert new_op.control_wires == Wires([3, 4, 0])
         assert qp.math.allclose(new_op.control_values, [1, 1, 1])
-        assert new_op.work_wires == qp.wires.Wires([5])
+        assert new_op.work_wires == Wires([5])
 
     # pylint: disable=too-few-public-methods,unused-argument
     def test_custom_ctrl_dispatch(self):

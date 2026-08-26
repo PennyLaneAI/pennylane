@@ -729,7 +729,7 @@ def _assert_valid_operator2(
 
     # check abstractify
     abstractified_op = abstractify(op)
-    leaves, _ = flatten(abstractified_op)
+    leaves, _ = flatten(abstractified_op, lambda l: isinstance(l, Wires))
     for l in leaves:
         if not isinstance(l, (AbstractArray, AbstractWires, CompressedResourceOp)):
             raise AssertionError(

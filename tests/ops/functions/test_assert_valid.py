@@ -29,6 +29,7 @@ from pennylane.core import Operator2
 from pennylane.core.operator import Operator
 from pennylane.ops.functions import assert_valid
 from pennylane.ops.functions.assert_valid import (
+    _check_bind_new_parameters_op2,
     _check_eigendecomposition,
     _check_pytree,
     _test_decomposition_rule,
@@ -765,15 +766,11 @@ class TestOperator2AssertValid:
             wire_argnames = ("wires",)
 
             def __init__(self, phi, wires):  # pylint: disable=unused-argument
-                if isinstance(phi, qp.typing.AbstractArray):
-                    # so abstractify check isn't triggered
-                    super().__init__(phi, wires)
-                else:
-                    super().__init__(1.0, wires=wires)  # always 1.0, ignores ``phi``
+                super().__init__(1.0, wires=wires)  # always 1.0, ignores ``phi``
 
         op = IgnoresParams(0.5, wires=0)
         with pytest.raises(AssertionError, match=r"bind_new_parameters must be able to update"):
-            assert_valid(op, skip_pickle=True, skip_differentiation=True)
+            _check_bind_new_parameters_op2(op)
 
     def test_hybrid_ops_arg(self):
         """``assert_valid`` fails if a hybrid op arg is invalid."""
@@ -802,7 +799,7 @@ class TestOperator2AssertValid:
                 skip_pickle=True,
             )
 
-    def test_cant_handle_AbstractArray_inputs(self):
+    def test_cant_handle_abstract_inputs(self):
         """Test an Operator that can't handle AbstractArray inputs."""
 
         class NoAAOp(qp.core.Operator2):

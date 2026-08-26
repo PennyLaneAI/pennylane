@@ -81,7 +81,7 @@ class TestTemporaryAND:
         op = abstractify(qp.TemporaryAND)
         assert op == full
 
-        op2 = qp.core.operator.abstractify(qp.TemporaryAND(Wire[3]))
+        op2 = abstractify(qp.TemporaryAND(Wire[3]))
         assert op2 == full
 
     def test_alias(self):
