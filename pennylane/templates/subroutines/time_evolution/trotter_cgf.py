@@ -429,7 +429,7 @@ def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, dou
     """Apply the two-body ``IsingZZ`` layer (base / double-phase / genuine controlled).
 
     Genuine control and double-phase are mutually exclusive constructions for a controlled
-    ``IsingZZ``, chosen once here via ``is_double_phase``: genuine control uses
+    ``IsingZZ``, chosen once here via ``double_phase``: genuine control uses
     ``ctrl(IsingZZ(...))`` on each term; double-phase instead shares *one* ``CNOT`` sandwich
     across every term touching a given ``wire_lp``, which is cheaper since ``IsingZZ`` itself
     stays uncontrolled either way.
