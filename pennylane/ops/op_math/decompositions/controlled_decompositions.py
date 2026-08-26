@@ -443,6 +443,10 @@ def _mcx_to_cnot_or_toffoli_resource(wires, **_):
 def mcx_to_cnot_or_toffoli(wires, control_values, *_, **__):
     """A decomposition rule that decomposes an MCX to a CNOT or Toffoli"""
 
+    if capture.enabled() or compiler.active():
+        wires = math.array(wires, like="jax")
+        control_values = math.array(control_values, like="jax")
+
     # Case 1: Decompose to single CNOT
     if len(wires) == 2:
         qp.CNOT(wires=wires)
