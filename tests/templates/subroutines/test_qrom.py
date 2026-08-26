@@ -302,8 +302,8 @@ class TestQROM:
             qp.CSWAP(wires=[1, 2, 3]),
             qp.Select(
                 ops=(
-                    qp.BasisEmbedding([1], wires=[2]) @ qp.BasisEmbedding([0], wires=[3]),
-                    qp.BasisEmbedding([0], wires=[2]) @ qp.BasisEmbedding([1], wires=[3]),
+                    qp.MultiX([1], wires=[2]) @ qp.MultiX([0], wires=[3]),
+                    qp.MultiX([0], wires=[2]) @ qp.MultiX([1], wires=[3]),
                 ),
                 control=[0],
             ),
@@ -312,8 +312,8 @@ class TestQROM:
             qp.CSWAP(wires=[1, 2, 3]),
             qp.Select(
                 ops=(
-                    qp.BasisEmbedding([1], wires=[2]) @ qp.BasisEmbedding([0], wires=[3]),
-                    qp.BasisEmbedding([0], wires=[2]) @ qp.BasisEmbedding([1], wires=[3]),
+                    qp.MultiX([1], wires=[2]) @ qp.MultiX([0], wires=[3]),
+                    qp.MultiX([0], wires=[2]) @ qp.MultiX([1], wires=[3]),
                 ),
                 control=0,
             ),
@@ -378,7 +378,7 @@ class TestQROM:
         ).decomposition()
 
         assert len(ops) == 1
-        assert qp.equal(ops[0], qp.BasisEmbedding([1, 0], wires=[0, 1]))
+        assert qp.equal(ops[0], qp.MultiX([1, 0], wires=[0, 1]))
 
     @pytest.mark.jax
     def test_traced_wires(self):
@@ -542,18 +542,18 @@ class TestMeasurementQROM:
         res_zero = _qrom_measurement_resources(
             bitstrings=Int[1, 3], control_wires=Wire[0], target_wires=Wire[3], work_wires=Wire[1]
         )
-        assert res_zero[qp.BasisState(Bool[3], Wire[3])] == 1
+        assert res_zero[qp.MultiX(Bool[3], Wire[3])] == 1
 
         res_one = _qrom_measurement_resources(
             bitstrings=Int[1, 3], control_wires=Wire[1], target_wires=Wire[3], work_wires=Wire[1]
         )
-        assert res_one[qp.BasisState(Bool[3], Wire[3])] == 1
+        assert res_one[qp.MultiX(Bool[3], Wire[3])] == 1
 
         res_two = _qrom_measurement_resources(
             bitstrings=Int[2, 3], control_wires=Wire[1], target_wires=Wire[3], work_wires=Wire[1]
         )
-        assert res_two[qp.BasisState(Bool[3], Wire[3])] == 1
-        assert res_two[qp.ctrl(qp.BasisState(Bool[3], Wire[3]), Wire[1])] == 1
+        assert res_two[qp.MultiX(Bool[3], Wire[3])] == 1
+        assert res_two[qp.ctrl(qp.MultiX(Bool[3], Wire[3]), Wire[1])] == 1
 
     def test_resources_general_case(self):
         """Test that the general resource estimate contains the expected gate types."""
@@ -644,7 +644,7 @@ class TestMeasurementQROM:
             )
         ops = q.queue
         assert len(ops) == 1
-        assert isinstance(ops[0], qp.BasisState)
+        assert isinstance(ops[0], qp.MultiX)
         assert ops[0].wires == qp.wires.Wires([1, 2, 3])
         assert np.array_equal(ops[0].data[0], np.array([1, 0, 1]))
 
@@ -658,11 +658,11 @@ class TestMeasurementQROM:
                 work_wires=[],
             )
         ops = q.queue
-        assert isinstance(ops[0], qp.BasisState)
-        # The diff bitstring is loaded with a single controlled BasisState.
+        assert isinstance(ops[0], qp.MultiX)
+        # The diff bitstring is loaded with a single controlled MultiX.
         assert len(ops[1:]) == 1
         assert isinstance(ops[1], qp.ops.Controlled)
-        assert isinstance(ops[1].base, qp.BasisState)
+        assert isinstance(ops[1].base, qp.MultiX)
 
     def test_decomposition_from_base_operator(self):
         """Test that the decomposition extracts arguments from ``base`` (Adjoint path)."""

@@ -79,7 +79,7 @@ class MultiX(Operator2):
 
     is_verified_hermitian = True
 
-    num_params = 0
+    num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
     def __init__(self, bitstring: TensorLike, wires: WiresLike) -> None:
