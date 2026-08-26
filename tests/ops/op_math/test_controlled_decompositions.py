@@ -840,10 +840,10 @@ class TestControlledTwoQubitUnitary:
 
         assert len(jaxpr.jaxpr.invars) == 4
 
-        cond_count = sum([1 for eqn in jaxpr.eqns if eqn.primitive == cond_prim])
+        cond_count = sum([1 for eqn in jaxpr.eqns if eqn.primitive is cond_prim])
         assert cond_count == 2
 
-        ctrl_count = sum([1 for eqn in jaxpr.eqns if eqn.primitive == ctrl_transform_prim])
+        ctrl_count = sum([1 for eqn in jaxpr.eqns if eqn.primitive is ctrl_transform_prim])
         assert ctrl_count == 1
 
         assert len(jaxpr.jaxpr.outvars) == 0
