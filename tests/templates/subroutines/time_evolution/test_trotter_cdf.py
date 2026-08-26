@@ -195,6 +195,7 @@ class TestInitialization:
 class TestValidity:
     """Basic structural validity tests for the TrotterCDF operator."""
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_assert_valid(self, toy_hamiltonian_cdf):
         """Run qp.ops.functions.assert_valid on a concrete CDF instance."""
         ham, num_orbitals = toy_hamiltonian_cdf
@@ -439,6 +440,7 @@ class TestDecomposition:
 class TestControlledDecomposition:
     """Tests for the default (genuine) C(TrotterCDF) controlled decomposition."""
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_controlled_decomposition_self_consistent(self, toy_hamiltonian_cdf):
         """The registered C(TrotterCDF) rule is self-consistent with its resources."""
         ham, num_orbitals = toy_hamiltonian_cdf
@@ -492,6 +494,7 @@ class TestControlledDecomposition:
 class TestDoublePhaseControlledDecomposition:
     """Tests for the opt-in double-phase (Fig. 6) C(TrotterCDF) controlled decomposition."""
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_controlled_decomposition_self_consistent(self, toy_hamiltonian_cdf):
         """The double-phase C(TrotterCDF) rule is self-consistent with its resources."""
         ham, num_orbitals = toy_hamiltonian_cdf

@@ -381,6 +381,7 @@ class TestInitialization:
         qp.ops.functions.assert_valid(op, skip_differentiation=True)
 
     @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/pennylane/issues/6333", strict=False)
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_standard_validity_with_differentiation(self, hamiltonian):
         """Test standard validity criteria using assert_valid."""

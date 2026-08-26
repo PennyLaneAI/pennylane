@@ -211,6 +211,7 @@ class TestInitialization:
 class TestValidity:
     """Basic structural validity tests for the TrotterCGF operator."""
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_assert_valid(self, toy_hamiltonian_cgf):
         """Run qp.ops.functions.assert_valid on a concrete CGF instance."""
         ham, num_modes, n_states = toy_hamiltonian_cgf
@@ -450,6 +451,7 @@ class TestDecomposition:
 class TestControlledDecomposition:
     """Tests for the default (genuine) C(TrotterCGF) controlled decomposition."""
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_controlled_decomposition_self_consistent(self, toy_hamiltonian_cgf):
         """The registered C(TrotterCGF) rule is self-consistent with its resources."""
         ham, num_modes, n_states = toy_hamiltonian_cgf
@@ -503,6 +505,7 @@ class TestControlledDecomposition:
 class TestDoublePhaseControlledDecomposition:
     """Tests for the opt-in double-phase (Fig. 6) C(TrotterCGF) controlled decomposition."""
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_controlled_decomposition_self_consistent(self, toy_hamiltonian_cgf):
         """The double-phase C(TrotterCGF) rule is self-consistent with its resources."""
         ham, num_modes, n_states = toy_hamiltonian_cgf
