@@ -25,7 +25,7 @@ from pennylane.numeric_hamiltonians import CDFHamiltonian
 from pennylane.ops import CNOT, RZ, GlobalPhase, IsingZZ, PhaseShift
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.templates.subroutines.qchem.basis_rotation import BasisRotation
-from pennylane.typing import Complex, Wire, AbstractArray, AbstractWires
+from pennylane.typing import AbstractArray, AbstractWires, Complex, Wire
 from pennylane.wires import WiresLike
 
 from ._trotter_utils import _emit_one_body_rz, _emit_two_body_isingzz, _run_trotter_steps
