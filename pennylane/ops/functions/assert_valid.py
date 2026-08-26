@@ -21,18 +21,22 @@ import itertools
 import pickle
 from collections import defaultdict
 from functools import partial
-from string import ascii_lowercase
 
 import numpy as np
 import scipy.sparse
 
 import pennylane as qp
-from pennylane import math
+from pennylane import capture, math
 from pennylane.core.operator import Operator, Operator1, Operator2, abstractify
 from pennylane.decomposition import DecompositionRule
 from pennylane.decomposition.decomposition_rule import _decomp_contains_mcm
+from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.decomposition.utils import _get_decomp_args
 from pennylane.exceptions import EigvalsUndefinedError
+from pennylane.ops.op_math.adjoint2 import Adjoint2
+from pennylane.ops.op_math.controlled2 import ControlledOp2
+from pennylane.ops.op_math.pow2 import Pow2
+from pennylane.ops.op_math.symbolicop2 import SymbolicOp2
 from pennylane.pytrees import flatten
 from pennylane.wires import Wires
 
@@ -127,11 +131,21 @@ def _check_decomposition(op, skip_wire_mapping):
     _assert_equal_ops(decomp, compute_decomp, compute_decomp_msg)
     _assert_equal_ops(decomp, processed_queue, queue_msg)
 
+    if op.has_matrix:
+        mat = op.matrix()
+        decomp_mat = qp.matrix(qp.tape.QuantumScript(decomp), wire_order=op.wires)
+        msg = f"matrix and matrix from decomposition must match. Got \n{mat}\n\n {decomp_mat}"
+        assert qp.math.allclose(mat, decomp_mat), msg
+
     if skip_wire_mapping:
         return
-    # Check that mapping wires transitions to the decomposition
-    wire_map = {w: ascii_lowercase[i] for i, w in enumerate(op.wires)}
+
+    # Check that mapping wires transitions to the decomposition. We use 10 * len(op.wires)
+    # here because op.wires often does not contain the work wires, which may cause the mapped
+    # wires to overlap with the work wires, so we space it out to be safe.
+    wire_map = {w: i + 10 * len(op.wires) for i, w in enumerate(op.wires)}
     mapped_op = op.map_wires(wire_map)
+
     # calling `map_wires` on a Controlled operator generates a new `op` from the controls and
     # base, so may return a different class of operator. We only compare decomps of `op` and
     # `mapped_op` if `mapped_op` **has** a decomposition.
@@ -176,9 +190,11 @@ def _check_decomposition_new(op, skip_decomp_matrix_check=False):
     for rule in qp.list_decomps(f"C({op.name})"):
         for n_ctrl_wires, c_value, n_workers in itertools.product([1, 2, 3], [0, 1], [0, 1, 2]):
             ctrl = qp.ops.Controlled if isinstance(op, Operator1) else qp.ops.ControlledOp2
-            control_wires = [i + len(op.wires) for i in range(n_ctrl_wires)]
+            int_wires = [w for w in op.wires if isinstance(w, int)]
+            max_wire = max(int_wires) if int_wires else -1
+            control_wires = [i + max_wire + 1 for i in range(n_ctrl_wires)]
             control_values = [c_value] * n_ctrl_wires
-            work_wires = [i + len(op.wires) + n_ctrl_wires for i in range(n_workers)]
+            work_wires = [i + max(control_wires) + 1 for i in range(n_workers)]
             ctrl_op = ctrl(op, control_wires, control_values, work_wires)
             _test_decomposition_rule(ctrl_op, rule, skip_decomp_matrix_check)
 
@@ -216,6 +232,54 @@ def _assert_counts_match(counts_0, counts_1):
     raise AssertionError(assertion_error_string)
 
 
+def _decomp_rule_to_tape(rule, args, kwargs):
+    with qp.queuing.AnnotatedQueue() as q:
+        rule(*args, **kwargs)
+    return qp.tape.QuantumScript.from_queue(q)
+
+
+def _make_wrapped_decomp_rule(rule, op, capture_kwargs):
+    """Makes a wrapper around a decomposition rule that manually flattens and unflattens
+    the hybrid arguments around the input boundary."""
+
+    hybrid_trees = {}
+    for k, v in op.hybrid_args.items():
+        leaves, tree = qp.pytrees.flatten(v)
+        capture_kwargs[k] = leaves
+        hybrid_trees[k] = tree
+
+    def _wrapped(*args, **kwargs):
+        for k in op.hybrid_args:
+            kwargs[k] = qp.pytrees.unflatten(kwargs[k], hybrid_trees[k])
+        rule(*args, **kwargs)
+
+    return _wrapped
+
+
+def _capture_decomp_rule_to_tape(rule, op):
+
+    import jax  # pylint: disable=import-outside-toplevel
+
+    # Match each operator model's capture boundary: legacy hyperparameters remain
+    # closed over, while Operator2 exposes its dynamic, wire, and hybrid arguments.
+    if isinstance(op, Operator1):
+        decomposition = partial(rule, **op.hyperparameters)
+        capture_args = op.data
+        capture_kwargs = {"wires": op.wires}
+    else:
+        decomposition = partial(rule, **op.static_args, **op.compilable_args)
+        capture_args = ()
+        capture_kwargs = {**op.dynamic_args, **op.wire_args}  # hybrid args will be added below
+        # TODO: tracing Operator2 hybrid args is not supported out of the box due to [sc-127789].
+        # For now we manually flatten the hybrid args and reassemble them within the wrapper rule,
+        # but ideally we want to be able to pass hybrid args directly.
+        decomposition = _make_wrapped_decomp_rule(decomposition, op, capture_kwargs)
+
+    plxpr = qp.capture.make_plxpr(decomposition, autograph=False)(*capture_args, **capture_kwargs)
+    flat_capture_args = jax.tree.leaves((capture_args, capture_kwargs))
+    return qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, *flat_capture_args)
+
+
 def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_check: bool = False):
     """Tests that a decomposition rule is consistent with the operator."""
 
@@ -226,32 +290,12 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
 
     # Test that the resource function is correct
     resources = rule.compute_resources(**params)
-    gate_counts = resources.gate_counts
-
-    if qp.capture.enabled():
-        import jax  # pylint: disable=import-outside-toplevel
-
-        # Match each operator model's capture boundary: legacy hyperparameters remain
-        # closed over, while Operator2 exposes its dynamic, wire, and hybrid arguments.
-        if isinstance(op, Operator1):
-            decomposition = partial(rule, **op.hyperparameters)
-            capture_args = op.data
-            capture_kwargs = {"wires": op.wires}
-        else:
-            decomposition = partial(rule, **op.static_args, **op.compilable_args)
-            capture_args = ()
-            capture_kwargs = {**op.dynamic_args, **op.wire_args, **op.hybrid_args}
-
-        plxpr = qp.capture.make_plxpr(decomposition, autograph=False)(
-            *capture_args, **capture_kwargs
-        )
-        flat_capture_args = jax.tree.leaves((capture_args, capture_kwargs))
-        tape = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, *flat_capture_args)
-    else:
-        with qp.queuing.AnnotatedQueue() as q:
-            rule(*args, **kwargs)
-
-        tape = qp.tape.QuantumScript.from_queue(q)
+    estimated_gate_counts = resources.gate_counts
+    tape = (
+        _capture_decomp_rule_to_tape(rule, op)
+        if qp.capture.enabled()
+        else _decomp_rule_to_tape(rule, args, kwargs)
+    )
 
     total_work_wires = rule.get_work_wire_spec(**params).total
     if total_work_wires:
@@ -265,19 +309,25 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
         actual_gate_counts[op_rep] += 1
     actual_gate_counts = dict(sorted(actual_gate_counts.items(), key=lambda item: str(item[0])))
 
+    if qp.capture.enabled():
+        # When capture is enabled, ChangeOpBasis is unrolled. The resource functions are typically
+        # not aware of that, and still produce resource reps of ChangeOpBasis. Therefore, we unroll
+        # the ChangeOpBasis in the resources manually so that it will match the reality.
+        estimated_gate_counts = _unroll_change_op_basis(estimated_gate_counts)
+
     if rule.exact_resources and not (
         isinstance(op, qp.templates.SubroutineOp) and not op.subroutine.exact_resources
     ):
-        non_zero_gate_counts = {k: v for k, v in gate_counts.items() if v > 0}
+        non_zero_gate_counts = {k: v for k, v in estimated_gate_counts.items() if v > 0}
         _assert_counts_match(non_zero_gate_counts, actual_gate_counts)
     else:
         # If the resource estimate is not expected to match exactly to the actual
         # decomposition, at least make sure that all gates are accounted for.
-        assert all(op in gate_counts for op in actual_gate_counts), (
+        assert all(op in estimated_gate_counts for op in actual_gate_counts), (
             "\nGate counts expected from resource function to contain actual gates:\n"
-            f"{list(gate_counts.keys())}\nActual gates:\n{list(actual_gate_counts.keys())}\n"
+            f"{list(estimated_gate_counts.keys())}\nActual gates:\n{list(actual_gate_counts.keys())}\n"
             "Missing in gate counts from resource function:\n"
-            f"{[op for op in actual_gate_counts if op not in gate_counts]}"
+            f"{[op for op in actual_gate_counts if op not in estimated_gate_counts]}"
         )
 
     # Tests that the decomposition produces the same matrix
@@ -290,10 +340,31 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
             tape.operations.insert(0, qp.Projector([0] * len(work_wires), wires=work_wires))
 
         op_matrix = op.matrix(wire_order=all_wires)
-        decomp_matrix = qp.matrix(tape, wire_order=all_wires)
+        with qp.capture.pause():
+            decomp_matrix = qp.matrix(tape, wire_order=all_wires)
         assert qp.math.allclose(
             op_matrix, decomp_matrix
         ), "decomposition must produce the same matrix as the operator."
+
+
+def _unroll_change_op_basis(gate_counts):
+    """Unroll any resource reps of ChangeOpBasis."""
+    new_gate_counts = defaultdict(int)
+    for k, count in gate_counts.items():
+        if not isinstance(k, CompressedResourceOp):
+            new_gate_counts[k] += count
+            continue
+        if k.op_type is not qp.ops.ChangeOpBasis:
+            new_gate_counts[k] += count
+            continue
+        for p in ("compute_op", "target_op", "uncompute_op"):
+            op_rep = k.params[p]
+            if isinstance(op_rep, CompressedResourceOp) and op_rep.op_type is qp.ops.Prod:
+                for inner_op, inner_count in op_rep.params["resources"].items():
+                    new_gate_counts[inner_op] += count * inner_count
+            else:
+                new_gate_counts[op_rep] += count
+    return new_gate_counts
 
 
 def _check_matrix(op):
@@ -343,17 +414,6 @@ def _check_sparse_matrix(op):
         )()
 
 
-def _check_matrix_matches_decomp(op):
-    """Check that if both the matrix and decomposition are defined, they match."""
-    if op.has_matrix and op.has_decomposition:
-        mat = op.matrix()
-        decomp_mat = qp.matrix(qp.tape.QuantumScript(op.decomposition()), wire_order=op.wires)
-        failure_comment = (
-            f"matrix and matrix from decomposition must match. Got \n{mat}\n\n {decomp_mat}"
-        )
-        assert qp.math.allclose(mat, decomp_mat), failure_comment
-
-
 def _check_eigendecomposition(op):
     """Checks involving diagonalizing gates and eigenvalues."""
     if op.has_diagonalizing_gates:
@@ -392,7 +452,8 @@ def _check_eigendecomposition(op):
     if has_eigvals:
         assert qp.math.allclose(eg, compute_eg), "eigvals and compute_eigvals must match"
 
-    if has_eigvals and op.has_diagonalizing_gates:
+    if (eg is not None or compute_eg is not None) and op.has_diagonalizing_gates:
+        eg = eg if eg is not None else compute_eg
         dg = qp.prod(*dg[::-1]) if len(dg) > 0 else qp.Identity(op.wires)
         eg = qp.QubitUnitary(np.diag(eg), wires=op.wires)
         decomp = qp.prod(qp.adjoint(dg), eg, dg)
@@ -410,11 +471,7 @@ def _check_generator(op):
     if op.has_generator:
         gen = op.generator()
         assert isinstance(gen, qp.operation.Operator)
-        new_op = (
-            qp.exp(gen, 1j * list(op.dynamic_args.values())[0])
-            if isinstance(op, Operator2)
-            else qp.exp(gen, 1j * op.data[0])
-        )
+        new_op = qp.exp(gen, 1j * op.data[0])
         assert qp.math.allclose(
             qp.matrix(op, wire_order=op.wires), qp.matrix(new_op, wire_order=op.wires)
         )
@@ -443,6 +500,7 @@ def _check_copy(op, skip_deepcopy):
 # pylint: disable=import-outside-toplevel, protected-access
 def _check_pytree(op):
     """Check that the operator is a pytree."""
+
     data, metadata = op._flatten()
     try:
         assert hash(metadata), "metadata must be hashable"
@@ -450,6 +508,7 @@ def _check_pytree(op):
         raise AssertionError(
             f"metadata output from _flatten must be hashable. Got metadata {metadata}"
         ) from e
+
     try:
         new_op = type(op)._unflatten(data, metadata)
     except Exception as e:
@@ -459,19 +518,27 @@ def _check_pytree(op):
             f"\nFor local testing, try type(op)._unflatten(*op._flatten())"
         )
         raise AssertionError(message) from e
+
     try:
         assert_equal(op, new_op)
     except AssertionError as e:
         raise AssertionError(
             "metadata and data must be able to reproduce the original operation"
         ) from e
+
     try:
         import jax
+
+        leaves, struct = jax.tree_util.tree_flatten(op)
+        unflattened = jax.tree_util.tree_unflatten(struct, leaves)
+        assert unflattened == op, f"op must be a valid pytree. Got {unflattened} instead of {op}."
+
     except ImportError:
-        return
-    leaves, struct = jax.tree_util.tree_flatten(op)
-    unflattened_op = jax.tree_util.tree_unflatten(struct, leaves)
-    assert unflattened_op == op, f"op must be a valid pytree. Got {unflattened_op} instead of {op}."
+        pass
+
+    leaves, struct = qp.pytrees.flatten(op)
+    unflattened = qp.pytrees.unflatten(leaves, struct)
+    assert unflattened == op, f"op must be a valid pytree. Got {unflattened} instead of {op}."
 
     if isinstance(op, Operator1):
         # Nested operators can contribute parameters or structural leaves (such as Operator2
@@ -502,48 +569,31 @@ def _check_pytree(op):
 
 
 def _check_capture(op):
+
     if isinstance(op, qp.templates.SubroutineOp):
         return
-    try:
-        import jax
-    except ImportError as e:  # pragma: no cover
-        raise ImportError(
-            "assert_valid(..., skip_capture=False) requires JAX to validate program capture. "
-            "To skip the capture test, set skip_capture=True. "
-            "To remove this error, install JAX (for local testing) or mark the test with @pytest.mark.jax (for CI)."
-        ) from e
 
     if not all(isinstance(w, int) for w in op.wires):
         return
 
-    qp.capture.enable()
-    try:
-        data, struct = jax.tree_util.tree_flatten(op)
+    import jax  # pylint: disable=import-outside-toplevel
 
-        def test_fn(*args):
-            op = jax.tree_util.tree_unflatten(struct, args)
-            if isinstance(op, Operator2):
-                op._bind_primitive()
-                return op.tracer
-            return op
+    data, struct = jax.tree_util.tree_flatten(op)
 
-        jaxpr = jax.make_jaxpr(test_fn)(*data)
-        new_op = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *data)[0]
-        assert_equal(op, new_op)
+    def test_fn(*args):
+        op = jax.tree_util.tree_unflatten(struct, args)
+        if isinstance(op, Operator2):
+            op._bind_primitive()
+            return op.tracer
+        return op
 
-        leaves = jax.tree_util.tree_leaves(jaxpr.eqns[-1].params)
-        assert not any(
-            qp.math.is_abstract(l) for l in leaves
-        ), "capture params cannot contain tracers"
-    except Exception as e:
-        raise ValueError(
-            "The capture of the operation into jaxpr failed somehow."
-            " This capture mechanism is currently experimental and not a core"
-            " requirement, but will be necessary in the future."
-            " Please see the capture module documentation for more information."
-        ) from e
-    finally:
-        qp.capture.disable()
+    jaxpr = jax.make_jaxpr(test_fn)(*data)
+    new_op = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *data)[0]
+    assert_equal(op, new_op)
+
+    leaves = jax.tree_util.tree_leaves(jaxpr.eqns[-1].params)
+    error_msg = "capture params cannot contain tracers"
+    assert not any(qp.math.is_abstract(l) for l in leaves), error_msg
 
 
 def _check_pickle(op):
@@ -564,13 +614,28 @@ def _check_bind_new_parameters(op):
 
 def _check_bind_new_parameters_op2(op):
     """Check that bind new parameters can create a new op with different bound arguments."""
-    new_dyn_args = {
-        k: math.cast_like(v * 0.0, v) for k, v in op.arguments.items() if k in op.dynamic_argnames
-    }
+    dyn_args = op.base.dynamic_args if isinstance(op, SymbolicOp2) else op.dynamic_args
+    new_dyn_args = {k: math.cast_like(v * 0.0, v) for k, v in dyn_args.items()}
     new_data_op = qp.ops.functions.bind_new_parameters(op, new_dyn_args.values())
     failure_comment = "bind_new_parameters must be able to update the operator2 with new arguments."
     for name, val in new_dyn_args.items():
-        assert qp.math.allclose(new_data_op.arguments[name], val), failure_comment
+        op_to_check = new_data_op.base if isinstance(new_data_op, SymbolicOp2) else new_data_op
+        assert qp.math.allclose(op_to_check.arguments[name], val), failure_comment
+
+
+def _check_bind_new_parameters_symbolicop2(op):
+    """Check that bind new parameters can create a new op with different bound arguments."""
+    new_dyn_args = {
+        k: math.cast_like(v * 0.0, v)
+        for k, v in op.base.arguments.items()
+        if k in op.base.dynamic_argnames
+    }
+    new_data_op = qp.ops.functions.bind_new_parameters(op, new_dyn_args.values())
+    failure_comment = (
+        "bind_new_parameters must be able to update the symbolicop2 with new arguments."
+    )
+    for name, val in new_dyn_args.items():
+        assert qp.math.allclose(new_data_op.base.arguments[name], val), failure_comment
 
 
 def _check_differentiation(op):
@@ -611,9 +676,9 @@ def _check_wires(op, skip_wire_mapping):
     assert isinstance(op.wires, qp.wires.Wires), "wires must be a wires instance"
     if skip_wire_mapping:
         return
-    wire_map = {w: ascii_lowercase[i] for i, w in enumerate(op.wires)}
+    wire_map = {w: i + 10 * len(op.wires) for i, w in enumerate(op.wires)}
     mapped_op = op.map_wires(wire_map)
-    new_wires = qp.wires.Wires(list(ascii_lowercase[: len(op.wires)]))
+    new_wires = qp.wires.Wires([i + 10 * len(op.wires) for i in range(len(op.wires))])
     assert mapped_op.wires == new_wires, "wires must be mappable with map_wires"
 
 
@@ -632,7 +697,7 @@ def _assert_valid_operator2(
     skip_decomp_matrix_check=False,
     skip_pickle=False,
     skip_wire_mapping=False,
-    skip_capture=False,
+    skip_bind_new_parameters=False,
 ) -> None:
     """
     Runs basic validation checks on an :class:`~.core.Operator2` to make sure it has been correctly defined.
@@ -645,7 +710,7 @@ def _assert_valid_operator2(
         skip_decomp_matrix_check: If ``True``, the decomposition matrix check will be skipped.
         skip_pickle: If ``True``, the pickle test will be skipped.
         skip_wire_mapping: If ``True``, the wire mapping test will be skipped.
-        skip_capture: If ``True``, the program capture test will be skipped.
+        skip_bind_new_parameters: If ``True``, the ``bind_new_parameters`` test will be skipped.
     """
 
     # Note: these attributes are in the spec but not the implementation yet.
@@ -659,17 +724,17 @@ def _assert_valid_operator2(
     assert isinstance(op.wire_argnames, tuple), "wire_argnames must be a tuple"
     assert isinstance(op.static_argnames, tuple), "static_argnames must be a tuple"
     assert isinstance(op.dynamic_argnames, tuple), "dynamic_argnames must be a tuple"
-
-    assert len(op.ndim_params) == len(
-        op.dynamic_argnames
-    ), "ndim_params must have the same length as dynamic_argnames"
-
     assert_equal(type(op)(**op.arguments), op)
 
-    for (name, val), dim in zip(op.dynamic_args.items(), op.ndim_params, strict=True):
-        # make sure that the bound args are not outside the allowed dimensions
-        shape = qp.math.shape(val)
-        assert len(shape) == dim, f"shape of {name} is not equal to dimension in ndim_params"
+    if not isinstance(op, (Adjoint2, ControlledOp2, Pow2)):
+
+        error_msg = "ndim_params must have the same length as dynamic_argnames"
+        assert len(op.ndim_params) == len(op.dynamic_argnames), error_msg
+
+        for (name, val), dim in zip(op.dynamic_args.items(), op.ndim_params, strict=True):
+            # make sure that the bound args are not outside the allowed dimensions
+            error_msg = f"shape of {name} is not equal to dimension in ndim_params"
+            assert len(qp.math.shape(val)) == dim, error_msg
 
     for (name, val), dim in zip(op.wire_args.items(), op.wire_sizes, strict=True):
         # make sure wires have the right sizes
@@ -690,10 +755,14 @@ def _assert_valid_operator2(
                     skip_decomp_matrix_check=skip_decomp_matrix_check,
                     skip_pickle=skip_pickle,
                     skip_wire_mapping=skip_wire_mapping,
-                    skip_capture=skip_capture,
+                    skip_bind_new_parameters=skip_bind_new_parameters,
                 )
 
-    _check_bind_new_parameters_op2(op)
+    if not skip_bind_new_parameters:
+        if isinstance(op, qp.ops.op_math.symbolicop2.SymbolicOp2):
+            _check_bind_new_parameters_symbolicop2(op)
+        else:
+            _check_bind_new_parameters_op2(op)
 
 
 # pylint: disable=too-many-arguments
@@ -706,7 +775,7 @@ def assert_valid(
     skip_decomp_matrix_check=False,
     skip_pickle=False,
     skip_wire_mapping=False,
-    skip_capture=False,
+    skip_bind_new_parameters=False,
 ) -> None:
     """Runs basic validation checks on an :class:`~.core.Operator` or :class:`~.core.Operator2` to make
     sure it has been correctly defined.
@@ -725,7 +794,7 @@ def assert_valid(
         skip_pickle=False : If ``True``, pickling tests are not run. Set to ``True`` when
             testing a locally defined operator, as pickle cannot handle local objects
         skip_wire_mapping : If ``True``, the operator will not be tested for wire mapping.
-        skip_capture: If ``True``, the program capture tests will be skipped.
+        skip_bind_new_parameters: If ``True``, the ``bind_new_parameters`` tests will be skipped.
 
     **Examples:**
 
@@ -761,7 +830,6 @@ def assert_valid(
     AssertionError: metadata output from _flatten must be hashable. Got metadata (Wires([0]), (('unhashable_list', []),))
 
     """
-
     if isinstance(op, qp.core.Operator2):
         _assert_valid_operator2(
             op,
@@ -771,7 +839,7 @@ def assert_valid(
             skip_decomp_matrix_check,
             skip_pickle,
             skip_wire_mapping,
-            skip_capture,
+            skip_bind_new_parameters,
         )
     else:
         assert isinstance(op.data, tuple), "op.data must be a tuple"
@@ -781,23 +849,24 @@ def assert_valid(
             assert isinstance(d, qp.typing.TensorLike), "each data element must be tensorlike"
             assert qp.math.allclose(d, p), "data and parameters must match."
 
-        _check_bind_new_parameters(op)
+        if not skip_bind_new_parameters:
+            _check_bind_new_parameters(op)
 
     _check_pytree(op)
+    _check_copy(op, skip_deepcopy=skip_deepcopy)
     if len(op.wires) <= 26:
         _check_wires(op, skip_wire_mapping=skip_wire_mapping)
-    _check_copy(op, skip_deepcopy=skip_deepcopy)
     if not skip_pickle:
         _check_pickle(op)
-    _check_decomposition(op, skip_wire_mapping=skip_wire_mapping)
+    if not capture.enabled():
+        _check_decomposition(op, skip_wire_mapping=skip_wire_mapping)
     if not skip_new_decomp:
         _check_decomposition_new(op, skip_decomp_matrix_check=skip_decomp_matrix_check)
     _check_matrix(op)
-    _check_matrix_matches_decomp(op)
     _check_sparse_matrix(op)
     _check_eigendecomposition(op)
     _check_generator(op)
-    if not skip_differentiation:
+    if not skip_differentiation and not capture.enabled():
         _check_differentiation(op)
-    if not skip_capture:
+    if qp.capture.enabled():
         _check_capture(op)

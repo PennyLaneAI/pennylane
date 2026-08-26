@@ -124,7 +124,8 @@ class Adder(Operation):
         dev = qp.device("default.qubit")
         @qp.qnode(dev, shots=1)
         def circuit():
-            qp.BasisEmbedding(x, wires=x_wires)
+            x_bin = qp.math.int_to_binary(x, len(x_wires))
+            qp.BasisEmbedding(x_bin, wires=x_wires)
             qp.Adder(k, x_wires, mod, work_wires)
             return qp.sample(wires=x_wires)
 
@@ -260,15 +261,7 @@ def _increment_resources(num_wires, num_control=0):
         if num_controls == 0:
             counts[PauliX] += 1
         else:
-            counts[
-                resource_rep(
-                    MultiControlledX,
-                    num_control_wires=num_controls,
-                    num_zero_control_values=0,
-                    num_work_wires=i,
-                    work_wire_type="borrowed",
-                )
-            ] += 1
+            counts[MultiControlledX(Wire[num_controls + 1], work_wires=Wire[i])] += 1
     return counts
 
 

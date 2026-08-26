@@ -494,7 +494,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             return True
         if not (ctrl_wires_in_progress := self._num_ctrl_wires_in_progress[base]):
             return False
-        return num_control_wires > ctrl_wires_in_progress[-1]
+        return num_control_wires >= ctrl_wires_in_progress[-1]
 
     def _get_decompositions(self, op: AbstractOperatorLike) -> Iterable[DecompositionRule]:
         """Helper function to get a list of decomposition rules."""
@@ -849,7 +849,7 @@ class DecompGraphSolution:
         >>> with qp.queuing.AnnotatedQueue() as q:
         ...     rule(*op.parameters, wires=op.wires, **op.hyperparameters)
         >>> q.queue
-        [PauliRot(0.1, Y, wires=[2]), PauliRot(-0.1, ZY, wires=[0, 2])]
+        [RY(0.1, wires=[2]), CNOT(wires=[0, 2]), RY(-0.1, wires=[2]), CNOT(wires=[0, 2])]
 
         """
         op_node_idx = self._get_best_solution(self._visitor, op, num_work_wires)

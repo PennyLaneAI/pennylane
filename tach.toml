@@ -75,6 +75,11 @@ layer = "core"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
+path = "pennylane.backline.runtime"
+layer = "core"
+depends_on = ["pennylane.capture"]
+
+[[modules]]
 path = "pennylane.core.measurements"
 layer = "core"
 depends_on = ["pennylane.capture",  "pennylane.math", "pennylane.wires", "pennylane.exceptions",  "pennylane.operation2", "pennylane.core.operator", "pennylane.core.queuing", "pennylane.typing", "pennylane.pytrees"]
@@ -110,7 +115,7 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "core"
 
 [[interfaces]]
-expose = ["QueuingManager", "AnnotatedQueue", "apply"]
+expose = ["QueuingManager", "AnnotatedQueue", "apply", "remove_from_program"]
 from = ["pennylane.core.queuing"]
 
 [[modules]]
@@ -143,7 +148,7 @@ layer = "core"
 
 [[modules]]
 path = "pennylane.wires"
-depends_on = ["pennylane.math", "pennylane.pytrees"]
+depends_on = ["pennylane.math", "pennylane.pytrees", "pennylane.typing"]
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "core"
 

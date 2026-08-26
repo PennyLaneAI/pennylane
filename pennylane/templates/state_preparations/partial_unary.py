@@ -21,8 +21,7 @@ import numpy as np
 import pennylane as qp
 from pennylane import allocate, math
 from pennylane.core.operator import Operation
-from pennylane.decomposition import controlled_resource_rep
-from pennylane.typing import Int, Wire
+from pennylane.typing import Bool, Complex, Int, Wire
 from pennylane.wires import Wires
 
 _U64 = np.uint64
@@ -726,7 +725,7 @@ class PartialUnaryStatePreparation(Operation):
       - SWAP: 1
     Measurement processes:
     - state(all wires): 1
-    Wire allocations: 26
+    Total wires: 26
     Circuit Depth: Not computed
 
     Note that passing more work wires than the needed :math:`\max(\lceil \log_2(|L|)\rceil-1, 1)`
@@ -745,7 +744,7 @@ class PartialUnaryStatePreparation(Operation):
       - SWAP: 16
     Measurement processes:
     - state(all wires): 1
-    Wire allocations: 48
+    Total wires: 48
     Circuit Depth: Not computed
 
     We used just ``160`` ``QROM``\ s instead of ``1207``, and as their size is dictated only by the
@@ -810,21 +809,21 @@ def _pui_state_prep_resources(num_entries, num_wires, num_work_wires):
     These resource counts are numerically obtained heuristics, extended to guarantee all
     resource reps that may appear are included at least once."""
     if num_entries == 1:
-        return {qp.resource_rep(qp.BasisState, num_wires=num_wires): 1}
+        return {qp.BasisState(Bool[num_wires], Wire[num_wires]): 1}
 
     n_subspace = max(math.ceil_log2(num_entries), 1)
     resources = defaultdict(int)
     needed_work_wires = max(n_subspace - 1, 1)
     effective_num_wires = num_wires + max(num_work_wires - needed_work_wires, 0)
     num_work_wires = max(num_work_wires, needed_work_wires)
-    resources[qp.resource_rep(qp.MultiplexerStatePreparation, num_wires=n_subspace)] += 1
+    resources[qp.MultiplexerStatePreparation(Complex[2**n_subspace], wires=Wire[n_subspace])] += 1
 
     R = effective_num_wires - n_subspace
     main_pui_batch_size = min(1 << int(math.floor(math.log2(max(R, 1)))), num_entries)
 
     qrom_reps = {
         p: qp.QROM(
-            data=Int[p, p],
+            bitstrings=Int[p, p],
             control_wires=Wire[n_subspace],
             target_wires=Wire[p],
             work_wires=Wire[n_subspace - 1],
@@ -837,13 +836,10 @@ def _pui_state_prep_resources(num_entries, num_wires, num_work_wires):
     for p in range(1, main_pui_batch_size):
         resources[qrom_reps[p]] += 1
 
-    resources[
-        controlled_resource_rep(
-            qp.BasisState, {"num_wires": effective_num_wires - 1}, num_control_wires=1
-        )
-    ] += num_entries
+    ctrl_basis_rep = qp.ctrl(qp.BasisState(Bool[effective_num_wires - 1], Wire[effective_num_wires - 1]), Wire[1])
+    resources[ctrl_basis_rep] += num_entries
 
-    embed_rep = qp.resource_rep(qp.BasisState, num_wires=n_subspace)
+    embed_rep = qp.BasisState(Bool[num_wires], Wire[n_subspace])
     resources[embed_rep] += 2 * (num_entries // main_pui_batch_size + 1)
 
     resources[qp.X] += effective_num_wires
@@ -851,11 +847,8 @@ def _pui_state_prep_resources(num_entries, num_wires, num_work_wires):
     resources[qp.SWAP] += effective_num_wires
 
     num_toffolis = int(effective_num_wires / 10) + 1
-    toffoli_params = {"num_control_wires": 2, "num_work_wires": 1, "work_wire_type": "zeroed"}
-    mcx_rep_0 = qp.resource_rep(qp.MultiControlledX, num_zero_control_values=0, **toffoli_params)
-    resources[mcx_rep_0] += max(num_toffolis // 2, 1)
-    mcx_rep_1 = qp.resource_rep(qp.MultiControlledX, num_zero_control_values=1, **toffoli_params)
-    resources[mcx_rep_1] += max(num_toffolis - num_toffolis // 2, 1)
+    mcx_rep = qp.MultiControlledX(Wire[3], work_wires=Wire[1], work_wire_type="zeroed")
+    resources[mcx_rep] += num_toffolis
 
     return resources
 
@@ -866,7 +859,7 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
     wire management."""
     num_entries = len(indices)
     if num_entries == 1:
-        qp.BasisState(indices[0], wires)
+        qp.BasisState(math.int_to_binary(indices[0], len(wires)), wires)
         return
 
     n_subspace = max(math.ceil_log2(num_entries), 1)
@@ -911,15 +904,15 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
     for _type, *data in reversed(circuit):
         if _type == "PUI":
             k_start, k = data
-            qp.BasisState(k_start, subspace_wires)
+            qp.BasisState(math.int_to_binary(k_start, len(subspace_wires)), subspace_wires)
             b = k - k_start
             qp.QROM(
-                data=np.eye(b, dtype=np.int64),
+                bitstrings=np.eye(b, dtype=np.int64),
                 control_wires=subspace_wires,
                 target_wires=nonsubspace_wires[:b],
                 work_wires=work_wires[: n_subspace - 1],
             )
-            qp.BasisState(k_start, subspace_wires)
+            qp.BasisState(math.int_to_binary(k_start, len(subspace_wires)), subspace_wires)
             continue
         if _type == "Fanout":
             control, bits = data

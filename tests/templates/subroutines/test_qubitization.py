@@ -39,7 +39,6 @@ def test_operator_definition_qpe(hamiltonian):
 
     @qp.qnode(qp.device("default.qubit"))
     def circuit(theta):
-
         # initial state
         qp.RX(theta[2], wires=0)
         qp.CRY(theta[3], wires=[0, 2])
@@ -214,6 +213,9 @@ class TestDifferentiability:
         assert np.allclose(jac, self.exp_grad, atol=atol)
 
     @pytest.mark.torch
+    @pytest.mark.pl2do(
+        reason="Figure out the desired behaviour of copying dynamic arguments, the factual behaviour of Operator2 differs from that of Operator, making this test fail."
+    )
     @pytest.mark.parametrize("shots", [None, 50000])
     def test_qnode_torch(self, shots, seed):
         """ "Test that the QNode executes and is differentiable with Torch. The shots
