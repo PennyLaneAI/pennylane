@@ -381,7 +381,7 @@ def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, dou
     """
     num_cas = Z.shape[0]
     # Double-phase assumes a single control wire; ``register_condition`` below enforces this.
-    is_double_phase = len(control_wires) == 1 and double_phase
+    double_phase = len(control_wires) == 1 and double_phase
 
     def _angle(wire_idx0, wire_idx1):
         # Two-body prefactor. In the fragment basis the generator is a sum over distinct wire
@@ -396,7 +396,7 @@ def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, dou
         return 0.5 * Z[wire_idx0 // 2, wire_idx1 // 2] * first_order_time_step
 
     def zz_rotations(wire_idx0):
-        if is_double_phase:
+        if double_phase:
 
             @for_loop(wire_idx0 + 1, 2 * num_cas)
             def _zz_rotations(wire_idx1):
