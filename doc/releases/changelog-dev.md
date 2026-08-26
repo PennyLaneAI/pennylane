@@ -1096,6 +1096,7 @@
   [(#9933)](https://github.com/PennyLaneAI/pennylane/pull/9933)
   [(#10042)](https://github.com/PennyLaneAI/pennylane/pull/10042)
   [(#10073)](https://github.com/PennyLaneAI/pennylane/pull/10073)
+  [(#10078)](https://github.com/PennyLaneAI/pennylane/pull/10078)
   - Quantum chemistry operators are ported:
     - :class:`~.SingleExcitation`
   [(#9944)](https://github.com/PennyLaneAI/pennylane/pull/9944)
@@ -1518,6 +1519,7 @@ Yushao Chen,
 Diksha Dhawan,
 Marcus Edwards,
 Thomas C. Fraser,
+Sengthai Heng,
 Austin Huang,
 Harshal Janjani,
 Jacob Kitchen,
