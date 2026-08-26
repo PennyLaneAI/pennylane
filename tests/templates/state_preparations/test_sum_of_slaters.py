@@ -724,11 +724,11 @@ class TestSumOfSlatersPrep:
             _sos_state_prep_with_wires(data, **dynamic_wires)
 
         jaxpr = jax.make_jaxpr(subroutine)(*(jnp.asarray(wires) for wires in all_wires.values()))
-
-        eqn_names = {eqn.primitive.name for eqn in jaxpr.eqns}
-        assert "MultiplexerStatePreparation" in eqn_names
-        assert "QROM" in eqn_names
-        assert "TemporaryAND" in eqn_names
+        
+        jaxpr_text = str(jaxpr.eqns[0].params["jaxpr"])
+        assert "MultiplexerStatePreparation" in jaxpr_text
+        assert "QROM" in jaxpr_text
+        assert "TemporaryAND" in jaxpr_text
 
     @pytest.mark.catalyst
     @pytest.mark.parametrize("force_non_id_encoding", (False, True))
