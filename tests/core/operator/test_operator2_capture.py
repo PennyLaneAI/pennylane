@@ -67,8 +67,8 @@ class TestCaptureBasics:
     """Tests for capturing operators into a single primitive equation."""
 
     @pytest.mark.parametrize("op", (NonParametricOp([0, 1]), OpBuildsNestedOp([0, 1])))
-    def test_multi_wire_operator_can_be_used_as_argument(self, op):
-        """Test that multi-wire operators can be used as input arguments"""
+    def test_operator_as_traced_argument(self, op):
+        """Test that operators can be used as traced arguments"""
 
         def fn(op_):
             qp.apply(op_)
