@@ -28,6 +28,8 @@ def _emit_one_body_rz(angle, target_wire, control_wires, double_phase):
     * No control wire: a plain ``RZ(angle)``.
     * Controlled, ``double_phase=True``: ``IsingZZ(angle, [control, target])``, i.e. the same
       ``CNOT; RZ; CNOT`` sandwich as Fig. 6 in https://arxiv.org/abs/2506.15784.
+      This results in :math:`\text{diag}(U, U^\dagger)` overall, such that the relative phase
+      between both branches is 2t (hence "double-phase").
     * Controlled, ``double_phase=False``: ``ctrl(RZ(angle, target))`` for a genuine
       controlled-:math:`e^{-iHt}` (``diag(1, U)`` on the control/target subspace).
     """
