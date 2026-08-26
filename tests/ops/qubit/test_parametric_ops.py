@@ -632,8 +632,8 @@ class TestDecompositions:
         """Tests that the decomposition of the IsingZZ gate is correct"""
         param = 0.1234
         op = qp.IsingZZ(param, wires=[3, 2])
-        # IsingZZ decomposes into a single ChangeOpBasis (so that its controlled version is
-        # efficient "for free"); expand one more level to get at the three underlying gates.
+        # IsingZZ decomposes into a single ChangeOpBasis;
+        # expand one more level to get at the three underlying gates.
         res = op.decomposition()[0].decomposition()
 
         assert len(res) == 3
@@ -662,8 +662,8 @@ class TestDecompositions:
         """Tests that the decomposition of the broadcasted IsingZZ gate is correct"""
         param = np.array([-0.1, 0.2, 0.5])
         op = qp.IsingZZ(param, wires=[3, 2])
-        # IsingZZ decomposes into a single ChangeOpBasis (so that its controlled version is
-        # efficient "for free"); expand one more level to get at the three underlying gates.
+        # IsingZZ decomposes into a single ChangeOpBasis;
+        # expand one more level to get at the three underlying gates.
         res = op.decomposition()[0].decomposition()
 
         assert len(res) == 3
