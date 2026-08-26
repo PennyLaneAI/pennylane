@@ -14,6 +14,7 @@
 
 """This submodule defines functions to decompose controlled operations."""
 
+from functools import partial
 from typing import Literal
 
 import numpy as np
@@ -27,6 +28,7 @@ from pennylane.decomposition import (
     register_resources,
 )
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.condition import cond
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract, flip_zero_control
 from pennylane.ops.op_math.decompositions.unitary_decompositions import two_qubit_decomp_rule
 from pennylane.typing import Complex, Float, Wire
@@ -274,7 +276,8 @@ def ctrl_decomp_bisect_rule(U, wires, **__):
             )
         ],
     )(su2_U, wires)
-    ops.cond(_not_zero(phase), _ctrl_global_phase)(phase, wires[:-1], wires[-1], "borrowed")
+    fn = partial(_ctrl_global_phase, work_wire_type="borrowed")
+    ops.cond(_not_zero(phase), fn)(phase, wires[:-1], wires[-1])
 
 
 def _single_ctrl_decomp_zyz_condition(U, wires, **__):
@@ -344,7 +347,8 @@ def multi_control_decomp_zyz_rule(U, wires, work_wires, work_wire_type, **__):
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )
-    ops.cond(_not_zero(phase), _ctrl_global_phase)(phase, wires[:-1], wires[-1], "borrowed")
+    fn = partial(_ctrl_global_phase, work_wire_type="borrowed")
+    ops.cond(_not_zero(phase), fn)(phase, wires[:-1], wires[-1])
 
 
 def _controlled_two_qubit_unitary_resource(U, wires, work_wires, work_wire_type, **__):
@@ -376,17 +380,24 @@ def _controlled_two_qubit_unitary_resource(U, wires, work_wires, work_wire_type,
 @register_resources(_controlled_two_qubit_unitary_resource, exact=False)
 def controlled_two_qubit_unitary_rule(U, wires, control_values, work_wires, work_wire_type, **__):
     """A controlled two-qubit unitary is decomposed by applying ctrl to the base decomposition."""
-    zero_control_wires = [w for w, val in zip(wires[:-2], control_values, strict=True) if not val]
-    for w in zero_control_wires:
-        ops.PauliX(w)
+
+    if compiler.active() or capture.enabled():
+        control_values = math.array(control_values, like="jax")
+
+    def _zero_control_wires():
+        for i in range(len(wires) - 2):
+            cond(control_values[i], ops.PauliX)(wires[i])
+
+    _zero_control_wires()
+
     ops.ctrl(
         two_qubit_decomp_rule._impl,  # pylint: disable=protected-access
         control=wires[:-2],
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )(U, wires=wires[-2:])
-    for w in zero_control_wires:
-        ops.PauliX(w)
+
+    _zero_control_wires()
 
 
 def augment_with_allocation(base_rule, num_work_wires, work_wire_type, name=""):
