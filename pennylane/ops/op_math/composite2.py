@@ -56,7 +56,7 @@ class CompositeOp2(Operator2, is_baseclass=True):
         self._name = self.__class__.__name__
         self._wires = Wires.all_wires([op.wires for op in operands])
         self._hash = None
-        self._has_overlapping_wires = None
+        self._has_overlapping_wires = len(self.wires) < sum(len(op.wires) for op in operands)
         self._overlapping_ops = None
         self._pauli_rep = self._build_pauli_rep() if _init_pauli_rep is None else _init_pauli_rep
         for op in self:
@@ -158,9 +158,6 @@ class CompositeOp2(Operator2, is_baseclass=True):
         eigvals = [math.asarray(ei, like=framework) for ei in eigvals]
         return self._math_op(math.vstack(eigvals), axis=0)
 
-    @abc.abstractmethod
-    def matrix(self, wire_order=None):
-        """Representation of the operator as a matrix in the computational basis."""
 
     @property
     def overlapping_ops(self) -> list[list[Operator]]:
