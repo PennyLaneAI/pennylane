@@ -692,32 +692,32 @@ class TestDecompositions:
 
     def test_controlled_isingzz_decomposition_gates(self):
         r"""Controlling ``IsingZZ`` should control only the inner ``RZ``, leaving the two
-        conjugating ``CNOT``'s bare. There's no dedicated ``C(IsingZZ)`` rule for this: writing
-        the bare decomposition as a ``change_op_basis`` (see ``_isingzz_to_cnot_rz_cnot``) lets
-        PennyLane's generic ``C(ChangeOpBasis)`` rule produce this automatically, since
-        ``IsingZZ`` is itself a compute-uncompute pattern:
+            conjugating ``CNOT``'s bare. There's no dedicated ``C(IsingZZ)`` rule for this: writing
+            the bare decomposition as a ``change_op_basis`` (see ``_isingzz_to_cnot_rz_cnot``) lets
+            PennyLane's generic ``C(ChangeOpBasis)`` rule produce this automatically, since
+            ``IsingZZ`` is itself a compute-uncompute pattern:
+
+            .. code-block::
+
+                a: ─╭●───────────╭●─┤   =   IsingZZ(angle, [a, b])
+                b: ─╰X──RZ(angle)╰X─┤
+
+            so controlling it only requires controlling the ``RZ`` inside, via the standard
+            controlled-``RZ`` decomposition:
+
+            .. code-block::
+
+                   b: ─RZ(angle/2)─╭X──RZ(-angle/2)─╭X─┤   =   Ctrl-RZ(angle, b)
+                ctrl: ─────────────╰●───────────────╰●─┤
+
+            Substituting the second diagram's four gates for the single ``RZ(angle, b)`` box in the
+            first gives the final six-gate circuit.
 
         .. code-block::
 
-            a: ─╭●───────────╭●─┤   =   IsingZZ(angle, [a, b])
-            b: ─╰X──RZ(angle)╰X─┤
-
-        so controlling it only requires controlling the ``RZ`` inside, via the standard
-        controlled-``RZ`` decomposition:
-
-        .. code-block::
-
-               b: ─RZ(angle/2)─╭X──RZ(-angle/2)─╭X─┤   =   Ctrl-RZ(angle, b)
-            ctrl: ─────────────╰●───────────────╰●─┤
-
-        Substituting the second diagram's four gates for the single ``RZ(angle, b)`` box in the
-        first gives the final six-gate circuit.
-
-    .. code-block::
-
-           a: ─╭●────────────────────────────────╭●─┤
-           b: ─╰X─RZ(angle/2)─╭X─RZ(-angle/2)─╭X─╰X─┤
-        ctrl: ────────────────╰●──────────────╰●────┤
+               a: ─╭●────────────────────────────────╭●─┤
+               b: ─╰X─RZ(angle/2)─╭X─RZ(-angle/2)─╭X─╰X─┤
+            ctrl: ────────────────╰●──────────────╰●────┤
 
         """
         op = qp.ctrl(qp.IsingZZ(0.6931, wires=[2, 3]), control=[4])
@@ -747,6 +747,19 @@ class TestDecompositions:
         assert [g.name for g in gates] == ["CNOT", "CRZ", "CNOT"]
         assert gates[0].wires == gates[2].wires == Wires([2, 3])
         assert gates[1].wires == Wires([4, 3])
+
+        # Further expand the CRZ to match the fully-expanded six-gate docstring diagram above.
+        crz = gates[1]
+        rule = qp.list_decomps(crz)[0]
+        with qp.queuing.AnnotatedQueue() as q:
+            rule(*crz.parameters, wires=crz.wires)
+        crz_gates = q.queue
+
+        assert [g.name for g in crz_gates] == ["RZ", "CNOT", "RZ", "CNOT"]
+        assert crz_gates[1].wires == crz_gates[3].wires == Wires([4, 3])
+
+        all_gates = [gates[0]] + crz_gates + [gates[2]]
+        assert [g.name for g in all_gates] == ["CNOT", "RZ", "CNOT", "RZ", "CNOT", "CNOT"]
 
     @pytest.mark.parametrize(
         "control_wires, control_values, work_wires",
