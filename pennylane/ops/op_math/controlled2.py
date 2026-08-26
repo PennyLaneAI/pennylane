@@ -639,11 +639,10 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
             )
         else:
             # Fresh single wrap: preserve `work_wire_type` verbatim, matching eager
-            # `ControlledOp2.__init__`. `resolve_work_wire_type` must not be applied here: per the
-            # NOTE above, `n_ctrls == 0` implies `base_work_wires` is empty too, and
-            # `resolve_work_wire_type` treats "both sides empty" as `"borrowed"` unconditionally
-            # -- which would incorrectly collapse a fresh, work-wire-less `"zeroed"` wrap down to
-            # `"borrowed"`.
+            # `ControlledOp2.__init__`. `resolve_work_wire_type` must not be applied here
+            # When n_ctrls == 0 and no self.work_wires,
+            # resolve_work_wire_type([], any, [], "zeroed") goes to "borrowed" and would
+            # incorrectly downgrade a fresh zeroed-with-no-work-wires wrap to borrowed.
             params["ctrl_work_wire_type"] = self.work_wire_type
         res = operator_p.bind(*invars, **params)
 
