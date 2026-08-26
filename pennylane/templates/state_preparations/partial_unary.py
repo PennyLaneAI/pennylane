@@ -727,7 +727,7 @@ def _pui_state_prep_resources(num_entries, num_wires, num_work_wires):
     ctrl_basis_rep = qp.ctrl(qp.BasisState(Bool[num_wires - 1], Wire[num_wires - 1]), Wire[1])
     resources[ctrl_basis_rep] += num_entries
 
-    embed_rep = qp.BasisState(Bool[num_wires], Wire[n_subspace])
+    embed_rep = qp.BasisState(Bool[n_subspace], Wire[n_subspace])
     resources[embed_rep] += 2 * (num_entries // main_pui_batch_size + 1)
 
     resources[qp.SWAP] += num_wires
