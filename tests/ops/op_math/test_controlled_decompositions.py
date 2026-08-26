@@ -820,6 +820,7 @@ class TestControlledTwoQubitUnitary:
         """Test that the controlled two qubit unitary rule is captured correctly."""
         from jax import make_jaxpr
         from jax import numpy as jnp
+
         from pennylane.capture.primitives import cond_prim, ctrl_transform_prim
 
         kwargs = {
