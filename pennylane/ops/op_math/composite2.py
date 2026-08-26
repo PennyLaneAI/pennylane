@@ -69,7 +69,7 @@ class CompositeOp2(Operator2, is_baseclass=True):
 
     def __repr__(self):
         return f" {self._op_symbol} ".join(
-            [f"({op})" if op.arithmetic_depth > 0 else f"{op}" for op in self]
+            [f"({op})" if getattr(op, "arithmetic_depth", 0) > 0 else f"{op}" for op in self]
         )
 
     def __iter__(self):
@@ -288,7 +288,7 @@ class CompositeOp2(Operator2, is_baseclass=True):
 
         def _label(op, decimals, base_label, cache):
             sub_label = op.label(decimals, base_label, cache)
-            return f"({sub_label})" if op.arithmetic_depth > 0 else sub_label
+            return f"({sub_label})" if getattr(op, "arithmetic_depth", 0) > 0 else sub_label
 
         if base_label is not None:
             if isinstance(base_label, str) or len(base_label) != len(self):
@@ -326,7 +326,7 @@ class CompositeOp2(Operator2, is_baseclass=True):
     @property
     @handle_recursion_error
     def arithmetic_depth(self) -> int:
-        return 1 + max(op.arithmetic_depth for op in self)
+        return 1 + max(getattr(op, "arithmetic_depth", 0) for op in self)
 
     @property
     @abc.abstractmethod
