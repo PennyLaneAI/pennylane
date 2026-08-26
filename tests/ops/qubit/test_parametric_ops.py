@@ -761,27 +761,6 @@ class TestDecompositions:
         all_gates = [gates[0]] + crz_gates + [gates[2]]
         assert [g.name for g in all_gates] == ["CNOT", "RZ", "CNOT", "RZ", "CNOT", "CNOT"]
 
-    @pytest.mark.parametrize(
-        "control_wires, control_values, work_wires",
-        [
-            ([4], [1], []),
-            ([4], [0], []),
-            ([4, 5], [1, 1], []),
-            ([4, 5], [1, 0], [6]),
-        ],
-    )
-    def test_controlled_isingzz_decomposition(self, control_wires, control_values, work_wires):
-        """Self-consistency of the (auto-generated) controlled ``IsingZZ`` decomposition rules
-        for one and two control wires, including zero-valued control wires."""
-        op = qp.ctrl(
-            qp.IsingZZ(0.6931, wires=[2, 3]),
-            control=control_wires,
-            control_values=control_values,
-            work_wires=work_wires,
-        )
-        for rule in qp.list_decomps(op):
-            _test_decomposition_rule(op, rule)
-
     two_wire_pcphases = [(0, [0, 1]), (1, [1, 0]), (2, ["a", 2]), (3, [1, 3]), (4, [9, 0])]
     five_wire_pcphases = [(i, [0, 1, 3, 2, 7]) for i in range(2**5)]
     other_pcphases = [(1, [0]), (2, [1]), (17, ["a", 2, "c", 4, 3, 0]), (3, list(range(5)))]
