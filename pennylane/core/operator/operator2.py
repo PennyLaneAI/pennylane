@@ -87,7 +87,7 @@ ARGNAME_CATEGORIES = (
 def _is_pytree_placeholder(obj):
     if not has_jax:
         return False
-    if isinstance(obj, object):
+    if type(obj) is object:
         return True
 
     cls = type(obj)
