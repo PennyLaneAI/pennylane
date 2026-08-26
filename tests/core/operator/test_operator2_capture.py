@@ -29,7 +29,7 @@ from operator2_utils import (
 
 import pennylane as qp
 from pennylane import apply
-from pennylane.typing import Wire
+from pennylane.typing import Float, Wire
 
 jax = pytest.importorskip("jax")
 from pennylane.capture import PlxprInterpreter
@@ -217,12 +217,12 @@ class TestCaptureAbstractInputs:
         """Test that we can capture a hybrid op where the inner op has an abstract input."""
 
         def f():
-            HybridOp(DynOp(qp.typing.Float, 0), 0)
+            HybridOp(DynOp(Float, 0), 0)
 
         jaxpr = jax.make_jaxpr(f)()
-        assert len(jaxpr.eqns) == 2  # one symbolic_array, one hybrid op
-        assert jaxpr.eqns[0].primitive == symbolic_array_prim
-        assert jaxpr.eqns[1].params["op_cls"] == HybridOp
+        assert len(jaxpr.eqns) == 3  # one dead symbolic array, one symbolic_array, one hybrid op
+        assert jaxpr.eqns[1].primitive == symbolic_array_prim
+        assert jaxpr.eqns[2].params["op_cls"] == HybridOp
 
     def test_hybrid_op_inner_op_defined_outside(self):
         """Test that we can capture a hybrid op where the inner op has an abstract input."""

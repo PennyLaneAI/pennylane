@@ -1995,7 +1995,7 @@ def _to_symbolic_array(value):
 
     if isinstance(value, AbstractWires):
         wire_array = [symbolic_array((), int) for _ in range(len(value))]
-        if any(isinstance(w, AbstractArray) for w in value):
+        if any(isinstance(w, AbstractArray) for w in wire_array):
             return value  # if we're not in a tracing context, do nothing
         return wire_array
 
