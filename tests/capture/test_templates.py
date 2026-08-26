@@ -1601,9 +1601,9 @@ class TestModifiedTemplates:
     def test_trotter_cdf(self):
         """Test TrotterCDF with program capture."""
 
-        from pennylane.numeric_hamiltonians import (
+        from pennylane.numeric_hamiltonians import (  # pylint: disable=import-outside-toplevel
             CDFHamiltonian,
-        )  # pylint: disable=import-outside-toplevel
+        )
 
         hamiltonian = CDFHamiltonian(
             core_tensors=np.random.rand(2, 2, 2),
@@ -1631,9 +1631,9 @@ class TestModifiedTemplates:
     def test_trotter_cgf(self):
         """Test TrotterCGF with program capture."""
 
-        from pennylane.numeric_hamiltonians import (
+        from pennylane.numeric_hamiltonians import (  # pylint: disable=import-outside-toplevel
             CGFHamiltonian,
-        )  # pylint: disable=import-outside-toplevel
+        )
 
         hamiltonian = CGFHamiltonian(
             core_tensors=np.random.rand(2, 2, 2, 2, 2),

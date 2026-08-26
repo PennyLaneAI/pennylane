@@ -40,7 +40,7 @@ from pennylane.templates.subroutines.time_evolution.trotter_cdf import (
     _apply_system_basis_rotation,
     _merge_leaves,
 )
-from pennylane.typing import Wire, Float
+from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 from tests.templates.subroutines.time_evolution.fermi_tools import (  # pylint: disable=no-name-in-module
     one_body_matrix,

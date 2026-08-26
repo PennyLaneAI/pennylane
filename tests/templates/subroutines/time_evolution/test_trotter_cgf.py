@@ -41,7 +41,7 @@ from pennylane.templates.subroutines.time_evolution.trotter_cgf import (
     _apply_system_basis_rotation,
     _merge_leaves,
 )
-from pennylane.typing import Wire, Float
+from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 from tests.templates.subroutines.time_evolution.trotter_test_helpers import (  # pylint: disable=no-name-in-module
     CATALYST_GATE_SET_DOUBLE_PHASE,
