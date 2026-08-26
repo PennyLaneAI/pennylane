@@ -48,6 +48,7 @@ from pennylane.ops.op_math.decompositions.controlled_decompositions import (
     decompose_mcx_one_worker,
 )
 from pennylane.wires import Wires
+from pennylane.capture.primitives import cond_prim, ctrl_transform_prim
 
 cw5 = tuple(list(range(1, 1 + n)) for n in range(2, 6))
 
@@ -839,10 +840,10 @@ class TestControlledTwoQubitUnitary:
 
         assert len(jaxpr.jaxpr.invars) == 4
 
-        cond_count = sum([1 for eqn in jaxpr.eqns if eqn.primitive.name == "cond"])
+        cond_count = sum([1 for eqn in jaxpr.eqns if eqn.primitive == cond_prim])
         assert cond_count == 2
 
-        ctrl_count = sum([1 for eqn in jaxpr.eqns if eqn.primitive.name == "ctrl_transform"])
+        ctrl_count = sum([1 for eqn in jaxpr.eqns if eqn.primitive == ctrl_transform_prim])
         assert ctrl_count == 1
 
         assert len(jaxpr.jaxpr.outvars) == 0
