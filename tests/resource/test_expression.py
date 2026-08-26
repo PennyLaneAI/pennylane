@@ -476,6 +476,11 @@ class TestExpressionMath:
         result = func(expr)
         assert result._data == {("x",): 2, (): 3}
 
+        expr_zero = Expression(0)
+        result = func(expr_zero)
+        assert result == 0
+        assert isinstance(result, int)
+
     def test_round_ndigits(self):
         """Test that rounding an int-valued expression with ndigits is unaffected."""
         expr = Expression({("x",): 2, (): 3.14159})
