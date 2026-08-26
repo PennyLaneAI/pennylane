@@ -1042,6 +1042,9 @@ class TestMCXDecomposition:
         expected_matrix = mcx.sparse_matrix()
         assert qp.math.allclose(matrix, expected_matrix)
 
+        if qp.capture.enabled():
+            return  # the following check is not expected to work with capture
+
         # compute decomposition result
         old_decomps = mcx.decomposition()
         assert tape.operations == old_decomps
