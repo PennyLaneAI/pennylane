@@ -1352,6 +1352,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed :class:`~.SumOfSlatersPrep` so its decomposition supports dynamic wire arguments and
+  returns Python integer resource counts, allowing it to be compiled with Catalyst.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
 * Fixed the QFT-based decomposition of :class:`~.OutMultiplier` so it can be captured and
   compiled with Catalyst when ``mod = 2 ** len(output_wires)``.
   [(#10057)](https://github.com/PennyLaneAI/pennylane/pull/10057)

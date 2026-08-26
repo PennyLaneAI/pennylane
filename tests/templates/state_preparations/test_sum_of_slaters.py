@@ -562,6 +562,16 @@ class TestSumOfSlatersPrep:
         registered_work_wires = _sos_state_prep.get_work_wire_spec(coefficients, range(n), indices)
         assert sum(sizes.values()) - n == registered_work_wires.total
 
+    def test_resource_counts_are_python_integers(self):
+        """Test that decomposition resource counts are Python integers."""
+        indices = (0, 1, 2, 4, 8, 16, 32, 64)
+        resources = _sos_state_prep.compute_resources(
+            np.zeros(len(indices), dtype=complex), range(7), indices
+        )
+
+        # Ensure they are Python integers, not other (NumPy) integers.
+        assert all(type(count) is int for count in resources.gate_counts.values())
+
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
         "num_wires,num_entries",

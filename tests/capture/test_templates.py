@@ -28,6 +28,10 @@ import pennylane as qp
 from pennylane import math
 from pennylane.core import Operator1
 from pennylane.core.operator import Operator2
+from pennylane.templates.state_preparations.sum_of_slaters import (
+    _preprocess,
+    _sos_state_prep_with_wires,
+)
 
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
@@ -290,6 +294,29 @@ def test_unmodified_templates(template, args, kwargs):
     # Check outvars; there should only be the DropVar returned by the template
     assert len(eqn.outvars) == 1
     assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
+
+def test_sum_of_slaters_subroutine_with_dynamic_wires():
+    """Test that the SumOfSlatersPrep subroutine supports dynamic wire arguments."""
+    indices = (0, 1, 2, 4, 8, 16, 32, 64)
+    num_wires = 7
+    coefficients = np.zeros(len(indices), dtype=complex)
+    v_bits = qp.math.int_to_binary(np.array(indices), num_wires).T
+    selected_wires, *data = _preprocess(v_bits, range(num_wires))
+    data = (coefficients, v_bits, *data)
+    all_wires = qp.registers(qp.SumOfSlatersPrep.required_register_sizes(indices, num_wires))
+    all_wires["selected_wires"] = selected_wires
+
+    @qp.capture.subroutine
+    def subroutine(*wire_args):
+        dynamic_wires = dict(zip(all_wires, wire_args, strict=True))
+        _sos_state_prep_with_wires(data, **dynamic_wires)
+
+    jaxpr = jax.make_jaxpr(subroutine)(*(jnp.asarray(wires) for wires in all_wires.values()))
+
+    assert [var.aval.shape for var in jaxpr.jaxpr.invars] == [
+        (len(wires),) for wires in all_wires.values()
+    ]
 
 
 @pytest.mark.parametrize(
