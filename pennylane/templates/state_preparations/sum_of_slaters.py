@@ -1074,7 +1074,7 @@ def _sos_state_prep_resources(coefficients, wires, indices, **_):
     resources[_adjoint_abstract(qp.TemporaryAND)] += (num_entries - 1) * (m - 1)
 
     # Calculate the bit counts of all integers that need to be uncomputed and sum them up.
-    number_of_bits_to_unset = int(np.sum(np.bitwise_count(np.arange(1, num_entries)).astype(int)))
+    number_of_bits_to_unset = int(np.sum(np.bitwise_count(np.arange(1, num_entries))))
     resources[qp.CNOT] += number_of_bits_to_unset
 
     # We have to flip at most m control bits between any pair of the `num_entries-1` uncomputing
