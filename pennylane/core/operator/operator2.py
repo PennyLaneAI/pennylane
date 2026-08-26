@@ -1480,7 +1480,6 @@ class Operator2(metaclass=OperatorMeta):
         >>> qp.PauliRot._unflatten(*op._flatten())
         PauliRot(theta=1.5, pauli_word=XY, wires=[0, 1])
         """
-
         args = {}
 
         # Process dynamic data
