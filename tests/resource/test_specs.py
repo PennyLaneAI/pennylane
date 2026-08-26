@@ -1026,7 +1026,7 @@ class TestSymbolicSpecs:
         assert r.subs({var: 10 for var in r.vars}).quantum_operations["RX"] == 10
 
     @pytest.mark.capture
-    def test_symbolic_array_loop_arguemtn(self):
+    def test_symbolic_array_loop_argument(self):
         """Test dynamic loop with a symbolic array as a loop argument."""
 
         @qp.qjit
@@ -1046,6 +1046,296 @@ class TestSymbolicSpecs:
 
         r = qp.specs(c, level=0)(2).resources
         assert r.subs({var: 10 for var in r.vars}).quantum_operations["RX"] == 10
+
+    @pytest.mark.capture
+    def test_empty_loops(self):
+        """Test that empty static loops are handled correctly."""
+
+        @qp.qjit
+        @qp.qnode(qp.device("null.qubit", wires=1))
+        def circuit():
+            for _ in range(0):
+                qp.PauliX(0)
+            for _ in range(2, 2):
+                qp.Hadamard(0)
+            return qp.expval(qp.PauliX(0))
+
+        actual = qp.specs(circuit, level=0)()
+        expected = CircuitSpecs(
+            device_name="null.qubit",
+            num_device_wires=1,
+            shots=Shots(None),
+            level="Before MLIR Passes",
+            resources=SpecsResources(
+                counts={},  # No operations executed
+                measurement_processes={"expval(PauliX)": 1},
+                num_wires=1,
+            ),
+        )
+
+        assert actual == expected
+
+
+class TestSymbolicSpecsLoopConcretization:
+    """
+    Integration tests for the loop concretization feature of the resource analysis pass, which
+    resolves nested loops whose inner bounds are the immediately enclosing loop's induction
+    variable.
+    """
+
+    def test_loop_concretization(self):
+        """Test a straightforward nested loop whose inner bound depends on the outer loop var."""
+        n = 8
+
+        @qp.qjit(autograph=True)
+        @qp.qnode(qp.device("null.qubit", wires=n))
+        def circuit():
+            for i in range(n):
+                for j in range(i):
+                    qp.PauliZ(wires=j % 2)
+            return qp.expval(qp.X(0))
+
+        resources = qp.specs(circuit, level=0)().resources
+
+        assert resources.quantum_operations["PauliZ"] == 28
+
+    def test_triple_nested_loop_concretization(self):
+        """Test 3 nested loops whose bounds depends on the outer loop var."""
+        n = 8
+
+        @qp.qjit(autograph=True)
+        @qp.qnode(qp.device("null.qubit", wires=n))
+        def circuit():
+            for i in range(n):  # Runs 8 times total
+                for j in range(i):  # Runs 28 times total
+                    for k in range(j):  # Runs 56 times total
+                        qp.PauliZ(wires=k % 2)
+                    qp.PauliX(wires=j % 2)
+
+            return qp.expval(qp.X(0))
+
+        resources = qp.specs(circuit, level=0)().resources
+
+        assert resources.quantum_operations["PauliZ"] == 56
+        assert resources.quantum_operations["PauliX"] == 28
+
+    def test_loop_concretization_with_unrelated_middle_loop(self):
+        """Test 3 nested loops where the middle loop is unrelated to the other 2."""
+        a, b = 4, 3
+
+        @qp.qjit(autograph=True)
+        @qp.qnode(qp.device("null.qubit", wires=2))
+        def circuit():
+            for i in range(a):  # Runs 4 times total
+                for j in range(b):  # Runs 12 times total
+                    for k in range(i):  # Runs 18 times total
+                        qp.PauliZ(wires=k % 2)
+                    qp.PauliX(wires=j % 2)
+
+            return qp.expval(qp.X(0))
+
+        resources = qp.specs(circuit, level=0)().resources
+
+        assert resources.quantum_operations["PauliZ"] == 18
+        assert resources.quantum_operations["PauliX"] == 12
+
+    def test_loop_concretization_symbolic(self):
+        """Test nested dynamic loops."""
+
+        @qp.qjit(autograph=True)
+        @qp.qnode(qp.device("null.qubit", wires=8))
+        def circuit(n):
+            for i in range(n):
+                for j in range(i):
+                    qp.PauliZ(wires=j % 2)
+
+            return qp.expval(qp.X(0))
+
+        resources = qp.specs(circuit, level=0)(8).resources
+
+        # Current behaviour is that these loops are *NOT* folded like static loops
+        assert not isinstance(resources.quantum_operations["PauliZ"], (int, float))
+        assert len(resources.quantum_operations["PauliZ"].vars) == 2
+
+    def test_loop_concretization_with_step(self):
+        """Test an outer loop with a step != 1."""
+        n = 8
+
+        @qp.qjit(autograph=True)
+        @qp.qnode(qp.device("null.qubit", wires=n))
+        def circuit():
+            for i in range(0, n, 2):
+                for j in range(i):
+                    qp.PauliZ(wires=j % 2)
+
+            return qp.expval(qp.X(0))
+
+        resources = qp.specs(circuit, level=0)().resources
+
+        assert resources.quantum_operations["PauliZ"] == 12
+
+    def test_loop_concretization_with_inner_step(self):
+        """Test an inner loop with a step != 1."""
+        n = 8
+
+        @qp.qjit(autograph=True)
+        @qp.qnode(qp.device("null.qubit", wires=n))
+        def circuit():
+            for i in range(n):
+                for j in range(0, i, 2):
+                    qp.PauliZ(wires=j % 2)
+
+            return qp.expval(qp.X(0))
+
+        resources = qp.specs(circuit, level=0)().resources
+
+        assert resources.quantum_operations["PauliZ"] == 16
+
+    def test_loop_concretization_with_lower_bound(self):
+        """Test an outer loop with a lower bound."""
+        n = 8
+
+        @qp.qjit(autograph=True)
+        @qp.qnode(qp.device("null.qubit", wires=n))
+        def circuit():
+            for i in range(2, n):
+                for j in range(i):
+                    qp.PauliZ(wires=j % 2)
+
+            return qp.expval(qp.X(0))
+
+        resources = qp.specs(circuit, level=0)().resources
+
+        assert resources.quantum_operations["PauliZ"] == 27
+
+    def test_loop_concretization_with_inner_lower_bound(self):
+        """Test an inner loop with a lower bound."""
+        n = 8
+
+        @qp.qjit(autograph=True)
+        @qp.qnode(qp.device("null.qubit", wires=n))
+        def circuit():
+            for i in range(n):
+                for j in range(1, i):
+                    qp.PauliZ(wires=j % 2)
+
+            return qp.expval(qp.X(0))
+
+        resources = qp.specs(circuit, level=0)().resources
+
+        assert resources.quantum_operations["PauliZ"] == 21
+
+    def test_loop_concretization_reverse(self):
+        """Test concretization on a decrementing loop."""
+        n = 8
+
+        @qp.qjit(autograph=True)
+        @qp.qnode(qp.device("null.qubit", wires=n))
+        def circuit():
+            for i in range(n, 0, -1):
+                for j in range(i):
+                    qp.PauliZ(wires=j % 2)
+
+            return qp.expval(qp.X(0))
+
+        resources = qp.specs(circuit, level=0)().resources
+
+        # Expect a symbolic value: reverse iteration is not supported for concretization
+        assert not isinstance(resources.quantum_operations["PauliZ"], (int, float))
+
+    def test_loop_concretization_static_change(self):
+        """Test concretization where the inner loop depends indirectly on the outer loop var."""
+        n = 8
+
+        @qp.qjit(autograph=True)
+        @qp.qnode(qp.device("null.qubit", wires=n))
+        def circuit():
+            for i in range(n):
+                for j in range(i + 1):  # Note the +1, this is now an expression
+                    qp.PauliZ(wires=j % 2)
+
+            return qp.expval(qp.X(0))
+
+        resources = qp.specs(circuit, level=0)().resources
+
+        # Expect a symbolic value: indirect dependency is not supported for concretization
+        assert not isinstance(resources.quantum_operations["PauliZ"], (int, float))
+
+    def test_loop_concretization_multi_dependency(self):
+        """Test concretization with a loop that has 2 direct dependencies from inner loops."""
+        n = 8
+
+        @qp.qjit(autograph=True)
+        @qp.qnode(qp.device("null.qubit", wires=n))
+        def circuit():
+            for i in range(n):
+                for _ in range(i):
+                    for k in range(i):  # Depends on outer-most loop
+                        qp.PauliZ(wires=k % 2)
+
+            return qp.expval(qp.X(0))
+
+        resources = qp.specs(circuit, level=0)().resources
+
+        assert resources.quantum_operations.get("PauliZ", 0) == 140
+
+    def test_loop_concretization_multi_level_dependency(self):
+        """Test concretization with a loop that jumps back to an outer ancestor,
+        skipping two enclosing loops."""
+        n = 8
+
+        @qp.qjit(autograph=True)
+        @qp.qnode(qp.device("null.qubit", wires=n))
+        def circuit():
+            for i in range(n):
+                for j in range(i):
+                    for k in range(j):
+                        for _ in range(i):  # Jumps back to the outer-most loop
+                            qp.PauliZ(wires=k % 2)
+
+            return qp.expval(qp.X(0))
+
+        resources = qp.specs(circuit, level=0)().resources
+
+        assert resources.quantum_operations.get("PauliZ", 0) == 322
+
+    def test_loop_concretization_combined(self):
+        """Test concretization with all different complexities on loop bounds put together."""
+        n = 8
+
+        @qp.qjit(autograph=True)
+        @qp.qnode(qp.device("null.qubit", wires=n))
+        def circuit():
+            for i in range(1, n, 2):
+                for j in range(1, i):
+                    for k in range(0, j, 2):
+                        qp.PauliZ(wires=k % 2)
+
+            return qp.expval(qp.X(0))
+
+        resources = qp.specs(circuit, level=0)().resources
+
+        assert resources.quantum_operations["PauliZ"] == 20
+
+    def test_loop_concretization_no_iters(self):
+        """Test concretization with a loop that has no iterations."""
+
+        @qp.qjit(autograph=True)
+        @qp.qnode(qp.device("null.qubit", wires=1))
+        def circuit():
+            for i in range(0):
+                for j in range(i):
+                    qp.PauliZ(wires=j % 2)
+            for i in range(2, 2):
+                for j in range(i):
+                    qp.PauliX(wires=j % 2)
+
+            return qp.expval(qp.X(0))
+
+        resources = qp.specs(circuit, level=0)().resources
+
+        assert resources.quantum_operations.get("PauliZ", 0) == 0
+        assert resources.quantum_operations.get("PauliX", 0) == 0
 
 
 class TestMarkerIntegration:
