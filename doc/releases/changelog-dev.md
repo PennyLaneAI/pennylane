@@ -2,6 +2,32 @@
 
 <h3>New features since last release</h3>
 
+* Two new numeric Hamiltonians called :class:`pennylane.CDFHamiltonian` (based on `arXiv:2506.15784, Sec. III A <https://arxiv.org/abs/2506.15784>`) and :class:`pennylane.CGFHamiltonian` have been added (based on `arXiv:2508.11865, Sec. III C <https://arxiv.org/abs/2508.11865>`), which define compressed double-factorized (CDF) and Christiansen greedy-fragmentation Hamiltonians, respectively. These Hamiltonians can be defined
+  with both concrete numeric data or abstract data (using ``qp.typing.Float[...]``).
+  [(#10048)](https://github.com/PennyLaneAI/pennylane/pull/10048)
+
+  ```python
+  import numpy as np
+  import pennylane as qp
+
+  L, M, N = 2, 2, 3
+  ham = qp.CGFHamiltonian(
+      core_tensors=np.random.rand(L + 1, M, M, N, N),
+      leaf_tensors=np.random.rand(L + 1, M, N, N),
+      nuc_constant=0.5,
+  )
+  ```
+
+  The same Hamiltonian can be described with abstract data for the purposes of fast, low-fidelity
+  resource-estimation workflows where only shape information is available:
+
+  ```pycon
+  >>> from pennylane.typing import Float
+  >>> qp.CGFHamiltonian(Float[L + 1, M, M, N, N], Float[L + 1, M, N, N]).leaf_tensors
+  AbstractArray((3, 2, 3, 3), float64, weak_type=True)
+
+  ```
+
 * Added :func:`~pennylane.backline.triton_decoder` and
   :func:`~pennylane.backline.css_bp_decoder` for compiling Triton-based coprocessor decoders.
   :func:`~pennylane.backline.triton_decoder` wraps user-provided Triton decoder tuples, while
@@ -109,6 +135,13 @@
   True
 
   ```
+
+* Added :class:`~.TrotterCDF` and :class:`~.TrotterCGF`, templates for second-order Trotter time evolution of
+  fragmented Hamiltonians (CDF for electronic structure, CGF for vibrational structure) as used in modern quantum
+  chemistry algorithms.
+  [(#9459)](https://github.com/PennyLaneAI/pennylane/pull/9459)
+  [(#9789)](https://github.com/PennyLaneAI/pennylane/pull/9789)
+  [(#10015)](https://github.com/PennyLaneAI/pennylane/pull/10015)
 
 * A new arithmetic template called :class:`~.SignedOutMultiplier` has been added that multiplies numbers encoded in the
   input registers using a two's complement.
@@ -400,6 +433,7 @@
   abstract type notation.
   [(#9701)](https://github.com/PennyLaneAI/pennylane/pull/9701)
   [(#9724)](https://github.com/PennyLaneAI/pennylane/pull/9724)
+  [(#10056)](https://github.com/PennyLaneAI/pennylane/pull/10056)
 
   ```python
   from pennylane.typing import Int, Float, Complex, Bool, Wire
@@ -407,7 +441,7 @@
   Float           # Float scalar
   Complex[...]    # Abstract complex array with any shape
   Bool[-1, 3, 4]  # Abstract bool array with dynamic size for the first axis
-  Wire            # Single abstract wire
+  Wire[1]         # Single abstract wire
   Wire[4]         # Four abstract wires
   Wire[-1]        # Wire sequence with dynamic size
   ```
@@ -583,6 +617,7 @@
 * Added the ``MultiX`` template which conditionally applies ``PauliX`` gates across target wires according
   to a bitstring array.
   [(#10033)](https://github.com/PennyLaneAI/pennylane/pull/10033)
+  [(#10073)](https://github.com/PennyLaneAI/pennylane/pull/10073)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -762,12 +797,6 @@
     ['circuit', 'Hadamard [x5]', 'RZ [x5]', 'T [x220]', 'QPE(RX, 4, adj_qft=None)']
 
   ```
-
-* Created a :func:`~.pennylane.labs.templates.trotter_fragmented` function to run specialized
-  Trotter circuits for fragmented Hamiltonians. This is used in modern quantum chemistry
-  application algorithms.
-  [(#9459)](https://github.com/PennyLaneAI/pennylane/pull/9459)
-  [(#9789)](https://github.com/PennyLaneAI/pennylane/pull/9789)
 
 * Performance of the Trotter error module is improved by introducing a novel algorithm for
   computing the Baker-Campbell-Hausdorff formula.
@@ -1041,7 +1070,8 @@
   - Templates are ported:
     - :class:`~.BasisRotation`, :class:`~.MultiplexerStatePreparation`, :class:`~.QROM`, :class:`~.QFT`, :class:`~.FlipSign`,
       :class:`~.TemporaryAND`, :class:`~.SelectPauliRot`, :class:`~.GQSP`, :class:`~.AQFT`, :class:`~.SumOfSlatersPrep`,
-      :class:`~.SemiAdder`, :class:`~.OutMultiplier`, :class:`~.SignedOutMultiplier`, :class:`~.BasisState`
+      :class:`~.SemiAdder`, :class:`~.OutMultiplier`, :class:`~.SignedOutMultiplier`, :class:`~.BasisState`, :class:`~.TrotterCDF`,
+      :class:`~.TrotterCGF`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
   [(#9925)](https://github.com/PennyLaneAI/pennylane/pull/9925)
   [(#9918)](https://github.com/PennyLaneAI/pennylane/pull/9918)
@@ -1056,8 +1086,11 @@
   [(#9994)](https://github.com/PennyLaneAI/pennylane/pull/9994)
   [(#9997)](https://github.com/PennyLaneAI/pennylane/pull/9997)
   [(#9995)](https://github.com/PennyLaneAI/pennylane/pull/9995)
+  [(#10015)](https://github.com/PennyLaneAI/pennylane/pull/10015)
   [(#10018)](https://github.com/PennyLaneAI/pennylane/pull/10018)
   [(#9933)](https://github.com/PennyLaneAI/pennylane/pull/9933)
+  [(#10042)](https://github.com/PennyLaneAI/pennylane/pull/10042)
+  [(#10073)](https://github.com/PennyLaneAI/pennylane/pull/10073)
   - Quantum chemistry operators are ported:
     - :class:`~.SingleExcitation`
   [(#9944)](https://github.com/PennyLaneAI/pennylane/pull/9944)
@@ -1159,6 +1192,7 @@
     [(#9659)](https://github.com/PennyLaneAI/pennylane/pull/9659)
     [(#9842)](https://github.com/PennyLaneAI/pennylane/pull/9842)
     [(#9898)](https://github.com/PennyLaneAI/pennylane/pull/9898)
+    [(#10058)](https://github.com/PennyLaneAI/pennylane/pull/10058)
   - :class:`~.StatePrepBase2`, based on :class:`~.Operator2`, is added.
     [(#9562)](https://github.com/PennyLaneAI/pennylane/pull/9562)
   - :meth:`~.Operator2.decomposition` falls back to registered graph decomposition rules when ``compute_decomposition`` is not overridden.
@@ -1315,6 +1349,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed capture compatibility of the decomposition rule of `SemiAdder`.
+  [(#10068)](https://github.com/PennyLaneAI/pennylane/pull/10068)
+
 * Fixed :func:`~pennylane.backline.css_bp_decoder` and the other Triton decoders so they can be
   compiled on a machine with no usable GPU. The ahead-of-time build called
   ``JITFunction.create_binder()``, which asks the local machine for a target through
@@ -1462,6 +1499,7 @@ This release contains contributions from (in alphabetical order):
 Usman Ahmed,
 Guillermo Alonso,
 Abdullah Al Omar Galib,
+Ali Asadi,
 Gabriel Bottrill,
 Joseph Bowles,
 Astral Cai,
