@@ -733,7 +733,7 @@ class TestGraphDecomposition:
         assert isinstance(rr, qp.decomposition.CompressedResourceOp)
         assert rr.name == "ChangeOpBasis"
 
-        assert rr.params["compute_op"] == PauliX(Wire)
+        assert rr.params["compute_op"] == PauliX(Wire[1])
         assert rr.params["compute_op"].is_abstract
 
         assert isinstance(rr.params["target_op"], qp.decomposition.CompressedResourceOp)

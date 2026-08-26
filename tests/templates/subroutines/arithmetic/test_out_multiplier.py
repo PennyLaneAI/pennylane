@@ -338,7 +338,7 @@ class TestOutMultiplier:
                 [6, 7, 8],
                 7,
                 [1, 10],
-                "None of the wires in work_wires should be included in x_wires.",
+                "x_wires and work_wires must not overlap",
             ),
             (
                 [0, 1, 2],
@@ -346,7 +346,7 @@ class TestOutMultiplier:
                 [6, 7, 8],
                 7,
                 [3, 10],
-                "None of the wires in work_wires should be included in y_wires.",
+                "y_wires and work_wires must not overlap",
             ),
             (
                 [0, 1, 2],
@@ -354,7 +354,7 @@ class TestOutMultiplier:
                 [6, 7, 8],
                 7,
                 [9, 10],
-                "None of the wires in y_wires should be included in x_wires.",
+                "x_wires and y_wires must not overlap",
             ),
             (
                 [0, 1, 2],
@@ -362,7 +362,7 @@ class TestOutMultiplier:
                 [6, 7, 8],
                 7,
                 [9, 10],
-                "None of the wires in output_wires should be included in y_wires.",
+                "y_wires and output_wires must not overlap",
             ),
             (
                 [0, 1, 7],
@@ -370,7 +370,7 @@ class TestOutMultiplier:
                 [6, 7, 8],
                 7,
                 [9, 10],
-                "None of the wires in output_wires should be included in x_wires.",
+                "x_wires and output_wires must not overlap",
             ),
             (
                 [0, 1, 2],

@@ -438,19 +438,19 @@ class TestQROM:
             [0, 1, 2],
             [0, 3],
             [4, 5],
-            "Target wires should be different from control wires.",
+            "control_wires and target_wires must not overlap",
         ),
         (
             [0, 1, 2],
             [4],
             [2, 5],
-            "Control wires should be different from work wires.",
+            "control_wires and work_wires must not overlap",
         ),
         (
             [0, 1, 2],
             [4],
             [4],
-            "Target wires should be different from work wires.",
+            "target_wires and work_wires must not overlap",
         ),
     ],
 )

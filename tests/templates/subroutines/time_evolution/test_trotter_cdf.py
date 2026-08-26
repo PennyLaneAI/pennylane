@@ -32,6 +32,7 @@ from scipy.linalg import expm
 jax = pytest.importorskip("jax")
 
 import pennylane as qp
+from pennylane.core.operator import abstractify
 from pennylane.decomposition.resources import Resources
 from pennylane.exceptions import CaptureWarning
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
@@ -39,7 +40,7 @@ from pennylane.templates.subroutines.time_evolution.trotter_cdf import (
     _apply_system_basis_rotation,
     _merge_leaves,
 )
-from pennylane.typing import Wire
+from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 from tests.templates.subroutines.time_evolution.fermi_tools import (  # pylint: disable=no-name-in-module
     one_body_matrix,
@@ -167,12 +168,11 @@ class TestInitialization:
             qp.TrotterCDF(0.3, 5, ham, wires, double_phase=True).arguments["double_phase"] is True
         )
 
-    def test_abstract_init(self, toy_hamiltonian_cdf):
-        """Test that an abstract instance (e.g. for resource-rep purposes) is built."""
-        from pennylane.typing import Float
+    def test_abstractify(self, toy_hamiltonian_cdf):
+        """Test that an abstract instance (e.g. for resource-rep purposes) can be built."""
 
         ham, num_orbitals = toy_hamiltonian_cdf
-        op = qp.TrotterCDF(Float, 5, ham, Wire[2 * num_orbitals])
+        op = abstractify(qp.TrotterCDF(Float, 5, ham, Wire[2 * num_orbitals]))
         assert op.is_abstract
 
     def test_list_hamiltonian_cast_to_arrays(self, toy_hamiltonian_cdf):
