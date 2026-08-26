@@ -214,8 +214,6 @@ class TestInitialization:
 
     def test_abstract_init(self, toy_hamiltonian_cgf_abstract):
         """Test that an abstract instance (e.g. for resource-rep purposes) is built."""
-        from pennylane.typing import Float
-
         abs_ham, num_modes, n_states = toy_hamiltonian_cgf_abstract
         op = qp.TrotterCGF(Float, 5, abs_ham, Wire[num_modes * n_states])
         assert op.is_abstract

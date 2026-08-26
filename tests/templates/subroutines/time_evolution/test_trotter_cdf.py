@@ -196,7 +196,6 @@ class TestInitialization:
 
     def test_abstract_init(self, toy_hamiltonian_cdf_abstract):
         """Test that an abstract instance (e.g. for resource-rep purposes) is built."""
-
         ham, num_orbitals = toy_hamiltonian_cdf_abstract
         op = qp.TrotterCDF(Float, 5, ham, Wire[2 * num_orbitals])
         assert op.is_abstract
