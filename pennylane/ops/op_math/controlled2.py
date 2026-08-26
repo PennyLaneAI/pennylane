@@ -591,9 +591,9 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
             # invars are ordered as (*other_args, *control_wires, *control_values), so we
             # need to insert the new control wires before the old ones, and do the same
             # for control values too.
-            control_wires = control_wires + eqns[0].invars[-2 * n_ctrls : -n_ctrls]
+            new_control_wires = control_wires + eqns[0].invars[-2 * n_ctrls : -n_ctrls]
             control_values = list(control_values) + eqns[0].invars[-n_ctrls:]
-            invars = eqns[0].invars[: -2 * n_ctrls] + control_wires + control_values
+            invars = eqns[0].invars[: -2 * n_ctrls] + new_control_wires + control_values
 
         params["n_ctrls"] += len(control_wires)
         res = operator_p.bind(*invars, **params)
