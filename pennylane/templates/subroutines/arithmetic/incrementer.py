@@ -337,8 +337,7 @@ def _controlled_incrementer_decomposition(
         )
         base_work_wires = math.array(base_work_wires, like="jax")
         if base_work_wires.shape[0] > 0 and work_wires.shape[0] > 0:
-            # Both arrays are already 1D at this point (guaranteed by the ``shape[0]`` checks
-            # above), so no ``atleast_1d`` is needed before concatenating.
+            # Both arrays are already 1D at this point, guaranteed by the ``shape[0]`` check
             work_wires = math.concatenate([base_work_wires, work_wires])
         elif base_work_wires.shape[0] > 0 and work_wires.shape[0] == 0:
             work_wires = base_work_wires
