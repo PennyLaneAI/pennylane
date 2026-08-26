@@ -204,7 +204,7 @@ def _work_wire_condition(wires, work_wires):
     return (len(work_wires) + 1) >= len(wires)
 
 
-def _base_work_wire_condition(base, control_wires, work_wires, **_):
+def _ctrl_work_wire_condition(base, control_wires, work_wires, **_):
     num_wires = len(base.increment_wires) + len(control_wires)
     num_work_wires = len(base.work_wires) + len(work_wires)
     return (num_work_wires + 1) >= num_wires
@@ -317,7 +317,7 @@ def _controlled_incrementer_resources(base, control_wires, **_):
     return resources
 
 
-@register_condition(_base_work_wire_condition)
+@register_condition(_ctrl_work_wire_condition)
 @register_resources(_controlled_incrementer_resources)
 def _controlled_incrementer_decomposition(
     *_,
