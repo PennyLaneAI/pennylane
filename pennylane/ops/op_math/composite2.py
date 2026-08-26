@@ -18,6 +18,7 @@ This submodule defines a base class for composite operations.
 
 import abc
 from collections.abc import Callable, Sequence
+from inspect import signature
 
 # pylint: disable=invalid-sequence-index
 from typing import override
@@ -52,7 +53,7 @@ class CompositeOp2(Operator2, is_baseclass=True):
     def __init__(self, operands: Sequence[Operator], _init_pauli_rep=None):
         if any(isinstance(op, (qp.ops.MidMeasure, qp.ops.PauliMeasure)) for op in operands):
             raise ValueError("Composite operators of mid-circuit measurements are not supported.")
-        super().__init__(operands, _init_pauli_rep=_init_pauli_rep)
+        super().__init__(**self._init_args)
         self._name = self.__class__.__name__
         self._wires = Wires.all_wires([op.wires for op in operands])
         self._hash = None
@@ -61,6 +62,19 @@ class CompositeOp2(Operator2, is_baseclass=True):
         self._pauli_rep = self._build_pauli_rep() if _init_pauli_rep is None else _init_pauli_rep
         for op in self:
             remove_from_program(op)
+
+    def __new__(cls, *args, **kwargs):
+        obj = super().__new__(cls)
+
+        if not args and not kwargs:
+            return obj
+
+        sig = signature(cls)
+        bound_args = sig.bind(*args, **kwargs)
+        bound_args.apply_defaults()
+        obj._init_args = bound_args.arguments
+
+        return obj
 
     @override
     def __abstract_init__(self, operands, _init_pauli_rep=None):  # pylint: disable=arguments-differ
@@ -157,7 +171,6 @@ class CompositeOp2(Operator2, is_baseclass=True):
         framework = math.get_deep_interface(eigvals)
         eigvals = [math.asarray(ei, like=framework) for ei in eigvals]
         return self._math_op(math.vstack(eigvals), axis=0)
-
 
     @property
     def overlapping_ops(self) -> list[list[Operator]]:
