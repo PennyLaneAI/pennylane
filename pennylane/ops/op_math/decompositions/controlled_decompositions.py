@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """This submodule defines functions to decompose controlled operations."""
+from functools import partial
 
 from typing import Literal
 
@@ -276,7 +277,8 @@ def ctrl_decomp_bisect_rule(U, wires, **__):
             )
         ],
     )(su2_U, wires)
-    ops.cond(_not_zero(phase), _ctrl_global_phase)(phase, wires[:-1], wires[-1], "borrowed")
+    fn = partial(_ctrl_global_phase, work_wire_type="borrowed")
+    ops.cond(_not_zero(phase), fn)(phase, wires[:-1], wires[-1])
 
 
 def _single_ctrl_decomp_zyz_condition(U, wires, **__):
@@ -346,7 +348,8 @@ def multi_control_decomp_zyz_rule(U, wires, work_wires, work_wire_type, **__):
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )
-    ops.cond(_not_zero(phase), _ctrl_global_phase)(phase, wires[:-1], wires[-1], "borrowed")
+    fn = partial(_ctrl_global_phase, work_wire_type="borrowed")
+    ops.cond(_not_zero(phase), fn)(phase, wires[:-1], wires[-1])
 
 
 def _controlled_two_qubit_unitary_resource(U, wires, work_wires, work_wire_type, **__):
@@ -381,13 +384,12 @@ def controlled_two_qubit_unitary_rule(U, wires, control_values, work_wires, work
 
     if compiler.active() or capture.enabled():
         control_values = math.array(control_values, like="jax")
-        wires = math.array(wires, like="jax")
 
-    @for_loop(0, len(wires) - 2)
-    def _zero_control_wires(i):
-        cond(control_values[i], ops.PauliX)(wires[i])
+    def _zero_control_wires():
+        for i in range(len(wires) - 2):
+            cond(control_values[i], ops.PauliX)(wires[i])
 
-    _zero_control_wires()  # pylint: disable=no-value-for-parameter
+    _zero_control_wires()
 
     ops.ctrl(
         two_qubit_decomp_rule._impl,  # pylint: disable=protected-access
@@ -396,7 +398,7 @@ def controlled_two_qubit_unitary_rule(U, wires, control_values, work_wires, work
         work_wire_type=work_wire_type,
     )(U, wires=wires[-2:])
 
-    _zero_control_wires()  # pylint: disable=no-value-for-parameter
+    _zero_control_wires()
 
 
 def augment_with_allocation(base_rule, num_work_wires, work_wire_type, name=""):
