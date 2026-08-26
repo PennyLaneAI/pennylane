@@ -84,6 +84,16 @@ ARGNAME_CATEGORIES = (
 )
 
 
+def _is_pytree_placeholder(obj):
+    if not has_jax:
+        return False
+    if isinstance(obj, object):
+        return True
+
+    cls = type(obj)
+    return cls.__name__ == "ArgInfo" and cls.__module__.partition(".")[0] == "jax"
+
+
 class Operator2(metaclass=OperatorMeta):
     r"""Base class representing quantum operators that are designed for compatibility with
     :func:`~.qjit`.
@@ -1470,6 +1480,7 @@ class Operator2(metaclass=OperatorMeta):
         >>> qp.PauliRot._unflatten(*op._flatten())
         PauliRot(theta=1.5, pauli_word=XY, wires=[0, 1])
         """
+
         args = {}
 
         # Process dynamic data
@@ -1489,9 +1500,16 @@ class Operator2(metaclass=OperatorMeta):
         for name, value in zip(hashable_argnames, metadata, strict=True):
             args[name] = value
 
-        with QueuingManager.stop_recording():
-            with pause():
-                return cls(**args)
+        if any(_is_pytree_placeholder(leaf) for leaf in flatten(args)[0]):
+            obj = object.__new__(cls)
+            bound_args = cls._sig.bind(**args)
+            bound_args.apply_defaults()
+            obj._bound_args = bound_args
+            obj._is_abstract = True
+            return obj
+
+        with QueuingManager.stop_recording(), pause():
+            return cls(**args)
 
     def _check_batching(self):
         """Check if the expected numbers of dimensions of parameters coincides with the
