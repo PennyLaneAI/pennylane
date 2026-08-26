@@ -288,7 +288,7 @@ class CompositeOp2(Operator2, is_baseclass=True):
 
         def _label(op, decimals, base_label, cache):
             sub_label = op.label(decimals, base_label, cache)
-            return f"({sub_label})" if op.arithmetic_depth > 0 else sub_label
+            return f"({sub_label})" if getattr(op, "arithmetic_depth", 0) > 0 else sub_label
 
         if base_label is not None:
             if isinstance(base_label, str) or len(base_label) != len(self):
