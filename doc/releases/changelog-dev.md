@@ -1235,6 +1235,7 @@
     [(#9808)](https://github.com/PennyLaneAI/pennylane/pull/9808)
     [(#9834)](https://github.com/PennyLaneAI/pennylane/pull/9834)
     [(#9908)](https://github.com/PennyLaneAI/pennylane/pull/9908)
+    [(#10066)](https://github.com/PennyLaneAI/pennylane/pull/10066)
   - Integration with measurements.
     [(#9753)](https://github.com/PennyLaneAI/pennylane/pull/9753)
   - Integration with :func:`pennylane.apply`.
