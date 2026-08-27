@@ -26,10 +26,30 @@ from pennylane.templates.subroutines.arithmetic.out_multiplier import (
     OutMultiplier,
     _add_plus_one,
     _out_multiplier_with_cache_resources,
+    _out_multiplier_with_caddsub,
     _out_multiplier_with_qft,
 )
 from pennylane.templates.subroutines.arithmetic.semi_adder import SemiAdder
 from pennylane.typing import Wire
+
+PL2DO_QFT_CAPTURE = pytest.mark.parametrize(
+    "enable_and_disable_capture",
+    [
+        False,
+        pytest.param(
+            True,
+            marks=(
+                pytest.mark.capture,
+                pytest.mark.jax,
+                pytest.mark.pl2do(
+                    reason="PL 2.0: ChangeOpBasis mishandles Prod operands during capture."
+                ),
+            ),
+        ),
+    ],
+    indirect=True,
+    ids=("capture_disabled", "capture_enabled"),
+)
 
 
 class TestBuildingBlocks:
@@ -174,7 +194,8 @@ def test_abstract_init_validation(mod, work_wires, msg_match):
         )
 
 
-@pytest.mark.jax
+@PL2DO_QFT_CAPTURE
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity_out_multiplier():
     """Check the operation using the assert_valid function."""
     mod = 12
@@ -464,6 +485,8 @@ class TestOutMultiplier:
             ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9, 10, 11, 12, 13], [0, 1, 2]),
         ],
     )
+    @PL2DO_QFT_CAPTURE
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_new_output_wires_zeroed(
         self, x_wires, y_wires, output_wires, mod, work_wires, applicable_rules, seed
     ):  # pylint: disable=too-many-arguments
@@ -503,6 +526,7 @@ class TestOutMultiplier:
             ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9, 10, 13, 14, 15, 16], [0, 1, 2]),
             ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], 16, [9, 10], [0]),
             ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], 16, [9, 10, 13, 14, 15, 16, 17, 18], [0]),
+            ([0, 1], [2, 3], [4, 5, 6, 7], 16, [8, 9], [0]),
             ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9], [0]),
             ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9, 10, 11], [0]),
             ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9, 10, 11, 12], [0, 1]),
@@ -510,6 +534,8 @@ class TestOutMultiplier:
             ([0], [3, 6], [5, 8, 2, 4, 7, 9], None, [11, 12, 13, 14, 15, 16, 17], [0, 1, 2]),
         ],
     )
+    @PL2DO_QFT_CAPTURE
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_new_non_zero_output_wires(
         self, x_wires, y_wires, output_wires, mod, work_wires, applicable_rules, seed
     ):  # pylint: disable=too-many-arguments
@@ -523,6 +549,29 @@ class TestOutMultiplier:
             if applicable:
                 all_wires = (x_wires, y_wires, output_wires, work_wires)
                 _test_mult_correctness(all_wires, mod, rule, seed)
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize(
+        ("x_wires", "y_wires", "output_wires", "mod", "work_wires", "output_wires_zeroed"),
+        [
+            ([0, 1, 2], [3, 6], [5, 8], 4, [9, 10, 11], False),
+            ([0, 1, 2], [3, 6], [5, 8], 4, [9, 10, 11], True),
+            ([0, 1, 2], [3], [5, 7, 8], None, [9, 10, 11, 12], False),
+            ([0], [3, 6], [5, 8], 4, [9, 10, 11], True),
+        ],
+    )
+    def test_decomposition_caddsub_rule_capture(
+        self, x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed
+    ):  # pylint: disable=too-many-arguments
+        """Regression test (#10065): ``_out_multiplier_with_caddsub`` relies internally on
+        ``_adder_flipped_first_work_wire``, whose collect-reorder-replay strategy used to be
+        capture-unsafe. Verify the rule still decomposes correctly with program capture
+        enabled."""
+        op = OutMultiplier(
+            x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=output_wires_zeroed
+        )
+        assert _out_multiplier_with_caddsub.is_applicable(**op.arguments)
+        _test_decomposition_rule(op, _out_multiplier_with_caddsub)
 
     def test_work_wires_added_correctly(self):
         """Test that no work wires are added if work_wire = None"""
