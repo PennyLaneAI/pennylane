@@ -588,18 +588,19 @@ class TestMapToResourceOp:
     def test_map_trotter_cdf(self):
         """Test that TrotterCDF maps to its estimator resource operator, inferring the
         CDF Hamiltonian dimensions (num_orbitals, num_fragments) from the tensor shapes."""
-        from pennylane.estimator.compact_hamiltonian import CDFHamiltonian
+        import pennylane.estimator.compact_hamiltonian as re_ham
+        import pennylane.numeric_hamiltonians as ham
 
         num_orbitals, num_two_body = 2, 1
-        hamiltonian = {
-            "core_tensors": np.zeros((num_two_body + 1, num_orbitals, num_orbitals)),
-            "leaf_tensors": np.zeros((num_two_body + 1, num_orbitals, num_orbitals)),
-            "nuc_constant": 0.0,
-        }
+        hamiltonian = ham.CDFHamiltonian(
+            core_tensors=np.zeros((num_two_body + 1, num_orbitals, num_orbitals)),
+            leaf_tensors=np.zeros((num_two_body + 1, num_orbitals, num_orbitals)),
+            nuc_constant=0.0,
+        )
         op = qp.TrotterCDF(1.0, 3, hamiltonian, wires=range(2 * num_orbitals))
 
         expected = re_temps.TrotterCDF(
-            CDFHamiltonian(num_orbitals=num_orbitals, num_fragments=num_two_body + 1),
+            re_ham.CDFHamiltonian(num_orbitals=num_orbitals, num_fragments=num_two_body + 1),
             num_steps=3,
             order=2,
             wires=range(2 * num_orbitals),

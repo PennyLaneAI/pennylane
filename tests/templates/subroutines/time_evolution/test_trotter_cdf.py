@@ -35,6 +35,7 @@ import pennylane as qp
 from pennylane.core.operator import abstractify
 from pennylane.decomposition.resources import Resources
 from pennylane.exceptions import CaptureWarning
+from pennylane.numeric_hamiltonians import CDFHamiltonian
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.time_evolution.trotter_cdf import (
     _apply_system_basis_rotation,
@@ -85,8 +86,8 @@ def cdf_reference_hamiltonian_leaves(ham):
         _energy_shift,
     )
 
-    Z = np.asarray(ham["core_tensors"], dtype=float)
-    U = np.asarray(ham["leaf_tensors"], dtype=float)
+    Z = np.asarray(ham.core_tensors, dtype=float)
+    U = np.asarray(ham.leaf_tensors, dtype=float)
     num_cas = Z.shape[-1]
     n_wires = 2 * num_cas
     dim = 2**n_wires
@@ -110,8 +111,7 @@ def cdf_reference_hamiltonian_leaves(ham):
     return H
 
 
-@pytest.fixture
-def toy_hamiltonian_cdf(seed):
+def toy_hamiltonian_cdf_generator(seed, abstract=False):
     """Synthetic CDF (electronic-structure) Hamiltonian: 2 spatial orbitals
     (4 qubits, alpha/beta interleaved), 1 two-body fragment."""
     rng = np.random.default_rng(seed)
@@ -127,11 +127,37 @@ def toy_hamiltonian_cdf(seed):
 
     core_tensors = np.concatenate([np.expand_dims(one_body_core, axis=0), core_2b], axis=0)
     leaf_tensors = np.concatenate([np.expand_dims(one_body_leaf, axis=0), leaf_2b], axis=0)
-    hamiltonian = {
-        "core_tensors": core_tensors,
-        "leaf_tensors": leaf_tensors,
-        "nuc_constant": 0.6,
-    }
+    nuc_constant = 0.6
+
+    if abstract:
+        core_tensors = Float[core_tensors.shape]
+        leaf_tensors = Float[leaf_tensors.shape]
+        nuc_constant = Float
+
+    return core_tensors, leaf_tensors, nuc_constant, num_orbitals
+
+
+@pytest.fixture
+def toy_hamiltonian_cdf_concrete(seed):
+    core_tensors, leaf_tensors, nuc_constant, num_orbitals = toy_hamiltonian_cdf_generator(seed)
+
+    hamiltonian = CDFHamiltonian(
+        core_tensors=core_tensors, leaf_tensors=leaf_tensors, nuc_constant=nuc_constant
+    )
+
+    return hamiltonian, num_orbitals
+
+
+@pytest.fixture
+def toy_hamiltonian_cdf_abstract(seed):
+    core_tensors, leaf_tensors, nuc_constant, num_orbitals = toy_hamiltonian_cdf_generator(
+        seed, abstract=True
+    )
+
+    hamiltonian = CDFHamiltonian(
+        core_tensors=core_tensors, leaf_tensors=leaf_tensors, nuc_constant=nuc_constant
+    )
+
     return hamiltonian, num_orbitals
 
 
@@ -146,15 +172,16 @@ def diagonal_hamiltonian_cdf(seed):
     core = rng.normal(size=(L + 1, num_orbitals, num_orbitals)) * 0.4
     core = 0.5 * (core + np.transpose(core, (0, 2, 1)))
     leaf = np.stack([np.eye(num_orbitals) for _ in range(L + 1)])
-    return {"core_tensors": core, "leaf_tensors": leaf, "nuc_constant": 0.3}, num_orbitals
+    ham = CDFHamiltonian(core_tensors=core, leaf_tensors=leaf, nuc_constant=0.3)
+    return ham, num_orbitals
 
 
 class TestInitialization:
     """Test that TrotterCDF is initialized correctly."""
 
-    def test_init_correctly(self, toy_hamiltonian_cdf):
+    def test_init_correctly(self, toy_hamiltonian_cdf_concrete):
         """Test that arguments and wires are stored correctly."""
-        ham, num_orbitals = toy_hamiltonian_cdf
+        ham, num_orbitals = toy_hamiltonian_cdf_concrete
         wires = list(range(2 * num_orbitals))
         op = qp.TrotterCDF(0.3, 5, ham, wires)
 
@@ -168,36 +195,31 @@ class TestInitialization:
             qp.TrotterCDF(0.3, 5, ham, wires, double_phase=True).arguments["double_phase"] is True
         )
 
-    def test_abstractify(self, toy_hamiltonian_cdf):
+    def test_abstractify(self, toy_hamiltonian_cdf_abstract):
         """Test that an abstract instance (e.g. for resource-rep purposes) can be built."""
 
-        ham, num_orbitals = toy_hamiltonian_cdf
+        ham, num_orbitals = toy_hamiltonian_cdf_abstract
         op = abstractify(qp.TrotterCDF(Float, 5, ham, Wire[2 * num_orbitals]))
         assert op.is_abstract
 
-    def test_list_hamiltonian_cast_to_arrays(self, toy_hamiltonian_cdf):
-        """List (or tuple) ``core_tensors``/``leaf_tensors`` are cast to arrays by the constructor."""
-        ham, num_orbitals = toy_hamiltonian_cdf
-        list_ham = {
-            **ham,
-            "core_tensors": ham["core_tensors"].tolist(),
-            "leaf_tensors": ham["leaf_tensors"].tolist(),
-        }
-        stored = qp.TrotterCDF(0.3, 2, list_ham, list(range(2 * num_orbitals))).arguments[
-            "hamiltonian"
-        ]
-        assert hasattr(stored["core_tensors"], "ndim") and stored["core_tensors"].ndim == 3
-        assert hasattr(stored["leaf_tensors"], "ndim") and stored["leaf_tensors"].ndim == 3
-        assert np.allclose(stored["core_tensors"], ham["core_tensors"])
-        assert np.allclose(stored["leaf_tensors"], ham["leaf_tensors"])
+    def test_input_hamiltonian_type(self):
+        """Test that anything but a CDFHamiltonian being given to the hamiltonian argument throws
+        an error."""
+        ham = [0.1, 0.2, 0.3, 0.4]
+        match = (
+            f"TrotterCDF expects a CDFHamiltonian for the hamiltonian argument. Got {type(ham)}."
+        )
+
+        with pytest.raises(ValueError, match=match):
+            qp.TrotterCDF(evolution_time=0.1, num_trotter_steps=123, hamiltonian=ham, wires=(0, 1))
 
 
 class TestValidity:
     """Basic structural validity tests for the TrotterCDF operator."""
 
-    def test_assert_valid(self, toy_hamiltonian_cdf):
+    def test_assert_valid(self, toy_hamiltonian_cdf_concrete):
         """Run qp.ops.functions.assert_valid on a concrete CDF instance."""
-        ham, num_orbitals = toy_hamiltonian_cdf
+        ham, num_orbitals = toy_hamiltonian_cdf_concrete
         wires = list(range(2 * num_orbitals))
         op = qp.TrotterCDF(0.1, 3, ham, wires)
         # Differentiating through the (non-trainable) hamiltonian dict is not supported.
@@ -236,9 +258,9 @@ class TestResourceRule:
     """Direct unit tests for the registered resource functions, following the
     graph-based decomposition testing convention."""
 
-    def test_num_trotter_steps_zero_has_no_resources(self, toy_hamiltonian_cdf):
+    def test_num_trotter_steps_zero_has_no_resources(self, toy_hamiltonian_cdf_concrete):
         """Test that zero Trotter steps require zero resources."""
-        ham, num_orbitals = toy_hamiltonian_cdf
+        ham, num_orbitals = toy_hamiltonian_cdf_concrete
         wires = list(range(2 * num_orbitals))
         rule = qp.list_decomps(qp.TrotterCDF)[0]
         resources = rule.compute_resources(
@@ -251,9 +273,9 @@ class TestResourceRule:
         assert resources == Resources({})
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
-    def test_controlled_zero_steps_empty_decomposition(self, toy_hamiltonian_cdf):
+    def test_controlled_zero_steps_empty_decomposition(self, toy_hamiltonian_cdf_concrete):
         """Test that C(TrotterCDF) with zero steps emits no gates."""
-        ham, num_orbitals = toy_hamiltonian_cdf
+        ham, num_orbitals = toy_hamiltonian_cdf_concrete
         wires = list(range(2 * num_orbitals))
         op = qp.TrotterCDF(1.0, 0, ham, wires=wires)
         assert qp.ctrl(op, control=[99]).decomposition() == []
@@ -263,9 +285,9 @@ class TestDecomposition:
     """Tests of the registered base decomposition rule."""
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
-    def test_decomposition_self_consistent(self, toy_hamiltonian_cdf):
+    def test_decomposition_self_consistent(self, toy_hamiltonian_cdf_concrete):
         """The registered base rule is self-consistent with its resource function."""
-        ham, num_orbitals = toy_hamiltonian_cdf
+        ham, num_orbitals = toy_hamiltonian_cdf_concrete
         wires = list(range(2 * num_orbitals))
         op = qp.TrotterCDF(0.4, 2, ham, wires)
         for rule in qp.list_decomps(qp.TrotterCDF):
@@ -294,7 +316,7 @@ class TestDecomposition:
         core = rng.normal(size=(L + 1, num_orbitals, num_orbitals)) * 0.4
         core = 0.5 * (core + np.transpose(core, (0, 2, 1)))
         leaf = np.stack([random_orthogonal(num_orbitals, rng) for _ in range(L + 1)])
-        ham = {"core_tensors": core, "leaf_tensors": leaf, "nuc_constant": 0.3}
+        ham = CDFHamiltonian(core_tensors=core, leaf_tensors=leaf, nuc_constant=0.3)
         sys_wires = list(range(2 * num_orbitals))
         t = 0.6
         expected = expm(-1j * cdf_reference_hamiltonian_leaves(ham) * t)
@@ -326,12 +348,12 @@ class TestDecomposition:
         core = rng.normal(size=(L + 1, num_orbitals, num_orbitals)) * 0.4
         core = 0.5 * (core + np.transpose(core, (0, 2, 1)))
         leaf = np.stack([random_orthogonal(num_orbitals, rng) for _ in range(L + 1)])
-        ham = {"core_tensors": core, "leaf_tensors": leaf, "nuc_constant": 0.3}
+        ham = CDFHamiltonian(core_tensors=core, leaf_tensors=leaf, nuc_constant=0.3)
 
         flipped = leaf.copy()
         flipped[0][:, 0] *= -1.0  # negate one orbital column -> det(leaf[0]) flips (now mixed)
         assert np.linalg.det(leaf[0]) * np.linalg.det(flipped[0]) < 0
-        ham_flipped = {**ham, "leaf_tensors": flipped}
+        ham_flipped = CDFHamiltonian(core_tensors=core, leaf_tensors=flipped, nuc_constant=0.3)
 
         sys_wires = list(range(2 * num_orbitals))
         t, steps = 0.6, 3
@@ -351,11 +373,11 @@ class TestDecomposition:
         nuc = 0.2
         core0 = np.diag([0.1, 0.3])  # one-body: trace = 0.4
         core2b = np.array([[0.2, 0.1], [0.1, 0.4]])  # one two-body fragment
-        ham = {
-            "core_tensors": np.stack([core0, core2b]),
-            "leaf_tensors": np.stack([np.eye(2), np.eye(2)]),  # identity leaves -> Trotter-exact
-            "nuc_constant": nuc,
-        }
+        ham = CDFHamiltonian(
+            core_tensors=np.stack([core0, core2b]),
+            leaf_tensors=np.stack([np.eye(2), np.eye(2)]),  # identity leaves -> Trotter-exact
+            nuc_constant=nuc,
+        )
         # s = nuc + tr(Z0) - sum(Z_l)/2 + sum(tr(Z_l))/4
         #   = 0.2 + 0.4 - 0.8/2 + 0.6/4 = 0.35
         s_literal = 0.35
@@ -415,11 +437,12 @@ class TestDecomposition:
         if np.linalg.det(pi_gauge @ ve) < 0:  # keep det(leaf_0) = +1 so its gauge is pi_gauge too
             ve[:, 0] = -ve[:, 0]
         leaf0 = pi_gauge @ ve
-        ham = {
-            "core_tensors": np.stack([np.diag(eps), lam]),
-            "leaf_tensors": np.stack([leaf0, leaf2]),
-            "nuc_constant": nuc,
-        }
+
+        ham = CDFHamiltonian(
+            core_tensors=np.stack([np.diag(eps), lam]),
+            leaf_tensors=np.stack([leaf0, leaf2]),
+            nuc_constant=nuc,
+        )
 
         expected = expm(-1j * h_phys * t)
         diffs = [
@@ -439,21 +462,21 @@ class TestDecomposition:
 class TestControlledDecomposition:
     """Tests for the default (genuine) C(TrotterCDF) controlled decomposition."""
 
-    def test_controlled_decomposition_self_consistent(self, toy_hamiltonian_cdf):
+    def test_controlled_decomposition_self_consistent(self, toy_hamiltonian_cdf_concrete):
         """The registered C(TrotterCDF) rule is self-consistent with its resources."""
-        ham, num_orbitals = toy_hamiltonian_cdf
+        ham, num_orbitals = toy_hamiltonian_cdf_concrete
         wires = list(range(2 * num_orbitals))
         op = qp.ctrl(qp.TrotterCDF(0.4, 2, ham, wires), control=[99])
         for rule in qp.list_decomps("C(TrotterCDF)"):
             _test_decomposition_rule(op, rule)
 
     @pytest.mark.capture
-    def test_controlled_decomposition_capture(self, toy_hamiltonian_cdf):
+    def test_controlled_decomposition_capture(self, toy_hamiltonian_cdf_concrete):
         """The C(TrotterCDF) rule captures cleanly. Operators can't be passed as capture inputs
         yet - they surface as ``ArgInfo`` wires (the "ArgInfo issue" tracked by ``test_Controlled``
         in ``tests/capture/test_operators.py``) - so the base is built inside the traced function.
         Once that is resolved this can use ``_test_decomposition_rule`` under capture directly."""
-        ham, num_orbitals = toy_hamiltonian_cdf
+        ham, num_orbitals = toy_hamiltonian_cdf_concrete
         n = 2 * num_orbitals
         rule = qp.list_decomps("C(TrotterCDF)")[0]
 
@@ -492,21 +515,21 @@ class TestControlledDecomposition:
 class TestDoublePhaseControlledDecomposition:
     """Tests for the opt-in double-phase (Fig. 6) C(TrotterCDF) controlled decomposition."""
 
-    def test_controlled_decomposition_self_consistent(self, toy_hamiltonian_cdf):
+    def test_controlled_decomposition_self_consistent(self, toy_hamiltonian_cdf_concrete):
         """The double-phase C(TrotterCDF) rule is self-consistent with its resources."""
-        ham, num_orbitals = toy_hamiltonian_cdf
+        ham, num_orbitals = toy_hamiltonian_cdf_concrete
         wires = list(range(2 * num_orbitals))
         op = qp.ctrl(qp.TrotterCDF(0.4, 2, ham, wires, double_phase=True), control=[99])
         for rule in qp.list_decomps("C(TrotterCDF)"):
             _test_decomposition_rule(op, rule)
 
     @pytest.mark.capture
-    def test_controlled_decomposition_capture(self, toy_hamiltonian_cdf):
+    def test_controlled_decomposition_capture(self, toy_hamiltonian_cdf_concrete):
         """The double-phase C(TrotterCDF) rule captures cleanly. Operators can't be passed as
         capture inputs yet - they surface as ``ArgInfo`` wires (the "ArgInfo issue" tracked by
         ``test_Controlled`` in ``tests/capture/test_operators.py``) - so the base is built inside
         the traced function; once resolved this can use ``_test_decomposition_rule`` directly."""
-        ham, num_orbitals = toy_hamiltonian_cdf
+        ham, num_orbitals = toy_hamiltonian_cdf_concrete
         n = 2 * num_orbitals
         rule = qp.list_decomps("C(TrotterCDF)")[0]
 
@@ -561,9 +584,9 @@ class TestIntegration:
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("t, num_steps", [(1.0, 0), (0.0, 10)])
-    def test_identity_edge_cases(self, toy_hamiltonian_cdf, t, num_steps):
+    def test_identity_edge_cases(self, toy_hamiltonian_cdf_concrete, t, num_steps):
         """Test that zero Trotter steps, or zero evolution time, produce the identity."""
-        ham, num_orbitals = toy_hamiltonian_cdf
+        ham, num_orbitals = toy_hamiltonian_cdf_concrete
         wires = list(range(2 * num_orbitals))
 
         def _circuit():
@@ -585,11 +608,11 @@ class TestIntegration:
         N = 2
         L = 1
         rng = np.random.default_rng(seed)
-        hamiltonian = {
-            "core_tensors": rng.random((L + 1, N, N)),
-            "leaf_tensors": rng.random((L + 1, N, N)),
-            "nuc_constant": 0.5,
-        }
+        hamiltonian = CDFHamiltonian(
+            core_tensors=rng.random((L + 1, N, N)),
+            leaf_tensors=rng.random((L + 1, N, N)),
+            nuc_constant=0.5,
+        )
         registers = qp.registers({"hadamard": 1, "system": 2 * N})
 
         @qp.qjit
@@ -606,17 +629,3 @@ class TestIntegration:
             return qp.expval(qp.X(registers["hadamard"]))
 
         assert not np.isclose(trotter_circuit(), 0)
-
-
-class TestInputValidation:
-    """Test that invalid inputs raise appropriate errors."""
-
-    def test_rejects_cgf_hamiltonian(self):
-        """Test that a CGF-shaped Hamiltonian raises a ValueError."""
-        bad_ham = {
-            "core_tensors": np.zeros((2, 2, 2, 3, 3)),  # CGF core (ndim 5)
-            "leaf_tensors": np.zeros((2, 2, 3, 3)),  # CGF leaf (ndim 4)
-            "nuc_constant": 0.0,
-        }
-        with pytest.raises(ValueError, match="TrotterCDF expects a CDF Hamiltonian"):
-            qp.TrotterCDF(0.1, 1, bad_ham, list(range(6)))
