@@ -618,6 +618,7 @@
   to a bitstring array.
   [(#10033)](https://github.com/PennyLaneAI/pennylane/pull/10033)
   [(#10073)](https://github.com/PennyLaneAI/pennylane/pull/10073)
+  [(#10079)](https://github.com/PennyLaneAI/pennylane/pull/10079)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -659,6 +660,9 @@
 * Created a new ``labs.templates.LeftQuantumComparator`` template for performing inequality test of two quantum registers.
   [(#9277)](https://github.com/PennyLaneAI/pennylane/pull/9277)
   [(#9544)](https://github.com/PennyLaneAI/pennylane/pull/9544)
+
+* TCDQ now supports workflows with qudits of non-uniform dimensions.
+  [(#9935)](https://github.com/PennyLaneAI/pennylane/pull/9935)
 
   ```python
   import pennylane as qp
