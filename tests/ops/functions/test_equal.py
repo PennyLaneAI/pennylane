@@ -43,6 +43,7 @@ from pennylane.ops.functions.equal import (
 from pennylane.ops.op_math import Controlled, SymbolicOp
 from pennylane.ops.op_math.controlled2 import ControlledOp2
 from pennylane.templates.subroutines import ControlledSequence
+from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires
 
 PARAMETRIZED_OPERATIONS_1P_1W = [
@@ -2087,6 +2088,33 @@ class TestSymbolicOpComparison:
                 assert_equal(op1, op2)
 
         assert qp.equal(op1, op2) is res
+
+    def test_controlled2_abstract_wires_comparison(self):
+        """Tests comparing ControlledOp2 with abstract wire arguments."""
+
+        base = qp.MultiRZ(1.23, [0, 1])
+        op1 = ControlledOp2(base, control_wires=[2, 3])
+        op2 = ControlledOp2(base, control_wires=Wire[2])
+
+        with pytest.raises(AssertionError, match="Mismatched representations for control_wires"):
+            assert_equal(op1, op2)
+
+        op3 = ControlledOp2(base, control_wires=Wire[3])
+        with pytest.raises(AssertionError, match="Different numbers of abstract control_wires"):
+            assert_equal(op2, op3)
+
+    def test_controlled2_abstract_control_values(self):
+        """Tests comparing ControlledOp2 with abstract control values."""
+
+        base = qp.MultiRZ(1.23, [0, 1])
+        op1 = ControlledOp2(base, control_wires=[2, 3], control_values=[0, 1])
+        op2 = ControlledOp2(base, control_wires=[2, 3], control_values=Bool[2])
+
+        with pytest.raises(AssertionError, match="op1 and op2 have different control values"):
+            assert_equal(op1, op2)
+
+        op3 = ControlledOp2(base, control_wires=[2, 3], control_values=Bool[2])
+        assert_equal(op2, op3)
 
     def test_controlled_arithmetic_depth(self):
         """The depths of controlled operators are different due to nesting"""

@@ -744,12 +744,14 @@ def _equal_controlled2(op1: Controlled2, op2: Controlled2, **kwargs):
     op1_abstract_cvals = isinstance(op1.control_values, AbstractArray)
     op2_abstract_cvals = isinstance(op2.control_values, AbstractArray)
 
+    # if one is abstract but the other one isn't
     if op1_abstract_cvals != op2_abstract_cvals:
         return f"op1 and op2 have different control values. Got {op1.control_values} and {op2.control_values}."
 
     if op1_abstract_cvals:
-        if op1.control_values != op2.control_values:
-            return f"op1 and op2 have different control values. Got {op1.control_values} and {op2.control_values}."
+        # if both are abstract, they must be equal, because if the number of control wires is
+        # the same, abstract control values are guaranteed to be Bool[len(control_wires)], and
+        # this is already validated by the Controlled2 constructor.
         return True
 
     # Check equivalence of concrete controlled values

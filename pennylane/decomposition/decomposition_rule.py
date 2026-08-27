@@ -1112,7 +1112,10 @@ def _is_abstract_and_fixed(val, is_leaf=False):
     if isinstance(val, (AbstractArray, AbstractWires)):
         return val.shape_fixed
     if is_leaf:
-        return False
+        # This branch is added as a precaution to avoid infinite recursion, but this should
+        # never actually happen, because we always call `abstractify` first to fully abstractify
+        # an operator, which should ensure that all pytree leaves are abstract.
+        return False  # return False if val is a non-abstract pytree leaf
     leaves, _ = flatten(val, is_leaf=lambda l: isinstance(l, Wires))
     return all(_is_abstract_and_fixed(leaf, is_leaf=True) for leaf in leaves)
 
