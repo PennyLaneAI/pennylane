@@ -767,21 +767,20 @@ class TestDecompositions:
         """Tests that the graph-based decomposition system actually selects the
         ``change_op_basis``-based route for ``C(IsingZZ)`` (rather than just testing that the
         individual rules compose correctly by hand, as ``test_controlled_isingzz_decomposition_gates``
-        does), and that it lands on the minimal six-gate circuit for a reasonably universal gate set.
+        does), and that it lands on the minimal six-gate circuit ``{CNOT, RZ, GlobalPhase}``.
 
-        Note: for a gate set that lacks any way to build an ``X``-type rotation (e.g. only
-        ``{CNOT, RZ, GlobalPhase}``), the graph solver currently fails to find this decomposition.
-        This is due to a pre-existing, unrelated limitation of the generic controlled-decomposition
-        wrapping mechanism (``_make_controlled_decomp`` in ``controlled2.py``), which conservatively
-        (and unconditionally) counts a ``PauliX`` per control wire regardless of whether any control
-        value is actually 0. This is not specific to ``IsingZZ``/``ChangeOpBasis``.
+        ``PauliX`` also has to be in the gate set: the generic controlled-decomposition wrapping
+        machinery conservatively counts a ``PauliX`` per control wire to account for a possible
+        0-control, even though none are used here. That gate is never actually applied at runtime
+        (as asserted below), but the graph's static resource estimate still requires it to be
+        present in (or reachable from) the target gate set.
         """
         op = qp.ctrl(qp.IsingZZ(0.6931, wires=[2, 3]), control=[4])
         tape = qp.tape.QuantumScript([op], [])
         expected_matrix = qp.matrix(tape, wire_order=[2, 3, 4])
 
         [decomp], _ = qp.transforms.decompose(
-            tape, gate_set={qp.RX, qp.RY, qp.RZ, qp.CNOT, qp.GlobalPhase}
+            tape, gate_set={qp.CNOT, qp.RZ, qp.GlobalPhase, qp.PauliX}
         )
 
         assert [g.name for g in decomp.operations] == ["CNOT", "RZ", "CNOT", "RZ", "CNOT", "CNOT"]
