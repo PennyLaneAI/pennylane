@@ -331,35 +331,6 @@ def _transpose_leaf(U):
     return U.conj().T
 
 
-def _normalize_leaf_determinant(hamiltonian):
-    r"""Force every leaf to determinant ``+1`` so :class:`~.BasisRotation`'s real-orthogonal sign
-    gauge is identical across fragments.
-
-    :class:`~.BasisRotation` realizes a real orthogonal ``leaf`` only up to a determinant-dependent
-    :math:`\pm 1` gauge, so leaves with *mixed* determinants -- e.g. an ``eigh`` one-body leaf with
-    ``det = -1`` next to ``expm`` two-body leaves with ``det = +1``, as produced by
-    :func:`~pennylane.qchem.factorize` for many molecules -- would be rotated into inconsistent bases
-    and realize a different Hamiltonian. Here :math:`v` is a single column of the leaf, i.e. one of
-    the fragment's diagonalizing orbitals; the fragment only depends on it through the projector
-    :math:`|v\rangle\langle v|` (the number operator built from that orbital), and negating the
-    column leaves this projector unchanged since :math:`|-v\rangle\langle -v| = |v\rangle\langle v|`.
-    So flipping one column's sign is a physical no-op on the fragment -- it only flips the leaf's
-    determinant.
-    """
-    leaves = hamiltonian.leaf_tensors
-    signs = math.sign(math.linalg.det(leaves))  # (num_fragments,)
-    col_scale = math.concatenate(
-        [signs[..., None], math.ones_like(leaves[..., 0, 1:])], axis=-1
-    )  # (num_fragments, N): +/-1 in the first column slot, 1 elsewhere
-    leaf_tensors = leaves * col_scale[..., None, :]
-    new_hamiltonian = CDFHamiltonian(
-        core_tensors=hamiltonian.core_tensors,
-        leaf_tensors=leaf_tensors,
-        nuc_constant=hamiltonian.nuc_constant,
-    )
-    return new_hamiltonian
-
-
 def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, double_phase):
     r"""Apply the two-body ``IsingZZ`` layer (base / double-phase / genuine controlled).
 
@@ -524,7 +495,7 @@ def _trotter_cdf_decomposition(evolution_time, num_trotter_steps, hamiltonian, w
         _run_trotter_steps(
             evolution_time,
             num_trotter_steps,
-            _normalize_leaf_determinant(hamiltonian),
+            hamiltonian.normalize_leaf_determinant(),
             wires,
             (),
             **_CDF_HELPERS,
@@ -560,7 +531,7 @@ def _controlled_trotter_cdf_decomp(base, control_wires, control_values, work_wir
         return
 
     phi = (_energy_shift(hamiltonian) * evolution_time) % (4 * np.pi)
-    hamiltonian = _normalize_leaf_determinant(hamiltonian)
+    hamiltonian.normalize_leaf_determinant()
 
     if double_phase:
         # Double-phase (Fig. 6 in https://arxiv.org/abs/2506.15784) circuit: each full-time diagonal block is CNOT-sandwiched by

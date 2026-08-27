@@ -32,7 +32,7 @@ class derives the named dimensions from the shapes and reports them as attribute
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from numbers import Number
 from typing import Any, ClassVar
 
@@ -346,6 +346,29 @@ class CDFHamiltonian(NumericHamiltonian):
     leaf_tensors: Any
     nuc_constant: Any = None
 
+    def normalize_leaf_determinant(self) -> "CDFHamiltonian":
+        r"""Force every leaf to determinant ``+1`` so :class:`~.BasisRotation`'s real-orthogonal sign
+        gauge is identical across fragments.
+
+        :class:`~.BasisRotation` realizes a real orthogonal ``leaf`` only up to a determinant-dependent
+        :math:`\pm 1` gauge, so leaves with *mixed* determinants -- e.g. an ``eigh`` one-body leaf with
+        ``det = -1`` next to ``expm`` two-body leaves with ``det = +1``, as produced by
+        :func:`~pennylane.qchem.factorize` for many molecules -- would be rotated into inconsistent bases
+        and realize a different Hamiltonian. Here :math:`v` is a single column of the leaf, i.e. one of
+        the fragment's diagonalizing orbitals; the fragment only depends on it through the projector
+        :math:`|v\rangle\langle v|` (the number operator built from that orbital), and negating the
+        column leaves this projector unchanged since :math:`|-v\rangle\langle -v| = |v\rangle\langle v|`.
+        So flipping one column's sign is a physical no-op on the fragment -- it only flips the leaf's
+        determinant.
+        """
+        leaves = self.leaf_tensors
+        signs = math.sign(math.linalg.det(leaves))  # (num_fragments,)
+        col_scale = math.concatenate(
+            [signs[..., None], math.ones_like(leaves[..., 0, 1:])], axis=-1
+        )  # (num_fragments, N): +/-1 in the first column slot, 1 elsewhere
+
+        return replace(self, leaf_tensors=leaves * col_scale[..., None, :])
+
 
 @dataclass(frozen=True, eq=False, repr=False)
 class CGFHamiltonian(NumericHamiltonian):
@@ -481,3 +504,42 @@ class CGFHamiltonian(NumericHamiltonian):
     core_tensors: Any
     leaf_tensors: Any
     nuc_constant: Any = None
+
+    def normalize_leaf_determinant(self) -> "CDFHamiltonian":
+        r"""Force every per-mode leaf to determinant ``+1`` so :class:`~.BasisRotation`'s real-orthogonal
+        sign gauge is identical across fragments.
+
+        :class:`~.BasisRotation` realizes a real orthogonal leaf only up to a determinant-dependent
+        :math:`\pm 1` gauge, so leaves with *mixed* determinants (e.g. an ``eigh`` one-body leaf with
+        ``det = -1`` next to ``expm`` two-body leaves with ``det = +1``) would be rotated into
+        inconsistent bases and realize a different Hamiltonian. Negating one orbital line leaves the
+        projector :math:`|v\rangle\langle v|`, and hence the fragment, unchanged, so this is a physical
+        no-op. The orbital is stored on the *columns* of the one-body leaf and on the *rows* of the
+        two-body leaves, so the two sectors negate a column and a row respectively.
+        """
+        leaves = self.leaf_tensors
+        signs = math.sign(math.linalg.det(leaves))  # (L+1, M)
+        line = math.concatenate(
+            [signs[..., None], math.ones_like(leaves[..., 0, 1:])], axis=-1
+        )  # (L+1, M, N): +/-1 in the first slot, 1 elsewhere
+        one_body = leaves[:1] * line[:1][..., None, :]  # eigenvectors on columns -> scale column 0
+        two_body = leaves[1:] * line[1:][..., :, None]  # modal index on rows -> scale row 0
+
+        return replace(self, leaf_tensors=math.concatenate([one_body, two_body], axis=0))
+
+    def align_one_body_leaf(self) -> "CDFHamiltonian":
+        """Transpose the one-body leaf so both sectors share the scaffolding's row convention.
+
+        The scaffolding assumes each ``leaf_tensors[nu][l]`` stores its per-mode diagonalizing
+        rotation with the modal index on the *rows* (the two-body :math:`U^{(l)}_{pa}` convention
+        of `arXiv:2508.11865 <https://arxiv.org/abs/2508.11865>`__). The one-body leaf, however,
+        is the eigenvector matrix of the effective one-body integrals and stores its eigenvectors
+        as *columns*, so it is transposed here to match. Leaves are (special) orthogonal, so this
+        is the inverse rotation.
+        """
+        leaves = self.leaf_tensors
+
+        return replace(
+            self,
+            leaf_tensors=math.concatenate([math.swapaxes(leaves[:1], -2, -1), leaves[1:]], axis=0),
+        )
