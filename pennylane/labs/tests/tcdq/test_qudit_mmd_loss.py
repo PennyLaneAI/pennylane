@@ -1040,10 +1040,10 @@ class TestQuditMMDLossPhaseLayer:
         n_qudits, d, bandwidth, graph_type = 2, 3, 0.5, "cycle"
 
         rng = np.random.default_rng(42)
-        X = rng.integers(0, d, (80, n_qudits))
+        qudits = rng.integers(0, d, (80, n_qudits))
 
         probs, _ = _qudit_circuit_probs(gates, params, n_qudits, d, phase_fn=self._phase_fn)
-        exact = _exact_qudit_mmd2_kernel(probs, X, d, bandwidth, graph_type, n_qudits)
+        exact = _exact_qudit_mmd2_kernel(probs, qudits, d, bandwidth, graph_type, n_qudits)
 
         config = QuditCircuitConfig(
             d=d,
@@ -1056,14 +1056,14 @@ class TestQuditMMDLossPhaseLayer:
         mmd_cfg = QuditMMDConfig(bandwidth=bandwidth, n_ops=self.N_OPS, graph_type=graph_type)
         loss_fn = build_qudit_mmd_loss(config, mmd_cfg)
 
-        X_jnp = jnp.array(X)
+        qudits_jnp = jnp.array(qudits)
         params_jnp = jnp.array(params)
         master_key = jax.random.PRNGKey(42)
         estimates = []
         for _ in range(self.N_TRIALS):
             master_key, loss_key, sample_key = jax.random.split(master_key, 3)
-            idx = jax.random.choice(sample_key, len(X), shape=(40,), replace=False)
-            estimates.append(float(loss_fn(params_jnp, X_jnp[idx], key=loss_key)))
+            idx = jax.random.choice(sample_key, len(qudits), shape=(40,), replace=False)
+            estimates.append(float(loss_fn(params_jnp, qudits_jnp[idx], key=loss_key)))
 
         estimates = np.array(estimates)
         mean_est = np.mean(estimates)
