@@ -32,6 +32,25 @@ from pennylane.templates.subroutines.arithmetic.out_multiplier import (
 from pennylane.templates.subroutines.arithmetic.semi_adder import SemiAdder
 from pennylane.typing import Wire
 
+PL2DO_QFT_CAPTURE = pytest.mark.parametrize(
+    "enable_and_disable_capture",
+    [
+        False,
+        pytest.param(
+            True,
+            marks=(
+                pytest.mark.capture,
+                pytest.mark.jax,
+                pytest.mark.pl2do(
+                    reason="PL 2.0: ChangeOpBasis mishandles Prod operands during capture."
+                ),
+            ),
+        ),
+    ],
+    indirect=True,
+    ids=("capture_disabled", "capture_enabled"),
+)
+
 
 class TestBuildingBlocks:
     @pytest.mark.parametrize(
@@ -175,7 +194,8 @@ def test_abstract_init_validation(mod, work_wires, msg_match):
         )
 
 
-@pytest.mark.jax
+@PL2DO_QFT_CAPTURE
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity_out_multiplier():
     """Check the operation using the assert_valid function."""
     mod = 12
@@ -465,6 +485,8 @@ class TestOutMultiplier:
             ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9, 10, 11, 12, 13], [0, 1, 2]),
         ],
     )
+    @PL2DO_QFT_CAPTURE
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_new_output_wires_zeroed(
         self, x_wires, y_wires, output_wires, mod, work_wires, applicable_rules, seed
     ):  # pylint: disable=too-many-arguments
@@ -504,6 +526,7 @@ class TestOutMultiplier:
             ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], None, [9, 10, 13, 14, 15, 16], [0, 1, 2]),
             ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], 16, [9, 10], [0]),
             ([0, 1, 2], [3, 6], [5, 8, 4, 11, 12], 16, [9, 10, 13, 14, 15, 16, 17, 18], [0]),
+            ([0, 1], [2, 3], [4, 5, 6, 7], 16, [8, 9], [0]),
             ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9], [0]),
             ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9, 10, 11], [0]),
             ([0, 1], [3, 6], [5, 8, 2, 4], 16, [9, 10, 11, 12], [0, 1]),
@@ -511,6 +534,8 @@ class TestOutMultiplier:
             ([0], [3, 6], [5, 8, 2, 4, 7, 9], None, [11, 12, 13, 14, 15, 16, 17], [0, 1, 2]),
         ],
     )
+    @PL2DO_QFT_CAPTURE
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_new_non_zero_output_wires(
         self, x_wires, y_wires, output_wires, mod, work_wires, applicable_rules, seed
     ):  # pylint: disable=too-many-arguments
