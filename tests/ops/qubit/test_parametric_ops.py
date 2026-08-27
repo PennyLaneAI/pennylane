@@ -724,12 +724,6 @@ class TestDecompositions:
         This test drives the actual graph-based decomposition system (rather than hand-picking
         rules by name) to confirm it lands on this minimal six-gate circuit for the gate set
         ``{CNOT, RZ, GlobalPhase}``.
-
-        ``PauliX`` also has to be in the gate set: the generic controlled-decomposition wrapping
-        machinery conservatively counts a ``PauliX`` per control wire to account for a possible
-        0-control, even though none are used here. That gate is never actually applied at runtime
-        (as asserted below), but the graph's static resource estimate still requires it to be
-        present in (or reachable from) the target gate set.
         """
         angle = 0.6931
         op = qp.ctrl(qp.IsingZZ(angle, wires=[2, 3]), control=[4])
@@ -737,7 +731,13 @@ class TestDecompositions:
         expected_matrix = qp.matrix(tape, wire_order=[2, 3, 4])
 
         [decomp], _ = qp.transforms.decompose(
-            tape, gate_set={qp.CNOT, qp.RZ, qp.GlobalPhase, qp.PauliX}
+            tape,
+            gate_set={
+                qp.CNOT,
+                qp.RZ,
+                qp.GlobalPhase,
+                qp.PauliX,
+            },  # PauliX because controlled-decomposition needs it in case there is a 0-control
         )
 
         gates = decomp.operations
