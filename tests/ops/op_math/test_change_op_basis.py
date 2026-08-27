@@ -435,6 +435,15 @@ class TestIntegration:
 
 
 class TestDecomposition:
+    def test_abstract_default_uncompute(self):
+        """Test defaulting uncompute when constructing COB from abstract operands."""
+        compute_op = abstractify(qp.X)
+        op = ChangeOpBasis(compute_op, abstractify(qp.Y))
+
+        assert op.is_abstract
+        assert isinstance(op.uncompute_op, Adjoint2)
+        assert op.uncompute_op.base is compute_op
+
     def test_abstract_resource_representation(self):
         """Test that abstractifying ChangeOpBasis preserves its operator arguments."""
         change_op_basis_op = ChangeOpBasis(qp.X(0), qp.Y(1), qp.X(2))
