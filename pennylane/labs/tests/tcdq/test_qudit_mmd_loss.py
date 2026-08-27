@@ -1069,9 +1069,8 @@ class TestQuditMMDLossPhaseLayer:
         mean_est = np.mean(estimates)
         se = np.std(estimates, ddof=1) / np.sqrt(self.N_TRIALS)
         z = abs(exact - mean_est) / se if se > 1e-15 else 0.0
-        assert (
-            z < self.Z_THRESHOLD
-        ), f"Z-test FAILED: z={z:.2f}, exact={exact:.6f}, mean={mean_est:.6f}, se={se:.6f}"
+
+        assert z < self.Z_THRESHOLD
 
     def test_phase_layer_gradient_flows(self):
         """Gradients w.r.t. the gate parameters stay finite with a phase layer."""
