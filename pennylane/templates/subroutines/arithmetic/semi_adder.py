@@ -418,7 +418,6 @@ def _controlled_semi_adder(
     work_wires=None,
     work_wire_type="borrowed",
     carry_flip=None,
-    **_,
 ):  # pylint: disable=too-many-arguments
     r"""
     Decomposition extracted from `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_
