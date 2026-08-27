@@ -86,10 +86,6 @@ ARGNAME_CATEGORIES = (
 
 def _is_pytree_placeholder(obj) -> bool:
     """Whether 'obj' is a sentinel placeholder that JAX substitutes for real pytree leaves."""
-
-    if not has_jax:
-        return False
-
     cls = type(obj)
     return cls.__name__ == "ArgInfo" and cls.__module__.partition(".")[0] == "jax"
 
