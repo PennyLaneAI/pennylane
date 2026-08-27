@@ -1006,7 +1006,7 @@ class TestQuditMMDLossPhaseLayer:
     @staticmethod
     def _make_config(phase_fn):
         return QuditCircuitConfig(
-            d=3,
+            dims=3,
             n_qudits=2,
             gates={0: [[1, 0]], 1: [[0, 1]], 2: [[1, 1]]},
             n_samples=200,
@@ -1049,7 +1049,7 @@ class TestQuditMMDLossPhaseLayer:
         exact = _exact_qudit_mmd2_kernel(probs, qudits, d, bandwidth, graph_type, n_qudits)
 
         config = QuditCircuitConfig(
-            d=d,
+            dims=d,
             n_qudits=n_qudits,
             gates=gates,
             n_samples=self.N_SAMPLES,
