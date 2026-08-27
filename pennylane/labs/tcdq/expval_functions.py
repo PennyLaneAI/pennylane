@@ -437,12 +437,31 @@ def _control_variate_expected_value(
         g_eq_m = jnp.all(G[jnp.newaxis, :, :] == m[:, jnp.newaxis, :], axis=2)  # (n_obs, n_gates)
         S1 = jnp.sum(a * g_eq_m, axis=1).astype(jnp.complex128)  # (n_obs,)
 
-        gh_xor = (G[jnp.newaxis, :, :] + G[:, jnp.newaxis, :]) % 2  # (n_gates, n_gates, n_qubits)
-        gh_match = jnp.all(
-            gh_xor[jnp.newaxis] == m[:, jnp.newaxis, jnp.newaxis, :], axis=3
-        )  # (n_obs, n_gates, n_gates)
-        S2 = jnp.sum(a[:, :, jnp.newaxis] * a[:, jnp.newaxis, :] * gh_match, axis=(1, 2))
-        S2 = S2.astype(jnp.complex128)
+        # S2 requires the gate pairs with G_g XOR G_h == m_o. Materialising that
+        # predicate for all observables at once costs n_obs * n_gates^2 * n_qubits
+        # bytes, so instead the observable axis is mapped over and the Hamming
+        # weight of (G_g XOR G_h XOR m_o) is obtained from inner products only.
+        G_f = G.astype(jnp.float32)  # (n_gates, n_qubits)
+        w_g = jnp.sum(G_f, axis=1)  # (n_gates,)
+        GG = G_f @ G_f.T  # (n_gates, n_gates)
+
+        def _s2_one(operands):
+            m_row, a_row = operands
+            m_f = m_row.astype(jnp.float32)  # (n_qubits,)
+            Gm = G_f @ m_f  # (n_gates,)
+            T = (G_f * m_f[jnp.newaxis, :]) @ G_f.T  # (n_gates, n_gates)
+            # |G_g XOR G_h XOR m| = sum_q (g + h + m - 2(gh + gm + hm) + 4ghm)
+            dist = (
+                w_g[:, jnp.newaxis]
+                + w_g[jnp.newaxis, :]
+                + jnp.sum(m_f)
+                - 2.0 * (GG + Gm[:, jnp.newaxis] + Gm[jnp.newaxis, :])
+                + 4.0 * T
+            )
+            match = dist < 0.5  # exact: dist is a non-negative integer
+            return jnp.sum(a_row[:, jnp.newaxis] * a_row[jnp.newaxis, :] * match)
+
+        S2 = jax.lax.map(_s2_one, (m, a)).astype(jnp.complex128)  # (n_obs,)
 
         series = S0 + 1j * S1 + (1j**2) / 2.0 * S2
         return jnp.real(y_phase[:, 0] * series)

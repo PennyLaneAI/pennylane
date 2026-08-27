@@ -69,8 +69,7 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
         d (int | Sequence[int]): Local qudit dimension(s). Either a single
             ``int`` (e.g., 2 for qubits, 3 for qutrits), which is broadcast to
             every qudit, or a sequence of length ``n_qudits`` giving a distinct
-            dimension :math:`d_j` per qudit. All
-            per-qudit index sets are then :math:`\{0, \ldots, d_j - 1\}`.
+            dimension :math:`d_j` per qudit.
         n_qudits (int): Number of qudits in the circuit.
         gates (dict[int, list[list[int]]]): Circuit structure mapping each
             trainable-parameter index to a list of generator vectors. Each
@@ -101,16 +100,6 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
             :math:`D'(\mathbf{\xi})` is given by a ``Callable`` with signature ``(params: ArrayLike, z: ArrayLike) -> scalar``
             where ``z`` is a dit-string of shape ``(n_qudits, )`` with entries in :math:`\{0, \dots, d-1\}` and
             ``params`` has shape matching :math:`\mathbf{\xi}`.
-        control_variate (bool): If ``True``, reduces the Monte Carlo variance using an
-            order-2 Taylor-expansion control variate: the integrand with
-            :math:`e^{i \Delta_\mathbf{l}}` expanded to second order in the phase
-            difference about :math:`\mathbf{\theta} = 0`, keeping the observable phase
-            and input-state factors exact. The control mean is evaluated in closed form
-            via character orthogonality on :math:`\mathbb{Z}_{d_1} \times \cdots \times
-            \mathbb{Z}_{d_n}`, so the resulting estimator stays unbiased. Cost is
-            :math:`O(T^2)` per observable with :math:`T = \sum_\mathbf{g}
-            2^{\vert \text{supp}(\mathbf{g}) \vert}`, so it is efficient for low-weight
-            gate sets. Not compatible with ``phase_fn``. Defaults to ``False``.
 
     **Example**
 
@@ -130,7 +119,7 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
     ... )
     """
 
-    #: Local qudit dimension: an int (uniform) or per-qudit sequence.
+    #: Local qudit dimension(s): an int (uniform) or list (per-qudit sequence).
     d: int | Sequence[int] = None
     #: Number of qudits in the circuit.
     n_qudits: int = None
@@ -148,8 +137,6 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
     init_state_amps: ArrayLike | None = None
     #: Learnable phase layer
     phase_fn: Callable | None = None
-    #: If ``True``, use the order-2 Taylor-expansion control variate.
-    control_variate: bool = False
 
 
 def _dims_to_numpy(d: int | Sequence[int], n_qudits: int) -> np.ndarray:
@@ -162,7 +149,7 @@ def _dims_to_numpy(d: int | Sequence[int], n_qudits: int) -> np.ndarray:
     Raises:
         ValueError: If ``d`` is a sequence whose length is not ``n_qudits``.
     """
-    if np.ndim(d) == 0:
+    if isinstance(d, int):
         return np.full((n_qudits,), int(d), dtype=int)
 
     dims = np.asarray(d, dtype=int)
@@ -462,366 +449,15 @@ def _compute_initial_state_correction(
     return psi_tilde_1 * psi_tilde_2[jnp.newaxis, :]
 
 
-def _real_dtype():
-    """Widest available real dtype, respecting JAX's ``jax_enable_x64`` setting."""
-    return jnp.float64 if jax.config.read("jax_enable_x64") else jnp.float32
-
-
-def _complex_dtype():
-    """Widest available complex dtype, respecting JAX's ``jax_enable_x64`` setting."""
-    return jnp.complex128 if jax.config.read("jax_enable_x64") else jnp.complex64
-
-
-class CharacterExpansionData(NamedTuple):
-    """Static character-expansion data for the order-2 Taylor control variate.
-
-    The phase difference admits the exact finite character expansion
-
-    .. math::
-
-        \\Delta_\\mathbf{l}(\\mathbf{z}) = \\sum_{t=1}^{T} A_{\\mathbf{l},t}\\,
-        \\chi_{\\mathbf{f}_t}(\\mathbf{z}), \\qquad
-        A_{\\mathbf{l},t} = \\theta_t c_t \\left( 1 - \\omega^{-\\mathbf{f}_t \\cdot \\mathbf{l}} \\right),
-
-    where :math:`t` indexes ``(gate, sign-pattern)`` pairs obtained by expanding each
-    :math:`\\sqrt{2}\\cos(\\cdot)` factor of :math:`\\mathcal{Q}_\\mathbf{g}` into two
-    characters. Weight-zero gates are dropped since they contribute
-    :math:`\\mathcal{Q}_\\mathbf{g} \\equiv 1` and cancel in the phase difference.
-
-    Only the :math:`\\mathbf{\\theta}`- and observable-independent pieces are stored
-    here; they depend solely on the gate set and are therefore computed once at
-    build time.
-
-    Args:
-        freqs (jnp.ndarray): Character frequencies :math:`\\mathbf{f}_t` reduced
-            modulo ``dims``, shape ``(T, n_qudits)``.
-        coeffs (jnp.ndarray): Sign-pattern coefficients :math:`c_t`, shape ``(T,)``.
-        param_indices (jnp.ndarray): Maps each term to its parameter index in
-            ``gates_params``, shape ``(T,)``.
-        pair_match (jnp.ndarray): Boolean table selecting, for each ordered pair
-            ``(t, u)``, the reduced sum frequency bucket used by the order-2 term.
-            Shape ``(T, T, n_freq_unique)``.
-        unique_freqs (jnp.ndarray): The distinct frequencies appearing either as
-            :math:`\\mathbf{f}_t` or as :math:`\\mathbf{f}_t + \\mathbf{f}_u`,
-            shape ``(n_freq_unique, n_qudits)``.
-        single_match (jnp.ndarray): Boolean table mapping each term ``t`` to its
-            bucket in ``unique_freqs``, shape ``(T, n_freq_unique)``.
-    """
-
-    #: Character frequencies, shape ``(T, n_qudits)``.
-    freqs: jnp.ndarray
-    #: Sign-pattern coefficients, shape ``(T,)``.
-    coeffs: jnp.ndarray
-    #: Parameter index for each term, shape ``(T,)``.
-    param_indices: jnp.ndarray
-    #: Pair-sum frequency bucket table, shape ``(T, T, n_freq_unique)``.
-    pair_match: jnp.ndarray
-    #: Distinct frequencies, shape ``(n_freq_unique, n_qudits)``.
-    unique_freqs: jnp.ndarray
-    #: Single-term frequency bucket table, shape ``(T, n_freq_unique)``.
-    single_match: jnp.ndarray
-
-
-def _build_character_expansion(
-    gen_np: np.ndarray, pm_np: np.ndarray, dims: np.ndarray
-) -> CharacterExpansionData:
-    """Enumerate the character expansion of the phase difference.
-
-    Each gate of weight :math:`\\omega` contributes :math:`2^\\omega` terms, one per
-    sign pattern :math:`\\mathbf{\\sigma} \\in \\{\\pm 1\\}^{\\text{supp}(\\mathbf{g})}`,
-    with frequency :math:`(\\mathbf{f}_{\\mathbf{g},\\mathbf{\\sigma}})_k = \\sigma_k g_k
-    \\bmod d_k` and coefficient :math:`c_\\mathbf{\\sigma} = \\prod_k \\chi` or
-    :math:`\\bar{\\chi}` according to :math:`\\sigma_k`, where
-    :math:`\\chi = (1 + i)/2`.
-
-    Frequencies are reduced modulo ``dims`` on construction, and pair sums are
-    reduced again before matching: the delta of the orthogonality lemma holds
-    modulo ``d``, and order-2 sum frequencies routinely exceed :math:`d_k`.
-
-    Args:
-        gen_np (np.ndarray): Generator matrix, shape ``(n_gates, n_qudits)``.
-        pm_np (np.ndarray): Parameter index for each gate, shape ``(n_gates,)``.
-        dims (np.ndarray): Per-qudit dimensions, shape ``(n_qudits,)``.
-
-    Returns:
-        CharacterExpansionData: Static expansion data.
-    """
-    chi = 0.5 + 0.5j
-    n_qudits = gen_np.shape[1]
-
-    freqs: list[np.ndarray] = []
-    coeffs: list[complex] = []
-    param_indices: list[int] = []
-
-    for gate, p_idx in zip(gen_np, pm_np):
-        support = np.nonzero(gate)[0]
-        if len(support) == 0:
-            # Weight-zero gates have Q_g = 1 and cancel in the phase difference.
-            continue
-        for sigma in itertools.product([1, -1], repeat=len(support)):
-            f = np.zeros(n_qudits, dtype=int)
-            c = 1.0 + 0.0j
-            for k, s in zip(support, sigma):
-                f[k] = (s * gate[k]) % dims[k]
-                c *= chi if s == 1 else np.conj(chi)
-            freqs.append(f)
-            coeffs.append(c)
-            param_indices.append(int(p_idx))
-
-    if len(freqs) == 0:
-        empty_f = np.zeros((0, n_qudits), dtype=int)
-        return CharacterExpansionData(
-            freqs=jnp.array(empty_f),
-            coeffs=jnp.zeros((0,), dtype=_complex_dtype()),
-            param_indices=jnp.zeros((0,), dtype=int),
-            pair_match=jnp.zeros((0, 0, 0), dtype=bool),
-            unique_freqs=jnp.array(empty_f),
-            single_match=jnp.zeros((0, 0), dtype=bool),
-        )
-
-    freqs_np = np.array(freqs, dtype=int)
-    pair_sums = (freqs_np[:, None, :] + freqs_np[None, :, :]) % dims  # (T, T, n_qudits)
-
-    # Buckets: every frequency that can be selected by the moment functional.
-    stacked = np.concatenate([freqs_np, pair_sums.reshape(-1, n_qudits)], axis=0)
-    unique_freqs = np.unique(stacked, axis=0)
-
-    single_match = np.all(freqs_np[:, None, :] == unique_freqs[None, :, :], axis=2)
-    pair_match = np.all(pair_sums[:, :, None, :] == unique_freqs[None, None, :, :], axis=3)
-
-    return CharacterExpansionData(
-        freqs=jnp.array(freqs_np),
-        coeffs=jnp.array(np.array(coeffs, dtype=complex)),
-        param_indices=jnp.array(np.array(param_indices, dtype=int)),
-        pair_match=jnp.array(pair_match),
-        unique_freqs=jnp.array(unique_freqs),
-        single_match=jnp.array(single_match),
-    )
-
-
-def _character_amplitudes(
-    gates_params: ArrayLike,
-    char_data: CharacterExpansionData,
-    l_f: jnp.ndarray,
-    dims: ArrayLike,
-) -> jnp.ndarray:
-    """Compute the observable-dependent amplitudes :math:`A_{\\mathbf{l},t}`.
-
-    Terms with :math:`\\mathbf{f}_t \\cdot \\mathbf{l} \\equiv 0` get zero amplitude
-    and drop out automatically; in particular :math:`\\mathbf{l} = \\mathbf{0}` gives
-    :math:`\\Delta_\\mathbf{l} \\equiv 0`, making the truncation exact.
-
-    Returns:
-        jnp.ndarray: Amplitudes of shape ``(n_obs, T)``.
-    """
-    theta_t = jnp.asarray(gates_params)[char_data.param_indices]  # (T,)
-    inv_d = 1.0 / jnp.asarray(dims, dtype=_real_dtype())
-    # omega^{-f.l} = exp(-2 pi i sum_k f_k l_k / d_k) -> (n_obs, T)
-    fl = (l_f.astype(_real_dtype()) * inv_d[jnp.newaxis, :]) @ char_data.freqs.astype(
-        _real_dtype()
-    ).T
-    shift = jnp.exp(-2j * jnp.pi * fl)
-    return (theta_t * char_data.coeffs)[jnp.newaxis, :] * (1.0 - shift)
-
-
-def _control_variate_integrand(
-    obs_pm: jnp.ndarray,
-    accumulated_phase_diffs: jnp.ndarray,
-    H: jnp.ndarray | None,
-) -> jnp.ndarray:
-    """Order-2 Taylor approximation control variate.
-
-    Expands only the nonlinear factor :math:`e^{i\\Delta_\\mathbf{l}}` to second
-    order, keeping the observable phase and the input-state correction exact.
-
-    Args:
-        obs_pm (jnp.ndarray): Observable phase matrix, shape ``(n_obs, n_samples)``.
-        accumulated_phase_diffs (jnp.ndarray): Phase difference
-            :math:`\\Delta_\\mathbf{l}(\\mathbf{z})`, shape ``(n_obs, n_samples)``.
-        H (jnp.ndarray | None): Input-state correction, shape ``(n_obs, n_samples)``,
-            or ``None`` for the default input state.
-
-    Returns:
-        jnp.ndarray: Control-variate integrand, shape ``(n_obs, n_samples)``.
-    """
-    D = accumulated_phase_diffs
-    taylor = 1.0 + 1j * D - 0.5 * D**2
-    out = obs_pm * taylor
-    if H is not None:
-        out = out * H
-    return out
-
-
-def _moment_functional(amps_lt: jnp.ndarray, char_data: CharacterExpansionData) -> jnp.ndarray:
-    r"""Evaluate the moment functional :math:`\Sigma(\nu)` on every frequency bucket.
-
-    Implements
-
-    .. math::
-
-        \Sigma(\mathbf{\nu}) = \delta_{\mathbf{\nu}, \mathbf{0}}
-        + i \sum_t A_{\mathbf{l},t} \delta_{\mathbf{f}_t, \mathbf{\nu}}
-        - \frac{1}{2} \sum_{t,u} A_{\mathbf{l},t} A_{\mathbf{l},u}
-          \delta_{\mathbf{f}_t + \mathbf{f}_u, \mathbf{\nu}},
-
-    i.e. it retains exactly those Taylor terms whose total character frequency
-    equals :math:`\mathbf{\nu}`; everything else averages to zero by orthogonality.
-
-    Returns:
-        jnp.ndarray: Values of shape ``(n_obs, n_freq_unique)``, aligned with
-        ``char_data.unique_freqs``.
-    """
-    n_obs = amps_lt.shape[0]
-    n_unique = char_data.unique_freqs.shape[0]
-
-    if n_unique == 0:
-        return jnp.zeros((n_obs, 0), dtype=_complex_dtype())
-
-    zero_bucket = jnp.all(char_data.unique_freqs == 0, axis=1).astype(_complex_dtype())
-    order0 = jnp.broadcast_to(zero_bucket[jnp.newaxis, :], (n_obs, n_unique))
-
-    single = char_data.single_match.astype(_complex_dtype())  # (T, n_unique)
-    order1 = 1j * (amps_lt @ single)  # (n_obs, n_unique)
-
-    pair = char_data.pair_match.astype(_complex_dtype())  # (T, T, n_unique)
-    aa = amps_lt[:, :, jnp.newaxis] * amps_lt[:, jnp.newaxis, :]  # (n_obs, T, T)
-    order2 = -0.5 * jnp.einsum("otu,tuv->ov", aa, pair)
-
-    return order0 + order1 + order2
-
-
-def _select_sigma(
-    sigma_vals: jnp.ndarray, target: jnp.ndarray, char_data: CharacterExpansionData, dims: ArrayLike
-) -> jnp.ndarray:
-    """Look up :math:`\\Sigma` at target frequencies, reducing modulo ``dims``.
-
-    Targets not present among the expansion's frequency buckets contribute only the
-    order-0 delta, so they evaluate to 1 when the reduced target is zero and 0
-    otherwise.
-
-    Args:
-        sigma_vals (jnp.ndarray): Bucket values, shape ``(n_obs, n_freq_unique)``.
-        target (jnp.ndarray): Target frequencies, shape ``(n_obs, ..., n_qudits)``.
-        char_data (CharacterExpansionData): Static expansion data.
-        dims (ArrayLike): Per-qudit dimensions.
-
-    Returns:
-        jnp.ndarray: Values of shape ``target.shape[:-1]``.
-    """
-    dims_i = jnp.asarray(dims, dtype=jnp.int32)
-    tgt = jnp.mod(jnp.asarray(target, dtype=jnp.int32), dims_i)
-
-    n_obs = sigma_vals.shape[0]
-    lead = tgt.shape[:-1]
-    if lead[0] != n_obs:
-        raise ValueError(
-            f"Leading axis of target must be n_obs={n_obs}, got shape {tuple(target.shape)}."
-        )
-
-    n_qudits = tgt.shape[-1]
-    inner = int(np.prod(lead[1:])) if len(lead) > 1 else 1
-    flat = tgt.reshape(n_obs, inner, n_qudits)
-
-    # Order-0 fallback for targets absent from the frequency buckets.
-    is_zero = jnp.all(flat == 0, axis=-1).astype(_complex_dtype())  # (n_obs, inner)
-
-    n_unique = char_data.unique_freqs.shape[0]
-    if n_unique == 0:
-        return is_zero.reshape(lead)
-
-    match = jnp.all(
-        flat[:, :, jnp.newaxis, :] == char_data.unique_freqs[jnp.newaxis, jnp.newaxis, :, :],
-        axis=-1,
-    )  # (n_obs, inner, n_unique)
-    found = jnp.any(match, axis=-1)  # (n_obs, inner)
-
-    # Each observable reads its own bucket values.
-    from_bucket = jnp.einsum("ov,oiv->oi", sigma_vals, match.astype(_complex_dtype()))
-    out = jnp.where(found, from_bucket, is_zero)
-    return out.reshape(lead)
-
-
-# pylint: disable=too-many-arguments
-def _control_variate_expected_value(
-    gates_params: ArrayLike,
-    char_data: CharacterExpansionData,
-    l_f: jnp.ndarray,
-    m_f: jnp.ndarray,
-    dims: ArrayLike,
-    state_elems: ArrayLike | None,
-    state_amps: ArrayLike | None,
-) -> jnp.ndarray:
-    r"""Analytic expectation value of the order-2 Taylor control variate.
-
-    For the default input state (:math:`H_\mathbf{l} \equiv 1`) the surviving Taylor
-    frequency must cancel that of the observable phase,
-
-    .. math::
-
-        \tau_\mathbf{l} = P_{\mathbf{l}\mathbf{m}} \Sigma(-\mathbf{m}), \qquad
-        P_{\mathbf{l}\mathbf{m}} = \exp \left( -i\pi \sum_k \frac{m_k l_k}{d_k} \right).
-
-    For a general sparse input state each pair :math:`(a, b)` contributes the
-    character :math:`\chi_{\mathbf{m} + \mathbf{x}_a - \mathbf{x}_b}`, so the required
-    Taylor frequency becomes pair-dependent,
-
-    .. math::
-
-        \tau_\mathbf{l} = P_{\mathbf{l}\mathbf{m}} \sum_{a,b} \Psi_a \bar{\Psi}_b\,
-        \omega^{\mathbf{l} \cdot \mathbf{x}_b}\,
-        \Sigma \left( -(\mathbf{m} + \mathbf{x}_a - \mathbf{x}_b) \right).
-
-    Because this mean is exact, the control-variate estimator is unbiased for any
-    choice of the coefficient :math:`c`.
-
-    Returns:
-        jnp.ndarray: Complex control mean of shape ``(n_obs,)``.
-    """
-    amps_lt = _character_amplitudes(gates_params, char_data, l_f, dims)  # (n_obs, T)
-    sigma_vals = _moment_functional(amps_lt, char_data)  # (n_obs, n_unique)
-
-    inv_d = 1.0 / jnp.asarray(dims, dtype=_real_dtype())
-    P_lm = jnp.exp(
-        -1j
-        * jnp.pi
-        * jnp.sum(m_f.astype(_real_dtype()) * l_f.astype(_real_dtype()) * inv_d, axis=1)
-    )  # (n_obs,)
-
-    m_i = jnp.asarray(m_f, dtype=jnp.int32)
-
-    if state_elems is None or state_amps is None:
-        sigma = _select_sigma(sigma_vals, -m_i, char_data, dims)  # (n_obs,)
-        return P_lm * sigma
-
-    X = jnp.asarray(state_elems, dtype=jnp.int32)  # (N, n_qudits)
-    Psi = jnp.asarray(state_amps)  # (N,)
-
-    x_diff = X[:, jnp.newaxis, :] - X[jnp.newaxis, :, :]  # (N, N, n_qudits)
-    target = -(m_i[:, jnp.newaxis, jnp.newaxis, :] + x_diff[jnp.newaxis])  # (n_obs, N, N, n)
-    sigma = _select_sigma(sigma_vals, target, char_data, dims)  # (n_obs, N, N)
-
-    # omega^{l.x_b} -> (n_obs, N)
-    omega_lx = jnp.exp(
-        2j
-        * jnp.pi
-        * ((l_f.astype(_real_dtype()) * inv_d[jnp.newaxis, :]) @ X.astype(_real_dtype()).T)
-    )
-    amp_outer = Psi[:, jnp.newaxis] * jnp.conj(Psi)[jnp.newaxis, :]  # (N, N)
-
-    total = jnp.einsum("ob,ab,oab->o", omega_lx, amp_outer, sigma)
-    return P_lm * total
-
-
 def _compute_mc_statistics(
     integrand: jnp.ndarray, n_samples: int
-) -> tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
-    """Compute Monte Carlo mean, covariance, and mean squared magnitude from the integrand.
+) -> tuple[jnp.ndarray, jnp.ndarray]:
+    """Compute the Monte Carlo mean and covariance from the integrand.
 
-    Returns ``(expvals, cov, mean_y_sq)`` where ``cov`` is the per-observable
-    covariance matrix of the mean estimator, shape ``(n_obs, 2, 2)``.
+    Returns ``(expvals, cov)`` where ``cov`` is the per-observable covariance
+    matrix of the mean estimator, shape ``(n_obs, 2, 2)``.
     """
     expvals = jnp.mean(integrand, axis=1)
-    mean_y_sq = jnp.mean(jnp.abs(integrand) ** 2, axis=1)  # (n_obs,)
 
     re = jnp.real(integrand)
     im = jnp.imag(integrand)
@@ -837,64 +473,7 @@ def _compute_mc_statistics(
         ],
         axis=-2,
     )  # (n_obs, 2, 2)
-    return expvals, cov, mean_y_sq
-
-
-def _compute_cv_mc_statistics(
-    integrand: jnp.ndarray,
-    cv_integrand: jnp.ndarray,
-    cv_mean: jnp.ndarray,
-    n_samples: int,
-) -> tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
-    r"""Monte Carlo statistics for the control-variate estimator.
-
-    Forms :math:`y + c(\tilde{y} - \tau)` with the variance-minimising coefficient
-    :math:`c^\star = -\text{Cov}(y, \tilde{y}) / \text{Var}(\tilde{y})`, which gives
-    :math:`\text{Var} = (1 - \rho^2)` times the plain variance. Since the integrand is
-    complex, a separate real coefficient is fitted for the real and imaginary parts;
-    each keeps the estimator unbiased because :math:`\mathbb{E}[\tilde{y} - \tau] = 0`
-    holds componentwise.
-
-    ``mean_y_sq`` is deliberately computed from the raw integrand, since it is the
-    mean of :math:`\vert y \vert^2` and not a quantity the control variate rescales.
-
-    Returns:
-        tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]: ``(expvals, cov, mean_y_sq)``
-        matching the layout of :func:`_compute_mc_statistics`.
-    """
-    mean_y_sq = jnp.mean(jnp.abs(integrand) ** 2, axis=1)  # (n_obs,)
-
-    def fit(y_part: jnp.ndarray, cv_part: jnp.ndarray, tau_part: jnp.ndarray) -> jnp.ndarray:
-        y_c = y_part - jnp.mean(y_part, axis=1, keepdims=True)
-        cv_c = cv_part - jnp.mean(cv_part, axis=1, keepdims=True)
-        cov = jnp.sum(y_c * cv_c, axis=1)
-        var_cv = jnp.sum(cv_c**2, axis=1)
-        # The denominator is sanitized *before* dividing: a bare
-        # jnp.where(var_cv > 0, -cov / var_cv, 0) still evaluates the division on the
-        # untaken branch under reverse-mode AD and yields NaN gradients whenever the
-        # control is exactly constant (e.g. l = 0, where Delta vanishes identically).
-        safe_var = jnp.where(var_cv > 0, var_cv, 1.0)
-        c = jnp.where(var_cv > 0, -cov / safe_var, 0.0)
-        return y_part + c[:, jnp.newaxis] * (cv_part - tau_part[:, jnp.newaxis])
-
-    re = fit(jnp.real(integrand), jnp.real(cv_integrand), jnp.real(cv_mean))
-    im = fit(jnp.imag(integrand), jnp.imag(cv_integrand), jnp.imag(cv_mean))
-
-    expvals = jnp.mean(re, axis=1) + 1j * jnp.mean(im, axis=1)
-
-    re_c = re - jnp.mean(re, axis=1, keepdims=True)
-    im_c = im - jnp.mean(im, axis=1, keepdims=True)
-    var_re = jnp.sum(re_c**2, axis=1) / (n_samples - 1) / n_samples
-    var_im = jnp.sum(im_c**2, axis=1) / (n_samples - 1) / n_samples
-    cov_re_im = jnp.sum(re_c * im_c, axis=1) / (n_samples - 1) / n_samples
-    cov = jnp.stack(
-        [
-            jnp.stack([var_re, cov_re_im], axis=-1),
-            jnp.stack([cov_re_im, var_im], axis=-1),
-        ],
-        axis=-2,
-    )  # (n_obs, 2, 2)
-    return expvals, cov, mean_y_sq
+    return expvals, cov
 
 
 def build_qudit_expval_func(  # pylint: disable=too-many-statements
@@ -926,15 +505,12 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements
                 observables=None,
                 init_state_elems=None,
                 init_state_amps=None,
-                return_mean_y_sq=False,
-            ) -> (expvals, cov) or (expvals, cov, mean_y_sq)
+            ) -> (expvals, cov)
 
         where ``expvals`` is a complex array of shape ``(n_obs,)`` containing
         the estimated moments, and ``cov`` has shape ``(n_obs, 2, 2)``
         providing the real/imaginary covariance matrix of the mean estimator
-        for each observable. When ``return_mean_y_sq=True``, also returns the
-        per-observable mean of :math:`|y|^2` (needed internally by the MMD
-        loss).
+        for each observable.
 
         When ``config.phase_fn`` is set, the returned callable requires ``phase_fn_params`` to be
         passed as the second argument (the trainable parameters of the phase layer).
@@ -969,9 +545,6 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements
 
         `Spectral Born machines: classically trainable quantum generative models for discrete data <https://arxiv.org/pdf/2607.06675>`_.
     """
-    if config.control_variate and config.phase_fn is not None:
-        raise ValueError("Phase layers are not compatible with control variates.")
-
     generators, param_map = _parse_qudit_generator_dict(config.gates, config.n_qudits)
 
     n = config.n_qudits
@@ -994,9 +567,6 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements
 
     gen_np, pm_np = np.array(generators), np.array(param_map)
     gate_weights = np.sum(gen_np != 0, axis=1)
-
-    # Depends only on the gate set, so it is built once regardless of observables.
-    char_data = _build_character_expansion(gen_np, pm_np, dims) if config.control_variate else None
 
     if config.observables is not None:
         l_vecs = jnp.array(config.observables[0], dtype=jnp.int32)
@@ -1025,10 +595,7 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements
         observables: tuple[ArrayLike, ArrayLike] | None = None,
         init_state_elems: ArrayLike | None = None,
         init_state_amps: ArrayLike | None = None,
-        return_mean_y_sq: bool = False,
-    ) -> (
-        tuple[jnp.ndarray, jnp.ndarray] | tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]
-    ):  # pylint: disable=too-many-arguments
+    ) -> tuple[jnp.ndarray, jnp.ndarray]:  # pylint: disable=too-many-arguments
         """Compute batched expectation values for the configured circuit.
 
         Args:
@@ -1048,19 +615,12 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements
             init_state_amps (ArrayLike | None, optional): Runtime override for the
                 complex amplitudes of the initial state. Array of shape ``(N,)``.
                 Defaults to None.
-            return_mean_y_sq (bool, optional): If ``True``, also return the
-                per-observable mean of ``|y_r|^2``. Defaults to ``False``.
 
         Returns:
-            tuple[jnp.ndarray, jnp.ndarray] | tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
-            By default returns ``(expvals, cov)`` where ``expvals`` are the estimated
-            complex expectation values, shape ``(n_obs,)``, and ``cov`` stores the
-            real-imaginary covariance matrices of the mean estimator, shape
-            ``(n_obs, 2, 2)``.
-
-            When ``return_mean_y_sq=True``, also returns ``mean_y_sq`` with shape
-            ``(n_obs,)``. This equals 1 when the per-sample integrand has unit
-            modulus (default input state, diagonal observables).
+            tuple[jnp.ndarray, jnp.ndarray]: Returns ``(expvals, cov)`` where
+            ``expvals`` are the estimated complex expectation values, shape
+            ``(n_obs,)``, and ``cov`` stores the real-imaginary covariance matrices
+            of the mean estimator, shape ``(n_obs, 2, 2)``.
         """
         if observables is not None:
             l_vecs = jnp.array(observables[0], dtype=jnp.int32)
@@ -1100,27 +660,11 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements
         state_elems = config.init_state_elems if init_state_elems is None else init_state_elems
         state_amps = config.init_state_amps if init_state_amps is None else init_state_amps
 
-        H = None
+        integrand = obs_pm * jnp.exp(1j * accumulated_phase_diffs)
         if state_elems is not None and state_amps is not None:
             H = _compute_initial_state_correction(samples, l_f, state_elems, state_amps, dims)
-
-        integrand = obs_pm * jnp.exp(1j * accumulated_phase_diffs)
-        if H is not None:
             integrand = integrand * H
 
-        if not config.control_variate:
-            expvals, cov, mean_y_sq = _compute_mc_statistics(integrand, _n)
-        else:
-            cv_integrand = _control_variate_integrand(obs_pm, accumulated_phase_diffs, H)
-            cv_mean = _control_variate_expected_value(
-                gates_params, char_data, l_f, m_f, dims, state_elems, state_amps
-            )
-            expvals, cov, mean_y_sq = _compute_cv_mc_statistics(
-                integrand, cv_integrand, cv_mean, _n
-            )
-
-        if return_mean_y_sq:
-            return expvals, cov, mean_y_sq
-        return expvals, cov
+        return _compute_mc_statistics(integrand, _n)
 
     return qudit_expval_batched
