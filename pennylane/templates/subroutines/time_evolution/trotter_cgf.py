@@ -38,7 +38,13 @@ class TrotterCGF(Operator2):
 
     This template realizes :math:`U \approx e^{-iHt}` for a vibrational Hamiltonian in the
     Christiansen Greedy Fragmentation (CGF) form (see `arXiv:2508.11865, Sec. III C
-    <https://arxiv.org/abs/2508.11865>`__).
+    <https://arxiv.org/abs/2508.11865>`__),
+
+    .. math::
+
+        H = C + \sum_{l,p} \epsilon_{lp}\, \tilde{n}^{(0)}_{lp}
+            + \sum_{\nu=1}^{L} \sum_{l>m} \sum_{p,q} \lambda^{(\nu)}_{lmpq}\,
+                \tilde{n}^{(\nu)}_{lp} \tilde{n}^{(\nu)}_{mq} .
 
     .. seealso:: :class:`pennylane.CGFHamiltonian`
 
@@ -68,6 +74,7 @@ class TrotterCGF(Operator2):
     .. code-block:: python
 
         import pennylane as qp
+        import numpy as np
 
         rng = np.random.default_rng(42)
         L, M, N = 1, 2, 3  # two-body fragments, modes, modals

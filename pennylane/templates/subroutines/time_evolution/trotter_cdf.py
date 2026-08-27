@@ -38,7 +38,13 @@ class TrotterCDF(Operator2):
 
     This template realizes :math:`U \approx e^{-iHt}` for an electronic-structure Hamiltonian in
     the Compressed Double Factorization (CDF) form (see `arXiv:2506.15784, Sec. III A
-    <https://arxiv.org/abs/2506.15784>`__).
+    <https://arxiv.org/abs/2506.15784>`__),
+
+    .. math::
+
+        H = C + \sum_{p} \epsilon_{p}\, \tilde{n}^{(0)}_{p}
+            + \frac{1}{2}\sum_{l=1}^{L} \sum_{p,q} \lambda^{(l)}_{pq}\,
+                \tilde{n}^{(l)}_{p} \tilde{n}^{(l)}_{q} .
 
     .. seealso:: :class:`pennylane.CDFHamiltonian`
 
