@@ -15,12 +15,14 @@
 Unit tests for the SumOfSlatersPrep template.
 """
 
+import copy
 from itertools import combinations, product
 
 import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane import math
 from pennylane.decomposition import list_decomps
 from pennylane.math import binary_matrix_rank, ceil_log2
 from pennylane.ops.functions import assert_valid
@@ -35,6 +37,7 @@ from pennylane.templates.state_preparations.sum_of_slaters import (
     compute_sos_encoding,
     select_sos_rows,
 )
+from pennylane.wires import Wires
 
 
 def _is_binary(x: np.ndarray) -> bool:
@@ -297,9 +300,9 @@ class TestHelperFunctions:
     )
     def test_find_single_w(self, bits):
         """Test _find_single_w."""
-        copy = bits.copy()
+        bits_copy = bits.copy()
         W = _find_single_w(bits)
-        assert np.allclose(bits, copy)  # Input not altered
+        assert np.allclose(bits, bits_copy)  # Input not altered
         assert isinstance(W, np.ndarray) and W.shape == (len(bits), 1)
         assert _is_binary(W)
         # Assert that the newly found vector indeed differs from the inputs
@@ -398,6 +401,73 @@ class TestComputeSosEncoding:
 class TestSumOfSlatersPrep:
     """Test the quantum template ``SumOfSlatersPrep``."""
 
+    @pytest.mark.parametrize(
+        "enumeration_wires, identification_wires, qrom_work_wires, mcx_cache_wires, match",
+        [
+            # Valid: every work register supplied with its exact required size.
+            ([7, 8, 9], [10, 11, 12, 13, 14], [15, 16], [17, 18, 19, 20], None),
+            # Valid: the optional work registers may be left empty (the default).
+            ((), (), (), (), None),
+            # Each of the following provides a single work register with the wrong
+            # (non-zero) size, triggering one of the register-size validations.
+            ([7, 8], (), (), (), "does not match the required number of enumeration wires"),
+            ((), [10, 11], (), (), "does not match the required number of identification wires"),
+            ((), (), [15], (), "does not match the required number of qrom work wires"),
+            ((), (), (), [17, 18], "does not match the required number of mcx cache wires"),
+        ],
+    )
+    def test_init(
+        self, enumeration_wires, identification_wires, qrom_work_wires, mcx_cache_wires, match
+    ):
+        """Test the initialization of ``SumOfSlatersPrep``, including the register-size
+        validations performed in ``__init__``.
+
+        A non-identity-encoding case is used (``indices=(32, 16, 8, 4, 2, 1, 0)`` on 7 target
+        wires) so that every work register has a non-zero required size:
+        ``{enumeration: 3, identification: 5, qrom_work: 2, mcx_cache: 4}``. This lets each
+        validation be triggered with a wrong, non-zero register size.
+        """
+        coefficients = np.arange(1, 8) / np.linalg.norm(np.arange(1, 8))
+        wires = list(range(7))
+        indices = (32, 16, 8, 4, 2, 1, 0)
+
+        if match is not None:
+            with pytest.raises(ValueError, match=match):
+                SumOfSlatersPrep(
+                    coefficients,
+                    wires,
+                    indices=indices,
+                    enumeration_wires=enumeration_wires,
+                    identification_wires=identification_wires,
+                    qrom_work_wires=qrom_work_wires,
+                    mcx_cache_wires=mcx_cache_wires,
+                )
+            return
+
+        op = SumOfSlatersPrep(
+            coefficients,
+            wires,
+            indices=indices,
+            enumeration_wires=enumeration_wires,
+            identification_wires=identification_wires,
+            qrom_work_wires=qrom_work_wires,
+            mcx_cache_wires=mcx_cache_wires,
+        )
+        assert np.allclose(op.coefficients, coefficients)
+        assert op.indices == indices
+        assert op.enumeration_wires == Wires(enumeration_wires)
+        assert op.identification_wires == Wires(identification_wires)
+        assert op.qrom_work_wires == Wires(qrom_work_wires)
+        assert op.mcx_cache_wires == Wires(mcx_cache_wires)
+        # ``op.wires`` is the union of the target wires and all provided work registers.
+        assert op.wires == Wires(
+            wires
+            + list(enumeration_wires)
+            + list(identification_wires)
+            + list(qrom_work_wires)
+            + list(mcx_cache_wires)
+        )
+
     def make_random_data(self, num_wires, num_entries, seed):
         """Produce some random input data for ``SumOfSlatersPrep`` with given specs."""
         rng = np.random.default_rng(seed)
@@ -462,15 +532,9 @@ class TestSumOfSlatersPrep:
         assert sizes["qrom_work_wires"] == max(d - 1, 0)
         assert sizes["mcx_cache_wires"] == max(m - 1, 0)
 
-        op = SumOfSlatersPrep(coefficients, range(num_wires), indices)
-        exp_resource_params = {
-            "num_entries": num_entries,
-            "num_bits": new_num_bits,
-            "num_wires": num_wires,
-        }
-        assert exp_resource_params == op.resource_params
-
-        registered_work_wires = _sos_state_prep.get_work_wire_spec(**exp_resource_params)
+        registered_work_wires = _sos_state_prep.get_work_wire_spec(
+            coefficients, range(num_wires), indices
+        )
         assert sum(sizes.values()) - num_wires == registered_work_wires.total
 
     @pytest.mark.parametrize("n", [7, 8, 9, 15, 16, 17])
@@ -495,12 +559,18 @@ class TestSumOfSlatersPrep:
         assert sizes["qrom_work_wires"] == max(d - 1, 0)
         assert sizes["mcx_cache_wires"] == m - 1
 
-        op = SumOfSlatersPrep(coefficients, range(n), indices)
-        exp_resource_params = {"num_entries": n, "num_bits": num_bits, "num_wires": n}
-        assert exp_resource_params == op.resource_params
-
-        registered_work_wires = _sos_state_prep.get_work_wire_spec(**exp_resource_params)
+        registered_work_wires = _sos_state_prep.get_work_wire_spec(coefficients, range(n), indices)
         assert sum(sizes.values()) - n == registered_work_wires.total
+
+    def test_resource_counts_are_python_integers(self):
+        """Test that decomposition resource counts are Python integers."""
+        indices = (0, 1, 2, 4, 8, 16, 32, 64)
+        resources = _sos_state_prep.compute_resources(
+            np.zeros(len(indices), dtype=complex), range(7), indices
+        )
+
+        # Ensure they are Python integers, not other (NumPy) integers.
+        assert all(isinstance(count, int) for count in resources.gate_counts.values())
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
@@ -512,31 +582,64 @@ class TestSumOfSlatersPrep:
 
         coefficients, indices = self.make_random_data(num_wires, num_entries, seed=seed)
 
+        v_bits = math.int_to_binary(np.array(indices), num_wires).T
+        if num_entries != 1:
+            _, data = _preprocess(v_bits, range(num_wires))
+            num_bits = data.r
+        else:
+            selector_ids, _ = select_sos_rows(v_bits)
+            num_bits = len(selector_ids)
+
+        # pylint: disable-next=protected-access
+        sizes = SumOfSlatersPrep._required_register_sizes_from_nums(
+            num_entries, num_bits, num_wires
+        )
+
+        all_wires = {}
+
+        def _assign_conditionally(size, name, start):
+            if size == 0:
+                all_wires[name] = []
+            else:
+                all_wires[name] = list(range(start, (start := start + size)))
+            return start
+
+        start = _assign_conditionally(sizes["enumeration_wires"], "enumeration_wires", num_wires)
+        start = _assign_conditionally(sizes["identification_wires"], "identification_wires", start)
+        start = _assign_conditionally(sizes["qrom_work_wires"], "qrom_work_wires", start)
+        start = _assign_conditionally(sizes["mcx_cache_wires"], "mcx_cache_wires", start)
+
         for rule in list_decomps(SumOfSlatersPrep):
 
-            @qp.qnode(qp.device("lightning.qubit"))
-            def func():
-                # pylint: disable=cell-var-from-loop
-                # Make sure that the output state length is at least 2**num_wires
-                qp.Identity(range(num_wires))
-                rule(coefficients, wires=range(num_wires), indices=indices)
-                return qp.state()
+            for aux_reg in list(all_wires.keys()):
 
-            out_state = func()
+                # we want to see that we can remove any auxilliary register and it will be automatically allocated
+                temp_wires = copy.deepcopy(all_wires)
+                del temp_wires[aux_reg]
 
-            # We infer the total and aux wire counts from the state shape, because small-scale
-            # edge cases often have fewer work wires than the general case.
-            num_all_wires = ceil_log2(out_state.shape[0])
-            num_aux_wires = num_all_wires - num_wires
-            for _ in range(num_aux_wires):
-                assert np.allclose(out_state[1::2], 0.0), "\n".join(
-                    [
-                        f"{a} : {b}"
-                        for a, b in zip(np.where(out_state)[0], out_state[np.where(out_state)])
-                    ]
-                )
-                out_state = out_state[::2]
-            assert np.allclose([out_state[key] for key in indices], coefficients)
+                @qp.qnode(qp.device("lightning.qubit"))
+                def func():
+                    # pylint: disable=cell-var-from-loop
+                    # Make sure that the output state length is at least 2**num_wires
+                    qp.Identity(range(num_wires))
+                    rule(coefficients, wires=range(num_wires), indices=indices, **temp_wires)
+                    return qp.state()
+
+                out_state = func()
+
+                # We infer the total and aux wire counts from the state shape, because small-scale
+                # edge cases often have fewer work wires than the general case.
+                num_all_wires = ceil_log2(out_state.shape[0])
+                num_aux_wires = num_all_wires - num_wires
+                for _ in range(num_aux_wires):
+                    assert np.allclose(out_state[1::2], 0.0), "\n".join(
+                        [
+                            f"{a} : {b}"
+                            for a, b in zip(np.where(out_state)[0], out_state[np.where(out_state)])
+                        ]
+                    )
+                    out_state = out_state[::2]
+                assert np.allclose([out_state[key] for key in indices], coefficients)
 
     @staticmethod
     def force_powers_of_two(indices: tuple, num_wires: int) -> tuple:
@@ -599,6 +702,37 @@ class TestSumOfSlatersPrep:
                 )
                 out_state = out_state[::2]
             assert np.allclose([out_state[key] for key in indices], coefficients)
+
+    @pytest.mark.capture
+    def test_subroutine_with_dynamic_wires(self):
+        """Test that the SumOfSlatersPrep subroutine supports dynamic wire arguments."""
+        jax = pytest.importorskip("jax")
+        jnp = jax.numpy
+
+        indices = (0, 1, 2, 4, 8, 16, 32, 64)
+        num_wires = 7
+        coefficients = np.zeros(len(indices), dtype=complex)
+        v_bits = qp.math.int_to_binary(np.array(indices), num_wires).T
+        selected_wires, *data = _preprocess(v_bits, range(num_wires))
+        data = (coefficients, v_bits, *data)
+        all_wires = qp.registers(SumOfSlatersPrep.required_register_sizes(indices, num_wires))
+        all_wires["selected_wires"] = selected_wires
+
+        @qp.capture.subroutine
+        def subroutine(*wire_args):
+            dynamic_wires = dict(zip(all_wires, wire_args, strict=True))
+            _sos_state_prep_with_wires(data, **dynamic_wires)
+
+        jaxpr = jax.make_jaxpr(subroutine)(*(jnp.asarray(wires) for wires in all_wires.values()))
+
+        subroutine_eqn = jaxpr.eqns[0]
+        assert subroutine_eqn.primitive == qp.capture.primitives.quantum_subroutine_prim
+
+        subroutine_jaxpr = subroutine_eqn.params["jaxpr"]
+        jaxpr_text = str(subroutine_jaxpr)
+        assert "MultiplexerStatePreparation" in jaxpr_text
+        assert "QROM" in jaxpr_text
+        assert "TemporaryAND" in jaxpr_text
 
     @pytest.mark.catalyst
     @pytest.mark.parametrize("force_non_id_encoding", (False, True))

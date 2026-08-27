@@ -71,12 +71,6 @@ def device(name, *args, **kwargs):
     * ``'lightning.qubit'``: a more performant state simulator of qubit-based
       quantum circuit architectures written in C++.
 
-    * :mod:`'default.qutrit' <pennylane.devices.default_qutrit>`: a simple
-      state simulator of qutrit-based quantum circuit architectures.
-
-    * :mod:`'default.qutrit.mixed' <pennylane.devices.default_qutrit_mixed>`: a
-      mixed-state simulator of qutrit-based quantum circuit architectures.
-
     * :mod:`'default.clifford' <pennylane.devices.default_clifford>`: an efficient
       simulator of Clifford circuits.
 
@@ -187,7 +181,7 @@ def device(name, *args, **kwargs):
     # Construct the device
     dev = plugin_device_class(*args, **kwargs)
 
-    if isinstance(dev, LegacyDevice):
+    if isinstance(dev, LegacyDevice):  # pragma: no cover
         dev = LegacyDeviceFacade(dev)
 
     return dev

@@ -15,7 +15,6 @@
 Unit tests for the available non-parametric qubit operations
 """
 
-# pylint: disable=too-few-public-methods
 import copy
 import itertools
 
@@ -47,9 +46,13 @@ from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
 from scipy.stats import unitary_group
 
 import pennylane as qp
+from pennylane.core.operator import abstractify
 from pennylane.decomposition.utils import _get_decomp_args
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.transforms import decompose
+
+# pylint: disable=too-few-public-methods
+from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires
 
 # Non-parametrized operations and their matrix representation
@@ -161,10 +164,10 @@ class TestDecompositions:
         assert res[0].data[0] == np.pi
 
         assert res[1].name == "GlobalPhase"
-        assert res[1].wires == Wires([0])
+        assert res[1].wires == Wires([])
         assert res[1].data[0] == -np.pi / 2
 
-        decomposed_matrix = np.linalg.multi_dot([i.matrix() for i in reversed(res)])
+        decomposed_matrix = np.linalg.multi_dot([i.matrix(wire_order=[0]) for i in reversed(res)])
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
     def test_y_decomposition(self, tol):
@@ -179,10 +182,10 @@ class TestDecompositions:
         assert res[0].data[0] == np.pi
 
         assert res[1].name == "GlobalPhase"
-        assert res[1].wires == Wires([0])
+        assert res[1].wires == Wires([])
         assert res[1].data[0] == -np.pi / 2
 
-        decomposed_matrix = np.linalg.multi_dot([i.matrix() for i in reversed(res)])
+        decomposed_matrix = np.linalg.multi_dot([i.matrix(wire_order=[0]) for i in reversed(res)])
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
     def test_z_decomposition(self, tol):
@@ -238,9 +241,9 @@ class TestDecompositions:
         assert len(res) == 2
 
         qp.assert_equal(res[0], qp.RX(np.pi / 2, wires=0))
-        qp.assert_equal(res[1], qp.GlobalPhase(-np.pi / 4, wires=0))
+        qp.assert_equal(res[1], qp.GlobalPhase(-np.pi / 4))
 
-        decomposed_matrix = np.linalg.multi_dot([i.matrix() for i in reversed(res)])
+        decomposed_matrix = np.linalg.multi_dot([i.matrix(wire_order=[0]) for i in reversed(res)])
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
     def test_hadamard_decomposition(self, tol):
@@ -248,9 +251,9 @@ class TestDecompositions:
         op = qp.Hadamard(wires=0)
         res = op.decomposition()
 
-        assert len(res) == 3
+        assert len(res) == 4
 
-        assert res[0].name == "PhaseShift"
+        assert res[0].name == "RZ"
 
         assert res[0].wires == Wires([0])
         assert res[0].data[0] == np.pi / 2
@@ -259,12 +262,33 @@ class TestDecompositions:
         assert res[1].wires == Wires([0])
         assert res[0].data[0] == np.pi / 2
 
-        assert res[2].name == "PhaseShift"
+        assert res[2].name == "RZ"
         assert res[2].wires == Wires([0])
         assert res[0].data[0] == np.pi / 2
 
-        decomposed_matrix = np.linalg.multi_dot([i.matrix() for i in reversed(res)])
+        assert res[3].name == "GlobalPhase"
+
+        decomposed_matrix = np.linalg.multi_dot([i.matrix(wire_order=[0]) for i in reversed(res)])
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
+
+    @pytest.mark.catalyst
+    def test_hadamard_ppm_decomposition(self, seed):
+        """Tests that the PPM decomposition of Hadamard is correct."""
+        rule = qp.list_decomps(qp.Hadamard)["_hadamard_ppm"]
+        rng = np.random.default_rng(seed)
+        init_state = rng.random(2) + 1j * rng.random(2)
+        init_state /= np.linalg.norm(init_state)
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("lightning.qubit", wires=[0, 1]))
+        def circuit():
+            qp.StatePrep(init_state, [0])
+            rule([0])
+            qp.H(0)
+            return qp.state()
+
+        init_state_full = np.kron(init_state, np.array([1, 0], dtype=complex))
+        assert np.allclose(init_state_full, circuit())
 
     def test_CH_decomposition(self, tol):
         """Tests that the decomposition of the CH gate is correct"""
@@ -594,34 +618,25 @@ class TestMultiControlledX:
 
     X = np.array([[0, 1], [1, 0]])
 
-    def test_str_control_values_error(self):
-        """Tests that control_values specified with a bit string is deprecated."""
-        with pytest.raises(
-            ValueError,
-            match="control_values must be boolean or int",
-        ):
-            _ = qp.MultiControlledX(wires=[0, 1, 2], control_values="01")
-
     @pytest.mark.parametrize(
-        "wires, control_values, error_message",
+        "wires, control_values, error_type, error_message",
         [
-            (None, [1, 0], "Must specify the wires where the operation acts on"),
-            ([0, 1, 2], [0, 1, 0], "Length of control values must equal number of control wires."),
-            (
-                [1],
-                [1],
-                r"MultiControlledX: wrong number of wires. 1 wire\(s\) given. Need at least 2.",
-            ),
+            (None, [1, 0], TypeError, "Must specify a set of wires."),
+            ([0, 1, 2], [0, 1, 0], ValueError, "control_values should be the same length"),
+            ([0, 1, 2], True, ValueError, "control_values should be the same length"),
+            ([1], [1], ValueError, r"MultiControlledX acts on at least 2 wires, 1 given."),
+            (Wire[1], None, ValueError, r"MultiControlledX acts on at least 2 wires, 1 given."),
+            ([1], Bool[1], ValueError, r"MultiControlledX acts on at least 2 wires, 1 given."),
         ],
     )
-    def test_invalid_arguments_to_init(self, wires, control_values, error_message):
+    def test_invalid_arguments_to_init(self, wires, control_values, error_type, error_message):
         """Tests initializing a MultiControlledX with invalid arguments"""
-        with pytest.raises(ValueError, match=error_message):
+        with pytest.raises(error_type, match=error_message):
             _ = qp.MultiControlledX(wires=wires, control_values=control_values)
 
     def test_decomposition_not_enough_wires(self):
         """Test that the decomposition raises an error if the number of wires is lower than two"""
-        with pytest.raises(ValueError, match="Wrong number of wires"):
+        with pytest.raises(ValueError, match="MultiControlledX acts on at least 2 wires, 1 given."):
             qp.MultiControlledX.compute_decomposition((0,), control_values=[1])
 
     def test_decomposition_no_control_values(self):
@@ -699,10 +714,7 @@ class TestMultiControlledX:
         """Test that a ValueError is raised when work_wires is not complementary to control_wires"""
         control_target_wires = range(4)
         work_wires = range(2)
-        with pytest.raises(
-            ValueError,
-            match="Work wires must be different the control_wires and base operation wires.",
-        ):
+        with pytest.raises(ValueError, match="work_wires must not overlap with the operator"):
             qp.MultiControlledX(wires=control_target_wires, work_wires=work_wires)
 
     @pytest.mark.parametrize("control_val", [0, 1])
@@ -725,7 +737,11 @@ class TestMultiControlledX:
             )
         tape = qp.tape.QuantumScript.from_queue(q)
         [tape], _ = decompose(tape, max_expansion=1, gate_set=qp.gate_sets.CLIFFORD_T)
-        assert all(not isinstance(op, qp.MultiControlledX) for op in tape.operations)
+        assert all(
+            # MCX on three wires do not resolve to a `Toffoli` if work wires are provided
+            not isinstance(op, qp.MultiControlledX) or len(getattr(op, "work_wires", [])) > 0
+            for op in tape.operations
+        )
 
         @qp.qnode(dev)
         def f(bitstring):
@@ -808,7 +824,7 @@ class TestMultiControlledX:
         """Test compute_matrix assumes all control on "1" if no
         `control_values` provided"""
         mat1 = qp.MultiControlledX.compute_matrix([0, 1])
-        mat2 = qp.MultiControlledX.compute_matrix([0, 1], control_values=[1, 1])
+        mat2 = qp.MultiControlledX.compute_matrix([0, 1], control_values=[1])
         assert np.allclose(mat1, mat2)
 
     def test_repr(self):
@@ -1047,35 +1063,10 @@ class TestControlledMethod:
 
     # pylint: disable=protected-access
 
-    def test_PauliX(self):
-        """Test the PauliX _controlled method."""
-        out = qp.PauliX(0)._controlled("a")
-        qp.assert_equal(out, qp.CNOT(("a", 0)))
-
-    def test_PauliY(self):
-        """Test the PauliY _controlled method."""
-        out = qp.PauliY(0)._controlled("a")
-        qp.assert_equal(out, qp.CY(("a", 0)))
-
     def test_PauliZ(self):
-        """Test the PauliZ _controlled method."""
-        out = qp.PauliZ(0)._controlled("a")
+        """A positive control on ``PauliZ`` should dispatch to ``CZ``."""
+        out = qp.ctrl(qp.PauliZ(0), "a")
         qp.assert_equal(out, qp.CZ(("a", 0)))
-
-    def test_Hadamard(self):
-        """Test the Hadamard _controlled method."""
-        out = qp.Hadamard(0)._controlled("a")
-        qp.assert_equal(out, qp.CH(("a", 0)))
-
-    def test_CNOT(self):
-        """Test the CNOT _controlled method"""
-        out = qp.CNOT((0, 1))._controlled("a")
-        qp.assert_equal(out, qp.Toffoli(("a", 0, 1)))
-
-    def test_SWAP(self):
-        """Test the SWAP _controlled method."""
-        out = qp.SWAP((0, 1))._controlled("a")
-        qp.assert_equal(out, qp.CSWAP(("a", 0, 1)))
 
     def test_Barrier(self):
         """Tests the _controlled behavior of Barrier."""
@@ -1084,8 +1075,8 @@ class TestControlledMethod:
         qp.assert_equal(original, out)
 
     def test_CZ(self):
-        """Test the PauliZ _controlled method."""
-        out = qp.CZ(wires=[0, 1])._controlled("a")
+        """Test the CZ ctrl dispatch produces CCZ."""
+        out = qp.ctrl(qp.CZ(wires=[0, 1]), control="a")
         qp.assert_equal(out, qp.CCZ(("a", 0, 1)))
 
 
@@ -1103,27 +1094,22 @@ class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods
         half_op = qp.pow(op, half_data)
         quart_op = qp.pow(op, quart_data)
 
-        decomps = qp.list_decomps(f"Pow({op.name})")
-        for rule in decomps:
-            params, args, kwargs = _get_decomp_args(half_op)
-            if rule.is_applicable(**params):
+        def check_power(pow_op, repetitions):
+            params, args, kwargs = _get_decomp_args(pow_op)
+            decomps = qp.list_decomps(abstractify(pow_op))
+            applicable_rules = [rule for rule in decomps if rule.is_applicable(**params)]
+            assert applicable_rules
+
+            for rule in applicable_rules:
                 with qp.queuing.AnnotatedQueue() as q:
-                    rule(*args, **kwargs)
-                    rule(*args, **kwargs)
+                    for _ in range(repetitions):
+                        rule(*args, **kwargs)
 
                 tape = qp.tape.QuantumScript.from_queue(q)
                 assert qp.math.allclose(qp.matrix(tape), qp.matrix(op))
 
-            params, args, kwargs = _get_decomp_args(quart_op)
-            if rule.is_applicable(**params):
-                with qp.queuing.AnnotatedQueue() as q:
-                    rule(*args, **kwargs)
-                    rule(*args, **kwargs)
-                    rule(*args, **kwargs)
-                    rule(*args, **kwargs)
-
-                tape = qp.tape.QuantumScript.from_queue(q)
-                assert qp.math.allclose(qp.matrix(tape), qp.matrix(op))
+        check_power(half_op, 2)
+        check_power(quart_op, 4)
 
     @pytest.mark.parametrize("z", [0.25, 0.5, 2, 4, 8, 9, [0.25, 0.5]])
     @pytest.mark.parametrize("op", [qp.ISWAP(wires=[0, 1]), qp.SISWAP(wires=[0, 1])])
@@ -1134,11 +1120,9 @@ class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods
 
         decomps = qp.list_decomps(f"Pow({op.name})")
         for rule in decomps:
-
-            if rule.is_applicable(**pow_op.resource_params):
-
+            if rule.is_applicable(**pow_op.arguments):
                 with qp.queuing.AnnotatedQueue() as q:
-                    rule(*pow_op.parameters, wires=pow_op.wires, **pow_op.hyperparameters)
+                    rule(**pow_op.arguments)
 
                 # It's fine to test matrix equivalence here because ISWAP and SISWAP
                 # have very specific power decompositions.

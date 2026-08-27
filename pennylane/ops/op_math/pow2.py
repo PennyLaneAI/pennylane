@@ -23,6 +23,7 @@ import pennylane as qp
 from pennylane import capture, math
 from pennylane.core import Operator
 from pennylane.core.operator import abstractify
+from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
 from pennylane.core.queuing import apply
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
@@ -44,7 +45,6 @@ from pennylane.exceptions import (
     PowUndefinedError,
     SparseMatrixUndefinedError,
 )
-from pennylane.ops.identity import Identity
 from pennylane.ops.op_math import adjoint
 
 from .adjoint import Adjoint
@@ -100,12 +100,22 @@ class Pow2(SymbolicOp2):
         else:
             self._pauli_rep = None
 
+    @override
+    def _bind_primitive(self):
+        pop_op_eqns((self.base,))
+        super()._bind_primitive()
+
     def __repr__(self):
         return (
             f"({self.base})**{self.z}"
             if self.base.arithmetic_depth > 0
             else f"{self.base}**{self.z}"
         )
+
+    @property
+    @override
+    def basis(self):  # pylint: disable=missing-function-docstring
+        return self.base.basis
 
     @property
     @override
@@ -116,6 +126,17 @@ class Pow2(SymbolicOp2):
     @override
     def ndim_params(self):
         return self.base.ndim_params
+
+    @property
+    @override
+    def data(self):
+        return self.base.data
+
+    @property
+    @override
+    def num_wires(self):
+        """The number of wires this power op acts on."""
+        return self.base.num_wires
 
     @override
     def label(self, decimals=None, base_label=None, cache=None):
@@ -152,7 +173,6 @@ class Pow2(SymbolicOp2):
     @property
     @override
     def has_decomposition(self):
-
         if isinstance(self.z, int) and self.z > 0:
             return True
         try:
@@ -285,7 +305,9 @@ class Pow2(SymbolicOp2):
         )
 
     @override
-    def simplify(self) -> Union["Pow", Identity]:
+    def simplify(self) -> Union["Pow", "Identity"]:
+        from pennylane.ops.identity import Identity  # pylint: disable=import-outside-toplevel
+
         # try using pauli_rep:
         if pr := self.pauli_rep:
             pr.prune()
@@ -325,7 +347,7 @@ def repeat_pow_base(base, z):
 
 
 # pylint: disable=protected-access,unused-argument
-@register_resources(lambda base, z: {abstractify(base.base): z * base.z})
+@register_resources(lambda base, z: {qp.pow(abstractify(base.base), z * base.z): 1})
 def merge_powers(base, z):
     """Decompose nested powers by combining them."""
     qp.pow(base.base, z * base.z)
@@ -373,9 +395,21 @@ def make_pow_decomp_with_period(period) -> DecompositionRule:
 pow_involutory = make_pow_decomp_with_period(2)
 
 
+def _pow_rotation_resource(base, z):  # pylint: disable=unused-argument
+    return {abstractify(base): 1}
+
+
+@register_resources(_pow_rotation_resource)
+def pow_rotation(base, z):
+    """Decompose the power of a general rotation operator by multiplying the power by the angle."""
+    # A rotation should only have 1 dynamic parameter
+    assert len(base.dynamic_argnames) == 1
+    angle = tuple(base.dynamic_args.values())[0]
+    qp.ops.functions.bind_new_parameters(base, (angle * z,))
+
+
 @list_decomps.register
 def _list_pow_decomps(op: Pow2) -> DecompCollection:
-
     abs_op = abstractify(op)
 
     # fixed_decomps would override everything.

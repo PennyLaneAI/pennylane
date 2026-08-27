@@ -21,15 +21,14 @@ from itertools import combinations
 from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
-    adjoint_resource_rep,
-    controlled_resource_rep,
     register_condition,
     register_resources,
 )
-from pennylane.decomposition.resources import resource_rep
-from pennylane.ops import CNOT, X, adjoint, ctrl
+from pennylane.ops import CNOT, adjoint, ctrl
+from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires, WiresLike
 
+from ..multix import MultiX
 from .out_multiplier import _c_add_sub, _c_add_sub_resources
 from .semi_adder import (
     SemiAdder,
@@ -92,9 +91,10 @@ class OutSquare(Operation):
         def circuit(output_wires):
             # Create a uniform superposition between integers 3 and 7
             qp.H(wires["x"][0]) # Superposition between 0 and 4
-            qp.BasisEmbedding(3, wires=wires["x"][1:]) # Add 3, by preparing lower-precision wires
+            # Add 3, by preparing lower-precision wires
+            qp.BasisState(qp.math.int_to_binary(3, len(wires["x"][1:])), wires=wires["x"][1:])
             # Prepare initial state on output wires
-            qp.BasisEmbedding(5, wires=output_wires)
+            qp.BasisState(qp.math.int_to_binary(5, len(output_wires)), wires=output_wires)
             # Square
             qp.OutSquare(wires["x"], output_wires, wires["work"])
             return qp.counts(wires=output_wires)
@@ -142,7 +142,7 @@ class OutSquare(Operation):
             @qp.decompose(max_expansion=1) # To see resources easily
             @qp.qnode(dev, shots=1_000)
             def circuit(zeroed):
-                qp.BasisEmbedding(13, wires=x_wires)
+                qp.BasisState(qp.math.int_to_binary(13, len(x_wires)), wires=x_wires)
                 qp.OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed=zeroed)
                 return qp.counts(wires=output_wires)
 
@@ -151,13 +151,13 @@ class OutSquare(Operation):
 
         >>> specs_false = qp.specs(circuit)(False).resources.quantum_operations
         >>> print(specs_false)
-        {'BasisEmbedding': 1, 'C(BasisState)': 4, 'MultiControlledX': 12, 'TemporaryAND': 19, 'CNOT': 49, 'Adjoint(TemporaryAND)': 19, 'PauliX': 28, 'SemiAdder': 2}
+        {'BasisState': 1, 'C(BasisState)': 4, 'MultiControlledX': 12, 'TemporaryAND': 19, 'CNOT': 49, 'Adjoint(TemporaryAND)': 19, 'PauliX': 28, 'SemiAdder': 2}
 
         When we do pass the information, we reduce the required resources by a lot:
 
         >>> specs_true = qp.specs(circuit)(True).resources.quantum_operations
         >>> print(specs_true)
-        {'BasisEmbedding': 1, 'TemporaryAND': 11, 'CNOT': 22, 'MultiControlledX': 8, 'Adjoint(TemporaryAND)': 8}
+        {'BasisState': 1, 'TemporaryAND': 11, 'CNOT': 22, 'MultiControlledX': 8, 'Adjoint(TemporaryAND)': 8}
 
         Of course, both decompositions are correctly implementing the squaring operation:
 
@@ -217,7 +217,6 @@ class OutSquare(Operation):
         work_wires: WiresLike,
         output_wires_zeroed: bool = False,
     ):
-
         x_wires = Wires(x_wires)
         output_wires = Wires(output_wires)
         work_wires = Wires(work_wires)
@@ -301,7 +300,7 @@ def _out_square_with_adder_zeroed_condition(
 def _self_ctrl_one_sparse_add_resources(num_x_wires, num_y_wires, num_work_wires):
     """Resources for _self_ctrl_one_sparse_add below."""
     if num_y_wires == 1:
-        return {resource_rep(CNOT): 1}
+        return {CNOT: 1}
 
     zeroed = _effective_zeros(num_x_wires, num_y_wires, zeroed=[1])
     num_elbows = num_y_wires - 1
@@ -311,12 +310,15 @@ def _self_ctrl_one_sparse_add_resources(num_x_wires, num_y_wires, num_work_wires
     # each _ctrl_right_block uses 3 CNOTs, each _right_block_zeroed none
     # each _ctrl_right_block or _ctrl_right_block_zeroed uses 1 ctrl(CNOT)
     # the remaining construction uses 1 CNOT and 1 + int(num_y_wires-1 not in zeroed) ctrl(CNOT)s
-    ccnot_rep = controlled_resource_rep(
-        CNOT, {}, 1, 0, num_work_wires - num_elbows, work_wire_type="zeroed"
+    ccnot_rep = ctrl(
+        CNOT(Wire[2]),
+        Wire[1],
+        work_wires=Wire[num_work_wires - num_elbows],
+        work_wire_type="zeroed",
     )
     return {
-        resource_rep(TemporaryAND): num_elbows,
-        adjoint_resource_rep(TemporaryAND, {}): num_elbows,
+        TemporaryAND: num_elbows,
+        adjoint(TemporaryAND(Wire[3])): num_elbows,
         CNOT: 6 * (num_blocks - num_zeroed_blocks) + 1,
         ccnot_rep: num_blocks + (1 + int(num_y_wires - 1 not in zeroed)),
     }
@@ -381,8 +383,8 @@ def _out_square_with_adder_zeroed_resources(
     m = num_output_wires
     resources = defaultdict(int)
     # Copying of first bit is a CNOT, all other bits require a TemporaryAND
-    resources[resource_rep(CNOT)] += 1
-    resources[resource_rep(TemporaryAND)] = min(n - 1, m - 2)
+    resources[CNOT] += 1
+    resources[TemporaryAND] = min(n - 1, m - 2)
     num_work_wires += 2  # Using the 1s and 2s output bits as work wires
     p = min(n, m // 2 + m % 2) - 1
     for i in range(1, p + 1):
@@ -455,19 +457,14 @@ def _out_square_with_caddsub_resources(
         resources[key] += value
 
     # Subtract 2 x_{[1:]}
-    resources[resource_rep(X)] += 2 * (m - 1)
-    resources[
-        resource_rep(SemiAdder, num_x_wires=n - 1, num_y_wires=m - 1, num_work_wires=num_work_wires)
-    ] += 1
+    resources[MultiX(Bool[m - 1], Wire[m - 1])] += 2
+    resources[SemiAdder(Wire[n - 1], Wire[m - 1], Wire[num_work_wires])] += 1
 
     if m > n:
         # Shifted addition
-        resources[resource_rep(X)] += 2 * (m - n + n - 1)
-        resources[
-            resource_rep(
-                SemiAdder, num_x_wires=n - 1, num_y_wires=m - n, num_work_wires=num_work_wires
-            )
-        ] += 1
+        resources[MultiX(Bool[m - n], Wire[m - n])] += 2
+        resources[MultiX(Bool[n - 1], Wire[n - 1])] += 2
+        resources[SemiAdder(Wire[n - 1], Wire[m - n], Wire[num_work_wires])] += 1
 
     return dict(resources)
 
@@ -495,8 +492,8 @@ def _sparse_adder_resources(num_x_wires, num_y_wires, zeroed):
     # each _right_block uses 3 CNOTs, each _right_block_zeroed just 1 CNOT
     # the remaining construction uses 2 + int(num_y_wires-1 not in zeroed) CNOTs
     return {
-        resource_rep(TemporaryAND): num_elbows,
-        adjoint_resource_rep(TemporaryAND, {}): num_elbows,
+        TemporaryAND: num_elbows,
+        adjoint(TemporaryAND(Wire[3])): num_elbows,
         CNOT: num_zeroed_blocks + 6 * num_nonzeroed_blocks + 2 + int(num_y_wires - 1 not in zeroed),
     }
 
@@ -545,11 +542,13 @@ def _sparse_adder(x_wires, y_wires, work_wires, zeroed):
 
 def _shifted_adder(x_wires, output_wires, work_wires):
     """Perform shifted addition y -> y + x - 2^n + 1."""
-    _ = [X(w) for w in x_wires]
-    _ = [X(w) for w in output_wires]
+    x_ones = [True] * len(x_wires)
+    output_ones = [True] * len(output_wires)
+    MultiX(x_ones, x_wires)
+    MultiX(output_ones, output_wires)
     SemiAdder(x_wires[::-1], output_wires[::-1], work_wires)
-    _ = [X(w) for w in output_wires]
-    _ = [X(w) for w in x_wires]
+    MultiX(output_ones, output_wires)
+    MultiX(x_ones, x_wires)
 
 
 @register_condition(_out_square_with_caddsub_condition)
@@ -599,9 +598,11 @@ def _out_square_with_caddsub(
     _sparse_adder(x_wires, output_wires, work_wires, zeroed=[1] + [2 * j for j in range(1, n)])
 
     if n > 1 and m > 1:
-        _ = [X(w) for w in output_wires[1:]]
-        SemiAdder(x_wires[1:][::-1], output_wires[1:][::-1], work_wires)
-        _ = [X(w) for w in output_wires[1:]]
+        _output = output_wires[1:]
+        output_ones = [True] * len(_output)
+        MultiX(output_ones, _output)
+        SemiAdder(x_wires[1:][::-1], _output[::-1], work_wires)
+        MultiX(output_ones, _output)
 
     # shifted addition
     if m > n > 1:

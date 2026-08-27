@@ -461,35 +461,33 @@ class AbstractWires:
         num_wires (int): The number of wires. Use ``-1`` when the wire count is unknown.
     """
 
-    num_wires: int
-    shape_fixed: bool = field(init=False)
+    _num_wires: int
 
     def __post_init__(self):
-        if not isinstance(self.num_wires, int):
+        if not isinstance(self._num_wires, int):
             raise TypeError(
-                f"'num_wires' must be an integer, but got {type(self.num_wires).__name__}."
+                f"'num_wires' must be an integer, but got {type(self._num_wires).__name__}."
             )
-        if self.num_wires < -1:
+        if self._num_wires < -1:
             raise ValueError(
-                f"'num_wires' must be a non-negative integer or -1, but got {self.num_wires}. "
+                f"'num_wires' must be a non-negative integer or -1, but got {self._num_wires}. "
                 "For a dynamic number of wires, use -1."
             )
-        object.__setattr__(self, "shape_fixed", self.num_wires != -1)
 
     def __eq__(self, other) -> bool:
         if isinstance(other, AbstractWires):
-            return self.num_wires == other.num_wires
+            return self._num_wires == other._num_wires
+        return NotImplemented  # pragma: no cover
 
-        raise TypeError(
-            "Cannot check equality between AbstractWires and an object of type "
-            f"'{type(other).__name__}'. AbstractWires equality is only supported "
-            "against other AbstractWires instances."
-        )
+    @property
+    def shape_fixed(self) -> bool:
+        """Whether the number of wires is fixed."""
+        return self._num_wires != -1
 
     @property
     def shape(self) -> tuple[int]:
         """The number of wires expressed as shape ``(num_wires,)``."""
-        return (self.num_wires,)
+        return (self._num_wires,)
 
     @property
     def dtype(self):
@@ -497,46 +495,61 @@ class AbstractWires:
         return np.int64
 
     def __hash__(self):
-        return hash(("AbstractWires", self.num_wires))
+        return hash(("AbstractWires", self._num_wires))
 
     def __len__(self) -> int:
-        if self.num_wires < 0:
+        if self._num_wires < 0:
             raise TypeError(f"len() is undefined for {self} with unknown number of wires.")
-        return self.num_wires
+        return self._num_wires
 
     def __add__(self, other) -> AbstractWires:
         if not isinstance(other, AbstractWires):
             return NotImplemented
         if not self.shape_fixed or not other.shape_fixed:
             return AbstractWires(-1)
-        return AbstractWires(self.num_wires + other.num_wires)
+        return AbstractWires(self._num_wires + other._num_wires)
+
+    __radd__ = __add__
 
     def __repr__(self):
-        return f"AbstractWires({self.num_wires})"
+        return f"AbstractWires({self._num_wires})"
 
     __str__ = __repr__
 
     def __instancecheck__(self, instance):
         if instance.__class__.__name__ != "Wires":
             return False
-        if self.num_wires == -1:
-            return True
-        return len(instance) == self.num_wires
+        return self._num_wires == -1 or len(instance) == self._num_wires
+
+    def __iter__(self):
+        if not self.shape_fixed:
+            raise TypeError("Cannot iterate over an AbstractWires of unfixed length.")
+        for _ in range(self._num_wires):
+            yield AbstractWires(1)
+
+    def __getitem__(self, index):
+        if not self.shape_fixed:
+            raise TypeError("Cannot index into an AbstractWires with unknown number of wires.")
+        if isinstance(index, int):
+            if index >= self._num_wires or index < -self._num_wires:
+                raise IndexError(f"{index} out of bounds for {self}.")
+            return AbstractWires(1)
+        if isinstance(index, slice):
+            start_stop_step = index.indices(self._num_wires)
+            return AbstractWires(len(range(*start_stop_step)))
+        index_type = type(index).__name__
+        raise TypeError(f"Wire indices must be integers or slices, not {index_type}.")
 
 
-class _AbstractWireTypeFactory(AbstractWires):
+class _AbstractWireTypeFactory:
     """
-    An abstraction that enables the generation of AbstractWires via a highly user-friendly type notation,
-    using an override of the __getitem__ method.
+    An abstraction that enables the generation of AbstractWires via a highly user-friendly type
+    notation, using an override of the __getitem__ method.
     """
-
-    def __init__(self):
-        super().__init__(1)
 
     def __getitem__(self, shape):
         """
-        Overrides the indexing mechanism in python to achieve a user-friendly
-        sized type notation.
+        Overrides the indexing mechanism in python to achieve a user-friendly sized type notation.
 
         Args:
             shape: Gives the shape of the desired abstract wires type. This is not an index,
@@ -544,22 +557,28 @@ class _AbstractWireTypeFactory(AbstractWires):
 
         Returns:
             An instance of AbstractWires with the desired shape.
-        """
 
+        """
         if not isinstance(shape, int):
             raise TypeError("_AbstractWireTypeFactory's can only be subscripted with integers.")
         return AbstractWires(shape)
 
+    def __iter__(self):
+        raise TypeError("'Wire' object is not iterable. Use 'Wire[1]' to represent a single wire.")
+
 
 Wire = _AbstractWireTypeFactory()
-"""An :class:`~.AbstractWires` subclass. On it's own, it corresponds to a single wire, but
-can be indexed to create :class:`~.AbstractWires` with a fixed or dynamic wire count.
+"""An :class:`~.AbstractWires` subclass. It can be indexed to create :class:`~.AbstractWires` 
+with a fixed or dynamic wire count. It should not be used on its own.
 
->>> isinstance(Wires([0, 1]), qp.typing.Wire[2])
+>>> from pennylane.typing import Wire
+>>> isinstance(Wires([0, 1]), Wire[2])
 True
->>> qp.typing.Wire[2]
+>>> Wire[1]
+AbstractWires(1)
+>>> Wire[2]
 AbstractWires(2)
->>> qp.typing.Wire[-1]
+>>> Wire[-1]
 AbstractWires(-1)
 
 """

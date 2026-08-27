@@ -35,6 +35,8 @@ from pennylane.ops import (
     SymbolicOp,
 )
 from pennylane.ops.op_math.adjoint2 import Adjoint2
+from pennylane.ops.op_math.controlled2 import ControlledOp2
+from pennylane.ops.op_math.pow2 import Pow2
 from pennylane.templates.embeddings import AngleEmbedding
 from pennylane.templates.subroutines import (
     QSVT,
@@ -45,6 +47,7 @@ from pennylane.templates.subroutines import (
     PrepSelPrep,
     QDrift,
     Select,
+    TemporaryAND,
     TrotterProduct,
 )
 from pennylane.templates.subroutines.hilbert_schmidt import HilbertSchmidt
@@ -192,6 +195,7 @@ def bind_new_parameters_composite_op(op: CompositeOp, params: Sequence[TensorLik
 @bind_new_parameters.register(ops.CNOT)
 @bind_new_parameters.register(ops.Toffoli)
 @bind_new_parameters.register(ops.MultiControlledX)
+@bind_new_parameters.register(TemporaryAND)
 def bind_new_parameters_copy(op, params: Sequence[TensorLike]):
     return copy.copy(op)
 
@@ -284,6 +288,21 @@ def bind_new_parameters_adjoint(op: Adjoint2, params: Sequence[TensorLike]):
 
 
 @bind_new_parameters.register
+def bind_new_parameters_controlled_op2(op: ControlledOp2, params: Sequence[TensorLike]):
+    # A generic ``ControlledOp2`` exposes its base's parameters as ``data`` (the
+    # ``control_values``/``control_wires`` are not trainable), so the new parameters are bound
+    # to the base.
+    new_base = bind_new_parameters(op.base, params)
+    return type(op)(
+        new_base,
+        control_wires=op.control_wires,
+        control_values=op.control_values,
+        work_wires=op.work_wires,
+        work_wire_type=op.work_wire_type,
+    )
+
+
+@bind_new_parameters.register
 def bind_new_parameters_projector(op: Projector, params: Sequence[TensorLike]):
     # Need a separate dispatch for `Projector` because using a more general class
     # signature results in a call to `Projector.__new__` which doesn't raise an
@@ -319,6 +338,11 @@ def bind_new_parameters_pow(op: Pow, params: Sequence[TensorLike]):
     # signature results in a call to `Pow.__new__` which doesn't raise an
     # error but does return an unusable object.
     return Pow(bind_new_parameters(op.base, params), op.scalar)
+
+
+@bind_new_parameters.register
+def bind_new_parameters_pow2(op: Pow2, params: Sequence[TensorLike]):
+    return Pow2(bind_new_parameters(op.base, params), z=op.z)
 
 
 @bind_new_parameters.register

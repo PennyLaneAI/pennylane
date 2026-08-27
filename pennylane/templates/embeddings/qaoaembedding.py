@@ -20,8 +20,9 @@ from collections import defaultdict
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation, abstractify
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import RX, RY, RZ, H, MultiRZ, cond
+from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 
 # pylint: disable=too-many-arguments
@@ -257,11 +258,7 @@ class QAOAEmbedding(Operation):
         >>> features = torch.tensor([1., 2.])
         >>> weights = torch.tensor([[0.1, -0.3, 1.3], [0.9, -0.2, -2.1]])
         >>> qp.QAOAEmbedding.compute_decomposition(features, weights, wires=["a", "b"], local_field=qp.RY)
-        [RX(tensor(1.), wires=['a']), RX(tensor(2.), wires=['b']),
-        MultiRZ(tensor(0.1000), wires=['a', 'b']), RY(tensor(-0.3000), wires=['a']), RY(tensor(1.3000), wires=['b']),
-        RX(tensor(1.), wires=['a']), RX(tensor(2.), wires=['b']),
-        MultiRZ(tensor(0.9000), wires=['a', 'b']), RY(tensor(-0.2000), wires=['a']), RY(tensor(-2.1000), wires=['b']),
-        RX(tensor(1.), wires=['a']), RX(tensor(2.), wires=['b'])]
+        [RX(1.0, wires=['a']), RX(2.0, wires=['b']), MultiRZ(0.100..., wires=['a', 'b']), RY(-0.3000..., wires=['a']), RY(1.2999..., wires=['b']), RX(1.0, wires=['a']), RX(2.0, wires=['b']), MultiRZ(0.899..., wires=['a', 'b']), RY(-0.2000..., wires=['a']), RY(-2.0999..., wires=['b']), RX(1.0, wires=['a']), RX(2.0, wires=['b'])]
         """
         wires = Wires(wires)
         # second to last dimension of the weights tensor determines
@@ -355,7 +352,7 @@ def _qaoa_embedding_resources(repeat, n_features, num_wires, local_field):
         {
             RX: n_features * (repeat + 1),
             H: (num_wires - n_features) * (repeat + 1),
-            resource_rep(MultiRZ, num_wires=2): multi_rz_count,
+            MultiRZ(Float, Wire[2]): multi_rz_count,
         },
     )
     resources[abstractify(local_field)] += num_wires * repeat

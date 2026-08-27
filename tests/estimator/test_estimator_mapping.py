@@ -102,7 +102,7 @@ class TestMapToResourceOp:
             ),
             (
                 qp.BasisEmbedding([0, 1, 0], wires=[0, 1, 2]),
-                re_temps.BasisEmbedding(num_wires=3, wires=[0, 1, 2]),
+                re_ops.BasisState(num_wires=3, wires=[0, 1, 2]),
             ),
             # Single-Qubit Gates
             (qp.Hadamard(0), re_ops.Hadamard()),
@@ -189,7 +189,7 @@ class TestMapToResourceOp:
             ),
             (
                 qtemps.HybridQRAM(
-                    data=["010", "111", "110", "000"],
+                    bitstrings=["010", "111", "110", "000"],
                     control_wires=[0, 1],
                     target_wires=[2, 3, 4],
                     work_wires=[5, 6, 7, 8, 9],
@@ -207,7 +207,7 @@ class TestMapToResourceOp:
             ),
             (
                 qtemps.SelectOnlyQRAM(
-                    data=[
+                    bitstrings=[
                         "000",
                         "101",
                         "010",
@@ -260,7 +260,7 @@ class TestMapToResourceOp:
             ),
             (
                 qtemps.BBQRAM(
-                    data=["010", "111", "110", "000"],
+                    bitstrings=["010", "111", "110", "000"],
                     control_wires=[0, 1],
                     target_wires=[2, 3, 4],
                     work_wires=[5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
@@ -277,7 +277,7 @@ class TestMapToResourceOp:
             ),
             (
                 qtemps.QROM(
-                    data=[[0, 1], [1, 1], [1, 0]],
+                    bitstrings=[[0, 1], [1, 1], [1, 0]],
                     control_wires=[0, 1],
                     target_wires=[2, 3],
                     work_wires=[4],
@@ -584,6 +584,29 @@ class TestMapToResourceOp:
     def test_map_to_identity(self, operator, expected_res_op):
         """Test that these special operators map to the identity"""
         assert _map_to_resource_op(operator) == expected_res_op
+
+    def test_map_trotter_cdf(self):
+        """Test that TrotterCDF maps to its estimator resource operator, inferring the
+        CDF Hamiltonian dimensions (num_orbitals, num_fragments) from the tensor shapes."""
+        from pennylane.estimator.compact_hamiltonian import CDFHamiltonian
+
+        num_orbitals, num_two_body = 2, 1
+        hamiltonian = {
+            "core_tensors": np.zeros((num_two_body + 1, num_orbitals, num_orbitals)),
+            "leaf_tensors": np.zeros((num_two_body + 1, num_orbitals, num_orbitals)),
+            "nuc_constant": 0.0,
+        }
+        op = qp.TrotterCDF(1.0, 3, hamiltonian, wires=range(2 * num_orbitals))
+
+        expected = re_temps.TrotterCDF(
+            CDFHamiltonian(num_orbitals=num_orbitals, num_fragments=num_two_body + 1),
+            num_steps=3,
+            order=2,
+            wires=range(2 * num_orbitals),
+        )
+        mapped = _map_to_resource_op(op)
+        assert mapped == expected
+        assert mapped.wires == expected.wires
 
 
 @pytest.mark.parametrize(

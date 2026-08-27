@@ -119,8 +119,8 @@ class TestOutSquare:
         @qp.decompose(max_expansion=2, fixed_decomps=fixed_decomps)
         @qp.qnode(dev)
         def circuit(x, y, x_wires, work_wires):
-            qp.BasisEmbedding(x, wires=x_wires)
-            qp.BasisEmbedding(y, wires=output_wires)
+            qp.BasisEmbedding(qp.math.int_to_binary(x, len(x_wires)), wires=x_wires)
+            qp.BasisEmbedding(qp.math.int_to_binary(y, len(output_wires)), wires=output_wires)
             OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
             return (
                 qp.sample(wires=x_wires),
@@ -289,17 +289,15 @@ class TestOutSquare:
             Adjoint(qp.TemporaryAND(wires=[1, 4, 5])),
             qp.CNOT(wires=[1, 4]),
             # Subtractor
-            qp.X(3),
-            qp.X(2),
+            qp.MultiX([True, True], [3, 2]),
             qp.SemiAdder([0], [2, 3], [5, 6, 7, 8]),
-            qp.X(3),
-            qp.X(2),
+            qp.MultiX([True, True], [3, 2]),
             # Shifted adder
-            qp.X(1),
-            qp.X(2),
+            qp.MultiX([True], [1]),
+            qp.MultiX([True], [2]),
             qp.SemiAdder([1], [2], [5, 6, 7, 8]),
-            qp.X(2),
-            qp.X(1),
+            qp.MultiX([True], [2]),
+            qp.MultiX([True], [1]),
         ]
         assert q.queue == expected
 
@@ -333,10 +331,8 @@ class TestOutSquare:
             Adjoint(qp.TemporaryAND(wires=[2, 5, 6])),
             qp.CNOT(wires=[2, 5]),
             # Subtractor
-            qp.X(4),
-            qp.X(3),
+            qp.MultiX([True, True], [4, 3]),
             qp.SemiAdder([0, 1], [3, 4], [6, 7]),
-            qp.X(4),
-            qp.X(3),
+            qp.MultiX([True, True], [4, 3]),
         ]
         assert q.queue == expected
