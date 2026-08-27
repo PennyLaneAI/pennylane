@@ -363,7 +363,8 @@ def _out_multiplier_with_qft(
         work_wire = work_wires[1:2]
     else:
         qft_output_wires = output_wires
-        work_wire = ()
+        # Keep the empty register traceable instead of passing a literal tuple to JAX.
+        work_wire = output_wires[:0]
 
     if output_wires_zeroed:
         compute_op = prod(*(H(w) for w in qft_output_wires))

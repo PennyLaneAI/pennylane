@@ -1937,20 +1937,18 @@ if has_jax:
             args[name] = unflatten(leaves, tree)
             i += len_
 
+        # `ControlledOp2._bind_primitive` appends control wires, control values, and work
+        # wires (in that order) after the base op's own args, so they're consumed in the
+        # same order here.
         if n_ctrls:
             control_wires = _to_int_wires(all_args[i : i + n_ctrls])
             i += n_ctrls
             control_values = all_args[i : i + n_ctrls]
             i += n_ctrls
+            work_wires = _to_int_wires(all_args[i : i + n_ctrl_work_wires])
+            i += n_ctrl_work_wires
         else:
-            control_wires = control_values = ()
-
-        # `n_ctrl_work_wires` is only ever set (non-zero) alongside `n_ctrls` by
-        # `ControlledOp2._bind_primitive`; it is silently unused below if `n_ctrls == 0`.
-        work_wires = Wires(
-            tuple(w if math.is_abstract(w) else int(w) for w in all_args[i : i + n_ctrl_work_wires])
-        )
-        i += n_ctrl_work_wires
+            control_wires = control_values = work_wires = ()
 
         op = type.__call__(op_cls, **args)
         if adjoint:
