@@ -761,6 +761,33 @@ class TestDecompositions:
         all_gates = [gates[0]] + crz_gates + [gates[2]]
         assert [g.name for g in all_gates] == ["CNOT", "RZ", "CNOT", "RZ", "CNOT", "CNOT"]
 
+    @pytest.mark.integration
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_controlled_isingzz_decomposition_graph(self):
+        """Tests that the graph-based decomposition system actually selects the
+        ``change_op_basis``-based route for ``C(IsingZZ)`` (rather than just testing that the
+        individual rules compose correctly by hand, as ``test_controlled_isingzz_decomposition_gates``
+        does), and that it lands on the minimal six-gate circuit for a reasonably universal gate set.
+
+        Note: for a gate set that lacks any way to build an ``X``-type rotation (e.g. only
+        ``{CNOT, RZ, GlobalPhase}``), the graph solver currently fails to find this decomposition.
+        This is due to a pre-existing, unrelated limitation of the generic controlled-decomposition
+        wrapping mechanism (``_make_controlled_decomp`` in ``controlled2.py``), which conservatively
+        (and unconditionally) counts a ``PauliX`` per control wire regardless of whether any control
+        value is actually 0. This is not specific to ``IsingZZ``/``ChangeOpBasis``.
+        """
+        op = qp.ctrl(qp.IsingZZ(0.6931, wires=[2, 3]), control=[4])
+        tape = qp.tape.QuantumScript([op], [])
+        expected_matrix = qp.matrix(tape, wire_order=[2, 3, 4])
+
+        [decomp], _ = qp.transforms.decompose(
+            tape, gate_set={qp.RX, qp.RY, qp.RZ, qp.CNOT, qp.GlobalPhase}
+        )
+
+        assert [g.name for g in decomp.operations] == ["CNOT", "RZ", "CNOT", "RZ", "CNOT", "CNOT"]
+        mat = qp.matrix(decomp, wire_order=[2, 3, 4])
+        assert qp.math.allclose(mat, expected_matrix)
+
     two_wire_pcphases = [(0, [0, 1]), (1, [1, 0]), (2, ["a", 2]), (3, [1, 3]), (4, [9, 0])]
     five_wire_pcphases = [(i, [0, 1, 3, 2, 7]) for i in range(2**5)]
     other_pcphases = [(1, [0]), (2, [1]), (17, ["a", 2, "c", 4, 3, 0]), (3, list(range(5)))]
