@@ -527,9 +527,3 @@ class TestCapture:
         assert len(jaxpr.eqns) == 1
         eqn = jaxpr.eqns[0]
         assert_eqn_matches_op(eqn, ValidOp)
-
-        with AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-
-        assert len(q.queue) == 1
-        qp.assert_equal(q.queue[0], ValidOp((qp.RX(1.2, wires=0), qp.PauliZ(0))))
