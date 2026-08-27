@@ -731,7 +731,8 @@ class TestDecompositions:
         (as asserted below), but the graph's static resource estimate still requires it to be
         present in (or reachable from) the target gate set.
         """
-        op = qp.ctrl(qp.IsingZZ(0.6931, wires=[2, 3]), control=[4])
+        angle = 0.6931
+        op = qp.ctrl(qp.IsingZZ(angle, wires=[2, 3]), control=[4])
         tape = qp.tape.QuantumScript([op], [])
         expected_matrix = qp.matrix(tape, wire_order=[2, 3, 4])
 
@@ -739,7 +740,10 @@ class TestDecompositions:
             tape, gate_set={qp.CNOT, qp.RZ, qp.GlobalPhase, qp.PauliX}
         )
 
-        assert [g.name for g in decomp.operations] == ["CNOT", "RZ", "CNOT", "RZ", "CNOT", "CNOT"]
+        gates = decomp.operations
+        assert [g.name for g in gates] == ["CNOT", "RZ", "CNOT", "RZ", "CNOT", "CNOT"]
+        assert qp.math.allclose(gates[1].parameters[0], angle / 2)
+        assert qp.math.allclose(gates[3].parameters[0], -angle / 2)
         mat = qp.matrix(decomp, wire_order=[2, 3, 4])
         assert qp.math.allclose(mat, expected_matrix)
 
