@@ -200,7 +200,7 @@ class TestInitialization:
 
         ham, num_orbitals = toy_hamiltonian_cdf_abstract
         op = abstractify(qp.TrotterCDF(Float, 5, ham, Wire[2 * num_orbitals]))
-        assert op.is_abstract
+        assert op.is_fully_abstract
 
     def test_input_hamiltonian_type(self):
         """Test that anything but a CDFHamiltonian being given to the hamiltonian argument throws

@@ -218,7 +218,7 @@ class TestInitialization:
         abs_ham, num_modes, n_states = toy_hamiltonian_cgf_abstract
         op = qp.TrotterCGF(Float, 5, abs_ham, Wire[num_modes * n_states])
         op = abstractify(op)
-        assert op.is_abstract
+        assert op.is_fully_abstract
 
     def test_input_hamiltonian_type(self):
         """Test that anything but a CGFHamiltonian being given to the hamiltonian argument throws

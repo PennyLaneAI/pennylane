@@ -443,7 +443,7 @@ class Operator2(metaclass=OperatorMeta):
     # ------------------------------------------------------------------------
 
     @property
-    def is_abstract(self) -> bool:
+    def is_fully_abstract(self) -> bool:
         """Whether this operator contains only abstract data."""
         # Make sure not to flatten wires here, because an empty Wires([]) flattens to
         # empty leaves, so it'd be incorrectly not identified as something concrete.
@@ -1264,7 +1264,7 @@ class Operator2(metaclass=OperatorMeta):
         return f"{self.name}({inputs})"
 
     def __str__(self) -> str:
-        if self.has_fixed_sig and self.is_abstract:
+        if self.has_fixed_sig and self.is_fully_abstract:
             return self.name
         return repr(self)
 
@@ -2229,7 +2229,7 @@ def _abstractify_operator_type(op_type: type[Operator2]) -> Operator2:
 @QueuingManager.stop_recording()
 def _abstractify_operator(op: Operator2) -> Operator2:
     """Abstractify an operator."""
-    if op.is_abstract:
+    if op.is_fully_abstract:
         return op
     op_cls = type(op)
     target_args = op_cls.dynamic_argnames + op_cls.hybrid_argnames + op_cls.wire_argnames
