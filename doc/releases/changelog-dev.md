@@ -664,6 +664,9 @@
 * TCDQ now supports workflows with qudits of non-uniform dimensions.
   [(#9935)](https://github.com/PennyLaneAI/pennylane/pull/9935)
 
+* TCDQ qudit MMD loss function now supports phase layers.
+  [(#10035)](https://github.com/PennyLaneAI/pennylane/pull/10035)
+
   ```python
   import pennylane as qp
   from pennylane.labs.templates import LeftQuantumComparator
