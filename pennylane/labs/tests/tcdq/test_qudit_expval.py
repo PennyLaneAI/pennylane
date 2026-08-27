@@ -39,7 +39,7 @@ def _build_qudit_expval_func_exact(config):
     """Build a brute-force reference evaluator by summing over all basis states."""
     generators, param_map = _parse_qudit_generator_dict(config.gates, config.n_qudits)
 
-    dims = _dims_to_numpy(config.d, config.n_qudits)  # (n_qudits,)
+    dims = _dims_to_numpy(config.dims, config.n_qudits)  # (n_qudits,)
     dims_f = jnp.asarray(dims, dtype=jnp.float32)  # (n_qudits,)
 
     all_states = jnp.array(
@@ -240,7 +240,7 @@ def _make_config_one_param_per_gate(
         key = jax.random.PRNGKey(0)
     gates = {i: [list(gen)] for i, gen in enumerate(generators_array)}
     return QuditCircuitConfig(
-        d=d,
+        dims=d,
         n_qudits=n,
         gates=gates,
         observables=(np.array(l_vecs), np.array(m_vecs)),
@@ -649,7 +649,7 @@ class TestQuditExpvalBatchedEdgeCases:
         l_vecs = np.array([[1, 0]])
         m_vecs = np.array([[0, 0]])
         config = QuditCircuitConfig(
-            d=d,
+            dims=d,
             n_qudits=n,
             gates={},
             observables=(l_vecs, m_vecs),
@@ -673,7 +673,7 @@ class TestQuditExpvalBatchedEdgeCases:
         m_vecs = np.array([[0, 0, 0]])
 
         config = QuditCircuitConfig(
-            d=d,
+            dims=d,
             n_qudits=n,
             gates=gates,
             observables=(l_vecs, m_vecs),
@@ -707,12 +707,10 @@ class TestQuditExpvalBatchedEdgeCases:
             key=jax.random.PRNGKey(11),
         )
         batched_fn = build_qudit_expval_func(config)
-        _, mc_cov, mean_y_sq = batched_fn(jnp.array(params), return_mean_y_sq=True)
+        _, mc_cov = batched_fn(jnp.array(params))
 
         # Symmetric.
         np.testing.assert_allclose(mc_cov, np.swapaxes(mc_cov, -1, -2), atol=1e-7)
-        # Unit-modulus default-state integrands give mean |y_r|^2 = 1.
-        np.testing.assert_allclose(mean_y_sq, np.ones_like(mean_y_sq), atol=1e-7)
         # Non-negative variances on the diagonal.
         assert np.all(mc_cov[:, 0, 0] >= 0)
         assert np.all(mc_cov[:, 1, 1] >= 0)
@@ -1063,7 +1061,7 @@ class TestQuditExpvalBatchedWithInitState:
 
         gates = {i: [list(gen)] for i, gen in enumerate(generators)}
         config = QuditCircuitConfig(
-            d=d,
+            dims=d,
             n_qudits=n,
             gates=gates,
             observables=(l_vecs, m_vecs),
@@ -1106,7 +1104,7 @@ class TestQuditExpvalBatchedWithInitState:
 
         gates = {i: [list(gen)] for i, gen in enumerate(generators)}
         config = QuditCircuitConfig(
-            d=d,
+            dims=d,
             n_qudits=n,
             gates=gates,
             observables=(l_vecs, m_vecs),
@@ -1423,7 +1421,7 @@ class TestQuditExpvalWithPhaseLayer:
 
         gates = {i: [list(gen)] for i, gen in enumerate(generators)}
         config = QuditCircuitConfig(
-            d=d,
+            dims=d,
             n_qudits=n,
             gates=gates,
             observables=(l_vecs, m_vecs),
@@ -1469,7 +1467,7 @@ class TestQuditExpvalWithPhaseLayer:
 
         gates = {i: [list(gen)] for i, gen in enumerate(generators)}
         config = QuditCircuitConfig(
-            d=d,
+            dims=d,
             n_qudits=n,
             gates=gates,
             observables=(l_vecs, m_vecs),
@@ -1519,7 +1517,7 @@ class TestQuditExpvalWithPhaseLayer:
 
         gates = {i: [list(gen)] for i, gen in enumerate(generators)}
         config = QuditCircuitConfig(
-            d=d,
+            dims=d,
             n_qudits=n,
             gates=gates,
             observables=(l_vecs, m_vecs),

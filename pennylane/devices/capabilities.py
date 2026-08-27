@@ -16,12 +16,11 @@ Defines the DeviceCapabilities class, and tools to load it from a TOML file.
 """
 
 import re
+import tomllib
 from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from enum import Enum
 from itertools import repeat
-
-import tomlkit as toml
 
 from pennylane.core.operator import Operator
 from pennylane.exceptions import InvalidCapabilitiesError, QuantumFunctionError
@@ -34,8 +33,8 @@ ALL_SUPPORTED_SCHEMAS = [3]
 
 def load_toml_file(file_path: str) -> dict:
     """Loads a TOML file and returns the parsed dict."""
-    with open(file_path, encoding="utf-8") as file:
-        return toml.load(file)
+    with open(file_path, "rb") as file:
+        return tomllib.load(file)
 
 
 class ExecutionCondition(Enum):

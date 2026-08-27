@@ -16,11 +16,50 @@ Helper classes and functions for symbolic resource expressions.
 """
 
 from collections import defaultdict
+from fractions import Fraction
 from functools import lru_cache
+from math import ceil, floor, trunc
+from numbers import Real
 from typing import Union
 
+# Type objects that represent either an Expression or a numeric constant
+IntExprResult = Union["Expression", int]
+ExprResult = Union["Expression", Real]
 
-def _term_to_str(vars: tuple[str, ...], coeff: int) -> str:
+
+def _cast_if_constant(
+    new_data: dict[tuple[str, ...], Real],
+    vars: set[str],
+    skip_copy: bool,
+    skip_normalization: bool,
+) -> ExprResult:
+    """Collapse the new data for creating an Expression into a constant if possible.
+
+    Args:
+        new_data (dict[tuple[str, ...], Real]): The new data for the Expression.
+        vars (set[str]): The set of variables in the Expression.
+        skip_copy (bool): Whether to skip copying the new data when creating the Expression.
+        skip_normalization (bool): Whether to skip normalization when creating the Expression.
+
+    Returns:
+        Expression | Real: An real number if the result is a constant, otherwise a new
+        :class:`~.resource.Expression` instance. The type of a constant result matches the type of
+        the corresponding coefficient.
+    """
+    if len(new_data) == 0:
+        return 0
+    if len(new_data) == 1 and () in new_data:
+        # Return as int/float rather than Expression if the result is a constant
+        return new_data[()]
+    return Expression(
+        new_data, vars=vars, _skip_copy=skip_copy, _skip_normalization=skip_normalization
+    )
+
+
+@lru_cache
+def _term_to_str(vars: tuple[str, ...], coeff: Real) -> str:
+    if isinstance(coeff, (float, Fraction)) and coeff.is_integer():
+        coeff = int(coeff)
     if not vars:
         return str(coeff)
     if coeff == 1:
@@ -31,9 +70,10 @@ def _term_to_str(vars: tuple[str, ...], coeff: int) -> str:
 class Expression:
     """
     Internal class for representing symbolic expressions of resources.
-    Specifically, each expression is an integral polynomial in the variables, where the variables
-    represent symbolic parameters of the resources. The expressions are represented as a dictionary
-    mapping tuples of variable names to their coefficients.
+    Specifically, each expression is a polynomial in the variables with real (numeric)
+    coefficients, where the variables represent symbolic parameters of the resources.
+    The expressions are represented as a dictionary mapping tuples of variable names to their
+    coefficients.
 
     .. warning::
 
@@ -41,14 +81,14 @@ class Expression:
         after it is created, as this may lead to incorrect behaviour.
     """
 
-    __slots__ = ("_hashval", "_data", "_vars")
+    __slots__ = ("_hashval", "_str", "_repr", "_data", "_vars")
 
-    _data: dict[tuple[str, ...], int]
+    _data: dict[tuple[str, ...], Real]
     _vars: set[str]
 
     def __init__(
         self,
-        data: dict[tuple[str, ...], int] | int,
+        data: dict[tuple[str, ...], Real] | Real,
         vars: set[str] | None = None,
         _skip_copy: bool = False,
         _skip_normalization: bool = False,
@@ -57,19 +97,21 @@ class Expression:
         Initializes the expression with the given data.
 
         Args:
-            data (dict[tuple[str, ...], int] | int): A dictionary mapping tuples of variable names
-                to their coefficients, or an integer for a constant expression.
+            data (dict[tuple[str, ...], Real] | Real): A dictionary mapping tuples of
+                variable names to their coefficients, or a real number for a constant expression.
             vars (set[str] | None): An optional set of variables that appear in the expression.
                 These must be a superset of the variables that appear in the keys of the data
                 dictionary. If not provided, the variables will be inferred from the keys of the
                 data dictionary.
         """
-        if not isinstance(data, (dict, int)):
-            raise TypeError("Expression data must be a dictionary of tuples or an integer")
+        if not isinstance(data, (dict, Real)):
+            raise TypeError("Expression data must be a dictionary of tuples or a real number")
 
         self._hashval = None
+        self._str = None
+        self._repr = None
 
-        if isinstance(data, int):
+        if isinstance(data, Real):
             if data == 0:
                 self._data = {}
             else:
@@ -102,6 +144,10 @@ class Expression:
         Also removes any terms with a zero coefficient.
         """
         for vars in list(self._data.keys()):
+            if not isinstance(self._data[vars], Real):
+                raise TypeError(
+                    f"Expression coefficients must be real numbers, got '{self._data[vars]}'"
+                )
             if self._data[vars] == 0:
                 del self._data[vars]
                 continue
@@ -122,19 +168,18 @@ class Expression:
         """
         return self._vars
 
-    def subs(
-        self, substitutions: dict[str, int] | None = None, **kwargs
-    ) -> Union["Expression", int]:
+    def subs(self, substitutions: dict[str, Real] | None = None, **kwargs) -> ExprResult:
         """
         Substitutes the given values for the variables in the expression.
 
         Args:
-            substitutions (dict[str, int] | None): A dictionary mapping variable names to their values.
-                If None, an empty dictionary is used. Additional keyword arguments can also be provided
-                as substitutions.
+            substitutions (dict[str, Real] | None): A dictionary mapping variable names to their
+                values. If None, an empty dictionary is used. Additional keyword arguments can
+                also be provided as substitutions.
 
         Returns:
-            Expression | int: A new expression with the variables substituted, or an int if the result is a constant.
+            Expression | Real: A new expression with the variables substituted, or a number if
+            the result is a constant.
         """
         if substitutions is None:
             substitutions = {}
@@ -155,13 +200,13 @@ class Expression:
             new_k = tuple(new_k)
             new_data[new_k] += coeff * mult
 
-        if len(new_data) == 0:
-            return 0
-        if len(new_data) == 1 and () in new_data:
-            return new_data[()]  # Return as int rather than Expression if the result is a constant
-        return Expression(new_data, vars=self._vars.difference(substitutions_copy.keys()))
+        return _cast_if_constant(
+            new_data,
+            vars=self._vars.difference(substitutions_copy.keys()),
+            skip_copy=False,
+            skip_normalization=False,
+        )
 
-    @lru_cache
     def __str__(self) -> str:
         """
         Returns a string representation of the expression.
@@ -171,18 +216,25 @@ class Expression:
         If a term has a coefficient of 1, the coefficient is omitted.
         If the expression is zero, it is "0".
         """
+        if self._str is not None:
+            return self._str
         if len(self._data) == 0:
-            return "0"
-        return " + ".join([_term_to_str(vars, coeff) for vars, coeff in self._data.items()])
+            self._str = "0"
+        else:
+            self._str = " + ".join(
+                [_term_to_str(vars, coeff) for vars, coeff in self._data.items()]
+            )
+        return self._str
 
-    @lru_cache
     def __repr__(self) -> str:
-        return f"Expression({self._data})"
+        if self._repr is None:
+            self._repr = f"Expression({self._data})"
+        return self._repr
 
     def __eq__(self, other) -> bool:
-        if not isinstance(other, (int, Expression)):
+        if not isinstance(other, (Expression, Real)):
             return NotImplemented
-        if isinstance(other, int):
+        if isinstance(other, Real):
             match len(self._data):
                 case 0:
                     return other == 0
@@ -195,7 +247,13 @@ class Expression:
     def __hash__(self) -> int:
         # NOTE: `lru_cache` and related methods can't be used here since they rely on a hash value existing
         if self._hashval is None:
-            self._hashval = hash(frozenset(self._data.items()))
+            # Extra cases to make sure that numeric hashes are consistent with Expression hashes
+            if len(self._data) == 0:
+                self._hashval = hash(0)
+            elif len(self._data) == 1 and () in self._data:
+                self._hashval = hash(self._data[()])
+            else:
+                self._hashval = hash(frozenset(self._data.items()))
 
         return self._hashval
 
@@ -206,44 +264,107 @@ class Expression:
             raise ValueError("Expression cannot be converted to int, more than one term")
         if () not in self._data:
             raise ValueError("Expression cannot be converted to int, contains variables")
-        return self._data[()]
+        return int(self._data[()])
 
-    def __mul__(self, other) -> "Expression":
-        if not isinstance(other, (int, Expression)):
+    def __float__(self) -> float:
+        if len(self._data) == 0:
+            return 0.0
+        if len(self._data) > 1:
+            raise ValueError("Expression cannot be converted to float, more than one term")
+        if () not in self._data:
+            raise ValueError("Expression cannot be converted to float, contains variables")
+        return float(self._data[()])
+
+    def __mul__(self, other) -> ExprResult:
+        if not isinstance(other, (Expression, Real)):
             return NotImplemented
 
-        if isinstance(other, int):
+        if isinstance(other, Real):
             if other == 0:
-                return Expression({})
-            return Expression(
-                {vars: coeff * other for vars, coeff in self._data.items()},
-                _skip_copy=True,
-                _skip_normalization=True,
+                return 0
+            # Scaling by a non-zero int can never zero out a coefficient, but float
+            # multiplication can underflow to zero. Such terms are dropped here to preserve the
+            # invariant that zero coefficients are never stored.
+            return _cast_if_constant(
+                {
+                    vars: new_coeff
+                    for vars, coeff in self._data.items()
+                    if (new_coeff := coeff * other) != 0
+                },
                 vars=self._vars,
+                skip_copy=True,
+                skip_normalization=True,
             )
 
         new_data = defaultdict(int)
         for vars1, coeff1 in self._data.items():
             for vars2, coeff2 in other._data.items():
                 new_data[vars1 + vars2] += coeff1 * coeff2
-        return Expression(new_data, vars=self._vars.union(other._vars))
+        return _cast_if_constant(
+            new_data, self._vars.union(other._vars), skip_copy=False, skip_normalization=False
+        )
 
-    def __rmul__(self, other) -> "Expression":
+    def __rmul__(self, other) -> ExprResult:
         return self.__mul__(other)
 
-    def __add__(self, other) -> "Expression":
-        if not isinstance(other, (int, Expression)):
+    def __add__(self, other) -> ExprResult:
+        if not isinstance(other, (Expression, Real)):
             return NotImplemented
 
-        if isinstance(other, int):
-            new_data = self._data.copy()
+        vars = self._vars
+        new_data = self._data.copy()
+
+        if isinstance(other, Real):
             new_data[()] = new_data.get((), 0) + other
-            return Expression(new_data, _skip_copy=True, vars=self._vars)
+        else:
+            for other_vars, coeff in other._data.items():
+                new_val = new_data.get(other_vars, 0) + coeff
+                if new_val == 0:
+                    del new_data[other_vars]
+                else:
+                    new_data[other_vars] = new_val
+            vars = vars.union(other._vars)
+
+        return _cast_if_constant(new_data, vars, skip_copy=True, skip_normalization=False)
+
+    def __radd__(self, other) -> ExprResult:
+        return self.__add__(other)
+
+    def _builtin_to_int_helper(self, func) -> ExprResult:
+        """Helper function to implement ``__floor__``, ``__ceil__``, ``__round__``, and
+        ``__trunc__`` for :class:`~.resource.Expression` objects.
+
+        Since the contents of the object are symbolic, it is not possible to fully cast to an int.
+        Instead, the chosen function is applied only to the constant term of the expression, if it
+        exists. If the expression has no constant term, the function has no effect.
+
+        Args:
+            func (Callable[[Real], int | float]): The function to apply to the constant term.
+
+        Returns:
+            Expression | int | float: An int if the result is a constant, otherwise a
+            :class:`~.resource.Expression` instance where the constant term is integral.
+            May also return a float if using ``round`` with ``ndigits`` specified.
+        """
+        if len(self._data) == 0:
+            return 0
+        if () not in self._data:
+            return self
 
         new_data = self._data.copy()
-        for vars, coeff in other._data.items():
-            new_data[vars] = new_data.get(vars, 0) + coeff
-        return Expression(new_data, _skip_copy=True, vars=self._vars.union(other._vars))
+        new_data[()] = func(new_data[()])
+        return _cast_if_constant(
+            new_data, vars=self._vars, skip_copy=True, skip_normalization=False
+        )
 
-    def __radd__(self, other) -> "Expression":
-        return self.__add__(other)
+    def __ceil__(self) -> IntExprResult:
+        return self._builtin_to_int_helper(ceil)
+
+    def __floor__(self) -> IntExprResult:
+        return self._builtin_to_int_helper(floor)
+
+    def __round__(self, ndigits=None) -> ExprResult:
+        return self._builtin_to_int_helper(lambda x: round(x, ndigits))
+
+    def __trunc__(self) -> IntExprResult:
+        return self._builtin_to_int_helper(trunc)

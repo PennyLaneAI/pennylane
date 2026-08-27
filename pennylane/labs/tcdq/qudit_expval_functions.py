@@ -66,11 +66,10 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
     :class:`~pennylane.labs.tcdq.CircuitConfig`.
 
     Args:
-        d (int | Sequence[int]): Local qudit dimension(s). Either a single
+        dims (int | Sequence[int]): Local qudit dimension(s). Either a single
             ``int`` (e.g., 2 for qubits, 3 for qutrits), which is broadcast to
             every qudit, or a sequence of length ``n_qudits`` giving a distinct
-            dimension :math:`d_j` per qudit. All
-            per-qudit index sets are then :math:`\{0, \ldots, d_j - 1\}`.
+            dimension :math:`d_j` per qudit.
         n_qudits (int): Number of qudits in the circuit.
         gates (dict[int, list[list[int]]]): Circuit structure mapping each
             trainable-parameter index to a list of generator vectors. Each
@@ -120,8 +119,8 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
     ... )
     """
 
-    #: Local qudit dimension: an int (uniform) or per-qudit sequence.
-    d: int | Sequence[int] = None
+    #: Local qudit dimension(s): an int (uniform) or list (per-qudit sequence).
+    dims: int | Sequence[int] = None
     #: Number of qudits in the circuit.
     n_qudits: int = None
     #: Circuit structure mapping parameter indices to generator vectors.
@@ -140,27 +139,27 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
     phase_fn: Callable | None = None
 
 
-def _dims_to_numpy(d: int | Sequence[int], n_qudits: int) -> np.ndarray:
-    """Normalize the ``d`` field to an integer array of per-qudit dimensions.
+def _dims_to_numpy(dims: int | Sequence[int], n_qudits: int) -> np.ndarray:
+    """Normalize the ``dims`` field to an integer array of per-qudit dimensions.
 
     Accepts either a scalar ``int`` (broadcast to all qudits, the uniform case)
     or a sequence of length ``n_qudits`` (mixed-dimension case), and always
     returns a NumPy integer array of shape ``(n_qudits,)``.
 
     Raises:
-        ValueError: If ``d`` is a sequence whose length is not ``n_qudits``.
+        ValueError: If ``dims`` is a sequence whose length is not ``n_qudits``.
     """
-    if np.ndim(d) == 0:
-        return np.full((n_qudits,), int(d), dtype=int)
+    if isinstance(dims, int):
+        return np.full((n_qudits,), int(dims), dtype=int)
 
-    dims = np.asarray(d, dtype=int)
-    if dims.shape != (n_qudits,):
+    normalized_dims = np.asarray(dims, dtype=int)
+    if normalized_dims.shape != (n_qudits,):
         raise ValueError(
             f"d given as a sequence must have length n_qudits={n_qudits}, "
-            f"got shape {dims.shape}."
+            f"got shape {normalized_dims.shape}."
         )
 
-    return dims
+    return normalized_dims
 
 
 def _parse_qudit_generator_dict(circuit_def: dict[int, list[list[int]]], n_qudits: int):
@@ -452,14 +451,13 @@ def _compute_initial_state_correction(
 
 def _compute_mc_statistics(
     integrand: jnp.ndarray, n_samples: int
-) -> tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
-    """Compute Monte Carlo mean, covariance, and mean squared magnitude from the integrand.
+) -> tuple[jnp.ndarray, jnp.ndarray]:
+    """Compute the Monte Carlo mean and covariance from the integrand.
 
-    Returns ``(expvals, cov, mean_y_sq)`` where ``cov`` is the per-observable
-    covariance matrix of the mean estimator, shape ``(n_obs, 2, 2)``.
+    Returns ``(expvals, cov)`` where ``cov`` is the per-observable covariance
+    matrix of the mean estimator, shape ``(n_obs, 2, 2)``.
     """
     expvals = jnp.mean(integrand, axis=1)
-    mean_y_sq = jnp.mean(jnp.abs(integrand) ** 2, axis=1)  # (n_obs,)
 
     re = jnp.real(integrand)
     im = jnp.imag(integrand)
@@ -475,7 +473,7 @@ def _compute_mc_statistics(
         ],
         axis=-2,
     )  # (n_obs, 2, 2)
-    return expvals, cov, mean_y_sq
+    return expvals, cov
 
 
 def build_qudit_expval_func(  # pylint: disable=too-many-statements
@@ -507,15 +505,12 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements
                 observables=None,
                 init_state_elems=None,
                 init_state_amps=None,
-                return_mean_y_sq=False,
-            ) -> (expvals, cov) or (expvals, cov, mean_y_sq)
+            ) -> (expvals, cov)
 
         where ``expvals`` is a complex array of shape ``(n_obs,)`` containing
         the estimated moments, and ``cov`` has shape ``(n_obs, 2, 2)``
         providing the real/imaginary covariance matrix of the mean estimator
-        for each observable. When ``return_mean_y_sq=True``, also returns the
-        per-observable mean of :math:`|y|^2` (needed internally by the MMD
-        loss).
+        for each observable.
 
         When ``config.phase_fn`` is set, the returned callable requires ``phase_fn_params`` to be
         passed as the second argument (the trainable parameters of the phase layer).
@@ -553,7 +548,7 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements
     generators, param_map = _parse_qudit_generator_dict(config.gates, config.n_qudits)
 
     n = config.n_qudits
-    dims = _dims_to_numpy(config.d, n)
+    dims = _dims_to_numpy(config.dims, n)
     default_samples = _compute_qudit_samples(config.key, config.n_samples, n, dims)
 
     vmapped_phase_func = None
@@ -600,10 +595,7 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements
         observables: tuple[ArrayLike, ArrayLike] | None = None,
         init_state_elems: ArrayLike | None = None,
         init_state_amps: ArrayLike | None = None,
-        return_mean_y_sq: bool = False,
-    ) -> (
-        tuple[jnp.ndarray, jnp.ndarray] | tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]
-    ):  # pylint: disable=too-many-arguments
+    ) -> tuple[jnp.ndarray, jnp.ndarray]:  # pylint: disable=too-many-arguments
         """Compute batched expectation values for the configured circuit.
 
         Args:
@@ -623,19 +615,12 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements
             init_state_amps (ArrayLike | None, optional): Runtime override for the
                 complex amplitudes of the initial state. Array of shape ``(N,)``.
                 Defaults to None.
-            return_mean_y_sq (bool, optional): If ``True``, also return the
-                per-observable mean of ``|y_r|^2``. Defaults to ``False``.
 
         Returns:
-            tuple[jnp.ndarray, jnp.ndarray] | tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
-            By default returns ``(expvals, cov)`` where ``expvals`` are the estimated
-            complex expectation values, shape ``(n_obs,)``, and ``cov`` stores the
-            real-imaginary covariance matrices of the mean estimator, shape
-            ``(n_obs, 2, 2)``.
-
-            When ``return_mean_y_sq=True``, also returns ``mean_y_sq`` with shape
-            ``(n_obs,)``. This equals 1 when the per-sample integrand has unit
-            modulus (default input state, diagonal observables).
+            tuple[jnp.ndarray, jnp.ndarray]: Returns ``(expvals, cov)`` where
+            ``expvals`` are the estimated complex expectation values, shape
+            ``(n_obs,)``, and ``cov`` stores the real-imaginary covariance matrices
+            of the mean estimator, shape ``(n_obs, 2, 2)``.
         """
         if observables is not None:
             l_vecs = jnp.array(observables[0], dtype=jnp.int32)
@@ -680,10 +665,6 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements
             H = _compute_initial_state_correction(samples, l_f, state_elems, state_amps, dims)
             integrand = integrand * H
 
-        expvals, cov, mean_y_sq = _compute_mc_statistics(integrand, _n)
-
-        if return_mean_y_sq:
-            return expvals, cov, mean_y_sq
-        return expvals, cov
+        return _compute_mc_statistics(integrand, _n)
 
     return qudit_expval_batched

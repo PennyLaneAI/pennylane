@@ -162,7 +162,7 @@ def _sample_fourier_indices(  # pylint: disable=too-many-arguments
 
 
 def _empirical_fourier_moments(
-    L_visible: jnp.ndarray,
+    l_visible: jnp.ndarray,
     X_data: jnp.ndarray,
     dims_visible: jnp.ndarray,
 ) -> jnp.ndarray:
@@ -171,11 +171,11 @@ def _empirical_fourier_moments(
     For each Fourier index vector :math:`\\mathbf{l}`, computes
     :math:`\\hat{\\mu}_p(\\mathbf{l}) = \\frac{1}{m} \\sum_i \\exp(2\\pi i \\sum_k l_k x_{ik} / d_k)`,
     i.e. the per-qudit root of unity :math:`\\omega_k = e^{2\\pi i / d_k}`. The
-    per-visible-wire dimension is folded in by column-scaling ``L_visible`` with
+    per-visible-wire dimension is folded in by column-scaling ``l_visible`` with
     ``1 / dims_visible``.
 
     Args:
-        L_visible: Integer array of shape ``(n_obs, n_visible)`` — the Fourier
+        l_visible: Integer array of shape ``(n_obs, n_visible)`` — the Fourier
             index vectors restricted to the visible wires.
         X_data: Integer array of shape ``(m, n_visible)`` — target dataset
             samples on the visible wires.
@@ -186,7 +186,7 @@ def _empirical_fourier_moments(
         Complex array of shape ``(n_obs,)``.
     """
     inv_d = 1.0 / jnp.asarray(dims_visible, dtype=jnp.float64)
-    l_scaled = L_visible.astype(jnp.float64) * inv_d[jnp.newaxis, :]
+    l_scaled = l_visible.astype(jnp.float64) * inv_d[jnp.newaxis, :]
     inner = l_scaled @ X_data.astype(jnp.float64).T
     return jnp.mean(jnp.exp(2j * jnp.pi * inner), axis=1)
 
@@ -209,29 +209,24 @@ def _pp_term(mu_p_hat: jnp.ndarray, m: int) -> jnp.ndarray:
 
 def _qq_term(
     mu_q_hat: jnp.ndarray,
-    mean_y_sq: jnp.ndarray,
-    s: int,
+    cov: jnp.ndarray,
 ) -> jnp.ndarray:
     """Compute the unbiased model–model U-statistic contribution to the MMD.
 
-    Removes the diagonal self-pairs from :math:`|\\hat{\\mu}_q|^2`:
-    :math:`QQ(l) = (s |\\hat{\\mu}_q(l)|^2 - \\overline{|y|^2}(l)) / (s - 1)`.
-
-    Gradients are stopped through ``mean_y_sq`` (it is treated as a constant
-    for differentiation purposes).
+    Removes the estimated variance of the complex sample mean from
+    :math:`|\\hat{\\mu}_q|^2`.
 
     Args:
         mu_q_hat: Complex array of shape ``(n_obs,)`` — circuit-side Monte
             Carlo moment estimates.
-        mean_y_sq: Real array of shape ``(n_obs,)`` — mean squared magnitude
-            of the per-sample integrand values.
-        s: Number of circuit samples.
+        cov: Real array of shape ``(n_obs, 2, 2)`` — covariance matrices of
+            the real and imaginary parts of the estimated moments.
 
     Returns:
         Real array of shape ``(n_obs,)``.
     """
-    mean_y_sq = jax.lax.stop_gradient(mean_y_sq)
-    return (s * jnp.abs(mu_q_hat) ** 2 - mean_y_sq) / (s - 1)
+    variances = jnp.trace(cov, axis1=-2, axis2=-1)
+    return jnp.abs(mu_q_hat) ** 2 - variances
 
 
 def _pq_cross_term(
@@ -254,24 +249,23 @@ def _pq_cross_term(
     return 2.0 * jnp.real(jnp.conj(mu_p_hat) * mu_q_hat)
 
 
-@partial(jax.jit, static_argnames=["dims_visible", "n_samples", "sqrt_loss"])
+@partial(jax.jit, static_argnames=["dims_visible", "sqrt_loss"])
 def _unbiased_mmd_squared(  # pylint: disable=too-many-arguments
     mu_q_hat: jnp.ndarray,
-    mean_y_sq: jnp.ndarray,
+    cov: jnp.ndarray,
     X_data: jnp.ndarray,
-    L_visible: jnp.ndarray,
+    l_visible: jnp.ndarray,
     dims_visible: tuple[int, ...],
-    n_samples: int,
     sqrt_loss: bool,
 ) -> jnp.ndarray:
     """Combine PP, PQ, and QQ terms into the unbiased MMD² estimator."""
     m = X_data.shape[0]
 
-    mu_p_hat = _empirical_fourier_moments(L_visible, X_data, jnp.asarray(dims_visible))
+    mu_p_hat = _empirical_fourier_moments(l_visible, X_data, jnp.asarray(dims_visible))
 
     pp_term = _pp_term(mu_p_hat, m)
     pq_term = _pq_cross_term(mu_p_hat, mu_q_hat)
-    qq_term = _qq_term(mu_q_hat, mean_y_sq, n_samples)
+    qq_term = _qq_term(mu_q_hat, cov)
 
     mmd_sq = jnp.mean(qq_term - pq_term + pp_term)
     return jnp.sqrt(jnp.abs(mmd_sq)) if sqrt_loss else mmd_sq
@@ -313,21 +307,19 @@ def _compute_qudit_loss_for_bandwidth(  # pylint: disable=too-many-arguments
     )
     m_obs = jnp.zeros_like(l_obs)
 
-    mu_q_hat, _, mean_y_sq = expval_func(
+    mu_q_hat, cov = expval_func(
         gates_params=params,
         observables=(l_obs, m_obs),
         key=eval_key,
         n_samples=n_samples,
         init_state_elems=init_state_elems,
         init_state_amps=init_state_amps,
-        return_mean_y_sq=True,
     )
 
-    L_visible = l_obs[:, list(wire_tuple)]
+    l_visible = l_obs[:, list(wire_tuple)]
     dims_visible = tuple(int(dims[w]) for w in wire_tuple)
-    return _unbiased_mmd_squared(
-        mu_q_hat, mean_y_sq, target_data, L_visible, dims_visible, n_samples, sqrt_loss
-    )
+
+    return _unbiased_mmd_squared(mu_q_hat, cov, target_data, l_visible, dims_visible, sqrt_loss)
 
 
 def build_qudit_mmd_loss(
@@ -367,7 +359,7 @@ def build_qudit_mmd_loss(
     >>> import jax.numpy as jnp
     >>> from pennylane.labs.tcdq import QuditCircuitConfig, QuditMMDConfig, build_qudit_mmd_loss
     >>> circuit_config = QuditCircuitConfig(
-    ...     d=3,
+    ...     dims=3,
     ...     n_qudits=2,
     ...     gates={0: [[1, 0]], 1: [[0, 1]]},
     ...     n_samples=512,
@@ -393,7 +385,7 @@ def build_qudit_mmd_loss(
     if mmd_config.n_ops < 1:
         raise ValueError("n_ops must be at least 1")
 
-    d = circuit_config.d
+    d = circuit_config.dims
     n_qudits = circuit_config.n_qudits
     dims = tuple(int(x) for x in _dims_to_numpy(d, n_qudits))
 
@@ -416,7 +408,7 @@ def build_qudit_mmd_loss(
         raise ValueError("bandwidth must not be empty")
 
     expval_config = QuditCircuitConfig(
-        d=d,
+        dims=d,
         n_qudits=n_qudits,
         gates=circuit_config.gates,
         observables=None,

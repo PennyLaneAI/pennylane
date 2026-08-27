@@ -19,8 +19,9 @@ Factory that produces a decomposition rule for CRZ in terms of
 import numpy as np
 
 import pennylane as qp
-from pennylane.decomposition import change_op_basis_resource_rep, controlled_resource_rep
+from pennylane.decomposition import change_op_basis_resource_rep
 from pennylane.ops import Prod
+from pennylane.typing import Bool, Wire
 
 from .rz_phase_gradient import validate_phase_gradient_wires
 
@@ -111,21 +112,9 @@ def make_crz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
     def _resource_fn(phi, wires):  # pylint: disable=unused-argument
         precision = len(angle_wires)
         # decomposition costs, using information about angle_wires etc from the outer scope
-        target_op = qp.resource_rep(
-            qp.SemiAdder,
-            num_x_wires=precision,
-            num_y_wires=precision,
-            num_work_wires=len(work_wires),
-        )
-        fanout_angle = controlled_resource_rep(
-            qp.BasisState, {"num_wires": precision}, num_control_wires=1, num_zero_control_values=0
-        )
-        fanout_addsub = controlled_resource_rep(
-            qp.BasisState, {"num_wires": precision}, num_control_wires=1, num_zero_control_values=1
-        )
-        compute_op = uncompute_op = qp.resource_rep(
-            Prod, resources={fanout_angle: 1, fanout_addsub: 1}
-        )
+        target_op = qp.SemiAdder(Wire[precision], Wire[precision], Wire[len(work_wires)])
+        fanout = qp.ctrl(qp.BasisState(Bool[precision], Wire[precision]), control=Wire[1])
+        compute_op = uncompute_op = qp.resource_rep(Prod, resources={fanout: 2})
         change_basis_rep = change_op_basis_resource_rep(compute_op, target_op, uncompute_op)
         return {change_basis_rep: 1}
 
@@ -134,7 +123,7 @@ def make_crz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
         precision = len(angle_wires)
         binary_int = qp.math.binary_decimals(phi, precision, unit=4 * np.pi)
 
-        def compute_fn():
+        def _compute_fn():
             qp.ctrl(qp.BasisState(binary_int, angle_wires), control=wires[0])
             qp.ctrl(
                 qp.BasisState([1] * precision, phase_grad_wires),
@@ -142,9 +131,7 @@ def make_crz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
                 control_values=[0],
             )
 
-        def target_fn():
-            qp.SemiAdder(angle_wires, phase_grad_wires, work_wires=work_wires)
-
-        qp.change_op_basis(compute_fn, target_fn, compute_fn)
+        target_op = qp.SemiAdder(angle_wires, phase_grad_wires, work_wires=work_wires)
+        qp.change_op_basis(_compute_fn, target_op, _compute_fn)
 
     return _decomp_fn

@@ -313,14 +313,15 @@ class TestUnbiasedMmdSquared:
         inv_d = 1.0 / jnp.asarray(dims, dtype=jnp.float64)
         inner = (l_obs.astype(jnp.float64) * inv_d[jnp.newaxis, :]) @ data.astype(jnp.float64).T
         data_moments = jnp.mean(jnp.exp(2j * jnp.pi * inner), axis=1)
+        variances = (1 - jnp.abs(data_moments) ** 2) / (n_samples - 1)
+        cov = jnp.zeros((n_ops, 2, 2)).at[:, 0, 0].set(variances)
 
         result = _unbiased_mmd_squared(
             data_moments,
-            jnp.ones(n_ops),
+            cov,
             data,
             l_obs,
             dims,
-            n_samples=n_samples,
             sqrt_loss=False,
         )
         assert abs(float(jnp.real(result))) < 0.05
@@ -334,10 +335,11 @@ class TestUnbiasedMmdSquared:
         data = jnp.array(np.stack([rng.integers(0, d_i, 40) for d_i in dims], axis=1))
         l_obs = jnp.array(np.stack([rng.integers(0, d_i, n_ops) for d_i in dims], axis=1))
         fake_model = jnp.array(rng.normal(0, 0.3, n_ops) + 0.1j * rng.normal(0, 0.3, n_ops))
-        mean_y_sq = jnp.ones(n_ops)
+        variances = (1 - jnp.abs(fake_model) ** 2) / (n_samples - 1)
+        cov = jnp.zeros((n_ops, 2, 2)).at[:, 0, 0].set(variances)
 
-        val = _unbiased_mmd_squared(fake_model, mean_y_sq, data, l_obs, dims, n_samples, False)
-        sqr = _unbiased_mmd_squared(fake_model, mean_y_sq, data, l_obs, dims, n_samples, True)
+        val = _unbiased_mmd_squared(fake_model, cov, data, l_obs, dims, False)
+        sqr = _unbiased_mmd_squared(fake_model, cov, data, l_obs, dims, True)
         assert np.isclose(float(sqr), np.sqrt(abs(float(val))), atol=1e-7)
 
     def test_deterministic(self):
@@ -349,10 +351,11 @@ class TestUnbiasedMmdSquared:
         data = jnp.array(np.stack([rng.integers(0, d_i, 30) for d_i in dims], axis=1))
         l_obs = jnp.array(np.stack([rng.integers(0, d_i, n_ops) for d_i in dims], axis=1))
         model = jnp.array(rng.normal(0, 0.4, n_ops) + 0.1j * rng.normal(0, 0.4, n_ops))
-        mean_y_sq = jnp.ones(n_ops)
+        variances = (1 - jnp.abs(model) ** 2) / (n_samples - 1)
+        cov = jnp.zeros((n_ops, 2, 2)).at[:, 0, 0].set(variances)
 
-        r1 = _unbiased_mmd_squared(model, mean_y_sq, data, l_obs, dims, n_samples, False)
-        r2 = _unbiased_mmd_squared(model, mean_y_sq, data, l_obs, dims, n_samples, False)
+        r1 = _unbiased_mmd_squared(model, cov, data, l_obs, dims, False)
+        r2 = _unbiased_mmd_squared(model, cov, data, l_obs, dims, False)
         assert np.isclose(float(r1), float(r2), atol=1e-10)
 
 
@@ -421,7 +424,7 @@ class TestQuditMMDLossAPI:
     def test_raises_n_samples_le_one(self):
         """n_samples <= 1 should raise ValueError."""
         config = QuditCircuitConfig(
-            d=3,
+            dims=3,
             n_qudits=2,
             gates={0: [[1, 0]]},
             n_samples=1,
@@ -434,7 +437,7 @@ class TestQuditMMDLossAPI:
     def test_raises_target_data_too_few_samples(self):
         """Target data with fewer than 2 samples should raise ValueError."""
         config = QuditCircuitConfig(
-            d=3,
+            dims=3,
             n_qudits=2,
             gates={0: [[1, 0]]},
             n_samples=100,
@@ -447,7 +450,7 @@ class TestQuditMMDLossAPI:
     def test_raises_n_ops_zero(self):
         """n_ops=0 should raise ValueError at build time."""
         config = QuditCircuitConfig(
-            d=3,
+            dims=3,
             n_qudits=2,
             gates={0: [[1, 0]]},
             n_samples=100,
@@ -460,7 +463,7 @@ class TestQuditMMDLossAPI:
     def test_raises_empty_bandwidth(self):
         """Empty bandwidth list should raise ValueError."""
         config = QuditCircuitConfig(
-            d=3,
+            dims=3,
             n_qudits=2,
             gates={0: [[1, 0]]},
             n_samples=100,
@@ -473,7 +476,7 @@ class TestQuditMMDLossAPI:
     def test_raises_wire_out_of_range(self):
         """Wire index beyond n_qudits should raise ValueError."""
         config = QuditCircuitConfig(
-            d=3,
+            dims=3,
             n_qudits=2,
             gates={0: [[1, 0]]},
             n_samples=100,
@@ -486,7 +489,7 @@ class TestQuditMMDLossAPI:
     def test_raises_duplicate_wires(self):
         """Duplicate wire indices should raise ValueError."""
         config = QuditCircuitConfig(
-            d=3,
+            dims=3,
             n_qudits=3,
             gates={0: [[1, 0, 0]]},
             n_samples=100,
@@ -499,7 +502,7 @@ class TestQuditMMDLossAPI:
     def test_raises_target_data_wrong_ndim(self):
         """Non-2D target data should raise ValueError."""
         config = QuditCircuitConfig(
-            d=3,
+            dims=3,
             n_qudits=2,
             gates={0: [[1, 0]]},
             n_samples=100,
@@ -512,7 +515,7 @@ class TestQuditMMDLossAPI:
     def test_raises_target_data_wrong_columns(self):
         """Target data with wrong number of columns should raise ValueError."""
         config = QuditCircuitConfig(
-            d=3,
+            dims=3,
             n_qudits=3,
             gates={0: [[1, 0, 0]]},
             n_samples=100,
@@ -526,7 +529,7 @@ class TestQuditMMDLossAPI:
     def test_return_per_bandwidth_type_and_length(self):
         """return_per_bandwidth=True returns a list of length len(bandwidth)."""
         config = QuditCircuitConfig(
-            d=3,
+            dims=3,
             n_qudits=2,
             gates={0: [[1, 0]], 1: [[0, 1]]},
             n_samples=100,
@@ -540,7 +543,7 @@ class TestQuditMMDLossAPI:
     def test_multi_bandwidth_mean(self):
         """Scalar output equals the mean of per-bandwidth outputs."""
         config = QuditCircuitConfig(
-            d=3,
+            dims=3,
             n_qudits=2,
             gates={0: [[1, 0]], 1: [[0, 1]]},
             n_samples=200,
@@ -568,7 +571,7 @@ class TestQuditMMDLossAPI:
     def test_single_bandwidth_returns_scalar(self):
         """A single float bandwidth produces a scalar output."""
         config = QuditCircuitConfig(
-            d=3,
+            dims=3,
             n_qudits=2,
             gates={0: [[1, 0]]},
             n_samples=100,
@@ -582,7 +585,7 @@ class TestQuditMMDLossAPI:
     def test_deterministic_same_key(self):
         """Identical keys must yield bit-identical results."""
         config = QuditCircuitConfig(
-            d=3,
+            dims=3,
             n_qudits=2,
             gates={0: [[1, 0]], 1: [[0, 1]], 2: [[1, 1]]},
             n_samples=100,
@@ -606,7 +609,7 @@ class TestQuditMMDLossAPI:
         r1 = _call_qudit_mmd_loss(
             params,
             QuditCircuitConfig(
-                d=3,
+                dims=3,
                 n_qudits=2,
                 gates=gates,
                 n_samples=100,
@@ -618,7 +621,7 @@ class TestQuditMMDLossAPI:
         r2 = _call_qudit_mmd_loss(
             params,
             QuditCircuitConfig(
-                d=3,
+                dims=3,
                 n_qudits=2,
                 gates=gates,
                 n_samples=100,
@@ -635,7 +638,7 @@ class TestQuditMMDLossAPI:
         state_amps = jnp.array([1 / jnp.sqrt(2), 1 / jnp.sqrt(2)])
 
         config = QuditCircuitConfig(
-            d=3,
+            dims=3,
             n_qudits=2,
             gates={0: [[1, 1]]},
             n_samples=100,
@@ -729,7 +732,7 @@ class TestQuditMMDLossStatistical:
         X_jnp = jnp.array(X)
 
         config = QuditCircuitConfig(
-            d=d,
+            dims=d,
             n_qudits=n_qudits,
             gates=gates,
             n_samples=self.N_SAMPLES,
@@ -762,7 +765,7 @@ class TestQuditMMDLossStatistical:
     def test_wires_subset_executes(self):
         """One-shot evaluation with a wires subset should run without error."""
         config = QuditCircuitConfig(
-            d=3,
+            dims=3,
             n_qudits=3,
             gates={0: [[1, 0, 0]], 1: [[0, 1, 0]], 2: [[0, 0, 1]]},
             n_samples=100,
@@ -777,7 +780,7 @@ class TestQuditMMDLossStatistical:
     def test_sqrt_loss_positive(self):
         """sqrt_loss=True should produce a non-negative scalar."""
         config = QuditCircuitConfig(
-            d=3,
+            dims=3,
             n_qudits=2,
             gates={0: [[1, 0]], 1: [[0, 1]]},
             n_samples=100,
@@ -792,7 +795,7 @@ class TestQuditMMDLossStatistical:
     def test_key_override_provides_new_randomness(self):
         """Passing an explicit key should override the config key."""
         config = QuditCircuitConfig(
-            d=3,
+            dims=3,
             n_qudits=2,
             gates={0: [[1, 0]], 1: [[0, 1]]},
             n_samples=100,
@@ -812,7 +815,7 @@ class TestQuditMMDLossStatistical:
     def test_both_graph_types_finite(self, graph_type):
         """Both cycle and complete graph types produce finite results."""
         config = QuditCircuitConfig(
-            d=3,
+            dims=3,
             n_qudits=2,
             gates={0: [[1, 0]], 1: [[0, 1]]},
             n_samples=200,
@@ -826,7 +829,7 @@ class TestQuditMMDLossStatistical:
     def test_gradient_flows(self):
         """jax.grad through one-shot loss evaluation should produce finite gradients."""
         config = QuditCircuitConfig(
-            d=3,
+            dims=3,
             n_qudits=2,
             gates={0: [[1, 0]], 1: [[0, 1]]},
             n_samples=200,
@@ -846,7 +849,7 @@ class TestBuildQuditMMDLoss:
 
     def _make_config_and_data(self):
         config = QuditCircuitConfig(
-            d=3,
+            dims=3,
             n_qudits=2,
             gates={0: [[1, 0]], 1: [[0, 1]], 2: [[1, 1]]},
             n_samples=200,
@@ -915,7 +918,7 @@ class TestBuildQuditMMDLoss:
         state_amps = jnp.array([1 / jnp.sqrt(2), 1 / jnp.sqrt(2)])
 
         config = QuditCircuitConfig(
-            d=3,
+            dims=3,
             n_qudits=2,
             gates={0: [[1, 1]]},
             n_samples=100,
@@ -934,7 +937,7 @@ class TestBuildQuditMMDLoss:
     def test_non_uniform_dims_builds_and_evaluates(self):
         """Factory works with a per-qudit sequence of dimensions."""
         config = QuditCircuitConfig(
-            d=[2, 3],
+            dims=[2, 3],
             n_qudits=2,
             gates={0: [[1, 0]], 1: [[0, 2]], 2: [[1, 1]]},
             n_samples=200,
@@ -955,7 +958,7 @@ class TestBuildQuditMMDLoss:
     def test_non_uniform_dims_wires_subset(self):
         """Visible-wire subset over non-uniform dims respects per-column ranges."""
         config = QuditCircuitConfig(
-            d=[2, 3, 4],
+            dims=[2, 3, 4],
             n_qudits=3,
             gates={0: [[1, 0, 0]], 1: [[0, 1, 0]], 2: [[0, 0, 1]]},
             n_samples=200,
@@ -971,7 +974,7 @@ class TestBuildQuditMMDLoss:
     def test_raises_n_samples_le_one(self):
         """Factory raises ValueError at build time for n_samples <= 1."""
         config = QuditCircuitConfig(
-            d=3,
+            dims=3,
             n_qudits=2,
             gates={0: [[1, 0]]},
             n_samples=1,
