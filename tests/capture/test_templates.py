@@ -1590,11 +1590,15 @@ class TestModifiedTemplates:
     def test_trotter_cdf(self):
         """Test TrotterCDF with program capture."""
 
-        hamiltonian = {
-            "core_tensors": np.random.rand(2, 2, 2),
-            "leaf_tensors": np.random.rand(2, 2, 2),
-            "nuc_constant": 0.5,
-        }
+        from pennylane.numeric_hamiltonians import (  # pylint: disable=import-outside-toplevel
+            CDFHamiltonian,
+        )
+
+        hamiltonian = CDFHamiltonian(
+            core_tensors=np.random.rand(2, 2, 2),
+            leaf_tensors=np.random.rand(2, 2, 2),
+            nuc_constant=0.5,
+        )
         wires = [0, 1, 2, 3]
 
         def qfunc(evolution_time):
@@ -1616,11 +1620,15 @@ class TestModifiedTemplates:
     def test_trotter_cgf(self):
         """Test TrotterCGF with program capture."""
 
-        hamiltonian = {
-            "core_tensors": np.random.rand(2, 2, 2, 2, 2),
-            "leaf_tensors": np.random.rand(2, 2, 2, 2),
-            "nuc_constant": 0.5,
-        }
+        from pennylane.numeric_hamiltonians import (  # pylint: disable=import-outside-toplevel
+            CGFHamiltonian,
+        )
+
+        hamiltonian = CGFHamiltonian(
+            core_tensors=np.random.rand(2, 2, 2, 2, 2),
+            leaf_tensors=np.random.rand(2, 2, 2, 2),
+            nuc_constant=0.5,
+        )
         wires = [0, 1, 2, 3]
 
         def qfunc(evolution_time):

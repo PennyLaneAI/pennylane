@@ -280,20 +280,15 @@ class TestControlledCapture:
     def test_work_wires_recorded(self, ctrl_fn, traced_work_wire):
         """Test that work_wires and work_wire_type survive plxpr encode/decode (#10065),
         whether the work wire is a concrete literal or an abstract (traced) value."""
-        if traced_work_wire:
-            jaxpr = jax.make_jaxpr(
-                lambda x, w: ctrl_fn(
-                    RX2(x, wires=1), [0], work_wires=[w], work_wire_type="zeroed"
-                ).tracer
-            )(0.5, 5)
-            args = (0.7, 5)
-        else:
-            jaxpr = jax.make_jaxpr(
-                lambda x: ctrl_fn(
-                    RX2(x, wires=1), [0], work_wires=[5], work_wire_type="zeroed"
-                ).tracer
-            )(0.5)
-            args = (0.7,)
+        args = (0.7, 5)
+
+        def f(x, w):
+            work_wire = w if traced_work_wire else 5
+            return ctrl_fn(
+                RX2(x, wires=1), [0], work_wires=[work_wire], work_wire_type="zeroed"
+            ).tracer
+
+        jaxpr = jax.make_jaxpr(f)(0.5, 5)
         eqn = _single_op_eqn(jaxpr)
 
         assert eqn.params["n_ctrls"] == 1
