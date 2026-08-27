@@ -603,10 +603,10 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         new_work_wires = work_wires + base_work_wires
         invars = base_args + new_control_wires + control_values + new_work_wires
 
-        params["n_ctrls"] += len(control_wires)
+        params["n_ctrls"] = len(new_control_wires)
         # These params are namespaced (`n_ctrl_`/`ctrl_`) so they never collide with an operator's
         # own static/compilable argnames when reconstructed in `_op_impl`.
-        params["n_ctrl_work_wires"] += len(work_wires)
+        params["n_ctrl_work_wires"] = len(new_work_wires)
         params["ctrl_work_wire_type"] = resolve_work_wire_type(
             base_work_wires,
             params.get("ctrl_work_wire_type", "borrowed"),
