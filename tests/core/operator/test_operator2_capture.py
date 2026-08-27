@@ -37,6 +37,7 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 # pylint: disable=wrong-import-position
 from pennylane.capture.primitives import AbstractOperator, operator_p
 from pennylane.pytrees import unflatten
+from tests.capture.capture_utils import assert_eqn_matches_op
 
 # ---------------------- Helpers ----------------------
 
@@ -130,6 +131,32 @@ class TestCaptureBasics:
         eqn = _single_op_eqn(jaxpr)
         for invar in jaxpr.jaxpr.invars:
             assert invar in eqn.invars
+
+    @pytest.mark.parametrize("arg", [[1, 2, 3], (1, 2, 3)])
+    def test_non_array_dynamic_arg(self, arg):
+        """Test that non-array values can be used as dynamic arguments without needing manual
+        casting to arrays."""
+        jaxpr = jax.make_jaxpr(lambda a: DynOp(a, wires=0))(arg)
+
+        # Creating arrays from a pytree of scalars will contain one primitive per element
+        # for unsqueezing scalars into arrays with shape (1,), and a final primitive for
+        # concatenating all (1,) shaped arrays
+        broadcast_eqns = [eqn for eqn in jaxpr.eqns if eqn.primitive.name == "broadcast_in_dim"]
+        concat_eqns = [eqn for eqn in jaxpr.eqns if eqn.primitive.name == "concatenate"]
+
+        assert len(broadcast_eqns) == len(arg)
+        assert len(concat_eqns) == 1
+
+        assert_eqn_matches_op(jaxpr.eqns[-1], DynOp)
+
+    def test_array_arg_doesnt_create_copies(self):
+        """Test that using array dynamic arguments does not create copy instructions in the
+        jaxpr. Copies would be expected if we were casting array values to new arrays, which
+        would occur if dynamic argument canonicalization was implemented naively."""
+        arg = jax.numpy.array([1, 2, 3])
+        jaxpr = jax.make_jaxpr(lambda a: DynOp(a, wires=0))(arg)
+        assert len(jaxpr.eqns) == 1
+        assert_eqn_matches_op(jaxpr.eqns[0], DynOp)
 
     def test_wires_passed_as_inputs(self):
         """Test that wires are passed as equation inputs."""

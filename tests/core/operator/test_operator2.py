@@ -588,6 +588,13 @@ class TestOperatorInit:
         op = WithWorkWires(wires=[0, 1], work_wires=[2, 3], work_wire=4)
         assert op.wires == Wires([0, 1])
 
+    @pytest.mark.parametrize("arg", [[1, 2, 3], (1, 2, 3)])
+    def test_dynamic_args_canonicalize_to_arrays(self, arg):
+        """Test that non-scalar dynamic arguments are cast to arrays."""
+        op = DynOp(arg, wires=0)
+        assert isinstance(op.phi, np.ndarray)
+        assert np.array_equal(op.phi, np.array(arg))
+
     def test_hybrid_arg_operator_wires_collected(self):
         """Test that operators inside ``hybrid_argnames`` contribute their wires."""
 
@@ -945,7 +952,7 @@ class TestBroadcasting:
                 super().__init__(phi, wires=wires)
 
         op = Op([0.5, 0.6, 0.7], wires=0)
-        assert op.arguments["phi"] == [0.5, 0.6, 0.7]
+        assert np.array_equal(op.arguments["phi"], np.array([0.5, 0.6, 0.7]))
 
     def test_broadcasted_array_shape_validation(self):
         """Test that broadcasted parameters validate the non-broadcasting dimensions

@@ -430,6 +430,10 @@ class Operator2(metaclass=OperatorMeta):
         self._bound_args = self._sig.bind(*args, **kwargs)
         self._bound_args.apply_defaults()
 
+        for dname, dval in self.dynamic_args.items():
+            if isinstance(dval, (list, tuple)):
+                self._bound_args.arguments[dname] = math.stack(dval)
+
         self._wires = Wires([])
         _init_wires(self)
         _init_arg_types(self)
@@ -1680,16 +1684,14 @@ def _init_arg_types(op: Operator2) -> None:
         argval = op.arguments[name]
         if name in op.wire_argnames:  # pragma: no cover
             # This branch is effectively unreachable since a mismatch between the actual
-            # and expected length for a wire argument is validated in __init_wires. We will
-            # only ever reach this branch if __validate_arg_types is called manually.
+            # and expected length for a wire argument is validated in _init_wires. We will
+            # only ever reach this branch if _init_arg_types is called manually.
             if exp_type.shape_fixed:
                 msg = f"Expected '{name}' to have length {len(exp_type)}, but got {argval}."
                 assert len(exp_type) == len(argval), msg
             continue
 
         # Dynamic argument
-        if isinstance(argval, (Number, list, tuple)):
-            argval = np.array(argval)
         # If the argument is batched, compare the shape other than that batch dimension
         arg_shape = argval.shape if isinstance(argval, AbstractArray) else math.shape(argval)
         either_is_ellipsis = exp_type.shape is Ellipsis or arg_shape is Ellipsis
