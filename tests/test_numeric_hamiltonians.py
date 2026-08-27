@@ -451,16 +451,12 @@ class TestConcrete:
         the two-body row convention; the two-body leaves are returned untouched."""
 
         rng = np.random.default_rng(seed)
-        num_modes, n_states, L = 2, 3, 2
         leaf = np.stack(
-            [
-                np.stack([random_orthogonal(n_states, rng) for _ in range(num_modes)])
-                for _ in range(L + 1)
-            ]
+            [np.stack([random_orthogonal(N, rng) for _ in range(M)]) for _ in range(L + 1)]
         )
 
         ham = CGFHamiltonian(
-            core_tensors=np.zeros((L + 1, num_modes, num_modes, n_states, n_states)),
+            core_tensors=np.zeros((L + 1, M, M, N, N)),
             leaf_tensors=leaf,
             nuc_constant=0.0,
         )
