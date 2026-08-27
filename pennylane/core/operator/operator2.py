@@ -1502,7 +1502,7 @@ class Operator2(metaclass=OperatorMeta):
         # NOTE: To prepare for lowering, JAX 0.7.1 will insert 'ArgInfo' placeholders
         # during the `jit_trace` pass in `stages.make_args_info`. This triggers
         # pre-mature unflattening even when just calling `make_jaxpr`.
-        # TODO: Remove this workaround once we support JAX > 0.7.1
+        # TODO: Remove this workaround once we support JAX > 0.7.1 as they fixed this in later versions
         if any(_is_pytree_placeholder(leaf) for leaf in flatten(args)[0]):
             obj = object.__new__(cls)
             bound_args = cls._sig.bind(**args)
