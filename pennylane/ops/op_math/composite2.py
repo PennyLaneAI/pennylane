@@ -18,6 +18,7 @@ This submodule defines a base class for composite operations.
 
 import abc
 from collections.abc import Callable, Sequence
+from inspect import signature
 
 # pylint: disable=invalid-sequence-index
 from typing import override
@@ -25,6 +26,7 @@ from typing import override
 import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operator, Operator2
+from pennylane.queuing import remove_from_program
 from pennylane.wires import Wires
 
 from .composite import handle_recursion_error
@@ -51,14 +53,28 @@ class CompositeOp2(Operator2, is_baseclass=True):
     def __init__(self, operands: Sequence[Operator], _init_pauli_rep=None):
         if any(isinstance(op, (qp.ops.MidMeasure, qp.ops.PauliMeasure)) for op in operands):
             raise ValueError("Composite operators of mid-circuit measurements are not supported.")
-        super().__init__(operands, _init_pauli_rep=_init_pauli_rep)
+        super().__init__(**self._init_args)
         self._name = self.__class__.__name__
         self._wires = Wires.all_wires([op.wires for op in operands])
         self._hash = None
-        self._has_overlapping_wires = None
+        self._has_overlapping_wires = len(self.wires) < sum(len(op.wires) for op in operands)
         self._overlapping_ops = None
         self._pauli_rep = self._build_pauli_rep() if _init_pauli_rep is None else _init_pauli_rep
-        self.queue()
+        for op in self:
+            remove_from_program(op)
+
+    def __new__(cls, *args, **kwargs):
+        obj = super().__new__(cls)
+
+        if not args and not kwargs:
+            return obj
+
+        sig = signature(cls)
+        bound_args = sig.bind(*args, **kwargs)
+        bound_args.apply_defaults()
+        obj._init_args = bound_args.arguments
+
+        return obj
 
     @override
     def __abstract_init__(self, operands, _init_pauli_rep=None):  # pylint: disable=arguments-differ
@@ -127,7 +143,8 @@ class CompositeOp2(Operator2, is_baseclass=True):
         return tuple(d for op in self for d in op.data)
 
     @handle_recursion_error
-    def eigvals(self):
+    # pylint: disable-next=unused-argument
+    def eigvals(self, ops=None, _init_pauli_rep=None):
         """Return the eigenvalues of the specified operator.
 
         This method uses pre-stored eigenvalues for standard observables where
@@ -154,10 +171,6 @@ class CompositeOp2(Operator2, is_baseclass=True):
         framework = math.get_deep_interface(eigvals)
         eigvals = [math.asarray(ei, like=framework) for ei in eigvals]
         return self._math_op(math.vstack(eigvals), axis=0)
-
-    @abc.abstractmethod
-    def matrix(self, wire_order=None):
-        """Representation of the operator as a matrix in the computational basis."""
 
     @property
     def overlapping_ops(self) -> list[list[Operator]]:
@@ -300,15 +313,6 @@ class CompositeOp2(Operator2, is_baseclass=True):
             )
 
         return self._op_symbol.join(_label(op, decimals, None, cache) for op in self)
-
-    def queue(self, context=qp.QueuingManager):
-        """Updates each operator's owner to self, this ensures
-        that the operators are not applied to the circuit repeatedly."""
-        if qp.QueuingManager.recording():
-            for op in self:
-                context.remove(op)
-            context.append(self)
-        return self
 
     @classmethod
     @abc.abstractmethod
