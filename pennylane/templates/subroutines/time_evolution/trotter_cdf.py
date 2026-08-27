@@ -76,6 +76,7 @@ class TrotterCDF(Operator2):
     .. code-block:: python
 
         import pennylane as qp
+        import numpy as np
 
         rng = np.random.default_rng(42)
         N = 2  # orbitals
