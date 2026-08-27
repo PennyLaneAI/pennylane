@@ -24,7 +24,6 @@ from pennylane.templates.subroutines.arithmetic import (
     SignedOutSquare,
 )
 from pennylane.templates.subroutines.time_evolution.trotter_vibronic import (
-    _derive_diag_keys,
     _diagonalization_matrix,
     _diagonalize_vibronic_circuit,
     _half_signed_out_multiplier,
@@ -176,31 +175,33 @@ class TestDiagonalization:
     """Tests for the electronic-diagonalization helpers."""
 
     @pytest.mark.parametrize(
-        "n_states, key, support",
-        [(2, (0, 1), [0]), (4, (0, 3), [1, 0]), (8, (0, 7), [2, 1, 0])],
+        "n_states, fragment_idx, support",
+        [(2, 1, [0]), (4, 3, [1, 0]), (8, 7, [2, 1, 0])],
     )
-    def test_expected_circuit(self, n_states, key, support):
-        """Test that the correct Clifford circuit is queued."""
+    def test_expected_circuit(self, n_states, fragment_idx, support):
+        """Test that the correct Clifford circuit is queued for the ``(0, fragment_idx)`` key."""
         wires = list(range(int(qp.math.ceil_log2(n_states))))
         with qp.queuing.AnnotatedQueue() as q:
-            _diagonalize_vibronic_circuit(key=key, wires=wires)
+            _diagonalize_vibronic_circuit(fragment_idx=fragment_idx, wires=wires)
         control = wires[support[0]]
         expected = [qp.Hadamard(control)] + [qp.CNOT([control, wires[i]]) for i in support[1:]]
         assert q.queue == expected
 
-    def test_diagonal_key_is_identity(self):
-        """Test that a diagonal key queues no operations and yields the identity matrix."""
+    def test_zero_fragment_idx_is_identity(self):
+        """Test that fragment index 0 (key ``(0, 0)``) queues no operations and yields identity."""
         with qp.queuing.AnnotatedQueue() as q:
-            _diagonalize_vibronic_circuit(key=(1, 1), wires=[0, 1])
+            _diagonalize_vibronic_circuit(fragment_idx=0, wires=[0, 1])
         assert q.queue == []
-        assert np.allclose(_diagonalization_matrix((1, 1), 2), np.eye(4))
+        assert np.allclose(_diagonalization_matrix((0, 0), 2), np.eye(4))
 
-    @pytest.mark.parametrize("n, key", [(1, (0, 1)), (2, (0, 3)), (2, (1, 2)), (3, (0, 7))])
-    def test_matrix_matches_circuit(self, n, key):
+    @pytest.mark.parametrize("n, fragment_idx", [(1, 1), (2, 3), (3, 7)])
+    def test_matrix_matches_circuit(self, n, fragment_idx):
         """Test that the dense diagonalization matrix matches the circuit unitary."""
         wires = list(range(n))
-        circuit_matrix = qp.matrix(_diagonalize_vibronic_circuit, wires)(key=key, wires=wires)
-        assert np.allclose(_diagonalization_matrix(key, n), circuit_matrix)
+        circuit_matrix = qp.matrix(_diagonalize_vibronic_circuit, wires)(
+            fragment_idx=fragment_idx, wires=wires
+        )
+        assert np.allclose(_diagonalization_matrix((0, fragment_idx), n), circuit_matrix)
 
     def test_matrix_is_orthogonal(self):
         """Test that the diagonalization matrix is orthogonal."""
@@ -218,12 +219,11 @@ class TestCoefficientReadout:
         """
         fragments = fragment_list(n_states=4, n_modes=2, seed=seed)
         hamiltonian = build_hamiltonian(fragments)
-        diag_keys = _derive_diag_keys(hamiltonian)
-        assert diag_keys[1] != (0, 0)  # off-diagonal fragment, not the identity change of basis
 
         n_states, n_modes = 4, 2
         n = int(qp.math.ceil_log2(n_states))
-        matrix = _diagonalization_matrix(diag_keys[1], n)[:n_states, :n_states]
+        # Fragment 1 is diagonalized with key ``(0, 1)``.
+        matrix = _diagonalization_matrix((0, 1), n)[:n_states, :n_states]
         constant, linear, quadratic, bilinear = _position_coefficients(
             matrix,
             hamiltonian["constant"][1],
@@ -273,26 +273,6 @@ def test_half_signed_out_multiplier(x, y, z, expected):
     assert int(np.argmax(circuit())) == expected
 
 
-def test_derive_diag_keys():
-    """Test that diagonal and off-diagonal fragments yield the expected diagonalization keys."""
-    n_states, n_modes = 2, 2
-    # fragment 0: diagonal (harmonic); fragment 1: off-diagonal coupling
-    constant = np.zeros((2, n_states, n_states))
-    constant[0, 0, 0] = 1.0
-    linear = np.zeros((2, n_states, n_states, n_modes))
-    linear[1, 0, 1, 0] = 0.5
-    linear[1, 1, 0, 0] = 0.5
-    quadratic = np.zeros((2, n_states, n_states, n_modes, n_modes))
-    kinetic = np.einsum("ab,cd->abcd", np.eye(n_states), np.diag(np.ones(n_modes)))
-    hamiltonian = {
-        "constant": constant,
-        "linear": linear,
-        "quadratic": quadratic,
-        "kinetic": kinetic,
-    }
-    assert _derive_diag_keys(hamiltonian) == ((0, 0), (0, 1))
-
-
 # ---------------------------------------------------------------------------
 # ------------------------------ Construction -------------------------------
 # ---------------------------------------------------------------------------
@@ -319,14 +299,13 @@ class TestConstruction:
         assert set(op.wires) == algorithmic_wires
         assert set(wires["work"]).isdisjoint(op.wires)
 
-    def test_diag_keys_derived_internally(self):
-        """Test that the diagonalization keys are derived from the Hamiltonian and are not a
-        public constructor argument (so they cannot silently disagree with the coefficients)."""
+    def test_no_diag_keys_argument(self):
+        """Test that ``diag_keys`` is not (and cannot be) a public constructor argument: the
+        ``(0, fragment_idx)`` diagonalization convention is fixed and derived purely from the
+        fragment index, so it cannot silently disagree with the Hamiltonian's coefficients."""
         fragments = fragment_list()
         hamiltonian = build_hamiltonian(fragments)
-        op = make_op(hamiltonian, make_wires(2, 2))
-        assert op.arguments["diag_keys"] == _derive_diag_keys(hamiltonian)
-        with pytest.raises(ValueError, match="derived internally"):
+        with pytest.raises(TypeError, match="diag_keys"):
             make_op(hamiltonian, make_wires(2, 2), diag_keys=((0, 0), (0, 0)))
 
     @pytest.mark.parametrize(
@@ -622,6 +601,36 @@ class TestDecomposition:
             op, skip_differentiation=True, skip_decomp_matrix_check=True, skip_wire_mapping=True
         )
 
+    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
+    def test_optional_coefficient_wires_are_allocated(self):
+        """Test that ``coefficient_wires`` is optional and dynamically allocated (sized to match
+        ``phase_gradient_wires``) when omitted, alongside ``cache_wires``/``work_wires``."""
+        from pennylane.allocation import Allocate, Deallocate
+
+        hamiltonian = build_hamiltonian(fragment_list(n_states=2, n_modes=2, seed=1))
+        wires = make_wires(2, 2)
+        op = qp.TrotterVibronic(
+            evolution_time=0.5,
+            num_trotter_steps=1,
+            hamiltonian=hamiltonian,
+            electronic_wires=wires["electronic"],
+            vib_wires=wires["vib_wires"],
+            phase_gradient_wires=wires["phase_gradient"],
+            aqft_order=1,
+        )
+        assert len(op.arguments["coefficient_wires"]) == 0
+        assert len(op.arguments["cache_wires"]) == 0
+        assert len(op.arguments["work_wires"]) == 0
+
+        queue = decomposition_queue(op)
+        assert count_ops(queue, Allocate) == 1
+        assert count_ops(queue, Deallocate) == 1
+
+        qp.ops.functions.assert_valid(
+            op, skip_differentiation=True, skip_decomp_matrix_check=True, skip_wire_mapping=True
+        )
+
     @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_explicit_work_wires_are_not_allocated(self):
         """Test that providing ``cache``/``work`` explicitly skips the dynamic allocation."""
@@ -630,6 +639,39 @@ class TestDecomposition:
         hamiltonian = build_hamiltonian(fragment_list(n_states=2, n_modes=2, seed=1))
         op = make_op(hamiltonian, make_wires(2, 2))
         assert count_ops(decomposition_queue(op), Allocate) == 0
+
+    @pytest.mark.capture
+    def test_position_fragments_loop_is_traced(self, seed):
+        """Test that the position-fragment loop is a traced ``for_loop`` under capture, rather
+        than unrolled by the fragment count: the number of traced ``for_loop`` primitives is the
+        same regardless of the number of position fragments."""
+        import jax  # pylint: disable=import-outside-toplevel
+        from jax._src.core import ClosedJaxpr, Jaxpr  # pylint: disable=import-outside-toplevel
+
+        from pennylane.capture.primitives import (  # pylint: disable=import-outside-toplevel
+            for_loop_prim,
+        )
+
+        def count_for_loops(jaxpr):
+            count = sum(eqn.primitive == for_loop_prim for eqn in jaxpr.eqns)
+            for eqn in jaxpr.eqns:
+                for val in eqn.params.values():
+                    if isinstance(val, ClosedJaxpr):
+                        val = val.jaxpr
+                    if isinstance(val, Jaxpr):
+                        count += count_for_loops(val)
+            return count
+
+        def num_for_loops(n_states):
+            hamiltonian = build_hamiltonian(fragment_list(n_states=n_states, n_modes=1, seed=seed))
+            op = make_op(hamiltonian, make_wires(n_states, 1), evolution_time=0.3)
+            decomposition = qp.list_decomps(qp.TrotterVibronic)[0]
+            jaxpr = jax.make_jaxpr(lambda: decomposition(**op.arguments))()
+            return count_for_loops(jaxpr.jaxpr)
+
+        # ``num_position_fragments == n_states`` here; if the fragment loop were unrolled, the
+        # traced ``for_loop`` count would scale with it instead of staying constant.
+        assert num_for_loops(2) == num_for_loops(8)
 
     @pytest.mark.capture
     @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
@@ -768,10 +810,13 @@ class TestNumericalCorrectness:
 # ---------------------------------------------------------------------------
 
 
-def _single_fragment(n_states, n_modes, include_op_types, seed=0, skip_quadratic=False):
+# pylint: disable-next=too-many-arguments
+def _single_fragment(n_states, n_modes, include_op_types, seed=0, skip_quadratic=False, m=0):
     """Build a single random position or kinetic dense fragment for targeted tests.
 
-    Mirrors the labs ``vibronic_fragments`` layout for the requested operator types.
+    Mirrors the labs ``vibronic_fragments`` layout for the requested operator types. ``m`` is
+    the XOR shift of the populated electronic blocks; as position fragment ``i``, it must equal
+    ``i`` to match the ``(0, i)`` diagonalization convention.
     """
     rng = np.random.default_rng(seed)
     fragment = _zero_fragment(n_states, n_modes)
@@ -783,7 +828,6 @@ def _single_fragment(n_states, n_modes, include_op_types, seed=0, skip_quadratic
         return fragment
 
     op_type_to_key = {(): "constant", ("Q",): "linear", ("Q", "Q"): "quadratic"}
-    m = int(rng.integers(0, n_states))
     elec_ids = [(i, i ^ m) for i in range(n_states) if i ^ m < n_states]
     for i, j in elec_ids:
         for op_type in include_op_types:

@@ -490,8 +490,10 @@ def _(op: qtemps.TrotterVibronic):
     num_states = hamiltonian["constant"].shape[1]
     num_modes = hamiltonian["linear"].shape[-1]
     grid_size = len(op.arguments["vib_wires"]) // num_modes
-    coeff_wires = len(op.arguments["coefficient_wires"])
     phase_grad_wires = len(op.arguments["phase_gradient_wires"])
+    # ``coefficient_wires`` may be dynamically allocated (empty); it then matches
+    # ``phase_gradient_wires`` in size (see the class docstring).
+    coeff_wires = len(op.arguments["coefficient_wires"]) or phase_grad_wires
 
     # ``VibronicHamiltonian`` assumes the standard XOR ("blocks") fragmentation
     # (``F == 2 ** ceil_log2(N)``); reject others so the estimate cannot silently disagree.
