@@ -357,7 +357,10 @@ def _unroll_change_op_basis_resource(op_rep):
 def _unroll_native_change_op_basis(op_rep: qp.ops.ChangeOpBasis):
     gate_counts = defaultdict(int)
     for operand in (op_rep.compute_op, op_rep.target_op, op_rep.uncompute_op):
-        if (
+        if isinstance(operand, qp.ops.Prod2):
+            for inner_op in operand.operands:
+                gate_counts[inner_op] += 1
+        elif (
             isinstance(operand, CompressedResourceOp) and operand.op_type is qp.ops.Prod
         ):  # legacy compat branch
             for inner_op, count in operand.params["resources"].items():

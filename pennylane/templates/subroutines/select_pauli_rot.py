@@ -23,10 +23,9 @@ from pennylane.decomposition import (
     add_decomps,
     change_op_basis_resource_rep,
     register_resources,
-    resource_rep,
 )
 from pennylane.ops import CNOT, RZ, Hadamard, S, adjoint, change_op_basis
-from pennylane.ops.op_math import Prod
+from pennylane.ops.op_math import Prod2
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.templates.state_preparations.mottonen import _apply_uniform_rotation_dagger
 from pennylane.typing import Float, Wire
@@ -142,29 +141,26 @@ class SelectPauliRot(Operator2):
 def _select_pauli_rot_resource(angles, control_wires, target_wire, rot_axis):
 
     num_wires = len(control_wires) + 1
+    num_rotations = 2 ** (num_wires - 1)
+    rz_rep = abstractify(RZ)
+    cnot_rep = abstractify(CNOT)
 
     prod_res = {
-        abstractify(RZ): 2 ** (num_wires - 1),
-        abstractify(CNOT): 2 ** (num_wires - 1) if num_wires > 1 else 0,
+        rz_rep: num_rotations,
+        cnot_rep: num_rotations if num_wires > 1 else 0,
     }
     if rot_axis == "Z":
         return prod_res
 
+    target_rep = Prod2((cnot_rep, rz_rep) * num_rotations) if num_wires > 1 else rz_rep
+
     if rot_axis == "X":
-        return {
-            change_op_basis_resource_rep(
-                Hadamard, resource_rep(Prod, resources=prod_res), Hadamard
-            ): 1,
-        }
+        return {change_op_basis_resource_rep(Hadamard, target_rep, Hadamard): 1}
 
-    prod_rep1 = resource_rep(Prod, resources={abstractify(Hadamard): 1, _adjoint_abstract(S): 1})
-    prod_rep2 = resource_rep(Prod, resources={abstractify(S): 1, abstractify(Hadamard): 1})
+    prod_rep1 = Prod2((abstractify(Hadamard), _adjoint_abstract(S)))
+    prod_rep2 = Prod2((abstractify(S), abstractify(Hadamard)))
 
-    return {
-        change_op_basis_resource_rep(
-            prod_rep1, resource_rep(Prod, resources=prod_res), prod_rep2
-        ): 1,
-    }
+    return {change_op_basis_resource_rep(prod_rep1, target_rep, prod_rep2): 1}
 
 
 # Not exact resources because rotations might be skipped based on angles
