@@ -23,7 +23,7 @@ from functools import reduce
 
 from pennylane import capture, math
 from pennylane.core import queuing
-from pennylane.core.operator import Operator, Operator2
+from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.exceptions import (
@@ -32,7 +32,7 @@ from pennylane.exceptions import (
     MatrixUndefinedError,
     SparseMatrixUndefinedError,
 )
-from pennylane.ops.op_math import adjoint, ctrl, prod
+from pennylane.ops.op_math import Prod, Prod2, adjoint, ctrl, prod
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract, flip_zero_control
 
@@ -89,7 +89,11 @@ def _apply_op_or_func(op_or_func):
 def _convert_to_prod(op_or_func):
     if callable(op_or_func):
         _validate_callable(op_or_func)
-        return prod(op_or_func)()
+        op = prod(op_or_func)()
+        if isinstance(op, Prod) and all(isinstance(operand, Operator2) for operand in op.operands):
+            queuing.remove_from_program(op)
+            return Prod2(op.operands)
+        return op
     if isinstance(op_or_func, Operator):
         return op_or_func
     raise TypeError(
@@ -343,6 +347,18 @@ class ChangeOpBasis(CompositeOp2):
         if all(operand_pauli_reps := [op.pauli_rep for op in self.operands[::-1]]):
             return reduce(lambda a, b: a @ b, operand_pauli_reps) if operand_pauli_reps else None
         return None
+
+
+@abstractify.register
+def _abstractify_change_op_basis(op: ChangeOpBasis):
+    """Abstractify a concrete COB through its resource-representation boundary."""
+    if op.is_abstract:
+        return op
+
+    # pylint: disable=import-outside-toplevel
+    from pennylane.decomposition.resources import change_op_basis_resource_rep
+
+    return change_op_basis_resource_rep(op.compute_op, op.target_op, op.uncompute_op)
 
 
 def _change_op_basis_resources(compute_op, target_op, uncompute_op):

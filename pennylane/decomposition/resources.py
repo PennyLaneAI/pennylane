@@ -358,6 +358,19 @@ def change_op_basis_resource_rep(
     compute_op = abstractify(compute_op)
     target_op = abstractify(target_op)
     uncompute_op = abstractify(uncompute_op) if uncompute_op else _adjoint_abstract(compute_op)
+
+    if any(
+        isinstance(op, CompressedResourceOp) for op in (compute_op, target_op, uncompute_op)
+    ):
+        return CompressedResourceOp(
+            qp.ops.ChangeOpBasis,
+            {
+                "compute_op": compute_op,
+                "target_op": target_op,
+                "uncompute_op": uncompute_op,
+            },
+        )
+
     return qp.ops.ChangeOpBasis(compute_op, target_op, uncompute_op)
 
 
