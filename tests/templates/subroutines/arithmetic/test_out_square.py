@@ -195,6 +195,8 @@ class TestOutSquare:
     @pytest.mark.parametrize(
         ("x_wires", "output_wires", "work_wires", "output_wires_zeroed", "applicable_rules"),
         [
+            ([0, 1], [4], [], False, [1]),
+            ([0, 1, 2], [4], [], True, [0, 1]),
             ([0, 1, 2, 3], [4, 5, 6], [9], True, [0]),
             ([0, 1, 2, 3], [4, 5, 6, 7, 8], [9], True, [0]),
             ([0], [4, 5, 6], [9, 10], False, [1]),
