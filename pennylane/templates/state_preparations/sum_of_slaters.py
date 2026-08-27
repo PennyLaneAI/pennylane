@@ -1081,7 +1081,7 @@ def _sos_state_prep_resources(  # pylint: disable=unused-argument,too-many-argum
     resources[_adjoint_abstract(qp.TemporaryAND)] += (num_entries - 1) * (m - 1)
 
     # Calculate the bit counts of all integers that need to be uncomputed and sum them up.
-    number_of_bits_to_unset = np.sum(np.bitwise_count(np.arange(1, num_entries)).astype(int))
+    number_of_bits_to_unset = int(np.sum(np.bitwise_count(np.arange(1, num_entries))))
     resources[qp.CNOT] += number_of_bits_to_unset
 
     # We have to flip at most m control bits between any pair of the `num_entries-1` uncomputing
@@ -1183,7 +1183,7 @@ def _sos_state_prep_with_wires(
     mcx_ctrl_wires = selected_wires if identity_encoding else identification_wires
 
     # Create wires for elbow ladder
-    elbow_wires = mcx_ctrl_wires[:1] + [
+    elbow_wires = [mcx_ctrl_wires[0]] + [
         _wires[k] for k in range(data.m - 1) for _wires in [mcx_ctrl_wires[1:], mcx_cache_wires]
     ]
     elbow_triples = [elbow_wires[2 * k : 2 * k + 3] for k in range(data.m - 1)]
