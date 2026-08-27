@@ -717,19 +717,7 @@ def add_decomps(op_type: type[Operator | Operator2] | str, *decomps: Decompositi
     if _is_operator2_target(op_type):
         for d in decomps:
             d.validate_resource_signature()
-    _extend_decomps(to_name(op_type), *decomps)
-
-
-def _extend_decomps(op_name: str, *decomps: DecompositionRule) -> None:
-    """Extends the registry with already-validated rules.
-
-    This is a developer-facing function meant to be used when the rules have already been
-    validated against their original registration target, e.g. by ``DecompositionGraph``.
-    Going through ``add_decomps`` instead would re-validate by name, which can wrongly
-    reject a legacy operator's rules when an ``Operator2`` class shares its name.
-
-    """
-    _decompositions_var.get()[op_name].extend(decomps)
+    _decompositions_var.get()[to_name(op_type)].extend(decomps)
 
 
 @singledispatch

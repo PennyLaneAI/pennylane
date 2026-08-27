@@ -43,9 +43,9 @@ from .decomposition_rule import (
     DecompositionRule,
     WorkWireSpec,
     _decomp_contains_mcm,
-    _extend_decomps,
     _fix_decomp,
     _is_operator2_target,
+    add_decomps,
     list_decomps,
     local_decomps,
     null_decomp,
@@ -275,6 +275,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         # Stores the library of custom decomposition rules
         fixed_decomps = fixed_decomps or {}
         alt_decomps = alt_decomps or {}
+        alt_decomp_targets = {to_name(k): k for k in alt_decomps}
         self._fixed_decomps = {to_name(k): _validate_rule(v, k) for k, v in fixed_decomps.items()}
         self._alt_decomps = {to_name(k): _validate_rule(v, k) for k, v in alt_decomps.items()}
 
@@ -300,8 +301,8 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         # happens, we need alt_decomps and fixed_decomps to still be respected.
         with local_decomps():
 
-            for op, decomps in self._alt_decomps.items():
-                _extend_decomps(op, *decomps)
+            for op_name, decomps in self._alt_decomps.items():
+                add_decomps(alt_decomp_targets[op_name], *decomps)
 
             for op, decomp in self._fixed_decomps.items():
                 _fix_decomp(op, decomp)
