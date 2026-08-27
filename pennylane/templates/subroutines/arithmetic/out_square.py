@@ -151,7 +151,7 @@ class OutSquare(Operation):
 
         >>> specs_false = qp.specs(circuit)(False).resources.quantum_operations
         >>> print(specs_false)
-        {'BasisState': 1, 'C(BasisState)': 4, 'MultiControlledX': 12, 'TemporaryAND': 19, 'CNOT': 49, 'Adjoint(TemporaryAND)': 19, 'PauliX': 28, 'SemiAdder': 2}
+        {'BasisState': 1, 'C(BasisState)': 4, 'MultiControlledX': 12, 'TemporaryAND': 19, 'CNOT': 49, 'Adjoint(TemporaryAND)': 19, 'MultiX': 6, 'SemiAdder': 2}
 
         When we do pass the information, we reduce the required resources by a lot:
 
@@ -460,15 +460,16 @@ def _out_square_with_caddsub_resources(
     for key, value in _sparse_adder_resources(n, m, [1] + [2 * j for j in range(1, n)]).items():
         resources[key] += value
 
-    # Subtract 2 x_{[1:]}
-    resources[MultiX(Bool[m - 1], Wire[m - 1])] += 2
-    resources[SemiAdder(Wire[n - 1], Wire[m - 1], Wire[num_work_wires])] += 1
+    if n > 1 and m > 1:
+        # Subtract 2 x_{[1:]}
+        resources[MultiX(Bool[m - 1], Wire[m - 1])] += 2
+        resources[SemiAdder(Wire[n - 1], Wire[m - 1], Wire[num_work_wires])] += 1
 
-    if m > n:
-        # Shifted addition
-        resources[MultiX(Bool[m - n], Wire[m - n])] += 2
-        resources[MultiX(Bool[n - 1], Wire[n - 1])] += 2
-        resources[SemiAdder(Wire[n - 1], Wire[m - n], Wire[num_work_wires])] += 1
+        if m > n:
+            # Shifted addition
+            resources[MultiX(Bool[m - n], Wire[m - n])] += 2
+            resources[MultiX(Bool[n - 1], Wire[n - 1])] += 2
+            resources[SemiAdder(Wire[n - 1], Wire[m - n], Wire[num_work_wires])] += 1
 
     return dict(resources)
 
@@ -589,9 +590,9 @@ def _out_square_with_caddsub(
         SemiAdder(x_wires[1:][::-1], _output[::-1], work_wires)
         MultiX(output_ones, _output)
 
-    # shifted addition
-    if m > n > 1:
-        _shifted_adder(x_wires[:-1], output_wires[n:], work_wires)
+        # shifted addition
+        if m > n:
+            _shifted_adder(x_wires[:-1], output_wires[n:], work_wires)
 
 
 add_decomps(
