@@ -142,6 +142,7 @@
   [(#9459)](https://github.com/PennyLaneAI/pennylane/pull/9459)
   [(#9789)](https://github.com/PennyLaneAI/pennylane/pull/9789)
   [(#10015)](https://github.com/PennyLaneAI/pennylane/pull/10015)
+  [(#10074)](https://github.com/PennyLaneAI/pennylane/pull/10074)
 
 * A new arithmetic template called :class:`~.SignedOutMultiplier` has been added that multiplies numbers encoded in the
   input registers using a two's complement.
@@ -663,6 +664,9 @@
 
 * TCDQ now supports workflows with qudits of non-uniform dimensions.
   [(#9935)](https://github.com/PennyLaneAI/pennylane/pull/9935)
+
+* TCDQ qudit MMD loss function now supports phase layers.
+  [(#10035)](https://github.com/PennyLaneAI/pennylane/pull/10035)
 
   ```python
   import pennylane as qp
