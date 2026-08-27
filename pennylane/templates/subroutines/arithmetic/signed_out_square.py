@@ -17,10 +17,9 @@ Contains the SignedOutSquare template.
 
 from collections import defaultdict
 from itertools import combinations
+from types import SimpleNamespace
 
-from pennylane import capture
 from pennylane.core.operator import Operation
-from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.ops import BasisState, X
 from pennylane.templates.subroutines.arithmetic import OutSquare, SemiAdder
@@ -326,10 +325,9 @@ def _c_subtract_then_add_one(c_wire, x_wires, y_wires, work_wires):
     X(y_wires[-1])
 
     m = len(y_wires)
-    # helper construction to avoid code duplication from SemiAdder
-    # Context manager ensures we neither queue nor bind to plxpr.
-    with capture.pause(), QueuingManager.stop_recording():
-        base = SemiAdder(x_wires, y_wires, work_wires[: m - 1])
+    # `_controlled_semi_adder` only reads x/y/work_wires from `base`
+    # using SimpleNamespace to avoid having to use capture.pause() and stop_recording()
+    base = SimpleNamespace(x_wires=x_wires, y_wires=y_wires, work_wires=work_wires[: m - 1])
 
     # Inject a work wire bit flip where a carry-in qubit would cause one, i.e. after the very
     # first left elbow and before the last right elbow.
