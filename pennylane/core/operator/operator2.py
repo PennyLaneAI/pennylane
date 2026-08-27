@@ -445,6 +445,8 @@ class Operator2(metaclass=OperatorMeta):
     @property
     def is_abstract(self) -> bool:
         """Whether this operator contains only abstract data."""
+        # Make sure not to flatten wires here, because an empty Wires([]) flattens to
+        # empty leaves, so it'd be incorrectly not identified as something concrete.
         leaves, _ = flatten(self, is_leaf=lambda l: isinstance(l, Wires))
         return all(isinstance(l, (AbstractArray, AbstractWires)) for l in leaves)
 
