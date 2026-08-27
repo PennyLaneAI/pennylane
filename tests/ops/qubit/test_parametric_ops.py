@@ -737,7 +737,7 @@ class TestDecompositions:
                 qp.RZ,
                 qp.GlobalPhase,
                 qp.PauliX,
-            },  # PauliX because controlled-decomposition needs it in case there is a 0-control
+            },  # PauliX because controlled-decomposition needs it in case there is a 0-control, see https://github.com/PennyLaneAI/pennylane/issues/10080
         )
 
         gates = decomp.operations
