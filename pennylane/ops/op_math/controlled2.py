@@ -627,23 +627,12 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         # These params are namespaced (`n_ctrl_`/`ctrl_`) so they never collide with an operator's
         # own static/compilable argnames when reconstructed in `_op_impl`.
         params["n_ctrl_work_wires"] = n_base_ctrl_work_wires + len(self.work_wires)
-        if n_ctrls:
-            # Merging into an already-controlled base equation: mirror the merge convention
-            # used by `simplify()`, resolving the base's work wires/type together with the
-            # new (outer) ones being added now.
-            params["ctrl_work_wire_type"] = resolve_work_wire_type(
-                base_work_wires,
-                params.get("ctrl_work_wire_type", "borrowed"),
-                self.work_wires,
-                self.work_wire_type,
-            )
-        else:
-            # Fresh single wrap: preserve `work_wire_type` verbatim, matching eager
-            # `ControlledOp2.__init__`. `resolve_work_wire_type` must not be applied here
-            # When n_ctrls == 0 and no self.work_wires,
-            # resolve_work_wire_type([], any, [], "zeroed") goes to "borrowed" and would
-            # incorrectly downgrade a fresh zeroed-with-no-work-wires wrap to borrowed.
-            params["ctrl_work_wire_type"] = self.work_wire_type
+        params["ctrl_work_wire_type"] = resolve_work_wire_type(
+            base_work_wires,
+            params.get("ctrl_work_wire_type", "borrowed"),
+            self.work_wires,
+            self.work_wire_type,
+        )
         res = operator_p.bind(*invars, **params)
 
         self.base.tracer = None
