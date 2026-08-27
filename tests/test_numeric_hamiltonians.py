@@ -24,6 +24,8 @@ import pennylane as qp
 from pennylane.numeric_hamiltonians import CDFHamiltonian, CGFHamiltonian, NumericHamiltonian
 from pennylane.typing import AbstractArray, Float
 
+from tests.templates.subroutines.time_evolution.trotter_test_helpers import random_orthogonal
+
 L, M, N = 2, 2, 3
 
 
@@ -416,11 +418,10 @@ class TestConcrete:
         """Force every per-mode leaf to determinant ``+1``"""
 
         rng = np.random.default_rng(seed)
-        _, n_states, L = 2, 3, 2
-        leaves = rng.random((L + 1, n_states, n_states))
+        leaves = rng.random((L + 1, N, N))
 
         ham = CDFHamiltonian(
-            core_tensors=np.zeros((L + 1, n_states, n_states)),
+            core_tensors=np.zeros((L + 1, N, N)),
             leaf_tensors=leaves,
             nuc_constant=0.0,
         )
@@ -433,11 +434,10 @@ class TestConcrete:
         """Force every per-mode leaf to determinant ``+1``"""
 
         rng = np.random.default_rng(seed)
-        num_modes, n_states, L = 2, 3, 2
-        leaves = rng.random((L + 1, num_modes, n_states, n_states))
+        leaves = rng.random((L + 1, M, N, N))
 
         ham = CGFHamiltonian(
-            core_tensors=np.zeros((L + 1, num_modes, num_modes, n_states, n_states)),
+            core_tensors=np.zeros((L + 1, M, M, N, N)),
             leaf_tensors=leaves,
             nuc_constant=0.0,
         )

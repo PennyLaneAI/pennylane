@@ -531,7 +531,7 @@ def _controlled_trotter_cdf_decomp(base, control_wires, control_values, work_wir
         return
 
     phi = (_energy_shift(hamiltonian) * evolution_time) % (4 * np.pi)
-    hamiltonian.normalize_leaf_determinant()
+    hamiltonian = hamiltonian.normalize_leaf_determinant()
 
     if double_phase:
         # Double-phase (Fig. 6 in https://arxiv.org/abs/2506.15784) circuit: each full-time diagonal block is CNOT-sandwiched by
