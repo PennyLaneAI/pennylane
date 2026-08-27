@@ -32,9 +32,9 @@ def _symbolic_array_primitive():
     # pylint: disable=import-outside-toplevel
     import jax
 
-    import pennylane
+    from pennylane.capture.custom_primitives import QpPrimitive
 
-    symbolic_array_p = pennylane.capture.custom_primitives.QpPrimitive("symbolic_array")
+    symbolic_array_p = QpPrimitive("symbolic_array")
 
     @symbolic_array_p.def_abstract_eval
     def _symbolic_array_p_abstract_eval(shape, dtype):
