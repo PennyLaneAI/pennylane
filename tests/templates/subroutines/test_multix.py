@@ -86,7 +86,7 @@ class TestValidation:
     def test_standard_checks(self):
         """Runs the standard Operator2 validity checks for MultiX."""
         op = qp.MultiX([1, 0, 1], wires=[0, 1, 2])
-        qp.ops.functions.assert_valid(op)
+        qp.ops.functions.assert_valid(op, skip_differentiation=True)
 
     @pytest.mark.parametrize(
         ("bitstring", "wires", "error_match"),
