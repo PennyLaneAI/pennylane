@@ -35,8 +35,6 @@ from pennylane.exceptions import (
 from pennylane.ops.op_math import adjoint, ctrl, prod
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract, flip_zero_control
-from pennylane.typing import Wire
-from pennylane.wires import Wires
 
 from .composite import handle_recursion_error
 from .composite2 import CompositeOp2
@@ -255,17 +253,8 @@ class ChangeOpBasis(CompositeOp2):
     def __init__(self, compute_op: Operator, target_op: Operator, uncompute_op: Operator = None):
         if uncompute_op is None:
             uncompute_op = adjoint(compute_op)
-        operands = (uncompute_op, target_op, compute_op)
-        # Skip ``CompositeOp2.__init__``, whose single operand tuple is incompatible with
-        # ChangeOpBasis's three named hybrid arguments.
-        super(CompositeOp2, self).__init__(compute_op, target_op, uncompute_op)
-        if all(isinstance(op, Operator) for op in operands):
-            self._wires = Wires.all_wires([op.wires for op in operands])
-            self._pauli_rep = self._build_pauli_rep()
-        else:
-            self._wires = Wire[0]
-            self._is_abstract = True
-        self.queue()
+            self._init_args["uncompute_op"] = uncompute_op
+        super().__init__((uncompute_op, target_op, compute_op))
 
     # pylint: disable=arguments-renamed
     def __abstract_init__(self, compute_op, target_op, uncompute_op=None):
