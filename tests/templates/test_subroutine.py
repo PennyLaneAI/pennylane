@@ -713,11 +713,11 @@ class TestGraphDecomposition:
         assert isinstance(rr, qp.decomposition.CompressedResourceOp)
         assert rr.name == "ChangeOpBasis"
         assert rr.params["compute_op"] == qp.Z(Wire[1])
-        assert rr.params["compute_op"].is_abstract
+        assert rr.params["compute_op"].is_fully_abstract
         assert rr.params["target_op"] == qp.X(Wire[1])
-        assert rr.params["target_op"].is_abstract
+        assert rr.params["target_op"].is_fully_abstract
         assert rr.params["uncompute_op"] == qp.adjoint(qp.Z(Wire[1]))
-        assert rr.params["uncompute_op"].is_abstract
+        assert rr.params["uncompute_op"].is_fully_abstract
 
     def test_change_op_basis_subroutine_resource_rep_with_a_resource_rep_and_a_subroutine(self):
         """Test creating a CompressedResourceRep specific to templates within change_op_basis with a subroutine and a nested resource_rep."""
@@ -734,7 +734,7 @@ class TestGraphDecomposition:
         assert rr.name == "ChangeOpBasis"
 
         assert rr.params["compute_op"] == PauliX(Wire[1])
-        assert rr.params["compute_op"].is_abstract
+        assert rr.params["compute_op"].is_fully_abstract
 
         assert isinstance(rr.params["target_op"], qp.decomposition.CompressedResourceOp)
         assert rr.params["target_op"].name == "SubroutineOp"
