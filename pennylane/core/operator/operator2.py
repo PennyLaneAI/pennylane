@@ -84,7 +84,9 @@ ARGNAME_CATEGORIES = (
 )
 
 
-def _is_pytree_placeholder(obj):
+def _is_pytree_placeholder(obj) -> bool:
+    """Whether 'obj' is a sentinel placeholder that JAX substitutes for real pytree leaves."""
+
     if not has_jax:
         return False
 
