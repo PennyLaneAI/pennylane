@@ -253,14 +253,9 @@ class ChangeOpBasis(CompositeOp2):
     """
 
     def __init__(self, compute_op: Operator, target_op: Operator, uncompute_op: Operator = None):
-        # pylint: disable=import-outside-toplevel
-        from pennylane.ops.mid_measure import MidMeasure, PauliMeasure
-
         if uncompute_op is None:
             uncompute_op = adjoint(compute_op)
         operands = (uncompute_op, target_op, compute_op)
-        if any(isinstance(op, (MidMeasure, PauliMeasure)) for op in operands):
-            raise ValueError("Composite operators of mid-circuit measurements are not supported.")
         # Skip ``CompositeOp2.__init__``, whose single operand tuple is incompatible with
         # ChangeOpBasis's three named hybrid arguments.
         super(CompositeOp2, self).__init__(compute_op, target_op, uncompute_op)
