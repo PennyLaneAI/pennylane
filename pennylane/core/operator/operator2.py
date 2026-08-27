@@ -1505,10 +1505,6 @@ class Operator2(metaclass=OperatorMeta):
         # TODO: Remove this workaround once we support JAX > 0.7.1 as they fixed this in later versions
         if any(_is_pytree_placeholder(leaf) for leaf in flatten(args)[0]):
             obj = object.__new__(cls)
-            bound_args = cls._sig.bind(**args)
-            bound_args.apply_defaults()
-            obj._bound_args = bound_args
-            obj._is_abstract = True
             return obj
 
         with QueuingManager.stop_recording(), pause():
