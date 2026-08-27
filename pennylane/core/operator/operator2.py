@@ -1504,8 +1504,7 @@ class Operator2(metaclass=OperatorMeta):
         # pre-mature unflattening even when just calling `make_jaxpr`.
         # TODO: Remove this workaround once we support JAX > 0.7.1 as they fixed this in later versions
         if any(_is_pytree_placeholder(leaf) for leaf in flatten(args)[0]):
-            obj = object.__new__(cls)
-            return obj
+            return object.__new__(cls)
 
         with QueuingManager.stop_recording(), pause():
             return cls(**args)
