@@ -273,3 +273,21 @@ class TestSignedOutSquare:
             assert rule.is_applicable(**op.resource_params)
             all_wires = (x_wires, output_wires, work_wires)
             _test_square_correctness(all_wires, rule, seed, output_wires_zeroed, use_jit)
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize(
+        ("x_wires", "output_wires", "work_wires", "output_wires_zeroed"),
+        [
+            ([0, 1], [3, 4, 5, 6], [9, 10, 11], True),
+            ([0, 1], [3, 4, 5, 6], [9, 10, 11, 12, 13], False),
+            ([0, 1, 2], [3, 4, 5, 6, 7], [8, 9, 10, 11, 12], True),
+        ],
+    )
+    def test_decomposition_capture(self, x_wires, output_wires, work_wires, output_wires_zeroed):
+        """Regression test (#10065): ``_signed_out_square`` relies internally on
+        ``_c_subtract_then_add_one`` (triggered whenever ``len(output_wires) > len(x_wires)``),
+        whose collect-reorder-replay strategy used to be capture-unsafe. Verify the decomposition
+        rule still produces the correct circuit with program capture enabled."""
+        op = SignedOutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
+        for rule in qp.list_decomps(SignedOutSquare):
+            _test_decomposition_rule(op, rule)
