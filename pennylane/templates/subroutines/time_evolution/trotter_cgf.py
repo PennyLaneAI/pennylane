@@ -363,51 +363,6 @@ def _transpose_leaf(U):
     return math.swapaxes(U, -2, -1)
 
 
-def _align_one_body_leaf(hamiltonian):
-    """Transpose the one-body leaf so both sectors share the scaffolding's row convention.
-
-    The scaffolding assumes each ``leaf_tensors[nu][l]`` stores its per-mode diagonalizing
-    rotation with the modal index on the *rows* (the two-body :math:`U^{(l)}_{pa}` convention
-    of `arXiv:2508.11865 <https://arxiv.org/abs/2508.11865>`__). The one-body leaf, however,
-    is the eigenvector matrix of the effective one-body integrals and stores its eigenvectors
-    as *columns*, so it is transposed here to match. Leaves are (special) orthogonal, so this
-    is the inverse rotation.
-    """
-    leaves = hamiltonian.leaf_tensors
-    leaves = math.concatenate([math.swapaxes(leaves[:1], -2, -1), leaves[1:]], axis=0)
-    return CGFHamiltonian(
-        core_tensors=hamiltonian.core_tensors,
-        leaf_tensors=leaves,
-        nuc_constant=hamiltonian.nuc_constant,
-    )
-
-
-def _normalize_leaf_determinant(hamiltonian):
-    r"""Force every per-mode leaf to determinant ``+1`` so :class:`~.BasisRotation`'s real-orthogonal
-    sign gauge is identical across fragments.
-
-    :class:`~.BasisRotation` realizes a real orthogonal leaf only up to a determinant-dependent
-    :math:`\pm 1` gauge, so leaves with *mixed* determinants (e.g. an ``eigh`` one-body leaf with
-    ``det = -1`` next to ``expm`` two-body leaves with ``det = +1``) would be rotated into
-    inconsistent bases and realize a different Hamiltonian. Negating one orbital line leaves the
-    projector :math:`|v\rangle\langle v|`, and hence the fragment, unchanged, so this is a physical
-    no-op. The orbital is stored on the *columns* of the one-body leaf and on the *rows* of the
-    two-body leaves, so the two sectors negate a column and a row respectively.
-    """
-    leaves = hamiltonian.leaf_tensors
-    signs = math.sign(math.linalg.det(leaves))  # (L+1, M)
-    line = math.concatenate(
-        [signs[..., None], math.ones_like(leaves[..., 0, 1:])], axis=-1
-    )  # (L+1, M, N): +/-1 in the first slot, 1 elsewhere
-    one_body = leaves[:1] * line[:1][..., None, :]  # eigenvectors on columns -> scale column 0
-    two_body = leaves[1:] * line[1:][..., :, None]  # modal index on rows -> scale row 0
-    return CGFHamiltonian(
-        core_tensors=hamiltonian.core_tensors,
-        leaf_tensors=math.concatenate([one_body, two_body], axis=0),
-        nuc_constant=hamiltonian.nuc_constant,
-    )
-
-
 def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, double_phase):
     """Apply the two-body ``IsingZZ`` layer (base / double-phase / genuine controlled).
 
@@ -567,7 +522,7 @@ def _trotter_cgf_decomposition(evolution_time, num_trotter_steps, hamiltonian, w
         _run_trotter_steps(
             evolution_time,
             num_trotter_steps,
-            _align_one_body_leaf(_normalize_leaf_determinant(hamiltonian)),
+            hamiltonian.normalize_leaf_determinant().align_one_body_leaf(),
             wires,
             (),
             **_CGF_HELPERS,
@@ -603,7 +558,7 @@ def _controlled_trotter_cgf_decomp(base, control_wires, control_values, work_wir
         return
 
     phi = (_energy_shift(hamiltonian) * evolution_time) % (4 * np.pi)
-    hamiltonian = _align_one_body_leaf(_normalize_leaf_determinant(hamiltonian))
+    hamiltonian = hamiltonian.normalize_leaf_determinant().align_one_body_leaf()
 
     if double_phase:
         # Double-phase (Fig. 6 https://arxiv.org/abs/2506.15784) circuit: each full-time diagonal block is CNOT-sandwiched by
