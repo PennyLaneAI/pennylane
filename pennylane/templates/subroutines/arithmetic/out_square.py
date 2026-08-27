@@ -52,8 +52,8 @@ class OutSquare(Operation):
         \text{OutSquare} |x \rangle |y \rangle = |x \rangle |(y + x^2) \; \text{mod} \; 2^m \rangle.
 
     There are two implementations available, differing in their :class:`~.Toffoli` and auxiliary
-    qubit counts. The first is based on Schoolbook multiplication, using a cache qubit and
-    controlled addition. The second uses controlled add-subtract blocks that also are used by
+    qubit counts. The first is based on Schoolbook multiplication, using controlled addition.
+    The second uses controlled add-subtract blocks that also are used by
     Litinski in `arXiv:2410.00899 <https://arxiv.org/abs/2410.00899>`__ to reduce the
     cost of multiplication.
 
@@ -66,8 +66,8 @@ class OutSquare(Operation):
             If the register is guaranteed to be in the zero state, it is recommended to set
             ``output_wires_zeroed=True``.
         work_wires (WiresLike): the auxiliary wires to use for the squaring.
-            :math:`m` work wires are required if ``output_wires_zeroed=False``,
-            otherwise :math:`\min(m, n+1)` work wires are required.
+            :math:`m-1` work wires are required if ``output_wires_zeroed=False``,
+            otherwise :math:`\min(m-4, n-1)` work wires are required.
         output_wires_zeroed (bool): Whether the output wires are guaranteed to be in the state
             :math:`|0\rangle` initially. Defaults to ``False``.
 
@@ -224,7 +224,7 @@ class OutSquare(Operation):
         n = len(x_wires)
         m = len(output_wires)
 
-        num_required_work_wires = min(n - 1, m - 4) if output_wires_zeroed else m
+        num_required_work_wires = min(n - 1, m - 4) if output_wires_zeroed else m - 1
         if len(work_wires) < num_required_work_wires:
             raise ValueError(
                 f"OutSquare requires at least {num_required_work_wires} work wires for "
@@ -360,7 +360,7 @@ def _self_ctrl_one_sparse_add(x_wires, y_wires, work_wires):
 
     ctrl(CNOT([work_wires[-1], y_wires[-1]]), **ctrl_kwargs)
     if num_y_wires - 1 not in zeroed:
-        ctrl(CNOT([x_wires[-1], y_wires[-1]]), **ctrl_kwargs)
+        ctrl(CNOT([x_wires[x_pos], y_wires[-1]]), **ctrl_kwargs)
 
     x_pos -= 1
     for i in range(num_y_wires - 2, 0, -1):
@@ -390,6 +390,8 @@ def _out_square_with_adder_zeroed_resources(
     for i in range(1, p + 1):
         x_size = num_x_wires - i
         y_size = min(m - 2 * i, n + 2 - i)
+        # Note that the first of these adders could replace one TemporaryAND gate by a CNOT
+        # but we do not implement this improvement here (Improvement #4 from Sec IIIA)
         for k, val in _self_ctrl_one_sparse_add_resources(x_size, y_size, num_work_wires).items():
             resources[k] += val
 
@@ -425,6 +427,8 @@ def _out_square_with_adder_zeroed(
     for i in range(1, p + 1):
         # Perform specialized "self"-controlled addition with zeroed 2s input bit, using
         # sliced x_wires and output_wires.
+        # Note that the first of these adders could replace one TemporaryAND gate by a CNOT
+        # but we do not implement this improvement here (Improvement #4 from Sec IIIA)
         _self_ctrl_one_sparse_add(x_wires[i:], output_wires[2 * i : min(m, n + 2 + i)], work_wires)
 
     CNOT([x_wires[0], output_wires[0]])  # First control-copy, delayed until end of decomp.
@@ -560,26 +564,8 @@ def _out_square_with_caddsub(
     output_wires_zeroed: bool,
     **_,
 ):
-    r"""This decomposition uses controlled add-subtract blocks.
-    We start with augmenting the output register by one auxiliary qubit that we add as the new
-    least significant bit (This basically multiplies with two) and applying n controlled
-    add-subtract operations. The j-th operation (starting at j=0) caches x_{n-1-j} in a cache qubit
-    ``c_wire`` (which we take from the work wires) and then adds or subtracts x into a subregister
-    of y, starting at the j-th least significant bit, controlled on the cache. This computes
-
-    ..math :: A = \sum_{j=0}^{n-1} \left(2^j (2x_j-1)x + 2^{n+j}(1-x_j)\right)
-
-    ..math :: =2x^2-x\left(\sum_{j=0}^{n-1}2^j\right) + 2^n \left(\sum_{j=0}^{n-1} 2^j\right) - 2^n x
-
-    ..math :: =2x^2-2^{n}x+x+2^n(2^n-1-x)
-
-    ..math :: =2x^2-2^{n+1}x-(2^n-x)+2^{2n}.
-
-    Then, we subtract 2^{2n}, add (2^n-x), and add 2^{n+1}x to arrive at 2x^2 overall.
-    In a last step we divide by two simply by splitting off the auxiliary qubit we had added as
-    LSB in the beginning (we do not have to do anything for this in code).
-    This qubit is guaranteed to be zeroed because we computed an even number before.
-    """
+    r"""This decomposition uses controlled add-subtract blocks, and three correction
+    steps. See Sec. II for details."""
     x_wires = x_wires[::-1]
     output_wires = output_wires[::-1]
     n = len(x_wires)
@@ -587,19 +573,18 @@ def _out_square_with_caddsub(
     p = min(n - 1, m // 2)
 
     for i, x_wire in enumerate(x_wires[:p]):
-        _in_reg = x_wires[i + 1 :]
-        _out_reg = (
-            output_wires[2 * i + 1 : n + 1 + i]
-            if output_wires_zeroed
-            else output_wires[2 * i + 1 :]
-        )
-        _c_add_sub(x_wire, _in_reg[::-1], _out_reg[::-1], work_wires)
+        if output_wires_zeroed:
+            _out_reg = output_wires[2 * i + 1 : n + 1 + i]
+        else:
+            _out_reg = output_wires[2 * i + 1 :]
+        _c_add_sub(x_wire, x_wires[i + 1 :][::-1], _out_reg[::-1], work_wires)
 
     _sparse_adder(x_wires, output_wires, work_wires, zeroed=[1] + [2 * j for j in range(1, n)])
 
     if n > 1 and m > 1:
         _output = output_wires[1:]
         output_ones = [True] * len(_output)
+
         MultiX(output_ones, _output)
         SemiAdder(x_wires[1:][::-1], _output[::-1], work_wires)
         MultiX(output_ones, _output)
