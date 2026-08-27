@@ -39,7 +39,7 @@ def _build_qudit_expval_func_exact(config):
     """Build a brute-force reference evaluator by summing over all basis states."""
     generators, param_map = _parse_qudit_generator_dict(config.gates, config.n_qudits)
 
-    dims = _dims_to_numpy(config.d, config.n_qudits)  # (n_qudits,)
+    dims = _dims_to_numpy(config.dims, config.n_qudits)  # (n_qudits,)
     dims_f = jnp.asarray(dims, dtype=jnp.float32)  # (n_qudits,)
 
     all_states = jnp.array(
@@ -240,7 +240,7 @@ def _make_config_one_param_per_gate(
         key = jax.random.PRNGKey(0)
     gates = {i: [list(gen)] for i, gen in enumerate(generators_array)}
     return QuditCircuitConfig(
-        d=d,
+        dims=d,
         n_qudits=n,
         gates=gates,
         observables=(np.array(l_vecs), np.array(m_vecs)),
@@ -649,7 +649,7 @@ class TestQuditExpvalBatchedEdgeCases:
         l_vecs = np.array([[1, 0]])
         m_vecs = np.array([[0, 0]])
         config = QuditCircuitConfig(
-            d=d,
+            dims=d,
             n_qudits=n,
             gates={},
             observables=(l_vecs, m_vecs),
@@ -673,7 +673,7 @@ class TestQuditExpvalBatchedEdgeCases:
         m_vecs = np.array([[0, 0, 0]])
 
         config = QuditCircuitConfig(
-            d=d,
+            dims=d,
             n_qudits=n,
             gates=gates,
             observables=(l_vecs, m_vecs),
@@ -1061,7 +1061,7 @@ class TestQuditExpvalBatchedWithInitState:
 
         gates = {i: [list(gen)] for i, gen in enumerate(generators)}
         config = QuditCircuitConfig(
-            d=d,
+            dims=d,
             n_qudits=n,
             gates=gates,
             observables=(l_vecs, m_vecs),
@@ -1104,7 +1104,7 @@ class TestQuditExpvalBatchedWithInitState:
 
         gates = {i: [list(gen)] for i, gen in enumerate(generators)}
         config = QuditCircuitConfig(
-            d=d,
+            dims=d,
             n_qudits=n,
             gates=gates,
             observables=(l_vecs, m_vecs),
@@ -1421,7 +1421,7 @@ class TestQuditExpvalWithPhaseLayer:
 
         gates = {i: [list(gen)] for i, gen in enumerate(generators)}
         config = QuditCircuitConfig(
-            d=d,
+            dims=d,
             n_qudits=n,
             gates=gates,
             observables=(l_vecs, m_vecs),
@@ -1467,7 +1467,7 @@ class TestQuditExpvalWithPhaseLayer:
 
         gates = {i: [list(gen)] for i, gen in enumerate(generators)}
         config = QuditCircuitConfig(
-            d=d,
+            dims=d,
             n_qudits=n,
             gates=gates,
             observables=(l_vecs, m_vecs),
@@ -1517,7 +1517,7 @@ class TestQuditExpvalWithPhaseLayer:
 
         gates = {i: [list(gen)] for i, gen in enumerate(generators)}
         config = QuditCircuitConfig(
-            d=d,
+            dims=d,
             n_qudits=n,
             gates=gates,
             observables=(l_vecs, m_vecs),

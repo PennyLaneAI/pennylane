@@ -359,7 +359,7 @@ def build_qudit_mmd_loss(
     >>> import jax.numpy as jnp
     >>> from pennylane.labs.tcdq import QuditCircuitConfig, QuditMMDConfig, build_qudit_mmd_loss
     >>> circuit_config = QuditCircuitConfig(
-    ...     d=3,
+    ...     dims=3,
     ...     n_qudits=2,
     ...     gates={0: [[1, 0]], 1: [[0, 1]]},
     ...     n_samples=512,
@@ -385,7 +385,7 @@ def build_qudit_mmd_loss(
     if mmd_config.n_ops < 1:
         raise ValueError("n_ops must be at least 1")
 
-    d = circuit_config.d
+    d = circuit_config.dims
     n_qudits = circuit_config.n_qudits
     dims = tuple(int(x) for x in _dims_to_numpy(d, n_qudits))
 
@@ -408,7 +408,7 @@ def build_qudit_mmd_loss(
         raise ValueError("bandwidth must not be empty")
 
     expval_config = QuditCircuitConfig(
-        d=d,
+        dims=d,
         n_qudits=n_qudits,
         gates=circuit_config.gates,
         observables=None,

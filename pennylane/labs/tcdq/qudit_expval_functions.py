@@ -66,7 +66,7 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
     :class:`~pennylane.labs.tcdq.CircuitConfig`.
 
     Args:
-        d (int | Sequence[int]): Local qudit dimension(s). Either a single
+        dims (int | Sequence[int]): Local qudit dimension(s). Either a single
             ``int`` (e.g., 2 for qubits, 3 for qutrits), which is broadcast to
             every qudit, or a sequence of length ``n_qudits`` giving a distinct
             dimension :math:`d_j` per qudit.
@@ -120,7 +120,7 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
     """
 
     #: Local qudit dimension(s): an int (uniform) or list (per-qudit sequence).
-    d: int | Sequence[int] = None
+    dims: int | Sequence[int] = None
     #: Number of qudits in the circuit.
     n_qudits: int = None
     #: Circuit structure mapping parameter indices to generator vectors.
@@ -139,27 +139,27 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
     phase_fn: Callable | None = None
 
 
-def _dims_to_numpy(d: int | Sequence[int], n_qudits: int) -> np.ndarray:
-    """Normalize the ``d`` field to an integer array of per-qudit dimensions.
+def _dims_to_numpy(dims: int | Sequence[int], n_qudits: int) -> np.ndarray:
+    """Normalize the ``dims`` field to an integer array of per-qudit dimensions.
 
     Accepts either a scalar ``int`` (broadcast to all qudits, the uniform case)
     or a sequence of length ``n_qudits`` (mixed-dimension case), and always
     returns a NumPy integer array of shape ``(n_qudits,)``.
 
     Raises:
-        ValueError: If ``d`` is a sequence whose length is not ``n_qudits``.
+        ValueError: If ``dims`` is a sequence whose length is not ``n_qudits``.
     """
-    if isinstance(d, int):
-        return np.full((n_qudits,), int(d), dtype=int)
+    if isinstance(dims, int):
+        return np.full((n_qudits,), int(dims), dtype=int)
 
-    dims = np.asarray(d, dtype=int)
-    if dims.shape != (n_qudits,):
+    normalized_dims = np.asarray(dims, dtype=int)
+    if normalized_dims.shape != (n_qudits,):
         raise ValueError(
             f"d given as a sequence must have length n_qudits={n_qudits}, "
-            f"got shape {dims.shape}."
+            f"got shape {normalized_dims.shape}."
         )
 
-    return dims
+    return normalized_dims
 
 
 def _parse_qudit_generator_dict(circuit_def: dict[int, list[list[int]]], n_qudits: int):
@@ -548,7 +548,7 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements
     generators, param_map = _parse_qudit_generator_dict(config.gates, config.n_qudits)
 
     n = config.n_qudits
-    dims = _dims_to_numpy(config.d, n)
+    dims = _dims_to_numpy(config.dims, n)
     default_samples = _compute_qudit_samples(config.key, config.n_samples, n, dims)
 
     vmapped_phase_func = None
