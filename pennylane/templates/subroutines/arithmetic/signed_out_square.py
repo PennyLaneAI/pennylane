@@ -16,9 +16,8 @@ Contains the SignedOutSquare template.
 """
 
 from collections import defaultdict
+from types import SimpleNamespace
 
-from pennylane import capture
-from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import BasisState, X
 from pennylane.templates.subroutines.arithmetic import OutSquare, SemiAdder
@@ -233,8 +232,9 @@ def _c_subtract_then_add_one_resources(n, m, num_work_wires, output_wires_zeroed
         basis_rep = BasisState(Bool[n - 2], Wire[n - 2])
         cadd_resources[basis_rep] = cadd_resources.get(basis_rep, 0) + 2
 
-    # Bit flips on output and work registers
-    cadd_resources[X] = cadd_resources.get(X, 0) + (2 + 2 * (num_work_wires > 0))
+    # Bit flips on output and work registers. The work-wire pair only occurs if there is a ladder
+    # elbow to inject it around, i.e. if the underlying adder has more than one ``y`` wire.
+    cadd_resources[X] = cadd_resources.get(X, 0) + (2 + 2 * (num_work_wires > 0 and size > 1))
     return cadd_resources
 
 
@@ -246,33 +246,21 @@ def _c_subtract_then_add_one(c_wire, x_wires, y_wires, work_wires):
     # Flip LSB of output register, due to input carry being set
     X(y_wires[-1])
 
-    # Create C(SemiAdder) decomposition and inject work wire bit flips required for input carry.
-    # Collect the sub-ops without emitting them, then replay in the intended order. capture.pause()
-    # prevents primitive binding under program capture: otherwise the scratch ``base = SemiAdder``
-    # would leak into the plxpr, the reordering below would be lost, and the reused
-    # ``work_wire_flip`` instance would appear only once.
     m = len(y_wires)
-    with capture.pause():
-        with QueuingManager.stop_recording():
-            base = SemiAdder(x_wires, y_wires, work_wires[: m - 1])
-        with AnnotatedQueue() as q:
-            _controlled_semi_adder(
-                base,
-                control_wires=[c_wire],
-                work_wires=work_wires[m - 1 :],
-                work_wire_type="zeroed",
-            )
-        cadder_ops = q.queue
-        if work_wires:
-            # We insert work wire bit flips where a carry-in qubit would cause them,
-            # i.e., after the very first left elbow and before the last right elbow
-            with QueuingManager.stop_recording():
-                work_wire_flip = X(work_wires[m - 2])
-            cadder_ops.insert(1, work_wire_flip)
-            cadder_ops.insert(-2, work_wire_flip)
-    if QueuingManager.recording() or capture.enabled():
-        for op in cadder_ops:
-            apply(op)
+    # `_controlled_semi_adder` only reads x/y/work_wires from `base`
+    # using SimpleNamespace to avoid having to use capture.pause() and stop_recording()
+    base = SimpleNamespace(x_wires=x_wires, y_wires=y_wires, work_wires=work_wires[: m - 1])
+
+    # Inject a work wire bit flip where a carry-in qubit would cause one, i.e. after the very
+    # first left elbow and before the last right elbow.
+    carry_flip = X if work_wires else None
+    _controlled_semi_adder(
+        base,
+        control_wires=[c_wire],
+        work_wires=work_wires[m - 1 :],
+        work_wire_type="zeroed",
+        carry_flip=carry_flip,
+    )
 
     # Flip LSB of output register, due to input carry being set
     X(y_wires[-1])

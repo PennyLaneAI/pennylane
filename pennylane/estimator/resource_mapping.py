@@ -526,7 +526,7 @@ def _(op: qtemps.TrotterVibronic):
 def _(op: qtemps.TrotterCDF):
     # TrotterCDF is a second-order Trotter template. The CDF Hamiltonian stores its
     # ``core_tensors`` with shape ``(num_fragments, num_orbitals, num_orbitals)``.
-    core_tensors = op.arguments["hamiltonian"]["core_tensors"]
+    core_tensors = op.arguments["hamiltonian"].core_tensors
     cdf_ham = CDFHamiltonian(
         num_orbitals=core_tensors.shape[1],
         num_fragments=core_tensors.shape[0],
