@@ -23,7 +23,6 @@ import pytest
 import pennylane as qp
 from pennylane.numeric_hamiltonians import CDFHamiltonian, CGFHamiltonian, NumericHamiltonian
 from pennylane.typing import AbstractArray, Float
-
 from tests.templates.subroutines.time_evolution.trotter_test_helpers import random_orthogonal
 
 L, M, N = 2, 2, 3
