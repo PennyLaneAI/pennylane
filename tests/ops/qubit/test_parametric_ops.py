@@ -690,28 +690,30 @@ class TestDecompositions:
 
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
-    def test_controlled_isingzz_decomposition_gates(self):
+    @pytest.mark.integration
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_controlled_isingzz_decomposition_graph(self):
         r"""Controlling ``IsingZZ`` should control only the inner ``RZ``, leaving the two
-            conjugating ``CNOT``'s bare. There's no dedicated ``C(IsingZZ)`` rule for this: writing
-            the bare decomposition as a ``change_op_basis`` (see ``_isingzz_to_cnot_rz_cnot``) lets
-            PennyLane's generic ``C(ChangeOpBasis)`` rule produce this automatically, since
-            ``IsingZZ`` is itself a compute-uncompute pattern:
+        conjugating ``CNOT``'s bare. There's no dedicated ``C(IsingZZ)`` rule for this: writing
+        the bare decomposition as a ``change_op_basis`` (see ``_isingzz_to_cnot_rz_cnot``) lets
+        PennyLane's generic ``C(ChangeOpBasis)`` rule produce this automatically, since
+        ``IsingZZ`` is itself a compute-uncompute pattern:
 
-            .. code-block::
+        .. code-block::
 
-                a: ─╭●───────────╭●─┤   =   IsingZZ(angle, [a, b])
-                b: ─╰X──RZ(angle)╰X─┤
+            a: ─╭●───────────╭●─┤   =   IsingZZ(angle, [a, b])
+            b: ─╰X──RZ(angle)╰X─┤
 
-            so controlling it only requires controlling the ``RZ`` inside, via the standard
-            controlled-``RZ`` decomposition:
+        so controlling it only requires controlling the ``RZ`` inside, via the standard
+        controlled-``RZ`` decomposition:
 
-            .. code-block::
+        .. code-block::
 
-                   b: ─RZ(angle/2)─╭X──RZ(-angle/2)─╭X─┤   =   Ctrl-RZ(angle, b)
-                ctrl: ─────────────╰●───────────────╰●─┤
+               b: ─RZ(angle/2)─╭X──RZ(-angle/2)─╭X─┤   =   Ctrl-RZ(angle, b)
+            ctrl: ─────────────╰●───────────────╰●─┤
 
-            Substituting the second diagram's four gates for the single ``RZ(angle, b)`` box in the
-            first gives the final six-gate circuit.
+        Substituting the second diagram's four gates for the single ``RZ(angle, b)`` box in the
+        first gives the final six-gate circuit:
 
         .. code-block::
 
@@ -719,55 +721,9 @@ class TestDecompositions:
                b: ─╰X─RZ(angle/2)─╭X─RZ(-angle/2)─╭X─╰X─┤
             ctrl: ────────────────╰●──────────────╰●────┤
 
-        """
-        op = qp.ctrl(qp.IsingZZ(0.6931, wires=[2, 3]), control=[4])
-
-        rule = qp.list_decomps(op)["controlled(_isingzz_to_cnot_rz_cnot)"]
-        with qp.queuing.AnnotatedQueue() as q:
-            rule(
-                base=op.base,
-                control_wires=op.control_wires,
-                control_values=op.control_values,
-                work_wires=op.work_wires,
-                work_wire_type=op.work_wire_type,
-            )
-        controlled_change_of_basis = q.queue[0]
-
-        rule = qp.list_decomps(controlled_change_of_basis)[0]
-        with qp.queuing.AnnotatedQueue() as q:
-            rule(
-                base=controlled_change_of_basis.base,
-                control_wires=controlled_change_of_basis.control_wires,
-                control_values=controlled_change_of_basis.control_values,
-                work_wires=controlled_change_of_basis.work_wires,
-                work_wire_type=controlled_change_of_basis.work_wire_type,
-            )
-        gates = q.queue
-
-        assert [g.name for g in gates] == ["CNOT", "CRZ", "CNOT"]
-        assert gates[0].wires == gates[2].wires == Wires([2, 3])
-        assert gates[1].wires == Wires([4, 3])
-
-        # Further expand the CRZ to match the fully-expanded six-gate docstring diagram above.
-        crz = gates[1]
-        rule = qp.list_decomps(crz)[0]
-        with qp.queuing.AnnotatedQueue() as q:
-            rule(*crz.parameters, wires=crz.wires)
-        crz_gates = q.queue
-
-        assert [g.name for g in crz_gates] == ["RZ", "CNOT", "RZ", "CNOT"]
-        assert crz_gates[1].wires == crz_gates[3].wires == Wires([4, 3])
-
-        all_gates = [gates[0]] + crz_gates + [gates[2]]
-        assert [g.name for g in all_gates] == ["CNOT", "RZ", "CNOT", "RZ", "CNOT", "CNOT"]
-
-    @pytest.mark.integration
-    @pytest.mark.usefixtures("enable_graph_decomposition")
-    def test_controlled_isingzz_decomposition_graph(self):
-        """Tests that the graph-based decomposition system actually selects the
-        ``change_op_basis``-based route for ``C(IsingZZ)`` (rather than just testing that the
-        individual rules compose correctly by hand, as ``test_controlled_isingzz_decomposition_gates``
-        does), and that it lands on the minimal six-gate circuit ``{CNOT, RZ, GlobalPhase}``.
+        This test drives the actual graph-based decomposition system (rather than hand-picking
+        rules by name) to confirm it lands on this minimal six-gate circuit for the gate set
+        ``{CNOT, RZ, GlobalPhase}``.
 
         ``PauliX`` also has to be in the gate set: the generic controlled-decomposition wrapping
         machinery conservatively counts a ``PauliX`` per control wire to account for a possible
