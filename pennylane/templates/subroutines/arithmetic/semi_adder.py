@@ -53,7 +53,7 @@ def _right_block_zeroed(wires: list):
     CNOT(wires[:2])
 
 
-def _left_ladder(x_wires, y_wires, work_wires):
+def _left_ladder(x_wires, y_wires, work_wires, carry_flip=None):
     """Implement a ladder formed from the left block in figure 2, https://arxiv.org/pdf/1709.06648.
 
     Args:
@@ -62,11 +62,16 @@ def _left_ladder(x_wires, y_wires, work_wires):
         y_wires(WiresLike): Wires encoding the integer :math:`y` onto which :math:`x` is added.
             Must be in non-PennyLane ordering, i.e., little endian.
         work_wires(WiresLike): Work wires for the addition.
+        carry_flip(Callable[[Wire], None], optional): if given, called with ``work_wires[0]``
+            right after it is computed, to simulate a ``1`` input carry (see
+            ``_adder_flipped_first_work_wire`` and ``_c_subtract_then_add_one``).
     """
     num_x_wires = len(x_wires)
     num_y_wires = len(y_wires)
 
     TemporaryAND([x_wires[0], y_wires[0], work_wires[0]])
+    if carry_flip is not None:
+        carry_flip(work_wires[0])
     crossover = min(num_y_wires - 1, num_x_wires)
 
     for i in range(1, crossover):
@@ -78,7 +83,7 @@ def _left_ladder(x_wires, y_wires, work_wires):
         _left_block_zeroed([work_wires[i - 1], y_wires[i], work_wires[i]])
 
 
-def _right_ladder(x_wires, y_wires, work_wires):
+def _right_ladder(x_wires, y_wires, work_wires, carry_flip=None):
     """Implement a ladder formed from the right block in figure 2, https://arxiv.org/pdf/1709.06648.
 
     Args:
@@ -87,6 +92,9 @@ def _right_ladder(x_wires, y_wires, work_wires):
         y_wires(WiresLike): Wires encoding the integer :math:`y` onto which :math:`x` is added.
             Must be in non-PennyLane ordering, i.e., little endian.
         work_wires(WiresLike): Work wires for the addition.
+        carry_flip(Callable[[Wire], None], optional): if given, called with ``work_wires[0]``
+            right before it is uncomputed, undoing the flip applied by ``_left_ladder``'s own
+            ``carry_flip`` (see ``_adder_flipped_first_work_wire`` and ``_c_subtract_then_add_one``).
     """
     num_x_wires = len(x_wires)
     num_y_wires = len(y_wires)
@@ -100,6 +108,8 @@ def _right_ladder(x_wires, y_wires, work_wires):
         # into the bit of y.
         _right_block([work_wires[i - 1], x_wires[i], y_wires[i], work_wires[i]])
 
+    if carry_flip is not None:
+        carry_flip(work_wires[0])
     adjoint(TemporaryAND([x_wires[0], y_wires[0], work_wires[0]]))
     CNOT([x_wires[0], y_wires[0]])
 
@@ -119,7 +129,7 @@ def _ctrl_right_block(wires, **ctrl_kwargs):
     CNOT([ck, ik])
 
 
-def _controlled_right_ladder(x_wires, y_wires, non_ctrl_work_wires, **ctrl_kwargs):
+def _controlled_right_ladder(x_wires, y_wires, non_ctrl_work_wires, carry_flip=None, **ctrl_kwargs):
     """Implement a ladder formed from the right block in figure 4, https://arxiv.org/pdf/1709.06648.
 
     Args:
@@ -128,6 +138,7 @@ def _controlled_right_ladder(x_wires, y_wires, non_ctrl_work_wires, **ctrl_kwarg
         y_wires(WiresLike): Wires encoding the integer :math:`y` onto which :math:`x` is added.
             Must be in non-PennyLane ordering, i.e., little endian.
         work_wires(WiresLike): Work wires for the addition.
+        carry_flip(Callable[[Wire], None], optional): see ``_right_ladder``.
     """
     # We need to use a different name for this variable in the function signature because
     # work_wires is a key in ctrl_kwargs. This allows us to keep passing ctrl_kwargs around as
@@ -143,6 +154,8 @@ def _controlled_right_ladder(x_wires, y_wires, non_ctrl_work_wires, **ctrl_kwarg
     for i in range(crossover - 1, 0, -1):
         _ctrl_right_block([work_wires[i - 1], x_wires[i], y_wires[i], work_wires[i]], **ctrl_kwargs)
 
+    if carry_flip is not None:
+        carry_flip(work_wires[0])
     adjoint(TemporaryAND([x_wires[0], y_wires[0], work_wires[0]]))
     ctrl(CNOT([x_wires[0], y_wires[0]]), **ctrl_kwargs)
 
@@ -306,8 +319,7 @@ def _semi_adder_work_wires(y_wires=None, work_wires=(), base=None, **_):
 
 
 @register_resources(_semi_adder_resources, work_wires=_semi_adder_work_wires)
-def _semi_adder(x_wires, y_wires, work_wires=None, **_):
-
+def _semi_adder(x_wires, y_wires, work_wires=None, carry_flip=None, **_):
     num_y_wires = len(y_wires)
     num_x_wires = len(x_wires)
 
@@ -326,14 +338,14 @@ def _semi_adder(x_wires, y_wires, work_wires=None, **_):
     y_wires = y_wires[::-1]
     work_wires = work_wires[: num_y_wires - 1][::-1]
 
-    _left_ladder(x_wires, y_wires, work_wires)
+    _left_ladder(x_wires, y_wires, work_wires, carry_flip=carry_flip)
 
     CNOT([work_wires[-1], y_wires[-1]])
 
     if num_x_wires >= num_y_wires:
         CNOT([x_wires[-1], y_wires[-1]])
 
-    _right_ladder(x_wires, y_wires, work_wires)
+    _right_ladder(x_wires, y_wires, work_wires, carry_flip=carry_flip)
 
 
 add_decomps(SemiAdder, _semi_adder)
@@ -400,7 +412,13 @@ def _controlled_semi_adder_resource(
 
 @register_resources(_controlled_semi_adder_resource, work_wires=_semi_adder_work_wires)
 def _controlled_semi_adder(
-    base, control_wires, control_values=None, work_wires=None, work_wire_type="borrowed", **_
+    base,
+    control_wires,
+    control_values=None,
+    work_wires=None,
+    work_wire_type="borrowed",
+    carry_flip=None,
+    **_,
 ):  # pylint: disable=too-many-arguments
     r"""
     Decomposition extracted from `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_
@@ -436,13 +454,13 @@ def _controlled_semi_adder(
     y_wires = y_wires[::-1]
     work_wires = base_work_wires[::-1]
 
-    _left_ladder(x_wires, y_wires, work_wires)
+    _left_ladder(x_wires, y_wires, work_wires, carry_flip=carry_flip)
 
     ctrl(CNOT([work_wires[-1], y_wires[-1]]), **ctrl_kwargs)
     if num_x_wires >= num_y_wires:
         ctrl(CNOT([x_wires[-1], y_wires[-1]]), **ctrl_kwargs)
 
-    _controlled_right_ladder(x_wires, y_wires, work_wires, **ctrl_kwargs)
+    _controlled_right_ladder(x_wires, y_wires, work_wires, carry_flip=carry_flip, **ctrl_kwargs)
 
 
 add_decomps("C(SemiAdder)", flip_zero_control2(_controlled_semi_adder))
