@@ -1005,6 +1005,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* The resource module JSON parser can now handle floating point values received from the Catalyst backend.
+  [(#10044)](https://github.com/PennyLaneAI/pennylane/pull/10044)
+
 * Removes `pennylane.transforms.decompose.DecomposeInterpreter`. Decompositions are no longer supported for the capture-without-qjit workflow.
   [(#9915)](https://github.com/PennyLaneAI/pennylane/pull/9915)
 
@@ -1068,6 +1071,7 @@
   [(#10026)](https://github.com/PennyLaneAI/pennylane/pull/10026)
   [(#9990)](https://github.com/PennyLaneAI/pennylane/pull/9990)
   [(#10041)](https://github.com/PennyLaneAI/pennylane/pull/10041)
+  [(#10072)](https://github.com/PennyLaneAI/pennylane/pull/10072)
   - Templates are ported:
     - :class:`~.BasisRotation`, :class:`~.MultiplexerStatePreparation`, :class:`~.QROM`, :class:`~.QFT`, :class:`~.FlipSign`,
       :class:`~.TemporaryAND`, :class:`~.SelectPauliRot`, :class:`~.GQSP`, :class:`~.AQFT`, :class:`~.SumOfSlatersPrep`,
@@ -1092,6 +1096,7 @@
   [(#9933)](https://github.com/PennyLaneAI/pennylane/pull/9933)
   [(#10042)](https://github.com/PennyLaneAI/pennylane/pull/10042)
   [(#10073)](https://github.com/PennyLaneAI/pennylane/pull/10073)
+  [(#10078)](https://github.com/PennyLaneAI/pennylane/pull/10078)
   - Quantum chemistry operators are ported:
     - :class:`~.SingleExcitation`
   [(#9944)](https://github.com/PennyLaneAI/pennylane/pull/9944)
@@ -1349,6 +1354,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed the QFT-based decomposition of :class:`~.OutMultiplier` so it can be captured and
+  compiled with Catalyst when ``mod = 2 ** len(output_wires)``.
+  [(#10057)](https://github.com/PennyLaneAI/pennylane/pull/10057)
+
 * Fixed capture compatibility of the decomposition rule of `SemiAdder`.
   [(#10068)](https://github.com/PennyLaneAI/pennylane/pull/10068)
 
@@ -1509,6 +1518,7 @@ Yushao Chen,
 Diksha Dhawan,
 Marcus Edwards,
 Thomas C. Fraser,
+Sengthai Heng,
 Austin Huang,
 Harshal Janjani,
 Jacob Kitchen,

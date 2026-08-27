@@ -33,15 +33,19 @@ from pennylane.pytrees import flatten, unflatten
 
 from .expression import Expression
 
+# The threshold after which integers in the resource class are displayed in scientific notation.
+# This is used in the __str__ and _repr_markdown_ methods of the Resources class.
+_SCIENTIFIC_NOTATION_THRESHOLD = 100_000
+
 
 def _count_to_str(
-    count: int | Expression, extra_compact: bool = False, markdown_safe: bool = False
+    count: int | float | Expression, extra_compact: bool = False, markdown_safe: bool = False
 ) -> str:
     """
     Helper for printing counts, converts large counts to scientific notation and standardizes printing of expressions.
 
     Args:
-        count (int | Expression): the count to convert to a string
+        count (int | float | Expression): the count to convert to a string
         extra_compact (bool): whether to remove spaces from expressions for compactness
         markdown_safe (bool): whether to escape asterisks for markdown tables
     """
@@ -53,8 +57,15 @@ def _count_to_str(
             if extra_compact:
                 retval = retval.replace(" ", "")  # Remove spaces from expressions for compactness
             return retval
-        count = int(count)
-    return f"{count:,}" if count < 100_000 else f"{Decimal(count):.3E}"
+        count = float(count)
+    if isinstance(count, float) and not count.is_integer():
+        # NOTE: stringify the count in order to bypass Decimal precision issues
+        return f"{Decimal(str(count)):.3E}"
+
+    if count >= _SCIENTIFIC_NOTATION_THRESHOLD:
+        return f"{Decimal(count):.3E}"
+
+    return f"{int(count):,}"  # Return as integer if count is small
 
 
 def _flatten_dict(data: dict, prefix: str = "", sep: str = ".") -> dict:
@@ -115,7 +126,7 @@ def _subs_pytree(obj: Any, substitutions: dict) -> Any:
 
     Args:
         obj (Any): The (possibly nested) object to substitute into.
-        substitutions (dict): A mapping from variable names to their concrete integer values.
+        substitutions (dict): A mapping from variable names to their concrete values.
 
     Returns:
         Any: A new object of the same structure with substitutions applied.
@@ -174,8 +185,7 @@ class Resources:
         present as top-level fields or as values within (possibly nested) dictionaries of arbitrary
         depth, the :attr:`vars` attribute will contain the set of all symbolic variables used in the
         resource counts. This includes fields introduced in derived classes. Similarly, the
-        :meth:`subs` method can be used to substitute symbolic variables with concrete integer
-        values.
+        :meth:`subs` method can be used to substitute symbolic variables with concrete values.
     """
 
     counts: dict
@@ -235,21 +245,25 @@ class Resources:
                 # Flatten nested dictionaries into dotted keys of arbitrary depth
                 dict_items = _flatten_dict(getattr(self, obj_field.name))
                 for k, v in dict_items.items():
-                    value_str = _count_to_str(v) if isinstance(v, (int, Expression)) else str(v)
+                    value_str = (
+                        _count_to_str(v) if isinstance(v, (int, float, Expression)) else str(v)
+                    )
                     lines.append(f"{prefix}- {k}: {value_str}")
                 if len(dict_items) == 0:
                     lines.append(f"{prefix}- None present.")
             else:
                 value = getattr(self, obj_field.name)
                 value_str = (
-                    _count_to_str(value) if isinstance(value, (int, Expression)) else str(value)
+                    _count_to_str(value)
+                    if isinstance(value, (int, float, Expression))
+                    else str(value)
                 )
                 lines.append(f"{prefix}{field_name}: {value_str}")
 
         if self.extra:
             lines.append(f"{prefix}Extra fields:")
             for k, v in _flatten_dict(self.extra).items():
-                value_str = _count_to_str(v) if isinstance(v, (int, Expression)) else str(v)
+                value_str = _count_to_str(v) if isinstance(v, (int, float, Expression)) else str(v)
                 lines.append(f"{prefix}- {k}: {value_str}")
 
         return "\n".join(lines)
@@ -287,21 +301,25 @@ class Resources:
                 # Flatten nested dictionaries into dotted keys of arbitrary depth
                 dict_items = _flatten_dict(getattr(self, obj_field.name))
                 for k, v in dict_items.items():
-                    value_str = _count_to_str(v) if isinstance(v, (int, Expression)) else str(v)
+                    value_str = (
+                        _count_to_str(v) if isinstance(v, (int, float, Expression)) else str(v)
+                    )
                     lines.append(f"| {k} | {value_str} |")
                 if len(dict_items) == 0:
                     lines.append("| *None present* | |")
             else:
                 value = getattr(self, obj_field.name)
                 value_str = (
-                    _count_to_str(value) if isinstance(value, (int, Expression)) else str(value)
+                    _count_to_str(value)
+                    if isinstance(value, (int, float, Expression))
+                    else str(value)
                 )
                 lines.append(f"| **{field_name}** | {value_str} |")
 
         if self.extra:
             lines.append("| **Extra Fields** | |")
             for k, v in _flatten_dict(self.extra).items():
-                value_str = _count_to_str(v) if isinstance(v, (int, Expression)) else str(v)
+                value_str = _count_to_str(v) if isinstance(v, (int, float, Expression)) else str(v)
                 lines.append(f"| {k} | {value_str} |")
 
         return "\n".join(lines)
@@ -314,9 +332,9 @@ class Resources:
             f"key '{key}' not available. Options are {[obj_field.name for obj_field in fields(self)]}"
         )
 
-    def subs(self, substitutions: dict[str, int] | None = None, **kwargs) -> Resources:
+    def subs(self, substitutions: dict[str, int | float] | None = None, **kwargs) -> Resources:
         """
-        Substitute symbolic variables in the object with concrete integer values.
+        Substitute symbolic variables in the object with concrete values.
 
         Automatically iterates over all fields of the dataclass and applies substitutions to any
         Expression instances, so derived classes do not have to explicitly implement this method
@@ -329,7 +347,7 @@ class Resources:
             original container structure is preserved.
 
         Args:
-            substitutions (dict[str, int] | None): A dictionary mapping variable names to their values.
+            substitutions (dict[str, int | float] | None): A dictionary mapping variable names to their values.
                 If None, an empty dictionary is used. Additional keyword arguments can also be provided.
 
         .. details::
