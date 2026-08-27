@@ -144,6 +144,7 @@
   [(#9789)](https://github.com/PennyLaneAI/pennylane/pull/9789)
   [(#10015)](https://github.com/PennyLaneAI/pennylane/pull/10015)
   [(#10074)](https://github.com/PennyLaneAI/pennylane/pull/10074)
+  [(#10081)](https://github.com/PennyLaneAI/pennylane/pull/10081)
 
 * A new arithmetic template called :class:`~.SignedOutMultiplier` has been added that multiplies numbers encoded in the
   input registers using a two's complement.
