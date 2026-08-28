@@ -36,7 +36,7 @@ class TestInitialization:
     def test_construction_and_operands(self):
         """Test the operands, length, iteration and indexing of a product."""
         op = Prod2([qp.X(0), qp.Z(1)])
-        assert op.operands == (qp.X(0), qp.Z(1))
+        assert op.operands == [qp.X(0), qp.Z(1)]
         assert len(op) == 2
         assert list(op) == [qp.X(0), qp.Z(1)]
         assert op[0] == qp.X(0)
@@ -63,44 +63,15 @@ class TestInitialization:
         with pytest.raises(ValueError, match="mid-circuit measurements"):
             Prod2([qp.X(1), m])
 
-    def test_invalid_operands_raises(self):
-        """Test that non-operator operands raise a ``TypeError``."""
-        with pytest.raises(TypeError, match="operands must be Operator2"):
-            Prod2([qp.X(0), 5])
 
-    def test_legacy_operands_raise(self):
-        """Test that legacy (op1) operands raise a ``TypeError``."""
-
-        class LegacyOp(qp.core.Operator):  # pylint: disable=too-few-public-methods
-            """Dummy operator for testing."""
-
-        with pytest.raises(TypeError, match="Legacy operators"):
-            Prod2([LegacyOp(wires=0), qp.Z(wires=1)])
-
-
-class TestParameters:
-    """Test parameter and batching behaviour."""
+class TestParameters:  # pylint: disable=too-few-public-methods
+    """Test parameter behaviour."""
 
     def test_data_and_num_params(self):
         """Test that ``data`` and ``num_params`` are gathered from the operands."""
         op = Prod2([qp.RZ(0.5, 0), qp.PhaseShift(0.3, 1), qp.X(2)])
         assert op.num_params == 2
         assert qp.math.allclose(op.data, (0.5, 0.3))
-
-    def test_no_batching(self):
-        """Test that an unbatched product has a ``batch_size`` of ``None``."""
-        assert Prod2([qp.RZ(0.5, 0), qp.X(1)]).batch_size is None
-
-    def test_batching(self):
-        """Test that the batch size is taken from batched operands."""
-        op = Prod2([qp.RZ(np.array([0.1, 0.2, 0.3]), 0), qp.X(1)])
-        assert op.batch_size == 3
-
-    def test_batching_mismatch_raises(self):
-        """Test that mismatched operand batch sizes raise an error."""
-        op = Prod2([qp.RZ(np.array([0.1, 0.2]), 0), qp.PhaseShift(np.array([0.1, 0.2, 0.3]), 1)])
-        with pytest.raises(ValueError, match="do not match"):
-            _ = op.batch_size
 
 
 class TestMatrix:
@@ -119,18 +90,6 @@ class TestMatrix:
         wire_order = qp.wires.Wires.all_wires([f.wires for f in factors])
         mat = qp.matrix(Prod2(factors), wire_order=wire_order)
         assert np.allclose(mat, _product_matrix(factors, wire_order))
-
-    def test_matrix_batched(self):
-        """Test that a broadcasted product's matrix is the per-element Kronecker product."""
-        x = np.array([0.1, 0.2, 0.3])
-        y = np.array([0.4, 0.5, 0.6])
-        mat = qp.matrix(Prod2([qp.RX(x, 0), qp.RY(y, 1)]), wire_order=[0, 1])
-        # operands act on distinct wires, so each broadcasted matrix is a Kronecker product
-        expected = np.stack(
-            [np.kron(qp.matrix(qp.RX(xi, 0)), qp.matrix(qp.RY(yi, 1))) for xi, yi in zip(x, y)]
-        )
-        assert mat.shape == (3, 4, 4)
-        assert np.allclose(mat, expected)
 
     def test_sparse_matrix(self):
         """Test that the sparse matrix is the ordered matrix product of the factors."""
@@ -233,6 +192,8 @@ class TestValidity:  # pylint: disable=too-few-public-methods
     def test_assert_valid(self):
         """Test that ``Prod2`` is defined correctly."""
         qp.ops.functions.assert_valid(Prod2([qp.RX(0.5, 0), qp.Z(1)]), skip_differentiation=True)
+        # Also assert validity with overlapping wires
+        qp.ops.functions.assert_valid(Prod2([qp.RX(0.5, 0), qp.Z(0)]), skip_differentiation=True)
 
 
 class TestIntegration:

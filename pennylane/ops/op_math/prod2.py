@@ -22,7 +22,7 @@ from typing import override
 
 import pennylane as qp
 from pennylane import math
-from pennylane.core.operator import Operator, Operator2, abstractify
+from pennylane.core.operator import Operator, abstractify
 from pennylane.core.queuing import apply
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.typing import TensorLike
@@ -55,45 +55,10 @@ class Prod2(CompositeOp2):
         indicates first applying :math:`\hat{op}_{2}` then :math:`\hat{op}_{1}` in the circuit).
     """
 
-    # ``operands`` and ``_init_pauli_rep`` are inherited as hybrid arguments from ``CompositeOp2``
-    arg_specs = {}
+    hybrid_argnames = ("operands", "_init_pauli_rep")
 
     _op_symbol = "@"
     _math_op = staticmethod(math.prod)
-
-    def __init__(self, operands, _init_pauli_rep=None):
-        # pylint: disable=import-outside-toplevel
-        from pennylane.ops.mid_measure import MidMeasure, PauliMeasure
-
-        operands = tuple(operands)
-
-        if any(isinstance(op, (MidMeasure, PauliMeasure)) for op in operands):
-            raise ValueError("Composite operators of mid-circuit measurements are not supported.")
-
-        if not all(isinstance(op, Operator2) for op in operands):
-            raise TypeError(
-                "Prod2 operands must be Operator2 instances. Legacy operators (subclasses of "
-                "Operator) should be combined using Prod instead."
-            )
-
-        super().__init__(operands, _init_pauli_rep=_init_pauli_rep)
-
-    @property
-    @handle_recursion_error
-    def data(self):
-        """The trainable parameters of the product are those of its operands."""
-        return tuple(d for op in self.operands for d in op.data)
-
-    def _check_batching(self):
-        batch_sizes = {op.batch_size for op in self if op.batch_size is not None}
-        if len(batch_sizes) > 1:
-            raise ValueError(
-                "Broadcasting was attempted but the broadcasted dimensions "
-                f"do not match: {batch_sizes}."
-            )
-        self._batch_size = batch_sizes.pop() if batch_sizes else None
-        # ``Prod2`` has no dynamic arguments of its own; parameters live in the operands.
-        self._ndim_params = ()
 
     @classmethod
     def _sort(cls, op_list, wire_map: dict = None) -> list[Operator]:
@@ -116,6 +81,12 @@ class Prod2(CompositeOp2):
             op_list[j + 1] = key_op
 
         return op_list
+
+    def _build_pauli_rep(self):
+        """PauliSentence representation of the product of operators."""
+        if all(operand_pauli_reps := [op.pauli_rep for op in self.operands]):
+            return reduce(lambda a, b: a @ b, operand_pauli_reps) if operand_pauli_reps else None
+        return None
 
     @property
     @handle_recursion_error
@@ -180,10 +151,6 @@ class Prod2(CompositeOp2):
         full_mat = reduce(sparse_kron, mats)
         return math.expand_matrix(full_mat, self.wires, wire_order=wire_order).asformat(format)
 
-    # ------------------------------------------------------------------------
-    # ------------------------------ Properties ------------------------------
-    # ------------------------------------------------------------------------
-
     @property
     @override
     def is_verified_hermitian(self) -> bool:
@@ -198,16 +165,6 @@ class Prod2(CompositeOp2):
     @override
     def adjoint(self) -> "Prod2":
         return Prod2([qp.adjoint(factor) for factor in self[::-1]])
-
-    @override
-    def map_wires(self, wire_map: dict) -> "Prod2":
-        return Prod2([op.map_wires(wire_map) for op in self])
-
-    def _build_pauli_rep(self):
-        """PauliSentence representation of the product of operators."""
-        if all(operand_pauli_reps := [op.pauli_rep for op in self.operands]):
-            return reduce(lambda a, b: a @ b, operand_pauli_reps) if operand_pauli_reps else None
-        return None
 
 
 def _prod2_resources(operands, _init_pauli_rep=None):  # pylint: disable=unused-argument
