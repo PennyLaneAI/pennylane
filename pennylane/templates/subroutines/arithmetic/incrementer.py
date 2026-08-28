@@ -161,7 +161,6 @@ class Incrementer(Operator2):
     """
 
     wire_argnames = ("wires", "work_wires")
-    resource_keys = {"num_wires", "num_work_wires"}
     arg_specs = {"wires": Wire[-1], "work_wires": Wire[-1]}
 
     def __init__(self, wires: WiresLike, work_wires: WiresLike = ()):
