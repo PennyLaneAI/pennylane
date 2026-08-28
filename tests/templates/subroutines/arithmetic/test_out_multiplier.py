@@ -194,9 +194,8 @@ def test_abstract_init_validation(mod, work_wires, msg_match):
         )
 
 
-@PL2DO_QFT_CAPTURE
 @pytest.mark.usefixtures("enable_and_disable_capture")
-def test_standard_validity_out_multiplier():
+def test_standard_validity_out_multiplier_capture():
     """Check the operation using the assert_valid function."""
     mod = 12
     x_wires = [0, 1]
