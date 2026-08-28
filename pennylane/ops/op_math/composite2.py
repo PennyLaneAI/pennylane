@@ -28,7 +28,6 @@ import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operator, Operator2
 from pennylane.queuing import remove_from_program
-from pennylane.wires import Wires
 
 from .composite import handle_recursion_error
 
@@ -154,7 +153,7 @@ class CompositeOp2(Operator2, is_baseclass=True):
                         )
                 framework = math.get_deep_interface(eigvals)
                 eigvals = [math.asarray(ei, like=framework) for ei in eigvals]
-                return op._math_op(math.vstack(eigvals), axis=0)
+                return op._math_op(math.vstack(eigvals), axis=0)  # pylint: disable=protected-access
 
             cls.compute_eigvals = staticmethod(_compute_eigvals)
 
