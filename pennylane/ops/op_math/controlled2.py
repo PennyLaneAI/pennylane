@@ -716,14 +716,14 @@ def _make_controlled_decomp(base_rule: DecompositionRule):
             qp.cond(qp.math.logical_not(_cvals[i]), qp.X)(_cwires[i])
 
         _x_flips()
-        static, dynamic = split_non_dynamic_args(base)
-        impl = partial(base_rule._impl, **static) if static else base_rule._impl
+        non_traced_args, traced_args = split_non_dynamic_args(base)
+        impl = partial(base_rule._impl, **non_traced_args)
         qp.ctrl(
             impl,
             control=control_wires,
             work_wires=work_wires,
             work_wire_type=work_wire_type,
-        )(**dynamic)
+        )(**traced_args)
         _x_flips()
 
     _impl._source = (

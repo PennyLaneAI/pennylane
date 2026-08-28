@@ -23,10 +23,10 @@ from pennylane.core.operator import Operator2
 from pennylane.decomposition.decomposition_rule import register_resources
 from pennylane.decomposition.resources import Resources
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
-from pennylane.ops.op_math.adjoint2 import Adjoint2, adjoint_rotation
+from pennylane.ops.op_math.adjoint2 import Adjoint2, _make_adjoint_decomp, adjoint_rotation
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
-from tests.core.operator.operator2_utils import OneWireDynOp
+from tests.core.operator.operator2_utils import OneWireDynOp, StaticOp
 
 # pylint: disable=unused-argument,arguments-differ,useless-parent-delegation
 
@@ -260,31 +260,38 @@ def test_adjoint_rotation_decomposition_rule():
     )
 
 
-@pytest.mark.catalyst
-@pytest.mark.usefixtures("enable_graph_decomposition")
-def test_adjoint_decomp_keeps_static_args_concrete_under_capture():
+def test_make_adjoint_decomp_closes_over_static_args(monkeypatch):
     """Regression test for ``_make_adjoint_decomp``: ``static_argnames``/``compilable_argnames``
-    must stay concrete through the adjoint decomposition rule. Otherwise decompositions that
-    branch on them with Python ``if`` (here the ``output_wires_zeroed`` flag of
-    :class:`~.OutMultiplier`) get their flag traced and fail to lower under program capture /
-    Catalyst with a ``TracerBoolConversionError``."""
-    pytest.importorskip("catalyst")
+    must be closed over (via ``functools.partial``) rather than forwarded as keyword arguments
+    to ``qp.adjoint(...)``. Some capture frontends (e.g. Catalyst's ``AdjointCallable``) trace
+    *all* keyword arguments passed to the wrapped callable, so forwarding a static/compilable
+    arg would turn it into a tracer and break any decomposition that branches on it with a
+    Python ``if`` (as :class:`~.OutMultiplier`'s ``mod``/``output_wires_zeroed`` do)."""
 
-    n, m = 3, 6
-    x_wires = list(range(n))
-    y_wires = list(range(n, 2 * n))
-    output_wires = list(range(2 * n, 2 * n + m))
-    work_wires = list(range(2 * n + m, 2 * n + 2 * m))
+    @register_resources({qp.X: 1})
+    def _label_decomp(label, wires):
+        if label:
+            qp.X(wires[0])
+        else:
+            qp.Y(wires[0])
 
-    @qp.qjit
-    @qp.qnode(qp.device("lightning.qubit", wires=2 * n + 2 * m))
-    def circuit():
-        qp.adjoint(
-            qp.OutMultiplier(
-                x_wires, y_wires, output_wires, work_wires=work_wires, output_wires_zeroed=True
-            )
-        )
-        return qp.state()
+    op = StaticOp("x", wires=[0])
+    rule = _make_adjoint_decomp(_label_decomp)
 
-    # If a static/compilable arg gets traced, AOT capture aborts and ``.mlir`` stays ``None``.
-    assert circuit.mlir is not None
+    captured_kwargs = {}
+    original_adjoint = qp.adjoint
+
+    def spy_adjoint(fn):
+        def wrapped(**kwargs):
+            captured_kwargs.update(kwargs)
+            return original_adjoint(fn)(**kwargs)
+
+        return wrapped
+
+    monkeypatch.setattr(qp, "adjoint", spy_adjoint)
+    with qp.core.AnnotatedQueue():
+        rule(base=op)
+
+    # ``label`` must be closed over, not forwarded through the (potentially traced) kwargs.
+    assert "label" not in captured_kwargs
+    assert captured_kwargs == {"wires": Wires([0])}
