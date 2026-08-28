@@ -366,11 +366,9 @@ class TestSignedOutSquare:
     def test_decomposition_rule_with_capture(
         self, x_wires, output_wires, work_wires, output_wires_zeroed
     ):
-        """Test that the decomposition rule is consistent with the operator, with program
-        capture enabled and disabled. Also a regression test (#10065): ``_signed_out_square``
-        relies internally on ``_c_subtract_then_add_one`` (triggered whenever
-        ``len(output_wires) > len(x_wires)``), whose collect-reorder-replay strategy used to be
-        capture-unsafe."""
+        """Test that the decomposition rule is working correctly when ``_signed_out_square``
+        calls ``_c_subtract_then_add_one`` (triggered whenever ``len(output_wires) > len(x_wires)``)
+        """
         op = SignedOutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
         for rule in qp.list_decomps(SignedOutSquare):
             _test_decomposition_rule(op, rule)
