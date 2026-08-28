@@ -207,19 +207,19 @@ class TestOutSquare:
                 [0, 1, 2],
                 [3, 4, 5],
                 [3, 10, 11],
-                "None of the wires in work_wires should be included in output_wires.",
+                "output_wires and work_wires must not overlap",
             ),
             (
                 [0, 1, 2],
                 [3, 4, 5],
                 [1, 10, 9],
-                "None of the wires in work_wires should be included in x_wires.",
+                "x_wires and work_wires must not overlap",
             ),
             (
                 [0, 1, 2],
                 [2, 4, 5],
                 [9, 10, 6],
-                "None of the wires in output_wires should be included in x_wires.",
+                "x_wires and output_wires must not overlap",
             ),
         ],
     )
