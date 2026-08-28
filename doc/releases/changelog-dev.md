@@ -1375,6 +1375,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed an issue where tracers were set on sub-operators and leaked out of the tracing context.
+  [(#10086)](https://github.com/PennyLaneAI/pennylane/pull/10086)
+
 * Fixed :class:`~.Incrementer` returning an incorrect incremented value when not enough
   work wires are provided.
   [(#10062)](https://github.com/PennyLaneAI/pennylane/pull/10062)
