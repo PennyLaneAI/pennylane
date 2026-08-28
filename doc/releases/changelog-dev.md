@@ -421,7 +421,7 @@
 * :func:`~.SumOfSlatersPrep.required_register_sizes` now works with abstract ``indices`` as input,
   for which it returns an upper bound for the register sizes, across any set of indices of the
   provided length.
-  [(#100XX)](https://github.com/PennyLaneAI/pennylane/pull/100XX)
+  [(#10084)](https://github.com/PennyLaneAI/pennylane/pull/10084)
 
 * Coprocessor connection addresses are grouped on :class:`~pennylane.Endpoint` as ``endpoint=qp.Endpoint(host, port)``, replacing the separate ``comm_host`` and ``oob_port`` fields.
   [(#10017)](https://github.com/PennyLaneAI/pennylane/pull/10017)
