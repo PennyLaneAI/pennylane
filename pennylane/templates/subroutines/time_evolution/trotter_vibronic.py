@@ -82,9 +82,9 @@ class TrotterVibronic(Operator2):
         vib_wires (WiresLike): the :math:`M \cdot k` vibrational-mode wires, provided as a single
             flattened register. Internally these are reshaped into ``M`` registers of ``k`` wires,
             one per mode, via ``np.array(vib_wires).reshape(M, -1)``.
-        phase_gradient_wires (WiresLike): the :math:`b` wires holding the `phase-gradient resource
-            state <https://pennylane.ai/compilation/phase-gradient>`__, assumed to be prepared
-            upfront.
+        phase_gradient_wires (WiresLike): at least :math:`b` wires holding the `phase-gradient
+            resource state <https://pennylane.ai/compilation/phase-gradient>`__, assumed to be
+            prepared upfront. Extra wires beyond :math:`b` add unused precision headroom.
         coefficient_wires (WiresLike): the :math:`b` wires of the Hamiltonian-coefficient
             register. If omitted (default), they are dynamically allocated in the decomposition,
             with :math:`b` equal to ``len(phase_gradient_wires)``.
@@ -168,7 +168,7 @@ class TrotterVibronic(Operator2):
              - :math:`b`
              - Hamiltonian coefficients (unsigned); optional, dynamically allocated if omitted
            * - ``phase_gradient_wires``
-             - :math:`b`
+             - :math:`\ge b`
              - phase-gradient state (unsigned)
            * - ``work_wires``
              - :math:`\max(n-1, 2k, 2b+2)`
@@ -184,7 +184,8 @@ class TrotterVibronic(Operator2):
         <https://pennylane.ai/demos/simulating_vibronic_dynamics>`__ for a from-scratch,
         step-by-step implementation). The mode positions :math:`Q_r` and momenta
         :math:`P_r` are the signed (two's-complement) integers on the mode sub-registers of
-        ``vib_wires``, and :math:`a` labels an ``electronic_wires`` basis state.
+        ``vib_wires``, and :math:`a` labels an ``electronic_wires`` basis state. Operator products
+        below use the standard convention that the rightmost factor is applied first.
 
         The Hamiltonian is a sum of :math:`F` position fragments and one kinetic fragment,
 
@@ -221,7 +222,9 @@ class TrotterVibronic(Operator2):
         pairs :math:`(j, i \oplus j)` (bitwise XOR), for :math:`i = 0, \dots, F-1`. This is what
         lets :math:`V_i` (step 3) be the fixed single-Hadamard/CNOT circuit derived from the key
         :math:`(0, i)`. A Hamiltonian with a different fragment structure will silently produce an
-        incorrect circuit. See the demo's `fragmentation and diagonalization
+        incorrect circuit. :math:`N` itself must be a power of 2, since :math:`V_i` is only
+        guaranteed orthogonal when it spans the full :math:`2^n`-dimensional electronic space. See
+        the demo's `fragmentation and diagonalization
         <https://pennylane.ai/demos/simulating_vibronic_dynamics#fragmentation-and-diagonalization>`__
         section for the general (non-XOR) construction of :math:`V_i`.
 
@@ -272,7 +275,7 @@ class TrotterVibronic(Operator2):
 
             e^{-i H_i \tau} = V_i e^{-i D_i(Q)\tau} V_i^\dagger,
             \qquad
-            V_i = H_c \prod_{j \ne c} \text{CNOT}_{c \to j},
+            V_i = \Big(\prod_{j \ne c} \text{CNOT}_{c \to j}\Big) H_c,
             \quad V_0 = I .
 
         Here :math:`c` is the least-significant set bit of :math:`i`, and the product runs over its
@@ -299,15 +302,17 @@ class TrotterVibronic(Operator2):
         The arithmetic block per monomial (skipped when the coefficient vanishes):
 
         * :math:`c_a` -- :class:`~.SemiAdder`.
-        * :math:`l_{a,r} Q_r` -- :class:`~.OutMultiplier` of the coefficient by the signed
-          :math:`Q_r`.
-        * :math:`q_{a,r} Q_r^2` -- :class:`~.SignedOutSquare` then :class:`~.OutMultiplier`.
-        * :math:`\beta_{a,rs} Q_r Q_s` -- :class:`~.SignedOutMultiplier` then
-          :class:`~.OutMultiplier`.
+        * :math:`l_{a,r} Q_r` -- a half-signed multiply of the (unsigned) coefficient by the
+          signed :math:`Q_r`.
+        * :math:`q_{a,r} Q_r^2` -- :class:`~.SignedOutSquare` then a plain :class:`~.OutMultiplier`.
+        * :math:`\beta_{a,rs} Q_r Q_s` -- :class:`~.SignedOutMultiplier` then the same
+          half-signed multiply as the linear term.
 
-        Signed inputs enter through a half-signed multiply (a controlled :class:`~.Incrementer`
-        supplies the two's-complement), :math:`Q_r^2` uses the low :math:`2k-1` ``cache_wires`` and
-        :math:`Q_r Q_s` all :math:`2k`, and each square/product is uncomputed after use. See the
+        The half-signed multiply is a plain :class:`~.OutMultiplier` on the magnitudes, flanked by
+        extra sign-bit CNOTs and two controlled :class:`~.Incrementer` calls that apply the
+        two's-complement (visible as ``C(Incrementer)`` in the resource count above).
+        :math:`Q_r^2` uses the low :math:`2k-1` ``cache_wires`` and :math:`Q_r Q_s` all
+        :math:`2k`, and each square/product is uncomputed after use. See the
         demo's `potential step
         <https://pennylane.ai/demos/simulating_vibronic_dynamics#the-potential-step>`__ section for
         an explicit, ungraphed version of this pattern.

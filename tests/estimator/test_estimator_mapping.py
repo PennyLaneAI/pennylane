@@ -494,14 +494,14 @@ class TestMapToResourceOp:
         assert mapped_op.phase_grad_precision == 2.0**-b
         assert mapped_op.coeff_precision == 2.0**-b
 
-    def test_map_to_resource_op_trotter_vibronic_rejects_nonstandard_fragmentation(self):
-        """Test that non-standard XOR fragmentation is rejected by the resource mapping.
+    def test_map_to_resource_op_trotter_vibronic_rejects_too_many_fragments(self):
+        """Test that a fragment count above the XOR-fragmentation maximum is rejected.
 
         ``VibronicHamiltonian`` derives its cost from ``num_states`` only.
         """
         n_states, n_modes, k, b = 4, 2, 3, 2
         n = int(qp.math.ceil_log2(n_states))
-        num_fragments = 1  # standard fragmentation requires num_fragments == n_states == 4
+        num_fragments = n_states + 1  # standard XOR fragmentation allows at most n_states == 4
         hamiltonian = {
             "constant": np.zeros((num_fragments, n_states, n_states)),
             "linear": np.zeros((num_fragments, n_states, n_states, n_modes)),
@@ -531,6 +531,41 @@ class TestMapToResourceOp:
         )
         with pytest.raises(ValueError, match="fragment"):
             _map_to_resource_op(operator)
+
+    def test_map_to_resource_op_trotter_vibronic_accepts_fewer_fragments(self):
+        """Test that fewer than the maximum number of XOR fragments is accepted."""
+        n_states, n_modes, k, b = 4, 2, 3, 2
+        n = int(qp.math.ceil_log2(n_states))
+        num_fragments = 1  # fewer fragments than the maximum (n_states == 4) is still valid
+        hamiltonian = {
+            "constant": np.zeros((num_fragments, n_states, n_states)),
+            "linear": np.zeros((num_fragments, n_states, n_states, n_modes)),
+            "quadratic": np.zeros((num_fragments, n_states, n_states, n_modes, n_modes)),
+            "kinetic": np.einsum("ab,cd->abcd", np.eye(n_states), np.diag(0.3 * np.ones(n_modes))),
+        }
+        wires = qp.registers(
+            {
+                "electronic": n,
+                "vib_wires": n_modes * k,
+                "cache": 2 * k,
+                "coefficients": b,
+                "phase_gradient": b,
+                "work": max(n - 1, 2 * k, 2 * b + 2),
+            }
+        )
+        operator = qp.TrotterVibronic(
+            evolution_time=0.5,
+            num_trotter_steps=3,
+            hamiltonian=hamiltonian,
+            electronic_wires=wires["electronic"],
+            vib_wires=wires["vib_wires"],
+            cache_wires=wires["cache"],
+            coefficient_wires=wires["coefficients"],
+            phase_gradient_wires=wires["phase_gradient"],
+            work_wires=wires["work"],
+        )
+        mapped_op = _map_to_resource_op(operator)
+        assert mapped_op.vibronic_ham.num_states == n_states
 
     @pytest.mark.parametrize(
         "operator, expected_res_op",
