@@ -397,9 +397,9 @@ def _two_qubit_resource(**_):
     }
 
 
-@register_condition(lambda wires, **_: len(wires) == 2)
+@register_condition(lambda U, wires, **_: len(wires) == 2)  # pylint: disable=unused-argument
 @register_resources(_two_qubit_resource, exact=False)
-def two_qubit_decomp_rule(U, wires, **__):
+def two_qubit_decomp_rule(U, wires, **_):
     """The decomposition rule for a two-qubit unitary."""
 
     U, initial_phase = math.convert_to_su4(U)
@@ -423,7 +423,7 @@ def two_qubit_decomp_rule(U, wires, **__):
     ops.cond(math.logical_not(math.allclose(total_phase, 0)), ops.GlobalPhase)(-total_phase)
 
 
-def _multi_qubit_decomp_resource(wires, **_):
+def _multi_qubit_decomp_resource(U, wires, **_):  # pylint: disable=unused-argument
     num_wires = len(wires)
     return {
         ops.QubitUnitary(
@@ -444,7 +444,7 @@ def _multi_qubit_decomp_resource(wires, **_):
     }
 
 
-@register_condition(lambda wires, **_: len(wires) > 2)
+@register_condition(lambda U, wires, **_: len(wires) > 2)  # pylint: disable=unused-argument
 @register_resources(_multi_qubit_decomp_resource)
 def multi_qubit_decomp_rule(U, wires, **__):
     """The decomposition rule for a multi-qubit unitary."""

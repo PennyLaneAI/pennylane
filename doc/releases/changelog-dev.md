@@ -2,6 +2,32 @@
 
 <h3>New features since last release</h3>
 
+* Two new numeric Hamiltonians called :class:`pennylane.CDFHamiltonian` (based on `arXiv:2506.15784, Sec. III A <https://arxiv.org/abs/2506.15784>`) and :class:`pennylane.CGFHamiltonian` have been added (based on `arXiv:2508.11865, Sec. III C <https://arxiv.org/abs/2508.11865>`), which define compressed double-factorized (CDF) and Christiansen greedy-fragmentation Hamiltonians, respectively. These Hamiltonians can be defined
+  with both concrete numeric data or abstract data (using ``qp.typing.Float[...]``).
+  [(#10048)](https://github.com/PennyLaneAI/pennylane/pull/10048)
+
+  ```python
+  import numpy as np
+  import pennylane as qp
+
+  L, M, N = 2, 2, 3
+  ham = qp.CGFHamiltonian(
+      core_tensors=np.random.rand(L + 1, M, M, N, N),
+      leaf_tensors=np.random.rand(L + 1, M, N, N),
+      nuc_constant=0.5,
+  )
+  ```
+
+  The same Hamiltonian can be described with abstract data for the purposes of fast, low-fidelity
+  resource-estimation workflows where only shape information is available:
+
+  ```pycon
+  >>> from pennylane.typing import Float
+  >>> qp.CGFHamiltonian(Float[L + 1, M, M, N, N], Float[L + 1, M, N, N]).leaf_tensors
+  AbstractArray((3, 2, 3, 3), float64, weak_type=True)
+
+  ```
+
 * Added :func:`~pennylane.backline.triton_decoder` and
   :func:`~pennylane.backline.css_bp_decoder` for compiling Triton-based coprocessor decoders.
   :func:`~pennylane.backline.triton_decoder` wraps user-provided Triton decoder tuples, while
@@ -110,6 +136,15 @@
   True
 
   ```
+
+* Added :class:`~.TrotterCDF` and :class:`~.TrotterCGF`, templates for second-order Trotter time evolution of
+  fragmented Hamiltonians (CDF for electronic structure, CGF for vibrational structure) as used in modern quantum
+  chemistry algorithms.
+  [(#9459)](https://github.com/PennyLaneAI/pennylane/pull/9459)
+  [(#9789)](https://github.com/PennyLaneAI/pennylane/pull/9789)
+  [(#10015)](https://github.com/PennyLaneAI/pennylane/pull/10015)
+  [(#10074)](https://github.com/PennyLaneAI/pennylane/pull/10074)
+  [(#10081)](https://github.com/PennyLaneAI/pennylane/pull/10081)
 
 * A new arithmetic template called :class:`~.SignedOutMultiplier` has been added that multiplies numbers encoded in the
   input registers using a two's complement.
@@ -384,6 +419,13 @@
 
 <h3>Improvements 🛠</h3>
 
+* :class:`~.IsingZZ`'s decomposition is now expressed as a :func:`~.change_op_basis` (``CNOT``
+  compute/uncompute around the ``RZ``) instead of three bare gates. This lets PennyLane's generic
+  ``C(ChangeOpBasis)`` rule automatically control only the ``RZ`` for any number of control wires,
+  using fewer gates than the previous default of naively controlling every gate.
+  [(#10059)](https://github.com/PennyLaneAI/pennylane/pull/10059)
+  [(#10059)](https://github.com/PennyLaneAI/pennylane/pull/10015)
+
 * Coprocessor connection addresses are grouped on :class:`~pennylane.Endpoint` as ``endpoint=qp.Endpoint(host, port)``, replacing the separate ``comm_host`` and ``oob_port`` fields.
   [(#10017)](https://github.com/PennyLaneAI/pennylane/pull/10017)
 
@@ -401,6 +443,7 @@
   abstract type notation.
   [(#9701)](https://github.com/PennyLaneAI/pennylane/pull/9701)
   [(#9724)](https://github.com/PennyLaneAI/pennylane/pull/9724)
+  [(#10056)](https://github.com/PennyLaneAI/pennylane/pull/10056)
 
   ```python
   from pennylane.typing import Int, Float, Complex, Bool, Wire
@@ -408,7 +451,7 @@
   Float           # Float scalar
   Complex[...]    # Abstract complex array with any shape
   Bool[-1, 3, 4]  # Abstract bool array with dynamic size for the first axis
-  Wire            # Single abstract wire
+  Wire[1]         # Single abstract wire
   Wire[4]         # Four abstract wires
   Wire[-1]        # Wire sequence with dynamic size
   ```
@@ -581,6 +624,12 @@
   giving order-of-magnitude speedups for sparse and structured operators.
   [(#9728)](https://github.com/PennyLaneAI/pennylane/pull/9728)
 
+* Added the ``MultiX`` template which conditionally applies ``PauliX`` gates across target wires according
+  to a bitstring array.
+  [(#10033)](https://github.com/PennyLaneAI/pennylane/pull/10033)
+  [(#10073)](https://github.com/PennyLaneAI/pennylane/pull/10073)
+  [(#10079)](https://github.com/PennyLaneAI/pennylane/pull/10079)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Added an arithmetic function ``labs.templates.half_signed_out_multiplier`` that multiplies
@@ -621,6 +670,12 @@
 * Created a new ``labs.templates.LeftQuantumComparator`` template for performing inequality test of two quantum registers.
   [(#9277)](https://github.com/PennyLaneAI/pennylane/pull/9277)
   [(#9544)](https://github.com/PennyLaneAI/pennylane/pull/9544)
+
+* TCDQ now supports workflows with qudits of non-uniform dimensions.
+  [(#9935)](https://github.com/PennyLaneAI/pennylane/pull/9935)
+
+* TCDQ qudit MMD loss function now supports phase layers.
+  [(#10035)](https://github.com/PennyLaneAI/pennylane/pull/10035)
 
   ```python
   import pennylane as qp
@@ -759,12 +814,6 @@
     ['circuit', 'Hadamard [x5]', 'RZ [x5]', 'T [x220]', 'QPE(RX, 4, adj_qft=None)']
 
   ```
-
-* Created a :func:`~.pennylane.labs.templates.trotter_fragmented` function to run specialized
-  Trotter circuits for fragmented Hamiltonians. This is used in modern quantum chemistry
-  application algorithms.
-  [(#9459)](https://github.com/PennyLaneAI/pennylane/pull/9459)
-  [(#9789)](https://github.com/PennyLaneAI/pennylane/pull/9789)
 
 * Performance of the Trotter error module is improved by introducing a novel algorithm for
   computing the Baker-Campbell-Hausdorff formula.
@@ -972,8 +1021,13 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Updated :mod:`pennylane.pytrees` to consider `None` a Pytree. This makes PennyLane Pytrees more
-  consistent with JAX Pytrees.
+* The resource module JSON parser can now handle floating point values received from the Catalyst backend.
+  [(#10044)](https://github.com/PennyLaneAI/pennylane/pull/10044)
+
+* Removes `pennylane.transforms.decompose.DecomposeInterpreter`. Decompositions are no longer supported for the capture-without-qjit workflow.
+  [(#9915)](https://github.com/PennyLaneAI/pennylane/pull/9915)
+
+* Updated :mod:`pennylane.pytrees` to consider `None` a Pytree. This makes PennyLane Pytrees more consistent with JAX Pytrees.
   [(#10045)](https://github.com/PennyLaneAI/pennylane/pull/10045)
 
 * The resource module JSON parser used by :func:`~.specs` to read Catalyst data has been revamped to match the new JSON structure produced by Catalyst.
@@ -1033,10 +1087,12 @@
   [(#10026)](https://github.com/PennyLaneAI/pennylane/pull/10026)
   [(#9990)](https://github.com/PennyLaneAI/pennylane/pull/9990)
   [(#10041)](https://github.com/PennyLaneAI/pennylane/pull/10041)
+  [(#10072)](https://github.com/PennyLaneAI/pennylane/pull/10072)
   - Templates are ported:
     - :class:`~.BasisRotation`, :class:`~.MultiplexerStatePreparation`, :class:`~.QROM`, :class:`~.QFT`, :class:`~.FlipSign`,
       :class:`~.TemporaryAND`, :class:`~.SelectPauliRot`, :class:`~.GQSP`, :class:`~.AQFT`, :class:`~.SumOfSlatersPrep`,
-      :class:`~.SemiAdder`, :class:`~.OutMultiplier`, :class:`~.SignedOutMultiplier`, :class:`~.BasisState`
+      :class:`~.SemiAdder`, :class:`~.OutMultiplier`, :class:`~.SignedOutMultiplier`, :class:`~.BasisState`, :class:`~.TrotterCDF`,
+      :class:`~.TrotterCGF`, :class:`~.OutSquare`, :class:`~.SignedOutSquare`, :class:`~.Incrementer`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
   [(#9925)](https://github.com/PennyLaneAI/pennylane/pull/9925)
   [(#9918)](https://github.com/PennyLaneAI/pennylane/pull/9918)
@@ -1051,8 +1107,17 @@
   [(#9994)](https://github.com/PennyLaneAI/pennylane/pull/9994)
   [(#9997)](https://github.com/PennyLaneAI/pennylane/pull/9997)
   [(#9995)](https://github.com/PennyLaneAI/pennylane/pull/9995)
+  [(#10015)](https://github.com/PennyLaneAI/pennylane/pull/10015)
   [(#10018)](https://github.com/PennyLaneAI/pennylane/pull/10018)
   [(#9933)](https://github.com/PennyLaneAI/pennylane/pull/9933)
+  [(#10042)](https://github.com/PennyLaneAI/pennylane/pull/10042)
+  [(#10052)](https://github.com/PennyLaneAI/pennylane/pull/10052)
+  [(#10054)](https://github.com/PennyLaneAI/pennylane/pull/10054)
+  [(#10062)](https://github.com/PennyLaneAI/pennylane/pull/10062)
+
+  [(#10073)](https://github.com/PennyLaneAI/pennylane/pull/10073)
+  [(#10078)](https://github.com/PennyLaneAI/pennylane/pull/10078)
+  [(#10085)](https://github.com/PennyLaneAI/pennylane/pull/10085)
   - Quantum chemistry operators are ported:
     - :class:`~.SingleExcitation`
   [(#9944)](https://github.com/PennyLaneAI/pennylane/pull/9944)
@@ -1129,6 +1194,7 @@
   [(#9937)](https://github.com/PennyLaneAI/pennylane/pull/9937)
   [(#9950)](https://github.com/PennyLaneAI/pennylane/pull/9950)
   [(#9926)](https://github.com/PennyLaneAI/pennylane/pull/9926)
+  [(#10077)](https://github.com/PennyLaneAI/pennylane/pull/10077)
 
   This is an internal, work-in-progress effort that is being incrementally integrated into the PennyLane
   ecosystem. Supported functionality so far:
@@ -1153,6 +1219,7 @@
     [(#9659)](https://github.com/PennyLaneAI/pennylane/pull/9659)
     [(#9842)](https://github.com/PennyLaneAI/pennylane/pull/9842)
     [(#9898)](https://github.com/PennyLaneAI/pennylane/pull/9898)
+    [(#10058)](https://github.com/PennyLaneAI/pennylane/pull/10058)
   - :class:`~.StatePrepBase2`, based on :class:`~.Operator2`, is added.
     [(#9562)](https://github.com/PennyLaneAI/pennylane/pull/9562)
   - :meth:`~.Operator2.decomposition` falls back to registered graph decomposition rules when ``compute_decomposition`` is not overridden.
@@ -1181,6 +1248,7 @@
     [(#9808)](https://github.com/PennyLaneAI/pennylane/pull/9808)
     [(#9834)](https://github.com/PennyLaneAI/pennylane/pull/9834)
     [(#9908)](https://github.com/PennyLaneAI/pennylane/pull/9908)
+    [(#10066)](https://github.com/PennyLaneAI/pennylane/pull/10066)
   - Integration with measurements.
     [(#9753)](https://github.com/PennyLaneAI/pennylane/pull/9753)
   - Integration with :func:`pennylane.apply`.
@@ -1308,6 +1376,22 @@
   [(#9621)](https://github.com/PennyLaneAI/pennylane/pull/9621)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed :class:`~.Incrementer` returning an incorrect incremented value when not enough
+  work wires are provided.
+  [(#10062)](https://github.com/PennyLaneAI/pennylane/pull/10062)
+
+* Converting an ``AbstractArray`` to a concrete array now raises an informative ``TypeError``
+  instead of silently producing an empty array, which previously surfaced as an obscure error
+  far from its cause.
+  [(#10083)](https://github.com/PennyLaneAI/pennylane/pull/10083)
+
+* Fixed the QFT-based decomposition of :class:`~.OutMultiplier` so it can be captured and
+  compiled with Catalyst when ``mod = 2 ** len(output_wires)``.
+  [(#10057)](https://github.com/PennyLaneAI/pennylane/pull/10057)
+
+* Fixed capture compatibility of the decomposition rule of `SemiAdder`.
+  [(#10068)](https://github.com/PennyLaneAI/pennylane/pull/10068)
 
 * Fixed :func:`~pennylane.backline.css_bp_decoder` and the other Triton decoders so they can be
   compiled on a machine with no usable GPU. The ahead-of-time build called
@@ -1456,6 +1540,7 @@ This release contains contributions from (in alphabetical order):
 Usman Ahmed,
 Guillermo Alonso,
 Abdullah Al Omar Galib,
+Ali Asadi,
 Gabriel Bottrill,
 Joseph Bowles,
 Astral Cai,
@@ -1464,6 +1549,8 @@ Miguel Cárdenas,
 Yushao Chen,
 Diksha Dhawan,
 Marcus Edwards,
+Thomas C. Fraser,
+Sengthai Heng,
 Austin Huang,
 Harshal Janjani,
 Jacob Kitchen,
