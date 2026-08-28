@@ -66,9 +66,16 @@ class CompositeOp2(Operator2, is_baseclass=True):
     def __new__(cls, *args, **kwargs):
         obj = super().__new__(cls)
 
+        # NOTE: If called without arguments (during a __copy__)
+        # skip signature binding as attributes will be restored
+        # during the copy.
         if not args and not kwargs:
             return obj
 
+        # The purpose of this function here is to intercept the argument passed to the
+        # constructor of the subclass and store it on the operator, so that in __init__,
+        # we can pass that along to the base Operator2.__init__, which expects the
+        # arguments to match the pre-defined signature of the subclass.
         sig = signature(cls)
         bound_args = sig.bind(*args, **kwargs)
         bound_args.apply_defaults()
