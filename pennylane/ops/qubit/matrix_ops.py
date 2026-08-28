@@ -384,12 +384,12 @@ add_decomps(
 )
 
 
-def _qubit_unitary_resource(base, **_):
+def _qubit_unitary_resource(base, *_, **__):
     return {abstractify(base): 1}
 
 
 @register_resources(_qubit_unitary_resource)
-def _adjoint_qubit_unitary(base, **_):
+def _adjoint_qubit_unitary(base):
     U = base.U
     U = (
         U.conjugate().transpose()
@@ -627,7 +627,7 @@ def _diagonal_mux_on_aux_decomp(D, wires, **_):
 add_decomps(DiagonalQubitUnitary, _diagonal_qu_decomp, _diagonal_mux_on_aux_decomp)
 
 
-def _diagonal_qubit_unitary_resource(base, **_):
+def _diagonal_qubit_unitary_resource(base, *_, **__):
     diagonal_size = qp.math.shape(base.D)[-1]
     return {DiagonalQubitUnitary(Complex[diagonal_size], wires=abstractify(base.wires)): 1}
 

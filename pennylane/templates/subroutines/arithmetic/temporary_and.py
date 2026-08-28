@@ -217,7 +217,7 @@ class TemporaryAND(Operator2):
 _number_xs = 2
 
 
-def _temporary_and_resources(**_):
+def _temporary_and_resources(*_, **__):
     prod_rep = resource_rep(
         ops.Prod,
         resources={
@@ -277,7 +277,7 @@ def _temporary_and_to_toffoli(wires: WiresLike, control_values: Sequence[bool]):
 add_decomps(TemporaryAND, _temporary_and, _temporary_and_to_toffoli)
 
 
-def _adjoint_temporary_and_resources(**_):
+def _adjoint_temporary_and_resources(*_, **__):
     return {ops.Hadamard: 1, ops.MidMeasure: 1, ops.CZ: 1, ops.X: _number_xs}
 
 

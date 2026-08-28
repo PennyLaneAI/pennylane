@@ -285,7 +285,8 @@ class SemiAdder(Operator2):
         return self.x_wires + self.y_wires + self.work_wires
 
 
-def _semi_adder_resources(x_wires, y_wires, **_):
+# pylint: disable-next=unused-argument
+def _semi_adder_resources(x_wires, y_wires, work_wires):
     num_x_wires = len(x_wires)
     num_y_wires = len(y_wires)
     if num_y_wires == 1:
@@ -304,15 +305,14 @@ def _semi_adder_resources(x_wires, y_wires, **_):
     }
 
 
-def _semi_adder_work_wires(y_wires=None, work_wires=(), base=None, **_):
+# pylint: disable-next=unused-argument
+def _semi_adder_work_wires(x_wires, y_wires, work_wires):
     """The work wires that the ladders need, minus the ones that were already provided.
 
     Symbolic rules like ``C(SemiAdder)`` reuse this spec but are called with the symbolic
     operator's arguments, so ``base`` is set instead of ``y_wires``. The requirement is the one
     of the wrapped ``SemiAdder``, whose own ``work_wires`` are the relevant ones.
     """
-    if base is not None:
-        return _semi_adder_work_wires(**base.arguments)
     num_work_wires_needed = len(y_wires) - 1
     num_work_wires_provided = len(work_wires)
     return {"zeroed": max(num_work_wires_needed - num_work_wires_provided, 0)}
@@ -351,9 +351,8 @@ def _semi_adder(x_wires, y_wires, work_wires=None, carry_flip=None):
 add_decomps(SemiAdder, _semi_adder)
 
 
-def _controlled_semi_adder_resource(
-    base, control_wires, control_values, work_wires=None, work_wire_type="borrowed"
-):  # pylint: disable=too-many-arguments,unused-argument
+# pylint: disable-next=too-many-arguments,unused-argument
+def _ctrl_semi_adder_resource(base, control_wires, control_values, work_wires, work_wire_type):
     r"""
     Resources calculated from `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_.
 
@@ -410,7 +409,10 @@ def _controlled_semi_adder_resource(
     }
 
 
-@register_resources(_controlled_semi_adder_resource, work_wires=_semi_adder_work_wires)
+@register_resources(
+    _ctrl_semi_adder_resource,
+    work_wires=lambda base, *_, **__: _semi_adder_work_wires(**base.arguments),
+)
 def _controlled_semi_adder(
     base,
     control_wires,
