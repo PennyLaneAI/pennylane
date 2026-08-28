@@ -43,7 +43,7 @@ from pennylane.decomposition.resources import (
     resolve_work_wire_type,
 )
 from pennylane.exceptions import SparseMatrixUndefinedError
-from pennylane.ops.op_math.adjoint2 import Adjoint2, split_non_dynamic_args
+from pennylane.ops.op_math.adjoint2 import Adjoint2, get_traced_and_non_traced_args
 from pennylane.typing import AbstractArray, AbstractWires, Bool, Complex, Wire
 from pennylane.wires import Wires, WiresLike
 
@@ -716,7 +716,7 @@ def _make_controlled_decomp(base_rule: DecompositionRule):
             qp.cond(qp.math.logical_not(_cvals[i]), qp.X)(_cwires[i])
 
         _x_flips()
-        non_traced_args, traced_args = split_non_dynamic_args(base)
+        non_traced_args, traced_args = get_traced_and_non_traced_args(base)
         impl = partial(base_rule._impl, **non_traced_args)
         qp.ctrl(
             impl,
