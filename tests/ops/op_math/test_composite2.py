@@ -51,6 +51,38 @@ ops_rep = (
 )
 
 
+class NoOperandsOp(CompositeOp2):
+    # pylint:disable=unused-argument
+    _op_symbol = "#"
+    _math_op = math.prod
+
+    hybrid_argnames = ("ops", "_init_pauli_rep")  # different name than operands
+    wire_argnames = ()
+
+    def __init__(self, ops: Sequence[Operator], _init_pauli_rep=None):
+        super().__init__(ops, _init_pauli_rep=_init_pauli_rep)
+
+    def _build_pauli_rep(self):
+        return qp.pauli.PauliSentence({})
+
+    @property
+    def is_verified_hermitian(self):
+        return False
+
+    def matrix(self, wire_order=None):
+        if wire_order is None:
+            wire_order = self.wires
+        mat = np.eye(2 ** len(wire_order))
+        for op in self:
+            mat = mat @ math.expand_matrix(op.matrix(), op.wires, wire_order=wire_order)
+        return mat
+
+    @classmethod
+    # pylint: disable-next=unused-argument
+    def _sort(cls, op_list, wire_map: dict = None):
+        return op_list
+
+
 class ValidOp(CompositeOp2):
     # pylint:disable=unused-argument
     _op_symbol = "#"
@@ -148,6 +180,11 @@ class TestConstruction:
         """Test that valid child classes can be initialized without error"""
         op = ValidOp(self.simple_operands)
         assert op._op_symbol == "#"
+        assert op.operands == self.simple_operands
+
+        op = NoOperandsOp(self.simple_operands)
+        assert op._op_symbol == "#"
+        assert op.ops == self.simple_operands
         assert op.operands == self.simple_operands
 
     def test_abstract_init(self):
