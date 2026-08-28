@@ -196,7 +196,7 @@ def _core_incrementer_resources(num_wires):
     return resources
 
 
-def _incrementer_resources(wires, **_):
+def _incrementer_resources(wires, work_wires=None):  # pylint: disable=unused-argument
     return _core_incrementer_resources(len(wires))
 
 
@@ -265,7 +265,7 @@ def _decompose_mcxs(wires, work_wires, control_wires=None):
     cond(len(wires) > 1, _increment)()
 
 
-def _incrementer_fallback_resources(wires, work_wires, **_):
+def _incrementer_fallback_resources(wires, work_wires):
     num_wires = len(wires)
     num_work_wires = len(work_wires)
     resources = {}
