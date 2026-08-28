@@ -226,8 +226,8 @@ class TrotterVibronic(Operator2):
         section for the general (non-XOR) construction of :math:`V_i`.
 
         **1. Second-order Trotter.**
-        With :math:`S =` ``num_trotter_steps`` and :math:`\Delta t = t/S`, :math:`e^{-iHt}` is
-        approximated by :math:`S` repetitions of the symmetric step
+        With :math:`n_T =` ``num_trotter_steps`` and :math:`\Delta t = t/n_T`, :math:`e^{-iHt}` is
+        approximated by :math:`n_T` repetitions of the symmetric step
 
         .. math::
 
@@ -317,11 +317,13 @@ class TrotterVibronic(Operator2):
 
         .. math::
 
-            e^{-i H_{\text{kin}} \Delta t} = \prod_r F_r^\dagger e^{-i t_r P_r^2 \Delta t} F_r,
+            e^{-i H_{\text{kin}} \Delta t} = \prod_r \text{QFT}_r^\dagger e^{-i t_r P_r^2 \Delta t}
+                                             \text{QFT}_r,
 
-        where :math:`F_r =` :class:`~.AQFT` maps mode :math:`r` from position to momentum space,
-        :math:`t_r` is read from the :math:`(0,0)` electronic block of ``kinetic`` (any electronic
-        dependence is ignored), and :math:`e^{-i t_r P_r^2 \Delta t}` reuses the
+        where :math:`\text{QFT}_r` maps mode :math:`r` from position to momentum space
+        (implemented as an :class:`~.AQFT`), :math:`t_r` is read from the :math:`(0,0)` electronic
+        block of ``kinetic`` (any electronic dependence is ignored), and
+        :math:`e^{-i t_r P_r^2 \Delta t}` reuses the
         square-and-multiply of the quadratic term (step 4). Since :math:`t_r` is state-independent,
         it is written directly to ``coefficient_wires`` without a :class:`~.QROM`. See the demo's
         `kinetic step <https://pennylane.ai/demos/simulating_vibronic_dynamics#the-kinetic-step>`__
