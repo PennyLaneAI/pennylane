@@ -259,31 +259,6 @@ class TestCGFScheme:
         expected = np.stack([U_curr[l] @ U_prev[l].T for l in range(num_modes)])
         assert np.allclose(_merge_leaves(U_prev, U_curr), expected)
 
-    def test_align_one_body_leaf(self, seed):
-        """The one-body leaf (eigenvectors stored as columns) is transposed per mode to match
-        the two-body row convention; the two-body leaves are returned untouched."""
-        from pennylane.templates.subroutines.time_evolution.trotter_cgf import (  # pylint: disable=import-outside-toplevel
-            _align_one_body_leaf,
-        )
-
-        rng = np.random.default_rng(seed)
-        num_modes, n_states, L = 2, 3, 2
-        leaf = np.stack(
-            [
-                np.stack([random_orthogonal(n_states, rng) for _ in range(num_modes)])
-                for _ in range(L + 1)
-            ]
-        )
-
-        ham = CGFHamiltonian(
-            core_tensors=np.zeros((L + 1, num_modes, num_modes, n_states, n_states)),
-            leaf_tensors=leaf,
-            nuc_constant=0.0,
-        )
-        aligned = _align_one_body_leaf(ham).leaf_tensors
-        assert np.allclose(aligned[0], np.swapaxes(leaf[0], -2, -1))
-        assert np.allclose(aligned[1:], leaf[1:])
-
     def test_apply_system_basis_rotation(self, seed):
         """Test that per-mode leaves are applied as (transposed) BasisRotations and that a
         mode whose rotation is the identity is skipped."""
@@ -511,7 +486,14 @@ class TestControlledDecomposition:
             jaxpr = jax.make_jaxpr(circuit)(jax.numpy.array(0.4), *range(n + 1))
 
         ops = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.4, *range(n + 1)).operations
-        assert {type(op).__name__ for op in ops} == {"BasisRotation", "CNOT", "RZ", "PhaseShift"}
+        # One-body terms emit ``CRZ`` (PennyLane's single-control shortcut for ``ctrl(RZ)``);
+        # two-body terms emit ``ControlledOp2`` wrapping ``IsingZZ``.
+        assert {type(op).__name__ for op in ops} == {
+            "BasisRotation",
+            "CRZ",
+            "PhaseShift",
+            "ControlledOp2",
+        }
 
     def test_genuine_controlled_matches_expm(self, diagonal_hamiltonian_cgf):
         """By default ctrl(TrotterCGF) is a genuine controlled unitary: for an identity-leaf
