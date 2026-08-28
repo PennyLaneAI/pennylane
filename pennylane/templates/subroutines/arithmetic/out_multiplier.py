@@ -20,7 +20,6 @@ from itertools import combinations
 
 from pennylane import math
 from pennylane.core.operator import Operator2, abstractify
-from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.decomposition import (
     add_decomps,
     change_op_basis_resource_rep,
@@ -363,7 +362,8 @@ def _out_multiplier_with_qft(
         work_wire = work_wires[1:2]
     else:
         qft_output_wires = output_wires
-        work_wire = ()
+        # Keep the empty register traceable instead of passing a literal tuple to JAX.
+        work_wire = output_wires[:0]
 
     if output_wires_zeroed:
         compute_op = prod(*(H(w) for w in qft_output_wires))
@@ -533,24 +533,18 @@ def _adder_flipped_first_work_wire(x_wires, y_wires, work_wires, flip_control=No
     unchanged. We only expect this function to be used with two values for `flip_control`: None
     or a tuple ``(c_wire, c_val)`` for a single control wire.
     """
-
-    with AnnotatedQueue() as q:
+    if not work_wires:
         _semi_adder(x_wires, y_wires, work_wires)
-    adder_ops = q.queue
-    if work_wires:
-        # We insert work wire bit flips where a carry-in qubit would cause them,
-        # i.e., after the very first left elbow and before the last right elbow
-        with QueuingManager.stop_recording():
-            if flip_control is None:
-                work_wire_flip = X(work_wires[-1])
-            else:
-                c_wire, c_val = flip_control
-                work_wire_flip = ctrl(X(work_wires[-1]), control=c_wire, control_values=[c_val])
-        adder_ops.insert(1, work_wire_flip)
-        adder_ops.insert(-2, work_wire_flip)
-    if QueuingManager.recording():
-        for op in adder_ops:
-            apply(op)
+        return
+
+    def carry_flip(wire):
+        if flip_control is None:
+            X(wire)
+        else:
+            c_wire, c_val = flip_control
+            ctrl(X(wire), control=c_wire, control_values=[c_val])
+
+    _semi_adder(x_wires, y_wires, work_wires, carry_flip=carry_flip)
 
 
 def _add_plus_one(x_wires, y_wires, work_wires):

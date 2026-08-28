@@ -79,8 +79,7 @@ class MultiX(Operator2):
 
     is_verified_hermitian = True
 
-    num_params = 0
-    """int: Number of trainable parameters that the operator depends on."""
+    grad_method = None
 
     def __init__(self, bitstring: TensorLike, wires: WiresLike) -> None:
         bitstring, wires = MultiX._canonicalize_validate_and_cast_inputs(bitstring, wires)

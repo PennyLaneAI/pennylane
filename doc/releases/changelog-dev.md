@@ -142,6 +142,8 @@
   [(#9459)](https://github.com/PennyLaneAI/pennylane/pull/9459)
   [(#9789)](https://github.com/PennyLaneAI/pennylane/pull/9789)
   [(#10015)](https://github.com/PennyLaneAI/pennylane/pull/10015)
+  [(#10074)](https://github.com/PennyLaneAI/pennylane/pull/10074)
+  [(#10081)](https://github.com/PennyLaneAI/pennylane/pull/10081)
 
 * A new arithmetic template called :class:`~.SignedOutMultiplier` has been added that multiplies numbers encoded in the
   input registers using a two's complement.
@@ -618,6 +620,7 @@
   to a bitstring array.
   [(#10033)](https://github.com/PennyLaneAI/pennylane/pull/10033)
   [(#10073)](https://github.com/PennyLaneAI/pennylane/pull/10073)
+  [(#10079)](https://github.com/PennyLaneAI/pennylane/pull/10079)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -659,6 +662,12 @@
 * Created a new ``labs.templates.LeftQuantumComparator`` template for performing inequality test of two quantum registers.
   [(#9277)](https://github.com/PennyLaneAI/pennylane/pull/9277)
   [(#9544)](https://github.com/PennyLaneAI/pennylane/pull/9544)
+
+* TCDQ now supports workflows with qudits of non-uniform dimensions.
+  [(#9935)](https://github.com/PennyLaneAI/pennylane/pull/9935)
+
+* TCDQ qudit MMD loss function now supports phase layers.
+  [(#10035)](https://github.com/PennyLaneAI/pennylane/pull/10035)
 
   ```python
   import pennylane as qp
@@ -1004,6 +1013,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* The resource module JSON parser can now handle floating point values received from the Catalyst backend.
+  [(#10044)](https://github.com/PennyLaneAI/pennylane/pull/10044)
+
 * Removes `pennylane.transforms.decompose.DecomposeInterpreter`. Decompositions are no longer supported for the capture-without-qjit workflow.
   [(#9915)](https://github.com/PennyLaneAI/pennylane/pull/9915)
 
@@ -1067,6 +1079,7 @@
   [(#10026)](https://github.com/PennyLaneAI/pennylane/pull/10026)
   [(#9990)](https://github.com/PennyLaneAI/pennylane/pull/9990)
   [(#10041)](https://github.com/PennyLaneAI/pennylane/pull/10041)
+  [(#10072)](https://github.com/PennyLaneAI/pennylane/pull/10072)
   - Templates are ported:
     - :class:`~.BasisRotation`, :class:`~.MultiplexerStatePreparation`, :class:`~.QROM`, :class:`~.QFT`, :class:`~.FlipSign`,
       :class:`~.TemporaryAND`, :class:`~.SelectPauliRot`, :class:`~.GQSP`, :class:`~.AQFT`, :class:`~.SumOfSlatersPrep`,
@@ -1091,6 +1104,7 @@
   [(#9933)](https://github.com/PennyLaneAI/pennylane/pull/9933)
   [(#10042)](https://github.com/PennyLaneAI/pennylane/pull/10042)
   [(#10073)](https://github.com/PennyLaneAI/pennylane/pull/10073)
+  [(#10078)](https://github.com/PennyLaneAI/pennylane/pull/10078)
   - Quantum chemistry operators are ported:
     - :class:`~.SingleExcitation`
   [(#9944)](https://github.com/PennyLaneAI/pennylane/pull/9944)
@@ -1168,6 +1182,7 @@
   [(#9950)](https://github.com/PennyLaneAI/pennylane/pull/9950)
   [(#10027)](https://github.com/PennyLaneAI/pennylane/pull/10027)
   [(#9926)](https://github.com/PennyLaneAI/pennylane/pull/9926)
+  [(#10077)](https://github.com/PennyLaneAI/pennylane/pull/10077)
 
   This is an internal, work-in-progress effort that is being incrementally integrated into the PennyLane
   ecosystem. Supported functionality so far:
@@ -1221,6 +1236,7 @@
     [(#9808)](https://github.com/PennyLaneAI/pennylane/pull/9808)
     [(#9834)](https://github.com/PennyLaneAI/pennylane/pull/9834)
     [(#9908)](https://github.com/PennyLaneAI/pennylane/pull/9908)
+    [(#10066)](https://github.com/PennyLaneAI/pennylane/pull/10066)
   - Integration with measurements.
     [(#9753)](https://github.com/PennyLaneAI/pennylane/pull/9753)
   - Integration with :func:`pennylane.apply`.
@@ -1348,6 +1364,10 @@
   [(#9621)](https://github.com/PennyLaneAI/pennylane/pull/9621)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed the QFT-based decomposition of :class:`~.OutMultiplier` so it can be captured and
+  compiled with Catalyst when ``mod = 2 ** len(output_wires)``.
+  [(#10057)](https://github.com/PennyLaneAI/pennylane/pull/10057)
 
 * Fixed capture compatibility of the decomposition rule of `SemiAdder`.
   [(#10068)](https://github.com/PennyLaneAI/pennylane/pull/10068)
@@ -1509,6 +1529,7 @@ Yushao Chen,
 Diksha Dhawan,
 Marcus Edwards,
 Thomas C. Fraser,
+Sengthai Heng,
 Austin Huang,
 Harshal Janjani,
 Jacob Kitchen,
