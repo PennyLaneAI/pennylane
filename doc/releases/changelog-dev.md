@@ -1107,6 +1107,7 @@
   [(#10054)](https://github.com/PennyLaneAI/pennylane/pull/10054)
   [(#10073)](https://github.com/PennyLaneAI/pennylane/pull/10073)
   [(#10078)](https://github.com/PennyLaneAI/pennylane/pull/10078)
+  [(#10069)](https://github.com/PennyLaneAI/pennylane/pull/10069)
   - Quantum chemistry operators are ported:
     - :class:`~.SingleExcitation`
   [(#9944)](https://github.com/PennyLaneAI/pennylane/pull/9944)
@@ -1365,12 +1366,6 @@
   [(#9621)](https://github.com/PennyLaneAI/pennylane/pull/9621)
 
 <h3>Bug fixes 🐛</h3>
-
-* Fixed a bug where the adjoint of an :class:`~.Operator2` failed to lower under program capture /
-  Catalyst when its decomposition branched on a ``static_argnames`` or ``compilable_argnames``
-  argument (such as ``output_wires_zeroed``). The adjoint decomposition rule traced those arguments,
-  triggering a ``TracerBoolConversionError``; the non-dynamic arguments are now kept concrete.
-  [(#10069)](https://github.com/PennyLaneAI/pennylane/pull/10069)
 
 * Converting an ``AbstractArray`` to a concrete array now raises an informative ``TypeError``
   instead of silently producing an empty array, which previously surfaced as an obscure error

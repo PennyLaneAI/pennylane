@@ -42,6 +42,15 @@ from pennylane.decomposition.symbolic_decomposition import self_adjoint
 from .symbolicop2 import SymbolicOp2
 
 
+def split_non_dynamic_args(op: Operator2) -> tuple[dict, dict]:
+    """Split an ``Operator2``'s bound arguments into non-dynamic (static, compilable,
+    and hybrid) and dynamic argument dicts."""
+    non_dynamic = op.static_argnames + op.compilable_argnames + op.hybrid_argnames
+    static = {k: v for k, v in op.arguments.items() if k in non_dynamic}
+    dynamic = {k: v for k, v in op.arguments.items() if k not in non_dynamic}
+    return static, dynamic
+
+
 class Adjoint2(SymbolicOp2):
     """The adjoint of an operator."""
 
@@ -239,12 +248,7 @@ def _make_adjoint_decomp(base_rule: DecompositionRule):
     )
     def _impl(base):
         # pylint: disable=protected-access
-        # Static/compilable args are concrete at compile time and often gate the decomposition
-        # structure (e.g. Python ``if`` branches). Close over them rather than forwarding them
-        # through ``qp.adjoint(...)``, which would otherwise trace them (breaking capture/MLIR).
-        non_dynamic = base.static_argnames + base.compilable_argnames
-        static = {k: base.arguments[k] for k in non_dynamic if k in base.arguments}
-        dynamic = {k: v for k, v in base.arguments.items() if k not in static}
+        static, dynamic = split_non_dynamic_args(base)
         impl = partial(base_rule._impl, **static) if static else base_rule._impl
         qp.adjoint(impl)(**dynamic)
 
