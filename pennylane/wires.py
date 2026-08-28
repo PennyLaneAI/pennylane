@@ -840,16 +840,15 @@ def is_abstract_qubit(v):
     return math.is_abstract(v) and isinstance(v.val.aval, AbstractQubit)
 
 
-def is_abstract_or_traced(v):
-    """Returns ``True`` if the provided value is abstract or traced."""
+def _filter_abstract_and_traced_wires(v):
     if isinstance(v, AbstractWires):
-        return True
-    return any(math.is_abstract(w) for w in v)
+        return Wires([])
+    return Wires([w for w in v if not math.is_abstract(w)])
 
 
 def validate_no_wire_overlaps(wire_args: dict):
     """Validate that the given wires do not overlap."""
-    concrete_wire_args = {n: w for n, w in wire_args.items() if not is_abstract_or_traced(w)}
+    concrete_wire_args = {n: _filter_abstract_and_traced_wires(w) for n, w in wire_args.items()}
     for n1, n2 in combinations(concrete_wire_args, r=2):
         if Wires.shared_wires([concrete_wire_args[n1], concrete_wire_args[n2]]):
             raise ValueError(f"{n1} and {n2} must not overlap")
