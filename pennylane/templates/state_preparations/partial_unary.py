@@ -788,6 +788,8 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
     if not circuit:
         return
 
+    batch_sizes = list({data[1] - data[0] for _type, *data in circuit if _type == 0})
+
     if qp.compiler.active() or qp.capture.enabled():
         fanout_bits = qp.math.array(fanout_bits, like="jax")
         circuit = qp.math.array(circuit, like="jax")
@@ -837,14 +839,17 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
             b = k - k_start
             _work_wires = work_wires[: n_subspace - 1]
 
-            @qp.cond(b == 1)
-            def qrom_branches():
-                qp.QROM(np.eye(1, dtype=int), subspace_wires, nonsubspace_wires[:1], _work_wires)
+            first_case_b = batch_sizes[0]
 
-            for case_b in range(2, iso_finder.m + 1):
-                # Register an additional branch to ``qrom_branches`` for each possible batch size.
+            @qp.cond(b == first_case_b)
+            def qrom_branches():
+                target_wires = nonsubspace_wires[:first_case_b]
+                qp.QROM(np.eye(first_case_b, dtype=int), subspace_wires, target_wires, _work_wires)
+
+            for case_b in batch_sizes[1:]:
+                # Register an additional branch to ``qrom_branches`` for each occurring batch size.
                 # Passing a default argument makes sure that we don't use an outdated closure
-                # variable `case_b` at when calling the function.
+                # variable `case_b` when calling the function.
                 @qrom_branches.else_if(b == case_b)
                 def _(case_b=case_b):
                     target_wires = nonsubspace_wires[:case_b]
