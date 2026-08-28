@@ -710,7 +710,7 @@ def _equal_prod_and_sum(op1: CompositeOp, op2: CompositeOp, **kwargs):
 
 @_equal_dispatch.register(Controlled2)
 def _equal_controlled2(op1: Controlled2, op2: Controlled2, **kwargs):
-    """Determine whether two Controlled or ControlledOp objects are equal"""
+    """Determine whether two Controlled2 or ControlledOp2 objects are equal"""
 
     if op1.arithmetic_depth != op2.arithmetic_depth:
         return f"op1 and op2 have different arithmetic depths. Got {op1.arithmetic_depth} and {op2.arithmetic_depth}"
