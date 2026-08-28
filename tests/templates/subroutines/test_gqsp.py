@@ -28,7 +28,7 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 class TestGQSP:
     """Test the qp.GQSP template."""
 
-    @pytest.mark.jax
+    @pytest.mark.capture
     def test_standard_validity(self):
         """Test standard validity criteria with assert_valid."""
 

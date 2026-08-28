@@ -256,6 +256,31 @@ def _make_wrapped_decomp_rule(rule, op, capture_kwargs):
     return _wrapped
 
 
+def _reset_operator_tracers(op):
+    """Reset the transient ``tracer`` left on ``op`` and its shared sub-operators after a capture
+    trace. Tracing a decomposition re-applies the op's (shared) sub-operators, binding them into the
+    trace and setting a ``tracer`` that goes stale once the trace ends; reusing such an operator
+    afterwards (eigendecomposition, copy/pickle, rebuilding a composite) raises an
+    ``UnexpectedTracerError``.
+
+    This is not composite-specific. An ``Operator2`` exposes its sub-operators through its hybrid
+    args (the accessor also used by ``queue`` / ``map_wires``), while a legacy ``Operator1`` surfaces
+    them through ``operands`` (composite) or ``base`` (symbolic)."""
+    if isinstance(op, Operator2):
+        op.tracer = None
+        subs = []
+        for arg in op.hybrid_args.values():
+            leaves, _ = flatten(arg, is_leaf=lambda v: isinstance(v, Operator))
+            subs.extend(leaf for leaf in leaves if isinstance(leaf, Operator))
+    else:
+        subs = list(getattr(op, "operands", None) or ())
+        base = getattr(op, "base", None)
+        if isinstance(base, Operator):
+            subs.append(base)
+    for sub in subs:
+        _reset_operator_tracers(sub)
+
+
 def _capture_decomp_rule_to_tape(rule, op):
 
     import jax  # pylint: disable=import-outside-toplevel
@@ -276,6 +301,7 @@ def _capture_decomp_rule_to_tape(rule, op):
         decomposition = _make_wrapped_decomp_rule(decomposition, op, capture_kwargs)
 
     plxpr = qp.capture.make_plxpr(decomposition, autograph=False)(*capture_args, **capture_kwargs)
+    _reset_operator_tracers(op)
     flat_capture_args = jax.tree.leaves((capture_args, capture_kwargs))
     return qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts, *flat_capture_args)
 
