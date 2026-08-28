@@ -79,7 +79,7 @@ def twos_complement_value(bits):
 def test_abstract_init(
     x_wires, y_wires, output_wires, work_wires, output_wires_zeroed, expected_num_work_wires
 ):  # pylint: disable=too-many-arguments
-    """Test that abstract init mirrors concrete init."""
+    """Tests creating an abstract operator."""
     abstract_op = SignedOutMultiplier(
         Wire[len(x_wires)],
         Wire[len(y_wires)],

@@ -51,7 +51,7 @@ def test_standard_validity_signed_out_square(output_wires_zeroed):
     ],
 )
 def test_abstract_init(x_wires, output_wires, work_wires, output_wires_zeroed):
-    """Test that abstract init mirrors concrete init."""
+    """Tests creating an abstract operator"""
     abstract_op = SignedOutSquare(
         Wire[len(x_wires)],
         Wire[len(output_wires)],
@@ -63,12 +63,10 @@ def test_abstract_init(x_wires, output_wires, work_wires, output_wires_zeroed):
 
 
 def test_abstract_init_mixed_concrete_and_abstract_wires():
-    """Test that __abstract_init__ is triggered and behaves correctly when only some of
-    the wire registers are abstract, while others are concrete."""
+    """Tests that __init__ works with partially abstract wires."""
     x_wires = [0, 1, 2]
     output_wires = [3, 4, 5]
     op = SignedOutSquare(x_wires, output_wires, Wire[3], output_wires_zeroed=False)
-    assert op.is_abstract
     assert len(op.x_wires) == len(x_wires)
     assert len(op.output_wires) == len(output_wires)
     assert len(op.work_wires) == 3

@@ -160,7 +160,7 @@ class TestBuildingBlocks:
 def test_abstract_init(
     x_wires, y_wires, output_wires, mod, work_wires, expected_mod, expected_num_work_wires
 ):  # pylint: disable=too-many-arguments
-    """Test that abstract init mirrors concrete init for mod defaulting and work wire truncation."""
+    """Tests that creating an abstract operator works."""
     abstract_op = OutMultiplier(
         Wire[len(x_wires)],
         Wire[len(y_wires)],
@@ -183,7 +183,7 @@ def test_abstract_init(
     ],
 )
 def test_abstract_init_validation(mod, work_wires, msg_match):
-    """Test that abstract init validates mod and work wires."""
+    """Tests that validation of wires work with abstract wire arguments."""
     with pytest.raises(ValueError, match=msg_match):
         OutMultiplier(
             Wire[2],
