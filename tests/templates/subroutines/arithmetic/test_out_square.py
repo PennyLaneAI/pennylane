@@ -32,7 +32,7 @@ from pennylane.typing import Wire
 
 
 @pytest.mark.parametrize("output_wires_zeroed", [False, True])
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity_out_square(output_wires_zeroed):
     """Check the operation using the assert_valid function."""
     x_wires = [0, 1, 2, 3]
