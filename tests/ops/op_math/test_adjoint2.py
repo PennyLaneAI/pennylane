@@ -286,5 +286,5 @@ def test_adjoint_decomp_keeps_static_args_concrete_under_capture():
         )
         return qp.state()
 
-    # Before the fix, static-arg tracing aborts the AOT capture and ``.mlir`` is ``None``.
+    # If a static/compilable arg gets traced, AOT capture aborts and ``.mlir`` stays ``None``.
     assert circuit.mlir is not None
