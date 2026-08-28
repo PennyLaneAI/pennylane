@@ -166,6 +166,7 @@ class CompositeOp2(Operator2, is_baseclass=True):
         super().__abstract_init__(operands, _init_pauli_rep=None)
         self._hash = None
         self._has_overlapping_wires = None
+        self._operands = operands
 
     def __repr__(self):
         return f" {self._op_symbol} ".join(
