@@ -1694,16 +1694,38 @@ class TestCtrl:
         )
         assert op == expected
 
-    def test_nested_controls_work_wires(self):
-        """Tests work wire handling for nested controlled ops."""
+    @pytest.mark.parametrize(
+        "inner_work_wires, inner_type, outer_work_wires, outer_type, expected_type",
+        [
+            # Only one side has work wires: its type wins, regardless of the other
+            # (wireless, hence irrelevant) side's type.
+            ([], "borrowed", [5], "zeroed", "zeroed"),
+            ([5], "zeroed", [], "borrowed", "zeroed"),
+            # Both sides have work wires: "borrowed" poisons the result, else "zeroed".
+            ([5], "borrowed", [6], "zeroed", "borrowed"),
+            ([5], "zeroed", [6], "borrowed", "borrowed"),
+            # Neither side has any work wires: falls back to the type being newly applied
+            # (outer). Must not spuriously flip a "borrowed" default to "zeroed" (#8718) nor
+            # collapse an explicit "zeroed" down to "borrowed".
+            ([], "borrowed", [], "borrowed", "borrowed"),
+            ([], "borrowed", [], "zeroed", "zeroed"),
+        ],
+    )
+    def test_nested_controls_work_wires(
+        self, inner_work_wires, inner_type, outer_work_wires, outer_type, expected_type
+    ):
+        """Tests that nested ``ctrl`` wraps merge work wire types via ``resolve_work_wire_type``
+        the same way as a single wrap that already specifies both sets of work wires."""
 
         op = qp.ctrl(
-            qp.ctrl(qp.H(0), control=[1, 2]),
+            qp.ctrl(
+                qp.H(0), control=[1, 2], work_wires=inner_work_wires, work_wire_type=inner_type
+            ),
             control=[3, 4],
-            work_wires=[5],
-            work_wire_type="zeroed",
+            work_wires=outer_work_wires,
+            work_wire_type=outer_type,
         )
-        assert op.work_wire_type == "zeroed"
+        assert op.work_wire_type == expected_type
 
     @pytest.mark.parametrize("op, ctrl_wires, ctrl_op", custom_ctrl_ops)
     def test_nested_custom_controls(self, op, ctrl_wires, ctrl_op):

@@ -72,7 +72,7 @@ def cdf_reference_hamiltonian(ham):
         _energy_shift,
     )
 
-    Z = np.asarray(ham["core_tensors"], dtype=float)
+    Z = np.asarray(ham.core_tensors, dtype=float)
     num_cas = Z.shape[-1]
     n_wires = 2 * num_cas
     dim = 2**n_wires
@@ -106,7 +106,7 @@ def cgf_reference_hamiltonian(ham):
         _energy_shift,
     )
 
-    Z = np.asarray(ham["core_tensors"], dtype=float)
+    Z = np.asarray(ham.core_tensors, dtype=float)
     num_modes = Z.shape[1]
     n_states = Z.shape[-1]
     n_wires = num_modes * n_states

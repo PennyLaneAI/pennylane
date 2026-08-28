@@ -15,6 +15,8 @@
 Tests for the SemiAdder template.
 """
 
+from functools import partial
+
 import pytest
 
 import pennylane as qp
@@ -188,6 +190,28 @@ class TestSemiAdder:
         for rule in qp.list_decomps(qp.SemiAdder):
             _test_decomposition_rule(qp.SemiAdder(x_wires, [5, 6, 7, 8], work_wires), rule)
 
+    @pytest.mark.capture
+    @pytest.mark.parametrize(
+        "wire_lens",
+        [
+            {"x_wires": 3, "y_wires": 3, "work_wires": 2},  # all work wires provided
+            {"x_wires": 3, "y_wires": 4, "work_wires": 1},  # some work wires allocated
+            {"x_wires": 3, "y_wires": 3, "work_wires": 0},  # all work wires allocated
+            {"x_wires": 2, "y_wires": 1, "work_wires": 0},  # single y wire
+        ],
+    )
+    def test_decomposition_rule_capture_dynamic_wires(self, wire_lens):
+        """Test that the decomposition rules of SemiAdder can be captured with dynamic wires."""
+        import jax
+
+        registers = qp.registers(wire_lens)
+        kwargs = {name: qp.math.array(wires, like="jax") for name, wires in registers.items()}
+        for rule in qp.list_decomps(qp.SemiAdder):
+            if not rule.is_applicable(**kwargs):
+                continue
+            # pylint: disable-next=protected-access
+            jax.make_jaxpr(qp.capture.subroutine(rule._impl))(**kwargs)
+
     @pytest.mark.jax
     def test_jit_compatible(self):
         """Test that the template is compatible with the JIT compiler."""
@@ -324,3 +348,36 @@ class TestSemiAdder:
                 assert output[:-1] == expected_output[:-1]
             else:
                 assert output == expected_output
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize(
+        "wire_lens",
+        [
+            {"control": 1, "x_wires": 3, "y_wires": 3, "work_wires": 2},  # all work wires provided
+            {
+                "control": 2,
+                "x_wires": 3,
+                "y_wires": 4,
+                "work_wires": 1,
+            },  # some work wires allocated
+            {"control": 3, "x_wires": 3, "y_wires": 3, "work_wires": 0},  # all work wires allocated
+            {"control": 2, "x_wires": 2, "y_wires": 1, "work_wires": 0},  # single y wire
+        ],
+    )
+    def test_ctrl_decomposition_rule_capture_dynamic_wires(self, wire_lens):
+        """Test that the decomposition rules of C(SemiAdder) can be captured with dynamic wires."""
+        import jax
+        from jax import numpy as jnp
+
+        registers = qp.registers(wire_lens)
+        control_wires = qp.math.array(registers.pop("control"), like="jax")
+        base = qp.SemiAdder(**registers)
+        ctrl_kwargs = {
+            "control_wires": control_wires,
+            "control_values": jnp.zeros(len(control_wires)),
+        }
+        for rule in qp.list_decomps("C(SemiAdder)"):
+            if not rule.is_applicable(base=base, **ctrl_kwargs):
+                continue
+            # pylint: disable-next=protected-access
+            jax.make_jaxpr(qp.capture.subroutine(partial(rule._impl, base=base)))(**ctrl_kwargs)

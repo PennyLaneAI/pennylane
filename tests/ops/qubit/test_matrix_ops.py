@@ -711,19 +711,9 @@ class TestQubitUnitaryDecompositions:
         for rule in qp.list_decomps(op):
             _test_decomposition_rule(op, rule)
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("num_wires", [3, 4, 5])
     def test_multi_qubit_decomposition(self, num_wires):
-        """Test the multi-qubit rule with AnnotatedQueue."""
-
-        U = qp.QFT.compute_matrix(range(num_wires))
-        op = qp.QubitUnitary(U, wires=range(num_wires))
-        for rule in qp.list_decomps(op):
-            _test_decomposition_rule(op, rule)
-
-    @pytest.mark.xfail(reason="investigating... [sc-128410]")
-    @pytest.mark.parametrize("num_wires", [3, 4, 5])
-    @pytest.mark.usefixtures("enable_capture")
-    def test_multi_qubit_decomposition_capture(self, num_wires):
         """Test the multi-qubit rule with AnnotatedQueue."""
 
         U = qp.QFT.compute_matrix(range(num_wires))

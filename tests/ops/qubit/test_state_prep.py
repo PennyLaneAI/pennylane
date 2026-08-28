@@ -128,13 +128,13 @@ class TestInputs:
 class TestStandardValidityBasisState:
     """Test `BasisState` validity, including its decomposition in JIT contexts."""
 
-    @pytest.mark.jax
-    def test_assert_valid(self):
+    @pytest.mark.capture
+    @pytest.mark.parametrize("input_state", (np.array([0, 1]), [0, 1], (0, 1), (True, False)))
+    def test_assert_valid(self, input_state):
         """Test standard validity."""
         # pylint: disable=import-outside-toplevel
-        state = np.array([0, 1])
-        wires = qp.wires.Wires([0, 1])
-        op = qp.BasisState(state, wires=wires)
+        wires = [0, 1]
+        op = qp.BasisState(input_state, wires=wires)
         qp.ops.functions.assert_valid(op, skip_differentiation=True)
 
     @staticmethod

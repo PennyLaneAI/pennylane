@@ -343,6 +343,16 @@ class AbstractArray:
     def __setitem__(self, *_, **__):
         raise IndexError("Cannot index into an AbstractArray.")
 
+    def __array__(self, *_, **__):
+        # Without this, np.asarray treats an AbstractArray as a sequence: it reads
+        # __len__ but __getitem__ raises, so numpy silently produces an empty
+        # array. Callers then fail far away with a confusing message, e.g.
+        # np.linalg.det reporting "1-dim array given". Fail here instead.
+        raise TypeError(
+            "An AbstractArray cannot be converted to a concrete array: it carries only a "
+            "shape and dtype, not values."
+        )
+
     def __len__(self) -> int:
         if not self.shape or self.shape is Ellipsis:
             raise TypeError("len() of unsized object.")
@@ -462,7 +472,6 @@ class AbstractWires:
     """
 
     _num_wires: int
-    shape_fixed: bool = field(init=False)
 
     def __post_init__(self):
         if not isinstance(self._num_wires, int):
@@ -474,17 +483,16 @@ class AbstractWires:
                 f"'num_wires' must be a non-negative integer or -1, but got {self._num_wires}. "
                 "For a dynamic number of wires, use -1."
             )
-        object.__setattr__(self, "shape_fixed", self._num_wires != -1)
 
     def __eq__(self, other) -> bool:
         if isinstance(other, AbstractWires):
             return self._num_wires == other._num_wires
+        return NotImplemented  # pragma: no cover
 
-        raise TypeError(
-            "Cannot check equality between AbstractWires and an object of type "
-            f"'{type(other).__name__}'. AbstractWires equality is only supported "
-            "against other AbstractWires instances."
-        )
+    @property
+    def shape_fixed(self) -> bool:
+        """Whether the number of wires is fixed."""
+        return self._num_wires != -1
 
     @property
     def shape(self) -> tuple[int]:
@@ -511,6 +519,8 @@ class AbstractWires:
             return AbstractWires(-1)
         return AbstractWires(self._num_wires + other._num_wires)
 
+    __radd__ = __add__
+
     def __repr__(self):
         return f"AbstractWires({self._num_wires})"
 
@@ -519,24 +529,37 @@ class AbstractWires:
     def __instancecheck__(self, instance):
         if instance.__class__.__name__ != "Wires":
             return False
-        if self._num_wires == -1:
-            return True
-        return len(instance) == self._num_wires
+        return self._num_wires == -1 or len(instance) == self._num_wires
+
+    def __iter__(self):
+        if not self.shape_fixed:
+            raise TypeError("Cannot iterate over an AbstractWires of unfixed length.")
+        for _ in range(self._num_wires):
+            yield AbstractWires(1)
+
+    def __getitem__(self, index):
+        if not self.shape_fixed:
+            raise TypeError("Cannot index into an AbstractWires with unknown number of wires.")
+        if isinstance(index, int):
+            if index >= self._num_wires or index < -self._num_wires:
+                raise IndexError(f"{index} out of bounds for {self}.")
+            return AbstractWires(1)
+        if isinstance(index, slice):
+            start_stop_step = index.indices(self._num_wires)
+            return AbstractWires(len(range(*start_stop_step)))
+        index_type = type(index).__name__
+        raise TypeError(f"Wire indices must be integers or slices, not {index_type}.")
 
 
-class _AbstractWireTypeFactory(AbstractWires):
+class _AbstractWireTypeFactory:
     """
-    An abstraction that enables the generation of AbstractWires via a highly user-friendly type notation,
-    using an override of the __getitem__ method.
+    An abstraction that enables the generation of AbstractWires via a highly user-friendly type
+    notation, using an override of the __getitem__ method.
     """
-
-    def __init__(self):
-        super().__init__(1)
 
     def __getitem__(self, shape):
         """
-        Overrides the indexing mechanism in python to achieve a user-friendly
-        sized type notation.
+        Overrides the indexing mechanism in python to achieve a user-friendly sized type notation.
 
         Args:
             shape: Gives the shape of the desired abstract wires type. This is not an index,
@@ -544,22 +567,28 @@ class _AbstractWireTypeFactory(AbstractWires):
 
         Returns:
             An instance of AbstractWires with the desired shape.
-        """
 
+        """
         if not isinstance(shape, int):
             raise TypeError("_AbstractWireTypeFactory's can only be subscripted with integers.")
         return AbstractWires(shape)
 
+    def __iter__(self):
+        raise TypeError("'Wire' object is not iterable. Use 'Wire[1]' to represent a single wire.")
+
 
 Wire = _AbstractWireTypeFactory()
-"""An :class:`~.AbstractWires` subclass. On it's own, it corresponds to a single wire, but
-can be indexed to create :class:`~.AbstractWires` with a fixed or dynamic wire count.
+"""An :class:`~.AbstractWires` subclass. It can be indexed to create :class:`~.AbstractWires` 
+with a fixed or dynamic wire count. It should not be used on its own.
 
->>> isinstance(Wires([0, 1]), qp.typing.Wire[2])
+>>> from pennylane.typing import Wire
+>>> isinstance(Wires([0, 1]), Wire[2])
 True
->>> qp.typing.Wire[2]
+>>> Wire[1]
+AbstractWires(1)
+>>> Wire[2]
 AbstractWires(2)
->>> qp.typing.Wire[-1]
+>>> Wire[-1]
 AbstractWires(-1)
 
 """

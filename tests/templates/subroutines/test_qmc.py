@@ -269,7 +269,7 @@ class TestQuantumMonteCarlo:
 
         op = QuantumMonteCarlo(p, self.func, target_wires, estimation_wires)
         # Skip capture test because the _unflatten method of QMC is not compatible with capture
-        qp.ops.functions.assert_valid(op, skip_differentiation=True, skip_capture=True)
+        qp.ops.functions.assert_valid(op, skip_differentiation=True)
 
     DECOMP_PARAMS = [
         (np.ones(4) / 4, Wires(range(3)), Wires(range(3, 5))),

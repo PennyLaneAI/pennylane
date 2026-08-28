@@ -18,9 +18,8 @@ Contains the OutMultiplier template.
 from collections import defaultdict
 from itertools import combinations
 
-from pennylane import math
+from pennylane import capture, compiler, math
 from pennylane.core.operator import Operator2, abstractify
-from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.decomposition import (
     add_decomps,
     change_op_basis_resource_rep,
@@ -358,18 +357,29 @@ def _out_multiplier_with_qft(
     work_wires: WiresLike,
     output_wires_zeroed: bool,
 ):  # pylint: disable=too-many-arguments, unused-argument
+
+    if capture.enabled() or compiler.active():
+        work_wires = math.array(work_wires, like="jax")
+        output_wires = math.array(output_wires, like="jax")
+
     if mod != 2 ** len(output_wires):
-        qft_output_wires = work_wires[:1] + output_wires
-        work_wire = work_wires[1:2]
+        if capture.enabled() or compiler.active():
+            qft_output_wires = math.concatenate(
+                [math.array([work_wires[0]], like="jax"), output_wires]
+            )
+        else:
+            qft_output_wires = [work_wires[0]] + output_wires
+        work_wire = work_wires[1]
     else:
         qft_output_wires = output_wires
-        work_wire = ()
+        # Keep the empty register traceable instead of passing a literal tuple to JAX.
+        work_wire = output_wires[:0]
 
     if output_wires_zeroed:
         compute_op = prod(*(H(w) for w in qft_output_wires))
     else:
         compute_op = QFT(qft_output_wires)
-    uncompute_op = adjoint(QFT)(qft_output_wires)
+    uncompute_op = adjoint(QFT(qft_output_wires))
 
     target_op = ControlledSequence(
         ControlledSequence(PhaseAdder(1, qft_output_wires, mod, work_wire), control=x_wires),
@@ -499,7 +509,7 @@ def _out_multiplier_with_caddsub_resources(
     # increment 2^(n+m) bit
     if k > n + m:
         size = k - n - m
-        resources[resource_rep(Incrementer, num_wires=size, num_work_wires=num_work_wires - 1)] = 1
+        resources[Incrementer(Wire[size], work_wires=Wire[num_work_wires - 1])] = 1
 
     # Second negation
     resources[X] += k
@@ -533,24 +543,18 @@ def _adder_flipped_first_work_wire(x_wires, y_wires, work_wires, flip_control=No
     unchanged. We only expect this function to be used with two values for `flip_control`: None
     or a tuple ``(c_wire, c_val)`` for a single control wire.
     """
-
-    with AnnotatedQueue() as q:
+    if not work_wires:
         _semi_adder(x_wires, y_wires, work_wires)
-    adder_ops = q.queue
-    if work_wires:
-        # We insert work wire bit flips where a carry-in qubit would cause them,
-        # i.e., after the very first left elbow and before the last right elbow
-        with QueuingManager.stop_recording():
-            if flip_control is None:
-                work_wire_flip = X(work_wires[-1])
-            else:
-                c_wire, c_val = flip_control
-                work_wire_flip = ctrl(X(work_wires[-1]), control=c_wire, control_values=[c_val])
-        adder_ops.insert(1, work_wire_flip)
-        adder_ops.insert(-2, work_wire_flip)
-    if QueuingManager.recording():
-        for op in adder_ops:
-            apply(op)
+        return
+
+    def carry_flip(wire):
+        if flip_control is None:
+            X(wire)
+        else:
+            c_wire, c_val = flip_control
+            ctrl(X(wire), control=c_wire, control_values=[c_val])
+
+    _semi_adder(x_wires, y_wires, work_wires, carry_flip=carry_flip)
 
 
 def _add_plus_one(x_wires, y_wires, work_wires):

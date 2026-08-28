@@ -350,6 +350,19 @@ class TestInitSubclass:
 
         assert Op.arg_specs == {"phi": AbstractArray((), float)}
 
+    def test_arg_specs_bare_wire_raises(self):
+        """Test that unsubscripted ``Wire`` is rejected in ``arg_specs``."""
+
+        with pytest.raises(TypeError, match=r"'Wire' cannot be used on its own"):
+
+            # pylint: disable=unused-variable
+            class InvalidSpecsOp(Operator2):
+
+                arg_specs = {"wires": Wire}
+
+                def __init__(self, wires):  # pylint: disable=useless-parent-delegation
+                    super().__init__(wires)
+
     def test_has_fixed_sig_false_with_argnames_without_arg_specs(self):
         """Test that ``has_fixed_sig`` is ``False`` when ``arg_specs`` is not declared and there
         are any arguments."""
@@ -514,6 +527,15 @@ class TestOperatorInit:
             _ = ParametrizedHybridOp(
                 Float[3], Wire[3], DynOp(Float[2], Wire[-1])
             )  # hybrid wire is not fixed
+
+    def test_unsubscripted_wire_raises(self):
+        """Test that unsubscripted ``Wire`` cannot initialize an operator."""
+
+        with pytest.raises(TypeError, match="'Wire' cannot be used on its own"):
+            NonParametricOp(Wire)
+
+        with pytest.raises(TypeError, match="'Wire' cannot be used on its own"):
+            DynOp(Float, Wire)
 
     def test_arguments_bound(self):
         """Test that constructor positional/keyword arguments are bound into ``arguments``."""

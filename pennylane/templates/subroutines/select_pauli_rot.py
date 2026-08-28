@@ -101,7 +101,7 @@ class SelectPauliRot(Operator2):
     wire_argnames = ("control_wires", "target_wire")
     compilable_argnames = ("rot_axis",)
 
-    arg_specs = {"angles": Float[-1], "control_wires": Wire[-1], "target_wire": Wire}
+    arg_specs = {"angles": Float[-1], "control_wires": Wire[-1], "target_wire": Wire[1]}
 
     grad_method = None
     ndim_params = (1,)

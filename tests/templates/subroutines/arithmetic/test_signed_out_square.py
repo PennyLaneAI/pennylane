@@ -21,12 +21,18 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.core.operator import abstractify
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.templates.subroutines.arithmetic.signed_out_square import SignedOutSquare
+from pennylane.templates.subroutines.arithmetic.signed_out_square import (
+    OutSquare,
+    SignedOutSquare,
+    _signed_out_square_resources,
+)
+from pennylane.typing import Wire
 
 
 @pytest.mark.parametrize("output_wires_zeroed", [False, True])
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity_signed_out_square(output_wires_zeroed):
     """Check the operation using the assert_valid function."""
     x_wires = [0, 1, 2, 3]
@@ -34,6 +40,81 @@ def test_standard_validity_signed_out_square(output_wires_zeroed):
     work_wires = [11, 12, 13, 14, 15, 16, 17, 18, 19]
     op = SignedOutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
     qp.ops.functions.assert_valid(op)
+
+
+@pytest.mark.parametrize("output_wires_zeroed", [False, True])
+@pytest.mark.parametrize(
+    ("x_wires", "output_wires", "work_wires"),
+    [
+        ([0, 1], [2, 3, 4], [5, 6, 7]),
+        ([0, 1, 2], [3, 4], [5, 6]),
+    ],
+)
+def test_abstract_init(x_wires, output_wires, work_wires, output_wires_zeroed):
+    """Test that abstract init mirrors concrete init."""
+    abstract_op = SignedOutSquare(
+        Wire[len(x_wires)],
+        Wire[len(output_wires)],
+        Wire[len(work_wires)],
+        output_wires_zeroed=output_wires_zeroed,
+    )
+    concrete_op = SignedOutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
+    assert abstractify(concrete_op) == abstract_op
+
+
+def test_abstract_init_mixed_concrete_and_abstract_wires():
+    """Test that __abstract_init__ is triggered and behaves correctly when only some of
+    the wire registers are abstract, while others are concrete."""
+    x_wires = [0, 1, 2]
+    output_wires = [3, 4, 5]
+    op = SignedOutSquare(x_wires, output_wires, Wire[3], output_wires_zeroed=False)
+    assert op.is_abstract
+    assert len(op.x_wires) == len(x_wires)
+    assert len(op.output_wires) == len(output_wires)
+    assert len(op.work_wires) == 3
+
+
+@pytest.mark.parametrize("output_wires_zeroed", [False, True])
+def test_abstract_init_validation(output_wires_zeroed):
+    """Test that abstract init validates the number of work wires."""
+    with pytest.raises(ValueError, match="SignedOutSquare requires at least"):
+        SignedOutSquare(Wire[3], Wire[3], Wire[1], output_wires_zeroed=output_wires_zeroed)
+
+
+def test_wires_property():
+    """Test that wires includes all registers, including work wires."""
+    op = SignedOutSquare([0, 1, 2], [3, 4, 5], [6, 7, 8])
+    assert op.wires == qp.wires.Wires([0, 1, 2, 3, 4, 5, 6, 7, 8])
+
+
+def test_isinstance_relationship():
+    """Test that SignedOutSquare is not an instance of OutSquare, despite sharing a common
+    private base class."""
+    signed_out_square = SignedOutSquare([0, 1], [2, 3, 4], [5, 6, 7])
+
+    assert not isinstance(signed_out_square, OutSquare)
+    assert isinstance(signed_out_square, qp.core.operator.Operator2)
+
+
+@pytest.mark.parametrize("output_wires_zeroed", [False, True])
+def test_signed_out_square_resources(output_wires_zeroed):
+    """Test that the resource function declares the expected abstract OutSquare operator."""
+    x_wires = [0, 1, 2]
+    output_wires = [3, 4, 5, 6, 7]
+    work_wires = [8, 9, 10, 11, 12]
+
+    resources = _signed_out_square_resources(
+        x_wires, output_wires, work_wires, output_wires_zeroed=output_wires_zeroed
+    )
+
+    square_ops = [key for key in resources if isinstance(key, OutSquare)]
+    assert len(square_ops) == 1
+    square_op = square_ops[0]
+    assert len(square_op.x_wires) == len(x_wires) - 1
+    assert len(square_op.output_wires) == len(output_wires)
+    assert len(square_op.work_wires) == len(work_wires)
+    assert square_op.arguments["output_wires_zeroed"] is output_wires_zeroed
+    assert resources[square_op] == 1
 
 
 def _test_square_correctness(all_wires, rule, seed, output_wires_zeroed, use_jit):
@@ -269,6 +350,25 @@ class TestSignedOutSquare:
         op = SignedOutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
         for rule in qp.list_decomps(SignedOutSquare):
             _test_decomposition_rule(op, rule)
-            assert rule.is_applicable(**op.resource_params)
+            assert rule.is_applicable(**op.arguments)
             all_wires = (x_wires, output_wires, work_wires)
             _test_square_correctness(all_wires, rule, seed, output_wires_zeroed, use_jit)
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize(
+        ("x_wires", "output_wires", "work_wires", "output_wires_zeroed"),
+        [
+            ([0, 1], [3, 4, 5, 6], [9, 10, 11], True),
+            ([0, 1], [3, 4, 5, 6], [9, 10, 11, 12, 13], False),
+            ([0, 1, 2], [3, 4, 5, 6, 7], [8, 9, 10, 11, 12], True),
+        ],
+    )
+    def test_decomposition_rule_with_capture(
+        self, x_wires, output_wires, work_wires, output_wires_zeroed
+    ):
+        """Test that the decomposition rule is working correctly when ``_signed_out_square``
+        calls ``_c_subtract_then_add_one`` (triggered whenever ``len(output_wires) > len(x_wires)``)
+        """
+        op = SignedOutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
+        for rule in qp.list_decomps(SignedOutSquare):
+            _test_decomposition_rule(op, rule)

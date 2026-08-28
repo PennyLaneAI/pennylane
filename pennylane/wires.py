@@ -26,6 +26,7 @@ import numpy as np
 from pennylane import math
 from pennylane.exceptions import WireError
 from pennylane.pytrees import register_pytree
+from pennylane.typing import AbstractWires, _AbstractWireTypeFactory
 
 if util.find_spec("jax") is not None:
     jax = import_module("jax")
@@ -130,6 +131,16 @@ class Wires(Sequence):
          wires (Any): the wire label(s)
     """
 
+    def __new__(cls, wires=None, _override=False):
+        if isinstance(wires, AbstractWires):
+            return wires
+        if isinstance(wires, _AbstractWireTypeFactory):
+            raise TypeError(
+                "'Wire' cannot be used on its own to represent a single wire, "
+                "Use 'Wire[1]' instead."
+            )
+        return super().__new__(cls)
+
     def _flatten(self):
         """Serialize Wires into a flattened representation according to the PyTree convention."""
         return self._labels, ()
@@ -223,6 +234,8 @@ class Wires(Sequence):
         >>> wires1 + wires2
         Wires([4, 0, 1, 2])
         """
+        if isinstance(other, AbstractWires):
+            return AbstractWires(len(self)) + other
         other = Wires(other)
         return Wires.all_wires([self, other])
 
@@ -235,6 +248,8 @@ class Wires(Sequence):
         Returns:
             Wires: all wires appearing in either object
         """
+        if isinstance(other, AbstractWires):
+            return AbstractWires(len(self)) + other
         other = Wires(other)
         return Wires.all_wires([other, self])
 

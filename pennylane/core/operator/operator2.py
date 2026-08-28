@@ -47,7 +47,13 @@ from pennylane.exceptions import (
     TermsUndefinedError,
 )
 from pennylane.pytrees import flatten, register_pytree, unflatten
-from pennylane.typing import AbstractArray, AbstractWires, FlatPytree, TensorLike
+from pennylane.typing import (
+    AbstractArray,
+    AbstractWires,
+    FlatPytree,
+    TensorLike,
+    _AbstractWireTypeFactory,
+)
 from pennylane.wires import Wires, WiresLike
 
 from .base import _UNSET_BATCH_SIZE, Operator, _get_abstract_operator
@@ -76,6 +82,12 @@ ARGNAME_CATEGORIES = (
     "compilable_argnames",
     "hybrid_argnames",
 )
+
+
+def _is_pytree_placeholder(obj) -> bool:
+    """Whether 'obj' is a sentinel placeholder that JAX substitutes for real pytree leaves."""
+    cls = type(obj)
+    return cls.__name__ == "ArgInfo" and cls.__module__.partition(".")[0] == "jax"
 
 
 class Operator2(metaclass=OperatorMeta):
@@ -1483,9 +1495,15 @@ class Operator2(metaclass=OperatorMeta):
         for name, value in zip(hashable_argnames, metadata, strict=True):
             args[name] = value
 
-        with QueuingManager.stop_recording():
-            with pause():
-                return cls(**args)
+        # NOTE: To prepare for lowering, JAX 0.7.1 will insert 'ArgInfo' placeholders
+        # during the `jit_trace` pass in `stages.make_args_info`. This triggers
+        # pre-mature unflattening even when just calling `make_jaxpr`.
+        # TODO: Remove this workaround once we support JAX > 0.7.1 as they fixed this in later versions
+        if any(_is_pytree_placeholder(leaf) for leaf in flatten(args)[0]):
+            return object.__new__(cls)
+
+        with QueuingManager.stop_recording(), pause():
+            return cls(**args)
 
     def _check_batching(self):
         """Check if the expected numbers of dimensions of parameters coincides with the
@@ -1772,25 +1790,30 @@ def _init_subclass_validate_argnames(cls: type[Operator2]) -> None:
 
 def _init_subclass_arg_specs_setup(cls: type[Operator2]) -> None:
     """Set up ``arg_specs`` for ``Operator2`` subclasses."""
-    arg_specs = cls.arg_specs or {}
-    disallowed_argnames = cls.hybrid_argnames + cls.compilable_argnames + cls.static_argnames
 
-    if names := (set(arg_specs.keys()) & set(disallowed_argnames)):
+    arg_specs = cls.arg_specs or {}
+    argnames_in_specs = set(arg_specs.keys())
+    illegal_args_in_specs = set(cls.hybrid_argnames + cls.compilable_argnames + cls.static_argnames)
+    traced_argnames = set(cls.dynamic_argnames + cls.wire_argnames)
+
+    if illegal_argnames := argnames_in_specs & illegal_args_in_specs:
         raise TypeError(
-            f"{cls.__name__}.arg_specs can only contain dynamic and wire arguments, but got {names}."
+            f"{cls.__name__}.arg_specs can only contain dynamic and wire "
+            f"arguments, but got {illegal_argnames}."
         )
 
-    cls.has_fixed_sig = (
-        set(arg_specs.keys()) == set(cls.dynamic_argnames + cls.wire_argnames)
-        and len(disallowed_argnames) == 0
-    )
+    cls.has_fixed_sig = argnames_in_specs == traced_argnames and len(illegal_args_in_specs) == 0
 
     for name, exp_type in arg_specs.items():
+        if isinstance(exp_type, _AbstractWireTypeFactory):
+            raise TypeError(
+                "'Wire' cannot be used on its own to represent a single wire, "
+                "Use 'Wire[1]' instead."
+            )
         canonical_exp_type = exp_type
         if isinstance(exp_type, type) and issubclass(exp_type, Number):
             canonical_exp_type = AbstractArray((), exp_type)
             cls.arg_specs[name] = canonical_exp_type
-
         if not canonical_exp_type.shape_fixed:
             cls.has_fixed_sig = False
 
@@ -1893,9 +1916,16 @@ if has_jax:
         hybrid_trees,
         forward_mask,
         n_ctrls=0,
+        n_ctrl_work_wires=0,
+        ctrl_work_wire_type="borrowed",
         adjoint=False,
         **static_args,
     ):
+        # NOTE: every explicit keyword above shadows an operator argname of the same name, so the
+        # controlled-specific params injected by `ControlledOp2._bind_primitive` are namespaced
+        # with a `ctrl_`/`n_ctrl_` prefix. Otherwise an operator declaring e.g. `work_wire_type`
+        # as a static/compilable arg (`MultiControlledX`, `ControlledQubitUnitary`) would have its
+        # own value swallowed here and silently replaced by the controlled default.
         args = {name: unflatten(*value) for name, value in static_args.items()}
         i = 0
 
@@ -1910,9 +1940,7 @@ if has_jax:
                 # TODO: impl is being used here for reconstruction while the interpreter itself is
                 # under JAX tracing. Need to separate this logic from such scenario. For now,
                 # we can use the fact that wires are always integers and cast them to int.
-                args[name] = Wires(
-                    tuple(w if math.is_abstract(w) else int(w) for w in all_args[i : i + len_])
-                )
+                args[name] = _to_int_wires(all_args[i : i + len_])
                 i += len_
 
         # Reorder hybrid args such that hybrid wire args are first
@@ -1921,15 +1949,18 @@ if has_jax:
             args[name] = unflatten(leaves, tree)
             i += len_
 
+        # `ControlledOp2._bind_primitive` appends control wires, control values, and work
+        # wires (in that order) after the base op's own args, so they're consumed in the
+        # same order here.
         if n_ctrls:
-            control_wires = Wires(
-                tuple(w if math.is_abstract(w) else int(w) for w in all_args[i : i + n_ctrls])
-            )
+            control_wires = _to_int_wires(all_args[i : i + n_ctrls])
             i += n_ctrls
-            control_values = all_args[i:]
-            assert len(control_wires) == len(control_values)
+            control_values = all_args[i : i + n_ctrls]
+            i += n_ctrls
+            work_wires = _to_int_wires(all_args[i : i + n_ctrl_work_wires])
+            i += n_ctrl_work_wires
         else:
-            control_wires = control_values = ()
+            control_wires = control_values = work_wires = ()
 
         op = type.__call__(op_cls, **args)
         if adjoint:
@@ -1940,6 +1971,8 @@ if has_jax:
                 op,
                 control_wires=control_wires,
                 control_values=control_values,
+                work_wires=work_wires,
+                work_wire_type=ctrl_work_wire_type,
             )
         return op
 
@@ -2084,6 +2117,11 @@ def _is_hash_leaf(l) -> bool:
     """Check whether a value is a pytree leaf for hashing. For the purpose of
     hashing, wires and operators are considered leaves."""
     return _is_op(l) or _is_wires(l)
+
+
+def _to_int_wires(wires):
+    """Cast all wires to integers."""
+    return Wires(tuple(w if math.is_abstract(w) else int(w) for w in wires))
 
 
 class _ArgType(Enum):

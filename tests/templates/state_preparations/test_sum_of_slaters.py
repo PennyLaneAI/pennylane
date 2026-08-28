@@ -562,6 +562,16 @@ class TestSumOfSlatersPrep:
         registered_work_wires = _sos_state_prep.get_work_wire_spec(coefficients, range(n), indices)
         assert sum(sizes.values()) - n == registered_work_wires.total
 
+    def test_resource_counts_are_python_integers(self):
+        """Test that decomposition resource counts are Python integers."""
+        indices = (0, 1, 2, 4, 8, 16, 32, 64)
+        resources = _sos_state_prep.compute_resources(
+            np.zeros(len(indices), dtype=complex), range(7), indices
+        )
+
+        # Ensure they are Python integers, not other (NumPy) integers.
+        assert all(isinstance(count, int) for count in resources.gate_counts.values())
+
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
         "num_wires,num_entries",
@@ -692,6 +702,37 @@ class TestSumOfSlatersPrep:
                 )
                 out_state = out_state[::2]
             assert np.allclose([out_state[key] for key in indices], coefficients)
+
+    @pytest.mark.capture
+    def test_subroutine_with_dynamic_wires(self):
+        """Test that the SumOfSlatersPrep subroutine supports dynamic wire arguments."""
+        jax = pytest.importorskip("jax")
+        jnp = jax.numpy
+
+        indices = (0, 1, 2, 4, 8, 16, 32, 64)
+        num_wires = 7
+        coefficients = np.zeros(len(indices), dtype=complex)
+        v_bits = qp.math.int_to_binary(np.array(indices), num_wires).T
+        selected_wires, *data = _preprocess(v_bits, range(num_wires))
+        data = (coefficients, v_bits, *data)
+        all_wires = qp.registers(SumOfSlatersPrep.required_register_sizes(indices, num_wires))
+        all_wires["selected_wires"] = selected_wires
+
+        @qp.capture.subroutine
+        def subroutine(*wire_args):
+            dynamic_wires = dict(zip(all_wires, wire_args, strict=True))
+            _sos_state_prep_with_wires(data, **dynamic_wires)
+
+        jaxpr = jax.make_jaxpr(subroutine)(*(jnp.asarray(wires) for wires in all_wires.values()))
+
+        subroutine_eqn = jaxpr.eqns[0]
+        assert subroutine_eqn.primitive == qp.capture.primitives.quantum_subroutine_prim
+
+        subroutine_jaxpr = subroutine_eqn.params["jaxpr"]
+        jaxpr_text = str(subroutine_jaxpr)
+        assert "MultiplexerStatePreparation" in jaxpr_text
+        assert "QROM" in jaxpr_text
+        assert "TemporaryAND" in jaxpr_text
 
     @pytest.mark.catalyst
     @pytest.mark.parametrize("force_non_id_encoding", (False, True))

@@ -296,14 +296,14 @@ class TrotterCDF(ResourceOperator):
     For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
     Args:
-        cdf_ham (:class:`~.pennylane.estimator.compact_hamiltonian.CDFHamiltonian`):
+        cdf_ham (:class:`pennylane.estimator.compact_hamiltonian.CDFHamiltonian`):
             a compressed double factorized Hamiltonian to be approximately exponentiated
         num_steps (int): number of Trotter steps to perform
         order (int): order of the approximation, must be ``1`` or an even number
         wires (list[int] | None): the wires on which the operator acts
 
     Raises:
-        TypeError: if ``cdf_ham`` is not an instance of :class:`~.CDFHamiltonian`
+        TypeError: if ``cdf_ham`` is not an instance of :class:`pennylane.estimator.compact_hamiltonian.CDFHamiltonian`
         ValueError: if ``num_steps`` is not a positive integer
         ValueError: if ``order`` is not 1 or a positive even integer
         ValueError: if the number of wires provided does not match the number of wires required by the operator
@@ -331,7 +331,7 @@ class TrotterCDF(ResourceOperator):
         calculated based on `arXiv:2506.15784 <https://arxiv.org/abs/2506.15784>`_.
 
     .. seealso::
-        :class:`~.estimator.compact_hamiltonian.CDFHamiltonian`
+        :class:`pennylane.estimator.compact_hamiltonian.CDFHamiltonian`
 
     .. seealso:: :class:`~.TrotterProduct`
 
@@ -401,7 +401,7 @@ class TrotterCDF(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * cdf_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.CDFHamiltonian`): a compressed double factorized
+                * cdf_ham (:class:`pennylane.estimator.templates.compact_hamiltonian.CDFHamiltonian`): a compressed double factorized
                   Hamiltonian to be approximately exponentiated
                 * num_steps (int): number of Trotter steps to perform
                 * order (int): order of the approximation, must be 1 or even.
@@ -420,7 +420,7 @@ class TrotterCDF(ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            cdf_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.CDFHamiltonian`):
+            cdf_ham (:class:`pennylane.estimator.templates.compact_hamiltonian.CDFHamiltonian`):
                 a compressed double factorized Hamiltonian to be approximately exponentiated
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even.
@@ -460,7 +460,7 @@ class TrotterCDF(ResourceOperator):
         quantum gate and the number of times it occurs in the decomposition.
 
         Args:
-            cdf_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.CDFHamiltonian`): a compressed double factorized
+            cdf_ham (:class:`pennylane.estimator.templates.compact_hamiltonian.CDFHamiltonian`): a compressed double factorized
                 Hamiltonian to be approximately exponentiated
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even.
