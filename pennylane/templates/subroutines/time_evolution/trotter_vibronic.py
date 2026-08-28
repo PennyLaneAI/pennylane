@@ -75,7 +75,7 @@ class TrotterVibronic(Operator2):
               ``F`` position fragments;
             * ``"linear"``: ``(F, N, N, M)`` -- the linear-in-position coefficients;
             * ``"quadratic"``: ``(F, N, N, M, M)`` -- the quadratic-in-position coefficients (see
-              the Data Format section for the diagonal/off-diagonal convention);
+              the Implementation Details section for the diagonal/off-diagonal convention);
             * ``"kinetic"``: ``(N, N, M, M)`` -- the quadratic-in-momentum coefficients of the
               single kinetic fragment.
         electronic_wires (WiresLike): the :math:`n` electronic-state wires.
@@ -95,24 +95,6 @@ class TrotterVibronic(Operator2):
         aqft_order (int): approximation order of the :class:`~.AQFT` used to transform between
             position and momentum space. If ``None`` (default), no approximation is made
             (``aqft_order = k - 1``).
-
-    .. details::
-        :title: Data Format
-        :href: data-format
-
-        The Hamiltonian must follow the "XOR" fragmentation scheme of `Motlagh et al,
-        arXiv:2411.13669 <https://arxiv.org/abs/2411.13669>`__. Position fragment :math:`i` may
-        only populate the electronic matrix elements at index pairs :math:`(j, i \oplus j)`
-        (bitwise XOR), for :math:`i = 0, \dots, F-1`. This is what lets each fragment be
-        diagonalized by the fixed single-Hadamard/CNOT circuit derived from the key
-        :math:`(0, i)`. A Hamiltonian with a different fragment structure will silently produce an
-        incorrect circuit.
-
-        The ``quadratic`` tensor encodes both the :math:`Q_r^2` coefficients (on its diagonal
-        ``[..., r, r]``) and the bilinear :math:`Q_r Q_s` coefficients (off-diagonal). Each
-        bilinear pair is read once, from the entry with :math:`r < s`, and the mirror entry
-        :math:`(s, r)` is ignored. Put the full :math:`Q_r Q_s` coefficient on the :math:`r < s`
-        entry. Splitting it evenly between :math:`(r, s)` and :math:`(s, r)` would drop half.
 
     **Example**
 
@@ -198,7 +180,9 @@ class TrotterVibronic(Operator2):
 
         This section shows how the dense ``hamiltonian`` is turned into gates, making every phase
         prefactor explicit, following `Motlagh et al, arXiv:2411.13669
-        <https://arxiv.org/abs/2411.13669>`__. The mode positions :math:`Q_r` and momenta
+        <https://arxiv.org/abs/2411.13669>`__ (see also this `PennyLane demo
+        <https://pennylane.ai/demos/simulating_vibronic_dynamics>`__ for a from-scratch,
+        step-by-step implementation). The mode positions :math:`Q_r` and momenta
         :math:`P_r` are the signed (two's-complement) integers on the mode sub-registers of
         ``vib_wires``, and :math:`a` labels an ``electronic_wires`` basis state.
 
@@ -227,7 +211,19 @@ class TrotterVibronic(Operator2):
                               + \sum_{r<s} \beta_{a,rs} Q_r Q_s .
 
         The entries :math:`c, l, q, \beta` are the diagonalized ``constant``/``linear``/``quadratic``
-        tensors and :math:`t_r` the diagonal of ``kinetic``.
+        tensors and :math:`t_r` the diagonal of ``kinetic``. The ``quadratic`` tensor packs both
+        :math:`q_{a,r}` (diagonal, ``[..., r, r]``) and :math:`\beta_{a,rs}` (read once from the
+        entry with :math:`r < s`). The mirror entry :math:`(s, r)` is ignored, so put the full
+        weight on :math:`r < s`. Splitting it evenly between the two would drop half.
+
+        The Hamiltonian must follow the "XOR" fragmentation scheme of the reference above:
+        position fragment :math:`i` may only populate the electronic matrix elements at index
+        pairs :math:`(j, i \oplus j)` (bitwise XOR), for :math:`i = 0, \dots, F-1`. This is what
+        lets :math:`V_i` (step 3) be the fixed single-Hadamard/CNOT circuit derived from the key
+        :math:`(0, i)`. A Hamiltonian with a different fragment structure will silently produce an
+        incorrect circuit. See the demo's `fragmentation and diagonalization
+        <https://pennylane.ai/demos/simulating_vibronic_dynamics#fragmentation-and-diagonalization>`__
+        section for the general (non-XOR) construction of :math:`V_i`.
 
         **1. Second-order Trotter.**
         With :math:`S =` ``num_trotter_steps`` and :math:`\Delta t = t/S`, :math:`e^{-iHt}` is
@@ -240,7 +236,9 @@ class TrotterVibronic(Operator2):
                             \Big(\prod_{i=F-1}^{0} e^{-i H_i \Delta t/2}\Big),
 
         so each position fragment is visited twice per step at :math:`\tau = \Delta t/2` and the
-        kinetic fragment once at :math:`\Delta t`.
+        kinetic fragment once at :math:`\Delta t`. See the demo's `assembling the Trotter step
+        <https://pennylane.ai/demos/simulating_vibronic_dynamics#assembling-the-trotter-step>`__
+        section for the fragment loop this unrolls into.
 
         **2. Phase-gradient arithmetic.**
         Each fragment is diagonal, so evolving it reduces to imprinting a phase per basis state
@@ -309,7 +307,10 @@ class TrotterVibronic(Operator2):
 
         Signed inputs enter through a half-signed multiply (a controlled :class:`~.Incrementer`
         supplies the two's-complement), :math:`Q_r^2` uses the low :math:`2k-1` ``cache_wires`` and
-        :math:`Q_r Q_s` all :math:`2k`, and each square/product is uncomputed after use.
+        :math:`Q_r Q_s` all :math:`2k`, and each square/product is uncomputed after use. See the
+        demo's `potential step
+        <https://pennylane.ai/demos/simulating_vibronic_dynamics#the-potential-step>`__ section for
+        an explicit, ungraphed version of this pattern.
 
         **5. Kinetic fragment.**
         The kinetic fragment is mode-diagonal in momentum space,
@@ -322,7 +323,9 @@ class TrotterVibronic(Operator2):
         :math:`t_r` is read from the :math:`(0,0)` electronic block of ``kinetic`` (any electronic
         dependence is ignored), and :math:`e^{-i t_r P_r^2 \Delta t}` reuses the
         square-and-multiply of the quadratic term (step 4). Since :math:`t_r` is state-independent,
-        it is written directly to ``coefficient_wires`` without a :class:`~.QROM`.
+        it is written directly to ``coefficient_wires`` without a :class:`~.QROM`. See the demo's
+        `kinetic step <https://pennylane.ai/demos/simulating_vibronic_dynamics#the-kinetic-step>`__
+        section for an explicit, ungraphed version of this basis change and arithmetic.
     """
 
     dynamic_argnames = ("evolution_time",)
