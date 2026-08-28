@@ -1106,6 +1106,7 @@
   [(#10052)](https://github.com/PennyLaneAI/pennylane/pull/10052)
   [(#10054)](https://github.com/PennyLaneAI/pennylane/pull/10054)
   [(#10062)](https://github.com/PennyLaneAI/pennylane/pull/10062)
+
   [(#10073)](https://github.com/PennyLaneAI/pennylane/pull/10073)
   [(#10078)](https://github.com/PennyLaneAI/pennylane/pull/10078)
   - Quantum chemistry operators are ported:
@@ -1370,6 +1371,11 @@
 * Fixed :class:`~.Incrementer` returning an incorrect incremented value when not enough
   work wires are provided.
   [(#10062)](https://github.com/PennyLaneAI/pennylane/pull/10062)
+
+* Converting an ``AbstractArray`` to a concrete array now raises an informative ``TypeError``
+  instead of silently producing an empty array, which previously surfaced as an obscure error
+  far from its cause.
+  [(#10083)](https://github.com/PennyLaneAI/pennylane/pull/10083)
 
 * Fixed the QFT-based decomposition of :class:`~.OutMultiplier` so it can be captured and
   compiled with Catalyst when ``mod = 2 ** len(output_wires)``.
