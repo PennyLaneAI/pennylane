@@ -38,9 +38,7 @@ from pennylane.typing import AbstractWires
 # --------------------------- Test data helpers -----------------------------
 # ---------------------------------------------------------------------------
 #
-# Dense vibronic Hamiltonians matching the labs "blocks" fragmentation output
-# (``pennylane.labs.trotter_error.vibronic_fragments`` + ``fragment_to_dense``), built here in
-# NumPy without importing ``pennylane.labs``.
+# Dense vibronic Hamiltonians in the "XOR" fragmentation format expected by ``TrotterVibronic``.
 
 
 def _next_pow_2(k):
@@ -731,6 +729,13 @@ def _binary_decimals_int(value, precision):
     return int(np.dot(np.asarray(bits), 2 ** np.arange(precision)[::-1]))
 
 
+def _prepare_phase_gradient(pg_wires):
+    """Prepare PennyLane's phase-gradient state |∇n> = (1/sqrt(N)) sum_m e^{-2 pi i m/N} |m>."""
+    for i, w in enumerate(pg_wires):
+        qp.H(w)
+        qp.PhaseShift(-np.pi / 2**i, w)
+
+
 def _phase_gradient_int(hamiltonian, wires, mode_value=0, electronic_state=0, evolution_time=1.0):
     """Run ``TrotterVibronic`` with the phase-gradient register prepared in ``|0>`` and return the
     integer it holds afterwards.
@@ -782,8 +787,10 @@ class TestNumericalCorrectness:
         }
         wires = make_wires(n_states, n_modes, k=k, b=b)
         got = _phase_gradient_int(hamiltonian, wires, electronic_state=electronic_state)
-        expected = (2 * _binary_decimals_int(c / 2, b)) % (2**b)
-        assert got == expected == (2 * m) % (2**b)
+        # Coefficients are negated before loading (phase-gradient sign convention), so the
+        # accumulated integer is ``-2 * m`` rather than ``2 * m`` (both mod ``2**b``).
+        expected = (2 * _binary_decimals_int(-c / 2, b)) % (2**b)
+        assert got == expected == (-2 * m) % (2**b)
 
     def test_linear_term_phase(self):
         """A linear fragment multiplies ``binary_decimals(lambda/2)`` by the (signed) mode value,
@@ -801,8 +808,60 @@ class TestNumericalCorrectness:
         }
         wires = make_wires(n_states, n_modes, k=k, b=b)
         got = _phase_gradient_int(hamiltonian, wires, mode_value=q, electronic_state=0)
-        expected = (2 * _binary_decimals_int(lam / 2, b) * q) % (2**b)
-        assert got == expected == (2 * m * q) % (2**b)
+        # Negated coefficient (see ``test_constant_term_phase``) times the (signed) mode value.
+        expected = (2 * _binary_decimals_int(-lam / 2, b) * q) % (2**b)
+        assert got == expected == (-2 * m * q) % (2**b)
+
+    @pytest.mark.parametrize("mode_value", [0, 1, 2])
+    def test_sign_matches_exact_evolution(self, mode_value):
+        """With a genuine phase-gradient state the template realizes ``e^{-iHt}`` (not
+        ``e^{+iHt}``): the global sign that the integer-accumulation tests above cannot see.
+
+        A single position fragment (kinetic zero) is diagonal, so one Trotter step is exact and
+        the electronic register picks up the diagonal phase ``e^{-i theta_a}`` per electronic
+        state ``a``. Comparing the measured relative phase against the exact one pins the sign.
+        """
+        n_states, n_modes, k, b = 2, 1, 3, 3
+        t = 1.0
+        # Exact binary fractions of 2*pi (so ``binary_decimals`` is exact): coeff = 2*pi*m/2**(b-1).
+        scale = 2 * np.pi / 2 ** (b - 1)
+        const_m, lin_m, quad_m = [1, -1], [1, -1], [1, 0]
+        constant = np.zeros((1, n_states, n_states))
+        linear = np.zeros((1, n_states, n_states, n_modes))
+        quadratic = np.zeros((1, n_states, n_states, n_modes, n_modes))
+        for a in range(n_states):
+            constant[0, a, a] = const_m[a] * scale
+            linear[0, a, a, 0] = lin_m[a] * scale
+            quadratic[0, a, a, 0, 0] = quad_m[a] * scale
+        hamiltonian = {
+            "constant": constant,
+            "linear": linear,
+            "quadratic": quadratic,
+            "kinetic": np.zeros((n_states, n_states, n_modes, n_modes)),
+        }
+        wires = make_wires(n_states, n_modes, k=k, b=b)
+        num_wires = max(w for reg in wires.values() for w in reg) + 1
+        dev = qp.device("default.qubit", wires=num_wires)
+
+        @qp.qnode(dev)
+        def circuit():
+            qp.Hadamard(wires["electronic"][0])  # electronic |+>
+            if mode_value:
+                qp.BasisState(qp.math.int_to_binary(mode_value, k), wires=wires["vib_wires"])
+            _prepare_phase_gradient(wires["phase_gradient"])
+            make_op(hamiltonian, wires, evolution_time=t, num_trotter_steps=1)
+            return qp.density_matrix(wires=wires["electronic"])
+
+        measured = np.angle(circuit()[1, 0])
+
+        def theta(a):
+            q = mode_value
+            return t * (
+                constant[0, a, a] + linear[0, a, a, 0] * q + quadratic[0, a, a, 0, 0] * q**2
+            )
+
+        expected = -(theta(1) - theta(0))  # arg(e^{-i theta_1} conj(e^{-i theta_0}))
+        assert np.isclose(np.exp(1j * measured), np.exp(1j * expected))
 
 
 # ---------------------------------------------------------------------------
@@ -814,9 +873,8 @@ class TestNumericalCorrectness:
 def _single_fragment(n_states, n_modes, include_op_types, seed=0, skip_quadratic=False, m=0):
     """Build a single random position or kinetic dense fragment for targeted tests.
 
-    Mirrors the labs ``vibronic_fragments`` layout for the requested operator types. ``m`` is
-    the XOR shift of the populated electronic blocks; as position fragment ``i``, it must equal
-    ``i`` to match the ``(0, i)`` diagonalization convention.
+    ``m`` is the XOR shift of the populated electronic blocks; as position fragment ``i``, it must
+    equal ``i`` to match the ``(0, i)`` diagonalization convention.
     """
     rng = np.random.default_rng(seed)
     fragment = _zero_fragment(n_states, n_modes)

@@ -68,21 +68,23 @@ class TrotterVibronic(Operator2):
     Args:
         evolution_time (float): time :math:`t` for which to evolve under the vibronic Hamiltonian.
         num_trotter_steps (int): number of second-order Trotter steps to use.
-        hamiltonian (dict): the vibronic Hamiltonian as a dictionary of dense coefficient tensors
-            (the stacked output of ``fragment_to_dense``). The expected keys and shapes are
+        hamiltonian (dict): the vibronic Hamiltonian as a dictionary of dense coefficient tensors.
+            The expected keys and shapes are
 
             * ``"constant"``: ``(F, N, N)`` -- the constant (mode-independent) coefficients of the
               ``F`` position fragments;
             * ``"linear"``: ``(F, N, N, M)`` -- the linear-in-position coefficients;
-            * ``"quadratic"``: ``(F, N, N, M, M)`` -- the quadratic-in-position coefficients;
+            * ``"quadratic"``: ``(F, N, N, M, M)`` -- the quadratic-in-position coefficients (see
+              the Data Format section for the diagonal/off-diagonal convention);
             * ``"kinetic"``: ``(N, N, M, M)`` -- the quadratic-in-momentum coefficients of the
               single kinetic fragment.
         electronic_wires (WiresLike): the :math:`n` electronic-state wires.
         vib_wires (WiresLike): the :math:`M \cdot k` vibrational-mode wires, provided as a single
             flattened register. Internally these are reshaped into ``M`` registers of ``k`` wires,
             one per mode, via ``np.array(vib_wires).reshape(M, -1)``.
-        phase_gradient_wires (WiresLike): the :math:`b` wires holding the phase-gradient resource
-            state.
+        phase_gradient_wires (WiresLike): the :math:`b` wires holding the `phase-gradient resource
+            state <https://pennylane.ai/compilation/phase-gradient>`__, assumed to be prepared
+            upfront.
         coefficient_wires (WiresLike): the :math:`b` wires of the Hamiltonian-coefficient
             register. If omitted (default), they are dynamically allocated in the decomposition,
             with :math:`b` equal to ``len(phase_gradient_wires)``.
@@ -94,45 +96,23 @@ class TrotterVibronic(Operator2):
             position and momentum space. If ``None`` (default), no approximation is made
             (``aqft_order = k - 1``).
 
-    .. warning::
-
-        This template is tailored to the vibronic fragments produced by
-        ``pennylane.labs.trotter_error.vibronic_fragments``. In particular, the electronic
-        diagonalization assumes the populated coefficients follow the structure imposed there.
-
     .. details::
-        :title: Register sizes
-        :href: register-sizes
+        :title: Data Format
+        :href: data-format
 
-        With :math:`N` electronic states (:math:`n = \lceil\log_2(N)\rceil` qubits), :math:`M`
-        vibrational modes (:math:`k` qubits each), and :math:`b`-qubit coefficient and
-        phase-gradient registers, the wire registers should have the following sizes:
+        The Hamiltonian must follow the "XOR" fragmentation scheme of `Motlagh et al,
+        arXiv:2411.13669 <https://arxiv.org/abs/2411.13669>`__. Position fragment :math:`i` may
+        only populate the electronic matrix elements at index pairs :math:`(j, i \oplus j)`
+        (bitwise XOR), for :math:`i = 0, \dots, F-1`. This is what lets each fragment be
+        diagonalized by the fixed single-Hadamard/CNOT circuit derived from the key
+        :math:`(0, i)`. A Hamiltonian with a different fragment structure will silently produce an
+        incorrect circuit.
 
-        .. list-table::
-           :widths: 25 25 50
-           :header-rows: 1
-
-           * - argument
-             - expected size
-             - information content
-           * - ``electronic_wires``
-             - :math:`n`
-             - electronic state
-           * - ``vib_wires``
-             - :math:`M \cdot k`
-             - positions of all vibrational modes (signed), flattened
-           * - ``cache_wires``
-             - :math:`2k`
-             - cached squares/products of modes (signed/unsigned)
-           * - ``coefficient_wires``
-             - :math:`b`
-             - Hamiltonian coefficients (unsigned); optional, dynamically allocated if omitted
-           * - ``phase_gradient_wires``
-             - :math:`b`
-             - phase-gradient state (unsigned)
-           * - ``work_wires``
-             - :math:`\max(n-1, 2k, 2b+2)`
-             - data-loading/arithmetic scratch
+        The ``quadratic`` tensor encodes both the :math:`Q_r^2` coefficients (on its diagonal
+        ``[..., r, r]``) and the bilinear :math:`Q_r Q_s` coefficients (off-diagonal). Each
+        bilinear pair is read once, from the entry with :math:`r < s`, and the mirror entry
+        :math:`(s, r)` is ignored. Put the full :math:`Q_r Q_s` coefficient on the :math:`r < s`
+        entry. Splitting it evenly between :math:`(r, s)` and :math:`(s, r)` would drop half.
 
     **Example**
 
@@ -177,6 +157,172 @@ class TrotterVibronic(Operator2):
 
     >>> qp.specs(circuit)().resources.quantum_operations
     {'QROM': 6, 'SemiAdder': 2, 'CNOT': 24, 'C(Incrementer)': 4, 'OutMultiplier': 3, 'AQFT': 1, 'SignedOutSquare': 1, 'Adjoint(SignedOutSquare)': 1, 'Adjoint(AQFT)': 1}
+
+    .. details::
+        :title: Register Sizes
+        :href: register-sizes
+
+        With :math:`N` electronic states (:math:`n = \lceil\log_2(N)\rceil` qubits), :math:`M`
+        vibrational modes (:math:`k` qubits each), and :math:`b`-qubit coefficient and
+        phase-gradient registers, the wire registers should have the following sizes:
+
+        .. list-table::
+           :widths: 25 25 50
+           :header-rows: 1
+
+           * - argument
+             - expected size
+             - information content
+           * - ``electronic_wires``
+             - :math:`n`
+             - electronic state
+           * - ``vib_wires``
+             - :math:`M \cdot k`
+             - positions of all vibrational modes (signed), flattened
+           * - ``cache_wires``
+             - :math:`2k`
+             - cached squares/products of modes (signed/unsigned)
+           * - ``coefficient_wires``
+             - :math:`b`
+             - Hamiltonian coefficients (unsigned); optional, dynamically allocated if omitted
+           * - ``phase_gradient_wires``
+             - :math:`b`
+             - phase-gradient state (unsigned)
+           * - ``work_wires``
+             - :math:`\max(n-1, 2k, 2b+2)`
+             - data-loading/arithmetic scratch
+
+    .. details::
+        :title: Implementation Details
+        :href: implementation-details
+
+        This section shows how the dense ``hamiltonian`` is turned into gates, making every phase
+        prefactor explicit, following `Motlagh et al, arXiv:2411.13669
+        <https://arxiv.org/abs/2411.13669>`__. The mode positions :math:`Q_r` and momenta
+        :math:`P_r` are the signed (two's-complement) integers on the mode sub-registers of
+        ``vib_wires``, and :math:`a` labels an ``electronic_wires`` basis state.
+
+        The Hamiltonian is a sum of :math:`F` position fragments and one kinetic fragment,
+
+        .. math::
+
+            H = \sum_{i=0}^{F-1} H_i + H_{\text{kin}},
+            \qquad
+            H_i = V_i D_i(Q) V_i^\dagger,
+            \qquad
+            H_{\text{kin}} = \sum_r t_r P_r^2 .
+
+        Here :math:`V_i` (step 3) rotates into a fragment-specific electronic eigenbasis, and
+        :math:`D_i(Q)` is the diagonal generator on ``electronic_wires``,
+
+        .. math::
+
+            D_i(Q) = \sum_a \theta_{i,a}(Q) |a\rangle\langle a|,
+
+        whose entries for electronic state :math:`a` are degree-2 polynomials in the mode positions,
+
+        .. math::
+
+            \theta_{i,a}(Q) = c_a + \sum_r l_{a,r} Q_r + \sum_r q_{a,r} Q_r^2
+                              + \sum_{r<s} \beta_{a,rs} Q_r Q_s .
+
+        The entries :math:`c, l, q, \beta` are the diagonalized ``constant``/``linear``/``quadratic``
+        tensors and :math:`t_r` the diagonal of ``kinetic``.
+
+        **1. Second-order Trotter.**
+        With :math:`S =` ``num_trotter_steps`` and :math:`\Delta t = t/S`, :math:`e^{-iHt}` is
+        approximated by :math:`S` repetitions of the symmetric step
+
+        .. math::
+
+            S_2(\Delta t) = \Big(\prod_{i=0}^{F-1} e^{-i H_i \Delta t/2}\Big)
+                            e^{-i H_{\text{kin}} \Delta t}
+                            \Big(\prod_{i=F-1}^{0} e^{-i H_i \Delta t/2}\Big),
+
+        so each position fragment is visited twice per step at :math:`\tau = \Delta t/2` and the
+        kinetic fragment once at :math:`\Delta t`.
+
+        **2. Phase-gradient arithmetic.**
+        Each fragment is diagonal, so evolving it reduces to imprinting a phase per basis state
+        with the `phase-gradient trick <https://pennylane.ai/compilation/phase-gradient>`__: the
+        ``phase_gradient_wires`` hold
+
+        .. math::
+
+            |\nabla n\rangle = \tfrac{1}{\sqrt{2^b}}\sum_{j=0}^{2^b-1} e^{-2\pi i j/2^b}|j\rangle,
+            \qquad
+            \text{ADD}(m)|\nabla n\rangle = e^{+2\pi i m/2^b}|\nabla n\rangle .
+
+        A phase :math:`\tau\,\theta_{i,a}` is imprinted by loading its :math:`b`-bit fixed-point
+        encoding :math:`m` into ``coefficient_wires`` and adding it into ``phase_gradient_wires``
+        with a :class:`~.SemiAdder`:
+
+        .. code-block::
+
+            coefficient : ─|m⟩─╭SemiAdder─|m⟩─┤
+            |∇n⟩        : ─────╰SemiAdder─────┤  e^{+2πi m/2^b}|∇n⟩
+
+        The sign of the ADD identity is positive, so coefficients are negated before encoding,
+        :math:`m = \text{encode}(-\tau\theta_{i,a})`, giving the target :math:`e^{-i\tau\theta}`.
+        Rounding to :math:`b` bits (mod :math:`2\pi`) is a discretization error on top of the
+        Trotter and AQFT truncation.
+
+        **3. Electronic diagonalization.**
+        Each position fragment is diagonalized by a Clifford :math:`V_i` (Fig. 2 of the reference),
+
+        .. math::
+
+            e^{-i H_i \tau} = V_i e^{-i D_i(Q)\tau} V_i^\dagger,
+            \qquad
+            V_i = H_c \prod_{j \ne c} \text{CNOT}_{c \to j},
+            \quad V_0 = I .
+
+        Here :math:`c` is the least-significant set bit of :math:`i`, and the product runs over its
+        other set bits :math:`j`. For :math:`i = 3` on two ``electronic_wires``:
+
+        .. code-block::
+
+            electronic[0]: ──────╭X─┤
+            electronic[1]: ──H───╰●─┤
+
+        **4. Position fragment.**
+        Each monomial of :math:`\theta_{i,a}(Q)` follows the same pattern: a :class:`~.QROM`
+        controlled on ``electronic_wires`` loads its coefficient into ``coefficient_wires``
+        (differentially, i.e. only the change from the previous term), an arithmetic block writes
+        the monomial's phase into ``phase_gradient_wires`` as in step 2, and a final
+        :class:`~.QROM` unloads the last coefficient back to :math:`|0\rangle`:
+
+        .. code-block::
+
+            electronic  : ─╭QROM─────────────╭QROM─┤
+            coefficient : ─╰QROM─╭arithmetic─╰QROM─┤
+            |∇n⟩        : ───────╰arithmetic───────┤  e^{-iτ θ}
+
+        The arithmetic block per monomial (skipped when the coefficient vanishes):
+
+        * :math:`c_a` -- :class:`~.SemiAdder`.
+        * :math:`l_{a,r} Q_r` -- :class:`~.OutMultiplier` of the coefficient by the signed
+          :math:`Q_r`.
+        * :math:`q_{a,r} Q_r^2` -- :class:`~.SignedOutSquare` then :class:`~.OutMultiplier`.
+        * :math:`\beta_{a,rs} Q_r Q_s` -- :class:`~.SignedOutMultiplier` then
+          :class:`~.OutMultiplier`.
+
+        Signed inputs enter through a half-signed multiply (a controlled :class:`~.Incrementer`
+        supplies the two's-complement), :math:`Q_r^2` uses the low :math:`2k-1` ``cache_wires`` and
+        :math:`Q_r Q_s` all :math:`2k`, and each square/product is uncomputed after use.
+
+        **5. Kinetic fragment.**
+        The kinetic fragment is mode-diagonal in momentum space,
+
+        .. math::
+
+            e^{-i H_{\text{kin}} \Delta t} = \prod_r F_r^\dagger e^{-i t_r P_r^2 \Delta t} F_r,
+
+        where :math:`F_r =` :class:`~.AQFT` maps mode :math:`r` from position to momentum space,
+        :math:`t_r` is read from the :math:`(0,0)` electronic block of ``kinetic`` (any electronic
+        dependence is ignored), and :math:`e^{-i t_r P_r^2 \Delta t}` reuses the
+        square-and-multiply of the quadratic term (step 4). Since :math:`t_r` is state-independent,
+        it is written directly to ``coefficient_wires`` without a :class:`~.QROM`.
     """
 
     dynamic_argnames = ("evolution_time",)
@@ -825,8 +971,12 @@ def _load_coefficients(coefficients, precision, prev_bitstrings, qrom_wires):
     loaded ``prev_bitstrings`` reference point, and loaded with a :class:`~.QROM`. The newly
     loaded bit strings are returned so that they can be used as the reference point for the next
     data-loading step.
+
+    The coefficients are negated before encoding: adding an integer into the standard
+    phase-gradient state :math:`|\\nabla n\\rangle` imprints :math:`e^{+2\\pi i m/2^b}`, so the
+    negation is what turns the accumulated phase into :math:`e^{-i\\theta}` (i.e. :math:`e^{-iHt}`).
     """
-    new_bitstrings = math.binary_decimals(coefficients, precision, unit=2 * np.pi)
+    new_bitstrings = math.binary_decimals(-coefficients, precision, unit=2 * np.pi)
     change_bitstrings = (prev_bitstrings + new_bitstrings) % 2
     QROM(change_bitstrings, **qrom_wires)
     return new_bitstrings
@@ -1034,7 +1184,8 @@ def _trotter_step_second_order(
                 square_wires, mult_wires = _extract_registers(
                     registers, mode_registers, "quadratic", k
                 )
-                bitstring = math.binary_decimals(_coeffs, precision, unit=2 * np.pi)
+                # Negated for the same phase-gradient sign convention as ``_load_coefficients``.
+                bitstring = math.binary_decimals(-_coeffs, precision, unit=2 * np.pi)
                 _load_basis(bitstring, registers["coefficients"])
                 _aqft(order=aqft_order, wires=mode_registers[k])
                 SignedOutSquare(**square_wires, output_wires_zeroed=True)

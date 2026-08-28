@@ -495,8 +495,9 @@ def _(op: qtemps.TrotterVibronic):
     # ``phase_gradient_wires`` in size (see the class docstring).
     coeff_wires = len(op.arguments["coefficient_wires"]) or phase_grad_wires
 
-    # ``VibronicHamiltonian`` assumes the standard XOR ("blocks") fragmentation
-    # (``F == 2 ** ceil_log2(N)``); reject others so the estimate cannot silently disagree.
+    # ``VibronicHamiltonian`` assumes the standard XOR ("blocks") fragmentation, i.e. the number
+    # of position fragments F equals 2 ** ceil_log2(N) (N = number of electronic states); reject
+    # other fragment counts so the estimate cannot silently disagree with the actual Hamiltonian.
     num_fragments = hamiltonian["constant"].shape[0]
     expected_fragments = 2 ** pl_math.ceil_log2(num_states)
     if num_fragments != expected_fragments:
