@@ -23,6 +23,8 @@ from operator2_utils import (
     HybridOp,
     MixedHybridOp,
     MultiWireOp,
+    NonParametricOp,
+    OpBuildsNestedOp,
     StaticOp,
     TwoDynOp,
 )
@@ -65,6 +67,17 @@ def _eval(jaxpr, *args):
 
 class TestCaptureBasics:
     """Tests for capturing operators into a single primitive equation."""
+
+    @pytest.mark.parametrize("op", (NonParametricOp([0, 1]), OpBuildsNestedOp([0, 1])))
+    def test_operator_as_traced_argument(self, op):
+        """Test that operators can be used as traced arguments"""
+
+        def fn(op_):
+            qp.apply(op_)
+
+        cjaxpr = jax.make_jaxpr(fn)(op)
+        assert len(cjaxpr.eqns) == 1
+        assert cjaxpr.eqns[0].params["op_cls"] is type(op)
 
     def test_tracer_none_without_capture(self):
         """Test that the tracer attribute is ``None`` when capture is disabled."""
@@ -362,7 +375,6 @@ class TestHybridCapture:
         """Hybrid tuples with scalar and operator leaves should partition the mask."""
 
         class TupleHybridOp(qp.core.Operator2):
-
             hybrid_argnames = ("data",)
 
             def __init__(self, data, wires):
@@ -380,7 +392,6 @@ class TestHybridCapture:
         """Nested operators with multi-wire arguments should mark each wire leaf."""
 
         class MultiWireDyn(qp.core.Operator2):
-
             dynamic_argnames = ("phi",)
 
             def __init__(self, phi, wires):
@@ -487,7 +498,6 @@ class TestReconstruction:
 
 
 class TestApply:
-
     @pytest.mark.parametrize("op2", [DynOp(1.0, wires=0), FullOp(0.3, "lbl", [1.0, 2.0], wires=0)])
     def test_apply_adds_eqn(self, op2):
         """Tests that when an Operator2 is applied, an equation is added for it."""
