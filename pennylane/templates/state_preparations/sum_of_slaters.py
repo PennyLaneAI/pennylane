@@ -964,8 +964,8 @@ class SumOfSlatersPrep(Operator2):
         computational basis states, ``indices``, and number of target wires, ``num_wires``.
 
         Args:
-            indices (tuple[int] or Int): Indices of computational basis states of the sparse state to be
-                prepared with ``SumOfSlatersPrep``.
+            indices (tuple[int] or AbstractArray): Indices of computational basis states of the
+                sparse state to be prepared with ``SumOfSlatersPrep``.
             num_wires (int): Number of target wires on which ``SumOfSlatersPrep``
                 will prepare the state.
 
@@ -976,7 +976,16 @@ class SumOfSlatersPrep(Operator2):
 
         This function supports an abstract input for ``indices``, in which case an upper bound
         for the register sizes, across all possible sets of basis states of the given length, is
-        returned.
+        returned:
+
+        >>> indices = qp.typing.Int[45]
+        >>> qp.SumOfSlatersPrep.required_register_sizes(indices, 18)
+        {'wires': 18,
+         'enumeration_wires': 6,
+         'identification_wires': 11,
+         'qrom_work_wires': 5,
+         'mcx_cache_wires': 10}
+
         """
         if isinstance(indices, AbstractArray):
             return SumOfSlatersPrep._required_register_sizes_abstract(len(indices), num_wires)
