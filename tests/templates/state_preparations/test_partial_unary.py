@@ -313,15 +313,34 @@ class TestAffineSubspaceIsometry:
 
     def test_resource_model_caps_batches_and_accounts_for_excess_wires(self):
         """Resource heuristics cap QROM widths and account for the enlarged register."""
-        base = _pui_state_prep_resources(num_entries=3, num_wires=4, num_work_wires=1)
-        excess = _pui_state_prep_resources(num_entries=3, num_wires=4, num_work_wires=5)
+        base = _pui_state_prep_resources(
+            num_entries=3, num_wires=4, num_work_wires=1, is_affine=False
+        )
+        excess = _pui_state_prep_resources(
+            num_entries=3, num_wires=4, num_work_wires=5, is_affine=False
+        )
 
-        assert len(base) == 9
-        assert len(excess) == 10
+        assert len(base) == 7
+        assert len(excess) == 8
         assert {len(rep.target_wires) for rep in base if isinstance(rep, qp.QROM)} == {1, 2}
         assert {len(rep.target_wires) for rep in excess if isinstance(rep, qp.QROM)} == {1, 2, 3}
-        assert (base[qp.X], base[qp.CNOT], base[qp.SWAP]) == (4, 4, 4)
-        assert (excess[qp.X], excess[qp.CNOT], excess[qp.SWAP]) == (8, 12, 8)
+        assert base[qp.SWAP] == 4
+        assert excess[qp.SWAP] == 8
+
+    def test_affine_resource_params_avoid_dynamic_allocation(self):
+        """Affine support uses the decomposition rule that does not allocate work wires."""
+        op = PartialUnaryStatePreparation(
+            np.ones(4) / 2,
+            wires=range(4),
+            indices=(0b0000, 0b0011, 0b1100, 0b1111),
+            work_wires=(),
+        )
+        dynamic_rule, provided_rule = list_decomps(PartialUnaryStatePreparation)
+
+        assert op.resource_params["is_affine"]
+        assert not dynamic_rule.is_applicable(**op.resource_params)
+        assert provided_rule.is_applicable(**op.resource_params)
+        assert dynamic_rule.get_work_wire_spec(**op.resource_params).total == 0
 
 
 def _is_binary(x: np.ndarray) -> bool:
@@ -490,13 +509,11 @@ class TestPartialUnaryStatePreparation:
 
         work_wires = list(range(num_wires, num_wires + num_work_wires))
         rng.shuffle(work_wires)
-        # If provide_work_wires=False/True (=> cast to 0/1), we expect the decomposition
-        # rule with index 0/1 to be applicable. Exception: For num_entries=1, the rule with
-        # index 1 should be applicable
-        applicable_rule = int(provide_work_wires) if num_entries > 1 else 1
+        op = PartialUnaryStatePreparation(coefficients, wires, indices, work_wires)
+        applicable_rule = int(provide_work_wires or op.resource_params["is_affine"])
 
         for j, rule in enumerate(list_decomps(PartialUnaryStatePreparation)):
-            applicable = rule.is_applicable(num_entries, num_wires, num_work_wires)
+            applicable = rule.is_applicable(**op.resource_params)
             assert applicable is (j == applicable_rule)
             if not applicable:
                 continue
@@ -519,9 +536,10 @@ class TestPartialUnaryStatePreparation:
 
         work_wires = list(range(num_wires, num_wires + num_work_wires))
         rng.shuffle(work_wires)
+        op = PartialUnaryStatePreparation(coefficients, wires, indices, work_wires)
 
         for j, rule in enumerate(list_decomps(PartialUnaryStatePreparation)):
-            applicable = rule.is_applicable(num_entries, num_wires, num_work_wires)
+            applicable = rule.is_applicable(**op.resource_params)
             assert applicable is (j == 1)
             if not applicable:
                 continue
