@@ -53,7 +53,6 @@ class CompositeOp2(Operator2, is_baseclass=True):
         if any(isinstance(op, (qp.ops.MidMeasure, qp.ops.PauliMeasure)) for op in operands):
             raise ValueError("Composite operators of mid-circuit measurements are not supported.")
         super().__init__(**self._init_args)
-        self._name = self.__class__.__name__
         self._hash = None
         self._has_overlapping_wires = len(self.wires) < sum(len(op.wires) for op in operands)
         self._overlapping_ops = None
