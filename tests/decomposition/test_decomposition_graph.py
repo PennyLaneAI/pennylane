@@ -304,7 +304,7 @@ class TestDecompGraphConstruction:
     @pytest.mark.parametrize("decomps_kwarg", ["alt_decomps", "fixed_decomps"])
     def test_operator2_resource_signature_rejected(self, decomps_kwarg):
         """Tests that a rule whose resource function cannot accept the rule's arguments
-        positionally is rejected for an Operator2 target."""
+        positionally is rejected for an Operator2."""
 
         @qp.register_resources(lambda **_: {qp.RX: 2})
         def _bad_rule(phi, wires):
@@ -313,7 +313,9 @@ class TestDecompGraphConstruction:
         rules = [_bad_rule] if decomps_kwarg == "alt_decomps" else _bad_rule
         with pytest.raises(TypeError, match="does not accept the rule's 2 argument"):
             DecompositionGraph(
-                operations=[], gate_set={"RX"}, **{decomps_kwarg: {OneWireDynOp: rules}}
+                operations=[OneWireDynOp(0.5, wires=0)],
+                gate_set={"RX"},
+                **{decomps_kwarg: {OneWireDynOp: rules}},
             )
 
     def test_gate_set(self):

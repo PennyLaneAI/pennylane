@@ -710,30 +710,28 @@ class TestDecompDictionary:
 
 @pytest.mark.unit
 class TestResourceSignatureValidation:
-    """Tests that registering a rule for an ``Operator2`` requires the rule's resource
-    function to accept the rule's arguments passed positionally."""
+    """Tests ``DecompositionRule.validate_resource_signature``."""
 
-    @pytest.mark.parametrize("target", [DynOp, "DynOp", "Adjoint(DynOp)", "C(DynOp)", "Pow(DynOp)"])
-    def test_keyword_only_resource_fn_rejected(self, target):
-        """Tests that a keyword-only resource function is rejected for an Operator2 target."""
+    def test_keyword_only_resource_fn_rejected(self):
+        """Tests that a keyword-only resource function is rejected."""
 
         @register_resources(lambda **_: {qp.RZ: 2})
         def bad_rule(phi, wires):
             raise NotImplementedError
 
         with pytest.raises(TypeError, match="does not accept the rule's 2 argument"):
-            qp.add_decomps(target, bad_rule)
+            bad_rule.validate_resource_signature()
 
     def test_resource_fn_requiring_extra_args_rejected(self):
         """Tests that a resource function requiring arguments the rule does not accept
-        positionally is rejected for an Operator2 target."""
+        positionally is rejected."""
 
         @register_resources(lambda phi, wires: {qp.RZ: 2})
         def bad_rule(**_):
             raise NotImplementedError
 
         with pytest.raises(TypeError, match="does not accept the rule's 0 argument"):
-            qp.add_decomps(DynOp, bad_rule)
+            bad_rule.validate_resource_signature()
 
     def test_valid_rules_accepted(self):
         """Tests that dict-based resources and mirrored resource functions are accepted."""
@@ -746,21 +744,8 @@ class TestResourceSignatureValidation:
         def mirrored_rule(phi, wires):
             raise NotImplementedError
 
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(DynOp, dict_rule, mirrored_rule)
-            rules = qp.list_decomps(DynOp)
-            assert dict_rule in rules and mirrored_rule in rules
-
-    def test_legacy_target_accepted(self):
-        """Tests that legacy operators are exempt from the resource signature requirement."""
-
-        @register_resources(lambda **_: {qp.RZ: 1})
-        def legacy_rule(wires, **_):
-            raise NotImplementedError
-
-        with qp.decomposition.local_decomps():
-            qp.add_decomps(CustomOp, legacy_rule)
-            assert legacy_rule in qp.list_decomps(CustomOp)
+        dict_rule.validate_resource_signature()
+        mirrored_rule.validate_resource_signature()
 
 
 class TestDecompCollection:

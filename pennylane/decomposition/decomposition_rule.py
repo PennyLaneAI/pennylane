@@ -17,7 +17,6 @@
 from __future__ import annotations
 
 import inspect
-import re
 from collections import Counter, defaultdict
 from collections.abc import Callable, Sequence
 from contextlib import contextmanager
@@ -40,7 +39,7 @@ from .resources import (
     Resources,
     _gate_count_dict_to_str,
 )
-from .utils import _get_decomp_args, to_name, translate_op_alias
+from .utils import _get_decomp_args, to_name
 
 
 @dataclass(frozen=True)
@@ -616,29 +615,6 @@ _fixed_decomps_private = {}
 _fixed_decomps_var = ContextVar("_fixed_decomps", default=_fixed_decomps_private)
 
 
-_SYMBOLIC_TARGET = re.compile(r"(?:Adjoint|C|Pow)\((\w+)\)")
-
-
-def _is_operator2_target(op_type: type[Operator | Operator2] | str) -> bool:
-    """Whether a decomposition target refers to an ``Operator2``, directly or symbolically."""
-    if isinstance(op_type, type):
-        return issubclass(op_type, Operator2)
-    if not isinstance(op_type, str):
-        return isinstance(op_type, Operator2)
-    name = to_name(op_type)
-    if match := _SYMBOLIC_TARGET.fullmatch(name):
-        name = match.group(1)
-    seen, stack = set(), [Operator2]
-    while stack:
-        for sub in stack.pop().__subclasses__():
-            if sub not in seen:
-                seen.add(sub)
-                if translate_op_alias(sub.__name__) == name:
-                    return True
-                stack.append(sub)
-    return False
-
-
 def add_decomps(op_type: type[Operator | Operator2] | str, *decomps: DecompositionRule) -> None:
     """Globally registers new decomposition rules with an operator class.
 
@@ -662,7 +638,7 @@ def add_decomps(op_type: type[Operator | Operator2] | str, *decomps: Decompositi
             A decomposition is a quantum function registered with a resource estimate using
             ``qp.register_resources``. For operators of the new ``Operator2`` type, a rule's
             resource function must accept the rule's arguments passed positionally, mirroring
-            the rule's signature; registration raises a ``TypeError`` otherwise.
+            the rule's signature; a ``TypeError`` is raised otherwise when the rule is used.
 
     .. seealso:: :func:`~pennylane.register_resources` and :class:`~pennylane.list_decomps`
 
@@ -714,9 +690,6 @@ def add_decomps(op_type: type[Operator | Operator2] | str, *decomps: Decompositi
             "A decomposition rule must be a qfunc with a resource estimate "
             "registered using qp.register_resources"
         )
-    if _is_operator2_target(op_type):
-        for d in decomps:
-            d.validate_resource_signature()
     _decompositions_var.get()[to_name(op_type)].extend(decomps)
 
 
