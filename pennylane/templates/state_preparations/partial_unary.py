@@ -89,10 +89,6 @@ def _move_pivots_to_leading_wires(translated, pivots, n_qubits):
             if bool(value & current_mask) != bool(value & desired_mask):
                 translated[j] = value ^ current_mask ^ desired_mask
 
-        for j in range(i + 1, len(locations)):
-            if locations[j] == desired_bit:
-                locations[j] = current_bit
-                break
         locations[i] = desired_bit
     return circuit
 

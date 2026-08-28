@@ -237,6 +237,15 @@ class TestPUIsometryFinder:
         self._validate_circuit_structure(circuit, iso_finder, num_entries)
         self._validate_circuit_ops(circuit, iso_finder, states)
 
+    def test_find_isometry_without_remainder_register(self):
+        """The identity isometry is returned when the subspace occupies the full register."""
+        iso_finder = PUIsometryFinder([2, 0, 1], 2)
+
+        circuit, bijection = iso_finder.find_isometry()
+
+        assert circuit == []
+        assert bijection == {0: 2, 1: 0, 2: 1}
+
     def test_toffoli_may_use_subspace_control(self):
         """A fallback Toffoli may distinguish rows using a subspace qubit."""
         iso_finder = PUIsometryFinder([0b0010, 0b0110, 0b1000], 4)
