@@ -25,9 +25,8 @@ import pennylane as qp
 from pennylane import SignedOutMultiplier, device, qnode
 from pennylane.core.operator import abstractify
 from pennylane.decomposition import list_decomps
-from pennylane.decomposition.resources import controlled_resource_rep
 from pennylane.measurements import sample, state
-from pennylane.ops import CNOT
+from pennylane.ops import CNOT, ctrl
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
 from pennylane.templates import BasisEmbedding
 from pennylane.templates.subroutines.arithmetic.incrementer import Incrementer
@@ -128,11 +127,7 @@ def test_signed_out_multiplier_resources():
         (len(output_wires) - 1, 1),
         (len(y_wires), 2),
     ):
-        inc_rep = controlled_resource_rep(
-            Incrementer,
-            {"num_wires": num_wires, "num_work_wires": num_incrementer_work_wires},
-            num_control_wires=1,
-        )
+        inc_rep = ctrl(Incrementer(Wire[num_wires], Wire[num_incrementer_work_wires]), Wire[1])
         expected_incrementers[inc_rep] += count
 
     for inc_rep, count in expected_incrementers.items():

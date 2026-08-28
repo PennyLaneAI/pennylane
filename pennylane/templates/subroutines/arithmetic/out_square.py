@@ -20,12 +20,7 @@ from itertools import combinations
 
 from pennylane import math
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import (
-    add_decomps,
-    adjoint_resource_rep,
-    register_condition,
-    register_resources,
-)
+from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.ops import CNOT, BasisState, X, adjoint, ctrl
 from pennylane.typing import AbstractWires, Bool, Wire
 from pennylane.wires import Wires, WiresLike
@@ -431,12 +426,7 @@ def _out_square_with_caddsub_resources(
 
     # Subtract 2^(2n)
     if m > 2 * n:
-        resources[
-            adjoint_resource_rep(
-                Incrementer,
-                base_params={"num_wires": m - 2 * n, "num_work_wires": num_work_wires - 1},
-            )
-        ] = 1
+        resources[adjoint(Incrementer(Wire[m - 2 * n], work_wires=Wire[num_work_wires - 1]))] = 1
 
     # Add (2^n-1-x) + 1
 

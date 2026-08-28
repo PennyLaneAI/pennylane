@@ -20,13 +20,8 @@ from collections import defaultdict
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import (
-    add_decomps,
-    controlled_resource_rep,
-    register_condition,
-    register_resources,
-)
-from pennylane.ops import CNOT, Controlled
+from pennylane.decomposition import add_decomps, register_condition, register_resources
+from pennylane.ops import CNOT, ctrl
 from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
@@ -363,11 +358,7 @@ def _zeroed_signed_out_multiplier_resources(
     num_work_wires = len(work_wires)
     resources = defaultdict(int)
     resources[
-        controlled_resource_rep(
-            Incrementer,
-            {"num_wires": num_x_wires, "num_work_wires": num_work_wires - 2},
-            num_control_wires=1,
-        )
+        ctrl(Incrementer(Wire[num_x_wires], work_wires=Wire[num_work_wires - 2]), Wire[1])
     ] += 2
     resources[
         OutMultiplier(
@@ -380,18 +371,10 @@ def _zeroed_signed_out_multiplier_resources(
         )
     ] += 1
     resources[
-        controlled_resource_rep(
-            Incrementer,
-            {"num_wires": num_output_wires - 1, "num_work_wires": num_work_wires - 2},
-            num_control_wires=1,
-        )
+        ctrl(Incrementer(Wire[num_output_wires - 1], work_wires=Wire[num_work_wires - 2]), Wire[1])
     ] += 1
     resources[
-        controlled_resource_rep(
-            Incrementer,
-            {"num_wires": num_y_wires, "num_work_wires": num_work_wires - 2},
-            num_control_wires=1,
-        )
+        ctrl(Incrementer(Wire[num_y_wires], work_wires=Wire[num_work_wires - 2]), Wire[1])
     ] += 2
     resources[CNOT] = 6 + (num_x_wires + num_y_wires) * 2 + (num_output_wires - 1)
     # Convert to a builtin dict so downstream lookups of missing gates
@@ -444,14 +427,14 @@ def _twos_complement_helper(input_reg, aux_wire, work_wires):
     invert()  # pylint: disable=no-value-for-parameter
 
     # Add one
-    Controlled(
+    ctrl(
         Incrementer(
             wires=Wires(input_reg),
             work_wires=Wires(
                 work_wires
             ),  # we can use the work wires since they are returned in a clean state
         ),
-        control_wires=aux_wire,
+        control=aux_wire,
         control_values=(1,),
     )
 
