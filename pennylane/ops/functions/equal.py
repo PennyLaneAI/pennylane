@@ -749,8 +749,13 @@ def _equal_controlled2(op1: Controlled2, op2: Controlled2, **kwargs):
     if op1_abstract_cvals:
         # if both are abstract, they must be equal, because if the number of control wires is
         # the same, abstract control values are guaranteed to be Bool[len(control_wires)], and
-        # this is already validated by the Controlled2 constructor.
-        return True
+        # this is already validated by the Controlled2 constructor. Therefore, we only need to
+        # check whether the control wires are equal (we didn't check this above because we were
+        # going to check it with control values later)
+        return (
+            op1.control_wires == op2.control_wires
+            or f"op1 and op2 have different control_wires. Got {op1.control_wires} and {op2.control_wires}"
+        )
 
     # Check equivalence of concrete controlled values
     op1_control_dict = dict(zip(op1.control_wires, op1.control_values, strict=True))

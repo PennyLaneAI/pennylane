@@ -2116,6 +2116,10 @@ class TestSymbolicOpComparison:
         op3 = ControlledOp2(base, control_wires=[2, 3], control_values=Bool[2])
         assert_equal(op2, op3)
 
+        op4 = ControlledOp2(base, control_wires=[4, 5], control_values=Bool[2])
+        with pytest.raises(AssertionError, match="op1 and op2 have different control_wires"):
+            assert_equal(op2, op4)
+
         op1 = ControlledOp2(base, control_wires=Wire[2], control_values=[0, 1])
         op2 = ControlledOp2(base, control_wires=Wire[2], control_values=[1, 0])
         with pytest.raises(AssertionError, match="op1 and op2 have different control dictionaries"):
