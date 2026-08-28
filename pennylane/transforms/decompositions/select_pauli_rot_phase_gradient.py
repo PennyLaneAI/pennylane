@@ -20,8 +20,7 @@ import numpy as np
 
 import pennylane as qp
 from pennylane.core.operator import Operator, abstractify
-from pennylane.decomposition import change_op_basis_resource_rep, resource_rep
-from pennylane.ops import Prod
+from pennylane.decomposition import change_op_basis_resource_rep
 from pennylane.ops.op_math import change_op_basis
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
@@ -201,9 +200,8 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
         #    -> Controlled X with 1 control, 1 zero-ctrl
         ctrl_x_rep = _ctrl_abstract(qp.X, Wire[1], num_zero_control_values=1)
 
-        # 3. Prod: MUST be a dict {CompressedResourceOp: count}
-        prod_res = {ctrl_x_rep: len(phase_grad_wires), qrom_rep: 1}
-        prod_rep = resource_rep(Prod, resources=prod_res)
+        # 3. The callable decomposition produces the controls before the QROM in product order.
+        prod_rep = qp.ops.Prod2((ctrl_x_rep,) * len(phase_grad_wires) + (qrom_rep,))
 
         # 4. SemiAdder as the target_op
         semi_adder_rep = qp.SemiAdder(
@@ -228,9 +226,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
                     qp.Hadamard, change_basis_rep, qp.Hadamard
                 )
             case "Y":
-                comp_rep = resource_rep(
-                    Prod, resources={abstractify(qp.Hadamard): 1, _adjoint_abstract(qp.S): 1}
-                )
+                comp_rep = qp.ops.Prod2((abstractify(qp.Hadamard), _adjoint_abstract(qp.S)))
                 change_basis_rep_basis_adapted = change_op_basis_resource_rep(
                     comp_rep, change_basis_rep, _adjoint_abstract(comp_rep)
                 )

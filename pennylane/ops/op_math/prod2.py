@@ -76,6 +76,7 @@ class Prod2(CompositeOp2):
                 "Operator) should be combined using Prod instead."
             )
 
+        self._init_args["operands"] = operands
         super().__init__(operands, _init_pauli_rep=_init_pauli_rep)
 
     @property

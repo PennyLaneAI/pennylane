@@ -154,13 +154,17 @@ class CompositeOp2(Operator2, is_baseclass=True):
             array: array containing the eigenvalues of the operator
         """
         eigvals = []
-        for ops in self.overlapping_ops:
-            if len(ops) == 1:
+        for overlapping_ops in self.overlapping_ops:
+            if len(overlapping_ops) == 1:
                 eigvals.append(
-                    math.expand_vector(ops[0].eigvals(), list(ops[0].wires), list(self.wires))
+                    math.expand_vector(
+                        overlapping_ops[0].eigvals(),
+                        list(overlapping_ops[0].wires),
+                        list(self.wires),
+                    )
                 )
             else:
-                tmp_composite = self.__class__(ops)
+                tmp_composite = self.__class__(overlapping_ops)
                 eigvals.append(
                     math.expand_vector(
                         tmp_composite.eigendecomposition["eigval"],

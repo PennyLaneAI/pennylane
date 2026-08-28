@@ -99,7 +99,7 @@ class NonOverlappingOp(ValidOp):
 
 @pytest.mark.capture
 @pytest.mark.parametrize(
-    "ops",
+    "operands",
     [
         (qp.S(0),),
         (qp.S(0), qp.T(1)),
@@ -107,9 +107,9 @@ class NonOverlappingOp(ValidOp):
         (qp.S(0), qp.T(1), qp.S(2), qp.T(3)),
     ],
 )
-def test_standard_validity(ops):
+def test_standard_validity(operands):
     """Run standard validity checks on a valid op."""
-    op = ValidOp(ops)
+    op = ValidOp(operands)
     assert_valid(op)
 
 

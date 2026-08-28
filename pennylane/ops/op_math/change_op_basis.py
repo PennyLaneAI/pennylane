@@ -289,6 +289,7 @@ class ChangeOpBasis(CompositeOp2):
     def diagonalizing_gates(self):
         raise DiagGatesUndefinedError
 
+    # pylint: disable-next=arguments-differ
     def eigvals(self):
         raise EigvalsUndefinedError
 
