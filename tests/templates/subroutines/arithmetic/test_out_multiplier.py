@@ -187,7 +187,6 @@ def test_standard_validity_out_multiplier():
     qp.ops.functions.assert_valid(op)
 
 
-@pytest.mark.xfail(reason="sc-128408")
 @pytest.mark.usefixtures("enable_capture")
 def test_standard_validity_out_multiplier_capture():
     """Check the operation using the assert_valid function."""
