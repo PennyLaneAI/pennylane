@@ -45,7 +45,6 @@ class CompositeOp2(Operator2, is_baseclass=True):
     :meth:`~.operation.Operator.matrix` and :meth:`~.operation.Operator.decomposition`.
     """
 
-    hybrid_argnames = ("operands", "_init_pauli_rep")
     wire_argnames = ()
 
     _eigs = {}  # cache eigen vectors and values like in qp.Hermitian
@@ -55,7 +54,6 @@ class CompositeOp2(Operator2, is_baseclass=True):
             raise ValueError("Composite operators of mid-circuit measurements are not supported.")
         super().__init__(**self._init_args)
         self._name = self.__class__.__name__
-        self._wires = Wires.all_wires([op.wires for op in operands])
         self._hash = None
         self._has_overlapping_wires = len(self.wires) < sum(len(op.wires) for op in operands)
         self._overlapping_ops = None
@@ -82,6 +80,46 @@ class CompositeOp2(Operator2, is_baseclass=True):
         obj._init_args = bound_args.arguments
 
         return obj
+
+    def __init_subclass__(cls, is_baseclass=False) -> None:
+        super().__init_subclass__(is_baseclass)
+
+        if cls.compute_eigvals is CompositeOp2.compute_eigvals:
+
+            @handle_recursion_error
+            # pylint: disable-next=unused-argument
+            def _compute_eigvals(operands=(), _init_pauli_rep=None):
+                """Return the eigenvalues of the specified operator.
+
+                This method uses pre-stored eigenvalues for standard observables where
+                possible and stores the corresponding eigenvectors from the eigendecomposition.
+
+                Returns:
+                    array: array containing the eigenvalues of the operator
+                """
+                op = cls(operands, _init_pauli_rep)
+                remove_from_program(op)
+
+                eigvals = []
+                for ops in op.overlapping_ops:
+                    if len(ops) == 1:
+                        eigvals.append(
+                            math.expand_vector(ops[0].eigvals(), list(ops[0].wires), list(op.wires))
+                        )
+                    else:
+                        tmp_composite = op.__class__(ops)
+                        eigvals.append(
+                            math.expand_vector(
+                                tmp_composite.eigendecomposition["eigval"],
+                                list(tmp_composite.wires),
+                                list(op.wires),
+                            )
+                        )
+                framework = math.get_deep_interface(eigvals)
+                eigvals = [math.asarray(ei, like=framework) for ei in eigvals]
+                return op._math_op(math.vstack(eigvals), axis=0)
+
+            cls.compute_eigvals = staticmethod(_compute_eigvals)
 
     @override
     def __abstract_init__(self, operands, _init_pauli_rep=None):  # pylint: disable=arguments-differ
@@ -143,36 +181,6 @@ class CompositeOp2(Operator2, is_baseclass=True):
     def data(self):
         """Create data property"""
         return tuple(d for op in self for d in op.data)
-
-    @handle_recursion_error
-    # pylint: disable-next=unused-argument
-    def eigvals(self, ops=None, _init_pauli_rep=None):
-        """Return the eigenvalues of the specified operator.
-
-        This method uses pre-stored eigenvalues for standard observables where
-        possible and stores the corresponding eigenvectors from the eigendecomposition.
-
-        Returns:
-            array: array containing the eigenvalues of the operator
-        """
-        eigvals = []
-        for ops in self.overlapping_ops:
-            if len(ops) == 1:
-                eigvals.append(
-                    math.expand_vector(ops[0].eigvals(), list(ops[0].wires), list(self.wires))
-                )
-            else:
-                tmp_composite = self.__class__(ops)
-                eigvals.append(
-                    math.expand_vector(
-                        tmp_composite.eigendecomposition["eigval"],
-                        list(tmp_composite.wires),
-                        list(self.wires),
-                    )
-                )
-        framework = math.get_deep_interface(eigvals)
-        eigvals = [math.asarray(ei, like=framework) for ei in eigvals]
-        return self._math_op(math.vstack(eigvals), axis=0)
 
     @property
     def overlapping_ops(self) -> list[list[Operator]]:

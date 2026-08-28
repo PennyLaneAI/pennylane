@@ -349,7 +349,7 @@ class TestMscMethods:
     def test_eigvals(self, operators):
         """Test that the eigvals method is correct."""
         op = ValidOp(operators)
-        vals = op.eigvals()
+        vals = op.compute_eigvals(operators)
 
         def _expand_two(sub_op):
             return (
