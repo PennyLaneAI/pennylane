@@ -26,6 +26,7 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule, asser
 from pennylane.templates import BasisEmbedding, TemporaryAND
 
 
+@pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize(
     "wires, work_wires",
     [
@@ -34,12 +35,12 @@ from pennylane.templates import BasisEmbedding, TemporaryAND
         ((0, 1, 2), []),  # no work wires
     ],
 )
-@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_assert_valid(wires, work_wires):
     op = Incrementer(wires, work_wires)
     assert_valid(op)
 
 
+@pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize(
     "wires, work_wires",
     [
@@ -48,8 +49,9 @@ def test_assert_valid(wires, work_wires):
         ((0, 1, 2), []),  # no work wires
     ],
 )
-@pytest.mark.usefixtures("enable_and_disable_capture")
-def test_decomposition_new(wires, work_wires):
+def test_decomposition_rules(wires, work_wires):
+    """Test that the decomposition rules are consistent with the operator, with program
+    capture enabled and disabled."""
     op = Incrementer(wires, work_wires)
 
     for rule in list_decomps(Incrementer):
@@ -260,7 +262,6 @@ def test_controlled_decomposition_new(wires, work_wires, controls, control_value
     op = ctrl(Incrementer(wires, work_wires), controls, control_values=control_values)
     for rule in list_decomps("C(Incrementer)"):
         _test_decomposition_rule(op, rule)
-
     # Split work wires between incrementer and control
     split = len(work_wires) // 2
     op = ctrl(

@@ -230,17 +230,14 @@ class TestInitialization:
             qp.TrotterCGF(evolution_time=0.1, num_trotter_steps=123, hamiltonian=ham, wires=(0, 1))
 
 
-class TestValidity:
-    """Basic structural validity tests for the TrotterCGF operator."""
-
-    @pytest.mark.usefixtures("enable_and_disable_capture")
-    def test_assert_valid(self, toy_hamiltonian_cgf_concrete):
-        """Run qp.ops.functions.assert_valid on a concrete CGF instance."""
-        ham, num_modes, n_states = toy_hamiltonian_cgf_concrete
-        wires = list(range(num_modes * n_states))
-        op = qp.TrotterCGF(0.1, 3, ham, wires)
-        # Differentiating through the (non-trainable) hamiltonian dict is not supported.
-        qp.ops.functions.assert_valid(op, skip_differentiation=True)
+@pytest.mark.usefixtures("enable_and_disable_capture")
+def test_assert_valid(toy_hamiltonian_cgf_concrete):
+    """Run qp.ops.functions.assert_valid on a concrete CGF instance."""
+    ham, num_modes, n_states = toy_hamiltonian_cgf_concrete
+    wires = list(range(num_modes * n_states))
+    op = qp.TrotterCGF(0.1, 3, ham, wires)
+    # Differentiating through the (non-trainable) hamiltonian dict is not supported.
+    qp.ops.functions.assert_valid(op, skip_differentiation=True)
 
 
 class TestCGFScheme:

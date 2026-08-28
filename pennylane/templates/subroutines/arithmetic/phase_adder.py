@@ -160,7 +160,8 @@ class PhaseAdder(Operation):
                     "PhaseAdder must have enough x_wires to represent mod. The maximum mod "
                     f"with len(x_wires)={len(x_wires)} is {2 ** len(x_wires)}, but received {mod}."
                 )
-            if num_work_wires != 0:
+            abstract_wires = any(math.is_abstract(w) for w in work_wire)
+            if num_work_wires != 0 and not abstract_wires:
                 if any(wire in work_wire for wire in x_wires):
                     raise ValueError(
                         "None of the wires in work_wire should be included in x_wires."

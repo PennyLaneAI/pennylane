@@ -491,11 +491,11 @@ class TestOutMultiplier:
         for op1, op2 in zip(multiplier_decomposition, op_list):
             qp.assert_equal(op1, op2)
 
-    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(
         ("x_wires", "y_wires", "output_wires", "mod", "work_wires", "applicable_rules"),
         _DECOMP_NEW_OUTPUT_WIRES_ZEROED_CASES,
     )
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_new_output_wires_zeroed(
         self, x_wires, y_wires, output_wires, mod, work_wires, applicable_rules, seed
     ):  # pylint: disable=too-many-arguments
@@ -512,11 +512,11 @@ class TestOutMultiplier:
                 all_wires = (x_wires, y_wires, output_wires, work_wires)
                 _test_mult_correctness(all_wires, mod, rule, seed, output_wires_zeroed=True)
 
-    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(
         ("x_wires", "y_wires", "output_wires", "mod", "work_wires", "applicable_rules"),
         _DECOMP_NEW_NON_ZERO_OUTPUT_WIRES_CASES,
     )
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_new_non_zero_output_wires(
         self, x_wires, y_wires, output_wires, mod, work_wires, applicable_rules, seed
     ):  # pylint: disable=too-many-arguments
@@ -561,18 +561,7 @@ class TestOutMultiplier:
 
     @pytest.mark.catalyst
     @pytest.mark.usefixtures("enable_graph_decomposition")
-    @pytest.mark.parametrize(
-        "mod",
-        [
-            16,
-            pytest.param(
-                12,
-                marks=pytest.mark.pl2do(
-                    reason="There are some downstream incompatibilities of the operators used in the QFT-based decomposition (which is chosen for mod!=2**len(output_wires))."
-                ),
-            ),
-        ],
-    )
+    @pytest.mark.parametrize("mod", [16, 12])
     def test_qjit_compatible(self, mod):
         """Test that the template is compatible with the QJIT compiler."""
         x, y = 2, 3

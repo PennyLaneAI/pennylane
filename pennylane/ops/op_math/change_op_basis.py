@@ -253,7 +253,7 @@ class ChangeOpBasis(CompositeOp):
 
     def __init__(self, compute_op: Operator, target_op: Operator, uncompute_op: Operator = None):
         if uncompute_op is None:
-            uncompute_op = adjoint(copy.copy(compute_op))
+            uncompute_op = adjoint(compute_op)
         super().__init__(uncompute_op, target_op, compute_op)
 
     def _flatten(self):

@@ -212,17 +212,14 @@ class TestInitialization:
             qp.TrotterCDF(evolution_time=0.1, num_trotter_steps=123, hamiltonian=ham, wires=(0, 1))
 
 
-class TestValidity:
-    """Basic structural validity tests for the TrotterCDF operator."""
-
-    @pytest.mark.usefixtures("enable_and_disable_capture")
-    def test_assert_valid(self, toy_hamiltonian_cdf_concrete):
-        """Run qp.ops.functions.assert_valid on a concrete CDF instance."""
-        ham, num_orbitals = toy_hamiltonian_cdf_concrete
-        wires = list(range(2 * num_orbitals))
-        op = qp.TrotterCDF(0.1, 3, ham, wires)
-        # Differentiating through the (non-trainable) hamiltonian dict is not supported.
-        qp.ops.functions.assert_valid(op, skip_differentiation=True)
+@pytest.mark.usefixtures("enable_and_disable_capture")
+def test_assert_valid(toy_hamiltonian_cdf_concrete):
+    """Run qp.ops.functions.assert_valid on a concrete CDF instance."""
+    ham, num_orbitals = toy_hamiltonian_cdf_concrete
+    wires = list(range(2 * num_orbitals))
+    op = qp.TrotterCDF(0.1, 3, ham, wires)
+    # Differentiating through the (non-trainable) hamiltonian dict is not supported.
+    qp.ops.functions.assert_valid(op, skip_differentiation=True)
 
 
 class TestCDFScheme:
