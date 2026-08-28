@@ -26,7 +26,7 @@ from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
 from pennylane.ops.op_math.adjoint2 import Adjoint2, _make_adjoint_decomp, adjoint_rotation
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
-from tests.core.operator.operator2_utils import OneWireDynOp, StaticOp
+from tests.core.operator.operator2_utils import CompilableOp, OneWireDynOp
 
 # pylint: disable=unused-argument,arguments-differ,useless-parent-delegation
 
@@ -260,38 +260,34 @@ def test_adjoint_rotation_decomposition_rule():
     )
 
 
-def test_make_adjoint_decomp_closes_over_static_args(monkeypatch):
+@pytest.mark.catalyst
+def test_make_adjoint_decomp_closes_over_compilable_args():
     """Regression test for ``_make_adjoint_decomp``: ``static_argnames``/``compilable_argnames``
     must be closed over (via ``functools.partial``) rather than forwarded as keyword arguments
-    to ``qp.adjoint(...)``. Some capture frontends (e.g. Catalyst's ``AdjointCallable``) trace
-    *all* keyword arguments passed to the wrapped callable, so forwarding a static/compilable
-    arg would turn it into a tracer and break any decomposition that branches on it with a
-    Python ``if`` (as :class:`~.OutMultiplier`'s ``mod``/``output_wires_zeroed`` do)."""
+    to ``qp.adjoint(...)``. Catalyst's ``AdjointCallable`` traces *all* keyword arguments passed
+    to the wrapped callable, so forwarding a compilable arg would turn it into a tracer and break
+    any decomposition that branches on it with a Python ``if`` (as :class:`~.OutMultiplier`'s
+    ``mod``/``output_wires_zeroed`` do)."""
 
-    @register_resources({qp.X: 1})
-    def _label_decomp(label, wires):
-        if label:
+    @register_resources(lambda n, wires: {qp.X: 1} if n else {qp.Y: 1})
+    def _some_decomp(n, wires):
+        if n:
             qp.X(wires[0])
         else:
             qp.Y(wires[0])
 
-    op = StaticOp("x", wires=[0])
-    rule = _make_adjoint_decomp(_label_decomp)
+    op = CompilableOp(True, wires=[0])
+    rule = _make_adjoint_decomp(_some_decomp)
 
-    captured_kwargs = {}
-    original_adjoint = qp.adjoint
-
-    def spy_adjoint(fn):
-        def wrapped(**kwargs):
-            captured_kwargs.update(kwargs)
-            return original_adjoint(fn)(**kwargs)
-
-        return wrapped
-
-    monkeypatch.setattr(qp, "adjoint", spy_adjoint)
-    with qp.core.AnnotatedQueue():
+    @qp.qjit
+    @qp.qnode(qp.device("lightning.qubit", wires=1))
+    def f():
         rule(base=op)
+        return qp.probs()
 
-    # ``label`` must be closed over, not forwarded through the (potentially traced) kwargs.
-    assert "label" not in captured_kwargs
-    assert captured_kwargs == {"wires": Wires([0])}
+    # Would raise a ``TracerBoolConversionError`` if ``n`` were forwarded as a traced kwarg.
+    f()
+
+    # ``n=True`` must take the ``qp.X`` branch, not the ``qp.Y`` one.
+    assert "PauliX" in f.mlir
+    assert "PauliY" not in f.mlir
