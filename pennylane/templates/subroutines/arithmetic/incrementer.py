@@ -287,8 +287,6 @@ def _incrementer_fallback_decomposition(wires, work_wires, **_):
     # it unrolled lets this fallback run under program capture without any extra gating.
     num_wires = len(wires)
 
-    # Loop from ``num_wires`` (not ``num_wires - 1``): the top iteration flips the MSB when all
-    # lower bits are set; starting one step early skipped that MCX and broke carry propagation.
     for i in range(num_wires, 1, -1):
         MultiControlledX(
             wires[num_wires - i :][::-1],

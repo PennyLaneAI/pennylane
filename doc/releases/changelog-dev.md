@@ -1367,6 +1367,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed :class:`~.Incrementer` returning an incorrect incremented value when not enough
+  work wires are provided.
+  [(#10062)](https://github.com/PennyLaneAI/pennylane/pull/10062)
+
 * Fixed the QFT-based decomposition of :class:`~.OutMultiplier` so it can be captured and
   compiled with Catalyst when ``mod = 2 ** len(output_wires)``.
   [(#10057)](https://github.com/PennyLaneAI/pennylane/pull/10057)
