@@ -300,7 +300,7 @@ def register_resources(
           def _condition_fn(control_wires, **_):
               return len(control_wires) > 1
 
-          def _ops_fn(control_wires, **_):
+          def _ops_fn(base, control_wires, **_):
               return {
                   qp.ctrl(qp.X(Wire[1]), control_wires): 2,
                   qp.CRot: 1
@@ -417,6 +417,26 @@ class DecompositionRule:
             if count > 0:
                 gate_counter.update({op: count})
         return Resources(dict(gate_counter))
+
+    def validate_resource_signature(self) -> None:
+        """Validates that the resource function accepts the rule's arguments positionally.
+
+        Raises:
+            TypeError: if the resource function cannot accept the same positional
+                arguments as the decomposition rule itself.
+        """
+        if self._compute_resources is None:
+            return
+        params = inspect.signature(self._impl).parameters.values()
+        num_args = sum(p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD) for p in params)
+        try:
+            inspect.signature(self._compute_resources).bind(*([None] * num_args))
+        except TypeError as e:
+            raise TypeError(
+                f"The resource function of decomposition rule '{self.name}' does not accept "
+                f"the rule's {num_args} argument(s) passed positionally. Give the resource "
+                f"function the same signature as the rule instead of a keyword-only catch-all."
+            ) from e
 
     def is_applicable(self, *args, **kwargs) -> bool:
         """Checks whether this decomposition rule is applicable."""
@@ -616,7 +636,9 @@ def add_decomps(op_type: type[Operator | Operator2] | str, *decomps: Decompositi
             For symbolic operators, use strings such as ``"Adjoint(RY)"``, ``"Pow(H)"``, ``"C(RX)"``, etc.
         decomps (DecompositionRule): new decomposition rules to add to the given ``op_type``.
             A decomposition is a quantum function registered with a resource estimate using
-            ``qp.register_resources``.
+            ``qp.register_resources``. For operators of the new ``Operator2`` type, a rule's
+            resource function must accept the rule's arguments passed positionally, mirroring
+            the rule's signature; a ``TypeError`` is raised otherwise when the rule is used.
 
     .. seealso:: :func:`~pennylane.register_resources` and :class:`~pennylane.list_decomps`
 

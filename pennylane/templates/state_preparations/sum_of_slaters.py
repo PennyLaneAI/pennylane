@@ -1029,8 +1029,15 @@ class SumOfSlatersPrep(Operator2):
         }
 
 
-# pylint: disable-next=unused-argument
-def _sos_state_prep_resources(coefficients, wires, indices, **_):
+def _sos_state_prep_resources(  # pylint: disable=unused-argument,too-many-arguments
+    coefficients,
+    wires,
+    indices,
+    enumeration_wires=(),
+    identification_wires=(),
+    qrom_work_wires=(),
+    mcx_cache_wires=(),
+):
     """Compute the resources for _sos_state_prep. It is an upper bound due to
     conditionally applied CNOT and X gates."""
 

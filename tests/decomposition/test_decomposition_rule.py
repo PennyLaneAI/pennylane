@@ -708,6 +708,46 @@ class TestDecompDictionary:
             assert list(qp.list_decomps(op)) == []
 
 
+@pytest.mark.unit
+class TestResourceSignatureValidation:
+    """Tests ``DecompositionRule.validate_resource_signature``."""
+
+    def test_keyword_only_resource_fn_rejected(self):
+        """Tests that a keyword-only resource function is rejected."""
+
+        @register_resources(lambda **_: {qp.RZ: 2})
+        def bad_rule(phi, wires):
+            raise NotImplementedError
+
+        with pytest.raises(TypeError, match="does not accept the rule's 2 argument"):
+            bad_rule.validate_resource_signature()
+
+    def test_resource_fn_requiring_extra_args_rejected(self):
+        """Tests that a resource function requiring arguments the rule does not accept
+        positionally is rejected."""
+
+        @register_resources(lambda phi, wires: {qp.RZ: 2})
+        def bad_rule(**_):
+            raise NotImplementedError
+
+        with pytest.raises(TypeError, match="does not accept the rule's 0 argument"):
+            bad_rule.validate_resource_signature()
+
+    def test_valid_rules_accepted(self):
+        """Tests that dict-based resources and mirrored resource functions are accepted."""
+
+        @register_resources({qp.RZ: 2})
+        def dict_rule(phi, wires):
+            raise NotImplementedError
+
+        @register_resources(lambda phi, wires: {qp.RZ: 2})
+        def mirrored_rule(phi, wires):
+            raise NotImplementedError
+
+        dict_rule.validate_resource_signature()
+        mirrored_rule.validate_resource_signature()
+
+
 class TestDecompCollection:
     """Tests the DecompCollection class."""
 

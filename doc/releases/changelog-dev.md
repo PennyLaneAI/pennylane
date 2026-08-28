@@ -1364,6 +1364,13 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed decomposition resource functions across the codebase to accept their decomposition
+  rule's arguments positionally, mirroring the rule's signature instead of using a
+  keyword-only catch-all. This signature is now mandatory for rules of ``Operator2``
+  operators: a ``TypeError`` is raised during decomposition graph construction if a rule's
+  resource function cannot accept the rule's arguments passed positionally.
+  [(#10071)](https://github.com/PennyLaneAI/pennylane/pull/10071)
+
 * Fixed the QFT-based decomposition of :class:`~.OutMultiplier` so it can be captured and
   compiled with Catalyst when ``mod = 2 ** len(output_wires)``.
   [(#10057)](https://github.com/PennyLaneAI/pennylane/pull/10057)

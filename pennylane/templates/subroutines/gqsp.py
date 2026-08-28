@@ -99,7 +99,8 @@ class GQSP(Operator2):
         super().__init__(unitary, angles, control)
 
 
-def _GQSP_resources(unitary, angles, **_):
+# pylint: disable-next=unused-argument
+def _GQSP_resources(unitary, angles, control=None):
     num_iters = angles.shape[1]
     return {
         ops.X: 2 + 2 * (num_iters - 1),

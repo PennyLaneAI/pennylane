@@ -384,7 +384,8 @@ add_decomps(
 )
 
 
-def _qubit_unitary_resource(base, **_):
+# pylint: disable-next=unused-argument
+def _qubit_unitary_resource(base, z=None):
     return {abstractify(base): 1}
 
 
@@ -627,7 +628,8 @@ def _diagonal_mux_on_aux_decomp(D, wires, **_):
 add_decomps(DiagonalQubitUnitary, _diagonal_qu_decomp, _diagonal_mux_on_aux_decomp)
 
 
-def _diagonal_qubit_unitary_resource(base, **_):
+# pylint: disable-next=unused-argument
+def _diagonal_qubit_unitary_resource(base, z=None):
     diagonal_size = qp.math.shape(base.D)[-1]
     return {DiagonalQubitUnitary(Complex[diagonal_size], wires=abstractify(base.wires)): 1}
 

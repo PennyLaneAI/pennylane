@@ -505,6 +505,8 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         # are integrated into list_decomps so that the graph would not be responsible
         # for populating these symbolic decomposition rules.
         if isinstance(op, Operator2):
+            for rule in decomps:
+                rule.validate_resource_signature()
             return decomps
 
         if to_name(op) in self._fixed_decomps:

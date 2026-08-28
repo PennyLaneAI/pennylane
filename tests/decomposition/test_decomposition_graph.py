@@ -301,6 +301,23 @@ class TestDecompGraphConstruction:
         # decomposition rule itself is included in the graph but not expanded.
         assert len(graph._graph.edges()) == 6
 
+    @pytest.mark.parametrize("decomps_kwarg", ["alt_decomps", "fixed_decomps"])
+    def test_operator2_resource_signature_rejected(self, decomps_kwarg):
+        """Tests that a rule whose resource function cannot accept the rule's arguments
+        positionally is rejected for an Operator2."""
+
+        @qp.register_resources(lambda **_: {qp.RX: 2})
+        def _bad_rule(phi, wires):
+            raise NotImplementedError
+
+        rules = [_bad_rule] if decomps_kwarg == "alt_decomps" else _bad_rule
+        with pytest.raises(TypeError, match="does not accept the rule's 2 argument"):
+            DecompositionGraph(
+                operations=[OneWireDynOp(0.5, wires=0)],
+                gate_set={"RX"},
+                **{decomps_kwarg: {OneWireDynOp: rules}},
+            )
+
     def test_gate_set(self):
         """Tests that graph construction stops at the target gate set."""
 
