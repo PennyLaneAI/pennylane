@@ -53,13 +53,17 @@ class CompositeOp2(Operator2, is_baseclass=True):
         if any(isinstance(op, (qp.ops.MidMeasure, qp.ops.PauliMeasure)) for op in operands):
             raise ValueError("Composite operators of mid-circuit measurements are not supported.")
         super().__init__(**self._init_args)
-        if not hasattr(self, "operands"):
-            self.operands = operands
+        self._operands = operands
         self._hash = None
         self._has_overlapping_wires = len(self.wires) < sum(len(op.wires) for op in operands)
         self._pauli_rep = self._build_pauli_rep() if _init_pauli_rep is None else _init_pauli_rep
         for op in self:
             remove_from_program(op)
+    
+    @property
+    def operands(self) -> Sequence[Operator]:
+        """The operands of the composite operator."""
+        return self._operands
 
     def __new__(cls, *args, **kwargs):
         obj = super().__new__(cls)
