@@ -147,8 +147,8 @@ class TestConstruction:
     def test_initialization(self):
         """Test that valid child classes can be initialized without error"""
         op = ValidOp(self.simple_operands)
-        assert op._name == "ValidOp"
         assert op._op_symbol == "#"
+        assert op.operands == self.simple_operands
 
     def test_abstract_init(self):
         """Test that building a composite op from abstract operands routes through
@@ -162,7 +162,6 @@ class TestConstruction:
 
         assert op._hash is None
         assert op._has_overlapping_wires is None
-        assert op._overlapping_ops is None
 
     def test_map_wires(self):
         """Test the map_wires method."""
@@ -192,8 +191,8 @@ class TestConstruction:
         """Test that valid child classes can be initialized in a queuing context"""
         with AnnotatedQueue() as q:
             op = ValidOp(self.simple_operands)
-            assert op._name == "ValidOp"
             assert op._op_symbol == "#"
+            assert op.operands == self.simple_operands
         assert op in q.queue
         assert len(q.queue) == 1
 
@@ -495,16 +494,6 @@ class TestProperties:
         for list_op1, list_op2 in zip(overlapping_ops, valid_op.overlapping_ops):
             for op1, op2 in zip(list_op1, list_op2):
                 qp.assert_equal(op1, op2)
-
-    def test_overlapping_ops_private_attribute(self):
-        """Test that the private `_overlapping_ops` attribute gets updated after a call to
-        the `overlapping_ops` property."""
-        op = ValidOp((qp.RZ(1.32, wires=0), qp.Identity(wires=0), qp.RX(1.9, wires=1)))
-        overlapping_ops = op.overlapping_ops
-        assert op._overlapping_ops == overlapping_ops
-
-        op = NonOverlappingOp((qp.RZ(1.32, wires=0),))
-        assert op.overlapping_ops == []
 
 
 @pytest.mark.capture

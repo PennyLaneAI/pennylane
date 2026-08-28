@@ -18,6 +18,7 @@ This submodule defines a base class for composite operations.
 
 import abc
 from collections.abc import Callable, Sequence
+from functools import cached_property
 from inspect import signature
 
 # pylint: disable=invalid-sequence-index
@@ -53,9 +54,10 @@ class CompositeOp2(Operator2, is_baseclass=True):
         if any(isinstance(op, (qp.ops.MidMeasure, qp.ops.PauliMeasure)) for op in operands):
             raise ValueError("Composite operators of mid-circuit measurements are not supported.")
         super().__init__(**self._init_args)
+        if not hasattr(self, "operands"):
+            self.operands = operands
         self._hash = None
         self._has_overlapping_wires = len(self.wires) < sum(len(op.wires) for op in operands)
-        self._overlapping_ops = None
         self._pauli_rep = self._build_pauli_rep() if _init_pauli_rep is None else _init_pauli_rep
         for op in self:
             remove_from_program(op)
@@ -82,6 +84,42 @@ class CompositeOp2(Operator2, is_baseclass=True):
 
     def __init_subclass__(cls, is_baseclass=False) -> None:
         super().__init_subclass__(is_baseclass)
+
+        if cls.compute_diagonalizing_gates is CompositeOp2.compute_diagonalizing_gates:
+
+            def _compute_diagonalizing_gates(operands=(), _init_pauli_rep=None):
+                r"""Sequence of gates that diagonalize the operator in the computational basis.
+
+                Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
+                :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
+                the sequence of diagonalizing gates implements the unitary :math:`U^{\dagger}`.
+
+                The diagonalizing gates rotate the state into the eigenbasis
+                of the operator.
+
+                A ``DiagGatesUndefinedError`` is raised if no representation by decomposition is defined.
+
+                .. seealso:: :meth:`~.Operator.compute_diagonalizing_gates`.
+
+                Returns:
+                    list[.Operator] or None: a list of operators
+                """
+                op = cls(operands, _init_pauli_rep)
+                remove_from_program(op)
+
+                diag_gates = []
+                for ops in op.overlapping_ops:
+                    if len(ops) == 1:
+                        diag_gates.extend(ops[0].diagonalizing_gates())
+                    else:
+                        tmp_sum = op.__class__(ops)
+                        eigvecs = tmp_sum.eigendecomposition["eigvec"]
+                        diag_gates.append(
+                            qp.QubitUnitary(math.transpose(math.conj(eigvecs)), wires=tmp_sum.wires)
+                        )
+                return diag_gates
+
+            cls.compute_diagonalizing_gates = staticmethod(_compute_diagonalizing_gates)
 
         if cls.compute_eigvals is CompositeOp2.compute_eigvals:
 
@@ -125,7 +163,6 @@ class CompositeOp2(Operator2, is_baseclass=True):
         super().__abstract_init__(operands, _init_pauli_rep=None)
         self._hash = None
         self._has_overlapping_wires = None
-        self._overlapping_ops = None
 
     def __repr__(self):
         return f" {self._op_symbol} ".join(
@@ -181,7 +218,7 @@ class CompositeOp2(Operator2, is_baseclass=True):
         """Create data property"""
         return tuple(d for op in self for d in op.data)
 
-    @property
+    @cached_property
     def overlapping_ops(self) -> list[list[Operator]]:
         """Groups all operands of the composite operator that act on overlapping wires.
 
@@ -189,9 +226,6 @@ class CompositeOp2(Operator2, is_baseclass=True):
             List[List[Operator]]: List of lists of operators that act on overlapping wires. All the
             inner lists commute with each other.
         """
-
-        if self._overlapping_ops is not None:
-            return self._overlapping_ops
 
         groups = []
         for op in self:
@@ -218,8 +252,7 @@ class CompositeOp2(Operator2, is_baseclass=True):
                 # Create new group
                 groups.append([[op], op.wires])
 
-        self._overlapping_ops = [group[0] for group in groups]
-        return self._overlapping_ops
+        return [group[0] for group in groups]
 
     @property
     def eigendecomposition(self):
@@ -255,35 +288,6 @@ class CompositeOp2(Operator2, is_baseclass=True):
             return self.has_matrix
 
         return all(op.has_diagonalizing_gates for op in self)
-
-    def diagonalizing_gates(self):
-        r"""Sequence of gates that diagonalize the operator in the computational basis.
-
-        Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
-        :math:`\Sigma` is a diagonal matrix containing the eigenvalues,
-        the sequence of diagonalizing gates implements the unitary :math:`U^{\dagger}`.
-
-        The diagonalizing gates rotate the state into the eigenbasis
-        of the operator.
-
-        A ``DiagGatesUndefinedError`` is raised if no representation by decomposition is defined.
-
-        .. seealso:: :meth:`~.Operator.compute_diagonalizing_gates`.
-
-        Returns:
-            list[.Operator] or None: a list of operators
-        """
-        diag_gates = []
-        for ops in self.overlapping_ops:
-            if len(ops) == 1:
-                diag_gates.extend(ops[0].diagonalizing_gates())
-            else:
-                tmp_sum = self.__class__(ops)
-                eigvecs = tmp_sum.eigendecomposition["eigvec"]
-                diag_gates.append(
-                    qp.QubitUnitary(math.transpose(math.conj(eigvecs)), wires=tmp_sum.wires)
-                )
-        return diag_gates
 
     @handle_recursion_error
     def label(self, decimals=None, base_label=None, cache=None):
