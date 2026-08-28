@@ -1366,6 +1366,11 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Converting an ``AbstractArray`` to a concrete array now raises an informative ``TypeError``
+  instead of silently producing an empty array, which previously surfaced as an obscure error
+  far from its cause.
+  [(#10083)](https://github.com/PennyLaneAI/pennylane/pull/10083)
+
 * Fixed the QFT-based decomposition of :class:`~.OutMultiplier` so it can be captured and
   compiled with Catalyst when ``mod = 2 ** len(output_wires)``.
   [(#10057)](https://github.com/PennyLaneAI/pennylane/pull/10057)
