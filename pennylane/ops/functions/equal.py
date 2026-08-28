@@ -715,7 +715,6 @@ def _equal_controlled2(op1: Controlled2, op2: Controlled2, **kwargs):
     if op1.arithmetic_depth != op2.arithmetic_depth:
         return f"op1 and op2 have different arithmetic depths. Got {op1.arithmetic_depth} and {op2.arithmetic_depth}"
 
-    # op.base.wires compared in return
     wire_comparison = _check_wire_value("work_wires", op1.work_wires, op2.work_wires)
     if isinstance(wire_comparison, str):
         return wire_comparison
