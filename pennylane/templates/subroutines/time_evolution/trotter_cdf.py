@@ -23,12 +23,13 @@ from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.numeric_hamiltonians import CDFHamiltonian
 from pennylane.ops import CNOT, RZ, GlobalPhase, IsingZZ, PhaseShift
+from pennylane.ops.op_math import ctrl
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.templates.subroutines.qchem.basis_rotation import BasisRotation
-from pennylane.typing import AbstractArray, AbstractWires, Complex, Wire
+from pennylane.typing import AbstractArray, AbstractWires, Complex, Float, Wire
 from pennylane.wires import WiresLike
 
-from ._trotter_utils import _emit_one_body_rz, _emit_two_body_isingzz, _run_trotter_steps
+from ._trotter_utils import _emit_one_body_rz, _run_trotter_steps
 
 # pylint: disable=too-many-arguments, no-value-for-parameter, unused-argument
 
@@ -335,14 +336,12 @@ def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, dou
     r"""Apply the two-body ``IsingZZ`` layer (base / double-phase / genuine controlled).
 
     Genuine control and double-phase are mutually exclusive constructions for a controlled
-    ``IsingZZ``, chosen once here via ``is_double_phase``: genuine control sandwiches each
-    ``IsingZZ`` individually (inside :func:`~._emit_two_body_isingzz`); double-phase instead
-    shares *one* ``CNOT`` sandwich across every term touching a given ``wire_idx0``, which is
-    cheaper since ``IsingZZ`` itself stays uncontrolled either way.
+    ``IsingZZ``, chosen once here via ``double_phase``: genuine control uses
+    ``ctrl(IsingZZ(...))`` on each term; double-phase instead shares *one* ``CNOT`` sandwich
+    across every term touching a given ``wire_idx0``, which is cheaper since ``IsingZZ`` itself
+    stays uncontrolled either way.
     """
     num_cas = Z.shape[0]
-    # Double-phase assumes a single control wire; ``register_condition`` below enforces this.
-    is_double_phase = len(control_wires) == 1 and double_phase
 
     def _angle(wire_idx0, wire_idx1):
         # Two-body prefactor. In the fragment basis the generator is a sum over distinct wire
@@ -354,13 +353,10 @@ def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, dou
         #   IsingZZ(lambda tau / 2) = IsingZZ(0.5 * lambda * first_order_time_step),
         # i.e. beta_twoB = 0.5. The two visits per Trotter step accumulate
         # IsingZZ(lambda * dt_trotter / 2), i.e. IsingZZ(lambda t / 2) over the full evolution.
-        # This is already the *complete* IsingZZ rotation angle. Any further halving inside
-        # ``_emit_two_body_isingzz`` (for the genuine-controlled CRZ-style synthesis) is an
-        # unrelated gate-decomposition detail, not a second physics prefactor.
         return 0.5 * Z[wire_idx0 // 2, wire_idx1 // 2] * first_order_time_step
 
     def zz_rotations(wire_idx0):
-        if is_double_phase:
+        if double_phase:
 
             @for_loop(wire_idx0 + 1, 2 * num_cas)
             def _zz_rotations(wire_idx1):
@@ -373,9 +369,12 @@ def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, dou
 
             @for_loop(wire_idx0 + 1, 2 * num_cas)
             def _zz_rotations(wire_idx1):
-                _emit_two_body_isingzz(
-                    _angle(wire_idx0, wire_idx1), wires[wire_idx0], wires[wire_idx1], control_wires
-                )
+                angle = _angle(wire_idx0, wire_idx1)
+                zz_wires = [wires[wire_idx0], wires[wire_idx1]]
+                if len(control_wires) == 0:
+                    IsingZZ(angle, zz_wires)
+                else:
+                    ctrl(IsingZZ(angle, zz_wires), control=control_wires)
 
             _zz_rotations()
 
@@ -465,19 +464,17 @@ def _cdf_resource_counts(num_trotter_steps, hamiltonian, has_control, double_pha
         resources[RZ] += num_onebody_rotations
         resources[GlobalPhase] += 1
     elif double_phase:
-        # Double-phase (Fig. 6 in https://arxiv.org/abs/2506.15784): bare IsingZZ / RZ rotations, plus one CNOT pair around
-        # each diagonal block, plus an RZ on the control wire for the global phase.
-        resources[IsingZZ] += num_twobody_rotations
-        resources[RZ] += num_onebody_rotations
+        # Double-phase (Fig. 6 in https://arxiv.org/abs/2506.15784): ``IsingZZ`` on every diagonal
+        # term (one- and two-body), plus one CNOT pair around each *two-body* block, plus an RZ on
+        # the control wire for the global phase.
+        resources[IsingZZ] += num_twobody_rotations + num_onebody_rotations
         resources[CNOT] += num_twobody_blocks * 2 * (2 * num_cas - 1)
-        resources[CNOT] += num_onebody_blocks * 4 * num_cas
         resources[RZ] += 1
     else:
-        # Genuine controlled: each IsingZZ -> controlled-IsingZZ (4 CNOT + 2 RZ) and each
-        # RZ -> controlled-RZ (2 CNOT + 2 RZ); the global phase becomes a PhaseShift on
-        # the control wire. There are no bare IsingZZ gates.
-        resources[RZ] += 2 * num_twobody_rotations + 2 * num_onebody_rotations
-        resources[CNOT] += 4 * num_twobody_rotations + 2 * num_onebody_rotations
+        # Genuine controlled: one-body ``ctrl(RZ(...))``, two-body ``ctrl(IsingZZ(...))``; the
+        # global phase becomes a PhaseShift on the control wire. There are no bare IsingZZ/RZ gates.
+        resources[ctrl(RZ(Float, wires=Wire[1]), control=Wire[1])] += num_onebody_rotations
+        resources[ctrl(IsingZZ(Float, wires=Wire[2]), control=Wire[1])] += num_twobody_rotations
         resources[PhaseShift] += 1
 
     return dict(resources)
