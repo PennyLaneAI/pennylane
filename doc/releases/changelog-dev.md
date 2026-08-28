@@ -142,6 +142,8 @@
   [(#9459)](https://github.com/PennyLaneAI/pennylane/pull/9459)
   [(#9789)](https://github.com/PennyLaneAI/pennylane/pull/9789)
   [(#10015)](https://github.com/PennyLaneAI/pennylane/pull/10015)
+  [(#10074)](https://github.com/PennyLaneAI/pennylane/pull/10074)
+  [(#10081)](https://github.com/PennyLaneAI/pennylane/pull/10081)
 
 * A new arithmetic template called :class:`~.SignedOutMultiplier` has been added that multiplies numbers encoded in the
   input registers using a two's complement.
@@ -625,6 +627,7 @@
   to a bitstring array.
   [(#10033)](https://github.com/PennyLaneAI/pennylane/pull/10033)
   [(#10073)](https://github.com/PennyLaneAI/pennylane/pull/10073)
+  [(#10079)](https://github.com/PennyLaneAI/pennylane/pull/10079)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -666,6 +669,12 @@
 * Created a new ``labs.templates.LeftQuantumComparator`` template for performing inequality test of two quantum registers.
   [(#9277)](https://github.com/PennyLaneAI/pennylane/pull/9277)
   [(#9544)](https://github.com/PennyLaneAI/pennylane/pull/9544)
+
+* TCDQ now supports workflows with qudits of non-uniform dimensions.
+  [(#9935)](https://github.com/PennyLaneAI/pennylane/pull/9935)
+
+* TCDQ qudit MMD loss function now supports phase layers.
+  [(#10035)](https://github.com/PennyLaneAI/pennylane/pull/10035)
 
   ```python
   import pennylane as qp
@@ -1179,6 +1188,7 @@
   [(#9937)](https://github.com/PennyLaneAI/pennylane/pull/9937)
   [(#9950)](https://github.com/PennyLaneAI/pennylane/pull/9950)
   [(#9926)](https://github.com/PennyLaneAI/pennylane/pull/9926)
+  [(#10077)](https://github.com/PennyLaneAI/pennylane/pull/10077)
 
   This is an internal, work-in-progress effort that is being incrementally integrated into the PennyLane
   ecosystem. Supported functionality so far:
@@ -1232,6 +1242,7 @@
     [(#9808)](https://github.com/PennyLaneAI/pennylane/pull/9808)
     [(#9834)](https://github.com/PennyLaneAI/pennylane/pull/9834)
     [(#9908)](https://github.com/PennyLaneAI/pennylane/pull/9908)
+    [(#10066)](https://github.com/PennyLaneAI/pennylane/pull/10066)
   - Integration with measurements.
     [(#9753)](https://github.com/PennyLaneAI/pennylane/pull/9753)
   - Integration with :func:`pennylane.apply`.
@@ -1359,6 +1370,11 @@
   [(#9621)](https://github.com/PennyLaneAI/pennylane/pull/9621)
 
 <h3>Bug fixes 🐛</h3>
+
+* Converting an ``AbstractArray`` to a concrete array now raises an informative ``TypeError``
+  instead of silently producing an empty array, which previously surfaced as an obscure error
+  far from its cause.
+  [(#10083)](https://github.com/PennyLaneAI/pennylane/pull/10083)
 
 * Fixed the QFT-based decomposition of :class:`~.OutMultiplier` so it can be captured and
   compiled with Catalyst when ``mod = 2 ** len(output_wires)``.

@@ -108,13 +108,13 @@ def _run_trotter_steps(
     second_order_time_step = evolution_time / num_trotter_steps
     first_order_time_step = second_order_time_step / 2
 
-    num_two_body_fragments = hamiltonian["leaf_tensors"].shape[0] - 1
+    num_two_body_fragments = hamiltonian.leaf_tensors.shape[0] - 1
 
     def _trotter_step(step_idx, hamiltonian):
         # ``hamiltonian`` is carried through the for-loop (rather than closed over)
         # so the traced tensors remain valid loop-body inputs under jax capture.
-        U_tensor = hamiltonian["leaf_tensors"]
-        Z_tensor = hamiltonian["core_tensors"]
+        U_tensor = hamiltonian.leaf_tensors
+        Z_tensor = hamiltonian.core_tensors
 
         def two_body_fragments(fragment_idx, prev_fragment_idx):
             # The first fragment of the circuit (prev_fragment_idx < 0) uses its own leaf; later
@@ -153,5 +153,5 @@ def _run_trotter_steps(
 
     for_loop(num_trotter_steps)(_trotter_step)(hamiltonian)
 
-    very_last_U = transpose_leaf(hamiltonian["leaf_tensors"][1])
+    very_last_U = transpose_leaf(hamiltonian.leaf_tensors[1])
     apply_system_basis_rotation(very_last_U, wires)

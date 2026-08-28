@@ -343,6 +343,16 @@ class AbstractArray:
     def __setitem__(self, *_, **__):
         raise IndexError("Cannot index into an AbstractArray.")
 
+    def __array__(self, *_, **__):
+        # Without this, np.asarray treats an AbstractArray as a sequence: it reads
+        # __len__ but __getitem__ raises, so numpy silently produces an empty
+        # array. Callers then fail far away with a confusing message, e.g.
+        # np.linalg.det reporting "1-dim array given". Fail here instead.
+        raise TypeError(
+            "An AbstractArray cannot be converted to a concrete array: it carries only a "
+            "shape and dtype, not values."
+        )
+
     def __len__(self) -> int:
         if not self.shape or self.shape is Ellipsis:
             raise TypeError("len() of unsized object.")
