@@ -354,24 +354,12 @@ def change_op_basis_resource_rep(
     """
     # pylint: disable=import-outside-toplevel
     from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+    from pennylane.ops.op_math.change_op_basis import _change_op_basis_abstract
 
     compute_op = abstractify(compute_op)
     target_op = abstractify(target_op)
     uncompute_op = abstractify(uncompute_op) if uncompute_op else _adjoint_abstract(compute_op)
-
-    if any(
-        isinstance(op, CompressedResourceOp) for op in (compute_op, target_op, uncompute_op)
-    ):
-        return CompressedResourceOp(
-            qp.ops.ChangeOpBasis,
-            {
-                "compute_op": compute_op,
-                "target_op": target_op,
-                "uncompute_op": uncompute_op,
-            },
-        )
-
-    return qp.ops.ChangeOpBasis(compute_op, target_op, uncompute_op)
+    return _change_op_basis_abstract(compute_op, target_op, uncompute_op)
 
 
 def pow_resource_rep(base_class, base_params, z):

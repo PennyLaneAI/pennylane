@@ -351,14 +351,25 @@ class ChangeOpBasis(CompositeOp2):
 
 @abstractify.register
 def _abstractify_change_op_basis(op: ChangeOpBasis):
-    """Abstractify a concrete COB through its resource-representation boundary."""
+    """Create the abstract resource representation of a concrete COB."""
     if op.is_abstract:
         return op
 
-    # pylint: disable=import-outside-toplevel
-    from pennylane.decomposition.resources import change_op_basis_resource_rep
+    return _change_op_basis_abstract(
+        abstractify(op.compute_op), abstractify(op.target_op), abstractify(op.uncompute_op)
+    )
 
-    return change_op_basis_resource_rep(op.compute_op, op.target_op, op.uncompute_op)
+
+def _change_op_basis_abstract(compute_op, target_op, uncompute_op):
+    """Construct a native abstract COB across the legacy resource boundary."""
+    if all(isinstance(op, Operator2) for op in (compute_op, target_op, uncompute_op)):
+        return ChangeOpBasis(compute_op, target_op, uncompute_op)
+
+    # CompressedResourceOp is an opaque legacy resource leaf, so OperatorMeta cannot route this
+    # mixed representation through abstract initialization.
+    op = ChangeOpBasis.__new__(ChangeOpBasis)
+    op.__abstract_init__(compute_op, target_op, uncompute_op)
+    return op
 
 
 def _change_op_basis_resources(compute_op, target_op, uncompute_op):

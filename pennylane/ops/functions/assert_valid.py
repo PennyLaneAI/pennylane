@@ -355,14 +355,8 @@ def _unroll_change_op_basis_resource(op_rep):
 
 @_unroll_change_op_basis_resource.register
 def _unroll_native_change_op_basis(op_rep: qp.ops.ChangeOpBasis):
-    return _unroll_change_op_basis_operands(
-        (op_rep.compute_op, op_rep.target_op, op_rep.uncompute_op)
-    )
-
-
-def _unroll_change_op_basis_operands(operands):
     gate_counts = defaultdict(int)
-    for operand in operands:
+    for operand in (op_rep.compute_op, op_rep.target_op, op_rep.uncompute_op):
         if isinstance(operand, qp.ops.Prod2):
             for inner_op in operand.operands:
                 gate_counts[inner_op] += 1
@@ -374,15 +368,6 @@ def _unroll_change_op_basis_operands(operands):
         else:
             gate_counts[operand] += 1
     return gate_counts
-
-
-@_unroll_change_op_basis_resource.register
-def _unroll_legacy_change_op_basis(op_rep: CompressedResourceOp):
-    if op_rep.op_type is not qp.ops.ChangeOpBasis:
-        return {op_rep: 1}
-    return _unroll_change_op_basis_operands(
-        tuple(op_rep.params[name] for name in qp.ops.ChangeOpBasis.hybrid_argnames)
-    )
 
 
 def _unroll_symbolic_change_op_basis(op_rep, wrapper):
