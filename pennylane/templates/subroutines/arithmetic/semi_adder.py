@@ -319,7 +319,7 @@ def _semi_adder_work_wires(y_wires=None, work_wires=(), base=None, **_):
 
 
 @register_resources(_semi_adder_resources, work_wires=_semi_adder_work_wires)
-def _semi_adder(x_wires, y_wires, work_wires=None, carry_flip=None, **_):
+def _semi_adder(x_wires, y_wires, work_wires=None, carry_flip=None):
     num_y_wires = len(y_wires)
     num_x_wires = len(x_wires)
 
