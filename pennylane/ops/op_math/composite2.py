@@ -118,11 +118,6 @@ class CompositeOp2(Operator2, is_baseclass=True):
     @property
     def has_overlapping_wires(self) -> bool:
         """Boolean expression that indicates if the factors have overlapping wires."""
-        if self._has_overlapping_wires is None:
-            wires = []
-            for op in self:
-                wires.extend(list(op.wires))
-            self._has_overlapping_wires = len(wires) != len(set(wires))
         return self._has_overlapping_wires
 
     @property
