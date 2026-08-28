@@ -28,7 +28,7 @@ import pennylane.numpy as qnp
 from pennylane.core.operator import abstractify
 from pennylane.exceptions import DeviceError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.ops.op_math import ChangeOpBasis, change_op_basis
+from pennylane.ops.op_math import ChangeOpBasis, Prod2, change_op_basis
 from pennylane.ops.op_math.adjoint2 import Adjoint2, _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis import _validate_callable
 from pennylane.ops.op_math.pow2 import Pow2, _pow_abstract
@@ -103,6 +103,61 @@ def test_change_op_basis_with_none():
     qp.assert_equal(cob.operands[2], f.operator(0.1, Wires([0]), Wires([1])))
     assert isinstance(cob.operands[1], qp.PauliX)
     qp.assert_equal(cob.operands[0], qp.adjoint(f)(0.1, Wires([0]), Wires([1])))
+
+
+def test_change_op_basis_callable_converts_to_prod2():
+    """A callable producing multiple Operator2 ops is converted to a ``Prod2`` operand."""
+
+    def compute(wires):
+        qp.PauliX(wires[0])
+        qp.PauliZ(wires[0])
+
+    cob = qp.change_op_basis(
+        partial(compute, Wires([0])), qp.RX(0.5, 0), partial(compute, Wires([0]))
+    )
+
+    for prod_op in (cob.operands[2], cob.operands[0]):
+        assert isinstance(prod_op, Prod2)
+        assert {type(o) for o in prod_op.operands} == {qp.PauliX, qp.PauliZ}
+
+
+@pytest.mark.capture
+def test_change_op_basis_concrete_legacy_operand_capture():
+    """Tests that a legacy operand built outside the traced function is captured into the
+    change_op_basis program exactly once (and not duplicated)."""
+    import jax
+
+    # Building with capture paused yields a concrete legacy operator rather than a tracer, so
+    # ``_apply_op_or_func`` takes the ``isinstance(op, Operator)`` -> ``queuing.apply`` branch.
+    with qp.capture.pause():
+        legacy_op = qp.ControlledSequence(qp.RX(0.1, 0), control=1)
+
+    def circuit():
+        qp.change_op_basis(legacy_op, qp.X(2), qp.X(2))
+
+    jaxpr = jax.make_jaxpr(circuit)()
+
+    names = [eqn.primitive.name for eqn in jaxpr.eqns]
+    assert names.count("ControlledSequence") == 1
+
+
+@pytest.mark.capture
+def test_change_op_basis_abstract_legacy_operand_capture():
+    """Tests that a legacy operand built inside the traced function is captured into the
+    change_op_basis program exactly once (and not re-emitted)."""
+    import jax
+
+    # A legacy operator constructed inside the trace becomes an ``AbstractOperator`` tracer, so
+    # ``_apply_op_or_func`` takes the ``_is_abstract_operator`` -> ``pass`` branch (the equation is
+    # already in the jaxpr from construction and must not be re-emitted).
+    def circuit():
+        legacy_op = qp.ControlledSequence(qp.RX(0.1, 0), control=1)
+        qp.change_op_basis(legacy_op, qp.X(2), qp.X(2))
+
+    jaxpr = jax.make_jaxpr(circuit)()
+
+    names = [eqn.primitive.name for eqn in jaxpr.eqns]
+    assert names.count("ControlledSequence") == 1
 
 
 @pytest.mark.capture
