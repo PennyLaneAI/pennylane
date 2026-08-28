@@ -364,7 +364,9 @@ def _out_multiplier_with_qft(
 
     if mod != 2 ** len(output_wires):
         if capture.enabled() or compiler.active():
-            qft_output_wires = math.concatenate([math.array([work_wires[0]], like="jax"), output_wires])
+            qft_output_wires = math.concatenate(
+                [math.array([work_wires[0]], like="jax"), output_wires]
+            )
         else:
             qft_output_wires = [work_wires[0]] + output_wires
         work_wire = work_wires[1]
