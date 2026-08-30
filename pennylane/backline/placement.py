@@ -91,15 +91,15 @@ class Node:
         the Catalyst compiler.
 
     Keyword Args:
-        name (str | None): A name identifying this node. Defaults to ``None``, letting the compiler
+        name (str, None): A name identifying this node. Defaults to ``None``, letting the compiler
             derive one from the node's role.
         hardware (Hardware): The hardware this node executes on. Defaults to ``"cpu"``. The compiler
             combines this with the placement's :class:`~.Transport` to select the runtime backend.
         remote (bool): Whether this node runs on another machine. Defaults to ``False``.
-        executor_options (dict | None): Options for the executor to launch for this node.
+        executor_options (dict, None): Options for the executor to launch for this node.
             Defaults to ``None``, which runs the node in this process. See the
             :attr:`~.Node.executor_options` attribute below for every option it accepts.
-        executor (object | None): An already-launched executor to attach. Defaults to ``None``, in
+        executor (object, None): An already-launched executor to attach. Defaults to ``None``, in
             which case the compiler builds one from :attr:`executor_options`.
         init_args (dict): Backend-specific initialization arguments. Empty by default. See the
             :attr:`~.Node.init_args` attribute below for the keys it accepts.
@@ -229,6 +229,18 @@ class Controller(Node):
         the Catalyst compiler.
 
     Keyword Args:
+        name (str, None): A name identifying the controler. Defaults to ``None``, letting the compiler
+            derive one from the node's role.
+        hardware (Hardware): The hardware the controller executes on. Defaults to ``"cpu"``. The compiler
+            combines this with the placement's :class:`~.Transport` to select the runtime backend.
+        remote (bool): Whether the controller runs on another machine. Defaults to ``False``.
+        executor_options (dict, None): Options for the executor to launch for this controller.
+            Defaults to ``None``, which runs the node in this process. See the
+            :attr:`~.Node.executor_options` attribute below for every option it accepts.
+        executor (object, None): An already-launched executor to attach. Defaults to ``None``, in
+            which case the compiler builds one from :attr:`executor_options`.
+        init_args (dict): Backend-specific initialization arguments. Empty by default. See the
+            :attr:`~.Node.init_args` attribute below for the keys it accepts.
         device (pennylane.devices.Device | None): The PennyLane device the controller executes.
             Defaults to ``None``, which builds a ``null.qubit``.
 
@@ -302,12 +314,24 @@ class Coprocessor(Node):
         the Catalyst compiler.
 
     Keyword Args:
-        coprocessor_fn (str | CoprocessorFunction): The function that processes each received
+        name (str, None): A name identifying the controler. Defaults to ``None``, letting the compiler
+            derive one from the node's role.
+        hardware (Hardware): The hardware the controller executes on. Defaults to ``"cpu"``. The compiler
+            combines this with the placement's :class:`~.Transport` to select the runtime backend.
+        remote (bool): Whether the controller runs on another machine. Defaults to ``False``.
+        coprocessor_fn (str, CoprocessorFunction): The function that processes each received
             message. A string is wrapped in a :class:`~.CoprocessorFunction` naming that symbol, so
             reading the attribute back always gives a :class:`~.CoprocessorFunction`.
-        endpoint (Endpoint | None): The address the controller dials to reach this coprocessor.
+        endpoint (Endpoint, None): The address the controller dials to reach this coprocessor.
             Some transports, such as ``"rdma"``, require it; others, such as ``"memcpy"``, do not
             use a network endpoint and may leave it unset.
+        executor_options (dict, None): Options for the executor to launch for this controller.
+            Defaults to ``None``, which runs the node in this process. See the
+            :attr:`~.Node.executor_options` attribute below for every option it accepts.
+        executor (object, None): An already-launched executor to attach. Defaults to ``None``, in
+            which case the compiler builds one from :attr:`executor_options`.
+        init_args (dict): Backend-specific initialization arguments. Empty by default. See the
+            :attr:`~.Node.init_args` attribute below for the keys it accepts.
 
     See :class:`~.Node` for the options every node shares.
 

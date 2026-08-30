@@ -73,6 +73,7 @@ class Backline(Device):
             name="cpu-controller",
             executor_options={"host": "192.168.3.15", "port": 7810},
         )
+
         coproc = qp.Coprocessor(
             coprocessor_fn="decoder",
             name="decoder-0",
@@ -90,6 +91,8 @@ class Backline(Device):
         def circuit(x):
             qp.RX(x, wires=0)
             return qp.expval(qp.Z(0))
+
+    For more usage details, see the `Backline demo <https://pennylane.ai/demos/backline>`__.
     """
 
     # pylint: disable=too-many-arguments
