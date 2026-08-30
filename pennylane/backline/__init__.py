@@ -200,7 +200,7 @@ Runtime calls
     :toctree: api
 
     ~runtime_call
-    ~runtime.declare
+    ~runtime_declare
     ~backline.runtime.CSignature
     ~backline.runtime.CType
 
