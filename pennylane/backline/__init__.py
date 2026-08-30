@@ -47,11 +47,11 @@ Overview
     ~Controller
     ~Coprocessor
     ~Endpoint
-    ~get_transport
-    ~Node
-    ~Placement
-    ~Transport
-    ~register_transport
+    ~backline.get_transport
+    ~backline.Node
+    ~backline.Placement
+    ~backline.Transport
+    ~backline.register_transport
 
 Backline provides the following abstractions for use with PennyLane and Catalyst.
 
@@ -194,7 +194,7 @@ a correction.
 Runtime calls
 ~~~~~~~~~~~~~
 
-.. currentmodule:: pennylane.backline.runtime
+.. currentmodule:: pennylane
 
 .. autosummary::
     :toctree: api
