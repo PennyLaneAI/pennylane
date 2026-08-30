@@ -87,12 +87,12 @@ Backline provides the following abstractions for use with PennyLane and Catalyst
       )
 
 - :class:`.Backline`: A representation of the complete hardware infrastructure supporting the
-   quantum-classical program (:class:`~.Placement`), packaged as a QNode device. The backline
-   includes a :class:`.Controller`, zero or more :class:`.Coprocessor` nodes, and a transport
-   method (``"rdma"``, ``"memcpy"``, or a :class:`~.Transport` object). A backline object is given
-   directly to a QNode in place of a traditional QNode `qp.device`, and orchestrates the remote
-   executor and the RDMA network the controllers and coprocessors talk over, separate from the
-   network used to log into remote machines.
+  quantum-classical program (:class:`~.Placement`), packaged as a QNode device. The backline
+  includes a :class:`.Controller`, zero or more :class:`.Coprocessor` nodes, and a transport
+  method (``"rdma"``, ``"memcpy"``, or a :class:`~.Transport` object). A backline object is given
+  directly to a QNode in place of a traditional QNode `qp.device`, and orchestrates the remote
+  executor and the RDMA network the controllers and coprocessors talk over, separate from the
+  network used to log into remote machines.
 
   .. code-block:: python
 

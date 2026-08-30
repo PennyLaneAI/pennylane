@@ -87,8 +87,8 @@ class Node:
 
     .. warning::
 
-        Backline is experimental. Its API may change without notice, and it is only usable through
-        the Catalyst compiler.
+        :mod:`Backline <.backline>` is experimental and only usable through the Catalyst
+        compiler.
 
     Keyword Args:
         name (str, None): A name identifying this node. Defaults to ``None``, letting the compiler
@@ -241,7 +241,7 @@ class Controller(Node):
             which case the compiler builds one from :attr:`executor_options`.
         init_args (dict): Backend-specific initialization arguments. Empty by default. See the
             :attr:`~.Node.init_args` attribute below for the keys it accepts.
-        device (pennylane.devices.Device | None): The PennyLane device the controller executes.
+        device (pennylane.devices.Device, None): The PennyLane device the controller executes.
             Defaults to ``None``, which builds a ``null.qubit``.
 
     See :class:`~.Node` for the options every node shares.
@@ -310,8 +310,8 @@ class Coprocessor(Node):
 
     .. warning::
 
-        Backline is experimental. Its API may change without notice, and it is only usable through
-        the Catalyst compiler.
+        :mod:`Backline <.backline>` is experimental and only usable through the Catalyst
+        compiler.
 
     Keyword Args:
         name (str, None): A name identifying the controler. Defaults to ``None``, letting the compiler
@@ -401,8 +401,8 @@ class Placement:
 
     .. warning::
 
-        Backline is experimental. Its API may change without notice, and it is only usable through
-        the Catalyst compiler.
+        :mod:`Backline <.backline>` is experimental and only usable through the Catalyst
+        compiler.
 
     Keyword Args:
         controller (Controller): The :class:`~.Controller` running the QNode.

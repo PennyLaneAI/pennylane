@@ -31,8 +31,8 @@ class CoprocessorFunction:
 
     .. warning::
 
-        Backline is experimental. Its API may change without notice, and it is only usable through
-        the Catalyst compiler.
+        :mod:`Backline <.backline>` is experimental and only usable through the Catalyst
+        compiler.
 
     Args:
         name (str): The name the function is known by, used to resolve the precompiled symbol.

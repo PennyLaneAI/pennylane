@@ -36,21 +36,21 @@ class Backline(Device):
     from the controller's device, so a QNode is written exactly as it would be against that device
     alone. This device requires the Catalyst compiler.
 
+    .. warning::
+
+        :mod:`Backline <.backline>` is experimental and only usable through the Catalyst
+        compiler.
+
     Keyword Args:
         controller (Controller): The :class:`~.Controller` that drives the QPU and runs the QNode.
         coprocessors (Sequence[Coprocessor]): Zero or more :class:`~.Coprocessor` accelerators.
-        transport (str | Transport): The transfer protocol between nodes, by registry name (e.g.
-            ``"rdma"``) or a :class:`~.Transport`.
-        qec_code (str | None): The quantum error-correcting code to implicitly encode the circuit.
+        transport (str, Transport): The transfer protocol between nodes, by registry name (e.g.,
+            ``"rdma"`` or ``"memcpy"``) or a :class:`~.Transport`.
+        qec_code (str, None): The quantum error-correcting code to implicitly encode the circuit.
             Currently the only supported option is ``"steane"``. Defaults to ``None``, leaving the
             circuit unencoded.
-        shots (int | None): Number of shots. Defaults to ``None`` (analytic); set shots on the
+        shots (int, None): Number of shots. Defaults to ``None`` (analytic); set shots on the
             QNode with :func:`~pennylane.set_shots` instead.
-
-    .. warning::
-
-        Backline is experimental. Its API may change without notice, and it is only usable through
-        the Catalyst compiler.
 
     .. seealso:: :class:`~.Controller`, :class:`~.Coprocessor`, :class:`~.Placement`
 
