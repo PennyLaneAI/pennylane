@@ -423,6 +423,14 @@
   provided length.
   [(#10084)](https://github.com/PennyLaneAI/pennylane/pull/10084)
 
+  ```pycon
+  >>> num_wires = 8
+  >>> num_entries = 16
+  >>> indices = qp.typing.Int[num_entries]
+  >>> qp.SumOfSlatersPrep.required_register_sizes(indices, num_wires)
+  {'wires': 8, 'enumeration_wires': 4, 'identification_wires': 7, 'qrom_work_wires': 3, 'mcx_cache_wires': 6}
+  ```
+
 * Coprocessor connection addresses are grouped on :class:`~pennylane.Endpoint` as ``endpoint=qp.Endpoint(host, port)``, replacing the separate ``comm_host`` and ``oob_port`` fields.
   [(#10017)](https://github.com/PennyLaneAI/pennylane/pull/10017)
 
