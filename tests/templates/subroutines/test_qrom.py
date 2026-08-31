@@ -27,7 +27,7 @@ from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.templates.subroutines.arithmetic import TemporaryAND
 from pennylane.templates.subroutines.qrom import (
-    _calculate_n_select_work_wires,
+    _calculate_select_swap_sizes,
     _count_tempAND_in_measurement_qrom,
     _qrom_measurement_condition,
     _qrom_measurement_decomposition,
@@ -491,22 +491,30 @@ def test_too_many_work_wires_case():
 @pytest.mark.parametrize(
     ("terms", "n_ctrl", "n_target", "n_work", "expected"),
     [
-        (16, 4, 1, 3, 2),
-        (16, 4, 10, 5, 5),
-        (7, 3, 2, 2, 2),
-        (14, 4, 2, 10, 4),
-        (256, 8, 2, 10, 8),
-        (4, 2, 1, 1, 0),
+        (16, 4, 1, 3, (2, 1, 2)),
+        (16, 4, 10, 5, (5, 0, 1)),
+        (7, 3, 2, 2, (2, 0, 1)),
+        (14, 4, 2, 10, (4, 6, 4)),
+        (256, 8, 2, 10, (8, 2, 2)),
+        (4, 2, 1, 1, (0, 1, 2)),
+        (14, 4, 2, 2, (2, 0, 1)),
+        (256, 8, 2, 6, (6, 0, 1)),
+        (4, 2, 1, 0, (0, 0, 1)),
     ],
 )
-def test_calculate_n_select_work_wires(terms, n_ctrl, n_target, n_work, expected):
+def test_calculate_select_swap_sizes(terms, n_ctrl, n_target, n_work, expected):
     """Test the allocation logic for Select vs Swap work wires."""
 
-    result = _calculate_n_select_work_wires(
+    # result contains (num_select_work_wires, num_swap_work_wires, depth)
+    num_select_work_wires, num_swap_work_wires, depth = _calculate_select_swap_sizes(
         terms=terms, num_control_wires=n_ctrl, num_target_wires=n_target, num_work_wires=n_work
     )
-
-    assert result == expected
+    assert num_select_work_wires + num_swap_work_wires == n_work  # all work wires are used
+    new_n_target = int(np.ceil(n_target / depth))
+    new_n_ctrl = qp.math.ceil_log2(new_n_target)
+    # Select has enough work wires for unary iteration
+    assert num_select_work_wires >= new_n_ctrl - 1
+    assert (num_select_work_wires, num_swap_work_wires, depth) == expected
 
 
 class TestMeasurementQROM:

@@ -59,16 +59,13 @@ def _select_ops(
     n_columns = int(np.ceil(bitstrings.shape[0] / depth))
     num_targets = len(target_wires)
     wire_maps = [
-        dict(zip(target_wires, swap_wires[j*num_targets: (j+1)*num_targets], strict=True))
+        dict(zip(target_wires, swap_wires[j * num_targets : (j + 1) * num_targets], strict=True))
         for j in range(depth)
     ]
 
     new_ops = []
     for i in range(n_columns):
-        column_ops = [
-            ops_identity_new[i * depth + j].map_wires(wire_maps[j])
-            for j in range(depth)
-        ]
+        column_ops = [ops_identity_new[i * depth + j].map_wires(wire_maps[j]) for j in range(depth)]
         new_ops.append(qp_ops.prod(*column_ops))
 
     if control_select_wires:
@@ -325,13 +322,19 @@ def _calculate_select_swap_sizes(terms, num_control_wires, num_target_wires, num
 
 def _select_swap_condition(bitstrings, control_wires, target_wires, work_wires, clean):
     # pylint: disable=unused-argument
+    """We use Select-SWAP decomposition only if there is an actual SWAP network used,
+    or if there are not enough work wires for unary iteration."""
     num_control_wires = len(control_wires)
+    num_work_wires = len(work_wires)
 
     if num_control_wires == 0:
         return False
 
+    if num_work_wires < num_control_wires - 1:
+        return True
+
     *_, depth = _calculate_select_swap_sizes(
-        len(bitstrings), num_control_wires, len(target_wires), len(work_wires)
+        len(bitstrings), num_control_wires, len(target_wires), num_work_wires
     )
     return depth > 1
 
@@ -435,9 +438,10 @@ def _select_swap(
     select_work_wires = work_wires[num_work_wires_swap:]
     swap_wires = target_wires + swap_work_wires
 
-    if not clean:
+    if not clean or depth == 1:
         _select_ops(control_wires, depth, target_wires, swap_wires, bitstrings, select_work_wires)
-        _swap_ops(control_wires, depth, swap_wires, target_wires)
+        if depth > 1:
+            _swap_ops(control_wires, depth, swap_wires, target_wires)
         return
 
     for _ in range(2):
