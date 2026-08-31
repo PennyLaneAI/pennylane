@@ -15,6 +15,7 @@
 """Defines the base class for controlled operators."""
 
 from collections.abc import Sequence
+from functools import partial
 from inspect import signature
 from textwrap import dedent
 from typing import Literal, override
@@ -42,7 +43,7 @@ from pennylane.decomposition.resources import (
     resolve_work_wire_type,
 )
 from pennylane.exceptions import SparseMatrixUndefinedError
-from pennylane.ops.op_math.adjoint2 import Adjoint2
+from pennylane.ops.op_math.adjoint2 import Adjoint2, get_traced_and_non_traced_args
 from pennylane.typing import AbstractArray, AbstractWires, Bool, Complex, Wire
 from pennylane.wires import Wires, WiresLike
 
@@ -715,12 +716,14 @@ def _make_controlled_decomp(base_rule: DecompositionRule):
             qp.cond(qp.math.logical_not(_cvals[i]), qp.X)(_cwires[i])
 
         _x_flips()
+        non_traced_args, traced_args = get_traced_and_non_traced_args(base)
+        impl = partial(base_rule._impl, **non_traced_args)
         qp.ctrl(
-            base_rule._impl,  # pylint: disable=protected-access
+            impl,
             control=control_wires,
             work_wires=work_wires,
             work_wire_type=work_wire_type,
-        )(**base.arguments)
+        )(**traced_args)
         _x_flips()
 
     _impl._source = (
