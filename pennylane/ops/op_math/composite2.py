@@ -21,9 +21,6 @@ from collections.abc import Callable, Sequence
 from functools import cached_property
 from inspect import signature
 
-# pylint: disable=invalid-sequence-index
-from typing import override
-
 import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operator, Operator2
@@ -31,7 +28,7 @@ from pennylane.queuing import remove_from_program
 
 from .composite import handle_recursion_error
 
-# pylint: disable=too-many-instance-attributes
+# pylint: disable=too-many-instance-attributes,invalid-sequence-index
 
 
 class CompositeOp2(Operator2, is_baseclass=True):
@@ -160,13 +157,6 @@ class CompositeOp2(Operator2, is_baseclass=True):
                 return op._math_op(math.vstack(eigvals), axis=0)  # pylint: disable=protected-access
 
             cls.compute_eigvals = staticmethod(_compute_eigvals)
-
-    @override
-    def __abstract_init__(self, operands, _init_pauli_rep=None):  # pylint: disable=arguments-differ
-        super().__abstract_init__(operands, _init_pauli_rep=None)
-        self._hash = None
-        self._has_overlapping_wires = None
-        self._operands = operands
 
     def __repr__(self):
         return f" {self._op_symbol} ".join(

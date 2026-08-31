@@ -94,6 +94,7 @@
   [(#9478)](https://github.com/PennyLaneAI/pennylane/pull/9478)
   [(#9656)](https://github.com/PennyLaneAI/pennylane/pull/9656)
   [(#9833)](https://github.com/PennyLaneAI/pennylane/pull/9833)
+  [(#10008)](https://github.com/PennyLaneAI/pennylane/pull/10008)
 
   Given the ``amplitudes`` and the computational basis state ``indices`` of the sparse state we
   want to prepare, the template is simple to call. Consider the following example:
@@ -1203,6 +1204,7 @@
     [(#9646)](https://github.com/PennyLaneAI/pennylane/pull/9646)
     [(#9694)](https://github.com/PennyLaneAI/pennylane/pull/9694)
     [(#9744)](https://github.com/PennyLaneAI/pennylane/pull/9744)
+    [(#9788)](https://github.com/PennyLaneAI/pennylane/pull/9788)
   - Some backwards compatibility with the legacy operator interface.
     [(#9596)](https://github.com/PennyLaneAI/pennylane/pull/9596)
     [(#9674)](https://github.com/PennyLaneAI/pennylane/pull/9674)
