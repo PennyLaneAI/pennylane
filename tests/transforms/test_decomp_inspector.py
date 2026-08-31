@@ -182,8 +182,8 @@ class TestInspectDecompGraph:
             Estimated First-Level Expansion Gates: {Controlled(MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(2)), control_wires=AbstractWires(1), control_values=AbstractArray((1,), bool)): 1, MultiControlledX(wires=AbstractWires(4), control_values=AbstractArray((3,), bool)): 2, PauliX: 3}
             Actual First-Level Expansion Gates: {Controlled(MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(2)), control_wires=AbstractWires(1), control_values=AbstractArray((1,), bool)): 1, MultiControlledX(wires=AbstractWires(4), control_values=AbstractArray((3,), bool)): 2}
             Wire Allocations: {'zero': 1}
-            Full Expansion Gates: {CNOT: 34, GlobalPhase: 74, MidMeasure: 2, RX: 18, RY: 18, RZ: 58}
-            Weighted Cost: 130.0
+            Full Expansion Gates: {CNOT: 34, GlobalPhase: 68, MidMeasure: 2, RX: 12, RY: 18, RZ: 58}
+            Weighted Cost: 124.0
 
             Decomposition 1 (name: controlled(_multi_rz_decomposition))
             0: ─╭X─╭RZ(0.50)─╭X─┤  
@@ -193,8 +193,8 @@ class TestInspectDecompGraph:
             5: ─╰●─╰●────────╰●─┤  
             Estimated First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool)): 2, PauliX: 3}
             Actual First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool)): 2}
-            Full Expansion Gates: {CNOT: 72, GlobalPhase: 98, MidMeasure: 4, RX: 38, RY: 24, RZ: 80}
-            Weighted Cost: 218.0
+            Full Expansion Gates: {CNOT: 72, GlobalPhase: 90, MidMeasure: 4, RX: 30, RY: 24, RZ: 80}
+            Weighted Cost: 210.0
             """).strip()
 
         assert result._repr_markdown_() == dedent("""
@@ -223,12 +223,12 @@ class TestInspectDecompGraph:
             | Full Expansion | Count |
             | :--- | :--- |
             | CNOT | 34 |
-            | GlobalPhase | 74 |
+            | GlobalPhase | 68 |
             | MidMeasure | 2 |
-            | RX | 18 |
+            | RX | 12 |
             | RY | 18 |
             | RZ | 58 |
-            | **Weighted Cost** | 130.0 |
+            | **Weighted Cost** | 124.0 |
             </details>
 
             ---
@@ -253,18 +253,18 @@ class TestInspectDecompGraph:
             | Full Expansion | Count |
             | :--- | :--- |
             | CNOT | 72 |
-            | GlobalPhase | 98 |
+            | GlobalPhase | 90 |
             | MidMeasure | 4 |
-            | RX | 38 |
+            | RX | 30 |
             | RY | 24 |
             | RZ | 80 |
-            | **Weighted Cost** | 218.0 |
+            | **Weighted Cost** | 210.0 |
             </details>
             """).strip()
 
         op = qp.MultiControlledX([0, 1, 2, 3])
         assert str(inspector.inspect_decomps(op, num_work_wires=1)) == dedent("""
-            Decomposition 0 (name: no_workers)
+            Decomposition 0 (name: decompose_mcx_with_no_worker)
             0: ────╭●───────────────────╭●──────────────────────╭●──────────────────┤  
             1: ────├●───────────────────├●──────────────────────├●──────────────────┤  
             2: ────│─────────╭●─────────│─────────╭●────────────├●──────────────────┤  
@@ -313,11 +313,10 @@ class TestInspectDecompGraph:
             2: ────│──├●─│──├●────┤  
             3: ────├X─│──├X─│─────┤  
                  ├─╰●─╰X─╰●─╰X──┤    
-            Estimated First-Level Expansion Gates: {PauliX: 3, Toffoli: 4}
-            Actual First-Level Expansion Gates: {Toffoli: 4}
+            First-Level Expansion Gates: {Toffoli: 4}
             Wire Allocations: {'any': 1}
-            Full Expansion Gates: {CNOT: 24, GlobalPhase: 39, RX: 3, RY: 8, RZ: 36}
-            Weighted Cost: 71.0
+            Full Expansion Gates: {CNOT: 24, GlobalPhase: 36, RY: 8, RZ: 36}
+            Weighted Cost: 68.0
 
             CHOSEN: Decomposition 6 (name: many_zeroed_workers)
             0: ──────────╭●────────┤  
@@ -325,11 +324,10 @@ class TestInspectDecompGraph:
             2: ───────├●─│───●┤────┤  
             3: ───────│──├X───│────┤  
                  |0>├─╰⊕─╰●──⊕╯──┤    
-            Estimated First-Level Expansion Gates: {Adjoint(TemporaryAND): 1, PauliX: 3, TemporaryAND: 1, Toffoli: 1}
-            Actual First-Level Expansion Gates: {Adjoint(TemporaryAND): 1, TemporaryAND: 1, Toffoli: 1}
+            First-Level Expansion Gates: {Adjoint(TemporaryAND): 1, TemporaryAND: 1, Toffoli: 1}
             Wire Allocations: {'zero': 1}
-            Full Expansion Gates: {CNOT: 10, GlobalPhase: 26, MidMeasure: 1, RX: 7, RY: 7, RZ: 19}
-            Weighted Cost: 44.0
+            Full Expansion Gates: {CNOT: 10, GlobalPhase: 23, MidMeasure: 1, RX: 4, RY: 7, RZ: 19}
+            Weighted Cost: 41.0
             """).strip()
 
     def test_missing_ops(self):
