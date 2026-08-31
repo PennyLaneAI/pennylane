@@ -43,13 +43,12 @@ from .arithmetic import TemporaryAND
 from .select import Select
 
 
-def _multi_swap(wires1, wires2):
-    """Apply a series of SWAP gates between two sets of wires."""
-    for wire1, wire2 in zip(wires1, wires2, strict=True):
-        qp_ops.SWAP(wires=[wire1, wire2])
-
-
-def _new_ops(depth, target_wires, capacity, swap_wires, bitstrings):
+def _select_ops(
+    control_wires, depth, target_wires, swap_wires, bitstrings, select_work_wires
+):  # pylint:disable=too-many-arguments
+    capacity = 1 << len(control_wires)
+    n_control_select_wires = ceil_log2(capacity / depth)
+    control_select_wires = control_wires[:n_control_select_wires]
 
     with QueuingManager.stop_recording():
         with capture.pause():
@@ -58,31 +57,27 @@ def _new_ops(depth, target_wires, capacity, swap_wires, bitstrings):
 
     n_columns = int(np.ceil(bitstrings.shape[0] / depth))
     num_targets = len(target_wires)
+    wire_maps = [
+        dict(zip(target_wires, swap_wires[j*num_targets: (j+1)*num_targets], strict=True))
+        for j in range(depth)
+    ]
+
     new_ops = []
     for i in range(n_columns):
-        column_ops = []
-        for j in range(depth):
-            dic_map = {target_wires[l]: swap_wires[j * num_targets + l] for l in range(num_targets)}
-            column_ops.append(ops_identity_new[i * depth + j].map_wires(dic_map))
+        column_ops = [
+            ops_identity_new[i * depth + j].map_wires(wire_maps[j])
+            for j in range(depth)
+        ]
         new_ops.append(qp_ops.prod(*column_ops))
-    return new_ops
-
-
-def _select_ops(
-    control_wires, depth, target_wires, swap_wires, bitstrings, select_work_wires
-):  # pylint:disable=too-many-arguments
-    capacity = 1 << len(control_wires)
-    n_control_select_wires = ceil_log2(capacity / depth)
-    control_select_wires = control_wires[:n_control_select_wires]
 
     if control_select_wires:
-        Select(
-            _new_ops(depth, target_wires, capacity, swap_wires, bitstrings),
-            control=control_select_wires,
-            work_wires=select_work_wires,
-        )
-    else:
-        _new_ops(depth, target_wires, capacity, swap_wires, bitstrings)
+        Select(new_ops, control=control_select_wires, work_wires=select_work_wires)
+
+
+def _multi_swap(wires1, wires2):
+    """Apply a series of SWAP gates between two sets of wires."""
+    for wire1, wire2 in zip(wires1, wires2, strict=True):
+        qp_ops.SWAP(wires=[wire1, wire2])
 
 
 def _swap_ops(control_wires, depth, swap_wires, target_wires):
@@ -218,8 +213,11 @@ class QROM(Operator2):
                 list(map(lambda bitstring: [int(bit) for bit in bitstring], bitstrings))
             )
 
-        if isinstance(bitstrings, (list, tuple)):
-            bitstrings = math.array(bitstrings)
+        elif isinstance(bitstrings, (list, tuple)):
+            bitstrings = math.array(bitstrings, dtype=int)
+
+        else:
+            bitstrings = bitstrings.astype(int)
 
         work_wires = Wires(() if work_wires is None else work_wires)
 
