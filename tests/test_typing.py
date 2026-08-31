@@ -336,6 +336,26 @@ class TestAbstractArray:
         with pytest.raises(IndexError, match="Cannot index into an AbstractArray."):
             a[1] = 2
 
+    def test_error_converting_to_concrete_array(self):
+        """Test that numpy coercion raises instead of silently producing an empty array.
+
+        ``AbstractArray`` reports a ``__len__`` but raises on ``__getitem__``, so without a
+        guard numpy reads it as an empty sequence: ``np.asarray`` returned ``array([])``
+        and callers failed far away with misleading messages, such as ``np.linalg.det``
+        complaining about a 1-dim input.
+        """
+        a = AbstractArray((3, 2, 2), float)
+
+        with pytest.raises(TypeError, match="cannot be converted to a concrete array"):
+            np.asarray(a)
+
+        with pytest.raises(TypeError, match="cannot be converted to a concrete array"):
+            np.linalg.det(a)
+
+        # Shape and dtype access is unaffected.
+        assert a.shape == (3, 2, 2)
+        assert len(a) == 3
+
     def test_error_len_on_scalar(self):
         """Test that requesting the len of a scalar results in an error."""
         a = AbstractArray((), int)

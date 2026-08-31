@@ -1,4 +1,4 @@
-# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -49,6 +49,39 @@ ops_rep = (
     "(CNOT(wires=[0, 1])) # RX(1.23, wires=[1]) # I(0)",
     "IsingXX(4.56, wires=[2, 3]) # (Toffoli(wires=[1, 2, 3])) # Rot(0.34, 1.0, 0, wires=[0])",
 )
+
+
+class NoOperandsOp(CompositeOp2):
+    # pylint:disable=unused-argument
+    _op_symbol = "#"
+    _math_op = math.prod
+
+    hybrid_argnames = ("ops", "_init_pauli_rep")  # different name than operands
+    wire_argnames = ()
+
+    # pylint: disable-next=redefined-outer-name
+    def __init__(self, ops: Sequence[Operator], _init_pauli_rep=None):
+        super().__init__(ops, _init_pauli_rep=_init_pauli_rep)
+
+    def _build_pauli_rep(self):
+        return qp.pauli.PauliSentence({})
+
+    @property
+    def is_verified_hermitian(self):
+        return False
+
+    def matrix(self, wire_order=None):
+        if wire_order is None:
+            wire_order = self.wires
+        mat = np.eye(2 ** len(wire_order))
+        for op in self:
+            mat = mat @ math.expand_matrix(op.matrix(), op.wires, wire_order=wire_order)
+        return mat
+
+    @classmethod
+    # pylint: disable-next=unused-argument
+    def _sort(cls, op_list, wire_map: dict = None):
+        return op_list
 
 
 class ValidOp(CompositeOp2):
@@ -147,8 +180,13 @@ class TestConstruction:
     def test_initialization(self):
         """Test that valid child classes can be initialized without error"""
         op = ValidOp(self.simple_operands)
-        assert op._name == "ValidOp"
         assert op._op_symbol == "#"
+        assert op.operands == self.simple_operands
+
+        op = NoOperandsOp(self.simple_operands)
+        assert op._op_symbol == "#"
+        assert op.ops == self.simple_operands
+        assert op.operands == self.simple_operands
 
     def test_abstract_init(self):
         """Test that building a composite op from abstract operands routes through
@@ -162,7 +200,6 @@ class TestConstruction:
 
         assert op._hash is None
         assert op._has_overlapping_wires is None
-        assert op._overlapping_ops is None
 
     def test_map_wires(self):
         """Test the map_wires method."""
@@ -192,8 +229,8 @@ class TestConstruction:
         """Test that valid child classes can be initialized in a queuing context"""
         with AnnotatedQueue() as q:
             op = ValidOp(self.simple_operands)
-            assert op._name == "ValidOp"
             assert op._op_symbol == "#"
+            assert op.operands == self.simple_operands
         assert op in q.queue
         assert len(q.queue) == 1
 
@@ -314,7 +351,7 @@ def _is_method_with_no_argument(method):
     return True
 
 
-class TestMscMethods:
+class TestMiscMethods:
     """Test dunder and other miscellaneous methods."""
 
     def test_has_diagonalizing_gates(self):
@@ -349,7 +386,7 @@ class TestMscMethods:
     def test_eigvals(self, operators):
         """Test that the eigvals method is correct."""
         op = ValidOp(operators)
-        vals = op.eigvals()
+        vals = op.compute_eigvals(operators)
 
         def _expand_two(sub_op):
             return (
@@ -496,23 +533,12 @@ class TestProperties:
             for op1, op2 in zip(list_op1, list_op2):
                 qp.assert_equal(op1, op2)
 
-    def test_overlapping_ops_private_attribute(self):
-        """Test that the private `_overlapping_ops` attribute gets updated after a call to
-        the `overlapping_ops` property."""
-        op = ValidOp((qp.RZ(1.32, wires=0), qp.Identity(wires=0), qp.RX(1.9, wires=1)))
-        overlapping_ops = op.overlapping_ops
-        assert op._overlapping_ops == overlapping_ops
-
-        op = NonOverlappingOp((qp.RZ(1.32, wires=0),))
-        assert op.overlapping_ops == []
-
 
 @pytest.mark.capture
 # pylint: disable-next=too-few-public-methods
 class TestCapture:
     """Test that a CompositeOp2 subclass integrates with program capture."""
 
-    @pytest.mark.jax
     def test_capture_valid_op(self):
         """Test that a ValidOp can be captured into and reconstructed from jaxpr."""
         import jax
