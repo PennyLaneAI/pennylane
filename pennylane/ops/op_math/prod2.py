@@ -20,11 +20,14 @@ from collections import Counter
 from functools import reduce
 from typing import override
 
+from scipy.sparse import kron as sparse_kron
+
 import pennylane as qp
 from pennylane import math
-from pennylane.core.operator import Operator, Operator2, abstractify
+from pennylane.core.operator import Operator, abstractify
 from pennylane.core.queuing import apply
 from pennylane.decomposition import add_decomps, register_resources
+from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
@@ -55,46 +58,10 @@ class Prod2(CompositeOp2):
         indicates first applying :math:`\hat{op}_{2}` then :math:`\hat{op}_{1}` in the circuit).
     """
 
-    # ``operands`` and ``_init_pauli_rep`` are inherited as hybrid arguments from ``CompositeOp2``
-    arg_specs = {}
+    hybrid_argnames = ("operands", "_init_pauli_rep")
 
     _op_symbol = "@"
     _math_op = staticmethod(math.prod)
-
-    def __init__(self, operands, _init_pauli_rep=None):
-        # pylint: disable=import-outside-toplevel
-        from pennylane.ops.mid_measure import MidMeasure, PauliMeasure
-
-        operands = tuple(operands)
-
-        if any(isinstance(op, (MidMeasure, PauliMeasure)) for op in operands):
-            raise ValueError("Composite operators of mid-circuit measurements are not supported.")
-
-        if not all(isinstance(op, Operator2) for op in operands):
-            raise TypeError(
-                "Prod2 operands must be Operator2 instances. Legacy operators (subclasses of "
-                "Operator) should be combined using Prod instead."
-            )
-
-        self._init_args["operands"] = operands
-        super().__init__(operands, _init_pauli_rep=_init_pauli_rep)
-
-    @property
-    @handle_recursion_error
-    def data(self):
-        """The trainable parameters of the product are those of its operands."""
-        return tuple(d for op in self.operands for d in op.data)
-
-    def _check_batching(self):
-        batch_sizes = {op.batch_size for op in self if op.batch_size is not None}
-        if len(batch_sizes) > 1:
-            raise ValueError(
-                "Broadcasting was attempted but the broadcasted dimensions "
-                f"do not match: {batch_sizes}."
-            )
-        self._batch_size = batch_sizes.pop() if batch_sizes else None
-        # ``Prod2`` has no dynamic arguments of its own; parameters live in the operands.
-        self._ndim_params = ()
 
     @classmethod
     def _sort(cls, op_list, wire_map: dict = None) -> list[Operator]:
@@ -105,11 +72,9 @@ class Prod2(CompositeOp2):
         """
         op_list = list(op_list)
 
-        if not all(isinstance(getattr(op, "wires", None), Wires) for op in op_list):
-            return op_list
-
         for i in range(1, len(op_list)):
             key_op = op_list[i]
+
             j = i - 1
             while j >= 0 and _swappable_ops(op1=op_list[j], op2=key_op, wire_map=wire_map):
                 op_list[j + 1] = op_list[j]
@@ -118,10 +83,16 @@ class Prod2(CompositeOp2):
 
         return op_list
 
+    def _build_pauli_rep(self):
+        """PauliSentence representation of the product of operators."""
+        if all(operand_pauli_reps := [op.pauli_rep for op in self.operands]):
+            return reduce(lambda a, b: a @ b, operand_pauli_reps) if operand_pauli_reps else None
+        return None
+
     @property
     @handle_recursion_error
     def has_matrix(self) -> bool:
-        return self.pauli_rep is not None or all(op.has_matrix for op in self)
+        return all(op.has_matrix for op in self) or self.pauli_rep is not None
 
     @handle_recursion_error
     def matrix(self, wire_order=None):
@@ -160,14 +131,22 @@ class Prod2(CompositeOp2):
     def has_sparse_matrix(  # pylint: disable=arguments-differ,invalid-overridden-method
         self,
     ) -> bool:
-        return self.pauli_rep is not None or all(op.has_sparse_matrix for op in self)
+        return (
+            all(op.has_sparse_matrix for op in self)
+            or self.pauli_rep is not None
+            # Sparse matrices are 2-D. Thus, batch sizes are not supported
+            and self.batch_size is None
+        )
 
     @handle_recursion_error
     def sparse_matrix(self, wire_order=None, format="csr"):
         if self.pauli_rep:
             return self.pauli_rep.to_mat(wire_order=wire_order or self.wires, format=format)
 
-        from scipy.sparse import kron as sparse_kron  # pylint: disable=import-outside-toplevel
+        if self.batch_size is not None:
+            raise SparseMatrixUndefinedError(
+                "Sparse matrices cannot be defined for batched operators."
+            )
 
         if self.has_overlapping_wires or self.num_wires > MAX_NUM_WIRES_KRON_PRODUCT:
             gen = ((op.sparse_matrix(), op.wires) for op in self)
@@ -180,10 +159,6 @@ class Prod2(CompositeOp2):
         mats = (op.sparse_matrix() for op in self)
         full_mat = reduce(sparse_kron, mats)
         return math.expand_matrix(full_mat, self.wires, wire_order=wire_order).asformat(format)
-
-    # ------------------------------------------------------------------------
-    # ------------------------------ Properties ------------------------------
-    # ------------------------------------------------------------------------
 
     @property
     @override
@@ -200,15 +175,12 @@ class Prod2(CompositeOp2):
     def adjoint(self) -> "Prod2":
         return Prod2([qp.adjoint(factor) for factor in self[::-1]])
 
-    @override
-    def map_wires(self, wire_map: dict) -> "Prod2":
-        return Prod2([op.map_wires(wire_map) for op in self])
 
-    def _build_pauli_rep(self):
-        """PauliSentence representation of the product of operators."""
-        if all(operand_pauli_reps := [op.pauli_rep for op in self.operands]):
-            return reduce(lambda a, b: a @ b, operand_pauli_reps) if operand_pauli_reps else None
-        return None
+@abstractify.register(Prod2)
+def _abstractify_prod2(val: Prod2):
+    """Abstractify ``Prod2``."""
+    abstract_operands = tuple(abstractify(op) for op in val.operands)
+    return Prod2(abstract_operands, _init_pauli_rep=None)
 
 
 def _prod2_resources(operands, _init_pauli_rep=None):  # pylint: disable=unused-argument

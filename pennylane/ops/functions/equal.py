@@ -44,9 +44,9 @@ from pennylane.ops import (
 )
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.ops.op_math.adjoint2 import Adjoint2
+from pennylane.ops.op_math.composite2 import CompositeOp2
 from pennylane.ops.op_math.controlled2 import Controlled2
 from pennylane.ops.op_math.pow2 import Pow2
-from pennylane.ops.op_math.prod2 import Prod2
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.pytrees import flatten
@@ -707,7 +707,7 @@ def _equal_paulisentence(
 
 
 @_equal_dispatch.register(CompositeOp)
-@_equal_dispatch.register(Prod2)
+@_equal_dispatch.register(CompositeOp2)
 # pylint: disable=protected-access
 def _equal_prod_and_sum(op1, op2, **kwargs):
     """Determine whether two Prod, Sum or Prod2 objects are equal"""

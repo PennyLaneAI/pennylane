@@ -21,6 +21,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.ops.op_math.prod2 import Prod2
 
 
@@ -36,7 +37,7 @@ class TestInitialization:
     def test_construction_and_operands(self):
         """Test the operands, length, iteration and indexing of a product."""
         op = Prod2([qp.X(0), qp.Z(1)])
-        assert op.operands == (qp.X(0), qp.Z(1))
+        assert op.operands == [qp.X(0), qp.Z(1)]
         assert len(op) == 2
         assert list(op) == [qp.X(0), qp.Z(1)]
         assert op[0] == qp.X(0)
@@ -63,44 +64,15 @@ class TestInitialization:
         with pytest.raises(ValueError, match="mid-circuit measurements"):
             Prod2([qp.X(1), m])
 
-    def test_invalid_operands_raises(self):
-        """Test that non-operator operands raise a ``TypeError``."""
-        with pytest.raises(TypeError, match="operands must be Operator2"):
-            Prod2([qp.X(0), 5])
 
-    def test_legacy_operands_raise(self):
-        """Test that legacy (op1) operands raise a ``TypeError``."""
-
-        class LegacyOp(qp.core.Operator):  # pylint: disable=too-few-public-methods
-            """Dummy operator for testing."""
-
-        with pytest.raises(TypeError, match="Legacy operators"):
-            Prod2([LegacyOp(wires=0), qp.Z(wires=1)])
-
-
-class TestParameters:
-    """Test parameter and batching behaviour."""
+class TestParameters:  # pylint: disable=too-few-public-methods
+    """Test parameter behaviour."""
 
     def test_data_and_num_params(self):
         """Test that ``data`` and ``num_params`` are gathered from the operands."""
         op = Prod2([qp.RZ(0.5, 0), qp.PhaseShift(0.3, 1), qp.X(2)])
         assert op.num_params == 2
         assert qp.math.allclose(op.data, (0.5, 0.3))
-
-    def test_no_batching(self):
-        """Test that an unbatched product has a ``batch_size`` of ``None``."""
-        assert Prod2([qp.RZ(0.5, 0), qp.X(1)]).batch_size is None
-
-    def test_batching(self):
-        """Test that the batch size is taken from batched operands."""
-        op = Prod2([qp.RZ(np.array([0.1, 0.2, 0.3]), 0), qp.X(1)])
-        assert op.batch_size == 3
-
-    def test_batching_mismatch_raises(self):
-        """Test that mismatched operand batch sizes raise an error."""
-        op = Prod2([qp.RZ(np.array([0.1, 0.2]), 0), qp.PhaseShift(np.array([0.1, 0.2, 0.3]), 1)])
-        with pytest.raises(ValueError, match="do not match"):
-            _ = op.batch_size
 
 
 class TestMatrix:
@@ -121,10 +93,12 @@ class TestMatrix:
         assert np.allclose(mat, _product_matrix(factors, wire_order))
 
     def test_matrix_batched(self):
-        """Test that a broadcasted product's matrix is the per-element Kronecker product."""
+        """Test that a broadcasted product's matrix is stacked over the batch dimension."""
         x = np.array([0.1, 0.2, 0.3])
         y = np.array([0.4, 0.5, 0.6])
-        mat = qp.matrix(Prod2([qp.RX(x, 0), qp.RY(y, 1)]), wire_order=[0, 1])
+        op = Prod2([qp.RX(x, 0), qp.RY(y, 1)])
+        assert op.batch_size == 3
+        mat = qp.matrix(op, wire_order=[0, 1])
         # operands act on distinct wires, so each broadcasted matrix is a Kronecker product
         expected = np.stack(
             [np.kron(qp.matrix(qp.RX(xi, 0)), qp.matrix(qp.RY(yi, 1))) for xi, yi in zip(x, y)]
@@ -147,6 +121,15 @@ class TestMatrix:
         # RX(0.5) @ RX(0.3) composes to a single RX(0.8) rotation on the shared wire
         mat = op.sparse_matrix(wire_order=[0]).todense()
         assert np.allclose(mat, qp.matrix(qp.RX(0.8, 0)))
+
+    def test_sparse_matrix_batched_raises(self):
+        """Test that a broadcasted product's sparse matrix raises (scipy sparse is 2D only)."""
+        x = np.array([0.1, 0.2, 0.3])
+        op = Prod2([qp.RX(x, 0), qp.RY(x, 1)])
+        assert op.batch_size == 3
+
+        with pytest.raises(SparseMatrixUndefinedError, match="batched operators"):
+            _ = op.sparse_matrix(wire_order=[0, 1])
 
     def test_pauli_rep(self):
         """Test the Pauli representation of a product."""
@@ -217,6 +200,15 @@ class TestEqualityAndHash:
         # operands on distinct wires commute and are treated as equal
         assert Prod2([qp.X(0), qp.Z(1)]) == Prod2([qp.Z(1), qp.X(0)])
 
+    def test_equal_wireless_operand(self):
+        """Test that ``qp.equal`` works when the operands don't have wires."""
+        op1 = Prod2([qp.GlobalPhase(0.5), qp.RX(0.3, 0)])
+        op2 = Prod2([qp.RX(0.3, 0), qp.GlobalPhase(0.5)])
+        assert op1.pauli_rep is None
+        assert qp.equal(op1, op2)
+        # a different global phase must not compare equal
+        assert not qp.equal(op1, Prod2([qp.RX(0.3, 0), qp.GlobalPhase(0.9)]))
+
     def test_hash_commuting_operands(self):
         """Test that products of commuting operands hash equally."""
         assert hash(Prod2([qp.X(0), qp.Z(1)])) == hash(Prod2([qp.Z(1), qp.X(0)]))
@@ -233,6 +225,30 @@ class TestValidity:  # pylint: disable=too-few-public-methods
     def test_assert_valid(self):
         """Test that ``Prod2`` is defined correctly."""
         qp.ops.functions.assert_valid(Prod2([qp.RX(0.5, 0), qp.Z(1)]), skip_differentiation=True)
+        # Also assert validity with overlapping wires
+        qp.ops.functions.assert_valid(Prod2([qp.RX(0.5, 0), qp.Z(0)]), skip_differentiation=True)
+
+
+class TestAbstractify:
+    """Test the ``abstractify`` registration for ``Prod2``."""
+
+    def test_abstractify_operands(self):
+        """Test that abstractifying a product yields an abstract product of abstract operands."""
+        op = Prod2([qp.RX(0.5, 0), qp.RZ(0.3, 1)])
+        abstract = qp.core.abstractify(op)
+        assert isinstance(abstract, Prod2)
+        assert abstract.is_abstract
+        assert len(abstract.operands) == 2
+        assert all(operand.is_abstract for operand in abstract.operands)
+
+    def test_abstractify_drops_pauli_rep(self):
+        """Test that a product carrying an ``_init_pauli_rep`` is abstractified without it."""
+        pauli_rep = qp.X(0).pauli_rep @ qp.Z(1).pauli_rep
+        op = Prod2([qp.X(0), qp.Z(1)], _init_pauli_rep=pauli_rep)
+        assert op.pauli_rep is not None  # concrete product carries a Pauli representation
+        abstract = qp.core.abstractify(op)
+        assert abstract.is_abstract
+        assert abstract.pauli_rep is None
 
 
 class TestIntegration:

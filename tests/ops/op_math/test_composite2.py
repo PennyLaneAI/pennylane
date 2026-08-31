@@ -130,6 +130,17 @@ class NonOverlappingOp(ValidOp):
         self._overlapping_ops = []
 
 
+class NoPauliRepOp(ValidOp):
+    """A composite whose Pauli representation is undefined.
+
+    ``ValidOp`` always builds an (empty) Pauli representation, which short-circuits the equality
+    dispatch. Returning ``None`` here exercises the operand-by-operand comparison path instead.
+    """
+
+    def _build_pauli_rep(self):
+        return None
+
+
 @pytest.mark.capture
 @pytest.mark.parametrize(
     "operands",
@@ -532,6 +543,51 @@ class TestProperties:
         for list_op1, list_op2 in zip(overlapping_ops, valid_op.overlapping_ops):
             for op1, op2 in zip(list_op1, list_op2):
                 qp.assert_equal(op1, op2)
+
+    def test_no_batching(self):
+        """Test that a composite of unbatched operands has a ``batch_size`` of ``None``."""
+        assert ValidOp((qp.S(0), qp.T(1))).batch_size is None
+
+    def test_batch_size_from_operands(self):
+        """Test that the batch size is taken from the broadcasted operands."""
+        op = ValidOp((qp.RX(np.array([0.1, 0.2, 0.3]), 0), qp.S(1)))
+        assert op.batch_size == 3
+
+    def test_batching_mismatch_raises(self):
+        """Test that operands with mismatched batch sizes raise an error."""
+        op = ValidOp((qp.RX(np.array([0.1, 0.2]), 0), qp.RY(np.array([0.1, 0.2, 0.3]), 1)))
+        with pytest.raises(ValueError, match="do not match"):
+            _ = op.batch_size
+
+
+class TestEqual:
+    """Test the generalized ``qp.equal`` dispatch for ``CompositeOp2`` subclasses."""
+
+    def test_equal_identical_operands(self):
+        """Test that composites with identical operands compare equal."""
+        qp.assert_equal(NoPauliRepOp([qp.X(0), qp.Z(1)]), NoPauliRepOp([qp.X(0), qp.Z(1)]))
+
+    def test_not_equal_different_operands(self):
+        """Test that composites with differing operands do not compare equal."""
+        op1 = NoPauliRepOp([qp.X(0), qp.Z(1)])
+        op2 = NoPauliRepOp([qp.X(0), qp.Y(1)])
+        assert not qp.equal(op1, op2)
+
+    def test_not_equal_different_number_of_operands(self):
+        """Test that composites with different numbers of operands are reported as unequal."""
+        op1 = NoPauliRepOp([qp.X(0), qp.Z(1)])
+        op2 = NoPauliRepOp([qp.X(0), qp.Z(1), qp.Y(2)])
+        assert not qp.equal(op1, op2)
+        with pytest.raises(AssertionError, match="different number of operands"):
+            qp.assert_equal(op1, op2)
+
+    def test_equal_pauli_rep_shortcut(self):
+        """Test that matching (non-``None``) Pauli representations short-circuit to equal."""
+        pauli_rep = PauliWord({0: "X"}) + PauliWord({1: "Z"})
+        # Operands differ in both count and content, but equal Pauli reps short-circuit the check.
+        op1 = NoPauliRepOp([qp.X(0), qp.Z(1)], _init_pauli_rep=pauli_rep)
+        op2 = NoPauliRepOp([qp.Y(2)], _init_pauli_rep=pauli_rep)
+        qp.assert_equal(op1, op2)
 
 
 @pytest.mark.capture

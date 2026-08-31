@@ -200,6 +200,17 @@ class CompositeOp2(Operator2, is_baseclass=True):
     def num_params(self):
         return sum(op.num_params for op in self)
 
+    @handle_recursion_error
+    def _check_batching(self):
+        self._ndim_params = tuple(dim for op in self for dim in op.ndim_params)
+        batch_sizes = {op.batch_size for op in self if op.batch_size is not None}
+        if len(batch_sizes) > 1:
+            raise ValueError(
+                "Broadcasting was attempted but the broadcasted dimensions "
+                f"do not match: {batch_sizes}."
+            )
+        self._batch_size = batch_sizes.pop() if batch_sizes else None
+
     @property
     def has_overlapping_wires(self) -> bool:
         """Boolean expression that indicates if the factors have overlapping wires."""
