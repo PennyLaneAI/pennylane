@@ -35,3 +35,4 @@ class DFHamiltonian:
     num_orbitals: int
     num_fragments: int
     num_eigenvectors: int
+    rank_max: int | None = None

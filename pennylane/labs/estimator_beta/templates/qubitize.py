@@ -30,6 +30,61 @@ from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=signature-differs, arguments-differ, too-many-arguments
 
+_QROM_ROLES = ("prep", "coeff_twobody", "coeff_onebody", "rotation")
+
+
+def _resolve_select_swap_depths(select_swap_depths):
+    """Normalise a scalar-or-mapping select-swap depth spec into a role -> depth dict.
+
+    Roles:
+        ``"prep"``           the two rank-L QROMs (steps 1b and 2)
+        ``"coeff_twobody"``  the two-body alt/keep QROM (step 3c)
+        ``"coeff_onebody"``  the one-body alt/keep QROM (step 7)
+        ``"rotation"``       both rotation-angle QROMs, which must share a depth
+    """
+    if select_swap_depths is None or (
+        isinstance(select_swap_depths, int) and not isinstance(select_swap_depths, bool)
+    ):
+        return dict.fromkeys(_QROM_ROLES, select_swap_depths)
+    if isinstance(select_swap_depths, dict):
+        unknown = set(select_swap_depths) - set(_QROM_ROLES)
+        if unknown:
+            raise ValueError(
+                f"Unknown QROM role(s) {sorted(unknown)} in `select_swap_depths`; "
+                f"valid roles are {_QROM_ROLES}."
+            )
+        return {role: select_swap_depths.get(role, None) for role in _QROM_ROLES}
+    raise TypeError(
+        f"`select_swap_depths` must be None, an int, or a dict keyed by {_QROM_ROLES}, "
+        f"but got {type(select_swap_depths).__name__}."
+    )
+
+def _validate_df(df_ham, num_batches, spin_blocked, complex_rotations) -> int:
+    """Shared validation for ``__init__`` and ``resource_rep``. Returns angles per record."""
+    modes = df_ham.num_orbitals if spin_blocked else 2 * df_ham.num_orbitals
+    if spin_blocked and not complex_rotations:
+        n_ang = modes
+    else:
+        n_ang = 2 * (modes - 1) if complex_rotations else modes-1
+
+
+    if (
+        not isinstance(num_batches, int)
+        or isinstance(num_batches, bool)
+        or num_batches not in range(1, n_ang + 1)
+    ):
+        raise ValueError(
+            f"`num_batches` must be a positive integer at most the number of rotation "
+            f"angles per record ({n_ang}), but got {num_batches}."
+        )
+    rank_max = getattr(df_ham, "rank_max", None)
+    if rank_max is not None and rank_max > 4 * df_ham.num_orbitals:
+        raise ValueError(
+            f"`rank_max` ({rank_max}) cannot exceed twice the fragment dimension "
+            f"({4 * df_ham.num_orbitals}); each leaf contributes the ranks of both "
+            f"of its Hermitian parts."
+        )
+    return n_ang
 
 class QubitizeDF(ResourceOperator):
     r"""Resource class for qubitization of tensor hypercontracted Hamiltonian.
@@ -49,7 +104,7 @@ class QubitizeDF(ResourceOperator):
             the coefficients of Hamiltonian.
         rotation_precision (int | None): The number of bits used to represent the precision for loading
             the rotation angles for :code:`select_op`.
-        select_swap_depths (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM`
+        select_swap_depths (int | dict| None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM`
             used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
         wires (WiresLike | None): the wires on which the operator acts
 
@@ -98,21 +153,25 @@ class QubitizeDF(ResourceOperator):
 
     resource_keys = {
         "df_ham",
-#        "num_batches",
+        "num_batches",
         "amplitude_amplification_precision",
         "coeff_precision",
         "rotation_precision",
+        "spin_blocked",
+        "complex_rotations",
         "select_swap_depths",
     }
 
     def __init__(
         self,
         df_ham: DFHamiltonian,
-#        num_batches: int = 1,
+        num_batches: int = 1,
         amplitude_amplification_precision: int | None = None,
         coeff_precision: int | None = None,
         rotation_precision: int | None = None,
-        select_swap_depths: int | None = None,
+        select_swap_depths: int | dict | None = None,
+        spin_blocked: bool = True,
+        complex_rotations: bool = False,
         wires: WiresLike | None = None,
     ):
         if not isinstance(df_ham, DFHamiltonian):
@@ -120,15 +179,18 @@ class QubitizeDF(ResourceOperator):
                 f"Unsupported Hamiltonian representation for QubitizeDF."
                 f"This method works with double factorized Hamiltonian, {type(df_ham)} provided"
             )
+        _validate_df(df_ham, num_batches, spin_blocked, complex_rotations)
 
+        self.num_batches = num_batches
         self.df_ham = df_ham
         self.amplitude_amplification_precision = amplitude_amplification_precision
         self.coeff_precision = coeff_precision
         self.rotation_precision = rotation_precision
-        self.select_swap_depths = select_swap_depths
-
+        self.select_swap_depths = _resolve_select_swap_depths(select_swap_depths)
+        self.spin_blocked = spin_blocked
+        self.complex_rotations = complex_rotations
         num_orb = df_ham.num_orbitals
-        xi = df_ham.num_orbitals
+        xi = df_ham.rank_max or df_ham.num_orbitals
         L = df_ham.num_fragments
         Lxi = df_ham.num_eigenvectors
         nlxi = int(np.ceil(np.log2(Lxi + num_orb)))
@@ -136,7 +198,9 @@ class QubitizeDF(ResourceOperator):
         nxi = int(np.ceil(np.log2(xi)))
         nl = int(np.ceil(np.log2(L + 1)))
 
-        # Based on section Eq. C40 in arXiv:2011.03494
+        # Based on Eq. C40 in arXiv:2011.03494. The k_r * N * beta / 2 rotation-angle term is
+        # an ancilla cost: the base register is allocated in resource_decomp and the k_r - 1
+        # select-swap copies are allocated by QROM.
         self.num_wires = (
             num_orb * 2
             + 2 * nl
@@ -145,7 +209,7 @@ class QubitizeDF(ResourceOperator):
             + 4 * coeff_precision
             + rotation_precision
             + nlxi
-            + num_orb * rotation_precision
+#            + num_orb * rotation_precision
             + 9
         )
         if wires is not None and len(Wires(wires)) != self.num_wires:
@@ -174,16 +238,22 @@ class QubitizeDF(ResourceOperator):
             "coeff_precision": self.coeff_precision,
             "rotation_precision": self.rotation_precision,
             "select_swap_depths": self.select_swap_depths,
+            "spin_blocked": self.spin_blocked,
+            "complex_rotations": self.complex_rotations,
+            "num_batches": self.num_batches,
         }
 
     @classmethod
     def resource_rep(
         cls,
         df_ham: DFHamiltonian,
+        num_batches: int = 1,
         amplitude_amplification_precision: int | None = None,
         coeff_precision: int | None = None,
         rotation_precision: int | None = None,
-        select_swap_depths: int | None = None,
+        select_swap_depths: int | dict | None = None,
+        spin_blocked: bool = True,
+        complex_rotations: bool = False,
     ) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
@@ -210,8 +280,9 @@ class QubitizeDF(ResourceOperator):
                 f"This method works with thc Hamiltonian, {type(df_ham)} provided"
             )
 
+        _validate_df(df_ham, num_batches, spin_blocked, complex_rotations)
         num_orb = df_ham.num_orbitals
-        xi = df_ham.num_orbitals
+        xi = df_ham.rank_max or df_ham.num_orbitals
         L = df_ham.num_fragments
         Lxi = df_ham.num_eigenvectors
         nlxi = int(np.ceil(np.log2(Lxi + num_orb)))
@@ -229,15 +300,18 @@ class QubitizeDF(ResourceOperator):
             + 4 * coeff_precision
             + rotation_precision
             + nlxi
-            + num_orb * rotation_precision
+#            + num_orb * rotation_precision
             + 9
         )
         params = {
             "df_ham": df_ham,
+            "num_batches": num_batches,
             "amplitude_amplification_precision": amplitude_amplification_precision,
             "coeff_precision": coeff_precision,
             "rotation_precision": rotation_precision,
-            "select_swap_depths": select_swap_depths,
+            "select_swap_depths": _resolve_select_swap_depths(select_swap_depths),
+            "spin_blocked": spin_blocked,
+            "complex_rotations": complex_rotations,
         }
         return CompressedResourceOp(cls, num_wires, params)
 
@@ -245,10 +319,13 @@ class QubitizeDF(ResourceOperator):
     def resource_decomp(
         cls,
         df_ham: DFHamiltonian,
+        num_batches: int = 1,
         amplitude_amplification_precision: int | None = None,
         coeff_precision: int | None = None,
         rotation_precision: int | None = None,
-        select_swap_depths: int | None = None,
+        select_swap_depths: int | dict | None = None,
+        spin_blocked: bool = True,
+        complex_rotations: bool = False,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
@@ -268,7 +345,7 @@ class QubitizeDF(ResourceOperator):
                 the coefficients of Hamiltonian.
             rotation_precision (int | None): The number of bits used to represent the precision for loading
                 the rotation angles for basis rotation.
-            select_swap_depths (int | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM`
+            select_swap_depths (int | dict | None): A parameter of :class:`~.pennylane.estimator.templates.subroutines.QROM`
                 used to trade-off extra wires for reduced circuit depth. Defaults to :code:`None`,
                 which internally determines the optimal depth.
 
@@ -281,10 +358,15 @@ class QubitizeDF(ResourceOperator):
         """
         gate_list = []
         num_orbitals = df_ham.num_orbitals
-        xi = df_ham.num_orbitals
+        xi = df_ham.rank_max or df_ham.num_orbitals
         Lxi = df_ham.num_eigenvectors
         L = df_ham.num_fragments
         num_coeff = Lxi + num_orbitals
+        # Angles loaded per batch. num_batches == 1 loads all of them at once. Each batch is a
+        # QROM load followed by its adjoint, so borrow_qubits=False stays valid and is kept.
+        n_ang = _validate_df(df_ham, num_batches, spin_blocked, complex_rotations)
+        batched_rotations = int(np.ceil(n_ang / num_batches))
+        select_swap_depths = _resolve_select_swap_depths(select_swap_depths)
 
         nl_register = int(np.ceil(np.log2(L + 1)))
         nxi = int(np.ceil(np.log2(xi)))
@@ -320,7 +402,7 @@ class QubitizeDF(ResourceOperator):
                 "num_bitstrings": L + 1,
                 "size_bitstring": nl_register + coeff_precision,
                 "borrow_qubits": False,
-                "select_swap_depth": select_swap_depths,
+                "select_swap_depth": select_swap_depths["prep"],
             },
         )
         gate_list.append(GateCount(qrom_prep1, 1))
@@ -340,7 +422,7 @@ class QubitizeDF(ResourceOperator):
                 "num_bitstrings": L + 1,
                 "size_bitstring": nxi + coeff_register + amplitude_amplification_precision + 1,
                 "borrow_qubits": False,
-                "select_swap_depth": select_swap_depths,
+                "select_swap_depth": select_swap_depths["prep"],
             },
         )
         gate_list.append(GateCount(qrom_output, 1))
@@ -386,7 +468,7 @@ class QubitizeDF(ResourceOperator):
                 "num_bitstrings": num_coeff,
                 "size_bitstring": nxi + coeff_precision + 2,
                 "borrow_qubits": False,
-                "select_swap_depth": select_swap_depths,
+                "select_swap_depth": select_swap_depths["coeff_twobody"],
             },
         )
         gate_list.append(GateCount(qrom_prep2, 1))
@@ -399,25 +481,29 @@ class QubitizeDF(ResourceOperator):
         # step4a: Add offset to the second register
         gate_list.append(GateCount(adder, 2))
 
+        gate_list.append(Allocate(batched_rotations * rotation_precision))
         # step4b: QROM for the rotation angles
         # For 2-body
         qrom_rot_twobody = resource_rep(
             qre.QROM,
             {
                 "num_bitstrings": num_coeff,
-                "size_bitstring": num_orbitals * rotation_precision,
+                "size_bitstring": batched_rotations * rotation_precision,
                 "borrow_qubits": False,
-                "select_swap_depth": select_swap_depths,
+                "select_swap_depth": select_swap_depths["rotation"],
             },
         )
-        gate_list.append(GateCount(qrom_rot_twobody, 1))
+        gate_list.append(GateCount(qrom_rot_twobody, num_batches))
 
-        # step4c: controlled swaps controlled on spin qubit
-        gate_list.append(GateCount(cswap, 2 * num_orbitals))
+        # step4c: controlled swaps controlled on the spin qubit. Only a spin-blocked
+        # Hamiltonian reuses one spatial rotation for both spin sectors; an X2C spinor
+        # rotation acts on all 2n modes directly and needs no routing swaps.
+        if spin_blocked:
+            gate_list.append(GateCount(cswap, 2 * num_orbitals))
 
         # step4d: Controlled rotations based on semiadder
         rotation_adder = resource_rep(qre.SemiAdder, {"max_register_size": rotation_precision - 1})
-        gate_list.append(GateCount(rotation_adder, 4 * num_orbitals))
+        gate_list.append(GateCount(rotation_adder, 4 * n_ang))
 
         # step4e: Z1 controlled on success of prep of l and p registers
         ccz = resource_rep(qre.CCZ)
@@ -425,13 +511,14 @@ class QubitizeDF(ResourceOperator):
 
         # step4f: reverse the controlled rotations and cswaps
         gate_list.append(
-            GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": rotation_adder}), 4 * num_orbitals)
+            GateCount(resource_rep(qre.Adjoint, {"base_cmpr_op": rotation_adder}), 4 * n_ang)
         )
-        gate_list.append(GateCount(cswap, 2 * num_orbitals))
+        if spin_blocked:
+            gate_list.append(GateCount(cswap, 2 * num_orbitals))
 
         # step4g: Reverse the qrom
         qrom_rot_twobody_adj = resource_rep(qre.Adjoint, {"base_cmpr_op": qrom_rot_twobody})
-        gate_list.append(GateCount(qrom_rot_twobody_adj, 1))
+        gate_list.append(GateCount(qrom_rot_twobody_adj, num_batches))
 
         # step4h: Reverse the addition
         gate_list.append(GateCount(adder, 2))
@@ -452,7 +539,7 @@ class QubitizeDF(ResourceOperator):
                 "num_bitstrings": Lxi,
                 "size_bitstring": nxi + coeff_precision + 2,
                 "borrow_qubits": False,
-                "select_swap_depth": select_swap_depths,
+                "select_swap_depth": select_swap_depths["coeff_onebody"],
             },
         )
         gate_list.append(GateCount(qrom_prep2_onebody))
@@ -461,15 +548,16 @@ class QubitizeDF(ResourceOperator):
             qre.QROM,
             {
                 "num_bitstrings": Lxi,
-                "size_bitstring": num_orbitals * rotation_precision,
+                "size_bitstring": batched_rotations * rotation_precision,
                 "borrow_qubits": False,
-                "select_swap_depth": select_swap_depths,
+                "select_swap_depth": select_swap_depths["rotation"],
             },
         )
-        gate_list.append(GateCount(qrom_rot_onebody, 1))
+        gate_list.append(GateCount(qrom_rot_onebody, num_batches))
 
         qrom_rot_onebody_adj = resource_rep(qre.Adjoint, {"base_cmpr_op": qrom_rot_onebody})
-        gate_list.append(GateCount(qrom_rot_onebody_adj, 1))
+        gate_list.append(GateCount(qrom_rot_onebody_adj, num_batches))
+        gate_list.append(Deallocate(batched_rotations * rotation_precision))
 
         qrom_prep2_onebody_adj = resource_rep(qre.Adjoint, {"base_cmpr_op": qrom_prep2_onebody})
         gate_list.append(GateCount(qrom_prep2_onebody_adj, 1))
