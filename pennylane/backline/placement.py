@@ -77,7 +77,7 @@ class Endpoint:
             raise ValueError(f"port must be in 1..65535, got {self.port}")
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(frozen=True, kw_only=False)
 class Node:
     """A node in a backline fabric.
 
@@ -93,7 +93,8 @@ class Node:
     Keyword Args:
         name (str, None): A name identifying this node. Defaults to ``None``, letting the compiler
             derive one from the node's role.
-        hardware (Hardware): The hardware this node executes on. Defaults to ``"cpu"``. The compiler
+        hardware (str): The hardware this node executes on. Defaults to ``"cpu"``; other allowed values are
+            ``gpu`` and ``fpga`. The compiler
             combines this with the placement's :class:`~.Transport` to select the runtime backend.
         remote (bool): Whether this node runs on another machine. Defaults to ``False``.
         executor_options (dict, None): Options for the executor to launch for this node.
@@ -215,7 +216,7 @@ class Node:
             )
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(frozen=True, kw_only=False)
 class Controller(Node):
     """The node that controls the QPU and initiates data transfers.
 
@@ -231,7 +232,8 @@ class Controller(Node):
     Keyword Args:
         name (str, None): A name identifying the controller. Defaults to ``None``, letting the compiler
             derive one from the node's role.
-        hardware (Hardware): The hardware the controller executes on. Defaults to ``"cpu"``. The compiler
+        hardware (Hardware): The hardware the controller executes on. Defaults to ``"cpu"``; other allowed
+            values are ``"gpu"`` and ``"fpga"``. The compiler
             combines this with the placement's :class:`~.Transport` to select the runtime backend.
         remote (bool): Whether the controller runs on another machine. Defaults to ``False``.
         executor_options (dict, None): Options for the executor to launch for this controller.
@@ -295,7 +297,7 @@ class Controller(Node):
             object.__setattr__(self, "device", _make_device("null.qubit", wires=DEFAULT_WIRES))
 
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(frozen=True, kw_only=False)
 class Coprocessor(Node):
     """The node that runs a coprocessor function per received message.
 
@@ -316,7 +318,8 @@ class Coprocessor(Node):
     Keyword Args:
         name (str, None): A name identifying the controller. Defaults to ``None``, letting the compiler
             derive one from the node's role.
-        hardware (Hardware): The hardware the controller executes on. Defaults to ``"cpu"``. The compiler
+        hardware (Hardware): The hardware the coprocessing function executes on. Defaults to ``"cpu"``; other allowed values are
+            ``gpu``. ``fpga`` is not currently accepted. The compiler
             combines this with the placement's :class:`~.Transport` to select the runtime backend.
         remote (bool): Whether the controller runs on another machine. Defaults to ``False``.
         coprocessor_fn (str, CoprocessorFunction): The function that processes each received
