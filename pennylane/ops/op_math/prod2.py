@@ -72,11 +72,9 @@ class Prod2(CompositeOp2):
         """
         op_list = list(op_list)
 
-        if not all(isinstance(getattr(op, "wires", None), Wires) for op in op_list):
-            return op_list
-
         for i in range(1, len(op_list)):
             key_op = op_list[i]
+
             j = i - 1
             while j >= 0 and _swappable_ops(op1=op_list[j], op2=key_op, wire_map=wire_map):
                 op_list[j + 1] = op_list[j]

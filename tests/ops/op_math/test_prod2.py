@@ -200,6 +200,15 @@ class TestEqualityAndHash:
         # operands on distinct wires commute and are treated as equal
         assert Prod2([qp.X(0), qp.Z(1)]) == Prod2([qp.Z(1), qp.X(0)])
 
+    def test_equal_wireless_operand(self):
+        """Test that ``qp.equal`` works when the operands don't have wires."""
+        op1 = Prod2([qp.GlobalPhase(0.5), qp.RX(0.3, 0)])
+        op2 = Prod2([qp.RX(0.3, 0), qp.GlobalPhase(0.5)])
+        assert op1.pauli_rep is None
+        assert qp.equal(op1, op2)
+        # a different global phase must not compare equal
+        assert not qp.equal(op1, Prod2([qp.RX(0.3, 0), qp.GlobalPhase(0.9)]))
+
     def test_hash_commuting_operands(self):
         """Test that products of commuting operands hash equally."""
         assert hash(Prod2([qp.X(0), qp.Z(1)])) == hash(Prod2([qp.Z(1), qp.X(0)]))
