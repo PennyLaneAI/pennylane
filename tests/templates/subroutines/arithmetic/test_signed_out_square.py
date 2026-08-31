@@ -32,7 +32,7 @@ from pennylane.typing import Wire
 
 
 @pytest.mark.parametrize("output_wires_zeroed", [False, True])
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity_signed_out_square(output_wires_zeroed):
     """Check the operation using the assert_valid function."""
     x_wires = [0, 1, 2, 3]
@@ -354,7 +354,7 @@ class TestSignedOutSquare:
             all_wires = (x_wires, output_wires, work_wires)
             _test_square_correctness(all_wires, rule, seed, output_wires_zeroed, use_jit)
 
-    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(
         ("x_wires", "output_wires", "work_wires", "output_wires_zeroed"),
         [
@@ -363,11 +363,12 @@ class TestSignedOutSquare:
             ([0, 1, 2], [3, 4, 5, 6, 7], [8, 9, 10, 11, 12], True),
         ],
     )
-    def test_decomposition_capture(self, x_wires, output_wires, work_wires, output_wires_zeroed):
-        """Regression test (#10065): ``_signed_out_square`` relies internally on
-        ``_c_subtract_then_add_one`` (triggered whenever ``len(output_wires) > len(x_wires)``),
-        whose collect-reorder-replay strategy used to be capture-unsafe. Verify the decomposition
-        rule still produces the correct circuit with program capture enabled."""
+    def test_decomposition_rule_with_capture(
+        self, x_wires, output_wires, work_wires, output_wires_zeroed
+    ):
+        """Test that the decomposition rule is working correctly when ``_signed_out_square``
+        calls ``_c_subtract_then_add_one`` (triggered whenever ``len(output_wires) > len(x_wires)``)
+        """
         op = SignedOutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
         for rule in qp.list_decomps(SignedOutSquare):
             _test_decomposition_rule(op, rule)

@@ -423,6 +423,13 @@
 
 <h3>Improvements 🛠</h3>
 
+* :class:`~.IsingZZ`'s decomposition is now expressed as a :func:`~.change_op_basis` (``CNOT``
+  compute/uncompute around the ``RZ``) instead of three bare gates. This lets PennyLane's generic
+  ``C(ChangeOpBasis)`` rule automatically control only the ``RZ`` for any number of control wires,
+  using fewer gates than the previous default of naively controlling every gate.
+  [(#10059)](https://github.com/PennyLaneAI/pennylane/pull/10059)
+  [(#10059)](https://github.com/PennyLaneAI/pennylane/pull/10015)
+
 * Coprocessor connection addresses are grouped on :class:`~pennylane.Endpoint` as ``endpoint=qp.Endpoint(host, port)``, replacing the separate ``comm_host`` and ``oob_port`` fields.
   [(#10017)](https://github.com/PennyLaneAI/pennylane/pull/10017)
 
@@ -1114,6 +1121,7 @@
   [(#10062)](https://github.com/PennyLaneAI/pennylane/pull/10062)
   [(#10073)](https://github.com/PennyLaneAI/pennylane/pull/10073)
   [(#10078)](https://github.com/PennyLaneAI/pennylane/pull/10078)
+  [(#10085)](https://github.com/PennyLaneAI/pennylane/pull/10085)
   - Quantum chemistry operators are ported:
     - :class:`~.SingleExcitation`
   [(#9944)](https://github.com/PennyLaneAI/pennylane/pull/9944)
@@ -1376,6 +1384,11 @@
 * Fixed :class:`~.Incrementer` returning an incorrect incremented value when not enough
   work wires are provided.
   [(#10062)](https://github.com/PennyLaneAI/pennylane/pull/10062)
+
+* Converting an ``AbstractArray`` to a concrete array now raises an informative ``TypeError``
+  instead of silently producing an empty array, which previously surfaced as an obscure error
+  far from its cause.
+  [(#10083)](https://github.com/PennyLaneAI/pennylane/pull/10083)
 
 * Fixed the QFT-based decomposition of :class:`~.OutMultiplier` so it can be captured and
   compiled with Catalyst when ``mod = 2 ** len(output_wires)``.
