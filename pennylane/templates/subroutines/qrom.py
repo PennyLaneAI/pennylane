@@ -278,8 +278,8 @@ class QROM(Operator2):
         return self.control_wires + self.target_wires + self.work_wires
 
 
-def _calculate_n_select_work_wires(terms, num_control_wires, num_target_wires, num_work_wires, **_):
-    """Calculates the number of work wires passes to the select block.
+def _calculate_select_swap_sizes(terms, num_control_wires, num_target_wires, num_work_wires, **_):
+    """Calculates the register sizes for the Select-SWAP decomposition.
 
     This utility function determines how many auxiliary wires from the total pool
     should be allocated to the Select operation versus the SWAP network.
@@ -291,11 +291,11 @@ def _calculate_n_select_work_wires(terms, num_control_wires, num_target_wires, n
         num_work_wires (int): total number of available work wires
 
     Returns:
-        int: The number of work wires assigned to the Select component.
+        tuple[int]: The number of work wires assigned to the Select component.
     """
 
     if num_work_wires < num_control_wires - 1:
-        return num_work_wires
+        return num_work_wires, 0, 1
 
     # Initialize available swap space using total work wires
     n_swap_work_wires = num_work_wires
@@ -317,10 +317,28 @@ def _calculate_n_select_work_wires(terms, num_control_wires, num_target_wires, n
         n_select_work_wires = num_work_wires - n_swap_work_wires
         n_select_control_wires = num_control_wires - math.floor_log2(depth)
 
-    return n_select_work_wires
+    # number of operators we store per column (power of 2 or number of bitstrings)
+    # depth = num_swap_wires // num_target_wires
+    # depth = 1 << math.floor_log2(depth)
+    # depth = min(depth, num_bitstrings)
+
+    return n_select_work_wires, n_swap_work_wires, depth
 
 
-def _qrom_decomposition_resources(
+def _select_swap_condition(bitstrings, control_wires, target_wires, work_wires, clean):
+    # pylint: disable=unused-argument
+    num_control_wires = len(control_wires)
+
+    if num_control_wires == 0:
+        return False
+
+    *_, depth = _calculate_select_swap_sizes(
+        len(bitstrings), num_control_wires, len(target_wires), len(work_wires)
+    )
+    return depth > 1
+
+
+def _select_swap_resources(
     bitstrings, control_wires, target_wires, work_wires, clean
 ):  # pylint: disable=too-many-branches
 
@@ -329,22 +347,9 @@ def _qrom_decomposition_resources(
     num_target_wires = len(target_wires)
     num_work_wires = len(work_wires)
 
-    num_work_wires_select = _calculate_n_select_work_wires(
+    num_work_wires_select, _, depth = _calculate_select_swap_sizes(
         num_bitstrings, num_control_wires, num_target_wires, num_work_wires
     )
-
-    num_work_wires_swap = num_work_wires - num_work_wires_select
-
-    if num_control_wires == 0:
-        return {MultiX(Bool[num_target_wires], Wire[num_target_wires]): num_bitstrings}
-
-    num_swap_wires = num_target_wires + num_work_wires_swap
-
-    # number of operators we store per column (power of 2)
-    depth = num_swap_wires // num_target_wires
-    depth = 1 << math.floor_log2(depth)
-    depth = min(depth, num_bitstrings)
-
     ops = [MultiX(Bool[num_target_wires], Wire[num_target_wires]) for _ in range(num_bitstrings)]
     ops_identity = ops + [resource_rep(qp_ops.I)] * int(2**num_control_wires - num_bitstrings)
 
@@ -418,43 +423,33 @@ def _qrom_decomposition_resources(
     return resources
 
 
-@register_resources(_qrom_decomposition_resources)
-def _qrom_decomposition(
+@register_condition(_select_swap_condition)
+@register_resources(_select_swap_resources)
+def _select_swap(
     bitstrings, control_wires, target_wires, work_wires, clean
 ):  # pylint: disable=unused-argument, too-many-arguments
-    if len(control_wires) == 0:
-        MultiX(bitstrings[0, :], wires=target_wires)
-        return
 
-    n_select_work_wires = _calculate_n_select_work_wires(
+    _, num_work_wires_swap, depth = _calculate_select_swap_sizes(
         len(bitstrings), len(control_wires), len(target_wires), len(work_wires)
     )
 
-    n_swap_work_wires = len(work_wires) - n_select_work_wires
-    swap_work_wires = work_wires[:n_swap_work_wires]
-    select_work_wires = work_wires[n_swap_work_wires:]
+    swap_work_wires = work_wires[:num_work_wires_swap]
+    select_work_wires = work_wires[num_work_wires_swap:]
     swap_wires = target_wires + swap_work_wires
 
-    # number of operators we store per column (power of 2)
-    depth = len(swap_wires) // len(target_wires)
-    depth = min(1 << math.floor_log2(depth), bitstrings.shape[0])
-
-    if not clean or depth == 1:
+    if not clean:
         _select_ops(control_wires, depth, target_wires, swap_wires, bitstrings, select_work_wires)
-        if not clean:
-            _swap_ops(control_wires, depth, swap_wires, target_wires)
+        _swap_ops(control_wires, depth, swap_wires, target_wires)
+        return
 
-    else:
-        for _ in range(2):
-            for w in target_wires:
-                qp_ops.Hadamard(wires=w)
-            qp_ops.adjoint(
-                partial(_swap_ops, control_wires, depth, swap_wires, target_wires), lazy=False
-            )()
-            _select_ops(
-                control_wires, depth, target_wires, swap_wires, bitstrings, select_work_wires
-            )
-            _swap_ops(control_wires, depth, swap_wires, target_wires)
+    for _ in range(2):
+        for w in target_wires:
+            qp_ops.Hadamard(wires=w)
+        qp_ops.adjoint(
+            partial(_swap_ops, control_wires, depth, swap_wires, target_wires), lazy=False
+        )()
+        _select_ops(control_wires, depth, target_wires, swap_wires, bitstrings, select_work_wires)
+        _swap_ops(control_wires, depth, swap_wires, target_wires)
 
 
 def _measurement_uncompute(work_wire, ctrl_wires, targets, product):
@@ -1013,5 +1008,5 @@ def _qrom_unary_iteration(
     _main_unary_loop_monolithic(bitstrings, triples, target_wires)
 
 
-add_decomps(QROM, _qrom_decomposition, _qrom_unary_iteration, _qrom_measurement_decomposition)
+add_decomps(QROM, _select_swap, _qrom_unary_iteration, _qrom_measurement_decomposition)
 add_decomps("Adjoint(QROM)", _qrom_measurement_decomposition)
