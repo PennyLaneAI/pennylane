@@ -91,7 +91,7 @@ class Prod2(CompositeOp2):
     @property
     @handle_recursion_error
     def has_matrix(self) -> bool:
-        return self.pauli_rep is not None or all(op.has_matrix for op in self)
+        return all(op.has_matrix for op in self) or self.pauli_rep is not None
 
     @handle_recursion_error
     def matrix(self, wire_order=None):
@@ -130,7 +130,7 @@ class Prod2(CompositeOp2):
     def has_sparse_matrix(  # pylint: disable=arguments-differ,invalid-overridden-method
         self,
     ) -> bool:
-        return self.pauli_rep is not None or all(op.has_sparse_matrix for op in self)
+        return all(op.has_sparse_matrix for op in self) or self.pauli_rep is not None
 
     @handle_recursion_error
     def sparse_matrix(self, wire_order=None, format="csr"):
@@ -165,6 +165,13 @@ class Prod2(CompositeOp2):
     @override
     def adjoint(self) -> "Prod2":
         return Prod2([qp.adjoint(factor) for factor in self[::-1]])
+
+
+@abstractify.register(Prod2)
+def _abstractify_prod2(val: Prod2):
+    """Abstractify ``Prod2``."""
+    abstract_operands = tuple(abstractify(op) for op in val.operands)
+    return Prod2(abstract_operands, _init_pauli_rep=None)
 
 
 def _prod2_resources(operands, _init_pauli_rep=None):  # pylint: disable=unused-argument

@@ -196,6 +196,28 @@ class TestValidity:  # pylint: disable=too-few-public-methods
         qp.ops.functions.assert_valid(Prod2([qp.RX(0.5, 0), qp.Z(0)]), skip_differentiation=True)
 
 
+class TestAbstractify:
+    """Test the ``abstractify`` registration for ``Prod2``."""
+
+    def test_abstractify_operands(self):
+        """Test that abstractifying a product yields an abstract product of abstract operands."""
+        op = Prod2([qp.RX(0.5, 0), qp.RZ(0.3, 1)])
+        abstract = qp.core.abstractify(op)
+        assert isinstance(abstract, Prod2)
+        assert abstract.is_abstract
+        assert len(abstract.operands) == 2
+        assert all(operand.is_abstract for operand in abstract.operands)
+
+    def test_abstractify_drops_pauli_rep(self):
+        """Test that a product carrying an ``_init_pauli_rep`` is abstractified without it."""
+        pauli_rep = qp.X(0).pauli_rep @ qp.Z(1).pauli_rep
+        op = Prod2([qp.X(0), qp.Z(1)], _init_pauli_rep=pauli_rep)
+        assert op.pauli_rep is not None  # concrete product carries a Pauli representation
+        abstract = qp.core.abstractify(op)
+        assert abstract.is_abstract
+        assert abstract.pauli_rep is None
+
+
 class TestIntegration:
     """Test circuit execution and decomposition parity with ``Prod``."""
 
