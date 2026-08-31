@@ -190,5 +190,5 @@ def test_bind_primitive():
     import jax
 
     cjaxpr = jax.make_jaxpr(lambda x: DynOp(x, wires=0))(2.0)
-    # Make sure the operator primitive is in thie JAXPR
+    # Make sure the operator primitive is in the JAXPR
     assert len([e for e in cjaxpr.eqns if e.primitive is operator_p]) == 1
