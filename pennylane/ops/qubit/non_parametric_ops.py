@@ -275,7 +275,7 @@ def _controlled_h_resources(base, control_wires, control_values, work_wires, wor
 @register_resources(_controlled_h_resources)
 # pylint: disable-next=unused-argument
 def _controlled_hadamard(base, control_wires, control_values, work_wires, work_wire_type):
-    wires = list(control_wires) + list(base.wires)
+    wires = control_wires + base.wires
     if len(control_wires) == 1:
         qp.CH(wires)
         return
@@ -456,7 +456,7 @@ class PauliX(Operator2):
 
 @custom_ctrl_dispatch.register
 def _ctrl_x(base: PauliX, control, control_values, work_wires, work_wire_type):
-    wires = list(control) + list(base.wires)
+    wires = control + base.wires
     if not _is_empty_or_all_true(control_values):
         return qp.MultiControlledX(wires, control_values, work_wires, work_wire_type)
     if len(control) == 1:
@@ -726,7 +726,7 @@ def _controlled_y_resource(base, control_wires, control_values, work_wires, work
 
 @register_resources(_controlled_y_resource)
 def _controlled_y_decomp(base, control_wires, control_values, work_wires, work_wire_type):
-    wires = list(control_wires) + list(base.wires)
+    wires = control_wires + base.wires
 
     if len(control_wires) == 1:
         qp.CY(wires=wires)
@@ -987,7 +987,7 @@ def _controlled_z_resources(  # pylint: disable=unused-argument
 def _controlled_z_decomp(  # pylint: disable=unused-argument
     base, control_wires, control_values, work_wires, work_wire_type
 ):
-    wires = list(control_wires) + list(base.wires)
+    wires = control_wires + base.wires
 
     if len(control_wires) == 1:
         qp.CZ(wires=wires)
@@ -1577,7 +1577,7 @@ def _controlled_swap_resources(base, control_wires, control_values, work_wires, 
 @register_resources(_controlled_swap_resources)
 # pylint: disable-next=unused-argument
 def _controlled_swap_decomp(base, control_wires, control_values, work_wires, work_wire_type):
-    wires = list(control_wires) + list(base.wires)
+    wires = control_wires + base.wires
     if len(control_wires) == 1:
         qp.CSWAP(wires=wires)
         return

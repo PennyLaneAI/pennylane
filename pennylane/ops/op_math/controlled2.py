@@ -806,13 +806,19 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
     )
     def _impl(base, control_wires, control_values, work_wires, work_wire_type):
 
+        _cwires = control_wires
+        _cvals = control_values
         if compiler.active() or capture.enabled():
-            control_wires = math.array(control_wires, like="jax")
-            control_values = math.array(control_values, like="jax")
+            # We perform the cast on these temporary variables for the sole purpose
+            # of indexing into them with tracers. the inner wrapper rule may still
+            # depend on control_wires being a Wires object. Ideally we should have a
+            # strictly enforced convention for what form the wires argument takes.
+            _cwires = math.array(_cwires, like="jax")
+            _cvals = math.array(_cvals, like="jax")
 
-        @qp.for_loop(0, len(control_wires))
+        @qp.for_loop(0, len(_cwires))
         def _x_flips(i):
-            qp.cond(qp.math.logical_not(control_values[i]), qp.X)(control_wires[i])
+            qp.cond(qp.math.logical_not(_cvals[i]), qp.X)(_cwires[i])
 
         _x_flips()
         rule(
