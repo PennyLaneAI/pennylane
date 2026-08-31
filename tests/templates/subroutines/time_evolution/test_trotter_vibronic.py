@@ -671,10 +671,10 @@ class TestDecomposition:
         # traced ``for_loop`` count would scale with it instead of staying constant.
         assert num_for_loops(2) == num_for_loops(8)
 
-    @pytest.mark.capture
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
-    def test_decomposition_resource_consistency_under_capture(self, seed):
-        """Test resource/decomposition consistency under capture via ``_test_decomposition_rule``."""
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp", "enable_and_disable_capture")
+    def test_decomposition_resource_consistency(self, seed):
+        """Test resource/decomposition consistency via ``_test_decomposition_rule``, with capture
+        both disabled and enabled (``enable_and_disable_capture`` runs this test twice)."""
         from pennylane.ops.functions.assert_valid import (  # pylint: disable=import-outside-toplevel
             _test_decomposition_rule,
         )
