@@ -32,7 +32,6 @@ def _wire_layout(n_states):
     n_work = max(logL - 1, 1)
 
     target_wires = list(range(n_tgt))
-    #    flag = n_tgt
     work_wires = list(range(n_tgt, n_tgt + 1 + n_work))
     n_wires = n_tgt + 1 + n_work
     return target_wires, work_wires, n_wires
