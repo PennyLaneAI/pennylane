@@ -33,13 +33,14 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.math import ceil_log2
-from pennylane.ops import CNOT, CZ, BasisState, X, cond, ctrl, pauli_measure
+from pennylane.ops import CNOT, CZ, X, cond, ctrl, pauli_measure
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.typing import AbstractArray, Bool, Int, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .arithmetic import TemporaryAND
+from .multix import MultiX
 from .select import Select
 
 
@@ -52,7 +53,7 @@ def _select_ops(
 
     with QueuingManager.stop_recording():
         with capture.pause():
-            ops_new = [BasisState(bits, wires=target_wires) for bits in bitstrings]
+            ops_new = [MultiX(bits, wires=target_wires) for bits in bitstrings]
             ops_identity_new = ops_new + [qp_ops.I(target_wires)] * (capacity - len(ops_new))
 
     n_columns = int(np.ceil(bitstrings.shape[0] / depth))
@@ -154,7 +155,7 @@ class QROM(Operator2):
 
         The second set of wires is ``target_wires`` which stores the bitstrings.
         For instance, if the bitstring is ``[0, 1, 1, 0]``, we will need four target wires. Internally,
-        the bitstrings are encoded using the :class:`~.BasisState` template.
+        the bitstrings are encoded using the :class:`~.MultiX` template.
 
 
         The ``work_wires`` are auxiliary qubits used to reduce the gate complexity of the
@@ -333,7 +334,7 @@ def _qrom_decomposition_resources(
     num_work_wires_swap = num_work_wires - num_work_wires_select
 
     if num_control_wires == 0:
-        return {BasisState(Bool[num_target_wires], Wire[num_target_wires]): num_bitstrings}
+        return {MultiX(Bool[num_target_wires], Wire[num_target_wires]): num_bitstrings}
 
     num_swap_wires = num_target_wires + num_work_wires_swap
 
@@ -342,9 +343,7 @@ def _qrom_decomposition_resources(
     depth = 1 << math.floor_log2(depth)
     depth = min(depth, num_bitstrings)
 
-    ops = [
-        BasisState(Bool[num_target_wires], Wire[num_target_wires]) for _ in range(num_bitstrings)
-    ]
+    ops = [MultiX(Bool[num_target_wires], Wire[num_target_wires]) for _ in range(num_bitstrings)]
     ops_identity = ops + [resource_rep(qp_ops.I)] * int(2**num_control_wires - num_bitstrings)
 
     n_columns = (
@@ -422,7 +421,7 @@ def _qrom_decomposition(
     bitstrings, control_wires, target_wires, work_wires, clean
 ):  # pylint: disable=unused-argument, too-many-arguments
     if len(control_wires) == 0:
-        BasisState(bitstrings[0, :], wires=target_wires)
+        MultiX(bitstrings[0, :], wires=target_wires)
         return
 
     n_select_work_wires = _calculate_n_select_work_wires(
@@ -473,7 +472,7 @@ def _measurement_uncompute(work_wire, ctrl_wires, targets, product):
 
     m2 = pauli_measure("Z", [work_wire])
     cond(m2 == 1, X)(wires=work_wire)
-    cond(m2 == 1, BasisState)(state=product, wires=targets)
+    cond(m2 == 1, MultiX)(product, wires=targets)
 
 
 def _measurement_qrom_inner(controls, targets, bitstrings):
@@ -619,12 +618,12 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments,unused-ar
     L = 2 ** ceil_log2(num_bitstrings)
 
     if L <= 1 and n_extra == 0:
-        return {BasisState(Bool[num_target_wires], Wire[num_target_wires]): 1}
+        return {MultiX(Bool[num_target_wires], Wire[num_target_wires]): 1}
 
     if L == 2 and n_extra == 0:
         return {
-            BasisState(Bool[num_target_wires], Wire[num_target_wires]): 1,
-            ctrl(BasisState(Bool[num_target_wires], Wire[num_target_wires]), Wire[1]): 1,
+            MultiX(Bool[num_target_wires], Wire[num_target_wires]): 1,
+            ctrl(MultiX(Bool[num_target_wires], Wire[num_target_wires]), Wire[1]): 1,
         }
 
     # Without extra wires the load uses the cheaper 4-quarter outer iterator; with extra wires
@@ -633,7 +632,7 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments,unused-ar
     num_cz = num_ands  # CZ correction per uncomputation
 
     # TemporaryAND counts are exact
-    # CNOTs, PauliX gates and BasisState ops are an approximation
+    # CNOTs, PauliX gates and MultiX ops are an approximation
     flag = _flag_resources(n_extra, num_target_wires)
     resources = {
         TemporaryAND: num_ands + flag.get(TemporaryAND, 0),
@@ -645,7 +644,7 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments,unused-ar
         PauliMeasure("X" * (num_target_wires + 1), wires=Wire[num_target_wires + 1]): num_ands,
         CZ: num_cz,
         CNOT: L - 1,
-        BasisState(Bool[num_target_wires], Wire[num_target_wires]): L,
+        MultiX(Bool[num_target_wires], Wire[num_target_wires]): L,
         X: L + flag.get(X, 0),
         ctrl(X(Wire[1]), control=Wire[1], control_values=Bool[1]): 1,
     }
@@ -800,7 +799,7 @@ def _qrom_measurement_decomposition(
         padded[:L] = bitstrings
         base = padded[0]
         # Fanout the base bitstring onto the target register, controlled on the flag.
-        ctrl(BasisState(base, wires=target_wires), control=flag)
+        ctrl(MultiX(base, wires=target_wires), control=flag)
         bitstrings = np.bitwise_xor(padded, base)
         controls = _interleave_controls(active_wires[:n_active], core_work, head=flag)
         _measurement_qrom_inner(controls, list(target_wires), bitstrings)
@@ -818,17 +817,17 @@ def _qrom_measurement_decomposition(
         L = next_pow2
 
     if L == 1:
-        BasisState(bitstrings[0], target_wires)
+        MultiX(bitstrings[0], target_wires)
         return
 
     if L == 2:
-        BasisState(bitstrings[0], target_wires)
+        MultiX(bitstrings[0], target_wires)
         diff = np.bitwise_xor(bitstrings[0], bitstrings[1])
-        ctrl(BasisState(diff, wires=target_wires), control=control_wires[0])
+        ctrl(MultiX(diff, wires=target_wires), control=control_wires[0])
         return
 
     # Load base bitstring
-    BasisState(bitstrings[0], target_wires)
+    MultiX(bitstrings[0], target_wires)
 
     # Build interleaved controls: [in[0], in[1], work[0], in[2], work[1], ...]
     controls = _interleave_controls(control_wires, work_wires)
@@ -859,7 +858,7 @@ def _qrom_unary_iteration_resources(
     K = len(bitstrings)
     num_target_wires = len(target_wires)
 
-    basis_rep = BasisState(Bool[num_target_wires], Wire[num_target_wires])
+    basis_rep = MultiX(Bool[num_target_wires], Wire[num_target_wires])
     cbasis_rep = ctrl(basis_rep, control=Wire[1])
     if c == 0:
         return {basis_rep: 1}
@@ -915,7 +914,7 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires):
     @for_loop(K - 1)
     def loop(k):
         # 1. load bitstrings[k], controlled on the flag circuit
-        ctrl(BasisState(bitstrings[k], target_wires), control=[flag])
+        ctrl(MultiX(bitstrings[k], target_wires), control=[flag])
 
         # 2. transition address k -> k+1
         # a is the MSB-first index of least-significant 0 bit of k
@@ -967,7 +966,7 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires):
     loop()  # pylint: disable=no-value-for-parameter
 
     # Load last bit string
-    ctrl(BasisState(bitstrings[K - 1], target_wires), control=[flag])
+    ctrl(MultiX(bitstrings[K - 1], target_wires), control=[flag])
 
     # closing ladder of right elbows for address K-1; control values depend on the bits of K-1
     closing_bits = [(K - 1 >> (c - 1 - b)) & 1 for b in range(c)]
@@ -988,17 +987,17 @@ def _qrom_unary_iteration(
 
     if num_controls == 0:
         # Simply load unique bit string
-        BasisState(bitstrings[0], target_wires)
+        MultiX(bitstrings[0], target_wires)
         return
 
     if num_controls == 1:
         if len(bitstrings) == 1:
             # One bit string to be applied
-            ctrl(BasisState(bitstrings[0], target_wires), control=control_wires, control_values=[0])
+            ctrl(MultiX(bitstrings[0], target_wires), control=control_wires, control_values=[0])
             return
         # Two bit strings to be applied. Load the first unconditionally and control-load the diff
-        BasisState(bitstrings[0], target_wires)
-        ctrl(BasisState((bitstrings[0] + bitstrings[1]) % 2, target_wires), control=control_wires)
+        MultiX(bitstrings[0], target_wires)
+        ctrl(MultiX((bitstrings[0] + bitstrings[1]) % 2, target_wires), control=control_wires)
         return
 
     # Compute unary iteration wires
