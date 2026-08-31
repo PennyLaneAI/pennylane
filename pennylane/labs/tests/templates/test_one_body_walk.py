@@ -296,7 +296,7 @@ class TestOneBodyWalk:
 
     @pytest.mark.parametrize("register", ["prep_wires", "system_wires", "work_wires"])
     def test_wrong_register_size_raises(self, register):
-        """Each register must have the size reported by one_body_walk_wires."""
+        """Test that each register must have the size reported by one_body_walk_wires."""
         req = one_body_walk_wires(2, 2)
         n_prep, n_sys, n_work = req["prep_wires"], req["system_wires"], req["work_wires"]
         prep = list(range(n_prep))
