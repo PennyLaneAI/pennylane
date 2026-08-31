@@ -28,9 +28,9 @@ def uniform_prep_ops(n_states, target_wires, work_wires):
 
         \frac{1}{\sqrt{n_\text{states}}} \sum_{i=0}^{n_\text{states}-1} |i\rangle
 
-    Uses ``Hadamard`` gates when ``n_states`` is a power of two, otherwise the
-    amplitude-amplification circuit of `arXiv:1805.03662
-    <https://arxiv.org/abs/1805.03662>`_ (Figure 12).
+    Applies a layer of Hadamard gates when ``n_states`` is a power of two.
+    Otherwise, uses the amplitude-amplification circuit described in
+    Figure 12 of `arXiv:1805.03662 <https://arxiv.org/abs/1805.03662>`_.
 
     Args:
         n_states (int): the number of states to prepare.
