@@ -113,7 +113,8 @@ def one_body_walk(op_matrix, alias_sampling_precision, prep_wires, system_wires,
         vmat = qp.math.concatenate([-vmat[:, :1], vmat[:, 1:]], axis=1)
 
     dmat = qp.math.diag([(-1.0) ** i for i in range(norbs)])
-    unitary_matrix = dmat @ vmat @ dmat
+    col = dmat if qp.math.linalg.det(vmat) > 0 else qp.math.concatenate([-dmat[:1], dmat[1:]])
+    unitary_matrix = vmat * chk[:, None] * col[None, :]
     absmu = qp.math.abs(mu)
     signs = qp.math.where(absmu > 0, qp.math.sign(mu), 1.0)
 
