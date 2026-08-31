@@ -12,10 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Abstract base class for TCDQ (Train Classical, Deploy Quantum) simulators.
-
-This module defines the contract that lets a loss function consume an
-estimator from any simulator, including ones defined outside PennyLane, as
-long as the estimator declares a compatible :class:`ObservableAlgebra`.
 """
 
 from abc import ABC, abstractmethod
