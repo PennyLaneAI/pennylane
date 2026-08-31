@@ -30,11 +30,7 @@ import pennylane as qp
 from pennylane import math
 from pennylane.allocation import allocate
 from pennylane.core.operator import Operator, abstractify
-from pennylane.decomposition import (
-    add_decomps,
-    change_op_basis_resource_rep,
-    register_resources,
-)
+from pennylane.decomposition import add_decomps, change_op_basis_resource_rep, register_resources
 from pennylane.decomposition.decomposition_rule import DecompCollection, list_decomps
 from pennylane.decomposition.resources import resolve_work_wire_type
 from pennylane.decomposition.symbolic_decomposition import self_adjoint
@@ -43,7 +39,6 @@ from pennylane.ops.mid_measure.pauli_measure import PauliMeasure, pauli_measure
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
 from pennylane.ops.op_math.controlled2 import Controlled2, ControlledOp2
-from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
 from pennylane.ops.qubit import X, Y, Z
@@ -58,7 +53,7 @@ from .controlled import (
     custom_ctrl_dispatch,
 )
 from .decompositions.controlled_decompositions import (
-    augment_with_allocation,
+    _wrap_mcx_rule_w_alloc,
     controlled_two_qubit_unitary_rule,
     ctrl_decomp_bisect_rule,
     decompose_mcx_many_workers,
@@ -269,9 +264,9 @@ def _to_general_c_qu(U, wires, control_values, work_wires, work_wire_type, **_):
 
 add_decomps(
     ControlledQubitUnitary,
-    flip_zero_control2(ctrl_decomp_bisect_rule),
-    flip_zero_control2(single_ctrl_decomp_zyz_rule),
-    flip_zero_control2(multi_control_decomp_zyz_rule),
+    ctrl_decomp_bisect_rule,
+    single_ctrl_decomp_zyz_rule,
+    multi_control_decomp_zyz_rule,
     controlled_two_qubit_unitary_rule,
     _to_general_c_qu,
 )
@@ -1516,25 +1511,25 @@ def _list_mcx_no_work_wire_decomps(op: MultiControlledX):
     if len(op.wires) == 2:
         return [mcx_to_cnot_or_toffoli]
     if len(op.wires) == 3:
-        elbow_rule = augment_with_allocation(decompose_mcx_two_controls_elbows, 1, "zeroed")
+        elbow_rule = _wrap_mcx_rule_w_alloc(decompose_mcx_two_controls_elbows, 1, "zeroed")
         return [mcx_to_cnot_or_toffoli, elbow_rule]
     return [
-        augment_with_allocation(
+        _wrap_mcx_rule_w_alloc(
             decompose_mcx_many_workers,
             len(op.control_wires) - 2,
             "zeroed",
             "many_zeroed_workers",
         ),
-        augment_with_allocation(
+        _wrap_mcx_rule_w_alloc(
             decompose_mcx_many_workers,
             len(op.control_wires) - 2,
             "borrowed",
             "many_borrowed_workers",
         ),
-        augment_with_allocation(decompose_mcx_two_workers, 2, "zeroed", "two_zeroed_workers"),
-        augment_with_allocation(decompose_mcx_two_workers, 2, "borrowed", "two_borrowed_workers"),
-        augment_with_allocation(decompose_mcx_one_worker, 1, "zeroed", "one_zeroed_worker"),
-        augment_with_allocation(decompose_mcx_one_worker, 1, "borrowed", "one_borrowed_worker"),
+        _wrap_mcx_rule_w_alloc(decompose_mcx_two_workers, 2, "zeroed", "two_zeroed_workers"),
+        _wrap_mcx_rule_w_alloc(decompose_mcx_two_workers, 2, "borrowed", "two_borrowed_workers"),
+        _wrap_mcx_rule_w_alloc(decompose_mcx_one_worker, 1, "zeroed", "one_zeroed_worker"),
+        _wrap_mcx_rule_w_alloc(decompose_mcx_one_worker, 1, "borrowed", "one_borrowed_worker"),
         decompose_mcx_with_no_worker,
     ]
 
