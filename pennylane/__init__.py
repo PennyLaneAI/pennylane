@@ -211,7 +211,6 @@ from pennylane.backline import (
     Coprocessor,
     CoprocessorFunction,
     Endpoint,
-    Node,
 )
 from pennylane.backline.runtime import declare as runtime_declare
 from pennylane.backline.runtime import runtime_call
