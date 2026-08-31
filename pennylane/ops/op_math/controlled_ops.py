@@ -1652,7 +1652,7 @@ class CRX(Controlled2):
         return qp.math.stack([stack_last(row) for row in matrix], axis=-2)
 
 
-def _crx_to_rz_ry_resources(theta, wires):  # pylint: disable=unused-argument
+def _crx_to_rz_ry_resources(phi, wires):  # pylint: disable=unused-argument
     return {qp.RZ: 2, qp.RY: 2, qp.CNOT: 2}
 
 
@@ -1666,7 +1666,7 @@ def _crx_to_rz_ry(phi: TensorLike, wires: WiresLike):
     qp.RZ(-np.pi / 2, wires=wires[1])
 
 
-def _crx_to_rx_cz_resources(theta, wires):  # pylint: disable=unused-argument
+def _crx_to_rx_cz_resources(phi, wires):  # pylint: disable=unused-argument
     return {qp.RX: 2, qp.CZ: 2}
 
 
@@ -1678,7 +1678,7 @@ def _crx_to_rx_cz(phi: TensorLike, wires: WiresLike):
     qp.CZ(wires=wires)
 
 
-def _crx_to_h_crz_resources(theta, wires):  # pylint: disable=unused-argument
+def _crx_to_h_crz_resources(phi, wires):  # pylint: disable=unused-argument
     return {qp.Hadamard: 2, qp.CRZ: 1}
 
 
@@ -1689,7 +1689,7 @@ def _crx_to_h_crz(phi: TensorLike, wires: WiresLike):
     qp.Hadamard(wires=wires[1])
 
 
-def _crx_to_ppr_resources(theta, wires):  # pylint: disable=unused-argument
+def _crx_to_ppr_resources(phi, wires):  # pylint: disable=unused-argument
     return {
         qp.PauliRot(Float, pauli_word="ZX", wires=Wire[2]): 1,
         qp.PauliRot(Float, pauli_word="X", wires=Wire[1]): 1,

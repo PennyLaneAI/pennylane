@@ -17,6 +17,8 @@
 from functools import partial
 from typing import Literal
 
+import numpy as np
+
 import pennylane as qp
 from pennylane import capture, compiler, control_flow, math, ops
 from pennylane.core import queuing
@@ -387,7 +389,7 @@ def _ctrl_two_qubit_unitary_resource(U, wires, control_values, work_wires, work_
 
 
 # Resources are not exact because rotations might be skipped for zero angle(s)
-@register_condition(lambda U, *_, **__: qp.math.ceil_log2(qp.math.shape(U)[0]) > 2)
+@register_condition(lambda U, *_, **__: qp.math.ceil_log2(qp.math.shape(U)[0]) == 2)
 @register_resources(_ctrl_two_qubit_unitary_resource, exact=False)
 def controlled_two_qubit_unitary_rule(U, wires, control_values, work_wires, work_wire_type, **_):
     """A controlled two-qubit unitary is decomposed by applying ctrl to the base decomposition."""
@@ -481,7 +483,7 @@ def mcx_to_cnot_or_toffoli(wires, control_values, *_, **__):
     _x_flips()  # pylint: disable=no-value-for-parameter
 
 
-def _2cx_elbow_explicit_resources(wires, **__):
+def _2cx_elbow_explicit_resources(wires, *_, **__):
     num_ctrl_wires = len(wires) - 1
     return {qp.Elbow: 1, qp.CNOT: 1, qp.adjoint(qp.Elbow(Wire[3])): 1, qp.X: num_ctrl_wires}
 
@@ -797,15 +799,16 @@ def _decompose_mcx_no_worker_resource(wires, *_, **__):
         ops.QubitUnitary(Complex[2, 2], wires=Wire[1]): 2,
         qp.adjoint(ops.QubitUnitary(Complex[2, 2], wires=Wire[1])): 2,
         ops.ctrl(ops.GlobalPhase(Float), Wire[num_control_wires]): 1,
+        ops.X: num_control_wires,
     } | mcx_reps
 
 
 @register_condition(lambda wires, *_, **__: len(wires) > 3)
-@register_resources(_decompose_mcx_no_worker_resource)
+@register_resources(_decompose_mcx_no_worker_resource, exact=False)
 def decompose_mcx_with_no_worker(wires, control_values, *_, **__):
     """Use ctrl_decomp_bisect_md to decompose a multi-controlled X gate with no work wires."""
 
-    U = ops.X.compute_matrix()
+    U = ops.RX.compute_matrix(np.pi)
 
     if compiler.active() or capture.enabled():
         wires = math.array(wires, like="jax")
@@ -817,6 +820,7 @@ def decompose_mcx_with_no_worker(wires, control_values, *_, **__):
 
     _x_flips()  # pylint: disable=no-value-for-parameter
     _ctrl_decomp_bisect_md(U, wires)
+    ops.ctrl(ops.GlobalPhase(-np.pi / 2), control=wires[:-1])
     _x_flips()  # pylint: disable=no-value-for-parameter
 
 
