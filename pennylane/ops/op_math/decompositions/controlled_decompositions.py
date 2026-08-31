@@ -469,7 +469,7 @@ def _2cx_elbow_explicit_condition(wires, control_values, work_wires, work_wire_t
 
 @register_condition(_2cx_elbow_explicit_condition)
 @register_resources(_2cx_elbow_explicit_resources)
-def _2cx_elbow_explicit(wires, control_values, work_wires, work_wire_type="borrowed"):
+def _2cx_elbow_explicit(wires, control_values, work_wires, **_):
     elbow_wires = [wires[0], wires[1], work_wires[0]]
     qp.Elbow(elbow_wires, control_values)
     qp.CNOT([work_wires[0], wires[2]])
@@ -504,9 +504,9 @@ def _mcx_many_workers_resource(wires, control_values, work_wires, work_wire_type
     }
 
 
-# pylint: disable=no-value-for-parameter
 @register_condition(_mcx_many_workers_condition)
 @register_resources(_mcx_many_workers_resource)
+# pylint: disable-next=unused-argument
 def _mcx_many_workers(wires, control_values, work_wires, work_wire_type="borrowed"):
     """Decomposes the multi-controlled PauliX gate using the approach in Lemma 7.2 of
     https://arxiv.org/abs/quant-ph/9503016, which requires a suitably large register of
@@ -537,10 +537,10 @@ def _mcx_many_workers(wires, control_values, work_wires, work_wire_type="borrowe
 
     if work_wire_type == "borrowed":
         ops.Toffoli(wires=[control_wires[0], work_wires[0], target_wire])
-        loop_up()
+        loop_up()  # pylint: disable=no-value-for-parameter
 
     down_gate(wires=[control_wires[-1], control_wires[-2], work_wires[-1]])
-    loop_down()
+    loop_down()  # pylint: disable=no-value-for-parameter
 
     _wires = [control_wires[0], work_wires[0], target_wire]
     qp.ctrl(
@@ -550,11 +550,11 @@ def _mcx_many_workers(wires, control_values, work_wires, work_wire_type="borrowe
         work_wire_type=work_wire_type,
     )
 
-    loop_up()
+    loop_up()  # pylint: disable=no-value-for-parameter
     up_gate(wires=[control_wires[-1], control_wires[-2], work_wires[-1]])
 
     if work_wire_type == "borrowed":
-        loop_down()
+        loop_down()  # pylint: disable=no-value-for-parameter
 
 
 decompose_mcx_many_workers = flip_zero_control(_mcx_many_workers, name="many_explicit_workers")
@@ -678,11 +678,14 @@ def _mcx_one_worker_resource(wires, control_values, work_wires, work_wire_type="
 @register_resources(_mcx_one_worker_resource)
 def _mcx_one_worker(
     wires,
-    control_values,
-    work_wires,
+    control_values=None,
+    # work_wires should never be None here, it's because control_values is an optional
+    # argument that could be None, and everything that follows an optional argument
+    # cannot be positional-only.
+    work_wires=None,
     work_wire_type="zeroed",
+    *,
     _skip_toggle_detection=False,
-    **_,
 ):  # pylint: disable=unused-argument
     r"""
     Synthesise a multi-controlled X gate with :math:`k` controls using :math:`1` auxiliary qubit. It

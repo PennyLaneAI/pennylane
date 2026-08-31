@@ -384,11 +384,7 @@ add_decomps(
 )
 
 
-def _qubit_unitary_resource(base, *_, **__):
-    return {abstractify(base): 1}
-
-
-@register_resources(_qubit_unitary_resource)
+@register_resources(lambda base: {abstractify(base): 1})
 def _adjoint_qubit_unitary(base):
     U = base.U
     U = (
@@ -410,18 +406,16 @@ def _matrix_pow(U, z):
     return qp.math.convert_like(fractional_matrix_power(U, z), U)
 
 
-@register_resources(_qubit_unitary_resource)
-def _pow_qubit_unitary(base, z, **_):
+@register_resources(lambda base, z: {abstractify(base): 1})
+def _pow_qubit_unitary(base, z):
     QubitUnitary(_matrix_pow(base.U, z), wires=base.wires)
 
 
 add_decomps("Pow(QubitUnitary)", _pow_qubit_unitary)
 
 
-# pylint: disable=unused-argument
-def _controlled_qubit_unitary_resource(
-    base, control_wires, control_values, work_wires, work_wire_type, **_
-):
+# pylint: disable-next=unused-argument
+def _ctrl_qubit_unitary_resource(base, control_wires, control_values, work_wires, work_wire_type):
     num_target_wires = len(base.wires)
     num_control_wires = len(control_wires)
     return {
@@ -435,8 +429,8 @@ def _controlled_qubit_unitary_resource(
     }
 
 
-@register_resources(_controlled_qubit_unitary_resource)
-def _controlled_qubit_unitary(base, control_wires, control_values, work_wires, work_wire_type, **_):
+@register_resources(_ctrl_qubit_unitary_resource)
+def _controlled_qubit_unitary(base, control_wires, control_values, work_wires, work_wire_type):
     qp.ControlledQubitUnitary(
         base.U,
         control_wires + base.wires,
@@ -486,9 +480,8 @@ class DiagonalQubitUnitary(Operator2):
         super().__init__(D, wires=wires)
 
     @staticmethod
-    def compute_matrix(
-        D: TensorLike, wires: WiresLike = None
-    ) -> TensorLike:  # pylint: disable=arguments-differ,unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
+    def compute_matrix(D: TensorLike, wires: WiresLike = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -522,9 +515,8 @@ class DiagonalQubitUnitary(Operator2):
         return qp.math.diag(D)
 
     @staticmethod
-    def compute_eigvals(
-        D: TensorLike, wires: WiresLike = None
-    ) -> TensorLike:  # pylint: disable=arguments-differ,unused-argument
+    # pylint: disable-next=arguments-differ,unused-argument
+    def compute_eigvals(D: TensorLike, wires: WiresLike = None) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -627,12 +619,7 @@ def _diagonal_mux_on_aux_decomp(D, wires, **_):
 add_decomps(DiagonalQubitUnitary, _diagonal_qu_decomp, _diagonal_mux_on_aux_decomp)
 
 
-def _diagonal_qubit_unitary_resource(base, *_, **__):
-    diagonal_size = qp.math.shape(base.D)[-1]
-    return {DiagonalQubitUnitary(Complex[diagonal_size], wires=abstractify(base.wires)): 1}
-
-
-@register_resources(_diagonal_qubit_unitary_resource)
+@register_resources(lambda base: {abstractify(base): 1})
 def _adjoint_diagonal_unitary(base):
     DiagonalQubitUnitary(qp.math.conj(base.D), wires=base.wires)
 
@@ -640,7 +627,8 @@ def _adjoint_diagonal_unitary(base):
 add_decomps("Adjoint(DiagonalQubitUnitary)", _adjoint_diagonal_unitary)
 
 
-@register_resources(_diagonal_qubit_unitary_resource)
+# pylint: disable-next=unused-argument
+@register_resources(lambda base, z: {abstractify(base): 1})
 def _pow_diagonal_unitary(base, z):
     DiagonalQubitUnitary(qp.math.cast(base.D, np.complex128) ** z, wires=base.wires)
 
