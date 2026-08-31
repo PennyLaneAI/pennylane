@@ -539,7 +539,6 @@ class TestProperties:
 class TestCapture:
     """Test that a CompositeOp2 subclass integrates with program capture."""
 
-    @pytest.mark.jax
     def test_capture_valid_op(self):
         """Test that a ValidOp can be captured into and reconstructed from jaxpr."""
         import jax
