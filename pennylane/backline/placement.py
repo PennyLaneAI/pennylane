@@ -77,7 +77,7 @@ class Endpoint:
             raise ValueError(f"port must be in 1..65535, got {self.port}")
 
 
-@dataclass(frozen=True, kw_only=False)
+@dataclass(frozen=True, kw_only=True)
 class Node:
     """A node in a backline fabric.
 
@@ -216,7 +216,7 @@ class Node:
             )
 
 
-@dataclass(frozen=True, kw_only=False)
+@dataclass(frozen=True, kw_only=True)
 class Controller(Node):
     """The node that controls the QPU and initiates data transfers.
 
@@ -233,7 +233,7 @@ class Controller(Node):
         name (str, None): A name identifying the controller. Defaults to ``None``, letting the compiler
             derive one from the node's role.
         hardware (str): The hardware the controller executes on. Defaults to ``"cpu"``; other allowed
-            values are ``"gpu"`` and ``"fpga"``. The compiler
+            values are ``"fpga"``. ``"gpu"`` is not accepted as a controller. The compiler
             combines this with the placement's :class:`~.Transport` to select the runtime backend.
         remote (bool): Whether the controller runs on another machine. Defaults to ``False``.
         executor_options (dict, None): Options for the executor to launch for this controller.
@@ -297,7 +297,7 @@ class Controller(Node):
             object.__setattr__(self, "device", _make_device("null.qubit", wires=DEFAULT_WIRES))
 
 
-@dataclass(frozen=True, kw_only=False)
+@dataclass(frozen=True, kw_only=True)
 class Coprocessor(Node):
     """The node that runs a coprocessor function per received message.
 
@@ -319,7 +319,7 @@ class Coprocessor(Node):
         name (str, None): A name identifying the controller. Defaults to ``None``, letting the compiler
             derive one from the node's role.
         hardware (str): The hardware the coprocessing function executes on. Defaults to ``"cpu"``; other allowed values are
-            ``gpu``. ``fpga`` is not currently accepted. The compiler
+            ``gpu``. ``fpga`` is not currently accepted for a coprocessor. The compiler
             combines this with the placement's :class:`~.Transport` to select the runtime backend.
         remote (bool): Whether the controller runs on another machine. Defaults to ``False``.
         coprocessor_fn (str, CoprocessorFunction): The function that processes each received
