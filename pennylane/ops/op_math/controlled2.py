@@ -866,7 +866,7 @@ def _ctrl_abstract(
             work_wire_type=work_wire_type,
         )
 
-    # if control values are all zeroes, first see if we can dispatch to a special type
+    # if control values are all ones, first see if we can dispatch to a special type
     # then run abstractify to promote control values to being boolean if it wasn't
     # turned into a special type.
     empty_cvals = num_zero_control_values == 0
