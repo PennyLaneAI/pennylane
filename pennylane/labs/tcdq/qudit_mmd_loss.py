@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Maximum Mean Discrepancy (MMD) loss for qudit IQP circuits.
+"""Maximum Mean Discrepancy (MMD) loss for qudit circuits.
 
 This module extends :mod:`~pennylane.labs.tcdq.mmd_loss` from qubits to
 qudits. It compares the circuit output to a dataset by sampling observables,
@@ -21,6 +21,11 @@ loss.
 For qudits, the kernel is defined from a graph on one qudit level set. The
 available choices are the cycle graph :math:`C_d` and the complete graph
 :math:`K_d`.
+
+The loss consumes an :class:`~pennylane.labs.tcdq.Estimator` rather than a
+particular simulator, so it works with any
+:class:`~pennylane.labs.tcdq.TCDQSimulator` that provides a Heisenberg-Weyl
+estimator.
 
 For the mathematical construction, see
 `Section IV B of Spectral Born machines: classically trainable quantum generative models for discrete data <https://arxiv.org/abs/2607.06675>`_.
@@ -34,11 +39,9 @@ import jax
 import jax.numpy as jnp
 from jax.typing import ArrayLike
 
-from .qudit_expval_functions import (
-    QuditCircuitConfig,
-    _dims_to_numpy,
-    build_qudit_expval_func,
-)
+from .base import Estimator, ObservableAlgebra
+from .mmd_loss import _resolve_bandwidths, _resolve_wires, _validate_target_data
+from .qudit_iqp import QuditCircuitConfig, _simulator_from_config
 
 
 @dataclass(frozen=True)
@@ -277,10 +280,9 @@ def _unbiased_mmd_squared(  # pylint: disable=too-many-arguments
         "n_ops",
         "n_qudits",
         "dims",
-        "n_samples",
         "wire_tuple",
         "sqrt_loss",
-        "expval_func",
+        "estimator",
         "graph_type",
     ],
 )
@@ -290,15 +292,12 @@ def _compute_qudit_loss_for_bandwidth(  # pylint: disable=too-many-arguments
     eval_key: jnp.ndarray,
     params: jnp.ndarray,
     target_data: jnp.ndarray,
-    init_state_elems: jnp.ndarray | None,
-    init_state_amps: jnp.ndarray | None,
     n_ops: int,
     n_qudits: int,
     dims: tuple[int, ...],
-    n_samples: int,
     wire_tuple: tuple[int, ...],
     sqrt_loss: bool,
-    expval_func: Callable,
+    estimator: Estimator,
     graph_type: str,
 ) -> jnp.ndarray:
     """Estimate one unbiased MMD loss value for a single bandwidth setting."""
@@ -307,14 +306,7 @@ def _compute_qudit_loss_for_bandwidth(  # pylint: disable=too-many-arguments
     )
     m_obs = jnp.zeros_like(l_obs)
 
-    mu_q_hat, cov = expval_func(
-        gates_params=params,
-        observables=(l_obs, m_obs),
-        key=eval_key,
-        n_samples=n_samples,
-        init_state_elems=init_state_elems,
-        init_state_amps=init_state_amps,
-    )
+    mu_q_hat, cov = estimator(params, (l_obs, m_obs), key=eval_key)
 
     l_visible = l_obs[:, list(wire_tuple)]
     dims_visible = tuple(int(dims[w]) for w in wire_tuple)
@@ -322,108 +314,39 @@ def _compute_qudit_loss_for_bandwidth(  # pylint: disable=too-many-arguments
     return _unbiased_mmd_squared(mu_q_hat, cov, target_data, l_visible, dims_visible, sqrt_loss)
 
 
-def build_qudit_mmd_loss(
-    circuit_config: QuditCircuitConfig,
-    mmd_config: QuditMMDConfig,
-) -> Callable:
-    """Build a reusable loss function that computes the qudit graph-kernel MMD.
-
-    The returned callable measures the distance between the qudit circuit's
-    output distribution and an empirical target dataset of dit-strings using
-    the Maximum Mean Discrepancy (MMD) with a graph-based kernel.
-
-    Args:
-        circuit_config (QuditCircuitConfig): Qudit circuit description
-            specifying gate structure, qudit dimension, and sample
-            count. See :class:`~pennylane.labs.tcdq.QuditCircuitConfig`.
-        mmd_config (QuditMMDConfig): MMD hyperparameters including the
-            bandwidth, number of observables, and graph type. See
-            :class:`QuditMMDConfig`.
-
-    Returns:
-        Callable: A function with signature
-        ``loss_fn(params, target_data, key=None)`` that returns either a
-        scalar MMD² estimate (averaged across bandwidths) or a list of
-        per-bandwidth values when ``mmd_config.return_per_bandwidth=True``.
+def _build_qudit_mmd_loss(estimator: Estimator, mmd_config: QuditMMDConfig) -> Callable:
+    """Validate an estimator and build the qudit graph-kernel MMD loss.
 
     Raises:
-        ValueError: If ``circuit_config.n_samples <= 1``.
-        ValueError: If ``mmd_config.n_ops < 1``.
-        ValueError: If ``mmd_config.bandwidth`` is empty.
-        ValueError: If ``mmd_config.wires`` contains duplicates or indices
-            outside ``[0, n_qudits)``.
-
-    **Example**
-
-    >>> import jax
-    >>> import jax.numpy as jnp
-    >>> from pennylane.labs.tcdq import QuditCircuitConfig, QuditMMDConfig, build_qudit_mmd_loss
-    >>> circuit_config = QuditCircuitConfig(
-    ...     dims=3,
-    ...     n_qudits=2,
-    ...     gates={0: [[1, 0]], 1: [[0, 1]]},
-    ...     n_samples=512,
-    ...     key=jax.random.PRNGKey(0),
-    ... )
-    >>> mmd_config = QuditMMDConfig(bandwidth=[0.3, 1.0], n_ops=32)
-    >>> loss_fn = build_qudit_mmd_loss(circuit_config, mmd_config)
-    >>> params = jnp.array([0.2, -0.1])
-    >>> target_data = jnp.array([[0, 0], [1, 0], [0, 1], [1, 1]], dtype=jnp.int32)
-    >>> loss = loss_fn(params, target_data, key=jax.random.PRNGKey(123))
-    >>> loss.shape
-    ()
-
-    .. seealso::
-
-        :func:`~pennylane.labs.tcdq.build_qudit_expval_func`,
-        `Section IV B of Spectral Born machines: classically trainable quantum generative models for discrete data <https://arxiv.org/abs/2607.06675>`_.
+        TypeError: If ``estimator`` does not measure Heisenberg-Weyl observables.
+        ValueError: If the MMD hyperparameters are invalid.
     """
-    n_samples = circuit_config.n_samples
-    if n_samples <= 1:
-        raise ValueError("n_samples must be greater than 1")
+    if not isinstance(estimator, Estimator):
+        raise TypeError(
+            f"build_qudit_mmd_loss expects a tcdq Estimator, got {type(estimator).__name__}. "
+            "Build one with TCDQSimulator.build_estimator(name)."
+        )
+
+    if estimator.spec.algebra is not ObservableAlgebra.HEISENBERG_WEYL:
+        raise TypeError(
+            f"The graph-kernel qudit MMD loss samples Heisenberg-Weyl displacement "
+            f"operators, but estimator {estimator.spec.name!r} declares the "
+            f"{estimator.spec.algebra.value!r} observable algebra. It must declare "
+            f"'heisenberg_weyl'."
+        )
 
     if mmd_config.n_ops < 1:
         raise ValueError("n_ops must be at least 1")
 
-    d = circuit_config.dims
-    n_qudits = circuit_config.n_qudits
-    dims = tuple(int(x) for x in _dims_to_numpy(d, n_qudits))
-
-    wire_tuple = tuple(range(n_qudits)) if mmd_config.wires is None else tuple(mmd_config.wires)
-
-    for w in wire_tuple:
-        if w < 0 or w >= n_qudits:
-            raise ValueError(f"Wire index {w} out of range for {n_qudits} qudits")
-
-    if len(set(wire_tuple)) != len(wire_tuple):
-        raise ValueError("wires must not contain duplicates")
-
-    bandwidth_list = (
-        [mmd_config.bandwidth]
-        if isinstance(mmd_config.bandwidth, (int, float))
-        else list(mmd_config.bandwidth)
-    )
-
-    if len(bandwidth_list) == 0:
-        raise ValueError("bandwidth must not be empty")
-
-    expval_config = QuditCircuitConfig(
-        dims=d,
-        n_qudits=n_qudits,
-        gates=circuit_config.gates,
-        observables=None,
-        n_samples=n_samples,
-        key=circuit_config.key,
-        init_state_elems=circuit_config.init_state_elems,
-        init_state_amps=circuit_config.init_state_amps,
-        phase_fn=circuit_config.phase_fn,
-    )
-    expval_func = build_qudit_expval_func(expval_config)
+    dims = estimator.spec.local_dims
+    n_qudits = estimator.spec.n_wires
+    wire_tuple = _resolve_wires(mmd_config.wires, n_qudits)
+    bandwidths = _resolve_bandwidths(mmd_config.bandwidth)
 
     def loss_fn(
         params: ArrayLike,
         target_data: ArrayLike,
-        key: ArrayLike | None = None,
+        key: ArrayLike,
     ) -> jnp.ndarray | list[jnp.ndarray]:
         """Estimate the empirical qudit MMD loss for one parameter setting.
 
@@ -437,58 +360,133 @@ def build_qudit_mmd_loss(
         independent observable batch and circuit-evaluation randomness.
 
         Args:
-            params: Trainable circuit parameters passed to the underlying qudit
-                expectation-value estimator.
-            target_data: Integer array of shape ``(m, n_visible)`` whose rows
-                are empirical samples on the visible wires.
-            key: Optional PRNG key overriding ``circuit_config.key`` for this
-                call.
+            params (ArrayLike): Trainable circuit parameters passed to the
+                underlying estimator.
+            target_data (ArrayLike): Integer array of shape ``(m, n_visible)``
+                whose rows are empirical samples on the visible wires.
+            key (ArrayLike): JAX PRNG key for this call.
 
         Returns:
-            Either a scalar mean across bandwidths or a list of per-bandwidth
-            loss values when ``return_per_bandwidth`` is enabled.
+            jnp.ndarray | list[jnp.ndarray]: Either a scalar mean across
+            bandwidths or a list of per-bandwidth loss values when
+            ``return_per_bandwidth`` is enabled.
         """
-        active_key = circuit_config.key if key is None else key
-        X_data = jnp.asarray(target_data)
-
-        if X_data.ndim != 2:
-            raise ValueError(f"target_data must be 2-D, got shape {X_data.shape}")
-
-        n_visible = len(wire_tuple)
-        if X_data.shape[1] != n_visible:
-            raise ValueError(
-                f"target_data has {X_data.shape[1]} columns but expected "
-                f"{n_visible} (number of visible wires)"
-            )
-
-        if X_data.shape[0] < 2:
-            raise ValueError(f"target_data must have at least 2 samples, got {X_data.shape[0]}")
+        data = _validate_target_data(target_data, len(wire_tuple))
 
         losses: list[jnp.ndarray] = []
-        for bandwidth in bandwidth_list:
-            active_key, obs_key, eval_key = jax.random.split(active_key, 3)
+        for bandwidth in bandwidths:
+            key, obs_key, eval_key = jax.random.split(key, 3)
 
-            loss_val = _compute_qudit_loss_for_bandwidth(
-                bandwidth=bandwidth,
-                obs_key=obs_key,
-                eval_key=eval_key,
-                params=jnp.asarray(params),
-                target_data=X_data,
-                init_state_elems=circuit_config.init_state_elems,
-                init_state_amps=circuit_config.init_state_amps,
-                n_ops=mmd_config.n_ops,
-                n_qudits=n_qudits,
-                dims=dims,
-                n_samples=n_samples,
-                wire_tuple=wire_tuple,
-                sqrt_loss=mmd_config.sqrt_loss,
-                expval_func=expval_func,
-                graph_type=mmd_config.graph_type,
+            losses.append(
+                _compute_qudit_loss_for_bandwidth(
+                    bandwidth=bandwidth,
+                    obs_key=obs_key,
+                    eval_key=eval_key,
+                    params=jnp.asarray(params),
+                    target_data=data,
+                    n_ops=mmd_config.n_ops,
+                    n_qudits=n_qudits,
+                    dims=dims,
+                    wire_tuple=wire_tuple,
+                    sqrt_loss=mmd_config.sqrt_loss,
+                    estimator=estimator,
+                    graph_type=mmd_config.graph_type,
+                )
             )
-            losses.append(loss_val)
 
         if mmd_config.return_per_bandwidth:
             return losses
         return jnp.mean(jnp.stack(losses))
 
     return loss_fn
+
+
+def build_qudit_mmd_loss(
+    estimator: Estimator | QuditCircuitConfig,
+    mmd_config: QuditMMDConfig,
+) -> Callable:
+    """Build a graph-kernel MMD loss on top of any Heisenberg-Weyl estimator.
+
+    The returned callable measures the distance between a qudit circuit's
+    output distribution and an empirical target dataset of dit-strings, using
+    the Maximum Mean Discrepancy (MMD) with a graph-based kernel.
+
+    Any :class:`~pennylane.labs.tcdq.TCDQSimulator` exposing an estimator that
+    declares the ``HEISENBERG_WEYL`` observable algebra can be used here, not
+    only :class:`~pennylane.labs.tcdq.QuditIQPSimulator`.
+
+    Args:
+        estimator (Estimator): An estimator obtained from
+            :meth:`~pennylane.labs.tcdq.TCDQSimulator.build_estimator`. Passing
+            a :class:`~pennylane.labs.tcdq.QuditCircuitConfig` here is
+            deprecated and supported only for backwards compatibility.
+        mmd_config (QuditMMDConfig): MMD hyperparameters including the
+            bandwidth, number of observables, and graph type. See
+            :class:`QuditMMDConfig`.
+
+    Returns:
+        Callable: A function with signature ``loss_fn(params, target_data, key)``
+        that returns either a scalar MMD² estimate (averaged across bandwidths)
+        or a list of per-bandwidth values when
+        ``mmd_config.return_per_bandwidth=True``.
+
+    Raises:
+        TypeError: If ``estimator`` does not measure Heisenberg-Weyl observables.
+        ValueError: If ``mmd_config.n_ops < 1``, if ``mmd_config.bandwidth`` is
+            empty, or if ``mmd_config.wires`` contains duplicates or indices
+            outside ``[0, n_qudits)``.
+
+    **Example**
+
+    >>> import jax
+    >>> import jax.numpy as jnp
+    >>> from pennylane.labs.tcdq import (
+    ...     QuditIQPSimulator, QuditMMDConfig, build_qudit_mmd_loss
+    ... )
+    >>> sim = QuditIQPSimulator(
+    ...     dims=3,
+    ...     n_qudits=2,
+    ...     gates={0: [[1, 0]], 1: [[0, 1]]},
+    ...     n_samples=512,
+    ...     key=jax.random.PRNGKey(0),
+    ... )
+    >>> mmd_config = QuditMMDConfig(bandwidth=[0.3, 1.0], n_ops=32)
+    >>> loss_fn = build_qudit_mmd_loss(sim.build_estimator("hw_expval"), mmd_config)
+    >>> params = jnp.array([0.2, -0.1])
+    >>> target_data = jnp.array([[0, 0], [1, 0], [0, 1], [1, 1]], dtype=jnp.int32)
+    >>> loss = loss_fn(params, target_data, jax.random.PRNGKey(123))
+    >>> loss.shape
+    ()
+
+    .. seealso::
+
+        :class:`~pennylane.labs.tcdq.QuditIQPSimulator`,
+        `Section IV B of Spectral Born machines: classically trainable quantum generative models for discrete data <https://arxiv.org/abs/2607.06675>`_.
+    """
+    if not isinstance(estimator, QuditCircuitConfig):
+        return _build_qudit_mmd_loss(estimator, mmd_config)
+
+    circuit_config = estimator
+    base_loss_fn = _build_qudit_mmd_loss(
+        _simulator_from_config(circuit_config).build_estimator("hw_expval"), mmd_config
+    )
+
+    def legacy_loss_fn(
+        params: ArrayLike,
+        target_data: ArrayLike,
+        key: ArrayLike | None = None,
+    ) -> jnp.ndarray | list[jnp.ndarray]:
+        """Estimate the qudit MMD loss, defaulting the key to the circuit config's.
+
+        Args:
+            params (ArrayLike): Trainable circuit parameters.
+            target_data (ArrayLike): Integer array of shape ``(m, n_visible)``.
+            key (ArrayLike | None): Optional PRNG key overriding
+                ``circuit_config.key`` for this call.
+
+        Returns:
+            jnp.ndarray | list[jnp.ndarray]: The MMD estimate.
+        """
+        return base_loss_fn(params, target_data, circuit_config.key if key is None else key)
+
+    return legacy_loss_fn

@@ -25,6 +25,8 @@ import jax.numpy as jnp
 import numpy as np
 from jax.typing import ArrayLike
 
+from .base import ObservableAlgebra, TCDQSimulator, estimator
+
 
 @dataclass
 class CircuitConfig:  # pylint: disable=too-many-instance-attributes
@@ -33,6 +35,13 @@ class CircuitConfig:  # pylint: disable=too-many-instance-attributes
     This dataclass bundles all the information needed to build an expectation-value
     estimator via :func:`build_expval_func`: the gate structure, the observables to
     measure, sampling parameters, and an optional non-standard initial state.
+
+    .. warning::
+
+        ``CircuitConfig`` and :func:`build_expval_func` are superseded by
+        :class:`IQPSimulator`, which exposes the same estimator through the
+        :class:`~pennylane.labs.tcdq.TCDQSimulator` interface. They are kept
+        for backwards compatibility and will be removed.
 
     Args:
         gates (dict[int, list[list[int]]]): Circuit structure mapping each
@@ -206,17 +215,196 @@ def _core_expval_execution(
     return expvals, variances
 
 
+class IQPSimulator(TCDQSimulator):
+    r"""Qubit IQP circuit with classical Monte Carlo estimation of Pauli expectation values.
+
+    An instantaneous quantum polynomial (IQP) circuit has the form
+    :math:`U(\mathbf{\theta}) = H^{\otimes n} D(\mathbf{\theta}) H^{\otimes n}`,
+    where :math:`D(\mathbf{\theta})` is a diagonal phase unitary built from
+    Pauli-:math:`Z` tensor-product generators. This simulator estimates Pauli
+    expectation values of such circuits without simulating the full quantum
+    state, by averaging a trigonometric integrand over uniformly random
+    bitstrings.
+
+    Args:
+        gates (dict[int, list[list[int]]]): Circuit structure mapping each
+            trainable parameter index to a list of gates. Each gate is itself a
+            list of qubit indices participating in a Pauli-:math:`Z`
+            tensor-product generator. For example, ``{0: [[0, 1]], 1: [[2]]}``
+            defines two parameters: parameter 0 drives a ZZ gate on qubits 0
+            and 1, and parameter 1 drives a Z gate on qubit 2. Use
+            :func:`~pennylane.labs.tcdq.create_local_gates` or
+            :func:`~pennylane.labs.tcdq.create_lattice_gates` to generate these
+            automatically.
+        n_qubits (int): Total number of qubits in the circuit.
+        n_samples (int): Default number of random bitstrings drawn per estimate.
+        key (ArrayLike): Default JAX PRNG key for random bitstring generation.
+        init_state (tuple[ArrayLike, ArrayLike] | None): Optional
+            ``(elements, amplitudes)`` pair describing a custom initial state,
+            where ``elements`` is a binary array of shape ``(N, n_qubits)``
+            listing the computational-basis states with non-zero amplitude and
+            ``amplitudes`` is a complex array of shape ``(N,)``. Defaults to
+            ``None``, the uniform superposition
+            :math:`H^{\otimes n}\vert 0 \rangle`.
+        phase_fn (Callable | None): Optional diagonal phase layer
+            ``phase_fn(params, bitstring)`` applied on top of the gates.
+            Defaults to ``None``.
+
+    Raises:
+        ValueError: If ``n_samples`` is not greater than 1.
+
+    **Example**
+
+    >>> import jax
+    >>> import jax.numpy as jnp
+    >>> from pennylane.labs.tcdq import IQPSimulator, create_local_gates
+    >>> gates = create_local_gates(n_qubits=4, max_weight=2)
+    >>> sim = IQPSimulator(
+    ...     gates=gates, n_qubits=4, n_samples=5000, key=jax.random.PRNGKey(0)
+    ... )
+    >>> expval = sim.build_estimator("pauli_expval")
+    >>> observables = jnp.array([[3, 3, 0, 0], [0, 0, 3, 3]])  # ZZ on (0,1) and (2,3)
+    >>> values, variances = expval(jnp.zeros(len(gates)), observables)
+    >>> values.shape
+    (2,)
+
+    .. seealso::
+
+        :class:`~pennylane.labs.tcdq.TCDQSimulator`,
+        :func:`~pennylane.labs.tcdq.build_mmd_loss`,
+        `IQPopt: Fast optimization of instantaneous quantum polynomial circuits in JAX <https://arxiv.org/abs/2501.04776>`_
+    """
+
+    # pylint: disable=too-many-arguments
+    def __init__(
+        self,
+        gates: dict[int, list[list[int]]],
+        n_qubits: int,
+        n_samples: int,
+        key: ArrayLike,
+        init_state: tuple[ArrayLike, ArrayLike] | None = None,
+        phase_fn: Callable | None = None,
+    ):
+        if n_samples <= 1:
+            raise ValueError("n_samples must be greater than 1")
+
+        self.gates = gates
+        self.n_qubits = n_qubits
+        self.n_samples = n_samples
+        self.key = key
+        self.init_state = init_state
+        self.phase_fn = phase_fn
+
+    @property
+    def local_dims(self) -> tuple[int, ...]:
+        """tuple[int, ...]: Local dimension of each wire, all equal to 2."""
+        return (2,) * self.n_qubits
+
+    @estimator("pauli_expval", algebra=ObservableAlgebra.PAULI)
+    def _build_pauli_expval(self) -> Callable:
+        """Build the Monte Carlo estimator for Pauli expectation values.
+
+        Returns:
+            Callable: A function with signature::
+
+                expval(params, observables, *, key=None, n_samples=None,
+                       phase_params=None) -> (values, variances)
+        """
+        generators, param_map = _parse_generator_dict(self.gates, self.n_qubits)
+        default_samples = _compute_samples(self.key, self.n_samples, self.n_qubits)
+        init_elems, init_amps = self.init_state if self.init_state is not None else (None, None)
+
+        vmapped_phase_func = None
+        if self.phase_fn is not None:
+            phase_fn = self.phase_fn
+
+            def compute_phase(p_params, sample, b_flips):
+                return phase_fn(p_params, sample) - phase_fn(p_params, (sample + b_flips) % 2)
+
+            vmapped_phase_func = jax.vmap(
+                jax.vmap(compute_phase, in_axes=(None, 0, None)), in_axes=(None, None, 0)
+            )
+
+        # pylint: disable=too-many-arguments
+        def pauli_expval(
+            params: ArrayLike,
+            observables: ArrayLike,
+            *,
+            key: ArrayLike | None = None,
+            n_samples: int | None = None,
+            phase_params: ArrayLike | None = None,
+            init_state: tuple[ArrayLike, ArrayLike] | None = None,
+        ) -> tuple[jnp.ndarray, jnp.ndarray]:
+            """Estimate Pauli expectation values and the variance of each mean.
+
+            Args:
+                params (ArrayLike): Trainable gate parameters, shape ``(n_params,)``.
+                observables (ArrayLike): Integer-encoded Pauli operators of shape
+                    ``(n_obs, n_qubits)`` with ``I=0, X=1, Y=2, Z=3``.
+                key (ArrayLike | None): Override for the bitstring sampling key.
+                n_samples (int | None): Override for the number of bitstrings.
+                phase_params (ArrayLike | None): Trainable parameters of the
+                    phase layer, required when the simulator has a ``phase_fn``.
+                init_state (tuple[ArrayLike, ArrayLike] | None): Override for the
+                    simulator's ``init_state``.
+
+            Returns:
+                tuple[jnp.ndarray, jnp.ndarray]: ``(values, variances)``, both
+                real arrays of shape ``(n_obs,)``. ``variances`` are the
+                variances of the mean estimators.
+            """
+            if key is None and n_samples is None:
+                samples = default_samples
+            else:
+                samples = _compute_samples(
+                    self.key if key is None else key,
+                    self.n_samples if n_samples is None else n_samples,
+                    self.n_qubits,
+                )
+
+            elems, amps = (init_elems, init_amps) if init_state is None else init_state
+
+            return _core_expval_execution(
+                params,
+                phase_params,
+                samples,
+                _prep_observables(observables),
+                elems,
+                amps,
+                generators,
+                param_map,
+                vmapped_phase_func,
+            )
+
+        return pauli_expval
+
+
+def _simulator_from_config(config: CircuitConfig) -> IQPSimulator:
+    """Build an :class:`IQPSimulator` from a legacy :class:`CircuitConfig`."""
+    elems, amps = config.init_state_elems, config.init_state_amps
+
+    return IQPSimulator(
+        gates=config.gates,
+        n_qubits=config.n_qubits,
+        n_samples=config.n_samples,
+        key=config.key,
+        init_state=None if elems is None or amps is None else (elems, amps),
+        phase_fn=config.phase_fn,
+    )
+
+
 def build_expval_func(
     config: CircuitConfig,
 ) -> Callable:
     """Build an estimator for Pauli expectation values of a qubit IQP circuit.
 
-    Returns a pure function that estimates the expectation value of each Pauli
-    observable specified in ``config.observables`` or passed at call time.
+    .. warning::
 
-    The returned function captures precomputed data from ``config`` (generator
-    matrices, default samples, preprocessed observables) so that repeated
-    evaluations with different parameters are fast.
+        This function is superseded by :class:`IQPSimulator`. Prefer
+        ``IQPSimulator(...).build_estimator("pauli_expval")``, which returns an
+        :class:`~pennylane.labs.tcdq.Estimator` carrying the metadata that loss
+        functions use to check compatibility. This function is kept for
+        backwards compatibility and will be removed.
 
     Args:
         config (CircuitConfig): Full circuit description including gate
@@ -262,25 +450,10 @@ def build_expval_func(
 
     .. seealso::
 
-        :class:`~pennylane.labs.tcdq.CircuitConfig`,
+        :class:`~pennylane.labs.tcdq.IQPSimulator`,
         `IQPopt: Fast optimization of instantaneous quantum polynomial circuits in JAX <https://arxiv.org/abs/2501.04776>`_
     """
-    generators, param_map = _parse_generator_dict(config.gates, config.n_qubits)
-
-    vmapped_phase_func = None
-    if config.phase_fn is not None:
-
-        def compute_phase(p_params, sample, b_flips):
-            return config.phase_fn(p_params, sample) - config.phase_fn(
-                p_params, (sample + b_flips) % 2
-            )
-
-        vmapped_phase_func = jax.vmap(
-            jax.vmap(compute_phase, in_axes=(None, 0, None)), in_axes=(None, None, 0)
-        )
-
-    default_samples = _compute_samples(config.key, config.n_samples, config.n_qubits)
-    default_obs_data = None if config.observables is None else _prep_observables(config.observables)
+    base_estimator = _simulator_from_config(config).build_estimator("pauli_expval")
 
     # pylint: disable=too-many-arguments
     def expval_execution(
@@ -294,12 +467,8 @@ def build_expval_func(
     ) -> tuple[jnp.ndarray, jnp.ndarray]:
         """Execute the estimator with optional runtime overrides.
 
-        This closure captures the precomputed matrices and defaults from the
-        CircuitConfig, while allowing dynamic injection of new parameters,
-        observables, or sampling configurations at execution time.
-
         Args:
-            gates_params (ArrayLike): Trainable parameters $\\theta$ for the circuit gates.
+            gates_params (ArrayLike): Trainable parameters for the circuit gates.
             phase_fn_params (ArrayLike | None, optional): Trainable parameters for the
                 custom phase function. Defaults to None.
             observables (ArrayLike | None, optional): Runtime override for the Pauli
@@ -309,44 +478,34 @@ def build_expval_func(
             n_samples (int | None, optional): Runtime override for the number of
                 samples. Defaults to None.
             init_state_elems (ArrayLike | None, optional): Runtime override for the
-                discrete elements of the initial state (X). Defaults to None.
+                discrete elements of the initial state. Defaults to None.
             init_state_amps (ArrayLike | None, optional): Runtime override for the
-                continuous amplitudes of the initial state (P). Defaults to None.
+                continuous amplitudes of the initial state. Defaults to None.
 
         Returns:
             tuple[jnp.ndarray, jnp.ndarray]: Estimated expectation values and
             the estimated variances of those estimators.
-        """
-        if key is not None or n_samples is not None:
-            _key = key if key is not None else config.key
-            _n = n_samples if n_samples is not None else config.n_samples
-            samples = _compute_samples(_key, _n, config.n_qubits)
-        else:
-            samples = default_samples
 
-        if observables is not None:
-            obs_data = _prep_observables(observables)
-        elif default_obs_data is not None:
-            obs_data = default_obs_data
-        else:
+        Raises:
+            ValueError: If no observables are available.
+        """
+        obs = config.observables if observables is None else observables
+        if obs is None:
             raise ValueError(
                 "No observables specified. Provide them in CircuitConfig "
                 "or pass at call time via the observables argument."
             )
 
-        state_elems = config.init_state_elems if init_state_elems is None else init_state_elems
-        state_amps = config.init_state_amps if init_state_amps is None else init_state_amps
+        elems = config.init_state_elems if init_state_elems is None else init_state_elems
+        amps = config.init_state_amps if init_state_amps is None else init_state_amps
 
-        return _core_expval_execution(
+        return base_estimator(
             gates_params,
-            phase_fn_params,
-            samples,
-            obs_data,
-            state_elems,
-            state_amps,
-            generators,
-            param_map,
-            vmapped_phase_func,
+            obs,
+            key=key,
+            n_samples=n_samples,
+            phase_params=phase_fn_params,
+            init_state=None if elems is None or amps is None else (elems, amps),
         )
 
     return expval_execution

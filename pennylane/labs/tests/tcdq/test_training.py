@@ -15,7 +15,7 @@
 
 import pytest
 
-from pennylane.labs.tcdq.expval_functions import CircuitConfig, build_expval_func
+from pennylane.labs.tcdq.iqp import CircuitConfig, build_expval_func
 from pennylane.labs.tcdq.training import TrainingOptions, train, training_iterator
 
 jax = pytest.importorskip("jax")

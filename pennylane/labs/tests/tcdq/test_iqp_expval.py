@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.labs.tcdq.expval_functions import (
+from pennylane.labs.tcdq.iqp import (
     CircuitConfig,
     _parse_generator_dict,
     build_expval_func,

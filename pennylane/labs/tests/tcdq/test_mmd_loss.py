@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.labs.tcdq.expval_functions import CircuitConfig
+from pennylane.labs.tcdq.iqp import CircuitConfig
 from pennylane.labs.tcdq.mmd_loss import (
     MMDConfig,
     _binary_ops_to_pauli_int,

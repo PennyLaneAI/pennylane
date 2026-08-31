@@ -22,7 +22,7 @@ import pytest
 from scipy.linalg import expm
 
 import pennylane as qp
-from pennylane.labs.tcdq.qudit_expval_functions import (
+from pennylane.labs.tcdq.qudit_iqp import (
     QuditCircuitConfig,
     _dims_to_numpy,
     _parse_qudit_generator_dict,

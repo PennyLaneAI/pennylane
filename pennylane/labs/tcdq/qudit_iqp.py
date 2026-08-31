@@ -13,9 +13,8 @@
 # limitations under the License.
 """Expectation-value estimator for qudit IQP circuits.
 
-This module extends :mod:`~pennylane.labs.tcdq.expval_functions` from qubits
-to qudits. It estimates Heisenberg-Weyl moments without building the full
-quantum state.
+This module extends :mod:`~pennylane.labs.tcdq.iqp` from qubits to qudits. It
+estimates Heisenberg-Weyl moments without building the full quantum state.
 
 The estimator samples random dit-strings, evaluates an observable-dependent
 phase, evaluates a circuit-dependent phase difference, and averages the
@@ -37,6 +36,8 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 from jax.typing import ArrayLike
+
+from .base import ObservableAlgebra, TCDQSimulator, estimator
 
 
 @dataclass
@@ -64,6 +65,14 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
     This dataclass collects the circuit data needed by
     :func:`build_qudit_expval_func`. It is the qudit analogue of
     :class:`~pennylane.labs.tcdq.CircuitConfig`.
+
+    .. warning::
+
+        ``QuditCircuitConfig`` and :func:`build_qudit_expval_func` are
+        superseded by :class:`QuditIQPSimulator`, which exposes the same
+        estimator through the :class:`~pennylane.labs.tcdq.TCDQSimulator`
+        interface. They are kept for backwards compatibility and will be
+        removed.
 
     Args:
         dims (int | Sequence[int]): Local qudit dimension(s). Either a single
@@ -107,7 +116,7 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
     >>> import jax.numpy as jnp
     >>> from pennylane.labs.tcdq import QuditCircuitConfig
     >>> config = QuditCircuitConfig(
-    ...     d=3,
+    ...     dims=3,
     ...     n_qudits=4,
     ...     gates={0: [[1, 0, 0, 0]], 1: [[0, 1, 0, 0]], 2: [[1, 1, 0, 0]]},
     ...     observables=(
@@ -342,17 +351,6 @@ def _build_weight_group(
     )
 
 
-class _PrecomputedObsData(NamedTuple):
-    """Bundled precomputed observable data from the factory."""
-
-    l_vecs: jnp.ndarray
-    n_obs: int
-    l_f: jnp.ndarray
-    m_f: jnp.ndarray
-    weight_data: list
-    obs_phase_matrix: jnp.ndarray
-
-
 def _obs_phase_matrix(
     samples: jnp.ndarray, m_f: jnp.ndarray, l_f: jnp.ndarray, dims: ArrayLike
 ) -> jnp.ndarray:
@@ -476,18 +474,218 @@ def _compute_mc_statistics(
     return expvals, cov
 
 
-def build_qudit_expval_func(  # pylint: disable=too-many-statements
+class QuditIQPSimulator(TCDQSimulator):
+    r"""Qudit IQP circuit with Monte Carlo estimation of Heisenberg-Weyl moments.
+
+    The qudit analogue of :class:`~pennylane.labs.tcdq.IQPSimulator`. A qudit
+    IQP circuit has the form
+    :math:`U(\mathbf{\theta}) = (F^{\otimes n})^\dagger D(\mathbf{\theta}) F^{\otimes n}`,
+    where :math:`F` is the Fourier transform and :math:`D(\mathbf{\theta})` is
+    a diagonal phase unitary. This simulator estimates the complex expectation
+    values :math:`\langle O(\mathbf{l}, \mathbf{m}) \rangle` of Heisenberg-Weyl
+    displacement operators by averaging over randomly sampled dit-strings.
+
+    Args:
+        dims (int | Sequence[int]): Local qudit dimension(s). Either a single
+            ``int`` broadcast to every qudit, or a sequence of length
+            ``n_qudits`` giving a distinct dimension :math:`d_j` per qudit.
+        n_qudits (int): Number of qudits in the circuit.
+        gates (dict[int, list[list[int]]]): Circuit structure mapping each
+            trainable-parameter index to a list of generator vectors. Each
+            generator vector has length ``n_qudits`` with integer entries in
+            :math:`\{0, \ldots, d_j-1\}` specifying the power of :math:`Z` on
+            each qudit.
+        n_samples (int): Default number of random dit-strings drawn per estimate.
+        key (ArrayLike): Default JAX PRNG key for dit-string generation.
+        init_state (tuple[ArrayLike, ArrayLike] | None): Optional
+            ``(elements, amplitudes)`` pair describing a custom initial state,
+            where ``elements`` has shape ``(N, n_qudits)`` with entries in
+            :math:`\{0, \ldots, d-1\}` and ``amplitudes`` is complex of shape
+            ``(N,)``. Defaults to ``None``, the uniform superposition via the
+            Fourier transform.
+        phase_fn (Callable | None): Optional diagonal phase layer
+            ``phase_fn(params, ditstring)``. Defaults to ``None``.
+
+    Raises:
+        ValueError: If ``n_samples`` is not greater than 1.
+
+    **Example**
+
+    >>> import jax
+    >>> import jax.numpy as jnp
+    >>> from pennylane.labs.tcdq import QuditIQPSimulator
+    >>> sim = QuditIQPSimulator(
+    ...     dims=3,
+    ...     n_qudits=2,
+    ...     gates={0: [[1, 0]], 1: [[0, 1]]},
+    ...     n_samples=512,
+    ...     key=jax.random.PRNGKey(0),
+    ... )
+    >>> expval = sim.build_estimator("hw_expval")
+    >>> l_vecs = jnp.array([[1, 0], [0, 1]], dtype=jnp.int32)
+    >>> values, cov = expval(jnp.array([0.2, -0.1]), (l_vecs, jnp.zeros_like(l_vecs)))
+    >>> values.shape, cov.shape
+    ((2,), (2, 2, 2))
+
+    .. seealso::
+
+        :class:`~pennylane.labs.tcdq.TCDQSimulator`,
+        :func:`~pennylane.labs.tcdq.build_qudit_mmd_loss`,
+        `Spectral Born machines: classically trainable quantum generative models for discrete data <https://arxiv.org/abs/2607.06675>`_
+    """
+
+    # pylint: disable=too-many-arguments
+    def __init__(
+        self,
+        dims: int | Sequence[int],
+        n_qudits: int,
+        gates: dict[int, list[list[int]]],
+        n_samples: int,
+        key: ArrayLike,
+        init_state: tuple[ArrayLike, ArrayLike] | None = None,
+        phase_fn: Callable | None = None,
+    ):
+        if n_samples <= 1:
+            raise ValueError("n_samples must be greater than 1")
+
+        self.gates = gates
+        self._dims = _dims_to_numpy(dims, n_qudits)
+        self.n_samples = n_samples
+        self.key = key
+        self.init_state = init_state
+        self.phase_fn = phase_fn
+
+    @property
+    def local_dims(self) -> tuple[int, ...]:
+        """tuple[int, ...]: Local dimension of each qudit."""
+        return tuple(int(x) for x in self._dims)
+
+    @estimator("hw_expval", algebra=ObservableAlgebra.HEISENBERG_WEYL)
+    def _build_hw_expval(self) -> Callable:
+        """Build the Monte Carlo estimator for Heisenberg-Weyl moments.
+
+        Returns:
+            Callable: A function with signature::
+
+                expval(params, observables, *, key=None, n_samples=None,
+                       phase_params=None) -> (values, cov)
+        """
+        dims = self._dims
+        n = len(dims)
+        generators, param_map = _parse_qudit_generator_dict(self.gates, n)
+        gen_np, pm_np = np.array(generators), np.array(param_map)
+        gate_weights = np.sum(gen_np != 0, axis=1)
+        default_samples = _compute_qudit_samples(self.key, self.n_samples, n, dims)
+        init_elems, init_amps = self.init_state if self.init_state is not None else (None, None)
+
+        vmapped_phase_func = None
+        if self.phase_fn is not None:
+            dims_j = jnp.asarray(dims)
+            phase_fn = self.phase_fn
+
+            def compute_phase_diff(p_params, sample, l_vec):
+                return phase_fn(p_params, sample) - phase_fn(p_params, (sample - l_vec) % dims_j)
+
+            vmapped_phase_func = jax.vmap(
+                jax.vmap(compute_phase_diff, in_axes=(None, 0, None)),
+                in_axes=(None, None, 0),
+            )
+
+        # pylint: disable=too-many-arguments
+        def hw_expval(
+            params: ArrayLike,
+            observables: tuple[ArrayLike, ArrayLike],
+            *,
+            key: ArrayLike | None = None,
+            n_samples: int | None = None,
+            phase_params: ArrayLike | None = None,
+            init_state: tuple[ArrayLike, ArrayLike] | None = None,
+        ) -> tuple[jnp.ndarray, jnp.ndarray]:
+            """Estimate Heisenberg-Weyl moments and their real-imaginary covariance.
+
+            Args:
+                params (ArrayLike): Trainable gate parameters, shape ``(n_params,)``.
+                observables (tuple[ArrayLike, ArrayLike]): Pair ``(l_vecs, m_vecs)``
+                    of integer arrays of shape ``(n_obs, n_qudits)``.
+                key (ArrayLike | None): Override for the dit-string sampling key.
+                n_samples (int | None): Override for the number of dit-strings.
+                phase_params (ArrayLike | None): Trainable parameters of the
+                    phase layer, required when the simulator has a ``phase_fn``.
+                init_state (tuple[ArrayLike, ArrayLike] | None): Override for the
+                    simulator's ``init_state``.
+
+            Returns:
+                tuple[jnp.ndarray, jnp.ndarray]: ``(values, cov)`` where ``values``
+                is complex of shape ``(n_obs,)`` and ``cov`` is real of shape
+                ``(n_obs, 2, 2)``, the real-imaginary covariance of each mean.
+            """
+            l_vecs = jnp.array(observables[0], dtype=jnp.int32)
+            l_f = l_vecs.astype(jnp.float32)
+            m_f = jnp.array(observables[1], dtype=jnp.int32).astype(jnp.float32)
+            n_obs = l_vecs.shape[0]
+
+            if key is None and n_samples is None:
+                samples, n_eff = default_samples, self.n_samples
+            else:
+                n_eff = self.n_samples if n_samples is None else n_samples
+                samples = _compute_qudit_samples(self.key if key is None else key, n_eff, n, dims)
+
+            weight_data = _build_all_weight_groups(
+                gen_np, pm_np, gate_weights, samples, l_vecs, dims
+            )
+            accumulated_phase_diffs = _accumulate_phase_diffs(
+                params,
+                weight_data,
+                n_obs,
+                n_eff,
+                vmapped_phase_func,
+                phase_params,
+                samples,
+                l_vecs,
+            )
+
+            elems, amps = (init_elems, init_amps) if init_state is None else init_state
+
+            integrand = _obs_phase_matrix(samples, m_f, l_f, dims) * jnp.exp(
+                1j * accumulated_phase_diffs
+            )
+            if elems is not None and amps is not None:
+                integrand = integrand * _compute_initial_state_correction(
+                    samples, l_f, elems, amps, dims
+                )
+
+            return _compute_mc_statistics(integrand, n_eff)
+
+        return hw_expval
+
+
+def _simulator_from_config(config: QuditCircuitConfig) -> QuditIQPSimulator:
+    """Build a :class:`QuditIQPSimulator` from a legacy :class:`QuditCircuitConfig`."""
+    elems, amps = config.init_state_elems, config.init_state_amps
+
+    return QuditIQPSimulator(
+        dims=config.dims,
+        n_qudits=config.n_qudits,
+        gates=config.gates,
+        n_samples=config.n_samples,
+        key=config.key,
+        init_state=None if elems is None or amps is None else (elems, amps),
+        phase_fn=config.phase_fn,
+    )
+
+
+def build_qudit_expval_func(
     config: QuditCircuitConfig,
 ) -> Callable:
     """Build an estimator for expectation values of a qudit IQP circuit.
 
-    Returns a pure function that estimates the complex expectation value
-    :math:`\\langle O(\\mathbf{l}, \\mathbf{m}) \\rangle` for each
-    observable by averaging over randomly sampled dit-strings.
+    .. warning::
 
-    The returned function captures precomputed data from ``config`` (generator
-    matrices, default samples, preprocessed observables) so that repeated
-    evaluations with different parameters are fast.
+        This function is superseded by :class:`QuditIQPSimulator`. Prefer
+        ``QuditIQPSimulator(...).build_estimator("hw_expval")``, which returns
+        an :class:`~pennylane.labs.tcdq.Estimator` carrying the metadata that
+        loss functions use to check compatibility. This function is kept for
+        backwards compatibility and will be removed.
 
     Args:
         config (QuditCircuitConfig): Full circuit description including gate
@@ -525,7 +723,7 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements
     >>> import jax.numpy as jnp
     >>> from pennylane.labs.tcdq import QuditCircuitConfig, build_qudit_expval_func
     >>> config = QuditCircuitConfig(
-    ...     d=3,
+    ...     dims=3,
     ...     n_qudits=2,
     ...     gates={0: [[1, 0]], 1: [[0, 1]]},
     ...     n_samples=512,
@@ -543,49 +741,10 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements
 
     .. seealso::
 
+        :class:`~pennylane.labs.tcdq.QuditIQPSimulator`,
         `Spectral Born machines: classically trainable quantum generative models for discrete data <https://arxiv.org/pdf/2607.06675>`_.
     """
-    generators, param_map = _parse_qudit_generator_dict(config.gates, config.n_qudits)
-
-    n = config.n_qudits
-    dims = _dims_to_numpy(config.dims, n)
-    default_samples = _compute_qudit_samples(config.key, config.n_samples, n, dims)
-
-    vmapped_phase_func = None
-    if config.phase_fn is not None:
-        dims_j = jnp.asarray(dims)
-
-        def compute_phase_diff(p_params, sample, l_vec):
-            return config.phase_fn(p_params, sample) - config.phase_fn(
-                p_params, (sample - l_vec) % dims_j
-            )
-
-        vmapped_phase_func = jax.vmap(
-            jax.vmap(compute_phase_diff, in_axes=(None, 0, None)),
-            in_axes=(None, None, 0),
-        )
-
-    gen_np, pm_np = np.array(generators), np.array(param_map)
-    gate_weights = np.sum(gen_np != 0, axis=1)
-
-    if config.observables is not None:
-        l_vecs = jnp.array(config.observables[0], dtype=jnp.int32)
-        m_vecs = jnp.array(config.observables[1], dtype=jnp.int32)
-        l_f = l_vecs.astype(jnp.float32)
-        m_f = m_vecs.astype(jnp.float32)
-        n_obs = l_vecs.shape[0]
-        defaults = _PrecomputedObsData(
-            l_vecs=l_vecs,
-            n_obs=n_obs,
-            l_f=l_f,
-            m_f=m_f,
-            weight_data=_build_all_weight_groups(
-                gen_np, pm_np, gate_weights, default_samples, l_vecs, dims
-            ),
-            obs_phase_matrix=_obs_phase_matrix(default_samples, m_f, l_f, dims),
-        )
-    else:
-        defaults = None
+    base_estimator = _simulator_from_config(config).build_estimator("hw_expval")
 
     def qudit_expval_batched(
         gates_params: ArrayLike,
@@ -621,50 +780,27 @@ def build_qudit_expval_func(  # pylint: disable=too-many-statements
             ``expvals`` are the estimated complex expectation values, shape
             ``(n_obs,)``, and ``cov`` stores the real-imaginary covariance matrices
             of the mean estimator, shape ``(n_obs, 2, 2)``.
+
+        Raises:
+            ValueError: If no observables are available.
         """
-        if observables is not None:
-            l_vecs = jnp.array(observables[0], dtype=jnp.int32)
-            n_obs = l_vecs.shape[0]
-            l_f = l_vecs.astype(jnp.float32)
-            m_f = jnp.array(observables[1], dtype=jnp.int32).astype(jnp.float32)
-        elif defaults is not None:
-            l_vecs, n_obs, l_f, m_f = defaults.l_vecs, defaults.n_obs, defaults.l_f, defaults.m_f
-        else:
+        obs = config.observables if observables is None else observables
+        if obs is None:
             raise ValueError(
                 "No observables specified. Provide them in QuditCircuitConfig "
                 "or pass at call time via the observables argument."
             )
 
-        if key is not None or n_samples is not None:
-            _key = key if key is not None else config.key
-            _n = n_samples if n_samples is not None else config.n_samples
-            samples = _compute_qudit_samples(_key, _n, n, dims)
-        else:
-            _n = config.n_samples
-            samples = default_samples
+        elems = config.init_state_elems if init_state_elems is None else init_state_elems
+        amps = config.init_state_amps if init_state_amps is None else init_state_amps
 
-        use_cached = (
-            key is None and n_samples is None and observables is None and defaults is not None
+        return base_estimator(
+            gates_params,
+            obs,
+            key=key,
+            n_samples=n_samples,
+            phase_params=phase_fn_params,
+            init_state=None if elems is None or amps is None else (elems, amps),
         )
-        if use_cached:
-            obs_pm = defaults.obs_phase_matrix
-            w_data = defaults.weight_data
-        else:
-            obs_pm = _obs_phase_matrix(samples, m_f, l_f, dims)
-            w_data = _build_all_weight_groups(gen_np, pm_np, gate_weights, samples, l_vecs, dims)
-
-        accumulated_phase_diffs = _accumulate_phase_diffs(
-            gates_params, w_data, n_obs, _n, vmapped_phase_func, phase_fn_params, samples, l_vecs
-        )
-
-        state_elems = config.init_state_elems if init_state_elems is None else init_state_elems
-        state_amps = config.init_state_amps if init_state_amps is None else init_state_amps
-
-        integrand = obs_pm * jnp.exp(1j * accumulated_phase_diffs)
-        if state_elems is not None and state_amps is not None:
-            H = _compute_initial_state_correction(samples, l_f, state_elems, state_amps, dims)
-            integrand = integrand * H
-
-        return _compute_mc_statistics(integrand, _n)
 
     return qudit_expval_batched

@@ -11,11 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Maximum Mean Discrepancy (MMD) loss for qubit IQP circuits.
+"""Maximum Mean Discrepancy (MMD) loss for qubit circuits.
 
-This module compares the output of a qubit IQP circuit to a dataset of
+This module compares the output of a qubit circuit to a dataset of
 bitstrings. It samples Pauli-Z observables from an RBF (Radial Basis Function) kernel distribution,
 estimates their expectation values, and combines the results into an MMD loss.
+
+The loss consumes an :class:`~pennylane.labs.tcdq.Estimator` rather than a
+particular simulator, so it works with any
+:class:`~pennylane.labs.tcdq.TCDQSimulator` that provides a Pauli-Z capable
+estimator over qubits.
 """
 
 from collections.abc import Callable, Sequence
@@ -27,7 +32,8 @@ import jax.numpy as jnp
 import numpy as np
 from jax.typing import ArrayLike
 
-from .expval_functions import CircuitConfig, build_expval_func
+from .base import Estimator, ObservableAlgebra
+from .iqp import CircuitConfig, _simulator_from_config
 
 
 @dataclass(frozen=True)
@@ -110,6 +116,69 @@ def median_heuristic(samples: ArrayLike) -> float:
     return 1.0
 
 
+def _resolve_wires(wires: Sequence[int] | None, n_wires: int) -> tuple[int, ...]:
+    """Normalize and validate the visible-wire selection.
+
+    Args:
+        wires (Sequence[int] | None): Requested visible wires, or ``None`` for all.
+        n_wires (int): Total number of wires available.
+
+    Returns:
+        tuple[int, ...]: The validated visible wires.
+
+    Raises:
+        ValueError: If a wire index is out of range or repeated.
+    """
+    wire_tuple = tuple(range(n_wires)) if wires is None else tuple(wires)
+
+    for wire in wire_tuple:
+        if wire < 0 or wire >= n_wires:
+            raise ValueError(f"Wire index {wire} out of range for {n_wires} wires")
+
+    if len(set(wire_tuple)) != len(wire_tuple):
+        raise ValueError("wires must not contain duplicates")
+
+    return wire_tuple
+
+
+def _resolve_bandwidths(bandwidth: float | Sequence[float]) -> list[float]:
+    """Normalize the bandwidth field to a non-empty list.
+
+    Raises:
+        ValueError: If the resulting list is empty.
+    """
+    bandwidths = [bandwidth] if isinstance(bandwidth, (int, float)) else list(bandwidth)
+
+    if len(bandwidths) == 0:
+        raise ValueError("bandwidth must not be empty")
+
+    return bandwidths
+
+
+def _validate_target_data(target_data: ArrayLike, n_visible: int) -> jnp.ndarray:
+    """Check that a target dataset matches the visible wires.
+
+    Raises:
+        ValueError: If the dataset is not 2-D, has the wrong number of columns,
+            or has fewer than two samples.
+    """
+    data = jnp.asarray(target_data)
+
+    if data.ndim != 2:
+        raise ValueError(f"target_data must be 2-D, got shape {data.shape}")
+
+    if data.shape[1] != n_visible:
+        raise ValueError(
+            f"target_data has {data.shape[1]} columns but expected "
+            f"{n_visible} (number of visible wires)"
+        )
+
+    if data.shape[0] < 2:
+        raise ValueError(f"target_data must have at least 2 samples, got {data.shape[0]}")
+
+    return data
+
+
 @jax.jit
 def _binary_ops_to_pauli_int(binary_ops: ArrayLike) -> jnp.ndarray:
     """Map binary operator entries to Pauli integer codes (0 → I, 1 → Z=3)."""
@@ -139,51 +208,32 @@ def _compute_single_mmd(
 # pylint: disable=too-many-arguments
 @partial(
     jax.jit,
-    static_argnames=[
-        "n_ops",
-        "n_qubits",
-        "wire_tuple",
-        "effective_samples",
-        "sqrt_loss",
-        "expval_func",
-    ],
+    static_argnames=["n_ops", "n_wires", "wire_tuple", "sqrt_loss", "estimator"],
 )
-def _compute_loss_for_bandwidth(
+def _loss_for_bandwidth(
     bandwidth: float,
-    subkey: jnp.ndarray,
+    obs_key: jnp.ndarray,
     eval_key: jnp.ndarray,
     params: jnp.ndarray,
     target_data: jnp.ndarray,
-    effective_init_state_elems: jnp.ndarray | None,
-    effective_init_state_amps: jnp.ndarray | None,
     n_ops: int,
-    n_qubits: int,
+    n_wires: int,
     wire_tuple: tuple[int, ...],
-    effective_samples: int,
     sqrt_loss: bool,
-    expval_func: Callable,
-):
+    estimator: Estimator,
+) -> jnp.ndarray:
     """JIT-compiled step that fuses observable generation and expectation value math."""
-    wire_list = list(wire_tuple)
-
     p_mmd = (1 - jnp.exp(-1 / (2 * bandwidth**2))) / 2
     visible_ops = jnp.array(
-        jax.random.binomial(subkey, 1, p_mmd, shape=(n_ops, len(wire_tuple))),
+        jax.random.binomial(obs_key, 1, p_mmd, shape=(n_ops, len(wire_tuple))),
         dtype=jnp.float64,
     )
 
-    all_ops = jnp.zeros((n_ops, n_qubits), dtype=jnp.float64)
-    all_ops = all_ops.at[:, wire_list].set(visible_ops)
+    all_ops = jnp.zeros((n_ops, n_wires), dtype=jnp.float64)
+    all_ops = all_ops.at[:, list(wire_tuple)].set(visible_ops)
 
-    pauli_obs = _binary_ops_to_pauli_int(all_ops)
-
-    model_expvals, model_expvals_variances = expval_func(
-        gates_params=params,
-        observables=pauli_obs,
-        key=eval_key,
-        n_samples=effective_samples,
-        init_state_elems=effective_init_state_elems,
-        init_state_amps=effective_init_state_amps,
+    model_expvals, model_expvals_variances = estimator(
+        params, _binary_ops_to_pauli_int(all_ops), key=eval_key
     )
 
     return _compute_single_mmd(
@@ -195,6 +245,138 @@ def _compute_loss_for_bandwidth(
     )
 
 
+def build_mmd_loss(estimator: Estimator, mmd_config: MMDConfig) -> Callable:
+    """Build an RBF-kernel MMD loss on top of any Pauli-Z capable estimator.
+
+    The returned loss measures how far a circuit's output distribution over
+    bitstrings is from an empirical target dataset. For each bandwidth it
+    samples Pauli-Z observables from the RBF kernel's spectral distribution,
+    asks ``estimator`` for their expectation values, and combines the results
+    into an unbiased MMD estimate.
+
+    Any :class:`~pennylane.labs.tcdq.TCDQSimulator` exposing an estimator that
+    declares the ``PAULI_Z`` or ``PAULI`` observable algebra over qubits can be
+    used here, not only :class:`~pennylane.labs.tcdq.IQPSimulator`.
+
+    Args:
+        estimator (Estimator): An estimator obtained from
+            :meth:`~pennylane.labs.tcdq.TCDQSimulator.build_estimator`.
+        mmd_config (MMDConfig): Hyperparameters for the MMD computation,
+            including the RBF bandwidth and number of observables.
+
+    Returns:
+        Callable: A function with signature ``loss_fn(params, target_data, key)``
+        returning a scalar MMD² estimate averaged over all bandwidths, or a list
+        of per-bandwidth estimates when ``mmd_config.return_per_bandwidth=True``.
+
+    Raises:
+        TypeError: If ``estimator`` is not an
+            :class:`~pennylane.labs.tcdq.Estimator`, or does not measure
+            Pauli-Z observables.
+        ValueError: If the estimator is not defined over qubits, if
+            ``mmd_config.n_ops < 1``, if ``mmd_config.bandwidth`` is empty, or
+            if ``mmd_config.wires`` contains duplicates or out-of-range indices.
+
+    **Example**
+
+    >>> import jax
+    >>> import jax.numpy as jnp
+    >>> import numpy as np
+    >>> from pennylane.labs.tcdq import (
+    ...     IQPSimulator, MMDConfig, build_mmd_loss, create_local_gates, median_heuristic
+    ... )
+    >>> gates = create_local_gates(4, max_weight=2)
+    >>> sim = IQPSimulator(
+    ...     gates=gates, n_qubits=4, n_samples=1000, key=jax.random.PRNGKey(0)
+    ... )
+    >>> target = np.random.binomial(1, 0.5, size=(100, 4))
+    >>> loss_fn = build_mmd_loss(
+    ...     sim.build_estimator("pauli_expval"),
+    ...     MMDConfig(bandwidth=median_heuristic(target), n_ops=50),
+    ... )
+    >>> loss_fn(jnp.zeros(len(gates)), target, jax.random.PRNGKey(1)).shape
+    ()
+
+    .. seealso::
+
+        :class:`~pennylane.labs.tcdq.IQPSimulator`,
+        `Section 3.3 of IQPopt: Fast optimization of instantaneous quantum polynomial circuits in JAX <https://arxiv.org/pdf/2501.04776>`_
+    """
+    if not isinstance(estimator, Estimator):
+        raise TypeError(
+            f"build_mmd_loss expects a tcdq Estimator, got {type(estimator).__name__}. "
+            "Build one with TCDQSimulator.build_estimator(name)."
+        )
+
+    if estimator.spec.algebra not in (ObservableAlgebra.PAULI_Z, ObservableAlgebra.PAULI):
+        raise TypeError(
+            f"The RBF-kernel MMD loss samples Pauli-Z observables, but estimator "
+            f"{estimator.spec.name!r} declares the {estimator.spec.algebra.value!r} "
+            f"observable algebra. It must declare 'pauli_z' or 'pauli'."
+        )
+
+    local_dims = estimator.spec.local_dims
+    if set(local_dims) != {2}:
+        raise ValueError(
+            f"The RBF-kernel MMD loss is defined over qubits, but estimator "
+            f"{estimator.spec.name!r} has local dimensions {local_dims}."
+        )
+
+    if mmd_config.n_ops < 1:
+        raise ValueError("n_ops must be at least 1")
+
+    n_wires = estimator.spec.n_wires
+    wire_tuple = _resolve_wires(mmd_config.wires, n_wires)
+    bandwidths = _resolve_bandwidths(mmd_config.bandwidth)
+
+    def loss_fn(
+        params: ArrayLike,
+        target_data: ArrayLike,
+        key: ArrayLike,
+    ) -> jnp.ndarray | list[jnp.ndarray]:
+        """Estimate the empirical MMD loss for one parameter setting.
+
+        Args:
+            params (ArrayLike): Trainable circuit parameters.
+            target_data (ArrayLike): Binary dataset of shape ``(m, n_visible)``
+                whose rows are bitstring samples on the visible wires.
+            key (ArrayLike): JAX PRNG key. Each bandwidth consumes independent
+                randomness for observable sampling and circuit evaluation.
+
+        Returns:
+            jnp.ndarray | list[jnp.ndarray]: A scalar mean across bandwidths, or
+            a list of per-bandwidth values when ``return_per_bandwidth`` is set.
+
+        Raises:
+            ValueError: If ``target_data`` does not match the visible wires.
+        """
+        data = _validate_target_data(target_data, len(wire_tuple))
+        losses = []
+
+        for bandwidth in bandwidths:
+            key, obs_key, eval_key = jax.random.split(key, 3)
+            losses.append(
+                _loss_for_bandwidth(
+                    bandwidth=bandwidth,
+                    obs_key=obs_key,
+                    eval_key=eval_key,
+                    params=params,
+                    target_data=data,
+                    n_ops=mmd_config.n_ops,
+                    n_wires=n_wires,
+                    wire_tuple=wire_tuple,
+                    sqrt_loss=mmd_config.sqrt_loss,
+                    estimator=estimator,
+                )
+            )
+
+        if mmd_config.return_per_bandwidth:
+            return losses
+        return jnp.mean(jnp.stack(losses))
+
+    return loss_fn
+
+
 def mmd_loss(
     params: ArrayLike,
     circuit_config: CircuitConfig,
@@ -204,8 +386,12 @@ def mmd_loss(
 ) -> jnp.ndarray | list[jnp.ndarray]:
     """Compute the MMD loss between a qubit IQP circuit and a target dataset.
 
-    This function estimates how far the circuit's output distribution is from
-    the empirical distribution defined by ``target_data``.
+    .. warning::
+
+        This function is superseded by :func:`build_mmd_loss`, which accepts an
+        estimator from any :class:`~pennylane.labs.tcdq.TCDQSimulator` instead
+        of a fixed :class:`~pennylane.labs.tcdq.CircuitConfig`. It is kept for
+        backwards compatibility and will be removed.
 
     Args:
         params (ArrayLike): Trainable circuit parameters, shape ``(n_params,)``.
@@ -226,7 +412,8 @@ def mmd_loss(
         ``mmd_config.return_per_bandwidth=True``.
 
     Raises:
-        ValueError: If ``circuit_config.n_samples <= 1``.
+        ValueError: If ``circuit_config.n_samples <= 1``, or if the MMD
+            hyperparameters or ``target_data`` are invalid.
 
     **Example**
 
@@ -251,48 +438,9 @@ def mmd_loss(
 
     .. seealso::
 
-        :func:`~pennylane.labs.tcdq.build_expval_func`,
+        :func:`build_mmd_loss`,
         `Section 3.3 of IQPopt: Fast optimization of instantaneous quantum polynomial circuits in JAX <https://arxiv.org/pdf/2501.04776>`_
     """
-    effective_samples = circuit_config.n_samples
-    if effective_samples <= 1:
-        raise ValueError("n_samples must be greater than 1")
-
-    active_key = circuit_config.key if key is None else key
-    n_qubits = circuit_config.n_qubits
-
-    wire_tuple = tuple(range(n_qubits)) if mmd_config.wires is None else tuple(mmd_config.wires)
-
-    bandwidth_list = (
-        [mmd_config.bandwidth]
-        if isinstance(mmd_config.bandwidth, (int, float))
-        else list(mmd_config.bandwidth)
-    )
-    target_data = jnp.asarray(target_data)
-
-    expval_func = build_expval_func(circuit_config)
-    losses = []
-
-    for bandwidth in bandwidth_list:
-        active_key, subkey, eval_key = jax.random.split(active_key, 3)
-
-        loss_val = _compute_loss_for_bandwidth(
-            bandwidth=bandwidth,
-            subkey=subkey,
-            eval_key=eval_key,
-            params=params,
-            target_data=target_data,
-            effective_init_state_elems=circuit_config.init_state_elems,
-            effective_init_state_amps=circuit_config.init_state_amps,
-            n_ops=mmd_config.n_ops,
-            n_qubits=n_qubits,
-            wire_tuple=wire_tuple,
-            effective_samples=effective_samples,
-            sqrt_loss=mmd_config.sqrt_loss,
-            expval_func=expval_func,
-        )
-        losses.append(loss_val)
-
-    if mmd_config.return_per_bandwidth:
-        return losses
-    return jnp.mean(jnp.stack(losses))
+    estimator = _simulator_from_config(circuit_config).build_estimator("pauli_expval")
+    loss_fn = build_mmd_loss(estimator, mmd_config)
+    return loss_fn(params, target_data, circuit_config.key if key is None else key)
