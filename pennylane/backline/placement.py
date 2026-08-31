@@ -232,7 +232,7 @@ class Controller(Node):
     Keyword Args:
         name (str, None): A name identifying the controller. Defaults to ``None``, letting the compiler
             derive one from the node's role.
-        hardware (Hardware): The hardware the controller executes on. Defaults to ``"cpu"``; other allowed
+        hardware (str): The hardware the controller executes on. Defaults to ``"cpu"``; other allowed
             values are ``"gpu"`` and ``"fpga"``. The compiler
             combines this with the placement's :class:`~.Transport` to select the runtime backend.
         remote (bool): Whether the controller runs on another machine. Defaults to ``False``.
@@ -318,7 +318,7 @@ class Coprocessor(Node):
     Keyword Args:
         name (str, None): A name identifying the controller. Defaults to ``None``, letting the compiler
             derive one from the node's role.
-        hardware (Hardware): The hardware the coprocessing function executes on. Defaults to ``"cpu"``; other allowed values are
+        hardware (str): The hardware the coprocessing function executes on. Defaults to ``"cpu"``; other allowed values are
             ``gpu``. ``fpga`` is not currently accepted. The compiler
             combines this with the placement's :class:`~.Transport` to select the runtime backend.
         remote (bool): Whether the controller runs on another machine. Defaults to ``False``.
