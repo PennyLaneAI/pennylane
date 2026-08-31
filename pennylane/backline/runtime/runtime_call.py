@@ -78,12 +78,12 @@ def runtime_call(target, *args, signature=None, out_bytes=0, address=None, libra
     Args:
         target (str, CSignature): the declared symbol name, or its complete signature
         *args: one argument per declared parameter except ``out``, in declaration order
-        signature (str | CSignature | None): the signature for a symbol not yet declared, using
+        signature (str, CSignature, None): the signature for a symbol not yet declared, using
             the ``"(parameter, ...) -> result"`` form or a :class:`CSignature`
-        out_bytes (int | Sequence[int]): the compile-time size of each ``out`` buffer
-        address (str | None): the executor to dispatch to, as ``"host:port"``. ``None`` makes the
+        out_bytes (int, Sequence[int]): the compile-time size of each ``out`` buffer
+        address (str, None): the executor to dispatch to, as ``"host:port"``. ``None`` makes the
                               call local (in-process).
-        library (str | None): for a local call, the shared library exporting the symbol, recorded so
+        library (str, None): for a local call, the shared library exporting the symbol, recorded so
                               the driver links it. Overrides the library set at
                               :func:`~pennylane.runtime_declare` time. Ignored for a dispatched
                               call.
