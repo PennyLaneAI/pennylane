@@ -191,8 +191,8 @@ an ``out`` buffer is sized with ``out_bytes=`` and returned by :func:`~pennylane
 
     ~runtime_call
     ~runtime_declare
-    ~pennylane.backline.runtime.CSignature
-    ~pennylane.backline.runtime.CType
+    ~backline.runtime.CSignature
+    ~backline.runtime.CType
 
 **Example**
 
