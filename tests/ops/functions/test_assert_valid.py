@@ -785,7 +785,7 @@ class TestOperator2AssertValid:
             def __init__(self, gamma, wires):
                 super().__init__(gamma, wires=wires)
 
-        class HybridOp(Operator2):
+        class Hybrid(Operator2):
             dynamic_argnames = ("phi",)
             wire_argnames = ("wires",)
             hybrid_argnames = ("ops",)
@@ -795,7 +795,7 @@ class TestOperator2AssertValid:
 
         with pytest.raises(AssertionError, match=r"copied op must be a separate instance"):
             assert_valid(
-                HybridOp(np.pi, wires=0, ops=[0.2, NoCopyOp(0.25, 1), SingleRZ(0.5, 0)]),
+                Hybrid(np.pi, wires=0, ops=[0.2, NoCopyOp(0.25, 1), SingleRZ(0.5, 0)]),
                 skip_pickle=True,
             )
 
