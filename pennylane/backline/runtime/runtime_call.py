@@ -76,7 +76,7 @@ def runtime_call(target, *args, signature=None, out_bytes=0, address=None, libra
     links the shared library that exports it.
 
     Args:
-        target (str | CSignature): the declared symbol name, or its complete signature
+        target (str, CSignature): the declared symbol name, or its complete signature
         *args: one argument per declared parameter except ``out``, in declaration order
         signature (str | CSignature | None): the signature for a symbol not yet declared, using
             the ``"(parameter, ...) -> result"`` form or a :class:`CSignature`
