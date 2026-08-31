@@ -680,6 +680,17 @@ def _list_controlled_decomps(op: ControlledOp2) -> DecompCollection:
     return custom_rules + wrapped_rules + general_rules
 
 
+def _wrap_work_wire_spec(base_rule):
+
+    if isinstance(base_rule._work_wire_spec, dict):
+        return base_rule._work_wire_spec
+
+    def _wrapper(base, *_, **__):
+        return base_rule._work_wire_spec(**base.arguments)
+
+    return _wrapper
+
+
 def _make_controlled_decomp(base_rule: DecompositionRule):
     def _condition_fn(base, **_):
         return base_rule.is_applicable(**base.arguments)
@@ -698,8 +709,8 @@ def _make_controlled_decomp(base_rule: DecompositionRule):
     @register_condition(_condition_fn)
     @register_resources(
         _resource_fn,
-        work_wires=base_rule._work_wire_spec,
-        exact=False,  # TODO:: no reliable way to tell whether control values has 0s.
+        work_wires=_wrap_work_wire_spec(base_rule),
+        exact=False,  # TODO: no reliable way to tell whether control values has 0s.
         name=f"controlled({base_rule.name})",
     )
     def _impl(base, control_wires, control_values, work_wires, work_wire_type):

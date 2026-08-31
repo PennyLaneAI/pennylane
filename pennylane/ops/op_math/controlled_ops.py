@@ -187,9 +187,10 @@ class ControlledQubitUnitary(Controlled2):
         U: TensorLike | AbstractArray,
         wires: WiresLike | AbstractWires,
         control_values=None,
-        unitary_check=False,  # pylint: disable=unused-argument
         work_wires: WiresLike | AbstractWires = (),
+        *,
         work_wire_type: str | None = "borrowed",
+        unitary_check=False,  # pylint: disable=unused-argument
     ):
         num_base_wires = int(qp.math.log2(U.shape[-1]))
         num_control_wires = len(wires) - num_base_wires
