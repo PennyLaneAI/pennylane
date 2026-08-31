@@ -125,7 +125,7 @@ Implicit QEC
 
 If the ``qec_code`` argument is provided to the Backline object, e.g.,
 
-.. codeb-block:: python
+.. code-block:: python
 
     qp.Backline(controller=CPU, coprocessors=[GPU], transport="rdma", qec_code="steane")
 
