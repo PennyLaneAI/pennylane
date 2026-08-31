@@ -1066,7 +1066,13 @@ class TestControlledDecomposition:
         @qp.qjit
         @qp.qnode(qp.device("null.qubit", wires=4))
         def circuit(cvals):
-            custom_rule(base=op, control_wires=[1, 2, 3], control_values=cvals)
+            custom_rule(
+                base=op,
+                control_wires=[1, 2, 3],
+                control_values=cvals,
+                work_wires=[],
+                work_wire_type="borrowed",
+            )
             return qp.probs()
 
         specs = qp.specs(circuit, level="device")([1, 1, 0])
@@ -1093,7 +1099,13 @@ class TestControlledDecomposition:
         op = NonParametricOp(wires=[0])
 
         def circuit():
-            custom_rule(base=op, control_wires=[1, 2, 3], control_values=[1, 1, 0])
+            custom_rule(
+                base=op,
+                control_wires=[1, 2, 3],
+                control_values=[1, 1, 0],
+                work_wires=[],
+                work_wire_type="borrowed",
+            )
 
         # Structured capture must succeed (no fallback to an unrolled Python loop).
         with warnings.catch_warnings():

@@ -826,9 +826,10 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
     )
     def _impl(base, control_wires, control_values, work_wires, work_wire_type):
 
-        wires = list(base.wires) + list(control_wires)
+        wires = list(control_wires) + list(base.wires)
         if compiler.active() or capture.enabled():
             wires = math.array(wires, like="jax")
+            control_values = math.array(control_values, like="jax")
 
         @qp.for_loop(0, len(control_values))
         def _x_flips(i):
