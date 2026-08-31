@@ -59,7 +59,7 @@ class CompositeOp2(Operator2, is_baseclass=True):
         self._pauli_rep = self._build_pauli_rep() if _init_pauli_rep is None else _init_pauli_rep
         for op in self:
             remove_from_program(op)
-    
+
     @property
     def operands(self) -> Sequence[Operator]:
         """The operands of the composite operator."""
