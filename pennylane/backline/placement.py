@@ -229,7 +229,7 @@ class Controller(Node):
         the Catalyst compiler.
 
     Keyword Args:
-        name (str, None): A name identifying the controler. Defaults to ``None``, letting the compiler
+        name (str, None): A name identifying the controller. Defaults to ``None``, letting the compiler
             derive one from the node's role.
         hardware (Hardware): The hardware the controller executes on. Defaults to ``"cpu"``. The compiler
             combines this with the placement's :class:`~.Transport` to select the runtime backend.
@@ -314,7 +314,7 @@ class Coprocessor(Node):
         compiler.
 
     Keyword Args:
-        name (str, None): A name identifying the controler. Defaults to ``None``, letting the compiler
+        name (str, None): A name identifying the controller. Defaults to ``None``, letting the compiler
             derive one from the node's role.
         hardware (Hardware): The hardware the controller executes on. Defaults to ``"cpu"``. The compiler
             combines this with the placement's :class:`~.Transport` to select the runtime backend.
