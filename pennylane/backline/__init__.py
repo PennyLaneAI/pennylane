@@ -15,7 +15,7 @@
 r"""
 .. currentmodule:: pennylane.backline
 
-This module contains functionality for defining and using backlines in PennyLane.
+This module contains functionality for defining and using backline in PennyLane.
 Backline is an open platform for compilation and low-latency execution
 that dynamically connects quantum workloads to heterogenous hardware devices, including
 GPUs, CPUs, FPGAs, and QPUs. For examples and tutorials see the
