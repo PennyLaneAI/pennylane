@@ -25,13 +25,17 @@ import numpy as np
 class CType(Enum):
     """A C type in a :class:`CSignature`.
 
-    Most of these are plain fixed-width scalars. The last four are special:
+    The ``I*``, ``U*``, and ``F*`` members are fixed-width scalar types. Callers can pass Python,
+    NumPy, or JAX scalar values, which are converted to the declared width. Use the lowercase enum
+    values, such as ``"u32"``, in a string signature.
+
+    The last four types are special:
 
     * :attr:`PTR` is an address the runtime hands out and takes back, such as a session handle.
-    * :attr:`STR` is a ``const char *``. It ends up as a constant in the compiled module, so its
-      value has to be known at trace time and cannot come from a traced value.
-    * :attr:`BUF` is the data pointer of an array argument. The length is not implied: if the entry
-      point wants a byte count, declare it as a separate scalar parameter.
+    * :attr:`STR` accepts a Python string or bytes-like value known at trace time. It becomes a
+      NUL-terminated constant in the compiled module.
+    * :attr:`BUF` accepts array data for a local call. Its length is not implied: if the entry point
+      wants a byte count, declare it as a separate scalar parameter.
     * :attr:`OUT` is a buffer the entry point writes. The caller does not pass one: it gives the
       size with ``out_bytes=`` and gets the filled buffer back alongside the result.
 
@@ -126,8 +130,11 @@ class CSignature:
 
     **Example**
 
-    >>> qp.backline.runtime.CSignature.parse("example_run", "(ptr, u32) -> i32")
+    >>> from pennylane.backline.runtime import CSignature, CType
+    >>> CSignature("example_run", (CType.PTR, CType.U32), result=CType.I32)
     CSignature('example_run', (ptr, u32) -> i32)
+
+    Alternatively, :meth:`parse` builds the same object from ``"(ptr, u32) -> i32"``.
     """
 
     symbol: str
@@ -211,6 +218,10 @@ _REGISTRY: dict[str, CSignature] = {}
 def declare(symbol: str, spec: str, library: str | None = None) -> CSignature:
     """Declare the signature of a runtime symbol so it can be called by name.
 
+    ``spec`` lists parameter types in runtime order, followed by an optional result. An ``out``
+    parameter is declared in ``spec`` but omitted from the arguments to
+    :func:`~pennylane.runtime_call`.
+
     Args:
         symbol (str): the C symbol name, as exported by the runtime library
         spec (str): the signature spec, e.g. ``"(ptr, buf, u64) -> i32"``. See :class:`CType`
@@ -221,7 +232,8 @@ def declare(symbol: str, spec: str, library: str | None = None) -> CSignature:
             calling process.
 
     Returns:
-        CSignature: the declared signature, which :func:`~.runtime_call` also takes directly
+        CSignature: the declared signature, which :func:`~pennylane.runtime_call` also takes
+            directly
 
     **Example**
 
@@ -238,7 +250,7 @@ def declare(symbol: str, spec: str, library: str | None = None) -> CSignature:
             qp.runtime_call("example_declared_rounds", session, 1000, address="board:9000")
             return qp.runtime_call("example_local", data, data.size)
 
-    .. seealso:: :func:`~.runtime_call`
+    .. seealso:: :func:`~pennylane.runtime_call`
     """
     signature = CSignature.parse(symbol, spec)
     if library is not None:

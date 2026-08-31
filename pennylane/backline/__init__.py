@@ -176,17 +176,23 @@ Runtime calls
 This module provides the functionality to call a runtime entry point directly, by its C symbol
 name.
 
-A symbol is declared with :func:`~.runtime_declare` and called with :func:`~.runtime_call` from
-inside a compiled program. The call can be dispatched to an executor, which invokes the symbol on
-the machine the runtime lives on.
+A symbol is declared with :func:`~pennylane.runtime_declare` and called with
+:func:`~pennylane.runtime_call` from inside a compiled program. The call can be dispatched to an
+executor, which invokes the symbol on the machine the runtime lives on.
 
-.. currentmodule:: pennylane.backline.runtime
+Signatures use the form ``"(parameter, ...) -> result"`` and the types listed in
+:class:`~pennylane.backline.runtime.CType`. Callers pass one argument per parameter except ``out``;
+an ``out`` buffer is sized with ``out_bytes=`` and returned by :func:`~pennylane.runtime_call`.
+
+.. currentmodule:: pennylane
 
 .. autosummary::
     :toctree: api
 
-    ~CSignature
-    ~CType
+    ~runtime_call
+    ~runtime_declare
+    ~pennylane.backline.runtime.CSignature
+    ~pennylane.backline.runtime.CType
 
 **Example**
 

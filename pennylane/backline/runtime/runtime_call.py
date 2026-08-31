@@ -54,8 +54,9 @@ def get_runtime_call_prim():
 def runtime_call(target, *args, signature=None, out_bytes=0, address=None, library=None):
     r"""Call a declared runtime symbol, in-process or on the executor it is addressed to.
 
-    A symbol is declared once with :func:`~.runtime_declare`, then called by name from inside a
-    :func:`~pennylane.qjit` program.
+    A symbol is declared once with :func:`~pennylane.runtime_declare`, then called by name from
+    inside a :func:`~pennylane.qjit` program. For a one-off call, pass its signature with
+    ``signature=`` or pass a :class:`~pennylane.backline.runtime.CSignature` as ``target``.
 
     Passing ``address`` dispatches the call: it is recorded into the program and sent to that
     executor, which invokes the symbol on the machine the runtime lives on. Omitting ``address``
@@ -75,15 +76,17 @@ def runtime_call(target, *args, signature=None, out_bytes=0, address=None, libra
     links the shared library that exports it.
 
     Args:
-        target (str | CSignature): the symbol to call, or its signature
-        *args: the arguments, in the order the symbol declares them
-        signature (str | CSignature | None): the signature, for a symbol not yet declared
-        out_bytes (int | Sequence[int]): how big each buffer the symbol fills should be
+        target (str | CSignature): the declared symbol name, or its complete signature
+        *args: one argument per declared parameter except ``out``, in declaration order
+        signature (str | CSignature | None): the signature for a symbol not yet declared, using
+            the ``"(parameter, ...) -> result"`` form or a :class:`CSignature`
+        out_bytes (int | Sequence[int]): the compile-time size of each ``out`` buffer
         address (str | None): the executor to dispatch to, as ``"host:port"``. ``None`` makes the
                               call local (in-process).
         library (str | None): for a local call, the shared library exporting the symbol, recorded so
                               the driver links it. Overrides the library set at
-                              :func:`~.runtime_declare` time. Ignored for a dispatched call.
+                              :func:`~pennylane.runtime_declare` time. Ignored for a dispatched
+                              call.
 
     Returns:
         The symbol's declared result. A symbol with one ``out`` parameter returns
@@ -136,7 +139,7 @@ def runtime_call(target, *args, signature=None, out_bytes=0, address=None, libra
             )
             return first, second
 
-    .. seealso:: :func:`~.runtime_declare`
+    .. seealso:: :func:`~pennylane.runtime_declare`
     """
     resolved = _resolve_signature(target, signature)
     sizes = operands.out_sizes(resolved, out_bytes)
