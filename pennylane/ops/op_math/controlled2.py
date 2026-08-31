@@ -25,7 +25,11 @@ from scipy import sparse
 import pennylane as qp
 from pennylane import allocation, capture, compiler, math
 from pennylane.core.operator import Operator, abstractify
-from pennylane.core.operator.operator2 import operator_p, pop_op_eqns  # tach-ignore
+from pennylane.core.operator.operator2 import (  # tach-ignore
+    _to_symbolic_array,
+    operator_p,
+    pop_op_eqns,
+)
 from pennylane.core.queuing import remove_from_program
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
@@ -45,11 +49,37 @@ from pennylane.decomposition.resources import (
 from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.ops.op_math.adjoint2 import Adjoint2, get_traced_and_non_traced_args
 from pennylane.typing import AbstractArray, AbstractWires, Bool, Complex, Wire
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
 from .symbolicop2 import SymbolicOp2
 
 # pylint: disable=unused-argument,protected-access,no-value-for-parameter
+
+
+def _setup_control_values(control_values, num_control_wires):
+
+    if control_values is None:
+        control_values = [True] * num_control_wires
+
+    if isinstance(control_values, (int, bool)):
+        control_values = [bool(control_values)]
+
+    if len(control_values) != num_control_wires:
+        raise ValueError("control_values should be the same length as control_wires")
+
+    if isinstance(control_values, (list, tuple)):
+        control_values = qp.math.asarray(control_values, like=control_values[0])
+
+    if not isinstance(control_values, AbstractArray):
+        control_values = qp.math.cast(control_values, dtype=bool)
+
+    return control_values
+
+
+def _validate_work_wire_type(work_wire_type):
+    accepted = ("zeroed", "borrowed")
+    if work_wire_type not in accepted:
+        raise ValueError(f"work_wire_type must be one of {accepted}. Got '{work_wire_type}'.")
 
 
 class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-public-methods
@@ -137,29 +167,14 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
         control_wires = Wires(control_wires)
         work_wires = Wires([] if work_wires is None else work_wires)
 
-        if Wires.shared_wires([base.wires, control_wires]):
-            raise ValueError("control_wires must not overlap with the base operator.")
-
-        if Wires.shared_wires([work_wires, base.wires + control_wires]):
-            raise ValueError("work_wires must not overlap with the operator or control_wires.")
-
-        accepted = ("zeroed", "borrowed")
-        if work_wire_type not in accepted:
-            raise ValueError(f"work_wire_type must be one of {accepted}. Got '{work_wire_type}'.")
-
-        if control_values is None:
-            control_values = [True] * len(control_wires)
-
-        if isinstance(control_values, (int, bool)):
-            control_values = [bool(control_values)]
-
-        if len(control_values) != len(control_wires):
-            raise ValueError("control_values should be the same length as control_wires")
-
-        if isinstance(control_values, (list, tuple)):
-            control_values = qp.math.asarray(control_values, like=control_values[0])
-
-        control_values = qp.math.cast(control_values, dtype=bool)
+        wire_args = {
+            "base.wires": base.wires,
+            "control_wires": control_wires,
+            "work_wires": work_wires,
+        }
+        validate_no_wire_overlaps(wire_args)
+        _validate_work_wire_type(work_wire_type)
+        control_values = _setup_control_values(control_values, len(control_wires))
 
         self._base = base
         self._control_wires = control_wires
@@ -177,51 +192,6 @@ class Controlled2(SymbolicOp2, is_baseclass=True):  # pylint: disable=too-many-p
             self._init_args["work_wires"] = work_wires
 
         super().__init__(**self._init_args)
-
-    @override
-    def __abstract_init__(  # pylint: disable=too-many-arguments,arguments-differ
-        self,
-        base: Operator,
-        control_wires: WiresLike | AbstractWires,
-        control_values: int | bool | Sequence[int | bool] | AbstractArray | None = None,
-        work_wires: WiresLike | AbstractWires | None = None,
-        work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
-    ):
-        # abstractify the wires
-        if work_wires is None:
-            work_wires = Wire[0]
-        if not isinstance(work_wires, AbstractWires):
-            work_wires = abstractify(Wires(work_wires))
-        if not isinstance(control_wires, AbstractWires):
-            control_wires = abstractify(Wires(control_wires))
-
-        # abstractify control values
-        if not isinstance(control_values, AbstractArray):
-            control_values = Bool[len(control_wires)]
-
-        # abstractify the base
-        base = abstractify(base)
-
-        # initialize the interface properties
-        self._base = base
-        self._control_wires = control_wires
-        self._control_values = control_values
-        self._work_wires = work_wires
-        self._work_wire_type = work_wire_type
-
-        if "base" in self._init_args:
-            self._init_args["base"] = base
-
-        if "control_wires" in self._init_args:
-            self._init_args["control_wires"] = control_wires
-
-        if "control_values" in self._init_args:
-            self._init_args["control_values"] = control_values
-
-        if "work_wires" in self._init_args:
-            self._init_args["work_wires"] = work_wires
-
-        super().__abstract_init__(**self._init_args)
 
     def __init_subclass__(cls, is_baseclass=False) -> None:
         super().__init_subclass__(is_baseclass)
@@ -591,6 +561,7 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
     def _bind_primitive(self):
         """Bind the operator primitive. ``ControlledOp2`` has to override the method of
         the base ``Operator2`` class so that we can "edit" the original primitive."""
+
         if not qp.capture.enabled():
             return
 
@@ -608,6 +579,15 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         n_ctrls = params["n_ctrls"]
         n_base_ctrl_work_wires = params.get("n_ctrl_work_wires", 0)
 
+        arguments = {k: _to_symbolic_array(v) for k, v in self.arguments.items()}
+
+        control_wires, work_wires = arguments["control_wires"], arguments["work_wires"]
+        if isinstance(control_wires, Wires):
+            control_wires = control_wires.tolist()
+        if isinstance(work_wires, Wires):
+            work_wires = work_wires.tolist()
+        control_values = arguments["control_values"]
+
         # `eqns` contains `TracingEqns`, not `JaxprEqns`, so invars during tracing will just
         # be tracers, not `Var`s wrapping abstract values. invars are ordered as
         # (*base_args, *control_wires, *control_values, *work_wires), so we need to insert
@@ -619,15 +599,15 @@ class ControlledOp2(Controlled2):  # pylint: disable=too-few-public-methods
         base_control_values = eqns[0].invars[n_base_args + n_ctrls : n_base_args + 2 * n_ctrls]
         base_work_wires = eqns[0].invars[n_base_args + 2 * n_ctrls :]
 
-        control_wires = self.control_wires.tolist() + base_control_wires
-        control_values = list(self.control_values) + base_control_values
-        work_wires = self.work_wires.tolist() + base_work_wires
-        invars = base_args + control_wires + control_values + work_wires
+        new_control_wires = control_wires + base_control_wires
+        control_values = list(control_values) + base_control_values
+        new_work_wires = work_wires + base_work_wires
+        invars = base_args + new_control_wires + control_values + new_work_wires
 
-        params["n_ctrls"] = n_ctrls + len(self.control_wires)
+        params["n_ctrls"] = len(new_control_wires)
         # These params are namespaced (`n_ctrl_`/`ctrl_`) so they never collide with an operator's
         # own static/compilable argnames when reconstructed in `_op_impl`.
-        params["n_ctrl_work_wires"] = n_base_ctrl_work_wires + len(self.work_wires)
+        params["n_ctrl_work_wires"] = len(new_work_wires)
         params["ctrl_work_wire_type"] = resolve_work_wire_type(
             base_work_wires,
             params.get("ctrl_work_wire_type", "borrowed"),
@@ -901,18 +881,15 @@ def _ctrl_abstract(
             work_wire_type=work_wire_type,
         )
 
-    if not num_zero_control_values:
-        return qp.ctrl(
-            op,
-            control=control_wires,
-            work_wires=work_wires,
-            work_wire_type=work_wire_type,
-        )
-
-    return qp.ctrl(
+    # if control values are all ones, first see if we can dispatch to a special type
+    # then run abstractify to promote control values to being boolean if it wasn't
+    # turned into a special type.
+    empty_cvals = num_zero_control_values == 0
+    op = qp.ctrl(
         op,
         control=control_wires,
-        control_values=Bool[len(control_wires)],
+        control_values=None if empty_cvals else Bool[len(control_wires)],
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )
+    return abstractify(op)
