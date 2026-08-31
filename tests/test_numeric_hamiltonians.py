@@ -23,6 +23,7 @@ import pytest
 import pennylane as qp
 from pennylane.numeric_hamiltonians import CDFHamiltonian, CGFHamiltonian, NumericHamiltonian
 from pennylane.typing import AbstractArray, Float
+from tests.templates.subroutines.time_evolution.trotter_test_helpers import random_orthogonal
 
 L, M, N = 2, 2, 3
 
@@ -411,6 +412,56 @@ class TestConcrete:
 
         with pytest.raises(ValueError, match="inconsistent 'tensor_rank'"):
             THCHamiltonian(np.zeros((7, 7)), np.zeros((6, 4)))
+
+    def test_cdf_normalize_leaf_determinant(self, seed):
+        """Force every per-mode leaf to determinant ``+1``"""
+
+        rng = np.random.default_rng(seed)
+        leaves = rng.random((L + 1, N, N))
+
+        ham = CDFHamiltonian(
+            core_tensors=np.zeros((L + 1, N, N)),
+            leaf_tensors=leaves,
+            nuc_constant=0.0,
+        )
+
+        normalized = ham.normalize_leaf_determinant().leaf_tensors
+        dets = qp.math.sign(qp.math.linalg.det(normalized))
+        assert np.allclose(dets, np.ones_like(dets))
+
+    def test_cgf_normalize_leaf_determinant(self, seed):
+        """Force every per-mode leaf to determinant ``+1``"""
+
+        rng = np.random.default_rng(seed)
+        leaves = rng.random((L + 1, M, N, N))
+
+        ham = CGFHamiltonian(
+            core_tensors=np.zeros((L + 1, M, M, N, N)),
+            leaf_tensors=leaves,
+            nuc_constant=0.0,
+        )
+
+        normalized = ham.normalize_leaf_determinant().leaf_tensors
+        dets = qp.math.sign(qp.math.linalg.det(normalized))
+        assert np.allclose(dets, np.ones_like(dets))
+
+    def test_cgf_align_one_body_leaf(self, seed):
+        """The one-body leaf (eigenvectors stored as columns) is transposed per mode to match
+        the two-body row convention; the two-body leaves are returned untouched."""
+
+        rng = np.random.default_rng(seed)
+        leaf = np.stack(
+            [np.stack([random_orthogonal(N, rng) for _ in range(M)]) for _ in range(L + 1)]
+        )
+
+        ham = CGFHamiltonian(
+            core_tensors=np.zeros((L + 1, M, M, N, N)),
+            leaf_tensors=leaf,
+            nuc_constant=0.0,
+        )
+        aligned = ham.align_one_body_leaf().leaf_tensors
+        assert np.allclose(aligned[0], np.swapaxes(leaf[0], -2, -1))
+        assert np.allclose(aligned[1:], leaf[1:])
 
 
 class TestAbstract:

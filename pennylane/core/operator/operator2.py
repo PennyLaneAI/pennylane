@@ -84,6 +84,12 @@ ARGNAME_CATEGORIES = (
 )
 
 
+def _is_pytree_placeholder(obj) -> bool:
+    """Whether 'obj' is a sentinel placeholder that JAX substitutes for real pytree leaves."""
+    cls = type(obj)
+    return cls.__name__ == "ArgInfo" and cls.__module__.partition(".")[0] == "jax"
+
+
 class Operator2(metaclass=OperatorMeta):
     r"""Base class representing quantum operators that are designed for compatibility with
     :func:`~.qjit`.
@@ -1488,9 +1494,15 @@ class Operator2(metaclass=OperatorMeta):
         for name, value in zip(hashable_argnames, metadata, strict=True):
             args[name] = value
 
-        with QueuingManager.stop_recording():
-            with pause():
-                return cls(**args)
+        # NOTE: To prepare for lowering, JAX 0.7.1 will insert 'ArgInfo' placeholders
+        # during the `jit_trace` pass in `stages.make_args_info`. This triggers
+        # pre-mature unflattening even when just calling `make_jaxpr`.
+        # TODO: Remove this workaround once we support JAX > 0.7.1 as they fixed this in later versions
+        if any(_is_pytree_placeholder(leaf) for leaf in flatten(args)[0]):
+            return object.__new__(cls)
+
+        with QueuingManager.stop_recording(), pause():
+            return cls(**args)
 
     def _check_batching(self):
         """Check if the expected numbers of dimensions of parameters coincides with the
@@ -1903,9 +1915,16 @@ if has_jax:
         hybrid_trees,
         forward_mask,
         n_ctrls=0,
+        n_ctrl_work_wires=0,
+        ctrl_work_wire_type="borrowed",
         adjoint=False,
         **static_args,
     ):
+        # NOTE: every explicit keyword above shadows an operator argname of the same name, so the
+        # controlled-specific params injected by `ControlledOp2._bind_primitive` are namespaced
+        # with a `ctrl_`/`n_ctrl_` prefix. Otherwise an operator declaring e.g. `work_wire_type`
+        # as a static/compilable arg (`MultiControlledX`, `ControlledQubitUnitary`) would have its
+        # own value swallowed here and silently replaced by the controlled default.
         args = {name: unflatten(*value) for name, value in static_args.items()}
         i = 0
 
@@ -1929,13 +1948,18 @@ if has_jax:
             args[name] = unflatten(leaves, tree)
             i += len_
 
+        # `ControlledOp2._bind_primitive` appends control wires, control values, and work
+        # wires (in that order) after the base op's own args, so they're consumed in the
+        # same order here.
         if n_ctrls:
             control_wires = _to_int_wires(all_args[i : i + n_ctrls])
             i += n_ctrls
-            control_values = all_args[i:]
-            assert len(control_wires) == len(control_values)
+            control_values = all_args[i : i + n_ctrls]
+            i += n_ctrls
+            work_wires = _to_int_wires(all_args[i : i + n_ctrl_work_wires])
+            i += n_ctrl_work_wires
         else:
-            control_wires = control_values = ()
+            control_wires = control_values = work_wires = ()
 
         op = type.__call__(op_cls, **args)
         if adjoint:
@@ -1946,6 +1970,8 @@ if has_jax:
                 op,
                 control_wires=control_wires,
                 control_values=control_values,
+                work_wires=work_wires,
+                work_wire_type=ctrl_work_wire_type,
             )
         return op
 

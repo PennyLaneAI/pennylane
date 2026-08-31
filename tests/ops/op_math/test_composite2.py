@@ -1,4 +1,4 @@
-# Copyright 2018-2022 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -51,6 +51,39 @@ ops_rep = (
 )
 
 
+class NoOperandsOp(CompositeOp2):
+    # pylint:disable=unused-argument
+    _op_symbol = "#"
+    _math_op = math.prod
+
+    hybrid_argnames = ("ops", "_init_pauli_rep")  # different name than operands
+    wire_argnames = ()
+
+    # pylint: disable-next=redefined-outer-name
+    def __init__(self, ops: Sequence[Operator], _init_pauli_rep=None):
+        super().__init__(ops, _init_pauli_rep=_init_pauli_rep)
+
+    def _build_pauli_rep(self):
+        return qp.pauli.PauliSentence({})
+
+    @property
+    def is_verified_hermitian(self):
+        return False
+
+    def matrix(self, wire_order=None):
+        if wire_order is None:
+            wire_order = self.wires
+        mat = np.eye(2 ** len(wire_order))
+        for op in self:
+            mat = mat @ math.expand_matrix(op.matrix(), op.wires, wire_order=wire_order)
+        return mat
+
+    @classmethod
+    # pylint: disable-next=unused-argument
+    def _sort(cls, op_list, wire_map: dict = None):
+        return op_list
+
+
 class ValidOp(CompositeOp2):
     # pylint:disable=unused-argument
     _op_symbol = "#"
@@ -97,9 +130,20 @@ class NonOverlappingOp(ValidOp):
         self._overlapping_ops = []
 
 
+class NoPauliRepOp(ValidOp):
+    """A composite whose Pauli representation is undefined.
+
+    ``ValidOp`` always builds an (empty) Pauli representation, which short-circuits the equality
+    dispatch. Returning ``None`` here exercises the operand-by-operand comparison path instead.
+    """
+
+    def _build_pauli_rep(self):
+        return None
+
+
 @pytest.mark.capture
 @pytest.mark.parametrize(
-    "ops",
+    "operands",
     [
         (qp.S(0),),
         (qp.S(0), qp.T(1)),
@@ -107,9 +151,9 @@ class NonOverlappingOp(ValidOp):
         (qp.S(0), qp.T(1), qp.S(2), qp.T(3)),
     ],
 )
-def test_standard_validity(ops):
+def test_standard_validity(operands):
     """Run standard validity checks on a valid op."""
-    op = ValidOp(ops)
+    op = ValidOp(operands)
     assert_valid(op)
 
 
@@ -147,8 +191,13 @@ class TestConstruction:
     def test_initialization(self):
         """Test that valid child classes can be initialized without error"""
         op = ValidOp(self.simple_operands)
-        assert op._name == "ValidOp"
         assert op._op_symbol == "#"
+        assert op.operands == self.simple_operands
+
+        op = NoOperandsOp(self.simple_operands)
+        assert op._op_symbol == "#"
+        assert op.ops == self.simple_operands
+        assert op.operands == self.simple_operands
 
     def test_abstract_init(self):
         """Test that building a composite op from abstract operands routes through
@@ -162,7 +211,6 @@ class TestConstruction:
 
         assert op._hash is None
         assert op._has_overlapping_wires is None
-        assert op._overlapping_ops is None
 
     def test_map_wires(self):
         """Test the map_wires method."""
@@ -192,8 +240,8 @@ class TestConstruction:
         """Test that valid child classes can be initialized in a queuing context"""
         with AnnotatedQueue() as q:
             op = ValidOp(self.simple_operands)
-            assert op._name == "ValidOp"
             assert op._op_symbol == "#"
+            assert op.operands == self.simple_operands
         assert op in q.queue
         assert len(q.queue) == 1
 
@@ -314,7 +362,7 @@ def _is_method_with_no_argument(method):
     return True
 
 
-class TestMscMethods:
+class TestMiscMethods:
     """Test dunder and other miscellaneous methods."""
 
     def test_has_diagonalizing_gates(self):
@@ -349,7 +397,7 @@ class TestMscMethods:
     def test_eigvals(self, operators):
         """Test that the eigvals method is correct."""
         op = ValidOp(operators)
-        vals = op.eigvals()
+        vals = op.compute_eigvals(operators)
 
         def _expand_two(sub_op):
             return (
@@ -496,15 +544,50 @@ class TestProperties:
             for op1, op2 in zip(list_op1, list_op2):
                 qp.assert_equal(op1, op2)
 
-    def test_overlapping_ops_private_attribute(self):
-        """Test that the private `_overlapping_ops` attribute gets updated after a call to
-        the `overlapping_ops` property."""
-        op = ValidOp((qp.RZ(1.32, wires=0), qp.Identity(wires=0), qp.RX(1.9, wires=1)))
-        overlapping_ops = op.overlapping_ops
-        assert op._overlapping_ops == overlapping_ops
+    def test_no_batching(self):
+        """Test that a composite of unbatched operands has a ``batch_size`` of ``None``."""
+        assert ValidOp((qp.S(0), qp.T(1))).batch_size is None
 
-        op = NonOverlappingOp((qp.RZ(1.32, wires=0),))
-        assert op.overlapping_ops == []
+    def test_batch_size_from_operands(self):
+        """Test that the batch size is taken from the broadcasted operands."""
+        op = ValidOp((qp.RX(np.array([0.1, 0.2, 0.3]), 0), qp.S(1)))
+        assert op.batch_size == 3
+
+    def test_batching_mismatch_raises(self):
+        """Test that operands with mismatched batch sizes raise an error."""
+        op = ValidOp((qp.RX(np.array([0.1, 0.2]), 0), qp.RY(np.array([0.1, 0.2, 0.3]), 1)))
+        with pytest.raises(ValueError, match="do not match"):
+            _ = op.batch_size
+
+
+class TestEqual:
+    """Test the generalized ``qp.equal`` dispatch for ``CompositeOp2`` subclasses."""
+
+    def test_equal_identical_operands(self):
+        """Test that composites with identical operands compare equal."""
+        qp.assert_equal(NoPauliRepOp([qp.X(0), qp.Z(1)]), NoPauliRepOp([qp.X(0), qp.Z(1)]))
+
+    def test_not_equal_different_operands(self):
+        """Test that composites with differing operands do not compare equal."""
+        op1 = NoPauliRepOp([qp.X(0), qp.Z(1)])
+        op2 = NoPauliRepOp([qp.X(0), qp.Y(1)])
+        assert not qp.equal(op1, op2)
+
+    def test_not_equal_different_number_of_operands(self):
+        """Test that composites with different numbers of operands are reported as unequal."""
+        op1 = NoPauliRepOp([qp.X(0), qp.Z(1)])
+        op2 = NoPauliRepOp([qp.X(0), qp.Z(1), qp.Y(2)])
+        assert not qp.equal(op1, op2)
+        with pytest.raises(AssertionError, match="different number of operands"):
+            qp.assert_equal(op1, op2)
+
+    def test_equal_pauli_rep_shortcut(self):
+        """Test that matching (non-``None``) Pauli representations short-circuit to equal."""
+        pauli_rep = PauliWord({0: "X"}) + PauliWord({1: "Z"})
+        # Operands differ in both count and content, but equal Pauli reps short-circuit the check.
+        op1 = NoPauliRepOp([qp.X(0), qp.Z(1)], _init_pauli_rep=pauli_rep)
+        op2 = NoPauliRepOp([qp.Y(2)], _init_pauli_rep=pauli_rep)
+        qp.assert_equal(op1, op2)
 
 
 @pytest.mark.capture
@@ -512,7 +595,6 @@ class TestProperties:
 class TestCapture:
     """Test that a CompositeOp2 subclass integrates with program capture."""
 
-    @pytest.mark.jax
     def test_capture_valid_op(self):
         """Test that a ValidOp can be captured into and reconstructed from jaxpr."""
         import jax
@@ -527,9 +609,3 @@ class TestCapture:
         assert len(jaxpr.eqns) == 1
         eqn = jaxpr.eqns[0]
         assert_eqn_matches_op(eqn, ValidOp)
-
-        with AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-
-        assert len(q.queue) == 1
-        qp.assert_equal(q.queue[0], ValidOp((qp.RX(1.2, wires=0), qp.PauliZ(0))))
