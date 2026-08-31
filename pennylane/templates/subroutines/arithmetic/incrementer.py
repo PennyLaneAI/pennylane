@@ -16,15 +16,12 @@
 from pennylane import compiler, math
 from pennylane.capture import enabled
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operator
-from pennylane.decomposition import (
-    add_decomps,
-    register_condition,
-    register_resources,
-    resource_rep,
-)
+from pennylane.core.operator import Operator2
+from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.ops import CNOT, MultiControlledX, PauliX, X, adjoint, cond
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
+from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
 
 from .temporary_and import TemporaryAND
@@ -32,11 +29,11 @@ from .temporary_and import TemporaryAND
 has_jax = True
 try:
     from jax import lax
-except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
+except (ModuleNotFoundError, ImportError):  # pragma: no cover
     has_jax = False  # pragma: no cover
 
 
-class Incrementer(Operator):
+class Incrementer(Operator2):
     """
     Increment the input ``wires`` by one, using zeroed ``work_wires``.
 
@@ -163,39 +160,32 @@ class Incrementer(Operator):
 
     """
 
-    resource_keys = {"num_wires", "num_work_wires"}
+    wire_argnames = ("wires", "work_wires")
+    arg_specs = {"wires": Wire[-1], "work_wires": Wire[-1]}
 
     def __init__(self, wires: WiresLike, work_wires: WiresLike = ()):
-        wires = Wires(wires)
-        work_wires = Wires(() if work_wires is None else work_wires)
-        self.hyperparameters["work_wires"] = work_wires
+        # The Operator2 base normalizes the wire registers to ``Wires`` via ``arg_specs``; we only
+        # coerce a ``None`` ``work_wires`` to the empty default here.
+        super().__init__(wires, work_wires=() if work_wires is None else work_wires)
 
-        super().__init__(wires=wires + work_wires)
-
-    @classmethod
-    def _primitive_bind_call(cls, *args, **kwargs):
-        return cls._primitive.bind(*args, **kwargs)
+    # pylint: disable=arguments-differ
+    def __abstract_init__(self, wires, work_wires=()):
+        super().__abstract_init__(wires=Wire[len(wires)], work_wires=Wire[len(work_wires)])
 
     @property
-    def resource_params(self):
-        num_work_wires = len(self.hyperparameters["work_wires"])
-        return {
-            "num_wires": len(self.wires) - num_work_wires,
-            "num_work_wires": num_work_wires,
-        }
+    def increment_wires(self):
+        """The wires whose encoded integer is incremented, excluding ``work_wires``."""
+        return self.arguments["wires"]
 
-    def map_wires(self, wire_map: dict):
-        work_wires = [wire_map.get(w, w) for w in self.hyperparameters["work_wires"]]
-        keep = set(self.wires) - set(self.hyperparameters["work_wires"])
-        wires = [wire_map.get(w, w) for w in self.wires if w in keep]
-
-        return Incrementer(
-            wires,
-            work_wires,
-        )
+    @property
+    def wires(self):
+        """All wires involved in the operation."""
+        return self.increment_wires + self.work_wires
 
 
-def _incrementer_resources(num_wires, **_):
+def _core_incrementer_resources(num_wires):
+    """Resources of the incrementer's core MCX ladder, as a function of the number of wires in
+    the ladder (excluding work wires)."""
     resources = {X: 1}
     if num_wires > 1:
         # Forward ladder
@@ -206,24 +196,22 @@ def _incrementer_resources(num_wires, **_):
     return resources
 
 
-def _work_wire_condition(num_wires, num_work_wires, **_):
+def _incrementer_resources(wires, work_wires=None):  # pylint: disable=unused-argument
+    return _core_incrementer_resources(len(wires))
+
+
+def _work_wire_condition(wires, work_wires):
+    return (len(work_wires) + 1) >= len(wires)
+
+
+def _ctrl_work_wire_condition(base, control_wires, work_wires, **_):
+    num_wires = len(base.increment_wires) + len(control_wires)
+    num_work_wires = len(base.work_wires) + len(work_wires)
     return (num_work_wires + 1) >= num_wires
 
 
-def _base_work_wire_condition(base_params, num_control_wires, num_work_wires, **_):
-    return _work_wire_condition(
-        base_params["num_wires"] + num_control_wires,
-        base_params["num_work_wires"] + num_work_wires,
-        **_,
-    )
-
-
-def _capture_disabled_condition(*_, **__):
-    return not enabled()
-
-
-def _work_wire_inverse_condition(num_wires, num_work_wires, **_):
-    return not _work_wire_condition(num_wires, num_work_wires)
+def _work_wire_inverse_condition(wires, work_wires):
+    return not _work_wire_condition(wires, work_wires)
 
 
 def _decompose_mcxs(wires, work_wires, control_wires=None):
@@ -277,43 +265,34 @@ def _decompose_mcxs(wires, work_wires, control_wires=None):
     cond(len(wires) > 1, _increment)()
 
 
-def _incrementer_fallback_resources(num_wires, num_work_wires, **_):
+def _incrementer_fallback_resources(wires, work_wires):
+    num_wires = len(wires)
+    num_work_wires = len(work_wires)
     resources = {}
 
-    for i in range(num_wires - 1, 1, -1):
-        resources[
-            resource_rep(
-                MultiControlledX,
-                num_control_wires=i - 1,
-                num_zero_control_values=0,
-                num_work_wires=num_work_wires,
-                work_wire_type="borrowed",
-            )
-        ] = 1
+    for i in range(num_wires, 1, -1):
+        resources[MultiControlledX(Wire[i], work_wires=Wire[num_work_wires])] = 1
 
     resources[PauliX] = 1
 
     return resources
 
 
-@register_condition(_capture_disabled_condition)
 @register_condition(_work_wire_inverse_condition)
 @register_resources(_incrementer_fallback_resources)
 def _incrementer_fallback_decomposition(wires, work_wires, **_):
+    # This loop is intentionally a plain Python loop rather than a ``qp.for_loop``: each
+    # iteration emits a ``MultiControlledX`` with a different number of controls (``i - 1``),
+    # so the loop body has no fixed structure and cannot be traced as a dynamic loop. Keeping
+    # it unrolled lets this fallback run under program capture without any extra gating.
+    num_wires = len(wires)
 
-    if len(work_wires) > 0:
-        wires = wires[: -len(work_wires)]
-
-    @for_loop(len(wires) - 1, 1, -1)
-    def flip_wires(i, wires, num_wires):
+    for i in range(num_wires, 1, -1):
         MultiControlledX(
-            [wires[wire + (num_wires - i)] for wire in range(i)][::-1],
-            [1 for _ in range(i - 1)],
+            wires[num_wires - i :][::-1],
+            [1] * (i - 1),
             work_wires=work_wires,
         )
-        return wires, num_wires
-
-    flip_wires(wires, len(wires))  # pylint: disable=no-value-for-parameter
 
     X(wires[-1])
 
@@ -321,19 +300,16 @@ def _incrementer_fallback_decomposition(wires, work_wires, **_):
 @register_condition(_work_wire_condition)
 @register_resources(_incrementer_resources)
 def _incrementer_decomposition(wires, work_wires, **_):
-
     if compiler.active() or enabled():
         wires = math.array(wires, like="jax")
-
-    if len(work_wires) > 0:
-        wires = wires[: -len(work_wires)]
 
     _decompose_mcxs(wires, work_wires)
     X(wires[-1])
 
 
-def _controlled_incrementer_resources(base_params, num_control_wires, **_):
-    resources = _incrementer_resources(base_params["num_wires"] + num_control_wires)
+def _controlled_incrementer_resources(base, control_wires, **_):
+    num_control_wires = len(control_wires)
+    resources = _core_incrementer_resources(len(base.increment_wires) + num_control_wires)
     resources[X] = 0
     if num_control_wires > 2:
         resources[CNOT] -= num_control_wires - 2
@@ -341,12 +317,7 @@ def _controlled_incrementer_resources(base_params, num_control_wires, **_):
     return resources
 
 
-def _control_values_condition(num_zero_control_values, **_):
-    return num_zero_control_values == 0
-
-
-@register_condition(_base_work_wire_condition)
-@register_condition(_control_values_condition)
+@register_condition(_ctrl_work_wire_condition)
 @register_resources(_controlled_incrementer_resources)
 def _controlled_incrementer_decomposition(
     *_,
@@ -355,7 +326,8 @@ def _controlled_incrementer_decomposition(
     base,
     **__,
 ):
-    wires = base.wires
+    wires = base.increment_wires
+    base_work_wires = base.work_wires
 
     if compiler.active() or enabled():
         wires, work_wires, control_wires = (
@@ -363,22 +335,18 @@ def _controlled_incrementer_decomposition(
             math.array(work_wires, like="jax"),
             math.array(control_wires, like="jax"),
         )
-        base_work_wires = math.array(base.hyperparameters["work_wires"], like="jax")
+        base_work_wires = math.array(base_work_wires, like="jax")
         if base_work_wires.shape[0] > 0 and work_wires.shape[0] > 0:
-            work_wires = math.concatenate(
-                [math.atleast_1d(base_work_wires), math.atleast_1d(work_wires)]
-            )
+            # Both arrays are already 1D at this point, guaranteed by the ``shape[0]`` check
+            work_wires = math.concatenate([base_work_wires, work_wires])
         elif base_work_wires.shape[0] > 0 and work_wires.shape[0] == 0:
             work_wires = base_work_wires
     else:
-        work_wires = base.hyperparameters["work_wires"] + work_wires
-
-    if len(base.hyperparameters["work_wires"]) > 0:
-        wires = wires[: -len(base.hyperparameters["work_wires"])]
+        work_wires = base_work_wires + Wires(work_wires)
 
     _decompose_mcxs(wires, work_wires, control_wires)
 
 
 add_decomps(Incrementer, _incrementer_decomposition)
 add_decomps(Incrementer, _incrementer_fallback_decomposition)
-add_decomps("C(Incrementer)", _controlled_incrementer_decomposition)
+add_decomps("C(Incrementer)", flip_zero_control2(_controlled_incrementer_decomposition))

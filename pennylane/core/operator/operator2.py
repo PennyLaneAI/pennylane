@@ -47,7 +47,13 @@ from pennylane.exceptions import (
     TermsUndefinedError,
 )
 from pennylane.pytrees import flatten, register_pytree, unflatten
-from pennylane.typing import AbstractArray, AbstractWires, FlatPytree, TensorLike
+from pennylane.typing import (
+    AbstractArray,
+    AbstractWires,
+    FlatPytree,
+    TensorLike,
+    _AbstractWireTypeFactory,
+)
 from pennylane.wires import Wires, WiresLike
 
 from .base import _UNSET_BATCH_SIZE, Operator, _get_abstract_operator
@@ -69,9 +75,226 @@ class GradMethod(StrEnum):
     FINITE_DIFF = "F"
 
 
+ARGNAME_CATEGORIES = (
+    "wire_argnames",
+    "dynamic_argnames",
+    "static_argnames",
+    "compilable_argnames",
+    "hybrid_argnames",
+)
+
+
+def _is_pytree_placeholder(obj) -> bool:
+    """Whether 'obj' is a sentinel placeholder that JAX substitutes for real pytree leaves."""
+    cls = type(obj)
+    return cls.__name__ == "ArgInfo" and cls.__module__.partition(".")[0] == "jax"
+
+
 class Operator2(metaclass=OperatorMeta):
-    r"""Base class representing quantum operators.
-    TODO: [sc-120453] Fill docstring
+    r"""Base class representing quantum operators that are designed for compatibility with
+    :func:`~.qjit`.
+
+    Child classes of ``Operator2`` are defined by their name and argument types, of which there are
+    five categories that are designated as class variables. These arguments dictate how ``Operator2``
+    child classes are handled when compiling with :func:`~.qjit`.
+
+    * :attr:`wire_argnames <Operator2.wire_argnames>` : The names of arguments corresponding to
+      wires. Values for these arguments are automatically wrapped in
+      :class:`~.Wires` objects by the ``Operator2`` constructor.
+
+    .. note::
+
+        ``Operator2.wire_argnames`` defaults to ``("wires",)``. Thus, if an operator one
+        has one wire argument and it is called ``wires``, ``wire_argnames`` does not need
+        to be overridden.
+
+    * :attr:`dynamic_argnames <Operator2.dynamic_argnames>` : The names of arguments that are
+      treated as dynamic. Inputs for these arguments must be scalars,
+      arrays, or castable to arrays.
+
+    * :attr:`static_argnames <Operator2.static_argnames>` : The names of arguments that are
+      treated as static but are **not compilable** (see below).
+
+    * :attr:`compilable_argnames <Operator2.compilable_argnames>` : The names of arguments that are
+      treated as **compilable** static arguments. Compilable static arguments include numeric values,
+      strings, lists, tuples, and dictionaries. This feature is opt-in; if any static arguments are
+      not guaranteed to be compilable, it is safer to place them in
+      :attr:`static_argnames <Operator2.static_argnames>`.
+
+    .. note::
+
+        An operator can only specify :attr:`static_argnames <Operator2.static_argnames>` or
+        :attr:`compilable_argnames <Operator2.compilable_argnames>`, but not both; if **any**
+        static arguments cannot be lowered to the IR, then all static arguments must be treated as
+        not lowerable.
+
+    * :attr:`hybrid_argnames <Operator2.hybrid_argnames>` : The names of arguments that represent
+      dynamic data wrapped in static structures (known as Pytrees). Names in this category may only
+      overlap with :attr:`wire_argnames <Operator2.wire_argnames>` when those arguments contain
+      nested structures of wires.
+
+    Args:
+        *args (tuple[...]): positional arguments
+        **kwargs (dict[str, Any]): Key-word arguments
+
+    .. details::
+        :title: Defining Custom Operators
+
+        Custom ``Operator2`` instances **must** designate all their arguments to
+        one of the aforementioned categories. This means that the union of all the
+        designated arguments must cover the full set of arguments.
+
+        As an example, consider the following custom operator:
+
+        .. code-block:: python
+
+            import pennylane as qp
+            from pennylane.core import Operator2
+            import jax.numpy as jnp
+
+            class MyOp(Operator2):
+                wire_argnames = ("wires", "rot_wire")
+                compilable_argnames = ("pauli_string")
+                dynamic_argnames = ("angle_array")
+
+                def __init__(self, pauli_string, angle_array, wires, rot_wire):
+                    super().__init__(pauli_string, angle_array, wires, rot_wire)
+
+                @staticmethod
+                def compute_matrix(pauli_string, angle_array, wires, rot_wire):
+                    wire_map = {wires[i]: i for i in range(len(wires))}
+                    pauli_op = qp.pauli.string_to_pauli_word(pauli_string, wire_map=wire_map)
+                    rot_op = qp.Rot(*angle_array, wires=rot_wire)
+                    return qp.matrix(qp.prod(pauli_op, rot_op))
+
+        The ``wires`` and ``rot_wire`` arguments will be a part of
+        :attr:`wire_argnames <Operator2.wire_argnames>`, and ``pauli_string`` and ``angle_array``
+        will belong to :attr:`compilable_argnames <Operator2.compilable_argnames>` and
+        :attr:`dynamic_argnames <Operator2.dynamic_argnames>`, respectively.
+
+        >>> from jax import numpy as jnp
+        >>> angle_array = jnp.array([0.1, 0.2, 0.3])
+        >>> op = MyOp("XYZ", angle_array, wires=(0, 1, 2), rot_wire=(3,))
+        >>> op
+        MyOp(pauli_string=XYZ, angle_array=[0.1 0.2 0.3], wires=[0, 1, 2], rot_wire=[3])
+
+        For optimal functionality, ``MyOp`` should define a decomposition using :func:`~pennylane.add_decomps`,
+        which is covered in the following section.
+
+        **Decomposing Operators**
+
+        More information and specifics on how to define decomposition rules for operators is found
+        in the :mod:`pennylane.decomposition` module. A brief synopsis is offered here.
+
+        Adding a decomposition rule to an existing or a custom operator can be done by defining two
+        functions:
+
+        * A "resource" function, which contains the resources comprising the decomposition rule.
+        * The decomposition rule itself, structured as a quantum function.
+
+        Both the resource function and the decomposition rule **must** have the same call signature
+        as the operator.
+
+        Consider this example using the custom operator ``MyOp``.
+
+        .. code-block:: python
+
+            from collections import defaultdict
+
+            def _my_op_resources(pauli_string, angle_array, wires, rot_wire):
+                resources = defaultdict(int)
+
+                for char in pauli_string:
+                    resources[getattr(qp, char)] += 1
+
+                resources[qp.Rot] = 1
+                return resources
+
+            @qp.register_resources(_my_op_resources)
+            def _my_op_decomp(pauli_string, angle_array, wires, rot_wire):
+                wire_map = {wires[i]: i for i in range(len(wires))}
+                for wire, pauli in zip(wires, pauli_string):
+                    getattr(qp, pauli)(wire)
+                qp.Rot(*angle_array, wires=rot_wire)
+
+            qp.add_decomps(MyOp, _my_op_decomp)
+
+        Resource functions are "registered" to the decomposition rule by decorating with
+        :func:`~pennylane.register_resources`. Adding the decomposition rule to the operator officially is
+        done via :func:`~pennylane.add_decomps`. To verify, we can inspect that the decomposition rule
+        created as been added to ``MyOp`` as follows.
+
+        .. code-block:: python
+
+            num_wires = 4
+            @qp.qnode(qp.device("null.qubit", wires=4))
+            def f():
+                MyOp("XYY", jnp.array([0.1, 0.2, 0.3]), wires=(0, 1, 2), rot_wire=(3,))
+                return qp.expval(qp.Z(0))
+
+        >>> qp.decomposition.enable_graph()
+        >>> inspector = qp.decomp_inspector(f)()
+        >>> inspector.inspect_decomps(MyOp("XYY", jnp.array([0.1, 0.2, 0.3]), wires=(0, 1, 2), rot_wire=(3,)))
+        CHOSEN: Decomposition 0 (name: _my_op_decomp)
+        0: ──X───────────────────┤
+        1: ──Y───────────────────┤
+        2: ──Y───────────────────┤
+        3: ──Rot(0.10,0.20,0.30)─┤
+        First-Level Expansion Gates: {PauliX: 1, PauliY: 2, Rot: 1}
+        Full Expansion Gates: {PauliX: 1, PauliY: 2, Rot: 1}
+        Weighted Cost: 4.0
+        >>> qp.decomposition.disable_graph()
+
+        **Downstream effects of static_argnames, compilable_argnames**
+
+        Static and *compilable static* arguments are similar, but have key differences to note that
+        dictate how certain arguments are treated when compiled down to MLIR.
+
+        Both ``static_argnames`` and ``compilable_argnames`` denote data that cannot be dynamic. In
+        other words, they both represent concrete data whose values are known when tracing the
+        program. The distinction in their behaviour comes at compile-time.
+
+        Arguments in ``compilable_argnames`` denote data that *can* be concretely accessed and
+        inspected at compile-time (it can be compiled and represented concretely in MLIR), including
+        numeric values, strings, lists, tuples, and dictionaries.
+
+        In the example above with ``MyOp``, the ``pauli_string`` argument is part of
+        ``compilable_argnames``. Its concrete (static) value will be accessible at compile time,
+        being represented at the MLIR level as follows, where the concrete value of
+        ``pauli_string`` is captured in the ``static_data`` attribute in MLIR:
+
+        >>> op = MyOp("XYZ", angle_array, wires=(0, 1, 2), rot_wire=(3,)) # doctest: +SKIP
+
+        .. code-block::
+
+            %out_qubits:4 = quantum.operator "MyOp"(%arg0: tensor<3xf64>) qubits(%q0, %q1, %q2, %q3)
+              static_data = {pauli_string = "XYZ"}
+              param_map = {angle_array = [0]} qubit_map = {rot_wires = [1, 2, 3], wires = [0]}
+
+        Arguments in ``static_argnames`` denote data that *cannot* be concretely accessed and
+        inspected at compile-time (it cannot be compiled and represented concretely in MLIR),
+        including arbitrary Python objects, Python functions, and custom classes. Static data will
+        be reduced to a Unique Identifier (UID) at the MLIR level.
+
+        In the example above with ``MyOp``, if the ``pauli_string`` argument was part of
+        ``static_argnames``, ``MyOp`` would be represented in MLIR as follows, where the concrete
+        value of ``pauli_string`` is reduced to a UID in MLIR:
+
+        .. code-block::
+
+            %out_qreg = quantum.operator "MyOp"(%arg0: tensor<3xf64>)
+              UID(278653)
+              quregs(%arg3) indices(%arg1: tensor<3xi64>, %arg2: tensor<1xi64>)
+
+            %out_qubits:4 = quantum.operator "MyOp"(%arg0: tensor<3xf64>) qubits(%arg4, %arg5, %arg6, %arg7)
+              UID(234567)
+              param_map = {angle_array = [0]} qubit_map = {rot_wires = [1, 2, 3], wires = [0]}
+
+        .. note::
+
+            If ``hybrid_argnames`` is not empty, the above behaviour also occurs
+            downstream; the dynamic data stored within the Pytree is lowered correctly,
+            and the static structure of the Pytree is reduced to a UID in MLIR.
     """
 
     # pylint: disable=too-many-public-methods, too-many-instance-attributes
@@ -285,8 +508,8 @@ class Operator2(metaclass=OperatorMeta):
     def wires(self) -> Wires:
         """Wires that the operator acts on.
 
-        The returned :class:`~.Wires` are collected from the operator's arguments in
-        the following order:
+        By default, the returned :class:`~.Wires` are collected from the operator's arguments
+        in the following order:
 
         1. For each name in ``wire_argnames`` (in declaration order):
 
@@ -305,8 +528,13 @@ class Operator2(metaclass=OperatorMeta):
 
         .. note::
 
-            Work wires are **not included** in ``op.wires``. In particular, wire arguments
-            named ``work_wires`` or ``work_wire`` are excluded.
+            By default, work wires are **not included** in ``op.wires``. In particular, wire
+            arguments named ``work_wires`` or ``work_wire`` are excluded.
+
+        .. note::
+
+            This property may be overridden by developers if the default behaviour is not
+            desired, for reasons such as including work wires or changing the order of the wires.
 
         Returns:
             Wires: wires
@@ -398,8 +626,7 @@ class Operator2(metaclass=OperatorMeta):
     # -------------- Legacy Operator compatibility views ----------------------
     # ------------------------------------------------------------------------
     # The following properties provide backwards-compatible read-only views
-    # matching the legacy ``Operator`` API (data, parameters, hyperparameters,
-    # control_wires).
+    # matching the legacy ``Operator`` API (data, parameters, hyperparameters).
     # They are *not* the canonical Operator2 API — prefer ``arguments``,
     # ``dynamic_args``, ``static_args``, etc. for new code.
 
@@ -577,6 +804,10 @@ class Operator2(metaclass=OperatorMeta):
 
     def queue(self, context: QueuingManager = QueuingManager):
         """Append the operator to the Operator queue."""
+        for h in self.hybrid_args.values():
+            leaves, _ = flatten(h, is_leaf=_is_op)
+            _ = [context.remove(l) for l in leaves if isinstance(l, Operator)]
+
         context.append(self)
         # return self so pre-constructed Observables can be queued and returned in
         # a single statement
@@ -645,7 +876,7 @@ class Operator2(metaclass=OperatorMeta):
                 continue
             leaves, tree = flatten(arg, is_leaf=_is_op)
             leaves = [
-                leaf.map_wires(wire_map) if isinstance(leaf, Operator2) else leaf for leaf in leaves
+                leaf.map_wires(wire_map) if isinstance(leaf, Operator) else leaf for leaf in leaves
             ]
             new_args[n] = unflatten(leaves, tree)
 
@@ -780,8 +1011,8 @@ class Operator2(metaclass=OperatorMeta):
         canonical_sparse_matrix = self.compute_sparse_matrix(**self.arguments, format=format)
         return self._expand_canonical_matrix(canonical_sparse_matrix, wire_order).asformat(format)
 
-    @staticmethod
-    def compute_decomposition(*args, **kwargs) -> list["Operator2"]:
+    @classmethod
+    def compute_decomposition(cls, *args, **kwargs) -> list["Operator2"]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -800,7 +1031,18 @@ class Operator2(metaclass=OperatorMeta):
         Returns:
             list[Operator2]: decomposition of the operator
         """
-        raise DecompositionUndefinedError
+        with pause(), QueuingManager.stop_recording():
+            # creating dummy op means this works for adjoint and ctrl too.
+            op = cls(*args, **kwargs)
+        for decomp in qp.list_decomps(op):
+            if decomp.is_applicable(**op.arguments):
+                with AnnotatedQueue() as q:
+                    decomp(**op.arguments)
+                if QueuingManager.recording():
+                    # no need for copies if we just use queue method
+                    _ = [op.queue() for op in q.queue]
+                return q.queue
+        raise DecompositionUndefinedError(f"No applicable decomposition rule for {cls}.")
 
     @classproperty
     @classmethod
@@ -812,8 +1054,29 @@ class Operator2(metaclass=OperatorMeta):
         rules are registered for the operator type. Per-instance rule applicability is resolved
         in :meth:`~.Operator2.decomposition`, not here.
         """
+
+        # cant do cls.compute_decompsition != Operator2.compute_decomposition
+        # because default is now a classmethod
+        # classmethod is always different, even if not overwritten
+        # cant do getattr(cls.compute_decomposition "__func__", cls.compute_decomposition)
+        # because of an astroid/ pylint bug
+        # see https://github.com/pylint-dev/pylint/issues/11198
+
+        # Instead, walk the MRO to detect an override in a subclass.
+        # MRO = method resolution order determines who defines what methods
+
+        def defines_compute_decomposition(op_type):
+            for klass in op_type.__mro__:
+                if klass is Operator2:
+                    return False
+                if "compute_decomposition" in vars(klass):
+                    return True
+            # should always find Operator2 in the mro
+            msg = "This line should be impossible to hit. Something is wrong."  # pragma: no cover
+            raise TypeError(msg)  # pragma: no cover
+
         return (
-            cls.compute_decomposition != Operator2.compute_decomposition
+            defines_compute_decomposition(cls)
             or cls.decomposition != Operator2.decomposition
             or qp.decomposition.has_decomp(cls)
         )
@@ -830,19 +1093,7 @@ class Operator2(metaclass=OperatorMeta):
         Returns:
             list[Operator2]: decomposition of the operator
         """
-        if type(self).compute_decomposition != Operator2.compute_decomposition:
-            return self.compute_decomposition(**self.arguments)
-
-        for decomp in qp.list_decomps(self):
-            if decomp.is_applicable(**self.arguments):
-                with AnnotatedQueue() as q:
-                    decomp(**self.arguments)
-                if QueuingManager.recording():
-                    # no need for copies if we just use queue method
-                    _ = [op.queue() for op in q.queue]
-                return q.queue
-
-        raise DecompositionUndefinedError
+        return self.compute_decomposition(**self.arguments)
 
     @staticmethod
     def compute_eigvals(*args, **kwargs) -> TensorLike:
@@ -1052,7 +1303,8 @@ class Operator2(metaclass=OperatorMeta):
         for h in self.hybrid_argnames:
             leaves, tree = flatten(self.arguments[h], is_leaf=_is_hash_leaf)
             ser_leaves = tuple(
-                l if isinstance(l, (Operator2, Wires)) else _canonicalize_dynamic(l) for l in leaves
+                l if isinstance(l, (AbstractWires, Operator, Wires)) else _canonicalize_dynamic(l)
+                for l in leaves
             )
             serialized_hybrid.append((ser_leaves, tree))
 
@@ -1089,6 +1341,19 @@ class Operator2(metaclass=OperatorMeta):
         for attr, value in vars(self).items():
             setattr(copied_op, attr, deepcopy(value, memo))
         return copied_op
+
+    def __getattr__(self, name):
+        # By default, all operator arguments are accessible as properties without needing
+        # to manually add properties. However, these properties are created dynamically in
+        # __init_subclass__. Pylint raises 'no-member' errors when trying to access these
+        # dynamically added properties. This dunder method is added to circumvent the error.
+        # Pylint does not raise the 'no-member' error for classes that contain __getattr__.
+        # The catch is that 'no-member' errors will no longer be raised for values that are
+        # _actually_ not present.
+
+        # __getattr__ is a fallback called after an attribute is not found on an object, so,
+        # unconditionally raising an AttributeError is exactly what would be expected anyway.
+        raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
 
     # ------------------------------------------------------------------------
     # ------------------ Operator arithmetic dunder methods ------------------
@@ -1171,15 +1436,11 @@ class Operator2(metaclass=OperatorMeta):
 
         **Example:**
 
-        # TODO: [sc-120453] Update code examples after migration as __repr__ has changed
-        >>> op = qp.Rot(1.2, 2.3, 3.4, wires=0)
-        >>> op._flatten() # doctest: +SKIP
-        (([1.2, 2.3, 3.4], [Wires([0])], []), ())
-        >>> qp.Rot._unflatten(*op._flatten()) # doctest: +SKIP
-        Rot(phi=1.2, theta=2.3, omega=3.4, wires=[0])
-        >>> op = qp.PauliRot(1.2, "XY", wires=(0,1))
-        >>> op._flatten() # doctest: +SKIP
-        (([1.2], [Wires([0, 1])], []), ('XY',))
+        >>> op = qp.PauliRot(1.5, "XY", wires=[0, 1])
+        >>> op._flatten()
+        (([1.5], [Wires([0, 1])], []), ('XY',))
+        >>> qp.PauliRot._unflatten(*op._flatten())
+        PauliRot(theta=1.5, pauli_word=XY, wires=[0, 1])
         """
         # Sort dynamic data as dynamic_args, wire_args, hybrid_args
         dyn_args = [self._bound_args.arguments[d] for d in self.dynamic_argnames]
@@ -1209,12 +1470,11 @@ class Operator2(metaclass=OperatorMeta):
 
         **Example:**
 
-        # TODO: [sc-120453] Update code examples after migration as __repr__ has changed
-        >>> op = qp.Rot(1.2, 2.3, 3.4, wires=0)
-        >>> op._flatten() # doctest: +SKIP
-        (([1.2, 2.3, 3.4], [Wires([0])], []), ())
-        >>> qp.Rot._unflatten(*op._flatten()) # doctest: +SKIP
-        Rot(phi=1.2, theta=2.3, omega=3.4, wires=[0])
+        >>> op = qp.PauliRot(1.5, "XY", wires=[0, 1])
+        >>> op._flatten()
+        (([1.5], [Wires([0, 1])], []), ('XY',))
+        >>> qp.PauliRot._unflatten(*op._flatten())
+        PauliRot(theta=1.5, pauli_word=XY, wires=[0, 1])
         """
         args = {}
 
@@ -1235,9 +1495,15 @@ class Operator2(metaclass=OperatorMeta):
         for name, value in zip(hashable_argnames, metadata, strict=True):
             args[name] = value
 
-        with QueuingManager.stop_recording():
-            with pause():
-                return cls(**args)
+        # NOTE: To prepare for lowering, JAX 0.7.1 will insert 'ArgInfo' placeholders
+        # during the `jit_trace` pass in `stages.make_args_info`. This triggers
+        # pre-mature unflattening even when just calling `make_jaxpr`.
+        # TODO: Remove this workaround once we support JAX > 0.7.1 as they fixed this in later versions
+        if any(_is_pytree_placeholder(leaf) for leaf in flatten(args)[0]):
+            return object.__new__(cls)
+
+        with QueuingManager.stop_recording(), pause():
+            return cls(**args)
 
     def _check_batching(self):
         """Check if the expected numbers of dimensions of parameters coincides with the
@@ -1248,7 +1514,7 @@ class Operator2(metaclass=OperatorMeta):
         expected numbers of dimensions, allowing to infer a batch size.
         """
         self._batch_size = None
-        dynamic_args = tuple(self.dynamic_args.values())
+        dynamic_args = self.data
 
         ndims = tuple(math.ndim(arg) for arg in dynamic_args)
         if any(len(math.shape(arg)) >= 1 and math.shape(arg)[0] is None for arg in dynamic_args):
@@ -1336,13 +1602,7 @@ class Operator2(metaclass=OperatorMeta):
             return
 
         # Argnames setup
-        for attr in (
-            "dynamic_argnames",
-            "wire_argnames",
-            "static_argnames",
-            "hybrid_argnames",
-            "compilable_argnames",
-        ):
+        for attr in ARGNAME_CATEGORIES:
             if isinstance(v := getattr(cls, attr), str):
                 setattr(cls, attr, (v,))
 
@@ -1351,6 +1611,11 @@ class Operator2(metaclass=OperatorMeta):
         _init_subclass_wire_sizes_setup(cls)
         _init_subclass_add_dynamic_properties(cls)
         register_pytree(cls, cls._flatten, cls._unflatten)
+
+        for attr in ARGNAME_CATEGORIES:
+            # enforce sorting by signature
+            sorted_names = tuple(a for a in cls._sig.parameters if a in getattr(cls, attr))
+            setattr(cls, attr, sorted_names)
 
 
 # ---------------------------------------------------------------------------------
@@ -1404,8 +1669,12 @@ def _init_wires(op: Operator2):
         ops = filter(_is_op, leaves)
         all_algorithmic_wires.extend(op.wires for op in ops)
 
-    if all_algorithmic_wires and isinstance(all_algorithmic_wires[0], AbstractWires):
-        total_wires = sum(w.num_wires for w in all_algorithmic_wires)
+    abstract_wires = [w for w in all_algorithmic_wires if isinstance(w, AbstractWires)]
+    if abstract_wires:
+        if any(not aw.shape_fixed for aw in abstract_wires):
+            raise ValueError("Operator2 instances must be constructed with wires of fixed length.")
+
+        total_wires = sum(len(w) for w in all_algorithmic_wires)
         op._wires = AbstractWires(total_wires)
     else:
         op._wires = Wires.all_wires(all_algorithmic_wires)
@@ -1425,8 +1694,9 @@ def _init_arg_types(op: Operator2) -> None:
             # This branch is effectively unreachable since a mismatch between the actual
             # and expected length for a wire argument is validated in __init_wires. We will
             # only ever reach this branch if __validate_arg_types is called manually.
-            msg = f"Expected '{name}' to have length {exp_type.num_wires}, but got {argval}."
-            assert exp_type.num_wires == -1 or exp_type.num_wires == len(argval), msg
+            if exp_type.shape_fixed:
+                msg = f"Expected '{name}' to have length {len(exp_type)}, but got {argval}."
+                assert len(exp_type) == len(argval), msg
             continue
 
         # Dynamic argument
@@ -1520,25 +1790,30 @@ def _init_subclass_validate_argnames(cls: type[Operator2]) -> None:
 
 def _init_subclass_arg_specs_setup(cls: type[Operator2]) -> None:
     """Set up ``arg_specs`` for ``Operator2`` subclasses."""
-    arg_specs = cls.arg_specs or {}
-    disallowed_argnames = cls.hybrid_argnames + cls.compilable_argnames + cls.static_argnames
 
-    if names := (set(arg_specs.keys()) & set(disallowed_argnames)):
+    arg_specs = cls.arg_specs or {}
+    argnames_in_specs = set(arg_specs.keys())
+    illegal_args_in_specs = set(cls.hybrid_argnames + cls.compilable_argnames + cls.static_argnames)
+    traced_argnames = set(cls.dynamic_argnames + cls.wire_argnames)
+
+    if illegal_argnames := argnames_in_specs & illegal_args_in_specs:
         raise TypeError(
-            f"{cls.__name__}.arg_specs can only contain dynamic and wire arguments, but got {names}."
+            f"{cls.__name__}.arg_specs can only contain dynamic and wire "
+            f"arguments, but got {illegal_argnames}."
         )
 
-    cls.has_fixed_sig = (
-        set(arg_specs.keys()) == set(cls.dynamic_argnames + cls.wire_argnames)
-        and len(disallowed_argnames) == 0
-    )
+    cls.has_fixed_sig = argnames_in_specs == traced_argnames and len(illegal_args_in_specs) == 0
 
     for name, exp_type in arg_specs.items():
+        if isinstance(exp_type, _AbstractWireTypeFactory):
+            raise TypeError(
+                "'Wire' cannot be used on its own to represent a single wire, "
+                "Use 'Wire[1]' instead."
+            )
         canonical_exp_type = exp_type
         if isinstance(exp_type, type) and issubclass(exp_type, Number):
             canonical_exp_type = AbstractArray((), exp_type)
             cls.arg_specs[name] = canonical_exp_type
-
         if not canonical_exp_type.shape_fixed:
             cls.has_fixed_sig = False
 
@@ -1551,8 +1826,8 @@ def _init_subclass_wire_sizes_setup(cls: type[Operator2]) -> None:
         cls.wire_sizes = tuple(
             (
                 None
-                if name not in arg_specs or arg_specs[name].num_wires == -1
-                else arg_specs[name].num_wires
+                if name not in arg_specs or not arg_specs[name].shape_fixed
+                else len(arg_specs[name])
             )
             for name in cls.wire_argnames
         )
@@ -1581,14 +1856,21 @@ def _init_subclass_wire_sizes_setup(cls: type[Operator2]) -> None:
         # If the wire argument is in arg_specs, the entries in arg_specs
         # and wire_sizes must match. Arbitrary number of wires is denoted by ``None`` and
         # ``-1`` in wire_sizes and arg_specs respectively.
-        if (et := arg_specs.get(wname, None)) is not None:
-            nwires = et.num_wires
-            if (nwires == -1 and wsize is not None) or (nwires not in (-1, wsize)):
+        if (expected_type := arg_specs.get(wname, None)) is not None:
+            if not expected_type.shape_fixed:
+                # Dynamic wire count, wire_sizes must specify arbitrary wires (None)
+                mismatch = wsize is not None
+            else:
+                # Fixed wire count: wire count must match size
+                mismatch = len(expected_type) != wsize
+
+            if mismatch:
                 cname = cls.__name__
+                declared_num = len(expected_type) if expected_type.shape_fixed else -1
                 raise TypeError(
                     f"Number of wires specified for '{wname}' does not match the declared "
                     f"type in {cname}.arg_specs and {cname}.wire_sizes. Got "
-                    f"{nwires} and {wsize} respectively."
+                    f"{declared_num} and {wsize} respectively."
                 )
 
 
@@ -1634,9 +1916,16 @@ if has_jax:
         hybrid_trees,
         forward_mask,
         n_ctrls=0,
+        n_ctrl_work_wires=0,
+        ctrl_work_wire_type="borrowed",
         adjoint=False,
         **static_args,
     ):
+        # NOTE: every explicit keyword above shadows an operator argname of the same name, so the
+        # controlled-specific params injected by `ControlledOp2._bind_primitive` are namespaced
+        # with a `ctrl_`/`n_ctrl_` prefix. Otherwise an operator declaring e.g. `work_wire_type`
+        # as a static/compilable arg (`MultiControlledX`, `ControlledQubitUnitary`) would have its
+        # own value swallowed here and silently replaced by the controlled default.
         args = {name: unflatten(*value) for name, value in static_args.items()}
         i = 0
 
@@ -1651,9 +1940,7 @@ if has_jax:
                 # TODO: impl is being used here for reconstruction while the interpreter itself is
                 # under JAX tracing. Need to separate this logic from such scenario. For now,
                 # we can use the fact that wires are always integers and cast them to int.
-                args[name] = Wires(
-                    tuple(w if math.is_abstract(w) else int(w) for w in all_args[i : i + len_])
-                )
+                args[name] = _to_int_wires(all_args[i : i + len_])
                 i += len_
 
         # Reorder hybrid args such that hybrid wire args are first
@@ -1662,13 +1949,18 @@ if has_jax:
             args[name] = unflatten(leaves, tree)
             i += len_
 
+        # `ControlledOp2._bind_primitive` appends control wires, control values, and work
+        # wires (in that order) after the base op's own args, so they're consumed in the
+        # same order here.
         if n_ctrls:
-            control_wires = all_args[i : i + n_ctrls]
+            control_wires = _to_int_wires(all_args[i : i + n_ctrls])
             i += n_ctrls
-            control_values = all_args[i:]
-            assert len(control_wires) == len(control_values)
+            control_values = all_args[i : i + n_ctrls]
+            i += n_ctrls
+            work_wires = _to_int_wires(all_args[i : i + n_ctrl_work_wires])
+            i += n_ctrl_work_wires
         else:
-            control_wires = control_values = ()
+            control_wires = control_values = work_wires = ()
 
         op = type.__call__(op_cls, **args)
         if adjoint:
@@ -1679,6 +1971,8 @@ if has_jax:
                 op,
                 control_wires=control_wires,
                 control_values=control_values,
+                work_wires=work_wires,
+                work_wire_type=ctrl_work_wire_type,
             )
         return op
 
@@ -1731,7 +2025,9 @@ def _op_arg_forward_mask(op: Operator2) -> list[bool]:
 
 def _process_bind_hybrid_arg(hybrid_val, is_wire_arg: bool) -> tuple[list, Any, list[bool]]:
     """Process a hybrid argument for binding an operator primitive."""
-    partial_leaves, _ = flatten(hybrid_val, is_leaf=_is_op)
+    # We don't use is_leaf=_is_op because we're deliberately not supporting program
+    # capture with legacy operators mixed with new operators
+    partial_leaves, _ = flatten(hybrid_val, is_leaf=lambda h: isinstance(h, Operator2))
     _ = pop_op_eqns(filter(_is_op, partial_leaves))
 
     leaves, tree = flatten(hybrid_val)
@@ -1785,8 +2081,8 @@ def _is_wires(val: Any) -> bool:
 
 
 def _is_op(val: Any) -> bool:
-    """Check whether a value is an Operator2 object."""
-    return isinstance(val, Operator2)
+    """Check whether a value is an Operator (legacy or new)."""
+    return isinstance(val, Operator)
 
 
 def _canonicalize_dynamic(d, op_name=None) -> Hashable:
@@ -1801,8 +2097,12 @@ def _canonicalize_dynamic(d, op_name=None) -> Hashable:
     # Use qp.math.real to take the real part. We may get complex inputs for
     # example when differentiating holomorphic functions with JAX: a complex
     # valued QNode (one that returns qp.state) requires complex typed inputs.
-    if op_name is not None and op_name in ("RX", "RY", "RZ", "PhaseShift", "Rot"):
+    if op_name is not None and op_name in ("RX", "RY", "RZ", "PhaseShift", "Rot", "U1", "U2", "U3"):
         mod_val = 2 * np.pi
+    elif op_name is not None and op_name in ("CRX", "CRY", "CRZ", "CRot"):
+        # Rot(θ) ∈ SU(2) double-covers SO(3) via center {-I, I}, so θ ↦ θ+2π is global phase -I;
+        # in CRot, -I becomes a relative phase on |1⟩, breaking 2π periodicity to 4π.
+        mod_val = 4 * np.pi
     else:
         mod_val = None
 
@@ -1817,6 +2117,11 @@ def _is_hash_leaf(l) -> bool:
     """Check whether a value is a pytree leaf for hashing. For the purpose of
     hashing, wires and operators are considered leaves."""
     return _is_op(l) or _is_wires(l)
+
+
+def _to_int_wires(wires):
+    """Cast all wires to integers."""
+    return Wires(tuple(w if math.is_abstract(w) else int(w) for w in wires))
 
 
 class _ArgType(Enum):
@@ -1871,6 +2176,8 @@ def _canonicalize_abstract_type(val, kind: _ArgType):
                     "specifiers found in pennylane.typing."
                 )
             # Ensure it behaves like a clean array/scalar leaf before abstractifying
+            if math.is_abstract(val):
+                return abstractify(val)
             return abstractify(math.asarray(val))
 
         case _ArgType.HYBRID:
@@ -1911,6 +2218,7 @@ def _abstractify_operator(op: Operator2) -> Operator2:
     for name in target_args:
         kind = _resolve_arg_kind(op_cls, name)
         new_args[name] = _canonicalize_abstract_type(new_args[name], kind)
+
     return op_cls(**new_args)
 
 

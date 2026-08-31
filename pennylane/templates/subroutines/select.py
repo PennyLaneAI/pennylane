@@ -22,7 +22,7 @@ import numpy as np
 
 from pennylane import math
 from pennylane import ops as qp_ops
-from pennylane.core.operator import Operation, abstractify
+from pennylane.core.operator import Operation, Operator2, abstractify
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.ops import CNOT, X, adjoint, ctrl
@@ -367,6 +367,15 @@ class Select(Operation):
     # pylint: disable=arguments-differ
     @classmethod
     def _primitive_bind_call(cls, ops, control, **kwargs):
+        def _get_tracer(op):
+            if isinstance(op, Operator2):
+                if op.tracer is None:
+                    # pylint: disable-next=protected-access
+                    op._bind_primitive()  # pragma: no cover
+                return op.tracer if op.tracer is not None else op
+            return op  # pragma: no cover
+
+        ops = (_get_tracer(op) for op in ops)
         return super()._primitive_bind_call(*ops, wires=control, **kwargs)
 
     @classmethod
@@ -770,15 +779,16 @@ def _select_resources_unary(op_reps, num_control_wires, partial, num_work_wires)
     counts = Counter()
 
     if num_ops == 2:
-        return {
-            _ctrl_abstract(
-                op_rep,
-                Wire[1],
-                Wire[num_work_wires],
-                num_zero_control_values=1 - i,
-            ): 1
-            for i, op_rep in enumerate(op_reps)
-        }
+        for i, op_rep in enumerate(op_reps):
+            counts[
+                _ctrl_abstract(
+                    op_rep,
+                    Wire[1],
+                    Wire[num_work_wires],
+                    num_zero_control_values=1 - i,
+                )
+            ] += 1
+        return dict(counts)
     if num_ops / 2 ** math.ceil_log2(num_ops) > 3 / 4:
         counts.update(
             {

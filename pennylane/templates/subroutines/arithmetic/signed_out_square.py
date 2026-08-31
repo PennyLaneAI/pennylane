@@ -16,19 +16,19 @@ Contains the SignedOutSquare template.
 """
 
 from collections import defaultdict
-from itertools import combinations
+from types import SimpleNamespace
 
-from pennylane.core.operator import Operation
-from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import BasisState, X
 from pennylane.templates.subroutines.arithmetic import OutSquare, SemiAdder
-from pennylane.wires import Wires, WiresLike
+from pennylane.typing import Bool, Wire
+from pennylane.wires import WiresLike
 
+from .out_square import _SquareArithmeticOp
 from .semi_adder import _controlled_semi_adder, _controlled_semi_adder_resource
 
 
-class SignedOutSquare(Operation):
+class SignedOutSquare(_SquareArithmeticOp):
     r"""Performs out-of-place squaring of a signed integer.
 
     This operator performs the squaring of a signed integer :math:`x` in 2s complement
@@ -88,9 +88,9 @@ class SignedOutSquare(Operation):
             # - Flip 4's bit if sign bit=0 (=> superposition of -8 and 4)
             qp.ctrl(qp.X(x_wires[1]), x_wires[0], control_values=[0])
             # - Add 3 (x_wires[2:] are zeroed, can just do bit flips) => superposition of -5 and 7
-            qp.BasisEmbedding(3, wires=x_wires[2:])
+            qp.BasisEmbedding(qp.math.int_to_binary(3, len(x_wires[2:])), wires=x_wires[2:])
             # Prepare initial state on output wires
-            qp.BasisEmbedding(5, wires=output_wires)
+            qp.BasisEmbedding(qp.math.int_to_binary(5, len(output_wires)), wires=output_wires)
             # Signed square
             qp.SignedOutSquare(x_wires, output_wires, work_wires)
             return qp.counts(wires=output_wires)
@@ -190,8 +190,8 @@ class SignedOutSquare(Operation):
         Overall, we arrive at the following decomposition:
 
         >>> op = qp.SignedOutSquare(range(3), range(3, 10), range(10, 16), True)
-        >>> rule = qp.list_decomps(op)["signed_square_from_unsigned_square"]
-        >>> print(qp.draw(rule)(**op.hyperparameters))
+        >>> qp.inspect_decomps(op, "signed_square_from_unsigned_square")
+        Decomposition 0 (name: signed_square_from_unsigned_square)
          0: ───────────────────────────────────╭●────────╭●──────────────╭●──────╭SemiAdder────┤
          1: ─╭OutSquare──|Ψ⟩───────╭X────╭●────│──────●╮─├●────╭X────────│───|Ψ⟩─│─────────────┤
          2: ─├OutSquare──────╭●────│─────│─────│───────│─│─────│──────●╮─├●──────│─────────────┤
@@ -208,113 +208,33 @@ class SignedOutSquare(Operation):
         13: ─├OutSquare──────────────────────────────────────────────────────────├SemiAdder────┤
         14: ─├OutSquare──────────────────────────────────────────────────────────├SemiAdder────┤
         15: ─╰OutSquare──────────────────────────────────────────────────────────╰SemiAdder────┤
+        Gate Count: {Adjoint(TemporaryAND): 2, BasisState(AbstractArray((1,), bool, weak_type=True), wires=AbstractWires(1)): 2, CNOT: 6, MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool, weak_type=True)): 3, OutSquare(x_wires=AbstractWires(2), output_wires=AbstractWires(7), work_wires=AbstractWires(6), output_wires_zeroed=True): 1, PauliX: 8, SemiAdder(x_wires=AbstractWires(1), y_wires=AbstractWires(2), work_wires=AbstractWires(6)): 1, TemporaryAND: 2}
 
     """
 
-    resource_keys = {"num_x_wires", "num_output_wires", "num_work_wires", "output_wires_zeroed"}
-
-    def __init__(
-        self,
-        x_wires: WiresLike,
-        output_wires: WiresLike,
-        work_wires: WiresLike,
-        output_wires_zeroed: bool = False,
-    ):
-
-        x_wires = Wires(x_wires)
-        output_wires = Wires(output_wires)
-        work_wires = Wires(work_wires)
-
-        n = len(x_wires)
-        m = len(output_wires)
-
+    @staticmethod
+    def _min_work_wires(n, m, output_wires_zeroed):
         # Work wires required for the unsigned square (its input is reduced by one)
-        num_required_work_wires = min(n, m) if output_wires_zeroed else m
         # Work wires required for the first correction adder are `min(m-n, n)-1`, which is smaller
         # than `m` and smaller than `n`, so that the unsigned square always needs more work wires.
-        if len(work_wires) < num_required_work_wires:
-            raise ValueError(
-                f"SignedOutSquare requires at least {num_required_work_wires} work wires for "
-                f"{n} input wires, {m} output wires and {output_wires_zeroed=}."
-                f"Got {len(work_wires)} work wires instead."
-            )
-
-        registers = [
-            (work_wires, "work_wires"),
-            (output_wires, "output_wires"),
-            (x_wires, "x_wires"),
-        ]
-        for (reg0, reg0_name), (reg1, reg1_name) in combinations(registers, r=2):
-            if reg0.intersection(reg1):
-                raise ValueError(
-                    f"None of the wires in {reg0_name} should be included in {reg1_name}."
-                )
-
-        for wires, name in registers:
-            self.hyperparameters[name] = wires
-
-        self.hyperparameters["output_wires_zeroed"] = output_wires_zeroed
-        all_wires = x_wires + output_wires + work_wires
-        super().__init__(wires=all_wires)
-
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "num_x_wires": len(self.hyperparameters["x_wires"]),
-            "num_output_wires": len(self.hyperparameters["output_wires"]),
-            "num_work_wires": len(self.hyperparameters["work_wires"]),
-            "output_wires_zeroed": self.hyperparameters["output_wires_zeroed"],
-        }
-
-    @property
-    def num_params(self):
-        return 0
-
-    def _flatten(self):
-        metadata = tuple((key, value) for key, value in self.hyperparameters.items())
-        return tuple(), metadata
-
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        hyperparams_dict = dict(metadata)
-        return cls(**hyperparams_dict)
-
-    def map_wires(self, wire_map: dict):
-        new_dict = {
-            key: [wire_map.get(w, w) for w in self.hyperparameters[key]]
-            for key in ["x_wires", "output_wires", "work_wires"]
-        }
-
-        return SignedOutSquare(
-            new_dict["x_wires"],
-            new_dict["output_wires"],
-            new_dict["work_wires"],
-            self.hyperparameters["output_wires_zeroed"],
-        )
-
-    @classmethod
-    def _primitive_bind_call(cls, *args, **kwargs):
-        return cls._primitive.bind(*args, **kwargs)
+        return min(n, m) if output_wires_zeroed else m
 
 
 def _c_subtract_then_add_one_resources(n, m, num_work_wires, output_wires_zeroed):
     size = min(m - n, n) if output_wires_zeroed else m - n
-    add_base_params = {"num_x_wires": n - 1, "num_y_wires": size, "num_work_wires": size - 1}
-    cadd_params = {
-        "num_control_wires": 1,
-        "num_zero_control_values": 0,
-        "num_work_wires": num_work_wires - size + 1,
-        "work_wire_type": "zeroed",
-    }
-    cadd_resources = _controlled_semi_adder_resource(add_base_params, SemiAdder, **cadd_params)
+    add_base = SemiAdder(Wire[n - 1], Wire[size], Wire[size - 1])
+    cadd_resources = _controlled_semi_adder_resource(
+        add_base, Wire[1], None, Wire[num_work_wires - size + 1], "zeroed"
+    )
 
     # Bit flips on input register
     if n - 1 > 1:
-        basis_rep = resource_rep(BasisState, num_wires=n - 2)
+        basis_rep = BasisState(Bool[n - 2], Wire[n - 2])
         cadd_resources[basis_rep] = cadd_resources.get(basis_rep, 0) + 2
 
-    # Bit flips on output and work registers
-    cadd_resources[X] = cadd_resources.get(X, 0) + (2 + 2 * (num_work_wires > 0))
+    # Bit flips on output and work registers. The work-wire pair only occurs if there is a ladder
+    # elbow to inject it around, i.e. if the underlying adder has more than one ``y`` wire.
+    cadd_resources[X] = cadd_resources.get(X, 0) + (2 + 2 * (num_work_wires > 0 and size > 1))
     return cadd_resources
 
 
@@ -326,27 +246,21 @@ def _c_subtract_then_add_one(c_wire, x_wires, y_wires, work_wires):
     # Flip LSB of output register, due to input carry being set
     X(y_wires[-1])
 
-    # Create C(SemiAdder) decomposition and inject work wire bit flips required for input carry
     m = len(y_wires)
-    with QueuingManager.stop_recording():
-        base = SemiAdder(x_wires, y_wires, work_wires[: m - 1])
-    with AnnotatedQueue() as q:
-        _controlled_semi_adder(
-            base, control_wires=[c_wire], work_wires=work_wires[m - 1 :], work_wire_type="zeroed"
-        )
-    cadder_ops = q.queue
+    # `_controlled_semi_adder` only reads x/y/work_wires from `base`
+    # using SimpleNamespace to avoid having to use capture.pause() and stop_recording()
+    base = SimpleNamespace(x_wires=x_wires, y_wires=y_wires, work_wires=work_wires[: m - 1])
 
-    if work_wires:
-        # We insert work wire bit flips where a carry-in qubit would cause them,
-        # i.e., after the very first left elbow and before the last right elbow
-        with QueuingManager.stop_recording():
-            work_wire_flip = X(work_wires[m - 2])
-        cadder_ops.insert(1, work_wire_flip)
-        cadder_ops.insert(-2, work_wire_flip)
-
-    if QueuingManager.recording():
-        for op in cadder_ops:
-            apply(op)
+    # Inject a work wire bit flip where a carry-in qubit would cause one, i.e. after the very
+    # first left elbow and before the last right elbow.
+    carry_flip = X if work_wires else None
+    _controlled_semi_adder(
+        base,
+        control_wires=[c_wire],
+        work_wires=work_wires[m - 1 :],
+        work_wire_type="zeroed",
+        carry_flip=carry_flip,
+    )
 
     # Flip LSB of output register, due to input carry being set
     X(y_wires[-1])
@@ -356,21 +270,18 @@ def _c_subtract_then_add_one(c_wire, x_wires, y_wires, work_wires):
 
 
 def _signed_out_square_resources(
-    num_x_wires, num_output_wires, num_work_wires, output_wires_zeroed
+    x_wires, output_wires, work_wires, output_wires_zeroed=False
 ) -> dict:
     # pylint: disable=unused-argument
-    n = num_x_wires
-    m = num_output_wires
+    n = len(x_wires)
+    m = len(output_wires)
+    num_work_wires = len(work_wires)
     resources = defaultdict(int)
 
-    square_rep = resource_rep(
-        OutSquare,
-        num_x_wires=n - 1,
-        num_output_wires=num_output_wires,
-        num_work_wires=num_work_wires,
-        output_wires_zeroed=output_wires_zeroed,
+    square_op = OutSquare(
+        Wire[n - 1], Wire[m], Wire[num_work_wires], output_wires_zeroed=output_wires_zeroed
     )
-    resources[square_rep] += 1
+    resources[square_op] += 1
 
     if n < m:
         # Add x_s 2^n (2^{n-1}-x)
@@ -382,9 +293,7 @@ def _signed_out_square_resources(
             # Subtract x_s 2^{2n-2}
             size = min(m - (2 * n - 2), 2) if output_wires_zeroed else m - (2 * n - 2)
             resources[X] += 2 * size
-            add_rep = resource_rep(
-                SemiAdder, num_x_wires=1, num_y_wires=size, num_work_wires=num_work_wires
-            )
+            add_rep = SemiAdder(Wire[1], Wire[size], Wire[num_work_wires])
             resources[add_rep] += 1
 
     return dict(resources)
@@ -396,7 +305,6 @@ def _signed_out_square(
     output_wires: WiresLike,
     work_wires: WiresLike,
     output_wires_zeroed: bool,
-    **_,
 ):
     """Implement signed squaring in three steps: Unsigned squaring, controlled subtraction
     (with input carry), and a single-bit subtraction.

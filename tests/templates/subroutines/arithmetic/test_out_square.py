@@ -19,6 +19,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.core.operator import abstractify
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math import Adjoint, Controlled
 from pennylane.templates.subroutines.arithmetic.out_square import (
@@ -26,10 +27,12 @@ from pennylane.templates.subroutines.arithmetic.out_square import (
     _out_square_with_adder,
     _out_square_with_caddsub,
 )
+from pennylane.templates.subroutines.arithmetic.signed_out_square import SignedOutSquare
+from pennylane.typing import Wire
 
 
 @pytest.mark.parametrize("output_wires_zeroed", [False, True])
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity_out_square(output_wires_zeroed):
     """Check the operation using the assert_valid function."""
     x_wires = [0, 1, 2, 3]
@@ -37,6 +40,72 @@ def test_standard_validity_out_square(output_wires_zeroed):
     work_wires = [11, 12, 13, 14, 15, 16, 17, 18, 19]
     op = OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
     qp.ops.functions.assert_valid(op)
+
+
+@pytest.mark.parametrize("output_wires_zeroed", [False, True])
+@pytest.mark.parametrize(
+    ("x_wires", "output_wires", "work_wires"),
+    [
+        ([0, 1], [2, 3, 4], [5, 6, 7]),
+        ([0, 1, 2], [3, 4], [5, 6]),
+    ],
+)
+def test_abstract_init(x_wires, output_wires, work_wires, output_wires_zeroed):
+    """Test that abstract init mirrors concrete init."""
+    abstract_op = OutSquare(
+        Wire[len(x_wires)],
+        Wire[len(output_wires)],
+        Wire[len(work_wires)],
+        output_wires_zeroed=output_wires_zeroed,
+    )
+    concrete_op = OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
+    assert abstractify(concrete_op) == abstract_op
+
+
+def test_abstract_init_mixed_concrete_and_abstract_wires():
+    """Test that __abstract_init__ is triggered and behaves correctly when only some of
+    the wire registers are abstract, while others are concrete."""
+    x_wires = [0, 1]
+    output_wires = [2, 3, 4]
+    op = OutSquare(x_wires, output_wires, Wire[3], output_wires_zeroed=False)
+    assert op.is_abstract
+    assert len(op.x_wires) == len(x_wires)
+    assert len(op.output_wires) == len(output_wires)
+    assert len(op.work_wires) == 3
+
+
+@pytest.mark.parametrize("output_wires_zeroed", [False, True])
+def test_abstract_init_validation(output_wires_zeroed):
+    """Test that abstract init validates the number of work wires."""
+    with pytest.raises(ValueError, match="OutSquare requires at least"):
+        OutSquare(Wire[3], Wire[3], Wire[1], output_wires_zeroed=output_wires_zeroed)
+
+
+def test_wires_property():
+    """Test that wires includes all registers, including work wires."""
+    op = OutSquare([0, 1, 2], [3, 4, 5], [6, 7, 8])
+    assert op.wires == qp.wires.Wires([0, 1, 2, 3, 4, 5, 6, 7, 8])
+
+
+def test_isinstance_relationship():
+    """Test that OutSquare is not an instance of SignedOutSquare, despite sharing a common
+    private base class."""
+    out_square = OutSquare([0, 1], [2, 3, 4], [5, 6, 7])
+
+    assert not isinstance(out_square, SignedOutSquare)
+    assert isinstance(out_square, qp.core.operator.Operator2)
+
+
+@pytest.mark.parametrize("cls", [OutSquare, SignedOutSquare])
+def test_min_work_wires_not_implemented_in_base_class(cls):
+    """Test that the shared base class's default _min_work_wires implementation raises
+    NotImplementedError."""
+    # Accessed via super() on each public class (rather than importing the
+    # private base class directly) since both OutSquare and SignedOutSquare override this method
+    # and would otherwise never reach the base class's placeholder implementation.
+    with pytest.raises(NotImplementedError):
+        # pylint: disable=protected-access
+        super(cls, cls)._min_work_wires(1, 1, False)
 
 
 def _test_square_correctness(all_wires, rule, seed, output_wires_zeroed, use_jit):
@@ -119,8 +188,8 @@ class TestOutSquare:
         @qp.decompose(max_expansion=2, fixed_decomps=fixed_decomps)
         @qp.qnode(dev)
         def circuit(x, y, x_wires, work_wires):
-            qp.BasisEmbedding(x, wires=x_wires)
-            qp.BasisEmbedding(y, wires=output_wires)
+            qp.BasisEmbedding(qp.math.int_to_binary(x, len(x_wires)), wires=x_wires)
+            qp.BasisEmbedding(qp.math.int_to_binary(y, len(output_wires)), wires=output_wires)
             OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
             return (
                 qp.sample(wires=x_wires),
@@ -227,12 +296,30 @@ class TestOutSquare:
         """Tests the decomposition rule implemented with the new system."""
         op = OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
         for j, rule in enumerate(qp.list_decomps(OutSquare)):
-            applicable = rule.is_applicable(**op.resource_params)
+            applicable = rule.is_applicable(**op.arguments)
             assert applicable is (j in applicable_rules)
             _test_decomposition_rule(op, rule)
             if applicable:
                 all_wires = (x_wires, output_wires, work_wires)
                 _test_square_correctness(all_wires, rule, seed, output_wires_zeroed, use_jit)
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("output_wires_zeroed", [False, True])
+    @pytest.mark.parametrize(
+        ("x_wires", "output_wires", "work_wires"),
+        [
+            ([0, 1, 2, 3], [4, 5, 6], [9, 10, 11]),
+            ([0, 1, 2, 3], [4, 5, 6], [9, 10, 11, 12, 13]),
+        ],
+    )
+    def test_decomposition_rules_with_capture(
+        self, x_wires, output_wires, work_wires, output_wires_zeroed
+    ):
+        """Test that the decomposition rules are consistent with the operator, with program
+        capture enabled and disabled."""
+        op = OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
+        for rule in qp.list_decomps(OutSquare):
+            _test_decomposition_rule(op, rule)
 
     def test_adder_decomposition_output_wires_zeroed(self):
         """Test that the controlled adder decomposition has the expected structure with

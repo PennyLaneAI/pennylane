@@ -21,6 +21,7 @@ from pennylane import math
 from pennylane._class_property import classproperty
 from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.core.operator.operator2 import operator_p, pop_op_eqns  # tach-ignore
+from pennylane.core.queuing import remove_from_program
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
     DecompositionRule,
@@ -35,6 +36,7 @@ from pennylane.decomposition.resources import (
     CompressedResourceOp,
     adjoint_resource_rep,
 )
+from pennylane.decomposition.symbolic_decomposition import self_adjoint
 
 from .symbolicop2 import SymbolicOp2
 
@@ -48,6 +50,11 @@ class Adjoint2(SymbolicOp2):
 
     def __init__(self, base: Operator2):
         super().__init__(base)
+
+    @property
+    @override
+    def data(self):
+        return self.base.data
 
     @property
     @override
@@ -113,10 +120,16 @@ class Adjoint2(SymbolicOp2):
 
     @override
     def simplify(self):
-        base = self.base.simplify()
-        if base.has_adjoint:
-            return base.adjoint().simplify()
-        return Adjoint2(base)
+        new_base = self.base.simplify()
+        if new_base is not self.base:
+            remove_from_program(new_base)  # remove intermediate op from program
+        if new_base.has_adjoint:
+            adjoint_base = new_base.adjoint()
+            simplified_base = adjoint_base.simplify()
+            if simplified_base is not adjoint_base:
+                remove_from_program(adjoint_base)  # remove intermediate op from program
+            return simplified_base
+        return Adjoint2(new_base)
 
     @property
     @override
@@ -184,6 +197,10 @@ def _list_adjoint_decomps(op: Adjoint2) -> DecompCollection:
     # Custom decomposition rules registered specifically to the adjoint operator
     custom_rules = list_decomps.dispatch(object)(abs_op)
 
+    # Shortcut that ignores general rules if an operator is self-adjoint
+    if self_adjoint in custom_rules:
+        return custom_rules
+
     # Decomposition rules populated by applying adjoint on the base decomp rules
     wrapped_rules = DecompCollection(
         [
@@ -250,3 +267,16 @@ def cancel_adjoint(base):
     """Decompose the adjoint of the adjoint of an operator."""
     assert isinstance(base, Adjoint2)
     type(base.base)(**base.base.arguments)
+
+
+def _adjoint_rotation_resource(base):
+    return {abstractify(base): 1}
+
+
+@register_resources(_adjoint_rotation_resource)
+def adjoint_rotation(base):
+    """Decompose the adjoint of a rotation operator by inverting the angle."""
+    # A rotation should only have 1 dynamic parameter
+    assert len(base.dynamic_argnames) == 1
+    angle = tuple(base.dynamic_args.values())[0]
+    qp.ops.functions.bind_new_parameters(base, (-angle,))
