@@ -31,10 +31,11 @@ from pennylane.ops.functions import assert_valid
 from pennylane.ops.functions.assert_valid import (
     _check_eigendecomposition,
     _check_pytree,
+    _reset_operator_tracers,
     _test_decomposition_rule,
 )
 from pennylane.wires import Wires
-from tests.core.operator.operator2_utils import DynOp, OneWireDynOp
+from tests.core.operator.operator2_utils import DynOp, HybridOp, OneWireDynOp
 
 
 class TestDecompositionErrors:
@@ -878,3 +879,42 @@ def test_explicit_list_of_failing_ops(invalid_instance_and_error):
     op, exc_type = invalid_instance_and_error
     with pytest.raises(exc_type):
         assert_valid(op)
+
+
+@pytest.mark.parametrize("child_attr", ["base", "operands"])
+def test_reset_operator_tracers(child_attr):
+    """
+    Test that _reset_operator_tracers resets the tracer of an operator and all its sub-operators.
+    """
+
+    sub_op = qp.RX(0.5, wires=0)
+    sub_op.tracer = "stale-tracer"
+
+    class Symbolic(Operator):
+        """Minimal legacy operator that stores its child under ``base`` or ``operands``."""
+
+        def __init__(self, child, wires):
+            setattr(self, child_attr, child if child_attr == "base" else [child])
+            super().__init__(wires=wires)
+
+    op = Symbolic(sub_op, wires=0)
+
+    _reset_operator_tracers(op)
+    assert sub_op.tracer is None
+
+
+def test_reset_operator_tracers_operator2():
+    """
+    Test that _reset_operator_tracers resets the tracer of an operator2 and all its sub-operators.
+    """
+
+    sub_op = qp.RX(0.5, wires=0)
+    sub_op.tracer = "stale-tracer"
+
+    op = HybridOp([sub_op], wires=0)
+    op.tracer = "stale-tracer"
+
+    _reset_operator_tracers(op)
+
+    assert op.tracer is None
+    assert sub_op.tracer is None
