@@ -722,7 +722,7 @@ def _make_controlled_decomp(base_rule: DecompositionRule):
 
         @qp.for_loop(0, len(control_values))
         def _x_flips(i):
-            qp.cond(qp.math.logical_not(control_wires[i]), qp.X)(control_wires[i])
+            qp.cond(qp.math.logical_not(control_values[i]), qp.X)(control_wires[i])
 
         _x_flips()
         non_traced_args, traced_args = get_traced_and_non_traced_args(base)
@@ -826,14 +826,13 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
     )
     def _impl(base, control_wires, control_values, work_wires, work_wire_type):
 
-        wires = list(control_wires) + list(base.wires)
         if compiler.active() or capture.enabled():
-            wires = math.array(wires, like="jax")
+            control_wires = math.array(control_wires, like="jax")
             control_values = math.array(control_values, like="jax")
 
-        @qp.for_loop(0, len(control_values))
+        @qp.for_loop(0, len(control_wires))
         def _x_flips(i):
-            qp.cond(qp.math.logical_not(control_values[i]), qp.X)(wires[i])
+            qp.cond(qp.math.logical_not(control_values[i]), qp.X)(control_wires[i])
 
         _x_flips()
         rule(

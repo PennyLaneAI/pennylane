@@ -510,9 +510,9 @@ def decompose_mcx_two_controls_elbows(wires, control_values, work_wires, **_):
     elbow_wires = [wires[0], wires[1], work_wires[0]]
 
     _x_flips()  # pylint: disable=no-value-for-parameter
-    qp.Elbow(elbow_wires, control_values)
+    qp.Elbow(elbow_wires)
     qp.CNOT([work_wires[0], wires[2]])
-    qp.adjoint(qp.Elbow)(elbow_wires, control_values)
+    qp.adjoint(qp.Elbow)(elbow_wires)
     _x_flips()  # pylint: disable=no-value-for-parameter
 
 
