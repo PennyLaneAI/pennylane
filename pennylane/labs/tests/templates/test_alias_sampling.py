@@ -106,7 +106,7 @@ class TestUniformPrepOps:
 
 
 def _reconstruct_amplitudes(alt, keep, mu):
-    """Exact ground-truth distribution from the integer alias tables (Eq. 29 from 	arXiv:1805.03662)."""
+    """Exact ground-truth distribution from the integer alias tables (Eq. 29 from arXiv:1805.03662)."""
     L, n = len(alt), 2**mu
     rho = np.zeros(L)
     for l in range(L):
