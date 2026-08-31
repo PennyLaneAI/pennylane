@@ -125,7 +125,9 @@ Implicit QEC
 
 If the ``qec_code`` argument is provided to the Backline object, e.g.,
 
->>> qp.Backline(controller=CPU, coprocessors=[GPU], transport="rdma", qec_code="steane")
+.. codeb-block:: python
+
+    qp.Backline(controller=CPU, coprocessors=[GPU], transport="rdma", qec_code="steane")
 
 then the encoding is automatically applied when compiling via Catalyst as an
 MLIR compilation pass --- the string provided must correspond to an existing
@@ -169,7 +171,7 @@ a correction.
 
     qdev = qp.device("lightning.qubit", wires=3)
     CPU1 = qp.Controller(device=qdev)
-    CPU2 = qp.Coprocessor(coprocessor_fn=steane_decode)
+    CPU2 = qp.Coprocessor(coprocessor_fn="some_decoder")
 
     dev = qp.Backline(controller=CPU1, coprocessors=[CPU2], transport="rdma")
 
