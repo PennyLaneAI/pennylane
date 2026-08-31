@@ -32,7 +32,6 @@ import pennylane as qp
 from pennylane.core.operator import Operator2, abstractify
 from pennylane.decomposition import (
     add_decomps,
-    change_op_basis_resource_rep,
     register_resources,
     resource_rep,
 )
@@ -205,7 +204,15 @@ def _rx_to_rz_ry(phi, wires: WiresLike):
 
 
 def _rx_to_ry_cliff_resources(**_):
-    return {change_op_basis_resource_rep(qp.S, qp.RY): 1}
+    from pennylane.ops.op_math.change_op_basis import (  # pylint: disable=import-outside-toplevel
+        _change_op_basis_abstract,
+    )
+
+    return {
+        _change_op_basis_abstract(
+            abstractify(qp.S), abstractify(qp.RY), _adjoint_abstract(abstractify(qp.S))
+        ): 1
+    }
 
 
 @register_resources(_rx_to_ry_cliff_resources)
@@ -214,7 +221,15 @@ def _rx_to_ry_cliff(phi, wires: WiresLike):
 
 
 def _rx_to_rz_cliff_resources(**_):
-    return {change_op_basis_resource_rep(qp.Hadamard, qp.RZ, qp.Hadamard): 1}
+    from pennylane.ops.op_math.change_op_basis import (  # pylint: disable=import-outside-toplevel
+        _change_op_basis_abstract,
+    )
+
+    return {
+        _change_op_basis_abstract(
+            abstractify(qp.Hadamard), abstractify(qp.RZ), abstractify(qp.Hadamard)
+        ): 1
+    }
 
 
 @register_resources(_rx_to_rz_cliff_resources)
@@ -416,7 +431,15 @@ def _ry_to_rz_rx(phi, wires: WiresLike):
 
 
 def _ry_to_rx_cliff_resources(**_):
-    return {change_op_basis_resource_rep(_adjoint_abstract(qp.S), qp.RX, qp.S): 1}
+    from pennylane.ops.op_math.change_op_basis import (  # pylint: disable=import-outside-toplevel
+        _change_op_basis_abstract,
+    )
+
+    return {
+        _change_op_basis_abstract(
+            abstractify(_adjoint_abstract(qp.S)), abstractify(qp.RX), abstractify(qp.S)
+        ): 1
+    }
 
 
 @register_resources(_ry_to_rx_cliff_resources)
@@ -425,16 +448,24 @@ def _ry_to_rx_cliff(phi, wires: WiresLike):
 
 
 def _ry_to_rz_cliff_resources(**_):
+    from pennylane.ops.op_math.change_op_basis import (  # pylint: disable=import-outside-toplevel
+        _change_op_basis_abstract,
+    )
+
     return {
-        change_op_basis_resource_rep(
-            resource_rep(
-                qp.ops.op_math.Prod,
-                resources={_adjoint_abstract(qp.S): 1, abstractify(qp.Hadamard): 1},
+        _change_op_basis_abstract(
+            abstractify(
+                resource_rep(
+                    qp.ops.op_math.Prod,
+                    resources={_adjoint_abstract(qp.S): 1, abstractify(qp.Hadamard): 1},
+                )
             ),
-            qp.RZ,
-            resource_rep(
-                qp.ops.op_math.Prod,
-                resources={abstractify(qp.S): 1, abstractify(qp.Hadamard): 1},
+            abstractify(qp.RZ),
+            abstractify(
+                resource_rep(
+                    qp.ops.op_math.Prod,
+                    resources={abstractify(qp.S): 1, abstractify(qp.Hadamard): 1},
+                )
             ),
         ): 1
     }
@@ -689,7 +720,15 @@ def _rz_to_ry_rx(phi, wires: WiresLike):
 
 # pylint: disable=unused-argument
 def _rz_to_rx_cliff_resources(phi, wires):
-    return {change_op_basis_resource_rep(qp.Hadamard, qp.RX, qp.Hadamard): 1}
+    from pennylane.ops.op_math.change_op_basis import (  # pylint: disable=import-outside-toplevel
+        _change_op_basis_abstract,
+    )
+
+    return {
+        _change_op_basis_abstract(
+            abstractify(qp.Hadamard), abstractify(qp.RX), abstractify(qp.Hadamard)
+        ): 1
+    }
 
 
 @register_resources(_rz_to_rx_cliff_resources)
@@ -699,16 +738,24 @@ def _rz_to_rx_cliff(phi, wires: WiresLike):
 
 # pylint: disable=unused-argument
 def _rz_to_ry_cliff_resources(phi, wires):
+    from pennylane.ops.op_math.change_op_basis import (  # pylint: disable=import-outside-toplevel
+        _change_op_basis_abstract,
+    )
+
     return {
-        change_op_basis_resource_rep(
-            resource_rep(
-                qp.ops.op_math.Prod,
-                resources={abstractify(qp.S): 1, abstractify(qp.Hadamard): 1},
+        _change_op_basis_abstract(
+            abstractify(
+                resource_rep(
+                    qp.ops.op_math.Prod,
+                    resources={abstractify(qp.S): 1, abstractify(qp.Hadamard): 1},
+                )
             ),
-            qp.RY,
-            resource_rep(
-                qp.ops.op_math.Prod,
-                resources={_adjoint_abstract(qp.S): 1, abstractify(qp.Hadamard): 1},
+            abstractify(qp.RY),
+            abstractify(
+                resource_rep(
+                    qp.ops.op_math.Prod,
+                    resources={_adjoint_abstract(qp.S): 1, abstractify(qp.Hadamard): 1},
+                )
             ),
         ): 1
     }

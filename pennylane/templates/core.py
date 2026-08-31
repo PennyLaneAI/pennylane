@@ -46,12 +46,12 @@ from pennylane.decomposition import (
     CompressedResourceOp,
     add_decomps,
     adjoint_resource_rep,
-    change_op_basis_resource_rep,
     register_resources,
     resource_rep,
 )
 from pennylane.ops import ChangeOpBasis
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.change_op_basis import _change_op_basis_abstract
 from pennylane.pytrees import flatten, unflatten
 from pennylane.typing import AbstractArray, AbstractWires, Wire
 from pennylane.wires import Wires, is_abstract_qubit
@@ -110,7 +110,9 @@ def change_op_basis_subroutine_resource_rep(
         uncompute_rep = _get_adjoint_rep(compute)
     else:
         uncompute_rep = _get_non_adjoint_rep(uncompute)
-    return change_op_basis_resource_rep(compute_rep, target_rep, uncompute_rep)
+    return _change_op_basis_abstract(
+        abstractify(compute_rep), abstractify(target_rep), abstractify(uncompute_rep)
+    )
 
 
 def adjoint_subroutine_resource_rep(

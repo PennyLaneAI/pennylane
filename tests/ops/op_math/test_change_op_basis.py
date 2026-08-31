@@ -30,7 +30,7 @@ from pennylane.exceptions import DeviceError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math import ChangeOpBasis, Prod2, change_op_basis
 from pennylane.ops.op_math.adjoint2 import Adjoint2, _adjoint_abstract
-from pennylane.ops.op_math.change_op_basis import _validate_callable
+from pennylane.ops.op_math.change_op_basis import _change_op_basis_abstract, _validate_callable
 from pennylane.ops.op_math.pow2 import Pow2, _pow_abstract
 from pennylane.templates import Subroutine
 from pennylane.typing import Float, Wire
@@ -309,7 +309,9 @@ def test_abstract_symbolic_resources_do_not_bind(make_rep, expected_type):
     import jax  # pylint: disable=import-outside-toplevel
 
     prod_rep = qp.ops.Prod2((qp.S(Wire[1]),))
-    base = qp.decomposition.change_op_basis_resource_rep(prod_rep, prod_rep, prod_rep)
+    base = _change_op_basis_abstract(
+        abstractify(prod_rep), abstractify(prod_rep), abstractify(prod_rep)
+    )
     rep = make_rep(base)
 
     assert isinstance(rep, expected_type)

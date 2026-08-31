@@ -32,7 +32,6 @@ from pennylane.allocation import allocate
 from pennylane.core.operator import Operator, abstractify
 from pennylane.decomposition import (
     add_decomps,
-    change_op_basis_resource_rep,
     register_resources,
 )
 from pennylane.decomposition.decomposition_rule import DecompCollection, list_decomps
@@ -1264,7 +1263,18 @@ def _toffoli_to_ppr(wires: WiresLike):
 
 
 def _toffoli_elbow_resources(**_):
-    return {change_op_basis_resource_rep(qp.Elbow, qp.CNOT): 1}
+    # Imported lazily to avoid a circular import: change_op_basis pulls in ops.op_math, which is
+    # still initializing when controlled_ops is first imported.
+    from pennylane.ops.op_math.change_op_basis import (  # pylint: disable=import-outside-toplevel
+        _change_op_basis_abstract,
+    )
+
+    _compute_op = abstractify(qp.Elbow)
+    return {
+        _change_op_basis_abstract(
+            _compute_op, abstractify(qp.CNOT), _adjoint_abstract(_compute_op)
+        ): 1
+    }
 
 
 @register_resources(_toffoli_elbow_resources, work_wires={"zeroed": 1})

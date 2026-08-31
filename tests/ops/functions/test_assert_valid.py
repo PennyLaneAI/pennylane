@@ -34,6 +34,7 @@ from pennylane.ops.functions.assert_valid import (
     _test_decomposition_rule,
     _unroll_change_op_basis,
 )
+from pennylane.ops.op_math.change_op_basis import _change_op_basis_abstract
 from pennylane.typing import Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import DynOp, OneWireDynOp
@@ -46,7 +47,9 @@ class TestDecompositionErrors:
         """ChangeOpBasis resource keys are expanded without rewriting other keys."""
         x_rep, y_rep, z_rep = (abstractify(op) for op in (qp.X, qp.Y, qp.Z))
         prod_rep = qp.resource_rep(qp.ops.Prod, resources={x_rep: 2})
-        cob_rep = qp.decomposition.change_op_basis_resource_rep(prod_rep, y_rep, x_rep)
+        cob_rep = _change_op_basis_abstract(
+            abstractify(prod_rep), abstractify(y_rep), abstractify(x_rep)
+        )
 
         result = _unroll_change_op_basis({cob_rep: 2, z_rep: 4, prod_rep: 3})
 
@@ -55,7 +58,7 @@ class TestDecompositionErrors:
     def test_unroll_nested_symbolic_change_op_basis_resources(self):
         """ChangeOpBasis resource keys are recursively expanded through symbolic wrappers."""
         x_rep, y_rep, z_rep = (abstractify(op) for op in (qp.X, qp.Y, qp.Z))
-        cob = qp.decomposition.change_op_basis_resource_rep(x_rep, y_rep, x_rep)
+        cob = _change_op_basis_abstract(abstractify(x_rep), abstractify(y_rep), abstractify(x_rep))
 
         def wrapper(op):
             return qp.adjoint(qp.ctrl(op, control=Wire[1]))

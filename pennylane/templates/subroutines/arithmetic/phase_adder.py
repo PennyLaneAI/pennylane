@@ -24,11 +24,11 @@ from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation, abstractify
 from pennylane.decomposition import (
     add_decomps,
-    change_op_basis_resource_rep,
     register_resources,
     resource_rep,
 )
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.change_op_basis import _change_op_basis_abstract
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
@@ -297,16 +297,16 @@ def _phase_adder_decomposition_resources(num_x_wires, mod) -> dict:
     return {
         ops.PhaseShift: num_x_wires,
         _adjoint_abstract(ops.PhaseShift): num_x_wires,
-        change_op_basis_resource_rep(
-            _adjoint_abstract(QFT(Wire[num_x_wires])),
-            ops.CNOT,
-            QFT(Wire[num_x_wires]),
+        _change_op_basis_abstract(
+            abstractify(_adjoint_abstract(QFT(Wire[num_x_wires]))),
+            abstractify(ops.CNOT),
+            abstractify(QFT(Wire[num_x_wires])),
         ): 1,
         ops.ControlledPhaseShift: num_x_wires,
-        change_op_basis_resource_rep(
-            resource_rep(ops.Prod, resources=dict(basis_op_resources1)),
-            ops.CNOT,
-            resource_rep(ops.Prod, resources=dict(basis_op_resources2)),
+        _change_op_basis_abstract(
+            abstractify(resource_rep(ops.Prod, resources=dict(basis_op_resources1))),
+            abstractify(ops.CNOT),
+            abstractify(resource_rep(ops.Prod, resources=dict(basis_op_resources2))),
         ): 1,
     }
 

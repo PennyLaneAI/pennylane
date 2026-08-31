@@ -23,12 +23,12 @@ from pennylane.core.operator import Operator2, abstractify
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.decomposition import (
     add_decomps,
-    change_op_basis_resource_rep,
     register_condition,
     register_resources,
 )
 from pennylane.decomposition.resources import resource_rep
 from pennylane.ops import BasisState, H, Prod, X, adjoint, change_op_basis, ctrl, prod
+from pennylane.ops.op_math.change_op_basis import _change_op_basis_abstract
 from pennylane.typing import AbstractWires, Bool, Wire
 from pennylane.wires import Wires, WiresLike
 
@@ -339,7 +339,11 @@ def _out_multiplier_with_qft_resources(
         ),
         num_control_wires=num_y_wires,
     )
-    return {change_op_basis_resource_rep(compute_rep, target_rep, uncompute_rep): 1}
+    return {
+        _change_op_basis_abstract(
+            abstractify(compute_rep), abstractify(target_rep), abstractify(uncompute_rep)
+        ): 1
+    }
 
 
 def _out_multiplier_with_qft_condition(

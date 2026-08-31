@@ -22,11 +22,11 @@ from pennylane import math, ops
 from pennylane.core.operator import Operator2, abstractify
 from pennylane.decomposition import (
     add_decomps,
-    change_op_basis_resource_rep,
     register_resources,
     resource_rep,
 )
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.change_op_basis import _change_op_basis_abstract
 from pennylane.typing import AbstractArray, AbstractWires, Bool, Wire
 from pennylane.wires import WiresLike
 
@@ -229,7 +229,9 @@ def _temporary_and_resources(**_):
     )
     return {
         ops.X: _number_xs,
-        change_op_basis_resource_rep(prod_rep, ops.CNOT, prod_rep): 1,
+        _change_op_basis_abstract(
+            abstractify(prod_rep), abstractify(ops.CNOT), abstractify(prod_rep)
+        ): 1,
         _adjoint_abstract(ops.S): 1,
     }
 

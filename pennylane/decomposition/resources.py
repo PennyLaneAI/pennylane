@@ -338,30 +338,6 @@ def adjoint_resource_rep(base_class: type[Operator], base_params: dict = None):
     )
 
 
-def change_op_basis_resource_rep(
-    compute_op: type[Operator] | AbstractOperatorLike,
-    target_op: type[Operator] | AbstractOperatorLike,
-    uncompute_op: type[Operator] | AbstractOperatorLike | None = None,
-):
-    """Creates an abstract :class:`~.ChangeOpBasis` representation of the compute-target-uncompute
-    pattern of operators.
-
-    Args:
-        compute_op: the compressed resource representation of the compute operator
-        target_op: the compressed resource representation of target operator
-        uncompute_op: the compressed resource representation of the uncompute operator
-
-    """
-    # pylint: disable=import-outside-toplevel
-    from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-    from pennylane.ops.op_math.change_op_basis import _change_op_basis_abstract
-
-    compute_op = abstractify(compute_op)
-    target_op = abstractify(target_op)
-    uncompute_op = abstractify(uncompute_op) if uncompute_op else _adjoint_abstract(compute_op)
-    return _change_op_basis_abstract(compute_op, target_op, uncompute_op)
-
-
 def pow_resource_rep(base_class, base_params, z):
     """Creates a ``CompressedResourceOp`` representation of the power of an operator.
 
