@@ -351,7 +351,7 @@ def _is_method_with_no_argument(method):
     return True
 
 
-class TestMscMethods:
+class TestMiscMethods:
     """Test dunder and other miscellaneous methods."""
 
     def test_has_diagonalizing_gates(self):
