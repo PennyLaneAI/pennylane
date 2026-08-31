@@ -21,6 +21,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.ops.op_math.prod2 import Prod2
 
 
@@ -91,6 +92,20 @@ class TestMatrix:
         mat = qp.matrix(Prod2(factors), wire_order=wire_order)
         assert np.allclose(mat, _product_matrix(factors, wire_order))
 
+    def test_matrix_batched(self):
+        """Test that a broadcasted product's matrix is stacked over the batch dimension."""
+        x = np.array([0.1, 0.2, 0.3])
+        y = np.array([0.4, 0.5, 0.6])
+        op = Prod2([qp.RX(x, 0), qp.RY(y, 1)])
+        assert op.batch_size == 3
+        mat = qp.matrix(op, wire_order=[0, 1])
+        # operands act on distinct wires, so each broadcasted matrix is a Kronecker product
+        expected = np.stack(
+            [np.kron(qp.matrix(qp.RX(xi, 0)), qp.matrix(qp.RY(yi, 1))) for xi, yi in zip(x, y)]
+        )
+        assert mat.shape == (3, 4, 4)
+        assert np.allclose(mat, expected)
+
     def test_sparse_matrix(self):
         """Test that the sparse matrix is the ordered matrix product of the factors."""
         factors = [qp.X(0), qp.Z(1)]
@@ -106,6 +121,15 @@ class TestMatrix:
         # RX(0.5) @ RX(0.3) composes to a single RX(0.8) rotation on the shared wire
         mat = op.sparse_matrix(wire_order=[0]).todense()
         assert np.allclose(mat, qp.matrix(qp.RX(0.8, 0)))
+
+    def test_sparse_matrix_batched_raises(self):
+        """Test that a broadcasted product's sparse matrix raises (scipy sparse is 2D only)."""
+        x = np.array([0.1, 0.2, 0.3])
+        op = Prod2([qp.RX(x, 0), qp.RY(x, 1)])
+        assert op.batch_size == 3
+
+        with pytest.raises(SparseMatrixUndefinedError, match="batched operators"):
+            _ = op.sparse_matrix(wire_order=[0, 1])
 
     def test_pauli_rep(self):
         """Test the Pauli representation of a product."""

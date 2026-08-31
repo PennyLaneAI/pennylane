@@ -20,11 +20,14 @@ from collections import Counter
 from functools import reduce
 from typing import override
 
+from scipy.sparse import kron as sparse_kron
+
 import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operator, abstractify
 from pennylane.core.queuing import apply
 from pennylane.decomposition import add_decomps, register_resources
+from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
@@ -130,14 +133,22 @@ class Prod2(CompositeOp2):
     def has_sparse_matrix(  # pylint: disable=arguments-differ,invalid-overridden-method
         self,
     ) -> bool:
-        return all(op.has_sparse_matrix for op in self) or self.pauli_rep is not None
+        return (
+            all(op.has_sparse_matrix for op in self)
+            or self.pauli_rep is not None
+            # Sparse matrices are 2-D. Thus, batch sizes are not supported
+            and self.batch_size is None
+        )
 
     @handle_recursion_error
     def sparse_matrix(self, wire_order=None, format="csr"):
         if self.pauli_rep:
             return self.pauli_rep.to_mat(wire_order=wire_order or self.wires, format=format)
 
-        from scipy.sparse import kron as sparse_kron  # pylint: disable=import-outside-toplevel
+        if self.batch_size is not None:
+            raise SparseMatrixUndefinedError(
+                "Sparse matrices cannot be defined for batched operators."
+            )
 
         if self.has_overlapping_wires or self.num_wires > MAX_NUM_WIRES_KRON_PRODUCT:
             gen = ((op.sparse_matrix(), op.wires) for op in self)

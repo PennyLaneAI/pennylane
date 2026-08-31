@@ -544,6 +544,21 @@ class TestProperties:
             for op1, op2 in zip(list_op1, list_op2):
                 qp.assert_equal(op1, op2)
 
+    def test_no_batching(self):
+        """Test that a composite of unbatched operands has a ``batch_size`` of ``None``."""
+        assert ValidOp((qp.S(0), qp.T(1))).batch_size is None
+
+    def test_batch_size_from_operands(self):
+        """Test that the batch size is taken from the broadcasted operands."""
+        op = ValidOp((qp.RX(np.array([0.1, 0.2, 0.3]), 0), qp.S(1)))
+        assert op.batch_size == 3
+
+    def test_batching_mismatch_raises(self):
+        """Test that operands with mismatched batch sizes raise an error."""
+        op = ValidOp((qp.RX(np.array([0.1, 0.2]), 0), qp.RY(np.array([0.1, 0.2, 0.3]), 1)))
+        with pytest.raises(ValueError, match="do not match"):
+            _ = op.batch_size
+
 
 class TestEqual:
     """Test the generalized ``qp.equal`` dispatch for ``CompositeOp2`` subclasses."""
