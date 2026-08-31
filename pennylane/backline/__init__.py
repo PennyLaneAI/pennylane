@@ -173,7 +173,7 @@ a correction.
     CPU1 = qp.Controller(device=qdev)
     CPU2 = qp.Coprocessor(coprocessor_fn="some_decoder")
 
-    dev = qp.Backline(controller=CPU1, coprocessors=[CPU2], transport="rdma")
+    dev = qp.Backline(controller=CPU1, coprocessors=[CPU2], transport="memcpy")
 
     @qp.qjit(capture=True, autograph=True)
     @qp.qnode(dev)
