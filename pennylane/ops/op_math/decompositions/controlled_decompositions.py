@@ -507,7 +507,7 @@ def _mcx_many_workers_resource(wires, control_values, work_wires, work_wire_type
 @register_condition(_mcx_many_workers_condition)
 @register_resources(_mcx_many_workers_resource)
 # pylint: disable-next=unused-argument
-def _mcx_many_workers(wires, control_values, work_wires, work_wire_type="borrowed"):
+def _mcx_many_workers(wires, control_values=None, work_wires=None, work_wire_type="borrowed"):
     """Decomposes the multi-controlled PauliX gate using the approach in Lemma 7.2 of
     https://arxiv.org/abs/quant-ph/9503016, which requires a suitably large register of
     work wires"""
@@ -591,7 +591,7 @@ def _mcx_two_workers_resource(wires, control_values, work_wires, work_wire_type=
 @register_condition(_mcx_two_workers_condition)
 @register_resources(_mcx_two_workers_resource)
 # pylint: disable-next=unused-argument
-def _mcx_two_workers(wires, control_values, work_wires, work_wire_type="borrowed"):
+def _mcx_two_workers(wires, control_values=None, work_wires=None, work_wire_type="borrowed"):
     r"""
     Synthesise a multi-controlled X gate with :math:`k` controls using :math:`2` auxiliary qubits.
     It produces a circuit with :math:`2k-3` Toffoli gates and depth :math:`O(\log(k))` if using
@@ -679,9 +679,9 @@ def _mcx_one_worker_resource(wires, control_values, work_wires, work_wire_type="
 def _mcx_one_worker(
     wires,
     control_values=None,
-    # work_wires should never be None here, it's because control_values is an optional
-    # argument that could be None, and everything that follows an optional argument
-    # cannot be positional-only.
+    # work_wires should never be None here, it's only like this because control_values
+    # is an optional argument that could be None, and everything that follows an optional
+    # argument must also specify a default value.
     work_wires=None,
     work_wire_type="zeroed",
     *,
