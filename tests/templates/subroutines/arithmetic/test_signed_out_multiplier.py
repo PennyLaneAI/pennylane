@@ -25,9 +25,8 @@ import pennylane as qp
 from pennylane import SignedOutMultiplier, device, qnode
 from pennylane.core.operator import abstractify
 from pennylane.decomposition import list_decomps
-from pennylane.decomposition.resources import controlled_resource_rep
 from pennylane.measurements import sample, state
-from pennylane.ops import CNOT
+from pennylane.ops import CNOT, ctrl
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
 from pennylane.templates import BasisEmbedding
 from pennylane.templates.subroutines.arithmetic.incrementer import Incrementer
@@ -80,7 +79,7 @@ def twos_complement_value(bits):
 def test_abstract_init(
     x_wires, y_wires, output_wires, work_wires, output_wires_zeroed, expected_num_work_wires
 ):  # pylint: disable=too-many-arguments
-    """Test that abstract init mirrors concrete init."""
+    """Tests creating an abstract operator."""
     abstract_op = SignedOutMultiplier(
         Wire[len(x_wires)],
         Wire[len(y_wires)],
@@ -128,11 +127,7 @@ def test_signed_out_multiplier_resources():
         (len(output_wires) - 1, 1),
         (len(y_wires), 2),
     ):
-        inc_rep = controlled_resource_rep(
-            Incrementer,
-            {"num_wires": num_wires, "num_work_wires": num_incrementer_work_wires},
-            num_control_wires=1,
-        )
+        inc_rep = ctrl(Incrementer(Wire[num_wires], Wire[num_incrementer_work_wires]), Wire[1])
         expected_incrementers[inc_rep] += count
 
     for inc_rep, count in expected_incrementers.items():
@@ -174,35 +169,35 @@ def test_assert_valid(x_wires, y_wires, work_wires, output_wires, zeroed):
             [3, 4, 5],
             [6, 7, 8],
             [1, 10],
-            "None of the wires in work_wires should be included in x_wires.",
+            "x_wires and work_wires must not overlap",
         ),
         (
             [0, 1, 2],
             [3, 4, 5],
             [6, 7, 8],
             [3, 10],
-            "None of the wires in work_wires should be included in y_wires.",
+            "y_wires and work_wires must not overlap",
         ),
         (
             [0, 1, 2],
             [2, 4, 5],
             [6, 7, 8],
             [9, 10],
-            "None of the wires in y_wires should be included in x_wires.",
+            "x_wires and y_wires must not overlap",
         ),
         (
             [0, 1, 2],
             [3, 7, 5],
             [6, 7, 8],
             [9, 10],
-            "None of the wires in output_wires should be included in y_wires.",
+            "y_wires and output_wires must not overlap",
         ),
         (
             [0, 1, 7],
             [3, 4, 5],
             [6, 7, 8],
             [9, 10],
-            "None of the wires in output_wires should be included in x_wires.",
+            "x_wires and output_wires must not overlap",
         ),
     ],
 )
