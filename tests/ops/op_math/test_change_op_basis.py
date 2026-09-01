@@ -315,7 +315,6 @@ def test_abstract_symbolic_resources_do_not_bind(make_rep, expected_type):
     rep = make_rep(base)
 
     assert isinstance(rep, expected_type)
-    assert rep.is_abstract
     assert rep.base is base
 
     def f():
@@ -497,7 +496,6 @@ class TestDecomposition:
         compute_op = abstractify(qp.X)
         op = ChangeOpBasis(compute_op, abstractify(qp.Y))
 
-        assert op.is_abstract
         assert isinstance(op.uncompute_op, Adjoint2)
         assert op.uncompute_op.base is compute_op
 

@@ -260,14 +260,6 @@ class ChangeOpBasis(CompositeOp2):
             self._init_args["uncompute_op"] = uncompute_op
         super().__init__((uncompute_op, target_op, compute_op))
 
-    # pylint: disable=arguments-renamed
-    def __abstract_init__(self, compute_op, target_op, uncompute_op=None):
-        # ``CompositeOp2.__abstract_init__`` expects a single ``operands`` tuple; ChangeOpBasis
-        # binds its three named hybrid arguments directly instead.
-        if uncompute_op is None:
-            uncompute_op = _adjoint_abstract(compute_op)
-        Operator2.__abstract_init__(self, compute_op, target_op, uncompute_op)
-
     hybrid_argnames = ("compute_op", "target_op", "uncompute_op")
 
     _hash = None
