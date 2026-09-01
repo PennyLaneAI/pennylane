@@ -204,7 +204,7 @@ def _rx_to_rz_ry(phi, wires: WiresLike):
 
 
 def _rx_to_ry_cliff_resources(**_):
-    from pennylane.ops.op_math.change_op_basis import (  # pylint: disable=import-outside-toplevel
+    from pennylane.ops.op_math.change_op_basis2 import (  # pylint: disable=import-outside-toplevel
         _change_op_basis_abstract,
     )
 
@@ -221,7 +221,7 @@ def _rx_to_ry_cliff(phi, wires: WiresLike):
 
 
 def _rx_to_rz_cliff_resources(**_):
-    from pennylane.ops.op_math.change_op_basis import (  # pylint: disable=import-outside-toplevel
+    from pennylane.ops.op_math.change_op_basis2 import (  # pylint: disable=import-outside-toplevel
         _change_op_basis_abstract,
     )
 
@@ -431,7 +431,7 @@ def _ry_to_rz_rx(phi, wires: WiresLike):
 
 
 def _ry_to_rx_cliff_resources(**_):
-    from pennylane.ops.op_math.change_op_basis import (  # pylint: disable=import-outside-toplevel
+    from pennylane.ops.op_math.change_op_basis2 import (  # pylint: disable=import-outside-toplevel
         _change_op_basis_abstract,
     )
 
@@ -448,7 +448,7 @@ def _ry_to_rx_cliff(phi, wires: WiresLike):
 
 
 def _ry_to_rz_cliff_resources(**_):
-    from pennylane.ops.op_math.change_op_basis import (  # pylint: disable=import-outside-toplevel
+    from pennylane.ops.op_math.change_op_basis2 import (  # pylint: disable=import-outside-toplevel
         _change_op_basis_abstract,
     )
 
@@ -720,7 +720,7 @@ def _rz_to_ry_rx(phi, wires: WiresLike):
 
 # pylint: disable=unused-argument
 def _rz_to_rx_cliff_resources(phi, wires):
-    from pennylane.ops.op_math.change_op_basis import (  # pylint: disable=import-outside-toplevel
+    from pennylane.ops.op_math.change_op_basis2 import (  # pylint: disable=import-outside-toplevel
         _change_op_basis_abstract,
     )
 
@@ -738,7 +738,7 @@ def _rz_to_rx_cliff(phi, wires: WiresLike):
 
 # pylint: disable=unused-argument
 def _rz_to_ry_cliff_resources(phi, wires):
-    from pennylane.ops.op_math.change_op_basis import (  # pylint: disable=import-outside-toplevel
+    from pennylane.ops.op_math.change_op_basis2 import (  # pylint: disable=import-outside-toplevel
         _change_op_basis_abstract,
     )
 

@@ -27,7 +27,7 @@ from pennylane.decomposition import (
 )
 from pennylane.ops import GlobalPhase, Prod, StatePrep, change_op_basis, prod
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.ops.op_math.change_op_basis import _change_op_basis_abstract
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.op_math.composite import CompositeOp
 from pennylane.ops.op_math.symbolicop import SymbolicOp
 from pennylane.templates.embeddings import AmplitudeEmbedding

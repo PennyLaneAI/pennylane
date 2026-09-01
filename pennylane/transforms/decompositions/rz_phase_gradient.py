@@ -17,7 +17,7 @@ Decomposition rule for RZ in terms of `phase gradient states <https://pennylane.
 
 import pennylane as qp
 from pennylane.core.operator import abstractify
-from pennylane.ops.op_math.change_op_basis import _change_op_basis_abstract
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.transforms.rz_phase_gradient import _rz_phase_gradient
 from pennylane.typing import Bool, Wire
 from pennylane.wires import WireError, Wires

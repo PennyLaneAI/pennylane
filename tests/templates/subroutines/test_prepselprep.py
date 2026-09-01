@@ -23,7 +23,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.core.operator import abstractify
-from pennylane.ops.op_math.change_op_basis import _change_op_basis_abstract
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 
 
 @pytest.mark.jax

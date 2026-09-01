@@ -51,7 +51,7 @@ from pennylane.decomposition import (
 )
 from pennylane.ops import ChangeOpBasis
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.ops.op_math.change_op_basis import _change_op_basis_abstract
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.pytrees import flatten, unflatten
 from pennylane.typing import AbstractArray, AbstractWires, Wire
 from pennylane.wires import Wires, is_abstract_qubit

@@ -29,7 +29,7 @@ from scipy.linalg import block_diag
 import pennylane as qp
 from pennylane import math
 from pennylane.allocation import allocate
-from pennylane.core.operator import Operator
+from pennylane.core.operator import Operator, abstractify
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
@@ -1213,7 +1213,7 @@ def _toffoli_to_ppr(wires: WiresLike):
 def _toffoli_elbow_resources(**_):
     # Imported lazily to avoid a circular import: change_op_basis pulls in ops.op_math, which is
     # still initializing when controlled_ops is first imported.
-    from pennylane.ops.op_math.change_op_basis import (  # pylint: disable=import-outside-toplevel
+    from pennylane.ops.op_math.change_op_basis2 import (  # pylint: disable=import-outside-toplevel
         _change_op_basis_abstract,
     )
 

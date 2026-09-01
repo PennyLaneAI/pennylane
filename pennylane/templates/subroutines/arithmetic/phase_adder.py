@@ -28,7 +28,7 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.ops.op_math.change_op_basis import _change_op_basis_abstract
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike

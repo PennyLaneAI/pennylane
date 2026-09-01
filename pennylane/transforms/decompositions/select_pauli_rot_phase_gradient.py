@@ -22,7 +22,7 @@ import pennylane as qp
 from pennylane.core.operator import Operator, abstractify
 from pennylane.ops.op_math import change_op_basis
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.ops.op_math.change_op_basis import _change_op_basis_abstract
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import Int, Wire
 from pennylane.wires import WireError, Wires

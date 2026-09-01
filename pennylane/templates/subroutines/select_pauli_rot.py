@@ -26,7 +26,7 @@ from pennylane.decomposition import (
 from pennylane.ops import CNOT, RZ, Hadamard, S, adjoint, change_op_basis
 from pennylane.ops.op_math import Prod2
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.ops.op_math.change_op_basis import _change_op_basis_abstract
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.templates.state_preparations.mottonen import _apply_uniform_rotation_dagger
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires

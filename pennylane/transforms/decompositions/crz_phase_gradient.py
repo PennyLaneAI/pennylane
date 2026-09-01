@@ -20,7 +20,7 @@ import numpy as np
 
 import pennylane as qp
 from pennylane.core.operator import abstractify
-from pennylane.ops.op_math.change_op_basis import _change_op_basis_abstract
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.typing import Bool, Wire
 
 from .rz_phase_gradient import validate_phase_gradient_wires

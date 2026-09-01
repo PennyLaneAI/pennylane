@@ -1498,7 +1498,7 @@ class IsingZZ(Operator2):
 
 # pylint: disable-next=unused-argument
 def _isingzz_to_cnot_rz_cnot_resources(phi: TensorLike, wires: WiresLike | None = None):
-    from pennylane.ops.op_math.change_op_basis import _change_op_basis_abstract
+    from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 
     return {
         _change_op_basis_abstract(

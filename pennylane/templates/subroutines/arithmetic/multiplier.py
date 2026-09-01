@@ -26,7 +26,7 @@ from pennylane.decomposition import (
 )
 from pennylane.ops import SWAP, Prod, adjoint, change_op_basis, prod
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.ops.op_math.change_op_basis import _change_op_basis_abstract
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.typing import Wire

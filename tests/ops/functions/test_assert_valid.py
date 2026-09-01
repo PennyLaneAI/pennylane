@@ -35,7 +35,7 @@ from pennylane.ops.functions.assert_valid import (
     _test_decomposition_rule,
     _unroll_change_op_basis,
 )
-from pennylane.ops.op_math.change_op_basis import _change_op_basis_abstract
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.typing import Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import DynOp, OneWireDynOp
