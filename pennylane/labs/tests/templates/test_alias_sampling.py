@@ -22,6 +22,8 @@ import pennylane as qp
 from pennylane.labs.templates import alias_sampling, alias_sampling_wires, uniform_prep_ops
 from pennylane.labs.templates.alias_sampling import _build_alias_tables
 
+# pylint: disable=too-few-public-methods
+
 
 def _wire_layout(n_states):
     """Return (target_wires, flag, work_wires, n_wires) for a given n_states."""
@@ -155,11 +157,11 @@ class TestBuildAliasTables:
 @pytest.mark.parametrize(
     "L, mu, expected_target, expected_temp, expected_work",
     [
-        (1, 4, 0, 12, 0),   # Edge case: L=1 -> logL=0, work=0
-        (2, 4, 1, 13, 0),   # Power of 2 -> 0 work wires
-        (3, 5, 2, 17, 2),   # Non-power of 2 -> L_odd=3, k=0 -> work=2
-        (4, 6, 2, 20, 0),   # Power of 2 -> 0 work wires
-        (8, 5, 3, 18, 0),   # Power of 2 -> 0 work wires
+        (1, 4, 0, 12, 0),  # Edge case: L=1 -> logL=0, work=0
+        (2, 4, 1, 13, 0),  # Power of 2 -> 0 work wires
+        (3, 5, 2, 17, 2),  # Non-power of 2 -> L_odd=3, k=0 -> work=2
+        (4, 6, 2, 20, 0),  # Power of 2 -> 0 work wires
+        (8, 5, 3, 18, 0),  # Power of 2 -> 0 work wires
         (16, 7, 4, 25, 0),  # Power of 2 -> 0 work wires
     ],
 )
@@ -190,7 +192,7 @@ class TestAliasSampling:
             np.arange(n), np.cumsum([req["target_wires"], req["temp_wires"]])
         )
 
-        dev = qp.device("lightning.qubit", wires=n)
+        dev = qp.device("default.qubit", wires=n)
 
         @qp.qnode(dev)
         def circuit():
