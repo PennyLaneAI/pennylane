@@ -91,7 +91,7 @@ class TestSelectPauliRot:
         ],
     )
     def test_abstract_init(self, angles, control_wires, target_wire, rot_axis, expected_error):
-        """Test that the abstract init method is works correctly."""
+        """Tests creating abstract operators."""
 
         if expected_error is not None:
             with pytest.raises(ValueError, match=re.escape(expected_error)):

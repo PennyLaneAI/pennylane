@@ -39,6 +39,7 @@ from pennylane.ops.op_math.composite2 import CompositeOp2
 from pennylane.ops.op_math.pow2 import Pow2
 from pennylane.ops.op_math.symbolicop2 import SymbolicOp2
 from pennylane.pytrees import flatten
+from pennylane.typing import AbstractArray, AbstractWires
 from pennylane.wires import Wires
 
 from .equal import assert_equal
@@ -767,6 +768,15 @@ def _assert_valid_operator2(
     assert isinstance(op.dynamic_argnames, tuple), "dynamic_argnames must be a tuple"
     assert_equal(type(op)(**op.arguments), op)
 
+    # check abstractify
+    abstractified_op = abstractify(op)
+    leaves, _ = flatten(abstractified_op, lambda l: isinstance(l, Wires))
+    for l in leaves:
+        if not isinstance(l, (AbstractArray, AbstractWires, CompressedResourceOp)):
+            raise AssertionError(
+                f"Op not properly abstractified. {abstractified_op} had non-abstract leaf {l}."
+            )
+
     if not isinstance(op, (Adjoint2, CompositeOp2, ControlledOp2, Pow2)):
 
         error_msg = "ndim_params must have the same length as dynamic_argnames"
@@ -780,9 +790,8 @@ def _assert_valid_operator2(
     for (name, val), dim in zip(op.wire_args.items(), op.wire_sizes, strict=True):
         # make sure wires have the right sizes
         if op.wire_sizes:
-            assert (dim is None) or (
-                len(val) == dim
-            ), f"Wires argument {name} has an invalid dimension."
+            error_msg = f"Wires argument {name} has an invalid dimension."
+            assert dim is None or len(val) == dim, error_msg
 
     for name, val in op.hybrid_args.items():
         leaves, _ = flatten(val, is_leaf=lambda l: isinstance(l, Operator))

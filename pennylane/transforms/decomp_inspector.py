@@ -358,7 +358,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     4: ───────├●─│──────────────├●────┤
     5: ───────├●─│──────────────├●────┤
          |0>├─╰X─╰●─────────────╰X──┤
-    Estimated First-Level Expansion Gates: {Controlled(MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(2)), control_wires=AbstractWires(1), control_values=AbstractArray((1,), bool, weak_type=True)): 1, MultiControlledX(wires=AbstractWires(4), control_values=AbstractArray((3,), bool, weak_type=True)): 2, PauliX: 3}
+    Estimated First-Level Expansion Gates: {Controlled(MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(2)), control_wires=AbstractWires(1), control_values=AbstractArray((1,), bool)): 1, MultiControlledX(wires=AbstractWires(4), control_values=AbstractArray((3,), bool)): 2, PauliX: 3}
     Actual First-Level Expansion Gates: {Controlled(MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(2)), control_wires=AbstractWires(1), control_values=AbstractArray((1,), bool)): 1, MultiControlledX(wires=AbstractWires(4), control_values=AbstractArray((3,), bool)): 2}
     Wire Allocations: {'zero': 1}
     Full Expansion Gates: {CNOT: 34, GlobalPhase: 74, MidMeasure: 2, RX: 18, RY: 18, RZ: 58}
@@ -370,7 +370,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     3: ─├●─├●────────├●─┤
     4: ─├●─├●────────├●─┤
     5: ─╰●─╰●────────╰●─┤
-    Estimated First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool, weak_type=True)): 1, MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool, weak_type=True)): 2, PauliX: 3}
+    Estimated First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool)): 2, PauliX: 3}
     Actual First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool)): 2}
     Full Expansion Gates: {CNOT: 72, GlobalPhase: 98, MidMeasure: 4, RX: 38, RY: 24, RZ: 80}
     Weighted Cost: 218.0
@@ -482,7 +482,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         5: ───────├●─│──────────────├●────┤
         6: ───────├●─│──────────────├●────┤
              |0>├─╰X─╰●─────────────╰X──┤
-        Estimated First-Level Expansion Gates: {Controlled(MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(2)), control_wires=AbstractWires(1), control_values=AbstractArray((1,), bool, weak_type=True)): 1, MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool, weak_type=True)): 2, PauliX: 4}
+        Estimated First-Level Expansion Gates: {Controlled(MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(2)), control_wires=AbstractWires(1), control_values=AbstractArray((1,), bool)): 1, MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool)): 2, PauliX: 4}
         Actual First-Level Expansion Gates: {Controlled(MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(2)), control_wires=AbstractWires(1), control_values=AbstractArray((1,), bool)): 1, MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool)): 2}
         Wire Allocations: {'zero': 1}
         Full Expansion Gates: {CNOT: 60, GlobalPhase: 115, MidMeasure: 2, RX: 25, RY: 22, RZ: 96}
@@ -495,7 +495,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         4: ─├●─├●────────├●─┤
         5: ─├●─├●────────├●─┤
         6: ─╰●─╰●────────╰●─┤
-        Estimated First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(4), control_values=AbstractArray((4,), bool, weak_type=True)): 1, MultiControlledX(wires=AbstractWires(6), control_values=AbstractArray((5,), bool, weak_type=True)): 2, PauliX: 4}
+        Estimated First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(4), control_values=AbstractArray((4,), bool)): 1, MultiControlledX(wires=AbstractWires(6), control_values=AbstractArray((5,), bool)): 2, PauliX: 4}
         Actual First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(4), control_values=AbstractArray((4,), bool)): 1, MultiControlledX(wires=AbstractWires(6), control_values=AbstractArray((5,), bool)): 2}
         Full Expansion Gates: {CNOT: 102, GlobalPhase: 220, MidMeasure: 6, RX: 58, RY: 42, RZ: 176}
         Weighted Cost: 384.0
@@ -512,8 +512,8 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         6: ──H─╰X──U(M0)─╰X──U(M0)†─╰X──U(M0)─╰X──U(M0)†──H─╰GlobalPhase(-1.57)─┤
         M0 =
         [[ 9.23879533e-01+0.38268343j -5.34910791e-34+0.j        ]
-        [ 5.34910791e-34+0.j          9.23879533e-01-0.38268343j]]
-        Estimated First-Level Expansion Gates: {Adjoint(QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1))): 2, Controlled(GlobalPhase, control_wires=AbstractWires(4), control_values=AbstractArray((4,), bool, weak_type=True)): 1, Hadamard: 2, MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool, weak_type=True)): 4, PauliX: 4, QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1)): 2}
+         [ 5.34910791e-34+0.j          9.23879533e-01-0.38268343j]]
+        Estimated First-Level Expansion Gates: {Adjoint(QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1))): 2, Controlled(GlobalPhase, control_wires=AbstractWires(4), control_values=AbstractArray((4,), bool)): 1, Hadamard: 2, MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool)): 4, PauliX: 4, QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1)): 2}
         Actual First-Level Expansion Gates: {Adjoint(QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1))): 2, Controlled(GlobalPhase, control_wires=AbstractWires(4), control_values=AbstractArray((4,), bool)): 1, Hadamard: 2, MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool)): 4, QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1)): 2}
         Full Expansion Gates: {CNOT: 58, GlobalPhase: 62, RX: 19, RY: 14, RZ: 61}
         Weighted Cost: 152.0
@@ -618,8 +618,8 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         6: ──H─╰X──U(M0)─╰X──U(M0)†─╰X──U(M0)─╰X──U(M0)†──H─╰GlobalPhase(-1.57)─┤
         M0 =
         [[ 9.23879533e-01+0.38268343j -5.34910791e-34+0.j        ]
-        [ 5.34910791e-34+0.j          9.23879533e-01-0.38268343j]]
-        Estimated First-Level Expansion Gates: {Adjoint(QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1))): 2, Controlled(GlobalPhase, control_wires=AbstractWires(4), control_values=AbstractArray((4,), bool, weak_type=True)): 1, Hadamard: 2, MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool, weak_type=True)): 4, PauliX: 4, QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1)): 2}
+         [ 5.34910791e-34+0.j          9.23879533e-01-0.38268343j]]
+        Estimated First-Level Expansion Gates: {Adjoint(QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1))): 2, Controlled(GlobalPhase, control_wires=AbstractWires(4), control_values=AbstractArray((4,), bool)): 1, Hadamard: 2, MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool)): 4, PauliX: 4, QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1)): 2}
         Actual First-Level Expansion Gates: {Adjoint(QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1))): 2, Controlled(GlobalPhase, control_wires=AbstractWires(4), control_values=AbstractArray((4,), bool)): 1, Hadamard: 2, MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool)): 4, QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1)): 2}
         Full Expansion Gates: {CNOT: 58, GlobalPhase: 62, RX: 19, RY: 14, RZ: 61}
         Weighted Cost: 152.0
