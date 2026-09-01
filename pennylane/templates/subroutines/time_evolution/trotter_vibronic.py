@@ -246,7 +246,7 @@ class TrotterVibronic(Operator2):
         **2. Phase-gradient arithmetic.**
         Each fragment is diagonal, so evolving it reduces to imprinting a phase per basis state
         with the `phase-gradient trick <https://pennylane.ai/compilation/phase-gradient>`__: the
-        ``phase_gradient_wires`` hold
+        ``phase_gradient_wires`` are required to hold
 
         .. math::
 
@@ -266,7 +266,7 @@ class TrotterVibronic(Operator2):
         The sign of the ADD identity is positive, so coefficients are negated before encoding,
         :math:`m = \text{encode}(-\tau\theta_{i,a})`, giving the target :math:`e^{-i\tau\theta}`.
         Rounding to :math:`b` bits (mod :math:`2\pi`) is a discretization error on top of the
-        Trotter and AQFT truncation.
+        Trotter truncation.
 
         **3. Electronic diagonalization.**
         Each position fragment is diagonalized by a Clifford :math:`V_i` (Fig. 2 of the reference),
@@ -435,8 +435,8 @@ def _trotter_vibronic_resources(
 ):
     """Coarse (upper-bound) gate counts for the vibronic Trotter circuit.
 
-    Terms whose coefficients vanish are skipped at runtime (``exact=False``). Sub-operations are
-    counted at top level with wire-sized operator/resource keys for the decomposition graph.
+    This estimate is intentionally inexact (``exact=False``): terms whose coefficients happen to
+    vanish are skipped at runtime, and the sub-operations are counted at their top level.
     """
     # ``evolution_time`` and ``cache_wires`` are part of the shared resource/decomposition
     # signature but do not affect the (structural) gate counts.
@@ -455,56 +455,58 @@ def _trotter_vibronic_resources(
     n_work = len(work_wires) if len(work_wires) > 0 else max(n_elec - 1, 2 * k, 2 * b + 2)
     num_pairs = n_modes * (n_modes - 1) // 2
 
-    # Dummy wire labels; only counts matter after abstractification.
-    _next = [0]
-
-    def ww(size):
-        size = max(size, 0)
-        wires = list(range(_next[0], _next[0] + size))
-        _next[0] += size
-        return wires
-
     # Each Trotter step visits every position fragment twice (forward + backward).
     position_visits = 2 * num_fragments * num_trotter_steps
 
     # Data loading (QROM) and the arithmetic primitives, sized to match ``_extract_registers``.
+    # ``Wire[size]`` builds an abstract wire register of the given size; only the sizes matter
+    # for resource counting, so registers of the same operator need not be kept disjoint.
     qrom = QROM(
         np.zeros((n_states, b), dtype=int),
-        control_wires=ww(n_elec),
-        target_wires=ww(b),
-        work_wires=ww(max(n_elec - 1, 0)),
+        control_wires=Wire[n_elec],
+        target_wires=Wire[b],
+        work_wires=Wire[max(n_elec - 1, 0)],
     )
-    semi_adder = SemiAdder(x_wires=ww(b), y_wires=ww(n_pg), work_wires=ww(n_work))
+    semi_adder = SemiAdder(x_wires=Wire[b], y_wires=Wire[n_pg], work_wires=Wire[n_work])
 
     # ``OutMultiplier`` appears with three different ``y`` register sizes: inside the half-signed
     # multiplier for the linear terms (``y = k``, the mode register) and the bilinear terms
     # (``y = 2k``, the cache register), and directly for the quadratic/kinetic terms
     # (``y = 2k - 1``, the cache register minus its sign bit).
     out_mult_linear = OutMultiplier(
-        x_wires=ww(b), y_wires=ww(k), output_wires=ww(n_pg), work_wires=ww(max(n_work - 1, 0))
+        x_wires=Wire[b],
+        y_wires=Wire[k],
+        output_wires=Wire[n_pg],
+        work_wires=Wire[max(n_work - 1, 0)],
     )
     out_mult_bilinear = OutMultiplier(
-        x_wires=ww(b), y_wires=ww(2 * k), output_wires=ww(n_pg), work_wires=ww(max(n_work - 1, 0))
+        x_wires=Wire[b],
+        y_wires=Wire[2 * k],
+        output_wires=Wire[n_pg],
+        work_wires=Wire[max(n_work - 1, 0)],
     )
     out_mult_quad = OutMultiplier(
-        x_wires=ww(b), y_wires=ww(max(2 * k - 1, 1)), output_wires=ww(n_pg), work_wires=ww(n_work)
+        x_wires=Wire[b],
+        y_wires=Wire[max(2 * k - 1, 1)],
+        output_wires=Wire[n_pg],
+        work_wires=Wire[n_work],
     )
     signed_out_mult = SignedOutMultiplier(
-        x_wires=ww(k),
-        y_wires=ww(k),
-        output_wires=ww(2 * k),
-        work_wires=ww(n_work),
+        x_wires=Wire[k],
+        y_wires=Wire[k],
+        output_wires=Wire[2 * k],
+        work_wires=Wire[n_work],
         output_wires_zeroed=True,
     )
     signed_square = SignedOutSquare(
-        x_wires=ww(k),
-        output_wires=ww(max(2 * k - 1, 1)),
-        work_wires=ww(n_work),
+        x_wires=Wire[k],
+        output_wires=Wire[max(2 * k - 1, 1)],
+        work_wires=Wire[n_work],
         output_wires_zeroed=True,
     )
     # Mirror the decomposition's resolution of ``aqft_order`` (``k - 1`` when unset) so the
     # resource estimate and the emitted circuit agree.
-    aqft = _aqft(order=(aqft_order if aqft_order is not None else k - 1), wires=ww(k))
+    aqft = _aqft(order=(aqft_order if aqft_order is not None else k - 1), wires=Wire[k])
 
     # The compute/uncompute pairs are emitted as ``adjoint(...)`` wrappers in the decomposition, so
     # they must be declared as such (not as their bare base ops) for the graph to find a path.
@@ -514,17 +516,17 @@ def _trotter_vibronic_resources(
 
     # The sign-bit-controlled two's complement (compute + uncompute) acts on the ``k``-wire mode
     # register (linear terms) and the ``2k``-wire cache register (bilinear terms).
-    ctrl_incrementer_linear = ctrl(Incrementer(ww(k), ww(max(n_work - 1, 0))), ww(1))
-    ctrl_incrementer_bilinear = ctrl(Incrementer(ww(2 * k), ww(max(n_work - 1, 0))), ww(1))
+    ctrl_incrementer_linear = ctrl(Incrementer(Wire[k], Wire[max(n_work - 1, 0)]), Wire[1])
+    ctrl_incrementer_bilinear = ctrl(Incrementer(Wire[2 * k], Wire[max(n_work - 1, 0)]), Wire[1])
 
     resources = defaultdict(int)
 
     # -- Electronic diagonalization (forward + adjoint per visit) --
-    resources[Hadamard(wires=ww(1))] += 2 * position_visits
+    resources[Hadamard(wires=Wire[1])] += 2 * position_visits
 
     # -- CNOTs: electronic diagonalization plus the half-signed multipliers, which cache the sign
     #    bit, invert the register for the two's complement, and apply the controlled output flips --
-    resources[CNOT(wires=ww(2))] += (
+    resources[CNOT(wires=Wire[2])] += (
         2 * position_visits * max(n_elec - 1, 0)
         + position_visits * n_modes * (2 + 2 * k + 2 * n_pg)
         + position_visits * num_pairs * (2 + 4 * k + 2 * n_pg)
@@ -554,7 +556,7 @@ def _trotter_vibronic_resources(
     #    basis state (conditional PauliX per coefficient wire), then AQFT + SignedOutSquare +
     #    OutMultiplier and their uncomputation --
     kinetic_visits = num_trotter_steps * n_modes
-    resources[X(wires=ww(1))] += kinetic_visits * 2 * b
+    resources[X(wires=Wire[1])] += kinetic_visits * 2 * b
     resources[aqft] += kinetic_visits
     resources[adj_aqft] += kinetic_visits
     resources[signed_square] += kinetic_visits

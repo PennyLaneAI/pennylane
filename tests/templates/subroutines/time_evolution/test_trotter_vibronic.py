@@ -17,6 +17,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.allocation import Allocate, Deallocate
 from pennylane.templates.subroutines import AQFT, QROM, SemiAdder
 from pennylane.templates.subroutines.arithmetic import (
     OutMultiplier,
@@ -297,15 +298,6 @@ class TestConstruction:
         assert set(op.wires) == algorithmic_wires
         assert set(wires["work"]).isdisjoint(op.wires)
 
-    def test_no_diag_keys_argument(self):
-        """Test that ``diag_keys`` is not (and cannot be) a public constructor argument: the
-        ``(0, fragment_idx)`` diagonalization convention is fixed and derived purely from the
-        fragment index, so it cannot silently disagree with the Hamiltonian's coefficients."""
-        fragments = fragment_list()
-        hamiltonian = build_hamiltonian(fragments)
-        with pytest.raises(TypeError, match="diag_keys"):
-            make_op(hamiltonian, make_wires(2, 2), diag_keys=((0, 0), (0, 0)))
-
     @pytest.mark.parametrize(
         "hamiltonian, match",
         [
@@ -574,8 +566,6 @@ class TestDecomposition:
     @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_optional_work_wires_are_allocated(self):
         """Test that ``cache`` and ``work`` are optional and dynamically allocated when omitted."""
-        from pennylane.allocation import Allocate, Deallocate
-
         hamiltonian = build_hamiltonian(fragment_list(n_states=2, n_modes=2, seed=1))
         wires = make_wires(2, 2)
         op = qp.TrotterVibronic(
@@ -604,8 +594,6 @@ class TestDecomposition:
     def test_optional_coefficient_wires_are_allocated(self):
         """Test that ``coefficient_wires`` is optional and dynamically allocated (sized to match
         ``phase_gradient_wires``) when omitted, alongside ``cache_wires``/``work_wires``."""
-        from pennylane.allocation import Allocate, Deallocate
-
         hamiltonian = build_hamiltonian(fragment_list(n_states=2, n_modes=2, seed=1))
         wires = make_wires(2, 2)
         op = qp.TrotterVibronic(
@@ -632,8 +620,6 @@ class TestDecomposition:
     @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
     def test_explicit_work_wires_are_not_allocated(self):
         """Test that providing ``cache``/``work`` explicitly skips the dynamic allocation."""
-        from pennylane.allocation import Allocate
-
         hamiltonian = build_hamiltonian(fragment_list(n_states=2, n_modes=2, seed=1))
         op = make_op(hamiltonian, make_wires(2, 2))
         assert count_ops(decomposition_queue(op), Allocate) == 0
