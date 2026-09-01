@@ -14,6 +14,7 @@
 """
 This submodule defines a class for compute-uncompute patterns.
 """
+from pennylane.decomposition.resources import change_op_basis_resource_rep
 
 import copy
 import inspect
@@ -354,12 +355,7 @@ def _change_op_basis_abstract(compute_op, target_op, uncompute_op):
     """Construct a native abstract COB across the legacy resource boundary."""
     if all(isinstance(op, Operator2) for op in (compute_op, target_op, uncompute_op)):
         return ChangeOpBasis(compute_op, target_op, uncompute_op)
-
-    # CompressedResourceOp is an opaque legacy resource leaf, so OperatorMeta cannot route this
-    # mixed representation through abstract initialization.
-    op = ChangeOpBasis.__new__(ChangeOpBasis)
-    op.__abstract_init__(compute_op, target_op, uncompute_op)
-    return op
+    return change_op_basis_resource_rep(compute_op, target_op, uncompute_op)
 
 
 def _change_op_basis_resources(compute_op, target_op, uncompute_op):
