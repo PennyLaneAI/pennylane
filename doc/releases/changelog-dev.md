@@ -425,7 +425,7 @@
   capture where the reduction is applied statically. Templates that decompose via
   :class:`~.BasisRotation`, such as :class:`~.TrotterCDF` and :class:`~.TrotterCGF`, inherit the
   reduction; dense rotations are unaffected.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#10097)](https://github.com/PennyLaneAI/pennylane/pull/10097)
 
 * :class:`~.IsingZZ`'s decomposition is now expressed as a :func:`~.change_op_basis` (``CNOT``
   compute/uncompute around the ``RZ``) instead of three bare gates. This lets PennyLane's generic
