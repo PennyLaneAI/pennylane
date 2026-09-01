@@ -313,14 +313,14 @@ def alias_sampling_thc(  # pylint: disable=too-many-arguments,too-many-positiona
         N (int): the number of spin orbitals. Requires ``N // 2 <= M + 1``
         zeta (tensor_like): the THC central tensor, shape ``(M, M)``
         t_ell (tensor_like): the one-body eigenvalues, shape ``(N // 2,)``
-        mu_wires (Sequence[int]): the ``n`` wires storing the first THC index
+        mu_wires (WiresLike): the ``n`` wires storing the first THC index
             :math:`\mu`. Requires exactly ``n = ceil(log2(M + 1))`` wires
-        nu_wires (Sequence[int]): the ``n`` wires storing the second THC index
+        nu_wires (WiresLike): the ``n`` wires storing the second THC index
             :math:`\nu`. Must have the same length as ``mu_wires``
-        edge_flag (int or str or Wires): the single wire holding the one-body sentinel flag
+        edge_flag (WiresLike): the single wire holding the one-body sentinel flag
             (true when the ``nu`` register is in state :math:`\lvert M \rangle`), as
             produced by :class:`~pennylane.labs.templates.SuperpositionTHC`
-        work_wires (Sequence[int]): the auxiliary wires. At least
+        work_wires (WiresLike): the auxiliary wires. At least
             ``n_d + 2 * n + 3 * aleph + 4`` zeroed work wires are required, where
             ``n = ceil(log2(M + 1))`` and
             ``n_d = ceil(log2(N // 2 + M (M + 1) // 2)) + 1``

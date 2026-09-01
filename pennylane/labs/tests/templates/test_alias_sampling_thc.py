@@ -24,7 +24,6 @@ from pennylane.labs.templates import (
     alias_sampling_thc,
     alias_sampling_thc_wires,
 )
-
 from pennylane.labs.templates.alias_sampling_thc import (
     _build_alias_tables,
     _build_qrom_data,
