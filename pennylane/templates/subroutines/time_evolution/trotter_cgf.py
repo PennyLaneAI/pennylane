@@ -23,12 +23,13 @@ from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.numeric_hamiltonians import CGFHamiltonian
 from pennylane.ops import CNOT, RZ, GlobalPhase, IsingZZ, PhaseShift
+from pennylane.ops.op_math import ctrl
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.templates.subroutines.qchem.basis_rotation import BasisRotation
-from pennylane.typing import AbstractArray, AbstractWires, Complex, Wire
+from pennylane.typing import AbstractArray, AbstractWires, Complex, Float, Wire
 from pennylane.wires import WiresLike
 
-from ._trotter_utils import _emit_one_body_rz, _emit_two_body_isingzz, _run_trotter_steps
+from ._trotter_utils import _emit_one_body_rz, _run_trotter_steps
 
 # pylint: disable=too-many-arguments, no-value-for-parameter, unused-argument
 
@@ -122,13 +123,13 @@ class TrotterCGF(Operator2):
 
     Or check the quantum resources required for this task. Because the (default) controlled
     decomposition is a genuine controlled unitary, each diagonal rotation is individually
-    controlled, so it decomposes into :class:`~.CNOT` and :class:`~.RZ` gates rather than
-    :class:`~.IsingZZ`. Note that the order of the keys in the ``quantum_operations`` dictionary
-    is not guaranteed, so we sort it before printing:
+    controlled via ``ctrl(RZ(...))`` and ``ctrl(IsingZZ(...))`` (showing up here as
+    :class:`~.CRZ` and controlled :class:`~.IsingZZ`). Note that the order of the keys in
+    the ``quantum_operations`` dictionary is not guaranteed, so we sort it before printing:
 
     >>> specs = qp.specs(trotter_circuit)()["resources"].quantum_operations
     >>> dict(sorted(specs.items()))
-    {'CNOT': 840, 'Hadamard': 1, 'PhaseShift': 1, 'RZ': 480, 'SingleExcitation': 186}
+    {'C(IsingZZ)': 180, 'CRZ': 60, 'Hadamard': 1, 'PhaseShift': 1, 'SingleExcitation': 186}
 
     The :class:`~.SingleExcitation` gates are due to :class:`~.BasisRotation` decomposing into
     :class:`~.PhaseShift` and :class:`~.SingleExcitation` on ``lightning.qubit``.
@@ -367,15 +368,13 @@ def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, dou
     """Apply the two-body ``IsingZZ`` layer (base / double-phase / genuine controlled).
 
     Genuine control and double-phase are mutually exclusive constructions for a controlled
-    ``IsingZZ``, chosen once here via ``is_double_phase``: genuine control sandwiches each
-    ``IsingZZ`` individually (inside :func:`~._emit_two_body_isingzz`); double-phase instead
-    shares *one* ``CNOT`` sandwich across every term touching a given ``wire_lp``, which is
-    cheaper since ``IsingZZ`` itself stays uncontrolled either way.
+    ``IsingZZ``, chosen once here via ``double_phase``: genuine control uses
+    ``ctrl(IsingZZ(...))`` on each term; double-phase instead shares *one* ``CNOT`` sandwich
+    across every term touching a given ``wire_lp``, which is cheaper since ``IsingZZ`` itself
+    stays uncontrolled either way.
     """
     num_modes = Z.shape[0]
     n_states = Z.shape[2]
-    # Double-phase assumes a single control wire; ``register_condition`` below enforces this.
-    is_double_phase = len(control_wires) == 1 and double_phase
 
     for l in range(1, num_modes):
         for m in range(l):  # strict lower triangle: l > m
@@ -389,7 +388,7 @@ def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, dou
                 def _angle(q):
                     return 0.5 * Z_lm[p, q] * first_order_time_step
 
-                if is_double_phase:
+                if double_phase:
 
                     @for_loop(n_states)
                     def _q_loop(q, wire_lp=wire_lp, m=m):
@@ -404,7 +403,12 @@ def _apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, dou
                     @for_loop(n_states)
                     def _q_loop(q, wire_lp=wire_lp, m=m):
                         wire_mq = wires[m * n_states + q]
-                        _emit_two_body_isingzz(_angle(q), wire_lp, wire_mq, control_wires)
+                        angle = _angle(q)
+                        zz_wires = [wire_lp, wire_mq]
+                        if len(control_wires) == 0:
+                            IsingZZ(angle, zz_wires)
+                        else:
+                            ctrl(IsingZZ(angle, zz_wires), control=control_wires)
 
                     _q_loop()
 
@@ -492,19 +496,17 @@ def _cgf_resource_counts(num_trotter_steps, hamiltonian, has_control, double_pha
         resources[RZ] += num_onebody_rotations
         resources[GlobalPhase] += 1
     elif double_phase:
-        # Double-phase (Fig. 6 https://arxiv.org/abs/2506.15784): bare IsingZZ / RZ rotations, plus one CNOT pair around
-        # each diagonal block, plus an RZ on the control wire for the global phase.
-        resources[IsingZZ] += num_twobody_rotations
-        resources[RZ] += num_onebody_rotations
+        # Double-phase (Fig. 6 https://arxiv.org/abs/2506.15784): ``IsingZZ`` on every diagonal
+        # term (one- and two-body), plus one CNOT pair around each *two-body* block, plus an RZ on
+        # the control wire for the global phase.
+        resources[IsingZZ] += num_twobody_rotations + num_onebody_rotations
         resources[CNOT] += num_twobody_blocks * num_pairs * 2 * n_states
-        resources[CNOT] += num_onebody_blocks * 2 * num_modes * n_states
         resources[RZ] += 1
     else:
-        # Genuine controlled: each IsingZZ -> controlled-IsingZZ (4 CNOT + 2 RZ) and each
-        # RZ -> controlled-RZ (2 CNOT + 2 RZ); the global phase becomes a PhaseShift on
-        # the control wire. There are no bare IsingZZ gates.
-        resources[RZ] += 2 * num_twobody_rotations + 2 * num_onebody_rotations
-        resources[CNOT] += 4 * num_twobody_rotations + 2 * num_onebody_rotations
+        # Genuine controlled: one-body ``ctrl(RZ(...))``, two-body ``ctrl(IsingZZ(...))``; the
+        # global phase becomes a PhaseShift on the control wire. There are no bare IsingZZ/RZ gates.
+        resources[ctrl(RZ(Float, wires=Wire[1]), control=Wire[1])] += num_onebody_rotations
+        resources[ctrl(IsingZZ(Float, wires=Wire[2]), control=Wire[1])] += num_twobody_rotations
         resources[PhaseShift] += 1
 
     return dict(resources)
