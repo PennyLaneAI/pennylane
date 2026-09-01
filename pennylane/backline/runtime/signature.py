@@ -82,6 +82,8 @@ class CType(Enum):
          - A writable buffer. The caller gives its size with ``out_bytes=`` instead of passing an
            argument, then receives the filled buffer alongside the result.
 
+    |
+
     The special types change how arguments and results are supplied. For example:
 
     .. code-block:: python
