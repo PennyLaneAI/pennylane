@@ -23,7 +23,7 @@ from pennylane import allocate, for_loop, math
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.typing import Bool, Complex, Int, TensorLike, Wire
+from pennylane.typing import AbstractArray, Bool, Complex, Int, TensorLike, Wire
 from pennylane.wires import WiresLike
 
 SoSData = namedtuple("data", ["u_bits", "b_bits", "d", "r", "m"])
@@ -959,13 +959,13 @@ class SumOfSlatersPrep(Operator2):
         )
 
     @staticmethod
-    def required_register_sizes(indices: tuple[int], num_wires: int) -> dict:
+    def required_register_sizes(indices: tuple[int] | AbstractArray, num_wires: int) -> dict:
         """Compute the register sizes required for ``SumOfSlatersPrep``, for given
         computational basis states, ``indices``, and number of target wires, ``num_wires``.
 
         Args:
-            indices (tuple[int]): Indices of computational basis states of the sparse state to be
-                prepared with ``SumOfSlatersPrep``.
+            indices (tuple[int] or AbstractArray): Indices of computational basis states of the
+                sparse state to be prepared with ``SumOfSlatersPrep``.
             num_wires (int): Number of target wires on which ``SumOfSlatersPrep``
                 will prepare the state.
 
@@ -974,7 +974,22 @@ class SumOfSlatersPrep(Operator2):
             of length ``num_wires`` with the label ``"wires"``, matching the call signature
             of ``SumOfSlatersPrep``.
 
+        This function supports an abstract input for ``indices``, in which case an upper bound
+        for the register sizes, across all possible sets of basis states of the given length, is
+        returned:
+
+        >>> indices = qp.typing.Int[45]
+        >>> qp.SumOfSlatersPrep.required_register_sizes(indices, 18)
+        {'wires': 18,
+         'enumeration_wires': 6,
+         'identification_wires': 11,
+         'qrom_work_wires': 5,
+         'mcx_cache_wires': 10}
+
         """
+        if isinstance(indices, AbstractArray):
+            return SumOfSlatersPrep._required_register_sizes_abstract(len(indices), num_wires)
+
         _, vtilde_bits = select_sos_rows(math.int_to_binary(np.array(indices), num_wires).T)
         num_bits, num_entries = vtilde_bits.shape
         return SumOfSlatersPrep._required_register_sizes_from_nums(num_entries, num_bits, num_wires)
@@ -1026,6 +1041,19 @@ class SumOfSlatersPrep(Operator2):
             "identification_wires": num_identification,
             "qrom_work_wires": d - 1,
             "mcx_cache_wires": m - 1,
+        }
+
+    @staticmethod
+    def _required_register_sizes_abstract(num_entries: int, num_wires: int) -> dict:
+        """Compute the upper bound of the required register sizes, if only the number of
+        basis states, but not the concrete states to be prepared, is known."""
+        d = math.ceil_log2(num_entries)
+        return {
+            "wires": num_wires,
+            "enumeration_wires": d,
+            "identification_wires": 2 * d - 1,
+            "qrom_work_wires": d - 1,
+            "mcx_cache_wires": 2 * d - 2,
         }
 
 

@@ -419,6 +419,20 @@
 
 <h3>Improvements 🛠</h3>
 
+* :func:`~.SumOfSlatersPrep.required_register_sizes` now works with abstract ``indices`` as input,
+  for which it returns an upper bound for the register sizes, across any set of indices of the
+  provided length.
+  [(#10084)](https://github.com/PennyLaneAI/pennylane/pull/10084)
+
+  ```pycon
+  >>> num_wires = 8
+  >>> num_entries = 16
+  >>> indices = qp.typing.Int[num_entries]
+  >>> qp.SumOfSlatersPrep.required_register_sizes(indices, num_wires)
+  {'wires': 8, 'enumeration_wires': 4, 'identification_wires': 7, 'qrom_work_wires': 3, 'mcx_cache_wires': 6}
+
+  ```
+
 * :class:`~.IsingZZ`'s decomposition is now expressed as a :func:`~.change_op_basis` (``CNOT``
   compute/uncompute around the ``RZ``) instead of three bare gates. This lets PennyLane's generic
   ``C(ChangeOpBasis)`` rule automatically control only the ``RZ`` for any number of control wires,
