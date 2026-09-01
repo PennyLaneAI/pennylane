@@ -354,7 +354,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
 
         mapped_op = op.map_wires({0: "a", 1: "b", 2: "c"})
 
-        assert mapped_op.wires == Wires(("c", "b", "a"))
+        assert mapped_op.wires == Wires(("a", "b", "c"))
         qp.assert_equal(mapped_op.compute_op, qp.X("a"))
         qp.assert_equal(mapped_op.target_op, NonParametricOp("b"))
         qp.assert_equal(mapped_op.uncompute_op, qp.RX(0.2, "c"))
@@ -448,7 +448,7 @@ class TestWrapperFunc:  # pylint: disable=too-few-public-methods
 
         factors = (qp.PauliX(wires=1), qp.RX(1.23, wires=0), qp.CNOT(wires=[0, 1]))
 
-        change_op_basis_func_op = change_op_basis(*factors)
+        change_op_basis_func_op = ChangeOpBasis2(*factors)
         change_op_basis_class_op = ChangeOpBasis2(*factors)
         qp.assert_equal(change_op_basis_func_op, change_op_basis_class_op)
 
@@ -560,7 +560,7 @@ class TestDecomposition:
     @pytest.mark.parametrize("ops_lst", ops)
     def test_decomposition_new(self, ops_lst):
         """Test the qfunc decomposition."""
-        change_op_basis_op = change_op_basis(*ops_lst)
+        change_op_basis_op = ChangeOpBasis2(*ops_lst)
 
         for rule in qp.list_decomps(ChangeOpBasis2):
             _test_decomposition_rule(change_op_basis_op, rule)
@@ -591,12 +591,12 @@ class TestDecomposition:
         control_wires = list(range(4, 4 + num_control_wires))
         work_wires = [2, 3]
         op = qp.ctrl(
-            change_op_basis(*ops_lst),
+            ChangeOpBasis2(*ops_lst),
             control=control_wires,
             control_values=[1] * num_control_wires,
             work_wires=work_wires,
         )
-        for rule in qp.list_decomps("C(ChangeOpBasis)"):
+        for rule in qp.list_decomps("C(ChangeOpBasis2)"):
             _test_decomposition_rule(op, rule)
 
         assert len(qp.list_decomps(op)) == 1

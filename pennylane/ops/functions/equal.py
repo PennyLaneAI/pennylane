@@ -32,7 +32,6 @@ from pennylane.measurements.mutual_info import MutualInfoMP
 from pennylane.measurements.vn_entropy import VnEntropyMP
 from pennylane.ops import (
     Adjoint,
-    ChangeOpBasis,
     CompositeOp,
     Conditional,
     Controlled,
@@ -44,6 +43,7 @@ from pennylane.ops import (
 )
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.ops.op_math.adjoint2 import Adjoint2
+from pennylane.ops.op_math.change_op_basis2 import ChangeOpBasis2
 from pennylane.ops.op_math.composite2 import CompositeOp2
 from pennylane.ops.op_math.controlled2 import Controlled2
 from pennylane.ops.op_math.pow2 import Pow2
@@ -470,9 +470,9 @@ def _equal_operator2(
 
 
 @_equal_dispatch.register
-def _equal_change_op_basis(op1: ChangeOpBasis, op2: ChangeOpBasis, **kwargs):
+def _equal_change_op_basis(op1: ChangeOpBasis2, op2: ChangeOpBasis2, **kwargs):
     """Compare COB operands across the transitional legacy-resource boundary."""
-    for name in ChangeOpBasis.hybrid_argnames:
+    for name in ChangeOpBasis2.hybrid_argnames:
         operand1, operand2 = op1.arguments[name], op2.arguments[name]
         if isinstance(operand1, qp.decomposition.CompressedResourceOp):
             # Generic Operator2 equality treats non-operator hybrid leaves as numeric.

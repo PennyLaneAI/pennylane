@@ -265,7 +265,10 @@ def _adjoint_abstract(op: AbstractOperatorLike | type[Operator]):
     op = abstractify(op)
     if isinstance(op, CompressedResourceOp):
         return adjoint_resource_rep(op.op_type, op.params)
-    return qp.adjoint(op)
+    # Building an abstract resource representation must not emit a quantum equation
+    # even when program capture is active.
+    with qp.capture.pause():
+        return qp.adjoint(op)
 
 
 def _cancel_adjoint_resources(base):

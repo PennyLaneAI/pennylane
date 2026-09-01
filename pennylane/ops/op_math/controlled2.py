@@ -644,7 +644,7 @@ def _list_controlled_decomps(op: ControlledOp2) -> DecompCollection:
 
     # The specialized ChangeOpBasis rule leaves the compute and uncompute operations
     # uncontrolled, so it must always take precedence over general controlled fallbacks.
-    if isinstance(op.base, qp.ops.ChangeOpBasis):
+    if isinstance(op.base, (qp.ops.ChangeOpBasis, qp.ops.ChangeOpBasis2)):
         return custom_rules
 
     # Get general fallback rules.
