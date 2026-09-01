@@ -45,7 +45,7 @@ class TestInitialization:
 
         assert isinstance(op.bitstring, (np.ndarray, AbstractArray))
         assert isinstance(op.wires, (Wires, AbstractWires))
-        assert op.is_abstract == (
+        assert op.is_fully_abstract == (
             isinstance(bitstring_input, AbstractArray) or isinstance(wires_input, AbstractWires)
         )
         assert op.bitstring.dtype == bool
@@ -57,7 +57,7 @@ class TestInitialization:
         assert op.dynamic_args == {"bitstring": op.bitstring}
         assert op.wire_args == {"wires": op.wires}
         assert op.num_wires == len(wires_input)
-        assert op.num_params == 0
+        assert op.num_params == 1
         assert op.grad_method is None
 
     def test_canonicalize_inputs_does_not_validate_or_cast(self):

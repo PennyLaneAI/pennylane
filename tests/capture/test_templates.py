@@ -1354,28 +1354,17 @@ class TestModifiedTemplates:
         }
 
         def qfunc():
-            qp.Incrementer(**kwargs)
+            return qp.Incrementer(**kwargs).tracer
 
-        # Validate inputs
-        qfunc()
-
-        # Actually test primitive bind
         jaxpr = jax.make_jaxpr(qfunc)()
 
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        assert eqn.primitive == qp.Incrementer._primitive
-        assert eqn.invars == jaxpr.jaxpr.invars
-        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
-        assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        assert_eqn_matches_op(eqn, qp.Incrementer)
 
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-
-        assert len(q) == 1
-        qp.assert_equal(q.queue[0], qp.Incrementer(**kwargs))
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        qp.assert_equal(op, qp.Incrementer(**kwargs))
 
     def test_signed_out_multiplier(self):
         """Test the primitive bind call of SignedOutMultiplier."""
@@ -1472,28 +1461,17 @@ class TestModifiedTemplates:
         }
 
         def qfunc():
-            cls(**kwargs)
+            return cls(**kwargs).tracer
 
-        # Validate inputs
-        qfunc()
-
-        # Actually test primitive bind
         jaxpr = jax.make_jaxpr(qfunc)()
 
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        assert eqn.primitive == cls._primitive
-        assert eqn.invars == jaxpr.jaxpr.invars
-        assert normalize_for_comparison(eqn.params) == normalize_for_comparison(kwargs)
-        assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+        assert_eqn_matches_op(eqn, cls)
 
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-
-        assert len(q) == 1
-        qp.assert_equal(q.queue[0], cls(**kwargs))
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        qp.assert_equal(op, cls(**kwargs))
 
     def test_mod_exp(self):
         """Test the primitive bind call of ModExp."""
@@ -1601,11 +1579,15 @@ class TestModifiedTemplates:
     def test_trotter_cdf(self):
         """Test TrotterCDF with program capture."""
 
-        hamiltonian = {
-            "core_tensors": np.random.rand(2, 2, 2),
-            "leaf_tensors": np.random.rand(2, 2, 2),
-            "nuc_constant": 0.5,
-        }
+        from pennylane.numeric_hamiltonians import (  # pylint: disable=import-outside-toplevel
+            CDFHamiltonian,
+        )
+
+        hamiltonian = CDFHamiltonian(
+            core_tensors=np.random.rand(2, 2, 2),
+            leaf_tensors=np.random.rand(2, 2, 2),
+            nuc_constant=0.5,
+        )
         wires = [0, 1, 2, 3]
 
         def qfunc(evolution_time):
@@ -1627,11 +1609,15 @@ class TestModifiedTemplates:
     def test_trotter_cgf(self):
         """Test TrotterCGF with program capture."""
 
-        hamiltonian = {
-            "core_tensors": np.random.rand(2, 2, 2, 2, 2),
-            "leaf_tensors": np.random.rand(2, 2, 2, 2),
-            "nuc_constant": 0.5,
-        }
+        from pennylane.numeric_hamiltonians import (  # pylint: disable=import-outside-toplevel
+            CGFHamiltonian,
+        )
+
+        hamiltonian = CGFHamiltonian(
+            core_tensors=np.random.rand(2, 2, 2, 2, 2),
+            leaf_tensors=np.random.rand(2, 2, 2, 2),
+            nuc_constant=0.5,
+        )
         wires = [0, 1, 2, 3]
 
         def qfunc(evolution_time):

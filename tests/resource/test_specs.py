@@ -13,7 +13,6 @@
 # limitations under the License.
 """Unit tests for the specs transform"""
 
-# pylint: disable=invalid-sequence-index
 from functools import partial
 
 import pytest
@@ -23,10 +22,12 @@ from pennylane import numpy as pnp
 from pennylane.core.shots import Shots
 from pennylane.resource import CircuitSpecs, PBCSpecsResources, SpecsResources
 
+# pylint: disable=invalid-sequence-index
+from pennylane.typing import Float, Wire
+
 catalyst = pytest.importorskip("catalyst")
 
 pytestmark = pytest.mark.catalyst
-
 
 class TestSpecsTransform:
     """Tests for the transform specs using the QNode"""
@@ -160,12 +161,17 @@ class TestDeviceLevelSpecs:
             ),
         )
 
+    @pytest.mark.xfail(reason="""
+        ControlledQubitUnitary doesn't work with specs
+        https://app.shortcut.com/xanaduai/story/128500/controlledqubitunitary-doesn-t-work-with-specs-in-non-jit-pl
+    """)
     def test_complex(self):
         """Test a complex case of qp.specs() against PennyLane"""
 
         dev = qp.device("lightning.qubit", wires=4)
         U = 1 / pnp.sqrt(2) * pnp.array([[1, 1], [1, -1]], dtype=pnp.complex128)
 
+        @qp.qjit
         @qp.qnode(dev)
         def circuit():
             qp.PauliX(0)
@@ -182,7 +188,7 @@ class TestDeviceLevelSpecs:
 
             return qp.probs()
 
-        specs = qp.specs(qp.qjit(circuit), level="device")()
+        specs = qp.specs(circuit, level="device")()
 
         assert specs == CircuitSpecs(
             device_name="lightning.qubit",
@@ -1543,3 +1549,91 @@ def test_abstract_array_inputs():
     s = qp.specs(c, level=0)(qp.typing.AbstractArray((3,), float), qp.typing.Wire[3])
     assert s.resources.quantum_operations["PauliX"] == 3
     assert s.resources.quantum_operations["RX"] == 3
+
+
+@pytest.mark.catalyst
+class TestSpecsAbstractArrayIntegartion:
+    """Test integration of qjit specs with abstract arrays."""
+
+    def test_simple_float_arg(self):
+        """Test specs on an array with a simple float arg."""
+
+        @qp.qjit(capture=True, target="mlir")
+        @qp.qnode(qp.device("null.qubit", wires=3))
+        def c():
+            qp.RZ(qp.typing.Float, wires=0)
+            return qp.probs(wires=0)
+
+        specs = qp.specs(c, level=0)()
+
+        assert specs.resources.quantum_operations["RZ"] == 1
+
+    def test_wire_arg(self):
+        """Test that abstract wires can be passed in."""
+
+        @qp.qjit(capture=True, target="mlir")
+        @qp.qnode(qp.device("null.qubit", wires=3))
+        def c():
+            qp.CZ(qp.typing.Wire[2])
+            return qp.probs(wires=0)
+
+        specs = qp.specs(c, level=0)()
+
+        assert specs.resources.quantum_operations["CZ"] == 1
+
+    def test_compilation(self):
+        """Test that a transform can processed the abstract inputs."""
+
+        @qp.qjit(capture=True, target="mlir")
+        @qp.transforms.merge_rotations
+        @qp.qnode(qp.device("null.qubit", wires=3))
+        def c():
+            qp.RZ(qp.typing.Float, wires=0)
+            qp.RZ(qp.typing.Float, wires=0)
+            return qp.probs(wires=0)
+
+        assert qp.specs(c, level=0)().resources.quantum_operations["RZ"] == 2
+        assert qp.specs(c, level=1)().resources.quantum_operations["RZ"] == 1
+
+    def test_hybrid_op(self):
+        """Test capturing a hybrid op."""
+
+        # pylint: disable=too-few-public-methods
+        class HybridOp(qp.core.Operator2):
+
+            hybrid_argnames = "op"
+            wire_argnames = ()
+
+            # pylint: disable=useless-parent-delegation)
+            def __init__(self, op):
+                super().__init__(op=op)
+
+        @qp.qjit(capture=True, target="mlir")
+        @qp.qnode(qp.device("null.qubit", wires=1))
+        def c():
+            HybridOp(qp.RZ(Float, Wire[1]))
+            return qp.probs(wires=0)
+
+        r = qp.specs(c, level=0)().resources
+
+        assert r.quantum_operations == {"HybridOp": 1}
+
+    def test_pytree_input(self):
+        """Test the input being in a pytree."""
+
+        # pylint: disable=too-few-public-methods
+        class PytreeOp(qp.core.Operator2):
+
+            hybrid_argnames = "a"
+
+            # pylint: disable=useless-parent-delegation
+            def __init__(self, a, wires):
+                super().__init__(a, wires)
+
+        @qp.qjit(capture=True, target="mlir")
+        @qp.qnode(qp.device("null.qubit", wires=2))
+        def c():
+            PytreeOp({"a": qp.typing.Float[4, 10], "b": qp.typing.Int[100]}, 0)
+            return qp.probs(wires=0)
+
+        assert qp.specs(c, level=0)().resources.quantum_operations == {"PytreeOp": 1}

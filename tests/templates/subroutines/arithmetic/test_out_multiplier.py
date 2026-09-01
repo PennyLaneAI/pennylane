@@ -26,6 +26,7 @@ from pennylane.templates.subroutines.arithmetic.out_multiplier import (
     OutMultiplier,
     _add_plus_one,
     _out_multiplier_with_cache_resources,
+    _out_multiplier_with_caddsub,
     _out_multiplier_with_qft,
 )
 from pennylane.templates.subroutines.arithmetic.semi_adder import SemiAdder
@@ -159,7 +160,7 @@ class TestBuildingBlocks:
 def test_abstract_init(
     x_wires, y_wires, output_wires, mod, work_wires, expected_mod, expected_num_work_wires
 ):  # pylint: disable=too-many-arguments
-    """Test that abstract init mirrors concrete init for mod defaulting and work wire truncation."""
+    """Tests that creating an abstract operator works."""
     abstract_op = OutMultiplier(
         Wire[len(x_wires)],
         Wire[len(y_wires)],
@@ -182,7 +183,7 @@ def test_abstract_init(
     ],
 )
 def test_abstract_init_validation(mod, work_wires, msg_match):
-    """Test that abstract init validates mod and work wires."""
+    """Tests that validation of wires work with abstract wire arguments."""
     with pytest.raises(ValueError, match=msg_match):
         OutMultiplier(
             Wire[2],
@@ -193,9 +194,8 @@ def test_abstract_init_validation(mod, work_wires, msg_match):
         )
 
 
-@PL2DO_QFT_CAPTURE
 @pytest.mark.usefixtures("enable_and_disable_capture")
-def test_standard_validity_out_multiplier():
+def test_standard_validity_out_multiplier_capture():
     """Check the operation using the assert_valid function."""
     mod = 12
     x_wires = [0, 1]
@@ -338,7 +338,7 @@ class TestOutMultiplier:
                 [6, 7, 8],
                 7,
                 [1, 10],
-                "None of the wires in work_wires should be included in x_wires.",
+                "x_wires and work_wires must not overlap",
             ),
             (
                 [0, 1, 2],
@@ -346,7 +346,7 @@ class TestOutMultiplier:
                 [6, 7, 8],
                 7,
                 [3, 10],
-                "None of the wires in work_wires should be included in y_wires.",
+                "y_wires and work_wires must not overlap",
             ),
             (
                 [0, 1, 2],
@@ -354,7 +354,7 @@ class TestOutMultiplier:
                 [6, 7, 8],
                 7,
                 [9, 10],
-                "None of the wires in y_wires should be included in x_wires.",
+                "x_wires and y_wires must not overlap",
             ),
             (
                 [0, 1, 2],
@@ -362,7 +362,7 @@ class TestOutMultiplier:
                 [6, 7, 8],
                 7,
                 [9, 10],
-                "None of the wires in output_wires should be included in y_wires.",
+                "y_wires and output_wires must not overlap",
             ),
             (
                 [0, 1, 7],
@@ -370,7 +370,7 @@ class TestOutMultiplier:
                 [6, 7, 8],
                 7,
                 [9, 10],
-                "None of the wires in output_wires should be included in x_wires.",
+                "x_wires and output_wires must not overlap",
             ),
             (
                 [0, 1, 2],
@@ -548,6 +548,29 @@ class TestOutMultiplier:
             if applicable:
                 all_wires = (x_wires, y_wires, output_wires, work_wires)
                 _test_mult_correctness(all_wires, mod, rule, seed)
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize(
+        ("x_wires", "y_wires", "output_wires", "mod", "work_wires", "output_wires_zeroed"),
+        [
+            ([0, 1, 2], [3, 6], [5, 8], 4, [9, 10, 11], False),
+            ([0, 1, 2], [3, 6], [5, 8], 4, [9, 10, 11], True),
+            ([0, 1, 2], [3], [5, 7, 8], None, [9, 10, 11, 12], False),
+            ([0], [3, 6], [5, 8], 4, [9, 10, 11], True),
+        ],
+    )
+    def test_decomposition_caddsub_rule_capture(
+        self, x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed
+    ):  # pylint: disable=too-many-arguments
+        """Regression test (#10065): ``_out_multiplier_with_caddsub`` relies internally on
+        ``_adder_flipped_first_work_wire``, whose collect-reorder-replay strategy used to be
+        capture-unsafe. Verify the rule still decomposes correctly with program capture
+        enabled."""
+        op = OutMultiplier(
+            x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=output_wires_zeroed
+        )
+        assert _out_multiplier_with_caddsub.is_applicable(**op.arguments)
+        _test_decomposition_rule(op, _out_multiplier_with_caddsub)
 
     def test_work_wires_added_correctly(self):
         """Test that no work wires are added if work_wire = None"""

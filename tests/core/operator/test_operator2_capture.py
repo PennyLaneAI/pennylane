@@ -14,6 +14,7 @@
 
 # pylint: disable=too-few-public-methods,protected-access,unbalanced-tuple-unpacking,wrong-import-position
 
+import numpy as np
 import pytest
 from operator2_utils import (
     CompilableOp,
@@ -22,12 +23,15 @@ from operator2_utils import (
     HybridOp,
     MixedHybridOp,
     MultiWireOp,
+    NonParametricOp,
+    OpBuildsNestedOp,
     StaticOp,
     TwoDynOp,
 )
 
 import pennylane as qp
 from pennylane import apply
+from pennylane.typing import Float, Wire
 
 jax = pytest.importorskip("jax")
 from pennylane.capture import PlxprInterpreter
@@ -35,7 +39,7 @@ from pennylane.capture import PlxprInterpreter
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 # pylint: disable=wrong-import-position
-from pennylane.capture.primitives import AbstractOperator, operator_p
+from pennylane.capture.primitives import AbstractOperator, operator_p, symbolic_array_prim
 from pennylane.pytrees import unflatten
 
 # ---------------------- Helpers ----------------------
@@ -63,6 +67,17 @@ def _eval(jaxpr, *args):
 
 class TestCaptureBasics:
     """Tests for capturing operators into a single primitive equation."""
+
+    @pytest.mark.parametrize("op", (NonParametricOp([0, 1]), OpBuildsNestedOp([0, 1])))
+    def test_operator_as_traced_argument(self, op):
+        """Test that operators can be used as traced arguments"""
+
+        def fn(op_):
+            qp.apply(op_)
+
+        cjaxpr = jax.make_jaxpr(fn)(op)
+        assert len(cjaxpr.eqns) == 1
+        assert cjaxpr.eqns[0].params["op_cls"] is type(op)
 
     def test_tracer_none_without_capture(self):
         """Test that the tracer attribute is ``None`` when capture is disabled."""
@@ -103,8 +118,8 @@ class TestCaptureBasics:
 
     def test_simple_op_eqn(self):
         """Test that capturing an operator produces a single operator equation."""
-        jaxpr = jax.make_jaxpr(lambda x: DynOp(x, wires=0))(0.5)
 
+        jaxpr = jax.make_jaxpr(lambda x: DynOp(x, wires=0))(0.5)
         assert len(jaxpr.eqns) == 1
         eqn = jaxpr.eqns[0]
         assert eqn.primitive is operator_p
@@ -155,6 +170,89 @@ class TestCaptureBasics:
         jaxpr = jax.make_jaxpr(lambda: CompilableOp(5, wires=0))()
         eqn = _single_op_eqn(jaxpr)
         assert unflatten(*eqn.params["n"]) == 5
+
+
+class TestCaptureAbstractInputs:
+
+    def test_abstract_single_wire(self):
+        """Test that abstract wires are promoted to integers."""
+
+        def f():
+            DynOp(0.5, Wire[1])
+
+        jaxpr = jax.make_jaxpr(f)()
+        assert jaxpr.eqns[0].primitive == symbolic_array_prim
+        assert len(jaxpr.eqns[0].invars) == 0
+        assert jaxpr.eqns[0].params == {"shape": (), "dtype": np.int64}
+        assert len(jaxpr.eqns[0].outvars) == 1
+        assert jaxpr.eqns[0].outvars[0].aval.shape == ()
+        assert jaxpr.eqns[0].outvars[0].aval.dtype == jax.numpy.int64
+        assert jaxpr.eqns[1].invars[1] == jaxpr.eqns[0].outvars[0]
+
+    def test_abstract_multi_wire(self):
+        """Test that multiple abstract wires are promoted to integers."""
+
+        def f():
+            DynOp(0.5, qp.typing.Wire[3])
+
+        jaxpr = jax.make_jaxpr(f)()
+        assert jaxpr.eqns[-1].invars[0].val == 0.5
+        for i in [0, 1, 2]:
+            assert jaxpr.eqns[i].primitive == symbolic_array_prim
+            assert len(jaxpr.eqns[i].invars) == 0
+            assert jaxpr.eqns[i].params == {"shape": (), "dtype": np.int64}
+            assert len(jaxpr.eqns[i].outvars) == 1
+            assert jaxpr.eqns[i].outvars[0].aval.shape == ()
+            assert jaxpr.eqns[i].outvars[0].aval.dtype == jax.numpy.int64
+            assert jaxpr.eqns[-1].invars[1 + i] == jaxpr.eqns[i].outvars[0]
+
+    @pytest.mark.parametrize(
+        "abstract_type", (qp.typing.Float, qp.typing.Int[3, 4, 5], qp.typing.Bool[4])
+    )
+    def test_abstract_float_parameter(self, abstract_type):
+        """Test that an operator can accept a single abstract float."""
+
+        def f():
+            DynOp(abstract_type, 0)
+
+        jaxpr = jax.make_jaxpr(f)()
+        assert jaxpr.eqns[1].invars[1].val == 0
+
+        assert jaxpr.eqns[0].primitive == symbolic_array_prim
+        assert len(jaxpr.eqns[0].invars) == 0
+        assert jaxpr.eqns[0].params == {"shape": abstract_type.shape, "dtype": abstract_type.dtype}
+        assert len(jaxpr.eqns[0].outvars) == 1
+        assert jaxpr.eqns[0].outvars[0].aval.shape == abstract_type.shape
+        assert jaxpr.eqns[0].outvars[0].aval.dtype == abstract_type.dtype
+        assert jaxpr.eqns[1].invars[0] == jaxpr.eqns[0].outvars[0]
+
+    def test_hybrid_op(self):
+        """Test that we can capture a hybrid op where the inner op has an abstract input."""
+
+        def f():
+            HybridOp(DynOp(Float, 0), 0)
+
+        jaxpr = jax.make_jaxpr(f)()
+        assert len(jaxpr.eqns) == 3  # one dead symbolic array, one symbolic_array, one hybrid op
+        assert jaxpr.eqns[1].primitive == symbolic_array_prim
+        assert jaxpr.eqns[2].params["op_cls"] == HybridOp
+
+    def test_hybrid_op_inner_op_defined_outside(self):
+        """Test that we can capture a hybrid op where the inner op has an abstract input."""
+
+        op = DynOp(qp.typing.Float, 0)
+
+        def f():
+            HybridOp(op, 3)
+
+        jaxpr = jax.make_jaxpr(f)()
+        assert len(jaxpr.eqns) == 2  # one symbolic_array, one hybrid op
+        assert jaxpr.eqns[0].primitive == symbolic_array_prim
+        assert jaxpr.eqns[1].params["op_cls"] == HybridOp
+
+        assert jaxpr.eqns[1].invars[0].val == 3
+        assert jaxpr.eqns[1].invars[1] == jaxpr.eqns[0].outvars[0]
+        assert jaxpr.eqns[1].invars[2].val == 0
 
 
 class TestHybridCapture:
@@ -277,7 +375,6 @@ class TestHybridCapture:
         """Hybrid tuples with scalar and operator leaves should partition the mask."""
 
         class TupleHybridOp(qp.core.Operator2):
-
             hybrid_argnames = ("data",)
 
             def __init__(self, data, wires):
@@ -295,7 +392,6 @@ class TestHybridCapture:
         """Nested operators with multi-wire arguments should mark each wire leaf."""
 
         class MultiWireDyn(qp.core.Operator2):
-
             dynamic_argnames = ("phi",)
 
             def __init__(self, phi, wires):
@@ -402,7 +498,6 @@ class TestReconstruction:
 
 
 class TestApply:
-
     @pytest.mark.parametrize("op2", [DynOp(1.0, wires=0), FullOp(0.3, "lbl", [1.0, 2.0], wires=0)])
     def test_apply_adds_eqn(self, op2):
         """Tests that when an Operator2 is applied, an equation is added for it."""
