@@ -17,7 +17,7 @@ import pennylane as qp
 from pennylane.labs.templates import alias_sampling, alias_sampling_wires
 
 
-def one_body_walk_wires(norbs, alias_sampling_precision):
+def one_body_walk_wires(norbs, alias_sampling_nbits):
     r"""Sizes of the three wire registers required by :func:`one_body_walk`.
 
     The registers are:
@@ -27,12 +27,12 @@ def one_body_walk_wires(norbs, alias_sampling_precision):
 
     Args:
         norbs (int): number of spatial orbitals
-        alias_sampling_precision (int): number of bits needed for alias-sampling coefficient precision.
+        alias_sampling_nbits (int): number of bits needed for alias-sampling coefficient precision.
 
     Returns:
         dict[str, int]: number of wires for ``prep_wires``, ``system_wires``, ``work_wires``.
     """
-    req = alias_sampling_wires(norbs, alias_sampling_precision)
+    req = alias_sampling_wires(norbs, alias_sampling_nbits)
     return {
         "prep_wires": req["target_wires"] + 1 + req["temp_wires"],  # |p> + |sigma> + garbage
         "system_wires": 2 * norbs,
@@ -40,7 +40,7 @@ def one_body_walk_wires(norbs, alias_sampling_precision):
     }
 
 
-def one_body_walk(op_matrix, alias_sampling_precision, prep_wires, system_wires, work_wires):
+def one_body_walk(op_matrix, alias_sampling_nbits, prep_wires, system_wires, work_wires):
     r"""Walk operator for the block-encoding of a one-particle operator.
 
     Implements :math:`\hat{\mathcal{W}} = \hat{\mathcal{R}} \cdot \text{PREP}^\dagger \cdot
@@ -71,7 +71,7 @@ def one_body_walk(op_matrix, alias_sampling_precision, prep_wires, system_wires,
     Args:
         op_matrix (array): The real symmetric one-body matrix, shape ``(N, N)``, where N is the number
             of spatial orbitals.
-        alias_sampling_precision (int): number of bits needed for alias-sampling coefficient precision
+        alias_sampling_nbits (int): number of bits needed for alias-sampling coefficient precision
         prep_wires (Sequence[int]): the full PREP register, reflected by ``R``
         system_wires (Sequence[int]): wires for representing the ``2 N`` system spin-orbitals
         work_wires (Sequence[int]): clean scratch returned to ``|0>``
@@ -85,17 +85,17 @@ def one_body_walk(op_matrix, alias_sampling_precision, prep_wires, system_wires,
     if not qp.math.allclose(op_matrix, qp.math.transpose(op_matrix)):
         raise ValueError("op_matrix must be symmetric (o_pq = o_qp).")
 
-    req = one_body_walk_wires(norbs, alias_sampling_precision)
+    req = one_body_walk_wires(norbs, alias_sampling_nbits)
     for name, seq in (("prep_wires", prep_wires), ("system_wires", system_wires)):
         if len(seq) != req[name]:
             raise ValueError(
                 f"{name} must have {req[name]} wires for norbs={norbs}, "
-                f"alias_sampling_precision={alias_sampling_precision}; got {len(seq)}."
+                f"alias_sampling_nbits={alias_sampling_nbits}; got {len(seq)}."
             )
     if len(work_wires) < req["work_wires"]:
         raise ValueError(
             f"work_wires must have at least {req['work_wires']} wires for norbs={norbs}, "
-            f"alias_sampling_precision={alias_sampling_precision}; got {len(work_wires)}."
+            f"alias_sampling_nbits={alias_sampling_nbits}; got {len(work_wires)}."
         )
 
     prep_wires = qp.wires.Wires(prep_wires)
@@ -103,7 +103,7 @@ def one_body_walk(op_matrix, alias_sampling_precision, prep_wires, system_wires,
     work_wires = qp.wires.Wires(work_wires)
 
     # Split prep_wires: index |p> (na) + spin |sigma> (1) + temp register.
-    na = alias_sampling_wires(norbs, alias_sampling_precision)["target_wires"]
+    na = alias_sampling_wires(norbs, alias_sampling_nbits)["target_wires"]
     index_wires, (spin_wire, *garbage_wires) = prep_wires[:na], prep_wires[na:]
 
     mu, vmat = qp.math.linalg.eigh(op_matrix)  # o = vmat diag(mu) vmat.T
@@ -117,7 +117,7 @@ def one_body_walk(op_matrix, alias_sampling_precision, prep_wires, system_wires,
     # PREP
     alias_sampling(
         absmu,
-        alias_sampling_precision,
+        alias_sampling_nbits,
         target_wires=index_wires,
         temp_wires=garbage_wires,
         work_wires=work_wires,
@@ -162,7 +162,7 @@ def one_body_walk(op_matrix, alias_sampling_precision, prep_wires, system_wires,
     # PREP^dagger
     qp.adjoint(alias_sampling)(
         absmu,
-        alias_sampling_precision,
+        alias_sampling_nbits,
         target_wires=index_wires,
         temp_wires=garbage_wires,
         work_wires=work_wires,
