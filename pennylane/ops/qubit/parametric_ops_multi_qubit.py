@@ -19,7 +19,6 @@ core parametrized gates.
 
 # pylint: disable=arguments-differ
 from pennylane.core import abstractify
-from pennylane.ops.op_math.change_op_basis import _change_op_basis_abstract
 import functools
 from collections import Counter
 from operator import matmul
@@ -1499,6 +1498,8 @@ class IsingZZ(Operator2):
 
 # pylint: disable-next=unused-argument
 def _isingzz_to_cnot_rz_cnot_resources(phi: TensorLike, wires: WiresLike | None = None):
+    from pennylane.ops.op_math.change_op_basis import _change_op_basis_abstract
+
     return {
         _change_op_basis_abstract(
             abstractify(qp.CNOT(wires=Wire[2])), abstractify(RZ(Float, wires=Wire[1])), abstractify(qp.CNOT(wires=Wire[2]))
