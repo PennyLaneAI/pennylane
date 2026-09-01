@@ -18,6 +18,8 @@ core parametrized gates.
 """
 
 # pylint: disable=arguments-differ
+from pennylane.core import abstractify
+from pennylane.ops.op_math.change_op_basis import _change_op_basis_abstract
 import functools
 from collections import Counter
 from operator import matmul
@@ -30,7 +32,7 @@ import pennylane as qp
 from pennylane import compiler, math
 from pennylane.capture.autograph import disable_autograph
 from pennylane.core.operator import Operation, Operator, Operator2
-from pennylane.decomposition import add_decomps, change_op_basis_resource_rep, register_resources
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.math.decomposition import decomp_int_to_powers_of_two
@@ -1498,8 +1500,8 @@ class IsingZZ(Operator2):
 # pylint: disable-next=unused-argument
 def _isingzz_to_cnot_rz_cnot_resources(phi: TensorLike, wires: WiresLike | None = None):
     return {
-        change_op_basis_resource_rep(
-            qp.CNOT(wires=Wire[2]), RZ(Float, wires=Wire[1]), qp.CNOT(wires=Wire[2])
+        _change_op_basis_abstract(
+            abstractify(qp.CNOT(wires=Wire[2])), abstractify(RZ(Float, wires=Wire[1])), abstractify(qp.CNOT(wires=Wire[2]))
         ): 1
     }
 
