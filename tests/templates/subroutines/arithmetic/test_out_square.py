@@ -114,7 +114,7 @@ def _test_square_correctness(all_wires, rule, seed, output_wires_zeroed, use_jit
     if work_wires:
         total_wires += work_wires
 
-    dev = qp.device("lightning.qubit")
+    dev = qp.device("lightning.qubit", wires=max(total_wires) + 1)
 
     @qp.qnode(dev)
     def circuit(x_state, y_state, output_state):
@@ -294,11 +294,18 @@ class TestOutSquare:
         seed,
     ):  # pylint: disable=too-many-arguments
         """Tests the decomposition rule implemented with the new system."""
+
         op = OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
         for j, rule in enumerate(qp.list_decomps(OutSquare)):
             applicable = rule.is_applicable(**op.arguments)
             assert applicable is (j in applicable_rules)
             _test_decomposition_rule(op, rule)
+
+        if qp.capture.enabled():
+            pytest.skip("The following test relies on executing a qnode with capture.")
+
+        for rule in qp.list_decomps(OutSquare):
+            applicable = rule.is_applicable(**op.arguments)
             if applicable:
                 all_wires = (x_wires, output_wires, work_wires)
                 _test_square_correctness(all_wires, rule, seed, output_wires_zeroed, use_jit)

@@ -206,6 +206,7 @@ _ABSTRACT_OR_META_TYPES = {
     qp.ops.Pow,
     Pow2,
     qp.ops.CompositeOp,
+    qp.ops.CompositeOp2,
     qp.ops.Controlled,
     qp.ops.ControlledOp,
     Controlled2,
@@ -213,6 +214,8 @@ _ABSTRACT_OR_META_TYPES = {
     qp.ops.qubit.BasisStateProjector,
     qp.ops.qubit.StateVectorProjector,
     qp.templates.core.CollectedSubroutine,
+    # pylint: disable-next=protected-access
+    qp.templates.subroutines.arithmetic.out_square._SquareArithmeticOp,
     StatePrepBase,
     StatePrepBase2,
     PowOperation,
