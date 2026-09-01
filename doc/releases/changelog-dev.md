@@ -94,6 +94,7 @@
   [(#9478)](https://github.com/PennyLaneAI/pennylane/pull/9478)
   [(#9656)](https://github.com/PennyLaneAI/pennylane/pull/9656)
   [(#9833)](https://github.com/PennyLaneAI/pennylane/pull/9833)
+  [(#10008)](https://github.com/PennyLaneAI/pennylane/pull/10008)
 
   Given the ``amplitudes`` and the computational basis state ``indices`` of the sparse state we
   want to prepare, the template is simple to call. Consider the following example:
@@ -143,6 +144,7 @@
   [(#9789)](https://github.com/PennyLaneAI/pennylane/pull/9789)
   [(#10015)](https://github.com/PennyLaneAI/pennylane/pull/10015)
   [(#10074)](https://github.com/PennyLaneAI/pennylane/pull/10074)
+  [(#10081)](https://github.com/PennyLaneAI/pennylane/pull/10081)
 
 * A new arithmetic template called :class:`~.SignedOutMultiplier` has been added that multiplies numbers encoded in the
   input registers using a two's complement.
@@ -416,6 +418,27 @@
   The round is resolved from the device being traced, so the program has to be captured (`qp.qjit(capture=True)`). The controller's `in_bytes` and `out_bytes` capacities both default to 8 bytes, and the correction comes back as an `out_bytes`-sized `uint8` buffer. Pass `controller=` / `coprocessor=` to choose the nodes explicitly, `out_bytes=` to override the reply size, and `decoder_id=` to select which coprocessor-side decoder handles the round.
 
 <h3>Improvements 🛠</h3>
+
+* :func:`~.SumOfSlatersPrep.required_register_sizes` now works with abstract ``indices`` as input,
+  for which it returns an upper bound for the register sizes, across any set of indices of the
+  provided length.
+  [(#10084)](https://github.com/PennyLaneAI/pennylane/pull/10084)
+
+  ```pycon
+  >>> num_wires = 8
+  >>> num_entries = 16
+  >>> indices = qp.typing.Int[num_entries]
+  >>> qp.SumOfSlatersPrep.required_register_sizes(indices, num_wires)
+  {'wires': 8, 'enumeration_wires': 4, 'identification_wires': 7, 'qrom_work_wires': 3, 'mcx_cache_wires': 6}
+
+  ```
+
+* :class:`~.IsingZZ`'s decomposition is now expressed as a :func:`~.change_op_basis` (``CNOT``
+  compute/uncompute around the ``RZ``) instead of three bare gates. This lets PennyLane's generic
+  ``C(ChangeOpBasis)`` rule automatically control only the ``RZ`` for any number of control wires,
+  using fewer gates than the previous default of naively controlling every gate.
+  [(#10059)](https://github.com/PennyLaneAI/pennylane/pull/10059)
+  [(#10059)](https://github.com/PennyLaneAI/pennylane/pull/10015)
 
 * Coprocessor connection addresses are grouped on :class:`~pennylane.Endpoint` as ``endpoint=qp.Endpoint(host, port)``, replacing the separate ``comm_host`` and ``oob_port`` fields.
   [(#10017)](https://github.com/PennyLaneAI/pennylane/pull/10017)
@@ -1086,7 +1109,7 @@
     - :class:`~.BasisRotation`, :class:`~.MultiplexerStatePreparation`, :class:`~.QROM`, :class:`~.QFT`, :class:`~.FlipSign`,
       :class:`~.TemporaryAND`, :class:`~.SelectPauliRot`, :class:`~.GQSP`, :class:`~.AQFT`, :class:`~.SumOfSlatersPrep`,
       :class:`~.SemiAdder`, :class:`~.OutMultiplier`, :class:`~.SignedOutMultiplier`, :class:`~.BasisState`, :class:`~.TrotterCDF`,
-      :class:`~.TrotterCGF`
+      :class:`~.TrotterCGF`, :class:`~.OutSquare`, :class:`~.SignedOutSquare`, :class:`~.Incrementer`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
   [(#9925)](https://github.com/PennyLaneAI/pennylane/pull/9925)
   [(#9918)](https://github.com/PennyLaneAI/pennylane/pull/9918)
@@ -1105,8 +1128,13 @@
   [(#10018)](https://github.com/PennyLaneAI/pennylane/pull/10018)
   [(#9933)](https://github.com/PennyLaneAI/pennylane/pull/9933)
   [(#10042)](https://github.com/PennyLaneAI/pennylane/pull/10042)
+  [(#10052)](https://github.com/PennyLaneAI/pennylane/pull/10052)
+  [(#10054)](https://github.com/PennyLaneAI/pennylane/pull/10054)
+  [(#10062)](https://github.com/PennyLaneAI/pennylane/pull/10062)
   [(#10073)](https://github.com/PennyLaneAI/pennylane/pull/10073)
   [(#10078)](https://github.com/PennyLaneAI/pennylane/pull/10078)
+  [(#10069)](https://github.com/PennyLaneAI/pennylane/pull/10069)
+  [(#10085)](https://github.com/PennyLaneAI/pennylane/pull/10085)
   - Quantum chemistry operators are ported:
     - :class:`~.SingleExcitation`
   [(#9944)](https://github.com/PennyLaneAI/pennylane/pull/9944)
@@ -1183,6 +1211,7 @@
   [(#9937)](https://github.com/PennyLaneAI/pennylane/pull/9937)
   [(#9950)](https://github.com/PennyLaneAI/pennylane/pull/9950)
   [(#9926)](https://github.com/PennyLaneAI/pennylane/pull/9926)
+  [(#10077)](https://github.com/PennyLaneAI/pennylane/pull/10077)
 
   This is an internal, work-in-progress effort that is being incrementally integrated into the PennyLane
   ecosystem. Supported functionality so far:
@@ -1192,6 +1221,7 @@
     [(#9646)](https://github.com/PennyLaneAI/pennylane/pull/9646)
     [(#9694)](https://github.com/PennyLaneAI/pennylane/pull/9694)
     [(#9744)](https://github.com/PennyLaneAI/pennylane/pull/9744)
+    [(#9788)](https://github.com/PennyLaneAI/pennylane/pull/9788)
   - Some backwards compatibility with the legacy operator interface.
     [(#9596)](https://github.com/PennyLaneAI/pennylane/pull/9596)
     [(#9674)](https://github.com/PennyLaneAI/pennylane/pull/9674)
@@ -1364,6 +1394,15 @@
   [(#9621)](https://github.com/PennyLaneAI/pennylane/pull/9621)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed :class:`~.Incrementer` returning an incorrect incremented value when not enough
+  work wires are provided.
+  [(#10062)](https://github.com/PennyLaneAI/pennylane/pull/10062)
+
+* Converting an ``AbstractArray`` to a concrete array now raises an informative ``TypeError``
+  instead of silently producing an empty array, which previously surfaced as an obscure error
+  far from its cause.
+  [(#10083)](https://github.com/PennyLaneAI/pennylane/pull/10083)
 
 * Fixed the QFT-based decomposition of :class:`~.OutMultiplier` so it can be captured and
   compiled with Catalyst when ``mod = 2 ** len(output_wires)``.

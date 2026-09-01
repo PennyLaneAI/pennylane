@@ -16,9 +16,8 @@ Contains the OutMultiplier template.
 """
 
 from collections import defaultdict
-from itertools import combinations
 
-from pennylane import math
+from pennylane import capture, compiler, math
 from pennylane.core.operator import Operator2, abstractify
 from pennylane.decomposition import (
     add_decomps,
@@ -28,11 +27,11 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.resources import resource_rep
 from pennylane.ops import BasisState, H, Prod, X, adjoint, change_op_basis, ctrl, prod
-from pennylane.typing import AbstractWires, Bool, Wire
-from pennylane.wires import Wires, WiresLike
+from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
+from pennylane.templates.subroutines.qft import QFT
+from pennylane.typing import Bool, Wire
+from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
-from ..controlled_sequence import ControlledSequence
-from ..qft import QFT
 from .incrementer import Incrementer
 from .phase_adder import PhaseAdder
 from .semi_adder import SemiAdder, _semi_adder, _semi_adder_resources
@@ -45,7 +44,8 @@ def _resolve_mod_and_num_work_wires(num_output_wires, mod, num_work_wires):
     if mod is None:
         mod = max_mod
     elif mod != max_mod:
-        num_work_wires = 2  # After the ≥2 work-wire guard in __init__/__abstract_init__, the truncated count is always 2
+        # After the ≥2 work-wire guard in __init__, the truncated count is always 2
+        num_work_wires = 2
     return mod, num_work_wires
 
 
@@ -251,56 +251,15 @@ class OutMultiplier(Operator2):
         if mod != max_mod:
             work_wires = Wires(work_wires[:num_work_wires])
 
-        wires_list = [x_wires, y_wires, output_wires, work_wires]
-        wires_name = ["x_wires", "y_wires", "output_wires", "work_wires"]
-
-        _wires_are_traced = any(math.is_abstract(w) for ws in wires_list for w in ws)
-
-        if not _wires_are_traced:
-            wires_dict = dict(zip(wires_name, wires_list, strict=True))
-            for name0, name1 in combinations(wires_name, r=2):
-                if wires_dict[name0].intersection(wires_dict[name1]):
-                    raise ValueError(f"None of the wires in {name1} should be included in {name0}.")
+        wire_args = {
+            "x_wires": x_wires,
+            "y_wires": y_wires,
+            "output_wires": output_wires,
+            "work_wires": work_wires,
+        }
+        validate_no_wire_overlaps(wire_args)
 
         super().__init__(
-            x_wires,
-            y_wires,
-            output_wires,
-            mod=mod,
-            work_wires=work_wires,
-            output_wires_zeroed=output_wires_zeroed,
-        )
-
-    # pylint: disable=arguments-differ
-    def __abstract_init__(
-        self,
-        x_wires: AbstractWires | WiresLike,
-        y_wires: AbstractWires | WiresLike,
-        output_wires: AbstractWires | WiresLike,
-        mod=None,
-        work_wires: AbstractWires | WiresLike = (),
-        output_wires_zeroed: bool = False,
-    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
-        num_output_wires = len(output_wires)
-        num_work_wires = len(work_wires)
-        max_mod = 2**num_output_wires
-
-        if mod is not None and mod != max_mod:
-            if num_work_wires < 2:
-                raise ValueError(
-                    f"If mod is not 2^{num_output_wires}, at least two work wires should be provided."
-                )
-            if mod > max_mod:
-                raise ValueError(
-                    "OutMultiplier must have enough wires to represent mod. The maximum mod "
-                    f"with len(output_wires)={num_output_wires} is {max_mod}, but received {mod}."
-                )
-
-        mod, num_work_wires = _resolve_mod_and_num_work_wires(num_output_wires, mod, num_work_wires)
-        if mod != 2**num_output_wires:
-            work_wires = Wire[num_work_wires]
-
-        super().__abstract_init__(
             x_wires,
             y_wires,
             output_wires,
@@ -357,9 +316,19 @@ def _out_multiplier_with_qft(
     work_wires: WiresLike,
     output_wires_zeroed: bool,
 ):  # pylint: disable=too-many-arguments, unused-argument
+
+    if capture.enabled() or compiler.active():
+        work_wires = math.array(work_wires, like="jax")
+        output_wires = math.array(output_wires, like="jax")
+
     if mod != 2 ** len(output_wires):
-        qft_output_wires = work_wires[:1] + output_wires
-        work_wire = work_wires[1:2]
+        if capture.enabled() or compiler.active():
+            qft_output_wires = math.concatenate(
+                [math.array([work_wires[0]], like="jax"), output_wires]
+            )
+        else:
+            qft_output_wires = [work_wires[0]] + output_wires
+        work_wire = work_wires[1]
     else:
         qft_output_wires = output_wires
         # Keep the empty register traceable instead of passing a literal tuple to JAX.
@@ -369,7 +338,7 @@ def _out_multiplier_with_qft(
         compute_op = prod(*(H(w) for w in qft_output_wires))
     else:
         compute_op = QFT(qft_output_wires)
-    uncompute_op = adjoint(QFT)(qft_output_wires)
+    uncompute_op = adjoint(QFT(qft_output_wires))
 
     target_op = ControlledSequence(
         ControlledSequence(PhaseAdder(1, qft_output_wires, mod, work_wire), control=x_wires),
@@ -499,7 +468,7 @@ def _out_multiplier_with_caddsub_resources(
     # increment 2^(n+m) bit
     if k > n + m:
         size = k - n - m
-        resources[resource_rep(Incrementer, num_wires=size, num_work_wires=num_work_wires - 1)] = 1
+        resources[Incrementer(Wire[size], work_wires=Wire[num_work_wires - 1])] = 1
 
     # Second negation
     resources[X] += k
