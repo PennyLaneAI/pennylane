@@ -27,11 +27,10 @@ from pennylane.decomposition import (
     CompressedResourceOp,
     add_decomps,
     register_resources,
-    resource_rep,
 )
 from pennylane.math import is_abstract
 from pennylane.ops import CNOT, Hadamard, QubitUnitary
-from pennylane.typing import TensorLike
+from pennylane.typing import Complex, TensorLike, Wire
 from pennylane.wires import Wires
 
 
@@ -439,7 +438,7 @@ def _hilbert_schmidt_resources(
         resources[op_rep] += 1
 
     for n_wires in v_wires:
-        resources[resource_rep(QubitUnitary, num_wires=n_wires)] += 1
+        resources[QubitUnitary(Complex[2**n_wires, 2**n_wires], wires=Wire[n_wires])] += 1
 
     return resources
 
@@ -460,7 +459,7 @@ def _local_hilbert_schmidt_resources(
         resources[op_rep] += 1
 
     for n_wires in v_wires:
-        resources[resource_rep(QubitUnitary, num_wires=n_wires)] += 1
+        resources[QubitUnitary(Complex[2**n_wires, 2**n_wires], wires=Wire[n_wires])] += 1
 
     return resources
 

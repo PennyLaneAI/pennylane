@@ -43,6 +43,7 @@ from pennylane.ops.op_math.decompositions.controlled_decompositions import (
     _ctrl_decomp_bisect_od,
     _decompose_mcx_with_no_worker,
     _mcx_two_workers,
+    controlled_two_qubit_unitary_rule,
     decompose_mcx_many_workers,
     decompose_mcx_one_worker,
 )
@@ -244,7 +245,7 @@ class TestControlledDecompositionZYZ:
         import torch
 
         target_op1 = qp.RY(torch.Tensor([1.2]), 0)
-        target_op2 = qp.RY(1.2, 0)
+        target_op2 = qp.RY(np.array([1.2]), 0)
 
         torch_decomp = ctrl_decomp_zyz(target_op1, 1)
         decomp = ctrl_decomp_zyz(target_op2, 1)
@@ -809,6 +810,44 @@ class TestControlledUnitaryRecursive:
         expected = expected_op.matrix()
 
         assert np.allclose(res, expected, atol=tol, rtol=tol)
+
+
+# pylint: disable-next=too-few-public-methods
+class TestControlledTwoQubitUnitary:
+
+    @pytest.mark.capture
+    def test_controlled_two_qubit_unitary_rule_capture(self):
+        """Test that the controlled two qubit unitary rule is captured correctly."""
+        from jax import make_jaxpr
+        from jax import numpy as jnp
+
+        from pennylane.capture.primitives import cond_prim, ctrl_transform_prim
+
+        kwargs = {
+            "wires": jnp.array([0, 1, 2]),
+            "U": jnp.eye(4),
+            "control_values": jnp.array([False], dtype=bool),
+            "work_wires": jnp.array([]),
+            "work_wire_type": "borrowed",
+        }
+
+        jaxpr = make_jaxpr(controlled_two_qubit_unitary_rule, static_argnums=(4,))(
+            kwargs["U"],
+            kwargs["wires"],
+            kwargs["control_values"],
+            kwargs["work_wires"],
+            kwargs["work_wire_type"],
+        )
+
+        assert len(jaxpr.jaxpr.invars) == 4
+
+        cond_count = sum([1 for eqn in jaxpr.eqns if eqn.primitive is cond_prim])
+        assert cond_count == 2
+
+        ctrl_count = sum([1 for eqn in jaxpr.eqns if eqn.primitive is ctrl_transform_prim])
+        assert ctrl_count == 1
+
+        assert len(jaxpr.jaxpr.outvars) == 0
 
 
 class TestMCXDecomposition:

@@ -27,7 +27,7 @@ from textwrap import dedent
 from typing import overload
 
 import pennylane as qp
-from pennylane.core import queuing
+from pennylane.core import QueuingManager, queuing
 from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.pytrees import flatten
 from pennylane.typing import AbstractArray, AbstractWires
@@ -395,6 +395,7 @@ class DecompositionRule:
     def __repr__(self):
         return f"DecompositionRule(name={self.name})"
 
+    @QueuingManager.stop_recording()
     def compute_resources(self, *args, **kwargs) -> Resources:
         """Computes the resources required to implement this decomposition rule."""
         if self._compute_resources is None:
@@ -595,7 +596,7 @@ _fixed_decomps_private = {}
 _fixed_decomps_var = ContextVar("_fixed_decomps", default=_fixed_decomps_private)
 
 
-def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> None:
+def add_decomps(op_type: type[Operator | Operator2] | str, *decomps: DecompositionRule) -> None:
     """Globally registers new decomposition rules with an operator class.
 
     .. note::
@@ -719,7 +720,7 @@ def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
     DecompositionRule(name=_crx_to_ppr)
     >>> print(qp.list_decomps(qp.CRX)[0])
     @register_resources(_crx_to_rx_cz_resources)
-    def _crx_to_rx_cz(phi: TensorLike, wires: WiresLike, **__):
+    def _crx_to_rx_cz(phi: TensorLike, wires: WiresLike):
         qp.RX(phi / 2, wires=wires[1])
         qp.CZ(wires=wires)
         qp.RX(-phi / 2, wires=wires[1])
@@ -1104,14 +1105,19 @@ def null_decomp(*_, **__):
     return
 
 
-def _is_abstract_and_fixed(val):
+def _is_abstract_and_fixed(val, is_leaf=False):
     """Checks whether `val` is (or only contains) abstract data of fixed shapes."""
     # We don't actually need to check whether val is abstract, since the Resources class
     # already abstractifies everything. We only need to make sure that it's fixed.
     if isinstance(val, (AbstractArray, AbstractWires)):
         return val.shape_fixed
-    leaves, _ = flatten(val, is_leaf=lambda op: isinstance(op, Wires))
-    return all(_is_abstract_and_fixed(leaf) for leaf in leaves)
+    if is_leaf:
+        # This branch is added as a precaution to avoid infinite recursion, but this should
+        # never actually happen, because we always call `abstractify` first to fully abstractify
+        # an operator, which should ensure that all pytree leaves are abstract.
+        return False  # return False if val is a non-abstract pytree leaf
+    leaves, _ = flatten(val, is_leaf=lambda l: isinstance(l, Wires))
+    return all(_is_abstract_and_fixed(leaf, is_leaf=True) for leaf in leaves)
 
 
 def _verify_is_abstract_and_fixed(op: AbstractOperatorLike):

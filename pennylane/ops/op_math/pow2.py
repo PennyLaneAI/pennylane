@@ -23,6 +23,7 @@ import pennylane as qp
 from pennylane import capture, math
 from pennylane.core import Operator
 from pennylane.core.operator import abstractify
+from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
 from pennylane.core.queuing import apply
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
@@ -44,7 +45,6 @@ from pennylane.exceptions import (
     PowUndefinedError,
     SparseMatrixUndefinedError,
 )
-from pennylane.ops.identity import Identity
 from pennylane.ops.op_math import adjoint
 
 from .adjoint import Adjoint
@@ -100,12 +100,22 @@ class Pow2(SymbolicOp2):
         else:
             self._pauli_rep = None
 
+    @override
+    def _bind_primitive(self):
+        pop_op_eqns((self.base,))
+        super()._bind_primitive()
+
     def __repr__(self):
         return (
             f"({self.base})**{self.z}"
             if self.base.arithmetic_depth > 0
             else f"{self.base}**{self.z}"
         )
+
+    @property
+    @override
+    def basis(self):  # pylint: disable=missing-function-docstring
+        return self.base.basis
 
     @property
     @override
@@ -116,6 +126,11 @@ class Pow2(SymbolicOp2):
     @override
     def ndim_params(self):
         return self.base.ndim_params
+
+    @property
+    @override
+    def data(self):
+        return self.base.data
 
     @property
     @override
@@ -158,7 +173,6 @@ class Pow2(SymbolicOp2):
     @property
     @override
     def has_decomposition(self):
-
         if isinstance(self.z, int) and self.z > 0:
             return True
         try:
@@ -291,7 +305,9 @@ class Pow2(SymbolicOp2):
         )
 
     @override
-    def simplify(self) -> Union["Pow", Identity]:
+    def simplify(self) -> Union["Pow", "Identity"]:
+        from pennylane.ops.identity import Identity  # pylint: disable=import-outside-toplevel
+
         # try using pauli_rep:
         if pr := self.pauli_rep:
             pr.prune()
@@ -394,7 +410,6 @@ def pow_rotation(base, z):
 
 @list_decomps.register
 def _list_pow_decomps(op: Pow2) -> DecompCollection:
-
     abs_op = abstractify(op)
 
     # fixed_decomps would override everything.

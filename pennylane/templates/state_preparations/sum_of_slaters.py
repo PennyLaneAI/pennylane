@@ -21,9 +21,9 @@ import numpy as np
 import pennylane as qp
 from pennylane import allocate, for_loop, math
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.typing import Complex, Int, TensorLike, Wire
+from pennylane.typing import Bool, Complex, Int, TensorLike, Wire
 from pennylane.wires import WiresLike
 
 SoSData = namedtuple("data", ["u_bits", "b_bits", "d", "r", "m"])
@@ -1043,7 +1043,7 @@ def _sos_state_prep_resources(coefficients, wires, indices, **_):
     num_wires = n
 
     if num_entries == 1:
-        return {resource_rep(qp.BasisState, num_wires=num_wires): 1}
+        return {qp.BasisState(Bool[num_wires], Wire[num_wires]): 1}
     d = math.ceil_log2(num_entries)
     m = min(num_bits, 2 * d - 1)
 
@@ -1074,7 +1074,7 @@ def _sos_state_prep_resources(coefficients, wires, indices, **_):
     resources[_adjoint_abstract(qp.TemporaryAND)] += (num_entries - 1) * (m - 1)
 
     # Calculate the bit counts of all integers that need to be uncomputed and sum them up.
-    number_of_bits_to_unset = np.sum(np.bitwise_count(np.arange(1, num_entries)).astype(int))
+    number_of_bits_to_unset = int(np.sum(np.bitwise_count(np.arange(1, num_entries))))
     resources[qp.CNOT] += number_of_bits_to_unset
 
     # We have to flip at most m control bits between any pair of the `num_entries-1` uncomputing
@@ -1176,7 +1176,7 @@ def _sos_state_prep_with_wires(
     mcx_ctrl_wires = selected_wires if identity_encoding else identification_wires
 
     # Create wires for elbow ladder
-    elbow_wires = mcx_ctrl_wires[:1] + [
+    elbow_wires = [mcx_ctrl_wires[0]] + [
         _wires[k] for k in range(data.m - 1) for _wires in [mcx_ctrl_wires[1:], mcx_cache_wires]
     ]
     elbow_triples = [elbow_wires[2 * k : 2 * k + 3] for k in range(data.m - 1)]

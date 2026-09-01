@@ -32,12 +32,11 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.math import ceil_log2
-from pennylane.ops import CNOT, CZ, BasisState, PauliMeasure, X, cond, ctrl, pauli_measure
+from pennylane.ops import CNOT, CZ, BasisState, X, cond, ctrl, pauli_measure
+from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-from pennylane.templates.embeddings import BasisEmbedding
 from pennylane.typing import AbstractArray, Bool, Int, TensorLike, Wire
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
 from .arithmetic import TemporaryAND
 from .select import Select
@@ -52,7 +51,7 @@ def _multi_swap(wires1, wires2):
 def _new_ops(depth, target_wires, control_wires, swap_wires, bitstrings):
 
     with QueuingManager.stop_recording():
-        ops_new = [BasisEmbedding(bits, wires=target_wires) for bits in bitstrings]
+        ops_new = [BasisState(bits, wires=target_wires) for bits in bitstrings]
         ops_identity_new = ops_new + [qp_ops.I(target_wires)] * int(
             2 ** len(control_wires) - len(ops_new)
         )
@@ -102,6 +101,10 @@ def _swap_ops(control_wires, depth, swap_wires, target_wires):
             qp_ops.ctrl(_multi_swap, control=control_swap_wires[-i - 1])(_wires0, _wires1)
 
 
+def _to_int_array(bitstring):
+    return [int(bit) for bit in bitstring]
+
+
 class QROM(Operator2):
     r"""Applies the QROM operator.
 
@@ -143,7 +146,7 @@ class QROM(Operator2):
         def circuit():
 
             # the third index is encoded in the control wires [0, 1]
-            qp.BasisEmbedding(2, wires = [0,1])
+            qp.BasisState([1, 0], wires = [0,1])
 
             qp.QROM(bitstrings = bitstrings,
                     control_wires = [0,1],
@@ -165,7 +168,7 @@ class QROM(Operator2):
 
         The second set of wires is ``target_wires`` which stores the bitstrings.
         For instance, if the bitstring is ``[0, 1, 1, 0]``, we will need four target wires. Internally,
-        the bitstrings are encoded using the :class:`~.BasisEmbedding` template.
+        the bitstrings are encoded using the :class:`~.BasisState` template.
 
 
         The ``work_wires`` are auxiliary qubits used to reduce the gate complexity of the
@@ -219,33 +222,20 @@ class QROM(Operator2):
 
         control_wires = Wires(control_wires)
         target_wires = Wires(target_wires)
+        work_wires = Wires(() if work_wires is None else work_wires)
 
-        if isinstance(bitstrings[0], str):
-            bitstrings = np.array(
-                list(map(lambda bitstring: [int(bit) for bit in bitstring], bitstrings))
-            )
+        if not isinstance(bitstrings, AbstractArray) and isinstance(bitstrings[0], str):
+            bitstrings = list(map(_to_int_array, bitstrings))
 
         if isinstance(bitstrings, (list, tuple)):
             bitstrings = math.array(bitstrings)
 
-        work_wires = Wires(() if work_wires is None else work_wires)
-
-        _wires_are_traced = any(
-            math.is_abstract(w) for ws in (control_wires, target_wires, work_wires) for w in ws
-        )
-
-        # Wire overlap validation must be skipped when wires are JAX tracers,
-        # as their concrete values are not available during tracing.
-        if not _wires_are_traced:
-            if len(work_wires) != 0:
-                if any(wire in work_wires for wire in control_wires):
-                    raise ValueError("Control wires should be different from work wires.")
-
-                if any(wire in work_wires for wire in target_wires):
-                    raise ValueError("Target wires should be different from work wires.")
-
-            if any(wire in control_wires for wire in target_wires):
-                raise ValueError("Target wires should be different from control wires.")
+        wire_args = {
+            "control_wires": control_wires,
+            "target_wires": target_wires,
+            "work_wires": work_wires,
+        }
+        validate_no_wire_overlaps(wire_args)
 
         if 2 ** len(control_wires) < bitstrings.shape[0]:
             raise ValueError(
@@ -254,29 +244,10 @@ class QROM(Operator2):
                 "control wires are required."
             )
 
-        if bitstrings[0].shape[0] != len(target_wires):
+        if bitstrings.shape[1] != len(target_wires):
             raise ValueError("Bitstring length must match the number of target wires.")
 
         super().__init__(bitstrings, control_wires, target_wires, work_wires, clean)
-
-    # pylint: disable=arguments-differ
-    def __abstract_init__(
-        self,
-        bitstrings: AbstractArray | TensorLike | Sequence[str],
-        control_wires: AbstractArray | WiresLike,
-        target_wires: AbstractArray | WiresLike,
-        work_wires: AbstractArray | WiresLike,
-        clean=True,
-    ):
-        if isinstance(bitstrings, Sequence) and isinstance(bitstrings[0], str):
-            bitstrings = AbstractArray(shape=(len(bitstrings), len(bitstrings[0])), dtype=np.int64)
-        super().__abstract_init__(
-            bitstrings,
-            control_wires=Wire[len(control_wires)],
-            target_wires=Wire[len(target_wires)],
-            work_wires=Wire[len(work_wires)],
-            clean=clean,
-        )
 
     @property
     def wires(self):
@@ -342,7 +313,7 @@ def _qrom_decomposition_resources(
     num_work_wires_swap = num_work_wires - num_work_wires_select
 
     if num_control_wires == 0:
-        return {resource_rep(BasisEmbedding, num_wires=num_target_wires): num_bitstrings}
+        return {BasisState(Bool[num_target_wires], Wire[num_target_wires]): num_bitstrings}
 
     num_swap_wires = num_target_wires + num_work_wires_swap
 
@@ -351,7 +322,9 @@ def _qrom_decomposition_resources(
     depth = int(2 ** np.floor(np.log2(depth)))
     depth = min(depth, num_bitstrings)
 
-    ops = [resource_rep(BasisEmbedding, num_wires=num_target_wires) for _ in range(num_bitstrings)]
+    ops = [
+        BasisState(Bool[num_target_wires], Wire[num_target_wires]) for _ in range(num_bitstrings)
+    ]
     ops_identity = ops + [qp_ops.I] * int(2**num_control_wires - num_bitstrings)
 
     n_columns = (
@@ -430,7 +403,8 @@ def _qrom_decomposition(
     bitstrings, control_wires, target_wires, work_wires, clean
 ):  # pylint: disable=unused-argument, too-many-arguments
     if len(control_wires) == 0:
-        BasisEmbedding(bitstrings[0, :], wires=target_wires)
+        BasisState(bitstrings[0, :], wires=target_wires)
+        return
 
     n_select_work_wires = _calculate_n_select_work_wires(
         len(bitstrings), len(control_wires), len(target_wires), len(work_wires)
@@ -623,14 +597,13 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments,unused-ar
     # TODO: allowing partial QROM will reduce this term
     L = 2 ** ceil_log2(num_bitstrings)
 
-    basis_state_rep = resource_rep(BasisState, num_wires=num_target_wires)
     if L <= 1 and n_extra == 0:
-        return {basis_state_rep: 1}
+        return {BasisState(Bool[num_target_wires], Wire[num_target_wires]): 1}
 
     if L == 2 and n_extra == 0:
         return {
-            basis_state_rep: 1,
-            _ctrl_abstract(basis_state_rep, Wire[1]): 1,
+            BasisState(Bool[num_target_wires], Wire[num_target_wires]): 1,
+            ctrl(BasisState(Bool[num_target_wires], Wire[num_target_wires]), Wire[1]): 1,
         }
 
     # Without extra wires the load uses the cheaper 4-quarter outer iterator; with extra wires
@@ -651,7 +624,7 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments,unused-ar
         PauliMeasure("X" * (num_target_wires + 1), wires=Wire[num_target_wires + 1]): num_ands,
         CZ: num_cz,
         CNOT: L - 1,
-        resource_rep(BasisState, num_wires=num_target_wires): L,
+        BasisState(Bool[num_target_wires], Wire[num_target_wires]): L,
         X: L + flag.get(X, 0),
         qp_ops.ctrl(X(Wire[1]), control=Wire[1], control_values=Bool[1]): 1,
     }
