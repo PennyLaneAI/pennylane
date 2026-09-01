@@ -26,7 +26,7 @@ from pennylane.decomposition.decomposition_rule import null_decomp
 from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
-from pennylane.typing import Float, TensorLike, Wire
+from pennylane.typing import AbstractArray, AbstractWires, Float, TensorLike, Wire
 from pennylane.wires import WiresLike
 
 
@@ -288,7 +288,10 @@ class GlobalPhase(Operator2):
     def __init__(self, phi, wires: WiresLike = ()):  # pylint: disable=unused-argument
         # NOTE: Pass empty wires to mimic MLIR counterpart
         # TODO: Remove 'wires' argument eventually, only here for backwards compatibility, [sc-127745]
-        super().__init__(phi, ())
+        if isinstance(phi, AbstractArray):
+            wires = Wire[0]
+        wires = wires if isinstance(wires, AbstractWires) else ()
+        super().__init__(phi, wires=wires)
 
     @staticmethod
     def compute_eigvals(phi, wires=()):  # pylint: disable=arguments-differ
