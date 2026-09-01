@@ -420,11 +420,7 @@
 <h3>Improvements 🛠</h3>
 
 * :class:`~.BasisRotation` now omits identity (zero-angle) ``SingleExcitation`` and ``PhaseShift``
-  gates from its decomposition. For a structurally sparse orbital rotation (leaf tensors with exact
-  zeros, e.g. a decoupled/frozen orbital) this lowers the gate count, including under program
-  capture where the reduction is applied statically. Templates that decompose via
-  :class:`~.BasisRotation`, such as :class:`~.TrotterCDF` and :class:`~.TrotterCGF`, inherit the
-  reduction; dense rotations are unaffected.
+  gates from its decomposition, leading to lower quantum resources.
   [(#10097)](https://github.com/PennyLaneAI/pennylane/pull/10097)
 
 * :class:`~.IsingZZ`'s decomposition is now expressed as a :func:`~.change_op_basis` (``CNOT``
