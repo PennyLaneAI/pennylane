@@ -17,6 +17,7 @@ Contains the Multiplier template.
 
 import numpy as np
 
+from pennylane import capture
 from pennylane.core.operator import Operation, abstractify
 from pennylane.decomposition import (
     add_decomps,
@@ -24,6 +25,7 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
+from pennylane.decomposition.resources import _unroll_change_op_basis
 from pennylane.ops import SWAP, Prod, adjoint, change_op_basis, prod
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
@@ -272,7 +274,7 @@ def _multiplier_decomposition_resources(
     else:
         target_op_rep = SWAP
     _compute_op = abstractify(QFT(Wire[num_wires_aux]))
-    return {
+    resources = {
         _change_op_basis_abstract(
             _compute_op,
             abstractify(resource_rep(ControlledSequence, **cs_base_params)),
@@ -285,6 +287,7 @@ def _multiplier_decomposition_resources(
             _adjoint_abstract(_compute_op),
         ): 1,
     }
+    return _unroll_change_op_basis(resources) if capture.enabled() else resources
 
 
 @register_resources(_multiplier_decomposition_resources)

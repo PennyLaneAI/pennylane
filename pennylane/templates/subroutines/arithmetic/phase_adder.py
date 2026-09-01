@@ -19,7 +19,7 @@ from collections import defaultdict
 
 import numpy as np
 
-from pennylane import math, ops
+from pennylane import capture, math, ops
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation, abstractify
 from pennylane.decomposition import (
@@ -27,6 +27,7 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
+from pennylane.decomposition.resources import _unroll_change_op_basis
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.templates.subroutines.qft import QFT
@@ -294,7 +295,7 @@ def _phase_adder_decomposition_resources(num_x_wires, mod) -> dict:
         },
     )
 
-    return {
+    resources = {
         ops.PhaseShift: num_x_wires,
         _adjoint_abstract(ops.PhaseShift): num_x_wires,
         _change_op_basis_abstract(
@@ -309,6 +310,7 @@ def _phase_adder_decomposition_resources(num_x_wires, mod) -> dict:
             abstractify(resource_rep(ops.Prod, resources=dict(basis_op_resources2))),
         ): 1,
     }
+    return _unroll_change_op_basis(resources) if capture.enabled() else resources
 
 
 # pylint: disable=no-value-for-parameter

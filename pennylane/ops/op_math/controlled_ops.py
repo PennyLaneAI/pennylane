@@ -1213,16 +1213,20 @@ def _toffoli_to_ppr(wires: WiresLike):
 def _toffoli_elbow_resources(**_):
     # Imported lazily to avoid a circular import: change_op_basis pulls in ops.op_math, which is
     # still initializing when controlled_ops is first imported.
+    from pennylane.decomposition.resources import (  # pylint: disable=import-outside-toplevel
+        _unroll_change_op_basis,
+    )
     from pennylane.ops.op_math.change_op_basis2 import (  # pylint: disable=import-outside-toplevel
         _change_op_basis_abstract,
     )
 
     _compute_op = abstractify(qp.Elbow)
-    return {
+    resources = {
         _change_op_basis_abstract(
             _compute_op, abstractify(qp.CNOT), _adjoint_abstract(_compute_op)
         ): 1
     }
+    return _unroll_change_op_basis(resources) if qp.capture.enabled() else resources
 
 
 @register_resources(_toffoli_elbow_resources, work_wires={"zeroed": 1})

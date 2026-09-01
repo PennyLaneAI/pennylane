@@ -20,6 +20,7 @@ import numpy as np
 
 import pennylane as qp
 from pennylane.core.operator import abstractify
+from pennylane.decomposition.resources import _unroll_change_op_basis
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.typing import Bool, Wire
 
@@ -118,7 +119,8 @@ def make_crz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
         change_basis_rep = _change_op_basis_abstract(
             abstractify(compute_op), abstractify(target_op), abstractify(uncompute_op)
         )
-        return {change_basis_rep: 1}
+        resources = {change_basis_rep: 1}
+        return _unroll_change_op_basis(resources) if qp.capture.enabled() else resources
 
     @qp.register_resources(_resource_fn)
     def _decomp_fn(phi, wires):  # pylint: disable=unused-argument

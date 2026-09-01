@@ -14,7 +14,6 @@
 """
 This submodule defines a class for compute-uncompute patterns.
 """
-from pennylane.decomposition.resources import change_op_basis_resource_rep
 
 import copy
 import inspect
@@ -27,6 +26,7 @@ from pennylane.core import queuing
 from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
 from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition.resources import change_op_basis_resource_rep
 from pennylane.exceptions import (
     DiagGatesUndefinedError,
     EigvalsUndefinedError,

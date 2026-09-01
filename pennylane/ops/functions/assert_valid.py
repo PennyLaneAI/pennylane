@@ -20,7 +20,7 @@ import copy
 import itertools
 import pickle
 from collections import defaultdict
-from functools import partial, singledispatch
+from functools import partial
 
 import numpy as np
 import scipy.sparse
@@ -30,12 +30,12 @@ from pennylane import capture, math
 from pennylane.core.operator import Operator, Operator1, Operator2, abstractify
 from pennylane.decomposition import DecompositionRule
 from pennylane.decomposition.decomposition_rule import _decomp_contains_mcm
-from pennylane.decomposition.resources import CompressedResourceOp
+from pennylane.decomposition.resources import CompressedResourceOp, _unroll_change_op_basis
 from pennylane.decomposition.utils import _get_decomp_args
 from pennylane.exceptions import EigvalsUndefinedError
-from pennylane.ops.op_math.adjoint2 import Adjoint2, _adjoint_abstract
-from pennylane.ops.op_math.controlled2 import ControlledOp2, _ctrl_abstract
+from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.ops.op_math.composite2 import CompositeOp2
+from pennylane.ops.op_math.controlled2 import ControlledOp2
 from pennylane.ops.op_math.pow2 import Pow2
 from pennylane.ops.op_math.symbolicop2 import SymbolicOp2
 from pennylane.pytrees import flatten
@@ -347,66 +347,6 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
         assert qp.math.allclose(
             op_matrix, decomp_matrix
         ), "decomposition must produce the same matrix as the operator."
-
-
-@singledispatch
-def _unroll_change_op_basis_resource(op_rep):
-    """Leave resource keys without a ChangeOpBasis unchanged."""
-    return {op_rep: 1}
-
-
-@_unroll_change_op_basis_resource.register
-def _unroll_native_change_op_basis(op_rep: qp.ops.ChangeOpBasis):
-    gate_counts = defaultdict(int)
-    for operand in (op_rep.compute_op, op_rep.target_op, op_rep.uncompute_op):
-        if isinstance(operand, qp.ops.Prod2):
-            for inner_op in operand.operands:
-                gate_counts[inner_op] += 1
-        elif (
-            isinstance(operand, CompressedResourceOp) and operand.op_type is qp.ops.Prod
-        ):  # legacy compat branch
-            for inner_op, count in operand.params["resources"].items():
-                gate_counts[inner_op] += count
-        else:
-            gate_counts[operand] += 1
-    return gate_counts
-
-
-def _unroll_symbolic_change_op_basis(op_rep, wrapper):
-    """Unroll ChangeOpBasis inside one symbolic resource key and reapply its wrapper."""
-    unrolled_base = _unroll_change_op_basis_resource(op_rep.base)
-    if unrolled_base == {op_rep.base: 1}:
-        return {op_rep: 1}
-
-    gate_counts = defaultdict(int)
-    for base_rep, count in unrolled_base.items():
-        gate_counts[wrapper(base_rep)] += count
-    return gate_counts
-
-
-@_unroll_change_op_basis_resource.register
-def _unroll_adjoint_change_op_basis(op_rep: Adjoint2):
-    return _unroll_symbolic_change_op_basis(op_rep, _adjoint_abstract)
-
-
-@_unroll_change_op_basis_resource.register
-def _unroll_controlled_change_op_basis(op_rep: ControlledOp2):
-    wrapper = partial(
-        _ctrl_abstract,
-        control_wires=op_rep.control_wires,
-        work_wires=op_rep.work_wires,
-        work_wire_type=op_rep.work_wire_type,
-    )
-    return _unroll_symbolic_change_op_basis(op_rep, wrapper)
-
-
-def _unroll_change_op_basis(gate_counts):
-    """Unroll ChangeOpBasis resource keys, including those inside symbolic operators."""
-    new_gate_counts = defaultdict(int)
-    for op_rep, count in gate_counts.items():
-        for unrolled_rep, inner_count in _unroll_change_op_basis_resource(op_rep).items():
-            new_gate_counts[unrolled_rep] += count * inner_count
-    return new_gate_counts
 
 
 def _check_matrix(op):

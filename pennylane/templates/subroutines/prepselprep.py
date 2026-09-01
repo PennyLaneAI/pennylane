@@ -16,7 +16,7 @@ Contains the PrepSelPrep template.
 """
 
 # pylint: disable=arguments-differ
-from pennylane import math
+from pennylane import capture, math
 from pennylane import ops as qp_ops
 from pennylane.core.operator import Operation, abstractify
 from pennylane.core.queuing import QueuingManager
@@ -25,6 +25,7 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
+from pennylane.decomposition.resources import _unroll_change_op_basis
 from pennylane.ops import GlobalPhase, Prod, StatePrep, change_op_basis, prod
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
@@ -211,7 +212,7 @@ def _prepselprep_resources(op_reps, num_control):
         resource_rep(Prod, resources={abstractify(GlobalPhase): 1, rep: 1}) for rep in op_reps
     )
     _compute_op = abstractify(resource_rep(StatePrep, num_wires=num_control))
-    return {
+    resources = {
         _change_op_basis_abstract(
             _compute_op,
             abstractify(
@@ -226,6 +227,7 @@ def _prepselprep_resources(op_reps, num_control):
             _adjoint_abstract(_compute_op),
         ): 1,
     }
+    return _unroll_change_op_basis(resources) if capture.enabled() else resources
 
 
 # pylint: disable=unused-argument

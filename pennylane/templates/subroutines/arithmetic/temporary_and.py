@@ -18,13 +18,14 @@ Contains the TemporaryAND template, which also is known as Elbow.
 from collections.abc import Sequence
 from typing import override
 
-from pennylane import math, ops
+from pennylane import capture, math, ops
 from pennylane.core.operator import Operator2, abstractify
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
     resource_rep,
 )
+from pennylane.decomposition.resources import _unroll_change_op_basis
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.typing import AbstractArray, AbstractWires, Bool, Wire
@@ -216,13 +217,14 @@ def _temporary_and_resources(**_):
             _adjoint_abstract(ops.T): 1,
         },
     )
-    return {
+    resources = {
         ops.X: _number_xs,
         _change_op_basis_abstract(
             abstractify(prod_rep), abstractify(ops.CNOT), abstractify(prod_rep)
         ): 1,
         _adjoint_abstract(ops.S): 1,
     }
+    return _unroll_change_op_basis(resources) if capture.enabled() else resources
 
 
 @register_resources(_temporary_and_resources, exact=False)

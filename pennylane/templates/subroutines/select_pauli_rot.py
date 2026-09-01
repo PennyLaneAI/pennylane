@@ -23,6 +23,7 @@ from pennylane.decomposition import (
     add_decomps,
     register_resources,
 )
+from pennylane.decomposition.resources import _unroll_change_op_basis
 from pennylane.ops import CNOT, RZ, Hadamard, S, adjoint, change_op_basis
 from pennylane.ops.op_math import Prod2
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
@@ -141,20 +142,22 @@ def _select_pauli_rot_resource(angles, control_wires, target_wire, rot_axis):
     target_rep = Prod2((cnot_rep, rz_rep) * num_rotations) if num_wires > 1 else rz_rep
 
     if rot_axis == "X":
-        return {
+        resources = {
             _change_op_basis_abstract(
                 abstractify(Hadamard), abstractify(target_rep), abstractify(Hadamard)
             ): 1
         }
+        return _unroll_change_op_basis(resources) if capture.enabled() else resources
 
     prod_rep1 = Prod2((abstractify(Hadamard), _adjoint_abstract(S)))
     prod_rep2 = Prod2((abstractify(S), abstractify(Hadamard)))
 
-    return {
+    resources = {
         _change_op_basis_abstract(
             abstractify(prod_rep1), abstractify(target_rep), abstractify(prod_rep2)
         ): 1
     }
+    return _unroll_change_op_basis(resources) if capture.enabled() else resources
 
 
 # Not exact resources because rotations might be skipped based on angles

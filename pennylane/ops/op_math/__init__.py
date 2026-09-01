@@ -157,7 +157,7 @@ from .evolution import Evolution
 from .exp import Exp, exp
 from .linear_combination import LinearCombination
 from .pow import Pow, pow
-from .prod import Prod, prod   
+from .prod import Prod, prod
 from .prod2 import Prod2
 from .change_op_basis import ChangeOpBasis, change_op_basis
 from .change_op_basis2 import ChangeOpBasis2
