@@ -229,6 +229,27 @@ def alias_sampling(probs, mu, target_wires, temp_wires, work_wires):
             comparator scratch), left entangled; size ``3*mu + ceil(log2 L)``.
         work_wires (Sequence[int]): clean scratch, returned to :math:`|0\rangle`.
 
+    **Example**
+
+    .. code-block:: python
+
+        probs = np.array([0.1, 0.2, 0.3, 0.4])
+        mu = 4
+
+        req = qp.labs.templates.alias_sampling_wires(len(probs), mu)
+        n_wires = sum(req.values())
+        target_wires, temp_wires, work_wires = np.split(
+            np.arange(n_wires), np.cumsum([req["target_wires"], req["temp_wires"]])
+        )
+
+        @qp.qnode(qp.device("default.qubit", wires=n_wires))
+        def circuit():
+            qp.labs.templates.alias_sampling(probs, mu, target_wires, temp_wires, work_wires)
+            return qp.probs(wires=target_wires)
+
+    >>> print(np.round(circuit(), 3))
+    [0.094 0.203 0.297 0.406]
+
     """
     probs = np.asarray(probs, dtype=float)
     L = len(probs)

@@ -152,16 +152,15 @@ class TestBuildAliasTables:
             _build_alias_tables([0.0, 0.0], 4)
 
 
-@pytest.mark.parametrize("L, mu", [(2, 4), (3, 5), (4, 6), (8, 5), (16, 7)])
 @pytest.mark.parametrize(
     "L, mu, expected_target, expected_temp, expected_work",
     [
-        (1, 4, 0, 8, 0),    # Edge case: L=1 -> logL=0, work=0
-        (2, 4, 1, 12, 0),   # Power of 2 -> 0 work wires
-        (3, 5, 2, 16, 2),   # Non-power of 2 -> L_odd=3, k=0 -> work=2
-        (4, 6, 2, 19, 0),   # Power of 2 -> 0 work wires
-        (8, 5, 3, 17, 0),   # Power of 2 -> 0 work wires
-        (16, 7, 4, 23, 0),  # Power of 2 -> 0 work wires
+        (1, 4, 0, 12, 0),   # Edge case: L=1 -> logL=0, work=0
+        (2, 4, 1, 13, 0),   # Power of 2 -> 0 work wires
+        (3, 5, 2, 17, 2),   # Non-power of 2 -> L_odd=3, k=0 -> work=2
+        (4, 6, 2, 20, 0),   # Power of 2 -> 0 work wires
+        (8, 5, 3, 18, 0),   # Power of 2 -> 0 work wires
+        (16, 7, 4, 25, 0),  # Power of 2 -> 0 work wires
     ],
 )
 def test_alias_sampling_wires(L, mu, expected_target, expected_temp, expected_work):
@@ -171,15 +170,6 @@ def test_alias_sampling_wires(L, mu, expected_target, expected_temp, expected_wo
     assert req["target_wires"] == expected_target
     assert req["temp_wires"] == expected_temp
     assert req["work_wires"] == expected_work
-    """Test that alias_sampling_wires returns the correct number of wires for a given L and mu."""
-    logL = max(qp.math.ceil_log2(L), 1)
-    req = alias_sampling_wires(L, mu)
-    assert req["target_wires"] == logL
-    # sigma(mu) + alt(logL) + keep(mu) + flag(1) + comparator scratch(mu-1)
-    assert req["temp_wires"] == mu + logL + mu + 1 + max(mu - 1, 0)
-    assert req["work_wires"] == logL - (
-        (L & -L).bit_length() - 1
-    )  # ceil(log2(L)) - k, where L = 2**k * L_odd
 
 
 class TestAliasSampling:
@@ -187,7 +177,8 @@ class TestAliasSampling:
 
     @pytest.mark.parametrize("L", [2, 3, 4, 5, 6])
     def test_marginal_matches_reconstruction(self, L):
-        """Test that the probability distribution matches the classical reconstruction through alias sampling."""
+        """Test the target marginal against the classical tables and the mu-bit bound,
+        and that no probability leaks onto indices >= L."""
         mu = 4
         rng = np.random.default_rng(L * 13 + 1)
         w = rng.random(L) + 0.05
@@ -211,28 +202,5 @@ class TestAliasSampling:
         target = w / w.sum()
         assert np.allclose(probs[:L], target, atol=1 / 2**mu)
         assert np.allclose(probs[:L], recon, atol=1e-9)
-
-    @pytest.mark.parametrize("L", [2, 3, 4, 5, 6])
-    def test_no_leakage(self, L):
-        """Test that the probability value on indices >= L is negligible."""
-        mu = 4
-        rng = np.random.default_rng(L * 13 + 1)
-        w = rng.random(L) + 0.05
-
-        req = alias_sampling_wires(L, mu)
-        n = req["target_wires"] + req["temp_wires"] + req["work_wires"]
-        wires, temp, work = np.split(
-            np.arange(n), np.cumsum([req["target_wires"], req["temp_wires"]])
-        )
-
-        dev = qp.device("lightning.qubit", wires=n)
-
-        @qp.qnode(dev)
-        def circuit():
-            alias_sampling(w, mu, wires, temp, work)
-            return qp.probs(wires=wires)
-
-        probs = np.asarray(circuit())
-
         assert np.isclose(probs[:L].sum(), 1.0, atol=1e-6)
         assert np.allclose(probs[L:], 0.0, atol=1e-9)
