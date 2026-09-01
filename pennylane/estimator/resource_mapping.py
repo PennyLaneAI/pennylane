@@ -27,6 +27,7 @@ import pennylane.templates as qtemps
 from pennylane import math as pl_math
 from pennylane.core.operator import Operation
 from pennylane.core.queuing import QueuingManager
+from pennylane.estimator.compact_hamiltonian import CDFHamiltonian
 from pennylane.ops.functions import simplify
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp
@@ -479,6 +480,23 @@ def _(op: qtemps.TrotterProduct):
         first_order_expansion=res_ops,
         num_steps=op.hyperparameters["n"],
         order=op.hyperparameters["order"],
+        wires=op.wires,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qtemps.TrotterCDF):
+    # TrotterCDF is a second-order Trotter template. The CDF Hamiltonian stores its
+    # ``core_tensors`` with shape ``(num_fragments, num_orbitals, num_orbitals)``.
+    core_tensors = op.arguments["hamiltonian"].core_tensors
+    cdf_ham = CDFHamiltonian(
+        num_orbitals=core_tensors.shape[1],
+        num_fragments=core_tensors.shape[0],
+    )
+    return re_temps.TrotterCDF(
+        cdf_ham,
+        num_steps=op.arguments["num_trotter_steps"],
+        order=2,
         wires=op.wires,
     )
 

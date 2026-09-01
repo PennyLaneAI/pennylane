@@ -65,7 +65,7 @@ from pennylane.ops.op_math.pow2 import flip_pow_adjoint as flip_pow_adjoint2
 from pennylane.ops.op_math.pow2 import merge_powers as merge_powers2
 from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
 from pennylane.ops.op_math.pow2 import repeat_pow_base as repeat_pow_base2
-from pennylane.typing import Float, Wire
+from pennylane.typing import Bool, Complex, Float, Wire
 
 # pylint: disable=no-name-in-module
 from tests.core.operator.operator2_utils import (
@@ -625,28 +625,20 @@ class TestControlledDecomposition:
             qp.assert_equal(actual, expected)
 
         actual_resources = rule.compute_resources(**op.resource_params)
-        assert actual_resources == Resources(
+        assert actual_resources == to_resources(
             {
-                abstractify(qp.CNOT): 1,
+                qp.CNOT: 1,
                 qp.MultiControlledX(Wire[3], work_wires=Wire[1]): 1,
                 qp.MultiControlledX(Wire[4], work_wires=Wire[1]): 1,
                 qp.MultiControlledX(Wire[5], work_wires=Wire[2]): 1,
-                abstractify(qp.CRX): 1,
-                abstractify(qp.CRot): 1,
-                _ctrl_abstract(qp.RZ, Wire[2], Wire[1]): 1,
-                _ctrl_abstract(
-                    qp.MultiRZ(Float, Wire[6]),
-                    control_wires=Wire[1],
-                    work_wires=Wire[1],
-                ): 1,
-                _ctrl_abstract(
-                    qp.MultiRZ(Float, Wire[5]),
-                    control_wires=Wire[2],
-                    work_wires=Wire[1],
-                ): 1,
-                _ctrl_abstract(qp.PauliRot(Float, "XYX", wires=Wire[3]), Wire[1], Wire[1]): 1,
-                abstractify(qp.CZ): 1,
-                abstractify(qp.CCZ): 1,
+                qp.CRX: 1,
+                qp.CRot: 1,
+                qp.ctrl(qp.RZ(Float, Wire[1]), Wire[2], work_wires=Wire[1]): 1,
+                qp.ctrl(qp.MultiRZ(Float, Wire[6]), Wire[1], work_wires=Wire[1]): 1,
+                qp.ctrl(qp.MultiRZ(Float, Wire[5]), Wire[2], work_wires=Wire[1]): 1,
+                qp.ctrl(qp.PauliRot(Float, "XYX", wires=Wire[3]), Wire[1], work_wires=Wire[1]): 1,
+                qp.CZ: 1,
+                qp.CCZ: 1,
             }
         )
 
@@ -752,29 +744,21 @@ class TestControlledDecomposition:
             qp.assert_equal(actual, expected)
 
         actual_resources = rule.compute_resources(**op.resource_params)
-        assert actual_resources == Resources(
+        assert actual_resources == to_resources(
             {
-                abstractify(qp.X): 2,
+                qp.X: 2,
                 qp.MultiControlledX(Wire[3], work_wires=Wire[1]): 1,
                 qp.MultiControlledX(Wire[4], work_wires=Wire[1]): 1,
                 qp.MultiControlledX(Wire[5], work_wires=Wire[1]): 1,
                 qp.MultiControlledX(Wire[6], work_wires=Wire[2]): 1,
-                _ctrl_abstract(qp.RX, Wire[2], Wire[1]): 1,
-                _ctrl_abstract(qp.Rot, Wire[2], Wire[1]): 1,
-                _ctrl_abstract(qp.RZ, Wire[3], Wire[1]): 1,
-                _ctrl_abstract(
-                    qp.MultiRZ(Float, Wire[6]),
-                    control_wires=Wire[2],
-                    work_wires=Wire[1],
-                ): 1,
-                _ctrl_abstract(
-                    qp.MultiRZ(Float, Wire[5]),
-                    control_wires=Wire[3],
-                    work_wires=Wire[1],
-                ): 1,
-                _ctrl_abstract(qp.PauliRot(Float, "XYX", wires=Wire[3]), Wire[2], Wire[1]): 1,
-                abstractify(qp.CCZ): 1,
-                _ctrl_abstract(qp.CZ, Wire[2], Wire[1]): 1,
+                qp.ctrl(qp.RX(Float, Wire[1]), Wire[2], work_wires=Wire[1]): 1,
+                qp.ctrl(abstractify(qp.Rot), Wire[2], work_wires=Wire[1]): 1,
+                qp.ctrl(qp.RZ(Float, Wire[1]), Wire[3], work_wires=Wire[1]): 1,
+                qp.ctrl(qp.MultiRZ(Float, Wire[6]), Wire[2], work_wires=Wire[1]): 1,
+                qp.ctrl(qp.MultiRZ(Float, Wire[5]), Wire[3], work_wires=Wire[1]): 1,
+                qp.ctrl(qp.PauliRot(Float, "XYX", wires=Wire[3]), Wire[2], work_wires=Wire[1]): 1,
+                qp.CCZ: 1,
+                qp.ctrl(qp.CZ(Wire[2]), Wire[2], work_wires=Wire[1]): 1,
             }
         )
 
@@ -839,29 +823,21 @@ class TestControlledDecomposition:
             actual_resources = rule.compute_resources(**op.resource_params)
         else:
             actual_resources = rule.compute_resources(**op.arguments)
-        assert actual_resources == Resources(
+        assert actual_resources == to_resources(
             {
-                abstractify(qp.X): 4,
+                qp.X: 4,
                 qp.MultiControlledX(Wire[4], work_wires=Wire[1]): 1,
                 qp.MultiControlledX(Wire[5], work_wires=Wire[1]): 1,
                 qp.MultiControlledX(Wire[6], work_wires=Wire[1]): 1,
                 qp.MultiControlledX(Wire[7], work_wires=Wire[2]): 1,
-                _ctrl_abstract(qp.RX, Wire[3], Wire[1]): 1,
-                _ctrl_abstract(qp.Rot, Wire[3], Wire[1]): 1,
-                _ctrl_abstract(qp.RZ, Wire[4], Wire[1]): 1,
-                _ctrl_abstract(
-                    qp.MultiRZ(Float, Wire[6]),
-                    control_wires=Wire[3],
-                    work_wires=Wire[1],
-                ): 1,
-                _ctrl_abstract(
-                    qp.MultiRZ(Float, Wire[5]),
-                    control_wires=Wire[4],
-                    work_wires=Wire[1],
-                ): 1,
-                _ctrl_abstract(qp.PauliRot(Float, "XYX", wires=Wire[3]), Wire[3], Wire[1]): 1,
-                _ctrl_abstract(qp.Z, Wire[3], Wire[1]): 1,
-                _ctrl_abstract(qp.CZ, Wire[3], Wire[1]): 1,
+                qp.ctrl(qp.RX(Float, Wire[1]), Wire[3], work_wires=Wire[1]): 1,
+                qp.ctrl(abstractify(qp.Rot), Wire[3], work_wires=Wire[1]): 1,
+                qp.ctrl(qp.RZ(Float, Wire[1]), Wire[4], work_wires=Wire[1]): 1,
+                qp.ctrl(qp.MultiRZ(Float, Wire[6]), Wire[3], work_wires=Wire[1]): 1,
+                qp.ctrl(qp.MultiRZ(Float, Wire[5]), Wire[4], work_wires=Wire[1]): 1,
+                qp.ctrl(qp.PauliRot(Float, "XYX", wires=Wire[3]), Wire[3], work_wires=Wire[1]): 1,
+                qp.ctrl(qp.Z(Wire[1]), Wire[3], work_wires=Wire[1]): 1,
+                qp.ctrl(qp.CZ(Wire[2]), Wire[3], work_wires=Wire[1]): 1,
             }
         )
 
@@ -908,7 +884,11 @@ class TestControlledDecomposition:
         ]
 
         assert ctrl_rule.compute_resources(**op.arguments) == to_resources(
-            {ControlledOp2(OneWireDynOp, control_wires=Wire[1]): 3, qp.Toffoli: 2, qp.X: 1}
+            {
+                ControlledOp2(abstractify(OneWireDynOp), control_wires=Wire[1]): 3,
+                qp.Toffoli: 2,
+                qp.X: 1,
+            }
         )
 
     def test_flip_control_adjoint(self):
@@ -943,7 +923,7 @@ class TestControlledDecomposition:
             flip_control_adjoint2(**op.arguments)
 
         assert q.queue == [qp.adjoint(qp.ctrl(DynOp(0.5, wires=[0, 1]), 2))]
-        assert flip_control_adjoint2.compute_resources(**op.arguments) == Resources(
+        assert flip_control_adjoint2.compute_resources(**op.arguments) == to_resources(
             {Adjoint2(ControlledOp2(DynOp(Float, Wire[2]), control_wires=Wire[1])): 1}
         )
 
@@ -1116,8 +1096,14 @@ class TestControlledDecomposition:
     def test_controlled_decomp_with_work_wire(self):
         """Tests the controlled decomposition with a single work wire (Lemma 7.11 from https://arxiv.org/pdf/quant-ph/9503016)."""
 
-        U = qp.Rot.compute_matrix(0.123, 0.234, 0.345)
-        op = qp.ctrl(qp.QubitUnitary(U, wires=0), control=[1, 2])
+        class CustomRot(Operator):  # pylint: disable=too-few-public-methods
+            """A dummy legacy (Operator1) single-qubit op with a defined matrix."""
+
+            @staticmethod
+            def compute_matrix(*params):
+                return qp.Rot.compute_matrix(*params)
+
+        op = qp.ctrl(CustomRot(0.123, 0.234, 0.345, wires=0), control=[1, 2])
 
         with queuing.AnnotatedQueue() as q:
             qp.Projector([0], wires=3)
@@ -1169,7 +1155,8 @@ class TestControlledDecomposition:
         op = qp.ctrl(DummyHadamard(wires=0), control=[1, 2])
         assert not ctrl_single_work_wire.is_applicable(**op.resource_params)
 
-    def test_decompose_to_controlled_unitary(self):
+    @pytest.mark.unit
+    def test_decompose_to_controlled_qubit_unitary(self):
         """Tests the decomposition to controlled qubit unitary"""
 
         class CustomRot(Operator):  # pylint: disable=too-few-public-methods
@@ -1189,17 +1176,17 @@ class TestControlledDecomposition:
         ]
         assert to_controlled_qubit_unitary.compute_resources(**op.resource_params) == Resources(
             {
-                resource_rep(
-                    qp.ControlledQubitUnitary,
-                    num_target_wires=1,
-                    num_control_wires=3,
-                    num_zero_control_values=0,
-                    num_work_wires=2,
+                qp.ControlledQubitUnitary(
+                    Complex[2, 2],
+                    wires=Wire[3 + 1],
+                    control_values=Bool[3],
+                    work_wires=Wire[2],
                     work_wire_type="borrowed",
                 ): 1
             }
         )
 
+    @pytest.mark.unit
     def test_decompose_to_controlled_unitary2(self):
         """Tests the decomposition to controlled qubit unitary."""
 
@@ -1214,12 +1201,11 @@ class TestControlledDecomposition:
         ]
         assert to_controlled_unitary.compute_resources(**op.arguments) == Resources(
             {
-                resource_rep(
-                    qp.ControlledQubitUnitary,
-                    num_target_wires=1,
-                    num_control_wires=3,
-                    num_zero_control_values=1,
-                    num_work_wires=2,
+                qp.ControlledQubitUnitary(
+                    Complex[2, 2],
+                    wires=Wire[3 + 1],
+                    control_values=Bool[3],
+                    work_wires=Wire[2],
                     work_wire_type="borrowed",
                 ): 1
             }

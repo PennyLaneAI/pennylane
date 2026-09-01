@@ -23,7 +23,10 @@ triton = pytest.importorskip("triton")
 pytestmark = [pytest.mark.gpu]
 
 from pennylane.backline.decoders.triton import triton_so_builder as builder
-from pennylane.backline.decoders.triton.decoder_frontend import _make_css_decoder
+from pennylane.backline.decoders.triton.decoder_frontend import (
+    _make_css_decoder,
+    _triton_jit_with_unique_names,
+)
 from pennylane.backline.decoders.triton.persistent_kernel import _persistent_decoder_kernel
 
 
@@ -34,8 +37,14 @@ class TestConstexprCacheKeys:
         """It should hash distinct decoder tuples differently."""
         hx = np.array([[1, 0], [0, 1]], dtype=int)
         hz = np.array([[1, 1], [0, 1]], dtype=int)
-        decode_x = _make_css_decoder(hx, postprocess="hard", num_iters=5, prob=0.1)
-        decode_z = _make_css_decoder(hz, postprocess="hard", num_iters=5, prob=0.1)
+        decoders = _triton_jit_with_unique_names(
+            (
+                _make_css_decoder(hx, postprocess="hard", num_iters=5, prob=0.1),
+                _make_css_decoder(hz, postprocess="hard", num_iters=5, prob=0.1),
+            )
+        )
+        decode_x = decoders[0]
+        decode_z = decoders[1]
         signature = {
             "ring_u64_ptr": "*u64",
             "handoff_u64_ptr": "*u64",
@@ -44,11 +53,12 @@ class TestConstexprCacheKeys:
             "total": "u64",
         }
 
-        _persistent_decoder_kernel.create_binder()
-
         def ast_hash(decoder_fns):
             wrapped = builder._wrap_constexpr(decoder_fns)
-            src = _persistent_decoder_kernel.ASTSource(
+            # builder.ASTSource, not kernel.ASTSource via create_binder(): the latter asks
+            # the local machine for a target and so needs a usable GPU, which hashing an
+            # AST does not.
+            src = builder.ASTSource(
                 fn=_persistent_decoder_kernel,
                 constexprs={"decoder_fns": wrapped},
                 signature=signature,

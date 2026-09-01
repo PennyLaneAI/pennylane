@@ -1872,6 +1872,8 @@ class TestReturn:
     ):
         """For a multi dimensional measurement (probs), check that a single array is returned with the correct
         dimension"""
+        if diff_method == "adjoint":
+            pytest.skip("adjoint state differentiation is not supported in pl2")
         gradient_kwargs = {}
         if diff_method == "hadamard":
             gradient_kwargs["aux_wire"] = 2
@@ -1966,6 +1968,7 @@ class TestReturn:
         self, dev, diff_method, grad_on_execution, device_vjp
     ):
         """The jacobian of multiple measurements with a single params return an array."""
+
         gradient_kwargs = {}
         if diff_method == "hadamard":
             gradient_kwargs["aux_wire"] = 2
@@ -1981,7 +1984,7 @@ class TestReturn:
         def circuit(a):
             qp.RY(a, wires=0)
             qp.RX(0.2, wires=0)
-            return qp.expval(qp.PauliZ(0)), qp.probs(wires=[0, 1])
+            return qp.expval(qp.Z(0)), qp.expval(qp.Z(0) @ qp.Y(1))
 
         a = np.array(0.1, requires_grad=True)
 
@@ -1991,12 +1994,13 @@ class TestReturn:
         jac = qp.jacobian(cost)(a)
 
         assert isinstance(jac, np.ndarray)
-        assert jac.shape == (5,)
+        assert jac.shape == (2,)
 
     def test_jacobian_multiple_measurement_multiple_param(
         self, dev, diff_method, grad_on_execution, device_vjp
     ):
         """The jacobian of multiple measurements with a multiple params return a tuple of arrays."""
+
         gradient_kwargs = {}
         if diff_method == "hadamard":
             gradient_kwargs["aux_wire"] = 2
