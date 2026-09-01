@@ -23,6 +23,7 @@ import pytest
 import pennylane as qp
 from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.ops.op_math.prod2 import Prod2
+from pennylane.typing import Float, Wire
 
 
 def _product_matrix(factors, wire_order):
@@ -229,25 +230,48 @@ class TestValidity:  # pylint: disable=too-few-public-methods
         qp.ops.functions.assert_valid(Prod2([qp.RX(0.5, 0), qp.Z(0)]), skip_differentiation=True)
 
 
-class TestAbstractify:
-    """Test the ``abstractify`` registration for ``Prod2``."""
+class TestAbstractOperands:
+    """Tests for ``Prod2`` with abstract operators."""
 
-    def test_abstractify_operands(self):
+    @pytest.mark.parametrize("_init_pauli_rep", [None, qp.X(0).pauli_rep @ qp.Z(1).pauli_rep])
+    def test_abstract_wires_pauli_rep(self, _init_pauli_rep):
+        """Test that a product of operators with abstract wires does not have a Pauli rep."""
+        op = Prod2([qp.X(Wire[1]), qp.Z(Wire[1])], _init_pauli_rep=_init_pauli_rep)
+        assert op.pauli_rep is None
+
+    @pytest.mark.parametrize(
+        "_init_pauli_rep",
+        [
+            qp.X(0).pauli_rep @ qp.Z(1).pauli_rep,
+            # The Pauli rep need not be consistent with the operands; with concrete wires
+            # Prod2 stores and returns whatever ``_init_pauli_rep`` is passed.
+            qp.Y(0).pauli_rep,
+        ],
+    )
+    def test_abstract_data_concrete_wires_pauli_rep(self, _init_pauli_rep):
+        """Test that a product of operators with abstract data can have a valid Pauli rep if
+        the wires are not abstract."""
+        op = Prod2([qp.RX(Float, 0), qp.RZ(Float, 1)], _init_pauli_rep=_init_pauli_rep)
+        assert op.pauli_rep == _init_pauli_rep
+
+    @pytest.mark.parametrize(
+        "_init_pauli_rep",
+        [
+            None,
+            qp.X(0).pauli_rep @ qp.Z(1).pauli_rep,
+        ],
+    )
+    def test_abstractify_operands(self, _init_pauli_rep):
         """Test that abstractifying a product yields an abstract product of abstract operands."""
-        op = Prod2([qp.RX(0.5, 0), qp.RZ(0.3, 1)])
+        op = Prod2([qp.RX(0.5, 0), qp.RZ(0.3, 1)], _init_pauli_rep=_init_pauli_rep)
         abstract = qp.core.abstractify(op)
-        assert isinstance(abstract, Prod2)
-        assert abstract.is_abstract
-        assert len(abstract.operands) == 2
-        assert all(operand.is_abstract for operand in abstract.operands)
 
-    def test_abstractify_drops_pauli_rep(self):
-        """Test that a product carrying an ``_init_pauli_rep`` is abstractified without it."""
-        pauli_rep = qp.X(0).pauli_rep @ qp.Z(1).pauli_rep
-        op = Prod2([qp.X(0), qp.Z(1)], _init_pauli_rep=pauli_rep)
-        assert op.pauli_rep is not None  # concrete product carries a Pauli representation
-        abstract = qp.core.abstractify(op)
-        assert abstract.is_abstract
+        assert isinstance(abstract, Prod2)
+        assert abstract.is_fully_abstract
+        assert len(abstract.operands) == 2
+        assert all(operand.is_fully_abstract for operand in abstract.operands)
+        # Abstractification makes the wires abstract, so the Pauli rep is dropped even when the
+        # concrete product had one.
         assert abstract.pauli_rep is None
 
 

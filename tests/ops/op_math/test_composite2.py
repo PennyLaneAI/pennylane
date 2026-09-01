@@ -29,6 +29,7 @@ from pennylane.ops.functions.assert_valid import assert_valid
 from pennylane.ops.op_math import CompositeOp2
 from pennylane.pauli.pauli_arithmetic import PauliWord
 from pennylane.queuing import AnnotatedQueue
+from pennylane.typing import Float, Wire
 from pennylane.wires import WiresLike
 
 # pylint:disable=protected-access, use-implicit-booleaness-not-comparison
@@ -583,6 +584,29 @@ class TestEqual:
         op1 = NoPauliRepOp([qp.X(0), qp.Z(1)], _init_pauli_rep=pauli_rep)
         op2 = NoPauliRepOp([qp.Y(2)], _init_pauli_rep=pauli_rep)
         qp.assert_equal(op1, op2)
+
+
+class TestAbstractOperands:
+    """Test the Pauli representation of composites built from abstract operands."""
+
+    @pytest.mark.parametrize("_init_pauli_rep", [None, PauliWord({0: "X"}) + PauliWord({1: "Z"})])
+    def test_abstract_wires_pauli_rep(self, _init_pauli_rep):
+        """Test that a composite of operators with abstract wires does not have a Pauli rep."""
+        op = ValidOp([qp.X(Wire[1]), qp.Z(Wire[1])], _init_pauli_rep=_init_pauli_rep)
+        assert op.pauli_rep is None
+
+    def test_abstract_data_concrete_wires_uses_init_pauli_rep(self):
+        """Test that a composite of operators with abstract data can have a valid Pauli rep if
+        the wires are not abstract."""
+        pauli_rep = PauliWord({0: "X"}) + PauliWord({1: "Z"})
+        op = ValidOp([qp.RX(Float, 0), qp.RZ(Float, 1)], _init_pauli_rep=pauli_rep)
+        assert op.pauli_rep == pauli_rep
+
+    def test_abstract_data_concrete_wires_builds_pauli_rep(self):
+        """Test that a composite with concrete wires builds its Pauli rep when none is passed,
+        even if the operands have abstract data."""
+        op = ValidOp([qp.RX(Float, 0), qp.RZ(Float, 1)])
+        assert op.pauli_rep == qp.pauli.PauliSentence({})
 
 
 @pytest.mark.capture
