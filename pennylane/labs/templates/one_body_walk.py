@@ -104,9 +104,7 @@ def one_body_walk(op_matrix, alias_sampling_precision, prep_wires, system_wires,
 
     # Split prep_wires: index |p> (na) + spin |sigma> (1) + temp register.
     na = alias_sampling_wires(norbs, alias_sampling_precision)["target_wires"]
-    index_wires = prep_wires[:na]
-    spin_wire = prep_wires[na]
-    garbage_wires = prep_wires[na + 1 :]
+    index_wires, (spin_wire, *garbage_wires) = prep_wires[:na], prep_wires[na:]
 
     mu, vmat = qp.math.linalg.eigh(op_matrix)  # o = vmat diag(mu) vmat.T
 
