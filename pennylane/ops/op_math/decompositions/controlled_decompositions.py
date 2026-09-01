@@ -549,7 +549,7 @@ def decompose_mcx_many_workers(wires, control_values, work_wires, work_wire_type
     https://arxiv.org/abs/quant-ph/9503016, which requires a suitably large register of
     work wires"""
 
-    if compiler.active() and not capture.enabled():
+    if compiler.active() or capture.enabled():
         wires = math.array(wires, like="jax")
         work_wires = math.array(work_wires, like="jax")
         control_values = math.array(control_values, like="jax")
@@ -648,7 +648,7 @@ def decompose_mcx_two_workers(wires, control_values, work_wires, work_wire_type=
 
     """
 
-    if compiler.active() and not capture.enabled():
+    if compiler.active() or capture.enabled():
         wires = math.array(wires, like="jax")
         control_values = math.array(control_values, like="jax")
 
