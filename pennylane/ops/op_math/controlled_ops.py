@@ -1442,7 +1442,7 @@ def _list_mcx_no_work_wire_decomps(op: MultiControlledX):
     if qp.capture.enabled():
         return capture_compatible_rules
 
-    # TODO: the following decomposition rules are not capture compatible [sc-]
+    # TODO: the following decomposition rules are not capture compatible [sc-129521]
     return [
         _wrap_mcx_rule_w_alloc(
             decompose_mcx_many_workers,
