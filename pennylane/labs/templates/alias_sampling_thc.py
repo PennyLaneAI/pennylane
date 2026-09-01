@@ -17,8 +17,7 @@ oracle (``PREPARE``) in tensor hypercontraction (THC) qubitization."""
 import numpy as np
 
 import pennylane as qp
-from pennylane.labs.templates import LeftQuantumComparator
-from pennylane.templates.subroutines.arithmetic.out_square import OutSquare
+from pennylane.labs.templates.left_quantum_comparator import LeftQuantumComparator
 from pennylane.wires import Wires
 
 
@@ -123,9 +122,20 @@ def _build_thc_pairs(M, N, zeta, t_ell):
     Returns:
         tuple[list[tuple[int, int]], list[float]]: the pairs sorted lexicographically
         by ``(mu, nu)`` and their (signed) weights, aligned index-by-index
+
+    Raises:
+        ValueError: if ``zeta`` is not of shape ``(M, M)`` or ``t_ell`` is not of
+            shape ``(N // 2,)``
     """
     n_half = N // 2
     d = n_half + M * (M + 1) // 2
+
+    zeta_shape = tuple(qp.math.shape(zeta))
+    if zeta_shape != (M, M):
+        raise ValueError(f"zeta must be of shape ({M}, {M}), got {zeta_shape}.")
+    t_shape = tuple(qp.math.shape(t_ell))
+    if t_shape != (n_half,):
+        raise ValueError(f"t_ell must be of shape ({n_half},), got {t_shape}.")
 
     weights = {}
     # Two-body block: mu <= nu, both in [0, M - 1] (0-indexed).
@@ -148,7 +158,7 @@ def _build_thc_pairs(M, N, zeta, t_ell):
 
 def _build_qrom_data(
     M, N, zeta, t_ell, num_index_wires, aleph
-):  # pylint: disable=too-many-arguments
+):  # pylint: disable=too-many-arguments,too-many-positional-arguments
     r"""Pack the alias tables into the bitstrings consumed by ``qp.QROM``.
 
     The QROM is addressed by the contiguous two-body index
@@ -205,7 +215,7 @@ def _compute_contiguous_register(M, N, mu_wires, nu_wires, work_wires):
     ``n_d`` work wires.
     """
     n_d = _num_address_wires(M, N)
-    OutSquare(nu_wires, work_wires[:n_d], work_wires[n_d : 2 * n_d], output_wires_zeroed=True)
+    qp.OutSquare(nu_wires, work_wires[:n_d], work_wires[n_d : 2 * n_d], output_wires_zeroed=True)
     qp.SemiAdder(nu_wires, work_wires[:n_d], work_wires[n_d : 2 * n_d])
     for i in reversed(range(n_d - 1)):
         qp.SWAP(wires=[work_wires[i], work_wires[i + 1]])
@@ -259,7 +269,7 @@ def alias_sampling_thc_wires(M, N, aleph):
     }
 
 
-def alias_sampling_thc(  # pylint: disable=too-many-arguments
+def alias_sampling_thc(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph
 ):
     r"""Coefficient oracle for tensor hypercontraction (THC) qubitization via
@@ -307,7 +317,7 @@ def alias_sampling_thc(  # pylint: disable=too-many-arguments
             :math:`\mu`. Requires exactly ``n = ceil(log2(M + 1))`` wires
         nu_wires (Sequence[int]): the ``n`` wires storing the second THC index
             :math:`\nu`. Must have the same length as ``mu_wires``
-        edge_flag (Sequence[int]): the wire holding the one-body sentinel flag
+        edge_flag (int or str or Wires): the single wire holding the one-body sentinel flag
             (true when the ``nu`` register is in state :math:`\lvert M \rangle`), as
             produced by :class:`~pennylane.labs.templates.SuperpositionTHC`
         work_wires (Sequence[int]): the auxiliary wires. At least
@@ -392,14 +402,27 @@ def alias_sampling_thc(  # pylint: disable=too-many-arguments
     # recomputed here.
     edge_flag = Wires(edge_flag)[0]
 
-    # Wire layout on the work register (b is the base of the flag block).
+    # Wire layout on the work register, in order (``b`` is the base of the flag block):
+    #   [0 : n_d]                                contiguous QROM address ``s``
+    #   [n_d]                                    QROM: ``sign`` of the original pair
+    #   [n_d + 1]                                QROM: ``alt_sign`` of the alternate pair
+    #   [n_d + 2 : n_d + n + 2]                  QROM: ``mu_alt``
+    #   [n_d + n + 2 : n_d + 2 n + 2]            QROM: ``nu_alt``
+    #   [n_d + 2 n + 2 : n_d + 2 n + aleph + 2]  QROM: ``keep`` threshold
+    #   [... : b + 2]                            uniform ``aleph``-bit sample ``sigma``
+    #   [b + 2], [b + 3], [b + 4]                alt_flag, swap_flag, alt_edge_flag
+    #   [b + 5 : ]                               comparator work wires, then any extra
+    #                                            wires forwarded to ``qp.QROM``
     b = n_d + 2 * n + 2 * aleph
-    keep_thresh = work_wires[n_d + 2 * n + 2 : n_d + 2 * n + aleph + 2]  # QROM keep prob
-    sample_reg = work_wires[n_d + 2 * n + aleph + 2 : n_d + 2 * n + 2 * aleph + 2]
-    keep_flag = work_wires[b + 2]  # comparator target: keep original pair
+    keep_thresh = work_wires[n_d + 2 * n + 2 : n_d + 2 * n + aleph + 2]
+    sample_reg = work_wires[n_d + 2 * n + aleph + 2 : b + 2]
+    # ``alt_flag == 1`` means the inequality test failed, i.e. the original pair is
+    # *discarded* and the QROM-loaded alternate is used instead.
+    alt_flag = work_wires[b + 2]
     swap_flag = work_wires[b + 3]  # symmetrization (mu <-> nu) control
-    alt_edge_flag = work_wires[b + 4]  # QROM-loaded alt_edge bit
-    cmp_work = work_wires[b + 5 : n_d + 2 * n + 3 * aleph + 4]
+    alt_edge_flag = work_wires[b + 4]  # QROM-loaded ``alt_edge`` bit
+    # ``qp.QROM`` restores its work wires to |0>, so the comparator safely reuses them.
+    cmp_work = work_wires[b + 5 : b + aleph + 4]
     qrom_work = work_wires[b + 5 :]
 
     # 1. Compute the contiguous QROM address s = mu + nu (nu + 1) / 2.
@@ -414,28 +437,35 @@ def alias_sampling_thc(  # pylint: disable=too-many-arguments
         work_wires=qrom_work,
     )
 
-    # 3. Draw a uniform aleph-bit sample and compare it against the keep threshold.
+    # 3. Draw a uniform aleph-bit sample sigma and test ``keep < sigma``: the original
+    #    pair is kept when the test fails, i.e. with probability (keep + 1) / 2 ** aleph.
     for w in sample_reg:
         qp.Hadamard(wires=w)
 
-    LeftQuantumComparator(keep_thresh, sample_reg, keep_flag, work_wires=cmp_work, comparator="<")
+    LeftQuantumComparator(keep_thresh, sample_reg, alt_flag, work_wires=cmp_work, comparator="<")
 
-    # 4. Phase the sign of the kept / alternate entries onto the amplitudes.
-    qp.CZ([keep_flag, work_wires[n_d + 1]])  # alt_sign, applied when keeping
-    qp.X(keep_flag)
-    qp.CZ([keep_flag, work_wires[n_d]])  # sign, applied when swapping to the alternate
-    qp.X(keep_flag)
+    # 4. Phase the sign of the kept / alternate entry onto the amplitude: ``alt_sign``
+    #    when the alternate is used (alt_flag == 1), ``sign`` when the original pair is
+    #    kept (alt_flag == 0).
+    qp.CZ([alt_flag, work_wires[n_d + 1]])  # alt_sign
+    qp.X(alt_flag)
+    qp.CZ([alt_flag, work_wires[n_d]])  # sign
+    qp.X(alt_flag)
 
-    # 5. If we do not keep, swap in the alternate (mu_alt, nu_alt) and alt_edge.
+    # 5. If the original pair is discarded, swap in the alternate (mu_alt, nu_alt)
+    #    and its alt_edge flag.
     for i in range(n):
-        qp.CSWAP([keep_flag, mu_wires[i], work_wires[n_d + 2 + i]])
+        qp.CSWAP([alt_flag, mu_wires[i], work_wires[n_d + 2 + i]])
     for i in range(n):
-        qp.CSWAP([keep_flag, nu_wires[i], work_wires[n_d + 2 + n + i]])
-    qp.CSWAP([keep_flag, edge_flag, alt_edge_flag])
+        qp.CSWAP([alt_flag, nu_wires[i], work_wires[n_d + 2 + n + i]])
+    qp.CSWAP([alt_flag, edge_flag, alt_edge_flag])
 
-    # 6. Uncompute the comparator, leaving the keep decision imprinted on the state.
+    # 6. Uncompute the inequality test. The comparator inputs (``keep_thresh`` and
+    #    ``sample_reg``) are untouched by step 5, so the same ``comparator="<"`` returns
+    #    ``alt_flag`` and ``cmp_work`` to |0>; any other comparator would leave
+    #    ``alt_flag`` entangled with the sample register.
     qp.adjoint(LeftQuantumComparator)(
-        keep_thresh, sample_reg, keep_flag, work_wires=cmp_work, comparator="<="
+        keep_thresh, sample_reg, alt_flag, work_wires=cmp_work, comparator="<"
     )
     qp.H(swap_flag)
 

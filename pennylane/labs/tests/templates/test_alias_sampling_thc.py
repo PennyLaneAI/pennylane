@@ -21,13 +21,16 @@ import pytest
 import pennylane as qp
 from pennylane.labs.templates import (
     SuperpositionTHC,
-    _build_alias_tables,
-    _build_qrom_data,
-    _compute_contiguous_register,
     alias_sampling_thc,
     alias_sampling_thc_wires,
 )
-from pennylane.labs.templates.alias_sampling_thc import _build_thc_pairs
+
+from pennylane.labs.templates.alias_sampling_thc import (
+    _build_alias_tables,
+    _build_qrom_data,
+    _build_thc_pairs,
+    _compute_contiguous_register,
+)
 
 
 def _wire_layout(M, N, aleph):
@@ -91,6 +94,48 @@ def _reconstruct_distribution(M, N, zeta, t_ell, aleph):  # pylint: disable=too-
             P[mu, nu] += p / 2.0
             P[nu, mu] += p / 2.0
     return P
+
+
+_T_GATE_SET = {
+    "T",
+    "Adjoint(T)",
+    "Hadamard",
+    "S",
+    "Adjoint(S)",
+    "CNOT",
+    "X",
+    "Z",
+    "CZ",
+    "SWAP",
+    "GlobalPhase",
+    "RZ",
+}
+
+
+def _t_count(M, N, aleph, extra_work_wires):
+    """T-gate count of the template given ``extra_work_wires`` beyond the minimum."""
+    sizes = alias_sampling_thc_wires(M, N, aleph)
+    n = sizes["mu_wires"]
+    mu_wires = list(range(n))
+    nu_wires = list(range(n, 2 * n))
+    edge_flag = 2 * n
+    num_work = sizes["work_wires"] + extra_work_wires
+    work_wires = list(range(2 * n + 1, 2 * n + 1 + num_work))
+
+    np.random.seed(3)
+    zeta = np.random.randn(M, M)
+    zeta = (zeta + zeta.T) / 2
+    t_ell = np.random.randn(N // 2)
+
+    def qfunc():
+        alias_sampling_thc(M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph)
+
+    with qp.decomposition.toggle_graph_ctx(True):
+        tape = qp.tape.make_qscript(qfunc)()
+        [decomposed], _ = qp.transforms.decompose(tape, gate_set=_T_GATE_SET)
+
+    names = [op.name for op in decomposed.operations]
+    return names.count("T") + names.count("Adjoint(T)")
 
 
 def _run(M, N, zeta, t_ell, aleph, device="lightning.qubit"):  # pylint: disable=too-many-arguments
@@ -183,8 +228,8 @@ def test_compute_contiguous_register_index(M, N):
 
     @qp.qnode(dev)
     def circuit(mu_val, nu_val):
-        qp.BasisState(mu_val, wires=mu_wires)
-        qp.BasisState(nu_val, wires=nu_wires)
+        qp.BasisState(qp.math.int_to_binary(mu_val, n), wires=mu_wires)
+        qp.BasisState(qp.math.int_to_binary(nu_val, n), wires=nu_wires)
         _compute_contiguous_register(M, N, mu_wires, nu_wires, work_wires)
         return qp.probs(wires=work_wires[:n_d])
 
@@ -250,6 +295,37 @@ class TestAliasSamplingTHC:
         target_support = {(a, b) for a in range(2**n) for b in range(2**n) if recon[a, b] > 1e-9}
         assert support == target_support
 
+    def test_ancillas_returned_to_zero(self):
+        """The comparator flag and its work wires are left in |0>.
+
+        The inequality test of step 3 is uncomputed with the *same* comparator in
+        step 6, so ``alt_flag`` and the comparator work wires end in |0> and the
+        prepared state carries no garbage. .
+        """
+        M, N, aleph = 2, 2, 2
+        mu_wires, nu_wires, sup_work, edge_flag, work_wires = _wire_layout(M, N, aleph)
+        n = len(mu_wires)
+        n_d = int(np.ceil(np.log2(N // 2 + M * (M + 1) // 2))) + 1
+        b = n_d + 2 * n + 2 * aleph
+        ancillas = [work_wires[b + 2]] + list(work_wires[b + 5 : b + aleph + 4])
+
+        np.random.seed(3)
+        zeta = np.random.randn(M, M)
+        zeta = (zeta + zeta.T) / 2
+        t_ell = np.random.randn(N // 2)
+
+        total = max(mu_wires + nu_wires + sup_work + work_wires) + 1
+        dev = qp.device("default.qubit", wires=total)
+
+        @qp.qnode(dev)
+        def circuit():
+            SuperpositionTHC(M, N, mu_wires, nu_wires, sup_work)
+            alias_sampling_thc(M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph)
+            return qp.probs(wires=ancillas)
+
+        probs = np.asarray(circuit())
+        assert np.isclose(probs[0], 1.0, atol=1e-9)
+
 
 class TestInputValidation:
     """Test the argument checks."""
@@ -289,6 +365,20 @@ class TestInputValidation:
         zeta, t_ell = self._dummy(2, 2)
         with pytest.raises(ValueError, match="aleph must be a positive integer"):
             alias_sampling_thc(2, 2, zeta, t_ell, [0, 1], [2, 3], 4, list(range(5, 40)), aleph)
+
+    @pytest.mark.parametrize(
+        ("zeta", "t_ell", "match"),
+        [
+            (np.ones((3, 3)), np.ones(1), r"zeta must be of shape \(2, 2\)"),
+            (np.ones(2), np.ones(1), r"zeta must be of shape \(2, 2\)"),
+            (np.ones((2, 2)), np.ones(0), r"t_ell must be of shape \(1,\)"),
+            (np.ones((2, 2)), np.ones((1, 1)), r"t_ell must be of shape \(1,\)"),
+        ],
+    )
+    def test_bad_coefficient_shapes(self, zeta, t_ell, match):
+        """Coefficients that would index out of bounds raise a ValueError, not IndexError."""
+        with pytest.raises(ValueError, match=match):
+            alias_sampling_thc(2, 2, zeta, t_ell, [0, 1], [2, 3], 4, list(range(5, 40)), 3)
 
     def test_bad_n_over_two(self):
         """A value of N // 2 larger than M + 1 raises an error."""
@@ -332,6 +422,18 @@ class TestWiresHelper:
         work_wires = list(range(2 * n + 1, 2 * n + 1 + sizes["work_wires"]))
         with qp.queuing.AnnotatedQueue():
             alias_sampling_thc(M, N, zeta, t_ell, mu_wires, nu_wires, 2 * n, work_wires, aleph)
+
+    def test_extra_work_wires_reduce_t_count(self):
+        """Work wires beyond the minimum are forwarded to ``qp.QROM``, which uses them
+        for a ``SelectSwap`` decomposition with a lower T-gate count.
+
+        The trade-off is not monotonic: ``qp.QROM`` consumes every work wire it is
+        given, so far more wires than the width of a target register can push the count
+        back up. Only the documented reduction is asserted here.
+        """
+        minimum = _t_count(3, 2, 3, extra_work_wires=0)
+        with_extra = _t_count(3, 2, 3, extra_work_wires=2)
+        assert with_extra < minimum
 
     @pytest.mark.parametrize(
         ("M", "N", "aleph", "match"),
