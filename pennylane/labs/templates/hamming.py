@@ -70,7 +70,7 @@ class HammingFour(Operation):
 
     """
 
-    resource_keys = {}
+    resource_keys = set()
 
     def __init__(self, input_wires, output_wires):
         input_wires = Wires(input_wires)
@@ -83,9 +83,9 @@ class HammingFour(Operation):
 
 
 @qp.register_resources({qp.CNOT: 10, qp.TemporaryAND: 4})
-def _hamming_four(input_wires, output_wires):
+def _hamming_four(input_wires, output_wires, **_):
     w0, w1, w2, t, k = output_wires
-    _ = [qp.CNOT(inp, w0) for inp in input_wires]
+    _ = [qp.CNOT([inp, w0]) for inp in input_wires]
     i0, i1, i2, i3 = input_wires
     qp.CNOT([i2, i0])
     qp.CNOT([i2, i1])
