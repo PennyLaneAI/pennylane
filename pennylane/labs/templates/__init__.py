@@ -19,6 +19,7 @@ This module contains templates, which are pre-coded routines that can be used in
 .. autosummary::
     :toctree: api
 
+    ~HammingFour
     ~LeftClassicalComparator
     ~LeftQuantumComparator
     ~SuperpositionTHC
@@ -26,6 +27,7 @@ This module contains templates, which are pre-coded routines that can be used in
     ~SumOfSlatersPrep2
 """
 
+from .hamming import HammingFour
 from .left_classical_comparator import LeftClassicalComparator
 from .left_quantum_comparator import LeftQuantumComparator
 from .superposition_thc import SuperpositionTHC

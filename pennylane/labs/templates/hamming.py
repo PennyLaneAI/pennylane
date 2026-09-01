@@ -75,11 +75,31 @@ class HammingFour(Operation):
     def __init__(self, input_wires, output_wires):
         input_wires = Wires(input_wires)
         output_wires = Wires(output_wires)
-        assert len(input_wires) == 4
-        assert len(output_wires) == 5
+        if len(input_wires) != 4:
+            raise ValueError(f"Expected four input wires, got {len(input_wires)}.")
+        if len(output_wires) != 5:
+            raise ValueError(f"Expected five output wires, got {len(output_wires)}.")
         super().__init__(input_wires + output_wires)
         self.hyperparameters["input_wires"] = input_wires
         self.hyperparameters["output_wires"] = output_wires
+
+    @property
+    def resource_params(self) -> dict:
+        return {}
+
+    def _flatten(self):
+        return tuple(), tuple(self.hyperparameters.items())
+
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        # The class does not have data
+        return cls(**dict(metadata))
+
+    def map_wires(self, wire_map: dict) -> "HammingFour":
+        return HammingFour(
+            [wire_map.get(w, w) for w in self.hyperparameters["input_wires"]],
+            [wire_map.get(w, w) for w in self.hyperparameters["output_wires"]],
+        )
 
 
 @qp.register_resources({qp.CNOT: 10, qp.TemporaryAND: 4})
