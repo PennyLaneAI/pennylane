@@ -212,10 +212,10 @@ def _to_general_c_qu_resource(U, wires, control_values, work_wires, work_wire_ty
     num_target_wires = int(qp.math.log2(qp.math.shape(U)[-1]))
     num_control_wires = len(wires) - num_target_wires
     num_work_wires = len(work_wires)
-    matrix_size = 2**num_target_wires
+    u_size = 2**num_target_wires
     return {
         ControlledOp2(
-            qp.QubitUnitary(Complex[matrix_size, matrix_size], wires=Wire[num_target_wires]),
+            qp.QubitUnitary(Complex[u_size, u_size], wires=Wire[num_target_wires]),
             control_wires=Wire[num_control_wires],
             control_values=Bool[num_control_wires],
             work_wires=Wire[num_work_wires],
