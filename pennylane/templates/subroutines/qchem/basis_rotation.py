@@ -327,12 +327,42 @@ def _basis_rotation_decomp_resources(unitary_matrix, wires, check=False):
     return {PhaseShift: ps_count, SingleExcitation: se_count}
 
 
-# Not exact because PhaseShift(s) might be skipped
+def _has_readable_angles(unitary_matrix):
+    """Whether the Givens angles can be read eagerly to skip identity gates without
+    breaking tracing or differentiation.
+
+    True for plain numpy, an eager (non-traced) jax array, or a concrete constant inside a
+    capture/qjit program. False for traced inputs (``jax.jit``/``jax.grad``) and for other
+    autodiff interfaces (autograd/torch/tf), where reading the value would detach gradients.
+    """
+    if math.is_abstract(unitary_matrix):
+        return False
+    if _qjit_or_capture():
+        return True
+    interface = math.get_interface(unitary_matrix)
+    if interface == "numpy":
+        return True
+    if interface == "jax":
+        import jax  # pylint: disable=import-outside-toplevel
+
+        return not isinstance(unitary_matrix, jax.core.Tracer)
+    return False
+
+
+# Not exact: identity (zero-angle) PhaseShift/SingleExcitation gates may be skipped -
+# conditionally for traced unitaries, statically for concrete ones.
 @register_resources(_basis_rotation_decomp_resources, exact=False)
 def _basis_rotation_decomp(unitary_matrix, wires, **__):
 
     if isinstance(wires, Wires):
         wires = wires.labels
+
+    # When the Givens angles are known (a constant unitary), compute them eagerly and skip
+    # the identity (zero-angle) gates - a static gate-count reduction that also holds under
+    # capture. Traced/differentiated inputs fall through to the rolled for_loop below.
+    if _has_readable_angles(unitary_matrix):
+        _basis_rotation_concrete(math.toarray(unitary_matrix), wires)
+        return
 
     if _qjit_or_capture():
         unitary_matrix, wires = math.array(unitary_matrix, like="jax"), math.array(
@@ -397,6 +427,44 @@ def _basis_rotation_decomp(unitary_matrix, wires, **__):
 
     is_real = math.is_real_obj_or_close(unitary_matrix)
     cond(is_real, real_unitary, complex_unitary)(unitary=unitary_matrix, wires=wires)
+
+
+def _basis_rotation_concrete(unitary_matrix, wires):
+    """Concrete-unitary path for ``_basis_rotation_decomp``.
+
+    The unitary is a concrete (non-traced) array, so the Givens angles are computed
+    eagerly in numpy and only the non-identity (non-zero-angle) gates are queued. This
+    is capture-safe: the queued gates carry constant angles and no python branch is taken
+    on a traced value.
+    """
+    if isinstance(wires, Wires):
+        wires = wires.labels
+
+    if math.is_real_obj_or_close(unitary_matrix):
+        angle, unitary_matrix = _adjust_determinant(unitary_matrix)
+        if not math.allclose(angle, 0.0):
+            PhaseShift(angle, wires[0])
+
+        _, givens_list = math.decomposition.givens_decomposition(unitary_matrix)
+        for grot_mat, (i, j) in givens_list:
+            theta = math.arctan2(math.real(grot_mat[0, 1]), math.real(grot_mat[0, 0]))
+            if not math.allclose(theta, 0.0):
+                SingleExcitation(2 * theta, wires=[wires[i], wires[j]])
+        return
+
+    phase_list, givens_list = math.decomposition.givens_decomposition(unitary_matrix)
+    for idx, phase in enumerate(phase_list):
+        phase_angle = math.angle(phase)
+        if not math.allclose(phase_angle, 0.0):
+            PhaseShift(phase_angle, wires=wires[idx])
+
+    for grot_mat, (i, j) in givens_list:
+        theta = math.arccos(math.real(grot_mat[1, 1]))
+        phi = math.angle(grot_mat[0, 0])
+        if not math.allclose(theta, 0.0):
+            SingleExcitation(2 * theta, wires=[wires[i], wires[j]])
+        if not math.allclose(phi, 0.0):
+            PhaseShift(phi, wires[i])
 
 
 add_decomps(BasisRotation, _basis_rotation_decomp)

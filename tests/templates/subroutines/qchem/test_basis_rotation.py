@@ -229,6 +229,54 @@ class TestDecomposition:
         for rule in qp.list_decomps(qp.BasisRotation):
             _test_decomposition_rule(op, rule)
 
+    def test_basis_rotation_skips_zero_angle_givens(self):
+        """A structurally sparse orthogonal matrix (a decoupled orbital) must not emit
+        identity SingleExcitation/PhaseShift gates, while still reconstructing the operator."""
+        # 4x4 orthogonal with orbital 0 decoupled (row/col 0 = e_0), like a CDF two-body
+        # leaf with a frozen orbital, so some Givens rotations are exact identities.
+        unitary = np.eye(4)
+        unitary[1:, 1:] = np.array(
+            [
+                [-0.25619233, 0.81407233, 0.52120219],
+                [-0.72789572, -0.5172592, 0.45012302],
+                [0.63602933, -0.26406278, 0.72507761],
+            ]
+        )
+
+        op = qp.BasisRotation(wires=range(4), unitary_matrix=unitary)
+        queue = op.decomposition()
+
+        num_single_excitations = sum(isinstance(g, qp.SingleExcitation) for g in queue)
+        assert num_single_excitations < 4 * 3 // 2  # fewer than the dense N(N-1)/2
+        # no identity gates remain in the decomposition
+        assert all(not np.isclose(g.parameters[0], 0.0) for g in queue)
+        # the pruned decomposition still equals the operator
+        decomp_matrix = qp.matrix(op.decomposition, wire_order=range(4))()
+        assert np.allclose(decomp_matrix, qp.matrix(op))
+
+    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_capture")
+    def test_basis_rotation_skips_zero_angle_givens_capture(self):
+        """The zero-angle skip must be reflected statically under program capture: a
+        concrete (constant) sparse unitary yields a captured program with strictly fewer
+        SingleExcitation gates, not runtime-guarded ones."""
+        unitary = np.eye(4)
+        unitary[1:, 1:] = np.array(
+            [
+                [-0.25619233, 0.81407233, 0.52120219],
+                [-0.72789572, -0.5172592, 0.45012302],
+                [0.63602933, -0.26406278, 0.72507761],
+            ]
+        )
+        op = qp.BasisRotation(wires=range(4), unitary_matrix=unitary)
+
+        plxpr = qp.capture.make_plxpr(op.decomposition, autograph=False)()
+        tape = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts)
+
+        num_single_excitations = sum(isinstance(g, qp.SingleExcitation) for g in tape.operations)
+        assert 0 < num_single_excitations < 4 * 3 // 2
+        assert all(not np.isclose(g.parameters[0], 0.0) for g in tape.operations)
+
     def test_custom_wire_labels(self, tol):
         """Test that BasisRotation template can deal with non-numeric, nonconsecutive wire labels."""
 
