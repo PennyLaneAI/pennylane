@@ -29,6 +29,7 @@ catalyst = pytest.importorskip("catalyst")
 
 pytestmark = pytest.mark.catalyst
 
+
 class TestSpecsTransform:
     """Tests for the transform specs using the QNode"""
 
