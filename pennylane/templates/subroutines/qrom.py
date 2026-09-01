@@ -36,7 +36,7 @@ from pennylane.ops import CNOT, CZ, BasisState, X, cond, ctrl, pauli_measure
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.typing import AbstractArray, Bool, Int, TensorLike, Wire
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
 from .arithmetic import TemporaryAND
 from .select import Select
@@ -99,6 +99,10 @@ def _swap_ops(control_wires, depth, swap_wires, target_wires):
             _wires0 = swap_wires[j * num_targets : (j + 1) * num_targets]
             _wires1 = swap_wires[(j + 2**i) * num_targets : (j + 2**i + 1) * num_targets]
             qp_ops.ctrl(_multi_swap, control=control_swap_wires[-i - 1])(_wires0, _wires1)
+
+
+def _to_int_array(bitstring):
+    return [int(bit) for bit in bitstring]
 
 
 class QROM(Operator2):
@@ -215,35 +219,23 @@ class QROM(Operator2):
         work_wires: WiresLike,
         clean=True,
     ):  # pylint: disable=too-many-arguments,disable=too-many-positional-arguments
+
         control_wires = Wires(control_wires)
         target_wires = Wires(target_wires)
+        work_wires = Wires(() if work_wires is None else work_wires)
 
-        if isinstance(bitstrings[0], str):
-            bitstrings = np.array(
-                list(map(lambda bitstring: [int(bit) for bit in bitstring], bitstrings))
-            )
+        if not isinstance(bitstrings, AbstractArray) and isinstance(bitstrings[0], str):
+            bitstrings = list(map(_to_int_array, bitstrings))
 
         if isinstance(bitstrings, (list, tuple)):
             bitstrings = math.array(bitstrings)
 
-        work_wires = Wires(() if work_wires is None else work_wires)
-
-        _wires_are_traced = any(
-            math.is_abstract(w) for ws in (control_wires, target_wires, work_wires) for w in ws
-        )
-
-        # Wire overlap validation must be skipped when wires are JAX tracers,
-        # as their concrete values are not available during tracing.
-        if not _wires_are_traced:
-            if len(work_wires) != 0:
-                if any(wire in work_wires for wire in control_wires):
-                    raise ValueError("Control wires should be different from work wires.")
-
-                if any(wire in work_wires for wire in target_wires):
-                    raise ValueError("Target wires should be different from work wires.")
-
-            if any(wire in control_wires for wire in target_wires):
-                raise ValueError("Target wires should be different from control wires.")
+        wire_args = {
+            "control_wires": control_wires,
+            "target_wires": target_wires,
+            "work_wires": work_wires,
+        }
+        validate_no_wire_overlaps(wire_args)
 
         if 2 ** len(control_wires) < bitstrings.shape[0]:
             raise ValueError(
@@ -252,29 +244,10 @@ class QROM(Operator2):
                 "control wires are required."
             )
 
-        if bitstrings[0].shape[0] != len(target_wires):
+        if bitstrings.shape[1] != len(target_wires):
             raise ValueError("Bitstring length must match the number of target wires.")
 
         super().__init__(bitstrings, control_wires, target_wires, work_wires, clean)
-
-    # pylint: disable-next=arguments-differ, too-many-arguments
-    def __abstract_init__(
-        self,
-        bitstrings: AbstractArray | TensorLike | Sequence[str],
-        control_wires: AbstractArray | WiresLike,
-        target_wires: AbstractArray | WiresLike,
-        work_wires: AbstractArray | WiresLike,
-        clean=True,
-    ):
-        if isinstance(bitstrings, Sequence) and isinstance(bitstrings[0], str):
-            bitstrings = AbstractArray(shape=(len(bitstrings), len(bitstrings[0])), dtype=np.int64)
-        super().__abstract_init__(
-            bitstrings,
-            control_wires=Wire[len(control_wires)],
-            target_wires=Wire[len(target_wires)],
-            work_wires=Wire[len(work_wires)],
-            clean=clean,
-        )
 
     @property
     def wires(self):

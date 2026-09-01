@@ -29,6 +29,7 @@ from pennylane.core import Operator2
 from pennylane.core.operator import Operator
 from pennylane.ops.functions import assert_valid
 from pennylane.ops.functions.assert_valid import (
+    _check_bind_new_parameters_op2,
     _check_eigendecomposition,
     _check_pytree,
     _test_decomposition_rule,
@@ -769,7 +770,7 @@ class TestOperator2AssertValid:
 
         op = IgnoresParams(0.5, wires=0)
         with pytest.raises(AssertionError, match=r"bind_new_parameters must be able to update"):
-            assert_valid(op, skip_pickle=True, skip_differentiation=True)
+            _check_bind_new_parameters_op2(op)
 
     def test_hybrid_ops_arg(self):
         """``assert_valid`` fails if a hybrid op arg is invalid."""
@@ -797,6 +798,36 @@ class TestOperator2AssertValid:
                 HybridOp(np.pi, wires=0, ops=[0.2, NoCopyOp(0.25, 1), SingleRZ(0.5, 0)]),
                 skip_pickle=True,
             )
+
+    def test_cant_handle_abstract_inputs(self):
+        """Test an Operator that can't handle AbstractArray inputs."""
+
+        class NoAAOp(qp.core.Operator2):
+
+            dynamic_argnames = "x"
+
+            def __init__(self, x, wires):
+                _ = qp.math.allclose(x, 1)
+                # 2 * AA will cause an error
+                super().__init__(x, wires)
+
+        op = NoAAOp(0.5, 0)
+        with pytest.raises(AttributeError, match="'AbstractArray' object has no attribute 'numpy'"):
+            assert_valid(op)
+
+    def test_improperly_abstractified(self):
+        """Test an error will be raised in an operator isn't properly abstractified."""
+
+        class BadAAOp(qp.core.Operator2):
+
+            dynamic_argnames = "x"
+
+            def __init__(self, x, wires):
+                super().__init__(1, wires)
+
+        op = BadAAOp(0.5, 0)
+        with pytest.raises(AssertionError, match="Op not properly abstractified. "):
+            assert_valid(op)
 
 
 @pytest.mark.capture

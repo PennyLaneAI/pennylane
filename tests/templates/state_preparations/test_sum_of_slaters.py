@@ -37,6 +37,7 @@ from pennylane.templates.state_preparations.sum_of_slaters import (
     compute_sos_encoding,
     select_sos_rows,
 )
+from pennylane.typing import Int
 from pennylane.wires import Wires
 
 
@@ -427,6 +428,7 @@ class TestSumOfSlatersPrep:
         ``{enumeration: 3, identification: 5, qrom_work: 2, mcx_cache: 4}``. This lets each
         validation be triggered with a wrong, non-zero register size.
         """
+        # pylint: disable=too-many-arguments
         coefficients = np.arange(1, 8) / np.linalg.norm(np.arange(1, 8))
         wires = list(range(7))
         indices = (32, 16, 8, 4, 2, 1, 0)
@@ -561,6 +563,38 @@ class TestSumOfSlatersPrep:
 
         registered_work_wires = _sos_state_prep.get_work_wire_spec(coefficients, range(n), indices)
         assert sum(sizes.values()) - n == registered_work_wires.total
+
+    @pytest.mark.parametrize("num_wires", [3, 5, 8])
+    @pytest.mark.parametrize("num_entries", [2, 4, 5, 16])
+    def test_register_sizes_abstract(self, num_wires, num_entries):
+        """Test that ``required_register_sizes`` dispatches to the abstract computation when
+        given an abstract ``indices`` input, returning the expected upper-bound sizes."""
+
+        indices = Int[num_entries]
+        sizes = SumOfSlatersPrep.required_register_sizes(indices, num_wires)
+
+        d = ceil_log2(num_entries)
+        assert sizes == {
+            "wires": num_wires,
+            "enumeration_wires": d,
+            "identification_wires": 2 * d - 1,
+            "qrom_work_wires": d - 1,
+            "mcx_cache_wires": 2 * d - 2,
+        }
+
+    @pytest.mark.parametrize("num_wires", [3, 4, 5])
+    @pytest.mark.parametrize("num_entries", [2, 4, 5, 6])
+    def test_register_sizes_abstract_is_upper_bound(self, num_wires, num_entries, seed):
+        """Test that the abstract register sizes upper-bound the concrete ones for indices
+        of the same length."""
+
+        _, indices = self.make_random_data(num_wires, num_entries, seed)
+
+        concrete = SumOfSlatersPrep.required_register_sizes(indices, num_wires)
+        abstract = SumOfSlatersPrep.required_register_sizes(Int[num_entries], num_wires)
+
+        assert concrete.keys() == abstract.keys()
+        assert all(size <= abstract[key] for key, size in concrete.items())
 
     def test_resource_counts_are_python_integers(self):
         """Test that decomposition resource counts are Python integers."""

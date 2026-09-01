@@ -141,7 +141,7 @@ class TestBuildingBlocks:
 def test_abstract_init(
     x_wires, y_wires, output_wires, mod, work_wires, expected_mod, expected_num_work_wires
 ):  # pylint: disable=too-many-arguments
-    """Test that abstract init mirrors concrete init for mod defaulting and work wire truncation."""
+    """Tests that creating an abstract operator works."""
     abstract_op = OutMultiplier(
         Wire[len(x_wires)],
         Wire[len(y_wires)],
@@ -164,7 +164,7 @@ def test_abstract_init(
     ],
 )
 def test_abstract_init_validation(mod, work_wires, msg_match):
-    """Test that abstract init validates mod and work wires."""
+    """Tests that validation of wires work with abstract wire arguments."""
     with pytest.raises(ValueError, match=msg_match):
         OutMultiplier(
             Wire[2],
@@ -372,7 +372,7 @@ class TestOutMultiplier:
                 [6, 7, 8],
                 7,
                 [1, 10],
-                "None of the wires in work_wires should be included in x_wires.",
+                "x_wires and work_wires must not overlap",
             ),
             (
                 [0, 1, 2],
@@ -380,7 +380,7 @@ class TestOutMultiplier:
                 [6, 7, 8],
                 7,
                 [3, 10],
-                "None of the wires in work_wires should be included in y_wires.",
+                "y_wires and work_wires must not overlap",
             ),
             (
                 [0, 1, 2],
@@ -388,7 +388,7 @@ class TestOutMultiplier:
                 [6, 7, 8],
                 7,
                 [9, 10],
-                "None of the wires in y_wires should be included in x_wires.",
+                "x_wires and y_wires must not overlap",
             ),
             (
                 [0, 1, 2],
@@ -396,7 +396,7 @@ class TestOutMultiplier:
                 [6, 7, 8],
                 7,
                 [9, 10],
-                "None of the wires in output_wires should be included in y_wires.",
+                "y_wires and output_wires must not overlap",
             ),
             (
                 [0, 1, 7],
@@ -404,7 +404,7 @@ class TestOutMultiplier:
                 [6, 7, 8],
                 7,
                 [9, 10],
-                "None of the wires in output_wires should be included in x_wires.",
+                "x_wires and output_wires must not overlap",
             ),
             (
                 [0, 1, 2],

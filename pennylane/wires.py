@@ -20,6 +20,7 @@ import itertools
 import uuid
 from collections.abc import Hashable, Iterable, Sequence
 from importlib import import_module, util
+from itertools import combinations
 
 import numpy as np
 
@@ -837,3 +838,17 @@ def is_abstract_qubit(v):
     if not jax_available:
         return False
     return math.is_abstract(v) and isinstance(v.val.aval, AbstractQubit)
+
+
+def _filter_abstract_and_traced_wires(v):
+    if isinstance(v, AbstractWires):
+        return Wires([])
+    return Wires([w for w in v if not math.is_abstract(w)])
+
+
+def validate_no_wire_overlaps(wire_args: dict):
+    """Validate that the given wires do not overlap."""
+    concrete_wire_args = {n: _filter_abstract_and_traced_wires(w) for n, w in wire_args.items()}
+    for n1, n2 in combinations(concrete_wire_args, r=2):
+        if Wires.shared_wires([concrete_wire_args[n1], concrete_wire_args[n2]]):
+            raise ValueError(f"{n1} and {n2} must not overlap")

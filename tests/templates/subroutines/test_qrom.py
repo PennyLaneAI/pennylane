@@ -45,46 +45,16 @@ except ImportError:
     has_jax = False
 
 
-@pytest.mark.parametrize(
-    "bitstrings",
-    [
-        [[1, 0, 0, 1], [0, 1, 1, 0]],
-        [
-            [
-                1,
-                0,
-            ],
-            [
-                0,
-                1,
-            ],
-            [
-                1,
-                1,
-            ],
-        ],
-        AbstractArray(shape=(5, 3), dtype=np.int64),
-        AbstractArray(shape=(7, 2), dtype=np.int64),
-        ["00000", "00001", "00011", "10001", "00101"],
-        ["0001", "1010", "0100", "1000"],
-        ("000", "101"),
-    ],
-)
-def test_abstract_init(bitstrings):
-    """Tests that the abstract init handles Sequence[str] bitstrings and more."""
+def test_abstract_data():
+    """Tests that the abstract init handles Sequence[str] data and more."""
     control_wires = Wire[3]
-    if not isinstance(bitstrings, AbstractArray) and isinstance(bitstrings[0], (str, list)):
-        target_wires = Wire[len(bitstrings[0])]
-    else:
-        target_wires = Wire[bitstrings.shape[-1]]
+    target_wires = Wire[3]
     work_wires = Wire[3]
 
-    op = qp.QROM(bitstrings, control_wires, target_wires, work_wires)
+    data = AbstractArray(shape=(5, 3), dtype=np.int64)
+    op = qp.QROM(data, control_wires, target_wires, work_wires)
 
-    if not isinstance(bitstrings, AbstractArray) and isinstance(bitstrings[0], (str, list)):
-        assert op.bitstrings == AbstractArray((len(bitstrings), len(bitstrings[0])), dtype=np.int64)
-    else:
-        assert op.bitstrings == AbstractArray(shape=bitstrings.shape, dtype=np.int64)
+    assert op.arguments["bitstrings"] == data
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -469,19 +439,19 @@ class TestQROM:
             [0, 1, 2],
             [0, 3],
             [4, 5],
-            "Target wires should be different from control wires.",
+            "control_wires and target_wires must not overlap",
         ),
         (
             [0, 1, 2],
             [4],
             [2, 5],
-            "Control wires should be different from work wires.",
+            "control_wires and work_wires must not overlap",
         ),
         (
             [0, 1, 2],
             [4],
             [4],
-            "Target wires should be different from work wires.",
+            "target_wires and work_wires must not overlap",
         ),
     ],
 )
@@ -629,11 +599,11 @@ class TestMeasurementQROM:
         """Test that resources are extracted from ``base`` (Adjoint path)."""
         # Only bitstrings and target_wires are relevant
         res_direct = _qrom_measurement_resources(
-            bitstrings=Int[8, 3], control_wires=Wire[1], target_wires=Wire[3], work_wires=Wire[1]
+            bitstrings=Int[8, 3], control_wires=Wire[3], target_wires=Wire[3], work_wires=Wire[1]
         )
 
         base = qp.QROM(
-            bitstrings=Int[8, 3], control_wires=Wire[1], target_wires=Wire[3], work_wires=Wire[1]
+            bitstrings=Int[8, 3], control_wires=Wire[3], target_wires=Wire[3], work_wires=Wire[1]
         )
         res_base = _qrom_measurement_resources(base=base)
         assert res_base == res_direct
