@@ -43,7 +43,7 @@ from pennylane.exceptions import (
     ParameterFrequenciesUndefinedError,
     SparseMatrixUndefinedError,
 )
-from pennylane.typing import AbstractArray, AbstractWires, Bool, Wire
+from pennylane.typing import AbstractArray, AbstractWires, Bool
 from pennylane.wires import Wires, WiresLike
 
 from .controlled2 import Controlled2, ControlledOp2
@@ -228,21 +228,13 @@ def create_controlled_op2(op, control_wires, control_values, work_wires, work_wi
         ctrl_values = _resolve_ctrl_values(control_values, op.control_values, len(control_wires))
         return ctrl(
             op.base,
-            control=_concat_wires(control_wires, op.control_wires),
+            control=control_wires + op.control_wires,
             control_values=ctrl_values,
-            work_wires=_concat_wires(work_wires, op.work_wires),
+            work_wires=work_wires + op.work_wires,
             work_wire_type=work_wire_type,
         )
 
     return ControlledOp2(op, control_wires, control_values, work_wires, work_wire_type)
-
-
-def _concat_wires(wire1, wire2):
-
-    if isinstance(wire2, AbstractWires):
-        return Wire[len(wire1) + len(wire2)]
-
-    return wire1 + wire2
 
 
 def _resolve_ctrl_values(control_values, base_ctrl_values, num_control: int):
@@ -251,7 +243,7 @@ def _resolve_ctrl_values(control_values, base_ctrl_values, num_control: int):
     if control_values is None:
         control_values = [True] * num_control
 
-    if isinstance(base_ctrl_values, AbstractArray):
+    if isinstance(control_values, AbstractArray) or isinstance(base_ctrl_values, AbstractArray):
         return Bool[len(control_values) + len(base_ctrl_values)]
 
     control_values = math.array(control_values)

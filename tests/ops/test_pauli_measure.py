@@ -107,16 +107,9 @@ class TestPauliMeasure:
         All data should be preserved other than ``meas_uid``, which should be ignored.
         """
         # Check manually created abstract instance
-        abstract_m1 = PauliMeasure("XYZ", Wire[3], postselect=postselect, meas_uid=meas_uid)
+        m1 = PauliMeasure("XYZ", Wire[3], postselect=postselect, meas_uid=meas_uid)
+        abstract_m1 = abstractify(m1)
         assert abstract_m1.pauli_word == "XYZ"
         assert abstract_m1.wires == Wire[3]
-        assert abstract_m1.postselect is None
+        assert abstract_m1.postselect == postselect
         assert abstract_m1.meas_uid is None
-
-        # Check abstract instance created using abstractify
-        m2 = PauliMeasure("XYZ", [1, 2, 3], postselect=postselect, meas_uid=meas_uid)
-        abstract_m2 = abstractify(m2)
-        assert abstract_m2.pauli_word == "XYZ"
-        assert abstract_m2.wires == Wire[3]
-        assert abstract_m2.postselect is None
-        assert abstract_m2.meas_uid is None

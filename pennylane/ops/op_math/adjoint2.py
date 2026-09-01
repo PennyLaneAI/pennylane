@@ -13,6 +13,7 @@
 # limitations under the License.
 """Defines the base class for the adjoint of operators."""
 
+from functools import partial
 from textwrap import dedent
 from typing import override
 
@@ -39,6 +40,15 @@ from pennylane.decomposition.resources import (
 from pennylane.decomposition.symbolic_decomposition import self_adjoint
 
 from .symbolicop2 import SymbolicOp2
+
+
+def get_traced_and_non_traced_args(op: Operator2) -> tuple[dict, dict]:
+    """Split an ``Operator2``'s bound arguments into non-dynamic (static and compilable)
+    and traced (everything else, including hybrid) argument dicts."""
+    non_traced_argnames = op.static_argnames + op.compilable_argnames
+    non_traced_args = {k: v for k, v in op.arguments.items() if k in non_traced_argnames}
+    traced_args = {k: v for k, v in op.arguments.items() if k not in non_traced_argnames}
+    return non_traced_args, traced_args
 
 
 class Adjoint2(SymbolicOp2):
@@ -238,7 +248,9 @@ def _make_adjoint_decomp(base_rule: DecompositionRule):
     )
     def _impl(base):
         # pylint: disable=protected-access
-        qp.adjoint(base_rule._impl)(**base.arguments)
+        non_traced_args, traced_args = get_traced_and_non_traced_args(base)
+        impl = partial(base_rule._impl, **non_traced_args)
+        qp.adjoint(impl)(**traced_args)
 
     _impl._source = (
         dedent(_impl._source).strip()

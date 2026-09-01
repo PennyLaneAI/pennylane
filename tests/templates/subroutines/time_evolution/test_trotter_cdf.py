@@ -32,6 +32,7 @@ from scipy.linalg import expm
 jax = pytest.importorskip("jax")
 
 import pennylane as qp
+from pennylane.core.operator import abstractify
 from pennylane.decomposition.resources import Resources
 from pennylane.exceptions import CaptureWarning
 from pennylane.numeric_hamiltonians import CDFHamiltonian
@@ -194,11 +195,12 @@ class TestInitialization:
             qp.TrotterCDF(0.3, 5, ham, wires, double_phase=True).arguments["double_phase"] is True
         )
 
-    def test_abstract_init(self, toy_hamiltonian_cdf_abstract):
-        """Test that an abstract instance (e.g. for resource-rep purposes) is built."""
+    def test_abstractify(self, toy_hamiltonian_cdf_abstract):
+        """Test that an abstract instance (e.g. for resource-rep purposes) can be built."""
+
         ham, num_orbitals = toy_hamiltonian_cdf_abstract
-        op = qp.TrotterCDF(Float, 5, ham, Wire[2 * num_orbitals])
-        assert op.is_abstract
+        op = abstractify(qp.TrotterCDF(Float, 5, ham, Wire[2 * num_orbitals]))
+        assert op.is_fully_abstract
 
     def test_input_hamiltonian_type(self):
         """Test that anything but a CDFHamiltonian being given to the hamiltonian argument throws

@@ -43,6 +43,7 @@ Symbolic Classes
     ~Adjoint
     ~ChangeOpBasis
     ~CompositeOp
+    ~CompositeOp2
     ~Conditional
     ~Controlled
     ~ControlledOp
@@ -120,6 +121,7 @@ Other Functions
 from .adjoint import Adjoint, adjoint
 from .adjoint2 import Adjoint2
 from .composite import CompositeOp
+from .composite2 import CompositeOp2
 from .condition import Conditional, cond
 from .controlled import Controlled, ControlledOp, ctrl, custom_ctrl_dispatch
 from .controlled2 import Controlled2, ControlledOp2

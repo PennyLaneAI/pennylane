@@ -33,6 +33,7 @@ from scipy.linalg import expm
 jax = pytest.importorskip("jax")
 
 import pennylane as qp
+from pennylane.core.operator import abstractify
 from pennylane.decomposition.resources import Resources
 from pennylane.exceptions import CaptureWarning
 from pennylane.numeric_hamiltonians import CGFHamiltonian
@@ -212,11 +213,12 @@ class TestInitialization:
             qp.TrotterCGF(0.3, 5, ham, wires, double_phase=True).arguments["double_phase"] is True
         )
 
-    def test_abstract_init(self, toy_hamiltonian_cgf_abstract):
+    def test_abstractify(self, toy_hamiltonian_cgf_abstract):
         """Test that an abstract instance (e.g. for resource-rep purposes) is built."""
         abs_ham, num_modes, n_states = toy_hamiltonian_cgf_abstract
         op = qp.TrotterCGF(Float, 5, abs_ham, Wire[num_modes * n_states])
-        assert op.is_abstract
+        op = abstractify(op)
+        assert op.is_fully_abstract
 
     def test_input_hamiltonian_type(self):
         """Test that anything but a CGFHamiltonian being given to the hamiltonian argument throws

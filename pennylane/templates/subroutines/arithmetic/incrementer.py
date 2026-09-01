@@ -163,14 +163,9 @@ class Incrementer(Operator2):
     wire_argnames = ("wires", "work_wires")
     arg_specs = {"wires": Wire[-1], "work_wires": Wire[-1]}
 
-    def __init__(self, wires: WiresLike, work_wires: WiresLike = ()):
-        # The Operator2 base normalizes the wire registers to ``Wires`` via ``arg_specs``; we only
-        # coerce a ``None`` ``work_wires`` to the empty default here.
-        super().__init__(wires, work_wires=() if work_wires is None else work_wires)
-
-    # pylint: disable=arguments-differ
-    def __abstract_init__(self, wires, work_wires=()):
-        super().__abstract_init__(wires=Wire[len(wires)], work_wires=Wire[len(work_wires)])
+    def __init__(self, wires: WiresLike, work_wires: WiresLike | None = None):
+        work_wires = Wires([] if work_wires is None else work_wires)
+        super().__init__(wires, work_wires=work_wires)
 
     @property
     def increment_wires(self):

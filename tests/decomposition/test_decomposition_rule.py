@@ -27,6 +27,7 @@ from pennylane.decomposition.decomposition_rule import (
     WorkWireSpec,
     _decompositions_private,
     _fix_decomp,
+    _verify_is_abstract_and_fixed,
     register_condition,
     register_resources,
 )
@@ -431,21 +432,18 @@ class TestDecompositionRule:
         assert multi_rz_decomposition.exact_resources is not exact_resources
 
     @pytest.mark.parametrize(
-        "rep",
+        "op",
         [
             ParametrizedHybridOp(Float[-1], Wire[3], DynOp(Float[3], Wire[3])),  # data not fixed
             ParametrizedHybridOp(Float[3], Wire[3], DynOp(Float[...], Wire[3])),  # hybrid not fixed
+            ParametrizedHybridOp(Float[3], Wire[3], DynOp(0.5, Wire[3])),  # data not even abstract
         ],
     )
-    def test_verify_operator2_is_abstract_and_fixed(self, rep):
+    def test_verify_operator2_is_abstract_and_fixed(self, op):
         """Tests that the resource function can only contain abstract and fixed Operator2."""
 
-        @qp.register_resources({rep: 1})
-        def rule():
-            raise NotImplementedError
-
         with pytest.raises(TypeError, match="abstract data of undetermined dimensions"):
-            rule.compute_resources()
+            _verify_is_abstract_and_fixed(op)
 
 
 class TestDecompDictionary:

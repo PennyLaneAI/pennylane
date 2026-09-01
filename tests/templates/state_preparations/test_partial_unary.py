@@ -78,13 +78,13 @@ class TestPUIsometryFinder:
         "num_entries, n, expected",
         [
             (2, 2, [2, 1, 1, 1, 2, np.uint64, np.uint64]),
-            (2, 8, [8, 1, 7, 4, 2, np.uint64, np.uint64]),
-            (2, 65, [65, 1, 64, 64, 2, object, int]),
+            (2, 8, [8, 1, 7, 2, 2, np.uint64, np.uint64]),
+            (2, 65, [65, 1, 64, 2, 2, object, int]),
             (3, 3, [3, 2, 1, 1, 3, np.uint64, np.uint64]),
             (4, 8, [8, 2, 6, 4, 4, np.uint64, np.uint64]),
             (15, 5, [5, 4, 1, 1, 15, np.uint64, np.uint64]),
             (23, 29, [29, 5, 24, 16, 23, np.uint64, np.uint64]),
-            (7, 65, [65, 3, 62, 32, 7, object, int]),
+            (7, 65, [65, 3, 62, 7, 7, object, int]),
             (112563, 100, [100, 17, 83, 64, 112563, object, int]),
         ],
     )

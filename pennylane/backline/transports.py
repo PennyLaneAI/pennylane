@@ -34,8 +34,8 @@ class Transport:
 
     .. warning::
 
-        Backline is experimental. Its API may change without notice, and it is only usable through
-        the Catalyst compiler.
+        :mod:`Backline <.backline>` is experimental and only usable through the Catalyst
+        compiler.
 
     Args:
         name (str): The registry name of the transport, e.g. ``"rdma"``.

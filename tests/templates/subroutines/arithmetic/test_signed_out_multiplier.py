@@ -79,7 +79,7 @@ def twos_complement_value(bits):
 def test_abstract_init(
     x_wires, y_wires, output_wires, work_wires, output_wires_zeroed, expected_num_work_wires
 ):  # pylint: disable=too-many-arguments
-    """Test that abstract init mirrors concrete init."""
+    """Tests creating an abstract operator."""
     abstract_op = SignedOutMultiplier(
         Wire[len(x_wires)],
         Wire[len(y_wires)],
@@ -169,35 +169,35 @@ def test_assert_valid(x_wires, y_wires, work_wires, output_wires, zeroed):
             [3, 4, 5],
             [6, 7, 8],
             [1, 10],
-            "None of the wires in work_wires should be included in x_wires.",
+            "x_wires and work_wires must not overlap",
         ),
         (
             [0, 1, 2],
             [3, 4, 5],
             [6, 7, 8],
             [3, 10],
-            "None of the wires in work_wires should be included in y_wires.",
+            "y_wires and work_wires must not overlap",
         ),
         (
             [0, 1, 2],
             [2, 4, 5],
             [6, 7, 8],
             [9, 10],
-            "None of the wires in y_wires should be included in x_wires.",
+            "x_wires and y_wires must not overlap",
         ),
         (
             [0, 1, 2],
             [3, 7, 5],
             [6, 7, 8],
             [9, 10],
-            "None of the wires in output_wires should be included in y_wires.",
+            "y_wires and output_wires must not overlap",
         ),
         (
             [0, 1, 7],
             [3, 4, 5],
             [6, 7, 8],
             [9, 10],
-            "None of the wires in output_wires should be included in x_wires.",
+            "x_wires and output_wires must not overlap",
         ),
     ],
 )

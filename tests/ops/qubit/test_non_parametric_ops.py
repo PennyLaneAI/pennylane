@@ -714,7 +714,7 @@ class TestMultiControlledX:
         """Test that a ValueError is raised when work_wires is not complementary to control_wires"""
         control_target_wires = range(4)
         work_wires = range(2)
-        with pytest.raises(ValueError, match="work_wires must not overlap with the operator"):
+        with pytest.raises(ValueError, match="wires and work_wires must not overlap"):
             qp.MultiControlledX(wires=control_target_wires, work_wires=work_wires)
 
     @pytest.mark.parametrize("control_val", [0, 1])
