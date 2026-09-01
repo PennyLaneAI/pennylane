@@ -353,9 +353,6 @@ class ChangeOpBasis(CompositeOp2):
 @abstractify.register
 def _abstractify_change_op_basis(op: ChangeOpBasis):
     """Create the abstract resource representation of a concrete COB."""
-    if op.is_abstract:
-        return op
-
     return _change_op_basis_abstract(
         abstractify(op.compute_op), abstractify(op.target_op), abstractify(op.uncompute_op)
     )
