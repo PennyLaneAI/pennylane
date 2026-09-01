@@ -429,6 +429,7 @@
   >>> indices = qp.typing.Int[num_entries]
   >>> qp.SumOfSlatersPrep.required_register_sizes(indices, num_wires)
   {'wires': 8, 'enumeration_wires': 4, 'identification_wires': 7, 'qrom_work_wires': 3, 'mcx_cache_wires': 6}
+
   ```
 
 * :class:`~.IsingZZ`'s decomposition is now expressed as a :func:`~.change_op_basis` (``CNOT``
