@@ -36,6 +36,23 @@ class HammingFour(Operation):
 
     **Example**
 
+    Note that this loading function can replace a four-control :class:`~.QROM` in this highly
+    specialized scenario, at a cost of just four elbow gates:
+
+    >>> from pennylane.labs.templates import HammingFour
+    >>> qp.inspect_decomps(HammingFour([0, 1, 2, 3], [4, 5, 6, 7, 8]))
+    Decomposition 0 (name: _hamming_four)
+    0: ─╭●───────╭X────╭●────╭X────────────────┤
+    1: ─│──╭●────│──╭X─├●─╭X─│─────────────────┤
+    2: ─│──│──╭●─╰●─╰●─│──╰●─╰●─╭●─────────────┤
+    3: ─│──│──│──╭●────│────────│──╭●──────────┤
+    4: ─╰X─╰X─╰X─╰X────│────────│──├○───────╭●─┤
+    5: ────────────────╰⊕───────╰X─│──╭●─╭X─├●─┤
+    6: ────────────────────────────│──├⊕─│──│──┤
+    7: ────────────────────────────│──│──│──╰⊕─┤
+    8: ────────────────────────────╰⊕─╰●─╰●────┤
+    Gate Count: {CNOT: 10, TemporaryAND: 4}
+
     Consider the specific scenario where we want to load a distinct bitstring based on the
     Hamming weight of four input qubits, but no bitstring for a Hamming weight of zero.
     This is useful when we want to perform parallel rotations with the same angle, where the
@@ -64,9 +81,6 @@ class HammingFour(Operation):
 
             # Uncompute the Hamming weight
             qp.adjoint(HammingFour)(input_wires, work_wires)
-
-    Note that this loading function can replace a four-control :class:`~.QROM` in this highly
-    specialized scenario, at a cost of just four elbow gates.
 
     """
 
