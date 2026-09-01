@@ -234,9 +234,9 @@ def change_op_basis(
         target = _convert_to_prod(target_op)
         uncompute = _convert_to_prod(uncompute_op) if uncompute_op is not None else None
         if (
-            isinstance(compute, Prod2)
-            and isinstance(target, Prod2)
-            and isinstance(uncompute, (Prod2, NoneType))
+            isinstance(compute, (Prod2, Operator2))
+            and isinstance(target, (Prod2, Operator2))
+            and isinstance(uncompute, (Prod2, Operator2, NoneType))
         ):
             return ChangeOpBasis2(
                 compute,

@@ -14,6 +14,7 @@
 """
 Unit tests for the composite operator class of Operator2 instances.
 """
+from pennylane.ops.op_math.change_op_basis2 import ChangeOpBasis2
 
 import pytest
 
@@ -132,7 +133,7 @@ def test_change_op_basis_operator(defined_outside):
 
     def f(x):
         op = outside_op if defined_outside else NonParametricOp(0)
-        ChangeOpBasis(op, DynOp(x, 1))
+        ChangeOpBasis2(op, DynOp(x, 1))
 
     cjaxpr = jax.make_jaxpr(f)(1.2)
 
@@ -140,7 +141,7 @@ def test_change_op_basis_operator(defined_outside):
 
     assert len(eqns) == 1
     assert eqns[0].primitive.name == "operator"
-    assert eqns[0].params["op_cls"] is ChangeOpBasis
+    assert eqns[0].params["op_cls"] is ChangeOpBasis2
     assert eqns[0].params["hybrid_lens"] == (1, 2, 1)
 
 
