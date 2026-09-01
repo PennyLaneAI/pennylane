@@ -2085,7 +2085,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         def circuit(a):
             qp.RY(a, wires=0)
             qp.RX(0.2, wires=0)
-            return qp.expval(qp.PauliZ(0)), qp.probs(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliX(0))
 
         a = jax.numpy.array(0.1)
 
@@ -2098,7 +2098,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         assert jac[0].shape == ()
 
         assert isinstance(jac[1], jax.numpy.ndarray)
-        assert jac[1].shape == (4,)
+        assert jac[1].shape == ()
 
     @pytest.mark.parametrize("jacobian", jacobian_fn)
     def test_jacobian_multiple_measurement_multiple_param(

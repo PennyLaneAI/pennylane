@@ -14,13 +14,14 @@
 
 """The heterogeneous device.
 
-A frontend device that carries a backline placement (consisting of controller, coprocessors and
-transport) for heterogeneous compilation and execution. This device requires the Catalyst compiler.
+A frontend device that carries a backline placement (consisting of controller, coprocessors, transport) for
+heterogeneous compilation and execution. This device requires the Catalyst compiler.
 """
 
 from collections.abc import Sequence
 from typing import cast
 
+from pennylane.capture import get_tracing_device
 from pennylane.devices import Device
 
 from .placement import Controller, Coprocessor, Placement
@@ -35,22 +36,21 @@ class Backline(Device):
     from the controller's device, so a QNode is written exactly as it would be against that device
     alone. This device requires the Catalyst compiler.
 
+    .. warning::
+
+        :mod:`Backline <.backline>` is experimental and only usable through the Catalyst
+        compiler.
+
     Keyword Args:
         controller (Controller): The :class:`~.Controller` that drives the QPU and runs the QNode.
         coprocessors (Sequence[Coprocessor]): Zero or more :class:`~.Coprocessor` accelerators.
-            Defaults to ``()``.
-        transport (str | Transport): The transfer protocol between nodes, by registry name (e.g.
-            ``"rdma"``) or a :class:`~.Transport`.
-        qec_code (str | None): The quantum error-correcting code to implicitly encode the circuit.
+        transport (str, Transport): The transfer protocol between nodes, by registry name (e.g.,
+            ``"rdma"`` or ``"memcpy"``) or a :class:`~.Transport`.
+        qec_code (str, None): The quantum error-correcting code to implicitly encode the circuit.
             Currently the only supported option is ``"steane"``. Defaults to ``None``, leaving the
             circuit unencoded.
-        shots (int | None): Number of shots. Defaults to ``None`` (analytic); set shots on the
+        shots (int, None): Number of shots. Defaults to ``None`` (analytic); set shots on the
             QNode with :func:`~pennylane.set_shots` instead.
-
-    .. warning::
-
-        Backline is experimental. Its API may change without notice, and it is only usable through
-        the Catalyst compiler.
 
     .. seealso:: :class:`~.Controller`, :class:`~.Coprocessor`, :class:`~.Placement`
 
@@ -68,32 +68,22 @@ class Backline(Device):
 
         import pennylane as qp
 
-        con = qp.Controller(
-            device=qp.device("lightning.qubit", wires=4),
-            label="cpu-controller",
-            backend="cpu_verbs",
-            remote=True,
-            executor_options={"host": "192.0.2.10", "port": 7810},
-            init_args={
-                "config": "dev=mlx5_1;gid=3",
-                "data_path": "cpu_verbs",
-                "in_bytes": 8,
-                "out_bytes": 8,
-            },
+        ctrl = qp.Controller(
+            device=qp.device("null.qubit", wires=4),
+            name="cpu-controller",
+            executor_options={"host": "192.168.3.15", "port": 7810},
         )
+
         coproc = qp.Coprocessor(
-            label="decoder-0",
             coprocessor_fn="decoder",
-            backend="gpu_verbs",
-            comm_host="198.51.100.2",
-            oob_port=7760,
-            remote=True,
+            name="decoder-0",
+            hardware="gpu",
+            endpoint=qp.Endpoint("198.51.100.2", 7760),
             executor_options={"host": "192.0.2.11", "port": 7813},
-            init_args={"config": "dev=mlx5_1;gid=3;gpu=0", "data_path": "cpu_verbs"},
         )
 
         dev = qp.Backline(
-            controller=con, coprocessors=[coproc], transport="rdma", qec_code="steane"
+            controller=ctrl, coprocessors=[coproc], transport="rdma", qec_code="steane"
         )
 
         @qp.qjit
@@ -101,8 +91,11 @@ class Backline(Device):
         def circuit(x):
             qp.RX(x, wires=0)
             return qp.expval(qp.Z(0))
+
+    For more usage details, see the `Backline demo <https://pennylane.ai/demos/backline>`__.
     """
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         *,
@@ -125,6 +118,11 @@ class Backline(Device):
     @property
     def placement(self):
         """Placement: The :class:`~.Placement` the device was configured with."""
+        return self._placement
+
+    @property
+    def backline(self):
+        """Placement: Alias of :attr:`placement` for Catalyst."""
         return self._placement
 
     @property
@@ -165,3 +163,42 @@ class Backline(Device):
             "Backline has no Python execution path; execute it via a compiler such as "
             "Catalyst (@qjit)."
         )
+
+
+def active_placement() -> "Placement | None":
+    """The placement an in-circuit call belongs to: the one on the device being traced.
+
+    ``None`` when there is no trace in progress, or when the device being traced did not come from
+    :class:`Backline`.
+
+        import pennylane as qp
+
+        ctrl = qp.Controller(
+            name="cpu-controller",
+            remote=True,
+            executor_options={"host": "192.0.2.10", "port": 7810},
+            init_args={"config": "dev=mlx5_1;gid=3"},
+        )
+        coproc = qp.Coprocessor(
+            name="decoder-0",
+            coprocessor_fn="decoder",
+            hardware="gpu",
+            endpoint=qp.Endpoint("198.51.100.2", 7760),
+            remote=True,
+            executor_options={"host": "192.0.2.11", "port": 7813},
+            init_args={"config": "dev=mlx5_1;gid=3;gpu=0"},
+        )
+
+        dev = qp.Backline(
+            controller=ctrl, coprocessors=[coproc], transport="rdma", qec_code="steane"
+        )
+
+        @qp.qjit
+        @qp.qnode(dev)
+        def circuit():
+            ...
+
+    .. seealso:: :func:`~pennylane.backline.decode`
+
+    """
+    return getattr(get_tracing_device(), "placement", None)

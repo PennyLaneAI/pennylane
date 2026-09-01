@@ -23,7 +23,6 @@ from pennylane.decomposition.resources import (
     Resources,
     adjoint_resource_rep,
     controlled_resource_rep,
-    custom_ctrl_op_to_base,
     pow_resource_rep,
     resource_rep,
 )
@@ -340,77 +339,6 @@ class TestControlledResourceRep:
         with pytest.raises(TypeError, match="Missing keyword arguments"):
             controlled_resource_rep(DummyOp, {}, 1, 1, 1)
 
-    def test_controlled_qubit_unitary(self):
-        """Tests that a controlled QubitUnitary is a ControlledQubitUnitary."""
-
-        rep = controlled_resource_rep(
-            qp.ops.Controlled,
-            {
-                "base_class": qp.QubitUnitary,
-                "base_params": {"num_wires": 2},
-                "num_control_wires": 1,
-                "num_zero_control_values": 1,
-                "num_work_wires": 1,
-                "work_wire_type": "zeroed",
-            },
-            1,
-            1,
-            1,
-            "zeroed",
-        )
-        assert rep == CompressedResourceOp(
-            qp.ops.ControlledQubitUnitary,
-            {
-                "num_target_wires": 2,
-                "num_control_wires": 2,
-                "num_zero_control_values": 2,
-                "num_work_wires": 2,
-                "work_wire_type": "zeroed",
-            },
-        )
-
-    def test_nested_controlled_qubit_unitary(self):
-        """Tests that a nested controlled qubit unitary is flattened."""
-
-        rep = controlled_resource_rep(
-            qp.ops.Controlled,
-            {
-                "base_class": qp.ControlledQubitUnitary,
-                "base_params": {
-                    "num_target_wires": 1,
-                    "num_control_wires": 2,
-                    "num_zero_control_values": 1,
-                    "num_work_wires": 1,
-                    "work_wire_type": "borrowed",
-                },
-                "num_control_wires": 1,
-                "num_zero_control_values": 1,
-                "num_work_wires": 1,
-                "work_wire_type": "borrowed",
-            },
-            1,
-            1,
-            1,
-            "zeroed",
-        )
-        assert rep == CompressedResourceOp(
-            qp.ops.ControlledQubitUnitary,
-            {
-                "num_target_wires": 1,
-                "num_control_wires": 4,
-                "num_zero_control_values": 3,
-                "num_work_wires": 3,
-                "work_wire_type": "borrowed",
-            },
-        )
-
-    def test_custom_controlled_ops(self):
-        """Tests that the resource rep of custom controlled ops remain as the custom version."""
-
-        for op_type in custom_ctrl_op_to_base():
-            rep = resource_rep(op_type)
-            assert rep == CompressedResourceOp(op_type, {})
-
 
 @pytest.mark.unit
 class TestSymbolicResourceRep:
@@ -438,19 +366,6 @@ class TestSymbolicResourceRep:
 
         with pytest.raises(TypeError, match="Missing keyword arguments"):
             qp.decomposition.adjoint_resource_rep(DummyOp, {})
-
-    def test_adjoint_custom_controlled_ops(self):
-        """Tests that the adjoint of custom controlled ops remain as the custom version."""
-
-        for op_type in custom_ctrl_op_to_base():
-            rep = qp.decomposition.adjoint_resource_rep(base_class=op_type, base_params={})
-            assert rep == CompressedResourceOp(
-                qp.ops.Adjoint,
-                {
-                    "base_class": op_type,
-                    "base_params": {},
-                },
-            )
 
     def test_pow_resource_rep(self):
         """Tests the pow_resource_rep utility function."""

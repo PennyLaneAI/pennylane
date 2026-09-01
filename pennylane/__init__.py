@@ -76,6 +76,10 @@ from pennylane.qchem import (
     from_openfermion,
     to_openfermion,
 )
+from pennylane.numeric_hamiltonians import (
+    CDFHamiltonian,
+    CGFHamiltonian,
+)
 from pennylane._grad import grad, jacobian, vjp, jvp, value_and_grad
 from pennylane._version import __version__
 from pennylane.about import about
@@ -206,9 +210,10 @@ from pennylane.backline import (
     Controller,
     Coprocessor,
     CoprocessorFunction,
-    Node,
-    css_decoder,
+    Endpoint,
 )
+from pennylane.backline.runtime import declare as runtime_declare
+from pennylane.backline.runtime import runtime_call
 
 from pennylane import spin
 

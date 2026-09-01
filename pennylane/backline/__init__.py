@@ -15,126 +15,28 @@
 r"""
 .. currentmodule:: pennylane.backline
 
-This module contains experimental features for compilation and execution on heterogeneous devices.
-The :class:`~pennylane.Backline` device is built from a :class:`~.Placement`, which specifies where
-each part of the workload runs and the :class:`~.Transport` protocol between them.
+This module contains functionality for defining and using backline in PennyLane.
+Backline is an open platform for compilation and low-latency execution
+that dynamically connects quantum workloads to heterogenous hardware devices, including
+GPUs, CPUs, FPGAs, and QPUs. For examples and tutorials see the
+`Backline demo <https://pennylane.ai/demos/backline>`__.
 
 .. warning::
 
-    Backline is experimental. Its API may change without notice, and it is only usable through
-    the Catalyst compiler.
+    Backline is experimental and under heavy development. Its API may change without notice, and it
+    is only usable through the Catalyst compiler.
 
-A backline device is built with :class:`~pennylane.Backline` from a
-:class:`controller <.Controller>` (which wraps the PennyLane device the QNode runs on, such as
-``lightning.qubit`` or ``null.qubit``), zero or more :class:`coprocessors <.Coprocessor>`, and a
-:class:`transport <.Transport>`, selected by name (e.g. ``transport="rdma"``) and resolved to a
-:class:`~.Transport`. The resulting device is passed into a :func:`~pennylane.qnode`:
+.. note::
 
-.. code-block:: python
+    Backline requires a recent version of PennyLane, Catalyst, and Lightning. Check out the `installation
+    instructions and requirements <https://github.com/PennyLaneAI/backline/tree/readme#installation>`__.
 
-    import pennylane as qp
+    Note that due to the wide range of system, network, and hardware configurations you can use
+    Backline with, there are different installation requirements and steps depending on your
+    needs.
 
-    cpu_controller = qp.Controller(
-        label="cpu-controller",
-        backend="cpu_verbs",
-        remote=True,
-        executor_options={"host": "192.0.2.10", "port": 7810},
-        init_args={
-            "config": "dev=mlx5_0;gid=1",
-            "data_path": "cpu_verbs",
-            "in_bytes": 8,
-            "out_bytes": 8,
-        },
-    )
-
-    gpu_coprocessor = qp.Coprocessor(
-        label="gpu-coprocessor",
-        coprocessor_fn="decoder",
-        backend="gpu_verbs",
-        comm_host="198.51.100.2",
-        oob_port=7760,
-        remote=True,
-        executor_options={"host": "192.0.2.11", "port": 7813},
-        init_args={"config": "dev=mlx5_0;gid=3", "data_path": "cpu_verbs"},
-    )
-
-    dev = qp.Backline(
-        controller=cpu_controller, coprocessors=[gpu_coprocessor], transport="rdma"
-    )
-
-    @qp.qjit
-    @qp.qnode(dev)
-    def circuit(x):
-        qp.RX(x, wires=0)
-        return qp.expval(qp.Z(0))
-
-.. currentmodule:: pennylane
-
-Nodes
-~~~~~
-
-A node is a participant in the backline fabric. It is either a :class:`~.Controller`, where the
-QNode executes and which issues messages, or a :class:`~.Coprocessor`, where those messages are
-processed and returned. Both share the options on :class:`~.Node`: a ``label`` to identify the
-node, the transport ``backend`` it uses, whether it runs ``remote``, and how its code is deployed
-there. A placement has exactly one controller and zero or more coprocessors, and nodes are never
-used on their own --- they are passed to :class:`~pennylane.Backline`, which assembles them into a
-device.
-
-.. autosummary::
-    :toctree: api
-
-    ~Controller
-    ~Coprocessor
-    ~Node
-
-.. currentmodule:: pennylane.backline
-
-Coprocessor functions
-~~~~~~~~~~~~~~~~~~~~~~~
-
-A :class:`~.Coprocessor` applies a precompiled function to each message it receives, for example
-decoding a syndrome into a correction. Because that function runs inside the real-time loop it is
-compiled ahead of time rather than traced: it can be written directly in C++ as a runtime function,
-or generated from Python by a helper such as :func:`~.css_decoder`. Either way the coprocessor
-refers to it through a :class:`~.CoprocessorFunction`, which names the symbol and, optionally, the
-shared library it lives in. Passing a plain string as a coprocessor's ``coprocessor_fn`` builds one
-for you.
-
-.. currentmodule:: pennylane
-
-.. autosummary::
-    :toctree: api
-
-    ~CoprocessorFunction
-    ~css_decoder
-
-.. currentmodule:: pennylane.backline
-
-Placement
-~~~~~~~~~
-
-A :class:`~.Placement` is the complete declarative description of where the workload runs: the
-:class:`~.Controller`, its :class:`coprocessors <.Coprocessor>`, the :class:`~.Transport` between
-them, and optionally the ``qec_code`` the circuit is encoded for. It is what the compiler
-consumes - everything it contains ends up in the compiled program, and nothing else about the
-deployment does.
-You normally do not construct one directly: :class:`~pennylane.Backline` takes the same arguments,
-builds the placement, and carries it as the device's ``placement`` attribute.
-
-.. autosummary::
-    :toctree: api
-
-    ~Placement
-
-Device
-~~~~~~
-
-:class:`~pennylane.Backline` is a device that is bound to a :func:`~pennylane.qnode` like any other
-PennyLane device. Its wires come from the controller's own device, so the QNode is written exactly
-as it would be against that device alone - the placement changes where the work runs, not the content
-of the circuit. It has no Python execution path: the device carries the placement through to the
-Catalyst compiler, so a QNode using it must be :func:`~pennylane.qjit`-compiled.
+Overview
+~~~~~~~~
 
 .. currentmodule:: pennylane
 
@@ -142,38 +44,196 @@ Catalyst compiler, so a QNode using it must be :func:`~pennylane.qjit`-compiled.
     :toctree: api
 
     ~Backline
+    ~Controller
+    ~Coprocessor
+    ~Endpoint
+    ~backline.get_transport
+    ~backline.Node
+    ~backline.Placement
+    ~backline.Transport
+    ~backline.register_transport
 
-.. currentmodule:: pennylane.backline
+Backline provides the following abstractions for use with PennyLane and Catalyst.
 
-Transports
-~~~~~~~~~~
+- :class:`.Controller`: The classical hardware :class:`~.Node` (such as a CPU or FPGA) that controls
+  the QPU(a quantum hardware or simulator `qp.device`), receives quantum measurement results, and
+  initiates data transfers with other hardware devices (*coprocessors*). For example, it might
+  perform quantum error correction (QEC) syndrome measurements on the QPU, and send these to a
+  coprocessor for decoding.
 
-A :class:`~.Transport` selects, by name, how messages move between nodes. Passing a string as
-the ``transport`` argument of :class:`~pennylane.Backline` resolves it for you, so most code never
-calls either function directly.
+  .. code-block:: python
+
+      import pennylane as qp
+
+      CPU = qp.Controller(
+          hardware="cpu",
+          executor_options={"host": "192.0.2.10", "port": 7810},
+          init_args={"config": "dev=mlx5_0;gid=1"},
+          device=qp.device("lightning.qubit", wires=1)
+      )
+
+- :class:`.Coprocessor`: Hardware device :class:`~.Node` (such as CPUs, GPUs, or FPGAs)  that
+  receive information from a controller for processing. They run :class:`.CoprocessingFuncion`
+  callables, potentially as a persistent kernel, such as a QEC decoder.
+
+  .. code-block:: python
+
+      GPU = qp.Coprocessor(
+          coprocessor_fn="decoder",
+          hardware="gpu",
+          endpoint=qp.Endpoint("198.51.100.2", 7760),
+          executor_options={"host": "192.0.2.11", "port": 7813},
+          init_args={"config": "dev=mlx5_0;gid=3"},
+      )
+
+- :class:`.Backline`: A representation of the complete hardware infrastructure supporting the
+  quantum-classical program (:class:`~.Placement`), packaged as a QNode device. The backline
+  includes a :class:`.Controller`, zero or more :class:`.Coprocessor` nodes, and a transport
+  method (``"rdma"``, ``"memcpy"``, or a :class:`~.Transport` object). A backline object is given
+  directly to a QNode in place of a traditional QNode `qp.device`, and orchestrates the remote
+  executor and the RDMA network the controllers and coprocessors talk over, separate from the
+  network used to log into remote machines.
+
+  .. code-block:: python
+
+      dev = qp.Backline(controller=CPU, coprocessors=[GPU], transport="rdma")
+
+      @qp.qjit
+      @qp.qnode(dev)
+      def circuit(x):
+          qp.RX(x, wires=0)
+          return qp.expval(qp.Z(0))
+
+Coprocessing functions and QEC
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane
 
 .. autosummary::
     :toctree: api
 
-    ~Transport
-    ~get_transport
-    ~register_transport
+    ~CoprocessorFunction
+    ~backline.decode
+    ~backline.css_bp_decoder
+    ~backline.triton_decoder
+
+When using a backline to execute a quantum program, there are multiple ways to incorporate
+quantum error correction (QEC) encoding and decoding.
+
+Implicit QEC
+************
+
+If the ``qec_code`` argument is provided to the Backline object, e.g.,
+
+.. code-block:: python
+
+    qp.Backline(controller=CPU, coprocessors=[GPU], transport="rdma", qec_code="steane")
+
+then the encoding is automatically applied when compiling via Catalyst as an
+MLIR compilation pass --- the string provided must correspond to an existing
+Catalyst QEC encoding pass.
+
+Here, the circuit defined in the PennyLane frontend for execution represents a **logical** circuit;
+QEC decoding will automatically be applied. The decoding function to be executed on the coprocessor
+can be specified in multiple ways:
+
+* **A Triton kernel**: The provided function :func:`~.triton_decoder` compiles a Python Triton
+  decoder function into a shared library that can be used as a coprocessing function. Alternatively,
+  :func:`~.css_bp_decoder` is a convenience function to compile a CSS Tanner graph to a
+  belief proagation decoder using Triton.
+
+* **A precompiled library**: :class:`~.CoprocessorFunction` registers a precompiled library symbol
+  and (optionally) the library path.
+
+The coprocessor decoding function can then be provided when defining the :class:`~.Coprocessor`.
+
+.. note::
+
+    Catalyst ships with a built-in Steane GPU decoding library. This can be specified via the
+    string ``coprocessor_fn="gpu_steane_launcher"``.
+
+Explicit QEC
+************
+
+If the ``qec_code`` argument is not provided to the Backline object, then no automatic
+encoding or decoding will occur. It will be assumed that the circuit defined in the PennyLane
+frontend represents a **physical** circuit; encoding and decoding should be manually defined
+in the frontend.
+
+To manually encode the circuit, this can be done explicitly in Python, or by manually applying
+an MLIR or xDSL compilation pass.
+
+To manually decode the circuit, the :func:`~.decode` function can be used within the QNode
+to call a registered coprocessing function --- providing a measured syndrome as input and returning
+a correction.
+
+.. code-block:: python
+
+    qdev = qp.device("lightning.qubit", wires=3)
+    CPU1 = qp.Controller(device=qdev)
+    CPU2 = qp.Coprocessor(coprocessor_fn="some_decoder")
+
+    dev = qp.Backline(controller=CPU1, coprocessors=[CPU2], transport="memcpy")
+
+    @qp.qjit(capture=True, autograph=True)
+    @qp.qnode(dev)
+    def circuit():
+        # logical circuit
+        ...
+
+        # measure qubits to extract syndromes
+        z_syndrome, x_syndrome = extract_syndromes()
+
+        # manual decoding
+        correction_z = qp.backline.decode(x_syndrome, decoder_id=0)
+
+        for q in range(N):
+            if correction_x[q]:
+                qp.X(wires=q)
+
+        return qp.expval(qp.Z(0))
+
+Runtime calls
+~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane
+
+.. autosummary::
+    :toctree: api
+
+    ~runtime_call
+    ~runtime_declare
+    ~backline.runtime.CSignature
+    ~backline.runtime.CType
+
+For explicit control of runtime calls, Catalyst additionally provides functionality to call a
+runtime entry point directly within the ``qjit`` compiled function, by its C symbol name.
+
+A symbol is declared with :func:`~.runtime_declare` and called with :func:`~.runtime_call` from
+inside a compiled program. The call can be dispatched to an executor, which invokes the symbol on
+the machine the runtime lives on.
 """
 
+from . import runtime
+from .decode import decode
 from .device import Backline
-from .functions import CoprocessorFunction, css_decoder
-from .placement import Controller, Coprocessor, Node, Placement
+from .functions import CoprocessorFunction, css_bp_decoder, triton_decoder
+from .placement import Controller, Coprocessor, Endpoint, Node, Placement
 from .transports import Transport, get_transport, register_transport
 
 __all__ = [
     "Node",
     "Controller",
     "Coprocessor",
+    "Endpoint",
     "Placement",
     "Backline",
+    "decode",
     "CoprocessorFunction",
-    "css_decoder",
+    "css_bp_decoder",
+    "triton_decoder",
     "Transport",
     "get_transport",
     "register_transport",
+    "runtime",
 ]

@@ -29,35 +29,35 @@ from scipy.linalg import block_diag
 import pennylane as qp
 from pennylane import math
 from pennylane.allocation import allocate
-from pennylane.core.operator import abstractify
+from pennylane.core.operator import Operator
 from pennylane.decomposition import (
     add_decomps,
     change_op_basis_resource_rep,
     register_resources,
-    resource_rep,
 )
 from pennylane.decomposition.decomposition_rule import DecompCollection, list_decomps
-from pennylane.decomposition.symbolic_decomposition import (
-    adjoint_rotation,
-    flip_zero_control,
-    pow_rotation,
-    self_adjoint,
-)
+from pennylane.decomposition.resources import resolve_work_wire_type
+from pennylane.decomposition.symbolic_decomposition import self_adjoint
 from pennylane.ops.identity import GlobalPhase
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure, pauli_measure
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
-from pennylane.ops.op_math.controlled2 import Controlled2
+from pennylane.ops.op_math.controlled2 import (
+    Controlled2,
+    ControlledOp2,
+    _setup_control_values,
+    _validate_work_wire_type,
+)
+from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
 from pennylane.ops.qubit import X, Y, Z
-from pennylane.typing import AbstractArray, AbstractWires, Bool, Float, TensorLike, Wire
-from pennylane.wires import Wires, WiresLike
+from pennylane.typing import AbstractArray, AbstractWires, Bool, Complex, Float, TensorLike, Wire
+from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
 from .adjoint2 import _adjoint_abstract
 from .controlled import (
     Controlled2,
-    ControlledOp,
     _is_empty_or_all_true,
     _resolve_ctrl_values,
     custom_ctrl_dispatch,
@@ -82,7 +82,7 @@ INV_SQRT2 = 1 / qp.math.sqrt(2)
 stack_last = partial(qp.math.stack, axis=-1)
 
 
-class ControlledQubitUnitary(ControlledOp):
+class ControlledQubitUnitary(Controlled2):
     r"""ControlledQubitUnitary(U, wires)
     Apply an arbitrary fixed unitary matrix ``U`` to ``wires``. If ``n = len(wires) `` and ``U`` has ``k`` wires, then the first ``n - k`` from ``wires`` serve as control, and ``U`` lives on the last ``k`` wires.
 
@@ -101,7 +101,7 @@ class ControlledQubitUnitary(ControlledOp):
     * Gradient recipe: None
 
     Args:
-        base (array[complex]): a square unitary matrix that will be used to construct a QubitUnitary
+        U (array[complex]): a square unitary matrix that will be used to construct a QubitUnitary
             operator, used as the base operator.
         wires (Union[Wires, Sequence[int], or int]): the wires the full
             controlled unitary acts on, composed of the controlled wires followed
@@ -120,8 +120,8 @@ class ControlledQubitUnitary(ControlledOp):
 
     >>> U = np.array([[ 0.94877869,  0.31594146], [-0.31594146,  0.94877869]])
     >>> qp.ControlledQubitUnitary(U, wires=[0, 1, 2])
-    Controlled(QubitUnitary(array([[ 0.948...,  0.3159...],
-        [-0.3159...,  0.948...]]), wires=[2]), control_wires=[0, 1])
+    ControlledQubitUnitary(U=[[ 0.94877869  0.31594146]
+     [-0.31594146  0.94877869]], wires=[0, 1, 2], control_values=[ True  True], unitary_check=False, work_wires=[], work_wire_type=borrowed)
 
     Typically, controlled operations apply a desired gate if the control qubits
     are all in the state :math:`\vert 1\rangle`. However, there are some situations where
@@ -134,73 +134,29 @@ class ControlledQubitUnitary(ControlledOp):
     second is in state ``1``, and the third in state ``1``, we can write:
 
     >>> qp.ControlledQubitUnitary(U, wires=[0, 1, 2, 3], control_values=[0, 1, 1])
-    Controlled(QubitUnitary(array([[ 0.948...,  0.3159...],
-           [-0.3159...,  0.948...]]), wires=[3]), control_wires=[0, 1, 2], control_values=[False, True, True])
+    ControlledQubitUnitary(U=[[ 0.94877869  0.31594146]
+     [-0.31594146  0.94877869]], wires=[0, 1, 2, 3], control_values=[False  True  True], unitary_check=False, work_wires=[], work_wire_type=borrowed)
 
     or
 
     >>> qp.ControlledQubitUnitary(U, wires=[0, 1, 2, 3], control_values=[False, True, True])
-    Controlled(QubitUnitary(array([[ 0.948...,  0.3159...],
-           [-0.3159...,  0.948...]]), wires=[3]), control_wires=[0, 1, 2], control_values=[False, True, True])
+    ControlledQubitUnitary(U=[[ 0.94877869  0.31594146]
+     [-0.31594146  0.94877869]], wires=[0, 1, 2, 3], control_values=[False  True  True], unitary_check=False, work_wires=[], work_wire_type=borrowed)
     """
 
-    num_params = 1
-    """int: Number of trainable parameters that the operator depends on."""
-
-    ndim_params = (2,)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
-    resource_keys = {
-        "num_target_wires",
-        "num_control_wires",
-        "num_zero_control_values",
-        "num_work_wires",
-        "work_wire_type",
+    dynamic_argnames = ("U", "control_values")
+    wire_argnames = ("wires", "work_wires")
+    compilable_argnames = ("unitary_check", "work_wire_type")
+    arg_specs = {
+        "U": Complex[-1, -1],
+        "wires": Wire[-1],
+        "control_values": Bool[-1],
+        "work_wires": Wire[-1],
     }
-
-    grad_method = None
-    """Gradient computation method."""
-
-    def _flatten(self):
-        return (self.base.data[0],), (
-            self.wires,
-            tuple(self.control_values),
-            self.work_wires,
-            self.work_wire_type,
-        )
-
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        return cls(
-            data[0],
-            wires=metadata[0],
-            control_values=metadata[1],
-            work_wires=metadata[2],
-            work_wire_type=metadata[3],
-        )
-
-    @classmethod
-    def _primitive_bind_call(  # pylint: disable=too-many-arguments
-        cls,
-        base,
-        wires: WiresLike,
-        control_values=None,
-        unitary_check=False,
-        work_wires: WiresLike = (),
-        work_wire_type="borrowed",
-    ):
-        work_wires = Wires(() if work_wires is None else work_wires)
-        return cls._primitive.bind(
-            base,
-            wires=wires,
-            control_values=control_values,
-            work_wires=work_wires,
-            work_wire_type=work_wire_type,
-        )
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        base,
+        U: TensorLike,
         wires: WiresLike,
         control_values=None,
         unitary_check=False,
@@ -210,77 +166,80 @@ class ControlledQubitUnitary(ControlledOp):
         if wires is None:
             raise TypeError("Must specify a set of wires. None is not a valid `wires` label.")
 
-        if not isinstance(base, Iterable):
-            raise ValueError("Base must be a matrix.")
+        if not isinstance(U, (Iterable, AbstractArray)):
+            raise ValueError("U must be a matrix.")
 
         work_wires = Wires(() if work_wires is None else work_wires)
 
-        num_base_wires = int(qp.math.log2(qp.math.shape(base)[-1]))
+        num_base_wires = int(qp.math.log2(qp.math.shape(U)[-1]))
         target_wires = wires[-num_base_wires:]
         control_wires = wires[:-num_base_wires]
 
-        # We use type.__call__ instead of calling the class directly so that we don't bind the
-        # operator primitive when new program capture is enabled
-        base = type.__call__(qp.QubitUnitary, base, wires=target_wires, unitary_check=unitary_check)
-
         super().__init__(
-            base,
+            qp.QubitUnitary(U, wires=target_wires, unitary_check=unitary_check),
             control_wires,
             control_values=control_values,
             work_wires=work_wires,
             work_wire_type=work_wire_type,
         )
 
-        self._name = "ControlledQubitUnitary"
-
     @property
-    def resource_params(self) -> dict:
-        return {
-            "num_target_wires": len(self.base.wires),
-            "num_control_wires": len(self.control_wires),
-            "num_zero_control_values": len([val for val in self.control_values if not val]),
-            "num_work_wires": len(self.work_wires),
-            "work_wire_type": self.work_wire_type,
-        }
+    def has_decomposition(self) -> bool:  # pylint: disable=invalid-overridden-method
+        # A controlled *sparse* multi-qubit unitary has no decomposition, because the underlying
+        # ``QubitUnitary`` base cannot be decomposed (mirrors ``QubitUnitary.has_decomposition``).
+        return self.base.has_decomposition and super().has_decomposition
 
-    def _controlled(self, wire):
-        ctrl_wires = wire + self.control_wires
-        values = None if self.control_values is None else [True] + self.control_values
-        base = self.base
-        if isinstance(self.base, qp.QubitUnitary):
-            base = self.base.matrix()
-
-        return ControlledQubitUnitary(
-            base,
-            wires=ctrl_wires + self.wires,
-            control_values=values,
-            work_wires=self.work_wires,
-            work_wire_type=self.work_wire_type,
-        )
+    def decomposition(self) -> list[Operator]:
+        # Guard against decomposition rules (selected purely by wire counts) being run on a sparse
+        # base matrix they cannot handle, e.g. a controlled two-qubit sparse ``QubitUnitary``.
+        if not self.has_decomposition:
+            raise qp.operation.DecompositionUndefinedError(
+                "The decomposition of a controlled sparse multi-qubit QubitUnitary is undefined."
+            )
+        return super().decomposition()
 
 
-def _to_general_c_qu_resource(num_target_wires, **kwargs):
+@custom_ctrl_dispatch.register
+def _ctrl_c_qu(base: ControlledQubitUnitary, control, control_values, work_wires, work_wire_type):
+    return ControlledQubitUnitary(
+        base.U,
+        control + base.wires,
+        control_values=_resolve_ctrl_values(control_values, base.control_values, len(control)),
+        work_wires=work_wires + base.work_wires,
+        work_wire_type=resolve_work_wire_type(
+            base.work_wires, base.work_wire_type, work_wires, work_wire_type
+        ),
+    )
+
+
+def _to_general_c_qu_resource(U, wires, work_wires, work_wire_type, **_):
+    num_target_wires = int(qp.math.log2(qp.math.shape(U)[-1]))
+    num_control_wires = len(wires) - num_target_wires
+    num_work_wires = len(work_wires)
     return {
-        resource_rep(
-            qp.ops.Controlled,
-            base_class=qp.QubitUnitary,
-            base_params={"num_wires": num_target_wires},
-            **kwargs,
+        ControlledOp2(
+            qp.QubitUnitary(
+                Complex[2**num_target_wires, 2**num_target_wires], wires=Wire[num_target_wires]
+            ),
+            control_wires=Wire[num_control_wires],
+            control_values=Bool[num_control_wires],
+            work_wires=Wire[num_work_wires],
+            work_wire_type=work_wire_type,
         ): 1
     }
 
 
-@qp.register_condition(lambda num_target_wires, **_: num_target_wires > 2)
+@qp.register_condition(lambda wires, control_values, **_: len(wires) - len(control_values) > 2)
 @qp.register_resources(_to_general_c_qu_resource)
 # pylint: disable=too-many-arguments
-def _to_general_c_qu(U, wires, control_wires, control_values, work_wires, work_wire_type, **_):
+def _to_general_c_qu(U, wires, control_values, work_wires, work_wire_type, **_):
     """Convert a ControlledQubitUnitary to a general Controlled(QubitUnitary) so that
     the graph finds the general decomposition rule of applying control to the decomposition
     of the base QubitUnitary."""
-    num_target_wires = len(wires) - len(control_wires)
-    qp.ops.Controlled(
+    num_target_wires = len(wires) - len(control_values)
+    ControlledOp2(
         qp.QubitUnitary(U, wires=wires[-num_target_wires:]),
-        control_wires=control_wires,
+        control_wires=wires[:-num_target_wires],
         control_values=control_values,
         work_wires=work_wires,
         work_wire_type=work_wire_type,
@@ -289,9 +248,9 @@ def _to_general_c_qu(U, wires, control_wires, control_values, work_wires, work_w
 
 add_decomps(
     ControlledQubitUnitary,
-    flip_zero_control(ctrl_decomp_bisect_rule),
-    flip_zero_control(single_ctrl_decomp_zyz_rule),
-    flip_zero_control(multi_control_decomp_zyz_rule),
+    flip_zero_control2(ctrl_decomp_bisect_rule),
+    flip_zero_control2(single_ctrl_decomp_zyz_rule),
+    flip_zero_control2(multi_control_decomp_zyz_rule),
     controlled_two_qubit_unitary_rule,
     _to_general_c_qu,
 )
@@ -338,10 +297,6 @@ class CH(Controlled2):
 
     def __init__(self, wires: WiresLike):
         super().__init__(qp.H(wires[1:]), wires[:1])
-
-    @override
-    def __abstract_init__(self, wires: WiresLike):
-        super().__abstract_init__(qp.H(Wire[1]), control_wires=Wire[1])
 
     @override
     def adjoint(self):
@@ -431,12 +386,6 @@ class CY(Controlled2):
 
     def __init__(self, wires: WiresLike):
         super().__init__(qp.Y(wires[1:]), wires[:1])
-
-    @override
-    def __abstract_init__(self, wires: WiresLike):
-        # `wires` is abstract here and carries no information beyond its fixed
-        # size of 2, which always splits into one control and one target wire.
-        super().__abstract_init__(qp.Y(Wire[1]), Wire[1])
 
     def adjoint(self):
         return CY(self.wires)
@@ -578,11 +527,6 @@ class CZ(Controlled2):
     def __init__(self, wires: WiresLike):
         super().__init__(qp.Z(wires[1:]), wires[:1])
 
-    @override
-    # pylint: disable=unused-argument
-    def __abstract_init__(self, wires: WiresLike):
-        super().__abstract_init__(qp.Z(Wire[1]), control_wires=Wire[1])
-
     def __repr__(self):
         return f"CZ(wires={self.wires})"
 
@@ -709,10 +653,6 @@ class CSWAP(Controlled2):
 
     def __init__(self, wires: WiresLike):
         super().__init__(qp.SWAP(wires[1:]), wires[:1])
-
-    @override
-    def __abstract_init__(self, wires: WiresLike):
-        super().__abstract_init__(qp.SWAP(Wire[2]), control_wires=Wire[1])
 
     @override
     def adjoint(self):
@@ -869,11 +809,6 @@ class CCZ(Controlled2):
     def __init__(self, wires: WiresLike):
         super().__init__(qp.Z(wires[2:]), wires[:2])
 
-    @override
-    # pylint: disable=unused-argument
-    def __abstract_init__(self, wires: WiresLike):
-        super().__abstract_init__(qp.Z(Wire[1]), control_wires=Wire[2])
-
     def __repr__(self):
         return f"CCZ(wires={self.wires})"
 
@@ -1026,10 +961,6 @@ class CNOT(Controlled2):
         super().__init__(qp.X(wires[1]), control_wires=wires[:1])
 
     @override
-    def __abstract_init__(self, wires: WiresLike):
-        super().__abstract_init__(qp.X(Wire[1]), control_wires=Wire[1])
-
-    @override
     def adjoint(self):
         return CNOT(self.wires)
 
@@ -1175,10 +1106,6 @@ class Toffoli(Controlled2):
 
     def __init__(self, wires):
         super().__init__(qp.X(wires[2]), wires[:2])
-
-    @override
-    def __abstract_init__(self, wires: WiresLike):
-        super().__abstract_init__(qp.X(Wire[1]), Wire[2])
 
     @override
     def adjoint(self):
@@ -1380,28 +1307,6 @@ class MultiControlledX(Controlled2):
             work_wire_type=arguments["work_wire_type"],
         )
 
-    @override
-    def __abstract_init__(
-        self,
-        wires: WiresLike | AbstractWires,
-        control_values: int | bool | Sequence[int | bool] | AbstractArray | None = None,
-        work_wires: WiresLike | AbstractWires | None = None,
-        work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
-    ):
-        if not isinstance(wires, AbstractWires):
-            wires = abstractify(Wires(wires))
-
-        if len(wires) < 2:
-            raise ValueError(f"MultiControlledX acts on at least 2 wires, {len(wires)} given.")
-
-        super().__abstract_init__(
-            base=qp.X(Wire[1]),
-            control_wires=Wire[len(wires) - 1],
-            control_values=control_values,
-            work_wires=work_wires,
-            work_wire_type=work_wire_type,
-        )
-
     def __repr__(self):
         params = [f"wires={self.wires}"]
         ctrl_values = self.control_values
@@ -1475,25 +1380,16 @@ def _setup_inputs_mcx(
     wires = Wires(wires)
     if len(wires) < 2:
         raise ValueError(f"MultiControlledX acts on at least 2 wires, {len(wires)} given.")
+
     work_wires = Wires([] if work_wires is None else work_wires)
-    if Wires.shared_wires([work_wires, wires]):
-        raise ValueError("work_wires must not overlap with the operator wires.")
+    wire_args = {"wires": wires, "work_wires": work_wires}
+    validate_no_wire_overlaps(wire_args)
 
     # Validate and canonicalize control values
-    if control_values is None:
-        control_values = [True] * (len(wires) - 1)
-    if isinstance(control_values, (int, bool)):
-        control_values = [bool(control_values)]
-    if len(control_values) != len(wires) - 1:
-        raise ValueError("control_values should be the same length as control_wires")
-    if isinstance(control_values, (list, tuple)):
-        control_values = qp.math.asarray(control_values, like=control_values[0])
-    control_values = qp.math.cast(control_values, dtype=bool)
+    control_values = _setup_control_values(control_values, len(wires) - 1)
 
     # Validate work_wire_type
-    accepted = ("zeroed", "borrowed")
-    if work_wire_type not in accepted:
-        raise ValueError(f"work_wire_type must be one of {accepted}. Got '{work_wire_type}'.")
+    _validate_work_wire_type(work_wire_type)
 
     # Return processed inputs
     return {
@@ -1619,10 +1515,6 @@ class CRX(Controlled2):
         super().__init__(qp.RX(phi, wires=wires[-1]), control_wires=wires[:-1])
 
     @override
-    def __abstract_init__(self, phi, wires: WiresLike):
-        super().__abstract_init__(abstractify(qp.RX), control_wires=Wire[1])
-
-    @override
     def adjoint(self):
         return CRX(-self.phi, wires=self.wires)
 
@@ -1733,7 +1625,7 @@ add_decomps("Adjoint(CRX)", adjoint_rotation2)
 add_decomps("Pow(CRX)", pow_rotation2)
 
 
-class CRY(ControlledOp):
+class CRY(Controlled2):
     r"""The controlled-RY operator
 
     .. math::
@@ -1780,40 +1672,21 @@ class CRY(ControlledOp):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
+    dynamic_argnames = ("phi",)
 
-    name = "CRY"
-    parameter_frequencies = [(0.5, 1.0)]
+    arg_specs = {"phi": Float, "wires": Wire[2]}
 
-    def __init__(self, phi, wires):
-        # We use type.__call__ instead of calling the class directly so that we don't bind the
-        # operator primitive when new program capture is enabled
-        base = type.__call__(qp.RY, phi, wires=wires[1:])
-        super().__init__(base, control_wires=wires[:1])
+    def __init__(self, phi, wires: WiresLike):
+        super().__init__(qp.RY(phi, wires=wires[-1]), control_wires=wires[:-1])
 
-    def __repr__(self):
-        return f"CRY({self.data[0]}, wires={self.wires}))"
-
-    def _flatten(self):
-        return self.data, (self.wires,)
-
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        return cls(*data, wires=metadata[0])
-
-    @classmethod
-    def _primitive_bind_call(cls, phi, wires):
-        return cls._primitive.bind(phi, *wires, n_wires=len(wires))
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
+    @override
     def adjoint(self):
-        return CRY(-self.data[0], wires=self.wires)
+        return CRY(-self.phi, wires=self.wires)
 
     @staticmethod
-    def compute_matrix(theta):
+    @override
+    # pylint: disable-next=unused-argument
+    def compute_matrix(phi, wires: WiresLike | None = None):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1823,7 +1696,7 @@ class CRY(ControlledOp):
 
 
         Args:
-            theta (tensor_like or float): rotation angle
+            phi (tensor_like or float): rotation angle
 
         Returns:
             tensor_like: canonical matrix
@@ -1836,10 +1709,10 @@ class CRY(ControlledOp):
                 [ 0.0000+0.j,  0.0000+0.j,  0.9689+0.j, -0.2474-0.j],
                 [ 0.0000+0.j,  0.0000+0.j,  0.2474+0.j,  0.9689+0.j]])
         """
-        interface = qp.math.get_interface(theta)
+        interface = qp.math.get_interface(phi)
 
-        c = qp.math.cos(theta / 2)
-        s = qp.math.sin(theta / 2)
+        c = qp.math.cos(phi / 2)
+        s = qp.math.sin(phi / 2)
 
         if (
             interface == "tensorflow"
@@ -1861,52 +1734,20 @@ class CRY(ControlledOp):
 
         return qp.math.stack([stack_last(row) for row in matrix], axis=-2)
 
-    @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list[qp.operation.Operator]:
-        r"""Representation of the operator as a product of other operators (static method). :
 
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.CRY.decomposition`.
-
-        Args:
-            phi (TensorLike): rotation angle :math:`\phi`
-            wires (Iterable, Wires): wires that the operator acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.CRY.compute_decomposition(1.2, wires=(0,1))
-        [RY(0.6, wires=[1]),
-        CNOT(wires=[0, 1]),
-        RY(-0.6, wires=[1]),
-        CNOT(wires=[0, 1])]
-
-        """
-        return [
-            qp.RY(phi / 2, wires=wires[1]),
-            qp.CNOT(wires=wires),
-            qp.RY(-phi / 2, wires=wires[1]),
-            qp.CNOT(wires=wires),
-        ]
-
-
-def _cry_resources():
+def _cry_resources(**_):
     return {qp.RY: 2, qp.CNOT: 2}
 
 
 @register_resources(_cry_resources)
-def _cry(phi: TensorLike, wires: WiresLike, **__):
+def _cry(phi: TensorLike, wires: WiresLike):
     qp.RY(phi / 2, wires=wires[1])
     qp.CNOT(wires=wires)
     qp.RY(-phi / 2, wires=wires[1])
     qp.CNOT(wires=wires)
 
 
-def _cry_to_ppr_resources():
+def _cry_to_ppr_resources(**_):
     return {
         qp.PauliRot(Float, pauli_word="ZY", wires=Wire[2]): 1,
         qp.PauliRot(Float, pauli_word="Y", wires=Wire[1]): 1,
@@ -1914,14 +1755,14 @@ def _cry_to_ppr_resources():
 
 
 @register_resources(_cry_to_ppr_resources)
-def _cry_to_ppr(phi: TensorLike, wires: WiresLike, **__):
+def _cry_to_ppr(phi: TensorLike, wires: WiresLike):
     qp.PauliRot(phi / 2, "Y", wires=wires[1])
     qp.PauliRot(-phi / 2, "ZY", wires=wires)
 
 
 add_decomps(CRY, _cry, _cry_to_ppr)
-add_decomps("Adjoint(CRY)", adjoint_rotation)
-add_decomps("Pow(CRY)", pow_rotation)
+add_decomps("Adjoint(CRY)", adjoint_rotation2)
+add_decomps("Pow(CRY)", pow_rotation2)
 
 
 class CRZ(Controlled2):
@@ -1984,13 +1825,6 @@ class CRZ(Controlled2):
 
     def __init__(self, phi, wires):
         super().__init__(qp.RZ(phi, wires[1:]), control_wires=wires[:1])
-
-    @override
-    # pylint: disable=unused-argument
-    def __abstract_init__(self, phi, wires: WiresLike):
-        # `wires` is abstract here and carries no information beyond its fixed
-        # size of 2, which always splits into one control and one target wire.
-        super().__abstract_init__(qp.RZ(phi, Wire[1]), Wire[1])
 
     def adjoint(self):
         return CRZ(-self.phi, wires=self.wires)
@@ -2170,10 +2004,6 @@ class CRot(Controlled2):
         super().__init__(qp.Rot(phi, theta, omega, wires[1]), control_wires=wires[:1])
 
     @override
-    def __abstract_init__(self, phi, theta, omega, wires):
-        super().__abstract_init__(abstractify(qp.Rot), control_wires=Wire[1])
-
-    @override
     def adjoint(self):
         return CRot(-self.omega, -self.theta, -self.phi, wires=self.wires)
 
@@ -2318,10 +2148,6 @@ class ControlledPhaseShift(Controlled2):
 
     def __init__(self, phi, wires):
         super().__init__(qp.PhaseShift(phi, wires[1:]), wires[:1])
-
-    @override
-    def __abstract_init__(self, phi, wires):  # pylint: disable=arguments-differ,unused-argument
-        super().__abstract_init__(qp.PhaseShift(Float, Wire), Wire)
 
     @override
     def adjoint(self):
