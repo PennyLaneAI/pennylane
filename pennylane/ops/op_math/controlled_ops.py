@@ -1424,11 +1424,25 @@ def _list_mcx_decomps(op: MultiControlledX):
 
 
 def _list_mcx_no_work_wire_decomps(op: MultiControlledX):
+
     if len(op.wires) == 2:
         return [mcx_to_cnot_or_toffoli]
+
     if len(op.wires) == 3:
         elbow_rule = _wrap_mcx_rule_w_alloc(decompose_mcx_two_controls_elbows, 1, "zeroed")
         return [mcx_to_cnot_or_toffoli, elbow_rule]
+
+    capture_compatible_rules = [
+        _wrap_mcx_rule_w_alloc(decompose_mcx_two_workers, 2, "zeroed", "two_zeroed_workers"),
+        _wrap_mcx_rule_w_alloc(decompose_mcx_two_workers, 2, "borrowed", "two_borrowed_workers"),
+        _wrap_mcx_rule_w_alloc(decompose_mcx_one_worker, 1, "zeroed", "one_zeroed_worker"),
+        _wrap_mcx_rule_w_alloc(decompose_mcx_one_worker, 1, "borrowed", "one_borrowed_worker"),
+        decompose_mcx_with_no_worker,
+    ]
+    if qp.capture.enabled():
+        return capture_compatible_rules
+
+    # TODO: the following decomposition rules are not capture compatible [sc-]
     return [
         _wrap_mcx_rule_w_alloc(
             decompose_mcx_many_workers,
@@ -1442,12 +1456,7 @@ def _list_mcx_no_work_wire_decomps(op: MultiControlledX):
             "borrowed",
             "many_borrowed_workers",
         ),
-        _wrap_mcx_rule_w_alloc(decompose_mcx_two_workers, 2, "zeroed", "two_zeroed_workers"),
-        _wrap_mcx_rule_w_alloc(decompose_mcx_two_workers, 2, "borrowed", "two_borrowed_workers"),
-        _wrap_mcx_rule_w_alloc(decompose_mcx_one_worker, 1, "zeroed", "one_zeroed_worker"),
-        _wrap_mcx_rule_w_alloc(decompose_mcx_one_worker, 1, "borrowed", "one_borrowed_worker"),
-        decompose_mcx_with_no_worker,
-    ]
+    ] + capture_compatible_rules
 
 
 add_decomps("Adjoint(MultiControlledX)", self_adjoint)

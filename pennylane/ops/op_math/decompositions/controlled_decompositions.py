@@ -468,6 +468,10 @@ def _mcx_to_cnot_or_toffoli_resource(wires, *_, **__):
 def mcx_to_cnot_or_toffoli(wires, control_values, *_, **__):
     """A decomposition rule that decomposes an MCX to a CNOT or Toffoli"""
 
+    if compiler.active() or capture.enabled():
+        wires = math.array(wires, like="jax")
+        control_values = math.array(control_values, like="jax")
+
     # Case 1: Decompose to single CNOT
     if len(wires) == 2:
         qp.CNOT(wires=wires)
@@ -495,7 +499,7 @@ def _2cx_elbow_explicit_condition(wires, control_values, work_wires, work_wire_t
 
 
 @register_condition(_2cx_elbow_explicit_condition)
-@register_resources(_2cx_elbow_explicit_resources)
+@register_resources(_2cx_elbow_explicit_resources, exact=False)
 def decompose_mcx_two_controls_elbows(wires, control_values, work_wires, **_):
     """A decomposition rule for MCX that uses controlled Elbow."""
 
@@ -525,19 +529,30 @@ def _mcx_many_workers_condition(wires, control_values, work_wires, **_):
 
 # pylint: disable-next=unused-argument
 def _mcx_many_workers_resource(wires, control_values, work_wires, work_wire_type="borrowed"):
+
     num_control_wires = len(wires) - 1
     num_used_work_wires = num_control_wires - 2
-    if work_wire_type == "borrowed":
+    num_extra_work_wires = len(work_wires) - num_used_work_wires
+
+    if work_wire_type == "borrowed" and not num_extra_work_wires:
         return {ops.Toffoli: 4 * num_used_work_wires}
+
+    # the middle toffoli might dispatch to a Toffoli or an MultiControlledX depending on
+    # whether extra work wires are available, so we need to replicate the logic here.
+    middle_toffoli = qp.ctrl(
+        qp.X(Wire[1]),
+        control=Wire[2],
+        work_wires=Wire[num_extra_work_wires],
+        work_wire_type=work_wire_type,
+    )
+
+    if work_wire_type == "borrowed":
+        return {ops.Toffoli: 4 * num_used_work_wires - 1, middle_toffoli: 1}
+
     return {
         qp.TemporaryAND: num_used_work_wires,
         qp.adjoint(qp.TemporaryAND(Wire[3])): num_used_work_wires,
-        qp.ctrl(
-            qp.X(Wire[1]),
-            control=Wire[2],
-            work_wires=Wire[len(work_wires) - num_used_work_wires],
-            work_wire_type="zeroed",
-        ): 1,
+        middle_toffoli: 1,
     }
 
 
@@ -674,7 +689,7 @@ def decompose_mcx_two_workers(wires, control_values, work_wires, work_wire_type=
         middle_wires = [wires[i] for i in middle_ctrl_indices]
         # No toggle detection needed for the inner MCX decomposition, even for borrowed work wires
         _mcx_one_worker_no_flips(
-            [work0] + middle_wires + wires[-1:],
+            [work0] + middle_wires + [wires[-1]],
             work_wires=work1,
             work_wire_type=work_wire_type,
             _skip_toggle_detection=True,
@@ -694,7 +709,7 @@ def decompose_mcx_two_workers(wires, control_values, work_wires, work_wire_type=
         else:
             middle_wires = [wires[i] for i in middle_ctrl_indices]
             _mcx_one_worker_no_flips(
-                [work0] + middle_wires + wires[-1:],
+                [work0] + middle_wires + [wires[-1]],
                 work_wires=work1,
                 work_wire_type=work_wire_type,
                 _skip_toggle_detection=True,
