@@ -419,6 +419,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* :class:`~.BasisRotation` now omits identity (zero-angle) ``SingleExcitation`` and ``PhaseShift``
+  gates from its decomposition, leading to lower quantum resources.
+  [(#10097)](https://github.com/PennyLaneAI/pennylane/pull/10097)
+
 * :class:`~.IsingZZ`'s decomposition is now expressed as a :func:`~.change_op_basis` (``CNOT``
   compute/uncompute around the ``RZ``) instead of three bare gates. This lets PennyLane's generic
   ``C(ChangeOpBasis)`` rule automatically control only the ``RZ`` for any number of control wires,
