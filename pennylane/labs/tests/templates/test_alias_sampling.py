@@ -206,3 +206,43 @@ class TestAliasSampling:
         assert np.allclose(probs[:L], recon, atol=1e-9)
         assert np.isclose(probs[:L].sum(), 1.0, atol=1e-6)
         assert np.allclose(probs[L:], 0.0, atol=1e-9)
+
+    @pytest.mark.parametrize("L", [3, 5])
+    def test_work_wires_clean_temp_wires_entangled(self, L):
+        """Test that work_wires return to |0> while temp_wires stay entangled."""
+        mu = 2
+        w = np.random.default_rng(L).random(L) + 0.05
+
+        req = alias_sampling_wires(L, mu)
+        n = sum(req.values())
+        wires, temp, work = np.split(
+            np.arange(n), np.cumsum([req["target_wires"], req["temp_wires"]])
+        )
+
+        @qp.qnode(qp.device("default.qubit", wires=n))
+        def circuit():
+            alias_sampling(w, mu, wires, temp, work)
+            return qp.probs(wires=work), qp.probs(wires=temp)
+
+        work_probs, temp_probs = circuit()
+        assert np.isclose(np.asarray(work_probs)[0], 1.0)
+        assert not np.isclose(np.asarray(temp_probs)[0], 1.0)
+
+    def test_adjoint_uncomputes(self):
+        """Test that prepare-dagger returns every register, temp_wires included, to |0>."""
+        L, mu = 3, 2
+        w = np.random.default_rng(0).random(L) + 0.05
+
+        req = alias_sampling_wires(L, mu)
+        n = sum(req.values())
+        wires, temp, work = np.split(
+            np.arange(n), np.cumsum([req["target_wires"], req["temp_wires"]])
+        )
+
+        @qp.qnode(qp.device("default.qubit", wires=n))
+        def circuit():
+            alias_sampling(w, mu, wires, temp, work)
+            qp.adjoint(alias_sampling)(w, mu, wires, temp, work)
+            return qp.probs()
+
+        assert np.isclose(np.asarray(circuit())[0], 1.0)

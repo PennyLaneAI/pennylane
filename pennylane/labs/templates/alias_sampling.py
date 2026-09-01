@@ -278,11 +278,10 @@ def alias_sampling(probs, mu, target_wires, temp_wires, work_wires):
             f"got {len(work_wires)}."
         )
 
-    if (
-        len(target_wires) + len(temp_wires) + len(work_wires)
-        != req["target_wires"] + req["temp_wires"] + req["work_wires"]
-    ):
+    all_wires = list(target_wires) + list(temp_wires) + list(work_wires)
+    if len(set(all_wires)) != len(all_wires):
         raise ValueError("target_wires, temp_wires and work_wires must be disjoint.")
+
 
     # Split temp_wires: sigma (mu), alt (logL), keep (mu), flag (1),
     # comparator scratch (mu-1).
