@@ -216,7 +216,7 @@ class QROM(Operator2):
             if isinstance(bitstrings[0], str):
                 bitstrings = list(map(_to_int_array, bitstrings))
 
-            elif isinstance(bitstrings, (list, tuple)):
+            if isinstance(bitstrings, (list, tuple)):
                 bitstrings = math.array(bitstrings, dtype=int)
 
             else:
