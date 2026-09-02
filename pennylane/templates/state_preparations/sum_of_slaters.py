@@ -928,18 +928,7 @@ class SumOfSlatersPrep(Operator2):
                     "The number of coefficients and the number of state indices must match."
                 )
         if isinstance(indices, AbstractArray) or indices is None:
-            k = min(n, num_entries - 1)
-            # Set of powers of 2 from 2^0 up to 2^(k-1), as well as 0
-            indices = {1 << i for i in range(k)}
-            indices.add(0)
-            # Fill remaining capacity with consecutive integers starting from 2
-            # (0, 1, 2 already contained)
-            curr = 2
-            while len(indices) < num_entries:
-                indices.add(curr)
-                curr += 1
-
-            indices = tuple(sorted(indices))
+            indices = self.worst_case_indices(num_entries, n)
         else:
             v_bits = math.int_to_binary(np.array(indices), n).T  # Shape (n, num_entries)
 
@@ -1007,6 +996,77 @@ class SumOfSlatersPrep(Operator2):
         _, vtilde_bits = select_sos_rows(math.int_to_binary(np.array(indices), num_wires).T)
         num_bits, num_entries = vtilde_bits.shape
         return SumOfSlatersPrep._required_register_sizes_from_nums(num_entries, num_bits, num_wires)
+
+    @staticmethod
+    def worst_case_indices(num_entries: int, num_wires: int) -> tuple[int]:
+        r"""Compute a set of ``num_entries`` computational basis states on ``num_wires`` wires
+        that maximizes the register sizes and gate counts of ``SumOfSlatersPrep``.
+
+        Args:
+            num_entries (int): Number of computational basis states in the sparse state.
+            num_wires (int): Number of target wires the state is prepared on.
+
+        Returns:
+            tuple[int]: Indices attaining the largest register sizes of any set of
+            ``num_entries`` indices on ``num_wires`` wires.
+
+        Raises:
+            ValueError: If ``num_entries`` exceeds ``2**num_wires``.
+
+        This is the index set that ``SumOfSlatersPrep`` synthesizes when ``indices`` is abstract
+        or omitted, and the one that realizes
+        :func:`~.SumOfSlatersPrep.required_register_sizes` for abstract ``indices``.
+
+        .. warning::
+
+            The returned indices are a resource-estimation stand-in. An operator built from them
+            is perfectly valid, but prepares *these* basis states, not any the caller has in mind.
+
+        All register sizes are non-decreasing in :math:`r`, the number of bits retained by
+        :func:`~.select_sos_rows`, so a single index set maximizes all of them at once. The
+        largest attainable :math:`r` is :math:`\min(\text{num\_wires}, \text{num\_entries}-1)`:
+        it cannot exceed the number of wires, and ``select_sos_rows`` returns an *irredundant*
+        set of rows, of which there can be at most :math:`\text{num\_entries}-1` because each
+        retained row must split at least one group of otherwise-identical indices. That bound is
+        attained by pairing the all-zero index with each power of two, as every such pair differs
+        in exactly one bit and therefore pins the corresponding row.
+
+        **Example**
+
+        >>> qp.SumOfSlatersPrep.worst_case_indices(5, 4)
+        (0, 1, 2, 4, 8)
+
+        The register sizes these indices require match the upper bound reported for an abstract
+        ``indices`` input of the same length:
+
+        >>> indices = qp.SumOfSlatersPrep.worst_case_indices(16, 8)
+        >>> sizes = qp.SumOfSlatersPrep.required_register_sizes(indices, 8)
+        >>> sizes == qp.SumOfSlatersPrep.required_register_sizes(qp.typing.Int[16], 8)
+        True
+
+        """
+        if num_entries > 2**num_wires:
+            raise ValueError(
+                f"Number of coefficients {num_entries} cannot be greater than 2^num_wires, "
+                f"{2**num_wires}."
+            )
+
+        num_bits = min(num_wires, num_entries - 1)
+        if num_bits < 1:
+            # A single index needs no distinguishing bits at all.
+            return (0,)
+
+        # The all-zero index together with each power of two. Every such pair is at Hamming
+        # distance one, so ``select_sos_rows`` cannot drop the corresponding row.
+        indices = {0} | {1 << i for i in range(num_bits)}
+        # Top up with the smallest unused indices. Confining them to the same ``num_bits`` bits
+        # leaves the remaining rows constant, so they are dropped and r == num_bits exactly.
+        candidate = 2
+        while len(indices) < num_entries:
+            indices.add(candidate)
+            candidate += 1
+
+        return tuple(sorted(indices))
 
     @staticmethod
     def _required_register_sizes_from_nums(num_entries: int, num_bits: int, num_wires: int):

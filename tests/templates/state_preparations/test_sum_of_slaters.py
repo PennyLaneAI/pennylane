@@ -399,6 +399,39 @@ class TestComputeSosEncoding:
         assert _columns_differ(b)
 
 
+class TestWorstCaseIndices:
+    """Tests for ``SumOfSlatersPrep.worst_case_indices``."""
+
+    @pytest.mark.parametrize("num_wires", [2, 3, 4, 5, 8])
+    @pytest.mark.parametrize("num_entries", [1, 2, 4, 5, 16])
+    def test_worst_case_indices_is_a_valid_index_set(self, num_wires, num_entries):
+        """Test that the generated indices are usable: the right number of distinct values,
+        all addressable by ``num_wires`` wires."""
+        if num_entries > 2**num_wires:
+            pytest.skip("not representable on this many wires")
+
+        indices = SumOfSlatersPrep.worst_case_indices(num_entries, num_wires)
+
+        assert len(indices) == num_entries
+        assert len(set(indices)) == num_entries
+        assert min(indices) >= 0
+        assert max(indices) < 2**num_wires
+
+    @pytest.mark.parametrize("num_wires", [1, 3, 5])
+    def test_worst_case_indices_saturated(self, num_wires):
+        """Test the generator where it has no slack, i.e. every index is used."""
+        indices = SumOfSlatersPrep.worst_case_indices(2**num_wires, num_wires)
+        assert set(indices) == set(range(2**num_wires))
+
+    def test_worst_case_indices_too_many_entries(self):
+        """Test that more entries than the wires can address is rejected."""
+        match = "Number of coefficients 9 cannot be greater than 2\\^num_wires, 8."
+        with pytest.raises(ValueError, match=match):
+            SumOfSlatersPrep.worst_case_indices(9, 3)
+        with pytest.raises(ValueError, match=match):
+            SumOfSlatersPrep(Complex[9], Wire[3])
+
+
 class TestSumOfSlatersPrep:
     """Test the quantum template ``SumOfSlatersPrep``."""
 
