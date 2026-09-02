@@ -43,7 +43,6 @@ from pennylane.ops import (
 )
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.ops.op_math.adjoint2 import Adjoint2
-from pennylane.ops.op_math.change_op_basis2 import ChangeOpBasis2
 from pennylane.ops.op_math.composite2 import CompositeOp2
 from pennylane.ops.op_math.controlled2 import Controlled2
 from pennylane.ops.op_math.pow2 import Pow2
