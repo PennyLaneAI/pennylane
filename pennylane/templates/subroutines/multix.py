@@ -74,6 +74,8 @@ class MultiX(Operator2):
 
     arg_specs = {"bitstring": Bool[-1], "wires": Wire[-1]}
 
+    is_verified_hermitian = True
+
     grad_method = None
 
     def __init__(self, bitstring: TensorLike, wires: WiresLike) -> None:

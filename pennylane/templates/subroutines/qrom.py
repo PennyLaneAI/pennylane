@@ -259,7 +259,10 @@ def _calculate_select_swap_sizes(terms, num_control_wires, num_target_wires, num
         num_work_wires (int): total number of available work wires
 
     Returns:
-        tuple[int]: The number of work wires assigned to the Select component.
+        tuple[int]: The number of work wires assigned to the Select component, the number of
+        work wires assigned to the SWAP network, and the number of bitstrings loaded in parallel
+        in the Select-SWAP method.
+
     """
 
     if num_work_wires < num_control_wires - 1:
@@ -284,11 +287,6 @@ def _calculate_select_swap_sizes(terms, num_control_wires, num_target_wires, num
         n_swap_work_wires = num_target_wires * depth - num_target_wires
         n_select_work_wires = num_work_wires - n_swap_work_wires
         n_select_control_wires = num_control_wires - math.floor_log2(depth)
-
-    # number of operators we store per column (power of 2 or number of bitstrings)
-    # depth = num_swap_wires // num_target_wires
-    # depth = 1 << math.floor_log2(depth)
-    # depth = min(depth, num_bitstrings)
 
     return n_select_work_wires, n_swap_work_wires, depth
 
