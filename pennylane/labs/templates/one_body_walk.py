@@ -112,7 +112,6 @@ def one_body_walk(op_matrix, alias_sampling_nbits, prep_wires, system_wires, wor
     col = dvec if qp.math.linalg.det(vmat) > 0 else qp.math.concatenate([-dvec[:1], dvec[1:]])
     unitary_matrix = vmat * dvec[:, None] * col[None, :]
     absmu = qp.math.abs(mu)
-    signs = qp.math.where(absmu > 0, qp.math.sign(mu), 1.0)
 
     # PREP
     alias_sampling(
@@ -132,23 +131,26 @@ def one_body_walk(op_matrix, alias_sampling_nbits, prep_wires, system_wires, wor
     # Carry the sign of mu_p as a -1 phase on |p> rather than scaling the multiplexed Z: Select
     # controls a bare Pauli far more cheaply than a scaled SProd.
     n_index = len(index_wires)
-    for p, sign in enumerate(signs):
-        if sign >= 0:
-            continue
-        zeros = [w for w, b in zip(index_wires, format(p, f"0{n_index}b")) if b == "0"]
-        for w in zeros:
-            qp.X(w)
-        if n_index == 1:
-            qp.Z(index_wires[0])
-        else:
-            qp.ctrl(
-                qp.Z(index_wires[-1]),
-                control=index_wires[:-1],
-                work_wires=work_wires,
-                work_wire_type="zeroed",
-            )
-        for w in zeros:
-            qp.X(w)
+    n_neg = int(qp.math.sum(qp.math.array(mu) < 0))
+    if n_neg >= 2**n_index:
+        qp.GlobalPhase(qp.numpy.pi)
+    else:
+        bits = format(n_neg, f"0{n_index}b")
+        for j, bit in enumerate(bits):
+            if bit != "1":
+                continue
+            qp.X(index_wires[j])
+            if j == 0:
+                qp.Z(index_wires[0])
+            else:
+                qp.ctrl(
+                    qp.Z(index_wires[j]),
+                    control=index_wires[:j],
+                    control_values=[int(c) for c in bits[:j]],
+                    work_wires=work_wires,
+                    work_wire_type="zeroed",
+                )
+            qp.X(index_wires[j])
 
     ops = [qp.Z(system_wires[s * norbs + p]) for p in range(norbs) for s in (0, 1)]
     # PREP puts amplitude only on |p> with p < norbs, so the control register has no support on

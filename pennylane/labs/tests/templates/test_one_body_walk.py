@@ -89,7 +89,7 @@ def _reference_block_matrix(op_matrix, system_wires, mu_bits=None):
     return -0.5 * total
 
 
-def _apply_walk(op_matrix, mu_bits, state, n_powers=1, system_wires=None):
+def _apply_walk(op_matrix, mu_bits, state, n_powers=1):
     r"""Helper function to apply the walk to one system state and return the :math:`|\vec 0\rangle` block."""
     norbs = qp.math.shape(op_matrix)[0]
     req = one_body_walk_wires(norbs, mu_bits)
@@ -99,10 +99,6 @@ def _apply_walk(op_matrix, mu_bits, state, n_powers=1, system_wires=None):
     work = list(range(n_prep + n_sys, n_prep + n_sys + n_work))
 
     n_wires = n_prep + n_sys + n_work
-
-    if system_wires is not None:
-        system = system_wires
-        n_sys = len(system)
 
     dev = qp.device("default.qubit", wires=n_wires)
 
@@ -168,6 +164,7 @@ class TestOneBodyWalk:
 
         dim = 2 ** (2 * norbs)
         state = rng.standard_normal(dim) + 1j * rng.standard_normal(dim)
+        state /= np.linalg.norm(state)
 
         block_encoded_state, work_scratch = _apply_walk(op_matrix, mu_bits, state)
 
@@ -213,6 +210,7 @@ class TestOneBodyWalk:
         system = list(range(n_prep, n_prep + n_sys))
         dim = 2 ** (2 * norbs)
         state = rng.standard_normal(dim) + 1j * rng.standard_normal(dim)
+        state /= np.linalg.norm(state)
 
         got, _ = _apply_walk(op_matrix, 2, state)
 
@@ -228,6 +226,7 @@ class TestOneBodyWalk:
         dim = 2 ** (2 * 2)
         rng = np.random.default_rng(1000)
         state = rng.standard_normal(dim) + 1j * rng.standard_normal(dim)
+        state /= np.linalg.norm(state)
 
         got, _ = _apply_walk(op_matrix, 2, state)
 

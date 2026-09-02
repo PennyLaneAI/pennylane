@@ -643,6 +643,11 @@
   [(#9459)](https://github.com/PennyLaneAI/pennylane/pull/9459)
   [(#9789)](https://github.com/PennyLaneAI/pennylane/pull/9789)
 
+* Created a :func:`~.pennylane.labs.templates.one_body_walk` function implementing the qubitization
+  walk operator that block-encodes a real symmetric one-body (single-particle) operator, together
+  with :func:`~.pennylane.labs.templates.one_body_walk_wires` reporting the required register sizes.
+  [(#9991)](https://github.com/PennyLaneAI/pennylane/pull/9991)
+  
 * Performance of the Trotter error module is improved by introducing a novel algorithm for
   computing the Baker-Campbell-Hausdorff formula.
   [(#9608)][https://github.com/PennyLaneAI/pennylane/pull/9608]
