@@ -469,25 +469,6 @@ def _equal_operator2(
     return True
 
 
-@_equal_dispatch.register
-def _equal_change_op_basis(op1: ChangeOpBasis2, op2: ChangeOpBasis2, **kwargs):
-    """Compare COB operands across the transitional legacy-resource boundary."""
-    for name in ChangeOpBasis2.hybrid_argnames:
-        operand1, operand2 = op1.arguments[name], op2.arguments[name]
-        if isinstance(operand1, qp.decomposition.CompressedResourceOp):
-            # Generic Operator2 equality treats non-operator hybrid leaves as numeric.
-            # Legacy compressed resource operands instead have structural equality.
-            if operand1 != operand2:
-                return f"op1 and op2 have different values for '{name}'."
-            continue
-
-        result = _equal(operand1, operand2, **kwargs)
-        if isinstance(result, str):
-            return f"op1 and op2 have different values for '{name}'.\n{result}"
-
-    return True
-
-
 def _check_wire_value(wname: str, wval1: Any, wval2: Any):
     """Check for equality of a wire argument of an Operator2 instance."""
 
