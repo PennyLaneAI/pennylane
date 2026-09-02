@@ -390,7 +390,7 @@ def _unroll_prod_operand(operand):
         counts = defaultdict(int)
         for inner_op in operand.operands:
             counts[inner_op] += 1
-        return counts
+        return dict(counts)
     if isinstance(operand, CompressedResourceOp) and operand.op_type is qp.ops.Prod:
         return dict(operand.params["resources"])
     return {operand: 1}
