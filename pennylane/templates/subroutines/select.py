@@ -21,8 +21,7 @@ from itertools import product
 import numpy as np
 
 from pennylane import math
-from pennylane import ops as qp_ops
-from pennylane.core.operator import Operation, Operator2, abstractify
+from pennylane.core.operator import Operator2
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.ops import CNOT, X, adjoint, ctrl
@@ -356,19 +355,19 @@ class Select(Operator2):
 
         if 2 ** len(self.control) < len(self.ops):
             raise ValueError(
-                f"Not enough control wires ({len(control)}) for the desired number of "
+                f"Not enough control wires ({len(self.control)}) for the desired number of "
                 + f"operations ({len(ops)}). At least {math.ceil_log2(len(ops))} control "
                 + "wires are required."
             )
 
-        _wires_are_traced = any(math.is_abstract(w) for w in control)
+        _wires_are_traced = any(math.is_abstract(w) for w in self.control)
 
         # Wire overlap validation must be skipped when wires are JAX tracers,
         # as their concrete values are not available during tracing.
         if not _wires_are_traced:
             if any(
                 control_wire in Wires.all_wires([op.wires for op in ops])
-                for control_wire in control
+                for control_wire in self.control
             ):
                 raise ValueError("Control wires should be different from operation wires.")
 
@@ -378,6 +377,16 @@ class Select(Operator2):
     def target_wires(self):
         """The wires of the target operators."""
         return self._target_wires
+
+    @property
+    def data(self) -> tuple:
+        """The trainable parameters of the target operators."""
+        return tuple(d for op in self.ops for d in op.data)
+
+    @property
+    def num_params(self) -> int:
+        """The number of trainable parameters of the target operators."""
+        return sum(op.num_params for op in self.ops)
 
     def __repr__(self):
         # Overriding so that work_wires aren't included

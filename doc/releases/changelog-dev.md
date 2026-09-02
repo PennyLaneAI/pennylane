@@ -1020,6 +1020,15 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* The decomposition rule of :class:`~.PrepSelPrep` now applies the linear-combination unitaries and
+  their global phases as two separate :class:`~.Select` operators instead of a single ``Select`` of
+  products.
+  [(#10020)](https://github.com/PennyLaneAI/pennylane/pull/10020)
+
+* The decomposition rule of :class:`~.QROM` now loads each column of bitstrings with a single
+  :class:`~.MultiX` instead of a product of smaller :class:`~.BasisState` and ``Identity`` operators.
+  [(#10020)](https://github.com/PennyLaneAI/pennylane/pull/10020)
+
 * The resource module JSON parser can now handle floating point values received from the Catalyst backend.
   [(#10044)](https://github.com/PennyLaneAI/pennylane/pull/10044)
 
