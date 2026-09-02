@@ -660,10 +660,9 @@ class SumOfSlatersPrep(Operator2):
             match that in ``indices``.
         wires (~.WiresLike): Wires on which to prepare the state.
         indices (tuple[int] or AbstractArray or None): Indices of the sparse state to prepare.
-            The ordering should match that in ``coefficients``. May also be given as an abstract
-            type from :mod:`~.typing`, such as ``qp.typing.Int[len(coefficients)]``, or omitted
-            altogether; in both of those cases a worst-case set of indices of the appropriate
-            length is generated with :func:`~.SumOfSlatersPrep.worst_case_indices`.
+            The ordering should match that in ``coefficients``. May also be an abstract type
+            such as ``qp.typing.Int[len(coefficients)]``, or omitted; in both cases the indices
+            are generated with :func:`~.SumOfSlatersPrep.generate_indices`.
         enumeration_wires (~.WiresLike): Work wires used for the enumeration register. For
             :math:`d` entries in the state, :math:`\lceil \log_2 (d)\rceil` qubits are required.
         identification_wires (~.WiresLike): Work wires used for the identification register.
@@ -690,11 +689,9 @@ class SumOfSlatersPrep(Operator2):
     .. warning::
 
         If ``indices`` is abstract or omitted, the generated indices are a resource-estimation
-        stand-in, chosen to maximize the register sizes and gate counts. The resulting operator
-        is perfectly valid and will decompose and execute, but it prepares *those* basis states,
-        not any that the caller has in mind. In particular the generated indices are **not**
-        ``(0, 1, ..., len(coefficients) - 1)``. Pass ``indices`` explicitly to prepare a
-        specific state.
+        stand-in that maximizes the register sizes and gate counts. The operator is valid and
+        will execute, but prepares *those* basis states -- in particular **not**
+        ``(0, 1, ..., len(coefficients) - 1)``. Pass ``indices`` to prepare a specific state.
 
     **Example**
 
@@ -932,8 +929,7 @@ class SumOfSlatersPrep(Operator2):
         mcx_cache_wires: WiresLike = (),
     ):
         n = 1 if isinstance(wires, int) else len(wires)
-        # Use the trailing axis, not len(), so that broadcast coefficients report the number of
-        # entries rather than the batch size.
+        # Trailing axis, not len(), so broadcast coefficients report entries, not batch size.
         num_entries = math.shape(coefficients)[-1]
         if indices is not None and not isinstance(indices, AbstractArray):
             if len(indices) != num_entries:
@@ -941,10 +937,9 @@ class SumOfSlatersPrep(Operator2):
                     "The number of coefficients and the number of state indices must match."
                 )
         if isinstance(indices, AbstractArray) or indices is None:
-            indices = self.worst_case_indices(num_entries, n)
+            indices = self.generate_indices(num_entries, n)
 
-        # ``indices`` is concrete from here on, whether it was given or synthesized, so the
-        # work-wire registers can be validated either way.
+        # indices is concrete from here on, so the registers are validated either way.
         v_bits = math.int_to_binary(np.array(indices), n).T  # Shape (n, num_entries)
 
         if num_entries != 1:
@@ -995,7 +990,7 @@ class SumOfSlatersPrep(Operator2):
         This function supports an abstract input for ``indices``, in which case the largest
         register sizes across all possible sets of basis states of the given length are
         returned. These sizes are attained exactly, by
-        :func:`~.SumOfSlatersPrep.worst_case_indices` of the same length:
+        :func:`~.SumOfSlatersPrep.generate_indices` of the same length:
 
         >>> indices = qp.typing.Int[45]
         >>> qp.SumOfSlatersPrep.required_register_sizes(indices, 18)
@@ -1014,7 +1009,7 @@ class SumOfSlatersPrep(Operator2):
         return SumOfSlatersPrep._required_register_sizes_from_nums(num_entries, num_bits, num_wires)
 
     @staticmethod
-    def worst_case_indices(num_entries: int, num_wires: int) -> tuple[int]:
+    def generate_indices(num_entries: int, num_wires: int) -> tuple[int]:
         r"""Compute a set of ``num_entries`` computational basis states on ``num_wires`` wires
         that maximizes the register sizes and gate counts of ``SumOfSlatersPrep``.
 
@@ -1038,24 +1033,21 @@ class SumOfSlatersPrep(Operator2):
             The returned indices are a resource-estimation stand-in. An operator built from them
             is perfectly valid, but prepares *these* basis states, not any the caller has in mind.
 
-        All register sizes are non-decreasing in :math:`r`, the number of bits retained by
-        :func:`~.select_sos_rows`, so a single index set maximizes all of them at once. The
-        largest attainable :math:`r` is :math:`\min(\text{num\_wires}, \text{num\_entries}-1)`:
-        it cannot exceed the number of wires, and ``select_sos_rows`` returns an *irredundant*
-        set of rows, of which there can be at most :math:`\text{num\_entries}-1` because each
-        retained row must split at least one group of otherwise-identical indices. That bound is
-        attained by pairing the all-zero index with each power of two, as every such pair differs
-        in exactly one bit and therefore pins the corresponding row.
+        Every register size is non-decreasing in :math:`r`, the number of bits retained by
+        :func:`~.select_sos_rows`, so one index set maximizes all of them at once. The largest
+        attainable :math:`r` is :math:`\min(\text{num\_wires}, \text{num\_entries}-1)`, and
+        pairing the all-zero index with each power of two attains it: every such pair differs in
+        exactly one bit, so that bit cannot be dropped.
 
         **Example**
 
-        >>> qp.SumOfSlatersPrep.worst_case_indices(5, 4)
+        >>> qp.SumOfSlatersPrep.generate_indices(5, 4)
         (0, 1, 2, 4, 8)
 
-        The register sizes these indices require match the upper bound reported for an abstract
-        ``indices`` input of the same length:
+        These indices require exactly the sizes reported for abstract ``indices`` of the same
+        length:
 
-        >>> indices = qp.SumOfSlatersPrep.worst_case_indices(16, 8)
+        >>> indices = qp.SumOfSlatersPrep.generate_indices(16, 8)
         >>> sizes = qp.SumOfSlatersPrep.required_register_sizes(indices, 8)
         >>> sizes == qp.SumOfSlatersPrep.required_register_sizes(qp.typing.Int[16], 8)
         True
@@ -1068,15 +1060,11 @@ class SumOfSlatersPrep(Operator2):
             )
 
         num_bits = min(num_wires, num_entries - 1)
-        if num_bits < 1:
-            # A single index needs no distinguishing bits at all.
+        if num_bits < 1:  # a single index needs no distinguishing bits
             return (0,)
 
-        # The all-zero index together with each power of two. Every such pair is at Hamming
-        # distance one, so ``select_sos_rows`` cannot drop the corresponding row.
         indices = {0} | {1 << i for i in range(num_bits)}
-        # Top up with the smallest unused indices. Confining them to the same ``num_bits`` bits
-        # leaves the remaining rows constant, so they are dropped and r == num_bits exactly.
+        # Top up within the same num_bits bits, so the other rows stay constant and get dropped.
         candidate = 2
         while len(indices) < num_entries:
             indices.add(candidate)
@@ -1136,14 +1124,10 @@ class SumOfSlatersPrep(Operator2):
     @staticmethod
     def _required_register_sizes_abstract(num_entries: int, num_wires: int) -> dict:
         """Compute the largest required register sizes, if only the number of basis states,
-        but not the concrete states to be prepared, is known.
-
-        All register sizes are non-decreasing in the number of retained bits, so feeding the
-        largest attainable value produces the largest sizes. That value is
-        ``min(num_wires, num_entries - 1)``, and it is attained by
-        :func:`~.SumOfSlatersPrep.worst_case_indices`, which makes these sizes exact rather
-        than merely an upper bound.
+        but not the concrete states to be prepared, is known. Exact, not just an upper bound:
+        :func:`~.SumOfSlatersPrep.generate_indices` attains these sizes.
         """
+        # num_bits <= num_wires, and <= num_entries-1 as select_sos_rows drops redundant rows.
         return SumOfSlatersPrep._required_register_sizes_from_nums(
             num_entries, min(num_wires, num_entries - 1), num_wires
         )

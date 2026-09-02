@@ -421,7 +421,7 @@
 
 * The ``indices`` of :class:`~.SumOfSlatersPrep` are now optional, and may also be given as an
   abstract type. In both cases a worst-case set of indices of the appropriate length is generated
-  with the new :func:`~.SumOfSlatersPrep.worst_case_indices`, so that the operator can be costed
+  with the new :func:`~.SumOfSlatersPrep.generate_indices`, so that the operator can be costed
   when only the number of Slater determinants is known. Note that the generated indices are a
   resource-estimation stand-in: the operator is valid, but does not prepare a state the caller
   chose.
@@ -438,7 +438,7 @@
 
   :func:`~.SumOfSlatersPrep.required_register_sizes` also accepts abstract ``indices``, and
   reports the largest register sizes across any set of indices of that length. Those sizes are
-  attained exactly, by ``worst_case_indices`` of the same length:
+  attained exactly, by ``generate_indices`` of the same length:
 
   ```pycon
   >>> num_wires = 8

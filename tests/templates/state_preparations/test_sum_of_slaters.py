@@ -399,18 +399,17 @@ class TestComputeSosEncoding:
         assert _columns_differ(b)
 
 
-class TestWorstCaseIndices:
-    """Tests for ``SumOfSlatersPrep.worst_case_indices``."""
+class TestGenerateIndices:
+    """Tests for ``SumOfSlatersPrep.generate_indices``."""
 
     @pytest.mark.parametrize("num_wires", [2, 3, 4, 5, 8])
     @pytest.mark.parametrize("num_entries", [1, 2, 4, 5, 16])
-    def test_worst_case_indices_is_a_valid_index_set(self, num_wires, num_entries):
-        """Test that the generated indices are usable: the right number of distinct values,
-        all addressable by ``num_wires`` wires."""
+    def test_generate_indices_is_a_valid_index_set(self, num_wires, num_entries):
+        """Test that the generated indices are distinct and addressable."""
         if num_entries > 2**num_wires:
             pytest.skip("not representable on this many wires")
 
-        indices = SumOfSlatersPrep.worst_case_indices(num_entries, num_wires)
+        indices = SumOfSlatersPrep.generate_indices(num_entries, num_wires)
 
         assert len(indices) == num_entries
         assert len(set(indices)) == num_entries
@@ -418,16 +417,16 @@ class TestWorstCaseIndices:
         assert max(indices) < 2**num_wires
 
     @pytest.mark.parametrize("num_wires", [1, 3, 5])
-    def test_worst_case_indices_saturated(self, num_wires):
+    def test_generate_indices_saturated(self, num_wires):
         """Test the generator where it has no slack, i.e. every index is used."""
-        indices = SumOfSlatersPrep.worst_case_indices(2**num_wires, num_wires)
+        indices = SumOfSlatersPrep.generate_indices(2**num_wires, num_wires)
         assert set(indices) == set(range(2**num_wires))
 
-    def test_worst_case_indices_too_many_entries(self):
+    def test_generate_indices_too_many_entries(self):
         """Test that more entries than the wires can address is rejected."""
         match = "Number of coefficients 9 cannot be greater than 2\\^num_wires, 8."
         with pytest.raises(ValueError, match=match):
-            SumOfSlatersPrep.worst_case_indices(9, 3)
+            SumOfSlatersPrep.generate_indices(9, 3)
         with pytest.raises(ValueError, match=match):
             SumOfSlatersPrep(Complex[9], Wire[3])
 
@@ -442,10 +441,9 @@ class TestSumOfSlatersPrep:
             ([7, 8, 9], [10, 11, 12, 13, 14], [15, 16], [17, 18, 19, 20], None),
             # Valid: the optional work registers may be left empty (the default).
             ((), (), (), (), None),
-            # Each of the following provides a single work register with the wrong
-            # (non-zero) size, triggering one of the register-size validations. The match
-            # includes the supplied count, so that the message must report the offending
-            # register's length and not some other register's.
+            # One work register at the wrong (non-zero) size, triggering its validation.
+            # The match includes the supplied count, so the message must report the
+            # offending register's length rather than some other register's.
             (
                 [7, 8],
                 (),
@@ -556,8 +554,7 @@ class TestSumOfSlatersPrep:
         assert len(op.indices) == num_entries
 
     def test_broadcast_coefficients(self):
-        """Test that the number of entries is read off the trailing axis, so that broadcast
-        coefficients are not mistaken for a shorter state."""
+        """Test that broadcast coefficients are not mistaken for a shorter state."""
         num_wires, num_entries, batch_size = 5, 8, 3
         indices = tuple(range(num_entries))
         coefficients = np.ones((batch_size, num_entries), dtype=complex) / np.sqrt(num_entries)
@@ -569,8 +566,7 @@ class TestSumOfSlatersPrep:
     @pytest.mark.parametrize("num_wires", [4, 6, 8])
     @pytest.mark.parametrize("num_entries", [2, 5, 8, 16])
     def test_abstract_indices_accept_reported_registers(self, num_wires, num_entries):
-        """Test that the registers reported for abstract ``indices`` are exactly the ones the
-        synthesized indices need -- accepted at the reported size, rejected one wire off."""
+        """Test that the reported registers are exactly what the generated indices need."""
         if num_entries > 2**num_wires:
             pytest.skip("not representable on this many wires")
 
@@ -693,11 +689,9 @@ class TestSumOfSlatersPrep:
     @pytest.mark.parametrize(
         "num_wires, num_entries, expected",
         [
-            # Hand-checked anchors, so that the abstract computation and the concrete one
-            # cannot silently drift together.
+            # Hand-checked, so the two computations cannot drift together.
             (8, 16, {"enumeration": 4, "identification": 7, "qrom_work": 3, "mcx_cache": 6}),
-            # Narrow registers cap the number of retained bits, so the identification
-            # register is not needed at all.
+            # Few wires cap the retained bits, so no identification register is needed.
             (3, 16, {"enumeration": 4, "identification": 0, "qrom_work": 3, "mcx_cache": 2}),
             (4, 4, {"enumeration": 2, "identification": 0, "qrom_work": 1, "mcx_cache": 2}),
             (4, 1, {"enumeration": 0, "identification": 0, "qrom_work": 0, "mcx_cache": 0}),
@@ -719,15 +713,14 @@ class TestSumOfSlatersPrep:
     @pytest.mark.parametrize("num_wires", [3, 4, 5, 6, 8])
     @pytest.mark.parametrize("num_entries", [1, 2, 4, 5, 8, 16])
     def test_register_sizes_abstract(self, num_wires, num_entries):
-        """Test that the sizes reported for abstract ``indices`` are exactly those required by
-        ``worst_case_indices`` of the same length -- i.e. that they are attainable, not merely
-        an upper bound."""
+        """Test that the sizes reported for abstract ``indices`` are attainable, i.e. exactly
+        those required by ``generate_indices`` of the same length."""
 
         if num_entries > 2**num_wires:
             pytest.skip("not representable on this many wires")
 
         abstract = SumOfSlatersPrep.required_register_sizes(Int[num_entries], num_wires)
-        indices = SumOfSlatersPrep.worst_case_indices(num_entries, num_wires)
+        indices = SumOfSlatersPrep.generate_indices(num_entries, num_wires)
         attained = SumOfSlatersPrep.required_register_sizes(indices, num_wires)
 
         assert abstract == attained
@@ -737,7 +730,7 @@ class TestSumOfSlatersPrep:
     @pytest.mark.parametrize("num_entries", [2, 4, 5, 6])
     def test_register_sizes_abstract_is_upper_bound(self, num_wires, num_entries, seed):
         """Test that the abstract register sizes bound the concrete ones for indices of the
-        same length, and that the bound is attained by ``worst_case_indices``."""
+        same length, and that the bound is attained by ``generate_indices``."""
 
         _, indices = self.make_random_data(num_wires, num_entries, seed)
 
@@ -747,7 +740,7 @@ class TestSumOfSlatersPrep:
         assert concrete.keys() == abstract.keys()
         assert all(size <= abstract[key] for key, size in concrete.items())
 
-        worst_case = SumOfSlatersPrep.worst_case_indices(num_entries, num_wires)
+        worst_case = SumOfSlatersPrep.generate_indices(num_entries, num_wires)
         assert SumOfSlatersPrep.required_register_sizes(worst_case, num_wires) == abstract
 
     def test_resource_counts_are_python_integers(self):
