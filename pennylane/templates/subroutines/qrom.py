@@ -212,14 +212,15 @@ class QROM(Operator2):
         target_wires = Wires(target_wires)
         work_wires = Wires(() if work_wires is None else work_wires)
 
-        if not isinstance(bitstrings, AbstractArray) and isinstance(bitstrings[0], str):
-            bitstrings = list(map(_to_int_array, bitstrings))
+        if not isinstance(bitstrings, AbstractArray):
+            if isinstance(bitstrings[0], str):
+                bitstrings = list(map(_to_int_array, bitstrings))
 
-        elif isinstance(bitstrings, (list, tuple)):
-            bitstrings = math.array(bitstrings, dtype=int)
+            elif isinstance(bitstrings, (list, tuple)):
+                bitstrings = math.array(bitstrings, dtype=int)
 
-        else:
-            bitstrings = bitstrings.astype(int)
+            else:
+                bitstrings = bitstrings.astype(int)
 
         wire_args = {
             "control_wires": control_wires,
