@@ -48,7 +48,7 @@ ops = (
 )
 
 
-@pytest.mark.jax
+@pytest.mark.capture
 def test_basic_validity():
     """Run basic validity checks on a change_op_basis operator."""
     op1 = qp.PauliZ(0)

@@ -669,16 +669,16 @@ class TestGraphDecomposition:
             partial(f, "X", AbstractArray((), dtype=int), x=x, reg2=AbstractArray((2,), dtype=int)),
             abstractify(qp.PauliX),
         )
-        assert isinstance(rr, qp.ops.ChangeOpBasis)
+        assert isinstance(rr, qp.decomposition.CompressedResourceOp)
         assert rr.name == "ChangeOpBasis"
 
         assert isinstance(rr.params["target_op"], PauliX)
         assert rr.params["target_op"].is_fully_abstract
 
-        assert isinstance(rr.compute_op, qp.decomposition.CompressedResourceOp)
-        assert rr.compute_op.name == "SubroutineOp"
-        assert rr.compute_op.op_type == SubroutineOp
-        assert rr.compute_op.params == {
+        assert isinstance(rr.params["compute_op"], qp.decomposition.CompressedResourceOp)
+        assert rr.params["compute_op"].name == "SubroutineOp"
+        assert rr.params["compute_op"].op_type == SubroutineOp
+        assert rr.params["compute_op"].params == {
             "subroutine": f,
             "signature_key": _make_signature_key(
                 f,
@@ -689,10 +689,10 @@ class TestGraphDecomposition:
             ),
         }
 
-        assert isinstance(rr.uncompute_op, qp.decomposition.CompressedResourceOp)
-        assert rr.uncompute_op.name == "Adjoint(SubroutineOp)"
-        assert rr.uncompute_op.op_type == Adjoint
-        assert rr.uncompute_op.params == {
+        assert isinstance(rr.params["uncompute_op"], qp.decomposition.CompressedResourceOp)
+        assert rr.params["uncompute_op"].name == "Adjoint(SubroutineOp)"
+        assert rr.params["uncompute_op"].op_type == Adjoint
+        assert rr.params["uncompute_op"].params == {
             "base_class": SubroutineOp,
             "base_params": {
                 "subroutine": f,
@@ -710,14 +710,14 @@ class TestGraphDecomposition:
         """Test creating a ChangeOpBasis resource representation with operators."""
 
         rr = change_op_basis_subroutine_resource_rep(qp.PauliZ(0), abstractify(qp.PauliX))
-        assert isinstance(rr, qp.ops.ChangeOpBasis)
-        assert rr.name == "ChangeOpBasis"
-        assert rr.params["compute_op"] == qp.Z(Wire[1])
-        assert rr.params["compute_op"].is_fully_abstract
-        assert rr.params["target_op"] == qp.X(Wire[1])
-        assert rr.params["target_op"].is_fully_abstract
-        assert rr.params["uncompute_op"] == qp.adjoint(qp.Z(Wire[1]))
-        assert rr.params["uncompute_op"].is_fully_abstract
+        assert isinstance(rr, qp.ops.ChangeOpBasis2)
+        assert rr.name == "ChangeOpBasis2"
+        assert rr.compute_op == qp.Z(Wire[1])
+        assert rr.compute_op.is_fully_abstract
+        assert rr.target_op == qp.X(Wire[1])
+        assert rr.target_op.is_fully_abstract
+        assert rr.uncompute_op == qp.adjoint(qp.Z(Wire[1]))
+        assert rr.uncompute_op.is_fully_abstract
 
     def test_change_op_basis_subroutine_resource_rep_with_a_resource_rep_and_a_subroutine(self):
         """Test creating a ChangeOpBasis resource representation with a subroutine target."""
@@ -730,16 +730,16 @@ class TestGraphDecomposition:
         rr = change_op_basis_subroutine_resource_rep(
             abstractify(qp.PauliX), partial(f, "X", AbstractWires(0), x=x, reg2=AbstractWires(2))
         )
-        assert isinstance(rr, qp.ops.ChangeOpBasis)
+        assert isinstance(rr, qp.decomposition.CompressedResourceOp)
         assert rr.name == "ChangeOpBasis"
 
         assert rr.params["compute_op"] == PauliX(Wire[1])
         assert rr.params["compute_op"].is_fully_abstract
 
-        assert isinstance(rr.target_op, qp.decomposition.CompressedResourceOp)
-        assert rr.target_op.name == "SubroutineOp"
-        assert rr.target_op.op_type == SubroutineOp
-        assert rr.target_op.params == {
+        assert isinstance(rr.params["target_op"], qp.decomposition.CompressedResourceOp)
+        assert rr.params["target_op"].name == "SubroutineOp"
+        assert rr.params["target_op"].op_type == SubroutineOp
+        assert rr.params["target_op"].params == {
             "subroutine": f,
             "signature_key": _make_signature_key(
                 f,
@@ -769,7 +769,7 @@ class TestGraphDecomposition:
                 f, "X", AbstractArray((), dtype=int), x=x, reg2=AbstractArray((2,), dtype=int)
             ),
         )
-        assert isinstance(rr, qp.ops.ChangeOpBasis)
+        assert isinstance(rr, qp.decomposition.CompressedResourceOp)
         assert rr.name == "ChangeOpBasis"
 
         assert isinstance(rr.params["compute_op"], CNOT)
@@ -778,10 +778,10 @@ class TestGraphDecomposition:
         assert isinstance(rr.params["target_op"], PauliX)
         assert rr.params["target_op"].is_fully_abstract
 
-        assert isinstance(rr.uncompute_op, qp.decomposition.CompressedResourceOp)
-        assert rr.uncompute_op.name == "SubroutineOp"
-        assert rr.uncompute_op.op_type == SubroutineOp
-        assert rr.uncompute_op.params == {
+        assert isinstance(rr.params["uncompute_op"], qp.decomposition.CompressedResourceOp)
+        assert rr.params["uncompute_op"].name == "SubroutineOp"
+        assert rr.params["uncompute_op"].op_type == SubroutineOp
+        assert rr.params["uncompute_op"].params == {
             "subroutine": f,
             "signature_key": _make_signature_key(
                 f, "X", AbstractArray((), dtype=int), x=x, reg2=AbstractArray((2,), dtype=int)

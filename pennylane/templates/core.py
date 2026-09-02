@@ -110,9 +110,7 @@ def change_op_basis_subroutine_resource_rep(
         uncompute_rep = _get_adjoint_rep(compute)
     else:
         uncompute_rep = _get_non_adjoint_rep(uncompute)
-    return _change_op_basis_abstract(
-        abstractify(compute_rep), abstractify(target_rep), abstractify(uncompute_rep)
-    )
+    return _change_op_basis_abstract(compute_rep, target_rep, uncompute_rep)
 
 
 def adjoint_subroutine_resource_rep(

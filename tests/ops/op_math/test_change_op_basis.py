@@ -45,11 +45,16 @@ ops = (
 )
 
 
+class DummyOp(qp.core.Operator1):
+    def __init__(self, wires):
+        super().__init__(wires)
+
+
 @pytest.mark.jax
 def test_basic_validity():
     """Run basic validity checks on a change_op_basis operator."""
     op1 = qp.PauliZ(0)
-    op2 = qp.Rot(1.2, 2.3, 3.4, wires=0)
+    op2 = DummyOp(0)
     op3 = qp.PauliZ(0)
     op = qp.change_op_basis(op1, op2, op3)
     qp.ops.functions.assert_valid(op)

@@ -120,6 +120,9 @@ class ChangeOpBasis2(CompositeOp2):
         """
         return op_list
 
+    def compute_eigvals(compute_op, target_op, uncompute_op):
+        return super().compute_eigvals((compute_op, target_op, uncompute_op))
+
     @property
     def is_verified_hermitian(self):
         """Check if the product operator is hermitian.
