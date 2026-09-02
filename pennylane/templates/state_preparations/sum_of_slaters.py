@@ -977,9 +977,10 @@ class SumOfSlatersPrep(Operator2):
             of length ``num_wires`` with the label ``"wires"``, matching the call signature
             of ``SumOfSlatersPrep``.
 
-        This function supports an abstract input for ``indices``, in which case an upper bound
-        for the register sizes, across all possible sets of basis states of the given length, is
-        returned:
+        This function supports an abstract input for ``indices``, in which case the largest
+        register sizes across all possible sets of basis states of the given length are
+        returned. These sizes are attained exactly, by
+        :func:`~.SumOfSlatersPrep.worst_case_indices` of the same length:
 
         >>> indices = qp.typing.Int[45]
         >>> qp.SumOfSlatersPrep.required_register_sizes(indices, 18)
@@ -1119,25 +1120,18 @@ class SumOfSlatersPrep(Operator2):
 
     @staticmethod
     def _required_register_sizes_abstract(num_entries: int, num_wires: int) -> dict:
-        """Compute the upper bound of the required register sizes, if only the number of
-        basis states, but not the concrete states to be prepared, is known."""
-        if num_entries == 1:
-            # Simple computational basis state preparation, does not require auxiliary qubits
-            return {
-                "wires": num_wires,
-                "enumeration_wires": 0,
-                "identification_wires": 0,
-                "qrom_work_wires": 0,
-                "mcx_cache_wires": 0,
-            }
-        d = math.ceil_log2(num_entries)
-        return {
-            "wires": num_wires,
-            "enumeration_wires": d,
-            "identification_wires": 2 * d - 1,
-            "qrom_work_wires": d - 1,
-            "mcx_cache_wires": 2 * d - 2,
-        }
+        """Compute the largest required register sizes, if only the number of basis states,
+        but not the concrete states to be prepared, is known.
+
+        All register sizes are non-decreasing in the number of retained bits, so feeding the
+        largest attainable value produces the largest sizes. That value is
+        ``min(num_wires, num_entries - 1)``, and it is attained by
+        :func:`~.SumOfSlatersPrep.worst_case_indices`, which makes these sizes exact rather
+        than merely an upper bound.
+        """
+        return SumOfSlatersPrep._required_register_sizes_from_nums(
+            num_entries, min(num_wires, num_entries - 1), num_wires
+        )
 
 
 # pylint: disable-next=unused-argument

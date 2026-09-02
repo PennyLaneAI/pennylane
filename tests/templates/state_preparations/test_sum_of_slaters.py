@@ -666,29 +666,54 @@ class TestSumOfSlatersPrep:
         registered_work_wires = _sos_state_prep.get_work_wire_spec(coefficients, range(n), indices)
         assert sum(sizes.values()) - n == registered_work_wires.total
 
-    @pytest.mark.parametrize("num_wires", [3, 5, 8])
-    @pytest.mark.parametrize("num_entries", [1, 2, 4, 5, 16])
-    def test_register_sizes_abstract(self, num_wires, num_entries):
-        """Test that ``required_register_sizes`` dispatches to the abstract computation when
-        given an abstract ``indices`` input, returning the expected upper-bound sizes."""
+    @pytest.mark.parametrize(
+        "num_wires, num_entries, expected",
+        [
+            # Hand-checked anchors, so that the abstract computation and the concrete one
+            # cannot silently drift together.
+            (8, 16, {"enumeration": 4, "identification": 7, "qrom_work": 3, "mcx_cache": 6}),
+            # Narrow registers cap the number of retained bits, so the identification
+            # register is not needed at all.
+            (3, 16, {"enumeration": 4, "identification": 0, "qrom_work": 3, "mcx_cache": 2}),
+            (4, 4, {"enumeration": 2, "identification": 0, "qrom_work": 1, "mcx_cache": 2}),
+            (4, 1, {"enumeration": 0, "identification": 0, "qrom_work": 0, "mcx_cache": 0}),
+        ],
+    )
+    def test_register_sizes_abstract_values(self, num_wires, num_entries, expected):
+        """Test the sizes reported for abstract ``indices`` against hand-checked values."""
 
-        indices = Int[num_entries]
-        sizes = SumOfSlatersPrep.required_register_sizes(indices, num_wires)
+        sizes = SumOfSlatersPrep.required_register_sizes(Int[num_entries], num_wires)
 
-        d = ceil_log2(num_entries)
         assert sizes == {
             "wires": num_wires,
-            "enumeration_wires": d,
-            "identification_wires": max(2 * d - 1, 0),
-            "qrom_work_wires": max(d - 1, 0),
-            "mcx_cache_wires": max(2 * d - 2, 0),
+            "enumeration_wires": expected["enumeration"],
+            "identification_wires": expected["identification"],
+            "qrom_work_wires": expected["qrom_work"],
+            "mcx_cache_wires": expected["mcx_cache"],
         }
+
+    @pytest.mark.parametrize("num_wires", [3, 4, 5, 6, 8])
+    @pytest.mark.parametrize("num_entries", [1, 2, 4, 5, 8, 16])
+    def test_register_sizes_abstract(self, num_wires, num_entries):
+        """Test that the sizes reported for abstract ``indices`` are exactly those required by
+        ``worst_case_indices`` of the same length -- i.e. that they are attainable, not merely
+        an upper bound."""
+
+        if num_entries > 2**num_wires:
+            pytest.skip("not representable on this many wires")
+
+        abstract = SumOfSlatersPrep.required_register_sizes(Int[num_entries], num_wires)
+        indices = SumOfSlatersPrep.worst_case_indices(num_entries, num_wires)
+        attained = SumOfSlatersPrep.required_register_sizes(indices, num_wires)
+
+        assert abstract == attained
+        assert all(size >= 0 for size in abstract.values())
 
     @pytest.mark.parametrize("num_wires", [3, 4, 5])
     @pytest.mark.parametrize("num_entries", [2, 4, 5, 6])
     def test_register_sizes_abstract_is_upper_bound(self, num_wires, num_entries, seed):
-        """Test that the abstract register sizes upper-bound the concrete ones for indices
-        of the same length."""
+        """Test that the abstract register sizes bound the concrete ones for indices of the
+        same length, and that the bound is attained by ``worst_case_indices``."""
 
         _, indices = self.make_random_data(num_wires, num_entries, seed)
 
@@ -697,6 +722,9 @@ class TestSumOfSlatersPrep:
 
         assert concrete.keys() == abstract.keys()
         assert all(size <= abstract[key] for key, size in concrete.items())
+
+        worst_case = SumOfSlatersPrep.worst_case_indices(num_entries, num_wires)
+        assert SumOfSlatersPrep.required_register_sizes(worst_case, num_wires) == abstract
 
     def test_resource_counts_are_python_integers(self):
         """Test that decomposition resource counts are Python integers."""
