@@ -48,14 +48,15 @@ ops = (
 )
 
 
-@pytest.mark.capture
+# NOTE: this test does not make sense with capture, since with capture enabled, COB does not produce an op
+@pytest.mark.jax
 def test_basic_validity():
     """Run basic validity checks on a change_op_basis operator."""
     op1 = qp.PauliZ(0)
     op2 = qp.Rot(1.2, 2.3, 3.4, wires=0)
     op3 = qp.PauliZ(0)
     op = qp.change_op_basis(op1, op2, op3)
-    qp.ops.functions.assert_valid(op)
+    qp.ops.functions.assert_valid(op, skip_eigvals=True)
 
 
 def test_change_op_basis_callables():

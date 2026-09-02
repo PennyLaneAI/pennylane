@@ -89,10 +89,6 @@ class ChangeOpBasis2(CompositeOp2):
     def diagonalizing_gates(self):
         raise DiagGatesUndefinedError
 
-    # pylint: disable-next=arguments-differ
-    def eigvals(self):
-        raise EigvalsUndefinedError
-
     @property
     def operands(self):
         """The operators in matrix-product order."""
@@ -119,9 +115,6 @@ class ChangeOpBasis2(CompositeOp2):
             List[.Operator]: sorted list of operators
         """
         return op_list
-
-    def compute_eigvals(compute_op, target_op, uncompute_op):
-        return super().compute_eigvals((compute_op, target_op, uncompute_op))
 
     @property
     def is_verified_hermitian(self):
