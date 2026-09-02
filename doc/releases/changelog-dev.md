@@ -1411,17 +1411,6 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* :func:`~.SumOfSlatersPrep.required_register_sizes` no longer returns negative register sizes for
-  a single-entry state. ``ceil_log2(1)`` is ``0``, so the abstract computation evaluated
-  :math:`2d-1` and :math:`2d-2` as ``-1`` and ``-2``.
-  [(#XXXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXXX)
-
-  ```pycon
-  >>> qp.SumOfSlatersPrep.required_register_sizes(qp.typing.Int[1], 4)
-  {'wires': 4, 'enumeration_wires': 0, 'identification_wires': 0, 'qrom_work_wires': 0, 'mcx_cache_wires': 0}
-
-  ```
-
 * Fixed :class:`~.Incrementer` returning an incorrect incremented value when not enough
   work wires are provided.
   [(#10062)](https://github.com/PennyLaneAI/pennylane/pull/10062)
