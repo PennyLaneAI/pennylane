@@ -20,7 +20,6 @@ import numpy as np
 
 import pennylane as qp
 from pennylane.core.operator import Operator, abstractify
-from pennylane.decomposition.resources import _unroll_change_op_basis
 from pennylane.ops.op_math import change_op_basis
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
@@ -239,7 +238,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
                 change_basis_rep_basis_adapted = change_basis_rep
 
         resources = {change_basis_rep_basis_adapted: 1}
-        return _unroll_change_op_basis(resources) if qp.capture.enabled() else resources
+        return resources
 
     @qp.register_resources(_resource_fn)
     def _decomp_fn(angles, control_wires, target_wire, rot_axis, **_):

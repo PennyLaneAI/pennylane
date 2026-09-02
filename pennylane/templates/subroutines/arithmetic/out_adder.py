@@ -17,14 +17,12 @@ Contains the OutAdder template.
 
 from collections import defaultdict
 
-from pennylane import capture
 from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
     resource_rep,
 )
-from pennylane.decomposition.resources import _unroll_change_op_basis
 from pennylane.ops import Prod, change_op_basis
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
@@ -319,7 +317,7 @@ def _out_adder_decomposition_resources(num_output_wires, num_x_wires, num_y_wire
             _adjoint_abstract(_compute_op),
         ): 1
     }
-    return _unroll_change_op_basis(resources) if capture.enabled() else resources
+    return resources
 
 
 @register_resources(_out_adder_decomposition_resources)

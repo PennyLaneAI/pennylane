@@ -1498,21 +1498,17 @@ class IsingZZ(Operator2):
 
 # pylint: disable-next=unused-argument
 def _isingzz_to_cnot_rz_cnot_resources(phi: TensorLike, wires: WiresLike | None = None):
-    from pennylane.decomposition.resources import (  # pylint: disable=import-outside-toplevel
-        _unroll_change_op_basis,
-    )
     from pennylane.ops.op_math.change_op_basis2 import (  # pylint: disable=import-outside-toplevel
         _change_op_basis_abstract,
     )
 
-    resources = {
+    return {
         _change_op_basis_abstract(
             qp.CNOT(wires=Wire[2]),
             RZ(Float, wires=Wire[1]),
             qp.CNOT(wires=Wire[2]),
         ): 1
     }
-    return _unroll_change_op_basis(resources) if qp.capture.enabled() else resources
 
 
 @register_resources(_isingzz_to_cnot_rz_cnot_resources)

@@ -24,7 +24,7 @@ from pennylane.decomposition import (
     register_condition,
     register_resources,
 )
-from pennylane.decomposition.resources import _unroll_change_op_basis, resource_rep
+from pennylane.decomposition.resources import resource_rep
 from pennylane.ops import BasisState, H, Prod, X, adjoint, change_op_basis, ctrl, prod
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
@@ -298,7 +298,7 @@ def _out_multiplier_with_qft_resources(
         num_control_wires=num_y_wires,
     )
     resources = {_change_op_basis_abstract(compute_rep, target_rep, uncompute_rep): 1}
-    return _unroll_change_op_basis(resources) if capture.enabled() else resources
+    return resources
 
 
 def _out_multiplier_with_qft_condition(

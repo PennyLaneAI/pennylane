@@ -27,11 +27,10 @@ import numpy as np
 import scipy
 from numpy.polynomial import Polynomial, chebyshev
 
-from pennylane import capture, math, ops
+from pennylane import math, ops
 from pennylane.core.operator import Operation, Operator, Operator2, abstractify
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.decomposition.resources import _unroll_change_op_basis
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.typing import TensorLike
@@ -705,8 +704,7 @@ def _QSVT_resources(projectors, UA):
         resources[abstractify(UA)] += 1
         resources[abstractify(projectors[0])] += 1
 
-    resources = dict(resources)
-    return _unroll_change_op_basis(resources) if capture.enabled() else resources
+    return dict(resources)
 
 
 @register_resources(_QSVT_resources)

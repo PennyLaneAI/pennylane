@@ -204,15 +204,12 @@ def _rx_to_rz_ry(phi, wires: WiresLike):
 
 
 def _rx_to_ry_cliff_resources(**_):
-    from pennylane.decomposition.resources import (  # pylint: disable=import-outside-toplevel
-        _unroll_change_op_basis,
-    )
     from pennylane.ops.op_math.change_op_basis2 import (  # pylint: disable=import-outside-toplevel
         _change_op_basis_abstract,
     )
 
     resources = {_change_op_basis_abstract(qp.S, qp.RY, _adjoint_abstract(qp.S)): 1}
-    return _unroll_change_op_basis(resources) if qp.capture.enabled() else resources
+    return resources
 
 
 @register_resources(_rx_to_ry_cliff_resources)
@@ -221,15 +218,12 @@ def _rx_to_ry_cliff(phi, wires: WiresLike):
 
 
 def _rx_to_rz_cliff_resources(**_):
-    from pennylane.decomposition.resources import (  # pylint: disable=import-outside-toplevel
-        _unroll_change_op_basis,
-    )
     from pennylane.ops.op_math.change_op_basis2 import (  # pylint: disable=import-outside-toplevel
         _change_op_basis_abstract,
     )
 
     resources = {_change_op_basis_abstract(qp.Hadamard, qp.RZ, qp.Hadamard): 1}
-    return _unroll_change_op_basis(resources) if qp.capture.enabled() else resources
+    return resources
 
 
 @register_resources(_rx_to_rz_cliff_resources)
@@ -431,15 +425,12 @@ def _ry_to_rz_rx(phi, wires: WiresLike):
 
 
 def _ry_to_rx_cliff_resources(**_):
-    from pennylane.decomposition.resources import (  # pylint: disable=import-outside-toplevel
-        _unroll_change_op_basis,
-    )
     from pennylane.ops.op_math.change_op_basis2 import (  # pylint: disable=import-outside-toplevel
         _change_op_basis_abstract,
     )
 
     resources = {_change_op_basis_abstract(_adjoint_abstract(qp.S), qp.RX, qp.S): 1}
-    return _unroll_change_op_basis(resources) if qp.capture.enabled() else resources
+    return resources
 
 
 @register_resources(_ry_to_rx_cliff_resources)
@@ -448,9 +439,6 @@ def _ry_to_rx_cliff(phi, wires: WiresLike):
 
 
 def _ry_to_rz_cliff_resources(**_):
-    from pennylane.decomposition.resources import (  # pylint: disable=import-outside-toplevel
-        _unroll_change_op_basis,
-    )
     from pennylane.ops.op_math.change_op_basis2 import (  # pylint: disable=import-outside-toplevel
         _change_op_basis_abstract,
     )
@@ -468,7 +456,7 @@ def _ry_to_rz_cliff_resources(**_):
             ),
         ): 1
     }
-    return _unroll_change_op_basis(resources) if qp.capture.enabled() else resources
+    return resources
 
 
 @register_resources(_ry_to_rz_cliff_resources)
@@ -720,15 +708,12 @@ def _rz_to_ry_rx(phi, wires: WiresLike):
 
 # pylint: disable=unused-argument
 def _rz_to_rx_cliff_resources(phi, wires):
-    from pennylane.decomposition.resources import (  # pylint: disable=import-outside-toplevel
-        _unroll_change_op_basis,
-    )
     from pennylane.ops.op_math.change_op_basis2 import (  # pylint: disable=import-outside-toplevel
         _change_op_basis_abstract,
     )
 
     resources = {_change_op_basis_abstract(qp.Hadamard, qp.RX, qp.Hadamard): 1}
-    return _unroll_change_op_basis(resources) if qp.capture.enabled() else resources
+    return resources
 
 
 @register_resources(_rz_to_rx_cliff_resources)
@@ -738,9 +723,6 @@ def _rz_to_rx_cliff(phi, wires: WiresLike):
 
 # pylint: disable=unused-argument
 def _rz_to_ry_cliff_resources(phi, wires):
-    from pennylane.decomposition.resources import (  # pylint: disable=import-outside-toplevel
-        _unroll_change_op_basis,
-    )
     from pennylane.ops.op_math.change_op_basis2 import (  # pylint: disable=import-outside-toplevel
         _change_op_basis_abstract,
     )
@@ -758,7 +740,7 @@ def _rz_to_ry_cliff_resources(phi, wires):
             ),
         ): 1
     }
-    return _unroll_change_op_basis(resources) if qp.capture.enabled() else resources
+    return resources
 
 
 @register_resources(_rz_to_ry_cliff_resources)
