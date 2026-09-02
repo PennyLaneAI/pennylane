@@ -29,7 +29,7 @@ from scipy.linalg import block_diag
 import pennylane as qp
 from pennylane import math
 from pennylane.allocation import allocate
-from pennylane.core.operator import Operator, abstractify
+from pennylane.core.operator import Operator
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
@@ -1220,12 +1220,8 @@ def _toffoli_elbow_resources(**_):
         _change_op_basis_abstract,
     )
 
-    _compute_op = abstractify(qp.Elbow)
-    resources = {
-        _change_op_basis_abstract(
-            _compute_op, abstractify(qp.CNOT), _adjoint_abstract(_compute_op)
-        ): 1
-    }
+    _compute_op = qp.Elbow
+    resources = {_change_op_basis_abstract(_compute_op, qp.CNOT, _adjoint_abstract(_compute_op)): 1}
     return _unroll_change_op_basis(resources) if qp.capture.enabled() else resources
 
 

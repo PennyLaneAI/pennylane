@@ -348,20 +348,16 @@ class TestPrepSelPrep:
         }
         expected_counts = {
             _change_op_basis_abstract(
-                abstractify(qp.resource_rep(qp.StatePrep, num_wires=2)),
-                abstractify(
-                    qp.resource_rep(
-                        qp.Select,
-                        op_reps=op_reps,
-                        num_control_wires=2,
-                        partial=True,
-                        num_work_wires=0,
-                    )
+                qp.resource_rep(qp.StatePrep, num_wires=2),
+                qp.resource_rep(
+                    qp.Select,
+                    op_reps=op_reps,
+                    num_control_wires=2,
+                    partial=True,
+                    num_work_wires=0,
                 ),
-                abstractify(
-                    qp.resource_rep(
-                        qp.ops.Adjoint, base_class=qp.StatePrep, base_params={"num_wires": 2}
-                    )
+                qp.resource_rep(
+                    qp.ops.Adjoint, base_class=qp.StatePrep, base_params={"num_wires": 2}
                 ),
             ): 1,
         }

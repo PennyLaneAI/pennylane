@@ -215,25 +215,25 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
         #    compute_op = prod (the QROM + ctrl-X product)
         #    target_op  = SemiAdder
         change_basis_rep = _change_op_basis_abstract(
-            compute_op=abstractify(prod_rep),
-            target_op=abstractify(semi_adder_rep),
-            uncompute_op=abstractify(prod_rep),
+            compute_op=prod_rep,
+            target_op=semi_adder_rep,
+            uncompute_op=prod_rep,
         )
 
         # 6. Basis adaptation depending on rot_axis
         match rot_axis:
             case "X":
                 change_basis_rep_basis_adapted = _change_op_basis_abstract(
-                    abstractify(qp.Hadamard),
-                    abstractify(change_basis_rep),
-                    abstractify(qp.Hadamard),
+                    qp.Hadamard,
+                    change_basis_rep,
+                    qp.Hadamard,
                 )
             case "Y":
                 comp_rep = qp.ops.Prod2((abstractify(qp.Hadamard), _adjoint_abstract(qp.S)))
                 change_basis_rep_basis_adapted = _change_op_basis_abstract(
-                    abstractify(comp_rep),
-                    abstractify(change_basis_rep),
-                    abstractify(_adjoint_abstract(comp_rep)),
+                    comp_rep,
+                    change_basis_rep,
+                    _adjoint_abstract(comp_rep),
                 )
             case "Z":
                 change_basis_rep_basis_adapted = change_basis_rep

@@ -219,9 +219,7 @@ def _temporary_and_resources(**_):
     )
     resources = {
         ops.X: _number_xs,
-        _change_op_basis_abstract(
-            abstractify(prod_rep), abstractify(ops.CNOT), abstractify(prod_rep)
-        ): 1,
+        _change_op_basis_abstract(prod_rep, ops.CNOT, prod_rep): 1,
         _adjoint_abstract(ops.S): 1,
     }
     return _unroll_change_op_basis(resources) if capture.enabled() else resources

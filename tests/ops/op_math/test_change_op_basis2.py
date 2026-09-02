@@ -311,9 +311,7 @@ def test_abstract_symbolic_resources_do_not_bind(make_rep, expected_type):
     import jax  # pylint: disable=import-outside-toplevel
 
     prod_rep = qp.ops.Prod2((qp.S(Wire[1]),))
-    base = _change_op_basis_abstract(
-        abstractify(prod_rep), abstractify(prod_rep), abstractify(prod_rep)
-    )
+    base = _change_op_basis_abstract(prod_rep, prod_rep, prod_rep)
     rep = make_rep(base)
 
     assert isinstance(rep, expected_type)

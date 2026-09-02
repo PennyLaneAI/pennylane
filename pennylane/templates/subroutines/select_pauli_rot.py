@@ -142,21 +142,13 @@ def _select_pauli_rot_resource(angles, control_wires, target_wire, rot_axis):
     target_rep = Prod2((cnot_rep, rz_rep) * num_rotations) if num_wires > 1 else rz_rep
 
     if rot_axis == "X":
-        resources = {
-            _change_op_basis_abstract(
-                abstractify(Hadamard), abstractify(target_rep), abstractify(Hadamard)
-            ): 1
-        }
+        resources = {_change_op_basis_abstract(Hadamard, target_rep, Hadamard): 1}
         return _unroll_change_op_basis(resources) if capture.enabled() else resources
 
     prod_rep1 = Prod2((abstractify(Hadamard), _adjoint_abstract(S)))
     prod_rep2 = Prod2((abstractify(S), abstractify(Hadamard)))
 
-    resources = {
-        _change_op_basis_abstract(
-            abstractify(prod_rep1), abstractify(target_rep), abstractify(prod_rep2)
-        ): 1
-    }
+    resources = {_change_op_basis_abstract(prod_rep1, target_rep, prod_rep2): 1}
     return _unroll_change_op_basis(resources) if capture.enabled() else resources
 
 

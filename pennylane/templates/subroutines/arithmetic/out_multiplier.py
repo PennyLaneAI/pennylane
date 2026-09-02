@@ -297,11 +297,7 @@ def _out_multiplier_with_qft_resources(
         ),
         num_control_wires=num_y_wires,
     )
-    resources = {
-        _change_op_basis_abstract(
-            abstractify(compute_rep), abstractify(target_rep), abstractify(uncompute_rep)
-        ): 1
-    }
+    resources = {_change_op_basis_abstract(compute_rep, target_rep, uncompute_rep): 1}
     return _unroll_change_op_basis(resources) if capture.enabled() else resources
 
 

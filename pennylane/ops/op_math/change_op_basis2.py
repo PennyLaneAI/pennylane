@@ -151,7 +151,15 @@ def _abstractify_change_op_basis(op: ChangeOpBasis2):
 
 
 def _change_op_basis_abstract(compute_op, target_op, uncompute_op):
-    """Construct a native abstract COB across the legacy resource boundary."""
+    """Construct a native abstract COB across the legacy resource boundary.
+
+    The operands are abstractified here so callers can pass concrete operators, abstract
+    operators, operator types (e.g. those with a fixed signature), or ``CompressedResourceOp``
+    representations interchangeably.
+    """
+    compute_op = abstractify(compute_op)
+    target_op = abstractify(target_op)
+    uncompute_op = abstractify(uncompute_op)
     if all(isinstance(op, Operator2) for op in (compute_op, target_op, uncompute_op)):
         return ChangeOpBasis2(compute_op, target_op, uncompute_op)
     return change_op_basis_resource_rep(compute_op, target_op, uncompute_op)

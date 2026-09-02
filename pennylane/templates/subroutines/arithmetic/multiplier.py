@@ -273,17 +273,17 @@ def _multiplier_decomposition_resources(
         target_op_rep = resource_rep(Prod, resources={abstractify(SWAP): num_x_wires})
     else:
         target_op_rep = SWAP
-    _compute_op = abstractify(QFT(Wire[num_wires_aux]))
+    _compute_op = QFT(Wire[num_wires_aux])
     resources = {
         _change_op_basis_abstract(
             _compute_op,
-            abstractify(resource_rep(ControlledSequence, **cs_base_params)),
+            resource_rep(ControlledSequence, **cs_base_params),
             _adjoint_abstract(_compute_op),
         ): 1,
         target_op_rep: 1,
         _change_op_basis_abstract(
             _compute_op,
-            abstractify(adjoint_resource_rep(ControlledSequence, cs_base_params)),
+            adjoint_resource_rep(ControlledSequence, cs_base_params),
             _adjoint_abstract(_compute_op),
         ): 1,
     }

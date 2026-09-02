@@ -299,15 +299,15 @@ def _phase_adder_decomposition_resources(num_x_wires, mod) -> dict:
         ops.PhaseShift: num_x_wires,
         _adjoint_abstract(ops.PhaseShift): num_x_wires,
         _change_op_basis_abstract(
-            abstractify(_adjoint_abstract(QFT(Wire[num_x_wires]))),
-            abstractify(ops.CNOT),
-            abstractify(QFT(Wire[num_x_wires])),
+            _adjoint_abstract(QFT(Wire[num_x_wires])),
+            ops.CNOT,
+            QFT(Wire[num_x_wires]),
         ): 1,
         ops.ControlledPhaseShift: num_x_wires,
         _change_op_basis_abstract(
-            abstractify(resource_rep(ops.Prod, resources=dict(basis_op_resources1))),
-            abstractify(ops.CNOT),
-            abstractify(resource_rep(ops.Prod, resources=dict(basis_op_resources2))),
+            resource_rep(ops.Prod, resources=dict(basis_op_resources1)),
+            ops.CNOT,
+            resource_rep(ops.Prod, resources=dict(basis_op_resources2)),
         ): 1,
     }
     return _unroll_change_op_basis(resources) if capture.enabled() else resources

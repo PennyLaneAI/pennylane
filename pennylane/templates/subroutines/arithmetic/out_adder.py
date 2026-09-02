@@ -18,7 +18,7 @@ Contains the OutAdder template.
 from collections import defaultdict
 
 from pennylane import capture
-from pennylane.core.operator import Operation, abstractify
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
@@ -311,11 +311,11 @@ def _out_adder_decomposition_resources(num_output_wires, num_x_wires, num_y_wire
         )
     ] += 1
 
-    _compute_op = abstractify(QFT(Wire[num_qft_wires]))
+    _compute_op = QFT(Wire[num_qft_wires])
     resources = {
         _change_op_basis_abstract(
             _compute_op,
-            abstractify(resource_rep(Prod, resources=target_resources)),
+            resource_rep(Prod, resources=target_resources),
             _adjoint_abstract(_compute_op),
         ): 1
     }

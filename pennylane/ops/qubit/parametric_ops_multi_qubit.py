@@ -30,7 +30,6 @@ from pennylane import compiler, math
 from pennylane.capture.autograph import disable_autograph
 
 # pylint: disable=arguments-differ
-from pennylane.core import abstractify
 from pennylane.core.operator import Operation, Operator, Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
@@ -1508,9 +1507,9 @@ def _isingzz_to_cnot_rz_cnot_resources(phi: TensorLike, wires: WiresLike | None 
 
     resources = {
         _change_op_basis_abstract(
-            abstractify(qp.CNOT(wires=Wire[2])),
-            abstractify(RZ(Float, wires=Wire[1])),
-            abstractify(qp.CNOT(wires=Wire[2])),
+            qp.CNOT(wires=Wire[2]),
+            RZ(Float, wires=Wire[1]),
+            qp.CNOT(wires=Wire[2]),
         ): 1
     }
     return _unroll_change_op_basis(resources) if qp.capture.enabled() else resources

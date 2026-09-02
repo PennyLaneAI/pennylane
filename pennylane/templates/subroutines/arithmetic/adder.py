@@ -18,7 +18,7 @@ Contains the Adder template.
 from collections import defaultdict
 
 from pennylane import capture
-from pennylane.core.operator import Operation, abstractify
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
@@ -235,11 +235,11 @@ class Adder(Operation):
 
 def _adder_decomposition_resources(num_x_wires, mod) -> dict:
     num_qft_wires = num_x_wires if mod == 2**num_x_wires else 1 + num_x_wires
-    _compute_op = abstractify(QFT(Wire[num_qft_wires]))
+    _compute_op = QFT(Wire[num_qft_wires])
     resources = {
         _change_op_basis_abstract(
             _compute_op,
-            abstractify(resource_rep(PhaseAdder, num_x_wires=num_qft_wires, mod=mod)),
+            resource_rep(PhaseAdder, num_x_wires=num_qft_wires, mod=mod),
             _adjoint_abstract(_compute_op),
         ): 1,
     }

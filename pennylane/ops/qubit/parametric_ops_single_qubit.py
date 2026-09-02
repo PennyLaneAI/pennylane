@@ -211,11 +211,7 @@ def _rx_to_ry_cliff_resources(**_):
         _change_op_basis_abstract,
     )
 
-    resources = {
-        _change_op_basis_abstract(
-            abstractify(qp.S), abstractify(qp.RY), _adjoint_abstract(abstractify(qp.S))
-        ): 1
-    }
+    resources = {_change_op_basis_abstract(qp.S, qp.RY, _adjoint_abstract(qp.S)): 1}
     return _unroll_change_op_basis(resources) if qp.capture.enabled() else resources
 
 
@@ -232,11 +228,7 @@ def _rx_to_rz_cliff_resources(**_):
         _change_op_basis_abstract,
     )
 
-    resources = {
-        _change_op_basis_abstract(
-            abstractify(qp.Hadamard), abstractify(qp.RZ), abstractify(qp.Hadamard)
-        ): 1
-    }
+    resources = {_change_op_basis_abstract(qp.Hadamard, qp.RZ, qp.Hadamard): 1}
     return _unroll_change_op_basis(resources) if qp.capture.enabled() else resources
 
 
@@ -446,11 +438,7 @@ def _ry_to_rx_cliff_resources(**_):
         _change_op_basis_abstract,
     )
 
-    resources = {
-        _change_op_basis_abstract(
-            abstractify(_adjoint_abstract(qp.S)), abstractify(qp.RX), abstractify(qp.S)
-        ): 1
-    }
+    resources = {_change_op_basis_abstract(_adjoint_abstract(qp.S), qp.RX, qp.S): 1}
     return _unroll_change_op_basis(resources) if qp.capture.enabled() else resources
 
 
@@ -469,18 +457,14 @@ def _ry_to_rz_cliff_resources(**_):
 
     resources = {
         _change_op_basis_abstract(
-            abstractify(
-                resource_rep(
-                    qp.ops.op_math.Prod,
-                    resources={_adjoint_abstract(qp.S): 1, abstractify(qp.Hadamard): 1},
-                )
+            resource_rep(
+                qp.ops.op_math.Prod,
+                resources={_adjoint_abstract(qp.S): 1, abstractify(qp.Hadamard): 1},
             ),
-            abstractify(qp.RZ),
-            abstractify(
-                resource_rep(
-                    qp.ops.op_math.Prod,
-                    resources={abstractify(qp.S): 1, abstractify(qp.Hadamard): 1},
-                )
+            qp.RZ,
+            resource_rep(
+                qp.ops.op_math.Prod,
+                resources={abstractify(qp.S): 1, abstractify(qp.Hadamard): 1},
             ),
         ): 1
     }
@@ -743,11 +727,7 @@ def _rz_to_rx_cliff_resources(phi, wires):
         _change_op_basis_abstract,
     )
 
-    resources = {
-        _change_op_basis_abstract(
-            abstractify(qp.Hadamard), abstractify(qp.RX), abstractify(qp.Hadamard)
-        ): 1
-    }
+    resources = {_change_op_basis_abstract(qp.Hadamard, qp.RX, qp.Hadamard): 1}
     return _unroll_change_op_basis(resources) if qp.capture.enabled() else resources
 
 
@@ -767,18 +747,14 @@ def _rz_to_ry_cliff_resources(phi, wires):
 
     resources = {
         _change_op_basis_abstract(
-            abstractify(
-                resource_rep(
-                    qp.ops.op_math.Prod,
-                    resources={abstractify(qp.S): 1, abstractify(qp.Hadamard): 1},
-                )
+            resource_rep(
+                qp.ops.op_math.Prod,
+                resources={abstractify(qp.S): 1, abstractify(qp.Hadamard): 1},
             ),
-            abstractify(qp.RY),
-            abstractify(
-                resource_rep(
-                    qp.ops.op_math.Prod,
-                    resources={_adjoint_abstract(qp.S): 1, abstractify(qp.Hadamard): 1},
-                )
+            qp.RY,
+            resource_rep(
+                qp.ops.op_math.Prod,
+                resources={_adjoint_abstract(qp.S): 1, abstractify(qp.Hadamard): 1},
             ),
         ): 1
     }

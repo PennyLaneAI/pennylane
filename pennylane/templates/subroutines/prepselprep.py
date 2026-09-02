@@ -211,18 +211,16 @@ def _prepselprep_resources(op_reps, num_control):
     prod_reps = tuple(
         resource_rep(Prod, resources={abstractify(GlobalPhase): 1, rep: 1}) for rep in op_reps
     )
-    _compute_op = abstractify(resource_rep(StatePrep, num_wires=num_control))
+    _compute_op = resource_rep(StatePrep, num_wires=num_control)
     resources = {
         _change_op_basis_abstract(
             _compute_op,
-            abstractify(
-                resource_rep(
-                    Select,
-                    op_reps=prod_reps,
-                    num_control_wires=num_control,
-                    partial=True,
-                    num_work_wires=0,
-                )
+            resource_rep(
+                Select,
+                op_reps=prod_reps,
+                num_control_wires=num_control,
+                partial=True,
+                num_work_wires=0,
             ),
             _adjoint_abstract(_compute_op),
         ): 1,
