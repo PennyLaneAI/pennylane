@@ -17,7 +17,6 @@ This submodule contains the template for QROM.
 
 from collections import Counter
 from collections.abc import Sequence
-from functools import reduce
 
 import numpy as np
 
@@ -29,7 +28,6 @@ from pennylane.decomposition import (
     add_decomps,
     register_condition,
     register_resources,
-    resource_rep,
 )
 from pennylane.math import ceil_log2
 from pennylane.ops import CNOT, CZ, BasisState, X, cond, ctrl, pauli_measure
@@ -39,6 +37,7 @@ from pennylane.typing import AbstractArray, Bool, Int, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .arithmetic import TemporaryAND
+from .multix import MultiX
 from .select import Select
 
 
@@ -50,10 +49,11 @@ def _multi_swap(wires1, wires2):
 
 def _new_ops(depth, target_wires, control_wires, swap_wires, bitstrings):
 
+    num_targets = len(target_wires)
+
     with QueuingManager.stop_recording():
-        ops_new = [BasisState(bits, wires=target_wires) for bits in bitstrings]
-        ops_identity_new = ops_new + [qp_ops.I(target_wires)] * int(
-            2 ** len(control_wires) - len(ops_new)
+        bitstrings_identity = list(bitstrings) + [np.zeros(num_targets, dtype=int)] * int(
+            2 ** len(control_wires) - len(bitstrings)
         )
 
     n_columns = (
@@ -63,14 +63,11 @@ def _new_ops(depth, target_wires, control_wires, swap_wires, bitstrings):
     )
     new_ops = []
     for i in range(n_columns):
-        column_ops = []
-        for j in range(depth):
-            dic_map = {
-                ops_identity_new[i * depth + j].wires[l]: swap_wires[j * len(target_wires) + l]
-                for l in range(len(target_wires))
-            }
-            column_ops.append(ops_identity_new[i * depth + j].map_wires(dic_map))
-        new_ops.append(qp_ops.prod(*column_ops))
+        # A column applies ``depth`` bitstrings on disjoint wire slices, which is a single
+        # MultiX over the concatenated bitstrings and wires.
+        column_bits = math.concatenate([bitstrings_identity[i * depth + j] for j in range(depth)])
+        column_wires = swap_wires[: depth * num_targets]
+        new_ops.append(MultiX(column_bits, wires=column_wires))
     return new_ops
 
 
@@ -340,7 +337,7 @@ def _qrom_decomposition_resources(
     num_work_wires_swap = num_work_wires - num_work_wires_select
 
     if num_control_wires == 0:
-        return {BasisState(Bool[num_target_wires], Wire[num_target_wires]): num_bitstrings}
+        return {MultiX(Bool[num_target_wires], Wire[num_target_wires]): num_bitstrings}
 
     num_swap_wires = num_target_wires + num_work_wires_swap
 
@@ -349,41 +346,24 @@ def _qrom_decomposition_resources(
     depth = int(2 ** np.floor(np.log2(depth)))
     depth = min(depth, num_bitstrings)
 
-    ops = [
-        BasisState(Bool[num_target_wires], Wire[num_target_wires]) for _ in range(num_bitstrings)
-    ]
-    ops_identity = ops + [qp_ops.I] * int(2**num_control_wires - num_bitstrings)
-
     n_columns = (
         num_bitstrings // depth if num_bitstrings % depth == 0 else num_bitstrings // depth + 1
     )
 
-    # New ops block
-    new_ops = Counter()
-    for i in range(n_columns):
-        column_ops = Counter()
-        for j in range(depth):
-            column_ops[ops_identity[i * depth + j]] += 1
-        if len(column_ops) == 1 and list(column_ops.values())[0] == 1:
-            new_ops[list(column_ops.keys())[0]] += 1
-        else:
-            new_ops[resource_rep(qp_ops.op_math.Prod, resources=dict(column_ops))] += 1
+    # Each column applies ``depth`` bitstrings on disjoint wire slices, i.e. a single MultiX.
+    column_rep = MultiX(Bool[depth * num_target_wires], Wire[depth * num_target_wires])
+    new_ops = Counter({column_rep: n_columns})
 
     # Select block
     num_control_select_wires = ceil_log2(2**num_control_wires / depth)
 
-    new_ops_reps = reduce(
-        lambda acc, lst: acc + lst, [[key for _ in range(val)] for key, val in new_ops.items()]
-    )
-
     if num_control_select_wires > 0:
         select_ops = {
-            resource_rep(
-                Select,
-                num_control_wires=num_control_select_wires,
-                op_reps=tuple(new_ops_reps),
+            Select(
+                [column_rep] * n_columns,
+                control=Wire[int(num_control_select_wires)],
+                work_wires=Wire[num_work_wires_select],
                 partial=False,
-                num_work_wires=num_work_wires_select,
             ): 1
         }
     else:
@@ -430,7 +410,7 @@ def _qrom_decomposition(
     bitstrings, control_wires, target_wires, work_wires, clean
 ):  # pylint: disable=unused-argument, too-many-arguments
     if len(control_wires) == 0:
-        BasisState(bitstrings[0, :], wires=target_wires)
+        MultiX(bitstrings[0, :], wires=target_wires)
         return
 
     n_select_work_wires = _calculate_n_select_work_wires(

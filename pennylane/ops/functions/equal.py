@@ -1174,7 +1174,11 @@ def _equal_select(op1: Select, op2: Select, **kwargs):
             f"op1 and op2 have different number of target operators. Got {len(t1)} and {len(t2)}."
         )
     for idx, (_t1, _t2) in enumerate(zip(t1, t2, strict=True)):
-        comparer = _equal(_t1, _t2, **kwargs)
+        if isinstance(_t1, Operator) and isinstance(_t2, Operator):
+            comparer = _equal(_t1, _t2, **kwargs)
+        else:
+            # Resource representations (e.g. CompressedResourceOp) are compared directly.
+            comparer = True if _t1 == _t2 else "they are not equal."
         if isinstance(comparer, str):
             return f"got different operations at index {idx}: {_t1} and {_t2}. They differ because {comparer}."
     return True
