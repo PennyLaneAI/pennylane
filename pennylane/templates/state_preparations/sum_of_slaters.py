@@ -919,7 +919,14 @@ class SumOfSlatersPrep(Operator2):
         mcx_cache_wires: WiresLike = (),
     ):
         n = 1 if isinstance(wires, int) else len(wires)
-        num_entries = len(coefficients)
+        # Use the trailing axis, not len(), so that broadcast coefficients report the number of
+        # entries rather than the batch size.
+        num_entries = math.shape(coefficients)[-1]
+        if indices is not None and not isinstance(indices, AbstractArray):
+            if len(indices) != num_entries:
+                raise ValueError(
+                    "The number of coefficients and the number of state indices must match."
+                )
         if isinstance(indices, AbstractArray) or indices is None:
             k = min(n, num_entries - 1)
             # Set of powers of 2 from 2^0 up to 2^(k-1), as well as 0

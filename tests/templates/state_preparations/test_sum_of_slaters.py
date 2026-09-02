@@ -492,6 +492,23 @@ class TestSumOfSlatersPrep:
         op = qp.SumOfSlatersPrep(Complex[num_entries], Wire[num_wires])
         assert len(op.indices) == num_entries
 
+    def test_broadcast_coefficients(self):
+        """Test that the number of entries is read off the trailing axis, so that broadcast
+        coefficients are not mistaken for a shorter state."""
+        num_wires, num_entries, batch_size = 5, 8, 3
+        indices = tuple(range(num_entries))
+        coefficients = np.ones((batch_size, num_entries), dtype=complex) / np.sqrt(num_entries)
+        sizes = qp.SumOfSlatersPrep.required_register_sizes(indices, num_wires)
+
+        op = qp.SumOfSlatersPrep(coefficients, indices=indices, **qp.registers(sizes))
+        assert len(op.indices) == num_entries
+
+    def test_coefficients_indices_length_mismatch(self):
+        """Test that mismatched ``coefficients`` and ``indices`` lengths are rejected."""
+        match = "The number of coefficients and the number of state indices must match."
+        with pytest.raises(ValueError, match=match):
+            qp.SumOfSlatersPrep(np.ones(3) / np.sqrt(3), wires=range(5), indices=(0, 3, 4, 17))
+
     def make_random_data(self, num_wires, num_entries, seed):
         """Produce some random input data for ``SumOfSlatersPrep`` with given specs."""
         rng = np.random.default_rng(seed)
