@@ -14,7 +14,7 @@
 """Qubitization walk operator for block-encoding of a one-particle operator."""
 
 import pennylane as qp
-from pennylane.labs.templates import alias_sampling, alias_sampling_wires
+from pennylane.labs.templates import LeftClassicalComparator, alias_sampling, alias_sampling_wires
 
 
 def one_body_walk_wires(norbs, alias_sampling_nbits):
@@ -130,27 +130,19 @@ def one_body_walk(op_matrix, alias_sampling_nbits, prep_wires, system_wires, wor
 
     # Carry the sign of mu_p as a -1 phase on |p> rather than scaling the multiplexed Z: Select
     # controls a bare Pauli far more cheaply than a scaled SProd.
-    n_index = len(index_wires)
     n_neg = int(qp.math.sum(qp.math.array(mu) < 0))
-    if n_neg >= 2**n_index:
-        qp.GlobalPhase(qp.numpy.pi)
-    else:
-        bits = format(n_neg, f"0{n_index}b")
-        for j, bit in enumerate(bits):
-            if bit != "1":
-                continue
-            qp.X(index_wires[j])
-            if j == 0:
-                qp.Z(index_wires[0])
-            else:
-                qp.ctrl(
-                    qp.Z(index_wires[j]),
-                    control=index_wires[:j],
-                    control_values=[int(c) for c in bits[:j]],
-                    work_wires=work_wires,
-                    work_wire_type="zeroed",
-                )
-            qp.X(index_wires[j])
+    if n_neg > 0:
+        n_index = len(index_wires)
+        compare = LeftClassicalComparator(
+            x_wires=index_wires,
+            L=n_neg,
+            target_wire=work_wires[0],
+            work_wires=work_wires[1:n_index],
+            comparator="<",
+        )
+        qp.apply(compare)
+        qp.Z(work_wires[0])
+        qp.adjoint(compare)
 
     ops = [qp.Z(system_wires[s * norbs + p]) for p in range(norbs) for s in (0, 1)]
     # PREP puts amplitude only on |p> with p < norbs, so the control register has no support on
