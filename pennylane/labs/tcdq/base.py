@@ -11,8 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Abstract base class for TCDQ (Train Classical, Deploy Quantum) simulators.
-"""
+"""Abstract base class for TCDQ (Train Classical, Deploy Quantum) simulators."""
 
 from abc import ABC, abstractmethod
 from collections.abc import Callable
@@ -50,20 +49,31 @@ class ObservableAlgebra(Enum):
 
 
 @dataclass(frozen=True)
-class EstimatorSpec:
-    """Description of what a built estimator measures.
+class Estimator:
+    """A pure estimation function bundled with the metadata describing it.
+
+    Instances are frozen and hashable, so they can be passed as a static
+    argument to :func:`jax.jit`. Two estimators compare equal only when they
+    wrap the same underlying closure, so each rebuild triggers one compilation.
 
     Args:
         name (str): Registered name of the estimator on its simulator.
         algebra (ObservableAlgebra): Observable encoding and return contract.
         local_dims (tuple[int, ...]): Local Hilbert space dimension of each wire.
+        fn (Callable): Pure callable with signature
+            ``fn(params, observables, *, key=None)`` returning
+            ``(values, uncertainty)`` as fixed by ``algebra``. Implementations
+            may accept further keyword-only runtime overrides of their own;
+            consumers never rely on them.
 
     **Example**
 
-    >>> from pennylane.labs.tcdq import EstimatorSpec, ObservableAlgebra
-    >>> spec = EstimatorSpec("expval", ObservableAlgebra.PAULI, (2, 2, 2))
-    >>> spec.n_wires
+    >>> from pennylane.labs.tcdq import Estimator, ObservableAlgebra
+    >>> est = Estimator("expval", ObservableAlgebra.PAULI, (2, 2, 2), lambda p, o: (p, o))
+    >>> est.n_wires
     3
+
+    .. seealso:: :meth:`TCDQSimulator.build_estimator`
     """
 
     #: Registered name of the estimator on its simulator.
@@ -72,36 +82,13 @@ class EstimatorSpec:
     algebra: ObservableAlgebra
     #: Local Hilbert space dimension of each wire.
     local_dims: tuple[int, ...]
+    #: The underlying pure estimation function.
+    fn: Callable
 
     @property
     def n_wires(self) -> int:
         """int: Number of wires, inferred from :attr:`local_dims`."""
         return len(self.local_dims)
-
-
-@dataclass(frozen=True)
-class Estimator:
-    """A pure estimation function bundled with its specification.
-
-    Instances are frozen and hashable, so they can be passed as a static
-    argument to :func:`jax.jit`. Two estimators compare equal only when they
-    wrap the same underlying closure, so each rebuild triggers one compilation.
-
-    Args:
-        spec (EstimatorSpec): What this estimator measures.
-        fn (Callable): Pure callable with signature
-            ``fn(params, observables, *, key=None, n_samples=None, phase_params=None)``
-            returning ``(values, uncertainty)`` as fixed by ``spec.algebra``.
-            Implementations may accept further keyword-only runtime overrides;
-            both built-in simulators also accept ``init_state``.
-
-    .. seealso:: :meth:`TCDQSimulator.build_estimator`
-    """
-
-    #: What this estimator measures.
-    spec: EstimatorSpec
-    #: The underlying pure estimation function.
-    fn: Callable
 
     def __call__(self, *args, **kwargs):
         return self.fn(*args, **kwargs)
@@ -134,8 +121,7 @@ def estimator(name: str, *, algebra: ObservableAlgebra) -> Callable:
             def _build_pauli_expval(self):
                 precomputed = self._expensive_setup()
 
-                def expval(params, observables, *, key=None, n_samples=None,
-                           phase_params=None):
+                def expval(params, observables, *, key=None):
                     return _core(params, observables, precomputed)
 
                 return expval
@@ -160,14 +146,27 @@ class TCDQSimulator(ABC):
     more factory methods with :func:`estimator`. Each factory returns a pure
     closure with the signature::
 
-        fn(params, observables, *, key=None, n_samples=None, phase_params=None)
-            -> (values, uncertainty)
+        fn(params, observables, *, key=None) -> (values, uncertainty)
 
-    Observables are always supplied by the caller. Their encoding, and the
-    dtypes and shapes of the two return values, are fixed by the estimator's
-    declared :class:`ObservableAlgebra`. The keyword arguments are runtime
-    overrides of build-time defaults; an implementation may accept further ones
-    of its own, since consumers only rely on the signature above.
+    This is the smallest signature a consumer can rely on. Observables are
+    always supplied by the caller, and their encoding, along with the dtypes
+    and shapes of the two return values, is fixed by the estimator's declared
+    :class:`ObservableAlgebra`.
+
+    ``params`` is an arbitrary JAX pytree rather than a flat array, so a model
+    with several groups of trainable parameters passes them as a tuple or a
+    dictionary. Consumers never inspect the structure, they only forward it, so
+    no particular parameterization needs a keyword argument of its own.
+
+    ``key`` is the single optional argument, because a consumer may need to
+    control the random stream. Implementations must accept it, but a
+    deterministic estimator is free to ignore it.
+
+    Everything else is simulator-specific and belongs at build time: sample
+    counts, initial states and similar options are set on the constructor, or
+    forwarded to the factory method through the ``**kwargs`` of
+    :meth:`build_estimator`. An implementation may still offer extra
+    keyword-only runtime overrides, but consumers never rely on them.
 
     **Example**
 
@@ -241,5 +240,9 @@ class TCDQSimulator(ABC):
                 f"Available estimators: {list(self.available_estimators())}"
             ) from None
 
-        spec = EstimatorSpec(name=name, algebra=algebra, local_dims=self.local_dims)
-        return Estimator(spec=spec, fn=getattr(self, attr_name)(**kwargs))
+        return Estimator(
+            name=name,
+            algebra=algebra,
+            local_dims=self.local_dims,
+            fn=getattr(self, attr_name)(**kwargs),
+        )

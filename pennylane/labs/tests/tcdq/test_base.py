@@ -20,7 +20,6 @@ import pytest
 
 from pennylane.labs.tcdq import (
     Estimator,
-    EstimatorSpec,
     IQPSimulator,
     MMDConfig,
     ObservableAlgebra,
@@ -74,7 +73,7 @@ class _ZOnlySimulator(TCDQSimulator):
     def _build_z_expval(self):
         n_qubits = self._n_qubits
 
-        def z_expval(params, observables, *, key=None, n_samples=None, phase_params=None):
+        def z_expval(params, observables, *, key=None):
             # pylint: disable=unused-argument
             ops = jnp.asarray(observables)
             weights = jnp.sum(ops == 3, axis=1)
@@ -96,7 +95,7 @@ class _HWOnlySimulator(TCDQSimulator):
 
     @estimator("hw", algebra=ObservableAlgebra.HEISENBERG_WEYL)
     def _build_hw(self):
-        def hw(params, observables, *, key=None, n_samples=None, phase_params=None):
+        def hw(params, observables, *, key=None):
             # pylint: disable=unused-argument
             l_vecs = jnp.asarray(observables[0])
             n_obs = l_vecs.shape[0]
@@ -106,18 +105,19 @@ class _HWOnlySimulator(TCDQSimulator):
         return hw
 
 
-class TestEstimatorSpec:
-    """Tests for the estimator specification."""
+class TestEstimatorRecord:
+    """Tests for the estimator record itself."""
 
     def test_n_wires_derived_from_local_dims(self):
         """n_wires is inferred from local_dims rather than stored separately."""
-        spec = EstimatorSpec("e", ObservableAlgebra.PAULI, (2, 3, 4))
-        assert spec.n_wires == 3
+        est = Estimator("e", ObservableAlgebra.PAULI, (2, 3, 4), lambda *a, **k: None)
+        assert est.n_wires == 3
 
-    def test_spec_is_hashable(self):
-        """Specs are frozen and hashable."""
-        spec = EstimatorSpec("e", ObservableAlgebra.PAULI, (2, 2))
-        assert hash(spec) == hash(EstimatorSpec("e", ObservableAlgebra.PAULI, (2, 2)))
+    def test_estimator_is_hashable(self):
+        """Estimators are frozen and hashable, so they can be jit static arguments."""
+        fn = lambda *a, **k: None  # pylint: disable=unnecessary-lambda-assignment
+        est = Estimator("e", ObservableAlgebra.PAULI, (2, 2), fn)
+        assert hash(est) == hash(Estimator("e", ObservableAlgebra.PAULI, (2, 2), fn))
 
 
 class TestSimulatorRegistration:
@@ -143,16 +143,16 @@ class TestSimulatorRegistration:
         """The built estimator carries a spec describing what it measures."""
         est = _iqp_simulator(n_qubits=4).build_estimator("pauli_expval")
         assert isinstance(est, Estimator)
-        assert est.spec.name == "pauli_expval"
-        assert est.spec.algebra is ObservableAlgebra.PAULI
-        assert est.spec.local_dims == (2, 2, 2, 2)
-        assert est.spec.n_wires == 4
+        assert est.name == "pauli_expval"
+        assert est.algebra is ObservableAlgebra.PAULI
+        assert est.local_dims == (2, 2, 2, 2)
+        assert est.n_wires == 4
 
     def test_qudit_spec_reports_mixed_dims(self):
         """Mixed local dimensions are reported faithfully."""
         est = _qudit_simulator(dims=[2, 5]).build_estimator("hw_expval")
-        assert est.spec.local_dims == (2, 5)
-        assert est.spec.algebra is ObservableAlgebra.HEISENBERG_WEYL
+        assert est.local_dims == (2, 5)
+        assert est.algebra is ObservableAlgebra.HEISENBERG_WEYL
 
     def test_n_wires_matches_local_dims(self):
         """The simulator's n_wires is derived from local_dims."""
@@ -249,8 +249,7 @@ class TestMMDLossCompatibilityChecks:
 
     def test_rejects_non_qubit_local_dims(self):
         """A Pauli estimator over non-qubits is refused."""
-        spec = EstimatorSpec("fake", ObservableAlgebra.PAULI_Z, (2, 3))
-        est = Estimator(spec=spec, fn=lambda *a, **k: None)
+        est = Estimator("fake", ObservableAlgebra.PAULI_Z, (2, 3), lambda *a, **k: None)
         with pytest.raises(ValueError, match="defined over qubits"):
             build_mmd_loss(est, MMDConfig(bandwidth=1.0, n_ops=8))
 

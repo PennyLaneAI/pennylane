@@ -308,24 +308,24 @@ def build_mmd_loss(estimator: Estimator, mmd_config: MMDConfig) -> Callable:
             "Build one with TCDQSimulator.build_estimator(name)."
         )
 
-    if estimator.spec.algebra not in (ObservableAlgebra.PAULI_Z, ObservableAlgebra.PAULI):
+    if estimator.algebra not in (ObservableAlgebra.PAULI_Z, ObservableAlgebra.PAULI):
         raise TypeError(
             f"The RBF-kernel MMD loss samples Pauli-Z observables, but estimator "
-            f"{estimator.spec.name!r} declares the {estimator.spec.algebra.value!r} "
+            f"{estimator.name!r} declares the {estimator.algebra.value!r} "
             f"observable algebra. It must declare 'pauli_z' or 'pauli'."
         )
 
-    local_dims = estimator.spec.local_dims
+    local_dims = estimator.local_dims
     if set(local_dims) != {2}:
         raise ValueError(
             f"The RBF-kernel MMD loss is defined over qubits, but estimator "
-            f"{estimator.spec.name!r} has local dimensions {local_dims}."
+            f"{estimator.name!r} has local dimensions {local_dims}."
         )
 
     if mmd_config.n_ops < 1:
         raise ValueError("n_ops must be at least 1")
 
-    n_wires = estimator.spec.n_wires
+    n_wires = estimator.n_wires
     wire_tuple = _resolve_wires(mmd_config.wires, n_wires)
     bandwidths = _resolve_bandwidths(mmd_config.bandwidth)
 

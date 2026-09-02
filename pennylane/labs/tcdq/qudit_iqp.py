@@ -567,8 +567,7 @@ class QuditIQPSimulator(TCDQSimulator):
         Returns:
             Callable: A function with signature::
 
-                expval(params, observables, *, key=None, n_samples=None,
-                       phase_params=None) -> (values, cov)
+                expval(params, observables, *, key=None) -> (values, cov)
         """
         dims = self._dims
         n = len(dims)
@@ -591,34 +590,36 @@ class QuditIQPSimulator(TCDQSimulator):
                 in_axes=(None, None, 0),
             )
 
-        # pylint: disable=too-many-arguments
         def hw_expval(
-            params: ArrayLike,
+            params: ArrayLike | tuple[ArrayLike, ArrayLike],
             observables: tuple[ArrayLike, ArrayLike],
             *,
             key: ArrayLike | None = None,
             n_samples: int | None = None,
-            phase_params: ArrayLike | None = None,
             init_state: tuple[ArrayLike, ArrayLike] | None = None,
         ) -> tuple[jnp.ndarray, jnp.ndarray]:
             """Estimate Heisenberg-Weyl moments and their real-imaginary covariance.
 
             Args:
-                params (ArrayLike): Trainable gate parameters, shape ``(n_params,)``.
+                params (ArrayLike | tuple[ArrayLike, ArrayLike]): Trainable
+                    parameters. Without a ``phase_fn`` this is the gate
+                    parameter array of shape ``(n_params,)``. With one, pass the
+                    pair ``(gate_params, phase_params)``.
                 observables (tuple[ArrayLike, ArrayLike]): Pair ``(l_vecs, m_vecs)``
                     of integer arrays of shape ``(n_obs, n_qudits)``.
                 key (ArrayLike | None): Override for the dit-string sampling key.
-                n_samples (int | None): Override for the number of dit-strings.
-                phase_params (ArrayLike | None): Trainable parameters of the
-                    phase layer, required when the simulator has a ``phase_fn``.
-                init_state (tuple[ArrayLike, ArrayLike] | None): Override for the
-                    simulator's ``init_state``.
+                n_samples (int | None): Simulator-specific override for the
+                    number of dit-strings.
+                init_state (tuple[ArrayLike, ArrayLike] | None): Simulator-specific
+                    override for the simulator's ``init_state``.
 
             Returns:
                 tuple[jnp.ndarray, jnp.ndarray]: ``(values, cov)`` where ``values``
                 is complex of shape ``(n_obs,)`` and ``cov`` is real of shape
                 ``(n_obs, 2, 2)``, the real-imaginary covariance of each mean.
             """
+            gate_params, phase_params = params if isinstance(params, tuple) else (params, None)
+
             l_vecs = jnp.array(observables[0], dtype=jnp.int32)
             l_f = l_vecs.astype(jnp.float32)
             m_f = jnp.array(observables[1], dtype=jnp.int32).astype(jnp.float32)
@@ -634,7 +635,7 @@ class QuditIQPSimulator(TCDQSimulator):
                 gen_np, pm_np, gate_weights, samples, l_vecs, dims
             )
             accumulated_phase_diffs = _accumulate_phase_diffs(
-                params,
+                gate_params,
                 weight_data,
                 n_obs,
                 n_eff,
@@ -795,11 +796,10 @@ def build_qudit_expval_func(
         amps = config.init_state_amps if init_state_amps is None else init_state_amps
 
         return base_estimator(
-            gates_params,
+            (gates_params, phase_fn_params),
             obs,
             key=key,
             n_samples=n_samples,
-            phase_params=phase_fn_params,
             init_state=None if elems is None or amps is None else (elems, amps),
         )
 

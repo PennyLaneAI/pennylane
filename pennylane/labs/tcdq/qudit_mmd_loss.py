@@ -327,19 +327,19 @@ def _build_qudit_mmd_loss(estimator: Estimator, mmd_config: QuditMMDConfig) -> C
             "Build one with TCDQSimulator.build_estimator(name)."
         )
 
-    if estimator.spec.algebra is not ObservableAlgebra.HEISENBERG_WEYL:
+    if estimator.algebra is not ObservableAlgebra.HEISENBERG_WEYL:
         raise TypeError(
             f"The graph-kernel qudit MMD loss samples Heisenberg-Weyl displacement "
-            f"operators, but estimator {estimator.spec.name!r} declares the "
-            f"{estimator.spec.algebra.value!r} observable algebra. It must declare "
+            f"operators, but estimator {estimator.name!r} declares the "
+            f"{estimator.algebra.value!r} observable algebra. It must declare "
             f"'heisenberg_weyl'."
         )
 
     if mmd_config.n_ops < 1:
         raise ValueError("n_ops must be at least 1")
 
-    dims = estimator.spec.local_dims
-    n_qudits = estimator.spec.n_wires
+    dims = estimator.local_dims
+    n_qudits = estimator.n_wires
     wire_tuple = _resolve_wires(mmd_config.wires, n_qudits)
     bandwidths = _resolve_bandwidths(mmd_config.bandwidth)
 

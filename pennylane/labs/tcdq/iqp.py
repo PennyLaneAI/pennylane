@@ -307,8 +307,7 @@ class IQPSimulator(TCDQSimulator):
         Returns:
             Callable: A function with signature::
 
-                expval(params, observables, *, key=None, n_samples=None,
-                       phase_params=None) -> (values, variances)
+                expval(params, observables, *, key=None) -> (values, variances)
         """
         generators, param_map = _parse_generator_dict(self.gates, self.n_qubits)
         default_samples = _compute_samples(self.key, self.n_samples, self.n_qubits)
@@ -325,34 +324,36 @@ class IQPSimulator(TCDQSimulator):
                 jax.vmap(compute_phase, in_axes=(None, 0, None)), in_axes=(None, None, 0)
             )
 
-        # pylint: disable=too-many-arguments
         def pauli_expval(
-            params: ArrayLike,
+            params: ArrayLike | tuple[ArrayLike, ArrayLike],
             observables: ArrayLike,
             *,
             key: ArrayLike | None = None,
             n_samples: int | None = None,
-            phase_params: ArrayLike | None = None,
             init_state: tuple[ArrayLike, ArrayLike] | None = None,
         ) -> tuple[jnp.ndarray, jnp.ndarray]:
             """Estimate Pauli expectation values and the variance of each mean.
 
             Args:
-                params (ArrayLike): Trainable gate parameters, shape ``(n_params,)``.
+                params (ArrayLike | tuple[ArrayLike, ArrayLike]): Trainable
+                    parameters. Without a ``phase_fn`` this is the gate
+                    parameter array of shape ``(n_params,)``. With one, pass the
+                    pair ``(gate_params, phase_params)``.
                 observables (ArrayLike): Integer-encoded Pauli operators of shape
                     ``(n_obs, n_qubits)`` with ``I=0, X=1, Y=2, Z=3``.
                 key (ArrayLike | None): Override for the bitstring sampling key.
-                n_samples (int | None): Override for the number of bitstrings.
-                phase_params (ArrayLike | None): Trainable parameters of the
-                    phase layer, required when the simulator has a ``phase_fn``.
-                init_state (tuple[ArrayLike, ArrayLike] | None): Override for the
-                    simulator's ``init_state``.
+                n_samples (int | None): Simulator-specific override for the
+                    number of bitstrings.
+                init_state (tuple[ArrayLike, ArrayLike] | None): Simulator-specific
+                    override for the simulator's ``init_state``.
 
             Returns:
                 tuple[jnp.ndarray, jnp.ndarray]: ``(values, variances)``, both
                 real arrays of shape ``(n_obs,)``. ``variances`` are the
                 variances of the mean estimators.
             """
+            gate_params, phase_params = params if isinstance(params, tuple) else (params, None)
+
             if key is None and n_samples is None:
                 samples = default_samples
             else:
@@ -365,7 +366,7 @@ class IQPSimulator(TCDQSimulator):
             elems, amps = (init_elems, init_amps) if init_state is None else init_state
 
             return _core_expval_execution(
-                params,
+                gate_params,
                 phase_params,
                 samples,
                 _prep_observables(observables),
@@ -500,11 +501,10 @@ def build_expval_func(
         amps = config.init_state_amps if init_state_amps is None else init_state_amps
 
         return base_estimator(
-            gates_params,
+            (gates_params, phase_fn_params),
             obs,
             key=key,
             n_samples=n_samples,
-            phase_params=phase_fn_params,
             init_state=None if elems is None or amps is None else (elems, amps),
         )
 

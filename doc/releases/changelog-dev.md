@@ -639,6 +639,35 @@
 * The Phox module has been renamed to `tcdq` (Train Classical, Deploy Quantum) and now supports qudit systems of arbitrary dimension.
   [(#9745)](https://github.com/PennyLaneAI/pennylane/pull/9745)
 
+* The `tcdq` module is now built around a `TCDQSimulator` abstract base class, so that externally
+  defined simulators can reuse the existing loss functions and training loop. A simulator implements
+  `local_dims` and tags one or more estimator factories with the `estimator` decorator, declaring the
+  `ObservableAlgebra` that fixes how observables are encoded and what the estimator returns.
+  `build_mmd_loss` and `build_qudit_mmd_loss` accept any `Estimator` declaring a compatible algebra,
+  and check that up front rather than failing inside a JIT trace.
+
+  ```python
+  import jax
+  from pennylane.labs.tcdq import IQPSimulator, MMDConfig, build_mmd_loss, create_local_gates
+
+  sim = IQPSimulator(
+      gates=create_local_gates(4, max_weight=2),
+      n_qubits=4,
+      n_samples=5000,
+      key=jax.random.PRNGKey(0),
+  )
+  loss_fn = build_mmd_loss(
+      sim.build_estimator("pauli_expval"), MMDConfig(bandwidth=1.0, n_ops=50)
+  )
+  ```
+
+  Estimators share the call contract `fn(params, observables, *, key=None)` returning
+  `(values, uncertainty)`, where `params` is an arbitrary pytree. A simulator with a `phase_fn` takes
+  the pair `(gate_params, phase_params)`, so no parameterization needs a keyword argument of its own.
+  `CircuitConfig`, `QuditCircuitConfig`, `build_expval_func`, `build_qudit_expval_func` and
+  `mmd_loss` remain as compatibility shims and will be removed.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
 * Added a factory :func:`~.labs.transforms.make_crz_to_phase_gradient_decomp` for phase gradient
   decompositions of :class:`~.CRZ`, as described
   [in the compilation hub](https://pennylane.ai/compilation/phase-gradient/c-control-rotations).

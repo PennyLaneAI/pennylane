@@ -40,7 +40,6 @@ estimate a circuit property for a batch of observables.
     ~QuditIQPSimulator
     ~estimator
     ~Estimator
-    ~EstimatorSpec
     ~ObservableAlgebra
 
 Loss functions
@@ -363,8 +362,7 @@ observables are encoded and what the estimator returns.
        def _build_pauli_expval(self):
            precomputed = expensive_setup(self._n_qubits)
 
-           def expval(params, observables, *, key=None, n_samples=None,
-                      phase_params=None):
+           def expval(params, observables, *, key=None):
                # returns (values, variances), both shape (n_obs,)
                return my_estimate(params, observables, precomputed)
 
@@ -377,7 +375,6 @@ its estimator can be passed straight to :func:`~build_mmd_loss`.
 
 from .base import (
     Estimator,
-    EstimatorSpec,
     ObservableAlgebra,
     TCDQSimulator,
     estimator,
@@ -408,7 +405,6 @@ __all__ = [
     "QuditIQPSimulator",
     "estimator",
     "Estimator",
-    "EstimatorSpec",
     "ObservableAlgebra",
     "MMDConfig",
     "QuditMMDConfig",
