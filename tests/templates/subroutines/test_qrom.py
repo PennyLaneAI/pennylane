@@ -320,12 +320,28 @@ class TestQROM:
     )
     @pytest.mark.parametrize("rule", qp.list_decomps(qp.QROM))
     def test_decomposition_new(
-        self, num_bitstrings, control_wires, target_wires, work_wires, clean, rule, seed
+        self, num_bitstrings, control_wires, target_wires, work_wires, clean, rule, seed, request
     ):  # pylint: disable=too-many-arguments
         """Tests the decomposition rule implemented with the new system."""
         rng = np.random.default_rng(seed)
-        if rule == qp.list_decomps(qp.QROM)[0] and qp.capture.enabled():
-            pytest.xfail("Select does not work correctly with capture enabled yet.")
+        # Check whether we have a power of two. If not and depth> 1,
+        # Select will fail due to usage of Identity.
+        power_of_two = num_bitstrings == 1 << (num_bitstrings.bit_length() - 1)
+        _, _, depth = _calculate_select_swap_sizes(
+            terms=num_bitstrings,
+            num_control_wires=len(control_wires),
+            num_target_wires=len(target_wires),
+            num_work_wires=len(work_wires),
+        )
+        will_use_identity = not power_of_two and depth > 1
+        if rule == qp.list_decomps(qp.QROM)[0] and qp.capture.enabled() and will_use_identity:
+            # xfail only has the strict kwarg when used as a marker.
+            request.node.add_marker(
+                pytest.mark.xfail(
+                    reason="Select does not work correctly with capture enabled yet.", strict=True
+                )
+            )
+
         bitstrings = rng.integers(0, 2, size=(num_bitstrings, len(target_wires)))
         op = qp.QROM(
             bitstrings,
