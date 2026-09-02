@@ -427,7 +427,7 @@
   chose.
   [(#10084)](https://github.com/PennyLaneAI/pennylane/pull/10084)
   [(#10102)](https://github.com/PennyLaneAI/pennylane/pull/10102)
-  [(#XXXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXXX)
+  [(#10105)](https://github.com/PennyLaneAI/pennylane/pull/10105)
 
   ```pycon
   >>> op = qp.SumOfSlatersPrep(qp.typing.Complex[16], wires=range(8))
