@@ -74,8 +74,8 @@ def adjoint(fn, lazy=True):
 
         This function supports a batched operator:
 
-        >>> op = qp.adjoint(qp.RX([1, 2, 3], wires=0))
-        >>> qp.matrix(op).shape
+        >>> op = qp.adjoint(qp.RX([1, 2, 3], wires=0))  # doctest: +SKIP
+        >>> qp.matrix(op).shape  # doctest: +SKIP
         (3, 2, 2)
 
         But it doesn't support batching of operators:
@@ -96,8 +96,8 @@ def adjoint(fn, lazy=True):
     ... def circuit2(y):
     ...     qp.adjoint(qp.RY(y, wires=0))
     ...     return qp.expval(qp.Z(0))
-    >>> print(qp.draw(circuit2)("y"))
-    0: ──RY(y)†─┤  <Z>
+    >>> print(qp.draw(circuit2)(0.1))
+    0: ──RY(0.10)†─┤  <Z>
     >>> print(qp.draw(circuit2, level="device")(0.1))
     0: ──RY(0.10)†─┤  <Z>
 
@@ -326,7 +326,7 @@ class Adjoint(SymbolicOp):
         >>> isinstance(op, AdjointOperation)
         True
         >>> op.grad_method
-        'A'
+        <GradMethod.ANALYTIC: 'A'>
 
     """
 
@@ -415,7 +415,7 @@ class Adjoint(SymbolicOp):
         if self.base.has_adjoint:
             return [self.base.adjoint()]
         base_decomp = self.base.decomposition()
-        return [Adjoint(op) for op in reversed(base_decomp)]
+        return [qp.adjoint(op) for op in reversed(base_decomp)]
 
     def eigvals(self):
         # Cannot define ``compute_eigvals`` because Hermitian only defines ``eigvals``

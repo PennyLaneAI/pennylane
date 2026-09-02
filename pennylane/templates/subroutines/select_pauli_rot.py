@@ -15,23 +15,25 @@ r"""
 Contains the SelectPauliRot template.
 """
 
-from pennylane import math
-from pennylane.core.operator import Operation, abstractify
-from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
+from functools import partial
+
+from pennylane import capture, math
+from pennylane.core.operator import Operator2, abstractify
 from pennylane.decomposition import (
     add_decomps,
     change_op_basis_resource_rep,
     register_resources,
     resource_rep,
 )
-from pennylane.ops import CNOT, RZ, Hadamard, S, adjoint, change_op_basis, prod
+from pennylane.ops import CNOT, RZ, Hadamard, S, adjoint, change_op_basis
 from pennylane.ops.op_math import Prod
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.templates.state_preparations.mottonen import _apply_uniform_rotation_dagger
+from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 
 
-class SelectPauliRot(Operation):
+class SelectPauliRot(Operator2):
     r"""Applies individual single-qubit Pauli rotations depending on the state of
     designated control qubits.
 
@@ -95,18 +97,18 @@ class SelectPauliRot(Operation):
      0.    +0.j 0.    +0.j]
     """
 
+    dynamic_argnames = ("angles",)
+    wire_argnames = ("control_wires", "target_wire")
+    compilable_argnames = ("rot_axis",)
+
+    arg_specs = {"angles": Float[-1], "control_wires": Wire[-1], "target_wire": Wire[1]}
+
     grad_method = None
     ndim_params = (1,)
-
-    resource_keys = {"num_wires", "rot_axis"}
 
     def __init__(
         self, angles, control_wires, target_wire, rot_axis="Z"
     ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
-
-        self.hyperparameters["control_wires"] = Wires(control_wires)
-        self.hyperparameters["target_wire"] = Wires(target_wire)
-        self.hyperparameters["rot_axis"] = rot_axis
 
         if math.shape(angles)[-1] != 2 ** len(control_wires):
             raise ValueError("Number of angles must be 2^(len(control_wires))")
@@ -114,79 +116,19 @@ class SelectPauliRot(Operation):
         if rot_axis not in ["X", "Y", "Z"]:
             raise ValueError("'rot_axis' can only take the values 'X', 'Y' and 'Z'.")
 
-        if len(self.hyperparameters["target_wire"]) != 1:
+        if len(Wires(target_wire)) != 1:
             raise ValueError("Only one target wire can be specified")
 
-        all_wires = self.hyperparameters["control_wires"] + self.hyperparameters["target_wire"]
-        super().__init__(angles, wires=all_wires)
-
-    def _flatten(self):
-        metadata = tuple((key, value) for key, value in self.hyperparameters.items())
-        return self.data, metadata
-
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        hyperparams_dict = dict(metadata)
-        return cls(*data, **hyperparams_dict)
-
-    @property
-    def resource_params(self) -> dict:
-        return {"rot_axis": self.hyperparameters["rot_axis"], "num_wires": len(self.wires)}
-
-    def map_wires(self, wire_map: dict):
-        """Map the control and target wires using the provided wire map."""
-        new_dict = {
-            key: [wire_map.get(w, w) for w in self.hyperparameters[key]]
-            for key in ["control_wires", "target_wire"]
-        }
-        return SelectPauliRot(
-            self.parameters[0],
-            new_dict["control_wires"],
-            new_dict["target_wire"],
-            rot_axis=self.hyperparameters["rot_axis"],
+        super().__init__(
+            angles, control_wires=control_wires, target_wire=target_wire, rot_axis=rot_axis
         )
 
-    # pylint: disable=arguments-differ
-    @classmethod
-    def _primitive_bind_call(cls, angles, control_wires, target_wire, **kwargs):
-        wires = [*control_wires, target_wire]
-        return super()._primitive_bind_call(angles, wires=wires, **kwargs)
 
-    def decomposition(self):
-        """Return the operator's decomposition using its parameters and hyperparameters."""
-        return self.compute_decomposition(self.parameters[0], **self.hyperparameters)
+# pylint: disable-next=unused-argument
+def _select_pauli_rot_resource(angles, control_wires, target_wire, rot_axis):
 
-    # pylint: disable=arguments-differ
-    @staticmethod
-    def compute_decomposition(angles, control_wires, target_wire, rot_axis):
-        r"""
-        Computes the decomposition operations for the given state vector.
+    num_wires = len(control_wires) + 1
 
-        Args:
-            angles (tensor_like): The rotation angles to be applied.
-            control_wires (Sequence[int]): The control qubits used to select the rotation.
-            target_wire (Sequence[int]): The wire where the rotations are applied.
-            rot_axis (str): The axis around the rotation is performed.
-                It can take the value ``X``, ``Y`` or ``Z``. Default is ``Z``.
-
-        Returns:
-            list: List of decomposition operations.
-        """
-
-        control_wires = Wires(control_wires)
-        target_wire = Wires(target_wire)
-
-        with AnnotatedQueue() as q:
-            decompose_select_pauli_rot(angles, control_wires + target_wire, rot_axis)
-
-        if QueuingManager.recording():
-            for op in q.queue:
-                apply(op)
-
-        return q.queue
-
-
-def _select_pauli_rot_resource(num_wires, rot_axis):
     prod_res = {
         abstractify(RZ): 2 ** (num_wires - 1),
         abstractify(CNOT): 2 ** (num_wires - 1) if num_wires > 1 else 0,
@@ -213,32 +155,50 @@ def _select_pauli_rot_resource(num_wires, rot_axis):
 
 # Not exact resources because rotations might be skipped based on angles
 @register_resources(_select_pauli_rot_resource, exact=False)
-def decompose_select_pauli_rot(angles, wires, rot_axis, **__):
+def decompose_select_pauli_rot(angles, control_wires, target_wire, rot_axis):
     r"""Decomposes the SelectPauliRot"""
+
+    wires = Wires(control_wires) + Wires(target_wire)
+
+    if capture.enabled():
+        wires = math.array(wires, like="jax")
 
     match rot_axis:
         case "X":
             change_op_basis(
                 Hadamard(wires[-1]),
-                prod(_apply_uniform_rotation_dagger)(RZ, angles, wires[-2::-1], wires[-1]),
+                partial(
+                    _apply_uniform_rotation_dagger,
+                    gate=RZ,
+                    alpha=angles,
+                    control_wires=wires[-2::-1],
+                    target_wire=wires[-1],
+                ),
                 Hadamard(wires[-1]),
             )
         case "Y":
+
+            def compute(wires):
+                adjoint(S(wires[-1]))
+                Hadamard(wires[-1])
+
+            def uncompute(wires):
+                Hadamard(wires[-1])
+                S(wires[-1])
+
             change_op_basis(
-                Hadamard(wires[-1]) @ adjoint(S(wires[-1])),
-                prod(_apply_uniform_rotation_dagger)(RZ, angles, wires[-2::-1], wires[-1]),
-                S(wires[-1]) @ Hadamard(wires[-1]),
+                partial(compute, wires=wires),
+                partial(
+                    _apply_uniform_rotation_dagger,
+                    gate=RZ,
+                    alpha=angles,
+                    control_wires=wires[-2::-1],
+                    target_wire=wires[-1],
+                ),
+                partial(uncompute, wires=wires),
             )
         case "Z":
             _apply_uniform_rotation_dagger(RZ, angles, wires[-2::-1], wires[-1])
 
 
 add_decomps(SelectPauliRot, decompose_select_pauli_rot)
-
-# pylint: disable=protected-access
-if SelectPauliRot._primitive is not None:
-
-    @SelectPauliRot._primitive.def_impl
-    def _(*args, n_wires, **kwargs):
-        (angles,), (*control_wires, target_wire) = args[:-n_wires], args[-n_wires:]
-        return type.__call__(SelectPauliRot, angles, control_wires, target_wire, **kwargs)

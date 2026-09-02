@@ -28,9 +28,9 @@ def uniform_prep_ops(n_states, target_wires, work_wires):
 
         \frac{1}{\sqrt{n_\text{states}}} \sum_{i=0}^{n_\text{states}-1} |i\rangle
 
-    Uses ``Hadamard`` gates when ``n_states`` is a power of two, otherwise the
-    amplitude-amplification circuit of `arXiv:1805.03662
-    <https://arxiv.org/abs/1805.03662>`_ (Figure 12).
+    Applies a layer of Hadamard gates when ``n_states`` is a power of two.
+    Otherwise, uses the amplitude-amplification circuit described in
+    Figure 12 of `arXiv:1805.03662 <https://arxiv.org/abs/1805.03662>`_.
 
     Args:
         n_states (int): the number of states to prepare.
@@ -58,7 +58,7 @@ def uniform_prep_ops(n_states, target_wires, work_wires):
     if L == 1:
         return
 
-    expected_work = 1 + max(logL - 1, 1)
+    expected_work = logL  # flag + (logL - 1) comparator scratch
     if len(work_wires) < expected_work:
         raise ValueError(
             f"work_wires must have at least {expected_work} wires for n_states={n_states} "
@@ -91,7 +91,7 @@ def _build_alias_tables(probs, mu):
     O(L) iterative matching (Walker/Vose) for the coherent alias sampling of
     `arXiv:1805.03662 <https://arxiv.org/abs/1805.03662>`_. Returns integers
     :math:`\mathrm{alt}_\ell \in [0, L)` and :math:`\mathrm{keep}_\ell \in [0, 2^\mu)`
-    satisfying the normalization constraint (Eq. requirekl):
+    satisfying the normalization constraint (Eq. 39):
 
     .. math::
 
@@ -113,8 +113,9 @@ def _build_alias_tables(probs, mu):
         constraint above and capping at :math:`2^\mu - 1` is exact.
     """
     probs = np.asarray(probs, dtype=float)
-    if np.any(probs < 0):
-        raise ValueError("probs must be non-negative")
+    if np.any(probs < 0) or not np.all(np.isfinite(probs)):
+        raise ValueError("probs must be non-negative and finite")
+
     L = len(probs)
 
     total = probs.sum()
@@ -163,15 +164,16 @@ def alias_sampling_wires(n_states, mu):
         * ``temp_wires`` (``3*mu + ceil(log2 L)``): sigma + alt + keep + flag +
           comparator scratch (``mu - 1`` wires that the comparator leaves dirty);
           left entangled with ``|l>`` and uncomputed by :math:`prepare^{\dagger}`.
-        * ``work_wires`` (``1+max(log(L) - 1, 1)``): minimum clean
-          scratch (UNIFORM_L flag + work, reused by QROM), returned to
-          :math:`|0\rangle`.
+        * ``work_wires`` (``ceil(log2 L) - k``, where ``k`` is the number of trailing
+          zero bits of ``L``): minimum clean scratch, returned to :math:`|0\rangle`. Only the odd part ``L / 2**k``
+          needs amplitude amplification, so this is zero whenever ``L`` is a power
+          of two.
 
     .. note::
 
         The reported ``work_wires`` is the minimum required by :func:`alias_sampling`.
         More work_wires can be added to be forwarded to the internal
-        ``qml.QROM``, which uses them for a ``SelectSwap`` decomposition that lowers
+        ``qp.QROM``, which uses them for a ``SelectSwap`` decomposition that lowers
         the T-gate count at the cost of the additional qubits. At exactly the
         minimum, ``QROM`` uses its unary decomposition (more T-gates, fewer qubits).
         ``target_wires`` and ``temp_wires`` are exact and must be matched exactly.
@@ -185,7 +187,11 @@ def alias_sampling_wires(n_states, mu):
     n_target = logL
     # sigma(mu) + alt(logL) + keep(mu) + flag(1) + comparator scratch(mu-1)
     n_temp = mu + logL + mu + 1 + max(mu - 1, 0)
-    n_work = 1 + max(logL - 1, 1)
+
+    # uniform_prep_ops only amplifies the odd part L of n_states = 2**k * L, which
+    # costs ceil_log2(L) = logL - k wires (zero when n_states is a power of two).
+    k = (n_states & -n_states).bit_length() - 1
+    n_work = logL - k
     return {"target_wires": n_target, "temp_wires": n_temp, "work_wires": n_work}
 
 
@@ -212,7 +218,7 @@ def alias_sampling(probs, mu, target_wires, temp_wires, work_wires):
 
         ``temp_wires`` come out entangled with ``|l>`` (the "temp" register of the
         paper) and are not returned to :math:`|0\rangle`. In a prepare/select/prepare
-        pattern, ``qml.adjoint(alias_sampling)`` (``prepare``-dagger) uncomputes
+        pattern, ``qp.adjoint(alias_sampling)`` (``prepare``-dagger) uncomputes
         them. ``work_wires`` are returned to :math:`|0\rangle` and may be reused.
 
     Args:
@@ -222,6 +228,27 @@ def alias_sampling(probs, mu, target_wires, temp_wires, work_wires):
         temp_wires (Sequence[int]): the garbage register (sigma + alt + keep + flag +
             comparator scratch), left entangled; size ``3*mu + ceil(log2 L)``.
         work_wires (Sequence[int]): clean scratch, returned to :math:`|0\rangle`.
+
+    **Example**
+
+    .. code-block:: python
+
+        probs = np.array([0.1, 0.2, 0.3, 0.4])
+        mu = 4
+
+        req = qp.labs.templates.alias_sampling_wires(len(probs), mu)
+        n_wires = sum(req.values())
+        target_wires, temp_wires, work_wires = np.split(
+            np.arange(n_wires), np.cumsum([req["target_wires"], req["temp_wires"]])
+        )
+
+        @qp.qnode(qp.device("default.qubit", wires=n_wires))
+        def circuit():
+            qp.labs.templates.alias_sampling(probs, mu, target_wires, temp_wires, work_wires)
+            return qp.probs(wires=target_wires)
+
+    >>> print(np.round(circuit(), 3))
+    [0.094 0.203 0.297 0.406]
 
     """
     probs = np.asarray(probs, dtype=float)
@@ -250,6 +277,11 @@ def alias_sampling(probs, mu, target_wires, temp_wires, work_wires):
             f"work_wires must have at least {req['work_wires']} entries for L={L}, mu={mu}; "
             f"got {len(work_wires)}."
         )
+
+    all_wires = list(target_wires) + list(temp_wires) + list(work_wires)
+    if len(set(all_wires)) != len(all_wires):
+        raise ValueError("target_wires, temp_wires and work_wires must be disjoint.")
+
 
     # Split temp_wires: sigma (mu), alt (logL), keep (mu), flag (1),
     # comparator scratch (mu-1).

@@ -15,6 +15,8 @@
 Tests for the SemiAdder template.
 """
 
+from functools import partial
+
 import pytest
 
 import pennylane as qp
@@ -23,7 +25,10 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arithmetic.semi_adder import _controlled_semi_adder
 
 
-@pytest.mark.jax
+@pytest.mark.pl2do(
+    reason="PL 2.0: blocked on supporting wires as arguments to captured workflows [sc-127789]."
+)
+@pytest.mark.capture
 def test_standard_validity_SemiAdder():
     """Check the operation using the assert_valid function."""
     x_wires = [0, 1, 2]
@@ -54,6 +59,14 @@ class TestSemiAdder:
             ([0, 1, 2], [3, 4, 5, 6], [7, 8, 9], 6, 5),
             ([0], [3, 4, 5, 6], [7, 8, 9], 1, 5),
             ([0, 1, 2, 3, 4], [5, 6], [7], 11, 2),
+            # work_wires are optional: the missing ones are allocated dynamically
+            ([0, 1], [2, 3, 4], [5], 3, 2),
+            ([0, 1, 2], [3, 4, 5], [6], 5, 6),
+            ([0, 1], [2, 3], None, 2, 0),
+            ([0, 1], [2, 3, 4], None, 3, 2),
+            ([0, 1, 2], [3, 4, 5], None, 5, 6),
+            ([0, 1, 2, 3, 4], [5, 6], None, 11, 2),
+            (["a", "b", "d"], ["e", "h", "p"], None, 4, 2),
             (["a", "b", "d"], ["e", "h", "p"], ["f", "z"], 4, 2),
             (["a", "b", "d"], ["e", "h", "p"], ["f", "z", "u", "q"], 4, 2),
             (["a", "b", "d"], ["e", "h", "p"], ["f", "z", "u", "q", "v"], 4, 2),
@@ -68,8 +81,10 @@ class TestSemiAdder:
         @qp.set_shots(1)
         @qp.qnode(dev)
         def circuit(x, y):
-            qp.BasisEmbedding(x, wires=x_wires)
-            qp.BasisEmbedding(y, wires=y_wires)
+            x_bin = qp.math.int_to_binary(x, len(x_wires))
+            y_bin = qp.math.int_to_binary(y, len(y_wires))
+            qp.BasisEmbedding(x_bin, wires=x_wires)
+            qp.BasisEmbedding(y_bin, wires=y_wires)
             qp.SemiAdder(x_wires, y_wires, work_wires)
             return qp.sample(wires=y_wires), qp.probs(wires=work_wires)
 
@@ -94,32 +109,26 @@ class TestSemiAdder:
             (
                 [0, 1, 2],
                 [3, 4, 5],
-                [1],
-                "At least 2 work_wires should be provided.",
-            ),
-            (
-                [0, 1, 2],
-                [3, 4, 5],
                 [1, 6],
-                "None of the wires in work_wires should be included in x_wires.",
+                "x_wires and work_wires must not overlap",
             ),
             (
                 [0, 1, 2],
                 [3, 4, 5],
                 [3, 6],
-                "None of the wires in work_wires should be included in y_wires.",
+                "y_wires and work_wires must not overlap",
             ),
             (
                 [1],
                 [0],
                 [0],
-                "None of the wires in work_wires should be included in y_wires.",
+                "y_wires and work_wires must not overlap",
             ),
             (
                 [0, 1, 2],
                 [2, 3, 4, 5],
                 [6, 7, 8],
-                "None of the wires in y_wires should be included in x_wires.",
+                "x_wires and y_wires must not overlap",
             ),
         ],
     )
@@ -149,6 +158,8 @@ class TestSemiAdder:
         assert names.count("Adjoint(TemporaryAND)") == 4
         assert names.count("CNOT") == 21
 
+    # work_wires=None checks the decomposition that allocates work wires dynamically
+    @pytest.mark.parametrize("work_wires", [[9, 10, 11], None])
     @pytest.mark.parametrize(
         ("x_wires"),
         [
@@ -157,14 +168,49 @@ class TestSemiAdder:
             [0, 1, 2, 3],
         ],
     )
-    def test_decomposition_rule(self, x_wires):
+    def test_decomposition_rule(self, x_wires, work_wires):
         """Tests that SemiAdder is decomposed properly."""
 
         for rule in qp.list_decomps(qp.SemiAdder):
-            _test_decomposition_rule(
-                qp.SemiAdder(x_wires, [5, 6, 7, 8], [9, 10, 11]),
-                rule,
-            )
+            _test_decomposition_rule(qp.SemiAdder(x_wires, [5, 6, 7, 8], work_wires), rule)
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize("work_wires", [[9, 10, 11], None])
+    @pytest.mark.parametrize(
+        ("x_wires"),
+        [
+            [0, 1, 2],
+            [0, 1],
+            [0, 1, 2, 3],
+        ],
+    )
+    def test_decomposition_rule_capture(self, x_wires, work_wires):
+        """Tests that SemiAdder is decomposed properly with program capture enabled."""
+
+        for rule in qp.list_decomps(qp.SemiAdder):
+            _test_decomposition_rule(qp.SemiAdder(x_wires, [5, 6, 7, 8], work_wires), rule)
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize(
+        "wire_lens",
+        [
+            {"x_wires": 3, "y_wires": 3, "work_wires": 2},  # all work wires provided
+            {"x_wires": 3, "y_wires": 4, "work_wires": 1},  # some work wires allocated
+            {"x_wires": 3, "y_wires": 3, "work_wires": 0},  # all work wires allocated
+            {"x_wires": 2, "y_wires": 1, "work_wires": 0},  # single y wire
+        ],
+    )
+    def test_decomposition_rule_capture_dynamic_wires(self, wire_lens):
+        """Test that the decomposition rules of SemiAdder can be captured with dynamic wires."""
+        import jax
+
+        registers = qp.registers(wire_lens)
+        kwargs = {name: qp.math.array(wires, like="jax") for name, wires in registers.items()}
+        for rule in qp.list_decomps(qp.SemiAdder):
+            if not rule.is_applicable(**kwargs):
+                continue
+            # pylint: disable-next=protected-access
+            jax.make_jaxpr(qp.capture.subroutine(rule._impl))(**kwargs)
 
     @pytest.mark.jax
     def test_jit_compatible(self):
@@ -185,8 +231,10 @@ class TestSemiAdder:
         @qp.set_shots(1)
         @qp.qnode(dev)
         def circuit():
-            qp.BasisEmbedding(x, wires=x_wires)
-            qp.BasisEmbedding(y, wires=y_wires)
+            x_bin = qp.math.int_to_binary(x, len(x_wires))
+            y_bin = qp.math.int_to_binary(y, len(y_wires))
+            qp.BasisEmbedding(x_bin, wires=x_wires)
+            qp.BasisEmbedding(y_bin, wires=y_wires)
             qp.SemiAdder(x_wires, y_wires, work_wires)
             return qp.sample(wires=y_wires)
 
@@ -222,6 +270,11 @@ class TestSemiAdder:
             ([0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 12, 13], [11], 3, 4, [0]),
             ([0], [1], None, [2], 1, 1, [1]),
             ([0], [1], None, [2], 1, 1, [0]),
+            # work_wires are optional: when not provided, they are allocated dynamically
+            ([0, 1], [2, 3], None, [4], 3, 1, [1]),
+            ([0, 1], [2, 3], None, [4], 3, 1, [0]),
+            ([0, 1, 2], [3, 4, 5], None, [6], 5, 6, [1]),
+            ([0, 1, 2], [3, 4, 5], None, [6, 7], 5, 6, [1, 0]),
             ([1, 2], [3, 4], [5, 6, 7], [0, 8], 3, 0, [0, 1]),
             ([3], [0, 1, 2], [6, 7], [8, 4], 1, 0, [1, 1]),
             ([3], [0, 1, 2], [6, 7, 9, 10], [8, 4, 5], 1, 0, [1, 0, 1]),
@@ -264,9 +317,12 @@ class TestSemiAdder:
         @qp.set_shots(1)
         @qp.qnode(dev)
         def circuit(c_value):
-            qp.BasisState(x_value, x_wires)
-            qp.BasisState(y_value, y_wires)
-            qp.BasisState(c_value, control_wires)
+            x_value_bin = qp.math.int_to_binary(x_value, len(x_wires))
+            y_value_bin = qp.math.int_to_binary(y_value, len(y_wires))
+            c_value_bin = qp.math.int_to_binary(c_value, len(control_wires))
+            qp.BasisState(x_value_bin, x_wires)
+            qp.BasisState(y_value_bin, y_wires)
+            qp.BasisState(c_value_bin, control_wires)
             _controlled_semi_adder(
                 op, control_wires, control_values, work_wires_ctrl, work_wire_type="zeroed"
             )
@@ -292,3 +348,36 @@ class TestSemiAdder:
                 assert output[:-1] == expected_output[:-1]
             else:
                 assert output == expected_output
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize(
+        "wire_lens",
+        [
+            {"control": 1, "x_wires": 3, "y_wires": 3, "work_wires": 2},  # all work wires provided
+            {
+                "control": 2,
+                "x_wires": 3,
+                "y_wires": 4,
+                "work_wires": 1,
+            },  # some work wires allocated
+            {"control": 3, "x_wires": 3, "y_wires": 3, "work_wires": 0},  # all work wires allocated
+            {"control": 2, "x_wires": 2, "y_wires": 1, "work_wires": 0},  # single y wire
+        ],
+    )
+    def test_ctrl_decomposition_rule_capture_dynamic_wires(self, wire_lens):
+        """Test that the decomposition rules of C(SemiAdder) can be captured with dynamic wires."""
+        import jax
+        from jax import numpy as jnp
+
+        registers = qp.registers(wire_lens)
+        control_wires = qp.math.array(registers.pop("control"), like="jax")
+        base = qp.SemiAdder(**registers)
+        ctrl_kwargs = {
+            "control_wires": control_wires,
+            "control_values": jnp.zeros(len(control_wires)),
+        }
+        for rule in qp.list_decomps("C(SemiAdder)"):
+            if not rule.is_applicable(base=base, **ctrl_kwargs):
+                continue
+            # pylint: disable-next=protected-access
+            jax.make_jaxpr(qp.capture.subroutine(partial(rule._impl, base=base)))(**ctrl_kwargs)

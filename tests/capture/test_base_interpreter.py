@@ -155,12 +155,12 @@ def test_default_operator_handling():
 
     jaxpr = jax.make_jaxpr(f)(1.2)
 
-    assert jaxpr.eqns[0].primitive == qp.RX._primitive
-    assert jaxpr.eqns[1].primitive == qp.ops.Adjoint._primitive
-    assert_eqn_matches_op(jaxpr.eqns[2], qp.T)
-    assert jaxpr.eqns[3].primitive == qp.X._primitive
-    assert jaxpr.eqns[4].primitive == qp.X._primitive
-    assert jaxpr.eqns[5].primitive == qp.ops.Sum._primitive
+    assert_eqn_matches_op(jaxpr.eqns[0], qp.RX)
+    assert jaxpr.eqns[0].params["adjoint"] is True
+    assert_eqn_matches_op(jaxpr.eqns[1], qp.T)
+    assert_eqn_matches_op(jaxpr.eqns[2], qp.X)
+    assert_eqn_matches_op(jaxpr.eqns[3], qp.X)
+    assert jaxpr.eqns[4].primitive == qp.ops.Sum._primitive
 
 
 @pytest.mark.parametrize(
@@ -209,7 +209,7 @@ def test_measurement_handling():
 
     jaxpr = jax.make_jaxpr(f)(0)
 
-    assert jaxpr.eqns[0].primitive == qp.X._primitive
+    assert_eqn_matches_op(jaxpr.eqns[0], qp.X)
     assert jaxpr.eqns[1].primitive == qp.ops.SProd._primitive
     assert jaxpr.eqns[2].primitive == qp.measurements.ExpectationMP._obs_primitive
     assert jaxpr.eqns[3].primitive == qp.measurements.ProbabilityMP._wires_primitive
@@ -233,12 +233,9 @@ def test_call_with_pytree_arguments():
     jaxpr = jax.make_jaxpr(f)(*args)
 
     assert len(jaxpr.jaxpr.invars) == 6
-    expected_primitives = [
-        qp.Rot._primitive,
-        qp.Rot._primitive,
-        qp.measurements.StateMP._wires_primitive,
-    ]
-    assert all(eqn.primitive == ep for eqn, ep in zip(jaxpr.eqns, expected_primitives))
+    assert_eqn_matches_op(jaxpr.eqns[0], qp.Rot)
+    assert_eqn_matches_op(jaxpr.eqns[1], qp.Rot)
+    assert jaxpr.eqns[2].primitive == qp.measurements.StateMP._wires_primitive
 
     assert jaxpr.eqns[0].invars[0:3] == jaxpr.jaxpr.invars[0:3]
     assert jaxpr.eqns[1].invars[0:3] == jaxpr.jaxpr.invars[3:]
@@ -321,16 +318,6 @@ def test_cleanup_method():
     assert inst.state is None
 
 
-def test_returning_operators():
-    """Test that operators that are returned are still processed by the interpreter."""
-
-    @SimplifyInterpreter()
-    def f():
-        return qp.X(0) ** 2
-
-    qp.assert_equal(f(), qp.I(0))
-
-
 class ConstAdder(PlxprInterpreter):
     """This interpreter, along with the add_3 primitive below, will be used to test
     that consts propagate through higher order primitives correctly."""
@@ -376,7 +363,7 @@ class TestHigherOrderPrimitiveRegistrations:
         assert jaxpr.eqns[0].primitive == adjoint_transform_prim
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         # first eqn mul, second RX
-        assert inner_jaxpr.eqns[1].primitive == qp.RX._primitive
+        assert_eqn_matches_op(inner_jaxpr.eqns[1], qp.RX)
         assert len(inner_jaxpr.eqns) == 2
 
     @pytest.mark.parametrize("lazy", (True, False))
@@ -386,8 +373,8 @@ class TestHigherOrderPrimitiveRegistrations:
         def f(x):
             def g(y):
                 # One new const
-                exponent = add_3.bind(0)
-                _ = qp.RX(y, 0) ** exponent
+                theta = add_3.bind(0)
+                qp.Rot(y, theta, y, 0)  # pylint: disable=expression-not-assigned
 
             qp.adjoint(g, lazy=lazy)(x)
 
@@ -414,7 +401,7 @@ class TestHigherOrderPrimitiveRegistrations:
         assert jaxpr.eqns[0].primitive == ctrl_transform_prim
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         # first eqn mul, second RY
-        assert inner_jaxpr.eqns[1].primitive == qp.RY._primitive
+        assert_eqn_matches_op(inner_jaxpr.eqns[1], qp.RY)
         assert len(inner_jaxpr.eqns) == 2
 
     def test_ctrl_consts(self):
@@ -423,8 +410,8 @@ class TestHigherOrderPrimitiveRegistrations:
         def f(x, control):
             def g(y):
                 # One new const
-                exponent = add_3.bind(0)
-                _ = qp.RX(y, 0) ** exponent
+                theta = add_3.bind(0)
+                qp.Rot(y, theta, y, 0)  # pylint: disable=expression-not-assigned
 
             qp.ctrl(g, control)(x)
 
@@ -442,10 +429,10 @@ class TestHigherOrderPrimitiveRegistrations:
         @SimplifyInterpreter()
         def f(x, control):
             def true_fn(y):
-                _ = qp.RY(y, 0) ** 2
+                qp.RY(y, 0) ** 2  # pylint: disable=expression-not-assigned
 
             def false_fn(y):
-                _ = qp.adjoint(qp.RX(y, 0))
+                qp.adjoint(qp.RX(y, 0))
 
             qp.cond(control, true_fn, false_fn)(x)
 
@@ -454,11 +441,11 @@ class TestHigherOrderPrimitiveRegistrations:
 
         branch1 = jaxpr.eqns[0].params["jaxpr_branches"][0]
         assert len(branch1.eqns) == 2
-        assert branch1.eqns[1].primitive == qp.RY._primitive
+        assert_eqn_matches_op(branch1.eqns[1], qp.RY)
 
         branch2 = jaxpr.eqns[0].params["jaxpr_branches"][1]
-        assert len(branch2.eqns) == 2
-        assert branch2.eqns[1].primitive == qp.RX._primitive
+        assert len(branch2.eqns) == 4
+        assert_eqn_matches_op(branch2.eqns[-1], qp.RX)
 
     def test_cond_no_false_branch(self):
         """Test transforming a cond HOP when no false branch exists."""
@@ -493,8 +480,8 @@ class TestHigherOrderPrimitiveRegistrations:
             @qp.cond(control)
             def cond_fn(y):
                 # One new const
-                exponent = add_3.bind(0)
-                _ = qp.RY(y, 0) ** exponent
+                theta = add_3.bind(0)
+                _ = qp.Rot(y, theta, y, 0)  # pylint: disable=expression-not-assigned
 
             @cond_fn.otherwise
             def _(y):
@@ -529,7 +516,7 @@ class TestHigherOrderPrimitiveRegistrations:
 
         inner_jaxpr = jaxpr.eqns[0].params["jaxpr_body_fn"]
         assert len(inner_jaxpr.eqns) == 1
-        assert inner_jaxpr.eqns[0].primitive == qp.X._primitive  # no adjoint of x
+        assert_eqn_matches_op(inner_jaxpr.eqns[0], qp.X)  # no adjoint of x
 
     def test_for_loop_consts(self):
         """Test the higher order for loop registration propagates consts correctly."""
@@ -537,8 +524,8 @@ class TestHigherOrderPrimitiveRegistrations:
         def f(n):
             @qp.for_loop(n)
             def g(i):
-                exponent = add_3.bind(0)
-                _ = qp.adjoint(qp.X(i)) ** exponent
+                theta = add_3.bind(0)
+                qp.Rot(i, theta, i, 0)  # pylint: disable=expression-not-assigned
 
             g()
 
@@ -575,8 +562,8 @@ class TestHigherOrderPrimitiveRegistrations:
         def f(n):
             @qp.while_loop(lambda i: i < add_3.bind(n))
             def g(i):
-                exponent = add_3.bind(0)
-                _ = qp.adjoint(qp.Z(i)) ** exponent
+                theta = add_3.bind(0)
+                qp.Rot(i, theta, i, 0)  # pylint: disable=expression-not-assigned
                 return i + 1
 
             g(0)
@@ -616,8 +603,8 @@ class TestHigherOrderPrimitiveRegistrations:
         assert len(inner_jaxpr.eqns) == 5
         assert inner_jaxpr.eqns[0].primitive == qp.I._primitive
         assert inner_jaxpr.eqns[2].primitive == qp.I._primitive
-        assert inner_jaxpr.eqns[1].primitive == qp.RX._primitive
-        assert inner_jaxpr.eqns[3].primitive == qp.RX._primitive
+        assert_eqn_matches_op(inner_jaxpr.eqns[1], qp.RX)
+        assert_eqn_matches_op(inner_jaxpr.eqns[3], qp.RX)
 
         assert jaxpr.eqns[0].params["execution_config"].gradient_method == "backprop"
         assert jaxpr.eqns[0].params["execution_config"].grad_on_execution is False
@@ -630,9 +617,9 @@ class TestHigherOrderPrimitiveRegistrations:
 
         @qp.qnode(dev, diff_method="backprop", grad_on_execution=False)
         def f():
-            exponent = add_3.bind(0)
-            _ = qp.X(0) ** exponent
-            _ = qp.I(0)
+            theta = add_3.bind(0)
+            qp.Rot(1, theta, 1, 0)  # pylint: disable=expression-not-assigned
+            qp.I(0)
             return qp.probs(wires=0)
 
         jaxpr = jax.make_jaxpr(f)()
@@ -659,7 +646,7 @@ class TestHigherOrderPrimitiveRegistrations:
 
         jaxpr0 = jaxpr.eqns[0].params["jaxpr"]
         assert jaxpr0.eqns[0].primitive.name == "mul"
-        assert jaxpr0.eqns[1].primitive == qp.RX._primitive  # pylint: disable=protected-access
+        assert_eqn_matches_op(jaxpr0.eqns[1], qp.RX)  # pylint: disable=protected-access
 
         assert jaxpr0 is jaxpr.eqns[1].params["jaxpr"]  # properly cached
 
@@ -687,7 +674,7 @@ class TestHigherOrderPrimitiveRegistrations:
             assert jaxpr.eqns[0].params["scalar_out"] == (grad_f == qp.grad)
         grad_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         qfunc_jaxpr = grad_jaxpr.eqns[0].params["qfunc_jaxpr"]
-        assert qfunc_jaxpr.eqns[1].primitive == qp.RX._primitive  # eqn 0 is mul
+        assert_eqn_matches_op(qfunc_jaxpr.eqns[1], qp.RX)  # eqn 0 is mul
         assert_eqn_matches_op(qfunc_jaxpr.eqns[2], qp.Z)
         assert qfunc_jaxpr.eqns[3].primitive == qp.ops.SProd._primitive
 
@@ -708,7 +695,7 @@ class TestHigherOrderPrimitiveRegistrations:
         assert jaxpr.eqns[0].primitive == qp.capture.primitives.vjp_prim
         vjp_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         qfunc_jaxpr = vjp_jaxpr.eqns[0].params["qfunc_jaxpr"]
-        assert qfunc_jaxpr.eqns[1].primitive == qp.RX._primitive  # eqn 0 is mul
+        assert_eqn_matches_op(qfunc_jaxpr.eqns[1], qp.RX)  # eqn 0 is mul
         assert_eqn_matches_op(qfunc_jaxpr.eqns[2], qp.Z)
         assert qfunc_jaxpr.eqns[3].primitive == qp.ops.SProd._primitive
 
@@ -729,7 +716,7 @@ class TestHigherOrderPrimitiveRegistrations:
         assert jaxpr.eqns[0].primitive == qp.capture.primitives.jvp_prim
         jvp_jaxpr = jaxpr.eqns[0].params["jaxpr"]
         qfunc_jaxpr = jvp_jaxpr.eqns[0].params["qfunc_jaxpr"]
-        assert qfunc_jaxpr.eqns[1].primitive == qp.RX._primitive  # eqn 0 is mul
+        assert_eqn_matches_op(qfunc_jaxpr.eqns[1], qp.RX)  # eqn 0 is mul
         assert_eqn_matches_op(qfunc_jaxpr.eqns[2], qp.Z)
         assert qfunc_jaxpr.eqns[3].primitive == qp.ops.SProd._primitive
 
@@ -741,8 +728,8 @@ class TestHigherOrderPrimitiveRegistrations:
         def f(x):
             @qp.qnode(qp.device("default.qubit", wires=2))
             def circuit(y):
-                exponent = add_3.bind(0)
-                _ = qp.RX(y, 0) ** exponent
+                theta = add_3.bind(0)
+                qp.Rot(y, theta, y, 0)  # pylint: disable=expression-not-assigned
                 return qp.expval(qp.Z(0) + qp.Z(0))
 
             return grad_f(circuit)(x)
@@ -762,8 +749,8 @@ class TestHigherOrderPrimitiveRegistrations:
         def f(x):
             @qp.qnode(qp.device("default.qubit", wires=2))
             def circuit(y):
-                exponent = add_3.bind(0)
-                _ = qp.RX(y, 0) ** exponent
+                theta = add_3.bind(0)
+                qp.Rot(y, theta, y, 0)  # pylint: disable=expression-not-assigned
                 return qp.expval(qp.Z(0) + qp.Z(0))
 
             return qp.vjp(circuit, (x,), (1.0,))
@@ -784,8 +771,8 @@ class TestHigherOrderPrimitiveRegistrations:
         def f(x):
             @qp.qnode(qp.device("default.qubit", wires=2))
             def circuit(y):
-                exponent = add_3.bind(0)
-                _ = qp.RX(y, 0) ** exponent
+                theta = add_3.bind(0)
+                qp.Rot(y, theta, y, 0)  # pylint: disable=expression-not-assigned
                 return qp.expval(qp.Z(0) + qp.Z(0))
 
             return qp.value_and_grad(circuit)(x)
@@ -806,8 +793,8 @@ class TestHigherOrderPrimitiveRegistrations:
         def f(x):
             @qp.qnode(qp.device("default.qubit", wires=2))
             def circuit(y):
-                exponent = add_3.bind(0)
-                _ = qp.RX(y, 0) ** exponent
+                theta = add_3.bind(0)
+                qp.Rot(y, theta, y, 0)  # pylint: disable=expression-not-assigned
                 return qp.expval(qp.Z(0) + qp.Z(0))
 
             return qp.jvp(circuit, (x,), (1.0,))

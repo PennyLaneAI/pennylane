@@ -15,6 +15,8 @@
 Unit tests for the SelectPauliRot template.
 """
 
+import re
+
 import numpy as np
 
 # pylint: disable=too-many-arguments,too-few-public-methods
@@ -24,6 +26,7 @@ import pennylane as qp
 from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math import Prod
+from pennylane.typing import AbstractWires, Float
 
 
 def get_tape(angles, wires):
@@ -58,6 +61,43 @@ class TestSelectPauliRot:
         )
 
         qp.ops.functions.assert_valid(op)
+
+    @pytest.mark.parametrize(
+        ("angles", "control_wires", "target_wire", "rot_axis", "expected_error"),
+        [
+            (Float[4], [0, 1], 2, "X", None),  # should pass
+            (
+                Float[5],
+                [0, 1],
+                2,
+                "X",
+                "Number of angles must be 2^(len(control_wires))",
+            ),  # wrong number of angles
+            (
+                np.array([1.0, 2.0, 3.0, 4.0]),
+                [0, 1],
+                AbstractWires(2),
+                "Y",
+                "Only one target wire can be specified",
+            ),  # wrong number of target wires
+            (np.array([1.0, 2.0, 3.0, 4.0]), AbstractWires(2), 2, "Z", None),  # should pass
+            (
+                Float[4],
+                [0, 1],
+                AbstractWires(2),
+                "Q",
+                "'rot_axis' can only take the values 'X', 'Y' and 'Z'.",
+            ),  # invalid rot_axis
+        ],
+    )
+    def test_abstract_init(self, angles, control_wires, target_wire, rot_axis, expected_error):
+        """Tests creating abstract operators."""
+
+        if expected_error is not None:
+            with pytest.raises(ValueError, match=re.escape(expected_error)):
+                qp.SelectPauliRot(angles, control_wires, target_wire, rot_axis)
+        else:
+            qp.SelectPauliRot(angles, control_wires, target_wire, rot_axis)
 
     @pytest.mark.parametrize(
         ("angles", "rot_axis", "target_wire", "msg_match"),
@@ -175,6 +215,7 @@ class TestSelectPauliRot:
             for gate in dec[1::2]:
                 assert gate.name == "CNOT"
 
+    @pytest.mark.capture
     @pytest.mark.parametrize("n", [1, 2, 3, 4])
     @pytest.mark.parametrize("axis", "XYZ")
     def test_decomposition_new(self, n, axis):

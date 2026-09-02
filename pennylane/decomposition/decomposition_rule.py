@@ -27,7 +27,7 @@ from textwrap import dedent
 from typing import overload
 
 import pennylane as qp
-from pennylane.core import queuing
+from pennylane.core import QueuingManager, queuing
 from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.pytrees import flatten
 from pennylane.typing import AbstractArray, AbstractWires
@@ -293,22 +293,26 @@ def register_resources(
 
           import pennylane as qp
           from pennylane.allocation import allocate
-          from pennylane.decomposition import controlled_resource_rep
+          from pennylane.typing import Wire
 
           qp.decomposition.enable_graph()
 
-          def _ops_fn(num_control_wires, **_):
+          def _condition_fn(control_wires, **_):
+              return len(control_wires) > 1
+
+          def _ops_fn(control_wires, **_):
               return {
-                  controlled_resource_rep(qp.X, {}, num_control_wires): 2,
+                  qp.ctrl(qp.X(Wire[1]), control_wires): 2,
                   qp.CRot: 1
               }
 
-          @qp.register_condition(lambda num_control_wires, **_: num_control_wires > 1)
+          @qp.register_condition(_condition_fn)
           @qp.register_resources(ops=_ops_fn, work_wires={"zeroed": 1})
-          def _controlled_rot_decomp(*params, wires, **_):
+          def _controlled_rot_decomp(base, control_wires, **_):
+              wires = control_wires + base.wires
               with allocate(1, state="zero", restored=True) as work_wires:
                   qp.ctrl(qp.X(work_wires[0]), control=wires[:-1])
-                  qp.CRot(*params, wires=[work_wires[0], wires[-1]])
+                  qp.CRot(**base.dynamic_args, wires=[work_wires[0], wires[-1]])
                   qp.ctrl(qp.X(work_wires[0]), control=wires[:-1])
 
           decomps = {"C(Rot)": _controlled_rot_decomp}
@@ -391,6 +395,7 @@ class DecompositionRule:
     def __repr__(self):
         return f"DecompositionRule(name={self.name})"
 
+    @QueuingManager.stop_recording()
     def compute_resources(self, *args, **kwargs) -> Resources:
         """Computes the resources required to implement this decomposition rule."""
         if self._compute_resources is None:
@@ -591,7 +596,7 @@ _fixed_decomps_private = {}
 _fixed_decomps_var = ContextVar("_fixed_decomps", default=_fixed_decomps_private)
 
 
-def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> None:
+def add_decomps(op_type: type[Operator | Operator2] | str, *decomps: DecompositionRule) -> None:
     """Globally registers new decomposition rules with an operator class.
 
     .. note::
@@ -715,7 +720,7 @@ def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
     DecompositionRule(name=_crx_to_ppr)
     >>> print(qp.list_decomps(qp.CRX)[0])
     @register_resources(_crx_to_rx_cz_resources)
-    def _crx_to_rx_cz(phi: TensorLike, wires: WiresLike, **__):
+    def _crx_to_rx_cz(phi: TensorLike, wires: WiresLike):
         qp.RX(phi / 2, wires=wires[1])
         qp.CZ(wires=wires)
         qp.RX(-phi / 2, wires=wires[1])
@@ -1100,14 +1105,19 @@ def null_decomp(*_, **__):
     return
 
 
-def _is_abstract_and_fixed(val):
+def _is_abstract_and_fixed(val, is_leaf=False):
     """Checks whether `val` is (or only contains) abstract data of fixed shapes."""
     # We don't actually need to check whether val is abstract, since the Resources class
     # already abstractifies everything. We only need to make sure that it's fixed.
     if isinstance(val, (AbstractArray, AbstractWires)):
         return val.shape_fixed
-    leaves, _ = flatten(val, is_leaf=lambda op: isinstance(op, Wires))
-    return all(_is_abstract_and_fixed(leaf) for leaf in leaves)
+    if is_leaf:
+        # This branch is added as a precaution to avoid infinite recursion, but this should
+        # never actually happen, because we always call `abstractify` first to fully abstractify
+        # an operator, which should ensure that all pytree leaves are abstract.
+        return False  # return False if val is a non-abstract pytree leaf
+    leaves, _ = flatten(val, is_leaf=lambda l: isinstance(l, Wires))
+    return all(_is_abstract_and_fixed(leaf, is_leaf=True) for leaf in leaves)
 
 
 def _verify_is_abstract_and_fixed(op: AbstractOperatorLike):
@@ -1123,10 +1133,16 @@ def _verify_is_abstract_and_fixed(op: AbstractOperatorLike):
         )
 
 
+def _is_measurement(resource_op) -> bool:
+    """Whether a resource key represents a mid-circuit or Pauli-product measurement."""
+    op_type = (
+        resource_op.op_type if isinstance(resource_op, CompressedResourceOp) else type(resource_op)
+    )
+    return issubclass(op_type, (qp.ops.MidMeasure, qp.ops.PauliMeasure))
+
+
 def _decomp_contains_mcm(rule, params):
     if not rule.is_applicable(**params):
         return False
     resources = rule.compute_resources(**params).gate_counts
-    mcm = abstractify(qp.ops.MidMeasure)
-    ppm = abstractify(qp.ops.PauliMeasure)
-    return mcm in resources or ppm in resources
+    return any(_is_measurement(resource_op) for resource_op in resources)

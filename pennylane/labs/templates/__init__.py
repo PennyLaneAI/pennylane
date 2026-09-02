@@ -24,7 +24,6 @@ This module contains templates, which are pre-coded routines that can be used in
     ~SuperpositionTHC
     ~half_signed_out_multiplier
     ~SumOfSlatersPrep2
-    ~trotter_fragmented
     ~uniform_prep_ops
     ~alias_sampling
     ~alias_sampling_wires
@@ -37,6 +36,5 @@ from .left_quantum_comparator import LeftQuantumComparator
 from .superposition_thc import SuperpositionTHC
 from .half_signed_out_multiplier import half_signed_out_multiplier
 from .sum_of_slaters2 import SumOfSlatersPrep2
-from .trotter_fragmented import trotter_fragmented
 from .alias_sampling import uniform_prep_ops, alias_sampling, alias_sampling_wires
 from .one_body_walk import one_body_walk, one_body_walk_wires

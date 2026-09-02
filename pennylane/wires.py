@@ -20,12 +20,14 @@ import itertools
 import uuid
 from collections.abc import Hashable, Iterable, Sequence
 from importlib import import_module, util
+from itertools import combinations
 
 import numpy as np
 
 from pennylane import math
 from pennylane.exceptions import WireError
 from pennylane.pytrees import register_pytree
+from pennylane.typing import AbstractWires, _AbstractWireTypeFactory
 
 if util.find_spec("jax") is not None:
     jax = import_module("jax")
@@ -64,6 +66,9 @@ def _process(wires):
     if math.get_interface(wires) == "jax" and not math.is_abstract(wires):
         wires = tuple(wires.tolist() if wires.ndim > 0 else (wires.item(),))
 
+    if math.get_interface(wires) == "numpy" and hasattr(wires, "tolist") and wires.ndim == 0:
+        wires = wires.tolist()
+
     try:
         # Use tuple conversion as a check for whether `wires` can be iterated over.
         # Note, this is not the same as `isinstance(wires, Iterable)` which would
@@ -74,9 +79,15 @@ def _process(wires):
         # if not iterable, interpret as single wire label
         try:
             hash(wires)
-        except TypeError as e:
+        except TypeError as e:  # pragma: no cover
             # if object is not hashable, cannot identify unique wires
             # Check for unhashable type error - format changed in Python 3.14
+            # since this branch corresponds to a non-iterable and non-hashable object,
+            # and the only thing in Python that fits that description is an numpy array
+            # of a scalar, which we do have special handling for. This branch cannot be
+            # reasonably tested without making a convoluted example, which is probably
+            # not worth it, adding a pragma: no cover here
+            # pragma: no cover
             if "unhashable" in str(e):
                 raise WireError(f"Wires must be hashable; got object of type {type(wires)}.") from e
         return (wires,)
@@ -120,6 +131,16 @@ class Wires(Sequence):
     Args:
          wires (Any): the wire label(s)
     """
+
+    def __new__(cls, wires=None, _override=False):
+        if isinstance(wires, AbstractWires):
+            return wires
+        if isinstance(wires, _AbstractWireTypeFactory):
+            raise TypeError(
+                "'Wire' cannot be used on its own to represent a single wire, "
+                "Use 'Wire[1]' instead."
+            )
+        return super().__new__(cls)
 
     def _flatten(self):
         """Serialize Wires into a flattened representation according to the PyTree convention."""
@@ -214,6 +235,8 @@ class Wires(Sequence):
         >>> wires1 + wires2
         Wires([4, 0, 1, 2])
         """
+        if isinstance(other, AbstractWires):
+            return AbstractWires(len(self)) + other
         other = Wires(other)
         return Wires.all_wires([self, other])
 
@@ -226,6 +249,8 @@ class Wires(Sequence):
         Returns:
             Wires: all wires appearing in either object
         """
+        if isinstance(other, AbstractWires):
+            return AbstractWires(len(self)) + other
         other = Wires(other)
         return Wires.all_wires([other, self])
 
@@ -813,3 +838,17 @@ def is_abstract_qubit(v):
     if not jax_available:
         return False
     return math.is_abstract(v) and isinstance(v.val.aval, AbstractQubit)
+
+
+def _filter_abstract_and_traced_wires(v):
+    if isinstance(v, AbstractWires):
+        return Wires([])
+    return Wires([w for w in v if not math.is_abstract(w)])
+
+
+def validate_no_wire_overlaps(wire_args: dict):
+    """Validate that the given wires do not overlap."""
+    concrete_wire_args = {n: _filter_abstract_and_traced_wires(w) for n, w in wire_args.items()}
+    for n1, n2 in combinations(concrete_wire_args, r=2):
+        if Wires.shared_wires([concrete_wire_args[n1], concrete_wire_args[n2]]):
+            raise ValueError(f"{n1} and {n2} must not overlap")

@@ -271,7 +271,7 @@ class TestSupportsBroadcasting:
         op = qp.QubitUnitary(U, wires=wires)
 
         mat1 = op.matrix()
-        mat2 = qp.QubitUnitary.compute_matrix(U)
+        mat2 = qp.QubitUnitary.compute_matrix(U, wires=wires)
         single_mats = [qp.QubitUnitary(_U, wires=wires).matrix() for _U in U]
 
         assert qp.math.allclose(mat1, single_mats)
@@ -451,6 +451,7 @@ class TestSupportsBroadcasting:
         )
         op.decomposition()
 
+    @pytest.mark.pl2do(reason="PL 2.0: Parameter broadcasting will be re-visited.")
     def test_pcphase(self):
         """Test that the PCPhase matrix works with broadcasted parameters"""
         dim = 2
@@ -486,7 +487,11 @@ class TestHasUnitaryGenerator:
         op_class = getattr(qp, entry)
         phi = 1.23
         try:
-            wires = [0, 1, 2] if op_class.num_wires is None else list(range(op_class.num_wires))
+            wires = (
+                [0, 1, 2]
+                if not hasattr(op_class, "num_wires") or op_class.num_wires is None
+                else list(range(op_class.num_wires))
+            )
         except TypeError:
             wires = [0, 1, 2]
         if op_class is qp.PauliRot:

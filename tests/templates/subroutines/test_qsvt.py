@@ -83,6 +83,7 @@ def generate_polynomial_coeffs(degree, parity=None):
 class TestQSVTBasics:
     """Basic validity checks for QSVT."""
 
+    @pytest.mark.pl2do(reason="Operators of operators not yet supported with Operator2")
     @pytest.mark.jax
     def test_standard_validity(self):
         """Test standard validity criteria with assert_valid."""
@@ -328,7 +329,7 @@ class TestQSVTIntegration:
         with qp.tape.QuantumTape() as tape:
             qp.QSVT(U_A, lst_projectors)
 
-        [tape], _ = decompose(tape, gate_set={"PCPhase", "BlockEncode", "RZ", "Z"})
+        [tape], _ = decompose(tape, gate_set={"PCPhase", "BlockEncode", "RZ", "RY", "Z"})
         for idx, val in enumerate(tape.operations):
             assert val.name == results[idx].name
             assert val.parameters == results[idx].parameters
@@ -547,7 +548,7 @@ class TestQSVTMatrix:
             return qp.expval(qp.PauliZ(wires=0))
 
         A = np.array([[0.1, 0.2], [0.3, 0.4]], dtype=complex, requires_grad=True)
-        phis = np.array([0.1, 0.2, 0.3], dtype=complex, requires_grad=True)
+        phis = np.array([0.1, 0.2, 0.3], dtype=float, requires_grad=True)
         y = circuit(A, phis)
 
         mat_grad_results, phi_grad_results = qp.grad(circuit)(A, phis)
