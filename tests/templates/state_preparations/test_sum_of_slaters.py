@@ -410,11 +410,41 @@ class TestSumOfSlatersPrep:
             # Valid: the optional work registers may be left empty (the default).
             ((), (), (), (), None),
             # Each of the following provides a single work register with the wrong
-            # (non-zero) size, triggering one of the register-size validations.
-            ([7, 8], (), (), (), "does not match the required number of enumeration wires"),
-            ((), [10, 11], (), (), "does not match the required number of identification wires"),
-            ((), (), [15], (), "does not match the required number of qrom work wires"),
-            ((), (), (), [17, 18], "does not match the required number of mcx cache wires"),
+            # (non-zero) size, triggering one of the register-size validations. The match
+            # includes the supplied count, so that the message must report the offending
+            # register's length and not some other register's.
+            (
+                [7, 8],
+                (),
+                (),
+                (),
+                "Number of enumeration wires 2 does not match the required number of "
+                "enumeration wires 3",
+            ),
+            (
+                (),
+                [10, 11],
+                (),
+                (),
+                "Number of identification wires 2 does not match the required number of "
+                "identification wires 5",
+            ),
+            (
+                (),
+                (),
+                [15],
+                (),
+                "Number of qrom work wires 1 does not match the required number of "
+                "qrom work wires 2",
+            ),
+            (
+                (),
+                (),
+                (),
+                [17, 18],
+                "Number of mcx cache wires 2 does not match the required number of "
+                "mcx cache wires 4",
+            ),
         ],
     )
     def test_init(
