@@ -578,7 +578,7 @@ class TestSumOfSlatersPrep:
         assert sum(sizes.values()) - n == registered_work_wires.total
 
     @pytest.mark.parametrize("num_wires", [3, 5, 8])
-    @pytest.mark.parametrize("num_entries", [2, 4, 5, 16])
+    @pytest.mark.parametrize("num_entries", [1, 2, 4, 5, 16])
     def test_register_sizes_abstract(self, num_wires, num_entries):
         """Test that ``required_register_sizes`` dispatches to the abstract computation when
         given an abstract ``indices`` input, returning the expected upper-bound sizes."""
@@ -590,9 +590,9 @@ class TestSumOfSlatersPrep:
         assert sizes == {
             "wires": num_wires,
             "enumeration_wires": d,
-            "identification_wires": 2 * d - 1,
-            "qrom_work_wires": d - 1,
-            "mcx_cache_wires": 2 * d - 2,
+            "identification_wires": max(2 * d - 1, 0),
+            "qrom_work_wires": max(d - 1, 0),
+            "mcx_cache_wires": max(2 * d - 2, 0),
         }
 
     @pytest.mark.parametrize("num_wires", [3, 4, 5])

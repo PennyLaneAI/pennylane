@@ -920,7 +920,20 @@ class SumOfSlatersPrep(Operator2):
     ):
         n = 1 if isinstance(wires, int) else len(wires)
         num_entries = len(indices)
-        if not isinstance(indices, AbstractArray):
+        if isinstance(indices, AbstractArray):
+            k = min(n, num_entries - 1)
+            # Set of powers of 2 from 2^0 up to 2^(k-1), as well as 0
+            indices = {1 << i for i in range(k)}
+            indices.add(0)
+            # Fill remaining capacity with consecutive integers starting from 2
+            # (0, 1, 2 already contained)
+            curr = 2
+            while len(indices) < num_entries:
+                indices.add(curr)
+                curr += 1
+
+            indices = tuple(sorted(indices))
+        else:
             v_bits = math.int_to_binary(np.array(indices), n).T  # Shape (n, num_entries)
 
             if num_entries != 1:
@@ -1026,8 +1039,8 @@ class SumOfSlatersPrep(Operator2):
             # (subselection of) system wires directly
             num_identification = 0
         else:
-            # Non-identity encoding, we need 2d-1 auxiliary qubits for the identification register
-            num_identification = m
+            # Non-identity encoding, we need m=2d-1 auxiliary qubits for the identification register
+            num_identification = 2 * d - 1
 
         return {
             "wires": num_wires,
@@ -1041,6 +1054,15 @@ class SumOfSlatersPrep(Operator2):
     def _required_register_sizes_abstract(num_entries: int, num_wires: int) -> dict:
         """Compute the upper bound of the required register sizes, if only the number of
         basis states, but not the concrete states to be prepared, is known."""
+        if num_entries == 1:
+            # Simple computational basis state preparation, does not require auxiliary qubits
+            return {
+                "wires": num_wires,
+                "enumeration_wires": 0,
+                "identification_wires": 0,
+                "qrom_work_wires": 0,
+                "mcx_cache_wires": 0,
+            }
         d = math.ceil_log2(num_entries)
         return {
             "wires": num_wires,
