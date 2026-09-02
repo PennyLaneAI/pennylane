@@ -72,28 +72,15 @@ class MultiX(Operator2):
 
     dynamic_argnames = ("bitstring",)
 
-    arg_specs = {
-        "bitstring": Bool[-1],
-        "wires": Wire[-1],
-    }
+    arg_specs = {"bitstring": Bool[-1], "wires": Wire[-1]}
 
     is_verified_hermitian = True
 
-    num_params = 0
-    """int: Number of trainable parameters that the operator depends on."""
+    grad_method = None
 
     def __init__(self, bitstring: TensorLike, wires: WiresLike) -> None:
         bitstring, wires = MultiX._canonicalize_validate_and_cast_inputs(bitstring, wires)
         super().__init__(bitstring, wires)
-
-    # pylint: disable-next=arguments-differ
-    def __abstract_init__(
-        self, bitstring: AbstractArray | TensorLike, wires: AbstractWires | WiresLike
-    ) -> None:
-        # We skip the canonicalizing and casting steps here for abstract inputs
-        MultiX._validate_inputs(bitstring, wires)
-
-        super().__abstract_init__(Bool[len(bitstring)], wires)
 
     @property
     def num_wires(self) -> int:
@@ -107,8 +94,7 @@ class MultiX(Operator2):
         if isinstance(bitstring, (list, tuple)):
             bitstring = math.array(bitstring)
         wires = Wires(wires)
-
-        return (bitstring, wires)
+        return bitstring, wires
 
     @staticmethod
     def _validate_inputs(
@@ -158,8 +144,12 @@ class MultiX(Operator2):
         # validate (throw error if inputs have problems)
         MultiX._validate_inputs(bitstring, wires)
         # cast (convert bitstring to Boolean dtype)
-        bitstring = math.cast(bitstring, bool)
-        return (bitstring, wires)
+        bitstring = (
+            Bool[len(bitstring)]
+            if isinstance(bitstring, AbstractArray)
+            else math.cast(bitstring, bool)
+        )
+        return bitstring, wires
 
     @staticmethod
     # pylint: disable-next=arguments-differ

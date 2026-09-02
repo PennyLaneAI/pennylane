@@ -15,12 +15,14 @@ r"""
 Contains the FlipSign template.
 """
 
+from collections.abc import Sequence
+
 from pennylane import math
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import X, Z, ctrl
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-from pennylane.typing import Wire
+from pennylane.typing import AbstractArray, Wire
 from pennylane.wires import Wires, WiresLike
 
 
@@ -71,8 +73,11 @@ class FlipSign(Operator2):
     wire_sizes = (None,)
 
     @staticmethod
-    def _canonicalize_state(state: int | list[int] | tuple[int], num_wires: int) -> tuple[int]:
+    def _canonicalize_state(
+        state: int | Sequence[int] | AbstractArray, num_wires: int
+    ) -> tuple[int] | AbstractArray:
         """Canonicalize the input state into a tuple of integers."""
+
         if isinstance(state, int):
             if not 0 <= state < 2**num_wires:
                 raise ValueError(
@@ -80,12 +85,14 @@ class FlipSign(Operator2):
                     f"than {2**num_wires}, but got {state}."
                 )
             return tuple(map(int, math.int_to_binary(state, num_wires)))
+
         if num_wires != len(state):
             raise ValueError(
                 "The basis state and wires must have equal length, "
                 f"but got {len(state)} and {num_wires}."
             )
-        return tuple(state)
+
+        return state if isinstance(state, AbstractArray) else tuple(state)
 
     def __init__(self, state: int | list[int] | tuple[int], wires: WiresLike):
         wires = Wires(wires)
@@ -94,10 +101,6 @@ class FlipSign(Operator2):
             raise ValueError("At least one wire is required.")
         state = self._canonicalize_state(state, num_wires)
         super().__init__(state, wires)
-
-    def __abstract_init__(self, state, wires):  # pylint: disable=arguments-differ
-        state = self._canonicalize_state(state, len(wires))
-        super().__abstract_init__(state, wires)
 
 
 def _flip_sign_resources(state: tuple[int], wires: WiresLike):

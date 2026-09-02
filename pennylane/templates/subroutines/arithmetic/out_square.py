@@ -16,18 +16,13 @@ Contains the OutSquare template.
 """
 
 from collections import defaultdict
-from itertools import combinations
 
 from pennylane import math
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import (
-    add_decomps,
-    register_condition,
-    register_resources,
-)
+from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.ops import CNOT, adjoint, ctrl
 from pennylane.typing import AbstractWires, Bool, Wire
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
 from ..multix import MultiX
 from .out_multiplier import _c_add_sub, _c_add_sub_resources
@@ -83,34 +78,10 @@ class _SquareArithmeticOp(Operator2, is_baseclass=True):
 
         self._check_work_wires(len(x_wires), len(output_wires), work_wires, output_wires_zeroed)
 
-        wires_list = [x_wires, output_wires, work_wires]
-
-        _wires_are_traced = any(math.is_abstract(w) for ws in wires_list for w in ws)
-
-        if not _wires_are_traced:
-            wires_dict = dict(zip(self.wire_argnames, wires_list, strict=True))
-            for name0, name1 in combinations(self.wire_argnames, r=2):
-                if wires_dict[name0].intersection(wires_dict[name1]):
-                    raise ValueError(f"None of the wires in {name1} should be included in {name0}.")
+        wire_args = {"x_wires": x_wires, "output_wires": output_wires, "work_wires": work_wires}
+        validate_no_wire_overlaps(wire_args)
 
         super().__init__(
-            x_wires,
-            output_wires,
-            work_wires,
-            output_wires_zeroed=output_wires_zeroed,
-        )
-
-    # pylint: disable=arguments-differ
-    def __abstract_init__(
-        self,
-        x_wires: AbstractWires | WiresLike,
-        output_wires: AbstractWires | WiresLike,
-        work_wires: AbstractWires | WiresLike,
-        output_wires_zeroed: bool = False,
-    ):
-        self._check_work_wires(len(x_wires), len(output_wires), work_wires, output_wires_zeroed)
-
-        super().__abstract_init__(
             x_wires,
             output_wires,
             work_wires,
@@ -410,7 +381,7 @@ def _out_square_with_adder_zeroed(
     x_wires: WiresLike,
     output_wires: WiresLike,
     work_wires: WiresLike,
-    output_wires_zeroed: bool = False,
+    output_wires_zeroed: bool,
 ):
     # pylint: disable=unused-argument
     n = len(x_wires)
@@ -569,7 +540,7 @@ def _out_square_with_caddsub(
     x_wires: WiresLike,
     output_wires: WiresLike,
     work_wires: WiresLike,
-    output_wires_zeroed: bool = False,
+    output_wires_zeroed: bool,
 ):
     r"""This decomposition uses controlled add-subtract blocks, and three correction
     steps. See Sec. II for details."""

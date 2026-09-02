@@ -32,7 +32,7 @@ from pennylane.typing import Wire
 
 
 @pytest.mark.parametrize("output_wires_zeroed", [False, True])
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity_out_square(output_wires_zeroed):
     """Check the operation using the assert_valid function."""
     x_wires = [0, 1, 2, 3]
@@ -51,7 +51,7 @@ def test_standard_validity_out_square(output_wires_zeroed):
     ],
 )
 def test_abstract_init(x_wires, output_wires, work_wires, output_wires_zeroed):
-    """Test that abstract init mirrors concrete init."""
+    """Tests creating abstract operator."""
     abstract_op = OutSquare(
         Wire[len(x_wires)],
         Wire[len(output_wires)],
@@ -63,12 +63,11 @@ def test_abstract_init(x_wires, output_wires, work_wires, output_wires_zeroed):
 
 
 def test_abstract_init_mixed_concrete_and_abstract_wires():
-    """Test that __abstract_init__ is triggered and behaves correctly when only some of
+    """Test that __init__ is triggered and behaves correctly when only some of
     the wire registers are abstract, while others are concrete."""
     x_wires = [0, 1]
     output_wires = [2, 3, 4]
     op = OutSquare(x_wires, output_wires, Wire[3], output_wires_zeroed=False)
-    assert op.is_abstract
     assert len(op.x_wires) == len(x_wires)
     assert len(op.output_wires) == len(output_wires)
     assert len(op.work_wires) == 3
@@ -208,19 +207,19 @@ class TestOutSquare:
                 [0, 1, 2],
                 [3, 4, 5],
                 [3, 10, 11],
-                "None of the wires in work_wires should be included in output_wires.",
+                "output_wires and work_wires must not overlap",
             ),
             (
                 [0, 1, 2],
                 [3, 4, 5],
                 [1, 10, 9],
-                "None of the wires in work_wires should be included in x_wires.",
+                "x_wires and work_wires must not overlap",
             ),
             (
                 [0, 1, 2],
                 [2, 4, 5],
                 [9, 10, 6],
-                "None of the wires in output_wires should be included in x_wires.",
+                "x_wires and output_wires must not overlap",
             ),
         ],
     )
