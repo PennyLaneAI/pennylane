@@ -446,6 +446,61 @@ class TestApplyOp:
         with pytest.raises(RuntimeError, match="non-tracing context"):
             qp.apply(op)
 
+    @pytest.mark.capture
+    def test_apply_then_adjoint(self):
+        """Tests that apply and then adjoint records both properly."""
+
+        import jax
+
+        op = qp.X(0)
+
+        def f():
+            qp.apply(op)
+            qp.adjoint(op)
+
+        cjaxpr = jax.make_jaxpr(f)()
+
+        assert len(cjaxpr.eqns) == 2
+        info = [(eqn.params["op_cls"], bool(eqn.params["adjoint"])) for eqn in cjaxpr.eqns]
+        assert info == [(qp.X, False), (qp.X, True)]
+
+    @pytest.mark.capture
+    def test_apply_then_ctrl(self):
+        """Tests that apply and then ctrl records both properly."""
+
+        import jax
+
+        op = qp.X(0)
+
+        def f():
+            qp.apply(op)
+            qp.ctrl(op, control=1)
+
+        cjaxpr = jax.make_jaxpr(f)()
+
+        assert len(cjaxpr.eqns) == 2
+        info = [eqn.params["op_cls"] for eqn in cjaxpr.eqns]
+        # C(PauliX) automatically gets dispatched to CNOT
+        assert info == [qp.X, qp.CNOT]
+
+    @pytest.mark.capture
+    def test_apply_twice(self):
+        """Tests that apply can be applied twice."""
+
+        import jax
+
+        op = qp.X(0)
+
+        def f():
+            qp.apply(op)
+            qp.apply(op)
+
+        cjaxpr = jax.make_jaxpr(f)()
+
+        assert len(cjaxpr.eqns) == 2
+        info = [eqn.params["op_cls"] for eqn in cjaxpr.eqns]
+        assert info == [qp.X, qp.X]
+
 
 class TestWrappedObj:
     """Tests for the ``WrappedObj`` class"""
