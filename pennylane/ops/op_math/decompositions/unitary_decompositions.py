@@ -290,7 +290,7 @@ def multi_qubit_decomposition(U, wires):
 def make_one_qubit_unitary_decomposition(su2_rule, su2_resource, name=""):
     """Wrapper around a naive one-qubit decomposition rule that adds a global phase."""
 
-    def _resource_fn(**_):
+    def _resource_fn(*_, **__):
         return su2_resource() | {ops.GlobalPhase: 1}
 
     name = name or su2_rule.name
@@ -386,7 +386,7 @@ xzx_decomp_rule = make_one_qubit_unitary_decomposition(_su2_xzx_decomp, _su2_xzx
 zxz_decomp_rule = make_one_qubit_unitary_decomposition(_su2_zxz_decomp, _su2_zxz_resource, "zxz")
 
 
-def _two_qubit_resource(**_):
+def _two_qubit_resource(*_, **__):
     """A worst-case over-estimate for the resources of two-qubit unitary decomposition."""
     return {
         ops.QubitUnitary(Complex[2, 2], wires=Wire[1]): 4,

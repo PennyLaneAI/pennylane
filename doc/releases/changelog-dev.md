@@ -1552,7 +1552,8 @@
   of the estimator. Qubit and qudit MMD loss functions now have unbiased gradients.
   [(#10025)](https://github.com/PennyLaneAI/pennylane/pull/10025)
 
-
+* Various decomposition rules are updated so that they accept positionally passed arguments.
+  [(#10088)](https://github.com/PennyLaneAI/pennylane/pull/10088)
 
 <h3>Contributors ✍️</h3>
 
