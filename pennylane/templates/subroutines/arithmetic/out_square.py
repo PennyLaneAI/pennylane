@@ -17,11 +17,10 @@ Contains the OutSquare template.
 
 from collections import defaultdict
 
-from pennylane import math
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.ops import CNOT, adjoint, ctrl
-from pennylane.typing import AbstractWires, Bool, Wire
+from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
 from ..multix import MultiX

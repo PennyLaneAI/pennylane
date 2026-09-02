@@ -16,7 +16,6 @@ Contains the SignedOutSquare template.
 """
 
 from collections import defaultdict
-
 from types import SimpleNamespace
 
 from pennylane.decomposition import add_decomps, register_resources
