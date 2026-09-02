@@ -99,6 +99,7 @@
   [(#9478)](https://github.com/PennyLaneAI/pennylane/pull/9478)
   [(#9656)](https://github.com/PennyLaneAI/pennylane/pull/9656)
   [(#9833)](https://github.com/PennyLaneAI/pennylane/pull/9833)
+  [(#10008)](https://github.com/PennyLaneAI/pennylane/pull/10008)
 
   Given the ``amplitudes`` and the computational basis state ``indices`` of the sparse state we
   want to prepare, the template is simple to call. Consider the following example:
@@ -422,6 +423,20 @@
   The round is resolved from the device being traced, so the program has to be captured (`qp.qjit(capture=True)`). The controller's `in_bytes` and `out_bytes` capacities both default to 8 bytes, and the correction comes back as an `out_bytes`-sized `uint8` buffer. Pass `controller=` / `coprocessor=` to choose the nodes explicitly, `out_bytes=` to override the reply size, and `decoder_id=` to select which coprocessor-side decoder handles the round.
 
 <h3>Improvements 🛠</h3>
+
+* :func:`~.SumOfSlatersPrep.required_register_sizes` now works with abstract ``indices`` as input,
+  for which it returns an upper bound for the register sizes, across any set of indices of the
+  provided length.
+  [(#10084)](https://github.com/PennyLaneAI/pennylane/pull/10084)
+
+  ```pycon
+  >>> num_wires = 8
+  >>> num_entries = 16
+  >>> indices = qp.typing.Int[num_entries]
+  >>> qp.SumOfSlatersPrep.required_register_sizes(indices, num_wires)
+  {'wires': 8, 'enumeration_wires': 4, 'identification_wires': 7, 'qrom_work_wires': 3, 'mcx_cache_wires': 6}
+
+  ```
 
 * :class:`~.IsingZZ`'s decomposition is now expressed as a :func:`~.change_op_basis` (``CNOT``
   compute/uncompute around the ``RZ``) instead of three bare gates. This lets PennyLane's generic
@@ -1121,6 +1136,7 @@
   [(#10062)](https://github.com/PennyLaneAI/pennylane/pull/10062)
   [(#10073)](https://github.com/PennyLaneAI/pennylane/pull/10073)
   [(#10078)](https://github.com/PennyLaneAI/pennylane/pull/10078)
+  [(#10069)](https://github.com/PennyLaneAI/pennylane/pull/10069)
   [(#10085)](https://github.com/PennyLaneAI/pennylane/pull/10085)
   - Quantum chemistry operators are ported:
     - :class:`~.SingleExcitation`
@@ -1208,6 +1224,7 @@
     [(#9646)](https://github.com/PennyLaneAI/pennylane/pull/9646)
     [(#9694)](https://github.com/PennyLaneAI/pennylane/pull/9694)
     [(#9744)](https://github.com/PennyLaneAI/pennylane/pull/9744)
+    [(#9788)](https://github.com/PennyLaneAI/pennylane/pull/9788)
   - Some backwards compatibility with the legacy operator interface.
     [(#9596)](https://github.com/PennyLaneAI/pennylane/pull/9596)
     [(#9674)](https://github.com/PennyLaneAI/pennylane/pull/9674)

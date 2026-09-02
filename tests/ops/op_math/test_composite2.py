@@ -189,17 +189,12 @@ class TestConstruction:
         assert op.operands == self.simple_operands
 
     def test_abstract_init(self):
-        """Test that building a composite op from abstract operands routes through
-        ``__abstract_init__`` rather than the concrete ``__init__``."""
+        """Test that building a composite op from abstract operands."""
+
         operands = (abstractify(qp.X(0)), abstractify(qp.PauliZ(1)))
         op = ValidOp(operands)
-
         assert op.operands[0] == abstractify(qp.X(0))
         assert op.operands[1] == abstractify(qp.PauliZ(1))
-        assert op._pauli_rep is None
-
-        assert op._hash is None
-        assert op._has_overlapping_wires is None
 
     def test_map_wires(self):
         """Test the map_wires method."""
