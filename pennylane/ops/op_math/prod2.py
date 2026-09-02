@@ -163,7 +163,13 @@ class Prod2(CompositeOp2):
     @property
     @override
     def is_verified_hermitian(self) -> bool:
+<<<<<<< HEAD
         """Non-exhaustive check for whether the product is Hermitian."""
+=======
+        """Non-exhaustive check for whether the product is Hermitian. Since the check
+        is non-exhaustive, it may be possible for Hermitian operators to return ``False``.
+        """
+>>>>>>> main
         from itertools import combinations  # pylint: disable=import-outside-toplevel
 
         for o1, o2 in combinations(self.operands, r=2):
