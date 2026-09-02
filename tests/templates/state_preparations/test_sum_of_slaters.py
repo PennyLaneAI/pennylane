@@ -566,6 +566,30 @@ class TestSumOfSlatersPrep:
         op = qp.SumOfSlatersPrep(coefficients, indices=indices, **qp.registers(sizes))
         assert len(op.indices) == num_entries
 
+    @pytest.mark.parametrize("num_wires", [4, 6, 8])
+    @pytest.mark.parametrize("num_entries", [2, 5, 8, 16])
+    def test_abstract_indices_accept_reported_registers(self, num_wires, num_entries):
+        """Test that the registers reported for abstract ``indices`` are exactly the ones the
+        synthesized indices need -- accepted at the reported size, rejected one wire off."""
+        if num_entries > 2**num_wires:
+            pytest.skip("not representable on this many wires")
+
+        sizes = qp.SumOfSlatersPrep.required_register_sizes(Int[num_entries], num_wires)
+        registers = qp.registers(sizes)
+
+        qp.SumOfSlatersPrep(Complex[num_entries], **registers)
+
+        for name in (
+            "enumeration_wires",
+            "identification_wires",
+            "qrom_work_wires",
+            "mcx_cache_wires",
+        ):
+            oversized = dict(registers)
+            oversized[name] = list(oversized[name]) + [f"extra_{name}"]
+            with pytest.raises(ValueError, match="does not match the required number"):
+                qp.SumOfSlatersPrep(Complex[num_entries], **oversized)
+
     def test_coefficients_indices_length_mismatch(self):
         """Test that mismatched ``coefficients`` and ``indices`` lengths are rejected."""
         match = "The number of coefficients and the number of state indices must match."

@@ -929,27 +929,29 @@ class SumOfSlatersPrep(Operator2):
                 )
         if isinstance(indices, AbstractArray) or indices is None:
             indices = self.worst_case_indices(num_entries, n)
-        else:
-            v_bits = math.int_to_binary(np.array(indices), n).T  # Shape (n, num_entries)
 
-            if num_entries != 1:
-                _, data = _preprocess(v_bits, wires)
+        # ``indices`` is concrete from here on, whether it was given or synthesized, so the
+        # work-wire registers can be validated either way.
+        v_bits = math.int_to_binary(np.array(indices), n).T  # Shape (n, num_entries)
 
-                # pylint: disable-next=protected-access
-                sizes = self._required_register_sizes_from_nums(num_entries, data.r, n)
-                registers = {
-                    "enumeration_wires": enumeration_wires,
-                    "identification_wires": identification_wires,
-                    "qrom_work_wires": qrom_work_wires,
-                    "mcx_cache_wires": mcx_cache_wires,
-                }
-                for name, reg in registers.items():
-                    if len(reg) > 0 and len(reg) != (expected_size := sizes[name]):
-                        _name = name.replace("_", " ")
-                        raise ValueError(
-                            f"Number of {_name} {len(reg)} does not match the "
-                            f"required number of {_name} {expected_size}"
-                        )
+        if num_entries != 1:
+            _, data = _preprocess(v_bits, wires)
+
+            # pylint: disable-next=protected-access
+            sizes = self._required_register_sizes_from_nums(num_entries, data.r, n)
+            registers = {
+                "enumeration_wires": enumeration_wires,
+                "identification_wires": identification_wires,
+                "qrom_work_wires": qrom_work_wires,
+                "mcx_cache_wires": mcx_cache_wires,
+            }
+            for name, reg in registers.items():
+                if len(reg) > 0 and len(reg) != (expected_size := sizes[name]):
+                    _name = name.replace("_", " ")
+                    raise ValueError(
+                        f"Number of {_name} {len(reg)} does not match the "
+                        f"required number of {_name} {expected_size}"
+                    )
 
         super().__init__(
             coefficients,
