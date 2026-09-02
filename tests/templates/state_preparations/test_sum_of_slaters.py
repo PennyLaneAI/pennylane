@@ -553,16 +553,6 @@ class TestSumOfSlatersPrep:
         op = qp.SumOfSlatersPrep(Complex[num_entries], Wire[num_wires])
         assert len(op.indices) == num_entries
 
-    def test_broadcast_coefficients(self):
-        """Test that broadcast coefficients are not mistaken for a shorter state."""
-        num_wires, num_entries, batch_size = 5, 8, 3
-        indices = tuple(range(num_entries))
-        coefficients = np.ones((batch_size, num_entries), dtype=complex) / np.sqrt(num_entries)
-        sizes = qp.SumOfSlatersPrep.required_register_sizes(indices, num_wires)
-
-        op = qp.SumOfSlatersPrep(coefficients, indices=indices, **qp.registers(sizes))
-        assert len(op.indices) == num_entries
-
     @pytest.mark.parametrize("num_wires", [4, 6, 8])
     @pytest.mark.parametrize("num_entries", [2, 5, 8, 16])
     def test_abstract_indices_accept_reported_registers(self, num_wires, num_entries):

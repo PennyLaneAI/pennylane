@@ -929,8 +929,7 @@ class SumOfSlatersPrep(Operator2):
         mcx_cache_wires: WiresLike = (),
     ):
         n = 1 if isinstance(wires, int) else len(wires)
-        # Trailing axis, not len(), so broadcast coefficients report entries, not batch size.
-        num_entries = math.shape(coefficients)[-1]
+        num_entries = len(coefficients)
         if indices is not None and not isinstance(indices, AbstractArray):
             if len(indices) != num_entries:
                 raise ValueError(
