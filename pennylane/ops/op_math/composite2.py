@@ -21,9 +21,6 @@ from collections.abc import Callable, Sequence
 from functools import cached_property
 from inspect import signature
 
-# pylint: disable=invalid-sequence-index
-from typing import override
-
 import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operator, Operator2
@@ -31,7 +28,7 @@ from pennylane.queuing import remove_from_program
 
 from .composite import handle_recursion_error
 
-# pylint: disable=too-many-instance-attributes
+# pylint: disable=too-many-instance-attributes,invalid-sequence-index
 
 
 class CompositeOp2(Operator2, is_baseclass=True):
@@ -131,7 +128,7 @@ class CompositeOp2(Operator2, is_baseclass=True):
             def _compute_eigvals(operands=(), _init_pauli_rep=None):
                 """Return the eigenvalues of the specified operator.
 
-                This method uses pre-stored eigenvalues for standard observables where
+                This method uses pre-stored eigenvalues for standard observables where\
                 possible and stores the corresponding eigenvectors from the eigendecomposition.
 
                 Returns:
@@ -161,13 +158,6 @@ class CompositeOp2(Operator2, is_baseclass=True):
 
             cls.compute_eigvals = staticmethod(_compute_eigvals)
 
-    @override
-    def __abstract_init__(self, operands, _init_pauli_rep=None):  # pylint: disable=arguments-differ
-        super().__abstract_init__(operands, _init_pauli_rep=None)
-        self._hash = None
-        self._has_overlapping_wires = None
-        self._operands = operands
-
     def __repr__(self):
         return f" {self._op_symbol} ".join(
             [f"({op})" if getattr(op, "arithmetic_depth", 0) > 0 else f"{op}" for op in self]
@@ -189,6 +179,17 @@ class CompositeOp2(Operator2, is_baseclass=True):
     @abc.abstractmethod
     def _op_symbol(self) -> str:
         """The symbol used when visualizing the composite operator"""
+
+    @handle_recursion_error
+    def _check_batching(self):
+        self._ndim_params = tuple(dim for op in self for dim in op.ndim_params)
+        batch_sizes = {op.batch_size for op in self if op.batch_size is not None}
+        if len(batch_sizes) > 1:
+            raise ValueError(
+                "Broadcasting was attempted but the broadcasted dimensions "
+                f"do not match: {batch_sizes}."
+            )
+        self._batch_size = batch_sizes.pop() if batch_sizes else None
 
     @property
     def num_wires(self):
