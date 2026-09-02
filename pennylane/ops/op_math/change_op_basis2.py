@@ -118,7 +118,7 @@ class ChangeOpBasis2(CompositeOp2):
         yields false, which ARE hermitian. So a false result only implies that a more explicit check
         must be performed.
         """
-        return self[1].is_verified_hermitian
+        return self.target_op.is_verified_hermitian
 
     def adjoint(self):
         return ChangeOpBasis2(*(adjoint(factor, lazy=False) for factor in self))
