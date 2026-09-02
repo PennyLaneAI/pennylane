@@ -919,8 +919,8 @@ class SumOfSlatersPrep(Operator2):
         mcx_cache_wires: WiresLike = (),
     ):
         n = 1 if isinstance(wires, int) else len(wires)
-        num_entries = len(indices)
-        if isinstance(indices, AbstractArray):
+        num_entries = len(coefficients)
+        if isinstance(indices, AbstractArray) or indices is None:
             k = min(n, num_entries - 1)
             # Set of powers of 2 from 2^0 up to 2^(k-1), as well as 0
             indices = {1 << i for i in range(k)}

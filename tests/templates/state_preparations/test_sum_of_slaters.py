@@ -471,7 +471,7 @@ class TestSumOfSlatersPrep:
         )
 
     def test_abstract_init(self):
-        """Test that abstract values can be passed to the constructor."""
+        """Test that abstract values (or None, for indices) can be passed to the constructor."""
         num_wires = 14
         num_entries = 15
         sizes = qp.SumOfSlatersPrep.required_register_sizes(Int[num_entries], num_wires)
@@ -480,6 +480,9 @@ class TestSumOfSlatersPrep:
             "indices": Int[num_entries],
             **{name: Wire[num] for name, num in sizes.items()},
         }
+        op = qp.SumOfSlatersPrep(**kwargs)
+        assert len(op.coefficients) == len(op.indices) == num_entries
+        kwargs["indices"] = None
         op = qp.SumOfSlatersPrep(**kwargs)
         assert len(op.coefficients) == len(op.indices) == num_entries
 
