@@ -77,7 +77,7 @@ def _multi_swap(wires1, wires2):
 
 
 def _swap_ops(control_wires, depth, swap_wires, target_wires):
-    n_control_select_wires = ceil_log2(1 << len(control_wires) // depth)  # depth is a power of 2
+    n_control_select_wires = ceil_log2(2 ** len(control_wires) // depth)  # depth is a power of 2
     control_swap_wires = control_wires[n_control_select_wires:]
     num_targets = len(target_wires)
     for i in range(len(control_swap_wires) - 1, -1, -1):
