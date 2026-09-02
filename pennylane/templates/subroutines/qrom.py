@@ -869,7 +869,8 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires):
     for i in range(1, len(triples)):
         TemporaryAND(triples[i], (1, 0))
 
-    # Once resource hints are merged, use those estimates:
+    # [dwierichs] todo: Once resource hints are merged, use those estimates:
+    # [sc-129626] [sc-129627]
     # quarter_prob = int(K > (1 << (c - 2))) / (K - 1)
     # mid_prob = int(K > (1 << (c - 1))) / (K - 1)
     # est_ladder_len = float(
@@ -891,10 +892,10 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires):
         top_not_flipped = k < (1 << (c - 1))
 
         # 2a. right-elbow ladder: uncompute levels c-2 .. max(a,1) (top-down)
-        # Once resource hints are merged, use those estimates:
         lower_bound = math.max(math.array([a, 1], like=a))
 
         @for_loop(c - 2, lower_bound - 1, -1)
+        # Once resource hints are merged, use those estimates:
         # @for_loop(c - 2, max(a - 1, 0), -1, estimated_iterations=est_ladder_len)
         def uncompute(i):
             qp_ops.adjoint(TemporaryAND)(wires=triples[i])
