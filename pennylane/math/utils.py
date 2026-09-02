@@ -550,12 +550,12 @@ def in_backprop(tensor, interface=None):
     raise ValueError(f"Cannot determine if {tensor} is in backpropagation.")
 
 
-def ceil_log2(n: int) -> int:
-    """Compute the ceiling of the base-2 logarithm of an integer, with integer as output data type.
+def ceil_log2(n: int | float) -> int:
+    """Compute the ceiling of the base-2 logarithm of a number, with integer as output data type.
 
     Args:
-        n (int): Integer to compute the rounded-up base-2 logarithm of. Traced inputs
-            must have an integer data type.
+        n (int or float): Number to compute the rounded-up base-2 logarithm of.
+            Traced inputs must have an integer data type.
 
     Returns:
         int: Rounded-up base-2 logarithm of ``n``.
@@ -597,12 +597,12 @@ def ceil_log2(n: int) -> int:
     return exponent + int(2**exponent < n) - int(2 ** (exponent - 1) >= n)
 
 
-def floor_log2(n: int) -> int:
-    """Compute the floor of the base-2 logarithm of an integer, with integer as output data type.
+def floor_log2(n: int | float) -> int:
+    """Compute the floor of the base-2 logarithm of a number, with integer as output data type.
 
     Args:
-        n (int): Integer to compute the rounded-down base-2 logarithm of. Traced inputs
-            must have an integer data type.
+        n (int or float): Number to compute the rounded-down base-2 logarithm of.
+            Traced inputs must have an integer data type.
 
     Returns:
         int: Rounded-down base-2 logarithm of ``n``.
