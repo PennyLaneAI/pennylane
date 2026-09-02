@@ -140,7 +140,7 @@ def test_one_body_walk_wires(norbs, mu_bits):
 
     assert req["prep_wires"] == alias["target_wires"] + 1 + alias["temp_wires"]
     assert req["system_wires"] == 2 * norbs
-    assert req["work_wires"] == alias["work_wires"]
+    assert req["work_wires"] == max(alias["work_wires"], alias["target_wires"])
 
 
 class TestOneBodyWalk:
