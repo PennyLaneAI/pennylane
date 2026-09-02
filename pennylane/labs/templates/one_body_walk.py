@@ -36,7 +36,7 @@ def one_body_walk_wires(norbs, alias_sampling_nbits):
     return {
         "prep_wires": req["target_wires"] + 1 + req["temp_wires"],  # |p> + |sigma> + garbage
         "system_wires": 2 * norbs,
-        "work_wires": req["work_wires"],  # clean scratch
+        "work_wires": max(req["work_wires"], req["target_wires"]),  # clean scratch
     }
 
 
