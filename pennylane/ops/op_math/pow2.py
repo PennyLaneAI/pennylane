@@ -329,10 +329,7 @@ def _pow_abstract(op: AbstractOperatorLike | type[Operator], z: int | float = 1)
     op = abstractify(op)
     if isinstance(op, CompressedResourceOp):
         return pow_resource_rep(op.op_type, op.params, z)
-    # Building an abstract resource representation must not emit a quantum equation
-    # even when program capture is active.
-    with capture.pause():
-        return qp.pow(op, z)
+    return qp.pow(op, z)
 
 
 # pylint: disable=protected-access,unused-argument

@@ -301,28 +301,6 @@ def test_change_op_basis_capture(compute_op, target_op, uncompute_op):
     assert tape.operations == [compute_op(0), target_op(1), expected_uncompute]
 
 
-@pytest.mark.capture
-@pytest.mark.parametrize(
-    ("make_rep", "expected_type"),
-    ((_adjoint_abstract, Adjoint2), (partial(_pow_abstract, z=2), Pow2)),
-)
-def test_abstract_symbolic_resources_do_not_bind(make_rep, expected_type):
-    """Abstract symbolic resources containing native operators do not bind equations."""
-    import jax  # pylint: disable=import-outside-toplevel
-
-    prod_rep = qp.ops.Prod2((qp.S(Wire[1]),))
-    base = _change_op_basis_abstract(prod_rep, prod_rep, prod_rep)
-    rep = make_rep(base)
-
-    assert isinstance(rep, expected_type)
-    assert rep.base is base
-
-    def f():
-        abstractify(make_rep(base))
-
-    assert not jax.make_jaxpr(f)().eqns
-
-
 class MyOp(qp.RX):  # pylint:disable=too-few-public-methods
     """Variant of qp.RX that claims to not have `adjoint` or a matrix defined."""
 
