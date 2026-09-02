@@ -920,33 +920,27 @@ class SumOfSlatersPrep(Operator2):
     ):
         n = 1 if isinstance(wires, int) else len(wires)
         num_entries = len(indices)
-        v_bits = math.int_to_binary(np.array(indices), n).T  # Shape (n, num_entries)
+        if not isinstance(indices, AbstractArray):
+            v_bits = math.int_to_binary(np.array(indices), n).T  # Shape (n, num_entries)
 
-        if num_entries != 1:
-            _, data = _preprocess(v_bits, wires)
+            if num_entries != 1:
+                _, data = _preprocess(v_bits, wires)
 
-            # pylint: disable-next=protected-access
-            sizes = self._required_register_sizes_from_nums(num_entries, data.r, n)
-
-            if len(enumeration_wires) > 0 and len(enumeration_wires) != sizes["enumeration_wires"]:
-                raise ValueError(
-                    f"Number of enumeration wires {len(enumeration_wires)} does not match the required number of enumeration wires {sizes['enumeration_wires']}"
-                )
-            if (
-                len(identification_wires) > 0
-                and len(identification_wires) != sizes["identification_wires"]
-            ):
-                raise ValueError(
-                    f"Number of identification wires {len(identification_wires)} does not match the required number of identification wires {sizes['identification_wires']}"
-                )
-            if len(qrom_work_wires) > 0 and len(qrom_work_wires) != sizes["qrom_work_wires"]:
-                raise ValueError(
-                    f"Number of qrom work wires {len(qrom_work_wires)} does not match the required number of qrom work wires {sizes['qrom_work_wires']}"
-                )
-            if len(mcx_cache_wires) > 0 and len(mcx_cache_wires) != sizes["mcx_cache_wires"]:
-                raise ValueError(
-                    f"Number of mcx cache wires {len(mcx_cache_wires)} does not match the required number of mcx cache wires {sizes['mcx_cache_wires']}"
-                )
+                # pylint: disable-next=protected-access
+                sizes = self._required_register_sizes_from_nums(num_entries, data.r, n)
+                registers = {
+                    "enumeration_wires": enumeration_wires,
+                    "identification_wires": identification_wires,
+                    "qrom_work_wires": qrom_work_wires,
+                    "mcx_cache_wires": mcx_cache_wires,
+                }
+                for name, reg in registers.items():
+                    if len(reg) > 0 and len(reg) != sizes[name]:
+                        _name = name.replace("_", " ")
+                        raise ValueError(
+                            f"Number of {_name} {len(enumeration_wires)} does not match the "
+                            f"required number of {_name} {sizes['name']}"
+                        )
 
         super().__init__(
             coefficients,
