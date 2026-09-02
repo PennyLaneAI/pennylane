@@ -419,12 +419,26 @@
 
 <h3>Improvements 🛠</h3>
 
-* Initialization of :class:`~.SumOfSlatersPrep`, as well as 
-  :func:`~.SumOfSlatersPrep.required_register_sizes` now work with abstract ``indices`` as input.
-  The latter returns an upper bound for the register sizes for abstract ``indices``, across any 
-  set of indices of the provided length.
+* The ``indices`` of :class:`~.SumOfSlatersPrep` are now optional, and may also be given as an
+  abstract type. In both cases a worst-case set of indices of the appropriate length is generated
+  with the new :func:`~.SumOfSlatersPrep.worst_case_indices`, so that the operator can be costed
+  when only the number of Slater determinants is known. Note that the generated indices are a
+  resource-estimation stand-in: the operator is valid, but does not prepare a state the caller
+  chose.
   [(#10084)](https://github.com/PennyLaneAI/pennylane/pull/10084)
   [(#10102)](https://github.com/PennyLaneAI/pennylane/pull/10102)
+  [(#XXXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXXX)
+
+  ```pycon
+  >>> op = qp.SumOfSlatersPrep(qp.typing.Complex[16], wires=range(8))
+  >>> op.indices
+  (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 16, 32, 64, 128)
+
+  ```
+
+  :func:`~.SumOfSlatersPrep.required_register_sizes` also accepts abstract ``indices``, and
+  reports the largest register sizes across any set of indices of that length. Those sizes are
+  attained exactly, by ``worst_case_indices`` of the same length:
 
   ```pycon
   >>> num_wires = 8
@@ -1396,6 +1410,17 @@
   [(#9621)](https://github.com/PennyLaneAI/pennylane/pull/9621)
 
 <h3>Bug fixes 🐛</h3>
+
+* :func:`~.SumOfSlatersPrep.required_register_sizes` no longer returns negative register sizes for
+  a single-entry state. ``ceil_log2(1)`` is ``0``, so the abstract computation evaluated
+  :math:`2d-1` and :math:`2d-2` as ``-1`` and ``-2``.
+  [(#XXXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXXX)
+
+  ```pycon
+  >>> qp.SumOfSlatersPrep.required_register_sizes(qp.typing.Int[1], 4)
+  {'wires': 4, 'enumeration_wires': 0, 'identification_wires': 0, 'qrom_work_wires': 0, 'mcx_cache_wires': 0}
+
+  ```
 
 * Fixed :class:`~.Incrementer` returning an incorrect incremented value when not enough
   work wires are provided.

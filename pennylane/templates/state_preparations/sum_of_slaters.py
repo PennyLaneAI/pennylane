@@ -659,6 +659,11 @@ class SumOfSlatersPrep(Operator2):
         coefficients (np.ndarray): Coefficients of the sparse state to prepare. The ordering should
             match that in ``indices``.
         wires (~.WiresLike): Wires on which to prepare the state.
+        indices (tuple[int] or AbstractArray or None): Indices of the sparse state to prepare.
+            The ordering should match that in ``coefficients``. May also be given as an abstract
+            type from :mod:`~.typing`, such as ``qp.typing.Int[len(coefficients)]``, or omitted
+            altogether; in both of those cases a worst-case set of indices of the appropriate
+            length is generated with :func:`~.SumOfSlatersPrep.worst_case_indices`.
         enumeration_wires (~.WiresLike): Work wires used for the enumeration register. For
             :math:`d` entries in the state, :math:`\lceil \log_2 (d)\rceil` qubits are required.
         identification_wires (~.WiresLike): Work wires used for the identification register.
@@ -670,11 +675,10 @@ class SumOfSlatersPrep(Operator2):
             the enumeration register with multicontrolled bit flips.
             The required number of qubits depends on the particular ``indices`` of the sparse state,
             but it is at most :math:`2d-2` for :math:`d` entries in the state.
-        indices (tuple[int]): Indices of the sparse state to prepare. The ordering should match
-            that in ``coefficients``.
 
     The sizes for the numerous optional work wire registers can be computed with
-    ``SumOfSlatersPrep.required_register_sizes(indices, wires)``.
+    ``SumOfSlatersPrep.required_register_sizes(indices, wires)``, which also accepts an abstract
+    ``indices`` input and then reports the sizes for the worst case.
 
     .. warning::
 
@@ -682,6 +686,15 @@ class SumOfSlatersPrep(Operator2):
         array, whereas the ``indices`` need to be hashable, and thus will be treated as static
         information. This is because ``indices`` significantly impacts the structure and size of
         the circuit that realizes the state preparation.
+
+    .. warning::
+
+        If ``indices`` is abstract or omitted, the generated indices are a resource-estimation
+        stand-in, chosen to maximize the register sizes and gate counts. The resulting operator
+        is perfectly valid and will decompose and execute, but it prepares *those* basis states,
+        not any that the caller has in mind. In particular the generated indices are **not**
+        ``(0, 1, ..., len(coefficients) - 1)``. Pass ``indices`` explicitly to prepare a
+        specific state.
 
     **Example**
 
