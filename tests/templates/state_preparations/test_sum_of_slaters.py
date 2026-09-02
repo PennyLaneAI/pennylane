@@ -37,7 +37,7 @@ from pennylane.templates.state_preparations.sum_of_slaters import (
     compute_sos_encoding,
     select_sos_rows,
 )
-from pennylane.typing import Int
+from pennylane.typing import Float, Int, Wire
 from pennylane.wires import Wires
 
 
@@ -469,6 +469,19 @@ class TestSumOfSlatersPrep:
             + list(qrom_work_wires)
             + list(mcx_cache_wires)
         )
+
+    def test_abstract_init(self):
+        """Test that abstract values can be passed to the constructor."""
+        num_wires = 14
+        num_entries = 15
+        sizes = qp.SumOfSlatersPrep.required_register_sizes(Int[num_entries], num_wires)
+        kwargs = {
+            "coefficients": Float[num_entries],
+            "indices": Int[num_entries],
+            **{name: Wire[num] for name, num in sizes.items()},
+        }
+        op = qp.SumOfSlatersPrep(**kwargs)
+        assert len(op.coefficients) == len(op.indices) == num_entries
 
     def make_random_data(self, num_wires, num_entries, seed):
         """Produce some random input data for ``SumOfSlatersPrep`` with given specs."""

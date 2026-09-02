@@ -935,11 +935,11 @@ class SumOfSlatersPrep(Operator2):
                     "mcx_cache_wires": mcx_cache_wires,
                 }
                 for name, reg in registers.items():
-                    if len(reg) > 0 and len(reg) != sizes[name]:
+                    if len(reg) > 0 and len(reg) != (expected_size := sizes[name]):
                         _name = name.replace("_", " ")
                         raise ValueError(
                             f"Number of {_name} {len(enumeration_wires)} does not match the "
-                            f"required number of {_name} {sizes['name']}"
+                            f"required number of {_name} {expected_size}"
                         )
 
         super().__init__(
