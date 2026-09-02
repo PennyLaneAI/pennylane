@@ -419,10 +419,12 @@
 
 <h3>Improvements 🛠</h3>
 
-* :func:`~.SumOfSlatersPrep.required_register_sizes` now works with abstract ``indices`` as input,
-  for which it returns an upper bound for the register sizes, across any set of indices of the
-  provided length.
+* Initialization of :class:`~.SumOfSlatersPrep`, as well as 
+  :func:`~.SumOfSlatersPrep.required_register_sizes` now work with abstract ``indices`` as input.
+  The latter returns an upper bound for the register sizes for abstract ``indices``, across any 
+  set of indices of the provided length.
   [(#10084)](https://github.com/PennyLaneAI/pennylane/pull/10084)
+  [(#10102)](https://github.com/PennyLaneAI/pennylane/pull/10102)
 
   ```pycon
   >>> num_wires = 8
