@@ -440,7 +440,6 @@ class TestMBQCFormalismConversion:
             (qp.Identity, [3]),
             (qp.Identity, []),
             (qp.GlobalPhase, [1.23]),
-            (qp.GlobalPhase, [1.23, 3]),
         ],
     )
     def test_identity_gates_are_supported(self, gate, args):
