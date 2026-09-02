@@ -912,7 +912,7 @@ class SumOfSlatersPrep(Operator2):
         self,
         coefficients: TensorLike,
         wires: WiresLike,
-        indices: tuple,
+        indices: tuple[int] | AbstractArray | None = None,
         enumeration_wires: WiresLike = (),
         identification_wires: WiresLike = (),
         qrom_work_wires: WiresLike = (),

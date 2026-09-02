@@ -37,7 +37,7 @@ from pennylane.templates.state_preparations.sum_of_slaters import (
     compute_sos_encoding,
     select_sos_rows,
 )
-from pennylane.typing import Float, Int, Wire
+from pennylane.typing import Complex, Float, Int, Wire
 from pennylane.wires import Wires
 
 
@@ -485,6 +485,12 @@ class TestSumOfSlatersPrep:
         kwargs["indices"] = None
         op = qp.SumOfSlatersPrep(**kwargs)
         assert len(op.coefficients) == len(op.indices) == num_entries
+
+    @pytest.mark.parametrize("num_wires, num_entries", [(5, 8), (14, 15)])
+    def test_indices_omitted(self, num_wires, num_entries):
+        """Test that ``indices`` can be left out entirely, not just passed as ``None``."""
+        op = qp.SumOfSlatersPrep(Complex[num_entries], Wire[num_wires])
+        assert len(op.indices) == num_entries
 
     def make_random_data(self, num_wires, num_entries, seed):
         """Produce some random input data for ``SumOfSlatersPrep`` with given specs."""
