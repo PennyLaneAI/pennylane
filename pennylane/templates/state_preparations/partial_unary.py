@@ -637,9 +637,9 @@ class PartialUnaryStatePreparation(Operation):
     Quantum operations:
     - Total: 6,046
       - MultiplexerStatePreparation: 1
-      - BasisState: 2,420
+      - MultiX: 2,420
       - QROM: 1,207
-      - C(BasisState): 2,414
+      - C(MultiX): 2,414
       - MultiControlledX: 3
       - SWAP: 1
     Measurement processes:
@@ -656,9 +656,9 @@ class PartialUnaryStatePreparation(Operation):
     Quantum operations:
     - Total: 3,068
       - MultiplexerStatePreparation: 1
-      - BasisState: 332
+      - MultiX: 332
       - QROM: 160
-      - C(BasisState): 2,553
+      - C(MultiX): 2,553
       - MultiControlledX: 6
       - SWAP: 16
     Measurement processes:
@@ -709,7 +709,7 @@ def _pui_state_prep_resources(num_entries, num_wires, num_work_wires):
     These resource counts are numerically obtained heuristics, extended to guarantee all
     resource reps that may appear are included at least once."""
     if num_entries == 1:
-        return {qp.BasisState(Bool[num_wires], Wire[num_wires]): 1}
+        return {qp.MultiX(Bool[num_wires], Wire[num_wires]): 1}
 
     n_subspace = max(math.ceil_log2(num_entries), 1)
     resources = defaultdict(int)
@@ -737,10 +737,10 @@ def _pui_state_prep_resources(num_entries, num_wires, num_work_wires):
     for p in range(1, main_pui_batch_size):
         resources[qrom_reps[p]] += 1
 
-    ctrl_basis_rep = qp.ctrl(qp.BasisState(Bool[num_wires - 1], Wire[num_wires - 1]), Wire[1])
+    ctrl_basis_rep = qp.ctrl(qp.MultiX(Bool[num_wires - 1], Wire[num_wires - 1]), Wire[1])
     resources[ctrl_basis_rep] += num_entries
 
-    embed_rep = qp.BasisState(Bool[n_subspace], Wire[n_subspace])
+    embed_rep = qp.MultiX(Bool[n_subspace], Wire[n_subspace])
     resources[embed_rep] += 2 * (num_entries // main_pui_batch_size + 1)
 
     resources[qp.SWAP] += num_wires
@@ -748,7 +748,7 @@ def _pui_state_prep_resources(num_entries, num_wires, num_work_wires):
     num_toffolis = int(num_wires / 10) + 1
     mcx_rep = qp.MultiControlledX(Wire[3], work_wires=Wire[1], work_wire_type="zeroed")
     resources[mcx_rep] += num_toffolis
-    resources[qp.BasisState(Bool[1], Wire[1])] += 2 * num_toffolis
+    resources[qp.MultiX(Bool[1], Wire[1])] += 2 * num_toffolis
 
     return resources
 
@@ -759,7 +759,7 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
     wire management."""
     num_entries = len(indices)
     if num_entries == 1:
-        qp.BasisState(math.int_to_binary(indices[0], len(wires)), wires)
+        qp.MultiX(math.int_to_binary(indices[0], len(wires)), wires)
         return
 
     n_subspace = max(math.ceil_log2(num_entries), 1)
@@ -814,7 +814,7 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
         the operation to be applied:
 
         - 0: Partial unary iterator (realized via shifted ``QROM``)
-        - 1: Fanout (realized via controlled ``BasisState``)
+        - 1: Fanout (realized via controlled ``MultiX``)
         - 2: SWAP of two remainder qubits (realized via a simple ``SWAP``)
         - 3: Toffoli (realized via ``MultiControlledX`` in order to use work wires for elbow decomp)
 
@@ -857,19 +857,19 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
 
             # Realize PUI via QROM, shifted by k_start
             k_start_bits = math.int_to_binary(k_start, n_subspace)
-            qp.BasisState(k_start_bits, subspace_wires)
+            qp.MultiX(k_start_bits, subspace_wires)
             qrom_branches()
-            qp.BasisState(k_start_bits, subspace_wires)
+            qp.MultiX(k_start_bits, subspace_wires)
 
         @branches.else_if(_type == 1)
         def fanout():
-            """The second branch calls a fan-out, in form of a controlled ``BasisState``,
+            """The second branch calls a fan-out, in form of a controlled ``MultiX``,
             controlled by one of the (first ``iso_finder.m``) remainder qubits and targeting
             all other qubits.
             """
             control, fanout_bit_pointer = data[:2]
             target_wires = del_cwire(control)
-            qp.ctrl(qp.BasisState(fanout_bits[fanout_bit_pointer], target_wires), wires[control])
+            qp.ctrl(qp.MultiX(fanout_bits[fanout_bit_pointer], target_wires), wires[control])
 
         @branches.else_if(_type == 2)
         def swap():
@@ -885,9 +885,10 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
             elbow-based decomposition.
             """
             _wires = [wires[idx] for idx in data[:3]]
-            qp.BasisState([1 - data[3]], _wires[1:2])
+            cval = 1 - math.array(data[3:4], like=math.get_interface(data[3]))
+            qp.MultiX(cval, _wires[1:2])
             qp.MultiControlledX(_wires, work_wires=work_wires[0], work_wire_type="zeroed")
-            qp.BasisState([1 - data[3]], _wires[1:2])
+            qp.MultiX(cval, _wires[1:2])
 
         branches()
 
