@@ -172,7 +172,7 @@ def _change_op_basis_resources(compute_op, target_op, uncompute_op):
     resources[target_op] += 1
     resources[uncompute_op] += 1
 
-    return resources
+    return dict(resources)
 
 
 def _controlled_change_op_basis_resources(
