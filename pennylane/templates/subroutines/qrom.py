@@ -35,7 +35,6 @@ from pennylane.decomposition import (
 from pennylane.math import ceil_log2
 from pennylane.ops import CNOT, CZ, X, cond, ctrl, pauli_measure
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
-from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.typing import AbstractArray, Bool, Int, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
@@ -51,10 +50,9 @@ def _select_ops(
     n_control_select_wires = ceil_log2(capacity / depth)
     control_select_wires = control_wires[:n_control_select_wires]
 
-    with QueuingManager.stop_recording():
-        with capture.pause():
-            ops_new = [MultiX(bits, wires=target_wires) for bits in bitstrings]
-            ops_identity_new = ops_new + [qp_ops.I(target_wires)] * (capacity - len(ops_new))
+    with QueuingManager.stop_recording(), capture.pause():
+        ops_new = [MultiX(bits, wires=target_wires) for bits in bitstrings]
+        ops_identity_new = ops_new + [qp_ops.I(target_wires)] * (capacity - len(ops_new))
 
     n_columns = int(np.ceil(bitstrings.shape[0] / depth))
     num_targets = len(target_wires)
@@ -640,7 +638,7 @@ def _flag_resources(n_extra, num_target_wires):
         resources[X] = 2
         return resources
     resources[TemporaryAND] = n_extra - 1
-    resources[_adjoint_abstract(TemporaryAND)] = n_extra - 1
+    resources[qp_ops.adjoint(TemporaryAND(Wire[3]))] = n_extra - 1
     return resources
 
 
@@ -809,21 +807,18 @@ def _qrom_measurement_decomposition(
     _measurement_qrom_outer(controls, list(target_wires), bitstrings, L)
 
 
-def _popcount(x, nbits=40):
-    pc = np.int64(0)
-    for j in range(nbits):
-        pc = pc + ((x >> j) & 1)
-    return pc
-
-
 def _qrom_unary_iteration_condition(
-    bitstrings=None, control_wires=None, target_wires=None, work_wires=None, clean=None, base=None
+    bitstrings, control_wires, target_wires, work_wires, clean=True
 ):  # pylint: disable=unused-argument,too-many-arguments
     return len(work_wires) >= len(control_wires) - 1
 
 
 def _qrom_unary_iteration_resources(
-    bitstrings=None, control_wires=None, target_wires=None, work_wires=None, clean=None, base=None
+    bitstrings,
+    control_wires,
+    target_wires,
+    work_wires,
+    clean=True,
 ):  # pylint: disable=unused-argument,too-many-arguments
     c = len(control_wires)
     K = len(bitstrings)
@@ -856,7 +851,7 @@ def _qrom_unary_iteration_resources(
     num_elbows = c + K - 2 - (K - 1).bit_count() - more_than_half
     return {
         TemporaryAND: num_elbows,
-        _adjoint_abstract(TemporaryAND): num_elbows,
+        qp_ops.adjoint(TemporaryAND(Wire[3])): num_elbows,
         CNOT: K - 1 + more_than_half,
         X: 2 * int(K > 2 ** (c - 2)),
         cbasis_rep: K,
@@ -878,7 +873,7 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires):
     # quarter_prob = int(K > (1 << (c - 2))) / (K - 1)
     # mid_prob = int(K > (1 << (c - 1))) / (K - 1)
     # est_ladder_len = float(
-    # np.mean([_popcount(math.bitwise_xor(k, k + 1)) - 1 for k in range(K - 1)])
+    # np.mean([math.bitwise_count(math.bitwise_xor(k, k + 1)) - 1 for k in range(K - 1)])
     # )
 
     # Loop over all bitstrings but the last one
@@ -889,7 +884,7 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires):
 
         # 2. transition address k -> k+1
         # a is the MSB-first index of least-significant 0 bit of k
-        a = c - _popcount(math.bitwise_xor(k, k + 1))
+        a = c - math.bitwise_count(math.bitwise_xor(k, k + 1)).astype(int)
 
         # Whether we are in the first half of the iteration, so that the top bit
         # has not been flipped yet
@@ -968,11 +963,11 @@ def _qrom_unary_iteration(
             return
         # Two bit strings to be applied. Load the first unconditionally and control-load the diff
         MultiX(bitstrings[0], target_wires)
-        ctrl(MultiX((bitstrings[0] + bitstrings[1]) % 2, target_wires), control=control_wires)
+        ctrl(MultiX(bitstrings[0] ^ bitstrings[1], target_wires), control=control_wires)
         return
 
     # Compute unary iteration wires
-    interleaved = _interleave_controls(control_wires, work_wires, None)
+    interleaved = _interleave_controls(control_wires, work_wires, head=None)
     triples = [interleaved[2 * i : 2 * i + 3] for i in range(num_controls - 1)]
 
     if compiler.active() or capture.enabled():
