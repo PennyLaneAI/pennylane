@@ -165,16 +165,6 @@ def _change_op_basis_abstract(compute_op, target_op, uncompute_op):
     return change_op_basis_resource_rep(compute_op, target_op, uncompute_op)
 
 
-def _change_op_basis_resources(compute_op, target_op, uncompute_op):
-    resources = Counter()
-
-    resources[compute_op] += 1
-    resources[target_op] += 1
-    resources[uncompute_op] += 1
-
-    return resources
-
-
 def _controlled_change_op_basis_resources(
     base,
     control_wires,
@@ -213,6 +203,16 @@ def _controlled_change_op_basis_decomposition(
         work_wire_type=work_wire_type,
     )
     queuing.apply(base.uncompute_op)
+
+
+def _change_op_basis_resources(compute_op, target_op, uncompute_op):
+    resources = Counter()
+
+    resources[compute_op] += 1
+    resources[target_op] += 1
+    resources[uncompute_op] += 1
+
+    return resources
 
 
 @register_resources(_change_op_basis_resources)
