@@ -408,6 +408,44 @@ class TestApplyOp:
 
         assert q1.queue == [op1, op2]
 
+    @pytest.mark.capture
+    def test_apply_returns_a_copy(self):
+        """Test that 'apply' will return a new object, not the operator it was given."""
+        import jax
+
+        results = {}
+
+        def f():
+            op = qp.X(0)
+            results["is_same"] = qp.apply(op) is op
+
+        _ = jax.make_jaxpr(f)()
+        assert results["is_same"] is False
+
+    @pytest.mark.capture
+    def test_apply_does_not_bind_input_operator(self):
+        """Test that apply does not leave its tracer on the caller's operator."""
+        import jax
+
+        op = qp.X(0)
+        assert op.tracer is None
+
+        _ = jax.make_jaxpr(lambda: qp.apply(op))()
+
+        assert op.tracer is None
+
+    @pytest.mark.capture
+    def test_apply_raises_outside_a_trace_for_prev_traced_op(self):
+        """Tests that a stale tracer from an earlier trace doesn't satsify the guard."""
+
+        import jax
+
+        op = qp.X(0)
+        _ = jax.make_jaxpr(lambda: qp.apply(op))()
+
+        with pytest.raises(RuntimeError, match="non-tracing context"):
+            qp.apply(op)
+
 
 class TestWrappedObj:
     """Tests for the ``WrappedObj`` class"""
