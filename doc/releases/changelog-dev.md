@@ -829,12 +829,6 @@
 
   ```
 
-* Created a :func:`~.pennylane.labs.templates.trotter_fragmented` function to run specialized
-  Trotter circuits for fragmented Hamiltonians. This is used in modern quantum chemistry
-  application algorithms.
-  [(#9459)](https://github.com/PennyLaneAI/pennylane/pull/9459)
-  [(#9789)](https://github.com/PennyLaneAI/pennylane/pull/9789)
-
 * Created a :func:`~.pennylane.labs.templates.one_body_walk` function implementing the qubitization
   walk operator that block-encodes a real symmetric one-body (single-particle) operator, together
   with :func:`~.pennylane.labs.templates.one_body_walk_wires` reporting the required register sizes.
