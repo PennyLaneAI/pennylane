@@ -28,7 +28,7 @@ from pennylane.decomposition import (
 from pennylane.decomposition.resources import _unroll_change_op_basis
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
-from pennylane.typing import AbstractArray, AbstractWires, Bool, Wire
+from pennylane.typing import AbstractArray, Bool, Wire
 from pennylane.wires import WiresLike
 
 

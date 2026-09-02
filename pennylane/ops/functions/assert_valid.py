@@ -680,7 +680,7 @@ def _assert_valid_operator2(
     skip_pickle=False,
     skip_wire_mapping=False,
     skip_bind_new_parameters=False,
-    skip_eigvals=False
+    skip_eigvals=False,
 ) -> None:
     """
     Runs basic validation checks on an :class:`~.core.Operator2` to make sure it has been correctly defined.
@@ -748,7 +748,7 @@ def _assert_valid_operator2(
                     skip_pickle=skip_pickle,
                     skip_wire_mapping=skip_wire_mapping,
                     skip_bind_new_parameters=skip_bind_new_parameters,
-                    skip_eigvals=skip_eigvals
+                    skip_eigvals=skip_eigvals,
                 )
 
     if not skip_bind_new_parameters:
@@ -769,7 +769,7 @@ def assert_valid(
     skip_pickle=False,
     skip_wire_mapping=False,
     skip_bind_new_parameters=False,
-    skip_eigvals=False
+    skip_eigvals=False,
 ) -> None:
     """Runs basic validation checks on an :class:`~.core.Operator` or :class:`~.core.Operator2` to make
     sure it has been correctly defined.
@@ -835,7 +835,7 @@ def assert_valid(
             skip_pickle,
             skip_wire_mapping,
             skip_bind_new_parameters,
-            skip_eigvals
+            skip_eigvals,
         )
     else:
         assert isinstance(op.data, tuple), "op.data must be a tuple"

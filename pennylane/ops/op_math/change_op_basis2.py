@@ -15,26 +15,20 @@
 This submodule defines a class for compute-uncompute patterns.
 """
 
-import copy
-import inspect
 from collections import Counter, defaultdict
-from collections.abc import Callable
 from functools import reduce
 
-from pennylane import capture, math
+from pennylane import math
 from pennylane.core import queuing
 from pennylane.core.operator import Operator, Operator2, abstractify
-from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.resources import change_op_basis_resource_rep
 from pennylane.exceptions import (
     DiagGatesUndefinedError,
-    EigvalsUndefinedError,
     MatrixUndefinedError,
     SparseMatrixUndefinedError,
 )
-from pennylane.ops.op_math import Prod, Prod2, adjoint, ctrl, prod
-from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math import adjoint, ctrl
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract, flip_zero_control
 
 from .composite import handle_recursion_error

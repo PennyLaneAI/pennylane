@@ -45,9 +45,9 @@ ops = (
 )
 
 
+# pylint: disable-next=too-few-public-methods
 class DummyOp(qp.core.Operator1):
-    def __init__(self, wires):
-        super().__init__(wires)
+    pass
 
 
 @pytest.mark.jax

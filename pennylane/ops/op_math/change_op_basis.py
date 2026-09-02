@@ -243,8 +243,7 @@ def change_op_basis(
                 target,
                 uncompute,
             )
-        else:
-            return ChangeOpBasis(compute, target, uncompute)
+        return ChangeOpBasis(compute, target, uncompute)
 
 
 class ChangeOpBasis(CompositeOp):
