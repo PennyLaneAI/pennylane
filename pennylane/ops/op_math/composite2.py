@@ -137,7 +137,7 @@ class CompositeOp2(Operator2, is_baseclass=True):
             def _compute_eigvals(operands=(), _init_pauli_rep=None):
                 """Return the eigenvalues of the specified operator.
 
-                This method uses pre-stored eigenvalues for standard observables where\
+                This method uses pre-stored eigenvalues for standard observables where
                 possible and stores the corresponding eigenvectors from the eigendecomposition.
 
                 Returns:
