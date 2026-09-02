@@ -380,7 +380,7 @@ def _out_square_with_adder_zeroed(
     x_wires: WiresLike,
     output_wires: WiresLike,
     work_wires: WiresLike,
-    output_wires_zeroed: bool,
+    output_wires_zeroed: bool=False,
 ):
     # pylint: disable=unused-argument
     n = len(x_wires)
@@ -539,7 +539,7 @@ def _out_square_with_caddsub(
     x_wires: WiresLike,
     output_wires: WiresLike,
     work_wires: WiresLike,
-    output_wires_zeroed: bool,
+    output_wires_zeroed: bool=False,
 ):
     r"""This decomposition uses controlled add-subtract blocks, and three correction
     steps. See Sec. II for details."""
