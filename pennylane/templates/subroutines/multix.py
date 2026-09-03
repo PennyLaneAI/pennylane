@@ -17,14 +17,19 @@ import numpy as np
 from scipy import sparse
 
 from pennylane import capture, compiler, math
+from pennylane.allocation import allocate
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.decomposition.symbolic_decomposition import self_adjoint
-from pennylane.ops import Hadamard, PauliX, cond
+from pennylane.ops import CNOT, Hadamard, PauliX, adjoint, cond
+from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.ops.op_math.pow2 import pow_involutory
+from pennylane.ops.op_math.prod import _multi_temporary_and_all_ones
 from pennylane.typing import AbstractArray, AbstractWires, Bool, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
+
+from .arithmetic.temporary_and import TemporaryAND
 
 
 class MultiX(Operator2):
@@ -339,3 +344,75 @@ def _multix_decomposition(bitstring: TensorLike, wires: WiresLike) -> None:
 add_decomps(MultiX, _multix_decomposition)
 add_decomps("Adjoint(MultiX)", self_adjoint)
 add_decomps("Pow(MultiX)", pow_involutory)
+
+
+def _controlled_multix_ladder_resources(base, control_wires, **_):
+    # num_control_wires - 1 TemporaryAND gates to compute the AND ladder, as many to uncompute it,
+    # and up to one CNOT per target wire (worst case, hence exact=False).
+    num_control_wires = len(control_wires)
+    return {
+        TemporaryAND: num_control_wires - 1,
+        adjoint(TemporaryAND(Wire[3])): num_control_wires - 1,
+        CNOT: len(base.wires),
+    }
+
+
+def _multix_ladder_fanout(base, control_wires, ladder_wires):
+    """Computes ``AND(control_wires)`` into a single work wire with the ``TemporaryAND`` ladder in
+    :func:`~._multi_temporary_and_all_ones`, fans that wire out with a ``CNOT`` to every set bit of
+    ``base``, then uncomputes the ladder. Requires ``len(control_wires) - 1`` wires in
+    ``ladder_wires``, all in the zero state."""
+    bitstring = base.bitstring
+    wires = base.wires
+    if compiler.active() or capture.enabled():
+        bitstring = math.array(bitstring, like="jax")
+        wires = math.array(wires, like="jax")
+
+    num_needed = len(control_wires) - 1
+    target_wire = _multi_temporary_and_all_ones(control_wires, ladder_wires)
+
+    def _apply_cnot(wire):
+        CNOT(wires=[target_wire, wire])
+
+    @for_loop(0, len(wires), 1)
+    def _locally_apply_cnot(i):
+        cond(bitstring[i], _apply_cnot)(wires[i])
+
+    _locally_apply_cnot()  # pylint: disable=no-value-for-parameter
+
+    # Uncompute the ladder. Rebuilt inline rather than via adjoint(_multi_temporary_and_all_ones)(),
+    # since adjoint-of-a-qfunc doesn't support DynamicRegister arguments under capture.
+    for i in range(num_needed - 1, 0, -1):
+        adjoint(TemporaryAND)(wires=[ladder_wires[i - 1], control_wires[i + 1], ladder_wires[i]])
+    adjoint(TemporaryAND)(wires=[control_wires[0], control_wires[1], ladder_wires[0]])
+
+
+def _controlled_multix_ladder_extra_work_wires(control_wires, work_wires, work_wire_type, **_):
+    # Allocate only the shortfall beyond any zeroed work wires already supplied.
+    num_needed = len(control_wires) - 1
+    num_available = len(work_wires) if work_wire_type == "zeroed" else 0
+    return {"zeroed": max(0, num_needed - num_available)}
+
+
+@register_condition(lambda control_wires, **_: len(control_wires) > 1)
+@register_resources(
+    _controlled_multix_ladder_resources,
+    work_wires=_controlled_multix_ladder_extra_work_wires,
+    exact=False,
+)
+def _controlled_multix_ladder(base, control_wires, work_wires, work_wire_type, **_):
+    """Controlled-``MultiX`` decomposition that loads the fanout through a single work wire
+    holding ``AND(control_wires)``, rather than repeating the multi-control structure once per
+    target wire. Uses as many of the caller-supplied zeroed work wires as needed, dynamically
+    allocating the rest."""
+    num_needed = len(control_wires) - 1
+    available = list(work_wires[:num_needed]) if work_wire_type == "zeroed" else []
+    num_to_allocate = num_needed - len(available)
+    if num_to_allocate > 0:
+        with allocate(num_to_allocate, state="zero", restored=True) as allocated:
+            _multix_ladder_fanout(base, control_wires, available + list(allocated))
+    else:
+        _multix_ladder_fanout(base, control_wires, available)
+
+
+add_decomps("C(MultiX)", flip_zero_control2(_controlled_multix_ladder))

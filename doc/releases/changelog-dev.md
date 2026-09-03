@@ -644,6 +644,7 @@
   [(#10033)](https://github.com/PennyLaneAI/pennylane/pull/10033)
   [(#10073)](https://github.com/PennyLaneAI/pennylane/pull/10073)
   [(#10079)](https://github.com/PennyLaneAI/pennylane/pull/10079)
+  [(#10098)](https://github.com/PennyLaneAI/pennylane/pull/10098)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
