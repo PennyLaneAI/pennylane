@@ -29,7 +29,7 @@ from pennylane.core.operator import abstractify
 from pennylane.exceptions import DeviceError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math import ChangeOpBasis, change_op_basis
-from pennylane.ops.op_math.change_op_basis import _validate_callable
+from pennylane.ops.op_math.change_op_basis import _convert_to_prod, _validate_callable
 from pennylane.templates import Subroutine
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
@@ -132,6 +132,14 @@ def test_change_op_basis_callables_capture_with_none():
 
     assert_eqn_matches_op(jaxpr.eqns[-2], qp.X)
     assert jaxpr.eqns[-3].primitive.name == "quantum_subroutine_prim"
+
+
+def test_convert_to_prod_raises():
+    """Test that _convert_to_prod raises for inputs that are neither Operators nor Callables."""
+    with pytest.raises(
+        TypeError, match="The parameters to change_op_basis must be Operator or Callable"
+    ):
+        _convert_to_prod(5)
 
 
 def test_change_op_basis_raises():
