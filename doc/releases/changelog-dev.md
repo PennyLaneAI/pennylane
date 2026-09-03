@@ -423,7 +423,7 @@
   :class:`~.SemiAdder` to each angle's significant bit-width and skip angles that round to zero,
   lowering the compiled gate count while staying exact. A new ``adaptive_precision`` keyword
   (default ``True``) toggles this behavior.
-  [(#10098)](https://github.com/PennyLaneAI/pennylane/pull/10098)
+  [(#10109)](https://github.com/PennyLaneAI/pennylane/pull/10109)
 
 * Controlling a :class:`~.MultiX` with more than one control wire, given a work wire, now decomposes
   into a :class:`~.TemporaryAND` ladder fanning out to the targets with ``CNOT`` gates, instead of
