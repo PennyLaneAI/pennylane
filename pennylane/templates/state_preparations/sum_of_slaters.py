@@ -1038,8 +1038,8 @@ class SumOfSlatersPrep(Operator2):
 
         **Example**
 
-        >>> qp.SumOfSlatersPrep.generate_indices(5, 4)
-        (0, 1, 2, 4, 8)
+        >>> qp.SumOfSlatersPrep.generate_indices(7, 4)
+        (0, 1, 2, 3, 4, 5, 8)
 
         These indices require exactly the sizes reported for abstract ``indices`` of the same
         length:
