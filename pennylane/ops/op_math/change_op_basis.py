@@ -93,6 +93,7 @@ def _convert_to_prod(op_or_func):
     if callable(op_or_func):
         _validate_callable(op_or_func)
         op = prod(op_or_func)()
+        # TODO: remove this branch once qp.prod dispatches properly to Prod2
         if isinstance(op, Prod) and all(isinstance(operand, Operator2) for operand in op.operands):
             queuing.remove_from_program(op)
             return Prod2(op.operands)
