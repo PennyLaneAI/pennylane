@@ -30,7 +30,7 @@ from operator2_utils import (
 import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.core.operator import Operator2
-from pennylane.typing import AbstractArray, AbstractWires
+from pennylane.typing import AbstractArray, AbstractWires, Wire
 
 # ---------------------- Tests ----------------------
 
@@ -491,6 +491,16 @@ class TestAbstractOperatorEquality:
         op2 = DynOp(AbstractArray(shape2, float), 0)
 
         assert qp.equal(op1, op2) is are_equal
+
+    def test_partially_abstract_operators(self):
+        """Tests that partially abstract operators are compared correctly."""
+
+        op1 = DynOp(0.5, Wire[1])
+        op2 = DynOp(0.6, Wire[1])
+        assert not qp.equal(op1, op2)  # concrete part not equal
+
+        op3 = DynOp(0.5, Wire[3])
+        assert not qp.equal(op1, op3)  # abstract part not equal
 
 
 def _jit_eq_fn(phi, wires, assert_=False):

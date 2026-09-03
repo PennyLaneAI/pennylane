@@ -498,6 +498,8 @@ class TestHasUnitaryGenerator:
             op = op_class(phi, pauli_word="XYZ", wires=wires)  # PauliRot has num_wires == None
         elif op_class is qp.PCPhase:
             op = op_class(phi, dim=(2 ** len(wires) - 1), wires=wires)
+        elif op_class is qp.GlobalPhase:
+            op = op_class(phi)
         else:
             op = op_class(phi, wires=wires)
         gen = qp.generator(op, format="observable")

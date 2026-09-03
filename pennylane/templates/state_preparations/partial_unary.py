@@ -603,15 +603,25 @@ class PartialUnaryStatePreparation(Operator2):
     The preparation circuit looks like this:
 
     >>> print(qp.draw(qp.decompose(circuit, max_expansion=1), max_length=200, show_matrices=False)())
-    0: ─╭MultiplexerStatePreparation(M0)─╭|Ψ⟩─╭◑────────╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭◑────────╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭◑────────╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭◑────────╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭◑────────╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─┤ ╭State
-    1: ─├MultiplexerStatePreparation(M0)─├|Ψ⟩─├◑────────├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├◑────────├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├◑────────├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├◑────────├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├◑────────├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─┤ ├State
-    2: ─├MultiplexerStatePreparation(M0)─├|Ψ⟩─├◑────────├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├◑────────├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├◑────────├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├◑────────├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├◑────────├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─┤ ├State
-    3: ─╰MultiplexerStatePreparation(M0)─╰|Ψ⟩─├◑────────╰|Ψ⟩─├|Ψ⟩─├|Ψ⟩─╰|Ψ⟩─├◑────────╰|Ψ⟩─├|Ψ⟩─├|Ψ⟩─╰|Ψ⟩─├◑────────╰|Ψ⟩─├|Ψ⟩─├|Ψ⟩─╰|Ψ⟩─├◑────────╰|Ψ⟩─├|Ψ⟩─├|Ψ⟩─╰|Ψ⟩─├◑────────╰|Ψ⟩─├|Ψ⟩─├|Ψ⟩─┤ ├State
-    4: ───────────────────────────────────────├QROM(M1)──────├|Ψ⟩─├●────────├QROM(M1)──────├|Ψ⟩─├●────────├QROM(M1)──────├|Ψ⟩─├●────────├QROM(M1)──────├|Ψ⟩─├●────────├QROM(M1)──────├|Ψ⟩─├●───┤ ├State
-    5: ───────────────────────────────────────├QROM(M1)──────╰●───╰|Ψ⟩──────├QROM(M1)──────╰●───╰|Ψ⟩──────├QROM(M1)──────╰●───╰|Ψ⟩──────├QROM(M1)──────╰●───╰|Ψ⟩──────├QROM(M1)──────╰●───╰|Ψ⟩─┤ ├State
-    6: ───────────────────────────────────────├work─────────────────────────├work─────────────────────────├work─────────────────────────├work─────────────────────────├work────────────────────┤ ├State
-    7: ───────────────────────────────────────├work─────────────────────────├work─────────────────────────├work─────────────────────────├work─────────────────────────├work────────────────────┤ ├State
-    8: ───────────────────────────────────────╰work─────────────────────────╰work─────────────────────────╰work─────────────────────────╰work─────────────────────────╰work────────────────────┤ ╰State
+    0: ─╭MultiplexerStatePreparation(M0)─╭MultiX(M1)─╭◑────────╭MultiX(M1)─╭MultiX(M3)─╭MultiX(M4)─╭MultiX(M5)─╭◑────────╭MultiX(M5)─╭MultiX(M6)─╭MultiX(M7)─╭MultiX(M8)─╭◑────────╭MultiX(M8) ···
+    1: ─├MultiplexerStatePreparation(M0)─├MultiX(M1)─├◑────────├MultiX(M1)─├MultiX(M3)─├MultiX(M4)─├MultiX(M5)─├◑────────├MultiX(M5)─├MultiX(M6)─├MultiX(M7)─├MultiX(M8)─├◑────────├MultiX(M8) ···
+    2: ─├MultiplexerStatePreparation(M0)─├MultiX(M1)─├◑────────├MultiX(M1)─├MultiX(M3)─├MultiX(M4)─├MultiX(M5)─├◑────────├MultiX(M5)─├MultiX(M6)─├MultiX(M7)─├MultiX(M8)─├◑────────├MultiX(M8) ···
+    3: ─╰MultiplexerStatePreparation(M0)─╰MultiX(M1)─├◑────────╰MultiX(M1)─├MultiX(M3)─├MultiX(M4)─╰MultiX(M5)─├◑────────╰MultiX(M5)─├MultiX(M6)─├MultiX(M7)─╰MultiX(M8)─├◑────────╰MultiX(M8) ···
+    4: ──────────────────────────────────────────────├QROM(M2)─────────────├MultiX(M3)─├●──────────────────────├QROM(M2)─────────────├MultiX(M6)─├●──────────────────────├QROM(M2)──────────── ···
+    5: ──────────────────────────────────────────────├QROM(M2)─────────────╰●──────────╰MultiX(M4)─────────────├QROM(M2)─────────────╰●──────────╰MultiX(M7)─────────────├QROM(M2)──────────── ···
+    6: ──────────────────────────────────────────────├work─────────────────────────────────────────────────────├work─────────────────────────────────────────────────────├work──────────────── ···
+    7: ──────────────────────────────────────────────├work─────────────────────────────────────────────────────├work─────────────────────────────────────────────────────├work──────────────── ···
+    8: ──────────────────────────────────────────────╰work─────────────────────────────────────────────────────╰work─────────────────────────────────────────────────────╰work──────────────── ···
+    <BLANKLINE>
+    0: ··· ─╭MultiX(M6)─╭MultiX(M9)─╭MultiX(M10)─╭◑────────╭MultiX(M10)─╭MultiX(M11)─╭MultiX(M11)─╭MultiX(M12)─╭◑────────╭MultiX(M12)─╭MultiX(M13)─╭MultiX(M14)─┤ ╭State
+    1: ··· ─├MultiX(M6)─├MultiX(M9)─├MultiX(M10)─├◑────────├MultiX(M10)─├MultiX(M11)─├MultiX(M11)─├MultiX(M12)─├◑────────├MultiX(M12)─├MultiX(M13)─├MultiX(M14)─┤ ├State
+    2: ··· ─├MultiX(M6)─├MultiX(M9)─├MultiX(M10)─├◑────────├MultiX(M10)─├MultiX(M11)─├MultiX(M11)─├MultiX(M12)─├◑────────├MultiX(M12)─├MultiX(M13)─├MultiX(M14)─┤ ├State
+    3: ··· ─├MultiX(M6)─├MultiX(M9)─╰MultiX(M10)─├◑────────╰MultiX(M10)─├MultiX(M11)─├MultiX(M11)─╰MultiX(M12)─├◑────────╰MultiX(M12)─├MultiX(M13)─├MultiX(M14)─┤ ├State
+    4: ··· ─├MultiX(M6)─├●───────────────────────├QROM(M2)──────────────├MultiX(M11)─├●────────────────────────├QROM(M2)──────────────├MultiX(M13)─├●───────────┤ ├State
+    5: ··· ─╰●──────────╰MultiX(M9)──────────────├QROM(M2)──────────────╰●───────────╰MultiX(M11)──────────────├QROM(M2)──────────────╰●───────────╰MultiX(M14)─┤ ├State
+    6: ··· ──────────────────────────────────────├work─────────────────────────────────────────────────────────├work────────────────────────────────────────────┤ ├State
+    7: ··· ──────────────────────────────────────├work─────────────────────────────────────────────────────────├work────────────────────────────────────────────┤ ├State
+    8: ··· ──────────────────────────────────────╰work─────────────────────────────────────────────────────────╰work────────────────────────────────────────────┤ ╰State
 
     We can make out the dense state preparation on the *subspace register* ``0`` through ``3``,
     followed by the isometry circuit consisting of partial unary iteration circuits and ``CNOT``
@@ -637,9 +647,9 @@ class PartialUnaryStatePreparation(Operator2):
     Quantum operations:
     - Total: 6,046
       - MultiplexerStatePreparation: 1
-      - BasisState: 2,420
+      - MultiX: 2,420
       - QROM: 1,207
-      - C(BasisState): 2,414
+      - C(MultiX): 2,414
       - MultiControlledX: 3
       - SWAP: 1
     Measurement processes:
@@ -656,9 +666,9 @@ class PartialUnaryStatePreparation(Operator2):
     Quantum operations:
     - Total: 3,068
       - MultiplexerStatePreparation: 1
-      - BasisState: 332
+      - MultiX: 332
       - QROM: 160
-      - C(BasisState): 2,553
+      - C(MultiX): 2,553
       - MultiControlledX: 6
       - SWAP: 16
     Measurement processes:
@@ -711,7 +721,7 @@ def _pui_state_prep_resources(coefficients, wires, indices, work_wires):
     num_wires = 1 if isinstance(wires, int) else len(wires)
     num_work_wires = len(work_wires)
     if num_entries == 1:
-        return {qp.BasisState(Bool[num_wires], Wire[num_wires]): 1}
+        return {qp.MultiX(Bool[num_wires], Wire[num_wires]): 1}
 
     n_subspace = max(math.ceil_log2(num_entries), 1)
     resources = defaultdict(int)
@@ -739,10 +749,10 @@ def _pui_state_prep_resources(coefficients, wires, indices, work_wires):
     for p in range(1, main_pui_batch_size):
         resources[qrom_reps[p]] += 1
 
-    ctrl_basis_rep = qp.ctrl(qp.BasisState(Bool[num_wires - 1], Wire[num_wires - 1]), Wire[1])
+    ctrl_basis_rep = qp.ctrl(qp.MultiX(Bool[num_wires - 1], Wire[num_wires - 1]), Wire[1])
     resources[ctrl_basis_rep] += num_entries
 
-    embed_rep = qp.BasisState(Bool[num_wires], Wire[n_subspace])
+    embed_rep = qp.MultiX(Bool[n_subspace], Wire[n_subspace])
     resources[embed_rep] += 2 * (num_entries // main_pui_batch_size + 1)
 
     resources[qp.SWAP] += num_wires
@@ -750,7 +760,7 @@ def _pui_state_prep_resources(coefficients, wires, indices, work_wires):
     num_toffolis = int(num_wires / 10) + 1
     mcx_rep = qp.MultiControlledX(Wire[3], work_wires=Wire[1], work_wire_type="zeroed")
     resources[mcx_rep] += num_toffolis
-    resources[qp.BasisState(Bool[1], Wire[1])] += 2 * num_toffolis
+    resources[qp.MultiX(Bool[1], Wire[1])] += 2 * num_toffolis
 
     return resources
 
@@ -761,7 +771,7 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
     wire management."""
     num_entries = len(indices)
     if num_entries == 1:
-        qp.BasisState(math.int_to_binary(indices[0], len(wires)), wires)
+        qp.MultiX(math.int_to_binary(indices[0], len(wires)), wires)
         return
 
     n_subspace = max(math.ceil_log2(num_entries), 1)
@@ -790,6 +800,8 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
     if not circuit:
         return
 
+    batch_sizes = list({data[1] - data[0] for _type, *data in circuit if _type == 0})
+
     if qp.compiler.active() or qp.capture.enabled():
         fanout_bits = qp.math.array(fanout_bits, like="jax")
         circuit = qp.math.array(circuit, like="jax")
@@ -814,7 +826,7 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
         the operation to be applied:
 
         - 0: Partial unary iterator (realized via shifted ``QROM``)
-        - 1: Fanout (realized via controlled ``BasisState``)
+        - 1: Fanout (realized via controlled ``MultiX``)
         - 2: SWAP of two remainder qubits (realized via a simple ``SWAP``)
         - 3: Toffoli (realized via ``MultiControlledX`` in order to use work wires for elbow decomp)
 
@@ -839,14 +851,17 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
             b = k - k_start
             _work_wires = work_wires[: n_subspace - 1]
 
-            @qp.cond(b == 1)
-            def qrom_branches():
-                qp.QROM(np.eye(1, dtype=int), subspace_wires, nonsubspace_wires[:1], _work_wires)
+            first_case_b = batch_sizes[0]
 
-            for case_b in range(2, iso_finder.m + 1):
-                # Register an additional branch to ``qrom_branches`` for each possible batch size.
+            @qp.cond(b == first_case_b)
+            def qrom_branches():
+                target_wires = nonsubspace_wires[:first_case_b]
+                qp.QROM(np.eye(first_case_b, dtype=int), subspace_wires, target_wires, _work_wires)
+
+            for case_b in batch_sizes[1:]:
+                # Register an additional branch to ``qrom_branches`` for each occurring batch size.
                 # Passing a default argument makes sure that we don't use an outdated closure
-                # variable `case_b` at when calling the function.
+                # variable `case_b` when calling the function.
                 @qrom_branches.else_if(b == case_b)
                 def _(case_b=case_b):
                     target_wires = nonsubspace_wires[:case_b]
@@ -854,19 +869,19 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
 
             # Realize PUI via QROM, shifted by k_start
             k_start_bits = math.int_to_binary(k_start, n_subspace)
-            qp.BasisState(k_start_bits, subspace_wires)
+            qp.MultiX(k_start_bits, subspace_wires)
             qrom_branches()
-            qp.BasisState(k_start_bits, subspace_wires)
+            qp.MultiX(k_start_bits, subspace_wires)
 
         @branches.else_if(_type == 1)
         def fanout():
-            """The second branch calls a fan-out, in form of a controlled ``BasisState``,
+            """The second branch calls a fan-out, in form of a controlled ``MultiX``,
             controlled by one of the (first ``iso_finder.m``) remainder qubits and targeting
             all other qubits.
             """
             control, fanout_bit_pointer = data[:2]
             target_wires = del_cwire(control)
-            qp.ctrl(qp.BasisState(fanout_bits[fanout_bit_pointer], target_wires), wires[control])
+            qp.ctrl(qp.MultiX(fanout_bits[fanout_bit_pointer], target_wires), wires[control])
 
         @branches.else_if(_type == 2)
         def swap():
@@ -882,9 +897,10 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
             elbow-based decomposition.
             """
             _wires = [wires[idx] for idx in data[:3]]
-            qp.BasisState([1 - data[3]], _wires[1:2])
+            cval = 1 - math.array(data[3:4], like=math.get_interface(data[3]))
+            qp.MultiX(cval, _wires[1:2])
             qp.MultiControlledX(_wires, work_wires=work_wires[0], work_wire_type="zeroed")
-            qp.BasisState([1 - data[3]], _wires[1:2])
+            qp.MultiX(cval, _wires[1:2])
 
         branches()
 
