@@ -94,6 +94,7 @@
   [(#9478)](https://github.com/PennyLaneAI/pennylane/pull/9478)
   [(#9656)](https://github.com/PennyLaneAI/pennylane/pull/9656)
   [(#9833)](https://github.com/PennyLaneAI/pennylane/pull/9833)
+  [(#9847)](https://github.com/PennyLaneAI/pennylane/pull/9847)
   [(#10008)](https://github.com/PennyLaneAI/pennylane/pull/10008)
 
   Given the ``amplitudes`` and the computational basis state ``indices`` of the sparse state we
@@ -1553,7 +1554,8 @@
   of the estimator. Qubit and qudit MMD loss functions now have unbiased gradients.
   [(#10025)](https://github.com/PennyLaneAI/pennylane/pull/10025)
 
-
+* Various decomposition rules are updated so that they accept positionally passed arguments.
+  [(#10088)](https://github.com/PennyLaneAI/pennylane/pull/10088)
 
 <h3>Contributors ✍️</h3>
 

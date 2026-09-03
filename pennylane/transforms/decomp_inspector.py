@@ -504,7 +504,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
 
         >>> op = qp.MultiControlledX([2, 3, 4, 5, 6])
         >>> inspector.inspect_decomps(op, num_work_wires=2)
-        Decomposition 0 (name: no_workers)
+        Decomposition 0 (name: decompose_mcx_with_no_worker)
         2: ────╭●───────────────────╭●──────────────────────╭●──────────────────┤
         3: ────├●───────────────────├●──────────────────────├●──────────────────┤
         4: ────│─────────╭●─────────│─────────╭●────────────├●──────────────────┤
@@ -580,11 +580,10 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         6: ────├X─│──│──│──├X─│──│──│─────┤
              ├─╰●─├X─│──├X─╰●─├X─│──├X──┤
              ├────╰●─╰X─╰●────╰●─╰X─╰●──┤
-        Estimated First-Level Expansion Gates: {PauliX: 4, Toffoli: 8}
-        Actual First-Level Expansion Gates: {Toffoli: 8}
+        First-Level Expansion Gates: {Toffoli: 8}
         Wire Allocations: {'any': 2}
-        Full Expansion Gates: {CNOT: 48, GlobalPhase: 76, RX: 4, RY: 16, RZ: 72}
-        Weighted Cost: 140.0
+        Full Expansion Gates: {CNOT: 48, GlobalPhase: 72, RY: 16, RZ: 72}
+        Weighted Cost: 136.0
         <BLANKLINE>
         CHOSEN: Decomposition 6 (name: many_zeroed_workers)
         2: ─────────────╭●────────────┤
@@ -594,8 +593,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         6: ───────│──│──├X───│───│────┤
              |0>├─│──├⊕─╰●──⊕┤───│──┤
              |0>├─╰⊕─╰●─────●╯──⊕╯──┤
-        Estimated First-Level Expansion Gates: {Adjoint(TemporaryAND): 2, PauliX: 4, TemporaryAND: 2, Toffoli: 1}
-        Actual First-Level Expansion Gates: {Adjoint(TemporaryAND): 2, TemporaryAND: 2, Toffoli: 1}
+        First-Level Expansion Gates: {Adjoint(TemporaryAND): 2, TemporaryAND: 2, Toffoli: 1}
         Wire Allocations: {'zero': 2}
         Full Expansion Gates: {CNOT: 14, GlobalPhase: 41, MidMeasure: 2, RX: 12, RY: 12, RZ: 29}
         Weighted Cost: 69.0
@@ -610,7 +608,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
 
         >>> op = qp.MultiControlledX([2, 3, 4, 5, 6])  # concrete wire labels don't matter
         >>> inspector.inspect_decomps(op, num_work_wires=1)
-        Decomposition 0 (name: no_workers)
+        Decomposition 0 (name: decompose_mcx_with_no_worker)
         2: ────╭●───────────────────╭●──────────────────────╭●──────────────────┤
         3: ────├●───────────────────├●──────────────────────├●──────────────────┤
         4: ────│─────────╭●─────────│─────────╭●────────────├●──────────────────┤

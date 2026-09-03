@@ -264,7 +264,7 @@ class TestInspectDecompGraph:
 
         op = qp.MultiControlledX([0, 1, 2, 3])
         assert str(inspector.inspect_decomps(op, num_work_wires=1)) == dedent("""
-            Decomposition 0 (name: no_workers)
+            Decomposition 0 (name: decompose_mcx_with_no_worker)
             0: ────╭●───────────────────╭●──────────────────────╭●──────────────────┤  
             1: ────├●───────────────────├●──────────────────────├●──────────────────┤  
             2: ────│─────────╭●─────────│─────────╭●────────────├●──────────────────┤  
@@ -313,11 +313,10 @@ class TestInspectDecompGraph:
             2: ────│──├●─│──├●────┤  
             3: ────├X─│──├X─│─────┤  
                  ├─╰●─╰X─╰●─╰X──┤    
-            Estimated First-Level Expansion Gates: {PauliX: 3, Toffoli: 4}
-            Actual First-Level Expansion Gates: {Toffoli: 4}
+            First-Level Expansion Gates: {Toffoli: 4}
             Wire Allocations: {'any': 1}
-            Full Expansion Gates: {CNOT: 24, GlobalPhase: 39, RX: 3, RY: 8, RZ: 36}
-            Weighted Cost: 71.0
+            Full Expansion Gates: {CNOT: 24, GlobalPhase: 36, RY: 8, RZ: 36}
+            Weighted Cost: 68.0
 
             CHOSEN: Decomposition 6 (name: many_zeroed_workers)
             0: ──────────╭●────────┤  
@@ -325,8 +324,7 @@ class TestInspectDecompGraph:
             2: ───────├●─│───●┤────┤  
             3: ───────│──├X───│────┤  
                  |0>├─╰⊕─╰●──⊕╯──┤    
-            Estimated First-Level Expansion Gates: {Adjoint(TemporaryAND): 1, PauliX: 3, TemporaryAND: 1, Toffoli: 1}
-            Actual First-Level Expansion Gates: {Adjoint(TemporaryAND): 1, TemporaryAND: 1, Toffoli: 1}
+            First-Level Expansion Gates: {Adjoint(TemporaryAND): 1, TemporaryAND: 1, Toffoli: 1}
             Wire Allocations: {'zero': 1}
             Full Expansion Gates: {CNOT: 11, GlobalPhase: 25, MidMeasure: 1, RX: 7, RY: 5, RZ: 20}
             Weighted Cost: 44.0
