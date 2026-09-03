@@ -1061,7 +1061,9 @@ class SumOfSlatersPrep(Operator2):
             return (0,)
 
         indices = {0} | {1 << i for i in range(num_bits)}
-        # Top up within the same num_bits bits, so the other rows stay constant and get dropped.
+        # Pad with the smallest unused indices, which keeps every index inside the low
+        # num_bits bits. The remaining wires are then constant across all indices, so
+        # select_sos_rows discards them and exactly num_bits rows survive.
         candidate = 2
         while len(indices) < num_entries:
             indices.add(candidate)
