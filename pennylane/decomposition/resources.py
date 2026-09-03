@@ -16,10 +16,9 @@
 
 from __future__ import annotations
 
-from collections import defaultdict
 from collections.abc import Set
 from dataclasses import dataclass, field
-from functools import cached_property, partial
+from functools import cached_property
 
 import pennylane as qp
 from pennylane.core.operator import Operator, Operator2, abstractify
