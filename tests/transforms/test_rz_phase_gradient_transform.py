@@ -29,12 +29,30 @@ def prepare_phase_gradient(wires):
     return ops
 
 
-@pytest.mark.parametrize("p", [2, 3, 4])
-def test_units_rz_phase_gradient(p):
-    """Test the outputs of ``_rz_phase_gradient``. The fanout is a ``MultiX`` (one ``X`` per set bit
-    on the angle wires) controlled by the RZ target wire, over the full angle width."""
+@pytest.mark.parametrize(
+    "frac, adaptive_precision, expected_width",
+    [
+        # all-ones angle: full width regardless of adaptive_precision
+        (1 - 2.0**-4, True, 4),
+        (1 - 2.0**-4, False, 4),
+        # trailing zeros: adaptive truncates to the MSB-anchored width, non-adaptive keeps full width
+        (1 / 2, True, 1),
+        (1 / 2, False, 4),
+        (1 / 4, True, 2),
+        (1 / 4, False, 4),
+        # rounds to zero: adaptive drops the addition (None), non-adaptive keeps full width
+        (0.0, True, 0),
+        (0.0, False, 4),
+    ],
+)
+def test_units_rz_phase_gradient(frac, adaptive_precision, expected_width):
+    """Test the outputs of ``_rz_phase_gradient``. With ``adaptive_precision`` a concrete angle is
+    truncated to its MSB-anchored significant width (dropped entirely if it rounds to zero); with
+    ``adaptive_precision=False`` the full-width adder is always emitted. The work register is kept
+    in full in every case."""
 
-    phi = (1 / 2 + 1 / 4 + 1 / 8 + 1 / 16 + 1 / 32) * 2 * np.pi
+    p = 4
+    phi = frac * 2 * np.pi
 
     wire = "targ"
     angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(p)])
@@ -47,10 +65,18 @@ def test_units_rz_phase_gradient(p):
         angle_wires=angle_wires,
         phase_grad_wires=phase_grad_wires,
         work_wires=work_wires,
+        adaptive_precision=adaptive_precision,
     )
 
-    expected_bits = qp.math.binary_decimals(phi, p, unit=2 * np.pi)
-    expected_targets = {angle_wires[i] for i, b in enumerate(expected_bits) if int(b)}
+    if expected_width == 0:
+        assert op is None
+        return
+
+    expected_bits = qp.math.binary_decimals(phi, p, unit=2 * np.pi)[:expected_width]
+    # Positions of the set bits within the (possibly truncated) angle. The fanout is a ``MultiX``
+    # (one ``X`` per set bit on the angle wires) controlled by the RZ target wire.
+    set_positions = [i for i, b in enumerate(expected_bits) if int(b)]
+    expected_targets = {angle_wires[i] for i in set_positions}
 
     assert isinstance(op, qp.ops.op_math.ChangeOpBasis)
     operands = op.operands
@@ -59,12 +85,15 @@ def test_units_rz_phase_gradient(p):
     for fanout in (operands[0], operands[2]):
         assert isinstance(fanout.base, qp.MultiX)
         assert fanout.control_wires == qp.wires.Wires(wire)  # controlled by the RZ target wire
-        assert fanout.base.wires == angle_wires
+        assert fanout.base.wires == angle_wires[:expected_width]
         flipped = {angle_wires[i] for i, b in enumerate(fanout.base.bitstring) if int(b)}
         assert flipped == expected_targets
 
     assert isinstance(operands[1], qp.SemiAdder)
-    assert operands[1].wires == angle_wires + phase_grad_wires + work_wires
+    assert (
+        operands[1].wires
+        == angle_wires[:expected_width] + phase_grad_wires[:expected_width] + work_wires
+    )
 
 
 def test_global_phases():

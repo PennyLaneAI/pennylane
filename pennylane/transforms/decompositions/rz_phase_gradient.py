@@ -48,7 +48,9 @@ def validate_phase_gradient_wires(angle_wires, phase_grad_wires, work_wires):
     return angle_wires, phase_grad_wires, work_wires
 
 
-def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
+def make_rz_to_phase_gradient_decomp(
+    angle_wires, phase_grad_wires, work_wires, adaptive_precision=True
+):
     r"""
     Create a custom decomposition rule for :class:`~.RZ` gates.
 
@@ -61,6 +63,10 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
         angle_wires (Wires): wires that encode the binary representation of the rotation angle
         phase_grad_wires (Wires): wires that carry a phase gradient state
         work_wires (Wires): additional work wires for :class:`~.SemiAdder` decomposition
+        adaptive_precision (bool): If ``True`` (default), narrow the ``SemiAdder`` for each concrete
+            angle to the bits up to its least-significant set bit (dropping trailing zero bits) and
+            skip angles that round to zero. If ``False``, always construct the full
+            ``len(angle_wires)``-bit adder.
 
     Returns:
         qp.decomposition.DecompositionRule: decomposition rule to be used within :func:`~.pennylane.decompose`.
@@ -123,8 +129,8 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
     )
 
     def _resource_fn(phi, wires):  # pylint: disable=unused-argument
-        # Full-precision cost from the angle_wires etc. in the outer scope. The MultiX fanout only
-        # emits a gate per set bit, so this is an upper bound (exact=False below).
+        # Full-precision cost from the angle_wires etc. in the outer scope. With adaptive_precision
+        # the compiled adder can be narrower, so this is an upper bound (exact=False below).
         precision = len(angle_wires)
         target_op = qp.SemiAdder(
             Wire[precision],
@@ -144,6 +150,8 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
     @qp.register_resources(_resource_fn, exact=False)
     def _decomp_fn(phi, wires):
         qp.GlobalPhase(phi / 2)
-        _rz_phase_gradient(phi, wires, angle_wires, phase_grad_wires, work_wires)
+        _rz_phase_gradient(
+            phi, wires, angle_wires, phase_grad_wires, work_wires, adaptive_precision
+        )
 
     return _decomp_fn

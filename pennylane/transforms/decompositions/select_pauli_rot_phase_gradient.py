@@ -40,13 +40,29 @@ def _select_pauli_rot_phase_gradient(
     angle_wires: Wires,
     phase_grad_wires: Wires,
     work_wires: Wires,
-) -> Operator:
-    """Function that transforms the SelectPauliRot gate to the phase gradient circuit
-    The precision is implicitly defined by the length of ``angle_wires``
+    adaptive_precision: bool = True,
+) -> Operator | None:
+    """Function that transforms the SelectPauliRot gate to the phase gradient circuit.
+
+    The precision is implicitly defined by the length of ``angle_wires`` and narrowed to the
+    minimum required width if ``adaptive_precision==True``.
     """
 
     precision = len(angle_wires)
     binary_int = qp.math.binary_decimals(phis, precision, unit=4 * np.pi)
+
+    if adaptive_precision and not qp.math.is_abstract(phis):
+        # Drop trailing zero-bit columns: width = deepest column set by any angle + 1 (binary_int is
+        # MSB-first), or 0 if all angles round to zero.
+        width = qp.math.where(qp.math.any(binary_int, axis=0))[0].max(initial=-1) + 1
+
+        if width == 0:
+            return None
+
+        binary_int = binary_int[:, :width]
+        angle_wires = angle_wires[:width]
+        phase_grad_wires = phase_grad_wires[:width]
+        # work_wires are passed in full; extra ones beyond the adder width are unused.
 
     def compute_fn():
         qp.QROM(
@@ -84,7 +100,9 @@ def _select_pauli_rot_phase_gradient(
     return inner_cob()
 
 
-def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
+def make_selectpaulirot_to_phase_gradient_decomp(
+    angle_wires, phase_grad_wires, work_wires, adaptive_precision=True
+):
     r"""
     Create a custom decomposition rule for :class:`~.SelectPauliRot` gates.
 
@@ -103,6 +121,10 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
             efficient decomposition, where ``control_wires`` are the control wires of the (largest)
             ``SelectPauliRot`` to be decomposed with the produced decomposition rule.
             Overall, we thus require ``max(len(angle_wires), len(control_wires))-1`` work wires.
+        adaptive_precision (bool): If ``True`` (default), truncate the shared adder to the
+            MSB-anchored significant width common to all concrete angles (dropping gates whose
+            angles all round to zero). If ``False``, always constructs the full ``len(angle_wires)``-bit
+            adder.
 
     Returns:
         func: decomposition rule to be used within :func:`~.pennylane.decompose`.
@@ -176,7 +198,8 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
 
     # pylint: disable=unused-argument
     def _resource_fn(angles, control_wires, target_wire, rot_axis):
-        # decomposition costs, using information about angle_wires etc from the outer scope
+        # Full-precision cost from angle_wires etc. in the outer scope. With adaptive_precision the
+        # compiled adder can be narrower, so this is an upper bound (exact=False below).
 
         num_control_wires = len(control_wires)
         if num_control_wires == 0:
@@ -239,7 +262,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
 
         return {change_basis_rep_basis_adapted: 1}
 
-    @qp.register_resources(_resource_fn)
+    @qp.register_resources(_resource_fn, exact=not adaptive_precision)
     def _decomp_fn(angles, control_wires, target_wire, rot_axis, **_):
         if len(control_wires) == 0:
             match rot_axis:
@@ -266,6 +289,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
             angle_wires=angle_wires,
             phase_grad_wires=phase_grad_wires,
             work_wires=work_wires,
+            adaptive_precision=adaptive_precision,
         )
 
     return _decomp_fn
