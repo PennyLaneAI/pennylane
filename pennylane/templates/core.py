@@ -84,7 +84,7 @@ def change_op_basis_subroutine_resource_rep(
     compute: "Operator | CompressedResourceOp | Subroutine",
     target: "Operator | CompressedResourceOp | Subroutine",
     uncompute: "Operator | CompressedResourceOp | Subroutine" = None,
-) -> ChangeOpBasis:
+) -> ChangeOpBasis | CompressedResourceOp:
     """Generate an abstract :class:`~pennylane.ops.ChangeOpBasis` resource representation that is more
     specifically targeted for use with :class:`~.Subroutine` instances.
 
