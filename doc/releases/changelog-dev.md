@@ -429,7 +429,7 @@
   [(#10105)](https://github.com/PennyLaneAI/pennylane/pull/10105)
 
   :func:`~.SumOfSlatersPrep.required_register_sizes` also accepts abstract ``indices``, and
-  reports the largest register sizes across any set of indices of that length:
+  reports the largest possible register sizes across any set of indices of that length:
 
   ```pycon
   >>> num_wires = 8

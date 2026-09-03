@@ -986,7 +986,7 @@ class SumOfSlatersPrep(Operator2):
             of ``SumOfSlatersPrep``.
 
         This function supports an abstract input for ``indices``, in which case the largest
-        register sizes across all possible sets of basis states of the given length are
+        possible register sizes across all possible sets of basis states of the given length are
         returned:
 
         >>> indices = qp.typing.Int[45]
@@ -1027,7 +1027,7 @@ class SumOfSlatersPrep(Operator2):
 
         .. warning::
 
-            The returned indices are a resource-estimation stand-in. An operator built from them
+            The returned indices are a stand-in for resource estimation. An operator built from them
             is perfectly valid, but prepares *these* basis states, not any the caller has provided.
 
         Every register size is non-decreasing in :math:`r`, the number of bits retained by
