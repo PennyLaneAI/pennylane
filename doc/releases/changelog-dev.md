@@ -94,6 +94,7 @@
   [(#9478)](https://github.com/PennyLaneAI/pennylane/pull/9478)
   [(#9656)](https://github.com/PennyLaneAI/pennylane/pull/9656)
   [(#9833)](https://github.com/PennyLaneAI/pennylane/pull/9833)
+  [(#9847)](https://github.com/PennyLaneAI/pennylane/pull/9847)
   [(#10008)](https://github.com/PennyLaneAI/pennylane/pull/10008)
 
   Given the ``amplitudes`` and the computational basis state ``indices`` of the sparse state we
@@ -847,6 +848,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* :class:`~.GlobalPhase` no longer accepts the `wires` argument in order to mirror its MLIR lowered operation.
+  [(#9992)](https://github.com/PennyLaneAI/pennylane/pull/9992)
+  
 * :class:`~.BasisState` no longer allows integers as input. Instead, `~.math.int_to_binary` should be used to preprocess
   the input in order to convert it to a binary array.
   [(#9933)](https://github.com/PennyLaneAI/pennylane/pull/9933)
@@ -1549,7 +1553,8 @@
   of the estimator. Qubit and qudit MMD loss functions now have unbiased gradients.
   [(#10025)](https://github.com/PennyLaneAI/pennylane/pull/10025)
 
-
+* Various decomposition rules are updated so that they accept positionally passed arguments.
+  [(#10088)](https://github.com/PennyLaneAI/pennylane/pull/10088)
 
 <h3>Contributors ✍️</h3>
 
