@@ -450,7 +450,7 @@ class TestSumOfSlatersPrep:
                 (),
                 (),
                 "Number of enumeration wires 2 does not match the required number of "
-                "enumeration wires 3",
+                r"enumeration wires \(3\)",
             ),
             (
                 (),
@@ -458,7 +458,7 @@ class TestSumOfSlatersPrep:
                 (),
                 (),
                 "Number of identification wires 2 does not match the required number of "
-                "identification wires 5",
+                r"identification wires \(5\)",
             ),
             (
                 (),
@@ -466,7 +466,7 @@ class TestSumOfSlatersPrep:
                 [15],
                 (),
                 "Number of qrom work wires 1 does not match the required number of "
-                "qrom work wires 2",
+                r"qrom work wires \(2\)",
             ),
             (
                 (),
@@ -474,7 +474,7 @@ class TestSumOfSlatersPrep:
                 (),
                 [17, 18],
                 "Number of mcx cache wires 2 does not match the required number of "
-                "mcx cache wires 4",
+                r"mcx cache wires \(4\)",
             ),
         ],
     )
