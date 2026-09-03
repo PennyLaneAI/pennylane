@@ -132,8 +132,8 @@ def _select_pauli_rot_resource(angles, control_wires, target_wire, rot_axis):
     cnot_rep = abstractify(CNOT)
 
     prod_res = {
-        rz_rep: num_rotations,
-        cnot_rep: num_rotations if num_wires > 1 else 0,
+        RZ: num_rotations,
+        CNOT: num_rotations if num_wires > 1 else 0,
     }
     if rot_axis == "Z":
         return prod_res
