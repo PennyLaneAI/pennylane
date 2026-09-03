@@ -1060,10 +1060,11 @@ class SumOfSlatersPrep(Operator2):
         if num_bits < 1:  # a single index needs no distinguishing bits
             return (0,)
 
+        # Pin all num_bits rows with the fewest indices: each pair (0, 2**i) differs in
+        # bit i alone, so row i can never be dropped.
         indices = {0} | {1 << i for i in range(num_bits)}
-        # Pad with the smallest unused indices, which keeps every index inside the low
-        # num_bits bits. The remaining wires are then constant across all indices, so
-        # select_sos_rows discards them and exactly num_bits rows survive.
+        # That is only num_bits + 1 indices; top up to the required num_entries. r is
+        # already maximal, so these values are arbitrary.
         candidate = 2
         while len(indices) < num_entries:
             indices.add(candidate)
