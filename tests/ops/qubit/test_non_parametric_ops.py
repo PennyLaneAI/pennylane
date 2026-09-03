@@ -1430,6 +1430,14 @@ class TestPPR:
         assert eqn.params["angle_denominator"][0] == (4,)
         assert eqn.params["pauli_word"][0] == ("XY",)
 
+    def test_abstract_init(self):
+        """Test that the operator can be initialized with abstract inputs"""
+        # angle_denominator and pauli_word are compilable args, so they are provided concretely.
+        op = qp.PPR(-2, "XY", wires=Wire[2])
+        assert op.angle_denominator == -2
+        assert op.pauli_word == "XY"
+        assert len(op.wires) == 2
+
     @pytest.mark.jax
     def test_abstractify(self):
         """Test that the operator can be abstractified."""

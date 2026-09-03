@@ -2161,10 +2161,6 @@ class PPR(Operator2):
                 f"were given: {self.wires}."
             )
 
-    @property
-    def _angle_label(self) -> str:
-        """The rotation angle ``pi / angle_denominator`` as a compact string."""
-
     @override
     def label(self, decimals=None, base_label=None, cache=None) -> str:
         r"""A customizable string representation of the operator.
@@ -2182,7 +2178,7 @@ class PPR(Operator2):
 
         >>> op = qp.PPR(4, "XY", wires=[0, 1])
         >>> op.label()
-        'RXY(π/4)'
+        'PPR(π/4, XY)'
         >>> op.label(base_label="PPR")
         'PPR'
         """
@@ -2199,8 +2195,8 @@ class PPR(Operator2):
         return f"PPR({self.angle_denominator}, '{self.pauli_word}', wires={self.wires})"
 
 
-def _ppr_to_paulirot_resources(angle_denominator, pauli_word, wires):
-    return {qp.PauliRot(Float, pauli_word=pauli_word, wires=Wire[len(wires)]): 1}
+def _ppr_to_paulirot_resources(pauli_word, **_):
+    return {qp.PauliRot(Float, pauli_word=pauli_word, wires=Wire[len(pauli_word)]): 1}
 
 
 @register_resources(_ppr_to_paulirot_resources)
