@@ -37,7 +37,7 @@ from pennylane.templates.state_preparations.sum_of_slaters import (
     compute_sos_encoding,
     select_sos_rows,
 )
-from pennylane.typing import Float, Int, Wire
+from pennylane.typing import Complex, Float, Int, Wire
 from pennylane.wires import Wires
 
 
@@ -399,6 +399,38 @@ class TestComputeSosEncoding:
         assert _columns_differ(b)
 
 
+class TestGenerateIndices:
+    """Tests for ``SumOfSlatersPrep.generate_indices``."""
+
+    @pytest.mark.parametrize("num_wires", [2, 3, 4, 5, 8])
+    @pytest.mark.parametrize("num_entries", [1, 2, 4, 5, 16])
+    def test_generate_indices_is_a_valid_index_set(self, num_wires, num_entries):
+        """Test that the generated indices are distinct and addressable."""
+        if num_entries > 2**num_wires:
+            pytest.skip("not representable on this many wires")
+
+        indices = SumOfSlatersPrep.generate_indices(num_entries, num_wires)
+
+        assert len(indices) == num_entries
+        assert len(set(indices)) == num_entries
+        assert min(indices) >= 0
+        assert max(indices) < 2**num_wires
+
+    @pytest.mark.parametrize("num_wires", [1, 3, 5])
+    def test_generate_indices_saturated(self, num_wires):
+        """Test the generator where it has no slack, i.e. every index is used."""
+        indices = SumOfSlatersPrep.generate_indices(2**num_wires, num_wires)
+        assert set(indices) == set(range(2**num_wires))
+
+    def test_generate_indices_too_many_entries(self):
+        """Test that more entries than the wires can address is rejected."""
+        match = "Number of coefficients 9 cannot be greater than 2\\^num_wires, 8."
+        with pytest.raises(ValueError, match=match):
+            SumOfSlatersPrep.generate_indices(9, 3)
+        with pytest.raises(ValueError, match=match):
+            SumOfSlatersPrep(Complex[9], Wire[3], Int[9])
+
+
 class TestSumOfSlatersPrep:
     """Test the quantum template ``SumOfSlatersPrep``."""
 
@@ -409,12 +441,41 @@ class TestSumOfSlatersPrep:
             ([7, 8, 9], [10, 11, 12, 13, 14], [15, 16], [17, 18, 19, 20], None),
             # Valid: the optional work registers may be left empty (the default).
             ((), (), (), (), None),
-            # Each of the following provides a single work register with the wrong
-            # (non-zero) size, triggering one of the register-size validations.
-            ([7, 8], (), (), (), "does not match the required number of enumeration wires"),
-            ((), [10, 11], (), (), "does not match the required number of identification wires"),
-            ((), (), [15], (), "does not match the required number of qrom work wires"),
-            ((), (), (), [17, 18], "does not match the required number of mcx cache wires"),
+            # One work register at the wrong (non-zero) size, triggering its validation.
+            # The match includes the supplied count, so the message must report the
+            # offending register's length rather than some other register's.
+            (
+                [7, 8],
+                (),
+                (),
+                (),
+                "Number of enumeration wires 2 does not match the required number of "
+                r"enumeration wires \(3\)",
+            ),
+            (
+                (),
+                [10, 11],
+                (),
+                (),
+                "Number of identification wires 2 does not match the required number of "
+                r"identification wires \(5\)",
+            ),
+            (
+                (),
+                (),
+                [15],
+                (),
+                "Number of qrom work wires 1 does not match the required number of "
+                r"qrom work wires \(2\)",
+            ),
+            (
+                (),
+                (),
+                (),
+                [17, 18],
+                "Number of mcx cache wires 2 does not match the required number of "
+                r"mcx cache wires \(4\)",
+            ),
         ],
     )
     def test_init(
@@ -471,7 +532,7 @@ class TestSumOfSlatersPrep:
         )
 
     def test_abstract_init(self):
-        """Test that abstract values (or None, for indices) can be passed to the constructor."""
+        """Test that abstract values can be passed to the constructor."""
         num_wires = 14
         num_entries = 15
         sizes = qp.SumOfSlatersPrep.required_register_sizes(Int[num_entries], num_wires)
@@ -482,9 +543,38 @@ class TestSumOfSlatersPrep:
         }
         op = qp.SumOfSlatersPrep(**kwargs)
         assert len(op.coefficients) == len(op.indices) == num_entries
-        kwargs["indices"] = None
-        op = qp.SumOfSlatersPrep(**kwargs)
-        assert len(op.coefficients) == len(op.indices) == num_entries
+
+    @pytest.mark.parametrize("num_wires", [4, 6, 8])
+    @pytest.mark.parametrize("num_entries", [2, 5, 8, 16])
+    def test_abstract_indices_accept_reported_registers(self, num_wires, num_entries):
+        """Test that the reported registers are exactly what the generated indices need."""
+        if num_entries > 2**num_wires:
+            pytest.skip("not representable on this many wires")
+
+        sizes = qp.SumOfSlatersPrep.required_register_sizes(Int[num_entries], num_wires)
+        registers = qp.registers(sizes)
+
+        qp.SumOfSlatersPrep(Complex[num_entries], indices=Int[num_entries], **registers)
+
+        for name in (
+            "enumeration_wires",
+            "identification_wires",
+            "qrom_work_wires",
+            "mcx_cache_wires",
+        ):
+            oversized = dict(registers)
+            oversized[name] = list(oversized[name]) + [f"extra_{name}"]
+            with pytest.raises(ValueError, match="does not match the required number"):
+                qp.SumOfSlatersPrep(Complex[num_entries], indices=Int[num_entries], **oversized)
+
+    def test_coefficients_indices_length_mismatch(self):
+        """Test that mismatched ``coefficients`` and ``indices`` lengths are rejected, both
+        concretely and at the abstract level."""
+        match = "The number of coefficients and the number of state indices must match."
+        with pytest.raises(ValueError, match=match):
+            qp.SumOfSlatersPrep(np.ones(3) / np.sqrt(3), wires=range(5), indices=(0, 3, 4, 17))
+        with pytest.raises(ValueError, match=match):
+            qp.SumOfSlatersPrep(Complex[8], wires=Wire[5], indices=Int[5])
 
     def make_random_data(self, num_wires, num_entries, seed):
         """Produce some random input data for ``SumOfSlatersPrep`` with given specs."""
@@ -580,29 +670,51 @@ class TestSumOfSlatersPrep:
         registered_work_wires = _sos_state_prep.get_work_wire_spec(coefficients, range(n), indices)
         assert sum(sizes.values()) - n == registered_work_wires.total
 
-    @pytest.mark.parametrize("num_wires", [3, 5, 8])
-    @pytest.mark.parametrize("num_entries", [1, 2, 4, 5, 16])
-    def test_register_sizes_abstract(self, num_wires, num_entries):
-        """Test that ``required_register_sizes`` dispatches to the abstract computation when
-        given an abstract ``indices`` input, returning the expected upper-bound sizes."""
+    @pytest.mark.parametrize(
+        "num_wires, num_entries, expected",
+        [
+            # Hand-checked, so the two computations cannot drift together.
+            (8, 16, {"enumeration": 4, "identification": 7, "qrom_work": 3, "mcx_cache": 6}),
+            # Few wires cap the retained bits, so no identification register is needed.
+            (3, 16, {"enumeration": 4, "identification": 0, "qrom_work": 3, "mcx_cache": 2}),
+            (4, 4, {"enumeration": 2, "identification": 0, "qrom_work": 1, "mcx_cache": 2}),
+            (4, 1, {"enumeration": 0, "identification": 0, "qrom_work": 0, "mcx_cache": 0}),
+        ],
+    )
+    def test_register_sizes_abstract_values(self, num_wires, num_entries, expected):
+        """Test the sizes reported for abstract ``indices`` against hand-checked values."""
 
-        indices = Int[num_entries]
-        sizes = SumOfSlatersPrep.required_register_sizes(indices, num_wires)
+        sizes = SumOfSlatersPrep.required_register_sizes(Int[num_entries], num_wires)
 
-        d = ceil_log2(num_entries)
         assert sizes == {
             "wires": num_wires,
-            "enumeration_wires": d,
-            "identification_wires": max(2 * d - 1, 0),
-            "qrom_work_wires": max(d - 1, 0),
-            "mcx_cache_wires": max(2 * d - 2, 0),
+            "enumeration_wires": expected["enumeration"],
+            "identification_wires": expected["identification"],
+            "qrom_work_wires": expected["qrom_work"],
+            "mcx_cache_wires": expected["mcx_cache"],
         }
+
+    @pytest.mark.parametrize("num_wires", [3, 4, 5, 6, 8])
+    @pytest.mark.parametrize("num_entries", [1, 2, 4, 5, 8, 16])
+    def test_register_sizes_abstract(self, num_wires, num_entries):
+        """Test that the sizes reported for abstract ``indices`` are attainable, i.e. exactly
+        those required by ``generate_indices`` of the same length."""
+
+        if num_entries > 2**num_wires:
+            pytest.skip("not representable on this many wires")
+
+        abstract = SumOfSlatersPrep.required_register_sizes(Int[num_entries], num_wires)
+        indices = SumOfSlatersPrep.generate_indices(num_entries, num_wires)
+        attained = SumOfSlatersPrep.required_register_sizes(indices, num_wires)
+
+        assert abstract == attained
+        assert all(size >= 0 for size in abstract.values())
 
     @pytest.mark.parametrize("num_wires", [3, 4, 5])
     @pytest.mark.parametrize("num_entries", [2, 4, 5, 6])
     def test_register_sizes_abstract_is_upper_bound(self, num_wires, num_entries, seed):
-        """Test that the abstract register sizes upper-bound the concrete ones for indices
-        of the same length."""
+        """Test that the abstract register sizes bound the concrete ones for indices of the
+        same length, and that the bound is attained by ``generate_indices``."""
 
         _, indices = self.make_random_data(num_wires, num_entries, seed)
 
@@ -611,6 +723,9 @@ class TestSumOfSlatersPrep:
 
         assert concrete.keys() == abstract.keys()
         assert all(size <= abstract[key] for key, size in concrete.items())
+
+        worst_case = SumOfSlatersPrep.generate_indices(num_entries, num_wires)
+        assert SumOfSlatersPrep.required_register_sizes(worst_case, num_wires) == abstract
 
     def test_resource_counts_are_python_integers(self):
         """Test that decomposition resource counts are Python integers."""
