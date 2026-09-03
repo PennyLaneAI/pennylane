@@ -276,7 +276,7 @@ def _multiplier_decomposition_resources(
         _change_op_basis_abstract(
             _compute_op,
             resource_rep(ControlledSequence, **cs_base_params),
-            _adjoint_abstract(_compute_op),
+            adjoint(_compute_op),
         ): 1,
         target_op_rep: 1,
         _change_op_basis_abstract(
