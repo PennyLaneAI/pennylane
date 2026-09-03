@@ -659,7 +659,7 @@ class SumOfSlatersPrep(Operator2):
         coefficients (np.ndarray): Coefficients of the sparse state to prepare. The ordering should
             match that in ``indices``.
         wires (~.WiresLike): Wires on which to prepare the state.
-        indices (tuple[int] or AbstractArray or None): Indices of the sparse state to prepare.
+        indices (tuple[int] or AbstractArray): Indices of the sparse state to prepare.
             The ordering should match that in ``coefficients``. May also be an abstract type
             such as ``qp.typing.Int[len(coefficients)]``, in which case the indices are
             generated with :func:`~.SumOfSlatersPrep.generate_indices`.
@@ -956,7 +956,7 @@ class SumOfSlatersPrep(Operator2):
                     _name = name.replace("_", " ")
                     raise ValueError(
                         f"Number of {_name} {len(reg)} does not match the "
-                        f"required number of {_name} {expected_size}"
+                        f"required number of {_name} ({expected_size})"
                     )
 
         super().__init__(
