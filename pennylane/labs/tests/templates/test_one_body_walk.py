@@ -21,17 +21,30 @@ from pennylane.fermi import FermiWord, jordan_wigner
 from pennylane.labs.templates import alias_sampling_wires, one_body_walk, one_body_walk_wires
 from pennylane.labs.templates.alias_sampling import _build_alias_tables
 
-# helper functions
-
 
 def _discretized_weights(weights, mu_bits):
-    r"""The probabilities coherent alias sampling actually prepares.
+    r"""Return the probability distribution that coherent alias sampling actually prepares.
 
-    ``one_body_walk``'s only approximation is that PREP loads a :math:`\mu`-bit
-    approximation of :math:`\sqrt{|\mu_p| / \lambda}` rather than the exact value. The
-    alias tables are deterministic, so that approximation is classically predictable
-    and the walk can be checked to machine precision instead of to a loose
-    ``L / 2**mu`` tolerance.
+    ``one_body_walk``'s only approximation is that PREP loads a ``mu_bits``-bit approximation of
+    :math:`\sqrt{|\mu_p| / \lambda}` rather than the exact value. Because the alias tables
+    ``alt`` and ``keep`` are deterministic, that approximation is classically predictable:
+
+    .. math::
+
+        \tilde{\rho}_\ell = \frac{1}{L 2^\mu} \Big( \mathrm{keep}_\ell +
+        \sum_{k \,:\, \mathrm{alt}_k = \ell} (2^\mu - \mathrm{keep}_k) \Big) ,
+
+    where :math:`L` is the number of weights and :math:`\mu` is ``mu_bits``. The tests can
+    therefore compare the walk against :math:`\tilde{\rho}` to machine precision, instead of
+    against the exact weights to the loose ``L / 2**mu_bits`` alias bound.
+
+    Args:
+        weights (array): the non-negative weights :math:`|\mu_p|` that PREP loads
+        mu_bits (int): number of bits of precision used by coherent alias sampling
+
+    Returns:
+        array: the normalized probabilities :math:`\tilde{\rho}_\ell`, of length ``len(weights)``
+
     """
     alt, keep = _build_alias_tables(weights, mu_bits)
     n_states, n_keep = len(alt), 2**mu_bits
@@ -62,6 +75,14 @@ def _reference_block_matrix(op_matrix, system_wires, mu_bits=None):
         op_matrix (array): the real symmetric one-body matrix.
         system_wires (list[int]): wires for representing the ``2 N`` system spin-orbitals
         mu_bits (int or None): alias sampling precision; if None, the exact weights are used.
+
+    Returns:
+        array: the Hermitian matrix of shape ``(2**(2 * norbs), 2**(2 * norbs))`` that
+        ``one_body_walk`` is expected to encode in its :math:`|\vec 0\rangle` block, namely
+        :math:`\hat O / \lambda`. With ``mu_bits=None`` this is the exact
+        :math:`\hat O / \lambda`; otherwise it uses the discretized weights that PREP
+        really loads.
+
     """
     norbs = qp.math.shape(op_matrix)[0]
     mu, vmat = np.linalg.eigh(op_matrix)
@@ -90,7 +111,21 @@ def _reference_block_matrix(op_matrix, system_wires, mu_bits=None):
 
 
 def _apply_walk(op_matrix, mu_bits, state, n_powers=1):
-    r"""Helper function to apply the walk to one system state and return the :math:`|\vec 0\rangle` block."""
+    r"""Apply the walk to one system state and project onto the :math:`|\vec 0\rangle` block.
+
+    Args:
+        op_matrix (array): the real symmetric one-body matrix
+        mu_bits (int): number of bits of precision used by coherent alias sampling
+        state (array): normalized system state of dimension ``2**(2 * norbs)``
+        n_powers (int): number of times the walk is applied; powers greater than one encode a
+            Chebyshev polynomial of the operator rather than the operator itself
+
+    Returns:
+        tuple[array, float]: the ``2**(2 * norbs)`` system amplitudes left after projecting both
+        the prep and the work register onto :math:`|\vec 0\rangle`, and the norm of the full state
+        outside :math:`|\vec 0\rangle` on the work register, which must vanish because the walk
+        returns the work wires to :math:`|0\rangle`
+    """
     norbs = qp.math.shape(op_matrix)[0]
     req = one_body_walk_wires(norbs, mu_bits)
     n_prep, n_sys, n_work = req["prep_wires"], req["system_wires"], req["work_wires"]
@@ -115,7 +150,19 @@ def _apply_walk(op_matrix, mu_bits, state, n_powers=1):
 
 
 def _walk_block(op_matrix, mu_bits, n_powers=1):
-    """The full encoded block, one column per system basis state."""
+    r"""Build the full encoded block, one column per system basis state.
+
+    Args:
+        op_matrix (array): the real symmetric one-body matrix
+        mu_bits (int): number of bits of precision used by coherent alias sampling
+        n_powers (int): number of times the walk is applied; powers greater than one encode a
+            Chebyshev polynomial of the operator rather than the operator itself
+
+    Returns:
+        array: the matrix of shape ``(2**(2 * norbs), 2**(2 * norbs))`` that the walk encodes in
+        its :math:`|\vec 0\rangle` block, directly comparable to
+        :func:`_reference_block_matrix`
+    """
     norbs = qp.math.shape(op_matrix)[0]
     req = one_body_walk_wires(norbs, mu_bits)
     n_prep, n_sys = req["prep_wires"], req["system_wires"]

@@ -11,14 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Qubitization walk operator for block-encoding of a one-particle operator."""
+"""Qubitization walk operator for block-encoding of a one-body operator."""
 
 import pennylane as qp
 from pennylane.labs.templates import LeftClassicalComparator, alias_sampling, alias_sampling_wires
 
 
 def one_body_walk_wires(norbs, alias_sampling_nbits):
-    r"""Sizes of the three wire registers required by :func:`one_body_walk`.
+    r"""Returns the sizes of the three wire registers required by :func:`one_body_walk`.
+
+    :func:`one_body_walk` acts on three disjoint registers whose sizes are fixed by ``norbs``
+    and ``alias_sampling_nbits``. Use this function to size them before allocating wires.
 
     The registers are:
         * ``prep_wires``: the full PREP register that the reflection acts on
@@ -31,6 +34,12 @@ def one_body_walk_wires(norbs, alias_sampling_nbits):
 
     Returns:
         dict[str, int]: number of wires for ``prep_wires``, ``system_wires``, ``work_wires``.
+
+    **Example**
+
+    >>> qp.labs.templates.one_body_walk_wires(4, 2)
+    {'prep_wires': 11, 'system_wires': 8, 'work_wires': 2}
+
     """
     req = alias_sampling_wires(norbs, alias_sampling_nbits)
     return {
@@ -41,7 +50,7 @@ def one_body_walk_wires(norbs, alias_sampling_nbits):
 
 
 def one_body_walk(op_matrix, alias_sampling_nbits, prep_wires, system_wires, work_wires):
-    r"""Walk operator for the block-encoding of a one-particle operator.
+    r"""Walk operator for the block-encoding of a one-body operator.
 
     Implements :math:`\hat{\mathcal{W}} = \hat{\mathcal{R}} \cdot \text{PREP}^\dagger \cdot
     \text{SEL} \cdot \text{PREP}`, with :math:`\hat{\mathcal{R}} = \hat 1 - 2|0\rangle\langle 0|`
@@ -75,6 +84,22 @@ def one_body_walk(op_matrix, alias_sampling_nbits, prep_wires, system_wires, wor
         prep_wires (Sequence[int]): the full PREP register, reflected by ``R``
         system_wires (Sequence[int]): wires for representing the ``2 N`` system spin-orbitals
         work_wires (Sequence[int]): clean scratch returned to ``|0>``
+
+    **Example**
+
+    >>> op_matrix = [[1.0, 2.0], [2.0, 1.0]]
+    >>> req = qp.labs.templates.one_body_walk_wires(len(op_matrix), 2)
+    >>> n_prep, n_sys, n_work = req["prep_wires"], req["system_wires"], req["work_wires"]
+    >>> prep_wires = range(n_prep)
+    >>> system_wires = range(n_prep, n_prep + n_sys)
+    >>> work_wires = range(n_prep + n_sys, n_prep + n_sys + n_work)
+    >>> @qp.qnode(qp.device("default.qubit", wires=n_prep + n_sys + n_work))
+    ... def circuit():
+    ...     qp.labs.templates.one_body_walk(op_matrix, 2, prep_wires, system_wires, work_wires)
+    ...     return qp.probs(wires=prep_wires)
+    >>> print(np.round(circuit()[0], 3))
+    0.25
+
     """
     norbs = qp.math.shape(op_matrix)[0]
 
