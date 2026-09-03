@@ -20,7 +20,6 @@ import inspect
 from collections import Counter, defaultdict
 from collections.abc import Callable
 from functools import reduce
-from types import NoneType
 
 from pennylane import capture, math
 from pennylane.core import queuing
