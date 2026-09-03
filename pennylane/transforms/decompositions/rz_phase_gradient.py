@@ -48,7 +48,9 @@ def validate_phase_gradient_wires(angle_wires, phase_grad_wires, work_wires):
     return angle_wires, phase_grad_wires, work_wires
 
 
-def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
+def make_rz_to_phase_gradient_decomp(
+    angle_wires, phase_grad_wires, work_wires, adaptive_precision=True
+):
     r"""
     Create a custom decomposition rule for :class:`~.RZ` gates.
 
@@ -61,6 +63,10 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
         angle_wires (Wires): wires that encode the binary representation of the rotation angle
         phase_grad_wires (Wires): wires that carry a phase gradient state
         work_wires (Wires): additional work wires for :class:`~.SemiAdder` decomposition
+        adaptive_precision (bool): If ``True`` (default), narrow the ``SemiAdder`` for each concrete
+            angle to the bits up to its least-significant set bit (dropping trailing zero bits) and
+            skip angles that round to zero. If ``False``, always construct the full
+            ``len(angle_wires)``-bit adder.
 
     Returns:
         qp.decomposition.DecompositionRule: decomposition rule to be used within :func:`~.pennylane.decompose`.
@@ -123,7 +129,8 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
     )
 
     def _resource_fn(phi, wires):  # pylint: disable=unused-argument
-        # rz decomposition costs, using information about angle_wires etc from the outer scope
+        # Full-precision cost from the angle_wires etc. in the outer scope. With adaptive_precision
+        # the compiled adder can be narrower, so this is an upper bound (exact=False below).
         target_op = qp.SemiAdder(
             Wire[len(angle_wires)],
             Wire[len(phase_grad_wires)],
@@ -134,10 +141,13 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
         change_basis_rep = change_op_basis_resource_rep(fanout, target_op, fanout)
         return {change_basis_rep: 1, qp.GlobalPhase: 1}
 
-    # MultiX only emits a gate per set bit, so the gate count depends on the concrete angle.
+    # MultiX only emits a gate per set bit, and adaptive_precision may narrow the adder further, so
+    # the gate count depends on the concrete angle.
     @qp.register_resources(_resource_fn, exact=False)
     def _decomp_fn(phi, wires):
         qp.GlobalPhase(phi / 2)
-        _rz_phase_gradient(phi, wires, angle_wires, phase_grad_wires, work_wires)
+        _rz_phase_gradient(
+            phi, wires, angle_wires, phase_grad_wires, work_wires, adaptive_precision
+        )
 
     return _decomp_fn

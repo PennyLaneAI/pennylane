@@ -420,6 +420,12 @@
 
 <h3>Improvements 🛠</h3>
 
+* The phase-gradient decompositions of :class:`~.RZ` and :class:`~.SelectPauliRot` truncate the
+  :class:`~.SemiAdder` to each angle's significant bit-width and skip angles that round to zero,
+  lowering the compiled gate count while staying exact. A new ``adaptive_precision`` keyword
+  (default ``True``) toggles this behavior.
+  [(#10109)](https://github.com/PennyLaneAI/pennylane/pull/10109)
+
 * :func:`~.SumOfSlatersPrep.required_register_sizes` now works with abstract ``indices`` as input,
   for which it returns an upper bound for the register sizes, across any set of indices of the
   provided length.
