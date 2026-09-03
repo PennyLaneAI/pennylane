@@ -33,6 +33,7 @@ from scipy.linalg import expm
 jax = pytest.importorskip("jax")
 
 import pennylane as qp
+from pennylane.core.operator import abstractify
 from pennylane.decomposition.resources import Resources
 from pennylane.exceptions import CaptureWarning
 from pennylane.numeric_hamiltonians import CGFHamiltonian
@@ -212,11 +213,12 @@ class TestInitialization:
             qp.TrotterCGF(0.3, 5, ham, wires, double_phase=True).arguments["double_phase"] is True
         )
 
-    def test_abstract_init(self, toy_hamiltonian_cgf_abstract):
+    def test_abstractify(self, toy_hamiltonian_cgf_abstract):
         """Test that an abstract instance (e.g. for resource-rep purposes) is built."""
         abs_ham, num_modes, n_states = toy_hamiltonian_cgf_abstract
         op = qp.TrotterCGF(Float, 5, abs_ham, Wire[num_modes * n_states])
-        assert op.is_abstract
+        op = abstractify(op)
+        assert op.is_fully_abstract
 
     def test_input_hamiltonian_type(self):
         """Test that anything but a CGFHamiltonian being given to the hamiltonian argument throws
@@ -484,7 +486,14 @@ class TestControlledDecomposition:
             jaxpr = jax.make_jaxpr(circuit)(jax.numpy.array(0.4), *range(n + 1))
 
         ops = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.4, *range(n + 1)).operations
-        assert {type(op).__name__ for op in ops} == {"BasisRotation", "CNOT", "RZ", "PhaseShift"}
+        # One-body terms emit ``CRZ`` (PennyLane's single-control shortcut for ``ctrl(RZ)``);
+        # two-body terms emit ``ControlledOp2`` wrapping ``IsingZZ``.
+        assert {type(op).__name__ for op in ops} == {
+            "BasisRotation",
+            "CRZ",
+            "PhaseShift",
+            "ControlledOp2",
+        }
 
     def test_genuine_controlled_matches_expm(self, diagonal_hamiltonian_cgf):
         """By default ctrl(TrotterCGF) is a genuine controlled unitary: for an identity-leaf

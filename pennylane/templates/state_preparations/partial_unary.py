@@ -337,6 +337,8 @@ class PUIsometryFinder:
             self.m = 0
             return
 
+        # Batch size can never exceed the number of states that actually need mapping, so cap
+        # it here. This matters when there are many more (unused) remainder wires than states.
         self.m = min(1 << int(math.floor(math.log2(self.n_r))), num_entries)
 
         # Frequently used word constants, precomputed in the packing type to avoid any casts
@@ -885,7 +887,7 @@ def _pui_state_prep_resources(num_entries, num_wires, num_work_wires, is_affine)
     )
     resources[ctrl_basis_rep] += num_entries
 
-    embed_rep = qp.BasisState(Bool[num_wires], Wire[n_subspace])
+    embed_rep = qp.BasisState(Bool[n_subspace], Wire[n_subspace])
     resources[embed_rep] += 2 * (num_entries // main_pui_batch_size + 1)
 
     resources[qp.SWAP] += effective_num_wires

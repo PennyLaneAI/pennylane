@@ -32,6 +32,7 @@ from scipy.linalg import expm
 jax = pytest.importorskip("jax")
 
 import pennylane as qp
+from pennylane.core.operator import abstractify
 from pennylane.decomposition.resources import Resources
 from pennylane.exceptions import CaptureWarning
 from pennylane.numeric_hamiltonians import CDFHamiltonian
@@ -194,11 +195,12 @@ class TestInitialization:
             qp.TrotterCDF(0.3, 5, ham, wires, double_phase=True).arguments["double_phase"] is True
         )
 
-    def test_abstract_init(self, toy_hamiltonian_cdf_abstract):
-        """Test that an abstract instance (e.g. for resource-rep purposes) is built."""
+    def test_abstractify(self, toy_hamiltonian_cdf_abstract):
+        """Test that an abstract instance (e.g. for resource-rep purposes) can be built."""
+
         ham, num_orbitals = toy_hamiltonian_cdf_abstract
-        op = qp.TrotterCDF(Float, 5, ham, Wire[2 * num_orbitals])
-        assert op.is_abstract
+        op = abstractify(qp.TrotterCDF(Float, 5, ham, Wire[2 * num_orbitals]))
+        assert op.is_fully_abstract
 
     def test_input_hamiltonian_type(self):
         """Test that anything but a CDFHamiltonian being given to the hamiltonian argument throws
@@ -494,7 +496,14 @@ class TestControlledDecomposition:
             jaxpr = jax.make_jaxpr(circuit)(jax.numpy.array(0.4), *range(n + 1))
 
         ops = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, 0.4, *range(n + 1)).operations
-        assert {type(op).__name__ for op in ops} == {"BasisRotation", "CNOT", "RZ", "PhaseShift"}
+        # One-body terms emit ``CRZ`` (PennyLane's single-control shortcut for ``ctrl(RZ)``);
+        # two-body terms emit ``ControlledOp2`` wrapping ``IsingZZ``.
+        assert {type(op).__name__ for op in ops} == {
+            "BasisRotation",
+            "CRZ",
+            "PhaseShift",
+            "ControlledOp2",
+        }
 
     def test_genuine_controlled_matches_expm(self, diagonal_hamiltonian_cdf):
         """By default ctrl(TrotterCDF) is a genuine controlled unitary: for an identity-leaf

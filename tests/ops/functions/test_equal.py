@@ -41,7 +41,9 @@ from pennylane.ops.functions.equal import (
     assert_equal,
 )
 from pennylane.ops.op_math import Controlled, SymbolicOp
+from pennylane.ops.op_math.controlled2 import ControlledOp2
 from pennylane.templates.subroutines import ControlledSequence
+from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires
 
 PARAMETRIZED_OPERATIONS_1P_1W = [
@@ -2058,28 +2060,70 @@ class TestSymbolicOpComparison:
 
     @pytest.mark.parametrize(("wire1", "wire2", "res"), WIRES)
     @pytest.mark.parametrize(
-        "wwt1, wwt2", [("zeroed", "zeroed"), ("borrowed", "borrowed"), ("borrowed", "zeroed")]
+        "wwt1, wwt2",
+        [
+            ("zeroed", "zeroed"),
+            ("borrowed", "borrowed"),
+            ("borrowed", "zeroed"),
+        ],
     )
-    def test_controlled_work_wires_comparison(self, wire1, wire2, res, wwt1, wwt2):
+    @pytest.mark.parametrize("ctrl_cls", [Controlled, ControlledOp2])
+    def test_controlled_work_wires_comparison(self, wire1, wire2, res, wwt1, wwt2, ctrl_cls):
         """Test that equal compares work_wires for Controlled operators"""
         base1 = qp.MultiRZ(1.23, [0, 1])
         base2 = qp.MultiRZ(1.23, [0, 1])
-        op1 = Controlled(base1, control_wires=2, work_wires=wire1, work_wire_type=wwt1)
-        op2 = Controlled(base2, control_wires=2, work_wires=wire2, work_wire_type=wwt2)
+        op1 = ctrl_cls(base1, control_wires=2, work_wires=wire1, work_wire_type=wwt1)
+        op2 = ctrl_cls(base2, control_wires=2, work_wires=wire2, work_wire_type=wwt2)
         # res is given by the wire parametrization, but is overwritten to False if the work
         # wire types differ. match is only used if res=False, and is adjusted if res was True
-        match = "op1 and op2 have different work wires."
+        match = "op1 and op2 have different wires for 'work_wires'."
         if res and wwt1 != wwt2:
             match = "op1 and op2 have different work wire types."
             res = False
-
-        assert qp.equal(op1, op2) is res
 
         if res:
             assert_equal(op1, op2)
         else:
             with pytest.raises(AssertionError, match=match):
                 assert_equal(op1, op2)
+
+        assert qp.equal(op1, op2) is res
+
+    def test_controlled2_abstract_wires_comparison(self):
+        """Tests comparing ControlledOp2 with abstract wire arguments."""
+
+        base = qp.MultiRZ(1.23, [0, 1])
+        op1 = ControlledOp2(base, control_wires=[2, 3])
+        op2 = ControlledOp2(base, control_wires=Wire[2])
+
+        with pytest.raises(AssertionError, match="Mismatched representations for control_wires"):
+            assert_equal(op1, op2)
+
+        op3 = ControlledOp2(base, control_wires=Wire[3])
+        with pytest.raises(AssertionError, match="Different numbers of abstract control_wires"):
+            assert_equal(op2, op3)
+
+    def test_controlled2_abstract_control_values(self):
+        """Tests comparing ControlledOp2 with abstract control values."""
+
+        base = qp.MultiRZ(1.23, [0, 1])
+        op1 = ControlledOp2(base, control_wires=[2, 3], control_values=[0, 1])
+        op2 = ControlledOp2(base, control_wires=[2, 3], control_values=Bool[2])
+
+        with pytest.raises(AssertionError, match="op1 and op2 have different control values"):
+            assert_equal(op1, op2)
+
+        op3 = ControlledOp2(base, control_wires=[2, 3], control_values=Bool[2])
+        assert_equal(op2, op3)
+
+        op4 = ControlledOp2(base, control_wires=[4, 5], control_values=Bool[2])
+        with pytest.raises(AssertionError, match="op1 and op2 have different control_wires"):
+            assert_equal(op2, op4)
+
+        op1 = ControlledOp2(base, control_wires=Wire[2], control_values=[0, 1])
+        op2 = ControlledOp2(base, control_wires=Wire[2], control_values=[1, 0])
+        with pytest.raises(AssertionError, match="op1 and op2 have different control dictionaries"):
+            assert_equal(op1, op2)
 
     def test_controlled_arithmetic_depth(self):
         """The depths of controlled operators are different due to nesting"""
