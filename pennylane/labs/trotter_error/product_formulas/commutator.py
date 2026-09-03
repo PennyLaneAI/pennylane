@@ -212,9 +212,15 @@ class CommutatorNode(ASTNode):
             ratios = defaultdict(complex)
 
             for symbol, coeff in self.left.symbols:
+                if np.isclose(coeff, 0):
+                    continue
+
                 ratios[symbol] = coeff
 
             for symbol, coeff in self.right.symbols:
+                if np.isclose(coeff, 0):
+                    continue
+
                 ratios[symbol] /= coeff
 
             ratio_list = list(ratios.values())
