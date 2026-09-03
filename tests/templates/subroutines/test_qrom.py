@@ -333,7 +333,7 @@ class TestQROM:
             num_work_wires=len(work_wires),
         )
         will_use_identity = not power_of_two and depth > 1
-        if rule == qp.list_decomps(qp.QROM)[0] and qp.capture.enabled() and will_use_identity:
+        if rule.name == "_select_swap" and qp.capture.enabled() and will_use_identity:
             # xfail only has the strict kwarg when used as a marker.
             request.node.add_marker(
                 pytest.mark.xfail(

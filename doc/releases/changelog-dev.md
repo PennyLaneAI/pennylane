@@ -2,7 +2,7 @@
 
 <h3>New features since last release</h3>
 
-* Added a `qp.math.floor_log2` function that computes the integer $\lfloor \log_2(x)\rfloor$,
+* Added a `qp.math.floor_log2` function that computes the integer :math:`\lfloor \log_2(x)\rfloor`,
   in analogy to the existing `qp.math.ceil_log2`.
   [(#10067)](https://github.com/PennyLaneAI/pennylane/pull/10067)
 
@@ -431,7 +431,7 @@
   if `depth==1 and len(work_wires)>=len(control_wires)-1`.
   Also replaced the usage of `BasisState` by the new `MultiX` template, because the intended
   bitflips are not applied to unconditionally zeroed qubits, which `BasisState` assumes.
-  [(#10084)](https://github.com/PennyLaneAI/pennylane/pull/10084)
+  [(#10067)](https://github.com/PennyLaneAI/pennylane/pull/10067)
 
 * :func:`~.SumOfSlatersPrep.required_register_sizes` now works with abstract ``indices`` as input,
   for which it returns an upper bound for the register sizes, across any set of indices of the
