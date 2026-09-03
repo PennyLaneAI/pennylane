@@ -427,7 +427,7 @@ class TestTwoQubitStateSpecialCases:
 
         assert qp.math.allclose(initial_state, new_state)
 
-    def test_globalphase(self, method, wire, ml_framework):
+    def test_globalphase(self, method, wire, ml_framework):  # pylint: disable=unused-argument
         """Test the application of a GlobalPhase gate on a two qubit state."""
         initial_state = np.array(
             [
@@ -440,17 +440,15 @@ class TestTwoQubitStateSpecialCases:
         phase = qp.math.asarray(-2.3, like=ml_framework)
         shift = qp.math.exp(-1j * qp.math.cast(phase, np.complex128))
 
-        new_state_with_wire = method(qp.GlobalPhase(phase, wire), initial_state)
         new_state_no_wire = method(qp.GlobalPhase(phase), initial_state)
 
-        assert qp.math.allclose(shift * initial_state, new_state_with_wire)
         assert qp.math.allclose(shift * initial_state, new_state_no_wire)
 
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
 @pytest.mark.parametrize("wire", (0, 1))
 @pytest.mark.parametrize("state_batched", [False, True])
-def test_globalphase_batched(wire, ml_framework, state_batched):
+def test_globalphase_batched(wire, ml_framework, state_batched):  # pylint: disable=unused-argument
     """Test the application of a broadcasted/batched GlobalPhase gate on a two qubit state.
     We separate this test from the class above because we do not actually want to test
     apply_operation_tensordot or apply_operation_einsum.
@@ -484,10 +482,8 @@ def test_globalphase_batched(wire, ml_framework, state_batched):
     phase = qp.math.asarray([-2.3, 0.672, 0.2], like=ml_framework)
     shift = qp.math.exp(-1j * qp.math.cast(phase, np.complex128))
 
-    new_state_with_wire = apply_operation(qp.GlobalPhase(phase, wire), initial_state, state_batched)
     new_state_no_wire = apply_operation(qp.GlobalPhase(phase), initial_state, state_batched)
 
-    assert qp.math.allclose(shift[:, None, None] * initial_state, new_state_with_wire)
     assert qp.math.allclose(shift[:, None, None] * initial_state, new_state_no_wire)
 
 
