@@ -62,14 +62,8 @@ def _rz_phase_gradient(
         phase_grad_wires = phase_grad_wires[:width]
         # work_wires are passed in full; extra ones beyond the adder width are unused.
 
-    # Wrap in functions so operators are only constructed when called (capture compatibility).
-    #
-    # The compute step loads the angle bits onto the ``angle_wires`` controlled by the RZ target:
-    # ``MultiX`` flips ``angle_wires[i]`` for each set bit of the (MSB-first) binary angle, and
-    # controlling it on the target realises a per-set-bit fanout. ``C(MultiX)`` lowers to
-    # ``MultiControlledX`` gates (a plain ``CNOT`` for a single control) and, unlike a controlled
-    # ``BasisState``, has a decomposition under program capture (``@qjit(capture=True)``).
-    # ``Wires(wire)`` normalises any single-wire input (a ``Wires``, a label, or an int).
+    # NOTE: To be capture compatible, must wrap in function
+    # so operators are only constructed when called
     control_wire = Wires(wire)[0]
 
     def compute_fn():

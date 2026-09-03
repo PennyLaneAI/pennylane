@@ -131,22 +131,18 @@ def make_rz_to_phase_gradient_decomp(
     def _resource_fn(phi, wires):  # pylint: disable=unused-argument
         # Full-precision cost from the angle_wires etc. in the outer scope. With adaptive_precision
         # the compiled adder can be narrower, so this is an upper bound (exact=False below).
-        precision = len(angle_wires)
         target_op = qp.SemiAdder(
-            Wire[precision],
+            Wire[len(angle_wires)],
             Wire[len(phase_grad_wires)],
             Wire[len(work_wires)],
         )
-        # The compute/uncompute fanout loads the angle bits onto the angle wires controlled by the
-        # RZ target: a ``MultiX`` (one X per set bit) controlled by the target realises a per-set-bit
-        # CNOT fanout. Only set bits emit a gate, so the count depends on the (concrete) angle; the
-        # full-precision fanout of ``precision`` CNOTs is the upper bound (hence ``exact=False``).
+        precision = len(angle_wires)
         fanout = qp.ctrl(qp.MultiX(Bool[precision], Wire[precision]), control=Wire[1])
         change_basis_rep = change_op_basis_resource_rep(fanout, target_op, fanout)
         return {change_basis_rep: 1, qp.GlobalPhase: 1}
 
-    # The fanout only loads the *set* bits of the angle, so the gate count depends on the concrete
-    # angle value and the declared resources are a full-precision upper bound, not exact.
+    # MultiX only emits a gate per set bit, and adaptive_precision may narrow the adder further, so
+    # the gate count depends on the concrete angle.
     @qp.register_resources(_resource_fn, exact=False)
     def _decomp_fn(phi, wires):
         qp.GlobalPhase(phi / 2)
