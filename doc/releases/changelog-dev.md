@@ -8,7 +8,7 @@
   :math:`\pm\pi/2`, :math:`\pm\pi/4` and :math:`\pm\pi/8` Pauli product rotations of Clifford+T
   circuits. Together with :func:`~.pauli_measure`, this makes the building blocks of Pauli-based
   computations directly expressible.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#10107)](https://github.com/PennyLaneAI/pennylane/pull/10107)
 
   ```pycon
   >>> import pennylane as qp
