@@ -559,8 +559,7 @@ def _capture_apply(op):
     """Applies an op in a capture context."""
 
     if hasattr(op, "_bind_primitive"):
-        with QueuingManager.stop_recording():
-            op = copy.copy(op)
+        op = copy.copy(op)
         op.tracer = None
         op._bind_primitive()  # pylint: disable=protected-access
         if op.tracer is None:
