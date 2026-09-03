@@ -2062,3 +2062,138 @@ add_decomps("Pow(SISWAP)", make_pow_decomp_with_period2(8), _pow_siswap_to_zz, _
 
 
 SQISW = SISWAP
+
+
+class PPR(Operator2):
+    r"""PPR(angle_denominator, pauli_word, wires)
+    A Pauli product rotation (PPR) with a fixed angle.
+
+    .. math::
+
+        \text{PPR}(k, P) = \exp\left(-i \frac{\pi}{2k} P\right),
+
+    where :math:`P` is a Pauli word and the rotation angle is :math:`\theta = \pi / k`, following
+    the convention of :class:`~.PauliRot`. The denominator :math:`k` is restricted to
+    :math:`\pm 1`, :math:`\pm 2` and :math:`\pm 4`, so that ``PPR`` covers exactly those Pauli
+    product rotations that occur in Clifford+T circuits:
+
+    * ``angle_denominator=±1``: :math:`\theta = \pm\pi`, a :math:`\pm\pi/2` PPR (Clifford),
+    * ``angle_denominator=±2``: :math:`\theta = \pm\pi/2`, a :math:`\pm\pi/4` PPR (Clifford),
+    * ``angle_denominator=±4``: :math:`\theta = \pm\pi/4`, a :math:`\pm\pi/8` PPR (non-Clifford).
+
+    The Pauli-based computation literature commonly writes a PPR as :math:`\exp(-i \varphi P)`
+    (with minus sign but without factor :math:`1/2`), whereas :class:`~.PauliRot` follows the
+    convention :math:`\exp(-i \theta / 2 P)`, i.e., :math:`\varphi = \theta / 2`.
+
+    .. note::
+
+        Circuits comprising ``PPR`` are currently not executable on any backend.
+        This class is only for analysis using the ``null.qubit`` device and potential future
+        execution when a suitable backend is available.
+
+    .. seealso:: :class:`~.PauliRot` for a Pauli product rotation with an arbitrary angle, and
+        :func:`~.pauli_measure` for PPM, the measurement counterpart of a PPR.
+        For more information on Pauli product measurements, check out the
+        `Quantum Compilation hub <https://pennylane.ai/compilation/pauli-based-computation>`_.
+
+    Args:
+        angle_denominator (int): the denominator :math:`k` of the rotation angle
+            :math:`\theta = \pi / k`. Must be one of ``1``, ``2``, ``4``, ``-1``, ``-2`` or ``-4``.
+        pauli_word (str): the Pauli word defining the rotation, consisting of the characters
+            ``"X"``, ``"Y"`` and ``"Z"``. Length must match the length of ``wires``.
+        wires (Sequence[int] or int): the wires the operation acts on. Length must match length of
+            ``pauli_word``.
+
+    Raises:
+        ValueError: if ``angle_denominator`` is not an allowed integer denominator
+        ValueError: if the Pauli word contains characters other than ``X``, ``Y`` and ``Z``
+        ValueError: if no wires are provided
+        ValueError: if the number of wires does not match the length of the Pauli word
+
+    **Example**
+
+    A :math:`\pi/8` PPR on the Pauli word :math:`X \otimes Y` is created by requesting the
+    corresponding angle :math:`\pi/4` (in :class:`~.PauliRot` convention):
+
+    >>> op = qp.PPR(4, "XY", wires=[0, 1])
+    >>> op
+    PPR(4, 'XY', wires=[0, 1])
+
+    Negative denominators denote the inverse rotations:
+
+    >>> qp.PPR(-4, "XY", wires=[0, 1])
+    PPR(-4, 'XY', wires=[0, 1])
+    """
+
+    compilable_argnames = ("angle_denominator", "pauli_word")
+    wire_sizes = (None,)
+
+    arg_specs = {"wires": Wire[-1]}
+
+    _ALLOWED_DENOMINATORS = (-4, -2, -1, 1, 2, 4)
+
+    def __init__(self, angle_denominator: int, pauli_word: str, wires: WiresLike):
+        if (
+            not isinstance(angle_denominator, (int, np.integer))
+            or angle_denominator not in self._ALLOWED_DENOMINATORS
+        ):
+            raise ValueError(
+                "The angle denominator must be an integer in "
+                f"{self._ALLOWED_DENOMINATORS}, denoting the rotation angle "
+                f"pi / angle_denominator, but got {angle_denominator}."
+            )
+
+        if not set(pauli_word).issubset({"X", "Y", "Z"}):
+            raise ValueError(
+                f'The given Pauli word "{pauli_word}" contains characters that are not allowed. '
+                "Allowed characters are X, Y and Z."
+            )
+
+        if not wires:
+            raise ValueError("At least one wire has to be provided.")
+
+        if len(pauli_word) != len(wires):
+            raise ValueError(
+                "The number of wires must be equal to the length of the Pauli word. The Pauli "
+                f"word {pauli_word} has length {len(pauli_word)} but {len(wires)} wires "
+                f"were given: {wires}."
+            )
+
+        super().__init__(angle_denominator, pauli_word, wires=wires)
+
+    @property
+    def _angle_label(self) -> str:
+        """The rotation angle ``pi / angle_denominator`` as a compact string."""
+
+    @override
+    def label(self, decimals=None, base_label=None, cache=None) -> str:
+        r"""A customizable string representation of the operator.
+
+        Args:
+            decimals=None (int): unused, as ``PPR`` has no trainable parameters
+            base_label=None (str): overwrite the non-parameter component of the label
+            cache=None (dict): dictionary that carries information between label calls
+                in the same drawing
+
+        Returns:
+            str: label to use in drawings
+
+        **Example:**
+
+        >>> op = qp.PPR(4, "XY", wires=[0, 1])
+        >>> op.label()
+        'RXY(π/4)'
+        >>> op.label(base_label="PPR")
+        'PPR'
+        """
+        denominator = self.angle_denominator
+        sign = "-" if denominator < 0 else ""
+        if abs(denominator) == 1:
+            angle_label = f"{sign}π"
+        else:
+            angle_label = f"{sign}π/{abs(denominator)}"
+        return base_label or f"PPR({angle_label}, {self.pauli_word})"
+
+    @override
+    def __repr__(self) -> str:
+        return f"PPR({self.angle_denominator}, '{self.pauli_word}', wires={self.wires})"

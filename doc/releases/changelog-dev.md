@@ -2,6 +2,20 @@
 
 <h3>New features since last release</h3>
 
+* A new operator :class:`pennylane.PPR` represents a Pauli product rotation with a fixed angle
+  :math:`\theta = \pi / k`, following the angle convention of :class:`~.PauliRot`. The denominator
+  :math:`k` is restricted to :math:`\pm 1`, :math:`\pm 2` and :math:`\pm 4`, covering exactly the
+  :math:`\pm\pi/2`, :math:`\pm\pi/4` and :math:`\pm\pi/8` Pauli product rotations of Clifford+T
+  circuits. Together with :func:`~.pauli_measure`, this makes the building blocks of Pauli-based
+  computations directly expressible.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
+  ```pycon
+  >>> import pennylane as qp
+  >>> qp.PPR(4, "XY", wires=[0, 1])
+  PPR(4, 'XY', wires=[0, 1])
+  ```
+
 * Two new numeric Hamiltonians called :class:`pennylane.CDFHamiltonian` (based on `arXiv:2506.15784, Sec. III A <https://arxiv.org/abs/2506.15784>`) and :class:`pennylane.CGFHamiltonian` have been added (based on `arXiv:2508.11865, Sec. III C <https://arxiv.org/abs/2508.11865>`), which define compressed double-factorized (CDF) and Christiansen greedy-fragmentation Hamiltonians, respectively. These Hamiltonians can be defined
   with both concrete numeric data or abstract data (using ``qp.typing.Float[...]``).
   [(#10048)](https://github.com/PennyLaneAI/pennylane/pull/10048)
