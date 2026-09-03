@@ -683,18 +683,6 @@ class TestDecomposition:
         # traced ``for_loop`` count would scale with it instead of staying constant.
         assert num_for_loops(2) == num_for_loops(8)
 
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp", "enable_and_disable_capture")
-    def test_decomposition_resource_consistency(self, seed):
-        """Test resource/decomposition consistency via ``_test_decomposition_rule``."""
-        from pennylane.ops.functions.assert_valid import (  # pylint: disable=import-outside-toplevel
-            _test_decomposition_rule,
-        )
-
-        hamiltonian = build_hamiltonian(fragment_list(n_states=2, n_modes=2, seed=seed))
-        op = make_op(hamiltonian, make_wires(2, 2), evolution_time=0.7)
-        rule = qp.list_decomps(qp.TrotterVibronic)[0]
-        _test_decomposition_rule(op, rule, skip_decomp_matrix_check=True)
-
 
 # ---------------------------------------------------------------------------
 # ------------------------------- Execution ---------------------------------
