@@ -964,9 +964,7 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
         # be cheaper in terms of quantum resources used in the isometry circuit.
         wires = Wires(work_wires[needed_work_wires:]) + wires
 
-    circuit, fanout_bits, bijection, is_affine = _select_isometry(
-        indices, len(wires), n_subspace
-    )
+    circuit, fanout_bits, bijection, is_affine = _select_isometry(indices, len(wires), n_subspace)
 
     subspace_wires = Wires(wires[:n_subspace])
     nonsubspace_wires = Wires(wires[n_subspace:])
