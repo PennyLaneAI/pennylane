@@ -94,6 +94,7 @@
   [(#9478)](https://github.com/PennyLaneAI/pennylane/pull/9478)
   [(#9656)](https://github.com/PennyLaneAI/pennylane/pull/9656)
   [(#9833)](https://github.com/PennyLaneAI/pennylane/pull/9833)
+  [(#9847)](https://github.com/PennyLaneAI/pennylane/pull/9847)
   [(#10008)](https://github.com/PennyLaneAI/pennylane/pull/10008)
 
   Given the ``amplitudes`` and the computational basis state ``indices`` of the sparse state we
