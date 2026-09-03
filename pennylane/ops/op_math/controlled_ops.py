@@ -30,11 +30,7 @@ import pennylane as qp
 from pennylane import math
 from pennylane.allocation import allocate
 from pennylane.core.operator import Operator
-from pennylane.decomposition import (
-    add_decomps,
-    change_op_basis_resource_rep,
-    register_resources,
-)
+from pennylane.decomposition import add_decomps, change_op_basis_resource_rep, register_resources
 from pennylane.decomposition.decomposition_rule import DecompCollection, list_decomps
 from pennylane.decomposition.resources import resolve_work_wire_type
 from pennylane.decomposition.symbolic_decomposition import self_adjoint
@@ -48,7 +44,6 @@ from pennylane.ops.op_math.controlled2 import (
     _setup_control_values,
     _validate_work_wire_type,
 )
-from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
 from pennylane.ops.qubit import X, Y, Z
@@ -63,7 +58,7 @@ from .controlled import (
     custom_ctrl_dispatch,
 )
 from .decompositions.controlled_decompositions import (
-    augment_with_allocation,
+    _wrap_mcx_rule_w_alloc,
     controlled_two_qubit_unitary_rule,
     ctrl_decomp_bisect_rule,
     decompose_mcx_many_workers,
@@ -121,7 +116,7 @@ class ControlledQubitUnitary(Controlled2):
     >>> U = np.array([[ 0.94877869,  0.31594146], [-0.31594146,  0.94877869]])
     >>> qp.ControlledQubitUnitary(U, wires=[0, 1, 2])
     ControlledQubitUnitary(U=[[ 0.94877869  0.31594146]
-     [-0.31594146  0.94877869]], wires=[0, 1, 2], control_values=[ True  True], unitary_check=False, work_wires=[], work_wire_type=borrowed)
+     [-0.31594146  0.94877869]], wires=[0, 1, 2], control_values=[ True  True], work_wires=[], work_wire_type=borrowed, unitary_check=False)
 
     Typically, controlled operations apply a desired gate if the control qubits
     are all in the state :math:`\vert 1\rangle`. However, there are some situations where
@@ -135,13 +130,13 @@ class ControlledQubitUnitary(Controlled2):
 
     >>> qp.ControlledQubitUnitary(U, wires=[0, 1, 2, 3], control_values=[0, 1, 1])
     ControlledQubitUnitary(U=[[ 0.94877869  0.31594146]
-     [-0.31594146  0.94877869]], wires=[0, 1, 2, 3], control_values=[False  True  True], unitary_check=False, work_wires=[], work_wire_type=borrowed)
+     [-0.31594146  0.94877869]], wires=[0, 1, 2, 3], control_values=[False  True  True], work_wires=[], work_wire_type=borrowed, unitary_check=False)
 
     or
 
     >>> qp.ControlledQubitUnitary(U, wires=[0, 1, 2, 3], control_values=[False, True, True])
     ControlledQubitUnitary(U=[[ 0.94877869  0.31594146]
-     [-0.31594146  0.94877869]], wires=[0, 1, 2, 3], control_values=[False  True  True], unitary_check=False, work_wires=[], work_wire_type=borrowed)
+     [-0.31594146  0.94877869]], wires=[0, 1, 2, 3], control_values=[False  True  True], work_wires=[], work_wire_type=borrowed, unitary_check=False)
     """
 
     dynamic_argnames = ("U", "control_values")
@@ -159,9 +154,10 @@ class ControlledQubitUnitary(Controlled2):
         U: TensorLike,
         wires: WiresLike,
         control_values=None,
-        unitary_check=False,
         work_wires: WiresLike = (),
+        *,
         work_wire_type: str | None = "borrowed",
+        unitary_check=False,
     ):
         if wires is None:
             raise TypeError("Must specify a set of wires. None is not a valid `wires` label.")
@@ -212,15 +208,14 @@ def _ctrl_c_qu(base: ControlledQubitUnitary, control, control_values, work_wires
     )
 
 
-def _to_general_c_qu_resource(U, wires, work_wires, work_wire_type, **_):
+def _to_general_c_qu_resource(U, wires, control_values, work_wires, work_wire_type, **_):
     num_target_wires = int(qp.math.log2(qp.math.shape(U)[-1]))
     num_control_wires = len(wires) - num_target_wires
     num_work_wires = len(work_wires)
+    u_size = 2**num_target_wires
     return {
         ControlledOp2(
-            qp.QubitUnitary(
-                Complex[2**num_target_wires, 2**num_target_wires], wires=Wire[num_target_wires]
-            ),
+            qp.QubitUnitary(Complex[u_size, u_size], wires=Wire[num_target_wires]),
             control_wires=Wire[num_control_wires],
             control_values=Bool[num_control_wires],
             work_wires=Wire[num_work_wires],
@@ -229,7 +224,7 @@ def _to_general_c_qu_resource(U, wires, work_wires, work_wire_type, **_):
     }
 
 
-@qp.register_condition(lambda wires, control_values, **_: len(wires) - len(control_values) > 2)
+@qp.register_condition(lambda U, *_, **__: qp.math.ceil_log2(qp.math.shape(U)[0]) > 2)
 @qp.register_resources(_to_general_c_qu_resource)
 # pylint: disable=too-many-arguments
 def _to_general_c_qu(U, wires, control_values, work_wires, work_wire_type, **_):
@@ -248,9 +243,9 @@ def _to_general_c_qu(U, wires, control_values, work_wires, work_wire_type, **_):
 
 add_decomps(
     ControlledQubitUnitary,
-    flip_zero_control2(ctrl_decomp_bisect_rule),
-    flip_zero_control2(single_ctrl_decomp_zyz_rule),
-    flip_zero_control2(multi_control_decomp_zyz_rule),
+    ctrl_decomp_bisect_rule,
+    single_ctrl_decomp_zyz_rule,
+    multi_control_decomp_zyz_rule,
     controlled_two_qubit_unitary_rule,
     _to_general_c_qu,
 )
@@ -568,7 +563,7 @@ def _cz_to_cps_resources(wires: AbstractWires):  # pylint: disable=unused-argume
 
 
 @register_resources(_cz_to_cps_resources)
-def _cz_to_cps(wires: WiresLike, **__):
+def _cz_to_cps(wires: WiresLike):
     qp.ControlledPhaseShift(np.pi, wires=wires)
 
 
@@ -577,20 +572,19 @@ def _cz_to_cnot_resources(wires: AbstractWires):  # pylint: disable=unused-argum
 
 
 @register_resources(_cz_to_cnot_resources)
-def _cz_to_cnot(wires: WiresLike, **__):
+def _cz_to_cnot(wires: WiresLike):
     qp.H(wires=wires[1])
     qp.CNOT(wires=wires)
     qp.H(wires=wires[1])
 
 
-@register_resources(partial(_pauli_ctrl_pauli_ppr_resources, wires=None, pauli0=Z, pauli1=Z))
-def _cz_to_ppr(wires: AbstractWires, **_):
+@register_resources(partial(_pauli_ctrl_pauli_ppr_resources, pauli0=Z, pauli1=Z))
+def _cz_to_ppr(wires: AbstractWires):
     _pauli_ctrl_pauli_ppr(wires, qp.Z, qp.Z)
 
 
-def _cz_lattice_surgery_ppm_resources(
-    wires: AbstractWires = None,
-):  # pylint: disable=unused-argument
+# pylint: disable-next=unused-argument
+def _cz_lattice_surgery_ppm_resources(wires: AbstractWires):
     return {
         PauliMeasure("ZX", wires=Wire[2]): 1,
         PauliMeasure("ZZ", wires=Wire[2]): 1,
@@ -601,7 +595,7 @@ def _cz_lattice_surgery_ppm_resources(
 
 
 @qp.register_resources(_cz_lattice_surgery_ppm_resources, work_wires={"burnable": 1})
-def _cz_lattice_surgery_ppm(wires: WiresLike, **__):
+def _cz_lattice_surgery_ppm(wires: WiresLike):
     _pauli_ctrl_pauli_ppm(wires, qp.Z, qp.Z)
 
 
@@ -1011,7 +1005,7 @@ def _cnot_to_cz_h(wires: WiresLike):
     qp.H(wires[1])
 
 
-@register_resources(partial(_pauli_ctrl_pauli_ppr_resources, wires=None, pauli0=Z, pauli1=X))
+@register_resources(partial(_pauli_ctrl_pauli_ppr_resources, pauli0=Z, pauli1=X))
 def _cnot_to_ppr(wires: AbstractWires):
     _pauli_ctrl_pauli_ppr(wires, qp.Z, qp.X)
 
@@ -1211,7 +1205,7 @@ def _toffoli_to_ppr(wires: WiresLike):
     qp.GlobalPhase(-np.pi / 8)
 
 
-def _toffoli_elbow_resources(**_):
+def _toffoli_elbow_resources(wires):  # pylint: disable=unused-argument
     return {change_op_basis_resource_rep(qp.Elbow, qp.CNOT): 1}
 
 
@@ -1430,30 +1424,39 @@ def _list_mcx_decomps(op: MultiControlledX):
 
 
 def _list_mcx_no_work_wire_decomps(op: MultiControlledX):
+
     if len(op.wires) == 2:
         return [mcx_to_cnot_or_toffoli]
+
     if len(op.wires) == 3:
-        elbow_rule = augment_with_allocation(decompose_mcx_two_controls_elbows, 1, "zeroed")
+        elbow_rule = _wrap_mcx_rule_w_alloc(decompose_mcx_two_controls_elbows, 1, "zeroed")
         return [mcx_to_cnot_or_toffoli, elbow_rule]
+
+    capture_compatible_rules = [
+        _wrap_mcx_rule_w_alloc(decompose_mcx_two_workers, 2, "zeroed", "two_zeroed_workers"),
+        _wrap_mcx_rule_w_alloc(decompose_mcx_two_workers, 2, "borrowed", "two_borrowed_workers"),
+        _wrap_mcx_rule_w_alloc(decompose_mcx_one_worker, 1, "zeroed", "one_zeroed_worker"),
+        _wrap_mcx_rule_w_alloc(decompose_mcx_one_worker, 1, "borrowed", "one_borrowed_worker"),
+        decompose_mcx_with_no_worker,
+    ]
+    if qp.capture.enabled():
+        return capture_compatible_rules
+
+    # TODO: the following decomposition rules are not capture compatible [sc-129521]
     return [
-        augment_with_allocation(
+        _wrap_mcx_rule_w_alloc(
             decompose_mcx_many_workers,
             len(op.control_wires) - 2,
             "zeroed",
             "many_zeroed_workers",
         ),
-        augment_with_allocation(
+        _wrap_mcx_rule_w_alloc(
             decompose_mcx_many_workers,
             len(op.control_wires) - 2,
             "borrowed",
             "many_borrowed_workers",
         ),
-        augment_with_allocation(decompose_mcx_two_workers, 2, "zeroed", "two_zeroed_workers"),
-        augment_with_allocation(decompose_mcx_two_workers, 2, "borrowed", "two_borrowed_workers"),
-        augment_with_allocation(decompose_mcx_one_worker, 1, "zeroed", "one_zeroed_worker"),
-        augment_with_allocation(decompose_mcx_one_worker, 1, "borrowed", "one_borrowed_worker"),
-        decompose_mcx_with_no_worker,
-    ]
+    ] + capture_compatible_rules
 
 
 add_decomps("Adjoint(MultiControlledX)", self_adjoint)
@@ -1570,7 +1573,7 @@ class CRX(Controlled2):
         return qp.math.stack([stack_last(row) for row in matrix], axis=-2)
 
 
-def _crx_to_rz_ry_resources(**_):
+def _crx_to_rz_ry_resources(phi, wires):  # pylint: disable=unused-argument
     return {qp.RZ: 2, qp.RY: 2, qp.CNOT: 2}
 
 
@@ -1584,7 +1587,7 @@ def _crx_to_rz_ry(phi: TensorLike, wires: WiresLike):
     qp.RZ(-np.pi / 2, wires=wires[1])
 
 
-def _crx_to_rx_cz_resources(**_):
+def _crx_to_rx_cz_resources(phi, wires):  # pylint: disable=unused-argument
     return {qp.RX: 2, qp.CZ: 2}
 
 
@@ -1596,7 +1599,7 @@ def _crx_to_rx_cz(phi: TensorLike, wires: WiresLike):
     qp.CZ(wires=wires)
 
 
-def _crx_to_h_crz_resources(**_):
+def _crx_to_h_crz_resources(phi, wires):  # pylint: disable=unused-argument
     return {qp.Hadamard: 2, qp.CRZ: 1}
 
 
@@ -1607,7 +1610,7 @@ def _crx_to_h_crz(phi: TensorLike, wires: WiresLike):
     qp.Hadamard(wires=wires[1])
 
 
-def _crx_to_ppr_resources(**_):
+def _crx_to_ppr_resources(phi, wires):  # pylint: disable=unused-argument
     return {
         qp.PauliRot(Float, pauli_word="ZX", wires=Wire[2]): 1,
         qp.PauliRot(Float, pauli_word="X", wires=Wire[1]): 1,
@@ -1735,7 +1738,7 @@ class CRY(Controlled2):
         return qp.math.stack([stack_last(row) for row in matrix], axis=-2)
 
 
-def _cry_resources(**_):
+def _cry_resources(phi, wires):  # pylint: disable=unused-argument
     return {qp.RY: 2, qp.CNOT: 2}
 
 
@@ -1747,7 +1750,7 @@ def _cry(phi: TensorLike, wires: WiresLike):
     qp.CNOT(wires=wires)
 
 
-def _cry_to_ppr_resources(**_):
+def _cry_to_ppr_resources(phi, wires):  # pylint: disable=unused-argument
     return {
         qp.PauliRot(Float, pauli_word="ZY", wires=Wire[2]): 1,
         qp.PauliRot(Float, pauli_word="Y", wires=Wire[1]): 1,
@@ -2079,7 +2082,7 @@ class CRot(Controlled2):
         return qp.math.stack([stack_last(row) for row in mat], axis=-2)
 
 
-def _crot_resources(**_):
+def _crot_resources(*_, **__):
     return {qp.RZ: 3, qp.CNOT: 2, qp.RY: 2}
 
 
