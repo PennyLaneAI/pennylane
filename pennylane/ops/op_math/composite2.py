@@ -189,17 +189,6 @@ class CompositeOp2(Operator2, is_baseclass=True):
     def _op_symbol(self) -> str:
         """The symbol used when visualizing the composite operator"""
 
-    @handle_recursion_error
-    def _check_batching(self):
-        self._ndim_params = tuple(dim for op in self for dim in op.ndim_params)
-        batch_sizes = {op.batch_size for op in self if op.batch_size is not None}
-        if len(batch_sizes) > 1:
-            raise ValueError(
-                "Broadcasting was attempted but the broadcasted dimensions "
-                f"do not match: {batch_sizes}."
-            )
-        self._batch_size = batch_sizes.pop() if batch_sizes else None
-
     @property
     def num_wires(self):
         """Number of wires the operator acts on."""

@@ -18,7 +18,7 @@ Unit tests for the ChangeOpBasis arithmetic class of qubit operations
 # pylint:disable=protected-access, unused-argument
 
 import re
-from functools import partial
+from functools import partial, reduce
 
 import numpy as np
 import pytest
@@ -26,7 +26,7 @@ import pytest
 import pennylane as qp
 import pennylane.numpy as qnp
 from pennylane.core.operator import abstractify
-from pennylane.exceptions import DeviceError
+from pennylane.exceptions import DeviceError, DiagGatesUndefinedError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math import ChangeOpBasis2, Prod2, change_op_basis
 from pennylane.ops.op_math.adjoint2 import Adjoint2
@@ -412,6 +412,45 @@ class TestProperties:  # pylint: disable=too-few-public-methods
         middle_op = ops_lst[1]
         change_op = change_op_basis(*ops_lst)
         assert middle_op.is_verified_hermitian == change_op.is_verified_hermitian
+
+    @pytest.mark.parametrize(
+        "target_op, expected",
+        [
+            (qp.PauliZ(0), True),  # hermitian target
+            (qp.S(0), False),  # non-hermitian target
+        ],
+    )
+    def test_is_verified_hermitian(self, target_op, expected):
+        """Test that a ChangeOpBasis2's is_verified_hermitian delegates to its target op."""
+        op = ChangeOpBasis2(qp.Hadamard(0), target_op, qp.Hadamard(0))
+        assert op.is_verified_hermitian is target_op.is_verified_hermitian
+        assert op.is_verified_hermitian is expected
+
+    def test_build_pauli_rep(self):
+        """Test that _build_pauli_rep returns the product of the operands' Pauli reps
+        in matrix-product (reversed operand) order."""
+        op = ChangeOpBasis2(qp.PauliX(0), qp.PauliZ(0), qp.PauliX(0))
+        # operands are (uncompute, target, compute); the Pauli rep is their product
+        # taken in reversed order: X @ Z @ X = -Z
+        expected = reduce(lambda a, b: a @ b, [o.pauli_rep for o in op.operands[::-1]])
+        pauli_rep = op._build_pauli_rep()
+        assert pauli_rep == expected
+        assert pauli_rep == qp.PauliZ(0).pauli_rep * -1
+        # the ``pauli_rep`` property is backed by ``_build_pauli_rep``
+        assert op.pauli_rep == expected
+
+    def test_build_pauli_rep_none(self):
+        """Test that _build_pauli_rep returns None when an operand has no Pauli rep."""
+        # ``RX`` has no Pauli representation, so the whole product is undefined
+        op = ChangeOpBasis2(qp.PauliX(0), qp.RX(0.5, 0), qp.PauliX(0))
+        assert op._build_pauli_rep() is None
+        assert op.pauli_rep is None
+
+    def test_diagonalizing_gates_raises(self):
+        """Test that diagonalizing_gates raises DiagGatesUndefinedError."""
+        op = ChangeOpBasis2(qp.Hadamard(0), qp.PauliZ(0), qp.Hadamard(0))
+        with pytest.raises(DiagGatesUndefinedError):
+            op.diagonalizing_gates()
 
 
 class TestWrapperFunc:  # pylint: disable=too-few-public-methods
