@@ -23,7 +23,7 @@ from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.decomposition.symbolic_decomposition import self_adjoint
 from pennylane.ops import CNOT, Hadamard, PauliX, adjoint, cond
-from pennylane.ops.op_math.controlled2 import flip_zero_control
+from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.ops.op_math.pow2 import pow_involutory
 from pennylane.ops.op_math.prod import _multi_temporary_and_all_ones
 from pennylane.typing import AbstractArray, AbstractWires, Bool, TensorLike, Wire
@@ -359,10 +359,9 @@ def _controlled_multix_ladder_resources(base, control_wires, **_):
 
 def _multix_ladder_fanout(base, control_wires, ladder_wires):
     """Computes ``AND(control_wires)`` into a single work wire with the ``TemporaryAND`` ladder in
-    :func:`~._multi_temporary_and_all_ones` (assumes all ``control_values`` are 1; the caller is
-    expected to wrap this with :func:`~.flip_zero_control`), fans that wire out with a ``CNOT`` to
-    every set bit of ``base``, then uncomputes the ladder. Requires ``len(control_wires) - 1``
-    wires in ``ladder_wires``, all in the zero state."""
+    :func:`~._multi_temporary_and_all_ones`, fans that wire out with a ``CNOT`` to every set bit of
+    ``base``, then uncomputes the ladder. Requires ``len(control_wires) - 1`` wires in
+    ``ladder_wires``, all in the zero state."""
     bitstring = base.bitstring
     wires = base.wires
     if compiler.active() or capture.enabled():
@@ -405,8 +404,7 @@ def _controlled_multix_ladder(base, control_wires, work_wires, work_wire_type, *
     """Controlled-``MultiX`` decomposition that loads the fanout through a single work wire
     holding ``AND(control_wires)``, rather than repeating the multi-control structure once per
     target wire. Uses as many of the caller-supplied zeroed work wires as needed, dynamically
-    allocating the rest. Assumes all ``control_values`` are 1; see the ``flip_zero_control``-wrapped
-    version registered below."""
+    allocating the rest."""
     num_needed = len(control_wires) - 1
     available = list(work_wires[:num_needed]) if work_wire_type == "zeroed" else []
     num_to_allocate = num_needed - len(available)
@@ -417,4 +415,4 @@ def _controlled_multix_ladder(base, control_wires, work_wires, work_wire_type, *
         _multix_ladder_fanout(base, control_wires, available)
 
 
-add_decomps("C(MultiX)", flip_zero_control(_controlled_multix_ladder))
+add_decomps("C(MultiX)", flip_zero_control2(_controlled_multix_ladder))
