@@ -14,7 +14,7 @@
 
 """Tests for the Triton decoder frontend."""
 
-# pylint: disable=protected-access,wrong-import-position,broad-exception-caught,import-outside-toplevel
+# pylint: disable=protected-access,wrong-import-position,broad-exception-caught,import-outside-toplevel,too-few-public-methods
 
 import ctypes
 import shutil
