@@ -23,7 +23,7 @@ from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.ops import CNOT, ctrl
 from pennylane.typing import Wire
-from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
+from pennylane.wires import Wires, WiresLike, is_abstract_qubit, validate_no_wire_overlaps
 
 from .incrementer import Incrementer
 from .out_multiplier import OutMultiplier
@@ -412,19 +412,25 @@ def _not_zeroed_signed_out_multiplier_resources(
 
 
 def _twos_complement_helper(input_reg, aux_wire, work_wires):
-
-    if compiler.active() or capture.enabled():
-        input_reg_arr = math.array(input_reg, like="jax")
+    # Dynamically-allocated wires (``AbstractQubit``) cannot be
+    # stacked into a numeric array for ``for_loop``-based dynamic indexing, so unroll instead.
+    # Remove this fallback once dynamic-wire indexing is supported (shortcut.com/story/129521).
+    if any(is_abstract_qubit(w) for w in input_reg):
+        for wire in input_reg:
+            CNOT([aux_wire, wire])
     else:
-        input_reg_arr = input_reg
+        if compiler.active() or capture.enabled():
+            input_reg_arr = math.array(input_reg, like="jax")
+        else:
+            input_reg_arr = input_reg
 
-    # Invert all bits
-    @for_loop(len(input_reg_arr))
-    def invert(w):
-        # sign bit of 1 indicates a negative value
-        CNOT([aux_wire, input_reg_arr[w]])
+        # Invert all bits
+        @for_loop(len(input_reg_arr))
+        def invert(w):
+            # sign bit of 1 indicates a negative value
+            CNOT([aux_wire, input_reg_arr[w]])
 
-    invert()  # pylint: disable=no-value-for-parameter
+        invert()  # pylint: disable=no-value-for-parameter
 
     # Add one
     ctrl(
