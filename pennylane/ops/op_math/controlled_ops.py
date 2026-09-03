@@ -1208,7 +1208,7 @@ def _toffoli_to_ppr(wires: WiresLike):
 
 def _toffoli_elbow_resources(*_, **__):
     _compute_op = qp.Elbow
-    return {_change_op_basis_abstract(_compute_op, qp.CNOT, _adjoint_abstract(_compute_op)): 1}
+    return {_change_op_basis_abstract(_compute_op, qp.CNOT, qp.adjoint(qp.Elbow(Wire[3]))): 1}
 
 
 @register_resources(_toffoli_elbow_resources, work_wires={"zeroed": 1})
