@@ -322,13 +322,7 @@ def _controlled_incrementer_resources(base, control_wires, **_):
 
 @register_condition(_ctrl_work_wire_condition)
 @register_resources(_controlled_incrementer_resources)
-def _controlled_incrementer_decomposition(
-    *_,
-    control_wires,
-    work_wires,
-    base,
-    **__,
-):
+def _controlled_incrementer_decomposition(base, control_wires, work_wires, **_):
     wires = base.increment_wires
     base_work_wires = base.work_wires
 
