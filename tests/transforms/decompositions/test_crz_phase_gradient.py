@@ -46,13 +46,8 @@ def _expected_crz_specs(phi, p):
 @pytest.mark.parametrize("p", [1, 2, 3, 4])
 def test_valid_decomp(p):
     """Test that ``make_crz_to_phase_gradient_decomp`` yields a valid decomposition, with capture
-    both disabled (concrete angle) and enabled (abstract angle).
-
-    ``_test_decomposition_rule`` checks the emitted circuit against the rule's full-precision
-    resource estimate. We use an all-ones angle so the concrete decomposition saturates that
-    estimate (every bit is set, so every fanout gate is emitted); other angles emit fewer gates than
-    the (upper-bound) estimate and are instead covered by ``test_as_fixed_decomps``/
-    ``test_as_alt_decomps`` (counts) and ``test_integration_multi_wire`` (statevector exactness)."""
+    both disabled (concrete angle) and enabled (abstract angle). We use an all-ones angle so the
+    concrete decomposition saturates the rule's full-precision resource estimate."""
 
     phi = (1 - 2.0**-p) * 4 * np.pi  # binary all-ones at p bits (CRZ uses units of 4*pi)
     first_free = 2
