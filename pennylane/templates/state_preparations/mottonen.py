@@ -437,7 +437,7 @@ class MottonenStatePreparation(Operation):
                     op_list.extend(_uniform_rotation_dagger_ops(qp.RZ, alpha_z_k, control, target))
 
             global_phase = -1 * qp.math.sum(omega, axis=-1) / qp.math.shape(state_vector)[-1]
-            op_list.extend([qp.GlobalPhase(global_phase, wires=wires)])
+            op_list.extend([qp.GlobalPhase(global_phase)])
 
         return op_list
 

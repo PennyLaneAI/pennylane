@@ -69,11 +69,10 @@ def _get_new_terms(lcu):
     new_ops = []
 
     for coeff, op in zip(*lcu.terms()):
-
         angle = qp.math.angle(coeff)
         new_coeffs.append(qp.math.abs(coeff))
 
-        new_op = op @ qp.GlobalPhase(-angle, wires=op.wires)
+        new_op = op @ qp.GlobalPhase(-angle)
         new_ops.append(new_op)
 
     interface = qp.math.get_interface(lcu.terms()[0])

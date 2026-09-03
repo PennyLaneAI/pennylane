@@ -259,7 +259,7 @@ class TestSpecialOps:
         gp_eqn = jaxpr.eqns[0]
         assert_eqn_matches_op(gp_eqn, qp.GlobalPhase)
         assert len(gp_eqn.invars) == 1
-        assert gp_eqn.params["wire_lens"] == (0,)
+        assert gp_eqn.params["wire_lens"] == ()
 
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, 1.2)
