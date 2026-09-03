@@ -2197,3 +2197,15 @@ class PPR(Operator2):
     @override
     def __repr__(self) -> str:
         return f"PPR({self.angle_denominator}, '{self.pauli_word}', wires={self.wires})"
+
+
+def _ppr_to_paulirot_resources(angle_denominator, pauli_word, wires):
+    return {qp.PauliRot(Float, pauli_word=pauli_word, wires=Wire[len(wires)]): 1}
+
+
+@register_resources(_ppr_to_paulirot_resources)
+def _ppr_to_paulirot(angle_denominator, pauli_word, wires):
+    qp.PauliRot(np.pi / angle_denominator, pauli_word, wires=wires)
+
+
+add_decomps(PPR, _ppr_to_paulirot)
