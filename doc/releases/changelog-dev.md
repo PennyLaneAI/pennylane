@@ -426,14 +426,6 @@
   (default ``True``) toggles this behavior.
   [(#10109)](https://github.com/PennyLaneAI/pennylane/pull/10109)
 
-* Controlling a :class:`~.MultiX` with more than one control wire, given a work wire, now decomposes
-  into a :class:`~.TemporaryAND` ladder fanning out to the targets with ``CNOT`` gates, instead of
-  repeating the whole multi-control structure once per target wire. The phase-gradient
-  decompositions of :class:`~.RZ` and :class:`~.CRZ` use the (already-supported) single-control case
-  to load angle bits, so they lower under program capture (``qp.qjit(capture=True)``) unlike the
-  previous controlled :class:`~.BasisState` fanouts.
-  [(#10098)](https://github.com/PennyLaneAI/pennylane/pull/10098)
-
 * :func:`~.SumOfSlatersPrep.required_register_sizes` now works with abstract ``indices`` as input,
   for which it returns an upper bound for the register sizes, across any set of indices of the
   provided length.
@@ -658,6 +650,7 @@
   [(#10033)](https://github.com/PennyLaneAI/pennylane/pull/10033)
   [(#10073)](https://github.com/PennyLaneAI/pennylane/pull/10073)
   [(#10079)](https://github.com/PennyLaneAI/pennylane/pull/10079)
+  [(#10098)](https://github.com/PennyLaneAI/pennylane/pull/10098)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
