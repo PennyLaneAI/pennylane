@@ -36,7 +36,7 @@ from pennylane.math import ceil_log2
 from pennylane.ops import CNOT, CZ, X, cond, ctrl, pauli_measure
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.typing import AbstractArray, Bool, Int, TensorLike, Wire
-from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
+from pennylane.wires import DynamicWire, Wires, WiresLike, validate_no_wire_overlaps
 
 from .arithmetic import TemporaryAND
 from .multix import MultiX
@@ -858,7 +858,9 @@ def _qrom_unary_iteration_resources(
     }
 
 
-def _main_unary_loop_monolithic(bitstrings, triples, target_wires):
+def _main_unary_loop_monolithic(bitstrings, triples, target_wires, unroll=False):
+    """The unroll option is just here to support QROM on dynamically allocated wires until
+    we can iterate with tracer indices over registers of such allocated wires."""
     K = len(bitstrings)
     c = len(triples) + 1
     # last work wire in use acts as the flag qubit for data loading.
@@ -878,7 +880,6 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires):
     # )
 
     # Loop over all bitstrings but the last one
-    @for_loop(K - 1)
     def loop(k):
         # 1. load bitstrings[k], controlled on the flag circuit
         ctrl(MultiX(bitstrings[k], target_wires), control=[flag])
@@ -930,7 +931,13 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires):
 
         recompute()  # pylint: disable=no-value-for-parameter
 
-    loop()  # pylint: disable=no-value-for-parameter
+    # todo: remove unrolling logic once iteration over dynamically allocated wires with a tracer
+    # is supported [sc-129521]
+    if unroll:
+        for k in range(K - 1):
+            loop(k)
+    else:
+        for_loop(K - 1)(loop)()  # pylint: disable=no-value-for-parameter
 
     # Load last bit string
     ctrl(MultiX(bitstrings[K - 1], target_wires), control=[flag])
@@ -971,11 +978,12 @@ def _qrom_unary_iteration(
     interleaved = _interleave_controls(control_wires, work_wires, head=None)
     triples = [interleaved[2 * i : 2 * i + 3] for i in range(num_controls - 1)]
 
-    if compiler.active() or capture.enabled():
+    unroll_for_loop = any(isinstance(wire, DynamicWire) for wire in interleaved)
+    if not unroll_for_loop and (compiler.active() or capture.enabled()):
         bitstrings = math.array(bitstrings, like="jax")
         triples = math.array(triples, like="jax")
 
-    _main_unary_loop_monolithic(bitstrings, triples, target_wires)
+    _main_unary_loop_monolithic(bitstrings, triples, target_wires, unroll=unroll_for_loop)
 
 
 add_decomps(QROM, _select_swap, _qrom_unary_iteration, _qrom_measurement_decomposition)
