@@ -38,6 +38,7 @@ from pennylane.ops.op_math.sprod import SProd
 from pennylane.ops.op_math.sum import Sum
 from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
 from pennylane.typing import TensorLike, Wire
+from pennylane.wires import is_abstract_qubit
 
 from .composite import CompositeOp, handle_recursion_error
 
@@ -578,6 +579,14 @@ def _multi_temporary_and_all_ones(
     via ``control_flow.for_loop`` when running under tracing.
     """
     num_needed = len(control) - 1
+
+    if any(is_abstract_qubit(w) for w in (*control, *work_wires)):
+        # AbstractQubit wires (dynamically allocated) can't be cast to a JAX array for the traced
+        # indexing below. The ladder length is static either way, so just unroll it directly.
+        qp.TemporaryAND(wires=[control[0], control[1], work_wires[0]])
+        for i in range(1, num_needed):
+            qp.TemporaryAND(wires=[work_wires[i - 1], control[i + 1], work_wires[i]])
+        return work_wires[num_needed - 1]
 
     if compiler.active() or qp.capture.enabled():
         control = math.array(control, like="jax")

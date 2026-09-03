@@ -91,7 +91,7 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
             angle_wires, phase_grad_wires, work_wires
         )
 
-        gate_set = {"C(BasisState)", "SemiAdder", "GlobalPhase"}
+        gate_set = {"CNOT", "SemiAdder", "GlobalPhase", "PauliX"}
 
         @qp.transforms.decompose(gate_set=gate_set, fixed_decomps={qp.RZ: custom_decomp})
         @qp.qnode(qp.device("null.qubit"))
@@ -105,17 +105,17 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
     containing two CNOT fanouts corresponding to the binary representation of the angle (111 in this case), the :class:`~SemiAdder`, and a :class:`~GlobalPhase`.
 
     >>> specs
-    {'GlobalPhase': 1, 'C(BasisState)': 2, 'SemiAdder': 1}
+    {'GlobalPhase': 1, 'CNOT': 6, 'SemiAdder': 1}
     >>> print(qp.draw(circuit)())
-         0: ─╭GlobalPhase(2.75)─╭●──────────────╭●───┤ ╭State
-     aux_0: ─├GlobalPhase(2.75)─├|Ψ⟩─╭SemiAdder─├|Ψ⟩─┤ ├State
-     aux_1: ─├GlobalPhase(2.75)─├|Ψ⟩─├SemiAdder─├|Ψ⟩─┤ ├State
-     aux_2: ─├GlobalPhase(2.75)─╰|Ψ⟩─├SemiAdder─╰|Ψ⟩─┤ ├State
-     qft_0: ─├GlobalPhase(2.75)──────├SemiAdder──────┤ ├State
-     qft_1: ─├GlobalPhase(2.75)──────├SemiAdder──────┤ ├State
-     qft_2: ─├GlobalPhase(2.75)──────├SemiAdder──────┤ ├State
-    work_0: ─├GlobalPhase(2.75)──────├SemiAdder──────┤ ├State
-    work_1: ─╰GlobalPhase(2.75)──────╰SemiAdder──────┤ ╰State
+         0: ─╭GlobalPhase(2.75)─╭●─╭●─╭●────────────╭●─╭●─╭●─┤ ╭State
+     aux_0: ─├GlobalPhase(2.75)─╰X─│──│──╭SemiAdder─╰X─│──│──┤ ├State
+     aux_1: ─├GlobalPhase(2.75)────╰X─│──├SemiAdder────╰X─│──┤ ├State
+     aux_2: ─├GlobalPhase(2.75)───────╰X─├SemiAdder───────╰X─┤ ├State
+     qft_0: ─├GlobalPhase(2.75)──────────├SemiAdder──────────┤ ├State
+     qft_1: ─├GlobalPhase(2.75)──────────├SemiAdder──────────┤ ├State
+     qft_2: ─├GlobalPhase(2.75)──────────├SemiAdder──────────┤ ├State
+    work_0: ─├GlobalPhase(2.75)──────────├SemiAdder──────────┤ ├State
+    work_1: ─╰GlobalPhase(2.75)──────────╰SemiAdder──────────┤ ╰State
 
     """
     angle_wires, phase_grad_wires, work_wires = validate_phase_gradient_wires(
@@ -123,19 +123,25 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
     )
 
     def _resource_fn(phi, wires):  # pylint: disable=unused-argument
-        # rz decomposition costs, using information about angle_wires etc from the outer scope
+        # Full-precision cost from the angle_wires etc. in the outer scope. The MultiX fanout only
+        # emits a gate per set bit, so this is an upper bound (exact=False below).
+        precision = len(angle_wires)
         target_op = qp.SemiAdder(
-            Wire[len(angle_wires)],
+            Wire[precision],
             Wire[len(phase_grad_wires)],
             Wire[len(work_wires)],
         )
-        precision = len(angle_wires)
-        fanout = qp.ctrl(qp.BasisState(Bool[precision], Wire[precision]), Wire[1])
-        compute_op = uncompute_op = fanout
-        change_basis_rep = change_op_basis_resource_rep(compute_op, target_op, uncompute_op)
+        # The compute/uncompute fanout loads the angle bits onto the angle wires controlled by the
+        # RZ target: a ``MultiX`` (one X per set bit) controlled by the target realises a per-set-bit
+        # CNOT fanout. Only set bits emit a gate, so the count depends on the (concrete) angle; the
+        # full-precision fanout of ``precision`` CNOTs is the upper bound (hence ``exact=False``).
+        fanout = qp.ctrl(qp.MultiX(Bool[precision], Wire[precision]), control=Wire[1])
+        change_basis_rep = change_op_basis_resource_rep(fanout, target_op, fanout)
         return {change_basis_rep: 1, qp.GlobalPhase: 1}
 
-    @qp.register_resources(_resource_fn)
+    # The fanout only loads the *set* bits of the angle, so the gate count depends on the concrete
+    # angle value and the declared resources are a full-precision upper bound, not exact.
+    @qp.register_resources(_resource_fn, exact=False)
     def _decomp_fn(phi, wires):
         qp.GlobalPhase(phi / 2)
         _rz_phase_gradient(phi, wires, angle_wires, phase_grad_wires, work_wires)

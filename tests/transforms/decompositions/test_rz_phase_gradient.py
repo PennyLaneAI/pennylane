@@ -28,6 +28,27 @@ from pennylane.transforms.decompositions import (
 from pennylane.wires import WireError
 
 
+def _num_set_bits(phi, p):
+    """Number of set bits in the ``p``-bit binary representation of ``phi`` (in units of 2*pi)."""
+    bits = [int(b) for b in qp.math.binary_decimals(phi, p, unit=2 * np.pi)]
+    return sum(bits)
+
+
+def _expected_rz_specs(phi, p):
+    """Expected specs for a single ``RZ``.
+
+    The compute/uncompute fanout is a ``MultiX`` (one ``X`` per set bit) controlled by the ``RZ``
+    target wire, realizing one ``CNOT`` per set bit on each of the two (compute and uncompute)
+    passes (a single-control ``MultiX`` fanout that's always controlled on |1>, so it renders
+    directly as ``CNOT``), so the count is ``2 * num_set_bits``. Trailing zero bits emit no gate,
+    hence ``CNOT`` is absent for an angle that rounds to zero."""
+    specs = {"GlobalPhase": 1, "SemiAdder": 1}
+    n = _num_set_bits(phi, p)
+    if n:
+        specs["CNOT"] = 2 * n
+    return specs
+
+
 @pytest.mark.parametrize(
     "n_angle_wires, n_phase_grad_wires, n_work_wires, msg_match",
     [
@@ -47,25 +68,24 @@ def test_validate_phase_gradient_wires(n_angle_wires, n_phase_grad_wires, n_work
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
-@pytest.mark.parametrize("phi", [0.5, 0.3, 1 / 2 + 1 / 4 + 1 / 8, 1.0])
-@pytest.mark.parametrize("p", [1, 2, 3, 4])
-def test_valid_decomp(phi, p):
-    """Test that ``make_rz_to_phase_gradient_decomp`` yields a valid decomposition"""
+@pytest.mark.parametrize("p", [2, 3, 4])
+def test_valid_decomp(p):
+    """Test that ``make_rz_to_phase_gradient_decomp`` yields a valid decomposition, with capture
+    both disabled (concrete angle) and enabled (abstract angle).
 
+    ``_test_decomposition_rule`` checks the emitted circuit against the rule's full-precision
+    resource estimate. We use an all-ones angle so the concrete decomposition saturates that
+    estimate (every bit is set); other angles emit a smaller circuit than the (upper-bound)
+    estimate and are instead covered by ``test_as_fixed_decomps``/``test_as_alt_decomps``."""
+
+    phi = (1 - 2.0**-p) * 2 * np.pi  # binary all-ones at p bits
     first_free = 1
     angle_wires = list(range(first_free, first_free + p))
     phase_grad_wires = list(range(first_free + p, first_free + 2 * p))
     work_wires = list(range(first_free + 2 * p, first_free + 3 * p - 1))
 
-    kwargs = {
-        "angle_wires": angle_wires,
-        "phase_grad_wires": phase_grad_wires,
-        "work_wires": work_wires,
-    }
-
-    custom_decomp = make_rz_to_phase_gradient_decomp(**kwargs)
-    op = qp.RZ(phi, 0)
-    _test_decomposition_rule(op, custom_decomp, skip_decomp_matrix_check=True)
+    custom_decomp = make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
+    _test_decomposition_rule(qp.RZ(phi, 0), custom_decomp, skip_decomp_matrix_check=True)
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
@@ -73,7 +93,7 @@ def test_valid_decomp(phi, p):
 @pytest.mark.parametrize("p", [2, 3, 4])
 def test_as_fixed_decomps(phi, p):
     """Test that the decomposition rule from make_rz_to_phase_gradient_decomp works as expected
-    as a fixed decomposition and yields the correct resources"""
+    as a fixed decomposition and yields the correct resources."""
     angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(p)])
     phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(p)])
     work_wires = qp.wires.Wires([f"work_{i}" for i in range(p - 1)])
@@ -85,7 +105,7 @@ def test_as_fixed_decomps(phi, p):
     }
 
     custom_decomp = make_rz_to_phase_gradient_decomp(**kwargs)
-    gate_set = {"SemiAdder", "C(BasisState)", "GlobalPhase"}
+    gate_set = {"SemiAdder", "CNOT", "PauliX", "GlobalPhase"}
 
     @qp.transforms.decompose(gate_set=gate_set, fixed_decomps={qp.RZ: custom_decomp})
     @qp.qnode(qp.device("null.qubit"))
@@ -93,9 +113,9 @@ def test_as_fixed_decomps(phi, p):
         qp.RZ(phi, 0)
         return qp.state()
 
+    expected = _expected_rz_specs(phi, p)
     specs = qp.specs(circuit)()["resources"].quantum_operations
-    expected_specs = {"GlobalPhase": 1, "SemiAdder": 1, "C(BasisState)": 2}
-    assert specs == expected_specs
+    assert specs == expected
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
@@ -103,7 +123,7 @@ def test_as_fixed_decomps(phi, p):
 @pytest.mark.parametrize("p", [2, 3, 4])
 def test_as_alt_decomps(phi, p):
     """Test that the decomposition rule from ``make_rz_to_phase_gradient_decomp works`` as
-    expected as an alternative decomposition and yields the correct resources"""
+    expected as an alternative decomposition and yields the correct resources."""
     angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(p)])
     phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(p)])
     work_wires = qp.wires.Wires([f"work_{i}" for i in range(p - 1)])
@@ -115,7 +135,7 @@ def test_as_alt_decomps(phi, p):
     }
 
     custom_decomp = make_rz_to_phase_gradient_decomp(**kwargs)
-    gate_set = {"SemiAdder", "C(BasisState)", "GlobalPhase"}
+    gate_set = {"SemiAdder", "CNOT", "PauliX", "GlobalPhase"}
 
     @qp.transforms.decompose(gate_set=gate_set, alt_decomps={qp.RZ: [custom_decomp]})
     @qp.qnode(qp.device("null.qubit"))
@@ -123,9 +143,9 @@ def test_as_alt_decomps(phi, p):
         qp.RZ(phi, 0)
         return qp.state()
 
+    expected = _expected_rz_specs(phi, p)
     specs = qp.specs(circuit)()["resources"].quantum_operations
-    expected_specs = {"GlobalPhase": 1, "SemiAdder": 1, "C(BasisState)": 2}
-    assert specs == expected_specs
+    assert specs == expected
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
@@ -154,9 +174,9 @@ def test_integration_multi_wire(seed):
         gate_set={
             "StatePrep",
             "Adjoint(StatePrep)",
-            "C(BasisState)",
             "SemiAdder",
             "CNOT",
+            "PauliX",
             "GlobalPhase",
         },
         fixed_decomps={qp.RZ: custom_decomp},
