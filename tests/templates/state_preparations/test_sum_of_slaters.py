@@ -568,10 +568,13 @@ class TestSumOfSlatersPrep:
                 qp.SumOfSlatersPrep(Complex[num_entries], indices=Int[num_entries], **oversized)
 
     def test_coefficients_indices_length_mismatch(self):
-        """Test that mismatched ``coefficients`` and ``indices`` lengths are rejected."""
+        """Test that mismatched ``coefficients`` and ``indices`` lengths are rejected, both
+        concretely and at the abstract level."""
         match = "The number of coefficients and the number of state indices must match."
         with pytest.raises(ValueError, match=match):
             qp.SumOfSlatersPrep(np.ones(3) / np.sqrt(3), wires=range(5), indices=(0, 3, 4, 17))
+        with pytest.raises(ValueError, match=match):
+            qp.SumOfSlatersPrep(Complex[8], wires=Wire[5], indices=Int[5])
 
     def make_random_data(self, num_wires, num_entries, seed):
         """Produce some random input data for ``SumOfSlatersPrep`` with given specs."""

@@ -930,11 +930,10 @@ class SumOfSlatersPrep(Operator2):
     ):
         n = 1 if isinstance(wires, int) else len(wires)
         num_entries = len(coefficients)
-        if not isinstance(indices, AbstractArray):
-            if len(indices) != num_entries:
-                raise ValueError(
-                    "The number of coefficients and the number of state indices must match."
-                )
+        if len(indices) != num_entries:
+            raise ValueError(
+                "The number of coefficients and the number of state indices must match."
+            )
         if isinstance(indices, AbstractArray):
             indices = self.generate_indices(num_entries, n)
 
