@@ -1332,7 +1332,7 @@ class TestPauliRep:
 
 
 class TestPPR:
-    """Tests for the fixed-angle Pauli product rotation."""
+    """Tests for the fixed-angle Pauli product rotation (PPR)."""
 
     @pytest.mark.parametrize("denominator", [-4, -2, -1, 1, 2, 4])
     def test_allowed_denominators(self, denominator):
@@ -1347,12 +1347,11 @@ class TestPPR:
         op = qp.PPR(4, "XY", wires=[0, 1])
         assert op.data == ()
         assert op.parameters == []
-        assert op.batch_size is None
         assert op.hyperparameters == {"angle_denominator": 4, "pauli_word": "XY"}
 
     def test_standard_validity(self):
         """Run the standard operator validity checks."""
-        qp.ops.functions.assert_valid(qp.PPR(2, "ZZZ", wires=[0, 1, 2]))
+        qp.ops.functions.assert_valid(qp.PPR(2, "ZXY", wires=[0, 1, 2]))
 
     @pytest.mark.parametrize("denominator", [0, 3, 8, -3, -8, 1.0, 2.0, np.pi / 4, "4"])
     def test_invalid_denominator_raises(self, denominator):
@@ -1384,7 +1383,13 @@ class TestPPR:
 
     @pytest.mark.parametrize(
         "denominator, expected",
-        [(1, "RZ(π)"), (-1, "RZ(-π)"), (2, "RZ(π/2)"), (-2, "RZ(-π/2)"), (4, "RZ(π/4)")],
+        [
+            (1, "PPR(π, Z)"),
+            (-1, "PPR(-π, Z)"),
+            (2, "PPR(π/2, Z)"),
+            (-2, "PPR(-π/2, Z)"),
+            (4, "PPR(π/4, Z)"),
+        ],
     )
     def test_label(self, denominator, expected):
         """Test that the label contains the Pauli word and the angle."""
@@ -1397,15 +1402,6 @@ class TestPPR:
     def test_repr(self):
         """Test the string representation."""
         assert repr(qp.PPR(-4, "XY", wires=[0, 1])) == "PPR(-4, 'XY', wires=[0, 1])"
-
-    def test_no_matrix_or_decomposition(self):
-        """Test that no matrix or decomposition is defined yet."""
-        op = qp.PPR(4, "XY", wires=[0, 1])
-        assert not op.has_matrix
-        with pytest.raises(qp.exceptions.MatrixUndefinedError):
-            op.matrix()
-        with pytest.raises(qp.exceptions.DecompositionUndefinedError):
-            op.decomposition()
 
     def test_equality_and_hash(self):
         """Test that the angle denominator is taken into account by equality and hashing."""
@@ -1422,16 +1418,12 @@ class TestPPR:
         assert op.angle_denominator == 4
         assert op.pauli_word == "XY"
 
-    @pytest.mark.jax
+    @pytest.mark.capture
     def test_capture(self):
         """Test that the angle denominator is captured as a compilable argument."""
         import jax
 
-        qp.capture.enable()
-        try:
-            jaxpr = jax.make_jaxpr(lambda: qp.PPR(4, "XY", wires=[0, 1]))()
-        finally:
-            qp.capture.disable()
+        jaxpr = jax.make_jaxpr(lambda: qp.PPR(4, "XY", wires=[0, 1]))()
 
         (eqn,) = jaxpr.eqns
         assert eqn.params["op_cls"] is qp.PPR

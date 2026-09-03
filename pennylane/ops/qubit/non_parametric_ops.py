@@ -2149,17 +2149,17 @@ class PPR(Operator2):
                 "Allowed characters are X, Y and Z."
             )
 
-        if not wires:
+        super().__init__(angle_denominator, pauli_word, wires=wires)
+
+        if not self.wires:
             raise ValueError("At least one wire has to be provided.")
 
-        if len(pauli_word) != len(wires):
+        if len(pauli_word) != len(self.wires):
             raise ValueError(
                 "The number of wires must be equal to the length of the Pauli word. The Pauli "
-                f"word {pauli_word} has length {len(pauli_word)} but {len(wires)} wires "
-                f"were given: {wires}."
+                f"word {pauli_word} has length {len(pauli_word)} but {len(self.wires)} wires "
+                f"were given: {self.wires}."
             )
-
-        super().__init__(angle_denominator, pauli_word, wires=wires)
 
     @property
     def _angle_label(self) -> str:
