@@ -208,7 +208,7 @@ def _rx_to_ry_cliff_resources(*_, **__):
         _change_op_basis_abstract,
     )
 
-    resources = {_change_op_basis_abstract(qp.S, qp.RY, _adjoint_abstract(qp.S)): 1}
+    resources = {_change_op_basis_abstract(qp.S, qp.RY, qp.adjoint(qp.S(Wire[1]))): 1}
     return resources
 
 

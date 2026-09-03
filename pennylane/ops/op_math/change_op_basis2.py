@@ -196,7 +196,7 @@ def _controlled_change_op_basis_decomposition(
 ):
     queuing.apply(base.compute_op)
     ctrl(
-        queuing.apply(base.target_op),
+        base.target_op,
         control=control_wires,
         control_values=control_values,
         work_wires=work_wires,
@@ -223,4 +223,4 @@ def _change_op_basis_decomp(compute_op, target_op, uncompute_op):
 
 
 add_decomps(ChangeOpBasis2, _change_op_basis_decomp)
-add_decomps("C(ChangeOpBasis2)", flip_zero_control(_controlled_change_op_basis_decomposition))
+add_decomps("C(ChangeOpBasis2)", _controlled_change_op_basis_decomposition)
