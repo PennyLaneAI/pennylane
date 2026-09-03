@@ -50,6 +50,39 @@ def _cuda_platform() -> str:
     return f"{target.backend}:{target.arch}:{target.warp_size}"
 
 
+class TestPollingCacheModifier:
+    """The polling loads need a per-backend cache modifier.
+
+    ``volatile=True`` is kept on both backends, but the cache modifier is not portable:
+    on HIP ``".cv"`` is what lowers the load to an LLVM ``volatile`` load, while on CUDA
+    ``volatile=True`` already emits ``ld.volatile.global`` and adding ``".cv"`` makes
+    ``ptxas`` reject the combination from Triton 3.8 onwards.
+    """
+
+    @pytest.mark.parametrize(
+        ("platform", "expected"),
+        [
+            ("hip:gfx90a:64", ".cv"),
+            ("hip:gfx942:64", ".cv"),
+            ("cuda:80:32", ""),
+            ("cuda:120:32", ""),
+        ],
+    )
+    def test_cache_mod_is_selected_per_backend(self, platform, expected, monkeypatch, tmp_path):
+        """The backend of the platform string decides the cache modifier, nothing else does."""
+        pytest.importorskip("triton")
+        captured = {}
+
+        def fake_build_so(*_args, **kwargs):
+            captured["cache_mod"] = kwargs["constexpr"]["cache_mod"]
+            return tmp_path / "fake.so", "fake_symbol"
+
+        monkeypatch.setattr(frontend, "_build_so", fake_build_so)
+        frontend._build_triton_decoder((_echo_decoder,), platform=platform)
+
+        assert captured["cache_mod"] == expected
+
+
 class TestBuildTritonDecoder:
     """Tests for _build_triton_decoder."""
 

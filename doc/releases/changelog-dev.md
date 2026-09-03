@@ -580,7 +580,7 @@
   giving order-of-magnitude speedups for sparse and structured operators.
   [(#9728)](https://github.com/PennyLaneAI/pennylane/pull/9728)
 
-* Added the ``MultiX`` template which conditionally applies ``PauliX`` gates across target wires according 
+* Added the ``MultiX`` template which conditionally applies ``PauliX`` gates across target wires according
   to a bitstring array.
   [(#10033)](https://github.com/PennyLaneAI/pennylane/pull/10033)
 
@@ -1311,6 +1311,10 @@
   [(#9621)](https://github.com/PennyLaneAI/pennylane/pull/9621)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed the Triton persistent decoder kernel so :func:`~pennylane.backline.css_bp_decoder` and
+  the other Triton decoders build on CUDA with Triton 3.8.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
 
 * Fixed :func:`~pennylane.backline.css_bp_decoder` and the other Triton decoders so they can be
   compiled on a machine with no usable GPU. The ahead-of-time build called
