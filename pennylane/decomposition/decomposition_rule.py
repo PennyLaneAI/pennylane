@@ -1111,6 +1111,9 @@ def _is_abstract_and_fixed(val, is_leaf=False):
     # already abstractifies everything. We only need to make sure that it's fixed.
     if isinstance(val, (AbstractArray, AbstractWires)):
         return val.shape_fixed
+    if isinstance(val, CompressedResourceOp):
+        # Legacy resource representations are valid, fully-abstract resource leaves.
+        return True
     if is_leaf:
         # This branch is added as a precaution to avoid infinite recursion, but this should
         # never actually happen, because we always call `abstractify` first to fully abstractify

@@ -183,7 +183,19 @@ class TestDifferentiability:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (False, True))
-    @pytest.mark.parametrize("shots", (None, 50000))
+    @pytest.mark.parametrize(
+        "shots",
+        (
+            None,
+            pytest.param(
+                50000,
+                marks=pytest.mark.pl2do(
+                    reason="[sc-129513] Differentiating PrepSelPrep (used by Qubitization) with "
+                    "parameter-shift needs bind_new_parameters support for Prod2/CompositeOp2."
+                ),
+            ),
+        ),
+    )
     def test_qnode_jax(self, shots, use_jit, seed):
         """Test that the QNode executes and it's differentiable with JAX. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
