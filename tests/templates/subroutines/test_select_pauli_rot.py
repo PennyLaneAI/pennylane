@@ -196,10 +196,10 @@ class TestSelectPauliRot:
             decomposition, decomposition_2 = [], []
             for op1, op2 in zip(decomp_1, decomp_2):
                 decomposition.extend(
-                    op1.decomposition() if isinstance(op1, (Prod, Prod2)) else [op1]
+                    op1.decomposition() if isinstance(op1, Prod) else [op1]
                 )
                 decomposition_2.extend(
-                    op2.decomposition() if isinstance(op2, (Prod, Prod2)) else [op2]
+                    op2.decomposition() if isinstance(op2, Prod) else [op2]
                 )
 
         for dec in [decomposition, decomposition_2]:
