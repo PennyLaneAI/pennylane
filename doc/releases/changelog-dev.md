@@ -14,6 +14,7 @@
   >>> import pennylane as qp
   >>> qp.PPR(4, "XY", wires=[0, 1])
   PPR(4, 'XY', wires=[0, 1])
+
   ```
 
 * Two new numeric Hamiltonians called :class:`pennylane.CDFHamiltonian` (based on `arXiv:2506.15784, Sec. III A <https://arxiv.org/abs/2506.15784>`) and :class:`pennylane.CGFHamiltonian` have been added (based on `arXiv:2508.11865, Sec. III C <https://arxiv.org/abs/2508.11865>`), which define compressed double-factorized (CDF) and Christiansen greedy-fragmentation Hamiltonians, respectively. These Hamiltonians can be defined
