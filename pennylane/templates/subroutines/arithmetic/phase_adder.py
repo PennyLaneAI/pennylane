@@ -296,7 +296,7 @@ def _phase_adder_decomposition_resources(num_x_wires, mod) -> dict:
 
     resources = {
         ops.PhaseShift: num_x_wires,
-        _adjoint_abstract(ops.PhaseShift): num_x_wires,
+        ops.adjoint(ops.PhaseShift(Wire[1])): num_x_wires,
         _change_op_basis_abstract(
             _adjoint_abstract(QFT(Wire[num_x_wires])),
             ops.CNOT,
