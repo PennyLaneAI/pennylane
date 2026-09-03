@@ -236,7 +236,7 @@ def change_op_basis(
         if (
             isinstance(compute, Operator2)
             and isinstance(target, Operator2)
-            and isinstance(uncompute, (Operator2, NoneType))
+            and (isinstance(uncompute, Operator2) or uncompute is None)
         ):
             return ChangeOpBasis2(
                 compute,
