@@ -638,7 +638,7 @@ class PartialUnaryStatePreparation(Operator2):
         num_entries = 2553
         coefficients = np.random.random(num_entries)
         coefficients /= np.linalg.norm(coefficients)
-        indices = np.random.choice(2**15, num_entries, replace=False)
+        indices = tuple(np.random.choice(2**15, num_entries, replace=False))
         wires = list(range(15))
         num_work_wires = qp.math.ceil_log2(num_entries) - 1
         work_wires = list(range(15, 15 + num_work_wires))
