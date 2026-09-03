@@ -338,8 +338,8 @@ class TestAffineSubspaceIsometry:
             num_entries=3, num_wires=4, num_work_wires=5, is_affine=False
         )
 
-        assert len(base) == 7
-        assert len(excess) == 8
+        assert len(base) == 8
+        assert len(excess) == 9
         assert {len(rep.target_wires) for rep in base if isinstance(rep, qp.QROM)} == {1, 2}
         assert {len(rep.target_wires) for rep in excess if isinstance(rep, qp.QROM)} == {1, 2, 3}
         assert base[qp.SWAP] == 4
