@@ -1028,7 +1028,7 @@ class SumOfSlatersPrep(Operator2):
         .. warning::
 
             The returned indices are a resource-estimation stand-in. An operator built from them
-            is perfectly valid, but prepares *these* basis states, not any the caller has in mind.
+            is perfectly valid, but prepares *these* basis states, not any the caller has provided.
 
         Every register size is non-decreasing in :math:`r`, the number of bits retained by
         :func:`~.select_sos_rows`, so one index set maximizes all of them at once. The largest
