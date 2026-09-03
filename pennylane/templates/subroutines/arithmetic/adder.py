@@ -17,6 +17,7 @@ Contains the Adder template.
 
 from collections import defaultdict
 
+import pennylane as qp
 from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
@@ -239,7 +240,7 @@ def _adder_decomposition_resources(num_x_wires, mod) -> dict:
         _change_op_basis_abstract(
             _compute_op,
             resource_rep(PhaseAdder, num_x_wires=num_qft_wires, mod=mod),
-            _adjoint_abstract(_compute_op),
+            qp.adjoint(_compute_op),
         ): 1,
     }
     return resources

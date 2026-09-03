@@ -30,7 +30,7 @@ import pennylane as qp
 from pennylane import math
 from pennylane.allocation import allocate
 from pennylane.core.operator import Operator
-from pennylane.decomposition import add_decomps, change_op_basis_resource_rep, register_resources
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.decomposition_rule import DecompCollection, list_decomps
 from pennylane.decomposition.resources import resolve_work_wire_type
 from pennylane.decomposition.symbolic_decomposition import self_adjoint
@@ -38,6 +38,7 @@ from pennylane.ops.identity import GlobalPhase
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure, pauli_measure
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.op_math.controlled2 import (
     Controlled2,
     ControlledOp2,
@@ -1206,14 +1207,8 @@ def _toffoli_to_ppr(wires: WiresLike):
 
 
 def _toffoli_elbow_resources(*_, **__):
-    # Imported lazily to avoid a circular import: change_op_basis pulls in ops.op_math, which is
-    # still initializing when controlled_ops is first imported.
-    from pennylane.ops.op_math.change_op_basis2 import (  # pylint: disable=import-outside-toplevel
-        _change_op_basis_abstract,
-    )
-
     _compute_op = qp.Elbow
-    return {_change_op_basis_abstract(_compute_op, qp.CNOT, _adjoint_abstract(_compute_op)): 1}
+    return {_change_op_basis_abstract(_compute_op, qp.CNOT, qp.adjoint(_compute_op)): 1}
 
 
 @register_resources(_toffoli_elbow_resources, work_wires={"zeroed": 1})
