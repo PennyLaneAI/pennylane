@@ -219,7 +219,7 @@ def _temporary_and_resources(*_, **__):
     resources = {
         ops.X: _number_xs,
         _change_op_basis_abstract(prod_rep, ops.CNOT, prod_rep): 1,
-        _adjoint_abstract(ops.S): 1,
+        ops.adjoint(ops.S(Wire[1])): 1,
     }
     return resources
 

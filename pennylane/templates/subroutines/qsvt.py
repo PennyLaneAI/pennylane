@@ -694,10 +694,7 @@ def _QSVT_resources(projectors, UA):
     resources = defaultdict(int)
     resources[abstractify(projectors[0])] = 1
     for i in range(1, len(projectors) - 1, 2):
-        _compute_op = UA
-        resources[
-            _change_op_basis_abstract(_compute_op, projectors[i], _adjoint_abstract(_compute_op))
-        ] += 1
+        resources[_change_op_basis_abstract(UA, projectors[i], _adjoint_abstract(UA))] += 1
         resources[abstractify(projectors[i + 1])] += 1
 
     if len(projectors) % 2 == 0:
