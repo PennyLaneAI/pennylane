@@ -21,17 +21,15 @@ from collections.abc import Callable, Sequence
 from functools import cached_property
 from inspect import signature
 
-# pylint: disable=invalid-sequence-index
-from typing import override
-
 import pennylane as qp
 from pennylane import math
 from pennylane.core.operator import Operator, Operator2
 from pennylane.queuing import remove_from_program
+from pennylane.typing import AbstractWires
 
 from .composite import handle_recursion_error
 
-# pylint: disable=too-many-instance-attributes
+# pylint: disable=too-many-instance-attributes,invalid-sequence-index
 
 
 class CompositeOp2(Operator2, is_baseclass=True):
@@ -52,11 +50,19 @@ class CompositeOp2(Operator2, is_baseclass=True):
     def __init__(self, operands: Sequence[Operator], _init_pauli_rep=None):
         if any(isinstance(op, (qp.ops.MidMeasure, qp.ops.PauliMeasure)) for op in operands):
             raise ValueError("Composite operators of mid-circuit measurements are not supported.")
+
         super().__init__(**self._init_args)
         self._operands = operands
         self._hash = None
         self._has_overlapping_wires = len(self.wires) < sum(len(op.wires) for op in operands)
-        self._pauli_rep = self._build_pauli_rep() if _init_pauli_rep is None else _init_pauli_rep
+
+        if isinstance(self.wires, AbstractWires):
+            self._pauli_rep = None
+        else:
+            self._pauli_rep = (
+                self._build_pauli_rep() if _init_pauli_rep is None else _init_pauli_rep
+            )
+
         for op in self:
             remove_from_program(op)
 
@@ -160,13 +166,6 @@ class CompositeOp2(Operator2, is_baseclass=True):
                 return op._math_op(math.vstack(eigvals), axis=0)  # pylint: disable=protected-access
 
             cls.compute_eigvals = staticmethod(_compute_eigvals)
-
-    @override
-    def __abstract_init__(self, operands, _init_pauli_rep=None):  # pylint: disable=arguments-differ
-        super().__abstract_init__(operands, _init_pauli_rep=None)
-        self._hash = None
-        self._has_overlapping_wires = None
-        self._operands = operands
 
     def __repr__(self):
         return f" {self._op_symbol} ".join(

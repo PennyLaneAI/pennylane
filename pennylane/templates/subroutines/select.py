@@ -21,14 +21,14 @@ from itertools import product
 import numpy as np
 
 from pennylane import math
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator, Operator2
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.ops import CNOT, X, adjoint, ctrl
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import Wire
-from pennylane.wires import Wires
+from pennylane.wires import Wires, validate_no_wire_overlaps
 
 from .arithmetic.temporary_and import TemporaryAND
 
@@ -360,18 +360,21 @@ class Select(Operator2):
                 + "wires are required."
             )
 
-        _wires_are_traced = any(math.is_abstract(w) for w in self.control)
+        all_target_wires = Wires([])
+        for op in self.ops:
+            if isinstance(op, Operator):
+                # We need this branch as the inputs can be CompressedResourceOps when
+                # computing decomposition rule resources
+                all_target_wires += op.wires
 
-        # Wire overlap validation must be skipped when wires are JAX tracers,
-        # as their concrete values are not available during tracing.
-        if not _wires_are_traced:
-            if any(
-                control_wire in Wires.all_wires([op.wires for op in ops])
-                for control_wire in self.control
-            ):
-                raise ValueError("Control wires should be different from operation wires.")
+        self._target_wires = all_target_wires
 
-        self._target_wires = Wires.all_wires([op.wires for op in ops])
+        wire_args = {
+            "target_wires": all_target_wires,
+            "control": self.control,
+            "work_wires": self.work_wires,
+        }
+        validate_no_wire_overlaps(wire_args)
 
     @property
     def target_wires(self):

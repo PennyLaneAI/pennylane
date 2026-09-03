@@ -45,7 +45,7 @@ class TestInitialization:
 
         assert isinstance(op.bitstring, (np.ndarray, AbstractArray))
         assert isinstance(op.wires, (Wires, AbstractWires))
-        assert op.is_abstract == (
+        assert op.is_fully_abstract == (
             isinstance(bitstring_input, AbstractArray) or isinstance(wires_input, AbstractWires)
         )
         assert op.bitstring.dtype == bool

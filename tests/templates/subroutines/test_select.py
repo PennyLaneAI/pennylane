@@ -26,13 +26,13 @@ import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.core.operator import abstractify
 from pennylane.decomposition.resources import CompressedResourceOp
-from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.templates.subroutines.select import (
     _partial_select,
     _select_decomp_multi_control_work_wire,
     _select_decomp_unary,
 )
 from pennylane.typing import Bool, Wire
+from tests.decomposition.conftest import to_resources
 
 
 @pytest.mark.jax
@@ -279,12 +279,12 @@ class TestSelect:
         )
 
         assert resource_obj.num_gates == 4
-
         expected_counts = {
             qp.ctrl(qp.X(Wire[1]), Wire[2], control_values=Bool[2]): 3,
-            _ctrl_abstract(qp.Y, Wire[2], num_zero_control_values=0): 1,
+            qp.ctrl(qp.Y(Wire[1]), Wire[2], control_values=Bool[2]): 1,
         }
-        assert resource_obj.gate_counts == expected_counts
+        expected_resources = to_resources(expected_counts)
+        assert resource_obj == expected_resources
 
         op = qp.Select(ops, control, partial=partial)
         with qp.queuing.AnnotatedQueue() as q:
@@ -320,14 +320,16 @@ class TestSelect:
             expected_counts = {
                 qp.ctrl(qp.X(Wire[1]), Wire[2], control_values=Bool[2]): 1,
                 qp.ctrl(qp.X(Wire[1]), Wire[1]): 1,
-                _ctrl_abstract(qp.SWAP, Wire[1]): 1,
+                qp.ctrl(qp.SWAP(Wire[2]), Wire[1]): 1,
             }
         else:
             expected_counts = {
                 qp.ctrl(qp.X(Wire[1]), Wire[2], control_values=Bool[2]): 2,
-                _ctrl_abstract(qp.SWAP, Wire[2], num_zero_control_values=1): 1,
+                qp.ctrl(qp.SWAP(Wire[2]), Wire[2], control_values=Bool[2]): 1,
             }
-        assert resource_obj.gate_counts == expected_counts
+
+        expected_resources = to_resources(expected_counts)
+        assert resource_obj == expected_resources
 
         op = qp.Select(ops, control, partial=partial)
         with qp.queuing.AnnotatedQueue() as q:
@@ -363,10 +365,12 @@ class TestSelect:
         assert resource_obj.num_gates == 1
 
         if partial:
-            expected_counts = {abstractify(qp.Z): 1}
+            expected_counts = {qp.Z: 1}
         else:
-            expected_counts = {_ctrl_abstract(qp.Z, Wire[1], num_zero_control_values=1): 1}
-        assert resource_obj.gate_counts == expected_counts
+            expected_counts = {qp.ctrl(qp.Z(Wire[1]), Wire[1], control_values=Bool[1]): 1}
+
+        expected_resource = to_resources(expected_counts)
+        assert resource_obj == expected_resource
 
         op = qp.Select(ops, control, partial=partial)
         with qp.queuing.AnnotatedQueue() as q:
