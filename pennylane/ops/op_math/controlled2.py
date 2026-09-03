@@ -783,7 +783,8 @@ def to_controlled_unitary(base, control_wires, control_values, work_wires, work_
 def flip_zero_control(inner_decomp: DecompositionRule, name: str = "") -> DecompositionRule:
     """Wraps a decomposition for a controlled operator with X gates to flip zero control wires."""
 
-    sig = inspect.signature(inner_decomp)
+    # pylint: disable=protected-access
+    sig = inspect.signature(inner_decomp._impl)
 
     def _get_arguments(*args, **kwargs):
         bound_args = sig.bind(*args, **kwargs)
@@ -802,7 +803,6 @@ def flip_zero_control(inner_decomp: DecompositionRule, name: str = "") -> Decomp
             gate_counts[qp.X] = gate_counts.get(qp.X, 0) + len(ctrl_values)
         return gate_counts
 
-    # pylint: disable=protected-access
     @register_condition(_condition_fn)
     @register_resources(
         _resource_fn,
@@ -829,7 +829,7 @@ def flip_zero_control(inner_decomp: DecompositionRule, name: str = "") -> Decomp
             qp.cond(qp.math.logical_not(_cvals[i]), qp.X)(_cwires[i])
 
         _x_flips()
-        inner_decomp(**(arguments | {"control_values": None}))
+        inner_decomp._impl(**(arguments | {"control_values": None}))
         _x_flips()
 
     base_source = inner_decomp._source

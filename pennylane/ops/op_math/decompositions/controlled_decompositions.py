@@ -423,7 +423,8 @@ def augment_with_alloc(base_rule, num_work_wires, work_wire_type, name=""):
     """Given a decomposition rule that takes explicit work wires, populate the same
     decomposition rule that uses dynamic work wire allocation instead."""
 
-    signature = inspect.signature(base_rule)
+    # pylint: disable=protected-access
+    signature = inspect.signature(base_rule._impl)
     abstract_sub = {"work_wires": Wire[num_work_wires], "work_wire_type": work_wire_type}
 
     def _get_arguments(*args, **kwargs):
@@ -433,7 +434,7 @@ def augment_with_alloc(base_rule, num_work_wires, work_wire_type, name=""):
 
     def _resource_fn(*args, **kwargs):
         arguments = _get_arguments(*args, **kwargs) | abstract_sub
-        return base_rule._compute_resources(**arguments)  # pylint: disable=protected-access
+        return base_rule._compute_resources(**arguments)
 
     def _condition_fn(*args, **kwargs):
         arguments = _get_arguments(*args, **kwargs) | abstract_sub
