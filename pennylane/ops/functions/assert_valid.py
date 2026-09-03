@@ -34,6 +34,7 @@ from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.decomposition.utils import _get_decomp_args
 from pennylane.exceptions import EigvalsUndefinedError
 from pennylane.ops.op_math.adjoint2 import Adjoint2
+from pennylane.ops.op_math.composite2 import CompositeOp2
 from pennylane.ops.op_math.controlled2 import ControlledOp2
 from pennylane.ops.op_math.pow2 import Pow2
 from pennylane.ops.op_math.symbolicop2 import SymbolicOp2
@@ -239,24 +240,6 @@ def _decomp_rule_to_tape(rule, args, kwargs):
     return qp.tape.QuantumScript.from_queue(q)
 
 
-def _make_wrapped_decomp_rule(rule, op, capture_kwargs):
-    """Makes a wrapper around a decomposition rule that manually flattens and unflattens
-    the hybrid arguments around the input boundary."""
-
-    hybrid_trees = {}
-    for k, v in op.hybrid_args.items():
-        leaves, tree = qp.pytrees.flatten(v)
-        capture_kwargs[k] = leaves
-        hybrid_trees[k] = tree
-
-    def _wrapped(*args, **kwargs):
-        for k in op.hybrid_args:
-            kwargs[k] = qp.pytrees.unflatten(kwargs[k], hybrid_trees[k])
-        rule(*args, **kwargs)
-
-    return _wrapped
-
-
 def _capture_decomp_rule_to_tape(rule, op):
 
     import jax  # pylint: disable=import-outside-toplevel
@@ -270,11 +253,7 @@ def _capture_decomp_rule_to_tape(rule, op):
     else:
         decomposition = partial(rule, **op.static_args, **op.compilable_args)
         capture_args = ()
-        capture_kwargs = {**op.dynamic_args, **op.wire_args}  # hybrid args will be added below
-        # TODO: tracing Operator2 hybrid args is not supported out of the box due to [sc-127789].
-        # For now we manually flatten the hybrid args and reassemble them within the wrapper rule,
-        # but ideally we want to be able to pass hybrid args directly.
-        decomposition = _make_wrapped_decomp_rule(decomposition, op, capture_kwargs)
+        capture_kwargs = {**op.dynamic_args, **op.wire_args, **op.hybrid_args}
 
     plxpr = qp.capture.make_plxpr(decomposition, autograph=False)(*capture_args, **capture_kwargs)
     flat_capture_args = jax.tree.leaves((capture_args, capture_kwargs))
@@ -736,7 +715,7 @@ def _assert_valid_operator2(
                 f"Op not properly abstractified. {abstractified_op} had non-abstract leaf {l}."
             )
 
-    if not isinstance(op, (Adjoint2, ControlledOp2, Pow2)):
+    if not isinstance(op, (Adjoint2, CompositeOp2, ControlledOp2, Pow2)):
 
         error_msg = "ndim_params must have the same length as dynamic_argnames"
         assert len(op.ndim_params) == len(op.dynamic_argnames), error_msg
