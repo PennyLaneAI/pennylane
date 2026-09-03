@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains the templates for Alias Sampling."""
+"""Contains the quantum functions for Alias Sampling and Uniform State Preparation."""
 
 from itertools import islice
 
@@ -151,11 +151,15 @@ def _build_alias_tables(probs, mu):
 
 
 def alias_sampling_wires(n_states, mu):
-    r"""Return the wire counts required by :func:`alias_sampling`.
+    r"""Compute the size of the three registers that :func:`alias_sampling` acts on.
+
+    The three registers differ in what they hold and in whether they are restored, so their sizes
+    are reported separately: ``target_wires`` carry the prepared state, ``temp_wires`` are left
+    entangled with it, and ``work_wires`` are returned to :math:`|0\rangle` and can be reused.
 
     Args:
-        n_states (int): the number of amplitudes ``L``.
-        mu (int): number of ``keep`` / ``sigma`` bits.
+        n_states (int): the number of coefficients of the state to be prepared.
+        mu (int): number of bits of precision used for the ``keep`` and ``sigma`` registers.
 
     Returns:
         dict: ``{"target_wires": n_target, "temp_wires": n_temp, "work_wires": n_work}``.
@@ -196,10 +200,10 @@ def alias_sampling_wires(n_states, mu):
 
 
 def alias_sampling(probs, mu, target_wires, temp_wires, work_wires):
-    r"""Prepare a state with real and positive amplitudes via coherent alias sampling (Figure 11 of
-    `arXiv:1805.03662 <https://arxiv.org/abs/1805.03662>`_).
+    r"""Prepare a state with real and positive amplitudes via coherent alias sampling.
 
-    Starting from all-zeros, prepares
+    Starting from all-zeros, the circuit of Figure 11 in
+    `arXiv:1805.03662 <https://arxiv.org/abs/1805.03662>`_ prepares
 
     .. math::
 
