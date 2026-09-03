@@ -409,6 +409,31 @@ class TestApplyOp:
         assert q1.queue == [op1, op2]
 
     @pytest.mark.capture
+    def test_global_op_used_in_two_different_captures(self):
+        """Regression test for a global operator used by two different workflows."""
+        import jax
+
+        global_op = qp.X(0)
+
+        def workflow1():
+            qp.apply(global_op)
+
+        def workflow2():
+            qp.apply(global_op)
+            qp.adjoint(global_op)
+
+        cjaxpr1 = jax.make_jaxpr(workflow1)()
+        assert global_op.tracer is None
+        assert [e.params["op_cls"] for e in cjaxpr1.eqns] == [qp.X]
+
+        cjaxpr2 = jax.make_jaxpr(workflow2)()
+        assert global_op.tracer is None
+        assert [(e.params["op_cls"], e.params["adjoint"]) for e in cjaxpr2.eqns] == [
+            (qp.X, False),
+            (qp.X, True),
+        ]
+
+    @pytest.mark.capture
     def test_apply_returns_a_copy(self):
         """Test that 'apply' will return a new object, not the operator it was given."""
         import jax
