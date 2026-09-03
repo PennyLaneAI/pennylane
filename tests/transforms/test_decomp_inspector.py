@@ -182,8 +182,8 @@ class TestInspectDecompGraph:
             Estimated First-Level Expansion Gates: {Controlled(MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(2)), control_wires=AbstractWires(1), control_values=AbstractArray((1,), bool)): 1, MultiControlledX(wires=AbstractWires(4), control_values=AbstractArray((3,), bool)): 2, PauliX: 3}
             Actual First-Level Expansion Gates: {Controlled(MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(2)), control_wires=AbstractWires(1), control_values=AbstractArray((1,), bool)): 1, MultiControlledX(wires=AbstractWires(4), control_values=AbstractArray((3,), bool)): 2}
             Wire Allocations: {'zero': 1}
-            Full Expansion Gates: {CNOT: 36, GlobalPhase: 72, MidMeasure: 2, RX: 18, RY: 14, RZ: 60}
-            Weighted Cost: 130.0
+            Full Expansion Gates: {CNOT: 36, GlobalPhase: 66, MidMeasure: 2, RX: 12, RY: 14, RZ: 60}
+            Weighted Cost: 124.0
 
             Decomposition 1 (name: controlled(_multi_rz_decomposition))
             0: ─╭X─╭RZ(0.50)─╭X─┤  
@@ -193,8 +193,8 @@ class TestInspectDecompGraph:
             5: ─╰●─╰●────────╰●─┤  
             Estimated First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool)): 2, PauliX: 3}
             Actual First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool)): 2}
-            Full Expansion Gates: {CNOT: 76, GlobalPhase: 94, MidMeasure: 4, RX: 38, RY: 16, RZ: 84}
-            Weighted Cost: 218.0
+            Full Expansion Gates: {CNOT: 76, GlobalPhase: 86, MidMeasure: 4, RX: 30, RY: 16, RZ: 84}
+            Weighted Cost: 210.0
             """).strip()
 
         assert result._repr_markdown_() == dedent("""
@@ -223,12 +223,12 @@ class TestInspectDecompGraph:
             | Full Expansion | Count |
             | :--- | :--- |
             | CNOT | 36 |
-            | GlobalPhase | 72 |
+            | GlobalPhase | 66 |
             | MidMeasure | 2 |
-            | RX | 18 |
+            | RX | 12 |
             | RY | 14 |
             | RZ | 60 |
-            | **Weighted Cost** | 130.0 |
+            | **Weighted Cost** | 124.0 |
             </details>
 
             ---
@@ -253,12 +253,12 @@ class TestInspectDecompGraph:
             | Full Expansion | Count |
             | :--- | :--- |
             | CNOT | 76 |
-            | GlobalPhase | 94 |
+            | GlobalPhase | 86 |
             | MidMeasure | 4 |
-            | RX | 38 |
+            | RX | 30 |
             | RY | 16 |
             | RZ | 84 |
-            | **Weighted Cost** | 218.0 |
+            | **Weighted Cost** | 210.0 |
             </details>
             """).strip()
 
@@ -326,8 +326,8 @@ class TestInspectDecompGraph:
                  |0>├─╰⊕─╰●──⊕╯──┤    
             First-Level Expansion Gates: {Adjoint(TemporaryAND): 1, TemporaryAND: 1, Toffoli: 1}
             Wire Allocations: {'zero': 1}
-            Full Expansion Gates: {CNOT: 11, GlobalPhase: 25, MidMeasure: 1, RX: 7, RY: 5, RZ: 20}
-            Weighted Cost: 44.0
+            Full Expansion Gates: {CNOT: 11, GlobalPhase: 22, MidMeasure: 1, RX: 4, RY: 5, RZ: 20}
+            Weighted Cost: 41.0
             """).strip()
 
     def test_missing_ops(self):
