@@ -29,10 +29,8 @@ from pennylane.core.operator import abstractify
 from pennylane.exceptions import DeviceError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math import ChangeOpBasis2, Prod2, change_op_basis
-from pennylane.ops.op_math.adjoint2 import Adjoint2, _adjoint_abstract
+from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.ops.op_math.change_op_basis import _validate_callable
-from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
-from pennylane.ops.op_math.pow2 import Pow2, _pow_abstract
 from pennylane.templates import Subroutine
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
