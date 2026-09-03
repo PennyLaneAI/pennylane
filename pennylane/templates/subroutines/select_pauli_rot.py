@@ -129,6 +129,9 @@ def _select_pauli_rot_resource(angles, control_wires, target_wire, rot_axis):
     num_wires = len(control_wires) + 1
     num_rotations = 2 ** (num_wires - 1)
 
+    rz_rep = abstractify(RZ)
+    cnot_rep = abstractify(CNOT)
+
     prod_res = {
         RZ: num_rotations,
         CNOT: num_rotations if num_wires > 1 else 0,
@@ -136,7 +139,7 @@ def _select_pauli_rot_resource(angles, control_wires, target_wire, rot_axis):
     if rot_axis == "Z":
         return prod_res
 
-    target_rep = Prod2((CNOT, RZ) * num_rotations) if num_wires > 1 else RZ
+    target_rep = Prod2((cnot_rep, rz_rep) * num_rotations) if num_wires > 1 else rz_rep
 
     if rot_axis == "X":
         return {_change_op_basis_abstract(Hadamard, target_rep, Hadamard): 1}
