@@ -1399,6 +1399,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed :func:`qp.apply` to copy the input operator when capture is enabled.
+  [(#10103)](https://github.com/PennyLaneAI/pennylane/pull/10103)
+
 * Fixed :class:`~.Incrementer` returning an incorrect incremented value when not enough
   work wires are provided.
   [(#10062)](https://github.com/PennyLaneAI/pennylane/pull/10062)
