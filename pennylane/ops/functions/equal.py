@@ -43,6 +43,7 @@ from pennylane.ops import (
 )
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.ops.op_math.adjoint2 import Adjoint2
+from pennylane.ops.op_math.composite2 import CompositeOp2
 from pennylane.ops.op_math.controlled2 import Controlled2
 from pennylane.ops.op_math.pow2 import Pow2
 from pennylane.pauli import PauliSentence, PauliWord
@@ -518,16 +519,17 @@ def _check_dynamic_value(
     atol=1e-9,
 ):
     """Check for equality of a dynamic argument of an Operator2 instance."""
+
     is_aa1 = isinstance(dval1, AbstractArray)
     is_aa2 = isinstance(dval2, AbstractArray)
 
-    # Note: A mixed state (is_aa1 != is_aa2) is structurally impossible under normal
-    # execution because Operator2's metaclass ensures abstract operators are fully abstract
-    # and so the wires check would fail first
     if is_aa1 and is_aa2:
         if dval1 == dval2:
             return True
         return f"op1 and op2 have different AbstractArray type specifiers for {dname}: Got {dval1} and {dval2}."
+
+    if is_aa1 != is_aa2:
+        return f"Unmatched representations for {dname}. Got {dval1} and {dval2}."
 
     if math.is_abstract(dval1) or math.is_abstract(dval2):
         return (
@@ -685,10 +687,11 @@ def _equal_paulisentence(
     return True
 
 
-@_equal_dispatch.register
+@_equal_dispatch.register(CompositeOp)
+@_equal_dispatch.register(CompositeOp2)
 # pylint: disable=protected-access
-def _equal_prod_and_sum(op1: CompositeOp, op2: CompositeOp, **kwargs):
-    """Determine whether two Prod or Sum objects are equal"""
+def _equal_prod_and_sum(op1, op2, **kwargs):
+    """Determine whether two Prod, Sum or Prod2 objects are equal"""
     if op1.pauli_rep is not None and (op1.pauli_rep == op2.pauli_rep):  # shortcut check
         return True
 
@@ -707,8 +710,65 @@ def _equal_prod_and_sum(op1: CompositeOp, op2: CompositeOp, **kwargs):
     return True
 
 
-@_equal_dispatch.register(Controlled)
 @_equal_dispatch.register(Controlled2)
+def _equal_controlled2(op1: Controlled2, op2: Controlled2, **kwargs):
+    """Determine whether two Controlled2 or ControlledOp2 objects are equal"""
+
+    if op1.arithmetic_depth != op2.arithmetic_depth:
+        return f"op1 and op2 have different arithmetic depths. Got {op1.arithmetic_depth} and {op2.arithmetic_depth}"
+
+    wire_comparison = _check_wire_value("work_wires", op1.work_wires, op2.work_wires)
+    if isinstance(wire_comparison, str):
+        return wire_comparison
+
+    if op1.work_wire_type != op2.work_wire_type:
+        return f"op1 and op2 have different work wire types. Got {op1.work_wire_type} and {op2.work_wire_type}"
+
+    base_equal_check = _equal(op1.base, op2.base, **kwargs)
+    if isinstance(base_equal_check, str):
+        return BASE_OPERATION_MISMATCH_ERROR_MESSAGE + base_equal_check
+
+    op1_abstract_wires = isinstance(op1.control_wires, AbstractWires)
+    op2_abstract_wires = isinstance(op2.control_wires, AbstractWires)
+
+    # if one is abstract but the other one isn't
+    if op1_abstract_wires != op2_abstract_wires:
+        return f"Mismatched representations for control_wires. Got {op1.control_wires} and {op2.control_wires}"
+
+    # if both are abstract
+    if op1_abstract_wires and op1.control_wires != op2.control_wires:
+        return f"Different numbers of abstract control_wires. Got {op1.control_wires} and {op2.control_wires}"
+
+    # both control wires are concrete
+    op1_abstract_cvals = isinstance(op1.control_values, AbstractArray)
+    op2_abstract_cvals = isinstance(op2.control_values, AbstractArray)
+
+    # if one is abstract but the other one isn't
+    if op1_abstract_cvals != op2_abstract_cvals:
+        return f"op1 and op2 have different control values. Got {op1.control_values} and {op2.control_values}."
+
+    if op1_abstract_cvals:
+        # if both are abstract, they must be equal, because if the number of control wires is
+        # the same, abstract control values are guaranteed to be Bool[len(control_wires)], and
+        # this is already validated by the Controlled2 constructor. Therefore, we only need to
+        # check whether the control wires are equal (we didn't check this above because we were
+        # going to check it with control values later)
+        return (
+            op1.control_wires == op2.control_wires
+            or f"op1 and op2 have different control_wires. Got {op1.control_wires} and {op2.control_wires}"
+        )
+
+    # Check equivalence of concrete controlled values
+    op1_control_dict = dict(zip(op1.control_wires, op1.control_values, strict=True))
+    op2_control_dict = dict(zip(op2.control_wires, op2.control_values, strict=True))
+
+    if op1_control_dict != op2_control_dict:
+        return f"op1 and op2 have different control dictionaries. Got {op1_control_dict} and {op2_control_dict}"
+
+    return True
+
+
+@_equal_dispatch.register(Controlled)
 def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
     """Determine whether two Controlled or ControlledOp objects are equal"""
 
@@ -716,28 +776,19 @@ def _equal_controlled(op1: Controlled, op2: Controlled, **kwargs):
         return f"op1 and op2 have different arithmetic depths. Got {op1.arithmetic_depth} and {op2.arithmetic_depth}"
 
     # op.base.wires compared in return
-    if op1.work_wires != op2.work_wires:
-        return f"op1 and op2 have different work wires. Got {op1.work_wires} and {op2.work_wires}"
+    wire_comparison = _check_wire_value("work_wires", op1.work_wires, op2.work_wires)
+    if isinstance(wire_comparison, str):
+        return wire_comparison
 
     if op1.work_wire_type != op2.work_wire_type:
         return f"op1 and op2 have different work wire types. Got {op1.work_wire_type} and {op2.work_wire_type}"
 
-    # for abstract operators, only check the length of control values and wires
-    if isinstance(op1, Controlled2) and op1.is_abstract:
+    # Check equivalence of concrete controlled values
+    op1_control_dict = dict(zip(op1.control_wires, op1.control_values, strict=True))
+    op2_control_dict = dict(zip(op2.control_wires, op2.control_values, strict=True))
 
-        if op1.control_wires != op2.control_wires:
-            return f"op1 and op2 have different control wires. Got {op1.control_wires} and {op2.control_wires}"
-
-        if op1.control_values != op2.control_values:
-            return f"op1 and op2 have different control values. Got {op1.control_values} and {op2.control_values}"
-
-    else:
-        # Check equivalence of concrete controlled values
-        op1_control_dict = dict(zip(op1.control_wires, op1.control_values, strict=True))
-        op2_control_dict = dict(zip(op2.control_wires, op2.control_values, strict=True))
-
-        if op1_control_dict != op2_control_dict:
-            return f"op1 and op2 have different control dictionaries. Got {op1_control_dict} and {op2_control_dict}"
+    if op1_control_dict != op2_control_dict:
+        return f"op1 and op2 have different control dictionaries. Got {op1_control_dict} and {op2_control_dict}"
 
     base_equal_check = _equal(op1.base, op2.base, **kwargs)
     if isinstance(base_equal_check, str):

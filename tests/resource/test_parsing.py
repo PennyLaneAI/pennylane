@@ -13,11 +13,14 @@
 # limitations under the License.
 """Unit tests for the JSON parsing helpers for the specs transform"""
 
+import copy
+
 import pytest
 
 from pennylane.resource import PBCSpecsResources, SpecsResources
 from pennylane.resource.expression import Expression
 from pennylane.resource.parsing import (
+    _convert_to_subclass,
     _generate_display_name_for_symbolic_var,
     _mlir_resources_to_specs_resources,
     parse_resources_json,
@@ -248,7 +251,7 @@ class TestAnalysisPassConversion:
 
     def test_fractional_operation_counts_from_branch_probabilities(self):
         """Probabilistic branch weighting (from cond ``estimated_probability`` hints) can
-        produce fractional operation counts, which must be preserved."""
+        produce fractional operation counts, which are rounded up in the final result."""
         with pytest.warns(UserWarning, match="branch"):
             actual = parse_resources_json(
                 {
@@ -271,7 +274,7 @@ class TestAnalysisPassConversion:
 
         assert actual == [
             SpecsResources(
-                counts={"RX": 0.2, "RY": 0.3},
+                counts={"RX": 1, "RY": 1},
                 measurement_processes={"probs()": 1},
                 num_wires=4,
                 circuit_depth=None,
@@ -280,7 +283,8 @@ class TestAnalysisPassConversion:
 
     def test_fractional_function_call_count(self):
         """A float call count (e.g. a probability-weighted branch) must be treated as a
-        numeric factor, not as a symbolic trip-count variable."""
+        numeric factor, not as a symbolic trip-count variable. The weighted counts it produces
+        are rounded up in the final result."""
         actual = parse_resources_json(
             {
                 "circuit": {
@@ -316,7 +320,7 @@ class TestAnalysisPassConversion:
 
         assert actual == [
             SpecsResources(
-                counts={"CNOT": 2.5, "Hadamard": 1, "RX": 2.5},
+                counts={"CNOT": 3, "Hadamard": 1, "RX": 3},
                 measurement_processes={},
                 num_wires=4,
                 circuit_depth=None,
@@ -416,3 +420,54 @@ class TestAnalysisPassConversion:
         # The top-level unknown field should be preserved
         assert "foo" in res[0].extra["unknown_field"]
         assert res[0].extra["unknown_field"]["foo"] == 15
+
+
+class TestConvertToSubclass:
+    """Unit tests for the _convert_to_subclass function."""
+
+    def test_convert_to_pbc(self):
+        """Test that _convert_to_subclass correctly converts a SpecsResources to a PBCSpecsResources."""
+        pbc_data = {"pbc_depth": {"any_commuting_depth": 22, "qubit_disjoint_depth": 18}}
+
+        res = SpecsResources(
+            counts={"Hadamard": 3, "PauliX": 2, "PauliZ": 6},
+            measurement_processes={"expval(PauliZ)": 1},
+            num_wires=10,
+            circuit_depth=5,
+            extra=copy.deepcopy(pbc_data),
+        )
+
+        converted = _convert_to_subclass(res)
+
+        assert isinstance(converted, PBCSpecsResources)
+        assert converted.counts == res.counts
+        assert converted.measurement_processes == res.measurement_processes
+        assert converted.num_wires == res.num_wires
+        assert converted.circuit_depth == res.circuit_depth
+        assert converted.any_commuting_depth == pbc_data["pbc_depth"]["any_commuting_depth"]
+        assert converted.qubit_disjoint_depth == pbc_data["pbc_depth"]["qubit_disjoint_depth"]
+        assert "any_commuting_depth" not in converted.extra
+        assert "qubit_disjoint_depth" not in converted.extra
+
+        assert res.extra == pbc_data  # Ensure the original extra data is unchanged
+
+    def test_convert_rounds_floats(self):
+        """Test that _convert_to_subclass rounds float counts and measurement processes to integers."""
+        res = SpecsResources(
+            counts={"Hadamard": Expression({("x",): 1.2, (): 1.5}), "PauliX": 2.2, "PauliZ": 6.9},
+            measurement_processes={"expval(PauliZ)": 1.5},
+            num_wires=10.00000000000001,  # Test that precision errors don't ceil
+            circuit_depth=5.9,
+        )
+
+        converted = _convert_to_subclass(res)
+
+        assert isinstance(converted, SpecsResources)
+        assert converted.counts == {
+            "Hadamard": Expression({("x",): 1.2, (): 2}),
+            "PauliX": 3,
+            "PauliZ": 7,
+        }
+        assert converted.measurement_processes == {"expval(PauliZ)": 2}
+        assert converted.num_wires == 10
+        assert converted.circuit_depth == 6
