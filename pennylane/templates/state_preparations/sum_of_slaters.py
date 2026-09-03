@@ -987,8 +987,7 @@ class SumOfSlatersPrep(Operator2):
 
         This function supports an abstract input for ``indices``, in which case the largest
         register sizes across all possible sets of basis states of the given length are
-        returned. These sizes are attained exactly, by
-        :func:`~.SumOfSlatersPrep.generate_indices` of the same length:
+        returned:
 
         >>> indices = qp.typing.Int[45]
         >>> qp.SumOfSlatersPrep.required_register_sizes(indices, 18)
