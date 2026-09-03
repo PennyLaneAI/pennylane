@@ -19,6 +19,7 @@ core parametrized gates.
 
 # pylint: disable=arguments-differ
 
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 import functools
 import math as builtin_math
 from itertools import combinations
@@ -204,10 +205,6 @@ def _rx_to_rz_ry(phi, wires: WiresLike):
 
 
 def _rx_to_ry_cliff_resources(*_, **__):
-    from pennylane.ops.op_math.change_op_basis2 import (  # pylint: disable=import-outside-toplevel
-        _change_op_basis_abstract,
-    )
-
     resources = {_change_op_basis_abstract(qp.S, qp.RY, qp.adjoint(qp.S(Wire[1]))): 1}
     return resources
 
@@ -218,10 +215,6 @@ def _rx_to_ry_cliff(phi, wires: WiresLike):
 
 
 def _rx_to_rz_cliff_resources(*_, **__):
-    from pennylane.ops.op_math.change_op_basis2 import (  # pylint: disable=import-outside-toplevel
-        _change_op_basis_abstract,
-    )
-
     resources = {_change_op_basis_abstract(qp.Hadamard, qp.RZ, qp.Hadamard): 1}
     return resources
 
@@ -425,10 +418,6 @@ def _ry_to_rz_rx(phi, wires: WiresLike):
 
 
 def _ry_to_rx_cliff_resources(*_, **__):
-    from pennylane.ops.op_math.change_op_basis2 import (  # pylint: disable=import-outside-toplevel
-        _change_op_basis_abstract,
-    )
-
     resources = {_change_op_basis_abstract(_adjoint_abstract(qp.S), qp.RX, qp.S): 1}
     return resources
 
@@ -439,10 +428,6 @@ def _ry_to_rx_cliff(phi, wires: WiresLike):
 
 
 def _ry_to_rz_cliff_resources(*_, **__):
-    from pennylane.ops.op_math.change_op_basis2 import (  # pylint: disable=import-outside-toplevel
-        _change_op_basis_abstract,
-    )
-
     resources = {
         _change_op_basis_abstract(
             resource_rep(
@@ -708,10 +693,6 @@ def _rz_to_ry_rx(phi, wires: WiresLike):
 
 # pylint: disable=unused-argument
 def _rz_to_rx_cliff_resources(phi, wires):
-    from pennylane.ops.op_math.change_op_basis2 import (  # pylint: disable=import-outside-toplevel
-        _change_op_basis_abstract,
-    )
-
     resources = {_change_op_basis_abstract(qp.Hadamard, qp.RX, qp.Hadamard): 1}
     return resources
 
@@ -723,10 +704,6 @@ def _rz_to_rx_cliff(phi, wires: WiresLike):
 
 # pylint: disable=unused-argument
 def _rz_to_ry_cliff_resources(phi, wires):
-    from pennylane.ops.op_math.change_op_basis2 import (  # pylint: disable=import-outside-toplevel
-        _change_op_basis_abstract,
-    )
-
     resources = {
         _change_op_basis_abstract(
             resource_rep(

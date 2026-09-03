@@ -16,6 +16,7 @@
 This submodule contains the discrete-variable quantum operations that are the
 core parametrized gates.
 """
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 
 import functools
 from collections import Counter
@@ -1498,10 +1499,6 @@ class IsingZZ(Operator2):
 
 # pylint: disable-next=unused-argument
 def _isingzz_to_cnot_rz_cnot_resources(phi: TensorLike, wires: WiresLike | None = None):
-    from pennylane.ops.op_math.change_op_basis2 import (  # pylint: disable=import-outside-toplevel
-        _change_op_basis_abstract,
-    )
-
     return {
         _change_op_basis_abstract(
             qp.CNOT(wires=Wire[2]),
