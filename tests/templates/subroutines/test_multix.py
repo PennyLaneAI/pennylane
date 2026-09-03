@@ -343,6 +343,34 @@ class TestDecomposition:
         for i, expected_op in enumerate(expected):
             qp.assert_equal(tape.operations[i], expected_op)
 
+    @pytest.mark.jax
+    @pytest.mark.capture
+    def test_decomposition_capture_dynamic_wires(self):
+        """Tests that MultiX decomposes with dynamically allocated wires under capture.
+
+        ``AbstractQubit`` handles from ``qp.allocate`` cannot be stacked for ``for_loop``-based
+        dynamic indexing, so the decomposition unrolls into plain ``cond`` gates instead.
+        """
+        import jax  # pylint: disable=import-outside-toplevel
+
+        from pennylane.allocation import allocate  # pylint: disable=import-outside-toplevel
+        from pennylane.capture.primitives import (  # pylint: disable=import-outside-toplevel
+            cond_prim,
+            for_loop_prim,
+        )
+
+        bitstring = jax.numpy.array([1, 0, 1])
+        decomposition = qp.list_decomps(qp.MultiX)[0]
+
+        def circuit(bits):
+            with allocate(3, state="zero", restored=True) as wires:
+                decomposition(bits, wires)
+
+        jaxpr = jax.make_jaxpr(circuit)(bitstring)
+
+        assert sum(eqn.primitive == for_loop_prim for eqn in jaxpr.eqns) == 0
+        assert sum(eqn.primitive == cond_prim for eqn in jaxpr.eqns) == 3
+
     def test_adjoint_decomposition(self):
         """Tests that Adjoint(MultiX) decomposes to MultiX."""
         op = qp.MultiX([1, 0, 1], wires=[0, 1, 2])
