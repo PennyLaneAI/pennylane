@@ -354,6 +354,19 @@ class TestProperties:  # pylint: disable=too-few-public-methods
         change_op = change_op_basis(*ops_lst)
         assert middle_op.is_verified_hermitian == change_op.is_verified_hermitian
 
+    @pytest.mark.parametrize(
+        "target_op, expected",
+        [
+            (qp.PauliZ(0), True),  # hermitian target
+            (qp.S(0), False),  # non-hermitian target
+        ],
+    )
+    def test_is_verified_hermitian(self, target_op, expected):
+        """Test that a ChangeOpBasis's is_verified_hermitian delegates to its target op."""
+        op = ChangeOpBasis(qp.Hadamard(0), target_op, qp.Hadamard(0))
+        assert op.is_verified_hermitian is target_op.is_verified_hermitian
+        assert op.is_verified_hermitian is expected
+
 
 class TestWrapperFunc:  # pylint: disable=too-few-public-methods
     """Test wrapper function."""
