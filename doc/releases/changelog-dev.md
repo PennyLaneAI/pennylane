@@ -419,26 +419,17 @@
 
 <h3>Improvements 🛠</h3>
 
-* The ``indices`` of :class:`~.SumOfSlatersPrep` are now optional, and may also be given as an
-  abstract type. In both cases a worst-case set of indices of the appropriate length is generated
-  with the new :func:`~.SumOfSlatersPrep.generate_indices`, so that the operator can be costed
-  when only the number of Slater determinants is known. Note that the generated indices are a
-  resource-estimation stand-in: the operator is valid, but does not prepare a state the caller
-  chose.
+* The ``indices`` of :class:`~.SumOfSlatersPrep` may now be given as an abstract type, in which
+  case a worst-case set of indices of that length is generated with the new
+  :func:`~.SumOfSlatersPrep.generate_indices`, so that the operator can be costed when only the
+  number of Slater determinants is known. The generated indices are a resource-estimation
+  stand-in: the operator is valid, but does not prepare a state the caller provided.
   [(#10084)](https://github.com/PennyLaneAI/pennylane/pull/10084)
   [(#10102)](https://github.com/PennyLaneAI/pennylane/pull/10102)
   [(#10105)](https://github.com/PennyLaneAI/pennylane/pull/10105)
 
-  ```pycon
-  >>> op = qp.SumOfSlatersPrep(qp.typing.Complex[16], wires=range(8))
-  >>> op.indices
-  (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 16, 32, 64, 128)
-
-  ```
-
   :func:`~.SumOfSlatersPrep.required_register_sizes` also accepts abstract ``indices``, and
-  reports the largest register sizes across any set of indices of that length. Those sizes are
-  attained exactly, by ``generate_indices`` of the same length:
+  reports the largest register sizes across any set of indices of that length:
 
   ```pycon
   >>> num_wires = 8
