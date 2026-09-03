@@ -68,11 +68,10 @@ def _get_new_terms(lcu):
     new_ops = []
 
     for coeff, op in zip(*lcu.terms()):
-
         angle = qp.math.angle(coeff)
         new_coeffs.append(qp.math.abs(coeff))
 
-        new_op = op @ qp.GlobalPhase(-angle, wires=op.wires)
+        new_op = op @ qp.GlobalPhase(-angle)
         new_ops.append(new_op)
 
     interface = qp.math.get_interface(lcu.terms()[0])
@@ -191,8 +190,8 @@ class TestPrepSelPrep:
 
     lcu1 = qp.ops.LinearCombination([0.25, 0.75], [qp.Z(2), qp.X(1) @ qp.X(2)])
     ops1 = [
-        qp.Z(2) @ qp.GlobalPhase(0, [2]),
-        qp.prod(qp.X(1) @ qp.X(2), qp.GlobalPhase(0, [1, 2])),
+        qp.Z(2) @ qp.GlobalPhase(0),
+        qp.prod(qp.X(1) @ qp.X(2), qp.GlobalPhase(0)),
     ]
     coeffs1 = lcu1.terms()[0]
 
@@ -367,7 +366,7 @@ class TestPrepSelPrep:
 
         q = q.queue[0].decomposition()
 
-        phase_ops = [qp.prod(op, qp.GlobalPhase(0, wires=op.wires)) for op in ops]
+        phase_ops = [qp.prod(op, qp.GlobalPhase(0)) for op in ops]
 
         prep = qp.StatePrep(np.array([1, 2, 3]), normalize=True, pad_with=0, wires=(3, 4))
         qp.assert_equal(q[0], prep)
