@@ -1902,8 +1902,8 @@ def _pswap_to_swap_cnot_phaseshift_cnot(phi: TensorLike, wires: WiresLike, **__)
 
 def _pswap_to_ppr_resources():
     return {
-        PauliRot(Float, pauli_word="XX", wires=Wire[2]): 1,
-        PauliRot(Float, pauli_word="YY", wires=Wire[2]): 1,
+        qp.PPR(-2, pauli_word="XX", wires=Wire[2]): 1,
+        qp.PPR(-2, pauli_word="YY", wires=Wire[2]): 1,
         PauliRot(Float, pauli_word="ZZ", wires=Wire[2]): 1,
         qp.GlobalPhase: 1,
     }
@@ -1911,9 +1911,9 @@ def _pswap_to_ppr_resources():
 
 @register_resources(_pswap_to_ppr_resources)
 def _pswap_to_ppr(phi: TensorLike, wires: WiresLike, **__):
-    qp.PauliRot(-np.pi / 2, pauli_word="YY", wires=wires)
-    qp.PauliRot(-np.pi / 2, pauli_word="XX", wires=wires)
-    qp.PauliRot(phi - np.pi / 2, pauli_word="ZZ", wires=wires)
+    qp.PPR(-2, pauli_word="YY", wires=wires)
+    qp.PPR(-2, pauli_word="XX", wires=wires)
+    PauliRot(phi - np.pi / 2, pauli_word="ZZ", wires=wires)
     qp.GlobalPhase(np.pi / 4 - phi / 2)
 
 
