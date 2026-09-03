@@ -150,6 +150,20 @@ class PUIsometryFinder:
     :math:`|\ell\rangle` was mapped, and run the isometry backwards to distribute the amplitudes
     to the states :math:`\{|\ell\rangle\}`.
 
+    For example, consider the support
+    :math:`L=\{0000, 0011, 1100, 1111\}`. Relative to the anchor :math:`0000`, it is generated
+    by the binary vectors :math:`0011` and :math:`1100`, so it lies in a two-dimensional affine
+    subspace. The forward Clifford circuit ``CNOT([0, 1])``, ``CNOT([2, 3])``, and
+    ``SWAP([1, 2])`` maps the support as
+
+    .. math::
+
+        0000 \mapsto 0000,\quad 0011 \mapsto 0100,\quad
+        1100 \mapsto 1000,\quad 1111 \mapsto 1100.
+
+    The last two bits are now zero, leaving the first two wires as the subspace register. Reversing
+    the circuit maps amplitudes prepared on this register back to the original support.
+
     Args:
         basis_states (list[int]): Computational basis state indices :math:`L` that we want to map
             to the first :math:`|L|` consecutive basis states.
