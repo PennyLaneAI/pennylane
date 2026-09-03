@@ -11,8 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains the ``alias_sampling_thc`` quantum function, used as the coefficient
-oracle (``PREPARE``) in tensor hypercontraction (THC) qubitization."""
+"""Contains the ``PREPARE`` template for tensor hypercontraction (THC) qubitization."""
 
 import numpy as np
 
@@ -27,7 +26,14 @@ def _num_index_wires(M):
 
 
 def _num_address_wires(M, N):
-    r"""Number of wires holding the contiguous QROM address ``s``."""
+    r"""Number of wires holding the contiguous QROM address ``s``.
+
+    One wire more than ``ceil(log2(d))``: the register must transiently hold
+    :math:`\nu^2 + \nu \le M(M + 1)`, i.e. up to twice the largest address, before the
+    division by two of :func:`_compute_contiguous_register`. The final address
+    satisfies :math:`s < d \le 2^{n_d - 1}`, so the leading wire is back to
+    :math:`\lvert 0 \rangle` and is *not* used to control the QROM.
+    """
     d = N // 2 + M * (M + 1) // 2
     return int(qp.math.ceil_log2(d)) + 1
 
@@ -278,16 +284,47 @@ def alias_sampling_thc(  # pylint: disable=too-many-arguments,too-many-positiona
     Given the uniform superposition over the valid THC index pairs
     :math:`\mathcal{S}` (as prepared by :class:`~pennylane.labs.templates.SuperpositionTHC`),
     this quantum function reweights the amplitudes to the target distribution set by
-    the THC coefficients:
+    the THC coefficients and symmetrizes the two-body block:
 
     .. math::
 
-        \frac{1}{\sqrt{d}} \sum_{(\mu, \nu) \in \mathcal{S}} \lvert \mu \rangle \lvert \nu \rangle
+        \frac{1}{\sqrt{d}} \sum_{(\mu, \nu) \in \mathcal{S}}
+        \lvert \mu \rangle \lvert \nu \rangle \lvert 0 \rangle
         \;\longmapsto\;
-        \sum_{(\mu, \nu)} \sqrt{p_{\mu\nu}}\; (-1)^{s_{\mu\nu}} \lvert \mu \rangle \lvert \nu \rangle ,
+        \sum_{\substack{(\mu, \nu) \in \mathcal{S} \\ \nu < M}}
+        \sqrt{\frac{p_{\mu\nu}}{2}}\; (-1)^{s_{\mu\nu}}
+        \Big( \lvert \mu \rangle \lvert \nu \rangle \lvert 0 \rangle
+        + \lvert \nu \rangle \lvert \mu \rangle \lvert 1 \rangle \Big)
+        \;+\; \sum_{\ell < N/2} \sqrt{p_{\ell M}}\; (-1)^{s_{\ell M}}
+        \lvert \ell \rangle \lvert M \rangle \lvert + \rangle ,
 
-    where :math:`p_{\mu\nu} \propto \lvert \zeta_{\mu\nu} \rvert` (two-body) or
-    :math:`\lvert t_\ell \rvert` (one-body). The construction follows the alias-sampling
+    where the third register is the single symmetrization flag
+    (``work_wires[n_d + 2 n + 2 aleph + 3]``), which is left in this entangled state for
+    the subsequent ``SELECT``, and
+
+    .. math::
+
+        p_{\mu\nu} \propto \begin{cases}
+        \lvert \zeta_{\mu\nu} \rvert & \mu < \nu < M \\
+        \lvert \zeta_{\mu\mu} \rvert / 2 & \mu = \nu < M \\
+        \lvert t_\ell \rvert & \nu = M .
+        \end{cases}
+
+    The :math:`1/\sqrt{2}` above is the symmetrization factor: it splits every
+    off-diagonal two-body weight evenly between the orderings :math:`(\mu, \nu)` and
+    :math:`(\nu, \mu)`, while the diagonal and the one-body column
+    (:math:`\nu = M`) are not split. This is exactly why :math:`\zeta_{\mu\mu}` is
+    halved classically, so that the marginal on the index registers is
+
+    .. math::
+
+        \Pr(\mu, \nu) = \frac{\lvert \zeta_{\mu\nu} \rvert}{\lambda}, \qquad
+        \Pr(\ell, M) = \frac{2 \lvert t_\ell \rvert}{\lambda}, \qquad
+        \lambda = \sum_{\mu, \nu = 0}^{M - 1} \lvert \zeta_{\mu\nu} \rvert
+        + 2 \sum_{\ell} \lvert t_\ell \rvert ,
+
+    uniformly over all :math:`M^2` ordered two-body pairs (up to the ``aleph``-bit
+    discretization). The construction follows the alias-sampling
     ``PREPARE`` of `Lee et al. (2021), Fig. 3 <https://arxiv.org/abs/2011.03494>`_ and
     the inequality-test primitive of
     `Su et al. (2021) <https://arxiv.org/abs/2105.12767>`_.
@@ -404,6 +441,7 @@ def alias_sampling_thc(  # pylint: disable=too-many-arguments,too-many-positiona
 
     # Wire layout on the work register, in order (``b`` is the base of the flag block):
     #   [0 : n_d]                                contiguous QROM address ``s``
+    #                                            ([0] is the spare high wire, see below)
     #   [n_d]                                    QROM: ``sign`` of the original pair
     #   [n_d + 1]                                QROM: ``alt_sign`` of the alternate pair
     #   [n_d + 2 : n_d + n + 2]                  QROM: ``mu_alt``
@@ -429,10 +467,14 @@ def alias_sampling_thc(  # pylint: disable=too-many-arguments,too-many-positiona
     _compute_contiguous_register(M, N, mu_wires, nu_wires, work_wires)
 
     # 2. Load the alias data (signs, alternate indices, keep threshold, alt_edge).
+    #    Only ``n_d - 1 = ceil(log2(d))`` control wires are needed: the address is
+    #    ``s < d`` for every valid pair, so ``work_wires[0]`` (the most significant wire,
+    #    only needed to hold ``nu ** 2 + nu`` before the division by two) is always |0>.
+    #    Including it would double the QROM address space and its gate cost for nothing.
     data = _build_qrom_data(M, N, zeta, t_ell, n, aleph)
     qp.QROM(
         data,
-        control_wires=work_wires[:n_d],
+        control_wires=work_wires[1:n_d],
         target_wires=work_wires[n_d : n_d + 2 * n + aleph + 2] + [alt_edge_flag],
         work_wires=qrom_work,
     )

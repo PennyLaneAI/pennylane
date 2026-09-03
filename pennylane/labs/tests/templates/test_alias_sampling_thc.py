@@ -156,7 +156,7 @@ class TestClassicalTables:
     """Test the classical alias-table construction."""
 
     def test_table_size_and_normalization(self):
-        """The THC pair enumeration has one entry per valid pair with a valid keep."""
+        """Test that the THC pair enumeration has one entry per valid pair with a valid keep."""
         M, N, aleph = 3, 4, 6
         np.random.seed(0)
         zeta = np.random.randn(M, M)
@@ -173,7 +173,7 @@ class TestClassicalTables:
         assert all(0 <= k < 2**aleph for k in keep)
 
     def test_alias_reconstructs_target(self):
-        """The (unquantized) alias tables reproduce the target distribution."""
+        """Test that the (unquantized) alias tables reproduce the target distribution."""
         M, N, aleph = 4, 2, 12
         np.random.seed(1)
         zeta = np.random.randn(M, M)
@@ -198,7 +198,7 @@ class TestClassicalTables:
             assert np.abs(recon[entry] - w / tot) <= float(d) / n_levels
 
     def test_qrom_data_shape(self):
-        """Each packed QROM row has the expected number of bits, all binary."""
+        """Test that each packed QROM row has the expected number of bits, all binary."""
         M, N, n, aleph = 3, 2, 3, 5
         np.random.seed(2)
         zeta = np.random.randn(M, M)
@@ -217,7 +217,7 @@ class TestClassicalTables:
 
 @pytest.mark.parametrize(("M", "N"), [(3, 2), (5, 2)])
 def test_compute_contiguous_register_index(M, N):
-    """``_compute_contiguous_register`` computes s = mu + nu (nu + 1) / 2."""
+    """Test that ``_compute_contiguous_register`` computes s = mu + nu (nu + 1) / 2."""
     n = alias_sampling_thc_wires(M, N, aleph=1)["mu_wires"]
     n_d = int(np.ceil(np.log2(N // 2 + M * (M + 1) // 2))) + 1
     mu_wires = list(range(n))
@@ -235,7 +235,12 @@ def test_compute_contiguous_register_index(M, N):
     for nu in range(M):
         for mu in range(nu + 1):
             probs = circuit(mu, nu)
-            assert int(np.argmax(probs)) == mu + nu * (nu + 1) // 2
+            s = int(np.argmax(probs))
+            assert s == mu + nu * (nu + 1) // 2
+            # The leading wire is only needed to hold ``nu ** 2 + nu`` before the
+            # division by two; the final address always fits in ``n_d - 1`` wires, which
+            # is what ``alias_sampling_thc`` uses to control its QROM.
+            assert s < 2 ** (n_d - 1)
 
 
 class TestAliasSamplingTHC:
@@ -257,7 +262,7 @@ class TestAliasSamplingTHC:
 
     @pytest.mark.parametrize(("M", "N", "aleph"), _INSTANCES)
     def test_probabilities_normalized(self, M, N, aleph):
-        """The prepared distribution sums to one."""
+        """Test that the prepared distribution sums to one."""
         np.random.seed(3)
         zeta = np.random.randn(M, M)
         zeta = (zeta + zeta.T) / 2
@@ -267,7 +272,7 @@ class TestAliasSamplingTHC:
 
     @pytest.mark.parametrize(("M", "N", "aleph"), _INSTANCES)
     def test_marginal_matches_reconstruction(self, M, N, aleph):
-        """The prepared distribution matches the classical alias reconstruction exactly."""
+        """Test that the prepared distribution matches the classical alias reconstruction."""
         np.random.seed(3)
         zeta = np.random.randn(M, M)
         zeta = (zeta + zeta.T) / 2
@@ -280,7 +285,7 @@ class TestAliasSamplingTHC:
 
     @pytest.mark.parametrize(("M", "N", "aleph"), _INSTANCES)
     def test_support_matches_symmetric_valid_set(self, M, N, aleph):
-        """All probability mass lands on the symmetrized valid support."""
+        """Test that all probability mass lands on the symmetrized valid support."""
         np.random.seed(3)
         zeta = np.random.randn(M, M)
         zeta = (zeta + zeta.T) / 2
@@ -294,12 +299,39 @@ class TestAliasSamplingTHC:
         target_support = {(a, b) for a in range(2**n) for b in range(2**n) if recon[a, b] > 1e-9}
         assert support == target_support
 
-    def test_ancillas_returned_to_zero(self):
-        """The comparator flag and its work wires are left in |0>.
+    @pytest.mark.parametrize(("M", "N"), [(2, 2), (3, 2), (5, 2), (8, 4)])
+    def test_qrom_uses_minimal_address_space(self, M, N):
+        """Test that the QROM is controlled on the minimal number of address wires.
 
-        The inequality test of step 3 is uncomputed with the *same* comparator in
-        step 6, so ``alt_flag`` and the comparator work wires end in |0> and the
-        prepared state carries no garbage. .
+        The contiguous address never exceeds ``d - 1``, so ``ceil(log2(d))`` control
+        wires are enough; controlling on the spare high wire of the arithmetic register
+        would double the QROM address space and its gate cost.
+        """
+        aleph = 3
+        sizes = alias_sampling_thc_wires(M, N, aleph)
+        n = sizes["mu_wires"]
+        mu_wires = list(range(n))
+        nu_wires = list(range(n, 2 * n))
+        work_wires = list(range(2 * n + 1, 2 * n + 1 + sizes["work_wires"]))
+
+        zeta = np.ones((M, M))
+        t_ell = np.ones(N // 2)
+
+        def qfunc():
+            alias_sampling_thc(M, N, zeta, t_ell, mu_wires, nu_wires, 2 * n, work_wires, aleph)
+
+        tape = qp.tape.make_qscript(qfunc)()
+        qroms = [op for op in tape.operations if isinstance(op, qp.QROM)]
+        assert len(qroms) == 1
+
+        d = N // 2 + M * (M + 1) // 2
+        assert len(qroms[0].control_wires) == int(np.ceil(np.log2(d)))
+
+    def test_ancillas_returned_to_zero(self):
+        """Test that the comparator flag and its work wires are left in |0>.
+
+        The inequality test of step 3 is uncomputed with the *same* comparator
+        in step 6, so ``alt_flag`` and the comparator work wires end in |0>.
         """
         M, N, aleph = 2, 2, 2
         mu_wires, nu_wires, sup_work, edge_flag, work_wires = _wire_layout(M, N, aleph)
@@ -335,14 +367,14 @@ class TestInputValidation:
         return zeta, t_ell
 
     def test_mismatched_registers(self):
-        """mu_wires and nu_wires of different lengths raise an error."""
+        """Test that mu_wires and nu_wires of different lengths raise an error."""
         zeta, t_ell = self._dummy(2, 2)
         with pytest.raises(ValueError, match="same number of wires"):
             alias_sampling_thc(2, 2, zeta, t_ell, [0, 1], [2, 3, 4], 5, list(range(6, 40)), 3)
 
     @pytest.mark.parametrize("n", [2, 5])
     def test_index_register_wrong_size(self, n):
-        """Index registers not of size exactly ceil(log2(M + 1)) raise an error."""
+        """Test that index registers not of size exactly ceil(log2(M + 1)) raise an error."""
         # M = 8 needs ceil(log2(9)) = 4 wires per register: 2 is too few, 5 too many.
         zeta, t_ell = self._dummy(8, 2)
         mu_wires = list(range(n))
@@ -353,14 +385,14 @@ class TestInputValidation:
             )
 
     def test_not_enough_work_wires(self):
-        """Too few work wires raise an error."""
+        """Test that too few work wires raise an error."""
         zeta, t_ell = self._dummy(2, 2)
         with pytest.raises(ValueError, match="At least"):
             alias_sampling_thc(2, 2, zeta, t_ell, [0, 1], [2, 3], 4, [5, 6, 7], 3)
 
     @pytest.mark.parametrize("aleph", [0, -1, 2.0, 3.5, True, "3", None])
     def test_invalid_aleph(self, aleph):
-        """A non-integer or non-positive aleph raises an error."""
+        """Test that a non-integer or non-positive aleph raises an error."""
         zeta, t_ell = self._dummy(2, 2)
         with pytest.raises(ValueError, match="aleph must be a positive integer"):
             alias_sampling_thc(2, 2, zeta, t_ell, [0, 1], [2, 3], 4, list(range(5, 40)), aleph)
@@ -375,19 +407,19 @@ class TestInputValidation:
         ],
     )
     def test_bad_coefficient_shapes(self, zeta, t_ell, match):
-        """Coefficients that would index out of bounds raise a ValueError, not IndexError."""
+        """Test that coefficients indexing out of bounds raise a ValueError, not IndexError."""
         with pytest.raises(ValueError, match=match):
             alias_sampling_thc(2, 2, zeta, t_ell, [0, 1], [2, 3], 4, list(range(5, 40)), 3)
 
     def test_bad_n_over_two(self):
-        """A value of N // 2 larger than M + 1 raises an error."""
+        """Test that a value of N // 2 larger than M + 1 raises an error."""
         zeta = np.ones((2, 2))
         t_ell = np.ones(4)
         with pytest.raises(ValueError, match="N // 2 must be"):
             alias_sampling_thc(2, 8, zeta, t_ell, [0, 1], [2, 3], 4, list(range(5, 40)), 3)
 
     def test_odd_spin_orbitals_allowed(self):
-        """An odd N is floor-divided, matching ``SuperpositionTHC``: N = 5, M = 1 is valid."""
+        """Test that an odd N is floor-divided, matching ``SuperpositionTHC``: N = 5, M = 1."""
         # ``N // 2 = 2 <= M + 1 = 2``, so the previous ``N / 2 = 2.5 > 2`` check was wrong.
         zeta = np.ones((1, 1))
         t_ell = np.ones(5 // 2)
@@ -405,7 +437,7 @@ class TestWiresHelper:
     """Test ``alias_sampling_thc_wires``."""
 
     def test_reported_sizes_are_accepted(self):
-        """The reported register sizes satisfy every check in ``alias_sampling_thc``."""
+        """Test that the reported register sizes satisfy every check in ``alias_sampling_thc``."""
         M, N, aleph = 5, 2, 4
         sizes = alias_sampling_thc_wires(M, N, aleph)
         n = sizes["mu_wires"]
@@ -423,15 +455,15 @@ class TestWiresHelper:
             alias_sampling_thc(M, N, zeta, t_ell, mu_wires, nu_wires, 2 * n, work_wires, aleph)
 
     def test_extra_work_wires_reduce_t_count(self):
-        """Work wires beyond the minimum are forwarded to ``qp.QROM``, which uses them
-        for a ``SelectSwap`` decomposition with a lower T-gate count.
+        """Test that work wires beyond the minimum are forwarded to ``qp.QROM``, which
+        uses them for a ``SelectSwap`` decomposition with a lower T-gate count.
 
         The trade-off is not monotonic: ``qp.QROM`` consumes every work wire it is
         given, so far more wires than the width of a target register can push the count
         back up. Only the documented reduction is asserted here.
         """
-        minimum = _t_count(3, 2, 3, extra_work_wires=0)
-        with_extra = _t_count(3, 2, 3, extra_work_wires=2)
+        minimum = _t_count(4, 2, 3, extra_work_wires=0)
+        with_extra = _t_count(4, 2, 3, extra_work_wires=2)
         assert with_extra < minimum
 
     @pytest.mark.parametrize(
@@ -446,6 +478,6 @@ class TestWiresHelper:
         ],
     )
     def test_invalid_arguments(self, M, N, aleph, match):
-        """Invalid arguments raise an error."""
+        """Test that invalid arguments raise an error."""
         with pytest.raises(ValueError, match=match):
             alias_sampling_thc_wires(M, N, aleph)

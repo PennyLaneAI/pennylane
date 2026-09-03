@@ -671,7 +671,8 @@
   [(#9277)](https://github.com/PennyLaneAI/pennylane/pull/9277)
   [(#9544)](https://github.com/PennyLaneAI/pennylane/pull/9544)
 
-* Developed the ``labs.templates.alias_sampling_thc`` function to facilitate state preparation via alias sampling in THC contexts.
+* Developed the ``labs.templates.alias_sampling_thc`` function to facilitate state preparation via alias sampling in THC contexts,
+  together with the ``labs.templates.alias_sampling_thc_wires`` helper function that returns the size of every register it requires.
   [(#9940)](https://github.com/PennyLaneAI/pennylane/pull/9940)
 
 * TCDQ now supports workflows with qudits of non-uniform dimensions.
