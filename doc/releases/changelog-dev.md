@@ -1314,7 +1314,7 @@
 
 * Fixed the Triton persistent decoder kernel so :func:`~pennylane.backline.css_bp_decoder` and
   the other Triton decoders build on CUDA with Triton 3.8.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#10111)](https://github.com/PennyLaneAI/pennylane/pull/10111)
 
 * Fixed :func:`~pennylane.backline.css_bp_decoder` and the other Triton decoders so they can be
   compiled on a machine with no usable GPU. The ahead-of-time build called
