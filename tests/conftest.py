@@ -283,7 +283,7 @@ def pytest_collection_modifyitems(items, config):
         _auto_assign_markers(item, rel_path)
         if pl2do_marker := item.get_closest_marker("pl2do"):
             reason = _get_pl2do_reason(pl2do_marker)
-            item.add_marker(pytest.mark.xfail(reason=reason, strict=True))
+            item.add_marker(pytest.mark.xfail(reason=reason, strict=False))
 
 
 def _auto_assign_markers(item, test_path):

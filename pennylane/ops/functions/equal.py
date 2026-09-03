@@ -26,6 +26,7 @@ from pennylane import math
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.operator import Operator, Operator2
 from pennylane.core.qscript import QuantumScript
+from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
 from pennylane.measurements.counts import CountsMP
 from pennylane.measurements.mutual_info import MutualInfoMP
@@ -1223,11 +1224,19 @@ def _equal_select(op1: Select, op2: Select, **kwargs):
             f"op1 and op2 have different number of target operators. Got {len(t1)} and {len(t2)}."
         )
     for idx, (_t1, _t2) in enumerate(zip(t1, t2, strict=True)):
-        if isinstance(_t1, Operator) and isinstance(_t2, Operator):
-            comparer = _equal(_t1, _t2, **kwargs)
-        else:
-            # Resource representations (e.g. CompressedResourceOp) are compared directly.
-            comparer = True if _t1 == _t2 else "they are not equal."
+        comparer = _equal(_t1, _t2, **kwargs)
         if isinstance(comparer, str):
             return f"got different operations at index {idx}: {_t1} and {_t2}. They differ because {comparer}."
     return True
+
+
+@_equal_dispatch.register
+def _equal_compressed_resource_op(op1: CompressedResourceOp, op2: CompressedResourceOp, **_):
+    """Determine whether two resource representations are equal.
+
+    Resource representations (produced by abstractifying operators for the decomposition graph)
+    appear, for example, as the target operators of an abstract ``Select``.
+    """
+    if op1 == op2:
+        return True
+    return f"op1 and op2 are different resource representations. Got {op1} and {op2}."

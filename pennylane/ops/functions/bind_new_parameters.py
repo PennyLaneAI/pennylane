@@ -239,7 +239,7 @@ def bind_new_parameters_select(op: Select, params: Sequence[TensorLike]):
     # ``Select`` (an ``Operator2``) stores its data in the target operators
     params = list(params)
     if not params:
-        return copy(op)
+        return copy.copy(op)
 
     new_ops = []
     for operand in op.ops:
