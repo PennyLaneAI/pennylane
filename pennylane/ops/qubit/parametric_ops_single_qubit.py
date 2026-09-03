@@ -203,7 +203,7 @@ def _rx_to_rz_ry(phi, wires: WiresLike):
     qp.RZ(-np.pi / 2, wires=wires)
 
 
-def _rx_to_ry_cliff_resources(*_, **_):
+def _rx_to_ry_cliff_resources(*_, **__):
     from pennylane.ops.op_math.change_op_basis2 import (  # pylint: disable=import-outside-toplevel
         _change_op_basis_abstract,
     )
@@ -217,7 +217,7 @@ def _rx_to_ry_cliff(phi, wires: WiresLike):
     qp.change_op_basis(qp.S(wires), qp.RY(phi, wires))
 
 
-def _rx_to_rz_cliff_resources(*_, **_):
+def _rx_to_rz_cliff_resources(*_, **__):
     from pennylane.ops.op_math.change_op_basis2 import (  # pylint: disable=import-outside-toplevel
         _change_op_basis_abstract,
     )
@@ -424,7 +424,7 @@ def _ry_to_rz_rx(phi, wires: WiresLike):
     qp.RZ(np.pi / 2, wires=wires)
 
 
-def _ry_to_rx_cliff_resources(*_, **_):
+def _ry_to_rx_cliff_resources(*_, **__):
     from pennylane.ops.op_math.change_op_basis2 import (  # pylint: disable=import-outside-toplevel
         _change_op_basis_abstract,
     )
@@ -438,7 +438,7 @@ def _ry_to_rx_cliff(phi, wires: WiresLike):
     qp.change_op_basis(qp.adjoint(qp.S(wires)), qp.RX(phi, wires), qp.S(wires))
 
 
-def _ry_to_rz_cliff_resources(*_, **_):
+def _ry_to_rz_cliff_resources(*_, **__):
     from pennylane.ops.op_math.change_op_basis2 import (  # pylint: disable=import-outside-toplevel
         _change_op_basis_abstract,
     )
