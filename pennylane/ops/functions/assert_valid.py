@@ -33,9 +33,9 @@ from pennylane.decomposition.decomposition_rule import _decomp_contains_mcm
 from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.decomposition.utils import _get_decomp_args
 from pennylane.exceptions import EigvalsUndefinedError
-from pennylane.ops.op_math.adjoint2 import Adjoint2
+from pennylane.ops.op_math.adjoint2 import Adjoint2, _adjoint_abstract
 from pennylane.ops.op_math.composite2 import CompositeOp2
-from pennylane.ops.op_math.controlled2 import ControlledOp2
+from pennylane.ops.op_math.controlled2 import ControlledOp2, _ctrl_abstract
 from pennylane.ops.op_math.pow2 import Pow2
 from pennylane.ops.op_math.symbolicop2 import SymbolicOp2
 from pennylane.pytrees import flatten
@@ -370,11 +370,6 @@ def _unroll_change_op_basis_resource(op_rep):
 
     Keys that do not involve a ChangeOpBasis are returned unchanged as ``{op_rep: 1}``.
     """
-    # Lazy imports avoid a circular import at module load: ``ops`` imports this module.
-    # pylint: disable=import-outside-toplevel
-    from pennylane.ops.op_math.adjoint2 import Adjoint2, _adjoint_abstract
-    from pennylane.ops.op_math.controlled2 import ControlledOp2, _ctrl_abstract
-
     operands = _change_op_basis_operands(op_rep)
     if operands is not None:
         gate_counts = defaultdict(int)

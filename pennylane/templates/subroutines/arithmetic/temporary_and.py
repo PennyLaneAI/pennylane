@@ -19,13 +19,11 @@ from collections.abc import Sequence
 from typing import override
 
 from pennylane import math, ops
-from pennylane.core.operator import Operator2, abstractify
+from pennylane.core.operator import Operator2
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
-    resource_rep,
 )
-from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.op_math.prod2 import Prod2
 from pennylane.typing import AbstractArray, Bool, Wire
