@@ -661,8 +661,8 @@ class SumOfSlatersPrep(Operator2):
         wires (~.WiresLike): Wires on which to prepare the state.
         indices (tuple[int] or AbstractArray or None): Indices of the sparse state to prepare.
             The ordering should match that in ``coefficients``. May also be an abstract type
-            such as ``qp.typing.Int[len(coefficients)]``, or omitted; in both cases the indices
-            are generated with :func:`~.SumOfSlatersPrep.generate_indices`.
+            such as ``qp.typing.Int[len(coefficients)]``, in which case the indices are
+            generated with :func:`~.SumOfSlatersPrep.generate_indices`.
         enumeration_wires (~.WiresLike): Work wires used for the enumeration register. For
             :math:`d` entries in the state, :math:`\lceil \log_2 (d)\rceil` qubits are required.
         identification_wires (~.WiresLike): Work wires used for the identification register.
@@ -688,10 +688,10 @@ class SumOfSlatersPrep(Operator2):
 
     .. warning::
 
-        If ``indices`` is abstract or omitted, the generated indices are a resource-estimation
-        stand-in that maximizes the register sizes and gate counts. The operator is valid and
-        will execute, but prepares *those* basis states -- in particular **not**
-        ``(0, 1, ..., len(coefficients) - 1)``. Pass ``indices`` to prepare a specific state.
+        If ``indices`` is abstract, the generated indices are a resource-estimation stand-in
+        that maximizes the register sizes and gate counts. The operator is valid and will
+        execute, but prepares *those* basis states. Pass ``indices`` concretely to prepare a
+        specific state.
 
     **Example**
 
@@ -922,7 +922,7 @@ class SumOfSlatersPrep(Operator2):
         self,
         coefficients: TensorLike,
         wires: WiresLike,
-        indices: tuple[int] | AbstractArray | None = None,
+        indices: tuple[int] | AbstractArray,
         enumeration_wires: WiresLike = (),
         identification_wires: WiresLike = (),
         qrom_work_wires: WiresLike = (),
@@ -930,12 +930,12 @@ class SumOfSlatersPrep(Operator2):
     ):
         n = 1 if isinstance(wires, int) else len(wires)
         num_entries = len(coefficients)
-        if indices is not None and not isinstance(indices, AbstractArray):
+        if not isinstance(indices, AbstractArray):
             if len(indices) != num_entries:
                 raise ValueError(
                     "The number of coefficients and the number of state indices must match."
                 )
-        if isinstance(indices, AbstractArray) or indices is None:
+        if isinstance(indices, AbstractArray):
             indices = self.generate_indices(num_entries, n)
 
         # indices is concrete from here on, so the registers are validated either way.
@@ -1023,8 +1023,8 @@ class SumOfSlatersPrep(Operator2):
         Raises:
             ValueError: If ``num_entries`` exceeds ``2**num_wires``.
 
-        This is the index set that ``SumOfSlatersPrep`` synthesizes when ``indices`` is abstract
-        or omitted, and the one that realizes
+        This is the index set that ``SumOfSlatersPrep`` synthesizes when ``indices`` is
+        abstract, and the one that realizes
         :func:`~.SumOfSlatersPrep.required_register_sizes` for abstract ``indices``.
 
         .. warning::

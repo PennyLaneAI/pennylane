@@ -428,7 +428,7 @@ class TestGenerateIndices:
         with pytest.raises(ValueError, match=match):
             SumOfSlatersPrep.generate_indices(9, 3)
         with pytest.raises(ValueError, match=match):
-            SumOfSlatersPrep(Complex[9], Wire[3])
+            SumOfSlatersPrep(Complex[9], Wire[3], Int[9])
 
 
 class TestSumOfSlatersPrep:
@@ -532,7 +532,7 @@ class TestSumOfSlatersPrep:
         )
 
     def test_abstract_init(self):
-        """Test that abstract values (or None, for indices) can be passed to the constructor."""
+        """Test that abstract values can be passed to the constructor."""
         num_wires = 14
         num_entries = 15
         sizes = qp.SumOfSlatersPrep.required_register_sizes(Int[num_entries], num_wires)
@@ -543,15 +543,6 @@ class TestSumOfSlatersPrep:
         }
         op = qp.SumOfSlatersPrep(**kwargs)
         assert len(op.coefficients) == len(op.indices) == num_entries
-        kwargs["indices"] = None
-        op = qp.SumOfSlatersPrep(**kwargs)
-        assert len(op.coefficients) == len(op.indices) == num_entries
-
-    @pytest.mark.parametrize("num_wires, num_entries", [(5, 8), (14, 15)])
-    def test_indices_omitted(self, num_wires, num_entries):
-        """Test that ``indices`` can be left out entirely, not just passed as ``None``."""
-        op = qp.SumOfSlatersPrep(Complex[num_entries], Wire[num_wires])
-        assert len(op.indices) == num_entries
 
     @pytest.mark.parametrize("num_wires", [4, 6, 8])
     @pytest.mark.parametrize("num_entries", [2, 5, 8, 16])
@@ -563,7 +554,7 @@ class TestSumOfSlatersPrep:
         sizes = qp.SumOfSlatersPrep.required_register_sizes(Int[num_entries], num_wires)
         registers = qp.registers(sizes)
 
-        qp.SumOfSlatersPrep(Complex[num_entries], **registers)
+        qp.SumOfSlatersPrep(Complex[num_entries], indices=Int[num_entries], **registers)
 
         for name in (
             "enumeration_wires",
@@ -574,7 +565,7 @@ class TestSumOfSlatersPrep:
             oversized = dict(registers)
             oversized[name] = list(oversized[name]) + [f"extra_{name}"]
             with pytest.raises(ValueError, match="does not match the required number"):
-                qp.SumOfSlatersPrep(Complex[num_entries], **oversized)
+                qp.SumOfSlatersPrep(Complex[num_entries], indices=Int[num_entries], **oversized)
 
     def test_coefficients_indices_length_mismatch(self):
         """Test that mismatched ``coefficients`` and ``indices`` lengths are rejected."""
