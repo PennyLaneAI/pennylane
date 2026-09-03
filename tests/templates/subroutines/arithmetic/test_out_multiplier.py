@@ -531,7 +531,7 @@ class TestOutMultiplier:
                 all_wires = (x_wires, y_wires, output_wires, work_wires)
                 _test_mult_correctness(all_wires, mod, rule, seed)
 
-    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(
         ("x_wires", "y_wires", "output_wires", "mod", "work_wires", "output_wires_zeroed"),
         [
@@ -541,7 +541,7 @@ class TestOutMultiplier:
             ([0], [3, 6], [5, 8], 4, [9, 10, 11], True),
         ],
     )
-    def test_decomposition_caddsub_rule_capture(
+    def test_decomposition_caddsub_rule(
         self, x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed
     ):  # pylint: disable=too-many-arguments
         """Regression test (#10065): ``_out_multiplier_with_caddsub`` relies internally on

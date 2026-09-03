@@ -142,7 +142,7 @@ class NoPauliRepOp(ValidOp):
         return None
 
 
-@pytest.mark.capture
+@pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize(
     "operands",
     [
