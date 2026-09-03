@@ -120,10 +120,6 @@ def make_crz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
         # gate per *set* bit of the (concrete) angle, so this is an upper bound (exact=False below).
         precision = len(angle_wires)
         target_op = qp.SemiAdder(Wire[precision], Wire[precision], Wire[len(work_wires)])
-        # compute/uncompute fanout: a controlled MultiX loads the angle bits onto the angle wires
-        # (controlled by the CRZ control wire) and controlled-X gates flip the phase-gradient wires
-        # (controlled by the target wire on |0>). Both lower under program capture, unlike a
-        # controlled BasisState.
         angle_fanout = abstractify(
             qp.ctrl(qp.MultiX(Bool[precision], Wire[precision]), control=Wire[1])
         )
@@ -139,8 +135,6 @@ def make_crz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
         control_wire, target_wire = wires[0], wires[1]
 
         def _compute_fn():
-            # Load the angle bits onto the angle wires controlled by the CRZ control wire: a MultiX
-            # (one X per set bit) controlled by the control wire is a per-set-bit fanout.
             qp.ctrl(qp.MultiX(binary_int, angle_wires), control=control_wire)
             # Flip the phase-gradient wires when the target wire is |0> (double-phase trick).
             for w in phase_grad_wires:

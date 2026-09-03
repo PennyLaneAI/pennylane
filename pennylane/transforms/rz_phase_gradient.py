@@ -39,11 +39,10 @@ def _rz_phase_gradient(
     work_wires: Wires,
     adaptive_precision: bool = True,
 ) -> Operator | None:
-    """Function that transforms the RZ gate to the phase gradient circuit.
-
+    """Function that transforms the RZ gate to the phase gradient circuit
     The precision is implicitly defined by the length of ``angle_wires`` and can be adapted to the
-    minimum required length if ``adaptive_precision==True``.
-    Global phases are collected and added as one big global phase in the main function.
+    minimum required length if ``adaptive_precision==True``
+    Note that the global phases are collected and added as one big global phase in the main function
     """
     precision = len(angle_wires)
 
@@ -160,6 +159,7 @@ def rz_phase_gradient(
                 qp.H(w)
                 qp.PhaseShift(-np.pi/2**i, w)
 
+        @qp.transforms.decompose(max_expansion=1)
         @rz_phase_gradient(
             angle_wires=angle_wires,
             phase_grad_wires=phase_grad_wires,
@@ -183,18 +183,19 @@ def rz_phase_gradient(
     Note that for the transform to work, we needed to also prepare a phase gradient state on
     the ``phase_grad_wires`` via ``phase_gradient``.
 
-    Overall, the full circuit looks like the following:
+    Overall, the full circuit looks like the following (``max_expansion=1`` unfolds the
+    compute/:class:`~.SemiAdder`/uncompute structure by one level):
 
     >>> print(qp.draw(rz_circ, wire_order=wire_order)(phi, wire))
-      targ: ──H────────────╭(MultiX(M0))@SemiAdder@(MultiX(M0))──H─╭GlobalPhase(2.75)─┤  Probs
-     ang_0: ───────────────├(MultiX(M0))@SemiAdder@(MultiX(M0))────├GlobalPhase(2.75)─┤
-     ang_1: ───────────────├(MultiX(M0))@SemiAdder@(MultiX(M0))────├GlobalPhase(2.75)─┤
-     ang_2: ───────────────├(MultiX(M0))@SemiAdder@(MultiX(M0))────├GlobalPhase(2.75)─┤
-     phg_0: ──H──Rϕ(-3.14)─├(MultiX(M0))@SemiAdder@(MultiX(M0))────├GlobalPhase(2.75)─┤
-     phg_1: ──H──Rϕ(-1.57)─├(MultiX(M0))@SemiAdder@(MultiX(M0))────├GlobalPhase(2.75)─┤
-     phg_2: ──H──Rϕ(-0.79)─├(MultiX(M0))@SemiAdder@(MultiX(M0))────├GlobalPhase(2.75)─┤
-    work_0: ───────────────├(MultiX(M0))@SemiAdder@(MultiX(M0))────├GlobalPhase(2.75)─┤
-    work_1: ───────────────╰(MultiX(M0))@SemiAdder@(MultiX(M0))────╰GlobalPhase(2.75)─┤
+      targ: ──H─╭●─────────────────────╭●───────────H─╭GlobalPhase(2.75)─┤  Probs
+     ang_0: ────├MultiX(M0)─╭SemiAdder─├MultiX(M0)────├GlobalPhase(2.75)─┤
+     ang_1: ────├MultiX(M0)─├SemiAdder─├MultiX(M0)────├GlobalPhase(2.75)─┤
+     ang_2: ────╰MultiX(M0)─├SemiAdder─╰MultiX(M0)────├GlobalPhase(2.75)─┤
+     phg_0: ──H──Rϕ(-3.14)──├SemiAdder────────────────├GlobalPhase(2.75)─┤
+     phg_1: ──H──Rϕ(-1.57)──├SemiAdder────────────────├GlobalPhase(2.75)─┤
+     phg_2: ──H──Rϕ(-0.79)──├SemiAdder────────────────├GlobalPhase(2.75)─┤
+    work_0: ────────────────├SemiAdder────────────────├GlobalPhase(2.75)─┤
+    work_1: ────────────────╰SemiAdder────────────────╰GlobalPhase(2.75)─┤
     <BLANKLINE>
     M0 =
     [ True  True  True]
