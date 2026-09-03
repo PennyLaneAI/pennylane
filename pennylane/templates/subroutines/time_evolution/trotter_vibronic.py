@@ -24,7 +24,7 @@ from pennylane.allocation import allocate
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.ops import CNOT, Hadamard, X, adjoint, cond, ctrl
+from pennylane.ops import CNOT, Hadamard, adjoint, cond, ctrl
 from pennylane.typing import AbstractWires, Float, Wire
 from pennylane.wires import Wires, WiresLike
 
@@ -34,6 +34,7 @@ from ..arithmetic.out_multiplier import OutMultiplier
 from ..arithmetic.semi_adder import SemiAdder
 from ..arithmetic.signed_out_multiplier import SignedOutMultiplier, _twos_complement_helper
 from ..arithmetic.signed_out_square import SignedOutSquare
+from ..multix import MultiX
 from ..qrom import QROM
 
 # Keys expected in the dense vibronic Hamiltonian dictionary.
@@ -349,13 +350,14 @@ class TrotterVibronic(Operator2):
     # `compilable_argnames` alongside the hybrid `hamiltonian` argument.
     static_argnames = ("num_trotter_steps", "aqft_order")
 
-    # `coefficient_wires`, `cache_wires` and `work_wires` are optional (dynamically allocated
-    # when omitted), so they have no fixed wire count and are excluded here.
     arg_specs = {
         "evolution_time": Float,
         "electronic_wires": Wire[-1],
         "vib_wires": Wire[-1],
         "phase_gradient_wires": Wire[-1],
+        "coefficient_wires": Wire[-1],
+        "cache_wires": Wire[-1],
+        "work_wires": Wire[-1],
     }
 
     # pylint: disable-next=too-many-arguments
@@ -553,10 +555,11 @@ def _trotter_vibronic_resources(
     resources[ctrl_incrementer_bilinear] += position_visits * num_pairs * 2
 
     # -- Kinetic fragment (once per Trotter step): per mode, load the momentum coefficients as a
-    #    basis state (conditional PauliX per coefficient wire), then AQFT + SignedOutSquare +
-    #    OutMultiplier and their uncomputation --
+    #    basis state (``MultiX``), then AQFT + SignedOutSquare + OutMultiplier and their
+    #    uncomputation --
     kinetic_visits = num_trotter_steps * n_modes
-    resources[X(wires=Wire[1])] += kinetic_visits * 2 * b
+    multi_x = MultiX(np.zeros(b, dtype=bool), wires=Wire[b])
+    resources[multi_x] += kinetic_visits * 2
     resources[aqft] += kinetic_visits
     resources[adj_aqft] += kinetic_visits
     resources[signed_square] += kinetic_visits
@@ -841,27 +844,6 @@ def _half_signed_out_multiplier(x_wires, y_wires, output_wires, work_wires):
     # Uncompute the two's complement and the cached sign bit.
     _twos_complement_helper(y_wires, y_aux, work_wires)
     CNOT([y_wires[0], y_aux])
-
-
-def _load_basis(bitstring, wires):
-    r"""Prepare the computational basis state ``bitstring`` on ``wires`` (assumed to start in
-    :math:`|0\rangle`).
-
-    Applies a conditional :class:`~.PauliX` on each wire whose bit is set. Self-inverse, so the
-    same call unloads the state.
-    """
-    if compiler.active() or capture.enabled():
-        bitstring = math.array(bitstring, like="jax")
-        wires_arr = math.array(list(wires), like="jax")
-    else:
-        wires_arr = list(wires)
-
-    @for_loop(len(wires))
-    def _prep(i):
-        cond(bitstring[i] != 0, X)(wires_arr[i])
-
-    # pylint: disable-next=no-value-for-parameter
-    _prep()
 
 
 # ---------------------------------------------------------------------------
@@ -1198,14 +1180,14 @@ def _trotter_step_second_order(
                 )
                 # Negated for the same phase-gradient sign convention as ``_load_coefficients``.
                 bitstring = math.binary_decimals(-_coeffs, precision, unit=2 * np.pi)
-                _load_basis(bitstring, registers["coefficients"])
+                MultiX(bitstring, registers["coefficients"])
                 _aqft(order=aqft_order, wires=mode_registers[k])
                 SignedOutSquare(**square_wires, output_wires_zeroed=True)
                 OutMultiplier(**mult_wires)
                 adjoint(SignedOutSquare(**square_wires, output_wires_zeroed=True))
                 adjoint(_aqft(order=aqft_order, wires=mode_registers[k]))
-                # ``_load_basis`` is self-inverse, so the unload is the same call.
-                _load_basis(bitstring, registers["coefficients"])
+                # ``MultiX`` is self-adjoint, so the unload is the same call.
+                MultiX(bitstring, registers["coefficients"])
 
             cond(math.allclose(_coeffs, 0.0), skip_fn, actual_fn)()
 

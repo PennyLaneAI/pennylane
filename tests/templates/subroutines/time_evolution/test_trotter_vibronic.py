@@ -165,6 +165,32 @@ def count_ops(queue, *op_types):
     return sum(isinstance(op, op_types) for op in queue)
 
 
+def count_allocations(op):
+    """Return the ``(num_allocate, num_deallocate)`` operations in ``op``'s decomposition.
+
+    ``TrotterVibronic`` allocates its dynamic wires in a single top-level ``with allocate(...)``
+    block, so under capture (where a jaxpr containing dynamic qubit allocation cannot be eagerly
+    executed) the ``allocate``/``deallocate`` primitives are counted directly in the traced
+    jaxpr's top-level equations instead of in the (executed) queue.
+    """
+    if qp.capture.enabled():
+        import jax  # pylint: disable=import-outside-toplevel
+
+        from pennylane.allocation import (  # pylint: disable=import-outside-toplevel
+            allocate_prim,
+            deallocate_prim,
+        )
+
+        decomposition = qp.list_decomps(qp.TrotterVibronic)[0]
+        jaxpr = jax.make_jaxpr(lambda: decomposition(**op.arguments))().jaxpr
+        return (
+            sum(eqn.primitive == allocate_prim for eqn in jaxpr.eqns),
+            sum(eqn.primitive == deallocate_prim for eqn in jaxpr.eqns),
+        )
+    queue = decomposition_queue(op)
+    return count_ops(queue, Allocate), count_ops(queue, Deallocate)
+
+
 # ---------------------------------------------------------------------------
 # --------------------------------- Helpers ---------------------------------
 # ---------------------------------------------------------------------------
@@ -522,8 +548,8 @@ class TestDecomposition:
         assert count_ops(nonzero, AQFT) > 0
         assert count_ops(nonzero, qp.BasisState) == 0  # momentum coeffs loaded via ``PauliX``
 
-    def test_basis_loading_uses_pauli_x(self):
-        """Test that non-zero momentum coefficients are loaded with conditional ``PauliX`` gates."""
+    def test_basis_loading_uses_multix(self):
+        """Test that non-zero momentum coefficients are loaded with ``MultiX``."""
         n_states, n_modes = 2, 1
         position = _zero_fragment(n_states, n_modes)
         kinetic = _zero_fragment(n_states, n_modes)
@@ -532,7 +558,7 @@ class TestDecomposition:
         hamiltonian = build_hamiltonian([position, kinetic])
         queue = decomposition_queue(make_op(hamiltonian, make_wires(n_states, n_modes), 1.0))
         assert count_ops(queue, qp.BasisState) == 0
-        assert count_ops(queue, qp.X) > 0
+        assert count_ops(queue, qp.MultiX) > 0
 
     def test_bilinear_queues_signed_out_multiplier(self):
         """Test that a bilinear fragment queues a SignedOutMultiplier."""
@@ -553,7 +579,7 @@ class TestDecomposition:
         assert resources.num_gates > 0
 
     @pytest.mark.jax
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp", "enable_and_disable_capture")
     def test_assert_valid(self):
         """Test that ``TrotterVibronic`` passes ``assert_valid``."""
         hamiltonian = build_hamiltonian(fragment_list(n_states=2, n_modes=2, seed=1))
@@ -563,7 +589,7 @@ class TestDecomposition:
         )
 
     @pytest.mark.jax
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp", "enable_and_disable_capture")
     def test_optional_work_wires_are_allocated(self):
         """Test that ``cache`` and ``work`` are optional and dynamically allocated when omitted."""
         hamiltonian = build_hamiltonian(fragment_list(n_states=2, n_modes=2, seed=1))
@@ -581,16 +607,16 @@ class TestDecomposition:
         assert len(op.arguments["cache_wires"]) == 0
         assert len(op.arguments["work_wires"]) == 0
 
-        queue = decomposition_queue(op)
-        assert count_ops(queue, Allocate) == 1
-        assert count_ops(queue, Deallocate) == 1
+        num_allocate, num_deallocate = count_allocations(op)
+        assert num_allocate == 1
+        assert num_deallocate == 1
 
         qp.ops.functions.assert_valid(
             op, skip_differentiation=True, skip_decomp_matrix_check=True, skip_wire_mapping=True
         )
 
     @pytest.mark.jax
-    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp", "enable_and_disable_capture")
     def test_optional_coefficient_wires_are_allocated(self):
         """Test that ``coefficient_wires`` is optional and dynamically allocated (sized to match
         ``phase_gradient_wires``) when omitted, alongside ``cache_wires``/``work_wires``."""
@@ -609,9 +635,9 @@ class TestDecomposition:
         assert len(op.arguments["cache_wires"]) == 0
         assert len(op.arguments["work_wires"]) == 0
 
-        queue = decomposition_queue(op)
-        assert count_ops(queue, Allocate) == 1
-        assert count_ops(queue, Deallocate) == 1
+        num_allocate, num_deallocate = count_allocations(op)
+        assert num_allocate == 1
+        assert num_deallocate == 1
 
         qp.ops.functions.assert_valid(
             op, skip_differentiation=True, skip_decomp_matrix_check=True, skip_wire_mapping=True
@@ -659,8 +685,7 @@ class TestDecomposition:
 
     @pytest.mark.usefixtures("enable_and_disable_graph_decomp", "enable_and_disable_capture")
     def test_decomposition_resource_consistency(self, seed):
-        """Test resource/decomposition consistency via ``_test_decomposition_rule``, with capture
-        both disabled and enabled (``enable_and_disable_capture`` runs this test twice)."""
+        """Test resource/decomposition consistency via ``_test_decomposition_rule``."""
         from pennylane.ops.functions.assert_valid import (  # pylint: disable=import-outside-toplevel
             _test_decomposition_rule,
         )
