@@ -1405,6 +1405,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed the Triton persistent decoder kernel so :func:`~pennylane.backline.css_bp_decoder` and
+  the other Triton decoders build on CUDA with Triton 3.8.
+  [(#10111)](https://github.com/PennyLaneAI/pennylane/pull/10111)
+
 * Fixed :class:`~.Incrementer` returning an incorrect incremented value when not enough
   work wires are provided.
   [(#10062)](https://github.com/PennyLaneAI/pennylane/pull/10062)
