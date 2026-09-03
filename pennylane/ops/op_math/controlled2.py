@@ -14,6 +14,7 @@
 
 """Defines the base class for controlled operators."""
 
+import inspect
 from collections.abc import Sequence
 from functools import partial
 from inspect import signature
@@ -779,37 +780,42 @@ def to_controlled_unitary(base, control_wires, control_values, work_wires, work_
     )
 
 
-def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionRule:
+def flip_zero_control(inner_decomp: DecompositionRule, name: str = "") -> DecompositionRule:
     """Wraps a decomposition for a controlled operator with X gates to flip zero control wires."""
 
-    def _condition_fn(*args, **kwargs):
-        return rule.is_applicable(*args, **kwargs)
+    sig = inspect.signature(inner_decomp)
 
-    def _resource_fn(base, control_wires, control_values, work_wires, work_wire_type):
-        base_resources = rule.compute_resources(
-            base,
-            control_wires,
-            control_values=None,
-            work_wires=work_wires,
-            work_wire_type=work_wire_type,
-        )
-        gate_counts = base_resources.gate_counts
-        base_x_count = gate_counts.get(qp.X, 0)
-        gate_counts[qp.X] = base_x_count + len(control_values)
+    def _get_arguments(*args, **kwargs):
+        bound_args = sig.bind(*args, **kwargs)
+        bound_args.apply_defaults()
+        return bound_args.arguments
+
+    def _condition_fn(*args, **kwargs):
+        arguments = _get_arguments(*args, **kwargs) | {"control_values": None}
+        return inner_decomp.is_applicable(**arguments)
+
+    def _resource_fn(*args, **kwargs):
+        arguments = _get_arguments(*args, **kwargs)
+        new_arguments = arguments | {"control_values": None}
+        gate_counts = inner_decomp.compute_resources(**new_arguments).gate_counts
+        if ctrl_values := arguments["control_values"]:
+            gate_counts[qp.X] = gate_counts.get(qp.X, 0) + len(ctrl_values)
         return gate_counts
 
     # pylint: disable=protected-access
     @register_condition(_condition_fn)
     @register_resources(
         _resource_fn,
-        work_wires=rule._work_wire_spec,
+        work_wires=inner_decomp._work_wire_spec,
         exact=False,
-        name=name or f"flip_zero_ctrl_values({rule.name})",
+        name=name or f"flip_zero_ctrl_values({inner_decomp.name})",
     )
-    def _impl(base, control_wires, control_values, work_wires, work_wire_type):
+    def _impl(*args, **kwargs):
 
-        _cwires = control_wires
-        _cvals = control_values
+        arguments = _get_arguments(*args, **kwargs)
+
+        _cwires = arguments["control_wires"]
+        _cvals = arguments["control_values"]
         if compiler.active() or capture.enabled():
             # We perform the cast on these temporary variables for the sole purpose
             # of indexing into them with tracers. the inner wrapper rule may still
@@ -823,16 +829,10 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
             qp.cond(qp.math.logical_not(_cvals[i]), qp.X)(_cwires[i])
 
         _x_flips()
-        rule(
-            base,
-            control_wires,
-            control_values=None,
-            work_wires=work_wires,
-            work_wire_type=work_wire_type,
-        )
+        inner_decomp(**(arguments | {"control_values": None}))
         _x_flips()
 
-    base_source = rule._source
+    base_source = inner_decomp._source
     _impl._source = (
         dedent(_impl._source).strip()
         + "\n\nwhere inner_decomp is defined as:\n\n"
