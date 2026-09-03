@@ -183,8 +183,7 @@ def rz_phase_gradient(
     Note that for the transform to work, we needed to also prepare a phase gradient state on
     the ``phase_grad_wires`` via ``phase_gradient``.
 
-    Overall, the full circuit looks like the following (``max_expansion=1`` unfolds the
-    compute/:class:`~.SemiAdder`/uncompute structure by one level):
+    Overall, the full circuit looks like the following:
 
     >>> print(qp.draw(rz_circ, wire_order=wire_order)(phi, wire))
       targ: ──H─╭●─────────────────────╭●───────────H─╭GlobalPhase(2.75)─┤  Probs
