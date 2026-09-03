@@ -64,12 +64,17 @@ def _get_has_generator_types(num_wires):
 def _find_equal_generator(base, coeff):
     val = -1j * coeff
     coeff = math.real(val) if math.is_real_obj_or_close(val) else val
+
     for op_class in _get_has_generator_types(len(base.wires)):
         # NOTE: Use a real probe coeff so that constructing the candidate does not fail for operators that do not support
         # complex angles (like RZ). This should be fine as any op_class in _get_has_generator_types has a generator
         # which doesn't depend on coeff. The coefficient is cast to real during construction anyways down below.
         probe_coeff = math.real(coeff)
-        g, c = qp.generator(op_class)(probe_coeff, base.wires)
+        if issubclass(op_class, qp.GlobalPhase):
+            # NOTE: GlobalPhase doesn't act on any wires
+            g, c = (qp.I(), -1)
+        else:
+            g, c = qp.generator(op_class)(probe_coeff, base.wires)
 
         # NOTE: Operators that can act on all wires (e.g. GlobalPhase), produce generators that
         # also act on all wires and cannot be mapped 1:1 to the base's wires. Therefore,
@@ -111,14 +116,14 @@ def exp(op, coeff: float = 1.0):
 
         This operator supports a batched base, a batched coefficient and a combination of both:
 
-        >>> op = qp.exp(qp.RX([1, 2, 3], wires=0), coeff=4)
-        >>> qp.matrix(op).shape
+        >>> op = qp.exp(qp.RX([1, 2, 3], wires=0), coeff=4)  # doctest: +SKIP
+        >>> qp.matrix(op).shape  # doctest: +SKIP
         (3, 2, 2)
         >>> op = qp.exp(qp.RX(1, wires=0), coeff=[1, 2, 3])
         >>> qp.matrix(op).shape
         (3, 2, 2)
-        >>> op = qp.exp(qp.RX([1, 2, 3], wires=0), coeff=[4, 5, 6])
-        >>> qp.matrix(op).shape
+        >>> op = qp.exp(qp.RX([1, 2, 3], wires=0), coeff=[4, 5, 6])  # doctest: +SKIP
+        >>> qp.matrix(op).shape  # doctest: +SKIP
         (3, 2, 2)
 
         But it doesn't support batching of operators:

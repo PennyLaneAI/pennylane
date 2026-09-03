@@ -714,7 +714,7 @@ class TestMultiControlledX:
         """Test that a ValueError is raised when work_wires is not complementary to control_wires"""
         control_target_wires = range(4)
         work_wires = range(2)
-        with pytest.raises(ValueError, match="work_wires must not overlap with the operator"):
+        with pytest.raises(ValueError, match="wires and work_wires must not overlap"):
             qp.MultiControlledX(wires=control_target_wires, work_wires=work_wires)
 
     @pytest.mark.parametrize("control_val", [0, 1])
@@ -835,20 +835,19 @@ class TestMultiControlledX:
         op_repr = qp.MultiControlledX(wires=wires, control_values=control_values).__repr__()
         assert op_repr == f"MultiControlledX(wires={wires}, control_values={control_values})"
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("num_work_wires", [0, 1, 2, 3])
     @pytest.mark.parametrize("num_control_wires", [2, 3, 4, 5, 6])
     @pytest.mark.parametrize("work_wire_type", ["borrowed", "zeroed"])
-    def test_decomposition_rules_with_work_wires(
-        self, num_work_wires, num_control_wires, work_wire_type
-    ):
-        """Tests the decomposition rules of MCX when work wires are specified."""
+    def test_decomposition_rules(self, num_work_wires, num_control_wires, work_wire_type):
+        """Tests the decomposition rules of MCX."""
         work_wires = range(num_control_wires + 1, num_work_wires + num_control_wires + 1)
         op = qp.MultiControlledX(
             range(num_control_wires + 1),
             work_wires=work_wires,
             work_wire_type=work_wire_type,
         )
-        for rule in qp.list_decomps(qp.MultiControlledX):
+        for rule in qp.list_decomps(op):
             _test_decomposition_rule(op, rule)
 
 

@@ -25,13 +25,13 @@ from scipy.stats import unitary_group
 import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.core.operator import abstractify
-from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.templates.subroutines.select import (
     _partial_select,
     _select_decomp_multi_control_work_wire,
     _select_decomp_unary,
 )
 from pennylane.typing import Bool, Wire
+from tests.decomposition.conftest import to_resources
 
 
 @pytest.mark.jax
@@ -63,8 +63,6 @@ def test_standard_checks(num_ops, num_controls, partial, work_wires, parametrize
         # differentiation and bind_new_parameters fail now that control_values are data
         skip_differentiation=not parametrized,
         skip_bind_new_parameters=not parametrized,
-        # bind fails now that MultiControlledX can't be converted to a tracer.
-        skip_capture=not parametrized,
     )
 
 
@@ -218,16 +216,19 @@ class TestSelect:
         control = (0, 1)
 
         resource_obj = decomp.compute_resources(
-            op_reps, num_control_wires=2, partial=partial, num_work_wires=0
+            op_reps,
+            num_control_wires=2,
+            partial=partial,
+            num_work_wires=0,
         )
 
         assert resource_obj.num_gates == 4
-
         expected_counts = {
             qp.ctrl(qp.X(Wire[1]), Wire[2], control_values=Bool[2]): 3,
-            _ctrl_abstract(qp.Y, Wire[2], num_zero_control_values=0): 1,
+            qp.ctrl(qp.Y(Wire[1]), Wire[2], control_values=Bool[2]): 1,
         }
-        assert resource_obj.gate_counts == expected_counts
+        expected_resources = to_resources(expected_counts)
+        assert resource_obj == expected_resources
 
         op = qp.Select(ops, control, partial=partial)
         with qp.queuing.AnnotatedQueue() as q:
@@ -254,7 +255,10 @@ class TestSelect:
         control = (0, 1)
 
         resource_obj = decomp.compute_resources(
-            op_reps, num_control_wires=2, partial=partial, num_work_wires=0
+            op_reps,
+            num_control_wires=2,
+            partial=partial,
+            num_work_wires=0,
         )
 
         assert resource_obj.num_gates == 3
@@ -263,14 +267,16 @@ class TestSelect:
             expected_counts = {
                 qp.ctrl(qp.X(Wire[1]), Wire[2], control_values=Bool[2]): 1,
                 qp.ctrl(qp.X(Wire[1]), Wire[1]): 1,
-                _ctrl_abstract(qp.SWAP, Wire[1]): 1,
+                qp.ctrl(qp.SWAP(Wire[2]), Wire[1]): 1,
             }
         else:
             expected_counts = {
                 qp.ctrl(qp.X(Wire[1]), Wire[2], control_values=Bool[2]): 2,
-                _ctrl_abstract(qp.SWAP, Wire[2], num_zero_control_values=1): 1,
+                qp.ctrl(qp.SWAP(Wire[2]), Wire[2], control_values=Bool[2]): 1,
             }
-        assert resource_obj.gate_counts == expected_counts
+
+        expected_resources = to_resources(expected_counts)
+        assert resource_obj == expected_resources
 
         op = qp.Select(ops, control, partial=partial)
         with qp.queuing.AnnotatedQueue() as q:
@@ -300,16 +306,21 @@ class TestSelect:
         control = (0,)
 
         resource_obj = decomp.compute_resources(
-            op_reps, num_control_wires=1, partial=partial, num_work_wires=0
+            op_reps,
+            num_control_wires=1,
+            partial=partial,
+            num_work_wires=0,
         )
 
         assert resource_obj.num_gates == 1
 
         if partial:
-            expected_counts = {abstractify(qp.Z): 1}
+            expected_counts = {qp.Z: 1}
         else:
-            expected_counts = {_ctrl_abstract(qp.Z, Wire[1], num_zero_control_values=1): 1}
-        assert resource_obj.gate_counts == expected_counts
+            expected_counts = {qp.ctrl(qp.Z(Wire[1]), Wire[1], control_values=Bool[1]): 1}
+
+        expected_resource = to_resources(expected_counts)
+        assert resource_obj == expected_resource
 
         op = qp.Select(ops, control, partial=partial)
         with qp.queuing.AnnotatedQueue() as q:
@@ -801,7 +812,10 @@ class TestUnaryIterator:
         work = list(range(num_controls, 2 * num_controls - 1))
         target = list(range(2 * num_controls - 1, 3 * num_controls - 1))
 
-        ops = [qp.BasisEmbedding(i, wires=target) for i in range(num_ops)]
+        ops = [
+            qp.BasisEmbedding(qp.math.int_to_binary(i, len(target)), wires=target)
+            for i in range(num_ops)
+        ]
 
         @qp.qnode(dev)
         def circuit():
@@ -823,7 +837,10 @@ class TestUnaryIterator:
         """Test that proper errors are raised"""
 
         wires = qp.registers({"target": num_ops, "control": control, "work": work})
-        ops = [qp.BasisEmbedding(i, wires=wires["target"]) for i in range(num_ops)]
+        ops = [
+            qp.BasisEmbedding(qp.math.int_to_binary(i, len(wires["target"])), wires=wires["target"])
+            for i in range(num_ops)
+        ]
 
         with pytest.raises(ValueError, match=msg_match):
             _select_decomp_unary(
@@ -912,7 +929,10 @@ class TestSelectWithWorkWire:
         work = ["a"]
         target = list(range(2 * num_controls - 1, 3 * num_controls - 1))
 
-        ops = [qp.BasisEmbedding(i, wires=target) for i in range(num_ops)]
+        ops = [
+            qp.BasisEmbedding(qp.math.int_to_binary(i, len(target)), wires=target)
+            for i in range(num_ops)
+        ]
 
         @qp.qnode(dev)
         def circuit():

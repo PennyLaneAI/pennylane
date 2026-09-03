@@ -101,7 +101,7 @@ class SelectPauliRot(Operator2):
     wire_argnames = ("control_wires", "target_wire")
     compilable_argnames = ("rot_axis",)
 
-    arg_specs = {"angles": Float[-1], "control_wires": Wire[-1], "target_wire": Wire}
+    arg_specs = {"angles": Float[-1], "control_wires": Wire[-1], "target_wire": Wire[1]}
 
     grad_method = None
     ndim_params = (1,)
@@ -122,20 +122,6 @@ class SelectPauliRot(Operator2):
         super().__init__(
             angles, control_wires=control_wires, target_wire=target_wire, rot_axis=rot_axis
         )
-
-    # pylint: disable-next=arguments-differ
-    def __abstract_init__(self, angles, control_wires, target_wire, rot_axis):
-        if math.shape(angles)[-1] != 2 ** len(control_wires):
-            raise ValueError("Number of angles must be 2^(len(control_wires))")
-        if rot_axis not in ["X", "Y", "Z"]:
-            raise ValueError("'rot_axis' can only take the values 'X', 'Y' and 'Z'.")
-        if (
-            not isinstance(target_wire, int)
-            and target_wire.shape != (1,)
-            and target_wire.shape != ()
-        ):
-            raise ValueError("Only one target wire can be specified")
-        return super().__abstract_init__(angles, control_wires, target_wire, rot_axis)
 
 
 # pylint: disable-next=unused-argument

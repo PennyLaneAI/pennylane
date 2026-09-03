@@ -79,7 +79,8 @@ class Multiplier(Operation):
 
         @qp.qnode(dev, shots=1)
         def circuit():
-            qp.BasisEmbedding(x, wires=x_wires)
+            x_bin = qp.math.int_to_binary(x, len(x_wires))
+            qp.BasisEmbedding(x_bin, wires=x_wires)
             qp.Multiplier(k, x_wires, mod, work_wires)
             return qp.sample(wires=x_wires)
 
@@ -262,8 +263,7 @@ def _multiplier_decomposition_resources(
 ) -> dict:
     num_wires_aux = num_work_wires - 1 if mod != 2**num_x_wires else num_x_wires
     cs_base_params = {
-        "base_class": PhaseAdder,
-        "base_params": {"num_x_wires": num_wires_aux, "mod": mod},
+        "base_rep": resource_rep(PhaseAdder, num_x_wires=num_wires_aux, mod=mod),
         "num_control_wires": num_x_wires,
     }
     if num_x_wires > 1:

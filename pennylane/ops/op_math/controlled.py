@@ -43,7 +43,7 @@ from pennylane.exceptions import (
     ParameterFrequenciesUndefinedError,
     SparseMatrixUndefinedError,
 )
-from pennylane.typing import AbstractArray, AbstractWires, Bool, Wire
+from pennylane.typing import AbstractArray, AbstractWires, Bool
 from pennylane.wires import Wires, WiresLike
 
 from .controlled2 import Controlled2, ControlledOp2
@@ -107,11 +107,11 @@ def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type=
             qp.ctrl(qp.RX, (1,2,3), control_values=(0,1,0))(x, wires=0)
             return qp.expval(qp.Z(0))
 
-    >>> print(qp.draw(circuit)("x"))
-    0: ────╭RX(x)─┤  <Z>
-    1: ────├○─────┤
-    2: ──X─├●─────┤
-    3: ────╰○─────┤
+    >>> print(qp.draw(circuit)(0.5))
+    0: ────╭RX(0.50)─┤  <Z>
+    1: ────├○────────┤
+    2: ──X─├●────────┤
+    3: ────╰○────────┤
     >>> x = qp.numpy.array(1.2, requires_grad=True)
     >>> circuit(x)
     tensor(0.362..., requires_grad=True)
@@ -228,21 +228,13 @@ def create_controlled_op2(op, control_wires, control_values, work_wires, work_wi
         ctrl_values = _resolve_ctrl_values(control_values, op.control_values, len(control_wires))
         return ctrl(
             op.base,
-            control=_concat_wires(control_wires, op.control_wires),
+            control=control_wires + op.control_wires,
             control_values=ctrl_values,
-            work_wires=_concat_wires(work_wires, op.work_wires),
+            work_wires=work_wires + op.work_wires,
             work_wire_type=work_wire_type,
         )
 
     return ControlledOp2(op, control_wires, control_values, work_wires, work_wire_type)
-
-
-def _concat_wires(wire1, wire2):
-
-    if isinstance(wire2, AbstractWires):
-        return Wire[len(wire1) + len(wire2)]
-
-    return wire1 + wire2
 
 
 def _resolve_ctrl_values(control_values, base_ctrl_values, num_control: int):
@@ -251,7 +243,7 @@ def _resolve_ctrl_values(control_values, base_ctrl_values, num_control: int):
     if control_values is None:
         control_values = [True] * num_control
 
-    if isinstance(base_ctrl_values, AbstractArray):
+    if isinstance(control_values, AbstractArray) or isinstance(base_ctrl_values, AbstractArray):
         return Bool[len(control_values) + len(base_ctrl_values)]
 
     control_values = math.array(control_values)
@@ -1211,10 +1203,7 @@ def base_to_custom_ctrl_op():
     ops_with_custom_ctrl_ops = {
         (qp.SWAP, 1): qp.CSWAP,
         (qp.Hadamard, 1): qp.CH,
-        (qp.RX, 1): qp.CRX,
         (qp.RY, 1): qp.CRY,
-        (qp.RZ, 1): qp.CRZ,
-        (qp.Rot, 1): qp.CRot,
         (qp.PhaseShift, 1): qp.ControlledPhaseShift,
         (qp.U1, 1): qp.ControlledPhaseShift,
     }

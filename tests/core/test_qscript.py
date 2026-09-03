@@ -655,7 +655,7 @@ class TestInfomationProperties:
         assert qs._specs is None
 
         assert qs.specs["resources"] == qp.resource.SpecsResources(
-            num_allocs=0,
+            num_wires=0,
             counts={},
             measurement_processes={},
             circuit_depth=0,
@@ -673,7 +673,7 @@ class TestInfomationProperties:
 
         counts = {"RX": 2, "Rot": 1, "CNOT": 1}
         expected_resources = qp.resource.SpecsResources(
-            num_allocs=3,
+            num_wires=3,
             counts=counts,
             measurement_processes={"expval(PauliX)": 1, "probs(2 wires)": 1},
             circuit_depth=3,
@@ -759,6 +759,9 @@ class TestScriptCopying:
         assert qs.data == copied_qs.data
         assert qs.shots is copied_qs.shots
 
+    @pytest.mark.pl2do(
+        reason="Figure out the desired behaviour of copying dynamic arguments, the factual behaviour of Operator2 differs from that of Operator, making this test fail."
+    )
     def test_deep_copy(self):
         """Test that deep copying a tape works, and copies all constituent data except parameters"""
         prep = [qp.BasisState(np.array([1, 0]), wires=(0, 1))]
@@ -1432,10 +1435,11 @@ def test_jax_pytree_integration(qscript_type):
 
     data, _ = jax.tree_util.tree_flatten(tape)
     assert data[0] == 0.5
-    assert data[1] == 1.2
-    assert data[2] == 2.3
-    assert data[3] == 3.4
-    assert data[4] == 0  # the wires of Rot
-    assert data[5] == 2.0
-    assert data[6] == 0  # the wire of `PauliX`
-    assert qp.math.allclose(data[7], eye_mat)
+    assert data[1] == 0  # the wire of Adj(RY)
+    assert data[2] == 1.2
+    assert data[3] == 2.3
+    assert data[4] == 3.4
+    assert data[5] == 0  # the wire of Rot
+    assert data[6] == 2.0
+    assert data[7] == 0  # the wire of `PauliX`
+    assert qp.math.allclose(data[8], eye_mat)

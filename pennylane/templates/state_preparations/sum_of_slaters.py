@@ -21,9 +21,9 @@ import numpy as np
 import pennylane as qp
 from pennylane import allocate, for_loop, math
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.typing import Complex, Int, TensorLike, Wire
+from pennylane.typing import AbstractArray, Bool, Complex, Int, TensorLike, Wire
 from pennylane.wires import WiresLike
 
 SoSData = namedtuple("data", ["u_bits", "b_bits", "d", "r", "m"])
@@ -959,13 +959,13 @@ class SumOfSlatersPrep(Operator2):
         )
 
     @staticmethod
-    def required_register_sizes(indices: tuple[int], num_wires: int) -> dict:
+    def required_register_sizes(indices: tuple[int] | AbstractArray, num_wires: int) -> dict:
         """Compute the register sizes required for ``SumOfSlatersPrep``, for given
         computational basis states, ``indices``, and number of target wires, ``num_wires``.
 
         Args:
-            indices (tuple[int]): Indices of computational basis states of the sparse state to be
-                prepared with ``SumOfSlatersPrep``.
+            indices (tuple[int] or AbstractArray): Indices of computational basis states of the
+                sparse state to be prepared with ``SumOfSlatersPrep``.
             num_wires (int): Number of target wires on which ``SumOfSlatersPrep``
                 will prepare the state.
 
@@ -974,7 +974,22 @@ class SumOfSlatersPrep(Operator2):
             of length ``num_wires`` with the label ``"wires"``, matching the call signature
             of ``SumOfSlatersPrep``.
 
+        This function supports an abstract input for ``indices``, in which case an upper bound
+        for the register sizes, across all possible sets of basis states of the given length, is
+        returned:
+
+        >>> indices = qp.typing.Int[45]
+        >>> qp.SumOfSlatersPrep.required_register_sizes(indices, 18)
+        {'wires': 18,
+         'enumeration_wires': 6,
+         'identification_wires': 11,
+         'qrom_work_wires': 5,
+         'mcx_cache_wires': 10}
+
         """
+        if isinstance(indices, AbstractArray):
+            return SumOfSlatersPrep._required_register_sizes_abstract(len(indices), num_wires)
+
         _, vtilde_bits = select_sos_rows(math.int_to_binary(np.array(indices), num_wires).T)
         num_bits, num_entries = vtilde_bits.shape
         return SumOfSlatersPrep._required_register_sizes_from_nums(num_entries, num_bits, num_wires)
@@ -1028,6 +1043,19 @@ class SumOfSlatersPrep(Operator2):
             "mcx_cache_wires": m - 1,
         }
 
+    @staticmethod
+    def _required_register_sizes_abstract(num_entries: int, num_wires: int) -> dict:
+        """Compute the upper bound of the required register sizes, if only the number of
+        basis states, but not the concrete states to be prepared, is known."""
+        d = math.ceil_log2(num_entries)
+        return {
+            "wires": num_wires,
+            "enumeration_wires": d,
+            "identification_wires": 2 * d - 1,
+            "qrom_work_wires": d - 1,
+            "mcx_cache_wires": 2 * d - 2,
+        }
+
 
 # pylint: disable-next=unused-argument
 def _sos_state_prep_resources(coefficients, wires, indices, **_):
@@ -1043,7 +1071,7 @@ def _sos_state_prep_resources(coefficients, wires, indices, **_):
     num_wires = n
 
     if num_entries == 1:
-        return {resource_rep(qp.BasisState, num_wires=num_wires): 1}
+        return {qp.BasisState(Bool[num_wires], Wire[num_wires]): 1}
     d = math.ceil_log2(num_entries)
     m = min(num_bits, 2 * d - 1)
 
@@ -1074,7 +1102,7 @@ def _sos_state_prep_resources(coefficients, wires, indices, **_):
     resources[_adjoint_abstract(qp.TemporaryAND)] += (num_entries - 1) * (m - 1)
 
     # Calculate the bit counts of all integers that need to be uncomputed and sum them up.
-    number_of_bits_to_unset = np.sum(np.bitwise_count(np.arange(1, num_entries)).astype(int))
+    number_of_bits_to_unset = int(np.sum(np.bitwise_count(np.arange(1, num_entries))))
     resources[qp.CNOT] += number_of_bits_to_unset
 
     # We have to flip at most m control bits between any pair of the `num_entries-1` uncomputing
@@ -1176,7 +1204,7 @@ def _sos_state_prep_with_wires(
     mcx_ctrl_wires = selected_wires if identity_encoding else identification_wires
 
     # Create wires for elbow ladder
-    elbow_wires = mcx_ctrl_wires[:1] + [
+    elbow_wires = [mcx_ctrl_wires[0]] + [
         _wires[k] for k in range(data.m - 1) for _wires in [mcx_ctrl_wires[1:], mcx_cache_wires]
     ]
     elbow_triples = [elbow_wires[2 * k : 2 * k + 3] for k in range(data.m - 1)]

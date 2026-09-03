@@ -259,7 +259,7 @@ class TestSpecialOps:
         gp_eqn = jaxpr.eqns[0]
         assert_eqn_matches_op(gp_eqn, qp.GlobalPhase)
         assert len(gp_eqn.invars) == 1
-        assert gp_eqn.params["wire_lens"] == (0,)
+        assert gp_eqn.params["wire_lens"] == ()
 
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts, 1.2)
@@ -353,13 +353,13 @@ class TestTemplates:
 
         state = input_type([1, 0])
         jaxpr = jax.make_jaxpr(qp.BasisState)(state, wires=[0, 1])
-        assert jaxpr.eqns[5].primitive == qp.BasisState._primitive
-        assert jaxpr.eqns[5].invars[0].aval == jax.core.ShapedArray((2,), int)
+        assert_eqn_matches_op(jaxpr.eqns[4], qp.BasisState)
+        assert jaxpr.eqns[4].invars[0].aval == jax.core.ShapedArray((2,), bool)
 
         state = input_type([1.0, 0.0])
         jaxpr = jax.make_jaxpr(qp.BasisState)(state, wires=[0, 1])
-        assert jaxpr.eqns[5].primitive == qp.BasisState._primitive
-        assert jaxpr.eqns[5].invars[0].aval == jax.core.ShapedArray((2,), float)
+        assert_eqn_matches_op(jaxpr.eqns[4], qp.BasisState)
+        assert jaxpr.eqns[4].invars[0].aval == jax.core.ShapedArray((2,), bool)
 
 
 class TestOpmath:

@@ -18,11 +18,8 @@ A transform for decomposing quantum circuits into user defined gate sets. Offers
 from __future__ import annotations
 
 import warnings
-from collections import ChainMap
 from collections.abc import Callable, Generator, Iterable, Sequence
-from functools import lru_cache, partial
 
-from pennylane import math, ops
 from pennylane.allocation import Allocate, Deallocate
 from pennylane.core import queuing
 from pennylane.core.operator import Operator
@@ -33,7 +30,6 @@ from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.ops import Conditional, GlobalPhase
 from pennylane.templates import SubroutineOp
 from pennylane.transforms.core import transform
-from pennylane.wires import is_abstract_qubit
 
 
 def null_postprocessing(results):
@@ -41,314 +37,6 @@ def null_postprocessing(results):
     into a result for a single ``QuantumTape``.
     """
     return results[0]
-
-
-@lru_cache
-def _get_plxpr_decompose():  # pylint: disable=too-many-statements
-    try:
-        # pylint: disable=import-outside-toplevel
-        import jax
-
-        from pennylane.capture import PlxprInterpreter, make_plxpr, pause
-        from pennylane.capture.primitives import ctrl_transform_prim
-        from pennylane.decomposition.collect_resource_ops import CollectResourceOps
-
-    except ImportError:  # pragma: no cover
-        return None, None
-
-    # pylint: disable=redefined-outer-name, too-few-public-methods
-
-    class ControlTransformInterpreter(PlxprInterpreter):
-        """Interpreter for replacing control transforms with individually controlled ops."""
-
-        def __init__(self, control_wires, control_values=None, work_wires=None):
-            super().__init__()
-            self.control_wires = control_wires
-            self.control_values = control_values
-            self.work_wires = work_wires
-
-        def interpret_operation(self, op):
-            """Interpret operation."""
-            with pause():
-                ctrl_op = ops.ctrl(
-                    op,
-                    self.control_wires,
-                    control_values=self.control_values,
-                    work_wires=self.work_wires,
-                )
-            super().interpret_operation(ctrl_op)
-
-    # pylint: disable=too-many-instance-attributes,super-init-not-called
-    class DecomposeInterpreter(PlxprInterpreter):
-        """Plxpr Interpreter for applying the ``decompose`` transform to callables or jaxpr
-        when program capture is enabled.
-        """
-
-        def __init__(
-            self,
-            *,
-            gate_set=None,
-            stopping_condition=None,
-            max_expansion=None,
-            num_work_wires=0,
-            minimize_work_wires=False,
-            fixed_decomps=None,
-            alt_decomps=None,
-            strict=True,
-        ):  # pylint: disable=too-many-arguments
-            self.max_expansion = max_expansion
-            self._current_depth = 0
-
-            if not enabled_graph() and (fixed_decomps or alt_decomps):
-                raise TypeError(
-                    "The keyword arguments fixed_decomps and alt_decomps are only available with "
-                    "the new experimental graph-based decomposition system. Use qp.decomposition.enable_graph() "
-                    "to enable the new system."
-                )
-
-            self._decomp_graph_solution = None
-            self._target_gate_names = None
-            self._fixed_decomps, self._alt_decomps = fixed_decomps, alt_decomps
-            self._num_work_wires = num_work_wires
-            self._minimize_work_wires = minimize_work_wires
-
-            # We use a ChainMap to store the environment frames, which allows us to push and pop
-            # environments without copying the interpreter instance when we evaluate a jaxpr of
-            # a dynamic decomposition. The name is different from the _env in the parent class
-            # (a dictionary) to avoid confusion.
-            self._env_map = ChainMap()
-
-            gate_set, stopping_condition = _resolve_gate_set(gate_set, stopping_condition)
-            self._gate_set = gate_set
-            self.stopping_condition = stopping_condition
-            self._strict = strict
-            self.subroutine_cache = {}
-
-        def setup(self) -> None:
-            """Setup the environment for the interpreter by pushing a new environment frame."""
-
-            # This is the local environment for the jaxpr evaluation, on the top of the stack,
-            # from which the interpreter reads and writes variables.
-            # ChainMap writes to the first dictionary in the chain by default.
-            self._env_map = self._env_map.new_child()
-
-        def cleanup(self) -> None:
-            """Cleanup the environment by popping the top-most environment frame."""
-
-            # We delete the top-most environment frame after the evaluation is done.
-            self._env_map = self._env_map.parents
-
-        def read(self, var):
-            """Extract the value corresponding to a variable."""
-            return var.val if isinstance(var, jax.extend.core.Literal) else self._env_map[var]
-
-        def decompose_operation(self, op: Operator):
-            """Decompose a PennyLane operation instance if it does not satisfy the
-            provided gate set.
-
-            Args:
-                op (Operator): a pennylane operator instance
-
-            This method is only called when the operator's output is a dropped variable,
-            so the output will not affect later equations in the circuit.
-
-            See also: :meth:`~.interpret_operation_eqn`, :meth:`~.interpret_operation`.
-            """
-
-            if self.stopping_condition(op):
-                return self.interpret_operation(op)
-
-            max_expansion = (
-                self.max_expansion - self._current_depth if self.max_expansion is not None else None
-            )
-
-            with pause():
-                decomposition = list(
-                    _operator_decomposition_gen(
-                        op,
-                        self.stopping_condition,
-                        max_expansion=max_expansion,
-                        graph_solution=self._decomp_graph_solution,
-                        num_work_wires=self._num_work_wires,
-                    )
-                )
-
-            return [self.interpret_operation(decomp_op) for decomp_op in decomposition]
-
-        def _evaluate_jaxpr_decomposition(self, op: Operator):
-            """Creates and evaluates a Jaxpr of the plxpr decomposition of an operator."""
-
-            if self.max_expansion is not None and self._current_depth >= self.max_expansion:
-                return self.interpret_operation(op)
-
-            if self.stopping_condition(op):
-                return self.interpret_operation(op)
-
-            rule = self._decomp_graph_solution.decomposition(
-                op, num_work_wires=self._num_work_wires
-            )
-            num_wires = len(op.wires)
-
-            def compute_qfunc_decomposition(*_args, **_kwargs):
-                wires = _args[-num_wires:]
-                if not any(is_abstract_qubit(w) for w in wires):
-                    wires = math.array(wires, like="jax")
-                rule(*_args[:-num_wires], wires=wires, **_kwargs)
-
-            args = (*op.parameters, *op.wires)
-
-            decomp_fn = partial(compute_qfunc_decomposition, **op.hyperparameters)
-            jaxpr_decomp = make_plxpr(decomp_fn)(*args)
-
-            self._current_depth += 1
-            # We don't need to copy the interpreter here, as the jaxpr of the decomposition
-            # is evaluated with a new environment frame placed on top of the stack.
-            out = self.eval(jaxpr_decomp.jaxpr, jaxpr_decomp.consts, *args)
-            self._current_depth -= 1
-
-            return out
-
-        # pylint: disable=too-many-branches
-        def eval(self, jaxpr: jax.extend.core.Jaxpr, consts: Sequence, *args) -> list:
-            """
-            Evaluates a jaxpr, which can also be generated by a dynamic decomposition.
-
-            Args:
-                jaxpr_decomp (jax.extend.core.Jaxpr): the Jaxpr to evaluate
-                consts (list[TensorLike]): the constant variables for the jaxpr
-                *args: the arguments to use in the evaluation
-            """
-
-            self.setup()
-
-            for arg, invar in zip(args, jaxpr.invars, strict=True):
-                self._env_map[invar] = arg
-            for const, constvar in zip(consts, jaxpr.constvars, strict=True):
-                self._env_map[constvar] = const
-
-            if enabled_graph() and not self._decomp_graph_solution:
-                with pause():
-                    collector = CollectResourceOps()
-                    collector.eval(jaxpr, consts, *args)
-                    operations = collector.state["ops"]
-
-                if operations:
-                    operations = [op for op in operations if not self.stopping_condition(op)]
-                    self._decomp_graph_solution = _construct_and_solve_decomp_graph(
-                        operations,
-                        self._gate_set,
-                        self._num_work_wires,
-                        self._minimize_work_wires,
-                        self._fixed_decomps,
-                        self._alt_decomps,
-                        self._strict,
-                    )
-                    self._num_work_wires = self._decomp_graph_solution.num_work_wires
-
-            for eq in jaxpr.eqns:
-                prim_type = getattr(eq.primitive, "prim_type", "")
-                custom_handler = self._primitive_registrations.get(eq.primitive, None)
-
-                if custom_handler:
-                    invals = [self.read(invar) for invar in eq.invars]
-                    outvals = custom_handler(self, *invals, **eq.params)
-
-                elif prim_type == "operator":
-                    outvals = self.interpret_operation_eqn(eq)
-                elif prim_type == "measurement":
-                    outvals = self.interpret_measurement_eqn(eq)
-                else:
-                    invals = [self.read(invar) for invar in eq.invars]
-                    subfuns, params = eq.primitive.get_bind_params(eq.params)
-                    outvals = eq.primitive.bind(*subfuns, *invals, **params)
-
-                    if self._num_work_wires is not None and eq.primitive.name == "allocate":
-                        self._num_work_wires -= params["num_wires"]
-                    if self._num_work_wires is not None and eq.primitive.name == "deallocate":
-                        self._num_work_wires += len(invals)
-
-                if not eq.primitive.multiple_results:
-                    outvals = [outvals]
-
-                for outvar, outval in zip(eq.outvars, outvals, strict=True):
-                    self._env_map[outvar] = outval
-
-            outvals = []
-            for var in jaxpr.outvars:
-                outval = self.read(var)
-                if isinstance(outval, Operator):
-                    outvals.append(self.interpret_operation(outval))
-                else:
-                    outvals.append(outval)
-
-            self.cleanup()
-
-            return outvals
-
-        def interpret_operation_eqn(self, eqn: jax.extend.core.JaxprEqn):
-            """Interpret an equation corresponding to an operator.
-
-            If the operator has a dynamic decomposition defined, this method will
-            create and evaluate the jaxpr of the decomposition using the :meth:`~.eval` method.
-
-            Args:
-                eqn (jax.extend.core.JaxprEqn): a jax equation for an operator.
-
-            See also: :meth:`~.interpret_operation`.
-
-            """
-
-            invals = (self.read(invar) for invar in eqn.invars)
-
-            with queuing.QueuingManager.stop_recording():
-                op = eqn.primitive.impl(*invals, **eqn.params)
-
-            if not eqn.outvars[0].__class__.__name__ == "DropVar":
-                return op
-
-            # _evaluate_jaxpr_decomposition should be used when graph-based
-            # decomposition is enabled and a solution is found for this
-            # operator in the graph.
-            if self._decomp_graph_solution and self._decomp_graph_solution.is_solved_for(
-                op, self._num_work_wires
-            ):
-                return self._evaluate_jaxpr_decomposition(op)
-
-            return self.decompose_operation(op)
-
-    # pylint: disable=too-many-arguments
-    @DecomposeInterpreter.register_primitive(ctrl_transform_prim)
-    def _(self, *invals, n_control, jaxpr, control_values, work_wires, n_consts):
-        consts = invals[:n_consts]
-        args = invals[n_consts:-n_control]
-        control_wires = invals[-n_control:]
-
-        unroller = ControlTransformInterpreter(
-            control_wires, control_values=control_values, work_wires=work_wires
-        )
-
-        def wrapper(*inner_args):
-            return unroller.eval(jaxpr, consts, *inner_args)
-
-        jaxpr = jax.make_jaxpr(wrapper)(*args)
-        return self.eval(jaxpr.jaxpr, jaxpr.consts, *args)
-
-    def decompose_plxpr_to_plxpr(jaxpr, consts, targs, tkwargs, *args):
-        """Function for applying the ``decompose`` transform on plxpr."""
-        # Restore tkwargs from hashable tuple to dict
-        tkwargs = dict(tkwargs)
-
-        interpreter = DecomposeInterpreter(*targs, **tkwargs)
-
-        def wrapper(*inner_args):
-            return interpreter.eval(jaxpr, consts, *inner_args)
-
-        return jax.make_jaxpr(wrapper)(*args)
-
-    return DecomposeInterpreter, decompose_plxpr_to_plxpr
-
-
-DecomposeInterpreter, decompose_plxpr_to_plxpr = _get_plxpr_decompose()
 
 
 @transform
@@ -529,28 +217,27 @@ def decompose(
      [0.        -0.479...j 0.877...+0.j        ]]
 
     >>> print(qp.draw(qp.decompose(circuit, max_expansion=2))())
-    0: ──H──RZ(4.71)──RY(1.14)─╭X──RY(-1.14)──RZ(-3.14)─╭X──RZ(-1.57)──RZ(1.57)──RY(1.00)─╭X ···
-    1: ──H─────────────────────╰●───────────────────────╰●────────────────────────────────│─ ···
-    2: ──H────────────────────────────────────────────────────────────────────────────────╰● ···
-    3: ──H────────────────────────────────────────────────────────────────────────────────── ···
+    0: ──H─╭U(M0)─╭U(M1)─╭U(M2)───────────────────────────────────────────────────────────┤
+    1: ──H─╰●─────│──────│──────╭SWAP†──────────────────────╭(Rϕ(0.79))†─╭(Rϕ(1.57))†──H†─┤
+    2: ──H────────╰●─────│──────│──────────╭(Rϕ(1.57))†──H†─│────────────╰(Rϕ(1.57))†─────┤
+    3: ──H───────────────╰●─────╰SWAP†──H†─╰(Rϕ(1.57))†─────╰(Rϕ(0.79))†──────────────────┤
     <BLANKLINE>
-    0: ··· ──RY(-1.00)──RZ(-6.28)─╭X──RZ(4.71)──RZ(1.57)──RY(0.50)─╭X──RY(-0.50)──RZ(-6.28)─╭X ···
-    1: ··· ───────────────────────│────────────────────────────────│────────────────────────│─ ···
-    2: ··· ───────────────────────╰●───────────────────────────────│────────────────────────│─ ···
-    3: ··· ────────────────────────────────────────────────────────╰●───────────────────────╰● ···
-    <BLANKLINE>
-    0: ··· ──RZ(4.71)────────────────────────────────────────────────────┤
-    1: ··· ─╭SWAP†─────────────────────────╭(Rϕ(0.79))†─╭(Rϕ(1.57))†──H†─┤
-    2: ··· ─│─────────────╭(Rϕ(1.57))†──H†─│────────────╰(Rϕ(1.57))†─────┤
-    3: ··· ─╰SWAP†─────H†─╰(Rϕ(1.57))†─────╰(Rϕ(0.79))†──────────────────┤
+    M0 =
+    [[-0.41614684+0.j          0.        -0.90929743j]
+     [ 0.        -0.90929743j -0.41614684+0.j        ]]
+    M1 =
+    [[0.54030231+0.j         0.        -0.84147098j]
+     [0.        -0.84147098j 0.54030231+0.j        ]]
+    M2 =
+    [[0.87758256+0.j         0.        -0.47942554j]
+     [0.        -0.47942554j 0.87758256+0.j        ]]
 
     .. details::
         :title: Integration with the Graph-Based Decomposition System
 
         This transform takes advantage of the new graph-based decomposition algorithm when
         ``qp.decomposition.enable_graph()`` is present, which allows for more flexible
-        decompositions towards any target gate set. For example, the current system does not
-        guarantee a decomposition to the desired target gate set:
+        decompositions towards any target gate set.
 
         .. code-block:: python
 
@@ -559,22 +246,11 @@ def decompose(
             with qp.queuing.AnnotatedQueue() as q:
                 qp.CRX(0.5, wires=[0, 1])
 
+            qp.decomposition.enable_graph()
+
             tape = qp.tape.QuantumScript.from_queue(q)
             [new_tape], _ = qp.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ", "CNOT"})
 
-        >>> from pprint import pprint
-        >>> pprint(new_tape.operations)
-        [RZ(1.57079..., wires=[1]),
-         RY(0.25, wires=[1]),
-         CNOT(wires=[0, 1]),
-         RY(-0.25, wires=[1]),
-         CNOT(wires=[0, 1]),
-         RZ(-1.57079..., wires=[1])]
-
-        With the new system enabled, the transform produces the expected outcome.
-
-        >>> qp.decomposition.enable_graph()
-        >>> [new_tape], _ = qp.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ"})
         >>> new_tape.operations
         [RX(0.25, wires=[1]), CZ(wires=[0, 1]), RX(-0.25, wires=[1]), CZ(wires=[0, 1])]
 

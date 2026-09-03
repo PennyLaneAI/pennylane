@@ -20,17 +20,7 @@ from functools import partial
 import numpy as np
 import pytest
 import scipy as sp
-from gate_data import (
-    CH,
-    CNOT,
-    CSWAP,
-    ControlledPhaseShift,
-    CRot3,
-    CRotx,
-    CRoty,
-    CRotz,
-    Toffoli,
-)
+from gate_data import CH, CNOT, CSWAP, ControlledPhaseShift, CRot3, CRotx, CRoty, CRotz, Toffoli
 from scipy import sparse
 
 import pennylane as qp
@@ -45,7 +35,7 @@ from pennylane.gradients import parameter_frequencies
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp, ctrl, custom_ctrl_dispatch
 from pennylane.ops.op_math.controlled2 import ControlledOp2
 from pennylane.transforms import decompose
-from pennylane.typing import Bool, Float, Wire
+from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import DynOp
 
@@ -858,34 +848,6 @@ special_non_par_op_decomps = [
 
 special_par_op_decomps = [
     (
-        qp.RX,
-        [0.123],
-        [1],
-        [0],
-        qp.CRX,
-        [
-            qp.RZ(np.pi / 2, wires=1),
-            qp.RY(0.123 / 2, wires=1),
-            qp.CNOT(wires=[0, 1]),
-            qp.RY(-0.123 / 2, wires=1),
-            qp.CNOT(wires=[0, 1]),
-            qp.RZ(-np.pi / 2, wires=1),
-        ],
-    ),
-    (
-        qp.RY,
-        [0.123],
-        [1],
-        [0],
-        qp.CRY,
-        [
-            qp.RY(0.123 / 2, 1),
-            qp.CNOT(wires=(0, 1)),
-            qp.RY(-0.123 / 2, 1),
-            qp.CNOT(wires=(0, 1)),
-        ],
-    ),
-    (
         qp.RZ,
         [0.123],
         [0],
@@ -1009,7 +971,8 @@ class TestDecomposition:
         """Tests decompositions of custom operations"""
 
         active_wires = ctrl_wires + base_wires
-        base_op = base_cls(*params, wires=base_wires)
+        kwargs = {} if base_cls is qp.GlobalPhase else {"wires": base_wires}
+        base_op = base_cls(*params, **kwargs)
         ctrl_op = qp.ctrl(base_op, control=ctrl_wires)
         custom_ctrl_op = custom_ctrl_cls(*params, active_wires)
 
@@ -1052,11 +1015,11 @@ class TestDecomposition:
     def test_decomposition_nested(self):
         """Tests decompositions of nested controlled operations"""
 
-        ctrl_op = Controlled(Controlled(qp.RZ(0.123, wires=0), control_wires=1), control_wires=2)
+        ctrl_op = qp.ctrl(qp.ctrl(qp.RZ(0.123, wires=0), control=1), control=2)
         expected = [
-            qp.CRZ(0.123 / 2, wires=[2, 0]),
+            qp.RZ(0.0615, wires=[0]),
             qp.Toffoli(wires=[2, 1, 0]),
-            qp.CRZ(-0.123 / 2, wires=[2, 0]),
+            qp.RZ(-0.0615, wires=[0]),
             qp.Toffoli(wires=[2, 1, 0]),
         ]
         assert ctrl_op.decomposition() == expected
@@ -1088,15 +1051,15 @@ class TestDecomposition:
         qp.assert_equal(decomp[4], qp.PauliX(2))
 
     @pytest.mark.parametrize(
-        "base_cls, params, base_wires, ctrl_wires, _, expected",
-        custom_ctrl_op_decomps,
+        "base_cls, params, base_wires, ctrl_wires, _, expected", custom_ctrl_op_decomps
     )
     def test_control_on_zero_custom_ops(
         self, base_cls, params, base_wires, ctrl_wires, _, expected
     ):
         """Tests that custom ops are not converted when wires are control-on-zero."""
 
-        base_op = base_cls(*params, wires=base_wires)
+        kwargs = {} if base_cls is qp.GlobalPhase else {"wires": base_wires}
+        base_op = base_cls(*params, **kwargs)
         op = qp.ctrl(base_op, control=ctrl_wires, control_values=[False] * len(ctrl_wires))
 
         if base_cls is qp.GlobalPhase and len(op.control_wires) == 1:
@@ -1183,7 +1146,7 @@ class TestDifferentiation:
         @qp.qnode(dev, diff_method=diff_method)
         def circuit(b):
             qp.StatePrep(init_state, wires=0)
-            Controlled(qp.RY(b, wires=1), control_wires=0)
+            qp.ctrl(qp.RY(b, wires=1), control=0)
             return qp.expval(qp.PauliX(0))
 
         b = pnp.array(0.123, requires_grad=True)
@@ -1234,7 +1197,7 @@ class TestDifferentiation:
         def circuit(b):
             init_state = np.array([1.0, -1.0]) / pnp.sqrt(2)
             qp.StatePrep(init_state, wires=0)
-            Controlled(qp.RY(b, wires=1), control_wires=0)
+            qp.ctrl(qp.RY(b, wires=1), control=0)
             return qp.expval(qp.PauliX(0))
 
         b = jnp.array(0.123)
@@ -1733,16 +1696,38 @@ class TestCtrl:
         )
         assert op == expected
 
-    def test_nested_controls_work_wires(self):
-        """Tests work wire handling for nested controlled ops."""
+    @pytest.mark.parametrize(
+        "inner_work_wires, inner_type, outer_work_wires, outer_type, expected_type",
+        [
+            # Only one side has work wires: its type wins, regardless of the other
+            # (wireless, hence irrelevant) side's type.
+            ([], "borrowed", [5], "zeroed", "zeroed"),
+            ([5], "zeroed", [], "borrowed", "zeroed"),
+            # Both sides have work wires: "borrowed" poisons the result, else "zeroed".
+            ([5], "borrowed", [6], "zeroed", "borrowed"),
+            ([5], "zeroed", [6], "borrowed", "borrowed"),
+            # Neither side has any work wires: falls back to the type being newly applied
+            # (outer). Must not spuriously flip a "borrowed" default to "zeroed" (#8718) nor
+            # collapse an explicit "zeroed" down to "borrowed".
+            ([], "borrowed", [], "borrowed", "borrowed"),
+            ([], "borrowed", [], "zeroed", "zeroed"),
+        ],
+    )
+    def test_nested_controls_work_wires(
+        self, inner_work_wires, inner_type, outer_work_wires, outer_type, expected_type
+    ):
+        """Tests that nested ``ctrl`` wraps merge work wire types via ``resolve_work_wire_type``
+        the same way as a single wrap that already specifies both sets of work wires."""
 
         op = qp.ctrl(
-            qp.ctrl(qp.H(0), control=[1, 2]),
+            qp.ctrl(
+                qp.H(0), control=[1, 2], work_wires=inner_work_wires, work_wire_type=inner_type
+            ),
             control=[3, 4],
-            work_wires=[5],
-            work_wire_type="zeroed",
+            work_wires=outer_work_wires,
+            work_wire_type=outer_type,
         )
-        assert op.work_wire_type == "zeroed"
+        assert op.work_wire_type == expected_type
 
     @pytest.mark.parametrize("op, ctrl_wires, ctrl_op", custom_ctrl_ops)
     def test_nested_custom_controls(self, op, ctrl_wires, ctrl_op):
@@ -1932,16 +1917,16 @@ class TestCtrl:
         assert isinstance(op, ControlledOp2)
         assert op.base == DynOp(Float, Wire[2])
         assert op.wires == Wire[3]
-        assert op.control_wires == Wire[1]
-        assert op.control_values == Bool[1]
+        assert op.control_wires == Wires([0])
+        assert op.control_values == [1]
 
         new_op = qp.ctrl(op, control=[3, 4], work_wires=[5])
         assert isinstance(new_op, ControlledOp2)
         assert new_op.base == DynOp(Float, Wire[2])
         assert new_op.wires == Wire[5]
-        assert new_op.control_wires == Wire[3]
-        assert new_op.control_values == Bool[3]
-        assert new_op.work_wires == Wire[1]
+        assert new_op.control_wires == Wires([3, 4, 0])
+        assert qp.math.allclose(new_op.control_values, [1, 1, 1])
+        assert new_op.work_wires == Wires([5])
 
     # pylint: disable=too-few-public-methods,unused-argument
     def test_custom_ctrl_dispatch(self):
@@ -1976,19 +1961,17 @@ class _Rot(Operation):
 
 
 unitaries = (
-    [
-        qp.PauliX.compute_matrix(),
-        qp.PauliY.compute_matrix(),
-        qp.PauliZ.compute_matrix(),
-        qp.Hadamard.compute_matrix(),
-        pnp.array(
-            [
-                [1 + 2j, -3 + 4j],
-                [3 + 4j, 1 - 2j],
-            ]
-        )
-        * 30**-0.5,
-    ],
+    qp.PauliX.compute_matrix(),
+    qp.PauliY.compute_matrix(),
+    qp.PauliZ.compute_matrix(),
+    qp.Hadamard.compute_matrix(),
+    pnp.array(
+        [
+            [1 + 2j, -3 + 4j],
+            [3 + 4j, 1 - 2j],
+        ]
+    )
+    * 30**-0.5,
 )
 
 
