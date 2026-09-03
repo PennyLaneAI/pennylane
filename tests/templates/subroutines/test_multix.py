@@ -45,7 +45,7 @@ class TestInitialization:
 
         assert isinstance(op.bitstring, (np.ndarray, AbstractArray))
         assert isinstance(op.wires, (Wires, AbstractWires))
-        assert op.is_abstract == (
+        assert op.is_fully_abstract == (
             isinstance(bitstring_input, AbstractArray) or isinstance(wires_input, AbstractWires)
         )
         assert op.bitstring.dtype == bool
@@ -57,7 +57,7 @@ class TestInitialization:
         assert op.dynamic_args == {"bitstring": op.bitstring}
         assert op.wire_args == {"wires": op.wires}
         assert op.num_wires == len(wires_input)
-        assert op.num_params == 0
+        assert op.num_params == 1
         assert op.grad_method is None
 
     def test_canonicalize_inputs_does_not_validate_or_cast(self):
@@ -82,15 +82,9 @@ class TestInitialization:
 class TestValidation:
     """Tests for MultiX input and operator validation."""
 
-    @pytest.mark.jax
-    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.capture
     def test_standard_checks(self):
         """Runs the standard Operator2 validity checks for MultiX."""
-        if qp.capture.enabled():
-            pytest.xfail(
-                "assert_valid is not yet compatible with capture-enabled Operator2 instances."
-            )
-
         op = qp.MultiX([1, 0, 1], wires=[0, 1, 2])
         qp.ops.functions.assert_valid(op)
 

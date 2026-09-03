@@ -43,6 +43,7 @@ Symbolic Classes
     ~Adjoint
     ~ChangeOpBasis
     ~CompositeOp
+    ~CompositeOp2
     ~Conditional
     ~Controlled
     ~ControlledOp
@@ -51,6 +52,7 @@ Symbolic Classes
     ~LinearCombination
     ~Pow
     ~Prod
+    ~Prod2
     ~Sum
     ~SProd
     ~SymbolicOp
@@ -120,6 +122,7 @@ Other Functions
 from .adjoint import Adjoint, adjoint
 from .adjoint2 import Adjoint2
 from .composite import CompositeOp
+from .composite2 import CompositeOp2
 from .condition import Conditional, cond
 from .controlled import Controlled, ControlledOp, ctrl, custom_ctrl_dispatch
 from .controlled2 import Controlled2, ControlledOp2
@@ -154,6 +157,7 @@ from .exp import Exp, exp
 from .linear_combination import LinearCombination
 from .pow import Pow, pow
 from .prod import Prod, prod
+from .prod2 import Prod2
 from .change_op_basis import ChangeOpBasis, change_op_basis
 from .sprod import SProd, s_prod
 from .sum import Sum, sum
