@@ -23,17 +23,45 @@ import pytest
 
 import pennylane as qp
 from pennylane.core.operator import abstractify
+from pennylane.ops.op_math.prod2 import Prod2
 from pennylane.typing import Wire
+
+prod2_differentiability_pl2do = pytest.mark.pl2do(
+    reason=(
+        "[sc-129513] Differentiating PrepSelPrep needs bind_new_parameters "
+        "support for Prod2/CompositeOp2."
+    )
+)
 
 
 @pytest.mark.jax
 @pytest.mark.parametrize(
     ("lcu", "control", "skip_diff"),
     [
-        (qp.ops.LinearCombination([0.25, 0.75], [qp.Z(2), qp.X(1) @ qp.X(2)]), [0], False),
-        (qp.dot([0.25, 0.75], [qp.Z(2), qp.X(1) @ qp.X(2)]), [0], False),
-        (qp.Hamiltonian([0.25, 0.75], [qp.Z(2), qp.X(1) @ qp.X(2)]), [0], False),
-        (0.25 * qp.Z(2) - 0.75 * qp.X(1) @ qp.X(2), [0], False),
+        pytest.param(
+            qp.ops.LinearCombination([0.25, 0.75], [qp.Z(2), qp.X(1) @ qp.X(2)]),
+            [0],
+            False,
+            marks=prod2_differentiability_pl2do,
+        ),
+        pytest.param(
+            qp.dot([0.25, 0.75], [qp.Z(2), qp.X(1) @ qp.X(2)]),
+            [0],
+            False,
+            marks=prod2_differentiability_pl2do,
+        ),
+        pytest.param(
+            qp.Hamiltonian([0.25, 0.75], [qp.Z(2), qp.X(1) @ qp.X(2)]),
+            [0],
+            False,
+            marks=prod2_differentiability_pl2do,
+        ),
+        pytest.param(
+            0.25 * qp.Z(2) - 0.75 * qp.X(1) @ qp.X(2),
+            [0],
+            False,
+            marks=prod2_differentiability_pl2do,
+        ),
         (qp.Z(2) + qp.X(1) @ qp.X(2), [0], False),
         (qp.ops.LinearCombination([-0.25, 0.75j], [qp.Z(3), qp.X(2) @ qp.X(3)]), [0, 1], True),
         (
@@ -191,7 +219,7 @@ class TestPrepSelPrep:
 
     lcu1 = qp.ops.LinearCombination([0.25, 0.75], [qp.Z(2), qp.X(1) @ qp.X(2)])
     lcu_ops1 = [qp.Z(2), qp.X(1) @ qp.X(2)]
-    phase_ops1 = [qp.GlobalPhase(0, [2]), qp.GlobalPhase(0, [1, 2])]
+    phase_ops1 = [qp.GlobalPhase(0), qp.GlobalPhase(0)]
     coeffs1 = lcu1.terms()[0]
 
     @pytest.mark.parametrize(
@@ -205,9 +233,11 @@ class TestPrepSelPrep:
                         qp.AmplitudeEmbedding(
                             qp.math.sqrt(coeffs1), normalize=True, pad_with=0, wires=[0]
                         ),
-                        qp.prod(
-                            qp.Select(lcu_ops1, control=[0], partial=True),
-                            qp.Select(phase_ops1, control=[0], partial=True),
+                        Prod2(
+                            [
+                                qp.Select(lcu_ops1, control=[0], partial=True),
+                                qp.Select(phase_ops1, control=[0], partial=True),
+                            ]
                         ),
                     )
                 ],
@@ -341,7 +371,7 @@ class TestPrepSelPrep:
             qp.resource_rep(
                 qp.ops.ChangeOpBasis,
                 compute_op=qp.resource_rep(qp.StatePrep, num_wires=2),
-                target_op=qp.resource_rep(qp.ops.Prod, resources={select_lcu: 1, select_phases: 1}),
+                target_op=Prod2([select_lcu, select_phases]),
                 uncompute_op=qp.resource_rep(
                     qp.ops.Adjoint, base_class=qp.StatePrep, base_params={"num_wires": 2}
                 ),
@@ -357,15 +387,17 @@ class TestPrepSelPrep:
 
         q = q.queue[0].decomposition()
 
-        phase_ops = [qp.GlobalPhase(0, wires=o.wires) for o in ops]
+        phase_ops = [qp.GlobalPhase(0) for _ in ops]
 
         prep = qp.StatePrep(np.array([1, 2, 3]), normalize=True, pad_with=0, wires=(3, 4))
         qp.assert_equal(q[0], prep)
         qp.assert_equal(
             q[1],
-            qp.prod(
-                qp.Select(ops, (3, 4), partial=True),
-                qp.Select(phase_ops, (3, 4), partial=True),
+            Prod2(
+                [
+                    qp.Select(ops, (3, 4), partial=True),
+                    qp.Select(phase_ops, (3, 4), partial=True),
+                ]
             ),
         )
         qp.assert_equal(q[2], qp.adjoint(prep))
@@ -386,6 +418,7 @@ class TestInterfaces:
     # TODO: We really shouldn't be hardcoding the expected derivative here [sc-98529]
     exp_grad = [-0.57485039, 0.31253535, -0.717947, 0.48489061]
 
+    @prod2_differentiability_pl2do
     @pytest.mark.torch
     def test_torch(self):
         """Test the torch interface"""
@@ -406,6 +439,7 @@ class TestInterfaces:
         assert qp.math.shape(res) == (4,)
         assert np.allclose(res, self.exp_grad, atol=1e-5)
 
+    @prod2_differentiability_pl2do
     @pytest.mark.autograd
     def test_autograd(self):
         """Test the autograd interface"""
@@ -426,6 +460,7 @@ class TestInterfaces:
         assert qp.math.shape(res) == (4,)
         assert np.allclose(res, self.exp_grad, atol=1e-5)
 
+    @prod2_differentiability_pl2do
     @pytest.mark.jax
     def test_jax(self):
         """Test the jax interface"""
@@ -446,6 +481,7 @@ class TestInterfaces:
         assert qp.math.shape(res) == (4,)
         assert np.allclose(res, self.exp_grad, atol=1e-5)
 
+    @prod2_differentiability_pl2do
     @pytest.mark.jax
     def test_jit(self):
         """Test that jax jit works"""

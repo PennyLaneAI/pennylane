@@ -850,7 +850,7 @@
 
 * :class:`~.GlobalPhase` no longer accepts the `wires` argument in order to mirror its MLIR lowered operation.
   [(#9992)](https://github.com/PennyLaneAI/pennylane/pull/9992)
-  
+
 * :class:`~.BasisState` no longer allows integers as input. Instead, `~.math.int_to_binary` should be used to preprocess
   the input in order to convert it to a binary array.
   [(#9933)](https://github.com/PennyLaneAI/pennylane/pull/9933)
@@ -1039,13 +1039,13 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* The decomposition rule of :class:`~.PrepSelPrep` now applies the linear-combination unitaries and
-  their global phases as two separate :class:`~.Select` operators instead of a single ``Select`` of
-  products.
+* The `_prepselprep_decomp` decomposition rule of :class:`~.PrepSelPrep` now applies the linear-combination
+  unitaries and their global phases as two separate :class:`~.Select` operators instead of a single ``Select``
+  of products.
   [(#10020)](https://github.com/PennyLaneAI/pennylane/pull/10020)
 
-* The decomposition rule of :class:`~.QROM` now loads each column of bitstrings with a single
-  :class:`~.MultiX` instead of a product of smaller :class:`~.BasisState` and ``Identity`` operators.
+* The `_qrom_decomposition` decomposition rule of :class:`~.QROM` now loads each column of bitstrings with
+  a single :class:`~.MultiX` instead of a product of smaller :class:`~.BasisState` and ``Identity`` operators.
   [(#10020)](https://github.com/PennyLaneAI/pennylane/pull/10020)
 
 * The resource module JSON parser can now handle floating point values received from the Catalyst backend.

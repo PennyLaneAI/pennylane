@@ -26,8 +26,9 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.ops import GlobalPhase, Prod, StatePrep, change_op_basis, prod
+from pennylane.ops import GlobalPhase, StatePrep, change_op_basis
 from pennylane.ops.op_math.composite import CompositeOp
+from pennylane.ops.op_math.prod2 import Prod2
 from pennylane.ops.op_math.symbolicop import SymbolicOp
 from pennylane.templates.embeddings import AmplitudeEmbedding
 from pennylane.typing import Wire
@@ -41,7 +42,7 @@ def _get_new_terms(lcu):
     coeffs, ops = lcu.terms()
     coeffs = math.stack(coeffs)
     angles = math.angle(coeffs)
-    phases = [GlobalPhase(-angle, wires=op.wires) for angle, op in zip(angles, ops, strict=True)]
+    phases = [GlobalPhase(-angle) for angle in angles]
 
     return math.abs(coeffs), ops, phases
 
@@ -53,8 +54,8 @@ class PrepSelPrep(Operation):
         Derivatives of this operator are not always guaranteed to exist.
 
     Args:
-        lcu (Union[.Hamiltonian, .Sum, .Prod, .SProd, .LinearCombination]): The operator
-            written as a linear combination of unitaries.
+        lcu (Union[.Hamiltonian, .Sum, .Prod, .Prod2, .SProd, .LinearCombination]): The
+            operator written as a linear combination of unitaries.
         control (WiresLike): The control qubits for the PrepSelPrep operator.
 
     **Example**
@@ -152,10 +153,7 @@ class PrepSelPrep(Operation):
         return [
             change_op_basis(
                 AmplitudeEmbedding(math.sqrt(coeffs), normalize=True, pad_with=0, wires=control),
-                prod(
-                    Select(ops, control, partial=True),
-                    Select(phases, control, partial=True),
-                ),
+                Prod2([Select(ops, control, partial=True), Select(phases, control, partial=True)]),
             ),
         ]
 
@@ -216,8 +214,7 @@ def _prepselprep_resources(op_reps, num_control):
     )
     return {
         change_op_basis_resource_rep(
-            resource_rep(StatePrep, num_wires=num_control),
-            resource_rep(Prod, resources={select_lcu: 1, select_phases: 1}),
+            resource_rep(StatePrep, num_wires=num_control), Prod2([select_lcu, select_phases])
         ): 1,
     }
 
@@ -229,10 +226,7 @@ def _prepselprep_decomp(*_, wires, lcu, control, target_wires):
     sqrt_coeffs = math.sqrt(coeffs)
     change_op_basis(
         StatePrep(sqrt_coeffs, normalize=True, pad_with=0, wires=control),
-        prod(
-            Select(ops, control, partial=True),
-            Select(phases, control, partial=True),
-        ),
+        Prod2([Select(ops, control, partial=True), Select(phases, control, partial=True)]),
     )
 
 
