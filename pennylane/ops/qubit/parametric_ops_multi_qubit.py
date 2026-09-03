@@ -16,7 +16,6 @@
 This submodule contains the discrete-variable quantum operations that are the
 core parametrized gates.
 """
-from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 
 import functools
 from collections import Counter
@@ -37,6 +36,7 @@ from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.math.decomposition import decomp_int_to_powers_of_two
 from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
 from pennylane.typing import Float, TensorLike, Wire

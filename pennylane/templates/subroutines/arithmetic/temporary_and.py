@@ -27,6 +27,7 @@ from pennylane.decomposition import (
 )
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
+from pennylane.ops.op_math.prod2 import Prod2
 from pennylane.typing import AbstractArray, Bool, Wire
 from pennylane.wires import WiresLike
 
@@ -207,18 +208,26 @@ _number_xs = 2
 
 
 def _temporary_and_resources(*_, **__):
-    prod_rep = resource_rep(
-        ops.Prod,
-        resources={
-            abstractify(ops.Hadamard): 1,
-            abstractify(ops.T): 1,
-            abstractify(ops.CNOT): 1,
-            _adjoint_abstract(ops.T): 1,
-        },
+    compute_rep = Prod2(
+        (
+            ops.adjoint(ops.T(Wire[1])),
+            ops.CNOT(Wire[2]),
+            ops.T(Wire[1]),
+            ops.Hadamard(Wire[1]),
+        )
     )
+    uncompute_rep = Prod2(
+        (
+            ops.Hadamard(Wire[1]),
+            ops.adjoint(ops.T(Wire[1])),
+            ops.CNOT(Wire[2]),
+            ops.T(Wire[1]),
+        )
+    )
+
     resources = {
         ops.X: _number_xs,
-        _change_op_basis_abstract(prod_rep, ops.CNOT, prod_rep): 1,
+        _change_op_basis_abstract(compute_rep, ops.CNOT, uncompute_rep): 1,
         ops.adjoint(ops.S(Wire[1])): 1,
     }
     return resources
@@ -230,18 +239,22 @@ def _temporary_and(wires: WiresLike, control_values: Sequence[bool]):
     ops.cond(math.logical_not(control_values[1]), ops.X)(wires[1])
 
     ops.change_op_basis(
-        ops.prod(
-            ops.adjoint(ops.T(wires=wires[2])),
-            ops.CNOT(wires=[wires[1], wires[2]]),
-            ops.T(wires=wires[2]),
-            ops.H(wires[2]),
+        Prod2(
+            (
+                ops.adjoint(ops.T(wires=wires[2])),
+                ops.CNOT(wires=[wires[1], wires[2]]),
+                ops.T(wires=wires[2]),
+                ops.H(wires[2]),
+            )
         ),
         ops.CNOT(wires=[wires[0], wires[2]]),
-        ops.prod(
-            ops.H(wires[2]),
-            ops.adjoint(ops.T(wires=wires[2])),
-            ops.CNOT(wires=[wires[1], wires[2]]),
-            ops.T(wires=wires[2]),
+        Prod2(
+            (
+                ops.H(wires[2]),
+                ops.adjoint(ops.T(wires=wires[2])),
+                ops.CNOT(wires=[wires[1], wires[2]]),
+                ops.T(wires=wires[2]),
+            )
         ),
     )
     ops.adjoint(ops.S(wires=wires[2]))

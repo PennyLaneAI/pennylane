@@ -29,7 +29,7 @@ from pennylane.decomposition import (
 )
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.templates.subroutines.qft import QFT
-from pennylane.typing import Wire, Float
+from pennylane.typing import Float, Wire
 from pennylane.wires import Wires, WiresLike
 
 

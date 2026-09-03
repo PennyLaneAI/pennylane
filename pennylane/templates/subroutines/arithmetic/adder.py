@@ -14,7 +14,6 @@
 """
 Contains the Adder template.
 """
-from pennylane.ops.op_math.adjoint import adjoint
 
 from collections import defaultdict
 
@@ -26,6 +25,7 @@ from pennylane.decomposition import (
 from pennylane.decomposition.resources import resource_rep
 from pennylane.ops import CNOT, MultiControlledX, PauliX
 from pennylane.ops.op_math import change_op_basis
+from pennylane.ops.op_math.adjoint import adjoint
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.templates.subroutines.qft import QFT

@@ -25,7 +25,7 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.ops.op_math import Prod, Prod2
+from pennylane.ops.op_math import Prod
 from pennylane.typing import AbstractWires, Float
 
 
@@ -195,12 +195,8 @@ class TestSelectPauliRot:
             decomp_2 = decomposition_2[0].decomposition()
             decomposition, decomposition_2 = [], []
             for op1, op2 in zip(decomp_1, decomp_2):
-                decomposition.extend(
-                    op1.decomposition() if isinstance(op1, Prod) else [op1]
-                )
-                decomposition_2.extend(
-                    op2.decomposition() if isinstance(op2, Prod) else [op2]
-                )
+                decomposition.extend(op1.decomposition() if isinstance(op1, Prod) else [op1])
+                decomposition_2.extend(op2.decomposition() if isinstance(op2, Prod) else [op2])
 
         for dec in [decomposition, decomposition_2]:
             if axis == "Y":
