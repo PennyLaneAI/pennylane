@@ -62,10 +62,10 @@ def test_units_select_pauli_rot_phase_gradient(p):
         work_wires=work_wires,
     )
 
-    assert op.name == "ChangeOpBasis"
+    assert op.name == "ChangeOpBasis2"
 
     # It iterates the ops in reverse order
-    for g, exp_name in zip(op, ["Prod", "SemiAdder", "Prod"], strict=True):
+    for g, exp_name in zip(op, ["Prod2", "SemiAdder", "Prod2"], strict=True):
         assert g.name == exp_name
 
     for g, exp_name in zip(op.operands[-1], ["MultiControlledX"] * p + ["QROM"], strict=True):
