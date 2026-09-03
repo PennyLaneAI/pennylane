@@ -351,13 +351,11 @@ class TestDecomposition:
         ``AbstractQubit`` handles from ``qp.allocate`` cannot be stacked for ``for_loop``-based
         dynamic indexing, so the decomposition unrolls into plain ``cond`` gates instead.
         """
-        import jax  # pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel
+        import jax
 
-        from pennylane.allocation import allocate  # pylint: disable=import-outside-toplevel
-        from pennylane.capture.primitives import (  # pylint: disable=import-outside-toplevel
-            cond_prim,
-            for_loop_prim,
-        )
+        from pennylane.allocation import allocate
+        from pennylane.capture.primitives import cond_prim, for_loop_prim
 
         bitstring = jax.numpy.array([1, 0, 1])
         decomposition = qp.list_decomps(qp.MultiX)[0]
