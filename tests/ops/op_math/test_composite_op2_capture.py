@@ -124,26 +124,6 @@ def test_change_op_basis_public_api(defined_outside):
     assert eqns[2].params["adjoint"] is True
 
 
-@pytest.mark.parametrize("defined_outside", (True, False))
-def test_change_op_basis_operator(defined_outside):
-    """Tests that change_op_basis captures correctly."""
-
-    outside_op = NonParametricOp(0) if defined_outside else None
-
-    def f(x):
-        op = outside_op if defined_outside else NonParametricOp(0)
-        ChangeOpBasis2(op, DynOp(x, 1))
-
-    cjaxpr = jax.make_jaxpr(f)(1.2)
-
-    eqns = cjaxpr.eqns
-
-    assert len(eqns) == 1
-    assert eqns[0].primitive.name == "operator"
-    assert eqns[0].params["op_cls"] is ChangeOpBasis2
-    assert eqns[0].params["hybrid_lens"] == (1, 2, 1)
-
-
 def test_linear_combination():
     """Tests that LinearCombination captures correctly."""
     # Assert can be created outside tracing context

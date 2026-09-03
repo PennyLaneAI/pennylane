@@ -121,7 +121,11 @@ class ChangeOpBasis2(CompositeOp2):
         return self.target_op.is_verified_hermitian
 
     def adjoint(self):
-        return ChangeOpBasis2(*(adjoint(factor, lazy=False) for factor in self))
+        return ChangeOpBasis2(
+            self.compute_op,
+            adjoint(self.target_op, lazy=False),
+            self.uncompute_op,
+        )
 
     @handle_recursion_error
     def map_wires(self, wire_map: dict):
