@@ -196,7 +196,7 @@ def _controlled_change_op_basis_decomposition(
 ):
     queuing.apply(base.compute_op)
     ctrl(
-        queuing.apply(base.target_op),
+        base.target_op,
         control=control_wires,
         control_values=control_values,
         work_wires=work_wires,
