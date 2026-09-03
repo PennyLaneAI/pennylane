@@ -174,12 +174,10 @@ def count_allocations(op):
     jaxpr's top-level equations instead of in the (executed) queue.
     """
     if qp.capture.enabled():
-        import jax  # pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel
+        import jax
 
-        from pennylane.allocation import (  # pylint: disable=import-outside-toplevel
-            allocate_prim,
-            deallocate_prim,
-        )
+        from pennylane.allocation import allocate_prim, deallocate_prim
 
         decomposition = qp.list_decomps(qp.TrotterVibronic)[0]
         jaxpr = jax.make_jaxpr(lambda: decomposition(**op.arguments))().jaxpr
