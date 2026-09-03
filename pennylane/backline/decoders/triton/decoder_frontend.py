@@ -117,6 +117,7 @@ def _build_triton_decoder(  # pylint: disable=too-many-arguments
         num_stages=num_stages,
         platform=platform,
     )
+    backend, _, _ = _validate_platform(platform.strip())
     decoder_fns = _triton_jit_with_unique_names(decoder_fns)
     tmpdir = Path(tempfile.mkdtemp(prefix="pl_triton_decoder_"))
     out = tmpdir / "librdma_triton_decoder.so"
@@ -141,7 +142,7 @@ def _build_triton_decoder(  # pylint: disable=too-many-arguments
                 #          ISA already performs with the .cv cache operator. Triton
                 #          <=3.7 silently dropped a redundant ".cv" here; >=3.8 emits
                 #          both and ptxas rejects the combination.
-                "cache_mod": ".cv" if platform.strip().split(":", 1)[0] == "hip" else "",
+                "cache_mod": ".cv" if backend == "hip" else "",
             },
             grid=grid,
             platform=platform.strip(),
