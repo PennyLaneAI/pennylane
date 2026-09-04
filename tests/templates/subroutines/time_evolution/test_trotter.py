@@ -363,18 +363,11 @@ class TestInitialization:
         assert op.hyperparameters == new_op.hyperparameters
         assert op is not new_op
 
-    @pytest.mark.usefixtures("disable_capture")
+    @pytest.mark.xfail_with_capture(
+        reason="come back to this after we migrate TrotterProduct [sc-128369]"
+    )
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_standard_validity(self, hamiltonian):
-        """Test standard validity criteria using assert_valid."""
-        time, n, order = (4.2, 10, 4)
-        op = qp.TrotterProduct(hamiltonian, time, n=n, order=order)
-        qp.ops.functions.assert_valid(op, skip_differentiation=True)
-
-    @pytest.mark.xfail(reason="come back to this after we migrate TrotterProduct [sc-128369]")
-    @pytest.mark.usefixtures("enable_capture")
-    @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
-    def test_standard_validity_capture(self, hamiltonian):
         """Test standard validity criteria using assert_valid."""
         time, n, order = (4.2, 10, 4)
         op = qp.TrotterProduct(hamiltonian, time, n=n, order=order)

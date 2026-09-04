@@ -25,16 +25,8 @@ from pennylane.wires import Wires
 # pylint: disable=unidiomatic-typecheck, cell-var-from-loop
 
 
-@pytest.mark.usefixtures("disable_capture")
+@pytest.mark.xfail_with_capture(reason="come back to this when it's ported to Op2 [sc-128372]")
 def test_standard_validity():
-    """Check the operation using the assert_valid function."""
-    op = qp.ControlledSequence(qp.RX(0.25, wires=3), control=[0, 1, 2])
-    qp.ops.functions.assert_valid(op)
-
-
-@pytest.mark.xfail(reason="come back to this when it's ported to Op2 [sc-128372]")
-@pytest.mark.usefixtures("enable_capture")
-def test_standard_validity_capture():
     """Check the operation using the assert_valid function."""
     op = qp.ControlledSequence(qp.RX(0.25, wires=3), control=[0, 1, 2])
     qp.ops.functions.assert_valid(op)
