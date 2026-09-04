@@ -354,3 +354,17 @@ class TestCapture:
         assert len(jaxpr.eqns) == 1
         eqn = jaxpr.eqns[0]
         assert_eqn_matches_op(eqn, Prod2)
+
+    def test_decomposition_does_not_leak_tracers(self):
+        """Regression test for tracer leak in #10086"""
+
+        import jax
+
+        op1, op2 = qp.RX(0.3, 1), qp.RZ(0.6, 1)
+        prod = Prod2([op1, op2])
+
+        jaxpr = jax.make_jaxpr(prod.decomposition)()
+
+        assert len(jaxpr.eqns) == 2
+        assert op1.tracer is None
+        assert op2.tracer is None
