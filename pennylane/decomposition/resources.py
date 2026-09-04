@@ -77,8 +77,6 @@ class CompressedResourceOp:
         if self.op_type in (qp.ops.Controlled, qp.ops.ControlledOp):
             base_rep = resource_rep(self.params["base_class"], **self.params["base_params"])
             return f"C({base_rep.name})"
-        if self.op_type is qp.ops.MidMeasure:
-            return "MidMeasureMP"
         return self.op_type.__name__
 
     def __hash__(self) -> int:

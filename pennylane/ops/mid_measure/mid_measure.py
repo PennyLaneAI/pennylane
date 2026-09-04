@@ -136,9 +136,9 @@ class MidMeasure(Operator2):
 
     @property
     def name(self) -> str:
-        # Kept as ``"MidMeasureMP"`` for backwards compatibility (gate sets, resource-rep aliases,
-        # device capabilities, etc. all key on this name).
-        return "MidMeasureMP"
+        # Hardcoded rather than inherited so the whole MidMeasure hierarchy (including the
+        # ftqc parametric subclasses) shares a single gate-set identity.
+        return "MidMeasure"
 
     @staticmethod
     def compute_diagonalizing_gates(*args, **kwargs) -> list:  # pylint: disable=unused-argument
