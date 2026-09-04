@@ -35,8 +35,8 @@ from pennylane.decomposition import (
     register_resources,
 )
 from pennylane.exceptions import PennyLaneDeprecationWarning
+from pennylane.ops import prod
 from pennylane.ops.identity import I
-from pennylane.ops.op_math import prod
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
