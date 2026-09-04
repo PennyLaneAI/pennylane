@@ -22,7 +22,7 @@ from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops.op_math import Evolution, Exp
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_basic_validity():
     """Assert the basic validity of an evolution op."""
     base = qp.prod(qp.PauliX(0), qp.PauliY(1))

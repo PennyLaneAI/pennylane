@@ -57,7 +57,7 @@ def test_abstract_data():
     assert op.arguments["bitstrings"] == data
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_assert_valid_qrom():
     """Run standard validity tests."""
     bitstrings = (
@@ -75,7 +75,7 @@ def test_assert_valid_qrom():
     qp.ops.functions.assert_valid(op, skip_differentiation=True)
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_falsy_zero_as_work_wire():
     """Test that work wire is not treated as a falsy zero."""
     op = qp.QROM(
@@ -344,6 +344,7 @@ class TestQROM:
             ([[1], [0], [0], [1]], [0, 1], [2], [3, 4], False),
         ],  # pylint: disable=too-many-arguments
     )
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_new(
         self, bitstrings, control_wires, target_wires, work_wires, clean
     ):  # pylint: disable=too-many-arguments

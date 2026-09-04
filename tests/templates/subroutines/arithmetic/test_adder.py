@@ -23,7 +23,7 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arithmetic.adder import _adder_arithmetic_decomposition
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity_Adder():
     """Check the operation using the assert_valid function."""
     k = 6
@@ -242,6 +242,7 @@ class TestAdder:
         mat1, mat2 = qp.matrix(ctrl_op1, wire_order), qp.matrix(ctrl_op2, wire_order)
         assert qp.math.allclose(mat1, mat2)
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("mod", [7, 8])
     def test_decomposition_new(self, mod):
         """Tests the decomposition rules implemented with the new system."""

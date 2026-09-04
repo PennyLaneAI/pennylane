@@ -136,6 +136,13 @@ def enable_capture():
         yield
 
 
+@pytest.fixture(scope="function")
+def disable_capture():
+    """make sure capture is disabled around each test."""
+    with qp.capture.toggle_ctx(False):
+        yield
+
+
 @pytest.fixture(
     params=[False, pytest.param(True, marks=(pytest.mark.capture, pytest.mark.jax))],
     ids=["capture_disabled", "capture_enabled"],
@@ -149,6 +156,31 @@ def enable_and_disable_capture(request):
     afterwards.
 
     """
+    with qp.capture.toggle_ctx(request.param):
+        yield
+
+
+@pytest.fixture(
+    params=[False, pytest.param(True, marks=(pytest.mark.capture, pytest.mark.jax))],
+    ids=["capture_disabled", "capture_enabled"],
+)
+def toggle_disable_and_xfail_enable_capture(request):
+    """Run a test twice: once with capture disabled and once with capture enabled.
+
+    The capture-enabled run is marked as ``xfail`` using the reason and ``strict`` flag
+    from the closest ``@pytest.mark.disable_and_xfail_enable_capture`` marker on the test.
+
+    Applied automatically to tests decorated with ``@pytest.mark.disable_and_xfail_enable_capture``.
+
+    Authored By: Cursor
+
+    """
+    marker = request.node.get_closest_marker("disable_and_xfail_enable_capture")
+    if request.param and marker is not None:
+        reason = marker.kwargs.get("reason", "")
+        strict = marker.kwargs.get("strict", True)
+        request.applymarker(pytest.mark.xfail(reason=reason, strict=strict))
+
     with qp.capture.toggle_ctx(request.param):
         yield
 
@@ -228,6 +260,19 @@ def pytest_generate_tests(metafunc):
         jax.config.update("jax_enable_x64", True)
 
 
+@pytest.hookimpl(hookwrapper=True)
+def pytest_pycollect_makeitem(collector, name, obj):
+    """Attach the toggle fixture to tests marked with disable_and_xfail_enable_capture."""
+    if callable(obj) and hasattr(obj, "pytestmark"):
+        marks = obj.pytestmark if isinstance(obj.pytestmark, list) else [obj.pytestmark]
+        if any(getattr(mark, "name", None) == "disable_and_xfail_enable_capture" for mark in marks):
+            obj.pytestmark = [
+                *marks,
+                pytest.mark.usefixtures("toggle_disable_and_xfail_enable_capture"),
+            ]
+    yield
+
+
 @pytest.fixture
 def preserve_jax_x64():
     """Save and restore jax_enable_x64 around a test.
@@ -273,6 +318,7 @@ CUSTOM_MARKERS = {
 }
 
 
+# pylint: disable=unused-argument
 def pytest_collection_modifyitems(items, config):
     """Handles markers for tests automatically."""
 

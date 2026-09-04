@@ -47,7 +47,7 @@ def get_tape(angles, wires):
 
 class TestSelectPauliRot:
 
-    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_standard_validity(self):
         """Check the operation using the assert_valid function."""
 
@@ -215,7 +215,7 @@ class TestSelectPauliRot:
             for gate in dec[1::2]:
                 assert gate.name == "CNOT"
 
-    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("n", [1, 2, 3, 4])
     @pytest.mark.parametrize("axis", "XYZ")
     def test_decomposition_new(self, n, axis):

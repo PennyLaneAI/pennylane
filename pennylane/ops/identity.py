@@ -458,6 +458,11 @@ def _controlled_g_phase_decomp(
     work_wire_type,  # pylint: disable=unused-argument
 ):
     """The decomposition rule for a controlled global phase."""
+
+    if qp.compiler.active() or qp.capture.enabled():
+        control_wires = qp.math.array(control_wires, like="jax")
+        control_values = qp.math.array(control_values, like="jax")
+
     if len(control_wires) == 1:
 
         def _true():

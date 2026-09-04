@@ -26,7 +26,7 @@ from pennylane import ops as qp_ops
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.external
 def test_standard_validity():
     """Check the operation using the assert_valid function."""

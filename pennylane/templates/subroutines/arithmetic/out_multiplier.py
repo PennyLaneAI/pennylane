@@ -25,7 +25,7 @@ from pennylane.decomposition import (
     register_resources,
 )
 from pennylane.decomposition.resources import resource_rep
-from pennylane.ops import BasisState, H, Prod, X, adjoint, change_op_basis, ctrl, prod
+from pennylane.ops import BasisState, H, Prod, X, adjoint, change_op_basis, ctrl
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.templates.subroutines.qft import QFT
@@ -336,9 +336,14 @@ def _out_multiplier_with_qft(
         work_wire = output_wires[:0]
 
     if output_wires_zeroed:
-        compute_op = prod(*(H(w) for w in qft_output_wires))
+
+        def compute_op():
+            for w in qft_output_wires:
+                H(w)
+
     else:
         compute_op = QFT(qft_output_wires)
+
     uncompute_op = adjoint(QFT(qft_output_wires))
 
     target_op = ControlledSequence(

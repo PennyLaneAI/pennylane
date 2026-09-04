@@ -25,15 +25,22 @@ from pennylane import numpy as pnp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
-@pytest.mark.jax
-def test_standard_validity():
+@pytest.mark.disable_and_xfail_enable_capture(
+    reason="come back to this as we port it to Op2 [sc-128406]"
+)
+@pytest.mark.parametrize("singles", [None, np.array([[0, 1]])])
+@pytest.mark.parametrize("doubles", [None, np.array([[0, 1, 2, 3]])])
+def test_standard_validity(singles, doubles):
     """Run standard tests of operation validity."""
+    if singles is None and doubles is None:
+        pytest.skip(reason="Not a valid configuration - both cannot be empty.")
+    weights = np.array([1.0]) if singles is None or doubles is None else np.array([1.0, 2.0])
     op = qp.AllSinglesDoubles(
-        np.array([1.0, 2.0]),
+        weights,
         np.array(list(range(4))),
         np.array([1, 1, 0, 0]),
-        singles=np.array([[0, 1]]),
-        doubles=np.array([[0, 1, 2, 3]]),
+        singles=singles,
+        doubles=doubles,
     )
     qp.ops.functions.assert_valid(op)
 
@@ -65,7 +72,7 @@ class TestDecomposition:
         ),
     ]
 
-    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(("weights", "wires", "hf_state", "singles", "doubles"), DECOMP_PARAMS)
     def test_decomposition_new(self, weights, wires, hf_state, singles, doubles):
         """Test the decomposition of the AllSinglesDoubles template."""
@@ -191,24 +198,6 @@ class TestDecomposition:
 
 class TestInputs:
     """Test inputs and pre-processing."""
-
-    @pytest.mark.jax
-    @pytest.mark.parametrize("singles", [None, np.array([[0, 1]])])
-    @pytest.mark.parametrize("doubles", [None, np.array([[0, 1, 2, 3]])])
-    def test_optional_arguments(self, singles, doubles):
-        """Tests that optional arguments are truly optional."""
-        if singles is None and doubles is None:
-            pytest.skip(reason="Not a valid configuration - both cannot be empty.")
-
-        weights = np.array([1.0]) if singles is None or doubles is None else np.array([1.0, 2.0])
-        op = qp.AllSinglesDoubles(
-            weights,
-            np.array(list(range(4))),
-            np.array([1, 1, 0, 0]),
-            singles=singles,
-            doubles=doubles,
-        )
-        qp.ops.functions.assert_valid(op)
 
     @pytest.mark.parametrize(
         ("weights", "wires", "singles", "doubles", "hf_state", "msg_match"),

@@ -49,7 +49,7 @@ def _pair_double_terms_wires(wires):
     ]
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize("k, delta_sz, init_state, wires", k_delta_sz_init_state_wires)
 def test_standard_validity(k, delta_sz, init_state, wires):
     """Test standard validity criteria for kUpCCGSD."""

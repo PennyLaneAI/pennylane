@@ -66,7 +66,9 @@ class TestInitialization:
         with pytest.raises(ValueError, match="work_wire must be different from the wires of O."):
             qp.AmplitudeAmplification(U, O, iters=3, fixed_point=fixed_point, work_wire=work_wire)
 
-    @pytest.mark.jax
+    @pytest.mark.disable_and_xfail_enable_capture(
+        reason="come back to this as we migrate AmplitudeAmplification [sc-128366]"
+    )
     def test_standard_validity(self):
         """Test standard validity using assert_valid."""
         U = generator(wires=range(3))
@@ -349,6 +351,9 @@ def test_fixed_point_angles_function(iters, p_min):
     assert all(isinstance(x, float) for x in betas)
 
 
+@pytest.mark.disable_and_xfail_enable_capture(
+    reason="come back to this as we migrate AmplitudeAmplification [sc-128366]"
+)
 @pytest.mark.parametrize(
     "n_wires, items, iters, fixed",
     (
@@ -362,8 +367,6 @@ def test_decomposition_new(n_wires, items, iters, fixed):
     """Tests the decomposition rule implemented with the new system."""
     U = generator(wires=range(n_wires))
     O = oracle(items, wires=range(n_wires))
-
     op = qp.AmplitudeAmplification(U, O, iters, work_wire=n_wires, fixed_point=fixed)
-
     for rule in qp.list_decomps(qp.AmplitudeAmplification):
         _test_decomposition_rule(op, rule)

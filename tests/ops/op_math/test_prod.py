@@ -92,7 +92,7 @@ ops_hermitian_status = (  # computed manually
 )
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_basic_validity():
     """Run basic validity checks on a prod operator."""
     op1 = qp.PauliZ(0)
@@ -1689,7 +1689,7 @@ class TestDecomposition:
 
         assert q.queue == list(op[::-1])
 
-    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_controlled_prod_basic_validity(self):
         """Check that Controlled(Prod) is valid, in particular its custom decomp rule"""
         op = qp.ctrl(
@@ -1708,6 +1708,7 @@ class TestDecomposition:
         "work_wires",
         [[7, 8, 9], [7]],
     )
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_controlled_prod_decomposition_new(self, control_values, work_wires):
         """The registered ``C(Prod)`` rule decomposes controlled products.
 

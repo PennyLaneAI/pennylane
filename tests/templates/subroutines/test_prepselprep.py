@@ -28,7 +28,6 @@ from pennylane.ops.op_math.prod2 import Prod2
 from pennylane.typing import Wire
 
 
-@pytest.mark.jax
 @pytest.mark.parametrize(
     ("lcu", "control", "skip_diff"),
     [
@@ -45,6 +44,7 @@ from pennylane.typing import Wire
         ),
     ],
 )
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_checks(lcu, control, skip_diff):
     """Run standard validity tests."""
 

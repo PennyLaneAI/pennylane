@@ -35,7 +35,8 @@ from pennylane.typing import AbstractWires, Bool, Wire
 from tests.decomposition.conftest import to_resources
 
 
-@pytest.mark.jax
+# address capture compatibility of select as we migrate it [sc-127463]
+@pytest.mark.usefixtures("disable_capture")
 @pytest.mark.parametrize(
     "num_ops, num_controls",
     [(0, 1), (1, 1), (2, 1), (1, 2), (4, 2), (3, 4), (10, 4), (15, 4), (16, 4)],
@@ -51,7 +52,7 @@ def test_standard_checks(num_ops, num_controls, partial, work_wires, parametrize
         ops = [qp.MultiControlledX([0, 10, 11, 12]) for _ in range(num_ops)]
     control = list(range(1, num_controls + 1))
 
-    op = qp.Select(ops, control, work_wires, partial=partial)
+    op = qp.Select(ops, control, work_wires=work_wires, partial=partial)
     if num_ops > 0:
         if parametrized:
             assert op.target_wires == qp.wires.Wires(0)

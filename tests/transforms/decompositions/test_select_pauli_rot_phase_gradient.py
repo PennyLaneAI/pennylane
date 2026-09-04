@@ -48,6 +48,7 @@ def test_wires_error_decomp_fun():
         rule(angles, control_wires, target_wire, "X")
 
 
+@pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize("prec", [2, 3, 5])
 @pytest.mark.parametrize("num_controls", [1, 2])
 def test_valid_decomp(prec, num_controls):
@@ -65,15 +66,21 @@ def test_valid_decomp(prec, num_controls):
     # required number of work wires.
     num_work_wires = max(prec, num_controls + 1) - 1
 
-    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(prec)])
-    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(prec)])
-    work_wires = qp.wires.Wires([f"work_{i}" for i in range(num_work_wires)])
+    wire_idx = 0
+    angle_wires = qp.wires.Wires([wire_idx + i for i in range(prec)])
+    wire_idx += len(angle_wires)
+    phase_grad_wires = qp.wires.Wires([wire_idx + i for i in range(prec)])
+    wire_idx += len(phase_grad_wires)
+    work_wires = qp.wires.Wires([wire_idx + i for i in range(num_work_wires)])
+    wire_idx += len(work_wires)
 
     custom_decomp = make_selectpaulirot_to_phase_gradient_decomp(
         angle_wires, phase_grad_wires, work_wires
     )
 
-    op = qp.SelectPauliRot(angles, control_wires=range(num_controls), target_wire=num_controls)
+    control_wires = qp.wires.Wires([wire_idx + i for i in range(num_controls)])
+    wire_idx += len(control_wires)
+    op = qp.SelectPauliRot(angles, control_wires=control_wires, target_wire=wire_idx)
     _test_decomposition_rule(op, custom_decomp)
 
 
@@ -224,7 +231,7 @@ def test_integration_multi_wire(rot_axis, seed):
     assert np.allclose(out_state, expected), f"decomposition wrong for rot_axis={rot_axis}"
 
 
-@pytest.mark.capture
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_capture_compatibility():
     """Ensures capture compatibility."""
 
@@ -264,6 +271,7 @@ def test_capture_compatibility():
         ("Z", qp.RZ),
     ],
 )
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_rot_axis_zero_controls(rot_axis, expected_op):
     """Test the 0-control-wire edge case for all rotation axes."""
     angle_wires = qp.wires.Wires(["aux_0"])

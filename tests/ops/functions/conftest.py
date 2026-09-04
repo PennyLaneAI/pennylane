@@ -23,13 +23,24 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.core.operator import Channel, Operation, Operator, StatePrepBase
+from pennylane.core.operator import (
+    Channel,
+    Operation,
+    Operator,
+    Operator2,
+    StatePrepBase,
+    StatePrepBase2,
+)
 from pennylane.drawer.label import LabelledOp
 from pennylane.exceptions import DeviceError
 from pennylane.fourier.mark import MarkedOp
 from pennylane.ops.op_math import ChangeOpBasis
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
+from pennylane.ops.op_math.adjoint2 import Adjoint2
+from pennylane.ops.op_math.controlled2 import Controlled2, ControlledOp2
 from pennylane.ops.op_math.pow import PowOperation
+from pennylane.ops.op_math.pow2 import Pow2
+from pennylane.ops.op_math.symbolicop2 import SymbolicOp2
 from pennylane.templates.subroutines.time_evolution.trotter import TrotterizedQfunc
 
 
@@ -99,11 +110,13 @@ _INSTANCES_TO_TEST = [
     ),
     (qp.pow(qp.IsingXX(1.1, [0, 1]), 2.5), {}),
     (qp.ops.Evolution(qp.PauliX(0), 5.2), {}),
-    (qp.estimator.FirstQuantization(1, 2, 1), {}),
+    (qp.estimator.FirstQuantization(1, 2, 1), {"skip_capture": True}),
     (qp.prod(qp.RX(1.1, 0), qp.RY(2.2, 0), qp.RZ(3.3, 1)), {}),
     (qp.Snapshot(measurement=qp.expval(qp.Z(0)), tag="hi"), {}),
     (qp.Snapshot(tag="tag"), {}),
     (qp.Identity(0), {}),
+    (qp.MultiRZ(0.123, wires=[0, 1, 2]), {}),
+    (qp.MultiRZ(0.123, wires=[0]), {}),
     (qp.Hermitian(np.eye(2), wires=[0]), {"skip_differentiation": True}),
     (
         TrotterizedQfunc(
@@ -180,21 +193,35 @@ _ABSTRACT_OR_META_TYPES = {
     LabelledOp,
     MarkedOp,
     Adjoint,
+    Adjoint2,
     AdjointOperation,
     Operator,
+    Operator2,
     Operation,
     Channel,
     qp.ops.Projector,
     qp.ops.SymbolicOp,
+    SymbolicOp2,
     qp.ops.ScalarSymbolicOp,
     qp.ops.Pow,
+    Pow2,
     qp.ops.CompositeOp,
+    qp.ops.CompositeOp2,
     qp.ops.Controlled,
     qp.ops.ControlledOp,
+    qp.ops.ChangeOpBasis,
+    qp.ops.ChangeOpBasis2,
+    qp.ops.Prod,
+    qp.ops.Prod2,
+    Controlled2,
+    ControlledOp2,
     qp.ops.qubit.BasisStateProjector,
     qp.ops.qubit.StateVectorProjector,
     qp.templates.core.CollectedSubroutine,
+    # pylint: disable-next=protected-access
+    qp.templates.subroutines.arithmetic.out_square._SquareArithmeticOp,
     StatePrepBase,
+    StatePrepBase2,
     PowOperation,
     qp.StatePrep,
     qp.FromBloq,
@@ -217,7 +244,7 @@ def get_all_classes(c):
 
 
 _CLASSES_TO_TEST = (
-    set(get_all_classes(Operator))
+    (set(get_all_classes(Operator)) | set(get_all_classes(Operator2)))
     - {i[1] for i in getmembers(qp.templates) if isclass(i[1]) and issubclass(i[1], Operator)}
     # `pytest.param` returns a `ParameterSet` (a namedtuple)
     - {type(v.values[0][0] if hasattr(v, "values") else v[0]) for v in _INSTANCES_TO_TEST}
