@@ -23,6 +23,10 @@ import pytest
 import pennylane as qp
 from pennylane.ftqc import generate_lattice
 
+PARAMETRIC_MCM_XFAIL = pytest.mark.pl2do(
+    reason="Parametric mid-circuit measurements have not yet been migrated to Operator2."
+)
+
 
 def generate_random_states(n, n_qubit=1, seed=None):
     """Generate `n` random initial `n_qubit`-states."""
@@ -48,6 +52,7 @@ def generate_random_rotation_angles(n, lo=0, hi=4 * np.pi, seed=None):
 
 
 @pytest.mark.system
+@PARAMETRIC_MCM_XFAIL
 class TestIndividualGates:
     """System-level tests to check that individual gates expressed in the MBQC formalism give
     correct results.

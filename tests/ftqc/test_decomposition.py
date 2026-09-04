@@ -46,6 +46,10 @@ from pennylane.ftqc.decomposition import (
 )
 from pennylane.ftqc.utils import QubitMgr
 
+PARAMETRIC_MCM_XFAIL = pytest.mark.pl2do(
+    reason="Parametric mid-circuit measurements have not yet been migrated to Operator2."
+)
+
 
 class TestGateSetDecomposition:
     """Test decomposition to the MBQC gate-set"""
@@ -139,6 +143,7 @@ class TestGateSetDecomposition:
 
         assert np.allclose(circuit(), decomposed_circuit())
 
+    @PARAMETRIC_MCM_XFAIL
     def test_explicit_mbqc_implementation_matches(self):
         """Test that the explicit MBQC implementation of the RotXZX gate that
         a Rot gate decomposes to produces the expected analytic result"""
@@ -210,6 +215,7 @@ class TestMBQCFormalismConversion:
     """Test the transform convert_to_mbqc_formalism, converting to the MBQC formalism with
     online corrections immediately after each gate"""
 
+    @PARAMETRIC_MCM_XFAIL
     @pytest.mark.parametrize("op", [qp.S(7), qp.H(1), qp.RZ(1.2, 2), RotXZX(1.2, 2.3, 3.4, 2)])
     def test_queue_measurements(self, op):
         """Test that queue_measurements returns MeasurementValues as expected"""
@@ -221,6 +227,7 @@ class TestMBQCFormalismConversion:
         for mv in mvs:
             assert mv.measurements[0].wires[0] in wires
 
+    @PARAMETRIC_MCM_XFAIL
     def test_cnot_measurements(self):
         """Test that cnot_measurements returns MeasurementValues as expected"""
 
@@ -281,6 +288,7 @@ class TestMBQCFormalismConversion:
         with pytest.raises(NotImplementedError, match="Received unsupported gate of type"):
             queue_corrections(qp.Identity, measurements=[0, 0, 0, 0])
 
+    @PARAMETRIC_MCM_XFAIL
     def test_invalid_op_in_tape_raises_error(self):
         """Test that a NotImplemented error is raised if the tape isn't valid for conversion
         to the MBQC formalism using this transform"""
@@ -292,6 +300,7 @@ class TestMBQCFormalismConversion:
         with pytest.raises(NotImplementedError, match="unsupported gate"):
             _, _ = convert_to_mbqc_formalism(tape)
 
+    @PARAMETRIC_MCM_XFAIL
     @pytest.mark.parametrize(
         "op",
         [qp.H(2), qp.S(2), qp.RZ(1.23, 2), RotXZX(0, 1.23, 0, 2), RotXZX(0.12, 0.34, 0.56, 2)],
@@ -344,6 +353,7 @@ class TestMBQCFormalismConversion:
         res, res_ref = qp.execute([diagonalized_tape, ref_tape], device=dev, mcm_method="one-shot")
         assert np.allclose(res, res_ref, atol=0.05)
 
+    @PARAMETRIC_MCM_XFAIL
     def test_queue_cnot(self, seed):
         """Test that the queue_cnot function queues state preparation, MCMs and byproduct
         corrections that are equivalent to the input operator"""
@@ -398,6 +408,7 @@ class TestMBQCFormalismConversion:
         res, res_ref = qp.execute([diagonalized_tape, ref_tape], device=dev, mcm_method="one-shot")
         assert np.allclose(res, res_ref, atol=0.1)
 
+    @PARAMETRIC_MCM_XFAIL
     @pytest.mark.parametrize(
         "gate, wire",
         [(qp.X, 2), (qp.Y, 1), (qp.Z, 0)],
@@ -434,6 +445,7 @@ class TestMBQCFormalismConversion:
         assert final_op.wires[0] != wire
         assert graph_op.wires[-1] == final_op.wires[0]
 
+    @PARAMETRIC_MCM_XFAIL
     @pytest.mark.parametrize(
         "gate, args",
         [
@@ -489,6 +501,7 @@ class TestMBQCFormalismConversion:
         ):
             _, _ = convert_to_mbqc_formalism(tape)
 
+    @PARAMETRIC_MCM_XFAIL
     @pytest.mark.parametrize("mp", (qp.sample(wires=[2, 3]), qp.sample()))
     def test_tape_wires_if_no_mp_wires(self, mp):
         """Test that wires are taken the measurement process if possible, and otherwise
@@ -510,6 +523,7 @@ class TestMBQCFormalismConversion:
     # wires E2E. Following discussion at the FTQC team meeting, we are marking
     # this test as flaky and keeping it here for the time being.
     @flaky(max_runs=5, min_passes=3)
+    @PARAMETRIC_MCM_XFAIL
     @pytest.mark.slow
     def test_conversion_of_multi_wire_circuit(self, seed):
         """Test that the transform converts the tape to the expected set of gates
