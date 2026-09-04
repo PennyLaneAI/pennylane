@@ -408,7 +408,7 @@ class TestSemiAdderPPM:
         [(4, 0, 5), (4, 3, 2), (4, 5, 0), (4, 7, 0), (1, 0, 2)],
     )
     def test_work_wires(self, num_y_wires, num_provided, expected):
-        """The ladder needs the carries, the shared ancilla and one wire held at |0>."""
+        """The ladder needs the carries, the shared auxiliary qubit and one wire held at |0>."""
         spec = _semi_adder_ppm_work_wires(y_wires=Wire[num_y_wires], work_wires=Wire[num_provided])
         assert spec == {"zeroed": expected}
 
@@ -466,4 +466,3 @@ class TestSemiAdderPPM:
         y_probs, work_probs = circuit()
         assert np.isclose(y_probs[(x + y) % 4], 1.0)
         assert np.isclose(work_probs[0], 1.0)
-

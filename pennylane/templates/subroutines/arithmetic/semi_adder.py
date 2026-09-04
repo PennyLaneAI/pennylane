@@ -339,16 +339,6 @@ def _semi_adder(x_wires, y_wires, work_wires=None, carry_flip=None):
 #######################################################################################
 # Measurement-based (Pauli-product) decomposition
 #######################################################################################
-#
-# The same ladder written with Pauli product rotations and Pauli product measurements.
-# Only the four pi/8 rotations of each temporary AND stay unitary; every CNOT becomes a
-# Pauli-controlled-Pauli
-#
-#     Lambda(Pc | Pt) = Proj(+Pc) (x) I  +  Proj(-Pc) (x) Pt ,
-#
-# which takes three PPMs, an ancilla and a few classically conditioned Pauli corrections.
-# The gadget flips the ancilla between |0> and |+>, so each block spends two of them and
-# hands the ancilla back in |0>.
 
 
 def _minus():
@@ -356,7 +346,7 @@ def _minus():
 
 
 def _ppm_left_block(wires):
-    """Wires are input carry, input bit, target bit, output carry, shared ancilla."""
+    """Wires are input carry, input bit, target bit, output carry, shared auxiliary qubit."""
     ck, ik, tk, out, aux = wires
 
     PauliRot(+np.pi / 4, "Y", wires=[out])
@@ -364,50 +354,55 @@ def _ppm_left_block(wires):
     PauliRot(-np.pi / 4, "ZZY", wires=[ck, ik, out])
     PauliRot(+np.pi / 4, "ZZY", wires=[ik, tk, out])
 
-    def flip_tk_out():
-        X(tk)
-        X(out)
-
-    # Lambda(Z_ck | X_tk X_out), ancilla |0> -> |+>
+    # Lambda(Z_ck | X_tk X_out), auxiliary qubit |0> -> |+>
     m1 = pauli_measure("ZX", wires=[ck, aux])
     m2 = pauli_measure("ZXX", wires=[aux, tk, out])
     m3 = pauli_measure("X", wires=[aux])
     cond(m3 == 1, Z)(aux)
     cond(m2 == 1, Z)(ck)
-    cond((m1 ^ m3) == 1, flip_tk_out)()
+    cond((m1 ^ m3) == 1, X)(out)
     cond((m2 & (m1 ^ m3)) == 1, _minus)()
 
-    # Lambda(Z_ik | X_tk), ancilla |+> -> |0>
+    # Lambda(Z_ik | X_tk), auxiliary qubit |+> -> |0>
     m4 = pauli_measure("ZZ", wires=[ik, aux])
     m5 = pauli_measure("XX", wires=[aux, tk])
     m6 = pauli_measure("Z", wires=[aux])
     cond(m6 == 1, X)(aux)
     cond(m5 == 1, Z)(ik)
-    cond((m4 ^ m6) == 1, X)(tk)
+    # X_tk of the first gadget commutes with all three measurements of the second one, so
+    # it is deferred and grouped with the X_tk correction of the second gadget.
+    cond((m1 ^ m3 ^ m4 ^ m6) == 1, X)(tk)
     cond((m5 & (m4 ^ m6)) == 1, _minus)()
 
 
 def _ppm_last_block(wires):
-    """Wires are input carry, input bit, target bit, shared ancilla. No output carry."""
+    """Wires are input carry, input bit, target bit, shared auxiliary qubit. No output carry.
+
+    Both CNOTs of the last block share the same target, and
+
+    .. math:: \\Lambda(Z_{c_k}, X_{t_k}) \\Lambda(Z_{i_k}, X_{t_k})
+        = \\Lambda(Z_{i_k} Z_{c_k}, X_{t_k}),
+
+    so a single gadget is enough here.
+    """
     ck, ik, tk, aux = wires
 
-    # Lambda(Z_ck | X_tk), ancilla |0> -> |+>
-    m1 = pauli_measure("ZX", wires=[ck, aux])
+    def flip_ctrl():
+        Z(ck)
+        Z(ik)
+
+    # Lambda(Z_ck Z_ik | X_tk), auxiliary qubit |0> -> |+>
+    m1 = pauli_measure("ZZX", wires=[ck, ik, aux])
     m2 = pauli_measure("ZX", wires=[aux, tk])
     m3 = pauli_measure("X", wires=[aux])
     cond(m3 == 1, Z)(aux)
-    cond(m2 == 1, Z)(ck)
+    cond(m2 == 1, flip_ctrl)()
     cond((m1 ^ m3) == 1, X)(tk)
     cond((m2 & (m1 ^ m3)) == 1, _minus)()
 
-    # Lambda(Z_ik | X_tk), ancilla |+> -> |0>
-    m4 = pauli_measure("ZZ", wires=[ik, aux])
-    m5 = pauli_measure("XX", wires=[aux, tk])
-    m6 = pauli_measure("Z", wires=[aux])
-    cond(m6 == 1, X)(aux)
-    cond(m5 == 1, Z)(ik)
-    cond((m4 ^ m6) == 1, X)(tk)
-    cond((m5 & (m4 ^ m6)) == 1, _minus)()
+    # Only one gadget ran, so the auxiliary qubit is left in |+>: reset it to |0>.
+    m4 = pauli_measure("Z", wires=[aux])
+    cond(m4 == 1, X)(aux)
 
 
 def _ppm_right_block(wires):
@@ -426,7 +421,7 @@ def _ppm_right_block(wires):
             Z(ik)
             Z(tk)
 
-        # Lambda(Z_ck Z_ik | Z_ik Z_tk), with the freed carry as the |+> ancilla
+        # Lambda(Z_ck Z_ik | Z_ik Z_tk), with the freed carry as the |+> auxiliary qubit
         m1 = pauli_measure("ZZZ", wires=[ck, ik, out])
         m2 = pauli_measure("XZZ", wires=[out, ik, tk])
         m3 = pauli_measure("Z", wires=[out])
@@ -444,7 +439,7 @@ def _ppm_right_block(wires):
 
 
 def _semi_adder_ppm_work_wires(y_wires=None, work_wires=(), **_):
-    """The carries, the shared ancilla and one wire held at |0>."""
+    """The carries, the shared auxiliary qubit and one wire held at |0>."""
     return {"zeroed": max(len(y_wires) + 1 - len(work_wires), 0)}
 
 
@@ -456,17 +451,31 @@ def _semi_adder_ppm_condition(x_wires=None, y_wires=None, **_):
 
 
 def _semi_adder_ppm_resources(y_wires=None, **_):
-    """Counts on the branch where every right block needs its correction."""
+    """Counts on the branch where every right block needs its correction.
+
+    Each of the ``num_blocks`` left blocks contributes one ``Y`` and three ``ZZY``
+    rotations and the six measurements of its two gadgets; the single last block
+    contributes one gadget plus the reset of the auxiliary qubit; each right block
+    contributes its ``X`` readout and the three measurements of its correction.
+    """
     num_blocks = len(y_wires) - 1
     return {
         PauliRot(Float, "Y", Wire[1]): num_blocks,
         PauliRot(Float, "ZZY", Wire[3]): 3 * num_blocks,
-        PauliMeasure("Z", wires=Wire[1]): 4 * num_blocks + 2,
-        PauliMeasure("ZZ", wires=Wire[2]): 3 * num_blocks + 4,
-        PauliMeasure("ZZZ", wires=Wire[3]): 3 * num_blocks,
-        X: 5 * num_blocks + 3,
+        # left blocks + last block + right block readouts
+        PauliMeasure("X", wires=Wire[1]): 2 * num_blocks + 1,
+        # left blocks + auxiliary reset of the last block + right block corrections
+        PauliMeasure("Z", wires=Wire[1]): 2 * num_blocks + 1,
+        PauliMeasure("ZX", wires=Wire[2]): num_blocks + 1,
+        PauliMeasure("ZZ", wires=Wire[2]): num_blocks,
+        PauliMeasure("XX", wires=Wire[2]): num_blocks,
+        PauliMeasure("ZXX", wires=Wire[3]): num_blocks,
+        PauliMeasure("ZZX", wires=Wire[3]): 1,
+        PauliMeasure("ZZZ", wires=Wire[3]): num_blocks,
+        PauliMeasure("XZZ", wires=Wire[3]): num_blocks,
+        X: 4 * num_blocks + 2,
         Z: 9 * num_blocks + 3,
-        GlobalPhase(Float): 3 * num_blocks + 2,
+        GlobalPhase(Float): 3 * num_blocks + 1,
     }
 
 
@@ -476,17 +485,35 @@ def _semi_adder_ppm(x_wires, y_wires, work_wires=None):
     """The ladder of `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_ written with
     Pauli product rotations and Pauli product measurements.
 
-    Requires ``len(y_wires) + 1`` work wires, all of them returned to ``|0>``: the
-    ``len(y_wires) - 1`` carries, the shared gadget ancilla and one wire held at ``|0>``.
-    That last wire stands in for the missing input carry of the first block and for the
-    missing bits of ``x``, so that every block is the same circuit.
-    """
-    num_y_wires = len(y_wires)
+    Only the four pi/8 rotations of each temporary AND stay unitary; every CNOT becomes a
+    Pauli-controlled-Pauli
 
+    .. math:: \\Lambda(P_c | P_t) = \\Pi_{+P_c} \\otimes I + \\Pi_{-P_c} \\otimes P_t,
+
+    which takes three Pauli product measurements, an auxiliary qubit and a few classically
+    conditioned Pauli corrections. The gadget flips the auxiliary qubit between ``|0>`` and
+    ``|+>``, so each left block spends two of them and hands the auxiliary qubit back in
+    ``|0>``, while the last block runs a single gadget and resets the auxiliary qubit.
+
+    Requires ``len(y_wires) + 1`` work wires, all of them returned to ``|0>``: the
+    ``len(y_wires) - 1`` carries, the shared gadget auxiliary qubit and one wire held at
+    ``|0>``. That last wire stands in for the missing input carry of the first block and for
+    the missing bits of ``x``, so that every block is the same circuit.
+    """
+    num_missing = len(y_wires) + 1 - (0 if work_wires is None else len(work_wires))
     work_wires = [] if work_wires is None else list(work_wires)
-    if len(work_wires) < num_y_wires + 1:
-        # The right ladder restores the work wires to zero, so they can be borrowed.
-        work_wires += list(allocate(num_y_wires + 1 - len(work_wires), restored=True))
+    if num_missing > 0:
+        # The right ladder restores the work wires to zero, so they can be borrowed and
+        # returned; the context manager deallocates them once the ladder is done with them.
+        with allocate(num_missing, restored=True) as new_wires:
+            _ppm_ladder(x_wires, y_wires, work_wires + list(new_wires))
+        return
+    _ppm_ladder(x_wires, y_wires, work_wires)
+
+
+def _ppm_ladder(x_wires, y_wires, work_wires):
+    """The left/last/right block sequence of the PPM decomposition of ``SemiAdder``."""
+    num_y_wires = len(y_wires)
 
     aux = work_wires[num_y_wires - 1]
     zero = work_wires[num_y_wires]
