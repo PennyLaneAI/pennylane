@@ -117,6 +117,7 @@ def _build_triton_decoder(  # pylint: disable=too-many-arguments
         num_stages=num_stages,
         platform=platform,
     )
+    backend, _, _ = _validate_platform(platform.strip())
     decoder_fns = _triton_jit_with_unique_names(decoder_fns)
     tmpdir = Path(tempfile.mkdtemp(prefix="pl_triton_decoder_"))
     out = tmpdir / "librdma_triton_decoder.so"
@@ -130,7 +131,19 @@ def _build_triton_decoder(  # pylint: disable=too-many-arguments
                 "ring_slots": "u32",
                 "total": "u64",
             },
-            constexpr={"decoder_fns": tuple(decoder_fns)},
+            constexpr={
+                "decoder_fns": tuple(decoder_fns),
+                # The polling loads need both a compiler barrier and a cache bypass,
+                # and the two backends injects that differently:
+                #   HIP  - ".cv" lowers to an LLVM volatile load (glc / sc0 sc1);
+                #          volatile=True alone is dropped and the load
+                #          gains !amdgpu.noclobber, so the poll never sees host writes.
+                #   CUDA - volatile=True alone gives ld.volatile.global, which the PTX
+                #          ISA already performs with the .cv cache operator. Triton
+                #          <=3.7 silently dropped a redundant ".cv" here; >=3.8 emits
+                #          both and ptxas rejects the combination.
+                "cache_mod": ".cv" if backend == "hip" else "",
+            },
             grid=grid,
             platform=platform.strip(),
             out=str(out.resolve()),
