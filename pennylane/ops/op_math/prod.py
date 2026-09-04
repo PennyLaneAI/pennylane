@@ -138,7 +138,7 @@ def prod(*ops, lazy=True):
 
         return wrapper
 
-    if all(isinstance(op, Operator2) for op in ops):
+    if ops and all(isinstance(op, Operator2) for op in ops):
         if lazy:
             return Prod2(ops)
 

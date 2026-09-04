@@ -22,7 +22,10 @@ import pytest
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix
 
 import pennylane as qp
+from pennylane.core.operator import Operator2
 from pennylane.exceptions import SparseMatrixUndefinedError
+from pennylane.ops.op_math import prod
+from pennylane.ops.op_math.prod import Prod
 from pennylane.ops.op_math.prod2 import Prod2
 from pennylane.typing import Float, Wire
 from tests.core.operator.operator2_utils import NonParametricOp
@@ -34,12 +37,36 @@ def _product_matrix(factors, wire_order):
     return reduce(np.matmul, mats)
 
 
-def test_prod_api_dispatch():
-    """Ensures that 'prod' dispatches to 'Prod2' when appropriate."""
+class TestProdDispatch:
+    """qp.prod must return Prod2 iff every operator is an Operator2."""
 
-    prod_op = qp.prod(NonParametricOp(0), NonParametricOp(1))
+    def test_all_operator2_dispatches_to_prod2(self):
+        assert isinstance(prod(NonParametricOp(0), NonParametricOp(1)), Prod2)
 
-    assert isinstance(prod_op, Prod2)
+    def test_single_operand_returns_unchanged(self):
+        op = NonParametricOp(0)
+        assert prod(op) is op
+
+    def test_empty_operands_returns_legacy_prod(self):
+        assert isinstance(prod(), Prod)
+
+    def test_mixed_operators_stays_legacy(self):
+        class LegacyOp(qp.core.operator.Operator):
+            pass
+
+        assert not isinstance(LegacyOp(0), Operator2)
+        assert isinstance(prod(LegacyOp(0), NonParametricOp(0)), Prod)
+        assert isinstance(prod(LegacyOp(0), LegacyOp(1)), Prod)
+
+    def test_matmul_dunder_dispatches(self):
+        assert isinstance(NonParametricOp(0) @ NonParametricOp(1), Prod2)
+
+    def test_qfunc_dispatches(self):
+        def f():
+            NonParametricOp(0)
+            NonParametricOp(1)
+
+        assert isinstance(prod(f)(), Prod2)
 
 
 class TestInitialization:
