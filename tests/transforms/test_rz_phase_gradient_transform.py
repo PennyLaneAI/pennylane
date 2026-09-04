@@ -48,7 +48,7 @@ def test_units_rz_phase_gradient(p):
         work_wires=work_wires,
     )
 
-    assert isinstance(op, qp.ops.op_math.ChangeOpBasis)
+    assert isinstance(op, qp.ops.op_math.ChangeOpBasis2)
 
     operands = op.operands
 

@@ -21,11 +21,12 @@ from pennylane.core.operator import Operation, abstractify
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
-    change_op_basis_resource_rep,
     register_resources,
     resource_rep,
 )
 from pennylane.ops import SWAP, Prod, adjoint, change_op_basis, prod
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.typing import Wire
@@ -270,17 +271,21 @@ def _multiplier_decomposition_resources(
         target_op_rep = resource_rep(Prod, resources={abstractify(SWAP): num_x_wires})
     else:
         target_op_rep = SWAP
-    return {
-        change_op_basis_resource_rep(
-            QFT(Wire[num_wires_aux]),
+    _compute_op = QFT(Wire[num_wires_aux])
+    resources = {
+        _change_op_basis_abstract(
+            _compute_op,
             resource_rep(ControlledSequence, **cs_base_params),
+            adjoint(_compute_op),
         ): 1,
         target_op_rep: 1,
-        change_op_basis_resource_rep(
-            QFT(Wire[num_wires_aux]),
+        _change_op_basis_abstract(
+            _compute_op,
             adjoint_resource_rep(ControlledSequence, cs_base_params),
+            _adjoint_abstract(_compute_op),
         ): 1,
     }
+    return resources
 
 
 @register_resources(_multiplier_decomposition_resources)

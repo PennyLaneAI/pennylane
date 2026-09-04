@@ -23,6 +23,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.core.operator import abstractify
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 
 
 @pytest.mark.jax
@@ -345,13 +346,16 @@ class TestPrepSelPrep:
             ): 1,
         }
         expected_counts = {
-            qp.resource_rep(
-                qp.ops.ChangeOpBasis,
-                compute_op=qp.resource_rep(qp.StatePrep, num_wires=2),
-                target_op=qp.resource_rep(
-                    qp.Select, op_reps=op_reps, num_control_wires=2, partial=True, num_work_wires=0
+            _change_op_basis_abstract(
+                qp.resource_rep(qp.StatePrep, num_wires=2),
+                qp.resource_rep(
+                    qp.Select,
+                    op_reps=op_reps,
+                    num_control_wires=2,
+                    partial=True,
+                    num_work_wires=0,
                 ),
-                uncompute_op=qp.resource_rep(
+                qp.resource_rep(
                     qp.ops.Adjoint, base_class=qp.StatePrep, base_params={"num_wires": 2}
                 ),
             ): 1,

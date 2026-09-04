@@ -32,9 +32,11 @@ from pennylane.exceptions import (
     MatrixUndefinedError,
     SparseMatrixUndefinedError,
 )
-from pennylane.ops.op_math import adjoint, ctrl, prod
+from pennylane.ops.op_math import Prod, adjoint, ctrl, prod
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.change_op_basis2 import ChangeOpBasis2
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.ops.op_math.prod2 import Prod2
 from pennylane.pytrees import flatten, unflatten
 from pennylane.typing import Wire
 
@@ -90,7 +92,12 @@ def _apply_op_or_func(op_or_func):
 def _convert_to_prod(op_or_func):
     if callable(op_or_func):
         _validate_callable(op_or_func)
-        return prod(op_or_func)()
+        op = prod(op_or_func)()
+        # TODO: remove this branch once qp.prod dispatches properly to Prod2
+        if isinstance(op, Prod) and all(isinstance(operand, Operator2) for operand in op.operands):
+            queuing.remove_from_program(op)
+            return Prod2(op.operands)
+        return op
     if isinstance(op_or_func, Operator):
         return op_or_func
     raise TypeError(
@@ -223,11 +230,20 @@ def change_op_basis(
         else:
             _apply_op_or_func(adjoint(compute_op))
     else:
-        return ChangeOpBasis(
-            _convert_to_prod(compute_op),
-            _convert_to_prod(target_op),
-            _convert_to_prod(uncompute_op) if uncompute_op is not None else None,
-        )
+        compute = _convert_to_prod(compute_op)
+        target = _convert_to_prod(target_op)
+        uncompute = _convert_to_prod(uncompute_op) if uncompute_op is not None else None
+        if (
+            isinstance(compute, Operator2)
+            and isinstance(target, Operator2)
+            and (isinstance(uncompute, Operator2) or uncompute is None)
+        ):
+            return ChangeOpBasis2(
+                compute,
+                target,
+                uncompute,
+            )
+        return ChangeOpBasis(compute, target, uncompute)
 
 
 class ChangeOpBasis(CompositeOp):

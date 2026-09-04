@@ -25,6 +25,7 @@ from .time_evolution import (
     TrotterCGF,
     TrotterizedQfunc,
     TrotterProduct,
+    TrotterVibronic,
     trotterize,
 )
 from .permute import Permute
@@ -86,6 +87,7 @@ __all__ = [
     "TrotterCGF",
     "TrotterizedQfunc",
     "TrotterProduct",
+    "TrotterVibronic",
     "trotterize",
     "Incrementer",
     "IQP",
