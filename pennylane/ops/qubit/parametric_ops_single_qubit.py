@@ -35,7 +35,6 @@ from pennylane.decomposition import (
     register_resources,
 )
 from pennylane.exceptions import PennyLaneDeprecationWarning
-from pennylane.ops import prod
 from pennylane.ops.identity import I
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
@@ -43,6 +42,7 @@ from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
+from pennylane.ops.op_math.prod import prod
 from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import WiresLike
 

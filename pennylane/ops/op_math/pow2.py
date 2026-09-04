@@ -39,6 +39,7 @@ from pennylane.decomposition.resources import (
     pow_resource_rep,
 )
 from pennylane.decomposition.symbolic_decomposition import is_integer
+from pennylane.decomposition.utils import to_name
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -428,3 +429,8 @@ def _list_pow_decomps(op: Pow2) -> DecompCollection:
     custom_rules = list_decomps.dispatch(object)(abs_op)
 
     return custom_rules + [repeat_pow_base] if is_integer(op.z) else custom_rules
+
+
+@to_name.register
+def _pow2_to_name(op: Pow2):
+    return f"Pow({to_name(op.base)})"
