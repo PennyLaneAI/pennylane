@@ -139,7 +139,17 @@ def prod(*ops, lazy=True):
         return wrapper
 
     if all(isinstance(op, Operator2) for op in ops):
-        return Prod2(ops)
+        if lazy:
+            return Prod2(ops)
+
+        operands = tuple(
+            itertools.chain.from_iterable(
+                op.operands if isinstance(op, Prod2) else (op,) for op in ops
+            )
+        )
+        for op in ops:
+            QueuingManager.remove(op)
+        return Prod2(operands)
 
     if lazy:
         return Prod(*ops)
