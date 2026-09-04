@@ -16,6 +16,7 @@ Tests for the QROM template.
 """
 
 import math
+from functools import partial
 
 import numpy
 import pytest
@@ -58,6 +59,7 @@ def test_abstract_data():
 
 
 @pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_assert_valid_qrom():
     """Run standard validity tests."""
     bitstrings = (
@@ -344,6 +346,7 @@ class TestQROM:
             ([[1], [0], [0], [1]], [0, 1], [2], [3, 4], False),
         ],  # pylint: disable=too-many-arguments
     )
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_new(
         self, bitstrings, control_wires, target_wires, work_wires, clean
     ):  # pylint: disable=too-many-arguments
@@ -429,6 +432,33 @@ class TestQROM:
         work_wires = jnp.arange(n + m, n + m + w)
 
         jax.make_jaxpr(build_and_decompose)(bitstrings, control_wires, target_wires, work_wires)
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize(
+        ("wire_lens", "clean"),
+        [
+            ({"control_wires": 1, "target_wires": 1, "work_wires": 0}, False),
+            ({"control_wires": 2, "target_wires": 1, "work_wires": 1}, True),
+        ],
+    )
+    def test_decomposition_rule_capture_dynamic_wires(self, wire_lens, clean):
+        """Test that the QROM decomposition rule can be captured with dynamic wires."""
+        import jax
+
+        registers = qp.registers(wire_lens)
+        kwargs = {
+            "bitstrings": qp.math.zeros(
+                (2 ** wire_lens["control_wires"], wire_lens["target_wires"]),
+                like="jax",
+                dtype=int,
+            ),
+            **{name: qp.math.array(wires, like="jax") for name, wires in registers.items()},
+        }
+
+        # ``clean`` is compilable and is therefore static when Catalyst captures this rule.
+        # pylint: disable-next=protected-access
+        rule = qp.capture.subroutine(partial(_qrom_decomposition._impl, clean=clean))
+        jax.make_jaxpr(rule)(**kwargs)
 
 
 @pytest.mark.parametrize(
