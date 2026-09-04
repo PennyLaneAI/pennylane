@@ -115,13 +115,23 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "core"
 
 [[interfaces]]
-expose = ["QueuingManager", "AnnotatedQueue", "apply", "remove_from_program"]
+expose = ["QueuingManager", "AnnotatedQueue", "remove_from_program"]
 from = ["pennylane.core.queuing"]
+
+[[modules]]
+path = "pennylane.core.apply"
+depends_on = ["pennylane.core.queuing", "pennylane.pytrees"]
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
+layer = "core"
+
+[[interfaces]]
+expose = ["apply"]
+from = ["pennylane.core.apply"]
 
 [[modules]]
 path = "pennylane.core.transforms"
 layer = "core"
-depends_on = ["pennylane.capture", "pennylane.math", "pennylane.core.measurements", "pennylane.core.operator", "pennylane.core.qscript", "pennylane.core.queuing", "pennylane.exceptions", "pennylane.pytrees", "pennylane.typing", "pennylane._grad"]
+depends_on = ["pennylane.capture", "pennylane.math", "pennylane.core.apply", "pennylane.core.measurements", "pennylane.core.operator", "pennylane.core.qscript", "pennylane.core.queuing", "pennylane.exceptions", "pennylane.pytrees", "pennylane.typing", "pennylane._grad"]
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[interfaces]]

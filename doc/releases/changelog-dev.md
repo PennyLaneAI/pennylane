@@ -632,7 +632,7 @@
   (:func:`~pennylane.decomposition.enable_graph`) automatically selects the cheaper rule.
   [(#9698)](https://github.com/PennyLaneAI/pennylane/pull/9698)
 
-* :func:`~core.queuing.apply` is now compatible with program capture.
+* :func:`~pennylane.apply` is now compatible with program capture.
   [(#9831)](https://github.com/PennyLaneAI/pennylane/pull/9831)
 
 * Implemented the `__str__` of `Wires` to display the wire labels as a list.
@@ -1043,6 +1043,10 @@
   [(#9925)](https://github.com/PennyLaneAI/pennylane/pull/9925)
 
 <h3>Internal changes ⚙️</h3>
+
+* :func:`~pennylane.apply` is now defined in the standalone :mod:`pennylane.core.apply`
+  module instead of :mod:`pennylane.core.queuing`.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
 
 * The resource module JSON parser can now handle floating point values received from the Catalyst backend.
   [(#10044)](https://github.com/PennyLaneAI/pennylane/pull/10044)
