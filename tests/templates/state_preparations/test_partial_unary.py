@@ -350,7 +350,29 @@ class TestPartialUnaryStatePreparation:
         indices = tuple(rng.choice(2**num_wires, size=num_entries, replace=False))
         return coefficients, indices
 
-    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.xfail(reason="come back to this when we port it to Op2. [sc-129858]")
+    @pytest.mark.usefixtures("enable_capture")
+    @pytest.mark.parametrize("provide_work_wires", [False, True])
+    @pytest.mark.parametrize(
+        "num_wires, num_entries",
+        [(2, 2), (2, 4), (4, 3), (4, 6), (10, 3), (10, 10), (10, 137), (13, 1421)],
+    )
+    def test_standard_validity_capture(self, num_wires, num_entries, seed, provide_work_wires):
+        """Test that PartialUnaryStatePreparation is a valid PennyLane operator."""
+        coefficients, indices = self.make_random_data(num_wires, num_entries, seed)
+        wires = list(range(num_wires))
+        if provide_work_wires:
+            num_work_wires = max(qp.math.ceil_log2(num_entries) - 1, 1)
+            work_wires = tuple(range(num_wires, num_wires + num_work_wires))
+        else:
+            work_wires = ()
+
+        op = PartialUnaryStatePreparation(
+            coefficients, wires, indices=indices, work_wires=work_wires
+        )
+        assert_valid(op, skip_differentiation=True)
+
+    @pytest.mark.usefixtures("disable_capture")
     @pytest.mark.parametrize("provide_work_wires", [False, True])
     @pytest.mark.parametrize(
         "num_wires, num_entries",

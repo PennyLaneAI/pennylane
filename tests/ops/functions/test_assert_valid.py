@@ -930,7 +930,8 @@ def test_explicit_list_of_ops(valid_instance_and_kwargs):
     assert_valid(op, **kwargs)
 
 
-@pytest.mark.usefixtures("enable_and_disable_capture")
+# these tests are explicitly for things expected to fail when capture is disabled
+@pytest.mark.usefixtures("disable_capture")
 def test_explicit_list_of_failing_ops(invalid_instance_and_error):
     """Test instances of ops that fail validation."""
     op, exc_type = invalid_instance_and_error
