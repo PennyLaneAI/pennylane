@@ -27,42 +27,15 @@ from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.op_math.prod2 import Prod2
 from pennylane.typing import Wire
 
-prod2_differentiability_pl2do = pytest.mark.pl2do(
-    reason=(
-        "[sc-129513] Differentiating PrepSelPrep needs bind_new_parameters "
-        "support for Prod2/CompositeOp2."
-    )
-)
-
 
 @pytest.mark.jax
 @pytest.mark.parametrize(
     ("lcu", "control", "skip_diff"),
     [
-        pytest.param(
-            qp.ops.LinearCombination([0.25, 0.75], [qp.Z(2), qp.X(1) @ qp.X(2)]),
-            [0],
-            False,
-            marks=prod2_differentiability_pl2do,
-        ),
-        pytest.param(
-            qp.dot([0.25, 0.75], [qp.Z(2), qp.X(1) @ qp.X(2)]),
-            [0],
-            False,
-            marks=prod2_differentiability_pl2do,
-        ),
-        pytest.param(
-            qp.Hamiltonian([0.25, 0.75], [qp.Z(2), qp.X(1) @ qp.X(2)]),
-            [0],
-            False,
-            marks=prod2_differentiability_pl2do,
-        ),
-        pytest.param(
-            0.25 * qp.Z(2) - 0.75 * qp.X(1) @ qp.X(2),
-            [0],
-            False,
-            marks=prod2_differentiability_pl2do,
-        ),
+        (qp.ops.LinearCombination([0.25, 0.75], [qp.Z(2), qp.X(1) @ qp.X(2)]), [0], False),
+        (qp.dot([0.25, 0.75], [qp.Z(2), qp.X(1) @ qp.X(2)]), [0], False),
+        (qp.Hamiltonian([0.25, 0.75], [qp.Z(2), qp.X(1) @ qp.X(2)]), [0], False),
+        (0.25 * qp.Z(2) - 0.75 * qp.X(1) @ qp.X(2), [0], False),
         (qp.Z(2) + qp.X(1) @ qp.X(2), [0], False),
         (qp.ops.LinearCombination([-0.25, 0.75j], [qp.Z(3), qp.X(2) @ qp.X(3)]), [0, 1], True),
         (
@@ -418,7 +391,6 @@ class TestInterfaces:
     # TODO: We really shouldn't be hardcoding the expected derivative here [sc-98529]
     exp_grad = [-0.57485039, 0.31253535, -0.717947, 0.48489061]
 
-    @prod2_differentiability_pl2do
     @pytest.mark.torch
     def test_torch(self):
         """Test the torch interface"""
@@ -439,7 +411,6 @@ class TestInterfaces:
         assert qp.math.shape(res) == (4,)
         assert np.allclose(res, self.exp_grad, atol=1e-5)
 
-    @prod2_differentiability_pl2do
     @pytest.mark.autograd
     def test_autograd(self):
         """Test the autograd interface"""
@@ -460,7 +431,6 @@ class TestInterfaces:
         assert qp.math.shape(res) == (4,)
         assert np.allclose(res, self.exp_grad, atol=1e-5)
 
-    @prod2_differentiability_pl2do
     @pytest.mark.jax
     def test_jax(self):
         """Test the jax interface"""
@@ -481,7 +451,6 @@ class TestInterfaces:
         assert qp.math.shape(res) == (4,)
         assert np.allclose(res, self.exp_grad, atol=1e-5)
 
-    @prod2_differentiability_pl2do
     @pytest.mark.jax
     def test_jit(self):
         """Test that jax jit works"""
