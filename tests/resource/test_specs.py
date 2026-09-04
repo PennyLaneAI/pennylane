@@ -333,7 +333,7 @@ class TestSpecsTransform:
         info = qp.specs(circuit)()
 
         assert info.resources == SpecsResources(
-            counts={"MidMeasureMP": 1},
+            counts={"MidMeasure": 1},
             measurement_processes={"sample(mcm)": 1},
             num_wires=1,
             circuit_depth=1,

@@ -121,7 +121,7 @@ ALL_DQ_GATES = GateSet(
     name="All DefaultQubit Gates",
 )
 
-ALL_DQ_GATES_PLUS_MCM = ALL_DQ_GATES | GateSet({"MidMeasureMP"})
+ALL_DQ_GATES_PLUS_MCM = ALL_DQ_GATES | GateSet({MidMeasure})
 ALL_DQ_GATES_PLUS_MCM.name = "All DefaultQubit Gates With MCM"
 
 _special_operator_support = {
