@@ -33,10 +33,10 @@ from pennylane.core.operator import Operator2, abstractify
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
-    resource_rep,
 )
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.ops.identity import I
+from pennylane.ops.op_math import prod
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
@@ -430,15 +430,9 @@ def _ry_to_rx_cliff(phi, wires: WiresLike):
 def _ry_to_rz_cliff_resources(*_, **__):
     resources = {
         _change_op_basis_abstract(
-            resource_rep(
-                qp.ops.op_math.Prod,
-                resources={_adjoint_abstract(qp.S): 1, abstractify(qp.Hadamard): 1},
-            ),
+            prod(qp.adjoint(qp.S(Wire[1])), qp.H(Wire[1])),
             qp.RZ,
-            resource_rep(
-                qp.ops.op_math.Prod,
-                resources={abstractify(qp.S): 1, abstractify(qp.Hadamard): 1},
-            ),
+            prod(qp.S(Wire[1]), qp.H(Wire[1])),
         ): 1
     }
     return resources
@@ -706,15 +700,9 @@ def _rz_to_rx_cliff(phi, wires: WiresLike):
 def _rz_to_ry_cliff_resources(phi, wires):
     resources = {
         _change_op_basis_abstract(
-            resource_rep(
-                qp.ops.op_math.Prod,
-                resources={abstractify(qp.S): 1, abstractify(qp.Hadamard): 1},
-            ),
+            prod(qp.S(Wire[1]), qp.H(Wire[1])),
             qp.RY,
-            resource_rep(
-                qp.ops.op_math.Prod,
-                resources={_adjoint_abstract(qp.S): 1, abstractify(qp.Hadamard): 1},
-            ),
+            prod(qp.adjoint(qp.S(Wire[1])), qp.H(Wire[1])),
         ): 1
     }
     return resources
