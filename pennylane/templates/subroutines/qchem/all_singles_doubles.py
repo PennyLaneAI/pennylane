@@ -67,7 +67,7 @@ class AllSinglesDoubles(Operation):
     projection of the Hartree-Fock state. The :class:`~.pennylane.SingleExcitation` gate
     :math:`G` act on the qubits ``[0, 2], [0, 4], [1, 3], [1, 5]`` as indicated by the
     squares, while the :class:`~.pennylane.DoubleExcitation` operation :math:`G^{(2)}` is
-    applied to the qubits ``[0, 1, 2, 3], [0, 1, 2, 5], [0, 1, 2, 4], [0, 1, 4, 5]``.
+    applied to the qubits ``[0, 1, 2, 3], [0, 1, 2, 5], [0, 1, 3, 4], [0, 1, 4, 5]``.
 
     The resulting unitary conserves the number of particles and prepares the
     :math:`n`-qubit system in a superposition of the initial Hartree-Fock state and
