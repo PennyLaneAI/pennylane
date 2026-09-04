@@ -122,6 +122,9 @@ class MidMeasure(Operator2):
 
     arg_specs = {"wires": Wire[1]}
 
+    num_wires = 1
+    num_params = 0
+
     def __init__(
         self,
         wires: Wires | None = None,
@@ -167,6 +170,12 @@ class MidMeasure(Operator2):
     @override
     def __repr__(self) -> str:
         return f"MidMeasure(wires={list(self.wires)}, postselect={self.postselect}, reset={self.reset})"
+
+    @override
+    def __str__(self) -> str:
+        if self.is_fully_abstract:
+            return self.__class__.__name__
+        return super().__str__()
 
 
 @abstractify.register
