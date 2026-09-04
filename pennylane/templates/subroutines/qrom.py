@@ -895,13 +895,20 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires, unroll=False)
         # 2a. right-elbow ladder: uncompute levels c-2 .. max(a,1) (top-down)
         lower_bound = math.max(math.array([a, 1], like=a))
 
-        @for_loop(c - 2, lower_bound - 1, -1)
-        # Once resource hints are merged, use those estimates:
-        # @for_loop(c - 2, max(a - 1, 0), -1, estimated_iterations=est_ladder_len)
-        def uncompute(i):
-            qp_ops.adjoint(TemporaryAND)(wires=triples[i])
+        if unroll:
+            _ = [
+                qp_ops.adjoint(TemporaryAND)(triples[i]) for i in range(c - 2, lower_bound - 1, -1)
+            ]
 
-        uncompute()  # pylint: disable=no-value-for-parameter
+        else:
+
+            @for_loop(c - 2, lower_bound - 1, -1)
+            # Once resource hints are merged, use those estimates:
+            # @for_loop(c - 2, max(a - 1, 0), -1, estimated_iterations=est_ladder_len)
+            def uncompute(i):
+                qp_ops.adjoint(TemporaryAND)(wires=triples[i])
+
+            uncompute()  # pylint: disable=no-value-for-parameter
 
         # 2b. merge gate(s) at the boundary
         # Once resource hints are merged, use those estimates:
@@ -923,13 +930,16 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires, unroll=False)
         cond(a == 0, CNOT)(triples[0][1:])
 
         # 2c. left-elbow ladder: recompute levels max(a,1) .. c-2 (bottom-up)
-        # Once resource hints are merged, use those estimates:
-        @for_loop(lower_bound, c - 1)
-        # @for_loop(max(a, 1), c - 1, estimated_iterations=est_ladder_len)
-        def recompute(i):
-            TemporaryAND(triples[i], (1, 0))
+        if unroll:
+            _ = [TemporaryAND(triples[i], (1, 0)) for i in range(lower_bound, c - 1)]
+        else:
+            # Once resource hints are merged, use those estimates:
+            @for_loop(lower_bound, c - 1)
+            # @for_loop(max(a, 1), c - 1, estimated_iterations=est_ladder_len)
+            def recompute(i):
+                TemporaryAND(triples[i], (1, 0))
 
-        recompute()  # pylint: disable=no-value-for-parameter
+            recompute()  # pylint: disable=no-value-for-parameter
 
     # todo: remove unrolling logic once iteration over dynamically allocated wires with a tracer
     # is supported [sc-129521]
