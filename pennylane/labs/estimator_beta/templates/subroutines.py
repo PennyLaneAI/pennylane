@@ -18,7 +18,7 @@ import math
 import pennylane.labs.estimator_beta as qre
 from pennylane.estimator import CompressedResourceOp, GateCount, ResourceOperator, resource_rep
 from pennylane.labs.estimator_beta.wires_manager.base_classes import Allocate, Deallocate
-from pennylane.math import ceil_log2
+from pennylane.math import ceil_log2, floor_log2
 from pennylane.wires import WiresLike
 
 # pylint: disable=unused-argument
@@ -765,7 +765,7 @@ class LabsQROM(ResourceOperator):
             # The continuous solution could be non-physical
             w1 = w2 = 1
         else:
-            w1 = 2 ** int(math.floor(math.log2(opt_width_continuous)))
+            w1 = 2 ** floor_log2(opt_width_continuous)
             w2 = 2 ** ceil_log2(opt_width_continuous)
 
         def t_cost_func(w, borrow):
@@ -1596,7 +1596,7 @@ class SelectCopyQROM(ResourceOperator):
             term2 = (lam - 1) * (mu * (beta + 1) + b % mu)
             return term1 + term2
 
-        highest_l_index = math.floor(math.log2(N - 1))
+        highest_l_index = floor_log2(N - 1)
 
         eligible_k = list(range(1, b + 1))
         eligible_l = [2**i for i in range(1, highest_l_index + 1)]
@@ -2290,7 +2290,7 @@ class SelectCopyQROM(ResourceOperator):
             GateCount(
                 cnot,
                 (
-                    bits_per_iter * math.floor(size_bitstring / bits_per_iter)
+                    bits_per_iter * (size_bitstring // bits_per_iter)
                     + (size_bitstring % bits_per_iter)
                 )
                 * (num_data_blocks - 1),

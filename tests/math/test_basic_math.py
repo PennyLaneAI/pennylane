@@ -49,6 +49,27 @@ class TestCeilLog2:
         assert fn.ceil_log2(2**out) == out
 
 
+@pytest.mark.parametrize("n, exp", [(1, 0), (2, 1), (4, 2), (1024, 10), (3, 1), (17, 4), (1023, 9)])
+class TestFloorLog2:
+    """Tests for ``qp.math.floor_log2``."""
+
+    def test_floor_log2_basic(self, n, exp):
+        """Test ``floor_log2``, which computes the flooring of log2, cast to a builtin integer."""
+        out = fn.floor_log2(n)
+        assert isinstance(out, int)
+        assert out == exp
+        assert fn.floor_log2(2**out) == out
+
+    def test_floor_log2_jit(self, n, exp):
+        """Test ``floor_log2`` with JIT, which computes the flooring of log2,
+        cast to integer dtype."""
+        out = jax.jit(fn.floor_log2)(jnp.array(n))
+        assert isinstance(out, jnp.ndarray)
+        assert out.dtype == jnp.int64
+        assert out == exp
+        assert fn.floor_log2(2**out) == out
+
+
 class TestFrobeniusInnerProduct:
     """Test the frobenius_inner_product method."""
 
