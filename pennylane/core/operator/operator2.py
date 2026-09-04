@@ -52,6 +52,7 @@ from pennylane.typing import (
     AbstractWires,
     FlatPytree,
     TensorLike,
+    Wire,
     _AbstractWireTypeFactory,
 )
 from pennylane.wires import Wires, WiresLike
@@ -2226,6 +2227,13 @@ def _is_abstract_specifier(val):
 @QueuingManager.stop_recording()
 def _abstractify_operator_type(op_type: type[Operator2]) -> Operator2:
     """Abstractify a subclass of operator."""
+    # pylint: disable=import-outside-toplevel
+    from pennylane.ops import MidMeasure
+
+    if op_type is MidMeasure:
+        # This branch is needed to continue supporting the use of the type `MidMeasure`
+        # as keys in resource dictionaries
+        return MidMeasure(wires=Wire[1], reset=False, postselect=None, meas_uid=None)
 
     if op_type.has_fixed_sig:
         return op_type(**op_type.arg_specs)
