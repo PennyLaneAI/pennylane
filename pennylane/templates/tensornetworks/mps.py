@@ -19,9 +19,10 @@ Contains the MPS template.
 import warnings
 
 from pennylane import math
+from pennylane.core.apply import apply
 from pennylane.core.operator import Operation
 from pennylane.core.qscript import make_qscript
-from pennylane.core.queuing import QueuingManager, apply
+from pennylane.core.queuing import QueuingManager
 
 
 def compute_indices_MPS(wires, n_block_wires, offset=None):

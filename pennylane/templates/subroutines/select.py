@@ -21,8 +21,9 @@ from itertools import product
 import numpy as np
 
 from pennylane import math
+from pennylane.core.apply import apply
 from pennylane.core.operator import Operator, Operator2
-from pennylane.core.queuing import QueuingManager, apply
+from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.ops import CNOT, X, adjoint, ctrl
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract

@@ -21,8 +21,9 @@ import copy
 import numpy as np
 
 from pennylane import ops
+from pennylane.core.apply import apply
 from pennylane.core.operator import Operation, abstractify
-from pennylane.core.queuing import QueuingManager, apply
+from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract

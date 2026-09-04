@@ -22,6 +22,7 @@ import numpy as np
 import pennylane as qp
 from pennylane import capture, compiler, control_flow, math, ops
 from pennylane.core import queuing
+from pennylane.core.apply import apply
 from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition import register_condition, register_resources
 from pennylane.ops.op_math.decompositions.unitary_decompositions import two_qubit_decomp_rule
@@ -104,7 +105,7 @@ def ctrl_decomp_bisect(target_operation: Operator, control_wires: Wires):
     # If there is an active queuing context, queue the decomposition so that expand works
     if queuing.QueuingManager.recording():
         for op in q.queue:  # pragma: no cover
-            queuing.apply(op)
+            apply(op)
 
     return q.queue
 
@@ -193,7 +194,7 @@ def ctrl_decomp_zyz(
     # If there is an active queuing context, queue the decomposition so that expand works
     if queuing.QueuingManager.recording():
         for op in q.queue:  # pragma: no cover
-            queuing.apply(op)
+            apply(op)
 
     return q.queue
 
