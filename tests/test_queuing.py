@@ -461,7 +461,7 @@ class TestApplyOp:
 
     @pytest.mark.capture
     def test_apply_raises_outside_a_trace_for_prev_traced_op(self):
-        """Tests that a stale tracer from an earlier trace doesn't satsify the guard."""
+        """Tests that a stale tracer from an earlier trace doesn't satisfy the guard."""
 
         import jax
 
