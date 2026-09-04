@@ -284,7 +284,7 @@ def _(op: qtemps.subroutines.QROM):
     num_parallel_computations = min(num_parallel_computations, square_fact)
 
     num_swap_states = 2 ** math.floor_log2(num_parallel_computations)
-    num_select_wires = math.ceil_log2(math.ceil(num_bitstrings / num_swap_states))
+    num_select_wires = math.ceil_log2(int(math.ceil(num_bitstrings / num_swap_states)))
 
     swap_work_wires = (num_swap_states - 1) * size_bitstring
     free_work_wires = num_work_wires - swap_work_wires

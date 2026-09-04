@@ -1412,6 +1412,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed `qp.math.ceil_log2` and `qp.math.floor_log2` returning results that were off by one
+  for inputs with more significant bits than a float can hold, like `2 ** 53 + 1`.
+  [(#10101)](https://github.com/PennyLaneAI/pennylane/pull/10101)
+
 * Fixed :class:`~.Incrementer` returning an incorrect incremented value when not enough
   work wires are provided.
   [(#10062)](https://github.com/PennyLaneAI/pennylane/pull/10062)

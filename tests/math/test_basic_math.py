@@ -70,6 +70,23 @@ class TestFloorLog2:
         assert fn.floor_log2(2**out) == out
 
 
+@pytest.mark.parametrize("n", [2**53 - 1, 2**53, 2**53 + 1, 2**60 + 3, 2**62 + 1, 2**64 - 1])
+def test_log2_of_large_integers(n):
+    """Test that ``ceil_log2`` and ``floor_log2`` are exact for integers with more
+    significant bits than a float can hold."""
+    assert fn.ceil_log2(n) == (n - 1).bit_length()
+    assert fn.floor_log2(n) == n.bit_length() - 1
+
+
+@pytest.mark.parametrize("n", [2**53 - 1, 2**53, 2**53 + 1, 2**60 + 3, 2**62 + 1, 2**63 - 1])
+def test_log2_of_large_integers_jit(n):
+    """Test that ``ceil_log2`` and ``floor_log2`` are exact with JIT for integers with more
+    significant bits than a float can hold."""
+    x = jnp.array(n, dtype=jnp.int64)
+    assert jax.jit(fn.ceil_log2)(x) == (n - 1).bit_length()
+    assert jax.jit(fn.floor_log2)(x) == n.bit_length() - 1
+
+
 class TestFrobeniusInnerProduct:
     """Test the frobenius_inner_product method."""
 
