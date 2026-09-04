@@ -28,18 +28,22 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 class TestGQSP:
     """Test the qp.GQSP template."""
 
-    @pytest.mark.usefixtures("enable_and_disable_capture")
-    def test_standard_validity(self):
+    @pytest.mark.disable_and_xfail_enable_capture(
+        reason="Requires prod to dispatch to Prod2 [sc-128922]", strict=False
+    )
+    @pytest.mark.parametrize(
+        "unitary",
+        (
+            qp.RX(0.3, 1),
+            qp.prod(qp.RX(0.3, 1), qp.RZ(0.6, 1)),
+        ),
+    )
+    def test_standard_validity(self, unitary):
         """Test standard validity criteria with assert_valid."""
 
         angles = np.ones([3, 5])
 
-        @qp.prod
-        def unitary(wires):
-            qp.RX(0.3, wires)
-            qp.RZ(0.6, wires)
-
-        op = qp.GQSP(unitary(1), angles, control=(0,))
+        op = qp.GQSP(unitary, angles, control=(0,))
         qp.ops.functions.assert_valid(op, skip_differentiation=True, skip_bind_new_parameters=True)
 
     @pytest.mark.parametrize(

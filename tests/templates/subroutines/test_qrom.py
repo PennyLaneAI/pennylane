@@ -275,8 +275,8 @@ class TestQROM:
             qp.CSWAP(wires=[1, 2, 3]),
             qp.Select(
                 ops=(
-                    qp.BasisEmbedding([1], wires=[2]) @ qp.BasisEmbedding([0], wires=[3]),
-                    qp.BasisEmbedding([0], wires=[2]) @ qp.BasisEmbedding([1], wires=[3]),
+                    qp.MultiX([1, 0], wires=[2, 3]),
+                    qp.MultiX([0, 1], wires=[2, 3]),
                 ),
                 control=[0],
             ),
@@ -285,10 +285,10 @@ class TestQROM:
             qp.CSWAP(wires=[1, 2, 3]),
             qp.Select(
                 ops=(
-                    qp.BasisEmbedding([1], wires=[2]) @ qp.BasisEmbedding([0], wires=[3]),
-                    qp.BasisEmbedding([0], wires=[2]) @ qp.BasisEmbedding([1], wires=[3]),
+                    qp.MultiX([1, 0], wires=[2, 3]),
+                    qp.MultiX([0, 1], wires=[2, 3]),
                 ),
-                control=0,
+                control=[0],
             ),
             qp.CSWAP(wires=[1, 2, 3]),
         ]
@@ -407,7 +407,7 @@ class TestQROM:
         ).decomposition()
 
         assert len(ops) == 1
-        assert qp.equal(ops[0], qp.BasisEmbedding([1, 0], wires=[0, 1]))
+        assert qp.equal(ops[0], qp.MultiX([1, 0], wires=[0, 1]))
 
     @pytest.mark.jax
     def test_traced_wires(self):

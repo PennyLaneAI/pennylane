@@ -24,6 +24,8 @@ import pytest
 import pennylane as qp
 from pennylane.core.operator import abstractify
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
+from pennylane.ops.op_math.prod2 import Prod2
+from pennylane.typing import Wire
 
 
 @pytest.mark.parametrize(
@@ -190,10 +192,8 @@ class TestPrepSelPrep:
         assert qp.math.allclose(matrix / normalization_factor, block_encoding[0:dim, 0:dim])
 
     lcu1 = qp.ops.LinearCombination([0.25, 0.75], [qp.Z(2), qp.X(1) @ qp.X(2)])
-    ops1 = [
-        qp.Z(2) @ qp.GlobalPhase(0),
-        qp.prod(qp.X(1) @ qp.X(2), qp.GlobalPhase(0)),
-    ]
+    lcu_ops1 = [qp.Z(2), qp.X(1) @ qp.X(2)]
+    phase_ops1 = [qp.GlobalPhase(0), qp.GlobalPhase(0)]
     coeffs1 = lcu1.terms()[0]
 
     @pytest.mark.parametrize(
@@ -207,7 +207,12 @@ class TestPrepSelPrep:
                         qp.AmplitudeEmbedding(
                             qp.math.sqrt(coeffs1), normalize=True, pad_with=0, wires=[0]
                         ),
-                        qp.Select(ops1, control=[0]),
+                        Prod2(
+                            [
+                                qp.Select(lcu_ops1, control=[0], partial=True),
+                                qp.Select(phase_ops1, control=[0], partial=True),
+                            ]
+                        ),
                     )
                 ],
             )
@@ -323,11 +328,7 @@ class TestPrepSelPrep:
         xrep = abstractify(qp.X)
         yrep = abstractify(qp.Y)
         prodrep = qp.resource_rep(qp.ops.Prod, resources={xrep: 1, yrep: 1})
-        op_reps = (
-            qp.resource_rep(qp.ops.Prod, resources={grep: 1, xrep: 1}),
-            qp.resource_rep(qp.ops.Prod, resources={grep: 1, xrep: 1}),
-            qp.resource_rep(qp.ops.Prod, resources={grep: 1, prodrep: 1}),
-        )
+        op_reps = (xrep, xrep, prodrep)
         lcu = qp.dot([1, 4, 9], ops)
         op = qp.PrepSelPrep(lcu, (3, 4))
 
@@ -336,25 +337,14 @@ class TestPrepSelPrep:
         resource_obj = decomp.compute_resources(**op.resource_params)
         assert resource_obj.num_gates == 1
 
-        expected_counts = {
-            qp.resource_rep(
-                qp.Select, op_reps=op_reps, num_control_wires=2, partial=True, num_work_wires=0
-            ): 1,
-            qp.resource_rep(qp.StatePrep, num_wires=2): 1,
-            qp.resource_rep(
-                qp.ops.Adjoint, base_class=qp.StatePrep, base_params={"num_wires": 2}
-            ): 1,
-        }
+        # The target of the change-of-basis is the product of two Selects: one for the LCU
+        # operators and another for the global phases.
+        select_lcu = qp.Select(list(op_reps), control=Wire[2], work_wires=Wire[0], partial=True)
+        select_phases = qp.Select([grep] * 3, control=Wire[2], work_wires=Wire[0], partial=True)
         expected_counts = {
             _change_op_basis_abstract(
                 qp.resource_rep(qp.StatePrep, num_wires=2),
-                qp.resource_rep(
-                    qp.Select,
-                    op_reps=op_reps,
-                    num_control_wires=2,
-                    partial=True,
-                    num_work_wires=0,
-                ),
+                Prod2([select_lcu, select_phases]),
                 qp.resource_rep(
                     qp.ops.Adjoint, base_class=qp.StatePrep, base_params={"num_wires": 2}
                 ),
@@ -370,11 +360,19 @@ class TestPrepSelPrep:
 
         q = q.queue[0].decomposition()
 
-        phase_ops = [qp.prod(op, qp.GlobalPhase(0)) for op in ops]
+        phase_ops = [qp.GlobalPhase(0) for _ in ops]
 
         prep = qp.StatePrep(np.array([1, 2, 3]), normalize=True, pad_with=0, wires=(3, 4))
         qp.assert_equal(q[0], prep)
-        qp.assert_equal(q[1], qp.Select(phase_ops, (3, 4)))
+        qp.assert_equal(
+            q[1],
+            Prod2(
+                [
+                    qp.Select(ops, (3, 4), partial=True),
+                    qp.Select(phase_ops, (3, 4), partial=True),
+                ]
+            ),
+        )
         qp.assert_equal(q[2], qp.adjoint(prep))
 
 
