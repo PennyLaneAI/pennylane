@@ -218,7 +218,9 @@ def _prepselprep_resources(op_reps, num_control):
     _target_op = Prod2([select_lcu, select_phases])
     resources = {
         _change_op_basis_abstract(
-            _compute_op, _target_op, _adjoint_abstract(_compute_op),
+            _compute_op,
+            _target_op,
+            _adjoint_abstract(_compute_op),
         ): 1,
     }
     return resources

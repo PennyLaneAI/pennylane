@@ -362,10 +362,15 @@ class Select(Operator2):
 
         all_target_wires = Wires([])
         for op in self.ops:
-            if isinstance(op, Operator):
-                # We need this branch as the inputs can be CompressedResourceOps when
-                # computing decomposition rule resources
+            # We need these branches in case the operators are abstract or their wires
+            # are abstract. In both cases, we cannot correctly compute the total number
+            # of target wires
+            if isinstance(op, Operator) and isinstance(op.wires, Wires):
                 all_target_wires += op.wires
+            else:
+                all_target_wires = Wire[-1]
+                self._wires = Wire[-1]
+                break
 
         self._target_wires = all_target_wires
 

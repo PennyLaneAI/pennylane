@@ -90,10 +90,9 @@ class TestAbstractSelect:
         """Test instantiation with abstract control wires and concrete operators."""
         op = qp.Select([qp.X(2), qp.Y(3)], control=Wire[1])
 
-        assert isinstance(op.control, AbstractWires)
-        assert len(op.control) == 1
-        # The concrete target operators still contribute concrete target wires.
+        assert op.control == Wire[1]
         assert op.target_wires == qp.wires.Wires([2, 3])
+        assert op.wires == Wire[3]
         assert not op.is_fully_abstract
 
     def test_abstract_work_wires(self):
@@ -101,7 +100,8 @@ class TestAbstractSelect:
         op = qp.Select([qp.X(2), qp.Y(2)], control=[0], work_wires=Wire[2])
 
         assert op.control == qp.wires.Wires([0])
-        assert isinstance(op.work_wires, AbstractWires)
+        assert op.work_wires == Wire[2]
+        assert op.wires == qp.wires.Wires([0, 2])
         assert len(op.work_wires) == 2
         assert op.target_wires == qp.wires.Wires([2])
         assert not op.is_fully_abstract
@@ -111,6 +111,8 @@ class TestAbstractSelect:
         op = qp.Select([abstractify(qp.X(2)), abstractify(qp.Y(3))], control=[0])
 
         assert op.control == qp.wires.Wires([0])
+        assert op.target_wires == Wire[-1]
+        assert op.wires == Wire[-1]
         assert len(op.ops) == 2
         assert not op.is_fully_abstract
 
@@ -119,6 +121,8 @@ class TestAbstractSelect:
         op = qp.Select([abstractify(qp.X(2)), qp.Y(3)], control=[0])
 
         assert op.control == qp.wires.Wires([0])
+        assert op.target_wires == Wire[-1]
+        assert op.wires == Wire[-1]
         assert len(op.ops) == 2
         assert not op.is_fully_abstract
 
@@ -128,8 +132,20 @@ class TestAbstractSelect:
 
         assert isinstance(op.control, AbstractWires)
         assert isinstance(op.work_wires, AbstractWires)
+        assert op.control == Wire[1]
+        assert op.work_wires == Wire[2]
         assert op.target_wires == qp.wires.Wires([2, 3])
+        assert op.wires == Wire[3]
         assert not op.is_fully_abstract
+
+    def test_abstract_operators_and_control_wires(self):
+        """When both the target operators and the control wires are abstract, both
+        ``target_wires`` and ``wires`` are fully abstract."""
+        op = qp.Select([abstractify(qp.X(2)), abstractify(qp.Y(3))], control=Wire[1])
+
+        assert op.control == Wire[1]
+        assert op.target_wires == Wire[-1]
+        assert op.wires == Wire[-1]
 
     @staticmethod
     def _prod_rep(second_op_type):
@@ -158,6 +174,8 @@ class TestAbstractSelect:
         op = qp.Select([abstractify(qp.X(0)), rep], control=[0])
 
         assert op.control == qp.wires.Wires([0])
+        assert op.target_wires == Wire[-1]
+        assert op.wires == Wire[-1]
         assert len(op.ops) == 2
 
     def test_equal_resource_rep_ops(self):
