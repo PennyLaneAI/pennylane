@@ -17,6 +17,7 @@ This submodule contains the template for QROM.
 
 from collections import Counter
 from collections.abc import Sequence
+from functools import partial
 
 import numpy as np
 
@@ -77,7 +78,7 @@ def _select_ops(
     n_control_select_wires = ceil_log2(2 ** len(control_wires) / depth)
     control_select_wires = control_wires[:n_control_select_wires]
 
-    if control_select_wires:
+    if len(control_select_wires) > 0:
         Select(
             _new_ops(depth, target_wires, control_wires, swap_wires, bitstrings),
             control=control_select_wires,
@@ -393,7 +394,7 @@ def _qrom_decomposition(
     n_swap_work_wires = len(work_wires) - n_select_work_wires
     swap_work_wires = work_wires[:n_swap_work_wires]
     select_work_wires = work_wires[n_swap_work_wires:]
-    swap_wires = target_wires + swap_work_wires
+    swap_wires = Wires(target_wires) + Wires(swap_work_wires)
 
     # number of operators we store per column (power of 2)
     depth = len(swap_wires) // len(target_wires)
@@ -405,10 +406,17 @@ def _qrom_decomposition(
         _swap_ops(control_wires, depth, swap_wires, target_wires)
 
     else:
+        # Close over the statically determined depth so the capture-compatible adjoint transform
+        # does not trace it as a dynamic array-slice bound in ``_swap_ops``.
+        swap_ops = partial(_swap_ops, depth=depth)
         for _ in range(2):
             for w in target_wires:
                 qp_ops.Hadamard(wires=w)
-            qp_ops.adjoint(_swap_ops, lazy=False)(control_wires, depth, swap_wires, target_wires)
+            qp_ops.adjoint(swap_ops, lazy=False)(
+                control_wires=control_wires,
+                swap_wires=swap_wires,
+                target_wires=target_wires,
+            )
             _select_ops(
                 control_wires, depth, target_wires, swap_wires, bitstrings, select_work_wires
             )
