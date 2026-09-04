@@ -792,9 +792,9 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
     nonsubspace_wires = Wires(wires[n_subspace:])
 
     # Step 1: Dense state preparation
-    dense_state = np.zeros(2**n_subspace, dtype=complex)
     ids = np.array([bijection[i] for i in range(num_entries)])
-    dense_state[ids] = coefficients
+    dense_size = 2**n_subspace
+    dense_state = math.scatter(ids, coefficients, dense_size, like=math.get_interface(coefficients))
     qp.MultiplexerStatePreparation(dense_state, subspace_wires)
 
     if not circuit:
