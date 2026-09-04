@@ -331,7 +331,7 @@ add_decomps(Prod2, _prod2_decomp)
 
 
 @to_name.register
-def _prod2_to_name(op):
+def _prod2_to_name(op: Prod2):
     """Prod2.name is Prod for device dispatch. Need to keep Prod2 decomp registry unique."""
     return "Prod2"
 
