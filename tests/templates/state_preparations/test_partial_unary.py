@@ -26,6 +26,8 @@ from pennylane.templates.state_preparations.partial_unary import (
     PartialUnaryStatePreparation,
     PUIsometryFinder,
 )
+from pennylane.typing import Float, Complex, Wire
+from pennylane.wires import Wires
 
 # pylint: disable=protected-access
 
@@ -351,6 +353,7 @@ class TestPartialUnaryStatePreparation:
         return coefficients, indices
 
     @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("provide_work_wires", [False, True])
     @pytest.mark.parametrize(
         "num_wires, num_entries",
@@ -370,6 +373,17 @@ class TestPartialUnaryStatePreparation:
             coefficients, wires, indices=indices, work_wires=work_wires
         )
         assert_valid(op, skip_differentiation=True)
+
+    @pytest.mark.parametrize("coeffs", [Complex[15], Float[15], np.arange(15)/np.linalg.norm(np.arange(15))])
+    @pytest.mark.parametrize("wires", [Wire[9], Wires(range(9))])
+    @pytest.mark.parametrize("work_wires", [Wire[0], Wire[4], (), Wires(range(10, 14))])
+    def test_abstract_init(self, coeffs, wires, work_wires):
+        """Test that PartialUnaryStatePreparation can be initialized with abstract inputs."""
+        indices = tuple(range(15))
+        op = PartialUnaryStatePreparation(coeffs, wires, indices=indices, work_wires=work_wires)
+        assert len(op.wires) == 9
+        assert len(op.coefficients) == 15
+        assert len(op.indices) == 15
 
     @pytest.mark.catalyst
     @pytest.mark.parametrize("provide_work_wires", [False, True])
@@ -412,7 +426,7 @@ class TestPartialUnaryStatePreparation:
         applicable_rule = int(provide_work_wires) if num_entries > 1 else 1
 
         for j, rule in enumerate(list_decomps(PartialUnaryStatePreparation)):
-            applicable = rule.is_applicable(num_entries, num_wires, num_work_wires)
+            applicable = rule.is_applicable(coefficients, wires, indices, work_wires)
             assert applicable is (j == applicable_rule)
             if not applicable:
                 continue
@@ -438,7 +452,7 @@ class TestPartialUnaryStatePreparation:
         rng.shuffle(work_wires)
 
         for j, rule in enumerate(list_decomps(PartialUnaryStatePreparation)):
-            applicable = rule.is_applicable(num_entries, num_wires, num_work_wires)
+            applicable = rule.is_applicable(coefficients, wires, indices, work_wires)
             assert applicable is (j == 1)
             if not applicable:
                 continue

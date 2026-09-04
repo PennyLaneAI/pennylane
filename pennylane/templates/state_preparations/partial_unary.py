@@ -19,9 +19,9 @@ import numpy as np
 
 import pennylane as qp
 from pennylane import allocate, math
-from pennylane.core.operator import Operation
-from pennylane.typing import Bool, Complex, Int, Wire
-from pennylane.wires import Wires
+from pennylane.core.operator import Operator2
+from pennylane.typing import AbstractWires, Bool, Complex, Int, TensorLike, Wire
+from pennylane.wires import Wires, WiresLike
 
 _U64 = np.uint64
 
@@ -517,7 +517,7 @@ class PUIsometryFinder:
         return self.circuit, self.fanout_bits, bijection
 
 
-class PartialUnaryStatePreparation(Operation):
+class PartialUnaryStatePreparation(Operator2):
     r"""Prepare a sparse quantum state with the partial unary iteration technique.
 
     This operation prepares an arbitrary state
@@ -638,7 +638,7 @@ class PartialUnaryStatePreparation(Operation):
         num_entries = 2553
         coefficients = np.random.random(num_entries)
         coefficients /= np.linalg.norm(coefficients)
-        indices = np.random.choice(2**15, num_entries, replace=False)
+        indices = tuple(np.random.choice(2**15, num_entries, replace=False))
         wires = list(range(15))
         num_work_wires = qp.math.ceil_log2(num_entries) - 1
         work_wires = list(range(15, 15 + num_work_wires))
@@ -681,17 +681,18 @@ class PartialUnaryStatePreparation(Operation):
 
     """
 
-    resource_keys = {"num_entries", "num_wires", "num_work_wires"}
+    dynamic_argnames = ("coefficients",)
+    wire_argnames = ("wires", "work_wires")
+    compilable_argnames = ("indices",)
+    arg_specs = {"coefficients": Complex[-1], "wires": Wire[-1]}
 
-    @property
-    def resource_params(self):
-        return {
-            "num_entries": len(self.hyperparameters["indices"]),
-            "num_wires": len(self.wires),
-            "num_work_wires": len(self.hyperparameters["work_wires"]),
-        }
-
-    def __init__(self, coefficients, wires, indices, work_wires):
+    def __init__(
+        self,
+        coefficients: TensorLike,
+        wires: AbstractWires | WiresLike,
+        indices: tuple,
+        work_wires: AbstractWires | WiresLike,
+    ):
         num_entries = len(indices)
         if len(set(indices)) != num_entries:
             raise ValueError("The state indices must be unique.")
@@ -708,16 +709,17 @@ class PartialUnaryStatePreparation(Operation):
                 f"The state indices must be positive. Smallest index is {min(indices)}"
             )
 
-        work_wires = Wires([] if work_wires is None else work_wires)
-        super().__init__(coefficients, wires=wires)
-        self.hyperparameters["indices"] = indices
-        self.hyperparameters["work_wires"] = Wires(work_wires)
+        super().__init__(coefficients, wires, indices, work_wires)
 
 
-def _pui_state_prep_resources(num_entries, num_wires, num_work_wires):
+def _pui_state_prep_resources(coefficients, wires, indices, work_wires):
     """Compute the resources for _pui_state_prep, the partial unary iteration state prep.
     These resource counts are numerically obtained heuristics, extended to guarantee all
     resource reps that may appear are included at least once."""
+    # pylint: disable=unused-argument
+    num_entries = len(indices)
+    num_wires = 1 if isinstance(wires, int) else len(wires)
+    num_work_wires = len(work_wires)
     if num_entries == 1:
         return {qp.MultiX(Bool[num_wires], Wire[num_wires]): 1}
 
@@ -790,9 +792,9 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
     nonsubspace_wires = Wires(wires[n_subspace:])
 
     # Step 1: Dense state preparation
-    dense_state = np.zeros(2**n_subspace, dtype=complex)
     ids = np.array([bijection[i] for i in range(num_entries)])
-    dense_state[ids] = coefficients
+    dense_size = 2**n_subspace
+    dense_state = math.scatter(ids, coefficients, dense_size, like=math.get_interface(coefficients))
     qp.MultiplexerStatePreparation(dense_state, subspace_wires)
 
     if not circuit:
@@ -908,16 +910,17 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
 # Decomposition rule with statically given work_wires to PartialUnaryStatePreparation
 
 
-# pylint: disable=unused-argument
-def _pui_state_prep_provided_work_wires_condition(num_entries, num_wires, num_work_wires):
+def _pui_state_prep_provided_work_wires_condition(coefficients, wires, indices, work_wires):
+    # pylint: disable=unused-argument
+    num_entries = len(indices)
     if num_entries == 1:
         return True
-    return num_work_wires >= max(math.ceil_log2(num_entries) - 1, 1)
+    return len(work_wires) >= max(math.ceil_log2(num_entries) - 1, 1)
 
 
 @qp.register_condition(_pui_state_prep_provided_work_wires_condition)
 @qp.register_resources(_pui_state_prep_resources, exact=False)
-def _pui_state_prep_provided_work_wires(coefficients, wires, indices, work_wires, **__):
+def _pui_state_prep_provided_work_wires(coefficients, wires, indices, work_wires):
     """Compute the decomposition of the partial unary iteration state preparation technique.
     Uses the work_wires given to PartialUnaryStatePreparation as an argument."""
     _pui_state_prep_core(coefficients, wires, indices, work_wires)
@@ -926,31 +929,33 @@ def _pui_state_prep_provided_work_wires(coefficients, wires, indices, work_wires
 # Decomposition rule with dynamic work wire allocation
 
 
-def _pui_state_prep_work_wires(num_entries, num_wires, num_work_wires):
+def _pui_state_prep_work_wires(coefficients, wires, indices, work_wires):
     # pylint: disable=unused-argument
-    return {"zeroed": max(math.ceil_log2(num_entries) - 1, 1)}
+    return {"zeroed": max(math.ceil_log2(len(indices)) - 1, 1)}
 
 
-def _pui_state_prep_dyn_work_wires_condition(num_entries, num_wires, num_work_wires):
+def _pui_state_prep_dyn_work_wires_condition(coefficients, wires, indices, work_wires):
     # pylint: disable=unused-argument
+    num_entries = len(indices)
     if num_entries == 1:
         return False  # Just use _pui_state_prep_provided_work_wires, we don't need work wires
-    return num_work_wires < max(math.ceil_log2(num_entries) - 1, 1)
+    return len(work_wires) < max(math.ceil_log2(num_entries) - 1, 1)
 
 
 @qp.register_condition(_pui_state_prep_dyn_work_wires_condition)
 @qp.register_resources(
     _pui_state_prep_resources, work_wires=_pui_state_prep_work_wires, exact=False
 )
-def _pui_state_prep_dyn_work_wires(coefficients, wires, indices, **__):
+def _pui_state_prep_dyn_work_wires(coefficients, wires, indices, work_wires):
     """Compute the decomposition of the partial unary iteration state preparation technique.
     This decomposition dynamically allocates work wires. If PartialUnaryStatePreparation
     has work_wires but too few of them, they will **not** be used here."""
+    # pylint: disable=unused-argument
     # The case num_entries=1 is excluded via _pui_state_prep_dyn_work_wires_condition, so
     # we know that we want to allocate at least one work wire.
     need_to_allocate = max(math.ceil_log2(len(indices)) - 1, 1)
-    with allocate(need_to_allocate, state="zero", restored=True) as work_wires:
-        _pui_state_prep_core(coefficients, wires, indices, work_wires)
+    with allocate(need_to_allocate, state="zero", restored=True) as _work_wires:
+        _pui_state_prep_core(coefficients, wires, indices, _work_wires)
 
 
 qp.add_decomps(
