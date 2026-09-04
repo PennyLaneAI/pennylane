@@ -851,6 +851,12 @@
   resource operators from their quantum functions.
   [(#9764)](https://github.com/PennyLaneAI/pennylane/pull/9764)
 
+* Added a :func:`~.pennylane.labs.templates.mps_synthesis` template that
+  synthesizes a right-canonical matrix product state into a quantum circuit via
+  generalized flag decompositions. This state-of-the-art method significantly reduces the non-Clifford 
+  cost compared to previous approaches, and is parameter-optimal for power-of-two bond dimensions.
+  [(#9971)](https://github.com/PennyLaneAI/pennylane/pull/9971)
+
 <h3>Breaking changes 💔</h3>
 
 * :class:`~.GlobalPhase` no longer accepts the `wires` argument in order to mirror its MLIR lowered operation.
