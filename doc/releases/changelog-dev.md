@@ -1408,7 +1408,6 @@
 
 * Fixed :func:`qp.apply` to copy the input operator when capture is enabled.
   [(#10103)](https://github.com/PennyLaneAI/pennylane/pull/10103)
-  
 * Fixed the Triton persistent decoder kernel so :func:`~pennylane.backline.css_bp_decoder` and
   the other Triton decoders build on CUDA with Triton 3.8.
   [(#10111)](https://github.com/PennyLaneAI/pennylane/pull/10111)
