@@ -309,16 +309,26 @@ def _semi_adder_work_wires(x_wires, y_wires, work_wires):
 @register_resources(_semi_adder_resources, work_wires=_semi_adder_work_wires)
 def _semi_adder(x_wires, y_wires, work_wires=None, carry_flip=None):
     num_y_wires = len(y_wires)
-    num_x_wires = len(x_wires)
 
     if num_y_wires == 1:
         CNOT([x_wires[-1], y_wires[0]])
         return
 
     work_wires = [] if work_wires is None else list(work_wires)
-    if len(work_wires) < num_y_wires - 1:
+    num_missing = num_y_wires - 1 - len(work_wires)
+    if num_missing > 0:
         # The right ladder restores the work wires to zero, so they can be borrowed and returned.
-        work_wires += list(allocate(num_y_wires - 1 - len(work_wires), restored=True))
+        with allocate(num_missing, restored=True) as new_wires:
+            _ladders(x_wires, y_wires, work_wires + list(new_wires), carry_flip)
+        return
+
+    _ladders(x_wires, y_wires, work_wires, carry_flip)
+
+
+def _ladders(x_wires, y_wires, work_wires, carry_flip):
+    """The ladders of Fig. 2, with all work wires resolved."""
+    num_y_wires = len(y_wires)
+    num_x_wires = len(x_wires)
 
     # Turn wires from big endian to little endian
     # Truncate x_wires, as values larger than 2**num_y_wires-1 can anyways not be stored
@@ -618,28 +628,41 @@ def _controlled_semi_adder(
     # will be used as work wires for `ctrl`
     extra_work_wires_from_base = base_work_wires[len(y_wires) - 1 :]
     base_work_wires = list(base_work_wires[: len(y_wires) - 1])
-    if len(base_work_wires) < len(y_wires) - 1:
-        # The right ladder restores the work wires to zero, so they can be borrowed and returned.
-        base_work_wires += list(allocate(len(y_wires) - 1 - len(base_work_wires), restored=True))
-    work_wires = [] if work_wires is None else work_wires
     ctrl_kwargs = {
         "control": control_wires,
         "control_values": control_values,
-        "work_wires": Wires.all_wires([work_wires, extra_work_wires_from_base]),
+        "work_wires": Wires.all_wires(
+            [[] if work_wires is None else work_wires, extra_work_wires_from_base]
+        ),
         "work_wire_type": work_wire_type,
     }
 
-    num_y_wires = len(y_wires)
-    num_x_wires = len(x_wires)
-    if num_y_wires == 1:
+    if len(y_wires) == 1:
         ctrl(CNOT([x_wires[-1], y_wires[0]]), **ctrl_kwargs)
         return
+
+    num_missing = len(y_wires) - 1 - len(base_work_wires)
+    if num_missing > 0:
+        # The right ladder restores the work wires to zero, so they can be borrowed and returned.
+        with allocate(num_missing, restored=True) as new_wires:
+            _ctrl_ladders(
+                x_wires, y_wires, base_work_wires + list(new_wires), carry_flip, ctrl_kwargs
+            )
+        return
+
+    _ctrl_ladders(x_wires, y_wires, base_work_wires, carry_flip, ctrl_kwargs)
+
+
+def _ctrl_ladders(x_wires, y_wires, work_wires, carry_flip, ctrl_kwargs):
+    """The controlled ladders of Fig. 4, with all work wires resolved."""
+    num_y_wires = len(y_wires)
+    num_x_wires = len(x_wires)
 
     # Turn wires from big endian to little endian
     # Truncate x_wires, as values larger than 2**num_y_wires-1 can anyways not be stored
     x_wires = x_wires[::-1][:num_y_wires]
     y_wires = y_wires[::-1]
-    work_wires = base_work_wires[::-1]
+    work_wires = work_wires[::-1]
 
     _left_ladder(x_wires, y_wires, work_wires, carry_flip=carry_flip)
 
