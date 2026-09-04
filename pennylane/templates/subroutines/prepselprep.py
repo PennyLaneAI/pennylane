@@ -28,7 +28,7 @@ from pennylane.decomposition import (
 )
 from pennylane.ops import GlobalPhase, StatePrep, change_op_basis
 from pennylane.ops.op_math.composite import CompositeOp
-from pennylane.ops.op_math.prod2 import Prod2
+from pennylane.ops.op_math.prod import prod
 from pennylane.ops.op_math.symbolicop import SymbolicOp
 from pennylane.templates.embeddings import AmplitudeEmbedding
 from pennylane.typing import Wire
@@ -153,7 +153,7 @@ class PrepSelPrep(Operation):
         return [
             change_op_basis(
                 AmplitudeEmbedding(math.sqrt(coeffs), normalize=True, pad_with=0, wires=control),
-                Prod2([Select(ops, control, partial=True), Select(phases, control, partial=True)]),
+                prod(Select(ops, control, partial=True), Select(phases, control, partial=True)),
             ),
         ]
 
@@ -214,7 +214,7 @@ def _prepselprep_resources(op_reps, num_control):
     )
     return {
         change_op_basis_resource_rep(
-            resource_rep(StatePrep, num_wires=num_control), Prod2([select_lcu, select_phases])
+            resource_rep(StatePrep, num_wires=num_control), prod(select_lcu, select_phases)
         ): 1,
     }
 
@@ -226,7 +226,7 @@ def _prepselprep_decomp(*_, wires, lcu, control, target_wires):
     sqrt_coeffs = math.sqrt(coeffs)
     change_op_basis(
         StatePrep(sqrt_coeffs, normalize=True, pad_with=0, wires=control),
-        Prod2([Select(ops, control, partial=True), Select(phases, control, partial=True)]),
+        prod(Select(ops, control, partial=True), Select(phases, control, partial=True)),
     )
 
 

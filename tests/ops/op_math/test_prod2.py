@@ -25,12 +25,21 @@ import pennylane as qp
 from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.ops.op_math.prod2 import Prod2
 from pennylane.typing import Float, Wire
+from tests.core.operator.operator2_utils import NonParametricOp
 
 
 def _product_matrix(factors, wire_order):
     """Independent reference matrix: the ordered matrix product of the factors."""
     mats = [qp.matrix(f, wire_order=wire_order) for f in factors]
     return reduce(np.matmul, mats)
+
+
+def test_prod_api_dispatch():
+    """Ensures that 'prod' dispatches to 'Prod2' when appropriate."""
+
+    prod_op = qp.prod(NonParametricOp(0), NonParametricOp(1))
+
+    assert isinstance(prod_op, Prod2)
 
 
 class TestInitialization:

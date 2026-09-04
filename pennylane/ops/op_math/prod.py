@@ -28,18 +28,19 @@ from scipy.sparse import kron as sparse_kron
 import pennylane as qp
 from pennylane import compiler, control_flow, math
 from pennylane.capture.autograph import wraps
-from pennylane.core.operator import Operator, abstractify
+from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition.symbolic_decomposition import flip_zero_control
-from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-from pennylane.ops.op_math.pow import Pow
-from pennylane.ops.op_math.sprod import SProd
-from pennylane.ops.op_math.sum import Sum
-from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
 from pennylane.typing import TensorLike, Wire
 
+from ..qubit.non_parametric_ops import PauliX, PauliY, PauliZ
+from .adjoint2 import _adjoint_abstract
 from .composite import CompositeOp, handle_recursion_error
+from .controlled2 import _ctrl_abstract
+from .pow import Pow
+from .prod2 import Prod2
+from .sprod import SProd
+from .sum import Sum
 
 MAX_NUM_WIRES_KRON_PRODUCT = 9
 """The maximum number of wires up to which using ``math.kron`` is faster than ``math.dot`` for
@@ -136,6 +137,9 @@ def prod(*ops, lazy=True):
             return prod(*qs.operations[::-1], lazy=lazy)
 
         return wrapper
+
+    if all(isinstance(op, Operator2) for op in ops):
+        return Prod2(ops)
 
     if lazy:
         return Prod(*ops)
