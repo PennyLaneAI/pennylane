@@ -1329,3 +1329,119 @@ class TestPauliRep:
         """Compares the matrix representation obtained after using the .pauli_rep attribute with the result of the .matrix() method."""
         assert np.allclose(op.matrix(), qp.matrix(op.pauli_rep, wire_order=op.wires))
         assert np.allclose(rep, qp.matrix(op.pauli_rep, wire_order=op.wires))
+
+
+class TestPPR:
+    """Tests for the fixed-angle Pauli product rotation (PPR)."""
+
+    @pytest.mark.parametrize("denominator", [-4, -2, -1, 1, 2, 4])
+    def test_allowed_denominators(self, denominator):
+        """Test that all allowed angle denominators can be used."""
+        op = qp.PPR(denominator, "XY", wires=[0, 1])
+        assert op.angle_denominator == denominator
+        assert op.pauli_word == "XY"
+        assert op.wires == Wires([0, 1])
+
+    def test_no_trainable_parameters(self):
+        """Test that the angle is a compilable, not a dynamic argument."""
+        op = qp.PPR(4, "XY", wires=[0, 1])
+        assert op.data == ()
+        assert op.parameters == []
+        assert op.hyperparameters == {"angle_denominator": 4, "pauli_word": "XY"}
+
+    def test_standard_validity(self):
+        """Run the standard operator validity checks."""
+        qp.ops.functions.assert_valid(qp.PPR(2, "ZXY", wires=[0, 1, 2]))
+
+    @pytest.mark.parametrize("denominator", [0, 3, 8, -3, -8, 1.0, 2.0, np.pi / 4, "4"])
+    def test_invalid_denominator_raises(self, denominator):
+        """Test that only exact integers from the Clifford+T set are accepted."""
+        with pytest.raises(ValueError, match="angle denominator must be an integer in"):
+            qp.PPR(denominator, "X", wires=0)
+
+    @pytest.mark.parametrize("denominator", [np.int64(4), np.int32(-2)])
+    def test_numpy_integer_denominator(self, denominator):
+        """Test that NumPy integers are accepted as angle denominators."""
+        assert qp.PPR(denominator, "X", wires=0).angle_denominator == denominator
+
+    @pytest.mark.parametrize("pauli_word", ["I", "IX", "XA", "xy"])
+    def test_invalid_pauli_word_raises(self, pauli_word):
+        """Test that Pauli words with characters other than X, Y and Z are rejected."""
+        with pytest.raises(ValueError, match="contains characters that are not allowed"):
+            qp.PPR(4, pauli_word, wires=range(len(pauli_word)))
+
+    @pytest.mark.parametrize("pauli_word, wires", [("XY", [0]), ("X", [0, 1]), ("", [0])])
+    def test_wire_count_mismatch_raises(self, pauli_word, wires):
+        """Test that the Pauli word length must match the number of wires."""
+        with pytest.raises(ValueError, match="number of wires must be equal to the length"):
+            qp.PPR(4, pauli_word, wires=wires)
+
+    def test_no_wires_raises(self):
+        """Test that at least one wire has to be provided."""
+        with pytest.raises(ValueError, match="At least one wire has to be provided"):
+            qp.PPR(4, "", wires=[])
+
+    @pytest.mark.parametrize(
+        "denominator, expected",
+        [
+            (1, "PPR(π, Z)"),
+            (-1, "PPR(-π, Z)"),
+            (2, "PPR(π/2, Z)"),
+            (-2, "PPR(-π/2, Z)"),
+            (4, "PPR(π/4, Z)"),
+        ],
+    )
+    def test_label(self, denominator, expected):
+        """Test that the label contains the Pauli word and the angle."""
+        assert qp.PPR(denominator, "Z", wires=0).label() == expected
+
+    def test_label_base_label(self):
+        """Test that the label can be overridden."""
+        assert qp.PPR(4, "XY", wires=[0, 1]).label(base_label="my_ppr") == "my_ppr"
+
+    def test_repr(self):
+        """Test the string representation."""
+        assert repr(qp.PPR(-4, "XY", wires=[0, 1])) == "PPR(-4, 'XY', wires=[0, 1])"
+
+    def test_equality_and_hash(self):
+        """Test that the angle denominator is taken into account by equality and hashing."""
+        op = qp.PPR(4, "XY", wires=[0, 1])
+        assert qp.equal(op, qp.PPR(4, "XY", wires=[0, 1]))
+        assert hash(op) == hash(qp.PPR(4, "XY", wires=[0, 1]))
+        assert not qp.equal(op, qp.PPR(-4, "XY", wires=[0, 1]))
+        assert not qp.equal(op, qp.PPR(4, "YX", wires=[0, 1]))
+
+    def test_map_wires(self):
+        """Test that the wires can be remapped."""
+        op = qp.PPR(4, "XY", wires=[0, 1]).map_wires({0: "a", 1: "b"})
+        assert op.wires == Wires(["a", "b"])
+        assert op.angle_denominator == 4
+        assert op.pauli_word == "XY"
+
+    @pytest.mark.capture
+    def test_capture(self):
+        """Test that the angle denominator is captured as a compilable argument."""
+        import jax
+
+        jaxpr = jax.make_jaxpr(lambda: qp.PPR(4, "XY", wires=[0, 1]))()
+
+        (eqn,) = jaxpr.eqns
+        assert eqn.params["op_cls"] is qp.PPR
+        assert eqn.params["angle_denominator"][0] == (4,)
+        assert eqn.params["pauli_word"][0] == ("XY",)
+
+    def test_abstract_init(self):
+        """Test that the operator can be initialized with abstract inputs"""
+        # angle_denominator and pauli_word are compilable args, so they are provided concretely.
+        op = qp.PPR(-2, "XY", wires=Wire[2])
+        assert op.angle_denominator == -2
+        assert op.pauli_word == "XY"
+        assert len(op.wires) == 2
+
+    @pytest.mark.jax
+    def test_abstractify(self):
+        """Test that the operator can be abstractified."""
+        op = abstractify(qp.PPR(4, "XY", wires=[0, 1]))
+        assert op.angle_denominator == 4
+        assert op.pauli_word == "XY"
+        assert len(op.wires) == 2
