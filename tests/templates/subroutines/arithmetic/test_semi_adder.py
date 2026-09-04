@@ -22,15 +22,13 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.templates.subroutines.arithmetic.semi_adder import (
     _controlled_semi_adder,
     _semi_adder_ppm,
     _semi_adder_ppm_condition,
-    _semi_adder_ppm_resources,
     _semi_adder_ppm_work_wires,
 )
-from pennylane.typing import Float, Wire
+from pennylane.typing import Wire
 from pennylane.wires import Wires
 
 
@@ -391,7 +389,6 @@ class TestSemiAdder:
             if not rule.is_applicable(**decomp_args):
                 continue
             # pylint: disable-next=protected-access
-
             subroutine = qp.capture.subroutine(partial(rule._impl, work_wire_type="borrowed"))
             jax.make_jaxpr(subroutine)(**decomp_args)
 
@@ -411,6 +408,23 @@ class TestSemiAdderPPM:
         """The ladder needs the carries, the shared auxiliary qubit and one wire held at |0>."""
         spec = _semi_adder_ppm_work_wires(y_wires=Wire[num_y_wires], work_wires=Wire[num_provided])
         assert spec == {"zeroed": expected}
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize("num_provided", [0, 2])
+    def test_ppm_allocates_missing_work_wires(self, num_provided):
+        """Test that the work wires that were not provided are allocated and given back."""
+        import jax
+
+        jaxpr = jax.make_jaxpr(qp.capture.subroutine(_semi_adder_ppm))(
+            Wires([0, 1]), Wires([2, 3]), list(range(4, 4 + num_provided))
+        )
+        eqns = jaxpr.eqns[0].params["jaxpr"].eqns
+        allocations = [eqn for eqn in eqns if str(eqn.primitive) == "allocate"]
+        assert len(allocations) == 1
+        # the ladder needs len(y_wires) + 1 = 3 work wires in total
+        assert allocations[0].params["num_wires"] == 3 - num_provided
+        assert allocations[0].params["restored"] is True
+        assert len([eqn for eqn in eqns if str(eqn.primitive) == "deallocate"]) == 1
 
     @pytest.mark.catalyst
     @pytest.mark.parametrize(("num_x_wires", "num_y_wires"), [(1, 1), (2, 2), (2, 3), (3, 3)])
