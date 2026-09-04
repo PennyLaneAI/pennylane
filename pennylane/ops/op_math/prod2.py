@@ -92,6 +92,9 @@ class Prod2(CompositeOp2):
 
     hybrid_argnames = ("operands", "_init_pauli_rep")
 
+    # FIX: Remove once 'Prod' is gone.
+    name = "Prod"
+
     _op_symbol = "@"
     _math_op = staticmethod(math.prod)
 
