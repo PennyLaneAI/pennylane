@@ -27,13 +27,6 @@ from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.op_math.prod2 import Prod2
 from pennylane.typing import Wire
 
-prod2_differentiability_pl2do = pytest.mark.pl2do(
-    reason=(
-        "[sc-129513] Differentiating PrepSelPrep needs bind_new_parameters "
-        "support for Prod2/CompositeOp2."
-    )
-)
-
 
 @pytest.mark.jax
 @pytest.mark.parametrize(
