@@ -16,23 +16,29 @@ This file contains the implementation of the ``Prod2`` class, an :class:`~.Opera
 symbolic operator representing the product of operators.
 """
 
+import itertools
 from collections import Counter
+from copy import copy
 from functools import reduce
-from typing import override
+from typing import Union, override
 
 from scipy.sparse import kron as sparse_kron
 
 import pennylane as qp
 from pennylane import math
-from pennylane.core.operator import Operator, abstractify
+from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.core.queuing import apply
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
+from ..qubit.non_parametric_ops import PauliX, PauliY, PauliZ
 from .composite import handle_recursion_error
 from .composite2 import CompositeOp2
+from .pow import Pow
+from .sprod import SProd
+from .sum import Sum
 
 MAX_NUM_WIRES_KRON_PRODUCT = 9
 """The maximum number of wires up to which using ``math.kron`` is faster than ``math.dot`` for
@@ -91,9 +97,6 @@ class Prod2(CompositeOp2):
     """
 
     hybrid_argnames = ("operands", "_init_pauli_rep")
-
-    # FIX: Remove once 'Prod' is gone.
-    name = "Prod"
 
     _op_symbol = "@"
     _math_op = staticmethod(math.prod)
@@ -212,6 +215,99 @@ class Prod2(CompositeOp2):
     def adjoint(self) -> "Prod2":
         return Prod2([qp.adjoint(factor) for factor in self[::-1]])
 
+    @property
+    @override
+    def name(self) -> str:
+        """The legacy 'Prod' name, so name-keyed dispatch keeps recognizing products."""
+        return "Prod"
+
+    def _simplify_factors(self, factors: tuple[Operator2]) -> tuple[complex, Operator2]:
+        """Reduces the depth of nested factors and groups identical factors.
+
+        Returns:
+            Tuple[complex, List[~.operation.Operator]: tuple containing the global phase and a list
+            of the simplified factors
+        """
+        new_factors = _ProductFactorsGrouping()
+
+        for factor in factors:
+            simplified_factor = factor.simplify()
+            new_factors.add(factor=simplified_factor)
+        new_factors.remove_factors(wires=self.wires)
+        return new_factors.global_phase, new_factors.factors
+
+    @handle_recursion_error
+    def terms(self):
+        r"""Representation of the operator as a linear combination of other operators.
+
+        .. math:: O = \sum_i c_i O_i
+
+        A ``TermsUndefinedError`` is raised if no representation by terms is defined.
+
+        Returns:
+            tuple[list[tensor_like or float], list[.Operation]]: list of coefficients :math:`c_i`
+            and list of operations :math:`O_i`
+
+        **Example**
+
+        >>> op = qp.X(0) @ (0.5 * qp.X(1) + qp.X(2))
+        >>> op.terms()
+        ([np.float64(0.5), 1.0], [X(0) @ X(1), X(0) @ X(2)])
+
+        """
+        # try using pauli_rep:
+        if pr := self.pauli_rep:
+            with qp.QueuingManager.stop_recording():
+                ops = [pauli.operation() for pauli in pr.keys()]
+            return list(pr.values()), ops
+
+        with qp.QueuingManager.stop_recording():
+            global_phase, factors = self._simplify_factors(factors=self.operands)
+            factors = list(itertools.product(*factors))
+
+            factors = [
+                Prod2(factor).simplify() if len(factor) > 1 else factor[0] for factor in factors
+            ]
+
+        # harvest coeffs and ops
+        coeffs = []
+        ops = []
+        for factor in factors:
+            if isinstance(factor, SProd):
+                coeffs.append(global_phase * factor.scalar)
+                ops.append(factor.base)
+            else:
+                coeffs.append(global_phase)
+                ops.append(factor)
+        return coeffs, ops
+
+    @handle_recursion_error
+    def simplify(self) -> Union["Prod2", Sum]:
+        r"""
+        Transforms any nested Prod instance into the form :math:`\sum c_i O_i` where
+        :math:`c_i` is a scalar coefficient and :math:`O_i` is a single PL operator
+        or pure product of single PL operators.
+        """
+        # try using pauli_rep:
+        if pr := self.pauli_rep:
+            pr.prune()
+            return pr.operation(wire_order=self.wires)
+
+        global_phase, factors = self._simplify_factors(factors=self.operands)
+
+        factors = list(itertools.product(*factors))
+        if len(factors) == 1:
+            factor = factors[0]
+            if len(factor) == 0:
+                op = qp.Identity(self.wires)
+            else:
+                op = factor[0] if len(factor) == 1 else Prod2(*factor)
+            return op if global_phase == 1 else qp.s_prod(global_phase, op)
+
+        factors = [Prod2(factor).simplify() if len(factor) > 1 else factor[0] for factor in factors]
+        op = Sum(*factors).simplify()
+        return op if global_phase == 1 else qp.s_prod(global_phase, op).simplify()
+
 
 @abstractify.register(Prod2)
 def _abstractify_prod2(val: Prod2):
@@ -231,3 +327,168 @@ def _prod2_decomp(operands, _init_pauli_rep=None):  # pylint: disable=unused-arg
 
 
 add_decomps(Prod2, _prod2_decomp)
+
+
+class _ProductFactorsGrouping:
+    """Utils class used for grouping identical product factors."""
+
+    _identity_map = {
+        "Identity": (1.0, "Identity"),
+        "PauliX": (1.0, "PauliX"),
+        "PauliY": (1.0, "PauliY"),
+        "PauliZ": (1.0, "PauliZ"),
+    }
+    _x_map = {
+        "Identity": (1.0, "PauliX"),
+        "PauliX": (1.0, "Identity"),
+        "PauliY": (1.0j, "PauliZ"),
+        "PauliZ": (-1.0j, "PauliY"),
+    }
+    _y_map = {
+        "Identity": (1.0, "PauliY"),
+        "PauliX": (-1.0j, "PauliZ"),
+        "PauliY": (1.0, "Identity"),
+        "PauliZ": (1.0j, "PauliX"),
+    }
+    _z_map = {
+        "Identity": (1.0, "PauliZ"),
+        "PauliX": (1.0j, "PauliY"),
+        "PauliY": (-1.0j, "PauliX"),
+        "PauliZ": (1.0, "Identity"),
+    }
+    _pauli_mult = {"Identity": _identity_map, "PauliX": _x_map, "PauliY": _y_map, "PauliZ": _z_map}
+    _paulis = {"PauliX": PauliX, "PauliY": PauliY, "PauliZ": PauliZ}
+
+    def __init__(self):
+        self._pauli_factors = {}  #  {wire: (pauli_coeff, pauli_word)}
+        self._non_pauli_factors = {}  # {wires: [hash, exponent, operator]}
+        self._factors = []
+        self.global_phase = 1
+
+    def add(self, factor: Operator):
+        """Add factor.
+
+        Args:
+            factor (Operator): Factor to add.
+        """
+        wires = factor.wires
+        if isinstance(factor, Prod2):
+            for prod_factor in factor:
+                self.add(prod_factor)
+        elif isinstance(factor, Sum):
+            self._remove_pauli_factors(wires=wires)
+            self._remove_non_pauli_factors(wires=wires)
+            self._factors += (factor.operands,)
+        elif not isinstance(factor, qp.Identity):
+            if isinstance(factor, SProd):
+                self.global_phase *= factor.scalar
+                factor = factor.base
+            if isinstance(factor, (qp.Identity, qp.X, qp.Y, qp.Z)):
+                self._add_pauli_factor(factor=factor, wires=wires)
+                self._remove_non_pauli_factors(wires=wires)
+            else:
+                self._add_non_pauli_factor(factor=factor, wires=wires)
+                self._remove_pauli_factors(wires=wires)
+
+    def _add_pauli_factor(self, factor: Operator, wires: list[int]):
+        """Adds the given Pauli operator to the temporary ``self._pauli_factors`` dictionary. If
+        there was another Pauli operator acting on the same wire, the two operators are grouped
+        together using the ``self._pauli_mult`` dictionary.
+
+        Args:
+            factor (Operator): Factor to be added.
+            wires (List[int]): Factor wires. This argument is added to avoid calling
+                ``factor.wires`` several times.
+        """
+        wire = wires[0]
+        op2_name = factor.name
+        old_coeff, old_word = self._pauli_factors.get(wire, (1, "Identity"))
+        coeff, new_word = self._pauli_mult[old_word][op2_name]
+        self._pauli_factors[wire] = old_coeff * coeff, new_word
+
+    def _add_non_pauli_factor(self, factor: Operator, wires: list[int]):
+        """Adds the given non-Pauli factor to the temporary ``self._non_pauli_factors`` dictionary.
+        If there alerady exists an identical operator in the dictionary, the two are grouped
+        together.
+
+        If there isn't an identical operator in the dictionary, all non Pauli factors that act on
+        the same wires are removed and added to the ``self._factors`` tuple.
+
+        Args:
+            factor (Operator): Factor to be added.
+            wires (List[int]): Factor wires. This argument is added to avoid calling
+                ``factor.wires`` several times.
+        """
+        if isinstance(factor, Pow):
+            exponent = factor.z
+            factor = factor.base
+        else:
+            exponent = 1
+        op_hash = hash(factor)
+        old_hash, old_exponent, old_op = self._non_pauli_factors.get(wires, [None, None, None])
+        if isinstance(old_op, (qp.RX, qp.RY, qp.RZ)) and factor.name == old_op.name:
+            self._non_pauli_factors[wires] = [
+                op_hash,
+                old_exponent,
+                factor.__class__(factor.data[0] + old_op.data[0], wires).simplify(),
+            ]
+        elif op_hash == old_hash:
+            self._non_pauli_factors[wires][1] += exponent
+        else:
+            self._remove_non_pauli_factors(wires=wires)
+            self._non_pauli_factors[wires] = [op_hash, copy(exponent), factor]
+
+    def _remove_non_pauli_factors(self, wires: list[int]):
+        """Remove all factors from the ``self._non_pauli_factors`` dictionary that act on the given
+        wires and add them to the ``self._factors`` tuple.
+
+        Args:
+            wires (List[int]): Wires of the operators to be removed.
+        """
+        if not self._non_pauli_factors:
+            return
+        for wire in wires:
+            for key, (_, exponent, op) in list(self._non_pauli_factors.items()):
+                if wire in key:
+                    self._non_pauli_factors.pop(key)
+                    if exponent == 0:
+                        continue
+                    if exponent != 1:
+                        op = Pow(base=op, z=exponent).simplify()
+                    if not isinstance(op, qp.Identity):
+                        self._factors += ((op,),)
+
+    def _remove_pauli_factors(self, wires: list[int]):
+        """Remove all Pauli factors from the ``self._pauli_factors`` dictionary that act on the
+        given wires and add them to the ``self._factors`` tuple.
+
+        Args:
+            wires (List[int]): Wires of the operators to be removed.
+        """
+        if not self._pauli_factors:
+            return
+        for wire in wires:
+            pauli_coeff, pauli_word = self._pauli_factors.pop(wire, (1, "Identity"))
+            if pauli_word != "Identity":
+                pauli_op = self._paulis[pauli_word](wire)
+                self._factors += ((pauli_op,),)
+            self.global_phase *= pauli_coeff
+
+    def remove_factors(self, wires: list[int]):
+        """Remove all factors from the ``self._pauli_factors`` and ``self._non_pauli_factors``
+        dictionaries that act on the given wires and add them to the ``self._factors`` tuple.
+
+        Args:
+            wires (List[int]): Wires of the operators to be removed.
+        """
+        self._remove_pauli_factors(wires=wires)
+        self._remove_non_pauli_factors(wires=wires)
+
+    @property
+    def factors(self):
+        """Grouped factors tuple.
+
+        Returns:
+            tuple: Tuple of grouped factors.
+        """
+        return tuple(self._factors)
