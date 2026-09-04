@@ -501,13 +501,25 @@ class TestOutMultiplier:
     ):  # pylint: disable=too-many-arguments
         """Tests the decomposition rule implemented with the new system
         with output_wires_zeroed=True."""
+
         op = qp.OutMultiplier(
-            x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=True
+            x_wires,
+            y_wires,
+            output_wires,
+            mod,
+            work_wires,
+            output_wires_zeroed=True,
         )
         for j, rule in enumerate(qp.list_decomps(qp.OutMultiplier)):
             applicable = rule.is_applicable(**op.arguments)
             assert applicable is (j in applicable_rules)
             _test_decomposition_rule(op, rule)
+
+        if qp.capture.enabled():
+            pytest.skip("The following test relies on executing a qnode with capture.")
+
+        for rule in qp.list_decomps(qp.OutMultiplier):
+            applicable = rule.is_applicable(**op.arguments)
             if applicable:
                 all_wires = (x_wires, y_wires, output_wires, work_wires)
                 _test_mult_correctness(all_wires, mod, rule, seed, output_wires_zeroed=True)
@@ -522,11 +534,18 @@ class TestOutMultiplier:
     ):  # pylint: disable=too-many-arguments
         """Tests the decomposition rule implemented with the new system
         with output_wires_zeroed=False (default)."""
+
         op = qp.OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
         for j, rule in enumerate(qp.list_decomps(qp.OutMultiplier)):
             applicable = rule.is_applicable(**op.arguments)
             assert applicable is (j in applicable_rules)
             _test_decomposition_rule(op, rule)
+
+        if qp.capture.enabled():
+            pytest.skip("The following test relies on executing a qnode with capture.")
+
+        for rule in qp.list_decomps(qp.OutMultiplier):
+            applicable = rule.is_applicable(**op.arguments)
             if applicable:
                 all_wires = (x_wires, y_wires, output_wires, work_wires)
                 _test_mult_correctness(all_wires, mod, rule, seed)

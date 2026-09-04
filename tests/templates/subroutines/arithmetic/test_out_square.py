@@ -114,7 +114,7 @@ def _test_square_correctness(all_wires, rule, seed, output_wires_zeroed, use_jit
     if work_wires:
         total_wires += work_wires
 
-    dev = qp.device("lightning.qubit", wires=max(total_wires) + 1)
+    dev = qp.device("lightning.qubit")
 
     @qp.qnode(dev)
     def circuit(x_state, y_state, output_state):

@@ -351,7 +351,13 @@ class TestSignedOutSquare:
             _test_decomposition_rule(op, rule)
             assert rule.is_applicable(**op.arguments)
             all_wires = (x_wires, output_wires, work_wires)
-            _test_square_correctness(all_wires, rule, seed, output_wires_zeroed, use_jit)
+
+        if qp.capture.enabled():
+            pytest.skip("The following test relies on executing a qnode with capture.")
+
+        for rule in qp.list_decomps(SignedOutSquare):
+            if not qp.capture.enabled():
+                _test_square_correctness(all_wires, rule, seed, output_wires_zeroed, use_jit)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(
