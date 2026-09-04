@@ -279,7 +279,12 @@ add_decomps(TemporaryAND, _temporary_and, _temporary_and_to_toffoli)
 
 
 def _adjoint_temporary_and_resources(*_, **__):
-    return {ops.Hadamard: 1, ops.MidMeasure: 1, ops.CZ: 1, ops.X: _number_xs}
+    return {
+        ops.Hadamard: 1,
+        ops.MidMeasure(Wire[1], reset=True): 1,
+        ops.CZ: 1,
+        ops.X: _number_xs,
+    }
 
 
 @register_resources(_adjoint_temporary_and_resources, exact=False)
