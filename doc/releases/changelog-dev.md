@@ -436,6 +436,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Added a decomposition of :class:`~.TemporaryAND` directly to four :math:`\pi/8` PPRs.
+  [(#10108)](https://github.com/PennyLaneAI/pennylane/pull/10108)
+
 * :func:`~.SumOfSlatersPrep.required_register_sizes` now works with abstract ``indices`` as input,
   for which it returns an upper bound for the register sizes, across any set of indices of the
   provided length.
