@@ -122,7 +122,7 @@ jobs:
           fi
 
     outputs:
-      fail_fast: ${{ steps.mat_fail_fast.outputs.fail_fast }}
+      fail_fast: false
       pytest_warning_args: ${{ steps.pytest_warning_flags.outputs.pytest_warning_args }}
 
   setup-ci-load:

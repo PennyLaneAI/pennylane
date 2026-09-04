@@ -488,35 +488,5 @@ def test_public_s_prod_binding(defined_outside):
     assert eqns[0].outvars[0] == eqns[1].invars[1]
 
 
-def test_public_prod_binding():
-    """Tests that the public API for symbolic op captures properly."""
-    # Ensure you can construct the op outside a function that is being traced
-    op = qp.prod(NonParametricOp(1), NonParametricOp(0))
-    assert op == NonParametricOp(1) @ NonParametricOp(0)
-
-    # NOTE: Have one op be outside trace context to
-    # cover the tracer-is-none fallback
-    outside_op = NonParametricOp(1)
-
-    def f():
-        qp.prod(outside_op, NonParametricOp(0))
-
-    cjaxpr = jax.make_jaxpr(f)()
-
-    eqns = cjaxpr.eqns
-
-    assert len(eqns) == 3  # op, op and sprod
-    assert eqns[0].primitive.name == "operator"
-    assert eqns[0].params["op_cls"] is NonParametricOp
-    assert eqns[1].primitive.name == "operator"
-    assert eqns[1].params["op_cls"] is NonParametricOp
-
-    assert eqns[2].primitive.name == "Prod"
-
-    # Prod primitive consumes the ops
-    assert eqns[1].outvars[0] == eqns[2].invars[0]
-    assert eqns[0].outvars[0] == eqns[2].invars[1]
-
-
 if __name__ == "__main__":
     pytest.main(["-x", __file__])

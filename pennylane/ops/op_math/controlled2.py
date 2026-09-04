@@ -46,6 +46,7 @@ from pennylane.decomposition.resources import (
     controlled_resource_rep,
     resolve_work_wire_type,
 )
+from pennylane.decomposition.utils import to_name
 from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.ops.op_math.adjoint2 import Adjoint2, get_traced_and_non_traced_args
 from pennylane.typing import AbstractArray, AbstractWires, Bool, Complex, Wire
@@ -906,3 +907,8 @@ def _ctrl_abstract(
         work_wire_type=work_wire_type,
     )
     return abstractify(op)
+
+
+@to_name.register
+def _controlledop2_to_name(op: ControlledOp2):
+    return f"C({to_name(op.base)})"
