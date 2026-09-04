@@ -119,7 +119,7 @@ class TestInspectDecompGraph:
             5: ─╰●─╰●────────╰●─┤  
             Estimated First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool)): 2, PauliX: 3}
             Actual First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool)): 2}
-            Full Expansion Gates: {CNOT: 160, GlobalPhase: 140, RX: 64, RY: 24, RZ: 136}
+            Full Expansion Gates: {CNOT: 160, GlobalPhase: 140, RX: 56, RY: 24, RZ: 144}
             Weighted Cost: 384.0
             """).strip()
 
@@ -151,9 +151,9 @@ class TestInspectDecompGraph:
             | :--- | :--- |
             | CNOT | 160 |
             | GlobalPhase | 140 |
-            | RX | 64 |
+            | RX | 56 |
             | RY | 24 |
-            | RZ | 136 |
+            | RZ | 144 |
             | **Weighted Cost** | 384.0 |
             </details>
             """).strip()
@@ -274,7 +274,7 @@ class TestInspectDecompGraph:
              [ 5.34910791e-34+0.j          9.23879533e-01-0.38268343j]]
             Estimated First-Level Expansion Gates: {Adjoint(QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1))): 2, CNOT: 2, Controlled(GlobalPhase, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, Hadamard: 2, MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool)): 2, PauliX: 3, QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1)): 2}
             Actual First-Level Expansion Gates: {Adjoint(QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1))): 2, CNOT: 2, Controlled(GlobalPhase, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, Hadamard: 2, MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool)): 2, QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1)): 2}
-            Full Expansion Gates: {CNOT: 24, GlobalPhase: 37, RX: 18, RY: 8, RZ: 31}
+            Full Expansion Gates: {CNOT: 24, GlobalPhase: 37, RX: 14, RY: 8, RZ: 35}
             Weighted Cost: 81.0
 
             Decomposition 1 (name: one_borrowed_worker)

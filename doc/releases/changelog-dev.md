@@ -9,6 +9,7 @@
   circuits. Together with :func:`~.pauli_measure`, this makes the building blocks of Pauli-based
   computations directly expressible.
   [(#10107)](https://github.com/PennyLaneAI/pennylane/pull/10107)
+  [(#10108)](https://github.com/PennyLaneAI/pennylane/pull/10108)
 
   ```pycon
   >>> import pennylane as qp
@@ -439,6 +440,9 @@
   The round is resolved from the device being traced, so the program has to be captured (`qp.qjit(capture=True)`). The controller's `in_bytes` and `out_bytes` capacities both default to 8 bytes, and the correction comes back as an `out_bytes`-sized `uint8` buffer. Pass `controller=` / `coprocessor=` to choose the nodes explicitly, `out_bytes=` to override the reply size, and `decoder_id=` to select which coprocessor-side decoder handles the round.
 
 <h3>Improvements 🛠</h3>
+
+* Added a decomposition of :class:`~.TemporaryAND` directly to four :math:`\pi/8` PPRs.
+  [(#10108)](https://github.com/PennyLaneAI/pennylane/pull/10108)
 
 * :func:`~.SumOfSlatersPrep.required_register_sizes` now works with abstract ``indices`` as input,
   for which it returns an upper bound for the register sizes, across any set of indices of the

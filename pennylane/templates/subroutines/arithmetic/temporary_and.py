@@ -275,7 +275,28 @@ def _temporary_and_to_toffoli(wires: WiresLike, control_values: Sequence[bool]):
     _toffoli_with_cvals(wires, control_values)
 
 
-add_decomps(TemporaryAND, _temporary_and, _temporary_and_to_toffoli)
+def _temporary_and__ppm_resources(*_, **__):
+    return {
+        ops.X: _number_xs,
+        ops.PPR(4, "ZZY", Wire[3]): 1,
+        ops.PPR(-4, "ZY", Wire[2]): 2,
+        ops.PPR(4, "Y", Wire[1]): 1,
+    }
+
+
+@register_resources(_temporary_and__ppm_resources, exact=False)
+def _temporary_and_ppm(wires: WiresLike, control_values: Sequence[bool]):
+    ops.cond(math.logical_not(control_values[0]), ops.X)(wires[0])
+    ops.cond(math.logical_not(control_values[1]), ops.X)(wires[1])
+    ops.PPR(4, "ZZY", wires)
+    ops.PPR(-4, "ZY", wires[1:])
+    ops.PPR(-4, "ZY", wires[::2])
+    ops.PPR(4, "Y", wires[2:])
+    ops.cond(math.logical_not(control_values[0]), ops.X)(wires[0])
+    ops.cond(math.logical_not(control_values[1]), ops.X)(wires[1])
+
+
+add_decomps(TemporaryAND, _temporary_and, _temporary_and_to_toffoli, _temporary_and_ppm)
 
 
 def _adjoint_temporary_and_resources(*_, **__):
@@ -284,7 +305,8 @@ def _adjoint_temporary_and_resources(*_, **__):
 
 @register_resources(_adjoint_temporary_and_resources, exact=False)
 def _adjoint_temporary_and(base):
-    r"""The implementation of adjoint TemporaryAND by mid-circuit measurements as found in https://arxiv.org/abs/1805.03662."""
+    r"""The implementation of adjoint TemporaryAND by mid-circuit measurements
+    as found in https://arxiv.org/abs/1805.03662."""
     cvals = base.control_values
     ops.cond(math.logical_not(cvals[0]), ops.X)(base.wires[0])
     ops.cond(math.logical_not(cvals[1]), ops.X)(base.wires[1])
