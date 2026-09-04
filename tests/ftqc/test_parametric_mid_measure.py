@@ -34,7 +34,6 @@ from pennylane.ftqc import (
 from pennylane.ops import MeasurementValue, MidMeasure
 from pennylane.wires import Wires
 
-
 pytestmark = pytest.mark.pl2do(
     reason="Parametric mid-circuit measurements have not yet been migrated to Operator2."
 )
