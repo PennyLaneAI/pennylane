@@ -102,7 +102,6 @@ class TestAbstractSelect:
         assert op.control == qp.wires.Wires([0])
         assert op.work_wires == Wire[2]
         assert op.wires == qp.wires.Wires([0, 2])
-        assert len(op.work_wires) == 2
         assert op.target_wires == qp.wires.Wires([2])
         assert not op.is_fully_abstract
 
@@ -111,8 +110,8 @@ class TestAbstractSelect:
         op = qp.Select([abstractify(qp.X(2)), abstractify(qp.Y(3))], control=[0])
 
         assert op.control == qp.wires.Wires([0])
-        assert op.target_wires == Wire[-1]
-        assert op.wires == Wire[-1]
+        assert op.target_wires == Wire[2]
+        assert op.wires == Wire[3]
         assert len(op.ops) == 2
         assert not op.is_fully_abstract
 
@@ -121,8 +120,8 @@ class TestAbstractSelect:
         op = qp.Select([abstractify(qp.X(2)), qp.Y(3)], control=[0])
 
         assert op.control == qp.wires.Wires([0])
-        assert op.target_wires == Wire[-1]
-        assert op.wires == Wire[-1]
+        assert op.target_wires == Wire[2]
+        assert op.wires == Wire[3]
         assert len(op.ops) == 2
         assert not op.is_fully_abstract
 
@@ -139,13 +138,24 @@ class TestAbstractSelect:
         assert not op.is_fully_abstract
 
     def test_abstract_operators_and_control_wires(self):
-        """When both the target operators and the control wires are abstract, both
-        ``target_wires`` and ``wires`` are fully abstract."""
+        """Test instantiation when target operators and control wires are abstract."""
         op = qp.Select([abstractify(qp.X(2)), abstractify(qp.Y(3))], control=Wire[1])
 
         assert op.control == Wire[1]
-        assert op.target_wires == Wire[-1]
-        assert op.wires == Wire[-1]
+        assert op.target_wires == Wire[2]
+        assert op.wires == Wire[3]
+
+    def test_mixed_concrete_and_abstract_operators_with_overlapping_wires(self):
+        """Test instantiation with a mix of concrete and abstract target operators where
+        the concrete operators have shared wires."""
+        op = qp.Select(
+            [abstractify(qp.X(2)), qp.CNOT([0, 1]), qp.Toffoli([0, 1, 2])], control=[4, 5]
+        )
+
+        assert op.control == qp.wires.Wires([4, 5])
+        # One abstract wire, 3 concrete wires shared between the CNOT and Toffoli
+        assert op.target_wires == Wire[4]
+        assert op.wires == Wire[6]
 
     @staticmethod
     def _prod_rep(second_op_type):
@@ -174,8 +184,8 @@ class TestAbstractSelect:
         op = qp.Select([abstractify(qp.X(0)), rep], control=[0])
 
         assert op.control == qp.wires.Wires([0])
-        assert op.target_wires == Wire[-1]
-        assert op.wires == Wire[-1]
+        assert op.target_wires == Wire[1]
+        assert op.wires == Wire[2]
         assert len(op.ops) == 2
 
     def test_equal_resource_rep_ops(self):
