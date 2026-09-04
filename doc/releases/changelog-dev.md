@@ -2,6 +2,12 @@
 
 <h3>New features since last release</h3>
 
+* :func:`~.cond` now accepts an ``estimated_probability`` resource hint indicating the expected
+  probability with which each branch is triggered. The hint is passed through to Catalyst and used
+  by :func:`~.specs` to produce scalable yet accurate resource accounting for
+  :func:`~.qjit`-compiled functions.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
 * Two new numeric Hamiltonians called :class:`pennylane.CDFHamiltonian` (based on `arXiv:2506.15784, Sec. III A <https://arxiv.org/abs/2506.15784>`) and :class:`pennylane.CGFHamiltonian` have been added (based on `arXiv:2508.11865, Sec. III C <https://arxiv.org/abs/2508.11865>`), which define compressed double-factorized (CDF) and Christiansen greedy-fragmentation Hamiltonians, respectively. These Hamiltonians can be defined
   with both concrete numeric data or abstract data (using ``qp.typing.Float[...]``).
   [(#10048)](https://github.com/PennyLaneAI/pennylane/pull/10048)
