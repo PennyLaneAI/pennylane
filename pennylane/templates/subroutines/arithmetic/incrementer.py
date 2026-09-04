@@ -22,7 +22,7 @@ from pennylane.ops import CNOT, MultiControlledX, PauliX, X, adjoint, cond
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.typing import Wire
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import Wires, WiresLike, is_abstract_qubit
 
 from .temporary_and import TemporaryAND
 
@@ -195,14 +195,22 @@ def _incrementer_resources(wires, work_wires=None):  # pylint: disable=unused-ar
     return _core_incrementer_resources(len(wires))
 
 
+def _has_dynamic_qubits(wires):
+    """Whether any wire is a dynamically-allocated ``AbstractQubit`` handle (e.g. from
+    ``qp.allocate``), which cannot be stacked into a numeric array for the dynamic-slicing
+    ladder construction below. This forces the fallback decomposition; remove once dynamic-wire
+    indexing is supported (shortcut.com/story/129521)."""
+    return any(is_abstract_qubit(w) for w in wires)
+
+
 def _work_wire_condition(wires, work_wires):
-    return (len(work_wires) + 1) >= len(wires)
+    return (len(work_wires) + 1) >= len(wires) and not _has_dynamic_qubits(wires)
 
 
 def _ctrl_work_wire_condition(base, control_wires, work_wires, **_):
     num_wires = len(base.increment_wires) + len(control_wires)
     num_work_wires = len(base.work_wires) + len(work_wires)
-    return (num_work_wires + 1) >= num_wires
+    return (num_work_wires + 1) >= num_wires and not _has_dynamic_qubits(base.increment_wires)
 
 
 def _work_wire_inverse_condition(wires, work_wires):

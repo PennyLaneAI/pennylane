@@ -187,6 +187,23 @@ def bind_new_parameters_composite_op(op: CompositeOp, params: Sequence[TensorLik
     return op.__class__(*new_operands)
 
 
+@bind_new_parameters.register
+def bind_new_parameters_prod2(op: ops.Prod2, params: Sequence[TensorLike]):
+    params = tuple(params)
+    if not params:
+        return op.__class__(op.operands)
+
+    new_operands = []
+
+    for operand in op.operands:
+        op_num_params = operand.num_params
+        sub_params = params[:op_num_params]
+        params = params[op_num_params:]
+        new_operands.append(bind_new_parameters(operand, sub_params))
+
+    return op.__class__(tuple(new_operands))
+
+
 @bind_new_parameters.register(ops.CY)
 @bind_new_parameters.register(ops.CZ)
 @bind_new_parameters.register(ops.CH)
