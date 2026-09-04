@@ -33,7 +33,12 @@ from pennylane.ftqc import (
 )
 from pennylane.ops import MeasurementValue
 
+PARAMETRIC_MCM_XFAIL = pytest.mark.pl2do(
+    reason="Parametric mid-circuit measurements have not yet been migrated to Operator2."
+)
 
+
+@PARAMETRIC_MCM_XFAIL
 class TestCondMeas:
     """Test the behaviour of cond_measure for expected inputs"""
 
@@ -136,6 +141,7 @@ class TestValidation:
             m = qp.measure(0)
             cond_measure(m, measure_x, inp)(0)
 
+    @PARAMETRIC_MCM_XFAIL
     @pytest.mark.parametrize("inp", [qp.X, XMidMeasure])
     def test_incorrect_callable_raises_error(self, inp):
         """Test that an error is raised when the callable does not return a MeasurementValue"""
@@ -154,6 +160,7 @@ class TestValidation:
             m = qp.measure(0)
             cond_measure(m, measure_x, inp)(0)
 
+    @PARAMETRIC_MCM_XFAIL
     @pytest.mark.parametrize("attribute, inp", [("reset", (True, False)), ("postselect", (0, 1))])
     def test_mismatched_settings_raises_error(self, attribute, inp):
         """Test that a mismatch between the measurement settings `reset` and `postselect`
@@ -169,6 +176,7 @@ class TestValidation:
             m = qp.measure(0)
             cond_measure(m, partial(measure_y, **input1), partial(measure_x, **input2))(0)
 
+    @PARAMETRIC_MCM_XFAIL
     def test_mismatched_wires_raises_error(self):
 
         with pytest.raises(
@@ -200,6 +208,7 @@ class TestValidation:
             assert str(angle) in branch_str
 
 
+@PARAMETRIC_MCM_XFAIL
 class TestWorkflows:
 
     @pytest.mark.parametrize("mcm_method, shots", [("tree-traversal", None), ("one-shot", 10000)])

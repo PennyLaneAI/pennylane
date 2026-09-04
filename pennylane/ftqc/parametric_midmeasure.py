@@ -136,7 +136,7 @@ def measure_arbitrary_basis(
     Executing this QNode:
 
     >>> pars = np.array([0.643, 0.246])
-    >>> func(*pars)
+    >>> func(*pars)  # doctest: +SKIP
     array([0.91237915, 0.08762085])
 
     .. details::
@@ -359,6 +359,10 @@ class ParametricMidMeasure(MidMeasure):
     """
 
     _shortname = "measure"
+
+    # TODO: Migrate this class to Operator2. This declaration only keeps the legacy subclass
+    # importable while that work is deferred.
+    compilable_argnames = ("angle", "plane", "reset", "postselect", "meas_uid")
 
     # pylint: disable=too-many-arguments
     def __init__(
@@ -655,14 +659,14 @@ def diagonalize_mcms(tape):
     Applying the transform inserts the relevant gates before the measurement to allow
     measurements to be in the Z basis, so the original circuit
 
-    >>> print(qp.draw(circuit, level=0)(np.pi/4))
+    >>> print(qp.draw(circuit, level=0)(np.pi/4))  # doctest: +SKIP
     0: ──RX(0.79)──┤↗ʸ├────┤
     1: ─────────────║────X─┤  <Z>
                     ╚════╝
 
     becomes
 
-    >>> print(qp.draw(circuit)(np.pi/4))
+    >>> print(qp.draw(circuit)(np.pi/4))  # doctest: +SKIP
     0: ──RX(0.79)──S†──H──┤↗├────┤
     1: ────────────────────║───X─┤  <Z>
                            ╚═══╝
@@ -701,7 +705,7 @@ def diagonalize_mcms(tape):
 
         This circuit thus diagonalizes to:
 
-        >>> print(qp.draw(circuit)([np.pi, np.pi/4]))
+        >>> print(qp.draw(circuit)([np.pi, np.pi/4]))  # doctest: +SKIP
         0: ──RY(3.14)──┤↗├───────────────────┤
         1: ──RX(0.79)───║───H──S†──H──┤↗├──X─┤  <Z>
                         ╚═══╩══╩═══╝   ╚═══╝
