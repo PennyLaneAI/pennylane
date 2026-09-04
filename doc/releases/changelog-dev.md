@@ -855,7 +855,7 @@
 
 * :class:`~.GlobalPhase` no longer accepts the `wires` argument in order to mirror its MLIR lowered operation.
   [(#9992)](https://github.com/PennyLaneAI/pennylane/pull/9992)
-  
+
 * :class:`~.BasisState` no longer allows integers as input. Instead, `~.math.int_to_binary` should be used to preprocess
   the input in order to convert it to a binary array.
   [(#9933)](https://github.com/PennyLaneAI/pennylane/pull/9933)
@@ -1044,6 +1044,15 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* The `_prepselprep_decomp` decomposition rule of :class:`~.PrepSelPrep` now applies the linear-combination
+  unitaries and their global phases as two separate :class:`~.Select` operators instead of a single ``Select``
+  of products.
+  [(#10020)](https://github.com/PennyLaneAI/pennylane/pull/10020)
+
+* The `_qrom_decomposition` decomposition rule of :class:`~.QROM` now loads each column of bitstrings with
+  a single :class:`~.MultiX` instead of a product of smaller :class:`~.BasisState` and ``Identity`` operators.
+  [(#10020)](https://github.com/PennyLaneAI/pennylane/pull/10020)
+
 * The resource module JSON parser can now handle floating point values received from the Catalyst backend.
   [(#10044)](https://github.com/PennyLaneAI/pennylane/pull/10044)
 
@@ -1115,7 +1124,8 @@
     - :class:`~.BasisRotation`, :class:`~.MultiplexerStatePreparation`, :class:`~.QROM`, :class:`~.QFT`, :class:`~.FlipSign`,
       :class:`~.TemporaryAND`, :class:`~.SelectPauliRot`, :class:`~.GQSP`, :class:`~.AQFT`, :class:`~.SumOfSlatersPrep`,
       :class:`~.SemiAdder`, :class:`~.OutMultiplier`, :class:`~.SignedOutMultiplier`, :class:`~.BasisState`, :class:`~.TrotterCDF`,
-      :class:`~.TrotterCGF`, :class:`~.OutSquare`, :class:`~.SignedOutSquare`, :class:`~.Incrementer`, :class:`~.TrotterVibronic`
+      :class:`~.TrotterCGF`, :class:`~.OutSquare`, :class:`~.SignedOutSquare`, :class:`~.Incrementer`, :class:`~.TrotterVibronic`,
+      :class:`~.Select`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
   [(#9925)](https://github.com/PennyLaneAI/pennylane/pull/9925)
   [(#9918)](https://github.com/PennyLaneAI/pennylane/pull/9918)
@@ -1142,6 +1152,7 @@
   [(#10078)](https://github.com/PennyLaneAI/pennylane/pull/10078)
   [(#10069)](https://github.com/PennyLaneAI/pennylane/pull/10069)
   [(#10085)](https://github.com/PennyLaneAI/pennylane/pull/10085)
+  [(#10020)](https://github.com/PennyLaneAI/pennylane/pull/10020)
   - Quantum chemistry operators are ported:
     - :class:`~.SingleExcitation`
   [(#9944)](https://github.com/PennyLaneAI/pennylane/pull/9944)
