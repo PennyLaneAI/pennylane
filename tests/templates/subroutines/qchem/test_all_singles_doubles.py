@@ -25,7 +25,9 @@ from pennylane import numpy as pnp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
-@pytest.mark.xfail_with_capture(reason="come back to this as we port it to Op2 [sc-128406]")
+@pytest.mark.disable_and_xfail_enable_capture(
+    reason="come back to this as we port it to Op2 [sc-128406]"
+)
 @pytest.mark.parametrize("singles", [None, np.array([[0, 1]])])
 @pytest.mark.parametrize("doubles", [None, np.array([[0, 1, 2, 3]])])
 def test_standard_validity(singles, doubles):

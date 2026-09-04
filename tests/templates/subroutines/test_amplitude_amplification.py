@@ -66,7 +66,7 @@ class TestInitialization:
         with pytest.raises(ValueError, match="work_wire must be different from the wires of O."):
             qp.AmplitudeAmplification(U, O, iters=3, fixed_point=fixed_point, work_wire=work_wire)
 
-    @pytest.mark.xfail_with_capture(
+    @pytest.mark.disable_and_xfail_enable_capture(
         reason="come back to this as we migrate AmplitudeAmplification [sc-128366]"
     )
     def test_standard_validity(self):
@@ -351,7 +351,7 @@ def test_fixed_point_angles_function(iters, p_min):
     assert all(isinstance(x, float) for x in betas)
 
 
-@pytest.mark.xfail_with_capture(
+@pytest.mark.disable_and_xfail_enable_capture(
     reason="come back to this as we migrate AmplitudeAmplification [sc-128366]"
 )
 @pytest.mark.parametrize(

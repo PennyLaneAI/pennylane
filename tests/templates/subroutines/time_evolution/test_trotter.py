@@ -363,7 +363,7 @@ class TestInitialization:
         assert op.hyperparameters == new_op.hyperparameters
         assert op is not new_op
 
-    @pytest.mark.xfail_with_capture(
+    @pytest.mark.disable_and_xfail_enable_capture(
         reason="come back to this after we migrate TrotterProduct [sc-128369]"
     )
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)

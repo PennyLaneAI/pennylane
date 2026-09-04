@@ -478,7 +478,7 @@ class TestSumOfSlatersPrep:
         indices = tuple(rng.choice(2**num_wires, size=num_entries, replace=False))
         return coefficients, indices
 
-    @pytest.mark.xfail_with_capture(
+    @pytest.mark.disable_and_xfail_enable_capture(
         reason="indexing into allocated wires not supported [sc-129521]"
     )
     @pytest.mark.parametrize(
@@ -492,7 +492,7 @@ class TestSumOfSlatersPrep:
         op = SumOfSlatersPrep(coefficients, wires, indices=indices)
         assert_valid(op, skip_differentiation=True)
 
-    @pytest.mark.xfail_with_capture(
+    @pytest.mark.disable_and_xfail_enable_capture(
         reason="indexing into allocated wires not supported [sc-129521]"
     )
     @pytest.mark.parametrize("n", [7, 9, 15, 16, 17])

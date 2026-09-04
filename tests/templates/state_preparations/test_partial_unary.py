@@ -350,7 +350,9 @@ class TestPartialUnaryStatePreparation:
         indices = tuple(rng.choice(2**num_wires, size=num_entries, replace=False))
         return coefficients, indices
 
-    @pytest.mark.xfail_with_capture(reason="come back to this when we port it to Op2. [sc-129858]")
+    @pytest.mark.disable_and_xfail_enable_capture(
+        reason="come back to this when we port it to Op2. [sc-129858]"
+    )
     @pytest.mark.parametrize("provide_work_wires", [False, True])
     @pytest.mark.parametrize(
         "num_wires, num_entries",

@@ -164,18 +164,18 @@ def enable_and_disable_capture(request):
     params=[False, pytest.param(True, marks=(pytest.mark.capture, pytest.mark.jax))],
     ids=["capture_disabled", "capture_enabled"],
 )
-def toggle_xfail_with_capture(request):
+def toggle_disable_and_xfail_enable_capture(request):
     """Run a test twice: once with capture disabled and once with capture enabled.
 
     The capture-enabled run is marked as ``xfail`` using the reason and ``strict`` flag
-    from the closest ``@pytest.mark.xfail_with_capture`` marker on the test.
+    from the closest ``@pytest.mark.disable_and_xfail_enable_capture`` marker on the test.
 
-    Applied automatically to tests decorated with ``@pytest.mark.xfail_with_capture``.
+    Applied automatically to tests decorated with ``@pytest.mark.disable_and_xfail_enable_capture``.
 
     Authored By: Cursor
 
     """
-    marker = request.node.get_closest_marker("xfail_with_capture")
+    marker = request.node.get_closest_marker("disable_and_xfail_enable_capture")
     if request.param and marker is not None:
         reason = marker.kwargs.get("reason", "")
         strict = marker.kwargs.get("strict", True)
@@ -262,11 +262,14 @@ def pytest_generate_tests(metafunc):
 
 @pytest.hookimpl(hookwrapper=True)
 def pytest_pycollect_makeitem(collector, name, obj):
-    """Attach the toggle fixture to tests marked with xfail_with_capture."""
+    """Attach the toggle fixture to tests marked with disable_and_xfail_enable_capture."""
     if callable(obj) and hasattr(obj, "pytestmark"):
         marks = obj.pytestmark if isinstance(obj.pytestmark, list) else [obj.pytestmark]
-        if any(getattr(mark, "name", None) == "xfail_with_capture" for mark in marks):
-            obj.pytestmark = [*marks, pytest.mark.usefixtures("toggle_xfail_with_capture")]
+        if any(getattr(mark, "name", None) == "disable_and_xfail_enable_capture" for mark in marks):
+            obj.pytestmark = [
+                *marks,
+                pytest.mark.usefixtures("toggle_disable_and_xfail_enable_capture"),
+            ]
     yield
 
 
