@@ -59,6 +59,7 @@ def test_abstract_data():
 
 
 @pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_assert_valid_qrom():
     """Run standard validity tests."""
     bitstrings = (
@@ -345,6 +346,7 @@ class TestQROM:
             ([[1], [0], [0], [1]], [0, 1], [2], [3, 4], False),
         ],  # pylint: disable=too-many-arguments
     )
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_new(
         self, bitstrings, control_wires, target_wires, work_wires, clean
     ):  # pylint: disable=too-many-arguments
