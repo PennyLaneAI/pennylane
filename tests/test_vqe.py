@@ -961,24 +961,26 @@ class TestNewVQE:
         dc = jax.grad(circuit)(w)
         assert np.allclose(dc, big_hamiltonian_grad, atol=tol)
 
+    @pytest.mark.catalyst
     def test_specs(self):
         """Test that the specs of a VQE circuit can be computed"""
-        dev = qp.device("default.qubit", wires=2)
+        dev = qp.device("lightning.qubit", wires=2)
         H = qp.Hamiltonian([0.1, 0.2], [qp.PauliZ(0), qp.PauliZ(0) @ qp.PauliX(1)])
 
+        @qp.qjit
         @qp.qnode(dev)
         def circuit():
             qp.Hadamard(wires=0)
             qp.CNOT(wires=[0, 1])
             return qp.expval(H)
 
-        res = qp.specs(circuit)()
+        res = qp.specs(circuit, level="user")()
 
         assert res["resources"] == qp.resource.SpecsResources(
             num_wires=2,
             counts={"Hadamard": 1, "CNOT": 1},
-            measurement_processes={"expval(Hamiltonian(num_wires=2, num_terms=2))": 1},
-            circuit_depth=2,
+            measurement_processes={"expval(Hamiltonian(num_terms=2))": 1},
+            circuit_depth=None,
         )
 
 
