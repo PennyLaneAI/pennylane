@@ -1237,6 +1237,4 @@ def _equal_compressed_resource_op(op1: CompressedResourceOp, op2: CompressedReso
     Resource representations (produced by abstractifying operators for the decomposition graph)
     appear, for example, as the target operators of an abstract ``Select``.
     """
-    if op1 == op2:
-        return True
-    return f"op1 and op2 are different resource representations. Got {op1} and {op2}."
+    return op1 == op2 or f"op1 and op2 are different resource representations. Got {op1} and {op2}."

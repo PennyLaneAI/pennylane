@@ -73,6 +73,17 @@ def test_composite_ops(op, new_params, expected_op):
     assert all(no is not o for no, o in zip(new_op.operands, op.operands))
 
 
+def test_prod2():
+    """Test that parameters nested in a Prod2 are rebound operand by operand."""
+    op = qp.ops.Prod2((qp.RZ(0.1, 0), qp.X(1), qp.RY(0.2, 2)))
+
+    new_op = bind_new_parameters(op, (0.3, 0.4))
+
+    qp.assert_equal(new_op, qp.ops.Prod2((qp.RZ(0.3, 0), qp.X(1), qp.RY(0.4, 2))))
+    assert new_op is not op
+    assert all(new_operand is not operand for new_operand, operand in zip(new_op, op))
+
+
 @pytest.mark.parametrize(
     "op, new_params, expected_op",
     [

@@ -272,6 +272,12 @@ class Prod(CompositeOp):
     _math_op = staticmethod(math.prod)
     grad_method = None
 
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        if subclass == qp.ops.op_math.Prod2:
+            return True
+        return NotImplemented
+
     @property
     def is_verified_hermitian(self):
         """Check if the product operator is hermitian.

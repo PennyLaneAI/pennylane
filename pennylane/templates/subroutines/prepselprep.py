@@ -22,11 +22,12 @@ from pennylane.core.operator import Operation, abstractify
 from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import (
     add_decomps,
-    change_op_basis_resource_rep,
     register_resources,
     resource_rep,
 )
 from pennylane.ops import GlobalPhase, StatePrep, change_op_basis
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.op_math.composite import CompositeOp
 from pennylane.ops.op_math.prod import prod
 from pennylane.ops.op_math.symbolicop import SymbolicOp
@@ -212,11 +213,15 @@ def _prepselprep_resources(op_reps, num_control):
         work_wires=Wire[0],
         partial=True,
     )
-    return {
-        change_op_basis_resource_rep(
-            resource_rep(StatePrep, num_wires=num_control), prod(select_lcu, select_phases)
+
+    _compute_op = resource_rep(StatePrep, num_wires=num_control)
+    _target_op = Prod2([select_lcu, select_phases])
+    resources = {
+        _change_op_basis_abstract(
+            _compute_op, _target_op, _adjoint_abstract(_compute_op),
         ): 1,
     }
+    return resources
 
 
 # pylint: disable=unused-argument
