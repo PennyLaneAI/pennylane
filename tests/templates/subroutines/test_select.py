@@ -129,6 +129,7 @@ class TestAbstractSelect:
         assert isinstance(op.control, AbstractWires)
         assert isinstance(op.work_wires, AbstractWires)
         assert op.target_wires == qp.wires.Wires([2, 3])
+        assert not op.is_fully_abstract
 
     @staticmethod
     def _prod_rep(second_op_type):
