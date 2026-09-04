@@ -23,6 +23,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.core.operator import abstractify
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.op_math.prod2 import Prod2
 from pennylane.typing import Wire
 
@@ -368,11 +369,10 @@ class TestPrepSelPrep:
         select_lcu = qp.Select(list(op_reps), control=Wire[2], work_wires=Wire[0], partial=True)
         select_phases = qp.Select([grep] * 3, control=Wire[2], work_wires=Wire[0], partial=True)
         expected_counts = {
-            qp.resource_rep(
-                qp.ops.ChangeOpBasis,
-                compute_op=qp.resource_rep(qp.StatePrep, num_wires=2),
-                target_op=Prod2([select_lcu, select_phases]),
-                uncompute_op=qp.resource_rep(
+            _change_op_basis_abstract(
+                qp.resource_rep(qp.StatePrep, num_wires=2),
+                Prod2([select_lcu, select_phases]),
+                qp.resource_rep(
                     qp.ops.Adjoint, base_class=qp.StatePrep, base_params={"num_wires": 2}
                 ),
             ): 1,
