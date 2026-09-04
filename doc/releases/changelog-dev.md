@@ -1046,7 +1046,7 @@
 
 * :func:`~pennylane.apply` is now defined in the standalone :mod:`pennylane.core.apply`
   module instead of :mod:`pennylane.core.queuing`.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#10114)](https://github.com/PennyLaneAI/pennylane/pull/10114)
 
 * The resource module JSON parser can now handle floating point values received from the Catalyst backend.
   [(#10044)](https://github.com/PennyLaneAI/pennylane/pull/10044)
