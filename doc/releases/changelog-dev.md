@@ -634,6 +634,7 @@
 
 * :func:`~core.queuing.apply` is now compatible with program capture.
   [(#9831)](https://github.com/PennyLaneAI/pennylane/pull/9831)
+  [(#10103)](https://github.com/PennyLaneAI/pennylane/pull/10103)
 
 * Implemented the `__str__` of `Wires` to display the wire labels as a list.
   [(#9860)](https://github.com/PennyLaneAI/pennylane/pull/9860)
