@@ -29,6 +29,7 @@ from pennylane import math
 from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.core.queuing import apply
 from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition.utils import to_name
 from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
@@ -327,6 +328,12 @@ def _prod2_decomp(operands, _init_pauli_rep=None):  # pylint: disable=unused-arg
 
 
 add_decomps(Prod2, _prod2_decomp)
+
+
+@to_name.register
+def _prod2_to_name(op):
+    """Prod2.name is Prod for device dispatch. Need to keep Prod2 decomp registry unique."""
+    return "Prod2"
 
 
 class _ProductFactorsGrouping:
