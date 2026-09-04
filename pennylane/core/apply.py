@@ -13,13 +13,6 @@
 # limitations under the License.
 r"""This module contains the :func:`apply` utility.
 
-.. currentmodule:: pennylane.core.apply
-
-.. autosummary::
-    :toctree: api
-
-    ~apply
-
 The ``apply`` utility records an instantiated operator or measurement in the active program,
 whether PennyLane is using a queuing context or program capture.
 """
