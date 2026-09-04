@@ -479,7 +479,9 @@ class TestSumOfSlatersPrep:
         return coefficients, indices
 
     @pytest.mark.disable_and_xfail_enable_capture(
-        reason="indexing into allocated wires not supported [sc-129521]"
+        # not all of the configurations in the parametrization fail.
+        reason="indexing into allocated wires not supported [sc-129521]",
+        strict=False,
     )
     @pytest.mark.parametrize(
         "num_wires, num_entries",

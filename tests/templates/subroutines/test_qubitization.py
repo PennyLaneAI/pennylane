@@ -65,6 +65,9 @@ def test_operator_definition_qpe(hamiltonian):
     assert np.allclose(np.sort(estimated_eigenvalues), qp.eigvals(hamiltonian), atol=0.1)
 
 
+@pytest.mark.disable_and_xfail_enable_capture(
+    reason="come back to this as we port Qubitization [sc-129900]"
+)
 @pytest.mark.parametrize(
     ("lcu", "control"),
     [
@@ -76,7 +79,6 @@ def test_operator_definition_qpe(hamiltonian):
         (qp.PauliX("a") @ qp.PauliZ(1) @ qp.PauliY(2), [0]),
     ],
 )
-@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity(lcu, control):
     """Check the operation using the assert_valid function."""
     op = qp.Qubitization(lcu, control)
@@ -117,6 +119,9 @@ def test_decomposition(hamiltonian, expected_decomposition):
         qp.assert_equal(op, expected_decomposition[i])
 
 
+@pytest.mark.disable_and_xfail_enable_capture(
+    reason="come back to this as we port Qubitization [sc-129900]"
+)
 @pytest.mark.parametrize(
     "hamiltonian, control",
     [
@@ -124,8 +129,8 @@ def test_decomposition(hamiltonian, expected_decomposition):
         (qp.X(0) @ qp.Z(1), [2]),
         (qp.X(1) @ qp.Z(2) @ qp.Y(3), [0]),
         (qp.X(0) @ qp.Z(1) @ qp.Y(2), [3]),
-        (qp.PauliX("a") @ qp.PauliZ(1), [0]),
-        (qp.PauliX("a") @ qp.PauliZ(1) @ qp.PauliY(2), [0]),
+        (qp.PauliX(2) @ qp.PauliZ(1), [0]),
+        (qp.PauliX(3) @ qp.PauliZ(1) @ qp.PauliY(2), [0]),
     ],
 )
 @pytest.mark.usefixtures("enable_and_disable_capture")

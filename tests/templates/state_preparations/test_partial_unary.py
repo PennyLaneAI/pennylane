@@ -351,7 +351,9 @@ class TestPartialUnaryStatePreparation:
         return coefficients, indices
 
     @pytest.mark.disable_and_xfail_enable_capture(
-        reason="come back to this when we port it to Op2. [sc-129858]"
+        # not all of the configurations in the parametrization fails
+        reason="come back to this when we port it to Op2. [sc-129858]",
+        strict=False,
     )
     @pytest.mark.parametrize("provide_work_wires", [False, True])
     @pytest.mark.parametrize(

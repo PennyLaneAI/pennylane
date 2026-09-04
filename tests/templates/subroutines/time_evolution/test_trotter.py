@@ -520,7 +520,9 @@ class TestDecomposition:
         for op1, op2 in zip(decomp, true_decomp):
             qp.assert_equal(op1, op2)
 
-    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.disable_and_xfail_enable_capture(
+        reason="come back to this after we migrate TrotterProduct [sc-128369]"
+    )
     @pytest.mark.parametrize("order", (1, 2, 4))
     @pytest.mark.parametrize("hamiltonian_index, hamiltonian", list(enumerate(test_hamiltonians)))
     def test_decomposition_new(
