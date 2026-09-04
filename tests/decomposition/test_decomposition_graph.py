@@ -130,9 +130,8 @@ class TestDecompGraphConstruction:
         h_rep = abstractify(qp.H)
 
         graph = DecompositionGraph(operations=[qp.Hadamard(0)], gate_set={"RX", "RY", "RZ"})
-        assert (
-            graph._get_decompositions(h_rep)._decomps == decompositions.get()["Hadamard"]._decomps
-        )
+        expected = decompositions.get()["Hadamard"]._decomps
+        assert graph._get_decompositions(h_rep)._decomps == expected
 
         graph = DecompositionGraph(
             operations=[qp.Hadamard(0)],
