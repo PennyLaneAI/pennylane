@@ -1721,10 +1721,7 @@ class TestMeasurementsEqual:
         mv1 = qp.measure(0)
         mv2 = qp.measure(0)
         # qp.equal of MidMeasure checks the id
-        # pylint: disable=protected-access
-        mv2.measurements[0]._hyperparameters["meas_uid"] = mv1.measurements[0]._hyperparameters[
-            "meas_uid"
-        ]
+        mv2.measurements[0].arguments["meas_uid"] = mv1.measurements[0].arguments["meas_uid"]
 
         assert qp.equal(mv1, mv1) is True
         assert qp.equal(mv1, mv2) is True
@@ -1741,10 +1738,7 @@ class TestMeasurementsEqual:
         mv2 = qp.measure(1)
         mv3 = qp.measure(0)
         # qp.equal of MidMeasure checks the id
-        # pylint: disable=protected-access
-        mv3.measurements[0]._hyperparameters["meas_uid"] = mv1.measurements[0]._hyperparameters[
-            "meas_uid"
-        ]
+        mv3.measurements[0].arguments["meas_uid"] = mv1.measurements[0].arguments["meas_uid"]
 
         assert qp.equal(mv1 * mv2, mv2 * mv1) is True
         assert qp.equal(mv1 + mv2, mv3 + mv2) is True
@@ -1759,10 +1753,7 @@ class TestMeasurementsEqual:
         mv2 = qp.measure(1)
         mv3 = qp.measure(1)
         mv4 = qp.measure(0)
-        # pylint: disable=protected-access
-        mv4.measurements[0]._hyperparameters["meas_uid"] = mv1.measurements[0]._hyperparameters[
-            "meas_uid"
-        ]
+        mv4.measurements[0].arguments["meas_uid"] = mv1.measurements[0].arguments["meas_uid"]
 
         mp1 = mp_fn(op=[mv1, mv2])
         mp2 = mp_fn(op=[mv4, mv2])
@@ -1792,10 +1783,7 @@ class TestMeasurementsEqual:
         mv2 = qp.measure(1)
         mv3 = qp.measure(1)
         mv4 = qp.measure(0)
-        # pylint: disable=protected-access
-        mv4.measurements[0]._hyperparameters["meas_uid"] = mv1.measurements[0]._hyperparameters[
-            "meas_uid"
-        ]
+        mv4.measurements[0].arguments["meas_uid"] = mv1.measurements[0].arguments["meas_uid"]
 
         mp1 = mp_fn(op=mv1 * mv2)
         mp2 = mp_fn(op=mv4 * mv2)
@@ -2189,10 +2177,7 @@ class TestSymbolicOpComparison:
         m2 = qp.measure(wire2)
         if wire1 == wire2:
             # qp.equal checks id for MidMeasure, but here we only care about them acting on the same wire
-            # pylint: disable=protected-access
-            m2.measurements[0]._hyperparameters["meas_uid"] = m1.measurements[0]._hyperparameters[
-                "meas_uid"
-            ]
+            m2.measurements[0].arguments["meas_uid"] = m1.measurements[0].arguments["meas_uid"]
         base = qp.PauliX(wire2)
         op1 = Conditional(m1, base)
         op2 = Conditional(m2, base)
