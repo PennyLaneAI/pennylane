@@ -35,6 +35,11 @@ from pennylane.ops import MeasurementValue, MidMeasure
 from pennylane.wires import Wires
 
 
+pytestmark = pytest.mark.pl2do(
+    reason="Parametric mid-circuit measurements have not yet been migrated to Operator2."
+)
+
+
 class TestParametricMidMeasure:
     """Tests for the parametric mid-circuit measurement class in an arbitrary basis"""
 
