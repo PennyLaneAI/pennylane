@@ -479,7 +479,9 @@ class TestDecompositions:
         """Tests that the decomposition of the IsingXX gate is correct"""
         param = 0.1234
         op = qp.IsingXX(param, wires=[3, 2])
-        res = op.decomposition()
+        # IsingXX decomposes into a single ChangeOpBasis;
+        # expand one more level to get at the three underlying gates.
+        res = op.decomposition()[0].decomposition()
 
         assert len(res) == 3
 
@@ -544,7 +546,9 @@ class TestDecompositions:
         """Tests that the decomposition of the broadcasted IsingXX gate is correct"""
         param = np.array([-0.1, 0.2, 0.5])
         op = qp.IsingXX(param, wires=[3, 2])
-        res = op.decomposition()
+        # IsingXX decomposes into a single ChangeOpBasis;
+        # expand one more level to get at the three underlying gates.
+        res = op.decomposition()[0].decomposition()
 
         assert len(res) == 3
 
@@ -574,7 +578,9 @@ class TestDecompositions:
         """Tests that the decomposition of the IsingYY gate is correct"""
         param = 0.1234
         op = qp.IsingYY(param, wires=[3, 2])
-        res = op.decomposition()
+        # IsingYY decomposes into a single ChangeOpBasis;
+        # expand one more level to get at the three underlying gates.
+        res = op.decomposition()[0].decomposition()
 
         assert len(res) == 3
 
@@ -602,7 +608,9 @@ class TestDecompositions:
         """Tests that the decomposition of the broadcasted IsingYY gate is correct"""
         param = np.array([-0.1, 0.2, 0.5])
         op = qp.IsingYY(param, wires=[3, 2])
-        res = op.decomposition()
+        # IsingYY decomposes into a single ChangeOpBasis;
+        # expand one more level to get at the three underlying gates.
+        res = op.decomposition()[0].decomposition()
 
         assert len(res) == 3
 
@@ -742,6 +750,66 @@ class TestDecompositions:
 
         gates = decomp.operations
         assert [g.name for g in gates] == ["CNOT", "RZ", "CNOT", "RZ", "CNOT", "CNOT"]
+        assert qp.math.allclose(gates[1].parameters[0], angle / 2)
+        assert qp.math.allclose(gates[3].parameters[0], -angle / 2)
+        mat = qp.matrix(decomp, wire_order=[2, 3, 4])
+        assert qp.math.allclose(mat, expected_matrix)
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_controlled_isingxx_decomposition_graph(self):
+        r"""Controlling ``IsingXX`` should control only the inner ``RX``, leaving the two
+        conjugating ``CNOT``'s bare. As for ``IsingZZ`` above, this comes out of the generic
+        ``C(ChangeOpBasis)`` rule rather than a dedicated ``C(IsingXX)`` rule. Here the inner
+        rotation sits on ``wires[0]`` (the *control* of the conjugating ``CNOT``), unlike
+        ``IsingZZ``, so the resulting circuit is checked separately."""
+        angle = 0.6931
+        op = qp.ctrl(qp.IsingXX(angle, wires=[2, 3]), control=[4])
+        tape = qp.tape.QuantumScript([op], [])
+        expected_matrix = qp.matrix(tape, wire_order=[2, 3, 4])
+
+        [decomp], _ = qp.transforms.decompose(
+            tape,
+            gate_set={qp.CNOT, qp.RX, qp.RZ, qp.Hadamard, qp.GlobalPhase, qp.PauliX},
+        )
+
+        gates = decomp.operations
+        # the controlled RX becomes H-RZ-CNOT-RZ-CNOT-H on the target
+        assert [g.name for g in gates] == [
+            "CNOT",
+            "Hadamard",
+            "RZ",
+            "CNOT",
+            "RZ",
+            "CNOT",
+            "Hadamard",
+            "CNOT",
+        ]
+        # only the two bare CNOTs conjugate; the control wire 4 never touches them
+        assert list(gates[0].wires) == [2, 3]
+        assert list(gates[-1].wires) == [2, 3]
+        assert qp.math.allclose(gates[2].parameters[0], angle / 2)
+        assert qp.math.allclose(gates[4].parameters[0], -angle / 2)
+        mat = qp.matrix(decomp, wire_order=[2, 3, 4])
+        assert qp.math.allclose(mat, expected_matrix)
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_controlled_isingyy_decomposition_graph(self):
+        r"""Controlling ``IsingYY`` should control only the inner ``RY``, leaving the two
+        conjugating ``CY``'s bare, via the generic ``C(ChangeOpBasis)`` rule."""
+        angle = 0.6931
+        op = qp.ctrl(qp.IsingYY(angle, wires=[2, 3]), control=[4])
+        tape = qp.tape.QuantumScript([op], [])
+        expected_matrix = qp.matrix(tape, wire_order=[2, 3, 4])
+
+        [decomp], _ = qp.transforms.decompose(
+            tape,
+            gate_set={qp.CY, qp.CNOT, qp.RY, qp.GlobalPhase, qp.PauliX},
+        )
+
+        gates = decomp.operations
+        assert [g.name for g in gates] == ["CY", "RY", "CNOT", "RY", "CNOT", "CY"]
+        assert list(gates[0].wires) == [2, 3]
+        assert list(gates[-1].wires) == [2, 3]
         assert qp.math.allclose(gates[1].parameters[0], angle / 2)
         assert qp.math.allclose(gates[3].parameters[0], -angle / 2)
         mat = qp.matrix(decomp, wire_order=[2, 3, 4])

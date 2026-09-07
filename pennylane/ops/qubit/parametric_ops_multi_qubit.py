@@ -1180,14 +1180,20 @@ class IsingXX(Operator2):
 
 # pylint: disable-next=unused-argument
 def _isingxx_to_cnot_rx_cnot_resources(phi: TensorLike, wires: WiresLike | None = None):
-    return {qp.CNOT: 2, qp.RX: 1}
+    return {
+        _change_op_basis_abstract(
+            qp.CNOT(wires=Wire[2]),
+            RX(Float, wires=Wire[1]),
+            qp.CNOT(wires=Wire[2]),
+        ): 1
+    }
 
 
 @register_resources(_isingxx_to_cnot_rx_cnot_resources)
 def _isingxx_to_cnot_rx_cnot(phi: TensorLike, wires: WiresLike, **__):
-    qp.CNOT(wires=wires)
-    qp.RX(phi, wires=[wires[0]])
-    qp.CNOT(wires=wires)
+    r"""Expressing ``IsingXX`` via :func:`~.change_op_basis` (instead of three bare gates) lets
+    PennyLane's generic ``C(ChangeOpBasis)`` rule automatically control it in an efficient way."""
+    qp.change_op_basis(qp.CNOT(wires=wires), RX(phi, wires=[wires[0]]), qp.CNOT(wires=wires))
 
 
 # pylint: disable-next=unused-argument
@@ -1323,14 +1329,20 @@ class IsingYY(Operator2):
 
 # pylint: disable-next=unused-argument
 def _isingyy_to_cy_ry_cy_resources(phi: TensorLike, wires: WiresLike | None = None):
-    return {qp.CY: 2, RY: 1}
+    return {
+        _change_op_basis_abstract(
+            qp.CY(wires=Wire[2]),
+            RY(Float, wires=Wire[1]),
+            qp.CY(wires=Wire[2]),
+        ): 1
+    }
 
 
 @register_resources(_isingyy_to_cy_ry_cy_resources)
 def _isingyy_to_cy_ry_cy(phi: TensorLike, wires: WiresLike, **__):
-    qp.CY(wires=wires)
-    RY(phi, wires=[wires[0]])
-    qp.CY(wires=wires)
+    r"""Expressing ``IsingYY`` via :func:`~.change_op_basis` (instead of three bare gates) lets
+    PennyLane's generic ``C(ChangeOpBasis)`` rule automatically control it in an efficient way."""
+    qp.change_op_basis(qp.CY(wires=wires), RY(phi, wires=[wires[0]]), qp.CY(wires=wires))
 
 
 # pylint: disable-next=unused-argument
