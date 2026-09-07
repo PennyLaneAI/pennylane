@@ -446,12 +446,15 @@
   [(#10059)](https://github.com/PennyLaneAI/pennylane/pull/10059)
   [(#10059)](https://github.com/PennyLaneAI/pennylane/pull/10015)
 
-* :class:`~.IsingXX` and :class:`~.IsingYY` decompositions are now expressed as a
-  :func:`~.change_op_basis` as well, extending the same treatment to the remaining two-qubit
-  rotations of the Ising family: the conjugating ``CNOT`` (resp. ``CY``) is now compute/uncompute
-  around the inner ``RX`` (resp. ``RY``). As for :class:`~.IsingZZ`, the generic
-  ``C(ChangeOpBasis)`` rule then controls only the inner rotation and leaves the conjugating gates
-  bare, instead of naively controlling all three gates.
+* The decompositions of :class:`~.IsingXX`, :class:`~.IsingYY`, :class:`~.IsingXY`,
+  :class:`~.MultiRZ`, :class:`~.PauliRot` and :class:`~.SingleExcitation` are now expressed as a
+  :func:`~.change_op_basis`, extending the treatment :class:`~.IsingZZ` already received to the
+  rest of the rotation family. In each case the basis change that used to be written out as bare
+  gates — a ``CNOT``, a ``CY``, a ``CNOT`` ladder, or a Hadamard/``RX`` layer — becomes the
+  compute/uncompute around the inner rotation. The generic ``C(ChangeOpBasis)`` rule then controls
+  only the inner rotation and leaves the basis change bare, instead of naively controlling every
+  gate. For example, ``C(MultiRZ)`` on four wires now decomposes into six ``CNOT``\ s and one
+  ``CRZ`` rather than six ``Toffoli``\ s and one ``CRZ``.
   [(#10112)](https://github.com/PennyLaneAI/pennylane/pull/10112)
 
 * Coprocessor connection addresses are grouped on :class:`~pennylane.Endpoint` as ``endpoint=qp.Endpoint(host, port)``, replacing the separate ``comm_host`` and ``oob_port`` fields.

@@ -410,24 +410,24 @@ class TestDecomposeGraphEnabled:
     def test_controlled_decomp(self):
         """Tests decomposing a controlled operation."""
 
-        # The C(MultiRZ) is decomposed by applying control on the base decomposition.
-        # The decomposition of MultiRZ contains two CNOTs
-        # So this also tests applying control on an PauliX based operation
+        # MultiRZ decomposes into a ChangeOpBasis conjugating an RZ with a CNOT ladder, so
+        # controlling it only controls the RZ and leaves the ladder as plain CNOTs rather than
+        # promoting them to Toffolis.
         # The decomposition of MultiRZ also contains an RZ gate
         # So this also tests logic involving custom controlled operators.
         ops = [qp.ctrl(qp.MultiRZ(0.5, wires=[0, 1]), control=[2])]
         tape = qp.tape.QuantumScript(ops)
         [new_tape], _ = qp.transforms.decompose(tape, gate_set={"RZ", "CNOT", "Toffoli"})
         assert new_tape.operations == [
-            # Decomposition of C(CNOT)
-            qp.Toffoli(wires=[2, 1, 0]),
+            # The conjugating ladder stays control-free
+            qp.CNOT(wires=[1, 0]),
             # Decomposition of C(RZ) -> CRZ
             qp.RZ(0.25, wires=[0]),
             qp.CNOT(wires=[2, 0]),
             qp.RZ(-0.25, wires=[0]),
             qp.CNOT(wires=[2, 0]),
-            # Decomposition of C(CNOT)
-            qp.Toffoli(wires=[2, 1, 0]),
+            # The conjugating ladder stays control-free
+            qp.CNOT(wires=[1, 0]),
         ]
 
     @pytest.mark.integration

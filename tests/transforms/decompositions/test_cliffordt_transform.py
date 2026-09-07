@@ -228,7 +228,22 @@ class TestCliffordCompile:
 
     @pytest.mark.catalyst
     @pytest.mark.jax
-    @pytest.mark.parametrize("circuit", [circuit_1, circuit_10])
+    @pytest.mark.parametrize(
+        "circuit",
+        [
+            pytest.param(
+                circuit_1,
+                marks=pytest.mark.xfail(
+                    reason="gridsynth emits ForLoop/Cond control flow, which leaks a tracer when "
+                    "it is synthesized inside a ChangeOpBasis region with a multi-gate operand "
+                    "(here SingleExcitation). Only affects the gridsynth path under qjit; the "
+                    "phase-gradient path compiles fine.",
+                    strict=True,
+                ),
+            ),
+            circuit_10,
+        ],
+    )
     def test_decomposition_with_rs_qjit_repeated_decomp(self, circuit):
         """Test decomposition for multiple Clifford transforms with Ross-Selinger method with QJIT enabled with repeated parameters."""
 

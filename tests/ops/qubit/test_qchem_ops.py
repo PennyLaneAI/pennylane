@@ -34,6 +34,9 @@ from scipy.linalg import expm, fractional_matrix_power
 import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.gradients import parameter_frequencies
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
+from pennylane.ops.op_math.prod2 import Prod2
 from pennylane.typing import Float, Wire
 
 PARAMETRIZED_QCHEM_OPERATIONS = [
@@ -340,16 +343,21 @@ class TestSingleExcitationDecompositions:
         with qp.queuing.AnnotatedQueue() as q:
             rule(**op.arguments)
 
-        expected = [
-            qp.Hadamard(wires[0]),
-            qp.CNOT(wires),
-            qp.RY(-phi / 2, wires[0]),
-            qp.RY(-phi / 2, wires[1]),
-            qp.CNOT(wires),
-            qp.Hadamard(wires[0]),
-        ]
-        for actual, exp in zip(q.queue, expected, strict=True):
+        # the rule queues a single ChangeOpBasis, which is what lets a control skip the
+        # Hadamard/CNOT basis change. Operands are in matrix order, i.e. reversed relative to
+        # the order they are applied in.
+        (cob,) = q.queue
+        for actual, exp in zip(
+            cob.compute_op.operands, [qp.CNOT(wires), qp.Hadamard(wires[0])], strict=True
+        ):
             qp.assert_equal(actual, exp)
+        for actual, exp in zip(
+            cob.target_op.operands,
+            [qp.RY(-phi / 2, wires[1]), qp.RY(-phi / 2, wires[0])],
+            strict=True,
+        ):
+            qp.assert_equal(actual, exp)
+        qp.assert_equal(cob.uncompute_op, qp.adjoint(cob.compute_op))
 
     @pytest.mark.capture
     def test_decomp_capture(self):
@@ -368,13 +376,14 @@ class TestSingleExcitationDecompositions:
         jaxpr = jax.make_jaxpr(circuit)(phi, *wires)
         ops = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, phi, *wires).operations
 
+        # the rule queues a ChangeOpBasis, so the basis change is undone via adjoints
         expected = [
             qp.Hadamard(wires[0]),
             qp.CNOT(wires),
             qp.RY(-phi / 2, wires[0]),
             qp.RY(-phi / 2, wires[1]),
-            qp.CNOT(wires),
-            qp.Hadamard(wires[0]),
+            qp.adjoint(qp.CNOT(wires)),
+            qp.adjoint(qp.Hadamard(wires[0])),
         ]
         for actual, exp in zip(ops, expected, strict=True):
             qp.assert_equal(actual, exp)
@@ -384,14 +393,41 @@ class TestSingleExcitationDecompositions:
         rule = qp.list_decomps(qp.SingleExcitation)[0]
         op = qp.SingleExcitation(0.5, wires=(0, 1))
 
+        # the rule reports a single ChangeOpBasis; operands are in matrix order
+        basis = Prod2((qp.CNOT(Wire[2]), qp.Hadamard(Wire[1])))
         expected = qp.decomposition.Resources(
             {
-                qp.Hadamard(Wire[1]): 2,
-                qp.CNOT(Wire[2]): 2,
-                qp.RY(Float, Wire[1]): 2,
+                _change_op_basis_abstract(
+                    basis,
+                    Prod2((qp.RY(Float, Wire[1]), qp.RY(Float, Wire[1]))),
+                    _adjoint_abstract(basis),
+                ): 1
             }
         )
         assert rule.compute_resources(**op.arguments) == expected
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_controlled_decomposition_graph(self):
+        r"""Controlling ``SingleExcitation`` should control only the two inner ``RY``'s, leaving the
+        conjugating Hadamard/CNOT basis change bare. This comes out of the generic
+        ``C(ChangeOpBasis)`` rule rather than a dedicated ``C(SingleExcitation)`` rule."""
+        phi = 0.6931
+        control = 2
+        op = qp.ctrl(qp.SingleExcitation(phi, wires=[0, 1]), control=[control])
+        tape = qp.tape.QuantumScript([op], [])
+        expected_matrix = qp.matrix(tape, wire_order=[0, 1, control])
+
+        [decomp], _ = qp.transforms.decompose(
+            tape, gate_set={qp.CNOT, qp.RY, qp.RZ, qp.Hadamard, qp.GlobalPhase, qp.PauliX}
+        )
+        gates = decomp.operations
+
+        conjugation = gates[:2] + gates[-2:]
+        assert [g.name for g in conjugation] == ["Hadamard", "CNOT", "CNOT", "Hadamard"]
+        assert all(control not in g.wires for g in conjugation)
+
+        mat = qp.matrix(decomp, wire_order=[0, 1, control])
+        assert qp.math.allclose(mat, expected_matrix)
 
     def test_ppr_queuing(self):
         """Test the operations queued by the Pauli-rotation decomposition rule."""
