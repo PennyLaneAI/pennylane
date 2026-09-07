@@ -207,13 +207,13 @@ def _multi_rz_decomposition_resources(theta: TensorLike, wires: WiresLike):
     cnots = [qp.CNOT(wires=Wire[2]) for _ in range(num_wires - 1)]
     # a two-wire ladder is a lone CNOT, which ``change_op_basis`` does not wrap in a product
     ladder = cnots[0] if num_wires == 2 else Prod2(tuple(cnots))
-    unladder = cnots[0] if num_wires == 2 else Prod2(tuple(reversed(cnots)))
+    # Reversing identical abstract CNOT reps would produce the same resource key.
+    unladder = ladder
     return {_change_op_basis_abstract(ladder, RZ(Float, wires=Wire[1]), unladder): 1}
 
 
 @register_resources(_multi_rz_decomposition_resources)
 def _multi_rz_decomposition(theta: TensorLike, wires: WiresLike):
-
     if len(wires) == 1:
         qp.RZ(theta, wires=wires[0])
         return
@@ -525,7 +525,8 @@ def _pauli_rot_resources(theta, pauli_word, wires):  # pylint: disable=unused-ar
         return {qp.MultiRZ(Float, Wire[num_active_wires]): 1}
     # a single-gate basis change is not wrapped in a product either
     to_z_basis = basis_gates[0] if len(basis_gates) == 1 else Prod2(tuple(basis_gates))
-    from_z_basis = basis_gates[0] if len(basis_gates) == 1 else Prod2(tuple(basis_gates))
+    # The basis gates act on distinct wires, so the inverse has the same abstract signature.
+    from_z_basis = to_z_basis
     return {
         _change_op_basis_abstract(
             to_z_basis,
@@ -1706,7 +1707,6 @@ def _isingxy_to_h_cy_resources(phi: TensorLike, wires: WiresLike | None = None):
 
 @register_resources(_isingxy_to_h_cy_resources)
 def _isingxy_to_h_cy(phi: TensorLike, wires: WiresLike, **__):
-
     def _to_basis():
         Hadamard(wires=[wires[0]])
         qp.CY(wires=wires)

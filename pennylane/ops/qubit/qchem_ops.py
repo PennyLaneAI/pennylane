@@ -248,7 +248,6 @@ def _single_excitation_resources(phi, wires):
 
 @register_resources(_single_excitation_resources)
 def _single_excitation_decomp(phi: TensorLike, wires: WiresLike):
-
     def _to_basis():
         qp.Hadamard(wires[0])
         qp.CNOT(wires)

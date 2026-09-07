@@ -606,9 +606,7 @@ class TestDecomposeTransformations:
             pytest.skip("This test only is expected to work with the graph-based system.")
 
         # Mock a simple target gate set
-        # RX is cheaper than PhaseShift to avoid relying on tie-breaking between the two
-        # five-cost decompositions in the final parametrized cases below.
-        target_gates = {"Hadamard": 1, "RX": 4, "RY": 5, "PhaseShift": 5, "GlobalPhase": 0}
+        target_gates = {"Hadamard": 1, "RX": 5, "RY": 5, "PhaseShift": 5, "GlobalPhase": 0}
 
         # Create a tape with an operation that needs decomposition
         tape = qp.tape.QuantumScript([qp.RZ(0.2, 0)])

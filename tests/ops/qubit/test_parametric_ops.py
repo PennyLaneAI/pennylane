@@ -3177,11 +3177,7 @@ class TestPauliRot:
         decomp_ops = op.decomposition()
 
         assert len(decomp_ops) == 1
-
-        assert decomp_ops[0].name == "MultiRZ"
-
-        assert decomp_ops[0].wires == Wires([0, 1])
-        assert np.allclose(decomp_ops[0].data[0], theta)
+        qp.assert_equal(decomp_ops[0], qp.MultiRZ(theta, wires=[0, 1]))
 
     @pytest.mark.parametrize("theta", [0.4, np.array([np.pi / 3, 0.1, -0.9])])
     def test_PauliRot_decomposition_XY(self, theta):
