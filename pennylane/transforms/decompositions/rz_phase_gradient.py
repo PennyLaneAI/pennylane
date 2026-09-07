@@ -16,7 +16,8 @@ Decomposition rule for RZ in terms of `phase gradient states <https://pennylane.
 """
 
 import pennylane as qp
-from pennylane.decomposition import change_op_basis_resource_rep
+from pennylane.core.operator import abstractify
+from pennylane.ops.op_math.change_op_basis2 import ChangeOpBasis2
 from pennylane.transforms.rz_phase_gradient import _rz_phase_gradient
 from pennylane.typing import Bool, Wire
 from pennylane.wires import WireError, Wires
@@ -131,7 +132,7 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
         )
         precision = len(angle_wires)
         fanout = qp.ctrl(qp.MultiX(Bool[precision], Wire[precision]), control=Wire[1])
-        change_basis_rep = change_op_basis_resource_rep(fanout, target_op, fanout)
+        change_basis_rep = abstractify(ChangeOpBasis2(fanout, target_op, fanout))
         return {change_basis_rep: 1, qp.GlobalPhase: 1}
 
     # MultiX only emits a gate per set bit, so the gate count depends on the concrete angle.

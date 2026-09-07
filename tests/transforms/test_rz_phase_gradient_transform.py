@@ -52,7 +52,7 @@ def test_units_rz_phase_gradient(p):
     expected_bits = qp.math.binary_decimals(phi, p, unit=2 * np.pi)
     expected_targets = {angle_wires[i] for i, b in enumerate(expected_bits) if int(b)}
 
-    assert isinstance(op, qp.ops.op_math.ChangeOpBasis)
+    assert isinstance(op, qp.ops.op_math.ChangeOpBasis2)
     operands = op.operands
 
     # operands[0] and operands[2] are the (self-inverse) compute / uncompute controlled-MultiX fanouts.

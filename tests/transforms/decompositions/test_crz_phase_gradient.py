@@ -35,11 +35,11 @@ def _expected_crz_specs(phi, p):
 
     The compute/uncompute fanout loads the angle bits onto the angle wires with a controlled
     ``MultiX`` (one single-control ``CNOT`` per *set* bit, so ``2 * num_set_bits`` across both
-    passes, since it's always controlled on |1>) and flips the phase-gradient wires with
-    ``2 * p`` controlled-``X`` gates controlled on |0> (each a ``CNOT`` plus a ``PauliX`` flip of
-    the target wire, independent of the angle)."""
+    passes, since it's always controlled on |1>) and flips all ``p`` phase-gradient wires with a
+    single controlled ``MultiX`` controlled on |0> (``p`` ``CNOT``\\ s plus one ``PauliX`` flip of
+    that control wire, independent of the angle, per pass)."""
     n = _num_set_bits(phi, p)
-    return {"SemiAdder": 1, "CNOT": 2 * p + 2 * n, "PauliX": 2 * p}
+    return {"SemiAdder": 1, "CNOT": 2 * p + 2 * n, "PauliX": 4}
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")

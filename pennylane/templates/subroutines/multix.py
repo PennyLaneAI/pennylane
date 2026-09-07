@@ -27,7 +27,7 @@ from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_con
 from pennylane.ops.op_math.pow2 import pow_involutory
 from pennylane.ops.op_math.prod import _multi_temporary_and_all_ones
 from pennylane.typing import AbstractArray, AbstractWires, Bool, TensorLike, Wire
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import Wires, WiresLike, is_abstract_qubit
 
 from .arithmetic.temporary_and import TemporaryAND
 
@@ -329,6 +329,16 @@ def _multix_resources(bitstring: TensorLike, wires: WiresLike):  # pylint: disab
 # Decomposition function for MultiX
 @register_resources(_multix_resources, exact=False)
 def _multix_decomposition(bitstring: TensorLike, wires: WiresLike) -> None:
+    # Dynamically-allocated wires (``AbstractQubit`` handles, e.g. from ``qp.allocate``) cannot
+    # be stacked into a numeric array for ``for_loop``-based dynamic indexing, so unroll instead
+    # (``bitstring`` may still be traced data, indexed with a static index). Remove this fallback
+    # once dynamic-wire indexing is supported (shortcut.com/story/129521).
+    if any(is_abstract_qubit(w) for w in wires):
+        if compiler.active() or capture.enabled():
+            bitstring = math.array(bitstring, like="jax")
+        for i, wire in enumerate(wires):
+            cond(bitstring[i], PauliX)(wires=wire)
+        return
 
     if compiler.active() or capture.enabled():
         bitstring = math.array(bitstring, like="jax")

@@ -5,6 +5,7 @@ build
 dist
 qit.egg-info
 .idea
+.cursor
 *.ipynb
 *.ipynb_checkpoints
 *.egg-info*
