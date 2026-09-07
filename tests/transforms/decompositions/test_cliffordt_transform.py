@@ -231,16 +231,7 @@ class TestCliffordCompile:
     @pytest.mark.parametrize(
         "circuit",
         [
-            pytest.param(
-                circuit_1,
-                marks=pytest.mark.xfail(
-                    reason="gridsynth emits ForLoop/Cond control flow, which leaks a tracer when "
-                    "it is synthesized inside a ChangeOpBasis region with a multi-gate operand "
-                    "(here SingleExcitation). Only affects the gridsynth path under qjit; the "
-                    "phase-gradient path compiles fine.",
-                    strict=True,
-                ),
-            ),
+            circuit_1,
             circuit_10,
         ],
     )

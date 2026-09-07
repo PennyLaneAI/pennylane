@@ -112,13 +112,13 @@ class TestInspectDecompGraph:
             Insufficient work wires: requires 1 but only 0 available.
 
             CHOSEN: Decomposition 1 (name: controlled(_multi_rz_decomposition))
-            0: ─╭(X†)@RZ(0.50)@(X)─┤  
-            1: ─├(X†)@RZ(0.50)@(X)─┤  
-            3: ─├●─────────────────┤  
-            4: ─├●─────────────────┤  
-            5: ─╰●─────────────────┤  
-            Estimated First-Level Expansion Gates: {Controlled((Adjoint(CNOT)) @ RZ @ (CNOT), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, PauliX: 3}
-            Actual First-Level Expansion Gates: {Controlled((Adjoint(CNOT)) @ RZ @ (CNOT), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1}
+            0: ─╭(X)@RZ(0.50)@(X)─┤\x20\x20
+            1: ─├(X)@RZ(0.50)@(X)─┤\x20\x20
+            3: ─├●────────────────┤\x20\x20
+            4: ─├●────────────────┤\x20\x20
+            5: ─╰●────────────────┤\x20\x20
+            Estimated First-Level Expansion Gates: {Controlled((CNOT) @ RZ @ (CNOT), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, PauliX: 3}
+            Actual First-Level Expansion Gates: {Controlled((CNOT) @ RZ @ (CNOT), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1}
             Full Expansion Gates: {CNOT: 46, GlobalPhase: 19, RX: 17, RZ: 22}
             Weighted Cost: 85.0
             """).strip()
@@ -133,17 +133,17 @@ class TestInspectDecompGraph:
             #### **CHOSEN:** Decomposition 1 (name: controlled(_multi_rz_decomposition))
 
             ```
-            0: ─╭(X†)@RZ(0.50)@(X)─┤  
-            1: ─├(X†)@RZ(0.50)@(X)─┤  
-            3: ─├●─────────────────┤  
-            4: ─├●─────────────────┤  
-            5: ─╰●─────────────────┤  
+            0: ─╭(X)@RZ(0.50)@(X)─┤\x20\x20
+            1: ─├(X)@RZ(0.50)@(X)─┤\x20\x20
+            3: ─├●────────────────┤\x20\x20
+            4: ─├●────────────────┤\x20\x20
+            5: ─╰●────────────────┤\x20\x20
             ```
             <details><summary>Gate Counts and Wire Allocations</summary>
 
             | First-Level Expansion | Estimated | Actual |
             | :--- | :--- | :--- |
-            | Controlled((Adjoint(CNOT)) @ RZ @ (CNOT), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)) | 1 | 1 |
+            | Controlled((CNOT) @ RZ @ (CNOT), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)) | 1 | 1 |
             | PauliX | 3 | 0 |
 
             | Full Expansion | Count |
@@ -184,13 +184,13 @@ class TestInspectDecompGraph:
             Weighted Cost: 93.0
 
             CHOSEN: Decomposition 1 (name: controlled(_multi_rz_decomposition))
-            0: ─╭(X†)@RZ(0.50)@(X)─┤  
-            1: ─├(X†)@RZ(0.50)@(X)─┤  
-            3: ─├●─────────────────┤  
-            4: ─├●─────────────────┤  
-            5: ─╰●─────────────────┤  
-            Estimated First-Level Expansion Gates: {Controlled((Adjoint(CNOT)) @ RZ @ (CNOT), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, PauliX: 3}
-            Actual First-Level Expansion Gates: {Controlled((Adjoint(CNOT)) @ RZ @ (CNOT), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1}
+            0: ─╭(X)@RZ(0.50)@(X)─┤\x20\x20
+            1: ─├(X)@RZ(0.50)@(X)─┤\x20\x20
+            3: ─├●────────────────┤\x20\x20
+            4: ─├●────────────────┤\x20\x20
+            5: ─╰●────────────────┤\x20\x20
+            Estimated First-Level Expansion Gates: {Controlled((CNOT) @ RZ @ (CNOT), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, PauliX: 3}
+            Actual First-Level Expansion Gates: {Controlled((CNOT) @ RZ @ (CNOT), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1}
             Full Expansion Gates: {CNOT: 46, GlobalPhase: 19, RX: 17, RZ: 22}
             Weighted Cost: 85.0
             """).strip()
@@ -234,17 +234,17 @@ class TestInspectDecompGraph:
             #### **CHOSEN:** Decomposition 1 (name: controlled(_multi_rz_decomposition))
 
             ```
-            0: ─╭(X†)@RZ(0.50)@(X)─┤  
-            1: ─├(X†)@RZ(0.50)@(X)─┤  
-            3: ─├●─────────────────┤  
-            4: ─├●─────────────────┤  
-            5: ─╰●─────────────────┤  
+            0: ─╭(X)@RZ(0.50)@(X)─┤\x20\x20
+            1: ─├(X)@RZ(0.50)@(X)─┤\x20\x20
+            3: ─├●────────────────┤\x20\x20
+            4: ─├●────────────────┤\x20\x20
+            5: ─╰●────────────────┤\x20\x20
             ```
             <details><summary>Gate Counts and Wire Allocations</summary>
 
             | First-Level Expansion | Estimated | Actual |
             | :--- | :--- | :--- |
-            | Controlled((Adjoint(CNOT)) @ RZ @ (CNOT), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)) | 1 | 1 |
+            | Controlled((CNOT) @ RZ @ (CNOT), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)) | 1 | 1 |
             | PauliX | 3 | 0 |
 
             | Full Expansion | Count |
@@ -269,7 +269,7 @@ class TestInspectDecompGraph:
              [ 5.34910791e-34+0.j          9.23879533e-01-0.38268343j]]
             Estimated First-Level Expansion Gates: {Adjoint(QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1))): 2, CNOT: 2, Controlled(GlobalPhase, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, Hadamard: 2, MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool)): 2, PauliX: 3, QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1)): 2}
             Actual First-Level Expansion Gates: {Adjoint(QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1))): 2, CNOT: 2, Controlled(GlobalPhase, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, Hadamard: 2, MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool)): 2, QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1)): 2}
-            Full Expansion Gates: {CNOT: 24, GlobalPhase: 37, RX: 20, RY: 10, RZ: 27}
+            Full Expansion Gates: {CNOT: 24, GlobalPhase: 37, RX: 18, RY: 6, RZ: 33}
             Weighted Cost: 81.0
 
             Decomposition 1 (name: one_borrowed_worker)
@@ -339,31 +339,31 @@ class TestInspectDecompGraph:
         result = inspector.inspect_decomps(op)
         assert str(result) == dedent("""
             Decomposition 0 (name: _pauli_rot_decomposition)
-            0: ─╭((RX(1.57)@H)†)@MultiRZ(0.50)@(RX(1.57)@H)─┤  
-            1: ─├((RX(1.57)@H)†)@MultiRZ(0.50)@(RX(1.57)@H)─┤  
-            2: ─╰((RX(1.57)@H)†)@MultiRZ(0.50)@(RX(1.57)@H)─┤  
-            First-Level Expansion Gates: {(Adjoint(RX @ Hadamard)) @ MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)) @ (RX @ Hadamard): 1}
-            Missing Ops: {(Adjoint(RX @ Hadamard)) @ MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)) @ (RX @ Hadamard)}
+            0: ─╭(RX(-1.57)@H)@MultiRZ(0.50)@(RX(1.57)@H)─┤\x20\x20
+            1: ─├(RX(-1.57)@H)@MultiRZ(0.50)@(RX(1.57)@H)─┤\x20\x20
+            2: ─╰(RX(-1.57)@H)@MultiRZ(0.50)@(RX(1.57)@H)─┤\x20\x20
+            First-Level Expansion Gates: {(RX @ Hadamard) @ MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)) @ (RX @ Hadamard): 1}
+            Missing Ops: {(RX @ Hadamard) @ MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)) @ (RX @ Hadamard)}
             """).strip()
 
         assert result._repr_markdown_() == dedent("""
             #### Decomposition 0 (name: _pauli_rot_decomposition)
 
             ```
-            0: ─╭((RX(1.57)@H)†)@MultiRZ(0.50)@(RX(1.57)@H)─┤  
-            1: ─├((RX(1.57)@H)†)@MultiRZ(0.50)@(RX(1.57)@H)─┤  
-            2: ─╰((RX(1.57)@H)†)@MultiRZ(0.50)@(RX(1.57)@H)─┤  
+            0: ─╭(RX(-1.57)@H)@MultiRZ(0.50)@(RX(1.57)@H)─┤\x20\x20
+            1: ─├(RX(-1.57)@H)@MultiRZ(0.50)@(RX(1.57)@H)─┤\x20\x20
+            2: ─╰(RX(-1.57)@H)@MultiRZ(0.50)@(RX(1.57)@H)─┤\x20\x20
             ```
             <details><summary>Gate Counts and Wire Allocations</summary>
 
             | First-Level Expansion | Count |
             | :--- | :--- |
-            | (Adjoint(RX @ Hadamard)) @ MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)) @ (RX @ Hadamard) | 1 |
+            | (RX @ Hadamard) @ MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)) @ (RX @ Hadamard) | 1 |
             </details>
 
             | Missing Ops |
             | :--- |
-            | (Adjoint(RX @ Hadamard)) @ MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)) @ (RX @ Hadamard) |
+            | (RX @ Hadamard) @ MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)) @ (RX @ Hadamard) |
             """).strip()
 
         assert str(inspector.inspect_decomps(qp.H(0))) == dedent("""
@@ -414,14 +414,14 @@ class TestInspectDecompGraph:
             Full Expansion Gates: {GlobalPhase: 1, RX: 3, RZ: 2}
             Weighted Cost: 6.0
 
-            Decomposition 4 (name: xzx)
+            CHOSEN: Decomposition 4 (name: xzx)
             0: ──RX(0.00)──RZ(0.00)──RX(0.00)─┤  
             Estimated First-Level Expansion Gates: {GlobalPhase: 1, RX: 2, RZ: 1}
             Actual First-Level Expansion Gates: {RX: 2, RZ: 1}
             Full Expansion Gates: {GlobalPhase: 1, RX: 2, RZ: 1}
             Weighted Cost: 4.0
 
-            CHOSEN: Decomposition 5 (name: zxz)
+            Decomposition 5 (name: zxz)
             0: ──RZ(0.00)──RX(0.00)──RZ(0.00)─┤  
             Estimated First-Level Expansion Gates: {GlobalPhase: 1, RX: 1, RZ: 2}
             Actual First-Level Expansion Gates: {RX: 1, RZ: 2}
@@ -495,7 +495,7 @@ class TestInspectDecompGraph:
 
             ---
 
-            #### Decomposition 4 (name: xzx)
+            #### **CHOSEN:** Decomposition 4 (name: xzx)
 
             ```
             0: ──RX(0.00)──RZ(0.00)──RX(0.00)─┤  
@@ -518,7 +518,7 @@ class TestInspectDecompGraph:
 
             ---
 
-            #### **CHOSEN:** Decomposition 5 (name: zxz)
+            #### Decomposition 5 (name: zxz)
 
             ```
             0: ──RZ(0.00)──RX(0.00)──RZ(0.00)─┤  

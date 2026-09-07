@@ -520,7 +520,11 @@ class TestDecompositions:
         assert [gate.name for gate in cob.target_op.operands] == ["RX", "RY"]
         assert [gate.wires for gate in cob.target_op.operands] == [Wires([2]), Wires([3])]
 
-        assert cob.uncompute_op == qp.adjoint(cob.compute_op)
+        assert [gate.name for gate in cob.uncompute_op.operands] == ["Hadamard", "CY"]
+        assert [gate.wires for gate in cob.uncompute_op.operands] == [
+            Wires([3]),
+            Wires([3, 2]),
+        ]
 
         decomposed_matrix = qp.matrix(qp.tape.QuantumScript([cob]), wire_order=[3, 2])
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
@@ -839,7 +843,7 @@ class TestDecompositions:
 
         # the Hadamard/RX basis change conjugates the controlled MultiRZ and stays control-free
         conjugation = gates[:2] + gates[-2:]
-        assert [g.name for g in conjugation] == ["Hadamard", "RX", "RX", "Hadamard"]
+        assert [g.name for g in conjugation] == ["Hadamard", "RX", "Hadamard", "RX"]
         assert all(control not in g.wires for g in conjugation)
 
         mat = qp.matrix(decomp, wire_order=[0, 1, control])
@@ -3184,56 +3188,43 @@ class TestPauliRot:
         """Test that the decomposition for a XY rotation is correct."""
 
         op = qp.PauliRot(theta, "XY", wires=[0, 1])
-        decomp_ops = op.decomposition()
+        (cob,) = op.decomposition()
 
-        assert len(decomp_ops) == 5
+        assert [gate.name for gate in cob.compute_op.operands] == ["RX", "Hadamard"]
+        assert [gate.wires for gate in cob.compute_op.operands] == [Wires([1]), Wires([0])]
+        assert cob.compute_op.operands[0].data[0] == np.pi / 2
 
-        assert decomp_ops[0].name == "Hadamard"
-        assert decomp_ops[0].wires == Wires([0])
+        qp.assert_equal(cob.target_op, qp.MultiRZ(theta, wires=[0, 1]))
 
-        assert decomp_ops[1].name == "RX"
-        assert decomp_ops[1].wires == Wires([1])
-        assert decomp_ops[1].data[0] == np.pi / 2
-
-        assert decomp_ops[2].name == "MultiRZ"
-        assert decomp_ops[2].wires == Wires([0, 1])
-        assert np.allclose(decomp_ops[2].data[0], theta)
-
-        assert decomp_ops[3].name == "Hadamard"
-        assert decomp_ops[3].wires == Wires([0])
-
-        assert decomp_ops[4].name == "RX"
-        assert decomp_ops[4].wires == Wires([1])
-        assert decomp_ops[4].data[0] == -np.pi / 2
+        assert [gate.name for gate in cob.uncompute_op.operands] == ["RX", "Hadamard"]
+        assert [gate.wires for gate in cob.uncompute_op.operands] == [Wires([1]), Wires([0])]
+        assert cob.uncompute_op.operands[0].data[0] == -np.pi / 2
 
     @pytest.mark.parametrize("theta", [0.4, np.array([np.pi / 3, 0.1, -0.9])])
     def test_PauliRot_decomposition_XIYZ(self, theta):
         """Test that the decomposition for a XIYZ rotation is correct."""
 
         op = qp.PauliRot(theta, "XIYZ", wires=[0, 1, 2, 3])
-        decomp_ops = op.decomposition()
+        (cob,) = op.decomposition()
 
-        assert len(decomp_ops) == 5
+        assert [gate.name for gate in cob.compute_op.operands] == ["RX", "Hadamard"]
+        assert [gate.wires for gate in cob.compute_op.operands] == [Wires([2]), Wires([0])]
+        assert cob.compute_op.operands[0].data[0] == np.pi / 2
 
-        assert decomp_ops[0].name == "Hadamard"
-        assert decomp_ops[0].wires == Wires([0])
+        qp.assert_equal(cob.target_op, qp.MultiRZ(theta, wires=[0, 2, 3]))
 
-        assert decomp_ops[1].name == "RX"
+        assert [gate.name for gate in cob.uncompute_op.operands] == ["RX", "Hadamard"]
+        assert [gate.wires for gate in cob.uncompute_op.operands] == [Wires([2]), Wires([0])]
+        assert cob.uncompute_op.operands[0].data[0] == -np.pi / 2
 
-        assert decomp_ops[1].wires == Wires([2])
-        assert decomp_ops[1].data[0] == np.pi / 2
+    def test_PauliRot_single_basis_gate_is_unwrapped(self):
+        """Test that a single basis gate is not wrapped in a product."""
+        theta = 0.4
+        (cob,) = qp.PauliRot(theta, "X", wires=0).decomposition()
 
-        assert decomp_ops[2].name == "MultiRZ"
-        assert decomp_ops[2].wires == Wires([0, 2, 3])
-        assert np.allclose(decomp_ops[2].data[0], theta)
-
-        assert decomp_ops[3].name == "Hadamard"
-        assert decomp_ops[3].wires == Wires([0])
-
-        assert decomp_ops[4].name == "RX"
-
-        assert decomp_ops[4].wires == Wires([2])
-        assert decomp_ops[4].data[0] == -np.pi / 2
+        qp.assert_equal(cob.compute_op, qp.Hadamard(0))
+        qp.assert_equal(cob.target_op, qp.MultiRZ(theta, wires=[0]))
+        qp.assert_equal(cob.uncompute_op, qp.Hadamard(0))
 
     @pytest.mark.parametrize("angle", npp.linspace(0, 2 * np.pi, 7, requires_grad=True))
     @pytest.mark.parametrize("pauli_word", ["XX", "YY", "ZZ"])
@@ -3476,6 +3467,13 @@ class TestMultiRZ:
         assert np.allclose(res_static, expected, atol=tol, rtol=0)
         assert np.allclose(res_dynamic, expected, atol=tol, rtol=0)
 
+    def test_MultiRZ_decomposition_one_wire(self):
+        """Test that a one-wire MultiRZ directly decomposes to RZ."""
+        theta = 0.4
+        (decomp_op,) = qp.MultiRZ(theta, wires=0).decomposition()
+
+        qp.assert_equal(decomp_op, qp.RZ(theta, wires=0))
+
     @pytest.mark.parametrize("theta", [0.4, np.array([np.pi / 3, 0.1, -0.9])])
     def test_MultiRZ_decomposition_ZZ(self, theta):
         """Test that the decomposition for a ZZ rotation is correct."""
@@ -3492,7 +3490,7 @@ class TestMultiRZ:
         assert cob.target_op.wires == Wires([0])
         assert np.allclose(cob.target_op.data[0], theta)
 
-        assert cob.uncompute_op == qp.adjoint(cob.compute_op)
+        qp.assert_equal(cob.uncompute_op, qp.CNOT(wires=[1, 0]))
 
     @pytest.mark.parametrize("theta", [0.4, np.array([np.pi / 3, 0.1, -0.9])])
     def test_MultiRZ_decomposition_ZZZ(self, theta):
@@ -3512,7 +3510,9 @@ class TestMultiRZ:
         assert cob.target_op.wires == Wires([0])
         assert np.allclose(cob.target_op.data[0], theta)
 
-        assert cob.uncompute_op == qp.adjoint(cob.compute_op)
+        unladder = cob.uncompute_op.operands
+        assert [gate.name for gate in unladder] == ["CNOT", "CNOT"]
+        assert [gate.wires for gate in unladder] == [Wires([3, 2]), Wires([2, 0])]
 
     @pytest.mark.jax
     def test_MultiRZ_assert_valid(self):

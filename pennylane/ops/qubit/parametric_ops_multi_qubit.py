@@ -35,7 +35,6 @@ from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.math.decomposition import decomp_int_to_powers_of_two
-from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
@@ -208,9 +207,8 @@ def _multi_rz_decomposition_resources(theta: TensorLike, wires: WiresLike):
     cnots = [qp.CNOT(wires=Wire[2]) for _ in range(num_wires - 1)]
     # a two-wire ladder is a lone CNOT, which ``change_op_basis`` does not wrap in a product
     ladder = cnots[0] if num_wires == 2 else Prod2(tuple(cnots))
-    return {
-        _change_op_basis_abstract(ladder, RZ(Float, wires=Wire[1]), _adjoint_abstract(ladder)): 1
-    }
+    unladder = cnots[0] if num_wires == 2 else Prod2(tuple(reversed(cnots)))
+    return {_change_op_basis_abstract(ladder, RZ(Float, wires=Wire[1]), unladder): 1}
 
 
 @register_resources(_multi_rz_decomposition_resources)
@@ -224,7 +222,11 @@ def _multi_rz_decomposition(theta: TensorLike, wires: WiresLike):
         for i in range(len(wires) - 1, 0, -1):
             qp.CNOT(wires=(wires[i], wires[i - 1]))
 
-    qp.change_op_basis(_ladder, qp.RZ(theta, wires=wires[0]))
+    def _unladder():
+        for i in range(1, len(wires)):
+            qp.CNOT(wires=(wires[i], wires[i - 1]))
+
+    qp.change_op_basis(_ladder, qp.RZ(theta, wires=wires[0]), _unladder)
 
 
 add_decomps(MultiRZ, _multi_rz_decomposition)
@@ -498,59 +500,6 @@ class PauliRot(Operator2):
 
         return MultiRZ.compute_eigvals(theta, list(range(len(pauli_word))))
 
-    @staticmethod
-    def compute_decomposition(
-        theta: TensorLike, wires: WiresLike, pauli_word: str
-    ) -> list[Operator]:
-        r"""Representation of the operator as a product of other operators (static method). :
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.PauliRot.decomposition`.
-
-        Args:
-            theta (TensorLike): rotation angle :math:`\theta`
-            wires (Iterable, Wires): the wires the operation acts on
-            pauli_word (string): the Pauli word defining the rotation
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.PauliRot.compute_decomposition(1.2, wires=(0,1), pauli_word="XY")
-        [H(0), RX(1.5707963267948966, wires=[1]), MultiRZ(1.2, wires=[0, 1]), H(0), RX(-1.5707963267948966, wires=[1])]
-
-        """
-        if isinstance(wires, int):  # Catch cases when the wire is passed as a single int.
-            wires = [wires]
-
-        # Check for identity and do nothing
-        if set(pauli_word) == {"I"}:
-            return [qp.GlobalPhase(phi=theta / 2)]
-
-        active_wires, active_gates = zip(
-            *[(wire, gate) for wire, gate in zip(wires, pauli_word, strict=True) if gate != "I"],
-            strict=True,
-        )
-
-        ops = []
-        for wire, gate in zip(active_wires, active_gates, strict=True):
-            if gate == "X":
-                ops.append(Hadamard(wires=[wire]))
-            elif gate == "Y":
-                ops.append(RX(np.pi / 2, wires=[wire]))
-
-        ops.append(MultiRZ(theta, wires=list(active_wires)))
-
-        for wire, gate in zip(active_wires, active_gates, strict=True):
-            if gate == "X":
-                ops.append(Hadamard(wires=[wire]))
-            elif gate == "Y":
-                ops.append(RX(-np.pi / 2, wires=[wire]))
-        return ops
-
     def adjoint(self):
         return PauliRot(-self.arguments["theta"], self.arguments["pauli_word"], wires=self.wires)
 
@@ -576,11 +525,12 @@ def _pauli_rot_resources(theta, pauli_word, wires):  # pylint: disable=unused-ar
         return {qp.MultiRZ(Float, Wire[num_active_wires]): 1}
     # a single-gate basis change is not wrapped in a product either
     to_z_basis = basis_gates[0] if len(basis_gates) == 1 else Prod2(tuple(basis_gates))
+    from_z_basis = basis_gates[0] if len(basis_gates) == 1 else Prod2(tuple(basis_gates))
     return {
         _change_op_basis_abstract(
             to_z_basis,
             qp.MultiRZ(Float, Wire[num_active_wires]),
-            _adjoint_abstract(to_z_basis),
+            from_z_basis,
         ): 1
     }
 
@@ -608,7 +558,14 @@ def _pauli_rot_decomposition(theta: TensorLike, pauli_word: str, wires: WiresLik
             elif gate == "Y":
                 qp.RX(np.pi / 2, wires=[wire])
 
-    qp.change_op_basis(_to_z_basis, qp.MultiRZ(theta, wires=list(active_wires)))
+    def _from_z_basis():
+        for wire, gate in zip(active_wires, active_gates, strict=True):
+            if gate == "X":
+                qp.Hadamard(wires=[wire])
+            elif gate == "Y":
+                qp.RX(-np.pi / 2, wires=[wire])
+
+    qp.change_op_basis(_to_z_basis, qp.MultiRZ(theta, wires=list(active_wires)), _from_z_basis)
 
 
 add_decomps(PauliRot, _pauli_rot_decomposition)
@@ -1737,11 +1694,12 @@ def _isingxy_to_h_cy_resources(phi: TensorLike, wires: WiresLike | None = None):
     # ``Prod2`` takes its operands in matrix order, i.e. reversed relative to the order in which
     # the decomposition below applies them.
     basis = Prod2((qp.CY(wires=Wire[2]), Hadamard(wires=Wire[1])))
+    unbasis = Prod2((Hadamard(wires=Wire[1]), qp.CY(wires=Wire[2])))
     return {
         _change_op_basis_abstract(
             basis,
             Prod2((RX(Float, wires=Wire[1]), RY(Float, wires=Wire[1]))),
-            _adjoint_abstract(basis),
+            unbasis,
         ): 1
     }
 
@@ -1757,7 +1715,11 @@ def _isingxy_to_h_cy(phi: TensorLike, wires: WiresLike, **__):
         RY(phi / 2, wires=[wires[0]])
         RX(-phi / 2, wires=[wires[1]])
 
-    qp.change_op_basis(_to_basis, _rotations)
+    def _from_basis():
+        qp.CY(wires=wires)
+        Hadamard(wires=[wires[0]])
+
+    qp.change_op_basis(_to_basis, _rotations, _from_basis)
 
 
 add_decomps(IsingXY, _isingxy_to_h_cy)

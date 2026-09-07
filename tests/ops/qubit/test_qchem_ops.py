@@ -34,7 +34,6 @@ from scipy.linalg import expm, fractional_matrix_power
 import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.gradients import parameter_frequencies
-from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.op_math.prod2 import Prod2
 from pennylane.typing import Float, Wire
@@ -357,7 +356,10 @@ class TestSingleExcitationDecompositions:
             strict=True,
         ):
             qp.assert_equal(actual, exp)
-        qp.assert_equal(cob.uncompute_op, qp.adjoint(cob.compute_op))
+        for actual, exp in zip(
+            cob.uncompute_op.operands, [qp.Hadamard(wires[0]), qp.CNOT(wires)], strict=True
+        ):
+            qp.assert_equal(actual, exp)
 
     @pytest.mark.capture
     def test_decomp_capture(self):
@@ -376,14 +378,14 @@ class TestSingleExcitationDecompositions:
         jaxpr = jax.make_jaxpr(circuit)(phi, *wires)
         ops = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, phi, *wires).operations
 
-        # the rule queues a ChangeOpBasis, so the basis change is undone via adjoints
+        # the rule queues a ChangeOpBasis with an explicit inverse basis change
         expected = [
             qp.Hadamard(wires[0]),
             qp.CNOT(wires),
             qp.RY(-phi / 2, wires[0]),
             qp.RY(-phi / 2, wires[1]),
-            qp.adjoint(qp.CNOT(wires)),
-            qp.adjoint(qp.Hadamard(wires[0])),
+            qp.CNOT(wires),
+            qp.Hadamard(wires[0]),
         ]
         for actual, exp in zip(ops, expected, strict=True):
             qp.assert_equal(actual, exp)
@@ -395,12 +397,13 @@ class TestSingleExcitationDecompositions:
 
         # the rule reports a single ChangeOpBasis; operands are in matrix order
         basis = Prod2((qp.CNOT(Wire[2]), qp.Hadamard(Wire[1])))
+        unbasis = Prod2((qp.Hadamard(Wire[1]), qp.CNOT(Wire[2])))
         expected = qp.decomposition.Resources(
             {
                 _change_op_basis_abstract(
                     basis,
                     Prod2((qp.RY(Float, Wire[1]), qp.RY(Float, Wire[1]))),
-                    _adjoint_abstract(basis),
+                    unbasis,
                 ): 1
             }
         )
