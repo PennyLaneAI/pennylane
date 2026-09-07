@@ -200,18 +200,14 @@ class MultiRZ(Operator2):
         return MultiRZ(theta, wires=self.wires)
 
 
-def _prod_abstract(ops):
-    """Abstract product of ``ops``, given in matrix order. A lone operator is left unwrapped, since
-    that is how :func:`~.change_op_basis` represents a single-gate operand."""
-    return ops[0] if len(ops) == 1 else Prod2(tuple(ops))
-
-
 # pylint: disable=unused-argument
 def _multi_rz_decomposition_resources(theta: TensorLike, wires: WiresLike):
     num_wires = len(wires)
     if num_wires == 1:
         return {qp.RZ: 1}
-    ladder = _prod_abstract([qp.CNOT(wires=Wire[2]) for _ in range(num_wires - 1)])
+    cnots = [qp.CNOT(wires=Wire[2]) for _ in range(num_wires - 1)]
+    # a two-wire ladder is a lone CNOT, which ``change_op_basis`` does not wrap in a product
+    ladder = cnots[0] if num_wires == 2 else Prod2(tuple(cnots))
     return {
         _change_op_basis_abstract(ladder, RZ(Float, wires=Wire[1]), _adjoint_abstract(ladder)): 1
     }
@@ -219,8 +215,6 @@ def _multi_rz_decomposition_resources(theta: TensorLike, wires: WiresLike):
 
 @register_resources(_multi_rz_decomposition_resources)
 def _multi_rz_decomposition(theta: TensorLike, wires: WiresLike):
-    r"""Expressing ``MultiRZ`` via :func:`~.change_op_basis` (instead of a bare CNOT ladder around
-    an ``RZ``) lets PennyLane's generic ``C(ChangeOpBasis)`` rule keep the ladder control-free."""
 
     if len(wires) == 1:
         qp.RZ(theta, wires=wires[0])
@@ -580,7 +574,8 @@ def _pauli_rot_resources(theta, pauli_word, wires):  # pylint: disable=unused-ar
     if not basis_gates:
         # a pure-Z word needs no basis change, so there is nothing to conjugate
         return {qp.MultiRZ(Float, Wire[num_active_wires]): 1}
-    to_z_basis = _prod_abstract(basis_gates)
+    # a single-gate basis change is not wrapped in a product either
+    to_z_basis = basis_gates[0] if len(basis_gates) == 1 else Prod2(tuple(basis_gates))
     return {
         _change_op_basis_abstract(
             to_z_basis,
@@ -593,9 +588,6 @@ def _pauli_rot_resources(theta, pauli_word, wires):  # pylint: disable=unused-ar
 @register_resources(_pauli_rot_resources)
 @disable_autograph
 def _pauli_rot_decomposition(theta: TensorLike, pauli_word: str, wires: WiresLike):
-    r"""Expressing ``PauliRot`` via :func:`~.change_op_basis` (instead of a bare basis change around
-    a ``MultiRZ``) lets PennyLane's generic ``C(ChangeOpBasis)`` rule keep the basis change
-    control-free."""
     if set(pauli_word) == {"I"}:
         qp.GlobalPhase(theta / 2)
         return
@@ -1220,8 +1212,6 @@ def _isingxx_to_cnot_rx_cnot_resources(phi: TensorLike, wires: WiresLike | None 
 
 @register_resources(_isingxx_to_cnot_rx_cnot_resources)
 def _isingxx_to_cnot_rx_cnot(phi: TensorLike, wires: WiresLike, **__):
-    r"""Expressing ``IsingXX`` via :func:`~.change_op_basis` (instead of three bare gates) lets
-    PennyLane's generic ``C(ChangeOpBasis)`` rule automatically control it in an efficient way."""
     qp.change_op_basis(qp.CNOT(wires=wires), RX(phi, wires=[wires[0]]), qp.CNOT(wires=wires))
 
 
@@ -1369,8 +1359,6 @@ def _isingyy_to_cy_ry_cy_resources(phi: TensorLike, wires: WiresLike | None = No
 
 @register_resources(_isingyy_to_cy_ry_cy_resources)
 def _isingyy_to_cy_ry_cy(phi: TensorLike, wires: WiresLike, **__):
-    r"""Expressing ``IsingYY`` via :func:`~.change_op_basis` (instead of three bare gates) lets
-    PennyLane's generic ``C(ChangeOpBasis)`` rule automatically control it in an efficient way."""
     qp.change_op_basis(qp.CY(wires=wires), RY(phi, wires=[wires[0]]), qp.CY(wires=wires))
 
 
@@ -1760,8 +1748,6 @@ def _isingxy_to_h_cy_resources(phi: TensorLike, wires: WiresLike | None = None):
 
 @register_resources(_isingxy_to_h_cy_resources)
 def _isingxy_to_h_cy(phi: TensorLike, wires: WiresLike, **__):
-    r"""Expressing ``IsingXY`` via :func:`~.change_op_basis` (instead of six bare gates) lets
-    PennyLane's generic ``C(ChangeOpBasis)`` rule keep the basis change control-free."""
 
     def _to_basis():
         Hadamard(wires=[wires[0]])

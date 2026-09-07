@@ -446,15 +446,12 @@
   [(#10059)](https://github.com/PennyLaneAI/pennylane/pull/10059)
   [(#10059)](https://github.com/PennyLaneAI/pennylane/pull/10015)
 
-* The decompositions of :class:`~.IsingXX`, :class:`~.IsingYY`, :class:`~.IsingXY`,
-  :class:`~.MultiRZ`, :class:`~.PauliRot` and :class:`~.SingleExcitation` are now expressed as a
-  :func:`~.change_op_basis`, extending the treatment :class:`~.IsingZZ` already received to the
-  rest of the rotation family. In each case the basis change that used to be written out as bare
-  gates — a ``CNOT``, a ``CY``, a ``CNOT`` ladder, or a Hadamard/``RX`` layer — becomes the
-  compute/uncompute around the inner rotation. The generic ``C(ChangeOpBasis)`` rule then controls
-  only the inner rotation and leaves the basis change bare, instead of naively controlling every
-  gate. For example, ``C(MultiRZ)`` on four wires now decomposes into six ``CNOT``\ s and one
-  ``CRZ`` rather than six ``Toffoli``\ s and one ``CRZ``.
+* Controlled rotations are now cheaper to decompose: :class:`~.IsingXX`, :class:`~.IsingYY`,
+  :class:`~.IsingXY`, :class:`~.MultiRZ`, :class:`~.PauliRot` and :class:`~.SingleExcitation` are
+  now expressed as a :func:`~.change_op_basis`, like :class:`~.IsingZZ` already was, so controlling
+  them only controls the inner rotation and leaves the basis change untouched. For example,
+  ``C(MultiRZ)`` on four wires now decomposes into six ``CNOT``\ s and one ``CRZ`` instead of six
+  ``Toffoli``\ s and one ``CRZ``.
   [(#10118)](https://github.com/PennyLaneAI/pennylane/pull/10118)
 
 * Coprocessor connection addresses are grouped on :class:`~pennylane.Endpoint` as ``endpoint=qp.Endpoint(host, port)``, replacing the separate ``comm_host`` and ``oob_port`` fields.

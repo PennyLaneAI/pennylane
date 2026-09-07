@@ -907,9 +907,6 @@ class TestDecomposition:
                 ],
             ),
             (
-                # IsingXX decomposes into a single change_op_basis, so controlling it defers to
-                # the C(ChangeOpBasis) rule, which controls only the inner rotation instead of
-                # turning the conjugating CNOTs into Toffolis
                 qp.IsingXX(0.123, wires=[0, 1]),
                 [
                     ctrl(

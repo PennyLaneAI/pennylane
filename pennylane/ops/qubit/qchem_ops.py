@@ -248,8 +248,6 @@ def _single_excitation_resources(phi, wires):
 
 @register_resources(_single_excitation_resources)
 def _single_excitation_decomp(phi: TensorLike, wires: WiresLike):
-    r"""Expressing ``SingleExcitation`` via :func:`~.change_op_basis` (instead of six bare gates)
-    lets PennyLane's generic ``C(ChangeOpBasis)`` rule keep the basis change control-free."""
 
     def _to_basis():
         qp.Hadamard(wires[0])
