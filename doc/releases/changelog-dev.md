@@ -455,7 +455,7 @@
   only the inner rotation and leaves the basis change bare, instead of naively controlling every
   gate. For example, ``C(MultiRZ)`` on four wires now decomposes into six ``CNOT``\ s and one
   ``CRZ`` rather than six ``Toffoli``\ s and one ``CRZ``.
-  [(#10112)](https://github.com/PennyLaneAI/pennylane/pull/10112)
+  [(#10118)](https://github.com/PennyLaneAI/pennylane/pull/10118)
 
 * Coprocessor connection addresses are grouped on :class:`~pennylane.Endpoint` as ``endpoint=qp.Endpoint(host, port)``, replacing the separate ``comm_host`` and ``oob_port`` fields.
   [(#10017)](https://github.com/PennyLaneAI/pennylane/pull/10017)
