@@ -37,6 +37,7 @@ This module contains functions that act on operators and tapes.
     ~commutator
     ~comm
     ~single_qubit_zyz_angles
+    ~subcircuit
 
 """
 
@@ -56,3 +57,4 @@ from .map_wires import map_wires
 from .matrix import matrix
 from .simplify import simplify
 from .single_qubit_zyz_angles import single_qubit_zyz_angles
+from .subcircuit import subcircuit
