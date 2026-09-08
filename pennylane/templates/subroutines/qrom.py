@@ -399,26 +399,29 @@ def _qrom_decomposition(
     depth = int(2 ** math.floor(math.log2(depth)))
     depth = min(depth, bitstrings.shape[0])
 
+    # Close over the statically determined arguments so the capture-compatible adjoint transform
+    # does not trace ``depth`` as a dynamic array-slice bound in ``_swap_ops``.
+    swap_ops = partial(
+        _swap_ops,
+        control_wires=control_wires,
+        depth=depth,
+        swap_wires=swap_wires,
+        target_wires=target_wires,
+    )
+
     if not clean or depth == 1:
         _select_ops(control_wires, depth, target_wires, swap_wires, bitstrings, select_work_wires)
-        _swap_ops(control_wires, depth, swap_wires, target_wires)
+        swap_ops()
 
     else:
-        # Close over the statically determined depth so the capture-compatible adjoint transform
-        # does not trace it as a dynamic array-slice bound in ``_swap_ops``.
-        swap_ops = partial(_swap_ops, depth=depth)
         for _ in range(2):
             for w in target_wires:
                 qp_ops.Hadamard(wires=w)
-            qp_ops.adjoint(swap_ops, lazy=False)(
-                control_wires=control_wires,
-                swap_wires=swap_wires,
-                target_wires=target_wires,
-            )
+            qp_ops.adjoint(swap_ops, lazy=False)()
             _select_ops(
                 control_wires, depth, target_wires, swap_wires, bitstrings, select_work_wires
             )
-            _swap_ops(control_wires, depth, swap_wires, target_wires)
+            swap_ops()
 
 
 def _measurement_uncompute(work_wire, ctrl_wires, targets, product):
