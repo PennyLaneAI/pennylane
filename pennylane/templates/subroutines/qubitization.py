@@ -182,6 +182,7 @@ def _qubitization_resources(num_control_wires, hamiltonian):
     return {
         resource_rep(
             Reflection,
+            # TODO: Change to qp.prod once Identity is migrated to Operator2
             base_rep=resource_rep(Prod, resources={abstractify(I): num_control_wires}),
             num_wires=1,
             num_reflection_wires=1,
@@ -199,7 +200,7 @@ def _qubitization_decomposition(*_, **kwargs):
     hamiltonian = kwargs["hamiltonian"]
     control = kwargs["control"]
 
-    Reflection(Prod(*[I(wire) for wire in control]))
+    Reflection(prod(*[I(wire) for wire in control]))
     PrepSelPrep(hamiltonian, control=control)
 
 

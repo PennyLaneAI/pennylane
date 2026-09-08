@@ -24,7 +24,7 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.ops import SWAP, Prod, adjoint, change_op_basis, prod
+from pennylane.ops import SWAP, adjoint, change_op_basis, prod
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
@@ -268,7 +268,7 @@ def _multiplier_decomposition_resources(
         "num_control_wires": num_x_wires,
     }
     if num_x_wires > 1:
-        target_op_rep = resource_rep(Prod, resources={abstractify(SWAP): num_x_wires})
+        target_op_rep = prod(*(abstractify(SWAP) for _ in range(num_x_wires)))
     else:
         target_op_rep = SWAP
     _compute_op = QFT(Wire[num_wires_aux])
