@@ -17,7 +17,6 @@ This submodule contains the discrete-variable quantum operations that are the
 core parametrized gates.
 """
 
-# pylint: disable=arguments-differ
 import functools
 from collections import Counter
 from operator import matmul
@@ -29,12 +28,15 @@ import numpy as np
 import pennylane as qp
 from pennylane import compiler, math
 from pennylane.capture.autograph import disable_autograph
+
+# pylint: disable=arguments-differ
 from pennylane.core.operator import Operation, Operator, Operator2
-from pennylane.decomposition import add_decomps, change_op_basis_resource_rep, register_resources
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.math.decomposition import decomp_int_to_powers_of_two
 from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
 from pennylane.typing import Float, TensorLike, Wire
@@ -1498,8 +1500,10 @@ class IsingZZ(Operator2):
 # pylint: disable-next=unused-argument
 def _isingzz_to_cnot_rz_cnot_resources(phi: TensorLike, wires: WiresLike | None = None):
     return {
-        change_op_basis_resource_rep(
-            qp.CNOT(wires=Wire[2]), RZ(Float, wires=Wire[1]), qp.CNOT(wires=Wire[2])
+        _change_op_basis_abstract(
+            qp.CNOT(wires=Wire[2]),
+            RZ(Float, wires=Wire[1]),
+            qp.CNOT(wires=Wire[2]),
         ): 1
     }
 

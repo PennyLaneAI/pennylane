@@ -21,12 +21,12 @@ from pennylane import capture, compiler, math
 from pennylane.core.operator import Operator2, abstractify
 from pennylane.decomposition import (
     add_decomps,
-    change_op_basis_resource_rep,
     register_condition,
     register_resources,
 )
 from pennylane.decomposition.resources import resource_rep
 from pennylane.ops import BasisState, H, Prod, X, adjoint, change_op_basis, ctrl, prod
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.typing import Bool, Wire
@@ -297,7 +297,8 @@ def _out_multiplier_with_qft_resources(
         ),
         num_control_wires=num_y_wires,
     )
-    return {change_op_basis_resource_rep(compute_rep, target_rep, uncompute_rep): 1}
+    resources = {_change_op_basis_abstract(compute_rep, target_rep, uncompute_rep): 1}
+    return resources
 
 
 def _out_multiplier_with_qft_condition(

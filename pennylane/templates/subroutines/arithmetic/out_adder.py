@@ -20,11 +20,12 @@ from collections import defaultdict
 from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
-    change_op_basis_resource_rep,
     register_resources,
     resource_rep,
 )
 from pennylane.ops import Prod, change_op_basis
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.typing import Wire
@@ -308,11 +309,15 @@ def _out_adder_decomposition_resources(num_output_wires, num_x_wires, num_y_wire
         )
     ] += 1
 
-    return {
-        change_op_basis_resource_rep(
-            QFT(Wire[num_qft_wires]), resource_rep(Prod, resources=target_resources)
+    _compute_op = QFT(Wire[num_qft_wires])
+    resources = {
+        _change_op_basis_abstract(
+            _compute_op,
+            resource_rep(Prod, resources=target_resources),
+            _adjoint_abstract(_compute_op),
         ): 1
     }
+    return resources
 
 
 @register_resources(_out_adder_decomposition_resources)
