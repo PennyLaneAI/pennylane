@@ -2072,12 +2072,12 @@ class PPR(Operator2):
 
         \text{PPR}(k, P) = \exp\left(-i \frac{\pi}{2k} P\right),
 
-    where :math:`P` is a Pauli word and the rotation angle is :math:`\theta = \pi / k`, following
-    the convention of :class:`~.PauliRot`. The denominator :math:`k` is restricted to
+    where :math:`P` is a Pauli word and we call :math:`\theta = \pi / k` the rotation angle,
+    following the convention of :class:`~.PauliRot`. The denominator :math:`k` is restricted to
     :math:`\pm 1`, :math:`\pm 2` and :math:`\pm 4`, so that ``PPR`` covers exactly those Pauli
     product rotations that occur in Clifford+T circuits:
 
-    * ``angle_denominator=±1``: :math:`\theta = \pm\pi`, a :math:`\pm\pi/2` PPR (Clifford),
+    * ``angle_denominator=±1``: :math:`\theta = \pm\pi`, a :math:`\pm\pi/2` PPR (signed Pauli),
     * ``angle_denominator=±2``: :math:`\theta = \pm\pi/2`, a :math:`\pm\pi/4` PPR (Clifford),
     * ``angle_denominator=±4``: :math:`\theta = \pm\pi/4`, a :math:`\pm\pi/8` PPR (non-Clifford).
 
@@ -2093,16 +2093,16 @@ class PPR(Operator2):
 
     .. seealso:: :class:`~.PauliRot` for a Pauli product rotation with an arbitrary angle, and
         :func:`~.pauli_measure` for PPM, the measurement counterpart of a PPR.
-        For more information on Pauli product measurements, check out the
+        For more information on Pauli-based computation (PBC), check out the
         `Quantum Compilation hub <https://pennylane.ai/compilation/pauli-based-computation>`_.
 
     Args:
         angle_denominator (int): the denominator :math:`k` of the rotation angle
-            :math:`\theta = \pi / k`. Must be one of ``1``, ``2``, ``4``, ``-1``, ``-2`` or ``-4``.
+            :math:`\theta = \pi / k`. Must be one of ``±1``, ``±2``, or ``±4``.
         pauli_word (str): the Pauli word defining the rotation, consisting of the characters
-            ``"X"``, ``"Y"`` and ``"Z"``. Length must match the length of ``wires``.
-        wires (Sequence[int] or int): the wires the operation acts on. Length must match length of
-            ``pauli_word``.
+            ``"X"``, ``"Y"`` and ``"Z"``. Its length must match the length of ``wires``.
+        wires (Sequence[int] or int): the wires the operation acts on. The length must match
+            length of ``pauli_word``.
 
     Raises:
         ValueError: if ``angle_denominator`` is not an allowed integer denominator
@@ -2123,6 +2123,11 @@ class PPR(Operator2):
 
     >>> qp.PPR(-4, "XY", wires=[0, 1])
     PPR(-4, 'XY', wires=[0, 1])
+
+    When compiling further to Pauli product measurements (PPM), ``PPR`` should first be lowered
+    using Catalyst's PBC passes :func:`catalyst.to_ppr`, :func:`catalyst.ppr_to_ppm`, or
+    :func:`catalyst.ppm_compilation`.
+
     """
 
     compilable_argnames = ("angle_denominator", "pauli_word")
