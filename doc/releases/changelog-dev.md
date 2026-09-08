@@ -12,8 +12,14 @@
 
   ```pycon
   >>> import pennylane as qp
-  >>> qp.PPR(4, "XY", wires=[0, 1])
+  >>> op = qp.PPR(4, "XY", wires=[0, 1])
+  >>> op
   PPR(4, 'XY', wires=[0, 1])
+  >>> qp.inspect_decomps(op)
+  Decomposition 0 (name: _ppr_to_paulirot)
+  0: ─╭RXY(0.79)─┤  
+  1: ─╰RXY(0.79)─┤  
+  Gate Count: {PauliRot(theta=AbstractArray((), float64, weak_type=True), pauli_word=XY, wires=AbstractWires(2)): 1}
 
   ```
 
