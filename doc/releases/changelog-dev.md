@@ -83,6 +83,11 @@
       return qp.expval(qp.Z(0))
   ```
 
+* Added a new template :class:`~.TrotterVibronic` that implements a second-order Trotter circuit for
+  vibronic Hamiltonian simulation using phase-gradient arithmetic, based on
+  [Motlagh et al, arXiv:2411.13669](https://arxiv.org/abs/2411.13669).
+  [(#10029)](https://github.com/PennyLaneAI/pennylane/pull/10029)
+
 * ``qp.allocate`` now supports ``state="magic-T"`` and ``state="magic-T-adj"`` for requesting
   magic-state dynamic wires (:math:`|m\rangle = TH|0\rangle` and :math:`|m̄\rangle = T^\dagger H|0\rangle`).
   These states are currently supported when compiling with Catalyst; device simulators raise an
@@ -636,6 +641,7 @@
 
 * :func:`~core.queuing.apply` is now compatible with program capture.
   [(#9831)](https://github.com/PennyLaneAI/pennylane/pull/9831)
+  [(#10103)](https://github.com/PennyLaneAI/pennylane/pull/10103)
 
 * Implemented the `__str__` of `Wires` to display the wire labels as a list.
   [(#9860)](https://github.com/PennyLaneAI/pennylane/pull/9860)
@@ -857,7 +863,7 @@
 
 * :class:`~.GlobalPhase` no longer accepts the `wires` argument in order to mirror its MLIR lowered operation.
   [(#9992)](https://github.com/PennyLaneAI/pennylane/pull/9992)
-  
+
 * :class:`~.BasisState` no longer allows integers as input. Instead, `~.math.int_to_binary` should be used to preprocess
   the input in order to convert it to a binary array.
   [(#9933)](https://github.com/PennyLaneAI/pennylane/pull/9933)
@@ -1046,6 +1052,15 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* The `_prepselprep_decomp` decomposition rule of :class:`~.PrepSelPrep` now applies the linear-combination
+  unitaries and their global phases as two separate :class:`~.Select` operators instead of a single ``Select``
+  of products.
+  [(#10020)](https://github.com/PennyLaneAI/pennylane/pull/10020)
+
+* The `_qrom_decomposition` decomposition rule of :class:`~.QROM` now loads each column of bitstrings with
+  a single :class:`~.MultiX` instead of a product of smaller :class:`~.BasisState` and ``Identity`` operators.
+  [(#10020)](https://github.com/PennyLaneAI/pennylane/pull/10020)
+
 * The resource module JSON parser can now handle floating point values received from the Catalyst backend.
   [(#10044)](https://github.com/PennyLaneAI/pennylane/pull/10044)
 
@@ -1117,7 +1132,8 @@
     - :class:`~.BasisRotation`, :class:`~.MultiplexerStatePreparation`, :class:`~.QROM`, :class:`~.QFT`, :class:`~.FlipSign`,
       :class:`~.TemporaryAND`, :class:`~.SelectPauliRot`, :class:`~.GQSP`, :class:`~.AQFT`, :class:`~.SumOfSlatersPrep`,
       :class:`~.SemiAdder`, :class:`~.OutMultiplier`, :class:`~.SignedOutMultiplier`, :class:`~.BasisState`, :class:`~.TrotterCDF`,
-      :class:`~.TrotterCGF`, :class:`~.OutSquare`, :class:`~.SignedOutSquare`, :class:`~.Incrementer`
+      :class:`~.TrotterCGF`, :class:`~.OutSquare`, :class:`~.SignedOutSquare`, :class:`~.Incrementer`, :class:`~.TrotterVibronic`,
+      :class:`~.Select`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
   [(#9925)](https://github.com/PennyLaneAI/pennylane/pull/9925)
   [(#9918)](https://github.com/PennyLaneAI/pennylane/pull/9918)
@@ -1138,11 +1154,13 @@
   [(#10042)](https://github.com/PennyLaneAI/pennylane/pull/10042)
   [(#10052)](https://github.com/PennyLaneAI/pennylane/pull/10052)
   [(#10054)](https://github.com/PennyLaneAI/pennylane/pull/10054)
+  [(#10029)](https://github.com/PennyLaneAI/pennylane/pull/10029)
   [(#10062)](https://github.com/PennyLaneAI/pennylane/pull/10062)
   [(#10073)](https://github.com/PennyLaneAI/pennylane/pull/10073)
   [(#10078)](https://github.com/PennyLaneAI/pennylane/pull/10078)
   [(#10069)](https://github.com/PennyLaneAI/pennylane/pull/10069)
   [(#10085)](https://github.com/PennyLaneAI/pennylane/pull/10085)
+  [(#10020)](https://github.com/PennyLaneAI/pennylane/pull/10020)
   - Quantum chemistry operators are ported:
     - :class:`~.SingleExcitation`
   [(#9944)](https://github.com/PennyLaneAI/pennylane/pull/9944)
@@ -1269,6 +1287,7 @@
   - Composite operators with :class:`~.Operator2` instances as the base.
     [(#10027)](https://github.com/PennyLaneAI/pennylane/pull/10027)
     [(#10047)](https://github.com/PennyLaneAI/pennylane/pull/10047)
+    [(#9999)](https://github.com/PennyLaneAI/pennylane/pull/9999)
   - Integration with :mod:`pennylane.capture`.
     [(#9556)](https://github.com/PennyLaneAI/pennylane/pull/9556)
     [(#9729)](https://github.com/PennyLaneAI/pennylane/pull/9729)
@@ -1405,6 +1424,10 @@
   [(#9621)](https://github.com/PennyLaneAI/pennylane/pull/9621)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed the Triton persistent decoder kernel so :func:`~pennylane.backline.css_bp_decoder` and
+  the other Triton decoders build on CUDA with Triton 3.8.
+  [(#10111)](https://github.com/PennyLaneAI/pennylane/pull/10111)
 
 * Fixed :class:`~.Incrementer` returning an incorrect incremented value when not enough
   work wires are provided.
