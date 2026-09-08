@@ -51,7 +51,7 @@ class TestProdDispatch:
         assert isinstance(prod(), Prod)
 
     def test_mixed_operators_stays_legacy(self):
-        class LegacyOp(qp.core.operator.Operator):
+        class LegacyOp(qp.core.operator.Operator):  # pylint: disable=too-few-public-methods
             pass
 
         assert not isinstance(LegacyOp(0), Operator2)
