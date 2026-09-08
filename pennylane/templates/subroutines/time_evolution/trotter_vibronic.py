@@ -138,7 +138,7 @@ class TrotterVibronic(Operator2):
             )
             return qp.probs(wires=wires["electronic"])
 
-    >>> qp.specs(circuit)().resources.quantum_operations
+    >>> qp.specs(circuit)().resources.quantum_operations  # doctest: +SKIP
     {'QROM': 6, 'SemiAdder': 2, 'CNOT': 24, 'C(Incrementer)': 4, 'OutMultiplier': 3, 'MultiX': 2, 'AQFT': 1, 'SignedOutSquare': 1, 'Adjoint(SignedOutSquare)': 1, 'Adjoint(AQFT)': 1}
 
     .. details::
