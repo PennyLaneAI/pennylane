@@ -26,7 +26,7 @@ from pennylane.templates.state_preparations.partial_unary import (
     PartialUnaryStatePreparation,
     PUIsometryFinder,
 )
-from pennylane.typing import Float, Complex, Wire
+from pennylane.typing import Complex, Float, Wire
 from pennylane.wires import Wires
 
 # pylint: disable=protected-access
@@ -374,7 +374,9 @@ class TestPartialUnaryStatePreparation:
         )
         assert_valid(op, skip_differentiation=True)
 
-    @pytest.mark.parametrize("coeffs", [Complex[15], Float[15], np.arange(15)/np.linalg.norm(np.arange(15))])
+    @pytest.mark.parametrize(
+        "coeffs", [Complex[15], Float[15], np.arange(15) / np.linalg.norm(np.arange(15))]
+    )
     @pytest.mark.parametrize("wires", [Wire[9], Wires(range(9))])
     @pytest.mark.parametrize("work_wires", [Wire[0], Wire[4], (), Wires(range(10, 14))])
     def test_abstract_init(self, coeffs, wires, work_wires):
