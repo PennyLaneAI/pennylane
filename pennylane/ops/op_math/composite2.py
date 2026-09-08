@@ -196,6 +196,11 @@ class CompositeOp2(Operator2, is_baseclass=True):
 
     @property
     @handle_recursion_error
+    def is_fully_abstract(self):
+        return super().is_fully_abstract
+
+    @property
+    @handle_recursion_error
     def num_params(self):
         return sum(op.num_params for op in self)
 
