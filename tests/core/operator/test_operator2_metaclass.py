@@ -48,23 +48,30 @@ class FixedSigOp(Operator2):
     arg_specs = {"x": Float, "wires": Wire[2]}
 
     def __init__(self, x, wires):
-        super.__init__(x, wires)
+        super().__init__(x, wires)
 
 
 class TestTypeToPow:
+    """Tests for raising Operator2 to powers."""
 
     def test_fixed_fix_pow(self):
         """Test that a class with a fixed sig can be raised to a power."""
         op = FixedSigOp**3
-        assert isinstance(op, qp.ops.Pow2)
+        assert isinstance(op, qp.ops.op_math.pow2.Pow2)
         assert op.z == 3
-        assert qp.assert_equal(op.base, FixedSigOp(Float, Wire[2]))
+        qp.assert_equal(op.base, FixedSigOp(Float, Wire[2]))
 
     @pytest.mark.parametrize("z", (2.0, 2.5, "a"))
     def test_non_integer_pow(self, z):
         """Test non-integer powers are not supported."""
         with pytest.raises(TypeError):
-            FixedSigOp**z
+            _ = FixedSigOp**z
+
+    def test_error_if_no_fixed_sig(self):
+        """Test that a TypeError is raised if the class doesn't have a fixed sig."""
+
+        with pytest.raises(TypeError, match="Only operator classes with fixed signatures "):
+            _ = DynCanonOp**2
 
 
 @pytest.mark.capture

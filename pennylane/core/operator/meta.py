@@ -62,7 +62,7 @@ class OperatorMeta(ABCMeta):
         if not isinstance(z, int):
             return NotImplemented
         if not getattr(cls, "has_fixed_sig", False):
-            return NotImplemented
+            raise TypeError("Only operator classes with fixed signatures can be raised to a power.")
         return cls(**cls.arg_specs) ** z
 
     @_stop_autograph

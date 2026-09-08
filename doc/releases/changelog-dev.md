@@ -425,6 +425,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* Resource functions passed to `qp.register_resources` can now be specified by abstract operators or operator
+  classes raised to powers instead of having them return a dictionary.
+  [(#10122)](https://github.com/PennyLaneAI/pennylane/pull/10122)
+
+
 * :func:`~.SumOfSlatersPrep.required_register_sizes` now works with abstract ``indices`` as input,
   for which it returns an upper bound for the register sizes, across any set of indices of the
   provided length.
