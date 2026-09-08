@@ -28,7 +28,8 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as npp
-from pennylane.core.operator import Operator
+from pennylane.core.operator import Operator, Operator2, abstractify
+from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.drawer.label import LabelledOp
 from pennylane.fourier.mark import MarkedOp
 from pennylane.measurements import ExpectationMP
@@ -41,7 +42,9 @@ from pennylane.ops.functions.equal import (
     assert_equal,
 )
 from pennylane.ops.op_math import Controlled, SymbolicOp
+from pennylane.ops.op_math.controlled2 import ControlledOp2
 from pennylane.templates.subroutines import ControlledSequence
+from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires
 
 PARAMETRIZED_OPERATIONS_1P_1W = [
@@ -337,7 +340,7 @@ class TestEqual:
             )
             is False
         )
-        with pytest.raises(AssertionError, match="op1 and op2 have different data."):
+        with pytest.raises(AssertionError, match=r"different (data|values)"):
             assert_equal(
                 test_operator,
                 test_operator_diff_parameter,
@@ -354,7 +357,14 @@ class TestEqual:
             )
             is False
         )
-        with pytest.raises(AssertionError, match="op1 and op2 have different wires."):
+        with pytest.raises(
+            AssertionError,
+            match=(
+                r"op1 and op2 have different wires for"
+                if issubclass(op1, Operator2)
+                else "op1 and op2 have different wires."
+            ),
+        ):
             assert_equal(
                 test_operator,
                 test_operator_diff_wire,
@@ -418,7 +428,7 @@ class TestEqual:
             is False
         )
 
-        with pytest.raises(AssertionError, match="Parameters have different trainability"):
+        with pytest.raises(AssertionError, match=r"(different|differ in) trainability"):
             assert_equal(
                 op1(param_qp, wires=wire),
                 op1(param_qp_1, wires=wire),
@@ -1179,7 +1189,7 @@ class TestEqual:
             is False
         )
         with pytest.raises(
-            AssertionError, match="The hyperparameters are not equal for op1 and op2."
+            AssertionError, match="op1 and op2 have different values for 'pauli_word'."
         ):
             assert_equal(
                 op1(param, "Y", wires=wire),
@@ -1333,7 +1343,7 @@ class TestEqual:
             is True
         )
 
-        with pytest.raises(AssertionError, match="Parameters have different interfaces"):
+        with pytest.raises(AssertionError, match="different interfaces"):
             assert_equal(
                 op1(pl_tensor, wires=wire),
                 op1(torch_tensor, wires=wire),
@@ -1464,7 +1474,7 @@ class TestPauliErrorEqual:
         pes = [qp.PauliError("XY", x1, (0, 1)), qp.PauliError("XY", 0.5, (0, 1))]
 
         assert qp.equal(pes[0], pes[1]) is False
-        with pytest.raises(AssertionError, match="Parameters have different trainability"):
+        with pytest.raises(AssertionError, match="Parameters differ in trainability"):
             assert_equal(pes[0], pes[1])
 
         with pytest.raises(AssertionError, match="Parameters have different interfaces"):
@@ -2051,28 +2061,70 @@ class TestSymbolicOpComparison:
 
     @pytest.mark.parametrize(("wire1", "wire2", "res"), WIRES)
     @pytest.mark.parametrize(
-        "wwt1, wwt2", [("zeroed", "zeroed"), ("borrowed", "borrowed"), ("borrowed", "zeroed")]
+        "wwt1, wwt2",
+        [
+            ("zeroed", "zeroed"),
+            ("borrowed", "borrowed"),
+            ("borrowed", "zeroed"),
+        ],
     )
-    def test_controlled_work_wires_comparison(self, wire1, wire2, res, wwt1, wwt2):
+    @pytest.mark.parametrize("ctrl_cls", [Controlled, ControlledOp2])
+    def test_controlled_work_wires_comparison(self, wire1, wire2, res, wwt1, wwt2, ctrl_cls):
         """Test that equal compares work_wires for Controlled operators"""
         base1 = qp.MultiRZ(1.23, [0, 1])
         base2 = qp.MultiRZ(1.23, [0, 1])
-        op1 = Controlled(base1, control_wires=2, work_wires=wire1, work_wire_type=wwt1)
-        op2 = Controlled(base2, control_wires=2, work_wires=wire2, work_wire_type=wwt2)
+        op1 = ctrl_cls(base1, control_wires=2, work_wires=wire1, work_wire_type=wwt1)
+        op2 = ctrl_cls(base2, control_wires=2, work_wires=wire2, work_wire_type=wwt2)
         # res is given by the wire parametrization, but is overwritten to False if the work
         # wire types differ. match is only used if res=False, and is adjusted if res was True
-        match = "op1 and op2 have different work wires."
+        match = "op1 and op2 have different wires for 'work_wires'."
         if res and wwt1 != wwt2:
             match = "op1 and op2 have different work wire types."
             res = False
-
-        assert qp.equal(op1, op2) is res
 
         if res:
             assert_equal(op1, op2)
         else:
             with pytest.raises(AssertionError, match=match):
                 assert_equal(op1, op2)
+
+        assert qp.equal(op1, op2) is res
+
+    def test_controlled2_abstract_wires_comparison(self):
+        """Tests comparing ControlledOp2 with abstract wire arguments."""
+
+        base = qp.MultiRZ(1.23, [0, 1])
+        op1 = ControlledOp2(base, control_wires=[2, 3])
+        op2 = ControlledOp2(base, control_wires=Wire[2])
+
+        with pytest.raises(AssertionError, match="Mismatched representations for control_wires"):
+            assert_equal(op1, op2)
+
+        op3 = ControlledOp2(base, control_wires=Wire[3])
+        with pytest.raises(AssertionError, match="Different numbers of abstract control_wires"):
+            assert_equal(op2, op3)
+
+    def test_controlled2_abstract_control_values(self):
+        """Tests comparing ControlledOp2 with abstract control values."""
+
+        base = qp.MultiRZ(1.23, [0, 1])
+        op1 = ControlledOp2(base, control_wires=[2, 3], control_values=[0, 1])
+        op2 = ControlledOp2(base, control_wires=[2, 3], control_values=Bool[2])
+
+        with pytest.raises(AssertionError, match="op1 and op2 have different control values"):
+            assert_equal(op1, op2)
+
+        op3 = ControlledOp2(base, control_wires=[2, 3], control_values=Bool[2])
+        assert_equal(op2, op3)
+
+        op4 = ControlledOp2(base, control_wires=[4, 5], control_values=Bool[2])
+        with pytest.raises(AssertionError, match="op1 and op2 have different control_wires"):
+            assert_equal(op2, op4)
+
+        op1 = ControlledOp2(base, control_wires=Wire[2], control_values=[0, 1])
+        op2 = ControlledOp2(base, control_wires=Wire[2], control_values=[1, 0])
+        with pytest.raises(AssertionError, match="op1 and op2 have different control dictionaries"):
+            assert_equal(op1, op2)
 
     def test_controlled_arithmetic_depth(self):
         """The depths of controlled operators are different due to nesting"""
@@ -2325,7 +2377,7 @@ class TestSymbolicOpComparison:
         assert qp.equal(op1, op2, check_interface=True, check_trainability=False) is False
 
         assert_equal(op1, op2, check_interface=False, check_trainability=False)
-        with pytest.raises(AssertionError, match="Parameters have different interface"):
+        with pytest.raises(AssertionError, match="different interface"):
             assert_equal(op1, op2, check_interface=True, check_trainability=False)
 
     def test_exp_base_op_comparison_with_trainability(self):
@@ -3094,7 +3146,7 @@ def test_ops_with_abstract_parameters_not_equal():
     import jax
 
     assert not jax.jit(qp.equal)(qp.RX(0.1, 0), qp.RX(0.1, 0))
-    with pytest.raises(AssertionError, match="Data contains a tracer"):
+    with pytest.raises(AssertionError, match="has one or more tracer values"):
         jax.jit(assert_equal)(qp.RX(0.1, 0), qp.RX(0.1, 0))
 
     assert not jax.jit(qp.equal)(qp.exp(qp.X(0), 0.5), qp.exp(qp.X(0), 0.5))
@@ -3181,9 +3233,30 @@ def test_select():
     assert qp.equal(op1, op2) is True
 
 
+def test_compressed_resource_op():
+    """Test that ``CompressedResourceOp`` resource representations can be compared with ``qp.equal``."""
+    rep1 = abstractify(qp.ops.Prod(qp.X(0), qp.Y(1)))
+    rep2 = abstractify(qp.ops.Prod(qp.X(0), qp.Y(1)))
+    rep3 = abstractify(qp.ops.Prod(qp.X(0), qp.Z(1)))
+    assert isinstance(rep1, CompressedResourceOp)
+
+    # Equal resource representations compare equal.
+    qp.assert_equal(rep1, rep2)
+    assert qp.equal(rep1, rep2) is True
+
+    # Different resource representations compare unequal, with an informative message.
+    assert qp.equal(rep1, rep3) is False
+    with pytest.raises(AssertionError, match="different resource representations"):
+        qp.assert_equal(rep1, rep3)
+
+    # A resource representation is not equal to a regular operator (different types).
+    assert qp.equal(rep1, qp.X(0)) is False
+    with pytest.raises(AssertionError, match="different types"):
+        qp.assert_equal(rep1, qp.X(0))
+
+
 # pylint: disable=unused-argument
 class TestCompareSubroutines:
-
     def test_different_subroutine_defs(self):
         """Test SubroutineOp are not equal if their Subroutines are not equal."""
 

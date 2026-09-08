@@ -177,6 +177,25 @@ def test_pytree_structure_load():
     )
 
 
+def test_pytree_structure_dump_load_none():
+    """Test that ``None`` serializes as an empty node (distinct from a leaf ``null``)
+    and round-trips through dump/load."""
+    obj = {"a": None, "b": [1, None]}
+    data, struct = flatten(obj)
+
+    assert json.loads(pytree_structure_dump(struct)) == [
+        "builtins.dict",
+        ["a", "b"],
+        [
+            ["builtins.NoneType", None, []],
+            ["builtins.list", None, [None, ["builtins.NoneType", None, []]]],
+        ],
+    ]
+
+    obj_out = unflatten(data, pytree_structure_load(pytree_structure_dump(struct)))
+    assert obj_out == obj
+
+
 H_ONE_QUBIT = np.array([[1.0, 0.5j], [-0.5j, 2.5]])
 H_TWO_QUBITS = np.array(
     [[0.5, 1.0j, 0.0, -3j], [-1.0j, -1.1, 0.0, -0.1], [0.0, 0.0, -0.9, 12.0], [3j, -0.1, 12.0, 0.0]]

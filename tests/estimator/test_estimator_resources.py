@@ -128,17 +128,19 @@ class TestResources:
 
     @pytest.mark.parametrize(
         "resources, expected_str",
-        zip(
-            tuple(
-                Resources(
-                    wire_info.get("zeroed", 0),
-                    wire_info.get("any_state", 0),
-                    wire_info.get("algo", 0),
-                    gate_types,
-                )
-                for wire_info, gate_types in zip(wire_data, gate_types_data)
-            ),
-            str_data,
+        list(
+            zip(
+                tuple(
+                    Resources(
+                        wire_info.get("zeroed", 0),
+                        wire_info.get("any_state", 0),
+                        wire_info.get("algo", 0),
+                        gate_types,
+                    )
+                    for wire_info, gate_types in zip(wire_data, gate_types_data)
+                ),
+                str_data,
+            )
         ),
     )
     def test_str_method(self, resources, expected_str):

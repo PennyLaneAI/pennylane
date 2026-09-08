@@ -18,10 +18,10 @@ Tests for the Incrementer template.
 import numpy as np
 import pytest
 
-from pennylane import Incrementer, decompose, device, qnode
+from pennylane import Incrementer, ctrl, decompose, device, qnode
 from pennylane.decomposition import list_decomps
 from pennylane.measurements import state
-from pennylane.ops import CNOT, Controlled, PauliX
+from pennylane.ops import CNOT, PauliX
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
 from pennylane.templates import BasisEmbedding, TemporaryAND
 
@@ -30,8 +30,8 @@ from pennylane.templates import BasisEmbedding, TemporaryAND
 @pytest.mark.parametrize(
     "wires, work_wires",
     [
-        ((0, 1, 2, 3, 4), (3, 4)),  # enough work wires for work wire decomp
-        ((0, 1, 2, 3), (3,)),  # not enough work wires... uses fallback
+        ((0, 1, 2), (3, 4)),  # enough work wires for work wire decomp
+        ((0, 1, 2), (3,)),  # not enough work wires... uses fallback
         ((0, 1, 2), []),  # no work wires
     ],
 )
@@ -40,7 +40,7 @@ def test_assert_valid(wires, work_wires):
     assert_valid(op)
 
 
-@pytest.mark.capture
+@pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize(
     "wires, work_wires",
     [
@@ -49,7 +49,9 @@ def test_assert_valid(wires, work_wires):
         ((0, 1, 2), []),  # no work wires
     ],
 )
-def test_decomposition_capture(wires, work_wires):
+def test_decomposition_rules_with_capture(wires, work_wires):
+    """Test that the decomposition rules are consistent with the operator, with program
+    capture enabled and disabled."""
     op = Incrementer(wires, work_wires)
 
     for rule in list_decomps(Incrementer):
@@ -66,6 +68,12 @@ def test_decomposition_capture(wires, work_wires):
         ([0, 1, 2], [1, 0, 1], [1, 1, 0], []),
         ([0, 1, 2, 3], [1, 0, 1, 1], [1, 1, 0, 0], []),
         ([0, 1, 2, 3], [0, 0, 1, 1], [0, 1, 0, 0], []),
+        # without work wires, carry propagating into the most significant bit (fallback path)
+        ([0, 1, 2], [0, 1, 1], [1, 0, 0], []),  # 3 -> 4
+        ([0, 1, 2], [1, 1, 1], [0, 0, 0], []),  # 7 -> 0
+        ([0, 1, 2, 3], [0, 1, 1, 1], [1, 0, 0, 0], []),  # 7 -> 8
+        # insufficient work wires, carry propagating into the most significant bit (fallback path)
+        ([0, 1, 2, 3], [0, 1, 1, 1], [1, 0, 0, 0], [4]),  # 7 -> 8
         # with work wires
         ([0, 1, 2], [1, 1, 0], [1, 1, 1], [3, 4]),  # enough work wires for our rule
         ([0, 1, 2], [1, 0, 1], [1, 1, 0], [3, 4, 5]),  # more than enough work wires
@@ -163,7 +171,7 @@ def test_controlled_enough_work_wires(
         for control_wire, control_value in zip(control_wires, control_values, strict=True):
             if control_value:
                 PauliX(control_wire)
-        Controlled(Incrementer(wires, work_wires), control_wires)
+        ctrl(Incrementer(wires, work_wires), control_wires)
         return state()
 
     result = np.array(
@@ -204,7 +212,7 @@ def test_controlled_allocates_work_wires(
         for control_wire, control_value in zip(control_wires, control_values, strict=True):
             if control_value:
                 PauliX(control_wire)
-        Controlled(Incrementer(wires, work_wires), control_wires)
+        ctrl(Incrementer(wires, work_wires), control_wires)
         return state()
 
     result = np.array(
@@ -225,38 +233,41 @@ def test_controlled_allocates_work_wires(
     assert np.allclose(result, 0)
 
 
-@pytest.mark.capture
+@pytest.mark.usefixtures("enable_and_disable_capture")
+@pytest.mark.parametrize("control_value", [0, 1])
 @pytest.mark.parametrize(
     "wires, work_wires, controls",
     [
-        # 1 control
-        # enough work wires for work wire decomp
+        # 1 control, enough work wires for the work-wire decomposition (applicable)
         ((0, 1, 2, 3, 4, 5), (6, 7, 8, 9, 10, 11), (12,)),
-        # not enough work wires... uses fallback
+        # 2 controls, enough work wires for the work-wire decomposition (applicable, needs 7)
+        ((0, 1, 2, 3, 4, 5), (6, 7, 8, 9, 10, 11, 12), (13, 14)),
+        # 1 control, not enough work wires... uses fallback (inapplicable)
         ((0, 1, 2, 3, 4, 5), (6, 7), (8,)),
-        # no work wires
+        # 1 control, no work wires (inapplicable)
         ((0, 1, 2), tuple(), (3,)),
-        # 2 controls
-        # enough work wires for work wire decomp
-        ((0, 1, 2, 3, 4, 5), (6, 7, 8, 9, 10, 11), (12, 13)),
-        # not enough work wires... uses fallback
+        # 2 controls, not enough work wires... uses fallback (inapplicable)
         ((0, 1, 2, 3, 4, 5), (6, 7), (8, 9)),
-        # no work wires
+        # 2 controls, no work wires (inapplicable)
         ((0, 1, 2), tuple(), (3, 4)),
     ],
 )
-def test_controlled_decomposition_new(wires, work_wires, controls):
-    """Tests the decomposition rule implemented with the new system."""
+def test_controlled_decomposition_new(wires, work_wires, controls, control_value):
+    """Tests the ``C(Incrementer)`` decomposition rule with the new system for single- and
+    multi-control shapes and both trivial (``1``) and flipped (``0``) control values, with and
+    without program capture."""
+    control_values = [control_value] * len(controls)
+
     # Work wires only in incrementer
-    op = Controlled(Incrementer(wires, work_wires), controls, control_values=[1] * len(controls))
+    op = ctrl(Incrementer(wires, work_wires), controls, control_values=control_values)
     for rule in list_decomps("C(Incrementer)"):
         _test_decomposition_rule(op, rule)
     # Split work wires between incrementer and control
     split = len(work_wires) // 2
-    op = Controlled(
+    op = ctrl(
         Incrementer(wires, work_wires[:split]),
         controls,
-        control_values=[1] * len(controls),
+        control_values=control_values,
         work_wires=work_wires[split:],
         work_wire_type="zeroed",
     )
@@ -264,10 +275,10 @@ def test_controlled_decomposition_new(wires, work_wires, controls):
         _test_decomposition_rule(op, rule)
 
     # Work wires only in control
-    op = Controlled(
+    op = ctrl(
         Incrementer(wires, []),
         controls,
-        control_values=[1] * len(controls),
+        control_values=control_values,
         work_wires=work_wires,
         work_wire_type="zeroed",
     )

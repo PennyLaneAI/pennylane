@@ -310,7 +310,7 @@ class TestHybridQRAM:
         @qp.qnode(dev)
         def circuit():
             HybridQRAM(
-                data=data,
+                bitstrings=data,
                 control_wires=range(num_control_wires),
                 target_wires=range(num_control_wires, num_control_wires + data.shape[1]),
                 work_wires=range(
@@ -332,7 +332,7 @@ class TestHybridQRAM:
                 and op.name.startswith("C(X")
                 or name == "CH"
                 and op.name.startswith("C(H")
-                or name == "2C(SWAP)"
+                or name == "C(SWAP)"  # C(C(SWAPs are now merged
                 and (op.name.startswith("C(C(SWAP") or op.name.startswith("C(CSWAP"))
                 or name == "CZ"
                 and op.name.startswith("C(Z")
@@ -515,7 +515,7 @@ class TestSelectOnlyQRAM:
                         ),
                         2,
                     ),
-                    GateCount(resource_rep(qre.BasisEmbedding, {"num_wires": 2}), 1),
+                    GateCount(resource_rep(qre.BasisState, {"num_wires": 2}), 1),
                 ],
             ),
         ),
@@ -547,7 +547,7 @@ class TestSelectOnlyQRAM:
         @qp.qnode(dev)
         def circuit():
             SelectOnlyQRAM(
-                data=data,
+                bitstrings=data,
                 control_wires=range(num_control_wires),
                 target_wires=range(num_control_wires, num_control_wires + data.shape[1]),
                 select_wires=range(

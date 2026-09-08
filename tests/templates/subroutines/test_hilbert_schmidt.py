@@ -34,7 +34,7 @@ from pennylane.transforms import decompose
 def test_flatten_unflatten_standard_checks(op_type):
     """Test the flatten and unflatten methods."""
 
-    U = (qp.Hadamard("a"), qp.Identity("b"))
+    U = (qp.Identity("a"), qp.Identity("b"))
     V = (qp.RZ(0.1, wires=0), qp.RZ(0.2, wires=1))
 
     op = op_type(V, U)
@@ -88,7 +88,7 @@ class TestHilbertSchmidt:
         """Test that the result is 0 when when the Hilbert-Schmidt inner product is vanishing."""
 
         U = [qp.Hadamard(wires=0)]
-        V = [qp.Identity(wires=1), qp.GlobalPhase(param, wires=1)]
+        V = [qp.Identity(wires=1), qp.GlobalPhase(param)]
 
         @qp.qnode(qp.device("default.qubit", wires=2))
         def hilbert_test(V, U):
@@ -104,7 +104,7 @@ class TestHilbertSchmidt:
         """Test that the result is 1 when the Hilbert-Schmidt inner product is maximal."""
 
         U = [qp.Hadamard(0)]
-        V = [qp.Hadamard(wires=1), qp.GlobalPhase(param, wires=1)]
+        V = [qp.Hadamard(wires=1), qp.GlobalPhase(param)]
 
         @qp.qnode(qp.device("default.qubit", wires=2))
         def hilbert_test(V, U):
@@ -486,7 +486,7 @@ class TestLocalHilbertSchmidt:
         """Test that the result is 0 when when the Hilbert-Schmidt inner product is vanishing."""
 
         U = [qp.Hadamard(wires=0)]
-        V = [qp.Identity(wires=1), qp.GlobalPhase(param, wires=1)]
+        V = [qp.Identity(wires=1), qp.GlobalPhase(param)]
 
         @qp.qnode(qp.device("default.qubit", wires=2))
         def hilbert_test(V, U):
@@ -502,7 +502,7 @@ class TestLocalHilbertSchmidt:
         """Test that the result is 1 when the Hilbert-Schmidt inner product is maximal."""
 
         U = [qp.Hadamard(0)]
-        V = [qp.Hadamard(wires=1), qp.GlobalPhase(param, wires=1)]
+        V = [qp.Hadamard(wires=1), qp.GlobalPhase(param)]
 
         @qp.qnode(qp.device("default.qubit", wires=2))
         def hilbert_test(V, U):

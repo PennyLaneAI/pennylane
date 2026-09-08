@@ -182,8 +182,7 @@ def _qubitization_resources(num_control_wires, hamiltonian):
     return {
         resource_rep(
             Reflection,
-            base_class=Prod,
-            base_params={"resources": {abstractify(I): num_control_wires}},
+            base_rep=resource_rep(Prod, resources={abstractify(I): num_control_wires}),
             num_wires=1,
             num_reflection_wires=1,
         ): 1,

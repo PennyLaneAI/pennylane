@@ -56,8 +56,8 @@ class TestLeftQuantumComparator:
         @qp.qjit
         @qp.qnode(qp.device("lightning.qubit", wires=range(13)), shots=1)
         def circuit():
-            qp.BasisState(x, wires=x_wires)
-            qp.BasisState(y, wires=y_wires)
+            qp.BasisState(qp.math.int_to_binary(x, len(x_wires)), wires=x_wires)
+            qp.BasisState(qp.math.int_to_binary(y, len(y_wires)), wires=y_wires)
             LeftQuantumComparator(x_wires, y_wires, target_wire, work_wires, comparator)
             qp.CNOT([11, 12])
             qp.adjoint(

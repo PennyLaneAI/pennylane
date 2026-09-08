@@ -422,7 +422,7 @@ class TestValidation:
             QuantumFunctionError,
             match="does not support backprop with requested circuit",
         ):
-            qp.grad(circuit, argnums=0)([0.5])
+            qp.grad(circuit, argnums=0)(0.5)
 
     def test_qnode_print(self):
         """Test that printing a QNode object yields the right information."""

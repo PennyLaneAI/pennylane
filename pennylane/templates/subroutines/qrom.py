@@ -17,29 +17,26 @@ This submodule contains the template for QROM.
 
 from collections import Counter
 from collections.abc import Sequence
-from functools import reduce
-
-import numpy as np
+from functools import partial
 
 from pennylane import compiler, math
 from pennylane import ops as qp_ops
-from pennylane.core.operator import Operation
-from pennylane.core.queuing import QueuingManager, apply
+from pennylane.core.operator import Operator2
+from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import (
     add_decomps,
-    controlled_resource_rep,
     register_condition,
     register_resources,
-    resource_rep,
 )
 from pennylane.math import ceil_log2
 from pennylane.ops import CNOT, CZ, BasisState, X, cond, ctrl, pauli_measure
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
-from pennylane.templates.embeddings import BasisEmbedding
-from pennylane.typing import TensorLike
-from pennylane.wires import Wires, WiresLike
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.typing import AbstractArray, Bool, Int, TensorLike, Wire
+from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
 from .arithmetic import TemporaryAND
+from .multix import MultiX
 from .select import Select
 
 
@@ -49,42 +46,44 @@ def _multi_swap(wires1, wires2):
         qp_ops.SWAP(wires=[wire1, wire2])
 
 
-def _new_ops(depth, target_wires, control_wires, swap_wires, data):
+def _new_ops(depth, target_wires, control_wires, swap_wires, bitstrings):
+
+    num_targets = len(target_wires)
 
     with QueuingManager.stop_recording():
-        ops_new = [BasisEmbedding(bits, wires=target_wires) for bits in data]
-        ops_identity_new = ops_new + [qp_ops.I(target_wires)] * int(
-            2 ** len(control_wires) - len(ops_new)
+        bitstrings_identity = list(bitstrings) + [math.zeros(num_targets, dtype=int)] * int(
+            2 ** len(control_wires) - len(bitstrings)
         )
 
-    n_columns = data.shape[0] // depth if data.shape[0] % depth == 0 else data.shape[0] // depth + 1
+    n_columns = (
+        bitstrings.shape[0] // depth
+        if bitstrings.shape[0] % depth == 0
+        else bitstrings.shape[0] // depth + 1
+    )
     new_ops = []
     for i in range(n_columns):
-        column_ops = []
-        for j in range(depth):
-            dic_map = {
-                ops_identity_new[i * depth + j].wires[l]: swap_wires[j * len(target_wires) + l]
-                for l in range(len(target_wires))
-            }
-            column_ops.append(ops_identity_new[i * depth + j].map_wires(dic_map))
-        new_ops.append(qp_ops.prod(*column_ops))
+        # A column applies ``depth`` bitstrings on disjoint wire slices, which is a single
+        # MultiX over the concatenated bitstrings and wires.
+        column_bits = math.concatenate([bitstrings_identity[i * depth + j] for j in range(depth)])
+        column_wires = swap_wires[: depth * num_targets]
+        new_ops.append(MultiX(column_bits, wires=column_wires))
     return new_ops
 
 
 def _select_ops(
-    control_wires, depth, target_wires, swap_wires, data, select_work_wires
+    control_wires, depth, target_wires, swap_wires, bitstrings, select_work_wires
 ):  # pylint:disable=too-many-arguments
     n_control_select_wires = ceil_log2(2 ** len(control_wires) / depth)
     control_select_wires = control_wires[:n_control_select_wires]
 
-    if control_select_wires:
+    if len(control_select_wires) > 0:
         Select(
-            _new_ops(depth, target_wires, control_wires, swap_wires, data),
+            _new_ops(depth, target_wires, control_wires, swap_wires, bitstrings),
             control=control_select_wires,
             work_wires=select_work_wires,
         )
     else:
-        _new_ops(depth, target_wires, control_wires, swap_wires, data)
+        _new_ops(depth, target_wires, control_wires, swap_wires, bitstrings)
 
 
 def _swap_ops(control_wires, depth, swap_wires, target_wires):
@@ -98,7 +97,11 @@ def _swap_ops(control_wires, depth, swap_wires, target_wires):
             qp_ops.ctrl(_multi_swap, control=control_swap_wires[-i - 1])(_wires0, _wires1)
 
 
-class QROM(Operation):
+def _to_int_array(bitstring):
+    return [int(bit) for bit in bitstring]
+
+
+class QROM(Operator2):
     r"""Applies the QROM operator.
 
     This operator encodes bitstrings associated with indexes:
@@ -109,7 +112,7 @@ class QROM(Operation):
     where :math:`b_i` is the bitstring associated with index :math:`i`.
 
     Args:
-        data (TensorLike): the data to be encoded
+        bitstrings (TensorLike): the data to be encoded
         control_wires (WiresLike):
             The register that stores the index for the entry of the classical data we want to
             read.
@@ -131,7 +134,7 @@ class QROM(Operation):
     .. code-block:: python
 
         # a list of bitstrings is defined
-        data = [[0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0]]
+        bitstrings = [[0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0]]
 
         dev = qp.device("default.qubit")
 
@@ -139,9 +142,9 @@ class QROM(Operation):
         def circuit():
 
             # the third index is encoded in the control wires [0, 1]
-            qp.BasisEmbedding(2, wires = [0,1])
+            qp.BasisState([1, 0], wires = [0,1])
 
-            qp.QROM(data = data,
+            qp.QROM(bitstrings = bitstrings,
                     control_wires = [0,1],
                     target_wires = [2,3,4],
                     work_wires = [5,6,7])
@@ -160,8 +163,8 @@ class QROM(Operation):
         at least :math:`\lceil \log_2(m)\rceil` control wires.
 
         The second set of wires is ``target_wires`` which stores the bitstrings.
-        For instance, if the data is ``[0, 1, 1, 0]``, we will need four target wires. Internally,
-        the bitstrings are encoded using the :class:`~.BasisEmbedding` template.
+        For instance, if the bitstring is ``[0, 1, 1, 0]``, we will need four target wires. Internally,
+        the bitstrings are encoded using the :class:`~.BasisState` template.
 
 
         The ``work_wires`` are auxiliary qubits used to reduce the gate complexity of the
@@ -183,19 +186,30 @@ class QROM(Operation):
         returning ``work_wires`` to their initial state. This technique can be applied when the ``work_wires`` are not
         initialized to zero.
 
+        .. note::
+
+            More ``control_wires`` than the minimum :math:`\lceil \log_2(m) \rceil` may be
+            provided. The extra wires are treated as the most-significant address bits: the data
+            is loaded only when they are all in :math:`|0\rangle`, and the operation acts as the
+            identity otherwise. This turns ``QROM`` into a *controlled* load gated by those extra
+            wires.
+
     """
 
-    resource_keys = {
-        "num_bitstrings",
-        "num_control_wires",
-        "num_target_wires",
-        "num_work_wires",
-        "clean",
+    dynamic_argnames = ("bitstrings",)
+    wire_argnames = ("control_wires", "target_wires", "work_wires")
+    compilable_argnames = ("clean",)
+
+    arg_specs = {
+        "bitstrings": Int[-1, -1],
+        "control_wires": Wire[-1],
+        "target_wires": Wire[-1],
+        "work_wires": Wire[-1],
     }
 
     def __init__(
         self,
-        data: TensorLike | Sequence[str],
+        bitstrings: TensorLike | Sequence[str],
         control_wires: WiresLike,
         target_wires: WiresLike,
         work_wires: WiresLike,
@@ -204,217 +218,37 @@ class QROM(Operation):
 
         control_wires = Wires(control_wires)
         target_wires = Wires(target_wires)
-
-        if isinstance(data[0], str):
-            data = np.array(list(map(lambda bitstring: [int(bit) for bit in bitstring], data)))
-
-        if isinstance(data, (list, tuple)):
-            data = math.array(data)
-
         work_wires = Wires(() if work_wires is None else work_wires)
 
-        self.hyperparameters["control_wires"] = control_wires
-        self.hyperparameters["target_wires"] = target_wires
-        self.hyperparameters["work_wires"] = work_wires
-        self.hyperparameters["clean"] = clean
+        if not isinstance(bitstrings, AbstractArray) and isinstance(bitstrings[0], str):
+            bitstrings = list(map(_to_int_array, bitstrings))
 
-        _wires_are_traced = any(
-            math.is_abstract(w) for ws in (control_wires, target_wires, work_wires) for w in ws
-        )
+        if isinstance(bitstrings, (list, tuple)):
+            bitstrings = math.array(bitstrings)
 
-        # Wire overlap validation must be skipped when wires are JAX tracers,
-        # as their concrete values are not available during tracing.
-        if not _wires_are_traced:
-            if len(work_wires) != 0:
-                if any(wire in work_wires for wire in control_wires):
-                    raise ValueError("Control wires should be different from work wires.")
+        wire_args = {
+            "control_wires": control_wires,
+            "target_wires": target_wires,
+            "work_wires": work_wires,
+        }
+        validate_no_wire_overlaps(wire_args)
 
-                if any(wire in work_wires for wire in target_wires):
-                    raise ValueError("Target wires should be different from work wires.")
-
-            if any(wire in control_wires for wire in target_wires):
-                raise ValueError("Target wires should be different from control wires.")
-
-        if 2 ** len(control_wires) < data.shape[0]:
+        if 2 ** len(control_wires) < bitstrings.shape[0]:
             raise ValueError(
                 f"Not enough control wires ({len(control_wires)}) for the desired number of "
-                + f"data ({data.shape[0]}). At least {ceil_log2(data.shape[0])} control "
-                + "wires are required."
+                f"bitstrings ({bitstrings.shape[0]}). At least {ceil_log2(bitstrings.shape[0])} "
+                "control wires are required."
             )
 
-        if data[0].shape[0] != len(target_wires):
+        if bitstrings.shape[1] != len(target_wires):
             raise ValueError("Bitstring length must match the number of target wires.")
 
-        all_wires = target_wires + control_wires + work_wires
-        super().__init__(data, wires=all_wires)
-
-    def _flatten(self):
-        metadata = tuple((key, value) for key, value in self.hyperparameters.items())
-        return tuple(self.data), metadata
-
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "num_bitstrings": self.data[0].shape[0],
-            "num_control_wires": len(self.hyperparameters["control_wires"]),
-            "num_target_wires": len(self.hyperparameters["target_wires"]),
-            "num_work_wires": len(self.hyperparameters["work_wires"]),
-            "clean": self.hyperparameters["clean"],
-        }
-
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        hyperparams_dict = dict(metadata)
-        return cls(*data, **hyperparams_dict)
-
-    def __repr__(self):
-        return f"QROM(control_wires={self.control_wires}, target_wires={self.target_wires},  work_wires={self.work_wires}, clean={self.clean})"
-
-    def map_wires(self, wire_map: dict):
-        new_dict = {
-            key: [wire_map.get(w, w) for w in self.hyperparameters[key]]
-            for key in ["target_wires", "control_wires", "work_wires"]
-        }
-
-        return QROM(
-            self.data[0],
-            new_dict["control_wires"],
-            new_dict["target_wires"],
-            new_dict["work_wires"],
-            self.clean,
-        )
-
-    def __copy__(self):
-        """Copy this op"""
-        cls = self.__class__
-        copied_op = cls.__new__(cls)
-
-        for attr, value in vars(self).items():
-            setattr(copied_op, attr, value)
-
-        return copied_op
-
-    def decomposition(self):
-
-        return self.compute_decomposition(
-            self.data[0],
-            control_wires=self.control_wires,
-            target_wires=self.target_wires,
-            work_wires=self.work_wires,
-            clean=self.clean,
-        )
-
-    @staticmethod
-    def compute_decomposition(
-        data, control_wires, target_wires, work_wires, clean
-    ):  # pylint: disable=arguments-differ
-
-        if len(control_wires) == 0:
-            return [BasisEmbedding(bits, wires=target_wires) for bits in data]
-
-        with QueuingManager.stop_recording():
-            n_select_work_wires = _calculate_n_select_work_wires(
-                len(data), len(control_wires), len(target_wires), len(work_wires)
-            )
-            n_swap_work_wires = len(work_wires) - n_select_work_wires
-            swap_work_wires = work_wires[:n_swap_work_wires]
-            select_work_wires = work_wires[n_swap_work_wires:]
-            swap_wires = target_wires + swap_work_wires
-
-            # number of operators we store per column (power of 2)
-            depth = len(swap_wires) // len(target_wires)
-            depth = int(2 ** np.floor(np.log2(depth)))
-            depth = min(depth, data.shape[0])
-
-            ops = [BasisEmbedding(bits, wires=target_wires) for bits in data]
-            ops_identity = ops + [qp_ops.I(target_wires)] * int(2 ** len(control_wires) - len(ops))
-
-            n_columns = len(ops) // depth + int(bool(len(ops) % depth))
-            new_ops = []
-            for i in range(n_columns):
-                column_ops = []
-                for j in range(depth):
-                    dic_map = {
-                        ops_identity[i * depth + j].wires[l]: swap_wires[j * len(target_wires) + l]
-                        for l in range(len(target_wires))
-                    }
-                    column_ops.append(ops_identity[i * depth + j].map_wires(dic_map))
-                new_ops.append(qp_ops.prod(*column_ops))
-
-            # Select block
-            n_control_select_wires = ceil_log2(2 ** len(control_wires) / depth)
-            control_select_wires = control_wires[:n_control_select_wires]
-
-            select_ops = []
-            if control_select_wires:
-                select_ops += [
-                    Select(new_ops, control=control_select_wires, work_wires=select_work_wires)
-                ]
-            else:
-                select_ops = new_ops
-
-            # Swap block
-            control_swap_wires = control_wires[n_control_select_wires:]
-            swap_ops = []
-            num_targets = len(target_wires)
-            for ind in range(len(control_swap_wires)):
-                for j in range(2**ind):
-                    _wires0 = swap_wires[j * num_targets : (j + 1) * num_targets]
-                    _wires1 = swap_wires[
-                        (j + 2**ind) * num_targets : (j + 2**ind + 1) * num_targets
-                    ]
-                    new_op = qp_ops.prod(_multi_swap)(_wires0, _wires1)
-                    swap_ops.insert(0, qp_ops.ctrl(new_op, control=control_swap_wires[-ind - 1]))
-
-            if not clean or depth == 1:
-                # Based on this paper (Fig 1.c): https://arxiv.org/abs/1812.00954
-                decomp_ops = select_ops + swap_ops
-
-            else:
-                # Based on this paper (Fig 4): https://arxiv.org/abs/1902.02134
-                adjoint_swap_ops = swap_ops[::-1]
-                hadamard_ops = [qp_ops.Hadamard(wires=w) for w in target_wires]
-
-                decomp_ops = 2 * (hadamard_ops + adjoint_swap_ops + select_ops + swap_ops)
-
-        if QueuingManager.recording():
-            for op in decomp_ops:
-                apply(op)
-
-        return decomp_ops
-
-    @classmethod
-    def _primitive_bind_call(cls, *args, **kwargs):
-        return cls._primitive.bind(*args, **kwargs)
-
-    @property
-    def control_wires(self):
-        """The control wires."""
-        return self.hyperparameters["control_wires"]
-
-    @property
-    def target_wires(self):
-        """The wires where the bitstring is loaded."""
-        return self.hyperparameters["target_wires"]
-
-    @property
-    def work_wires(self):
-        """The wires where the index is specified."""
-        return self.hyperparameters["work_wires"]
+        super().__init__(bitstrings, control_wires, target_wires, work_wires, clean)
 
     @property
     def wires(self):
         """All wires involved in the operation."""
-        return (
-            self.hyperparameters["control_wires"]
-            + self.hyperparameters["target_wires"]
-            + self.hyperparameters["work_wires"]
-        )
-
-    @property
-    def clean(self):
-        """Boolean to select the version of QROM."""
-        return self.hyperparameters["clean"]
+        return self.control_wires + self.target_wires + self.work_wires
 
 
 def _calculate_n_select_work_wires(terms, num_control_wires, num_target_wires, num_work_wires, **_):
@@ -442,26 +276,31 @@ def _calculate_n_select_work_wires(terms, num_control_wires, num_target_wires, n
 
     # Calculate depth: how many bitstrings we can load in parallel (power of 2)
     depth = n_swap_wires // num_target_wires
-    depth = int(2 ** np.floor(np.log2(min(depth, terms))))
+    depth = int(2 ** math.floor(math.log2(min(depth, terms))))
 
     # Recalculate actual wires used by SWAP and the remaining for Select
     n_swap_work_wires = num_target_wires * depth - num_target_wires
     n_select_work_wires = num_work_wires - n_swap_work_wires
 
     # Adjust depth if Select doesn't have enough work wires for the required control logic
-    n_select_control_wires = num_control_wires - np.floor(np.log2(depth))
+    n_select_control_wires = num_control_wires - math.floor(math.log2(depth))
     while n_select_work_wires < n_select_control_wires - 1:
         depth = depth // 2
         n_swap_work_wires = num_target_wires * depth - num_target_wires
         n_select_work_wires = num_work_wires - n_swap_work_wires
-        n_select_control_wires = num_control_wires - np.floor(np.log2(depth))
+        n_select_control_wires = num_control_wires - math.floor(math.log2(depth))
 
     return n_select_work_wires
 
 
 def _qrom_decomposition_resources(
-    num_bitstrings, num_control_wires, num_target_wires, num_work_wires, clean
+    bitstrings, control_wires, target_wires, work_wires, clean
 ):  # pylint: disable=too-many-branches
+
+    num_bitstrings = len(bitstrings)
+    num_control_wires = len(control_wires)
+    num_target_wires = len(target_wires)
+    num_work_wires = len(work_wires)
 
     num_work_wires_select = _calculate_n_select_work_wires(
         num_bitstrings, num_control_wires, num_target_wires, num_work_wires
@@ -470,48 +309,33 @@ def _qrom_decomposition_resources(
     num_work_wires_swap = num_work_wires - num_work_wires_select
 
     if num_control_wires == 0:
-        return {resource_rep(BasisEmbedding, num_wires=num_target_wires): num_bitstrings}
+        return {MultiX(Bool[num_target_wires], Wire[num_target_wires]): num_bitstrings}
 
     num_swap_wires = num_target_wires + num_work_wires_swap
 
     # number of operators we store per column (power of 2)
     depth = num_swap_wires // num_target_wires
-    depth = int(2 ** np.floor(np.log2(depth)))
+    depth = int(2 ** math.floor(math.log2(depth)))
     depth = min(depth, num_bitstrings)
-
-    ops = [resource_rep(BasisEmbedding, num_wires=num_target_wires) for _ in range(num_bitstrings)]
-    ops_identity = ops + [qp_ops.I] * int(2**num_control_wires - num_bitstrings)
 
     n_columns = (
         num_bitstrings // depth if num_bitstrings % depth == 0 else num_bitstrings // depth + 1
     )
 
-    # New ops block
-    new_ops = Counter()
-    for i in range(n_columns):
-        column_ops = Counter()
-        for j in range(depth):
-            column_ops[ops_identity[i * depth + j]] += 1
-        if len(column_ops) == 1 and list(column_ops.values())[0] == 1:
-            new_ops[list(column_ops.keys())[0]] += 1
-        else:
-            new_ops[resource_rep(qp_ops.op_math.Prod, resources=dict(column_ops))] += 1
+    # Each column applies ``depth`` bitstrings on disjoint wire slices, i.e. a single MultiX.
+    column_rep = MultiX(Bool[depth * num_target_wires], Wire[depth * num_target_wires])
+    new_ops = Counter({column_rep: n_columns})
 
     # Select block
     num_control_select_wires = ceil_log2(2**num_control_wires / depth)
 
-    new_ops_reps = reduce(
-        lambda acc, lst: acc + lst, [[key for _ in range(val)] for key, val in new_ops.items()]
-    )
-
     if num_control_select_wires > 0:
         select_ops = {
-            resource_rep(
-                Select,
-                num_control_wires=num_control_select_wires,
-                op_reps=tuple(new_ops_reps),
+            Select(
+                [column_rep] * n_columns,
+                control=Wire[int(num_control_select_wires)],
+                work_wires=Wire[num_work_wires_select],
                 partial=False,
-                num_work_wires=num_work_wires_select,
             ): 1
         }
     else:
@@ -555,35 +379,49 @@ def _qrom_decomposition_resources(
 
 @register_resources(_qrom_decomposition_resources)
 def _qrom_decomposition(
-    data, control_wires, target_wires, work_wires, clean, **__
+    bitstrings, control_wires, target_wires, work_wires, clean
 ):  # pylint: disable=unused-argument, too-many-arguments
     if len(control_wires) == 0:
-        BasisEmbedding(data[0, :], wires=target_wires)
+        MultiX(bitstrings[0, :], wires=target_wires)
+        return
 
     n_select_work_wires = _calculate_n_select_work_wires(
-        len(data), len(control_wires), len(target_wires), len(work_wires)
+        len(bitstrings), len(control_wires), len(target_wires), len(work_wires)
     )
 
-    select_work_wires = work_wires[:n_select_work_wires]
-    swap_work_wires = work_wires[n_select_work_wires:]
-    swap_wires = target_wires + swap_work_wires
+    n_swap_work_wires = len(work_wires) - n_select_work_wires
+    swap_work_wires = work_wires[:n_swap_work_wires]
+    select_work_wires = work_wires[n_swap_work_wires:]
+    swap_wires = Wires(target_wires) + Wires(swap_work_wires)
 
     # number of operators we store per column (power of 2)
     depth = len(swap_wires) // len(target_wires)
-    depth = int(2 ** np.floor(np.log2(depth)))
-    depth = min(depth, data.shape[0])
+    depth = int(2 ** math.floor(math.log2(depth)))
+    depth = min(depth, bitstrings.shape[0])
+
+    # Close over the statically determined arguments so the capture-compatible adjoint transform
+    # does not trace ``depth`` as a dynamic array-slice bound in ``_swap_ops``.
+    swap_ops = partial(
+        _swap_ops,
+        control_wires=control_wires,
+        depth=depth,
+        swap_wires=swap_wires,
+        target_wires=target_wires,
+    )
 
     if not clean or depth == 1:
-        _select_ops(control_wires, depth, target_wires, swap_wires, data, select_work_wires)
-        _swap_ops(control_wires, depth, swap_wires, target_wires)
+        _select_ops(control_wires, depth, target_wires, swap_wires, bitstrings, select_work_wires)
+        swap_ops()
 
     else:
         for _ in range(2):
             for w in target_wires:
                 qp_ops.Hadamard(wires=w)
-            qp_ops.adjoint(_swap_ops, lazy=False)(control_wires, depth, swap_wires, target_wires)
-            _select_ops(control_wires, depth, target_wires, swap_wires, data, select_work_wires)
-            _swap_ops(control_wires, depth, swap_wires, target_wires)
+            qp_ops.adjoint(swap_ops, lazy=False)()
+            _select_ops(
+                control_wires, depth, target_wires, swap_wires, bitstrings, select_work_wires
+            )
+            swap_ops()
 
 
 def _measurement_uncompute(work_wire, ctrl_wires, targets, product):
@@ -641,7 +479,7 @@ def _measurement_qrom_inner(controls, targets, bitstrings):
     else:
         TemporaryAND([flag, sel, work], control_values=[1, 1])
 
-    product = np.bitwise_xor(bitstrings[0], bitstrings[k_left])
+    product = math.bitwise_xor(bitstrings[0], bitstrings[k_left])
     _measurement_uncompute(work, [flag, sel], targets, product)
 
 
@@ -676,7 +514,7 @@ def _measurement_qrom_outer(controls, targets, bitstrings, k):
 
     # --- Q0 -> Q1 transition ---
     ctrl(X(controls[2]), control=controls[0], control_values=[0])
-    diff_q1 = np.bitwise_xor(bitstrings[0], bitstrings[k0])
+    diff_q1 = math.bitwise_xor(bitstrings[0], bitstrings[k0])
 
     # --- Q1 ---
     if k1 > 1:
@@ -692,7 +530,7 @@ def _measurement_qrom_outer(controls, targets, bitstrings, k):
     sec_child = child_controls
 
     # --- Q2 base correction (explicit, no measurement available here) ---
-    diff_q2 = np.bitwise_xor(bitstrings[0], bitstrings[k01])
+    diff_q2 = math.bitwise_xor(bitstrings[0], bitstrings[k01])
     for i, bit in enumerate(diff_q2):
         if bit == 1:
             CNOT(wires=[sec_wires[2], targets[i]])
@@ -705,7 +543,7 @@ def _measurement_qrom_outer(controls, targets, bitstrings, k):
     CNOT(wires=[sec_wires[0], sec_wires[2]])
 
     # --- Q3 ---
-    diff_q3 = np.bitwise_xor(bitstrings[0], bitstrings[k01 + k2])
+    diff_q3 = math.bitwise_xor(bitstrings[0], bitstrings[k01 + k2])
     if k3 > 1:
         _measurement_qrom_inner(sec_child, targets, bitstrings[k01 + k2 :])
 
@@ -723,8 +561,8 @@ def _count_tempAND_in_measurement_qrom(k):
     return k - 2
 
 
-def _qrom_measurement_resources(  # pylint: disable=too-many-arguments
-    num_bitstrings=None, num_target_wires=None, base_params=None, **_
+def _qrom_measurement_resources(  # pylint: disable=too-many-arguments,unused-argument
+    bitstrings=None, control_wires=None, target_wires=None, work_wires=None, clean=None, base=None
 ):
     """Resource estimate for the measurement-based QROM decomposition.
 
@@ -734,61 +572,156 @@ def _qrom_measurement_resources(  # pylint: disable=too-many-arguments
       - conditional X gates on work + targets
     """
     # When called for Adjoint(QROM), extract params from the base parameters
-    if base_params is not None:
-        num_bitstrings = base_params["num_bitstrings"]
-        num_target_wires = base_params["num_target_wires"]
+    if base is not None:
+        num_bitstrings = len(base.bitstrings)
+        num_target_wires = len(base.target_wires)
+        num_control_wires = len(base.control_wires)
+    else:
+        num_bitstrings = len(bitstrings)
+        num_target_wires = len(target_wires)
+        num_control_wires = len(control_wires)
 
+    n_extra = 0 if num_control_wires is None else num_control_wires - ceil_log2(num_bitstrings)
     # L = num_bitstrings
     # TODO: allowing partial QROM will reduce this term
     L = 2 ** ceil_log2(num_bitstrings)
 
-    if L <= 1:
-        return {resource_rep(BasisState, num_wires=num_target_wires): 1}
+    if L <= 1 and n_extra == 0:
+        return {BasisState(Bool[num_target_wires], Wire[num_target_wires]): 1}
 
-    if L == 2:
+    if L == 2 and n_extra == 0:
         return {
-            resource_rep(BasisState, num_wires=num_target_wires): 1,
-            resource_rep(CNOT): num_target_wires,
+            BasisState(Bool[num_target_wires], Wire[num_target_wires]): 1,
+            ctrl(BasisState(Bool[num_target_wires], Wire[num_target_wires]), Wire[1]): 1,
         }
 
-    num_ands = _count_tempAND_in_measurement_qrom(L)
-    num_measurements = 2 * num_ands  # X-type + Z per uncomputation
+    # Without extra wires the load uses the cheaper 4-quarter outer iterator; with extra wires
+    # it uses the flag-gated binary inner iterator, which needs ``L - 1`` AND gates.
+    num_ands = L - 1 if n_extra > 0 else _count_tempAND_in_measurement_qrom(L)
     num_cz = num_ands  # CZ correction per uncomputation
 
     # TemporaryAND counts are exact
     # CNOTs, PauliX gates and BasisState ops are an approximation
-    return {
-        resource_rep(TemporaryAND): num_ands,
-        resource_rep(PauliMeasure): num_measurements,
-        resource_rep(CZ): num_cz,
-        resource_rep(CNOT): L - 1,
-        resource_rep(BasisState, num_wires=num_target_wires): L,
-        resource_rep(X): L,
-        controlled_resource_rep(X, {}, num_control_wires=1, num_zero_control_values=1): 1,
+    flag = _flag_resources(n_extra, num_target_wires)
+    resources = {
+        TemporaryAND: num_ands + flag.get(TemporaryAND, 0),
+        # Each of the ``num_ands`` uncomputations performs one Z measurement on the work wire and
+        # one X-type joint measurement on the work wire plus the target wires flipped by that
+        # bitstring. The joint measurement's size (``1 + len(x_wires)``) varies per bitstring, so
+        # the worst case (all ``num_target_wires`` flipped) is used for this approximate estimate.
+        PauliMeasure("Z", wires=Wire[1]): num_ands,
+        PauliMeasure("X" * (num_target_wires + 1), wires=Wire[num_target_wires + 1]): num_ands,
+        CZ: num_cz,
+        CNOT: L - 1,
+        BasisState(Bool[num_target_wires], Wire[num_target_wires]): L,
+        X: L + flag.get(X, 0),
+        qp_ops.ctrl(X(Wire[1]), control=Wire[1], control_values=Bool[1]): 1,
     }
+    # Merge the remaining flag-only resource types (controlled-X load, adjoint ANDs).
+    for rep, count in flag.items():
+        if rep not in resources:
+            resources[rep] = count
+    return resources
+
+
+def _flag_resources(n_extra, num_target_wires):
+    """Return the resources for the flag that gates the load on extra control wires.
+
+    A single extra wire uses two X gates; two or more use a ladder of ``n_extra - 1`` AND gates,
+    all later uncomputed by the same number of adjoints. In both cases the base load is gated,
+    adding up to ``num_target_wires`` controlled-X gates.
+    """
+    if n_extra < 1:
+        return {}
+    resources = {qp_ops.ctrl(X(Wire[1]), control=Wire[1]): num_target_wires}
+    if n_extra == 1:
+        resources[X] = 2
+        return resources
+    resources[TemporaryAND] = n_extra - 1
+    resources[_adjoint_abstract(TemporaryAND)] = n_extra - 1
+    return resources
 
 
 def _qrom_measurement_condition(
-    num_bitstrings=None, num_control_wires=None, num_work_wires=None, base_params=None, **_
-):  # pylint: disable=unused-argument
+    bitstrings=None, control_wires=None, target_wires=None, work_wires=None, clean=None, base=None
+):  # pylint: disable=too-many-arguments,unused-argument
+
+    if base is not None:
+        num_bitstrings = len(base.bitstrings)
+        num_work_wires = len(base.work_wires)
+        num_control_wires = len(base.control_wires)
+    else:
+        num_bitstrings = len(bitstrings)
+        num_work_wires = len(work_wires)
+        num_control_wires = len(control_wires)
 
     if not compiler.active():
         return False
-    if base_params is not None:
-        num_bitstrings = base_params["num_bitstrings"]
-        num_work_wires = base_params["num_work_wires"]
 
-    n_input = max(1, ceil_log2(num_bitstrings))
-    if num_bitstrings <= 2:
+    n_input = (
+        num_control_wires if num_control_wires is not None else max(1, ceil_log2(num_bitstrings))
+    )
+    if num_bitstrings <= 2 and n_input <= 1:
         return True
     return num_work_wires >= n_input - 1
 
 
+def _interleave_controls(sel_wires, work_wires, head=None):
+    """Build the interleaved control list consumed by the measurement iterators.
+
+    The iterators expect ``[head, sel0, work0, sel1, work1, ...]`` where ``head`` is either the
+    first selection wire (outer iterator, no flag) or the flag wire (flag-gated inner iterator).
+    When ``head`` is ``None`` the first selection wire is used as the head and is not repeated.
+    """
+    if head is None:
+        controls = [sel_wires[0]]
+        sel_wires = sel_wires[1:]
+    else:
+        controls = [head]
+    for sel, work in zip(sel_wires, work_wires):
+        controls.append(sel)
+        controls.append(work)
+    return controls
+
+
+def _build_flag(extra_wires, work_wires):
+    """Build a flag wire that is 1 iff all extra control wires are 0.
+
+    A single extra wire is flipped in place so that ``flag == 1`` iff it was 0; two or more are
+    folded with a ladder of ``AND`` gates into an ancilla work wire. Returns ``(flag, core_work)``,
+    where ``core_work`` are the work wires left to drive the inner unary iterator.
+    """
+    n_extra = len(extra_wires)
+    if n_extra == 1:
+        X(extra_wires[0])
+        return extra_wires[0], work_wires
+
+    anc_work, core_work = work_wires[: n_extra - 1], work_wires[n_extra - 1 :]
+
+    # Each node is ``(wire, sat_value)``: the subtree rooted at ``wire`` reports "all extra wires
+    # zero" when ``wire == sat_value``. Raw extra wires are satisfied at 0; ancillas written by an
+    # ``AND`` are satisfied at 1. Combine nodes pairwise, level by level, into a balanced tree.
+    nodes = [(w, 0) for w in extra_wires]
+    anc_iter = iter(anc_work)
+    while len(nodes) > 1:
+        next_nodes = []
+        for i in range(0, len(nodes) - 1, 2):
+            (w0, v0), (w1, v1) = nodes[i], nodes[i + 1]
+            anc = next(anc_iter)
+            TemporaryAND([w0, w1, anc], control_values=[v0, v1])
+            next_nodes.append((anc, 1))
+        if len(nodes) % 2:  # carry the unpaired node up to the next level
+            next_nodes.append(nodes[-1])
+        nodes = next_nodes
+
+    return nodes[0][0], core_work
+
+
 @register_condition(_qrom_measurement_condition)
 @register_resources(_qrom_measurement_resources, exact=False)
-def _qrom_measurement_decomposition(  # pylint: disable=too-many-arguments,too-many-branches
-    data=None, control_wires=None, target_wires=None, work_wires=None, base=None, **_
-):
+def _qrom_measurement_decomposition(
+    bitstrings=None, control_wires=None, target_wires=None, work_wires=None, clean=None, base=None
+):  # pylint: disable=too-many-arguments,too-many-branches,unused-argument
     """QROM decomposition using measurement-based uncomputation.
 
     Uses L-3 (or L-2) TemporaryAND gates. All uncomputation is done via
@@ -796,55 +729,80 @@ def _qrom_measurement_decomposition(  # pylint: disable=too-many-arguments,too-m
     Work wires are always left clean (via measurement-based uncomputation).
     Decomposition is based on Fig 18. https://arxiv.org/abs/2211.15465
 
-    Requires: len(work_wires) >= ceil_log2(L) - 1.
+    Requires: len(work_wires) >= len(control_wires) - 1.
     """
     # When called for Adjoint(QROM), extract params from the base operator
     if base is not None:
-        data = base.data[0]
-        control_wires = base.hyperparameters["control_wires"]
-        target_wires = base.hyperparameters["target_wires"]
-        work_wires = base.hyperparameters["work_wires"]
+        bitstrings = base.bitstrings
+        control_wires = base.control_wires
+        target_wires = base.target_wires
+        work_wires = base.work_wires
 
-    # Bitstrings are manipulated with integer bitwise operations (np.bitwise_xor)
+    # Bitstrings are manipulated with integer bitwise operations (math.bitwise_xor)
     # below, but callers may pass float data (e.g. QROM(np.eye(b), ...)). Cast to
     # int so the XOR-relative encoding works regardless of the input dtype.
-    data = np.asarray(data).astype(int)
+    bitstrings = math.cast(bitstrings, int)
 
-    L = len(data)
+    L = len(bitstrings)
     n_input = len(control_wires)
+
+    # Extra control wires beyond ceil_log2(L) are the most-significant address bits: the data
+    # is loaded only when they are all zero, otherwise the operation is the identity (matching
+    # the non-partial ``Select``). We build a flag qubit that is 1 iff every extra wire is 0
+    # and control the whole load on it, reusing the unary iterator ``_measurement_qrom_inner``
+    # over the real 2**n_active table.
+    #
+    # ``n_extra == 0`` is intentionally handled by the branches below (the 4-quarter outer
+    # iterator), which is cheaper than the flag-gated inner iterator used here.
+    n_active = ceil_log2(L)
+    n_extra = n_input - n_active
+    if n_extra > 0:
+        extra_wires, active_wires = control_wires[:n_extra], control_wires[n_extra:]
+
+        # Fold the extra wires into a flag that is 1 iff all of them are 0, then run the whole
+        # load conditioned on that flag; the flag is uncomputed afterwards so work wires stay clean.
+        flag, core_work = _build_flag(extra_wires, work_wires)
+
+        # Gated base load, then the flag-gated unary iterator over the padded 2**n_active table.
+        padded = math.zeros((2**n_active, len(bitstrings[0])), dtype=int)
+        padded[:L] = bitstrings
+        base = padded[0]
+        # Fanout the base bitstring onto the target register, controlled on the flag.
+        ctrl(BasisState(base, wires=target_wires), control=flag)
+        bitstrings = math.bitwise_xor(padded, base)
+        controls = _interleave_controls(active_wires[:n_active], core_work, head=flag)
+        _measurement_qrom_inner(controls, list(target_wires), bitstrings)
+
+        # Uncompute the flag by inverting the exact gate sequence queued by ``_build_flag``.
+        qp_ops.adjoint(_build_flag)(extra_wires, work_wires)
+        return
 
     # TODO: allowing partial qrom will remove this padding
     # Pad data up to the next power of 2 with all-zero bitstrings
     next_pow2 = 1 << ceil_log2(L)
     if L < next_pow2:
-        width = len(data[0])
-        data = np.concatenate([data, np.zeros((next_pow2 - L, width), dtype=int)])
+        width = len(bitstrings[0])
+        bitstrings = math.concatenate([bitstrings, math.zeros((next_pow2 - L, width), dtype=int)])
         L = next_pow2
 
     if L == 1:
-        BasisState(data[0], target_wires)
+        BasisState(bitstrings[0], target_wires)
         return
 
     if L == 2:
-        BasisState(data[0], target_wires)
-        diff = np.bitwise_xor(data[0], data[1])
-        for i, bit in enumerate(diff):
-            if bit == 1:
-                CNOT(wires=[control_wires[0], target_wires[i]])
+        BasisState(bitstrings[0], target_wires)
+        diff = math.bitwise_xor(bitstrings[0], bitstrings[1])
+        ctrl(BasisState(diff, wires=target_wires), control=control_wires[0])
         return
 
     # Load base bitstring
-    BasisState(data[0], target_wires)
+    BasisState(bitstrings[0], target_wires)
 
     # Build interleaved controls: [in[0], in[1], work[0], in[2], work[1], ...]
-    controls = [control_wires[0]]
-    for i in range(n_input - 1):
-        controls.append(control_wires[i + 1])
-        controls.append(work_wires[i])
+    controls = _interleave_controls(control_wires, work_wires)
 
-    # XOR-relative encoding: bitstrings[i] = data[i] XOR data[0]
-    base = list(data[0])
-    bitstrings = [np.bitwise_xor(row, base) for row in data]
+    # XOR-relative encoding: bitstrings[i] = bitstrings[i] XOR bitstrings[0]
+    bitstrings = math.bitwise_xor(bitstrings, bitstrings[0])
 
     _measurement_qrom_outer(controls, list(target_wires), bitstrings, L)
 

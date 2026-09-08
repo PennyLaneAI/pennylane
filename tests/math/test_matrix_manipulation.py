@@ -544,6 +544,35 @@ class TestExpandMatrix:
         assert np.allclose(op.matrix(wire_order=[2, 0]), permuted_matrix, atol=tol)
         assert np.allclose(op.matrix(wire_order=[0, 1, 2]), expanded_matrix, atol=tol)
 
+    @pytest.mark.parametrize("wire_order", [[0], [0, 1], [0, 1, 2], ["a", "b"]])
+    @pytest.mark.parametrize(
+        "scalar_mat",
+        [
+            np.array([[0.33423773 + 0.9424888j]]),  # Complex
+            np.array([[-1.0 + 0.0j]]),  # "Real" but complex dtype
+            np.array([[2.5]]),  # Real
+        ],
+    )
+    def test_expand_empty_wires_scalar_matrix(self, scalar_mat, wire_order):
+        """Test that expanding a 1x1 matrix with empty wires produces a 2^N x 2^N
+        identity matrix scaled by the scalar."""
+        empty_wires = qp.wires.Wires([])
+        res = qp.math.expand_matrix(scalar_mat, wires=empty_wires, wire_order=wire_order)
+
+        expected_dim = 2 ** len(wire_order)
+        expected_matrix = scalar_mat[0, 0] * np.eye(expected_dim)
+
+        assert res.shape == (expected_dim, expected_dim)
+        assert np.allclose(res, expected_matrix)
+
+    def test_expand_empty_wires_none_wire_order(self):
+        """Test that when wire_order is None, the 1x1 matrix is returned as-is without crashing."""
+        scalar_mat = np.array([[0.5 + 0.5j]])
+        res = qp.math.expand_matrix(scalar_mat, wires=[], wire_order=None)
+
+        assert res.shape == (1, 1)
+        assert np.allclose(res, scalar_mat)
+
 
 class TestExpandMatrixSparse:
     """Tests for the _sparse_expand_matrix function."""

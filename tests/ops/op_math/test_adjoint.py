@@ -20,6 +20,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.core.operator.base import Operator
 from pennylane.gradients import parameter_frequencies
 from pennylane.ops.functions import single_qubit_zyz_angles
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation, adjoint
@@ -861,23 +862,17 @@ class TestAdjointConstructorDifferentCallableTypes:
         y = 2.34
         z = 3.45
         with qp.queuing.AnnotatedQueue() as q:
-            out = adjoint(func)(x, y, z)
+            adjoint(func)(x, y, z)
 
         tape = qp.tape.QuantumScript.from_queue(q)
-        assert out == tape.circuit
 
-        for op in tape:
-            assert isinstance(op, Adjoint)
-
-        # check order reversed
-        assert tape[0].base.__class__ is qp.RZ
-        assert tape[1].base.__class__ is qp.RY
-        assert tape[2].base.__class__ is qp.RX
-
-        # check parameters assigned correctly
-        assert tape[0].data == (z,)
-        assert tape[1].data == (y,)
-        assert tape[2].data == (x,)
+        expected_ops = [
+            qp.adjoint(qp.RZ(z, wires=0)),
+            qp.adjoint(qp.RY(y, wires=0)),
+            qp.adjoint(qp.RX(x, wires=0)),
+        ]
+        expected_tape = qp.tape.QuantumScript(expected_ops, [])
+        qp.assert_equal(tape, expected_tape)
 
     def test_nested_adjoint(self):
         """Test the adjoint transform on an adjoint transform."""
@@ -971,12 +966,15 @@ class TestAdjointConstructorOutsideofQueuing:
     def test_single_op(self):
         """Test providing a single op outside of a queuing context."""
 
+        class DummyOp(Operator):
+            pass
+
         x = 1.234
-        out = adjoint(qp.RZ(x, wires=0))
+        out = adjoint(DummyOp(x, wires=0))
 
         assert isinstance(out, Adjoint)
-        assert out.base.__class__ is qp.RZ
-        assert out.data == (1.234,)
+        assert out.base.__class__ is DummyOp
+        assert out.data == (x,)
         assert out.wires == qp.wires.Wires(0)
 
     def test_single_op_eager(self):
@@ -1055,7 +1053,8 @@ class TestAdjointConstructorIntegration:
         expected_grad = np.cos(x)
         assert qp.math.allclose(circ(x), expected_res)
         assert qp.math.allclose(
-            autograd.grad(circ)(x), expected_grad  # pylint: disable=no-value-for-parameter
+            autograd.grad(circ)(x),
+            expected_grad,  # pylint: disable=no-value-for-parameter
         )
 
     @pytest.mark.jax

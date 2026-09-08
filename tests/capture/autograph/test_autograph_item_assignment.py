@@ -28,7 +28,7 @@ import pennylane as qp
 from pennylane.capture.autograph import run_autograph
 
 
-@pytest.mark.usefixtures("enable_disable_plxpr")
+@pytest.mark.capture
 @pytest.mark.parametrize(
     "array_in, index, new_value, array_out",
     [
@@ -50,7 +50,7 @@ def test_single_integer_indexing(array_in, index, new_value, array_out):
     assert jnp.array_equal(result[0], array_out)
 
 
-@pytest.mark.usefixtures("enable_disable_plxpr")
+@pytest.mark.capture
 @pytest.mark.parametrize(
     "array_in, index, new_value, array_out",
     [
@@ -74,7 +74,7 @@ def test_slicing(array_in, index, new_value, array_out):
     assert jnp.array_equal(result[0], array_out)
 
 
-@pytest.mark.usefixtures("enable_disable_plxpr")
+@pytest.mark.capture
 @pytest.mark.parametrize(
     "array_in, index, new_value, array_out",
     [
@@ -130,7 +130,7 @@ def test_non_trivial_indexing(array_in, index, new_value, array_out):
     assert jnp.array_equal(result[0], array_out)
 
 
-@pytest.mark.usefixtures("enable_disable_plxpr")
+@pytest.mark.capture
 def test_non_tracing_assignment():
     """Tests item assignment if the list is not a tracer."""
 
@@ -146,7 +146,7 @@ def test_non_tracing_assignment():
     assert jnp.array_equal(result, expected)
 
 
-@pytest.mark.usefixtures("enable_disable_plxpr")
+@pytest.mark.capture
 def test_while_loop_integration():
     """Tests item assignment within a while loop."""
 
@@ -165,7 +165,7 @@ def test_while_loop_integration():
     assert jnp.array_equal(result[0], expected)
 
 
-@pytest.mark.usefixtures("enable_disable_plxpr")
+@pytest.mark.capture
 def test_for_loop_integration():
     """Tests item assignment within a for loop."""
 
@@ -182,7 +182,7 @@ def test_for_loop_integration():
     assert jnp.array_equal(result[0], expected)
 
 
-@pytest.mark.usefixtures("enable_disable_plxpr")
+@pytest.mark.capture
 def test_qnode_with_python_array_assignment():
     """Test a QNode where a python array argument is modified."""
 
@@ -201,7 +201,7 @@ def test_qnode_with_python_array_assignment():
     assert qfunc_jaxpr.eqns[0].invars[0] is qfunc_jaxpr.invars[0]
 
 
-@pytest.mark.usefixtures("enable_disable_plxpr")
+@pytest.mark.capture
 def test_qnode_with_jax_array_assignment():
     """Test a QNode where a JAX array argument is modified."""
 
@@ -222,7 +222,7 @@ def test_qnode_with_jax_array_assignment():
     assert qfunc_jaxpr.eqns[3].primitive.name == "slice"
 
 
-@pytest.mark.usefixtures("enable_disable_plxpr")
+@pytest.mark.capture
 def test_item_assignment_is_differentiable():
     """Test that item assignment is differentiable."""
 
@@ -240,7 +240,7 @@ def test_item_assignment_is_differentiable():
     assert jnp.allclose(result[0], 1.0)
 
 
-@pytest.mark.usefixtures("enable_disable_plxpr")
+@pytest.mark.capture
 def test_shape_mismatch_raises_error():
     """Test that assigning an array of the wrong shape raises an error."""
 

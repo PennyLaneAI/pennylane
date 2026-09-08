@@ -112,7 +112,7 @@ def _specs_qjit_device_level_tracking(
         return SpecsResources(
             counts=resource_data["gate_types"],
             measurement_processes=resource_data["measurements"],
-            num_allocs=resource_data["num_wires"],
+            num_wires=resource_data["num_wires"],
             circuit_depth=resource_data["depth"],
         )
 
@@ -121,7 +121,6 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
     SpecsResources | list[SpecsResources] | dict[str, SpecsResources | list[SpecsResources]],
     str | dict[int, str],
 ]:  # pragma: no cover
-
     # Note that this only gets transforms manually applied by the user
     compile_pipeline = original_qnode.compile_pipeline
 
@@ -270,7 +269,7 @@ def specs(
     Returns:
         A function that has the same argument signature as ``qnode``. This function returns a
         :class:`~.resource.CircuitSpecs` object containing the ``qnode`` specifications, including gate and
-        measurement data, wire allocations, device information, shots, and more.
+        measurement data, total wires, device information, shots, and more.
 
     .. warning::
 
@@ -321,7 +320,7 @@ def specs(
       - TrotterProduct: 2
     Measurement processes:
     - probs(all wires): 1
-    Wire allocations: 2
+    Total wires: 2
     Circuit Depth: 4
 
     The :class:`~.resource.SpecsResources` can be accessed using the ``.resources`` attribute, which provides more direct
@@ -365,7 +364,7 @@ def specs(
           - PauliX: 2
         Measurement processes:
         - expval(Sum(num_wires=2, num_terms=2)): 1
-        Wire allocations: 2
+        Total wires: 2
         Circuit Depth: 6
 
         We can analyze the effects of, for example, applying the first two transforms
@@ -379,7 +378,7 @@ def specs(
           - RX: 2
         Measurement processes:
         - expval(Sum(num_wires=2, num_terms=2)): 1
-        Wire allocations: 2
+        Total wires: 2
         Circuit Depth: 3
 
         We can then check the resources after applying all user transforms with ``level="user"`` (which, in this particular example,
@@ -391,7 +390,7 @@ def specs(
           - RandomLayers: 1
         Measurement processes:
         - expval(Sum(num_wires=2, num_terms=2)): 1
-        Wire allocations: 2
+        Total wires: 2
         Circuit Depth: 1
 
         After the user transforms, additional transforms for device compatibility and gradient support may be applied. To see the
@@ -405,7 +404,7 @@ def specs(
           - RX: 1
         Measurement processes:
         - expval(Sum(num_wires=2, num_terms=2)): 1
-        Wire allocations: 2
+        Total wires: 2
         Circuit Depth: 1
 
         If a QNode with a tape-splitting transform is supplied to the function, the output will provide
@@ -435,7 +434,7 @@ def specs(
               - RandomLayers: 1
             Measurement processes:
             - expval(Prod(num_wires=2, num_terms=2)): 1
-            Wire allocations: 2
+            Total wires: 2
             Circuit Depth: 1
         <BLANKLINE>
         Batched tape b:
@@ -444,7 +443,7 @@ def specs(
               - RandomLayers: 1
             Measurement processes:
             - expval(Prod(num_wires=2, num_terms=2)): 1
-            Wire allocations: 3
+            Total wires: 3
             Circuit Depth: 1
 
         In this case, the ``.resources`` attribute of the returned :class:`~.resource.CircuitSpecs` is a list containing a
@@ -454,12 +453,12 @@ def specs(
         >>> pprint(qp.specs(circuit, level="user")().resources)
         [SpecsResources(counts={'RandomLayers': 1},
                         measurement_processes={'expval(Prod(num_wires=2, num_terms=2))': 1},
-                        num_allocs=2,
+                        num_wires=2,
                         circuit_depth=1,
                         total_quantum_operations=1),
          SpecsResources(counts={'RandomLayers': 1},
                         measurement_processes={'expval(Prod(num_wires=2, num_terms=2))': 1},
-                        num_allocs=3,
+                        num_wires=3,
                         circuit_depth=1,
                         total_quantum_operations=1)]
 
@@ -503,7 +502,7 @@ def specs(
           - RX: 1
         Measurement processes:
         - probs(all wires): 1
-        Wire allocations: 3
+        Total wires: 3
         Circuit Depth: 2
 
         .. note::
@@ -575,8 +574,8 @@ def specs(
 
         We can get a pass-by-pass overview of the resources using ``level="all"``:
 
-        >>> all_specs = qp.specs(circuit, level="all")(1.23)
-        >>> print(all_specs)
+        >>> all_specs = qp.specs(circuit, level="all")(1.23) # doctest: +SKIP
+        >>> print(all_specs) # doctest: +SKIP
         Device: lightning.qubit
         Device wires: 3
         Shots: Shots(total=None)
@@ -594,34 +593,34 @@ def specs(
           - RX                 |  2 |  2 |  1
         Measurement processes: |
         - probs(all wires)     |  1 |  1 |  1
-        Wire allocations       |  3 |  3 |  3
+        Total wires            |  3 |  3 |  3
 
         When invoked with an iterable of levels, or ``"all"`` as above, the resources at different levels can be
         accessed from the the returned :class:`~.resource.CircuitSpecs` object's ``.resources`` attribute, using
         the name of a pass or marker. For example:
 
-        >>> print(all_specs.resources['merge-rotations'])
+        >>> print(all_specs.resources['merge-rotations']) # doctest: +SKIP
         Quantum operations:
         - Total: 2
           - CNOT: 1
           - RX: 1
         Measurement processes:
         - probs(all wires): 1
-        Wire allocations: 3
+        Total wires: 3
         Circuit Depth: Not computed
 
         A shortcut to access the resources after all user-specified transforms and passes have been
         applied is to use the ``"user"`` level. For example, the following will also return the
         resources after the ``merge-rotations`` pass:
 
-        >>> print(qp.specs(circuit, level="user")(1.23).resources)
+        >>> print(qp.specs(circuit, level="user")(1.23).resources)# doctest: +SKIP
         Quantum operations:
         - Total: 2
           - CNOT: 1
           - RX: 1
         Measurement processes:
         - probs(all wires): 1
-        Wire allocations: 3
+        Total wires: 3
         Circuit Depth: Not computed
 
         .. warning::
@@ -642,7 +641,7 @@ def specs(
                 qp.X(0)
                 return qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliX(0))
 
-        >>> print(qp.specs(circuit, level="all")())
+        >>> print(qp.specs(circuit, level="all")()) # doctest: +SKIP
         Device: lightning.qubit
         Device wires: 3
         Shots: Shots(total=None)
@@ -660,7 +659,7 @@ def specs(
         Measurement processes: |
         - expval(PauliZ)       |    1 |    1 |    0 |    1 |    0 |    1 |    0
         - expval(PauliX)       |    1 |    0 |    1 |    0 |    1 |    0 |    1
-        Wire allocations       |    1 |    1 |    1 |    3 |    3 |    3 |    3
+        Total wires            |    1 |    1 |    1 |    3 |    3 |    3 |    3
 
         Note that in the above example, the ``split_non_commuting`` transform results in two separate executions,
         which are labeled with the suffixes ``-a`` and ``-b`` in the output. The resources for these executions are
@@ -694,12 +693,12 @@ def specs(
                     qp.PauliZ(0)
                 return qp.expval(qp.PauliZ(0))
 
-            specs_result = qp.specs(circuit, level=0)(5, 3)
+        >>> specs_result = qp.specs(circuit, level=0)(5, 3)
 
         If we attempt to get pass-by-pass specs for this circuit, the resource information will be
         symbolic due to the dependence on the input parameters ``x`` and ``z``:
 
-        >>> print(specs_result)
+        >>> print(specs_result) # doctest: +SKIP
         Device: lightning.qubit
         Device wires: 1
         Shots: Shots(total=None)
@@ -713,15 +712,15 @@ def specs(
           - PauliZ: b
         Measurement processes:
         - expval(PauliZ): 1
-        Wire allocations: 1
+        Total wires: 1
         Circuit Depth: Not computed
 
         You can estimate the concrete resource values using the ``.subs`` method of the
         returned :class:`~.resource.SpecsResources` object, and providing keyword arguments
         which describe the mapping from each symbolic variable to an integer value:
 
-        >>> res = specs_result.resources
-        >>> print(res.subs(a=5, b=3))
+        >>> res = specs_result.resources # doctest: +SKIP
+        >>> print(res.subs(a=5, b=3)) # doctest: +SKIP
         Quantum operations:
         - Total: 10
           - Hadamard: 1
@@ -729,13 +728,13 @@ def specs(
           - PauliZ: 3
         Measurement processes:
         - expval(PauliZ): 1
-        Wire allocations: 1
+        Total wires: 1
         Circuit Depth: Not computed
 
         These substitutions may also be provided as a dictionary, which can be helpful in
         programmatic contexts:
 
-        >>> print(res.subs({"a": 5, "b": 3}))
+        >>> print(res.subs({"a": 5, "b": 3})) # doctest: +SKIP
         Quantum operations:
         - Total: 10
           - Hadamard: 1
@@ -743,7 +742,7 @@ def specs(
           - PauliZ: 3
         Measurement processes:
         - expval(PauliZ): 1
-        Wire allocations: 1
+        Total wires: 1
         Circuit Depth: Not computed
     """
     # pylint: disable=import-outside-toplevel

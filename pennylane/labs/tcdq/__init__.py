@@ -100,7 +100,7 @@ Estimating expectation values
 
    # Build and JIT-compile the estimator, then evaluate
    expval_fn = jax.jit(build_expval_func(config))
-   expvals, std_errs = expval_fn(params)
+   expvals, variances = expval_fn(params)
 
 
 Training with a custom loss

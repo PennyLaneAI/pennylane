@@ -20,7 +20,7 @@ from copy import copy
 import jax
 import numpy as np
 
-from pennylane import ops
+from pennylane import math, ops
 from pennylane.allocation import Allocate, Deallocate, allocate_prim, deallocate_prim
 from pennylane.capture import pause
 from pennylane.capture.base_interpreter import FlattenedInterpreter
@@ -76,7 +76,7 @@ class CollectOpsandMeas(FlattenedInterpreter):
     >>> collector.eval(plxpr.jaxpr, plxpr.consts, 1.2)
     [probs(wires=[0]), expval(Z(1))]
     >>> collector.state
-    {'ops': [X(0), X(1), X(2), Adjoint(S(0)), MidMeasure(wires=[0], postselect=None, reset=False), RX(Array(2.4, dtype=float..., weak_type=True), wires=[0])], 'measurements': [probs(wires=[0]), expval(Z(1))], 'dynamic_wire_map': {}}
+    {'ops': [X(0), X(1), X(2), Adjoint(S(0)), MidMeasure(wires=[0], postselect=None, reset=False), RX(2.4, wires=[0])], 'measurements': [probs(wires=[0]), expval(Z(1))], 'dynamic_wire_map': {}}
 
     After execution, the collected operations and measurements are available in the ``state``
     property.
@@ -135,7 +135,7 @@ def _ctrl_transform_prim(self, *invals, n_control, jaxpr, n_consts, **params):
     """
     consts = invals[:n_consts]
     args = invals[n_consts:-n_control]
-    control = invals[-n_control:]
+    control = math.array(invals[-n_control:])
 
     child = CollectOpsandMeas()
     child.eval(jaxpr, consts, *args)
@@ -266,6 +266,20 @@ def _convert_element_type(self, operand, **kwargs):
     if isinstance(operand, MeasurementValue):
         return operand
     return jax.lax.convert_element_type_p.bind(operand, **kwargs)
+
+
+@CollectOpsandMeas.register_primitive(jax.lax.eq_p)
+def _equal(self, lhs, rhs):
+    if isinstance(lhs, MeasurementValue) or isinstance(rhs, MeasurementValue):
+        return lhs == rhs
+    return jax.lax.eq_p.bind(lhs, rhs)
+
+
+@CollectOpsandMeas.register_primitive(jax.lax.ne_p)
+def _not_equal(self, lhs, rhs):
+    if isinstance(lhs, MeasurementValue) or isinstance(rhs, MeasurementValue):
+        return lhs != rhs
+    return jax.lax.ne_p.bind(lhs, rhs)
 
 
 def plxpr_to_tape(plxpr: "jax.extend.core.Jaxpr", consts, *args, shots=None) -> QuantumScript:

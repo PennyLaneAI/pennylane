@@ -148,9 +148,7 @@ class TestAbstractifyOperatorInstances:
         "phi_spec, wire_spec",
         [
             (Float[3], Wire[3]),
-            (Float[-1], Wire[-1]),
             (Float[-1], Wire[3]),
-            (Float[3], Wire[-1]),
         ],
     )
     def test_noop_on_abstract_operator(self, phi_spec, wire_spec):

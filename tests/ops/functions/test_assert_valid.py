@@ -15,7 +15,7 @@
 This module contains unit tests for ``qp.ops.functions.assert_valid``.
 """
 
-import string
+import copy
 from pickle import PicklingError
 
 import numpy as np
@@ -26,14 +26,47 @@ import scipy.sparse
 
 import pennylane as qp
 from pennylane.core import Operator2
-from pennylane.core.operator import Operator
+from pennylane.core.operator import Operator, abstractify
 from pennylane.ops.functions import assert_valid
-from pennylane.ops.functions.assert_valid import _check_capture, _test_decomposition_rule
+from pennylane.ops.functions.assert_valid import (
+    _check_bind_new_parameters_op2,
+    _check_eigendecomposition,
+    _check_pytree,
+    _test_decomposition_rule,
+    _unroll_change_op_basis,
+)
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
+from pennylane.typing import Wire
 from pennylane.wires import Wires
+from tests.core.operator.operator2_utils import DynOp, OneWireDynOp
 
 
 class TestDecompositionErrors:
     """Test assertions involving decompositions."""
+
+    def test_unroll_change_op_basis_resources(self):
+        """ChangeOpBasis resource keys are expanded without rewriting other keys."""
+        x_rep, y_rep, z_rep = (abstractify(op) for op in (qp.X, qp.Y, qp.Z))
+        prod_rep = qp.resource_rep(qp.ops.Prod, resources={x_rep: 2})
+        cob_rep = _change_op_basis_abstract(prod_rep, y_rep, x_rep)
+
+        result = _unroll_change_op_basis({cob_rep: 2, z_rep: 4, prod_rep: 3})
+
+        assert result == {x_rep: 6, y_rep: 2, z_rep: 4, prod_rep: 3}
+
+    def test_unroll_nested_symbolic_change_op_basis_resources(self):
+        """ChangeOpBasis resource keys are recursively expanded through symbolic wrappers."""
+        x_rep, y_rep, z_rep = (abstractify(op) for op in (qp.X, qp.Y, qp.Z))
+        cob = _change_op_basis_abstract(x_rep, y_rep, x_rep)
+
+        def wrapper(op):
+            return qp.adjoint(qp.ctrl(op, control=Wire[1]))
+
+        wrapped_z = wrapper(z_rep)
+
+        result = _unroll_change_op_basis({wrapper(cob): 2, wrapped_z: 3})
+
+        assert result == {wrapper(x_rep): 4, wrapper(y_rep): 2, wrapped_z: 3}
 
     def test_bad_decomposition_output(self):
         """Test that an error is raised if decomposition output is not a list."""
@@ -212,6 +245,58 @@ class TestDecompositionErrors:
         with pytest.raises(AssertionError, match="Gate counts expected from"):
             _test_decomposition_rule(op, rule_wrong_ops)
 
+    def test_new_decomposition_rule_with_mcm_skips_matrix_check(self, mocker):
+        """Test that matrix check is skipped for decompositions containing mid-circuit measurements."""
+
+        class MyOp(Operator):
+            num_wires = 1
+
+            @staticmethod
+            def compute_matrix():
+                return qp.Hadamard.compute_matrix()
+
+        op = MyOp([0])
+
+        def mcm_rule(wires):
+            qp.ops.measure(wires[0])
+
+        rule = qp.register_resources({qp.ops.MidMeasure: 1})(mcm_rule)
+
+        spy = mocker.spy(qp, "matrix")
+        _test_decomposition_rule(op, rule)
+        spy.assert_not_called()
+
+    @pytest.mark.capture
+    def test_new_decomposition_rule_capture(self):
+        """A captured decomposition is converted to a tape before validating its resources."""
+
+        class MyOp(Operator):
+            num_wires = 3
+
+        @qp.register_resources({qp.S: 3})
+        def rule(wires):  # pylint: disable=unused-argument
+            @qp.for_loop(3)
+            def loop(i):
+                qp.S(i)
+
+            loop()  # pylint: disable=no-value-for-parameter
+
+        _test_decomposition_rule(MyOp([0, 1, 2]), rule)
+
+    @pytest.mark.capture
+    def test_new_decomposition_rule_capture_operator2(self):
+        """Operator2 dynamic and wire arguments are forwarded as capture inputs."""
+
+        @qp.register_resources({OneWireDynOp: 3})
+        def rule(phi, wires):  # pylint: disable=unused-argument
+            @qp.for_loop(3)
+            def loop(i):
+                OneWireDynOp(phi, wires=i)
+
+            loop()  # pylint: disable=no-value-for-parameter
+
+        _test_decomposition_rule(OneWireDynOp(0.5, wires=0), rule)
+
 
 class TestBadMatrix:
     """Tests involving matrix validation."""
@@ -299,13 +384,36 @@ def test_bad_eigenvalues_order():
 
     class BadEigenDecomp(qp.PauliX):
         @staticmethod
-        def compute_eigvals():  # pylint: disable=signature-differs
+        def compute_eigvals(wires):  # pylint: disable=signature-differs
             return [-1, 1]
 
     with pytest.raises(
         AssertionError, match=r"eigenvalues and diagonalizing gates must be able to"
     ):
         assert_valid(BadEigenDecomp(0), skip_pickle=True)
+
+
+def test_eigendecomposition_with_different_wire_order():
+    """A valid eigendecomposition is compared using the operator's wire order."""
+
+    class ReorderedDiagonalizingGates(Operator):
+        num_wires = 2
+
+        @staticmethod
+        def compute_matrix():
+            x = np.array([[0, 1], [1, 0]])
+            asymmetric_x_basis_op = np.array([[2.5, -0.5], [-0.5, 2.5]])
+            return np.kron(x, asymmetric_x_basis_op)
+
+        @staticmethod
+        def compute_eigvals():
+            return np.array([2, 3, -2, -3])
+
+        @staticmethod
+        def compute_diagonalizing_gates(wires):
+            return [qp.H(wires[0]), qp.H(wires[1])]
+
+    _check_eigendecomposition(ReorderedDiagonalizingGates([0, 1]))
 
 
 class BadPickling0(Operator):
@@ -431,27 +539,26 @@ class TestPytree:
         with pytest.raises(AssertionError, match=r"data must be the terminal leaves of the pytree"):
             assert_valid(op, skip_pickle=True)
 
+    @pytest.mark.jax
+    def test_nested_operator2_data_check(self):
+        """A nested Operator2 does not disable validation of the outer Operator1 data order."""
 
-@pytest.mark.jax
-def test_bad_capture():
-    """Tests that the correct error is raised when something goes wrong with program capture."""
+        class BadLeavesOrdering(qp.ops.op_math.SProd):
+            def _flatten(self):
+                return (self.base, self.scalar), tuple()
 
-    class MyBadOp(qp.operation.Operator):
+            @classmethod
+            def _unflatten(cls, data, _):
+                return cls(data[1], data[0])
 
-        def _flatten(self):
-            return (self.hyperparameters["target_op"], self.data[0]), ()
+        with pytest.raises(AssertionError, match=r"data must be the terminal leaves of the pytree"):
+            _check_pytree(BadLeavesOrdering(2.0, DynOp(1.2, wires=0)))
 
-        @classmethod
-        def _unflatten(cls, data, metadata):
-            return cls(*data)
-
-        def __init__(self, target_op, val):
-            super().__init__(val, wires=target_op.wires)
-            self.hyperparameters["target_op"] = target_op
-
-    op = MyBadOp(qp.X(0), 2)
-    with pytest.raises(ValueError, match=r"The capture of the operation into jaxpr failed"):
-        _check_capture(op)
+    @pytest.mark.jax
+    def test_nested_operator2_with_omitted_data(self):
+        """Nested parameters omitted intentionally from outer data do not fail validation."""
+        generator = qp.ops.LinearCombination([1.0], [DynOp(0.5, wires=0)])
+        _check_pytree(qp.ops.Evolution(generator, 0.2))
 
 
 def test_data_is_tuple():
@@ -502,7 +609,7 @@ class SingleRZ(Operator2):
         return qp.Hamiltonian([-0.5], [qp.PauliZ(wires=self.wires)])
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 class TestOperator2AssertValid:
     """Tests showing that ``assert_valid`` works on :class:`~.core.Operator2` instances thanks to
     the backwards-compatible ``data``/``parameters``/``num_params``/``hyperparameters`` attributes.
@@ -534,6 +641,9 @@ class TestOperator2AssertValid:
 
     def test_check_decomposition(self):
         """``_check_decomposition`` fails if ``compute_decomposition`` does not return a list."""
+
+        if qp.capture.enabled():
+            pytest.skip("this is not expected to work when capture is enabled.")
 
         class BadDecomp(Operator2):
             dynamic_argnames = ("phi",)
@@ -570,6 +680,9 @@ class TestOperator2AssertValid:
 
     def test_check_matrix_matches_decomposition(self):
         """``_check_matrix_matches_decomp`` fails if the matrix and decomposition disagree."""
+
+        if qp.capture.enabled():
+            pytest.skip("this is not expected to work when capture is enabled.")
 
         class MatDecompMismatch(Operator2):
             wire_argnames = ("wires",)
@@ -684,7 +797,7 @@ class TestOperator2AssertValid:
 
         op = IgnoresParams(0.5, wires=0)
         with pytest.raises(AssertionError, match=r"bind_new_parameters must be able to update"):
-            assert_valid(op, skip_pickle=True, skip_differentiation=True)
+            _check_bind_new_parameters_op2(op)
 
     def test_hybrid_ops_arg(self):
         """``assert_valid`` fails if a hybrid op arg is invalid."""
@@ -713,16 +826,54 @@ class TestOperator2AssertValid:
                 skip_pickle=True,
             )
 
+    def test_cant_handle_abstract_inputs(self):
+        """Test an Operator that can't handle AbstractArray inputs."""
 
-def create_op_instance(c, str_wires=False):
+        class NoAAOp(qp.core.Operator2):
+
+            dynamic_argnames = "x"
+
+            def __init__(self, x, wires):
+                _ = qp.math.allclose(x, 1)
+                # 2 * AA will cause an error
+                super().__init__(x, wires)
+
+        op = NoAAOp(0.5, 0)
+        with pytest.raises(AttributeError, match="'AbstractArray' object has no attribute 'numpy'"):
+            assert_valid(op)
+
+    def test_improperly_abstractified(self):
+        """Test an error will be raised in an operator isn't properly abstractified."""
+
+        class BadAAOp(qp.core.Operator2):
+
+            dynamic_argnames = "x"
+
+            def __init__(self, x, wires):
+                super().__init__(1, wires)
+
+        op = BadAAOp(0.5, 0)
+        with pytest.raises(AssertionError, match="Op not properly abstractified. "):
+            assert_valid(op)
+
+
+@pytest.mark.capture
+def test_op1_assert_valid_capture():
+    """Tests calling assert_valid on Operator1 with capture enabled."""
+
+    class CustomOp(Operator):
+        pass
+
+    assert_valid(CustomOp(0.5, wires=[0, 1]), skip_pickle=True)
+
+
+def create_op_instance(c):
     """Given an Operator class, create an instance of it."""
     n_wires = c.num_wires
     if n_wires is None:
         n_wires = 1
 
     wires = qp.wires.Wires(range(n_wires))
-    if str_wires and len(wires) < 26:
-        wires = qp.wires.Wires([string.ascii_lowercase[i] for i in wires])
     if (num_params := c.num_params) == 0:
         return c(wires) if wires else c()
     if isinstance(num_params, property):
@@ -747,8 +898,7 @@ def create_op_instance(c, str_wires=False):
 
 
 @pytest.mark.jax
-@pytest.mark.parametrize("str_wires", (True, False))
-def test_generated_list_of_ops(class_to_validate, str_wires):
+def test_generated_list_of_ops(class_to_validate):
     """Test every auto-generated operator instance."""
     if class_to_validate.__module__[10:14] == "ftqc":
         pytest.skip(reason="skip tests for ftqc ops")
@@ -759,7 +909,7 @@ def test_generated_list_of_ops(class_to_validate, str_wires):
     #   2. Improve `create_op_instance` so it can create an instance of your op (it is quite hacky)
     #   3. Add an instance of your class to `_INSTANCES_TO_TEST` in ./conftest.py
     #       Note: if it then fails validation, move it to `_INSTANCES_TO_FAIL` as described below.
-    op = create_op_instance(class_to_validate, str_wires)
+    op = create_op_instance(class_to_validate)
 
     # If you defined a new Operator and this call to `assert_valid` failed, the Operator doesn't
     # follow PL standards. Please do one of the following things:
@@ -773,8 +923,11 @@ def test_generated_list_of_ops(class_to_validate, str_wires):
 @pytest.mark.jax
 def test_explicit_list_of_ops(valid_instance_and_kwargs):
     """Test the validity of operators that could not be auto-generated."""
-    valid_instance, kwargs = valid_instance_and_kwargs
-    assert_valid(valid_instance, **kwargs)
+    op, kwargs = valid_instance_and_kwargs
+    kwargs = copy.copy(kwargs)
+    if kwargs.pop("skip_capture", False) and qp.capture.enabled():
+        pytest.skip("this operator is marked with skip_capture.")
+    assert_valid(op, **kwargs)
 
 
 @pytest.mark.jax

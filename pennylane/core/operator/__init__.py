@@ -80,16 +80,27 @@ Operator Types
     :toctree: api
 
     ~Operator
+    ~Operator2
     ~Operation
     ~Channel
     ~StatePrepBase
     ~Operator1
+    ~Operator2
 
 .. currentmodule:: pennylane.core.operator
 
 .. inheritance-diagram:: Operator Operation Channel StatePrepBase
     :parts: 1
 
+Utility Functions
+~~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.core.operator
+
+.. autosummary::
+    :toctree: api
+
+    ~abstractify
 
 Boolean Functions
 ~~~~~~~~~~~~~~~~~

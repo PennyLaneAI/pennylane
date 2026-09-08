@@ -69,7 +69,7 @@ class TestList:
         bind = DatasetList(input_type(value)).bind
         assert DatasetList(bind=bind) == value
 
-    @pytest.mark.parametrize("slc", _generate_slices(3))
+    @pytest.mark.parametrize("slc", list(_generate_slices(3)))
     def test_slice(self, slc):
         """Test that slicing a DatasetList works exactly like slicing
         a built-in list."""

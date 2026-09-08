@@ -21,17 +21,16 @@ from collections.abc import Iterable
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operation, Operator, abstractify
+from pennylane.core.operator import Operation, Operator, Operator2, abstractify
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import (
     CompressedResourceOp,
     add_decomps,
     register_resources,
-    resource_rep,
 )
 from pennylane.math import is_abstract
 from pennylane.ops import CNOT, Hadamard, QubitUnitary
-from pennylane.typing import TensorLike
+from pennylane.typing import Complex, TensorLike, Wire
 from pennylane.wires import Wires
 
 
@@ -117,6 +116,17 @@ class HilbertSchmidt(Operation):
         # pylint: disable=arguments-differ
         U = (U,) if isinstance(U, Operator) or is_abstract(U) else U
         V = (V,) if isinstance(V, Operator) or is_abstract(V) else V
+
+        def _get_tracer(op):
+            if isinstance(op, Operator2):
+                if op.tracer is None:
+                    # pylint: disable-next=protected-access
+                    op._bind_primitive()
+                return op.tracer if op.tracer is not None else op
+            return op
+
+        V = tuple(_get_tracer(op) for op in V)
+        U = tuple(_get_tracer(op) for op in U)
         num_v_ops = len(V)
         return cls._primitive.bind(*V, *U, num_v_ops=num_v_ops, **kwargs)
 
@@ -143,7 +153,6 @@ class HilbertSchmidt(Operation):
         V: Operator | Iterable[Operator],
         U: Operator | Iterable[Operator],
     ) -> None:
-
         u_ops = (U,) if isinstance(U, Operator) else tuple(U)
         if not all(isinstance(op, Operator) for op in u_ops):
             raise ValueError("The argument 'U' must be an Operator or an iterable of Operators.")
@@ -429,7 +438,7 @@ def _hilbert_schmidt_resources(
         resources[op_rep] += 1
 
     for n_wires in v_wires:
-        resources[resource_rep(QubitUnitary, num_wires=n_wires)] += 1
+        resources[QubitUnitary(Complex[2**n_wires, 2**n_wires], wires=Wire[n_wires])] += 1
 
     return resources
 
@@ -450,7 +459,7 @@ def _local_hilbert_schmidt_resources(
         resources[op_rep] += 1
 
     for n_wires in v_wires:
-        resources[resource_rep(QubitUnitary, num_wires=n_wires)] += 1
+        resources[QubitUnitary(Complex[2**n_wires, 2**n_wires], wires=Wire[n_wires])] += 1
 
     return resources
 
@@ -464,13 +473,11 @@ def _up_to_last_layer(
     v_ops = (V,) if isinstance(V, Operator) else tuple(V)
 
     def collect_wires_in_order(ops):
-
         accumulator = []
         for operator in ops:
             for wire_index in range(  # pylint: disable=consider-using-enumerate
                 len(operator.wires)
             ):
-
                 if capture.enabled() and isinstance(operator.wires, Wires):
                     wire = operator.wires.labels[wire_index]
                 else:

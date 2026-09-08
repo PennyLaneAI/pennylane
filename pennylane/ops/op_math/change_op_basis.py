@@ -32,9 +32,11 @@ from pennylane.exceptions import (
     MatrixUndefinedError,
     SparseMatrixUndefinedError,
 )
-from pennylane.ops.op_math import adjoint, ctrl, prod
+from pennylane.ops.op_math import Prod, adjoint, ctrl, prod
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.change_op_basis2 import ChangeOpBasis2
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.ops.op_math.prod2 import Prod2
 from pennylane.pytrees import flatten, unflatten
 from pennylane.typing import Wire
 
@@ -62,6 +64,11 @@ def _validate_callable(func: Callable) -> None:
             )
 
 
+def _is_abstract_operator(op) -> bool:
+    """Return whether ``op`` is an operator-valued JAX tracer."""
+    return math.is_abstract(op) and isinstance(op.aval, capture.AbstractOperator)
+
+
 def _apply_op_or_func(op_or_func):
     if callable(op_or_func):
         _validate_callable(op_or_func)
@@ -74,7 +81,7 @@ def _apply_op_or_func(op_or_func):
             op_or_func._bind_primitive()
     elif isinstance(op_or_func, Operator):
         queuing.apply(op_or_func)
-    elif math.is_abstract(op_or_func):
+    elif _is_abstract_operator(op_or_func):
         pass
     else:
         raise TypeError(
@@ -85,7 +92,12 @@ def _apply_op_or_func(op_or_func):
 def _convert_to_prod(op_or_func):
     if callable(op_or_func):
         _validate_callable(op_or_func)
-        return prod(op_or_func)()
+        op = prod(op_or_func)()
+        # TODO: remove this branch once qp.prod dispatches properly to Prod2
+        if isinstance(op, Prod) and all(isinstance(operand, Operator2) for operand in op.operands):
+            queuing.remove_from_program(op)
+            return Prod2(op.operands)
+        return op
     if isinstance(op_or_func, Operator):
         return op_or_func
     raise TypeError(
@@ -194,9 +206,15 @@ def change_op_basis(
         # out of the jaxpr. This ensures that the order is kept consistent if any operators
         # were built outside of the traced function. '_apply_op_or_func' will bind the primitives
         # and insert them in the correct order.
-        for _op in (compute_op, target_op):
-            if isinstance(_op, Operator2) and _op.tracer is not None:
-                pop_op_eqns((_op,))
+        operands = (compute_op, target_op, uncompute_op)
+        # Operator1 constructors return AbstractOperator tracers during capture, while
+        # Operator2 constructors retain Python wrappers whose ``tracer`` attributes point to
+        # their equations. If any operand is already an AbstractOperator tracer, preserve the
+        # constructor order instead of moving only the Operator2 equations.
+        if not any(_is_abstract_operator(op) for op in operands):
+            for _op in operands:
+                if isinstance(_op, Operator2) and _op.tracer is not None:
+                    pop_op_eqns((_op,))
         _apply_op_or_func(compute_op)
         _apply_op_or_func(target_op)
         if uncompute_op is not None:
@@ -212,11 +230,20 @@ def change_op_basis(
         else:
             _apply_op_or_func(adjoint(compute_op))
     else:
-        return ChangeOpBasis(
-            _convert_to_prod(compute_op),
-            _convert_to_prod(target_op),
-            _convert_to_prod(uncompute_op) if uncompute_op is not None else None,
-        )
+        compute = _convert_to_prod(compute_op)
+        target = _convert_to_prod(target_op)
+        uncompute = _convert_to_prod(uncompute_op) if uncompute_op is not None else None
+        if (
+            isinstance(compute, Operator2)
+            and isinstance(target, Operator2)
+            and (isinstance(uncompute, Operator2) or uncompute is None)
+        ):
+            return ChangeOpBasis2(
+                compute,
+                target,
+                uncompute,
+            )
+        return ChangeOpBasis(compute, target, uncompute)
 
 
 class ChangeOpBasis(CompositeOp):
