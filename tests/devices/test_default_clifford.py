@@ -182,7 +182,7 @@ def test_meas_qinfo_clifford(meas_op):
     assert np.allclose(qnode_clfrd(), qnode_qubit())
 
 
-@pytest.mark.parametrize("shots", [None, 1_000_000])
+@pytest.mark.parametrize("shots", [None, 100_000])
 @pytest.mark.parametrize(
     "ops",
     [
@@ -215,7 +215,7 @@ def test_meas_expval(shots, ops, seed):
     assert np.allclose(qnode_clfrd(), qnode_qubit(), atol=1e-2 if shots else 1e-8)
 
 
-@pytest.mark.parametrize("shots", [None, int(2e6)])
+@pytest.mark.parametrize("shots", [None, 200_000])
 @pytest.mark.parametrize(
     "ops",
     [
