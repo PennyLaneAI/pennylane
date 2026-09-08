@@ -58,7 +58,6 @@ def test_abstract_data():
     assert op.arguments["bitstrings"] == data
 
 
-@pytest.mark.jax
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_assert_valid_qrom():
     """Run standard validity tests."""
