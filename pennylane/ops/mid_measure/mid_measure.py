@@ -26,7 +26,7 @@ from pennylane.core import QueuingManager
 from pennylane.core.operator import Operator2, abstractify
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.typing import Wire
-from pennylane.wires import Wires
+from pennylane.wires import Wires, WiresLike
 
 from .measurement_value import MeasurementValue
 
@@ -127,7 +127,7 @@ class MidMeasure(Operator2):
 
     def __init__(
         self,
-        wires: Wires | None = None,
+        wires: WiresLike,
         reset: bool = False,
         postselect: int | None = None,
         meas_uid: str | None = None,
