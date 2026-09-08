@@ -471,7 +471,9 @@ def _cgf_resource_counts(num_trotter_steps, hamiltonian, has_control, double_pha
 
     The exact gate count can be lower at runtime because fragments whose basis rotation
     happens to be the identity are skipped when the Hamiltonian data is concrete (not
-    traced); this estimate assumes no such fragment is skipped.
+    traced); this estimate assumes no such fragment is skipped. ``num_sysrot_calls``
+    is ``2 L r + 2`` for the merged layout; the pre-merge ``r(2L+1)+1`` over-counted
+    the eager circuit by ``r-1`` identity ``U1† U1`` skips at internal step boundaries.
     """
     if num_trotter_steps <= 0:
         return {}

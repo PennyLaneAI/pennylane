@@ -168,3 +168,21 @@ def control_branches(
     matrix = qp.matrix(tape, wire_order=[anc] + list(sys_wires))
     dim = 2 ** len(sys_wires)
     return matrix[:dim, :dim], matrix[dim:, dim:]
+
+
+def assert_merged_trotter_matches(
+    trotter_cls, ham, wires, t, steps, expected_u, has_control, double_phase
+):  # pylint: disable=too-many-arguments
+    """Compare the template (and both controlled variants) to an independently built Trotter product."""
+    if not has_control:
+        actual = qp.matrix(trotter_cls(t, steps, ham, wires=wires), wire_order=wires)
+        assert np.allclose(actual, expected_u, atol=1e-10)
+        return
+    block0, block1 = control_branches(trotter_cls, ham, wires, t, steps, double_phase)
+    if double_phase:
+        assert np.allclose(block0, expected_u, atol=1e-10)
+        assert np.allclose(block1, expected_u.conj().T, atol=1e-10)
+        return
+    dim = expected_u.shape[0]
+    assert np.allclose(block0, np.eye(dim), atol=1e-10)
+    assert np.allclose(block1, expected_u, atol=1e-10)

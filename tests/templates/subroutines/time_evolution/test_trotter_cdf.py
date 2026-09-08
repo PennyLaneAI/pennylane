@@ -53,6 +53,7 @@ from tests.templates.subroutines.time_evolution.trotter_test_helpers import (  #
     CATALYST_GATE_SET_DOUBLE_PHASE,
     CATALYST_GATE_SET_GENUINE,
     _single_z,
+    assert_merged_trotter_matches,
     cdf_reference_hamiltonian,
     control_branches,
     hadamard_test,
@@ -404,8 +405,14 @@ class TestDecomposition:
 
     @pytest.mark.parametrize("num_fragments", [1, 2])
     @pytest.mark.parametrize("num_steps", [1, 3])
-    def test_matches_independent_second_order_trotter_product(self, seed, num_fragments, num_steps):
-        """Test that merging boundary blocks preserves the full matrix, including global phase."""
+    @pytest.mark.parametrize(
+        ("has_control", "double_phase"), [(False, False), (True, False), (True, True)]
+    )
+    def test_matches_independent_second_order_trotter_product(
+        self, seed, num_fragments, num_steps, has_control, double_phase
+    ):
+        """Merging boundary blocks preserves the full matrix, including global phase,
+        for uncontrolled, genuine-controlled, and double-phase circuits."""
         rng = np.random.default_rng(seed)
         num_orbitals = 2
         core = rng.normal(size=(num_fragments + 1, num_orbitals, num_orbitals)) * 0.4
@@ -414,12 +421,17 @@ class TestDecomposition:
         ham = CDFHamiltonian(core_tensors=core, leaf_tensors=leaf, nuc_constant=0.37)
         wires = list(range(2 * num_orbitals))
         evolution_time = 0.7
-
-        actual = qp.matrix(
-            qp.TrotterCDF(evolution_time, num_steps, ham, wires=wires), wire_order=wires
-        )
         expected = cdf_second_order_trotter_matrix(ham, evolution_time, num_steps)
-        assert np.allclose(actual, expected, atol=1e-10)
+        assert_merged_trotter_matches(
+            qp.TrotterCDF,
+            ham,
+            wires,
+            evolution_time,
+            num_steps,
+            expected,
+            has_control,
+            double_phase,
+        )
 
     @pytest.mark.capture
     def test_capture_ir_size_independent_of_num_steps(self, toy_hamiltonian_cdf_concrete):
