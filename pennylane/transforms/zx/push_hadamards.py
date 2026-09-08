@@ -60,7 +60,6 @@ def push_hadamards(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
 
     Raises:
         ModuleNotFoundError: if the required ``pyzx`` package is not installed.
-        TypeError: if the input quantum circuit is not a phase-polynomial + Hadamard circuit.
 
     **Example:**
 
@@ -94,17 +93,7 @@ def push_hadamards(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
 
     def transform_fn(pyzx_graph):
         pyzx_circ = pyzx.Circuit.from_graph(pyzx_graph)
-
-        try:
-            pyzx_circ = pyzx.basic_optimization(pyzx_circ.to_basic_gates())
-
-        except TypeError:
-
-            raise TypeError(
-                "The input quantum circuit must be a phase-polynomial + Hadamard circuit. "
-                "RX and RY rotation gates are not supported."
-            ) from None
-
+        pyzx_circ = pyzx.basic_optimization(pyzx_circ.to_basic_gates())
         return pyzx_circ.to_graph()
 
     new_tape = _apply_zx_transform(tape, transform_fn, to_zx, from_zx)
