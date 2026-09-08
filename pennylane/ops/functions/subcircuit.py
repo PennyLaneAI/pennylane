@@ -45,6 +45,7 @@ def _subcircuit(qfunc: DecompositionRule, **cls_attrs):
     new_operator = type(qfunc.name, (Operator2,), attrs)
 
     # registers the decomposition
+    qfunc.name += "_decomp"
     add_decomps(new_operator, qfunc)
     return new_operator
 
@@ -56,7 +57,6 @@ def subcircuit(
     compilable_argnames=(),
     hybrid_argnames=(),
     static_argnames=(),
-    arg_specs=None,
     **additional_attrs,
 ):  # pylint: disable=too-many-arguments
     """Decorator to create an operator using a quantum function."""
@@ -68,7 +68,6 @@ def subcircuit(
             compilable_argnames=compilable_argnames,
             hybrid_argnames=hybrid_argnames,
             static_argnames=static_argnames,
-            arg_specs=arg_specs,
             **additional_attrs,
         )
 
@@ -80,7 +79,6 @@ def subcircuit(
             compilable_argnames=compilable_argnames,
             hybrid_argnames=hybrid_argnames,
             static_argnames=static_argnames,
-            arg_specs=arg_specs,
             **additional_attrs,
         )
 
