@@ -1708,7 +1708,8 @@ class TestDecomposition:
         "work_wires",
         [[7, 8, 9], [7]],
     )
-    def test_controlled_prod_decomposition_new(self, control_values, work_wires):
+    @pytest.mark.parametrize("prod_fn, key", [(qp.ops.Prod, "C(Prod)"), (qp.ops.prod, "C(Prod2)")])
+    def test_controlled_prod_decomposition_new(self, control_values, work_wires, prod_fn, key):
         """The registered ``C(Prod)`` rule decomposes controlled products.
 
         Covers both rules (many work wires and single work wire) as well as the
@@ -1716,13 +1717,15 @@ class TestDecomposition:
         """
         from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
-        op = qp.ops.Controlled(
-            qp.prod(qp.X(0), qp.X(1), qp.X(2)),
-            control_wires=[4, 5, 6],
+        op = qp.ctrl(
+            prod_fn(qp.X(0), qp.X(1), qp.X(2)),
+            control=[4, 5, 6],
             control_values=control_values,
             work_wires=work_wires,
         )
-        for rule in qp.list_decomps("C(Prod)"):
+        rules = qp.list_decomps(key)
+        assert rules, f"no decomp rules registered for {key}"
+        for rule in rules:
             _test_decomposition_rule(op, rule)
 
     @pytest.mark.usefixtures("enable_graph_decomposition")

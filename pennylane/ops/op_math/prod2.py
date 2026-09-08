@@ -28,10 +28,10 @@ import pennylane as qp
 from pennylane import capture, math
 from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.core.queuing import apply
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.decomposition.utils import to_name
 from pennylane.exceptions import SparseMatrixUndefinedError
-from pennylane.typing import TensorLike
+from pennylane.typing import TensorLike, Wire
 from pennylane.wires import Wires
 
 from ..qubit.non_parametric_ops import PauliX, PauliY, PauliZ
@@ -327,7 +327,84 @@ def _prod2_decomp(operands, _init_pauli_rep=None):  # pylint: disable=unused-arg
         apply(op)
 
 
+# pylint: disable=unused-argument
+def _ctrl_prod2_resources(base, control_wires, work_wires, work_wire_type, **_):
+    # pylint: disable=import-outside-toplevel,cyclic-import
+    from .controlled2 import _ctrl_abstract
+
+    num_control_wires = len(control_wires)
+    resources = Counter()
+    resources[qp.TemporaryAND] += num_control_wires - 1
+    resources[qp.adjoint(abstractify(qp.TemporaryAND))] += num_control_wires - 1
+
+    # Per-factor single-control fan-out from the single aux qubit
+    for op in base.operands:
+        resources[_ctrl_abstract(op, Wire[1])] += 1
+
+    return dict(resources)
+
+
+# pylint: disable=unused-argument
+@register_condition(
+    lambda control_wires, work_wires, work_wire_type, **_: len(control_wires) >= 2
+    and len(work_wires) >= len(control_wires) - 1
+    and work_wire_type == "zeroed"
+)
+@register_resources(_ctrl_prod2_resources)
+def _controlled_prod2_with_work_wires(base, control_wires, control_values, work_wires, **_):
+    """Decomposition of ``C(Prod2)`` with at least ``num_control_wires - 1`` zeroed work wires.
+
+    ``Operator2`` port of :func:`~._controlled_product_with_work_wires`. Assumes all
+    ``control_values`` are 1; zero-control flipping is handled by ``flip_zero_control``.
+    """
+    # pylint: disable=import-outside-toplevel,cyclic-import
+    from .prod import _multi_temporary_and_all_ones
+
+    target_wire = _multi_temporary_and_all_ones(control_wires, work_wires)
+    for op in base.operands[::-1]:
+        qp.ctrl(op, control=[target_wire])
+    qp.adjoint(_multi_temporary_and_all_ones)(control_wires, work_wires)
+
+
+def _ctrl_prod2_resources_with_one_work_wire(base, control_wires, work_wires, **_):
+    # pylint: disable=import-outside-toplevel,cyclic-import
+    from .controlled2 import _ctrl_abstract
+
+    resources = Counter()
+    resources[qp.MultiControlledX(Wire[len(control_wires) + 1])] += 2
+
+    # Per-factor single-control fan-out from the single aux qubit
+    for op in base.operands:
+        resources[_ctrl_abstract(op, Wire[1])] += 1
+
+    return dict(resources)
+
+
+# pylint: disable=unused-argument
+@register_condition(
+    lambda control_wires, work_wires, work_wire_type, **_: len(control_wires) >= 2
+    and len(work_wires) >= 1
+    and work_wire_type == "zeroed"
+)
+@register_resources(_ctrl_prod2_resources_with_one_work_wire)
+def _controlled_prod2_with_one_work_wire(base, control_wires, control_values, work_wires, **_):
+    """Decomposition of ``C(Prod2)`` with a single zeroed work wire.
+
+    ``Operator2`` port of :func:`~._controlled_product_with_one_work_wire`. Assumes all
+    ``control_values`` are 1; zero-control flipping is handled by ``flip_zero_control``.
+    """
+    qp.ctrl(qp.X(work_wires[:1]), control=control_wires)
+    for op in base.operands[::-1]:
+        qp.ctrl(op, control=work_wires[:1])
+    qp.ctrl(qp.X(work_wires[:1]), control=control_wires)
+
+
 add_decomps(Prod2, _prod2_decomp)
+add_decomps(
+    "C(Prod2)",
+    _controlled_prod2_with_work_wires,
+    _controlled_prod2_with_one_work_wire,
+)
 
 
 @to_name.register
