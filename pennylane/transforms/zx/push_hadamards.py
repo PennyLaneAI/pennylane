@@ -23,7 +23,7 @@ from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
 from .converter import from_zx, to_zx
-from .helper import _needs_pyzx
+from .helper import _apply_zx_transform, _needs_pyzx
 
 
 @_needs_pyzx
@@ -92,21 +92,22 @@ def push_hadamards(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
     # pylint: disable=import-outside-toplevel
     import pyzx
 
-    pyzx_graph = to_zx(tape)
-    pyzx_circ = pyzx.Circuit.from_graph(pyzx_graph)
+    def transform_fn(pyzx_graph):
+        pyzx_circ = pyzx.Circuit.from_graph(pyzx_graph)
 
-    try:
-        pyzx_circ = pyzx.basic_optimization(pyzx_circ.to_basic_gates())
+        try:
+            pyzx_circ = pyzx.basic_optimization(pyzx_circ.to_basic_gates())
 
-    except TypeError:
+        except TypeError:
 
-        raise TypeError(
-            "The input quantum circuit must be a phase-polynomial + Hadamard circuit. "
-            "RX and RY rotation gates are not supported."
-        ) from None
+            raise TypeError(
+                "The input quantum circuit must be a phase-polynomial + Hadamard circuit. "
+                "RX and RY rotation gates are not supported."
+            ) from None
 
-    qscript = from_zx(pyzx_circ.to_graph())
-    new_tape = tape.copy(operations=qscript.operations)
+        return pyzx_circ.to_graph()
+
+    new_tape = _apply_zx_transform(tape, transform_fn, to_zx, from_zx)
 
     def null_postprocessing(results):
         """A postprocessing function returned by a transform that only converts the batch of results

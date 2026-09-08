@@ -23,7 +23,7 @@ from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
 from .converter import from_zx, to_zx
-from .helper import _needs_pyzx
+from .helper import _apply_zx_transform, _needs_pyzx
 
 
 @_needs_pyzx
@@ -91,18 +91,19 @@ def optimize_t_count(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postproce
     # pylint: disable=import-outside-toplevel
     import pyzx
 
-    pyzx_graph = to_zx(tape)
-    pyzx_circ = pyzx.Circuit.from_graph(pyzx_graph)
+    def transform_fn(pyzx_graph):
+        pyzx_circ = pyzx.Circuit.from_graph(pyzx_graph)
 
-    try:
-        pyzx_circ = pyzx.full_optimize(pyzx_circ)
-    except TypeError as e:
-        raise TypeError(
-            "The input circuit must be a Clifford + T circuit. Consider using `qp.clifford_t_decomposition` first."
-        ) from e
+        try:
+            pyzx_circ = pyzx.full_optimize(pyzx_circ)
+        except TypeError as e:
+            raise TypeError(
+                "The input circuit must be a Clifford + T circuit. Consider using `qp.clifford_t_decomposition` first."
+            ) from e
 
-    qscript = from_zx(pyzx_circ.to_graph())
-    new_tape = tape.copy(operations=qscript.operations)
+        return pyzx_circ.to_graph()
+
+    new_tape = _apply_zx_transform(tape, transform_fn, to_zx, from_zx)
 
     def null_postprocessing(results):
         """A postprocessing function returned by a transform that only converts the batch of results

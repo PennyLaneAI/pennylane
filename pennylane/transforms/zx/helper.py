@@ -15,7 +15,10 @@
 Helper functions for the ZX calculus module.
 """
 
+from collections.abc import Callable
 from functools import wraps
+
+from pennylane.core.qscript import QuantumScript
 
 
 def _needs_pyzx(func):
@@ -36,3 +39,20 @@ def _needs_pyzx(func):
         return func(*args, **kwargs)
 
     return wrapper
+
+
+def _apply_zx_transform(
+    tape: QuantumScript,
+    transform_fn: Callable[[object], object],
+    to_zx: Callable[[QuantumScript], object],
+    from_zx: Callable[[object], QuantumScript],
+) -> QuantumScript:
+    """Apply a PyZX transform and restore the original PennyLane wire labels."""
+    original_wires = tape.wires
+    transformed_graph = transform_fn(to_zx(tape))
+    qscript = from_zx(transformed_graph)
+
+    wire_map = dict(enumerate(original_wires))
+    mapped_operations = [op.map_wires(wire_map) for op in qscript.operations]
+
+    return tape.copy(operations=mapped_operations)
