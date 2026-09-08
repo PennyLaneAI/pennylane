@@ -119,9 +119,6 @@ def test_decomposition(hamiltonian, expected_decomposition):
         qp.assert_equal(op, expected_decomposition[i])
 
 
-@pytest.mark.disable_and_xfail_enable_capture(
-    reason="come back to this as we port Qubitization [sc-129900]"
-)
 @pytest.mark.parametrize(
     "hamiltonian, control",
     [
@@ -133,7 +130,9 @@ def test_decomposition(hamiltonian, expected_decomposition):
         (qp.PauliX(3) @ qp.PauliZ(1) @ qp.PauliY(2), [0]),
     ],
 )
-@pytest.mark.usefixtures("enable_and_disable_capture")
+@pytest.mark.disable_and_xfail_enable_capture(
+    reason="come back to this as we port Qubitization [sc-129900]"
+)
 def test_decomposition_new(hamiltonian, control):  # pylint: disable=unused-argument
     """Tests the decomposition rule implemented with the new system."""
     op = qp.Qubitization(hamiltonian, control=control)

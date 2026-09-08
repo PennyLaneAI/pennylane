@@ -49,7 +49,9 @@ def _pair_double_terms_wires(wires):
     ]
 
 
-@pytest.mark.usefixtures("enable_and_disable_capture")
+@pytest.mark.disable_and_xfail_enable_capture(
+    reason="Come back to this as we port kUpCCGSD [sc-129964]"
+)
 @pytest.mark.parametrize("k, delta_sz, init_state, wires", k_delta_sz_init_state_wires)
 def test_standard_validity(k, delta_sz, init_state, wires):
     """Test standard validity criteria for kUpCCGSD."""

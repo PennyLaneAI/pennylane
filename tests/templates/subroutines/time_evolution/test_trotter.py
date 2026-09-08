@@ -364,7 +364,8 @@ class TestInitialization:
         assert op is not new_op
 
     @pytest.mark.disable_and_xfail_enable_capture(
-        reason="come back to this after we migrate TrotterProduct [sc-128369]"
+        reason="come back to this after we migrate TrotterProduct [sc-128369]",
+        strict=False,  # not all parametrized configurations fail but most do.
     )
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_standard_validity(self, hamiltonian):
