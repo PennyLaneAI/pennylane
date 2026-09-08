@@ -2,6 +2,38 @@
 
 <h3>New features since last release</h3>
 
+* Added :func:`pennylane.subcircuit` that can be used to create operators using quantum functions, allowing for
+  fast prototyping without needing to create full-fledged operator classes.
+  [(#10126)](https://github.com/PennyLaneAI/pennylane/pull/10126)
+
+  ```python
+  import inspect
+  from pennylane.typing import Wire
+
+  @qp.subcircuit(dynamic_argnames=("phi",), wire_argnames=("wires",))
+  @qp.register_resources({qp.H: 1, qp.RZ: 1})
+  def MyOp(phi, wires):
+      """My custom operator created using qp.subcircuit."""
+      qp.H(wires)
+      qp.RZ(phi, wires)
+  ```
+  ```pycon
+  >>> print(MyOp)
+  <class '__main__.MyOp'>
+  >>> print(MyOp.mro())
+  [<class '__main__.MyOp'>, <class 'pennylane.core.operator.operator2.Operator2'>, <class 'object'>]
+  >>> print(inspect.signature(MyOp))
+  (phi, wires)
+  >>> help(MyOp)
+  Help on class MyOp in module __main__:
+
+  class MyOp(pennylane.core.operator.operator2.Operator2)
+  |  MyOp(phi, wires)
+  |
+  |  My custom operator created using qp.subcircuit.
+  ...
+  ```
+
 * Two new numeric Hamiltonians called :class:`pennylane.CDFHamiltonian` (based on `arXiv:2506.15784, Sec. III A <https://arxiv.org/abs/2506.15784>`) and :class:`pennylane.CGFHamiltonian` have been added (based on `arXiv:2508.11865, Sec. III C <https://arxiv.org/abs/2508.11865>`), which define compressed double-factorized (CDF) and Christiansen greedy-fragmentation Hamiltonians, respectively. These Hamiltonians can be defined
   with both concrete numeric data or abstract data (using ``qp.typing.Float[...]``).
   [(#10048)](https://github.com/PennyLaneAI/pennylane/pull/10048)
