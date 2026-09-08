@@ -2232,11 +2232,8 @@ def _is_abstract_specifier(val):
 @QueuingManager.stop_recording()
 def _abstractify_operator_type(op_type: type[Operator2]) -> Operator2:
     """Abstractify a subclass of operator."""
-    # pylint: disable=import-outside-toplevel
-    from pennylane.ops import MidMeasure
 
-    # ``MidMeasure`` is exempted so that the bare type keeps working as a resource dict key.
-    if op_type.has_fixed_sig or op_type is MidMeasure:
+    if op_type.has_fixed_sig:
         return op_type(**op_type.arg_specs)
 
     raise TypeError(
