@@ -522,7 +522,8 @@ class TestDecomposition:
             qp.assert_equal(op1, op2)
 
     @pytest.mark.disable_and_xfail_enable_capture(
-        reason="come back to this after we migrate TrotterProduct [sc-128369]"
+        reason="come back to this after we migrate TrotterProduct [sc-128369]",
+        strict=False,  # not all parametrized configurations fail
     )
     @pytest.mark.parametrize("order", (1, 2, 4))
     @pytest.mark.parametrize("hamiltonian_index, hamiltonian", list(enumerate(test_hamiltonians)))
