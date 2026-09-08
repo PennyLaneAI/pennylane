@@ -8,7 +8,6 @@
 
   ```python
   import inspect
-  from pennylane.typing import Wire
 
   @qp.subcircuit(dynamic_argnames=("phi",), wire_argnames=("wires",))
   @qp.register_resources({qp.H: 1, qp.RZ: 1})
@@ -20,10 +19,6 @@
   ```pycon
   >>> print(MyOp)
   <class '__main__.MyOp'>
-  >>> print(MyOp.mro())
-  [<class '__main__.MyOp'>, <class 'pennylane.core.operator.operator2.Operator2'>, <class 'object'>]
-  >>> print(inspect.signature(MyOp))
-  (phi, wires)
   >>> help(MyOp)
   Help on class MyOp in module __main__:
 
