@@ -1653,7 +1653,7 @@ class TestDecomposition:
     def test_resource_keys(self):
         """Test that the resource keys of `Prod` are op_reps."""
         assert Prod.resource_keys == frozenset({"resources"})
-        product = qp.X(0) @ qp.Y(1) @ qp.X(2)
+        product = Prod(qp.X(0), qp.Y(1), qp.X(2))
         resources = {abstractify(qp.X): 2, abstractify(qp.Y): 1}
         assert product.resource_params == {"resources": resources}
 
