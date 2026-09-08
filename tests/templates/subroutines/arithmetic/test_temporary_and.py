@@ -93,7 +93,8 @@ class TestTemporaryAND:
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_standard_validity(self):
         """Check the operation using the assert_valid function."""
-        op = qp.TemporaryAND(wires=[0, "a", 2], control_values=(0, 0))
+        cvals = qp.math.array([0, 0], like="jax") if qp.capture.enabled() else [0, 0]
+        op = qp.TemporaryAND(wires=[0, 1, 2], control_values=cvals)
         # Skip matrix check because the decomposition to Toffoli,and the adjoint decomposition
         # to mcm + cond(CZ) do not reproduce the matrix of the op. Skip bind_new_parameters
         # now that control_values is part of dynamic data
@@ -161,7 +162,8 @@ class TestTemporaryAND:
             _test_decomposition_rule(
                 qp.TemporaryAND(wires, control_values=cvals), rule, skip_decomp_matrix_check=True
             )
-            matrix = qp.matrix(rule, wire_order=wires)(wires, control_values=cvals)
+            with qp.capture.pause():
+                matrix = qp.matrix(rule, wire_order=wires)(wires, control_values=cvals)
             self.compare_to_toffoli_on_zero(matrix, "input", cvals)
 
     @pytest.mark.parametrize("rule", qp.list_decomps("Adjoint(TemporaryAND)"))
