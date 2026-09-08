@@ -1421,7 +1421,7 @@
 * ZX optimization transforms now preserve the original wire labels when round-tripping through
   PyZX, preventing circuits on nonconsecutive, noncanonical, or string-valued wires from being
   permuted.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#10121)](https://github.com/PennyLaneAI/pennylane/pull/10121)
 
 * Fixed the Triton persistent decoder kernel so :func:`~pennylane.backline.css_bp_decoder` and
   the other Triton decoders build on CUDA with Triton 3.8.
