@@ -254,8 +254,6 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
         return adjoint_resource_rep(**params)
     if issubclass(op_type, qp.ops.Pow):
         return pow_resource_rep(**params)
-    if issubclass(op_type, qp.ops.ChangeOpBasis):
-        return change_op_basis_resource_rep(**params)
     if op_type is qp.ops.ControlledOp:
         op_type = qp.ops.Controlled
     if op_type is qp.ops.Controlled:

@@ -33,8 +33,9 @@ from pennylane.decomposition.decomposition_rule import _decomp_contains_mcm
 from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.decomposition.utils import _get_decomp_args
 from pennylane.exceptions import EigvalsUndefinedError
-from pennylane.ops.op_math.adjoint2 import Adjoint2
-from pennylane.ops.op_math.controlled2 import ControlledOp2
+from pennylane.ops.op_math.adjoint2 import Adjoint2, _adjoint_abstract
+from pennylane.ops.op_math.composite2 import CompositeOp2
+from pennylane.ops.op_math.controlled2 import ControlledOp2, _ctrl_abstract
 from pennylane.ops.op_math.pow2 import Pow2
 from pennylane.ops.op_math.symbolicop2 import SymbolicOp2
 from pennylane.pytrees import flatten
@@ -239,24 +240,6 @@ def _decomp_rule_to_tape(rule, args, kwargs):
     return qp.tape.QuantumScript.from_queue(q)
 
 
-def _make_wrapped_decomp_rule(rule, op, capture_kwargs):
-    """Makes a wrapper around a decomposition rule that manually flattens and unflattens
-    the hybrid arguments around the input boundary."""
-
-    hybrid_trees = {}
-    for k, v in op.hybrid_args.items():
-        leaves, tree = qp.pytrees.flatten(v)
-        capture_kwargs[k] = leaves
-        hybrid_trees[k] = tree
-
-    def _wrapped(*args, **kwargs):
-        for k in op.hybrid_args:
-            kwargs[k] = qp.pytrees.unflatten(kwargs[k], hybrid_trees[k])
-        rule(*args, **kwargs)
-
-    return _wrapped
-
-
 def _capture_decomp_rule_to_tape(rule, op):
 
     import jax  # pylint: disable=import-outside-toplevel
@@ -270,11 +253,7 @@ def _capture_decomp_rule_to_tape(rule, op):
     else:
         decomposition = partial(rule, **op.static_args, **op.compilable_args)
         capture_args = ()
-        capture_kwargs = {**op.dynamic_args, **op.wire_args}  # hybrid args will be added below
-        # TODO: tracing Operator2 hybrid args is not supported out of the box due to [sc-127789].
-        # For now we manually flatten the hybrid args and reassemble them within the wrapper rule,
-        # but ideally we want to be able to pass hybrid args directly.
-        decomposition = _make_wrapped_decomp_rule(decomposition, op, capture_kwargs)
+        capture_kwargs = {**op.dynamic_args, **op.wire_args, **op.hybrid_args}
 
     plxpr = qp.capture.make_plxpr(decomposition, autograph=False)(*capture_args, **capture_kwargs)
     flat_capture_args = jax.tree.leaves((capture_args, capture_kwargs))
@@ -348,23 +327,83 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
         ), "decomposition must produce the same matrix as the operator."
 
 
+def _change_op_basis_operands(op_rep):
+    """Return ``(compute_op, target_op, uncompute_op)`` for a ChangeOpBasis resource key.
+
+    Handles both a native :class:`~.ChangeOpBasis2` and a legacy ``CompressedResourceOp``
+    wrapping :class:`~.ChangeOpBasis`. Returns ``None`` for any other resource key.
+    """
+    if isinstance(op_rep, qp.ops.ChangeOpBasis2):
+        return op_rep.compute_op, op_rep.target_op, op_rep.uncompute_op
+    if isinstance(op_rep, CompressedResourceOp) and op_rep.op_type is qp.ops.ChangeOpBasis:
+        params = op_rep.params
+        return params["compute_op"], params["target_op"], params["uncompute_op"]
+    return None
+
+
+def _unroll_prod_operand(operand):
+    """Expand a Prod-like ChangeOpBasis operand into its inner resource keys with counts."""
+    if isinstance(operand, qp.ops.Prod2):
+        counts = defaultdict(int)
+        for inner_op in operand.operands:
+            counts[inner_op] += 1
+        return dict(counts)
+    if isinstance(operand, CompressedResourceOp) and operand.op_type is qp.ops.Prod:
+        return dict(operand.params["resources"])
+    return {operand: 1}
+
+
+def _unroll_symbolic_change_op_basis(op_rep, wrapper):
+    """Unroll a ChangeOpBasis nested in a single symbolic resource key and reapply its wrapper."""
+    unrolled_base = _unroll_change_op_basis_resource(op_rep.base)
+    if unrolled_base == {op_rep.base: 1}:
+        return {op_rep: 1}
+
+    gate_counts = defaultdict(int)
+    for base_rep, count in unrolled_base.items():
+        gate_counts[wrapper(base_rep)] += count
+    return gate_counts
+
+
+def _unroll_change_op_basis_resource(op_rep):
+    """Expand a single resource key that is (or wraps) a ChangeOpBasis.
+
+    Keys that do not involve a ChangeOpBasis are returned unchanged as ``{op_rep: 1}``.
+    """
+    operands = _change_op_basis_operands(op_rep)
+    if operands is not None:
+        gate_counts = defaultdict(int)
+        for operand in operands:
+            for inner_op, count in _unroll_prod_operand(operand).items():
+                gate_counts[inner_op] += count
+        return gate_counts
+
+    if isinstance(op_rep, Adjoint2):
+        return _unroll_symbolic_change_op_basis(op_rep, _adjoint_abstract)
+
+    if isinstance(op_rep, ControlledOp2):
+        wrapper = partial(
+            _ctrl_abstract,
+            control_wires=op_rep.control_wires,
+            work_wires=op_rep.work_wires,
+            work_wire_type=op_rep.work_wire_type,
+        )
+        return _unroll_symbolic_change_op_basis(op_rep, wrapper)
+
+    return {op_rep: 1}
+
+
 def _unroll_change_op_basis(gate_counts):
-    """Unroll any resource reps of ChangeOpBasis."""
+    """Unroll ChangeOpBasis resource keys, including those inside symbolic operators.
+
+    ``ChangeOpBasis`` is unrolled into its compute/target/uncompute operands when program
+    capture is enabled. Resource functions call this on their returned gate-count dict so that
+    the estimate matches the captured decomposition.
+    """
     new_gate_counts = defaultdict(int)
-    for k, count in gate_counts.items():
-        if not isinstance(k, CompressedResourceOp):
-            new_gate_counts[k] += count
-            continue
-        if k.op_type is not qp.ops.ChangeOpBasis:
-            new_gate_counts[k] += count
-            continue
-        for p in ("compute_op", "target_op", "uncompute_op"):
-            op_rep = k.params[p]
-            if isinstance(op_rep, CompressedResourceOp) and op_rep.op_type is qp.ops.Prod:
-                for inner_op, inner_count in op_rep.params["resources"].items():
-                    new_gate_counts[inner_op] += count * inner_count
-            else:
-                new_gate_counts[op_rep] += count
+    for op_rep, count in gate_counts.items():
+        for unrolled_rep, inner_count in _unroll_change_op_basis_resource(op_rep).items():
+            new_gate_counts[unrolled_rep] += count * inner_count
     return new_gate_counts
 
 
@@ -617,7 +656,7 @@ def _check_bind_new_parameters_op2(op):
     """Check that bind new parameters can create a new op with different bound arguments."""
     dyn_args = op.base.dynamic_args if isinstance(op, SymbolicOp2) else op.dynamic_args
     new_dyn_args = {k: math.cast_like(v * 0.0, v) for k, v in dyn_args.items()}
-    new_data_op = qp.ops.functions.bind_new_parameters(op, new_dyn_args.values())
+    new_data_op = qp.ops.functions.bind_new_parameters(op, tuple(new_dyn_args.values()))
     failure_comment = "bind_new_parameters must be able to update the operator2 with new arguments."
     for name, val in new_dyn_args.items():
         op_to_check = new_data_op.base if isinstance(new_data_op, SymbolicOp2) else new_data_op
@@ -699,6 +738,7 @@ def _assert_valid_operator2(
     skip_pickle=False,
     skip_wire_mapping=False,
     skip_bind_new_parameters=False,
+    skip_eigvals=False,
 ) -> None:
     """
     Runs basic validation checks on an :class:`~.core.Operator2` to make sure it has been correctly defined.
@@ -712,6 +752,7 @@ def _assert_valid_operator2(
         skip_pickle: If ``True``, the pickle test will be skipped.
         skip_wire_mapping: If ``True``, the wire mapping test will be skipped.
         skip_bind_new_parameters: If ``True``, the ``bind_new_parameters`` test will be skipped.
+        skip_eigvals: If ``True``, the eigendecomposition tests will be skipped.
     """
 
     # Note: these attributes are in the spec but not the implementation yet.
@@ -736,7 +777,13 @@ def _assert_valid_operator2(
                 f"Op not properly abstractified. {abstractified_op} had non-abstract leaf {l}."
             )
 
-    if not isinstance(op, (Adjoint2, ControlledOp2, Pow2)):
+    # Some operators (e.g. composites and ``Select``) hold their data inside operator-valued
+    # arguments rather than dynamic arguments, so their ``data`` does not correspond to
+    # ``dynamic_argnames`` and this check does not apply.
+    # pylint: disable=import-outside-toplevel
+    from pennylane.templates.subroutines.select import Select
+
+    if not isinstance(op, (Adjoint2, CompositeOp2, ControlledOp2, Pow2, Select)):
 
         error_msg = "ndim_params must have the same length as dynamic_argnames"
         assert len(op.ndim_params) == len(op.dynamic_argnames), error_msg
@@ -765,6 +812,7 @@ def _assert_valid_operator2(
                     skip_pickle=skip_pickle,
                     skip_wire_mapping=skip_wire_mapping,
                     skip_bind_new_parameters=skip_bind_new_parameters,
+                    skip_eigvals=skip_eigvals,
                 )
 
     if not skip_bind_new_parameters:
@@ -785,6 +833,7 @@ def assert_valid(
     skip_pickle=False,
     skip_wire_mapping=False,
     skip_bind_new_parameters=False,
+    skip_eigvals=False,
 ) -> None:
     """Runs basic validation checks on an :class:`~.core.Operator` or :class:`~.core.Operator2` to make
     sure it has been correctly defined.
@@ -804,6 +853,7 @@ def assert_valid(
             testing a locally defined operator, as pickle cannot handle local objects
         skip_wire_mapping : If ``True``, the operator will not be tested for wire mapping.
         skip_bind_new_parameters: If ``True``, the ``bind_new_parameters`` tests will be skipped.
+        skip_eigvals: If ``True``, the eigendecomposition tests will be skipped.
 
     **Examples:**
 
@@ -849,6 +899,7 @@ def assert_valid(
             skip_pickle,
             skip_wire_mapping,
             skip_bind_new_parameters,
+            skip_eigvals,
         )
     else:
         assert isinstance(op.data, tuple), "op.data must be a tuple"
@@ -873,7 +924,8 @@ def assert_valid(
         _check_decomposition_new(op, skip_decomp_matrix_check=skip_decomp_matrix_check)
     _check_matrix(op)
     _check_sparse_matrix(op)
-    _check_eigendecomposition(op)
+    if not skip_eigvals:
+        _check_eigendecomposition(op)
     _check_generator(op)
     if not skip_differentiation and not capture.enabled():
         _check_differentiation(op)
