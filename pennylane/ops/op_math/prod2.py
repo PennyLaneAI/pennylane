@@ -313,7 +313,8 @@ class Prod2(CompositeOp2):
 @abstractify.register(Prod2)
 def _abstractify_prod2(val: Prod2):
     """Abstractify ``Prod2``."""
-    abstract_operands = tuple(abstractify(op) for op in val.operands)
+    with capture.pause():
+        abstract_operands = tuple(abstractify(op) for op in val.operands)
     return Prod2(abstract_operands, _init_pauli_rep=None)
 
 
