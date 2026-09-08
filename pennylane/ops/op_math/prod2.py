@@ -311,10 +311,10 @@ class Prod2(CompositeOp2):
 
 
 @abstractify.register(Prod2)
+@qp.QueuingManager.stop_recording()
 def _abstractify_prod2(val: Prod2):
     """Abstractify ``Prod2``."""
-    abstract_operands = tuple(abstractify(op) for op in val.operands)
-    return Prod2(abstract_operands, _init_pauli_rep=None)
+    return Prod2(tuple(abstractify(op) for op in val.operands), _init_pauli_rep=None)
 
 
 def _prod2_resources(operands, _init_pauli_rep=None):  # pylint: disable=unused-argument
