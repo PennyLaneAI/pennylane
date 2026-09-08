@@ -1423,6 +1423,13 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed the decomposition rule of :class:`~.QROM` so that it can be captured and compiled with
+  Catalyst. Tracing the ``clean`` branch previously raised a ``TracerIntegerConversionError``
+  because :func:`~pennylane.adjoint` traced the statically known ``depth``, and passing the wires
+  as traced arrays raised a ``TracerBoolConversionError``. The NumPy calls in the decomposition
+  are also replaced with :mod:`pennylane.math` so that they work on traced bitstrings.
+  [(#10116)](https://github.com/PennyLaneAI/pennylane/pull/10116)
+
 * Fixed the Triton persistent decoder kernel so :func:`~pennylane.backline.css_bp_decoder` and
   the other Triton decoders build on CUDA with Triton 3.8.
   [(#10111)](https://github.com/PennyLaneAI/pennylane/pull/10111)
