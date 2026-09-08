@@ -26,7 +26,7 @@ from functools import partial
 import jax
 import jax.numpy as jnp
 import numpy as np
-from jax.typing import ArrayLike
+from jax.typing import ArrayLike, PyTree
 
 
 @dataclass(frozen=True)
@@ -323,7 +323,7 @@ def build_mmd_loss_pauli(
         raise ValueError("bandwidth must not be empty")
 
     def loss_fn(
-        params: ArrayLike,
+        params: PyTree,
         target_data: ArrayLike,
         key: ArrayLike | None = None,
         **expval_kwargs,
