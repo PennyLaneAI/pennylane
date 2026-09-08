@@ -430,7 +430,7 @@ def _ry_to_rx_cliff(phi, wires: WiresLike):
 def _ry_to_rz_cliff_resources(*_, **__):
     resources = {
         _change_op_basis_abstract(
-            prod(qp.adjoint(qp.S(Wire[1])), qp.H(Wire[1])),
+            prod(qp.H(Wire[1]), qp.adjoint(qp.S(Wire[1]))),
             qp.RZ,
             prod(qp.S(Wire[1]), qp.H(Wire[1])),
         ): 1
@@ -702,7 +702,7 @@ def _rz_to_ry_cliff_resources(phi, wires):
         _change_op_basis_abstract(
             prod(qp.S(Wire[1]), qp.H(Wire[1])),
             qp.RY,
-            prod(qp.adjoint(qp.S(Wire[1])), qp.H(Wire[1])),
+            prod(qp.H(Wire[1]), qp.adjoint(qp.S(Wire[1]))),
         ): 1
     }
     return resources

@@ -40,6 +40,8 @@ import pennylane as qp
         (qp.PCPhase(1.23, 7, (1, 2, 3)), "Z"),
         (qp.X(0) + qp.Y(0), None),
         (qp.X(0) @ qp.Y(1), None),
+        # NOTE: @ dispatches to Prod2 now, keep Prod for legacy testing
+        (qp.ops.Prod(qp.X(0), qp.Y(1)), None),
     ],
 )
 def test_basis_deprecation(op, basis):
