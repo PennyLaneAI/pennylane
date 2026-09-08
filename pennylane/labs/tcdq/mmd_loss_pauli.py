@@ -19,7 +19,7 @@ estimates their expectation values with a user-supplied callable, and combines t
 MMD loss.
 """
 
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from functools import partial
 
@@ -204,7 +204,7 @@ def _compute_loss_for_bandwidth(
     try:
         model_output = expval_fn(params, **call_kwargs)
     except TypeError as exc:
-        for name in ("observables", "key"):
+        for name in ("observables", "key") if inject_key else ("observables",):
             if f"unexpected keyword argument '{name}'" in str(exc):
                 raise TypeError(
                     f"expval_fn does not accept a '{name}' keyword argument. The loss calls "
@@ -240,33 +240,33 @@ def _compute_loss_for_bandwidth(
     )
 
 
-def mmd_loss_pauli(
-    params: ArrayLike,
+
+
+def build_mmd_loss_pauli(
     expval_fn: Callable,
     n_qubits: int,
     mmd_config: MMDConfig,
-    target_data: ArrayLike,
-    key: ArrayLike | None = None,
-    expval_kwargs: Mapping | None = None,
-) -> jnp.ndarray | list[jnp.ndarray]:
-    r"""Compute the MMD loss between a Pauli expectation value function and a target dataset.
+    inject_key: bool = True,
+) -> Callable:
+    r"""Build a reusable loss function that computes the qubit Pauli-kernel MMD.
 
-    This function estimates how far the model's output distribution is from the
-    empirical distribution defined by ``target_data``. The model is called as
+    The returned callable measures the distance between a model's output
+    distribution and an empirical target dataset of bitstrings using the
+    Maximum Mean Discrepancy (MMD) with an RBF kernel expanded in Pauli-Z
+    strings. The model is called as
 
     .. code-block:: python
 
         expval_fn(params, observables=..., key=..., **expval_kwargs)
 
-    where ``observables`` is an integer array of shape ``(n_ops, n_qubits)`` of
+    where the ``key`` argument is omitted when ``inject_key=False``, and
+    ``observables`` is an integer array of shape ``(n_ops, n_qubits)`` of
     Pauli codes (``0=I``, ``1=X``, ``2=Y``, ``3=Z``), of which only ``I`` and
     ``Z`` are generated. It must return ``expvals`` of shape ``(n_ops,)``, or
     ``(expvals, variances)`` where ``variances[i]`` is the variance of the
     estimator ``expvals[i]``; returning ``expvals`` alone declares the model exact.
 
     Args:
-        params (ArrayLike): Trainable model parameters, passed to ``expval_fn``
-            as its first argument.
         expval_fn (Callable): Pauli expectation value function, as above. Must be
             hashable and JAX-traceable.
         n_qubits (int): Number of qubits the model acts on, i.e. the width of the
@@ -274,37 +274,34 @@ def mmd_loss_pauli(
         mmd_config (MMDConfig): Hyperparameters for the MMD computation,
             including the RBF bandwidth and number of observables. See
             :class:`MMDConfig`.
-        target_data (ArrayLike): Binary dataset of shape ``(m, n_qubits)``, or
-            ``(m, len(mmd_config.wires))`` when a wire subset is selected, where
-            each row is a bitstring sample from the target distribution.
-        key (ArrayLike | None): Optional JAX PRNG key. If ``None``, uses
-            ``jax.random.PRNGKey(0)``.
-        expval_kwargs (Mapping | None): Extra keyword arguments forwarded to
-            ``expval_fn``, for example ``{"n_samples": 4000}``. Hashable values
-            are forwarded as compile-time constants; unhashable ones, notably
-            arrays, are traced.
+        inject_key (bool): If ``True`` (default), pass a freshly split ``key``
+            to ``expval_fn`` on every bandwidth. If ``False``, do not pass
+            ``key`` at all, leaving the model to source its own randomness, for
+            example via ``functools.partial(expval_fn, key=my_key)`` or a key
+            stored on the model. Note that ``inject_key=False`` reuses the same
+            model randomness for every bandwidth and every call, which gives
+            repeatable estimates but correlates them.
 
     Returns:
-        jnp.ndarray | list[jnp.ndarray]: A scalar MMD² estimate averaged over
-        all bandwidths by default, or a list of per-bandwidth estimates when
-        ``mmd_config.return_per_bandwidth=True``.
+        Callable: A function with signature
+        ``loss_fn(params, target_data, key=None, **expval_kwargs)`` that returns
+        either a scalar MMD² estimate (averaged across bandwidths) or a list of
+        per-bandwidth values when ``mmd_config.return_per_bandwidth=True``.
 
     Raises:
         ValueError: If ``mmd_config`` leaves ``bandwidth`` or ``n_ops`` unset, if
-            ``mmd_config.wires`` exceeds ``n_qubits``, if ``target_data`` has
-            fewer than two rows or an unexpected number of columns, if
-            ``expval_kwargs`` contains ``"observables"``, or if ``expval_fn``
-            returns arrays of the wrong shape.
-        TypeError: If ``expval_fn`` does not accept the ``observables`` or ``key``
-            keyword arguments.
+            ``mmd_config.bandwidth`` is empty, if ``mmd_config.n_ops < 1``, or if
+            ``mmd_config.wires`` contains duplicates or indices outside
+            ``[0, n_qubits)``.
 
     **Example**
 
     >>> import jax
+    >>> import jax.numpy as jnp
     >>> import numpy as np
     >>> from pennylane.labs.tcdq import (
-    ...     CircuitConfig, MMDConfig, build_expval_func, create_local_gates,
-    ...     median_heuristic, mmd_loss_pauli,
+    ...     CircuitConfig, MMDConfig, build_expval_func, build_mmd_loss_pauli,
+    ...     create_local_gates, median_heuristic,
     ... )
     >>> n_qubits = 4
     >>> gates = create_local_gates(n_qubits, max_weight=2)
@@ -312,14 +309,11 @@ def mmd_loss_pauli(
     ...     gates=gates, n_samples=1000, key=jax.random.PRNGKey(0), n_qubits=n_qubits
     ... )
     >>> target = np.random.binomial(1, 0.5, size=(100, n_qubits))
-    >>> bw = median_heuristic(target)
-    >>> mmd_cfg = MMDConfig(bandwidth=bw, n_ops=50)
-    >>> import jax.numpy as jnp
+    >>> mmd_config = MMDConfig(bandwidth=median_heuristic(target), n_ops=50)
+    >>> loss_fn = build_mmd_loss_pauli(build_expval_func(config), n_qubits, mmd_config)
     >>> params = jnp.zeros(len(gates))
-    >>> loss_val = mmd_loss_pauli(
-    ...     params, build_expval_func(config), n_qubits, mmd_cfg, target, key=config.key
-    ... )
-    >>> loss_val.shape
+    >>> loss = loss_fn(params, target, key=jax.random.PRNGKey(123))
+    >>> loss.shape
     ()
 
     .. seealso::
@@ -330,37 +324,17 @@ def mmd_loss_pauli(
     if mmd_config.bandwidth is None or mmd_config.n_ops is None:
         raise ValueError("mmd_config must specify both bandwidth and n_ops")
 
-    expval_kwargs = dict(expval_kwargs or {})
-    if "observables" in expval_kwargs:
-        raise ValueError(
-            "expval_kwargs must not contain 'observables': the loss samples the observables "
-            "and passes them to expval_fn itself"
-        )
-    inject_key = "key" not in expval_kwargs
-
-    static_kwargs, dynamic_kwargs = _partition_by_hashability(tuple(expval_kwargs.items()))
-    traced_kwargs = dict(dynamic_kwargs)
-
-    active_key = jax.random.PRNGKey(0) if key is None else key
+    if mmd_config.n_ops < 1:
+        raise ValueError("n_ops must be at least 1")
 
     wire_tuple = tuple(range(n_qubits)) if mmd_config.wires is None else tuple(mmd_config.wires)
-    if max(wire_tuple, default=-1) >= n_qubits:
-        raise ValueError(f"wires {wire_tuple} are out of range for n_qubits={n_qubits}")
 
-    target_data = jnp.asarray(target_data)
-    if target_data.ndim != 2:
-        raise ValueError(f"target_data must be 2-dimensional, got shape {target_data.shape}")
-    if target_data.shape[0] <= 1:
-        raise ValueError("target_data must contain more than one sample")
-    if target_data.shape[1] == n_qubits:
-        target_data = target_data[:, list(wire_tuple)]
-    elif target_data.shape[1] != len(wire_tuple):
-        expected = (
-            f"{n_qubits} (one per qubit)"
-            if len(wire_tuple) == n_qubits
-            else f"{len(wire_tuple)} (one per selected wire) or {n_qubits} (one per qubit)"
-        )
-        raise ValueError(f"target_data has {target_data.shape[1]} columns, expected {expected}")
+    for w in wire_tuple:
+        if w < 0 or w >= n_qubits:
+            raise ValueError(f"Wire index {w} out of range for {n_qubits} qubits")
+
+    if len(set(wire_tuple)) != len(wire_tuple):
+        raise ValueError("wires must not contain duplicates")
 
     bandwidth_list = (
         [mmd_config.bandwidth]
@@ -368,27 +342,106 @@ def mmd_loss_pauli(
         else list(mmd_config.bandwidth)
     )
 
-    losses = []
-    for bandwidth in bandwidth_list:
-        active_key, subkey, eval_key = jax.random.split(active_key, 3)
+    if len(bandwidth_list) == 0:
+        raise ValueError("bandwidth must not be empty")
 
-        loss_val = _compute_loss_for_bandwidth(
-            bandwidth=bandwidth,
-            subkey=subkey,
-            eval_key=eval_key,
-            params=params,
-            target_data=target_data,
-            traced_kwargs=traced_kwargs,
-            n_ops=mmd_config.n_ops,
-            n_qubits=n_qubits,
-            wire_tuple=wire_tuple,
-            sqrt_loss=mmd_config.sqrt_loss,
-            expval_fn=expval_fn,
-            static_kwargs=static_kwargs,
-            inject_key=inject_key,
-        )
-        losses.append(loss_val)
+    def loss_fn(
+        params: ArrayLike,
+        target_data: ArrayLike,
+        key: ArrayLike | None = None,
+        **expval_kwargs,
+    ) -> jnp.ndarray | list[jnp.ndarray]:
+        """Estimate the empirical qubit MMD loss for one parameter setting.
 
-    if mmd_config.return_per_bandwidth:
-        return losses
-    return jnp.mean(jnp.stack(losses))
+        The input ``target_data`` is interpreted as samples from the empirical
+        data distribution on the visible wires. For each requested bandwidth,
+        this function samples a fresh batch of Pauli-Z observables, estimates
+        their expectation values with ``expval_fn``, computes the matching
+        empirical moments from ``target_data``, and returns the resulting
+        unbiased MMD estimate.
+
+        If multiple bandwidths are configured, each bandwidth gets its own
+        independent observable batch and model-evaluation randomness.
+
+        Args:
+            params: Trainable model parameters, passed to ``expval_fn`` as its
+                first argument.
+            target_data: Binary array of shape ``(m, n_qubits)``, or
+                ``(m, len(mmd_config.wires))`` when a wire subset is selected,
+                whose rows are bitstring samples from the target distribution.
+            key: Optional JAX PRNG key seeding this call. It is split once per
+                bandwidth into one key for observable sampling and one that is
+                forwarded to ``expval_fn``. If ``None``, uses
+                ``jax.random.PRNGKey(0)``.
+            **expval_kwargs: Extra keyword arguments forwarded to ``expval_fn``,
+                for example ``n_samples=4000``. Hashable values are forwarded as
+                compile-time constants; unhashable ones, notably arrays, are
+                traced. ``observables`` is reserved, and ``key`` is controlled by
+                ``inject_key`` rather than passed here.
+
+        Returns:
+            Either a scalar mean across bandwidths or a list of per-bandwidth
+            loss values when ``return_per_bandwidth`` is enabled.
+
+        Raises:
+            ValueError: If ``target_data`` is not 2-dimensional, has fewer than
+                two rows or an unexpected number of columns, if
+                ``expval_kwargs`` contains ``"observables"``, or if ``expval_fn``
+                returns arrays of the wrong shape.
+            TypeError: If ``expval_fn`` does not accept the ``observables`` or
+                ``key`` keyword arguments.
+        """
+        if "observables" in expval_kwargs:
+            raise ValueError(
+                "expval_kwargs must not contain 'observables': the loss samples the observables "
+                "and passes them to expval_fn itself"
+            )
+
+        static_kwargs, dynamic_kwargs = _partition_by_hashability(tuple(expval_kwargs.items()))
+        traced_kwargs = dict(dynamic_kwargs)
+
+        active_key = jax.random.PRNGKey(0) if key is None else key
+
+        target_data = jnp.asarray(target_data)
+        if target_data.ndim != 2:
+            raise ValueError(f"target_data must be 2-dimensional, got shape {target_data.shape}")
+        if target_data.shape[0] <= 1:
+            raise ValueError("target_data must contain more than one sample")
+        if target_data.shape[1] == n_qubits:
+            target_data = target_data[:, list(wire_tuple)]
+        elif target_data.shape[1] != len(wire_tuple):
+            expected = (
+                f"{n_qubits} (one per qubit)"
+                if len(wire_tuple) == n_qubits
+                else f"{len(wire_tuple)} (one per selected wire) or {n_qubits} (one per qubit)"
+            )
+            raise ValueError(
+                f"target_data has {target_data.shape[1]} columns, expected {expected}"
+            )
+
+        losses = []
+        for bandwidth in bandwidth_list:
+            active_key, subkey, eval_key = jax.random.split(active_key, 3)
+
+            loss_val = _compute_loss_for_bandwidth(
+                bandwidth=bandwidth,
+                subkey=subkey,
+                eval_key=eval_key,
+                params=jnp.asarray(params),
+                target_data=target_data,
+                traced_kwargs=traced_kwargs,
+                n_ops=mmd_config.n_ops,
+                n_qubits=n_qubits,
+                wire_tuple=wire_tuple,
+                sqrt_loss=mmd_config.sqrt_loss,
+                expval_fn=expval_fn,
+                static_kwargs=static_kwargs,
+                inject_key=inject_key,
+            )
+            losses.append(loss_val)
+
+        if mmd_config.return_per_bandwidth:
+            return losses
+        return jnp.mean(jnp.stack(losses))
+
+    return loss_fn

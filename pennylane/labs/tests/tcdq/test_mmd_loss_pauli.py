@@ -25,7 +25,7 @@ from pennylane.labs.tcdq.mmd_loss_pauli import (
     _binary_ops_to_pauli_int,
     _compute_single_mmd,
     median_heuristic,
-    mmd_loss_pauli,
+    build_mmd_loss_pauli,
 )
 
 jax = pytest.importorskip("jax")
@@ -295,11 +295,10 @@ class TestMMDLossAPI:
         mmd_cfg = MMDConfig(bandwidth=[0.5, 1.0], n_ops=30, return_per_bandwidth=True)
         data = jnp.array([[0, 1], [1, 0], [0, 0]])
 
-        res = mmd_loss_pauli(
+        loss_fn = build_mmd_loss_pauli(expval_fn, 2, mmd_cfg)
+
+        res = loss_fn(
             jnp.array([0.1, 0.2]),
-            expval_fn,
-            2,
-            mmd_cfg,
             data,
         )
         assert isinstance(res, list)
@@ -324,8 +323,11 @@ class TestMMDLossAPI:
         cfg_per = MMDConfig(bandwidth=bandwidths, n_ops=100, return_per_bandwidth=True)
         cfg_avg = MMDConfig(bandwidth=bandwidths, n_ops=100, return_per_bandwidth=False)
 
-        per = mmd_loss_pauli(jnp.array([0.1, 0.2]), expval_fn, 2, cfg_per, data)
-        avg = mmd_loss_pauli(jnp.array([0.1, 0.2]), expval_fn, 2, cfg_avg, data)
+        loss_fn_per = build_mmd_loss_pauli(expval_fn, 2, cfg_per)
+        loss_fn_avg = build_mmd_loss_pauli(expval_fn, 2, cfg_avg)
+
+        per = loss_fn_per(jnp.array([0.1, 0.2]), data)
+        avg = loss_fn_avg(jnp.array([0.1, 0.2]), data)
 
         expected = np.mean([float(v) for v in per])
         assert np.isclose(float(avg), expected, atol=1e-6)
@@ -341,8 +343,9 @@ class TestMMDLossAPI:
         mmd_cfg = MMDConfig(bandwidth=1.0, n_ops=20)
         data = jnp.array([[0], [1]])
         expval_fn = build_expval_func(config)
+        loss_fn = build_mmd_loss_pauli(expval_fn, 1, mmd_cfg)
 
-        res = mmd_loss_pauli(jnp.array([0.5]), expval_fn, 1, mmd_cfg, data)
+        res = loss_fn(jnp.array([0.5]), data)
         assert res.shape == ()
 
     def test_deterministic_same_key(self):
@@ -355,13 +358,18 @@ class TestMMDLossAPI:
         )
         expval_fn = build_expval_func(config)
         kwargs = {
-            "params": jnp.array([0.3, 0.5, 0.1]),
             "expval_fn": expval_fn,
             "n_qubits": 2,
             "mmd_config": MMDConfig(bandwidth=1.0, n_ops=100),
-            "target_data": jnp.array([[0, 1], [1, 0], [0, 0], [1, 1]]),
         }
-        assert float(mmd_loss_pauli(**kwargs)) == float(mmd_loss_pauli(**kwargs))
+
+        params = jnp.array([0.3, 0.5, 0.1])
+        target_data = jnp.array([[0, 1], [1, 0], [0, 0], [1, 1]])
+
+        loss_fn_1 = build_mmd_loss_pauli(**kwargs)
+        loss_fn_2 = build_mmd_loss_pauli(**kwargs)
+
+        assert float(loss_fn_1(params, target_data)) == float(loss_fn_2(params, target_data))
 
     def test_different_keys_give_different_results(self):
         """Different PRNG keys should (almost surely) give different losses."""
@@ -370,8 +378,7 @@ class TestMMDLossAPI:
         params = jnp.array([0.3, 0.7])
         mmd_cfg = MMDConfig(bandwidth=1.0, n_ops=100)
 
-        r1 = mmd_loss_pauli(
-            params,
+        loss_fn_1 = build_mmd_loss_pauli(
             build_expval_func(
                 CircuitConfig(
                     gates=gates,
@@ -382,11 +389,9 @@ class TestMMDLossAPI:
             ),
             2,
             mmd_cfg,
-            data,
-            key=jax.random.PRNGKey(0),
         )
-        r2 = mmd_loss_pauli(
-            params,
+
+        loss_fn_2 = build_mmd_loss_pauli(
             build_expval_func(
                 CircuitConfig(
                     gates=gates,
@@ -397,9 +402,11 @@ class TestMMDLossAPI:
             ),
             2,
             mmd_cfg,
-            data,
-            key=jax.random.PRNGKey(999),
         )
+
+        r1 = loss_fn_1(params, data, key=jax.random.PRNGKey(0))
+        r2 = loss_fn_2(params, data, key=jax.random.PRNGKey(999))
+
         assert float(r1) != float(r2)
 
     def test_mmd_loss_with_custom_init_state(self):
@@ -419,9 +426,10 @@ class TestMMDLossAPI:
         data = jnp.array([[0, 0], [1, 1]])
         params = jnp.array([0.5])
         expval_fn = build_expval_func(config)
+        loss_fn = build_mmd_loss_pauli(expval_fn, 2, mmd_cfg)
 
         # This should execute and return a finite scalar without any JAX tracer/shape errors
-        res = mmd_loss_pauli(params, expval_fn, 2, mmd_cfg, data)
+        res = loss_fn(params, data)
         assert res.shape == () and np.isfinite(float(res))
 
 
@@ -500,15 +508,9 @@ class TestMMDLossStatistical:
 
             idx = jax.random.choice(sample_key, n_data, shape=(batch,), replace=False)
             expval_fn = build_expval_func(config)
+            loss_fn = build_mmd_loss_pauli(expval_fn, n_qubits, mmd_cfg, inject_key=True)
 
-            return mmd_loss_pauli(
-                params=params_jnp,
-                expval_fn=expval_fn,
-                mmd_config=mmd_cfg,
-                n_qubits=n_qubits,
-                target_data=X_jnp[idx],
-                key=loss_key,
-            )
+            return loss_fn(params_jnp, X_jnp[idx], key=loss_key)
 
         vmapped_eval = jax.vmap(evaluate_single_trial)
 
@@ -527,7 +529,7 @@ class TestMMDLossStatistical:
         ), f"Z-test FAILED: z={z:.2f}, exact={exact:.6f}, mean={mean_est:.6f}, se={se:.6f}"
 
     def test_wires_subset_executes(self):
-        """``mmd_loss_pauli`` with a ``wires`` subset should run without error."""
+        """Loss function with a ``wires`` subset should run without error."""
         config = CircuitConfig(
             gates={0: [[0]], 1: [[1]], 2: [[2]], 3: [[0, 1]]},
             n_samples=500,
@@ -538,14 +540,9 @@ class TestMMDLossStatistical:
         data = jnp.array(rng.binomial(1, 0.5, (30, 2)))
         mmd_cfg = MMDConfig(bandwidth=1.0, n_ops=50, wires=[0, 2])
         expval_fn = build_expval_func(config)
+        loss_fn = build_mmd_loss_pauli(expval_fn, 3, mmd_cfg)
 
-        res = mmd_loss_pauli(
-            jnp.array([0.1, 0.2, 0.3, 0.15]),
-            expval_fn,
-            3,
-            mmd_cfg,
-            data,
-        )
+        res = loss_fn(jnp.array([0.1, 0.2, 0.3, 0.15]), data)
         assert res.shape == () and np.isfinite(float(res))
 
     def test_sqrt_loss_positive(self):
@@ -560,19 +557,15 @@ class TestMMDLossStatistical:
         data = jnp.array(rng.binomial(1, 0.3, (50, 2)))
         mmd_cfg = MMDConfig(bandwidth=1.0, n_ops=200, sqrt_loss=True)
         expval_fn = build_expval_func(config)
+        loss_fn = build_mmd_loss_pauli(expval_fn, 2, mmd_cfg)
 
-        res = mmd_loss_pauli(
-            jnp.array([0.5, 0.3]),
-            expval_fn,
-            2,
-            mmd_cfg,
-            data,
-        )
+        res = loss_fn(jnp.array([0.5, 0.3]), data)
+
         assert res.shape == ()
         assert float(res) >= 0.0
 
     def test_key_override_provides_new_randomness(self):
-        """Passing ``key`` to ``mmd_loss_pauli`` should override ``config.key``."""
+        """Passing ``key`` to loss function should override key."""
         config = CircuitConfig(
             gates={0: [[0]], 1: [[1]]},
             n_samples=500,
@@ -583,14 +576,8 @@ class TestMMDLossStatistical:
         params = jnp.array([0.3, 0.7])
         mmd_cfg = MMDConfig(bandwidth=1.0, n_ops=100)
         expval_fn = build_expval_func(config)
+        loss_fn = build_mmd_loss_pauli(expval_fn, 2, mmd_cfg)
 
-        r_default = mmd_loss_pauli(params, expval_fn, 2, mmd_cfg, data)
-        r_override = mmd_loss_pauli(
-            params,
-            expval_fn,
-            2,
-            mmd_cfg,
-            data,
-            key=jax.random.PRNGKey(12345),
-        )
+        r_default = loss_fn(params, data)
+        r_override = loss_fn(params, data, key=jax.random.PRNGKey(12345))
         assert float(r_default) != float(r_override)
