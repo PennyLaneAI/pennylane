@@ -38,6 +38,13 @@ from tests.ops.op_math.test_adjoint2 import RX2, SX2
 # pylint: disable=unused-argument,arguments-differ,useless-parent-delegation,too-few-public-methods
 
 
+# pylint: disable=unused-argument
+def pow_using_dunder_method(base, z):
+    """Helper function which computes the base raised to the power invoking the __pow__ dunder
+    method."""
+    return base**z
+
+
 class NoPowOp(Operator2):
     """A base operator whose ``pow`` always raises ``PowUndefinedError``."""
 
@@ -332,3 +339,42 @@ def test_pow_rotation2():
     assert pow_rotation.compute_resources(**op.arguments) == Resources(
         {OneWireDynOp(Float, wires=Wire[1]): 1}
     )
+
+
+@pytest.mark.parametrize(
+    "z, power_method", [(0.5, Pow2), (1.5, pow_using_dunder_method), (-0.5, qp.pow)]
+)
+def test_eigvals_fractional_power_negative_eigenvalue_2(z, power_method):
+    """Test that the pow method correctly calculates complex eigenvalues
+    for various fractional powers of an operator."""
+
+    base = qp.PauliZ(0)
+    op = power_method(base=base, z=z)
+
+    eigvals = op.eigvals()
+
+    expected_eigvals = np.array([1.0**z, (-1.0 + 0j) ** z])
+
+    assert np.allclose(eigvals, expected_eigvals)
+
+
+# pylint: disable-next=too-few-public-methods
+class TestCapture:
+
+    @pytest.mark.jax
+    def test_pow_2_eigvals_is_jittable(self):
+        """Test that the eigvals method is jittable."""
+        import jax
+        import jax.numpy as jnp
+        import numpy as np
+
+        import pennylane as qp
+
+        @jax.jit
+        def f(x):
+            return jnp.array(Pow2(qp.RX(x, 0), 2).eigvals())
+
+        x = 0.5
+        expected = np.array([np.cos(x) + np.sin(x) * 1j, np.cos(x) - np.sin(x) * 1j])
+
+        assert np.allclose(f(x), expected)

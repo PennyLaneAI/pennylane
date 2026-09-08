@@ -1045,7 +1045,7 @@ class TestCapture:
 
         @jax.jit
         def f(x):
-            return jnp.array(qp.pow(qp.RX(x, 0), 2).eigvals())
+            return jnp.array(Pow(qp.RX(x, 0), 2).eigvals())
 
         x = 0.5
         expected = np.array([np.cos(x) + np.sin(x) * 1j, np.cos(x) - np.sin(x) * 1j])
