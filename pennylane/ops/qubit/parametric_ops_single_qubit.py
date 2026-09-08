@@ -706,15 +706,9 @@ def _rz_to_rx_cliff(phi, wires: WiresLike):
 def _rz_to_ry_cliff_resources(phi, wires):
     resources = {
         _change_op_basis_abstract(
-            resource_rep(
-                qp.ops.op_math.Prod,
-                resources={abstractify(qp.S): 1, abstractify(qp.Hadamard): 1},
-            ),
+            qp.ops.op_math.Prod2((abstractify(qp.S), abstractify(qp.Hadamard))),
             qp.RY,
-            resource_rep(
-                qp.ops.op_math.Prod,
-                resources={_adjoint_abstract(qp.S): 1, abstractify(qp.Hadamard): 1},
-            ),
+            qp.ops.op_math.Prod2((abstractify(qp.Hadamard), _adjoint_abstract(qp.S))),
         ): 1
     }
     return resources
@@ -723,9 +717,9 @@ def _rz_to_ry_cliff_resources(phi, wires):
 @register_resources(_rz_to_ry_cliff_resources)
 def _rz_to_ry_cliff(phi, wires: WiresLike):
     qp.change_op_basis(
-        qp.S(wires) @ qp.Hadamard(wires),
+        qp.ops.op_math.Prod2((qp.S(wires), qp.Hadamard(wires))),
         qp.RY(phi, wires),
-        qp.Hadamard(wires) @ qp.adjoint(qp.S(wires)),
+        qp.ops.op_math.Prod2((qp.Hadamard(wires), qp.adjoint(qp.S(wires)))),
     )
 
 
