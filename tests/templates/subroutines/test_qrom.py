@@ -458,7 +458,7 @@ class TestQROM:
         # ``clean`` is compilable and is therefore static when Catalyst captures this rule.
         # pylint: disable-next=protected-access
         rule = qp.capture.subroutine(partial(_qrom_decomposition._impl, clean=clean))
-        jax.make_jaxpr(rule)(**kwargs)
+        _ = jax.make_jaxpr(rule)(**kwargs)
 
 
 @pytest.mark.parametrize(
