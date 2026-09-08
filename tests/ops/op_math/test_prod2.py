@@ -361,9 +361,9 @@ class TestCapture:
         import jax
 
         op1, op2 = qp.RX(0.3, 1), qp.RZ(0.6, 1)
-        prod = Prod2([op1, op2])
+        custom_prod = Prod2([op1, op2])
 
-        jaxpr = jax.make_jaxpr(prod.decomposition)()
+        jaxpr = jax.make_jaxpr(custom_prod.decomposition)()
 
         assert len(jaxpr.eqns) == 2
         assert op1.tracer is None

@@ -25,7 +25,7 @@ from typing import Union, override
 from scipy.sparse import kron as sparse_kron
 
 import pennylane as qp
-from pennylane import math
+from pennylane import capture, math
 from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.core.queuing import apply
 from pennylane.decomposition import add_decomps, register_resources
@@ -258,11 +258,11 @@ class Prod2(CompositeOp2):
         """
         # try using pauli_rep:
         if pr := self.pauli_rep:
-            with qp.QueuingManager.stop_recording():
+            with qp.QueuingManager.stop_recording(), capture.pause():
                 ops = [pauli.operation() for pauli in pr.keys()]
             return list(pr.values()), ops
 
-        with qp.QueuingManager.stop_recording():
+        with qp.QueuingManager.stop_recording(), capture.pause():
             global_phase, factors = self._simplify_factors(factors=self.operands)
             factors = list(itertools.product(*factors))
 
@@ -302,7 +302,7 @@ class Prod2(CompositeOp2):
             if len(factor) == 0:
                 op = qp.Identity(self.wires)
             else:
-                op = factor[0] if len(factor) == 1 else Prod2(*factor)
+                op = factor[0] if len(factor) == 1 else Prod2(factor)
             return op if global_phase == 1 else qp.s_prod(global_phase, op)
 
         factors = [Prod2(factor).simplify() if len(factor) > 1 else factor[0] for factor in factors]
