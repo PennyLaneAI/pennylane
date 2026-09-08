@@ -479,7 +479,9 @@ class TestDecompositions:
         """Tests that the decomposition of the IsingXX gate is correct"""
         param = 0.1234
         op = qp.IsingXX(param, wires=[3, 2])
-        res = op.decomposition()
+        # IsingXX decomposes into a single ChangeOpBasis;
+        # expand one more level to get at the three underlying gates.
+        res = op.decomposition()[0].decomposition()
 
         assert len(res) == 3
 
@@ -507,44 +509,33 @@ class TestDecompositions:
         """Tests that the decomposition of the IsingXY gate is correct"""
         param = 0.1234
         op = qp.IsingXY(param, wires=[3, 2])
-        res = op.decomposition()
+        # IsingXY decomposes into a single ChangeOpBasis conjugating the two rotations with a
+        # Hadamard-CY basis change, which is what lets a control skip the basis change.
+        (cob,) = op.decomposition()
 
-        assert len(res) == 6
+        # operands are in matrix order, i.e. reversed relative to the order they are applied in
+        assert [gate.name for gate in cob.compute_op.operands] == ["CY", "Hadamard"]
+        assert [gate.wires for gate in cob.compute_op.operands] == [Wires([3, 2]), Wires([3])]
 
-        assert res[0].wires == Wires([3])
-        assert res[1].wires == Wires([3, 2])
-        assert res[2].wires == Wires([3])
-        assert res[3].wires == Wires([2])
-        assert res[4].wires == Wires([3, 2])
-        assert res[5].wires == Wires([3])
+        assert [gate.name for gate in cob.target_op.operands] == ["RX", "RY"]
+        assert [gate.wires for gate in cob.target_op.operands] == [Wires([2]), Wires([3])]
 
-        assert res[0].name == "Hadamard"
-        assert res[1].name == "CY"
-        assert res[2].name == "RY"
-        assert res[3].name == "RX"
-        assert res[4].name == "CY"
-        assert res[5].name == "Hadamard"
+        assert [gate.name for gate in cob.uncompute_op.operands] == ["Hadamard", "CY"]
+        assert [gate.wires for gate in cob.uncompute_op.operands] == [
+            Wires([3]),
+            Wires([3, 2]),
+        ]
 
-        mats = []
-        for i in reversed(res):
-            if i.wires == Wires([3]):
-                # RY and Hadamard gate
-                mats.append(np.kron(i.matrix(), np.eye(2)))
-            elif i.wires == Wires([2]):
-                # RX gate
-                mats.append(np.kron(np.eye(2), i.matrix()))
-            else:
-                mats.append(i.matrix())
-
-        decomposed_matrix = np.linalg.multi_dot(mats)
-
+        decomposed_matrix = qp.matrix(qp.tape.QuantumScript([cob]), wire_order=[3, 2])
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
     def test_isingxx_decomposition_broadcasted(self, tol):
         """Tests that the decomposition of the broadcasted IsingXX gate is correct"""
         param = np.array([-0.1, 0.2, 0.5])
         op = qp.IsingXX(param, wires=[3, 2])
-        res = op.decomposition()
+        # IsingXX decomposes into a single ChangeOpBasis;
+        # expand one more level to get at the three underlying gates.
+        res = op.decomposition()[0].decomposition()
 
         assert len(res) == 3
 
@@ -574,7 +565,9 @@ class TestDecompositions:
         """Tests that the decomposition of the IsingYY gate is correct"""
         param = 0.1234
         op = qp.IsingYY(param, wires=[3, 2])
-        res = op.decomposition()
+        # IsingYY decomposes into a single ChangeOpBasis;
+        # expand one more level to get at the three underlying gates.
+        res = op.decomposition()[0].decomposition()
 
         assert len(res) == 3
 
@@ -602,7 +595,9 @@ class TestDecompositions:
         """Tests that the decomposition of the broadcasted IsingYY gate is correct"""
         param = np.array([-0.1, 0.2, 0.5])
         op = qp.IsingYY(param, wires=[3, 2])
-        res = op.decomposition()
+        # IsingYY decomposes into a single ChangeOpBasis;
+        # expand one more level to get at the three underlying gates.
+        res = op.decomposition()[0].decomposition()
 
         assert len(res) == 3
 
@@ -745,6 +740,136 @@ class TestDecompositions:
         assert qp.math.allclose(gates[1].parameters[0], angle / 2)
         assert qp.math.allclose(gates[3].parameters[0], -angle / 2)
         mat = qp.matrix(decomp, wire_order=[2, 3, 4])
+        assert qp.math.allclose(mat, expected_matrix)
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_controlled_isingxx_decomposition_graph(self):
+        r"""Controlling ``IsingXX`` should control only the inner ``RX``, leaving the two
+        conjugating ``CNOT``'s bare. As for ``IsingZZ`` above, this comes out of the generic
+        ``C(ChangeOpBasis)`` rule rather than a dedicated ``C(IsingXX)`` rule. Here the inner
+        rotation sits on ``wires[0]`` (the *control* of the conjugating ``CNOT``), unlike
+        ``IsingZZ``, so the resulting circuit is checked separately."""
+        angle = 0.6931
+        op = qp.ctrl(qp.IsingXX(angle, wires=[2, 3]), control=[4])
+        tape = qp.tape.QuantumScript([op], [])
+        expected_matrix = qp.matrix(tape, wire_order=[2, 3, 4])
+
+        [decomp], _ = qp.transforms.decompose(
+            tape,
+            gate_set={qp.CNOT, qp.RX, qp.RZ, qp.Hadamard, qp.GlobalPhase, qp.PauliX},
+        )
+
+        gates = decomp.operations
+        # the controlled RX becomes H-RZ-CNOT-RZ-CNOT-H on the target
+        assert [g.name for g in gates] == [
+            "CNOT",
+            "Hadamard",
+            "RZ",
+            "CNOT",
+            "RZ",
+            "CNOT",
+            "Hadamard",
+            "CNOT",
+        ]
+        # only the two bare CNOTs conjugate; the control wire 4 never touches them
+        assert list(gates[0].wires) == [2, 3]
+        assert list(gates[-1].wires) == [2, 3]
+        assert qp.math.allclose(gates[2].parameters[0], angle / 2)
+        assert qp.math.allclose(gates[4].parameters[0], -angle / 2)
+        mat = qp.matrix(decomp, wire_order=[2, 3, 4])
+        assert qp.math.allclose(mat, expected_matrix)
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_controlled_isingyy_decomposition_graph(self):
+        r"""Controlling ``IsingYY`` should control only the inner ``RY``, leaving the two
+        conjugating ``CY``'s bare, via the generic ``C(ChangeOpBasis)`` rule."""
+        angle = 0.6931
+        op = qp.ctrl(qp.IsingYY(angle, wires=[2, 3]), control=[4])
+        tape = qp.tape.QuantumScript([op], [])
+        expected_matrix = qp.matrix(tape, wire_order=[2, 3, 4])
+
+        [decomp], _ = qp.transforms.decompose(
+            tape,
+            gate_set={qp.CY, qp.CNOT, qp.RY, qp.GlobalPhase, qp.PauliX},
+        )
+
+        gates = decomp.operations
+        assert [g.name for g in gates] == ["CY", "RY", "CNOT", "RY", "CNOT", "CY"]
+        assert list(gates[0].wires) == [2, 3]
+        assert list(gates[-1].wires) == [2, 3]
+        assert qp.math.allclose(gates[1].parameters[0], angle / 2)
+        assert qp.math.allclose(gates[3].parameters[0], -angle / 2)
+        mat = qp.matrix(decomp, wire_order=[2, 3, 4])
+        assert qp.math.allclose(mat, expected_matrix)
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_controlled_multirz_decomposition_graph(self):
+        r"""Controlling ``MultiRZ`` should control only the inner ``RZ``, leaving the conjugating
+        CNOT ladder bare. This comes out of the generic ``C(ChangeOpBasis)`` rule rather than a
+        dedicated ``C(MultiRZ)`` rule, and is what keeps the ladder from becoming Toffolis."""
+        angle = 0.6931
+        control = 3
+        op = qp.ctrl(qp.MultiRZ(angle, wires=[0, 1, 2]), control=[control])
+        tape = qp.tape.QuantumScript([op], [])
+        expected_matrix = qp.matrix(tape, wire_order=[0, 1, 2, control])
+
+        [decomp], _ = qp.transforms.decompose(
+            tape, gate_set={qp.CNOT, qp.RZ, qp.GlobalPhase, qp.PauliX}
+        )
+        gates = decomp.operations
+
+        # the ladder conjugates a controlled RZ, so it is the first and last two gates
+        conjugation = gates[:2] + gates[-2:]
+        assert [g.name for g in conjugation] == ["CNOT"] * 4
+        assert all(control not in g.wires for g in conjugation)
+
+        mat = qp.matrix(decomp, wire_order=[0, 1, 2, control])
+        assert qp.math.allclose(mat, expected_matrix)
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_controlled_paulirot_decomposition_graph(self):
+        r"""Controlling ``PauliRot`` should control only the inner ``MultiRZ``, leaving the
+        conjugating basis change bare."""
+        angle = 0.6931
+        control = 2
+        op = qp.ctrl(qp.PauliRot(angle, "XY", wires=[0, 1]), control=[control])
+        tape = qp.tape.QuantumScript([op], [])
+        expected_matrix = qp.matrix(tape, wire_order=[0, 1, control])
+
+        [decomp], _ = qp.transforms.decompose(
+            tape, gate_set={qp.CNOT, qp.RX, qp.RZ, qp.Hadamard, qp.GlobalPhase, qp.PauliX}
+        )
+        gates = decomp.operations
+
+        # the Hadamard/RX basis change conjugates the controlled MultiRZ and stays control-free
+        conjugation = gates[:2] + gates[-2:]
+        assert [g.name for g in conjugation] == ["Hadamard", "RX", "Hadamard", "RX"]
+        assert all(control not in g.wires for g in conjugation)
+
+        mat = qp.matrix(decomp, wire_order=[0, 1, control])
+        assert qp.math.allclose(mat, expected_matrix)
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_controlled_isingxy_decomposition_graph(self):
+        r"""Controlling ``IsingXY`` should control only the two inner rotations, leaving the
+        conjugating Hadamard/CY basis change bare."""
+        angle = 0.6931
+        control = 2
+        op = qp.ctrl(qp.IsingXY(angle, wires=[0, 1]), control=[control])
+        tape = qp.tape.QuantumScript([op], [])
+        expected_matrix = qp.matrix(tape, wire_order=[0, 1, control])
+
+        [decomp], _ = qp.transforms.decompose(
+            tape,
+            gate_set={qp.CNOT, qp.CY, qp.RX, qp.RY, qp.RZ, qp.Hadamard, qp.GlobalPhase, qp.PauliX},
+        )
+        gates = decomp.operations
+
+        conjugation = gates[:2] + gates[-2:]
+        assert [g.name for g in conjugation] == ["Hadamard", "CY", "CY", "Hadamard"]
+        assert all(control not in g.wires for g in conjugation)
+
+        mat = qp.matrix(decomp, wire_order=[0, 1, control])
         assert qp.math.allclose(mat, expected_matrix)
 
     two_wire_pcphases = [(0, [0, 1]), (1, [1, 0]), (2, ["a", 2]), (3, [1, 3]), (4, [9, 0])]
@@ -3052,67 +3177,50 @@ class TestPauliRot:
         decomp_ops = op.decomposition()
 
         assert len(decomp_ops) == 1
-
-        assert decomp_ops[0].name == "MultiRZ"
-
-        assert decomp_ops[0].wires == Wires([0, 1])
-        assert np.allclose(decomp_ops[0].data[0], theta)
+        qp.assert_equal(decomp_ops[0], qp.MultiRZ(theta, wires=[0, 1]))
 
     @pytest.mark.parametrize("theta", [0.4, np.array([np.pi / 3, 0.1, -0.9])])
     def test_PauliRot_decomposition_XY(self, theta):
         """Test that the decomposition for a XY rotation is correct."""
 
         op = qp.PauliRot(theta, "XY", wires=[0, 1])
-        decomp_ops = op.decomposition()
+        (cob,) = op.decomposition()
 
-        assert len(decomp_ops) == 5
+        assert [gate.name for gate in cob.compute_op.operands] == ["RX", "Hadamard"]
+        assert [gate.wires for gate in cob.compute_op.operands] == [Wires([1]), Wires([0])]
+        assert cob.compute_op.operands[0].data[0] == np.pi / 2
 
-        assert decomp_ops[0].name == "Hadamard"
-        assert decomp_ops[0].wires == Wires([0])
+        qp.assert_equal(cob.target_op, qp.MultiRZ(theta, wires=[0, 1]))
 
-        assert decomp_ops[1].name == "RX"
-        assert decomp_ops[1].wires == Wires([1])
-        assert decomp_ops[1].data[0] == np.pi / 2
-
-        assert decomp_ops[2].name == "MultiRZ"
-        assert decomp_ops[2].wires == Wires([0, 1])
-        assert np.allclose(decomp_ops[2].data[0], theta)
-
-        assert decomp_ops[3].name == "Hadamard"
-        assert decomp_ops[3].wires == Wires([0])
-
-        assert decomp_ops[4].name == "RX"
-        assert decomp_ops[4].wires == Wires([1])
-        assert decomp_ops[4].data[0] == -np.pi / 2
+        assert [gate.name for gate in cob.uncompute_op.operands] == ["RX", "Hadamard"]
+        assert [gate.wires for gate in cob.uncompute_op.operands] == [Wires([1]), Wires([0])]
+        assert cob.uncompute_op.operands[0].data[0] == -np.pi / 2
 
     @pytest.mark.parametrize("theta", [0.4, np.array([np.pi / 3, 0.1, -0.9])])
     def test_PauliRot_decomposition_XIYZ(self, theta):
         """Test that the decomposition for a XIYZ rotation is correct."""
 
         op = qp.PauliRot(theta, "XIYZ", wires=[0, 1, 2, 3])
-        decomp_ops = op.decomposition()
+        (cob,) = op.decomposition()
 
-        assert len(decomp_ops) == 5
+        assert [gate.name for gate in cob.compute_op.operands] == ["RX", "Hadamard"]
+        assert [gate.wires for gate in cob.compute_op.operands] == [Wires([2]), Wires([0])]
+        assert cob.compute_op.operands[0].data[0] == np.pi / 2
 
-        assert decomp_ops[0].name == "Hadamard"
-        assert decomp_ops[0].wires == Wires([0])
+        qp.assert_equal(cob.target_op, qp.MultiRZ(theta, wires=[0, 2, 3]))
 
-        assert decomp_ops[1].name == "RX"
+        assert [gate.name for gate in cob.uncompute_op.operands] == ["RX", "Hadamard"]
+        assert [gate.wires for gate in cob.uncompute_op.operands] == [Wires([2]), Wires([0])]
+        assert cob.uncompute_op.operands[0].data[0] == -np.pi / 2
 
-        assert decomp_ops[1].wires == Wires([2])
-        assert decomp_ops[1].data[0] == np.pi / 2
+    def test_PauliRot_single_basis_gate_is_unwrapped(self):
+        """Test that a single basis gate is not wrapped in a product."""
+        theta = 0.4
+        (cob,) = qp.PauliRot(theta, "X", wires=0).decomposition()
 
-        assert decomp_ops[2].name == "MultiRZ"
-        assert decomp_ops[2].wires == Wires([0, 2, 3])
-        assert np.allclose(decomp_ops[2].data[0], theta)
-
-        assert decomp_ops[3].name == "Hadamard"
-        assert decomp_ops[3].wires == Wires([0])
-
-        assert decomp_ops[4].name == "RX"
-
-        assert decomp_ops[4].wires == Wires([2])
-        assert decomp_ops[4].data[0] == -np.pi / 2
+        qp.assert_equal(cob.compute_op, qp.Hadamard(0))
+        qp.assert_equal(cob.target_op, qp.MultiRZ(theta, wires=[0]))
+        qp.assert_equal(cob.uncompute_op, qp.Hadamard(0))
 
     @pytest.mark.parametrize("angle", npp.linspace(0, 2 * np.pi, 7, requires_grad=True))
     @pytest.mark.parametrize("pauli_word", ["XX", "YY", "ZZ"])
@@ -3355,47 +3463,52 @@ class TestMultiRZ:
         assert np.allclose(res_static, expected, atol=tol, rtol=0)
         assert np.allclose(res_dynamic, expected, atol=tol, rtol=0)
 
+    def test_MultiRZ_decomposition_one_wire(self):
+        """Test that a one-wire MultiRZ directly decomposes to RZ."""
+        theta = 0.4
+        (decomp_op,) = qp.MultiRZ(theta, wires=0).decomposition()
+
+        qp.assert_equal(decomp_op, qp.RZ(theta, wires=0))
+
     @pytest.mark.parametrize("theta", [0.4, np.array([np.pi / 3, 0.1, -0.9])])
     def test_MultiRZ_decomposition_ZZ(self, theta):
         """Test that the decomposition for a ZZ rotation is correct."""
 
         op = qp.MultiRZ(theta, wires=[0, 1])
-        decomp_ops = op.decomposition()
+        # MultiRZ decomposes into a single ChangeOpBasis conjugating an RZ with a CNOT ladder,
+        # which is what lets a control skip the ladder entirely.
+        (cob,) = op.decomposition()
 
-        assert decomp_ops[0].name == "CNOT"
-        assert decomp_ops[0].wires == Wires([1, 0])
+        assert cob.compute_op.name == "CNOT"
+        assert cob.compute_op.wires == Wires([1, 0])
 
-        assert decomp_ops[1].name == "RZ"
+        assert cob.target_op.name == "RZ"
+        assert cob.target_op.wires == Wires([0])
+        assert np.allclose(cob.target_op.data[0], theta)
 
-        assert decomp_ops[1].wires == Wires([0])
-        assert np.allclose(decomp_ops[1].data[0], theta)
-
-        assert decomp_ops[2].name == "CNOT"
-        assert decomp_ops[2].wires == Wires([1, 0])
+        qp.assert_equal(cob.uncompute_op, qp.CNOT(wires=[1, 0]))
 
     @pytest.mark.parametrize("theta", [0.4, np.array([np.pi / 3, 0.1, -0.9])])
     def test_MultiRZ_decomposition_ZZZ(self, theta):
         """Test that the decomposition for a ZZZ rotation is correct."""
 
         op = qp.MultiRZ(theta, wires=[0, 2, 3])
-        decomp_ops = op.decomposition()
+        # MultiRZ decomposes into a single ChangeOpBasis conjugating an RZ with a CNOT ladder,
+        # which is what lets a control skip the ladder entirely.
+        (cob,) = op.decomposition()
 
-        assert decomp_ops[0].name == "CNOT"
-        assert decomp_ops[0].wires == Wires([3, 2])
+        # the ladder is applied outermost-first, so its operands are in reverse circuit order
+        ladder = cob.compute_op.operands
+        assert [gate.name for gate in ladder] == ["CNOT", "CNOT"]
+        assert [gate.wires for gate in ladder] == [Wires([2, 0]), Wires([3, 2])]
 
-        assert decomp_ops[1].name == "CNOT"
-        assert decomp_ops[1].wires == Wires([2, 0])
+        assert cob.target_op.name == "RZ"
+        assert cob.target_op.wires == Wires([0])
+        assert np.allclose(cob.target_op.data[0], theta)
 
-        assert decomp_ops[2].name == "RZ"
-
-        assert decomp_ops[2].wires == Wires([0])
-        assert np.allclose(decomp_ops[2].data[0], theta)
-
-        assert decomp_ops[3].name == "CNOT"
-        assert decomp_ops[3].wires == Wires([2, 0])
-
-        assert decomp_ops[4].name == "CNOT"
-        assert decomp_ops[4].wires == Wires([3, 2])
+        unladder = cob.uncompute_op.operands
+        assert [gate.name for gate in unladder] == ["CNOT", "CNOT"]
+        assert [gate.wires for gate in unladder] == [Wires([3, 2]), Wires([2, 0])]
 
     @pytest.mark.jax
     def test_MultiRZ_assert_valid(self):

@@ -228,7 +228,13 @@ class TestCliffordCompile:
 
     @pytest.mark.catalyst
     @pytest.mark.jax
-    @pytest.mark.parametrize("circuit", [circuit_1, circuit_10])
+    @pytest.mark.parametrize(
+        "circuit",
+        [
+            circuit_1,
+            circuit_10,
+        ],
+    )
     def test_decomposition_with_rs_qjit_repeated_decomp(self, circuit):
         """Test decomposition for multiple Clifford transforms with Ross-Selinger method with QJIT enabled with repeated parameters."""
 

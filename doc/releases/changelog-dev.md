@@ -446,6 +446,16 @@
   [(#10059)](https://github.com/PennyLaneAI/pennylane/pull/10059)
   [(#10059)](https://github.com/PennyLaneAI/pennylane/pull/10015)
 
+* Controlled rotations now decompose with fewer gates: :class:`~.IsingXX`, :class:`~.IsingYY`,
+  :class:`~.IsingXY`, :class:`~.MultiRZ`, :class:`~.PauliRot` and
+  :class:`~.SingleExcitation` use :func:`~.change_op_basis`, which also lowers the cost of
+  higher-level operations such as :class:`~.DoubleExcitation`, :class:`~.OrbitalRotation` and
+  :class:`~.FermionicSWAP`. Their :meth:`~.Operator.decomposition` now returns a single
+  :class:`~.ChangeOpBasis` instead of a flat gate list, including for :class:`~.PauliRot`. For
+  Clifford-and-rotation targets, ``C²(MultiRZ)`` on six wires drops from weighted cost 892 to 44,
+  while ``C²(OrbitalRotation)`` drops from 1972 to 876.
+  [(#10118)](https://github.com/PennyLaneAI/pennylane/pull/10118)
+
 * Coprocessor connection addresses are grouped on :class:`~pennylane.Endpoint` as ``endpoint=qp.Endpoint(host, port)``, replacing the separate ``comm_host`` and ``oob_port`` fields.
   [(#10017)](https://github.com/PennyLaneAI/pennylane/pull/10017)
 

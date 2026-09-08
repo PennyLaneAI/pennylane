@@ -351,7 +351,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     "CHOSEN" among those that were considered.
 
     >>> inspector.inspect_decomps(qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=[3, 4, 5]), num_work_wires=2)
-    CHOSEN: Decomposition 0 (name: ctrl_single_work_wire)
+    Decomposition 0 (name: ctrl_single_work_wire)
     0: ──────────╭MultiRZ(0.50)───────┤
     1: ──────────├MultiRZ(0.50)───────┤
     3: ───────╭●─│──────────────╭●────┤
@@ -361,19 +361,19 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     Estimated First-Level Expansion Gates: {Controlled(MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(2)), control_wires=AbstractWires(1), control_values=AbstractArray((1,), bool)): 1, MultiControlledX(wires=AbstractWires(4), control_values=AbstractArray((3,), bool)): 2, PauliX: 3}
     Actual First-Level Expansion Gates: {Controlled(MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(2)), control_wires=AbstractWires(1), control_values=AbstractArray((1,), bool)): 1, MultiControlledX(wires=AbstractWires(4), control_values=AbstractArray((3,), bool)): 2}
     Wire Allocations: {'zero': 1}
-    Full Expansion Gates: {CNOT: 34, GlobalPhase: 68, MidMeasure: 2, RX: 12, RY: 18, RZ: 58}
-    Weighted Cost: 124.0
+    Full Expansion Gates: {CNOT: 24, GlobalPhase: 51, MidMeasure: 2, RX: 13, RY: 14, RZ: 40}
+    Weighted Cost: 93.0
     <BLANKLINE>
-    Decomposition 1 (name: controlled(_multi_rz_decomposition))
-    0: ─╭X─╭RZ(0.50)─╭X─┤
-    1: ─├●─│─────────├●─┤
-    3: ─├●─├●────────├●─┤
-    4: ─├●─├●────────├●─┤
-    5: ─╰●─╰●────────╰●─┤
-    Estimated First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool)): 2, PauliX: 3}
-    Actual First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool)): 2}
-    Full Expansion Gates: {CNOT: 72, GlobalPhase: 90, MidMeasure: 4, RX: 30, RY: 24, RZ: 80}
-    Weighted Cost: 210.0
+    CHOSEN: Decomposition 1 (name: controlled(_multi_rz_decomposition))
+    0: ─╭(X)@RZ(0.50)@(X)─┤
+    1: ─├(X)@RZ(0.50)@(X)─┤
+    3: ─├●────────────────┤
+    4: ─├●────────────────┤
+    5: ─╰●────────────────┤
+    Estimated First-Level Expansion Gates: {Controlled((CNOT) @ RZ @ (CNOT), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, PauliX: 3}
+    Actual First-Level Expansion Gates: {Controlled((CNOT) @ RZ @ (CNOT), control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1}
+    Full Expansion Gates: {CNOT: 46, GlobalPhase: 19, RX: 17, RZ: 22}
+    Weighted Cost: 85.0
 
     For applicable decompositions, the "First-Level Expansion" label refers to the operators immediately produced by the decomposition rule,
     whereas the "Full Expansion" refers to the circuit produced by decomposing the operator all the way
@@ -387,13 +387,13 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
 
     >>> inspector.inspect_decomps(qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=2), num_work_wires=1)
     CHOSEN: Decomposition 0 (name: controlled(_multi_rz_decomposition))
-    0: ─╭X─╭RZ(0.50)─╭X─┤
-    1: ─├●─│─────────├●─┤
-    2: ─╰●─╰●────────╰●─┤
-    Estimated First-Level Expansion Gates: {CRZ: 1, PauliX: 1, Toffoli: 2}
-    Actual First-Level Expansion Gates: {CRZ: 1, Toffoli: 2}
-    Full Expansion Gates: {CNOT: 14, GlobalPhase: 19, RX: 1, RY: 4, RZ: 20}
-    Weighted Cost: 39.0
+    0: ─╭(X)@RZ(0.50)@(X)─┤
+    1: ─├(X)@RZ(0.50)@(X)─┤
+    2: ─╰●────────────────┤
+    Estimated First-Level Expansion Gates: {Controlled((CNOT) @ RZ @ (CNOT), control_wires=AbstractWires(1), control_values=AbstractArray((1,), bool)): 1, PauliX: 1}
+    Actual First-Level Expansion Gates: {Controlled((CNOT) @ RZ @ (CNOT), control_wires=AbstractWires(1), control_values=AbstractArray((1,), bool)): 1}
+    Full Expansion Gates: {CNOT: 4, GlobalPhase: 2, RX: 2, RZ: 2}
+    Weighted Cost: 8.0
 
     This can be useful to find out why a circuit cannot be decomposed:
 
@@ -411,14 +411,15 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
 
     >>> inspector.inspect_decomps(qp.PauliRot(0.5, "XYZ", [0, 1, 2]))
     Decomposition 0 (name: _pauli_rot_decomposition)
-    0: ──H────────╭MultiRZ(0.50)──H─────────┤
-    1: ──RX(1.57)─├MultiRZ(0.50)──RX(-1.57)─┤
-    2: ───────────╰MultiRZ(0.50)────────────┤
-    First-Level Expansion Gates: {Hadamard: 2, MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)): 1, RX: 2}
-    Missing Ops: {Hadamard}
+    0: ─╭(RX(-1.57)@H)@MultiRZ(0.50)@(RX(1.57)@H)─┤
+    1: ─├(RX(-1.57)@H)@MultiRZ(0.50)@(RX(1.57)@H)─┤
+    2: ─╰(RX(-1.57)@H)@MultiRZ(0.50)@(RX(1.57)@H)─┤
+    First-Level Expansion Gates: {(RX @ Hadamard) @ MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)) @ (RX @ Hadamard): 1}
+    Missing Ops: {(RX @ Hadamard) @ MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)) @ (RX @ Hadamard)}
 
     The message suggests that the ``PauliRot`` could not be decomposed because the graph was unable
-    to find a decomposition for ``Hadamard``. We can investigate further:
+    to find a decomposition for the change-of-basis operator, which contains ``Hadamard``. We can
+    investigate further:
 
     >>> inspector.inspect_decomps(qp.Hadamard(0))
     Decomposition 0 (name: _hadamard_ppm)
@@ -474,7 +475,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
 
         >>> op = qp.ctrl(qp.MultiRZ(0.5, [0, 1]), control=[3, 4, 5, 6])
         >>> inspector.inspect_decomps(op, num_work_wires=2)
-        CHOSEN: Decomposition 0 (name: ctrl_single_work_wire)
+        Decomposition 0 (name: ctrl_single_work_wire)
         0: ──────────╭MultiRZ(0.50)───────┤
         1: ──────────├MultiRZ(0.50)───────┤
         3: ───────╭●─│──────────────╭●────┤
@@ -485,20 +486,20 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         Estimated First-Level Expansion Gates: {Controlled(MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(2)), control_wires=AbstractWires(1), control_values=AbstractArray((1,), bool)): 1, MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool)): 2, PauliX: 4}
         Actual First-Level Expansion Gates: {Controlled(MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(2)), control_wires=AbstractWires(1), control_values=AbstractArray((1,), bool)): 1, MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool)): 2}
         Wire Allocations: {'zero': 1}
-        Full Expansion Gates: {CNOT: 58, GlobalPhase: 117, MidMeasure: 2, RX: 25, RY: 26, RZ: 94}
-        Weighted Cost: 205.0
+        Full Expansion Gates: {CNOT: 48, GlobalPhase: 100, MidMeasure: 2, RX: 26, RY: 22, RZ: 76}
+        Weighted Cost: 174.0
         <BLANKLINE>
-        Decomposition 1 (name: controlled(_multi_rz_decomposition))
-        0: ─╭X─╭RZ(0.50)─╭X─┤
-        1: ─├●─│─────────├●─┤
-        3: ─├●─├●────────├●─┤
-        4: ─├●─├●────────├●─┤
-        5: ─├●─├●────────├●─┤
-        6: ─╰●─╰●────────╰●─┤
-        Estimated First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(4), control_values=AbstractArray((4,), bool)): 1, MultiControlledX(wires=AbstractWires(6), control_values=AbstractArray((5,), bool)): 2, PauliX: 4}
-        Actual First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(4), control_values=AbstractArray((4,), bool)): 1, MultiControlledX(wires=AbstractWires(6), control_values=AbstractArray((5,), bool)): 2}
-        Full Expansion Gates: {CNOT: 96, GlobalPhase: 218, MidMeasure: 6, RX: 50, RY: 54, RZ: 170}
-        Weighted Cost: 376.0
+        CHOSEN: Decomposition 1 (name: controlled(_multi_rz_decomposition))
+        0: ─╭(X)@RZ(0.50)@(X)─┤
+        1: ─├(X)@RZ(0.50)@(X)─┤
+        3: ─├●────────────────┤
+        4: ─├●────────────────┤
+        5: ─├●────────────────┤
+        6: ─╰●────────────────┤
+        Estimated First-Level Expansion Gates: {Controlled((CNOT) @ RZ @ (CNOT), control_wires=AbstractWires(4), control_values=AbstractArray((4,), bool)): 1, PauliX: 4}
+        Actual First-Level Expansion Gates: {Controlled((CNOT) @ RZ @ (CNOT), control_wires=AbstractWires(4), control_values=AbstractArray((4,), bool)): 1}
+        Full Expansion Gates: {CNOT: 30, GlobalPhase: 86, MidMeasure: 4, RX: 28, RY: 24, RZ: 60}
+        Weighted Cost: 146.0
 
         Similarly, for the ``MultiControlledX`` in the circuit:
 
@@ -515,7 +516,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
          [ 5.34910791e-34+0.j          9.23879533e-01-0.38268343j]]
         Estimated First-Level Expansion Gates: {Adjoint(QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1))): 2, Controlled(GlobalPhase, control_wires=AbstractWires(4), control_values=AbstractArray((4,), bool)): 1, Hadamard: 2, MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool)): 4, PauliX: 4, QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1)): 2}
         Actual First-Level Expansion Gates: {Adjoint(QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1))): 2, Controlled(GlobalPhase, control_wires=AbstractWires(4), control_values=AbstractArray((4,), bool)): 1, Hadamard: 2, MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool)): 4, QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1)): 2}
-        Full Expansion Gates: {CNOT: 58, GlobalPhase: 66, RX: 27, RY: 12, RZ: 55}
+        Full Expansion Gates: {CNOT: 58, GlobalPhase: 70, RX: 19, RY: 14, RZ: 61}
         Weighted Cost: 152.0
         <BLANKLINE>
         Decomposition 1 (name: one_borrowed_worker)
@@ -619,7 +620,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
          [ 5.34910791e-34+0.j          9.23879533e-01-0.38268343j]]
         Estimated First-Level Expansion Gates: {Adjoint(QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1))): 2, Controlled(GlobalPhase, control_wires=AbstractWires(4), control_values=AbstractArray((4,), bool)): 1, Hadamard: 2, MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool)): 4, PauliX: 4, QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1)): 2}
         Actual First-Level Expansion Gates: {Adjoint(QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1))): 2, Controlled(GlobalPhase, control_wires=AbstractWires(4), control_values=AbstractArray((4,), bool)): 1, Hadamard: 2, MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool)): 4, QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1)): 2}
-        Full Expansion Gates: {CNOT: 58, GlobalPhase: 66, RX: 27, RY: 12, RZ: 55}
+        Full Expansion Gates: {CNOT: 58, GlobalPhase: 70, RX: 19, RY: 14, RZ: 61}
         Weighted Cost: 152.0
         <BLANKLINE>
         Decomposition 1 (name: one_borrowed_worker)
