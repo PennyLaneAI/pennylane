@@ -44,17 +44,19 @@ def uniform_prep_ops(n_states, target_wires, work_wires):
 
     **Example**
 
-    >>> import numpy as np
-    >>> import pennylane as qp
-    >>> from pennylane.labs.templates import uniform_prep_ops
+    .. code-block:: python
 
-    >>> @qp.qnode(qp.device("default.qubit", wires=6))
-    >>> def circuit():
-    >>>     uniform_prep_ops(n_states=5, target_wires=range(3), work_wires=range(3, 6))
-    >>>     return qp.probs(wires=range(3))
+        import numpy as np
+        import pennylane as qp
+        from pennylane.labs.templates import uniform_prep_ops
+
+        @qp.qnode(qp.device("default.qubit", wires=6))
+        def circuit():
+            uniform_prep_ops(n_states=5, target_wires=range(3), work_wires=range(3, 6))
+            return qp.probs(wires=range(3))
 
     >>> print(np.round(circuit(), 3))
-    [0.2 0.2 0.2 0.2 0.2 0.   0.   0.  ]
+    [0.2 0.2 0.2 0.2 0.2 0.  0.  0. ]
 
     """
     if n_states < 1:
