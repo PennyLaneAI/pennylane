@@ -98,7 +98,7 @@ def test_basic_validity():
     op1 = qp.PauliZ(0)
     op2 = qp.Rot(1.2, 2.3, 3.4, wires=0)
     op3 = qp.IsingZZ(4.32, wires=(1, 2))
-    op = qp.prod(op1, op2, op3)
+    op = Prod(op1, op2, op3)
     qp.ops.functions.assert_valid(op)
 
 
