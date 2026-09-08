@@ -31,6 +31,7 @@ from pennylane.core.queuing import apply
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.decomposition.utils import to_name
 from pennylane.exceptions import SparseMatrixUndefinedError
+from pennylane.ops.op_math.controlled2 import flip_zero_control
 from pennylane.typing import TensorLike, Wire
 from pennylane.wires import Wires
 
@@ -402,8 +403,8 @@ def _controlled_prod2_with_one_work_wire(base, control_wires, control_values, wo
 add_decomps(Prod2, _prod2_decomp)
 add_decomps(
     "C(Prod2)",
-    _controlled_prod2_with_work_wires,
-    _controlled_prod2_with_one_work_wire,
+    flip_zero_control(_controlled_prod2_with_work_wires),
+    flip_zero_control(_controlled_prod2_with_one_work_wire),
 )
 
 
