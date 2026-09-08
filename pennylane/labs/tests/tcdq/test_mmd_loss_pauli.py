@@ -24,8 +24,8 @@ from pennylane.labs.tcdq.mmd_loss_pauli import (
     MMDConfig,
     _binary_ops_to_pauli_int,
     _compute_single_mmd,
-    median_heuristic,
     build_mmd_loss_pauli,
+    median_heuristic,
 )
 
 jax = pytest.importorskip("jax")
@@ -508,7 +508,7 @@ class TestMMDLossStatistical:
 
             idx = jax.random.choice(sample_key, n_data, shape=(batch,), replace=False)
             expval_fn = build_expval_func(config)
-            loss_fn = build_mmd_loss_pauli(expval_fn, n_qubits, mmd_cfg, inject_key=True)
+            loss_fn = build_mmd_loss_pauli(expval_fn, n_qubits, mmd_cfg)
 
             return loss_fn(params_jnp, X_jnp[idx], key=loss_key)
 

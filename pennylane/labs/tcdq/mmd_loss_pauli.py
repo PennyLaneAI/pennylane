@@ -232,7 +232,6 @@ def build_mmd_loss_pauli(
     expval_fn: Callable,
     n_qubits: int,
     mmd_config: MMDConfig,
-    inject_key: bool = True,
 ) -> Callable:
     r"""Build a reusable loss function that computes the qubit Pauli-kernel MMD.
 
@@ -243,10 +242,9 @@ def build_mmd_loss_pauli(
 
     .. code-block:: python
 
-        expval_fn(params, observables=..., key=..., **expval_kwargs)
+        expval_fn(params, observables=..., **expval_kwargs)
 
-    where the ``key`` argument is omitted when ``inject_key=False``, and
-    ``observables`` is an integer array of shape ``(n_ops, n_qubits)`` of
+    where ``observables`` is an integer array of shape ``(n_ops, n_qubits)`` of
     Pauli codes (``0=I``, ``1=X``, ``2=Y``, ``3=Z``), of which only ``I`` and
     ``Z`` are generated. It must return ``expvals`` of shape ``(n_ops,)``, or
     ``(expvals, variances)`` where ``variances[i]`` is the variance of the
@@ -260,13 +258,6 @@ def build_mmd_loss_pauli(
         mmd_config (MMDConfig): Hyperparameters for the MMD computation,
             including the RBF bandwidth and number of observables. See
             :class:`MMDConfig`.
-        inject_key (bool): If ``True`` (default), pass a freshly split ``key``
-            to ``expval_fn`` on every bandwidth. If ``False``, do not pass
-            ``key`` at all, leaving the model to source its own randomness, for
-            example via ``functools.partial(expval_fn, key=my_key)`` or a key
-            stored on the model. Note that ``inject_key=False`` reuses the same
-            model randomness for every bandwidth and every call, which gives
-            repeatable estimates but correlates them.
 
     Returns:
         Callable: A function with signature
@@ -362,8 +353,7 @@ def build_mmd_loss_pauli(
             **expval_kwargs: Extra keyword arguments forwarded to ``expval_fn``,
                 for example ``n_samples=4000``. Hashable values are forwarded as
                 compile-time constants; unhashable ones, notably arrays, are
-                traced. ``observables`` is reserved, and ``key`` is controlled by
-                ``inject_key`` rather than passed here.
+                traced. ``observables`` is reserved.
 
         Returns:
             Either a scalar mean across bandwidths or a list of per-bandwidth
@@ -420,7 +410,6 @@ def build_mmd_loss_pauli(
                 sqrt_loss=mmd_config.sqrt_loss,
                 expval_fn=expval_fn,
                 static_kwargs=static_kwargs,
-                inject_key=inject_key,
             )
             losses.append(loss_val)
 
