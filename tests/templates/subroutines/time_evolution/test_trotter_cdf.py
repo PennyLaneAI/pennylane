@@ -39,7 +39,9 @@ from pennylane.numeric_hamiltonians import CDFHamiltonian
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.time_evolution.trotter_cdf import (
     _apply_system_basis_rotation,
+    _cdf_resource_counts,
     _merge_leaves,
+    _trotter_cdf_decomposition,
 )
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
@@ -109,6 +111,47 @@ def cdf_reference_hamiltonian_leaves(ham):
                 Dl += (Z[frag][i // 2, j // 2] / 4) * (z_ops[i] @ z_ops[j])
         H += Bl.conj().T @ Dl @ Bl
     return H
+
+
+def cdf_second_order_trotter_matrix(ham, evolution_time, num_steps):
+    """Build the unmerged second-order Trotter product from independently assembled fragments."""
+    Z = np.asarray(ham.core_tensors, dtype=float)
+    U = np.asarray(ham.leaf_tensors, dtype=float)
+    num_orbitals = Z.shape[-1]
+    n_wires = 2 * num_orbitals
+    dim = 2**n_wires
+    z_ops = [_single_z(w, n_wires) for w in range(n_wires)]
+
+    fragments = []
+    B0 = _basis_rotation_matrix(U[0], n_wires)
+    D0 = sum((-Z[0][wire // 2, wire // 2] / 2) * z_ops[wire] for wire in range(n_wires))
+    fragments.append(B0.conj().T @ D0 @ B0)
+
+    for frag in range(1, Z.shape[0]):
+        Bl = _basis_rotation_matrix(U[frag], n_wires)
+        Dl = sum(
+            (Z[frag][i // 2, j // 2] / 4) * (z_ops[i] @ z_ops[j])
+            for i in range(n_wires)
+            for j in range(i + 1, n_wires)
+        )
+        fragments.append(Bl.conj().T @ Dl @ Bl)
+
+    dt = evolution_time / num_steps
+    step = np.eye(dim, dtype=complex)
+    for generator, duration in [
+        *((fragment, dt / 2) for fragment in fragments[1:]),
+        (fragments[0], dt),
+        *((fragment, dt / 2) for fragment in reversed(fragments[1:])),
+    ]:
+        step = expm(-1j * generator * duration) @ step
+
+    from pennylane.templates.subroutines.time_evolution.trotter_cdf import (  # pylint: disable=import-outside-toplevel
+        _energy_shift,
+    )
+
+    return np.exp(-1j * _energy_shift(ham) * evolution_time) * np.linalg.matrix_power(
+        step, num_steps
+    )
 
 
 def toy_hamiltonian_cdf_generator(seed, abstract=False):
@@ -280,6 +323,38 @@ class TestResourceRule:
         op = qp.TrotterCDF(1.0, 0, ham, wires=wires)
         assert qp.ctrl(op, control=[99]).decomposition() == []
 
+    @pytest.mark.parametrize("num_steps", [1, 4])
+    @pytest.mark.parametrize("num_fragments", [1, 3])
+    @pytest.mark.parametrize(
+        ("has_control", "double_phase"), [(False, False), (True, False), (True, True)]
+    )
+    def test_merged_resource_counts(self, num_steps, num_fragments, has_control, double_phase):
+        """Test analytic resource counts after merging internal H1 half blocks."""
+        num_orbitals = 2
+        core = np.zeros((num_fragments + 1, num_orbitals, num_orbitals))
+        leaf = np.stack([np.eye(num_orbitals)] * (num_fragments + 1))
+        ham = CDFHamiltonian(core_tensors=core, leaf_tensors=leaf, nuc_constant=0.0)
+
+        resources = _cdf_resource_counts(num_steps, ham, has_control, double_phase)
+        blocks = (2 * num_fragments - 1) * num_steps + 1
+        basis_rotations = 2 * (2 * num_fragments * num_steps + 2)
+        two_body_rotations = blocks * num_orbitals * (2 * num_orbitals - 1)
+        one_body_rotations = num_steps * 2 * num_orbitals
+        cnot_count = blocks * 2 * (2 * num_orbitals - 1) if double_phase else 0
+
+        basis_count = sum(
+            count for op, count in resources.items() if getattr(op, "name", None) == "BasisRotation"
+        )
+        assert basis_count == basis_rotations
+        assert sum(resources.values()) == (
+            basis_rotations + two_body_rotations + one_body_rotations + cnot_count + 1
+        )
+        if not has_control:
+            assert resources[qp.IsingZZ] == two_body_rotations
+        elif double_phase:
+            assert resources[qp.IsingZZ] == two_body_rotations + one_body_rotations
+            assert resources[qp.CNOT] == cnot_count
+
 
 class TestDecomposition:
     """Tests of the registered base decomposition rule."""
@@ -303,6 +378,62 @@ class TestDecomposition:
         u = qp.matrix(qp.TrotterCDF(t, steps, ham, wires=sys_wires), wire_order=sys_wires)
         expected = expm(-1j * cdf_reference_hamiltonian(ham) * t)
         assert np.allclose(u, expected, atol=1e-9)
+
+    @pytest.mark.parametrize("num_fragments", [1, 3])
+    def test_endpoint_block_angles_and_counts(self, num_fragments):
+        """Only the first and last H1 blocks are half duration; internal H1 blocks are full."""
+        num_orbitals, evolution_time, num_steps = 2, 1.2, 4
+        core = np.zeros((num_fragments + 1, num_orbitals, num_orbitals))
+        core[1] = 1.0
+        core[2:] = 13.0
+        leaf = np.stack([np.eye(num_orbitals)] * (num_fragments + 1))
+        ham = CDFHamiltonian(core_tensors=core, leaf_tensors=leaf, nuc_constant=0.0)
+        wires = list(range(2 * num_orbitals))
+
+        tape = qp.tape.make_qscript(_trotter_cdf_decomposition)(
+            evolution_time, num_steps, ham, wires, False
+        )
+        angles = np.array([op.data[0] for op in tape.operations if isinstance(op, qp.IsingZZ)])
+        pairs_per_block = num_orbitals * (2 * num_orbitals - 1)
+        half_angle = evolution_time / (4 * num_steps)
+        full_angle = 2 * half_angle
+
+        assert np.count_nonzero(np.isclose(angles, half_angle)) == 2 * pairs_per_block
+        assert np.count_nonzero(np.isclose(angles, full_angle)) == (num_steps - 1) * pairs_per_block
+        assert len(angles) == ((2 * num_fragments - 1) * num_steps + 1) * pairs_per_block
+
+    @pytest.mark.parametrize("num_fragments", [1, 2])
+    @pytest.mark.parametrize("num_steps", [1, 3])
+    def test_matches_independent_second_order_trotter_product(self, seed, num_fragments, num_steps):
+        """Test that merging boundary blocks preserves the full matrix, including global phase."""
+        rng = np.random.default_rng(seed)
+        num_orbitals = 2
+        core = rng.normal(size=(num_fragments + 1, num_orbitals, num_orbitals)) * 0.4
+        core = 0.5 * (core + np.transpose(core, (0, 2, 1)))
+        leaf = np.stack([random_orthogonal(num_orbitals, rng) for _ in range(num_fragments + 1)])
+        ham = CDFHamiltonian(core_tensors=core, leaf_tensors=leaf, nuc_constant=0.37)
+        wires = list(range(2 * num_orbitals))
+        evolution_time = 0.7
+
+        actual = qp.matrix(
+            qp.TrotterCDF(evolution_time, num_steps, ham, wires=wires), wire_order=wires
+        )
+        expected = cdf_second_order_trotter_matrix(ham, evolution_time, num_steps)
+        assert np.allclose(actual, expected, atol=1e-10)
+
+    @pytest.mark.capture
+    def test_capture_ir_size_independent_of_num_steps(self, toy_hamiltonian_cdf_concrete):
+        """The captured loop structure does not grow with the number of Trotter steps."""
+        ham, num_orbitals = toy_hamiltonian_cdf_concrete
+        wires = list(range(2 * num_orbitals))
+
+        def captured_jaxpr(num_steps):
+            def circuit(t):
+                _trotter_cdf_decomposition(t, num_steps, ham, wires, False)
+
+            return jax.make_jaxpr(circuit)(jax.numpy.array(0.4)).jaxpr
+
+        assert len(captured_jaxpr(2).eqns) == len(captured_jaxpr(20).eqns)
 
     @pytest.mark.slow
     def test_base_matches_expm_nonidentity_leaves(self, seed):
