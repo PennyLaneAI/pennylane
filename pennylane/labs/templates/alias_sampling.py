@@ -33,9 +33,29 @@ def uniform_prep_ops(n_states, target_wires, work_wires):
     Figure 12 of `arXiv:1805.03662 <https://arxiv.org/abs/1805.03662>`_.
 
     Args:
-        n_states (int): the number of states to prepare.
-        target_wires (Sequence[int]): wires on which to prepare the superposition.
-        work_wires (Sequence[int]): auxiliary qubits, returned to zero.
+        n_states (int): the number of basis states to prepare
+        target_wires (Sequence[int]): wires on which to prepare the superposition
+        work_wires (Sequence[int]): auxiliary qubits, returned to zero
+
+    Raises:
+        ValueError: if ``n_states`` is less than 1
+        ValueError: if the number of provided target_wires is incorrect
+        ValueError: if the number of provided work_wires is incorrect
+
+    **Example**
+
+    >>> import numpy as np
+    >>> import pennylane as qp
+    >>> from pennylane.labs.templates import uniform_prep_ops
+
+    >>> @qp.qnode(qp.device("default.qubit", wires=6))
+    >>> def circuit():
+    >>>     uniform_prep_ops(n_states=5, target_wires=range(3), work_wires=range(3, 6))
+    >>>     return qp.probs(wires=range(3))
+
+    >>> print(np.round(circuit(), 3))
+    [0.2 0.2 0.2 0.2 0.2 0.   0.   0.  ]
+
     """
     if n_states < 1:
         raise ValueError("n_states must be at least 1")
@@ -158,16 +178,16 @@ def alias_sampling_wires(n_states, mu):
     entangled with it, and ``work_wires`` are returned to :math:`|0\rangle` and can be reused.
 
     Args:
-        n_states (int): the number of coefficients of the state to be prepared.
-        mu (int): number of bits of precision used for the ``keep`` and ``sigma`` registers.
+        n_states (int): the number of coefficients :math:`L` of the state to be prepared
+        mu (int): number of bits of precision used for the ``keep`` and ``sigma`` registers
 
     Returns:
         dict: ``{"target_wires": n_target, "temp_wires": n_temp, "work_wires": n_work}``.
 
-        * ``target_wires`` (``ceil(log2 L)``): the output index register ``|l>``.
+        * ``target_wires`` (``ceil(log2 L)``): the output index register :math:`|\ell \rangle`
         * ``temp_wires`` (``3*mu + ceil(log2 L)``): sigma + alt + keep + flag +
           comparator scratch (``mu - 1`` wires that the comparator leaves dirty);
-          left entangled with ``|l>`` and uncomputed by :math:`prepare^{\dagger}`.
+          left entangled with :math:`|\ell \rangle` and uncomputed by :math:`prepare^{\dagger}`.
         * ``work_wires`` (``ceil(log2 L) - k``, where ``k`` is the number of trailing
           zero bits of ``L``): minimum clean scratch, returned to :math:`|0\rangle`. Only the odd part ``L / 2**k``
           needs amplitude amplification, so this is zero whenever ``L`` is a power
@@ -210,25 +230,27 @@ def alias_sampling(probs, mu, target_wires, temp_wires, work_wires):
         \sum_{\ell=0}^{L-1} \sqrt{\widetilde{\rho}_\ell}\; |\ell\rangle |\mathrm{temp}_\ell\rangle ,
 
     the :math:`\mu`-bit approximation of the target :math:`\sqrt{w_\ell / \lambda}`
-    on the index register ``target_wires``.
+    on the index register ``target_wires``, where :math:`\lambda = \sum_{\ell} w_\ell`
+    and :math:`\widetilde{\rho}_\ell` is the :math:`\mu`-bit approximation of :math:`w_\ell / \lambda`,
+    satisfying  :math:`|\widetilde{\rho}_\ell - w_\ell / \lambda| \le 2^{-\mu}`.
 
-    The gate sequence is: ``UNIFORM_L`` on ``wires``, ``H^mu`` on the sigma part of
+    The gate sequence is: ``UNIFORM_L`` on ``target_wires``, ``H^mu`` on the sigma part of
     ``temp_wires``, a ``QROM`` load of ``alt_l``/``keep_l``, the inequality test
-    ``keep_l <= sigma``, and a flag-controlled SWAP of ``wires`` with ``alt_l``.
+    ``keep_l <= sigma``, and a flag-controlled SWAP of ``target_wires`` with ``alt_l``.
 
     Use :func:`alias_sampling_wires` for the required register sizes.
 
     .. warning::
 
-        ``temp_wires`` come out entangled with ``|l>`` (the "temp" register of the
+        ``temp_wires`` come out entangled with :math:`|\ell\rangle` (the "temp" register of the
         paper) and are not returned to :math:`|0\rangle`. In a prepare/select/prepare
         pattern, ``qp.adjoint(alias_sampling)`` (``prepare``-dagger) uncomputes
         them. ``work_wires`` are returned to :math:`|0\rangle` and may be reused.
 
     Args:
-        probs (Sequence[float]): non-negative weights :math:`w_\ell` (length ``L``).
-        mu (int): number of bits for ``keep`` and ``sigma``, representing the precision of the alias-sampling coefficients.
-        target_wires (Sequence[int]): the output index register ``|l>``, size ``ceil(log2 L)``.
+        probs (Sequence[float]): non-negative weights :math:`w_\ell` (length ``L``)
+        mu (int): number of bits for ``keep`` and ``sigma``, representing the precision of the alias-sampling coefficients
+        target_wires (Sequence[int]): the output index register :math:`|\ell\rangle`, size ``ceil(log2 L)``
         temp_wires (Sequence[int]): the garbage register (sigma + alt + keep + flag +
             comparator scratch), left entangled; size ``3*mu + ceil(log2 L)``.
         work_wires (Sequence[int]): clean scratch, returned to :math:`|0\rangle`.
@@ -237,10 +259,14 @@ def alias_sampling(probs, mu, target_wires, temp_wires, work_wires):
 
     .. code-block:: python
 
+        import numpy as np
+        import pennylane as qp
+        from pennylane.labs.templates import alias_sampling_wires, alias_sampling
+
         probs = np.array([0.1, 0.2, 0.3, 0.4])
         mu = 4
 
-        req = qp.labs.templates.alias_sampling_wires(len(probs), mu)
+        req = alias_sampling_wires(len(probs), mu)
         n_wires = sum(req.values())
         target_wires, temp_wires, work_wires = np.split(
             np.arange(n_wires), np.cumsum([req["target_wires"], req["temp_wires"]])
@@ -248,7 +274,7 @@ def alias_sampling(probs, mu, target_wires, temp_wires, work_wires):
 
         @qp.qnode(qp.device("default.qubit", wires=n_wires))
         def circuit():
-            qp.labs.templates.alias_sampling(probs, mu, target_wires, temp_wires, work_wires)
+            alias_sampling(probs, mu, target_wires, temp_wires, work_wires)
             return qp.probs(wires=target_wires)
 
     >>> print(np.round(circuit(), 3))

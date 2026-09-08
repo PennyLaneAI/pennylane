@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Tests for the alias sampling uniform-state-preparation template.
-"""
+Tests for the coherent alias-sampling and uniform state preparation templates"""
 
 import numpy as np
 import pytest
@@ -26,7 +25,7 @@ from pennylane.labs.templates.alias_sampling import _build_alias_tables
 
 
 def _wire_layout(n_states):
-    """Return (target_wires, flag, work_wires, n_wires) for a given n_states."""
+    """Return (target_wires, work_wires, n_wires) for a given n_states."""
     k = (n_states & -n_states).bit_length() - 1
     L = n_states >> k
     logL = (L - 1).bit_length()
