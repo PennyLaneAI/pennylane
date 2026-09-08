@@ -42,11 +42,12 @@ def test_child_constructor_runs_when_concrete():
     assert op.wires == Wires(0)
 
 
-class FixedSigOp(Operator2):
+class FixedSigOp(Operator2):  # pylint: disable=too-few-public-methods
 
     dynamic_argnames = "x"
     arg_specs = {"x": Float, "wires": Wire[2]}
 
+    # pylint: disable=useless-parent-delegation
     def __init__(self, x, wires):
         super().__init__(x, wires)
 
