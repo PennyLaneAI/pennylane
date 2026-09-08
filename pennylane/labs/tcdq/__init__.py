@@ -320,7 +320,7 @@ __all__ = [
     "QuditMMDConfig",
     "build_expval_func",
     "build_qudit_expval_func",
-    "mmd_loss",
+    "mmd_loss_pauli",
     "build_qudit_mmd_loss",
     "median_heuristic",
     "BatchResult",
