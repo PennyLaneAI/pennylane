@@ -58,6 +58,13 @@ class OperatorMeta(ABCMeta):
         without_self = tuple(sig.parameters.values())[1:]
         return Signature(without_self)
 
+    def __pow__(cls, z):
+        if not isinstance(z, int):
+            return NotImplemented
+        if not getattr(cls, "has_fixed_sig", False):
+            return NotImplemented
+        return cls(**cls.arg_specs) ** z
+
     @_stop_autograph
     def __call__(cls, *args, **kwargs):
 

@@ -16,6 +16,7 @@ import numpy as np
 import pytest
 from operator2_utils import CompilableOp, DynOp, StaticOp
 
+import pennylane as qp
 from pennylane.core.operator import Operator2
 from pennylane.core.operator.operator2 import operator_p
 from pennylane.typing import AbstractArray, Complex, Float, Int, Wire
@@ -39,6 +40,31 @@ def test_child_constructor_runs_when_concrete():
     # __init__ is hit so phi is doubled
     assert op.phi == 4.0
     assert op.wires == Wires(0)
+
+
+class FixedSigOp(Operator2):
+
+    dynamic_argnames = "x"
+    arg_specs = {"x": Float, "wires": Wire[2]}
+
+    def __init__(self, x, wires):
+        super.__init__(x, wires)
+
+
+class TestTypeToPow:
+
+    def test_fixed_fix_pow(self):
+        """Test that a class with a fixed sig can be raised to a power."""
+        op = FixedSigOp**3
+        assert isinstance(op, qp.ops.Pow2)
+        assert op.z == 3
+        assert qp.assert_equal(op.base, FixedSigOp(Float, Wire[2]))
+
+    @pytest.mark.parametrize("z", (2.0, 2.5, "a"))
+    def test_non_integer_pow(self, z):
+        """Test non-integer powers are not supported."""
+        with pytest.raises(TypeError):
+            FixedSigOp**z
 
 
 @pytest.mark.capture
