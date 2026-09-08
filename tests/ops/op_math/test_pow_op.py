@@ -437,17 +437,19 @@ class TestProperties:
 
     @pytest.mark.parametrize("z", [0.5, 1.5, -0.5])
     def test_eigvals_fractional_power_negative_eigenvalue(self, z, power_method):
-        """Test that the pow method correctly calculates complex eigenvalues 
+        """Test that the pow method correctly calculates complex eigenvalues
         for various fractional powers of an operator."""
 
         base = qp.PauliZ(0)
-        op = power_method(base=base, z=z) 
-    
+        op = power_method(base=base, z=z)
+
         eigvals = op.eigvals()
-    
-        expected_eigvals = np.array([1.0**z, (-1.0 + 0j)**z])
-    
+
+        expected_eigvals = np.array([1.0**z, (-1.0 + 0j) ** z])
+
         assert np.allclose(eigvals, expected_eigvals)
+
+
 class TestSimplify:
     """Test Pow simplify method and depth property."""
 
@@ -1038,3 +1040,24 @@ class TestIntegration:
         assert np.allclose(res, expected)
         assert np.allclose(res_grad, expected_grad)
 
+
+# pylint: disable-next=too-few-public-methods
+class TestCapture:
+
+    @pytest.mark.jax
+    def test_pow_eigvals_is_jittable(self):
+        """Test that the eigvals method is jittable."""
+        import jax
+        import jax.numpy as jnp
+        import numpy as np
+
+        import pennylane as qp
+
+        @jax.jit
+        def f(x):
+            return jnp.array(qp.pow(qp.RX(x, 0), 2).eigvals())
+
+        x = 0.5
+        expected = np.array([np.cos(x) + np.sin(x) * 1j, np.cos(x) - np.sin(x) * 1j])
+
+        assert np.allclose(f(x), expected)

@@ -1,0 +1,19 @@
+---
+description: Local env and skip lint/format after changes
+alwaysApply: true
+---
+
+# Python environment
+
+On this machine, ignore the repo `AGENTS.md` Environment section that prefers `.venv`.
+
+Always use the conda env named `pennylane` at `/Users/marcus.edwards/miniforge3/envs/pennylane`.
+
+- Run tools via that env’s binaries, e.g. `/Users/marcus.edwards/miniforge3/envs/pennylane/bin/python`, `.../bin/pytest`
+- Or `conda run -n pennylane <cmd>`
+
+Do not use `.venv`, `../.venv`, or conda `base`.
+
+# Lint and format
+
+Do not run the linter, formatter, or import sorter after changes. Skip `pylint`, `black`, and `isort` even though `AGENTS.md` asks for them. The user will handle that.
