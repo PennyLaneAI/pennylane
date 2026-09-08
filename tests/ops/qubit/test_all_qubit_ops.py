@@ -39,7 +39,6 @@ import pennylane as qp
         (qp.PhaseShift(0.5, 0), "Z"),
         (qp.PCPhase(1.23, 7, (1, 2, 3)), "Z"),
         (qp.X(0) + qp.Y(0), None),
-        (qp.X(0) @ qp.Y(1), None),
         # NOTE: @ dispatches to Prod2 now and doesn't have basis method, keep Prod for legacy testing
         (qp.ops.Prod(qp.X(0), qp.Y(1)), None),
     ],
