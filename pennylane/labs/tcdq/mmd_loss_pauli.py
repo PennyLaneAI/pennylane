@@ -163,7 +163,6 @@ def _partition_by_hashability(items: tuple) -> tuple[tuple, tuple]:
         "sqrt_loss",
         "expval_fn",
         "static_kwargs",
-        "inject_key",
     ],
 )
 def _compute_loss_for_bandwidth(
@@ -179,7 +178,6 @@ def _compute_loss_for_bandwidth(
     sqrt_loss: bool,
     expval_fn: Callable,
     static_kwargs: tuple,
-    inject_key: bool,
 ):
     """JIT-compiled step that fuses observable generation and expectation value math."""
     wire_list = list(wire_tuple)
@@ -198,19 +196,9 @@ def _compute_loss_for_bandwidth(
     call_kwargs = dict(static_kwargs)
     call_kwargs.update(traced_kwargs)
     call_kwargs["observables"] = pauli_obs
-    if inject_key:
-        call_kwargs["key"] = eval_key
+    call_kwargs["key"] = eval_key
 
-    try:
-        model_output = expval_fn(params, **call_kwargs)
-    except TypeError as exc:
-        for name in ("observables", "key") if inject_key else ("observables",):
-            if f"unexpected keyword argument '{name}'" in str(exc):
-                raise TypeError(
-                    f"expval_fn does not accept a '{name}' keyword argument. The loss calls "
-                    "expval_fn(params, observables=..., key=..., **expval_kwargs)"
-                ) from exc
-        raise
+    model_output = expval_fn(params, **call_kwargs)
 
     model_expvals, model_expvals_variances = (
         model_output if isinstance(model_output, tuple) else (model_output, None)
@@ -238,8 +226,6 @@ def _compute_loss_for_bandwidth(
         visible_ops,
         sqrt_loss,
     )
-
-
 
 
 def build_mmd_loss_pauli(
@@ -415,9 +401,7 @@ def build_mmd_loss_pauli(
                 if len(wire_tuple) == n_qubits
                 else f"{len(wire_tuple)} (one per selected wire) or {n_qubits} (one per qubit)"
             )
-            raise ValueError(
-                f"target_data has {target_data.shape[1]} columns, expected {expected}"
-            )
+            raise ValueError(f"target_data has {target_data.shape[1]} columns, expected {expected}")
 
         losses = []
         for bandwidth in bandwidth_list:
