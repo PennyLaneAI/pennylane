@@ -11,14 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Maximum Mean Discrepancy (MMD) loss for qubit IQP circuits.
+"""Maximum Mean Discrepancy (MMD) loss for Pauli expectation value functions.
 
-This module compares the output of a qubit IQP circuit to a dataset of
+This module compares the output distribution of a model to a dataset of
 bitstrings. It samples Pauli-Z observables from an RBF (Radial Basis Function) kernel distribution,
-estimates their expectation values, and combines the results into an MMD loss.
+estimates their expectation values with a user-supplied callable, and combines the results into an
+MMD loss.
 """
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from functools import partial
 
@@ -27,15 +28,13 @@ import jax.numpy as jnp
 import numpy as np
 from jax.typing import ArrayLike
 
-from .expval_functions import CircuitConfig, build_expval_func
-
 
 @dataclass(frozen=True)
 class MMDConfig:
     r"""Hyperparameters for the qubit Maximum Mean Discrepancy (MMD) loss.
 
-    The MMD measures how well the circuit's output distribution matches a
-    target dataset.
+    The MMD measures how well the model's output distribution matches a target
+    dataset.
 
     Args:
         bandwidth (float | Sequence[float]): The bandwidth :math:`\sigma^2` of the kernel. If a sequence is provided,
@@ -120,32 +119,51 @@ def _binary_ops_to_pauli_int(binary_ops: ArrayLike) -> jnp.ndarray:
 @partial(jax.jit, static_argnames=["sqrt_loss"])
 def _compute_single_mmd(
     model_expvals: jnp.ndarray,
-    model_expvals_variances: jnp.ndarray,
+    model_expvals_variances: jnp.ndarray | None,
     target_data: jnp.ndarray,
     visible_ops: jnp.ndarray,
     sqrt_loss: bool,
 ) -> jnp.ndarray:
-    """Core, heavily JIT-compiled math for MMD calculation."""
+    """Core, heavily JIT-compiled math for MMD calculation.
+
+    ``model_expvals_variances`` may be ``None`` for an exact model.
+    """
     tr_train = jnp.mean(1 - 2 * ((target_data @ visible_ops.T) % 2), axis=0)
     m = target_data.shape[0]
 
-    result = model_expvals**2 - model_expvals_variances
+    result = model_expvals**2
+    if model_expvals_variances is not None:
+        result = result - model_expvals_variances
     result = result - 2 * model_expvals * tr_train + (tr_train * tr_train * m - 1) / (m - 1)
 
     reduced = jnp.mean(result)
     return jnp.sqrt(jnp.abs(reduced)) if sqrt_loss else reduced
 
 
-# pylint: disable=too-many-arguments
+def _partition_by_hashability(items: tuple) -> tuple[tuple, tuple]:
+    """Split ``(name, value)`` pairs into hashable (static) and unhashable (traced) groups."""
+    static, dynamic = [], []
+    for name, value in items:
+        try:
+            hash(value)
+        except TypeError:
+            dynamic.append((name, value))
+        else:
+            static.append((name, value))
+    return tuple(static), tuple(dynamic)
+
+
+# pylint: disable=too-many-arguments,too-many-locals
 @partial(
     jax.jit,
     static_argnames=[
         "n_ops",
         "n_qubits",
         "wire_tuple",
-        "effective_samples",
         "sqrt_loss",
-        "expval_func",
+        "expval_fn",
+        "static_kwargs",
+        "inject_key",
     ],
 )
 def _compute_loss_for_bandwidth(
@@ -154,14 +172,14 @@ def _compute_loss_for_bandwidth(
     eval_key: jnp.ndarray,
     params: jnp.ndarray,
     target_data: jnp.ndarray,
-    effective_init_state_elems: jnp.ndarray | None,
-    effective_init_state_amps: jnp.ndarray | None,
+    traced_kwargs: dict,
     n_ops: int,
     n_qubits: int,
     wire_tuple: tuple[int, ...],
-    effective_samples: int,
     sqrt_loss: bool,
-    expval_func: Callable,
+    expval_fn: Callable,
+    static_kwargs: tuple,
+    inject_key: bool,
 ):
     """JIT-compiled step that fuses observable generation and expectation value math."""
     wire_list = list(wire_tuple)
@@ -177,14 +195,41 @@ def _compute_loss_for_bandwidth(
 
     pauli_obs = _binary_ops_to_pauli_int(all_ops)
 
-    model_expvals, model_expvals_variances = expval_func(
-        gates_params=params,
-        observables=pauli_obs,
-        key=eval_key,
-        n_samples=effective_samples,
-        init_state_elems=effective_init_state_elems,
-        init_state_amps=effective_init_state_amps,
+    call_kwargs = dict(static_kwargs)
+    call_kwargs.update(traced_kwargs)
+    call_kwargs["observables"] = pauli_obs
+    if inject_key:
+        call_kwargs["key"] = eval_key
+
+    try:
+        model_output = expval_fn(params, **call_kwargs)
+    except TypeError as exc:
+        for name in ("observables", "key"):
+            if f"unexpected keyword argument '{name}'" in str(exc):
+                raise TypeError(
+                    f"expval_fn does not accept a '{name}' keyword argument. The loss calls "
+                    "expval_fn(params, observables=..., key=..., **expval_kwargs)"
+                ) from exc
+        raise
+
+    model_expvals, model_expvals_variances = (
+        model_output if isinstance(model_output, tuple) else (model_output, None)
     )
+
+    model_expvals = jnp.asarray(model_expvals)
+    if model_expvals_variances is not None:
+        model_expvals_variances = jnp.asarray(model_expvals_variances)
+
+    if model_expvals.shape != (n_ops,):
+        raise ValueError(
+            f"expval_fn returned expectation values of shape {model_expvals.shape}, "
+            f"expected ({n_ops},)"
+        )
+    if model_expvals_variances is not None and model_expvals_variances.shape != (n_ops,):
+        raise ValueError(
+            f"expval_fn returned variances of shape {model_expvals_variances.shape}, "
+            f"expected ({n_ops},)"
+        )
 
     return _compute_single_mmd(
         model_expvals,
@@ -195,30 +240,49 @@ def _compute_loss_for_bandwidth(
     )
 
 
-def mmd_loss(
+def mmd_loss_pauli(
     params: ArrayLike,
-    circuit_config: CircuitConfig,
+    expval_fn: Callable,
+    n_qubits: int,
     mmd_config: MMDConfig,
     target_data: ArrayLike,
     key: ArrayLike | None = None,
+    expval_kwargs: Mapping | None = None,
 ) -> jnp.ndarray | list[jnp.ndarray]:
-    """Compute the MMD loss between a qubit IQP circuit and a target dataset.
+    r"""Compute the MMD loss between a Pauli expectation value function and a target dataset.
 
-    This function estimates how far the circuit's output distribution is from
-    the empirical distribution defined by ``target_data``.
+    This function estimates how far the model's output distribution is from the
+    empirical distribution defined by ``target_data``. The model is called as
+
+    .. code-block:: python
+
+        expval_fn(params, observables=..., key=..., **expval_kwargs)
+
+    where ``observables`` is an integer array of shape ``(n_ops, n_qubits)`` of
+    Pauli codes (``0=I``, ``1=X``, ``2=Y``, ``3=Z``), of which only ``I`` and
+    ``Z`` are generated. It must return ``expvals`` of shape ``(n_ops,)``, or
+    ``(expvals, variances)`` where ``variances[i]`` is the variance of the
+    estimator ``expvals[i]``; returning ``expvals`` alone declares the model exact.
 
     Args:
-        params (ArrayLike): Trainable circuit parameters, shape ``(n_params,)``.
-        circuit_config (CircuitConfig): Circuit description specifying the gate
-            structure, number of qubits, and sample count. See
-            :class:`~pennylane.labs.tcdq.CircuitConfig` for how to construct one.
+        params (ArrayLike): Trainable model parameters, passed to ``expval_fn``
+            as its first argument.
+        expval_fn (Callable): Pauli expectation value function, as above. Must be
+            hashable and JAX-traceable.
+        n_qubits (int): Number of qubits the model acts on, i.e. the width of the
+            observable array passed to ``expval_fn``.
         mmd_config (MMDConfig): Hyperparameters for the MMD computation,
             including the RBF bandwidth and number of observables. See
             :class:`MMDConfig`.
-        target_data (ArrayLike): Binary dataset of shape ``(m, n_qubits)``
-            where each row is a bitstring sample from the target distribution.
-        key (ArrayLike | None): Optional JAX PRNG key. If ``None``, uses the
-            key stored in ``circuit_config``.
+        target_data (ArrayLike): Binary dataset of shape ``(m, n_qubits)``, or
+            ``(m, len(mmd_config.wires))`` when a wire subset is selected, where
+            each row is a bitstring sample from the target distribution.
+        key (ArrayLike | None): Optional JAX PRNG key. If ``None``, uses
+            ``jax.random.PRNGKey(0)``.
+        expval_kwargs (Mapping | None): Extra keyword arguments forwarded to
+            ``expval_fn``, for example ``{"n_samples": 4000}``. Hashable values
+            are forwarded as compile-time constants; unhashable ones, notably
+            arrays, are traced.
 
     Returns:
         jnp.ndarray | list[jnp.ndarray]: A scalar MMD² estimate averaged over
@@ -226,14 +290,21 @@ def mmd_loss(
         ``mmd_config.return_per_bandwidth=True``.
 
     Raises:
-        ValueError: If ``circuit_config.n_samples <= 1``.
+        ValueError: If ``mmd_config`` leaves ``bandwidth`` or ``n_ops`` unset, if
+            ``mmd_config.wires`` exceeds ``n_qubits``, if ``target_data`` has
+            fewer than two rows or an unexpected number of columns, if
+            ``expval_kwargs`` contains ``"observables"``, or if ``expval_fn``
+            returns arrays of the wrong shape.
+        TypeError: If ``expval_fn`` does not accept the ``observables`` or ``key``
+            keyword arguments.
 
     **Example**
 
     >>> import jax
     >>> import numpy as np
     >>> from pennylane.labs.tcdq import (
-    ...     CircuitConfig, MMDConfig, mmd_loss, create_local_gates, median_heuristic
+    ...     CircuitConfig, MMDConfig, build_expval_func, create_local_gates,
+    ...     median_heuristic, mmd_loss_pauli,
     ... )
     >>> n_qubits = 4
     >>> gates = create_local_gates(n_qubits, max_weight=2)
@@ -245,7 +316,9 @@ def mmd_loss(
     >>> mmd_cfg = MMDConfig(bandwidth=bw, n_ops=50)
     >>> import jax.numpy as jnp
     >>> params = jnp.zeros(len(gates))
-    >>> loss_val = mmd_loss(params, config, mmd_cfg, target)
+    >>> loss_val = mmd_loss_pauli(
+    ...     params, build_expval_func(config), n_qubits, mmd_cfg, target, key=config.key
+    ... )
     >>> loss_val.shape
     ()
 
@@ -254,25 +327,48 @@ def mmd_loss(
         :func:`~pennylane.labs.tcdq.build_expval_func`,
         `Section 3.3 of IQPopt: Fast optimization of instantaneous quantum polynomial circuits in JAX <https://arxiv.org/pdf/2501.04776>`_
     """
-    effective_samples = circuit_config.n_samples
-    if effective_samples <= 1:
-        raise ValueError("n_samples must be greater than 1")
+    if mmd_config.bandwidth is None or mmd_config.n_ops is None:
+        raise ValueError("mmd_config must specify both bandwidth and n_ops")
 
-    active_key = circuit_config.key if key is None else key
-    n_qubits = circuit_config.n_qubits
+    expval_kwargs = dict(expval_kwargs or {})
+    if "observables" in expval_kwargs:
+        raise ValueError(
+            "expval_kwargs must not contain 'observables': the loss samples the observables "
+            "and passes them to expval_fn itself"
+        )
+    inject_key = "key" not in expval_kwargs
+
+    static_kwargs, dynamic_kwargs = _partition_by_hashability(tuple(expval_kwargs.items()))
+    traced_kwargs = dict(dynamic_kwargs)
+
+    active_key = jax.random.PRNGKey(0) if key is None else key
 
     wire_tuple = tuple(range(n_qubits)) if mmd_config.wires is None else tuple(mmd_config.wires)
+    if max(wire_tuple, default=-1) >= n_qubits:
+        raise ValueError(f"wires {wire_tuple} are out of range for n_qubits={n_qubits}")
+
+    target_data = jnp.asarray(target_data)
+    if target_data.ndim != 2:
+        raise ValueError(f"target_data must be 2-dimensional, got shape {target_data.shape}")
+    if target_data.shape[0] <= 1:
+        raise ValueError("target_data must contain more than one sample")
+    if target_data.shape[1] == n_qubits:
+        target_data = target_data[:, list(wire_tuple)]
+    elif target_data.shape[1] != len(wire_tuple):
+        expected = (
+            f"{n_qubits} (one per qubit)"
+            if len(wire_tuple) == n_qubits
+            else f"{len(wire_tuple)} (one per selected wire) or {n_qubits} (one per qubit)"
+        )
+        raise ValueError(f"target_data has {target_data.shape[1]} columns, expected {expected}")
 
     bandwidth_list = (
         [mmd_config.bandwidth]
         if isinstance(mmd_config.bandwidth, (int, float))
         else list(mmd_config.bandwidth)
     )
-    target_data = jnp.asarray(target_data)
 
-    expval_func = build_expval_func(circuit_config)
     losses = []
-
     for bandwidth in bandwidth_list:
         active_key, subkey, eval_key = jax.random.split(active_key, 3)
 
@@ -282,14 +378,14 @@ def mmd_loss(
             eval_key=eval_key,
             params=params,
             target_data=target_data,
-            effective_init_state_elems=circuit_config.init_state_elems,
-            effective_init_state_amps=circuit_config.init_state_amps,
+            traced_kwargs=traced_kwargs,
             n_ops=mmd_config.n_ops,
             n_qubits=n_qubits,
             wire_tuple=wire_tuple,
-            effective_samples=effective_samples,
             sqrt_loss=mmd_config.sqrt_loss,
-            expval_func=expval_func,
+            expval_fn=expval_fn,
+            static_kwargs=static_kwargs,
+            inject_key=inject_key,
         )
         losses.append(loss_val)
 

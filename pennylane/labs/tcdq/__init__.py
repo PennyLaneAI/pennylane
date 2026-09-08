@@ -37,7 +37,7 @@ Core classes and functions
     ~build_expval_func
     ~build_qudit_expval_func
     ~build_qudit_mmd_loss
-    ~mmd_loss
+    ~mmd_loss_pauli
     ~median_heuristic
     ~train
     ~training_iterator
@@ -154,7 +154,7 @@ For more detail on how the loss is constructed, see
 .. code-block:: python
 
    import numpy as np
-   from pennylane.labs.tcdq import MMDConfig, mmd_loss, median_heuristic
+   from pennylane.labs.tcdq import MMDConfig, mmd_loss_pauli, median_heuristic
 
    np.random.seed(42)
    target_data = np.random.binomial(1, 0.5, size=(500, n_qubits))
@@ -171,7 +171,7 @@ For more detail on how the loss is constructed, see
 
    mmd_result = train(
        optimizer="Adam",
-       loss=mmd_loss,
+       loss=mmd_loss_pauli,
        stepsize=0.01,
        n_iters=100,
        loss_kwargs=loss_kwargs,
@@ -303,7 +303,7 @@ from .qudit_expval_functions import (
     QuditCircuitConfig,
     build_qudit_expval_func,
 )
-from .mmd_loss import MMDConfig, median_heuristic, mmd_loss
+from .mmd_loss_pauli import MMDConfig, median_heuristic, mmd_loss_pauli
 from .qudit_mmd_loss import QuditMMDConfig, build_qudit_mmd_loss
 from .training import BatchResult, TrainingOptions, TrainingResult, train, training_iterator
 from .utils import (
