@@ -7,8 +7,6 @@
   [(#10126)](https://github.com/PennyLaneAI/pennylane/pull/10126)
 
   ```python
-  import inspect
-
   @qp.subcircuit(dynamic_argnames=("phi",), wire_argnames=("wires",))
   @qp.register_resources({qp.H: 1, qp.RZ: 1})
   def MyOp(phi, wires):
@@ -19,6 +17,10 @@
   ```pycon
   >>> print(MyOp)
   <class '__main__.MyOp'>
+  >>> qp.list_decomps(MyOp)
+  DecompCollection([
+      DecompositionRule(name=MyOp_decomp)
+  ])
   >>> help(MyOp)
   Help on class MyOp in module __main__:
 
