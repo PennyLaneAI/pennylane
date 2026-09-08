@@ -462,7 +462,7 @@ class TestWrapperFunc:  # pylint: disable=too-few-public-methods
 
         factors = (qp.PauliX(wires=1), qp.RX(1.23, wires=0), qp.CNOT(wires=[0, 1]))
 
-        change_op_basis_func_op = ChangeOpBasis2(*factors)
+        change_op_basis_func_op = qp.change_op_basis(*factors)
         change_op_basis_class_op = ChangeOpBasis2(*factors)
         qp.assert_equal(change_op_basis_func_op, change_op_basis_class_op)
 
