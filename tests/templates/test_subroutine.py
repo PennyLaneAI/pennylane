@@ -657,7 +657,7 @@ class TestGraphDecomposition:
 
     # pylint: disable=too-many-statements
     def test_change_op_basis_subroutine_resource_rep_with_a_subroutine(self):
-        """Test creating a CompressedResourceRep specific to templates within change_op_basis with a subroutine and a nested resource_rep."""
+        """Test creating a ChangeOpBasis resource representation with a subroutine."""
 
         # use a non-standard order
         @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
@@ -707,20 +707,20 @@ class TestGraphDecomposition:
         }
 
     def test_change_op_basis_subroutine_resource_rep_with_an_op_and_a_resource_rep(self):
-        """Test creating a CompressedResourceRep specific to templates within change_op_basis with an op and a nested resource_rep."""
+        """Test creating a ChangeOpBasis resource representation with operators."""
 
         rr = change_op_basis_subroutine_resource_rep(qp.PauliZ(0), abstractify(qp.PauliX))
-        assert isinstance(rr, qp.decomposition.CompressedResourceOp)
-        assert rr.name == "ChangeOpBasis"
-        assert rr.params["compute_op"] == qp.Z(Wire[1])
-        assert rr.params["compute_op"].is_fully_abstract
-        assert rr.params["target_op"] == qp.X(Wire[1])
-        assert rr.params["target_op"].is_fully_abstract
-        assert rr.params["uncompute_op"] == qp.adjoint(qp.Z(Wire[1]))
-        assert rr.params["uncompute_op"].is_fully_abstract
+        assert isinstance(rr, qp.ops.ChangeOpBasis2)
+        assert rr.name == "ChangeOpBasis2"
+        assert rr.compute_op == qp.Z(Wire[1])
+        assert rr.compute_op.is_fully_abstract
+        assert rr.target_op == qp.X(Wire[1])
+        assert rr.target_op.is_fully_abstract
+        assert rr.uncompute_op == qp.adjoint(qp.Z(Wire[1]))
+        assert rr.uncompute_op.is_fully_abstract
 
     def test_change_op_basis_subroutine_resource_rep_with_a_resource_rep_and_a_subroutine(self):
-        """Test creating a CompressedResourceRep specific to templates within change_op_basis with a subroutine and a nested resource_rep."""
+        """Test creating a ChangeOpBasis resource representation with a subroutine target."""
 
         @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
         def f(a, reg1, reg2, x):
@@ -755,7 +755,7 @@ class TestGraphDecomposition:
         assert rr.params["uncompute_op"].is_fully_abstract
 
     def test_change_op_basis_subroutine_resource_rep_with_a_subroutine_uncompute(self):
-        """Test creating a CompressedResourceRep specific to templates within change_op_basis with a subroutine uncompute."""
+        """Test creating a ChangeOpBasis resource representation with a subroutine uncompute."""
 
         @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
         def f(a, reg1, reg2, x):

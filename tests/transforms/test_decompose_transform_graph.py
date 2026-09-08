@@ -404,7 +404,7 @@ class TestDecomposeGraphEnabled:
             ):
                 [new_tape], _ = qp.transforms.decompose([tape], gate_set={"RX"})
 
-        assert new_tape.operations == [qp.RX(np.pi, wires=0), qp.GlobalPhase(-np.pi / 2, wires=0)]
+        assert new_tape.operations == [qp.RX(np.pi, wires=0), qp.GlobalPhase(-np.pi / 2)]
 
     @pytest.mark.integration
     def test_controlled_decomp(self):
