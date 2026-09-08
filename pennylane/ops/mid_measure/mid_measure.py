@@ -178,14 +178,6 @@ class MidMeasure(Operator2):
         return super().__str__()
 
 
-# ``has_fixed_sig`` is assigned by ``__init_subclass__``, which reports ``False`` here only because
-# ``compilable_argnames`` is non-empty. The traced surface (``wires``) is fully pinned by
-# ``arg_specs`` and every other argument has a default, so ``MidMeasure(**arg_specs)`` builds a
-# fully abstract instance and the bare type stays usable as a resource dict key. Subclasses get
-# their own ``has_fixed_sig`` from ``__init_subclass__``, so this opt-in does not propagate.
-MidMeasure.has_fixed_sig = True
-
-
 @abstractify.register
 @QueuingManager.stop_recording()
 def _abstractify_mid_measure(op: MidMeasure):
