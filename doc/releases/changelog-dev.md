@@ -1385,6 +1385,12 @@
   context manager that temporarily enables or disables capture is added.
   [(#10016)](https://github.com/PennyLaneAI/pennylane/pull/10016)
 
+* The test-local `CompositeOp2` subclasses in `tests/ops/op_math/test_composite2.py` now wrap
+  `math.prod` in `staticmethod`, fixing Python 3.14 CI failures. `math.prod` is a
+  `functools.partial`, which became a method descriptor in Python 3.14, so an unwrapped class
+  attribute bound the operator instance as the first argument.
+  [(#10125)](https://github.com/PennyLaneAI/pennylane/pull/10125)
+
 <h3>Documentation 📝</h3>
 
 * Corrected spelling errors in documentation, comments, and internal variable names across the codebase.
