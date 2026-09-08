@@ -140,19 +140,6 @@ def _compute_single_mmd(
     return jnp.sqrt(jnp.abs(reduced)) if sqrt_loss else reduced
 
 
-def _partition_by_hashability(items: tuple) -> tuple[tuple, tuple]:
-    """Split ``(name, value)`` pairs into hashable (static) and unhashable (traced) groups."""
-    static, dynamic = [], []
-    for name, value in items:
-        try:
-            hash(value)
-        except TypeError:
-            dynamic.append((name, value))
-        else:
-            static.append((name, value))
-    return tuple(static), tuple(dynamic)
-
-
 # pylint: disable=too-many-arguments,too-many-locals
 @partial(
     jax.jit,
@@ -162,7 +149,6 @@ def _partition_by_hashability(items: tuple) -> tuple[tuple, tuple]:
         "wire_tuple",
         "sqrt_loss",
         "expval_fn",
-        "static_kwargs",
     ],
 )
 def _compute_loss_for_bandwidth(
@@ -171,13 +157,12 @@ def _compute_loss_for_bandwidth(
     eval_key: jnp.ndarray,
     params: jnp.ndarray,
     target_data: jnp.ndarray,
-    traced_kwargs: dict,
+    expval_kwargs: dict,
     n_ops: int,
     n_qubits: int,
     wire_tuple: tuple[int, ...],
     sqrt_loss: bool,
     expval_fn: Callable,
-    static_kwargs: tuple,
 ):
     """JIT-compiled step that fuses observable generation and expectation value math."""
     wire_list = list(wire_tuple)
@@ -193,12 +178,10 @@ def _compute_loss_for_bandwidth(
 
     pauli_obs = _binary_ops_to_pauli_int(all_ops)
 
-    call_kwargs = dict(static_kwargs)
-    call_kwargs.update(traced_kwargs)
-    call_kwargs["observables"] = pauli_obs
-    call_kwargs["key"] = eval_key
+    expval_kwargs["observables"] = pauli_obs
+    expval_kwargs["key"] = eval_key
 
-    model_output = expval_fn(params, **call_kwargs)
+    model_output = expval_fn(params, **expval_kwargs)
 
     model_expvals, model_expvals_variances = (
         model_output if isinstance(model_output, tuple) else (model_output, None)
@@ -373,9 +356,6 @@ def build_mmd_loss_pauli(
                 "and passes them to expval_fn itself"
             )
 
-        static_kwargs, dynamic_kwargs = _partition_by_hashability(tuple(expval_kwargs.items()))
-        traced_kwargs = dict(dynamic_kwargs)
-
         active_key = jax.random.PRNGKey(0) if key is None else key
 
         target_data = jnp.asarray(target_data)
@@ -403,13 +383,12 @@ def build_mmd_loss_pauli(
                 eval_key=eval_key,
                 params=jnp.asarray(params),
                 target_data=target_data,
-                traced_kwargs=traced_kwargs,
                 n_ops=mmd_config.n_ops,
                 n_qubits=n_qubits,
                 wire_tuple=wire_tuple,
                 sqrt_loss=mmd_config.sqrt_loss,
                 expval_fn=expval_fn,
-                static_kwargs=static_kwargs,
+                expval_kwargs=expval_kwargs,
             )
             losses.append(loss_val)
 
