@@ -200,7 +200,8 @@ def _qubitization_decomposition(*_, **kwargs):
     hamiltonian = kwargs["hamiltonian"]
     control = kwargs["control"]
 
-    Reflection(prod(*[I(wire) for wire in control]))
+    # TODO: Change to qp.prod once Identity is migrated to Operator2
+    Reflection(Prod(*[I(wire) for wire in control]))
     PrepSelPrep(hamiltonian, control=control)
 
 
