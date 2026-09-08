@@ -37,9 +37,8 @@ class SelectPauliRot(Operation):
     r"""Applies individual single-qubit Pauli rotations depending on the state of
     designated control qubits.
 
-    This operator, also called a **multiplexed rotation** or **uniformly controlled rotation**,
-    and available as ``MultiplexedRotation`` and ``UniformlyControlledRotation``, applies a
-    sequence of multi-controlled rotations about the same axis to a single target qubit.
+    This operator, also available as :class:`~.MultiplexedRotation` and :class:`~.UniformlyControlledRotation`,
+    applies a sequence of multi-controlled rotations about the same axis to a single target qubit.
     The rotation angles are selected based on the state of the control qubits.
     Its definition is given by:
 
