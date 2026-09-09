@@ -204,8 +204,8 @@ def alias_sampling_thc_wires(M, N, aleph, include_sign=True):
 
     Returns:
         dict: ``{"mu_wires": n, "nu_wires": n, "superposition_work_wires": 3 * n + 5,
-        "work_wires": n_d + 2 * n + 3 * aleph + 2 + 2 * include_sign}``, where
-        ``n = ceil(log2(M + 1))`` and
+        "work_wires": n_d + 2 * n + 3 * aleph + 2 + 2 * include_sign, "sign_wire": n_d}``,
+        where ``n = ceil(log2(M + 1))`` and
         ``n_d = ceil(log2(N // 2 + M (M + 1) // 2)) + 1``
 
         * ``mu_wires`` / ``nu_wires``: the two index registers, exact
@@ -215,14 +215,17 @@ def alias_sampling_thc_wires(M, N, aleph, include_sign=True):
         * ``work_wires``: the minimum scratch register of :func:`alias_sampling_thc`.
           Additional wires are forwarded to the internal ``qp.QROM``, which uses them
           for a ``SelectSwap`` decomposition that lowers the T-gate count.
+        * ``sign_wire``: the *index into* ``work_wires`` of the wire left holding the
+          sign bit, i.e. the wire to apply the single ``qp.Z`` to between ``PREPARE``
+          and ``SELECT``. ``None`` when ``include_sign=False``.
 
     **Example**
 
     >>> from pennylane.labs.templates import alias_sampling_thc_wires
     >>> alias_sampling_thc_wires(M=2, N=2, aleph=6)
-    {'mu_wires': 2, 'nu_wires': 2, 'superposition_work_wires': 11, 'work_wires': 29}
+    {'mu_wires': 2, 'nu_wires': 2, 'superposition_work_wires': 11, 'work_wires': 29, 'sign_wire': 3}
     >>> alias_sampling_thc_wires(M=2, N=2, aleph=6, include_sign=False)
-    {'mu_wires': 2, 'nu_wires': 2, 'superposition_work_wires': 11, 'work_wires': 27}
+    {'mu_wires': 2, 'nu_wires': 2, 'superposition_work_wires': 11, 'work_wires': 27, 'sign_wire': None}
     """
     if isinstance(M, bool) or not isinstance(M, int) or M < 1:
         raise ValueError(f"M must be a positive integer, got {M!r}.")
@@ -240,11 +243,21 @@ def alias_sampling_thc_wires(M, N, aleph, include_sign=True):
         "nu_wires": n,
         "superposition_work_wires": 3 * n + 5,
         "work_wires": n_d + 2 * n + 3 * aleph + 2 + 2 * bool(include_sign),
+        "sign_wire": n_d if include_sign else None,
     }
 
 
 def alias_sampling_thc(  # pylint: disable=too-many-arguments,too-many-positional-arguments
-    M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph, include_sign=True
+    M,
+    N,
+    zeta,
+    t_ell,
+    mu_wires,
+    nu_wires,
+    edge_flag,
+    work_wires,
+    aleph,
+    include_sign=True,
 ):
     r"""Coefficient oracle for tensor hypercontraction (THC) qubitization via
     coherent alias (Walker) sampling.
@@ -313,9 +326,13 @@ def alias_sampling_thc(  # pylint: disable=too-many-arguments,too-many-positiona
     .. note::
 
         **The sign is an output register, not a phase on the amplitude.** With
-        ``include_sign=True`` the wire ``work_wires[n_d]`` is left holding the sign bit
-        :math:`s` of the coefficient that was actually selected, and the caller must apply
-        a single ``qp.Z(work_wires[n_d])`` *between* ``PREPARE`` and ``SELECT``. Phasing
+        ``include_sign=True`` the wire ``work_wires[sign_wire]`` is left holding the sign
+        bit :math:`s` of the coefficient that was actually selected, and the caller must
+        apply a single ``qp.Z(work_wires[sign_wire])`` *between* ``PREPARE`` and
+        ``SELECT``, where ``sign_wire`` comes from
+        :func:`~pennylane.labs.templates.alias_sampling_thc_wires`. That same ``Z`` is
+        what puts :math:`(-1)^s` on the amplitudes if you want to look at the prepared
+        state on its own, so there is nothing else to switch on. Phasing
         the amplitude inside ``PREPARE`` instead would do nothing: the phase appears once
         in the ket and once in the bra of
         :math:`\langle 0 \rvert \mathrm{PREPARE}^\dagger \cdot \mathrm{SELECT} \cdot
@@ -335,7 +352,8 @@ def alias_sampling_thc(  # pylint: disable=too-many-arguments,too-many-positiona
         reflections :math:`V = I - 2 c^\dagger c` and the one-body block is linear in
         :math:`c^\dagger c` while the two-body block is quadratic (see the
         ``_lcu_signs`` helper). With this convention the block encoded operator is
-        :math:`+H / \lambda`.
+        :math:`+H / \lambda`, matching Eq. (26) of `Lee et al. (2021)
+        <https://arxiv.org/abs/2011.03494>`_.
 
     .. seealso:: :func:`~pennylane.labs.templates.alias_sampling_thc_wires`, which
         returns every register size for a given ``(M, N, aleph)``.
@@ -357,10 +375,11 @@ def alias_sampling_thc(  # pylint: disable=too-many-arguments,too-many-positiona
             required, where ``n = ceil(log2(M + 1))`` and
             ``n_d = ceil(log2(N // 2 + M (M + 1) // 2)) + 1``
         aleph (int): the number of bits used to encode the keep-probabilities
-        include_sign (bool): if ``True`` (default), ``work_wires[n_d]`` is left holding
-            the sign bit of the selected coefficient, to be consumed by a single
-            ``qp.Z`` between ``PREPARE`` and ``SELECT``. If ``False``, all coefficients
-            are taken to be non-negative and two work wires are saved
+        include_sign (bool): if ``True`` (default), the wire at index
+            ``alias_sampling_thc_wires(M, N, aleph)["sign_wire"]`` of ``work_wires`` is
+            left holding the sign bit of the selected coefficient, to be consumed by a
+            single ``qp.Z`` between ``PREPARE`` and ``SELECT``. If ``False``, all
+            coefficients are taken to be non-negative and two work wires are saved
 
     **Example**
 
@@ -382,6 +401,7 @@ def alias_sampling_thc(  # pylint: disable=too-many-arguments,too-many-positiona
 
         sizes = alias_sampling_thc_wires(M, N, aleph)
         n = sizes["mu_wires"]
+        sign_wire_index = sizes["sign_wire"]
 
         mu_wires = list(range(n))
         nu_wires = list(range(n, 2 * n))
@@ -401,10 +421,10 @@ def alias_sampling_thc(  # pylint: disable=too-many-arguments,too-many-positiona
             alias_sampling_thc(
                 M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph
             )
-            # In a full block encoding the sign of the selected coefficient is consumed
-            # here, between PREPARE and SELECT, with a single
-            #     n_d = int(qp.math.ceil_log2(N // 2 + M * (M + 1) // 2)) + 1
-            #     qp.Z(work_wires[n_d])
+            # The sign of the selected coefficient is consumed here, between PREPARE and
+            # SELECT, by a single Z. This is also what puts the signs on the amplitudes
+            # if you want to inspect the prepared state on its own with qp.state().
+            qp.Z(work_wires[sign_wire_index])
             return qp.probs(wires=mu_wires + nu_wires)
     """
     mu_wires = list(Wires(mu_wires))
@@ -428,7 +448,6 @@ def alias_sampling_thc(  # pylint: disable=too-many-arguments,too-many-positiona
         )
     if isinstance(aleph, bool) or not isinstance(aleph, int) or aleph < 1:
         raise ValueError(f"aleph must be a positive integer, got {aleph!r}.")
-
     n_d = _num_address_wires(M, N)
     n_sign = 2 * bool(include_sign)  # QROM sign columns: ``sign`` and ``alt_sign``
     min_work = n_d + 2 * n + 3 * aleph + 2 + n_sign
