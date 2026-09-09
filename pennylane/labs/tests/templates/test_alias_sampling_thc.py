@@ -65,9 +65,9 @@ def _reconstruct_distribution(M, N, zeta, t_ell, aleph):  # pylint: disable=too-
     loads into the QROM back classically, so the comparison is exact (independent of
     ``aleph``) rather than an approximation of the ideal target.
 
-    Each address keeps its original pair with probability ``(keep + 1) / 2 ** aleph``
-    (the circuit tests ``keep_thresh < sigma`` against a uniform ``aleph``-bit sample,
-    so ``keep`` values ``0 .. keep`` all pass), and routes the remaining mass to its
+    Each address keeps its original pair with probability ``keep / 2 ** aleph`` (the
+    circuit tests ``keep_thresh <= sigma`` against a uniform ``aleph``-bit sample, so
+    only ``sigma < keep`` keeps the original), and routes the remaining mass to its
     alternate. The symmetrization step then splits every two-body weight across the
     two orderings ``(mu, nu)`` and ``(nu, mu)``, while the one-body sentinel column
     ``nu = M`` is excluded from the swap and keeps its full weight.
@@ -80,7 +80,7 @@ def _reconstruct_distribution(M, N, zeta, t_ell, aleph):  # pylint: disable=too-
     n_levels = 2**aleph
     per_pair = {e: 0.0 for e in entries}
     for i, entry in enumerate(entries):
-        keep_prob = (keep[i] + 1) / n_levels  # comparator "<" against uniform sample
+        keep_prob = keep[i] / n_levels  # comparator "<=" against uniform sample
         per_pair[entry] += (1 / d) * keep_prob
         per_pair[entries[alt[i]]] += (1 / d) * (1 - keep_prob)
 
