@@ -39,6 +39,7 @@ from ..qubit.non_parametric_ops import PauliX, PauliY, PauliZ
 from .composite import handle_recursion_error
 from .composite2 import CompositeOp2
 from .pow import Pow
+from .pow2 import Pow2
 from .sprod import SProd
 from .sum import Sum
 
@@ -539,7 +540,8 @@ class _ProductFactorsGrouping:
                     if exponent == 0:
                         continue
                     if exponent != 1:
-                        op = Pow(base=op, z=exponent).simplify()
+                        pow_cls = Pow2 if isinstance(op, Operator2) else Pow
+                        op = pow_cls(base=op, z=exponent).simplify()
                     if not isinstance(op, qp.Identity):
                         self._factors += ((op,),)
 
