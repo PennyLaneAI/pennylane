@@ -71,6 +71,8 @@ class Identity(Operator2):
 
     is_verified_hermitian = True
 
+    arg_specs = {"wires": Wire[-1]}
+
     def __init__(self, wires: WiresLike = ()):
         super().__init__(wires=wires)
         self._pauli_rep = qp.pauli.PauliSentence({qp.pauli.PauliWord({}): 1.0})

@@ -20,7 +20,8 @@ import copy
 from pennylane.core.operator import Operation, abstractify
 from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.ops import I, Prod, prod
+from pennylane.ops import I, Prod2, prod
+from pennylane.typing import Wire
 from pennylane.wires import Wires
 
 from .prepselprep import PrepSelPrep
@@ -182,7 +183,7 @@ def _qubitization_resources(num_control_wires, hamiltonian):
     return {
         resource_rep(
             Reflection,
-            base_rep=resource_rep(Prod, resources={abstractify(I): num_control_wires}),
+            base_rep=Prod2([I(Wire[1]) for _ in range(num_control_wires)]),
             num_wires=1,
             num_reflection_wires=1,
         ): 1,
@@ -199,7 +200,7 @@ def _qubitization_decomposition(*_, **kwargs):
     hamiltonian = kwargs["hamiltonian"]
     control = kwargs["control"]
 
-    Reflection(Prod(*[I(wire) for wire in control]))
+    Reflection(Prod2([I(wire) for wire in control]))
     PrepSelPrep(hamiltonian, control=control)
 
 
