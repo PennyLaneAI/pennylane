@@ -847,9 +847,7 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
     return _impl
 
 
-def _ctrl_single_work_wire_resource(
-    base, control_wires, control_values, work_wires, work_wire_type
-):  # pylint: disable=unused-argument
+def _ctrl_single_work_wire_resource(base, control_wires, *_, **__):
     return {
         _ctrl_abstract(
             base,
