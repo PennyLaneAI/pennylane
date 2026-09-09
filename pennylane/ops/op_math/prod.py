@@ -33,7 +33,7 @@ from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition.symbolic_decomposition import flip_zero_control
 from pennylane.typing import TensorLike, Wire
 
-from ..qubit.non_parametric_ops import PauliX, PauliY, PauliZ
+from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
 from .adjoint2 import _adjoint_abstract
 from .composite import CompositeOp, handle_recursion_error
 from .controlled2 import _ctrl_abstract
