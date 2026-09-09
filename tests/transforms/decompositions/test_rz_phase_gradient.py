@@ -47,6 +47,26 @@ def test_validate_phase_gradient_wires(n_angle_wires, n_phase_grad_wires, n_work
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
+def test_decomp_has_name():
+    """Test that ``make_rz_to_phase_gradient_decomp`` yields a decomposition with a name property."""
+    p = 1
+
+    first_free = 1
+    angle_wires = list(range(first_free, first_free + p))
+    phase_grad_wires = list(range(first_free + p, first_free + 2 * p))
+    work_wires = list(range(first_free + 2 * p, first_free + 3 * p - 1))
+
+    kwargs = {
+        "angle_wires": angle_wires,
+        "phase_grad_wires": phase_grad_wires,
+        "work_wires": work_wires,
+    }
+
+    custom_decomp = make_rz_to_phase_gradient_decomp(**kwargs)
+    assert custom_decomp.name == "rz_phase_gradient"
+
+
+@pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize("phi", [0.5, 0.3, 1 / 2 + 1 / 4 + 1 / 8, 1.0])
 @pytest.mark.parametrize("p", [1, 2, 3, 4])
 def test_valid_decomp(phi, p):
