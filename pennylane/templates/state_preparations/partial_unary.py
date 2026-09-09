@@ -14,6 +14,7 @@
 r"""Contains the PartialUnaryStatePreparation template."""
 
 from collections import defaultdict
+from numbers import Integral
 
 import numpy as np
 
@@ -26,15 +27,142 @@ from pennylane.wires import Wires
 _U64 = np.uint64
 
 
+def _reduced_binary_row_basis(values, max_rank):
+    """Return a reduced row basis of packed binary vectors, or ``None`` above ``max_rank``."""
+    basis = {}
+    for value in values:
+        reduced = int(value)
+        for pivot in sorted(basis, reverse=True):
+            if reduced & (1 << pivot):
+                reduced ^= basis[pivot]
+        if not reduced:
+            continue
+
+        pivot = reduced.bit_length() - 1
+        for other_pivot, row in tuple(basis.items()):
+            if row & (1 << pivot):
+                basis[other_pivot] = row ^ reduced
+        basis[pivot] = reduced
+
+        if len(basis) > max_rank:
+            return None
+
+    return basis
+
+
+def _is_affine_subspace(basis_states, n_subspace):
+    """Return whether ``basis_states`` lie in an affine subspace of the given width."""
+    anchor = int(basis_states[0])
+    translated = (int(state) ^ anchor for state in basis_states)
+    return _reduced_binary_row_basis(translated, n_subspace) is not None
+
+
+def _clear_nonpivot_columns(translated, rows, pivots, n_qubits):
+    """Clear non-pivot columns and return the corresponding CNOT gates."""
+    pivot_set = set(pivots)
+    circuit = []
+    for target_bit in range(n_qubits - 1, -1, -1):
+        if target_bit in pivot_set:
+            continue
+        for row, control_bit in zip(rows, pivots, strict=True):
+            if row & (1 << target_bit):
+                circuit.append(("CNOT", n_qubits - 1 - control_bit, n_qubits - 1 - target_bit))
+                target_mask = 1 << target_bit
+                for i, value in enumerate(translated):
+                    if value & (1 << control_bit):
+                        translated[i] = value ^ target_mask
+    return circuit
+
+
+def _move_pivots_to_leading_wires(translated, pivots, n_qubits):
+    """Move pivot columns to the leading wires and return the corresponding SWAP gates."""
+    locations = list(pivots)
+    circuit = []
+    for i, desired_bit in enumerate(range(n_qubits - 1, n_qubits - 1 - len(pivots), -1)):
+        current_bit = locations[i]
+        if current_bit == desired_bit:
+            continue
+
+        circuit.append(("SWAP", [n_qubits - 1 - current_bit, n_qubits - 1 - desired_bit]))
+        current_mask, desired_mask = 1 << current_bit, 1 << desired_bit
+        for j, value in enumerate(translated):
+            if bool(value & current_mask) != bool(value & desired_mask):
+                translated[j] = value ^ current_mask ^ desired_mask
+
+        locations[i] = desired_bit
+    return circuit
+
+
+def _find_affine_subspace_isometry(basis_states, n_qubits, n_subspace):
+    """Find a Clifford-only isometry for support in a minimal affine binary subspace.
+
+    Returns ``None`` if the translated support has binary rank larger than ``n_subspace``.
+    Otherwise, returns a circuit of X, CNOT and SWAP gates together with the induced mapping
+    into the subspace register.
+    """
+    states = list(basis_states)
+    n_remainder = n_qubits - n_subspace
+    remainder_mask = (1 << n_remainder) - 1
+
+    if all((state & remainder_mask) == 0 for state in states):
+        return [], {i: state >> n_remainder for i, state in enumerate(states)}
+
+    anchor = states[0]
+    translated = [state ^ anchor for state in states]
+
+    # Row operations only change the chosen basis of the affine span the column operations
+    # recorded below are the physical Clifford circuit.
+    basis = _reduced_binary_row_basis(translated, n_subspace)
+    if basis is None:
+        return None
+
+    pivots = sorted(basis, reverse=True)
+    rows = [basis[pivot] for pivot in pivots]
+    circuit = []
+
+    # Translate the affine support to a linear subspace.
+    for bit in range(n_qubits - 1, -1, -1):
+        if anchor & (1 << bit):
+            wire = n_qubits - 1 - bit
+            circuit.append(("X", wire))
+
+    # In reduced row-echelon form, each non-pivot column is a combination of pivot columns.
+    # Clear it with CNOTs controlled by those pivots.
+    circuit.extend(_clear_nonpivot_columns(translated, rows, pivots, n_qubits))
+
+    # Move the pivot columns to the leading wires, updating pivot locations after each swap.
+    circuit.extend(_move_pivots_to_leading_wires(translated, pivots, n_qubits))
+
+    if any(value & remainder_mask for value in translated):  # pragma: no cover
+        raise AssertionError("Affine preconditioning failed to map support into the subspace.")
+
+    bijection = {i: value >> n_remainder for i, value in enumerate(translated)}
+    return circuit, bijection
+
+
 # pylint: disable-next=too-many-instance-attributes
 class PUIsometryFinder:
     r"""Classical algorithm that finds the isometry circuit and bijection for
     :class:`~.PartialUnaryStatePreparation`. The goal is to compute an isometry that maps
-    given computational basis states :math:`\{|\ell\rangle\}_{\ell \in L}` to the first consecutive
-    computational basis states :math:`\{|j\rangle\}_{0\leq j < |L|}`. The state preparation
-    circuit will then prepare the amplitude :math:`c_\ell` on the computational basis state that
-    :math:`|\ell\rangle` was mapped to, and then runs the isometry backwards to distribute the
-    amplitudes to the states :math:`\{|\ell\rangle\}`.
+    given computational basis states :math:`\{|\ell\rangle\}_{\ell \in L}` to unique states in
+    a :math:`\lceil\log_2(|L|)\rceil`-qubit subspace register. The state preparation circuit will
+    then prepare the amplitude :math:`c_\ell` on the computational basis state to which
+    :math:`|\ell\rangle` was mapped, and run the isometry backwards to distribute the amplitudes
+    to the states :math:`\{|\ell\rangle\}`.
+
+    For example, consider the support
+    :math:`L=\{0000, 0011, 1100, 1111\}`. Relative to the anchor :math:`0000`, it is generated
+    by the binary vectors :math:`0011` and :math:`1100`, so it lies in a two-dimensional affine
+    subspace. The forward Clifford circuit ``CNOT([0, 1])``, ``CNOT([2, 3])``, and
+    ``SWAP([1, 2])`` maps the support as
+
+    .. math::
+
+        0000 \mapsto 0000,\quad 0011 \mapsto 0100,\quad
+        1100 \mapsto 1000,\quad 1111 \mapsto 1100.
+
+    The last two bits are now zero, leaving the first two wires as the subspace register. Reversing
+    the circuit maps amplitudes prepared on this register back to the original support.
 
     Args:
         basis_states (list[int]): Computational basis state indices :math:`L` that we want to map
@@ -59,7 +187,8 @@ class PUIsometryFinder:
         Throughout, we will switch between integers and their bit string representation as needed,
         for example in the split of :math:`\ell` into its first :math:`n_{\text{subspace}}` bits
         :math:`\ell_s` and the remaining substring :math:`\ell_r`.
-        Finally, we also define a *batch size* :math:`m = 2^{\lfloor \log_2(n_r)\rfloor}`.
+        Finally, we also define a *batch size*
+        :math:`m = \min(2^{\lfloor \log_2(n_r)\rfloor}, |L|)`.
 
         **Algorithm description**
 
@@ -117,10 +246,11 @@ class PUIsometryFinder:
            have been manipulated repeatedly by the previous steps.
 
         We now have the complete bijection :math:`f` and the recording of the isometry operations
-        required to map :math:`L` to the consecutive integers :math:`0\leq j<|L|`. The former
-        is used to prepare the dense state :math:`|\phi_0\rangle=\sum_{\ell\in L} c_{\ell}|f(\ell)\rangle`
-        on the subspace register. The latter can be executed in reverse to map the states to the
-        desired :math:`|\psi\rangle = \sum_{\ell \in L } c_\ell |\ell\rangle`.
+        required to map :math:`L` into the subspace register. The former is used to prepare the
+        dense state
+        :math:`|\phi_0\rangle=\sum_{\ell\in L} c_{\ell}|f(\ell)\rangle` on the subspace register.
+        The latter can be executed in reverse to map the states to the desired
+        :math:`|\psi\rangle = \sum_{\ell \in L } c_\ell |\ell\rangle`.
 
         **Why does this work?**
 
@@ -600,6 +730,13 @@ class PartialUnaryStatePreparation(Operation):
     >>> print(np.allclose(prepared_state[where], coefficients))
     True
 
+    In addition to the generic path for building the isometry, there is an alternative fast path
+    for affine mappings. A minimal example of this affine fast path is given by the indices
+    ``(0b0000, 0b0011, 0b1100, 0b1111)``. They are generated by XOR combinations of
+    ``0b0011`` and ``0b1100``, so they fit exactly in a two-qubit affine subspace. For such
+    supports, the isometry uses only ``X``, ``CNOT``, and ``SWAP`` gates, avoiding the
+    ``QROM`` and Toffoli operations needed by the generic path.
+
     The preparation circuit looks like this:
 
     >>> print(qp.draw(qp.decompose(circuit, max_expansion=1), max_length=200, show_matrices=False)())
@@ -681,7 +818,7 @@ class PartialUnaryStatePreparation(Operation):
 
     """
 
-    resource_keys = {"num_entries", "num_wires", "num_work_wires"}
+    resource_keys = {"num_entries", "num_wires", "num_work_wires", "is_affine"}
 
     @property
     def resource_params(self):
@@ -689,10 +826,16 @@ class PartialUnaryStatePreparation(Operation):
             "num_entries": len(self.hyperparameters["indices"]),
             "num_wires": len(self.wires),
             "num_work_wires": len(self.hyperparameters["work_wires"]),
+            "is_affine": self._is_affine,
         }
 
     def __init__(self, coefficients, wires, indices, work_wires):
         num_entries = len(indices)
+        if num_entries == 0:
+            raise ValueError("At least one state index must be provided.")
+        if any(isinstance(index, bool) or not isinstance(index, Integral) for index in indices):
+            raise TypeError("State indices must be integers.")
+        indices = tuple(int(index) for index in indices)
         if len(set(indices)) != num_entries:
             raise ValueError("The state indices must be unique.")
         if len(coefficients) != num_entries:
@@ -708,13 +851,21 @@ class PartialUnaryStatePreparation(Operation):
                 f"The state indices must be positive. Smallest index is {min(indices)}"
             )
 
+        wires = Wires(wires)
         work_wires = Wires([] if work_wires is None else work_wires)
+        overlap = Wires.shared_wires([wires, work_wires])
+        if overlap:
+            raise ValueError(
+                f"State-preparation wires and work wires must be disjoint; shared wires: {overlap}."
+            )
         super().__init__(coefficients, wires=wires)
         self.hyperparameters["indices"] = indices
-        self.hyperparameters["work_wires"] = Wires(work_wires)
+        self.hyperparameters["work_wires"] = work_wires
+        n_subspace = max(math.ceil_log2(num_entries), 1)
+        self._is_affine = _is_affine_subspace(indices, n_subspace)
 
 
-def _pui_state_prep_resources(num_entries, num_wires, num_work_wires):
+def _pui_state_prep_resources(num_entries, num_wires, num_work_wires, is_affine):
     """Compute the resources for _pui_state_prep, the partial unary iteration state prep.
     These resource counts are numerically obtained heuristics, extended to guarantee all
     resource reps that may appear are included at least once."""
@@ -723,13 +874,18 @@ def _pui_state_prep_resources(num_entries, num_wires, num_work_wires):
 
     n_subspace = max(math.ceil_log2(num_entries), 1)
     resources = defaultdict(int)
-    num_work_wires = max(num_work_wires, n_subspace - 1, 1)
+    # QROM needs n_subspace - 1 work wires, while Toffoli needs one zeroed work wire.
+    needed_work_wires = max(n_subspace - 1, 1)
+    effective_num_wires = num_wires + max(num_work_wires - needed_work_wires, 0)
     resources[qp.MultiplexerStatePreparation(Complex[2**n_subspace], wires=Wire[n_subspace])] += 1
 
-    R = num_wires - n_subspace
-    # Cap by num_entries: the isometry finder (PUIsometryFinder) can never actually produce a
-    # batch larger than the number of states being mapped, regardless of how many remainder
-    # wires are available.
+    if is_affine:
+        resources[qp.X] += effective_num_wires
+        resources[qp.CNOT] += n_subspace * max(effective_num_wires - n_subspace, 1)
+        resources[qp.SWAP] += effective_num_wires
+        return resources
+
+    R = effective_num_wires - n_subspace
     main_pui_batch_size = min(1 << int(math.floor(math.log2(max(R, 1)))), num_entries)
 
     qrom_reps = {
@@ -747,20 +903,45 @@ def _pui_state_prep_resources(num_entries, num_wires, num_work_wires):
     for p in range(1, main_pui_batch_size):
         resources[qrom_reps[p]] += 1
 
-    ctrl_basis_rep = qp.ctrl(qp.MultiX(Bool[num_wires - 1], Wire[num_wires - 1]), Wire[1])
+    ctrl_basis_rep = qp.ctrl(
+        qp.MultiX(Bool[effective_num_wires - 1], Wire[effective_num_wires - 1]), Wire[1]
+    )
     resources[ctrl_basis_rep] += num_entries
 
     embed_rep = qp.MultiX(Bool[n_subspace], Wire[n_subspace])
     resources[embed_rep] += 2 * (num_entries // main_pui_batch_size + 1)
 
-    resources[qp.SWAP] += num_wires
+    resources[qp.SWAP] += effective_num_wires
 
-    num_toffolis = int(num_wires / 10) + 1
+    num_toffolis = int(effective_num_wires / 10) + 1
     mcx_rep = qp.MultiControlledX(Wire[3], work_wires=Wire[1], work_wire_type="zeroed")
     resources[mcx_rep] += num_toffolis
     resources[qp.MultiX(Bool[1], Wire[1])] += 2 * num_toffolis
 
     return resources
+
+
+def _select_isometry(indices, num_wires, n_subspace):
+    """Select the Clifford-only affine isometry when available, or use the generic finder."""
+    affine_isometry = _find_affine_subspace_isometry(indices, num_wires, n_subspace)
+    if affine_isometry is not None:
+        circuit, bijection = affine_isometry
+        return circuit, [], bijection, True
+
+    iso_finder = PUIsometryFinder(np.array(indices), num_wires)
+    circuit, fanout_bits, bijection = iso_finder.find_isometry()
+    return circuit, fanout_bits, bijection, False
+
+
+def _apply_affine_isometry(circuit, wires):
+    """Apply the inverse of a Clifford-only affine isometry."""
+    for op_type, *data in reversed(circuit):
+        if op_type == "X":
+            qp.X(wires[data[0]])
+        elif op_type == "CNOT":
+            qp.CNOT([wires[data[0]], wires[data[1]]])
+        else:
+            qp.SWAP([wires[idx] for idx in data[0]])
 
 
 def _pui_state_prep_core(coefficients, wires, indices, work_wires):
@@ -783,19 +964,22 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
         # be cheaper in terms of quantum resources used in the isometry circuit.
         wires = Wires(work_wires[needed_work_wires:]) + wires
 
-    iso_finder = PUIsometryFinder(np.array(indices), len(wires))
-    circuit, fanout_bits, bijection = iso_finder.find_isometry()
+    circuit, fanout_bits, bijection, is_affine = _select_isometry(indices, len(wires), n_subspace)
 
     subspace_wires = Wires(wires[:n_subspace])
     nonsubspace_wires = Wires(wires[n_subspace:])
 
     # Step 1: Dense state preparation
-    dense_state = np.zeros(2**n_subspace, dtype=complex)
     ids = np.array([bijection[i] for i in range(num_entries)])
-    dense_state[ids] = coefficients
+    dense_size = 2**n_subspace
+    dense_state = math.scatter(ids, coefficients, dense_size, like=math.get_interface(coefficients))
     qp.MultiplexerStatePreparation(dense_state, subspace_wires)
 
     if not circuit:
+        return
+
+    if is_affine:
+        _apply_affine_isometry(circuit, wires)
         return
 
     batch_sizes = list({data[1] - data[0] for _type, *data in circuit if _type == 0})
@@ -909,8 +1093,10 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
 
 
 # pylint: disable=unused-argument
-def _pui_state_prep_provided_work_wires_condition(num_entries, num_wires, num_work_wires):
-    if num_entries == 1:
+def _pui_state_prep_provided_work_wires_condition(
+    num_entries, num_wires, num_work_wires, is_affine
+):
+    if num_entries == 1 or is_affine:
         return True
     return num_work_wires >= max(math.ceil_log2(num_entries) - 1, 1)
 
@@ -926,15 +1112,15 @@ def _pui_state_prep_provided_work_wires(coefficients, wires, indices, work_wires
 # Decomposition rule with dynamic work wire allocation
 
 
-def _pui_state_prep_work_wires(num_entries, num_wires, num_work_wires):
+def _pui_state_prep_work_wires(num_entries, num_wires, num_work_wires, is_affine):
     # pylint: disable=unused-argument
-    return {"zeroed": max(math.ceil_log2(num_entries) - 1, 1)}
+    return {"zeroed": 0 if is_affine else max(math.ceil_log2(num_entries) - 1, 1)}
 
 
-def _pui_state_prep_dyn_work_wires_condition(num_entries, num_wires, num_work_wires):
+def _pui_state_prep_dyn_work_wires_condition(num_entries, num_wires, num_work_wires, is_affine):
     # pylint: disable=unused-argument
-    if num_entries == 1:
-        return False  # Just use _pui_state_prep_provided_work_wires, we don't need work wires
+    if num_entries == 1 or is_affine:
+        return False  # Use the provided-work-wire rule, which does not allocate wires.
     return num_work_wires < max(math.ceil_log2(num_entries) - 1, 1)
 
 
