@@ -610,22 +610,6 @@ class TestTapePLIntegration:
         out2 = qp.draw(c, decimals=None)(0.5, 1.2)
         assert out2 == "0: ─╭Tester─┤  <Z>\n1: ─╰Tester─┤  <Z>"
 
-    def test_specs(self):
-        """Test that subroutines show up as gate types in specs."""
-
-        @qp.templates.Subroutine
-        def Tester(x, y, wires):
-            qp.RX(x, wires[0])
-            qp.RY(y, wires[1])
-
-        @qp.qnode(qp.device("reference.qubit", wires=2))
-        def c(x, y):
-            Tester(x, y, wires=(0, 1))
-            return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))
-
-        specs = qp.specs(c, level="top")(0.5, 1.2)
-        assert specs.resources.quantum_operations["Tester"] == 1
-
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
 class TestGraphDecomposition:

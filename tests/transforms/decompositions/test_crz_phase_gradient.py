@@ -71,7 +71,8 @@ def test_as_fixed_decomps(phi, p):
         qp.CRZ(phi, [0, 1])
         return qp.state()
 
-    specs = qp.specs(circuit)()["resources"].quantum_operations
+    tape = qp.workflow.construct_tape(circuit)()
+    specs = qp.resource.resources_from_tape(tape).quantum_operations
     expected_specs = {"SemiAdder": 1, "C(BasisState)": 4}
     assert specs == expected_specs
 
@@ -101,7 +102,8 @@ def test_as_alt_decomps(phi, p):
         qp.CRZ(phi, [0, 1])
         return qp.state()
 
-    specs = qp.specs(circuit)()["resources"].quantum_operations
+    tape = qp.workflow.construct_tape(circuit)()
+    specs = qp.resource.resources_from_tape(tape).quantum_operations
     expected_specs = {"SemiAdder": 1, "C(BasisState)": 4}
     assert specs == expected_specs
 

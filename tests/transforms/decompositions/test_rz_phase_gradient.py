@@ -93,7 +93,8 @@ def test_as_fixed_decomps(phi, p):
         qp.RZ(phi, 0)
         return qp.state()
 
-    specs = qp.specs(circuit)()["resources"].quantum_operations
+    tape = qp.workflow.construct_tape(circuit)()
+    specs = qp.resource.resources_from_tape(tape).quantum_operations
     expected_specs = {"GlobalPhase": 1, "SemiAdder": 1, "C(BasisState)": 2}
     assert specs == expected_specs
 
@@ -123,7 +124,8 @@ def test_as_alt_decomps(phi, p):
         qp.RZ(phi, 0)
         return qp.state()
 
-    specs = qp.specs(circuit)()["resources"].quantum_operations
+    tape = qp.workflow.construct_tape(circuit)()
+    specs = qp.resource.resources_from_tape(tape).quantum_operations
     expected_specs = {"GlobalPhase": 1, "SemiAdder": 1, "C(BasisState)": 2}
     assert specs == expected_specs
 

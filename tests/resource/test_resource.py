@@ -1477,9 +1477,18 @@ class TestCircuitSpecs:
         assert r["level"] == r.level
         assert r["resources"] == r.resources
 
-    def test_to_dict(
-        self, example_specs_result, example_specs_result_multi, example_specs_result_multi_symbolic
-    ):
+    def test_getitem_invalid(self, example_specs_result):
+        """Test that CircuitSpecs raises a KeyError for invalid keys."""
+
+        r = example_specs_result
+
+        with pytest.raises(
+            KeyError,
+            match="key 'foo' not available",
+        ):
+            _ = r["foo"]
+
+    def test_to_dict(self, example_specs_result):
         """Test the to_dict method of CircuitSpecs."""
 
         r = example_specs_result
@@ -1502,6 +1511,8 @@ class TestCircuitSpecs:
 
         assert r.to_dict() == expected
 
+    def test_to_dict_multi(self, example_specs_result_multi, example_specs_result_multi_symbolic):
+        """Test the to_dict method of CircuitSpecs when multiple resources are present."""
         r = example_specs_result_multi
 
         expected = {
@@ -1589,6 +1600,50 @@ class TestCircuitSpecs:
 
         assert r.to_dict() == expected
 
+        # Test with a list of resources
+        r = example_specs_result_multi
+        r = dataclasses.replace(
+            r, resources=[r.resources[1], r.resources[2][0], r.resources[2][1]], level=1
+        )
+
+        expected = {
+            "device_name": "default.qubit",
+            "num_device_wires": 5,
+            "shots": Shots(1000),
+            "level": 1,
+            "resources": [
+                {
+                    "quantum_operations": {"Hadamard": 4, "CNOT": 2},
+                    "measurement_processes": {"expval(PauliX)": 1, "expval(PauliZ)": 1},
+                    "num_wires": 2,
+                    "circuit_depth": 2,
+                    "total_quantum_operations": 6,
+                    "vars": frozenset(),
+                    "extra": {},
+                },
+                {
+                    "quantum_operations": {"CNOT": 1},
+                    "measurement_processes": {"expval(PauliX)": 1},
+                    "num_wires": 2,
+                    "circuit_depth": 1,
+                    "total_quantum_operations": 1,
+                    "vars": frozenset(),
+                    "extra": {},
+                },
+                {
+                    "quantum_operations": {"CNOT": 1},
+                    "measurement_processes": {"expval(PauliZ)": 1},
+                    "num_wires": 2,
+                    "circuit_depth": 1,
+                    "total_quantum_operations": 1,
+                    "vars": frozenset(),
+                    "extra": {},
+                },
+            ],
+        }
+
+        assert r.to_dict() == expected
+
     def test_str(self, example_specs_result):
         """Test the string representation of a CircuitSpecs instance."""
 
@@ -1671,9 +1726,9 @@ class TestCircuitSpecs:
         expected += "\n\n" + "-" * 60 + "\n\n"
 
         expected += "Level = 2:\n"
-        expected += "    Batched tape a:\n"
+        expected += "    Batched qnode a:\n"
         expected += r.resources[2][0].to_pretty_str(preindent=8)
-        expected += "\n\n    Batched tape b:\n"
+        expected += "\n\n    Batched qnode b:\n"
         expected += r.resources[2][1].to_pretty_str(preindent=8)
 
         assert r.to_pretty_str(tabular=False) == expected
@@ -1877,7 +1932,7 @@ class TestIPythonDisplays:
 
             **Resources:**
 
-            **Batched tape a:**
+            **Batched qnode a:**
 
             | **Metric** | **Value** |
             | :--- | ---: |
@@ -1890,7 +1945,7 @@ class TestIPythonDisplays:
             | **Total wires** | 2 |
             | **Circuit depth** | 2 |
 
-            **Batched tape b:**
+            **Batched qnode b:**
 
             | **Metric** | **Value** |
             | :--- | ---: |
@@ -1932,7 +1987,7 @@ class TestIPythonDisplays:
             <summary>Resources</summary>
 
             <details open>
-            <summary>Batched tape a</summary>
+            <summary>Batched qnode a</summary>
 
             | **Metric** | **Value** |
             | :--- | ---: |
@@ -1947,7 +2002,7 @@ class TestIPythonDisplays:
 
             </details>
             <details open>
-            <summary>Batched tape b</summary>
+            <summary>Batched qnode b</summary>
 
             | **Metric** | **Value** |
             | :--- | ---: |

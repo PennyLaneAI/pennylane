@@ -47,7 +47,7 @@ def marker(obj: QNode | None = None, label: str | None = None) -> QNode | Callab
         @qp.marker("after-cancel-inverses")
         @qp.transforms.cancel_inverses
         @qp.marker("nothing-applied")
-        @qp.qnode(qp.device("null.qubit"))
+        @qp.qnode(qp.device("null.qubit", wires=1))
         def c():
             qp.RX(0.5, 0)
             qp.H(0)
@@ -71,9 +71,9 @@ def marker(obj: QNode | None = None, label: str | None = None) -> QNode | Callab
     These markers are then recognized by a few of our inspectability features.
     For example, we can verify the circuit resources after the ``Hadamard`` gates  have been cancelled by using ``level="after-cancel-inverses"`` with :func:`~.specs`:
 
-    >>> print(qp.specs(c, level="after-cancel-inverses")()) # or level=1
+    >>> print(qp.specs(qp.qjit(c), level="after-cancel-inverses")()) # or level=1
     Device: null.qubit
-    Device wires: None
+    Device wires: 1
     Shots: Shots(total=None)
     Level: after-cancel-inverses
     <BLANKLINE>
@@ -83,7 +83,7 @@ def marker(obj: QNode | None = None, label: str | None = None) -> QNode | Callab
     Measurement processes:
     - probs(all wires): 1
     Total wires: 1
-    Circuit Depth: 2
+    Circuit Depth: Not computed
 
     Similarly, we can print the circuit after the ``merge_rotations`` transform has been applied by passing ``level="after-merge-rotations"`` to :func:`~.draw`:
 
