@@ -136,7 +136,7 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
         resources = {change_basis_rep: 1, qp.GlobalPhase: 1}
         return resources
 
-    @qp.register_resources(_resource_fn, name="rz_phase_gradient")
+    @qp.register_resources(_resource_fn)
     def _decomp_fn(phi, wires):
         qp.GlobalPhase(phi / 2)
         _rz_phase_gradient(phi, wires, angle_wires, phase_grad_wires, work_wires)

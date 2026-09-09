@@ -48,27 +48,6 @@ def test_wires_error_decomp_fun():
         rule(angles, control_wires, target_wire, "X")
 
 
-@pytest.mark.usefixtures("enable_and_disable_capture")
-def test_decomp_has_a_name():
-    """Test that the decomposition rule from make_selectpaulirot_to_phase_gradient_decomp works as expected
-    as a fixed decomposition and yields the correct resources"""
-    num_controls = 1
-    prec = 2
-
-    # If precision is very low, the number of control wires of the multiplexer dictate the
-    # required number of work wires.
-    num_work_wires = max(prec, num_controls + 1) - 1
-
-    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(prec)])
-    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(prec)])
-    work_wires = qp.wires.Wires([f"work_{i}" for i in range(num_work_wires)])
-
-    custom_decomp = make_selectpaulirot_to_phase_gradient_decomp(
-        angle_wires, phase_grad_wires, work_wires
-    )
-    assert custom_decomp.name == "select_pauli_rot_phase_gradient"
-
-
 @pytest.mark.parametrize("prec", [2, 3, 5])
 @pytest.mark.parametrize("num_controls", [1, 2])
 def test_valid_decomp(prec, num_controls):

@@ -240,7 +240,7 @@ def make_selectpaulirot_to_phase_gradient_decomp(angle_wires, phase_grad_wires, 
         resources = {change_basis_rep_basis_adapted: 1}
         return resources
 
-    @qp.register_resources(_resource_fn, name="select_pauli_rot_phase_gradient")
+    @qp.register_resources(_resource_fn)
     def _decomp_fn(angles, control_wires, target_wire, rot_axis, **_):
         if len(control_wires) == 0:
             match rot_axis:
