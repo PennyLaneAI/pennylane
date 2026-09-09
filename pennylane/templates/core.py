@@ -41,6 +41,7 @@ import numpy as np
 from pennylane import capture, math
 from pennylane.capture import subroutine as capture_subroutine
 from pennylane.core import queuing
+from pennylane.core.apply import apply
 from pennylane.core.operator import Operation, Operator, abstractify
 from pennylane.decomposition import (
     CompressedResourceOp,
@@ -378,7 +379,7 @@ class SubroutineOp(Operation):
 
     def decomposition(self):
         if queuing.QueuingManager.recording():
-            _ = [queuing.apply(op) for op in self._decomp]
+            _ = [apply(op) for op in self._decomp]
         return self._decomp
 
     def label(
@@ -417,7 +418,7 @@ def _calculate_resources(subroutine: "Subroutine", signature_key):
 # pylint: disable=unused-argument
 @register_resources(_calculate_resources)
 def _Subroutine_decomp(*data, wires, decomposition):
-    _ = [queuing.apply(op) for op in decomposition]
+    _ = [apply(op) for op in decomposition]
 
 
 add_decomps(SubroutineOp, _Subroutine_decomp)

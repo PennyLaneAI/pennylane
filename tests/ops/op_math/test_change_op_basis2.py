@@ -128,7 +128,7 @@ def test_change_op_basis_concrete_legacy_operand_capture():
     import jax
 
     # Building with capture paused yields a concrete legacy operator rather than a tracer, so
-    # ``_apply_op_or_func`` takes the ``isinstance(op, Operator)`` -> ``queuing.apply`` branch.
+    # ``_apply_op_or_func`` takes the ``isinstance(op, Operator)`` -> ``apply`` branch.
     with qp.capture.pause():
         legacy_op = qp.ControlledSequence(qp.RX(0.1, 0), control=1)
 

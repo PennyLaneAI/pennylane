@@ -22,8 +22,9 @@ import copy
 import numpy as np
 
 from pennylane.control_flow import for_loop
+from pennylane.core.apply import apply
 from pennylane.core.operator import Operation, abstractify
-from pennylane.core.queuing import QueuingManager, apply
+from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.ops import Hadamard, PhaseShift
 from pennylane.ops.op_math import ctrl

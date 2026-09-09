@@ -33,8 +33,9 @@ from operator2_utils import (
 from scipy.sparse import csr_matrix
 
 import pennylane as qp
+from pennylane.core.apply import apply
 from pennylane.core.operator import Operator2, StatePrepBase2, abstractify
-from pennylane.core.queuing import AnnotatedQueue, apply
+from pennylane.core.queuing import AnnotatedQueue
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,

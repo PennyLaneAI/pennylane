@@ -21,8 +21,9 @@ from collections.abc import Iterable
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
+from pennylane.core.apply import apply
 from pennylane.core.operator import Operation, Operator, Operator2, abstractify
-from pennylane.core.queuing import QueuingManager, apply
+from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import (
     CompressedResourceOp,
     add_decomps,

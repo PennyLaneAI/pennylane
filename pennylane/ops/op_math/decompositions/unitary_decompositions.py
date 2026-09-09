@@ -23,6 +23,7 @@ from scipy.linalg import cossin
 
 from pennylane import capture, compiler, math, ops, templates
 from pennylane.core import queuing
+from pennylane.core.apply import apply
 from pennylane.decomposition.decomposition_rule import register_condition, register_resources
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.math.decomposition import (
@@ -102,7 +103,7 @@ def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False)
     # If there is an active queuing context, queue the decomposition so that expand works
     if queuing.QueuingManager.recording():
         for op in q.queue:  # pragma: no cover
-            queuing.apply(op)
+            apply(op)
 
     return q.queue
 
@@ -237,7 +238,7 @@ def two_qubit_decomposition(U, wires):
     # If there is an active queuing context, queue the decomposition so that expand works
     if queuing.QueuingManager.recording():
         for op in q.queue:  # pragma: no cover
-            queuing.apply(op)
+            apply(op)
 
     return q.queue
 
@@ -277,7 +278,7 @@ def multi_qubit_decomposition(U, wires):
     # If there is an active queuing context, queue the decomposition so that expand works
     if queuing.QueuingManager.recording():
         for op in q.queue:  # pragma: no cover
-            queuing.apply(op)
+            apply(op)
 
     return q.queue
 

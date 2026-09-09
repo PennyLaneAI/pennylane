@@ -28,8 +28,9 @@ from scipy.sparse import kron as sparse_kron
 import pennylane as qp
 from pennylane import compiler, control_flow, math
 from pennylane.capture.autograph import wraps
+from pennylane.core.apply import apply
 from pennylane.core.operator import Operator, abstractify
-from pennylane.core.queuing import QueuingManager, apply
+from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition.symbolic_decomposition import flip_zero_control
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract

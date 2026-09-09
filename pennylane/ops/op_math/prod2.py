@@ -24,8 +24,8 @@ from scipy.sparse import kron as sparse_kron
 
 import pennylane as qp
 from pennylane import math
+from pennylane.core.apply import apply
 from pennylane.core.operator import Operator, abstractify
-from pennylane.core.queuing import apply
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.typing import TensorLike

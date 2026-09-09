@@ -22,9 +22,9 @@ from scipy.linalg import fractional_matrix_power
 import pennylane as qp
 from pennylane import capture, math
 from pennylane.core import Operator
+from pennylane.core.apply import apply
 from pennylane.core.operator import abstractify
 from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
-from pennylane.core.queuing import apply
 from pennylane.decomposition.decomposition_rule import (
     DecompCollection,
     DecompositionRule,

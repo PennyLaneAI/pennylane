@@ -26,10 +26,11 @@ from inspect import Parameter, signature
 
 from pennylane import capture, math
 from pennylane.capture import autograph
+from pennylane.core.apply import apply
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.operator import Operator
 from pennylane.core.qscript import QuantumScript
-from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
+from pennylane.core.queuing import AnnotatedQueue, QueuingManager
 from pennylane.exceptions import TransformError
 from pennylane.pytrees import flatten
 from pennylane.typing import ResultBatch
