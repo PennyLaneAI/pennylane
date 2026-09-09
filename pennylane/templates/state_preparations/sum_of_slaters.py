@@ -1057,6 +1057,7 @@ class SumOfSlatersPrep(Operator2):
         }
 
 
+# pylint: disable=expression-not-assigned, pointless-statement
 # pylint: disable-next=unused-argument
 def _sos_state_prep_resources(coefficients, wires, indices, **_):
     """Compute the resources for _sos_state_prep. It is an upper bound due to
@@ -1092,24 +1093,24 @@ def _sos_state_prep_resources(coefficients, wires, indices, **_):
 
     if not identity_encoding:
         ## Step 3 & 4 in paper (p.7). This is an upper bound
-        _ = qp.CNOT ** (m * num_wires)  # size {u_k} * bits in u_k
+        qp.CNOT ** (m * num_wires)  # size {u_k} * bits in u_k
 
     ## Step 5 in paper (p.7)
-    _ = qp.TemporaryAND ** ((num_entries - 1) * (m - 1))
-    _ = _adjoint_abstract(qp.TemporaryAND) ** ((num_entries - 1) * (m - 1))
+    qp.TemporaryAND ** ((num_entries - 1) * (m - 1))
+    _adjoint_abstract(qp.TemporaryAND) ** ((num_entries - 1) * (m - 1))
 
     # Calculate the bit counts of all integers that need to be uncomputed and sum them up.
     number_of_bits_to_unset = int(np.sum(np.bitwise_count(np.arange(1, num_entries))))
-    _ = qp.CNOT**number_of_bits_to_unset
+    qp.CNOT**number_of_bits_to_unset
 
     # We have to flip at most m control bits between any pair of the `num_entries-1` uncomputing
     # MCX groups (skipping 0 because nothing needs to be done) as well as before the first
     # and after the last group. This amounts to `num_entries` layers of bit flips
-    _ = qp.X ** (num_entries * m)
+    qp.X ** (num_entries * m)
 
     if not identity_encoding:
         ## Step 6 in paper (p.7). This is an upper bound
-        _ = qp.CNOT ** (m * num_wires)  # size {u_k} * bits in u_k
+        qp.CNOT ** (m * num_wires)  # size {u_k} * bits in u_k
 
 
 # pylint: disable=unused-argument,too-many-arguments
