@@ -18,8 +18,6 @@ This module contains core quantum operations supported by PennyLane -
 such as gates, state preparations and observables.
 """
 
-from pennylane.core.operator import Operation  # re-exported for backwards compatibility
-
 from .channel import *
 from .channel import __all__ as _channel__ops__
 
