@@ -70,6 +70,7 @@ class TestControlledQubitUnitary:
     @pytest.mark.parametrize(
         "op",
         [
+            qp.ControlledQubitUnitary(np.eye(2), wires=(1, 2)),
             qp.ControlledQubitUnitary(np.eye(2), wires=(1, 2, 3)),
             qp.ControlledQubitUnitary(np.eye(4), wires=(1, 2, 3, 4)),
             qp.ControlledQubitUnitary(np.eye(8), wires=(1, 2, 3, 4, 5)),

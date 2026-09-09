@@ -746,12 +746,13 @@ class TmpPauliRot(PauliRot):
         return [PauliRot(theta, pauli_word, wires)]
 
 
-def _tmp_paulirot_decomp_resources(pauli_word: str, **__):
+# pylint: disable-next=unused-argument
+def _tmp_paulirot_decomp_resources(theta, wires, pauli_word: str):
     return {qp.PauliRot(Float, pauli_word=pauli_word, wires=Wire[len(pauli_word)]): 1}
 
 
 @register_resources(_tmp_paulirot_decomp_resources)
-def _tmp_paulirot_decomp(theta: TensorLike, wires: WiresLike, pauli_word: str, **__):
+def _tmp_paulirot_decomp(theta: TensorLike, wires: WiresLike, pauli_word: str):
     PauliRot(theta, pauli_word=pauli_word, wires=wires)
 
 

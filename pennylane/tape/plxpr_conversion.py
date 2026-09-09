@@ -20,7 +20,7 @@ from copy import copy
 import jax
 import numpy as np
 
-from pennylane import ops
+from pennylane import math, ops
 from pennylane.allocation import Allocate, Deallocate, allocate_prim, deallocate_prim
 from pennylane.capture import pause
 from pennylane.capture.base_interpreter import FlattenedInterpreter
@@ -135,7 +135,7 @@ def _ctrl_transform_prim(self, *invals, n_control, jaxpr, n_consts, **params):
     """
     consts = invals[:n_consts]
     args = invals[n_consts:-n_control]
-    control = invals[-n_control:]
+    control = math.array(invals[-n_control:])
 
     child = CollectOpsandMeas()
     child.eval(jaxpr, consts, *args)

@@ -362,7 +362,7 @@ class TestDecomposition:
         qp.assert_equal(q[7], qp.CNOT((0, 1)))
         qp.assert_equal(q[8], qp.RZ(-np.pi / 4, 1))
         qp.assert_equal(q[9], qp.CNOT((0, 1)))
-        qp.assert_equal(q[10], qp.GlobalPhase(-np.pi / 8, wires=(0, 1)))
+        qp.assert_equal(q[10], qp.GlobalPhase(-np.pi / 8))
 
     @pytest.mark.capture
     @pytest.mark.usefixtures("enable_graph_decomposition")
@@ -394,7 +394,7 @@ class TestDecomposition:
         qp.assert_equal(q[7], qp.CNOT((0, 1)))
         qp.assert_equal(q[8], qp.RZ(-pi / 4, 1))
         qp.assert_equal(q[9], qp.CNOT((0, 1)))
-        qp.assert_equal(q[10], qp.GlobalPhase(-pi / 8, wires=(0, 1)))
+        qp.assert_equal(q[10], qp.GlobalPhase(-pi / 8))
 
 
 class TestInputs:
