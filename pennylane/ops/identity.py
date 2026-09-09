@@ -30,6 +30,18 @@ from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import WiresLike
 
 
+@lru_cache
+def _identity_matrix(n_wires):
+    """Cached dense identity matrix, keyed on the number of wires rather than the wire labels."""
+    return qp.math.eye(int(2**n_wires))
+
+
+@lru_cache
+def _identity_sparse_matrix(n_wires, format):  # pylint: disable=redefined-builtin
+    """Cached sparse identity matrix, keyed on the number of wires rather than the wire labels."""
+    return sparse.eye(int(2**n_wires), format=format)
+
+
 class Identity(Operator2):
     r"""
     The Identity operator
@@ -48,6 +60,12 @@ class Identity(Operator2):
     simulators should always be equal to 1.
     """
 
+    num_wires = None
+    """Any number of wires."""
+
+    num_params = 0
+    """Number of trainable parameters."""
+
     grad_method = None
     """Gradient computation method."""
 
@@ -55,7 +73,6 @@ class Identity(Operator2):
 
     def __init__(self, wires: WiresLike = ()):
         super().__init__(wires=wires)
-        self._hyperparameters = {"n_wires": len(self.wires)}
         self._pauli_rep = qp.pauli.PauliSentence({qp.pauli.PauliWord({}): 1.0})
 
     def label(self, decimals=None, base_label=None, cache=None):
@@ -77,7 +94,7 @@ class Identity(Operator2):
         return "Identity"
 
     @staticmethod
-    def compute_eigvals(wires=()):  # pylint: disable=arguments-differ
+    def compute_eigvals(wires=(0,)):  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -102,8 +119,7 @@ class Identity(Operator2):
         return qp.math.ones(2 ** len(wires))
 
     @staticmethod
-    @lru_cache
-    def compute_matrix(wires=()):  # pylint: disable=arguments-differ
+    def compute_matrix(wires=(0,)):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -120,15 +136,11 @@ class Identity(Operator2):
         [[1. 0.]
          [0. 1.]]
         """
-        return qp.math.eye(int(2 ** len(wires)))
+        return _identity_matrix(len(wires))
 
     @staticmethod
-    @lru_cache
-    def compute_sparse_matrix(wires=(), format="csr"):  # pylint: disable=arguments-differ
-        return sparse.eye(int(2 ** len(wires)), format=format)
-
-    def matrix(self, wire_order=None):
-        return self.compute_matrix(wires=wire_order or ())
+    def compute_sparse_matrix(wires=(0,), format="csr"):  # pylint: disable=arguments-differ
+        return _identity_sparse_matrix(len(wires), format)
 
     @staticmethod
     def compute_diagonalizing_gates(

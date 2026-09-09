@@ -47,9 +47,8 @@ class TestIdentity:
         """Test the flatten and unflatten methods of identity."""
         op = Identity(wires)
         data, metadata = op._flatten()
-        assert data == tuple()
-        assert metadata[0] == qp.wires.Wires(wires)
-        assert metadata[1] == tuple()
+        assert data == ([], [qp.wires.Wires(wires)], [])
+        assert hash(metadata)
 
         new_op = Identity._unflatten(*op._flatten())
         qp.assert_equal(op, new_op)
@@ -64,14 +63,19 @@ class TestIdentity:
 
     @pytest.mark.jax
     def test_jax_pytree_integration(self, wires):
-        """Test that identity is a pytree by jitting a function of it."""
+        """Test that identity round-trips through the jax pytree registry."""
         import jax
 
         op = qp.Identity(wires)
 
-        adj_op = jax.jit(lambda op: qp.adjoint(op, lazy=False))(op)
+        leaves, tree_def = jax.tree_util.tree_flatten(op)
+        qp.assert_equal(jax.tree_util.tree_unflatten(tree_def, leaves), op)
 
-        qp.assert_equal(op, adj_op)
+        if all(isinstance(w, int) for w in wires):
+            # ``Operator2`` treats wires as dynamic pytree leaves, so only integer wire
+            # labels can be traced by ``jax.jit``.
+            adj_op = jax.jit(lambda op: qp.adjoint(op, lazy=False))(op)
+            qp.assert_equal(op, adj_op)
 
     def test_identity_eigvals(self, wires, tol):
         """Test identity eigenvalues are correct"""
@@ -100,7 +104,7 @@ class TestIdentity:
 
     def test_matrix_representation(self, wires, tol):
         """Test the matrix representation"""
-        res_static = Identity.compute_matrix(n_wires=len(wires))
+        res_static = Identity.compute_matrix(wires=wires)
         res_dynamic = Identity(wires=wires).matrix()
         expected = np.eye(int(2 ** len(wires)))
         assert np.allclose(res_static, expected, atol=tol)

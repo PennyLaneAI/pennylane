@@ -273,15 +273,16 @@ class TestSpecialOps:
         jaxpr = jax.make_jaxpr(qp.I)()
         assert len(jaxpr.eqns) == 1
 
-        assert jaxpr.eqns[0].primitive == qp.I._primitive
-        assert len(jaxpr.eqns[0].invars) == 0
-        assert jaxpr.eqns[0].params == {"n_wires": 0}
+        i_eqn = jaxpr.eqns[0]
+        assert_eqn_matches_op(i_eqn, qp.I)
+        assert len(i_eqn.invars) == 0
+        assert i_eqn.params["wire_lens"] == (0,)
 
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts)
 
-        assert len(q.queue) == 1
-        qp.assert_equal(q.queue[0], qp.I())
+        assert len(collector.state["ops"]) == 1
+        qp.assert_equal(collector.state["ops"][0], qp.I())
 
 
 class TestTemplates:

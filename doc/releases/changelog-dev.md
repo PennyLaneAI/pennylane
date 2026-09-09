@@ -857,6 +857,13 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The static methods :meth:`~.Identity.compute_matrix`, :meth:`~.Identity.compute_sparse_matrix` and
+  :meth:`~.Identity.compute_eigvals` now take a `wires` argument instead of `n_wires`, matching the
+  :class:`~.Operator2` interface. They default to a single wire, so calls without arguments are unaffected.
+  Additionally, controlling an :class:`~.Identity` now decomposes into an empty list of operations for
+  any control values, instead of flipping the control wires around an ``Identity``.
+  [(#10129)](https://github.com/PennyLaneAI/pennylane/pull/10129)
+
 * :class:`~.GlobalPhase` no longer accepts the `wires` argument in order to mirror its MLIR lowered operation.
   [(#9992)](https://github.com/PennyLaneAI/pennylane/pull/9992)
 
@@ -1088,7 +1095,8 @@
   - Non-parametric operators are ported:
     - :class:`~.S`, :class:`~.T`, :class:`~.SX`, :class:`~.Y`, :class:`~.CY`, :class:`~.SISWAP`, :class:`~.ISWAP`, :class:`~.ECR`,
       :class:`~.SWAP`, :class:`~.CSWAP`, :class:`~.H`, :class:`~.CH`, :class:`~.Z`, :class:`~.CZ`, :class:`~.CCZ`, :class:`~.X`,
-      :class:`~.CNOT`, :class:`~.Toffoli`, :class:`~.MultiControlledX`, :class:`~.ops.MidMeasure`.
+      :class:`~.CNOT`, :class:`~.Toffoli`, :class:`~.MultiControlledX`, :class:`~.ops.MidMeasure`,
+      :class:`~.Identity`.
   [(#9818)](https://github.com/PennyLaneAI/pennylane/pull/9818)
   [(#9859)](https://github.com/PennyLaneAI/pennylane/pull/9859)
   [(#9819)](https://github.com/PennyLaneAI/pennylane/pull/9819)
@@ -1102,6 +1110,7 @@
   [(#9960)](https://github.com/PennyLaneAI/pennylane/pull/9960)
   [(#10004)](https://github.com/PennyLaneAI/pennylane/pull/10004)
   [(#10115)](https://github.com/PennyLaneAI/pennylane/pull/10115)
+  [(#10129)](https://github.com/PennyLaneAI/pennylane/pull/10129)
   - Parametric operators are ported:
     - :class:`~.RZ`, :class:`~.CRZ`, :class:`~.DiagonalQubitUnitary`, :class:`~.PauliRot`, :class:`~.MultiRZ`, :class:`~.PhaseShift`,
       :class:`~.ControlledPhaseShift`, :class:`~.Rot`, :class:`~.CRot`, :class:`~.U1`, :class:`~.U2`, :class:`~.U3`, :class:`~.PCPhase`,
