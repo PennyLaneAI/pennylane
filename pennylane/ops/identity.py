@@ -60,6 +60,7 @@ class Identity(Operator2):
     simulators should always be equal to 1.
     """
 
+    # NOTE: Previous default for legacy operator
     num_wires = None
     """Any number of wires."""
 
