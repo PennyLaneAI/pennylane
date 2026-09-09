@@ -850,7 +850,7 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
 def _ctrl_single_work_wire_resource(base, control_wires, *_, **__):
     return {
         _ctrl_abstract(base, Wire[1]): 1,
-        qp.ctrl(qp.X, Wire[len(control_wires)]): 2,
+        qp.ctrl(qp.X(Wire[1]), Wire[len(control_wires)]): 2,
     }
 
 
