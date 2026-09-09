@@ -3,7 +3,7 @@ permissions:
   contents: read
 on:
   release:
-    types: [published]
+    types: [released]
 
 env:
   UV_SYSTEM_PYTHON: 1
