@@ -22,8 +22,8 @@ from typing import Any
 import numpy as np
 
 from pennylane import ops
-from pennylane.core.base import Operation
 from pennylane.core.measurements import MeasurementProcess
+from pennylane.core.operator import Operation
 from pennylane.ops.meta import WireCut
 
 from .cutstrategy import CutStrategy
