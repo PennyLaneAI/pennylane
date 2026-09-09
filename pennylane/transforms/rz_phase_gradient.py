@@ -30,16 +30,36 @@ from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
 
+# pylint: disable=too-many-arguments
 def _rz_phase_gradient(
-    phi: float, wire: Wires, angle_wires: Wires, phase_grad_wires: Wires, work_wires: Wires
-) -> Operator:
+    phi: float,
+    wire: Wires,
+    angle_wires: Wires,
+    phase_grad_wires: Wires,
+    work_wires: Wires,
+    adaptive_precision: bool = True,
+) -> Operator | None:
     """Function that transforms the RZ gate to the phase gradient circuit
-    The precision is implicitly defined by the length of ``angle_wires``
+    The precision is implicitly defined by the length of ``angle_wires`` and can be adapted to the
+    minimum required length if ``adaptive_precision==True``
     Note that the global phases are collected and added as one big global phase in the main function
     """
     precision = len(angle_wires)
 
     binary_int = math.binary_decimals(phi, precision, unit=2 * np.pi)
+
+    if adaptive_precision and not math.is_abstract(phi):
+        # Drop trailing zero bits: width = lowest-order set bit index + 1 (binary_int is MSB-first),
+        # or 0 if the angle rounds to zero.
+        width = math.where(binary_int)[0].max(initial=-1) + 1
+
+        if width == 0:
+            return None
+
+        binary_int = binary_int[:width]
+        angle_wires = angle_wires[:width]
+        phase_grad_wires = phase_grad_wires[:width]
+        # work_wires are passed in full; extra ones beyond the adder width are unused.
 
     # NOTE: To be capture compatible, must wrap in function
     # so operators are only constructed when called
@@ -60,6 +80,7 @@ def rz_phase_gradient(
     angle_wires: Wires,
     phase_grad_wires: Wires,
     work_wires: Wires,
+    adaptive_precision: bool = True,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Quantum function transform to decompose all instances of :class:`~.RZ` gates into additions
     using a phase gradient resource state.
@@ -110,6 +131,10 @@ def rz_phase_gradient(
         work_wires (Wires): Additional work wires to realize the :class:`~.SemiAdder` between the ``angle_wires`` and
             ``phase_grad_wires``. Needs to be at least ``b-1`` wires, where ``b=len(phase_grad_wires)`` is
             the precision of the angle :math:`\phi`.
+        adaptive_precision (bool): If ``True`` (default), narrow the ``SemiAdder`` for each concrete
+            angle to the bits up to its least-significant set bit (dropping trailing zero bits) and
+            skip angles that round to zero. If ``False``, always construct the full
+            ``len(angle_wires)``-bit adder.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
@@ -203,15 +228,19 @@ def rz_phase_gradient(
             global_phases.append(phi / 2)
 
             with QueuingManager.stop_recording():
-                operations.append(
-                    _rz_phase_gradient(
-                        phi,
-                        wire,
-                        angle_wires=angle_wires,
-                        phase_grad_wires=phase_grad_wires,
-                        work_wires=work_wires,
-                    )
+                new_op = _rz_phase_gradient(
+                    phi,
+                    wire,
+                    angle_wires=angle_wires,
+                    phase_grad_wires=phase_grad_wires,
+                    work_wires=work_wires,
+                    adaptive_precision=adaptive_precision,
                 )
+            # _rz_phase_gradient returns None for an angle that rounds to zero (its adder is the
+            # identity). The true-angle global phase phi/2 collected above is still applied, so the
+            # result matches the full-precision decomposition.
+            if new_op is not None:
+                operations.append(new_op)
         else:
             operations.append(op)
 

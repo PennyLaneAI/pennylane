@@ -29,6 +29,13 @@ from pennylane.transforms.decompositions import (
 from pennylane.wires import WireError
 
 
+def _selectpaulirot_width(angles, prec):
+    """MSB-anchored width shared across all multiplexed angles at ``prec`` bits."""
+    bits = qp.math.binary_decimals(angles, prec, unit=4 * np.pi)
+    cols = [j for j in range(prec) if any(int(b) for b in bits[:, j])]
+    return (max(cols) + 1) if cols else 0
+
+
 def test_wires_error_decomp_fun():
     """Test WireError is raised correctly when calling the decomposition function on a large
     SelectPauliRot that needs more work wires for its QROM than are available."""
@@ -48,29 +55,38 @@ def test_wires_error_decomp_fun():
         rule(angles, control_wires, target_wire, "X")
 
 
+@pytest.mark.usefixtures("enable_and_disable_capture")
+@pytest.mark.parametrize("adaptive_precision", [True, False])
 @pytest.mark.parametrize("prec", [2, 3, 5])
 @pytest.mark.parametrize("num_controls", [1, 2])
-def test_valid_decomp(prec, num_controls):
-    """Test that the decomposition rule from make_selectpaulirot_to_phase_gradient_decomp works as expected
-    as a fixed decomposition and yields the correct resources"""
+def test_valid_decomp(prec, num_controls, adaptive_precision):
+    """Test that the decomposition rule from make_selectpaulirot_to_phase_gradient_decomp yields a
+    valid decomposition, with capture both disabled (concrete angles) and enabled (abstract
+    angles).
 
-    angles = (
-        np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 1, 0]])
-        @ np.array([1 / 2, 1 / 4, 1 / 8])
-        * 4
-        * np.pi
-    )[: 2**num_controls]
+    ``_test_decomposition_rule`` checks the emitted circuit against the rule's full-precision
+    resource estimate. We use all-ones angles so every bit column is set and the concrete
+    decomposition saturates that estimate (no trailing-zero columns to truncate); narrower angles
+    emit a smaller circuit than the (upper-bound) estimate and are covered by
+    ``test_as_fixed_decomps``."""
+
+    # every multiplexed angle all-ones at prec bits -> all columns set -> width == prec
+    angles = np.full(2**num_controls, (1 - 2.0**-prec) * 4 * np.pi)
 
     # If precision is very low, the number of control wires of the multiplexer dictate the
     # required number of work wires.
     num_work_wires = max(prec, num_controls + 1) - 1
 
-    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(prec)])
-    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(prec)])
-    work_wires = qp.wires.Wires([f"work_{i}" for i in range(num_work_wires)])
+    # integer wires (string labels are not valid JAX types under capture)
+    first_aux = num_controls + 1
+    angle_wires = qp.wires.Wires(list(range(first_aux, first_aux + prec)))
+    phase_grad_wires = qp.wires.Wires(list(range(first_aux + prec, first_aux + 2 * prec)))
+    work_wires = qp.wires.Wires(
+        list(range(first_aux + 2 * prec, first_aux + 2 * prec + num_work_wires))
+    )
 
     custom_decomp = make_selectpaulirot_to_phase_gradient_decomp(
-        angle_wires, phase_grad_wires, work_wires
+        angle_wires, phase_grad_wires, work_wires, adaptive_precision=adaptive_precision
     )
 
     op = qp.SelectPauliRot(angles, control_wires=range(num_controls), target_wire=num_controls)
@@ -78,11 +94,14 @@ def test_valid_decomp(prec, num_controls):
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
+@pytest.mark.parametrize("adaptive_precision", [True, False])
 @pytest.mark.parametrize("prec", [2, 3, 5])
 @pytest.mark.parametrize("num_controls", [1, 2])
-def test_as_fixed_decomps(prec, num_controls):
-    """Test that the decomposition rule from make_selectpaulirot_to_phase_gradient_decomp works as expected
-    as a fixed decomposition and yields the correct resources"""
+def test_as_fixed_decomps(prec, num_controls, adaptive_precision):
+    """Test that the decomposition rule from make_selectpaulirot_to_phase_gradient_decomp works as
+    expected as a fixed decomposition and yields the correct resources. With
+    ``adaptive_precision=False`` the full-precision adder is always emitted, so the specs are
+    precision-scaled regardless of the (possibly narrower) significant width of the angles."""
     angles = (
         np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 1, 0]])
         @ np.array([1 / 2, 1 / 4, 1 / 8])
@@ -99,7 +118,7 @@ def test_as_fixed_decomps(prec, num_controls):
     work_wires = qp.wires.Wires([f"work_{i}" for i in range(num_work_wires)])
 
     custom_decomp = make_selectpaulirot_to_phase_gradient_decomp(
-        angle_wires, phase_grad_wires, work_wires
+        angle_wires, phase_grad_wires, work_wires, adaptive_precision=adaptive_precision
     )
 
     @qp.transforms.decompose(
@@ -118,11 +137,12 @@ def test_as_fixed_decomps(prec, num_controls):
         qp.SelectPauliRot(angles, control_wires=range(num_controls), target_wire=num_controls)
         return qp.state()
 
+    width = _selectpaulirot_width(angles, prec) if adaptive_precision else prec
     specs = qp.specs(circuit)(angles)["resources"].quantum_operations
     expected_specs = {
         "QROM": 2,
-        "CNOT": 2 * prec,
-        "PauliX": 2 * prec,
+        "CNOT": 2 * width,
+        "PauliX": 2 * width,
         "SemiAdder": 1,
     }
     assert expected_specs == specs
