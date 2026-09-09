@@ -118,7 +118,7 @@ def make_crz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
         resources = {change_basis_rep: 1}
         return resources
 
-    @qp.register_resources(_resource_fn)
+    @qp.register_resources(_resource_fn, name="crz_phase_gradient")
     def _decomp_fn(phi, wires):  # pylint: disable=unused-argument
         precision = len(angle_wires)
         binary_int = qp.math.binary_decimals(phi, precision, unit=4 * np.pi)
