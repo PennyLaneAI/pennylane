@@ -15,7 +15,7 @@ This module contains ``qp.subscircuit``, a factory function to create operators
 using quantum functions.
 """
 
-import inspect
+from inspect import Parameter, Signature, signature
 
 from pennylane.core import Operator2
 from pennylane.decomposition import DecompositionRule, add_decomps
@@ -26,9 +26,9 @@ def _subcircuit(qfunc: DecompositionRule, **cls_attrs):
 
     # 'self' shouldn't be in signature(OpClass), but it should be in
     # signature(OpClass.__init__)
-    s = inspect.signature(qfunc._impl)
-    self_p = inspect.Parameter("self", kind=inspect.Parameter.POSITIONAL_OR_KEYWORD)
-    init_sig = inspect.Signature((self_p, *s.parameters.values()))
+    s = signature(qfunc._impl)
+    self_p = Parameter("self", kind=Parameter.POSITIONAL_OR_KEYWORD)
+    init_sig = Signature((self_p, *s.parameters.values()))
 
     def _init(self, *args, **kwargs):
         Operator2.__init__(self, *args, **kwargs)
@@ -57,7 +57,7 @@ def subcircuit(
     compilable_argnames=(),
     hybrid_argnames=(),
     static_argnames=(),
-    **additional_attrs,
+    **cls_attrs,
 ):  # pylint: disable=too-many-arguments
     """Decorator to create an operator using a quantum function."""
     if qfunc is not None:
@@ -68,7 +68,7 @@ def subcircuit(
             compilable_argnames=compilable_argnames,
             hybrid_argnames=hybrid_argnames,
             static_argnames=static_argnames,
-            **additional_attrs,
+            **cls_attrs,
         )
 
     def wrapper(qfunc_):
@@ -79,7 +79,7 @@ def subcircuit(
             compilable_argnames=compilable_argnames,
             hybrid_argnames=hybrid_argnames,
             static_argnames=static_argnames,
-            **additional_attrs,
+            **cls_attrs,
         )
 
     return wrapper
