@@ -22,7 +22,9 @@ from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops.op_math import Evolution, Exp
 
 
-@pytest.mark.usefixtures("enable_and_disable_capture")
+@pytest.mark.disable_and_xfail_enable_capture(
+    reason="Exp is not currently planned for porting to Op2"
+)
 def test_basic_validity():
     """Assert the basic validity of an evolution op."""
     base = qp.prod(qp.PauliX(0), qp.PauliY(1))

@@ -716,7 +716,8 @@ class TestMCXDecomposition:
         mcx = qp.MultiControlledX(wires=control_wires + [target_wire])
 
         with qp.queuing.AnnotatedQueue() as q:
-            decompose_mcx_with_no_worker(**mcx.arguments)
+            with qp.capture.pause():
+                decompose_mcx_with_no_worker(**mcx.arguments)
 
         # Verify that the resource estimate is correct.
         _test_decomposition_rule(mcx, decompose_mcx_with_no_worker, skip_decomp_matrix_check=True)
