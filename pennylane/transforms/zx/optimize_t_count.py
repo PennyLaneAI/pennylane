@@ -22,7 +22,6 @@ from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
-from .converter import from_zx, to_zx
 from .helper import _apply_zx_transform, _needs_pyzx
 
 
@@ -103,7 +102,7 @@ def optimize_t_count(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postproce
 
         return pyzx_circ.to_graph()
 
-    new_tape = _apply_zx_transform(tape, transform_fn, to_zx, from_zx)
+    new_tape = _apply_zx_transform(tape, transform_fn)
 
     def null_postprocessing(results):
         """A postprocessing function returned by a transform that only converts the batch of results

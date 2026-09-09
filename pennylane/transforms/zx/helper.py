@@ -44,15 +44,15 @@ def _needs_pyzx(func):
 def _apply_zx_transform(
     tape: QuantumScript,
     transform_fn: Callable[[object], object],
-    to_zx: Callable[[QuantumScript], object],
-    from_zx: Callable[[object], QuantumScript],
 ) -> QuantumScript:
     """Apply a PyZX transform and restore the original PennyLane wire labels."""
-    original_wires = tape.wires
+    # Avoid a circular import: converter.py imports ``_needs_pyzx`` from this module.
+    from .converter import from_zx, to_zx  # pylint: disable=import-outside-toplevel
+
     transformed_graph = transform_fn(to_zx(tape))
     qscript = from_zx(transformed_graph)
 
-    wire_map = dict(enumerate(original_wires))
+    wire_map = dict(enumerate(tape.wires))
     mapped_operations = [op.map_wires(wire_map) for op in qscript.operations]
 
     return tape.copy(operations=mapped_operations)
