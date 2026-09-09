@@ -66,6 +66,20 @@ class CompositeOp2(Operator2, is_baseclass=True):
         for op in self:
             remove_from_program(op)
 
+    # FIX: This is a temporary work-around. Long-term fix is to remove `_init_pauli_rep`
+    # from the constructor [sc-130145].
+    def _flatten(self):
+        (dyn_args, wires, hybrid_args), metadata = super()._flatten()
+
+        # Filter out _init_pauli_rep, replacing it with None for JAX compatibility
+        names = [h for h in self.hybrid_argnames if h not in self.wire_argnames]
+        hybrid_args = tuple(
+            None if name == "_init_pauli_rep" else arg
+            for name, arg in zip(names, hybrid_args, strict=True)
+        )
+
+        return (dyn_args, wires, hybrid_args), metadata
+
     @property
     def operands(self) -> Sequence[Operator]:
         """The operands of the composite operator."""
