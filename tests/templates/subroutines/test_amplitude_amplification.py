@@ -352,7 +352,8 @@ def test_fixed_point_angles_function(iters, p_min):
 
 
 @pytest.mark.disable_and_xfail_enable_capture(
-    reason="come back to this as we migrate AmplitudeAmplification [sc-128366]"
+    reason="come back to this as we migrate AmplitudeAmplification [sc-128366]",
+    strict=False,  # not all parametrized configurations fail
 )
 @pytest.mark.parametrize(
     "n_wires, items, iters, fixed",

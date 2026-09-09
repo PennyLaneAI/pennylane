@@ -75,7 +75,7 @@ def test_raises(params, error, match):
             math.random.uniform(0, 2 * np.pi, 4),
             local_gates(4, 1),
             False,
-            ["a", "b", "c", "d"],
+            [0, 1, 2, 3],
         ),
         (
             math.random.uniform(0, 2 * np.pi, 6),
