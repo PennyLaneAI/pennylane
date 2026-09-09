@@ -20,7 +20,7 @@ from functools import lru_cache
 from scipy import sparse
 
 import pennylane as qp
-from pennylane.core.operator import Operation, Operator2, abstractify
+from pennylane.core.operator import Operator2, abstractify
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.decomposition_rule import null_decomp
 from pennylane.exceptions import SparseMatrixUndefinedError
@@ -30,7 +30,7 @@ from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import WiresLike
 
 
-class Identity(Operation):
+class Identity(Operator2):
     r"""
     The Identity operator
 
@@ -48,27 +48,10 @@ class Identity(Operation):
     simulators should always be equal to 1.
     """
 
-    num_params = 0
-
     grad_method = None
     """Gradient computation method."""
 
     is_verified_hermitian = True
-
-    resource_keys = set()
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
-    @classmethod
-    def _primitive_bind_call(
-        cls, wires: WiresLike = (), **kwargs
-    ):  # pylint: disable=arguments-differ
-        return super()._primitive_bind_call(wires=wires, **kwargs)
-
-    def _flatten(self):
-        return tuple(), (self.wires, tuple())
 
     def __init__(self, wires: WiresLike = ()):
         super().__init__(wires=wires)
@@ -94,7 +77,7 @@ class Identity(Operation):
         return "Identity"
 
     @staticmethod
-    def compute_eigvals(n_wires=1):  # pylint: disable=arguments-differ
+    def compute_eigvals(wires=()):  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -116,11 +99,11 @@ class Identity(Operation):
         >>> print(qp.I.compute_eigvals())
         [1. 1.]
         """
-        return qp.math.ones(2**n_wires)
+        return qp.math.ones(2 ** len(wires))
 
     @staticmethod
     @lru_cache
-    def compute_matrix(n_wires=1):  # pylint: disable=arguments-differ
+    def compute_matrix(wires=()):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -137,16 +120,15 @@ class Identity(Operation):
         [[1. 0.]
          [0. 1.]]
         """
-        return qp.math.eye(int(2**n_wires))
+        return qp.math.eye(int(2 ** len(wires)))
 
     @staticmethod
     @lru_cache
-    def compute_sparse_matrix(n_wires=1, format="csr"):  # pylint: disable=arguments-differ
-        return sparse.eye(int(2**n_wires), format=format)
+    def compute_sparse_matrix(wires=(), format="csr"):  # pylint: disable=arguments-differ
+        return sparse.eye(int(2 ** len(wires)), format=format)
 
     def matrix(self, wire_order=None):
-        n_wires = len(wire_order) if wire_order else len(self.wires)
-        return self.compute_matrix(n_wires=n_wires)
+        return self.compute_matrix(wires=wire_order or ())
 
     @staticmethod
     def compute_diagonalizing_gates(
@@ -173,28 +155,6 @@ class Identity(Operation):
 
         >>> qp.Identity.compute_diagonalizing_gates(wires=[0])
         []
-        """
-        return []
-
-    @staticmethod
-    def compute_decomposition(wires, n_wires=1):  # pylint:disable=arguments-differ,unused-argument
-        r"""Representation of the operator as a product of other operators (static method).
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-        .. seealso:: :meth:`~.Identity.decomposition`.
-
-        Args:
-            wires (Any, Wires): A single wire that the operator acts on.
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.Identity.compute_decomposition(wires=0)
-        []
-
         """
         return []
 
