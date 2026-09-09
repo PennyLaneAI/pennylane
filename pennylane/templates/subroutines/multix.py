@@ -27,7 +27,7 @@ from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_con
 from pennylane.ops.op_math.pow2 import pow_involutory
 from pennylane.ops.op_math.prod import _multi_temporary_and_all_ones
 from pennylane.typing import AbstractArray, AbstractWires, Bool, TensorLike, Wire
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import DynamicWire, Wires, WiresLike, is_abstract_qubit
 
 from .arithmetic.temporary_and import TemporaryAND
 
@@ -329,6 +329,16 @@ def _multix_resources(bitstring: TensorLike, wires: WiresLike):  # pylint: disab
 # Decomposition function for MultiX
 @register_resources(_multix_resources, exact=False)
 def _multix_decomposition(bitstring: TensorLike, wires: WiresLike) -> None:
+    # Dynamically-allocated wires (``AbstractQubit`` handles, e.g. from ``qp.allocate``) cannot
+    # be stacked into a numeric array for ``for_loop``-based dynamic indexing, so unroll instead
+    # (``bitstring`` may still be traced data, indexed with a static index). Remove this fallback
+    # once dynamic-wire indexing is supported (shortcut.com/story/129521).
+    if any(is_abstract_qubit(w) or isinstance(w, DynamicWire) for w in wires):
+        if compiler.active() or capture.enabled():
+            bitstring = math.array(bitstring, like="jax")
+        for i, wire in enumerate(wires):
+            cond(bitstring[i], PauliX)(wires=wire)
+        return
 
     if compiler.active() or capture.enabled():
         bitstring = math.array(bitstring, like="jax")
@@ -366,7 +376,6 @@ def _multix_ladder_fanout(base, control_wires, ladder_wires):
     wires = base.wires
     if compiler.active() or capture.enabled():
         bitstring = math.array(bitstring, like="jax")
-        wires = math.array(wires, like="jax")
 
     num_needed = len(control_wires) - 1
     target_wire = _multi_temporary_and_all_ones(control_wires, ladder_wires)
@@ -374,11 +383,20 @@ def _multix_ladder_fanout(base, control_wires, ladder_wires):
     def _apply_cnot(wire):
         CNOT(wires=[target_wire, wire])
 
-    @for_loop(0, len(wires), 1)
-    def _locally_apply_cnot(i):
-        cond(bitstring[i], _apply_cnot)(wires[i])
+    if any(
+        is_abstract_qubit(w) or isinstance(w, DynamicWire)
+        for w in (*wires, *ladder_wires, *control_wires)
+    ):
+        for i, wire in enumerate(wires):
+            cond(bitstring[i], _apply_cnot)(wire)
+    else:
+        wires = math.array(wires, like="jax")
 
-    _locally_apply_cnot()  # pylint: disable=no-value-for-parameter
+        @for_loop(0, len(wires), 1)
+        def _locally_apply_cnot(i):
+            cond(bitstring[i], _apply_cnot)(wires[i])
+
+        _locally_apply_cnot()  # pylint: disable=no-value-for-parameter
 
     # Uncompute the ladder. Rebuilt inline rather than via adjoint(_multi_temporary_and_all_ones)(),
     # since adjoint-of-a-qfunc doesn't support DynamicRegister arguments under capture.
@@ -394,7 +412,7 @@ def _controlled_multix_ladder_extra_work_wires(control_wires, work_wires, work_w
     return {"zeroed": max(0, num_needed - num_available)}
 
 
-@register_condition(lambda control_wires, **_: len(control_wires) > 1)
+@register_condition(lambda control_wires, **_: len(control_wires) > 1 and not compiler.active())
 @register_resources(
     _controlled_multix_ladder_resources,
     work_wires=_controlled_multix_ladder_extra_work_wires,
