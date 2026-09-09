@@ -224,11 +224,11 @@ def test_diagonalizing_gates():
 
 
 def test_eigvals():
-    """Tests the compute_eigvals method."""
+    """Tests the eigvals method."""
 
     # SX2 has eigenvalues [1, 1j], which squared are [1, -1]
     op = pow(SX2(0), z=2)
-    assert qp.math.allclose(op.compute_eigvals(SX2(0), z=2), [1, -1])
+    assert qp.math.allclose(op.eigvals(), [1, -1])
 
 
 def test_generator():
@@ -351,7 +351,7 @@ def test_eigvals_fractional_power_negative_eigenvalue_2(z, power_method):
     base = qp.PauliZ(0)
     op = power_method(base=base, z=z)
 
-    eigvals = op.eigvals(base, z)
+    eigvals = op.eigvals()
 
     expected_eigvals = np.array([1.0**z, (-1.0 + 0j) ** z])
 
@@ -372,7 +372,7 @@ class TestCapture:
         @jax.jit
         def f(x):
             base = qp.RX(x, 0)
-            return jnp.array(Pow2(base, 2).eigvals(base, 2))
+            return jnp.array(Pow2(base, 2).eigvals())
 
         x = 0.5
         expected = np.array([np.cos(x) + np.sin(x) * 1j, np.cos(x) - np.sin(x) * 1j])
