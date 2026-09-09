@@ -242,7 +242,9 @@ class TestAdder:
         mat1, mat2 = qp.matrix(ctrl_op1, wire_order), qp.matrix(ctrl_op2, wire_order)
         assert qp.math.allclose(mat1, mat2)
 
-    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.disable_and_xfail_enable_capture(
+        reason="Needs PhaseAdder to be Op2 [sc-130164]", strict=False
+    )
     @pytest.mark.parametrize("mod", [7, 8])
     def test_decomposition_new(self, mod):
         """Tests the decomposition rules implemented with the new system."""
