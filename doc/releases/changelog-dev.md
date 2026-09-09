@@ -1590,6 +1590,11 @@
   using Pauli-type observables.
   [(#10123)](https://github.com/PennyLaneAI/pennylane/pull/10123)
 
+* Config option added to qubit MMD loss that bootstraps target data by default to ensure
+  unbiasedness of the estimator
+  [(#10128)](https://github.com/PennyLaneAI/pennylane/pull/10128)
+
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
