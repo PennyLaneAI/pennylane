@@ -225,7 +225,7 @@ def build_mmd_loss_pauli(
 
     .. code-block:: python
 
-        expval_fn(params, observables=..., **expval_kwargs)
+        expval_fn(params, observables=..., key=..., **expval_kwargs)
 
     where ``observables`` is an integer array of shape ``(n_ops, n_qubits)`` of
     Pauli codes (``0=I``, ``1=X``, ``2=Y``, ``3=Z``), of which only ``I`` and
