@@ -1408,10 +1408,11 @@ class TestToBloqEstimator:
                     work_wires=[5, 6, 7, 8, 9],
                 ),
                 {
-                    (qp.Hadamard(0), True): 9708,
-                    (qp.CNOT([0, 1]), True): 7374,
-                    (qp.T(0), True): 312576,
-                    (qp.Toffoli([0, 1, 2]), True): 8829,
+                    (qp.Hadamard(0), True): 2316,
+                    (qp.CNOT([0, 1]), True): 5232,
+                    (qp.T(0), True): 268224,
+                    (qp.Toffoli([0, 1, 2]), True): 2865,
+                    (qp.X(0), True): 42,
                 },
             ),
             (
