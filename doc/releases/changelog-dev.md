@@ -645,6 +645,9 @@
   giving order-of-magnitude speedups for sparse and structured operators.
   [(#9728)](https://github.com/PennyLaneAI/pennylane/pull/9728)
 
+* :class:`~.PartialUnaryStatePreparation` now uses a Clifford-only isometry for affine binary supports and avoids oversized PUI batch estimates.
+  [(#9947)](https://github.com/PennyLaneAI/pennylane/pull/9947)
+
 * Added the ``MultiX`` template which conditionally applies ``PauliX`` gates across target wires according
   to a bitstring array.
   [(#10033)](https://github.com/PennyLaneAI/pennylane/pull/10033)
@@ -1422,6 +1425,13 @@
   PyZX, preventing circuits on nonconsecutive, noncanonical, or string-valued wires from being
   permuted.
   [(#10121)](https://github.com/PennyLaneAI/pennylane/pull/10121)
+
+* Fixed the decomposition rule of :class:`~.QROM` so that it can be captured and compiled with
+  Catalyst. Tracing the ``clean`` branch previously raised a ``TracerIntegerConversionError``
+  because :func:`~pennylane.adjoint` traced the statically known ``depth``, and passing the wires
+  as traced arrays raised a ``TracerBoolConversionError``. The NumPy calls in the decomposition
+  are also replaced with :mod:`pennylane.math` so that they work on traced bitstrings.
+  [(#10116)](https://github.com/PennyLaneAI/pennylane/pull/10116)
 
 * Fixed the Triton persistent decoder kernel so :func:`~pennylane.backline.css_bp_decoder` and
   the other Triton decoders build on CUDA with Triton 3.8.
