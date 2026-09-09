@@ -31,9 +31,9 @@ from pennylane.capture.autograph import wraps
 from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition.symbolic_decomposition import flip_zero_control
+from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
 from pennylane.typing import TensorLike, Wire
 
-from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
 from .adjoint2 import _adjoint_abstract
 from .composite import CompositeOp, handle_recursion_error
 from .controlled2 import _ctrl_abstract
