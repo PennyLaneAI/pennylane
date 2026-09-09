@@ -13,6 +13,8 @@
 # limitations under the License.
 """Shared helpers for TrotterCDF and TrotterCGF tests."""
 
+from collections import Counter
+
 import numpy as np
 from scipy.linalg import expm
 
@@ -186,3 +188,16 @@ def assert_merged_trotter_matches(
     dim = expected_u.shape[0]
     assert np.allclose(block0, np.eye(dim), atol=1e-10)
     assert np.allclose(block1, expected_u, atol=1e-10)
+
+
+def assert_resource_counts_match(resources, operations):
+    """Assert that resource estimates match the operation counts of a traced decomposition."""
+
+    def resource_name(resource):
+        return resource.__name__ if isinstance(resource, type) else resource.name
+
+    expected = Counter(
+        {resource_name(resource): count for resource, count in resources.items() if count}
+    )
+    actual = Counter(op.name for op in operations)
+    assert actual == expected
