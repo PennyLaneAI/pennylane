@@ -699,23 +699,28 @@ class TestMatrix:
         ]
         assert np.allclose(mat, true_mat)
 
-    def test_matrix_all_batched(self):
+    # ``prod`` dispatches to ``Prod2`` for these operands, so both classes are tested
+    @pytest.mark.parametrize("prod_fn", [Prod, prod])
+    def test_matrix_all_batched(self, prod_fn):
         """Test that Prod matrix has batching support when all operands are batched."""
         x = qp.numpy.array([0.1, 0.2, 0.3])
         y = qp.numpy.array([0.4, 0.5, 0.6])
-        op = prod(qp.RX(x, wires=0), qp.RY(y, wires=2), qp.PauliZ(1))
+        op = prod_fn(qp.RX(x, wires=0), qp.RY(y, wires=2), qp.PauliZ(1))
         mat = op.matrix()
-        sum_list = [prod(qp.RX(i, wires=0), qp.RY(j, wires=2), qp.PauliZ(1)) for i, j in zip(x, y)]
+        sum_list = [
+            prod_fn(qp.RX(i, wires=0), qp.RY(j, wires=2), qp.PauliZ(1)) for i, j in zip(x, y)
+        ]
         compare = qp.math.stack([s.matrix() for s in sum_list])
         assert qp.math.allclose(mat, compare)
         assert mat.shape == (3, 8, 8)
 
-    def test_matrix_not_all_batched(self):
+    @pytest.mark.parametrize("prod_fn", [Prod, prod])
+    def test_matrix_not_all_batched(self, prod_fn):
         """Test that Prod matrix has batching support when all operands are not batched."""
         x = qp.numpy.array([0.1, 0.2, 0.3])
         y = 0.5
         z = qp.numpy.array([0.4, 0.5, 0.6])
-        op = prod(
+        op = prod_fn(
             qp.RX(x, wires=0),
             qp.RY(y, wires=2),
             qp.RZ(z, wires=1),
@@ -724,7 +729,7 @@ class TestMatrix:
         mat = op.matrix()
         batched_y = [y for _ in x]
         sum_list = [
-            prod(
+            prod_fn(
                 qp.RX(i, wires=0),
                 qp.RY(j, wires=2),
                 qp.RZ(k, wires=1),
@@ -1149,14 +1154,23 @@ class TestSimplify:
         simplified_op = prod_op.simplify()
         qp.assert_equal(simplified_op, final_op)
 
-    def test_simplify_method_groups_rotations(self):
+    # ``qp.prod`` dispatches to ``Prod2`` for these operands, so both classes are tested
+    @pytest.mark.parametrize("prod_fn", [Prod, qp.prod])
+    def test_simplify_method_groups_rotations(self, prod_fn):
         """Test that the simplify method groups rotation operators."""
-        prod_op = qp.prod(
+        prod_op = prod_fn(
             qp.RX(1, 0), qp.RZ(1, 1), qp.CNOT((1, 2)), qp.RZ(1, 1), qp.RX(3, 0), qp.RZ(1, 1)
         )
-        final_op = qp.prod(qp.RZ(1, 1), qp.CNOT((1, 2)), qp.RX(4, 0), qp.RZ(2, 1))
+        final_op = prod_fn(qp.RZ(1, 1), qp.CNOT((1, 2)), qp.RX(4, 0), qp.RZ(2, 1))
         simplified_op = prod_op.simplify()
         qp.assert_equal(simplified_op, final_op)
+
+    def test_simplify_method_cancels_powers(self):
+        """Test that the simplify method cancels ``Pow`` factors with opposite exponents."""
+        rot = qp.Rot(0.1, 0.2, 0.3, 0)
+        prod_op = Prod(qp.ops.Pow(rot, 2), qp.ops.Pow(rot, -2), qp.RY(0.3, 1))
+        simplified_op = prod_op.simplify()
+        qp.assert_equal(simplified_op, qp.RY(0.3, 1))
 
     def test_simplify_method_with_pauli_words(self):
         """Test that the simplify method groups pauli words."""
@@ -1708,13 +1722,18 @@ class TestDecomposition:
         "work_wires",
         [[7, 8, 9], [7]],
     )
+    @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
     @pytest.mark.parametrize("prod_fn, key", [(qp.ops.Prod, "C(Prod)"), (qp.ops.prod, "C(Prod2)")])
-    def test_controlled_prod_decomposition_new(self, control_values, work_wires, prod_fn, key):
+    def test_controlled_prod_decomposition_new(
+        self, control_values, work_wires, work_wire_type, prod_fn, key
+    ):  # pylint: disable=too-many-arguments
         """The registered ``C(Prod)`` rule decomposes controlled products.
 
         Covers both rules (many work wires and single work wire) as well as the
-        ``flip_zero_control`` wrapper for arbitrary ``control_values``.
+        ``flip_zero_control`` wrapper for arbitrary ``control_values``. Both rules require
+        zeroed work wires, so ``work_wire_type="borrowed"`` only checks that they are skipped.
         """
+        from pennylane.decomposition.utils import _get_decomp_args
         from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
         op = qp.ctrl(
@@ -1722,9 +1741,17 @@ class TestDecomposition:
             control=[4, 5, 6],
             control_values=control_values,
             work_wires=work_wires,
+            work_wire_type=work_wire_type,
         )
         rules = qp.list_decomps(key)
         assert rules, f"no decomp rules registered for {key}"
+
+        # ``_test_decomposition_rule`` is a no-op for rules that are not applicable, so check
+        # explicitly that the zeroed case does exercise at least one rule
+        params, _, _ = _get_decomp_args(op)
+        applicable = [rule for rule in rules if rule.is_applicable(**params)]
+        assert bool(applicable) == (work_wire_type == "zeroed")
+
         for rule in rules:
             _test_decomposition_rule(op, rule)
 

@@ -445,6 +445,13 @@ class TestDecompositionRule:
         with pytest.raises(TypeError, match="abstract data of undetermined dimensions"):
             _verify_is_abstract_and_fixed(op)
 
+    def test_verify_operator2_with_legacy_resource_rep(self):
+        """Tests that a legacy resource rep is a valid fully abstract leaf of an Operator2."""
+
+        # e.g. ``Select`` stores the resource reps of its legacy target operators
+        op = ParametrizedHybridOp(Float[3], Wire[3], qp.resource_rep(qp.ops.Sum))
+        _verify_is_abstract_and_fixed(op)
+
 
 class TestDecompDictionary:
     """Tests the behaviour of adding and getting decomposition rules."""

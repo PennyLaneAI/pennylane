@@ -31,6 +31,7 @@ from pennylane.decomposition.decomposition_rule import (
 from pennylane.decomposition.resources import (
     Resources,
     adjoint_resource_rep,
+    controlled_resource_rep,
     pow_resource_rep,
     resource_rep,
 )
@@ -1115,16 +1116,26 @@ class TestControlledDecomposition:
             def compute_matrix(*params):
                 return qp.Rot.compute_matrix(*params)
 
-        op = qp.ctrl(CustomRot(0.123, 0.234, 0.345, wires=0), control=[1, 2])
+        # the rule requires more than two control wires
+        op = qp.ctrl(CustomRot(0.123, 0.234, 0.345, wires=0), control=[1, 2, 3])
+        assert ctrl_single_work_wire.is_applicable(**op.resource_params)
+
+        assert ctrl_single_work_wire.compute_resources(**op.resource_params) == to_resources(
+            {
+                _ctrl_abstract(qp.X, Wire[3]): 2,
+                controlled_resource_rep(CustomRot, {}, 1): 1,
+            }
+        )
+        assert ctrl_single_work_wire.get_work_wire_spec(**op.resource_params).zeroed == 1
 
         with queuing.AnnotatedQueue() as q:
-            qp.Projector([0], wires=3)
+            qp.Projector([0], wires=4)
             ctrl_single_work_wire(*op.parameters, wires=op.wires, **op.hyperparameters)
 
         tape = qp.tape.QuantumScript.from_queue(q)
-        [tape], _ = qp.transforms.resolve_dynamic_wires([tape], min_int=3)
-        mat = qp.matrix(tape, wire_order=[0, 1, 2, 3])
-        expected_mat = qp.matrix(op @ qp.Projector([0], wires=3), wire_order=[0, 1, 2, 3])
+        [tape], _ = qp.transforms.resolve_dynamic_wires([tape], min_int=4)
+        mat = qp.matrix(tape, wire_order=[0, 1, 2, 3, 4])
+        expected_mat = qp.matrix(op @ qp.Projector([0], wires=4), wire_order=[0, 1, 2, 3, 4])
         assert qp.math.allclose(mat, expected_mat)
 
     @pytest.mark.unit
