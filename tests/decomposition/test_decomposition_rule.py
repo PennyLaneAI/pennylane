@@ -679,7 +679,7 @@ class TestDecompDictionary:
     def test_mcm_and_allocation_rules_skipped_for_adjoint2(self):
         """Tests that rules containing MCMs and wire allocations can't be adjointed."""
 
-        @register_resources({qp.RX: 2, qp.CZ: 1, MidMeasure: 1})
+        @register_resources({qp.RX: 2, qp.CZ: 1, MidMeasure(wires=Wire[1]): 1})
         def custom_rule(theta, wires):
             raise NotImplementedError
 
@@ -696,7 +696,7 @@ class TestDecompDictionary:
     def test_mcm_rules_skipped_for_controlled2(self):
         """Tests that rules containing MCMs are skipped for controlled."""
 
-        @register_resources({qp.RX: 2, qp.CZ: 1, MidMeasure: 1})
+        @register_resources({qp.RX: 2, qp.CZ: 1, MidMeasure(wires=Wire[1]): 1})
         def custom_rule(theta, wires):
             raise NotImplementedError
 
@@ -859,7 +859,7 @@ class TestInspectDecomps:
                 qp.Toffoli: 2 * (num_wires - 1),
                 qp.H: 1,
                 qp.RX: 1,
-                qp.ops.MidMeasure: 1,
+                qp.ops.MidMeasure(wires=Wire[1]): 1,
             },
             work_wires={"zeroed": 2},
             name="with-aux",
