@@ -213,8 +213,7 @@ def alias_sampling_thc_wires(M, N, aleph):
           Additional wires are forwarded to the internal ``qp.QROM``, which uses them
           for a ``SelectSwap`` decomposition that lowers the T-gate count.
         * ``sign_wire``: the *index into* ``work_wires`` of the wire holding the sign bit
-          of the selected coefficient. Only needed with ``apply_sign=False``, to apply
-          the single ``qp.Z`` between ``PREPARE`` and ``SELECT`` yourself.
+          of the selected coefficient.
 
     **Example**
 
@@ -276,7 +275,7 @@ def alias_sampling_thc(  # pylint: disable=too-many-arguments,too-many-positiona
         \lvert \ell \rangle \lvert M \rangle \lvert + \rangle \lvert s_{\ell M} \rangle ,
 
     where the third register is the single symmetrization flag and the fourth is the sign
-    bit :math:`s` of the selected coefficient (see the note below on ``apply_sign``). Both
+    bit :math:`s` of the selected coefficient. Both
     are left in this entangled state for the subsequent ``SELECT``, and
 
     .. math::
@@ -318,49 +317,6 @@ def alias_sampling_thc(  # pylint: disable=too-many-arguments,too-many-positiona
         one-body sentinel flag (its ``work_wires[3]``, true when :math:`\nu = M`)
         passed here as ``edge_flag``. This routine does not recompute that flag.
 
-    .. note::
-
-        **The sign is always encoded; ``apply_sign`` only chooses who consumes it.** The
-        ``QROM`` always loads the sign bit :math:`s` of the coefficient that was actually
-        selected onto ``work_wires[sign_wire]``, with ``sign_wire`` as returned by
-        :func:`~pennylane.labs.templates.alias_sampling_thc_wires`. Turning that bit into
-        the factor :math:`(-1)^s` takes exactly one ``qp.Z`` on that wire, and the only
-        question is where it goes:
-
-        * ``apply_sign=True`` (default) applies it at the end of this routine, so the
-          *prepared state* carries :math:`(-1)^s` on its amplitudes. Use this to prepare,
-          inspect or validate the signed coefficient state on its own.
-        * ``apply_sign=False`` leaves the bit in the register for the caller to consume
-          with a single ``qp.Z(work_wires[sign_wire])``. **This is the setting required
-          for a block encoding**, where that ``Z`` must sit *between* ``PREPARE`` and
-          ``SELECT``.
-
-        The distinction is forced by the algebra, not by taste. ``Z`` acts on the sign
-        wire and ``SELECT`` does not, so the two commute, and a ``Z`` applied inside
-        ``PREPARE`` is applied a second time by ``PREPARE``:math:`^\dagger`:
-
-        .. math::
-
-            \langle 0 \rvert P^\dagger Z \cdot \mathrm{SELECT} \cdot Z P \lvert 0 \rangle
-            = \langle 0 \rvert P^\dagger \cdot Z \, \mathrm{SELECT} \, Z \cdot
-            P \lvert 0 \rangle
-            = \langle 0 \rvert P^\dagger \cdot \mathrm{SELECT} \cdot P \lvert 0 \rangle .
-
-        The two phases square to :math:`+1` and the block encoded operator collapses to
-        :math:`\sum_\ell \lvert w_\ell \rvert U_\ell = \lvert H \rvert / \lambda`. With
-        ``apply_sign=False`` the single ``Z`` sits between the two halves and contributes
-        :math:`(-1)^s` exactly once, giving :math:`H / \lambda`. Because ``Z`` is diagonal
-        it disturbs no auxiliary register either way, so
-        ``qp.adjoint(alias_sampling_thc)`` uncomputes exactly the same garbage.
-
-        The stored bit is the sign of the *LCU coefficient*, not of the raw weight: the
-        one-body column carries an extra minus sign because ``SELECT`` applies the
-        reflections :math:`V = I - 2 c^\dagger c` and the one-body block is linear in
-        :math:`c^\dagger c` while the two-body block is quadratic (see the
-        ``_lcu_signs`` helper). With this convention the block encoded operator is
-        :math:`+H / \lambda`, matching Eq. (26) of `Lee et al. (2021)
-        <https://arxiv.org/abs/2011.03494>`_.
-
     .. seealso:: :func:`~pennylane.labs.templates.alias_sampling_thc_wires`, which
         returns every register size for a given ``(M, N, aleph)``.
 
@@ -383,9 +339,7 @@ def alias_sampling_thc(  # pylint: disable=too-many-arguments,too-many-positiona
         aleph (int): the number of bits used to encode the keep-probabilities
         apply_sign (bool): if ``True`` (default), the sign of the selected coefficient is
             applied here, so the prepared state carries it on its amplitudes. Set to
-            ``False`` when using this routine as the ``PREPARE`` of a block encoding: the
-            sign bit is then left on ``work_wires[sign_wire]`` and the caller applies the
-            single ``qp.Z`` between ``PREPARE`` and ``SELECT``. See the note above
+            ``False`` when using only positive coefficients.
 
     **Example**
 
@@ -426,11 +380,7 @@ def alias_sampling_thc(  # pylint: disable=too-many-arguments,too-many-positiona
             alias_sampling_thc(
                 M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph
             )
-            # The default apply_sign=True already put (-1)^s on the amplitudes, so
-            # qp.state() here would show the signed coefficient state. Inside a block
-            # encoding pass apply_sign=False instead and apply
-            #     qp.Z(work_wires[sizes["sign_wire"]])
-            # here, between PREPARE and SELECT.
+
             return qp.probs(wires=mu_wires + nu_wires)
     """
     mu_wires = list(Wires(mu_wires))
@@ -502,7 +452,6 @@ def alias_sampling_thc(  # pylint: disable=too-many-arguments,too-many-positiona
     #    Only ``n_d - 1 = ceil(log2(d))`` control wires are needed: the address is
     #    ``s < d`` for every valid pair, so ``work_wires[0]`` (the most significant wire,
     #    only needed to hold ``nu ** 2 + nu`` before the division by two) is always |0>.
-    #    Including it would double the QROM address space and its gate cost for nothing.
     data = _build_qrom_data(M, N, zeta, t_ell, n, aleph)
     qp.QROM(
         data,
@@ -554,10 +503,6 @@ def alias_sampling_thc(  # pylint: disable=too-many-arguments,too-many-positiona
             control_values=[1, 0],
         )
 
-    # 7. Turn the sign bit into the factor (-1)^s on the amplitudes. Only valid for a
-    #    standalone state preparation: SELECT does not act on ``sign_wire``, so this Z
-    #    commutes through it and PREPARE^dag would apply it a second time, cancelling it.
-    #    Inside a block encoding pass ``apply_sign=False`` and apply the Z between
-    #    PREPARE and SELECT instead.
+    # 7. Turn the sign bit into the factor (-1)^s on the amplitudes.
     if apply_sign:
         qp.Z(sign_wire)
