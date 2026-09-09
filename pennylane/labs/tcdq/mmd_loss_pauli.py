@@ -49,10 +49,6 @@ class MMDConfig:
         return_per_bandwidth (bool): If ``True``, return a list of
             per-bandwidth loss values instead of their scalar average.
             Defaults to ``False``.
-        bootstrap_target_data (bool): If ``True``, resample ``target_data`` with
-            replacement before computing the loss. This makes the target-target
-            U-statistic unbiased with respect to the empirical training
-            distribution. Defaults to ``True``.
 
     **Example**
 
@@ -73,8 +69,6 @@ class MMDConfig:
     sqrt_loss: bool = False
     #: If ``True``, return per-bandwidth losses instead of their average.
     return_per_bandwidth: bool = False
-    #: If ``True``, bootstrap the target data before computing the loss.
-    bootstrap_target_data: bool = True
 
 
 def median_heuristic(samples: ArrayLike) -> float:
@@ -336,7 +330,6 @@ def build_mmd_loss_pauli(
                 ``(m, len(mmd_config.wires))`` when a wire subset is selected,
                 whose rows are bitstring samples from the target distribution.
             key: Optional JAX PRNG key seeding this call. It is split once per
-                call to resample the target data when requested, then once per
                 bandwidth into one key for observable sampling and one that is
                 forwarded to ``expval_fn``. If ``None``, uses
                 ``jax.random.PRNGKey(0)``.
@@ -380,13 +373,6 @@ def build_mmd_loss_pauli(
             )
             raise ValueError(f"target_data has {target_data.shape[1]} columns, expected {expected}")
 
-        if mmd_config.bootstrap_target_data:
-            active_key, target_key = jax.random.split(active_key)
-            target_indices = jax.random.choice(
-                target_key, target_data.shape[0], shape=(target_data.shape[0],), replace=True
-            )
-            target_data = target_data[target_indices]
-
         losses = []
         for bandwidth in bandwidth_list:
             active_key, subkey, eval_key = jax.random.split(active_key, 3)
@@ -395,7 +381,7 @@ def build_mmd_loss_pauli(
                 bandwidth=bandwidth,
                 subkey=subkey,
                 eval_key=eval_key,
-                params=params,
+                params=jnp.asarray(params),
                 target_data=target_data,
                 n_ops=mmd_config.n_ops,
                 n_qubits=n_qubits,
