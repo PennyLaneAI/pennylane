@@ -1418,6 +1418,13 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed the decomposition rule of :class:`~.QROM` so that it can be captured and compiled with
+  Catalyst. Tracing the ``clean`` branch previously raised a ``TracerIntegerConversionError``
+  because :func:`~pennylane.adjoint` traced the statically known ``depth``, and passing the wires
+  as traced arrays raised a ``TracerBoolConversionError``. The NumPy calls in the decomposition
+  are also replaced with :mod:`pennylane.math` so that they work on traced bitstrings.
+  [(#10116)](https://github.com/PennyLaneAI/pennylane/pull/10116)
+
 * Fixed the Triton persistent decoder kernel so :func:`~pennylane.backline.css_bp_decoder` and
   the other Triton decoders build on CUDA with Triton 3.8.
   [(#10111)](https://github.com/PennyLaneAI/pennylane/pull/10111)
@@ -1578,6 +1585,15 @@
 
 * Various decomposition rules are updated so that they accept positionally passed arguments.
   [(#10088)](https://github.com/PennyLaneAI/pennylane/pull/10088)
+
+* ``mmd_loss`` replaced with ``mmd_loss_pauli`` and now supports any expectation value function
+  using Pauli-type observables.
+  [(#10123)](https://github.com/PennyLaneAI/pennylane/pull/10123)
+
+* Config option added to qubit MMD loss that bootstraps target data by default to ensure
+  unbiasedness of the estimator
+  [(#10128)](https://github.com/PennyLaneAI/pennylane/pull/10128)
+
 
 <h3>Contributors ✍️</h3>
 
