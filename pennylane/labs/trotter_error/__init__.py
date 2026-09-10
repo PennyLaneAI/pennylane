@@ -46,6 +46,8 @@ Fragments
     ~SparseState
     ~vibrational_fragments
     ~vibronic_fragments
+    ~gan_fragments
+    ~GanConfig
 
 Product Formulas
 ~~~~~~~~~~~~~~~~~
@@ -84,6 +86,8 @@ from .fragments import (
     NumpyState,
     SparseFragment,
     SparseState,
+    GanConfig,
+    gan_fragments,
     vibrational_fragments,
     vibronic_fragments,
 )
