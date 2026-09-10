@@ -606,8 +606,8 @@ class VibronicHamiltonian(NumericHamiltonian):
 
     The form of this Hamiltonian is described in `Motlagh et al, arXiv:2411.13669
     <https://arxiv.org/abs/2411.13669>`__. It acts on ``N`` electronic states and ``M``
-    vibrational modes, and is partitioned into ``F`` position fragments -- each diagonal in a
-    fragment-specific electronic basis and polynomial in the mode positions up to second order --
+    vibrational modes, and is partitioned into ``F`` position fragments — each diagonal in a
+    fragment-specific electronic basis and polynomial in the mode positions up to second order —
     plus a single kinetic fragment that is quadratic in the mode momenta,
 
     .. math::
@@ -675,8 +675,22 @@ class VibronicHamiltonian(NumericHamiltonian):
     .. details ::
         :title: Implementation Details
 
-        Writing :math:`Q_r` for the position and :math:`P_r` for the momentum of mode :math:`r`,
-        and :math:`a, b` for electronic states, the tensors map onto the Hamiltonian as:
+        Recall the form of the vibronic Hamiltonian,
+
+        .. math::
+
+            H = \sum_{i=0}^{F-1} H_i + H_{\text{kin}},
+            \qquad
+            H_{\text{kin}} = \sum_{r,s} t_{rs}\, P_r P_s ,
+
+        where each position fragment carries the electronic matrix elements
+
+        .. math::
+
+            (H_i)_{ab} = c^{(i)}_{ab} + \sum_r l^{(i)}_{ab,r} Q_r
+                        + \sum_{r,s} q^{(i)}_{ab,rs} Q_r Q_s .
+
+        The arguments of `VibronicHamiltonian` map onto this expression as:
 
         * ``constant[i][a, b]``: the mode-independent coefficient of position fragment :math:`i`;
         * ``linear[i][a, b, r]``: the coefficient of :math:`Q_r`;

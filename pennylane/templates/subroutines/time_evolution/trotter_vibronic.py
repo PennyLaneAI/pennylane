@@ -163,9 +163,9 @@ class TrotterVibronic(Operator2):
            :widths: 25 25 50
            :header-rows: 1
 
-           * - argument
-             - expected size
-             - information content
+           * - Argument
+             - Expected size
+             - Physical meaning / information content
            * - ``electronic_wires``
              - :math:`n`
              - electronic state
