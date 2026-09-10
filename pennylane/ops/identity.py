@@ -97,7 +97,7 @@ class Identity(Operator2):
         return "Identity"
 
     @staticmethod
-    def compute_eigvals(wires=(0,)):  # pylint: disable=arguments-differ
+    def compute_eigvals(wires=()):  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -116,13 +116,13 @@ class Identity(Operator2):
 
         **Example**
 
-        >>> print(qp.I.compute_eigvals())
+        >>> print(qp.I.compute_eigvals(wires=[0]))
         [1. 1.]
         """
         return qp.math.ones(2 ** len(wires))
 
     @staticmethod
-    def compute_matrix(wires=(0,)):  # pylint: disable=arguments-differ
+    def compute_matrix(wires=()):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -135,20 +135,18 @@ class Identity(Operator2):
 
         **Example**
 
-        >>> print(qp.Identity.compute_matrix())
+        >>> print(qp.Identity.compute_matrix(wires=[0]))
         [[1. 0.]
          [0. 1.]]
         """
         return _identity_matrix(len(wires))
 
     @staticmethod
-    def compute_sparse_matrix(wires=(0,), format="csr"):  # pylint: disable=arguments-differ
+    def compute_sparse_matrix(wires=(), format="csr"):  # pylint: disable=arguments-differ
         return _identity_sparse_matrix(len(wires), format)
 
     @staticmethod
-    def compute_diagonalizing_gates(
-        wires, n_wires=1
-    ):  # pylint: disable=arguments-differ,unused-argument
+    def compute_diagonalizing_gates(wires=()):  # pylint: disable=arguments-differ,unused-argument
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
