@@ -25,6 +25,7 @@
   Decomposition 0 (name: MyOp_decomp)
   0: ──H──RZ(0.50)─┤
   Gate Count: {Hadamard: 1, RZ: 1}
+
   ```
 
 * Two new numeric Hamiltonians called :class:`pennylane.CDFHamiltonian` (based on `arXiv:2506.15784, Sec. III A <https://arxiv.org/abs/2506.15784>`) and :class:`pennylane.CGFHamiltonian` have been added (based on `arXiv:2508.11865, Sec. III C <https://arxiv.org/abs/2508.11865>`), which define compressed double-factorized (CDF) and Christiansen greedy-fragmentation Hamiltonians, respectively. These Hamiltonians can be defined
