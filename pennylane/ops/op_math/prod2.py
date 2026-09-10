@@ -331,8 +331,6 @@ def _prod2_decomp(operands, _init_pauli_rep=None):  # pylint: disable=unused-arg
 
 # pylint: disable=unused-argument
 def _ctrl_prod2_resources(base, control_wires, work_wires, work_wire_type, **_):
-    # pylint: disable=import-outside-toplevel,cyclic-import
-    from .controlled2 import _ctrl_abstract
 
     num_control_wires = len(control_wires)
     resources = Counter()
@@ -341,7 +339,7 @@ def _ctrl_prod2_resources(base, control_wires, work_wires, work_wire_type, **_):
 
     # Per-factor single-control fan-out from the single aux qubit
     for op in base.operands:
-        resources[_ctrl_abstract(op, Wire[1])] += 1
+        resources[qp.ctrl(abstractify(op), Wire[1])] += 1
 
     return dict(resources)
 
@@ -369,15 +367,13 @@ def _controlled_prod2_with_work_wires(base, control_wires, control_values, work_
 
 
 def _ctrl_prod2_resources_with_one_work_wire(base, control_wires, work_wires, **_):
-    # pylint: disable=import-outside-toplevel,cyclic-import
-    from .controlled2 import _ctrl_abstract
 
     resources = Counter()
     resources[qp.MultiControlledX(Wire[len(control_wires) + 1])] += 2
 
     # Per-factor single-control fan-out from the single aux qubit
     for op in base.operands:
-        resources[_ctrl_abstract(op, Wire[1])] += 1
+        resources[qp.ctrl(abstractify(op), Wire[1])] += 1
 
     return dict(resources)
 
