@@ -366,8 +366,6 @@ class TestCapture:
         """Test that the eigvals method is jittable."""
         import jax
         import jax.numpy as jnp
-        import numpy as np
-        import pennylane as qp
 
         @jax.jit
         def f(x):

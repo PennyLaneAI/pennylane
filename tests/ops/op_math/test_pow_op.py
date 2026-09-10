@@ -19,7 +19,6 @@ from copy import copy
 
 import pytest
 
-import pennylane as qp
 from pennylane import numpy as np
 from pennylane.exceptions import AdjointUndefinedError, DecompositionUndefinedError
 from pennylane.ops.op_math.controlled import ControlledOp
