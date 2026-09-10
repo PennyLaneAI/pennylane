@@ -854,9 +854,8 @@ def _ctrl_single_work_wire_resource(base, control_wires, *_, **__):
     }
 
 
-# pylint: disable=protected-access,unused-argument
 @register_resources(_ctrl_single_work_wire_resource, work_wires={"zeroed": 1})
-def _ctrl_single_work_wire(base, control_wires, control_values, work_wires, work_wire_type):
+def _ctrl_single_work_wire(base, control_wires, *_, **__):
     """Implements Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016."""
     with allocation.allocate(1, state="zero", restored=True) as aux:
         qp.ctrl(qp.X(aux[0]), control=control_wires)
