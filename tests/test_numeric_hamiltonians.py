@@ -21,11 +21,19 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.numeric_hamiltonians import CDFHamiltonian, CGFHamiltonian, NumericHamiltonian
+from pennylane.numeric_hamiltonians import (
+    BaseNumericHamiltonian,
+    CDFHamiltonian,
+    CGFHamiltonian,
+    NumericHamiltonian,
+    VibronicHamiltonian,
+)
 from pennylane.typing import AbstractArray, Float
 from tests.templates.subroutines.time_evolution.trotter_test_helpers import random_orthogonal
 
 L, M, N = 2, 2, 3
+# Number of position fragments of the vibronic representation, which has no offset axis.
+F = 4
 
 
 def cdf_tensors(seed, num_fragments=L, num_orbitals=N):
@@ -48,6 +56,28 @@ def cgf_tensors(seed, num_fragments=L, num_modes=M, num_modals=N):
         ),
         "leaf_tensors": rng.random((num_fragments + 1, num_modes, num_modals, num_modals)),
         "nuc_constant": 0.5,
+    }
+
+
+def vibronic_tensors(seed, num_fragments=F, num_states=N, num_modes=M):
+    """Concrete vibronic tensor data: dense Taylor coefficients per position fragment, plus the
+    single kinetic fragment."""
+    rng = np.random.default_rng(seed)
+    return {
+        "constant": rng.random((num_fragments, num_states, num_states)),
+        "linear": rng.random((num_fragments, num_states, num_states, num_modes)),
+        "quadratic": rng.random((num_fragments, num_states, num_states, num_modes, num_modes)),
+        "kinetic": rng.random((num_states, num_states, num_modes, num_modes)),
+    }
+
+
+def vibronic_specs(num_fragments=F, num_states=N, num_modes=M):
+    """Abstract vibronic specifications."""
+    return {
+        "constant": Float[num_fragments, num_states, num_states],
+        "linear": Float[num_fragments, num_states, num_states, num_modes],
+        "quadratic": Float[num_fragments, num_states, num_states, num_modes, num_modes],
+        "kinetic": Float[num_states, num_states, num_modes, num_modes],
     }
 
 
@@ -387,6 +417,13 @@ class TestConcrete:
         assert qp.CGFHamiltonian is CGFHamiltonian
         assert qp.numeric_hamiltonians.NumericHamiltonian is NumericHamiltonian
 
+        # ``NumericHamiltonian`` is itself only one shape family of the generic base.
+        assert issubclass(NumericHamiltonian, BaseNumericHamiltonian)
+        assert issubclass(VibronicHamiltonian, BaseNumericHamiltonian)
+        assert not issubclass(VibronicHamiltonian, NumericHamiltonian)
+        assert qp.VibronicHamiltonian is VibronicHamiltonian
+        assert qp.numeric_hamiltonians.BaseNumericHamiltonian is BaseNumericHamiltonian
+
     def test_new_subclass_from_shape_family_alone(self):
         """Test that defining a new representation needs only a shape family, with no
         new validation code."""
@@ -582,3 +619,225 @@ class TestAbstract:
 
         assert ham.is_abstract
         assert ham.dimensions == {"tensor_rank": 7, "num_orbitals": 4}
+
+
+class TestVibronic:
+    """Tests for ``VibronicHamiltonian``, whose four tensors have no offset axis."""
+
+    def test_dimensions_derived_from_shapes(self, seed):
+        """Test that ``F``, ``N`` and ``M`` are derived from the four tensor shapes."""
+        ham = VibronicHamiltonian(**vibronic_tensors(seed))
+
+        assert ham.dimensions == {"num_fragments": F, "num_states": N, "num_modes": M}
+        assert (ham.num_fragments, ham.num_states, ham.num_modes) == (F, N, M)
+        assert not ham.is_abstract
+
+    def test_direct_attribute_access(self, seed):
+        """Test that the numeric data is readable off the instance, and that the tensors
+        are the positional arguments in order."""
+        data = vibronic_tensors(seed)
+        ham = VibronicHamiltonian(
+            data["constant"], data["linear"], data["quadratic"], data["kinetic"]
+        )
+
+        for name, tensor in data.items():
+            assert qp.math.allclose(getattr(ham, name), tensor)
+        assert ham.tensors == (ham.constant, ham.linear, ham.quadratic, ham.kinetic)
+
+    def test_lists_are_coerced_to_arrays(self, seed):
+        """Test that nested list/tuple input is materialized as arrays, so every tensor
+        exposes ``shape``/``dtype`` to consumers."""
+        data = {k: v.tolist() for k, v in vibronic_tensors(seed).items()}
+        ham = VibronicHamiltonian(**data)
+
+        assert all(isinstance(t, np.ndarray) for t in ham.tensors)
+        assert ham.num_fragments == F
+
+    @pytest.mark.parametrize(
+        "name, rank", [("constant", 3), ("linear", 4), ("quadratic", 5), ("kinetic", 4)]
+    )
+    def test_wrong_rank(self, name, rank, seed):
+        """Test that each tensor is rejected by name when its rank is wrong."""
+        data = vibronic_tensors(seed)
+        data[name] = data[name][0]  # drop the leading axis
+
+        with pytest.raises(ValueError, match=f"'{name}' must have {rank} dimensions"):
+            VibronicHamiltonian(**data)
+
+    @pytest.mark.parametrize(
+        "name, shape, dimension",
+        [
+            ("linear", (F + 1, N, N, M), "num_fragments"),
+            ("quadratic", (F, N, N, M + 1, M + 1), "num_modes"),
+            # ``kinetic`` shares only ``N`` and ``M``, so it still has to unify with the rest.
+            ("kinetic", (N + 1, N + 1, M, M), "num_states"),
+        ],
+    )
+    def test_inconsistent_shared_dimension(self, name, shape, dimension, seed):
+        """Test that a symbol repeated across the four templates must unify."""
+        data = vibronic_tensors(seed)
+        data[name] = np.zeros(shape)
+
+        with pytest.raises(ValueError, match=f"inconsistent '{dimension}'"):
+            VibronicHamiltonian(**data)
+
+    def test_degenerate_dimension_rejected(self):
+        """Test that a zero-length axis is rejected: every dimension has offset ``0`` here."""
+        with pytest.raises(ValueError, match="'num_fragments' must be at least 1"):
+            VibronicHamiltonian(
+                np.zeros((0, N, N)),
+                np.zeros((0, N, N, M)),
+                np.zeros((0, N, N, M, M)),
+                np.zeros((N, N, M, M)),
+            )
+
+    def test_missing_tensors(self):
+        """Test that all four tensors are required."""
+        with pytest.raises(TypeError):
+            VibronicHamiltonian(np.zeros((F, N, N)))  # pylint: disable=no-value-for-parameter
+
+    def test_registered_with_pennylane_pytrees(self, seed):
+        """Test that the four tensors are the pytree leaves."""
+        assert qp.pytrees.is_pytree(VibronicHamiltonian)
+
+        leaves, structure = qp.pytrees.flatten(VibronicHamiltonian(**vibronic_tensors(seed)))
+
+        assert len(leaves) == 4
+        assert qp.pytrees.unflatten(leaves, structure) == VibronicHamiltonian(
+            **vibronic_tensors(seed)
+        )
+
+    @pytest.mark.jax
+    def test_jax_roundtrip_preserves_values_and_structure(self, seed):
+        """Test that a ``jax.tree_util`` round-trip preserves values and structure."""
+        import jax
+
+        ham = VibronicHamiltonian(**vibronic_tensors(seed))
+        leaves, treedef = jax.tree_util.tree_flatten(ham)
+        rebuilt = jax.tree_util.tree_unflatten(treedef, leaves)
+
+        assert len(leaves) == 4
+        assert rebuilt == ham
+        assert rebuilt.dimensions == ham.dimensions
+
+    @pytest.mark.jax
+    def test_constructed_from_tracers(self, seed):
+        """Test that a Hamiltonian built inside a trace is concrete, since a tracer has a
+        known shape and dtype."""
+        import jax
+
+        data = vibronic_tensors(seed)
+        seen = {}
+
+        def f(constant, linear, quadratic, kinetic):
+            ham = VibronicHamiltonian(constant, linear, quadratic, kinetic)
+            seen["is_abstract"] = ham.is_abstract
+            seen["dimensions"] = ham.dimensions
+            return ham.constant.sum()
+
+        jax.make_jaxpr(f)(*data.values())
+
+        assert seen["is_abstract"] is False
+        assert seen["dimensions"] == {"num_fragments": F, "num_states": N, "num_modes": M}
+
+    def test_from_specs(self):
+        """Test that abstract inputs surface as ``AbstractArray`` of the right shape."""
+        ham = VibronicHamiltonian(**vibronic_specs())
+
+        assert ham.is_abstract
+        assert ham.constant == AbstractArray((F, N, N), float)
+        assert ham.kinetic == AbstractArray((N, N, M, M), float)
+        assert ham.dimensions == {"num_fragments": F, "num_states": N, "num_modes": M}
+
+    def test_unknown_axis_size_permitted(self):
+        """Test that ``-1`` marks an axis of unknown size without pinning the symbol."""
+        specs = vibronic_specs()
+        specs["constant"] = Float[-1, N, N]
+
+        assert VibronicHamiltonian(**specs).num_fragments == F
+
+    def test_abstractify_matches_abstract_construction(self, seed):
+        """Test that ``abstractify`` on concrete data reproduces the abstract instance."""
+        concrete = VibronicHamiltonian(**vibronic_tensors(seed))
+
+        assert qp.core.abstractify(concrete) == VibronicHamiltonian(**vibronic_specs())
+        assert hash(VibronicHamiltonian(**vibronic_specs())) == hash(concrete)
+
+    def test_equality_and_hash(self, seed):
+        """Test that equality compares values and that other representations never match."""
+        assert VibronicHamiltonian(**vibronic_tensors(seed)) == VibronicHamiltonian(
+            **vibronic_tensors(seed)
+        )
+        assert VibronicHamiltonian(**vibronic_tensors(seed)) != VibronicHamiltonian(
+            **vibronic_tensors(seed + 1)
+        )
+        assert VibronicHamiltonian(**vibronic_tensors(seed)) != CGFHamiltonian(**cgf_tensors(seed))
+        assert hash(VibronicHamiltonian(**vibronic_tensors(seed))) != hash(
+            VibronicHamiltonian(**vibronic_tensors(seed, num_modes=M + 1))
+        )
+
+    def test_repr_does_not_dump_arrays(self, seed):
+        """Test that the repr stays readable, summarizing arrays by shape."""
+        text = repr(VibronicHamiltonian(**vibronic_tensors(seed)))
+
+        assert text.startswith("VibronicHamiltonian(")
+        assert "tensor(shape=" in text
+        assert len(text) < 300
+
+    def test_immutable(self, seed):
+        """Test that instances are frozen dataclasses."""
+        assert VibronicHamiltonian.__dataclass_params__.frozen is True
+        ham = VibronicHamiltonian(**vibronic_tensors(seed))
+
+        with pytest.raises(AttributeError):
+            ham.constant = None
+
+
+class TestBaseNumericHamiltonian:
+    """Tests for the generic machinery shared by every representation."""
+
+    @staticmethod
+    def _diagonal_hamiltonian():
+        """A minimal one-tensor representation, defined for these tests only."""
+
+        # pylint: disable=too-few-public-methods
+        @dataclass(frozen=True, eq=False, repr=False)
+        class DiagonalHamiltonian(BaseNumericHamiltonian):
+            """Single square tensor of couplings."""
+
+            tensor_names = ("coeffs",)
+            tensor_shapes = {"coeffs": ("K", "K")}
+            symbol_metadata = {"K": ("num_terms", 0)}
+
+            coeffs: object
+
+        return DiagonalHamiltonian
+
+    def test_new_subclass_from_tensor_names_and_shapes_alone(self):
+        """Test that a representation outside the ``core``/``leaf`` family needs only its
+        tensor names and shape templates, with no new validation code."""
+        cls = self._diagonal_hamiltonian()
+        ham = cls(np.zeros((5, 5)))
+
+        assert ham.num_terms == 5
+        assert ham.dimensions == {"num_terms": 5}
+        assert ham.tensors == (ham.coeffs,)
+        assert qp.pytrees.is_pytree(cls)
+
+        with pytest.raises(ValueError, match="inconsistent 'num_terms'"):
+            cls(np.zeros((5, 4)))
+
+    def test_new_subclass_supports_abstract_data(self):
+        """Test that a new representation gets abstract construction for free."""
+        ham = self._diagonal_hamiltonian()(Float[5, 5])
+
+        assert ham.is_abstract
+        assert ham.dimensions == {"num_terms": 5}
+
+    def test_new_subclass_pytree_roundtrip(self):
+        """Test that the leaves and the derived dimensions survive a round-trip."""
+        cls = self._diagonal_hamiltonian()
+        leaves, structure = qp.pytrees.flatten(cls(np.zeros((5, 5))))
+
+        assert len(leaves) == 1
+        assert qp.pytrees.unflatten(leaves, structure).num_terms == 5

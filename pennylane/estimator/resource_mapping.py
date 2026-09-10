@@ -487,19 +487,19 @@ def _(op: qtemps.TrotterProduct):
 @_map_to_resource_op.register
 def _(op: qtemps.TrotterVibronic):
     hamiltonian = op.arguments["hamiltonian"]
-    num_states = hamiltonian["constant"].shape[1]
-    num_modes = hamiltonian["linear"].shape[-1]
+    num_states = hamiltonian.num_states
+    num_modes = hamiltonian.num_modes
     grid_size = len(op.arguments["vib_wires"]) // num_modes
     phase_grad_wires = len(op.arguments["phase_gradient_wires"])
     # ``coefficient_wires`` may be dynamically allocated (empty); it then matches
     # ``phase_gradient_wires`` in size (see the class docstring).
     coeff_wires = len(op.arguments["coefficient_wires"]) or phase_grad_wires
 
-    # ``VibronicHamiltonian`` assumes the standard XOR ("blocks") fragmentation, under which the
+    # The resource estimate assumes the standard XOR ("blocks") fragmentation, under which the
     # number of position fragments F is at most 2 ** ceil_log2(N) (N = number of electronic
     # states); reject larger fragment counts so the estimate cannot silently disagree with the
     # actual Hamiltonian.
-    num_fragments = hamiltonian["constant"].shape[0]
+    num_fragments = hamiltonian.num_fragments
     max_fragments = 2 ** pl_math.ceil_log2(num_states)
     if num_fragments > max_fragments:
         raise ValueError(
