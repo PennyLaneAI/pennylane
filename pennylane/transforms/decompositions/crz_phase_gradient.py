@@ -19,8 +19,7 @@ Factory that produces a decomposition rule for CRZ in terms of
 import numpy as np
 
 import pennylane as qp
-from pennylane.ops.op_math.change_op_basis2 import ChangeOpBasis2
-from pennylane.ops.op_math.prod2 import Prod2
+from pennylane.ops.op_math import ChangeOpBasis2, prod
 from pennylane.typing import Bool, Wire
 
 from .rz_phase_gradient import validate_phase_gradient_wires
@@ -122,7 +121,7 @@ def make_crz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
         # angle-load and phase-flip fanouts abstractify to the same op (control_values aren't
         # part of the abstract representation), hence the repeated ``fanout`` below.
         fanout = qp.ctrl(qp.MultiX(Bool[precision], Wire[precision]), control=Wire[1])
-        compute_op = uncompute_op = qp.ops.prod((fanout, fanout))
+        compute_op = uncompute_op = prod(fanout, fanout)
         change_basis_rep = ChangeOpBasis2(compute_op, target_op, uncompute_op)
         return {change_basis_rep: 1}
 
