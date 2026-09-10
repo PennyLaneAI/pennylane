@@ -19,6 +19,7 @@ from copy import copy
 
 import pytest
 
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.exceptions import AdjointUndefinedError, DecompositionUndefinedError
 from pennylane.ops.op_math.controlled import ControlledOp
@@ -1036,11 +1037,11 @@ class TestCapture:
     @pytest.mark.jax
     def test_pow_eigvals_is_jittable(self):
         """Test that the eigvals method is jittable."""
-        import jax
-        import jax.numpy as jnp
-        import numpy as np
+        import jax  # pylint: disable=import-outside-toplevel
+        import jax.numpy as jnp  # pylint: disable=import-outside-toplevel
+        import numpy as np  # pylint: disable=reimported,import-outside-toplevel,redefined-outer-name
 
-        import pennylane as qp
+        import pennylane as qp  # pylint: disable=reimported,import-outside-toplevel,redefined-outer-name
 
         @jax.jit
         def f(x):

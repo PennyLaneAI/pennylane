@@ -368,6 +368,7 @@ class TestCapture:
         import jax  # pylint: disable=import-outside-toplevel
         import jax.numpy as jnp  # pylint: disable=import-outside-toplevel
         import numpy as np  # pylint: disable=reimported,import-outside-toplevel,redefined-outer-name
+
         import pennylane as qp  # pylint: disable=reimported,import-outside-toplevel,redefined-outer-name
 
         @jax.jit
