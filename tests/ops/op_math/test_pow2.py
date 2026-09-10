@@ -360,12 +360,15 @@ def test_eigvals_fractional_power_negative_eigenvalue_2(z, power_method):
 
 # pylint: disable-next=too-few-public-methods
 class TestCapture:
+    """Tests Capture"""
 
     @pytest.mark.jax
     def test_pow_2_eigvals_is_jittable(self):
         """Test that the eigvals method is jittable."""
-        import jax
-        import jax.numpy as jnp
+        import jax  # pylint: disable=import-outside-toplevel
+        import jax.numpy as jnp  # pylint: disable=import-outside-toplevel
+        import numpy as np  # pylint: disable=reimported,import-outside-toplevel,redefined-outer-name
+        import pennylane as qp  # pylint: disable=reimported,import-outside-toplevel,redefined-outer-name
 
         @jax.jit
         def f(x):
