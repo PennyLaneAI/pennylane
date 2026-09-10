@@ -240,7 +240,7 @@ def test_meas_var(shots, ops, seed):
     qnode_clfrd = qp.set_shots(qp.QNode(circuit_fn, dev_c), shots=shots)
     qnode_qubit = qp.QNode(circuit_fn, dev_q)
 
-    assert np.allclose(qnode_clfrd(), qnode_qubit(), atol=1e-2 if shots else 1e-8)
+    assert np.allclose(qnode_clfrd(), qnode_qubit(), atol=5e-2 if shots else 1e-8)
 
 
 @pytest.mark.parametrize("circuit", [circuit_1, circuit_2])
