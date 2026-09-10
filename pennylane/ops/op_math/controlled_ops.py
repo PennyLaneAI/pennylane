@@ -432,9 +432,9 @@ def _pauli_ctrl_pauli_ppr_resources(wires: AbstractWires, pauli0, pauli1):
     """Resources for _pauli_ctrl_pauli_ppr."""
     resources = defaultdict(int)
     p0, p1 = pauli0.__name__[-1], pauli1.__name__[-1]
-    resources[qp.PauliRot(Float, pauli_word=p0, wires=Wire[len(p0)])] += 1
-    resources[qp.PauliRot(Float, pauli_word=p1, wires=Wire[len(p1)])] += 1
-    resources[qp.PauliRot(Float, pauli_word=p0 + p1, wires=Wire[len(p0 + p1)])] += 1
+    resources[qp.PPR(-2, pauli_word=p0, wires=Wire[len(p0)])] += 1
+    resources[qp.PPR(-2, pauli_word=p1, wires=Wire[len(p1)])] += 1
+    resources[qp.PPR(2, pauli_word=p0 + p1, wires=Wire[len(p0 + p1)])] += 1
     resources[qp.GlobalPhase] += 1
     return dict(resources)
 
@@ -442,9 +442,9 @@ def _pauli_ctrl_pauli_ppr_resources(wires: AbstractWires, pauli0, pauli1):
 def _pauli_ctrl_pauli_ppr(wires: AbstractWires, pauli0, pauli1):
     """Generalized two-qubit Pauli-controlled Pauli gate decomposition to PPRs."""
     p0, p1 = pauli0.__name__[-1], pauli1.__name__[-1]
-    qp.PauliRot(-np.pi / 2, p0, wires=wires[0])
-    qp.PauliRot(-np.pi / 2, p1, wires=wires[1])
-    qp.PauliRot(np.pi / 2, p0 + p1, wires=wires)
+    qp.PPR(-2, p0, wires=wires[0])
+    qp.PPR(-2, p1, wires=wires[1])
+    qp.PPR(2, p0 + p1, wires=wires)
     qp.GlobalPhase(np.pi / 4)
 
 
@@ -707,26 +707,26 @@ def _cswap(wires: WiresLike, **__):
 
 def _cswap_to_ppr_resource(wires: WiresLike = None):
     return {
-        qp.PauliRot(Float, pauli_word="ZZZ", wires=Wire[3]): 1,
-        qp.PauliRot(Float, pauli_word="ZYY", wires=Wire[3]): 1,
-        qp.PauliRot(Float, pauli_word="ZXX", wires=Wire[3]): 1,
-        qp.PauliRot(Float, pauli_word="ZZ", wires=Wire[2]): 1,
-        qp.PauliRot(Float, pauli_word="YY", wires=Wire[2]): 1,
-        qp.PauliRot(Float, pauli_word="XX", wires=Wire[2]): 1,
-        qp.PauliRot(Float, pauli_word="Z", wires=Wire[1]): 1,
+        qp.PPR(-4, pauli_word="ZZZ", wires=Wire[3]): 1,
+        qp.PPR(-4, pauli_word="ZYY", wires=Wire[3]): 1,
+        qp.PPR(-4, pauli_word="ZXX", wires=Wire[3]): 1,
+        qp.PPR(4, pauli_word="ZZ", wires=Wire[2]): 1,
+        qp.PPR(4, pauli_word="YY", wires=Wire[2]): 1,
+        qp.PPR(4, pauli_word="XX", wires=Wire[2]): 1,
+        qp.PPR(4, pauli_word="Z", wires=Wire[1]): 1,
         qp.GlobalPhase: 1,
     }
 
 
 @register_resources(_cswap_to_ppr_resource)
 def _cswap_to_ppr(wires: WiresLike, **_):
-    qp.PauliRot(-np.pi / 4, "ZZZ", wires=wires)
-    qp.PauliRot(-np.pi / 4, "ZYY", wires=wires)
-    qp.PauliRot(-np.pi / 4, "ZXX", wires=wires)
-    qp.PauliRot(np.pi / 4, "ZZ", wires=wires[1:])
-    qp.PauliRot(np.pi / 4, "YY", wires=wires[1:])
-    qp.PauliRot(np.pi / 4, "XX", wires=wires[1:])
-    qp.PauliRot(np.pi / 4, "Z", wires=wires[0])
+    qp.PPR(-4, "ZZZ", wires=wires)
+    qp.PPR(-4, "ZYY", wires=wires)
+    qp.PPR(-4, "ZXX", wires=wires)
+    qp.PPR(4, "ZZ", wires=wires[1:])
+    qp.PPR(4, "YY", wires=wires[1:])
+    qp.PPR(4, "XX", wires=wires[1:])
+    qp.PPR(4, "Z", wires=wires[0])
     qp.GlobalPhase(-np.pi / 8)
 
 
@@ -1185,24 +1185,24 @@ def _toffoli(wires: WiresLike):
 
 def _toffoli_to_ppr_resource(wires: WiresLike):
     return {
-        qp.PauliRot(Float, pauli_word="ZZ", wires=Wire[2]): 1,
-        qp.PauliRot(Float, pauli_word="ZX", wires=Wire[2]): 2,
-        qp.PauliRot(Float, pauli_word="ZZX", wires=Wire[3]): 1,
-        qp.PauliRot(Float, pauli_word="X", wires=Wire[1]): 1,
-        qp.PauliRot(Float, pauli_word="Z", wires=Wire[1]): 2,
+        qp.PPR(-4, pauli_word="ZZ", wires=Wire[2]): 1,
+        qp.PPR(-4, pauli_word="ZX", wires=Wire[2]): 2,
+        qp.PPR(4, pauli_word="ZZX", wires=Wire[3]): 1,
+        qp.PPR(4, pauli_word="X", wires=Wire[1]): 1,
+        qp.PPR(4, pauli_word="Z", wires=Wire[1]): 2,
         qp.GlobalPhase: 1,
     }
 
 
 @register_resources(_toffoli_to_ppr_resource)
 def _toffoli_to_ppr(wires: WiresLike):
-    qp.PauliRot(-np.pi / 4, "ZZ", wires=wires[:2])
-    qp.PauliRot(-np.pi / 4, "ZX", wires=[wires[0], wires[2]])
-    qp.PauliRot(-np.pi / 4, "ZX", wires=wires[1:])
-    qp.PauliRot(np.pi / 4, "ZZX", wires=wires)
-    qp.PauliRot(np.pi / 4, "X", wires=wires[2])
-    qp.PauliRot(np.pi / 4, "Z", wires=wires[1])
-    qp.PauliRot(np.pi / 4, "Z", wires=wires[0])
+    qp.PPR(-4, "ZZ", wires=wires[:2])
+    qp.PPR(-4, "ZX", wires=[wires[0], wires[2]])
+    qp.PPR(-4, "ZX", wires=wires[1:])
+    qp.PPR(4, "ZZX", wires=wires)
+    qp.PPR(4, "X", wires=wires[2])
+    qp.PPR(4, "Z", wires=wires[1])
+    qp.PPR(4, "Z", wires=wires[0])
     qp.GlobalPhase(-np.pi / 8)
 
 
