@@ -240,8 +240,8 @@ class Multiplier(Operation):
             ControlledSequence(PhaseAdder(k, wires_aux, mod, work_wire_aux), control=x_wires),
         )
 
-        target_op = Prod2(
-            list(reversed([SWAP(wires) for wires in zip(x_wires, wires_aux_swap, strict=True)]))
+        target_op = prod(
+            *list(reversed([SWAP(wires) for wires in zip(x_wires, wires_aux_swap, strict=True)]))
         )
 
         inv_k = pow(k, -1, mod)
@@ -301,8 +301,8 @@ def _multiplier_decomposition(k, x_wires: WiresLike, mod, work_wires: WiresLike,
         QFT(wires=wires_aux),
         ControlledSequence(PhaseAdder(k, wires_aux, mod, work_wire_aux), control=x_wires),
     )
-    Prod2(
-        list(
+    prod(
+        *list(
             reversed(
                 [
                     SWAP(wires=[x_wire, aux_wire])
