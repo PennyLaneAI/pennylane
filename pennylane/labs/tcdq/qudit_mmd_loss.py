@@ -465,11 +465,7 @@ def build_qudit_mmd_loss(
                 bandwidth into one key for observable sampling and one that is
                 forwarded to ``expval_fn``. If ``None``, uses
                 ``jax.random.PRNGKey(0)``.
-            **expval_kwargs: Extra keyword arguments forwarded to ``expval_fn``,
-                for example ``n_samples=4000`` or ``phase_fn_params=xi``.
-                Hashable values are forwarded as compile-time constants;
-                unhashable ones, notably arrays, are traced. ``observables``
-                is reserved.
+            **expval_kwargs: Extra keyword arguments forwarded to ``expval_fn``.
 
         Returns:
             Either a scalar mean across bandwidths or a list of per-bandwidth
