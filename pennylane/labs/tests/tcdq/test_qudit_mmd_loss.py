@@ -15,11 +15,16 @@
 """Reference and regression tests for the qudit MMD loss."""
 
 import itertools
+from dataclasses import replace
 
 import numpy as np
 import pytest
 
-from pennylane.labs.tcdq.qudit_expval_functions import QuditCircuitConfig, _dims_to_numpy
+from pennylane.labs.tcdq.qudit_expval_functions import (
+    QuditCircuitConfig,
+    _dims_to_numpy,
+    build_qudit_expval_func,
+)
 from pennylane.labs.tcdq.qudit_mmd_loss import (
     QuditMMDConfig,
     _complete_marginal_probs,
@@ -35,6 +40,17 @@ jnp = pytest.importorskip("jax.numpy")
 jax.config.update("jax_enable_x64", True)
 
 
+def _build_loss(circuit_config, mmd_config):
+    """Build the loss function from a qudit IQP circuit configuration."""
+    expval_fn = build_qudit_expval_func(replace(circuit_config, observables=None))
+    return build_qudit_mmd_loss(
+        expval_fn,
+        circuit_config.dims,
+        circuit_config.n_qudits,
+        mmd_config,
+    )
+
+
 def _call_qudit_mmd_loss(
     params,
     circuit_config,
@@ -43,8 +59,7 @@ def _call_qudit_mmd_loss(
     key=None,
 ):
     """Construct the loss function and evaluate it once."""
-    loss_fn = build_qudit_mmd_loss(circuit_config, mmd_config)
-    return loss_fn(params, target_data, key)
+    return _build_loss(circuit_config, mmd_config)(params, target_data, key)
 
 
 def _qudit_phi_g_z(gen, z, d):
@@ -421,19 +436,6 @@ class TestExactQuditMMDConsistency:
 class TestQuditMMDLossAPI:
     """API-level tests for one-shot qudit MMD loss evaluation."""
 
-    def test_raises_n_samples_le_one(self):
-        """n_samples <= 1 should raise ValueError."""
-        config = QuditCircuitConfig(
-            dims=3,
-            n_qudits=2,
-            gates={0: [[1, 0]]},
-            n_samples=1,
-            key=jax.random.PRNGKey(0),
-        )
-        mmd_cfg = QuditMMDConfig(bandwidth=1.0, n_ops=5)
-        with pytest.raises(ValueError, match="n_samples must be greater than 1"):
-            _call_qudit_mmd_loss(jnp.array([0.1]), config, mmd_cfg, jnp.array([[0, 0]]))
-
     def test_raises_target_data_too_few_samples(self):
         """Target data with fewer than 2 samples should raise ValueError."""
         config = QuditCircuitConfig(
@@ -458,7 +460,7 @@ class TestQuditMMDLossAPI:
         )
         mmd_cfg = QuditMMDConfig(bandwidth=1.0, n_ops=0)
         with pytest.raises(ValueError, match="n_ops must be at least 1"):
-            build_qudit_mmd_loss(config, mmd_cfg)
+            _build_loss(config, mmd_cfg)
 
     def test_raises_empty_bandwidth(self):
         """Empty bandwidth list should raise ValueError."""
@@ -471,7 +473,7 @@ class TestQuditMMDLossAPI:
         )
         mmd_cfg = QuditMMDConfig(bandwidth=[], n_ops=5)
         with pytest.raises(ValueError, match="bandwidth must not be empty"):
-            build_qudit_mmd_loss(config, mmd_cfg)
+            _build_loss(config, mmd_cfg)
 
     def test_raises_wire_out_of_range(self):
         """Wire index beyond n_qudits should raise ValueError."""
@@ -484,7 +486,7 @@ class TestQuditMMDLossAPI:
         )
         mmd_cfg = QuditMMDConfig(bandwidth=1.0, n_ops=5, wires=[0, 5])
         with pytest.raises(ValueError, match="Wire index 5 out of range"):
-            build_qudit_mmd_loss(config, mmd_cfg)
+            _build_loss(config, mmd_cfg)
 
     def test_raises_duplicate_wires(self):
         """Duplicate wire indices should raise ValueError."""
@@ -497,7 +499,7 @@ class TestQuditMMDLossAPI:
         )
         mmd_cfg = QuditMMDConfig(bandwidth=1.0, n_ops=5, wires=[0, 0])
         with pytest.raises(ValueError, match="wires must not contain duplicates"):
-            build_qudit_mmd_loss(config, mmd_cfg)
+            _build_loss(config, mmd_cfg)
 
     def test_raises_target_data_wrong_ndim(self):
         """Non-2D target data should raise ValueError."""
@@ -601,35 +603,20 @@ class TestQuditMMDLossAPI:
 
     def test_different_keys_give_different_results(self):
         """Different PRNG keys should give different losses."""
-        gates = {0: [[1, 0]], 1: [[0, 1]]}
+        config = QuditCircuitConfig(
+            dims=3,
+            n_qudits=2,
+            gates={0: [[1, 0]], 1: [[0, 1]]},
+            n_samples=100,
+            key=jax.random.PRNGKey(0),
+        )
         data = jnp.array([[0, 1], [1, 0], [2, 2], [1, 1]])
         params = jnp.array([0.3, 0.7])
         mmd_cfg = QuditMMDConfig(bandwidth=1.0, n_ops=20)
+        loss_fn = _build_loss(config, mmd_cfg)
 
-        r1 = _call_qudit_mmd_loss(
-            params,
-            QuditCircuitConfig(
-                dims=3,
-                n_qudits=2,
-                gates=gates,
-                n_samples=100,
-                key=jax.random.PRNGKey(0),
-            ),
-            mmd_cfg,
-            data,
-        )
-        r2 = _call_qudit_mmd_loss(
-            params,
-            QuditCircuitConfig(
-                dims=3,
-                n_qudits=2,
-                gates=gates,
-                n_samples=100,
-                key=jax.random.PRNGKey(999),
-            ),
-            mmd_cfg,
-            data,
-        )
+        r1 = loss_fn(params, data, key=jax.random.PRNGKey(0))
+        r2 = loss_fn(params, data, key=jax.random.PRNGKey(999))
         assert float(r1) != float(r2)
 
     def test_mmd_loss_with_custom_init_state(self):
@@ -739,7 +726,7 @@ class TestQuditMMDLossStatistical:
             key=jax.random.PRNGKey(0),
         )
 
-        loss_fn = build_qudit_mmd_loss(config, mmd_cfg)
+        loss_fn = _build_loss(config, mmd_cfg)
 
         estimates = []
         master_key = jax.random.PRNGKey(42)
@@ -793,7 +780,7 @@ class TestQuditMMDLossStatistical:
         assert res.shape == () and float(res) >= 0.0
 
     def test_key_override_provides_new_randomness(self):
-        """Passing an explicit key should override the config key."""
+        """Passing an explicit key should change the result."""
         config = QuditCircuitConfig(
             dims=3,
             n_qudits=2,
@@ -865,7 +852,7 @@ class TestBuildQuditMMDLoss:
         mmd_cfg = QuditMMDConfig(bandwidth=1.0, n_ops=50)
 
         direct = _call_qudit_mmd_loss(params, config, mmd_cfg, data)
-        loss_fn = build_qudit_mmd_loss(config, mmd_cfg)
+        loss_fn = _build_loss(config, mmd_cfg)
         factory = loss_fn(params, data)
 
         assert np.isclose(float(direct), float(factory), atol=1e-10)
@@ -874,7 +861,7 @@ class TestBuildQuditMMDLoss:
         """The returned loss_fn can be JIT-compiled."""
         config, data, params = self._make_config_and_data()
         mmd_cfg = QuditMMDConfig(bandwidth=1.0, n_ops=50)
-        loss_fn = build_qudit_mmd_loss(config, mmd_cfg)
+        loss_fn = _build_loss(config, mmd_cfg)
 
         eager = loss_fn(params, data, key=jax.random.PRNGKey(7))
         jitted = jax.jit(loss_fn)(params, data, key=jax.random.PRNGKey(7))
@@ -885,7 +872,7 @@ class TestBuildQuditMMDLoss:
         """jax.grad through the factory loss produces finite gradients."""
         config, data, params = self._make_config_and_data()
         mmd_cfg = QuditMMDConfig(bandwidth=1.0, n_ops=50)
-        loss_fn = build_qudit_mmd_loss(config, mmd_cfg)
+        loss_fn = _build_loss(config, mmd_cfg)
 
         grad = jax.grad(loss_fn)(params, data, key=jax.random.PRNGKey(0))
         assert grad.shape == params.shape
@@ -895,7 +882,7 @@ class TestBuildQuditMMDLoss:
         """Calling loss_fn with different params gives different results."""
         config, data, params = self._make_config_and_data()
         mmd_cfg = QuditMMDConfig(bandwidth=1.0, n_ops=50)
-        loss_fn = build_qudit_mmd_loss(config, mmd_cfg)
+        loss_fn = _build_loss(config, mmd_cfg)
 
         r1 = loss_fn(params, data)
         r2 = loss_fn(params * 2.0, data)
@@ -905,7 +892,7 @@ class TestBuildQuditMMDLoss:
         """Factory with multiple bandwidths works under JIT."""
         config, data, params = self._make_config_and_data()
         mmd_cfg = QuditMMDConfig(bandwidth=[0.5, 1.0], n_ops=50)
-        loss_fn = build_qudit_mmd_loss(config, mmd_cfg)
+        loss_fn = _build_loss(config, mmd_cfg)
 
         eager = loss_fn(params, data, key=jax.random.PRNGKey(3))
         jitted = jax.jit(loss_fn)(params, data, key=jax.random.PRNGKey(3))
@@ -913,7 +900,7 @@ class TestBuildQuditMMDLoss:
         assert np.isclose(float(eager), float(jitted), atol=1e-10)
 
     def test_with_init_state(self):
-        """Factory works with custom init state in circuit_config."""
+        """Factory works with a custom init state baked into the expval function."""
         state_elems = jnp.array([[0, 0], [1, 1]])
         state_amps = jnp.array([1 / jnp.sqrt(2), 1 / jnp.sqrt(2)])
 
@@ -930,7 +917,7 @@ class TestBuildQuditMMDLoss:
         data = jnp.array([[0, 0], [1, 1]])
         params = jnp.array([0.5])
 
-        loss_fn = build_qudit_mmd_loss(config, mmd_cfg)
+        loss_fn = _build_loss(config, mmd_cfg)
         res = loss_fn(params, data)
         assert res.shape == () and np.isfinite(float(res))
 
@@ -948,7 +935,7 @@ class TestBuildQuditMMDLoss:
         data = jnp.array([[0, 1], [1, 2], [0, 0], [1, 1], [0, 2]])
         params = jnp.array([0.3, 0.5, 0.1])
 
-        loss_fn = build_qudit_mmd_loss(config, mmd_cfg)
+        loss_fn = _build_loss(config, mmd_cfg)
         res = loss_fn(params, data)
         assert res.shape == () and np.isfinite(float(res))
 
@@ -967,26 +954,13 @@ class TestBuildQuditMMDLoss:
         # Visible wires (0, 2) -> qubit and ququart columns only.
         data = jnp.array([[0, 3], [1, 0], [0, 2], [1, 1]])
         mmd_cfg = QuditMMDConfig(bandwidth=1.0, n_ops=30, wires=[0, 2])
-        loss_fn = build_qudit_mmd_loss(config, mmd_cfg)
+        loss_fn = _build_loss(config, mmd_cfg)
         res = loss_fn(jnp.array([0.1, 0.2, 0.3]), data)
         assert res.shape == () and np.isfinite(float(res))
 
-    def test_raises_n_samples_le_one(self):
-        """Factory raises ValueError at build time for n_samples <= 1."""
-        config = QuditCircuitConfig(
-            dims=3,
-            n_qudits=2,
-            gates={0: [[1, 0]]},
-            n_samples=1,
-            key=jax.random.PRNGKey(0),
-        )
-        mmd_cfg = QuditMMDConfig(bandwidth=1.0, n_ops=5)
-        with pytest.raises(ValueError, match="n_samples must be greater than 1"):
-            build_qudit_mmd_loss(config, mmd_cfg)
-
 
 class TestQuditMMDLossPhaseLayer:
-    """The phase layer in ``circuit_config`` must reach the underlying expval function."""
+    """The phase layer must reach the underlying expval function."""
 
     Z_THRESHOLD = 4.0
     N_TRIALS = 80
@@ -1020,10 +994,8 @@ class TestQuditMMDLossPhaseLayer:
         params = jnp.array([0.3, 0.5, 0.1])
         mmd_cfg = QuditMMDConfig(bandwidth=1.0, n_ops=50)
 
-        without = build_qudit_mmd_loss(self._make_config(None), mmd_cfg)(params, data)
-        with_zero = build_qudit_mmd_loss(self._make_config(self._zero_phase_fn), mmd_cfg)(
-            params, data
-        )
+        without = _build_loss(self._make_config(None), mmd_cfg)(params, data)
+        with_zero = _build_loss(self._make_config(self._zero_phase_fn), mmd_cfg)(params, data)
         assert np.isclose(float(without), float(with_zero), atol=1e-12)
 
     def test_nontrivial_phase_layer_changes_loss(self):
@@ -1032,8 +1004,8 @@ class TestQuditMMDLossPhaseLayer:
         params = jnp.array([0.3, 0.5, 0.1])
         mmd_cfg = QuditMMDConfig(bandwidth=1.0, n_ops=50)
 
-        without = build_qudit_mmd_loss(self._make_config(None), mmd_cfg)(params, data)
-        with_phase = build_qudit_mmd_loss(self._make_config(self._phase_fn), mmd_cfg)(params, data)
+        without = _build_loss(self._make_config(None), mmd_cfg)(params, data)
+        with_phase = _build_loss(self._make_config(self._phase_fn), mmd_cfg)(params, data)
         assert float(without) != float(with_phase)
 
     def test_phase_layer_matches_exact_mmd(self):
@@ -1057,7 +1029,7 @@ class TestQuditMMDLossPhaseLayer:
             phase_fn=self._phase_fn,
         )
         mmd_cfg = QuditMMDConfig(bandwidth=bandwidth, n_ops=self.N_OPS, graph_type=graph_type)
-        loss_fn = build_qudit_mmd_loss(config, mmd_cfg)
+        loss_fn = _build_loss(config, mmd_cfg)
 
         qudits_jnp = jnp.array(qudits)
         params_jnp = jnp.array(params)
@@ -1080,8 +1052,134 @@ class TestQuditMMDLossPhaseLayer:
         data = jnp.array([[0, 1], [1, 2], [2, 0]])
         params = jnp.array([0.5, 0.3, 0.1])
         mmd_cfg = QuditMMDConfig(bandwidth=1.0, n_ops=50)
-        loss_fn = build_qudit_mmd_loss(self._make_config(self._phase_fn), mmd_cfg)
+        loss_fn = _build_loss(self._make_config(self._phase_fn), mmd_cfg)
 
         grad = jax.grad(loss_fn)(params, data, key=jax.random.PRNGKey(0))
         assert grad.shape == params.shape
         assert jnp.all(jnp.isfinite(grad))
+
+
+class TestArbitraryExpvalCallable:
+    """The loss must work with any Heisenberg-Weyl moment callable, not only qudit IQP."""
+
+    D = 3
+    N_QUDITS = 2
+
+    @staticmethod
+    def _exact_moments(probs, d, n_qudits):
+        """Return an exact moment callable for a fixed distribution over dit-strings."""
+        states = jnp.array(list(itertools.product(range(d), repeat=n_qudits)), dtype=jnp.float64)
+
+        def expval_fn(params, observables=None, key=None):  # pylint: disable=unused-argument
+            l_vecs, _ = observables
+            inner = (l_vecs.astype(jnp.float64) / d) @ states.T
+            return jnp.exp(2j * jnp.pi * inner) @ (probs * params[0])
+
+        return expval_fn
+
+    def test_moments_only_callable(self):
+        """A callable returning moments alone is treated as an exact model."""
+        rng = np.random.default_rng(0)
+        probs = rng.dirichlet(np.ones(self.D**self.N_QUDITS))
+        expval_fn = self._exact_moments(jnp.array(probs), self.D, self.N_QUDITS)
+
+        mmd_cfg = QuditMMDConfig(bandwidth=0.5, n_ops=40)
+        loss_fn = build_qudit_mmd_loss(expval_fn, self.D, self.N_QUDITS, mmd_cfg)
+        data = jnp.array([[0, 1], [1, 2], [2, 0], [1, 1]])
+
+        res = loss_fn(jnp.array([1.0]), data, key=jax.random.PRNGKey(0))
+        assert res.shape == () and np.isfinite(float(jnp.real(res)))
+
+    def test_exact_model_matches_kernel_mmd(self):
+        """With exact moments the loss must reproduce the exact kernel MMD² in expectation."""
+        rng = np.random.default_rng(1)
+        probs = rng.dirichlet(np.ones(self.D**self.N_QUDITS))
+        data = rng.integers(0, self.D, (40, self.N_QUDITS))
+        bandwidth, graph_type = 0.5, "cycle"
+
+        exact = _exact_qudit_mmd2_kernel(probs, data, self.D, bandwidth, graph_type, self.N_QUDITS)
+
+        expval_fn = self._exact_moments(jnp.array(probs), self.D, self.N_QUDITS)
+        mmd_cfg = QuditMMDConfig(bandwidth=bandwidth, n_ops=200, graph_type=graph_type)
+        loss_fn = build_qudit_mmd_loss(expval_fn, self.D, self.N_QUDITS, mmd_cfg)
+
+        estimates = [
+            float(jnp.real(loss_fn(jnp.array([1.0]), jnp.array(data), key=jax.random.PRNGKey(s))))
+            for s in range(60)
+        ]
+        mean_est = np.mean(estimates)
+        se = np.std(estimates, ddof=1) / np.sqrt(len(estimates))
+        assert abs(exact - mean_est) / se < 4.0, f"exact={exact}, mean={mean_est}, se={se}"
+
+    def test_array_expval_kwargs_are_traced(self):
+        """An array kwarg such as ``phase_fn_params`` must be traced and differentiable."""
+
+        def phase_fn(xi, z):
+            return jnp.sum(xi) * jnp.cos(2.0 * jnp.pi * jnp.sum(z.astype(jnp.float64)) / 3.0)
+
+        config = QuditCircuitConfig(
+            dims=3,
+            n_qudits=2,
+            gates={0: [[1, 0]], 1: [[0, 1]]},
+            n_samples=200,
+            key=jax.random.PRNGKey(0),
+            phase_fn=phase_fn,
+        )
+        mmd_cfg = QuditMMDConfig(bandwidth=1.0, n_ops=30)
+        loss_fn = _build_loss(config, mmd_cfg)
+        data = jnp.array([[0, 1], [1, 2], [2, 0], [1, 1]])
+        params = jnp.array([0.3, 0.5])
+        key = jax.random.PRNGKey(9)
+
+        zero = loss_fn(params, data, key, phase_fn_params=jnp.array([0.0]))
+        nonzero = loss_fn(params, data, key, phase_fn_params=jnp.array([1.7]))
+        assert float(zero) != float(nonzero)
+
+        grad = jax.grad(lambda xi: loss_fn(params, data, key, phase_fn_params=xi))(jnp.array([1.7]))
+        assert jnp.all(jnp.isfinite(grad))
+
+    def test_raises_observables_in_expval_kwargs(self):
+        """``observables`` is reserved and must not be forwarded by the caller."""
+        expval_fn = self._exact_moments(
+            jnp.full(self.D**self.N_QUDITS, 1.0 / self.D**self.N_QUDITS), self.D, self.N_QUDITS
+        )
+        loss_fn = build_qudit_mmd_loss(
+            expval_fn, self.D, self.N_QUDITS, QuditMMDConfig(bandwidth=1.0, n_ops=5)
+        )
+        with pytest.raises(ValueError, match="must not contain 'observables'"):
+            loss_fn(jnp.array([1.0]), jnp.array([[0, 1], [1, 0]]), observables=None)
+
+    def test_raises_wrong_moment_shape(self):
+        """A callable returning the wrong number of moments must raise."""
+
+        def bad_expval_fn(params, observables=None, key=None):  # pylint: disable=unused-argument
+            return jnp.zeros(3, dtype=jnp.complex128)
+
+        loss_fn = build_qudit_mmd_loss(
+            bad_expval_fn, self.D, self.N_QUDITS, QuditMMDConfig(bandwidth=1.0, n_ops=5)
+        )
+        with pytest.raises(ValueError, match=r"moments of shape \(3,\), expected \(5,\)"):
+            loss_fn(jnp.array([1.0]), jnp.array([[0, 1], [1, 0]]))
+
+    def test_raises_wrong_cov_shape(self):
+        """A callable returning a badly shaped covariance must raise."""
+
+        def bad_expval_fn(params, observables=None, key=None):  # pylint: disable=unused-argument
+            l_vecs, _ = observables
+            return jnp.zeros(l_vecs.shape[0], dtype=jnp.complex128), jnp.zeros((l_vecs.shape[0], 3))
+
+        loss_fn = build_qudit_mmd_loss(
+            bad_expval_fn, self.D, self.N_QUDITS, QuditMMDConfig(bandwidth=1.0, n_ops=5)
+        )
+        with pytest.raises(ValueError, match=r"covariances of shape \(5, 3\)"):
+            loss_fn(jnp.array([1.0]), jnp.array([[0, 1], [1, 0]]))
+
+    def test_raises_unset_hyperparameters(self):
+        """``bandwidth`` and ``n_ops`` must both be set on the config."""
+        expval_fn = self._exact_moments(
+            jnp.full(self.D**self.N_QUDITS, 1.0 / self.D**self.N_QUDITS), self.D, self.N_QUDITS
+        )
+        with pytest.raises(ValueError, match="must specify both bandwidth and n_ops"):
+            build_qudit_mmd_loss(expval_fn, self.D, self.N_QUDITS, QuditMMDConfig(n_ops=5))
+        with pytest.raises(ValueError, match="must specify both bandwidth and n_ops"):
+            build_qudit_mmd_loss(expval_fn, self.D, self.N_QUDITS, QuditMMDConfig(bandwidth=1.0))
