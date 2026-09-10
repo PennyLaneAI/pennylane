@@ -829,8 +829,7 @@
 
   ```
 
-* Created a :func:`~.pennylane.labs.templates.one_body_walk` function implementing the qubitization
-  walk operator that block-encodes a real symmetric one-bod* Two new functions, :func:`~.pennylane.labs.templates.one_body_walk` and
+* Two new functions, :func:`~.pennylane.labs.templates.one_body_walk` and
   :func:`~.pennylane.labs.templates.one_body_walk_wires`, have been added.
   :func:`~.pennylane.labs.templates.one_body_walk` builds the qubitization walk operator that
   block-encodes a real symmetric one-body operator :math:`\hat O`, giving access to the

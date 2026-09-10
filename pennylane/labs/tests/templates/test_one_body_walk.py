@@ -73,7 +73,7 @@ def _reference_block_matrix(op_matrix, system_wires, mu_bits=None):
 
     Args:
         op_matrix (array): the real symmetric one-body matrix.
-        system_wires (list[int]): wires for representing the ``2 N`` system spin-orbitals
+        system_wires (list[int]): wires for representing the ``2 * norbs`` system spin-orbitals
         mu_bits (int or None): alias sampling precision; if None, the exact weights are used.
 
     Returns:
@@ -245,7 +245,9 @@ class TestOneBodyWalk:
 
     @pytest.mark.parametrize("norbs", [2, 3])
     def test_negative_definite_spectrum(self, norbs):
-        """Test a negative spectrum: signs phase the index register, magnitude in PREP."""
+        """Test that a negative-definite spectrum is encoded correctly, with the signs of the
+        eigenvalues phased onto the index register and only their magnitudes loaded by PREP.
+        """
         rng = np.random.default_rng(1000 * norbs)
         a = rng.standard_normal((norbs, norbs))
         op_matrix = (a + a.T) / 2
@@ -297,7 +299,8 @@ class TestOneBodyWalk:
 
     @pytest.mark.parametrize("n_powers", [2, 3])
     def test_chebyshev_recursion(self, n_powers):
-        r"""Test that applying the walk n times block-encodes the :math:`n^{th}` Chebyshev polynomial of the operator it encodes."""
+        r"""Test that applying the walk n times block-encodes the :math:`n`-th Chebyshev
+        polynomial of the operator it encodes."""
         rng = np.random.default_rng(n_powers)
         a = rng.standard_normal((2, 2))
         op_matrix = (a + a.T) / 2

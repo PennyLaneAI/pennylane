@@ -20,20 +20,22 @@ from pennylane.labs.templates import LeftClassicalComparator, alias_sampling, al
 def one_body_walk_wires(norbs, alias_sampling_nbits):
     r"""Returns the sizes of the three wire registers required by :func:`one_body_walk`.
 
-    :func:`one_body_walk` acts on three disjoint registers whose sizes are fixed by ``norbs``
+    The function :func:`one_body_walk` acts on three disjoint registers whose sizes are fixed by ``norbs``
     and ``alias_sampling_nbits``. Use this function to size them before allocating wires.
 
     The registers are:
+
         * ``prep_wires``: the full PREP register that the reflection acts on
         * ``system_wires``: the state register :math:`|\psi\rangle` the operator acts on
-        * ``work_wires``: clean scratch that returns to ``|0>``
+        * ``work_wires``: clean scratch that starts and ends in :math:`|0\rangle`
 
     Args:
         norbs (int): number of spatial orbitals
-        alias_sampling_nbits (int): number of bits needed for alias-sampling coefficient precision.
+        alias_sampling_nbits (int): number of bits of precision used for the alias-sampling
+            coefficients
 
     Returns:
-        dict[str, int]: number of wires for ``prep_wires``, ``system_wires``, ``work_wires``.
+        dict[str, int]: number of wires for ``prep_wires``, ``system_wires`` and ``work_wires``
 
     **Example**
 
@@ -50,7 +52,7 @@ def one_body_walk_wires(norbs, alias_sampling_nbits):
 
 
 def one_body_walk(op_matrix, alias_sampling_nbits, prep_wires, system_wires, work_wires):
-    r"""Walk operator for the block-encoding of a one-body operator.
+    r"""Apply the qubitization walk operator that block-encodes a one-body operator.
 
     Implements :math:`\hat{\mathcal{W}} = \hat{\mathcal{R}} \cdot \text{PREP}^\dagger \cdot
     \text{SEL} \cdot \text{PREP}`, with :math:`\hat{\mathcal{R}} = \hat 1 - 2|0\rangle\langle 0|`
@@ -78,25 +80,58 @@ def one_body_walk(op_matrix, alias_sampling_nbits, prep_wires, system_wires, wor
     The normalization of the block-encoding is :math:`\lambda = \sum_p |\mu_p|`.
 
     Args:
-        op_matrix (array): The real symmetric one-body matrix, shape ``(N, N)``, where N is the number
+        op_matrix (array): The real symmetric one-body matrix, shape ``(norbs, norbs)``, where ``norbs`` is the number
             of spatial orbitals.
-        alias_sampling_nbits (int): number of bits needed for alias-sampling coefficient precision
+        alias_sampling_nbits (int): number of bits of precision used for the alias-sampling coefficients
         prep_wires (Sequence[int]): the full PREP register, reflected by ``R``
-        system_wires (Sequence[int]): wires for representing the ``2 N`` system spin-orbitals
+        system_wires (Sequence[int]): the ``2 * norbs`` system spin-orbitals, ordered
+            spin-blocked: ``system_wires[s * norbs + p]`` holds spatial orbital ``p`` of spin
+            sector ``s``, so the first ``norbs`` wires are one spin sector and the last
+            ``norbs`` the other. This differs from the interleaved ``2 * p + s`` ordering
+            produced by ``qp.qchem``; only the occupation convention (:math:`|1\rangle` is
+            occupied) is shared
         work_wires (Sequence[int]): clean scratch returned to ``|0>``
+
+    Raises:
+        ValueError: if ``op_matrix`` is not square, not real, or not symmetric
+        ValueError: if ``prep_wires`` or ``system_wires`` do not have exactly the sizes reported
+            by :func:`one_body_walk_wires`, or if ``work_wires`` has fewer than the reported
+            minimum
+        ValueError: if ``op_matrix`` is zero, so that :math:`\lambda = \sum_p |\mu_p| = 0` and
+            the block-encoding cannot be normalized
+
+    .. warning::
+
+        ``system_wires`` uses the spin-blocked ``s * norbs + p`` ordering. Passing a register
+        laid out in the interleaved ``2 * p + s`` ordering produced by ``qp.qchem`` gives a
+        silently incorrect block-encoding; no error is raised.
 
     **Example**
 
-    >>> op_matrix = [[1.0, 2.0], [2.0, 1.0]]
-    >>> req = qp.labs.templates.one_body_walk_wires(len(op_matrix), 2)
-    >>> n_prep, n_sys, n_work = req["prep_wires"], req["system_wires"], req["work_wires"]
-    >>> prep_wires = range(n_prep)
-    >>> system_wires = range(n_prep, n_prep + n_sys)
-    >>> work_wires = range(n_prep + n_sys, n_prep + n_sys + n_work)
-    >>> @qp.qnode(qp.device("default.qubit", wires=n_prep + n_sys + n_work))
-    ... def circuit():
-    ...     qp.labs.templates.one_body_walk(op_matrix, 2, prep_wires, system_wires, work_wires)
-    ...     return qp.probs(wires=prep_wires)
+    .. code-block:: python
+
+        import numpy as np
+        import pennylane as qp
+        from pennylane.labs.templates import one_body_walk, one_body_walk_wires
+
+        op_matrix = [[1.0, 2.0], [2.0, 1.0]]
+        req = one_body_walk_wires(len(op_matrix), 2)
+        n_prep, n_sys, n_work = req["prep_wires"], req["system_wires"], req["work_wires"]
+        prep_wires = range(n_prep)
+        system_wires = range(n_prep, n_prep + n_sys)
+        work_wires = range(n_prep + n_sys, n_prep + n_sys + n_work)
+
+        @qp.qnode(qp.device("default.qubit", wires=n_prep + n_sys + n_work))
+        def circuit():
+            one_body_walk(op_matrix, 2, prep_wires, system_wires, work_wires)
+            return qp.probs(wires=prep_wires)
+
+    The first entry of the returned distribution is the probability that the PREP register
+    returns to :math:`|\vec 0\rangle`, i.e. the squared norm of
+    :math:`(\hat O / \lambda)|\psi\rangle`. Here the system starts in the vacuum, where
+    :math:`\hat O |\mathrm{vac}\rangle = -\big(\sum_p \mu_p\big)|\mathrm{vac}\rangle`, so with
+    :math:`\mu = (-1, 3)` and :math:`\lambda = 4` the expected value is :math:`(2/4)^2 = 0.25`:
+
     >>> print(np.round(circuit()[0], 3))
     0.25
 
@@ -119,7 +154,7 @@ def one_body_walk(op_matrix, alias_sampling_nbits, prep_wires, system_wires, wor
             )
     if len(work_wires) < req["work_wires"]:
         raise ValueError(
-            f"work_wires must have at least {req['work_wires']} wires for norbs={norbs}, "
+            f"work_wires must have at least {req['work_wires']} wire(s) for norbs={norbs}, "
             f"alias_sampling_nbits={alias_sampling_nbits}; got {len(work_wires)}."
         )
 
