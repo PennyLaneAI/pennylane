@@ -14,7 +14,7 @@
 
 """Tests for ``qp.transforms.decompositions.make_rz_to_phase_gradient_decomp``"""
 
-# pylint: disable=no-value-for-parameter,disable=too-many-arguments
+# pylint: disable=no-value-for-parameter,disable=too-many-arguments,disable=no-name-in-module
 
 import numpy as np
 import pytest
@@ -23,6 +23,7 @@ import pennylane as qp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.transforms.decompositions import (
     make_rz_to_phase_gradient_decomp,
+    make_rz_to_phase_gradient_decomp_double_phase,
     validate_phase_gradient_wires,
 )
 from pennylane.wires import WireError
@@ -256,6 +257,215 @@ def test_adaptive_truncation(frac):
     all_wires = angle_wires + phase_grad_wires + work_wires + sys
 
     custom_decomp = make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
+    phase_grad_state = np.exp(-1j * 2 * np.pi * np.arange(2**prec) / 2**prec) / np.sqrt(2**prec)
+
+    @qp.transforms.decompose(
+        gate_set={
+            "StatePrep",
+            "Adjoint(StatePrep)",
+            "SemiAdder",
+            "CNOT",
+            "PauliX",
+            "GlobalPhase",
+        },
+        fixed_decomps={qp.RZ: custom_decomp},
+    )
+    @qp.qnode(qp.device("default.qubit", wires=all_wires))
+    def circuit(in_state):
+        qp.StatePrep(in_state, wires=sys)
+        qp.StatePrep(phase_grad_state, wires=phase_grad_wires)
+        qp.RZ(phi, sys)
+        qp.adjoint(qp.StatePrep(phase_grad_state, wires=phase_grad_wires))
+        return qp.state()
+
+    rng = np.random.default_rng(0)
+    in_state = rng.random(2)
+    in_state /= np.linalg.norm(in_state)
+
+    out_state = circuit(in_state)
+    zeros = np.eye(2 ** (len(all_wires) - 1), 1)[:, 0]
+    out_state_expected = np.kron(zeros, qp.matrix(qp.RZ(phi, sys)) @ in_state)
+    assert np.allclose(out_state, out_state_expected)
+
+
+def _msb_anchored_width_double_phase(phi, p):
+    """MSB-anchored significant width of ``phi`` at ``p`` bits in units of ``4*pi``."""
+    bits = [int(b) for b in qp.math.binary_decimals(phi, p, unit=4 * np.pi)]
+    set_positions = [i for i, b in enumerate(bits) if b]
+    return (max(set_positions) + 1) if set_positions else 0
+
+
+def _num_set_bits_double_phase(phi, p):
+    """Number of set bits in the ``p``-bit binary representation of ``phi`` (in units of 4*pi)."""
+    bits = [int(b) for b in qp.math.binary_decimals(phi, p, unit=4 * np.pi)]
+    return sum(bits)
+
+
+def _expected_rz_double_phase_specs(phi, p, adaptive_precision):
+    """Expected specs for a single ``RZ`` via the double-phase factory.
+
+    The compute/uncompute loads the angle bits with an *unconditional* ``MultiX`` (one ``X`` per
+    set bit, so ``2 * num_set_bits`` ``PauliX``) and flips the phase-gradient wires with a
+    ``MultiX`` controlled on |0> (``width`` ``CNOT``\\ s plus one ``PauliX`` flip of the target
+    wire, per pass). With ``adaptive_precision=True``, ``width`` is the MSB-anchored significant
+    width; with ``False`` it is the full ``p``. A zero angle emits an empty circuit."""
+    n = _num_set_bits_double_phase(phi, p)
+    width = _msb_anchored_width_double_phase(phi, p)
+    if adaptive_precision and width == 0:
+        return {}
+    cnot_width = width if adaptive_precision else p
+    return {"SemiAdder": 1, "CNOT": 2 * cnot_width, "PauliX": 4 + 2 * n}
+
+
+@pytest.mark.usefixtures("enable_and_disable_capture")
+@pytest.mark.parametrize("adaptive_precision", [True, False])
+@pytest.mark.parametrize("p", [2, 3, 4])
+def test_valid_decomp_double_phase(p, adaptive_precision):
+    """Test that ``make_rz_to_phase_gradient_decomp_double_phase`` yields a valid decomposition,
+    with capture both disabled (concrete angle) and enabled (abstract angle).
+
+    ``_test_decomposition_rule`` checks the emitted circuit against the rule's full-precision
+    resource estimate. We use an all-ones angle so the concrete decomposition saturates that
+    estimate (every bit is set)."""
+
+    phi = (1 - 2.0**-p) * 4 * np.pi  # binary all-ones at p bits (double-phase uses units of 4*pi)
+    first_free = 1
+    angle_wires = list(range(first_free, first_free + p))
+    phase_grad_wires = list(range(first_free + p, first_free + 2 * p))
+    work_wires = list(range(first_free + 2 * p, first_free + 3 * p - 1))
+
+    custom_decomp = make_rz_to_phase_gradient_decomp_double_phase(
+        angle_wires, phase_grad_wires, work_wires, adaptive_precision=adaptive_precision
+    )
+    _test_decomposition_rule(qp.RZ(phi, 0), custom_decomp, skip_decomp_matrix_check=True)
+
+
+@pytest.mark.usefixtures("enable_graph_decomposition")
+@pytest.mark.parametrize("adaptive_precision", [True, False])
+@pytest.mark.parametrize("phi", [0.5, 0.3, 1 / 2 + 1 / 4 + 1 / 8, 1.0])
+@pytest.mark.parametrize("p", [2, 3, 4])
+def test_as_fixed_decomps_double_phase(phi, p, adaptive_precision):
+    """Test that ``make_rz_to_phase_gradient_decomp_double_phase`` works as a fixed decomposition
+    and yields the correct resources."""
+    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(p)])
+    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(p)])
+    work_wires = qp.wires.Wires([f"work_{i}" for i in range(p - 1)])
+
+    custom_decomp = make_rz_to_phase_gradient_decomp_double_phase(
+        angle_wires, phase_grad_wires, work_wires, adaptive_precision=adaptive_precision
+    )
+    gate_set = {"SemiAdder", "CNOT", "PauliX"}
+
+    @qp.transforms.decompose(gate_set=gate_set, fixed_decomps={qp.RZ: custom_decomp})
+    @qp.qnode(qp.device("null.qubit"))
+    def circuit():
+        qp.RZ(phi, 0)
+        return qp.state()
+
+    expected = _expected_rz_double_phase_specs(phi, p, adaptive_precision)
+    specs = qp.specs(circuit)()["resources"].quantum_operations
+    assert specs == expected
+
+
+@pytest.mark.usefixtures("enable_graph_decomposition")
+@pytest.mark.parametrize("adaptive_precision", [True, False])
+@pytest.mark.parametrize("phi", [0.5, 0.3, 1 / 2 + 1 / 4 + 1 / 8, 1.0])
+@pytest.mark.parametrize("p", [2, 3, 4])
+def test_as_alt_decomps_double_phase(phi, p, adaptive_precision):
+    """Test that ``make_rz_to_phase_gradient_decomp_double_phase`` works as an alternative
+    decomposition and yields the correct resources."""
+    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(p)])
+    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(p)])
+    work_wires = qp.wires.Wires([f"work_{i}" for i in range(p - 1)])
+
+    custom_decomp = make_rz_to_phase_gradient_decomp_double_phase(
+        angle_wires, phase_grad_wires, work_wires, adaptive_precision=adaptive_precision
+    )
+    gate_set = {"SemiAdder", "CNOT", "PauliX"}
+
+    @qp.transforms.decompose(gate_set=gate_set, alt_decomps={qp.RZ: [custom_decomp]})
+    @qp.qnode(qp.device("null.qubit"))
+    def circuit():
+        qp.RZ(phi, 0)
+        return qp.state()
+
+    expected = _expected_rz_double_phase_specs(phi, p, adaptive_precision)
+    specs = qp.specs(circuit)()["resources"].quantum_operations
+    assert specs == expected
+
+
+@pytest.mark.usefixtures("enable_graph_decomposition")
+def test_integration_multi_wire_double_phase(seed):
+    """Tests that the double-phase factory realizes ``RZ`` against a phase-gradient state."""
+
+    prec = 3
+
+    phi = (1 / 2 + 0 / 4 + 1 / 8) * 4 * np.pi
+    wires = [0]
+
+    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(prec)])
+    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(prec)])
+    work_wires = qp.wires.Wires([f"work_{i}" for i in range(prec - 1)])
+
+    phase_grad_state = np.exp(-1j * 2 * np.pi * np.arange(2**3) / 2**3) / np.sqrt(2**3)
+
+    all_wires = angle_wires + phase_grad_wires + work_wires + wires
+
+    custom_decomp = make_rz_to_phase_gradient_decomp_double_phase(
+        angle_wires, phase_grad_wires, work_wires
+    )
+
+    @qp.transforms.decompose(
+        gate_set={
+            "StatePrep",
+            "Adjoint(StatePrep)",
+            "SemiAdder",
+            "CNOT",
+            "PauliX",
+            "GlobalPhase",
+        },
+        fixed_decomps={qp.RZ: custom_decomp},
+    )
+    @qp.qnode(qp.device("default.qubit", wires=all_wires))
+    def circuit(phi, in_state):
+        qp.StatePrep(in_state, wires=wires)  # input state
+        qp.StatePrep(phase_grad_state, wires=phase_grad_wires)  # phase gradient state
+        qp.RZ(phi, wires)
+        qp.adjoint(
+            qp.StatePrep(phase_grad_state, wires=phase_grad_wires)
+        )  # uncompute phase gradient state
+        return qp.state()
+
+    rng = np.random.default_rng(seed=seed)
+    in_state = rng.random(2 ** len(wires))
+    in_state /= np.linalg.norm(in_state)
+
+    out_state = circuit(phi, in_state)
+
+    zeros = np.eye(2 ** (prec * 3 - 1), 1)[:, 0]  # |000> on all the aux wires
+    out_state_expected = qp.matrix(qp.RZ(phi, wires)) @ in_state
+    out_state_expected = np.kron(zeros, out_state_expected)
+
+    assert np.allclose(out_state, out_state_expected)
+
+
+@pytest.mark.usefixtures("enable_graph_decomposition")
+@pytest.mark.parametrize("frac", [0.0, 0.5, 0.25, 0.75, 0.125, 0.875])
+def test_adaptive_truncation_double_phase(frac):
+    """Double-phase truncation stays exact for representable angles, including trailing zeros
+    and the zero angle (empty circuit)."""
+    prec = 4
+    phi = frac * 4 * np.pi
+
+    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(prec)])
+    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(prec)])
+    work_wires = qp.wires.Wires([f"work_{i}" for i in range(prec - 1)])
+    sys = qp.wires.Wires([0])
+    all_wires = angle_wires + phase_grad_wires + work_wires + sys
+
+    custom_decomp = make_rz_to_phase_gradient_decomp_double_phase(
+        angle_wires, phase_grad_wires, work_wires
+    )
     phase_grad_state = np.exp(-1j * 2 * np.pi * np.arange(2**prec) / 2**prec) / np.sqrt(2**prec)
 
     @qp.transforms.decompose(
