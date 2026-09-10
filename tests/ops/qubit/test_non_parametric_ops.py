@@ -1465,3 +1465,21 @@ class TestPPR:
 
         expected = qp.decomposition.Resources({qp.PPR(-4, pauli_word="XY", wires=Wire[2]): 1})
         assert rule.compute_resources(**adj_op.arguments) == expected
+
+    @pytest.mark.parametrize(
+        "denominator, pauli_word",
+        [(1, "XYZ"), (-1, "Z"), (2, "XX"), (-2, "YZ"), (4, "Y"), (-4, "ZYZX")],
+    )
+    def test_compute_matrix_against_pauli_rot(self, denominator, pauli_word):
+        """Test PPR.compute_matrix against PauliRot.compute_matrix."""
+        mat_ppr = qp.PPR.compute_matrix(denominator, pauli_word)
+        theta = np.pi / denominator
+        mat_paulirot = qp.PauliRot.compute_matrix(theta, pauli_word)
+        assert np.allclose(mat_ppr, mat_paulirot)
+
+        pw = qp.pauli.PauliWord(dict(enumerate(pauli_word)))
+        wires = list(pw)
+        expected_manual = sp.linalg.expm(
+            -1j * np.pi / (2 * denominator) * qp.matrix(pw, wire_order=wires)
+        )
+        assert np.allclose(mat_ppr, expected_manual)
