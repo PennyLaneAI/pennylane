@@ -39,7 +39,7 @@ import numpy as np
 
 from pennylane import math
 from pennylane.pytrees import register_pytree
-from pennylane.typing import AbstractArray, Float
+from pennylane.typing import AbstractArray
 
 __all__ = [
     "NumericHamiltonian",
@@ -467,12 +467,6 @@ class CGFHamiltonian(NumericHamiltonian):
     (3, 2, 2, 3, 3)
     >>> ham.leaf_tensors.shape
     (3, 2, 3, 3)
-
-    Note that ``core_shape`` is the *symbolic* shape family shared by every instance of the
-    class, not the shape of this instance's data:
-
-    >>> ham.core_shape
-    ('L1', 'M', 'M', 'N', 'N')
 
     The same Hamiltonian can be described with abstract data for the purposes of fast, low-fidelity
     resource-estimation workflows where only shape information is available:
