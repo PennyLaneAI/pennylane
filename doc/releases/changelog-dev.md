@@ -1425,6 +1425,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug in :func:`~pennylane.draw` with conditionally applied operators that do not have wires,
+  such as ``cond(condition, GlobalPhase(0.52))``.
+  [(#10132)](https://github.com/PennyLaneAI/pennylane/pull/10132)
+
 * Fix `qp.eigvals` returns `NaN` for a legal fractional power operator.
   [(#9802)](https://github.com/PennyLaneAI/pennylane/pull/9802)
 
