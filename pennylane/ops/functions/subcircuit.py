@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-This module contains ``qp.subscircuit``, a factory function to create operators
+This module contains ``qp.subcircuit``, a factory function to create operators
 using quantum functions.
 """
 
@@ -22,6 +22,7 @@ from pennylane.decomposition import DecompositionRule, add_decomps
 
 
 def _subcircuit(qfunc: DecompositionRule, **cls_attrs):
+    """Implementation of ``subcircuit``."""
     # pylint: disable=protected-access
 
     # 'self' shouldn't be in signature(OpClass), but it should be in
@@ -59,7 +60,70 @@ def subcircuit(
     static_argnames=(),
     **cls_attrs,
 ):  # pylint: disable=too-many-arguments
-    """Decorator to create an operator using a quantum function."""
+    r"""Create an operator from a quantum function.
+
+    ``subcircuit`` is a decorator that turns a quantum function that is registered as a
+    decomposition rule (see :func:`~pennylane.register_resources`) into a new
+    :class:`~.Operator2` subclass. The quantum function becomes the operator's decomposition.
+
+    Args:
+        qfunc (DecompositionRule): a quantum function whose resources have been registered with
+            :func:`~pennylane.register_resources`
+
+    Keyword Args:
+        dynamic_argnames (Sequence[str]): names of the arguments that are dynamic data of the
+            operator. For more details, see :attr:`~.Operator2.dynamic_argnames`
+        wire_argnames (Sequence[str]): names of the arguments that are wires. Defaults to
+            ``("wires",)``. For more details, see :attr:`~.Operator2.wire_argnames`
+        compilable_argnames (Sequence[str]): names of arguments that are static **and compilable**
+            data of the operator. For more details, see :attr:`~.Operator2.compilable_argnames`
+        hybrid_argnames (Sequence[str]): names of arguments that are dynamic data wrapped in static
+            data structures (pytrees). For more details, see :attr:`~.Operator2.hybrid_argnames`
+        static_argnames (Sequence[str]): names of arguments that are static but **not compilable**.
+            For more details, see :attr:`~.Operator2.static_argnames`
+        **cls_attrs: additional class attributes to set on the created operator class
+
+    Returns:
+        type[~.Operator2]: a new operator class named after the quantum function
+
+    .. note::
+
+        Every parameter of the quantum function must be classified into one of ``dynamic_argnames``,
+        ``wire_argnames``, ``compilable_argnames``, ``hybrid_argnames`` or ``static_argnames``.
+        See :class:`~.Operator2` for details on how arguments are classified.
+
+    .. seealso:: :class:`~.Operator2`, :func:`~pennylane.register_resources`
+
+    **Example**
+
+    An operator can be created by decorating a quantum function that has registered resources. Its
+    parameters are classified using the ``*_argnames`` keyword arguments; here
+    ``phi`` is dynamic data and ``wires`` are (by default) the wires:
+
+    .. code-block:: python
+
+        @qp.subcircuit(dynamic_argnames=("phi",))
+        @qp.register_resources({qp.H: 1, qp.RZ: 1})
+        def MyOp(phi, wires):
+            qp.H(wires)
+            qp.RZ(phi, wires)
+
+    The returned object is an :class:`~.Operator2` subclass named after the quantum function, and
+    is instantiated and used like any other operator:
+
+    >>> op = MyOp(0.5, wires=0)
+    >>> op
+    MyOp(0.5, wires=[0])
+    >>> isinstance(op, qp.core.Operator2)
+    True
+
+    The body of the quantum function is registered as its decomposition rule:
+
+    >>> qp.inspect_decomps(op)
+    Decomposition 0 (name: MyOp_decomp)
+    0: ──H──RZ(0.50)─┤
+    Gate Count: {Hadamard: 1, RZ: 1}
+    """
     if qfunc is not None:
         return _subcircuit(
             qfunc,
