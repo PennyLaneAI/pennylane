@@ -835,8 +835,8 @@
   block-encodes a real symmetric one-body operator :math:`\hat O`, giving access to the
   eigenvalues of :math:`\hat O / \lambda` through quantum phase estimation, where
   :math:`\lambda = \sum_p |\mu_p|` and :math:`\mu_p` are the eigenvalues of the one-body matrix.
-  :func:`~.pennylane.labs.templates.one_body_walk_wires` reports the size of each of the three
-  registers the template needs.
+  :func:`~.pennylane.labs.templates.one_body_walk_wires` reports the required sizes of the PREP and system registers,
+  and the minimum size of the work register.
   [(#9991)](https://github.com/PennyLaneAI/pennylane/pull/9991)
  
 * Performance of the Trotter error module is improved by introducing a novel algorithm for

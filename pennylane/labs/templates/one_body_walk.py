@@ -35,7 +35,8 @@ def one_body_walk_wires(norbs, alias_sampling_nbits):
             coefficients
 
     Returns:
-        dict[str, int]: number of wires for ``prep_wires``, ``system_wires`` and ``work_wires``
+        dict[str, int]: the required number of wires for ``prep_wires`` and ``system_wires``, which
+            are exact, and the minimum number for ``work_wires``
 
     **Example**
 
@@ -83,15 +84,19 @@ def one_body_walk(op_matrix, alias_sampling_nbits, prep_wires, system_wires, wor
         op_matrix (array): The real symmetric one-body matrix, shape ``(norbs, norbs)``, where ``norbs`` is the number
             of spatial orbitals.
         alias_sampling_nbits (int): number of bits of precision used for the alias-sampling coefficients
-        prep_wires (Sequence[int]): the full PREP register, reflected by ``R``
+        prep_wires (Sequence[int]): the full PREP register, reflected by
+            :math:`\hat{\mathcal{R}}`
         system_wires (Sequence[int]): the ``2 * norbs`` system spin-orbitals, ordered
             spin-blocked: ``system_wires[s * norbs + p]`` holds spatial orbital ``p`` of spin
             sector ``s``, so the first ``norbs`` wires are one spin sector and the last
             ``norbs`` the other. This differs from the interleaved ``2 * p + s`` ordering
             produced by ``qp.qchem``; only the occupation convention (:math:`|1\rangle` is
             occupied) is shared
-        work_wires (Sequence[int]): clean scratch returned to ``|0>``
-
+        work_wires (Sequence[int]): clean scratch, must start in :math:`|0\rangle` and is
+            returned to :math:`|0\rangle`. At least
+            ``one_body_walk_wires(norbs, alias_sampling_nbits)["work_wires"]`` wires are
+            required; extra wires are forwarded to the internal ``qp.QROM`` and
+            multi-controlled :math:`Z` to lower the T-gate count
     Raises:
         ValueError: if ``op_matrix`` is not square, not real, or not symmetric
         ValueError: if ``prep_wires`` or ``system_wires`` do not have exactly the sizes reported
