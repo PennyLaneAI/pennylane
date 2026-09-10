@@ -120,7 +120,7 @@ class TestQROMTable:
 
     @pytest.mark.parametrize("beth", [3, 6])
     def test_grid_angles_are_exact(self, beth):
-        """A leaf with cascade angle ``theta = 2 pi m / 2**beth`` packs to exactly ``m``.
+        """Test that a leaf with cascade angle ``theta = 2 pi m / 2**beth`` packs to exactly ``m``.
 
         The table stores ``2 * theta`` quantized over ``[0, 4 pi)``, the period of the
         Givens rotation. This also covers that wrap: for ``m >= 2**(beth - 1)`` the

@@ -208,9 +208,9 @@ def select_thc_wires(M, N, beth, num_batches=1):
     .. note::
 
         Only ``work_wires`` is a minimum; the other four are exact and must be matched.
-        Extra work wires are forwarded to the internal ``qp.QROM``, which uses them for a
-        ``SelectSwap`` decomposition that lowers the T-gate count at the cost of those
-        qubits.
+        Extra work wires are forwarded to the internal ``qp.QROM``, which uses them for
+        a unary iteration; the ``SelectSwap`` space-time trade-off is not engaged in this
+        mode.
 
     .. note::
 
@@ -446,12 +446,12 @@ def select_thc(
         t_eigenvectors = np.linalg.qr(rng.standard_normal((N // 2, N // 2)))[0]
 
         sizes = select_thc_wires(M, N, beth)
-        wires = qp.registers({name: size for name, size in sizes.items()})
+        wires = qp.registers(sizes)
         n_total = sum(sizes.values())
 
         @qp.qnode(qp.device("default.qubit", wires=n_total))
         def circuit():
-            qp.PauliX(wires["flag_wires"][0])              # success flag
+            qp.X(wires["flag_wires"][0])              # success flag
             for w in wires["flag_wires"][3:]:              # the two spin flags
                 qp.Hadamard(w)
             for j, w in enumerate(wires["gradient_wires"]):     # phase gradient state
@@ -461,6 +461,7 @@ def select_thc(
                 chi, t_eigenvectors, beth, wires["system_wires"], wires["index_wires"],
                 wires["flag_wires"], wires["gradient_wires"], wires["work_wires"],
             )
+            return qp.probs(wires=wires["system_wires"])
 
     """
     M = np.asarray(chi, dtype=float).shape[0]
