@@ -1445,3 +1445,23 @@ class TestPPR:
         assert op.angle_denominator == 4
         assert op.pauli_word == "XY"
         assert len(op.wires) == 2
+
+    def test_adjoint_decomp_queuing(self):
+        """Test the operations queued by the Adjoint(PPR) rule."""
+        adj_op = qp.adjoint(qp.PPR(4, "XY", wires=[0, 1]))
+        rule = qp.list_decomps("Adjoint(PPR)")["_adjoint_ppr_to_ppr"]
+
+        with qp.queuing.AnnotatedQueue() as q:
+            rule(**adj_op.arguments)
+
+        expected = [qp.PPR(-4, "XY", wires=[0, 1])]
+        for actual, exp in zip(q.queue, expected, strict=True):
+            qp.assert_equal(actual, exp)
+
+    def test_adjoint_decomp_resources(self):
+        """Test the resources of the Adjoint(PPR) rule."""
+        rule = qp.list_decomps("Adjoint(PPR)")["_adjoint_ppr_to_ppr"]
+        adj_op = qp.adjoint(qp.PPR(4, "XY", wires=[0, 1]))
+
+        expected = qp.decomposition.Resources({qp.PPR(-4, pauli_word="XY", wires=Wire[2]): 1})
+        assert rule.compute_resources(**adj_op.arguments) == expected
