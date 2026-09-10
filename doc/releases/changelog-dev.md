@@ -1594,6 +1594,11 @@
   using Pauli-type observables.
   [(#10123)](https://github.com/PennyLaneAI/pennylane/pull/10123)
 
+* ``build_qudit_mmd_loss`` now takes a Heisenberg-Weyl moment callable, the qudit dimension(s) and
+  the number of qudits instead of a ``QuditCircuitConfig``, so it supports any expectation value
+  function using Heisenberg-Weyl observables.
+  [(#10123)](https://github.com/PennyLaneAI/pennylane/pull/10123)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
