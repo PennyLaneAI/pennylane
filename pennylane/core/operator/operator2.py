@@ -851,6 +851,7 @@ class Operator2(metaclass=OperatorMeta):
             .Operator2: new operator
         """
         new_args = dict(self.arguments)
+
         for n, wires in self.wire_args.items():
             # Flattening/unflattening allows mapping hybrid wire arguments
             leaves, tree = flatten(wires, is_leaf=lambda w: isinstance(w, Wires))
