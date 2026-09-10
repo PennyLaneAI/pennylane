@@ -1618,6 +1618,7 @@ Miguel Cárdenas,
 Yushao Chen,
 Diksha Dhawan,
 Marcus Edwards,
+Sümeyye Nur Esin,
 Thomas C. Fraser,
 Connor Gambla,
 Sengthai Heng,
@@ -1641,4 +1642,3 @@ David Wierichs,
 Jake Zaia,
 Hongsheng Zheng,
 Zinan Zhou.
-Sümeyye Nur Esin
