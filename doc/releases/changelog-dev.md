@@ -1423,7 +1423,7 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixed a bug in :func:`~.draw` with conditionally applied operators that do not have wires,
+* Fixed a bug in :func:`~pennylane.draw` with conditionally applied operators that do not have wires,
   such as ``cond(condition, GlobalPhase(0.52))``.
   [(#10132)](https://github.com/PennyLaneAI/pennylane/pull/10132)
 

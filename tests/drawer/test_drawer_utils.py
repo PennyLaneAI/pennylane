@@ -287,11 +287,12 @@ class TestCwireConnections:
         assert wires == {0: [[0, 0]]}
         assert new_bit_map == bit_map
 
-    def test_single_measure_single_cond_no_wires(self):
+    @pytest.mark.parametrize("op", (qp.GlobalPhase(0.512), qp.Identity()))
+    def test_single_measure_single_cond_no_wires(self, op):
         """Test a case with a single measurement and a single conditional where the base
         op of the conditional does not have wires."""
         m = qp.measure(0)
-        cond = qp.ops.Conditional(m, qp.GlobalPhase(0.512))
+        cond = qp.ops.Conditional(m, op)
         layers = [m.measurements, [cond]]
         bit_map = {m.measurements[0]: 0}
 
