@@ -273,28 +273,6 @@ def _unbiased_mmd_squared(  # pylint: disable=too-many-arguments
     return jnp.sqrt(jnp.abs(mmd_sq)) if sqrt_loss else mmd_sq
 
 
-def _partition_expval_kwargs(
-    expval_kwargs: dict,
-) -> tuple[tuple[tuple[str, object], ...], dict]:
-    """Split ``expval_kwargs`` into compile-time constants and traced values.
-
-    Hashable values (for example ``n_samples=2000``) are returned as a sorted
-    tuple of ``(name, value)`` pairs so they can be marked static under
-    ``jax.jit``. Unhashable values, notably arrays, are returned as a dict and
-    traced.
-    """
-    static: dict = {}
-    traced: dict = {}
-    for name, value in expval_kwargs.items():
-        try:
-            hash(value)
-        except TypeError:
-            traced[name] = value
-        else:
-            static[name] = value
-    return tuple(sorted(static.items())), traced
-
-
 # pylint: disable=too-many-arguments,too-many-locals
 @partial(
     jax.jit,
@@ -306,7 +284,6 @@ def _partition_expval_kwargs(
         "sqrt_loss",
         "expval_fn",
         "graph_type",
-        "static_expval_kwargs",
     ],
 )
 def _compute_qudit_loss_for_bandwidth(
@@ -315,7 +292,6 @@ def _compute_qudit_loss_for_bandwidth(
     eval_key: jnp.ndarray,
     params: jnp.ndarray,
     target_data: jnp.ndarray,
-    traced_expval_kwargs: dict,
     n_ops: int,
     n_qudits: int,
     dims: tuple[int, ...],
@@ -323,7 +299,7 @@ def _compute_qudit_loss_for_bandwidth(
     sqrt_loss: bool,
     expval_fn: Callable,
     graph_type: str,
-    static_expval_kwargs: tuple[tuple[str, object], ...],
+    expval_kwargs: dict,
 ) -> jnp.ndarray:
     """Estimate one unbiased MMD loss value for a single bandwidth setting."""
     l_obs = _sample_fourier_indices(
@@ -335,8 +311,7 @@ def _compute_qudit_loss_for_bandwidth(
         params,
         observables=(l_obs, m_obs),
         key=eval_key,
-        **dict(static_expval_kwargs),
-        **traced_expval_kwargs,
+        **expval_kwargs,
     )
 
     mu_q_hat, cov = model_output if isinstance(model_output, tuple) else (model_output, None)
@@ -528,8 +503,6 @@ def build_qudit_mmd_loss(
         if X_data.shape[0] < 2:
             raise ValueError(f"target_data must have at least 2 samples, got {X_data.shape[0]}")
 
-        static_expval_kwargs, traced_expval_kwargs = _partition_expval_kwargs(expval_kwargs)
-
         losses: list[jnp.ndarray] = []
         for bandwidth in bandwidth_list:
             active_key, obs_key, eval_key = jax.random.split(active_key, 3)
@@ -540,7 +513,6 @@ def build_qudit_mmd_loss(
                 eval_key=eval_key,
                 params=jnp.asarray(params),
                 target_data=X_data,
-                traced_expval_kwargs=traced_expval_kwargs,
                 n_ops=mmd_config.n_ops,
                 n_qudits=n_qudits,
                 dims=dims_tuple,
@@ -548,7 +520,7 @@ def build_qudit_mmd_loss(
                 sqrt_loss=mmd_config.sqrt_loss,
                 expval_fn=expval_fn,
                 graph_type=mmd_config.graph_type,
-                static_expval_kwargs=static_expval_kwargs,
+                expval_kwargs=expval_kwargs,
             )
             losses.append(loss_val)
 

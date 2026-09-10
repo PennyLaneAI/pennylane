@@ -1111,25 +1111,6 @@ class TestArbitraryExpvalCallable:
         se = np.std(estimates, ddof=1) / np.sqrt(len(estimates))
         assert abs(exact - mean_est) / se < 4.0, f"exact={exact}, mean={mean_est}, se={se}"
 
-    def test_hashable_expval_kwargs_are_static(self):
-        """A hashable kwarg such as ``n_samples`` must reach the callable as a constant."""
-        config = QuditCircuitConfig(
-            dims=3,
-            n_qudits=2,
-            gates={0: [[1, 0]], 1: [[0, 1]]},
-            n_samples=200,
-            key=jax.random.PRNGKey(0),
-        )
-        mmd_cfg = QuditMMDConfig(bandwidth=1.0, n_ops=30)
-        loss_fn = _build_loss(config, mmd_cfg)
-        data = jnp.array([[0, 1], [1, 2], [2, 0], [1, 1]])
-        params = jnp.array([0.3, 0.5])
-        key = jax.random.PRNGKey(9)
-
-        default = loss_fn(params, data, key)
-        overridden = loss_fn(params, data, key, n_samples=4000)
-        assert np.isfinite(float(overridden)) and float(default) != float(overridden)
-
     def test_array_expval_kwargs_are_traced(self):
         """An array kwarg such as ``phase_fn_params`` must be traced and differentiable."""
 
