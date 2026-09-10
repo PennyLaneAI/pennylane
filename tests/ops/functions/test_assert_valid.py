@@ -260,7 +260,7 @@ class TestDecompositionErrors:
         def mcm_rule(wires):
             qp.ops.measure(wires[0])
 
-        rule = qp.register_resources({qp.ops.MidMeasure: 1})(mcm_rule)
+        rule = qp.register_resources({qp.ops.MidMeasure(wires=Wire[1]): 1})(mcm_rule)
 
         spy = mocker.spy(qp, "matrix")
         _test_decomposition_rule(op, rule)
