@@ -22,7 +22,7 @@ import pytest
 import pennylane as qp
 from pennylane.core import Operator2
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.typing import Float, Wire
+from pennylane.typing import Bool, Float, Wire
 
 
 @qp.subcircuit(dynamic_argnames=("phi",), arg_specs={"phi": float, "wires": Wire[1]})
@@ -279,9 +279,31 @@ class TestAdditionalDecompositionRules:
         """Test that a valid controlled decomposition rule can be registered for the operator."""
         with qp.decomposition.local_decomps():
 
-            # Resources will be wrong if there is more than one control wire, zero control values, or
-            # work wires, but it doesn't matter for the sake of the test
-            @qp.register_resources({qp.CH: 1, qp.CRZ: 1})
+            def _ctrl_resources(
+                base, control_wires, control_values, work_wires, work_wire_type
+            ):  # pylint: disable=unused-argument
+                resources = {}
+                resources[
+                    qp.ctrl(
+                        qp.H(Wire[1]),
+                        Wire[len(control_wires)],
+                        Bool[len(control_values)],
+                        Wire[(len(work_wires))],
+                        work_wire_type,
+                    )
+                ] = 1
+                resources[
+                    qp.ctrl(
+                        qp.RZ(Float, Wire[1]),
+                        Wire[len(control_wires)],
+                        Bool[len(control_values)],
+                        Wire[(len(work_wires))],
+                        work_wire_type,
+                    )
+                ] = 1
+                return resources
+
+            @qp.register_resources(_ctrl_resources, exact=False)
             def controlled_fixed(base, control_wires, control_values, work_wires, work_wire_type):
                 qp.ctrl(
                     qp.H(base.wires),
@@ -301,4 +323,6 @@ class TestAdditionalDecompositionRules:
             qp.add_decomps("C(FixedOp)", controlled_fixed)
 
             assert [rule.name for rule in qp.list_decomps("C(FixedOp)")] == ["controlled_fixed"]
-            _test_decomposition_rule(qp.ctrl(FixedOp(1.5, wires=1), control=0), controlled_fixed)
+            _test_decomposition_rule(
+                qp.ctrl(FixedOp(1.5, wires=0), control=[1, 2, 3]), controlled_fixed
+            )
