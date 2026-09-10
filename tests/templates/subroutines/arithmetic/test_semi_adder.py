@@ -22,7 +22,14 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.templates.subroutines.arithmetic.semi_adder import _controlled_semi_adder
+from pennylane.templates.subroutines.arithmetic.semi_adder import (
+    _controlled_semi_adder,
+    _semi_adder_ppm,
+    _semi_adder_ppm_condition,
+    _semi_adder_ppm_work_wires,
+)
+from pennylane.typing import Wire
+from pennylane.wires import Wires
 
 
 @pytest.mark.pl2do(
@@ -384,3 +391,92 @@ class TestSemiAdder:
             # pylint: disable-next=protected-access
             subroutine = qp.capture.subroutine(partial(rule._impl, work_wire_type="borrowed"))
             jax.make_jaxpr(subroutine)(**decomp_args)
+
+
+class TestSemiAdderPPM:
+    """Test the measurement-based (Pauli product) decomposition of qp.SemiAdder."""
+
+    def test_condition_without_compiler(self):
+        """Test that the PPM decomposition is not applicable without an active compiler."""
+        assert _semi_adder_ppm_condition(Wire[3], Wire[3], work_wires=Wire[3]) is False
+
+    @pytest.mark.parametrize(
+        ("num_y_wires", "num_provided", "expected"),
+        [(4, 0, 5), (4, 3, 2), (4, 5, 0), (4, 7, 0), (1, 0, 2)],
+    )
+    def test_work_wires(self, num_y_wires, num_provided, expected):
+        """The ladder needs the carries, the shared auxiliary qubit and one wire held at |0>."""
+        spec = _semi_adder_ppm_work_wires(y_wires=Wire[num_y_wires], work_wires=Wire[num_provided])
+        assert spec == {"zeroed": expected}
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize("num_provided", [0, 2])
+    def test_ppm_allocates_missing_work_wires(self, num_provided):
+        """Test that the work wires that were not provided are allocated and given back."""
+        import jax
+
+        jaxpr = jax.make_jaxpr(qp.capture.subroutine(_semi_adder_ppm))(
+            Wires([0, 1]), Wires([2, 3]), list(range(4, 4 + num_provided))
+        )
+        eqns = jaxpr.eqns[0].params["jaxpr"].eqns
+        allocations = [eqn for eqn in eqns if str(eqn.primitive) == "allocate"]
+        assert len(allocations) == 1
+        # the ladder needs len(y_wires) + 1 = 3 work wires in total
+        assert allocations[0].params["num_wires"] == 3 - num_provided
+        assert allocations[0].params["restored"] is True
+        assert len([eqn for eqn in eqns if str(eqn.primitive) == "deallocate"]) == 1
+
+    @pytest.mark.catalyst
+    @pytest.mark.parametrize(("num_x_wires", "num_y_wires"), [(1, 1), (2, 2), (2, 3), (3, 3)])
+    def test_ppm_correctness(self, num_x_wires, num_y_wires):
+        """Test that the PPM decomposition equals SemiAdder amplitude by amplitude, global phase included."""
+
+        x_wires = list(range(num_x_wires))
+        y_wires = list(range(num_x_wires, num_x_wires + num_y_wires))
+        work_wires = list(range(num_x_wires + num_y_wires, num_x_wires + 2 * num_y_wires + 1))
+        num_wires = num_x_wires + 2 * num_y_wires + 1
+
+        def prepare():
+            rng = np.random.default_rng(11)
+            for wire in x_wires + y_wires:
+                qp.RY(float(rng.uniform(0.4, 2.4)), wires=wire)
+                qp.RZ(float(rng.uniform(0.4, 2.4)), wires=wire)
+            for control, target in zip(x_wires + y_wires, (x_wires + y_wires)[1:]):
+                qp.CNOT(wires=[control, target])
+
+        @qp.qnode(qp.device("lightning.qubit", wires=num_wires))
+        def reference():
+            prepare()
+            qp.SemiAdder(x_wires, y_wires, work_wires[: num_y_wires - 1])
+            return qp.state()
+
+        @qp.qjit
+        @qp.qnode(qp.device("lightning.qubit", wires=num_wires))
+        def ppm():
+            prepare()
+            _semi_adder_ppm(Wires(x_wires), Wires(y_wires), work_wires)
+            return qp.state()
+
+        expected = np.asarray(reference())
+        nonzero = np.abs(expected) > 1e-8
+        for _ in range(2):
+            ratio = np.asarray(ppm())[nonzero] / expected[nonzero]
+            assert np.allclose(ratio, 1.0)
+
+    @pytest.mark.catalyst
+    @pytest.mark.parametrize(("x", "y"), [(1, 0), (3, 3)])
+    def test_ppm_arithmetic_and_clean_work_wires(self, x, y):
+        """Test that the PPM decomposition adds correctly and returns every work wire to |0>."""
+        x_wires, y_wires, work_wires = [0, 1], [2, 3], [4, 5, 6]
+
+        @qp.qjit
+        @qp.qnode(qp.device("lightning.qubit", wires=7))
+        def circuit():
+            qp.BasisState(qp.math.int_to_binary(x, len(x_wires)), wires=x_wires)
+            qp.BasisState(qp.math.int_to_binary(y, len(y_wires)), wires=y_wires)
+            _semi_adder_ppm(Wires(x_wires), Wires(y_wires), work_wires)
+            return qp.probs(wires=y_wires), qp.probs(wires=work_wires)
+
+        y_probs, work_probs = circuit()
+        assert np.isclose(y_probs[(x + y) % 4], 1.0)
+        assert np.isclose(work_probs[0], 1.0)
