@@ -110,7 +110,7 @@ class TrotterCDF(Operator2):
 
     >>> specs = qp.specs(trotter_circuit)()["resources"].quantum_operations
     >>> dict(sorted(specs.items()))
-    {'GlobalPhase': 1, 'IsingZZ': 120, 'RZ': 40, 'SingleExcitation': 62}
+    {'GlobalPhase': 1, 'IsingZZ': 66, 'RZ': 40, 'SingleExcitation': 44}
 
     The :class:`~.SingleExcitation` gates are due to :class:`~.BasisRotation` decomposing
     further on ``lightning.qubit``.
@@ -185,7 +185,8 @@ class TrotterCDF(Operator2):
         which visits each two-body fragment *twice* per step (at the half-step duration
         ``first_order_time_step`` :math:`= \Delta t/2`) and the central one-body fragment *once* (at the
         full :math:`\Delta t`). The next steps derive :math:`e^{-i H_l \tau}` for a single fragment and
-        duration :math:`\tau`.
+        duration :math:`\tau`. In the circuit, adjacent :math:`H_1` half evolutions at
+        internal step boundaries are merged into one full-duration evolution.
 
         **2. Evolving a fragment**
         The fragments are optimized and derived via :doc:`compressed double factorization <demo:demos/tutorial_how_to_build_compressed_double_factorized_hamiltonians>`.
@@ -450,8 +451,8 @@ def _cdf_resource_counts(num_trotter_steps, hamiltonian, has_control, double_pha
     num_cas = leaf_tensors.shape[-1]
 
     resources = defaultdict(int)
-    num_sysrot_calls = num_trotter_steps * (2 * num_two_body_fragments + 1) + 1
-    num_twobody_blocks = num_trotter_steps * 2 * num_two_body_fragments
+    num_sysrot_calls = 2 * num_two_body_fragments * num_trotter_steps + 2
+    num_twobody_blocks = (2 * num_two_body_fragments - 1) * num_trotter_steps + 1
     num_onebody_blocks = num_trotter_steps
     num_twobody_rotations = num_twobody_blocks * num_cas * (2 * num_cas - 1)
     num_onebody_rotations = num_onebody_blocks * 2 * num_cas

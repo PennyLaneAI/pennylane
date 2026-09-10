@@ -40,7 +40,11 @@ from pennylane.numeric_hamiltonians import CGFHamiltonian
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.time_evolution.trotter_cgf import (
     _apply_system_basis_rotation,
+    _cgf_resource_counts,
+    _controlled_trotter_cgf_decomp,
+    _energy_shift,
     _merge_leaves,
+    _trotter_cgf_decomposition,
 )
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
@@ -48,6 +52,8 @@ from tests.templates.subroutines.time_evolution.trotter_test_helpers import (  #
     CATALYST_GATE_SET_DOUBLE_PHASE,
     CATALYST_GATE_SET_GENUINE,
     _single_z,
+    assert_merged_trotter_matches,
+    assert_resource_counts_match,
     cgf_reference_hamiltonian,
     control_branches,
     hadamard_test,
@@ -87,10 +93,6 @@ def cgf_reference_hamiltonian_leaves(ham):
     reproduced by ``matrix(TrotterCGF)`` in the many-step limit (second-order Trotter error
     ``~ 1 / steps^2``).
     """
-    from pennylane.templates.subroutines.time_evolution.trotter_cgf import (  # pylint: disable=import-outside-toplevel
-        _energy_shift,
-    )
-
     Z = np.asarray(ham.core_tensors, dtype=float)
     U = np.asarray(ham.leaf_tensors, dtype=float)
     num_modes = Z.shape[1]
@@ -121,6 +123,50 @@ def cgf_reference_hamiltonian_leaves(ham):
                         Dl += (Z[frag][l, m][p, q] / 4) * (z_ops[wire(l, p)] @ z_ops[wire(m, q)])
         H += Bl.conj().T @ Dl @ Bl
     return H
+
+
+def cgf_second_order_trotter_matrix(ham, evolution_time, num_steps):
+    """Build the unmerged second-order Trotter product from independently assembled fragments."""
+    Z = np.asarray(ham.core_tensors, dtype=float)
+    U = np.asarray(ham.leaf_tensors, dtype=float)
+    num_modes = Z.shape[1]
+    n_states = Z.shape[-1]
+    n_wires = num_modes * n_states
+    dim = 2**n_wires
+    z_ops = [_single_z(w, n_wires) for w in range(n_wires)]
+
+    fragments = []
+    B0 = _cgf_basis_rotation_matrix(U[0], n_states)
+    D0 = sum(
+        (-Z[0][l, l, p, p] / 2) * z_ops[l * n_states + p]
+        for l in range(num_modes)
+        for p in range(n_states)
+    )
+    fragments.append(B0.conj().T @ D0 @ B0)
+
+    for frag in range(1, Z.shape[0]):
+        Bl = _cgf_basis_rotation_matrix(np.swapaxes(U[frag], -2, -1), n_states)
+        Dl = sum(
+            (Z[frag][l, m, p, q] / 4) * (z_ops[l * n_states + p] @ z_ops[m * n_states + q])
+            for l in range(num_modes)
+            for m in range(l)
+            for p in range(n_states)
+            for q in range(n_states)
+        )
+        fragments.append(Bl.conj().T @ Dl @ Bl)
+
+    dt = evolution_time / num_steps
+    step = np.eye(dim, dtype=complex)
+    for generator, duration in [
+        *((fragment, dt / 2) for fragment in fragments[1:]),
+        (fragments[0], dt),
+        *((fragment, dt / 2) for fragment in reversed(fragments[1:])),
+    ]:
+        step = expm(-1j * generator * duration) @ step
+
+    return np.exp(-1j * _energy_shift(ham) * evolution_time) * np.linalg.matrix_power(
+        step, num_steps
+    )
 
 
 def toy_hamiltonian_cgf_generator(seed, abstract=False):
@@ -298,6 +344,44 @@ class TestResourceRule:
         op = qp.TrotterCGF(1.0, 0, ham, wires=wires)
         assert qp.ctrl(op, control=[99]).decomposition() == []
 
+    @pytest.mark.parametrize("num_steps", [1, 4])
+    @pytest.mark.parametrize("num_fragments", [1, 3])
+    @pytest.mark.parametrize(
+        ("has_control", "double_phase"), [(False, False), (True, False), (True, True)]
+    )
+    @pytest.mark.capture
+    def test_merged_resource_counts_match_traced_decomposition(
+        self, num_steps, num_fragments, has_control, double_phase
+    ):
+        """Resource counts match the traced decomposition after merging H1 half blocks."""
+        num_modes = n_states = 2
+        core = np.zeros((num_fragments + 1, num_modes, num_modes, n_states, n_states))
+        leaf = np.stack(
+            [np.stack([np.eye(n_states)] * num_modes) for _ in range(num_fragments + 1)]
+        )
+        ham = CGFHamiltonian(core_tensors=core, leaf_tensors=leaf, nuc_constant=0.0)
+        resources = _cgf_resource_counts(num_steps, ham, has_control, double_phase)
+        num_system_wires = num_modes * n_states
+        trace_wires = tuple(range(num_system_wires + int(has_control)))
+
+        def circuit(t, *wires):
+            system_wires = list(wires[:num_system_wires])
+            if not has_control:
+                _trotter_cgf_decomposition(t, num_steps, ham, system_wires, False)
+                return
+            with qp.capture.pause():
+                base = qp.TrotterCGF(t, num_steps, ham, system_wires, double_phase=double_phase)
+            _controlled_trotter_cgf_decomp(
+                base, list(wires[num_system_wires:]), [1], [], "borrowed"
+            )
+
+        args = (jax.numpy.array(0.4), *trace_wires)
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", CaptureWarning)
+            jaxpr = jax.make_jaxpr(circuit)(*args)
+        operations = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, *args).operations
+        assert_resource_counts_match(resources, operations)
+
 
 class TestDecomposition:
     """Tests of the registered base decomposition rule."""
@@ -321,6 +405,66 @@ class TestDecomposition:
         u = qp.matrix(qp.TrotterCGF(t, steps, ham, wires=sys_wires), wire_order=sys_wires)
         expected = expm(-1j * cgf_reference_hamiltonian(ham) * t)
         assert np.allclose(u, expected, atol=1e-9)
+
+    @pytest.mark.parametrize("num_fragments", [1, 3])
+    def test_endpoint_block_angles_and_counts(self, num_fragments):
+        """Only the first and last H1 blocks are half duration; internal H1 blocks are full."""
+        num_modes = n_states = 2
+        evolution_time, num_steps = 1.2, 4
+        core = np.zeros((num_fragments + 1, num_modes, num_modes, n_states, n_states))
+        core[1, 1, 0] = 1.0
+        core[2:, 1, 0] = 13.0
+        leaf = np.stack(
+            [np.stack([np.eye(n_states)] * num_modes) for _ in range(num_fragments + 1)]
+        )
+        ham = CGFHamiltonian(core_tensors=core, leaf_tensors=leaf, nuc_constant=0.0)
+        wires = list(range(num_modes * n_states))
+
+        tape = qp.tape.make_qscript(_trotter_cgf_decomposition)(
+            evolution_time, num_steps, ham, wires, False
+        )
+        angles = np.array([op.data[0] for op in tape.operations if isinstance(op, qp.IsingZZ)])
+        pairs_per_block = num_modes * (num_modes - 1) * n_states**2 // 2
+        half_angle = evolution_time / (4 * num_steps)
+        full_angle = 2 * half_angle
+
+        assert np.count_nonzero(np.isclose(angles, half_angle)) == 2 * pairs_per_block
+        assert np.count_nonzero(np.isclose(angles, full_angle)) == (num_steps - 1) * pairs_per_block
+        assert len(angles) == ((2 * num_fragments - 1) * num_steps + 1) * pairs_per_block
+
+    @pytest.mark.parametrize("num_fragments", [1, 2])
+    @pytest.mark.parametrize("num_steps", [1, 3])
+    @pytest.mark.parametrize(
+        ("has_control", "double_phase"), [(False, False), (True, False), (True, True)]
+    )
+    def test_matches_independent_second_order_trotter_product(
+        self, seed, num_fragments, num_steps, has_control, double_phase
+    ):
+        """Merging boundary blocks preserves the full matrix, including global phase,
+        for uncontrolled, genuine-controlled, and double-phase circuits."""
+        rng = np.random.default_rng(seed)
+        num_modes = n_states = 2
+        core = rng.normal(size=(num_fragments + 1, num_modes, num_modes, n_states, n_states)) * 0.4
+        leaf = np.stack(
+            [
+                np.stack([random_orthogonal(n_states, rng) for _ in range(num_modes)])
+                for _ in range(num_fragments + 1)
+            ]
+        )
+        ham = CGFHamiltonian(core_tensors=core, leaf_tensors=leaf, nuc_constant=0.37)
+        wires = list(range(num_modes * n_states))
+        evolution_time = 0.7
+        expected = cgf_second_order_trotter_matrix(ham, evolution_time, num_steps)
+        assert_merged_trotter_matches(
+            qp.TrotterCGF,
+            ham,
+            wires,
+            evolution_time,
+            num_steps,
+            expected,
+            has_control,
+            double_phase,
+        )
 
     @pytest.mark.slow
     def test_base_matches_expm_nonidentity_leaves(self, seed):

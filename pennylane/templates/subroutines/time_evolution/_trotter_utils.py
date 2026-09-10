@@ -16,7 +16,7 @@
 
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
-from pennylane.ops import RZ, IsingZZ, cond
+from pennylane.ops import RZ, IsingZZ
 from pennylane.ops.op_math import ctrl
 
 # pylint: disable=too-many-arguments
@@ -100,58 +100,61 @@ def _run_trotter_steps(
         transpose_leaf (callable): ``(U) -> U``. Inverse of a leaf, for the trailing basis
             rotation that closes the final fragment.
     """
+    U_tensor = hamiltonian.leaf_tensors
+    Z_tensor = hamiltonian.core_tensors
     if compiler.active() or capture.enabled():
         wires = math.array(wires, like="jax")
         if len(control_wires) > 0:
             control_wires = math.array(control_wires, like="jax")
+        # The diagonal layers index these tensors with traced loop indices, which a numpy
+        # array cannot do.
+        U_tensor = math.array(U_tensor, like="jax")
+        Z_tensor = math.array(Z_tensor, like="jax")
 
     second_order_time_step = evolution_time / num_trotter_steps
     first_order_time_step = second_order_time_step / 2
 
-    num_two_body_fragments = hamiltonian.leaf_tensors.shape[0] - 1
+    num_two_body_fragments = U_tensor.shape[0] - 1
 
-    def _trotter_step(step_idx, hamiltonian):
-        # ``hamiltonian`` is carried through the for-loop (rather than closed over)
-        # so the traced tensors remain valid loop-body inputs under jax capture.
-        U_tensor = hamiltonian.leaf_tensors
-        Z_tensor = hamiltonian.core_tensors
+    apply_system_basis_rotation(U_tensor[1], wires)
+    apply_two_body_diagonal(Z_tensor[1], wires, first_order_time_step, control_wires, double_phase)
 
-        def two_body_fragments(fragment_idx, prev_fragment_idx):
-            # The first fragment of the circuit (prev_fragment_idx < 0) uses its own leaf; later
-            # fragments merge with the previous fragment's leaf so consecutive basis rotations
-            # telescope into a single one. This is classical array selection (no quantum ops in
-            # either branch), branching on the loop-carried ``prev_fragment_idx``.
-            U = cond(
-                prev_fragment_idx < 0,
-                lambda: U_tensor[fragment_idx],
-                lambda: merge_leaves(U_tensor[prev_fragment_idx], U_tensor[fragment_idx]),
-            )()
-            Z = Z_tensor[fragment_idx]
+    def remainder_of_step(step_idx):
+        def two_body_fragment(fragment_idx, prev_fragment_idx):
+            U = merge_leaves(U_tensor[prev_fragment_idx], U_tensor[fragment_idx])
             apply_system_basis_rotation(U, wires)
-            apply_two_body_diagonal(Z, wires, first_order_time_step, control_wires, double_phase)
+            apply_two_body_diagonal(
+                Z_tensor[fragment_idx],
+                wires,
+                first_order_time_step,
+                control_wires,
+                double_phase,
+            )
             return fragment_idx
 
-        def one_body_fragment():
-            U_one = U_tensor[0]
-            U = merge_leaves(U_tensor[num_two_body_fragments], U_one)
-            apply_system_basis_rotation(U, wires)
-            apply_one_body_diagonal(
-                Z_tensor[0], wires, first_order_time_step, control_wires, double_phase
-            )
+        for_loop(2, num_two_body_fragments + 1)(two_body_fragment)(1)
 
-        prev_fragment_idx_forward = math.sign(2 * step_idx - 1)
-        for_loop(1, num_two_body_fragments + 1)(two_body_fragments)(prev_fragment_idx_forward)
+        U = merge_leaves(U_tensor[num_two_body_fragments], U_tensor[0])
+        apply_system_basis_rotation(U, wires)
+        apply_one_body_diagonal(
+            Z_tensor[0], wires, first_order_time_step, control_wires, double_phase
+        )
 
-        one_body_fragment()
+        # Carry the index of the fragment whose inverse was most recently applied.
+        # For L=1 there is no reverse two-body loop, so the preceding frame is H0.
+        prev_fragment_idx = for_loop(num_two_body_fragments, 1, -1)(two_body_fragment)(0)
 
-        # Second half of the symmetric second-order Suzuki step: revisits each
-        # two-body fragment in reverse order, still at forward time (first_order_time_step).
-        prev_fragment_idx_backward = 0
-        for_loop(num_two_body_fragments, 0, -1)(two_body_fragments)(prev_fragment_idx_backward)
+        U = merge_leaves(U_tensor[prev_fragment_idx], U_tensor[1])
+        apply_system_basis_rotation(U, wires)
+        endpoint_time_step = math.where(
+            step_idx < num_trotter_steps - 1,
+            second_order_time_step,
+            first_order_time_step,
+        )
+        apply_two_body_diagonal(Z_tensor[1], wires, endpoint_time_step, control_wires, double_phase)
 
-        return hamiltonian
+    # End internal steps with a full fragment-1 block and the final step with a half block.
+    for_loop(num_trotter_steps)(remainder_of_step)()
 
-    for_loop(num_trotter_steps)(_trotter_step)(hamiltonian)
-
-    very_last_U = transpose_leaf(hamiltonian.leaf_tensors[1])
+    very_last_U = transpose_leaf(U_tensor[1])
     apply_system_basis_rotation(very_last_U, wires)
