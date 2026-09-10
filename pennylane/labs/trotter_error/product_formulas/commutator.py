@@ -224,6 +224,10 @@ class CommutatorNode(ASTNode):
                 ratios[symbol] /= coeff
 
             ratio_list = list(ratios.values())
+
+            if len(ratio_list) == 0:
+                return True
+
             return np.allclose(ratio_list, ratio_list[0])
 
         return self.left.is_zero() or self.right.is_zero() or self.left == self.right
