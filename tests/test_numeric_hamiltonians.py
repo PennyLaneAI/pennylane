@@ -22,7 +22,6 @@ import pytest
 
 import pennylane as qp
 from pennylane.numeric_hamiltonians import (
-    BaseNumericHamiltonian,
     CDFHamiltonian,
     CGFHamiltonian,
     NumericHamiltonian,
@@ -128,7 +127,8 @@ class TestConcrete:
         assert qp.math.allclose(ham.core_tensors, data["core_tensors"])
         assert qp.math.allclose(ham.leaf_tensors, data["leaf_tensors"])
         assert qp.math.allclose(ham.nuc_constant, data["nuc_constant"])
-        assert ham.tensors == (ham.core_tensors, ham.leaf_tensors, ham.nuc_constant)
+        assert ham.tensors == (ham.core_tensors, ham.leaf_tensors)
+        assert ham.numeric_data == (ham.core_tensors, ham.leaf_tensors, ham.nuc_constant)
 
     def test_nuc_constant_defaults_to_zero_array(self, seed):
         """Test that omitting ``nuc_constant`` gives a rank-0 array of zero. It is stored
@@ -237,7 +237,7 @@ class TestConcrete:
 
         assert len(leaves) == 3
         assert isinstance(rebuilt, cls)
-        for original, restored in zip(ham.tensors, rebuilt.tensors, strict=True):
+        for original, restored in zip(ham.numeric_data, rebuilt.numeric_data, strict=True):
             assert qp.math.allclose(original, restored)
         assert rebuilt == ham
 
@@ -261,7 +261,7 @@ class TestConcrete:
         ham = CGFHamiltonian(**cgf_tensors(seed))
         mapped = jax.tree_util.tree_map(lambda _: leaf, ham)
 
-        assert all(isinstance(t, type(leaf)) for t in mapped.tensors)
+        assert all(isinstance(t, type(leaf)) for t in mapped.numeric_data)
         assert isinstance(hash(mapped), int)
         assert mapped == jax.tree_util.tree_map(lambda _: leaf, ham)
 
@@ -413,16 +413,10 @@ class TestConcrete:
         """
         assert issubclass(CDFHamiltonian, NumericHamiltonian)
         assert issubclass(CGFHamiltonian, NumericHamiltonian)
+        assert issubclass(VibronicHamiltonian, NumericHamiltonian)
         assert qp.CDFHamiltonian is CDFHamiltonian
         assert qp.CGFHamiltonian is CGFHamiltonian
-        assert qp.numeric_hamiltonians.NumericHamiltonian is NumericHamiltonian
-
-        # ``NumericHamiltonian`` is itself only one shape family of the generic base.
-        assert issubclass(NumericHamiltonian, BaseNumericHamiltonian)
-        assert issubclass(VibronicHamiltonian, BaseNumericHamiltonian)
-        assert not issubclass(VibronicHamiltonian, NumericHamiltonian)
         assert qp.VibronicHamiltonian is VibronicHamiltonian
-        assert qp.numeric_hamiltonians.BaseNumericHamiltonian is BaseNumericHamiltonian
 
     def test_new_subclass_from_shape_family_alone(self):
         """Test that defining a new representation needs only a shape family, with no
@@ -433,9 +427,14 @@ class TestConcrete:
         class THCHamiltonian(NumericHamiltonian):
             """Tensor-hypercontracted shape family, for this test only."""
 
-            core_shape = ("R", "R")
-            leaf_shape = ("R", "N")
+            tensor_shapes = {
+                "core_tensors": ("R", "R"),
+                "leaf_tensors": ("R", "N"),
+            }
             symbol_metadata = {"R": ("tensor_rank", 0), "N": ("num_orbitals", 0)}
+
+            tensor_names = ("core_tensors", "leaf_tensors")
+            scalar_names = ("nuc_constant",)
 
             core_tensors: object
             leaf_tensors: object
@@ -607,9 +606,14 @@ class TestAbstract:
         class THCHamiltonian(NumericHamiltonian):
             """Tensor-hypercontracted shape family, for this test only."""
 
-            core_shape = ("R", "R")
-            leaf_shape = ("R", "N")
+            tensor_shapes = {
+                "core_tensors": ("R", "R"),
+                "leaf_tensors": ("R", "N"),
+            }
             symbol_metadata = {"R": ("tensor_rank", 0), "N": ("num_orbitals", 0)}
+
+            tensor_names = ("core_tensors", "leaf_tensors")
+            scalar_names = ("nuc_constant",)
 
             core_tensors: object
             leaf_tensors: object
@@ -643,6 +647,7 @@ class TestVibronic:
         for name, tensor in data.items():
             assert qp.math.allclose(getattr(ham, name), tensor)
         assert ham.tensors == (ham.constant, ham.linear, ham.quadratic, ham.kinetic)
+        assert ham.numeric_data == ham.tensors
 
     def test_lists_are_coerced_to_arrays(self, seed):
         """Test that nested list/tuple input is materialized as arrays, so every tensor
@@ -650,7 +655,7 @@ class TestVibronic:
         data = {k: v.tolist() for k, v in vibronic_tensors(seed).items()}
         ham = VibronicHamiltonian(**data)
 
-        assert all(isinstance(t, np.ndarray) for t in ham.tensors)
+        assert all(isinstance(t, np.ndarray) for t in ham.numeric_data)
         assert ham.num_fragments == F
 
     @pytest.mark.parametrize(
@@ -793,7 +798,7 @@ class TestVibronic:
             ham.constant = None
 
 
-class TestBaseNumericHamiltonian:
+class TestNumericHamiltonian:
     """Tests for the generic machinery shared by every representation."""
 
     @staticmethod
@@ -802,7 +807,7 @@ class TestBaseNumericHamiltonian:
 
         # pylint: disable=too-few-public-methods
         @dataclass(frozen=True, eq=False, repr=False)
-        class DiagonalHamiltonian(BaseNumericHamiltonian):
+        class DiagonalHamiltonian(NumericHamiltonian):
             """Single square tensor of couplings."""
 
             tensor_names = ("coeffs",)
