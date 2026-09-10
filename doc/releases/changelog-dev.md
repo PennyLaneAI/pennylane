@@ -1590,14 +1590,13 @@
 * Various decomposition rules are updated so that they accept positionally passed arguments.
   [(#10088)](https://github.com/PennyLaneAI/pennylane/pull/10088)
 
-* ``mmd_loss`` replaced with ``mmd_loss_pauli`` and now supports any expectation value function
+* ``mmd_loss`` replaced with ``build_mmd_loss_pauli`` and now supports any expectation value function
   using Pauli-type observables.
   [(#10123)](https://github.com/PennyLaneAI/pennylane/pull/10123)
 
-* ``build_qudit_mmd_loss`` now takes a Heisenberg-Weyl moment callable, the qudit dimension(s) and
-  the number of qudits instead of a ``QuditCircuitConfig``, so it supports any expectation value
+* ``build_qudit_mmd_loss`` replaced by ``build_mmd_loss_hw`` and now supports any expectation value
   function using Heisenberg-Weyl observables.
-  [(#10123)](https://github.com/PennyLaneAI/pennylane/pull/10123)
+  [(#10133)](https://github.com/PennyLaneAI/pennylane/pull/10133)
 
 <h3>Contributors ✍️</h3>
 
