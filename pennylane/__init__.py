@@ -160,7 +160,6 @@ from pennylane.ops.functions import (
     comm,
     single_qubit_zyz_angles,
     subcircuit,
-    TestOp,
 )
 from pennylane.ops.identity import I
 from pennylane.optimize import *

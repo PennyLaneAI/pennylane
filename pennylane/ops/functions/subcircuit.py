@@ -18,8 +18,7 @@ using quantum functions.
 from inspect import Parameter, Signature, signature
 
 from pennylane.core import Operator2
-from pennylane.decomposition import DecompositionRule, add_decomps, register_resources
-from pennylane.ops import H
+from pennylane.decomposition import DecompositionRule, add_decomps
 
 
 def _subcircuit(qfunc: DecompositionRule, **cls_attrs):
@@ -148,11 +147,3 @@ def subcircuit(
         )
 
     return wrapper
-
-
-@subcircuit
-@register_resources({H: 1})
-def TestOp(wires):
-    """Operator created for testing whether the docstring renders or not."""
-
-    H(wires)
