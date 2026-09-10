@@ -43,7 +43,11 @@ def _rz_phase_gradient(
 
     # NOTE: To be capture compatible, must wrap in function
     # so operators are only constructed when called
-    compute_fn = partial(qp.ctrl(qp.BasisState, control=wire), state=binary_int, wires=angle_wires)
+    control_wire = Wires(wire)[0]
+
+    def compute_fn():
+        qp.ctrl(qp.MultiX(binary_int, angle_wires), control=control_wire)
+
     target_fn = partial(qp.SemiAdder, angle_wires, phase_grad_wires, work_wires)
 
     # NOTE: Compute function is self-inverse, pass it for the uncompute function
@@ -52,24 +56,29 @@ def _rz_phase_gradient(
 
 @transform
 def rz_phase_gradient(
-    tape: QuantumScript, angle_wires: Wires, phase_grad_wires: Wires, work_wires: Wires
+    tape: QuantumScript,
+    angle_wires: Wires,
+    phase_grad_wires: Wires,
+    work_wires: Wires,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Quantum function transform to decompose all instances of :class:`~.RZ` gates into additions
     using a phase gradient resource state.
 
     For example, an :class:`~.RZ` gate with angle :math:`\phi = (0 \cdot 2^{-1} + 1 \cdot 2^{-2} + 0 \cdot 2^{-3}) 2\pi`
-    is translated into the following routine, where the angle is conditionally prepared on the ``angle_wires`` in binary
-    and added to a ``phase_grad_wires`` register semi-inplace via :class:`~.SemiAdder`.
+    is translated into the following routine, where the angle is loaded onto the ``angle_wires`` in
+    binary by a :class:`~.MultiX` (one ``X`` per set bit) controlled by the target - realizing one
+    controlled-``X`` per set bit, here only ``ang_1`` - and added to a ``phase_grad_wires`` register
+    semi-inplace via :class:`~.SemiAdder`.
 
     .. code-block::
 
-        target: ─RZ(ϕ)─ = ────╭●──────────────╭●────exp(iϕ/2)─┤
-         ang_0:           ────├|0⟩─╭SemiAdder─├|0⟩────────────┤
-         ang_1:           ────├|1⟩─├SemiAdder─├|1⟩────────────┤
-         ang_2:           ────╰|0⟩─├SemiAdder─╰|0⟩────────────┤
-         phg_0:           ─────────├SemiAdder─────────────────┤
-         phg_1:           ─────────├SemiAdder─────────────────┤
-         phg_2:           ─────────╰SemiAdder─────────────────┤
+        target: ─RZ(ϕ)─ = ─╭●────────────╭●──exp(iϕ/2)─┤
+         ang_0:           ─│──╭SemiAdder─│─────────────┤
+         ang_1:           ─╰X─├SemiAdder─╰X────────────┤
+         ang_2:           ────├SemiAdder───────────────┤
+         phg_0:           ────├SemiAdder───────────────┤
+         phg_1:           ────├SemiAdder───────────────┤
+         phg_2:           ────╰SemiAdder───────────────┤
 
     For this routine to work, the provided ``phase_grad_wires`` need to hold a phase gradient
     state :math:`|\nabla n\rangle = \frac{1}{\sqrt{N}} \sum_{m=0}^{N-1} e^{-2 \pi i \frac{m}{N}} |m\rangle`,
@@ -125,6 +134,7 @@ def rz_phase_gradient(
                 qp.H(w)
                 qp.PhaseShift(-np.pi/2**i, w)
 
+        @qp.transforms.decompose(max_expansion=1)
         @rz_phase_gradient(
             angle_wires=angle_wires,
             phase_grad_wires=phase_grad_wires,
@@ -151,15 +161,18 @@ def rz_phase_gradient(
     Overall, the full circuit looks like the following:
 
     >>> print(qp.draw(rz_circ, wire_order=wire_order)(phi, wire))
-      targ: ──H────────────╭(|Ψ⟩)@SemiAdder@(|Ψ⟩)──H─╭GlobalPhase(2.75)─┤  Probs
-     ang_0: ───────────────├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
-     ang_1: ───────────────├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
-     ang_2: ───────────────├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
-     phg_0: ──H──Rϕ(-3.14)─├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
-     phg_1: ──H──Rϕ(-1.57)─├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
-     phg_2: ──H──Rϕ(-0.79)─├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
-    work_0: ───────────────├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
-    work_1: ───────────────╰(|Ψ⟩)@SemiAdder@(|Ψ⟩)────╰GlobalPhase(2.75)─┤
+      targ: ──H─╭●─────────────────────╭●───────────H─╭GlobalPhase(2.75)─┤  Probs
+     ang_0: ────├MultiX(M0)─╭SemiAdder─├MultiX(M0)────├GlobalPhase(2.75)─┤
+     ang_1: ────├MultiX(M0)─├SemiAdder─├MultiX(M0)────├GlobalPhase(2.75)─┤
+     ang_2: ────╰MultiX(M0)─├SemiAdder─╰MultiX(M0)────├GlobalPhase(2.75)─┤
+     phg_0: ──H──Rϕ(-3.14)──├SemiAdder────────────────├GlobalPhase(2.75)─┤
+     phg_1: ──H──Rϕ(-1.57)──├SemiAdder────────────────├GlobalPhase(2.75)─┤
+     phg_2: ──H──Rϕ(-0.79)──├SemiAdder────────────────├GlobalPhase(2.75)─┤
+    work_0: ────────────────├SemiAdder────────────────├GlobalPhase(2.75)─┤
+    work_1: ────────────────╰SemiAdder────────────────╰GlobalPhase(2.75)─┤
+    <BLANKLINE>
+    M0 =
+    [ True  True  True]
 
     The additional work wires are required by the :class:`~.SemiAdder`.
     Executing the circuit, we get the following result:

@@ -25,7 +25,7 @@ from pennylane.typing import Bool, Wire
 from pennylane.wires import WiresLike
 
 from .out_square import _SquareArithmeticOp
-from .semi_adder import _controlled_semi_adder, _controlled_semi_adder_resource
+from .semi_adder import _controlled_semi_adder, _ctrl_semi_adder_resource
 
 
 class SignedOutSquare(_SquareArithmeticOp):
@@ -223,7 +223,7 @@ class SignedOutSquare(_SquareArithmeticOp):
 def _c_subtract_then_add_one_resources(n, m, num_work_wires, output_wires_zeroed):
     size = min(m - n, n) if output_wires_zeroed else m - n
     add_base = SemiAdder(Wire[n - 1], Wire[size], Wire[size - 1])
-    cadd_resources = _controlled_semi_adder_resource(
+    cadd_resources = _ctrl_semi_adder_resource(
         add_base, Wire[1], None, Wire[num_work_wires - size + 1], "zeroed"
     )
 

@@ -268,8 +268,8 @@ class TestFromBloq:
 
         to_pl = _get_to_pl_op()
 
-        assert to_pl(GlobalPhase(exponent=1), 0) == qp.GlobalPhase(
-            GlobalPhase(exponent=1).exponent * np.pi, 0
+        assert to_pl(GlobalPhase(exponent=1), ()) == qp.GlobalPhase(
+            GlobalPhase(exponent=1).exponent * np.pi
         )
         assert to_pl(Identity(), 0) == qp.Identity(0)
         assert to_pl(Ry(angle=np.pi / 2), 0) == qp.RY(np.pi / 2, 0)
@@ -593,7 +593,7 @@ class TestToBloqDecomposition:
         )
 
         assert GlobalPhase(exponent=1) == _map_to_bloq(
-            qp.GlobalPhase(GlobalPhase(exponent=1).exponent * np.pi, 0)
+            qp.GlobalPhase(GlobalPhase(exponent=1).exponent * np.pi)
         )
         assert Identity() == _map_to_bloq(qp.Identity(0))
         assert Ry(angle=np.pi / 2) == _map_to_bloq(qp.RY(np.pi / 2, 0))
@@ -837,7 +837,7 @@ class TestToBloqDecomposition:
                     (qp.CRY(0.0, wires=[0, 1]), True): 6,
                     (
                         qp.ctrl(
-                            qp.GlobalPhase((2 * np.pi), wires=[1]),
+                            qp.GlobalPhase(2 * np.pi),
                             control=0,
                         ),
                         True,
@@ -1408,10 +1408,10 @@ class TestToBloqEstimator:
                     work_wires=[5, 6, 7, 8, 9],
                 ),
                 {
-                    (qp.Toffoli([0, 1, 2]), True): 2865,
-                    (qp.CNOT([0, 1]), True): 5232,
-                    (qp.Hadamard(0), True): 2316,
-                    (qp.T(0), True): 268224,
+                    (qp.Hadamard(0), True): 6012,
+                    (qp.CNOT([0, 1]), True): 6156,
+                    (qp.T(0), True): 283008,
+                    (qp.Toffoli([0, 1, 2]), True): 5469,
                     (qp.X(0), True): 42,
                 },
             ),

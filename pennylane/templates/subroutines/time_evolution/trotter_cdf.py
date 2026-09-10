@@ -515,7 +515,7 @@ def _controlled_trotter_cdf_resource(
     )
 
 
-@register_condition(lambda control_wires, **__: len(control_wires) == 1)
+@register_condition(lambda base, control_wires, *_, **__: len(control_wires) == 1)
 @register_resources(_controlled_trotter_cdf_resource, exact=False)
 def _controlled_trotter_cdf_decomp(base, control_wires, control_values, work_wires, work_wire_type):
     evolution_time = base.arguments["evolution_time"]

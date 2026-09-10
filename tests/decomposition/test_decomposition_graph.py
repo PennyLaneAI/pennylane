@@ -896,12 +896,12 @@ class TestControlledDecompositions:
         @qp.register_resources({qp.X: 1, qp.GlobalPhase: 1})
         def custom_decomp(wires):
             qp.X(wires[0])
-            qp.GlobalPhase(np.pi, wires=wires)
+            qp.GlobalPhase(np.pi)
 
         @qp.register_resources({qp.Z: 1, qp.GlobalPhase: 1})
         def second_decomp(wires):
             qp.Z(wires=wires[0])
-            qp.GlobalPhase(np.pi / 2, wires=wires)
+            qp.GlobalPhase(np.pi / 2)
 
         class CustomControlledOp(Operation):
             """A custom operation."""
@@ -1017,7 +1017,7 @@ class TestControlledDecompositions:
     def test_base_decomp_contains_mcms(self):
         """Tests that the graph does not apply ctrl to rules that contain MCMs."""
 
-        @qp.register_resources({qp.ops.MidMeasure: 1, qp.X: 1})
+        @qp.register_resources({qp.ops.MidMeasure(wires=Wire[1]): 1, qp.X: 1})
         def _custom_rule(wires):
             raise NotImplementedError
 
@@ -1272,7 +1272,7 @@ class TestSymbolicDecompositions:
     def test_base_decomp_contains_mcms_or_dynamic_wires(self):
         """Tests that the graph skips adjoint of rules that contain MCMs or dynamic wires."""
 
-        @qp.register_resources({qp.ops.MidMeasure: 1, qp.X: 1})
+        @qp.register_resources({qp.ops.MidMeasure(wires=Wire[1]): 1, qp.X: 1})
         def _custom_rule(wires):
             raise NotImplementedError
 

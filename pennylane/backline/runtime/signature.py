@@ -25,15 +25,85 @@ import numpy as np
 class CType(Enum):
     """A C type in a :class:`CSignature`.
 
-    Most of these are plain fixed-width scalars. The last four are special:
+    Types can be specified in two ways. When constructing a :class:`CSignature` directly, pass
+    uppercase enum members such as ``CType.PTR`` and ``CType.U32``. When declaring a symbol with
+    :func:`~pennylane.runtime_declare`, write their lowercase values in a string signature:
 
-    * :attr:`PTR` is an address the runtime hands out and takes back, such as a session handle.
-    * :attr:`STR` is a ``const char *``. It ends up as a constant in the compiled module, so its
-      value has to be known at trace time and cannot come from a traced value.
-    * :attr:`BUF` is the data pointer of an array argument. The length is not implied: if the entry
-      point wants a byte count, declare it as a separate scalar parameter.
-    * :attr:`OUT` is a buffer the entry point writes. The caller does not pass one: it gives the
-      size with ``out_bytes=`` and gets the filled buffer back alongside the result.
+    >>> import pennylane as qp
+    >>> from pennylane.backline.runtime import CSignature, CType
+    >>> CType.U32.value
+    'u32'
+    >>> direct = CSignature("example_run", (CType.PTR, CType.U32), result=CType.I32)
+    >>> declared = qp.runtime_declare("example_run", "(ptr, u32) -> i32")
+    >>> direct == declared
+    True
+
+    In ``"(ptr, u32) -> i32"``, the parentheses contain the parameter types in order: ``ptr``
+    followed by ``u32``. The arrow separates those parameters from the ``i32`` result type.
+
+    The supported types are:
+
+    .. list-table::
+       :header-rows: 1
+       :widths: 24 20 56
+
+       * - Enum member
+         - String token
+         - Use
+       * - ``VOID``
+         - ``"void"``
+         - No scalar result. It is valid only as a result type; ``(void)`` also denotes no
+           parameters.
+       * - ``I1``
+         - ``"i1"``
+         - A Python, NumPy, or JAX boolean scalar.
+       * - ``I8``, ``I16``, ``I32``, ``I64``
+         - ``"i8"``, ``"i16"``, ``"i32"``, ``"i64"``
+         - A signed integer scalar of the stated width.
+       * - ``U8``, ``U16``, ``U32``, ``U64``
+         - ``"u8"``, ``"u16"``, ``"u32"``, ``"u64"``
+         - An unsigned integer scalar of the stated width.
+       * - ``F32``, ``F64``
+         - ``"f32"``, ``"f64"``
+         - A floating-point scalar of the stated width.
+       * - ``PTR``
+         - ``"ptr"``
+         - An integer address the runtime hands out and takes back, such as a session handle.
+       * - ``STR``
+         - ``"str"``
+         - A Python string or bytes-like value known at trace time. It becomes a NUL-terminated
+           constant in the compiled module.
+       * - ``BUF``
+         - ``"buf"``
+         - Array data for a local call. Its length is not implied; declare a separate scalar
+           parameter when the entry point needs a byte count.
+       * - ``OUT``
+         - ``"out"``
+         - A writable buffer. The caller gives its size with ``out_bytes=`` instead of passing an
+           argument, then receives the filled buffer alongside the result.
+
+    |
+
+    The special types change how arguments and results are supplied. For example:
+
+    .. code-block:: python
+
+        qp.runtime_declare("example_log", "(str) -> void")
+        qp.runtime_declare("example_transform", "(buf, u64, out) -> i32")
+
+        @qp.qjit
+        def program(data):
+            qp.runtime_call("example_log", "starting")
+            status, output = qp.runtime_call(
+                "example_transform", data, data.size, out_bytes=64
+            )
+            return status, output
+
+    In ``example_log``, ``"starting"`` supplies the trace-time constant ``STR`` parameter and
+    ``VOID`` means the call has no scalar result. In ``example_transform``, ``data`` supplies the
+    local ``BUF`` and ``data.size`` supplies its explicit element count. The caller passes no
+    argument for ``OUT``; ``out_bytes=64`` allocates it, and the filled buffer is returned as
+    ``output`` after the ``I32`` status result.
 
     .. note::
 
@@ -126,8 +196,11 @@ class CSignature:
 
     **Example**
 
-    >>> qp.backline.runtime.CSignature.parse("example_run", "(ptr, u32) -> i32")
+    >>> from pennylane.backline.runtime import CSignature, CType
+    >>> CSignature("example_run", (CType.PTR, CType.U32), result=CType.I32)
     CSignature('example_run', (ptr, u32) -> i32)
+
+    Alternatively, :meth:`parse` builds the same object from ``"(ptr, u32) -> i32"``.
     """
 
     symbol: str
@@ -211,6 +284,10 @@ _REGISTRY: dict[str, CSignature] = {}
 def declare(symbol: str, spec: str, library: str | None = None) -> CSignature:
     """Declare the signature of a runtime symbol so it can be called by name.
 
+    ``spec`` lists parameter types in runtime order, followed by an optional result. An ``out``
+    parameter is declared in ``spec`` but omitted from the arguments to
+    :func:`~pennylane.runtime_call`.
+
     Args:
         symbol (str): the C symbol name, as exported by the runtime library
         spec (str): the signature spec, e.g. ``"(ptr, buf, u64) -> i32"``. See :class:`CType`
@@ -221,7 +298,8 @@ def declare(symbol: str, spec: str, library: str | None = None) -> CSignature:
             calling process.
 
     Returns:
-        CSignature: the declared signature, which :func:`~.runtime_call` also takes directly
+        CSignature: the declared signature, which :func:`~pennylane.runtime_call` also takes
+            directly
 
     **Example**
 
@@ -238,7 +316,7 @@ def declare(symbol: str, spec: str, library: str | None = None) -> CSignature:
             qp.runtime_call("example_declared_rounds", session, 1000, address="board:9000")
             return qp.runtime_call("example_local", data, data.size)
 
-    .. seealso:: :func:`~.runtime_call`
+    .. seealso:: :func:`~pennylane.runtime_call`
     """
     signature = CSignature.parse(symbol, spec)
     if library is not None:
