@@ -1285,6 +1285,7 @@
     [(#10027)](https://github.com/PennyLaneAI/pennylane/pull/10027)
     [(#10047)](https://github.com/PennyLaneAI/pennylane/pull/10047)
     [(#9999)](https://github.com/PennyLaneAI/pennylane/pull/9999)
+    [(#10125)](https://github.com/PennyLaneAI/pennylane/pull/10125)
   - Integration with :mod:`pennylane.capture`.
     [(#9556)](https://github.com/PennyLaneAI/pennylane/pull/9556)
     [(#9729)](https://github.com/PennyLaneAI/pennylane/pull/9729)
@@ -1388,12 +1389,6 @@
 * `capture.enable()`, `capture.disable()` are updated to use `ContextVar` for thread safety. A `capture.toggle_ctx`
   context manager that temporarily enables or disables capture is added.
   [(#10016)](https://github.com/PennyLaneAI/pennylane/pull/10016)
-
-* The test-local `CompositeOp2` subclasses in `tests/ops/op_math/test_composite2.py` now wrap
-  `math.prod` in `staticmethod`, fixing Python 3.14 CI failures. `math.prod` is a
-  `functools.partial`, which became a method descriptor in Python 3.14, so an unwrapped class
-  attribute bound the operator instance as the first argument.
-  [(#10125)](https://github.com/PennyLaneAI/pennylane/pull/10125)
 
 <h3>Documentation 📝</h3>
 
