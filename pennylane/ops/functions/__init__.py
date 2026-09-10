@@ -57,4 +57,4 @@ from .map_wires import map_wires
 from .matrix import matrix
 from .simplify import simplify
 from .single_qubit_zyz_angles import single_qubit_zyz_angles
-from .subcircuit import subcircuit
+from .subcircuit import subcircuit, TestOp

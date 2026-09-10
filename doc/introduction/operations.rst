@@ -158,6 +158,7 @@ Non-parametrized gates
     :nosignatures:
 
     ~pennylane.Identity
+    ~pennylane.TestOp
     ~pennylane.Hadamard
     ~pennylane.S
     ~pennylane.CNOT
