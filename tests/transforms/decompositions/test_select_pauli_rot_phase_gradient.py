@@ -52,16 +52,16 @@ def test_wires_error_decomp_fun():
 def test_decomp_has_a_name():
     """Test that the decomposition rule from make_selectpaulirot_to_phase_gradient_decomp works as expected
     as a fixed decomposition and yields the correct resources"""
-    num_controls = 1
-    prec = 2
 
-    # If precision is very low, the number of control wires of the multiplexer dictate the
-    # required number of work wires.
+    prec = 3
+    num_controls = 2
+
+    first_aux = num_controls + 1
+
+    angle_wires = list(range(first_aux, first_aux + prec))
+    phase_grad_wires = list(range(first_aux + prec, first_aux + 2 * prec))
     num_work_wires = max(prec, num_controls + 1) - 1
-
-    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(prec)])
-    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(prec)])
-    work_wires = qp.wires.Wires([f"work_{i}" for i in range(num_work_wires)])
+    work_wires = list(range(first_aux + 2 * prec, first_aux + 2 * prec + num_work_wires))
 
     custom_decomp = make_selectpaulirot_to_phase_gradient_decomp(
         angle_wires, phase_grad_wires, work_wires

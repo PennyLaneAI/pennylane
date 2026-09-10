@@ -70,9 +70,11 @@ def test_valid_decomp(p):
 def test_decomp_has_name():
     """Ensures the decomp rule has a name property."""
     p = 2
-    angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(p)])
-    phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(p)])
-    work_wires = qp.wires.Wires([f"work_{i}" for i in range(p - 1)])
+
+    first_free = 2
+    angle_wires = list(range(first_free, first_free + p))
+    phase_grad_wires = list(range(first_free + p, first_free + 2 * p))
+    work_wires = list(range(first_free + 2 * p, first_free + 3 * p - 1))
 
     kwargs = {
         "angle_wires": angle_wires,
