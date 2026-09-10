@@ -50,6 +50,11 @@ jobs:
         run: |
           uv build --wheel --out-dir dist
 
+      - uses: actions/upload-artifact@v6
+        with:
+          name: pennylane-wheel
+          path: dist/*.whl
+
       - name: Publish
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
