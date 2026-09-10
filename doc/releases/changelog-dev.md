@@ -1433,6 +1433,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fix `qp.eigvals` returns `NaN` for a legal fractional power operator.
+  [(#9802)](https://github.com/PennyLaneAI/pennylane/pull/9802)
+
 * Fixed the decomposition rule of :class:`~.QROM` so that it can be captured and compiled with
   Catalyst. Tracing the ``clean`` branch previously raised a ``TracerIntegerConversionError``
   because :func:`~pennylane.adjoint` traced the statically known ``depth``, and passing the wires
@@ -1618,6 +1621,7 @@ Yushao Chen,
 Diksha Dhawan,
 Marcus Edwards,
 Thomas C. Fraser,
+Connor Gambla,
 Sengthai Heng,
 Austin Huang,
 Harshal Janjani,
