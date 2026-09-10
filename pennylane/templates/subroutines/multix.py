@@ -367,25 +367,25 @@ def _controlled_multix_ladder_resources(base, control_wires, **_):
     }
 
 
-def _multix_ladder_fanout(base, control_wires, ladder_wires):
+def _multix_ladder_fanout(base, control_wires, work_wires):
     """Computes ``AND(control_wires)`` into a single work wire with the ``TemporaryAND`` ladder in
     :func:`~._multi_temporary_and_all_ones`, fans that wire out with a ``CNOT`` to every set bit of
     ``base``, then uncomputes the ladder. Requires ``len(control_wires) - 1`` wires in
-    ``ladder_wires``, all in the zero state."""
+    ``work_wires``, all in the zero state."""
     bitstring = base.bitstring
     wires = base.wires
     if compiler.active() or capture.enabled():
         bitstring = math.array(bitstring, like="jax")
 
     num_needed = len(control_wires) - 1
-    target_wire = _multi_temporary_and_all_ones(control_wires, ladder_wires)
+    target_wire = _multi_temporary_and_all_ones(control_wires, work_wires)
 
     def _apply_cnot(wire):
         CNOT(wires=[target_wire, wire])
 
     if any(
         is_abstract_qubit(w) or isinstance(w, DynamicWire)
-        for w in (*wires, *ladder_wires, *control_wires)
+        for w in (*wires, *work_wires, *control_wires)
     ):
         for i, wire in enumerate(wires):
             cond(bitstring[i], _apply_cnot)(wire)
@@ -401,8 +401,8 @@ def _multix_ladder_fanout(base, control_wires, ladder_wires):
     # Uncompute the ladder. Rebuilt inline rather than via adjoint(_multi_temporary_and_all_ones)(),
     # since adjoint-of-a-qfunc doesn't support DynamicRegister arguments under capture.
     for i in range(num_needed - 1, 0, -1):
-        adjoint(TemporaryAND)(wires=[ladder_wires[i - 1], control_wires[i + 1], ladder_wires[i]])
-    adjoint(TemporaryAND)(wires=[control_wires[0], control_wires[1], ladder_wires[0]])
+        adjoint(TemporaryAND)(wires=[work_wires[i - 1], control_wires[i + 1], work_wires[i]])
+    adjoint(TemporaryAND)(wires=[control_wires[0], control_wires[1], work_wires[0]])
 
 
 def _controlled_multix_ladder_extra_work_wires(control_wires, work_wires, work_wire_type, **_):
@@ -428,9 +428,9 @@ def _controlled_multix_ladder(base, control_wires, work_wires, work_wire_type, *
     num_to_allocate = num_needed - len(available)
     if num_to_allocate > 0:
         with allocate(num_to_allocate, state="zero", restored=True) as allocated:
-            _multix_ladder_fanout(base, control_wires, available + list(allocated))
+            _multix_ladder_fanout(base, control_wires, work_wires=available + list(allocated))
     else:
-        _multix_ladder_fanout(base, control_wires, available)
+        _multix_ladder_fanout(base, control_wires, work_wires=available)
 
 
 add_decomps("C(MultiX)", flip_zero_control2(_controlled_multix_ladder))

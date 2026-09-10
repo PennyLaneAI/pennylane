@@ -480,6 +480,7 @@ class TestDecomposition:
             _test_decomposition_rule(op, rule)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("control_values", [[1, 1, 1], [0, 1, 0]])
     def test_controlled_multi_control_ladder_decomposition_capture_compatibility(
         self, control_values
@@ -487,20 +488,6 @@ class TestDecomposition:
         """With more than one control wire, the TemporaryAND-ladder rules (which load the fanout
         through a single work wire instead of repeating the multi-control structure per target)
         become applicable, and should also be valid, capture-compatible decomposition rules."""
-        op = qp.ctrl(
-            qp.MultiX([1, 0, 1], wires=[3, 4, 5]),
-            control=[0, 1, 2],
-            control_values=control_values,
-        )
-
-        for rule in qp.list_decomps("C(MultiX)"):
-            _test_decomposition_rule(op, rule)
-
-    @pytest.mark.usefixtures("enable_graph_decomposition")
-    @pytest.mark.parametrize("control_values", [[1, 1, 1], [0, 1, 0]])
-    def test_controlled_multi_control_ladder_decomposition_matrix(self, control_values):
-        """The TemporaryAND-ladder decomposition rules match the op matrix for a multi-control
-        C(MultiX), for both zeroed work wires supplied explicitly and dynamically allocated."""
         op = qp.ctrl(
             qp.MultiX([1, 0, 1], wires=[3, 4, 5]),
             control=[0, 1, 2],
@@ -573,7 +560,7 @@ class TestDecomposition:
             work_wires=[6, 7],
             work_wire_type="zeroed",
         )
-        fanout.assert_called_once_with(base, [0, 1, 2], [6, 7])
+        fanout.assert_called_once_with(base, [0, 1, 2], work_wires=[6, 7])
 
     @pytest.mark.jax
     @pytest.mark.capture
@@ -587,7 +574,7 @@ class TestDecomposition:
 
         base = qp.MultiX([1, 0, 1], wires=[3, 4, 5])
         jaxpr = jax.make_jaxpr(
-            lambda: _multix_ladder_fanout(base, control_wires=[0, 1, 2], ladder_wires=[6, 7])
+            lambda: _multix_ladder_fanout(base, control_wires=[0, 1, 2], work_wires=[6, 7])
         )()
         assert any(eqn.primitive == for_loop_prim for eqn in jaxpr.eqns)
 
