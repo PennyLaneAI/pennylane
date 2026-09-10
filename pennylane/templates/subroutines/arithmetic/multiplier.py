@@ -17,14 +17,14 @@ Contains the Multiplier template.
 
 import numpy as np
 
-from pennylane.core.operator import Operation, abstractify
+from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
     register_resources,
     resource_rep,
 )
-from pennylane.ops import SWAP, Prod, adjoint, change_op_basis, prod
+from pennylane.ops import SWAP, Prod2, adjoint, change_op_basis
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
@@ -240,8 +240,8 @@ class Multiplier(Operation):
             ControlledSequence(PhaseAdder(k, wires_aux, mod, work_wire_aux), control=x_wires),
         )
 
-        target_op = prod(
-            *reversed([SWAP(wires) for wires in zip(x_wires, wires_aux_swap, strict=True)])
+        target_op = Prod2(
+            list(reversed([SWAP(wires) for wires in zip(x_wires, wires_aux_swap, strict=True)]))
         )
 
         inv_k = pow(k, -1, mod)
@@ -267,10 +267,7 @@ def _multiplier_decomposition_resources(
         "base_rep": resource_rep(PhaseAdder, num_x_wires=num_wires_aux, mod=mod),
         "num_control_wires": num_x_wires,
     }
-    if num_x_wires > 1:
-        target_op_rep = resource_rep(Prod, resources={abstractify(SWAP): num_x_wires})
-    else:
-        target_op_rep = SWAP
+    target_op_rep = Prod2([SWAP(Wire[2]) for _ in range(num_x_wires)])
     _compute_op = QFT(Wire[num_wires_aux])
     resources = {
         _change_op_basis_abstract(
@@ -304,12 +301,14 @@ def _multiplier_decomposition(k, x_wires: WiresLike, mod, work_wires: WiresLike,
         QFT(wires=wires_aux),
         ControlledSequence(PhaseAdder(k, wires_aux, mod, work_wire_aux), control=x_wires),
     )
-    prod(
-        *reversed(
-            [
-                SWAP(wires=[x_wire, aux_wire])
-                for x_wire, aux_wire in zip(x_wires, wires_aux_swap, strict=True)
-            ]
+    Prod2(
+        list(
+            reversed(
+                [
+                    SWAP(wires=[x_wire, aux_wire])
+                    for x_wire, aux_wire in zip(x_wires, wires_aux_swap, strict=True)
+                ]
+            )
         )
     )
     change_op_basis(

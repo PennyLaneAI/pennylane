@@ -239,11 +239,10 @@ class Pow2(SymbolicOp2):
         """
         return base.diagonalizing_gates()
 
-    @staticmethod
     @override
-    def compute_eigvals(base, z):
-        base_eigvals = base.eigvals()
-        return [math.cast(value, dtype="complex128") ** z for value in base_eigvals]
+    def eigvals(self):
+        base_eigvals = self.base.eigvals()
+        return [((1 + 0j) * value) ** self.z for value in base_eigvals]
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
