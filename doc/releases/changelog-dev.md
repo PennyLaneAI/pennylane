@@ -2,6 +2,14 @@
 
 <h3>New features since last release</h3>
 
+* Added :func:`~.transforms.decompositions.make_rz_to_phase_gradient_decomp_double_phase`, an alternative
+  phase-gradient decomposition of :class:`~.RZ` that loads the angle with Clifford ``X`` gates and
+  cancels the unwanted phase on :math:`|0\rangle` by flipping the phase-gradient register. That trades
+  a sparse, angle-dependent CNOT count for a fixed ``2p`` CNOTs, which is cheaper when the binary
+  angle is dense. It takes the same ``adaptive_precision`` keyword as
+  :func:`~.transforms.decompositions.make_rz_to_phase_gradient_decomp`.
+  [(#10135)](https://github.com/PennyLaneAI/pennylane/pull/10135)
+
 * Two new numeric Hamiltonians called :class:`pennylane.CDFHamiltonian` (based on `arXiv:2506.15784, Sec. III A <https://arxiv.org/abs/2506.15784>`) and :class:`pennylane.CGFHamiltonian` have been added (based on `arXiv:2508.11865, Sec. III C <https://arxiv.org/abs/2508.11865>`), which define compressed double-factorized (CDF) and Christiansen greedy-fragmentation Hamiltonians, respectively. These Hamiltonians can be defined
   with both concrete numeric data or abstract data (using ``qp.typing.Float[...]``).
   [(#10048)](https://github.com/PennyLaneAI/pennylane/pull/10048)
