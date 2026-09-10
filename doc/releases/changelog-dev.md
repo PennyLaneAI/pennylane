@@ -1422,6 +1422,11 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* ZX optimization transforms now preserve the original wire labels when round-tripping through
+  PyZX, preventing circuits on nonconsecutive, noncanonical, or string-valued wires from being
+  permuted.
+  [(#10121)](https://github.com/PennyLaneAI/pennylane/pull/10121)
+
 * Fixed the decomposition rule of :class:`~.QROM` so that it can be captured and compiled with
   Catalyst. Tracing the ``clean`` branch previously raised a ``TracerIntegerConversionError``
   because :func:`~pennylane.adjoint` traced the statically known ``depth``, and passing the wires
