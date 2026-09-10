@@ -1286,6 +1286,8 @@
     [(#10027)](https://github.com/PennyLaneAI/pennylane/pull/10027)
     [(#10047)](https://github.com/PennyLaneAI/pennylane/pull/10047)
     [(#9999)](https://github.com/PennyLaneAI/pennylane/pull/9999)
+    [(#10125)](https://github.com/PennyLaneAI/pennylane/pull/10125)
+    [(#10124)](https://github.com/PennyLaneAI/pennylane/pull/10124)
   - Integration with :mod:`pennylane.capture`.
     [(#9556)](https://github.com/PennyLaneAI/pennylane/pull/9556)
     [(#9729)](https://github.com/PennyLaneAI/pennylane/pull/9729)
@@ -1422,6 +1424,9 @@
   [(#9621)](https://github.com/PennyLaneAI/pennylane/pull/9621)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fix `qp.eigvals` returns `NaN` for a legal fractional power operator.
+  [(#9802)](https://github.com/PennyLaneAI/pennylane/pull/9802)
 
 * Fixed the decomposition rule of :class:`~.QROM` so that it can be captured and compiled with
   Catalyst. Tracing the ``clean`` branch previously raised a ``TracerIntegerConversionError``
@@ -1608,6 +1613,7 @@ Yushao Chen,
 Diksha Dhawan,
 Marcus Edwards,
 Thomas C. Fraser,
+Connor Gambla,
 Sengthai Heng,
 Austin Huang,
 Harshal Janjani,

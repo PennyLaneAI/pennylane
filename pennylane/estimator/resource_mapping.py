@@ -618,6 +618,16 @@ def _(op: qops.ChangeOpBasis):
 
 
 @_map_to_resource_op.register
+def _(op: qops.ChangeOpBasis2):
+    return re_ops.ChangeOpBasis(
+        _map_to_resource_op(op.compute_op),
+        _map_to_resource_op(op.target_op),
+        _map_to_resource_op(op.uncompute_op),
+        wires=op.wires,
+    )
+
+
+@_map_to_resource_op.register
 def _(op: Prod):
     return re_ops.Prod(
         res_ops=[_map_to_resource_op(factor) for factor in op.operands],
