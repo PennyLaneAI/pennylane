@@ -53,10 +53,9 @@ import numpy as np
 
 from pennylane import math
 from pennylane.pytrees import register_pytree
-from pennylane.typing import AbstractArray
+from pennylane.typing import AbstractArray, Float
 
 __all__ = [
-    "BaseNumericHamiltonian",
     "NumericHamiltonian",
     "CDFHamiltonian",
     "CGFHamiltonian",
@@ -102,6 +101,9 @@ class NumericHamiltonian:
     tensor_names: ClassVar[tuple[str, ...]]
     """The tensor fields this Hamiltonian carries, in pytree leaf order."""
 
+    scalar_names: ClassVar[tuple[str, ...]]
+    """The fields the Hamiltonian carries that are scalar quantities."""
+
     tensor_shapes: ClassVar[dict[str, tuple[str, ...]]]
     """Maps each shape-validated tensor field to its symbolic shape template."""
 
@@ -109,6 +111,9 @@ class NumericHamiltonian:
     """Maps each shape symbol to ``(attribute name, offset)``."""
 
     def __init_subclass__(cls, **kwargs):
+        if not hasattr(cls, "scalar_names"):
+            cls.scalar_names = ()
+
         super().__init_subclass__(**kwargs)
 
         # It's required for Catalyst to treat the Hamiltonian as a pytree, so that it can be
@@ -165,12 +170,17 @@ class NumericHamiltonian:
         concrete.
         """
         _is_abstract = False
-        for name in self.tensor_names:
+        for name in self.tensor_names + self.scalar_names:
             if isinstance(getattr(self, name), AbstractArray):
                 _is_abstract = True
                 break
 
         return _is_abstract
+
+    @property
+    def numeric_data(self) -> tuple:
+        """tuple: The tensors this Hamiltonian carries and the scalar data, in (``tensor_names``, ``scalar_names``) order."""
+        return tuple(getattr(self, name) for name in self.tensor_names + self.scalar_names)
 
     @property
     def tensors(self) -> tuple:
@@ -188,20 +198,20 @@ class NumericHamiltonian:
         The derived dimensions travel in the metadata so that ``_unflatten`` does not
         have to re-derive them.
         """
-        return self.tensors, tuple(self.dimensions.values())
+        return self.numeric_data, tuple(self.dimensions.values())
 
     @classmethod
     def _unflatten(cls, data, metadata):
         """Rebuild from leaves and metadata, bypassing validation."""
         obj = cls.__new__(cls)
-        for name, value in zip(cls.tensor_names, data, strict=True):
+        for name, value in zip(cls.tensor_names + cls.scalar_names, data, strict=True):
             object.__setattr__(obj, name, value)
         for value, (name, _) in zip(metadata, cls.symbol_metadata.values(), strict=True):
             object.__setattr__(obj, name, value)
         return obj
 
     def _hash_key(self):
-        return tuple((_shape_of(t), _dtype_of(t)) for t in self.tensors)
+        return tuple((_shape_of(t), _dtype_of(t)) for t in self.numeric_data)
 
     def __hash__(self):
         # Deliberately keyed on shapes rather than values: this is the information that
@@ -217,7 +227,9 @@ class NumericHamiltonian:
         if self.is_abstract or other.is_abstract:
             # Shapes and dtypes already match and there are no values to compare.
             return True
-        return all(math.allclose(a, b) for a, b in zip(self.tensors, other.tensors, strict=True))
+        return all(
+            math.allclose(a, b) for a, b in zip(self.numeric_data, other.numeric_data, strict=True)
+        )
 
     def __repr__(self):
         def render(tensor):
@@ -227,7 +239,9 @@ class NumericHamiltonian:
                 return repr(tensor)
             return f"tensor(shape={_shape_of(tensor)})"
 
-        body = ", ".join(f"{n}={render(getattr(self, n))}" for n in self.tensor_names)
+        body = ", ".join(
+            f"{n}={render(getattr(self, n))}" for n in self.tensor_names + self.scalar_names
+        )
         return f"{type(self).__name__}({body})"
 
 
@@ -342,6 +356,7 @@ class CDFHamiltonian(NumericHamiltonian):
     """
 
     tensor_names: ClassVar[tuple[str, ...]] = ("core_tensors", "leaf_tensors")
+    scalar_names: ClassVar[tuple[str, ...]] = ("nuc_constant",)
     tensor_shapes: ClassVar[dict[str, tuple[str, ...]]] = {
         "core_tensors": ("L1", "N", "N"),
         "leaf_tensors": ("L1", "N", "N"),
@@ -356,12 +371,6 @@ class CDFHamiltonian(NumericHamiltonian):
     leaf_tensors: Any
     nuc_constant: Any = None
 
-    def __init_subclass__(cls, **kwargs):
-        # ``core_shape``/``leaf_shape`` are this family's spelling of the base class's
-        # ``tensor_shapes``, so the generic validator sees them under the field names.
-        cls.tensor_shapes = {"core_tensors": cls.core_shape, "leaf_tensors": cls.leaf_shape}
-        super().__init_subclass__(**kwargs)
-
     def __post_init__(self):
         if self.nuc_constant is None:
             zero = AbstractArray((), float) if self.is_abstract else np.asarray(0.0)
@@ -374,6 +383,11 @@ class CDFHamiltonian(NumericHamiltonian):
         nuc_shape = _shape_of(self.nuc_constant)
         if nuc_shape != ():
             raise ValueError(f"'nuc_constant' must be a scalar, got shape {nuc_shape}.")
+
+        for name in self.tensor_names:
+            tensor = getattr(self, name)
+            if isinstance(tensor, (list, tuple)):
+                object.__setattr__(self, name, np.asarray(tensor))
 
         super().__post_init__()
 
@@ -525,6 +539,7 @@ class CGFHamiltonian(NumericHamiltonian):
     """
 
     tensor_names: ClassVar[tuple[str, ...]] = ("core_tensors", "leaf_tensors")
+    scalar_names: ClassVar[tuple[str, ...]] = ("nuc_constant",)
     tensor_shapes: ClassVar[dict[str, tuple[str, ...]]] = {
         "core_tensors": ("L1", "M", "M", "N", "N"),
         "leaf_tensors": ("L1", "M", "N", "N"),
@@ -539,12 +554,6 @@ class CGFHamiltonian(NumericHamiltonian):
     leaf_tensors: Any
     nuc_constant: Any = None
 
-    def __init_subclass__(cls, **kwargs):
-        # ``core_shape``/``leaf_shape`` are this family's spelling of the base class's
-        # ``tensor_shapes``, so the generic validator sees them under the field names.
-        cls.tensor_shapes = {"core_tensors": cls.core_shape, "leaf_tensors": cls.leaf_shape}
-        super().__init_subclass__(**kwargs)
-
     def __post_init__(self):
         if self.nuc_constant is None:
             zero = AbstractArray((), float) if self.is_abstract else np.asarray(0.0)
@@ -557,6 +566,11 @@ class CGFHamiltonian(NumericHamiltonian):
         nuc_shape = _shape_of(self.nuc_constant)
         if nuc_shape != ():
             raise ValueError(f"'nuc_constant' must be a scalar, got shape {nuc_shape}.")
+
+        for name in self.tensor_names:
+            tensor = getattr(self, name)
+            if isinstance(tensor, (list, tuple)):
+                object.__setattr__(self, name, np.asarray(tensor))
 
         super().__post_init__()
 
@@ -730,7 +744,7 @@ class VibronicHamiltonian(NumericHamiltonian):
     def __post_init__(self):
         # Materialize list/tuple leaves on the host with ``np.asarray`` (not ``math.asarray``),
         # so every tensor exposes ``shape``/``dtype`` to the shape validator and to consumers.
-        for name in self.tensor_names:
+        for name in self.tensor_names + self.scalar_names:
             tensor = getattr(self, name)
             if isinstance(tensor, (list, tuple)):
                 object.__setattr__(self, name, np.asarray(tensor))
