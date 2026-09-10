@@ -66,7 +66,7 @@ def test_decomp_has_a_name():
     custom_decomp = make_selectpaulirot_to_phase_gradient_decomp(
         angle_wires, phase_grad_wires, work_wires
     )
-    assert custom_decomp.name == "select_pauli_rot_phase_gradient"
+    assert custom_decomp.name == "_select_pauli_rot_phase_gradient_decomp"
 
 
 @pytest.mark.parametrize("prec", [2, 3, 5])

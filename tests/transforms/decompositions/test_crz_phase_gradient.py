@@ -81,7 +81,7 @@ def test_decomp_has_name():
     }
 
     custom_decomp = make_crz_to_phase_gradient_decomp(**kwargs)
-    assert custom_decomp.name == "crz_phase_gradient"
+    assert custom_decomp.name == "_crz_phase_gradient_decomp"
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
