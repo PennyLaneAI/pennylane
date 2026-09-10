@@ -232,6 +232,7 @@ class TestDecomposition:
             qp.assert_equal(actual, exp)
 
 
+@pytest.mark.usefixtures("enable_and_disable_capture")
 class TestAdditionalDecompositionRules:
     """Tests that additional decomposition rules can be registered for operators created by
     ``subcircuit``, including rules for their controlled and adjoint versions.
@@ -240,7 +241,6 @@ class TestAdditionalDecompositionRules:
     the global registry (and other tests).
     """
 
-    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_register_additional_rule(self):
         """Test that an additional (and valid) decomposition rule can be registered for the
         operator itself."""
@@ -261,7 +261,6 @@ class TestAdditionalDecompositionRules:
             }
             _test_decomposition_rule(FixedOp(1.5, wires=0), alt_fixed)
 
-    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_register_adjoint_rule(self):
         """Test that a valid adjoint decomposition rule can be registered for the operator."""
         with qp.decomposition.local_decomps():
