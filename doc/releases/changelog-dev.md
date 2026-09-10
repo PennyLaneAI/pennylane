@@ -1423,6 +1423,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug in :func:`~.draw` with conditionally applied operators that do not have wires,
+  such as ``cond(condition, GlobalPhase(0.52))``.
+  [(#10132)](https://github.com/PennyLaneAI/pennylane/pull/10132)
+
 * Fixed the decomposition rule of :class:`~.QROM` so that it can be captured and compiled with
   Catalyst. Tracing the ``clean`` branch previously raised a ``TracerIntegerConversionError``
   because :func:`~pennylane.adjoint` traced the statically known ``depth``, and passing the wires
