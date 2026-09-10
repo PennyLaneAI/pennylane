@@ -284,6 +284,20 @@ class TestSpecialOps:
         assert len(collector.state["ops"]) == 1
         qp.assert_equal(collector.state["ops"][0], qp.I())
 
+    def test_identity_with_wires(self):
+        """Test that an identity on wires can be captured."""
+
+        def f(wires):
+            qp.I(wires)
+
+        jaxpr = jax.make_jaxpr(f)([0, 1])
+        assert len(jaxpr.eqns) == 1
+
+        i_eqn = jaxpr.eqns[0]
+        assert_eqn_matches_op(i_eqn, qp.I)
+        assert len(i_eqn.invars) == 2
+        assert i_eqn.params["wire_lens"] == (2,)
+
 
 class TestTemplates:
     def test_variable_wire_non_parametrized_template(self):
