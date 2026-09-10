@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "hooks": {
+    "afterFileEdit": [
+      {
+        "command": "bash scripts/format-hook.sh",
+        "failClosed": false
+      }
+    ]
+  }
+}
