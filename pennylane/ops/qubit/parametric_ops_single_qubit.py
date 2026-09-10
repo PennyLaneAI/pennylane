@@ -33,7 +33,6 @@ from pennylane.core.operator import Operator2, abstractify
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
-    resource_rep,
 )
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.ops.identity import I
@@ -430,15 +429,9 @@ def _ry_to_rx_cliff(phi, wires: WiresLike):
 def _ry_to_rz_cliff_resources(*_, **__):
     resources = {
         _change_op_basis_abstract(
-            resource_rep(
-                qp.ops.op_math.Prod,
-                resources={_adjoint_abstract(qp.S): 1, abstractify(qp.Hadamard): 1},
-            ),
+            qp.ops.op_math.Prod2((abstractify(qp.Hadamard), qp.adjoint(qp.S(Wire[1])))),
             qp.RZ,
-            resource_rep(
-                qp.ops.op_math.Prod,
-                resources={abstractify(qp.S): 1, abstractify(qp.Hadamard): 1},
-            ),
+            qp.ops.op_math.Prod2((abstractify(qp.S), abstractify(qp.Hadamard))),
         ): 1
     }
     return resources
@@ -447,9 +440,9 @@ def _ry_to_rz_cliff_resources(*_, **__):
 @register_resources(_ry_to_rz_cliff_resources)
 def _ry_to_rz_cliff(phi, wires: WiresLike):
     qp.change_op_basis(
-        qp.Hadamard(wires) @ qp.adjoint(qp.S(wires)),
+        qp.ops.op_math.Prod2((qp.Hadamard(wires), qp.adjoint(qp.S(wires)))),
         qp.RZ(phi, wires),
-        qp.S(wires) @ qp.Hadamard(wires),
+        qp.ops.op_math.Prod2((qp.S(wires), qp.Hadamard(wires))),
     )
 
 
