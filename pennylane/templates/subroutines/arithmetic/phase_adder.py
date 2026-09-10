@@ -254,13 +254,17 @@ class PhaseAdder(Operation):
 
             op_list.append(
                 ops.change_op_basis(
-                    ops.prod(
-                        ops.X(aux_k),
-                        ops.adjoint(QFT)(wires=x_wires),
-                        *[ops.adjoint(op) for op in _add_k_fourier(k, x_wires)],
+                    ops.op_math.Prod2(
+                        (
+                            ops.X(aux_k),
+                            ops.adjoint(QFT)(wires=x_wires),
+                            *[ops.adjoint(op) for op in _add_k_fourier(k, x_wires)],
+                        )
                     ),
                     ops.CNOT(wires=[aux_k, work_wire[0]]),
-                    ops.prod(*_add_k_fourier(k, x_wires)[::-1], QFT(wires=x_wires), ops.X(aux_k)),
+                    ops.op_math.Prod2(
+                        (*_add_k_fourier(k, x_wires)[::-1], QFT(wires=x_wires), ops.X(aux_k))
+                    ),
                 )
             )
 
@@ -326,13 +330,15 @@ def _phase_adder_decomposition(k, x_wires: WiresLike, mod, work_wire, **__):
     )
     ops.ctrl(_add_k_fourier_loop, control=work_wire)(mod)
     ops.change_op_basis(
-        ops.prod(
-            ops.X(aux_k),
-            ops.adjoint(QFT)(wires=x_wires),
-            *reversed(ops.adjoint(_add_k_fourier_loop)(k)),
+        ops.op_math.Prod2(
+            (
+                ops.X(aux_k),
+                ops.adjoint(QFT)(wires=x_wires),
+                *reversed(ops.adjoint(_add_k_fourier_loop)(k)),
+            )
         ),
         ops.CNOT(wires=[aux_k, work_wire[0]]),
-        ops.prod(ops.prod(_add_k_fourier_loop)(k), QFT(wires=x_wires), ops.X(aux_k), lazy=False),
+        ops.op_math.Prod2((*_add_k_fourier(k, x_wires), QFT(wires=x_wires), ops.X(aux_k))),
     )
 
 
