@@ -17,30 +17,16 @@ These classes wrap pre-computed numeric data in a named type so that it can be p
 around, validated, and used as operator input data consistently, whether the data is
 concrete or only known abstractly at compile time.
 
-:class:`BaseNumericHamiltonian` holds the machinery every representation shares. A
+:class:`NumericHamiltonian` holds the machinery every representation shares. A
 representation is defined by naming its tensors and giving each one a symbolic shape
 template:
 
 .. code-block:: python
 
-    class VibronicHamiltonian(BaseNumericHamiltonian):
+    class VibronicHamiltonian(NumericHamiltonian):
         tensor_names = ("constant", "kinetic")
         tensor_shapes = {"constant": ("F", "N", "N"), "kinetic": ("N", "N", "M", "M")}
         symbol_metadata = {"F": ("num_fragments", 0), "N": ("num_states", 0), "M": ("num_modes", 0)}
-
-:class:`NumericHamiltonian` specializes it for the factorized
-``(core_tensors, leaf_tensors, nuc_constant)`` family, whose two templates are spelled
-``core_shape`` and ``leaf_shape``, so adding a new factorization requires only a shape family:
-
-.. code-block:: python
-
-    class THCHamiltonian(NumericHamiltonian):
-        core_shape = ("R", "R")
-        leaf_shape = ("R", "N")
-        symbol_metadata = {"R": ("tensor_rank", 0), "N": ("num_orbitals", 0)}
-
-Symbols repeated within or across the templates must take the same size; the base
-class derives the named dimensions from the shapes and reports them as attributes.
 """
 
 from __future__ import annotations
