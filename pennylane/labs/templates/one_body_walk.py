@@ -36,7 +36,7 @@ def one_body_walk_wires(norbs, alias_sampling_nbits):
 
     Returns:
         dict[str, int]: the required number of wires for ``prep_wires`` and ``system_wires``, which
-            are exact, and the minimum number for ``work_wires``
+        are exact, and the minimum number for ``work_wires``
 
     **Example**
 
@@ -97,6 +97,7 @@ def one_body_walk(op_matrix, alias_sampling_nbits, prep_wires, system_wires, wor
             ``one_body_walk_wires(norbs, alias_sampling_nbits)["work_wires"]`` wires are
             required; extra wires are forwarded to the internal ``qp.QROM`` and
             multi-controlled :math:`Z` to lower the T-gate count
+
     Raises:
         ValueError: if ``op_matrix`` is not square, not real, or not symmetric
         ValueError: if ``prep_wires`` or ``system_wires`` do not have exactly the sizes reported
