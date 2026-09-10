@@ -2082,14 +2082,9 @@ class PPR(Operator2):
     * ``angle_denominator=±4``: :math:`\theta = \pm\pi/4`, a :math:`\pm\pi/8` PPR (non-Clifford).
 
     The Pauli-based computation literature commonly writes a PPR as :math:`\exp(-i \varphi P)`
-    (with minus sign but without factor :math:`1/2`), whereas :class:`~.PauliRot` follows the
+    (with the same minus sign but without factor :math:`1/2`), whereas :class:`~.PauliRot` follows the
     convention :math:`\exp(-i \theta / 2 P)`, i.e., :math:`\varphi = \theta / 2`.
 
-    .. note::
-
-        Circuits comprising ``PPR`` are currently not executable on any backend.
-        This class is only for analysis using the ``null.qubit`` device and potential future
-        execution when a suitable backend is available.
 
     .. seealso:: :class:`~.PauliRot` for a Pauli product rotation with an arbitrary angle, and
         :func:`~.pauli_measure` for PPM, the measurement counterpart of a PPR.
