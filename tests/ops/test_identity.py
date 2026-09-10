@@ -17,8 +17,10 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.operator.utils import abstractify
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.identity import GlobalPhase, Identity
+from pennylane.typing import Float, Wire
 
 op_wires = [[], [0], ["a"], [0, 1], ["a", "b", "c"], [100, "xasd", 12]]
 op_repr = ["I()", "I(0)", "I('a')", "I([0, 1])", "I(['a', 'b', 'c'])", "I([100, 'xasd', 12])"]
@@ -32,6 +34,20 @@ def test_global_phase_decompositions(phi):
     op = GlobalPhase(phi)
     for rule in qp.list_decomps(GlobalPhase):
         _test_decomposition_rule(op, rule)
+
+
+def test_abstractify_globalphase():
+    """Test that globalphase can be abstractified."""
+
+    assert abstractify(GlobalPhase(0.5)) == GlobalPhase(Float)
+    assert abstractify(GlobalPhase(1)) == GlobalPhase(Float)
+
+
+def test_abstractify_identity():
+    """Test that identity can be abstractified."""
+
+    assert abstractify(Identity(wires=[0])) == Identity(Wire[1])
+    assert abstractify(Identity(wires=[0, 1])) == Identity(Wire[2])
 
 
 def test_is_verified_hermitian():
