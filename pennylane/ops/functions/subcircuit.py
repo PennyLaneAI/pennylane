@@ -16,12 +16,13 @@ using quantum functions.
 """
 
 from inspect import Parameter, Signature, signature
+from typing import Callable
 
 from pennylane.core import Operator2
 from pennylane.decomposition import DecompositionRule, add_decomps
 
 
-def _subcircuit(qfunc: DecompositionRule, **cls_attrs):
+def _subcircuit(qfunc: DecompositionRule, **cls_attrs) -> type[Operator2]:
     """Implementation of ``subcircuit``."""
     # pylint: disable=protected-access
 
@@ -59,12 +60,16 @@ def subcircuit(
     hybrid_argnames=(),
     static_argnames=(),
     **cls_attrs,
-):  # pylint: disable=too-many-arguments
-    r"""Create an operator from a quantum function.
+):  -> Callable | type[Operator] # pylint: disable=too-many-arguments
+    r"""A decorator for turning a quantum function with registered resources into an :class:`~.Operator2` subclass.
 
-    ``subcircuit`` is a decorator that turns a quantum function that is registered as a
-    decomposition rule (see :func:`~pennylane.register_resources`) into a new
-    :class:`~.Operator2` subclass. The quantum function becomes the operator's decomposition.
+    The quantum function decorated with `subcircuit` can be any valid quantum 
+    function, provided that nothing is returned from it (e.g., terminal measurements are 
+    not allowed) and that it has resources registered to it via :func:`~.register_resources`.
+    
+    The decorated quantum function will automatically be registered as an :class:`~.Operator2` 
+    subclass with a single decomposition rule that corresponds to the quantum function body.
+    
 
     Args:
         qfunc (DecompositionRule): a quantum function whose resources have been registered with

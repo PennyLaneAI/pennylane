@@ -2,9 +2,10 @@
 
 <h3>New features since last release</h3>
 
-* Added :func:`pennylane.subcircuit` that can be used to create operators using quantum functions,
-  enabling fast research and development of operators without the need to create full-fledged
-  operator classes manually.
+* A new decorator is available called :func:`pennylane.subcircuit`, which can be used to 
+  create operators directly from quantum functions. This enables fast research and 
+  development of new operators without the need to create full-fledged operator classes 
+  manually.
   [(#10126)](https://github.com/PennyLaneAI/pennylane/pull/10126)
 
   ```python
