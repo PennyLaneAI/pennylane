@@ -819,6 +819,20 @@ class TestVibronic:
         with pytest.raises(AttributeError):
             ham.constant = None
 
+    def test_equality_partially_abstract(self, seed):
+        """Test equality of VibronicHamiltonians that have some data as abstract."""
+        data = vibronic_tensors(seed)
+        concrete_ham = VibronicHamiltonian(**data)
+
+        data["constant"] = AbstractArray(data["constant"].shape, float)
+        partial_abs_ham1 = VibronicHamiltonian(**data)
+
+        data["linear"] = AbstractArray(data["linear"].shape, float)
+        partial_abs_ham2 = VibronicHamiltonian(**data)
+
+        assert concrete_ham != partial_abs_ham1
+        assert partial_abs_ham1 != partial_abs_ham2
+
 
 class TestNumericHamiltonian:
     """Tests for the generic machinery shared by every representation."""

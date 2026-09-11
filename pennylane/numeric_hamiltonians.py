@@ -236,7 +236,7 @@ class NumericHamiltonian:
             for name in self.tensor_names + self.scalar_names:
                 data = getattr(self, name)
                 other_data = getattr(other, name)
-                if _dtype_of(data) != _dtype_of(other_data):
+                if not (isinstance(data, AbstractArray) and isinstance(other_data, AbstractArray)):
                     return False
             return True
 
@@ -732,11 +732,4 @@ class VibronicHamiltonian(NumericHamiltonian):
     kinetic: Any
 
     def __post_init__(self):
-        # Materialize list/tuple leaves on the host with ``np.asarray`` (not ``math.asarray``),
-        # so every tensor exposes ``shape``/``dtype`` to the shape validator and to consumers.
-        for name in self.tensor_names + self.scalar_names:
-            tensor = getattr(self, name)
-            if isinstance(tensor, (list, tuple)):
-                object.__setattr__(self, name, np.asarray(tensor))
-
         super().__post_init__()
