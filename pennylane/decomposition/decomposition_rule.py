@@ -42,6 +42,18 @@ from .resources import (
 from .utils import _get_decomp_args, to_name
 
 
+def _gate_counts_from_queue(q: queuing.AnnotatedQueue) -> dict:
+    gate_counts = defaultdict(int)
+    for op in q.queue:
+        if isinstance(op, qp.ops.Pow):
+            count = op.z
+            op = op.base
+        else:
+            count = 1
+        gate_counts[abstractify(op)] += count
+    return gate_counts
+
+
 @dataclass(frozen=True)
 class WorkWireSpec:
     """The number of each type of work wires that a decomposition rule requires."""
@@ -174,8 +186,8 @@ def register_resources(
     Args:
         ops (dict or Callable): a dictionary mapping unique operators within the given ``qfunc``
             to their number of occurrences therein. If a function is provided instead of a static
-            dictionary, a dictionary must be returned from the function. For more information,
-            consult the "Quantum Functions as Decomposition Rules" section below.
+            dictionary, the function must either return a dictionary or use pow-qfunc syntax.
+            For more information, consult the "Quantum Functions as Decomposition Rules" section below.
         qfunc (Callable): the quantum function that implements the decomposition. If ``None``,
             returns a decorator for acting on a function.
 
@@ -252,6 +264,17 @@ def register_resources(
         Quantum functions representing decomposition rules within the new decomposition system
         are expected to take ``(*op.parameters, op.wires, **op.hyperparameters)`` as arguments,
         where ``op`` is an instance of the operator type that the decomposition is for.
+
+        The resources can also be specified as a quantum function with abstract operators raised to powers.
+
+        .. code-block:: python
+
+            def resource_fn(x, wires):
+                # if the  class has a fixed signature, the class itself can be raised to a power
+                qp.X ** len(wires)
+
+                # otherwise, the class with abstract inputs can be raised to a power
+                qp.QubitUnitary(Float[2,2], Wire[1]) ** 2
 
     .. details::
         :title: Operators with Dynamic Resource Requirements
@@ -400,7 +423,10 @@ class DecompositionRule:
         """Computes the resources required to implement this decomposition rule."""
         if self._compute_resources is None:
             raise NotImplementedError("No resource estimation found for this decomposition rule.")
-        raw_gate_counts = self._compute_resources(*args, **kwargs)
+        with queuing.AnnotatedQueue() as q:
+            raw_gate_counts = self._compute_resources(*args, **kwargs)
+        if raw_gate_counts is None:
+            raw_gate_counts = _gate_counts_from_queue(q)
         assert isinstance(raw_gate_counts, dict), "Resource function must return a dictionary."
         gate_counter = Counter()
         for op, count in raw_gate_counts.items():

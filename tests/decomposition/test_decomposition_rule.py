@@ -706,6 +706,77 @@ class TestDecompDictionary:
             assert list(qp.list_decomps(op)) == []
 
 
+# pylint: disable=unused-argument
+class TestDecompQfunc:
+    """Tests for specifying resources as a qfunc with abstract operators."""
+
+    def test_single_abstract_operator(self):
+        """Test a single abstract operator is considered that operator once."""
+
+        def r(wires):
+            qp.X(Wire[1])
+
+        @qp.register_resources(r)
+        def f(wires):
+            qp.X(wires)
+
+        assert f.compute_resources((0,)).gate_counts == {qp.X(Wire[1]): 1}
+
+    def test_operator_to_pow(self):
+        """test an abstract operator being raised to a power."""
+
+        def r(wires):
+            _ = qp.X(Wire[1]) ** 100
+
+        @qp.register_resources(r)
+        def f(wires):
+            qp.X(wires)
+
+        assert f.compute_resources(Wire[1]).gate_counts == {qp.X(Wire[1]): 100}
+
+    def test_same_abstract_operator_multiple_times(self):
+        """Test that the same operator can be queued multiple times."""
+
+        def r(wires):
+            _ = qp.X(Wire[1]) ** 3
+            _ = qp.X(Wire[1]) ** 5
+
+        @qp.register_resources(r)
+        def f(wires):
+            qp.X(wires)
+
+        assert f.compute_resources(Wire[1]).gate_counts == {qp.X(Wire[1]): 8}
+
+    def test_class_fixed_sig_to_power(self):
+        """Test that a class can be raised to a power if it has a fixed signature."""
+
+        def r(wires):
+            _ = qp.X**3
+            _ = qp.Rot**10
+
+        @qp.register_resources(r)
+        def f(wires):
+            qp.X(wires)
+
+        assert f.compute_resources(Wire[1]).gate_counts == {
+            qp.X(Wire[1]): 3,
+            qp.Rot(Float, Float, Float, Wire[1]): 10,
+        }
+
+    def test_abstractify_operators(self):
+        """Test real operators can be in the qfunc but get abstractified."""
+
+        def r(wires):
+            _ = qp.X(0)
+            _ = qp.RX(0.5, Wire[1]) ** 2
+
+        @qp.register_resources(r)
+        def f(wires):
+            pass
+
+        assert f.compute_resources(0).gate_counts == {qp.X(Wire[1]): 1, qp.RX(Float, Wire[1]): 2}
+
+
 class TestDecompCollection:
     """Tests the DecompCollection class."""
 
