@@ -424,6 +424,9 @@
   The round is resolved from the device being traced, so the program has to be captured (`qp.qjit(capture=True)`). The controller's `in_bytes` and `out_bytes` capacities both default to 8 bytes, and the correction comes back as an `out_bytes`-sized `uint8` buffer. Pass `controller=` / `coprocessor=` to choose the nodes explicitly, `out_bytes=` to override the reply size, and `decoder_id=` to select which coprocessor-side decoder handles the round.
 
 <h3>Improvements 🛠</h3>
+ 
+*  Reduced shot counts in `default.clifford` measurement tests to improve CI runtime.
+  [(#10127)](https://github.com/PennyLaneAI/pennylane/pull/10127)
 
 * :func:`~.SumOfSlatersPrep.required_register_sizes` now works with abstract ``indices`` as input,
   for which it returns an upper bound for the register sizes, across any set of indices of the
@@ -1616,6 +1619,7 @@ Miguel Cárdenas,
 Yushao Chen,
 Diksha Dhawan,
 Marcus Edwards,
+Sümeyye Nur Esin,
 Thomas C. Fraser,
 Connor Gambla,
 Sengthai Heng,
