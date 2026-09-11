@@ -696,6 +696,10 @@
   [(#9277)](https://github.com/PennyLaneAI/pennylane/pull/9277)
   [(#9544)](https://github.com/PennyLaneAI/pennylane/pull/9544)
 
+* Developed the ``labs.templates.alias_sampling_thc`` function to facilitate state preparation via alias sampling in THC contexts,
+  together with the ``labs.templates.alias_sampling_thc_wires`` helper function that returns the size of every register it requires.
+  [(#9940)](https://github.com/PennyLaneAI/pennylane/pull/9940)
+
 * TCDQ now supports workflows with qudits of non-uniform dimensions.
   [(#9935)](https://github.com/PennyLaneAI/pennylane/pull/9935)
 
@@ -855,6 +859,18 @@
   :func:`~.pennylane.labs.estimator_beta.mark_subroutine` which allow users to easily define their own
   resource operators from their quantum functions.
   [(#9764)](https://github.com/PennyLaneAI/pennylane/pull/9764)
+
+* Added :func:`~.pennylane.labs.templates.alias_sampling`, which prepares a state with real, positive
+  amplitudes to a chosen number of bits of precision using coherent alias sampling. The routine loads the
+  amplitudes with a single `QROM` call and one inequality test instead of a sequence of
+  controlled rotations, so its non-Clifford cost grows linearly in the number of coefficients rather
+  than with the product of the number of coefficients and the bits of precision. This makes it the
+  preferred `PREPARE` subroutine for qubitization-based algorithms. The companion functions
+  :func:`~.pennylane.labs.templates.uniform_prep_ops`, which prepares a uniform superposition over an
+  arbitrary number of basis states, and
+  :func:`~.pennylane.labs.templates.alias_sampling_wires`, which reports the required register sizes,
+  were added as well.
+  [(#9913)](https://github.com/PennyLaneAI/pennylane/pull/9913)
 
 <h3>Breaking changes 💔</h3>
 
