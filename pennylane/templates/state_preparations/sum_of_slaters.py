@@ -1129,6 +1129,9 @@ def _sos_state_prep_work_wires(
     **_,
 ):
     """See SumOfSlatersPrep.required_register_sizes for details."""
+    if indices is None:
+        # invalid rule, just return so we dont get an error
+        return {}
     # pylint: disable-next=protected-access
     n = 1 if isinstance(wires, int) else len(wires)
     v_bits = math.int_to_binary(np.array(indices), n).T
@@ -1282,7 +1285,9 @@ def _sos_state_prep_with_wires(
         encoding()
 
 
-@register_condition(lambda *_, indices, **__: indices is not None)  # indices must be known
+@register_condition(
+    lambda coefficients, wires, indices, *_, **__: indices is not None
+)  # indices must be known
 @register_resources(_sos_state_prep_resources, exact=False, work_wires=_sos_state_prep_work_wires)
 # pylint: disable-next=too-many-arguments
 def _sos_state_prep(
