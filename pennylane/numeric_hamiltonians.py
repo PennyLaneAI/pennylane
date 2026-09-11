@@ -249,9 +249,7 @@ class NumericHamiltonian:
                 for a, b in zip(self.numeric_data, other.numeric_data, strict=True)
             )
 
-        return (
-            self.is_abstract and other.is_abstract
-        )  # One is abstract, one is not, therefore not the same
+        return False # One is abstract, one is not, therefore not the same
 
     def __repr__(self):
         def render(tensor):
