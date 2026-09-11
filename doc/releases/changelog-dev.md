@@ -1427,6 +1427,7 @@
 
 * Fix `qp.eigvals` returns `NaN` for a legal fractional power operator.
   [(#9802)](https://github.com/PennyLaneAI/pennylane/pull/9802)
+  [(#10139)](https://github.com/PennyLaneAI/pennylane/pull/10139)
 
 * Fixed the decomposition rule of :class:`~.QROM` so that it can be captured and compiled with
   Catalyst. Tracing the ``clean`` branch previously raised a ``TracerIntegerConversionError``
@@ -1595,12 +1596,6 @@
 
 * Various decomposition rules are updated so that they accept positionally passed arguments.
   [(#10088)](https://github.com/PennyLaneAI/pennylane/pull/10088)
-
-* Fixed :class:`~pennylane.ops.op_math.Pow` and ``Pow2`` returning the complex conjugate of the
-  correct eigenvalues for fractional powers of operators with negative eigenvalues on Python 3.14.
-  Python 3.14 implements C99 mixed-mode arithmetic, so multiplying a negative real by ``1 + 0j`` now
-  yields a negative zero imaginary part, which selects the wrong branch of the power function.
-  [(#10139)](https://github.com/PennyLaneAI/pennylane/pull/10139)
 
 <h3>Contributors ✍️</h3>
 
