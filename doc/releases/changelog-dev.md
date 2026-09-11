@@ -425,6 +425,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Register a dispatch for ``np.delete`` to handle Numpy/JAX signature divergence.
+  [(#10137)]((https://github.com/PennyLaneAI/pennylane/pull/10137)
+
 * `DecompositionRule` now wraps the target qfunc, preserving it's signature and docstring.
   [(#10144)](https://github.com/PennyLaneAI/pennylane/pull/10144)
  
