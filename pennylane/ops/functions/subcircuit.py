@@ -15,8 +15,8 @@ This module contains ``qp.subcircuit``, a factory function to create operators
 using quantum functions.
 """
 
+from collections.abc import Callable
 from inspect import Parameter, Signature, signature
-from typing import Callable
 
 from pennylane.core import Operator2
 from pennylane.decomposition import DecompositionRule, add_decomps
@@ -25,6 +25,11 @@ from pennylane.decomposition import DecompositionRule, add_decomps
 def _subcircuit(qfunc: DecompositionRule, **cls_attrs) -> type[Operator2]:
     """Implementation of ``subcircuit``."""
     # pylint: disable=protected-access
+
+    if not isinstance(qfunc, DecompositionRule):
+        raise TypeError(
+            "The provided quantum function must register resources using 'qp.register_resources'."
+        )
 
     # 'self' shouldn't be in signature(OpClass), but it should be in
     # signature(OpClass.__init__)
@@ -52,7 +57,7 @@ def _subcircuit(qfunc: DecompositionRule, **cls_attrs) -> type[Operator2]:
     return new_operator
 
 
-def subcircuit(
+def subcircuit(  # pylint: disable=too-many-arguments
     qfunc: DecompositionRule | None = None,
     dynamic_argnames=(),
     wire_argnames=("wires",),
@@ -60,16 +65,17 @@ def subcircuit(
     hybrid_argnames=(),
     static_argnames=(),
     **cls_attrs,
-):  -> Callable | type[Operator] # pylint: disable=too-many-arguments
-    r"""A decorator for turning a quantum function with registered resources into an :class:`~.Operator2` subclass.
+) -> Callable | type[Operator2]:
+    r"""A decorator for turning a quantum function with registered resources into an
+    :class:`~.Operator2` subclass.
 
-    The quantum function decorated with `subcircuit` can be any valid quantum 
-    function, provided that nothing is returned from it (e.g., terminal measurements are 
+    The quantum function decorated with `subcircuit` can be any valid quantum
+    function, provided that nothing is returned from it (e.g., terminal measurements are
     not allowed) and that it has resources registered to it via :func:`~.register_resources`.
-    
-    The decorated quantum function will automatically be registered as an :class:`~.Operator2` 
+
+    The decorated quantum function will automatically be registered as an :class:`~.Operator2`
     subclass with a single decomposition rule that corresponds to the quantum function body.
-    
+
 
     Args:
         qfunc (DecompositionRule): a quantum function whose resources have been registered with

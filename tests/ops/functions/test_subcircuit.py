@@ -54,6 +54,15 @@ def LoopOp(phi, w, n_iters):
 class TestClassCreation:
     """Tests that ``subcircuit`` builds a valid ``Operator2`` subclass."""
 
+    def test_not_decomposition_rule_error(self):
+        """Test that an error is raised if the input function is not a ``DecompositionRule``."""
+
+        def invalid_fn(wires):
+            qp.H(wires)
+
+        with pytest.raises(TypeError, match="The provided quantum function must register"):
+            _ = qp.subcircuit(invalid_fn)
+
     def test_returns_operator2_subclass(self):
         """Test that ``subcircuit`` returns a subclass of ``Operator2``."""
         assert isinstance(FixedOp, type) and issubclass(FixedOp, Operator2)
