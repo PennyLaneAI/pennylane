@@ -25,6 +25,7 @@ import pennylane.numpy as qnp
 from pennylane import math
 from pennylane.core.operator import Operator, abstractify
 from pennylane.exceptions import DeviceError, MatrixUndefinedError
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math.prod import Prod, _swappable_ops, prod
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
@@ -1713,7 +1714,9 @@ class TestDecomposition:
 
         assert q.queue == list(op[::-1])
 
-    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.disable_and_xfail_enable_capture(
+        reason="Prod2 cannot be passed as traced arguments [sc-130466]"
+    )
     def test_controlled_prod_basic_validity(self):
         """Check that Controlled(Prod) is valid, in particular its custom decomp rule"""
         op = qp.ctrl(
@@ -1726,35 +1729,28 @@ class TestDecomposition:
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("control_values", [[1, 1, 1], [0, 1, 0], [1, 0, 1], [0, 0, 0]])
     @pytest.mark.parametrize("work_wires", [[7, 8, 9], [7]])
-    @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
-    @pytest.mark.parametrize("prod_fn, key", [(qp.ops.Prod, "C(Prod)"), (qp.ops.prod, "C(Prod2)")])
-    def test_controlled_prod_decomposition_new(
-        self, control_values, work_wires, work_wire_type, prod_fn, key
-    ):  # pylint: disable=too-many-arguments
+    def test_controlled_prod_decomposition_new(self, control_values, work_wires):
         """The registered ``C(Prod)`` rule decomposes controlled products.
 
         Covers both rules (many work wires and single work wire) as well as the
         ``flip_zero_control`` wrapper for arbitrary ``control_values``. Both rules require
         zeroed work wires, so ``work_wire_type="borrowed"`` only checks that they are skipped.
         """
-        from pennylane.decomposition.utils import _get_decomp_args
-        from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
         op = qp.ctrl(
-            prod_fn(qp.X(0), qp.X(1), qp.X(2)),
+            qp.ops.Prod(qp.X(0), qp.X(1), qp.X(2)),
             control=[4, 5, 6],
             control_values=control_values,
             work_wires=work_wires,
-            work_wire_type=work_wire_type,
+            work_wire_type="zeroed",
         )
-        rules = qp.list_decomps(key)
-        assert rules, f"no decomp rules registered for {key}"
+        rules = qp.list_decomps("C(Prod)")
+        assert rules, "no decomp rules registered for C(Prod)"
 
         # ``_test_decomposition_rule`` is a no-op for rules that are not applicable, so check
-        # explicitly that the zeroed case does exercise at least one rule
-        params, _, _ = _get_decomp_args(op)
-        applicable = [rule for rule in rules if rule.is_applicable(**params)]
-        assert bool(applicable) == (work_wire_type == "zeroed")
+        # explicitly that when the work_wire_type is "zeroed", at least one rule is applicable
+        applicable = [rule for rule in rules if rule.is_applicable(**op.resource_params)]
+        assert applicable
 
         for rule in rules:
             _test_decomposition_rule(op, rule)

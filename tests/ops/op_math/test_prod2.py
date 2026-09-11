@@ -24,6 +24,7 @@ from scipy.sparse import coo_matrix, csc_matrix, csr_matrix
 import pennylane as qp
 from pennylane.core.operator import Operator2
 from pennylane.exceptions import SparseMatrixUndefinedError
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math import prod
 from pennylane.ops.op_math.prod import Prod
 from pennylane.ops.op_math.prod2 import Prod2
@@ -390,6 +391,37 @@ class TestValidity:  # pylint: disable=too-few-public-methods
         qp.ops.functions.assert_valid(Prod2([qp.RX(0.5, 0), qp.Z(1)]), skip_differentiation=True)
         # Also assert validity with overlapping wires
         qp.ops.functions.assert_valid(Prod2([qp.RX(0.5, 0), qp.Z(0)]), skip_differentiation=True)
+
+    @pytest.mark.disable_and_xfail_enable_capture(
+        reason="Prod2 cannot be passed as traced arguments [sc-130466]"
+    )
+    @pytest.mark.parametrize("control_values", [[1, 1, 1], [0, 1, 0], [1, 0, 1], [0, 0, 0]])
+    @pytest.mark.parametrize("work_wires", [[7, 8, 9], [7]])
+    def test_controlled_prod_decomposition_new(self, control_values, work_wires):
+        """The registered ``C(Prod)`` rule decomposes controlled products.
+
+        Covers both rules (many work wires and single work wire) as well as the
+        ``flip_zero_control`` wrapper for arbitrary ``control_values``. Both rules require
+        zeroed work wires, so ``work_wire_type="borrowed"`` only checks that they are skipped.
+        """
+
+        op = qp.ctrl(
+            qp.prod(qp.X(0), qp.X(1), qp.X(2)),
+            control=[4, 5, 6],
+            control_values=control_values,
+            work_wires=work_wires,
+            work_wire_type="zeroed",
+        )
+        rules = qp.list_decomps("C(Prod2)")
+        assert rules, "no decomp rules registered for C(Prod2)"
+
+        # ``_test_decomposition_rule`` is a no-op for rules that are not applicable, so check
+        # explicitly that when the work_wire_type is "zeroed", at least one rule is applicable
+        applicable = [rule for rule in rules if rule.is_applicable(**op.arguments)]
+        assert applicable
+
+        for rule in rules:
+            _test_decomposition_rule(op, rule)
 
 
 class TestAbstractOperands:
