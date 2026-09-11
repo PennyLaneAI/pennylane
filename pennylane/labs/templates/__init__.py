@@ -29,6 +29,8 @@ This module contains templates, which are pre-coded routines that can be used in
     ~uniform_prep_ops
     ~alias_sampling
     ~alias_sampling_wires
+    ~one_body_walk
+    ~one_body_walk_wires
 """
 
 from .left_classical_comparator import LeftClassicalComparator
@@ -39,3 +41,4 @@ from .sum_of_slaters2 import SumOfSlatersPrep2
 from .select_thc import select_thc, select_thc_wires
 from .alias_sampling_thc import alias_sampling_thc, alias_sampling_thc_wires
 from .alias_sampling import uniform_prep_ops, alias_sampling, alias_sampling_wires
+from .one_body_walk import one_body_walk, one_body_walk_wires
