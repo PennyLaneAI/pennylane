@@ -369,7 +369,7 @@ def _controlled_prod2_with_work_wires(base, control_wires, control_values, work_
 def _ctrl_prod2_resources_with_one_work_wire(base, control_wires, work_wires, **_):
 
     resources = Counter()
-    resources[qp.MultiControlledX(Wire[len(control_wires) + 1])] += 2
+    resources[qp.ctrl(qp.X(Wire[1]), Wire[len(control_wires)])] += 2
 
     # Per-factor single-control fan-out from the single aux qubit
     for op in base.operands:
