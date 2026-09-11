@@ -13,6 +13,8 @@
 # limitations under the License.
 """Qubitization walk operator for the tensor hypercontracted (THC) Hamiltonian."""
 
+from functools import partial
+
 import numpy as np
 
 import pennylane as qp
@@ -59,18 +61,24 @@ def qubitization_thc_wires(M, N, aleph, beth, num_batches=1):
         num_batches (int): the number of batches the Givens angles are loaded in
 
     Returns:
-        dict: ``{"system_wires": N, "index_wires": 2 * n, "prep_wires": n_prep,
+        dict: ``{"system_wires": N, "index_wires": 2 * n, "prep_garbage_wires": n_prep,
         "gradient_wires": beth, "work_wires": n_work}``
 
         * ``system_wires`` (``N``): the spin orbitals, the ``N/2`` spin-down spatial
           orbitals followed by the ``N/2`` spin-up ones
-        * ``index_wires`` (``2 * ceil(log2(M + 1))``): :math:`\mu` followed by :math:`\nu`
-        * ``prep_wires``: the ``PREPARE`` ancillas that stay entangled and therefore have
-          to be reflected, laid out as the
+        * ``index_wires`` (``2 * ceil(log2(M + 1))``): the LCU index :math:`\mu` followed by
+          :math:`\nu`, i.e. the register ``PREPARE`` writes the coefficient amplitudes on and
+          ``SELECT`` reads to pick which :math:`V` to apply
+        * ``prep_garbage_wires``: *not* a state preparation register. These are the wires
+          ``PREPARE`` leaves entangled with the index and that therefore have to be reflected
+          along with it, laid out as the
           :class:`~pennylane.labs.templates.SuperpositionTHC` work register, then whatever
           :func:`~pennylane.labs.templates.alias_sampling_thc` garbage it cannot supply,
-          then the two spin flags. Exact: the reflection acts on
-          ``index_wires + prep_wires``, so a spare wire here would break the block encoding
+          then the two spin flags. The spin flags are the exception to the name: they are
+          genuine LCU index wires, placed here because ``index_wires`` is sized exactly
+          ``2 n`` by :func:`~pennylane.labs.templates.select_thc_wires`. Exact: the
+          reflection acts on ``index_wires + prep_garbage_wires``, so a spare wire here
+          changes the walk operator
         * ``gradient_wires`` (``beth``): the phase gradient register, which must be
           prepared by the caller and is left unchanged
         * ``work_wires``: the shared clean pool, returned to :math:`\lvert 0 \rangle`. This
@@ -79,8 +87,8 @@ def qubitization_thc_wires(M, N, aleph, beth, num_batches=1):
 
     .. note::
 
-        Every clean ancilla is shared rather than duplicated, which is what keeps
-        ``prep_wires`` well below the sum of the sub-template registers:
+        Every zeroed auxiliary wire is shared rather than duplicated, which is what keeps
+        ``prep_garbage_wires`` well below the sum of the sub-template registers:
 
         * ``SuperpositionTHC`` returns all but three of its ``3 n + 5`` work wires to
           :math:`\lvert 0 \rangle` (the exceptions are its indices ``0``, ``3`` and ``6``),
@@ -88,23 +96,41 @@ def qubitization_thc_wires(M, N, aleph, beth, num_batches=1):
         * of ``alias_sampling_thc``'s work register, only
           ``n_d + 2 n + 2 aleph + 4`` wires stay entangled; the remaining ``aleph``
           (its ``alt_flag`` and comparator scratch) are restored, so they are taken from
-          ``work_wires`` instead of ``prep_wires``. This both saves ``aleph`` qubits and
+          ``work_wires`` instead of ``prep_garbage_wires``. This both saves ``aleph`` qubits and
           removes ``aleph`` controls from the reflection
         * ``work_wires`` is idle during ``PREPARE`` and clean again during ``SELECT``, so
           the same pool serves ``PREPARE``'s comparator and ``QROM``, ``SELECT``, and the
           reflection's multi-controlled :math:`Z`
 
-        The remaining ``prep_wires`` are genuine garbage. Moving them out of the reflected
-        register would silently break the walk operator, because
-        ``PREPARE``:math:`^\dagger \cdot` ``SELECT`` :math:`\cdot` ``PREPARE`` has support
-        on states that are :math:`\lvert 0 \rangle` on the reflected wires but not on the
-        garbage, and those would pick up :math:`+1` instead of :math:`-1`.
+        The remaining ``prep_garbage_wires`` are genuine garbage and must stay inside the
+        reflection. Note that dropping them from it does *not* change the
+        :math:`\lvert 0 \rangle` block: for any reflection whose fixed subspace contains
+        :math:`\lvert 0 \rangle`, :math:`\langle 0 \rvert \mathcal{R} = \langle 0 \rvert`, so
+        a single walk looks correct either way. What breaks is the Chebyshev property
+        :math:`\langle 0 \rvert W^k \lvert 0 \rangle = T_k(H / \lambda)` from :math:`k = 2`
+        on, since
+
+        .. math::
+
+            \langle 0 \rvert U \Pi U \lvert 0 \rangle = B^2
+            \quad \text{but} \quad
+            \langle 0 \rvert U \Pi_{\text{idx}} U \lvert 0 \rangle
+            = B^2 + \sum_{g \neq 0} \langle 0 \rvert U \lvert 0, g \rangle
+              \langle 0, g \rvert U \lvert 0 \rangle
+
+        with :math:`U =` ``PREPARE``:math:`^\dagger \cdot` ``SELECT`` :math:`\cdot`
+        ``PREPARE``, :math:`B = \langle 0 \rvert U \lvert 0 \rangle` and :math:`\Pi` the
+        projector onto :math:`\lvert 0 \rangle` on *all* of ``index_wires +
+        prep_garbage_wires``. The extra terms are the branches that are
+        :math:`\lvert 0 \rangle` on the index but not on the garbage; reflecting only the
+        index gives them :math:`+1` instead of :math:`-1`. The failure is therefore silent
+        until phase estimation.
 
     **Example**
 
     >>> from pennylane.labs.templates import qubitization_thc_wires
     >>> qubitization_thc_wires(M=2, N=2, aleph=1, beth=1)
-    {'system_wires': 2, 'index_wires': 4, 'prep_wires': 18, 'gradient_wires': 1, 'work_wires': 1}
+    {'system_wires': 2, 'index_wires': 4, 'prep_garbage_wires': 18, 'gradient_wires': 1, 'work_wires': 1}
     """
     select_sizes = select_thc_wires(M, N, beth, num_batches)
     alias_sizes = alias_sampling_thc_wires(M, N, aleph)
@@ -115,10 +141,10 @@ def qubitization_thc_wires(M, N, aleph, beth, num_batches=1):
         "system_wires": N,
         "index_wires": select_sizes["index_wires"],
         # SuperpositionTHC work + the alias garbage it cannot supply + the two spin flags.
-        "prep_wires": n_sup + max(0, n_garbage - (n_sup - 3)) + 2,
+        "prep_garbage_wires": n_sup + max(0, n_garbage - (n_sup - 3)) + 2,
         "gradient_wires": beth,
         # One shared clean pool: SELECT's scratch, the alias comparator/QROM scratch that
-        # ``alias_sampling_thc`` restores, and at least one zeroed ancilla for the
+        # ``alias_sampling_thc`` restores, and at least one zeroed auxiliary wire for the
         # reflection's multi-controlled Z.
         "work_wires": max(select_sizes["work_wires"], aleph, 1),
     }
@@ -133,7 +159,7 @@ def qubitization_thc(  # pylint: disable=too-many-arguments,too-many-positional-
     beth,
     system_wires,
     index_wires,
-    prep_wires,
+    prep_garbage_wires,
     gradient_wires,
     work_wires,
     num_batches=1,
@@ -148,7 +174,7 @@ def qubitization_thc(  # pylint: disable=too-many-arguments,too-many-positional-
         \cdot \mathrm{PREPARE} ,
         \qquad \mathcal{R} = 2 \lvert \vec 0 \rangle \langle \vec 0 \rvert - I ,
 
-    with :math:`\mathcal{R}` the reflection on ``index_wires + prep_wires``, following
+    with :math:`\mathcal{R}` the reflection on ``index_wires + prep_garbage_wires``, following
     `Lee et al. (2021) <https://arxiv.org/abs/2011.03494>`_ (Figs. 3, 5 and 7).
     ``PREPARE`` is :class:`~pennylane.labs.templates.SuperpositionTHC` followed by
     :func:`~pennylane.labs.templates.alias_sampling_thc` and a ``Hadamard`` on each of the
@@ -240,7 +266,7 @@ def qubitization_thc(  # pylint: disable=too-many-arguments,too-many-positional-
             spin-down spatial orbitals followed by the ``N/2`` spin-up ones
         index_wires (WiresLike): ``2 * ceil(log2(M + 1))`` wires, :math:`\mu` followed by
             :math:`\nu`
-        prep_wires (WiresLike): the ``PREPARE`` ancillas, in the exact order and size
+        prep_garbage_wires (WiresLike): the wires ``PREPARE`` leaves entangled, in the exact order and size
             reported by :func:`qubitization_thc_wires`
         gradient_wires (WiresLike): the ``beth`` wires holding the phase gradient state
         work_wires (WiresLike): clean scratch, returned to :math:`\lvert 0 \rangle`
@@ -255,6 +281,8 @@ def qubitization_thc(  # pylint: disable=too-many-arguments,too-many-positional-
     **Example**
 
     .. code-block:: python
+
+        from functools import partial
 
         import numpy as np
         import pennylane as qp
@@ -276,16 +304,51 @@ def qubitization_thc(  # pylint: disable=too-many-arguments,too-many-positional-
                 qp.Hadamard(w)
                 qp.PhaseShift(-2 * np.pi * 2 ** (beth - 1 - j) / 2**beth, wires=w)
 
-        @qp.qnode(qp.device("default.qubit", wires=sum(sizes.values())))
+        @partial(qp.transforms.decompose, stopping_condition=lambda op: len(op.wires) <= 3)
+        @qp.qnode(qp.device("default.qubit"))
         def circuit():
             gradient_state()
             qubitization_thc(
                 zeta, t_ell, chi, t_eigenvectors, aleph, beth,
-                wires["system_wires"], wires["index_wires"], wires["prep_wires"],
+                wires["system_wires"], wires["index_wires"], wires["prep_garbage_wires"],
                 wires["gradient_wires"], wires["work_wires"],
             )
             qp.adjoint(gradient_state)()
-            return qp.probs(wires=wires["index_wires"] + wires["prep_wires"])
+            return qp.probs(wires=wires["index_wires"] + wires["prep_garbage_wires"])
+
+    .. warning::
+
+        Two things about that device line are load-bearing.
+
+        First, ``wires`` is deliberately left unset. ``PREPARE``'s ``QROM`` requests dynamic
+        work wires when it decomposes, and those come on top of the registers reported by
+        :func:`qubitization_thc_wires`, so a device fixed at ``sum(sizes.values())`` raises
+        ``AllocationError``. Measured peak of concurrent dynamic wires: ``0`` at
+        ``M = 1, N = 2``, ``1`` at ``M = 2, N = 2``, and ``3`` at ``M = 7, N = 8``. Leaving
+        ``wires`` unset lets the device size itself.
+
+        On a fixed-width device — which is what ``lightning.qubit`` requires, since it
+        cannot take a :class:`~pennylane.allocation.DynamicWire` at all — resolve the
+        dynamic requests yourself against an explicit pool:
+
+        .. code-block:: python
+
+            total = sum(sizes.values())
+            pool = [total]  # size it to the peak above; 1 is enough at M = 2, N = 2
+
+            @partial(qp.transforms.resolve_dynamic_wires, zeroed=pool)
+            @partial(qp.transforms.decompose, stopping_condition=lambda op: len(op.wires) <= 3)
+            @qp.qnode(qp.device("default.qubit", wires=total + len(pool)))
+            def circuit():
+                ...
+
+        A pool smaller than the peak raises ``AllocationError: no wires left to allocate``,
+        so the failure is loud rather than silent.
+
+        Second, the :func:`~pennylane.transforms.decompose` wrapper is not an optimization.
+        Without it the simulator tries to build the dense matrix of the reflection's
+        multi-controlled :math:`Z` and dies with a ``MemoryError`` asking for over 100 TiB
+        already at ``M = 2, N = 2``.
 
     The first entry of the returned distribution is the probability that the reflected
     register returns to :math:`\lvert \vec 0 \rangle`, i.e. the squared norm of
@@ -325,7 +388,7 @@ def qubitization_thc(  # pylint: disable=too-many-arguments,too-many-positional-
     registers = {
         "system_wires": Wires(system_wires),
         "index_wires": Wires(index_wires),
-        "prep_wires": Wires(prep_wires),
+        "prep_garbage_wires": Wires(prep_garbage_wires),
         "gradient_wires": Wires(gradient_wires),
     }
     for name, register in registers.items():
@@ -344,23 +407,23 @@ def qubitization_thc(  # pylint: disable=too-many-arguments,too-many-positional-
     index = list(registers["index_wires"])
     mu_wires, nu_wires = index[:n], index[n:]
 
-    # Split ``prep_wires`` into the two work registers and the two spin flags. The layout
+    # Split ``prep_garbage_wires`` into the two work registers and the two spin flags. The layout
     # is the one documented by ``qubitization_thc_wires``.
-    prep = list(registers["prep_wires"])
+    garbage = list(registers["prep_garbage_wires"])
     n_sup = alias_sampling_thc_wires(M, N, aleph)["superposition_work_wires"]
     first_clean, n_garbage = _alias_wire_split(M, N, aleph)
-    superposition_work = prep[:n_sup]
-    spin_wires = prep[-2:]
+    superposition_work = garbage[:n_sup]
+    spin_wires = garbage[-2:]
 
     # ``alias_sampling_thc`` takes one work register that mixes garbage and restored wires.
     # Feed the garbage slots from the reflected register and the restored slots from the
-    # shared clean pool, so ``prep_wires`` carries no wire that ends in |0>.
+    # shared clean pool, so ``prep_garbage_wires`` carries no wire that ends in |0>.
     #
     # ``SuperpositionTHC`` returns every work wire to |0> except its three flags (indices
     # 0, 3 and 6), so the rest are reflected wires that are free to carry alias garbage;
     # the alias adjoint clears them again before ``SuperpositionTHC``'s adjoint runs.
     garbage_pool = (
-        [w for i, w in enumerate(superposition_work) if i not in (0, 3, 6)] + prep[n_sup:-2]
+        [w for i, w in enumerate(superposition_work) if i not in (0, 3, 6)] + garbage[n_sup:-2]
     )[:n_garbage]
     clean_pool = list(work_wires)
     alias_work = (
@@ -406,7 +469,7 @@ def qubitization_thc(  # pylint: disable=too-many-arguments,too-many-positional-
     # qubit, so the adjoint call must switch it off: keeping it on both sides would square
     # the sign away and block encode the coefficient *magnitudes* instead. The Z is
     # diagonal and SELECT never touches the sign qubit, so dropping it from the adjoint
-    # still returns every PREPARE ancilla to |0>.
+    # still returns every PREPARE auxiliary wire to |0>.
     prepare(apply_sign=True)
 
     select_thc(
@@ -421,15 +484,18 @@ def qubitization_thc(  # pylint: disable=too-many-arguments,too-many-positional-
         num_batches=num_batches,
     )
 
-    qp.adjoint(prepare)(apply_sign=False)
+    # ``partial`` rather than ``qp.adjoint(prepare)(apply_sign=False)``: under ``qp.qjit``
+    # the callable form of ``adjoint`` traces its arguments, which would turn the flag into
+    # a JAX tracer and make ``if apply_sign`` fail. Closing over it keeps it static.
+    qp.adjoint(partial(prepare, apply_sign=False))()
 
     # R = 2|0><0| - I on the full PREPARE register. The global sign is fixed so that the
     # |0> block is + H / lambda: the sign flip of |0> that a bare I - 2|0><0| would give
     # is exactly what ``SELECT``'s rewriting of n = (1 - V) / 2 already supplies.
-    reflected = index + prep
+    reflected = index + garbage
     for wire in reflected:
         qp.X(wire)
-    # ``SELECT`` and ``PREPARE`` both restore ``work_wires``, so they are clean ancillas
+    # ``SELECT`` and ``PREPARE`` both restore ``work_wires``, so they are zeroed auxiliary wires
     # here and make the multi-controlled Z much cheaper.
     qp.ctrl(
         qp.Z(reflected[-1]),

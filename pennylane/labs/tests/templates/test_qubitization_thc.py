@@ -17,7 +17,11 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.labs.templates import qubitization_thc, qubitization_thc_wires
+from pennylane.labs.templates import (
+    SuperpositionTHC,
+    qubitization_thc,
+    qubitization_thc_wires,
+)
 from pennylane.labs.templates.alias_sampling import _build_alias_tables
 from pennylane.labs.templates.alias_sampling_thc import _build_thc_pairs, _lcu_signs
 
@@ -72,15 +76,16 @@ def _reference_block(M, N, zeta, t_ell, chi, t_eigenvectors, aleph):
     return block
 
 
-def _run(zeta, t_ell, chi, t_eigenvectors, aleph, beth, psi, spare=0):
+def _run(zeta, t_ell, chi, t_eigenvectors, aleph, beth, psi, spare=0, num_walks=1):
     # pylint: disable=too-many-arguments, too-many-positional-arguments
-    """Apply the walk to ``psi`` and return the system amplitudes with every ancilla on |0>."""
+    """Apply the walk ``num_walks`` times to ``psi`` and return the system amplitudes with
+    every auxiliary wire on |0>."""
     M, n_half = np.shape(chi)
     sizes = qubitization_thc_wires(M, 2 * n_half, aleph, beth)
     total = sum(sizes.values()) + spare
     wires = qp.registers(sizes)
     system = list(wires["system_wires"])
-    ancillas = [w for w in range(total) if w not in system]
+    auxiliaries = [w for w in range(total) if w not in system]
 
     def gradient_state():
         for j, wire in enumerate(wires["gradient_wires"]):
@@ -92,25 +97,26 @@ def _run(zeta, t_ell, chi, t_eigenvectors, aleph, beth, psi, spare=0):
     def circuit():
         qp.StatePrep(psi, wires=system)
         gradient_state()
-        qubitization_thc(
-            zeta,
-            t_ell,
-            chi,
-            t_eigenvectors,
-            aleph,
-            beth,
-            system,
-            wires["index_wires"],
-            wires["prep_wires"],
-            wires["gradient_wires"],
-            wires["work_wires"],
-        )
+        for _ in range(num_walks):
+            qubitization_thc(
+                zeta,
+                t_ell,
+                chi,
+                t_eigenvectors,
+                aleph,
+                beth,
+                system,
+                wires["index_wires"],
+                wires["prep_garbage_wires"],
+                wires["gradient_wires"],
+                wires["work_wires"],
+            )
         qp.adjoint(gradient_state)()
         return qp.state()
 
     state = np.asarray(circuit()).reshape([2] * total)
     selector = [slice(None)] * total
-    for wire in ancillas:
+    for wire in auxiliaries:
         selector[wire] = 0
     return np.asarray(state[tuple(selector)]).reshape(-1)
 
@@ -118,10 +124,12 @@ def _run(zeta, t_ell, chi, t_eigenvectors, aleph, beth, psi, spare=0):
 @pytest.mark.parametrize(
     "M, N, aleph, beth, expected",
     [
-        (1, 2, 1, 1, {"system": 2, "index": 2, "prep": 16, "gradient": 1, "work": 1}),
-        (2, 2, 1, 1, {"system": 2, "index": 4, "prep": 19, "gradient": 1, "work": 1}),
-        (2, 2, 2, 1, {"system": 2, "index": 4, "prep": 22, "gradient": 1, "work": 1}),
-        (2, 4, 2, 3, {"system": 4, "index": 4, "prep": 23, "gradient": 3, "work": 5}),
+        (1, 2, 1, 1, {"system": 2, "index": 2, "prep_garbage": 15, "gradient": 1, "work": 1}),
+        (2, 2, 1, 1, {"system": 2, "index": 4, "prep_garbage": 18, "gradient": 1, "work": 1}),
+        # aleph = 2 > select_thc's 1 work wire, so the shared pool grows to hold the
+        # alias comparator scratch instead of putting it in prep_garbage_wires.
+        (2, 2, 2, 1, {"system": 2, "index": 4, "prep_garbage": 20, "gradient": 1, "work": 2}),
+        (2, 4, 2, 3, {"system": 4, "index": 4, "prep_garbage": 21, "gradient": 3, "work": 5}),
     ],
 )
 def test_qubitization_thc_wires(M, N, aleph, beth, expected):
@@ -156,7 +164,7 @@ def test_prepare_cannot_succeed_raises():
     [
         ("system_wires", "system_wires must have exactly"),
         ("index_wires", "index_wires must have exactly"),
-        ("prep_wires", "prep_wires must have exactly"),
+        ("prep_garbage_wires", "prep_garbage_wires must have exactly"),
         ("gradient_wires", "gradient_wires must have exactly"),
     ],
 )
@@ -176,7 +184,7 @@ def test_wrong_register_size_raises(register, match):
             beth,
             wires["system_wires"],
             wires["index_wires"],
-            wires["prep_wires"],
+            wires["prep_garbage_wires"],
             wires["gradient_wires"],
             wires["work_wires"],
         )
@@ -201,10 +209,88 @@ def test_wrong_array_shape_raises(chi_shape, tev_shape, match):
             beth,
             wires["system_wires"],
             wires["index_wires"],
-            wires["prep_wires"],
+            wires["prep_garbage_wires"],
             wires["gradient_wires"],
             wires["work_wires"],
         )
+
+
+class TestWireReuse:
+    """Checks that zeroed auxiliary wires are shared between the sub-templates."""
+
+    def _tape(self, M, N, aleph, beth):
+        sizes = qubitization_thc_wires(M, N, aleph, beth)
+        wires = qp.registers(sizes)
+        with qp.queuing.AnnotatedQueue() as q:
+            qubitization_thc(
+                np.eye(M),
+                np.ones(N // 2),
+                np.ones((M, N // 2)),
+                np.eye(N // 2),
+                aleph,
+                beth,
+                wires["system_wires"],
+                wires["index_wires"],
+                wires["prep_garbage_wires"],
+                wires["gradient_wires"],
+                wires["work_wires"],
+            )
+        return qp.tape.QuantumScript.from_queue(q), wires
+
+    @pytest.mark.parametrize("M, N, aleph, beth", [(1, 2, 2, 1), (2, 2, 2, 1), (2, 4, 2, 3)])
+    def test_work_wires_used_by_prepare(self, M, N, beth, aleph):
+        """Test that the shared clean pool really is reused by PREPARE. For N = 2 SELECT
+        needs no scratch at all, so any use of these wires has to come from the alias
+        comparator; if the pool were not shared they would sit idle."""
+        tape, wires = self._tape(M, N, aleph, beth)
+        touched = set().union(*(set(op.wires) for op in tape.operations))
+        assert set(wires["work_wires"]) <= touched
+
+    @pytest.mark.parametrize("M, N, aleph, beth", [(1, 2, 1, 1), (2, 2, 3, 1)])
+    def test_reflection_spans_index_and_prep_only(self, M, N, beth, aleph):
+        """Test that the reflection covers every garbage wire and no clean one: the walk
+        needs all of index + garbage reflected, and reflecting a restored wire would only
+        add controls."""
+        tape, wires = self._tape(M, N, aleph, beth)
+        reflected = set(wires["index_wires"]) | set(wires["prep_garbage_wires"])
+        controlled_z = [
+            op
+            for op in tape.operations
+            if isinstance(op, qp.ops.Controlled) and len(op.wires) == len(reflected)
+        ]
+        assert len(controlled_z) == 1
+        assert set(controlled_z[0].control_wires) | set(controlled_z[0].target_wires) == reflected
+        assert not reflected & set(wires["work_wires"])
+
+    def test_extra_work_wires_leave_superposition_unchanged(self):
+        """Test that appending the shared pool to SuperpositionTHC is safe: it must not
+        change the prepared state and must return the extra wires to |0>. Otherwise the
+        alias comparator, which reuses that pool right after, would start from garbage."""
+        M, N, n = 2, 2, 2
+        mu, nu = [0, 1], [2, 3]
+        base = list(range(4, 4 + 3 * n + 5))
+        # n + 1 extra wires is the point where SuperpositionTHC starts using them for its
+        # multi-controlled gates, so this exercises the branch the walk operator hits.
+        extra = list(range(base[-1] + 1, base[-1] + 1 + n + 1))
+        total = extra[-1] + 1
+
+        def state(work):
+            @qp.transforms.decompose(stopping_condition=lambda op: len(op.wires) <= 3)
+            @qp.qnode(qp.device("default.qubit", wires=total))
+            def circuit():
+                SuperpositionTHC(M, N, mu, nu, work)
+                return qp.state()
+
+            return np.asarray(circuit())
+
+        assert np.allclose(state(base), state(base + extra), atol=1e-10)
+
+    def test_no_wire_outside_declared_registers(self):
+        """Test that nothing is allocated behind the caller's back."""
+        tape, wires = self._tape(2, 2, 2, 1)
+        declared = set().union(*(set(register) for register in wires.values()))
+        touched = set().union(*(set(op.wires) for op in tape.operations))
+        assert touched <= declared
 
 
 class TestBlockEncoding:
@@ -230,6 +316,27 @@ class TestBlockEncoding:
         got = _run(zeta, t_ell, chi, tev, aleph, beth, psi)
         expected = _reference_block(M, N, zeta, t_ell, chi, tev, aleph) @ psi
         assert np.allclose(got, expected, atol=1e-8)
+
+    def test_second_chebyshev_moment(self):
+        """Test that two walks give T_2(H / lambda) = 2 (H / lambda)^2 - I.
+
+        The single-walk test above cannot detect a reflection of the wrong scope, because
+        ``<0| R = <0|`` for any reflection whose fixed subspace contains ``|0>``. This one
+        can: it is the first moment that sees the reflection, and it fails by O(1) if the
+        garbage is left out of the reflected register.
+        """
+        M, N, aleph, beth = 1, 2, 1, 1
+        zeta, t_ell = np.array([[2.0]]), np.array([-1.0])
+        chi, tev = np.ones((M, N // 2)), np.eye(N // 2)
+
+        psi = np.random.default_rng(7).standard_normal(2**N) + 0j
+        psi /= np.linalg.norm(psi)
+
+        block = _reference_block(M, N, zeta, t_ell, chi, tev, aleph)
+        chebyshev_2 = 2 * block @ block - np.eye(2**N)
+
+        got = _run(zeta, t_ell, chi, tev, aleph, beth, psi, num_walks=2)
+        assert np.allclose(got, chebyshev_2 @ psi, atol=1e-8)
 
     def test_identity_shift_form(self):
         """Test the closed form quoted in the docstring: the block is H / lambda up to a

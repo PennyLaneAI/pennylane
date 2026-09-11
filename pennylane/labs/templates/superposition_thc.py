@@ -333,7 +333,7 @@ def _left_inequalities(
         MultiControlledX(
             wires=nu_wires + work_wires[3:4],
             control_values=[0] * len(nu_wires),
-            work_wires=work_wires[7 + 3 * n - 1 : 7 + 4 * n - 1],
+            work_wires=work_wires[7:],
         )
 
 
@@ -361,10 +361,10 @@ def _superposition_thc_resources(num_mu_wires, num_work_wires, M, N):
 
     n = num_mu_wires
 
-    # Number of borrowed work wires available to each gate: the Controlled gates use
-    # extra_work = work_wires[4n+6:], and the MCX in _left_inequalities uses work_wires[3n+6:4n+6].
-    ctrl_work = max(0, num_work_wires - (4 * n + 6))
-    mcx_work = max(0, min(4 * n + 6, num_work_wires) - (3 * n + 6))
+    # Number of borrowed work wires available to each gate: everything from index 7 on is
+    # comparator scratch, restored to |0> by the time the multi-controlled gates run.
+    ctrl_work = max(0, num_work_wires - 7)
+    mcx_work = ctrl_work
 
     lcc_le = resource_rep(LeftClassicalComparator, num_x_wires=n, L=M, comparator="<=")
     lcc_gt = resource_rep(LeftClassicalComparator, num_x_wires=n, L=N // 2, comparator=">=")
@@ -415,7 +415,10 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     work_wires = Wires(work_wires)
 
     n = len(mu_wires)
-    extra_work = work_wires[7 + 4 * n - 1 :]
+    # Everything past the seven flag wires is comparator scratch: ``_left_inequalities`` returns
+    # it to |0>, so the multi-controlled gates below can borrow all of it instead of only the
+    # wires supplied past the ``3n + 5`` minimum (which is an empty slice at the minimum).
+    extra_work = work_wires[7:]
 
     # 1. Equal superposition over both index registers.
     for wire in mu_wires + nu_wires:

@@ -444,6 +444,13 @@ def alias_sampling_thc(  # pylint: disable=too-many-arguments,too-many-positiona
     # ``qp.QROM`` restores its work wires to |0>, so the comparator safely reuses them.
     cmp_work = work_wires[f + 3 : f + aleph + 2]
     qrom_work = work_wires[f + 3 :]
+    # ``work_wires[f + 3 :]`` holds only ``aleph - 1`` wires at the minimum register size, i.e.
+    # none at all for ``aleph = 1``, which forces the QROM and the symmetrization ``ctrl(SWAP)``
+    # to allocate their own scratch. Both can borrow more: at step 2 the sample register is still
+    # |0> (it is only put in |+> at step 3) and so are both flags, and at step 6 ``alt_flag`` is
+    # back to |0>, uncomputed by the adjoint comparator of step 5.
+    qrom_all_work = sample_reg + [alt_flag, swap_flag] + qrom_work
+    swap_work = [alt_flag] + qrom_work
 
     # 1. Compute the contiguous QROM address s = mu + nu (nu + 1) / 2.
     _compute_contiguous_register(M, N, mu_wires, nu_wires, work_wires)
@@ -457,7 +464,7 @@ def alias_sampling_thc(  # pylint: disable=too-many-arguments,too-many-positiona
         data,
         control_wires=work_wires[1:n_d],
         target_wires=work_wires[n_d : q + 2 * n + aleph] + [alt_edge_flag],
-        work_wires=qrom_work,
+        work_wires=qrom_all_work,
     )
 
     # 3. Draw a uniform aleph-bit sample sigma and test ``keep <= sigma``: the original
@@ -487,6 +494,10 @@ def alias_sampling_thc(  # pylint: disable=too-many-arguments,too-many-positiona
     #    ``sample_reg``) are untouched by step 4, so the same ``comparator="<="`` returns
     #    ``alt_flag`` and ``cmp_work`` to |0>; any other comparator would leave
     #    ``alt_flag`` entangled with the sample register.
+    # Operator form rather than the callable form ``qp.adjoint(LeftQuantumComparator)(...)``:
+    # under capture the callable form traces its arguments, so the wire registers become JAX
+    # tracers and leak into the jaxpr as constants, which fails MLIR lowering with
+    # ``InvalidInputException: Argument 'JitTracer<~int64[]>' ... is not a valid JAX type``.
     qp.adjoint(
         LeftQuantumComparator(
             keep_thresh, sample_reg, alt_flag, work_wires=cmp_work, comparator="<="
@@ -503,6 +514,8 @@ def alias_sampling_thc(  # pylint: disable=too-many-arguments,too-many-positiona
             qp.SWAP([mu_wires[i], nu_wires[i]]),
             control=[swap_flag, edge_flag],
             control_values=[1, 0],
+            work_wires=swap_work,
+            work_wire_type="zeroed",
         )
 
     # 7. Turn the sign bit into the factor (-1)^s on the amplitudes.
