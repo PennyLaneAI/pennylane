@@ -1288,6 +1288,7 @@
   - Composite operators with :class:`~.Operator2` instances as the base.
     [(#10027)](https://github.com/PennyLaneAI/pennylane/pull/10027)
     [(#10047)](https://github.com/PennyLaneAI/pennylane/pull/10047)
+    [(#10113)](https://github.com/PennyLaneAI/pennylane/pull/10113)
     [(#9999)](https://github.com/PennyLaneAI/pennylane/pull/9999)
     [(#10125)](https://github.com/PennyLaneAI/pennylane/pull/10125)
     [(#10124)](https://github.com/PennyLaneAI/pennylane/pull/10124)
