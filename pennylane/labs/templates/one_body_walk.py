@@ -24,7 +24,6 @@ def one_body_walk_wires(norbs, alias_sampling_nbits):
     and ``alias_sampling_nbits``. Use this function to size them before allocating wires.
 
     The registers are:
-
         * ``prep_wires``: the full PREP register that the reflection acts on
         * ``system_wires``: the state register :math:`|\psi\rangle` the operator acts on
         * ``work_wires``: clean scratch that starts and ends in :math:`|0\rangle`
@@ -55,8 +54,8 @@ def one_body_walk_wires(norbs, alias_sampling_nbits):
 def one_body_walk(op_matrix, alias_sampling_nbits, prep_wires, system_wires, work_wires):
     r"""Apply the qubitization walk operator that block-encodes a one-body operator.
 
-    Implements :math:`\hat{\mathcal{W}} = \hat{\mathcal{R}} \cdot \text{PREP}^\dagger \cdot
-    \text{SEL} \cdot \text{PREP}`, with :math:`\hat{\mathcal{R}} = \hat 1 - 2|0\rangle\langle 0|`
+    Implements :math:`\hat{W} = \hat{R} \cdot \text{PREP}^\dagger \cdot
+    \text{SEL} \cdot \text{PREP}`, with :math:`\hat{R} = \hat 1 - 2|0\rangle\langle 0|`
     the reflection on ``prep_wires``, following `arXiv:2602.20270
     <https://arxiv.org/abs/2602.20270>`_ (Fig. 12 for the block-encoding, Sec. III A for the
     walk operator). The :math:`|\vec 0\rangle` block of the walk is :math:`\hat O / \lambda`,
@@ -131,12 +130,6 @@ def one_body_walk(op_matrix, alias_sampling_nbits, prep_wires, system_wires, wor
         def circuit():
             one_body_walk(op_matrix, 2, prep_wires, system_wires, work_wires)
             return qp.probs(wires=prep_wires)
-
-    The first entry of the returned distribution is the probability that the PREP register
-    returns to :math:`|\vec 0\rangle`, i.e. the squared norm of
-    :math:`(\hat O / \lambda)|\psi\rangle`. Here the system starts in the vacuum, where
-    :math:`\hat O |\mathrm{vac}\rangle = -\big(\sum_p \mu_p\big)|\mathrm{vac}\rangle`, so with
-    :math:`\mu = (-1, 3)` and :math:`\lambda = 4` the expected value is :math:`(2/4)^2 = 0.25`:
 
     >>> print(np.round(circuit()[0], 3))
     0.25
