@@ -73,7 +73,8 @@ class NumericHamiltonian:
     symbol, and a symbol repeated within or across templates must take the same size — this
     is what lets a single validator enforce shape consistency for every representation, for
     concrete and abstract data alike. A field carrying no shape template (e.g. a scalar
-    validated separately) appears in ``tensor_names`` but not in ``tensor_shapes``.
+    validated separately) is named in ``scalar_names`` instead. It still participates in
+    the pytree, hashing and equality (see ``numeric_data``) but is not shape-validated.
 
     ``symbol_metadata`` maps each symbol to the attribute that reports it, together with
     the offset between the two. An axis holding ``L + 1`` entries for ``L`` fragments (index
