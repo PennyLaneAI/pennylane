@@ -425,10 +425,17 @@
 
 <h3>Improvements 🛠</h3>
 
-* :func:`~.SumOfSlatersPrep.required_register_sizes` now works with abstract ``indices`` as input,
-  for which it returns an upper bound for the register sizes, across any set of indices of the
-  provided length.
+* The ``indices`` of :class:`~.SumOfSlatersPrep` may now be given as an abstract type, in which
+  case a worst-case set of indices of that length is generated with the new
+  :func:`~.SumOfSlatersPrep.generate_indices`, so that the operator can be costed when only the
+  number of Slater determinants is known. The generated indices are a resource-estimation
+  stand-in: the operator is valid, but does not prepare a state the caller provided.
   [(#10084)](https://github.com/PennyLaneAI/pennylane/pull/10084)
+  [(#10102)](https://github.com/PennyLaneAI/pennylane/pull/10102)
+  [(#10105)](https://github.com/PennyLaneAI/pennylane/pull/10105)
+
+  :func:`~.SumOfSlatersPrep.required_register_sizes` also accepts abstract ``indices``, and
+  reports the largest possible register sizes across any set of indices of that length:
 
   ```pycon
   >>> num_wires = 8
