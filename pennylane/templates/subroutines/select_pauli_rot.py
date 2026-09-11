@@ -36,7 +36,7 @@ class SelectPauliRot(Operator2):
     r"""Applies individual single-qubit Pauli rotations depending on the state of
     designated control qubits.
 
-    This operator, also called a **multiplexed rotation** or **uniformly controlled rotation**,
+    This operator, also available as :class:`~.MultiplexedRotation` and :class:`~.UniformlyControlledRotation`,
     applies a sequence of multi-controlled rotations about the same axis to a single target qubit.
     The rotation angles are selected based on the state of the control qubits.
     Its definition is given by:
@@ -199,3 +199,24 @@ def decompose_select_pauli_rot(angles, control_wires, target_wire, rot_axis):
 
 
 add_decomps(SelectPauliRot, decompose_select_pauli_rot)
+
+# pylint: disable=protected-access
+if getattr(SelectPauliRot, "_primitive", None) is not None:
+
+    @SelectPauliRot._primitive.def_impl
+    def _(*args, n_wires, **kwargs):
+        (angles,), (*control_wires, target_wire) = args[:-n_wires], args[-n_wires:]
+        return type.__call__(SelectPauliRot, angles, control_wires, target_wire, **kwargs)
+
+
+MultiplexedRotation = SelectPauliRot
+r"""MultiplexedRotation(angles, control_wires, target_wire, rot_axis="Z")
+
+Alias for :class:`~.SelectPauliRot`.
+"""
+
+UniformlyControlledRotation = SelectPauliRot
+r"""UniformlyControlledRotation(angles, control_wires, target_wire, rot_axis="Z")
+
+Alias for :class:`~.SelectPauliRot`.
+"""

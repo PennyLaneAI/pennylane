@@ -425,6 +425,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* Added `Multiplexer` and `Multiplexor` as aliases for :class:`~.Select`, and
+  `MultiplexedRotation` and `UniformlyControlledRotation` as aliases for
+  :class:`~.SelectPauliRot`.
+  [(#9639)](https://github.com/PennyLaneAI/pennylane/pull/9639)
+
 * :func:`~.SumOfSlatersPrep.required_register_sizes` now works with abstract ``indices`` as input,
   for which it returns an upper bound for the register sizes, across any set of indices of the
   provided length.
