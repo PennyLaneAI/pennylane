@@ -1661,6 +1661,16 @@ class TestSwappableOps:
         """Test the check for non-swappable operators."""
         assert not _swappable_ops(op1, op2)
 
+    def test_op_with_abstract_wires(self):
+        """Test that the check works with abstract wires."""
+        assert not _swappable_ops(qp.X(Wire[1]), qp.X(5))
+        assert not _swappable_ops(qp.X(5), qp.X(Wire[1]))
+
+        assert not _swappable_ops(qp.X(Wire[1]), qp.X(Wire[1]))
+        assert not _swappable_ops(qp.X(Wire[1]), qp.CNOT(Wire[2]))
+
+        assert not _swappable_ops(qp.CNOT([0, Wire[1]]), qp.X(2))
+
 
 class TestDecomposition:
 

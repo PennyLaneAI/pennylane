@@ -25,15 +25,15 @@ from typing import Union, override
 from scipy.sparse import kron as sparse_kron
 
 import pennylane as qp
-from pennylane import capture, math
+from pennylane import capture, compiler, control_flow, math
 from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.core.queuing import apply
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.decomposition.utils import to_name
 from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.ops.op_math.controlled2 import flip_zero_control
-from pennylane.typing import TensorLike, Wire
-from pennylane.wires import Wires
+from pennylane.typing import AbstractWires, TensorLike, Wire
+from pennylane.wires import DynamicWire, Wires, is_abstract_qubit
 
 from ..qubit.non_parametric_ops import PauliX, PauliY, PauliZ
 from .composite import handle_recursion_error
@@ -66,15 +66,30 @@ def _swappable_ops(op1, op2, wire_map: dict = None) -> bool:
         return True
     if not op2.wires:
         return False
+
+    # Early exit for abstract wires as we cannot compare their values
+    def _has_abstract_wires(op) -> bool:
+        return any(isinstance(w, AbstractWires) for w in op.wires)
+
+    if _has_abstract_wires(op1) or _has_abstract_wires(op2):
+        return False
+
     wires1 = op1.wires
     wires2 = op2.wires
+
     if wire_map is not None:
         wires1 = wires1.map(wire_map)
         wires2 = wires2.map(wire_map)
+
     wires1 = set(wires1)
     wires2 = set(wires2)
+
+    # Do not swap if operators share wires
+    if wires1 & wires2:
+        return False
+
     # compare strings of wire labels so that we can compare arbitrary wire labels like 0 and "a"
-    return False if wires1 & wires2 else str(wires1.pop()) > str(wires2.pop())
+    return str(wires1.pop()) > str(wires2.pop())
 
 
 class Prod2(CompositeOp2):
@@ -344,6 +359,41 @@ def _ctrl_prod2_resources(base, control_wires, work_wires, work_wire_type, **_):
     return dict(resources)
 
 
+def _multi_temporary_and_all_ones(
+    control,
+    work_wires,
+):
+    """Controlled decomposition using a ``TemporaryAND`` ladder.
+
+    Assumes all control values are 1 and returns the last ancilla as the
+    effective control target. Compatible with QJIT: the ladder is expressed
+    via ``control_flow.for_loop`` when running under tracing.
+    """
+    num_needed = len(control) - 1
+
+    if any(is_abstract_qubit(w) or isinstance(w, DynamicWire) for w in (*control, *work_wires)):
+        # Dynamically allocated wires can't be cast to a JAX array for the traced indexing below.
+        # The ladder length is static either way, so just unroll it directly.
+        qp.TemporaryAND(wires=[control[0], control[1], work_wires[0]])
+        for i in range(1, num_needed):
+            qp.TemporaryAND(wires=[work_wires[i - 1], control[i + 1], work_wires[i]])
+        return work_wires[num_needed - 1]
+
+    if compiler.active() or qp.capture.enabled():
+        control = math.array(control, like="jax")
+        work_wires = math.array(work_wires, like="jax")
+
+    qp.TemporaryAND(wires=[control[0], control[1], work_wires[0]])
+
+    @control_flow.for_loop(1, num_needed, 1)
+    def _ladder(i):
+        qp.TemporaryAND(wires=[work_wires[i - 1], control[i + 1], work_wires[i]])
+
+    _ladder()  # pylint: disable = no-value-for-parameter
+
+    return work_wires[num_needed - 1]
+
+
 # pylint: disable=unused-argument
 @register_condition(
     lambda control_wires, work_wires, work_wire_type, **_: len(control_wires) >= 2
@@ -357,9 +407,6 @@ def _controlled_prod2_with_work_wires(base, control_wires, control_values, work_
     ``Operator2`` port of :func:`~._controlled_product_with_work_wires`. Assumes all
     ``control_values`` are 1; zero-control flipping is handled by ``flip_zero_control``.
     """
-    # pylint: disable=import-outside-toplevel,cyclic-import
-    from .prod import _multi_temporary_and_all_ones
-
     target_wire = _multi_temporary_and_all_ones(control_wires, work_wires)
     for op in base.operands[::-1]:
         qp.ctrl(op, control=[target_wire])
@@ -454,7 +501,7 @@ class _ProductFactorsGrouping:
             factor (Operator): Factor to add.
         """
         wires = factor.wires
-        if isinstance(factor, Prod2):
+        if isinstance(factor, (qp.ops.Prod, Prod2)):
             for prod_factor in factor:
                 self.add(prod_factor)
         elif isinstance(factor, Sum):
