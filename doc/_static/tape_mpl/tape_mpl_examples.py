@@ -85,7 +85,7 @@ def rcparams(tape):
 
 def use_style(tape):
 
-    fig, ax = tape_mpl(tape, style='sketch')
+    fig, ax = tape_mpl(tape, style="sketch")
 
     plt.savefig(folder / "sketch_style.png")
     plt.close()

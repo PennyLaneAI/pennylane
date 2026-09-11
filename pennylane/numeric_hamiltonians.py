@@ -142,6 +142,25 @@ class NumericHamiltonian:
         return sizes
 
     def __post_init__(self):
+
+        for name in self.tensor_names:
+            tensor_data = getattr(self, name)
+            if isinstance(tensor_data, (list, tuple)):
+                object.__setattr__(self, name, np.asarray(tensor_data))
+
+        for name in self.scalar_names:
+            scalar_data = getattr(self, name)
+            scalar_data_shape = _shape_of(scalar_data)
+            if scalar_data_shape != ():
+                raise ValueError(
+                    f"Input argument {name} must be a scalar, got shape {scalar_data_shape}."
+                )
+
+            if isinstance(scalar_data, Number):
+                # Stored as an array so the pytree leaf has a stable shape and dtype,
+                # Note it's important when a Hamiltonian is used as a control-flow carry.
+                object.__setattr__(self, name, np.asarray(scalar_data))
+
         sizes = self._unify_shapes()
         for symbol, (name, offset) in self.symbol_metadata.items():
             size = sizes[symbol]
@@ -210,11 +229,28 @@ class NumericHamiltonian:
             return NotImplemented
         if self._hash_key() != other._hash_key():
             return False
-        if self.is_abstract or other.is_abstract:
-            # Shapes and dtypes already match and there are no values to compare.
-            return True
+
+        concrete_numeric_data = []
+        concrete_numeric_data_other = []
+
+        if self.is_abstract and other.is_abstract:
+            # Shapes already match, just check values
+            for name in self.tensor_names + self.scalar_names:
+                data = getattr(self, name)
+                other_data = getattr(other, name)
+                if _dtype_of(data) != _dtype_of(other_data):
+                    return False
+
+                # Append concrete data to a separate list to compare individual values
+                elif not isinstance(data, AbstractArray) and not isinstance(
+                    other_data, AbstractArray
+                ):
+                    concrete_numeric_data.append(data)
+                    concrete_numeric_data_other.append(other_data)
+
         return all(
-            math.allclose(a, b) for a, b in zip(self.numeric_data, other.numeric_data, strict=True)
+            math.allclose(a, b)
+            for a, b in zip(concrete_numeric_data, concrete_numeric_data_other, strict=True)
         )
 
     def __repr__(self):
@@ -361,19 +397,6 @@ class CDFHamiltonian(NumericHamiltonian):
         if self.nuc_constant is None:
             zero = AbstractArray((), float) if self.is_abstract else np.asarray(0.0)
             object.__setattr__(self, "nuc_constant", zero)
-        elif isinstance(self.nuc_constant, Number):
-            # Stored as an array so the pytree leaf has a stable shape and dtype,
-            # Note it's important when a Hamiltonian is used as a control-flow carry.
-            object.__setattr__(self, "nuc_constant", np.asarray(self.nuc_constant))
-
-        nuc_shape = _shape_of(self.nuc_constant)
-        if nuc_shape != ():
-            raise ValueError(f"'nuc_constant' must be a scalar, got shape {nuc_shape}.")
-
-        for name in self.tensor_names:
-            tensor = getattr(self, name)
-            if isinstance(tensor, (list, tuple)):
-                object.__setattr__(self, name, np.asarray(tensor))
 
         super().__post_init__()
 
@@ -535,22 +558,10 @@ class CGFHamiltonian(NumericHamiltonian):
     nuc_constant: Any = None
 
     def __post_init__(self):
+
         if self.nuc_constant is None:
             zero = AbstractArray((), float) if self.is_abstract else np.asarray(0.0)
             object.__setattr__(self, "nuc_constant", zero)
-        elif isinstance(self.nuc_constant, Number):
-            # Stored as an array so the pytree leaf has a stable shape and dtype,
-            # Note it's important when a Hamiltonian is used as a control-flow carry.
-            object.__setattr__(self, "nuc_constant", np.asarray(self.nuc_constant))
-
-        nuc_shape = _shape_of(self.nuc_constant)
-        if nuc_shape != ():
-            raise ValueError(f"'nuc_constant' must be a scalar, got shape {nuc_shape}.")
-
-        for name in self.tensor_names:
-            tensor = getattr(self, name)
-            if isinstance(tensor, (list, tuple)):
-                object.__setattr__(self, name, np.asarray(tensor))
 
         super().__post_init__()
 

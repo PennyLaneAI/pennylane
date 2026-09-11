@@ -15,7 +15,7 @@
 
 # pylint: disable=import-outside-toplevel,too-many-public-methods,no-member
 
-from dataclasses import dataclass, FrozenInstanceError
+from dataclasses import FrozenInstanceError, dataclass
 
 import numpy as np
 import pytest
