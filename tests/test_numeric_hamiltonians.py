@@ -557,8 +557,6 @@ class TestAbstractCDFCGF:
 
     def test_abstractify_matches_abstract_construction(self, seed):
         """Test that ``abstractify`` on concrete data reproduces the abstract instance."""
-        print(qp.core.abstractify(CGFHamiltonian(**cgf_tensors(seed))).numeric_data)
-        print(CGFHamiltonian(**cgf_specs()).numeric_data)
         assert qp.core.abstractify(CGFHamiltonian(**cgf_tensors(seed))) == CGFHamiltonian(
             **cgf_specs()
         )
