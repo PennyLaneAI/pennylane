@@ -1069,6 +1069,12 @@ class TestDecomposition:
 
         decomp = op.decomposition()
 
+        if base_cls is qp.Identity:
+            # A controlled Identity is the identity for any control values, so it decomposes
+            # into nothing and needs no gates to flip the control values.
+            assert decomp == []
+            return
+
         i = 0
         for ctrl_wire in ctrl_wires:
             assert decomp[i] == qp.PauliX(wires=ctrl_wire)
