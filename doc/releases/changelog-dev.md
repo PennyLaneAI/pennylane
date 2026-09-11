@@ -425,6 +425,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Register a dispatch for ``np.delete`` to handle Numpy/JAX signature divergence.
+  [(#10137)]((https://github.com/PennyLaneAI/pennylane/pull/10137)
+
 * :func:`~.SumOfSlatersPrep.required_register_sizes` now works with abstract ``indices`` as input,
   for which it returns an upper bound for the register sizes, across any set of indices of the
   provided length.
