@@ -426,6 +426,7 @@
 <h3>Improvements 🛠</h3>
 
 * `DecompositionRule` now wraps the target qfunc, preserving it's signature and docstring.
+  [(#10144)](https://github.com/PennyLaneAI/pennylane/pull/10144)
  
 *  Reduced shot counts in `default.clifford` measurement tests to improve CI runtime.
   [(#10127)](https://github.com/PennyLaneAI/pennylane/pull/10127)
