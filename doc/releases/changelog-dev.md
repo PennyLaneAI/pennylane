@@ -1404,6 +1404,9 @@
   context manager that temporarily enables or disables capture is added.
   [(#10016)](https://github.com/PennyLaneAI/pennylane/pull/10016)
 
+* Improved coverage of testing operators and their decomposition rules with capture enabled.
+  [(#10019)](https://github.com/PennyLaneAI/pennylane/pull/10019)
+
 <h3>Documentation 📝</h3>
 
 * Corrected spelling errors in documentation, comments, and internal variable names across the codebase.
