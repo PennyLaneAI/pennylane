@@ -21,6 +21,7 @@ from pennylane.core.operator import Operation, abstractify
 from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.ops import I, prod
+from pennylane.typing import Wire
 from pennylane.wires import Wires
 
 from .prepselprep import PrepSelPrep
@@ -182,7 +183,7 @@ def _qubitization_resources(num_control_wires, hamiltonian):
     return {
         resource_rep(
             Reflection,
-            base_rep=abstractify(I),
+            base_rep=I(Wire[num_control_wires]),
             num_wires=1,
             num_reflection_wires=1,
         ): 1,
