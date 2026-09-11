@@ -23,7 +23,7 @@ from pennylane import numpy as pnp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Run standard tests of operation validity."""
     weight = 0.5
@@ -238,27 +238,7 @@ class TestDecomposition:
             ),
         ],
     )
-    @pytest.mark.capture
-    def test_decomposition_new_capture(self, wires1, wires2):
-        """Tests the decomposition rule implemented with the new system."""
-        op = qp.FermionicDoubleExcitation(np.pi / 3, wires1=wires1, wires2=wires2)
-
-        for rule in qp.list_decomps(qp.FermionicDoubleExcitation):
-            _test_decomposition_rule(op, rule)
-
-    @pytest.mark.parametrize(
-        ("wires1", "wires2"),
-        [
-            (
-                [0, 1, 2],
-                [4, 5, 6],
-            ),
-            (
-                [0, 1],
-                [4, 5],
-            ),
-        ],
-    )
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_new(self, wires1, wires2):
         """Tests the decomposition rule implemented with the new system."""
         op = qp.FermionicDoubleExcitation(np.pi / 3, wires1=wires1, wires2=wires2)

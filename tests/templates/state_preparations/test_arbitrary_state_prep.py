@@ -63,6 +63,7 @@ class TestHelpers:
             assert expected_pauli_words[idx] == pauli_word
 
 
+@pytest.mark.disable_and_xfail_enable_capture(reason="Come back to this when we port it to Op2.")
 @pytest.mark.parametrize(
     ("weights", "wires"),
     [
@@ -71,7 +72,6 @@ class TestHelpers:
         ([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13], [0, 1, 2]),
     ],
 )
-# No capture test as JAX does not support indexing into arrays of strings
 def test_decomposition_new(weights, wires):
     """Tests the decomposition rule implemented with the new system."""
     weights = np.array(weights, dtype=float)
@@ -82,7 +82,7 @@ def test_decomposition_new(weights, wires):
         _test_decomposition_rule(op, rule)
 
 
-@pytest.mark.jax
+@pytest.mark.disable_and_xfail_enable_capture(reason="Come back to this when we port it to Op2.")
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
 

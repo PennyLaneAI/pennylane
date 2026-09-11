@@ -214,16 +214,14 @@ class TestInitialization:
             qp.TrotterCDF(evolution_time=0.1, num_trotter_steps=123, hamiltonian=ham, wires=(0, 1))
 
 
-class TestValidity:
-    """Basic structural validity tests for the TrotterCDF operator."""
-
-    def test_assert_valid(self, toy_hamiltonian_cdf_concrete):
-        """Run qp.ops.functions.assert_valid on a concrete CDF instance."""
-        ham, num_orbitals = toy_hamiltonian_cdf_concrete
-        wires = list(range(2 * num_orbitals))
-        op = qp.TrotterCDF(0.1, 3, ham, wires)
-        # Differentiating through the (non-trainable) hamiltonian dict is not supported.
-        qp.ops.functions.assert_valid(op, skip_differentiation=True)
+@pytest.mark.usefixtures("enable_and_disable_capture")
+def test_assert_valid(toy_hamiltonian_cdf_concrete):
+    """Run qp.ops.functions.assert_valid on a concrete CDF instance."""
+    ham, num_orbitals = toy_hamiltonian_cdf_concrete
+    wires = list(range(2 * num_orbitals))
+    op = qp.TrotterCDF(0.1, 3, ham, wires)
+    # Differentiating through the (non-trainable) hamiltonian dict is not supported.
+    qp.ops.functions.assert_valid(op, skip_differentiation=True)
 
 
 class TestCDFScheme:
@@ -462,6 +460,7 @@ class TestDecomposition:
 class TestControlledDecomposition:
     """Tests for the default (genuine) C(TrotterCDF) controlled decomposition."""
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_controlled_decomposition_self_consistent(self, toy_hamiltonian_cdf_concrete):
         """The registered C(TrotterCDF) rule is self-consistent with its resources."""
         ham, num_orbitals = toy_hamiltonian_cdf_concrete
@@ -522,6 +521,7 @@ class TestControlledDecomposition:
 class TestDoublePhaseControlledDecomposition:
     """Tests for the opt-in double-phase (Fig. 6) C(TrotterCDF) controlled decomposition."""
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_controlled_decomposition_self_consistent(self, toy_hamiltonian_cdf_concrete):
         """The double-phase C(TrotterCDF) rule is self-consistent with its resources."""
         ham, num_orbitals = toy_hamiltonian_cdf_concrete

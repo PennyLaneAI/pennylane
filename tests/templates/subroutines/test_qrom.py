@@ -76,7 +76,7 @@ def test_assert_valid_qrom():
     qp.ops.functions.assert_valid(op, skip_differentiation=True)
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_falsy_zero_as_work_wire():
     """Test that work wire is not treated as a falsy zero."""
     op = qp.QROM(

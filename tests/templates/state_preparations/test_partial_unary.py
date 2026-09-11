@@ -487,7 +487,7 @@ class TestPartialUnaryStatePreparation:
         target[list(indices)] = coefficients
         assert np.allclose(circuit()[::4], target)
 
-    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("provide_work_wires", [False, True])
     @pytest.mark.parametrize(
         "num_wires, num_entries",

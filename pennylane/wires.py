@@ -177,7 +177,7 @@ class Wires(Sequence):
         """Method to support indexing. Returns a Wires object if index is a slice,
         or a label if index is an integer."""
         if isinstance(idx, slice):
-            return Wires(self._labels[idx])
+            return Wires(self._labels[idx], _override=True)
         return self._labels[idx]
 
     def __iter__(self):

@@ -478,7 +478,11 @@ class TestSumOfSlatersPrep:
         indices = tuple(rng.choice(2**num_wires, size=num_entries, replace=False))
         return coefficients, indices
 
-    @pytest.mark.jax
+    @pytest.mark.disable_and_xfail_enable_capture(
+        # not all of the configurations in the parametrization fail.
+        reason="indexing into allocated wires not supported [sc-129521]",
+        strict=False,
+    )
     @pytest.mark.parametrize(
         "num_wires, num_entries",
         [(2, 1), (2, 2), (2, 4), (4, 3), (4, 6), (10, 3), (10, 10), (10, 137), (13, 1421)],
@@ -490,7 +494,9 @@ class TestSumOfSlatersPrep:
         op = SumOfSlatersPrep(coefficients, wires, indices=indices)
         assert_valid(op, skip_differentiation=True)
 
-    @pytest.mark.jax
+    @pytest.mark.disable_and_xfail_enable_capture(
+        reason="indexing into allocated wires not supported [sc-129521]"
+    )
     @pytest.mark.parametrize("n", [7, 9, 15, 16, 17])
     def test_standard_validity_non_id_encoding(self, n, seed):
         """Test that SumOfSlatersPrep is a valid PennyLane operator for non-identity

@@ -24,7 +24,7 @@ import pennylane as qp
 from pennylane import numpy as pnp
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Run standard checks with the assert_valid function."""
 

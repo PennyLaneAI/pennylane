@@ -231,21 +231,19 @@ def _temporary_and(wires: WiresLike, control_values: Sequence[bool]):
     ops.cond(math.logical_not(control_values[0]), ops.X)(wires[0])
     ops.cond(math.logical_not(control_values[1]), ops.X)(wires[1])
 
-    ops.change_op_basis(
-        ops.prod(
-            ops.adjoint(ops.T(wires=wires[2])),
-            ops.CNOT(wires=[wires[1], wires[2]]),
-            ops.T(wires=wires[2]),
-            ops.H(wires[2]),
-        ),
-        ops.CNOT(wires=[wires[0], wires[2]]),
-        ops.prod(
-            ops.H(wires[2]),
-            ops.adjoint(ops.T(wires=wires[2])),
-            ops.CNOT(wires=[wires[1], wires[2]]),
-            ops.T(wires=wires[2]),
-        ),
-    )
+    def _compute_fn():
+        ops.H(wires[2])
+        ops.T(wires=wires[2])
+        ops.CNOT(wires=[wires[1], wires[2]])
+        ops.adjoint(ops.T(wires=wires[2]))
+
+    def _uncompute_fn():
+        ops.T(wires=wires[2])
+        ops.CNOT(wires=[wires[1], wires[2]])
+        ops.adjoint(ops.T(wires=wires[2]))
+        ops.H(wires[2])
+
+    ops.change_op_basis(_compute_fn, ops.CNOT(wires=[wires[0], wires[2]]), _uncompute_fn)
     ops.adjoint(ops.S(wires=wires[2]))
 
     ops.cond(math.logical_not(control_values[0]), ops.X)(wires[0])

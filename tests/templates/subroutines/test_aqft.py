@@ -22,7 +22,7 @@ import pennylane as qp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
     op = qp.AQFT(order=2, wires=(0, 1, 2))
@@ -86,18 +86,10 @@ class TestAQFT:
 
         assert np.allclose(m1, m2)
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("order,wires", [(o, w) for w in range(2, 10) for o in range(1, w)])
     def test_decomposition_new(self, order, wires):
         """Tests the decomposition rule implemented with the new system."""
-        op = qp.AQFT(order=order, wires=range(wires))
-
-        for rule in qp.list_decomps(qp.AQFT):
-            _test_decomposition_rule(op, rule)
-
-    @pytest.mark.parametrize("order,wires", [(o, w) for w in range(2, 10) for o in range(1, w)])
-    @pytest.mark.capture
-    def test_decomposition_new_capture(self, order, wires):
-        """Tests the decomposition rule implemented with the new system when program capture is enabled."""
         op = qp.AQFT(order=order, wires=range(wires))
 
         for rule in qp.list_decomps(qp.AQFT):

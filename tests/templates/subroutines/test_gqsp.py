@@ -28,33 +28,14 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 class TestGQSP:
     """Test the qp.GQSP template."""
 
-    @pytest.mark.jax
+    @pytest.mark.disable_and_xfail_enable_capture(
+        reason="Requires prod to dispatch to Prod2 [sc-128922]", strict=False
+    )
     @pytest.mark.parametrize(
         "unitary",
         (
             qp.RX(0.3, 1),
             qp.prod(qp.RX(0.3, 1), qp.RZ(0.6, 1)),
-        ),
-    )
-    def test_standard_validity_non_capture(self, unitary):
-        """Test standard validity criteria with assert_valid."""
-
-        angles = np.ones([3, 5])
-
-        op = qp.GQSP(unitary, angles, control=(0,))
-        qp.ops.functions.assert_valid(op, skip_differentiation=True, skip_bind_new_parameters=True)
-
-    @pytest.mark.capture
-    @pytest.mark.parametrize(
-        "unitary",
-        (
-            qp.RX(0.3, 1),
-            pytest.param(
-                qp.prod(qp.RX(0.3, 1), qp.RZ(0.6, 1)),
-                marks=pytest.mark.xfail(
-                    reason="Requires prod to dispatch to Prod2 [sc-128922]", strict=True
-                ),
-            ),
         ),
     )
     def test_standard_validity(self, unitary):
@@ -205,15 +186,7 @@ class TestGQSP:
         for op1, op2 in zip(decomposition, expected):
             qp.assert_equal(op1, op2)
 
-    @pytest.mark.capture
-    def test_decomposition_new_capture(self):
-        """Tests the decomposition rule implemented with the new system."""
-        angles = np.array([[1, 2], [3, 4], [5, 6]])
-        op = qp.GQSP(qp.Z(1), angles, control=0)
-
-        for rule in qp.list_decomps(qp.GQSP):
-            _test_decomposition_rule(op, rule)
-
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_new(self):
         """Tests the decomposition rule implemented with the new system."""
         angles = np.array([[1, 2], [3, 4], [5, 6]])

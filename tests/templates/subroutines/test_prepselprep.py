@@ -28,7 +28,6 @@ from pennylane.ops.op_math.prod2 import Prod2
 from pennylane.typing import Wire
 
 
-@pytest.mark.jax
 @pytest.mark.parametrize(
     ("lcu", "control", "skip_diff"),
     [
@@ -44,6 +43,10 @@ from pennylane.typing import Wire
             True,
         ),
     ],
+)
+@pytest.mark.disable_and_xfail_enable_capture(
+    reason="Come back to this when we port PrepSelPrep [sc-129961]",
+    strict=False,  # not all parametrized configurations fail
 )
 def test_standard_checks(lcu, control, skip_diff):
     """Run standard validity tests."""

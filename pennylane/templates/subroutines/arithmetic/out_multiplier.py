@@ -337,9 +337,14 @@ def _out_multiplier_with_qft(
         work_wire = output_wires[:0]
 
     if output_wires_zeroed:
-        compute_op = prod(*[H(w) for w in qft_output_wires])
+
+        def compute_op():
+            for w in qft_output_wires:
+                H(w)
+
     else:
         compute_op = QFT(qft_output_wires)
+
     uncompute_op = adjoint(QFT(qft_output_wires))
 
     target_op = ControlledSequence(
