@@ -495,19 +495,11 @@ class TestAbstractDunders:
 
         jaxpr = jax.make_jaxpr(qfunc)()
 
-        assert len(jaxpr.eqns) == 3
-        assert_eqn_matches_op(jaxpr.eqns[0], qp.X)
-        assert_eqn_matches_op(jaxpr.eqns[1], qp.Y)
-
-        eqn = jaxpr.eqns[2]
-
-        assert eqn.primitive == qp.ops.Prod._primitive
-        assert eqn.invars[0] == jaxpr.eqns[0].outvars[0]
-        assert eqn.invars[1] == jaxpr.eqns[1].outvars[0]
-
-        assert eqn.params == {}
-
-        assert isinstance(eqn.outvars[0].aval, AbstractOperator)
+        assert len(jaxpr.eqns) == 1
+        assert_eqn_matches_op(jaxpr.eqns[0], qp.ops.Prod2)
+        assert len(jaxpr.eqns[0].params["hybrid_trees"]) == 2
+        assert "PauliX" in str(jaxpr.eqns[0].params["hybrid_trees"][0])
+        assert "PauliY" in str(jaxpr.eqns[0].params["hybrid_trees"][0])
 
     def test_mul(self):
         """Test that the scalar multiplication dunder works."""

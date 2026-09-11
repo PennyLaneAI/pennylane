@@ -369,6 +369,19 @@ class TestDecomposition:
         assert sum(eqn.primitive == for_loop_prim for eqn in jaxpr.eqns) == 0
         assert sum(eqn.primitive == cond_prim for eqn in jaxpr.eqns) == 3
 
+    def test_multix_decomposition_unrolls_for_dynamic_wire(self):
+        """``DynamicWire`` handles cannot be stacked for ``for_loop`` indexing, so unroll."""
+        # pylint: disable=import-outside-toplevel
+        from pennylane.templates.subroutines.multix import _multix_decomposition
+        from pennylane.wires import DynamicWire
+
+        qp.capture.disable()
+        wires = [DynamicWire() for _ in range(3)]
+        with qp.queuing.AnnotatedQueue() as q:
+            _multix_decomposition([1, 0, 1], wires)
+        tape = qp.tape.QuantumScript.from_queue(q)
+        assert len(tape.operations) == 2
+
     def test_adjoint_decomposition(self):
         """Tests that Adjoint(MultiX) decomposes to MultiX."""
         op = qp.MultiX([1, 0, 1], wires=[0, 1, 2])
@@ -417,6 +430,153 @@ class TestDecomposition:
 
         for rule in qp.list_decomps("Pow(MultiX)"):
             _test_decomposition_rule(pow_op, rule)
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_controlled_decomposition_capture_compatibility(self):
+        """Tests that the C(MultiX) decomposition rule is a valid, capture-compatible rule."""
+        op = qp.ctrl(qp.MultiX([1, 0, 1], wires=[1, 2, 3]), control=0)
+
+        for rule in qp.list_decomps("C(MultiX)"):
+            _test_decomposition_rule(op, rule)
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.parametrize(
+        ("control_values", "gate_set", "expected"),
+        [
+            # single control on |1>: one CNOT per set bit (PauliX covers the abstract control-value
+            # branch of the general rule but is not emitted for a concrete control on |1>)
+            ([1], {"CNOT", "PauliX"}, {"CNOT": 2}),
+            # single control on |0>: one CNOT per set bit, plus a PauliX flip of the control wire
+            # before and after.
+            ([0], {"CNOT", "PauliX"}, {"CNOT": 2, "PauliX": 2}),
+        ],
+    )
+    def test_controlled_decomposition_gate_set(self, control_values, gate_set, expected):
+        """A single-control C(MultiX) fans out to one controlled-X per set bit (a CNOT for a
+        control on |1>), lowering to the requested gate set."""
+
+        @qp.transforms.decompose(gate_set=gate_set)
+        @qp.qnode(qp.device("null.qubit", wires=4))
+        def circuit():
+            qp.ctrl(
+                qp.MultiX([1, 0, 1], wires=[1, 2, 3]),
+                control=0,
+                control_values=control_values,
+            )
+            return qp.state()
+
+        specs = qp.specs(circuit)()["resources"].quantum_operations
+        assert dict(specs) == expected
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.parametrize("control_values", [[1], [0]])
+    def test_controlled_decomposition_matrix(self, control_values):
+        """The controlled MultiX decomposition matches the op matrix for controls on |0> and |1>."""
+        op = qp.ctrl(
+            qp.MultiX([1, 0, 1], wires=[1, 2, 3]), control=0, control_values=control_values
+        )
+
+        for rule in qp.list_decomps("C(MultiX)"):
+            _test_decomposition_rule(op, rule)
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.parametrize("control_values", [[1, 1, 1], [0, 1, 0]])
+    def test_controlled_multi_control_ladder_decomposition_capture_compatibility(
+        self, control_values
+    ):
+        """With more than one control wire, the TemporaryAND-ladder rules (which load the fanout
+        through a single work wire instead of repeating the multi-control structure per target)
+        become applicable, and should also be valid, capture-compatible decomposition rules."""
+        op = qp.ctrl(
+            qp.MultiX([1, 0, 1], wires=[3, 4, 5]),
+            control=[0, 1, 2],
+            control_values=control_values,
+        )
+
+        for rule in qp.list_decomps("C(MultiX)"):
+            _test_decomposition_rule(op, rule)
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_controlled_multi_control_ladder_uses_fewer_non_clifford_gates(self):
+        """With a work wire available, a multi-control C(MultiX) loads the multi-control
+        structure once (as a TemporaryAND ladder) and fans it out to the targets with CNOTs,
+        instead of repeating a MultiControlledX once per target bit."""
+        bitstring = [1, 0, 1, 1]
+        control = [0, 1, 2, 3]
+        targets = [4, 5, 6, 7]
+
+        @qp.transforms.decompose(
+            # PauliX is required for solvability (flip_zero_control's declared resources), even
+            # though this concrete, all-1-control circuit never emits one.
+            gate_set={"TemporaryAND", "Adjoint(TemporaryAND)", "CNOT", "PauliX"},
+            num_work_wires=len(control) - 1,
+        )
+        @qp.qnode(qp.device("null.qubit", wires=11))
+        def circuit():
+            qp.ctrl(qp.MultiX(bitstring, wires=targets), control=control)
+            return qp.state()
+
+        specs = qp.specs(circuit)()["resources"].quantum_operations
+        num_controls = len(control)
+        num_set_bits = sum(bitstring)
+        # One CNOT per set target bit fanned out from the ladder's single work wire, instead of
+        # one MultiControlledX (which itself needs O(num_controls) gates) per set target bit.
+        assert dict(specs) == {
+            "Allocate": 1,
+            "Deallocate": 1,
+            "TemporaryAND": num_controls - 1,
+            "Adjoint(TemporaryAND)": num_controls - 1,
+            "CNOT": num_set_bits,
+        }
+
+    def test_controlled_multix_ladder_extra_work_wires(self):
+        """Tests how many zeroed work wires the ladder decomp requests beyond those supplied."""
+        # pylint: disable=import-outside-toplevel
+        from pennylane.templates.subroutines.multix import (
+            _controlled_multix_ladder_extra_work_wires,
+        )
+
+        assert _controlled_multix_ladder_extra_work_wires([0, 1, 2, 3], [10], "zeroed") == {
+            "zeroed": 2
+        }
+        assert _controlled_multix_ladder_extra_work_wires([0, 1, 2], [10, 11], "zeroed") == {
+            "zeroed": 0
+        }
+        assert _controlled_multix_ladder_extra_work_wires([0, 1, 2, 3], [], "other") == {
+            "zeroed": 3
+        }
+
+    def test_controlled_multix_ladder_with_supplied_work_wires(self, mocker):
+        """When enough zeroed work wires are supplied, the ladder decomp does not allocate."""
+        # pylint: disable=import-outside-toplevel
+        from pennylane.templates.subroutines.multix import _controlled_multix_ladder
+
+        fanout = mocker.patch("pennylane.templates.subroutines.multix._multix_ladder_fanout")
+        base = qp.MultiX([1, 0, 1], wires=[3, 4, 5])
+        _controlled_multix_ladder(
+            base=base,
+            control_wires=[0, 1, 2],
+            work_wires=[6, 7],
+            work_wire_type="zeroed",
+        )
+        fanout.assert_called_once_with(base, [0, 1, 2], work_wires=[6, 7])
+
+    @pytest.mark.jax
+    @pytest.mark.capture
+    def test_multix_ladder_fanout_uses_for_loop_with_static_wires(self):
+        """With static wires, the CNOT fanout uses a ``for_loop`` under capture."""
+        # pylint: disable=import-outside-toplevel
+        import jax
+
+        from pennylane.capture.primitives import for_loop_prim
+        from pennylane.templates.subroutines.multix import _multix_ladder_fanout
+
+        base = qp.MultiX([1, 0, 1], wires=[3, 4, 5])
+        jaxpr = jax.make_jaxpr(
+            lambda: _multix_ladder_fanout(base, control_wires=[0, 1, 2], work_wires=[6, 7])
+        )()
+        assert any(eqn.primitive == for_loop_prim for eqn in jaxpr.eqns)
 
 
 class TestExecution:

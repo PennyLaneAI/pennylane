@@ -19,7 +19,7 @@ Factory that produces a decomposition rule for CRZ in terms of
 import numpy as np
 
 import pennylane as qp
-from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
+from pennylane.ops.op_math import ChangeOpBasis2, prod
 from pennylane.typing import Bool, Wire
 
 from .rz_phase_gradient import validate_phase_gradient_wires
@@ -64,7 +64,7 @@ def make_crz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
         qp.decomposition.enable_graph()
 
         prec = 3
-        phi = (1/2 + 1/4 + 1/8) * 2 * np.pi # binary rep is (111)
+        phi = (1/2 + 1/4 + 1/8) * 4 * np.pi # binary rep is (111)
 
         angle_wires = qp.wires.Wires([f"aux_{i}" for i in range(prec)])
         phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(prec)])
@@ -75,7 +75,7 @@ def make_crz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
         )
 
         @qp.transforms.decompose(
-            gate_set={"C(BasisState)", "SemiAdder"},
+            gate_set={"CNOT", "SemiAdder", "PauliX"},
             fixed_decomps={qp.CRZ: custom_decomp}
         )
         @qp.qnode(qp.device("null.qubit"))
@@ -85,23 +85,28 @@ def make_crz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
 
         specs = qp.specs(circuit)()["resources"].quantum_operations
 
-    The resulting circuit corresponds to the phase gradient decomposition
-    of ``CRZ``, containing four fanouts corresponding to the binary representation
-    of the angle (111 in this case), the :class:`~.SemiAdder`, and a :class:`~.GlobalPhase`.
+    The resulting circuit corresponds to the phase gradient decomposition of ``CRZ``. The compute
+    and uncompute fanouts load the binary representation of the angle (111 in this case) onto the
+    ``angle_wires`` with a :class:`~.MultiX` controlled by the control wire (rendering as ``CNOT``,
+    since the control is always on |1>), and flip all of the ``phase_grad_wires`` with a single
+    :class:`~.MultiX` controlled by the target wire on |0> (rendering as a ``PauliX`` flip of that
+    control wire, ``CNOT``\\ s to the ``phase_grad_wires``, and a ``PauliX`` flip back), and
+    enclose the :class:`~.SemiAdder`.
 
     >>> specs
-    {'C(BasisState)': 4, 'SemiAdder': 1}
-    >>> print(qp.draw(circuit, wire_order=[0, 1])())
-         0: ─╭●───────────────────╭●────────┤ ╭State
-         1: ─│────╭○──────────────│────╭○───┤ ├State
-     aux_0: ─├|Ψ⟩─│────╭SemiAdder─├|Ψ⟩─│────┤ ├State
-     aux_1: ─├|Ψ⟩─│────├SemiAdder─├|Ψ⟩─│────┤ ├State
-     aux_2: ─╰|Ψ⟩─│────├SemiAdder─╰|Ψ⟩─│────┤ ├State
-     qft_0: ──────├|Ψ⟩─├SemiAdder──────├|Ψ⟩─┤ ├State
-     qft_1: ──────├|Ψ⟩─├SemiAdder──────├|Ψ⟩─┤ ├State
-     qft_2: ──────╰|Ψ⟩─├SemiAdder──────╰|Ψ⟩─┤ ├State
-    work_0: ───────────├SemiAdder───────────┤ ├State
-    work_1: ───────────╰SemiAdder───────────┤ ╰State
+    {'CNOT': 12, 'PauliX': 4, 'SemiAdder': 1}
+    >>> wire_order = [0, 1] + angle_wires + phase_grad_wires + work_wires
+    >>> print(qp.draw(circuit, wire_order=wire_order)())
+         0: ─╭●─╭●─╭●────────────────────────╭●─╭●─╭●────────────────┤ ╭State
+         1: ─│──│──│───X─╭●─╭●─╭●──X─────────│──│──│───X─╭●─╭●─╭●──X─┤ ├State
+     aux_0: ─╰X─│──│─────│──│──│──╭SemiAdder─╰X─│──│─────│──│──│─────┤ ├State
+     aux_1: ────╰X─│─────│──│──│──├SemiAdder────╰X─│─────│──│──│─────┤ ├State
+     aux_2: ───────╰X────│──│──│──├SemiAdder───────╰X────│──│──│─────┤ ├State
+     qft_0: ─────────────╰X─│──│──├SemiAdder─────────────╰X─│──│─────┤ ├State
+     qft_1: ────────────────╰X─│──├SemiAdder────────────────╰X─│─────┤ ├State
+     qft_2: ───────────────────╰X─├SemiAdder───────────────────╰X────┤ ├State
+    work_0: ──────────────────────├SemiAdder─────────────────────────┤ ├State
+    work_1: ──────────────────────╰SemiAdder─────────────────────────┤ ╰State
 
     """
     angle_wires, phase_grad_wires, work_wires = validate_phase_gradient_wires(
@@ -109,29 +114,33 @@ def make_crz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
     )
 
     def _resource_fn(phi, wires):  # pylint: disable=unused-argument
+        # Full-precision cost from the wires in the outer scope. The angle-load fanout emits one
+        # gate per *set* bit of the (concrete) angle, so this is an upper bound (exact=False below).
         precision = len(angle_wires)
-        # decomposition costs, using information about angle_wires etc from the outer scope
         target_op = qp.SemiAdder(Wire[precision], Wire[precision], Wire[len(work_wires)])
-        fanout = qp.ctrl(qp.BasisState(Bool[precision], Wire[precision]), control=Wire[1])
-        compute_op = uncompute_op = qp.ops.Prod2((fanout, fanout))
-        change_basis_rep = _change_op_basis_abstract(compute_op, target_op, uncompute_op)
-        resources = {change_basis_rep: 1}
-        return resources
+        # angle-load and phase-flip fanouts abstractify to the same op (control_values aren't
+        # part of the abstract representation), hence the repeated ``fanout`` below.
+        fanout = qp.ctrl(qp.MultiX(Bool[precision], Wire[precision]), control=Wire[1])
+        compute_op = uncompute_op = prod(fanout, fanout)
+        change_basis_rep = ChangeOpBasis2(compute_op, target_op, uncompute_op)
+        return {change_basis_rep: 1}
 
-    @qp.register_resources(_resource_fn)
-    def _decomp_fn(phi, wires):  # pylint: disable=unused-argument
+    @qp.register_resources(_resource_fn, exact=False)
+    def _crz_phase_gradient_decomp(phi, wires):
         precision = len(angle_wires)
         binary_int = qp.math.binary_decimals(phi, precision, unit=4 * np.pi)
+        control_wire, target_wire = wires[0], wires[1]
 
         def _compute_fn():
-            qp.ctrl(qp.BasisState(binary_int, angle_wires), control=wires[0])
+            qp.ctrl(qp.MultiX(binary_int, angle_wires), control=control_wire)
+            # Flip the phase-gradient wires when the target wire is |0> (double-phase trick).
             qp.ctrl(
-                qp.BasisState([1] * precision, phase_grad_wires),
-                control=wires[1],
+                qp.MultiX([1] * len(phase_grad_wires), phase_grad_wires),
+                control=target_wire,
                 control_values=[0],
             )
 
         target_op = qp.SemiAdder(angle_wires, phase_grad_wires, work_wires=work_wires)
         qp.change_op_basis(_compute_fn, target_op, _compute_fn)
 
-    return _decomp_fn
+    return _crz_phase_gradient_decomp
