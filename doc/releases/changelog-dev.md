@@ -855,6 +855,9 @@
   resource operators from their quantum functions.
   [(#9764)](https://github.com/PennyLaneAI/pennylane/pull/9764)
 
+* Added performance benchmarking suite for TCDQ workflows
+  [(#10142)](https://github.com/PennyLaneAI/pennylane/pull/10142)
+
 <h3>Breaking changes 💔</h3>
 
 * :class:`~.GlobalPhase` no longer accepts the `wires` argument in order to mirror its MLIR lowered operation.
