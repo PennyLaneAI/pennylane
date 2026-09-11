@@ -2,9 +2,17 @@
 
 <h3>New features since last release</h3>
 
-* Two new numeric Hamiltonians called :class:`pennylane.CDFHamiltonian` (based on `arXiv:2506.15784, Sec. III A <https://arxiv.org/abs/2506.15784>`) and :class:`pennylane.CGFHamiltonian` have been added (based on `arXiv:2508.11865, Sec. III C <https://arxiv.org/abs/2508.11865>`), which define compressed double-factorized (CDF) and Christiansen greedy-fragmentation Hamiltonians, respectively. These Hamiltonians can be defined
-  with both concrete numeric data or abstract data (using ``qp.typing.Float[...]``).
+* Three new numeric Hamiltonians called :class:`pennylane.CDFHamiltonian` (based on
+  `arXiv:2506.15784, Sec. III A <https://arxiv.org/abs/2506.15784>`),
+  :class:`pennylane.CGFHamiltonian` (based on
+  `arXiv:2508.11865, Sec. III C <https://arxiv.org/abs/2508.11865>`), and
+  :class:`pennylane.VibronicHamiltonian` (based on
+  `arXiv:2411.13669 <https://arxiv.org/abs/2411.13669>`) have been added, which define compressed
+  double-factorized (CDF), Christiansen greedy-fragmentation (CGF) Hamiltonians, and vibronic
+  Hamiltonians respectively. These Hamiltonians can be defined with both concrete numeric data or
+  abstract data (using ``qp.typing.Float[...]``).
   [(#10048)](https://github.com/PennyLaneAI/pennylane/pull/10048)
+  [(#10138)](https://github.com/PennyLaneAI/pennylane/pull/10138)
 
   ```python
   import numpy as np
@@ -27,6 +35,18 @@
   AbstractArray((3, 2, 3, 3), float64, weak_type=True)
 
   ```
+
+* Three new state-of-the-art Trotterization operators called :class:`~.TrotterCDF`,
+  :class:`~.TrotterCGF`, and :class:`~.TrotterVibronic` have been added to encode
+  fragmentation-based Trotterization procedures of :class:`pennylane.CDFHamiltonian`,
+  :class:`pennylane.CGFHamiltonian`, and :class:`pennylane.VibronicHamiltonian` Hamiltonians,
+  respectively.
+  [(#9459)](https://github.com/PennyLaneAI/pennylane/pull/9459)
+  [(#9789)](https://github.com/PennyLaneAI/pennylane/pull/9789)
+  [(#10015)](https://github.com/PennyLaneAI/pennylane/pull/10015)
+  [(#10074)](https://github.com/PennyLaneAI/pennylane/pull/10074)
+  [(#10081)](https://github.com/PennyLaneAI/pennylane/pull/10081)
+  [(#10138)](https://github.com/PennyLaneAI/pennylane/pull/10138)
 
 * Added :func:`~pennylane.backline.triton_decoder` and
   :func:`~pennylane.backline.css_bp_decoder` for compiling Triton-based coprocessor decoders.
@@ -83,11 +103,6 @@
       return qp.expval(qp.Z(0))
   ```
 
-* Added a new template :class:`~.TrotterVibronic` that implements a second-order Trotter circuit for
-  vibronic Hamiltonian simulation using phase-gradient arithmetic, based on
-  [Motlagh et al, arXiv:2411.13669](https://arxiv.org/abs/2411.13669).
-  [(#10029)](https://github.com/PennyLaneAI/pennylane/pull/10029)
-
 * ``qp.allocate`` now supports ``state="magic-T"`` and ``state="magic-T-adj"`` for requesting
   magic-state dynamic wires (:math:`|m\rangle = TH|0\rangle` and :math:`|m̄\rangle = T^\dagger H|0\rangle`).
   These states are currently supported when compiling with Catalyst; device simulators raise an
@@ -142,15 +157,6 @@
   True
 
   ```
-
-* Added :class:`~.TrotterCDF` and :class:`~.TrotterCGF`, templates for second-order Trotter time evolution of
-  fragmented Hamiltonians (CDF for electronic structure, CGF for vibrational structure) as used in modern quantum
-  chemistry algorithms.
-  [(#9459)](https://github.com/PennyLaneAI/pennylane/pull/9459)
-  [(#9789)](https://github.com/PennyLaneAI/pennylane/pull/9789)
-  [(#10015)](https://github.com/PennyLaneAI/pennylane/pull/10015)
-  [(#10074)](https://github.com/PennyLaneAI/pennylane/pull/10074)
-  [(#10081)](https://github.com/PennyLaneAI/pennylane/pull/10081)
 
 * A new arithmetic template called :class:`~.SignedOutMultiplier` has been added that multiplies numbers encoded in the
   input registers using a two's complement.

@@ -17,17 +17,16 @@ These classes wrap pre-computed numeric data in a named type so that it can be p
 around, validated, and used as operator input data consistently, whether the data is
 concrete or only known abstractly at compile time.
 
-Adding a new representation requires only a shape family:
+:class:`NumericHamiltonian` holds the machinery every representation shares. A
+representation is defined by naming its tensors and giving each one a symbolic shape
+template:
 
 .. code-block:: python
 
-    class THCHamiltonian(NumericHamiltonian):
-        core_shape = ("R", "R")
-        leaf_shape = ("R", "N")
-        symbol_metadata = {"R": ("tensor_rank", 0), "N": ("num_orbitals", 0)}
-
-Symbols repeated within or across the two templates must take the same size; the base
-class derives the named dimensions from the shapes and reports them as attributes.
+    class VibronicHamiltonian(NumericHamiltonian):
+        tensor_names = ("constant", "kinetic")
+        tensor_shapes = {"constant": ("F", "N", "N"), "kinetic": ("N", "N", "M", "M")}
+        symbol_metadata = {"F": ("num_fragments", 0), "N": ("num_states", 0), "M": ("num_modes", 0)}
 """
 
 from __future__ import annotations
@@ -42,10 +41,12 @@ from pennylane import math
 from pennylane.pytrees import register_pytree
 from pennylane.typing import AbstractArray
 
-__all__ = ["NumericHamiltonian", "CDFHamiltonian", "CGFHamiltonian"]
-
-_TENSOR_NAMES = ("core_tensors", "leaf_tensors", "nuc_constant")
-"""The tensor fields every fragmented Hamiltonian carries, in pytree leaf order."""
+__all__ = [
+    "NumericHamiltonian",
+    "CDFHamiltonian",
+    "CGFHamiltonian",
+    "VibronicHamiltonian",
+]
 
 
 def _shape_of(tensor):
@@ -65,35 +66,41 @@ def _dtype_of(tensor):
 
 
 class NumericHamiltonian:
-    r"""Base class for Hamiltonians expressed as a bundle of per-fragment tensors.
+    r"""Base class for Hamiltonians expressed as a bundle of named numeric tensors.
 
-    Subclasses describe their tensor shapes symbolically via ``core_shape`` and
-    ``leaf_shape``. Each entry is a symbol, and a symbol repeated within or across the
-    two templates must take the same size — this is what lets a single validator enforce
-    shape consistency for every representation, for concrete and abstract data alike.
+    Subclasses name their tensors in ``tensor_names`` (the pytree leaf order) and describe
+    the shape of each one symbolically in ``tensor_shapes``. Each entry of a template is a
+    symbol, and a symbol repeated within or across templates must take the same size — this
+    is what lets a single validator enforce shape consistency for every representation, for
+    concrete and abstract data alike. A field carrying no shape template (e.g. a scalar
+    validated separately) is named in ``scalar_names`` instead. It still participates in
+    the pytree, hashing and equality (see ``numeric_data``) but is not shape-validated.
 
     ``symbol_metadata`` maps each symbol to the attribute that reports it, together with
-    the offset between the two. The leading axis holds ``L + 1`` entries for ``L``
-    two-body fragments (index ``0`` being the one-body fragment), so its offset is ``1``.
+    the offset between the two. An axis holding ``L + 1`` entries for ``L`` fragments (index
+    ``0`` being a distinguished fragment) therefore has offset ``1``, while an axis that is
+    itself the reported dimension has offset ``0``.
 
-    Subclasses are registered as pytrees whose leaves are the three tensors, so the data
-    flows through program capture and lowering with no per-representation special-casing.
+    Subclasses are registered as pytrees whose leaves are the tensors, so the data flows
+    through program capture and lowering with no per-representation special-casing.
     """
 
-    core_shape: ClassVar[tuple[str, ...]]
-    """Symbolic shape template for ``core_tensors``."""
+    tensor_names: ClassVar[tuple[str, ...]]
+    """The tensor fields this Hamiltonian carries, in pytree leaf order."""
 
-    leaf_shape: ClassVar[tuple[str, ...]]
-    """Symbolic shape template for ``leaf_tensors``."""
+    scalar_names: ClassVar[tuple[str, ...]]
+    """The fields the Hamiltonian carries that are scalar quantities."""
+
+    tensor_shapes: ClassVar[dict[str, tuple[str, ...]]]
+    """Maps each shape-validated tensor field to its symbolic shape template."""
 
     symbol_metadata: ClassVar[dict[str, tuple[str, int]]]
     """Maps each shape symbol to ``(attribute name, offset)``."""
 
-    core_tensors: Any
-    leaf_tensors: Any
-    nuc_constant: Any
-
     def __init_subclass__(cls, **kwargs):
+        if not hasattr(cls, "scalar_names"):
+            cls.scalar_names = ()
+
         super().__init_subclass__(**kwargs)
 
         # It's required for Catalyst to treat the Hamiltonian as a pytree, so that it can be
@@ -101,13 +108,10 @@ class NumericHamiltonian:
         register_pytree(cls, cls._flatten, cls._unflatten)
 
     def _unify_shapes(self):
-        """Check both tensors against their templates and unify the shared symbols."""
+        """Check every templated tensor against its template and unify the shared symbols."""
         sizes: dict[str, int] = {}
 
-        for name, template in (
-            ("core_tensors", self.core_shape),
-            ("leaf_tensors", self.leaf_shape),
-        ):
+        for name, template in self.tensor_shapes.items():
             shape = _shape_of(getattr(self, name))
 
             if shape is Ellipsis or len(shape) != len(template):
@@ -139,17 +143,24 @@ class NumericHamiltonian:
         return sizes
 
     def __post_init__(self):
-        if self.nuc_constant is None:
-            zero = AbstractArray((), float) if self.is_abstract else np.asarray(0.0)
-            object.__setattr__(self, "nuc_constant", zero)
-        elif isinstance(self.nuc_constant, Number):
-            # Stored as an array so the pytree leaf has a stable shape and dtype,
-            # Note it's important when a Hamiltonian is used as a control-flow carry.
-            object.__setattr__(self, "nuc_constant", np.asarray(self.nuc_constant))
 
-        nuc_shape = _shape_of(self.nuc_constant)
-        if nuc_shape != ():
-            raise ValueError(f"'nuc_constant' must be a scalar, got shape {nuc_shape}.")
+        for name in self.tensor_names:
+            tensor_data = getattr(self, name)
+            if isinstance(tensor_data, (list, tuple)):
+                object.__setattr__(self, name, np.asarray(tensor_data))
+
+        for name in self.scalar_names:
+            scalar_data = getattr(self, name)
+            scalar_data_shape = _shape_of(scalar_data)
+            if scalar_data_shape != ():
+                raise ValueError(
+                    f"Input argument {name} must be a scalar, got shape {scalar_data_shape}."
+                )
+
+            if isinstance(scalar_data, Number):
+                # Stored as an array so the pytree leaf has a stable shape and dtype,
+                # Note it's important when a Hamiltonian is used as a control-flow carry.
+                object.__setattr__(self, name, np.asarray(scalar_data))
 
         sizes = self._unify_shapes()
         for symbol, (name, offset) in self.symbol_metadata.items():
@@ -158,18 +169,29 @@ class NumericHamiltonian:
 
     @property
     def is_abstract(self) -> bool:
-        """bool: Whether the tensors are abstract specifications rather than data.
+        """bool: Whether the tensors are abstract specifications rather than concrete data.
 
         Note that traced values are *not* abstract in this sense: a tracer has a
         concrete shape and dtype, so a Hamiltonian built from ``qjit`` arguments is
         concrete.
         """
-        return isinstance(self.core_tensors, AbstractArray)
+        _is_abstract = False
+        for name in self.tensor_names + self.scalar_names:
+            if isinstance(getattr(self, name), AbstractArray):
+                _is_abstract = True
+                break
+
+        return _is_abstract
+
+    @property
+    def numeric_data(self) -> tuple:
+        """tuple: The tensors this Hamiltonian carries and the scalar data, in (``tensor_names``, ``scalar_names``) order."""
+        return tuple(getattr(self, name) for name in self.tensor_names + self.scalar_names)
 
     @property
     def tensors(self) -> tuple:
-        """tuple: The ``(core_tensors, leaf_tensors, nuc_constant)`` triple."""
-        return (self.core_tensors, self.leaf_tensors, self.nuc_constant)
+        """tuple: The tensors this Hamiltonian carries, in ``tensor_names`` order."""
+        return tuple(getattr(self, name) for name in self.tensor_names)
 
     @property
     def dimensions(self) -> dict[str, int | None]:
@@ -182,20 +204,20 @@ class NumericHamiltonian:
         The derived dimensions travel in the metadata so that ``_unflatten`` does not
         have to re-derive them.
         """
-        return self.tensors, tuple(self.dimensions.values())
+        return self.numeric_data, tuple(self.dimensions.values())
 
     @classmethod
     def _unflatten(cls, data, metadata):
         """Rebuild from leaves and metadata, bypassing validation."""
         obj = cls.__new__(cls)
-        for name, value in zip(_TENSOR_NAMES, data, strict=True):
+        for name, value in zip(cls.tensor_names + cls.scalar_names, data, strict=True):
             object.__setattr__(obj, name, value)
         for value, (name, _) in zip(metadata, cls.symbol_metadata.values(), strict=True):
             object.__setattr__(obj, name, value)
         return obj
 
     def _hash_key(self):
-        return tuple((_shape_of(t), _dtype_of(t)) for t in self.tensors)
+        return tuple((_shape_of(t), _dtype_of(t)) for t in self.numeric_data)
 
     def __hash__(self):
         # Deliberately keyed on shapes rather than values: this is the information that
@@ -206,12 +228,30 @@ class NumericHamiltonian:
     def __eq__(self, other):
         if type(other) is not type(self):
             return NotImplemented
+
         if self._hash_key() != other._hash_key():
             return False
-        if self.is_abstract or other.is_abstract:
-            # Shapes and dtypes already match and there are no values to compare.
+
+        if self.is_abstract and other.is_abstract:
+            # Both are abstract, compare each numeric data variable for concreteness/abstractness
+            for name in self.tensor_names + self.scalar_names:
+                data = getattr(self, name)
+                other_data = getattr(other, name)
+                if not (isinstance(data, AbstractArray) and isinstance(other_data, AbstractArray)):
+                    return False
+
             return True
-        return all(math.allclose(a, b) for a, b in zip(self.tensors, other.tensors, strict=True))
+
+        if not self.is_abstract and not other.is_abstract:
+            # Both are concrete Hamiltonians, so compare elements of all numeric data
+            return all(
+                math.allclose(a, b)
+                for a, b in zip(self.numeric_data, other.numeric_data, strict=True)
+            )
+
+        return (
+            self.is_abstract and other.is_abstract
+        )  # One is abstract, one is not, therefore not the same
 
     def __repr__(self):
         def render(tensor):
@@ -221,7 +261,9 @@ class NumericHamiltonian:
                 return repr(tensor)
             return f"tensor(shape={_shape_of(tensor)})"
 
-        body = ", ".join(f"{n}={render(getattr(self, n))}" for n in _TENSOR_NAMES)
+        body = ", ".join(
+            f"{n}={render(getattr(self, n))}" for n in self.tensor_names + self.scalar_names
+        )
         return f"{type(self).__name__}({body})"
 
 
@@ -335,8 +377,13 @@ class CDFHamiltonian(NumericHamiltonian):
         layer use only two-site :class:`~.IsingZZ` gates.
     """
 
-    core_shape: ClassVar[tuple[str, ...]] = ("L1", "N", "N")
-    leaf_shape: ClassVar[tuple[str, ...]] = ("L1", "N", "N")
+    tensor_names: ClassVar[tuple[str, ...]] = ("core_tensors", "leaf_tensors")
+    scalar_names: ClassVar[tuple[str, ...]] = ("nuc_constant",)
+    tensor_shapes: ClassVar[dict[str, tuple[str, ...]]] = {
+        "core_tensors": ("L1", "N", "N"),
+        "leaf_tensors": ("L1", "N", "N"),
+    }
+
     symbol_metadata: ClassVar[dict[str, tuple[str, int]]] = {
         "L1": ("num_fragments", 1),
         "N": ("num_orbitals", 0),
@@ -345,6 +392,13 @@ class CDFHamiltonian(NumericHamiltonian):
     core_tensors: Any
     leaf_tensors: Any
     nuc_constant: Any = None
+
+    def __post_init__(self):
+        if self.nuc_constant is None:
+            zero = AbstractArray((), float) if self.is_abstract else np.asarray(0.0)
+            object.__setattr__(self, "nuc_constant", zero)
+
+        super().__post_init__()
 
     def normalize_leaf_determinant(self) -> "CDFHamiltonian":
         r"""Force every leaf to determinant ``+1`` so :class:`~.BasisRotation`'s real-orthogonal sign
@@ -437,12 +491,6 @@ class CGFHamiltonian(NumericHamiltonian):
     >>> ham.leaf_tensors.shape
     (3, 2, 3, 3)
 
-    Note that ``core_shape`` is the *symbolic* shape family shared by every instance of the
-    class, not the shape of this instance's data:
-
-    >>> ham.core_shape
-    ('L1', 'M', 'M', 'N', 'N')
-
     The same Hamiltonian can be described with abstract data for the purposes of fast, low-fidelity
     resource-estimation workflows where only shape information is available:
 
@@ -493,8 +541,12 @@ class CGFHamiltonian(NumericHamiltonian):
         two-body layer use only two-site :class:`~.IsingZZ` gates.
     """
 
-    core_shape: ClassVar[tuple[str, ...]] = ("L1", "M", "M", "N", "N")
-    leaf_shape: ClassVar[tuple[str, ...]] = ("L1", "M", "N", "N")
+    tensor_names: ClassVar[tuple[str, ...]] = ("core_tensors", "leaf_tensors")
+    scalar_names: ClassVar[tuple[str, ...]] = ("nuc_constant",)
+    tensor_shapes: ClassVar[dict[str, tuple[str, ...]]] = {
+        "core_tensors": ("L1", "M", "M", "N", "N"),
+        "leaf_tensors": ("L1", "M", "N", "N"),
+    }
     symbol_metadata: ClassVar[dict[str, tuple[str, int]]] = {
         "L1": ("num_fragments", 1),
         "M": ("num_modes", 0),
@@ -504,6 +556,14 @@ class CGFHamiltonian(NumericHamiltonian):
     core_tensors: Any
     leaf_tensors: Any
     nuc_constant: Any = None
+
+    def __post_init__(self):
+
+        if self.nuc_constant is None:
+            zero = AbstractArray((), float) if self.is_abstract else np.asarray(0.0)
+            object.__setattr__(self, "nuc_constant", zero)
+
+        super().__post_init__()
 
     def normalize_leaf_determinant(self) -> "CGFHamiltonian":
         r"""Force every per-mode leaf to determinant ``+1`` so :class:`~.BasisRotation`'s real-orthogonal
@@ -543,3 +603,131 @@ class CGFHamiltonian(NumericHamiltonian):
             self,
             leaf_tensors=math.concatenate([math.swapaxes(leaves[:1], -2, -1), leaves[1:]], axis=0),
         )
+
+
+@dataclass(frozen=True, eq=False, repr=False)
+class VibronicHamiltonian(NumericHamiltonian):
+    r"""A real-space vibronic Hamiltonian, given as dense Taylor coefficients per fragment.
+
+    The form of this Hamiltonian is described in `Motlagh et al, arXiv:2411.13669
+    <https://arxiv.org/abs/2411.13669>`__. It acts on ``N`` electronic states and ``M``
+    vibrational modes, and is partitioned into ``F`` position fragments — each diagonal in a
+    fragment-specific electronic basis and polynomial in the mode positions up to second order —
+    plus a single kinetic fragment that is quadratic in the mode momenta,
+
+    .. math::
+
+        H = \sum_{i=0}^{F-1} H_i + H_{\text{kin}},
+        \qquad
+        H_{\text{kin}} = \sum_{r,s} t_{rs}\, P_r P_s ,
+
+    where each position fragment carries the electronic matrix elements
+
+    .. math::
+
+        (H_i)_{ab} = c^{(i)}_{ab} + \sum_r l^{(i)}_{ab,r} Q_r
+                     + \sum_{r,s} q^{(i)}_{ab,rs} Q_r Q_s .
+
+    .. seealso:: :class:`pennylane.TrotterVibronic`
+
+    Args:
+        constant (TensorLike | AbstractArray): the constant (mode-independent) coefficients
+            :math:`c^{(i)}_{ab}` of the ``F`` position fragments, of shape ``(F, N, N)``.
+        linear (TensorLike | AbstractArray): the linear-in-position coefficients
+            :math:`l^{(i)}_{ab,r}`, of shape ``(F, N, N, M)``.
+        quadratic (TensorLike | AbstractArray): the quadratic-in-position coefficients
+            :math:`q^{(i)}_{ab,rs}`, of shape ``(F, N, N, M, M)`` (see the Implementation Details
+            section for the diagonal/off-diagonal convention).
+        kinetic (TensorLike | AbstractArray): the quadratic-in-momentum coefficients
+            :math:`t_{rs}` of the single kinetic fragment, of shape ``(N, N, M, M)``.
+
+    Here ``F`` is the number of position fragments, ``N`` the number of electronic states and
+    ``M`` the number of vibrational modes; all three are derived from the shapes and reported as
+    :attr:`num_fragments`, :attr:`num_states` and :attr:`num_modes`.
+
+    Raises:
+        ValueError: if the tensor ranks or shared dimensions are inconsistent.
+
+    **Example**
+
+    >>> import numpy as np
+    >>> F, N, M = 2, 2, 3
+    >>> ham = qp.VibronicHamiltonian(
+    ...     constant=np.random.rand(F, N, N),
+    ...     linear=np.random.rand(F, N, N, M),
+    ...     quadratic=np.random.rand(F, N, N, M, M),
+    ...     kinetic=np.random.rand(N, N, M, M),
+    ... )
+    >>> ham.num_fragments, ham.num_states, ham.num_modes
+    (2, 2, 3)
+
+    The numeric data is directly accessible as follows:
+
+    >>> ham.constant.shape
+    (2, 2, 2)
+    >>> ham.quadratic.shape
+    (2, 2, 2, 3, 3)
+
+    The same Hamiltonian can be described with abstract data for the purposes of fast, low-fidelity
+    resource-estimation workflows where only shape information is available:
+
+    >>> from pennylane.typing import Float
+    >>> qp.VibronicHamiltonian(
+    ...     Float[F, N, N], Float[F, N, N, M], Float[F, N, N, M, M], Float[N, N, M, M]
+    ... ).constant
+    AbstractArray((2, 2, 2), float64, weak_type=True)
+
+    .. details ::
+        :title: Implementation Details
+
+        Recall the form of the vibronic Hamiltonian,
+
+        .. math::
+
+            H = \sum_{i=0}^{F-1} H_i + H_{\text{kin}},
+            \qquad
+            H_{\text{kin}} = \sum_{r,s} t_{rs}\, P_r P_s ,
+
+        where each position fragment carries the electronic matrix elements
+
+        .. math::
+
+            (H_i)_{ab} = c^{(i)}_{ab} + \sum_r l^{(i)}_{ab,r} Q_r
+                        + \sum_{r,s} q^{(i)}_{ab,rs} Q_r Q_s .
+
+        The arguments of `VibronicHamiltonian` map onto this expression as:
+
+        * ``constant[i][a, b]``: the mode-independent coefficient of position fragment :math:`i`;
+        * ``linear[i][a, b, r]``: the coefficient of :math:`Q_r`;
+        * ``quadratic[i][a, b, r, s]``: the coefficient of :math:`Q_r Q_s`. The diagonal
+          ``[..., r, r]`` holds the :math:`Q_r^2` coefficient, while an off-diagonal
+          :math:`Q_r Q_s` coefficient is read *once*, from the entry with :math:`r < s`; the
+          mirror entry :math:`(s, r)` is ignored, so put the full weight on :math:`r < s`
+          rather than splitting it evenly between the two;
+        * ``kinetic[a, b, r, s]``: the coefficient of :math:`P_r P_s`. :class:`~.TrotterVibronic`
+          reads only the mode-diagonal part of the :math:`(0, 0)` electronic block,
+          :math:`t_r =` ``kinetic[0, 0, r, r]``.
+
+        Note that the :class:`~.TrotterVibronic` operator imposes further structure to the above;
+        it requires the "XOR" fragmentation scheme of
+        `arXiv:2411.13669 <https://arxiv.org/abs/2411.13669>`__ and a number of electronic states,
+        ``N``, that is a power of 2.
+    """
+
+    tensor_names: ClassVar[tuple[str, ...]] = ("constant", "linear", "quadratic", "kinetic")
+    tensor_shapes: ClassVar[dict[str, tuple[str, ...]]] = {
+        "constant": ("F", "N", "N"),
+        "linear": ("F", "N", "N", "M"),
+        "quadratic": ("F", "N", "N", "M", "M"),
+        "kinetic": ("N", "N", "M", "M"),
+    }
+    symbol_metadata: ClassVar[dict[str, tuple[str, int]]] = {
+        "F": ("num_fragments", 0),
+        "N": ("num_states", 0),
+        "M": ("num_modes", 0),
+    }
+
+    constant: Any
+    linear: Any
+    quadratic: Any
+    kinetic: Any
