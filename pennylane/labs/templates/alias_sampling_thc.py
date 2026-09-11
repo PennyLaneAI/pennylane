@@ -487,8 +487,10 @@ def alias_sampling_thc(  # pylint: disable=too-many-arguments,too-many-positiona
     #    ``sample_reg``) are untouched by step 4, so the same ``comparator="<="`` returns
     #    ``alt_flag`` and ``cmp_work`` to |0>; any other comparator would leave
     #    ``alt_flag`` entangled with the sample register.
-    qp.adjoint(LeftQuantumComparator)(
-        keep_thresh, sample_reg, alt_flag, work_wires=cmp_work, comparator="<="
+    qp.adjoint(
+        LeftQuantumComparator(
+            keep_thresh, sample_reg, alt_flag, work_wires=cmp_work, comparator="<="
+        )
     )
     qp.H(swap_flag)
 
