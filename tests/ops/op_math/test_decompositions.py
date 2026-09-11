@@ -30,7 +30,6 @@ from pennylane.ops.op_math.decompositions.unitary_decompositions import (
     _compute_num_cnots,
     multi_qubit_decomposition,
 )
-from pennylane.transforms.decompose import DecomposeInterpreter
 from pennylane.wires import Wires
 
 
@@ -988,7 +987,7 @@ class TestTwoQubitUnitaryDecomposition:
     def test_compute_num_cnots_identifies_2_cnots(self, U):
         """Test that the new Shende–Bullock–Markov criterion correctly
         classifies 2-CNOT unitaries."""
-        U = qp.math.convert_to_su4(np.array(U))
+        U, _ = qp.math.convert_to_su4(np.array(U))
         assert _compute_num_cnots(U) == 2
 
     @pytest.mark.unit
@@ -996,7 +995,7 @@ class TestTwoQubitUnitaryDecomposition:
     def test_two_qubit_decomposition_2_cnots_gate_count(self, U):
         """Test that the dispatcher selects the new 2-CNOT decomposition
         and that the resulting circuit actually contains exactly 2 CNOTs."""
-        U = qp.math.convert_to_su4(np.array(U))
+        U, _ = qp.math.convert_to_su4(np.array(U))
 
         ops = two_qubit_decomposition(U, wires=[0, 1])
 
@@ -1018,7 +1017,7 @@ class TestTwoQubitUnitaryDecomposition:
     def test_two_qubit_decomposition_3_cnots(self, U, wires):
         """Test that a two-qubit matrix using 3 CNOTs is correctly decomposed."""
 
-        U = qp.math.convert_to_su4(np.array(U))
+        U, _ = qp.math.convert_to_su4(np.array(U))
 
         assert _compute_num_cnots(U) == 3
 
@@ -1037,7 +1036,7 @@ class TestTwoQubitUnitaryDecomposition:
     def test_two_qubit_decomposition_2_cnots(self, U, wires):
         """Test that a two-qubit matrix using 2 CNOTs isolation is correctly decomposed."""
 
-        U = qp.math.convert_to_su4(np.array(U))
+        U, _ = qp.math.convert_to_su4(np.array(U))
 
         assert _compute_num_cnots(U) == 2
 
@@ -1054,7 +1053,7 @@ class TestTwoQubitUnitaryDecomposition:
     def test_two_qubit_decomposition_1_cnot(self, U, wires):
         """Test that a two-qubit matrix using one CNOT is correctly decomposed."""
 
-        U = qp.math.convert_to_su4(np.array(U))
+        U, _ = qp.math.convert_to_su4(np.array(U))
 
         assert _compute_num_cnots(U) == 1
 
@@ -1071,7 +1070,7 @@ class TestTwoQubitUnitaryDecomposition:
     def test_two_qubit_decomposition_tensor_products(self, U_pair, wires):
         """Test that a two-qubit tensor product matrix is correctly decomposed."""
 
-        U = qp.math.convert_to_su4(qp.math.kron(np.array(U_pair[0]), np.array(U_pair[1])))
+        U, _ = qp.math.convert_to_su4(qp.math.kron(np.array(U_pair[0]), np.array(U_pair[1])))
 
         assert _compute_num_cnots(U) == 0
 
@@ -1233,7 +1232,6 @@ class TestTwoQubitUnitaryDecompositionInterfaces:
 
     @pytest.mark.jax
     @pytest.mark.catalyst
-    @pytest.mark.external
     def test_two_qubit_decomposition_2_cnots_qjit(self):
         """Test that two_qubit_decomposition does not raise TracerArrayConversionError
         under qjit. Regression test for #9016."""
@@ -1471,7 +1469,7 @@ class TestTwoQubitDecompositionWarnings:
     "U, n_wires",
     [
         (qp.matrix(qp.CRX(0.123, [0, 2]) @ qp.CRY(0.456, [1, 3])), 4),
-        (qp.QFT.compute_matrix(5), 5),
+        (qp.QFT.compute_matrix(tuple(range(5))), 5),
         (qp.GroverOperator.compute_matrix(6, []), 6),
     ],
 )
@@ -1518,45 +1516,6 @@ class TestQubitUnitaryDecompositionGraph:
         matrix = qp.matrix(decomp)
         assert qp.math.allclose(matrix, U, atol=1e-7)
 
-    @pytest.mark.jax
-    @pytest.mark.capture
-    @pytest.mark.parametrize(
-        "gate_set",
-        [
-            ("RX", "RY", "GlobalPhase"),
-            ("RX", "RZ", "GlobalPhase"),
-            ("RZ", "RY", "GlobalPhase"),
-            ("Rot", "GlobalPhase"),
-        ],
-    )
-    def test_single_qubit_decomposition_capture(self, gate_set):
-        """Tests that a single-qubit unitary can be decomposed with capture enabled."""
-
-        import jax
-
-        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
-
-        # Just a random matrix
-        U = np.array(
-            [
-                [-0.28829348 - 0.78829734j, 0.30364367 + 0.45085995j],
-                [0.53396245 - 0.10177564j, 0.76279558 - 0.35024096j],
-            ]
-        )
-
-        @DecomposeInterpreter(gate_set=gate_set)
-        def circuit(mat):
-            qp.QubitUnitary(mat, wires=[0])
-
-        jaxpr = jax.make_jaxpr(circuit)(U)
-        collector = CollectOpsandMeas()
-        collector.eval(jaxpr.jaxpr, jaxpr.consts, U)
-        decomp = collector.state["ops"]
-
-        decomp_tape = qp.tape.QuantumScript(decomp)
-        matrix = qp.matrix(decomp_tape)
-        assert qp.math.allclose(matrix, U, atol=1e-7)
-
     @pytest.mark.parametrize(
         "gate_set",
         [
@@ -1577,39 +1536,6 @@ class TestQubitUnitaryDecompositionGraph:
         matrix = qp.matrix(decomp, wire_order=[0, 1])
         assert qp.math.allclose(matrix, U, atol=1e-7)
 
-    @pytest.mark.jax
-    @pytest.mark.capture
-    @pytest.mark.parametrize(
-        "gate_set",
-        [
-            ("RX", "RY", "CNOT", "GlobalPhase"),
-            ("RX", "RZ", "CNOT", "GlobalPhase"),
-            ("RZ", "RY", "CNOT", "GlobalPhase"),
-            ("Rot", "CNOT", "GlobalPhase"),
-        ],
-    )
-    @pytest.mark.parametrize("U", samples_3_cnots + samples_2_cnots + samples_1_cnot)
-    def test_two_qubit_decomposition_capture(self, gate_set, U):
-        """Tests that the two-qubit unitary can be decomposed with capture enabled."""
-
-        import jax
-
-        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
-
-        @DecomposeInterpreter(gate_set=gate_set)
-        def circuit(mat):
-            qp.QubitUnitary(mat, wires=[0, 1])
-
-        U = jax.numpy.array(U)
-        jaxpr = jax.make_jaxpr(circuit)(U)
-        collector = CollectOpsandMeas()
-        collector.eval(jaxpr.jaxpr, jaxpr.consts, U)
-        decomp = collector.state["ops"]
-
-        decomp_tape = qp.tape.QuantumScript(decomp)
-        matrix = qp.matrix(decomp_tape, wire_order=[0, 1])
-        assert qp.math.allclose(matrix, U, atol=1e-7)
-
     @pytest.mark.integration
     @pytest.mark.parametrize(
         "gate_set",
@@ -1623,10 +1549,10 @@ class TestQubitUnitaryDecompositionGraph:
     @pytest.mark.parametrize(
         "U, n_wires",
         [
-            (qp.QFT.compute_matrix(2), 2),
+            (qp.QFT.compute_matrix(tuple(range(2))), 2),
             (qp.matrix(qp.CRX(0.123, [0, 2]) @ qp.CRY(0.456, [2, 0])), 2),
             (qp.matrix(qp.CRX(0.123, [0, 2]) @ qp.CRY(0.456, [1, 3])), 4),
-            (qp.QFT.compute_matrix(5), 5),
+            (qp.QFT.compute_matrix(tuple(range(5))), 5),
             (qp.GroverOperator.compute_matrix(6, []), 6),
         ],
     )

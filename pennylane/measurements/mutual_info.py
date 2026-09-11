@@ -20,11 +20,10 @@ from collections.abc import Sequence
 from copy import copy
 
 from pennylane import math
+from pennylane.core.measurements import StateMeasurement
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
-
-from .measurements import StateMeasurement
 
 
 class MutualInfoMP(StateMeasurement):
@@ -64,7 +63,7 @@ class MutualInfoMP(StateMeasurement):
         return cls._wires_primitive.bind(*wires[0], *wires[1], n_wires0=len(wires[0]), **kwargs)
 
     def __repr__(self):
-        return f"MutualInfo(wires0={self.raw_wires[0].tolist()}, wires1={self.raw_wires[1].tolist()}, log_base={self.log_base})"
+        return f"MutualInfo(wires0={self.raw_wires[0]}, wires1={self.raw_wires[1]}, log_base={self.log_base})"
 
     def __hash__(self):
         """int: returns an integer hash uniquely representing the measurement process"""

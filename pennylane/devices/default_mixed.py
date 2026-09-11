@@ -25,13 +25,13 @@ from collections.abc import Callable, Sequence
 from dataclasses import replace
 
 import pennylane as qp
+from pennylane.core.qscript import QuantumScript
+from pennylane.core.transforms import CompilePipeline
 from pennylane.devices.qubit_mixed import simulate
 from pennylane.exceptions import DeviceError
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.math import Interface
 from pennylane.ops.channel import __qubit_channels__ as channels
-from pennylane.tape import QuantumScript
-from pennylane.transforms.core import CompilePipeline
 from pennylane.typing import Result, ResultBatch
 
 from . import Device
@@ -320,7 +320,7 @@ class DefaultMixed(Device):
         self,
         execution_config: ExecutionConfig = None,
     ) -> tuple[CompilePipeline, ExecutionConfig]:
-        """This function defines the device compile pileline to be applied and an updated device
+        """This function defines the device compile pipeline to be applied and an updated device
         configuration.
 
         Args:
@@ -328,7 +328,7 @@ class DefaultMixed(Device):
                 describing the parameters needed to fully describe the execution.
 
         Returns:
-            CompilePipeline, ExecutionConfig: A compile pileline that when called returns
+            CompilePipeline, ExecutionConfig: A compile pipeline that when called returns
             ``QuantumTape`` objects that the device can natively execute, as well as a postprocessing
             function to be called after execution, and a configuration with unset
             specifications filled in.
@@ -341,11 +341,11 @@ class DefaultMixed(Device):
         """
         execution_config = execution_config or ExecutionConfig()
         config = self._setup_execution_config(execution_config)
-        compile_pileline = CompilePipeline()
+        compile_pipeline = CompilePipeline()
 
-        # Defer first since it addes wires to the device
-        compile_pileline.add_transform(qp.defer_measurements, allow_postselect=False)
-        compile_pileline.add_transform(
+        # Defer first since it adds wires to the device
+        compile_pipeline.add_transform(qp.defer_measurements, allow_postselect=False)
+        compile_pipeline.add_transform(
             decompose,
             target_gates=DEFAULT_MIXED_GATES,
             stopping_condition=stopping_condition,
@@ -356,21 +356,21 @@ class DefaultMixed(Device):
         # we should handle this case directly within setup_execution_config. This would
         # eliminate the need for the no_sampling transform in this section.
         if config.gradient_method == "backprop":
-            compile_pileline.add_transform(no_sampling, name="backprop + default.mixed")
+            compile_pipeline.add_transform(no_sampling, name="backprop + default.mixed")
 
         if self.readout_err is not None:
-            compile_pileline.add_transform(warn_readout_error_state)
+            compile_pipeline.add_transform(warn_readout_error_state)
 
         # Add the validate section
-        compile_pileline.add_transform(validate_device_wires, self.wires, name=self.name)
-        compile_pileline.add_transform(
+        compile_pipeline.add_transform(validate_device_wires, self.wires, name=self.name)
+        compile_pipeline.add_transform(
             validate_measurements,
             analytic_measurements=qp.devices.default_qubit.accepted_analytic_measurement,
             sample_measurements=qp.devices.default_qubit.accepted_sample_measurement,
             name=self.name,
         )
-        compile_pileline.add_transform(
+        compile_pipeline.add_transform(
             validate_observables, stopping_condition=observable_stopping_condition, name=self.name
         )
 
-        return compile_pileline, config
+        return compile_pipeline, config

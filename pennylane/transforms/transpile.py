@@ -5,12 +5,12 @@ Contains the transpiler transform.
 from functools import partial
 
 import pennylane as qp
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
+from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import gate_sets
 from pennylane.ops import LinearCombination
 from pennylane.ops import __all__ as all_ops
 from pennylane.ops.qubit import SWAP
-from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
@@ -136,9 +136,8 @@ def transpile(
 
     # make sure every wire is present in coupling map
     if any(wire not in coupling_graph.nodes for wire in tape.wires):
-        wires = tape.wires.tolist()
         raise ValueError(
-            f"Not all wires present in coupling map! wires: {wires}, coupling map: {coupling_graph.nodes}"
+            f"Not all wires present in coupling map! wires: {tape.wires}, coupling map: {coupling_graph.nodes}"
         )
 
     if any(isinstance(m.obs, (LinearCombination, qp.ops.Prod)) for m in tape.measurements):

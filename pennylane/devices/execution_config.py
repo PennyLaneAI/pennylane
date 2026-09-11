@@ -24,8 +24,8 @@ from enum import StrEnum
 from typing import TYPE_CHECKING
 
 from pennylane.concurrency.executors.backends import ExecBackends, get_executor
+from pennylane.core.transforms import Transform
 from pennylane.math.interface_utils import Interface
-from pennylane.transforms.core import Transform
 
 if TYPE_CHECKING:
     from pennylane.concurrency.executors.base import RemoteExec

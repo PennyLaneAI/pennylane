@@ -70,6 +70,7 @@ jobs:
     runs-on: ${{ needs.determine_runner.outputs.runner_group }}
     env:
       TORCH_VERSION: "2.9.0"  # must match pyproject.toml [dependency-groups] docs
+      DOCUTILSCONFIG: "doc/docutils.conf"
     steps:
       - uses: actions/checkout@v6
       - uses: PennyLaneAI/sphinx-action@master

@@ -42,7 +42,7 @@ from .utils import (
 
 if TYPE_CHECKING:
     from pennylane.core.operator import Operator
-    from pennylane.tape import QuantumScript
+    from pennylane.core.qscript import QuantumScript
 
 
 has_mpl = True
@@ -72,16 +72,11 @@ def _add_operation_to_drawer(op: Operator, drawer: MPLDrawer, layer: int, config
     """
     op_control_wires, control_values, base = unwrap_controls(op)
     is_global_op = isinstance(base, (ops.GlobalPhase, ops.Identity))
-    if len(op.wires) == 0 or is_global_op:
-        op_wires = list(range(drawer.n_wires))
-    else:
-        op_wires = op.wires
+    op_wires = list(range(drawer.n_wires)) if len(op.wires) == 0 or is_global_op else op.wires
     target_wires = [w for w in op_wires if w not in op_control_wires]
+
     if is_global_op and len(target_wires) == 0:
         raise ValueError("Can't draw controlled global gate with unknown non-control wires.")
-
-    if control_values is None:
-        control_values = [True for _ in op_control_wires]
 
     if op_control_wires:
         drawer.ctrl(
@@ -90,6 +85,7 @@ def _add_operation_to_drawer(op: Operator, drawer: MPLDrawer, layer: int, config
             wires_target=target_wires,
             control_values=control_values,
         )
+
     drawer.box_gate(
         layer,
         target_wires,
@@ -311,13 +307,16 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, max_length=None, **kw
     tape = ops.functions.map_wires(tape, wire_map=full_wire_map)[0][0]
     bit_map = default_bit_map(tape)
 
-    layers = drawable_layers(tape.operations, wire_map={i: i for i in tape.wires}, bit_map=bit_map)
+    mapped_wire_map = {i: i for i in tape.wires}
+    layers = drawable_layers(tape.operations, wire_map=mapped_wire_map, bit_map=bit_map)
 
     for i, layer in enumerate(layers):
         if any(isinstance(o, ops.MidMeasure) and o.reset for o in layer):
             layers.insert(i + 1, [])
 
-    bit_map, cwire_layers, cwire_wires = cwire_connections(layers + [tape.measurements], bit_map)
+    bit_map, cwire_layers, cwire_wires = cwire_connections(
+        layers + [tape.measurements], bit_map, mapped_wire_map
+    )
 
     config = _Config(
         decimals=kwargs.get("decimals", None),

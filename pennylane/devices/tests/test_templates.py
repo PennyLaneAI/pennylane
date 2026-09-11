@@ -228,21 +228,6 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
 
         assert np.allclose([math.fidelity_statevector(circuit(), exp_state)], [1.0], atol=tol)
 
-    @pytest.mark.xfail(reason="most devices do not support CV")
-    def test_CVNeuralNetLayers(self, device, shots):
-        """Test the CVNeuralNetLayers template."""
-        dev = device(2)
-
-        @qp.qnode(dev, shots=shots)
-        def circuit(weights):
-            qp.CVNeuralNetLayers(*weights, wires=[0, 1])
-            return qp.expval(qp.QuadX(0))
-
-        shapes = qp.CVNeuralNetLayers.shape(n_layers=2, n_wires=2)
-        weights = [np.random.random(shape) for shape in shapes]
-
-        circuit(weights)
-
     def test_CommutingEvolution(self, device, tol, shots):
         """Test the CommutingEvolution template."""
         n_wires = 2
@@ -299,23 +284,6 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         res = circuit()
         expected = [0.0, 0.25, 0.5, 0.25]
         assert np.allclose(res, expected, atol=tol)
-
-    @pytest.mark.xfail(reason="most devices do not support CV")
-    def test_DisplacementEmbedding(self, device, tol, shots):
-        """Test the DisplacementEmbedding template."""
-        dev = device(3)
-
-        @qp.qnode(dev, shots=shots)
-        def circuit(feature_vector):
-            qp.DisplacementEmbedding(features=feature_vector, wires=range(3))
-            qp.QuadraticPhase(0.1, wires=1)
-            return qp.expval(qp.NumberOperator(wires=1))
-
-        X = [1, 2, 3]
-
-        res = circuit(X)
-        expected = 4.1215690638748494
-        assert np.isclose(res, expected, atol=tol)
 
     def test_FermionicDoubleExcitation(self, device, tol, shots):
         """Test the FermionicDoubleExcitation template."""
@@ -433,23 +401,6 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         res = circuit([1.0, 2.0, 3.0])
         expected = [0.40712208, 0.32709118, 0.89125407]
         assert np.allclose(res, expected, atol=tol)
-
-    @pytest.mark.xfail(reason="most devices do not support CV")
-    def test_Interferometer(self, device, shots):
-        """Test the Interferometer template."""
-        dev = device(4)
-
-        @qp.qnode(dev, shots=shots)
-        def circuit(params):
-            qp.Interferometer(*params, wires=range(4))
-            return qp.expval(qp.Identity(0))
-
-        shapes = [[6], [6], [4]]
-        params = []
-        for shape in shapes:
-            params.append(np.random.random(shape))
-
-        _ = circuit(params)
 
     def test_LocalHilbertSchmidt(self, device, tol, shots):
         """Test the LocalHilbertSchmidt template."""
@@ -712,24 +663,6 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         expected = 0.125
         assert np.isclose(res, expected, atol=tol)
 
-    def test_QutritBasisStatePreparation(self, device, tol, shots):
-        """Test the QutritBasisStatePreparation template."""
-        dev = device(4)
-        if "qutrit" not in dev.name:
-            pytest.skip("QutritBasisState template only works on qutrit devices")
-
-        @qp.qnode(dev, shots=shots)
-        def circuit(basis_state, obs):
-            qp.QutritBasisStatePreparation(basis_state, wires=range(4))
-            return [qp.expval(qp.THermitian(obs, wires=i)) for i in range(4)]
-
-        basis_state = [0, 1, 1, 0]
-        obs = np.array([[1, 1, 0], [1, -1, 0], [0, 0, np.sqrt(2)]]) / np.sqrt(2)
-
-        res = circuit(basis_state, obs)
-        expected = np.array([1, -1, -1, 1]) / np.sqrt(2)
-        assert np.allclose(res, expected, atol=tol)
-
     def test_RandomLayers(self, device, tol, shots):
         """Test the RandomLayers template."""
         dev = device(2)
@@ -781,23 +714,6 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         res = circuit(init_weights, weights)
         expected = [1.0, -1.0, 1.0]
         assert np.allclose(res, expected, atol=tol)
-
-    @pytest.mark.xfail(reason="most devices do not support CV")
-    def test_SqueezingEmbedding(self, device, tol, shots):
-        """Test the SqueezingEmbedding template."""
-        dev = device(2)
-
-        @qp.qnode(dev, shots=shots)
-        def circuit(feature_vector):
-            qp.SqueezingEmbedding(features=feature_vector, wires=range(3))
-            qp.QuadraticPhase(0.1, wires=1)
-            return qp.expval(qp.NumberOperator(wires=1))
-
-        X = [1, 2, 3]
-
-        res = circuit(X)
-        expected = 13.018280763205285
-        assert np.isclose(res, expected, atol=tol)
 
     def test_StronglyEntanglingLayers(self, device, tol, shots):
         """Test the StronglyEntanglingLayers template."""

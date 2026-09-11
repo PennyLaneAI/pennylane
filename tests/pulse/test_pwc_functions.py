@@ -233,7 +233,7 @@ class TestIntegration:
             time_bins = np.linspace(t1, t2, num_bins)
             constants = jnp.array(list(fn(params, time_bins)) + [0])
 
-        # get start and end point as indicies, without casting to int
+        # get start and end point as indices, without casting to int
         start = num_bins / (t2 - t1) * (integration_bounds[0] - t1)
         end = num_bins / (t2 - t1) * (integration_bounds[1] - t1)
 

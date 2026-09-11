@@ -17,9 +17,9 @@ including a decorator for specifying gradient expansions."""
 import warnings
 
 from pennylane import math
+from pennylane.core.qscript import QuantumScript
 from pennylane.measurements import MutualInfoMP, ProbabilityMP, StateMP, VarianceMP, VnEntropyMP
 from pennylane.pytrees import flatten, unflatten
-from pennylane.tape import QuantumScript
 
 SUPPORTED_GRADIENT_KWARGS = {
     "approx_order",
@@ -31,7 +31,6 @@ SUPPORTED_GRADIENT_KWARGS = {
     "diagonal_shifts",
     "fallback_fn",
     "f0",
-    "force_order2",
     "gradient_recipes",
     "h",
     "mode",
@@ -258,7 +257,6 @@ def _all_zero_grad(tape):
 
     par_shapes = [math.shape(p) for p in tape.get_parameters()]
     for m in tape.measurements:
-        # TODO: Update shape for CV variables
         shape = (2 ** len(m.wires),) if isinstance(m, ProbabilityMP) else ()
         if len(tape.trainable_params) == 1:
             sub_list_zeros = math.zeros(par_shapes[0] + shape)

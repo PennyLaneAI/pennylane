@@ -22,6 +22,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
+from pennylane.core.operator import abstractify
 from pennylane.templates.state_preparations.mottonen import (
     _get_alpha_y,
     _get_alpha_z,
@@ -287,7 +288,7 @@ class TestDecomposition:
         circuit(state_vector)
         tape = spy.call_args[0][0][0]
 
-        assert tape.specs["resources"].gate_types["CNOT"] == n_CNOT
+        assert tape.specs["resources"].quantum_operations["CNOT"] == n_CNOT
 
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
@@ -340,10 +341,10 @@ class TestDecomposition:
 
         assert resource_obj.num_gates == 1 + 2 * n + 2 * (n - 1)
         assert resource_obj.gate_counts == {
-            qp.resource_rep(qp.GlobalPhase): 1,
-            qp.resource_rep(qp.RY): n,
-            qp.resource_rep(qp.RZ): n,
-            qp.resource_rep(qp.CNOT): 2 * (n - 1),
+            abstractify(qp.GlobalPhase): 1,
+            abstractify(qp.RY): n,
+            abstractify(qp.RZ): n,
+            abstractify(qp.CNOT): 2 * (n - 1),
         }
 
         with qp.queuing.AnnotatedQueue() as q:
@@ -361,7 +362,7 @@ class TestDecomposition:
         qp.assert_equal(q[7], qp.CNOT((0, 1)))
         qp.assert_equal(q[8], qp.RZ(-np.pi / 4, 1))
         qp.assert_equal(q[9], qp.CNOT((0, 1)))
-        qp.assert_equal(q[10], qp.GlobalPhase(-np.pi / 8, wires=(0, 1)))
+        qp.assert_equal(q[10], qp.GlobalPhase(-np.pi / 8))
 
     @pytest.mark.capture
     @pytest.mark.usefixtures("enable_graph_decomposition")
@@ -393,7 +394,7 @@ class TestDecomposition:
         qp.assert_equal(q[7], qp.CNOT((0, 1)))
         qp.assert_equal(q[8], qp.RZ(-pi / 4, 1))
         qp.assert_equal(q[9], qp.CNOT((0, 1)))
-        qp.assert_equal(q[10], qp.GlobalPhase(-pi / 8, wires=(0, 1)))
+        qp.assert_equal(q[10], qp.GlobalPhase(-pi / 8))
 
 
 class TestInputs:

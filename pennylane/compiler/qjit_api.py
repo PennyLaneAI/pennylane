@@ -27,8 +27,9 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
 
     .. note::
 
-        Currently, only two compilers are supported; the :doc:`Catalyst <catalyst:index>` hybrid
-        quantum-classical compiler, which works with the JAX interface, and CUDA Quantum.
+        PennyLane uses the :doc:`Catalyst <catalyst:index>` hybrid quantum-classical compiler by
+        default. Other compiler packages can integrate with :func:`~.qjit` through the
+        :mod:`~.compiler` API.
 
         For more details on Catalyst, see the :doc:`Catalyst documentation <catalyst:index>` and
         :func:`catalyst.qjit`.
@@ -42,12 +43,11 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
 
         For a full list of supported devices, please see :doc:`catalyst:dev/devices`.
 
-        CUDA Quantum supports ``softwareq.qpp``, ``nvidia.custatevec``, and ``nvidia.cutensornet``.
-
     Args:
         fn (Callable): Hybrid (quantum-classical) function to compile
-        compiler (str): Name of the compiler to use for just-in-time compilation. Available
-            options include ``catalyst`` and ``cuda_quantum``.
+        compiler (str): Name of the registered compiler to use for just-in-time compilation.
+            Use :func:`~.compiler.available_compilers` to list the compiler packages available in
+            the current environment. The default is ``"catalyst"``.
         autograph (bool): Experimental support for automatically converting Python control
             flow statements to Catalyst-compatible control flow. Currently supports Python ``if``,
             ``elif``, ``else``, and ``for`` statements. Note that this feature requires an
@@ -76,8 +76,8 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
             below.
 
     Returns:
-        catalyst.QJIT: A class that, when executed, just-in-time compiles and executes the
-        decorated function
+        Callable: A compiler-specific callable that, when executed, just-in-time compiles and
+        executes the decorated function
 
     Raises:
         FileExistsError: Unable to create temporary directory

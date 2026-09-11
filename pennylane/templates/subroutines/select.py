@@ -15,27 +15,22 @@
 Contains the Select template.
 """
 
-import copy
 from collections import Counter, defaultdict
 from itertools import product
 
 import numpy as np
 
 from pennylane import math
-from pennylane.core.operator import Operation
-from pennylane.decomposition import (
-    add_decomps,
-    adjoint_resource_rep,
-    controlled_resource_rep,
-    register_condition,
-    register_resources,
-    resource_rep,
-)
+from pennylane.core.operator import Operator, Operator2
+from pennylane.core.queuing import QueuingManager, apply
+from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.ops import CNOT, X, adjoint, ctrl
-from pennylane.queuing import QueuingManager, apply
-from pennylane.wires import Wires
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.typing import AbstractWires, Wire
+from pennylane.wires import Wires, validate_no_wire_overlaps
 
-from .arithmetic import TemporaryAND
+from .arithmetic.temporary_and import TemporaryAND
 
 
 def _partial_select(K, control):
@@ -71,10 +66,10 @@ def _partial_select(K, control):
         ]
         for j in range(K)
     ]
-    return (list(zip(*ctrl_)) for ctrl_ in controls)
+    return (list(zip(*ctrl_, strict=True)) for ctrl_ in controls)
 
 
-class Select(Operation):
+class Select(Operator2):
     r"""The ``Select`` operator, also available as :class:`~.Multiplexer` and :class:`~.Multiplexor`,
     applies different operations depending on the state of designated control wires.
 
@@ -101,7 +96,6 @@ class Select(Operation):
         partial (bool): Whether the state on the wires provided in ``control`` are compatible with
             a `partial Select <https://pennylane.ai/compilation/partial-select>`__ decomposition.
             See the note below for details.
-        id (str or None): String representing the operation (optional)
 
     .. note::
         The position of the operation in the list determines which qubit state implements that
@@ -349,245 +343,107 @@ class Select(Operation):
 
     """
 
-    resource_keys = {"op_reps", "num_control_wires", "partial", "num_work_wires"}
+    hybrid_argnames = ("ops",)
+    wire_argnames = ("control", "work_wires")
+    static_argnames = ("partial",)
 
-    @property
-    def resource_params(self):
-        op_reps = tuple(resource_rep(type(op), **op.resource_params) for op in self.ops)
-        return {
-            "op_reps": op_reps,
-            "num_control_wires": len(self.control),
-            "partial": self.partial,
-            "num_work_wires": len(self.work_wires),
-        }
+    arg_specs = {"control": Wire[-1], "work_wires": Wire[-1]}
 
-    def _flatten(self):
-        return tuple(self.ops), (
-            self.control,
-            self.work_wires,
-            self.partial,
-        )
-
-    # pylint: disable=arguments-differ
-    @classmethod
-    def _primitive_bind_call(cls, ops, control, **kwargs):
-        return super()._primitive_bind_call(*ops, wires=control, **kwargs)
-
-    @classmethod
-    def _unflatten(cls, data, metadata) -> "Select":
-        return cls(data, control=metadata[0], work_wires=metadata[1], partial=metadata[2])
-
-    def __repr__(self):
-        return f"Select(ops={self.ops}, control={self.control}, partial={self.partial})"
-
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(self, ops, control, work_wires=None, partial=False):
-        control = Wires(control)
-        work_wires = Wires(() if work_wires is None else work_wires)
-        self.hyperparameters["ops"] = tuple(ops)
-        self.hyperparameters["control"] = control
-        self.hyperparameters["work_wires"] = work_wires
-        self.hyperparameters["partial"] = partial
+        work_wires = () if work_wires is None else work_wires
+        super().__init__(ops=ops, control=control, work_wires=work_wires, partial=partial)
 
-        if 2 ** len(control) < len(ops):
+        if 2 ** len(self.control) < len(self.ops):
             raise ValueError(
-                f"Not enough control wires ({len(control)}) for the desired number of "
+                f"Not enough control wires ({len(self.control)}) for the desired number of "
                 + f"operations ({len(ops)}). At least {math.ceil_log2(len(ops))} control "
                 + "wires are required."
             )
 
-        _wires_are_traced = any(math.is_abstract(w) for w in control)
-
-        # Wire overlap validation must be skipped when wires are JAX tracers,
-        # as their concrete values are not available during tracing.
-        if not _wires_are_traced:
-            if any(
-                control_wire in Wires.all_wires([op.wires for op in ops])
-                for control_wire in control
-            ):
-                raise ValueError("Control wires should be different from operation wires.")
-
-        for op in ops:
-            QueuingManager.remove(op)
-
-        target_wires = Wires.all_wires([op.wires for op in ops])
-        self.hyperparameters["target_wires"] = target_wires
-
-        all_wires = target_wires + control
-        super().__init__(*self.data, wires=all_wires)
-
-    def map_wires(self, wire_map: dict) -> "Select":
-        new_ops = [o.map_wires(wire_map) for o in self.hyperparameters["ops"]]
-        new_control = [wire_map.get(wire, wire) for wire in self.control]
-        new_work_wires = [wire_map.get(wire, wire) for wire in self.work_wires]
-        return Select(new_ops, new_control, work_wires=new_work_wires, partial=self.partial)
-
-    def __copy__(self):
-        """Copy this op"""
-        cls = self.__class__
-        copied_op = cls.__new__(cls)
-
-        new_data = copy.copy(self.data)
-
-        for attr, value in vars(self).items():
-            if attr != "data":
-                setattr(copied_op, attr, value)
-
-        copied_op.data = new_data
-
-        return copied_op
-
-    @property
-    def data(self):
-        """Create data property"""
-        return tuple(d for op in self.ops for d in op.data)
-
-    @data.setter
-    def data(self, new_data):
-        """Set the data property"""
+        # Concrete target wires have known labels and are deduplicated, while abstract wires are
+        # assumed disjoint from all other wires and only contribute to the total wire count.
+        concrete_target_wires = Wires([])
+        num_abstract_target_wires = 0
         for op in self.ops:
-            op_num_params = op.num_params
-            if op_num_params > 0:
-                op.data = new_data[:op_num_params]
-                new_data = new_data[op_num_params:]
+            # CompressedResourceOps have no accessible wires and are skipped.
+            if not isinstance(op, Operator):
+                continue
+            if isinstance(op.wires, AbstractWires):
+                num_abstract_target_wires += len(op.wires)
+            else:
+                concrete_target_wires += op.wires
 
-    def decomposition(self):
-        r"""Representation of the operator as a product of other operators.
+        if num_abstract_target_wires:
+            all_target_wires = Wire[len(concrete_target_wires) + num_abstract_target_wires]
+        else:
+            all_target_wires = concrete_target_wires
 
-        .. math:: O = O_1 O_2 \dots O_n
+        self._target_wires = all_target_wires
 
-        A ``DecompositionUndefinedError`` is raised if no representation by decomposition is defined.
+        # ``wires`` is the union of control and target wires (work wires are excluded). Control and
+        # target wires are disjoint, so when either is abstract only the total count is known.
+        if isinstance(self.control, AbstractWires) or isinstance(all_target_wires, AbstractWires):
+            self._wires = Wire[len(self.control) + len(all_target_wires)]
+        else:
+            self._wires = self.control + all_target_wires
 
-        .. seealso:: :meth:`~.Operator.compute_decomposition`.
-
-        Returns:
-            list[Operator]: decomposition of the operator
-
-        **Example**
-
-        >>> ops = [qp.X(2), qp.X(3), qp.Y(2), qp.SWAP([2,3])]
-        >>> op = qp.Select(ops, control=[0,1])
-        >>> from pprint import pprint
-        >>> pprint(op.decomposition())
-        [MultiControlledX(wires=[0, 1, 2], control_values=[False, False]),
-        MultiControlledX(wires=[0, 1, 3], control_values=[False, True]),
-        Controlled(Y(2), control_wires=[0, 1], control_values=[True, False]),
-        Controlled(SWAP(wires=[2, 3]), control_wires=[0, 1])]
-
-        """
-        return self.compute_decomposition(
-            self.ops, control=self.control, partial=self.partial, work_wires=self.work_wires
-        )
-
-    # pylint: disable=arguments-differ
-    @staticmethod
-    def compute_decomposition(ops, control, partial: bool = False, work_wires=None):
-        r"""Representation of the operator as a product of other operators (static method).
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-        .. note::
-
-            Operations making up the decomposition should be queued within the
-            ``compute_decomposition`` method.
-
-        .. seealso:: :meth:`~.Operator.decomposition`.
-
-        Args:
-            ops (list[Operator]): operations to apply
-            control (Sequence[int]): the wires controlling which operation is applied
-
-        Returns:
-            list[Operator]: decomposition of the operator
-
-        **Example**
-
-        >>> ops = [qp.X(2), qp.X(3), qp.Y(2), qp.SWAP([2,3])]
-        >>> decomp = qp.Select.compute_decomposition(ops, control=[0,1])
-        >>> from pprint import pprint
-        >>> pprint(decomp)
-        [MultiControlledX(wires=[0, 1, 2], control_values=[False, False]),
-        MultiControlledX(wires=[0, 1, 3], control_values=[False, True]),
-        Controlled(Y(2), control_wires=[0, 1], control_values=[True, False]),
-        Controlled(SWAP(wires=[2, 3]), control_wires=[0, 1])]
-
-        """
-        if partial:
-            if len(ops) == 1:
-                if QueuingManager.recording():
-                    apply(ops[0])
-                return list(ops)
-            decomp_ops = [
-                ctrl(op, ctrl_, control_values=values, work_wires=work_wires)
-                for (ctrl_, values), op in zip(_partial_select(len(ops), control), ops)
-            ]
-            return decomp_ops
-
-        ctrl_states = product([0, 1], repeat=len(control))
-        return [
-            ctrl(op, control, control_values=state, work_wires=work_wires)
-            for state, op in zip(ctrl_states, ops)
-        ]
-
-    @property
-    def ops(self):
-        """Operations to be applied."""
-        return self.hyperparameters["ops"]
-
-    @property
-    def control(self):
-        """The control wires."""
-        return self.hyperparameters["control"]
+        wire_args = {
+            "target_wires": all_target_wires,
+            "control": self.control,
+            "work_wires": self.work_wires,
+        }
+        validate_no_wire_overlaps(wire_args)
 
     @property
     def target_wires(self):
         """The wires of the target operators."""
-        return self.hyperparameters["target_wires"]
+        return self._target_wires
 
     @property
-    def work_wires(self):
-        """The work wires of the Select template."""
-        return self.hyperparameters["work_wires"]
+    def data(self) -> tuple:
+        """The trainable parameters of the target operators."""
+        return tuple(d for op in self.ops for d in op.data)
 
     @property
-    def wires(self):
-        """All wires involved in the operation."""
-        return self.hyperparameters["control"] + self.hyperparameters["target_wires"]
+    def num_params(self) -> int:
+        """The number of trainable parameters of the target operators."""
+        return sum(op.num_params for op in self.ops)
 
-    @property
-    def partial(self):
-        """Operations to be applied."""
-        return self.hyperparameters["partial"]
+    def __repr__(self):
+        # Overriding so that work_wires aren't included
+        return f"Select(ops={self.ops}, control={self.control}, partial={self.partial})"
 
 
 # Decomposition of Select using multi-control strategy
 
 
 def _multi_controlled_rep(target_rep, num_control_wires, ctrl_state, num_work_wires):
-    return controlled_resource_rep(
-        base_class=target_rep.op_type,
-        base_params=target_rep.params,
-        num_control_wires=num_control_wires,
-        num_work_wires=num_work_wires,
+    return _ctrl_abstract(
+        target_rep,
+        Wire[num_control_wires],
+        Wire[num_work_wires],
         num_zero_control_values=num_control_wires - sum(ctrl_state),
     )
 
 
-def _select_resources_multi_control(op_reps, num_control_wires, partial, num_work_wires):
+def _select_resources_multi_control(ops, control, work_wires, partial):
+    num_control_wires = len(control)
+    num_work_wires = len(work_wires)
     resources = defaultdict(int)
     if partial:
-        if len(op_reps) == 1:
-            resources[op_reps[0]] += 1
+        if len(ops) == 1:
+            resources[ops[0]] += 1
         else:
             # Use dummy control values, we will only care about the length of the outputs
-            ctrls_and_ctrl_states = _partial_select(len(op_reps), list(range(num_control_wires)))
-            for (ctrl_, ctrl_state), rep in zip(ctrls_and_ctrl_states, op_reps):
-                resources[_multi_controlled_rep(rep, len(ctrl_), ctrl_state, num_work_wires)] += 1
+            ctrls_and_ctrl_states = _partial_select(len(ops), list(range(num_control_wires)))
+            for (ctrl_, ctrl_state), op in zip(ctrls_and_ctrl_states, ops, strict=True):
+                resources[_multi_controlled_rep(op, len(ctrl_), ctrl_state, num_work_wires)] += 1
     else:
         state_iterator = product([0, 1], repeat=num_control_wires)
 
-        for state, rep in zip(state_iterator, op_reps):
-            resources[_multi_controlled_rep(rep, num_control_wires, state, num_work_wires)] += 1
+        # state_iterator may be longer than ops, but will not be shorter. So we use strict=False
+        for state, op in zip(state_iterator, ops, strict=False):
+            resources[_multi_controlled_rep(op, num_control_wires, state, num_work_wires)] += 1
     return dict(resources)
 
 
@@ -598,10 +454,13 @@ def _select_decomp_multi_control(*_, ops, control, work_wires, partial, **__):
         if len(ops) == 1:
             apply(ops[0])
         else:
-            for (ctrl_, ctrl_state), op in zip(_partial_select(len(ops), control), ops):
+            for (ctrl_, ctrl_state), op in zip(
+                _partial_select(len(ops), control), ops, strict=True
+            ):
                 ctrl(op, ctrl_, control_values=ctrl_state, work_wires=work_wires)
     else:
-        for ctrl_state, op in zip(product([0, 1], repeat=len(control)), ops):
+        # ctrl_states may be longer than `ops`, but will never be shorter. So we use strict=False
+        for ctrl_state, op in zip(product([0, 1], repeat=len(control)), ops, strict=False):
             ctrl(op, control, control_values=ctrl_state, work_wires=work_wires)
 
 
@@ -730,21 +589,20 @@ def _add_k_units(ops, controls, work_wires, k):
     )
 
 
-def _select_resources_unary_not_partial(op_reps, num_control_wires, num_work_wires):
+def _select_resources_unary_not_partial(ops, num_control_wires, num_work_wires):
     resources = defaultdict(int)
     c = num_control_wires
-    K = len(op_reps)
+    K = len(ops)
     num_work_wires = num_work_wires - (c - 1)
 
     if c == 1:
-        for i, target_rep in enumerate(op_reps):
+        for i, op in enumerate(ops):
             resources[
-                controlled_resource_rep(
-                    base_class=target_rep.op_type,
-                    base_params=target_rep.params,
-                    num_control_wires=1,
+                _ctrl_abstract(
+                    op,
+                    Wire[1],
+                    Wire[num_work_wires],
                     num_zero_control_values=(1 - i),
-                    num_work_wires=num_work_wires,
                 )
             ] += 1
         return dict(resources)
@@ -765,77 +623,67 @@ def _select_resources_unary_not_partial(op_reps, num_control_wires, num_work_wir
     # N(c,K)=1+∑_{j=1}^{c−2} ⌈K⋅2^{−j}⌉
     num_elbows = c + K - 2 - (K - 1).bit_count() - int(K > 2 ** (c - 1))
 
-    resources[resource_rep(TemporaryAND)] += num_elbows
-    resources[adjoint_resource_rep(TemporaryAND)] += num_elbows
+    resources[TemporaryAND] += num_elbows
+    resources[_adjoint_abstract(TemporaryAND)] += num_elbows
     more_than_a_quarter = int(K > 2 ** (c - 2))
     more_than_a_half = int(K > 2 ** (c - 1))
-    resources[resource_rep(CNOT)] += K - 1 + more_than_a_half - more_than_a_quarter
-    resources[
-        controlled_resource_rep(
-            base_class=X, base_params={}, num_control_wires=1, num_zero_control_values=1
-        )
-    ] += more_than_a_quarter
-    for op_rep in op_reps:
-        resources[
-            controlled_resource_rep(
-                op_rep.op_type, op_rep.params, num_control_wires=1, num_work_wires=num_work_wires
-            )
-        ] += 1
+    resources[CNOT] += K - 1 + more_than_a_half - more_than_a_quarter
+    resources[_ctrl_abstract(X, Wire[1], num_zero_control_values=1)] += more_than_a_quarter
+    for op in ops:
+        resources[_ctrl_abstract(op, Wire[1], Wire[num_work_wires])] += 1
 
     return dict(resources)
 
 
 # pylint: disable=unused-argument
-def _select_resources_unary(op_reps, num_control_wires, partial, num_work_wires):
-    num_ops = len(op_reps)
+def _select_resources_unary(ops, control, work_wires, partial):
+    num_control_wires = len(control)
+    num_work_wires = len(work_wires)
+    num_ops = len(ops)
     if num_ops == 0:
         return {}
     if not partial:
-        return _select_resources_unary_not_partial(op_reps, num_control_wires, num_work_wires)
+        return _select_resources_unary_not_partial(ops, num_control_wires, num_work_wires)
 
     if num_ops == 1:
-        return {op_reps[0]: 1}
+        return {ops[0]: 1}
     counts = Counter()
 
     if num_ops == 2:
-        return {
-            controlled_resource_rep(
-                op_rep.op_type,
-                op_rep.params,
-                num_control_wires=1,
-                num_work_wires=num_work_wires,
-                num_zero_control_values=1 - i,
-            ): 1
-            for i, op_rep in enumerate(op_reps)
-        }
+        for i, op in enumerate(ops):
+            counts[
+                _ctrl_abstract(
+                    op,
+                    Wire[1],
+                    Wire[num_work_wires],
+                    num_zero_control_values=1 - i,
+                )
+            ] += 1
+        return dict(counts)
     if num_ops / 2 ** math.ceil_log2(num_ops) > 3 / 4:
         counts.update(
             {
-                resource_rep(TemporaryAND): num_ops - 3,
-                adjoint_resource_rep(TemporaryAND): num_ops - 3,
+                TemporaryAND: num_ops - 3,
+                _adjoint_abstract(TemporaryAND): num_ops - 3,
                 CNOT: num_ops - 1,
-                controlled_resource_rep(X, {}, num_control_wires=1, num_zero_control_values=1): 1,
+                _ctrl_abstract(X, Wire[1], num_zero_control_values=1): 1,
             }
         )
     else:
         counts.update(
             {
-                resource_rep(TemporaryAND): num_ops - 2,
-                adjoint_resource_rep(TemporaryAND): num_ops - 2,
+                TemporaryAND: num_ops - 2,
+                _adjoint_abstract(TemporaryAND): num_ops - 2,
                 CNOT: num_ops - 3,
-                controlled_resource_rep(X, {}, num_control_wires=1, num_zero_control_values=1): 1,
+                _ctrl_abstract(X, Wire[1], num_zero_control_values=1): 1,
             }
         )
 
     # Due to partial=True, we are allowed to restrict to a subset of the control wires
     unary_control_wires = max(math.ceil_log2(num_ops) - 1, 0)
     num_work_wires = num_work_wires - unary_control_wires
-    for op in op_reps:
-        counts[
-            controlled_resource_rep(
-                op.op_type, op.params, num_control_wires=1, num_work_wires=num_work_wires
-            )
-        ] += 1
+    for op in ops:
+        counts[_ctrl_abstract(op, Wire[1], Wire[num_work_wires])] += 1
 
     return dict(counts)
 
@@ -955,7 +803,7 @@ def _select_decomp_unary_not_partial(ops, control, work_wires):
     unary_work_wires = work_wires[: c - 1]
     new_work_wires = work_wires[c - 1 :]
     aux_control = [control[0]]
-    for ctrl_wire, work_wire in zip(control[1:], unary_work_wires, strict=False):
+    for ctrl_wire, work_wire in zip(control[1:], unary_work_wires, strict=True):
         aux_control.append(ctrl_wire)
         aux_control.append(work_wire)
     # Create triples of wires to which elbows are applied
@@ -986,7 +834,7 @@ def _select_decomp_unary_not_partial(ops, control, work_wires):
             if first_bit_has_flipped:
                 inter_ops = [CNOT([c0, c2])]
             else:
-                inter_ops = [ctrl(X(c2), control=c0, control_values=[0])]
+                inter_ops = [ctrl(X(c2), control=[c0], control_values=[0])]
         elif first_flip_bit == 0:
             c0, c1, c2 = unary_triples[0]
             inter_ops = [CNOT([c0, c2]), CNOT([c1, c2])]
@@ -1001,7 +849,7 @@ def _select_decomp_unary_not_partial(ops, control, work_wires):
     # For the last target operator, apply controlled target op and then the "closing"
     # ladder of right elbows
     closing_ctrl_bits = list(map(int, np.binary_repr(K - 1, width=c)))
-    ops_decomp.append(ctrl(ops[-1], control=aux_control[-1], work_wires=new_work_wires))
+    ops_decomp.append(ctrl(ops[-1], control=aux_control[-1:], work_wires=new_work_wires))
     ops_decomp.extend(
         [
             adjoint(TemporaryAND(triple, control_values=(1, val)))
@@ -1014,8 +862,9 @@ def _select_decomp_unary_not_partial(ops, control, work_wires):
     return ops_decomp
 
 
-def _unary_condition(op_reps, num_control_wires, partial, num_work_wires):
-    return num_work_wires >= num_control_wires - 1
+# pylint: disable=unused-argument
+def _unary_condition(ops, control, work_wires, partial):
+    return len(work_wires) >= len(control) - 1
 
 
 @register_condition(_unary_condition)
@@ -1085,42 +934,40 @@ add_decomps(Select, _select_decomp_unary)
 # Decomposition of Select using one work wire to control the target operations
 
 
-def _select_multi_control_work_wire_resources(op_reps, num_control_wires, num_work_wires, partial):
+def _select_multi_control_work_wire_resources(ops, control, work_wires, partial):
+    num_control_wires = len(control)
+    num_work_wires = len(work_wires)
     resources = defaultdict(int)
 
     if partial:
-        if len(op_reps) == 1:
-            resources[_multi_controlled_rep(op_reps[0], 1, [1], num_work_wires - 1)] += 1
+        if len(ops) == 1:
+            resources[_multi_controlled_rep(ops[0], 1, [1], num_work_wires - 1)] += 1
             resources[
                 _multi_controlled_rep(
-                    resource_rep(X), num_control_wires, [0] * num_control_wires, num_work_wires - 1
+                    X, num_control_wires, [0] * num_control_wires, num_work_wires - 1
                 )
             ] += 2
         else:
             # Use dummy control values, we will only care about the length of the outputs
-            ctrls_and_ctrl_states = _partial_select(len(op_reps), list(range(num_control_wires)))
-            for (ctrl_, ctrl_state), rep in zip(ctrls_and_ctrl_states, op_reps):
-                resources[_multi_controlled_rep(rep, 1, [1], num_work_wires - 1)] += 1
-                resources[
-                    _multi_controlled_rep(
-                        resource_rep(X), len(ctrl_), ctrl_state, num_work_wires - 1
-                    )
-                ] += 2
+            ctrls_and_ctrl_states = _partial_select(len(ops), list(range(num_control_wires)))
+            for (ctrl_, ctrl_state), op in zip(ctrls_and_ctrl_states, ops, strict=True):
+                resources[_multi_controlled_rep(op, 1, [1], num_work_wires - 1)] += 1
+                resources[_multi_controlled_rep(X, len(ctrl_), ctrl_state, num_work_wires - 1)] += 2
     else:
         state_iterator = product([0, 1], repeat=num_control_wires)
 
-        for state, rep in zip(state_iterator, op_reps):
+        # state_iterator may be longer than ops, but will not be shorter. So we use strict=False
+        for state, op in zip(state_iterator, ops, strict=False):
 
-            resources[_multi_controlled_rep(rep, 1, [1], num_work_wires - 1)] += 1
-            resources[
-                _multi_controlled_rep(resource_rep(X), num_control_wires, state, num_work_wires - 1)
-            ] += 2
+            resources[_multi_controlled_rep(op, 1, [1], num_work_wires - 1)] += 1
+            resources[_multi_controlled_rep(X, num_control_wires, state, num_work_wires - 1)] += 2
+
     return dict(resources)
 
 
 # pylint: disable=unused-argument
-def _work_wire_condition(op_reps, num_control_wires, partial, num_work_wires):
-    return num_work_wires >= 1
+def _work_wire_condition(ops, control, work_wires, partial):
+    return len(work_wires) >= 1
 
 
 @register_condition(_work_wire_condition)
@@ -1160,6 +1007,7 @@ def _select_decomp_multi_control_work_wire(*_, ops, control, work_wires, partial
             ctrl(X(work_wires[:1]), ctrl_, control_values=ctrl_state, work_wires=work_wires[1:])
         return []
 
+    # ctrl_states may be longer than `ops`, but will never be shorter. So we use strict=False
     for ctrl_state, op in zip(product([0, 1], repeat=len(control)), ops, strict=False):
         ctrl(X(work_wires[:1]), control, control_values=ctrl_state, work_wires=work_wires[1:])
         ctrl(op, control=work_wires[:1], work_wires=work_wires[1:])
@@ -1170,7 +1018,7 @@ def _select_decomp_multi_control_work_wire(*_, ops, control, work_wires, partial
 add_decomps(Select, _select_decomp_multi_control_work_wire)
 
 # pylint: disable=protected-access
-if Select._primitive is not None:
+if getattr(Select, "_primitive", None) is not None:
 
     @Select._primitive.def_impl
     def _(*args, n_wires, **kwargs):

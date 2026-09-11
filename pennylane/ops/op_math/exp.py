@@ -22,19 +22,20 @@ import numpy as np
 from scipy.sparse.linalg import expm as sparse_expm
 
 import pennylane as qp
-from pennylane import math, queuing
+from pennylane import math
+from pennylane.core import queuing
 from pennylane.core.operator import Operation, Operator
 from pennylane.decomposition import (
     add_decomps,
     register_condition,
     register_resources,
-    resource_rep,
 )
 from pennylane.exceptions import (
     DecompositionUndefinedError,
     GeneratorUndefinedError,
     OperatorPropertyUndefined,
 )
+from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 
 from .linear_combination import LinearCombination
@@ -61,21 +62,40 @@ def _get_has_generator_types(num_wires):
 
 
 def _find_equal_generator(base, coeff):
+    val = -1j * coeff
+    coeff = math.real(val) if math.is_real_obj_or_close(val) else val
+
     for op_class in _get_has_generator_types(len(base.wires)):
-        g, c = qp.generator(op_class)(coeff, base.wires)
+        # NOTE: Use a real probe coeff so that constructing the candidate does not fail for operators that do not support
+        # complex angles (like RZ). This should be fine as any op_class in _get_has_generator_types has a generator
+        # which doesn't depend on coeff. The coefficient is cast to real during construction anyways down below.
+        probe_coeff = math.real(coeff)
+        if issubclass(op_class, qp.GlobalPhase):
+            # NOTE: GlobalPhase doesn't act on any wires
+            g, c = (qp.I(), -1)
+        else:
+            g, c = qp.generator(op_class)(probe_coeff, base.wires)
+
+        # NOTE: Operators that can act on all wires (e.g. GlobalPhase), produce generators that
+        # also act on all wires and cannot be mapped 1:1 to the base's wires. Therefore,
+        # they can never be an equal generator for a wire-carrying base. Skip them rather than failing
+        # the zip strict check below.
+        candidate_wires_can_be_mapped = len(g.wires) == len(base.wires)
+        if not candidate_wires_can_be_mapped:
+            continue
+
         # Some generators are not wire-ordered (e.g. OrbitalRotation)
         mapped_wires_g = qp.map_wires(g, dict(zip(g.wires, base.wires, strict=True)))
 
         if qp.equal(mapped_wires_g, base):
             # Cancel the coefficients added by the generator
-            coeff = math.real(-1j / c * coeff)
+            coeff = math.real(1 / c * coeff)
             return op_class(coeff, g.wires)
 
         # could have absorbed the coefficient.
         simplified_g = qp.simplify(qp.s_prod(c, mapped_wires_g))
 
         if qp.equal(simplified_g, base):
-            coeff = math.real(-1j * coeff)
             return op_class(coeff, g.wires)
 
     return None
@@ -96,14 +116,14 @@ def exp(op, coeff: float = 1.0):
 
         This operator supports a batched base, a batched coefficient and a combination of both:
 
-        >>> op = qp.exp(qp.RX([1, 2, 3], wires=0), coeff=4)
-        >>> qp.matrix(op).shape
+        >>> op = qp.exp(qp.RX([1, 2, 3], wires=0), coeff=4)  # doctest: +SKIP
+        >>> qp.matrix(op).shape  # doctest: +SKIP
         (3, 2, 2)
         >>> op = qp.exp(qp.RX(1, wires=0), coeff=[1, 2, 3])
         >>> qp.matrix(op).shape
         (3, 2, 2)
-        >>> op = qp.exp(qp.RX([1, 2, 3], wires=0), coeff=[4, 5, 6])
-        >>> qp.matrix(op).shape
+        >>> op = qp.exp(qp.RX([1, 2, 3], wires=0), coeff=[4, 5, 6])  # doctest: +SKIP
+        >>> qp.matrix(op).shape  # doctest: +SKIP
         (3, 2, 2)
 
         But it doesn't support batching of operators:
@@ -364,15 +384,26 @@ class Exp(ScalarSymbolicOp, Operation):
             # This won't catch situations when the base matrix is autograd,
             # but at least this provides as much trainablility as possible
             try:
-                eigvals = self.eigvals()
+                # Compute the eigendecomposition without recording. Diagonalizing a
+                # composite base (e.g. a Sum/Hamiltonian) constructs intermediate
+                # operators; if those are queued into an active recording context,
+                # ``qp.matrix`` below would pick them up and return an incorrect
+                # diagonalizing matrix, silently producing a wrong (exception-free)
+                # result and incorrect gradients.
+                with queuing.QueuingManager.stop_recording():
+                    eigvals = self.eigvals()
+                    diagonalizing_gates = self.diagonalizing_gates()
                 eigvals_mat = (
                     math.stack([math.diag(e) for e in eigvals])
                     if math.ndim(self.scalar) > 0
                     else math.diag(eigvals)
                 )
-                if len(self.diagonalizing_gates()) == 0:
+                if len(diagonalizing_gates) == 0:
                     return math.expand_matrix(eigvals_mat, wires=self.wires, wire_order=wire_order)
-                diagonalizing_mat = qp.matrix(self.diagonalizing_gates, wire_order=self.wires)()
+                with queuing.QueuingManager.stop_recording():
+                    diagonalizing_mat = qp.matrix(
+                        qp.tape.QuantumScript(diagonalizing_gates), wire_order=self.wires
+                    )
                 mat = diagonalizing_mat.conj().T @ eigvals_mat @ diagonalizing_mat
                 return math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)
             except OperatorPropertyUndefined:
@@ -484,7 +515,9 @@ def _pauli_rot_decomp_condition(base):
 def _pauli_rot_decomp_resource(base):
     with queuing.QueuingManager.stop_recording():
         base = base.simplify()
-    return {resource_rep(qp.PauliRot, pauli_word=qp.pauli.pauli_word_to_string(base)): 1}
+
+    pauli_word = qp.pauli.pauli_word_to_string(base)
+    return {qp.PauliRot(Float, pauli_word=pauli_word, wires=Wire[len(pauli_word)]): 1}
 
 
 @register_condition(_pauli_rot_decomp_condition)

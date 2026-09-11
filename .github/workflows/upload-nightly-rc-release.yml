@@ -11,7 +11,9 @@ jobs:
     permissions:
       contents: write
     name: Setup the release
-    runs-on: ubuntu-24.04
+    runs-on:  
+      group: 'PennyLaneAI-Static-IP-Runners'
+      labels: ['pl-2-core-gh-runner']   
     outputs:
       rc_branch: ${{ steps.check_rc.outputs.rc_branch }}
       branch_exists: ${{ steps.check_rc.outputs.branch_exists }}
@@ -25,7 +27,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v6
       with:
-        python-version: "3.11"
+        python-version: "3.12"
         
     # Ensure setuptools is up-to-date for pyproject.toml processing
     - name: Install latest setuptools 

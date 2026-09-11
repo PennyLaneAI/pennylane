@@ -1448,7 +1448,7 @@ class TestParameterShiftHessianQNode:
 
     @pytest.mark.autograd
     def test_no_trainable_params_qnode_autograd(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
 
         dev = qp.device("default.qubit", wires=2)
@@ -1465,7 +1465,7 @@ class TestParameterShiftHessianQNode:
 
     @pytest.mark.torch
     def test_no_trainable_params_qnode_torch(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
 
         dev = qp.device("default.qubit", wires=2)
@@ -1482,7 +1482,7 @@ class TestParameterShiftHessianQNode:
 
     @pytest.mark.tf
     def test_no_trainable_params_qnode_tf(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
 
         dev = qp.device("default.qubit", wires=2)
@@ -1499,7 +1499,7 @@ class TestParameterShiftHessianQNode:
 
     @pytest.mark.jax
     def test_no_trainable_params_qnode_jax(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
 
         dev = qp.device("default.qubit", wires=2)

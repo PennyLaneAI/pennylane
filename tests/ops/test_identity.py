@@ -17,11 +17,27 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane import Identity
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.ops.identity import GlobalPhase, Identity
 
 op_wires = [[], [0], ["a"], [0, 1], ["a", "b", "c"], [100, "xasd", 12]]
 op_repr = ["I()", "I(0)", "I('a')", "I([0, 1])", "I(['a', 'b', 'c'])", "I([100, 'xasd', 12])"]
 op_params = tuple(zip(op_wires, op_repr))
+
+
+@pytest.mark.usefixtures("enable_and_disable_capture")
+@pytest.mark.parametrize("phi", (0.0, 1.0, -1.0))
+def test_global_phase_decompositions(phi):
+    """Tests that the decomposition rules of GlobalPhase are capture compatible."""
+    op = GlobalPhase(phi)
+    for rule in qp.list_decomps(GlobalPhase):
+        _test_decomposition_rule(op, rule)
+
+
+def test_is_verified_hermitian():
+    """Test that identity is verified to be hermitian."""
+    assert Identity.is_verified_hermitian is True
+    assert Identity(0).is_verified_hermitian is True
 
 
 @pytest.mark.parametrize("wires", op_wires)

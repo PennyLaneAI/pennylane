@@ -20,10 +20,10 @@ from collections import defaultdict
 import pytest
 
 import pennylane.estimator as qre
+from pennylane.core.queuing import AnnotatedQueue
 from pennylane.estimator.ops.op_math.symbolic import apply_adj
 from pennylane.estimator.resource_operator import GateCount, resource_rep
 from pennylane.estimator.wires_manager import Allocate, Deallocate
-from pennylane.queuing import AnnotatedQueue
 from pennylane.wires import Wires
 
 # pylint: disable=no-self-use, too-few-public-methods

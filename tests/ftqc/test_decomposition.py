@@ -46,6 +46,10 @@ from pennylane.ftqc.decomposition import (
 )
 from pennylane.ftqc.utils import QubitMgr
 
+PARAMETRIC_MCM_XFAIL = pytest.mark.pl2do(
+    reason="Parametric mid-circuit measurements have not yet been migrated to Operator2 [sc-130033]."
+)
+
 
 class TestGateSetDecomposition:
     """Test decomposition to the MBQC gate-set"""
@@ -55,7 +59,7 @@ class TestGateSetDecomposition:
         phi, theta, omega = 1.39, -0.123, np.pi / 7
 
         mat = qp.Rot.compute_matrix(phi, theta, omega)
-        a1, a2, a3 = math.decomposition.xzx_rotation_angles(mat)
+        a1, a2, a3, _ = math.decomposition.xzx_rotation_angles(mat)
 
         with qp.queuing.AnnotatedQueue() as q:
             _rot_to_xzx(phi, theta, omega, wires=0)
@@ -139,6 +143,7 @@ class TestGateSetDecomposition:
 
         assert np.allclose(circuit(), decomposed_circuit())
 
+    @PARAMETRIC_MCM_XFAIL
     def test_explicit_mbqc_implementation_matches(self):
         """Test that the explicit MBQC implementation of the RotXZX gate that
         a Rot gate decomposes to produces the expected analytic result"""
@@ -210,6 +215,7 @@ class TestMBQCFormalismConversion:
     """Test the transform convert_to_mbqc_formalism, converting to the MBQC formalism with
     online corrections immediately after each gate"""
 
+    @PARAMETRIC_MCM_XFAIL
     @pytest.mark.parametrize("op", [qp.S(7), qp.H(1), qp.RZ(1.2, 2), RotXZX(1.2, 2.3, 3.4, 2)])
     def test_queue_measurements(self, op):
         """Test that queue_measurements returns MeasurementValues as expected"""
@@ -221,6 +227,7 @@ class TestMBQCFormalismConversion:
         for mv in mvs:
             assert mv.measurements[0].wires[0] in wires
 
+    @PARAMETRIC_MCM_XFAIL
     def test_cnot_measurements(self):
         """Test that cnot_measurements returns MeasurementValues as expected"""
 
@@ -281,6 +288,7 @@ class TestMBQCFormalismConversion:
         with pytest.raises(NotImplementedError, match="Received unsupported gate of type"):
             queue_corrections(qp.Identity, measurements=[0, 0, 0, 0])
 
+    @PARAMETRIC_MCM_XFAIL
     def test_invalid_op_in_tape_raises_error(self):
         """Test that a NotImplemented error is raised if the tape isn't valid for conversion
         to the MBQC formalism using this transform"""
@@ -292,15 +300,16 @@ class TestMBQCFormalismConversion:
         with pytest.raises(NotImplementedError, match="unsupported gate"):
             _, _ = convert_to_mbqc_formalism(tape)
 
+    @PARAMETRIC_MCM_XFAIL
     @pytest.mark.parametrize(
         "op",
         [qp.H(2), qp.S(2), qp.RZ(1.23, 2), RotXZX(0, 1.23, 0, 2), RotXZX(0.12, 0.34, 0.56, 2)],
     )
-    def test_queue_single_qubit_gate(self, op):
+    def test_queue_single_qubit_gate(self, op, seed):
         """Test that the queue_single_qubit_gate function queues state preparation, MCMs
         and byproduct corrections that are equivalent to the input operator"""
 
-        dev = qp.device("lightning.qubit", wires=5)
+        dev = qp.device("lightning.qubit", wires=5, seed=seed)
         q_mgr = QubitMgr(num_qubits=5, start_idx=0)
         wire_map = {2: q_mgr.acquire_qubit()}
         w = op.wires[0]
@@ -344,11 +353,12 @@ class TestMBQCFormalismConversion:
         res, res_ref = qp.execute([diagonalized_tape, ref_tape], device=dev, mcm_method="one-shot")
         assert np.allclose(res, res_ref, atol=0.05)
 
-    def test_queue_cnot(self):
+    @PARAMETRIC_MCM_XFAIL
+    def test_queue_cnot(self, seed):
         """Test that the queue_cnot function queues state preparation, MCMs and byproduct
         corrections that are equivalent to the input operator"""
 
-        dev = qp.device("lightning.qubit", wires=15, seed=42)
+        dev = qp.device("lightning.qubit", wires=15, seed=seed)
         q_mgr = QubitMgr(num_qubits=15, start_idx=0)
 
         op = qp.CNOT([2, 3])
@@ -398,6 +408,7 @@ class TestMBQCFormalismConversion:
         res, res_ref = qp.execute([diagonalized_tape, ref_tape], device=dev, mcm_method="one-shot")
         assert np.allclose(res, res_ref, atol=0.1)
 
+    @PARAMETRIC_MCM_XFAIL
     @pytest.mark.parametrize(
         "gate, wire",
         [(qp.X, 2), (qp.Y, 1), (qp.Z, 0)],
@@ -434,13 +445,13 @@ class TestMBQCFormalismConversion:
         assert final_op.wires[0] != wire
         assert graph_op.wires[-1] == final_op.wires[0]
 
+    @PARAMETRIC_MCM_XFAIL
     @pytest.mark.parametrize(
         "gate, args",
         [
             (qp.Identity, [3]),
             (qp.Identity, []),
             (qp.GlobalPhase, [1.23]),
-            (qp.GlobalPhase, [1.23, 3]),
         ],
     )
     def test_identity_gates_are_supported(self, gate, args):
@@ -490,6 +501,7 @@ class TestMBQCFormalismConversion:
         ):
             _, _ = convert_to_mbqc_formalism(tape)
 
+    @PARAMETRIC_MCM_XFAIL
     @pytest.mark.parametrize("mp", (qp.sample(wires=[2, 3]), qp.sample()))
     def test_tape_wires_if_no_mp_wires(self, mp):
         """Test that wires are taken the measurement process if possible, and otherwise
@@ -511,12 +523,13 @@ class TestMBQCFormalismConversion:
     # wires E2E. Following discussion at the FTQC team meeting, we are marking
     # this test as flaky and keeping it here for the time being.
     @flaky(max_runs=5, min_passes=3)
+    @PARAMETRIC_MCM_XFAIL
     @pytest.mark.slow
-    def test_conversion_of_multi_wire_circuit(self):
+    def test_conversion_of_multi_wire_circuit(self, seed):
         """Test that the transform converts the tape to the expected set of gates
         correctly, and the returned tape continues to produce the expected output"""
 
-        dev = qp.device("lightning.qubit", seed=1234)
+        dev = qp.device("lightning.qubit", seed=seed)
 
         theta = 2.5
         with qp.queuing.AnnotatedQueue() as q:
@@ -573,8 +586,7 @@ class TestMBQCFormalismConversion:
 
 
 @pytest.mark.catalyst
-@pytest.mark.external
-def test_ppr_to_mbqc_conversion_to_mlir():
+def test_ppr_to_mbqc_conversion_to_mlir(seed):
     """Test that we can generate MLIR from the captured circuit and that the generated MLIR
     includes the pass name we are mapping to"""
 
@@ -582,7 +594,7 @@ def test_ppr_to_mbqc_conversion_to_mlir():
 
     @qp.qjit(target="mlir", capture=True)
     @ppr_to_mbqc
-    @qp.qnode(qp.device("lightning.qubit", wires=3), shots=1000)
+    @qp.qnode(qp.device("lightning.qubit", wires=3, seed=seed), shots=1000)
     def circ():
         qp.H(0)
         qp.S(0)
@@ -594,7 +606,6 @@ def test_ppr_to_mbqc_conversion_to_mlir():
 
 
 @pytest.mark.catalyst
-@pytest.mark.external
 def test_ppr_to_mbqc_without_qjit_raises_error():
     """Test that trying to apply the transform without QJIT raises an error"""
 

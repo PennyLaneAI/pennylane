@@ -37,7 +37,7 @@ def read_reports(workspace_path: Path | None) -> dict:
     report_contents = {}
     for report_path in reports:
         try:
-            with open(report_path, 'r', encoding='utf-8') as f:
+            with open(report_path, encoding="utf-8") as f:
                 report_contents[Path(report_path).name] = f.read()
                 print(f"Successfully read report: {Path(report_path).name}")
         except Exception as e:
@@ -102,7 +102,7 @@ def parse_args() -> Namespace:
         type=Path,
         required=False,
         default=os.environ.get("GITHUB_WORKSPACE"),
-        help="Path to where the repository is cloned to."
+        help="Path to where the repository is cloned to.",
     )
 
     return parser.parse_args()
@@ -115,7 +115,7 @@ if __name__ == "__main__":
     report_contents["metadata"] = {
         "commit_sha": args.commit_sha,
         "branch": args.branch,
-        "workflow_id": args.workflow_id
+        "workflow_id": args.workflow_id,
     }
 
     upload_reports(report_contents)

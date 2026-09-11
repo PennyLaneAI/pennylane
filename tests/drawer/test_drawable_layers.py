@@ -20,13 +20,13 @@ import sys
 import pytest
 
 import pennylane as qp
+from pennylane.core.queuing import AnnotatedQueue
 from pennylane.drawer.drawable_layers import (
     _recursive_find_layer,
     _recursive_find_mcm_stats_layer,
     drawable_layers,
 )
 from pennylane.ops import MidMeasure
-from pennylane.queuing import AnnotatedQueue
 
 
 class TestRecursiveFindLayer:
@@ -212,6 +212,17 @@ def test_basic_mid_measure():
     with AnnotatedQueue() as q:
         m0 = qp.measure(0)
         qp.cond(m0, qp.PauliX)(1)
+
+    bit_map = {q.queue[0]: None}
+
+    assert drawable_layers(q.queue, bit_map=bit_map) == [[q.queue[0]], [q.queue[1]]]
+
+
+def test_conditional_global_phase():
+    """Test conditional global phase operations do not break layer placement."""
+    with AnnotatedQueue() as q:
+        m0 = qp.measure(0)
+        qp.cond(m0, qp.GlobalPhase)(0.5)
 
     bit_map = {q.queue[0]: None}
 

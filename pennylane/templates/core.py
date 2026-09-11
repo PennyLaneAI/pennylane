@@ -38,9 +38,10 @@ from typing import Any, ParamSpec
 
 import numpy as np
 
-from pennylane import capture, math, queuing
+from pennylane import capture, math
 from pennylane.capture import subroutine as capture_subroutine
-from pennylane.core.operator import Operation, Operator
+from pennylane.core import queuing
+from pennylane.core.operator import Operation, Operator, abstractify
 from pennylane.decomposition import (
     CompressedResourceOp,
     add_decomps,
@@ -48,11 +49,12 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.decomposition.resources import auto_wrap
 from pennylane.ops import ChangeOpBasis
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.pytrees import flatten, unflatten
-from pennylane.typing import AbstractArray
-from pennylane.wires import AbstractWires, Wires, is_abstract_qubit
+from pennylane.typing import AbstractArray, AbstractWires, Wire
+from pennylane.wires import Wires, is_abstract_qubit
 
 has_jax = find_spec("jax") is not None
 
@@ -67,18 +69,14 @@ def _make_signature_key(subroutine: "Subroutine", *args, **kwargs):
 
 
 def _get_non_adjoint_rep(initial: "Operator | CompressedResourceOp | Subroutine"):
-    if isinstance(initial, CompressedResourceOp):
-        return auto_wrap(initial)
-    if isinstance(initial, Operator):
-        return resource_rep(type(initial), **initial.resource_params)
+    if isinstance(initial, (Operator, CompressedResourceOp)):
+        return abstractify(initial)
     return subroutine_resource_rep(initial.func, *initial.args, **initial.keywords)
 
 
 def _get_adjoint_rep(initial: "Operator | CompressedResourceOp | Subroutine"):
-    if isinstance(initial, Operator):
-        return adjoint_resource_rep(type(initial), initial.resource_params)
-    if isinstance(initial, CompressedResourceOp):
-        return adjoint_resource_rep(initial.op_type, initial.params)
+    if isinstance(initial, (Operator, CompressedResourceOp)):
+        return _adjoint_abstract(abstractify(initial))
     return adjoint_subroutine_resource_rep(initial.func, *initial.args, **initial.keywords)
 
 
@@ -86,8 +84,8 @@ def change_op_basis_subroutine_resource_rep(
     compute: "Operator | CompressedResourceOp | Subroutine",
     target: "Operator | CompressedResourceOp | Subroutine",
     uncompute: "Operator | CompressedResourceOp | Subroutine" = None,
-) -> CompressedResourceOp:
-    """Generate a :class:`~pennylane.decomposition.CompressedResourceOp` similar to :func:`~.change_op_basis_resource_rep` that is more
+) -> ChangeOpBasis | CompressedResourceOp:
+    """Generate an abstract :class:`~pennylane.ops.ChangeOpBasis` resource representation that is more
     specifically targeted for use with :class:`~.Subroutine` instances.
 
     If any of `compute`, `target`, or `uncompute` are subroutines, they should be provided as partials, with any parameters bound
@@ -98,7 +96,7 @@ def change_op_basis_subroutine_resource_rep(
         target (Operator | pennylane.decomposition.resources.CompressedResourceOp | Subroutine): the target operator or subroutine.
         uncompute (Operator | pennylane.decomposition.resources.CompressedResourceOp | Subroutine | None): the optional uncompute operator or subroutine.
     Returns:
-        pennylane.decomposition.CompressedResourceOp: a condensed representation of the :func:`~.change_op_basis` involving a subroutine that can be
+        pennylane.ops.ChangeOpBasis: an abstract representation of :func:`~.change_op_basis` involving a subroutine that can be
         used in specifying the resources of another operator, template or subroutine.
 
     .. note::
@@ -112,14 +110,7 @@ def change_op_basis_subroutine_resource_rep(
         uncompute_rep = _get_adjoint_rep(compute)
     else:
         uncompute_rep = _get_non_adjoint_rep(uncompute)
-    return CompressedResourceOp(
-        ChangeOpBasis,
-        {
-            "compute_op": compute_rep,
-            "target_op": target_rep,
-            "uncompute_op": uncompute_rep,
-        },
-    )
+    return _change_op_basis_abstract(compute_rep, target_rep, uncompute_rep)
 
 
 def adjoint_subroutine_resource_rep(
@@ -166,7 +157,7 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
         from functools import partial
 
         def S_resources(params, wires, rotation):
-            return {qp.resource_rep(rotation): params.shape[0]}
+            return {rotation: params.shape[0]}
 
         @partial(qp.templates.Subroutine, static_argnames="rotation", compute_resources=S_resources)
         def S(params, wires, rotation):
@@ -175,18 +166,19 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
 
     We can add ``S`` to the resources of another ``Operator`` by using this function together with
     an abstract form of the arguments it will be called with, using :class:`~.AbstractArray` and
-    :class:`~.AbstractWires`. ``AbstractWires`` can be created by indexing into the :class:`~.Wires` class.
+    :class:`~.AbstractWires`. These can be created by indexing into the :func:`~.typing.Float` and
+    :func:`~.typing.Wire` abstract types respectively.
 
     .. code-block:: python
 
-        from pennylane.typing import AbstractArray
+        from pennylane.typing import Float, Wire
         from pennylane.templates import subroutine_resource_rep
 
         class MyOp(qp.operation.Operation):
             pass
 
-        abstract_params = AbstractArray((4,), float)
-        abstract_wires = qp.wires.Wires[1] # a single wire
+        abstract_params = Float[4]
+        abstract_wires = Wire[1] # a single wire
         S_rep = subroutine_resource_rep(S, abstract_params, abstract_wires, qp.RX)
 
         @qp.decomposition.register_resources({S_rep: 1})
@@ -227,7 +219,7 @@ def _create_signature_key(
         if arg in static_argnames:
             key.append(val)
         elif arg in wire_argnames:
-            key.append(Wires[len(val)])
+            key.append(Wire[len(val)])
         else:
             leaves, struct = flatten(val)
 
@@ -410,7 +402,7 @@ def _default_resources(subroutine: "Subroutine", *args, **kwargs) -> defaultdict
 
     resources = defaultdict(int)
     for op in q.queue:
-        resources[resource_rep(type(op), **op.resource_params)] += 1
+        resources[abstractify(op)] += 1
     return resources
 
 
@@ -479,13 +471,13 @@ class Subroutine:
     >>> print(qp.draw(c, level="device")())
     0: ──RX(0.10)──RY(0.20)─┤  State
     >>> print(qp.specs(c)().resources)
-    Wire allocations: 1
-    Total gates: 1
-    Gate counts:
-    - MyTemplate: 1
-    Measurements:
+    Quantum operations:
+    - Total: 1
+      - MyTemplate: 1
+    Measurement processes:
     - state(all wires): 1
-    Depth: 1
+    Total wires: 1
+    Circuit Depth: 1
 
     For multiple wire register inputs or use of a different name than ``"wires"``, the
     ``wire_argnames`` can be provided:
@@ -604,11 +596,12 @@ class Subroutine:
 
     For example, we should be able to calculate the resources using the :class:`~.AbstractArray`
     and :class:`~.AbstractWires` classes. :class:`~.AbstractWires` can be created by indexing into
-    ``Wires`` with the number of wires.
+    :func:`~.typing.Wire` with the number of wires, and we can create the :class:`~.AbstractArray` from the available
+    :func:`~.typing.Float` abstract type.
 
-    >>> from pennylane.typing import AbstractArray
-    >>> abstract_params = AbstractArray((10, ), float)
-    >>> abstract_wires = qp.wires.Wires[1]
+    >>> from pennylane.typing import Float, Wire
+    >>> abstract_params = Float[10]
+    >>> abstract_wires = Wire[1]
     >>> RXLayer.compute_resources(abstract_params, abstract_wires)
     {<class 'pennylane.ops.qubit.parametric_ops_single_qubit.RX'>: 10}
 
@@ -617,14 +610,14 @@ class Subroutine:
 
     .. code-block:: python
 
-        from pennylane.typing import AbstractArray
+        from pennylane.typing import Float, Wire
         from pennylane.templates import subroutine_resource_rep
 
         class MyOp(qp.operation.Operation):
             pass
 
-        abstract_params = AbstractArray((3,), float)
-        abstract_wires = qp.wires.Wires[3]
+        abstract_params = Float[3]
+        abstract_wires = Wire[3]
         rxlayer_rep = subroutine_resource_rep(RXLayer, abstract_params, abstract_wires)
 
         @qp.decomposition.register_resources({rxlayer_rep: 1})

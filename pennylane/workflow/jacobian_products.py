@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 if TYPE_CHECKING:
-    from pennylane.tape import QuantumScriptBatch
+    from pennylane.core.qscript import QuantumScriptBatch
     from pennylane.typing import ResultBatch, TensorLike
 
 

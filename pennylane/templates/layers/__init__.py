@@ -17,7 +17,6 @@ They implement a transformation from a quantum state to another quantum state.
 """
 
 from .basic_entangler import BasicEntanglerLayers
-from .cv_neural_net import CVNeuralNetLayers
 from .gate_fabric import GateFabric
 from .particle_conserving_u1 import ParticleConservingU1
 from .particle_conserving_u2 import ParticleConservingU2

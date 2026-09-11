@@ -21,14 +21,14 @@ from collections.abc import Sequence
 import numpy as np
 
 from pennylane import math
+from pennylane.core._capture_measurements import _get_abstract_measurement  # tach-ignore
+from pennylane.core.measurements import SampleMeasurement
 from pennylane.core.operator import Operator
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops import MeasurementValue
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
-from .capture_measurements import _get_abstract_measurement
-from .measurements import SampleMeasurement
 from .process_samples import process_raw_samples
 
 
@@ -76,9 +76,9 @@ class CountsMP(SampleMeasurement):
         if self.obs:
             return f"CountsMP({self.obs}, all_outcomes={self.all_outcomes})"
         if self._eigvals is not None:
-            return f"CountsMP(eigvals={self._eigvals}, wires={self.wires.tolist()}, all_outcomes={self.all_outcomes})"
+            return f"CountsMP(eigvals={self._eigvals}, wires={self.wires}, all_outcomes={self.all_outcomes})"
 
-        return f"CountsMP(wires={self.wires.tolist()}, all_outcomes={self.all_outcomes})"
+        return f"CountsMP(wires={self.wires}, all_outcomes={self.all_outcomes})"
 
     @classmethod
     def _abstract_eval(

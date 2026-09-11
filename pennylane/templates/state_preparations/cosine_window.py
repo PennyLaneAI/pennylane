@@ -21,8 +21,10 @@ import pennylane as qp
 from pennylane import capture, math, register_resources
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import StatePrepBase
-from pennylane.decomposition import add_decomps, adjoint_resource_rep, resource_rep
+from pennylane.decomposition import add_decomps
 from pennylane.exceptions import WireError
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.typing import Wire
 from pennylane.wires import Wires
 
 
@@ -147,10 +149,10 @@ class CosineWindow(StatePrepBase):
 
 def _cosine_window_resources(num_wires):
     return {
-        resource_rep(qp.Hadamard): 1,
-        resource_rep(qp.RZ): 1,
-        adjoint_resource_rep(qp.QFT, {"num_wires": num_wires}): 1,
-        resource_rep(qp.PhaseShift): num_wires,
+        qp.Hadamard: 1,
+        qp.RZ: 1,
+        _adjoint_abstract(qp.QFT(Wire[num_wires])): 1,
+        qp.PhaseShift: num_wires,
     }
 
 

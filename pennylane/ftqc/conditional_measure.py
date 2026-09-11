@@ -19,9 +19,9 @@ from collections.abc import Callable
 
 from pennylane import capture
 from pennylane.capture.autograph import wraps
+from pennylane.core.queuing import QueuingManager
 from pennylane.ops import MeasurementValue, MidMeasure
 from pennylane.ops.op_math.condition import CondCallable, Conditional, cond
-from pennylane.queuing import QueuingManager
 
 
 def cond_measure(

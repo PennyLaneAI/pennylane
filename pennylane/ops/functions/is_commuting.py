@@ -19,7 +19,8 @@ import numpy as np
 
 import pennylane as qp
 from pennylane.exceptions import QuantumFunctionError
-from pennylane.ops.op_math import Prod, SProd, Sum
+from pennylane.ops.op_math import Controlled, Prod, SProd, Sum
+from pennylane.wires import Wires
 
 SPECIAL_UTILITIES = {
     "Barrier",
@@ -229,12 +230,14 @@ def check_commutation_two_non_simplified_rotations(operation1, operation2):
         bool: True if commutation, False otherwise, None if not two rotations.
     """
 
-    target_wires_1 = qp.wires.Wires(
-        [w for w in operation1.wires if w not in operation1.control_wires]
+    op1_control_wires = (
+        operation1.control_wires if isinstance(operation1, Controlled) else Wires([])
     )
-    target_wires_2 = qp.wires.Wires(
-        [w for w in operation2.wires if w not in operation2.control_wires]
+    target_wires_1 = qp.wires.Wires([w for w in operation1.wires if w not in op1_control_wires])
+    op2_control_wires = (
+        operation2.control_wires if isinstance(operation2, Controlled) else Wires([])
     )
+    target_wires_2 = qp.wires.Wires([w for w in operation2.wires if w not in op2_control_wires])
 
     if operation1.name == "CRot":
         if intersection(target_wires_1, operation2.wires):
@@ -254,12 +257,9 @@ def check_commutation_two_non_simplified_rotations(operation1, operation2):
 unsupported_operations = [
     "PauliRot",
     "QubitDensityMatrix",
-    "CVNeuralNetLayers",
     "ApproxTimeEvolution",
     "ArbitraryUnitary",
     "CommutingEvolution",
-    "DisplacementEmbedding",
-    "SqueezingEmbedding",
     "Exp",
 ]
 
@@ -272,14 +272,10 @@ def is_commuting(operation1, operation2):
 
     .. note::
 
-        Most qubit-based PennyLane operations are supported --- CV operations
-        are not supported at this time.
+        Most PennyLane operations are supported. Unsupported operations include:
 
-        Unsupported qubit-based operations include:
-
-        :class:`~.PauliRot`, :class:`~.QubitDensityMatrix`, :class:`~.CVNeuralNetLayers`,
+        :class:`~.PauliRot`, :class:`~.QubitDensityMatrix`,
         :class:`~.ApproxTimeEvolution`, :class:`~.ArbitraryUnitary`, :class:`~.CommutingEvolution`,
-        :class:`~.DisplacementEmbedding`, :class:`~.SqueezingEmbedding`
         :class:`~.Exp`
 
     Args:
@@ -300,14 +296,10 @@ def is_commuting(operation1, operation2):
     if not intersection(operation1.wires, operation2.wires):
         return True
 
-    if operation1.name in unsupported_operations or isinstance(
-        operation1, (qp.operation.CVOperation, qp.operation.Channel)
-    ):
+    if operation1.name in unsupported_operations or isinstance(operation1, qp.operation.Channel):
         raise QuantumFunctionError(f"Operation {operation1.name} not supported.")
 
-    if operation2.name in unsupported_operations or isinstance(
-        operation2, (qp.operation.CVOperation, qp.operation.Channel)
-    ):
+    if operation2.name in unsupported_operations or isinstance(operation2, qp.operation.Channel):
         raise QuantumFunctionError(f"Operation {operation2.name} not supported.")
 
     if operation1.pauli_rep is not None and operation2.pauli_rep is not None:

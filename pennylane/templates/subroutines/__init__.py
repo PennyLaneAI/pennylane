@@ -21,11 +21,13 @@ from .time_evolution import (
     ApproxTimeEvolution,
     CommutingEvolution,
     QDrift,
+    TrotterCDF,
+    TrotterCGF,
     TrotterizedQfunc,
     TrotterProduct,
+    TrotterVibronic,
     trotterize,
 )
-from .interferometer import Interferometer
 from .permute import Permute
 from .qft import QFT
 from .qpe import QuantumPhaseEstimation
@@ -37,6 +39,7 @@ from .fable import FABLE
 from .ffft import FFFT, TwoWireFFT
 from .select import Multiplexer, Multiplexor, Select
 from .prepselprep import PrepSelPrep
+from .multix import MultiX
 from .reflection import Reflection
 from .qubitization import Qubitization
 from .controlled_sequence import ControlledSequence
@@ -74,6 +77,8 @@ from .arithmetic import (
     SemiAdder,
     Elbow,
     TemporaryAND,
+    Incrementer,
+    SignedOutMultiplier,
 )
 
 __all__ = [
@@ -82,10 +87,13 @@ __all__ = [
     "BBQRAM",
     "CommutingEvolution",
     "QDrift",
+    "TrotterCDF",
+    "TrotterCGF",
     "TrotterizedQfunc",
     "TrotterProduct",
+    "TrotterVibronic",
     "trotterize",
-    "Interferometer",
+    "Incrementer",
     "IQP",
     "Permute",
     "QFT",
@@ -105,6 +113,7 @@ __all__ = [
     "Multiplexor",
     "SelectOnlyQRAM",
     "PrepSelPrep",
+    "MultiX",
     "Reflection",
     "Qubitization",
     "ControlledSequence",
@@ -127,6 +136,8 @@ __all__ = [
     "PhaseAdder",
     "Adder",
     "Multiplier",
+    "OutMultiplier",
+    "SignedOutMultiplier",
     "OutAdder",
     "OutMultiplier",
     "OutSquare",

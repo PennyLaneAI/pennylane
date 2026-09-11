@@ -31,6 +31,8 @@ Resource Estimation
 
     ~estimate
     ~LabsResourceConfig
+    ~mark_subroutine
+    ~ResourceQfunc
 
 Qubit Tracking Functionality
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -93,6 +95,12 @@ Templates
 
     ~OutOfPlaceIntegerComparator
     ~RegisterEquality
+    ~LabsAdder
+    ~LabsOutAdder
+    ~LabsMultiplier
+    ~ClassicalOutMultiplier
+    ~LabsModExp
+    ~LabsPhaseAdder
     ~LabsQROM
     ~SelectCopyQROM
 
@@ -128,6 +136,12 @@ from .templates import (
     OutOfPlaceIntegerComparator,
     RegisterEquality,
     selectpaulirot_controlled_resource_decomp,
+    ClassicalOutMultiplier,
+    LabsAdder,
+    LabsModExp,
+    LabsMultiplier,
+    LabsOutAdder,
+    LabsPhaseAdder,
     aqft_resource_decomp,
     qft_phase_grad_resource_decomp,
     qrom_state_preparation_resource_decomp,
@@ -135,6 +149,7 @@ from .templates import (
     select_thc_resource_decomp,
     select_thc_controlled_resource_decomp,
 )
+
 from .ops import (
     ch_resource_decomp,
     ch_toffoli_based_resource_decomp,
@@ -144,8 +159,15 @@ from .ops import (
     mcx_one_clean_aux_resource_decomp,
     mcx_one_dirty_aux_resource_decomp,
     mcx_many_clean_aux_resource_decomp,
+    mark_subroutine,
+    ResourceQfunc,
 )
 
+Adder = LabsAdder
+OutAdder = LabsOutAdder
+Multiplier = LabsMultiplier
+ModExp = LabsModExp
+PhaseAdder = LabsPhaseAdder
 CosineWindow = LabsCosineWindow
 MottonenStatePreparation = LabsMottonenStatePreparation
 SumOfSlatersPrep = LabsSumOfSlatersPrep
@@ -170,16 +192,82 @@ def _(action: Deallocate):
 
 
 @_map_to_resource_op.register
+def _(op: qp.Adder):
+    mod = op.hyperparameters["mod"]
+    x_wires = op.hyperparameters["x_wires"]
+    return Adder(
+        len(x_wires),
+        mod,
+        wires=x_wires,
+    )
+
+
+@_map_to_resource_op.register
 def _(op: qp.QROM):
     bitstrings = op.data[0]
     num_bitstrings = bitstrings.shape[0]
     size_bitstring = bitstrings.shape[1] if num_bitstrings > 0 else 0
-    op_wires = op.hyperparameters["control_wires"] + op.hyperparameters["target_wires"]
+    op_wires = op.control_wires + op.target_wires
     return LabsQROM(
         num_bitstrings=num_bitstrings,
         size_bitstring=size_bitstring,
         borrow_qubits=not (op.hyperparameters["clean"]),
         wires=op_wires,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qp.OutAdder):
+    mod = op.hyperparameters["mod"]
+    x_wires = op.hyperparameters["x_wires"]
+    y_wires = op.hyperparameters["y_wires"]
+    output_wires = op.hyperparameters["output_wires"]
+
+    return OutAdder(
+        len(x_wires),
+        len(y_wires),
+        len(output_wires),
+        mod=mod,
+        wires=x_wires + y_wires + output_wires,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qp.Multiplier):
+    mod = op.hyperparameters["mod"]
+    x_wires = op.hyperparameters["x_wires"]
+    return Multiplier(
+        len(x_wires),
+        mod=mod,
+        wires=x_wires,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qp.ModExp):
+    mod = op.hyperparameters["mod"]
+    x_wires = op.hyperparameters["x_wires"]
+    output_wires = op.hyperparameters["output_wires"]
+    return ModExp(
+        len(x_wires),
+        len(output_wires),
+        mod=mod,
+        wires=x_wires + output_wires,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qp.PhaseAdder):
+    mod = op.hyperparameters["mod"]
+    x_wires = op.hyperparameters["x_wires"]
+
+    if mod != 2 ** (len(x_wires)):  # An extra wire was prepended
+        x_wires = x_wires[1:]
+
+    return PhaseAdder(
+        len(x_wires),
+        mod=mod,
+        wires=x_wires,
     )
 
 

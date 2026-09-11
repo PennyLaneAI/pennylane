@@ -157,7 +157,8 @@ class SparseOp(CustomOp):
 ###################################################################
 
 
-class TestValidation:
+class TestValidation:  # pylint: disable=too-few-public-methods
+
     def test_non_hermitian_generator(self):
         """Check that an error is raised if the generator
         returned is non-Hermitian"""
@@ -174,78 +175,10 @@ class TestValidation:
         with pytest.raises(QuantumFunctionError, match="is not hermitian"):
             qp.generator(op)
 
-    def test_multi_param_op(self):
-        """Test that an error is raised if the operator has more than one parameter"""
-
-        class SomeOp(qp.operation.Operation):
-            num_params = 2
-            num_wires = 1
-
-            def generator(self):
-                return qp.RX(self.data[0], wires=self.wires[0])
-
-        op = SomeOp(0.5, 0.1, wires=0)
-
-        with pytest.raises(ValueError, match="is not written in terms of a single parameter"):
-            qp.generator(op)
-
     def test_unknown_format(self):
         """Raise an exception is the format is unknown"""
         with pytest.raises(ValueError, match="format must be one of"):
             qp.generator(qp.RX, format=None)(0.5, wires=0)
-
-
-class TestBackwardsCompatibility:
-    """Test that operators that provide the old style generator property
-    continue to work with a deprecation warning."""
-
-    def test_return_class(self):
-        """Test that an old-style Operator that has a generator property,
-        and that returns a list containing (a) operator class and (b) prefactor,
-        continues to work but also raises a deprecation warning."""
-
-        class DeprecatedClassOp(CustomOp):
-            generator = [qp.PauliX, -0.6]
-
-        op = DeprecatedClassOp(0.5, wires="a")
-
-        with pytest.warns(UserWarning, match=r"The Operator\.generator property is deprecated"):
-            gen, prefactor = qp.generator(op)
-
-        assert isinstance(gen, qp.operation.Operator)
-        assert prefactor == -0.6
-        assert gen.name == "PauliX"
-        assert gen.wires.tolist() == ["a"]
-
-    def test_return_array(self):
-        """Test that an old-style Operator that has a generator property,
-        and that returns a list containing (a) array and (b) prefactor,
-        continues to work but also raises a deprecation warning."""
-
-        class DeprecatedClassOp(CustomOp):
-            generator = [np.diag([0, 1]), -0.6]
-
-        op = DeprecatedClassOp(0.5, wires="a")
-
-        with pytest.warns(UserWarning, match=r"The Operator\.generator property is deprecated"):
-            gen, prefactor = qp.generator(op)
-
-        assert isinstance(gen, qp.operation.Operator)
-        assert prefactor == -0.6
-        assert gen.name == "Hermitian"
-        assert gen.wires.tolist() == ["a"]
-
-    def test_generator_property_old_default(self):
-        """Test that if the old-style generator property is the default,
-        a GeneratorUndefinedError is raised and a warning is raised about the old syntax."""
-
-        class DeprecatedClassOp(CustomOp):
-            generator = [None, 1]
-
-        op = DeprecatedClassOp(0.5, wires="a")
-        with pytest.warns(UserWarning, match=r"The Operator\.generator property is deprecated"):
-            with pytest.raises(qp.operation.GeneratorUndefinedError):
-                qp.generator(op)
 
 
 class TestPrefactorReturn:

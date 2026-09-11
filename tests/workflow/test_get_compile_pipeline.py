@@ -18,16 +18,14 @@ import re
 import pytest
 
 import pennylane as qp
+from pennylane.core.transforms import BoundTransform, CompilePipeline
 from pennylane.devices.execution_config import ExecutionConfig
-from pennylane.transforms.core.compile_pipeline import CompilePipeline
-from pennylane.transforms.core.transform import BoundTransform
 from pennylane.workflow import get_compile_pipeline
 
 
 class TestValidation:
     """Tests for validation errors."""
 
-    @pytest.mark.external
     @pytest.mark.catalyst
     def test_input_is_not_qjit_qnode(self):
         """Tests when the input is QJIT'd but not a qnode."""
@@ -44,7 +42,6 @@ class TestValidation:
         ):
             _ = get_compile_pipeline(inc)()
 
-    @pytest.mark.external
     @pytest.mark.catalyst
     @pytest.mark.parametrize(
         "unsupported_level",
@@ -105,9 +102,7 @@ class TestValidation:
             _ = get_compile_pipeline(circuit, level="my_marker")()
 
 
-@pytest.mark.parametrize(
-    "use_qjit", [False, pytest.param(True, marks=[pytest.mark.external, pytest.mark.catalyst])]
-)
+@pytest.mark.parametrize("use_qjit", [False, pytest.param(True, marks=[pytest.mark.catalyst])])
 class TestUserLevel:
     """Tests 'user' level transforms."""
 
@@ -326,9 +321,7 @@ class TestDeviceLevel:
         assert cp[2:] == expected_cp[2:]
 
 
-@pytest.mark.parametrize(
-    "use_qjit", [False, pytest.param(True, marks=[pytest.mark.external, pytest.mark.catalyst])]
-)
+@pytest.mark.parametrize("use_qjit", [False, pytest.param(True, marks=[pytest.mark.catalyst])])
 def test_marker_level(use_qjit):
     """Tests that a string corresponding to a marker level can be used."""
 
@@ -349,9 +342,7 @@ def test_marker_level(use_qjit):
     assert cp[0].tape_transform == qp.transforms.cancel_inverses.tape_transform
 
 
-@pytest.mark.parametrize(
-    "use_qjit", [False, pytest.param(True, marks=[pytest.mark.external, pytest.mark.catalyst])]
-)
+@pytest.mark.parametrize("use_qjit", [False, pytest.param(True, marks=[pytest.mark.catalyst])])
 def test_level_is_top(use_qjit):
     """Tests that level is top returns an empty pipeline."""
 
@@ -370,9 +361,7 @@ def test_level_is_top(use_qjit):
     assert cp == CompilePipeline()
 
 
-@pytest.mark.parametrize(
-    "use_qjit", [False, pytest.param(True, marks=[pytest.mark.external, pytest.mark.catalyst])]
-)
+@pytest.mark.parametrize("use_qjit", [False, pytest.param(True, marks=[pytest.mark.catalyst])])
 @pytest.mark.parametrize("level", [0, 1, 2])
 def test_level_is_integer(level, use_qjit):
     """Tests that levels can be integers corresponding to their position
@@ -399,7 +388,6 @@ def test_level_is_integer(level, use_qjit):
         assert cp == CompilePipeline(qp.transforms.cancel_inverses, qp.transforms.merge_rotations)
 
 
-@pytest.mark.external
 @pytest.mark.catalyst
 @pytest.mark.parametrize("level_slice", [slice(2, 5), slice(2, None), slice(None, 3)])
 def test_level_is_slice_qjit(level_slice):

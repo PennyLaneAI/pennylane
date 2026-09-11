@@ -160,7 +160,9 @@ class TestPauliRotation:
         ),
     )
 
-    @pytest.mark.parametrize("resource_class, local_res", zip(params_classes, params_ctrl_res))
+    @pytest.mark.parametrize(
+        "resource_class, local_res", list(zip(params_classes, params_ctrl_res))
+    )
     @pytest.mark.parametrize("ctrl_wires, ctrl_values, general_res", ctrl_res_data)
     def test_controlled_decomposition_multi_controlled(
         self, resource_class, local_res, ctrl_wires, ctrl_values, general_res

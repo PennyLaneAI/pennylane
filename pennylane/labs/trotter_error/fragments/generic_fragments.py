@@ -1,4 +1,4 @@
-# Copyright 2025 Xanadu Quantum Technologies Inc.
+# Copyright 2026 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,120 +15,242 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
-from typing import Any
+import numpy as np
+import scipy as sp
+from numpy.typing import ArrayLike
+from scipy.sparse import csr_array
 
-from pennylane.labs.trotter_error import Fragment
+from pennylane.labs.trotter_error.abstract import Fragment, TrotterState
 
 
-def generic_fragments(fragments: Sequence[Any], norm_fn: Callable = None) -> list[GenericFragment]:
-    """Instantiates :class:`~.pennylane.labs.trotter_error.GenericFragment` objects.
+class NumpyFragment(Fragment):
+    r"""A wrapper class for NumPy arrays to be used in the Trotter error functions
 
     Args:
-        fragments (Sequence[Any]): A sequence of objects of the same type. The type is assumed to implement ``__add__``, ``__mul__``, and ``__matmul__``.
-        norm_fn (Callable): A function that computes the norm of the fragments.
-
-    Returns:
-        List[GenericFragment]: A list of :class:`~.pennylane.labs.trotter_error.GenericFragment` objects instantiated from `fragments`.
-
+        fragment (ArrayLike): The ``ArrayLike`` to be wrapped as a :class:`~.pennylane.labs.trotter_error.abstract.Fragment` object.
 
     **Example**
 
-    This code example demonstrates building fragments from numpy matrices.
-
-    >>> from pennylane.labs.trotter_error import generic_fragments
+    >>> from pennylane.labs.trotter_error import NumpyFragment
     >>> import numpy as np
-    >>> matrices = [np.array([[1, 0], [0, 1]]), np.array([[0, 1], [1, 0]])]
-    >>> fragments = generic_fragments(matrices, norm_fn=np.linalg.norm)
-    >>> fragments
-    [GenericFragment(type=<class 'numpy.ndarray'>), GenericFragment(type=<class 'numpy.ndarray'>)]
-    >>> fragments[0].norm()
-    1.4142135623730951
+
+    >>> matrix = np.array([[1, 0], [0, 1]])
+    >>> NumpyFragment(matrix)
+    NumpyFragment(shape=(2, 2))
     """
 
-    if len(fragments) == 0:
-        return []
-
-    frag_type = type(fragments[0])
-
-    if not all(isinstance(fragment, frag_type) for fragment in fragments):
-        raise TypeError("All fragments must be of the same type.")
-
-    if not hasattr(frag_type, "__add__"):
-        raise TypeError(f"Fragment of type {frag_type} does not implement __add__.")
-
-    if not hasattr(frag_type, "__mul__"):
-        raise TypeError(f"Fragment of type {frag_type} does not implement __mul__.")
-
-    if not hasattr(frag_type, "__matmul__"):
-        raise TypeError(f"Fragment of type {frag_type} does not implement __matmul__.")
-
-    return [GenericFragment(fragment, norm_fn=norm_fn) for fragment in fragments]
-
-
-class GenericFragment(Fragment):
-    """Abstract class used to define a generic fragment object for product formula error estimation.
-
-    This class allows using any object implementing arithmetic dunder methods to be used
-    for product formula error estimation.
-
-    Args:
-        fragment (Any): An object that implements the following arithmetic methods:
-            ``__add__``, ``__mul__``, and ``__matmul__``.
-        norm_fn (optional, Callable): A function used to compute the norm of ``fragment``.
-
-    .. note:: :class:`~.pennylane.labs.trotter_error.GenericFragment` objects should be instantated through the ``generic_fragments`` function.
-
-    **Example**
-
-    >>> from pennylane.labs.trotter_error import generic_fragments
-    >>> import numpy as np
-    >>> matrices = [np.array([[1, 0], [0, 1]]), np.array([[0, 1], [1, 0]])]
-    >>> generic_fragments(matrices)
-    [GenericFragment(type=<class 'numpy.ndarray'>), GenericFragment(type=<class 'numpy.ndarray'>)]
-    """
-
-    def __init__(self, fragment: Any, norm_fn: Callable = None):
+    def __init__(self, fragment: ArrayLike):
         self.fragment = fragment
-        self.norm_fn = norm_fn
 
-    def __add__(self, other: GenericFragment):
-        return GenericFragment(self.fragment + other.fragment, norm_fn=self.norm_fn)
+    def __add__(self, other: NumpyFragment):
+        return NumpyFragment(self.fragment + other.fragment)
 
-    def __sub__(self, other: GenericFragment):
-        return GenericFragment(self.fragment + (-1) * other.fragment, norm_fn=self.norm_fn)
+    def __sub__(self, other: NumpyFragment):
+        return NumpyFragment(self.fragment + (-1) * other.fragment)
 
     def __mul__(self, scalar: float):
-        return GenericFragment(scalar * self.fragment, norm_fn=self.norm_fn)
+        return NumpyFragment(scalar * self.fragment)
 
-    def __eq__(self, other: GenericFragment):
-        if not isinstance(self.fragment, type(other)):
-            return False
-
-        return self.fragment == other.fragment
+    def __eq__(self, other: NumpyFragment):
+        return np.allclose(self.fragment, other.fragment)
 
     __rmul__ = __mul__
 
-    def __matmul__(self, other: GenericFragment):
-        return GenericFragment(self.fragment @ other.fragment, norm_fn=self.norm_fn)
+    def __matmul__(self, other: NumpyFragment):
+        return NumpyFragment(self.fragment @ other.fragment)
 
-    def apply(self, state: Any) -> Any:
+    def apply(self, state: NumpyState) -> NumpyState:
         """Apply the fragment to a state using the underlying object's ``__matmul__`` method."""
-        return self.fragment @ state
+        return NumpyState(self.fragment @ state.state)
 
-    def expectation(self, left: Any, right: Any) -> float:
+    def expectation(self, left: NumpyState, right: NumpyState) -> float:
         """Compute the expectation value using the underlying object's ``__matmul__`` method."""
-        return left @ self.fragment @ right
-
-    def norm(self, params: dict = None) -> float:
-        """Compute the norm of the fragment."""
-        if self.norm_fn:
-            params = params or {}
-            return self.norm_fn(self.fragment, **params)
-
-        raise NotImplementedError(
-            "GenericFragment was constructed without specifying the norm function."
-        )
+        return left.state.T @ self.fragment @ right.state
 
     def __repr__(self):
-        return f"GenericFragment(type={type(self.fragment)})"
+        return f"NumpyFragment(shape={self.fragment.shape})"
+
+
+class NumpyState(TrotterState):
+    r"""State wrapper for Numpy objects.
+
+    **Example**
+
+    >>> from pennylane.labs.trotter_error import NumpyFragment, NumpyState
+    >>> import numpy as np
+    >>>
+    >>> matrix = NumpyFragment(np.array([[1, 0], [0, 1]]))
+    >>> vector = NumpyState(np.array([1, 0]))
+    >>> matrix.apply(vector)
+    NumpyState([1 0])"""
+
+    def __init__(self, state: ArrayLike):
+        self.state = state
+
+    def __add__(self, other: NumpyState):
+        return NumpyState(self.state + other.state)
+
+    def __mul__(self, scalar: float):
+        return NumpyState(scalar * self.state)
+
+    def dot(self, other: NumpyState):
+        return self.state.dot(other.state)
+
+    def __repr__(self):
+        return f"NumpyState({self.state})"
+
+
+class SparseFragment(Fragment):
+    r"""A wrapper class for scipy sparse matrices to be used in the Trotter error functions.
+
+    Args:
+        fragment (csr_array): The ``csr_array`` to be wrapped as a :class:`~.pennylane.labs.trotter_error.abstract.Fragment` object.
+
+    **Example**
+
+    >>> from pennylane.labs.trotter_error import SparseFragment
+    >>> from scipy.sparse import csr_array
+    >>>
+    >>> matrix = csr_array([[1, 0], [0, 1]])
+    >>> SparseFragment(matrix)
+    SparseFragment(shape=(2, 2), dtype=int64)
+    """
+
+    def __init__(self, fragment: csr_array):
+        self.fragment = fragment
+
+    def __add__(self, other: SparseFragment):
+        new_fragment = self.fragment + other.fragment
+        return SparseFragment(new_fragment)
+
+    def __sub__(self, other: SparseFragment):
+        return SparseFragment(self.fragment - other.fragment)
+
+    def __mul__(self, scalar: float):
+        return SparseFragment(scalar * self.fragment)
+
+    def __eq__(self, other: SparseFragment):
+        if not isinstance(other, SparseFragment):
+            raise TypeError(f"Cannot compare SparseFragment with type {type(other)}.")
+
+        if not np.all(self.fragment.indices == other.fragment.indices):
+            return False
+
+        if not np.all(self.fragment.indptr == other.fragment.indptr):
+            return False
+
+        return np.allclose(self.fragment.data, other.fragment.data)
+
+    __rmul__ = __mul__
+
+    def __matmul__(self, other: SparseFragment):
+        return SparseFragment(self.fragment.dot(other.fragment))
+
+    def apply(self, state: SparseState) -> SparseState:
+        result = self.fragment.dot(state.state.transpose()).transpose()
+        return SparseState(csr_array(result))
+
+    def expectation(self, left: SparseState, right: SparseFragment) -> complex:
+        result = left.state.conjugate().dot(self.fragment.dot(right.state.transpose()))
+        return complex(result.toarray().flatten()[0])
+
+    def norm(self, params: dict = None) -> float:
+        """Returns the norm computed by SciPy"""
+
+        if params is None:
+            params = {}
+
+        ord = params.get("ord")
+        return sp.sparse.linalg.norm(self.fragment, ord=ord)
+
+    def __repr__(self):
+        return f"SparseFragment(shape={self.fragment.shape}, dtype={self.fragment.dtype})"
+
+
+class SparseState(TrotterState):
+    """A wrapper class to allow scipy sparse vectors to be used in the Trotter error estimation
+    functions.
+
+    This class is intended to instantiate states to be used along with
+    the :class:`~.pennylane.labs.trotter_error.fragments.generic_fragments.SparseFragment` class.
+
+    **Example**
+    >>> from pennylane.labs.trotter_error import SparseFragment, SparseState
+    >>> from scipy.sparse import csr_array
+
+    >>> matrix = csr_array([[1, 0], [0, 1]])
+    >>> vector = csr_array([1, 0], shape=(1, 2))
+
+    >>> frag = SparseFragment(matrix)
+    >>> state = SparseState(vector)
+
+    >>> frag.apply(state)
+    SparseState(<Compressed Sparse Row sparse array of dtype 'int64'
+        with 1 stored elements and shape (1, 2)>)
+    """
+
+    def __init__(self, state: csr_array):
+        if not isinstance(state, csr_array):
+            raise TypeError(
+                f"SparseState must be instantiated from a csr_array. Got {type(state)}."
+            )
+
+        shape = state.shape
+
+        if not len(shape) == 2 or not shape[0] == 1:
+            raise ValueError(
+                f"Input csr_array must be one-dimensional with shape (1, k). Got shape {shape}."
+            )
+
+        self.state = state
+
+    def __add__(self, other: SparseState) -> SparseState:
+        return SparseState(self.state + other.state)
+
+    def __sub__(self, other: SparseState) -> SparseState:
+        return SparseState(self.state - other.state)
+
+    def __mul__(self, scalar: float) -> SparseState:
+        return SparseState(scalar * self.state)
+
+    __rmul__ = __mul__
+
+    def __repr__(self) -> str:
+        return f"SparseState({self.state.__repr__()})"
+
+    def __eq__(self, other: SparseState) -> SparseState:
+        if not isinstance(other, SparseState):
+            raise TypeError(f"Cannot compare SparseFragment with type {type(other)}.")
+
+        if not np.all(self.state.indices == other.state.indices):
+            return False
+
+        if not np.all(self.state.indptr == other.state.indptr):
+            return False
+
+        return np.allclose(self.state.data, other.state.data)
+
+    @classmethod
+    def zero_state(cls, dim: int) -> SparseState:  # pylint: disable=arguments-differ
+        """Return a representation of the zero state.
+
+        Returns:
+            SparseState: an ``SparseState`` representation of the zero state
+        """
+        return csr_array((dim, dim))
+
+    def dot(self, other) -> complex:
+        """Compute the dot product of two states.
+
+        Args:
+            other: the state to take the dot product with
+
+        Returns:
+            complex: the dot product of self and other
+        """
+
+        if isinstance(other, SparseState):
+            result = self.state.conjugate().dot(other.state.transpose())
+            return complex(result.toarray().flatten()[0])
+
+        raise TypeError(f"Cannot compute dot product between SparseState and {type(other)}")

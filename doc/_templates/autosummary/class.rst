@@ -33,7 +33,7 @@
    {% endblock %}
 
    {% for item in attributes %}
-   .. autoattribute:: {{ item }}
+   .. autoattribute:: {{ fullname }}.{{ item }}
    {%- endfor %}
 
    .. raw:: html
@@ -67,7 +67,7 @@
    {% endblock %}
 
    {% for item in methods %}
-   .. automethod:: {{ item }}
+   .. automethod:: {{ fullname }}.{{ item }}
    {%- endfor %}
 
    .. raw:: html
@@ -84,3 +84,6 @@
              $(this).children('h2').eq(0).children('i').eq(0).toggleClass("up");
          })
       </script>
+
+   ..
+

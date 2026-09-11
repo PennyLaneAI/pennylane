@@ -17,38 +17,39 @@ Contains the OutMultiplier template.
 
 from collections import defaultdict
 
-from pennylane.core.operator import Operation
+from pennylane import capture, compiler, math
+from pennylane.core.operator import Operator2, abstractify
 from pennylane.decomposition import (
     add_decomps,
-    adjoint_resource_rep,
-    change_op_basis_resource_rep,
-    controlled_resource_rep,
     register_condition,
     register_resources,
 )
 from pennylane.decomposition.resources import resource_rep
-from pennylane.ops import (
-    CNOT,
-    BasisState,
-    H,
-    Prod,
-    X,
-    adjoint,
-    change_op_basis,
-    ctrl,
-    prod,
-)
-from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
-from pennylane.wires import Wires, WiresLike
+from pennylane.ops import BasisState, H, Prod2, X, adjoint, change_op_basis, ctrl
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
+from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
+from pennylane.templates.subroutines.qft import QFT
+from pennylane.typing import Bool, Wire
+from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
-from ..controlled_sequence import ControlledSequence
-from ..qft import QFT
+from .incrementer import Incrementer
 from .phase_adder import PhaseAdder
-from .semi_adder import SemiAdder, _semiadder, _semiadder_resources
+from .semi_adder import SemiAdder, _semi_adder, _semi_adder_resources
 from .temporary_and import TemporaryAND
 
 
-class OutMultiplier(Operation):
+def _resolve_mod_and_num_work_wires(num_output_wires, mod, num_work_wires):
+    """Resolve default ``mod`` and truncated work wire count."""
+    max_mod = 2**num_output_wires
+    if mod is None:
+        mod = max_mod
+    elif mod != max_mod:
+        # After the ≥2 work-wire guard in __init__, the truncated count is always 2
+        num_work_wires = 2
+    return mod, num_work_wires
+
+
+class OutMultiplier(Operator2):
     r"""Performs the out-place modular multiplication operation.
 
     This operator performs the modular multiplication of integers :math:`x` and :math:`y` modulo
@@ -101,8 +102,10 @@ class OutMultiplier(Operation):
 
         @qp.qnode(dev, shots=1)
         def circuit():
-            qp.BasisEmbedding(x, wires=x_wires)
-            qp.BasisEmbedding(y, wires=y_wires)
+            x_bin = qp.math.int_to_binary(x, len(x_wires))
+            y_bin = qp.math.int_to_binary(y, len(y_wires))
+            qp.BasisState(x_bin, wires=x_wires)
+            qp.BasisState(y_bin, wires=y_wires)
             qp.OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
             return qp.sample(wires=output_wires)
 
@@ -153,9 +156,12 @@ class OutMultiplier(Operation):
 
             @qp.qnode(dev, shots=1)
             def circuit():
-                qp.BasisEmbedding(x, wires=x_wires)
-                qp.BasisEmbedding(y, wires=y_wires)
-                qp.BasisEmbedding(z, wires=output_wires)
+                x_bin = qp.math.int_to_binary(x, len(x_wires))
+                qp.BasisState(x_bin, wires=x_wires)
+                y_bin = qp.math.int_to_binary(y, len(y_wires))
+                qp.BasisState(y_bin, wires=y_wires)
+                z_bin = qp.math.int_to_binary(z, len(output_wires))
+                qp.BasisState(z_bin, wires=output_wires)
                 qp.OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
                 return qp.sample(wires=output_wires)
 
@@ -202,15 +208,14 @@ class OutMultiplier(Operation):
 
     """
 
-    grad_method = None
+    wire_argnames = ("x_wires", "y_wires", "output_wires", "work_wires")
+    compilable_argnames = ("mod", "output_wires_zeroed")
 
-    resource_keys = {
-        "num_output_wires",
-        "num_x_wires",
-        "num_y_wires",
-        "num_work_wires",
-        "mod",
-        "output_wires_zeroed",
+    arg_specs = {
+        "x_wires": Wire[-1],
+        "y_wires": Wire[-1],
+        "output_wires": Wire[-1],
+        "work_wires": Wire[-1],
     }
 
     def __init__(
@@ -226,169 +231,80 @@ class OutMultiplier(Operation):
         x_wires = Wires(x_wires)
         y_wires = Wires(y_wires)
         output_wires = Wires(output_wires)
-        work_wires = Wires(() if work_wires is None else work_wires)
-
+        work_wires = Wires([] if work_wires is None else work_wires)
+        num_output_wires = len(output_wires)
         num_work_wires = len(work_wires)
+        max_mod = 2**num_output_wires
 
-        if mod is None:
-            mod = 2 ** len(output_wires)
-        if mod != 2 ** len(output_wires):
+        if mod is not None and mod != max_mod:
             if num_work_wires < 2:
                 raise ValueError(
-                    f"If mod is not 2^{len(output_wires)}, at least two work wires should be provided."
+                    f"If mod is not 2^{num_output_wires}, at least two work wires should be provided."
                 )
-            work_wires = work_wires[:2]
-        if mod > 2 ** (len(output_wires)):
-            raise ValueError(
-                "OutMultiplier must have enough wires to represent mod. The maximum mod "
-                f"with len(output_wires)={len(output_wires)} is {2 ** len(output_wires)}, but received {mod}."
-            )
+            if mod > max_mod:
+                raise ValueError(
+                    "OutMultiplier must have enough wires to represent mod. The maximum mod "
+                    f"with len(output_wires)={num_output_wires} is {max_mod}, but received {mod}."
+                )
 
-        if len(work_wires) != 0:
-            if any(wire in work_wires for wire in x_wires):
-                raise ValueError("None of the wires in work_wires should be included in x_wires.")
-            if any(wire in work_wires for wire in y_wires):
-                raise ValueError("None of the wires in work_wires should be included in y_wires.")
+        mod, num_work_wires = _resolve_mod_and_num_work_wires(num_output_wires, mod, num_work_wires)
+        if mod != max_mod:
+            work_wires = Wires(work_wires[:num_work_wires])
 
-        if any(wire in y_wires for wire in x_wires):
-            raise ValueError("None of the wires in y_wires should be included in x_wires.")
-        if any(wire in x_wires for wire in output_wires):
-            raise ValueError("None of the wires in x_wires should be included in output_wires.")
-        if any(wire in y_wires for wire in output_wires):
-            raise ValueError("None of the wires in y_wires should be included in output_wires.")
-
-        wires_list = [x_wires, y_wires, output_wires, work_wires]
-        wires_name = ["x_wires", "y_wires", "output_wires", "work_wires"]
-
-        for name, wires in zip(wires_name, wires_list):
-            self.hyperparameters[name] = Wires(wires)
-        self.hyperparameters["mod"] = mod
-        self.hyperparameters["output_wires_zeroed"] = output_wires_zeroed
-
-        # pylint: disable=consider-using-generator
-        all_wires = sum([self.hyperparameters[name] for name in wires_name], start=[])
-        super().__init__(wires=all_wires)
-
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "num_output_wires": len(self.hyperparameters["output_wires"]),
-            "num_x_wires": len(self.hyperparameters["x_wires"]),
-            "num_y_wires": len(self.hyperparameters["y_wires"]),
-            "num_work_wires": len(self.hyperparameters["work_wires"]),
-            "mod": self.hyperparameters["mod"],
-            "output_wires_zeroed": self.hyperparameters["output_wires_zeroed"],
+        wire_args = {
+            "x_wires": x_wires,
+            "y_wires": y_wires,
+            "output_wires": output_wires,
+            "work_wires": work_wires,
         }
+        validate_no_wire_overlaps(wire_args)
 
-    @property
-    def num_params(self):
-        return 0
-
-    def _flatten(self):
-        metadata = tuple((key, value) for key, value in self.hyperparameters.items())
-        return tuple(), metadata
-
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        hyperparams_dict = dict(metadata)
-        return cls(**hyperparams_dict)
-
-    def map_wires(self, wire_map: dict):
-        new_dict = {
-            key: [wire_map.get(w, w) for w in self.hyperparameters[key]]
-            for key in ["x_wires", "y_wires", "output_wires", "work_wires"]
-        }
-
-        return OutMultiplier(
-            new_dict["x_wires"],
-            new_dict["y_wires"],
-            new_dict["output_wires"],
-            self.hyperparameters["mod"],
-            new_dict["work_wires"],
+        super().__init__(
+            x_wires,
+            y_wires,
+            output_wires,
+            mod=mod,
+            work_wires=work_wires,
+            output_wires_zeroed=output_wires_zeroed,
         )
 
-    def decomposition(self):
-        return self.compute_decomposition(**self.hyperparameters)
-
-    @classmethod
-    def _primitive_bind_call(cls, *args, **kwargs):
-        return cls._primitive.bind(*args, **kwargs)
-
-    @staticmethod
-    def compute_decomposition(
-        x_wires: WiresLike,
-        y_wires: WiresLike,
-        output_wires: WiresLike,
-        mod,
-        work_wires: WiresLike,
-        output_wires_zeroed: bool = False,
-    ):  # pylint: disable=arguments-differ, too-many-arguments, unused-argument
-        r"""Representation of the operator as a product of other operators.
-
-        Args:
-            x_wires (Sequence[int]): the wires that store the integer :math:`x`
-            y_wires (Sequence[int]): the wires that store the integer :math:`y`
-            output_wires (Sequence[int]): the wires that store the multiplication result. If the register is in a non-zero state :math:`b`, the solution will be added to this value
-            mod (int): the modulo for performing the multiplication. If not provided, it will be set to its maximum value, :math:`2^{\text{len(output_wires)}}`
-            work_wires (Sequence[int]): the auxiliary wires to use for the multiplication. The
-                work wires are not needed if :math:`mod=2^{\text{len(output_wires)}}`, otherwise two work wires
-                should be provided.
-
-        Returns:
-            list[.Operator]: Decomposition of the operator
-
-        **Example**
-
-        >>> qp.OutMultiplier.compute_decomposition(x_wires=[0,1], y_wires=[2,3], output_wires=[5,6], mod=4, work_wires=[4,7])
-        [(Adjoint(QFT(wires=[5, 6]))) @ (ControlledSequence(ControlledSequence(PhaseAdder(wires=[5, 6]), control=[0, 1]), control=[2, 3])) @ QFT(wires=[5, 6])]
-        """
-        if mod != 2 ** len(output_wires):
-            qft_output_wires = work_wires[:1] + output_wires
-            work_wire = work_wires[1:2]
-        else:
-            qft_output_wires = output_wires
-            work_wire = ()
-
-        if output_wires_zeroed:
-            compute_op = prod(*(H(w) for w in qft_output_wires))
-        else:
-            compute_op = QFT(qft_output_wires)
-        uncompute_op = adjoint(QFT)(qft_output_wires)
-
-        target_op = ControlledSequence(
-            ControlledSequence(PhaseAdder(1, qft_output_wires, mod, work_wire), control=x_wires),
-            control=y_wires,
-        )
-        op_list = [change_op_basis(compute_op, target_op, uncompute_op)]
-        return op_list
+    @property
+    def wires(self):
+        """All wires involved in the operation."""
+        return self.x_wires + self.y_wires + self.output_wires + self.work_wires
 
 
 def _out_multiplier_with_qft_resources(
-    num_output_wires, num_x_wires, num_y_wires, mod, output_wires_zeroed, **_
-) -> dict:
-    qft_wires = num_output_wires + 1 if mod != 2**num_output_wires else num_output_wires
+    x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
+):  # pylint: disable=too-many-arguments,unused-argument
+    num_output_wires = len(output_wires)
+    num_x_wires = len(x_wires)
+    num_y_wires = len(y_wires)
+    num_qft_wires = num_output_wires + 1 if mod != 2**num_output_wires else num_output_wires
 
     if output_wires_zeroed:
-        compute_rep = resource_rep(Prod, resources={resource_rep(H): qft_wires})
+        compute_rep = Prod2([abstractify(H) for _ in range(num_qft_wires)])
     else:
-        compute_rep = resource_rep(QFT, num_wires=qft_wires)
+        compute_rep = QFT(Wire[num_qft_wires])
 
-    uncompute_rep = adjoint_resource_rep(QFT, base_params={"num_wires": qft_wires})
+    uncompute_rep = adjoint(QFT(Wire[num_qft_wires]))
     target_rep = resource_rep(
         ControlledSequence,
-        base_class=ControlledSequence,
-        base_params={
-            "base_class": PhaseAdder,
-            "base_params": {"num_x_wires": qft_wires, "mod": mod},
-            "num_control_wires": num_x_wires,
-        },
+        base_rep=resource_rep(
+            ControlledSequence,
+            base_rep=resource_rep(PhaseAdder, num_x_wires=num_qft_wires, mod=mod),
+            num_control_wires=num_x_wires,
+        ),
         num_control_wires=num_y_wires,
     )
-    return {change_op_basis_resource_rep(compute_rep, target_rep, uncompute_rep): 1}
+    resources = {_change_op_basis_abstract(compute_rep, target_rep, uncompute_rep): 1}
+    return resources
 
 
-def _out_multiplier_with_qft_condition(num_output_wires, mod, num_work_wires, **_):
-    return mod in (None, 2**num_output_wires) or num_work_wires >= 2
+def _out_multiplier_with_qft_condition(
+    x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
+):  # pylint: disable=unused-argument, too-many-arguments
+    return mod == 2 ** len(output_wires) or len(work_wires) >= 2
 
 
 @register_condition(_out_multiplier_with_qft_condition)
@@ -400,50 +316,65 @@ def _out_multiplier_with_qft(
     mod,
     work_wires: WiresLike,
     output_wires_zeroed: bool,
-    **_,
 ):  # pylint: disable=too-many-arguments, unused-argument
-    OutMultiplier.compute_decomposition(
-        x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed
+
+    if capture.enabled() or compiler.active():
+        work_wires = math.array(work_wires, like="jax")
+        output_wires = math.array(output_wires, like="jax")
+
+    if mod != 2 ** len(output_wires):
+        if capture.enabled() or compiler.active():
+            qft_output_wires = math.concatenate(
+                [math.array([work_wires[0]], like="jax"), output_wires]
+            )
+        else:
+            qft_output_wires = [work_wires[0]] + output_wires
+        work_wire = work_wires[1]
+    else:
+        qft_output_wires = output_wires
+        # Keep the empty register traceable instead of passing a literal tuple to JAX.
+        work_wire = output_wires[:0]
+
+    if output_wires_zeroed:
+        compute_op = Prod2([H(w) for w in qft_output_wires])
+    else:
+        compute_op = QFT(qft_output_wires)
+    uncompute_op = adjoint(QFT(qft_output_wires))
+
+    target_op = ControlledSequence(
+        ControlledSequence(PhaseAdder(1, qft_output_wires, mod, work_wire), control=x_wires),
+        control=y_wires,
     )
+    change_op_basis(compute_op, target_op, uncompute_op)
 
 
 def _out_multiplier_with_adder_resources(
-    num_output_wires, num_x_wires, num_y_wires, output_wires_zeroed, num_work_wires, **_
-) -> dict:
+    x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
+):  # pylint: disable=too-many-arguments,unused-argument
     """Resources for OutMultiplier decomposition with controlled adders."""
-    n = num_x_wires
-    m = num_y_wires
-    k = num_output_wires
+    n = len(x_wires)
+    m = len(y_wires)
+    k = len(output_wires)
+    num_work_wires = len(work_wires)
 
     resources = defaultdict(int)
     if output_wires_zeroed:
-        resources[resource_rep(TemporaryAND)] += min(m, k)
+        resources[TemporaryAND] += min(m, k)
 
     for i in range(int(output_wires_zeroed), min(k, n)):
         if output_wires_zeroed:
             size = min(k - i, m + 1)
         else:
             size = k - i
-        resources[
-            controlled_resource_rep(
-                base_class=SemiAdder,
-                base_params={
-                    "num_x_wires": m,
-                    "num_y_wires": size,
-                    "num_work_wires": num_work_wires,
-                },
-                num_control_wires=1,
-                num_zero_control_values=0,
-            )
-        ] += 1
+        resources[ctrl(SemiAdder(Wire[m], Wire[size], Wire[num_work_wires]), Wire[1])] += 1
     return dict(resources)
 
 
 def _out_multiplier_with_adder_condition(
-    num_output_wires, num_y_wires, mod, num_work_wires, output_wires_zeroed, **_
-):
-    k = num_output_wires
-    m = num_y_wires
+    x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
+):  # pylint: disable=unused-argument, too-many-arguments
+    k = len(output_wires)
+    m = len(y_wires)
     # Controlled adder takes as many work wires as the output register size. The largest controlled
     # adder is the first one in the loop, with size `min(k - 1, m+1)` if output_wires_zeroed=True
     # (because in that case the very first adder is replaced by ctrl(copy)) and size `k` else.
@@ -451,7 +382,7 @@ def _out_multiplier_with_adder_condition(
         min_num_work_wires = min(k - 1, m + 1)
     else:
         min_num_work_wires = k
-    return mod in (None, 2**num_output_wires) and num_work_wires >= min_num_work_wires
+    return mod == 2 ** k and len(work_wires) >= min_num_work_wires
 
 
 @register_condition(_out_multiplier_with_adder_condition)
@@ -463,7 +394,6 @@ def _out_multiplier_with_adder(
     mod,
     work_wires: WiresLike,
     output_wires_zeroed: bool,
-    **__,
 ):  # pylint: disable=unused-argument, too-many-arguments
     """Implementation of Schoolbook multiplication via controlled adders as sole building block,
     except for a potential simplification for the very first adder.
@@ -482,6 +412,8 @@ def _out_multiplier_with_adder(
 
     # If the output wires are zeroed, the first controlled adder is just a controlled copy.
     if output_wires_zeroed:
+        # We use strict=False here because we only need to copy for as long as both
+        # more y_wires and more output_wires exist. zip(strict=False) produces exactly this bound
         for y_wire, out_wire in zip(
             y_wires[::-1], output_wires[max(0, k - (m + 1)) : k][::-1], strict=False
         ):
@@ -501,92 +433,66 @@ def _out_multiplier_with_adder(
 
 
 def _out_multiplier_with_caddsub_resources(
-    num_output_wires, num_x_wires, num_y_wires, num_work_wires, output_wires_zeroed, **_
-) -> dict:
-    n = num_x_wires
-    m = num_y_wires
-    k = num_output_wires + 1  # augmented output register
+    x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
+):  # pylint: disable=unused-argument,too-many-arguments
+    n = len(x_wires)
+    m = len(y_wires)
+    k = len(output_wires) + 1  # augmented output register
+    num_work_wires = len(work_wires)
     num_passed_ww = num_work_wires - 1  # One work wire is used by the arithmetic logic itself.
 
     resources = defaultdict(int)
 
-    # Some resource reps we will need:
-    cnot_on_0_kwargs = {"base_params": {}, "num_control_wires": 1, "num_zero_control_values": 1}
-    cnot_on_0_rep = controlled_resource_rep(X, **cnot_on_0_kwargs)
-    x_rep = resource_rep(X)
-
     # Controlled add-subtract loop
-    loop_size = min(k, n)
-    # Bit flips on the y_wires, controlled on |0>: two per ctrl-add-subtract
-    if num_y_wires > 1:
-        c_flips = controlled_resource_rep(
-            BasisState,
-            base_params={"num_wires": num_y_wires - 1},
-            num_control_wires=1,
-            num_zero_control_values=1,
-        )
-        resources[c_flips] += 2 * loop_size
-
-    # Bit flip of LSB output wire, controlled on |0>: two per ctrl-add-subtract
-    resources[cnot_on_0_rep] += 2 * loop_size
-    # Bit flip on LSB work wire, controlled on |0>: two per ctrl-add-subtract that has work wires
-    c_add_subs_with_work_wires = min(n, k - 1)
-    resources[cnot_on_0_rep] += 2 * c_add_subs_with_work_wires
-
-    # Decomposed SemiAdder of y_wires onto output_wires: One per ctrl-add-subtract, varying size
-    for i in range(loop_size):
+    for i in range(min(k, n)):
         size = min(k - i, m + 1) if output_wires_zeroed else k - i
-        adder_resources = _semiadder_resources(num_x_wires=m, num_y_wires=size)
-        for key, value in adder_resources.items():
+        for key, value in _c_add_sub_resources(m, size).items():
             resources[key] += value
 
     # Add 2^m(x+1)
-    adder_resources = _semiadder_resources(num_x_wires=n, num_y_wires=k - m)
-    for key, value in adder_resources.items():
-        resources[key] += value
-    # bit flips corresponding to input carry activated. Accounts for the fact that
-    # we don't need to flip a work wire if k=m+1, in which case there are no work wires.
-    has_work_wires = int(k > m + 1)
-    resources[x_rep] += 4 + 2 * has_work_wires
+    if k > m:
+        adder_resources = _semi_adder_resources(Wire[n], Wire[k - m])
+        for key, value in adder_resources.items():
+            resources[key] += value
+        # bit flips corresponding to input carry activated. Accounts for the fact that
+        # we don't need to flip a work wire if k=m+1, in which case there are no work wires.
+        has_work_wires = int(k > m + 1)
+        resources[X] += 4 + 2 * has_work_wires
 
     # Subtract y+2^(n+m)
     # First negation
-    resources[x_rep] += k
+    resources[X] += k
     # Add y
-    add_rep = resource_rep(SemiAdder, num_x_wires=m, num_y_wires=k, num_work_wires=num_passed_ww)
+    add_rep = SemiAdder(Wire[m], Wire[k], Wire[num_passed_ww])
     resources[add_rep] += 1
 
     # increment 2^(n+m) bit
-    size = k - n - m
-    if size > 0:
-        if size > 1:
-            resources[resource_rep(TemporaryAND)] += size - 2
-            resources[adjoint_resource_rep(TemporaryAND)] += size - 2
-        resources[resource_rep(CNOT)] += size - 1
-        resources[x_rep] += 1
+    if k > n + m:
+        size = k - n - m
+        resources[Incrementer(Wire[size], work_wires=Wire[num_work_wires - 1])] = 1
 
     # Second negation
-    resources[x_rep] += k
+    resources[X] += k
 
     # Add 2^n y
     if k > n:
-        resources[
-            resource_rep(SemiAdder, num_x_wires=m, num_y_wires=k - n, num_work_wires=num_passed_ww)
-        ] += 1
+        resources[SemiAdder(Wire[m], Wire[k - n], Wire[num_passed_ww])] += 1
 
     return dict(resources)
 
 
-def _out_multiplier_with_caddsub_condition(num_output_wires, mod, num_work_wires, **_) -> bool:
-    # Adder sizes are (using n=num_x_wires, m=num_y_wires, k=num_output_wires+1):
+def _out_multiplier_with_caddsub_condition(  # pylint: disable=too-many-arguments
+    x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
+):  # pylint: disable=unused-argument
+    # Adder sizes are (using n=len(x_wires), m=len(y_wires), k=len(output_wires)+1):
     # - min(k, m+1) # Largest size occurring in controlled add/sub loop
     # - k-m, # Add 2^m(x+1)
     # - k, # Add y during subtracting 2^(n+m)+y     <-- Largest one
     # - k-n, # Add 2^n y
-    largest_adder_size = num_output_wires + 1
+    largest_adder_size = len(output_wires) + 1
     # One work wire for temporarily enlarged output register. Adder takes size-1 work wires.
     min_num_work_wires = 1 + (largest_adder_size - 1)
-    return mod in (None, 2**num_output_wires) and num_work_wires >= min_num_work_wires
+    return mod == 2 ** len(output_wires) and len(work_wires) >= min_num_work_wires
 
 
 def _adder_flipped_first_work_wire(x_wires, y_wires, work_wires, flip_control=None):
@@ -597,24 +503,18 @@ def _adder_flipped_first_work_wire(x_wires, y_wires, work_wires, flip_control=No
     unchanged. We only expect this function to be used with two values for `flip_control`: None
     or a tuple ``(c_wire, c_val)`` for a single control wire.
     """
+    if not work_wires:
+        _semi_adder(x_wires, y_wires, work_wires)
+        return
 
-    with AnnotatedQueue() as q:
-        _semiadder(x_wires, y_wires, work_wires)
-    adder_ops = q.queue
-    if work_wires:
-        # We insert work wire bit flips where a carry-in qubit would cause them,
-        # i.e., after the very first left elbow and before the last right elbow
-        with QueuingManager.stop_recording():
-            if flip_control is None:
-                work_wire_flip = X(work_wires[-1])
-            else:
-                c_wire, c_val = flip_control
-                work_wire_flip = ctrl(X(work_wires[-1]), control=c_wire, control_values=[c_val])
-        adder_ops.insert(1, work_wire_flip)
-        adder_ops.insert(-2, work_wire_flip)
-    if QueuingManager.recording():
-        for op in adder_ops:
-            apply(op)
+    def carry_flip(wire):
+        if flip_control is None:
+            X(wire)
+        else:
+            c_wire, c_val = flip_control
+            ctrl(X(wire), control=c_wire, control_values=[c_val])
+
+    _semi_adder(x_wires, y_wires, work_wires, carry_flip=carry_flip)
 
 
 def _add_plus_one(x_wires, y_wires, work_wires):
@@ -634,63 +534,20 @@ def _add_plus_one(x_wires, y_wires, work_wires):
     X(x_wires[-1])
 
 
-def _increment(wires, work_wires):
-    """Increment the input `wires` by one, using zeroed `work_wires`.
-    We use a left elbow ladder together with a CNOT+right elbow uncompute ladder.
-    This is a manually reduced decomposition of the standard incrementer via MCX gates if
-    work wires are available:
+def _c_add_sub_resources(num_x_wires, num_y_wires):
+    """Resources for _c_add_sub."""
+    resources = defaultdict(int)
+    if num_x_wires > 1:
+        ctrl_basis_rep = ctrl(BasisState(Bool[num_x_wires - 1], Wire[num_x_wires - 1]), Wire[1])
+        resources[ctrl_basis_rep] += 2
 
-    Generic decomposition:
-    0: ─╭X────────────────┤
-    1: ─├●─╭X─────────────┤
-    2: ─├●─├●─╭X──────────┤
-    3: ─├●─├●─├●─╭X───────┤
-    4: ─├●─├●─├●─├●─╭X────┤
-    5: ─╰●─╰●─╰●─╰●─╰●──X─┤
+    cnot_on_0_rep = ctrl(X(Wire[1]), control=Wire[1], control_values=[0])
+    resources[cnot_on_0_rep] += 2 * (1 + int(num_y_wires > 1))
 
-    Decompose all MCX gates into elbows and CNOTs:
-       0: ─────────────╭X──────────────────────────────────────────────────────────────────────────┤
-       1: ──────────╭●─│───●╮──────────────────────╭X──────────────────────────────────────────────┤
-       2: ───────╭●─│──│────│──●╮───────────────╭●─│───●╮───────────────╭X─────────────────────────┤
-       3: ────╭●─│──│──│────│───│──●╮────────╭●─│──│────│──●╮────────╭●─│───●╮────────╭X───────────┤
-       4: ─╭●─│──│──│──│────│───│───│──●╮─╭●─│──│──│────│───│──●╮─╭●─│──│────│──●╮─╭●─│───●╮─╭X────┤
-       5: ─├●─│──│──│──│────│───│───│──●┤─├●─│──│──│────│───│──●┤─├●─│──│────│──●┤─├●─│───●┤─╰●──X─┤
-    aux0: ─│──│──├⊕─├●─│───●┤──⊕┤───│───│─│──│──│──│────│───│───│─│──│──│────│───│─│──│────│───────┤
-    aux1: ─│──├⊕─╰●─│──│────│──●╯──⊕┤───│─│──├⊕─├●─│───●┤──⊕┤───│─│──│──│────│───│─│──│────│───────┤
-    aux2: ─╰⊕─╰●────│──│────│──────●╯──⊕╯─╰⊕─╰●─│──│────│──●╯──⊕╯─╰⊕─├●─│───●┤──⊕╯─│──│────│───────┤
-    aux3: ──────────╰⊕─╰●──⊕╯───────────────────╰⊕─╰●──⊕╯────────────╰⊕─╰●──⊕╯─────╰⊕─╰●──⊕╯───────┤
+    for key, value in _semi_adder_resources(Wire[num_x_wires], Wire[num_y_wires]).items():
+        resources[key] += value
 
-    Cancel neighbouring right and left elbows (moving some work wire usage around in the process)
-       0: ─────────────╭X───────────────────────────────┤
-       1: ──────────╭●─│───●╮─╭X────────────────────────┤
-       2: ───────╭●─│──│────│─│──●╮──╭X─────────────────┤
-       3: ────╭●─│──│──│────│─│───│──│──●╮─╭X───────────┤
-       4: ─╭●─│──│──│──│────│─│───│──│───│─│───●╮─╭X────┤
-       5: ─├●─│──│──│──│────│─│───│──│───│─│───●┤─╰●──X─┤
-    aux0: ─│──│──├⊕─├●─│───●┤─╰●─⊕┤──│───│─│────│───────┤
-    aux1: ─│──├⊕─╰●─│──│────│────●╯──╰●─⊕┤─│────│───────┤
-    aux2: ─╰⊕─╰●────│──│────│───────────●╯─╰●──⊕╯───────┤
-    aux3: ──────────╰⊕─╰●──⊕╯───────────────────────────┤
-
-    We see a leading ladder of left elbows and a backwards ladder of CNOT+right elbow pairs.
-    This circuit is derived, e.g., in
-    `Gidney's blog <https://algassert.com/circuits/2015/06/12/Constructing-Large-Increment-Gates.html>`__,
-    see "Incrementer from n-2 Zeroed bits".
-    """
-    wires = wires[::-1]
-    if len(wires) > 1:
-        # Construct the wires on which the ladder will act.
-        all_wires = wires[:1] + list(sum(zip(wires[1:], work_wires), start=tuple()))
-        # Forward ladder
-        for k in range(len(wires) - 2):
-            TemporaryAND(all_wires[2 * k : 2 * k + 3])
-        # Backward ladder
-        for k in range(len(wires) - 3, -1, -1):
-            CNOT([all_wires[2 * k + 2], all_wires[2 * k + 3]])
-            adjoint(TemporaryAND)(all_wires[2 * k : 2 * k + 3])
-        # Trailing CNOT
-        CNOT(wires[:2])
-    X(wires[0])
+    return dict(resources)
 
 
 def _c_add_sub(c_wire, x_wires, y_wires, work_wires):
@@ -713,6 +570,7 @@ def _c_add_sub(c_wire, x_wires, y_wires, work_wires):
     # We also need to control-flip the LSB of x_wires (last wire) to achieve addition plus one
     # (c.f. _add_plus_one). The bit flips on the LSB cancel, so that we only control-flip all _but_
     # the LSB
+    c_wire = [c_wire]
     if len(x_wires) > 1:
         ctrl(BasisState([1] * (len(x_wires) - 1), x_wires[:-1]), control=c_wire, control_values=[0])
 
@@ -741,7 +599,6 @@ def _out_multiplier_with_caddsub(
     mod: None,
     work_wires: WiresLike,
     output_wires_zeroed: bool,
-    **__,
 ):  # pylint: disable=unused-argument, too-many-arguments
     """Implementation of improved Schoolbook multiplication via controlled add/subtract blocks,
     combined with some correction steps. After appending a work wire to the output register,
@@ -785,7 +642,8 @@ def _out_multiplier_with_caddsub(
         _c_add_sub(x_wire, y_wires, output, work_wires)
 
     # Add 2^m(x+1)
-    _add_plus_one(x_wires, output_wires[: k - m], work_wires)
+    if k > m:
+        _add_plus_one(x_wires, output_wires[: k - m], work_wires)
 
     # Implement |y> |z> -> |y> |z-2^(n+m)-y>, i.e. subtract 2^(n+m)+y in four steps:
     # - Negate z: |y> |z> -> |y> |2^k-1-z>
@@ -798,7 +656,7 @@ def _out_multiplier_with_caddsub(
     SemiAdder(y_wires, output_wires, work_wires)
     if k > n + m:
         increment_wires = output_wires[: k - n - m]
-        _increment(increment_wires, work_wires)
+        Incrementer(increment_wires, work_wires)
     _ = [X(w) for w in output_wires]
 
     # Add (2^n·y) if 2^k > 2^n (otherwise it just vanishes in the modulus)
@@ -810,32 +668,33 @@ def _out_multiplier_with_caddsub(
 
 
 def _out_multiplier_with_cache_condition(
-    num_output_wires, num_work_wires, output_wires_zeroed, **_
-):
-    return num_work_wires >= 2 * num_output_wires - 1 and not output_wires_zeroed
+    x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
+):  # pylint: disable=unused-argument, too-many-arguments
+    return len(work_wires) >= 2 * len(output_wires) - 1 and not output_wires_zeroed
 
 
 def _out_multiplier_with_cache_resources(
-    num_output_wires, num_x_wires, num_y_wires, num_work_wires, output_wires_zeroed, mod, **_
-):  # pylint: disable=unused-argument,too-many-arguments
-    new_num_work_wires = num_work_wires - num_output_wires
-    mult_params = {
-        "num_x_wires": num_x_wires,
-        "num_y_wires": num_y_wires,
-        "num_output_wires": num_output_wires,
-        "num_work_wires": new_num_work_wires,
-        "mod": mod,
-        "output_wires_zeroed": True,
-    }
-    adder_params = {
-        "num_x_wires": num_output_wires,
-        "num_y_wires": num_output_wires,
-        "num_work_wires": new_num_work_wires,
-    }
+    x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
+):  # pylint: disable=unused-argument, too-many-arguments
+    num_x_wires = len(x_wires)
+    num_y_wires = len(y_wires)
+    num_output_wires = len(output_wires)
+    new_num_work_wires = len(work_wires) - num_output_wires
+    mod, new_num_work_wires = _resolve_mod_and_num_work_wires(
+        num_output_wires, mod, new_num_work_wires
+    )
+    mult_op = OutMultiplier(
+        Wire[num_x_wires],
+        Wire[num_y_wires],
+        Wire[num_output_wires],
+        mod=mod,
+        work_wires=Wire[new_num_work_wires],
+        output_wires_zeroed=True,
+    )
     return {
-        resource_rep(OutMultiplier, **mult_params): 1,
-        resource_rep(SemiAdder, **adder_params): 1,
-        adjoint_resource_rep(OutMultiplier, base_params=mult_params): 1,
+        mult_op: 1,
+        SemiAdder(Wire[num_output_wires], Wire[num_output_wires], Wire[new_num_work_wires]): 1,
+        adjoint(mult_op): 1,
     }
 
 
@@ -848,7 +707,6 @@ def _out_multiplier_with_cache(
     mod: None,
     work_wires: WiresLike,
     output_wires_zeroed,
-    **__,
 ):  # pylint: disable=unused-argument,too-many-arguments
     r"""Decompose ``OutMultiplier`` with ``output_wires_zeroed=False`` into two ``OutMultiplier``\ s
     with ``output_wires_zeroed=True`` and one ``SemiAdder``, using additional work wires."""

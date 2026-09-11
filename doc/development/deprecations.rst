@@ -107,6 +107,11 @@ for details on how to port your legacy code to the new system. The following fun
 Completed deprecation cycles
 ----------------------------
 
+* Implementing ``Operator.generator`` as a property is no longer supported. Instead, define a ``generator()`` method for your operator that returns an ``Operator`` instance.
+
+  - Deprecated in v0.22
+  - Removed in v0.46
+
 * Specifying ``shots`` as a keyword argument when executing a :class:`~.QNode` has been removed.
   Instead, please set shots on ``QNode`` initialization, or use the :func:`~.workflow.set_shots` transform to set the number of shots.
 

@@ -15,6 +15,8 @@
 Tests for the jacobian product calculator classes.
 """
 
+from functools import partial
+
 import numpy as np
 
 # pylint: disable=protected-access
@@ -24,6 +26,7 @@ from param_shift_dev import ParamShiftDerivativesDevice
 
 import pennylane as qp
 from pennylane.exceptions import QuantumFunctionError
+from pennylane.measurements import Shots
 from pennylane.workflow.jacobian_products import (
     DeviceDerivatives,
     DeviceJacobianProducts,
@@ -32,47 +35,61 @@ from pennylane.workflow.jacobian_products import (
     TransformJacobianProducts,
 )
 
-dev = qp.device("default.qubit")
-dev_lightning = qp.device("lightning.qubit", wires=5)
 adjoint_config = qp.devices.ExecutionConfig(gradient_method="adjoint")
-dev_ps = ParamShiftDerivativesDevice()
 ps_config = qp.devices.ExecutionConfig(gradient_method="parameter-shift")
 
 
-def inner_execute_numpy(tapes):
+def inner_execute_numpy(tapes, seed):
+    dev = qp.device("default.qubit", seed=seed)
     return dev.execute(tapes)
 
 
-param_shift_jpc = TransformJacobianProducts(inner_execute_numpy, qp.gradients.param_shift)
-param_shift_cached_jpc = TransformJacobianProducts(
-    inner_execute_numpy, qp.gradients.param_shift, cache_full_jacobian=True
-)
-hadamard_grad_jpc = TransformJacobianProducts(
-    inner_execute_numpy,
-    qp.gradients.hadamard_grad,
-    {
-        "aux_wire": "aux",
-        "mode": "standard",
-    },
-)
-device_jacs = DeviceDerivatives(dev, adjoint_config)
-device_ps_jacs = DeviceDerivatives(dev_ps, ps_config)
-device_native_jps = DeviceJacobianProducts(dev, adjoint_config)
-device_ps_native_jps = DeviceJacobianProducts(dev_ps, ps_config)
-lightning_vjps = DeviceJacobianProducts(dev_lightning, execution_config=adjoint_config)
+def param_shift_jpc(seed):
+    """Parameter-shift rule Jacobian product calculator."""
+    inner_execute = partial(inner_execute_numpy, seed=seed)
+    return TransformJacobianProducts(inner_execute, qp.gradients.param_shift)
+
+
+def param_shift_cached_jpc(seed):
+    """Parameter-shift rule Jacobian product calculator with cached Jacobian."""
+    inner_execute = partial(inner_execute_numpy, seed=seed)
+    return TransformJacobianProducts(
+        inner_execute, qp.gradients.param_shift, cache_full_jacobian=True
+    )
+
+
+def hadamard_grad_jpc(seed):
+    """Hadamard-test Jacobian product calculator."""
+    inner_execute = partial(inner_execute_numpy, seed=seed)
+    kwargs = {"aux_wire": "aux", "mode": "standard"}
+    return TransformJacobianProducts(inner_execute, qp.gradients.hadamard_grad, kwargs)
+
+
+def device_jacs(seed):
+    return DeviceDerivatives(qp.device("default.qubit", seed=seed), adjoint_config)
+
+
+def device_ps_jacs(seed):
+    return DeviceDerivatives(ParamShiftDerivativesDevice(seed=seed), ps_config)
+
+
+def device_native_jps(seed):
+    return DeviceJacobianProducts(qp.device("default.qubit", seed=seed), adjoint_config)
+
+
+def device_ps_native_jps(seed):
+    return DeviceJacobianProducts(ParamShiftDerivativesDevice(seed=seed), ps_config)
+
+
+def lightning_vjps(seed):
+    dev_lightning = qp.device("lightning.qubit", wires=5, seed=seed)
+    return DeviceJacobianProducts(dev_lightning, execution_config=adjoint_config)
+
 
 transform_jpc_matrix = [param_shift_jpc, param_shift_cached_jpc, hadamard_grad_jpc]
-dev_jpc_matrix = [device_jacs, device_ps_jacs]
-jpc_matrix = [
-    param_shift_jpc,
-    param_shift_cached_jpc,
-    hadamard_grad_jpc,
-    device_jacs,
-    device_ps_jacs,
-    device_native_jps,
-    device_ps_native_jps,
-    lightning_vjps,
-]
+dev_deriv_matrix = [device_jacs, device_ps_jacs]
+dev_jpc_matrix = [device_native_jps, device_ps_native_jps, lightning_vjps]
+jpc_matrix = transform_jpc_matrix + dev_deriv_matrix + dev_jpc_matrix
 
 
 def _accepts_finite_shots(jpc):
@@ -81,6 +98,14 @@ def _accepts_finite_shots(jpc):
     if isinstance(jpc, (DeviceDerivatives, DeviceJacobianProducts)):
         return isinstance(jpc._device, ParamShiftDerivativesDevice)
     return False
+
+
+def _accepts_partitioned_shots(jpc):
+    if not _accepts_finite_shots(jpc):
+        return False
+    if isinstance(jpc, TransformJacobianProducts):
+        return not jpc._gradient_transform is qp.gradients.hadamard_grad
+    return True
 
 
 def _tol_for_shots(shots):
@@ -195,8 +220,9 @@ class TestBasics:
 class TestJacobianProductResults:
     """Test first order results for the matrix of jpc options."""
 
-    def test_execute_jvp_basic(self, jpc, shots):
+    def test_execute_jvp_basic(self, jpc, shots, seed):
         """Test execute_and_compute_jvp for a simple single input single output."""
+        jpc = jpc(seed)
         if shots and not _accepts_finite_shots(jpc):
             pytest.skip("jpc does not work with finite shots.")
         if isinstance(jpc, DeviceJacobianProducts) and "lightning" in jpc._device.name:
@@ -224,7 +250,7 @@ class TestJacobianProductResults:
     def test_vjp_basic(self, jpc, shots, seed):
         """Test compute_vjp for a simple single input single output."""
 
-        np.random.seed(seed)
+        jpc = jpc(seed)
 
         if shots and not _accepts_finite_shots(jpc):
             pytest.skip("jpc does not work with finite shots.")
@@ -237,8 +263,9 @@ class TestJacobianProductResults:
 
         assert qp.math.allclose(vjp[0], -1.8 * np.sin(x), atol=_tol_for_shots(shots))
 
-    def test_jacobian_basic(self, jpc, shots):
+    def test_jacobian_basic(self, jpc, shots, seed):
         """Test compute_jacobian for a simple single input single output."""
+        jpc = jpc(seed)
         if shots and not _accepts_finite_shots(jpc):
             pytest.skip("jpc does not work with finite shots.")
 
@@ -248,8 +275,9 @@ class TestJacobianProductResults:
 
         assert qp.math.allclose(jac, -np.sin(x), atol=_tol_for_shots(shots))
 
-    def test_execute_jacobian_basic(self, jpc, shots):
+    def test_execute_jacobian_basic(self, jpc, shots, seed):
         """Test execute_and_compute_jacobian for a simple single input single output."""
+        jpc = jpc(seed)
         if shots and not _accepts_finite_shots(jpc):
             pytest.skip("jpc does not work with finite shots.")
 
@@ -259,8 +287,9 @@ class TestJacobianProductResults:
         assert qp.math.allclose(results[0], np.cos(x), atol=_tol_for_shots(shots))
         assert qp.math.allclose(jacs, -np.sin(x), atol=_tol_for_shots(shots))
 
-    def test_batch_execute_jvp(self, jpc, shots):
+    def test_batch_execute_jvp(self, jpc, shots, seed):
         """Test execute_and_compute_jvp on a batch with ragged observables and parameters.."""
+        jpc = jpc(seed)
         if shots and not _accepts_finite_shots(jpc):
             pytest.skip("jpc does not work with finite shots.")
         if isinstance(jpc, DeviceJacobianProducts) and "lightning" in jpc._device.name:
@@ -295,12 +324,13 @@ class TestJacobianProductResults:
         )
         assert qp.math.allclose(jvps[1], -0.5 * np.sin(phi), atol=_tol_for_shots(shots))
 
-    def test_batch_vjp(self, jpc, shots):
+    def test_batch_vjp(self, jpc, shots, seed):
         """Test compute_vjp on a batch with ragged observables and parameters."""
 
+        jpc = jpc(seed)
         if shots and not _accepts_finite_shots(jpc):
             pytest.skip("jpc does not work with finite shots.")
-        if jpc is hadamard_grad_jpc and qp.measurements.Shots(shots).has_partitioned_shots:
+        if Shots(shots).has_partitioned_shots and not _accepts_partitioned_shots(jpc):
             pytest.skip(
                 "hadamard gradient does not support multiple measurements with partitioned shots."
             )
@@ -337,12 +367,12 @@ class TestJacobianProductResults:
         )  # dy
         assert qp.math.allclose(vjps[1], -0.9 * np.sin(phi), atol=_tol_for_shots(shots))
 
-    def test_batch_jacobian(self, jpc, shots):
+    def test_batch_jacobian(self, jpc, shots, seed):
         """Test compute_jacobian on a batch with ragged observables and parameters."""
-
+        jpc = jpc(seed)
         if shots and not _accepts_finite_shots(jpc):
             pytest.skip("jpc does not work with finite shots.")
-        if jpc is hadamard_grad_jpc and qp.measurements.Shots(shots).has_partitioned_shots:
+        if Shots(shots).has_partitioned_shots and not _accepts_partitioned_shots(jpc):
             pytest.skip(
                 "hadamard gradient does not work with partitioned shots and multiple measurements."
             )
@@ -387,12 +417,13 @@ class TestJacobianProductResults:
                 jacs[1][1][1], -np.sin(x) * np.cos(y), atol=_tol_for_shots(shots)
             )
 
-    def test_batch_execute_jacobian(self, jpc, shots):
+    def test_batch_execute_jacobian(self, jpc, shots, seed):
         """Test execute_and_compute_jacobian on a batch with ragged observables and parameters."""
 
+        jpc = jpc(seed)
         if shots and not _accepts_finite_shots(jpc):
             pytest.skip("jpc does not work with finite shots.")
-        if jpc is hadamard_grad_jpc and qp.measurements.Shots(shots).has_partitioned_shots:
+        if Shots(shots).has_partitioned_shots and not _accepts_partitioned_shots(jpc):
             pytest.skip(
                 "hadamard gradient does not work with partitioned shots and multiple measurements."
             )
@@ -448,12 +479,13 @@ class TestJacobianProductResults:
             )
 
 
-@pytest.mark.parametrize("jpc", dev_jpc_matrix)
+@pytest.mark.parametrize("jpc", dev_deriv_matrix)
 class TestCachingDeviceDerivatives:
     """Test caching for device jacobians."""
 
-    def test_execution_caching(self, jpc):
+    def test_execution_caching(self, jpc, seed):
         """Test that results and jacobians are cached on calls to execute."""
+        jpc = jpc(seed)
         tape1 = qp.tape.QuantumScript([qp.RX(0.1, wires=0)], [qp.expval(qp.PauliZ(0))])
         batch = (tape1,)
 
@@ -519,8 +551,9 @@ class TestCachingDeviceDerivatives:
 
         assert jpc._device.tracker.totals.get("executions", 0) == expected_execs
 
-    def test_cached_on_execute_and_compute_jvps(self, jpc):
+    def test_cached_on_execute_and_compute_jvps(self, jpc, seed):
         """Test that execute_and_compute_jvp caches results and Jacobians if they are not precalculated."""
+        jpc = jpc(seed)
         tape1 = qp.tape.QuantumScript(
             [qp.Hadamard(0), qp.IsingXX(0.8, wires=(0, 1))], [qp.expval(qp.PauliZ(1))]
         )
@@ -544,8 +577,9 @@ class TestCachingDeviceDerivatives:
         assert jpc._device.tracker.totals.get("derivatives", 0) == 0
         assert jpc._device.tracker.totals.get("executions", 0) == 0
 
-    def test_cached_on_execute_and_compute_jacobian(self, jpc):
+    def test_cached_on_execute_and_compute_jacobian(self, jpc, seed):
         """Test that execute_and_compute_jacobians caches results and Jacobians if they are not precalculated."""
+        jpc = jpc(seed)
         x = 1.5
         tape1 = qp.tape.QuantumScript(
             [qp.Hadamard(0), qp.IsingXX(x, wires=(0, 1))], [qp.expval(qp.PauliZ(1))]
@@ -569,9 +603,10 @@ class TestCachingDeviceDerivatives:
         assert jpc._device.tracker.totals.get("derivatives", 0) == 0
         assert jpc._device.tracker.totals.get("executions", 0) == 0
 
-    def test_cached_on_vjps(self, jpc):
+    def test_cached_on_vjps(self, jpc, seed):
         """test that only jacs are cached on calls to compute_vjp."""
 
+        jpc = jpc(seed)
         tape1 = qp.tape.QuantumScript([qp.RZ(0.5, wires=0)], [qp.expval(qp.PauliX(0))])
         batch = (tape1,)
         dy = ((0.5,),)
@@ -598,10 +633,11 @@ class TestCachingDeviceDerivatives:
         assert jpc._device.tracker.totals.get("derivatives", 0) == 0
         assert qp.math.allclose(jpc._results_cache[batch], 0)
 
-    def test_error_cant_cache_results_without_jac(self, jpc):
+    def test_error_cant_cache_results_without_jac(self, jpc, seed):
         """Test that a NotImplementedError is raised if somehow the results are cached
         without the jac being cached and execute_and_compute_jvp is called."""
 
+        jpc = jpc(seed)
         tape = qp.tape.QuantumScript([], [qp.state()])
         batch = (tape,)
         jpc._results_cache[batch] = "value"
@@ -614,7 +650,7 @@ class TestCachingDeviceDerivatives:
 class TestProbsTransformJacobians:
     """Testing results when probabilities are returned. This only works with gradient transforms."""
 
-    def test_execute_jvp_multi_params_multi_out(self, jpc):
+    def test_execute_jvp_multi_params_multi_out(self, jpc, seed):
         """Test execute_and_compute_jvp with multiple parameters and multiple outputs"""
         x = 0.62
         y = 2.64
@@ -629,7 +665,7 @@ class TestProbsTransformJacobians:
 
         tangents = (1.5, 2.5)
         tangents2 = (0.6,)
-        res, jvp = jpc.execute_and_compute_jvp((tape1, tape2), (tangents, tangents2))
+        res, jvp = jpc(seed).execute_and_compute_jvp((tape1, tape2), (tangents, tangents2))
 
         expected_res00 = 0.5 * np.array([1 + np.cos(x) * np.cos(y), 1 - np.cos(x) * np.cos(y)])
         assert qp.math.allclose(res[0][0], expected_res00)
@@ -651,7 +687,7 @@ class TestProbsTransformJacobians:
         assert qp.math.allclose(jvp[1][0], 0)
         assert qp.math.allclose(jvp[1][1], -0.6 * np.sin(phi))
 
-    def test_execute_jacobian_multi_params_multi_out(self, jpc):
+    def test_execute_jacobian_multi_params_multi_out(self, jpc, seed):
         """Test execute_and_compute_jacobian with multiple parameters and multiple outputs"""
         x = 0.93
         y = -0.83
@@ -664,7 +700,7 @@ class TestProbsTransformJacobians:
         measurements2 = [qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliZ(1))]
         tape2 = qp.tape.QuantumScript(ops2, measurements2)
 
-        res, jac = jpc.execute_and_compute_jacobian((tape1, tape2))
+        res, jac = jpc(seed).execute_and_compute_jacobian((tape1, tape2))
 
         expected_res00 = 0.5 * np.array([1 + np.cos(x) * np.cos(y), 1 - np.cos(x) * np.cos(y)])
         assert qp.math.allclose(res[0][0], expected_res00)
@@ -695,7 +731,7 @@ class TestProbsTransformJacobians:
         # second tape, second measurement, only parameter
         assert qp.math.allclose(jac[1][1], -np.sin(phi))
 
-    def test_vjp_multi_params_multi_out(self, jpc):
+    def test_vjp_multi_params_multi_out(self, jpc, seed):
         """Test compute_vjp with multiple parameters and multiple outputs."""
 
         x = 0.62
@@ -711,7 +747,7 @@ class TestProbsTransformJacobians:
 
         dy = (np.array([0.25, 0.5]), 1.5)
         dy2 = (0.7, 0.8)
-        vjps = jpc.compute_vjp((tape1, tape2), (dy, dy2))
+        vjps = jpc(seed).compute_vjp((tape1, tape2), (dy, dy2))
 
         dy = (
             0.5 * 0.25 * np.cos(x) * -np.sin(y)
@@ -729,7 +765,7 @@ class TestProbsTransformJacobians:
 
         assert qp.math.allclose(vjps[1], -0.8 * np.sin(phi))
 
-    def test_jac_multi_params_multi_out(self, jpc):
+    def test_jac_multi_params_multi_out(self, jpc, seed):
         """Test compute_jacobian with multiple parameters and multiple measurements."""
 
         x = 0.62
@@ -743,7 +779,7 @@ class TestProbsTransformJacobians:
         measurements2 = [qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliZ(1))]
         tape2 = qp.tape.QuantumScript(ops2, measurements2)
 
-        jac = jpc.compute_jacobian((tape1, tape2))
+        jac = jpc(seed).compute_jacobian((tape1, tape2))
 
         # first tape, first measurement, first parameters (y)
         expected = 0.5 * np.array([-np.cos(x) * np.sin(y), np.cos(x) * np.sin(y)])
@@ -773,11 +809,11 @@ class TestTransformsDifferentiability:
     """
 
     @pytest.mark.jax
-    def test_execute_jvp_jax(self):
+    def test_execute_jvp_jax(self, seed):
         """Test that execute_and_compute_jvp is jittable and differentiable with jax."""
         import jax
 
-        jpc = param_shift_jpc
+        jpc = param_shift_jpc(seed)
 
         def f(x, tangents):
             tape = qp.tape.QuantumScript([qp.RX(x, 0)], [qp.expval(qp.PauliZ(0))])
@@ -799,10 +835,10 @@ class TestTransformsDifferentiability:
         assert qp.math.allclose(tangent_grad[0][0], -np.sin(x))
 
     @pytest.mark.autograd
-    def test_vjp_autograd(self):
+    def test_vjp_autograd(self, seed):
         """Test that the derivative of compute_vjp can be taken with autograd."""
 
-        jpc = param_shift_jpc
+        jpc = param_shift_jpc(seed)
 
         def f(x, dy):
             tape = qp.tape.QuantumScript([qp.RX(x, 0)], [qp.expval(qp.PauliZ(0))])
@@ -820,12 +856,12 @@ class TestTransformsDifferentiability:
         assert qp.math.allclose(ddy, -np.sin(x))
 
     @pytest.mark.torch
-    def test_vjp_torch(self):
+    def test_vjp_torch(self, seed):
         """Test that the derivative of compute_vjp can be taken with torch."""
 
         import torch
 
-        jpc = param_shift_jpc
+        jpc = param_shift_jpc(seed)
 
         def f(x, dy):
             tape = qp.tape.QuantumScript([qp.RX(x, 0)], [qp.expval(qp.PauliZ(0))])
@@ -843,12 +879,12 @@ class TestTransformsDifferentiability:
         assert qp.math.allclose(dy.grad, -np.sin(0.1))
 
     @pytest.mark.tf
-    def test_vjp_tf(self):
+    def test_vjp_tf(self, seed):
         """Test that the derivatives of compute_vjp can be taken with tensorflow."""
 
         import tensorflow as tf
 
-        jpc = param_shift_jpc
+        jpc = param_shift_jpc(seed)
 
         def f(x, dy):
             tape = qp.tape.QuantumScript([qp.RX(x, 0)], [qp.expval(qp.PauliZ(0))])

@@ -136,6 +136,31 @@ def test_error_bad_state():
         allocate(2, state="no")
 
 
+def test_magic_t_state_enum_values():
+    """Test that magic-T state enum values are defined."""
+    assert AllocateState.MAGIC_T == "magic-T"
+    assert AllocateState.MAGIC_T_ADJ == "magic-T-adj"
+
+
+def test_allocate_magic_t_states():
+    """Test that allocate accepts magic-T state kwargs."""
+    with qp.queuing.AnnotatedQueue() as q:
+        allocate(1, state="magic-T")
+        allocate(1, state="magic-T-adj")
+
+    assert q.queue[0].state == AllocateState.MAGIC_T
+    assert q.queue[1].state == AllocateState.MAGIC_T_ADJ
+
+
+def test_error_magic_t_state_restored():
+    """Test that restored=True is rejected for magic-T state allocations."""
+    with pytest.raises(ValueError, match="restored=True is not supported for magic state"):
+        allocate(1, state="magic-T", restored=True)
+
+    with pytest.raises(ValueError, match="restored=True is not supported for magic state"):
+        allocate(1, state="magic-T-adj", restored=True)
+
+
 def test_allocate_function():
     """Test that allocate returns dynamic wires and queues an Allocate op."""
     with qp.queuing.AnnotatedQueue() as q:
@@ -218,6 +243,22 @@ def test_allocate_context_manager():
     qp.assert_equal(q.queue[2], Deallocate(wires))
 
 
+def test_allocate_in_ctrl():
+    """Tests that control is not applied to Allocate and Deallocate."""
+
+    def f():
+        with allocate(2, state="zero", restored=True) as wires:
+            qp.H(wires[0])
+            qp.CNOT(wires)
+
+    with qp.queuing.AnnotatedQueue() as q:
+        qp.ctrl(f, control=0)()
+
+    assert len(q.queue) == 4
+    assert isinstance(q.queue[0], Allocate)
+    assert isinstance(q.queue[3], Deallocate)
+
+
 @pytest.mark.jax
 @pytest.mark.capture
 class TestCaptureIntegration:
@@ -260,6 +301,25 @@ class TestCaptureIntegration:
 
         with pytest.raises(NotImplementedError):
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+    @pytest.mark.parametrize("state", (AllocateState.MAGIC_T, AllocateState.MAGIC_T_ADJ))
+    @pytest.mark.parametrize("use_context", (True, False))
+    def test_capturing_magic_t_states(self, state, use_context):
+        """Test that magic-T state allocations are captured in jaxpr."""
+        import jax
+
+        def f():
+            if use_context:
+                with allocate(1, state=state) as wires:
+                    qp.H(wires)
+            else:
+                [w] = allocate(1, state=state)
+                qp.H(w)
+                deallocate(w)
+
+        jaxpr = jax.make_jaxpr(f)()
+        assert jaxpr.eqns[0].primitive == allocate_prim
+        assert jaxpr.eqns[0].params["state"] == state
 
     def test_deallocate_single_wire(self):
         """Test deallocate can accept a single wire."""

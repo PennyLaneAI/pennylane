@@ -20,15 +20,15 @@ from collections.abc import Sequence
 import numpy as np
 
 from pennylane import math
+from pennylane.core.measurements import SampleMeasurement
 from pennylane.core.operator import Operator
+from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import MeasurementShapeError, QuantumFunctionError
 from pennylane.ops import MeasurementValue
-from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
 from .counts import CountsMP
-from .measurements import SampleMeasurement
 from .process_samples import process_raw_samples
 
 

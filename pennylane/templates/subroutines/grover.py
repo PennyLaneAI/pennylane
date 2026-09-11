@@ -20,8 +20,9 @@ import numpy as np
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import GlobalPhase, Hadamard, MultiControlledX, PauliZ
+from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
 
 
@@ -106,7 +107,9 @@ class GroverOperator(Operation):
     resource_keys = {"num_wires", "num_work_wires"}
 
     def __repr__(self):
-        return f"GroverOperator(wires={self.wires.tolist()}, work_wires={self.hyperparameters['work_wires'].tolist()})"
+        return (
+            f"GroverOperator(wires={self.wires}, work_wires={self.hyperparameters['work_wires']})"
+        )
 
     def _flatten(self):
         hyperparameters = (("work_wires", self.hyperparameters["work_wires"]),)
@@ -183,7 +186,7 @@ class GroverOperator(Operation):
         for wire in wires[:-1]:
             op_list.append(Hadamard(wire))
 
-        op_list.append(GlobalPhase(np.pi, wires))
+        op_list.append(GlobalPhase(np.pi))
 
         return op_list
 
@@ -221,13 +224,7 @@ def _grover_operator_resources(num_wires, num_work_wires):
         Hadamard: (num_wires - 1) * 2,
         PauliZ: 2,
         GlobalPhase: 1,
-        resource_rep(
-            MultiControlledX,
-            num_control_wires=num_wires - 1,
-            num_zero_control_values=num_wires - 1,
-            num_work_wires=num_work_wires,
-            work_wire_type="borrowed",
-        ): 1,
+        MultiControlledX(Wire[num_wires], work_wires=Wire[num_work_wires]): 1,
     }
 
 
@@ -254,7 +251,7 @@ def _grover_decomposition(wires, work_wires, n_wires):
 
     apply_hadamards()  # pylint: disable=no-value-for-parameter
 
-    GlobalPhase(np.pi, wires=wires[0])
+    GlobalPhase(np.pi)
 
 
 add_decomps(GroverOperator, _grover_decomposition)

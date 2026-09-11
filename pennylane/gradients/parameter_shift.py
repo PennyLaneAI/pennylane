@@ -23,6 +23,7 @@ import numpy as np
 
 from pennylane import math
 from pennylane.core.operator import Operation, Operator, Operator2
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.decomposition import gate_sets
 from pennylane.exceptions import (
     GeneratorUndefinedError,
@@ -30,9 +31,9 @@ from pennylane.exceptions import (
     ParameterFrequenciesUndefinedError,
 )
 from pennylane.measurements import ExpectationMP, VarianceMP, expval
-from pennylane.ops import Prod, prod
+from pennylane.ops import U2, U3, CRot, PauliRot, Prod, Rot, SingleExcitation, prod
 from pennylane.ops.functions import eigvals, generator
-from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.transforms import decompose, split_to_single_terms
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
@@ -1237,7 +1238,7 @@ def param_shift(
 
 
 @singledispatch
-def parameter_frequencies(op: Operation | Operator2):
+def parameter_frequencies(op: Operation | Operator2) -> list[tuple[int | float, ...]]:
     r"""
     Returns the frequencies for each operator parameter with respect
     to an expectation value of the form
@@ -1278,7 +1279,7 @@ def parameter_frequencies(op: Operation | Operator2):
 
     .. code-block:: python
 
-        from pennylane.operation2 import Operator2
+        from pennylane.core.operator import Operator2
         from pennylane.wires import WiresLike
         from pennylane.gradients import parameter_frequencies
 
@@ -1333,3 +1334,49 @@ def _handle_operator2(op: Operator2):
         f"Operation {op.name} does not have parameter frequencies defined, "
         "and parameter frequencies can not be computed as no generator is defined."
     )
+
+
+@parameter_frequencies.register
+def _handle_adjoint2(op: Adjoint2):
+    """Calculates the parameter frequencies for an Adjoint2."""
+    return parameter_frequencies(op.base)
+
+
+@parameter_frequencies.register
+def _handle_single_excitation(op: SingleExcitation):
+    return [(0.5, 1.0)]
+
+
+@parameter_frequencies.register
+def _handle_u2(op: U2):
+    """Returns the parameter frequencies for a ``U2`` gate."""
+    return [(1,), (1,)]
+
+
+@parameter_frequencies.register
+def _handle_u3(op: U3):
+    """Returns the parameter frequencies for a ``U3`` gate."""
+    return [(1,), (1,), (1,)]
+
+
+@parameter_frequencies.register
+def _handle_pauli_rot(op: PauliRot):
+    """Calculates the parameter frequencies for a PauliRot.
+
+    This is needed because if the Pauli word is an identity, then the computed
+    parameter frequencies will be ``[()]``, which breaks parameter shift with
+    ``PauliRot``.
+    """
+    return [(1,)]
+
+
+@parameter_frequencies.register
+def _handle_rot(op: Rot):
+    """Calculates the parameter frequencies for an Rot."""
+    return [(1,), (1,), (1,)]
+
+
+@parameter_frequencies.register
+def _handle_crot(op: CRot):
+    """Calculates the parameter frequencies for an CRot."""
+    return [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]

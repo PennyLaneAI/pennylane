@@ -117,9 +117,7 @@ def test_standard_validity():
     """Check the operation using the assert_valid function."""
 
     coeffs = np.array([0.5, 0.5, -0.5, -0.5])
-    bases = np.array(
-        [[0, 0, 0, 0, 0], [0, 1, 0, 1, 1], [0, 0, 0, 0, 1], [0, 0, 0, 1, 0], [1, 1, 0, 1, 1]]
-    )
+    bases = np.array([[0, 0, 0, 0, 0], [0, 1, 0, 1, 1], [0, 0, 0, 1, 0], [1, 1, 0, 1, 1]])
 
     op = qp.Superposition(coeffs, bases=bases, wires=range(5), work_wire=5)
     qp.ops.functions.assert_valid(op)

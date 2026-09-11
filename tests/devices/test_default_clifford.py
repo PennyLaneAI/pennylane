@@ -21,6 +21,7 @@ import scipy as sp
 from dummy_debugger import Debugger
 
 import pennylane as qp
+from pennylane.core.operator import Operator1
 from pennylane.devices.default_clifford import _pl_op_to_stim
 from pennylane.exceptions import DecompositionWarning, DeviceError, QuantumFunctionError
 
@@ -528,17 +529,15 @@ def test_tracker():
     }
     assert np.allclose(tracker.history.pop("results")[0], 0.0)
     assert tracker.history.pop("resources")[0] == qp.resource.SpecsResources(
-        num_allocs=2,
-        gate_types={"Hadamard": 1, "CNOT": 1},
-        gate_sizes={1: 1, 2: 1},
-        measurements={"expval(PauliZ)": 1},
-        depth=2,
+        num_wires=2,
+        counts={"Hadamard": 1, "CNOT": 1},
+        measurement_processes={"expval(PauliZ)": 1},
+        circuit_depth=2,
     )
     assert tracker.history == {
         "batches": [1, 1],
         "simulations": [1, 1],
         "executions": [1, 1],
-        "errors": [{}, {}],
     }
 
 
@@ -651,6 +650,10 @@ def test_meas_error():
         circuit_herm()
 
 
+class LegacyRX(Operator1):  # pylint: disable=too-few-public-methods
+    has_decomposition = False
+
+
 @pytest.mark.parametrize("check", [True, False])
 def test_clifford_error(check):
     """Test if an QuantumFunctionError is raised when one of the operations is not Clifford."""
@@ -661,12 +664,12 @@ def test_clifford_error(check):
     def circuit():
         qp.Hadamard(wires=[0])
         qp.PauliX(wires=[0])
-        qp.RX(1.0, wires=[0])
+        LegacyRX(1.0, wires=[0])
         return qp.state()
 
     with pytest.raises(
         DeviceError,
-        match=r"Operator RX\(1.0, wires=\[0\]\) not supported with default.clifford and does not provide a decomposition",
+        match=r"Operator LegacyRX\(1.0, wires=\[0\]\) not supported with default.clifford and does not provide a decomposition",
     ):
         if qp.decomposition.enabled_graph() and check:
             with pytest.warns(DecompositionWarning):

@@ -18,8 +18,8 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
+from pennylane.core.qscript import QuantumScript
 from pennylane.math import Interface
-from pennylane.tape import QuantumScript
 from pennylane.workflow import _resolve_interface
 
 

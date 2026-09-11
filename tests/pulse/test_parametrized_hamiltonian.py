@@ -225,33 +225,6 @@ class TestCall:
         qp.assert_equal(H_fixed, expected_H_fixed)
         qp.assert_equal(H_parametrized, expected_H_parametrized)
 
-    def test_call_with_qutrit_operators(self):
-        """Test that the ParametrizedHamiltonian can be created and called to initialize an
-        operator consisting of qutrit operations"""
-
-        def f(x, t):
-            return x + 2 * t
-
-        coeffs = [f, 2]
-        obs = [qp.GellMann(wires=0, index=1), qp.GellMann(wires=0, index=2)]
-
-        H = ParametrizedHamiltonian(coeffs, obs)
-
-        assert isinstance(H([2], 4), qp.ops.Sum)
-        assert (
-            repr(H([2], t=4)) == "(\n    2 * GellMann2(wires=[0])\n  + 10 * GellMann1(wires=[0])\n)"
-        )
-        assert np.all(
-            qp.matrix(H([2], 4))
-            == np.array(
-                [
-                    [0.0 + 0.0j, 10.0 - 2.0j, 0.0 + 0.0j],
-                    [10.0 + 2.0j, 0.0 + 0.0j, 0.0 + 0.0j],
-                    [0.0 + 0.0j, 0.0 + 0.0j, 0.0 + 0.0j],
-                ]
-            )
-        )
-
     def test_call_raises_error(self):
         """Test that if the user calls a `ParametrizedHamiltonian` with the incorrect number
         of parameters, an error is raised."""
@@ -260,7 +233,7 @@ class TestCall:
             return x + 2 * t
 
         coeffs = [f, 2]
-        obs = [qp.GellMann(wires=0, index=1), qp.GellMann(wires=0, index=2)]
+        obs = [qp.PauliZ(wires=0), qp.PauliX(wires=0)]
         H = ParametrizedHamiltonian(coeffs, obs)
         # fmt: off
         with pytest.raises(ValueError, match="The length of the params argument and the number of scalar-valued functions must be the same",):

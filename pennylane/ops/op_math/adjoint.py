@@ -24,11 +24,13 @@ import pennylane as qp
 from pennylane import pytrees
 from pennylane.capture.autograph import wraps
 from pennylane.compiler import compiler
-from pennylane.core.operator import Operation, Operator
+from pennylane.core.operator import Operation, Operator, Operator2
+from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
+from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.math import conj, moveaxis, transpose
-from pennylane.queuing import QueuingManager
 
+from .adjoint2 import Adjoint2
 from .symbolicop import SymbolicOp
 
 
@@ -72,8 +74,8 @@ def adjoint(fn, lazy=True):
 
         This function supports a batched operator:
 
-        >>> op = qp.adjoint(qp.RX([1, 2, 3], wires=0))
-        >>> qp.matrix(op).shape
+        >>> op = qp.adjoint(qp.RX([1, 2, 3], wires=0))  # doctest: +SKIP
+        >>> qp.matrix(op).shape  # doctest: +SKIP
         (3, 2, 2)
 
         But it doesn't support batching of operators:
@@ -94,8 +96,8 @@ def adjoint(fn, lazy=True):
     ... def circuit2(y):
     ...     qp.adjoint(qp.RY(y, wires=0))
     ...     return qp.expval(qp.Z(0))
-    >>> print(qp.draw(circuit2)("y"))
-    0: ──RY(y)†─┤  <Z>
+    >>> print(qp.draw(circuit2)(0.1))
+    0: ──RY(0.10)†─┤  <Z>
     >>> print(qp.draw(circuit2, level="device")(0.1))
     0: ──RY(0.10)†─┤  <Z>
 
@@ -180,9 +182,9 @@ def adjoint(fn, lazy=True):
 def create_adjoint_op(fn, lazy):
     """Main logic for qp.adjoint, but allows bypassing the compiler dispatch if needed."""
     if qp.math.is_abstract(fn):
-        return Adjoint(fn)
+        return _make_adjoint_op(fn)
     if isinstance(fn, Operator):
-        return Adjoint(fn) if lazy else _single_op_eager(fn, update_queue=True)
+        return _make_adjoint_op(fn) if lazy else _single_op_eager(fn, update_queue=True)
     if callable(fn):
         return _adjoint_transform(fn, lazy=lazy)
     if fn is None:
@@ -254,21 +256,19 @@ def _capture_adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
 
 
 def _adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
-    # default adjoint transform when capture is not enabled.
+    """Default adjoint transform when capture is not enabled."""
+
     @wraps(qfunc)
     def wrapper(*args, **kwargs):
         if qp.capture.enabled():
             return _capture_adjoint_transform(qfunc, lazy=lazy)(*args, **kwargs)
 
         qscript = qp.tape.make_qscript(qfunc)(*args, **kwargs)
-
-        leaves, _ = qp.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
+        leaves, _ = qp.pytrees.flatten((args, kwargs), lambda op: isinstance(op, Operator))
         _ = [qp.QueuingManager.remove(l) for l in leaves if isinstance(l, Operator)]
 
-        if lazy:
-            adjoint_ops = [Adjoint(op) for op in reversed(qscript.operations)]
-        else:
-            adjoint_ops = [_single_op_eager(op) for op in reversed(qscript.operations)]
+        adjoint_fn = _make_adjoint_op if lazy else _single_op_eager
+        adjoint_ops = [adjoint_fn(op) for op in reversed(qscript.operations)]
 
         return adjoint_ops[0] if len(adjoint_ops) == 1 else adjoint_ops
 
@@ -279,10 +279,12 @@ def _single_op_eager(op: Operator, update_queue: bool = False) -> Operator:
     if op.has_adjoint:
         adj = op.adjoint()
         if update_queue:
+            if isinstance(op, Operator2):
+                _ = pop_op_eqns((op,))
             QueuingManager.remove(op)
             QueuingManager.append(adj)
         return adj
-    return Adjoint(op)
+    return _make_adjoint_op(op)
 
 
 class Adjoint(SymbolicOp):
@@ -324,7 +326,7 @@ class Adjoint(SymbolicOp):
         >>> isinstance(op, AdjointOperation)
         True
         >>> op.grad_method
-        'A'
+        <GradMethod.ANALYTIC: 'A'>
 
     """
 
@@ -351,12 +353,17 @@ class Adjoint(SymbolicOp):
         If the ``base`` is an ``Operation``, this will return an instance of ``AdjointOperation``.
 
         """
-
         if isinstance(base, Operation):
             # not an observable
             return object.__new__(AdjointOperation)
 
         return object.__new__(Adjoint)
+
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        if subclass == qp.ops.op_math.Adjoint2:
+            return True
+        return NotImplemented
 
     def __init__(self, base=None):
         self._name = f"Adjoint({base.name})"
@@ -408,7 +415,7 @@ class Adjoint(SymbolicOp):
         if self.base.has_adjoint:
             return [self.base.adjoint()]
         base_decomp = self.base.decomposition()
-        return [Adjoint(op) for op in reversed(base_decomp)]
+        return [qp.adjoint(op) for op in reversed(base_decomp)]
 
     def eigvals(self):
         # Cannot define ``compute_eigvals`` because Hermitian only defines ``eigvals``
@@ -454,6 +461,12 @@ class AdjointOperation(Adjoint, Operation):
     def __new__(cls, *_, **__):
         return object.__new__(cls)
 
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        if subclass == qp.ops.op_math.Adjoint2:
+            return True
+        return NotImplemented
+
     @property
     def name(self):
         return self._name
@@ -482,7 +495,10 @@ class AdjointOperation(Adjoint, Operation):
 
     @property
     def parameter_frequencies(self):
-        return self.base.parameter_frequencies
+        # pylint: disable=import-outside-toplevel
+        from pennylane.gradients.parameter_shift import parameter_frequencies
+
+        return parameter_frequencies(self.base)
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
@@ -491,6 +507,14 @@ class AdjointOperation(Adjoint, Operation):
 
     def generator(self):
         return -1 * self.base.generator()
+
+
+def _make_adjoint_op(op: Operator) -> Adjoint | Adjoint2:
+    if isinstance(op, Operator2):
+        _ = pop_op_eqns((op,))
+        return Adjoint2(op)
+
+    return Adjoint(op)
 
 
 AdjointOperation._primitive = Adjoint._primitive  # pylint: disable=protected-access

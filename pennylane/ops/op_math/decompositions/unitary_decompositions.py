@@ -21,9 +21,9 @@ import numpy as np
 from scipy import sparse
 from scipy.linalg import cossin
 
-from pennylane import capture, compiler, math, ops, queuing, templates
+from pennylane import capture, compiler, math, ops, templates
+from pennylane.core import queuing
 from pennylane.decomposition.decomposition_rule import register_condition, register_resources
-from pennylane.decomposition.resources import resource_rep
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.math.decomposition import (
     xyx_rotation_angles,
@@ -31,6 +31,7 @@ from pennylane.math.decomposition import (
     zxz_rotation_angles,
     zyz_rotation_angles,
 )
+from pennylane.typing import Complex, Float, Wire
 from pennylane.wires import Wires
 
 #: Maximum tolerated error for a valid real SO(4) decomposition.
@@ -62,16 +63,16 @@ def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False)
     >>> U = np.array([[1, 1], [1, -1]]) / np.sqrt(2)  # Hadamard
     >>> decomp = qp.ops.one_qubit_decomposition(U, 0, rotations='ZYZ', return_global_phase=True)
     >>> pprint(decomp)
-    [RZ(np.float64(3.14159...), wires=[0]),
-     RY(np.float64(1.57079...), wires=[0]),
-     RZ(np.float64(0.0), wires=[0]),
-     GlobalPhase(np.float64(-1.57079...), wires=[])]
+    [RZ(3.14159..., wires=[0]),
+     RY(1.57079..., wires=[0]),
+     RZ(0.0, wires=[0]),
+     GlobalPhase(-1.57079...)]
     >>> decomp = qp.ops.one_qubit_decomposition(U, 0, rotations='XZX', return_global_phase=True)
     >>> pprint(decomp)
-    [RX(np.float64(1.57079...), wires=[0]),
-     RZ(np.float64(1.57079...), wires=[0]),
-     RX(np.float64(1.57079...), wires=[0]),
-     GlobalPhase(np.float64(-1.57079...), wires=[])]
+    [RX(1.57079..., wires=[0]),
+     RZ(1.57079..., wires=[0]),
+     RX(1.57079..., wires=[0]),
+     GlobalPhase(-1.57079...)]
     """
 
     supported_rotations = {
@@ -92,7 +93,7 @@ def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False)
     if sparse.issparse(U):
         U = U.todense()
 
-    U, global_phase = math.convert_to_su2(U, return_global_phase=True)
+    U, global_phase = math.convert_to_su2(U)
     with queuing.AnnotatedQueue() as q:
         supported_rotations[rotations](U, wires=Wires(wire))
         if return_global_phase:
@@ -176,16 +177,16 @@ def two_qubit_decomposition(U, wires):
      QubitUnitary(array([[ 0.73465919-0.15696895j,  0.51629531-0.41118825j],
            [-0.51629531-0.41118825j,  0.73465919+0.15696895j]]), wires=[1]),
      CNOT(wires=[1, 0]),
-     RZ(np.float64(0.028408953417448358), wires=[0]),
-     RY(np.float64(0.6226823676455966), wires=[1]),
+     RZ(0.028408953417448358, wires=[0]),
+     RY(0.6226823676455966, wires=[1]),
      CNOT(wires=[0, 1]),
-     RY(np.float64(-0.7259987841675299), wires=[1]),
+     RY(-0.7259987841675299, wires=[1]),
      CNOT(wires=[1, 0]),
      QubitUnitary(array([[ 0.85429569-0.34743933j,  0.14569083+0.35810469j],
            [-0.14569083+0.35810469j,  0.85429569+0.34743933j]]), wires=[0]),
      QubitUnitary(array([[-0.30052527-0.4826478j ,  0.74833925-0.34164898j],
            [-0.74833925-0.34164898j, -0.30052527+0.4826478j ]]), wires=[1]),
-     GlobalPhase(np.float64(0.07394316416802127), wires=[])]
+     GlobalPhase(0.07394316416802127)]
 
     """
 
@@ -203,8 +204,7 @@ def two_qubit_decomposition(U, wires):
         )
 
     with queuing.AnnotatedQueue() as q:
-
-        U, phase = math.convert_to_su4(U, return_global_phase=True)
+        U, phase = math.convert_to_su4(U)
 
         if _is_jax_jit(U):
             # Always use the 3-CNOT case when in jax.jit, because it is not compatible
@@ -290,19 +290,18 @@ def multi_qubit_decomposition(U, wires):
 def make_one_qubit_unitary_decomposition(su2_rule, su2_resource, name=""):
     """Wrapper around a naive one-qubit decomposition rule that adds a global phase."""
 
-    def _resource_fn(num_wires):  # pylint: disable=unused-argument
+    def _resource_fn(*_, **__):
         return su2_resource() | {ops.GlobalPhase: 1}
 
     name = name or su2_rule.name
 
     # Resources are not exact because the global phase or rotations might be skipped
-    @register_condition(lambda num_wires: num_wires == 1)
+    @register_condition(lambda U, wires, **_: len(wires) == 1)
     @register_resources(_resource_fn, exact=False, name=name)
     def _impl(U, wires, **__):
         if sparse.issparse(U):
             U = U.todense()
-        U, phase = math.convert_to_su2(U, return_global_phase=True)
-        su2_rule(U, wires=wires)
+        phase = su2_rule(U, wires=wires)
         if _is_jax_jit(U):
             ops.GlobalPhase(-phase)
         else:
@@ -319,12 +318,16 @@ def _su2_rot_resource():
 
 
 def _su2_rot_decomp(U, wires, **__):
-    phi, theta, omega = zyz_rotation_angles(U)
-    ops.cond(
-        math.allclose(U[..., 0, 1], 0.0),
-        lambda: ops.RZ(2 * math.angle(U[..., 1, 1]) % (4 * np.pi), wires=wires[0]),
-        lambda: ops.Rot(phi, theta, omega, wires=wires[0]),
-    )()
+    phi, theta, omega, alpha = zyz_rotation_angles(U)
+
+    def _true():
+        ops.RZ((phi + omega) % (4 * np.pi), wires=wires[0])
+
+    def _false():
+        ops.Rot(phi, theta, omega, wires=wires[0])
+
+    ops.cond(math.allclose(theta, 0.0), _true, _false)()
+    return alpha
 
 
 def _su2_zyz_resource():
@@ -332,10 +335,11 @@ def _su2_zyz_resource():
 
 
 def _su2_zyz_decomp(U, wires, **__):
-    phi, theta, omega = zyz_rotation_angles(U)
+    phi, theta, omega, alpha = zyz_rotation_angles(U)
     ops.RZ(phi, wires=wires[0])
     ops.RY(theta, wires=wires[0])
     ops.RZ(omega, wires=wires[0])
+    return alpha
 
 
 def _su2_xyx_resource():
@@ -344,10 +348,11 @@ def _su2_xyx_resource():
 
 def _su2_xyx_decomp(U, wires, **__):
     """Decomposes a QubitUnitary into a sequence of XYX rotations."""
-    phi, theta, omega = xyx_rotation_angles(U)
+    phi, theta, omega, alpha = xyx_rotation_angles(U)
     ops.RX(phi, wires=wires[0])
     ops.RY(theta, wires=wires[0])
     ops.RX(omega, wires=wires[0])
+    return alpha
 
 
 def _su2_xzx_resource():
@@ -355,10 +360,11 @@ def _su2_xzx_resource():
 
 
 def _su2_xzx_decomp(U, wires, **__):
-    phi, theta, omega = xzx_rotation_angles(U)
+    phi, theta, omega, alpha = xzx_rotation_angles(U)
     ops.RX(phi, wires=wires[0])
     ops.RZ(theta, wires=wires[0])
     ops.RX(omega, wires=wires[0])
+    return alpha
 
 
 def _su2_zxz_resource():
@@ -366,10 +372,11 @@ def _su2_zxz_resource():
 
 
 def _su2_zxz_decomp(U, wires, **__):
-    phi, theta, omega = zxz_rotation_angles(U)
+    phi, theta, omega, alpha = zxz_rotation_angles(U)
     ops.RZ(phi, wires=wires[0])
     ops.RX(theta, wires=wires[0])
     ops.RZ(omega, wires=wires[0])
+    return alpha
 
 
 rot_decomp_rule = make_one_qubit_unitary_decomposition(_su2_rot_decomp, _su2_rot_resource, "rot")
@@ -379,10 +386,10 @@ xzx_decomp_rule = make_one_qubit_unitary_decomposition(_su2_xzx_decomp, _su2_xzx
 zxz_decomp_rule = make_one_qubit_unitary_decomposition(_su2_zxz_decomp, _su2_zxz_resource, "zxz")
 
 
-def _two_qubit_resource(**_):
+def _two_qubit_resource(*_, **__):
     """A worst-case over-estimate for the resources of two-qubit unitary decomposition."""
     return {
-        resource_rep(ops.QubitUnitary, num_wires=1): 4,
+        ops.QubitUnitary(Complex[2, 2], wires=Wire[1]): 4,
         ops.CNOT: 3,
         ops.RZ: 1,
         ops.RY: 2,
@@ -390,12 +397,12 @@ def _two_qubit_resource(**_):
     }
 
 
-@register_condition(lambda num_wires: num_wires == 2)
+@register_condition(lambda U, wires, **_: len(wires) == 2)  # pylint: disable=unused-argument
 @register_resources(_two_qubit_resource, exact=False)
-def two_qubit_decomp_rule(U, wires, **__):
+def two_qubit_decomp_rule(U, wires, **_):
     """The decomposition rule for a two-qubit unitary."""
 
-    U, initial_phase = math.convert_to_su4(U, return_global_phase=True)
+    U, initial_phase = math.convert_to_su4(U)
     num_cnots = _compute_num_cnots(U)
 
     elifs = [(num_cnots == 1, _decompose_1_cnot)]
@@ -416,15 +423,28 @@ def two_qubit_decomp_rule(U, wires, **__):
     ops.cond(math.logical_not(math.allclose(total_phase, 0)), ops.GlobalPhase)(-total_phase)
 
 
-def _multi_qubit_decomp_resource(num_wires):
+def _multi_qubit_decomp_resource(U, wires, **_):  # pylint: disable=unused-argument
+    num_wires = len(wires)
     return {
-        resource_rep(ops.QubitUnitary, num_wires=num_wires - 1): 4,
-        resource_rep(templates.SelectPauliRot, num_wires=num_wires, rot_axis="Z"): 2,
-        resource_rep(templates.SelectPauliRot, num_wires=num_wires, rot_axis="Y"): 1,
+        ops.QubitUnitary(
+            Complex[2 ** (num_wires - 1), 2 ** (num_wires - 1)], wires=Wire[num_wires - 1]
+        ): 4,
+        templates.SelectPauliRot(
+            Float[2 ** (num_wires - 1)],
+            control_wires=Wire[num_wires - 1],
+            target_wire=Wire[1],
+            rot_axis="Z",
+        ): 2,
+        templates.SelectPauliRot(
+            Float[2 ** (num_wires - 1)],
+            control_wires=Wire[num_wires - 1],
+            target_wire=Wire[1],
+            rot_axis="Y",
+        ): 1,
     }
 
 
-@register_condition(lambda num_wires: num_wires > 2)
+@register_condition(lambda U, wires, **_: len(wires) > 2)  # pylint: disable=unused-argument
 @register_resources(_multi_qubit_decomp_resource)
 def multi_qubit_decomp_rule(U, wires, **__):
     """The decomposition rule for a multi-qubit unitary."""
@@ -441,7 +461,7 @@ def multi_qubit_decomp_rule(U, wires, **__):
     ops.QubitUnitary(v12_dagg, wires=wires[1:])
 
     templates.SelectPauliRot(
-        -2 * math.angle(diag_v),
+        math.cast(-2 * math.angle(diag_v), dtype=np.float64),
         target_wire=wires[0],
         control_wires=wires[1:],
         rot_axis="Z",
@@ -449,12 +469,17 @@ def multi_qubit_decomp_rule(U, wires, **__):
 
     ops.QubitUnitary(v11_dagg, wires=wires[1:])
 
-    templates.SelectPauliRot(2 * theta, target_wire=wires[0], control_wires=wires[1:], rot_axis="Y")
+    templates.SelectPauliRot(
+        math.cast(2 * theta, dtype=np.float64),
+        target_wire=wires[0],
+        control_wires=wires[1:],
+        rot_axis="Y",
+    )
 
     ops.QubitUnitary(u12, wires=wires[1:])
 
     templates.SelectPauliRot(
-        -2 * math.angle(diag_u),
+        math.cast(-2 * math.angle(diag_u), dtype=np.float64),
         target_wire=wires[0],
         control_wires=wires[1:],
         rot_axis="Z",
@@ -544,8 +569,8 @@ def _decompose_0_cnots(U, wires, initial_phase):
      -╰U- = -B-
     """
     A, B = math.decomposition.su2su2_to_tensor_products(U)
-    A, phaseA = math.convert_to_su2(A, return_global_phase=True)
-    B, phaseB = math.convert_to_su2(B, return_global_phase=True)
+    A, phaseA = math.convert_to_su2(A)
+    B, phaseB = math.convert_to_su2(B)
     ops.QubitUnitary(A, wires=wires[0])
     ops.QubitUnitary(B, wires=wires[1])
     return math.cast_like(phaseA + phaseB, initial_phase)
@@ -1098,7 +1123,6 @@ def _compute_udv(a, b):
 
 
 def _cossin_decomposition(U, p):
-
     # pylint: disable=import-outside-toplevel
     if math.get_interface(U) == "jax":
         # Wrap scipy's cossin function with pure_callback to make the decomposition compatible with jit
@@ -1113,11 +1137,19 @@ def _cossin_decomposition(U, p):
 
         def cossin_decomposition(U, p):
             dtype = U.dtype
+            real_dtype = np.finfo(dtype).dtype
             U_flat = U.reshape(-1)
 
             def callback(U_flat):
-                return tuple(
-                    arr.astype(dtype) for arr in scipy_cossin_callback(np.asarray(U_flat), p)
+                u1, u2, theta, v1_dagg, v2_dagg = scipy_cossin_callback(np.asarray(U_flat), p)
+                return (
+                    u1.astype(dtype),
+                    u2.astype(dtype),
+                    # NOTE: According to https://docs.scipy.org/doc/scipy/reference/generated/scipy.linalg.cossin.html
+                    # theta is an array of real angles in radians.
+                    theta.astype(real_dtype),
+                    v1_dagg.astype(dtype),
+                    v2_dagg.astype(dtype),
                 )
 
             u1, u2, theta, v1_dagg, v2_dagg = jax.pure_callback(
@@ -1125,7 +1157,7 @@ def _cossin_decomposition(U, p):
                 result_shape_dtypes=(
                     jax.ShapeDtypeStruct((p, p), dtype),
                     jax.ShapeDtypeStruct((p, p), dtype),
-                    jax.ShapeDtypeStruct((p,), dtype),
+                    jax.ShapeDtypeStruct((p,), real_dtype),
                     jax.ShapeDtypeStruct((p, p), dtype),
                     jax.ShapeDtypeStruct((p, p), dtype),
                 ),

@@ -19,8 +19,8 @@ Unit tests for the qp.map_wires function
 import pytest
 
 import pennylane as qp
+from pennylane.core.qscript import QuantumScript
 from pennylane.ops import Prod
-from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
 

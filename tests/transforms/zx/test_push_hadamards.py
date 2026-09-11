@@ -22,7 +22,7 @@ import pytest
 from packaging.version import Version
 
 import pennylane as qp
-from pennylane.tape import QuantumScript
+from pennylane.core.qscript import QuantumScript
 
 pyzx = pytest.importorskip("pyzx")
 
