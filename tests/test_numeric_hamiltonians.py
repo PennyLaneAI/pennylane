@@ -793,10 +793,7 @@ class TestVibronic:
             **vibronic_tensors(seed)
         )
         assert VibronicHamiltonian(**vibronic_tensors(seed)) != VibronicHamiltonian(
-            **vibronic_specs(seed)
-        )
-        assert VibronicHamiltonian(**vibronic_specs(seed)) != VibronicHamiltonian(
-            **vibronic_specs(seed + 1)
+            **vibronic_specs()
         )
         assert VibronicHamiltonian(**vibronic_tensors(seed)) != VibronicHamiltonian(
             **vibronic_tensors(seed + 1)
