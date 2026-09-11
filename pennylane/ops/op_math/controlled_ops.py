@@ -59,7 +59,7 @@ from .controlled import (
     custom_ctrl_dispatch,
 )
 from .decompositions.controlled_decompositions import (
-    _wrap_mcx_rule_w_alloc,
+    augment_with_alloc,
     controlled_two_qubit_unitary_rule,
     ctrl_decomp_bisect_rule,
     decompose_mcx_many_workers,
@@ -1430,14 +1430,14 @@ def _list_mcx_no_work_wire_decomps(op: MultiControlledX):
         return [mcx_to_cnot_or_toffoli]
 
     if len(op.wires) == 3:
-        elbow_rule = _wrap_mcx_rule_w_alloc(decompose_mcx_two_controls_elbows, 1, "zeroed")
+        elbow_rule = augment_with_alloc(decompose_mcx_two_controls_elbows, 1, "zeroed")
         return [mcx_to_cnot_or_toffoli, elbow_rule]
 
     capture_compatible_rules = [
-        _wrap_mcx_rule_w_alloc(decompose_mcx_two_workers, 2, "zeroed", "two_zeroed_workers"),
-        _wrap_mcx_rule_w_alloc(decompose_mcx_two_workers, 2, "borrowed", "two_borrowed_workers"),
-        _wrap_mcx_rule_w_alloc(decompose_mcx_one_worker, 1, "zeroed", "one_zeroed_worker"),
-        _wrap_mcx_rule_w_alloc(decompose_mcx_one_worker, 1, "borrowed", "one_borrowed_worker"),
+        augment_with_alloc(decompose_mcx_two_workers, 2, "zeroed", "two_zeroed_workers"),
+        augment_with_alloc(decompose_mcx_two_workers, 2, "borrowed", "two_borrowed_workers"),
+        augment_with_alloc(decompose_mcx_one_worker, 1, "zeroed", "one_zeroed_worker"),
+        augment_with_alloc(decompose_mcx_one_worker, 1, "borrowed", "one_borrowed_worker"),
         decompose_mcx_with_no_worker,
     ]
     if qp.capture.enabled():
@@ -1445,13 +1445,13 @@ def _list_mcx_no_work_wire_decomps(op: MultiControlledX):
 
     # TODO: the following decomposition rules are not capture compatible [sc-129521]
     return [
-        _wrap_mcx_rule_w_alloc(
+        augment_with_alloc(
             decompose_mcx_many_workers,
             len(op.control_wires) - 2,
             "zeroed",
             "many_zeroed_workers",
         ),
-        _wrap_mcx_rule_w_alloc(
+        augment_with_alloc(
             decompose_mcx_many_workers,
             len(op.control_wires) - 2,
             "borrowed",

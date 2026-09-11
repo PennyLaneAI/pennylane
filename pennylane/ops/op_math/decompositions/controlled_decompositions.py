@@ -14,7 +14,9 @@
 
 """This submodule defines functions to decompose controlled operations."""
 
+import inspect
 from functools import partial
+from textwrap import dedent
 from typing import Literal
 
 import numpy as np
@@ -417,26 +419,26 @@ def controlled_two_qubit_unitary_rule(U, wires, control_values, work_wires, work
 ########################################
 
 
-def _wrap_mcx_rule_w_alloc(base_rule, num_work_wires, work_wire_type, name=""):
-    """Given a MCX decomposition rule that takes explicit work wires, populate the same
+def augment_with_alloc(base_rule, num_work_wires, work_wire_type, name=""):
+    """Given a decomposition rule that takes explicit work wires, populate the same
     decomposition rule that uses dynamic work wire allocation instead."""
 
-    def _resource_fn(wires, control_values, *_, **__):
-        # pylint: disable-next=protected-access
-        return base_rule._compute_resources(
-            wires,
-            control_values,
-            Wire[num_work_wires],
-            work_wire_type=work_wire_type,
-        )
+    # pylint: disable=protected-access
+    signature = inspect.signature(base_rule._impl)
+    abstract_sub = {"work_wires": Wire[num_work_wires], "work_wire_type": work_wire_type}
 
-    def _condition_fn(wires, control_values, *_, **__):
-        return base_rule.is_applicable(
-            wires,
-            control_values,
-            Wire[num_work_wires],
-            work_wire_type=work_wire_type,
-        )
+    def _get_arguments(*args, **kwargs):
+        bound_args = signature.bind(*args, **kwargs)
+        bound_args.apply_defaults()
+        return bound_args.arguments
+
+    def _resource_fn(*args, **kwargs):
+        arguments = _get_arguments(*args, **kwargs) | abstract_sub
+        return base_rule._compute_resources(**arguments)
+
+    def _condition_fn(*args, **kwargs):
+        arguments = _get_arguments(*args, **kwargs) | abstract_sub
+        return base_rule.is_applicable(**arguments)
 
     @register_condition(_condition_fn)
     @register_resources(
@@ -445,11 +447,19 @@ def _wrap_mcx_rule_w_alloc(base_rule, num_work_wires, work_wire_type, name=""):
         exact=base_rule.exact_resources,
         name=name or f"use_allocation({base_rule.name})",
     )
-    def _impl(wires, control_values, *_, **__):
+    def _impl(*args, **kwargs):
+        arguments = _get_arguments(*args, **kwargs)
         state = "zero" if work_wire_type == "zeroed" else "any"
         with qp.allocation.allocate(num_work_wires, state, restored=True) as work_wires:
-            # pylint: disable-next=protected-access
-            base_rule._impl(wires, control_values, work_wires, work_wire_type=work_wire_type)
+            arguments |= {"work_wires": work_wires, "work_wire_type": work_wire_type}
+            base_rule._impl(**arguments)  # pylint: disable=protected-access
+
+    base_source = base_rule._source
+    _impl._source = (
+        dedent(_impl._source).strip()
+        + "\n\nwhere base_rule is defined as:\n\n"
+        + dedent(base_source).strip()
+    )
 
     return _impl
 
