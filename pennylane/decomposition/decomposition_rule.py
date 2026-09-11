@@ -22,7 +22,7 @@ from collections.abc import Callable, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
-from functools import singledispatch
+from functools import singledispatch, update_wrapper
 from textwrap import dedent
 from typing import overload
 
@@ -363,6 +363,7 @@ class DecompositionRule:
         name: str = "",
     ):
 
+        update_wrapper(self, func)
         self._impl = func
 
         try:
