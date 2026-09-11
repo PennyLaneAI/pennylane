@@ -189,7 +189,7 @@ class TrotterVibronic(Operator2):
         :title: Implementation Details
         :href: implementation-details
 
-        This section shows how the dense :class:`~.VibronicHamiltonian` is turned into gates,
+        This section shows how the dense :class:`pennylane.VibronicHamiltonian` is turned into gates,
         making every phase prefactor explicit, following `Motlagh et al, arXiv:2411.13669
         <https://arxiv.org/abs/2411.13669>`__ (see also this `PennyLane demo
         <https://pennylane.ai/demos/simulating_vibronic_dynamics>`__ for a from-scratch,
@@ -1258,7 +1258,7 @@ def _validate_hamiltonian(hamiltonian):
     """Validate the vibronic Hamiltonian against ``TrotterVibronic``'s own requirements.
 
     The tensor ranks and the consistency of the shared ``F``/``N``/``M`` dimensions are already
-    enforced by :class:`~.VibronicHamiltonian`; only the extra constraint this template imposes on
+    enforced by :class:`pennylane.VibronicHamiltonian`; only the extra constraint this template imposes on
     top of that shape family is checked here.
     """
     if not isinstance(hamiltonian, VibronicHamiltonian):

@@ -231,28 +231,25 @@ class NumericHamiltonian:
         if self._hash_key() != other._hash_key():
             return False
 
-        concrete_numeric_data = []
-        concrete_numeric_data_other = []
-
         if self.is_abstract and other.is_abstract:
-            # Shapes already match, just check values
             for name in self.tensor_names + self.scalar_names:
                 data = getattr(self, name)
                 other_data = getattr(other, name)
                 if _dtype_of(data) != _dtype_of(other_data):
                     return False
+            return True
 
-                # Append concrete data to a separate list to compare individual values
-                elif not isinstance(data, AbstractArray) and not isinstance(
-                    other_data, AbstractArray
-                ):
-                    concrete_numeric_data.append(data)
-                    concrete_numeric_data_other.append(other_data)
+        elif not self.is_abstract and not other.is_abstract:
+            # Both are concrete Hamiltonians, so compare elements of all numeric data
+            return all(
+                math.allclose(a, b)
+                for a, b in zip(self.numeric_data, other.numeric_data, strict=True)
+            )
 
-        return all(
-            math.allclose(a, b)
-            for a, b in zip(concrete_numeric_data, concrete_numeric_data_other, strict=True)
-        )
+        elif not (
+            self.is_abstract and other.is_abstract
+        ):  # One is abstract, one is not, therefore not the same
+            return False
 
     def __repr__(self):
         def render(tensor):

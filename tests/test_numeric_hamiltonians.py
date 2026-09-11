@@ -95,7 +95,7 @@ def cgf_specs(num_fragments=L, num_modes=M, num_modals=N):
     }
 
 
-class TestConcrete:
+class TestConcreteCDFCGF:
     """Tests for CDF/CGF Hamiltonians built from concrete numeric data."""
 
     @pytest.mark.parametrize(
@@ -202,13 +202,13 @@ class TestConcrete:
         data = cgf_tensors(seed)
         data["nuc_constant"] = np.zeros(4)
 
-        with pytest.raises(ValueError, match="'nuc_constant' must be a scalar"):
+        with pytest.raises(ValueError, match="Input argument nuc_constant must be a scalar"):
             CGFHamiltonian(**data)
 
         data = cdf_tensors(seed)
         data["nuc_constant"] = np.zeros(4)
 
-        with pytest.raises(ValueError, match="'nuc_constant' must be a scalar"):
+        with pytest.raises(ValueError, match="Input argument nuc_constant must be a scalar"):
             CDFHamiltonian(**data)
 
     def test_missing_tensors(self):
@@ -363,6 +363,8 @@ class TestConcrete:
         """Test that two Hamiltonians differing only in values are not equal."""
         assert CGFHamiltonian(**cgf_tensors(seed)) == CGFHamiltonian(**cgf_tensors(seed))
         assert CGFHamiltonian(**cgf_tensors(seed)) != CGFHamiltonian(**cgf_tensors(seed + 1))
+        assert CDFHamiltonian(**cdf_tensors(seed)) == CDFHamiltonian(**cdf_tensors(seed))
+        assert CDFHamiltonian(**cdf_tensors(seed)) != CDFHamiltonian(**cdf_tensors(seed + 1))
 
     def test_equality_across_representations(self, seed):
         """Test that a CDF and a CGF Hamiltonian are never equal."""
@@ -516,7 +518,7 @@ class TestConcrete:
             setattr(cdf_ham, "core_tensors", np.zeros_like(cdf_ham.core_tensors))
 
 
-class TestAbstract:
+class TestAbstractCDFCGF:
     """Tests for CDF/CGF Hamiltonians built from ``qp.typing.Float[...]`` specifications."""
 
     def test_cgf_from_specs(self):
@@ -555,6 +557,8 @@ class TestAbstract:
 
     def test_abstractify_matches_abstract_construction(self, seed):
         """Test that ``abstractify`` on concrete data reproduces the abstract instance."""
+        print(qp.core.abstractify(CGFHamiltonian(**cgf_tensors(seed))).numeric_data)
+        print(CGFHamiltonian(**cgf_specs()).numeric_data)
         assert qp.core.abstractify(CGFHamiltonian(**cgf_tensors(seed))) == CGFHamiltonian(
             **cgf_specs()
         )
@@ -598,7 +602,8 @@ class TestAbstract:
 
     def test_equality_ignores_values(self, seed):
         """Test that comparing abstract to concrete compares shapes only."""
-        assert CGFHamiltonian(**cgf_specs()) == CGFHamiltonian(**cgf_tensors(seed))
+        assert CGFHamiltonian(**cgf_specs()) != CGFHamiltonian(**cgf_tensors(seed))
+        assert CDFHamiltonian(**cdf_specs()) != CDFHamiltonian(**cdf_tensors(seed))
 
     def test_repr_shows_specs(self):
         """Test that an abstract Hamiltonian reports its ``AbstractArray`` specs."""
@@ -788,6 +793,12 @@ class TestVibronic:
         """Test that equality compares values and that other representations never match."""
         assert VibronicHamiltonian(**vibronic_tensors(seed)) == VibronicHamiltonian(
             **vibronic_tensors(seed)
+        )
+        assert VibronicHamiltonian(**vibronic_tensors(seed)) != VibronicHamiltonian(
+            **vibronic_specs(seed)
+        )
+        assert VibronicHamiltonian(**vibronic_specs(seed)) != VibronicHamiltonian(
+            **vibronic_specs(seed + 1)
         )
         assert VibronicHamiltonian(**vibronic_tensors(seed)) != VibronicHamiltonian(
             **vibronic_tensors(seed + 1)
