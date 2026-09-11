@@ -15,7 +15,7 @@
 
 # pylint: disable=import-outside-toplevel,too-many-public-methods,no-member
 
-from dataclasses import dataclass
+from dataclasses import dataclass, FrozenInstanceError
 
 import numpy as np
 import pytest
@@ -96,7 +96,7 @@ def cgf_specs(num_fragments=L, num_modes=M, num_modals=N):
 
 
 class TestConcrete:
-    """Tests for Hamiltonians built from concrete numeric data."""
+    """Tests for CDF/CGF Hamiltonians built from concrete numeric data."""
 
     @pytest.mark.parametrize(
         "cls, data, expected",
@@ -204,6 +204,12 @@ class TestConcrete:
 
         with pytest.raises(ValueError, match="'nuc_constant' must be a scalar"):
             CGFHamiltonian(**data)
+
+        data = cdf_tensors(seed)
+        data["nuc_constant"] = np.zeros(4)
+
+        with pytest.raises(ValueError, match="'nuc_constant' must be a scalar"):
+            CDFHamiltonian(**data)
 
     def test_missing_tensors(self):
         """Test that both tensors are required."""
@@ -499,9 +505,19 @@ class TestConcrete:
         assert np.allclose(aligned[0], np.swapaxes(leaf[0], -2, -1))
         assert np.allclose(aligned[1:], leaf[1:])
 
+    def test_setattr_attribute_error(self, seed):
+        cgf_ham = CGFHamiltonian(**cgf_tensors(seed))
+        cdf_ham = CDFHamiltonian(**cdf_tensors(seed))
+
+        with pytest.raises(FrozenInstanceError):
+            setattr(cgf_ham, "core_tensors", np.zeros_like(cgf_ham.core_tensors))
+
+        with pytest.raises(FrozenInstanceError):
+            setattr(cdf_ham, "core_tensors", np.zeros_like(cdf_ham.core_tensors))
+
 
 class TestAbstract:
-    """Tests for Hamiltonians built from ``qp.typing.Float[...]`` specifications."""
+    """Tests for CDF/CGF Hamiltonians built from ``qp.typing.Float[...]`` specifications."""
 
     def test_cgf_from_specs(self):
         """Test that abstract inputs surface as ``AbstractArray`` of the right shape."""
