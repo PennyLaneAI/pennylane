@@ -17,6 +17,7 @@
 from functools import reduce
 from typing import Union, override
 
+import numpy as np
 from scipy.linalg import fractional_matrix_power
 
 import pennylane as qp
@@ -241,11 +242,8 @@ class Pow2(SymbolicOp2):
 
     @override
     def eigvals(self):
-        # Cast rather than multiply by ``1 + 0j``: since Python 3.14 implements C99 mixed-mode
-        # arithmetic, ``(1 + 0j) * -1.0`` is ``-1 - 0j``, and the negative zero imaginary part
-        # puts negative eigenvalues on the wrong side of the branch cut of ``**``.
         base_eigvals = self.base.eigvals()
-        return math.cast(base_eigvals, "complex128") ** self.z
+        return np.array(base_eigvals, dtype=complex) ** self.z
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
