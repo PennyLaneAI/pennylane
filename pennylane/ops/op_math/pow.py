@@ -18,7 +18,6 @@ This submodule defines the symbolic operation that stands for the power of an op
 import copy
 from typing import Union
 
-import numpy as np
 from scipy.linalg import fractional_matrix_power
 
 import pennylane as qp
@@ -338,7 +337,9 @@ class Pow(ScalarSymbolicOp):
 
     def eigvals(self):
         base_eigvals = self.base.eigvals()
-        return np.array(base_eigvals, dtype=complex) ** self.z
+        is_single_precision = math.get_dtype_name(base_eigvals) in ("float32", "complex64")
+        complex_dtype = "complex64" if is_single_precision else "complex128"
+        return math.cast(base_eigvals, complex_dtype) ** self.z
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
