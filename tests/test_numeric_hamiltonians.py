@@ -661,9 +661,7 @@ class TestVibronic:
         """Test that the numeric data is readable off the instance, and that the tensors
         are the positional arguments in order."""
         data = vibronic_tensors(seed)
-        ham = VibronicHamiltonian(
-            data["constant"], data["linear"], data["quadratic"], data["kinetic"]
-        )
+        ham = VibronicHamiltonian(**data)
 
         for name, tensor in data.items():
             assert qp.math.allclose(getattr(ham, name), tensor)
