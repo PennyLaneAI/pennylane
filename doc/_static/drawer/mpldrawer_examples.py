@@ -94,7 +94,7 @@ def cond(savefile="cond.png"):
 
     drawer.cond(layer=1, measured_layer=0, wires=[0], wires_target=[1])
 
-    options = {"color": "indigo", "linewidth": 1.5}
+    options = {'color': "indigo", 'linewidth': 1.5}
     drawer.cond(layer=3, measured_layer=2, wires=(1,), wires_target=(2,), options=options)
 
     plt.savefig(folder / savefile)
