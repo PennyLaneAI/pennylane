@@ -17,11 +17,37 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane import Identity
+from pennylane.core.operator.utils import abstractify
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.ops.identity import GlobalPhase, Identity
+from pennylane.typing import Float, Wire
 
 op_wires = [[], [0], ["a"], [0, 1], ["a", "b", "c"], [100, "xasd", 12]]
 op_repr = ["I()", "I(0)", "I('a')", "I([0, 1])", "I(['a', 'b', 'c'])", "I([100, 'xasd', 12])"]
 op_params = tuple(zip(op_wires, op_repr))
+
+
+@pytest.mark.usefixtures("enable_and_disable_capture")
+@pytest.mark.parametrize("phi", (0.0, 1.0, -1.0))
+def test_global_phase_decompositions(phi):
+    """Tests that the decomposition rules of GlobalPhase are capture compatible."""
+    op = GlobalPhase(phi)
+    for rule in qp.list_decomps(GlobalPhase):
+        _test_decomposition_rule(op, rule)
+
+
+def test_abstractify_globalphase():
+    """Test that globalphase can be abstractified."""
+
+    assert abstractify(GlobalPhase(0.5)) == GlobalPhase(Float)
+    assert abstractify(GlobalPhase(1)) == GlobalPhase(Float)
+
+
+def test_abstractify_identity():
+    """Test that identity can be abstractified."""
+
+    assert abstractify(Identity(wires=[0])) == Identity(Wire[1])
+    assert abstractify(Identity(wires=[0, 1])) == Identity(Wire[2])
 
 
 def test_is_verified_hermitian():
@@ -37,9 +63,8 @@ class TestIdentity:
         """Test the flatten and unflatten methods of identity."""
         op = Identity(wires)
         data, metadata = op._flatten()
-        assert data == tuple()
-        assert metadata[0] == qp.wires.Wires(wires)
-        assert metadata[1] == tuple()
+        assert data == ([], [qp.wires.Wires(wires)], [])
+        assert hash(metadata)
 
         new_op = Identity._unflatten(*op._flatten())
         qp.assert_equal(op, new_op)
@@ -54,14 +79,19 @@ class TestIdentity:
 
     @pytest.mark.jax
     def test_jax_pytree_integration(self, wires):
-        """Test that identity is a pytree by jitting a function of it."""
+        """Test that identity round-trips through the jax pytree registry."""
         import jax
 
         op = qp.Identity(wires)
 
-        adj_op = jax.jit(lambda op: qp.adjoint(op, lazy=False))(op)
+        leaves, tree_def = jax.tree_util.tree_flatten(op)
+        qp.assert_equal(jax.tree_util.tree_unflatten(tree_def, leaves), op)
 
-        qp.assert_equal(op, adj_op)
+        if all(isinstance(w, int) for w in wires):
+            # ``Operator2`` treats wires as dynamic pytree leaves, so only integer wire
+            # labels can be traced by ``jax.jit``.
+            adj_op = jax.jit(lambda op: qp.adjoint(op, lazy=False))(op)
+            qp.assert_equal(op, adj_op)
 
     def test_identity_eigvals(self, wires, tol):
         """Test identity eigenvalues are correct"""
@@ -90,7 +120,7 @@ class TestIdentity:
 
     def test_matrix_representation(self, wires, tol):
         """Test the matrix representation"""
-        res_static = Identity.compute_matrix(n_wires=len(wires))
+        res_static = Identity.compute_matrix(wires=wires)
         res_dynamic = Identity(wires=wires).matrix()
         expected = np.eye(int(2 ** len(wires)))
         assert np.allclose(res_static, expected, atol=tol)

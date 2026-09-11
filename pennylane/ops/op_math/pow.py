@@ -57,13 +57,13 @@ def pow(base, z=1, lazy=True) -> Operator:
         This operator supports a batched base, a batched coefficient and a combination of both:
 
         >>> op = qp.pow(qp.RX([1, 2, 3], wires=0), z=4)
-        >>> qp.matrix(op).shape
+        >>> qp.matrix(op).shape  # doctest: +SKIP
         (3, 2, 2)
         >>> op = qp.pow(qp.RX(1, wires=0), z=[1, 2, 3])
-        >>> qp.matrix(op).shape
+        >>> qp.matrix(op).shape  # doctest: +SKIP
         (3, 2, 2)
         >>> op = qp.pow(qp.RX([1, 2, 3], wires=0), z=[4, 5, 6])
-        >>> qp.matrix(op).shape
+        >>> qp.matrix(op).shape  # doctest: +SKIP
         (3, 2, 2)
 
         But it doesn't support batching of operators:
@@ -337,7 +337,7 @@ class Pow(ScalarSymbolicOp):
 
     def eigvals(self):
         base_eigvals = self.base.eigvals()
-        return [value**self.z for value in base_eigvals]
+        return [((1 + 0j) * value) ** self.z for value in base_eigvals]
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property

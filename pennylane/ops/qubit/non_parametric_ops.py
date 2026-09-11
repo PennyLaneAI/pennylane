@@ -216,7 +216,7 @@ def _hadamard_to_rz_rx(wires: WiresLike, **__):
     qp.RZ(np.pi / 2, wires=wires)
     qp.RX(np.pi / 2, wires=wires)
     qp.RZ(np.pi / 2, wires=wires)
-    qp.GlobalPhase(-np.pi / 2, wires=wires)
+    qp.GlobalPhase(-np.pi / 2)
 
 
 def _hadamard_rz_ry_resources(wires: WiresLike):
@@ -231,7 +231,13 @@ def _hadamard_to_rz_ry(wires: WiresLike, **__):
 
 
 def _hadamard_ppm_resources(wires: WiresLike):
-    return {qp.resource_rep(PauliMeasure): 2, qp.Y: 1, qp.Z: 2, qp.GlobalPhase: 1}
+    return {
+        PauliMeasure("YY", wires=Wire[2]): 1,
+        PauliMeasure("X", wires=Wire[1]): 1,
+        qp.Y: 1,
+        qp.Z: 2,
+        qp.GlobalPhase: 1,
+    }
 
 
 @qp.register_resources(_hadamard_ppm_resources, work_wires={"burnable": 1})
@@ -250,7 +256,8 @@ add_decomps("Adjoint(Hadamard)", self_adjoint)
 add_decomps("Pow(Hadamard)", pow_involutory2)
 
 
-def _controlled_h_resources(base, control_wires, work_wires, work_wire_type, **_):
+# pylint: disable-next=unused-argument
+def _controlled_h_resources(base, control_wires, control_values, work_wires, work_wire_type):
     if len(control_wires) == 1:
         return {qp.CH: 1}
     return {
@@ -266,7 +273,8 @@ def _controlled_h_resources(base, control_wires, work_wires, work_wire_type, **_
 
 
 @register_resources(_controlled_h_resources)
-def _controlled_hadamard(base, control_wires, work_wires, work_wire_type, **_):
+# pylint: disable-next=unused-argument
+def _controlled_hadamard(base, control_wires, control_values, work_wires, work_wire_type):
     wires = control_wires + base.wires
     if len(control_wires) == 1:
         qp.CH(wires)
@@ -482,20 +490,21 @@ def _paulix_to_rx_resources(wires: AbstractWires):
 @register_resources(_paulix_to_rx_resources)
 def _paulix_to_rx(wires: WiresLike):
     qp.RX(np.pi, wires=wires)
-    qp.GlobalPhase(-np.pi / 2, wires=wires)
+    qp.GlobalPhase(-np.pi / 2)
 
 
-@register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 2, 0.5))
-@register_resources(lambda **_: {qp.SX: 1})
-def _pow_x_to_sx(base, z):
+# pylint: disable-next=unused-argument
+@register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 2, 0.5))
+@register_resources(lambda *_, **__: {qp.SX: 1})
+def _pow_x_to_sx(base, z):  # pylint: disable=unused-argument
     qp.SX(wires=base.wires)
 
 
-@register_resources(lambda **_: {qp.RX: 1, qp.GlobalPhase: 1})
+@register_resources(lambda *_, **__: {qp.RX: 1, qp.GlobalPhase: 1})
 def _pow_x_to_rx(base, z):
     z_mod2 = qp.math.array(z) % 2
     qp.RX(np.pi * z_mod2, wires=base.wires)
-    qp.GlobalPhase(-np.pi / 2 * z_mod2, wires=base.wires)
+    qp.GlobalPhase(-np.pi / 2 * z_mod2)
 
 
 add_decomps(PauliX, _paulix_to_rx)
@@ -685,14 +694,14 @@ def _pauliy_to_ry_gp_resources(wires: AbstractWires):
 @register_resources(_pauliy_to_ry_gp_resources)
 def _pauliy_to_ry_gp(wires: WiresLike):
     qp.RY(np.pi, wires=wires)
-    qp.GlobalPhase(-np.pi / 2, wires=wires)
+    qp.GlobalPhase(-np.pi / 2)
 
 
-@register_resources(lambda **_: {qp.RY: 1, qp.GlobalPhase: 1})
+@register_resources(lambda *_, **__: {qp.RY: 1, qp.GlobalPhase: 1})
 def _pow_y(base, z):
     z_mod2 = qp.math.array(z) % 2
     qp.RY(np.pi * z_mod2, wires=base.wires)
-    qp.GlobalPhase(-np.pi / 2 * z_mod2, wires=base.wires)
+    qp.GlobalPhase(-np.pi / 2 * z_mod2)
 
 
 add_decomps(PauliY, _pauliy_to_ry_gp)
@@ -934,19 +943,19 @@ def _pauliz_to_ps(wires: WiresLike):
     qp.PhaseShift(np.pi, wires=wires)
 
 
-@register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 2, 0.5))
-@register_resources(lambda **_: {qp.S: 1})
+@register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 2, 0.5))
+@register_resources(lambda *_, **__: {qp.S: 1})
 def _pow_z_to_s(base, z):  # pylint: disable=unused-argument
     qp.S(wires=base.wires)
 
 
-@register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 2, 0.25))
-@register_resources(lambda **_: {qp.T: 1})
+@register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 2, 0.25))
+@register_resources(lambda *_, **__: {qp.T: 1})
 def _pow_z_to_t(base, z):  # pylint: disable=unused-argument
     qp.T(wires=base.wires)
 
 
-@register_resources(lambda **_: {qp.PhaseShift: 1})
+@register_resources(lambda *_, **__: {qp.PhaseShift: 1})
 def _pow_z(base, z):
     z_mod2 = qp.math.array(z) % 2
     qp.PhaseShift(np.pi * z_mod2, wires=base.wires)
@@ -1118,19 +1127,19 @@ def _s_phaseshift(wires: WiresLike | None = None):
 add_decomps(S, _s_phaseshift)
 
 
-@register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 4, 0.5))
-@register_resources(lambda **_: {qp.T: 1})
+@register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 4, 0.5))
+@register_resources(lambda *_, **__: {qp.T: 1})
 def _pow_s_to_t(base, z):
     qp.T(wires=base.wires)
 
 
-@register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 4, 2))
-@register_resources(lambda **_: {qp.Z: 1})
+@register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 4, 2))
+@register_resources(lambda *_, **__: {qp.Z: 1})
 def _pow_s_to_z(base, z):
     qp.Z(wires=base.wires)
 
 
-@register_resources(lambda **_: {qp.PhaseShift: 1})
+@register_resources(lambda *_, **__: {qp.PhaseShift: 1})
 def _pow_s(base, z):
     z_mod4 = qp.math.array(z) % 4
     qp.PhaseShift(np.pi * z_mod4 / 2, wires=base.wires)
@@ -1255,7 +1264,7 @@ def _t_phaseshift(wires=None):
     qp.PhaseShift(np.pi / 4, wires=wires)
 
 
-@register_resources(lambda **_: {qp.PhaseShift: 1})
+@register_resources(lambda *_, **__: {qp.PhaseShift: 1})
 def _pow_t(base, z):
     z_mod8 = qp.math.array(z) % 8
     qp.PhaseShift(np.pi * z_mod8 / 4, wires=base.wires)
@@ -1375,23 +1384,23 @@ def _sx_to_rx_resources(wires: WiresLike = None):
 @register_resources(_sx_to_rx_resources)
 def _sx_to_rx(wires: WiresLike | None = None):
     qp.RX(np.pi / 2, wires=wires)
-    qp.GlobalPhase(-np.pi / 4, wires=wires)
+    qp.GlobalPhase(-np.pi / 4)
 
 
 add_decomps(SX, _sx_to_rx)
 
 
-@register_condition(lambda z, **_: math.shape(z) == () and z % 4 == 2)
-@register_resources(lambda **_: {qp.X: 1})
+@register_condition(lambda base, z: math.shape(z) == () and z % 4 == 2)
+@register_resources(lambda *_, **__: {qp.X: 1})
 def _pow_sx_to_x(base, z):
     qp.X(base.wires)
 
 
-@register_resources(lambda **_: {qp.RX: 1, qp.GlobalPhase: 1})
+@register_resources(lambda *_, **__: {qp.RX: 1, qp.GlobalPhase: 1})
 def _pow_sx(base, z):
     z_mod4 = qp.math.array(z) % 4
     qp.RX(np.pi / 2 * z_mod4, wires=base.wires)
-    qp.GlobalPhase(-np.pi / 4 * z_mod4, wires=base.wires)
+    qp.GlobalPhase(-np.pi / 4 * z_mod4)
 
 
 add_decomps("Pow(SX)", make_pow_decomp_with_period2(4), _pow_sx_to_x, _pow_sx)
@@ -1551,7 +1560,8 @@ add_decomps("Adjoint(SWAP)", self_adjoint)
 add_decomps("Pow(SWAP)", pow_involutory2)
 
 
-def _controlled_swap_resources(control_wires, work_wires, work_wire_type, **_):
+# pylint: disable-next=unused-argument
+def _controlled_swap_resources(base, control_wires, control_values, work_wires, work_wire_type):
     if len(control_wires) == 1:
         return {qp.CSWAP: 1}
     return {
@@ -1565,7 +1575,8 @@ def _controlled_swap_resources(control_wires, work_wires, work_wire_type, **_):
 
 
 @register_resources(_controlled_swap_resources)
-def _controlled_swap_decomp(base, control_wires, work_wires, work_wire_type, **_):
+# pylint: disable-next=unused-argument
+def _controlled_swap_decomp(base, control_wires, control_values, work_wires, work_wire_type):
     wires = control_wires + base.wires
     if len(control_wires) == 1:
         qp.CSWAP(wires=wires)
@@ -1859,14 +1870,14 @@ def _iswap_to_ppr(wires):
 add_decomps(ISWAP, _iswap_decomp, _iswap_to_ppr)
 
 
-@register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 4, 0.5))
-@register_resources(lambda **_: {qp.SISWAP: 1})
+@register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 4, 0.5))
+@register_resources(lambda *_, **__: {qp.SISWAP: 1})
 def _pow_iswap_to_siswap(base, z):
     qp.SISWAP(wires=base.wires)
 
 
-@register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 4, 2))
-@register_resources(lambda **_: {qp.Z: 2})
+@register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 4, 2))
+@register_resources(lambda *_, **__: {qp.Z: 2})
 def _pow_iswap_to_zz(base, z):
     qp.Z(wires=base.wires[0])
     qp.Z(wires=base.wires[1])
@@ -2034,14 +2045,14 @@ def _siswap_to_ppr(wires, **_):
 add_decomps(SISWAP, _siswap_decomp, _siswap_to_ppr)
 
 
-@register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 8, 2))
-@register_resources(lambda **_: {qp.ISWAP: 1})
+@register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 8, 2))
+@register_resources(lambda *_, **__: {qp.ISWAP: 1})
 def _pow_siswap_to_iswap(base, z):
     qp.ISWAP(base.wires)
 
 
-@register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 8, 4))
-@register_resources(lambda **_: {qp.Z: 2})
+@register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 8, 4))
+@register_resources(lambda *_, **__: {qp.Z: 2})
 def _pow_siswap_to_zz(base, z):
     qp.Z(wires=base.wires[0])
     qp.Z(wires=base.wires[1])

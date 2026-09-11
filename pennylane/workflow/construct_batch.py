@@ -197,9 +197,7 @@ def construct_batch(
 
         >>> batch, fn = construct_batch(circuit, level="gradient")(1.23)
         >>> batch[0].circuit
-        [RY(tensor(1., requires_grad=True), wires=[1]),
-         RX(tensor(2., requires_grad=True), wires=[0]),
-         expval(X(0) + Y(0))]
+        [RY(1.0, wires=[1]), RX(2.0, wires=[0]), expval(X(0) + Y(0))]
 
         We can inspect what was directly captured from the qfunc with ``level=0``.
 

@@ -103,6 +103,7 @@ class EdgeType:  # pylint: disable=too-few-public-methods
     HADAMARD = 2
 
 
+# pylint: disable=too-many-statements
 @partial(transform, is_informative=True)
 @_needs_pyzx
 def to_zx(tape, expand_measurements=False):
@@ -405,6 +406,10 @@ def to_zx(tape, expand_measurements=False):
 
         expanded_operations = []
         for op in mapped_tape.operations:
+            # NOTE: Legacy decomposition previously had GlobalPhase decompose to nothing.
+            # PyZX doesn't track global phases so we can drop it.
+            if not qp.decomposition.enabled_graph() and op.name == "GlobalPhase":
+                continue
             if op.name == "Toffoli":
                 decomp = _toffoli_clifford_t_decomp(op.wires)
                 expanded_operations.extend(decomp)

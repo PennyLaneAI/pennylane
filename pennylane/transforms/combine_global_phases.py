@@ -57,11 +57,11 @@ def combine_global_phases(tape: QuantumScript) -> tuple[QuantumScriptBatch, Post
         @qp.transforms.combine_global_phases
         @qp.qnode(dev)
         def circuit():
-            qp.GlobalPhase(0.3, wires=0)
+            qp.GlobalPhase(0.3)
             qp.PauliY(wires=0)
             qp.Hadamard(wires=1)
             qp.CNOT(wires=(1,2))
-            qp.GlobalPhase(0.46, wires=2)
+            qp.GlobalPhase(0.46)
             return qp.expval(qp.X(0) @ qp.Z(1))
 
     To check the result, let's print out the circuit:
@@ -84,7 +84,7 @@ def combine_global_phases(tape: QuantumScript) -> tuple[QuantumScriptBatch, Post
 
         Consider the following example:
 
-        .. code-block:: python3
+        .. code-block:: python
 
             import pennylane as qp
 
@@ -95,20 +95,20 @@ def combine_global_phases(tape: QuantumScript) -> tuple[QuantumScriptBatch, Post
             @qp.transforms.combine_global_phases
             @qp.qnode(dev)
             def circuit():
-                qp.GlobalPhase(0.1, wires = 2)
+                qp.GlobalPhase(0.1)
                 qp.X(n-1)
-                qp.GlobalPhase(0.1, wires = 1)
+                qp.GlobalPhase(0.1)
                 qp.H(n-2)
 
                 @qp.for_loop(0, 2)
                 def loop(i):
-                    qp.GlobalPhase(0.1967, wires=i)
-                    qp.GlobalPhase(0.7691, wires=i)
+                    qp.GlobalPhase(0.1967)
+                    qp.GlobalPhase(0.7691)
 
                 loop()
 
-                qp.GlobalPhase(0.1, wires=0)
-                qp.GlobalPhase(0.1, wires=0)
+                qp.GlobalPhase(0.1)
+                qp.GlobalPhase(0.1)
 
                 return qp.expval(qp.Z(0))
 
@@ -120,7 +120,7 @@ def combine_global_phases(tape: QuantumScript) -> tuple[QuantumScriptBatch, Post
         ``combine_global_phases`` results in two ``GlobalPhase`` instances (one inside of a
         ``for_loop`` and the other from the ``GlobalPhase`` instances outside of the ``for_loop``).
 
-        >>> qp.specs(circuit, level="device")().resources.quantum_operations  # doctest: +SKIP
+        >>> qp.specs(circuit, level="device")().resources.quantum_operations
         {'GlobalPhase': 3, 'Hadamard': 1, 'PauliX': 1}
         >>> print(qp.draw_graph(circuit)()) # doctest: +SKIP
 

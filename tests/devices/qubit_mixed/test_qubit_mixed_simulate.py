@@ -193,7 +193,7 @@ class TestBasicCircuit:
         phi = torch.tensor(-0.526, requires_grad=True)
 
         def f(x):
-            qs = self.get_quantum_script(x, wires)
+            qs = self.get_quantum_script(qp.math.cast(x, "float64"), wires)
             return simulate(qs)
 
         result = f(phi)

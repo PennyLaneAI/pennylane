@@ -202,7 +202,7 @@ def cancel_inverses(
           - :class:`qp.SWAP <pennylane.SWAP>`
           - :class:`qp.Toffoli <pennylane.Toffoli>`
 
-        .. code-block:: python3
+        .. code-block:: python
 
             dev = qp.device("lightning.qubit", wires=1)
 
@@ -215,7 +215,7 @@ def cancel_inverses(
                 qp.Hadamard(wires=0)
                 return qp.expval(qp.PauliZ(0))
 
-        >>> print(qp.specs(circuit, level=1)())  # doctest: +SKIP
+        >>> print(qp.specs(circuit, level=1)()) # doctest: +SKIP
         Device: lightning.qubit
         Device wires: 1
         Shots: Shots(total=None)
@@ -226,7 +226,7 @@ def cancel_inverses(
           - RX: 1
         Measurement processes:
         - expval(PauliZ): 1
-        Wire allocations: 1
+        Total wires: 1
         Circuit Depth: Not computed
 
         Additionally, the ``cancel_inverses`` transform with ``qjit`` supports

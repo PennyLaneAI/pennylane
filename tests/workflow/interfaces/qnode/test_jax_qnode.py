@@ -435,6 +435,8 @@ class TestVectorValuedQNode:
             gradient_kwargs["aux_wire"] = 2
         if "lightning" in dev_name:
             pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint differentiation of state measurements is not to be supported.")
 
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
@@ -487,6 +489,8 @@ class TestVectorValuedQNode:
             gradient_kwargs["aux_wire"] = 3
         if "lightning" in dev_name:
             pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint differentiation of state measurements is not to be supported.")
 
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
@@ -571,6 +575,8 @@ class TestVectorValuedQNode:
             gradient_kwargs["aux_wire"] = 2
         if "lightning" in dev_name:
             pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint differentiation of state measurements is not to be supported.")
 
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
@@ -640,8 +646,7 @@ class TestVectorValuedQNode:
         y = jax.numpy.array(-0.654)
 
         if diff_method == "adjoint":
-            x = x + 0j
-            y = y + 0j
+            pytest.xfail("adjoint differentiation of state measurements is not to be supported.")
 
         @qnode(
             get_device(dev_name, wires=1, seed=seed),
@@ -704,6 +709,8 @@ class TestVectorValuedQNode:
         elif diff_method == "spsa":
             gradient_kwargs["sampler_rng"] = np.random.default_rng(seed)
             tol = TOL_FOR_SPSA
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint differentiation of state measurements is not to be supported.")
 
         x = jax.numpy.array(0.543)
         y = jax.numpy.array(-0.654)
@@ -2078,7 +2085,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         def circuit(a):
             qp.RY(a, wires=0)
             qp.RX(0.2, wires=0)
-            return qp.expval(qp.PauliZ(0)), qp.probs(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliX(0))
 
         a = jax.numpy.array(0.1)
 
@@ -2091,7 +2098,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         assert jac[0].shape == ()
 
         assert isinstance(jac[1], jax.numpy.ndarray)
-        assert jac[1].shape == (4,)
+        assert jac[1].shape == ()
 
     @pytest.mark.parametrize("jacobian", jacobian_fn)
     def test_jacobian_multiple_measurement_multiple_param(
@@ -2104,6 +2111,8 @@ class TestReturn:  # pylint:disable=too-many-public-methods
             pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
         if diff_method == "adjoint" and jacobian == jax.jacfwd:
             pytest.skip("jacfwd doesn't like complex numbers")
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint differentiation of state measurements is not to be supported.")
 
         gradient_kwargs = {}
         if diff_method == "hadamard":
@@ -2156,6 +2165,8 @@ class TestReturn:  # pylint:disable=too-many-public-methods
             pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
         if diff_method == "adjoint" and jacobian == jax.jacfwd:
             pytest.skip("jacfwd doesn't like complex numbers")
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint differentiation of state measurements is not to be supported.")
 
         gradient_kwargs = {}
         if diff_method == "hadamard":

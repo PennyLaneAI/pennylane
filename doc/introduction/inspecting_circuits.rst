@@ -71,7 +71,7 @@ Quantum operations:
 Measurement processes:
 - expval(PauliZ): 1
 - expval(PauliX): 1
-Wire allocations: 3
+Total wires: 3
 Circuit Depth: 4
 
 

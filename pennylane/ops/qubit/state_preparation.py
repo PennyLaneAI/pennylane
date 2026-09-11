@@ -16,7 +16,7 @@ This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the device.
 """
 
-from importlib.util import find_spec
+from collections.abc import Sequence
 
 # pylint: disable=too-many-branches,arguments-differ
 from warnings import warn
@@ -27,11 +27,11 @@ from scipy.sparse import csr_array, csr_matrix
 
 import pennylane as qp
 from pennylane import math
-from pennylane.core.operator import Operation, Operator, StatePrepBase
-from pennylane.decomposition import add_decomps, register_condition, register_resources
+from pennylane.core.operator import Operation, Operator, StatePrepBase, StatePrepBase2
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.exceptions import WireError
 from pennylane.templates.state_preparations import MottonenStatePreparation
-from pennylane.typing import TensorLike, Wire
+from pennylane.typing import AbstractArray, AbstractWires, Bool, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 state_prep_ops = {"BasisState", "StatePrep", "QubitDensityMatrix"}
@@ -40,15 +40,11 @@ state_prep_ops = {"BasisState", "StatePrep", "QubitDensityMatrix"}
 _STATE_NORM_TOLERANCE = 1e-10
 
 
-class BasisState(StatePrepBase):
-    r"""BasisState(state, wires)
-    Prepares a single computational basis state.
+class BasisState(StatePrepBase2):
+    r"""Prepares a single computational basis state.
 
-    **Details:**
-
-    * Number of wires: Any (the operation can act on any number of wires)
-    * Number of parameters: 1
-    * Gradient recipe: None
+    The state is specified as a 1D binary sequence or array of booleans/integers of length ``len(wires)``,
+    where each element represents the computational state (:math:`0` or :math:`1`) of the corresponding qubit.
 
     .. note::
 
@@ -56,122 +52,90 @@ class BasisState(StatePrepBase):
         target device, PennyLane will attempt to decompose the operation
         into :class:`~.PauliX` operations.
 
-    .. note::
-
-        When called in the middle of a circuit, the action of the operation is defined
-        as :math:`U|0\rangle = |\psi\rangle`
-
     Args:
-        state (tensor_like): Binary input of shape ``(len(wires), )``. For example, if ``state=np.array([0, 1, 0])`` or ``state=2`` (equivalent to 010 in binary), the quantum system will be prepared in the state :math:`|010 \rangle`.
-
-        wires (Sequence[int] or int): the wire(s) the operation acts on
+        state (TensorLike | Sequence[int | bool]): Computational basis state to prepare as a binary
+            sequence of shape ``(len(wires),)``.
+        wires (WiresLike): Wires on which the state is prepared.
 
     **Example**
 
+    Preparing the state :math:`|11\rangle` on two qubits using a binary sequence:
+
     >>> dev = qp.device('default.qubit', wires=2)
     >>> @qp.qnode(dev)
-    ... def example_circuit():
-    ...     qp.BasisState(np.array([1, 1]), wires=range(2))
+    ... def circuit(state):
+    ...     qp.BasisState(state, wires=[0, 1])
     ...     return qp.state()
-    >>> print(example_circuit())
-    [0.+0.j 0.+0.j 0.+0.j 1.+0.j]
+    >>> circuit(np.array([1, 1]))
+    array([0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j])
+
+    Lists or tuples of bit values are automatically converted to arrays:
+
+    >>> circuit([1, 0])
+    array([0.+0.j, 0.+0.j, 1.+0.j, 0.+0.j])
+
+    If you would like to set a state represented by a base-10 decimal, you can do:
+
+    >>> num_wires = 2
+    >>> dec_state = 3 # |11> state on two wires
+    >>> bin_state = qp.math.int_to_binary(dec_state, num_wires)
+    >>> print(bin_state)
+    [1 1]
+    >>> circuit(bin_state)
+    array([0.+0.j, 0.+0.j, 0.+0.j, 1.+0.j])
+
     """
 
-    resource_keys = {"num_wires"}
+    dynamic_argnames = ("state",)
+    arg_specs = {"state": Bool[-1], "wires": Wire[-1]}
 
-    @classmethod
-    def _primitive_bind_call(cls, state, wires, **kwargs):
-        if isinstance(state, (tuple, list)):
-            if any(qp.math.is_abstract(x) for x in state):
-                state = qp.math.asarray(state, like="jax")
-            else:
-                state = qp.math.asarray(state)
-        return super()._primitive_bind_call(state, wires, **kwargs)
-
-    @property
-    def resource_params(self) -> dict:
-        return {"num_wires": len(self.wires)}
-
-    def __init__(self, state, wires: WiresLike):
-
+    def __init__(self, state: TensorLike | Sequence[int | bool], wires: WiresLike) -> None:
         wires = Wires(wires)
-        if isinstance(state, list):
+        canonicalized_state = self._canonicalize_state(state, len(wires))
+        super().__init__(canonicalized_state, wires=wires)
+
+    def _canonicalize_state(
+        self, state: TensorLike | Sequence[int | bool] | AbstractArray, num_wires: int
+    ) -> Sequence[bool] | AbstractArray:
+
+        if isinstance(state, (list, tuple)):
             state = qp.math.stack(state)
 
-        tracing = qp.math.is_abstract(state)
-
-        if not qp.math.shape(state):
-            if not tracing and state >= 2 ** len(wires):
-                raise ValueError(
-                    f"Integer state must be < {2 ** len(wires)} to have a feasible binary representation, got {state}"
-                )
-            bin = 2 ** math.arange(len(wires))[::-1]
-            state = qp.math.where((state & bin) > 0, 1, 0)
-
-        shape = qp.math.shape(state)
+        shape = math.shape(state)
+        if not shape:
+            raise ValueError(
+                "Integer states are not supported. Please convert your state to a binary "
+                f"array, e.g. with 'qp.math.int_to_binary(state, {num_wires})'."
+            )
 
         if len(shape) != 1:
             raise ValueError(f"State must be one-dimensional; got shape {shape}.")
 
-        n_states = shape[0]
-        if n_states != len(wires):
+        if shape[0] != num_wires:
             raise ValueError(
-                f"State must be of length {len(wires)}; got length {n_states} (state={state})."
+                f"State and wires must have the same length; got {num_wires} wires but "
+                f"a state of length {shape[0]} ({state=})."
             )
 
-        if not tracing:
+        if isinstance(state, AbstractArray):
+            return state
+
+        if not qp.math.is_abstract(state):
             state_list = list(qp.math.toarray(state))
             if not set(state_list).issubset({0, 1}):
                 raise ValueError(f"Basis state must only consist of 0s and 1s; got {state_list}")
-        state = qp.math.cast(state, int)
-        super().__init__(state, wires=wires)
 
-    def _flatten(self):
-        state = self.parameters[0]
-        state = tuple(state) if isinstance(state, list) else state
-        return (state,), (self.wires,)
+        return qp.math.cast(state, bool)
 
-    @classmethod
-    def _unflatten(cls, data, metadata) -> "BasisState":
-        return cls(data[0], wires=metadata[0])
-
-    @staticmethod
-    def compute_decomposition(state: TensorLike, wires: WiresLike) -> list[Operator]:
-        r"""Representation of the operator as a product of other operators (static method). :
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.BasisState.decomposition`.
-
-        Args:
-            state (array): the basis state to be prepared
-            wires (Iterable, Wires): the wire(s) the operation acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.BasisState.compute_decomposition([1,0], wires=(0,1))
-        [X(0)]
-
-        """
-
-        if not qp.math.is_abstract(state):
-            return [qp.X(wire) for wire, basis in zip(wires, state, strict=True) if basis == 1]
-
-        op_list = []
-        for wire, basis in zip(wires, state, strict=True):
-            op_list.append(qp.GlobalPhase(-basis * np.pi / 2, wire))
-            op_list.append(qp.RX(basis * np.pi, wire))
-
-        return op_list
+    def __repr__(self) -> str:
+        if not (isinstance(self.state, AbstractArray) or isinstance(self.wires, AbstractWires)):
+            return f"BasisState({qp.math.cast(self.state, int)}, wires={self.wires})"
+        return super().__repr__()
 
     def state_vector(self, wire_order: WiresLike | None = None) -> TensorLike:
         """Returns a statevector of shape ``(2,) * num_wires``."""
-        prep_vals = self.parameters[0]
-        prep_vals_int = math.cast(self.parameters[0], int)
+        prep_vals = self.state
+        prep_vals_int = math.cast(self.state, int)
 
         if wire_order is None:
             indices = prep_vals_int
@@ -195,40 +159,13 @@ class BasisState(StatePrepBase):
         return math.convert_like(ket, prep_vals)
 
 
-def _jax_jit_basis_state_resources(num_wires):
-    resources = {
-        qp.pow(qp.X(Wire[1]), z=0): num_wires // 2,
-        qp.pow(qp.X(Wire[1]), z=1): num_wires - num_wires // 2,
-    }
-    return resources
+def _basis_state_decomp_resources(state, wires):  # pylint: disable=unused-argument
+    num_wires = len(wires)
+    return {qp.X: num_wires - num_wires // 2}  # Estimate 50% of wires (rounded up) to get flipped
 
 
-def _jax_jit_basis_state_cond(**_):
-    if qp.capture.enabled() or qp.compiler.active():
-        return False
-
-    if find_spec("jax") is None:
-        return False
-
-    x = qp.math.array(0.2, like="jax")
-    # If x is turned into a tracer and qjit/capture are not active, we must be using jax.jit
-    return qp.math.is_abstract(x)
-
-
-@register_condition(_jax_jit_basis_state_cond)
-@register_resources(_jax_jit_basis_state_resources, exact=False)
-def _jax_jit_basis_state_decomp(state, wires, **__):
-    _ = [qp.X(wires=wire) ** basis for wire, basis in zip(wires, state, strict=True)]
-
-
-def _basis_state_decomp_resources(num_wires):
-    return {qp.X: num_wires - num_wires // 2}
-
-
-@register_condition(lambda **_: not _jax_jit_basis_state_cond(**_))
 @register_resources(_basis_state_decomp_resources, exact=False)
-def _basis_state_decomp(state, wires, **__):
-
+def _basis_state_decomp(state, wires):
     if qp.capture.enabled() or qp.compiler.active():
         # This branch makes sure that state and wires are cast to objects into which
         # a traced loop index is allowed to index (if they aren't already traced)
@@ -242,7 +179,7 @@ def _basis_state_decomp(state, wires, **__):
     _loop()  # pylint: disable=no-value-for-parameter
 
 
-add_decomps(BasisState, _basis_state_decomp, _jax_jit_basis_state_decomp)
+add_decomps(BasisState, _basis_state_decomp)
 
 
 class StatePrep(StatePrepBase):
@@ -465,7 +402,6 @@ class StatePrep(StatePrepBase):
         return cls(*data, **dict(metadata[0]), wires=metadata[1])
 
     def state_vector(self, wire_order: WiresLike | None = None):
-
         if self.is_sparse:
             op_vector = _sparse_statevec_permute_and_embed(
                 self.parameters[0], self.wires, wire_order

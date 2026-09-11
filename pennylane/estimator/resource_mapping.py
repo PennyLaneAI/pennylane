@@ -27,6 +27,7 @@ import pennylane.templates as qtemps
 from pennylane import math as pl_math
 from pennylane.core.operator import Operation
 from pennylane.core.queuing import QueuingManager
+from pennylane.estimator.compact_hamiltonian import CDFHamiltonian, VibronicHamiltonian
 from pennylane.ops.functions import simplify
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp
@@ -199,7 +200,7 @@ def _(op: qops.PauliRot):
 
 @_map_to_resource_op.register
 def _(op: qops.PCPhase):
-    dim = op.hyperparameters["dimension"][0]
+    dim = op.dim
     return re_ops.PCPhase(num_wires=len(op.wires), dim=dim, wires=op.wires)
 
 
@@ -285,16 +286,16 @@ def _(op: qops.Toffoli):
 @_map_to_resource_op.register
 def _(op: qtemps.OutMultiplier):
     return re_temps.OutMultiplier(
-        a_num_wires=len(op.hyperparameters["x_wires"]),
-        b_num_wires=len(op.hyperparameters["y_wires"]),
+        a_num_wires=len(op.x_wires),
+        b_num_wires=len(op.y_wires),
         wires=op.wires,
     )
 
 
 @_map_to_resource_op.register
 def _(op: qtemps.SemiAdder):
-    x_wires = op.hyperparameters["x_wires"]
-    y_wires = op.hyperparameters["y_wires"]
+    x_wires = op.x_wires
+    y_wires = op.y_wires
 
     return re_temps.SemiAdder(
         max_register_size=max(len(x_wires), len(y_wires)),
@@ -484,6 +485,64 @@ def _(op: qtemps.TrotterProduct):
 
 
 @_map_to_resource_op.register
+def _(op: qtemps.TrotterVibronic):
+    hamiltonian = op.arguments["hamiltonian"]
+    num_states = hamiltonian["constant"].shape[1]
+    num_modes = hamiltonian["linear"].shape[-1]
+    grid_size = len(op.arguments["vib_wires"]) // num_modes
+    phase_grad_wires = len(op.arguments["phase_gradient_wires"])
+    # ``coefficient_wires`` may be dynamically allocated (empty); it then matches
+    # ``phase_gradient_wires`` in size (see the class docstring).
+    coeff_wires = len(op.arguments["coefficient_wires"]) or phase_grad_wires
+
+    # ``VibronicHamiltonian`` assumes the standard XOR ("blocks") fragmentation, under which the
+    # number of position fragments F is at most 2 ** ceil_log2(N) (N = number of electronic
+    # states); reject larger fragment counts so the estimate cannot silently disagree with the
+    # actual Hamiltonian.
+    num_fragments = hamiltonian["constant"].shape[0]
+    max_fragments = 2 ** pl_math.ceil_log2(num_states)
+    if num_fragments > max_fragments:
+        raise ValueError(
+            "The resource estimate for TrotterVibronic assumes the standard XOR fragmentation "
+            f"with at most {max_fragments} position fragments for {num_states} electronic "
+            f"states (arXiv:2411.13669), but the given Hamiltonian has {num_fragments} "
+            "fragments."
+        )
+
+    vibronic_ham = VibronicHamiltonian(
+        num_modes=num_modes,
+        num_states=num_states,
+        grid_size=grid_size,
+        taylor_degree=2,
+    )
+    return re_temps.TrotterVibronic(
+        vibronic_ham=vibronic_ham,
+        num_steps=op.arguments["num_trotter_steps"],
+        order=2,
+        phase_grad_precision=2.0**-phase_grad_wires,
+        coeff_precision=2.0**-coeff_wires,
+        wires=Wires.all_wires([op.arguments["electronic_wires"], op.arguments["vib_wires"]]),
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qtemps.TrotterCDF):
+    # TrotterCDF is a second-order Trotter template. The CDF Hamiltonian stores its
+    # ``core_tensors`` with shape ``(num_fragments, num_orbitals, num_orbitals)``.
+    core_tensors = op.arguments["hamiltonian"].core_tensors
+    cdf_ham = CDFHamiltonian(
+        num_orbitals=core_tensors.shape[1],
+        num_fragments=core_tensors.shape[0],
+    )
+    return re_temps.TrotterCDF(
+        cdf_ham,
+        num_steps=op.arguments["num_trotter_steps"],
+        order=2,
+        wires=op.wires,
+    )
+
+
+@_map_to_resource_op.register
 def _(op: qtemps.MPSPrep):
     max_bond_dim = max(data.shape[-1] for data in op.mps)
     return re_temps.MPSPrep(
@@ -554,6 +613,16 @@ def _(op: qops.ChangeOpBasis):
         _map_to_resource_op(compute),
         _map_to_resource_op(target),
         _map_to_resource_op(uncompute),
+        wires=op.wires,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qops.ChangeOpBasis2):
+    return re_ops.ChangeOpBasis(
+        _map_to_resource_op(op.compute_op),
+        _map_to_resource_op(op.target_op),
+        _map_to_resource_op(op.uncompute_op),
         wires=op.wires,
     )
 

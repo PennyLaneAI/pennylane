@@ -22,15 +22,15 @@ from test_optimization.utils import compare_operation_lists
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.transforms import unitary_to_rot
-from pennylane.transforms.compile import compile
-from pennylane.transforms.optimization import (
+from pennylane.transforms import (
     cancel_inverses,
+    combine_global_phases,
     commute_controlled,
     merge_rotations,
     single_qubit_fusion,
+    unitary_to_rot,
 )
-from pennylane.transforms.optimization.optimization_utils import _fuse_global_phases
+from pennylane.transforms.compile import compile
 from pennylane.wires import Wires
 
 
@@ -296,7 +296,12 @@ class TestCompileIntegration:
 
         qnode = qp.QNode(qfunc, dev)
 
-        pipeline = [partial(commute_controlled, direction="left"), cancel_inverses, merge_rotations]
+        pipeline = [
+            partial(commute_controlled, direction="left"),
+            cancel_inverses,
+            merge_rotations,
+            combine_global_phases,
+        ]
 
         basis_set = ["CNOT", "RX", "RY", "RZ", "GlobalPhase"]
 
@@ -317,7 +322,6 @@ class TestCompileIntegration:
             "RX",
             "RZ",
             "RY",
-            "RY",
             "CNOT",
             "RY",
             "CNOT",
@@ -332,7 +336,6 @@ class TestCompileIntegration:
             Wires(wires[0]),
             Wires(wires[1]),
             Wires(wires[2]),
-            Wires(wires[2]),
             Wires([wires[1], wires[2]]),
             Wires(wires[2]),
             Wires([wires[1], wires[2]]),
@@ -340,8 +343,7 @@ class TestCompileIntegration:
         ]
 
         tape = qp.workflow.construct_tape(transformed_qnode)(0.3, 0.4, 0.5)
-        transformed_ops = _fuse_global_phases(tape.operations)
-        compare_operation_lists(transformed_ops, names_expected, wires_expected)
+        compare_operation_lists(tape.operations, names_expected, wires_expected)
 
     def test_compile_template(self):
         """Test that functions with templates are correctly expanded and compiled."""

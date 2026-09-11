@@ -222,7 +222,8 @@ class TestBasicCircuit:
 
         def f(x):
             qs = qp.tape.QuantumScript(
-                [qp.RX(x, wires=0)], [qp.expval(qp.PauliY(0)), qp.expval(qp.PauliZ(0))]
+                [qp.RX(qp.math.cast(x, "float64"), wires=0)],
+                [qp.expval(qp.PauliY(0)), qp.expval(qp.PauliZ(0))],
             )
             return simulate(qs)
 

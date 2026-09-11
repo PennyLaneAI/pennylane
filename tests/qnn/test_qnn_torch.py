@@ -987,7 +987,7 @@ def test_specs():
 
     gate_types = {"AngleEmbedding": 1, "RX": 1, "StronglyEntanglingLayers": 1}
     expected_resources = qp.resource.SpecsResources(
-        num_allocs=2,
+        num_wires=2,
         counts=gate_types,
         measurement_processes={"expval(PauliZ)": 2},
         circuit_depth=3,

@@ -255,8 +255,8 @@ class Hermitian(Operator):
         >>> evecs = evecs + 0 # add 0 to normalize signed zeros before printing
         >>> with np.printoptions(precision=4): # easier to read the matrix
         ...     print(qp.Hermitian.compute_diagonalizing_gates(evecs, wires=[0]))
-        [QubitUnitary(array([[-0.9492-0.j    ,  0.2816+0.1408j],
-               [ 0.3148-0.j    ,  0.8489+0.4245j]]), wires=[0])]
+        [QubitUnitary(U=[[-0.9492-0.j      0.2816+0.1408j]
+         [ 0.3148-0.j      0.8489+0.4245j]], wires=[0])]
 
         """
         return [QubitUnitary(eigenvectors.conj().T, wires=wires)]
@@ -843,8 +843,8 @@ class StateVectorProjector(Projector):
 
         >>> state_vector = np.array([1., 1j])/np.sqrt(2)
         >>> StateVectorProjector.compute_diagonalizing_gates(state_vector, wires=[0])
-        [QubitUnitary(array([[ 0.70710678+0.j        ,  0.        -0.70710678j],
-                             [ 0.        +0.70710678j, -0.70710678+0.j        ]]), wires=[0])]
+        [QubitUnitary(U=[[ 0.70710678+0.j          0.        -0.70710678j]
+         [ 0.        +0.70710678j -0.70710678+0.j        ]], wires=[0])]
         """
         # Adapting the approach discussed in the link below to work with arbitrary complex-valued state vectors.
         # Alternatively, we could take the adjoint of the Mottonen decomposition for the state vector.

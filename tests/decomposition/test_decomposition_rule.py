@@ -14,6 +14,7 @@
 
 """Unit tests for the DecompositionRule class."""
 
+import inspect
 from textwrap import dedent
 
 import numpy as np
@@ -27,6 +28,7 @@ from pennylane.decomposition.decomposition_rule import (
     WorkWireSpec,
     _decompositions_private,
     _fix_decomp,
+    _verify_is_abstract_and_fixed,
     register_condition,
     register_resources,
 )
@@ -48,6 +50,18 @@ class CustomOp(Operator):
 @pytest.mark.unit
 class TestDecompositionRule:
     """Unit tests for DecompositionRule."""
+
+    def test_wraps_rule(self):
+        """Test that a DecompositionRule has the same sig and docstring as the qfunc."""
+
+        # pylint: disable=unused-argument
+        def f(x, wires: qp.wires.Wires, arg: str = "hello"):
+            """A docstring."""
+
+        rule = qp.decomposition.DecompositionRule(f, {})
+        assert inspect.signature(rule) == inspect.signature(f)
+
+        assert rule.__doc__ == """A docstring."""
 
     @pytest.mark.parametrize("exact_resources", [False, True])
     def test_create_decomposition_rule(self, exact_resources):
@@ -431,23 +445,25 @@ class TestDecompositionRule:
         assert multi_rz_decomposition.exact_resources is not exact_resources
 
     @pytest.mark.parametrize(
-        "rep",
+        "op",
         [
             ParametrizedHybridOp(Float[-1], Wire[3], DynOp(Float[3], Wire[3])),  # data not fixed
-            ParametrizedHybridOp(Float[3], Wire[-1], DynOp(Float[1], Wire[1])),  # wire is not fixed
             ParametrizedHybridOp(Float[3], Wire[3], DynOp(Float[...], Wire[3])),  # hybrid not fixed
-            ParametrizedHybridOp(Float[3], Wire[3], DynOp(Float[2], Wire[-1])),  # hybrid not fixed
+            ParametrizedHybridOp(Float[3], Wire[3], DynOp(0.5, Wire[3])),  # data not even abstract
         ],
     )
-    def test_verify_operator2_is_abstract_and_fixed(self, rep):
+    def test_verify_operator2_is_abstract_and_fixed(self, op):
         """Tests that the resource function can only contain abstract and fixed Operator2."""
 
-        @qp.register_resources({rep: 1})
-        def rule():
-            raise NotImplementedError
-
         with pytest.raises(TypeError, match="abstract data of undetermined dimensions"):
-            rule.compute_resources()
+            _verify_is_abstract_and_fixed(op)
+
+    def test_verify_operator2_with_legacy_resource_rep(self):
+        """Tests that a legacy resource rep is a valid fully abstract leaf of an Operator2."""
+
+        # e.g. ``Select`` stores the resource reps of its legacy target operators
+        op = ParametrizedHybridOp(Float[3], Wire[3], qp.resource_rep(qp.ops.Sum))
+        _verify_is_abstract_and_fixed(op)
 
 
 class TestDecompDictionary:
@@ -683,7 +699,7 @@ class TestDecompDictionary:
     def test_mcm_and_allocation_rules_skipped_for_adjoint2(self):
         """Tests that rules containing MCMs and wire allocations can't be adjointed."""
 
-        @register_resources({qp.RX: 2, qp.CZ: 1, MidMeasure: 1})
+        @register_resources({qp.RX: 2, qp.CZ: 1, MidMeasure(wires=Wire[1]): 1})
         def custom_rule(theta, wires):
             raise NotImplementedError
 
@@ -700,7 +716,7 @@ class TestDecompDictionary:
     def test_mcm_rules_skipped_for_controlled2(self):
         """Tests that rules containing MCMs are skipped for controlled."""
 
-        @register_resources({qp.RX: 2, qp.CZ: 1, MidMeasure: 1})
+        @register_resources({qp.RX: 2, qp.CZ: 1, MidMeasure(wires=Wire[1]): 1})
         def custom_rule(theta, wires):
             raise NotImplementedError
 
@@ -863,7 +879,7 @@ class TestInspectDecomps:
                 qp.Toffoli: 2 * (num_wires - 1),
                 qp.H: 1,
                 qp.RX: 1,
-                qp.ops.MidMeasure: 1,
+                qp.ops.MidMeasure(wires=Wire[1]): 1,
             },
             work_wires={"zeroed": 2},
             name="with-aux",

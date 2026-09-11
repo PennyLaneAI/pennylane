@@ -192,7 +192,7 @@ def _(op: qtemps.state_preparations.QROMStatePreparation):
     def _add_qrom_and_adjoint(gate_types, bitstrings, control_wires):
         """Helper to create a QROM, count it and its adjoint."""
         qrom_op = qtemps.QROM(
-            data=bitstrings,
+            bitstrings=bitstrings,
             target_wires=precision_wires,
             control_wires=control_wires,
             work_wires=work_wires,
@@ -237,7 +237,7 @@ def _(op: qtemps.state_preparations.QROMStatePreparation):
         gate_types[
             _map_to_bloq(
                 qops.ctrl(
-                    qops.GlobalPhase((2 * np.pi), wires=input_wires[0]),
+                    qops.GlobalPhase(2 * np.pi),
                     control=0,
                 ),
                 call_graph="decomposition",
@@ -734,7 +734,7 @@ def _get_to_pl_op():
 
     @_to_pl_op.register
     def _(bloq: qt.bloqs.basic_gates.GlobalPhase, wires):
-        return qops.GlobalPhase(bloq.exponent * np.pi, wires)
+        return qops.GlobalPhase(bloq.exponent * np.pi)
 
     @_to_pl_op.register
     def _(bloq: qt.bloqs.basic_gates.Hadamard, wires):

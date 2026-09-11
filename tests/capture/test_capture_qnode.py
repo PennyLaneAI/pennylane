@@ -130,7 +130,7 @@ def test_simple_qnode():
 
     qfunc_jaxpr = eqn0.params["qfunc_jaxpr"]
     assert len(qfunc_jaxpr.eqns) == 3
-    assert qfunc_jaxpr.eqns[0].primitive == qp.RX._primitive
+    assert_eqn_matches_op(qfunc_jaxpr.eqns[0], qp.RX)
     assert_eqn_matches_op(qfunc_jaxpr.eqns[1], qp.Z)
     assert qfunc_jaxpr.eqns[2].primitive == qp.measurements.ExpectationMP._obs_primitive
 
@@ -153,7 +153,7 @@ def test_providing_keywords_dynamic():
 
     qfunc_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
     assert len(qfunc_jaxpr.invars) == 1
-    assert qfunc_jaxpr.eqns[0].primitive == qp.RX._primitive
+    assert_eqn_matches_op(qfunc_jaxpr.eqns[0], qp.RX)
     assert qfunc_jaxpr.eqns[0].invars[0] == qfunc_jaxpr.invars[0]
     assert len(qfunc_jaxpr.eqns) == 2
 

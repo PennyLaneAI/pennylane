@@ -91,7 +91,7 @@ class TestSelectPauliRot:
         ],
     )
     def test_abstract_init(self, angles, control_wires, target_wire, rot_axis, expected_error):
-        """Test that the abstract init method is works correctly."""
+        """Tests creating abstract operators."""
 
         if expected_error is not None:
             with pytest.raises(ValueError, match=re.escape(expected_error)):
@@ -195,8 +195,8 @@ class TestSelectPauliRot:
             decomp_2 = decomposition_2[0].decomposition()
             decomposition, decomposition_2 = [], []
             for op1, op2 in zip(decomp_1, decomp_2):
-                decomposition.extend([op1] if not isinstance(op1, Prod) else op1.decomposition())
-                decomposition_2.extend([op2] if not isinstance(op2, Prod) else op2.decomposition())
+                decomposition.extend(op1.decomposition() if isinstance(op1, Prod) else [op1])
+                decomposition_2.extend(op2.decomposition() if isinstance(op2, Prod) else [op2])
 
         for dec in [decomposition, decomposition_2]:
             if axis == "Y":

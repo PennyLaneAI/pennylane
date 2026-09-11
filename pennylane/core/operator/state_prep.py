@@ -52,7 +52,7 @@ class StatePrepBase(Operation):
 
     @classmethod
     def __subclasshook__(cls, subclass):
-        if issubclass(subclass, StatePrepBase2):
+        if cls is StatePrepBase and issubclass(subclass, StatePrepBase2):
             return True
         return NotImplemented
 

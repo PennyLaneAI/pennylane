@@ -138,7 +138,7 @@ class TestOperations:
     def test_matrices(self, ops, mat, tol):
         """Test matrices of non-parametrized operations are correct"""
         op = ops(wires=0 if ops.num_wires is None else range(ops.num_wires))
-        res_static = op.compute_matrix()
+        res_static = op.compute_matrix(wires=[0] if ops.num_wires is None else range(ops.num_wires))
         res_dynamic = op.matrix()
         assert np.allclose(res_static, mat, atol=tol, rtol=0)
         assert np.allclose(res_dynamic, mat, atol=tol, rtol=0)
@@ -164,10 +164,10 @@ class TestDecompositions:
         assert res[0].data[0] == np.pi
 
         assert res[1].name == "GlobalPhase"
-        assert res[1].wires == Wires([0])
+        assert res[1].wires == Wires([])
         assert res[1].data[0] == -np.pi / 2
 
-        decomposed_matrix = np.linalg.multi_dot([i.matrix() for i in reversed(res)])
+        decomposed_matrix = np.linalg.multi_dot([i.matrix(wire_order=[0]) for i in reversed(res)])
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
     def test_y_decomposition(self, tol):
@@ -182,10 +182,10 @@ class TestDecompositions:
         assert res[0].data[0] == np.pi
 
         assert res[1].name == "GlobalPhase"
-        assert res[1].wires == Wires([0])
+        assert res[1].wires == Wires([])
         assert res[1].data[0] == -np.pi / 2
 
-        decomposed_matrix = np.linalg.multi_dot([i.matrix() for i in reversed(res)])
+        decomposed_matrix = np.linalg.multi_dot([i.matrix(wire_order=[0]) for i in reversed(res)])
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
     def test_z_decomposition(self, tol):
@@ -241,9 +241,9 @@ class TestDecompositions:
         assert len(res) == 2
 
         qp.assert_equal(res[0], qp.RX(np.pi / 2, wires=0))
-        qp.assert_equal(res[1], qp.GlobalPhase(-np.pi / 4, wires=0))
+        qp.assert_equal(res[1], qp.GlobalPhase(-np.pi / 4))
 
-        decomposed_matrix = np.linalg.multi_dot([i.matrix() for i in reversed(res)])
+        decomposed_matrix = np.linalg.multi_dot([i.matrix(wire_order=[0]) for i in reversed(res)])
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
     def test_hadamard_decomposition(self, tol):
@@ -268,7 +268,7 @@ class TestDecompositions:
 
         assert res[3].name == "GlobalPhase"
 
-        decomposed_matrix = np.linalg.multi_dot([i.matrix() for i in reversed(res)])
+        decomposed_matrix = np.linalg.multi_dot([i.matrix(wire_order=[0]) for i in reversed(res)])
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
     @pytest.mark.catalyst
@@ -714,7 +714,7 @@ class TestMultiControlledX:
         """Test that a ValueError is raised when work_wires is not complementary to control_wires"""
         control_target_wires = range(4)
         work_wires = range(2)
-        with pytest.raises(ValueError, match="work_wires must not overlap with the operator"):
+        with pytest.raises(ValueError, match="wires and work_wires must not overlap"):
             qp.MultiControlledX(wires=control_target_wires, work_wires=work_wires)
 
     @pytest.mark.parametrize("control_val", [0, 1])
@@ -835,20 +835,19 @@ class TestMultiControlledX:
         op_repr = qp.MultiControlledX(wires=wires, control_values=control_values).__repr__()
         assert op_repr == f"MultiControlledX(wires={wires}, control_values={control_values})"
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("num_work_wires", [0, 1, 2, 3])
     @pytest.mark.parametrize("num_control_wires", [2, 3, 4, 5, 6])
     @pytest.mark.parametrize("work_wire_type", ["borrowed", "zeroed"])
-    def test_decomposition_rules_with_work_wires(
-        self, num_work_wires, num_control_wires, work_wire_type
-    ):
-        """Tests the decomposition rules of MCX when work wires are specified."""
+    def test_decomposition_rules(self, num_work_wires, num_control_wires, work_wire_type):
+        """Tests the decomposition rules of MCX."""
         work_wires = range(num_control_wires + 1, num_work_wires + num_control_wires + 1)
         op = qp.MultiControlledX(
             range(num_control_wires + 1),
             work_wires=work_wires,
             work_wire_type=work_wire_type,
         )
-        for rule in qp.list_decomps(qp.MultiControlledX):
+        for rule in qp.list_decomps(op):
             _test_decomposition_rule(op, rule)
 
 
@@ -1120,9 +1119,7 @@ class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods
 
         decomps = qp.list_decomps(f"Pow({op.name})")
         for rule in decomps:
-
             if rule.is_applicable(**pow_op.arguments):
-
                 with qp.queuing.AnnotatedQueue() as q:
                     rule(**pow_op.arguments)
 

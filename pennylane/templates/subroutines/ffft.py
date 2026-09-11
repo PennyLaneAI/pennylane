@@ -198,11 +198,8 @@ def _recursive_decompose(wires: WiresLike):
         _recursive_decompose(wires[: len(wires) // 2])
         _recursive_decompose(wires[len(wires) // 2 :])
 
-        @for_loop(len(wires) // 2)
-        def twiddle(mode):
+        for mode in range(len(wires) // 2):
             pow(PauliZ(wires[len(wires) // 2 + mode]), z=2 * mode / len(wires))
-
-        twiddle()  # pylint: disable=no-value-for-parameter
 
         _permute_and_apply_parallel(wires, TwoWireFFT)
 

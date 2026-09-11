@@ -25,9 +25,9 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.labs.templates import LeftClassicalComparator, LeftQuantumComparator
-from pennylane.ops import RY, BasisState, Controlled, GlobalPhase, Hadamard, MultiControlledX, X, Z
+from pennylane.ops import RY, BasisState, GlobalPhase, Hadamard, MultiControlledX, X, Z
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
-from pennylane.typing import Wire
+from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires, WiresLike
 
 
@@ -149,7 +149,6 @@ class SuperpositionTHC(Operation):
         nu_wires: WiresLike,
         work_wires: WiresLike,
     ):  # pylint: disable=too-many-arguments
-
         mu_wires = Wires(mu_wires)
         nu_wires = Wires(nu_wires)
         work_wires = Wires(work_wires)
@@ -327,7 +326,7 @@ def _left_inequalities(
     # To do so, we use the fact that a MultiControlledX with control_values = 0 detects if
     # the register is in state 0, and we shift that state with BasisState before and after.
     # (We don't include the 'after' operation here since it will be uncomputed later.)
-    BasisState(M, wires=nu_wires)
+    BasisState(math.int_to_binary(M, len(nu_wires)), wires=nu_wires)
 
     # TODO: replace this zero-controlled MultiControlledX with MultiTemporaryAND.
     if not keep_eq:
@@ -338,27 +337,21 @@ def _left_inequalities(
         )
 
 
-def _controlled_rep(base_class, num_control_wires, num_work_wires):
-    """resource_rep of the ``Controlled`` gates used in the decomposition, with no zero controls.
-
-    ``num_work_wires`` must match the number of borrowed work wires the gate receives in the
-    decomposition, since it changes how the graph decomposer expands a multi-controlled gate."""
-    return resource_rep(
-        Controlled,
-        base_class=base_class,
-        base_params={},
-        num_control_wires=num_control_wires,
-        num_zero_control_values=0,
-        num_work_wires=num_work_wires,
-        work_wire_type="borrowed",
-    )
-
-
 def _controlled_z(num_control_wires, num_work_wires):
     """Resources for a borrowed-work multi-controlled ``Z``."""
     return ctrl(
         Z(Wire[1]),
         control=Wire[num_control_wires],
+        work_wires=Wire[num_work_wires],
+    )
+
+
+def _controlled_x(num_control_wires, num_work_wires, control_values=None):
+    """Resources for a borrowed-work multi-controlled ``X``."""
+    return ctrl(
+        X(Wire[1]),
+        control=Wire[num_control_wires],
+        control_values=control_values,
         work_wires=Wire[num_work_wires],
     )
 
@@ -376,37 +369,34 @@ def _superposition_thc_resources(num_mu_wires, num_work_wires, M, N):
     lcc_le = resource_rep(LeftClassicalComparator, num_x_wires=n, L=M, comparator="<=")
     lcc_gt = resource_rep(LeftClassicalComparator, num_x_wires=n, L=N // 2, comparator=">=")
     lqc = resource_rep(LeftQuantumComparator, num_y_wires=n, comparator="<=")
-    basis = resource_rep(BasisState, num_wires=n)
-    mcx = resource_rep(
-        MultiControlledX,
-        num_control_wires=n,
-        num_zero_control_values=n,
-        num_work_wires=mcx_work,
-        work_wire_type="borrowed",
-    )
+    basis = BasisState(Bool[n], Wire[n])
+    mcx = _controlled_x(n, mcx_work, control_values=[0] * n)
 
-    resources = {
-        resource_rep(GlobalPhase): 1,
-        Hadamard: 6 * n,
-        X: 4 * n + 4,
-        resource_rep(RY): 3,
-        _controlled_rep(X, 2, ctrl_work): 4,
-        _controlled_rep(X, 3, ctrl_work): 1,
-        _controlled_z(3, ctrl_work): 1,
-        _controlled_z(2 * n, ctrl_work): 1,
-        # _left_inequalities applied twice in the forward direction
-        lcc_le: 2,
-        lcc_gt: 2,
-        lqc: 2,
-        basis: 2,
-        # _left_inequalities applied twice as an adjoint.
-        adjoint_resource_rep(LeftClassicalComparator, lcc_le.params): 2,
-        adjoint_resource_rep(LeftClassicalComparator, lcc_gt.params): 2,
-        adjoint_resource_rep(LeftQuantumComparator, lqc.params): 2,
-        adjoint_resource_rep(BasisState, basis.params): 2,
-        mcx: 2,
-        adjoint_resource_rep(MultiControlledX, mcx.params): 1,
-    }
+    resources = {}
+
+    def _add(rep, count):
+        resources[rep] = resources.get(rep, 0) + count
+
+    _add(GlobalPhase, 1)
+    _add(Hadamard, 6 * n)
+    _add(X, 4 * n + 4)
+    _add(RY, 3)
+    _add(_controlled_x(2, ctrl_work), 4)
+    _add(_controlled_x(3, ctrl_work), 1)
+    _add(_controlled_z(3, ctrl_work), 1)
+    _add(_controlled_z(2 * n, ctrl_work), 1)
+    # _left_inequalities applied twice in the forward direction
+    _add(lcc_le, 2)
+    _add(lcc_gt, 2)
+    _add(lqc, 2)
+    _add(basis, 2)
+    # _left_inequalities applied twice as an adjoint.
+    _add(adjoint_resource_rep(LeftClassicalComparator, lcc_le.params), 2)
+    _add(adjoint_resource_rep(LeftClassicalComparator, lcc_gt.params), 2)
+    _add(adjoint_resource_rep(LeftQuantumComparator, lqc.params), 2)
+    _add(adjoint(BasisState(Bool[n], Wire[n])), 2)
+    _add(mcx, 2)
+    _add(adjoint(mcx), 1)
 
     return resources
 
@@ -445,9 +435,9 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     # 3. Flag the valid index pairs, then mark the "success" subspace with a phase.
     _left_inequalities(M, N, mu_wires, nu_wires, work_wires)
 
-    Controlled(X(work_wires[5]), control_wires=work_wires[3:5], work_wires=extra_work)
+    ctrl(X(work_wires[5]), control=work_wires[3:5], work_wires=extra_work)
     ctrl(Z(work_wires[5]), control=work_wires[0:3], work_wires=extra_work)
-    Controlled(X(work_wires[5]), control_wires=work_wires[3:5], work_wires=extra_work)
+    ctrl(X(work_wires[5]), control=work_wires[3:5], work_wires=extra_work)
 
     # 4. Uncompute the flags and the amplitude-marking rotation.
     adjoint(_left_inequalities)(M, N, mu_wires, nu_wires, work_wires)
@@ -471,11 +461,9 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     # 6. Recompute the flags onto the output ancilla register (work_wires[5], work_wires[6]).
     _left_inequalities(M, N, mu_wires, nu_wires, work_wires)
 
-    Controlled(X(work_wires[5]), control_wires=work_wires[3:5], work_wires=extra_work)
-    Controlled(
-        X(work_wires[6]), control_wires=work_wires[1:3] + work_wires[5:6], work_wires=extra_work
-    )
-    Controlled(X(work_wires[5]), control_wires=work_wires[3:5], work_wires=extra_work)
+    ctrl(X(work_wires[5]), control=work_wires[3:5], work_wires=extra_work)
+    ctrl(X(work_wires[6]), control=work_wires[1:3] + work_wires[5:6], work_wires=extra_work)
+    ctrl(X(work_wires[5]), control=work_wires[3:5], work_wires=extra_work)
 
     X(wires=work_wires[5])
 

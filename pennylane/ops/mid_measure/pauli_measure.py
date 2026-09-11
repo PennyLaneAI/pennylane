@@ -18,6 +18,7 @@ Implements the pauli measurement.
 import uuid
 from functools import lru_cache
 from importlib.util import find_spec
+from typing import override
 
 import numpy as np
 
@@ -25,7 +26,9 @@ import pennylane as qp
 from pennylane import math
 from pennylane.capture import enabled as capture_enabled
 from pennylane.compiler import compiler
-from pennylane.core.operator import Operator
+from pennylane.core import QueuingManager
+from pennylane.core.operator import Operator2, abstractify
+from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
 
 from .measurement_value import MeasurementValue
@@ -35,8 +38,10 @@ has_jax = find_spec("jax") is not None
 _VALID_PAULI_CHARS = "XYZ"
 
 
-class PauliMeasure(Operator):
+class PauliMeasure(Operator2):
     """A Pauli product measurement."""
+
+    compilable_argnames = ("pauli_word", "postselect", "meas_uid")
 
     # pylint: disable=too-many-arguments
     def __init__(
@@ -53,40 +58,16 @@ class PauliMeasure(Operator):
                 "are not allowed. Allowed characters are X, Y and Z."
             )
 
-        wires = Wires(wires)
-        if len(pauli_word) != len(wires):
+        super().__init__(pauli_word, wires=wires, postselect=postselect, meas_uid=meas_uid)
+
+        if len(pauli_word) != len(self.wires):
             raise ValueError(
                 "The number of wires must be equal to the length of the Pauli "
                 f"word. The Pauli word {pauli_word} has length {len(pauli_word)} "
                 f"and {len(wires)} wires were given: {wires}."
             )
-        super().__init__(wires=wires)
-        self.hyperparameters["pauli_word"] = pauli_word
-        self.hyperparameters["postselect"] = postselect
-        self.hyperparameters["meas_uid"] = meas_uid
 
-    @property
-    def meas_uid(self) -> str | None:
-        """The custom ID associated with the measurement instance."""
-        return self.hyperparameters["meas_uid"]
-
-    @property
-    def pauli_word(self) -> str:
-        """The Pauli word for the measurement."""
-        return self.hyperparameters["pauli_word"]
-
-    @property
-    def postselect(self) -> int | None:
-        """Which outcome to postselect after the measurement."""
-        return self.hyperparameters["postselect"]
-
-    @classmethod
-    def _primitive_bind_call(cls, *args, **kwargs):
-        return type.__call__(cls, *args, **kwargs)
-
-    def __repr__(self) -> str:
-        return f"PauliMeasure('{self.pauli_word}', wires={self.wires})"
-
+    @override
     def label(self, decimals=None, base_label=None, cache=None, wire=None) -> str:
         """How the pauli-product measurement is represented in diagrams and drawings."""
         postselect = "" if self.postselect is None else ("₁" if self.postselect == 1 else "₀")
@@ -94,11 +75,16 @@ class PauliMeasure(Operator):
             return f"┤↗{postselect}{self.pauli_word}├"
         return f"┤↗{postselect}{self.pauli_word[self.wires.index(wire)]}├"
 
-    def __hash__(self) -> int:
-        """int: An integer hash uniquely representing the measurement."""
-        return hash(
-            (self.__class__.__name__, self.pauli_word, tuple(self.wires.tolist()), self.meas_uid)
-        )
+    @override
+    def __repr__(self) -> str:
+        return f"PauliMeasure('{self.pauli_word}', wires={self.wires})"
+
+
+@abstractify.register
+@QueuingManager.stop_recording()
+def _abstractify_pauli_measure(op: PauliMeasure):
+    # This is necessary so that an abstractified PauliMeasure would not have meas_uid
+    return PauliMeasure(op.pauli_word, Wire[len(op.wires)], postselect=op.postselect, meas_uid=None)
 
 
 def _pauli_measure_impl(wires: WiresLike, pauli_word: str, postselect: int | None = None):
@@ -143,14 +129,7 @@ def _get_array_types():
 
 @lru_cache
 def _get_non_array_iterables():
-    return (
-        list,
-        tuple,
-        Wires,
-        range,
-        qp.capture.autograph.ag_primitives.PRange,
-        set,
-    )
+    return list, tuple, Wires, range, qp.capture.autograph.ag_primitives.PRange, set
 
 
 def _setup_wires(wires):
@@ -231,7 +210,7 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
       - Conditional(PauliX): 1
     Measurement processes:
     - expval(PauliZ): 1
-    Wire allocations: 3
+    Total wires: 3
     Circuit Depth: 3
     """
 
