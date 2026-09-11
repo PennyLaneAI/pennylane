@@ -880,8 +880,8 @@ class TestMatrix:
         """Test Identity matrix is correct with no wires"""
 
         # test Identity().compute_matrix()
-        assert np.allclose(qp.Identity().compute_matrix(1), np.identity(2), atol=tol, rtol=0)
-        assert np.allclose(qp.Identity().compute_matrix(2), np.identity(4), atol=tol, rtol=0)
+        assert np.allclose(qp.Identity().compute_matrix([0]), np.identity(2), atol=tol, rtol=0)
+        assert np.allclose(qp.Identity().compute_matrix([0, 1]), np.identity(4), atol=tol, rtol=0)
 
         # test Identity().matrix()
         assert np.allclose(qp.Identity().matrix(), np.identity(1), atol=tol, rtol=0)

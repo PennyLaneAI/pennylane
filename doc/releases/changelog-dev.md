@@ -424,6 +424,12 @@
   The round is resolved from the device being traced, so the program has to be captured (`qp.qjit(capture=True)`). The controller's `in_bytes` and `out_bytes` capacities both default to 8 bytes, and the correction comes back as an `out_bytes`-sized `uint8` buffer. Pass `controller=` / `coprocessor=` to choose the nodes explicitly, `out_bytes=` to override the reply size, and `decoder_id=` to select which coprocessor-side decoder handles the round.
 
 <h3>Improvements 🛠</h3>
+
+* Register a dispatch for ``np.delete`` to handle Numpy/JAX signature divergence.
+  [(#10137)]((https://github.com/PennyLaneAI/pennylane/pull/10137)
+
+* `DecompositionRule` now wraps the target qfunc, preserving it's signature and docstring.
+  [(#10144)](https://github.com/PennyLaneAI/pennylane/pull/10144)
  
 *  Reduced shot counts in `default.clifford` measurement tests to improve CI runtime.
   [(#10127)](https://github.com/PennyLaneAI/pennylane/pull/10127)
@@ -1092,7 +1098,8 @@
   - Non-parametric operators are ported:
     - :class:`~.S`, :class:`~.T`, :class:`~.SX`, :class:`~.Y`, :class:`~.CY`, :class:`~.SISWAP`, :class:`~.ISWAP`, :class:`~.ECR`,
       :class:`~.SWAP`, :class:`~.CSWAP`, :class:`~.H`, :class:`~.CH`, :class:`~.Z`, :class:`~.CZ`, :class:`~.CCZ`, :class:`~.X`,
-      :class:`~.CNOT`, :class:`~.Toffoli`, :class:`~.MultiControlledX`, :class:`~.ops.MidMeasure`.
+      :class:`~.CNOT`, :class:`~.Toffoli`, :class:`~.MultiControlledX`
+      :class:`~.Identity`.
   [(#9818)](https://github.com/PennyLaneAI/pennylane/pull/9818)
   [(#9859)](https://github.com/PennyLaneAI/pennylane/pull/9859)
   [(#9819)](https://github.com/PennyLaneAI/pennylane/pull/9819)
@@ -1105,7 +1112,7 @@
   [(#9858)](https://github.com/PennyLaneAI/pennylane/pull/9858)
   [(#9960)](https://github.com/PennyLaneAI/pennylane/pull/9960)
   [(#10004)](https://github.com/PennyLaneAI/pennylane/pull/10004)
-  [(#10115)](https://github.com/PennyLaneAI/pennylane/pull/10115)
+  [(#10129)](https://github.com/PennyLaneAI/pennylane/pull/10129)
   - Parametric operators are ported:
     - :class:`~.RZ`, :class:`~.CRZ`, :class:`~.DiagonalQubitUnitary`, :class:`~.PauliRot`, :class:`~.MultiRZ`, :class:`~.PhaseShift`,
       :class:`~.ControlledPhaseShift`, :class:`~.Rot`, :class:`~.CRot`, :class:`~.U1`, :class:`~.U2`, :class:`~.U3`, :class:`~.PCPhase`,
@@ -1166,8 +1173,9 @@
     - :class:`~.SingleExcitation`
   [(#9944)](https://github.com/PennyLaneAI/pennylane/pull/9944)
   - Miscelleneous operators are ported:
-    - :class:`~.PauliMeasure`
+    - :class:`~.PauliMeasure`, :class:`~.ops.MidMeasure`
   [(#10005)](https://github.com/PennyLaneAI/pennylane/pull/10005)
+  [(#10115)](https://github.com/PennyLaneAI/pennylane/pull/10115)
 
 * The `cond` primitive no longer adds an artificial `True` Literal for the predicate of the default
   else branch.
@@ -1288,6 +1296,7 @@
   - Composite operators with :class:`~.Operator2` instances as the base.
     [(#10027)](https://github.com/PennyLaneAI/pennylane/pull/10027)
     [(#10047)](https://github.com/PennyLaneAI/pennylane/pull/10047)
+    [(#10113)](https://github.com/PennyLaneAI/pennylane/pull/10113)
     [(#9999)](https://github.com/PennyLaneAI/pennylane/pull/9999)
     [(#10125)](https://github.com/PennyLaneAI/pennylane/pull/10125)
     [(#10124)](https://github.com/PennyLaneAI/pennylane/pull/10124)
