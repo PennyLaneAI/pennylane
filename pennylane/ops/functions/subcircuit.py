@@ -52,8 +52,15 @@ def _subcircuit(qfunc: DecompositionRule, **cls_attrs) -> type[Operator2]:
     new_operator = type(qfunc.name, (Operator2,), attrs)
 
     # registers the decomposition
-    qfunc.name += "_decomp"
-    add_decomps(new_operator, qfunc)
+    decomp_name = qfunc.name + "_decomp"
+    decomp_rule = DecompositionRule(
+        qfunc._impl,
+        resources=qfunc._compute_resources,
+        work_wires=qfunc._work_wire_spec,
+        exact_resources=qfunc.exact_resources,
+        name=decomp_name,
+    )
+    add_decomps(new_operator, decomp_rule)
     return new_operator
 
 

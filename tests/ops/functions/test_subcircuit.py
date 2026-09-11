@@ -21,7 +21,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.core import Operator2
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.ops.functions import assert_valid
 from pennylane.typing import Bool, Float, Wire
 
 
@@ -53,6 +53,20 @@ def LoopOp(phi, w, n_iters):
 
 class TestClassCreation:
     """Tests that ``subcircuit`` builds a valid ``Operator2`` subclass."""
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_validity(self):
+        """Test that the decomposition rule of operators returned by ``subcircuit`` is valid."""
+        op = FixedOp(1.5, wires=1)
+        assert_valid(op)
+
+    # Differentiation test failing without program capture, but we don't care about PL classic
+    @pytest.mark.usefixtures("enable_capture")
+    def test_control_flow_validity(self):
+        """Test that the decomposition rule of operators that contain control flow returned
+        by ``subcircuit`` is valid."""
+        op = LoopOp(1.5, w=1, n_iters=100)
+        assert_valid(op, skip_differentiation=not qp.capture.enabled())
 
     def test_not_decomposition_rule_error(self):
         """Test that an error is raised if the input function is not a ``DecompositionRule``."""
@@ -191,13 +205,6 @@ class TestDecomposition:
         for actual, exp in zip(decomp, expected):
             qp.assert_equal(actual, exp)
 
-    @pytest.mark.usefixtures("enable_and_disable_capture")
-    def test_decomposition_rule_validity(self):
-        """Test that the decomposition rule of operators returned by ``subcircuit`` is valid."""
-        op = FixedOp(1.5, wires=1)
-        rule = qp.list_decomps(op)[0]
-        _test_decomposition_rule(op, rule)
-
     def test_decomposition_with_control_flow_matches_qfunc(self):
         """Test that a decomposition containing of an instance that contains control flow
         matches the quantum function body."""
@@ -208,14 +215,6 @@ class TestDecomposition:
         assert len(decomp) == len(expected)
         for actual, exp in zip(decomp, expected):
             qp.assert_equal(actual, exp)
-
-    @pytest.mark.usefixtures("enable_and_disable_capture")
-    def test_decomposition_rule_with_control_flow_validity(self):
-        """Test that the decomposition rule of operators that contain control flow returned
-        by ``subcircuit`` is valid."""
-        op = LoopOp(1.5, w=1, n_iters=100)
-        rule = qp.list_decomps(op)[0]
-        _test_decomposition_rule(op, rule)
 
     def test_adjoint_decomposition(self):
         """Test that the adjoint of an operator created by ``subcircuit`` decomposes correctly."""
@@ -241,7 +240,6 @@ class TestDecomposition:
             qp.assert_equal(actual, exp)
 
 
-@pytest.mark.usefixtures("enable_and_disable_capture")
 class TestAdditionalDecompositionRules:
     """Tests that additional decomposition rules can be registered for operators created by
     ``subcircuit``, including rules for their controlled and adjoint versions.
@@ -250,6 +248,7 @@ class TestAdditionalDecompositionRules:
     the global registry (and other tests).
     """
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_register_additional_rule(self):
         """Test that an additional (and valid) decomposition rule can be registered for the
         operator itself."""
@@ -268,8 +267,9 @@ class TestAdditionalDecompositionRules:
                 "FixedOp_decomp",
                 "alt_fixed",
             }
-            _test_decomposition_rule(FixedOp(1.5, wires=0), alt_fixed)
+            assert_valid(FixedOp(1.5, wires=0))
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_register_adjoint_rule(self):
         """Test that a valid adjoint decomposition rule can be registered for the operator."""
         with qp.decomposition.local_decomps():
@@ -282,8 +282,13 @@ class TestAdditionalDecompositionRules:
             qp.add_decomps("Adjoint(FixedOp)", adjoint_fixed)
 
             assert [rule.name for rule in qp.list_decomps("Adjoint(FixedOp)")] == ["adjoint_fixed"]
-            _test_decomposition_rule(qp.adjoint(FixedOp(1.5, wires=0)), adjoint_fixed)
+            assert_valid(qp.adjoint(FixedOp(1.5, wires=0)))
 
+    # We test only with capture because when capture is disabled, testing the decompositions of the
+    # operator fails because assert_valid parametrizes the validation over the number of control wires,
+    # leading to custom control dispatches being used if there is only one control wire. Skipping the test
+    # in this case is fine because we don't care about PL classic
+    @pytest.mark.usefixtures("enable_capture")
     def test_register_controlled_rule(self):
         """Test that a valid controlled decomposition rule can be registered for the operator."""
         with qp.decomposition.local_decomps():
@@ -332,6 +337,4 @@ class TestAdditionalDecompositionRules:
             qp.add_decomps("C(FixedOp)", controlled_fixed)
 
             assert [rule.name for rule in qp.list_decomps("C(FixedOp)")] == ["controlled_fixed"]
-            _test_decomposition_rule(
-                qp.ctrl(FixedOp(1.5, wires=0), control=[1, 2, 3]), controlled_fixed
-            )
+            assert_valid(qp.ctrl(FixedOp(1.5, wires=0), control=[1, 2, 3]))
