@@ -36,5 +36,6 @@ from .left_quantum_comparator import LeftQuantumComparator
 from .superposition_thc import SuperpositionTHC
 from .half_signed_out_multiplier import half_signed_out_multiplier
 from .sum_of_slaters2 import SumOfSlatersPrep2
+from .select_thc import select_thc, select_thc_wires
 from .alias_sampling_thc import alias_sampling_thc, alias_sampling_thc_wires
 from .alias_sampling import uniform_prep_ops, alias_sampling, alias_sampling_wires
