@@ -1431,7 +1431,7 @@ class TrotterVibronic(ResourceOperator):
     For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
     Args:
-        vibronic_ham (:class:`~.pennylane.estimator.compact_hamiltonian.VibronicHamiltonian`): a real-space vibronic
+        vibronic_ham (:class:`pennylane.estimator.compact_hamiltonian.VibronicHamiltonian`): a real-space vibronic
             Hamiltonian to be approximately exponentiated
         num_steps (int): number of Trotter steps to perform
         order (int): order of the approximation, must be ``1`` or an even number
@@ -1440,7 +1440,7 @@ class TrotterVibronic(ResourceOperator):
         wires (list[int] | None): the wires on which the operator acts.
 
     Raises:
-        TypeError: if ``vibronic_ham`` is not an instance of :class:`~.VibronicHamiltonian`
+        TypeError: if ``vibronic_ham`` is not an instance of :class:`pennylane.estimator.compact_hamiltonian.VibronicHamiltonian`
         ValueError: if ``num_steps`` is not a positive integer
         ValueError: if ``order`` is not 1 or a positive even integer
         ValueError: if the number of wires provided does not match the number of wires expected by the operator
@@ -1468,7 +1468,7 @@ class TrotterVibronic(ResourceOperator):
         based on `arXiv:2411.13669 <https://arxiv.org/abs/2411.13669>`_.
 
     .. seealso::
-        :class:`~.estimator.compact_hamiltonian.VibronicHamiltonian`
+        :class:`pennylane.estimator.compact_hamiltonian.VibronicHamiltonian`
 
     .. seealso:: :class:`~.TrotterProduct`
 
@@ -1552,7 +1552,7 @@ class TrotterVibronic(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * vibronic_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.VibronicHamiltonian`): a real-space vibronic
+                * vibronic_ham (:class:`pennylane.estimator.templates.compact_hamiltonian.VibronicHamiltonian`): a real-space vibronic
                   Hamiltonian to be approximately exponentiated
                 * num_steps (int): number of Trotter steps to perform
                 * order (int): order of the approximation, must be 1 or even
@@ -1580,7 +1580,7 @@ class TrotterVibronic(ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            vibronic_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.VibronicHamiltonian`): a real space vibronic
+            vibronic_ham (:class:`pennylane.estimator.templates.compact_hamiltonian.VibronicHamiltonian`): a real space vibronic
                 Hamiltonian to be approximately exponentiated
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even
@@ -1781,7 +1781,7 @@ class TrotterVibronic(ResourceOperator):
         and the number of times it occurs in the decomposition.
 
         Args:
-            vibronic_ham (:class:`~.pennylane.estimator.templates.compact_hamiltonian.VibronicHamiltonian`): a real space vibronic
+            vibronic_ham (:class:`pennylane.estimator.templates.compact_hamiltonian.VibronicHamiltonian`): a real space vibronic
                 Hamiltonian to be approximately exponentiated
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even

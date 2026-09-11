@@ -232,6 +232,7 @@ class NumericHamiltonian:
             return False
 
         if self.is_abstract and other.is_abstract:
+            # Both are abstract, compare each numeric data variable for concreteness/abstractness
             for name in self.tensor_names + self.scalar_names:
                 data = getattr(self, name)
                 other_data = getattr(other, name)
@@ -239,14 +240,14 @@ class NumericHamiltonian:
                     return False
             return True
 
-        elif not self.is_abstract and not other.is_abstract:
+        if not self.is_abstract and not other.is_abstract:
             # Both are concrete Hamiltonians, so compare elements of all numeric data
             return all(
                 math.allclose(a, b)
                 for a, b in zip(self.numeric_data, other.numeric_data, strict=True)
             )
 
-        elif not (
+        if not (
             self.is_abstract and other.is_abstract
         ):  # One is abstract, one is not, therefore not the same
             return False
