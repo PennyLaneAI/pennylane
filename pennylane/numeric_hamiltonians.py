@@ -228,6 +228,7 @@ class NumericHamiltonian:
     def __eq__(self, other):
         if type(other) is not type(self):
             return NotImplemented
+
         if self._hash_key() != other._hash_key():
             return False
 
@@ -238,6 +239,7 @@ class NumericHamiltonian:
                 other_data = getattr(other, name)
                 if not (isinstance(data, AbstractArray) and isinstance(other_data, AbstractArray)):
                     return False
+
             return True
 
         if not self.is_abstract and not other.is_abstract:
@@ -247,10 +249,9 @@ class NumericHamiltonian:
                 for a, b in zip(self.numeric_data, other.numeric_data, strict=True)
             )
 
-        if not (
+        return (
             self.is_abstract and other.is_abstract
-        ):  # One is abstract, one is not, therefore not the same
-            return False
+        )  # One is abstract, one is not, therefore not the same
 
     def __repr__(self):
         def render(tensor):
@@ -730,6 +731,3 @@ class VibronicHamiltonian(NumericHamiltonian):
     linear: Any
     quadratic: Any
     kinetic: Any
-
-    def __post_init__(self):
-        super().__post_init__()
