@@ -227,7 +227,10 @@ class TestControlledInit:
     @pytest.mark.parametrize(
         "base",
         [
-            qp.prod(qp.X(0), qp.X(1), qp.X(2)),
+            # NOTE: 'qp.prod' now will dispatch to 'Prod2'
+            # which belongs to 'ControlledOp2'. This equivalent test
+            # is covered by 'test_prod.py::test_controlled_prod_basic_validity'
+            qp.ops.Prod(qp.X(0), qp.X(1), qp.X(2)),
             qp.X(0) + qp.Y(1),
         ],
     )

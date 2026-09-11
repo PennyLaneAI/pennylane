@@ -23,8 +23,7 @@ from pennylane.decomposition import (
     add_decomps,
     register_resources,
 )
-from pennylane.ops import CNOT, RZ, Hadamard, S, adjoint, change_op_basis
-from pennylane.ops.op_math import Prod2
+from pennylane.ops import CNOT, RZ, Hadamard, S, adjoint, change_op_basis, prod
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.templates.state_preparations.mottonen import _apply_uniform_rotation_dagger
@@ -139,13 +138,13 @@ def _select_pauli_rot_resource(angles, control_wires, target_wire, rot_axis):
     if rot_axis == "Z":
         return prod_res
 
-    target_rep = Prod2((cnot_rep, rz_rep) * num_rotations) if num_wires > 1 else rz_rep
+    target_rep = prod(*((cnot_rep, rz_rep) * num_rotations)) if num_wires > 1 else rz_rep
 
     if rot_axis == "X":
         return {_change_op_basis_abstract(Hadamard, target_rep, Hadamard): 1}
 
-    prod_rep1 = Prod2((abstractify(Hadamard), _adjoint_abstract(S)))
-    prod_rep2 = Prod2((abstractify(S), abstractify(Hadamard)))
+    prod_rep1 = prod(abstractify(Hadamard), _adjoint_abstract(S))
+    prod_rep2 = prod(abstractify(S), abstractify(Hadamard))
 
     return {_change_op_basis_abstract(prod_rep1, target_rep, prod_rep2): 1}
 
