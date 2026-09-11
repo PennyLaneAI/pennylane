@@ -68,6 +68,21 @@ class TestProdDispatch:
 
         assert isinstance(prod(f)(), Prod2)
 
+    @pytest.mark.capture
+    @pytest.mark.parametrize("lazy", (True, False))
+    def test_no_leftover_product_eqn(self, lazy):
+        import jax
+
+        def f():
+            inner = prod(qp.RX(0.1, 0), qp.RY(0.2, 1))
+
+            return prod(inner, qp.RZ(0.3, 2), lazy=lazy)
+
+        cjaxpr = jax.make_jaxpr(f)()
+
+        prod_eqns = [eqn for eqn in cjaxpr.eqns if eqn.params["op_cls"] is Prod2]
+        assert len(prod_eqns) == 1
+
 
 class TestInitialization:
     """Test construction and basic container behaviour."""

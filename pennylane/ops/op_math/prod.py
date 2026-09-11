@@ -29,7 +29,7 @@ import pennylane as qp
 from pennylane import compiler, control_flow, math
 from pennylane.capture.autograph import wraps
 from pennylane.core.operator import Operator, Operator2, abstractify
-from pennylane.core.queuing import QueuingManager, apply
+from pennylane.core.queuing import QueuingManager, apply, remove_from_program
 from pennylane.decomposition.symbolic_decomposition import flip_zero_control
 from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
 from pennylane.typing import TensorLike, Wire
@@ -143,13 +143,18 @@ def prod(*ops, lazy=True):
         if lazy:
             return Prod2(ops)
 
+        # The outer 'Prod2's in 'ops' are discarded here and so we need to remove them from
+        # the program as nothing else will. The lazy route above does not need
+        # this as it forwards 'ops' directly to the constructor which already dequeues
+        # every operand in the '__init__' of 'CompositeOp2'.
         operands = tuple(
             itertools.chain.from_iterable(
                 op.operands if isinstance(op, Prod2) else (op,) for op in ops
             )
         )
         for op in ops:
-            QueuingManager.remove(op)
+            remove_from_program(op)
+
         return Prod2(operands)
 
     if lazy:
