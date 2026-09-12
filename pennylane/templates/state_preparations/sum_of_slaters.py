@@ -21,7 +21,7 @@ import numpy as np
 import pennylane as qp
 from pennylane import allocate, for_loop, math
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.typing import AbstractArray, Bool, Complex, Int, TensorLike, Wire
 from pennylane.wires import WiresLike
@@ -670,8 +670,8 @@ class SumOfSlatersPrep(Operator2):
             the enumeration register with multicontrolled bit flips.
             The required number of qubits depends on the particular ``indices`` of the sparse state,
             but it is at most :math:`2d-2` for :math:`d` entries in the state.
-        indices (tuple[int]): Indices of the sparse state to prepare. The ordering should match
-            that in ``coefficients``.
+        indices (tuple[int] | None): Indices of the sparse state to prepare. The ordering should match
+            that in ``coefficients``. ``None`` indicates unknown indices for the purposes of resource estimation.
 
     The sizes for the numerous optional work wire registers can be computed with
     ``SumOfSlatersPrep.required_register_sizes(indices, wires)``.
@@ -912,17 +912,17 @@ class SumOfSlatersPrep(Operator2):
         self,
         coefficients: TensorLike,
         wires: WiresLike,
-        indices: tuple,
+        indices: tuple | None,
         enumeration_wires: WiresLike = (),
         identification_wires: WiresLike = (),
         qrom_work_wires: WiresLike = (),
         mcx_cache_wires: WiresLike = (),
     ):
         n = 1 if isinstance(wires, int) else len(wires)
-        num_entries = len(indices)
-        v_bits = math.int_to_binary(np.array(indices), n).T  # Shape (n, num_entries)
+        num_entries = coefficients.shape[0]
 
-        if num_entries != 1:
+        if num_entries != 1 and indices:
+            v_bits = math.int_to_binary(np.array(indices), n).T  # Shape (n, num_entries)
             _, data = _preprocess(v_bits, wires)
 
             # pylint: disable-next=protected-access
@@ -1129,6 +1129,9 @@ def _sos_state_prep_work_wires(
     **_,
 ):
     """See SumOfSlatersPrep.required_register_sizes for details."""
+    if indices is None:
+        # invalid rule, just return so we dont get an error
+        return {}
     # pylint: disable-next=protected-access
     n = 1 if isinstance(wires, int) else len(wires)
     v_bits = math.int_to_binary(np.array(indices), n).T
@@ -1282,6 +1285,9 @@ def _sos_state_prep_with_wires(
         encoding()
 
 
+@register_condition(
+    lambda coefficients, wires, indices, *_, **__: indices is not None
+)  # indices must be known
 @register_resources(_sos_state_prep_resources, exact=False, work_wires=_sos_state_prep_work_wires)
 # pylint: disable-next=too-many-arguments
 def _sos_state_prep(

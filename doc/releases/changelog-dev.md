@@ -475,6 +475,9 @@
 
   ```
 
+* ``SumOfSlaterPrep`` can now accept ``indicies=None`` for the purposes of resource estimation later on.
+  [(#10143)](https://github.com/PennyLaneAI/pennylane/pull/10143)
+
 * :class:`~.IsingZZ`'s decomposition is now expressed as a :func:`~.change_op_basis` (``CNOT``
   compute/uncompute around the ``RZ``) instead of three bare gates. This lets PennyLane's generic
   ``C(ChangeOpBasis)`` rule automatically control only the ``RZ`` for any number of control wires,
