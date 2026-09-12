@@ -159,6 +159,7 @@ from pennylane.ops.functions import (
     commutator,
     comm,
     single_qubit_zyz_angles,
+    subcircuit,
 )
 from pennylane.ops.identity import I
 from pennylane.optimize import *

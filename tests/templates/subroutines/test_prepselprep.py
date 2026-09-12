@@ -316,7 +316,7 @@ class TestPrepSelPrep:
         op_reps = (
             abstractify(qp.X),
             abstractify(qp.X),
-            qp.resource_rep(qp.ops.Prod, **ops[-1].resource_params),
+            abstractify(ops[-1]),
         )
         assert op.resource_params == {"num_control": 2, "op_reps": op_reps}
 
@@ -326,8 +326,7 @@ class TestPrepSelPrep:
         ops = [qp.X(0), qp.X(1), qp.X(0) @ qp.Y(1)]
         grep = abstractify(qp.GlobalPhase)
         xrep = abstractify(qp.X)
-        yrep = abstractify(qp.Y)
-        prodrep = qp.resource_rep(qp.ops.Prod, resources={xrep: 1, yrep: 1})
+        prodrep = abstractify(ops[-1])
         op_reps = (xrep, xrep, prodrep)
         lcu = qp.dot([1, 4, 9], ops)
         op = qp.PrepSelPrep(lcu, (3, 4))
@@ -344,7 +343,7 @@ class TestPrepSelPrep:
         expected_counts = {
             _change_op_basis_abstract(
                 qp.resource_rep(qp.StatePrep, num_wires=2),
-                Prod2([select_lcu, select_phases]),
+                qp.prod(select_lcu, select_phases),
                 qp.resource_rep(
                     qp.ops.Adjoint, base_class=qp.StatePrep, base_params={"num_wires": 2}
                 ),

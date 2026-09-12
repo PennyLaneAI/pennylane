@@ -46,6 +46,7 @@ from pennylane.decomposition.resources import (
     controlled_resource_rep,
     resolve_work_wire_type,
 )
+from pennylane.decomposition.utils import to_name
 from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.ops.op_math.adjoint2 import Adjoint2, get_traced_and_non_traced_args
 from pennylane.typing import AbstractArray, AbstractWires, Bool, Complex, Wire
@@ -846,23 +847,18 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
     return _impl
 
 
-def _ctrl_single_work_wire_resource(
-    base, control_wires, control_values, work_wires, work_wire_type
-):
+def _ctrl_single_work_wire_resource(base, control_wires, *_, **__):
+    # NOTE: No need to pass work_wire information into the resources below
+    # as this rule assumes that no work wires are *explicitly* provided and instead
+    # the only work wire comes from allocation.
     return {
-        _ctrl_abstract(
-            base,
-            control_wires=Wire[1],
-            work_wires=work_wires,
-            work_wire_type=work_wire_type,
-        ): 1,
-        _ctrl_abstract(qp.X, Wire[len(control_wires)], Wire[len(work_wires)], work_wire_type): 2,
+        _ctrl_abstract(base, Wire[1]): 1,
+        qp.ctrl(qp.X(Wire[1]), Wire[len(control_wires)]): 2,
     }
 
 
-# pylint: disable=protected-access,unused-argument
 @register_resources(_ctrl_single_work_wire_resource, work_wires={"zeroed": 1})
-def _ctrl_single_work_wire(base, control_wires, control_values, work_wires, work_wire_type):
+def _ctrl_single_work_wire(base, control_wires, *_, **__):
     """Implements Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016."""
     with allocation.allocate(1, state="zero", restored=True) as aux:
         qp.ctrl(qp.X(aux[0]), control=control_wires)
@@ -906,3 +902,8 @@ def _ctrl_abstract(
         work_wire_type=work_wire_type,
     )
     return abstractify(op)
+
+
+@to_name.register
+def _controlledop2_to_name(op: ControlledOp2):
+    return f"C({to_name(op.base)})"

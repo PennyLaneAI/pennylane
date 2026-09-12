@@ -273,15 +273,30 @@ class TestSpecialOps:
         jaxpr = jax.make_jaxpr(qp.I)()
         assert len(jaxpr.eqns) == 1
 
-        assert jaxpr.eqns[0].primitive == qp.I._primitive
-        assert len(jaxpr.eqns[0].invars) == 0
-        assert jaxpr.eqns[0].params == {"n_wires": 0}
+        i_eqn = jaxpr.eqns[0]
+        assert_eqn_matches_op(i_eqn, qp.I)
+        assert len(i_eqn.invars) == 0
+        assert i_eqn.params["wire_lens"] == (0,)
 
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts)
 
-        assert len(q.queue) == 1
-        qp.assert_equal(q.queue[0], qp.I())
+        assert len(collector.state["ops"]) == 1
+        qp.assert_equal(collector.state["ops"][0], qp.I())
+
+    def test_identity_with_wires(self):
+        """Test that an identity on wires can be captured."""
+
+        def f(wires):
+            qp.I(wires)
+
+        jaxpr = jax.make_jaxpr(f)([0, 1])
+        assert len(jaxpr.eqns) == 1
+
+        i_eqn = jaxpr.eqns[0]
+        assert_eqn_matches_op(i_eqn, qp.I)
+        assert len(i_eqn.invars) == 2
+        assert i_eqn.params["wire_lens"] == (2,)
 
 
 class TestTemplates:
@@ -495,19 +510,11 @@ class TestAbstractDunders:
 
         jaxpr = jax.make_jaxpr(qfunc)()
 
-        assert len(jaxpr.eqns) == 3
-        assert_eqn_matches_op(jaxpr.eqns[0], qp.X)
-        assert_eqn_matches_op(jaxpr.eqns[1], qp.Y)
-
-        eqn = jaxpr.eqns[2]
-
-        assert eqn.primitive == qp.ops.Prod._primitive
-        assert eqn.invars[0] == jaxpr.eqns[0].outvars[0]
-        assert eqn.invars[1] == jaxpr.eqns[1].outvars[0]
-
-        assert eqn.params == {}
-
-        assert isinstance(eqn.outvars[0].aval, AbstractOperator)
+        assert len(jaxpr.eqns) == 1
+        assert_eqn_matches_op(jaxpr.eqns[0], qp.ops.Prod2)
+        assert len(jaxpr.eqns[0].params["hybrid_trees"]) == 2
+        assert "PauliX" in str(jaxpr.eqns[0].params["hybrid_trees"][0])
+        assert "PauliY" in str(jaxpr.eqns[0].params["hybrid_trees"][0])
 
     def test_mul(self):
         """Test that the scalar multiplication dunder works."""

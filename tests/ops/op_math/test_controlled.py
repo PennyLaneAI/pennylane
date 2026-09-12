@@ -227,7 +227,10 @@ class TestControlledInit:
     @pytest.mark.parametrize(
         "base",
         [
-            qp.prod(qp.X(0), qp.X(1), qp.X(2)),
+            # NOTE: 'qp.prod' now will dispatch to 'Prod2'
+            # which belongs to 'ControlledOp2'. This equivalent test
+            # is covered by 'test_prod.py::test_controlled_prod_basic_validity'
+            qp.ops.Prod(qp.X(0), qp.X(1), qp.X(2)),
             qp.X(0) + qp.Y(1),
         ],
     )
@@ -1068,6 +1071,12 @@ class TestDecomposition:
             )
 
         decomp = op.decomposition()
+
+        if base_cls is qp.Identity:
+            # A controlled Identity is the identity for any control values, so it decomposes
+            # into nothing and needs no gates to flip the control values.
+            assert decomp == []
+            return
 
         i = 0
         for ctrl_wire in ctrl_wires:
