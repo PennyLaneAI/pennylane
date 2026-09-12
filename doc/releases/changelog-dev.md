@@ -1464,6 +1464,12 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug where ``QubitDevice.probability`` and ``QubitDevice.estimate_probability``
+  ignored an integer wire label of ``0`` and returned the full joint distribution instead
+  of the single-wire marginal. The falsy label was silently replaced by all device wires;
+  the default is now resolved with an explicit ``None`` check.
+  [(#9875)](https://github.com/PennyLaneAI/pennylane/pull/9875)
+
 * Fixed a bug in :func:`~pennylane.draw` with conditionally applied operators that do not have wires,
   such as ``cond(condition, GlobalPhase(0.52))``.
   [(#10132)](https://github.com/PennyLaneAI/pennylane/pull/10132)
