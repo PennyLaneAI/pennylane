@@ -86,7 +86,7 @@ def _left_ladder(x_wires, y_wires, work_wires, carry_flip=None, skip_input_pos=N
     return x_pos
 
 
-def _right_ladder(x_wires, y_wires, work_wires, carry_flip=None, skip_input_pos=None, x_pos=None):
+def _right_ladder(x_wires, y_wires, work_wires, carry_flip=None, skip_input_pos=None):
     """Implement a ladder formed from the right block in figure 2, https://arxiv.org/pdf/1709.06648.
 
     Args:
@@ -99,9 +99,9 @@ def _right_ladder(x_wires, y_wires, work_wires, carry_flip=None, skip_input_pos=
             right before it is uncomputed, undoing the flip applied by ``_left_ladder``'s own
             ``carry_flip`` (see ``_adder_flipped_first_work_wire`` and ``_c_subtract_then_add_one``).
     """
-    # pylint: disable=too-many-arguments
-    x_pos -= 1
     num_y_wires = len(y_wires)
+    # This is x_pos as computed by _left_ladder, minus one.
+    x_pos = sum(i not in skip_input_pos for i in range(1, num_y_wires - 1))
 
     for i in range(num_y_wires - 2, 0, -1):
         if i in skip_input_pos:
@@ -266,6 +266,20 @@ class SemiAdder(Operator2):
         return self.x_wires + self.y_wires + self.work_wires
 
 
+def _effective_skip_input_pos(num_x_wires, num_y_wires, skip_input_pos):
+    if skip_input_pos is None:
+        skip_input_pos = []
+    assert 0 not in skip_input_pos
+    used_x = 0
+    new_skip_input_pos = []
+    for i in range(num_y_wires):
+        if i in skip_input_pos or used_x >= num_x_wires:
+            new_skip_input_pos.append(i)
+        else:
+            used_x += 1
+    return set(new_skip_input_pos)
+
+
 # pylint: disable-next=unused-argument
 def _semi_adder_resources(x_wires, y_wires, work_wires=None, skip_input_pos=None):
     num_x_wires = len(x_wires)
@@ -336,10 +350,6 @@ def _semi_adder(x_wires, y_wires, work_wires=None, carry_flip=None, skip_input_p
     )
 
     CNOT([work_wires[-1], y_wires[-1]])
-    print(f"{x_wires=},  {y_wires=}")
-    print(f"{num_y_wires-1=}")
-    print(f"{x_pos=}")
-    print(f"{skip_input_pos=}")
 
     if num_y_wires - 1 not in skip_input_pos:
         CNOT([x_wires[x_pos], y_wires[-1]])
@@ -350,7 +360,6 @@ def _semi_adder(x_wires, y_wires, work_wires=None, carry_flip=None, skip_input_p
         work_wires,
         carry_flip=carry_flip,
         skip_input_pos=skip_input_pos,
-        x_pos=x_pos,
     )
 
 
@@ -472,20 +481,6 @@ def _controlled_semi_adder(
 
 
 add_decomps("C(SemiAdder)", flip_zero_control2(_controlled_semi_adder))
-
-
-def _effective_skip_input_pos(num_x_wires, num_y_wires, skip_input_pos):
-    if skip_input_pos is None:
-        skip_input_pos = []
-    assert 0 not in skip_input_pos
-    used_x = 0
-    new_skip_input_pos = []
-    for i in range(num_y_wires):
-        if i in skip_input_pos or used_x >= num_x_wires:
-            new_skip_input_pos.append(i)
-        else:
-            used_x += 1
-    return set(new_skip_input_pos)
 
 
 def _self_ctrl_one_sparse_add_resources(

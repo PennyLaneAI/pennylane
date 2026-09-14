@@ -21,8 +21,16 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as np
+from pennylane.ops import CNOT, adjoint
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.templates.subroutines.arithmetic.semi_adder import _controlled_semi_adder
+from pennylane.templates.subroutines.arithmetic.semi_adder import (
+    _controlled_semi_adder,
+    _effective_skip_input_pos,
+    _semi_adder,
+    _semi_adder_resources,
+)
+from pennylane.templates.subroutines.arithmetic.temporary_and import TemporaryAND
+from pennylane.typing import Wire
 
 
 @pytest.mark.pl2do(
@@ -384,3 +392,70 @@ class TestSemiAdder:
             # pylint: disable-next=protected-access
             subroutine = qp.capture.subroutine(partial(rule._impl, work_wire_type="borrowed"))
             jax.make_jaxpr(subroutine)(**decomp_args)
+
+
+class TestSemiAdderSkipInputPos:
+    """Independent tests for the ``skip_input_pos`` feature of ``_semi_adder``."""
+
+    @staticmethod
+    def _sparse_addend(x, num_x_wires, num_y_wires, skip_input_pos):
+        """Integer added to ``y`` when ``skip_input_pos`` zeros some input bit slots."""
+        skip = _effective_skip_input_pos(num_x_wires, num_y_wires, skip_input_pos)
+        used_x = 0
+        addend = 0
+        for i in range(num_y_wires):
+            if i in skip:
+                continue
+            addend |= ((x >> used_x) & 1) << i
+            used_x += 1
+        return addend
+
+    @pytest.mark.parametrize(
+        ("x_wires", "y_wires", "work_wires", "x", "y", "skip_input_pos"),
+        [
+            ([0, 1, 2], [3, 4, 5, 6], [7, 8, 9], 5, 3, [1]),
+            ([0, 1, 2], [3, 4, 5], [6, 7], 7, 1, [1]),
+            ([0, 1], [2, 3, 4, 5], [6, 7, 8], 3, 2, [1, 2]),
+            ([0, 1], [2, 3, 4], [5, 6], 3, 4, [2]),
+            ([0, 1], [2, 3, 4, 5], [6, 7, 8], 3, 5, [1, 3]),
+        ],
+    )
+    def test_operation_result(
+        self, x_wires, y_wires, work_wires, x, y, skip_input_pos
+    ):  # pylint: disable=too-many-arguments
+        """Test that skipped input positions inject classical zeros into the addend."""
+        n = len(x_wires)
+        m = len(y_wires)
+        expected = (y + self._sparse_addend(x, n, m, skip_input_pos)) % (2**m)
+        dev = qp.device("default.qubit")
+
+        @qp.set_shots(1)
+        @qp.qnode(dev)
+        def circuit():
+            qp.BasisEmbedding(qp.math.int_to_binary(x, n), wires=x_wires)
+            qp.BasisEmbedding(qp.math.int_to_binary(y, m), wires=y_wires)
+            _semi_adder(x_wires, y_wires, work_wires, skip_input_pos=skip_input_pos)
+            return qp.sample(wires=y_wires), qp.probs(wires=work_wires)
+
+        sample, work_probs = circuit()
+        int_sample = 2 ** np.arange(len(sample[0, :])) @ sample[0, ::-1]
+        assert np.allclose(int_sample, expected)
+        assert np.isclose(work_probs[0], 1.0)
+
+    def test_resources_match_decomposition(self):
+        """Test that ``_semi_adder_resources`` matches the queued ``skip_input_pos``
+        decomposition."""
+        x_wires, y_wires, work_wires = [0, 1, 2], [3, 4, 5, 6], [7, 8, 9]
+        skip_input_pos = [1, 2]
+
+        with qp.queuing.AnnotatedQueue() as q:
+            _semi_adder(x_wires, y_wires, work_wires, skip_input_pos=skip_input_pos)
+
+        names = [op.name for op in qp.tape.QuantumScript.from_queue(q).operations]
+        resources = _semi_adder_resources(
+            x_wires, y_wires, work_wires, skip_input_pos=skip_input_pos
+        )
+
+        assert names.count("TemporaryAND") == resources[TemporaryAND]
+        assert names.count("Adjoint(TemporaryAND)") == resources[adjoint(TemporaryAND(Wire[3]))]
+        assert names.count("CNOT") == resources[CNOT]
