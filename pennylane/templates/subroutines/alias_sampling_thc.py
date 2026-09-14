@@ -13,6 +13,8 @@
 # limitations under the License.
 """Contains the ``PREPARE`` template for tensor hypercontraction (THC) qubitization."""
 
+from functools import lru_cache
+
 import numpy as np
 
 from pennylane import capture, compiler, math
@@ -146,6 +148,7 @@ def _lcu_signs(M, entries, weights):
     return [0 if c >= 0 else 1 for c in coeffs]
 
 
+@lru_cache(maxsize=16)
 def _build_qrom_data(
     M, N, zeta, t_ell, num_index_wires, aleph
 ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -247,9 +250,11 @@ def alias_sampling_thc_wires(M, N, aleph):
         * ``superposition_work_wires``: the work register of
           :class:`~.SuperpositionTHC`; its entry at index ``3``
           is the one-body sentinel flag to pass as ``edge_flag``
-        * ``work_wires``: the minimum scratch register of :class:`~.AliasSamplingTHC`.
-          Additional wires are forwarded to the internal :class:`~.QROM`, which uses them
-          for a ``SelectSwap`` decomposition that lowers the T-gate count.
+        * ``work_wires``: the minimum auxiliary register of :class:`~.AliasSamplingTHC`.
+          Most of these wires retain data and are uncomputed by
+          ``qp.adjoint(AliasSamplingTHC(...))``. Additional wires are forwarded to the internal
+          :class:`~.QROM`, which uses them for a ``SelectSwap`` decomposition that lowers the
+          T-gate count.
         * ``sign_wire``: the *index into* ``work_wires`` of the wire holding the sign bit
           of the selected coefficient.
 
@@ -389,6 +394,12 @@ class AliasSamplingTHC(Operator2):
         one-body sentinel flag (its ``work_wires[3]``, true when :math:`\nu = M`)
         passed here as ``edge_flag``. This template does not recompute that flag.
 
+    .. warning::
+
+        Most ``work_wires`` are left entangled with the index registers and are not
+        returned to :math:`\lvert 0\rangle`. In a prepare/select/prepare pattern,
+        ``qp.adjoint(AliasSamplingTHC(...))`` uncomputes them.
+
     .. seealso:: :func:`~.alias_sampling_thc_wires`, which
         returns every register size for a given ``(M, N, aleph)``.
 
@@ -404,10 +415,11 @@ class AliasSamplingTHC(Operator2):
         edge_flag (WiresLike): the single wire holding the one-body sentinel flag
             (true when the ``nu`` register is in state :math:`\lvert M \rangle`), as
             produced by :class:`~.SuperpositionTHC`
-        work_wires (WiresLike): the auxiliary wires. At least
-            ``n_d + 2 * n + 3 * aleph + 4`` zeroed work wires are
-            required, where ``n = ceil(log2(M + 1))`` and
-            ``n_d = ceil(log2(N // 2 + M (M + 1) // 2)) + 1``
+        work_wires (WiresLike): the auxiliary wires, most of which retain data until the
+            adjoint of this template is applied. At least ``n_d + 2 * n + 3 * aleph + 4``
+            wires initialized in :math:`\lvert 0\rangle` are required, where
+            ``n = ceil(log2(M + 1))`` and
+            ``n_d = ceil(log2(N // 2 + M (M + 1) // 2)) + 1`
         aleph (int): the number of bits used to encode the keep-probabilities
         apply_sign (bool): if ``True`` (default), the sign of the selected coefficient is
             applied here, so the prepared state carries it on its amplitudes. Set to
@@ -464,12 +476,6 @@ class AliasSamplingTHC(Operator2):
         aleph,
         apply_sign: bool = True,
     ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
-        if isinstance(mu_wires, AbstractWires):
-            super().__init__(
-                M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph, apply_sign
-            )
-            return
-
         if isinstance(M, bool) or not isinstance(M, int) or M < 1:
             raise ValueError(f"M must be a positive integer, got {M!r}.")
         if isinstance(N, bool) or not isinstance(N, int) or N < 1:
@@ -482,6 +488,12 @@ class AliasSamplingTHC(Operator2):
         _build_thc_pairs(M, N, zeta, t_ell)
         zeta = _canonicalize_zeta(zeta)
         t_ell = _canonicalize_t_ell(t_ell)
+
+        if isinstance(mu_wires, AbstractWires):
+            super().__init__(
+                M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph, apply_sign
+            )
+            return
 
         mu_wires = Wires(mu_wires)
         nu_wires = Wires(nu_wires)
@@ -499,9 +511,6 @@ class AliasSamplingTHC(Operator2):
                 f"mu_wires and nu_wires must each contain exactly ceil(log2(M + 1)) wires. "
                 f"Got M={M} with {n} wires, but {_num_index_wires(M)} are required."
             )
-        if len(edge_flag) != 1:
-            raise ValueError(f"edge_flag must contain exactly one wire, got {len(edge_flag)}.")
-
         req = alias_sampling_thc_wires(M, N, aleph)
         if len(work_wires) < req["work_wires"]:
             raise ValueError(
@@ -520,6 +529,11 @@ class AliasSamplingTHC(Operator2):
         super().__init__(
             M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph, apply_sign
         )
+
+    @property
+    def wires(self):
+        """All wires involved in the operation."""
+        return self.mu_wires + self.nu_wires + self.edge_flag + self.work_wires
 
 
 def _alias_sampling_thc_resources(

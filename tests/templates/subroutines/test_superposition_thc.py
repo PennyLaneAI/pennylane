@@ -105,6 +105,10 @@ def test_standard_validity(M, N, n):
     assert gate.mu_wires == qp.wires.Wires(mu_wires)
     assert gate.nu_wires == qp.wires.Wires(nu_wires)
     assert gate.work_wires == qp.wires.Wires(work_wires)
+    assert gate.wires == qp.wires.Wires(mu_wires + nu_wires + work_wires)
+
+    with pytest.raises(ValueError, match="must not overlap"):
+        qp.ctrl(gate, control=work_wires[-1])
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")

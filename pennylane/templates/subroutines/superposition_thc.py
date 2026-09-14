@@ -109,6 +109,7 @@ class SuperpositionTHC(Operator2):
 
     .. code-block:: python
 
+        import numpy as np
         import pennylane as qp
 
         n = 3
@@ -128,18 +129,16 @@ class SuperpositionTHC(Operator2):
     The valid pairs are exactly those flagged in the success subspace, and each
     carries equal weight :math:`1 / d` with :math:`d = N/2 + M(M+1)/2`.
 
-    .. code-block:: pycon
-
-        >>> probs = circuit().reshape(2**n, 2**n, 2)
-        >>> valid = np.where(probs > 1e-9)
-        >>> valid_mu_nu = [tuple(map(int, arr)) for arr in zip(*valid[:2])]
-        >>> valid_mu_nu
-        [(0, 0), (0, 1), (0, 2), (0, 3), (0, 4), (0, 5), (1, 1), (1, 2), (1, 3), (1, 4), (2, 2), (2, 3), (2, 4), (3, 3), (3, 4), (4, 4)]
-        >>> d = N // 2 + M * (M + 1) // 2
-        >>> len(valid_mu_nu) == d
-        True
-        >>> np.allclose(probs[valid], 1/d)
-        True
+    >>> probs = circuit().reshape(2**n, 2**n, 2)
+    >>> valid = np.where(probs > 1e-9)
+    >>> valid_mu_nu = [tuple(map(int, arr)) for arr in zip(*valid[:2])]
+    >>> valid_mu_nu
+    [(0, 0), (0, 1), (0, 2), (0, 3), (0, 4), (0, 5), (1, 1), (1, 2), (1, 3), (1, 4), (2, 2), (2, 3), (2, 4), (3, 3), (3, 4), (4, 4)]
+    >>> d = N // 2 + M * (M + 1) // 2
+    >>> len(valid_mu_nu) == d
+    True
+    >>> np.allclose(probs[valid], 1/d)
+    True
     """
 
     wire_argnames = ("mu_wires", "nu_wires", "work_wires")
@@ -197,6 +196,11 @@ class SuperpositionTHC(Operator2):
             )
 
         super().__init__(M, N, mu_wires, nu_wires, work_wires)
+
+    @property
+    def wires(self):
+        """All wires involved in the operation."""
+        return self.mu_wires + self.nu_wires + self.work_wires
 
 
 def _left_inequalities(

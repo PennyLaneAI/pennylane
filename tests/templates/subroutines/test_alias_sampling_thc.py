@@ -28,6 +28,7 @@ from pennylane.templates.subroutines.alias_sampling_thc import (
     _right_shift,
     _symmetrize,
 )
+from pennylane.typing import AbstractWires
 
 
 def _wire_layout(M, N, aleph):
@@ -222,7 +223,7 @@ class TestClassicalTables:
         zeta = (zeta + zeta.T) / 2
         t_ell = np.random.randn(N // 2)
 
-        data = _build_qrom_data(M, N, zeta, t_ell, n, aleph)
+        data = _build_qrom_data(M, N, tuple(map(tuple, zeta)), tuple(t_ell), n, aleph)
         d = N // 2 + M * (M + 1) // 2
         assert len(data) == d
         # Each row: sign + alt_sign + mu_alt + nu_alt + keep + alt_edge.
@@ -290,8 +291,79 @@ class TestAliasSamplingTHC:
         work_wires = list(range(2 * n + 1, 2 * n + 1 + sizes["work_wires"]))
         op = qp.AliasSamplingTHC(M, N, zeta, t_ell, mu_wires, nu_wires, 2 * n, work_wires, aleph)
         assert_valid(op, skip_differentiation=True)
+        assert op.wires == qp.wires.Wires(mu_wires + nu_wires + [2 * n] + work_wires)
+        with pytest.raises(ValueError, match="must not overlap"):
+            qp.ctrl(op, control=work_wires[-1])
         for rule in list_decomps(qp.AliasSamplingTHC):
             _test_decomposition_rule(op, rule)
+
+    def test_abstract_wires_canonicalize_coefficients(self):
+        """Test that abstract construction keeps compilable coefficients hashable."""
+        M, N, aleph = 2, 2, 1
+        sizes = qp.alias_sampling_thc_wires(M, N, aleph)
+        n = sizes["mu_wires"]
+        op = qp.AliasSamplingTHC(
+            M,
+            N,
+            np.ones((M, M)),
+            np.ones(N // 2),
+            AbstractWires(n),
+            AbstractWires(n),
+            AbstractWires(1),
+            AbstractWires(sizes["work_wires"]),
+            aleph,
+        )
+
+        assert isinstance(op.zeta, tuple)
+        assert isinstance(op.t_ell, tuple)
+        assert qp.equal(op, op)
+
+    def test_abstract_wires_validate_coefficient_shapes(self):
+        """Test that abstract construction still reports invalid coefficient shapes."""
+        sizes = qp.alias_sampling_thc_wires(2, 2, 1)
+        with pytest.raises(ValueError, match=r"zeta must be of shape \(2, 2\)"):
+            qp.AliasSamplingTHC(
+                2,
+                2,
+                np.ones((3, 3)),
+                np.ones(1),
+                AbstractWires(2),
+                AbstractWires(2),
+                AbstractWires(1),
+                AbstractWires(sizes["work_wires"]),
+                1,
+            )
+
+    @pytest.mark.catalyst
+    def test_qjit_operation_result(self):
+        """Test the compiler-specific decomposition branches."""
+        M, N, aleph = 2, 2, 1
+        zeta = np.ones((M, M))
+        t_ell = np.ones(N // 2)
+        mu_wires, nu_wires, sup_work, edge_flag, work_wires = _wire_layout(M, N, aleph)
+        total_wires = max(mu_wires + nu_wires + sup_work + work_wires) + 1
+
+        @qp.qjit
+        @qp.qnode(qp.device("lightning.qubit", wires=total_wires))
+        def circuit():
+            qp.SuperpositionTHC(M, N, mu_wires, nu_wires, sup_work)
+            qp.AliasSamplingTHC(
+                M,
+                N,
+                zeta,
+                t_ell,
+                mu_wires,
+                nu_wires,
+                edge_flag,
+                work_wires,
+                aleph,
+            )
+            return qp.probs(wires=mu_wires + nu_wires)
+
+        n = len(mu_wires)
+        probs = np.asarray(circuit()).reshape((2**n, 2**n))
+        expected = _reconstruct_distribution(M, N, zeta, t_ell, aleph)
+        assert np.allclose(probs, expected)
 
     @pytest.mark.parametrize(("M", "N", "aleph"), _INSTANCES)
     def test_probabilities_normalized(self, M, N, aleph):
@@ -416,7 +488,10 @@ class TestInputValidation:
     def test_edge_flag_wrong_size(self, edge_flag):
         """Test that an edge_flag register that does not hold exactly one wire raises."""
         zeta, t_ell = self._dummy(2, 2)
-        with pytest.raises(ValueError, match="edge_flag must contain exactly one wire"):
+        with pytest.raises(
+            ValueError,
+            match="Incorrect number of wires for 'AliasSamplingTHC.edge_flag'. Expected 1",
+        ):
             qp.AliasSamplingTHC(2, 2, zeta, t_ell, [0, 1], [2, 3], edge_flag, list(range(6, 40)), 3)
 
     def test_mismatched_registers(self):
