@@ -2066,7 +2066,8 @@ SQISW = SISWAP
 
 class PPR(Operator2):
     r"""PPR(angle_denominator, pauli_word, wires)
-    A Pauli product rotation (PPR) with a fixed angle.
+    A Pauli product rotation (PPR) with a fixed angle, corresponding to the respective
+    operators in the Pauli-based computation dialect of Catalyst.
 
     .. math::
 
