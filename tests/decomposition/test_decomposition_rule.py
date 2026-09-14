@@ -14,6 +14,7 @@
 
 """Unit tests for the DecompositionRule class."""
 
+import inspect
 from textwrap import dedent
 
 import numpy as np
@@ -49,6 +50,18 @@ class CustomOp(Operator):
 @pytest.mark.unit
 class TestDecompositionRule:
     """Unit tests for DecompositionRule."""
+
+    def test_wraps_rule(self):
+        """Test that a DecompositionRule has the same sig and docstring as the qfunc."""
+
+        # pylint: disable=unused-argument
+        def f(x, wires: qp.wires.Wires, arg: str = "hello"):
+            """A docstring."""
+
+        rule = qp.decomposition.DecompositionRule(f, {})
+        assert inspect.signature(rule) == inspect.signature(f)
+
+        assert rule.__doc__ == """A docstring."""
 
     @pytest.mark.parametrize("exact_resources", [False, True])
     def test_create_decomposition_rule(self, exact_resources):
@@ -444,6 +457,13 @@ class TestDecompositionRule:
 
         with pytest.raises(TypeError, match="abstract data of undetermined dimensions"):
             _verify_is_abstract_and_fixed(op)
+
+    def test_verify_operator2_with_legacy_resource_rep(self):
+        """Tests that a legacy resource rep is a valid fully abstract leaf of an Operator2."""
+
+        # e.g. ``Select`` stores the resource reps of its legacy target operators
+        op = ParametrizedHybridOp(Float[3], Wire[3], qp.resource_rep(qp.ops.Sum))
+        _verify_is_abstract_and_fixed(op)
 
 
 class TestDecompDictionary:

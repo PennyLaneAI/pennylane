@@ -19,8 +19,7 @@ Factory that produces a decomposition rule for CRZ in terms of
 import numpy as np
 
 import pennylane as qp
-from pennylane.ops.op_math.change_op_basis2 import ChangeOpBasis2
-from pennylane.ops.op_math.prod2 import Prod2
+from pennylane.ops.op_math import ChangeOpBasis2, prod
 from pennylane.typing import Bool, Wire
 
 from .rz_phase_gradient import validate_phase_gradient_wires
@@ -122,12 +121,12 @@ def make_crz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
         # angle-load and phase-flip fanouts abstractify to the same op (control_values aren't
         # part of the abstract representation), hence the repeated ``fanout`` below.
         fanout = qp.ctrl(qp.MultiX(Bool[precision], Wire[precision]), control=Wire[1])
-        compute_op = uncompute_op = Prod2((fanout, fanout))
+        compute_op = uncompute_op = prod(fanout, fanout)
         change_basis_rep = ChangeOpBasis2(compute_op, target_op, uncompute_op)
         return {change_basis_rep: 1}
 
     @qp.register_resources(_resource_fn, exact=False)
-    def _decomp_fn(phi, wires):
+    def _crz_phase_gradient_decomp(phi, wires):
         precision = len(angle_wires)
         binary_int = qp.math.binary_decimals(phi, precision, unit=4 * np.pi)
         control_wire, target_wire = wires[0], wires[1]
@@ -144,4 +143,4 @@ def make_crz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
         target_op = qp.SemiAdder(angle_wires, phase_grad_wires, work_wires=work_wires)
         qp.change_op_basis(_compute_fn, target_op, _compute_fn)
 
-    return _decomp_fn
+    return _crz_phase_gradient_decomp

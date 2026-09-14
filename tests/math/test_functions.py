@@ -1653,6 +1653,16 @@ class TestTake:
         assert np.array_equal(fn.take(x, indices=3, axis=-1), [3, 7])
 
 
+class TestDelete:
+    """Tests for the qp.math.delete function."""
+
+    def test_numpy_accepts_assume_unique_indices(self):
+        """Test that NumPy accepts the JAX-only assume_unique_indices keyword."""
+        array = onp.arange(5)
+        result = fn.delete(array, [1, 3], assume_unique_indices=True)
+        assert onp.array_equal(result, onp.array([0, 2, 4]))
+
+
 where_data = [
     np.array([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
     torch.tensor([[[1, 2], [3, 4], [-1, 1]], [[5, 6], [0, -1], [2, 1]]]),
