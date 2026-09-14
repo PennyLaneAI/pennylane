@@ -804,3 +804,18 @@ class TestSumOfSlatersPrep:
             expected[idx] = c**2
 
         assert np.allclose(output, expected)
+
+    def test_indices_None(self):
+        """Test that indices can be specified to None for the purposes of resource estimation."""
+
+        op = qp.SumOfSlatersPrep(qp.typing.Float[8], qp.typing.Wire[7], indices=None)
+        assert op.indices is None
+
+        applicable_rules = [
+            rule for rule in qp.list_decomps(op) if rule.is_applicable(**op.arguments)
+        ]
+        assert len(applicable_rules) == 0
+
+        # runs without issue even without valid arguments
+        # gets run during inspect_decomps even if rule isn't valid
+        assert qp.list_decomps(op)[0].get_work_wire_spec(**op.arguments).total == 0
