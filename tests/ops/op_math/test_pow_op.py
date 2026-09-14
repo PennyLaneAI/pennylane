@@ -446,6 +446,8 @@ class TestProperties:
         expected_eigvals = np.array([1.0**z, (-1.0 + 0j) ** z])
 
         assert np.allclose(eigvals, expected_eigvals)
+        # the eigenvalues must sit on the same branch of ``**`` as the matrix
+        assert np.allclose(eigvals, np.diag(qp.matrix(op)))
 
 
 class TestSimplify:
