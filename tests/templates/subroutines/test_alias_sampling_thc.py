@@ -24,6 +24,9 @@ from pennylane.templates.subroutines.alias_sampling_thc import (
     _build_qrom_data,
     _build_thc_pairs,
     _compute_contiguous_register,
+    _cswap_pair,
+    _right_shift,
+    _symmetrize,
 )
 
 
@@ -144,7 +147,26 @@ def _run(M, N, zeta, t_ell, aleph, device="lightning.qubit"):  # pylint: disable
         return qp.probs(wires=mu_wires + nu_wires)
 
     n = len(mu_wires)
-    return np.asarray(circuit()).reshape((2**n, 2**n))
+    # The graph-based decomposition picks sub-decompositions that fit the work wires we
+    # hand out; the legacy path instead allocates dynamic scratch the device has no room for.
+    with qp.decomposition.toggle_graph_ctx(True):
+        probs = np.asarray(circuit())
+    return probs.reshape((2**n, 2**n))
+
+
+@pytest.mark.parametrize(
+    "call",
+    [
+        lambda: _right_shift([0], 1),
+        lambda: _cswap_pair(0, [], []),
+        lambda: _symmetrize([], [], 1, 2),
+    ],
+)
+def test_register_helpers_are_noops_when_degenerate(call):
+    """Test that the register helpers queue nothing on empty / single-wire registers."""
+    with qp.queuing.AnnotatedQueue() as q:
+        call()
+    assert not q.queue
 
 
 class TestClassicalTables:
@@ -374,6 +396,28 @@ class TestInputValidation:
         zeta = np.ones((M, M))
         t_ell = np.ones(N // 2)
         return zeta, t_ell
+
+    @pytest.mark.parametrize(
+        ("M", "N", "match"),
+        [
+            (0, 2, "M must be a positive integer"),
+            (2.0, 2, "M must be a positive integer"),
+            (2, 0, "N must be a positive integer"),
+            (2, True, "N must be a positive integer"),
+        ],
+    )
+    def test_invalid_rank_or_orbitals(self, M, N, match):
+        """Test that a non-integer or non-positive M or N raises an error."""
+        zeta, t_ell = self._dummy(2, 2)
+        with pytest.raises(ValueError, match=match):
+            qp.AliasSamplingTHC(M, N, zeta, t_ell, [0, 1], [2, 3], 4, list(range(5, 40)), 3)
+
+    @pytest.mark.parametrize("edge_flag", [[], [4, 5]])
+    def test_edge_flag_wrong_size(self, edge_flag):
+        """Test that an edge_flag register that does not hold exactly one wire raises."""
+        zeta, t_ell = self._dummy(2, 2)
+        with pytest.raises(ValueError, match="edge_flag must contain exactly one wire"):
+            qp.AliasSamplingTHC(2, 2, zeta, t_ell, [0, 1], [2, 3], edge_flag, list(range(6, 40)), 3)
 
     def test_mismatched_registers(self):
         """Test that mu_wires and nu_wires of different lengths raise an error."""

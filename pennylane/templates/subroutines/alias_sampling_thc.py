@@ -89,7 +89,6 @@ def _build_thc_pairs(M, N, zeta, t_ell):
             shape ``(N // 2,)``
     """
     n_half = N // 2
-    d = n_half + M * (M + 1) // 2
 
     zeta = np.asarray(zeta, dtype=float)
     t_ell = np.asarray(t_ell, dtype=float)
@@ -113,9 +112,6 @@ def _build_thc_pairs(M, N, zeta, t_ell):
         weights[(ell, M)] = t_ell[ell]
 
     entries = sorted(weights.keys())
-    if len(entries) != d:
-        raise ValueError(f"Expected {d} valid pairs, built {len(entries)}.")
-
     return entries, [weights[k] for k in entries]
 
 

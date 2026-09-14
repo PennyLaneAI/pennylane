@@ -98,9 +98,7 @@ def test_standard_validity(M, N, n):
     assert_valid(gate, skip_differentiation=True)
 
     extra_work = work_wires + list(range(work_wires[-1] + 1, work_wires[-1] + 9))
-    assert_valid(
-        SuperpositionTHC(M, N, mu_wires, nu_wires, extra_work), skip_differentiation=True
-    )
+    assert_valid(SuperpositionTHC(M, N, mu_wires, nu_wires, extra_work), skip_differentiation=True)
 
     assert gate.M == M
     assert gate.N == N
