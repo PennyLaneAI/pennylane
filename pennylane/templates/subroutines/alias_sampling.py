@@ -200,6 +200,13 @@ def _build_alias_tables(probs, mu):
 
     Returns:
         tuple[list[int], list[int]]: ``(alt, keep)``, each of length ``L``.
+
+    .. note::
+
+        ``keep_l`` holds :math:`\mu` bits (range :math:`[0, 2^\mu - 1]`). Columns
+        not touched by the matching loop keep their defaults ``alt_l = l`` and a
+        full ``keep``; these are self-aliased, so the ``keep`` value cancels in the
+        constraint above and capping at :math:`2^\mu - 1` is exact.
     """
     probs = np.asarray(probs, dtype=float)
     if np.any(probs < 0) or not np.all(np.isfinite(probs)):
