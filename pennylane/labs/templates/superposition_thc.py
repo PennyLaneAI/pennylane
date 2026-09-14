@@ -313,7 +313,7 @@ def _left_inequalities(
         mu_wires,
         N // 2,
         target_wire=work_wires[4],
-        work_wires=work_wires[7 + 2 * n - 1 : 7 + 3 * n - 1],
+        work_wires=work_wires[7 + 2 * n - 1 : 7 + 3 * n - 2],
         comparator=">=",
     )
 

@@ -120,6 +120,11 @@ class TestUniformPrep:
         with pytest.raises(ValueError, match="n_states must be at least 1"):
             qp.UniformPrep(n_states=0, target_wires=[0, 1, 2], work_wires=[3, 4, 5])
 
+    def test_overlapping_wires_raise_for_power_of_two(self):
+        """Test that target/work overlap is rejected even when n_states is a power of two."""
+        with pytest.raises(ValueError, match="must not overlap"):
+            qp.UniformPrep(4, [0, 1], work_wires=[0])
+
 
 def _reconstruct_amplitudes(alt, keep, mu):
     """Exact ground-truth distribution from the integer alias tables (Eq. 29 from arXiv:1805.03662)."""
@@ -278,6 +283,17 @@ class TestAliasSampling:
         """Test that probs must contain at least one entry."""
         with pytest.raises(ValueError, match="probs must have at least one entry"):
             qp.AliasSampling([], 1, [], [0, 1, 2], [])
+
+    def test_2d_probs_raise(self):
+        """Test that a 2-D probs array is rejected instead of being flattened."""
+        with pytest.raises(ValueError, match="1-D sequence"):
+            qp.AliasSampling([[0.5, 0.5]], 1, [0], list(range(1, 5)), [])
+
+    @pytest.mark.parametrize("probs", [[0.5, -0.1, 0.6], [0.5, np.nan], [0.5, np.inf]])
+    def test_invalid_probs_raise(self, probs):
+        """Test that negative or non-finite probs are rejected in the constructor."""
+        with pytest.raises(ValueError, match="non-negative and finite"):
+            qp.AliasSampling(probs, 1, [0, 1], list(range(2, 6)), [])
 
     @pytest.mark.parametrize(
         ("target_wires", "temp_wires", "work_wires", "match"),

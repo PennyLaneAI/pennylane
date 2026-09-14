@@ -111,6 +111,8 @@ class UniformPrep(Operator2):
                 f"(k={k}, logL={logL}); got {len(target_wires)}."
             )
 
+        validate_no_wire_overlaps({"target_wires": target_wires, "work_wires": work_wires})
+
         if L != 1:
             expected_work = logL  # flag + (logL - 1) comparator scratch
             if len(work_wires) < expected_work:
@@ -118,7 +120,6 @@ class UniformPrep(Operator2):
                     f"work_wires must have at least {expected_work} wires for n_states={n_states} "
                     f"(k={k}, logL={logL}); got {len(work_wires)}."
                 )
-            validate_no_wire_overlaps({"target_wires": target_wires, "work_wires": work_wires})
 
         super().__init__(n_states, target_wires, work_wires)
 
@@ -148,7 +149,7 @@ def _uniform_prep_resources(n_states, target_wires, work_wires):
     return resources
 
 
-@register_resources(_uniform_prep_resources, exact=False)
+@register_resources(_uniform_prep_resources)
 def _uniform_prep_decomp(n_states, target_wires, work_wires, **_):
     k = (n_states & -n_states).bit_length() - 1
     L = n_states >> k
@@ -296,8 +297,17 @@ def alias_sampling_wires(n_states, mu):
 
 
 def _canonicalize_probs(probs):
-    """Turn ``probs`` into a hashable tuple of floats for compilable static data."""
-    return tuple(float(p) for p in np.asarray(probs, dtype=float).ravel())
+    """Turn ``probs`` into a hashable 1-D tuple of floats for compilable static data."""
+    arr = np.asarray(probs, dtype=float)
+    if arr.ndim != 1:
+        raise ValueError(f"probs must be a 1-D sequence of weights, got shape {arr.shape}.")
+    if arr.size < 1:
+        raise ValueError("probs must have at least one entry.")
+    if np.any(arr < 0) or not np.all(np.isfinite(arr)):
+        raise ValueError("probs must be non-negative and finite")
+    if arr.sum() <= 0:
+        raise ValueError("probs must sum to a positive value")
+    return tuple(float(p) for p in arr)
 
 
 class AliasSampling(Operator2):
@@ -380,14 +390,12 @@ class AliasSampling(Operator2):
         if isinstance(mu, bool) or not isinstance(mu, int) or mu < 1:
             raise ValueError(f"mu must be a positive integer, got {mu!r}.")
 
+        probs = _canonicalize_probs(probs)
         if isinstance(target_wires, AbstractWires):
             super().__init__(probs, mu, target_wires, temp_wires, work_wires)
             return
 
-        probs = _canonicalize_probs(probs)
         L = len(probs)
-        if L < 1:
-            raise ValueError("probs must have at least one entry.")
 
         target_wires = Wires(target_wires)
         temp_wires = Wires(temp_wires)
@@ -459,7 +467,7 @@ def _alias_sampling_resources(probs, mu, target_wires, temp_wires, work_wires):
     }
 
 
-@register_resources(_alias_sampling_resources, exact=False)
+@register_resources(_alias_sampling_resources)
 def _alias_sampling_decomp(probs, mu, target_wires, temp_wires, work_wires, **_):
     L = len(probs)
     logL = ceil_log2(L)

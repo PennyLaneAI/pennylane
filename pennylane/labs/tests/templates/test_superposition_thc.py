@@ -96,6 +96,9 @@ def test_standard_validity(M, N, n):
     gate = SuperpositionTHC(M, N, mu_wires, nu_wires, work_wires)
     assert_valid(gate)
 
+    extra_work = work_wires + list(range(work_wires[-1] + 1, work_wires[-1] + 9))
+    assert_valid(SuperpositionTHC(M, N, mu_wires, nu_wires, extra_work))
+
     assert gate.hyperparameters["M"] == M
     assert gate.hyperparameters["N"] == N
     assert gate.hyperparameters["mu_wires"] == qp.wires.Wires(mu_wires)
@@ -143,7 +146,7 @@ class TestSuperpositionTHC:
         probs = np.asarray(circuit()).reshape((2**n, 2**n, 2))
         success = probs[:, :, 1]
 
-        support = set(tuple(map(int, arr)) for arr in zip(*np.where(success > 1e-9)))
+        support = {tuple(map(int, arr)) for arr in zip(*np.where(success > 1e-9))}
 
         assert set(support) == _valid_pairs(M, N)
 
