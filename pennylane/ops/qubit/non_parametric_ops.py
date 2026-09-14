@@ -2215,7 +2215,11 @@ class PPR(Operator2):
 
         **Example**
 
-        >>> qp.PPR.compute_matrix(-2, 'X')
+        >>> mat = qp.PPR.compute_matrix(-2, 'X')
+        >>> expected = ((qp.I(0) + 1j * qp.X(0))/np.sqrt(2)).matrix()
+        >>> np.allclose(mat, expected)
+        True
+
         """
         theta = np.pi / angle_denominator
         multi_Z_rot_matrix = qp.MultiRZ.compute_matrix(theta, list(range(len(pauli_word))))
