@@ -186,13 +186,15 @@ class NumericHamiltonian:
     @property
     def is_fully_abstract(self) -> bool:
         """bool: Whether all tensors are abstract specifications rather than concrete data."""
-        _is_fully_abstract = True
-        for name in self.tensor_names + self.scalar_names:
-            if not isinstance(getattr(self, name), AbstractArray):
-                _is_fully_abstract = False
-                break
+        if not hasattr(self, "_is_fully_abstract"):
+            _is_fully_abstract = True
+            for name in self.tensor_names + self.scalar_names:
+                if not isinstance(getattr(self, name), AbstractArray):
+                    _is_fully_abstract = False
+                    break
+            self._is_fully_abstract = _is_fully_abstract
 
-        return _is_fully_abstract
+        return self._is_fully_abstract
 
     @property
     def numeric_data(self) -> tuple:
