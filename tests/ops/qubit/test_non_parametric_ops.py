@@ -138,7 +138,7 @@ class TestOperations:
     def test_matrices(self, ops, mat, tol):
         """Test matrices of non-parametrized operations are correct"""
         op = ops(wires=0 if ops.num_wires is None else range(ops.num_wires))
-        res_static = op.compute_matrix()
+        res_static = op.compute_matrix(wires=[0] if ops.num_wires is None else range(ops.num_wires))
         res_dynamic = op.matrix()
         assert np.allclose(res_static, mat, atol=tol, rtol=0)
         assert np.allclose(res_dynamic, mat, atol=tol, rtol=0)
@@ -1445,3 +1445,41 @@ class TestPPR:
         assert op.angle_denominator == 4
         assert op.pauli_word == "XY"
         assert len(op.wires) == 2
+
+    def test_adjoint_decomp_queuing(self):
+        """Test the operations queued by the Adjoint(PPR) rule."""
+        adj_op = qp.adjoint(qp.PPR(4, "XY", wires=[0, 1]))
+        rule = qp.list_decomps("Adjoint(PPR)")["_adjoint_ppr_to_ppr"]
+
+        with qp.queuing.AnnotatedQueue() as q:
+            rule(**adj_op.arguments)
+
+        expected = [qp.PPR(-4, "XY", wires=[0, 1])]
+        for actual, exp in zip(q.queue, expected, strict=True):
+            qp.assert_equal(actual, exp)
+
+    def test_adjoint_decomp_resources(self):
+        """Test the resources of the Adjoint(PPR) rule."""
+        rule = qp.list_decomps("Adjoint(PPR)")["_adjoint_ppr_to_ppr"]
+        adj_op = qp.adjoint(qp.PPR(4, "XY", wires=[0, 1]))
+
+        expected = qp.decomposition.Resources({qp.PPR(-4, pauli_word="XY", wires=Wire[2]): 1})
+        assert rule.compute_resources(**adj_op.arguments) == expected
+
+    @pytest.mark.parametrize(
+        "denominator, pauli_word",
+        [(1, "XYZ"), (-1, "Z"), (2, "XX"), (-2, "YZ"), (4, "Y"), (-4, "ZYZX")],
+    )
+    def test_compute_matrix_against_pauli_rot(self, denominator, pauli_word):
+        """Test PPR.compute_matrix against PauliRot.compute_matrix."""
+        mat_ppr = qp.PPR.compute_matrix(denominator, pauli_word)
+        theta = np.pi / denominator
+        mat_paulirot = qp.PauliRot.compute_matrix(theta, pauli_word)
+        assert np.allclose(mat_ppr, mat_paulirot)
+
+        pw = qp.pauli.PauliWord(dict(enumerate(pauli_word)))
+        wires = list(pw)
+        expected_manual = sp.linalg.expm(
+            -1j * np.pi / (2 * denominator) * qp.matrix(pw, wire_order=wires)
+        )
+        assert np.allclose(mat_ppr, expected_manual)
