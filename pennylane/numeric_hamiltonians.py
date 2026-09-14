@@ -253,13 +253,13 @@ class NumericHamiltonian:
             if self_abstract ^ other_abstract:
                 return False
 
-            # Both abstract
-            if self_abstract and data != other_data:
-                return False
-
             # Both concrete
             if not self_abstract and not math.allclose(data, other_data):
                 return False
+
+            # We only need to compare our data with the other data  if both are concrete
+            # because comparing the `_hash_key` implicitly compares the shape and
+            # dtype, thus making comparisons redundant if the data is abstract
 
         return True
 
