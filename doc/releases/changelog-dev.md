@@ -454,13 +454,72 @@
   number of bits of precision using coherent alias sampling, the standard `PREPARE` subroutine for
   qubitization-based algorithms. Use :func:`~.alias_sampling_wires` to get the required register sizes.
   Also added :class:`~.UniformPrep`, preparing a uniform superposition over an arbitrary number of
-  basis states, and the inequality testers :class:`~.LeftClassicalComparator` and
-  :class:`~.LeftQuantumComparator`.
-  [(#9277)](https://github.com/PennyLaneAI/pennylane/pull/9277)
-  [(#9308)](https://github.com/PennyLaneAI/pennylane/pull/9308)
-  [(#9544)](https://github.com/PennyLaneAI/pennylane/pull/9544)
+  basis states.
   [(#9913)](https://github.com/PennyLaneAI/pennylane/pull/9913)
   [(#10145)](https://github.com/PennyLaneAI/pennylane/pull/10145)
+
+* Added :class:`~.LeftQuantumComparator` for inequality tests between two quantum registers.
+  [(#9277)](https://github.com/PennyLaneAI/pennylane/pull/9277)
+  [(#9544)](https://github.com/PennyLaneAI/pennylane/pull/9544)
+  [(#10145)](https://github.com/PennyLaneAI/pennylane/pull/10145)
+
+  ```python
+  import pennylane as qp
+
+  dev = qp.device("lightning.qubit")
+
+  @qp.set_shots(shots=1)
+  @qp.qnode(dev)
+  def circuit(a, comparator, b):
+      x_wires = [0, 3, 6, 9]
+      y_wires = [1, 4, 7, 10]
+      work_wires = [2, 5, 8]
+      a_bin = qp.math.int_to_binary(a, len(x_wires))
+      b_bin = qp.math.int_to_binary(b, len(x_wires))
+      qp.BasisState(a_bin, wires=x_wires)
+      qp.BasisState(b_bin, wires=y_wires)
+      qp.LeftQuantumComparator(x_wires, y_wires, 11, work_wires, comparator)
+      qp.CNOT(wires=[11, 12])
+      qp.adjoint(qp.LeftQuantumComparator(x_wires, y_wires, 11, work_wires, comparator))
+      return qp.sample(wires=[12])
+  ```
+
+  ```pycon
+  >>> output = circuit(3, ">=", 2)
+  >>> print(bool(output))
+  True
+  ```
+
+* Added :class:`~.LeftClassicalComparator` for inequality tests between a quantum register and an integer.
+  [(#9308)](https://github.com/PennyLaneAI/pennylane/pull/9308)
+  [(#9554)](https://github.com/PennyLaneAI/pennylane/pull/9554)
+  [(#10145)](https://github.com/PennyLaneAI/pennylane/pull/10145)
+
+  ```python
+  import pennylane as qp
+
+  dev = qp.device("lightning.qubit", wires=6)
+
+  @qp.set_shots(shots=1)
+  @qp.qnode(dev)
+  def circuit(x_val, L_val):
+      x_val_bin = qp.math.int_to_binary(x_val, 3)
+      qp.BasisState(x_val_bin, wires=[0, 1, 2])
+      qp.LeftClassicalComparator(
+          x_wires=[0, 1, 2],
+          L=L_val,
+          target_wire=3,
+          work_wires=[4, 5],
+          comparator=">=",
+      )
+      return qp.sample(wires=3)
+  ```
+
+  ```pycon
+  >>> output = circuit(3, 2)
+  >>> print(bool(output))  # 3 >= 2
+  True
+  ```
 
 <h3>Improvements 🛠</h3>
 
@@ -1497,9 +1556,6 @@
 
 * Fixed a bug in :class:`~.OutMultiplier` for small output registers.
   [(#9759)](https://github.com/PennyLaneAI/pennylane/pull/9759)
-
-* Fixed a bug in :class:`~.LeftClassicalComparator` for `L = 2^n -1`.
-  [(#9554)](https://github.com/PennyLaneAI/pennylane/pull/9554)
 
 * Fixed a bug in :class:`~.SumOfSlatersPrep` with `qjit` compilation and non-identity encoding.
   [(#9747)](https://github.com/PennyLaneAI/pennylane/pull/9747)
