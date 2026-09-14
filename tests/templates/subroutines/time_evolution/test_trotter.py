@@ -363,10 +363,11 @@ class TestInitialization:
         assert op.hyperparameters == new_op.hyperparameters
         assert op is not new_op
 
-    @pytest.mark.disable_and_xfail_enable_capture(
+    @pytest.mark.xfail_if_capture(
         reason="come back to this after we migrate TrotterProduct [sc-128369]",
         strict=False,  # not all parametrized configurations fail but most do.
     )
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_standard_validity(self, hamiltonian):
         """Test standard validity criteria using assert_valid."""
@@ -521,10 +522,11 @@ class TestDecomposition:
         for op1, op2 in zip(decomp, true_decomp):
             qp.assert_equal(op1, op2)
 
-    @pytest.mark.disable_and_xfail_enable_capture(
+    @pytest.mark.xfail_if_capture(
         reason="come back to this after we migrate TrotterProduct [sc-128369]",
         strict=False,  # not all parametrized configurations fail
     )
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("order", (1, 2, 4))
     @pytest.mark.parametrize("hamiltonian_index, hamiltonian", list(enumerate(test_hamiltonians)))
     def test_decomposition_new(

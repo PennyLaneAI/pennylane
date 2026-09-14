@@ -392,9 +392,8 @@ class TestValidity:  # pylint: disable=too-few-public-methods
         # Also assert validity with overlapping wires
         qp.ops.functions.assert_valid(Prod2([qp.RX(0.5, 0), qp.Z(0)]), skip_differentiation=True)
 
-    @pytest.mark.disable_and_xfail_enable_capture(
-        reason="Prod2 cannot be passed as traced arguments [sc-130466]"
-    )
+    @pytest.mark.xfail_if_capture(reason="Prod2 cannot be passed as traced arguments [sc-130466]")
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("control_values", [[1, 1, 1], [0, 1, 0], [1, 0, 1], [0, 0, 0]])
     @pytest.mark.parametrize("work_wires", [[7, 8, 9], [7]])
     def test_controlled_prod_decomposition_new(self, control_values, work_wires):

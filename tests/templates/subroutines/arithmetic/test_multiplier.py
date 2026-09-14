@@ -171,9 +171,8 @@ class TestMultiplier:
 class TestMultiplierUnit:
     """Unit tests for Multiplier"""
 
-    @pytest.mark.disable_and_xfail_enable_capture(
-        reason="Needs PhaseAdder to be Op2 [sc-130164]", strict=False
-    )
+    @pytest.mark.xfail_if_capture(reason="Needs PhaseAdder to be Op2 [sc-130164]", strict=False)
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(
         ("k", "x_wire", "mod", "work_wires"), [(3, [1], 1, [2, 3, 4]), (3, [1], 2, [2, 3, 4])]
     )

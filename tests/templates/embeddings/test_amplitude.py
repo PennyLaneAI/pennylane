@@ -47,7 +47,8 @@ TOO_MANY_FEATURES = [
 TOO_MANY_BROADCASTED_FEATURES = [np.eye(6)[:3, :5], np.ones((3, 8)) / np.sqrt(8)]
 
 
-@pytest.mark.disable_and_xfail_enable_capture(reason="Come back to this as we port it to Op2")
+@pytest.mark.xfail_if_capture(reason="Come back to this as we port it to Op2")
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
 

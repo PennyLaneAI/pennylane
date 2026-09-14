@@ -42,7 +42,8 @@ def test_float_to_binary(val, num_bits, expected):
 
 class TestQROMStatePreparation:
 
-    @pytest.mark.disable_and_xfail_enable_capture(reason="Come back to this as we port it to Op2")
+    @pytest.mark.xfail_if_capture(reason="Come back to this as we port it to Op2")
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_standard_validity(self):
         """Check the operation using the assert_valid function."""
 

@@ -249,9 +249,8 @@ def test_raises(params, error, match):
         ),
     ],
 )
-@pytest.mark.disable_and_xfail_enable_capture(
-    reason="Come back to this when we port BBQRAM [sc-129953]"
-)
+@pytest.mark.xfail_if_capture(reason="Come back to this when we port BBQRAM [sc-129953]")
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_bbqram_decomposition_new(
     bitstrings,
     control_wires,
@@ -584,9 +583,8 @@ def test_hybrid_quantum(
         ),
     ],
 )
-@pytest.mark.disable_and_xfail_enable_capture(
-    reason="Come back to this when we port HybridQRAM [sc-129954]"
-)
+@pytest.mark.xfail_if_capture(reason="Come back to this when we port HybridQRAM [sc-129954]")
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_hybrid_decomposition_new(
     bitstrings,
     control_wires,
@@ -1191,9 +1189,8 @@ def test_select_only_raises(params, error, match):
         ),
     ],
 )
-@pytest.mark.disable_and_xfail_enable_capture(
-    reason="Come back to this when we port SelectOnlyQRAM [sc-129956]"
-)
+@pytest.mark.xfail_if_capture(reason="Come back to this when we port SelectOnlyQRAM [sc-129956]")
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_select_decomposition_new(
     bitstrings, control_wires, target_wires, select_wires, select_value
 ):  # pylint: disable=too-many-arguments

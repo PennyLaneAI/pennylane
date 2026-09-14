@@ -1714,9 +1714,8 @@ class TestDecomposition:
 
         assert q.queue == list(op[::-1])
 
-    @pytest.mark.disable_and_xfail_enable_capture(
-        reason="Prod2 cannot be passed as traced arguments [sc-130466]"
-    )
+    @pytest.mark.xfail_if_capture(reason="Prod2 cannot be passed as traced arguments [sc-130466]")
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_controlled_prod_basic_validity(self):
         """Check that Controlled(Prod) is valid, in particular its custom decomp rule"""
         op = qp.ctrl(

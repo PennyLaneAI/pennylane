@@ -44,10 +44,11 @@ from pennylane.typing import Wire
         ),
     ],
 )
-@pytest.mark.disable_and_xfail_enable_capture(
+@pytest.mark.xfail_if_capture(
     reason="Come back to this when we port PrepSelPrep [sc-129961]",
     strict=False,  # not all parametrized configurations fail
 )
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_checks(lcu, control, skip_diff):
     """Run standard validity tests."""
 

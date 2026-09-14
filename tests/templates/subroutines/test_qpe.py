@@ -23,9 +23,8 @@ import pennylane as qp
 from pennylane.exceptions import QuantumFunctionError
 
 
-@pytest.mark.disable_and_xfail_enable_capture(
-    reason="come back to this when we port QPE [sc-128367]"
-)
+@pytest.mark.xfail_if_capture(reason="come back to this when we port QPE [sc-128367]")
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Test standard validity criteria using assert_valid."""
     op = qp.QuantumPhaseEstimation(np.eye(4), target_wires=(0, 1), estimation_wires=[2, 5])

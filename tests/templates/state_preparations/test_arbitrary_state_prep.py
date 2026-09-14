@@ -63,7 +63,8 @@ class TestHelpers:
             assert expected_pauli_words[idx] == pauli_word
 
 
-@pytest.mark.disable_and_xfail_enable_capture(reason="Come back to this when we port it to Op2.")
+@pytest.mark.xfail_if_capture(reason="Come back to this when we port it to Op2.")
+@pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize(
     ("weights", "wires"),
     [
@@ -82,7 +83,8 @@ def test_decomposition_new(weights, wires):
         _test_decomposition_rule(op, rule)
 
 
-@pytest.mark.disable_and_xfail_enable_capture(reason="Come back to this when we port it to Op2.")
+@pytest.mark.xfail_if_capture(reason="Come back to this when we port it to Op2.")
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
 
