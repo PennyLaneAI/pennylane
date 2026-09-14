@@ -252,6 +252,7 @@ class NumericHamiltonian:
                     other_data, AbstractArray
                 )
                 _same_dtype = _dtype_of(data) == _dtype_of(other_data)
+                _same_shape = data.shape == other_data.shape
 
                 if not _both_data_abstract and _same_dtype:
                     return False

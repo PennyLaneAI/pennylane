@@ -27,7 +27,7 @@ from pennylane.numeric_hamiltonians import (
     NumericHamiltonian,
     VibronicHamiltonian,
 )
-from pennylane.typing import AbstractArray, Float
+from pennylane.typing import AbstractArray, Float, Int
 from tests.templates.subroutines.time_evolution.trotter_test_helpers import random_orthogonal
 
 L, M, N = 2, 2, 3
@@ -428,37 +428,6 @@ class TestConcreteCDFCGF:
         assert qp.CGFHamiltonian is CGFHamiltonian
         assert qp.VibronicHamiltonian is VibronicHamiltonian
 
-    def test_new_subclass_from_shape_family_alone(self):
-        """Test that defining a new representation needs only a shape family, with no
-        new validation code."""
-
-        # pylint: disable=too-few-public-methods
-        @dataclass(frozen=True, eq=False, repr=False)
-        class THCHamiltonian(NumericHamiltonian):
-            """Tensor-hypercontracted shape family, for this test only."""
-
-            tensor_shapes = {
-                "core_tensors": ("R", "R"),
-                "leaf_tensors": ("R", "N"),
-            }
-            symbol_metadata = {"R": ("tensor_rank", 0), "N": ("num_orbitals", 0)}
-
-            tensor_names = ("core_tensors", "leaf_tensors")
-            scalar_names = ("nuc_constant",)
-
-            core_tensors: object
-            leaf_tensors: object
-            nuc_constant: object = None
-
-        ham = THCHamiltonian(np.zeros((7, 7)), np.zeros((7, 4)))
-
-        assert ham.tensor_rank == 7
-        assert ham.num_orbitals == 4
-        assert qp.pytrees.is_pytree(THCHamiltonian)
-
-        with pytest.raises(ValueError, match="inconsistent 'tensor_rank'"):
-            THCHamiltonian(np.zeros((7, 7)), np.zeros((6, 4)))
-
     def test_cdf_normalize_leaf_determinant(self, seed):
         """Force every per-mode leaf to determinant ``+1``"""
 
@@ -621,33 +590,6 @@ class TestAbstractCDFCGF:
         leaves, treedef = jax.tree_util.tree_flatten(ham)
 
         assert jax.tree_util.tree_unflatten(treedef, leaves) == ham
-
-    def test_new_subclass_supports_abstract_data(self):
-        """Test that a new representation gets abstract construction for free."""
-
-        # pylint: disable=too-few-public-methods
-        @dataclass(frozen=True, eq=False, repr=False)
-        class THCHamiltonian(NumericHamiltonian):
-            """Tensor-hypercontracted shape family, for this test only."""
-
-            tensor_shapes = {
-                "core_tensors": ("R", "R"),
-                "leaf_tensors": ("R", "N"),
-            }
-            symbol_metadata = {"R": ("tensor_rank", 0), "N": ("num_orbitals", 0)}
-
-            tensor_names = ("core_tensors", "leaf_tensors")
-            scalar_names = ("nuc_constant",)
-
-            core_tensors: object
-            leaf_tensors: object
-            nuc_constant: object
-
-        ham = THCHamiltonian(Float[7, 7], Float[7, 4], Float)
-
-        assert ham.is_abstract
-        assert ham.is_fully_abstract
-        assert ham.dimensions == {"tensor_rank": 7, "num_orbitals": 4}
 
 
 class TestVibronic:
@@ -889,3 +831,66 @@ class TestNumericHamiltonian:
 
         assert len(leaves) == 1
         assert qp.pytrees.unflatten(leaves, structure).num_terms == 5
+
+    def test_new_subclass_from_shape_family_alone(self):
+        """Test that defining a new representation needs only a shape family, with no
+        new validation code."""
+
+        # pylint: disable=too-few-public-methods
+        @dataclass(frozen=True, eq=False, repr=False)
+        class THCHamiltonian(NumericHamiltonian):
+            """Tensor-hypercontracted shape family, for this test only."""
+
+            tensor_shapes = {
+                "core_tensors": ("R", "R"),
+                "leaf_tensors": ("R", "N"),
+            }
+            symbol_metadata = {"R": ("tensor_rank", 0), "N": ("num_orbitals", 0)}
+
+            tensor_names = ("core_tensors", "leaf_tensors")
+            scalar_names = ("nuc_constant",)
+
+            core_tensors: object
+            leaf_tensors: object
+            nuc_constant: object
+
+        ham = THCHamiltonian(np.zeros((7, 7)), np.zeros((7, 4)), 0.1)
+
+        assert ham.tensor_rank == 7
+        assert ham.num_orbitals == 4
+        assert qp.pytrees.is_pytree(THCHamiltonian)
+
+        with pytest.raises(ValueError, match="inconsistent 'tensor_rank'"):
+            THCHamiltonian(np.zeros((7, 7)), np.zeros((6, 4)), 0.1)
+
+    def test_new_subclass_supports_abstract_data(self):
+        """Test that a new representation gets abstract construction for free."""
+
+        # pylint: disable=too-few-public-methods
+        @dataclass(frozen=True, eq=False, repr=False)
+        class THCHamiltonian(NumericHamiltonian):
+            """Tensor-hypercontracted shape family, for this test only."""
+
+            tensor_shapes = {
+                "core_tensors": ("R", "R"),
+                "leaf_tensors": ("R", "N"),
+            }
+            symbol_metadata = {"R": ("tensor_rank", 0), "N": ("num_orbitals", 0)}
+
+            tensor_names = ("core_tensors", "leaf_tensors")
+            scalar_names = ("nuc_constant",)
+
+            core_tensors: object
+            leaf_tensors: object
+            nuc_constant: object
+
+        ham = THCHamiltonian(Float[7, 7], Float[7, 4], Float)
+
+        assert ham.is_abstract
+        assert ham.is_fully_abstract
+        assert ham.dimensions == {"tensor_rank": 7, "num_orbitals": 4}
+
+        other_ham1 = THCHamiltonian(Float[8, 8], Float[8, 4], Float)
+        other_ham2 = THCHamiltonian(Float[7, 7], Float[7, 4], Int)
+        assert ham != other_ham1
+        assert ham != other_ham2
