@@ -2,8 +2,9 @@
 
 <h3>New features since last release</h3>
 
-* A new operator :class:`pennylane.PPR` represents a Pauli product rotation with a fixed angle
-  :math:`\theta = \pi / k`, following the angle convention of :class:`~.PauliRot`. That is,
+* A new operator called :class:`pennylane.PPR` has been added, which represents a Pauli product
+  rotation with a fixed angle
+  :math:`\theta = \pi / k`, following this angle convention:
   :math:`\mathrm{PPR}(-2, \mathrm{X})=\exp(-i\pi / (-4) X)=\exp(i\tfrac{\pi}{4} X)`.
   The denominator
   :math:`k` is restricted to :math:`\pm 1`, :math:`\pm 2` and :math:`\pm 4`, covering exactly the

@@ -1349,6 +1349,7 @@ class TestPPR:
         assert op.parameters == []
         assert op.hyperparameters == {"angle_denominator": 4, "pauli_word": "XY"}
 
+    @pytest.mark.use_fixtures("enable_and_disable_capture")
     def test_standard_validity(self):
         """Run the standard operator validity checks."""
         qp.ops.functions.assert_valid(qp.PPR(2, "ZXY", wires=[0, 1, 2]))

@@ -2066,17 +2066,17 @@ SQISW = SISWAP
 
 class PPR(Operator2):
     r"""PPR(angle_denominator, pauli_word, wires)
-    A Pauli product rotation (PPR) with a fixed angle, corresponding to the respective
-    operators in the Pauli-based computation dialect of Catalyst.
+    A Pauli product rotation (PPR) with a fixed angle.
 
     .. math::
 
         \text{PPR}(k, P) = \exp\left(-i \frac{\pi}{2k} P\right),
 
     where :math:`P` is a Pauli word and we call :math:`\theta = \pi / k` the rotation angle,
-    following the convention of :class:`~.PauliRot`. The denominator :math:`k` is restricted to
-    :math:`\pm 1`, :math:`\pm 2` and :math:`\pm 4`, so that ``PPR`` covers exactly those Pauli
-    product rotations that occur in Clifford+T circuits:
+    following the convention of :class:`~.PauliRot`  (e.g.,
+    `:math:`\mathrm{PPR}(-2, \mathrm{X})=\exp(-i\pi / (-4) X)=\exp(i\tfrac{\pi}{4} X) = \mathrm{PauliRot}(-\tfrac{\pi}{2}, \mathrm{X})`).
+    The denominator :math:`k` is restricted to :math:`\pm 1`, :math:`\pm 2` and :math:`\pm 4`,
+    so that ``PPR`` covers exactly those Pauli product rotations that occur in Clifford+T circuits:
 
     * ``angle_denominator=±1``: :math:`\theta = \pm\pi`, a :math:`\pm\pi/2` PPR (signed Pauli),
     * ``angle_denominator=±2``: :math:`\theta = \pm\pi/2`, a :math:`\pm\pi/4` PPR (Clifford),
@@ -2086,6 +2086,8 @@ class PPR(Operator2):
     (with the same minus sign but without factor :math:`1/2`), whereas :class:`~.PauliRot` follows the
     convention :math:`\exp(-i \theta / 2 P)`, i.e., :math:`\varphi = \theta / 2`.
 
+    .. note:: ``PPR`` corresponds to the respective operators in the Pauli-based computation
+        (``pbc``) dialect of Catalyst.
 
     .. seealso:: :class:`~.PauliRot` for a Pauli product rotation with an arbitrary angle, and
         :func:`~.pauli_measure` for PPM, the measurement counterpart of a PPR.
@@ -2121,23 +2123,18 @@ class PPR(Operator2):
     PPR(-4, 'XY', wires=[0, 1])
 
     When compiling further to Pauli product measurements (PPM), ``PPR`` should first be lowered
-    using Catalyst's PBC passes :func:`catalyst.to_ppr`, :func:`catalyst.ppr_to_ppm`, or
-    :func:`catalyst.ppm_compilation`.
+    using Catalyst's PBC passes :func:`~.to_ppr`, :func:`~.ppr_to_ppm`, or
+    :func:`~.ppm_compilation`.
 
     """
 
     compilable_argnames = ("angle_denominator", "pauli_word")
-    wire_sizes = (None,)
-
     arg_specs = {"wires": Wire[-1]}
 
     _ALLOWED_DENOMINATORS = (-4, -2, -1, 1, 2, 4)
 
     def __init__(self, angle_denominator: int, pauli_word: str, wires: WiresLike):
-        if (
-            not isinstance(angle_denominator, (int, np.integer))
-            or angle_denominator not in self._ALLOWED_DENOMINATORS
-        ):
+        if angle_denominator not in self._ALLOWED_DENOMINATORS):
             raise ValueError(
                 "The angle denominator must be an integer in "
                 f"{self._ALLOWED_DENOMINATORS}, denoting the rotation angle "
