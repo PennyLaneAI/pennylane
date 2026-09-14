@@ -22,15 +22,66 @@ import pytest
 from scipy.sparse import coo_matrix, csc_matrix, csr_matrix
 
 import pennylane as qp
+from pennylane.core.operator import Operator2
 from pennylane.exceptions import SparseMatrixUndefinedError
+from pennylane.ops.op_math import prod
+from pennylane.ops.op_math.prod import Prod
 from pennylane.ops.op_math.prod2 import Prod2
 from pennylane.typing import Float, Wire
+from tests.core.operator.operator2_utils import NonParametricOp
 
 
 def _product_matrix(factors, wire_order):
     """Independent reference matrix: the ordered matrix product of the factors."""
     mats = [qp.matrix(f, wire_order=wire_order) for f in factors]
     return reduce(np.matmul, mats)
+
+
+class TestProdDispatch:
+    """qp.prod must return Prod2 iff every operator is an Operator2."""
+
+    def test_all_operator2_dispatches_to_prod2(self):
+        assert isinstance(prod(NonParametricOp(0), NonParametricOp(1)), Prod2)
+
+    def test_single_operand_returns_unchanged(self):
+        op = NonParametricOp(0)
+        assert prod(op) is op
+
+    def test_empty_operands_returns_legacy_prod(self):
+        assert isinstance(prod(), Prod)
+
+    def test_mixed_operators_stays_legacy(self):
+        class LegacyOp(qp.core.operator.Operator):  # pylint: disable=too-few-public-methods
+            pass
+
+        assert not isinstance(LegacyOp(0), Operator2)
+        assert isinstance(prod(LegacyOp(0), NonParametricOp(0)), Prod)
+        assert isinstance(prod(LegacyOp(0), LegacyOp(1)), Prod)
+
+    def test_matmul_dunder_dispatches(self):
+        assert isinstance(NonParametricOp(0) @ NonParametricOp(1), Prod2)
+
+    def test_qfunc_dispatches(self):
+        def f():
+            NonParametricOp(0)
+            NonParametricOp(1)
+
+        assert isinstance(prod(f)(), Prod2)
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize("lazy", (True, False))
+    def test_no_leftover_product_eqn(self, lazy):
+        import jax
+
+        def f():
+            inner = prod(qp.RX(0.1, 0), qp.RY(0.2, 1))
+
+            return prod(inner, qp.RZ(0.3, 2), lazy=lazy)
+
+        cjaxpr = jax.make_jaxpr(f)()
+
+        prod_eqns = [eqn for eqn in cjaxpr.eqns if eqn.params["op_cls"] is Prod2]
+        assert len(prod_eqns) == 1
 
 
 class TestInitialization:
@@ -241,6 +292,93 @@ class TestEqualityAndHash:
         assert Prod2([qp.X(0), qp.Z(1)]) != Prod2([qp.X(0), qp.Y(1)])
 
 
+class TestSorting:  # pylint: disable=too-few-public-methods
+    """Tests for the insertion sort of the product factors."""
+
+    def test_sorting_operators_with_wire_map(self):
+        """Test that the sorting algorithm orders factors by their mapped wire labels."""
+        op_list = [qp.Z("b"), qp.X("a"), qp.RX(0.5, "c")]
+
+        # "a" is mapped before "b", so the two commuting factors get swapped
+        # pylint: disable-next=protected-access
+        sorted_list = Prod2._sort(op_list, wire_map={"a": 0, "b": 1, "c": 2})
+        for expected, actual in zip(
+            [qp.X("a"), qp.Z("b"), qp.RX(0.5, "c")], sorted_list, strict=True
+        ):
+            qp.assert_equal(expected, actual)
+
+        # the reversed map puts "b" first, so the construction order is preserved
+        # pylint: disable-next=protected-access
+        sorted_list = Prod2._sort(op_list, wire_map={"a": 2, "b": 1, "c": 0})
+        for expected, actual in zip(
+            [qp.RX(0.5, "c"), qp.Z("b"), qp.X("a")], sorted_list, strict=True
+        ):
+            qp.assert_equal(expected, actual)
+
+
+class TestTerms:  # pylint: disable=too-few-public-methods
+    """Tests for ``Prod2.terms``."""
+
+    def test_terms_with_sum_and_scalar_factors(self):
+        """Test that ``terms`` distributes over a ``Sum`` factor and harvests scalar factors."""
+        factors = [qp.RX(0.5, 0), qp.s_prod(2.0, qp.RY(0.3, 1)) + qp.RY(0.4, 1)]
+        op = Prod2(factors)
+        # no Pauli rep, so the factors are grouped and distributed explicitly
+        assert op.pauli_rep is None
+
+        coeffs, ops = op.terms()
+
+        assert qp.math.allclose(coeffs, [2.0, 1.0])
+        qp.assert_equal(ops[0], Prod2([qp.RY(0.3, 1), qp.RX(0.5, 0)]))
+        qp.assert_equal(ops[1], Prod2([qp.RY(0.4, 1), qp.RX(0.5, 0)]))
+
+        # the legacy ``Prod`` is the reference implementation
+        legacy_coeffs, legacy_ops = Prod(*factors).terms()
+        assert qp.math.allclose(coeffs, legacy_coeffs)
+        for actual, expected in zip(ops, legacy_ops, strict=True):
+            assert np.allclose(
+                qp.matrix(actual, wire_order=[0, 1]), qp.matrix(expected, wire_order=[0, 1])
+            )
+
+
+class TestSimplify:
+    """Tests for ``Prod2.simplify`` when the Pauli representation cannot be used."""
+
+    def test_simplify_scalar_factor(self):
+        """Test that the scalar of an ``SProd`` factor is pulled out as a global phase."""
+        op = Prod2([qp.s_prod(2.0, qp.RX(0.5, 0)), qp.RY(0.3, 1)])
+        assert op.pauli_rep is None
+
+        simplified = op.simplify()
+
+        qp.assert_equal(simplified, qp.s_prod(2.0, Prod2([qp.RX(0.5, 0), qp.RY(0.3, 1)])))
+
+    def test_simplify_distributes_over_sum(self):
+        """Test that a product containing a ``Sum`` factor simplifies into a ``Sum``."""
+        factors = [qp.s_prod(2.0, qp.RX(0.5, 0)), qp.Hadamard(1) + qp.RY(0.3, 1)]
+        op = Prod2(factors)
+        assert op.pauli_rep is None
+
+        simplified = op.simplify()
+
+        assert isinstance(simplified, qp.ops.Sum)
+        # the legacy ``Prod`` is the reference implementation
+        legacy = Prod(*factors).simplify()
+        assert np.allclose(
+            qp.matrix(simplified, wire_order=[0, 1]), qp.matrix(legacy, wire_order=[0, 1])
+        )
+
+    def test_simplify_cancels_powers(self):
+        """Test that ``Pow`` factors with opposite exponents cancel out."""
+        rot = qp.Rot(0.1, 0.2, 0.3, 0)
+        op = Prod2([qp.ops.Pow(rot, 2), qp.ops.Pow(rot, -2), qp.RY(0.3, 1)])
+        assert op.pauli_rep is None
+
+        simplified = op.simplify()
+
+        qp.assert_equal(simplified, qp.RY(0.3, 1))
+
+
 class TestValidity:  # pylint: disable=too-few-public-methods
     """Standard validity checks."""
 
@@ -325,9 +463,9 @@ class TestCapture:
         import jax
 
         op1, op2 = qp.RX(0.3, 1), qp.RZ(0.6, 1)
-        prod = Prod2([op1, op2])
+        custom_prod = Prod2([op1, op2])
 
-        jaxpr = jax.make_jaxpr(prod.decomposition)()
+        jaxpr = jax.make_jaxpr(custom_prod.decomposition)()
 
         assert len(jaxpr.eqns) == 2
         assert op1.tracer is None

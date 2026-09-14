@@ -61,7 +61,7 @@ def _add_cond_grouping_symbols(op, layer_str, config):
 
     mapped_wires = [config.wire_map[w] for w in op.wires]
     mapped_bits = [config.bit_map[m] for m in op.meas_val.measurements]
-    max_w = max(mapped_wires)
+    max_w = max(mapped_wires) if mapped_wires else config.n_wires - 1
     max_b = max(mapped_bits)
 
     ctrl_symbol = "╩"

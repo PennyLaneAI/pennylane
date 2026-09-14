@@ -55,7 +55,7 @@ ops_rep = (
 class NoOperandsOp(CompositeOp2):
     # pylint:disable=unused-argument
     _op_symbol = "#"
-    _math_op = math.prod
+    _math_op = staticmethod(math.prod)
 
     hybrid_argnames = ("ops", "_init_pauli_rep")  # different name than operands
     wire_argnames = ()
@@ -88,7 +88,7 @@ class NoOperandsOp(CompositeOp2):
 class ValidOp(CompositeOp2):
     # pylint:disable=unused-argument
     _op_symbol = "#"
-    _math_op = math.prod
+    _math_op = staticmethod(math.prod)
 
     hybrid_argnames = ("operands", "_init_pauli_rep")
     wire_argnames = ()

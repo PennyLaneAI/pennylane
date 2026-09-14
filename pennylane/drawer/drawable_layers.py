@@ -143,6 +143,9 @@ def _handle_mid_measure(op: MidMeasure | PauliMeasure, wire_map, bit_map):
 
 @_get_op_occupied_wires.register
 def _handle_cond(op: Conditional, wire_map, bit_map):
+    if len(op.base.wires) == 0 or isinstance(op.base, (GlobalPhase, Identity)):
+        return set(wire_map.values())
+
     mapped_wires = [wire_map[wire] for wire in op.base.wires]
     min_wire = min(mapped_wires)
     max_wire = max(wire_map.values())
@@ -164,8 +167,8 @@ class _LayersData:
 
     waiting_dynamic_wires: list[DynamicWire] = field(default_factory=list)
     """DynamicWires that are waiting for the first interaction between
-    the dynamic wires and an algorithmic wire. 
-    
+    the dynamic wires and an algorithmic wire.
+
     This allows us to push the allocation and initial setup to the right and conserve
     drawer space, keeping things together.  See ``insert_waiting_ops``.
     """
