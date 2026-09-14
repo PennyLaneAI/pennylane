@@ -756,6 +756,26 @@ class TestMapToResourceOp:
         assert mapped == expected
         assert mapped.wires == expected.wires
 
+    def test_map_alias_sampling_thc(self):
+        """Test that AliasSamplingTHC maps to estimator PrepTHC."""
+        import pennylane.estimator.compact_hamiltonian as re_ham
+
+        M, N, aleph = 2, 2, 3
+        sizes = qp.alias_sampling_thc_wires(M, N, aleph)
+        n = sizes["mu_wires"]
+        mu_wires = list(range(n))
+        nu_wires = list(range(n, 2 * n))
+        work_wires = list(range(2 * n + 1, 2 * n + 1 + sizes["work_wires"]))
+        op = qp.AliasSamplingTHC(
+            M, N, np.eye(M), np.ones(N // 2), mu_wires, nu_wires, 2 * n, work_wires, aleph
+        )
+        expected = re_temps.PrepTHC(
+            re_ham.THCHamiltonian(num_orbitals=N // 2, tensor_rank=M),
+            coeff_precision=aleph,
+        )
+        mapped = _map_to_resource_op(op)
+        assert mapped == expected
+
 
 @pytest.mark.parametrize(
     "op, mapped_op",

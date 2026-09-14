@@ -1526,6 +1526,39 @@ class TestModifiedTemplates:
         [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
         qp.assert_equal(op, qp.AliasSampling(**kwargs))
 
+    def test_alias_sampling_thc(self):
+        """Test the primitive bind call of AliasSamplingTHC."""
+
+        sizes = qp.alias_sampling_thc_wires(2, 2, 2)
+        n = sizes["mu_wires"]
+        mu_wires = list(range(n))
+        nu_wires = list(range(n, 2 * n))
+        work_wires = list(range(2 * n + 1, 2 * n + 1 + sizes["work_wires"]))
+        kwargs = {
+            "M": 2,
+            "N": 2,
+            "zeta": ((1.0, 0.0), (0.0, 1.0)),
+            "t_ell": (0.5,),
+            "mu_wires": mu_wires,
+            "nu_wires": nu_wires,
+            "edge_flag": 2 * n,
+            "work_wires": work_wires,
+            "aleph": 2,
+        }
+
+        def qfunc():
+            return qp.AliasSamplingTHC(**kwargs).tracer
+
+        jaxpr = jax.make_jaxpr(qfunc)()
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert_eqn_matches_op(eqn, qp.AliasSamplingTHC)
+
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        qp.assert_equal(op, qp.AliasSamplingTHC(**kwargs))
+
     def test_signed_out_multiplier(self):
         """Test the primitive bind call of SignedOutMultiplier."""
 

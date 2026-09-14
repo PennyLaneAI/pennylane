@@ -458,6 +458,12 @@
   [(#9913)](https://github.com/PennyLaneAI/pennylane/pull/9913)
   [(#10145)](https://github.com/PennyLaneAI/pennylane/pull/10145)
 
+* Added :class:`~.AliasSamplingTHC`, the coherent alias-sampling ``PREPARE`` for tensor
+  hypercontraction qubitization. Use :func:`~.alias_sampling_thc_wires` to get the required
+  register sizes, including the work register of :class:`~pennylane.labs.templates.SuperpositionTHC`.
+  [(#9940)](https://github.com/PennyLaneAI/pennylane/pull/9940)
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
 * Added :class:`~.LeftQuantumComparator` for inequality tests between two quantum registers.
   [(#9277)](https://github.com/PennyLaneAI/pennylane/pull/9277)
   [(#9544)](https://github.com/PennyLaneAI/pennylane/pull/9544)

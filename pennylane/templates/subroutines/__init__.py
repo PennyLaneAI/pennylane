@@ -49,6 +49,7 @@ from .qram import BBQRAM, HybridQRAM, SelectOnlyQRAM, FFQRAM
 from .iqp import IQP
 from .qrom import QROM
 from .alias_sampling import AliasSampling, UniformPrep, alias_sampling_wires
+from .alias_sampling_thc import AliasSamplingTHC, alias_sampling_thc_wires
 from .gqsp import GQSP
 from .select_pauli_rot import (
     MultiplexedRotation,
@@ -126,8 +127,10 @@ __all__ = [
     "AmplitudeAmplification",
     "QROM",
     "AliasSampling",
+    "AliasSamplingTHC",
     "UniformPrep",
     "alias_sampling_wires",
+    "alias_sampling_thc_wires",
     "GQSP",
     "SelectPauliRot",
     "MultiplexedRotation",
