@@ -19,15 +19,11 @@ This module contains templates, which are pre-coded routines that can be used in
 .. autosummary::
     :toctree: api
 
-    ~LeftClassicalComparator
-    ~LeftQuantumComparator
     ~SuperpositionTHC
     ~half_signed_out_multiplier
     ~SumOfSlatersPrep2
 """
 
-from .left_classical_comparator import LeftClassicalComparator
-from .left_quantum_comparator import LeftQuantumComparator
 from .superposition_thc import SuperpositionTHC
 from .half_signed_out_multiplier import half_signed_out_multiplier
 from .sum_of_slaters2 import SumOfSlatersPrep2

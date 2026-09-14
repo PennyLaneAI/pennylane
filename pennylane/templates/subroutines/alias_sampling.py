@@ -20,11 +20,9 @@ import numpy as np
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
-from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.math import ceil_log2
 from pennylane.ops import CSWAP, RZ, GlobalPhase, Hadamard, adjoint, ctrl
-from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.typing import AbstractWires, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
@@ -126,6 +124,7 @@ class UniformPrep(Operator2):
 
 
 def _uniform_prep_resources(n_states, target_wires, work_wires):
+    # pylint: disable=unused-argument
     k = (n_states & -n_states).bit_length() - 1
     L = n_states >> k
     logL = ceil_log2(L)
@@ -133,19 +132,18 @@ def _uniform_prep_resources(n_states, target_wires, work_wires):
     if L == 1:
         return resources
 
-    data_L = target_wires[:logL]
-    w_used = work_wires[1:logL]
-    with QueuingManager.stop_recording():
-        lcc = LeftClassicalComparator(
-            x_wires=data_L, L=L, target_wire=work_wires[0], work_wires=w_used, comparator="<"
-        )
+    lcc = LeftClassicalComparator(
+        x_wires=Wire[logL],
+        L=L,
+        target_wire=Wire[1],
+        work_wires=Wire[max(logL - 1, 0)],
+        comparator="<",
+    )
     resources[lcc] = 1
     resources[RZ] = 1
-    resources[_adjoint_abstract(lcc)] = 1
+    resources[adjoint(lcc)] = 1
     resources[Hadamard] += 2 * logL
-    with QueuingManager.stop_recording():
-        cphase = ctrl(GlobalPhase(0.0), control=data_L, control_values=[0] * logL)
-    resources[cphase] = 1
+    resources[ctrl(GlobalPhase(0.0), control=Wire[logL], control_values=[0] * logL)] = 1
     resources[GlobalPhase] = 1
     return resources
 
@@ -431,28 +429,22 @@ def _qrom_data(probs, mu, logL):
 
 
 def _alias_sampling_resources(probs, mu, target_wires, temp_wires, work_wires):
+    # pylint: disable=unused-argument
     L = len(probs)
     logL = ceil_log2(L)
     n_target = len(target_wires)
-    n_temp = len(temp_wires)
     n_work = len(work_wires)
-    dummy_t = list(range(n_target))
-    dummy_tmp = list(range(n_target, n_target + n_temp))
-    dummy_w = list(range(n_target + n_temp, n_target + n_temp + n_work))
-    sigma_wires, alt_wires, keep_wires, flag, cmp_work = _split_temp_wires(dummy_tmp, mu, logL)
     data = _qrom_data(probs, mu, logL)
-    with QueuingManager.stop_recording():
-        uni = UniformPrep(L, dummy_t, dummy_w)
-        qrom = QROM(
-            data,
-            control_wires=dummy_t,
-            target_wires=list(alt_wires) + list(keep_wires),
-            work_wires=dummy_w[1:],
-            clean=True,
-        )
-        lqc = LeftQuantumComparator(keep_wires, sigma_wires, flag, cmp_work, comparator="<=")
+    qrom = QROM(
+        data,
+        control_wires=Wire[n_target],
+        target_wires=Wire[logL + mu],
+        work_wires=Wire[max(n_work - 1, 0)],
+        clean=True,
+    )
+    lqc = LeftQuantumComparator(Wire[mu], Wire[mu], Wire[1], Wire[max(mu - 1, 0)], comparator="<=")
     return {
-        uni: 1,
+        UniformPrep(L, Wire[n_target], Wire[n_work]): 1,
         Hadamard: mu,
         qrom: 1,
         lqc: 1,
