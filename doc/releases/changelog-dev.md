@@ -452,6 +452,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* Added `Multiplexer` and `Multiplexor` as aliases for :class:`~.Select`, and
+  `MultiplexedRotation` and `UniformlyControlledRotation` as aliases for
+  :class:`~.SelectPauliRot`.
+  [(#9639)](https://github.com/PennyLaneAI/pennylane/pull/9639)
+
 * Register a dispatch for ``np.delete`` to handle Numpy/JAX signature divergence.
   [(#10137)]((https://github.com/PennyLaneAI/pennylane/pull/10137)
 
