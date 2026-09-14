@@ -126,7 +126,7 @@ class Reflection(Operation):
                     # pylint: disable-next=protected-access
                     op._bind_primitive()  # pragma: no cover
                 return op.tracer if op.tracer is not None else op
-            return op
+            return op  # pragma: no cover
 
         U = _get_tracer(U)
         return super()._primitive_bind_call(U, alpha, wires=reflection_wires, **kwargs)
