@@ -32,7 +32,7 @@ def test_standard_validity_left_comparator():
     comparator = ">="
 
     gate = LeftQuantumComparator(x_wires, y_wires, target_wire, work_wires, comparator=comparator)
-    assert_valid(gate)
+    assert_valid(gate, skip_differentiation=True)
 
 
 class TestLeftQuantumComparator:

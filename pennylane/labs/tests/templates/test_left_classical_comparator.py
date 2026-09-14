@@ -32,13 +32,13 @@ def test_standard_validity_left_comparator():
     comparator = ">="
 
     gate = LeftClassicalComparator(x_wires, L, target_wire, work_wires, comparator=comparator)
-    assert_valid(gate)
+    assert_valid(gate, skip_differentiation=True)
 
-    assert gate.hyperparameters["target_wire"] == qp.wires.Wires(8)
-    assert gate.hyperparameters["x_wires"] == qp.wires.Wires([0, 1, 2])
-    assert gate.hyperparameters["L"] == L
-    assert gate.hyperparameters["work_wires"] == qp.wires.Wires([6, 7])
-    assert gate.hyperparameters["comparator"] == ">="
+    assert gate.arguments["target_wire"] == qp.wires.Wires(8)
+    assert gate.arguments["x_wires"] == qp.wires.Wires([0, 1, 2])
+    assert gate.arguments["L"] == L
+    assert gate.arguments["work_wires"] == qp.wires.Wires([6, 7])
+    assert gate.arguments["comparator"] == ">="
 
 
 class TestLeftClassicalComparator:

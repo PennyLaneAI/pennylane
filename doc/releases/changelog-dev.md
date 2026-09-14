@@ -450,6 +450,18 @@
 
   The round is resolved from the device being traced, so the program has to be captured (`qp.qjit(capture=True)`). The controller's `in_bytes` and `out_bytes` capacities both default to 8 bytes, and the correction comes back as an `out_bytes`-sized `uint8` buffer. Pass `controller=` / `coprocessor=` to choose the nodes explicitly, `out_bytes=` to override the reply size, and `decoder_id=` to select which coprocessor-side decoder handles the round.
 
+* Added :class:`~.AliasSampling`, which prepares a state with real, positive
+  amplitudes to a chosen number of bits of precision using coherent alias sampling. The routine loads the
+  amplitudes with a single `QROM` call and one inequality test instead of a sequence of
+  controlled rotations, so its non-Clifford cost grows linearly in the number of coefficients rather
+  than with the product of the number of coefficients and the bits of precision. This makes it the
+  preferred `PREPARE` subroutine for qubitization-based algorithms. The companion
+  :class:`~.UniformPrep`, which prepares a uniform superposition over an
+  arbitrary number of basis states, :func:`~.alias_sampling_wires`, which reports the required register sizes,
+  and the inequality testers :class:`~.LeftClassicalComparator` and :class:`~.LeftQuantumComparator`
+  were added as well.
+  [(#9913)](https://github.com/PennyLaneAI/pennylane/pull/9913)
+
 <h3>Improvements 🛠</h3>
 
 * Added `Multiplexer` and `Multiplexor` as aliases for :class:`~.Select`, and
