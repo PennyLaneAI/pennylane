@@ -461,6 +461,7 @@
   and the inequality testers :class:`~.LeftClassicalComparator` and :class:`~.LeftQuantumComparator`
   were added as well.
   [(#9913)](https://github.com/PennyLaneAI/pennylane/pull/9913)
+  [(#10145)](https://github.com/PennyLaneAI/pennylane/pull/10145)
 
 <h3>Improvements 🛠</h3>
 
