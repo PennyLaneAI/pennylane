@@ -1090,6 +1090,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Update `tach` to `0.35.1`.
+  [(#)]()
+
 * The `_prepselprep_decomp` decomposition rule of :class:`~.PrepSelPrep` now applies the linear-combination
   unitaries and their global phases as two separate :class:`~.Select` operators instead of a single ``Select``
   of products.
