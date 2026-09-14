@@ -488,6 +488,7 @@
   >>> output = circuit(3, ">=", 2)
   >>> print(bool(output))
   True
+
   ```
 
 * Added :class:`~.LeftClassicalComparator` for inequality tests between a quantum register and an integer.
@@ -519,6 +520,7 @@
   >>> output = circuit(3, 2)
   >>> print(bool(output))  # 3 >= 2
   True
+
   ```
 
 <h3>Improvements 🛠</h3>
