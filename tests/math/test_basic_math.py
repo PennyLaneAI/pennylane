@@ -27,7 +27,8 @@ jnp = pytest.importorskip("jax.numpy")
 
 
 @pytest.mark.parametrize(
-    "n, exp", [(1, 0), (2, 1), (4, 2), (1024, 10), (3, 2), (17, 5), (1023, 10)]
+    "n, exp",
+    [(1, 0), (2, 1), (4, 2), (1024, 10), (3, 2), (17, 5), (1023, 10), (2**53 + 1, 54)],
 )
 class TestCeilLog2:
     """Tests for ``qp.math.ceil_log2``."""
@@ -47,6 +48,18 @@ class TestCeilLog2:
         assert out.dtype == jnp.int64
         assert out == exp
         assert fn.ceil_log2(2**out) == out
+
+
+def test_ceil_log2_numpy_scalar():
+    """Test that ``ceil_log2`` is exact for large NumPy integer scalars."""
+    out = fn.ceil_log2(onp.array(2**53 + 1))
+    assert isinstance(out, int)
+    assert out == 54
+
+
+def test_ceil_log2_arbitrary_precision_integer():
+    """Test that ``ceil_log2`` is exact for integers beyond fixed-width dtypes."""
+    assert fn.ceil_log2(2**100 + 1) == 101
 
 
 class TestFrobeniusInnerProduct:
