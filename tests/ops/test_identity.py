@@ -18,7 +18,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.core.operator.utils import abstractify
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.ops.functions import assert_valid
 from pennylane.ops.identity import GlobalPhase, Identity
 from pennylane.typing import Float, Wire
 
@@ -29,11 +29,18 @@ op_params = tuple(zip(op_wires, op_repr))
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize("phi", (0.0, 1.0, -1.0))
-def test_global_phase_decompositions(phi):
-    """Tests that the decomposition rules of GlobalPhase are capture compatible."""
+def test_global_phase_is_valid(phi):
+    """Tests that the GlobalPhase operator is valid."""
     op = GlobalPhase(phi)
-    for rule in qp.list_decomps(GlobalPhase):
-        _test_decomposition_rule(op, rule)
+    assert_valid(op, skip_differentiation=True)
+
+
+@pytest.mark.usefixtures("enable_and_disable_capture")
+@pytest.mark.parametrize("wires", ((), [0], [0, 1]))
+def test_identity_is_valid(wires):
+    """Tests that Identity ops are valid."""
+    op = Identity(wires)
+    assert_valid(op, skip_differentiation=True)
 
 
 def test_abstractify_globalphase():
