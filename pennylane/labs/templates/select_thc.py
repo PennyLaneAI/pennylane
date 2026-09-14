@@ -14,8 +14,7 @@
 """Contains the templates for the tensor hypercontraction ``SELECT`` oracle."""
 
 from itertools import islice
-
-import numpy as np
+from math import pi
 
 import pennylane as qp
 
@@ -33,24 +32,24 @@ def _cascade_angles(leaf):
             the angles are scale invariant.
 
     Returns:
-        numpy.ndarray: the ``N/2 - 1`` angles, where entry ``p`` belongs to the pair
+        the ``N/2 - 1`` angles, where entry ``p`` belongs to the pair
         ``(p, p + 1)``. Empty for a single orbital.
 
     Raises:
         ValueError: if ``leaf`` is the zero vector.
     """
-    vec = np.asarray(leaf, dtype=float).reshape(-1)
-    if vec.size <= 1:
-        return np.zeros(0)
-    if np.linalg.norm(vec) < 1e-15:
+    vec = qp.math.reshape(qp.math.asarray(leaf, dtype=float), -1)
+    if qp.math.shape(vec)[0] <= 1:
+        return qp.math.zeros(0)
+    if qp.math.norm(vec) < 1e-15:
         raise ValueError("Cannot build a rotation from a zero vector.")
 
     # Each step of the cascade replaces vec[p] by the norm of the suffix it has just
     # zeroed, so the angles have a closed form. Only the last coordinate keeps its sign,
     # which is what puts the final angle in (-pi, 0] when leaf[-1] is negative.
-    suffix = np.sqrt(np.cumsum(vec[::-1] ** 2)[::-1])
-    suffix[-1] = vec[-1]
-    return np.arctan2(suffix[1:], vec[:-1])
+    suffix = qp.math.sqrt(qp.math.cumsum(vec[::-1] ** 2)[::-1])
+    suffix = qp.math.concatenate([suffix[:-1], vec[-1:]])
+    return qp.math.arctan2(suffix[1:], vec[:-1])
 
 
 def _angle_batches(n_half, num_batches):
@@ -68,7 +67,7 @@ def _angle_batches(n_half, num_batches):
         ``num_batches``.
     """
     pairs = list(reversed(range(max(n_half - 1, 0))))
-    width = max(int(np.ceil(len(pairs) / num_batches)), 1)
+    width = max(-(-len(pairs) // num_batches), 1)
     return [pairs[i : i + width] for i in range(0, len(pairs), width)], width
 
 
@@ -97,7 +96,7 @@ def _build_qrom_givens_data(chi, t_eigenvectors, beth, one_body_table, batches):
         list[list[list[int]]]: one ``QROM`` table per batch, empty when there are no pairs
         to rotate.
     """
-    chi = np.asarray(chi, dtype=float)
+    chi = qp.math.asarray(chi, dtype=float)
     M, n_half = chi.shape
     if not batches:
         return []
@@ -107,21 +106,37 @@ def _build_qrom_givens_data(chi, t_eigenvectors, beth, one_body_table, batches):
     leaves = list(chi)
     if one_body_table:
         addresses += [block + ell for ell in range(n_half)]
-        leaves += list(np.asarray(t_eigenvectors, dtype=float).T)
+        t_eig = qp.math.asarray(t_eigenvectors, dtype=float)
+        leaves += list(qp.math.transpose(t_eig))
 
+    # The quantized angles are the last point where this is array math: ``QROM`` takes
+    # classical bitstrings, so the grid indices are pulled out as Python ints here and the
+    # tables below are built with plain integer arithmetic.
     levels = 1 << beth
-    thetas = np.array([_cascade_angles(leaf) for leaf in leaves])
-    k = np.round(np.mod(2.0 * thetas, 4.0 * np.pi) / (4.0 * np.pi) * levels).astype(int) % levels
-    bits = (k[:, :, None] >> np.arange(beth - 1, -1, -1)) & 1
+    thetas = qp.math.stack([_cascade_angles(leaf) for leaf in leaves])
+    grid = qp.math.floor(-qp.math.mod(2.0 * thetas, 4.0 * pi) / (4.0 * pi) * levels)
+    grid = [[int(value) % levels for value in row] for row in grid]
 
     # Only the last batch can be short, so the first sets the width of the angle register
-    # and the rest fill a prefix.
-    n_rows = block * (2 if one_body_table else 1)
-    tables = np.zeros((len(batches), n_rows, len(batches[0]) * beth), dtype=int)
-    for b, batch in enumerate(batches):
-        tables[b, addresses, : len(batch) * beth] = bits[:, batch].reshape(len(leaves), -1)
+    # and the rest fill a prefix. The table stops at the last address backed by a leaf:
+    # ``QROM`` pads the rest with the identity, and its cost scales with the number of rows
+    # rather than with ``2 ** len(control_wires)``.
+    n_rows = block + n_half if one_body_table else M
+    width = len(batches[0]) * beth
+    leaf_of = dict(zip(addresses, range(len(leaves))))
 
-    return [table.tolist() for table in np.concatenate([tables[:1], tables[:-1] ^ tables[1:]])]
+    def _row(address, batch):
+        if address not in leaf_of:
+            return [0] * width
+        angles = grid[leaf_of[address]]
+        bits = [(angles[p] >> (beth - 1 - j)) & 1 for p in batch for j in range(beth)]
+        return bits + [0] * (width - len(bits))
+
+    tables = [[_row(address, batch) for address in range(n_rows)] for batch in batches]
+    return [tables[0]] + [
+        [[cur ^ prev for cur, prev in zip(row, previous)] for row, previous in zip(table, before)]
+        for table, before in zip(tables[1:], tables[:-1])
+    ]
 
 
 def _apply_loaded_rotation(
@@ -139,24 +154,25 @@ def _apply_loaded_rotation(
         \left(H_0\,\mathrm{CNOT}_{01}\right) ,
         \qquad R_y(\alpha) = S H R_z(\alpha) H S^\dagger ,
 
-    both :math:`R_y` carry the same angle, so each becomes one controlled addition of the
+    both :math:`R_y` carry the same angle, so each becomes one addition of the
     same loaded value under a fixed Clifford: two additions per Givens pair, and no
-    arbitrary-angle rotation anywhere.
+    arbitrary-angle rotation anywhere. The control is moved onto the loaded bits by a ``CNOT`` layer.
 
     Args:
         psi_down (Sequence[int]): the ``N/2`` spatial orbitals :math:`U` acts on
         angle_wires (Sequence[int]): the loaded angle register, ``beth`` bits per pair
         beth (int): bits of precision per Givens angle
         pairs (Sequence[int]): the Givens pairs of this batch, in application order
-        gradient_wires (Sequence[int]): the ``beth`` wires of the phase gradient register
-        adder_work (Sequence[int]): ``beth - 1`` clean wires for :class:`~pennylane.SemiAdder`
+        gradient_wires (Sequence[int]): the ``beth + 1`` wires of the phase gradient register
+        adder_work (Sequence[int]): ``beth`` clean wires for :class:`~pennylane.SemiAdder`
         adjoint (bool): if ``True``, apply the inverse rotation
     """
     for slot, p in reversed(list(enumerate(pairs))) if adjoint else enumerate(pairs):
         bits = angle_wires[slot * beth : (slot + 1) * beth]
 
         # Subtracting rather than adding gives the forward rotation; the adjoint rotation
-        # is the same Clifford frame with the addition running the other way.
+        # is the same Clifford frame with the addition running the other way. Both directions
+        # pick up the same constant pi offset, and Z is self-inverse, so the same Z works.
         add = qp.SemiAdder if adjoint else qp.adjoint(qp.SemiAdder)
         lower, upper = psi_down[p], psi_down[p + 1]
         qp.Hadamard(lower)
@@ -164,7 +180,12 @@ def _apply_loaded_rotation(
         for wire in (lower, upper):
             qp.adjoint(qp.S)(wire)
             qp.Hadamard(wire)
-            qp.ctrl(add, control=wire)(bits, gradient_wires, adder_work)
+            for bit in bits:
+                qp.CNOT(wires=[wire, bit])
+            add(bits, gradient_wires, adder_work)
+            for bit in bits:
+                qp.CNOT(wires=[wire, bit])
+            qp.Z(wire)
             qp.Hadamard(wire)
             qp.S(wire)
         qp.CNOT(wires=[lower, upper])
@@ -177,9 +198,9 @@ def select_thc_wires(M, N, beth, num_batches=1):
     Args:
         M (int): the THC rank.
         N (int): the number of spin orbitals.
-        beth (int): bits of precision per Givens angle. The angle grid has spacing
-            :math:`2\pi / 2^{\mathrm{beth}}`, so the worst-case error of any one angle
-            is :math:`\pi / 2^{\mathrm{beth}}`.
+        beth (int): bits of precision per Givens angle. The realised grid is the odd
+            multiples of :math:`\pi / 2^{\mathrm{beth}}`, so the spacing is
+            :math:`2\pi / 2^{\mathrm{beth}}`
         num_batches (int): the number of batches the Givens angles are loaded in. The
             default of ``1`` loads all of them at once. See the note below.
 
@@ -193,11 +214,11 @@ def select_thc_wires(M, N, beth, num_batches=1):
           :math:`\nu`, as produced by ``PREPARE``. The ``+ 1`` inside the logarithm
           leaves room for the one-body sentinel value :math:`\nu = M`.
         * ``flag_wires`` (``5``): the success flag, the one-body sentinel flag,
-          ``PREPARE``'s :math:`\mu \leftrightarrow \nu` symmetrization flag,
+          the qubit that controls the :math:`\mu \leftrightarrow \nu` symmetrization,
           and the two spin flags.
-        * ``gradient_wires`` (``beth``): the phase gradient register. See the note below.
+        * ``gradient_wires`` (``beth + 1``): the phase gradient register. See the note below.
         * ``work_wires`` (``ceil((N/2 - 1) / num_batches) * beth +
-          max(ceil(log2(M + 1)), beth - 1)``): the minimum clean scratch, returned to
+          max(ceil(log2(M + 1)), beth)``): the minimum clean scratch, returned to
           :math:`\lvert 0 \rangle`. Zero when ``N/2 == 1``, where the sandwich is a lone
           :math:`Z_1` and no angles are loaded.
 
@@ -222,7 +243,7 @@ def select_thc_wires(M, N, beth, num_batches=1):
             \sum_{k=0}^{2^{\mathrm{beth}} - 1}
             e^{-2 \pi i k / 2^{\mathrm{beth}}} \lvert k \rangle ,
 
-        a product state that ``beth`` ``Hadamard`` and ``beth`` ``PhaseShift`` gates prepare.
+        a product state that ``beth + 1`` ``Hadamard`` and ``beth + 1`` ``PhaseShift`` gates prepare.
         The ``SELECT`` oracle leaves it unchanged, so it is
         deliberately not allocated internally: one register is prepared once and shared by
         ``PREPARE`` and ``SELECT``.
@@ -231,7 +252,7 @@ def select_thc_wires(M, N, beth, num_batches=1):
 
     >>> from pennylane.labs.templates import select_thc_wires
     >>> select_thc_wires(M=3, N=4, beth=4)
-    {'system_wires': 4, 'index_wires': 4, 'flag_wires': 5, 'gradient_wires': 4, 'work_wires': 7}
+    {'system_wires': 4, 'index_wires': 4, 'flag_wires': 5, 'gradient_wires': 5, 'work_wires': 8}
 
     """
     for name, value in (("M", M), ("N", N), ("beth", beth), ("num_batches", num_batches)):
@@ -252,8 +273,8 @@ def select_thc_wires(M, N, beth, num_batches=1):
         "system_wires": N,
         "index_wires": 2 * n,
         "flag_wires": 5,
-        "gradient_wires": beth,
-        "work_wires": n_angle + max(n, beth - 1) if n_angle else 0,
+        "gradient_wires": beth + 1,
+        "work_wires": n_angle + max(n, beth) if n_angle else 0,
     }
 
 
@@ -285,7 +306,7 @@ def _select_half(
             addressing the rotation table
         flag_wires (Sequence[int]): three wires, the success flag, the one-body
             flag and the spin flag
-        gradient_wires (Sequence[int]): the ``beth`` wires holding the phase gradient state.
+        gradient_wires (Sequence[int]): the ``beth + 1`` wires holding the phase gradient state.
             This is assumed to be prepared on entry and left unchanged, as it is reused between
             ``PREPARE`` and ``SELECT`` oracles.
         work_wires (Sequence[int]): clean scratch, returned to :math:`\lvert 0 \rangle`
@@ -301,7 +322,7 @@ def _select_half(
         ValueError: if a register has the wrong size, or if ``t_eigenvectors`` has the
             wrong shape when ``one_body_table=True``.
     """
-    chi = np.asarray(chi, dtype=float)
+    chi = qp.math.asarray(chi, dtype=float)
     M, n_half = chi.shape
     n = qp.math.ceil_log2(M + 1)
     req = select_thc_wires(M, 2 * n_half, beth, num_batches)
@@ -314,19 +335,19 @@ def _select_half(
         raise ValueError(f"index_wires must have {n} entries for M={M}; got {len(index_wires)}.")
     if len(flag_wires) != 3:
         raise ValueError(f"flag_wires must have 3 entries; got {len(flag_wires)}.")
-    if len(gradient_wires) != beth:
+    if len(gradient_wires) != beth + 1:
         raise ValueError(
-            f"gradient_wires must have beth = {beth} entries; got {len(gradient_wires)}."
+            f"gradient_wires must have beth + 1 = {beth + 1} entries; got {len(gradient_wires)}."
         )
     if len(work_wires) < req["work_wires"]:
         raise ValueError(
             f"work_wires must have at least {req['work_wires']} entries for M={M}, "
             f"N/2={n_half}, beth={beth}; got {len(work_wires)}."
         )
-    if one_body_table and np.shape(t_eigenvectors) != (n_half, n_half):
+    if one_body_table and qp.math.shape(t_eigenvectors) != (n_half, n_half):
         raise ValueError(
             f"t_eigenvectors must have shape ({n_half}, {n_half}); "
-            f"got {np.shape(t_eigenvectors)}."
+            f"got {qp.math.shape(t_eigenvectors)}."
         )
 
     psi_down, psi_up = list(system_wires[:n_half]), list(system_wires[n_half:])
@@ -334,7 +355,7 @@ def _select_half(
     angle_wires = list(work_wires[:n_angle])
     # The QROM restores its work wires before the adder runs, so the two share the pool.
     qrom_work = list(work_wires[n_angle:])
-    adder_work = qrom_work[: beth - 1]
+    adder_work = qrom_work[:beth]
     gradient_wires = list(gradient_wires)
 
     tables = _build_qrom_givens_data(chi, t_eigenvectors, beth, one_body_table, batches)
@@ -418,9 +439,9 @@ def select_thc(
         index_wires (Sequence[int]): ``2 * ceil(log2(M + 1))`` wires, :math:`\mu`
             followed by :math:`\nu`, as left by ``PREPARE``.
         flag_wires (Sequence[int]): this includes five wires, in order the success flag, the
-            one-body flag, ``PREPARE``'s :math:`\mu \leftrightarrow \nu`
-            symmetrization flag, and the two spin flags.
-        gradient_wires (Sequence[int]): the ``beth`` wires holding the phase gradient state.
+            one-body flag (:math:`\nu = M`), the qubit that controls the :math:`\mu \leftrightarrow \nu`
+            symmetrization, and the two spin flags.
+        gradient_wires (Sequence[int]): the ``beth + 1`` wires holding the phase gradient state.
             This is assumed to be prepared on entry and left unchanged, as it is reused between
             ``PREPARE`` and ``SELECT`` oracles.
         work_wires (Sequence[int]): clean scratch, returned to :math:`\lvert 0 \rangle`
@@ -454,9 +475,10 @@ def select_thc(
             qp.X(wires["flag_wires"][0])              # success flag
             for w in wires["flag_wires"][3:]:              # the two spin flags
                 qp.Hadamard(w)
-            for j, w in enumerate(wires["gradient_wires"]):     # phase gradient state
+            grad = wires["gradient_wires"]
+            for j, w in enumerate(grad):     # phase gradient state
                 qp.Hadamard(w)
-                qp.PhaseShift(-2 * np.pi * 2 ** (beth - 1 - j) / 2**beth, wires=w)
+                qp.PhaseShift(-2 * np.pi * 2 ** (len(grad) - 1 - j) / 2**len(grad), wires=w)
             select_thc(
                 chi, t_eigenvectors, beth, wires["system_wires"], wires["index_wires"],
                 wires["flag_wires"], wires["gradient_wires"], wires["work_wires"],
@@ -464,7 +486,7 @@ def select_thc(
             return qp.probs(wires=wires["system_wires"])
 
     """
-    M = np.asarray(chi, dtype=float).shape[0]
+    M = qp.math.asarray(chi, dtype=float).shape[0]
     n = qp.math.ceil_log2(M + 1)
 
     if len(index_wires) != 2 * n:
@@ -508,8 +530,10 @@ def select_thc(
         skip_one_body=True,
     )
 
-    # 3. Exchange the two indices and the two spin flags, and flip PREPARE's
-    #    symmetrization flag
+    # 3. Exchange the two indices and the two spin flags, and flip the qubit that
+    #    controls the mu <-> nu swap. This is the "X on the ancilla qubit and swapping the mu and nu
+    #    registers" step between Eqs. (38) and (39) of arXiv:2011.03494, and it is what makes
+    #    SELECT self-inverse.
     for a, b in zip(mu_wires, nu_wires):
         qp.ctrl(qp.SWAP(wires=[a, b]), control=edge, control_values=0)
     qp.ctrl(qp.SWAP(wires=[spin1, spin2]), control=edge, control_values=0)
