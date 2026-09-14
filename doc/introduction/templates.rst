@@ -145,6 +145,10 @@ as addition, multiplication and exponentiation.
     :figure: _static/templates/arithmetic/semiadder.png
 
 .. gallery-item::
+    :description: :doc:`Incrementer <../code/api/pennylane.Incrementer>`
+    :figure: _static/templates/arithmetic/adder.png
+
+.. gallery-item::
     :description: :doc:`OutAdder <../code/api/pennylane.OutAdder>`
     :figure: _static/templates/arithmetic/outadder.png
 
@@ -314,6 +318,10 @@ Other useful templates which do not belong to the previous categories can be fou
 
 .. gallery-item::
   :description: :doc:`TrotterCGF <../code/api/pennylane.TrotterCGF>`
+  :figure: _static/templates/subroutines/trotter_product.png
+
+.. gallery-item::
+  :description: :doc:`TrotterVibronic <../code/api/pennylane.TrotterVibronic>`
   :figure: _static/templates/subroutines/trotter_product.png
 
 .. gallery-item::
