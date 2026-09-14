@@ -19,7 +19,7 @@ from collections import defaultdict
 
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_condition, register_resources
-from pennylane.ops import CNOT, adjoint, ctrl
+from pennylane.ops import CNOT
 from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
@@ -27,12 +27,10 @@ from ..multix import MultiX
 from .out_multiplier import _c_add_sub, _c_add_sub_resources
 from .semi_adder import (
     SemiAdder,
-    _ctrl_right_block,
-    _ctrl_right_block_zeroed,
-    _left_block,
-    _left_block_zeroed,
-    _right_block,
-    _right_block_zeroed,
+    _self_ctrl_one_sparse_add,
+    _self_ctrl_one_sparse_add_resources,
+    _sparse_adder,
+    _sparse_adder_resources,
 )
 from .temporary_and import TemporaryAND
 
@@ -118,7 +116,7 @@ class OutSquare(_SquareArithmeticOp):
             ``output_wires_zeroed=True``.
         work_wires (WiresLike): the auxiliary wires to use for the squaring.
             :math:`m-1` work wires are required if ``output_wires_zeroed=False``,
-            otherwise :math:`\min(m-4, n-1)` work wires are required.
+            otherwise :math:`\min(\max(m-4, 0), n-1)` work wires are required.
         output_wires_zeroed (bool): Whether the output wires are guaranteed to be in the state
             :math:`|0\rangle` initially. Defaults to ``False``.
 
@@ -259,7 +257,7 @@ class OutSquare(_SquareArithmeticOp):
 
     @staticmethod
     def _min_work_wires(n, m, output_wires_zeroed):
-        return min(n - 1, m - 4) if output_wires_zeroed else m - 1
+        return min(n - 1, max(m - 4, 0)) if output_wires_zeroed else m - 1
 
 
 def _out_square_with_adder_zeroed_condition(
@@ -269,85 +267,8 @@ def _out_square_with_adder_zeroed_condition(
         return False
     n = len(x_wires)
     m = len(output_wires)
-    return len(work_wires) >= min(n - 1, m - 4)
-
-
-def _self_ctrl_one_sparse_add_resources(num_x_wires, num_y_wires, num_work_wires):
-    """Resources for _self_ctrl_one_sparse_add below."""
-    if num_y_wires == 1:
-        return {CNOT: 1}
-
-    zeroed = _effective_zeros(num_x_wires, num_y_wires, zeroed=[1])
-    num_elbows = num_y_wires - 1
-    num_blocks = num_y_wires - 2
-    num_zeroed_blocks = len(zeroed) - int(num_y_wires - 1 in zeroed)
-    # each _left_block uses 3 CNOTs, each _left_block_zeroed none
-    # each _ctrl_right_block uses 3 CNOTs, each _right_block_zeroed none
-    # each _ctrl_right_block or _ctrl_right_block_zeroed uses 1 ctrl(CNOT)
-    # the remaining construction uses 1 CNOT and 1 + int(num_y_wires-1 not in zeroed) ctrl(CNOT)s
-    ccnot_rep = ctrl(
-        CNOT(Wire[2]),
-        Wire[1],
-        work_wires=Wire[num_work_wires - num_elbows],
-        work_wire_type="zeroed",
-    )
-    return {
-        TemporaryAND: num_elbows,
-        adjoint(TemporaryAND(Wire[3])): num_elbows,
-        CNOT: 6 * (num_blocks - num_zeroed_blocks) + 1,
-        ccnot_rep: num_blocks + (1 + int(num_y_wires - 1 not in zeroed)),
-    }
-
-
-def _self_ctrl_one_sparse_add(x_wires, y_wires, work_wires):
-    """Specialized arithmetic unit: Addition controlled on the first qubit of the first addend,
-    with a classically fixed bit in state |0> injected into first addend register at the position
-    of the 2's bit. All other input bits are shifted in position.
-
-    Effectively, we are adding :math:`x_0 * (x_{n-1} x_{n-2} ... x_1 0 x_0)_2` to ``y_wires``.
-    """
-    num_y_wires = len(y_wires)
-    if num_y_wires == 1:
-        CNOT([x_wires[0], y_wires[0]])
-        return
-
-    # Set up control structure for controlled ops within decomposition
-    ctrl_kwargs = {
-        "control": x_wires[:1],
-        "control_values": [1],
-        "work_wires": work_wires[num_y_wires - 1 :],  # Pass only additional work qubits
-        "work_wire_type": "zeroed",
-    }
-
-    num_x_wires = len(x_wires)
-    # We use static zeroed=[1] for this subroutine
-    zeroed = _effective_zeros(num_x_wires, num_y_wires, zeroed=[1])
-    work_wires = work_wires[: num_y_wires - 1]
-
-    TemporaryAND([x_wires[0], y_wires[0], work_wires[0]])
-    x_pos = 1
-    for i in range(1, num_y_wires - 1):
-        if i in zeroed:
-            _left_block_zeroed([work_wires[i - 1], y_wires[i], work_wires[i]])
-        else:
-            _left_block([work_wires[i - 1], x_wires[x_pos], y_wires[i], work_wires[i]])
-            x_pos += 1
-
-    ctrl(CNOT([work_wires[-1], y_wires[-1]]), **ctrl_kwargs)
-    if num_y_wires - 1 not in zeroed:
-        ctrl(CNOT([x_wires[x_pos], y_wires[-1]]), **ctrl_kwargs)
-
-    x_pos -= 1
-    for i in range(num_y_wires - 2, 0, -1):
-        if i in zeroed:
-            _ctrl_right_block_zeroed([work_wires[i - 1], y_wires[i], work_wires[i]], **ctrl_kwargs)
-        else:
-            _wires = [work_wires[i - 1], x_wires[x_pos], y_wires[i], work_wires[i]]
-            _ctrl_right_block(_wires, **ctrl_kwargs)
-            x_pos -= 1
-
-    adjoint(TemporaryAND([x_wires[0], y_wires[0], work_wires[0]]))
-    CNOT([x_wires[0], y_wires[0]])
+    # pylint: disable-next=protected-access
+    return len(work_wires) >= OutSquare._min_work_wires(n, m, output_wires_zeroed)
 
 
 def _out_square_with_adder_zeroed_resources(
@@ -414,7 +335,12 @@ def _out_square_with_caddsub_condition(
     x_wires, output_wires, work_wires, output_wires_zeroed=False
 ) -> bool:
     # pylint: disable=unused-argument
-    return len(work_wires) >= len(output_wires) - 1
+    n = len(x_wires)
+    m = len(output_wires)
+    if output_wires_zeroed and (n == 1 or m == 1):
+        # Just a single CNOT in the decomposition.
+        return True
+    return len(work_wires) >= m - 1
 
 
 def _out_square_with_caddsub_resources(
@@ -434,8 +360,11 @@ def _out_square_with_caddsub_resources(
         for key, value in _c_add_sub_resources(n - i - 1, size).items():
             resources[key] += value
 
-    for key, value in _sparse_adder_resources(n, m, [1] + [2 * j for j in range(1, n)]).items():
-        resources[key] += value
+    if output_wires_zeroed and p == 0:
+        resources[CNOT] += 1
+    else:
+        for key, value in _sparse_adder_resources(n, m, [1] + [2 * j for j in range(1, n)]).items():
+            resources[key] += value
 
     if n > 1 and m > 1:
         # Subtract 2 x_{[1:]}
@@ -449,77 +378,6 @@ def _out_square_with_caddsub_resources(
             resources[SemiAdder(Wire[n - 1], Wire[m - n], Wire[num_work_wires])] += 1
 
     return dict(resources)
-
-
-def _effective_zeros(num_x_wires, num_y_wires, zeroed):
-    used_x = 0
-    new_zeroed = []
-    for i in range(num_y_wires):
-        if i in zeroed or used_x >= num_x_wires:
-            new_zeroed.append(i)
-        else:
-            used_x += 1
-    return new_zeroed
-
-
-def _sparse_adder_resources(num_x_wires, num_y_wires, zeroed):
-    if num_y_wires == 1:
-        return {CNOT: 1}
-
-    zeroed = _effective_zeros(num_x_wires, num_y_wires, zeroed)
-    num_elbows = num_y_wires - 1
-    num_zeroed_blocks = len(zeroed) - int(num_y_wires - 1 in zeroed)
-    num_nonzeroed_blocks = (num_y_wires - 2) - num_zeroed_blocks
-    # each _left_block uses 3 CNOTs, each _left_block_zeroed none
-    # each _right_block uses 3 CNOTs, each _right_block_zeroed just 1 CNOT
-    # the remaining construction uses 2 + int(num_y_wires-1 not in zeroed) CNOTs
-    return {
-        TemporaryAND: num_elbows,
-        adjoint(TemporaryAND(Wire[3])): num_elbows,
-        CNOT: num_zeroed_blocks + 6 * num_nonzeroed_blocks + 2 + int(num_y_wires - 1 not in zeroed),
-    }
-
-
-def _sparse_adder(x_wires, y_wires, work_wires, zeroed):
-    """Perform sparse addition, i.e., addition of ``x_wires`` interlaced with zeroed bits
-    specified by ``zeroed``. It is assumed that 0 is not in ``zeroed``.
-    This function assumes little endian ordering!
-    """
-    num_y_wires = len(y_wires)
-    if num_y_wires == 1:
-        CNOT([x_wires[0], y_wires[0]])
-        return
-    assert zeroed[0] != 0
-
-    num_x_wires = len(x_wires)
-    zeroed = _effective_zeros(num_x_wires, num_y_wires, zeroed)
-    work_wires = work_wires[: num_y_wires - 1]
-
-    TemporaryAND([x_wires[0], y_wires[0], work_wires[0]])
-
-    x_pos = 1
-    for i in range(1, num_y_wires - 1):
-        if i in zeroed:
-            _left_block_zeroed([work_wires[i - 1], y_wires[i], work_wires[i]])
-        else:
-            _left_block([work_wires[i - 1], x_wires[x_pos], y_wires[i], work_wires[i]])
-            x_pos += 1
-
-    CNOT([work_wires[-1], y_wires[-1]])
-
-    if num_y_wires - 1 not in zeroed:
-        CNOT([x_wires[x_pos], y_wires[-1]])
-
-    x_pos -= 1
-    for i in range(num_y_wires - 2, 0, -1):
-        if i in zeroed:
-            _right_block_zeroed([work_wires[i - 1], y_wires[i], work_wires[i]])
-        else:
-            _right_block([work_wires[i - 1], x_wires[x_pos], y_wires[i], work_wires[i]])
-            x_pos -= 1
-
-    adjoint(TemporaryAND([x_wires[0], y_wires[0], work_wires[0]]))
-    CNOT([x_wires[0], y_wires[0]])
 
 
 def _shifted_adder(x_wires, output_wires, work_wires):
@@ -556,7 +414,12 @@ def _out_square_with_caddsub(
             _out_reg = output_wires[2 * i + 1 :]
         _c_add_sub(x_wire, x_wires[i + 1 :][::-1], _out_reg[::-1], work_wires)
 
-    _sparse_adder(x_wires, output_wires, work_wires, zeroed=[1] + [2 * j for j in range(1, n)])
+    if output_wires_zeroed and p == 0:
+        # output register is still zeroed, no need for a full adder. p=0 holds for n=1 or m=1
+        # in both cases we just need a CNOT to copy the LSB of the input into the zeroed output.
+        CNOT([x_wires[0], output_wires[0]])
+    else:
+        _sparse_adder(x_wires, output_wires, work_wires, zeroed=[1] + [2 * j for j in range(1, n)])
 
     if n > 1 and m > 1:
         _output = output_wires[1:]

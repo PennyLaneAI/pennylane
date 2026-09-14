@@ -439,3 +439,152 @@ def _controlled_semi_adder(
 
 
 add_decomps("C(SemiAdder)", flip_zero_control2(_controlled_semi_adder))
+
+
+def _effective_zeros(num_x_wires, num_y_wires, zeroed):
+    used_x = 0
+    new_zeroed = []
+    for i in range(num_y_wires):
+        if i in zeroed or used_x >= num_x_wires:
+            new_zeroed.append(i)
+        else:
+            used_x += 1
+    return new_zeroed
+
+
+def _sparse_adder_resources(num_x_wires, num_y_wires, zeroed):
+    if num_y_wires == 1:
+        return {CNOT: 1}
+
+    zeroed = _effective_zeros(num_x_wires, num_y_wires, zeroed)
+    num_elbows = num_y_wires - 1
+    num_zeroed_blocks = len(zeroed) - int(num_y_wires - 1 in zeroed)
+    num_nonzeroed_blocks = (num_y_wires - 2) - num_zeroed_blocks
+    # each _left_block uses 3 CNOTs, each _left_block_zeroed none
+    # each _right_block uses 3 CNOTs, each _right_block_zeroed just 1 CNOT
+    # the remaining construction uses 2 + int(num_y_wires-1 not in zeroed) CNOTs
+    return {
+        TemporaryAND: num_elbows,
+        adjoint(TemporaryAND(Wire[3])): num_elbows,
+        CNOT: num_zeroed_blocks + 6 * num_nonzeroed_blocks + 2 + int(num_y_wires - 1 not in zeroed),
+    }
+
+
+def _sparse_adder(x_wires, y_wires, work_wires, zeroed):
+    """Perform sparse addition, i.e., addition of ``x_wires`` interlaced with zeroed bits
+    specified by ``zeroed``. It is assumed that 0 is not in ``zeroed``.
+    This function assumes little endian ordering!
+    """
+    num_y_wires = len(y_wires)
+    if num_y_wires == 1:
+        CNOT([x_wires[0], y_wires[0]])
+        return
+    assert zeroed[0] != 0
+
+    num_x_wires = len(x_wires)
+    zeroed = _effective_zeros(num_x_wires, num_y_wires, zeroed)
+    work_wires = work_wires[: num_y_wires - 1]
+
+    TemporaryAND([x_wires[0], y_wires[0], work_wires[0]])
+
+    x_pos = 1
+    for i in range(1, num_y_wires - 1):
+        if i in zeroed:
+            _left_block_zeroed([work_wires[i - 1], y_wires[i], work_wires[i]])
+        else:
+            _left_block([work_wires[i - 1], x_wires[x_pos], y_wires[i], work_wires[i]])
+            x_pos += 1
+
+    CNOT([work_wires[-1], y_wires[-1]])
+
+    if num_y_wires - 1 not in zeroed:
+        CNOT([x_wires[x_pos], y_wires[-1]])
+
+    x_pos -= 1
+    for i in range(num_y_wires - 2, 0, -1):
+        if i in zeroed:
+            _right_block_zeroed([work_wires[i - 1], y_wires[i], work_wires[i]])
+        else:
+            _right_block([work_wires[i - 1], x_wires[x_pos], y_wires[i], work_wires[i]])
+            x_pos -= 1
+
+    adjoint(TemporaryAND([x_wires[0], y_wires[0], work_wires[0]]))
+    CNOT([x_wires[0], y_wires[0]])
+
+
+def _self_ctrl_one_sparse_add_resources(num_x_wires, num_y_wires, num_work_wires):
+    """Resources for _self_ctrl_one_sparse_add below."""
+    if num_y_wires == 1:
+        return {CNOT: 1}
+
+    zeroed = _effective_zeros(num_x_wires, num_y_wires, zeroed=[1])
+    num_elbows = num_y_wires - 1
+    num_blocks = num_y_wires - 2
+    num_zeroed_blocks = len(zeroed) - int(num_y_wires - 1 in zeroed)
+    # each _left_block uses 3 CNOTs, each _left_block_zeroed none
+    # each _ctrl_right_block uses 3 CNOTs, each _right_block_zeroed none
+    # each _ctrl_right_block or _ctrl_right_block_zeroed uses 1 ctrl(CNOT)
+    # the remaining construction uses 1 CNOT and 1 + int(num_y_wires-1 not in zeroed) ctrl(CNOT)s
+    ccnot_rep = ctrl(
+        CNOT(Wire[2]),
+        Wire[1],
+        work_wires=Wire[num_work_wires - num_elbows],
+        work_wire_type="zeroed",
+    )
+    return {
+        TemporaryAND: num_elbows,
+        adjoint(TemporaryAND(Wire[3])): num_elbows,
+        CNOT: 6 * (num_blocks - num_zeroed_blocks) + 1,
+        ccnot_rep: num_blocks + (1 + int(num_y_wires - 1 not in zeroed)),
+    }
+
+
+def _self_ctrl_one_sparse_add(x_wires, y_wires, work_wires):
+    """Specialized arithmetic unit: Addition controlled on the first qubit of the first addend,
+    with a classically fixed bit in state |0> injected into first addend register at the position
+    of the 2's bit. All other input bits are shifted in position.
+
+    Effectively, we are adding :math:`x_0 * (x_{n-1} x_{n-2} ... x_1 0 x_0)_2` to ``y_wires``.
+    """
+    num_y_wires = len(y_wires)
+    if num_y_wires == 1:
+        CNOT([x_wires[0], y_wires[0]])
+        return
+
+    # Set up control structure for controlled ops within decomposition
+    ctrl_kwargs = {
+        "control": x_wires[:1],
+        "control_values": [1],
+        "work_wires": work_wires[num_y_wires - 1 :],  # Pass only additional work qubits
+        "work_wire_type": "zeroed",
+    }
+
+    num_x_wires = len(x_wires)
+    # We use static zeroed=[1] for this subroutine
+    zeroed = _effective_zeros(num_x_wires, num_y_wires, zeroed=[1])
+    work_wires = work_wires[: num_y_wires - 1]
+
+    TemporaryAND([x_wires[0], y_wires[0], work_wires[0]])
+    x_pos = 1
+    for i in range(1, num_y_wires - 1):
+        if i in zeroed:
+            _left_block_zeroed([work_wires[i - 1], y_wires[i], work_wires[i]])
+        else:
+            _left_block([work_wires[i - 1], x_wires[x_pos], y_wires[i], work_wires[i]])
+            x_pos += 1
+
+    ctrl(CNOT([work_wires[-1], y_wires[-1]]), **ctrl_kwargs)
+    if num_y_wires - 1 not in zeroed:
+        ctrl(CNOT([x_wires[x_pos], y_wires[-1]]), **ctrl_kwargs)
+
+    x_pos -= 1
+    for i in range(num_y_wires - 2, 0, -1):
+        if i in zeroed:
+            _ctrl_right_block_zeroed([work_wires[i - 1], y_wires[i], work_wires[i]], **ctrl_kwargs)
+        else:
+            _wires = [work_wires[i - 1], x_wires[x_pos], y_wires[i], work_wires[i]]
+            _ctrl_right_block(_wires, **ctrl_kwargs)
+            x_pos -= 1
+
+    adjoint(TemporaryAND([x_wires[0], y_wires[0], work_wires[0]]))
+    CNOT([x_wires[0], y_wires[0]])
