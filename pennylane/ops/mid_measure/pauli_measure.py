@@ -153,9 +153,8 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
 
     .. note::
 
-        Circuits comprising ``pauli_measure`` are currently not executable on any backend.
-        This function is only for analysis using the ``null.qubit`` device and potential future
-        execution when a suitable backend is available.
+        Circuits comprising ``pauli_measure`` are currently only executable with
+        :func:`~.qjit` and lightning qubit.
 
     .. seealso::
         For more information on Pauli product measurements, check out the
