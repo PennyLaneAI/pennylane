@@ -192,7 +192,7 @@ class NumericHamiltonian:
                 if not isinstance(getattr(self, name), AbstractArray):
                     _is_fully_abstract = False
                     break
-            self._is_fully_abstract = _is_fully_abstract
+            object.__setattr__(self, "_is_fully_abstract", _is_fully_abstract)
 
         return self._is_fully_abstract
 
