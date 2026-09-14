@@ -540,7 +540,6 @@ def _ctrl_x_to_mcx(base, control_wires, control_values, work_wires, work_wire_ty
 add_decomps("C(PauliX)", _ctrl_x_to_mcx)
 
 
-@register_resources()
 class PauliY(Operator2):
     r"""
     The Pauli Y operator
