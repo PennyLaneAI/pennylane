@@ -37,7 +37,7 @@ from .hilbert_schmidt import HilbertSchmidt, LocalHilbertSchmidt
 from .flip_sign import FlipSign
 from .fable import FABLE
 from .ffft import FFFT, TwoWireFFT
-from .select import Select
+from .select import Multiplexer, Multiplexor, Select
 from .prepselprep import PrepSelPrep
 from .multix import MultiX
 from .reflection import Reflection
@@ -49,7 +49,11 @@ from .qram import BBQRAM, HybridQRAM, SelectOnlyQRAM, FFQRAM
 from .iqp import IQP
 from .qrom import QROM
 from .gqsp import GQSP
-from .select_pauli_rot import SelectPauliRot
+from .select_pauli_rot import (
+    MultiplexedRotation,
+    SelectPauliRot,
+    UniformlyControlledRotation,
+)
 from .qsvt import poly_to_angles, QSVT, qsvt, transform_angles
 
 from .qchem import (
@@ -105,6 +109,8 @@ __all__ = [
     "FFFT",
     "TwoWireFFT",
     "Select",
+    "Multiplexer",
+    "Multiplexor",
     "SelectOnlyQRAM",
     "PrepSelPrep",
     "MultiX",
@@ -116,6 +122,8 @@ __all__ = [
     "QROM",
     "GQSP",
     "SelectPauliRot",
+    "MultiplexedRotation",
+    "UniformlyControlledRotation",
     "poly_to_angles",
     "QSVT",
     "qsvt",
