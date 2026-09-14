@@ -245,7 +245,6 @@ class NumericHamiltonian:
         if self._hash_key() != other._hash_key():
             return False
 
-        # Compare data one by one
         for data, other_data in zip(self.numeric_data, other.numeric_data, strict=True):
             self_abstract = isinstance(data, AbstractArray)
             other_abstract = isinstance(other_data, AbstractArray)
@@ -255,7 +254,6 @@ class NumericHamiltonian:
                 return False
 
             # Both abstract
-            # AbstractArray.__eq__ compares dtype and shape, so we don't need to compare manually
             if self_abstract and data != other_data:
                 return False
 
