@@ -2216,7 +2216,7 @@ class PPR(Operator2):
         True
 
         """
-        theta = np.pi / angle_denominator
+        theta = np.pi / angle_denominator * 2
         multi_Z_rot_matrix = qp.MultiRZ.compute_matrix(theta, list(range(len(pauli_word))))
 
         # conjugate with Hadamard and RX to create the Pauli string
