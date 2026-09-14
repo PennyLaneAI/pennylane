@@ -32,17 +32,17 @@ import pennylane as qp
 from pennylane.core.operator import Operator2, abstractify
 from pennylane.decomposition import (
     add_decomps,
-    change_op_basis_resource_rep,
     register_resources,
-    resource_rep,
 )
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.ops.identity import I
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_dispatch
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
+from pennylane.ops.op_math.prod import prod
 from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import WiresLike
 
@@ -205,7 +205,8 @@ def _rx_to_rz_ry(phi, wires: WiresLike):
 
 
 def _rx_to_ry_cliff_resources(*_, **__):
-    return {change_op_basis_resource_rep(qp.S, qp.RY): 1}
+    resources = {_change_op_basis_abstract(qp.S, qp.RY, qp.adjoint(qp.S(Wire[1]))): 1}
+    return resources
 
 
 @register_resources(_rx_to_ry_cliff_resources)
@@ -214,7 +215,8 @@ def _rx_to_ry_cliff(phi, wires: WiresLike):
 
 
 def _rx_to_rz_cliff_resources(*_, **__):
-    return {change_op_basis_resource_rep(qp.Hadamard, qp.RZ, qp.Hadamard): 1}
+    resources = {_change_op_basis_abstract(qp.Hadamard, qp.RZ, qp.Hadamard): 1}
+    return resources
 
 
 @register_resources(_rx_to_rz_cliff_resources)
@@ -416,7 +418,8 @@ def _ry_to_rz_rx(phi, wires: WiresLike):
 
 
 def _ry_to_rx_cliff_resources(*_, **__):
-    return {change_op_basis_resource_rep(_adjoint_abstract(qp.S), qp.RX, qp.S): 1}
+    resources = {_change_op_basis_abstract(_adjoint_abstract(qp.S), qp.RX, qp.S): 1}
+    return resources
 
 
 @register_resources(_ry_to_rx_cliff_resources)
@@ -425,27 +428,22 @@ def _ry_to_rx_cliff(phi, wires: WiresLike):
 
 
 def _ry_to_rz_cliff_resources(*_, **__):
-    return {
-        change_op_basis_resource_rep(
-            resource_rep(
-                qp.ops.op_math.Prod,
-                resources={_adjoint_abstract(qp.S): 1, abstractify(qp.Hadamard): 1},
-            ),
+    resources = {
+        _change_op_basis_abstract(
+            prod(qp.H(Wire[1]), qp.adjoint(qp.S(Wire[1]))),
             qp.RZ,
-            resource_rep(
-                qp.ops.op_math.Prod,
-                resources={abstractify(qp.S): 1, abstractify(qp.Hadamard): 1},
-            ),
+            prod(qp.S(Wire[1]), qp.H(Wire[1])),
         ): 1
     }
+    return resources
 
 
 @register_resources(_ry_to_rz_cliff_resources)
 def _ry_to_rz_cliff(phi, wires: WiresLike):
     qp.change_op_basis(
-        qp.Hadamard(wires) @ qp.adjoint(qp.S(wires)),
+        prod(qp.Hadamard(wires), qp.adjoint(qp.S(wires))),
         qp.RZ(phi, wires),
-        qp.S(wires) @ qp.Hadamard(wires),
+        prod(qp.S(wires), qp.Hadamard(wires)),
     )
 
 
@@ -689,7 +687,8 @@ def _rz_to_ry_rx(phi, wires: WiresLike):
 
 # pylint: disable=unused-argument
 def _rz_to_rx_cliff_resources(phi, wires):
-    return {change_op_basis_resource_rep(qp.Hadamard, qp.RX, qp.Hadamard): 1}
+    resources = {_change_op_basis_abstract(qp.Hadamard, qp.RX, qp.Hadamard): 1}
+    return resources
 
 
 @register_resources(_rz_to_rx_cliff_resources)
@@ -699,27 +698,22 @@ def _rz_to_rx_cliff(phi, wires: WiresLike):
 
 # pylint: disable=unused-argument
 def _rz_to_ry_cliff_resources(phi, wires):
-    return {
-        change_op_basis_resource_rep(
-            resource_rep(
-                qp.ops.op_math.Prod,
-                resources={abstractify(qp.S): 1, abstractify(qp.Hadamard): 1},
-            ),
+    resources = {
+        _change_op_basis_abstract(
+            prod(qp.S(Wire[1]), qp.H(Wire[1])),
             qp.RY,
-            resource_rep(
-                qp.ops.op_math.Prod,
-                resources={_adjoint_abstract(qp.S): 1, abstractify(qp.Hadamard): 1},
-            ),
+            prod(qp.H(Wire[1]), qp.adjoint(qp.S(Wire[1]))),
         ): 1
     }
+    return resources
 
 
 @register_resources(_rz_to_ry_cliff_resources)
 def _rz_to_ry_cliff(phi, wires: WiresLike):
     qp.change_op_basis(
-        qp.S(wires) @ qp.Hadamard(wires),
+        prod(qp.S(wires), qp.Hadamard(wires)),
         qp.RY(phi, wires),
-        qp.Hadamard(wires) @ qp.adjoint(qp.S(wires)),
+        prod(qp.Hadamard(wires), qp.adjoint(qp.S(wires))),
     )
 
 

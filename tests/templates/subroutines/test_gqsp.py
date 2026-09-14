@@ -29,17 +29,40 @@ class TestGQSP:
     """Test the qp.GQSP template."""
 
     @pytest.mark.jax
-    def test_standard_validity(self):
+    @pytest.mark.parametrize(
+        "unitary",
+        (
+            qp.RX(0.3, 1),
+            qp.prod(qp.RX(0.3, 1), qp.RZ(0.6, 1)),
+        ),
+    )
+    def test_standard_validity_non_capture(self, unitary):
         """Test standard validity criteria with assert_valid."""
 
         angles = np.ones([3, 5])
 
-        @qp.prod
-        def unitary(wires):
-            qp.RX(0.3, wires)
-            qp.RZ(0.6, wires)
+        op = qp.GQSP(unitary, angles, control=(0,))
+        qp.ops.functions.assert_valid(op, skip_differentiation=True, skip_bind_new_parameters=True)
 
-        op = qp.GQSP(unitary(1), angles, control=(0,))
+    @pytest.mark.capture
+    @pytest.mark.parametrize(
+        "unitary",
+        (
+            qp.RX(0.3, 1),
+            pytest.param(
+                qp.prod(qp.RX(0.3, 1), qp.RZ(0.6, 1)),
+                marks=pytest.mark.xfail(
+                    reason="Requires prod to dispatch to Prod2 [sc-128922]", strict=True
+                ),
+            ),
+        ),
+    )
+    def test_standard_validity(self, unitary):
+        """Test standard validity criteria with assert_valid."""
+
+        angles = np.ones([3, 5])
+
+        op = qp.GQSP(unitary, angles, control=(0,))
         qp.ops.functions.assert_valid(op, skip_differentiation=True, skip_bind_new_parameters=True)
 
     @pytest.mark.parametrize(

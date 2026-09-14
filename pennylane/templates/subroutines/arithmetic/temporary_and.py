@@ -19,14 +19,12 @@ from collections.abc import Sequence
 from typing import override
 
 from pennylane import math, ops
-from pennylane.core.operator import Operator2, abstractify
+from pennylane.core.operator import Operator2
 from pennylane.decomposition import (
     add_decomps,
-    change_op_basis_resource_rep,
     register_resources,
-    resource_rep,
 )
-from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.typing import AbstractArray, Bool, Wire
 from pennylane.wires import WiresLike
 
@@ -207,20 +205,25 @@ _number_xs = 2
 
 
 def _temporary_and_resources(*_, **__):
-    prod_rep = resource_rep(
-        ops.Prod,
-        resources={
-            abstractify(ops.Hadamard): 1,
-            abstractify(ops.T): 1,
-            abstractify(ops.CNOT): 1,
-            _adjoint_abstract(ops.T): 1,
-        },
+    compute_rep = ops.prod(
+        ops.adjoint(ops.T(Wire[1])),
+        ops.CNOT(Wire[2]),
+        ops.T(Wire[1]),
+        ops.Hadamard(Wire[1]),
     )
-    return {
+    uncompute_rep = ops.prod(
+        ops.Hadamard(Wire[1]),
+        ops.adjoint(ops.T(Wire[1])),
+        ops.CNOT(Wire[2]),
+        ops.T(Wire[1]),
+    )
+
+    resources = {
         ops.X: _number_xs,
-        change_op_basis_resource_rep(prod_rep, ops.CNOT, prod_rep): 1,
-        _adjoint_abstract(ops.S): 1,
+        _change_op_basis_abstract(compute_rep, ops.CNOT, uncompute_rep): 1,
+        ops.adjoint(ops.S(Wire[1])): 1,
     }
+    return resources
 
 
 @register_resources(_temporary_and_resources, exact=False)
@@ -267,7 +270,12 @@ add_decomps(TemporaryAND, _temporary_and, _temporary_and_to_toffoli)
 
 
 def _adjoint_temporary_and_resources(*_, **__):
-    return {ops.Hadamard: 1, ops.MidMeasure: 1, ops.CZ: 1, ops.X: _number_xs}
+    return {
+        ops.Hadamard: 1,
+        ops.MidMeasure(Wire[1], reset=True): 1,
+        ops.CZ: 1,
+        ops.X: _number_xs,
+    }
 
 
 @register_resources(_adjoint_temporary_and_resources, exact=False)
