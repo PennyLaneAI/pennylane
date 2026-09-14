@@ -25,7 +25,7 @@ from pennylane.decomposition.symbolic_decomposition import self_adjoint
 from pennylane.ops import CNOT, Hadamard, PauliX, adjoint, cond
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.ops.op_math.pow2 import pow_involutory
-from pennylane.ops.op_math.prod import _multi_temporary_and_all_ones
+from pennylane.ops.op_math.prod2 import _multi_temporary_and_all_ones
 from pennylane.typing import AbstractArray, AbstractWires, Bool, TensorLike, Wire
 from pennylane.wires import DynamicWire, Wires, WiresLike, is_abstract_qubit
 

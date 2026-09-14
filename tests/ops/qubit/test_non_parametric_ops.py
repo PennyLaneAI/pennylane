@@ -138,7 +138,7 @@ class TestOperations:
     def test_matrices(self, ops, mat, tol):
         """Test matrices of non-parametrized operations are correct"""
         op = ops(wires=0 if ops.num_wires is None else range(ops.num_wires))
-        res_static = op.compute_matrix()
+        res_static = op.compute_matrix(wires=[0] if ops.num_wires is None else range(ops.num_wires))
         res_dynamic = op.matrix()
         assert np.allclose(res_static, mat, atol=tol, rtol=0)
         assert np.allclose(res_dynamic, mat, atol=tol, rtol=0)

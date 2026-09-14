@@ -136,8 +136,8 @@ def make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires):
 
     # MultiX only emits a gate per set bit, so the gate count depends on the concrete angle.
     @qp.register_resources(_resource_fn, exact=False)
-    def _decomp_fn(phi, wires):
+    def _rz_phase_gradient_decomp(phi, wires):
         qp.GlobalPhase(phi / 2)
         _rz_phase_gradient(phi, wires, angle_wires, phase_grad_wires, work_wires)
 
-    return _decomp_fn
+    return _rz_phase_gradient_decomp
