@@ -452,6 +452,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* Added `Multiplexer` and `Multiplexor` as aliases for :class:`~.Select`, and
+  `MultiplexedRotation` and `UniformlyControlledRotation` as aliases for
+  :class:`~.SelectPauliRot`.
+  [(#9639)](https://github.com/PennyLaneAI/pennylane/pull/9639)
+
 * Register a dispatch for ``np.delete`` to handle Numpy/JAX signature divergence.
   [(#10137)]((https://github.com/PennyLaneAI/pennylane/pull/10137)
 
@@ -474,6 +479,9 @@
   {'wires': 8, 'enumeration_wires': 4, 'identification_wires': 7, 'qrom_work_wires': 3, 'mcx_cache_wires': 6}
 
   ```
+
+* ``SumOfSlaterPrep`` can now accept ``indicies=None`` for the purposes of resource estimation later on.
+  [(#10143)](https://github.com/PennyLaneAI/pennylane/pull/10143)
 
 * :class:`~.IsingZZ`'s decomposition is now expressed as a :func:`~.change_op_basis` (``CNOT``
   compute/uncompute around the ``RZ``) instead of three bare gates. This lets PennyLane's generic
