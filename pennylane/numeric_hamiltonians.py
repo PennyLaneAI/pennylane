@@ -243,30 +243,25 @@ class NumericHamiltonian:
         if self._hash_key() != other._hash_key():
             return False
 
-        if self.is_abstract and other.is_abstract:
-            # Both are abstract, compare each numeric data variable for concreteness/abstractness
-            for name in self.tensor_names + self.scalar_names:
-                data = getattr(self, name)
-                other_data = getattr(other, name)
-                _both_data_abstract = isinstance(data, AbstractArray) and isinstance(
-                    other_data, AbstractArray
-                )
-                _same_dtype = _dtype_of(data) == _dtype_of(other_data)
-                _same_shape = data.shape == other_data.shape
+        # Compare data one by one
+        for data, other_data in zip(self.numeric_data, other.numeric_data, strict=True):
+            self_abstract = isinstance(data, AbstractArray)
+            other_abstract = isinstance(other_data, AbstractArray)
 
-                if not _both_data_abstract and _same_dtype and _same_shape:
-                    return False
+            # One is abstract, other is concrete
+            if self_abstract ^ other_abstract:
+                return False
 
-            return True
+            # Both abstract
+            # AbstractArray.__eq__ compares dtype and shape, so we don't need to compare manually
+            if self_abstract and data != other_data:
+                return False
 
-        if not self.is_abstract and not other.is_abstract:
-            # Both are concrete Hamiltonians, so compare elements of all numeric data
-            return all(
-                math.allclose(a, b)
-                for a, b in zip(self.numeric_data, other.numeric_data, strict=True)
-            )
+            # Both concrete
+            if not self_abstract and not math.allclose(data, other_data):
+                return False
 
-        return False  # One is abstract, one is not, therefore not the same
+        return True
 
     def __repr__(self):
         def render(tensor):
