@@ -2225,6 +2225,12 @@ class PPR(Operator2):
         conjugation_matrix = reduce(math.kron, conjugation_factors)
         return math.conj(conjugation_matrix) @ multi_Z_rot_matrix @ conjugation_matrix
 
+def _ppr_to_paulirot_resources(pauli_word, **_):
+    return {qp.PauliRot(Float, pauli_word=pauli_word, wires=Wire[len(pauli_word)]): 1}
+
+@register_resources(_ppr_to_paulirot_resources)
+def _ppr_to_paulirot(angle_denominator, pauli_word, wires):
+    qp.PauliRot(np.pi / angle_denominator * 2, pauli_word, wires=wires)
 
 def _adjoint_ppr_to_ppr_resources(base):
     num_wires = len(base.wires)
