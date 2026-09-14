@@ -921,7 +921,7 @@ class SumOfSlatersPrep(Operator2):
         n = 1 if isinstance(wires, int) else len(wires)
         num_entries = coefficients.shape[0]
 
-        if num_entries != 1 and indices:
+        if num_entries != 1 and indices is not None:
             v_bits = math.int_to_binary(np.array(indices), n).T  # Shape (n, num_entries)
             _, data = _preprocess(v_bits, wires)
 
