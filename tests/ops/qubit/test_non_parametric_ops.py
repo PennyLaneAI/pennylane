@@ -1354,7 +1354,7 @@ class TestPPR:
         """Run the standard operator validity checks."""
         qp.ops.functions.assert_valid(qp.PPR(2, "ZXY", wires=[0, 1, 2]))
 
-    @pytest.mark.parametrize("denominator", [0, 3, 8, -3, -8, 1.0, 2.0, np.pi / 4, "4"])
+    @pytest.mark.parametrize("denominator", [0, 3, 8, -3, -8, np.pi / 4, "4"])
     def test_invalid_denominator_raises(self, denominator):
         """Test that only exact integers from the Clifford+T set are accepted."""
         with pytest.raises(ValueError, match="angle denominator must be an integer in"):

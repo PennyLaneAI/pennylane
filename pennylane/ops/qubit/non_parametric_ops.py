@@ -2134,7 +2134,7 @@ class PPR(Operator2):
     _ALLOWED_DENOMINATORS = (-4, -2, -1, 1, 2, 4)
 
     def __init__(self, angle_denominator: int, pauli_word: str, wires: WiresLike):
-        if angle_denominator not in self._ALLOWED_DENOMINATORS):
+        if angle_denominator not in self._ALLOWED_DENOMINATORS:
             raise ValueError(
                 "The angle denominator must be an integer in "
                 f"{self._ALLOWED_DENOMINATORS}, denoting the rotation angle "
