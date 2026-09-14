@@ -24,6 +24,7 @@ from pennylane.labs.transforms.select_pauli_rot_phase_gradient import (
     _select_pauli_rot_phase_gradient,
     select_pauli_rot_phase_gradient,
 )
+from pennylane.ops.op_math.prod2 import Prod2
 
 
 def prepare_phase_gradient(wires):
@@ -64,9 +65,9 @@ def test_units_select_pauli_rot_phase_gradient(p):
 
     assert op.name == "ChangeOpBasis2"
 
-    # It iterates the ops in reverse order
-    for g, exp_name in zip(op, ["Prod2", "SemiAdder", "Prod2"], strict=True):
-        assert g.name == exp_name
+    # It iterates the ops in reverse order. 
+    for g, exp_type in zip(op, [Prod2, qp.SemiAdder, Prod2], strict=True):
+        assert isinstance(g, exp_type)
 
     for g, exp_name in zip(op.operands[-1], ["MultiControlledX"] * p + ["QROM"], strict=True):
         assert g.name == exp_name
