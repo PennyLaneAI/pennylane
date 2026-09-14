@@ -11,21 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Module containing functions to generate fragments for various Hamiltonians"""
+"""Functions for building GAN fragments"""
 
-from .generic_fragments import NumpyFragment, NumpyState, SparseFragment, SparseState
-from .vibrational_fragments import vibrational_fragments
-from .vibronic_fragments import vibronic_fragments
-
-from .gan_fragments import GanConfig, gan_fragments
-
-__all__ = [
-    "NumpyFragment",
-    "NumpyState",
-    "SparseFragment",
-    "SparseState",
-    "vibrational_fragments",
-    "vibronic_fragments",
-    "gan_fragments",
-    "GanConfig",
-]
+from .fragmentation_scheme import GanConfig, gan_fragments
