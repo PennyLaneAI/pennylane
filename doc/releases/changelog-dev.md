@@ -2,9 +2,12 @@
 
 <h3>New features since last release</h3>
 
-* A new operator :class:`pennylane.PPR` represents a Pauli product rotation with a fixed angle
-  :math:`\theta = \pi / k`, following the angle convention of :class:`~.PauliRot`. The denominator
-  :math:`k` is restricted to :math:`\pm 1`, :math:`\pm 2` and :math:`\pm 4`, covering exactly the
+* A new operator called :class:`pennylane.PPR` has been added, which represents a Pauli product
+  rotation with a fixed angle
+  :math:`\theta = \pi / k`, following this angle convention:
+  :math:`\mathrm{PPR}(-4, \mathrm{X})=\exp(-i\pi / (-4) X)=\exp(i\tfrac{\pi}{4} X)`.
+  The denominator
+  :math:`k` is restricted to :math:`\pm 2`, :math:`\pm 4` and :math:`\pm 8`, covering exactly the
   :math:`\pm\pi/2`, :math:`\pm\pi/4` and :math:`\pm\pi/8` Pauli product rotations of Clifford+T
   circuits. Together with :func:`~.pauli_measure`, this makes the building blocks of Pauli-based
   computations directly expressible.
@@ -499,6 +502,9 @@
   {'wires': 8, 'enumeration_wires': 4, 'identification_wires': 7, 'qrom_work_wires': 3, 'mcx_cache_wires': 6}
 
   ```
+
+* ``SumOfSlaterPrep`` can now accept ``indicies=None`` for the purposes of resource estimation later on.
+  [(#10143)](https://github.com/PennyLaneAI/pennylane/pull/10143)
 
 * :class:`~.IsingZZ`'s decomposition is now expressed as a :func:`~.change_op_basis` (``CNOT``
   compute/uncompute around the ``RZ``) instead of three bare gates. This lets PennyLane's generic
@@ -1109,6 +1115,9 @@
   [(#9925)](https://github.com/PennyLaneAI/pennylane/pull/9925)
 
 <h3>Internal changes ⚙️</h3>
+
+* Update `tach` to `0.35.1`.
+  [(#10147 )](https://github.com/PennyLaneAI/pennylane/pull/10147)
 
 * The `_prepselprep_decomp` decomposition rule of :class:`~.PrepSelPrep` now applies the linear-combination
   unitaries and their global phases as two separate :class:`~.Select` operators instead of a single ``Select``

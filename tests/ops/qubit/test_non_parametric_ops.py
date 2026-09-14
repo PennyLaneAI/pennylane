@@ -1334,7 +1334,7 @@ class TestPauliRep:
 class TestPPR:
     """Tests for the fixed-angle Pauli product rotation (PPR)."""
 
-    @pytest.mark.parametrize("denominator", [-4, -2, -1, 1, 2, 4])
+    @pytest.mark.parametrize("denominator", [-8, -4, -2, 2, 4, 8])
     def test_allowed_denominators(self, denominator):
         """Test that all allowed angle denominators can be used."""
         op = qp.PPR(denominator, "XY", wires=[0, 1])
@@ -1349,11 +1349,12 @@ class TestPPR:
         assert op.parameters == []
         assert op.hyperparameters == {"angle_denominator": 4, "pauli_word": "XY"}
 
+    @pytest.mark.use_fixtures("enable_and_disable_capture")
     def test_standard_validity(self):
         """Run the standard operator validity checks."""
         qp.ops.functions.assert_valid(qp.PPR(2, "ZXY", wires=[0, 1, 2]))
 
-    @pytest.mark.parametrize("denominator", [0, 3, 8, -3, -8, 1.0, 2.0, np.pi / 4, "4"])
+    @pytest.mark.parametrize("denominator", [0, 3, 1, -3, -1, np.pi / 4, "4"])
     def test_invalid_denominator_raises(self, denominator):
         """Test that only exact integers from the Clifford+T set are accepted."""
         with pytest.raises(ValueError, match="angle denominator must be an integer in"):
@@ -1364,9 +1365,9 @@ class TestPPR:
         """Test that NumPy integers are accepted as angle denominators."""
         assert qp.PPR(denominator, "X", wires=0).angle_denominator == denominator
 
-    @pytest.mark.parametrize("pauli_word", ["I", "IX", "XA", "xy"])
+    @pytest.mark.parametrize("pauli_word", ["W", "iX", "XA", "xy"])
     def test_invalid_pauli_word_raises(self, pauli_word):
-        """Test that Pauli words with characters other than X, Y and Z are rejected."""
+        """Test that Pauli words with characters other than X, Y, Z and I are rejected."""
         with pytest.raises(ValueError, match="contains characters that are not allowed"):
             qp.PPR(4, pauli_word, wires=range(len(pauli_word)))
 
@@ -1384,11 +1385,11 @@ class TestPPR:
     @pytest.mark.parametrize(
         "denominator, expected",
         [
-            (1, "PPR(π, Z)"),
-            (-1, "PPR(-π, Z)"),
             (2, "PPR(π/2, Z)"),
             (-2, "PPR(-π/2, Z)"),
             (4, "PPR(π/4, Z)"),
+            (-4, "PPR(-π/4, Z)"),
+            (8, "PPR(π/8, Z)"),
         ],
     )
     def test_label(self, denominator, expected):
@@ -1468,18 +1469,18 @@ class TestPPR:
 
     @pytest.mark.parametrize(
         "denominator, pauli_word",
-        [(1, "XYZ"), (-1, "Z"), (2, "XX"), (-2, "YZ"), (4, "Y"), (-4, "ZYZX")],
+        [(2, "XYZ"), (-2, "Z"), (4, "XX"), (-4, "YZ"), (8, "Y"), (-8, "ZYZX")],
     )
     def test_compute_matrix_against_pauli_rot(self, denominator, pauli_word):
         """Test PPR.compute_matrix against PauliRot.compute_matrix."""
         mat_ppr = qp.PPR.compute_matrix(denominator, pauli_word)
-        theta = np.pi / denominator
+        theta = np.pi / denominator * 2
         mat_paulirot = qp.PauliRot.compute_matrix(theta, pauli_word)
         assert np.allclose(mat_ppr, mat_paulirot)
 
         pw = qp.pauli.PauliWord(dict(enumerate(pauli_word)))
         wires = list(pw)
         expected_manual = sp.linalg.expm(
-            -1j * np.pi / (2 * denominator) * qp.matrix(pw, wire_order=wires)
+            -1j * np.pi / denominator * qp.matrix(pw, wire_order=wires)
         )
         assert np.allclose(mat_ppr, expected_manual)

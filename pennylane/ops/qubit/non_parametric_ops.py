@@ -2070,21 +2070,24 @@ class PPR(Operator2):
 
     .. math::
 
-        \text{PPR}(k, P) = \exp\left(-i \frac{\pi}{2k} P\right),
+        \text{PPR}(k, P) = \exp\left(-i \frac{\pi}{k} P\right),
 
-    where :math:`P` is a Pauli word and we call :math:`\theta = \pi / k` the rotation angle,
-    following the convention of :class:`~.PauliRot`. The denominator :math:`k` is restricted to
-    :math:`\pm 1`, :math:`\pm 2` and :math:`\pm 4`, so that ``PPR`` covers exactly those Pauli
-    product rotations that occur in Clifford+T circuits:
+    where :math:`P` is a Pauli word and we call :math:`\varphi = \pi / k` the rotation angle,
+    following the literature convention (e.g.
+    `:math:`\mathrm{PPR}(-4, \mathrm{X})=\exp(-i\pi / (-4) X)=\exp(i\tfrac{\pi}{4} X)`).
+    The denominator :math:`k` is restricted to :math:`\pm 2`, :math:`\pm 4` and :math:`\pm 8`,
+    so that ``PPR`` covers exactly those Pauli product rotations that occur in Clifford+T circuits:
 
-    * ``angle_denominator=±1``: :math:`\theta = \pm\pi`, a :math:`\pm\pi/2` PPR (signed Pauli),
-    * ``angle_denominator=±2``: :math:`\theta = \pm\pi/2`, a :math:`\pm\pi/4` PPR (Clifford),
-    * ``angle_denominator=±4``: :math:`\theta = \pm\pi/4`, a :math:`\pm\pi/8` PPR (non-Clifford).
+    * ``angle_denominator=±2``: a :math:`\pm\pi/2` PPR (signed Pauli),
+    * ``angle_denominator=±4``: a :math:`\pm\pi/4` PPR (Clifford),
+    * ``angle_denominator=±8``: a :math:`\pm\pi/8` PPR (non-Clifford).
 
-    The Pauli-based computation literature commonly writes a PPR as :math:`\exp(-i \varphi P)`
-    (with the same minus sign but without factor :math:`1/2`), whereas :class:`~.PauliRot` follows the
-    convention :math:`\exp(-i \theta / 2 P)`, i.e., :math:`\varphi = \theta / 2`.
+    The Pauli-based computation literature commonly writes a PPR with this angle convention,
+    whereas :class:`~.PauliRot` follows the convention
+    :math:`\mathrm{PauliRot}(\theta, P)=\exp(-i \theta / 2 P)`, i.e., :math:`\varphi = \theta / 2`.
 
+    .. note:: ``PPR`` corresponds to the respective operators in the Pauli-based computation
+        (``pbc``) dialect of Catalyst, and follows the same angle convention.
 
     .. seealso:: :class:`~.PauliRot` for a Pauli product rotation with an arbitrary angle, and
         :func:`~.pauli_measure` for PPM, the measurement counterpart of a PPR.
@@ -2093,60 +2096,55 @@ class PPR(Operator2):
 
     Args:
         angle_denominator (int): the denominator :math:`k` of the rotation angle
-            :math:`\theta = \pi / k`. Must be one of ``±1``, ``±2``, or ``±4``.
+            :math:`\varphi = \pi / k`. Must be one of ``±2``, ``±4``, or ``±8``.
         pauli_word (str): the Pauli word defining the rotation, consisting of the characters
-            ``"X"``, ``"Y"`` and ``"Z"``. Its length must match the length of ``wires``.
+            ``"X"``, ``"Y"``, ``"Z"``, and ``"I"``. Its length must match the length of ``wires``.
         wires (Sequence[int] or int): the wires the operation acts on. The length must match
             length of ``pauli_word``.
 
     Raises:
         ValueError: if ``angle_denominator`` is not an allowed integer denominator
-        ValueError: if the Pauli word contains characters other than ``X``, ``Y`` and ``Z``
+        ValueError: if the Pauli word contains characters other than ``X``, ``Y``, ``Z``, and ``I``
         ValueError: if no wires are provided
         ValueError: if the number of wires does not match the length of the Pauli word
 
     **Example**
 
     A :math:`\pi/8` PPR on the Pauli word :math:`X \otimes Y` is created by requesting the
-    corresponding angle :math:`\pi/4` (in :class:`~.PauliRot` convention):
+    corresponding angle :math:`\varphi=\pi/8`:
 
-    >>> op = qp.PPR(4, "XY", wires=[0, 1])
+    >>> op = qp.PPR(8, "XY", wires=[0, 1])
     >>> op
-    PPR(4, 'XY', wires=[0, 1])
+    PPR(8, 'XY', wires=[0, 1])
 
     Negative denominators denote the inverse rotations:
 
-    >>> qp.PPR(-4, "XY", wires=[0, 1])
-    PPR(-4, 'XY', wires=[0, 1])
+    >>> qp.PPR(-8, "XY", wires=[0, 1])
+    PPR(-8, 'XY', wires=[0, 1])
 
     When compiling further to Pauli product measurements (PPM), ``PPR`` should first be lowered
-    using Catalyst's PBC passes :func:`catalyst.to_ppr`, :func:`catalyst.ppr_to_ppm`, or
-    :func:`catalyst.ppm_compilation`.
+    using Catalyst's PBC passes :func:`~.to_ppr`, :func:`~.ppr_to_ppm`, or
+    :func:`~.ppm_compilation`.
 
     """
 
     compilable_argnames = ("angle_denominator", "pauli_word")
-    wire_sizes = (None,)
-
     arg_specs = {"wires": Wire[-1]}
 
-    _ALLOWED_DENOMINATORS = (-4, -2, -1, 1, 2, 4)
+    _ALLOWED_DENOMINATORS = (-8, -4, -2, 2, 4, 8)
 
     def __init__(self, angle_denominator: int, pauli_word: str, wires: WiresLike):
-        if (
-            not isinstance(angle_denominator, (int, np.integer))
-            or angle_denominator not in self._ALLOWED_DENOMINATORS
-        ):
+        if angle_denominator not in self._ALLOWED_DENOMINATORS:
             raise ValueError(
                 "The angle denominator must be an integer in "
                 f"{self._ALLOWED_DENOMINATORS}, denoting the rotation angle "
                 f"pi / angle_denominator, but got {angle_denominator}."
             )
 
-        if not set(pauli_word).issubset({"X", "Y", "Z"}):
+        if not set(pauli_word).issubset({"X", "Y", "Z", "I"}):
             raise ValueError(
                 f'The given Pauli word "{pauli_word}" contains characters that are not allowed. '
-                "Allowed characters are X, Y and Z."
+                "Allowed characters are X, Y, Z and I."
             )
 
         super().__init__(angle_denominator, pauli_word, wires=wires)
@@ -2176,18 +2174,15 @@ class PPR(Operator2):
 
         **Example:**
 
-        >>> op = qp.PPR(4, "XY", wires=[0, 1])
+        >>> op = qp.PPR(8, "XY", wires=[0, 1])
         >>> op.label()
-        'PPR(π/4, XY)'
+        'PPR(π/8, XY)'
         >>> op.label(base_label="PPR")
         'PPR'
         """
         denominator = self.angle_denominator
         sign = "-" if denominator < 0 else ""
-        if abs(denominator) == 1:
-            angle_label = f"{sign}π"
-        else:
-            angle_label = f"{sign}π/{abs(denominator)}"
+        angle_label = f"{sign}π/{abs(denominator)}"
         return base_label or f"PPR({angle_label}, {self.pauli_word})"
 
     @override
@@ -2215,9 +2210,13 @@ class PPR(Operator2):
 
         **Example**
 
-        >>> qp.PPR.compute_matrix(-2, 'X')
+        >>> mat = qp.PPR.compute_matrix(-4, 'X')
+        >>> expected = ((qp.I(0) + 1j * qp.X(0))/np.sqrt(2)).matrix()
+        >>> np.allclose(mat, expected)
+        True
+
         """
-        theta = np.pi / angle_denominator
+        theta = np.pi / angle_denominator * 2
         multi_Z_rot_matrix = qp.MultiRZ.compute_matrix(theta, list(range(len(pauli_word))))
 
         # conjugate with Hadamard and RX to create the Pauli string
@@ -2226,6 +2225,12 @@ class PPR(Operator2):
         conjugation_matrix = reduce(math.kron, conjugation_factors)
         return math.conj(conjugation_matrix) @ multi_Z_rot_matrix @ conjugation_matrix
 
+def _ppr_to_paulirot_resources(pauli_word, **_):
+    return {qp.PauliRot(Float, pauli_word=pauli_word, wires=Wire[len(pauli_word)]): 1}
+
+@register_resources(_ppr_to_paulirot_resources)
+def _ppr_to_paulirot(angle_denominator, pauli_word, wires):
+    qp.PauliRot(np.pi / angle_denominator * 2, pauli_word, wires=wires)
 
 def _adjoint_ppr_to_ppr_resources(base):
     num_wires = len(base.wires)
