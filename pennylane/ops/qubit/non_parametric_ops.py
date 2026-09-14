@@ -512,6 +512,35 @@ add_decomps("Adjoint(PauliX)", self_adjoint)
 add_decomps("Pow(PauliX)", pow_involutory2, _pow_x_to_rx, _pow_x_to_sx)
 
 
+def _ctrl_x_resource(base, control_wires, control_values, work_wires, work_wire_type):
+    # let qp.ctrl handle the dispatch to CNOT/Toffoli/MCX
+    return {
+        qp.ctrl(
+            qp.X(base.wires),
+            control=control_wires,
+            control_values=control_values,
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
+        ): 1
+    }
+
+
+@qp.register_resources(_ctrl_x_resource)
+def _ctrl_x_to_mcx(base, control_wires, control_values, work_wires, work_wire_type):
+    # let qp.ctrl handle the dispatch to CNOT/Toffoli/MCX
+    qp.ctrl(
+        qp.X(base.wires),
+        control=control_wires,
+        control_values=control_values,
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
+    )
+
+
+add_decomps("C(PauliX)", _ctrl_x_to_mcx)
+
+
+@register_resources()
 class PauliY(Operator2):
     r"""
     The Pauli Y operator

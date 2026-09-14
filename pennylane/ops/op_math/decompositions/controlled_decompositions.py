@@ -430,8 +430,13 @@ def _wrap_mcx_rule_w_alloc(base_rule, num_work_wires, work_wire_type, name=""):
             work_wire_type=work_wire_type,
         )
 
-    def _condition_fn(wires, control_values, *_, **__):
-        return base_rule.is_applicable(
+    # pylint: disable-next=unused-argument
+    def _condition_fn(wires, control_values, work_wires, work_wire_type):
+        # The allocation-based rules are only considered if the operator does not
+        # come with explicitly specified work wires. We've made the decision last
+        # year that passing work wires to an operator is like explicitly saying
+        # "use these work wires in the operator's decomposition"
+        return len(work_wires) == 0 and base_rule.is_applicable(
             wires,
             control_values,
             Wire[num_work_wires],
