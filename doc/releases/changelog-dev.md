@@ -3,7 +3,9 @@
 <h3>New features since last release</h3>
 
 * A new operator :class:`pennylane.PPR` represents a Pauli product rotation with a fixed angle
-  :math:`\theta = \pi / k`, following the angle convention of :class:`~.PauliRot`. The denominator
+  :math:`\theta = \pi / k`, following the angle convention of :class:`~.PauliRot`. That is,
+  :math:`\mathrm{PPR}(-2, \mathrm{X})=\exp(-i\pi / (-4) X)=\exp(i\tfrac{\pi}{4} X)`.
+  The denominator
   :math:`k` is restricted to :math:`\pm 1`, :math:`\pm 2` and :math:`\pm 4`, covering exactly the
   :math:`\pm\pi/2`, :math:`\pm\pi/4` and :math:`\pm\pi/8` Pauli product rotations of Clifford+T
   circuits. Together with :func:`~.pauli_measure`, this makes the building blocks of Pauli-based
