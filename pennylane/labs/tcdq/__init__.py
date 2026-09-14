@@ -246,6 +246,11 @@ based on a graph-kernel MMD. The ``graph_type`` parameter selects the
 kernel: ``"cycle"`` respects the ordering of neighbouring levels, while
 ``"complete"`` treats all levels symmetrically.
 
+It takes any Heisenberg-Weyl moment callable, the qudit dimension(s), the
+number of qudits, and the MMD hyperparameters. Because it takes a callable
+rather than a circuit configuration, the same loss works for any model that
+can estimate Heisenberg-Weyl moments, not only qudit IQP circuits.
+
 .. code-block:: python
 
    import jax
@@ -254,6 +259,7 @@ kernel: ``"cycle"`` respects the ordering of neighbouring levels, while
    from pennylane.labs.tcdq import (
        QuditCircuitConfig,
        QuditMMDConfig,
+       build_qudit_expval_func,
        build_qudit_mmd_loss,
        TrainingOptions,
        train,
@@ -283,7 +289,8 @@ kernel: ``"cycle"`` respects the ordering of neighbouring levels, while
 
    # Build the MMD loss with a cycle-graph kernel
    mmd_config = QuditMMDConfig(bandwidth=[0.3, 1.0], n_ops=64, graph_type="cycle")
-   loss_fn = build_qudit_mmd_loss(circuit_config, mmd_config)
+   expval_fn = build_qudit_expval_func(circuit_config)
+   loss_fn = build_qudit_mmd_loss(expval_fn, d, n_qudits, mmd_config)
 
    # Generate synthetic target data and train
    target_data = jax.random.randint(jax.random.PRNGKey(99), (500, n_qudits), 0, d)
@@ -299,6 +306,11 @@ kernel: ``"cycle"`` respects the ordering of neighbouring levels, while
    )
 
    print("Final MMD loss:", float(result.losses[-1]))
+
+Any extra keyword arguments needed by the moment callable are forwarded
+through the loss, for example
+``loss_fn(params, target_data, key, n_samples=8000)`` or
+``loss_fn(params, target_data, key, phase_fn_params=xi)``.
 
 """
 
