@@ -141,9 +141,9 @@ class OutSquare(_SquareArithmeticOp):
             # Create a uniform superposition between integers 3 and 7
             qp.H(wires["x"][0]) # Superposition between 0 and 4
             # Add 3, by preparing lower-precision wires
-            qp.BasisState(qp.math.int_to_binary(3, len(wires["x"][1:])), wires=wires["x"][1:])
+            qp.BasisState(qp.math.int_to_binary(3, n-1), wires=wires["x"][1:])
             # Prepare initial state on output wires
-            qp.BasisState(qp.math.int_to_binary(5, len(output_wires)), wires=output_wires)
+            qp.BasisState(qp.math.int_to_binary(5, m), wires=output_wires)
             # Square
             qp.OutSquare(wires["x"], output_wires, wires["work"])
             return qp.counts(wires=output_wires)
@@ -387,12 +387,15 @@ def _out_square_with_caddsub_resources(
 
 
 def _shifted_adder(x_wires, output_wires, work_wires):
-    """Perform shifted addition y -> y + x - 2^n + 1."""
+    """Perform shifted addition y -> y + x - 2^n + 1.
+
+    Wires are in PennyLane (big-endian) order.
+    """
     x_ones = [True] * len(x_wires)
     output_ones = [True] * len(output_wires)
     MultiX(x_ones, x_wires)
     MultiX(output_ones, output_wires)
-    SemiAdder(x_wires[::-1], output_wires[::-1], work_wires)
+    SemiAdder(x_wires, output_wires, work_wires)
     MultiX(output_ones, output_wires)
     MultiX(x_ones, x_wires)
 
@@ -406,40 +409,42 @@ def _out_square_with_caddsub(
     output_wires_zeroed: bool = False,
 ):
     r"""This decomposition uses controlled add-subtract blocks, and three correction
-    steps. See Sec. II for details."""
-    x_wires = x_wires[::-1]
-    output_wires = output_wires[::-1]
+    steps. See Sec. II for details.
+    """
     n = len(x_wires)
     m = len(output_wires)
     p = min(n - 1, m // 2)
 
-    for i, x_wire in enumerate(x_wires[:p]):
+    for i in range(p):
+        # ``i`` indexes from the LSB. In big-endian layout the LSB is the last wire.
+        x_wire = x_wires[n - 1 - i]
+        x_rest = x_wires[: n - 1 - i]
         if output_wires_zeroed:
-            _out_reg = output_wires[2 * i + 1 : n + 1 + i]
+            # Equivalent to little-endian slice `[2*i+1 : n+1+i]`
+            _out_reg = output_wires[max(0, m - (n + 1 + i)) : m - (2 * i + 1)]
         else:
-            _out_reg = output_wires[2 * i + 1 :]
-        _c_add_sub(x_wire, x_wires[i + 1 :][::-1], _out_reg[::-1], work_wires)
+            _out_reg = output_wires[: m - (2 * i + 1)]
+        _c_add_sub(x_wire, x_rest, _out_reg, work_wires)
 
     if output_wires_zeroed and p == 0:
         # output register is still zeroed, no need for a full adder. p=0 holds for n=1 or m=1
         # in both cases we just need a CNOT to copy the LSB of the input into the zeroed output.
-        CNOT([x_wires[0], output_wires[0]])
+        CNOT([x_wires[-1], output_wires[-1]])
     else:
-        _semi_adder(
-            x_wires, output_wires, work_wires, skip_input_pos=[1] + [2 * j for j in range(1, n)]
-        )
+        zeroed = [1] + [2 * j for j in range(1, n)]
+        _semi_adder(x_wires, output_wires, work_wires, skip_input_pos=zeroed)
 
     if n > 1 and m > 1:
-        _output = output_wires[1:]
+        _output = output_wires[:-1]
         output_ones = [True] * len(_output)
 
         MultiX(output_ones, _output)
-        SemiAdder(x_wires[1:][::-1], _output[::-1], work_wires)
+        SemiAdder(x_wires[:-1], _output, work_wires)
         MultiX(output_ones, _output)
 
         # shifted addition
         if m > n:
-            _shifted_adder(x_wires[:-1], output_wires[n:], work_wires)
+            _shifted_adder(x_wires[1:], output_wires[: m - n], work_wires)
 
 
 add_decomps(
