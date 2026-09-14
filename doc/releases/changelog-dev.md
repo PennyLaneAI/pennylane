@@ -2,6 +2,33 @@
 
 <h3>New features since last release</h3>
 
+* A new decorator is available called :func:`pennylane.subcircuit`, which can be used to 
+  create operators directly from quantum functions. This enables fast research and 
+  development of new operators without the need to create full-fledged operator classes 
+  manually.
+  [(#10126)](https://github.com/PennyLaneAI/pennylane/pull/10126)
+
+  ```python
+  @qp.subcircuit(dynamic_argnames=("phi",), wire_argnames=("wires",))
+  @qp.register_resources({qp.H: 1, qp.RZ: 1})
+  def MyOp(phi, wires):
+      """My custom operator created using qp.subcircuit."""
+      qp.H(wires)
+      qp.RZ(phi, wires)
+  ```
+  ```pycon
+  >>> op = MyOp(0.5, wires=0)
+  >>> op
+  MyOp(0.5, wires=[0])
+  >>> isinstance(op, qp.core.Operator2)
+  True
+  >>> qp.inspect_decomps(op)
+  Decomposition 0 (name: MyOp_decomp)
+  0: ──H──RZ(0.50)─┤
+  Gate Count: {Hadamard: 1, RZ: 1}
+
+  ```
+
 * Two new numeric Hamiltonians called :class:`pennylane.CDFHamiltonian` (based on `arXiv:2506.15784, Sec. III A <https://arxiv.org/abs/2506.15784>`) and :class:`pennylane.CGFHamiltonian` have been added (based on `arXiv:2508.11865, Sec. III C <https://arxiv.org/abs/2508.11865>`), which define compressed double-factorized (CDF) and Christiansen greedy-fragmentation Hamiltonians, respectively. These Hamiltonians can be defined
   with both concrete numeric data or abstract data (using ``qp.typing.Float[...]``).
   [(#10048)](https://github.com/PennyLaneAI/pennylane/pull/10048)
@@ -424,6 +451,11 @@
   The round is resolved from the device being traced, so the program has to be captured (`qp.qjit(capture=True)`). The controller's `in_bytes` and `out_bytes` capacities both default to 8 bytes, and the correction comes back as an `out_bytes`-sized `uint8` buffer. Pass `controller=` / `coprocessor=` to choose the nodes explicitly, `out_bytes=` to override the reply size, and `decoder_id=` to select which coprocessor-side decoder handles the round.
 
 <h3>Improvements 🛠</h3>
+
+* Added `Multiplexer` and `Multiplexor` as aliases for :class:`~.Select`, and
+  `MultiplexedRotation` and `UniformlyControlledRotation` as aliases for
+  :class:`~.SelectPauliRot`.
+  [(#9639)](https://github.com/PennyLaneAI/pennylane/pull/9639)
 
 * Register a dispatch for ``np.delete`` to handle Numpy/JAX signature divergence.
   [(#10137)]((https://github.com/PennyLaneAI/pennylane/pull/10137)
@@ -1446,6 +1478,7 @@
 
 * Fix `qp.eigvals` returns `NaN` for a legal fractional power operator.
   [(#9802)](https://github.com/PennyLaneAI/pennylane/pull/9802)
+  [(#10139)](https://github.com/PennyLaneAI/pennylane/pull/10139)
 
 * Fixed the decomposition rule of :class:`~.QROM` so that it can be captured and compiled with
   Catalyst. Tracing the ``clean`` branch previously raised a ``TracerIntegerConversionError``

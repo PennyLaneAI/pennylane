@@ -337,7 +337,9 @@ class Pow(ScalarSymbolicOp):
 
     def eigvals(self):
         base_eigvals = self.base.eigvals()
-        return [((1 + 0j) * value) ** self.z for value in base_eigvals]
+        is_single_precision = math.get_dtype_name(base_eigvals) in ("float32", "complex64")
+        complex_dtype = "complex64" if is_single_precision else "complex128"
+        return math.cast(base_eigvals, complex_dtype) ** self.z
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
