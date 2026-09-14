@@ -184,6 +184,17 @@ class NumericHamiltonian:
         return _is_abstract
 
     @property
+    def is_fully_abstract(self) -> bool:
+        """bool: Whether all tensors are abstract specifications rather than concrete data."""
+        _is_fully_abstract = True
+        for name in self.tensor_names + self.scalar_names:
+            if not isinstance(getattr(self, name), AbstractArray):
+                _is_fully_abstract = False
+                break
+
+        return _is_fully_abstract
+
+    @property
     def numeric_data(self) -> tuple:
         """tuple: The tensors this Hamiltonian carries and the scalar data, in (``tensor_names``, ``scalar_names``) order."""
         return tuple(getattr(self, name) for name in self.tensor_names + self.scalar_names)
@@ -237,7 +248,12 @@ class NumericHamiltonian:
             for name in self.tensor_names + self.scalar_names:
                 data = getattr(self, name)
                 other_data = getattr(other, name)
-                if not (isinstance(data, AbstractArray) and isinstance(other_data, AbstractArray)):
+                _both_data_abstract = isinstance(data, AbstractArray) and isinstance(
+                    other_data, AbstractArray
+                )
+                _same_dtype = _dtype_of(data) == _dtype_of(other_data)
+
+                if not _both_data_abstract and _same_dtype:
                     return False
 
             return True
@@ -249,7 +265,7 @@ class NumericHamiltonian:
                 for a, b in zip(self.numeric_data, other.numeric_data, strict=True)
             )
 
-        return False # One is abstract, one is not, therefore not the same
+        return False  # One is abstract, one is not, therefore not the same
 
     def __repr__(self):
         def render(tensor):

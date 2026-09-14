@@ -117,6 +117,7 @@ class TestConcreteCDFCGF:
         for name, size in expected.items():
             assert getattr(ham, name) == size
         assert not ham.is_abstract
+        assert not ham.is_fully_abstract
 
     def test_direct_attribute_access(self, seed):
         """Test that the numeric data is readable off the instance, and that the tensors
@@ -156,6 +157,7 @@ class TestConcreteCDFCGF:
 
         assert ham.num_modes == M
         assert not ham.is_abstract
+        assert not ham.is_fully_abstract
 
     def test_inconsistent_shared_dimension(self):
         """Test that a symbol appearing in both tensors must unify."""
@@ -526,6 +528,7 @@ class TestAbstractCDFCGF:
         ham = CGFHamiltonian(**cgf_specs())
 
         assert ham.is_abstract
+        assert ham.is_fully_abstract
         assert ham.core_tensors == AbstractArray((L + 1, M, M, N, N), float)
         assert ham.leaf_tensors == AbstractArray((L + 1, M, N, N), float)
         assert ham.nuc_constant == AbstractArray((), float)
@@ -535,6 +538,7 @@ class TestAbstractCDFCGF:
         ham = CDFHamiltonian(**cdf_specs())
 
         assert ham.is_abstract
+        assert ham.is_fully_abstract
         assert ham.core_tensors == AbstractArray((L + 1, N, N), float)
 
     @pytest.mark.parametrize(
@@ -553,6 +557,7 @@ class TestAbstractCDFCGF:
         ham = CGFHamiltonian(Float[L + 1, M, M, N, N], Float[L + 1, M, N, N])
 
         assert ham.is_abstract
+        assert ham.is_fully_abstract
         assert ham.nuc_constant == AbstractArray((), float)
 
     def test_abstractify_matches_abstract_construction(self, seed):
@@ -636,11 +641,12 @@ class TestAbstractCDFCGF:
 
             core_tensors: object
             leaf_tensors: object
-            nuc_constant: object = None
+            nuc_constant: object
 
-        ham = THCHamiltonian(Float[7, 7], Float[7, 4])
+        ham = THCHamiltonian(Float[7, 7], Float[7, 4], Float)
 
         assert ham.is_abstract
+        assert ham.is_fully_abstract
         assert ham.dimensions == {"tensor_rank": 7, "num_orbitals": 4}
 
 
@@ -654,6 +660,7 @@ class TestVibronic:
         assert ham.dimensions == {"num_fragments": F, "num_states": N, "num_modes": M}
         assert (ham.num_fragments, ham.num_states, ham.num_modes) == (F, N, M)
         assert not ham.is_abstract
+        assert not ham.is_fully_abstract
 
     def test_direct_attribute_access(self, seed):
         """Test that the numeric data is readable off the instance, and that the tensors
@@ -767,6 +774,7 @@ class TestVibronic:
         ham = VibronicHamiltonian(**vibronic_specs())
 
         assert ham.is_abstract
+        assert ham.is_fully_abstract
         assert ham.constant == AbstractArray((F, N, N), float)
         assert ham.kinetic == AbstractArray((N, N, M, M), float)
         assert ham.dimensions == {"num_fragments": F, "num_states": N, "num_modes": M}
@@ -871,6 +879,7 @@ class TestNumericHamiltonian:
         ham = self._diagonal_hamiltonian()(Float[5, 5])
 
         assert ham.is_abstract
+        assert ham.is_fully_abstract
         assert ham.dimensions == {"num_terms": 5}
 
     def test_new_subclass_pytree_roundtrip(self):
