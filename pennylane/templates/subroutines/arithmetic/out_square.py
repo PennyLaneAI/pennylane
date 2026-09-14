@@ -29,8 +29,8 @@ from .semi_adder import (
     SemiAdder,
     _self_ctrl_one_sparse_add,
     _self_ctrl_one_sparse_add_resources,
-    _sparse_adder,
-    _sparse_adder_resources,
+    _semi_adder,
+    _semi_adder_resources,
 )
 from .temporary_and import TemporaryAND
 
@@ -287,9 +287,11 @@ def _out_square_with_adder_zeroed_resources(
     for i in range(1, p + 1):
         x_size = n - i
         y_size = min(m - 2 * i, n + 2 - i)
-        # Note that the first of these adders could replace one TemporaryAND gate by a CNOT
-        # but we do not implement this improvement here (Improvement #4 from Sec IIIA)
-        for k, val in _self_ctrl_one_sparse_add_resources(x_size, y_size, num_work_wires).items():
+        # First self-controlled 1-sparse adder can copy the first input bit instead of recomputing
+        # a temporary AND (Improvement #4 from Sec IIIA).
+        for k, val in _self_ctrl_one_sparse_add_resources(
+            x_size, y_size, num_work_wires, i == 1
+        ).items():
             resources[k] += val
 
     return dict(resources)
@@ -324,9 +326,11 @@ def _out_square_with_adder_zeroed(
     for i in range(1, p + 1):
         # Perform specialized "self"-controlled addition with zeroed 2s input bit, using
         # sliced x_wires and output_wires.
-        # Note that the first of these adders could replace one TemporaryAND gate by a CNOT
-        # but we do not implement this improvement here (Improvement #4 from Sec IIIA)
-        _self_ctrl_one_sparse_add(x_wires[i:], output_wires[2 * i : min(m, n + 2 + i)], work_wires)
+        # First self-controlled 1-sparse adder can copy the first input bit instead of recomputing
+        # a temporary AND (Improvement #4 from Sec IIIA).
+        _self_ctrl_one_sparse_add(
+            x_wires[i:], output_wires[2 * i : min(m, n + 2 + i)], work_wires, i == 1
+        )
 
     CNOT([x_wires[0], output_wires[0]])  # First control-copy, delayed until end of decomp.
 
@@ -363,7 +367,9 @@ def _out_square_with_caddsub_resources(
     if output_wires_zeroed and p == 0:
         resources[CNOT] += 1
     else:
-        for key, value in _sparse_adder_resources(n, m, [1] + [2 * j for j in range(1, n)]).items():
+        skips = [1] + [2 * j for j in range(1, n)]
+        sparse_adder_res = _semi_adder_resources(x_wires, output_wires, skip_input_pos=skips)
+        for key, value in sparse_adder_res.items():
             resources[key] += value
 
     if n > 1 and m > 1:
@@ -419,7 +425,9 @@ def _out_square_with_caddsub(
         # in both cases we just need a CNOT to copy the LSB of the input into the zeroed output.
         CNOT([x_wires[0], output_wires[0]])
     else:
-        _sparse_adder(x_wires, output_wires, work_wires, zeroed=[1] + [2 * j for j in range(1, n)])
+        _semi_adder(
+            x_wires, output_wires, work_wires, skip_input_pos=[1] + [2 * j for j in range(1, n)]
+        )
 
     if n > 1 and m > 1:
         _output = output_wires[1:]

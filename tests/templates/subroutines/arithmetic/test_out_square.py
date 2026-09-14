@@ -342,14 +342,15 @@ class TestOutSquare:
             # controlled copy
             qp.TemporaryAND(wires=[2, 1, 4]),
             qp.TemporaryAND(wires=[2, 0, 3]),
-            qp.TemporaryAND(wires=[1, 4, 7]),
+            # First AND copied from third-least significant output bit
+            qp.CNOT([4, 7]),
             qp.MultiControlledX(
                 wires=[1, 7, 3],
                 control_values=[True, True],
                 work_wires=[8, 9, 10, 6, 5],
                 work_wire_type="zeroed",
             ),
-            Adjoint(qp.TemporaryAND(wires=[1, 4, 7])),
+            qp.CNOT([4, 7]),
             qp.CNOT(wires=[1, 4]),
             qp.CNOT([2, 6]),
         ]
