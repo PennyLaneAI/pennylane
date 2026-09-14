@@ -1423,8 +1423,15 @@ class MultiControlledX(Controlled2):
 
 @custom_ctrl_dispatch.register
 def _ctrl_mcx(base: MultiControlledX, control, control_values, work_wires, work_wire_type):
-    wires = control + base.wires
     ctrl_values = _resolve_ctrl_values(control_values, base.control_values, len(control))
+    work_wire_type = resolve_work_wire_type(
+        base.work_wires,
+        base.work_wire_type,
+        work_wires,
+        work_wire_type,
+    )
+    wires = control + base.wires
+    work_wires = work_wires + base.work_wires
     return qp.MultiControlledX(wires, ctrl_values, work_wires, work_wire_type)
 
 
