@@ -894,3 +894,4 @@ class TestNumericHamiltonian:
         other_ham2 = THCHamiltonian(Float[7, 7], Float[7, 4], Int)
         assert ham != other_ham1
         assert ham != other_ham2
+        assert other_ham1 != other_ham2
