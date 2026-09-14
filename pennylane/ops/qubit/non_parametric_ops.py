@@ -1540,18 +1540,18 @@ def _swap_to_cnot(wires, **_):
 
 def _swap_to_ppr_resource(wires: WiresLike):
     return {
-        qp.PPR(2, pauli_word="XX", wires=Wire[2]): 1,
-        qp.PPR(2, pauli_word="YY", wires=Wire[2]): 1,
-        qp.PPR(2, pauli_word="ZZ", wires=Wire[2]): 1,
+        qp.PPR(4, pauli_word="XX", wires=Wire[2]): 1,
+        qp.PPR(4, pauli_word="YY", wires=Wire[2]): 1,
+        qp.PPR(4, pauli_word="ZZ", wires=Wire[2]): 1,
         qp.GlobalPhase: 1,
     }
 
 
 @register_resources(_swap_to_ppr_resource)
 def _swap_to_ppr(wires, **_):
-    qp.PPR(2, "YY", wires=wires)
-    qp.PPR(2, "XX", wires=wires)
-    qp.PPR(2, "ZZ", wires=wires)
+    qp.PPR(4, "YY", wires=wires)
+    qp.PPR(4, "XX", wires=wires)
+    qp.PPR(4, "ZZ", wires=wires)
     qp.GlobalPhase(-np.pi / 4)
 
 
@@ -1856,15 +1856,15 @@ def _iswap_decomp(wires):
 
 def _iswap_to_ppr_resource(wires: WiresLike):
     return {
-        qp.PPR(-2, pauli_word="XX", wires=Wire[2]): 1,
-        qp.PPR(-2, pauli_word="YY", wires=Wire[2]): 1,
+        qp.PPR(-4, pauli_word="XX", wires=Wire[2]): 1,
+        qp.PPR(-4, pauli_word="YY", wires=Wire[2]): 1,
     }
 
 
 @register_resources(_iswap_to_ppr_resource)
 def _iswap_to_ppr(wires):
-    qp.PPR(-2, "YY", wires=wires)
-    qp.PPR(-2, "XX", wires=wires)
+    qp.PPR(-4, "YY", wires=wires)
+    qp.PPR(-4, "XX", wires=wires)
 
 
 add_decomps(ISWAP, _iswap_decomp, _iswap_to_ppr)
@@ -2031,15 +2031,15 @@ def _siswap_decomp(wires):
 
 def _siswap_to_ppr_resource(wires: WiresLike):
     return {
-        qp.PPR(-4, pauli_word="XX", wires=Wire[2]): 1,
-        qp.PPR(-4, pauli_word="YY", wires=Wire[2]): 1,
+        qp.PPR(-8, pauli_word="XX", wires=Wire[2]): 1,
+        qp.PPR(-8, pauli_word="YY", wires=Wire[2]): 1,
     }
 
 
 @register_resources(_siswap_to_ppr_resource)
 def _siswap_to_ppr(wires, **_):
-    qp.PPR(-4, "YY", wires=wires)
-    qp.PPR(-4, "XX", wires=wires)
+    qp.PPR(-8, "YY", wires=wires)
+    qp.PPR(-8, "XX", wires=wires)
 
 
 add_decomps(SISWAP, _siswap_decomp, _siswap_to_ppr)
@@ -2225,12 +2225,15 @@ class PPR(Operator2):
         conjugation_matrix = reduce(math.kron, conjugation_factors)
         return math.conj(conjugation_matrix) @ multi_Z_rot_matrix @ conjugation_matrix
 
+
 def _ppr_to_paulirot_resources(pauli_word, **_):
     return {qp.PauliRot(Float, pauli_word=pauli_word, wires=Wire[len(pauli_word)]): 1}
+
 
 @register_resources(_ppr_to_paulirot_resources)
 def _ppr_to_paulirot(angle_denominator, pauli_word, wires):
     qp.PauliRot(np.pi / angle_denominator * 2, pauli_word, wires=wires)
+
 
 def _adjoint_ppr_to_ppr_resources(base):
     num_wires = len(base.wires)

@@ -264,15 +264,15 @@ def _single_excitation_ppr(phi: TensorLike, wires: WiresLike):
 
 # pylint: disable=unused-argument
 def _single_excitation_ppr_rz_resources(phi, wires):
-    return {qp.RZ: 2, qp.PPR(2, "XX", Wire[2]): 1, qp.PPR(-2, "XX", Wire[2]): 1}
+    return {qp.RZ: 2, qp.PPR(4, "XX", Wire[2]): 1, qp.PPR(-4, "XX", Wire[2]): 1}
 
 
 @register_resources(_single_excitation_ppr_rz_resources)
 def _single_excitation_ppr_rz(phi: TensorLike, wires: WiresLike):
-    qp.PPR(2, "XX", wires=wires)
+    qp.PPR(4, "XX", wires=wires)
     qp.RZ(phi / 2, wires[0])
     qp.RZ(-phi / 2, wires[1])
-    qp.PPR(-2, "XX", wires=wires)
+    qp.PPR(-4, "XX", wires=wires)
 
 
 add_decomps(
