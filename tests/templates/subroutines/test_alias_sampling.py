@@ -194,6 +194,19 @@ def test_alias_sampling_wires(L, mu, expected_target, expected_temp, expected_wo
     assert req["work_wires"] == expected_work
 
 
+@pytest.mark.parametrize("mu", [True, 0])
+def test_alias_sampling_wires_invalid_mu_raises(mu):
+    """Test that alias_sampling_wires rejects an invalid precision."""
+    with pytest.raises(ValueError, match="mu must be a positive integer"):
+        qp.alias_sampling_wires(2, mu)
+
+
+def test_alias_sampling_wires_invalid_n_states_raises():
+    """Test that alias_sampling_wires rejects an empty coefficient register."""
+    with pytest.raises(ValueError, match="n_states must be at least 1"):
+        qp.alias_sampling_wires(0, 1)
+
+
 def _alias_registers(L, mu, w=None):
     if w is None:
         w = np.random.default_rng(L).random(L) + 0.05
@@ -283,6 +296,11 @@ class TestAliasSampling:
         """Test that probs must contain at least one entry."""
         with pytest.raises(ValueError, match="probs must have at least one entry"):
             qp.AliasSampling([], 1, [], [0, 1, 2], [])
+
+    def test_zero_sum_probs_raise(self):
+        """Test that probs must have a positive sum."""
+        with pytest.raises(ValueError, match="probs must sum to a positive value"):
+            qp.AliasSampling([0.0, 0.0], 1, [0], list(range(1, 5)), [])
 
     def test_2d_probs_raise(self):
         """Test that a 2-D probs array is rejected instead of being flattened."""
