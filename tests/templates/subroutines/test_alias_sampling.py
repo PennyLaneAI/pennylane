@@ -92,6 +92,7 @@ class TestUniformPrep:
         probs = _target_probs(n_states)
         assert np.allclose(probs, 1 / n_states)
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_single_state(self):
         """Test that n_states = 1 uses zero target wires and leaves the register in |0>."""
         with qp.queuing.AnnotatedQueue() as q:
@@ -100,10 +101,19 @@ class TestUniformPrep:
         tape = qp.tape.QuantumScript.from_queue(q)
         assert tape.operations[0].name == "UniformPrep"
 
+        op = qp.UniformPrep(1, [], work_wires=[])
+        for rule in list_decomps(qp.UniformPrep):
+            _test_decomposition_rule(op, rule)
+
     def test_wrong_target_wire_count_raises(self):
         """Test that a target register of the wrong size raises a clear error."""
         with pytest.raises(ValueError, match="target_wires must have 3 wires"):
             qp.UniformPrep(5, [0, 1], work_wires=[3, 4])
+
+    def test_insufficient_work_wires_raises(self):
+        """Test that too few work wires raise a clear error."""
+        with pytest.raises(ValueError, match="work_wires must have at least 4 wires"):
+            qp.UniformPrep(9, [0, 1, 2, 3], work_wires=[4, 5])
 
     def test_non_positive_n_states_raises(self):
         """Test that an error is raised when n_states is not a positive integer."""
@@ -257,3 +267,34 @@ class TestAliasSampling:
             return qp.probs()
 
         assert np.isclose(np.asarray(circuit())[0], 1.0)
+
+    @pytest.mark.parametrize("mu", [True, 0])
+    def test_invalid_mu_raises(self, mu):
+        """Test that mu must be a positive integer."""
+        with pytest.raises(ValueError, match="mu must be a positive integer"):
+            qp.AliasSampling([1.0], mu, [], [0, 1, 2], [])
+
+    def test_empty_probs_raises(self):
+        """Test that probs must contain at least one entry."""
+        with pytest.raises(ValueError, match="probs must have at least one entry"):
+            qp.AliasSampling([], 1, [], [0, 1, 2], [])
+
+    @pytest.mark.parametrize(
+        ("target_wires", "temp_wires", "work_wires", "match"),
+        [
+            ([0], list(range(1, 9)), [9, 10], "target_wires must have 2 entries"),
+            ([0, 1], list(range(2, 9)), [9, 10], "temp_wires must have 8 entries"),
+            ([0, 1], list(range(2, 10)), [10], "work_wires must have at least 2 entries"),
+        ],
+    )
+    def test_invalid_register_sizes_raise(self, target_wires, temp_wires, work_wires, match):
+        """Test that each register size is validated."""
+        with pytest.raises(ValueError, match=match):
+            qp.AliasSampling([0.2, 0.3, 0.5], 2, target_wires, temp_wires, work_wires)
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_single_coefficient_decomposition(self):
+        """Test the zero-target-wire decomposition."""
+        op = qp.AliasSampling([1.0], 1, [], [0, 1, 2], [])
+        for rule in list_decomps(qp.AliasSampling):
+            _test_decomposition_rule(op, rule)
