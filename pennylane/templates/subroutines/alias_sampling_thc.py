@@ -249,7 +249,7 @@ def alias_sampling_thc_wires(M, N, aleph):
 
         * ``mu_wires`` / ``nu_wires``: the two index registers, exact
         * ``superposition_work_wires``: the work register of
-          :class:`~pennylane.labs.templates.SuperpositionTHC`; its entry at index ``3``
+          :class:`~.SuperpositionTHC`; its entry at index ``3``
           is the one-body sentinel flag to pass as ``edge_flag``
         * ``work_wires``: the minimum scratch register of :class:`~.AliasSamplingTHC`.
           Additional wires are forwarded to the internal :class:`~.QROM`, which uses them
@@ -333,7 +333,7 @@ class AliasSamplingTHC(Operator2):
     coherent alias (Walker) sampling.
 
     Given the uniform superposition over the valid THC index pairs
-    :math:`\mathcal{S}` (as prepared by :class:`~pennylane.labs.templates.SuperpositionTHC`),
+    :math:`\mathcal{S}` (as prepared by :class:`~.SuperpositionTHC`),
     this template reweights the amplitudes to the target distribution set by
     the THC coefficients and symmetrizes the two-body block:
 
@@ -389,7 +389,7 @@ class AliasSamplingTHC(Operator2):
 
         This is the ``PREPARE`` step *after* the index superposition. The input
         superposition must be prepared first with
-        :class:`~pennylane.labs.templates.SuperpositionTHC`, which also produces the
+        :class:`~.SuperpositionTHC`, which also produces the
         one-body sentinel flag (its ``work_wires[3]``, true when :math:`\nu = M`)
         passed here as ``edge_flag``. This template does not recompute that flag.
 
@@ -407,7 +407,7 @@ class AliasSamplingTHC(Operator2):
             :math:`\nu`. Must have the same length as ``mu_wires``
         edge_flag (WiresLike): the single wire holding the one-body sentinel flag
             (true when the ``nu`` register is in state :math:`\lvert M \rangle`), as
-            produced by :class:`~pennylane.labs.templates.SuperpositionTHC`
+            produced by :class:`~.SuperpositionTHC`
         work_wires (WiresLike): the auxiliary wires. At least
             ``n_d + 2 * n + 3 * aleph + 4`` zeroed work wires are
             required, where ``n = ceil(log2(M + 1))`` and
@@ -420,7 +420,7 @@ class AliasSamplingTHC(Operator2):
     **Example**
 
     The index superposition is prepared first with
-    :class:`~pennylane.labs.templates.SuperpositionTHC`. Use
+    :class:`~.SuperpositionTHC`. Use
     :func:`~.alias_sampling_thc_wires` for every register size, including the
     ``SuperpositionTHC`` work register whose entry at index ``3`` is ``edge_flag``.
 
@@ -428,7 +428,6 @@ class AliasSamplingTHC(Operator2):
 
         import numpy as np
         import pennylane as qp
-        from pennylane.labs.templates import SuperpositionTHC
 
         M, N, aleph = 2, 2, 6
         zeta = np.eye(M)
@@ -443,7 +442,7 @@ class AliasSamplingTHC(Operator2):
         start = sup_work[-1] + 1
         work_wires = list(range(start, start + sizes["work_wires"]))
 
-        SuperpositionTHC(M, N, mu_wires, nu_wires, sup_work)
+        qp.SuperpositionTHC(M, N, mu_wires, nu_wires, sup_work)
         qp.AliasSamplingTHC(M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph)
     """
 

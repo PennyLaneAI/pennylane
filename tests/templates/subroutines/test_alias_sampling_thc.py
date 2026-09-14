@@ -18,7 +18,6 @@ import pytest
 
 import pennylane as qp
 from pennylane.decomposition import list_decomps
-from pennylane.labs.templates import SuperpositionTHC
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
 from pennylane.templates.subroutines.alias_sampling_thc import (
     _build_alias_tables,
@@ -140,7 +139,7 @@ def _run(M, N, zeta, t_ell, aleph, device="lightning.qubit"):  # pylint: disable
 
     @qp.qnode(dev)
     def circuit():
-        SuperpositionTHC(M, N, mu_wires, nu_wires, sup_work)
+        qp.SuperpositionTHC(M, N, mu_wires, nu_wires, sup_work)
         qp.AliasSamplingTHC(M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph)
         return qp.probs(wires=mu_wires + nu_wires)
 
@@ -360,7 +359,7 @@ class TestAliasSamplingTHC:
 
         @qp.qnode(dev)
         def circuit():
-            SuperpositionTHC(M, N, mu_wires, nu_wires, sup_work)
+            qp.SuperpositionTHC(M, N, mu_wires, nu_wires, sup_work)
             qp.AliasSamplingTHC(M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph)
             return qp.probs(wires=ancillas)
 
