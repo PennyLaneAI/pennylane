@@ -63,7 +63,7 @@ dev = [
     "pytest-forked>=1.4.0",
     "pytest-split",
     "rich>=13.7.1",
-    "tach==0.32.2",
+    "tach==0.35.1",
     "build",
     "pylint~=4.0.0",
     "isort~=7.0.0",
