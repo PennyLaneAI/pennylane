@@ -1032,12 +1032,11 @@ add_decomps("Pow(CNOT)", pow_involutory2)
 
 
 def _ctrl_cnot_resource(base, control_wires, control_values, work_wires, work_wire_type):
-    # let qp.ctrl handle the dispatch to Toffoli/MCX
+    ctrl_values = _resolve_ctrl_values(control_values, [True], len(control_wires))
     return {
-        qp.ctrl(
-            qp.CNOT(base.wires),
-            control=control_wires,
-            control_values=control_values,
+        qp.MultiControlledX(
+            Wire[len(control_wires) + 2],
+            control_values=ctrl_values,
             work_wires=work_wires,
             work_wire_type=work_wire_type,
         ): 1
@@ -1046,11 +1045,10 @@ def _ctrl_cnot_resource(base, control_wires, control_values, work_wires, work_wi
 
 @qp.register_resources(_ctrl_cnot_resource)
 def _ctrl_cnot_to_mcx(base, control_wires, control_values, work_wires, work_wire_type):
-    # let qp.ctrl handle the dispatch to CNOT/Toffoli/MCX
-    qp.ctrl(
-        qp.CNOT(base.wires),
-        control=control_wires,
-        control_values=control_values,
+    ctrl_values = _resolve_ctrl_values(control_values, [True], len(control_wires))
+    qp.MultiControlledX(
+        control_wires + base.wires,
+        control_values=ctrl_values,
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )
@@ -1253,12 +1251,11 @@ add_decomps("Pow(Toffoli)", pow_involutory2)
 
 
 def _ctrl_toffoli_resource(base, control_wires, control_values, work_wires, work_wire_type):
-    # let qp.ctrl handle the dispatch to MCX
+    ctrl_values = _resolve_ctrl_values(control_values, [True, True], len(control_wires))
     return {
-        qp.ctrl(
-            qp.Toffoli(base.wires),
-            control=control_wires,
-            control_values=control_values,
+        qp.MultiControlledX(
+            Wire[len(control_wires) + 3],
+            control_values=ctrl_values,
             work_wires=work_wires,
             work_wire_type=work_wire_type,
         ): 1
@@ -1267,11 +1264,10 @@ def _ctrl_toffoli_resource(base, control_wires, control_values, work_wires, work
 
 @qp.register_resources(_ctrl_toffoli_resource)
 def _ctrl_toffoli_to_mcx(base, control_wires, control_values, work_wires, work_wire_type):
-    # let qp.ctrl handle the dispatch to CNOT/Toffoli/MCX
-    qp.ctrl(
-        qp.Toffoli(base.wires),
-        control=control_wires,
-        control_values=control_values,
+    ctrl_values = _resolve_ctrl_values(control_values, [True, True], len(control_wires))
+    qp.MultiControlledX(
+        control_wires + base.wires,
+        control_values=ctrl_values,
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )
@@ -1551,13 +1547,17 @@ add_decomps("Pow(MultiControlledX)", pow_involutory2)
 
 
 def _ctrl_mcx_resource(base, control_wires, control_values, work_wires, work_wire_type):
-    # let qp.ctrl handle the dispatch to MCX
+    work_wire_type = resolve_work_wire_type(
+        base.work_wires,
+        base.work_wire_type,
+        work_wires,
+        work_wire_type,
+    )
     return {
-        qp.ctrl(
-            base,
-            control=control_wires,
-            control_values=control_values,
-            work_wires=work_wires,
+        qp.MultiControlledX(
+            control_wires + base.wires,
+            control_values=Bool[len(control_values) + len(base.control_values)],
+            work_wires=work_wires + base.work_wires,
             work_wire_type=work_wire_type,
         ): 1
     }
@@ -1565,12 +1565,17 @@ def _ctrl_mcx_resource(base, control_wires, control_values, work_wires, work_wir
 
 @qp.register_resources(_ctrl_mcx_resource)
 def _ctrl_mcx_to_mcx(base, control_wires, control_values, work_wires, work_wire_type):
-    # let qp.ctrl handle the dispatch to CNOT/Toffoli/MCX
-    qp.ctrl(
-        base,
-        control=control_wires,
-        control_values=control_values,
-        work_wires=work_wires,
+    n_ctrl_wires = len(control_wires)
+    work_wire_type = resolve_work_wire_type(
+        base.work_wires,
+        base.work_wire_type,
+        work_wires,
+        work_wire_type,
+    )
+    qp.MultiControlledX(
+        control_wires + base.wires,
+        control_values=_resolve_ctrl_values(control_values, base.control_values, n_ctrl_wires),
+        work_wires=work_wires + base.work_wires,
         work_wire_type=work_wire_type,
     )
 

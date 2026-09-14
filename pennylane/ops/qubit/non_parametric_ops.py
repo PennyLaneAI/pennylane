@@ -513,11 +513,9 @@ add_decomps("Pow(PauliX)", pow_involutory2, _pow_x_to_rx, _pow_x_to_sx)
 
 
 def _ctrl_x_resource(base, control_wires, control_values, work_wires, work_wire_type):
-    # let qp.ctrl handle the dispatch to CNOT/Toffoli/MCX
     return {
-        qp.ctrl(
-            qp.X(base.wires),
-            control=control_wires,
+        qp.MultiControlledX(
+            Wire[len(control_wires) + 1],
             control_values=control_values,
             work_wires=work_wires,
             work_wire_type=work_wire_type,
@@ -527,10 +525,8 @@ def _ctrl_x_resource(base, control_wires, control_values, work_wires, work_wire_
 
 @qp.register_resources(_ctrl_x_resource)
 def _ctrl_x_to_mcx(base, control_wires, control_values, work_wires, work_wire_type):
-    # let qp.ctrl handle the dispatch to CNOT/Toffoli/MCX
-    qp.ctrl(
-        qp.X(base.wires),
-        control=control_wires,
+    qp.MultiControlledX(
+        wires=control_wires + base.wires,
         control_values=control_values,
         work_wires=work_wires,
         work_wire_type=work_wire_type,
