@@ -156,7 +156,8 @@ def _apply_loaded_rotation(
 
     both :math:`R_y` carry the same angle, so each becomes one addition of the
     same loaded value under a fixed Clifford: two additions per Givens pair, and no
-    arbitrary-angle rotation anywhere. The control is moved onto the loaded bits by a ``CNOT`` layer.
+    arbitrary-angle rotation anywhere. The control is moved onto the loaded bits by a ``CNOT`` layer,
+    so no controlled adder is needed.
 
     Args:
         psi_down (Sequence[int]): the ``N/2`` spatial orbitals :math:`U` acts on
@@ -200,7 +201,7 @@ def select_thc_wires(M, N, beth, num_batches=1):
         N (int): the number of spin orbitals.
         beth (int): bits of precision per Givens angle. The realised grid is the odd
             multiples of :math:`\pi / 2^{\mathrm{beth}}`, so the spacing is
-            :math:`2\pi / 2^{\mathrm{beth}}`
+            :math:`2\pi / 2^{\mathrm{beth}}`.
         num_batches (int): the number of batches the Givens angles are loaded in. The
             default of ``1`` loads all of them at once. See the note below.
 
@@ -213,8 +214,8 @@ def select_thc_wires(M, N, beth, num_batches=1):
         * ``index_wires`` (``2 * ceil(log2(M + 1))``): :math:`\mu` followed by
           :math:`\nu`, as produced by ``PREPARE``. The ``+ 1`` inside the logarithm
           leaves room for the one-body sentinel value :math:`\nu = M`.
-        * ``flag_wires`` (``5``): the success flag, the one-body sentinel flag,
-          the qubit that controls the :math:`\mu \leftrightarrow \nu` symmetrization,
+        * ``flag_wires`` (``5``): the success flag, the one-body sentinel flag (:math:`\nu = M`),
+          the qubit that controls the :math:`\mu \leftrightarrow \nu` swap,
           and the two spin flags.
         * ``gradient_wires`` (``beth + 1``): the phase gradient register. See the note below.
         * ``work_wires`` (``ceil((N/2 - 1) / num_batches) * beth +
@@ -239,9 +240,9 @@ def select_thc_wires(M, N, beth, num_batches=1):
 
         .. math::
 
-            \lvert \phi \rangle = \frac{1}{\sqrt{2^{\mathrm{beth}}}}
-            \sum_{k=0}^{2^{\mathrm{beth}} - 1}
-            e^{-2 \pi i k / 2^{\mathrm{beth}}} \lvert k \rangle ,
+            \lvert \phi \rangle = \frac{1}{\sqrt{2^{\mathrm{beth}+1}}}
+            \sum_{k=0}^{2^{\mathrm{beth}+1} - 1}
+            e^{-2 \pi i k / 2^{\mathrm{beth}+1}} \lvert k \rangle ,
 
         a product state that ``beth + 1`` ``Hadamard`` and ``beth + 1`` ``PhaseShift`` gates prepare.
         The ``SELECT`` oracle leaves it unchanged, so it is
@@ -293,7 +294,7 @@ def _select_half(
 ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
     r"""Apply one :math:`V = U^\dagger Z_1 U` sandwich of the THC ``SELECT`` oracle.
 
-    This is the kernel of Figs. 5 and 7 of `Lee et al. (2021)
+    This is the kernel of Figs. 5 of `Lee et al. (2021)
     <https://arxiv.org/abs/2011.03494>`_.
 
     Args:
@@ -404,9 +405,9 @@ def select_thc(
 ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
     r"""Self-inverse Hamiltonian selection oracle for tensor hypercontraction (THC).
 
-    Implements the ``SELECT`` of Figs. 5 and 7 of `Lee et al. (2021)
-    <https://arxiv.org/abs/2011.03494>`_. On the subspace flagged by the success wire this
-    applies
+    Implements the ``SELECT`` of Fig. 5 of `Lee et al. (2021)
+    <https://arxiv.org/abs/2011.03494>`_, with the self-inverse fix of its Eqs. (36)-(42)
+    and Fig. 7. On the subspace flagged by the success wire this applies
 
     .. math::
 
@@ -440,7 +441,7 @@ def select_thc(
             followed by :math:`\nu`, as left by ``PREPARE``.
         flag_wires (Sequence[int]): this includes five wires, in order the success flag, the
             one-body flag (:math:`\nu = M`), the qubit that controls the :math:`\mu \leftrightarrow \nu`
-            symmetrization, and the two spin flags.
+            swap, and the two spin flags.
         gradient_wires (Sequence[int]): the ``beth + 1`` wires holding the phase gradient state.
             This is assumed to be prepared on entry and left unchanged, as it is reused between
             ``PREPARE`` and ``SELECT`` oracles.
