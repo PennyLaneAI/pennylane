@@ -863,7 +863,7 @@ class TestNumericHamiltonian:
         with pytest.raises(ValueError, match="inconsistent 'tensor_rank'"):
             THCHamiltonian(np.zeros((7, 7)), np.zeros((6, 4)), 0.1)
 
-    def test_new_subclass_supports_abstract_data(self):
+    def test_new_subclass_equality(self):
         """Test that a new representation gets abstract construction for free."""
 
         # pylint: disable=too-few-public-methods
