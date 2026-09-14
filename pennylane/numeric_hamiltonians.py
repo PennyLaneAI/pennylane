@@ -194,7 +194,7 @@ class NumericHamiltonian:
                     break
             object.__setattr__(self, "_is_fully_abstract", _is_fully_abstract)
 
-        return self._is_fully_abstract
+        return self._is_fully_abstract  # pylint: disable=no-member
 
     @property
     def numeric_data(self) -> tuple:
