@@ -23,7 +23,7 @@ from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.math import ceil_log2
 from pennylane.ops import CSWAP, RZ, GlobalPhase, Hadamard, adjoint, ctrl
-from pennylane.typing import AbstractWires, Wire
+from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
 from .arithmetic.left_classical_comparator import LeftClassicalComparator
@@ -90,10 +90,6 @@ class UniformPrep(Operator2):
     def __init__(self, n_states: int, target_wires: WiresLike, work_wires: WiresLike):
         if n_states < 1:
             raise ValueError("n_states must be at least 1")
-
-        if isinstance(target_wires, AbstractWires):
-            super().__init__(n_states, target_wires, work_wires)
-            return
 
         target_wires = Wires(target_wires)
         work_wires = Wires([] if work_wires is None else work_wires)
@@ -388,9 +384,6 @@ class AliasSampling(Operator2):
             raise ValueError(f"mu must be a positive integer, got {mu!r}.")
 
         probs = _canonicalize_probs(probs)
-        if isinstance(target_wires, AbstractWires):
-            super().__init__(probs, mu, target_wires, temp_wires, work_wires)
-            return
 
         L = len(probs)
 
@@ -401,7 +394,8 @@ class AliasSampling(Operator2):
         req = alias_sampling_wires(L, mu)
         if len(target_wires) != req["target_wires"]:
             raise ValueError(
-                f"target_wires must have {req['target_wires']} entries for L={L}; got {len(target_wires)}."
+                f"target_wires must have {req['target_wires']} entries for L={L}; "
+                f"got {len(target_wires)}."
             )
         if len(temp_wires) != req["temp_wires"]:
             raise ValueError(
