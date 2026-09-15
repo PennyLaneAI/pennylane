@@ -185,9 +185,9 @@ def _empirical_fourier_moments(
     Returns:
         Complex array of shape ``(n_obs,)``.
     """
-    inv_d = 1.0 / jnp.asarray(dims_visible, dtype=jnp.float64)
-    l_scaled = l_visible.astype(jnp.float64) * inv_d[jnp.newaxis, :]
-    inner = l_scaled @ X_data.astype(jnp.float64).T
+    inv_d = 1.0 / jnp.asarray(dims_visible, dtype=float)
+    l_scaled = l_visible.astype(float) * inv_d[jnp.newaxis, :]
+    inner = l_scaled @ X_data.astype(float).T
     return jnp.mean(jnp.exp(2j * jnp.pi * inner), axis=1)
 
 
