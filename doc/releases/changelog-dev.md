@@ -458,6 +458,13 @@
   [(#9913)](https://github.com/PennyLaneAI/pennylane/pull/9913)
   [(#10145)](https://github.com/PennyLaneAI/pennylane/pull/10145)
 
+* Added :class:`~.AliasSamplingTHC`, the coherent alias-sampling ``PREPARE`` for tensor
+  hypercontraction qubitization, together with :class:`~.SuperpositionTHC`, which prepares the
+  index superposition it acts on.
+  [(#9554)](https://github.com/PennyLaneAI/pennylane/pull/9554)
+  [(#9940)](https://github.com/PennyLaneAI/pennylane/pull/9940)
+  [(#10146)](https://github.com/PennyLaneAI/pennylane/pull/10146)
+
 * Added :class:`~.LeftQuantumComparator` for inequality tests between two quantum registers.
   [(#9277)](https://github.com/PennyLaneAI/pennylane/pull/9277)
   [(#9544)](https://github.com/PennyLaneAI/pennylane/pull/9544)
@@ -848,10 +855,6 @@
       'Hadamard': 1.055E+7
 
   ```
-
-* Created a new ``labs.templates.SuperpositionTHC`` template, used as a subroutine in tensor
-  hypercontraction (THC) qubitization.
-  [(#9554)](https://github.com/PennyLaneAI/pennylane/pull/9554)
 
 * Added the :mod:`pennylane.labs.profiler` which allows users to profile the quantum resources required for
   their quantum workflows. This contains core functions and classes such as
