@@ -189,7 +189,11 @@ test_data_decomposition_new = [
 ]
 
 
-@pytest.mark.jax
+@pytest.mark.xfail_if_capture(
+    reason="Come back to this when we migrate UCCSD [sc-129958]",
+    strict=False,  # not all parametrized configurations fail.
+)
+@pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize("s_wires, d_wires, weights, n_repeats, _", test_data_decomposition)
 def test_standard_validity(s_wires, d_wires, weights, n_repeats, _):
     """Test standard validity criteria using assert_valid."""
@@ -289,6 +293,11 @@ class TestDecomposition:
 
     @pytest.mark.parametrize("s_wires, d_wires, weights, n_repeats", test_data_decomposition_new)
     # Note: UCCSD is not capture compatible
+    @pytest.mark.xfail_if_capture(
+        reason="Come back to this when we migrate UCCSD [sc-129958]",
+        strict=False,  # not all parametrized configurations fail.
+    )
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_new(
         self, s_wires, d_wires, weights, n_repeats
     ):  # pylint: disable=unused-argument
