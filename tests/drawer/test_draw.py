@@ -44,8 +44,8 @@ class TestPartial:
         expected = "\n".join(
             (
                 "    0: ──RX(1.23)─┤  <Z>",
-                "    a: ──RY(2.35)─┤     ",
-                "1.234: ──RZ(3.46)─┤     ",
+                "    a: ──RY(2.35)─┤",
+                "1.234: ──RZ(3.46)─┤",
             )
         )
         assert draw(fixed)(2.345, 3.456) == expected
@@ -57,8 +57,8 @@ class TestPartial:
         expected = "\n".join(
             (
                 "    0: ──RX(1.23)─┤  <Z>",
-                "    a: ──RY(2.35)─┤     ",
-                "1.234: ──RZ(3.46)─┤     ",
+                "    a: ──RY(2.35)─┤",
+                "1.234: ──RZ(3.46)─┤",
             )
         )
         assert draw(fixed)(1.234) == expected
@@ -70,8 +70,8 @@ class TestPartial:
         expected = "\n".join(
             (
                 "    0: ──RX(1.23)─┤  <Z>",
-                "    a: ──RY(2.35)─┤     ",
-                "1.234: ──RZ(3.46)─┤     ",
+                "    a: ──RY(2.35)─┤",
+                "1.234: ──RZ(3.46)─┤",
             )
         )
         assert draw(fixed)(2.345) == expected
@@ -157,19 +157,19 @@ class TestDecimals:
     def test_decimals_None(self):
         """Test that when decimals is ``None``, parameters are omitted."""
 
-        expected = "    0: ──RX─┤  <Z>\n    a: ──RY─┤     \n1.234: ──RZ─┤     "
+        expected = "    0: ──RX─┤  <Z>\n    a: ──RY─┤\n1.234: ──RZ─┤"
         assert draw(circuit, decimals=None)(1.234, 2.345, 3.456) == expected
 
     def test_decimals(self):
         """Test decimals keyword makes the operation parameters included to given precision"""
 
-        expected = "    0: ──RX(1.2)─┤  <Z>\n    a: ──RY(2.3)─┤     \n1.234: ──RZ(3.5)─┤     "
+        expected = "    0: ──RX(1.2)─┤  <Z>\n    a: ──RY(2.3)─┤\n1.234: ──RZ(3.5)─┤"
         assert draw(circuit, decimals=1)(1.234, 2.345, 3.456) == expected
 
     def test_decimals_higher_value(self):
         """Test all decimals places display when requested value is bigger than number precision."""
 
-        out = "    0: ──RX(1.0000)─┤  <Z>\n    a: ──RY(2.0000)─┤     \n1.234: ──RZ(3.0000)─┤     "
+        out = "    0: ──RX(1.0000)─┤  <Z>\n    a: ──RY(2.0000)─┤\n1.234: ──RZ(3.0000)─┤"
         assert qp.draw(circuit, decimals=4)(1, 2, 3) == out
 
     def test_decimals_multiparameters(self):
@@ -186,13 +186,13 @@ class TestDecimals:
     def test_decimals_0(self):
         """Test decimals=0 rounds to integers."""
 
-        expected = "    0: ──RX(1)─┤  <Z>\n    a: ──RY(2)─┤     \n1.234: ──RZ(3)─┤     "
+        expected = "    0: ──RX(1)─┤  <Z>\n    a: ──RY(2)─┤\n1.234: ──RZ(3)─┤"
         assert draw(circuit, decimals=0)(1.234, 2.3456, 3.456) == expected
 
     def test_qp_numpy_parameters(self):
         """Test numpy parameters display as normal numbers."""
 
-        expected = "    0: ──RX(1.00)─┤  <Z>\n    a: ──RY(2.00)─┤     \n1.234: ──RZ(3.00)─┤     "
+        expected = "    0: ──RX(1.00)─┤  <Z>\n    a: ──RY(2.00)─┤\n1.234: ──RZ(3.00)─┤"
         assert draw(circuit)(pnp.array(1), pnp.array(2), pnp.array(3)) == expected
 
     @pytest.mark.torch
@@ -201,7 +201,7 @@ class TestDecimals:
 
         import torch
 
-        expected = "    0: ──RX(1.2)─┤  <Z>\n    a: ──RY(2.3)─┤     \n1.234: ──RZ(3.5)─┤     "
+        expected = "    0: ──RX(1.2)─┤  <Z>\n    a: ──RY(2.3)─┤\n1.234: ──RZ(3.5)─┤"
         out = draw(circuit, decimals=1)(torch.tensor(1.23), torch.tensor(2.34), torch.tensor(3.45))
         assert out == expected
 
@@ -210,7 +210,7 @@ class TestDecimals:
         """Test tensorflow parameters display as normal numbers."""
         import tensorflow as tf
 
-        expected = "    0: ──RX(1.2)─┤  <Z>\n    a: ──RY(2.3)─┤     \n1.234: ──RZ(3.5)─┤     "
+        expected = "    0: ──RX(1.2)─┤  <Z>\n    a: ──RY(2.3)─┤\n1.234: ──RZ(3.5)─┤"
         out = draw(circuit, decimals=1)(tf.Variable(1.234), tf.Variable(2.345), tf.Variable(3.456))
         assert out == expected
 
@@ -219,7 +219,7 @@ class TestDecimals:
         """Test jax parameters in tape display as normal numbers."""
         import jax.numpy as jnp
 
-        expected = "    0: ──RX(1.2)─┤  <Z>\n    a: ──RY(2.3)─┤     \n1.234: ──RZ(3.5)─┤     "
+        expected = "    0: ──RX(1.2)─┤  <Z>\n    a: ──RY(2.3)─┤\n1.234: ──RZ(3.5)─┤"
         out = draw(circuit, decimals=1)(jnp.array(1.234), jnp.array(2.345), jnp.array(3.456))
         assert out == expected
 
@@ -236,16 +236,11 @@ class TestMatrixParameters:
             qp.QubitUnitary(pnp.eye(2), wires=0)
             return qp.expval(qp.Hermitian(pnp.eye(2), wires=0))
 
-        expected1 = "0: ─╭|Ψ⟩──U(M0)─┤  <𝓗(M0)>\n1: ─╰|Ψ⟩────────┤         "
+        expected1 = "0: ─╭|Ψ⟩──U(M0)─┤  <𝓗(M0)>\n1: ─╰|Ψ⟩────────┤"
 
         assert draw(matrices_circuit, show_matrices=False)() == expected1
 
-        expected2 = (
-            "0: ─╭|Ψ⟩──U(M0)─┤  <𝓗(M0)>\n"
-            "1: ─╰|Ψ⟩────────┤         \n"
-            "\n"
-            "M0 = \n[[1. 0.]\n [0. 1.]]"
-        )
+        expected2 = "0: ─╭|Ψ⟩──U(M0)─┤  <𝓗(M0)>\n1: ─╰|Ψ⟩────────┤\n\nM0 = \n[[1. 0.]\n [0. 1.]]"
         assert draw(matrices_circuit)() == expected2
 
     def test_matrix_parameters_batch_transform(self):
@@ -260,9 +255,9 @@ class TestMatrixParameters:
             return qp.expval(qp.Hermitian(pnp.eye(2, requires_grad=False), wires=1))
 
         expected1 = (
-            "0: ─╭|Ψ⟩──U(M0)────┤         \n"
+            "0: ─╭|Ψ⟩──U(M0)────┤\n"
             "1: ─╰|Ψ⟩──RX(1.20)─┤  <𝓗(M0)>\n\n"
-            "0: ─╭|Ψ⟩──U(M0)────┤         \n"
+            "0: ─╭|Ψ⟩──U(M0)────┤\n"
             "1: ─╰|Ψ⟩──RX(0.80)─┤  <𝓗(M0)>\n\n"
             "M0 = \n[[1. 0.]\n [0. 1.]]"
         )
@@ -270,9 +265,9 @@ class TestMatrixParameters:
         assert output == expected1
 
         expected2 = (
-            "0: ─╭|Ψ⟩──U(M0)────┤         \n"
+            "0: ─╭|Ψ⟩──U(M0)────┤\n"
             "1: ─╰|Ψ⟩──RX(1.20)─┤  <𝓗(M0)>\n\n"
-            "0: ─╭|Ψ⟩──U(M0)────┤         \n"
+            "0: ─╭|Ψ⟩──U(M0)────┤\n"
             "1: ─╰|Ψ⟩──RX(0.80)─┤  <𝓗(M0)>"
         )
         output = draw(matrices_circuit, show_matrices=False)(pnp.array(1.0, requires_grad=True))
@@ -349,8 +344,8 @@ class TestLayering:
 
         expected = (
             "0: ──X─╭IsingXX(1.23)────┤  <Z>\n"
-            "1: ────│───────────────X─┤     \n"
-            "2: ────╰IsingXX(1.23)────┤     "
+            "1: ────│───────────────X─┤\n"
+            "2: ────╰IsingXX(1.23)────┤"
         )
         assert draw(circ)() == expected
 
@@ -426,17 +421,15 @@ class TestMidCircuitMeasurements:
             qp.apply(op)
             return qp.expval(qp.Z(0))
 
-        # Stripping to remove trailing white-space because length of white-space at the
-        # end of the drawing depends on the length of each individual line
-        drawing = qp.draw(func, decimals=decimals)().strip()
+        drawing = qp.draw(func, decimals=decimals)()
         label = op.label(decimals=decimals).replace("\n", "")
         if grouped:
             expected_drawing = (
-                f"0: ──X──┤↗├──X─╭{label}─┤  <Z>\n1: ──X───║───║─╰{label}─┤     \n         ╚═══╝"
+                f"0: ──X──┤↗├──X─╭{label}─┤  <Z>\n1: ──X───║───║─╰{label}─┤\n         ╚═══╝"
             )
         else:
             expected_drawing = (
-                f"0: ──X──┤↗├──X──{label}─┤  <Z>\n1: ──X───║───║──{label}─┤     \n         ╚═══╝"
+                f"0: ──X──┤↗├──X──{label}─┤  <Z>\n1: ──X───║───║──{label}─┤\n         ╚═══╝"
             )
 
         assert drawing == expected_drawing
@@ -454,9 +447,7 @@ class TestMidCircuitMeasurements:
             qp.cond(m, qp.X)(0)
             return qp.apply(mp)
 
-        # Stripping to remove trailing white-space because length of white-space at the
-        # end of the drawing depends on the length of each individual line
-        drawing = qp.draw(func)().strip()
+        drawing = qp.draw(func)()
         # Issue #7807: multi-wire all-wires measurements now render with
         # grouping brackets even when ``m.wires`` is implicitly empty.
         expected_drawing = f"0: ──X──┤↗├──X─┤ ╭{label}\n1: ──X───║───║─┤ ╰{label}\n         ╚═══╝"
@@ -482,10 +473,10 @@ class TestMidCircuitMeasurements:
 
         drawing = qp.draw(circ)(pnp.array([pnp.pi, 3.124, 0.456]))
         expected_drawing = (
-            "0: ──RX(3.14)──┤↗│  │0⟩─╭●─────────────────────╭MultiRZ(0.50)─┤     \n"
-            "1: ──RX(3.12)──┤↗├──────│─────────────╭●───────│──────────────┤     \n"
+            "0: ──RX(3.14)──┤↗│  │0⟩─╭●─────────────────────╭MultiRZ(0.50)─┤\n"
+            "1: ──RX(3.12)──┤↗├──────│─────────────╭●───────│──────────────┤\n"
             "2: ─────────────────────│───RY(0.46)──╰X──┤↗₁├─╰MultiRZ(0.50)─┤  <Z>\n"
-            "3: ─────────────────────╰X──┤↗₀│  │0⟩─────────────────────────┤     "
+            "3: ─────────────────────╰X──┤↗₀│  │0⟩─────────────────────────┤"
         )
 
         assert drawing == expected_drawing
@@ -543,10 +534,10 @@ class TestMidCircuitMeasurements:
         drawing = qp.draw(circ)()
         expected_drawing = (
             "0: ──RX(0.50)───────────╭X────╭MultiRZ(0.50)──X─┤  <Z>\n"
-            "1: ──RX(0.50)──┤↗│  │0⟩─├●────├●──────────────║─┤     \n"
-            "2: ─────────────║───────╰○─╭X─├○──────────────║─┤     \n"
-            "3: ─────────────║────────║─╰●─╰MultiRZ(0.50)──║─┤     \n"
-            "                ╚════════╩═════╩══════════════╝       "
+            "1: ──RX(0.50)──┤↗│  │0⟩─├●────├●──────────────║─┤\n"
+            "2: ─────────────║───────╰○─╭X─├○──────────────║─┤\n"
+            "3: ─────────────║────────║─╰●─╰MultiRZ(0.50)──║─┤\n"
+            "                ╚════════╩═════╩══════════════╝"
         )
 
         assert drawing == expected_drawing
@@ -570,10 +561,10 @@ class TestMidCircuitMeasurements:
         drawing = qp.draw(circ)()
         expected_drawing = (
             "0: ──RX(0.50)───────╭X────╭MultiRZ(0.50)──X─┤  <Z>\n"
-            "1: ──RX(0.50)──┤↗₁├─├●────├●──────────────║─┤     \n"
-            "2: ─────────────║───╰○─╭X─├○──────────────║─┤     \n"
-            "3: ─────────────║────║─╰●─╰MultiRZ(0.50)──║─┤     \n"
-            "                ╚════╩═════╩══════════════╝       "
+            "1: ──RX(0.50)──┤↗₁├─├●────├●──────────────║─┤\n"
+            "2: ─────────────║───╰○─╭X─├○──────────────║─┤\n"
+            "3: ─────────────║────║─╰●─╰MultiRZ(0.50)──║─┤\n"
+            "                ╚════╩═════╩══════════════╝"
         )
 
         assert drawing == expected_drawing
@@ -595,11 +586,11 @@ class TestMidCircuitMeasurements:
         drawing = qp.draw(circ)()
         expected_drawing = (
             "0: ──RX(0.50)──┤↗├────────────────────────┤  <Z>\n"
-            "1: ──RX(0.50)───║───┤↗├─╭●───────RZ(1.23)─┤     \n"
-            "2: ─────────────║────║──╰X──┤↗├──║────────┤     \n"
-            "                ╚════║═══════║═══╣              \n"
-            "                     ╚═══════║═══╣              \n"
-            "                             ╚═══╝              "
+            "1: ──RX(0.50)───║───┤↗├─╭●───────RZ(1.23)─┤\n"
+            "2: ─────────────║────║──╰X──┤↗├──║────────┤\n"
+            "                ╚════║═══════║═══╣\n"
+            "                     ╚═══════║═══╣\n"
+            "                             ╚═══╝"
         )
 
         assert drawing == expected_drawing
@@ -635,12 +626,12 @@ class TestMidCircuitMeasurements:
         drawing = qp.draw(circ)()
         expected_drawing = (
             "0: ──RX(0.50)──┤↗₁│  │0⟩──────╭X────────────╭SWAP──Y─╭X────────────────────┤ ╭<Z@Z>\n"
-            "1: ──RX(0.50)───║─────────┤↗├─├●─────┤↗├────├●─────║─├●────────────────────┤ │     \n"
+            "1: ──RX(0.50)───║─────────┤↗├─├●─────┤↗├────├●─────║─├●────────────────────┤ │\n"
             "2: ─────────────║──────────║──├●──Z───║──╭X─├○─────║─│───────────────────H─┤ ╰<Z@Z>\n"
-            "3: ─────────────║──────────║──╰○──║───║──╰●─╰SWAP──║─╰●──┤↗₀├──RX(1.23)──║─┤       \n"
-            "                ╚══════════║═══╬══║═══║══════╝     ║      ╚════╩═════════╣         \n"
-            "                           ╚═══╩══╩═══║════════════╬═════════════════════╝         \n"
-            "                                      ╚════════════╝                               "
+            "3: ─────────────║──────────║──╰○──║───║──╰●─╰SWAP──║─╰●──┤↗₀├──RX(1.23)──║─┤\n"
+            "                ╚══════════║═══╬══║═══║══════╝     ║      ╚════╩═════════╣\n"
+            "                           ╚═══╩══╩═══║════════════╬═════════════════════╝\n"
+            "                                      ╚════════════╝"
         )
         assert drawing == expected_drawing
 
@@ -662,8 +653,8 @@ class TestMidCircuitMeasurements:
             "1: ───║───RX(0.12) ···\n"
             "      ╚═══╩═══════\n\n"
             "0: ··· ──RX(0.00)─┤  <Z>\n"
-            "1: ··· ──RX(0.12)─┤     \n"
-            "       ══╝              "
+            "1: ··· ──RX(0.12)─┤\n"
+            "       ══╝"
         )
 
         assert drawing == expected_drawing
@@ -684,10 +675,10 @@ class TestMidCircuitMeasurements:
         expected_drawing = (
             "0: ──RX(0.00)──RX(0.00) ···\n"
             "1: ──────────────────── ···\n"
-            "                       \n\n"
+            "\n\n"
             "0: ··· ──┤↗├───────┤  <Z>\n"
-            "1: ··· ───║───X──X─┤     \n"
-            "          ╚═══╩══╝       "
+            "1: ··· ───║───X──X─┤\n"
+            "          ╚═══╩══╝"
         )
 
         assert drawing == expected_drawing
@@ -710,8 +701,8 @@ class TestMidCircuitMeasurements:
             "1: ───║───RX(0.12)──X ···\n"
             "      ╚═══╩═════════╝\n\n"
             "0: ··· ───────────┤  <Z>\n"
-            "1: ··· ──RX(0.00)─┤     \n"
-            "                        "
+            "1: ··· ──RX(0.00)─┤\n"
+            ""
         )
 
         assert drawing == expected_drawing
@@ -737,13 +728,13 @@ class TestMidCircuitMeasurements:
             "2: ─────────────║────║──╰X ···\n"
             "                ╚════║════\n"
             "                     ╚════\n"
-            "                          \n\n"
+            "\n\n"
             "0: ··· ────────────────┤  <Z>\n"
-            "1: ··· ───────RZ(1.23)─┤     \n"
-            "2: ··· ──┤↗├──║────────┤     \n"
-            "       ═══║═══╣              \n"
-            "       ═══║═══╣              \n"
-            "          ╚═══╝              "
+            "1: ··· ───────RZ(1.23)─┤\n"
+            "2: ··· ──┤↗├──║────────┤\n"
+            "       ═══║═══╣\n"
+            "       ═══║═══╣\n"
+            "          ╚═══╝"
         )
 
         assert drawing == expected_drawing
@@ -782,16 +773,16 @@ class TestMidCircuitMeasurements:
             "1: ──RX(0.50)───║─────────┤↗├─├●─────┤↗├────├●─────║─├● ···\n"
             "2: ─────────────║──────────║──├●──Z───║──╭X─├○─────║─│─ ···\n"
             "3: ─────────────║──────────║──╰○──║───║──╰●─╰SWAP──║─╰● ···\n"
-            "                ╚══════════║═══╬══║═══║══════╝     ║   \n"
+            "                ╚══════════║═══╬══║═══║══════╝     ║\n"
             "                           ╚═══╩══╩═══║════════════╬═══\n"
-            "                                      ╚════════════╝   \n\n"
+            "                                      ╚════════════╝\n\n"
             "0: ··· ────────────────────┤ ╭<Z@Z>\n"
-            "1: ··· ────────────────────┤ │     \n"
+            "1: ··· ────────────────────┤ │\n"
             "2: ··· ──────────────────H─┤ ╰<Z@Z>\n"
-            "3: ··· ──┤↗₀├──RX(1.23)──║─┤       \n"
-            "          ╚════╩═════════╣         \n"
-            "       ══════════════════╝         \n"
-            "                                   "
+            "3: ··· ──┤↗₀├──RX(1.23)──║─┤\n"
+            "          ╚════╩═════════╣\n"
+            "       ══════════════════╝\n"
+            ""
         )
 
         assert drawing == expected_drawing
@@ -817,9 +808,7 @@ class TestMidCircuitMeasurements:
             return mp(op=m0)
 
         drawing = qp.draw(circ)()
-        expected_drawing = (
-            "0: ──H──┤↗├──H─┤  " + " " * len(mp_label) + f"\n         ╚═════╡  {mp_label}"
-        )
+        expected_drawing = f"0: ──H──┤↗├──H─┤\n         ╚═════╡  {mp_label}"
 
         assert drawing == expected_drawing
 
@@ -845,12 +834,10 @@ class TestMidCircuitMeasurements:
 
         drawing = qp.draw(circ)()
         expected_drawing = (
-            "0: ──H──┤↗├──────┤  "
-            + " " * len(mp_label)
-            + "\n1: ──H───║───┤↗├─┤  "
-            + " " * len(mp_label)
-            + f"\n         ╚════║══╡ ╭{mp_label}"
-            + f"\n              ╚══╡ ╰{mp_label}"
+            "0: ──H──┤↗├──────┤\n"
+            "1: ──H───║───┤↗├─┤\n"
+            f"         ╚════║══╡ ╭{mp_label}\n"
+            f"              ╚══╡ ╰{mp_label}"
         )
 
         assert drawing == expected_drawing
@@ -870,12 +857,12 @@ class TestMidCircuitMeasurements:
 
         drawing = qp.draw(circ)()
         expected_drawing = (
-            "0: ──H──┤↗├─────────────────┤                    \n"
-            "1: ──────║───H──┤↗├─────────┤                    \n"
-            "2: ──────║───────║───H──┤↗├─┤                    \n"
-            "         ╚═══════║═══════║══╡ ╭<MCM>             \n"
+            "0: ──H──┤↗├─────────────────┤\n"
+            "1: ──────║───H──┤↗├─────────┤\n"
+            "2: ──────║───────║───H──┤↗├─┤\n"
+            "         ╚═══════║═══════║══╡ ╭<MCM>\n"
             "                 ╚═══════║══╡ │       Sample[MCM]\n"
-            "                         ╚══╡ ╰<MCM>             "
+            "                         ╚══╡ ╰<MCM>"
         )
 
         assert drawing == expected_drawing
@@ -893,10 +880,10 @@ class TestMidCircuitMeasurements:
 
         drawing = qp.draw(circ)()
         expected_drawing = (
-            "0: ──H──┤↗├──────┤                    \n"
-            "1: ──H───║───┤↗├─┤                    \n"
+            "0: ──H──┤↗├──────┤\n"
+            "1: ──H───║───┤↗├─┤\n"
             "         ╚════║══╡ ╭<MCM>  Sample[MCM]\n"
-            "              ╚══╡ ╰<MCM>             "
+            "              ╚══╡ ╰<MCM>"
         )
 
         assert drawing == expected_drawing
@@ -912,7 +899,7 @@ class TestMidCircuitMeasurements:
             return qp.expval(m0)
 
         drawing = qp.draw(circ)()
-        expected_drawing = "0: ──H──┤↗├──Z─┤       \n         ╚═══╩═╡  <MCM>"
+        expected_drawing = "0: ──H──┤↗├──Z─┤\n         ╚═══╩═╡  <MCM>"
 
         assert drawing == expected_drawing
 
@@ -935,11 +922,11 @@ class TestMidCircuitMeasurements:
 
         drawing = qp.draw(circ)()
         expected_drawing = (
-            "0: ──H──┤↗├──────────────────────────X────┤                    \n"
-            "1: ──────║───H──┤↗├──────────────────║──Y─┤                    \n"
-            "2: ──────║───────║───H──┤↗├──────────║──║─┤                    \n"
-            "3: ──────║───────║───────║───H──┤↗├──║──║─┤                    \n"
-            "         ╚═══════║═══════║═══════════╩══╣                      \n"
+            "0: ──H──┤↗├──────────────────────────X────┤\n"
+            "1: ──────║───H──┤↗├──────────────────║──Y─┤\n"
+            "2: ──────║───────║───H──┤↗├──────────║──║─┤\n"
+            "3: ──────║───────║───────║───H──┤↗├──║──║─┤\n"
+            "         ╚═══════║═══════║═══════════╩══╣\n"
             "                 ╚═══════║══════════════╩═╡        ╭Sample[MCM]\n"
             "                         ╚════════════════╡  <MCM> ╰Sample[MCM]"
         )
@@ -973,13 +960,13 @@ class TestMidCircuitMeasurements:
         out = qp.draw(c)()
 
         expected_drawing = (
-            "0: ──────╭f──S──T──SX─┤       \n"
-            "1: ──────├f──║──║──║──┤       \n"
-            "2: ──────╰f──║──║──║──┤       \n"
-            "3: ──┤↗├──║──║──║──║──┤       \n"
-            "      ╚═══║══╝  ║  ║          \n"
+            "0: ──────╭f──S──T──SX─┤\n"
+            "1: ──────├f──║──║──║──┤\n"
+            "2: ──────╰f──║──║──║──┤\n"
+            "3: ──┤↗├──║──║──║──║──┤\n"
+            "      ╚═══║══╝  ║  ║\n"
             "          ╠═════╩══║══╡  <MCM>\n"
-            "          ╚════════╝          "
+            "          ╚════════╝"
         )
         assert out == expected_drawing
 
@@ -1024,7 +1011,7 @@ class TestPauliMeasure:
             qp.CNOT([1, 2])
             return qp.expval(qp.Z(2))
 
-        expected = "0: ──H─╭┤↗X├────┤     \n1: ────╰┤↗Y├─╭●─┤     \n2: ──────────╰X─┤  <Z>"
+        expected = "0: ──H─╭┤↗X├────┤\n1: ────╰┤↗Y├─╭●─┤\n2: ──────────╰X─┤  <Z>"
         assert draw(circ)() == expected
 
     @pytest.mark.parametrize("postselect", [0, 1])
@@ -1040,8 +1027,8 @@ class TestPauliMeasure:
             return qp.expval(qp.Z(2))
 
         expected = (
-            f"0: ──H─╭┤↗{postselect_script}X├────┤     \n"
-            f"1: ────╰┤↗{postselect_script}Y├─╭●─┤     \n"
+            f"0: ──H─╭┤↗{postselect_script}X├────┤\n"
+            f"1: ────╰┤↗{postselect_script}Y├─╭●─┤\n"
             "2: ───────────╰X─┤  <Z>"
         )
         assert draw(circ)() == expected
@@ -1083,7 +1070,7 @@ class TestPauliMeasure:
             "2: ──H─├┤↗Z├──║─┤ ├Probs\n"
             "3: ──H─╰┤↗X├──║─┤ ├Probs\n"
             "4: ──H───║────║─┤ ╰Probs\n"
-            "         ╚════╝         "
+            "         ╚════╝"
         )
         assert draw(circ)() == expected
 
@@ -1096,7 +1083,7 @@ class TestPauliMeasure:
             m0 = qp.pauli_measure("XY", wires=[1, 0])
             return qp.expval(m0)
 
-        expected = "0: ──H─╭┤↗Y├─┤       \n1: ──H─╰┤↗X├─┤       \n         ╚═══╡  <PPM>"
+        expected = "0: ──H─╭┤↗Y├─┤\n1: ──H─╰┤↗X├─┤\n         ╚═══╡  <PPM>"
         assert draw(circ)() == expected
 
 
@@ -1128,29 +1115,27 @@ class TestLevelExpansionStrategy:
                 0,
                 "top",
                 "0: ─╭RandomLayers(M0)─╭Permute──X──X──RX(0.10)──RX(-0.10)─┤  <X>\n"
-                "1: ─╰RandomLayers(M0)─├Permute────────────────────────────┤     \n"
-                "2: ───────────────────╰Permute────────────────────────────┤     ",
+                "1: ─╰RandomLayers(M0)─├Permute────────────────────────────┤\n"
+                "2: ───────────────────╰Permute────────────────────────────┤",
             ),
             (
                 2,
                 "user",
                 "0: ─╭RandomLayers(M0)─╭Permute─┤  <X>\n"
-                "1: ─╰RandomLayers(M0)─├Permute─┤     \n"
-                "2: ───────────────────╰Permute─┤     ",
+                "1: ─╰RandomLayers(M0)─├Permute─┤\n"
+                "2: ───────────────────╰Permute─┤",
             ),
             (
                 3,
                 "gradient",
                 "0: ──RY(1.00)──╭Permute─┤  <X>\n"
-                "1: ──RX(20.00)─├Permute─┤     \n"
-                "2: ────────────╰Permute─┤     ",
+                "1: ──RX(20.00)─├Permute─┤\n"
+                "2: ────────────╰Permute─┤",
             ),
             (
                 8,
                 "device",
-                "0: ──RY(1.00)──╭SWAP─┤  <X>\n"
-                "1: ──RX(20.00)─│─────┤     \n"
-                "2: ────────────╰SWAP─┤     ",
+                "0: ──RY(1.00)──╭SWAP─┤  <X>\n1: ──RX(20.00)─│─────┤\n2: ────────────╰SWAP─┤",
             ),
         ],
     )
@@ -1174,8 +1159,8 @@ class TestLevelExpansionStrategy:
 
         expected = (
             "0: ─╭RandomLayers(M0)─╭Permute──RX(0.10)──RX(-0.10)─┤  <X>\n"
-            "1: ─╰RandomLayers(M0)─├Permute──────────────────────┤     \n"
-            "2: ───────────────────╰Permute──────────────────────┤     "
+            "1: ─╰RandomLayers(M0)─├Permute──────────────────────┤\n"
+            "2: ───────────────────╰Permute──────────────────────┤"
         )
         assert out == expected
 
@@ -1263,7 +1248,7 @@ class TestWireAllocation:
         # fmt: off
         expected = (
             "0: ───────╭●────╭●────┤\n"
-            "     ├──H─╰X──┤ │    \n"
+            "     ├──H─╰X──┤ │\n"
             "           ├──T─╰X──┤"
         )
         assert out == expected
@@ -1325,7 +1310,7 @@ class TestWireAllocation:
             "0: ────╭●──X──X─╭●──X──X ···\n"
             "     ├─╰X──┤  ├─╰X──┤  ├ ···\n\n"
             "0: ··· ─╭●──X──X─┤\n"
-            "   ··· ─╰X──┤   "
+            "   ··· ─╰X──┤"
         )
         assert out == expected
 
@@ -1361,7 +1346,7 @@ class TestWireAllocation:
                 qp.cond(m, qp.CZ)((wires[0], 0))
 
         out = qp.draw(f)()
-        expected = "0: ──┤↗├─╭X──H──H─╭Z────┤\n      ║├─╰●──┤  ├─╰●──┤\n      ╚═══╩════════╝   "
+        expected = "0: ──┤↗├─╭X──H──H─╭Z────┤\n      ║├─╰●──┤  ├─╰●──┤\n      ╚═══╩════════╝"
         assert out == expected
 
     def test_identity_global_phase_dynamic_wires(self):
@@ -1389,7 +1374,7 @@ class TestWireAllocation:
         expected = (
             "0: ──I─╭●─╭I────╭●─╭I────╭●─╭GlobalPhase(0.50)────┤\n"
             "     ├─╰X─╰I──┤ │  │   ├─╰X─╰GlobalPhase(0.50)──┤\n"
-            "              ├─╰X─╰I──┤                         "
+            "              ├─╰X─╰I──┤"
         )
         assert out == expected
 
@@ -1413,7 +1398,7 @@ class TestWireAllocation:
         expected = (
             "0: ────╭●──H──H─╭●────┤ ╭Probs\n"
             "1: ────│────────│───X─┤ ╰Probs\n"
-            "     ├─╰X──┤  ├─╰X──┤         "
+            "     ├─╰X──┤  ├─╰X──┤"
         )
         assert out == expected
 
@@ -1450,11 +1435,7 @@ class TestWireAllocation:
                 qp.CNOT((0, wires[0]))
 
         out = qp.draw(f)()
-        expected = (
-            "0: ────╭●─────||────╭●────┤\n"
-            "     ├─╰X──┤  ||    │    \n"
-            "           ├──||──X─╰X──┤"
-        )
+        expected = "0: ────╭●─────||────╭●────┤\n     ├─╰X──┤  ||    │\n           ├──||──X─╰X──┤"
         assert out == expected
 
     def test_barrier_middle_of_allocation_region(self):
@@ -1527,7 +1508,7 @@ def test_draw_with_qfunc_with_measurements():
         qp.CNOT([0, 1])
         return qp.expval(qp.PauliZ(1))
 
-    assert qp.draw(qfunc)(1.1) == "0: ──RX(1.10)─╭●─┤     \n1: ───────────╰X─┤  <Z>"
+    assert qp.draw(qfunc)(1.1) == "0: ──RX(1.10)─╭●─┤\n1: ───────────╰X─┤  <Z>"
 
 
 @pytest.mark.parametrize("use_qnode", [True, False])
@@ -1543,7 +1524,7 @@ def test_sort_wires(use_qnode):
     if use_qnode:
         func = qp.QNode(func, qp.device("default.qubit"))
 
-    expected = "0: ──X─┤  <Z>\n2: ──X─┤     \n4: ──X─┤     "
+    expected = "0: ──X─┤  <Z>\n2: ──X─┤\n4: ──X─┤"
     assert qp.draw(func)() == expected
 
 
@@ -1561,5 +1542,5 @@ def test_sort_wires_fallback(use_qnode):
     if use_qnode:
         func = qp.QNode(func, qp.device("default.qubit"))
 
-    expected = "4: ──X─┤     \na: ──X─┤     \n0: ──X─┤  <Z>"
+    expected = "4: ──X─┤\na: ──X─┤\n0: ──X─┤  <Z>"
     assert qp.draw(func)() == expected

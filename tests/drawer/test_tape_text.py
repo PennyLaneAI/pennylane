@@ -899,7 +899,7 @@ class TestShowMatrices:
         # fmt: off
         expected = (
             "0: ─╭|Ψ⟩──U(M0)─┤  <𝓗(M0)>\n"
-            "1: ─╰|Ψ⟩────────┤         \n"
+            "1: ─╰|Ψ⟩────────┤\n"
             "M0 = \n[[1. 0.]\n [0. 1.]]"
         )
         # fmt: on
@@ -909,7 +909,7 @@ class TestShowMatrices:
     def test_do_not_show_matrices(self):
         """Test matrices included when requested."""
 
-        expected = "0: ─╭|Ψ⟩──U(M0)─┤  <𝓗(M0)>\n1: ─╰|Ψ⟩────────┤         "
+        expected = "0: ─╭|Ψ⟩──U(M0)─┤  <𝓗(M0)>\n1: ─╰|Ψ⟩────────┤"
 
         assert tape_text(tape_matrices, show_matrices=False) == expected
 
@@ -921,7 +921,7 @@ class TestShowMatrices:
 
         expected = (
             "0: ─╭|Ψ⟩──U(M0)─┤  <𝓗(M0)>\n"
-            "1: ─╰|Ψ⟩────────┤         \n"
+            "1: ─╰|Ψ⟩────────┤\n"
             "M0 = \n[[1. 0.]\n [0. 1.]]\n"
             "M1 = \n[[-1. -0. -0.]\n [-0. -1. -0.]\n [-0. -0. -1.]]"
         )
