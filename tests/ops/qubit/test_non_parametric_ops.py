@@ -850,6 +850,32 @@ class TestMultiControlledX:
         for rule in qp.list_decomps(op):
             _test_decomposition_rule(op, rule)
 
+    def test_custom_dispatch(self):
+        """Tests that qp.ctrl() of MCX dispatches to another MCX."""
+
+        op = qp.MultiControlledX(
+            [0, 1, 2],
+            control_values=[0, 1],
+            work_wires=[3],
+            work_wire_type="borrowed",
+        )
+        new_op = qp.ctrl(
+            op,
+            control=[4, 5],
+            control_values=[1, 0],
+            work_wires=[6],
+            work_wire_type="zeroed",
+        )
+        qp.assert_equal(
+            new_op,
+            qp.MultiControlledX(
+                [4, 5, 0, 1, 2],
+                control_values=[1, 0, 0, 1],
+                work_wires=[6, 3],
+                work_wire_type="borrowed",
+            ),
+        )
+
 
 period_two_ops = (
     qp.PauliX(0),
