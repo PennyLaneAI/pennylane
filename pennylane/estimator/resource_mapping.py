@@ -419,6 +419,17 @@ def _(op: qtemps.QROM):
 
 
 @_map_to_resource_op.register
+def _(op: qtemps.AliasSampling):
+    # ``mu`` is the number of keep/sigma bits; the estimator ResourceOperator stores that as
+    # ``precision = 2**(-mu)`` (see ``AliasSampling.resource_decomp``).
+    return re_temps.AliasSampling(
+        num_coeffs=len(op.probs),
+        precision=2.0 ** (-op.mu),
+        wires=op.target_wires,
+    )
+
+
+@_map_to_resource_op.register
 def _(op: qtemps.SelectPauliRot):
     return re_temps.SelectPauliRot(
         rot_axis=op.hyperparameters["rot_axis"],
