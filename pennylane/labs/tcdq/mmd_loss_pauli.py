@@ -220,8 +220,8 @@ def build_mmd_loss_pauli(
 
     The returned callable measures the distance between a model's output
     distribution and an empirical target dataset of bitstrings using the
-    Maximum Mean Discrepancy (MMD) with an RBF kernel expanded in Pauli-Z
-    strings. The model is called as
+    Maximum Mean Discrepancy (MMD) with a Radial Basis Function (RBF) kernel 
+    expanded in Pauli-Z strings. The model is called as
 
     .. code-block:: python
 
