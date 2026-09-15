@@ -484,6 +484,36 @@
   [(#9913)](https://github.com/PennyLaneAI/pennylane/pull/9913)
   [(#10145)](https://github.com/PennyLaneAI/pennylane/pull/10145)
 
+* Added :class:`~.OneBodyWalk`, the qubitization walk operator that block-encodes a real symmetric
+  one-body operator :math:`\hat O`, giving access to the eigenvalues of :math:`\hat O / \lambda`
+  through quantum phase estimation, where :math:`\lambda = \sum_p |\mu_p|` and :math:`\mu_p` are the
+  eigenvalues of the one-body matrix. Use :func:`~.one_body_walk_wires` to get the required sizes of
+  the PREP and system registers, and the minimum size of the work register.
+  [(#9991)](https://github.com/PennyLaneAI/pennylane/pull/9991)
+
+  ```python
+  import numpy as np
+  import pennylane as qp
+
+  op_matrix = [[1.0, 2.0], [2.0, 1.0]]
+  req = qp.one_body_walk_wires(len(op_matrix), 2)
+  n_prep, n_sys, n_work = req["prep_wires"], req["system_wires"], req["work_wires"]
+  prep_wires = range(n_prep)
+  system_wires = range(n_prep, n_prep + n_sys)
+  work_wires = range(n_prep + n_sys, n_prep + n_sys + n_work)
+
+  @qp.qnode(qp.device("default.qubit", wires=n_prep + n_sys + n_work))
+  def circuit():
+      qp.OneBodyWalk(op_matrix, 2, prep_wires, system_wires, work_wires)
+      return qp.probs(wires=prep_wires)
+  ```
+
+  ```pycon
+  >>> print(np.round(circuit()[0], 3))
+  0.25
+
+  ```
+
 * Added :class:`~.LeftQuantumComparator` for inequality tests between two quantum registers.
   [(#9277)](https://github.com/PennyLaneAI/pennylane/pull/9277)
   [(#9544)](https://github.com/PennyLaneAI/pennylane/pull/9544)

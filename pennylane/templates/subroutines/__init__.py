@@ -49,6 +49,7 @@ from .qram import BBQRAM, HybridQRAM, SelectOnlyQRAM, FFQRAM
 from .iqp import IQP
 from .qrom import QROM
 from .alias_sampling import AliasSampling, UniformPrep, alias_sampling_wires
+from .one_body_walk import OneBodyWalk, one_body_walk_wires
 from .gqsp import GQSP
 from .select_pauli_rot import (
     MultiplexedRotation,
@@ -128,6 +129,8 @@ __all__ = [
     "AliasSampling",
     "UniformPrep",
     "alias_sampling_wires",
+    "OneBodyWalk",
+    "one_body_walk_wires",
     "GQSP",
     "SelectPauliRot",
     "MultiplexedRotation",
