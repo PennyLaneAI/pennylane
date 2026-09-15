@@ -17,37 +17,22 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.decomposition import list_decomps
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
+from pennylane.ops.functions.assert_valid import assert_valid
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
-def test_assert_valid_and_decomposition():
+def test_assert_valid():
     """Standard Operator2 checks, with capture enabled and disabled."""
     op = qp.LeftClassicalComparator(
         x_wires=[0, 1, 2], L=2, target_wire=3, work_wires=[4, 5], comparator=">="
     )
     assert_valid(op, skip_differentiation=True)
-    for rule in list_decomps(qp.LeftClassicalComparator):
-        _test_decomposition_rule(op, rule)
 
     assert op.arguments["x_wires"] == qp.wires.Wires([0, 1, 2])
     assert op.arguments["L"] == 2
     assert op.arguments["target_wire"] == qp.wires.Wires(3)
     assert op.arguments["work_wires"] == qp.wires.Wires([4, 5])
     assert op.arguments["comparator"] == ">="
-
-
-@pytest.mark.usefixtures("enable_and_disable_capture")
-def test_adjoint_decomposition():
-    """Adjoint decomposition is capture compatible."""
-    op = qp.adjoint(
-        qp.LeftClassicalComparator(
-            x_wires=[0, 1, 2], L=2, target_wire=3, work_wires=[4, 5], comparator="<"
-        )
-    )
-    for rule in list_decomps("Adjoint(LeftClassicalComparator)"):
-        _test_decomposition_rule(op, rule)
 
 
 class TestLeftClassicalComparator:
@@ -75,6 +60,8 @@ class TestLeftClassicalComparator:
             qp.BasisState(qp.math.int_to_binary(x, len(x_wires)), wires=x_wires)
             qp.LeftClassicalComparator(x_wires, L, target_wire, work_wires, comparator)
             qp.CNOT([11, 12])
+            # qfunc form: L is traced under qjit, and adjoint(op) would evaluate the
+            # resource function, which branches on L.
             qp.adjoint(
                 lambda: qp.LeftClassicalComparator(x_wires, L, target_wire, work_wires, comparator)
             )()

@@ -20,6 +20,7 @@ import pennylane as qp
 from pennylane.decomposition import list_decomps
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
 from pennylane.templates.subroutines.alias_sampling import _build_alias_tables
+from pennylane.typing import AbstractWires
 
 
 def _wire_layout(n_states):
@@ -124,6 +125,24 @@ class TestUniformPrep:
         """Test that target/work overlap is rejected even when n_states is a power of two."""
         with pytest.raises(ValueError, match="must not overlap"):
             qp.UniformPrep(4, [0, 1], work_wires=[0])
+
+    def test_abstract_wires_length_is_validated(self):
+        """AbstractWires still expose a length, so register sizes are checked."""
+        with pytest.raises(ValueError, match="target_wires must have 3 wires"):
+            qp.UniformPrep(5, AbstractWires(2), AbstractWires(3))
+        with pytest.raises(ValueError, match="work_wires must have at least 3 wires"):
+            qp.UniformPrep(5, AbstractWires(3), AbstractWires(1))
+        op = qp.UniformPrep(5, AbstractWires(3), AbstractWires(3))
+        assert isinstance(op.target_wires, AbstractWires)
+        assert isinstance(op.work_wires, AbstractWires)
+
+    def test_mixed_concrete_and_abstract_wires(self):
+        """Length checks run per register, including mixed concrete/abstract inputs."""
+        with pytest.raises(ValueError, match="work_wires must have at least 3 wires"):
+            qp.UniformPrep(5, range(3), AbstractWires(1))
+        op = qp.UniformPrep(5, range(3), AbstractWires(3))
+        assert list(op.target_wires) == [0, 1, 2]
+        assert isinstance(op.work_wires, AbstractWires)
 
 
 def _reconstruct_amplitudes(alt, keep, mu):
@@ -325,6 +344,17 @@ class TestAliasSampling:
         """Test that each register size is validated."""
         with pytest.raises(ValueError, match=match):
             qp.AliasSampling([0.2, 0.3, 0.5], 2, target_wires, temp_wires, work_wires)
+
+    def test_abstract_wires_length_is_validated(self):
+        """AbstractWires still expose a length, so register sizes are checked."""
+        with pytest.raises(ValueError, match="target_wires must have 2 entries"):
+            qp.AliasSampling(
+                [0.2, 0.3, 0.5], 2, AbstractWires(1), AbstractWires(8), AbstractWires(2)
+            )
+        op = qp.AliasSampling(
+            [0.2, 0.3, 0.5], 2, AbstractWires(2), AbstractWires(8), AbstractWires(2)
+        )
+        assert isinstance(op.target_wires, AbstractWires)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_single_coefficient_decomposition(self):
