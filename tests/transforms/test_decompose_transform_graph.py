@@ -492,9 +492,12 @@ class TestDecomposeGraphEnabled:
         """Tests that circuits and decomposition rules containing MCMs and PPMs are supported."""
 
         measure_obj_class = MidMeasure if m_type == "mcm" else PauliMeasure
-        # ``PauliMeasure`` is an ``Operator2`` with a compilable ``pauli_word``, so it cannot be
-        # abstractified from its bare type; an abstract instance is used as the resource key.
-        measure_resource = MidMeasure if m_type == "mcm" else PauliMeasure("XY", wires=Wire[2])
+        # ``MidMeasure`` and ``PauliMeasure`` are ``Operator2``s with compilable arguments, so
+        # neither can be abstractified from its bare type; abstract instances are used as the
+        # resource keys.
+        measure_resource = (
+            MidMeasure(wires=Wire[1]) if m_type == "mcm" else PauliMeasure("XY", wires=Wire[2])
+        )
 
         @qp.register_resources({qp.H: 2, measure_resource: 1})
         def _custom_decomp(wires, **_):
