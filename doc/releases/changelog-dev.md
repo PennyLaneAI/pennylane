@@ -42,11 +42,12 @@
   >>> op = qp.PPR(4, "XY", wires=[0, 1])
   >>> op
   PPR(4, 'XY', wires=[0, 1])
+
   ```
 
-* A new decorator is available called :func:`pennylane.subcircuit`, which can be used to 
-  create operators directly from quantum functions. This enables fast research and 
-  development of new operators without the need to create full-fledged operator classes 
+* A new decorator is available called :func:`pennylane.subcircuit`, which can be used to
+  create operators directly from quantum functions. This enables fast research and
+  development of new operators without the need to create full-fledged operator classes
   manually.
   [(#10126)](https://github.com/PennyLaneAI/pennylane/pull/10126)
 
@@ -487,7 +488,7 @@
 
 * `DecompositionRule` now wraps the target qfunc, preserving it's signature and docstring.
   [(#10144)](https://github.com/PennyLaneAI/pennylane/pull/10144)
- 
+
 *  Reduced shot counts in `default.clifford` measurement tests to improve CI runtime.
   [(#10127)](https://github.com/PennyLaneAI/pennylane/pull/10127)
 
