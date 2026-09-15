@@ -54,16 +54,16 @@ class _DecompInGraphInfo(_DecompInfo):
         result = super().__str__()
         if not self._is_applicable:
             return result
-        if not self._is_reachable:
-            return result + "\n" + self._missing_ops
+        if not self._is_reachable and (missing_ops := self._missing_ops):
+            return result + "\n" + missing_ops
         return result
 
     def _repr_markdown_(self) -> str:
         result = super()._repr_markdown_()
         if not self._is_applicable:
             return result
-        if not self._is_reachable:
-            return result + "\n\n" + self._missing_ops_md
+        if not self._is_reachable and (missing_ops := self._missing_ops_md):
+            return result + "\n\n" + missing_ops
         return result
 
     @property
@@ -112,8 +112,8 @@ class _DecompInGraphInfo(_DecompInfo):
     @property
     def _missing_ops_md(self) -> str:
         """The unsolved ops required for this decomposition in Markdown."""
-        unsolved_ops = map(str, self._unsolved_ops())
-        rows = "\n".join(f"| {op} |" for op in sorted(unsolved_ops))
+        unsolved_ops = sorted(map(str, self._unsolved_ops()))
+        rows = "\n".join(f"| {op} |" for op in unsolved_ops)
         return f"| Missing Ops |\n| :--- |\n{rows}" if unsolved_ops else ""
 
     def _unsolved_ops(self):

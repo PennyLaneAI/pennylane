@@ -223,18 +223,25 @@ def _add_layer_str_to_totals(totals: _CurrentTotals, layer_str, config) -> _Curr
     return totals
 
 
-def _finalize_layers(totals: _CurrentTotals, config: _Config) -> _CurrentTotals:
-    """Add ending characters to separate the operation layers from the measurement layers"""
+def _finalize_layers(
+    totals: _CurrentTotals, config: _Config, has_measurements: bool
+) -> _CurrentTotals:
+    """Add ending characters to separate the operation layers from the measurement layers.
+
+    Lines that already ended before the last operation layer are only padded to the width of
+    the ``─┤`` separator if measurement layers follow, as the padding aligns them with the
+    measurement columns.
+    """
     for row, s in enumerate(totals.wire_totals):
         if config.cur_layer < config.wire_layers[row][-1][-1]:
             totals.wire_totals[row] = f"{s}─┤"
-        else:
+        elif has_measurements:
             totals.wire_totals[row] = f"{s}  "
 
     for b in range(config.n_bits):
         if config.cwire_layers[b][-1][-1] >= config.num_op_layers:
             totals.bit_totals[b] += "═╡"
-        else:
+        elif has_measurements:
             totals.bit_totals[b] += "  "
 
     return totals
@@ -448,7 +455,9 @@ def tape_text(
 
     layers = drawable_layers(tape.operations, wire_map=wire_map, bit_map=bit_map)
     num_op_layers = len(layers)
-    layers += drawable_layers(tape.measurements, wire_map=wire_map, bit_map=bit_map)
+    has_measurements = bool(tape.measurements)
+    if has_measurements:
+        layers += drawable_layers(tape.measurements, wire_map=wire_map, bit_map=bit_map)
     # Update bit map and collect information about connections between mid-circuit measurements,
     # classical conditions, and terminal measurements for processing mid-circuit measurements.
     bit_map, cwire_layers, _ = cwire_connections(layers, bit_map, wire_map)
@@ -481,7 +490,7 @@ def tape_text(
 
         totals = _add_layer_str_to_totals(totals, layer_str, config)
         if config.cur_layer == config.num_op_layers - 1:
-            totals = _finalize_layers(totals, config)
+            totals = _finalize_layers(totals, config, has_measurements)
 
     # Recursively handle nested tapes #
     tape_totals = "\n".join(totals.finished_lines + totals.wire_totals + totals.bit_totals)

@@ -1671,6 +1671,15 @@
 * Various decomposition rules are updated so that they accept positionally passed arguments.
   [(#10088)](https://github.com/PennyLaneAI/pennylane/pull/10088)
 
+* Circuit drawings no longer end in trailing whitespace when the drawn circuit contains no
+  measurements, which also removes the trailing whitespace from the drawings shown by
+  :func:`~.decomposition.inspect_decomps` and :func:`~.transforms.decomp_inspector`.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
+* :func:`~.decomposition.inspect_decomps` and :func:`~.transforms.decomp_inspector` no longer
+  insert a blank line after a decomposition rule that is unreachable but has no missing operators.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):

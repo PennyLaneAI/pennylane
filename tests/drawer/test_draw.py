@@ -83,7 +83,7 @@ class TestPartial:
             qp.RX(x, wires=0)
             qp.RY(y, wires=1)
 
-        expected = "0: ──RX(1.23)─┤  \n1: ──RY(2.35)─┤  "
+        expected = "0: ──RX(1.23)─┤\n1: ──RY(2.35)─┤"
         assert draw(partial(qfunc, x=1.234))(y=2.345) == expected
 
 
@@ -500,9 +500,7 @@ class TestMidCircuitMeasurements:
             qp.cond(m0, qp.PauliX)(wires=1)
 
         drawing = qp.draw(circ)(pnp.pi)
-        expected_drawing = (
-            "0: ──RX(3.14)──┤↗├────┤  \n1: ─────────────║───X─┤  \n                ╚═══╝    "
-        )
+        expected_drawing = "0: ──RX(3.14)──┤↗├────┤\n1: ─────────────║───X─┤\n                ╚═══╝"
 
         assert drawing == expected_drawing
 
@@ -518,10 +516,10 @@ class TestMidCircuitMeasurements:
 
         drawing = qp.draw(circ)(pnp.pi, pnp.pi / 2)
         expected_drawing = (
-            "0: ──RX(3.14)──┤↗├───────────╭X─┤  \n"
-            "1: ─────────────║────────────╰●─┤  \n"
-            "2: ─────────────║───RY(1.57)──║─┤  \n"
-            "                ╚═════════════╝    "
+            "0: ──RX(3.14)──┤↗├───────────╭X─┤\n"
+            "1: ─────────────║────────────╰●─┤\n"
+            "2: ─────────────║───RY(1.57)──║─┤\n"
+            "                ╚═════════════╝"
         )
 
         assert drawing == expected_drawing
@@ -999,7 +997,7 @@ class TestMidCircuitMeasurements:
             qp.cond(m == 1, qp.S)(0)
 
         out = qp.draw(c)()
-        expected = "0: ─╭f──S─┤  \n1: ─╰f──║─┤  \n     ╠══╣    \n     ╚══╝    "
+        expected = "0: ─╭f──S─┤\n1: ─╰f──║─┤\n     ╠══╣\n     ╚══╝"
         assert out == expected
 
 
@@ -1222,9 +1220,9 @@ class TestWireAllocation:
         out = qp.draw(f)()
         # fmt: off
         expected = (
-            "0: ──┤↗├───────────X─┤  \n"
-            "      ║|0>├──X──┤  ║    \n"
-            "      ╚══════╩═════╝    "
+            "0: ──┤↗├───────────X─┤\n"
+            "      ║|0>├──X──┤  ║\n"
+            "      ╚══════╩═════╝"
         )
         assert out == expected
 
@@ -1243,9 +1241,9 @@ class TestWireAllocation:
         out = qp.draw(f)()
         # fmt: off
         expected = (
-            "0: ──X──────────╭●────┤  \n"
-            "     |0>├─╭●─╭●─│───┤    \n"
-            "     |0>├─╰X─╰Z─╰H──┤    "
+            "0: ──X──────────╭●────┤\n"
+            "     |0>├─╭●─╭●─│───┤\n"
+            "     |0>├─╰X─╰Z─╰H──┤"
         )
         assert out == expected
 
@@ -1264,9 +1262,9 @@ class TestWireAllocation:
         out = qp.draw(f)()
         # fmt: off
         expected = (
-            "0: ───────╭●────╭●────┤  \n"
-            "     ├──H─╰X──┤ │        \n"
-            "           ├──T─╰X──┤    "
+            "0: ───────╭●────╭●────┤\n"
+            "     ├──H─╰X──┤ │    \n"
+            "           ├──T─╰X──┤"
         )
         assert out == expected
 
@@ -1285,9 +1283,9 @@ class TestWireAllocation:
         out = qp.draw(f)()
         # fmt: off
         expected = (
-            "0: ─────────────╭●────┤  \n"
-            "     ├─────H─╭●─│───┤    \n"
-            "     |0>├────╰X─╰Z──┤    "
+            "0: ─────────────╭●────┤\n"
+            "     ├─────H─╭●─│───┤\n"
+            "     |0>├────╰X─╰Z──┤"
         )
         assert out == expected
 
@@ -1306,8 +1304,8 @@ class TestWireAllocation:
         out = qp.draw(f)()
         # fmt: off
         expected = (
-            "0: ────╭●──X──X─╭●────┤  \n"
-            "     ├─╰X──┤  ├─╰Z──┤    "
+            "0: ────╭●──X──X─╭●────┤\n"
+            "     ├─╰X──┤  ├─╰Z──┤"
         )
         assert out == expected
 
@@ -1326,8 +1324,8 @@ class TestWireAllocation:
         expected = (
             "0: ────╭●──X──X─╭●──X──X ···\n"
             "     ├─╰X──┤  ├─╰X──┤  ├ ···\n\n"
-            "0: ··· ─╭●──X──X─┤  \n"
-            "   ··· ─╰X──┤       "
+            "0: ··· ─╭●──X──X─┤\n"
+            "   ··· ─╰X──┤   "
         )
         assert out == expected
 
@@ -1338,7 +1336,7 @@ class TestWireAllocation:
             with qp.allocate(1) as wires:
                 qp.X(wires[0])
 
-        assert qp.draw(f)() == "  |0>├──X──┤    "
+        assert qp.draw(f)() == "  |0>├──X──┤"
 
     def test_empty_allocation(self):
         """Test an allocation with no operators in it."""
@@ -1347,7 +1345,7 @@ class TestWireAllocation:
             with qp.allocate(1) as _:
                 pass
 
-        assert qp.draw(f)() == "  |0>├──┤    "
+        assert qp.draw(f)() == "  |0>├──┤"
 
     def test_mcm_with_dynamic_wire_reuse(self):
         """Test that we can have mcm's and conditionals with dynamic wire reuse."""
@@ -1363,11 +1361,7 @@ class TestWireAllocation:
                 qp.cond(m, qp.CZ)((wires[0], 0))
 
         out = qp.draw(f)()
-        expected = (
-            "0: ──┤↗├─╭X──H──H─╭Z────┤  \n"
-            "      ║├─╰●──┤  ├─╰●──┤    \n"
-            "      ╚═══╩════════╝       "
-        )
+        expected = "0: ──┤↗├─╭X──H──H─╭Z────┤\n      ║├─╰●──┤  ├─╰●──┤\n      ╚═══╩════════╝   "
         assert out == expected
 
     def test_identity_global_phase_dynamic_wires(self):
@@ -1393,9 +1387,9 @@ class TestWireAllocation:
 
         out = qp.draw(f)()
         expected = (
-            "0: ──I─╭●─╭I────╭●─╭I────╭●─╭GlobalPhase(0.50)────┤  \n"
-            "     ├─╰X─╰I──┤ │  │   ├─╰X─╰GlobalPhase(0.50)──┤    \n"
-            "              ├─╰X─╰I──┤                             "
+            "0: ──I─╭●─╭I────╭●─╭I────╭●─╭GlobalPhase(0.50)────┤\n"
+            "     ├─╰X─╰I──┤ │  │   ├─╰X─╰GlobalPhase(0.50)──┤\n"
+            "              ├─╰X─╰I──┤                         "
         )
         assert out == expected
 
@@ -1438,8 +1432,8 @@ class TestWireAllocation:
         out = qp.draw(f)()
         # fmt: off
         expected = (
-            "0: ────╭●─────||─────╭●────┤  \n"
-            "     ├─╰X──┤  ||├──X─╰X──┤    "
+            "0: ────╭●─────||─────╭●────┤\n"
+            "     ├─╰X──┤  ||├──X─╰X──┤"
         )
         assert out == expected
 
@@ -1457,9 +1451,9 @@ class TestWireAllocation:
 
         out = qp.draw(f)()
         expected = (
-            "0: ────╭●─────||────╭●────┤  \n"
-            "     ├─╰X──┤  ||    │        \n"
-            "           ├──||──X─╰X──┤    "
+            "0: ────╭●─────||────╭●────┤\n"
+            "     ├─╰X──┤  ||    │    \n"
+            "           ├──||──X─╰X──┤"
         )
         assert out == expected
 
@@ -1476,8 +1470,8 @@ class TestWireAllocation:
         out = qp.draw(f)()
         # fmt: off
         expected = (
-            "0: ───────╭●──||───────┤  \n"
-            "     ├──X─╰X──||──X──┤    "
+            "0: ───────╭●──||───────┤\n"
+            "     ├──X─╰X──||──X──┤"
         )
         assert out == expected
 
@@ -1511,7 +1505,7 @@ def test_applied_transforms():
         qp.SWAP(wires=(0, 1))
         return qp.probs(wires=(0, 1))
 
-    expected = "0: ──X─┤  "
+    expected = "0: ──X─┤"
     assert qp.draw(my_circuit)(1.234) == expected
 
 
@@ -1522,7 +1516,7 @@ def test_draw_with_qfunc():
         qp.RX(x, wires=[0])
         qp.PauliZ(1)
 
-    assert qp.draw(qfunc)(1.1) == "0: ──RX(1.10)─┤  \n1: ──Z────────┤  "
+    assert qp.draw(qfunc)(1.1) == "0: ──RX(1.10)─┤\n1: ──Z────────┤"
 
 
 def test_draw_with_qfunc_with_measurements():
