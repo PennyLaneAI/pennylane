@@ -288,7 +288,9 @@ class TestSelectTHCOperator:
     """
 
     M, N, beth = 2, 4, 3
-    # leaves on the beth-bit grid, theta = 2 pi m / 2**beth, so the circuit is exact
+    # leaves at the centers of the angle grid cells, theta = (2 m + 1) pi / 2**beth, which
+    # the beth-bit floor quantization represents exactly, so the circuit carries no
+    # discretization error. Integer multiples of the step 2 pi / 2**beth are the worst case.
     theta = np.pi * np.array([1, 5]) / (1 << beth)
     chi = np.stack([np.cos(theta), np.sin(theta)], axis=1)
     tev = np.eye(2)
@@ -579,7 +581,6 @@ class TestSelectTHCInvariants:
             assert np.allclose(run(num_batches), reference, atol=1e-8)
 
 
-
 class TestControlledSelectTHC:
     """A control on ``select_thc`` should reach only the two ``Z_1`` reflections."""
 
@@ -613,7 +614,8 @@ class TestControlledSelectTHC:
         tape = qp.tape.QuantumScript.from_queue(q)
 
         # one ChangeOpBasis per V sandwich, and the control lands on the outside of it
-        assert [op.name for op in tape.operations].count("C(ChangeOpBasis)") == 2
+        names = [op.name for op in tape.operations]
+        assert sum(name.startswith("C(ChangeOpBasis") for name in names) == 2
 
         with qp.decomposition.toggle_graph_ctx(True):
             tape = qp.transforms.decompose(tape, max_expansion=1)[0][0]
@@ -663,6 +665,7 @@ class TestControlledSelectTHC:
         assert np.allclose(got[:, 0], off(), atol=1e-8)
         assert np.allclose(got[:, 1], on(), atol=1e-8)
 
+
 @pytest.mark.parametrize(
     "overlap, match",
     [
@@ -677,8 +680,7 @@ def test_select_thc_register_overlap(overlap, match):
     names = ["system_wires", "index_wires", "flag_wires", "gradient_wires", "work_wires"]
     edges = np.cumsum([0, 4, 4, 5, 4, 6])
     regs = {
-        name: list(range(int(lo), int(hi)))
-        for name, lo, hi in zip(names, edges[:-1], edges[1:])
+        name: list(range(int(lo), int(hi))) for name, lo, hi in zip(names, edges[:-1], edges[1:])
     }
     regs[overlap] = [0] + regs[overlap][1:]
     with pytest.raises(ValueError, match=match):

@@ -19,6 +19,7 @@ from math import pi
 import pennylane as qp
 from pennylane.wires import Wires
 
+
 def _cascade_angles(leaf):
     r"""Givens angles :math:`\theta_p` mapping ``leaf`` onto :math:`\lvert e_0 \rangle`.
 
