@@ -168,7 +168,7 @@ def _core_expval_execution(
     param_map: jnp.ndarray,
     vmapped_phase_func: Callable | None,
 ) -> tuple[jnp.ndarray, jnp.ndarray]:
-    """Evaluate the Monte Carlo integrand and return means with standard errors."""
+    """Evaluate the Monte Carlo integrand and return expectation values and variances."""
     bitflips, mask_XY, y_phase = obs_data
 
     s_f = samples.astype(jnp.float32)
@@ -188,7 +188,7 @@ def _core_expval_execution(
         E += vmapped_phase_func(phase_fn_params, samples, bitflips)
 
     if init_state_elems is None or init_state_amps is None:
-        expvals = jnp.real(phases) * jnp.cos(E) - jnp.imag(phases) * jnp.sin(E)
+        integrand = jnp.real(phases) * jnp.cos(E) - jnp.imag(phases) * jnp.sin(E)
     else:
         M = phases * jnp.exp(1j * E)
         X = init_state_elems
@@ -198,11 +198,12 @@ def _core_expval_execution(
         col_sums = jnp.sum(F.conj(), axis=0, keepdims=True)
         H = H1 * col_sums
         M = M * H
-        expvals = jnp.real(M)
+        integrand = jnp.real(M)
 
-    std_err = jnp.std(expvals, axis=-1, ddof=1) / jnp.sqrt(samples.shape[0])
+    expvals = jnp.mean(integrand, axis=1)
+    variances = jnp.var(integrand, axis=-1, ddof=1) / samples.shape[0]
 
-    return jnp.mean(expvals, axis=1), std_err
+    return expvals, variances
 
 
 def build_expval_func(
@@ -233,10 +234,11 @@ def build_expval_func(
                 n_samples=None,
                 init_state_elems=None,
                 init_state_amps=None,
-            ) -> (expvals, std_errs)
+            ) -> (expvals, variances)
 
         where ``expvals`` is a real array of shape ``(n_observables,)`` and
-        ``std_errs`` is the estimated standard error of each expectation value.
+        ``variances`` contains the estimated variance of each expectation-value
+        estimator.
 
     **Example**
 
@@ -254,7 +256,7 @@ def build_expval_func(
     ... )
     >>> expval_fn = jax.jit(build_expval_func(config))
     >>> params = jnp.zeros(len(gates))
-    >>> expvals, std_errs = expval_fn(params)
+    >>> expvals, variances = expval_fn(params)
     >>> expvals.shape
     (2,)
 
@@ -313,7 +315,7 @@ def build_expval_func(
 
         Returns:
             tuple[jnp.ndarray, jnp.ndarray]: Estimated expectation values and
-            their standard errors.
+            the estimated variances of those estimators.
         """
         if key is not None or n_samples is not None:
             _key = key if key is not None else config.key

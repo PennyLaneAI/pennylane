@@ -1491,19 +1491,19 @@ class TestResourcesTracker:
 
     expected_resources = (
         SpecsResources(
-            num_allocs=2,
+            num_wires=2,
             counts={"Hadamard": 1, "CNOT": 1},
             measurement_processes={},
             circuit_depth=2,
         ),
         SpecsResources(
-            num_allocs=3,
+            num_wires=3,
             counts={"PauliZ": 1, "CNOT": 1, "RX": 1},
             measurement_processes={},
             circuit_depth=2,
         ),
         SpecsResources(
-            num_allocs=2,
+            num_wires=2,
             counts={"Hadamard": 3, "RX": 2, "CNOT": 1},
             measurement_processes={},
             circuit_depth=4,
@@ -1535,13 +1535,13 @@ class TestResourcesTracker:
         qs2 = qp.tape.QuantumScript([qp.PauliZ(0), qp.CNOT([0, 1]), qp.RX(1.23, 2)])
 
         exp_res1 = SpecsResources(
-            num_allocs=2,
+            num_wires=2,
             counts={"Hadamard": 1, "CNOT": 1},
             measurement_processes={},
             circuit_depth=2,
         )
         exp_res2 = SpecsResources(
-            num_allocs=3,
+            num_wires=3,
             counts={"PauliZ": 1, "CNOT": 1, "RX": 1},
             measurement_processes={},
             circuit_depth=2,
@@ -1572,7 +1572,7 @@ class TestResourcesTracker:
 
         x = pnp.array(0.1, requires_grad=True)
         expected_resources = SpecsResources(
-            num_allocs=1,
+            num_wires=1,
             counts={"RX": 1},
             measurement_processes={"expval(PauliZ)": 1},
             circuit_depth=1,

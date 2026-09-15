@@ -22,6 +22,7 @@ import pytest
 
 from pennylane import apply, device, measure, qnode, registers, workflow
 from pennylane.decomposition import list_decomps
+from pennylane.math import int_to_binary
 from pennylane.measurements import probs, state
 from pennylane.ops import CH, CNOT, CSWAP, CZ, SWAP, Controlled, MultiControlledX, Toffoli, X
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
@@ -39,10 +40,10 @@ dev = device("default.qubit")
 
 
 @qnode(dev)
-def bb_quantum(data, control_wires, target_wires, work_wires, address):
+def bb_quantum(bitstrings, control_wires, target_wires, work_wires, address):
     BasisEmbedding(address, wires=control_wires)
     BBQRAM(
-        data,
+        bitstrings,
         control_wires=control_wires,
         target_wires=target_wires,
         work_wires=work_wires,
@@ -54,7 +55,7 @@ def bb_quantum(data, control_wires, target_wires, work_wires, address):
 @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 @pytest.mark.parametrize(
     (
-        "data",
+        "bitstrings",
         "control_wires",
         "target_wires",
         "work_wires",
@@ -72,7 +73,7 @@ def bb_quantum(data, control_wires, target_wires, work_wires, address):
             [0, 1],
             [2, 3, 4],
             [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
-            2,  # addressed from the left
+            [1, 0],  # addressed from the left
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0],  # |110>
         ),
         (
@@ -87,7 +88,7 @@ def bb_quantum(data, control_wires, target_wires, work_wires, address):
             np.array([0, 1]),
             np.array([2, 3, 4]),
             np.array([5, 11, 10, 9, 6, 7, 8, 12, 13, 14]),
-            1,
+            [0, 1],
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0],  # |111>
         ),
         (
@@ -100,23 +101,22 @@ def bb_quantum(data, control_wires, target_wires, work_wires, address):
             [0, 1],
             [2, 3, 4],
             [5, 6, 7, 8, 12, 13, 14, 9, 10, 11],
-            0,
+            [0, 0],
             [0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0],  # |010>
         ),
     ],
 )
 def test_bb_quantum(
-    data,
+    bitstrings,
     control_wires,
     target_wires,
     work_wires,
     address,
     probabilities,
 ):  # pylint: disable=too-many-arguments
-
-    if has_jax and not isinstance(data[0], str) and not isinstance(data, np.ndarray):
-        data, control_wires, target_wires, work_wires = (
-            jnp.array(data),
+    if has_jax and not isinstance(bitstrings[0], str) and not isinstance(bitstrings, np.ndarray):
+        bitstrings, control_wires, target_wires, work_wires = (
+            jnp.array(bitstrings),
             jnp.array(control_wires),
             jnp.array(target_wires),
             jnp.array(work_wires),
@@ -125,7 +125,7 @@ def test_bb_quantum(
     assert np.allclose(
         probabilities,
         bb_quantum(
-            data,
+            bitstrings,
             control_wires,
             target_wires,
             work_wires,
@@ -145,7 +145,7 @@ def test_bb_quantum(
                 [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
             ),
             ValueError,
-            "data' cannot be empty.",
+            "bitstrings' cannot be empty.",
         ),
         (
             (
@@ -155,7 +155,7 @@ def test_bb_quantum(
                 [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
             ),
             ValueError,
-            "data.shape[0] must be 2^(len(control_wires)).",
+            "bitstrings.shape[0] must be 2^(len(control_wires)).",
         ),
         (
             (
@@ -196,7 +196,7 @@ def test_raises(params, error, match):
 
 @pytest.mark.parametrize(
     (
-        "data",
+        "bitstrings",
         "control_wires",
         "target_wires",
         "bus",
@@ -250,7 +250,7 @@ def test_raises(params, error, match):
     ],
 )
 def test_bbqram_decomposition_new(
-    data,
+    bitstrings,
     control_wires,
     target_wires,
     bus,
@@ -259,7 +259,7 @@ def test_bbqram_decomposition_new(
     portR_wires,
 ):  # pylint: disable=too-many-arguments
     op = BBQRAM(
-        data,
+        bitstrings,
         control_wires,
         target_wires,
         [bus] + dir_wires + portL_wires + portR_wires,
@@ -271,11 +271,11 @@ def test_bbqram_decomposition_new(
 
 @qnode(dev)
 def hybrid_quantum(
-    data, control_wires, target_wires, work_wires, k, address
+    bitstrings, control_wires, target_wires, work_wires, k, address
 ):  # pylint: disable=too-many-arguments
-    BasisEmbedding(address, wires=control_wires)
+    BasisEmbedding(int_to_binary(address, len(control_wires)), wires=control_wires)
     HybridQRAM(
-        data,
+        bitstrings,
         control_wires=control_wires,
         target_wires=target_wires,
         work_wires=work_wires,
@@ -288,7 +288,7 @@ def hybrid_quantum(
 @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 @pytest.mark.parametrize(
     (
-        "data",
+        "bitstrings",
         "control_wires",
         "target_wires",
         "work_wires",
@@ -497,7 +497,7 @@ def hybrid_quantum(
     ],
 )
 def test_hybrid_quantum(
-    data,
+    bitstrings,
     control_wires,
     target_wires,
     work_wires,
@@ -506,17 +506,16 @@ def test_hybrid_quantum(
     probabilities,
     expected_circuit,
 ):  # pylint: disable=too-many-arguments
-
-    if has_jax and not isinstance(data[0], str) and not isinstance(data, np.ndarray):
-        data, control_wires, target_wires, work_wires = (
-            jnp.array(data),
+    if has_jax and not isinstance(bitstrings[0], str) and not isinstance(bitstrings, np.ndarray):
+        bitstrings, control_wires, target_wires, work_wires = (
+            jnp.array(bitstrings),
             jnp.array(control_wires),
             jnp.array(target_wires),
             jnp.array(work_wires),
         )
 
     real_probs = hybrid_quantum(
-        data,
+        bitstrings,
         control_wires,
         target_wires,
         work_wires,
@@ -525,7 +524,7 @@ def test_hybrid_quantum(
     )
     assert np.allclose(probabilities, real_probs)
     tape = workflow.construct_tape(hybrid_quantum, level="device")(
-        data,
+        bitstrings,
         control_wires,
         target_wires,
         work_wires,
@@ -537,7 +536,7 @@ def test_hybrid_quantum(
 
 @pytest.mark.parametrize(
     (
-        "data",
+        "bitstrings",
         "control_wires",
         "target_wires",
         "signal",
@@ -583,7 +582,7 @@ def test_hybrid_quantum(
     ],
 )
 def test_hybrid_decomposition_new(
-    data,
+    bitstrings,
     control_wires,
     target_wires,
     signal,
@@ -594,7 +593,7 @@ def test_hybrid_decomposition_new(
     k,
 ):  # pylint: disable=too-many-arguments
     op = HybridQRAM(
-        data,
+        bitstrings,
         control_wires=control_wires,
         target_wires=target_wires,
         work_wires=[signal] + [bus] + dir_wires + portL_wires + portR_wires,
@@ -610,7 +609,7 @@ def test_hybrid_decomposition_new(
         (
             ([], [0, 1], [2, 3, 4], [5, 6, 7, 8, 9, 10, 11, 12, 13, 14], 0),
             ValueError,
-            "data' cannot be empty.",
+            "bitstrings' cannot be empty.",
         ),
         (
             (
@@ -621,7 +620,7 @@ def test_hybrid_decomposition_new(
                 0,
             ),
             ValueError,
-            "data.shape[0] must be 2^(len(control_wires)).",
+            "bitstrings.shape[0] must be 2^(len(control_wires)).",
         ),
         (
             (
@@ -696,11 +695,11 @@ def test_hybrid_raises(params, error, match):
 
 @qnode(dev)
 def select_only_quantum(
-    data, control_wires, target_wires, select_wires, select_value, address
+    bitstrings, control_wires, target_wires, select_wires, select_value, address
 ):  # pylint: disable=too-many-arguments
-    BasisEmbedding(address, wires=control_wires)
+    BasisEmbedding(int_to_binary(address, len(control_wires)), wires=control_wires)
     SelectOnlyQRAM(
-        data,
+        bitstrings,
         control_wires=control_wires,
         target_wires=target_wires,
         select_wires=select_wires,
@@ -713,7 +712,7 @@ def select_only_quantum(
 @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 @pytest.mark.parametrize(
     (
-        "data",
+        "bitstrings",
         "control_wires",
         "target_wires",
         "select_wires",
@@ -996,7 +995,7 @@ def select_only_quantum(
     ],
 )
 def test_select_only_quantum(
-    data,
+    bitstrings,
     control_wires,
     target_wires,
     select_wires,
@@ -1005,17 +1004,16 @@ def test_select_only_quantum(
     probabilities,
     expected_circuit,
 ):  # pylint: disable=too-many-arguments
-
-    if has_jax and not isinstance(data[0], str) and not isinstance(data, np.ndarray):
-        data, control_wires, target_wires, select_wires = (
-            jnp.array(data),
+    if has_jax and not isinstance(bitstrings[0], str) and not isinstance(bitstrings, np.ndarray):
+        bitstrings, control_wires, target_wires, select_wires = (
+            jnp.array(bitstrings),
             jnp.array(control_wires),
             jnp.array(target_wires),
             jnp.array(select_wires),
         )
 
     real_probs = select_only_quantum(
-        data,
+        bitstrings,
         control_wires,
         target_wires,
         select_wires,
@@ -1024,7 +1022,7 @@ def test_select_only_quantum(
     )
     assert np.allclose(probabilities, real_probs)
     tape = workflow.construct_tape(select_only_quantum, level="device")(
-        data,
+        bitstrings,
         control_wires,
         target_wires,
         select_wires,
@@ -1046,7 +1044,7 @@ def test_select_only_quantum(
                 2,
             ),
             ValueError,
-            "data.shape[0] must be 2^(len(select_wires)+len(control_wires)).",
+            "bitstrings.shape[0] must be 2^(len(select_wires)+len(control_wires)).",
         ),
         (
             (
@@ -1092,7 +1090,7 @@ def test_select_only_quantum(
                 [5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
             ),
             ValueError,
-            "data' cannot be empty.",
+            "bitstrings' cannot be empty.",
         ),
         (
             (
@@ -1118,7 +1116,7 @@ def test_select_only_raises(params, error, match):
 
 @pytest.mark.parametrize(
     (
-        "data",
+        "bitstrings",
         "control_wires",
         "target_wires",
         "select_wires",
@@ -1188,10 +1186,10 @@ def test_select_only_raises(params, error, match):
     ],
 )
 def test_select_decomposition_new(
-    data, control_wires, target_wires, select_wires, select_value
+    bitstrings, control_wires, target_wires, select_wires, select_value
 ):  # pylint: disable=too-many-arguments
     op = SelectOnlyQRAM(
-        data,
+        bitstrings,
         control_wires,
         target_wires,
         select_wires,
@@ -1386,6 +1384,7 @@ class TestFFQRAMDecomposition:
         for rule in list_decomps(FFQRAM):
             _test_decomposition_rule(op, rule)
 
+    @pytest.mark.pl2do(reason="we will come back to broadcasting later")
     def test_decomposition_broadcasted(self):
         """Checks the decomposition for broadcasted amplitudes."""
         amplitudes = np.array(

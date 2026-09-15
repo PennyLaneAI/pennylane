@@ -511,8 +511,9 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
     @pytest.mark.parametrize("cls, label", [(qp.GlobalPhase, "GlobalPhase"), (qp.Identity, "I")])
     def test_add_global_op(self, wires, wire_map, cls, label):
         """Test that adding a global op works as expected."""
-        data = [0.5124][: cls.num_params]
-        op = cls(*data, wires=wires)
+        data = (0.5124,) if cls is qp.GlobalPhase else ()
+        kwargs = {} if cls is qp.GlobalPhase else {"wires": wires}
+        op = cls(*data, **kwargs)
         # Expected output does not depend on the wires of GlobalPhase but just
         # on the number of drawn wires as dictated by the config!
         n_wires = len(wire_map)
@@ -543,8 +544,9 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
     def test_add_controlled_global_op(self, wires, control_wires, expected, wire_map, cls, label):
         """Test that adding a controlled global op works as expected."""
         expected = copy(expected)
-        data = [0.5124][: cls.num_params]
-        op = qp.ctrl(cls(*data, wires=wires), control=control_wires)
+        data = (0.5124,) if cls is qp.GlobalPhase else ()
+        base_op = cls(*data, wires=wires) if cls is qp.Identity else cls(*data)
+        op = qp.ctrl(base_op, control=control_wires)
         n_wires = len(wire_map)
         if n_wires > 4:
             expected[-1] = "├" + expected[-1][1:]
@@ -894,11 +896,13 @@ class TestShowMatrices:
     def test_default_shows_matrix_parameters(self):
         """Test matrices numbered but not included by default."""
 
+        # fmt: off
         expected = (
             "0: ─╭|Ψ⟩──U(M0)─┤  <𝓗(M0)>\n"
             "1: ─╰|Ψ⟩────────┤         \n"
             "M0 = \n[[1. 0.]\n [0. 1.]]"
         )
+        # fmt: on
 
         assert tape_text(tape_matrices) == expected
 

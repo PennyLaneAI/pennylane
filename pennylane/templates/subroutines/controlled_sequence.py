@@ -18,15 +18,13 @@ Contains the ControlledSequence template.
 from copy import copy
 
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operation
-from pennylane.decomposition import (
-    add_decomps,
-    controlled_resource_rep,
-    pow_resource_rep,
-    register_resources,
-)
+from pennylane.core.operator import Operation, abstractify
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops.op_math import SymbolicOp, ctrl
 from pennylane.ops.op_math import pow as qp_pow
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.ops.op_math.pow2 import _pow_abstract
+from pennylane.typing import Wire
 from pennylane.wires import Wires
 
 
@@ -79,7 +77,7 @@ class ControlledSequence(SymbolicOp, Operation):
 
     grad_method = None
 
-    resource_keys = {"base_class", "base_params", "num_control_wires"}
+    resource_keys = {"base_rep", "num_control_wires"}
 
     def _flatten(self):
         return (self.base,), (self.control,)
@@ -104,8 +102,7 @@ class ControlledSequence(SymbolicOp, Operation):
     @property
     def resource_params(self) -> dict:
         params = {
-            "base_class": self.hyperparameters["base"].__class__,
-            "base_params": self.hyperparameters["base"].resource_params,
+            "base_rep": abstractify(self.hyperparameters["base"]),
             "num_control_wires": len(self.hyperparameters["control_wires"]),
         }
         return params
@@ -212,19 +209,15 @@ class ControlledSequence(SymbolicOp, Operation):
         return ops
 
 
-def _ctrl_seq_decomposition_resources(base_class, base_params, num_control_wires) -> dict:
+def _ctrl_seq_decomposition_resources(base_rep, num_control_wires) -> dict:
 
     resources = {}
 
     powers_of_two = [2**i for i in range(num_control_wires)]
 
     for z in powers_of_two[::-1]:
-        controlled_rep = controlled_resource_rep(base_class, base_params, 1)
-        rep = pow_resource_rep(
-            base_class=controlled_rep.op_type,
-            base_params=controlled_rep.params,
-            z=z,
-        )
+        controlled_rep = _ctrl_abstract(base_rep, Wire[1])
+        rep = _pow_abstract(controlled_rep, z=z)
         resources[rep] = 1
     return resources
 

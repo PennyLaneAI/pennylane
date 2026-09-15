@@ -494,7 +494,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             return True
         if not (ctrl_wires_in_progress := self._num_ctrl_wires_in_progress[base]):
             return False
-        return num_control_wires > ctrl_wires_in_progress[-1]
+        return num_control_wires >= ctrl_wires_in_progress[-1]
 
     def _get_decompositions(self, op: AbstractOperatorLike) -> Iterable[DecompositionRule]:
         """Helper function to get a list of decomposition rules."""

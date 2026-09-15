@@ -194,8 +194,7 @@ from contextlib import contextmanager
 from threading import RLock
 from typing import Optional
 
-from pennylane import pytrees
-from pennylane.capture import enabled  # tach-ignore
+from pennylane import capture, pytrees  # tach-ignore
 from pennylane.exceptions import QueuingError
 
 
@@ -534,7 +533,7 @@ def apply(op, context: type[QueuingManager] | AnnotatedQueue = QueuingManager):
 
     """
 
-    if enabled():
+    if capture.enabled():
         return _capture_apply(op)
 
     if not QueuingManager.recording():
@@ -560,6 +559,10 @@ def _capture_apply(op):
     """Applies an op in a capture context."""
 
     if hasattr(op, "_bind_primitive"):
+        # NOTE: Shallow-copy to avoid mutating the input operator
+        op = copy.copy(op)
+        # NOTE: Reset tracer attribute to prevent tracer leaks
+        op.tracer = None
         op._bind_primitive()  # pylint: disable=protected-access
         if op.tracer is None:
             raise RuntimeError("Trying to use apply in a non-tracing context.")
@@ -571,4 +574,15 @@ def _capture_apply(op):
     return pytrees.unflatten(*pytrees.flatten(op))
 
 
-__all__ = ["QueuingManager", "AnnotatedQueue", "apply"]
+def remove_from_program(op):
+    """Removes an operator from the captured/queued program."""
+    if QueuingManager.recording():
+        QueuingManager.remove(op)
+    if capture.enabled():
+        # pylint: disable-next=import-outside-toplevel
+        from .operator.operator2 import pop_op_eqns  # tach-ignore
+
+        pop_op_eqns((op,))
+
+
+__all__ = ["QueuingManager", "AnnotatedQueue", "apply", "remove_from_program"]

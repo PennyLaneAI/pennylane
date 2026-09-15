@@ -17,7 +17,9 @@ import pytest
 
 import pennylane as qp
 from pennylane.core import queuing
+from pennylane.core.operator import abstractify
 from pennylane.ops import MeasurementValue, PauliMeasure
+from pennylane.typing import Wire
 from pennylane.wires import Wires
 
 
@@ -96,3 +98,18 @@ class TestPauliMeasure:
 
         m5 = PauliMeasure("XY", wires=[0, 1], meas_uid="id1")
         assert hash(m1) == hash(m5)
+
+    @pytest.mark.parametrize("postselect", [0, 1, None])
+    @pytest.mark.parametrize("meas_uid", [123, 456, None])
+    def test_abstract_pauli_measure(self, postselect, meas_uid):
+        """Test that instantiating an abstract PauliMeasure`` works correctly.
+
+        All data should be preserved other than ``meas_uid``, which should be ignored.
+        """
+        # Check manually created abstract instance
+        m1 = PauliMeasure("XYZ", Wire[3], postselect=postselect, meas_uid=meas_uid)
+        abstract_m1 = abstractify(m1)
+        assert abstract_m1.pauli_word == "XYZ"
+        assert abstract_m1.wires == Wire[3]
+        assert abstract_m1.postselect == postselect
+        assert abstract_m1.meas_uid is None

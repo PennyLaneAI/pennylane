@@ -1036,9 +1036,13 @@ class TestParamShift:
         and no generator are found."""
 
         # pylint: disable=too-few-public-methods
-        class RX(qp.RX):
+        class LegacyRX(qp.operation.Operation):
             """This copy of RX overwrites parameter_frequencies to report
             missing information, disabling its differentiation."""
+
+            num_params = 1
+            grad_method = "A"
+            num_wires = 1
 
             @property
             def parameter_frequencies(self):
@@ -1055,7 +1059,7 @@ class TestParamShift:
             num_wires = 1
 
         x = np.array(0.654, requires_grad=True)
-        for op in [RX, NewOp]:
+        for op in [LegacyRX, NewOp]:
             with qp.queuing.AnnotatedQueue() as q:
                 op(x, wires=0)
                 qp.expval(qp.PauliZ(0))
@@ -1290,22 +1294,23 @@ class TestParamShiftUsingBroadcasting:
         assert np.allclose(j2[0], 0)
         assert np.allclose(j2[1], exp)
 
-    def test_grad_recipe_parameter_dependent(self, monkeypatch):
+    def test_grad_recipe_parameter_dependent(self):
         """Test that an operation with a gradient recipe that depends on
         its instantiated parameter values works correctly within the parameter
         shift rule. Also tests that grad_recipes supersedes parameter_frequencies.
         """
 
-        def fail(*args, **kwargs):
-            raise qp.operation.ParameterFrequenciesUndefinedError
+        class NewRX(RX_par_dep_recipe):  # pylnit: disable=too-few-public-methods
 
-        monkeypatch.setattr(qp.RX, "parameter_frequencies", fail)
+            @property
+            def parameter_frequencies(self):
+                raise qp.operation.ParameterFrequenciesUndefinedError
 
         x = np.array(0.654, requires_grad=True)
         dev = qp.device("default.qubit", wires=2)
 
         with qp.queuing.AnnotatedQueue() as q:
-            RX_par_dep_recipe(x, wires=0)
+            NewRX(x, wires=0)
             qp.expval(qp.PauliZ(0))
 
         tape = qp.tape.QuantumScript.from_queue(q)

@@ -87,7 +87,8 @@ class TestMultiplier:
         @qp.set_shots(1)
         @qp.qnode(dev)
         def circuit(x):
-            qp.BasisEmbedding(x, wires=x_wires)
+            x_bin = qp.math.int_to_binary(x, len(x_wires))
+            qp.BasisEmbedding(x_bin, wires=x_wires)
             qp.Multiplier(k, x_wires, mod, work_wires)
             return qp.sample(wires=x_wires)
 
@@ -156,7 +157,8 @@ class TestMultiplier:
         @qp.set_shots(1)
         @qp.qnode(dev)
         def circuit():
-            qp.BasisEmbedding(x, wires=x_wires)
+            x_bin = qp.math.int_to_binary(x, len(x_wires))
+            qp.BasisEmbedding(x_bin, wires=x_wires)
             qp.Multiplier(k, x_wires, mod, work_wires)
             return qp.sample(wires=x_wires)
 
