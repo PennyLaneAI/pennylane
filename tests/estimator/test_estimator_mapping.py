@@ -444,12 +444,12 @@ class TestMapToResourceOp:
         n_states, n_modes, k, b = 4, 2, 3, 2
         n = int(qp.math.ceil_log2(n_states))
         num_fragments = n_states
-        hamiltonian = {
-            "constant": np.zeros((num_fragments, n_states, n_states)),
-            "linear": np.zeros((num_fragments, n_states, n_states, n_modes)),
-            "quadratic": np.zeros((num_fragments, n_states, n_states, n_modes, n_modes)),
-            "kinetic": np.einsum("ab,cd->abcd", np.eye(n_states), np.diag(0.3 * np.ones(n_modes))),
-        }
+        hamiltonian = qp.VibronicHamiltonian(
+            constant=np.zeros((num_fragments, n_states, n_states)),
+            linear=np.zeros((num_fragments, n_states, n_states, n_modes)),
+            quadratic=np.zeros((num_fragments, n_states, n_states, n_modes, n_modes)),
+            kinetic=np.einsum("ab,cd->abcd", np.eye(n_states), np.diag(0.3 * np.ones(n_modes))),
+        )
         wires = qp.registers(
             {
                 "electronic": n,
@@ -497,17 +497,17 @@ class TestMapToResourceOp:
     def test_map_to_resource_op_trotter_vibronic_rejects_too_many_fragments(self):
         """Test that a fragment count above the XOR-fragmentation maximum is rejected.
 
-        ``VibronicHamiltonian`` derives its cost from ``num_states`` only.
+        ``re_ops.VibronicHamiltonian`` derives its cost from ``num_states`` only.
         """
         n_states, n_modes, k, b = 4, 2, 3, 2
         n = int(qp.math.ceil_log2(n_states))
         num_fragments = n_states + 1  # standard XOR fragmentation allows at most n_states == 4
-        hamiltonian = {
-            "constant": np.zeros((num_fragments, n_states, n_states)),
-            "linear": np.zeros((num_fragments, n_states, n_states, n_modes)),
-            "quadratic": np.zeros((num_fragments, n_states, n_states, n_modes, n_modes)),
-            "kinetic": np.einsum("ab,cd->abcd", np.eye(n_states), np.diag(0.3 * np.ones(n_modes))),
-        }
+        hamiltonian = qp.VibronicHamiltonian(
+            constant=np.zeros((num_fragments, n_states, n_states)),
+            linear=np.zeros((num_fragments, n_states, n_states, n_modes)),
+            quadratic=np.zeros((num_fragments, n_states, n_states, n_modes, n_modes)),
+            kinetic=np.einsum("ab,cd->abcd", np.eye(n_states), np.diag(0.3 * np.ones(n_modes))),
+        )
         wires = qp.registers(
             {
                 "electronic": n,
@@ -537,12 +537,12 @@ class TestMapToResourceOp:
         n_states, n_modes, k, b = 4, 2, 3, 2
         n = int(qp.math.ceil_log2(n_states))
         num_fragments = 1  # fewer fragments than the maximum (n_states == 4) is still valid
-        hamiltonian = {
-            "constant": np.zeros((num_fragments, n_states, n_states)),
-            "linear": np.zeros((num_fragments, n_states, n_states, n_modes)),
-            "quadratic": np.zeros((num_fragments, n_states, n_states, n_modes, n_modes)),
-            "kinetic": np.einsum("ab,cd->abcd", np.eye(n_states), np.diag(0.3 * np.ones(n_modes))),
-        }
+        hamiltonian = qp.VibronicHamiltonian(
+            constant=np.zeros((num_fragments, n_states, n_states)),
+            linear=np.zeros((num_fragments, n_states, n_states, n_modes)),
+            quadratic=np.zeros((num_fragments, n_states, n_states, n_modes, n_modes)),
+            kinetic=np.einsum("ab,cd->abcd", np.eye(n_states), np.diag(0.3 * np.ones(n_modes))),
+        )
         wires = qp.registers(
             {
                 "electronic": n,
@@ -732,6 +732,25 @@ class TestMapToResourceOp:
             num_steps=3,
             order=2,
             wires=range(2 * num_orbitals),
+        )
+        mapped = _map_to_resource_op(op)
+        assert mapped == expected
+        assert mapped.wires == expected.wires
+
+    def test_map_alias_sampling(self):
+        """Test that AliasSampling maps to its estimator resource operator."""
+        probs = [0.1, 0.2, 0.3, 0.4]
+        mu = 4
+        req = qp.alias_sampling_wires(len(probs), mu)
+        n_wires = sum(req.values())
+        target_wires, temp_wires, work_wires = np.split(
+            np.arange(n_wires), np.cumsum([req["target_wires"], req["temp_wires"]])
+        )
+        op = qp.AliasSampling(probs, mu, target_wires, temp_wires, work_wires)
+        expected = re_temps.AliasSampling(
+            num_coeffs=len(probs),
+            precision=2.0 ** (-mu),
+            wires=target_wires,
         )
         mapped = _map_to_resource_op(op)
         assert mapped == expected

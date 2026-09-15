@@ -2,6 +2,30 @@
 
 <h3>New features since last release</h3>
 
+* Three new numeric Hamiltonians called :class:`pennylane.CDFHamiltonian` (based on
+  `arXiv:2506.15784, Sec. III A <https://arxiv.org/abs/2506.15784>`),
+  :class:`pennylane.CGFHamiltonian` (based on
+  `arXiv:2508.11865, Sec. III C <https://arxiv.org/abs/2508.11865>`), and
+  :class:`pennylane.VibronicHamiltonian` (based on
+  `arXiv:2411.13669 <https://arxiv.org/abs/2411.13669>`) have been added, which define compressed
+  double-factorized (CDF), Christiansen greedy-fragmentation (CGF) Hamiltonians, and vibronic
+  Hamiltonians respectively. These Hamiltonians can be defined with both concrete numeric data or
+  abstract data (using ``qp.typing.Float[...]``).
+  [(#10048)](https://github.com/PennyLaneAI/pennylane/pull/10048)
+  [(#10138)](https://github.com/PennyLaneAI/pennylane/pull/10138)
+
+* Three new state-of-the-art Trotterization operators called :class:`~.TrotterCDF`,
+  :class:`~.TrotterCGF`, and :class:`~.TrotterVibronic` have been added to encode
+  fragmentation-based Trotterization procedures of :class:`pennylane.CDFHamiltonian`,
+  :class:`pennylane.CGFHamiltonian`, and :class:`pennylane.VibronicHamiltonian` Hamiltonians,
+  respectively.
+  [(#9459)](https://github.com/PennyLaneAI/pennylane/pull/9459)
+  [(#9789)](https://github.com/PennyLaneAI/pennylane/pull/9789)
+  [(#10015)](https://github.com/PennyLaneAI/pennylane/pull/10015)
+  [(#10074)](https://github.com/PennyLaneAI/pennylane/pull/10074)
+  [(#10081)](https://github.com/PennyLaneAI/pennylane/pull/10081)
+  [(#10138)](https://github.com/PennyLaneAI/pennylane/pull/10138)
+
 * A new operator called :class:`pennylane.PPR` has been added, which represents a Pauli product
   rotation with a fixed angle
   :math:`\theta = \pi / k`, following this angle convention:
@@ -19,12 +43,12 @@
   >>> op = qp.PPR(4, "XY", wires=[0, 1])
   >>> op
   PPR(4, 'XY', wires=[0, 1])
-  
+
   ```
 
-* A new decorator is available called :func:`pennylane.subcircuit`, which can be used to 
-  create operators directly from quantum functions. This enables fast research and 
-  development of new operators without the need to create full-fledged operator classes 
+* A new decorator is available called :func:`pennylane.subcircuit`, which can be used to
+  create operators directly from quantum functions. This enables fast research and
+  development of new operators without the need to create full-fledged operator classes
   manually.
   [(#10126)](https://github.com/PennyLaneAI/pennylane/pull/10126)
 
@@ -49,9 +73,6 @@
 
   ```
 
-* Two new numeric Hamiltonians called :class:`pennylane.CDFHamiltonian` (based on `arXiv:2506.15784, Sec. III A <https://arxiv.org/abs/2506.15784>`) and :class:`pennylane.CGFHamiltonian` have been added (based on `arXiv:2508.11865, Sec. III C <https://arxiv.org/abs/2508.11865>`), which define compressed double-factorized (CDF) and Christiansen greedy-fragmentation Hamiltonians, respectively. These Hamiltonians can be defined
-  with both concrete numeric data or abstract data (using ``qp.typing.Float[...]``).
-  [(#10048)](https://github.com/PennyLaneAI/pennylane/pull/10048)
 
   ```python
   import numpy as np
@@ -130,11 +151,6 @@
       return qp.expval(qp.Z(0))
   ```
 
-* Added a new template :class:`~.TrotterVibronic` that implements a second-order Trotter circuit for
-  vibronic Hamiltonian simulation using phase-gradient arithmetic, based on
-  [Motlagh et al, arXiv:2411.13669](https://arxiv.org/abs/2411.13669).
-  [(#10029)](https://github.com/PennyLaneAI/pennylane/pull/10029)
-
 * ``qp.allocate`` now supports ``state="magic-T"`` and ``state="magic-T-adj"`` for requesting
   magic-state dynamic wires (:math:`|m\rangle = TH|0\rangle` and :math:`|m̄\rangle = T^\dagger H|0\rangle`).
   These states are currently supported when compiling with Catalyst; device simulators raise an
@@ -189,15 +205,6 @@
   True
 
   ```
-
-* Added :class:`~.TrotterCDF` and :class:`~.TrotterCGF`, templates for second-order Trotter time evolution of
-  fragmented Hamiltonians (CDF for electronic structure, CGF for vibrational structure) as used in modern quantum
-  chemistry algorithms.
-  [(#9459)](https://github.com/PennyLaneAI/pennylane/pull/9459)
-  [(#9789)](https://github.com/PennyLaneAI/pennylane/pull/9789)
-  [(#10015)](https://github.com/PennyLaneAI/pennylane/pull/10015)
-  [(#10074)](https://github.com/PennyLaneAI/pennylane/pull/10074)
-  [(#10081)](https://github.com/PennyLaneAI/pennylane/pull/10081)
 
 * A new arithmetic template called :class:`~.SignedOutMultiplier` has been added that multiplies numbers encoded in the
   input registers using a two's complement.
@@ -470,6 +477,79 @@
 
   The round is resolved from the device being traced, so the program has to be captured (`qp.qjit(capture=True)`). The controller's `in_bytes` and `out_bytes` capacities both default to 8 bytes, and the correction comes back as an `out_bytes`-sized `uint8` buffer. Pass `controller=` / `coprocessor=` to choose the nodes explicitly, `out_bytes=` to override the reply size, and `decoder_id=` to select which coprocessor-side decoder handles the round.
 
+* Added :class:`~.AliasSampling`, which prepares a state with real, positive amplitudes to a chosen
+  number of bits of precision using coherent alias sampling, the standard `PREPARE` subroutine for
+  qubitization-based algorithms. Use :func:`~.alias_sampling_wires` to get the required register sizes.
+  Also added :class:`~.UniformPrep`, preparing a uniform superposition over an arbitrary number of
+  basis states.
+  [(#9913)](https://github.com/PennyLaneAI/pennylane/pull/9913)
+  [(#10145)](https://github.com/PennyLaneAI/pennylane/pull/10145)
+
+* Added :class:`~.LeftQuantumComparator` for inequality tests between two quantum registers.
+  [(#9277)](https://github.com/PennyLaneAI/pennylane/pull/9277)
+  [(#9544)](https://github.com/PennyLaneAI/pennylane/pull/9544)
+  [(#10145)](https://github.com/PennyLaneAI/pennylane/pull/10145)
+
+  ```python
+  import pennylane as qp
+
+  dev = qp.device("lightning.qubit")
+
+  @qp.set_shots(shots=1)
+  @qp.qnode(dev)
+  def circuit(a, comparator, b):
+      x_wires = [0, 3, 6, 9]
+      y_wires = [1, 4, 7, 10]
+      work_wires = [2, 5, 8]
+      a_bin = qp.math.int_to_binary(a, len(x_wires))
+      b_bin = qp.math.int_to_binary(b, len(x_wires))
+      qp.BasisState(a_bin, wires=x_wires)
+      qp.BasisState(b_bin, wires=y_wires)
+      qp.LeftQuantumComparator(x_wires, y_wires, 11, work_wires, comparator)
+      qp.CNOT(wires=[11, 12])
+      qp.adjoint(qp.LeftQuantumComparator(x_wires, y_wires, 11, work_wires, comparator))
+      return qp.sample(wires=[12])
+  ```
+
+  ```pycon
+  >>> output = circuit(3, ">=", 2)
+  >>> print(bool(output))
+  True
+
+  ```
+
+* Added :class:`~.LeftClassicalComparator` for inequality tests between a quantum register and an integer.
+  [(#9308)](https://github.com/PennyLaneAI/pennylane/pull/9308)
+  [(#9554)](https://github.com/PennyLaneAI/pennylane/pull/9554)
+  [(#10145)](https://github.com/PennyLaneAI/pennylane/pull/10145)
+
+  ```python
+  import pennylane as qp
+
+  dev = qp.device("lightning.qubit", wires=6)
+
+  @qp.set_shots(shots=1)
+  @qp.qnode(dev)
+  def circuit(x_val, L_val):
+      x_val_bin = qp.math.int_to_binary(x_val, 3)
+      qp.BasisState(x_val_bin, wires=[0, 1, 2])
+      qp.LeftClassicalComparator(
+          x_wires=[0, 1, 2],
+          L=L_val,
+          target_wire=3,
+          work_wires=[4, 5],
+          comparator=">=",
+      )
+      return qp.sample(wires=3)
+  ```
+
+  ```pycon
+  >>> output = circuit(3, 2)
+  >>> print(bool(output))  # 3 >= 2
+  True
+
+  ```
+
 <h3>Improvements 🛠</h3>
 
 * Added a decomposition of :class:`~.TemporaryAND` directly to four :math:`\pi/8` PPRs.
@@ -485,7 +565,7 @@
 
 * `DecompositionRule` now wraps the target qfunc, preserving it's signature and docstring.
   [(#10144)](https://github.com/PennyLaneAI/pennylane/pull/10144)
- 
+
 *  Reduced shot counts in `default.clifford` measurement tests to improve CI runtime.
   [(#10127)](https://github.com/PennyLaneAI/pennylane/pull/10127)
 
@@ -759,78 +839,11 @@
   [(#9537)](https://github.com/PennyLaneAI/pennylane/pull/9537)
   [(#9481)](https://github.com/PennyLaneAI/pennylane/pull/9481)
 
-* Created a new ``labs.templates.LeftQuantumComparator`` template for performing inequality test of two quantum registers.
-  [(#9277)](https://github.com/PennyLaneAI/pennylane/pull/9277)
-  [(#9544)](https://github.com/PennyLaneAI/pennylane/pull/9544)
-
 * TCDQ now supports workflows with qudits of non-uniform dimensions.
   [(#9935)](https://github.com/PennyLaneAI/pennylane/pull/9935)
 
 * TCDQ qudit MMD loss function now supports phase layers.
   [(#10035)](https://github.com/PennyLaneAI/pennylane/pull/10035)
-
-  ```python
-  import pennylane as qp
-  from pennylane.labs.templates import LeftQuantumComparator
-
-  dev = qp.device("lightning.qubit")
-
-  @qp.set_shots(shots=1)
-  @qp.qnode(dev)
-  def circuit(a, comparator, b):
-    x_wires = [0, 3, 6, 9]
-    y_wires = [1, 4, 7, 10]
-    work_wires = [2, 5, 8]
-    a_bin = qp.math.int_to_binary(a, len(x_wires))
-    b_bin = qp.math.int_to_binary(b, len(x_wires))
-    qp.BasisState(a_bin, wires=x_wires)
-    qp.BasisState(b_bin, wires=y_wires)
-    LeftQuantumComparator(x_wires, y_wires, 11, work_wires, comparator)
-    qp.CNOT(wires=[11, 12])
-    qp.adjoint(LeftQuantumComparator(x_wires, y_wires, 11, work_wires, comparator))
-
-    return qp.sample(wires=[12])
-  ```
-
-  ```pycon
-    >>> output = circuit(3, ">=", 2)
-    >>> print(bool(output))
-    True
-
-  ```
-
-* Created a new ``labs.templates.LeftClassicalComparator`` template for performing an inequality
-  test of a quantum register and an integer.
-  [(#9308)](https://github.com/PennyLaneAI/pennylane/pull/9308)
-
-  ```python
-  import pennylane as qp
-  from pennylane.labs.templates import LeftClassicalComparator
-
-  dev = qp.device("lightning.qubit", wires=6)
-
-  @qp.set_shots(shots=1)
-  @qp.qnode(dev)
-  def circuit(x_val, L_val):
-    x_val_bin = qp.math.int_to_binary(x_val, 3)
-    qp.BasisState(x_val_bin, wires=[0, 1, 2])
-
-    LeftClassicalComparator(
-        x_wires=[0, 1, 2],
-        L=L_val,
-        target_wire=3,
-        work_wires=[4, 5],
-        comparator='>='
-    )
-    return qp.sample(wires=3)
-  ```
-
-  ```pycon
-    >>> output = circuit(3, 2)
-    >>> print(bool(output)) # 3 >= 2
-    True
-
-  ```
 
 * Update phase gradient transforms to use ``BasisState`` instead of ``BasisEmbedding``.
   This is an improvement as the latter is not consistently dispatched to ``C(BasisState)`` in ``controlled_resource_rep``, which
@@ -1309,6 +1322,7 @@
   [(#9950)](https://github.com/PennyLaneAI/pennylane/pull/9950)
   [(#9926)](https://github.com/PennyLaneAI/pennylane/pull/9926)
   [(#10077)](https://github.com/PennyLaneAI/pennylane/pull/10077)
+  [(#10150)](https://github.com/PennyLaneAI/pennylane/pull/10150)
 
   This is an internal, work-in-progress effort that is being incrementally integrated into the PennyLane
   ecosystem. Supported functionality so far:
@@ -1576,9 +1590,6 @@
 
 * Fixed a bug in :class:`~.OutMultiplier` for small output registers.
   [(#9759)](https://github.com/PennyLaneAI/pennylane/pull/9759)
-
-* Fixed a bug in :class:`~.labs.LeftClassicalComparator` for `L = 2^n -1`.
-  [(#9554)](https://github.com/PennyLaneAI/pennylane/pull/9554)
 
 * Fixed a bug in :class:`~.SumOfSlatersPrep` with `qjit` compilation and non-identity encoding.
   [(#9747)](https://github.com/PennyLaneAI/pennylane/pull/9747)

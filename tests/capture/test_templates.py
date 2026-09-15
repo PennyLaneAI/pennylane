@@ -354,6 +354,10 @@ tested_modified_templates = [
     qp.Multiplier,
     qp.OutMultiplier,
     qp.Incrementer,
+    qp.LeftClassicalComparator,
+    qp.LeftQuantumComparator,
+    qp.UniformPrep,
+    qp.AliasSampling,
     qp.SignedOutMultiplier,
     qp.OutSquare,
     qp.SignedOutSquare,
@@ -478,12 +482,12 @@ class TestModifiedTemplates:
         # diagonal position fragment and a diagonal kinetic fragment.
         n_states, n_modes, k, b = 2, 1, 3, 2
         n = int(math.ceil_log2(n_states))
-        hamiltonian = {
-            "constant": np.zeros((1, n_states, n_states)),
-            "linear": np.zeros((1, n_states, n_states, n_modes)),
-            "quadratic": np.zeros((1, n_states, n_states, n_modes, n_modes)),
-            "kinetic": np.einsum("ab,cd->abcd", np.eye(n_states), np.diag(0.3 * np.ones(n_modes))),
-        }
+        hamiltonian = qp.VibronicHamiltonian(
+            constant=np.zeros((1, n_states, n_states)),
+            linear=np.zeros((1, n_states, n_states, n_modes)),
+            quadratic=np.zeros((1, n_states, n_states, n_modes, n_modes)),
+            kinetic=np.einsum("ab,cd->abcd", np.eye(n_states), np.diag(0.3 * np.ones(n_modes))),
+        )
         wires = qp.registers(
             {
                 "electronic": n,
@@ -1422,6 +1426,105 @@ class TestModifiedTemplates:
 
         [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
         qp.assert_equal(op, qp.Incrementer(**kwargs))
+
+    def test_left_classical_comparator(self):
+        """Test the primitive bind call of LeftClassicalComparator."""
+
+        kwargs = {
+            "x_wires": [0, 1, 2],
+            "L": 3,
+            "target_wire": 3,
+            "work_wires": [4, 5],
+            "comparator": "<",
+        }
+
+        def qfunc():
+            return qp.LeftClassicalComparator(**kwargs).tracer
+
+        jaxpr = jax.make_jaxpr(qfunc)()
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert_eqn_matches_op(eqn, qp.LeftClassicalComparator)
+
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        qp.assert_equal(op, qp.LeftClassicalComparator(**kwargs))
+
+    def test_left_quantum_comparator(self):
+        """Test the primitive bind call of LeftQuantumComparator."""
+
+        kwargs = {
+            "x_wires": [0, 1, 2],
+            "y_wires": [3, 4, 5],
+            "target_wire": 6,
+            "work_wires": [7, 8],
+            "comparator": "<=",
+        }
+
+        def qfunc():
+            return qp.LeftQuantumComparator(**kwargs).tracer
+
+        jaxpr = jax.make_jaxpr(qfunc)()
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert_eqn_matches_op(eqn, qp.LeftQuantumComparator)
+
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        qp.assert_equal(op, qp.LeftQuantumComparator(**kwargs))
+
+    def test_uniform_prep(self):
+        """Test the primitive bind call of UniformPrep."""
+
+        kwargs = {
+            "n_states": 4,
+            "target_wires": [0, 1],
+            "work_wires": [],
+        }
+
+        def qfunc():
+            return qp.UniformPrep(**kwargs).tracer
+
+        jaxpr = jax.make_jaxpr(qfunc)()
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert_eqn_matches_op(eqn, qp.UniformPrep)
+
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        qp.assert_equal(op, qp.UniformPrep(**kwargs))
+
+    def test_alias_sampling(self):
+        """Test the primitive bind call of AliasSampling."""
+
+        req = qp.alias_sampling_wires(2, 2)
+        n = sum(req.values())
+        target, temp, work = np.split(
+            np.arange(n), np.cumsum([req["target_wires"], req["temp_wires"]])
+        )
+        kwargs = {
+            "probs": (0.25, 0.75),
+            "mu": 2,
+            "target_wires": target.tolist(),
+            "temp_wires": temp.tolist(),
+            "work_wires": work.tolist(),
+        }
+
+        def qfunc():
+            return qp.AliasSampling(**kwargs).tracer
+
+        jaxpr = jax.make_jaxpr(qfunc)()
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert_eqn_matches_op(eqn, qp.AliasSampling)
+
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        qp.assert_equal(op, qp.AliasSampling(**kwargs))
 
     def test_signed_out_multiplier(self):
         """Test the primitive bind call of SignedOutMultiplier."""
