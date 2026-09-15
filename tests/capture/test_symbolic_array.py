@@ -23,26 +23,21 @@ pytestmark = pytest.mark.capture
 
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
-from pennylane.capture.primitives import (  # pylint: disable=wrong-import-position
-    symbolic_array_prim,
-)
+
+# pylint: disable=wrong-import-position
+from pennylane.capture.primitives import symbolic_array_prim
 
 
 def test_error_without_capture():
     """Test a ``NotImplementedError`` is raised if capture is not turned on."""
-    qp.capture.disable()
+    with qp.capture.toggle_ctx(False):
+        with pytest.raises(NotImplementedError, match="symbolic_array requires program capture"):
+            qp.capture.symbolic_array((), float)
 
-    with pytest.raises(NotImplementedError, match="symbolic_array requires program capture"):
-        qp.capture.symbolic_array((), float)
 
-
-def test_error_if_execute():
-    """Test that a ``NotImplementedError`` is raised if we try and execute symbolic_array."""
-
-    with pytest.raises(
-        NotImplementedError, match="symbolic_arrays can only be produced for abstract evaluation"
-    ):
-        qp.capture.symbolic_array((), float)
+def test_execute_creates_abstract_array():
+    """Tests that executing symbolic_array in a non-tracing context produce AbstractArray."""
+    assert qp.capture.symbolic_array((4, 1), float) == qp.typing.AbstractArray((4, 1), float)
 
 
 @pytest.mark.parametrize("bad_dimension", (..., -1, 0, 3.0))
@@ -52,7 +47,7 @@ def test_error_if_bad_dimesion(bad_dimension):
     def f():
         qp.capture.symbolic_array((2, bad_dimension), float)
 
-    with pytest.raises(ValueError, match="must be integers greater than zero"):
+    with pytest.raises(ValueError, match="tuple of positive integers"):
         jax.make_jaxpr(f)()
 
 

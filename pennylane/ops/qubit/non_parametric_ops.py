@@ -20,7 +20,7 @@ not depend on any parameters.
 
 import cmath
 from copy import copy
-from functools import lru_cache
+from functools import lru_cache, reduce
 from typing import Literal, override
 from warnings import warn
 
@@ -40,7 +40,7 @@ from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.ops.op_math.pow2 import make_pow_decomp_with_period as make_pow_decomp_with_period2
 from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
-from pennylane.typing import AbstractWires, Float, Wire
+from pennylane.typing import AbstractWires, Float, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 INV_SQRT2 = 1 / qp.math.sqrt(2)
@@ -216,7 +216,7 @@ def _hadamard_to_rz_rx(wires: WiresLike, **__):
     qp.RZ(np.pi / 2, wires=wires)
     qp.RX(np.pi / 2, wires=wires)
     qp.RZ(np.pi / 2, wires=wires)
-    qp.GlobalPhase(-np.pi / 2, wires=wires)
+    qp.GlobalPhase(-np.pi / 2)
 
 
 def _hadamard_rz_ry_resources(wires: WiresLike):
@@ -231,7 +231,13 @@ def _hadamard_to_rz_ry(wires: WiresLike, **__):
 
 
 def _hadamard_ppm_resources(wires: WiresLike):
-    return {qp.resource_rep(PauliMeasure): 2, qp.Y: 1, qp.Z: 2, qp.GlobalPhase: 1}
+    return {
+        PauliMeasure("YY", wires=Wire[2]): 1,
+        PauliMeasure("X", wires=Wire[1]): 1,
+        qp.Y: 1,
+        qp.Z: 2,
+        qp.GlobalPhase: 1,
+    }
 
 
 @qp.register_resources(_hadamard_ppm_resources, work_wires={"burnable": 1})
@@ -250,7 +256,8 @@ add_decomps("Adjoint(Hadamard)", self_adjoint)
 add_decomps("Pow(Hadamard)", pow_involutory2)
 
 
-def _controlled_h_resources(base, control_wires, work_wires, work_wire_type, **_):
+# pylint: disable-next=unused-argument
+def _controlled_h_resources(base, control_wires, control_values, work_wires, work_wire_type):
     if len(control_wires) == 1:
         return {qp.CH: 1}
     return {
@@ -266,7 +273,8 @@ def _controlled_h_resources(base, control_wires, work_wires, work_wire_type, **_
 
 
 @register_resources(_controlled_h_resources)
-def _controlled_hadamard(base, control_wires, work_wires, work_wire_type, **_):
+# pylint: disable-next=unused-argument
+def _controlled_hadamard(base, control_wires, control_values, work_wires, work_wire_type):
     wires = control_wires + base.wires
     if len(control_wires) == 1:
         qp.CH(wires)
@@ -482,20 +490,21 @@ def _paulix_to_rx_resources(wires: AbstractWires):
 @register_resources(_paulix_to_rx_resources)
 def _paulix_to_rx(wires: WiresLike):
     qp.RX(np.pi, wires=wires)
-    qp.GlobalPhase(-np.pi / 2, wires=wires)
+    qp.GlobalPhase(-np.pi / 2)
 
 
-@register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 2, 0.5))
-@register_resources(lambda **_: {qp.SX: 1})
-def _pow_x_to_sx(base, z):
+# pylint: disable-next=unused-argument
+@register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 2, 0.5))
+@register_resources(lambda *_, **__: {qp.SX: 1})
+def _pow_x_to_sx(base, z):  # pylint: disable=unused-argument
     qp.SX(wires=base.wires)
 
 
-@register_resources(lambda **_: {qp.RX: 1, qp.GlobalPhase: 1})
+@register_resources(lambda *_, **__: {qp.RX: 1, qp.GlobalPhase: 1})
 def _pow_x_to_rx(base, z):
     z_mod2 = qp.math.array(z) % 2
     qp.RX(np.pi * z_mod2, wires=base.wires)
-    qp.GlobalPhase(-np.pi / 2 * z_mod2, wires=base.wires)
+    qp.GlobalPhase(-np.pi / 2 * z_mod2)
 
 
 add_decomps(PauliX, _paulix_to_rx)
@@ -685,14 +694,14 @@ def _pauliy_to_ry_gp_resources(wires: AbstractWires):
 @register_resources(_pauliy_to_ry_gp_resources)
 def _pauliy_to_ry_gp(wires: WiresLike):
     qp.RY(np.pi, wires=wires)
-    qp.GlobalPhase(-np.pi / 2, wires=wires)
+    qp.GlobalPhase(-np.pi / 2)
 
 
-@register_resources(lambda **_: {qp.RY: 1, qp.GlobalPhase: 1})
+@register_resources(lambda *_, **__: {qp.RY: 1, qp.GlobalPhase: 1})
 def _pow_y(base, z):
     z_mod2 = qp.math.array(z) % 2
     qp.RY(np.pi * z_mod2, wires=base.wires)
-    qp.GlobalPhase(-np.pi / 2 * z_mod2, wires=base.wires)
+    qp.GlobalPhase(-np.pi / 2 * z_mod2)
 
 
 add_decomps(PauliY, _pauliy_to_ry_gp)
@@ -934,19 +943,19 @@ def _pauliz_to_ps(wires: WiresLike):
     qp.PhaseShift(np.pi, wires=wires)
 
 
-@register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 2, 0.5))
-@register_resources(lambda **_: {qp.S: 1})
+@register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 2, 0.5))
+@register_resources(lambda *_, **__: {qp.S: 1})
 def _pow_z_to_s(base, z):  # pylint: disable=unused-argument
     qp.S(wires=base.wires)
 
 
-@register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 2, 0.25))
-@register_resources(lambda **_: {qp.T: 1})
+@register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 2, 0.25))
+@register_resources(lambda *_, **__: {qp.T: 1})
 def _pow_z_to_t(base, z):  # pylint: disable=unused-argument
     qp.T(wires=base.wires)
 
 
-@register_resources(lambda **_: {qp.PhaseShift: 1})
+@register_resources(lambda *_, **__: {qp.PhaseShift: 1})
 def _pow_z(base, z):
     z_mod2 = qp.math.array(z) % 2
     qp.PhaseShift(np.pi * z_mod2, wires=base.wires)
@@ -1118,19 +1127,19 @@ def _s_phaseshift(wires: WiresLike | None = None):
 add_decomps(S, _s_phaseshift)
 
 
-@register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 4, 0.5))
-@register_resources(lambda **_: {qp.T: 1})
+@register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 4, 0.5))
+@register_resources(lambda *_, **__: {qp.T: 1})
 def _pow_s_to_t(base, z):
     qp.T(wires=base.wires)
 
 
-@register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 4, 2))
-@register_resources(lambda **_: {qp.Z: 1})
+@register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 4, 2))
+@register_resources(lambda *_, **__: {qp.Z: 1})
 def _pow_s_to_z(base, z):
     qp.Z(wires=base.wires)
 
 
-@register_resources(lambda **_: {qp.PhaseShift: 1})
+@register_resources(lambda *_, **__: {qp.PhaseShift: 1})
 def _pow_s(base, z):
     z_mod4 = qp.math.array(z) % 4
     qp.PhaseShift(np.pi * z_mod4 / 2, wires=base.wires)
@@ -1255,7 +1264,7 @@ def _t_phaseshift(wires=None):
     qp.PhaseShift(np.pi / 4, wires=wires)
 
 
-@register_resources(lambda **_: {qp.PhaseShift: 1})
+@register_resources(lambda *_, **__: {qp.PhaseShift: 1})
 def _pow_t(base, z):
     z_mod8 = qp.math.array(z) % 8
     qp.PhaseShift(np.pi * z_mod8 / 4, wires=base.wires)
@@ -1375,23 +1384,23 @@ def _sx_to_rx_resources(wires: WiresLike = None):
 @register_resources(_sx_to_rx_resources)
 def _sx_to_rx(wires: WiresLike | None = None):
     qp.RX(np.pi / 2, wires=wires)
-    qp.GlobalPhase(-np.pi / 4, wires=wires)
+    qp.GlobalPhase(-np.pi / 4)
 
 
 add_decomps(SX, _sx_to_rx)
 
 
-@register_condition(lambda z, **_: math.shape(z) == () and z % 4 == 2)
-@register_resources(lambda **_: {qp.X: 1})
+@register_condition(lambda base, z: math.shape(z) == () and z % 4 == 2)
+@register_resources(lambda *_, **__: {qp.X: 1})
 def _pow_sx_to_x(base, z):
     qp.X(base.wires)
 
 
-@register_resources(lambda **_: {qp.RX: 1, qp.GlobalPhase: 1})
+@register_resources(lambda *_, **__: {qp.RX: 1, qp.GlobalPhase: 1})
 def _pow_sx(base, z):
     z_mod4 = qp.math.array(z) % 4
     qp.RX(np.pi / 2 * z_mod4, wires=base.wires)
-    qp.GlobalPhase(-np.pi / 4 * z_mod4, wires=base.wires)
+    qp.GlobalPhase(-np.pi / 4 * z_mod4)
 
 
 add_decomps("Pow(SX)", make_pow_decomp_with_period2(4), _pow_sx_to_x, _pow_sx)
@@ -1551,7 +1560,8 @@ add_decomps("Adjoint(SWAP)", self_adjoint)
 add_decomps("Pow(SWAP)", pow_involutory2)
 
 
-def _controlled_swap_resources(control_wires, work_wires, work_wire_type, **_):
+# pylint: disable-next=unused-argument
+def _controlled_swap_resources(base, control_wires, control_values, work_wires, work_wire_type):
     if len(control_wires) == 1:
         return {qp.CSWAP: 1}
     return {
@@ -1565,7 +1575,8 @@ def _controlled_swap_resources(control_wires, work_wires, work_wire_type, **_):
 
 
 @register_resources(_controlled_swap_resources)
-def _controlled_swap_decomp(base, control_wires, work_wires, work_wire_type, **_):
+# pylint: disable-next=unused-argument
+def _controlled_swap_decomp(base, control_wires, control_values, work_wires, work_wire_type):
     wires = control_wires + base.wires
     if len(control_wires) == 1:
         qp.CSWAP(wires=wires)
@@ -1859,14 +1870,14 @@ def _iswap_to_ppr(wires):
 add_decomps(ISWAP, _iswap_decomp, _iswap_to_ppr)
 
 
-@register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 4, 0.5))
-@register_resources(lambda **_: {qp.SISWAP: 1})
+@register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 4, 0.5))
+@register_resources(lambda *_, **__: {qp.SISWAP: 1})
 def _pow_iswap_to_siswap(base, z):
     qp.SISWAP(wires=base.wires)
 
 
-@register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 4, 2))
-@register_resources(lambda **_: {qp.Z: 2})
+@register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 4, 2))
+@register_resources(lambda *_, **__: {qp.Z: 2})
 def _pow_iswap_to_zz(base, z):
     qp.Z(wires=base.wires[0])
     qp.Z(wires=base.wires[1])
@@ -2034,14 +2045,14 @@ def _siswap_to_ppr(wires, **_):
 add_decomps(SISWAP, _siswap_decomp, _siswap_to_ppr)
 
 
-@register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 8, 2))
-@register_resources(lambda **_: {qp.ISWAP: 1})
+@register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 8, 2))
+@register_resources(lambda *_, **__: {qp.ISWAP: 1})
 def _pow_siswap_to_iswap(base, z):
     qp.ISWAP(base.wires)
 
 
-@register_condition(lambda z, **_: math.shape(z) == () and math.allclose(z % 8, 4))
-@register_resources(lambda **_: {qp.Z: 2})
+@register_condition(lambda base, z: math.shape(z) == () and math.allclose(z % 8, 4))
+@register_resources(lambda *_, **__: {qp.Z: 2})
 def _pow_siswap_to_zz(base, z):
     qp.Z(wires=base.wires[0])
     qp.Z(wires=base.wires[1])
@@ -2051,3 +2062,189 @@ add_decomps("Pow(SISWAP)", make_pow_decomp_with_period2(8), _pow_siswap_to_zz, _
 
 
 SQISW = SISWAP
+
+
+class PPR(Operator2):
+    r"""PPR(angle_denominator, pauli_word, wires)
+    A Pauli product rotation (PPR) with a fixed angle.
+
+    .. math::
+
+        \text{PPR}(k, P) = \exp\left(-i \frac{\pi}{k} P\right),
+
+    where :math:`P` is a Pauli word and we call :math:`\varphi = \pi / k` the rotation angle,
+    following the literature convention (e.g.
+    `:math:`\mathrm{PPR}(-4, \mathrm{X})=\exp(-i\pi / (-4) X)=\exp(i\tfrac{\pi}{4} X)`).
+    The denominator :math:`k` is restricted to :math:`\pm 2`, :math:`\pm 4` and :math:`\pm 8`,
+    so that ``PPR`` covers exactly those Pauli product rotations that occur in Clifford+T circuits:
+
+    * ``angle_denominator=±2``: a :math:`\pm\pi/2` PPR (signed Pauli),
+    * ``angle_denominator=±4``: a :math:`\pm\pi/4` PPR (Clifford),
+    * ``angle_denominator=±8``: a :math:`\pm\pi/8` PPR (non-Clifford).
+
+    The Pauli-based computation literature commonly writes a PPR with this angle convention,
+    whereas :class:`~.PauliRot` follows the convention
+    :math:`\mathrm{PauliRot}(\theta, P)=\exp(-i \theta / 2 P)`, i.e., :math:`\varphi = \theta / 2`.
+
+    .. note:: ``PPR`` corresponds to the respective operators in the Pauli-based computation
+        (``pbc``) dialect of Catalyst, and follows the same angle convention.
+
+    .. seealso:: :class:`~.PauliRot` for a Pauli product rotation with an arbitrary angle, and
+        :func:`~.pauli_measure` for PPM, the measurement counterpart of a PPR.
+        For more information on Pauli-based computation (PBC), check out the
+        `Quantum Compilation hub <https://pennylane.ai/compilation/pauli-based-computation>`_.
+
+    Args:
+        angle_denominator (int): the denominator :math:`k` of the rotation angle
+            :math:`\varphi = \pi / k`. Must be one of ``±2``, ``±4``, or ``±8``.
+        pauli_word (str): the Pauli word defining the rotation, consisting of the characters
+            ``"X"``, ``"Y"``, ``"Z"``, and ``"I"``. Its length must match the length of ``wires``.
+        wires (Sequence[int] or int): the wires the operation acts on. The length must match
+            length of ``pauli_word``.
+
+    Raises:
+        ValueError: if ``angle_denominator`` is not an allowed integer denominator
+        ValueError: if the Pauli word contains characters other than ``X``, ``Y``, ``Z``, and ``I``
+        ValueError: if no wires are provided
+        ValueError: if the number of wires does not match the length of the Pauli word
+
+    **Example**
+
+    A :math:`\pi/8` PPR on the Pauli word :math:`X \otimes Y` is created by requesting the
+    corresponding angle :math:`\varphi=\pi/8`:
+
+    >>> op = qp.PPR(8, "XY", wires=[0, 1])
+    >>> op
+    PPR(8, 'XY', wires=[0, 1])
+
+    Negative denominators denote the inverse rotations:
+
+    >>> qp.PPR(-8, "XY", wires=[0, 1])
+    PPR(-8, 'XY', wires=[0, 1])
+
+    When compiling further to Pauli product measurements (PPM), ``PPR`` should first be lowered
+    using PBC passes :func:`~.to_ppr`, :func:`~.ppr_to_ppm`, or :func:`~.ppm_compilation`.
+
+    """
+
+    compilable_argnames = ("angle_denominator", "pauli_word")
+    arg_specs = {"wires": Wire[-1]}
+
+    _ALLOWED_DENOMINATORS = (-8, -4, -2, 2, 4, 8)
+
+    def __init__(self, angle_denominator: int, pauli_word: str, wires: WiresLike):
+        if angle_denominator not in self._ALLOWED_DENOMINATORS:
+            raise ValueError(
+                "The angle denominator must be an integer in "
+                f"{self._ALLOWED_DENOMINATORS}, denoting the rotation angle "
+                f"pi / angle_denominator, but got {angle_denominator}."
+            )
+
+        if not set(pauli_word).issubset({"X", "Y", "Z", "I"}):
+            raise ValueError(
+                f'The given Pauli word "{pauli_word}" contains characters that are not allowed. '
+                "Allowed characters are X, Y, Z and I."
+            )
+
+        super().__init__(angle_denominator, pauli_word, wires=wires)
+
+        if not self.wires:
+            raise ValueError("At least one wire has to be provided.")
+
+        if len(pauli_word) != len(self.wires):
+            raise ValueError(
+                "The number of wires must be equal to the length of the Pauli word. The Pauli "
+                f"word {pauli_word} has length {len(pauli_word)} but {len(self.wires)} wires "
+                f"were given: {self.wires}."
+            )
+
+    @override
+    def label(self, decimals=None, base_label=None, cache=None) -> str:
+        r"""A customizable string representation of the operator.
+
+        Args:
+            decimals=None (int): unused, as ``PPR`` has no trainable parameters
+            base_label=None (str): overwrite the non-parameter component of the label
+            cache=None (dict): dictionary that carries information between label calls
+                in the same drawing
+
+        Returns:
+            str: label to use in drawings
+
+        **Example:**
+
+        >>> op = qp.PPR(8, "XY", wires=[0, 1])
+        >>> op.label()
+        'PPR(π/8, XY)'
+        >>> op.label(base_label="PPR")
+        'PPR'
+        """
+        denominator = self.angle_denominator
+        sign = "-" if denominator < 0 else ""
+        angle_label = f"{sign}π/{abs(denominator)}"
+        return base_label or f"PPR({angle_label}, {self.pauli_word})"
+
+    @override
+    def __repr__(self) -> str:
+        return f"PPR({self.angle_denominator}, '{self.pauli_word}', wires={self.wires})"
+
+    @staticmethod
+    def compute_matrix(  # pylint: disable=unused-argument
+        angle_denominator: int, pauli_word: str, wires=None
+    ) -> TensorLike:
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.PPR.matrix`
+
+
+        Args:
+            angle_denominator (TensorLike): rotation angle
+            pauli_word (str): string representation of Pauli word
+
+        Returns:
+            TensorLike: canonical matrix
+
+        **Example**
+
+        >>> mat = qp.PPR.compute_matrix(-4, 'X')
+        >>> expected = ((qp.I(0) + 1j * qp.X(0))/np.sqrt(2)).matrix()
+        >>> np.allclose(mat, expected)
+        True
+
+        """
+        theta = np.pi / angle_denominator * 2
+        multi_Z_rot_matrix = qp.MultiRZ.compute_matrix(theta, list(range(len(pauli_word))))
+
+        # conjugate with Hadamard and RX to create the Pauli string
+        # pylint: disable-next=protected-access
+        conjugation_factors = (qp.PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in pauli_word)
+        conjugation_matrix = reduce(math.kron, conjugation_factors)
+        return math.conj(conjugation_matrix) @ multi_Z_rot_matrix @ conjugation_matrix
+
+
+def _ppr_to_paulirot_resources(pauli_word, **_):
+    return {qp.PauliRot(Float, pauli_word=pauli_word, wires=Wire[len(pauli_word)]): 1}
+
+
+@register_resources(_ppr_to_paulirot_resources)
+def _ppr_to_paulirot(angle_denominator, pauli_word, wires):
+    qp.PauliRot(np.pi / angle_denominator * 2, pauli_word, wires=wires)
+
+
+add_decomps(PPR, _ppr_to_paulirot)
+
+
+def _adjoint_ppr_to_ppr_resources(base):
+    num_wires = len(base.wires)
+    return {PPR(-base.angle_denominator, pauli_word=base.pauli_word, wires=Wire[num_wires]): 1}
+
+
+@register_resources(_adjoint_ppr_to_ppr_resources)
+def _adjoint_ppr_to_ppr(base):
+    PPR(-base.angle_denominator, pauli_word=base.pauli_word, wires=base.wires)
+
+
+add_decomps("Adjoint(PPR)", _adjoint_ppr_to_ppr)

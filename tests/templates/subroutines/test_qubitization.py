@@ -39,7 +39,6 @@ def test_operator_definition_qpe(hamiltonian):
 
     @qp.qnode(qp.device("default.qubit"))
     def circuit(theta):
-
         # initial state
         qp.RX(theta[2], wires=0)
         qp.CRY(theta[3], wires=[0, 2])

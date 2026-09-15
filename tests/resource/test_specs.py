@@ -13,7 +13,6 @@
 # limitations under the License.
 """Unit tests for the specs transform"""
 
-# pylint: disable=invalid-sequence-index
 from functools import partial
 
 import pytest
@@ -22,6 +21,9 @@ import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.core.shots import Shots
 from pennylane.resource import SpecsResources
+
+# pylint: disable=invalid-sequence-index
+from pennylane.typing import Float, Wire
 
 devices_list = [
     (qp.device("default.qubit"), None),
@@ -108,7 +110,7 @@ class TestSpecsTransform:
             pass
 
         expected_resources = SpecsResources(
-            counts={}, measurement_processes={}, num_allocs=0, circuit_depth=0
+            counts={}, measurement_processes={}, num_wires=0, circuit_depth=0
         )
 
         info = qp.specs(circ)()
@@ -138,7 +140,7 @@ class TestSpecsTransform:
 
         counts = {"RX": 1, "Toffoli": 1, "CRY": 1, "Rot": 1}
         expected_resources = SpecsResources(
-            num_allocs=3,
+            num_wires=3,
             counts=counts,
             measurement_processes={"expval(PauliZ)": 1, "expval(PauliX)": 1},
             circuit_depth=3,
@@ -200,7 +202,13 @@ class TestSpecsTransform:
         assert resources.depth == 4
 
     @pytest.mark.catalyst
-    @pytest.mark.parametrize("level", [0, "device"])
+    @pytest.mark.parametrize(
+        "level",
+        [
+            0,
+            "device",
+        ],
+    )
     def test_qjit_partial(self, level):
         """Test specs for a partial-wrapped Catalyst jitted QNode."""
         pytest.importorskip("catalyst")
@@ -306,7 +314,7 @@ class TestSpecsTransform:
         assert info.resources == SpecsResources(
             counts={},
             measurement_processes={"state(all wires)": 1},
-            num_allocs=0,  # Nothing actually used in this circuit
+            num_wires=0,  # Nothing actually used in this circuit
             circuit_depth=0,
         )
 
@@ -327,7 +335,7 @@ class TestSpecsTransform:
         assert info.resources == SpecsResources(
             counts={"MidMeasureMP": 1},
             measurement_processes={"sample(mcm)": 1},
-            num_allocs=1,
+            num_wires=1,
             circuit_depth=1,
         )
 
@@ -354,7 +362,7 @@ class TestSpecsTransform:
                 "expval(Hamiltonian(num_wires=3, num_terms=2))": 1,
                 "expval(Hamiltonian(num_wires=2, num_terms=1))": 1,
             },
-            num_allocs=3,
+            num_wires=3,
             circuit_depth=0,
         )
 
@@ -426,9 +434,9 @@ class TestSpecsTransform:
         assert isinstance(specs_output.resources, list)
         assert len(specs_output.resources) == len(H)
 
-        assert specs_output.resources[0].num_allocs == 2
-        assert specs_output.resources[1].num_allocs == 3
-        assert specs_output.resources[2].num_allocs == 3
+        assert specs_output.resources[0].num_wires == 2
+        assert specs_output.resources[1].num_wires == 3
+        assert specs_output.resources[2].num_wires == 3
 
         assert specs_output.level == 2
         assert specs_output.device_name == "default.qubit"
@@ -444,7 +452,6 @@ class TestSpecsTransform:
                 {
                     "quantum_operations": {"RandomLayers": 1, "RX": 1, "SWAP": 1, "PauliX": 2},
                     "measurement_processes": {"expval(Prod(num_wires=2, num_terms=2))": 1},
-                    "num_allocs": 2,
                     "num_wires": 2,
                     "circuit_depth": 5,
                     "total_quantum_operations": 5,
@@ -454,7 +461,6 @@ class TestSpecsTransform:
                 {
                     "quantum_operations": {"RandomLayers": 1, "RX": 1, "SWAP": 1, "PauliX": 2},
                     "measurement_processes": {"expval(Prod(num_wires=2, num_terms=2))": 1},
-                    "num_allocs": 3,
                     "num_wires": 3,
                     "circuit_depth": 5,
                     "total_quantum_operations": 5,
@@ -464,7 +470,6 @@ class TestSpecsTransform:
                 {
                     "quantum_operations": {"RandomLayers": 1, "RX": 1, "SWAP": 1, "PauliX": 2},
                     "measurement_processes": {"expval(Prod(num_wires=2, num_terms=2))": 1},
-                    "num_allocs": 3,
                     "num_wires": 3,
                     "circuit_depth": 5,
                     "total_quantum_operations": 5,
@@ -488,7 +493,7 @@ Batched tape a:
       - PauliX: 2
     Measurement processes:
     - expval(Prod(num_wires=2, num_terms=2)): 1
-    Wire allocations: 2
+    Total wires: 2
     Circuit Depth: 5
 
 Batched tape b:
@@ -500,7 +505,7 @@ Batched tape b:
       - PauliX: 2
     Measurement processes:
     - expval(Prod(num_wires=2, num_terms=2)): 1
-    Wire allocations: 3
+    Total wires: 3
     Circuit Depth: 5
 
 Batched tape c:
@@ -512,7 +517,7 @@ Batched tape c:
       - PauliX: 2
     Measurement processes:
     - expval(Prod(num_wires=2, num_terms=2)): 1
-    Wire allocations: 3
+    Total wires: 3
     Circuit Depth: 5"""
 
     @pytest.mark.parametrize(
@@ -556,7 +561,7 @@ Batched tape c:
             return qp.state()
 
         expected = SpecsResources(
-            num_allocs=1,
+            num_wires=1,
             counts={"RX": 2},
             measurement_processes={"state(all wires)": 1},
             circuit_depth=2,
@@ -612,7 +617,7 @@ class TestSpecsGraphModeExclusive:
         # Work wires calculation should be: device_wires - tape_wires
         if num_device_wires:
             assert specs["num_device_wires"] == num_device_wires
-        assert specs["resources"].num_allocs == 1
+        assert specs["resources"].num_wires == 1
 
         # Check that the correct decomposition was used
         assert expected_decomp in specs["resources"].counts
@@ -646,7 +651,7 @@ class TestSpecsGraphModeExclusive:
 
         # Should report 1 work wire available (2 device wires - 1 tape wire)
         assert specs["num_device_wires"] == 2
-        assert specs["resources"].num_allocs == 1
+        assert specs["resources"].num_wires == 1
         # Fallback decomposition should be used (H gate)
         assert "Hadamard" in specs["resources"].counts
 
@@ -665,4 +670,92 @@ class TestSpecsGraphModeExclusive:
 
         # No work wires available (2 device wires - 2 tape wires = 0)
         assert specs["num_device_wires"] == 2
-        assert specs["resources"].num_allocs == 2
+        assert specs["resources"].num_wires == 2
+
+
+@pytest.mark.catalyst
+class TestSpecsAbstractArrayIntegartion:
+    """Test integration of qjit specs with abstract arrays."""
+
+    def test_simple_float_arg(self):
+        """Test specs on an array with a simple float arg."""
+
+        @qp.qjit(capture=True, target="mlir")
+        @qp.qnode(qp.device("null.qubit", wires=3))
+        def c():
+            qp.RZ(qp.typing.Float, wires=0)
+            return qp.probs(wires=0)
+
+        specs = qp.specs(c, level=0)()
+
+        assert specs.resources.quantum_operations["RZ"] == 1
+
+    def test_wire_arg(self):
+        """Test that abstract wires can be passed in."""
+
+        @qp.qjit(capture=True, target="mlir")
+        @qp.qnode(qp.device("null.qubit", wires=3))
+        def c():
+            qp.CZ(qp.typing.Wire[2])
+            return qp.probs(wires=0)
+
+        specs = qp.specs(c, level=0)()
+
+        assert specs.resources.quantum_operations["CZ"] == 1
+
+    def test_compilation(self):
+        """Test that a transform can processed the abstract inputs."""
+
+        @qp.qjit(capture=True, target="mlir")
+        @qp.transforms.merge_rotations
+        @qp.qnode(qp.device("null.qubit", wires=3))
+        def c():
+            qp.RZ(qp.typing.Float, wires=0)
+            qp.RZ(qp.typing.Float, wires=0)
+            return qp.probs(wires=0)
+
+        assert qp.specs(c, level=0)().resources.quantum_operations["RZ"] == 2
+        assert qp.specs(c, level=1)().resources.quantum_operations["RZ"] == 1
+
+    def test_hybrid_op(self):
+        """Test capturing a hybrid op."""
+
+        # pylint: disable=too-few-public-methods
+        class HybridOp(qp.core.Operator2):
+
+            hybrid_argnames = "op"
+            wire_argnames = ()
+
+            # pylint: disable=useless-parent-delegation)
+            def __init__(self, op):
+                super().__init__(op=op)
+
+        @qp.qjit(capture=True, target="mlir")
+        @qp.qnode(qp.device("null.qubit", wires=1))
+        def c():
+            HybridOp(qp.RZ(Float, Wire[1]))
+            return qp.probs(wires=0)
+
+        r = qp.specs(c, level=0)().resources
+
+        assert r.quantum_operations == {"HybridOp": 1}
+
+    def test_pytree_input(self):
+        """Test the input being in a pytree."""
+
+        # pylint: disable=too-few-public-methods
+        class PytreeOp(qp.core.Operator2):
+
+            hybrid_argnames = "a"
+
+            # pylint: disable=useless-parent-delegation
+            def __init__(self, a, wires):
+                super().__init__(a, wires)
+
+        @qp.qjit(capture=True, target="mlir")
+        @qp.qnode(qp.device("null.qubit", wires=2))
+        def c():
+            PytreeOp({"a": qp.typing.Float[4, 10], "b": qp.typing.Int[100]}, 0)
+            return qp.probs(wires=0)
+
+        assert qp.specs(c, level=0)().resources.quantum_operations == {"PytreeOp": 1}

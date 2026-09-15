@@ -107,8 +107,13 @@ class TestDecompose:
     iterables_test = [
         (
             [qp.Hadamard(0)],
-            {qp.RX, qp.RZ},
-            [qp.RZ(qnp.pi / 2, 0), qp.RX(qnp.pi / 2, 0), qp.RZ(qnp.pi / 2, 0)],
+            {qp.RX, qp.RZ, qp.GlobalPhase},
+            [
+                qp.RZ(qnp.pi / 2, 0),
+                qp.RX(qnp.pi / 2, 0),
+                qp.RZ(qnp.pi / 2, 0),
+                qp.GlobalPhase(-np.pi / 2),
+            ],
             None,
         ),
         (
@@ -120,8 +125,13 @@ class TestDecompose:
         ([qp.Toffoli([0, 1, 2])], {qp.Toffoli}, [qp.Toffoli([0, 1, 2])], None),
         (
             [qp.Hadamard(0)],
-            {qp.RX: 1, qp.RZ: 2},
-            [qp.RZ(qnp.pi / 2, 0), qp.RX(qnp.pi / 2, 0), qp.RZ(qnp.pi / 2, 0)],
+            {qp.RX: 1, qp.RZ: 2, qp.GlobalPhase: 1},
+            [
+                qp.RZ(qnp.pi / 2, 0),
+                qp.RX(qnp.pi / 2, 0),
+                qp.RZ(qnp.pi / 2, 0),
+                qp.GlobalPhase(-np.pi / 2),
+            ],
             None,
         ),
         (
@@ -171,9 +181,9 @@ class TestDecompose:
         gate_set = None
 
         def stopping_condition(op):
-            return op.name in ("RX")
+            return op.name in ("NoMatNoDecompOp")
 
-        tape = qp.tape.QuantumScript([qp.RX(0, wires=[0])])
+        tape = qp.tape.QuantumScript([NoMatNoDecompOp(0, wires=[0])])
 
         (decomposed_tape,), _ = decompose(
             tape, gate_set=gate_set, stopping_condition=stopping_condition
@@ -184,15 +194,16 @@ class TestDecompose:
             return op.name in ("CX")
 
         with pytest.raises(
-            UserWarning, match="Operator RX does not define a decomposition to the target gate set"
+            UserWarning,
+            match="Operator NoMatNoDecompOp does not define a decomposition to the target gate set",
         ):
             decompose(tape, gate_set=gate_set, stopping_condition=stopping_condition_2)
 
     def test_user_warning(self):
         """Tests that user warning is raised if operator does not have a valid decomposition"""
-        tape = qp.tape.QuantumScript([qp.RX(0, wires=[0])])
+        tape = qp.tape.QuantumScript([NoMatNoDecompOp(0, wires=[0])])
         with pytest.warns(UserWarning, match="does not define a decomposition"):
-            decompose(tape, stopping_condition=lambda op: op.name not in {"RX"})
+            decompose(tape, stopping_condition=lambda op: op.name not in {"NoMatNoDecompOp"})
 
     def test_infinite_decomposition_loop(self):
         """Test that a recursion error is raised if decomposition enters an infinite loop."""
@@ -262,42 +273,52 @@ class TestDecompose:
                 qp.ops.Conditional(m0, qp.RX(0.5, wires=0)),
             ]
         )
-        [decomposed_tape], _ = qp.decompose([tape], gate_set={qp.RX, qp.RZ, MidMeasure})
-        assert len(decomposed_tape.operations) == 10
+        [decomposed_tape], _ = qp.decompose(
+            [tape], gate_set={qp.RX, qp.RZ, MidMeasure, qp.GlobalPhase}
+        )
+        assert len(decomposed_tape.operations) == 13
 
         with qp.queuing.AnnotatedQueue() as q:
             qp.RZ(np.pi / 2, wires=0)
             qp.RX(np.pi / 2, wires=0)
             qp.RZ(np.pi / 2, wires=0)
+            qp.GlobalPhase(-np.pi / 2)
             m0 = qp.measure(0)
             qp.cond(m0, qp.RZ)(np.pi / 2, wires=1)
             qp.cond(m0, qp.RX)(np.pi / 2, wires=1)
             qp.cond(m0, qp.RZ)(np.pi / 2, wires=1)
+            qp.cond(m0, qp.GlobalPhase)(-np.pi / 2)
             m1 = qp.measure(0)
             qp.cond(m1, qp.RX)(np.pi, wires=0)
+            qp.cond(m1, qp.GlobalPhase)(-np.pi / 2)
             qp.cond(m1, qp.RX)(0.5, wires=0)
 
         qp.assert_equal(decomposed_tape.operations[0], q.queue[0])
         qp.assert_equal(decomposed_tape.operations[1], q.queue[1])
         qp.assert_equal(decomposed_tape.operations[2], q.queue[2])
-        assert isinstance(decomposed_tape.operations[4], Conditional)
+        qp.assert_equal(decomposed_tape.operations[3], q.queue[3])
+
+        assert isinstance(decomposed_tape.operations[4], MidMeasure)
+
         assert isinstance(decomposed_tape.operations[5], Conditional)
-        assert isinstance(decomposed_tape.operations[6], Conditional)
-        assert isinstance(decomposed_tape.operations[8], Conditional)
-        assert isinstance(decomposed_tape.operations[9], Conditional)
-        qp.assert_equal(decomposed_tape.operations[4].base, q.queue[4].base)
         qp.assert_equal(decomposed_tape.operations[5].base, q.queue[5].base)
+        assert isinstance(decomposed_tape.operations[6], Conditional)
         qp.assert_equal(decomposed_tape.operations[6].base, q.queue[6].base)
+        assert isinstance(decomposed_tape.operations[7], Conditional)
+        qp.assert_equal(decomposed_tape.operations[7].base, q.queue[7].base)
+        assert isinstance(decomposed_tape.operations[8], Conditional)
         qp.assert_equal(decomposed_tape.operations[8].base, q.queue[8].base)
-        qp.assert_equal(decomposed_tape.operations[9].base, q.queue[9].base)
-        assert isinstance(decomposed_tape.operations[3], MidMeasure)
-        assert isinstance(decomposed_tape.operations[7], MidMeasure)
+
+        assert isinstance(decomposed_tape.operations[9], MidMeasure)
+
+        assert isinstance(decomposed_tape.operations[10], Conditional)
+        qp.assert_equal(decomposed_tape.operations[10].base, q.queue[10].base)
 
 
 def test_null_postprocessing():
     """Tests the null postprocessing function in the decompose transform"""
     tape = qp.tape.QuantumScript([qp.Hadamard(0), qp.RX(0, 0)])
-    (_,), fn = qp.decompose(tape, gate_set={qp.RX, qp.RZ})
+    (_,), fn = qp.decompose(tape, gate_set={qp.RX, qp.RZ, qp.GlobalPhase})
     assert fn((1,)) == 1
 
 
@@ -319,7 +340,7 @@ class TestPrivateHelpers:
                 return [qp.RY(0.5, wires=wires), qp.RX(0.5, wires=wires)]
 
         def stopping_condition(op):
-            return op.name in {"RX", "RY", "RZ", "CNOT"}
+            return op.name in {"RX", "RY", "RZ", "CNOT", "GlobalPhase"}
 
         op = qp.ctrl(_DecomposingOp(wires=[1]), control=0)
         with AnnotatedQueue() as q:

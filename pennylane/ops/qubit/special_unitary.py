@@ -663,8 +663,8 @@ class SpecialUnitary(Operation):
 
         >>> theta = np.array([0.5, 0.1, -0.3])
         >>> qp.SpecialUnitary(theta, wires=[0]).decomposition()
-        [QubitUnitary(array([[ 0.83004499-0.28280371j,  0.0942679 +0.47133952j],
-            [-0.0942679 +0.47133952j,  0.83004499+0.28280371j]]), wires=[0])]
+        [QubitUnitary(U=[[ 0.83004499-0.28280371j  0.0942679 +0.47133952j]
+         [-0.0942679 +0.47133952j  0.83004499+0.28280371j]], wires=[0])]
         """
         theta = self.data[0]
         if qp.math.requires_grad(theta):
@@ -746,12 +746,13 @@ class TmpPauliRot(PauliRot):
         return [PauliRot(theta, pauli_word, wires)]
 
 
-def _tmp_paulirot_decomp_resources(pauli_word: str, **__):
+# pylint: disable-next=unused-argument
+def _tmp_paulirot_decomp_resources(theta, wires, pauli_word: str):
     return {qp.PauliRot(Float, pauli_word=pauli_word, wires=Wire[len(pauli_word)]): 1}
 
 
 @register_resources(_tmp_paulirot_decomp_resources)
-def _tmp_paulirot_decomp(theta: TensorLike, wires: WiresLike, pauli_word: str, **__):
+def _tmp_paulirot_decomp(theta: TensorLike, wires: WiresLike, pauli_word: str):
     PauliRot(theta, pauli_word=pauli_word, wires=wires)
 
 

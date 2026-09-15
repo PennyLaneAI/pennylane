@@ -14,18 +14,23 @@
 r"""Contains the SumOfSlatersPrep2 template, a variant of qp.SumOfSlatersPrep that handles work
 wires explicitly."""
 
+from collections import defaultdict
+
 import numpy as np
 
 import pennylane as qp
+from pennylane import math
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.templates.state_preparations.sum_of_slaters import (
     _preprocess,
-    _sos_state_prep_resources,
     _sos_state_prep_with_wires,
+    select_sos_rows,
 )
+from pennylane.typing import Bool, Complex, Int, Wire
 from pennylane.wires import Wires
 
 
-class SumOfSlatersPrep2(qp.SumOfSlatersPrep):
+class SumOfSlatersPrep2(qp.core.operator.Operation):
     r"""Prepare an arbitrary quantum state with the sum-of-Slaters technique.
     In contrast to :class:`~.SumOfSlatersPrep`, this operation handles work wires explicitly.
 
@@ -280,6 +285,8 @@ class SumOfSlatersPrep2(qp.SumOfSlatersPrep):
 
     """
 
+    resource_keys = {"num_entries", "num_bits", "num_wires"}
+
     # pylint: disable=arguments-differ
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
@@ -287,6 +294,7 @@ class SumOfSlatersPrep2(qp.SumOfSlatersPrep):
 
     @property
     def resource_params(self):
+        """Resource parameters for the sum-of-slaters state preparation template."""
         indices = self.hyperparameters["indices"]
         num_wires = len(self.wires)
         v_bits = qp.math.int_to_binary(np.array(indices), num_wires).T
@@ -304,11 +312,134 @@ class SumOfSlatersPrep2(qp.SumOfSlatersPrep):
         mcx_cache_wires,
         indices,
     ):  # pylint: disable=too-many-arguments
-        super().__init__(coefficients, wires, indices)
+        super().__init__(coefficients, wires)
         self.hyperparameters["enumeration_wires"] = Wires(enumeration_wires)
         self.hyperparameters["identification_wires"] = Wires(identification_wires)
         self.hyperparameters["qrom_work_wires"] = Wires(qrom_work_wires)
         self.hyperparameters["mcx_cache_wires"] = Wires(mcx_cache_wires)
+        self.hyperparameters["indices"] = indices
+
+    @staticmethod
+    def required_register_sizes(indices: tuple[int], num_wires: int) -> dict:
+        """Compute the register sizes required for ``SumOfSlatersPrep``, for given
+        computational basis states, ``indices``, and number of target wires, ``num_wires``.
+
+        Args:
+            indices (tuple[int]): Indices of computational basis states of the sparse state to be
+                prepared with ``SumOfSlatersPrep2``.
+            num_wires (int): Number of target wires on which ``SumOfSlatersPrep2``
+                will prepare the state.
+
+        Returns:
+            dict[str, int]: Required register size per register name. Includes the target wires
+            of length ``num_wires`` with the label ``"wires"``, matching the call signature
+            of ``SumOfSlatersPrep2``.
+
+        """
+        _, vtilde_bits = select_sos_rows(math.int_to_binary(np.array(indices), num_wires).T)
+        num_bits, num_entries = vtilde_bits.shape
+        return SumOfSlatersPrep2._required_register_sizes_from_nums(
+            num_entries, num_bits, num_wires
+        )
+
+    @staticmethod
+    def _required_register_sizes_from_nums(num_entries: int, num_bits: int, num_wires: int):
+        """Compute the register sizes required for ``SumOfSlatersPrep2``, for given
+        number of bits strings, number of bits per bit string, and number of wires. It is
+        the core method for ``required_register_sizes``, separated out for convenient internal
+        reuse.
+
+        Args:
+            num_entries (int): Number of bit strings prepared by ``SumOfSlatersPrep2``.
+            num_bits (int): Number of bits per bit string used in ``SumOfSlatersPrep2`` to
+                represent the individual basis states in the sparse state. That is, number of
+                bits after using ``select_sos_rows``.
+            num_wires (int): Number of qubits on which ``SumOfSlatersPrep2`` prepares the state.
+
+        Returns:
+            dict[str, int]: Required register size per register name. Includes the target wires
+            of length ``num_wires`` with the label ``"wires"``, matching the call signature
+            of ``SumOfSlatersPrep2``.
+
+        """
+
+        if num_entries == 1:
+            # Simple computational basis state preparation, does not require auxiliary qubits
+            return {
+                "wires": num_wires,
+                "enumeration_wires": 0,
+                "identification_wires": 0,
+                "qrom_work_wires": 0,
+                "mcx_cache_wires": 0,
+            }
+
+        d = math.ceil_log2(num_entries)
+        m = min(num_bits, 2 * d - 1)
+        if num_bits <= m:
+            # Identity encoding. We do not need the identification register but can use the
+            # (subselection of) system wires directly
+            num_identification = 0
+        else:
+            # Non-identity encoding, we need 2d-1 auxiliary qubits for the identification register
+            num_identification = m
+
+        return {
+            "wires": num_wires,
+            "enumeration_wires": d,
+            "identification_wires": num_identification,
+            "qrom_work_wires": d - 1,
+            "mcx_cache_wires": m - 1,
+        }
+
+
+def _sos_state_prep_resources(num_entries, num_bits, num_wires):
+    """Compute the resources for _sos_state_prep. It is an upper bound due to
+    conditionally applied CNOT and X gates."""
+    if num_entries == 1:
+        return {qp.BasisState(Bool[num_wires], Wire[num_wires]): 1}
+    d = math.ceil_log2(num_entries)
+    m = min(num_bits, 2 * d - 1)
+
+    identity_encoding = num_bits == m
+
+    resources = defaultdict(int)
+
+    # Step 1 in paper (p.7)
+    resources[qp.MultiplexerStatePreparation(Complex[2**d], wires=Wire[d])] += 1
+
+    # Step 2 in paper (p.7)
+    resources[
+        qp.QROM(
+            bitstrings=Int[num_entries, num_wires],
+            control_wires=Wire[d],
+            target_wires=Wire[num_wires],
+            work_wires=Wire[d - 1],
+            clean=True,
+        )
+    ] += 1
+
+    if not identity_encoding:
+        ## Step 3 & 4 in paper (p.7). This is an upper bound
+        resources[qp.CNOT] += m * num_wires  # size {u_k} * bits in u_k
+
+    ## Step 5 in paper (p.7)
+    resources[qp.TemporaryAND] += (num_entries - 1) * (m - 1)
+    resources[_adjoint_abstract(qp.TemporaryAND)] += (num_entries - 1) * (m - 1)
+
+    # Calculate the bit counts of all integers that need to be uncomputed and sum them up.
+    number_of_bits_to_unset = np.sum(np.bitwise_count(np.arange(1, num_entries)).astype(int))
+    resources[qp.CNOT] += number_of_bits_to_unset
+
+    # We have to flip at most m control bits between any pair of the `num_entries-1` uncomputing
+    # MCX groups (skipping 0 because nothing needs to be done) as well as before the first
+    # and after the last group. This amounts to `num_entries` layers of bit flips
+    resources[qp.X] += num_entries * m
+
+    if not identity_encoding:
+        ## Step 6 in paper (p.7). This is an upper bound
+        resources[qp.CNOT] += m * num_wires  # size {u_k} * bits in u_k
+
+    return resources
 
 
 @qp.register_resources(_sos_state_prep_resources, exact=False)

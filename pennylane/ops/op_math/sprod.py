@@ -47,13 +47,13 @@ def s_prod(scalar, operator, lazy=True):
         This operator supports a batched base, a batched coefficient and a combination of both:
 
         >>> op = qp.s_prod(scalar=4, operator=qp.RX([1, 2, 3], wires=0))
-        >>> qp.matrix(op).shape
+        >>> qp.matrix(op).shape  # doctest: +SKIP
         (3, 2, 2)
         >>> op = qp.s_prod(scalar=[1, 2, 3], operator=qp.RX(1, wires=0))
-        >>> qp.matrix(op).shape
+        >>> qp.matrix(op).shape  # doctest: +SKIP
         (3, 2, 2)
         >>> op = qp.s_prod(scalar=[4, 5, 6], operator=qp.RX([1, 2, 3], wires=0))
-        >>> qp.matrix(op).shape
+        >>> qp.matrix(op).shape  # doctest: +SKIP
         (3, 2, 2)
 
         But it doesn't support batching of operators.

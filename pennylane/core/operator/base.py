@@ -189,7 +189,7 @@ def _process_data(op):
     # Use qp.math.real to take the real part. We may get complex inputs for
     # example when differentiating holomorphic functions with JAX: a complex
     # valued QNode (one that returns qp.state) requires complex typed inputs.
-    if op.name in ("RX", "RY", "RZ", "PhaseShift", "Rot"):
+    if op.name in ("RX", "RY", "RZ", "PhaseShift", "Rot", "U1", "U2", "U3"):
         mod_val = 2 * np.pi
     else:
         mod_val = None
@@ -1741,7 +1741,7 @@ class Operation(Operator):
         **Example**
 
         >>> op = qp.CRot(0.4, 0.1, 0.3, wires=[0, 1])
-        >>> op.parameter_frequencies
+        >>> qp.gradients.parameter_frequencies(op)
         [(0.5, 1.0), (0.5, 1.0), (0.5, 1.0)]
 
         For operators that define a generator, the parameter frequencies are directly

@@ -52,7 +52,7 @@ def apply_partial_args(fn, args, kwargs):
 
 
 def get_last_tape_transform_level(compile_pipeline: "CompilePipeline") -> int:
-    """Helper function to get the last level from a :class:`CompilePipeline` which is a tape
+    """Helper function to get the last level from a :class:`~.CompilePipeline` which is a tape
     transform and not an MLIR pass.
 
     .. note::
@@ -64,7 +64,7 @@ def get_last_tape_transform_level(compile_pipeline: "CompilePipeline") -> int:
         This function is intended for internal use only and may change or be removed in future releases.
 
     Args:
-        compile_pipeline: The :class:`CompilePipeline` to analyse, which may contain both user-applied tape transforms
+        compile_pipeline: The :class:`~.CompilePipeline` to analyse, which may contain both user-applied tape transforms
             and MLIR passes
 
     Returns:

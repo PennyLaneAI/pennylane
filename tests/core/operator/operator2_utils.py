@@ -149,3 +149,11 @@ class FullOp(Operator2):
 
     def __init__(self, phi, static, hybrid, wires):
         super().__init__(phi, static, hybrid, wires=wires)
+
+
+class OpBuildsNestedOp(Operator2):
+    """Operator that builds a sub-operator based on input wires."""
+
+    def __init__(self, wires):
+        _ = NonParametricOp(wires[1])
+        super().__init__(wires)

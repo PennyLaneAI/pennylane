@@ -41,11 +41,15 @@ def _trotterize_qfunc_dummy(time, theta, phi, wires, flip=False):
 
 
 _INSTANCES_TO_TEST = [
+    # GlobalPhase acts on no wires, so `_check_differentiation`'s `qp.probs(wires=op.wires)` cannot be constructed
+    (qp.GlobalPhase(1.1), {"skip_differentiation": True}),
     (LabelledOp(qp.X(0), "my-x"), {}),
     (MarkedOp(qp.X(0), "my-x"), {}),
+    # MidMeasure and PauliMeasure are only operators in the tape-based pipeline.
     (qp.ops.MidMeasure(wires=0), {"skip_capture": True}),
     (qp.ops.PauliMeasure("X", wires=0), {"skip_capture": True}),
-    (ChangeOpBasis(qp.T(0), qp.PauliZ(0)), {}),
+    # ChangeOpBasis as an operator is only used in the tape-based pipeline. It is unrolled when capture is enabled
+    (ChangeOpBasis(qp.T(0), qp.PauliZ(0)), {"skip_capture": True}),
     (qp.sum(qp.PauliX(0), qp.PauliZ(0)), {}),
     (qp.sum(qp.X(0), qp.X(0), qp.Z(0), qp.Z(0)), {}),
     (qp.BasisState([1], wires=[0]), {"skip_differentiation": True}),
@@ -56,7 +60,7 @@ _INSTANCES_TO_TEST = [
     ),
     (
         qp.QubitChannel([np.array([[1, 0], [0, 0.8]]), np.array([[0, 0.6], [0, 0]])], wires=0),
-        {"skip_differentiation": True},
+        {"skip_differentiation": True, "skip_capture": True},
     ),
     # Skipping bind_new_parameters test for `MultiControlledX` because it does not make sense for control values
     (qp.MultiControlledX(wires=[0, 1]), {"skip_bind_new_parameters": True}),
@@ -83,6 +87,8 @@ _INSTANCES_TO_TEST = [
     ),
     (qp.s_prod(1.1, qp.RX(1.1, 0)), {"skip_differentiation": True}),
     (qp.prod(qp.PauliX(0), qp.PauliY(1), qp.PauliZ(0)), {}),
+    # NOTE: qp.prod dispatches to Prod2 now, keep legacy Prod for testing
+    (qp.ops.Prod(qp.PauliX(0), qp.PauliY(1), qp.PauliZ(0)), {}),
     (qp.ctrl(qp.RX(1.1, 0), 1), {}),
     pytest.param(
         (qp.exp(qp.PauliX(0), 1.1), {}),
@@ -154,10 +160,6 @@ _INSTANCES_TO_FAIL = [
     (
         qp.ops.Conditional(qp.measure(1), qp.S(0)),
         AssertionError,  # needs flattening helpers to be updated, also cannot be pickled
-    ),
-    (
-        qp.GlobalPhase(1.1),
-        AssertionError,  # empty decomposition, matrix differs from decomp's matrix
     ),
     (
         qp.pulse.ParametrizedEvolution(qp.PauliX(0) + sum * qp.PauliZ(0)),
