@@ -1093,6 +1093,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Update `tach` to `0.35.1`.
+  [(#10147 )](https://github.com/PennyLaneAI/pennylane/pull/10147)
+
 * The `_prepselprep_decomp` decomposition rule of :class:`~.PrepSelPrep` now applies the linear-combination
   unitaries and their global phases as two separate :class:`~.Select` operators instead of a single ``Select``
   of products.
@@ -1171,6 +1174,7 @@
   [(#9990)](https://github.com/PennyLaneAI/pennylane/pull/9990)
   [(#10041)](https://github.com/PennyLaneAI/pennylane/pull/10041)
   [(#10072)](https://github.com/PennyLaneAI/pennylane/pull/10072)
+  [(#10149)](https://github.com/PennyLaneAI/pennylane/pull/10149)
   - Templates are ported:
     - :class:`~.BasisRotation`, :class:`~.MultiplexerStatePreparation`, :class:`~.QROM`, :class:`~.QFT`, :class:`~.FlipSign`,
       :class:`~.TemporaryAND`, :class:`~.SelectPauliRot`, :class:`~.GQSP`, :class:`~.AQFT`, :class:`~.SumOfSlatersPrep`,
