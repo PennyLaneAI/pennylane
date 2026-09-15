@@ -144,10 +144,10 @@ def make_rz_to_phase_gradient_decomp(
     # MultiX only emits a gate per set bit, and adaptive_precision may narrow the adder further, so
     # the gate count depends on the concrete angle.
     @qp.register_resources(_resource_fn, exact=False)
-    def _decomp_fn(phi, wires):
+    def _rz_phase_gradient_decomp(phi, wires):
         qp.GlobalPhase(phi / 2)
         _rz_phase_gradient(
             phi, wires, angle_wires, phase_grad_wires, work_wires, adaptive_precision
         )
 
-    return _decomp_fn
+    return _rz_phase_gradient_decomp
