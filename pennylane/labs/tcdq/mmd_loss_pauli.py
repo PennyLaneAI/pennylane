@@ -150,6 +150,7 @@ def _compute_single_mmd(
         "wire_tuple",
         "sqrt_loss",
         "expval_fn",
+        "static_kwargs",
     ],
 )
 def _compute_loss_for_bandwidth(
@@ -158,7 +159,8 @@ def _compute_loss_for_bandwidth(
     eval_key: jnp.ndarray,
     params: jnp.ndarray,
     target_data: jnp.ndarray,
-    expval_kwargs: dict,
+    traced_kwargs: dict,
+    static_kwargs: tuple,
     n_ops: int,
     n_qubits: int,
     wire_tuple: tuple[int, ...],
@@ -171,18 +173,19 @@ def _compute_loss_for_bandwidth(
     p_mmd = (1 - jnp.exp(-1 / (2 * bandwidth**2))) / 2
     visible_ops = jnp.array(
         jax.random.binomial(subkey, 1, p_mmd, shape=(n_ops, len(wire_tuple))),
-        dtype=jnp.float64,
+        dtype=float,
     )
 
-    all_ops = jnp.zeros((n_ops, n_qubits), dtype=jnp.float64)
+    all_ops = jnp.zeros((n_ops, n_qubits), dtype=float)
     all_ops = all_ops.at[:, wire_list].set(visible_ops)
 
     pauli_obs = _binary_ops_to_pauli_int(all_ops)
 
-    expval_kwargs["observables"] = pauli_obs
-    expval_kwargs["key"] = eval_key
+    call_kwargs = {**dict(static_kwargs), **traced_kwargs}
+    call_kwargs["observables"] = pauli_obs
+    call_kwargs["key"] = eval_key
 
-    model_output = expval_fn(params, **expval_kwargs)
+    model_output = expval_fn(params, **call_kwargs)
 
     model_expvals, model_expvals_variances = (
         model_output if isinstance(model_output, tuple) else (model_output, None)
@@ -375,6 +378,17 @@ def build_mmd_loss_pauli(
             )
             raise ValueError(f"target_data has {target_data.shape[1]} columns, expected {expected}")
 
+        static_items = []
+        traced_items = {}
+        for name, value in expval_kwargs.items():
+            try:
+                hash(value)
+            except TypeError:
+                traced_items[name] = value
+            else:
+                static_items.append((name, value))
+        static_kwargs = tuple(static_items)
+
         losses = []
         for bandwidth in bandwidth_list:
             active_key, subkey, eval_key = jax.random.split(active_key, 3)
@@ -385,12 +399,13 @@ def build_mmd_loss_pauli(
                 eval_key=eval_key,
                 params=jnp.asarray(params),
                 target_data=target_data,
+                traced_kwargs=traced_items,
+                static_kwargs=static_kwargs,
                 n_ops=mmd_config.n_ops,
                 n_qubits=n_qubits,
                 wire_tuple=wire_tuple,
                 sqrt_loss=mmd_config.sqrt_loss,
                 expval_fn=expval_fn,
-                expval_kwargs=expval_kwargs,
             )
             losses.append(loss_val)
 
