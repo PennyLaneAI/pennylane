@@ -2234,6 +2234,7 @@ def _ppr_to_paulirot_resources(pauli_word, **_):
 def _ppr_to_paulirot(angle_denominator, pauli_word, wires):
     qp.PauliRot(np.pi / angle_denominator * 2, pauli_word, wires=wires)
 
+add_decomps(PPR, _ppr_to_paulirot)
 
 def _adjoint_ppr_to_ppr_resources(base):
     num_wires = len(base.wires)
