@@ -361,6 +361,13 @@ class TestOneBodyWalk:
         with pytest.raises(ValueError, match="must be real"):
             qp.OneBodyWalk(np.eye(2, dtype=complex) * 1j, 2, prep, system, work)
 
+    @pytest.mark.parametrize("bad", [np.nan, np.inf])
+    def test_non_finite_raises(self, bad):
+        """Test that a non-finite op_matrix is rejected."""
+        prep, system, work = _registers(2, 2)
+        with pytest.raises(ValueError, match="must be finite"):
+            qp.OneBodyWalk(np.array([[1.0, bad], [bad, 1.0]]), 2, prep, system, work)
+
     def test_non_symmetric_raises(self):
         """Test that a non-symmetric op_matrix is rejected."""
         prep, system, work = _registers(2, 2)

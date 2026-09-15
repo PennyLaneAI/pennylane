@@ -268,8 +268,6 @@ class OneBodyWalk(Operator2):
 def _apply_xs(wires):
     """Apply an ``X`` to each wire, using ``for_loop`` (unrolled when not tracing)."""
     n = len(wires)
-    if n == 0:
-        return
     if compiler.active() or capture.enabled():
         wires = math.array(wires, like="jax")
 
