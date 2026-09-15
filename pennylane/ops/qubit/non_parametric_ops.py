@@ -2123,8 +2123,7 @@ class PPR(Operator2):
     PPR(-8, 'XY', wires=[0, 1])
 
     When compiling further to Pauli product measurements (PPM), ``PPR`` should first be lowered
-    using Catalyst's PBC passes :func:`~.to_ppr`, :func:`~.ppr_to_ppm`, or
-    :func:`~.ppm_compilation`.
+    using PBC passes :func:`~.to_ppr`, :func:`~.ppr_to_ppm`, or :func:`~.ppm_compilation`.
 
     """
 
@@ -2234,7 +2233,9 @@ def _ppr_to_paulirot_resources(pauli_word, **_):
 def _ppr_to_paulirot(angle_denominator, pauli_word, wires):
     qp.PauliRot(np.pi / angle_denominator * 2, pauli_word, wires=wires)
 
+
 add_decomps(PPR, _ppr_to_paulirot)
+
 
 def _adjoint_ppr_to_ppr_resources(base):
     num_wires = len(base.wires)
