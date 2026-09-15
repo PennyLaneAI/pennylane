@@ -28,6 +28,7 @@ from pennylane.decomposition.decomposition_rule import (
     WorkWireSpec,
     _decompositions_private,
     _fix_decomp,
+    _unroll_change_op_basis,
     _verify_is_abstract_and_fixed,
     register_condition,
     register_resources,
@@ -35,6 +36,7 @@ from pennylane.decomposition.decomposition_rule import (
 from pennylane.decomposition.resources import Resources
 from pennylane.ops.mid_measure import MidMeasure
 from pennylane.ops.op_math.adjoint2 import Adjoint2
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.ops.op_math.controlled2 import ControlledOp2
 from pennylane.ops.op_math.pow2 import flip_pow_adjoint, merge_powers, repeat_pow_base
 from pennylane.typing import Float, Int, Wire
@@ -1250,3 +1252,31 @@ class TestInspectDecomps:
 
         with pytest.raises(TypeError, match="concrete operator instance as its first argument"):
             qp.inspect_decomps(CustomParametrizedOp)
+
+
+class TestCOBUnroll:  # pylint: disable=too-few-public-methods
+    """Tests the custom behaviour related to COB in the resource function."""
+
+    def test_unroll_change_op_basis_resources(self):
+        """ChangeOpBasis resource keys are expanded without rewriting other keys."""
+        x_rep, y_rep, z_rep = (abstractify(op) for op in (qp.X, qp.Y, qp.Z))
+        prod_rep = qp.resource_rep(qp.ops.Prod, resources={x_rep: 2})
+        cob_rep = _change_op_basis_abstract(prod_rep, y_rep, x_rep)
+
+        result = _unroll_change_op_basis({cob_rep: 2, z_rep: 4, prod_rep: 3})
+
+        assert result == {x_rep: 6, y_rep: 2, z_rep: 4, prod_rep: 3}
+
+    def test_unroll_nested_symbolic_change_op_basis_resources(self):
+        """ChangeOpBasis resource keys are recursively expanded through symbolic wrappers."""
+        x_rep, y_rep, z_rep = (abstractify(op) for op in (qp.X, qp.Y, qp.Z))
+        cob = _change_op_basis_abstract(x_rep, y_rep, x_rep)
+
+        def wrapper(op):
+            return qp.adjoint(qp.ctrl(op, control=Wire[1]))
+
+        wrapped_z = wrapper(z_rep)
+
+        result = _unroll_change_op_basis({wrapper(cob): 2, wrapped_z: 3})
+
+        assert result == {wrapper(x_rep): 4, wrapper(y_rep): 2, wrapped_z: 3}
