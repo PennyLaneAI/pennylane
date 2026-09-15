@@ -116,7 +116,6 @@ class TestConcreteCDFCGF:
         assert ham.dimensions == expected
         for name, size in expected.items():
             assert getattr(ham, name) == size
-        assert not ham.is_abstract
         assert not ham.is_fully_abstract
 
     def test_direct_attribute_access(self, seed):
@@ -156,7 +155,6 @@ class TestConcreteCDFCGF:
         )
 
         assert ham.num_modes == M
-        assert not ham.is_abstract
         assert not ham.is_fully_abstract
 
     def test_inconsistent_shared_dimension(self):
@@ -305,7 +303,7 @@ class TestConcreteCDFCGF:
 
         def f(core, leaf, nuc):
             ham = CGFHamiltonian(core, leaf, nuc)
-            seen["is_abstract"] = ham.is_abstract
+            seen["is_abstract"] = ham.is_fully_abstract
             seen["dimensions"] = ham.dimensions
             return ham.core_tensors.sum()
 
@@ -496,7 +494,6 @@ class TestAbstractCDFCGF:
         """Test that abstract inputs surface as ``AbstractArray`` of the right shape."""
         ham = CGFHamiltonian(**cgf_specs())
 
-        assert ham.is_abstract
         assert ham.is_fully_abstract
         assert ham.core_tensors == AbstractArray((L + 1, M, M, N, N), float)
         assert ham.leaf_tensors == AbstractArray((L + 1, M, N, N), float)
@@ -506,7 +503,6 @@ class TestAbstractCDFCGF:
         """Test abstract construction for CDF."""
         ham = CDFHamiltonian(**cdf_specs())
 
-        assert ham.is_abstract
         assert ham.is_fully_abstract
         assert ham.core_tensors == AbstractArray((L + 1, N, N), float)
 
@@ -525,7 +521,6 @@ class TestAbstractCDFCGF:
         """Test that omitting ``nuc_constant`` gives an abstract scalar."""
         ham = CGFHamiltonian(Float[L + 1, M, M, N, N], Float[L + 1, M, N, N])
 
-        assert ham.is_abstract
         assert ham.is_fully_abstract
         assert ham.nuc_constant == AbstractArray((), float)
 
@@ -601,7 +596,6 @@ class TestVibronic:
 
         assert ham.dimensions == {"num_fragments": F, "num_states": N, "num_modes": M}
         assert (ham.num_fragments, ham.num_states, ham.num_modes) == (F, N, M)
-        assert not ham.is_abstract
         assert not ham.is_fully_abstract
 
     def test_direct_attribute_access(self, seed):
@@ -702,7 +696,7 @@ class TestVibronic:
 
         def f(constant, linear, quadratic, kinetic):
             ham = VibronicHamiltonian(constant, linear, quadratic, kinetic)
-            seen["is_abstract"] = ham.is_abstract
+            seen["is_abstract"] = ham.is_fully_abstract
             seen["dimensions"] = ham.dimensions
             return ham.constant.sum()
 
@@ -715,7 +709,6 @@ class TestVibronic:
         """Test that abstract inputs surface as ``AbstractArray`` of the right shape."""
         ham = VibronicHamiltonian(**vibronic_specs())
 
-        assert ham.is_abstract
         assert ham.is_fully_abstract
         assert ham.constant == AbstractArray((F, N, N), float)
         assert ham.kinetic == AbstractArray((N, N, M, M), float)
@@ -820,7 +813,6 @@ class TestNumericHamiltonian:
         """Test that a new representation gets abstract construction for free."""
         ham = self._diagonal_hamiltonian()(Float[5, 5])
 
-        assert ham.is_abstract
         assert ham.is_fully_abstract
         assert ham.dimensions == {"num_terms": 5}
 
@@ -886,7 +878,6 @@ class TestNumericHamiltonian:
 
         ham = THCHamiltonian(Float[7, 7], Float[7, 4], Float)
 
-        assert ham.is_abstract
         assert ham.is_fully_abstract
         assert ham.dimensions == {"tensor_rank": 7, "num_orbitals": 4}
 

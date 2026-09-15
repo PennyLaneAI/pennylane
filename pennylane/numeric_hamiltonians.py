@@ -168,22 +168,6 @@ class NumericHamiltonian:
             object.__setattr__(self, name, size - offset if size >= 0 else None)
 
     @property
-    def is_abstract(self) -> bool:
-        """bool: Whether the tensors are abstract specifications rather than concrete data.
-
-        Note that traced values are *not* abstract in this sense: a tracer has a
-        concrete shape and dtype, so a Hamiltonian built from ``qjit`` arguments is
-        concrete.
-        """
-        _is_abstract = False
-        for name in self.tensor_names + self.scalar_names:
-            if isinstance(getattr(self, name), AbstractArray):
-                _is_abstract = True
-                break
-
-        return _is_abstract
-
-    @property
     def is_fully_abstract(self) -> bool:
         """bool: Whether all tensors are abstract specifications rather than concrete data."""
         if not hasattr(self, "_is_fully_abstract"):
@@ -405,7 +389,7 @@ class CDFHamiltonian(NumericHamiltonian):
 
     def __post_init__(self):
         if self.nuc_constant is None:
-            zero = AbstractArray((), float) if self.is_abstract else np.asarray(0.0)
+            zero = AbstractArray((), float) if self.is_fully_abstract else np.asarray(0.0)
             object.__setattr__(self, "nuc_constant", zero)
 
         super().__post_init__()
@@ -569,8 +553,17 @@ class CGFHamiltonian(NumericHamiltonian):
 
     def __post_init__(self):
 
-        if self.nuc_constant is None:
-            zero = AbstractArray((), float) if self.is_abstract else np.asarray(0.0)
+        if (
+            self.nuc_constant is None
+        ):  # replace value with Float if core & leaf tensors are abstract, otherwise 0.0
+            zero = (
+                AbstractArray((), float)
+                if (
+                    isinstance(self.leaf_tensors, AbstractArray)
+                    and isinstance(self.core_tensors, AbstractArray)
+                )
+                else np.asarray(0.0)
+            )
             object.__setattr__(self, "nuc_constant", zero)
 
         super().__post_init__()
