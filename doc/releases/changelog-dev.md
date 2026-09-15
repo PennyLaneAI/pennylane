@@ -2,6 +2,11 @@
 
 <h3>New features since last release</h3>
 
+
+* A new decorator is available called :func:`pennylane.subcircuit`, which can be used to 
+  create operators directly from quantum functions. This enables fast research and 
+  development of new operators without the need to create full-fledged operator classes 
+
 * Three new numeric Hamiltonians called :class:`pennylane.CDFHamiltonian` (based on
   `arXiv:2506.15784, Sec. III A <https://arxiv.org/abs/2506.15784>`),
   :class:`pennylane.CGFHamiltonian` (based on
@@ -550,6 +555,15 @@
   ```
 
 <h3>Improvements 🛠</h3>
+
+* Added a scalable unary iterator decomposition to `QROM`. While this decomposition produces the
+  same quantum circuit as the Select-SWAP decomposition with `depth=1`, once `Select` is decomposed,
+  the new rule uses a flat `for_loop` structure to represent the unary iteration, instead of
+  recursion, making it scalable. Select-SWAP has been deactivated
+  if `depth==1 and len(work_wires)>=len(control_wires)-1`.
+  Also replaced the usage of `BasisState` by the new `MultiX` template, because the intended
+  bitflips are not applied to unconditionally zeroed qubits, which `BasisState` assumes.
+  [(#10067)](https://github.com/PennyLaneAI/pennylane/pull/10067)
 
 * Added `Multiplexer` and `Multiplexor` as aliases for :class:`~.Select`, and
   `MultiplexedRotation` and `UniformlyControlledRotation` as aliases for
