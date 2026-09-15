@@ -318,8 +318,11 @@ def _select_half(
             ``work_wires`` at the cost of more ``QROM`` loads.
         one_body_table (bool): flag to check if the the ``QROM`` address is extended by the
             one-body flag and the one-body rotations are loaded
-        skip_one_body (bool): flag to check if reflection is switched off when the one-body
-            flag is set, so this sandwich acts as the identity on the one-body block
+        skip_one_body (bool): if ``False``, the :math:`Z_1` reflection is controlled on the
+            success flag alone, as in the first sandwich of Fig. 5. If ``True``, it carries
+            a second control, the open circle on the :math:`\lvert \nu = M + 1 \rangle`
+            wire of the second sandwich in Fig. 5, so the reflection is switched off on the
+            one-body block and this half acts as the identity there.
 
     Raises:
         ValueError: if a register has the wrong size, or if ``t_eigenvectors`` has the
