@@ -1480,7 +1480,7 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixed `qp.math.ceil_log2` and `qp.math.floor_log2` returning results that were off by one
+* Fixed `qp.math.ceil_log2` returning results that were off by one
   for inputs with more significant bits than a float can hold, like `2 ** 53 + 1`.
   [(#10101)](https://github.com/PennyLaneAI/pennylane/pull/10101)
 
