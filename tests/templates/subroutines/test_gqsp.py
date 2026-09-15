@@ -28,9 +28,6 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 class TestGQSP:
     """Test the qp.GQSP template."""
 
-    @pytest.mark.xfail_if_capture(
-        reason="Requires prod to dispatch to Prod2 [sc-128922]", strict=False
-    )
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(
         "unitary",

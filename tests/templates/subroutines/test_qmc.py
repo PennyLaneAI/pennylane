@@ -261,8 +261,8 @@ class TestQuantumMonteCarlo:
     def func(i):
         return np.sin(i) ** 2
 
-    # Skip capture test because the _unflatten method of QMC is not compatible with capture
-    @pytest.mark.usefixtures("disable_capture")
+    @pytest.mark.xfail_if_capture(reason="the _unflatten of QMC is not compatible with capture")
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_standard_validity(self):
         """Test standard validity criteria with assert_valid."""
         p = np.ones(4) / 4

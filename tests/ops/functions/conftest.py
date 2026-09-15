@@ -112,7 +112,7 @@ _INSTANCES_TO_TEST = [
     ),
     (qp.pow(qp.IsingXX(1.1, [0, 1]), 2.5), {}),
     (qp.ops.Evolution(qp.PauliX(0), 5.2), {}),
-    (qp.estimator.FirstQuantization(1, 2, 1), {"skip_capture": True}),
+    (qp.estimator.FirstQuantization(1, 2, 1), {"skip_bind_new_parameters": True}),
     (qp.prod(qp.RX(1.1, 0), qp.RY(2.2, 0), qp.RZ(3.3, 1)), {}),
     (qp.Snapshot(measurement=qp.expval(qp.Z(0)), tag="hi"), {}),
     (qp.Snapshot(tag="tag"), {}),
