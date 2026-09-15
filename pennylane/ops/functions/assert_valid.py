@@ -31,7 +31,7 @@ from pennylane.core.operator import Operator, Operator1, Operator2, abstractify
 from pennylane.decomposition import DecompositionRule
 from pennylane.decomposition.decomposition_rule import _decomp_contains_mcm
 from pennylane.decomposition.resources import CompressedResourceOp
-from pennylane.decomposition.utils import _get_decomp_args
+from pennylane.decomposition.utils import _get_decomp_args, to_name
 from pennylane.exceptions import EigvalsUndefinedError
 from pennylane.ops.op_math.adjoint2 import Adjoint2, _adjoint_abstract
 from pennylane.ops.op_math.composite2 import CompositeOp2
@@ -180,16 +180,16 @@ def _check_decomposition_new(op, skip_decomp_matrix_check=False):
     for rule in qp.list_decomps(op):
         _test_decomposition_rule(op, rule, skip_decomp_matrix_check)
 
-    for rule in qp.list_decomps(f"Adjoint({op.name})"):
+    for rule in qp.list_decomps(f"Adjoint({to_name(op)})"):
         adj_op = qp.adjoint(op)
         _test_decomposition_rule(adj_op, rule, skip_decomp_matrix_check)
 
-    for rule in qp.list_decomps(f"Pow({op.name})"):
+    for rule in qp.list_decomps(f"Pow({to_name(op)})"):
         for z in [2, 3, 4, 8, 9]:
             pow_op = qp.pow(op, z)
             _test_decomposition_rule(pow_op, rule, skip_decomp_matrix_check)
 
-    for rule in qp.list_decomps(f"C({op.name})"):
+    for rule in qp.list_decomps(f"C({to_name(op)})"):
         for n_ctrl_wires, c_value, n_workers in itertools.product([1, 2, 3], [0, 1], [0, 1, 2]):
             ctrl = qp.ops.Controlled if isinstance(op, Operator1) else qp.ops.ControlledOp2
             int_wires = [w for w in op.wires if isinstance(w, int)]
@@ -656,7 +656,7 @@ def _check_bind_new_parameters_op2(op):
     """Check that bind new parameters can create a new op with different bound arguments."""
     dyn_args = op.base.dynamic_args if isinstance(op, SymbolicOp2) else op.dynamic_args
     new_dyn_args = {k: math.cast_like(v * 0.0, v) for k, v in dyn_args.items()}
-    new_data_op = qp.ops.functions.bind_new_parameters(op, new_dyn_args.values())
+    new_data_op = qp.ops.functions.bind_new_parameters(op, tuple(new_dyn_args.values()))
     failure_comment = "bind_new_parameters must be able to update the operator2 with new arguments."
     for name, val in new_dyn_args.items():
         op_to_check = new_data_op.base if isinstance(new_data_op, SymbolicOp2) else new_data_op
@@ -777,7 +777,13 @@ def _assert_valid_operator2(
                 f"Op not properly abstractified. {abstractified_op} had non-abstract leaf {l}."
             )
 
-    if not isinstance(op, (Adjoint2, CompositeOp2, ControlledOp2, Pow2)):
+    # Some operators (e.g. composites and ``Select``) hold their data inside operator-valued
+    # arguments rather than dynamic arguments, so their ``data`` does not correspond to
+    # ``dynamic_argnames`` and this check does not apply.
+    # pylint: disable=import-outside-toplevel
+    from pennylane.templates.subroutines.select import Select
+
+    if not isinstance(op, (Adjoint2, CompositeOp2, ControlledOp2, Pow2, Select)):
 
         error_msg = "ndim_params must have the same length as dynamic_argnames"
         assert len(op.ndim_params) == len(op.dynamic_argnames), error_msg
