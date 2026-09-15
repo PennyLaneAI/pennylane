@@ -419,7 +419,7 @@ class TestOutSquare:
             # Cache first bit
             qp.CNOT(wires=[1, 5]),
             # Controlled add-subtract block (contains decomposed adder)
-            Controlled(qp.BasisState([1], wires=[0]), control_wires=[5], control_values=[False]),
+            Controlled(qp.MultiX([1], wires=[0]), control_wires=[5], control_values=[False]),
             qp.MultiControlledX(wires=[5, 6], control_values=[False]),
             qp.TemporaryAND(wires=[1, 6, 8]),
             qp.MultiControlledX(wires=[5, 8], control_values=[False]),
@@ -436,13 +436,13 @@ class TestOutSquare:
             Adjoint(qp.TemporaryAND(wires=[1, 6, 8])),
             qp.CNOT(wires=[1, 6]),
             qp.MultiControlledX(wires=[5, 6], control_values=[False]),
-            Controlled(qp.BasisState([1], wires=[0]), control_wires=[5], control_values=[False]),
+            Controlled(qp.MultiX([1], wires=[0]), control_wires=[5], control_values=[False]),
             # Un-cache first bit
             qp.CNOT(wires=[1, 5]),
             # Cache second bit
             qp.CNOT(wires=[0, 5]),
             # Controlled add-subtract block (contains decomposed adder)
-            Controlled(qp.BasisState([1], wires=[0]), control_wires=[5], control_values=[False]),
+            Controlled(qp.MultiX([1], wires=[0]), control_wires=[5], control_values=[False]),
             qp.MultiControlledX(wires=[5, 4], control_values=[False]),
             qp.TemporaryAND(wires=[1, 4, 8]),
             qp.MultiControlledX(wires=[5, 8], control_values=[False]),
@@ -459,7 +459,7 @@ class TestOutSquare:
             Adjoint(qp.TemporaryAND(wires=[1, 4, 8])),
             qp.CNOT(wires=[1, 4]),
             qp.MultiControlledX(wires=[5, 4], control_values=[False]),
-            Controlled(qp.BasisState([1], wires=[0]), control_wires=[5], control_values=[False]),
+            Controlled(qp.MultiX([1], wires=[0]), control_wires=[5], control_values=[False]),
             # Un-cache second bit
             qp.CNOT(wires=[0, 5]),
             # Decrementer is skipped because len(y_wires) <= 2*len(x_wires)
@@ -508,9 +508,7 @@ class TestOutSquare:
         expected = [
             # Cache first bit
             qp.CNOT(wires=[2, 5]),
-            Controlled(
-                qp.BasisState([1, 1], wires=[0, 1]), control_wires=[5], control_values=[False]
-            ),
+            Controlled(qp.MultiX([1, 1], wires=[0, 1]), control_wires=[5], control_values=[False]),
             qp.MultiControlledX(wires=[5, 6], control_values=[False]),
             qp.TemporaryAND(wires=[2, 6, 8]),
             qp.MultiControlledX(wires=[5, 8], control_values=[False]),
@@ -528,16 +526,12 @@ class TestOutSquare:
             Adjoint(qp.TemporaryAND(wires=[2, 6, 8])),
             qp.CNOT(wires=[2, 6]),
             qp.MultiControlledX(wires=[5, 6], control_values=[False]),
-            Controlled(
-                qp.BasisState([1, 1], wires=[0, 1]), control_wires=[5], control_values=[False]
-            ),
+            Controlled(qp.MultiX([1, 1], wires=[0, 1]), control_wires=[5], control_values=[False]),
             # Un-cache first bit
             qp.CNOT(wires=[2, 5]),
             # Cache second bit
             qp.CNOT(wires=[1, 5]),
-            Controlled(
-                qp.BasisState([1, 1], wires=[0, 1]), control_wires=[5], control_values=[False]
-            ),
+            Controlled(qp.MultiX([1, 1], wires=[0, 1]), control_wires=[5], control_values=[False]),
             qp.MultiControlledX(wires=[5, 4], control_values=[False]),
             qp.TemporaryAND(wires=[2, 4, 7]),
             qp.MultiControlledX(wires=[5, 7], control_values=[False]),
@@ -547,22 +541,16 @@ class TestOutSquare:
             Adjoint(qp.TemporaryAND(wires=[2, 4, 7])),
             qp.CNOT(wires=[2, 4]),
             qp.MultiControlledX(wires=[5, 4], control_values=[False]),
-            Controlled(
-                qp.BasisState([1, 1], wires=[0, 1]), control_wires=[5], control_values=[False]
-            ),
+            Controlled(qp.MultiX([1, 1], wires=[0, 1]), control_wires=[5], control_values=[False]),
             # Un-cache second bit
             qp.CNOT(wires=[1, 5]),
             # Cache third bit
             qp.CNOT(wires=[0, 5]),
-            Controlled(
-                qp.BasisState([1, 1], wires=[0, 1]), control_wires=[5], control_values=[False]
-            ),
+            Controlled(qp.MultiX([1, 1], wires=[0, 1]), control_wires=[5], control_values=[False]),
             qp.MultiControlledX(wires=[5, 3], control_values=[False]),
             qp.CNOT(wires=[2, 3]),
             qp.MultiControlledX(wires=[5, 3], control_values=[False]),
-            Controlled(
-                qp.BasisState([1, 1], wires=[0, 1]), control_wires=[5], control_values=[False]
-            ),
+            Controlled(qp.MultiX([1, 1], wires=[0, 1]), control_wires=[5], control_values=[False]),
             # Un-cache third bit
             qp.CNOT(wires=[0, 5]),
             # Decrementer is skipped because len(y_wires) <= 2*len(x_wires)
