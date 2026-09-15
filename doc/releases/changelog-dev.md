@@ -26,6 +26,24 @@
   [(#10081)](https://github.com/PennyLaneAI/pennylane/pull/10081)
   [(#10138)](https://github.com/PennyLaneAI/pennylane/pull/10138)
 
+* A new operator called :class:`pennylane.PPR` has been added, which represents a Pauli product
+  rotation with a fixed angle
+  :math:`\theta = \pi / k`, following this angle convention:
+  :math:`\mathrm{PPR}(-4, \mathrm{X})=\exp(-i\pi / (-4) X)=\exp(i\tfrac{\pi}{4} X)`.
+  The denominator
+  :math:`k` is restricted to :math:`\pm 2`, :math:`\pm 4` and :math:`\pm 8`, covering exactly the
+  :math:`\pm\pi/2`, :math:`\pm\pi/4` and :math:`\pm\pi/8` Pauli product rotations of Clifford+T
+  circuits. Together with :func:`~.pauli_measure`, this makes the building blocks of Pauli-based
+  computations directly expressible.
+  [(#10107)](https://github.com/PennyLaneAI/pennylane/pull/10107)
+
+  ```pycon
+  >>> import pennylane as qp
+  >>> op = qp.PPR(4, "XY", wires=[0, 1])
+  >>> op
+  PPR(4, 'XY', wires=[0, 1])
+  ```
+
 * A new decorator is available called :func:`pennylane.subcircuit`, which can be used to 
   create operators directly from quantum functions. This enables fast research and 
   development of new operators without the need to create full-fledged operator classes 
@@ -1100,6 +1118,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Update `tach` to `0.35.1`.
+  [(#10147 )](https://github.com/PennyLaneAI/pennylane/pull/10147)
+
 * The `_prepselprep_decomp` decomposition rule of :class:`~.PrepSelPrep` now applies the linear-combination
   unitaries and their global phases as two separate :class:`~.Select` operators instead of a single ``Select``
   of products.
@@ -1178,6 +1199,7 @@
   [(#9990)](https://github.com/PennyLaneAI/pennylane/pull/9990)
   [(#10041)](https://github.com/PennyLaneAI/pennylane/pull/10041)
   [(#10072)](https://github.com/PennyLaneAI/pennylane/pull/10072)
+  [(#10149)](https://github.com/PennyLaneAI/pennylane/pull/10149)
   - Templates are ported:
     - :class:`~.BasisRotation`, :class:`~.MultiplexerStatePreparation`, :class:`~.QROM`, :class:`~.QFT`, :class:`~.FlipSign`,
       :class:`~.TemporaryAND`, :class:`~.SelectPauliRot`, :class:`~.GQSP`, :class:`~.AQFT`, :class:`~.SumOfSlatersPrep`,
