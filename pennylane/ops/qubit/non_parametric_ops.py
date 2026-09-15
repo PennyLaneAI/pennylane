@@ -2123,8 +2123,7 @@ class PPR(Operator2):
     PPR(-8, 'XY', wires=[0, 1])
 
     When compiling further to Pauli product measurements (PPM), ``PPR`` should first be lowered
-    using Catalyst's PBC passes :func:`~.to_ppr`, :func:`~.ppr_to_ppm`, or
-    :func:`~.ppm_compilation`.
+    using PBC passes :func:`~.to_ppr`, :func:`~.ppr_to_ppm`, or :func:`~.ppm_compilation`.
 
     """
 
