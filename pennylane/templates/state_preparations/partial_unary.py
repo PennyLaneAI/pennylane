@@ -340,7 +340,7 @@ class PUIsometryFinder:
 
         # Batch size can never exceed the number of states that actually need mapping, so cap
         # it here. This matters when there are many more (unused) remainder wires than states.
-        self.m = min(1 << math.floor_log2(self.n_r), num_entries)
+        self.m = min(1 << int(math.floor(math.log2(self.n_r))), num_entries)
 
         # Frequently used word constants, precomputed in the packing type to avoid any casts
         # inside the hot loop.

@@ -111,7 +111,6 @@ from .utils import (
     convert_like,
     in_backprop,
     is_abstract,
-    floor_log2,
     requires_grad,
 )
 from .interface_utils import (
@@ -241,7 +240,6 @@ __all__ = [
     "eye",
     "fidelity",
     "fidelity_statevector",
-    "floor_log2",
     "frobenius_inner_product",
     "gammainc",
     "get_dtype_name",

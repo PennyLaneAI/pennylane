@@ -50,6 +50,7 @@ from .non_parametric_ops import (
     ISWAP,
     SISWAP,
     SQISW,
+    PPR,
 )
 from .observables import (
     Hermitian,
@@ -97,6 +98,7 @@ __ops__ = {
     "PauliZ",
     "Z",
     "PauliRot",
+    "PPR",
     "MultiRZ",
     "S",
     "T",

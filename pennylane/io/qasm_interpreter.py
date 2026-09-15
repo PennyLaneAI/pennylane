@@ -449,9 +449,9 @@ def _get_bit_type_val(var):
     if isinstance(var, Variable) and var.ty == "BitType":
         return bin(var.val)[2:].zfill(var.size)
     if isinstance(var, Variable) and var.ty == "IntType":
-        return bin(var.val)[2:].zfill(math.floor_log2(var.val) + 1)
+        return bin(var.val)[2:].zfill(int(math.floor(math.log2(var.val))) + 1)
     if isinstance(var, int):
-        return bin(var)[2:].zfill(math.floor_log2(var) + 1)
+        return bin(var)[2:].zfill(int(math.floor(math.log2(var))) + 1)
     raise TypeError(f"Cannot convert {type(var)} to bitstring.")
 
 

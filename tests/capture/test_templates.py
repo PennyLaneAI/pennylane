@@ -478,12 +478,12 @@ class TestModifiedTemplates:
         # diagonal position fragment and a diagonal kinetic fragment.
         n_states, n_modes, k, b = 2, 1, 3, 2
         n = int(math.ceil_log2(n_states))
-        hamiltonian = {
-            "constant": np.zeros((1, n_states, n_states)),
-            "linear": np.zeros((1, n_states, n_states, n_modes)),
-            "quadratic": np.zeros((1, n_states, n_states, n_modes, n_modes)),
-            "kinetic": np.einsum("ab,cd->abcd", np.eye(n_states), np.diag(0.3 * np.ones(n_modes))),
-        }
+        hamiltonian = qp.VibronicHamiltonian(
+            constant=np.zeros((1, n_states, n_states)),
+            linear=np.zeros((1, n_states, n_states, n_modes)),
+            quadratic=np.zeros((1, n_states, n_states, n_modes, n_modes)),
+            kinetic=np.einsum("ab,cd->abcd", np.eye(n_states), np.diag(0.3 * np.ones(n_modes))),
+        )
         wires = qp.registers(
             {
                 "electronic": n,
