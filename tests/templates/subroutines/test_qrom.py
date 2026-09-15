@@ -29,10 +29,10 @@ from pennylane.templates.subroutines.arithmetic import TemporaryAND
 from pennylane.templates.subroutines.qrom import (
     _calculate_select_swap_sizes,
     _count_tempAND_in_measurement_qrom,
-    _qrom_decomposition,
     _qrom_measurement_condition,
     _qrom_measurement_decomposition,
     _qrom_measurement_resources,
+    _select_swap,
 )
 from pennylane.typing import AbstractArray, Bool, Int, Wire
 
@@ -322,28 +322,10 @@ class TestQROM:
     @pytest.mark.parametrize("rule", qp.list_decomps(qp.QROM))
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_new(
-        self, num_bitstrings, control_wires, target_wires, work_wires, clean, rule, seed, request
+        self, num_bitstrings, control_wires, target_wires, work_wires, clean, rule, seed
     ):  # pylint: disable=too-many-arguments
         """Tests the decomposition rule implemented with the new system."""
         rng = np.random.default_rng(seed)
-        # Check whether we have a power of two. If not and depth> 1,
-        # Select will fail due to usage of Identity.
-        power_of_two = num_bitstrings == 1 << (num_bitstrings.bit_length() - 1)
-        _, _, depth = _calculate_select_swap_sizes(
-            terms=num_bitstrings,
-            num_control_wires=len(control_wires),
-            num_target_wires=len(target_wires),
-            num_work_wires=len(work_wires),
-        )
-        will_use_identity = not power_of_two and depth > 1
-        if rule.name == "_select_swap" and qp.capture.enabled() and will_use_identity:
-            # xfail only has the strict kwarg when used as a marker.
-            request.node.add_marker(
-                pytest.mark.xfail(
-                    reason="Select does not work correctly with capture enabled yet.", strict=True
-                )
-            )
-
         bitstrings = rng.integers(0, 2, size=(num_bitstrings, len(target_wires)))
         op = qp.QROM(
             bitstrings,
@@ -409,12 +391,15 @@ class TestQROM:
                 like="jax",
                 dtype=int,
             ),
-            **{name: qp.math.array(wires, like="jax") for name, wires in registers.items()},
+            **{
+                name: qp.math.array(wires, like="jax", dtype=int)
+                for name, wires in registers.items()
+            },
         }
 
         # ``clean`` is compilable and is therefore static when Catalyst captures this rule.
         # pylint: disable-next=protected-access
-        rule = qp.capture.subroutine(partial(_qrom_decomposition._impl, clean=clean))
+        rule = qp.capture.subroutine(partial(_select_swap._impl, clean=clean))
         _ = jax.make_jaxpr(rule)(**kwargs)
 
 

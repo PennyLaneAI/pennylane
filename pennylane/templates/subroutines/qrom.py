@@ -25,7 +25,6 @@ from pennylane import capture, compiler, math
 from pennylane import ops as qp_ops
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
-from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import (
     add_decomps,
     register_condition,
@@ -49,23 +48,24 @@ def _select_ops(
     n_control_select_wires = ceil_log2(capacity / depth)
     control_select_wires = control_wires[:n_control_select_wires]
 
-    with QueuingManager.stop_recording(), capture.pause():
-        ops_new = [MultiX(bits, wires=target_wires) for bits in bitstrings]
-        ops_identity_new = ops_new + [qp_ops.I(target_wires)] * (capacity - len(ops_new))
-
-    n_columns = int(np.ceil(bitstrings.shape[0] / depth))
+    # with QueuingManager.stop_recording(), capture.pause():
+    # ops_new = [MultiX(bits, wires=target_wires) for bits in bitstrings]
+    # ops_identity_new = ops_new + [qp_ops.I(target_wires)] * (capacity - len(ops_new))
     num_targets = len(target_wires)
-    wire_maps = [
-        dict(zip(target_wires, swap_wires[j * num_targets : (j + 1) * num_targets], strict=True))
-        for j in range(depth)
-    ]
+    num_missing = capacity - len(bitstrings)
+    n_columns = int(np.ceil(bitstrings.shape[0] / depth))
+
+    if num_missing > 0:
+        bitstrings = math.vstack([bitstrings, math.zeros((num_missing, num_targets), dtype=int)])
+
+    column_wires = swap_wires[: depth * num_targets]
 
     new_ops = []
     for i in range(n_columns):
-        column_ops = [ops_identity_new[i * depth + j].map_wires(wire_maps[j]) for j in range(depth)]
-        new_ops.append(qp_ops.prod(*column_ops))
+        column_bits = math.concatenate([bitstrings[i * depth + j] for j in range(depth)])
+        new_ops.append(MultiX(column_bits, wires=column_wires))
 
-    if control_select_wires:
+    if len(control_select_wires) > 0:
         Select(new_ops, control=control_select_wires, work_wires=select_work_wires)
 
 
@@ -397,7 +397,7 @@ def _select_swap(
 
     swap_work_wires = work_wires[:num_work_wires_swap]
     select_work_wires = work_wires[num_work_wires_swap:]
-    swap_wires = target_wires + swap_work_wires
+    swap_wires = Wires(target_wires) + Wires(swap_work_wires)
 
     if not clean or depth == 1:
         _select_ops(control_wires, depth, target_wires, swap_wires, bitstrings, select_work_wires)
