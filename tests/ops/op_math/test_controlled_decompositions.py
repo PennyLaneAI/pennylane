@@ -758,7 +758,9 @@ class TestMCXDecomposition:
         """Tests that MCX can be resolved into CNOT and Toffoli properly."""
 
         mcx = qp.MultiControlledX(**params)
-        for rule in qp.list_decomps(mcx):
+        rules = qp.list_decomps(mcx)
+        assert rules
+        for rule in rules:
             _test_decomposition_rule(mcx, rule)
 
     @pytest.mark.catalyst
