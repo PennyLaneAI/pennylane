@@ -18,7 +18,7 @@ from functools import singledispatch
 
 import pennylane as qp
 from pennylane.exceptions import QuantumFunctionError
-from pennylane.ops import CompositeOp, LinearCombination, SymbolicOp
+from pennylane.ops import CompositeOp, CompositeOp2, LinearCombination, SymbolicOp
 from pennylane.pauli import diagonalize_qwc_pauli_words
 from pennylane.tape.tape import (
     _validate_computational_basis_sampling,
@@ -327,6 +327,15 @@ def _change_composite_op(observable: CompositeOp):
     return diagonalizing_gates, new_observable
 
 
+@_change_obs_to_Z.register
+def _change_composite_op(observable: CompositeOp2):
+    diagonalizing_gates, new_operands = diagonalize_qwc_pauli_words(observable.operands)
+
+    new_observable = observable.__class__(tuple(new_operands))
+
+    return diagonalizing_gates, new_observable
+
+
 def _check_if_diagonalizing(obs, _visited_obs, switch_basis):
     """Checks if the observable should be diagonalized based on whether its basis should
     be switched, and whether the same observable has already been diagonalized.
@@ -487,5 +496,18 @@ def _diagonalize_composite_op(
     )
 
     new_observable = observable.__class__(*new_operands)
+
+    return diagonalizing_gates, new_observable, _visited_obs
+
+
+@_diagonalize_non_basic_observable.register
+def _diagonalize_composite_op(
+    observable: CompositeOp2, _visited_obs, supported_base_obs=_default_supported_obs
+):
+    diagonalizing_gates, new_operands, _visited_obs = _get_obs_and_gates(
+        observable.operands, _visited_obs, supported_base_obs
+    )
+
+    new_observable = observable.__class__(new_operands)
 
     return diagonalizing_gates, new_observable, _visited_obs

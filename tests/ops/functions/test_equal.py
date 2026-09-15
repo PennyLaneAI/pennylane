@@ -28,7 +28,8 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as npp
-from pennylane.core.operator import Operator, Operator2
+from pennylane.core.operator import Operator, Operator2, abstractify
+from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.drawer.label import LabelledOp
 from pennylane.fourier.mark import MarkedOp
 from pennylane.measurements import ExpectationMP
@@ -1721,10 +1722,7 @@ class TestMeasurementsEqual:
         mv1 = qp.measure(0)
         mv2 = qp.measure(0)
         # qp.equal of MidMeasure checks the id
-        # pylint: disable=protected-access
-        mv2.measurements[0]._hyperparameters["meas_uid"] = mv1.measurements[0]._hyperparameters[
-            "meas_uid"
-        ]
+        mv2.measurements[0].arguments["meas_uid"] = mv1.measurements[0].arguments["meas_uid"]
 
         assert qp.equal(mv1, mv1) is True
         assert qp.equal(mv1, mv2) is True
@@ -1741,10 +1739,7 @@ class TestMeasurementsEqual:
         mv2 = qp.measure(1)
         mv3 = qp.measure(0)
         # qp.equal of MidMeasure checks the id
-        # pylint: disable=protected-access
-        mv3.measurements[0]._hyperparameters["meas_uid"] = mv1.measurements[0]._hyperparameters[
-            "meas_uid"
-        ]
+        mv3.measurements[0].arguments["meas_uid"] = mv1.measurements[0].arguments["meas_uid"]
 
         assert qp.equal(mv1 * mv2, mv2 * mv1) is True
         assert qp.equal(mv1 + mv2, mv3 + mv2) is True
@@ -1759,10 +1754,7 @@ class TestMeasurementsEqual:
         mv2 = qp.measure(1)
         mv3 = qp.measure(1)
         mv4 = qp.measure(0)
-        # pylint: disable=protected-access
-        mv4.measurements[0]._hyperparameters["meas_uid"] = mv1.measurements[0]._hyperparameters[
-            "meas_uid"
-        ]
+        mv4.measurements[0].arguments["meas_uid"] = mv1.measurements[0].arguments["meas_uid"]
 
         mp1 = mp_fn(op=[mv1, mv2])
         mp2 = mp_fn(op=[mv4, mv2])
@@ -1792,10 +1784,7 @@ class TestMeasurementsEqual:
         mv2 = qp.measure(1)
         mv3 = qp.measure(1)
         mv4 = qp.measure(0)
-        # pylint: disable=protected-access
-        mv4.measurements[0]._hyperparameters["meas_uid"] = mv1.measurements[0]._hyperparameters[
-            "meas_uid"
-        ]
+        mv4.measurements[0].arguments["meas_uid"] = mv1.measurements[0].arguments["meas_uid"]
 
         mp1 = mp_fn(op=mv1 * mv2)
         mp2 = mp_fn(op=mv4 * mv2)
@@ -2189,10 +2178,7 @@ class TestSymbolicOpComparison:
         m2 = qp.measure(wire2)
         if wire1 == wire2:
             # qp.equal checks id for MidMeasure, but here we only care about them acting on the same wire
-            # pylint: disable=protected-access
-            m2.measurements[0]._hyperparameters["meas_uid"] = m1.measurements[0]._hyperparameters[
-                "meas_uid"
-            ]
+            m2.measurements[0].arguments["meas_uid"] = m1.measurements[0].arguments["meas_uid"]
         base = qp.PauliX(wire2)
         op1 = Conditional(m1, base)
         op2 = Conditional(m2, base)
@@ -3230,6 +3216,28 @@ def test_select():
     op2 = qp.Select((qp.X(0),), control=2)
     qp.assert_equal(op1, op2)
     assert qp.equal(op1, op2) is True
+
+
+def test_compressed_resource_op():
+    """Test that ``CompressedResourceOp`` resource representations can be compared with ``qp.equal``."""
+    rep1 = abstractify(qp.ops.Prod(qp.X(0), qp.Y(1)))
+    rep2 = abstractify(qp.ops.Prod(qp.X(0), qp.Y(1)))
+    rep3 = abstractify(qp.ops.Prod(qp.X(0), qp.Z(1)))
+    assert isinstance(rep1, CompressedResourceOp)
+
+    # Equal resource representations compare equal.
+    qp.assert_equal(rep1, rep2)
+    assert qp.equal(rep1, rep2) is True
+
+    # Different resource representations compare unequal, with an informative message.
+    assert qp.equal(rep1, rep3) is False
+    with pytest.raises(AssertionError, match="different resource representations"):
+        qp.assert_equal(rep1, rep3)
+
+    # A resource representation is not equal to a regular operator (different types).
+    assert qp.equal(rep1, qp.X(0)) is False
+    with pytest.raises(AssertionError, match="different types"):
+        qp.assert_equal(rep1, qp.X(0))
 
 
 # pylint: disable=unused-argument
