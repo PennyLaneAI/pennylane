@@ -441,7 +441,7 @@ class TestOpmath:
         """Test that capturing a function whose argument is an operator of operators
         works correctly.
         """
-        op = qp.ops.Prod2([qp.X(0), qp.X(1)])
+        op = qp.prod(qp.X(0), qp.X(1))
 
         empty_jaxpr = jax.make_jaxpr(lambda _op: None)(op)
         assert len(empty_jaxpr.eqns) == 0
