@@ -955,7 +955,7 @@ class TestIntegration:
 
         tape = qp.tape.QuantumScript.from_queue(q)
 
-        assert qp.drawer.tape_text(tape) == "0: ──Exp(-0.6j X)─┤  "
+        assert qp.drawer.tape_text(tape) == "0: ──Exp(-0.6j X)─┤"
 
     def test_exp_batching(self):
         """Test execution of a batched Exp operator."""
