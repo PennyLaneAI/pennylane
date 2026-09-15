@@ -23,9 +23,7 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.arithmetic.phase_adder import _add_k_fourier
 
 
-@pytest.mark.xfail_if_capture(
-    reason="Come back to this when we port it to Op2 [sc-130164]", strict=False
-)
+@pytest.mark.xfail_if_capture(reason="Come back to this when we port it to Op2 [sc-130164]")
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity_Phase_Adder():
     """Check the operation using the assert_valid function."""
