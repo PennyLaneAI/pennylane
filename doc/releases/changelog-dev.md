@@ -11,6 +11,20 @@
   double-factorized (CDF), Christiansen greedy-fragmentation (CGF) Hamiltonians, and vibronic
   Hamiltonians respectively. These Hamiltonians can be defined with both concrete numeric data or
   abstract data (using ``qp.typing.Float[...]``).
+  [(#10048)](https://github.com/PennyLaneAI/pennylane/pull/10048)
+  [(#10138)](https://github.com/PennyLaneAI/pennylane/pull/10138)
+
+* Three new state-of-the-art Trotterization operators called :class:`~.TrotterCDF`,
+  :class:`~.TrotterCGF`, and :class:`~.TrotterVibronic` have been added to encode
+  fragmentation-based Trotterization procedures of :class:`pennylane.CDFHamiltonian`,
+  :class:`pennylane.CGFHamiltonian`, and :class:`pennylane.VibronicHamiltonian` Hamiltonians,
+  respectively.
+  [(#9459)](https://github.com/PennyLaneAI/pennylane/pull/9459)
+  [(#9789)](https://github.com/PennyLaneAI/pennylane/pull/9789)
+  [(#10015)](https://github.com/PennyLaneAI/pennylane/pull/10015)
+  [(#10074)](https://github.com/PennyLaneAI/pennylane/pull/10074)
+  [(#10081)](https://github.com/PennyLaneAI/pennylane/pull/10081)
+  [(#10138)](https://github.com/PennyLaneAI/pennylane/pull/10138)
 
 * A new decorator is available called :func:`pennylane.subcircuit`, which can be used to 
   create operators directly from quantum functions. This enables fast research and 
@@ -39,8 +53,6 @@
 
   ```
 
-  [(#10048)](https://github.com/PennyLaneAI/pennylane/pull/10048)
-  [(#10138)](https://github.com/PennyLaneAI/pennylane/pull/10138)
 
   ```python
   import numpy as np
@@ -63,18 +75,6 @@
   AbstractArray((3, 2, 3, 3), float64, weak_type=True)
 
   ```
-
-* Three new state-of-the-art Trotterization operators called :class:`~.TrotterCDF`,
-  :class:`~.TrotterCGF`, and :class:`~.TrotterVibronic` have been added to encode
-  fragmentation-based Trotterization procedures of :class:`pennylane.CDFHamiltonian`,
-  :class:`pennylane.CGFHamiltonian`, and :class:`pennylane.VibronicHamiltonian` Hamiltonians,
-  respectively.
-  [(#9459)](https://github.com/PennyLaneAI/pennylane/pull/9459)
-  [(#9789)](https://github.com/PennyLaneAI/pennylane/pull/9789)
-  [(#10015)](https://github.com/PennyLaneAI/pennylane/pull/10015)
-  [(#10074)](https://github.com/PennyLaneAI/pennylane/pull/10074)
-  [(#10081)](https://github.com/PennyLaneAI/pennylane/pull/10081)
-  [(#10138)](https://github.com/PennyLaneAI/pennylane/pull/10138)
 
 * Added :func:`~pennylane.backline.triton_decoder` and
   :func:`~pennylane.backline.css_bp_decoder` for compiling Triton-based coprocessor decoders.
