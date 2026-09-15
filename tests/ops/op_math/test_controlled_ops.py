@@ -578,6 +578,16 @@ class TestControlledQubitUnitary:
         with pytest.warns(UserWarning, match="may not be unitary"):
             qp.ControlledQubitUnitary(not_unitary, wires=[0, 2, 1], unitary_check=True)
 
+    def test_data_returns_only_unitary(self):
+        """Test that the ``data`` property override returns a tuple containing just the unitary."""
+        unitary = np.array([[0.94877869j, 0.31594146], [-0.31594146, 0.94877869j]])
+        op = qp.ControlledQubitUnitary(unitary, wires=[0, 2, 1], control_values=[True, False])
+
+        assert isinstance(op.data, tuple)
+        assert len(op.data) == 1
+        assert qp.math.allclose(op.data[0], unitary)
+        assert qp.math.allclose(op.data[0], op.U)
+
 
 @pytest.mark.parametrize("op_cls, _", NON_PARAMETRIZED_OPERATIONS)
 def test_map_wires_non_parametric(op_cls, _):
