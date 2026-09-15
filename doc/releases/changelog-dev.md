@@ -1495,9 +1495,15 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* :func:`~.decomposition.inspect_decomps` and :func:`~.transforms.decomp_inspector` no longer
+  insert a blank line after a decomposition rule that is unreachable but has no missing operators.
+  [(#10151)](https://github.com/PennyLaneAI/pennylane/pull/10151)
+
 * Fixed a bug in :func:`~pennylane.draw` with conditionally applied operators that do not have wires,
-  such as ``cond(condition, GlobalPhase(0.52))``.
+  such as ``cond(condition, GlobalPhase(0.52))``. Also removed trailing whitespace from text
+  drawings.
   [(#10132)](https://github.com/PennyLaneAI/pennylane/pull/10132)
+  [(#10151)](https://github.com/PennyLaneAI/pennylane/pull/10151)
 
 * Fix `qp.eigvals` returns `NaN` for a legal fractional power operator.
   [(#9802)](https://github.com/PennyLaneAI/pennylane/pull/9802)
@@ -1670,15 +1676,6 @@
 
 * Various decomposition rules are updated so that they accept positionally passed arguments.
   [(#10088)](https://github.com/PennyLaneAI/pennylane/pull/10088)
-
-* Circuit drawings no longer end in trailing whitespace when the drawn circuit contains no
-  measurements, which also removes the trailing whitespace from the drawings shown by
-  :func:`~.decomposition.inspect_decomps` and :func:`~.transforms.decomp_inspector`.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
-
-* :func:`~.decomposition.inspect_decomps` and :func:`~.transforms.decomp_inspector` no longer
-  insert a blank line after a decomposition rule that is unreachable but has no missing operators.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
 
 <h3>Contributors ✍️</h3>
 

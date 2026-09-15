@@ -54,16 +54,16 @@ class _DecompInGraphInfo(_DecompInfo):
         result = super().__str__()
         if not self._is_applicable:
             return result
-        if not self._is_reachable and (missing_ops := self._missing_ops):
-            return result + "\n" + missing_ops
+        if not self._is_reachable and self._missing_ops:
+            return result + "\n" + self._missing_ops
         return result
 
     def _repr_markdown_(self) -> str:
         result = super()._repr_markdown_()
         if not self._is_applicable:
             return result
-        if not self._is_reachable and (missing_ops := self._missing_ops_md):
-            return result + "\n\n" + missing_ops
+        if not self._is_reachable and self._missing_ops_md:
+            return result + "\n\n" + self._missing_ops_md
         return result
 
     @property
