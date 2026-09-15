@@ -283,7 +283,7 @@ def _not_equal(self, lhs, rhs):
 
 
 @CollectOpsandMeas.register_primitive(jax.lax.and_p)
-def _not_equal(self, lhs, rhs):
+def _and(self, lhs, rhs):
     if isinstance(lhs, MeasurementValue) or isinstance(rhs, MeasurementValue):
         return lhs & rhs
     return jax.lax.and_p.bind(lhs, rhs)
