@@ -317,7 +317,7 @@ class CDFHamiltonian(NumericHamiltonian):
             tensor, while the rest represents the two-body leaves. ``leaf_tensors`` must be real and
             orthogonal.
         nuc_constant (float | AbstractArray | None): the nuclear constant energy offset. Defaults to
-            ``0.0``.
+            ``0.0`` if left as ``None``.
 
     Here ``N`` is the number of spatial orbitals and ``L`` the number of two-body fragments; both
     are derived from the shapes and reported as :attr:`num_orbitals` and :attr:`num_fragments`.
@@ -473,7 +473,7 @@ class CGFHamiltonian(NumericHamiltonian):
             indices ``1`` through ``L`` represent the two-mode rotation leaves. All ``leaf_tensors``
             must be real and orthogonal.
         nuc_constant (float | AbstractArray | None): The nuclear constant energy offset. Defaults to
-            ``0.0``.
+            ``0.0`` if left as ``None``.
 
     Here ``M`` is the number of modes, ``N`` the number of modals per mode, and ``L`` the number of
     two-body fragments; all three are derived from the shapes and reported as :attr:`num_modes`,
