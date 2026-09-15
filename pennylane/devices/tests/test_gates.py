@@ -109,6 +109,7 @@ ops = {
     "QubitCarry": qp.QubitCarry(wires=[0, 1, 2, 3]),
     "QubitSum": qp.QubitSum(wires=[0, 1, 2]),
     "PauliRot": qp.PauliRot(0, "XXYY", wires=[0, 1, 2, 3]),
+    "PPR": qp.PPR(-4, "XZYZ", wires=[0, 1, 2, 3]),
     "U1": qp.U1(0, wires=0),
     "U2": qp.U2(0, 0, wires=0),
     "U3": qp.U3(0, 0, 0, wires=0),

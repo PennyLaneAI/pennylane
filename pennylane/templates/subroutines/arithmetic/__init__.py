@@ -28,3 +28,5 @@ from .phase_adder import PhaseAdder
 from .incrementer import Incrementer
 from .out_square import OutSquare
 from .signed_out_square import SignedOutSquare
+from .left_classical_comparator import LeftClassicalComparator
+from .left_quantum_comparator import LeftQuantumComparator
