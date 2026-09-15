@@ -662,3 +662,24 @@ class TestControlledSelectTHC:
         got = np.asarray(branches()).reshape(2**ntot, 2) * np.sqrt(2)
         assert np.allclose(got[:, 0], off(), atol=1e-8)
         assert np.allclose(got[:, 1], on(), atol=1e-8)
+
+@pytest.mark.parametrize(
+    "overlap, match",
+    [
+        ("index_wires", "system_wires and index_wires must not overlap"),
+        ("flag_wires", "system_wires and flag_wires must not overlap"),
+        ("gradient_wires", "system_wires and gradient_wires must not overlap"),
+        ("work_wires", "system_wires and work_wires must not overlap"),
+    ],
+)
+def test_select_thc_register_overlap(overlap, match):
+    """Test that a register sharing a wire with another one is rejected by name."""
+    names = ["system_wires", "index_wires", "flag_wires", "gradient_wires", "work_wires"]
+    edges = np.cumsum([0, 4, 4, 5, 4, 6])
+    regs = {
+        name: list(range(int(lo), int(hi)))
+        for name, lo, hi in zip(names, edges[:-1], edges[1:])
+    }
+    regs[overlap] = [0] + regs[overlap][1:]
+    with pytest.raises(ValueError, match=match):
+        select_thc(np.ones((3, 2)), np.eye(2), 3, *regs.values())

@@ -13,11 +13,11 @@
 # limitations under the License.
 """Contains the templates for the tensor hypercontraction ``SELECT`` oracle."""
 
-from itertools import islice
+from itertools import combinations, islice
 from math import pi
 
 import pennylane as qp
-
+from pennylane.wires import Wires
 
 def _cascade_angles(leaf):
     r"""Givens angles :math:`\theta_p` mapping ``leaf`` onto :math:`\lvert e_0 \rangle`.
@@ -101,7 +101,7 @@ def _build_qrom_givens_data(chi, t_eigenvectors, beth, one_body_table, batches):
     if not batches:
         return []
 
-    block = 1 << qp.math.ceil_log2(M + 1)
+    block = 1 << qp.math.ceil_log2(max(M, n_half))
     addresses = list(range(M))
     leaves = list(chi)
     if one_body_table:
@@ -119,8 +119,8 @@ def _build_qrom_givens_data(chi, t_eigenvectors, beth, one_body_table, batches):
 
     # Only the last batch can be short, so the first sets the width of the angle register
     # and the rest fill a prefix. The table stops at the last address backed by a leaf:
-    # ``QROM`` pads the rest with the identity, and its cost scales with the number of rows
-    # rather than with ``2 ** len(control_wires)``.
+    # `QROM`` pads the rest with the identity, so cost falls with the number of rows but
+    # it also scales with ``2 ** len(control_wires)``, so both are kept as tight as possible.
     n_rows = block + n_half if one_body_table else M
     width = len(batches[0]) * beth
     leaf_of = dict(zip(addresses, range(len(leaves))))
@@ -365,8 +365,11 @@ def _select_half(
     gradient_wires = list(gradient_wires)
 
     tables = _build_qrom_givens_data(chi, t_eigenvectors, beth, one_body_table, batches)
+    # The index register is sized by PREPARE, which needs the ``nu = M`` sentinel, but this
+    # QROM only addresses ``mu < M`` or ``ell < N/2``, so its top wire is always in |0>.
+    n_mu = qp.math.ceil_log2(max(M, n_half))
     qrom = {
-        "control_wires": ([edge] if one_body_table else []) + list(index_wires),
+        "control_wires": ([edge] if one_body_table else []) + list(index_wires)[n - n_mu :],
         "target_wires": angle_wires,
         "work_wires": qrom_work,
         "clean": True,
@@ -459,7 +462,13 @@ def select_thc(
             ``work_wires`` at the cost of more ``QROM`` loads.
 
     Raises:
-        ValueError: if a register has the wrong size.
+        ValueError: if two registers share a wire, or if a register has the wrong size
+        ValueError: if ``t_eigenvectors`` does not have shape ``(N/2, N/2)``
+        ValueError: if ``beth`` or ``num_batches`` is not a positive integer
+        ValueError: if the one-body rotations do not fit the index register, that is if
+            ``N/2 > 2 ** ceil(log2(M + 1))``
+        ValueError: if a row of ``chi`` or a column of ``t_eigenvectors`` is the zero
+            vector, which has no rotation onto :math:`\lvert e_0 \rangle`
 
 
     **Example**
@@ -497,6 +506,17 @@ def select_thc(
     """
     M = qp.math.asarray(chi, dtype=float).shape[0]
     n = qp.math.ceil_log2(M + 1)
+
+    registers = {
+        "system_wires": Wires(system_wires),
+        "index_wires": Wires(index_wires),
+        "flag_wires": Wires(flag_wires),
+        "gradient_wires": Wires(gradient_wires),
+        "work_wires": Wires(work_wires),
+    }
+    for first, second in combinations(registers, r=2):
+        if Wires.shared_wires([registers[first], registers[second]]):
+            raise ValueError(f"{first} and {second} must not overlap.")
 
     if len(index_wires) != 2 * n:
         raise ValueError(
