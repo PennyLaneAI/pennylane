@@ -156,10 +156,10 @@ class TestTemporaryAND:
     def test_temporary_and_decompositions(self, cvals):
         """Tests that TemporaryAND is decomposed properly."""
         wires = [0, 1, 2]
+        op = qp.TemporaryAND(wires, control_values=cvals)
         for rule in qp.list_decomps(qp.TemporaryAND):
-            _test_decomposition_rule(
-                qp.TemporaryAND(wires, control_values=cvals), rule, skip_decomp_matrix_check=True
-            )
+            assert rule.is_applicable(**op.arguments)
+            _test_decomposition_rule(op, rule, skip_decomp_matrix_check=True)
             matrix = qp.matrix(rule, wire_order=wires)(wires, control_values=cvals)
             self.compare_to_toffoli_on_zero(matrix, "input", cvals)
 
