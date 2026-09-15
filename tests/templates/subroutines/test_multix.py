@@ -397,11 +397,6 @@ class TestDecomposition:
         op = qp.MultiX([1, 0, 1], wires=[0, 1, 2])
         adjoint_op = qp.adjoint(op)
 
-        if qp.capture.enabled():
-            pytest.xfail(
-                "When capture is enabled, ends up passing identical `ArgInfo` placeholder leaves into MultiX's`__init__` as wires since `ArgInfo` are not recognized as abstract. Since they are not unique, we get an error comparing them."
-            )
-
         for rule in qp.list_decomps("Adjoint(MultiX)"):
             _test_decomposition_rule(adjoint_op, rule)
 
@@ -422,11 +417,6 @@ class TestDecomposition:
         """Tests that the MultiX decomposition rule is capture compatible."""
         op = qp.MultiX([1, 0, 1], wires=[0, 1, 2])
         pow_op = qp.pow(op, 3)
-
-        if qp.capture.enabled():
-            pytest.xfail(
-                "When capture is enabled, ends up passing identical `ArgInfo` placeholder leaves into MultiX's`__init__` as wires since `ArgInfo` are not recognized as abstract. Since they are not unique, we get an error comparing them."
-            )
 
         for rule in qp.list_decomps("Pow(MultiX)"):
             _test_decomposition_rule(pow_op, rule)
