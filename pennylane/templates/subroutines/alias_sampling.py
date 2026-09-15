@@ -32,25 +32,22 @@ from .qrom import QROM
 
 
 def _apply_hadamards(wires):
-    """Apply a Hadamard to each wire, using ``for_loop`` under capture."""
+    """Apply a Hadamard to each wire, using ``for_loop`` (unrolled when not tracing)."""
     n = len(wires)
     if n == 0:
         return
     if compiler.active() or capture.enabled():
         wires = math.array(wires, like="jax")
 
-        @for_loop(n)
-        def _loop(i):
-            Hadamard(wires[i])
+    @for_loop(n)
+    def _loop(i):
+        Hadamard(wires[i])
 
-        _loop()  # pylint: disable=no-value-for-parameter
-        return
-    for w in wires:
-        Hadamard(w)
+    _loop()  # pylint: disable=no-value-for-parameter
 
 
 class UniformPrep(Operator2):
-    r"""Prepare a uniform superposition over ``n_states`` basis states.
+    r"""Prepare a uniform superposition over the first ``n_states`` basis states.
 
     .. math::
 
@@ -62,13 +59,13 @@ class UniformPrep(Operator2):
 
     Args:
         n_states (int): the number of basis states to prepare
-        target_wires (WiresLike): wires on which to prepare the superposition
-        work_wires (WiresLike): auxiliary qubits, returned to zero
+        target_wires (WiresLike): wires on which to prepare the superposition.
+            Must have ``k + ceil(log2 L)`` wires, where ``n_states = 2**k * L`` with ``L`` odd.
+        work_wires (WiresLike): auxiliary qubits, returned to zero. Unused when
+            ``n_states`` is a power of two; otherwise at least ``ceil(log2 L)`` wires.
 
     Raises:
-        ValueError: if ``n_states`` is less than 1
-        ValueError: if the number of provided target_wires is incorrect
-        ValueError: if the number of provided work_wires is incorrect
+        ValueError: if ``n_states`` is less than 1, or if the wire registers have the wrong size
 
     **Example**
 
@@ -489,17 +486,14 @@ def _alias_sampling_decomp(probs, mu, target_wires, temp_wires, work_wires, **_)
     if n_swap == 0:
         return
     if compiler.active() or capture.enabled():
-        tw = math.array(target_wires, like="jax")
-        aw = math.array(alt_wires, like="jax")
+        target_wires = math.array(target_wires, like="jax")
+        alt_wires = math.array(alt_wires, like="jax")
 
-        @for_loop(n_swap)
-        def _swap(i):
-            CSWAP(wires=[flag, tw[i], aw[i]])
+    @for_loop(n_swap)
+    def _swap(i):
+        CSWAP(wires=[flag, target_wires[i], alt_wires[i]])
 
-        _swap()  # pylint: disable=no-value-for-parameter
-        return
-    for wl, wa in zip(target_wires, alt_wires, strict=False):
-        CSWAP(wires=[flag, wl, wa])
+    _swap()  # pylint: disable=no-value-for-parameter
 
 
 add_decomps(AliasSampling, _alias_sampling_decomp)

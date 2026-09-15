@@ -96,6 +96,7 @@ def test_standard_validity(M, N, n):
     gate = SuperpositionTHC(M, N, mu_wires, nu_wires, work_wires)
     assert_valid(gate)
 
+    # Surplus work used to clip the >= comparator slice to n-1 wires (not n).
     extra_work = work_wires + list(range(work_wires[-1] + 1, work_wires[-1] + 9))
     assert_valid(SuperpositionTHC(M, N, mu_wires, nu_wires, extra_work))
 

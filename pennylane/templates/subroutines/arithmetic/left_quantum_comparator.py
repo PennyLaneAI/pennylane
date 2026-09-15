@@ -67,7 +67,9 @@ class LeftQuantumComparator(Operator2):
             qp.BasisState(qp.math.int_to_binary(3, 4), wires=x_wires)
             qp.BasisState(qp.math.int_to_binary(2, 4), wires=y_wires)
             qp.LeftQuantumComparator(x_wires, y_wires, 11, work_wires, ">=")
+            # Copy the comparator output onto wire 12.
             qp.CNOT(wires=[11, 12])
+            # Uncompute the comparator so the work wires return to |0>.
             qp.adjoint(qp.LeftQuantumComparator(x_wires, y_wires, 11, work_wires, ">="))
             return qp.probs(wires=[12])
 

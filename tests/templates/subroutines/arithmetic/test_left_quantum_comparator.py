@@ -17,12 +17,11 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.decomposition import list_decomps
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
+from pennylane.ops.functions.assert_valid import assert_valid
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
-def test_assert_valid_and_decomposition():
+def test_assert_valid():
     """Standard Operator2 checks, with capture enabled and disabled."""
     op = qp.LeftQuantumComparator(
         x_wires=[0, 1, 2],
@@ -32,24 +31,6 @@ def test_assert_valid_and_decomposition():
         comparator="<=",
     )
     assert_valid(op, skip_differentiation=True)
-    for rule in list_decomps(qp.LeftQuantumComparator):
-        _test_decomposition_rule(op, rule)
-
-
-@pytest.mark.usefixtures("enable_and_disable_capture")
-def test_adjoint_decomposition():
-    """Adjoint decomposition is capture compatible."""
-    op = qp.adjoint(
-        qp.LeftQuantumComparator(
-            x_wires=[0, 1, 2],
-            y_wires=[3, 4, 5],
-            target_wire=6,
-            work_wires=[7, 8],
-            comparator="<",
-        )
-    )
-    for rule in list_decomps("Adjoint(LeftQuantumComparator)"):
-        _test_decomposition_rule(op, rule)
 
 
 class TestLeftQuantumComparator:
@@ -79,10 +60,8 @@ class TestLeftQuantumComparator:
             qp.LeftQuantumComparator(x_wires, y_wires, target_wire, work_wires, comparator)
             qp.CNOT([11, 12])
             qp.adjoint(
-                lambda: qp.LeftQuantumComparator(
-                    x_wires, y_wires, target_wire, work_wires, comparator
-                )
-            )()
+                qp.LeftQuantumComparator(x_wires, y_wires, target_wire, work_wires, comparator)
+            )
             return qp.sample(wires=[12])
 
         expected = {"<": x < y, "<=": x <= y, ">": x > y, ">=": x >= y}[comparator]

@@ -119,6 +119,14 @@ state preparation is typically used as the first operation.
     :description: :doc:`PartialUnaryStatePreparation <../code/api/pennylane.PartialUnaryStatePreparation>`
     :figure: _static/templates/state_preparations/partialunarystatepreparation_template.png
 
+.. gallery-item::
+    :description: :doc:`UniformPrep <../code/api/pennylane.UniformPrep>`
+    :figure: _static/templates/state_preparations/mottonen.png
+
+.. gallery-item::
+    :description: :doc:`AliasSampling <../code/api/pennylane.AliasSampling>`
+    :figure: _static/templates/state_preparations/thumbnail_qrom.png
+
 
 .. raw:: html
 
@@ -178,6 +186,14 @@ as addition, multiplication and exponentiation.
 
 .. gallery-item::
     :description: :doc:`IntegerComparator <../code/api/pennylane.IntegerComparator>`
+    :figure: _static/templates/arithmetic/integercomparator.png
+
+.. gallery-item::
+    :description: :doc:`LeftClassicalComparator <../code/api/pennylane.LeftClassicalComparator>`
+    :figure: _static/templates/arithmetic/integercomparator.png
+
+.. gallery-item::
+    :description: :doc:`LeftQuantumComparator <../code/api/pennylane.LeftQuantumComparator>`
     :figure: _static/templates/arithmetic/integercomparator.png
 
 .. gallery-item::
