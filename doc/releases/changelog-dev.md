@@ -2,7 +2,7 @@
 
 <h3>New features since last release</h3>
 
-* Added a `qp.math.floor_log2` function that computes the integer $\lfloor \log_2(x)\rfloor$,
+* Added a `qp.math.floor_log2` function that computes the integer :math:`\lfloor \log_2(x)\rfloor`,
   in analogy to the existing `qp.math.ceil_log2`.
   [(#10101)](https://github.com/PennyLaneAI/pennylane/pull/10101)
 
