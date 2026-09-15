@@ -44,8 +44,8 @@ class MMDConfig:
             values reduce estimator variance.
         wires (Sequence[int] | None): Subset of qubit indices to include in
             the loss. If ``None`` (default), all qubits are used.
-        sqrt_loss (bool): If ``True``, return ``sqrt(|MMD²|)`` instead of
-            ``MMD²``. Defaults to ``False``.
+        sqrt_loss (bool): If ``True``, return :math:`\sqrt{|\text{MMD}^2|}` instead of
+            :math:`\text{MMD}^2`. Defaults to ``False``.
         return_per_bandwidth (bool): If ``True``, return a list of
             per-bandwidth loss values instead of their scalar average.
             Defaults to ``False``.
