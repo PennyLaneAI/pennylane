@@ -219,7 +219,8 @@ def to_openqasm(
     Args:
         circuit (QNode or QuantumScript): the quantum circuit to be serialized.
         wires (Wires or None): the wires to use when serializing the circuit.
-            Default is ``None``, such that all the wires of the circuit are used for serialization.
+            Default is ``None``, such that all the wires of the circuit are used for
+            serialization, ordered by their first appearance in the circuit.
         rotations (bool): if ``True``, add gates that rotate the quantum state into the eigenbasis
             of the circuit's observables. Default is ``True``.
         measure_all (bool): if ``True``, add a computational basis measurement on all the qubits.
@@ -318,6 +319,50 @@ def to_openqasm(
         h q[1];
         measure q[0] -> c[0];
         measure q[1] -> c[1];
+
+        When ``wires=None``, the qubit register indices follow the order in which wires
+        first appear in the circuit, which can differ from their numerical order:
+
+        .. code-block:: python
+
+            dev = qp.device("default.qubit", wires=3)
+
+            @qp.qnode(dev)
+            def circuit():
+                qp.X(0)
+                qp.X(2)
+                qp.Toffoli(wires=[0, 1, 2])
+                return qp.state()
+
+        Here wire ``2`` is mapped to ``q[1]`` because it appears in the circuit before
+        wire ``1``:
+
+        >>> print(qp.to_openqasm(circuit)())
+        OPENQASM 2.0;
+        include "qelib1.inc";
+        qreg q[3];
+        creg c[3];
+        x q[0];
+        x q[1];
+        ccx q[0],q[2],q[1];
+        measure q[0] -> c[0];
+        measure q[1] -> c[1];
+        measure q[2] -> c[2];
+
+        Setting ``wires`` explicitly maps each wire to the qubit register index at the
+        same position, preserving the wire ordering of the original circuit:
+
+        >>> print(qp.to_openqasm(circuit, wires=[0, 1, 2])())
+        OPENQASM 2.0;
+        include "qelib1.inc";
+        qreg q[3];
+        creg c[3];
+        x q[0];
+        x q[2];
+        ccx q[0],q[1],q[2];
+        measure q[0] -> c[0];
+        measure q[1] -> c[1];
+        measure q[2] -> c[2];
     """
     if isinstance(circuit, QuantumScript):
         return _tape_openqasm(
