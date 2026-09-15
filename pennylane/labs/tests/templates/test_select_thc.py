@@ -429,7 +429,10 @@ class TestSelectTHCOperator:
         result = self._run(psi, prep, out, (chi, np.eye(2)))
         exact = _reference_V(chi[1], N, 1) @ _reference_V(chi[0], N, 0) @ psi
         assert np.isclose(np.linalg.norm(result), 1.0, atol=1e-8)
-        assert np.abs(result - exact).max() <= 0.8
+        # coarse sanity bound: one full step of the beth-bit angle grid, since the floor
+        # quantization can put a single angle a whole step off. The sharp check is the
+        # unitarity assertion above; measured slack here is about 5x.
+        assert np.abs(result - exact).max() <= 2 * np.pi / 2**self.beth
 
 
 class TestPhaseGradientRotation:  # pylint: disable=too-few-public-methods

@@ -932,6 +932,12 @@
   resource operators from their quantum functions.
   [(#9764)](https://github.com/PennyLaneAI/pennylane/pull/9764)
 
+* Created a new ``labs.templates.select_thc`` template, together with
+  ``labs.templates.select_thc_wires``, implementing the ``SELECT`` oracle for tensor
+  hypercontraction (THC) qubitization, based on
+  `arXiv:2011.03494, Sec. III C <https://arxiv.org/abs/2011.03494>`__.
+  [(#10119)](https://github.com/PennyLaneAI/pennylane/pull/10119)
+
 <h3>Breaking changes 💔</h3>
 
 * :class:`~.GlobalPhase` no longer accepts the `wires` argument in order to mirror its MLIR lowered operation.
