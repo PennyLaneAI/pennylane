@@ -2,6 +2,10 @@
 
 <h3>New features since last release</h3>
 
+* Added a `qp.math.floor_log2` function that computes the integer $\lfloor \log_2(x)\rfloor$,
+  in analogy to the existing `qp.math.ceil_log2`.
+  [(#10101)](https://github.com/PennyLaneAI/pennylane/pull/10101)
+
 * A new decorator is available called :func:`pennylane.subcircuit`, which can be used to 
   create operators directly from quantum functions. This enables fast research and 
   development of new operators without the need to create full-fledged operator classes 
@@ -1475,6 +1479,10 @@
   [(#9621)](https://github.com/PennyLaneAI/pennylane/pull/9621)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed `qp.math.ceil_log2` and `qp.math.floor_log2` returning results that were off by one
+  for inputs with more significant bits than a float can hold, like `2 ** 53 + 1`.
+  [(#10101)](https://github.com/PennyLaneAI/pennylane/pull/10101)
 
 * Fixed a bug in :func:`~pennylane.draw` with conditionally applied operators that do not have wires,
   such as ``cond(condition, GlobalPhase(0.52))``.

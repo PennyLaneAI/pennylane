@@ -550,11 +550,12 @@ def in_backprop(tensor, interface=None):
     raise ValueError(f"Cannot determine if {tensor} is in backpropagation.")
 
 
-def ceil_log2(n: int) -> int:
-    """Compute the ceiling of the base-2 logarithm of an integer, with integer as output data type.
+def ceil_log2(n: int | float) -> int:
+    """Compute the ceiling of the base-2 logarithm of a number, with integer as output data type.
 
     Args:
-        n (int): Integer to compute the rounded-up base-2 logarithm of.
+        n (int or float): Number to compute the rounded-up base-2 logarithm of.
+            Traced inputs must have an integer data type.
 
     Returns:
         int: Rounded-up base-2 logarithm of ``n``.
@@ -580,7 +581,66 @@ def ceil_log2(n: int) -> int:
     3.0
     >>> qp.math.ceil_log2(9)
     4
+
+    The result is exact even for inputs with more significant bits than a float can hold:
+
+    >>> qp.math.ceil_log2(2**53 + 1)
+    54
     """
     if is_abstract(n):
-        return np.ceil(np.log2(n)).astype(int)
-    return int(np.ceil(np.log2(n)))
+        # The ceiling exceeds the floor by one unless n is a power of two, which is the
+        # case if and only if n & (n - 1) vanishes
+        return floor_log2(n) + ((n & (n - 1)) != 0)
+    # np.log2 loses precision for inputs with more than 53 significant bits, so that its rounded
+    # result may be off by one. Comparing to the neighbouring powers of two corrects this.
+    exponent = int(np.ceil(np.log2(n)))
+    return exponent + int(2**exponent < n) - int(2 ** (exponent - 1) >= n)
+
+
+def floor_log2(n: int | float) -> int:
+    """Compute the floor of the base-2 logarithm of a number, with integer as output data type.
+
+    Args:
+        n (int or float): Number to compute the rounded-down base-2 logarithm of.
+            Traced inputs must have an integer data type.
+
+    Returns:
+        int: Rounded-down base-2 logarithm of ``n``.
+
+    **Example**
+
+    On powers of two, ``floor_log2`` simply acts like ``np.log2`` whose result was converted to
+    an ``int``:
+
+    >>> qp.math.floor_log2(8)
+    3
+
+    On other numbers, the rounding of the logarithm becomes visible:
+
+    >>> qp.math.log2(14)
+    3.807354922057604
+    >>> qp.math.floor_log2(14)
+    3
+
+    Note that we always round down:
+
+    >>> qp.math.round(qp.math.log2(15))
+    4.0
+    >>> qp.math.floor_log2(15)
+    3
+
+    The result is exact even for inputs with more significant bits than a float can hold:
+
+    >>> qp.math.floor_log2(2**53 - 1)
+    52
+    """
+    # np.log2 loses precision for inputs with more than 53 significant bits, so that its rounded
+    # result may be off by one. Comparing to the neighbouring powers of two corrects this.
+    if is_abstract(n):
+        exponent = np.floor(np.log2(n)).astype(int)
+        # Shifting compares n to 2 ** exponent without forming the power itself, which could
+        # exceed the integer data type
+        shifted = n >> math.cast_like(exponent, n)
+        return exponent - (shifted == 0) + (shifted >= 2)
+    exponent = int(np.floor(np.log2(n)))
+    return exponent + int(2 ** (exponent + 1) <= n) - int(2**exponent > n)

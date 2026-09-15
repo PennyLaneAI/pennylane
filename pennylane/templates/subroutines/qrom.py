@@ -73,7 +73,7 @@ def _new_ops(depth, target_wires, control_wires, swap_wires, bitstrings):
 def _select_ops(
     control_wires, depth, target_wires, swap_wires, bitstrings, select_work_wires
 ):  # pylint:disable=too-many-arguments
-    n_control_select_wires = ceil_log2(2 ** len(control_wires) / depth)
+    n_control_select_wires = ceil_log2(2 ** len(control_wires) // depth)
     control_select_wires = control_wires[:n_control_select_wires]
 
     if len(control_select_wires) > 0:
@@ -87,7 +87,7 @@ def _select_ops(
 
 
 def _swap_ops(control_wires, depth, swap_wires, target_wires):
-    n_control_select_wires = ceil_log2(2 ** len(control_wires) / depth)
+    n_control_select_wires = ceil_log2(2 ** len(control_wires) // depth)
     control_swap_wires = control_wires[n_control_select_wires:]
     num_targets = len(target_wires)
     for i in range(len(control_swap_wires) - 1, -1, -1):
@@ -327,7 +327,7 @@ def _qrom_decomposition_resources(
     new_ops = Counter({column_rep: n_columns})
 
     # Select block
-    num_control_select_wires = ceil_log2(2**num_control_wires / depth)
+    num_control_select_wires = ceil_log2(2**num_control_wires // depth)
 
     if num_control_select_wires > 0:
         select_ops = {
