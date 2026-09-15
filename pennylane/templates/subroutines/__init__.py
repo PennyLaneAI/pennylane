@@ -48,6 +48,7 @@ from .amplitude_amplification import AmplitudeAmplification
 from .qram import BBQRAM, HybridQRAM, SelectOnlyQRAM, FFQRAM
 from .iqp import IQP
 from .qrom import QROM
+from .alias_sampling import AliasSampling, UniformPrep, alias_sampling_wires
 from .gqsp import GQSP
 from .select_pauli_rot import (
     MultiplexedRotation,
@@ -79,6 +80,8 @@ from .arithmetic import (
     TemporaryAND,
     Incrementer,
     SignedOutMultiplier,
+    LeftClassicalComparator,
+    LeftQuantumComparator,
 )
 
 __all__ = [
@@ -94,6 +97,8 @@ __all__ = [
     "TrotterVibronic",
     "trotterize",
     "Incrementer",
+    "LeftClassicalComparator",
+    "LeftQuantumComparator",
     "IQP",
     "Permute",
     "QFT",
@@ -120,6 +125,9 @@ __all__ = [
     "AQFT",
     "AmplitudeAmplification",
     "QROM",
+    "AliasSampling",
+    "UniformPrep",
+    "alias_sampling_wires",
     "GQSP",
     "SelectPauliRot",
     "MultiplexedRotation",
