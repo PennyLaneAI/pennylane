@@ -87,6 +87,7 @@ _INSTANCES_TO_TEST = [
     (qp.SpecialUnitary([1, 1, 1], 0), {"skip_differentiation": True}),
     (qp.IntegerComparator(1, wires=[0, 1]), {"skip_differentiation": True}),
     (qp.PauliRot(1.1, "X", wires=[0]), {}),
+    (qp.PPR(2, "XYZ", wires=[0, 1, 2]), {}),
     (qp.StatePrep([0, 1], 0), {"skip_differentiation": True}),
     (qp.PCPhase(0.27, dim=2, wires=[0, 1]), {}),
     (qp.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1]), {"skip_differentiation": True}),
