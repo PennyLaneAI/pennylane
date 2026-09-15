@@ -401,6 +401,10 @@ Other useful templates which do not belong to the previous categories can be fou
     :figure: _static/templates/qubitization/thumbnail_qubitization.png
 
 .. gallery-item::
+    :description: :doc:`OneBodyWalk <../code/api/pennylane.OneBodyWalk>`
+    :figure: _static/templates/subroutines/onebodywalk.png
+
+.. gallery-item::
     :description: :doc:`QROM <../code/api/pennylane.QROM>`
     :figure: _static/templates/qrom/qrom_thumbnail.png
 
