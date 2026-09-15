@@ -26,6 +26,7 @@ from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.numeric_hamiltonians import VibronicHamiltonian
 from pennylane.ops import CNOT, Hadamard, adjoint, cond, ctrl
+from pennylane.templates.subroutines.multix import MultiX
 from pennylane.typing import AbstractWires, Float, Wire
 from pennylane.wires import Wires, WiresLike
 
@@ -35,7 +36,6 @@ from ..arithmetic.out_multiplier import OutMultiplier
 from ..arithmetic.semi_adder import SemiAdder
 from ..arithmetic.signed_out_multiplier import SignedOutMultiplier, _twos_complement_helper
 from ..arithmetic.signed_out_square import SignedOutSquare
-from ..multix import MultiX
 from ..qrom import QROM
 
 
