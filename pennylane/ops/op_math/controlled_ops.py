@@ -150,6 +150,11 @@ class ControlledQubitUnitary(Controlled2):
         "work_wires": Wire[-1],
     }
 
+    @property
+    @override
+    def data(self) -> tuple[TensorLike]:
+        return (self.U,)
+
     def __init__(  # pylint: disable=too-many-arguments
         self,
         U: TensorLike,
