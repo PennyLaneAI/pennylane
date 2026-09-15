@@ -56,6 +56,9 @@ def _execute_analysis_pass(
 
     new_qjit = QJIT(new_qnode, compile_options=compile_options)
 
+    # Signal to capture the diagnostic output from the compiler
+    new_qjit.stderr_return = True
+
     # Force a compilation, which will output the necessary JSON files
     # This code snippet is adapted from the source code of `QJIT.jit_compile`
     if new_qjit.mlir_module is None:
