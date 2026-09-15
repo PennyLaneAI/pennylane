@@ -210,23 +210,23 @@ class SignedOutSquare(_SquareArithmeticOp):
         14: ─├OutSquare─────────────────────────────────────────────────────────────────────── ···
         15: ─╰OutSquare─────────────────────────────────────────────────────────────────────── ···
         <BLANKLINE>
-         0: ··· ─╭SemiAdder────┤  
-         1: ··· ─│─────────────┤  
-         2: ··· ─│─────────────┤  
-         3: ··· ─│─────────────┤  
-         4: ··· ─├SemiAdder──X─┤  
-         5: ··· ─├SemiAdder──X─┤  
-         6: ··· ─│─────────────┤  
-         7: ··· ─│─────────────┤  
-         8: ··· ─│─────────────┤  
-         9: ··· ─│─────────────┤  
-        10: ··· ─├SemiAdder────┤  
-        11: ··· ─├SemiAdder────┤  
-        12: ··· ─├SemiAdder────┤  
-        13: ··· ─├SemiAdder────┤  
-        14: ··· ─├SemiAdder────┤  
-        15: ··· ─╰SemiAdder────┤  
-        M0 = 
+         0: ··· ─╭SemiAdder────┤
+         1: ··· ─│─────────────┤
+         2: ··· ─│─────────────┤
+         3: ··· ─│─────────────┤
+         4: ··· ─├SemiAdder──X─┤
+         5: ··· ─├SemiAdder──X─┤
+         6: ··· ─│─────────────┤
+         7: ··· ─│─────────────┤
+         8: ··· ─│─────────────┤
+         9: ··· ─│─────────────┤
+        10: ··· ─├SemiAdder────┤
+        11: ··· ─├SemiAdder────┤
+        12: ··· ─├SemiAdder────┤
+        13: ··· ─├SemiAdder────┤
+        14: ··· ─├SemiAdder────┤
+        15: ··· ─╰SemiAdder────┤
+        M0 =
         [ True]
         Gate Count: {Adjoint(TemporaryAND): 2, CNOT: 6, MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool)): 3, MultiX(AbstractArray((1,), bool, weak_type=True), wires=AbstractWires(1)): 2, OutSquare(x_wires=AbstractWires(2), output_wires=AbstractWires(7), work_wires=AbstractWires(6), output_wires_zeroed=True): 1, PauliX: 8, SemiAdder(x_wires=AbstractWires(1), y_wires=AbstractWires(2), work_wires=AbstractWires(6)): 1, TemporaryAND: 2}
 

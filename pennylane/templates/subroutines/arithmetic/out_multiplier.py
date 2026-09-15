@@ -28,11 +28,11 @@ from pennylane.decomposition.resources import resource_rep
 from pennylane.ops import H, X, adjoint, change_op_basis, ctrl, prod
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
+from pennylane.templates.subroutines.multix import MultiX
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
-from ..multix import MultiX
 from .incrementer import Incrementer
 from .phase_adder import PhaseAdder
 from .semi_adder import SemiAdder, _semi_adder, _semi_adder_resources
