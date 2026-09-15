@@ -217,12 +217,12 @@ def build_mmd_loss_pauli(
     n_qubits: int,
     mmd_config: MMDConfig,
 ) -> Callable:
-    r"""Build a reusable loss function that computes the qubit Pauli-kernel 
+    r"""Build a reusable loss function that computes the qubit Pauli-kernel
     Maximum Mean Discrepancy (MMD) loss.
 
     The returned callable measures the distance between a model's output
     distribution and an empirical target dataset of bitstrings using the
-    Maximum Mean Discrepancy (MMD) with a Radial Basis Function (RBF) kernel 
+    Maximum Mean Discrepancy (MMD) with a Radial Basis Function (RBF) kernel
     expanded in Pauli-Z strings. The model is called as
 
     .. code-block:: python
