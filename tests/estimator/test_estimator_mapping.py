@@ -737,6 +737,25 @@ class TestMapToResourceOp:
         assert mapped == expected
         assert mapped.wires == expected.wires
 
+    def test_map_alias_sampling(self):
+        """Test that AliasSampling maps to its estimator resource operator."""
+        probs = [0.1, 0.2, 0.3, 0.4]
+        mu = 4
+        req = qp.alias_sampling_wires(len(probs), mu)
+        n_wires = sum(req.values())
+        target_wires, temp_wires, work_wires = np.split(
+            np.arange(n_wires), np.cumsum([req["target_wires"], req["temp_wires"]])
+        )
+        op = qp.AliasSampling(probs, mu, target_wires, temp_wires, work_wires)
+        expected = re_temps.AliasSampling(
+            num_coeffs=len(probs),
+            precision=2.0 ** (-mu),
+            wires=target_wires,
+        )
+        mapped = _map_to_resource_op(op)
+        assert mapped == expected
+        assert mapped.wires == expected.wires
+
 
 @pytest.mark.parametrize(
     "op, mapped_op",
