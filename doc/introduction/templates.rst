@@ -121,11 +121,11 @@ state preparation is typically used as the first operation.
 
 .. gallery-item::
     :description: :doc:`UniformPrep <../code/api/pennylane.UniformPrep>`
-    :figure: _static/templates/state_preparations/mottonen.png
+    :figure: _static/templates/state_preparations/uniformprep.png
 
 .. gallery-item::
     :description: :doc:`AliasSampling <../code/api/pennylane.AliasSampling>`
-    :figure: _static/templates/state_preparations/thumbnail_qrom.png
+    :figure: _static/templates/state_preparations/aliassampling.png
 
 
 .. raw:: html
@@ -190,11 +190,11 @@ as addition, multiplication and exponentiation.
 
 .. gallery-item::
     :description: :doc:`LeftClassicalComparator <../code/api/pennylane.LeftClassicalComparator>`
-    :figure: _static/templates/arithmetic/integercomparator.png
+    :figure: _static/templates/arithmetic/leftclassicalcomparator.png
 
 .. gallery-item::
     :description: :doc:`LeftQuantumComparator <../code/api/pennylane.LeftQuantumComparator>`
-    :figure: _static/templates/arithmetic/integercomparator.png
+    :figure: _static/templates/arithmetic/leftquantumcomparator.png
 
 .. gallery-item::
     :description: :doc:`OutPoly <../code/api/pennylane.OutPoly>`
