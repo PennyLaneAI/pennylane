@@ -142,7 +142,8 @@ def _ctrl_transform_prim(self, *invals, n_control, jaxpr, n_consts, **params):
     assert child.state
 
     for op in child.state["ops"]:
-        self.state["ops"].append(ops.ctrl(op, control=control, **params))
+        with pause():
+            self.state["ops"].append(ops.ctrl(op, control=control, **params))
 
     return []
 
