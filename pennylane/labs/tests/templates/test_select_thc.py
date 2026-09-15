@@ -482,6 +482,7 @@ class TestPhaseGradientRotation:  # pylint: disable=too-few-public-methods
             )
             assert np.allclose(self._block(beth, k, adjoint), expected, atol=1e-8)
 
+
 class TestSelectTHCInvariants:
     """Properties that hold for any chi, checkable without knowing the target operator."""
 
@@ -576,3 +577,88 @@ class TestSelectTHCInvariants:
         reference = run(1)
         for num_batches in range(2, N // 2):
             assert np.allclose(run(num_batches), reference, atol=1e-8)
+
+
+
+class TestControlledSelectTHC:
+    """A control on ``select_thc`` should reach only the two ``Z_1`` reflections."""
+
+    @staticmethod
+    def _case(beth):
+        M, N = 3, 4
+        rng = np.random.default_rng(0)
+        chi = rng.standard_normal((M, N // 2))
+        tev = np.linalg.qr(rng.standard_normal((N // 2, N // 2)))[0]
+        sizes = select_thc_wires(M, N, beth)
+        wires = qp.registers(sizes)
+        args = (
+            chi,
+            tev,
+            beth,
+            wires["system_wires"],
+            wires["index_wires"],
+            wires["flag_wires"],
+            wires["gradient_wires"],
+            wires["work_wires"],
+        )
+        return sum(sizes.values()), wires, args
+
+    def test_control_reaches_only_the_reflection(self):
+        """The QROM loads and the phase-gradient additions stay uncontrolled."""
+        ntot, _, args = self._case(3)
+        control = ntot
+
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.ctrl(select_thc, control=control)(*args)
+        tape = qp.tape.QuantumScript.from_queue(q)
+
+        # one ChangeOpBasis per V sandwich, and the control lands on the outside of it
+        assert [op.name for op in tape.operations].count("C(ChangeOpBasis)") == 2
+
+        with qp.decomposition.toggle_graph_ctx(True):
+            tape = qp.transforms.decompose(tape, max_expansion=1)[0][0]
+            tape = qp.transforms.decompose(tape, max_expansion=1)[0][0]
+
+        loads = [op for op in tape.operations if "QROM" in op.name or "SemiAdder" in op.name]
+        assert len(loads) == 12
+        assert all(control not in op.wires for op in loads)
+
+    def test_controlled_select_acts_as_the_control(self):
+        """The two branches are the identity and ``SELECT``."""
+        beth = 2
+        ntot, wires, args = self._case(beth)
+        control = ntot
+
+        def prep():
+            qp.X(wires["flag_wires"][0])
+            for w in wires["flag_wires"][3:]:
+                qp.Hadamard(w)
+            grad = wires["gradient_wires"]
+            for j, w in enumerate(grad):
+                qp.Hadamard(w)
+                qp.PhaseShift(-2 * np.pi * 2 ** (len(grad) - 1 - j) / 2 ** len(grad), wires=w)
+            for w in wires["index_wires"]:
+                qp.Hadamard(w)
+            qp.Hadamard(wires["system_wires"][0])
+
+        @qp.qnode(qp.device("default.qubit", wires=ntot))
+        def off():
+            prep()
+            return qp.state()
+
+        @qp.qnode(qp.device("default.qubit", wires=ntot))
+        def on():
+            prep()
+            select_thc(*args)
+            return qp.state()
+
+        @qp.qnode(qp.device("default.qubit", wires=ntot + 1))
+        def branches():
+            qp.Hadamard(control)
+            prep()
+            qp.ctrl(select_thc, control=control)(*args)
+            return qp.state()
+
+        got = np.asarray(branches()).reshape(2**ntot, 2) * np.sqrt(2)
+        assert np.allclose(got[:, 0], off(), atol=1e-8)
+        assert np.allclose(got[:, 1], on(), atol=1e-8)

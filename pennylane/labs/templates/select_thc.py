@@ -294,8 +294,10 @@ def _select_half(
 ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
     r"""Apply one :math:`V = U^\dagger Z_1 U` sandwich of the THC ``SELECT`` oracle.
 
-    This is the kernel of Figs. 5 of `Lee et al. (2021)
-    <https://arxiv.org/abs/2011.03494>`_.
+    This is the kernel of Fig. 5 of `Lee et al. (2021)
+    <https://arxiv.org/abs/2011.03494>`_. It is emitted as a single
+    :func:`~.change_op_basis` so that a control placed on this sandwich falls only on the
+    :math:`Z_1` reflection.
 
     Args:
         chi (tensor_like): the THC leaf matrix, shape ``(M, N/2)``
@@ -367,29 +369,32 @@ def _select_half(
         "clean": True,
     }
 
-    # 1. Route V onto the spin-up block when the spin flag is set.
-    for down, up in zip(psi_down, psi_up):
-        qp.CSWAP(wires=[spin, down, up])
-
-    # 2. Apply U, one batch of angles at a time
-    for b, batch in enumerate(batches):
-        qp.QROM(tables[b], **qrom)
-        _apply_loaded_rotation(psi_down, angle_wires, beth, batch, gradient_wires, adder_work)
-
-    # 3. Reflect on the first orbital, switched off on the one-body block
     z_control, z_values = ([succ, edge], [1, 0]) if skip_one_body else ([succ], [1])
-    qp.ctrl(qp.Z(psi_down[0]), control=z_control, control_values=z_values)
 
-    # 4. Apply Adjoint U, one batch of angles at a time
-    for b in reversed(range(len(batches))):
-        _apply_loaded_rotation(
-            psi_down, angle_wires, beth, batches[b], gradient_wires, adder_work, adjoint=True
-        )
-        qp.adjoint(qp.QROM(tables[b], **qrom))
+    def _basis():
+        # Route V onto the spin-up block when the spin flag is set, then apply U,
+        # one batch of angles at a time.
+        for down, up in zip(psi_down, psi_up):
+            qp.CSWAP(wires=[spin, down, up])
+        for b, batch in enumerate(batches):
+            qp.QROM(tables[b], **qrom)
+            _apply_loaded_rotation(psi_down, angle_wires, beth, batch, gradient_wires, adder_work)
 
-    # 5. Undo the spin routing.
-    for down, up in zip(psi_down, psi_up):
-        qp.CSWAP(wires=[spin, down, up])
+    def _unbasis():
+        # Adjoint U, one batch at a time, then undo the spin routing.
+        for b in reversed(range(len(batches))):
+            _apply_loaded_rotation(
+                psi_down, angle_wires, beth, batches[b], gradient_wires, adder_work, adjoint=True
+            )
+            qp.adjoint(qp.QROM(tables[b], **qrom))
+        for down, up in zip(psi_down, psi_up):
+            qp.CSWAP(wires=[spin, down, up])
+
+    def _reflect():
+        # Reflect on the first orbital, switched off on the one-body block.
+        qp.ctrl(qp.Z(psi_down[0]), control=z_control, control_values=z_values)
+
+    qp.change_op_basis(_basis, _reflect, _unbasis)
 
 
 def select_thc(
@@ -440,8 +445,8 @@ def select_thc(
         index_wires (Sequence[int]): ``2 * ceil(log2(M + 1))`` wires, :math:`\mu`
             followed by :math:`\nu`, as left by ``PREPARE``.
         flag_wires (Sequence[int]): this includes five wires, in order the success flag, the
-            one-body flag (:math:`\nu = M`), the qubit that controls the :math:`\mu \leftrightarrow \nu`
-            swap, and the two spin flags.
+            one-body flag (:math:`\nu = M`), the qubit that controls the :math:`\mu \leftrightarrow
+            \nu` swap, and the two spin flags.
         gradient_wires (Sequence[int]): the ``beth + 1`` wires holding the phase gradient state.
             This is assumed to be prepared on entry and left unchanged, as it is reused between
             ``PREPARE`` and ``SELECT`` oracles.
