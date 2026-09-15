@@ -13,7 +13,8 @@
 # limitations under the License.
 """Maximum Mean Discrepancy (MMD) loss for Pauli expectation value functions.
 
-This module compares the output distribution of a model to a dataset of
+This module contains functionality to construct an MMD loss function for Pauli expectation value
+functions. The MMD loss function compares the output distribution of a model to a dataset of
 bitstrings. It samples Pauli-Z observables from an RBF (Radial Basis Function) kernel distribution,
 estimates their expectation values with a user-supplied callable, and combines the results into an
 MMD loss.
