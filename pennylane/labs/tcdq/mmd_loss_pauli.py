@@ -73,7 +73,7 @@ class MMDConfig:
 
 
 def median_heuristic(samples: ArrayLike) -> float:
-    """Choose a reasonable radial basis function (RBF) kernel bandwidth from the target dataset.
+    """Choose a reasonable radial basis function (RBF) kernel bandwidth from a target dataset.
 
     A good starting point for :class:`MMDConfig`'s ``bandwidth`` parameter.
 
