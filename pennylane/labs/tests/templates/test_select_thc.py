@@ -171,7 +171,7 @@ class TestQROMTable:
                 expected_data = [a ^ b for a, b in zip(data, table[i])]
                 # work wires must come back clean, so the outcome is a single basis state
                 expected_state = int("".join(map(str, index + expected_data)) + "000", 2)
-                assert np.isclose(circuit(index, data)[expected_state], 1.0, atol=1e-9)
+                assert np.isclose(np.asarray(circuit(index, data))[expected_state], 1.0, atol=1e-9)
 
     @pytest.mark.parametrize("n_half, num_batches", [(8, 3), (10, 4), (5, 2)])
     def test_running_xor_rebuilds_each_batch(self, n_half, num_batches):
@@ -525,7 +525,7 @@ class TestSelectTHCInvariants:
             select_thc(chi, np.eye(N // 2), beth, system, index, flags, gradient, work)
             return qp.probs(wires=work)
 
-        assert np.isclose(circuit()[0], 1.0, atol=1e-8)
+        assert np.isclose(np.asarray(circuit())[0], 1.0, atol=1e-8)
 
     @pytest.mark.parametrize("extra", [1, 2])
     def test_extra_work_wires_do_not_change_the_unitary(self, extra):
