@@ -75,7 +75,7 @@ def test_raises(params, error, match):
             math.random.uniform(0, 2 * np.pi, 4),
             local_gates(4, 1),
             False,
-            ["a", "b", "c", "d"],
+            [0, 1, 2, 3],
         ),
         (
             math.random.uniform(0, 2 * np.pi, 6),
@@ -85,6 +85,7 @@ def test_raises(params, error, match):
         ),
     ],
 )
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_decomposition_new(weights, pattern, spin_sym, wires):  # pylint: disable=too-many-arguments
     op = IQP(weights, wires, pattern, spin_sym)
 

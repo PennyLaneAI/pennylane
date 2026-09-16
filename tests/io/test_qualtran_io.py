@@ -90,6 +90,7 @@ class TestFromBloq:
         with pytest.raises(MatrixUndefinedError):
             qp.FromBloq(RectangularWindowState(3), [0, 1, 2]).matrix()
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.xfail(reason="Fails due to overly broad assertion")
     def test_assert_valid(self):
         """Tests that FromBloq passes the assert_valid check"""
