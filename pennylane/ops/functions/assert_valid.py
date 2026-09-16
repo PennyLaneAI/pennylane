@@ -35,7 +35,7 @@ from pennylane.decomposition.utils import _get_decomp_args, to_name
 from pennylane.exceptions import EigvalsUndefinedError
 from pennylane.ops.op_math.adjoint2 import Adjoint2, _adjoint_abstract
 from pennylane.ops.op_math.composite2 import CompositeOp2
-from pennylane.ops.op_math.controlled2 import ControlledOp2, _ctrl_abstract
+from pennylane.ops.op_math.controlled2 import Controlled2, ControlledOp2, _ctrl_abstract
 from pennylane.ops.op_math.pow2 import Pow2
 from pennylane.ops.op_math.symbolicop2 import SymbolicOp2
 from pennylane.pytrees import flatten
@@ -783,7 +783,7 @@ def _assert_valid_operator2(
     # pylint: disable=import-outside-toplevel
     from pennylane.templates.subroutines.select import Select
 
-    if not isinstance(op, (Adjoint2, CompositeOp2, ControlledOp2, Pow2, Select)):
+    if not isinstance(op, (Adjoint2, CompositeOp2, Controlled2, Pow2, Select)):
 
         error_msg = "ndim_params must have the same length as dynamic_argnames"
         assert len(op.ndim_params) == len(op.dynamic_argnames), error_msg

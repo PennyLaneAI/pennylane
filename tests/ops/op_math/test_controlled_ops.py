@@ -56,6 +56,23 @@ X_broadcasted = np.array([X] * 3)
 class TestControlledQubitUnitary:
     """Tests specific to the ControlledQubitUnitary operation"""
 
+    @pytest.mark.jax
+    def test_integrates_with_specs(self):
+        """Tests that the ControlledQubitUnitary operation integrates with specs."""
+        import jax.numpy as jnp
+
+        dev = qp.device("null.qubit", wires=4)
+        U = 1 / jnp.sqrt(2) * jnp.array([[1, 1], [1, -1]], dtype=jnp.complex128)
+
+        @qp.qnode(dev)
+        def circuit():
+            qp.ControlledQubitUnitary(U, control_values=[1], wires=[1, 0])
+            return qp.probs()
+
+        pl_specs = qp.specs(circuit, level="device")()
+
+        assert pl_specs.resources.counts["ControlledQubitUnitary"] == 1
+
     def test_has_decomposition_sparse_edge_case(self):
         """Test that has_decomposition doesn't error out with sparse matrices."""
         U = np.random.rand(4, 4) + 1.0j * np.random.rand(4, 4)
@@ -560,6 +577,16 @@ class TestControlledQubitUnitary:
 
         with pytest.warns(UserWarning, match="may not be unitary"):
             qp.ControlledQubitUnitary(not_unitary, wires=[0, 2, 1], unitary_check=True)
+
+    def test_data_returns_only_unitary(self):
+        """Test that the ``data`` property override returns a tuple containing just the unitary."""
+        unitary = np.array([[0.94877869j, 0.31594146], [-0.31594146, 0.94877869j]])
+        op = qp.ControlledQubitUnitary(unitary, wires=[0, 2, 1], control_values=[True, False])
+
+        assert isinstance(op.data, tuple)
+        assert len(op.data) == 1
+        assert qp.math.allclose(op.data[0], unitary)
+        assert qp.math.allclose(op.data[0], op.U)
 
 
 @pytest.mark.parametrize("op_cls, _", NON_PARAMETRIZED_OPERATIONS)
