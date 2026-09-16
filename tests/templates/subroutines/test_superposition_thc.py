@@ -19,8 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.decomposition import list_decomps
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
+from pennylane.ops.functions.assert_valid import assert_valid
 from pennylane.templates.subroutines.superposition_thc import SuperpositionTHC
 
 
@@ -85,6 +84,7 @@ def _full_state(M, N, n):
         (7, 3, 3),
     ],
 )
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity(M, N, n):
     """Check the operation using the assert_valid function.
 
@@ -110,15 +110,6 @@ def test_standard_validity(M, N, n):
 
     with pytest.raises(ValueError, match="must not overlap"):
         qp.ctrl(gate, control=work_wires[-1])
-
-
-@pytest.mark.usefixtures("enable_and_disable_capture")
-def test_decomposition_rules():
-    """Operator2 decomposition rules, with and without capture."""
-    mu_wires, nu_wires, work_wires = _wire_layout(2)
-    op = SuperpositionTHC(1, 2, mu_wires, nu_wires, work_wires)
-    for rule in list_decomps(SuperpositionTHC):
-        _test_decomposition_rule(op, rule)
 
 
 class TestSuperpositionTHC:

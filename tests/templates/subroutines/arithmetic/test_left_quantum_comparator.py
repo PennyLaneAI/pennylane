@@ -22,7 +22,8 @@ from pennylane.ops.functions.assert_valid import assert_valid
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_assert_valid():
-    """Standard Operator2 checks, with capture enabled and disabled."""
+    """Test that LeftQuantumComparator passes the standard Operator2 checks,
+    with capture enabled and disabled."""
     op = qp.LeftQuantumComparator(
         x_wires=[0, 1, 2],
         y_wires=[3, 4, 5],
@@ -50,7 +51,7 @@ class TestLeftQuantumComparator:
     def test_operation_result(
         self, comparator, x_wires, y_wires, target_wire, work_wires, x, y
     ):  # pylint: disable=too-many-arguments
-        """Test the correctness of the LeftComparator template output."""
+        """Test that the LeftQuantumComparator template produces the correct output."""
 
         @qp.qjit
         @qp.qnode(qp.device("lightning.qubit", wires=range(13)), shots=1)
@@ -147,7 +148,7 @@ class TestLeftQuantumComparator:
     def test_wires_error(
         self, target_wire, x_wires, y_wires, work_wires, comparator, msg_match
     ):  # pylint: disable=too-many-arguments
-        """Test an error is raised when some work_wires don't meet the requirements"""
+        """Test that an error is raised when some work_wires don't meet the requirements."""
         with pytest.raises(ValueError, match=msg_match):
             qp.LeftQuantumComparator(
                 x_wires, y_wires, target_wire, work_wires, comparator=comparator
@@ -166,7 +167,7 @@ class TestLeftQuantumComparator:
     def test_no_phase_errors(  # pylint: disable=too-many-arguments
         self, x_wires, y_wires, target_wire, work_wires, comparator, seed
     ):
-        """Verify the comparator introduces no complex phases.
+        """Test that the comparator introduces no complex phases.
         A correct classical reversible circuit is a real permutation matrix,
         so a real positive input must produce a real positive output."""
 

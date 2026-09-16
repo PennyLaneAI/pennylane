@@ -23,7 +23,7 @@ from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.math import ceil_log2
 from pennylane.ops import CSWAP, SWAP, Hadamard, Z, adjoint, ctrl
-from pennylane.typing import AbstractWires, Wire
+from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
 from .alias_sampling import _apply_hadamards, _build_alias_tables
@@ -35,7 +35,7 @@ from .qrom import QROM
 
 def _num_index_wires(M):
     r"""Number of wires per index register: exactly ``ceil(log2(M + 1))``."""
-    return int(ceil_log2(M + 1))
+    return ceil_log2(M + 1)
 
 
 def _num_address_wires(M, N):
@@ -48,7 +48,7 @@ def _num_address_wires(M, N):
     :math:`\lvert 0 \rangle` and is *not* used to control the QROM.
     """
     d = N // 2 + M * (M + 1) // 2
-    return int(ceil_log2(d)) + 1
+    return ceil_log2(d) + 1
 
 
 def _canonicalize_zeta(zeta):
@@ -144,8 +144,8 @@ def _lcu_signs(M, entries, weights):
         for a negative one
     """
     # Flip only the one-body column. Negate both branches to block encode ``-H`` instead.
-    coeffs = [-w if nu == M else w for w, (_, nu) in zip(weights, entries)]
-    return [0 if c >= 0 else 1 for c in coeffs]
+    coeffs = [-w if nu == M else w for w, (_, nu) in zip(weights, entries, strict=True)]
+    return [int(c < 0) for c in coeffs]
 
 
 @lru_cache(maxsize=16)
@@ -190,9 +190,9 @@ def _build_qrom_data(
         mu_alt, nu_alt = entries[alt_i]
         data[s] = (
             [signs[i], signs[alt_i]]
-            + [int(b) for b in f"{int(mu_alt):0{num_index_wires}b}"]
-            + [int(b) for b in f"{int(nu_alt):0{num_index_wires}b}"]
-            + [int(b) for b in f"{int(keep[i]):0{aleph}b}"]
+            + math.int_to_binary(mu_alt, num_index_wires).tolist()
+            + math.int_to_binary(nu_alt, num_index_wires).tolist()
+            + math.int_to_binary(keep[i], aleph).tolist()
             + [1 if nu_alt == M else 0]
         )
     return data
@@ -204,17 +204,14 @@ def _right_shift(work_wires, n_d):
     if n_swaps <= 0:
         return
     if compiler.active() or capture.enabled():
-        ww = math.array(work_wires, like="jax")
+        work_wires = math.array(work_wires, like="jax")
 
-        @for_loop(n_swaps)
-        def _loop(j):
-            i = n_d - 2 - j
-            SWAP(wires=[ww[i], ww[i + 1]])
-
-        _loop()  # pylint: disable=no-value-for-parameter
-        return
-    for i in reversed(range(n_swaps)):
+    @for_loop(n_swaps)
+    def _loop(j):
+        i = n_d - 2 - j
         SWAP(wires=[work_wires[i], work_wires[i + 1]])
+
+    _loop()  # pylint: disable=no-value-for-parameter
 
 
 def _compute_contiguous_register(M, N, mu_wires, nu_wires, work_wires):
@@ -292,14 +289,11 @@ def _cswap_pair(flag, left, right):
         left = math.array(left, like="jax")
         right = math.array(right, like="jax")
 
-        @for_loop(n)
-        def _loop(i):
-            CSWAP(wires=[flag, left[i], right[i]])
+    @for_loop(n)
+    def _loop(i):
+        CSWAP(wires=[flag, left[i], right[i]])
 
-        _loop()  # pylint: disable=no-value-for-parameter
-        return
-    for a, b in zip(left, right, strict=False):
-        CSWAP(wires=[flag, a, b])
+    _loop()  # pylint: disable=no-value-for-parameter
 
 
 def _symmetrize(mu_wires, nu_wires, swap_flag, edge_flag):
@@ -308,25 +302,18 @@ def _symmetrize(mu_wires, nu_wires, swap_flag, edge_flag):
     if n == 0:
         return
     if compiler.active() or capture.enabled():
-        mu_w = math.array(mu_wires, like="jax")
-        nu_w = math.array(nu_wires, like="jax")
+        mu_wires = math.array(mu_wires, like="jax")
+        nu_wires = math.array(nu_wires, like="jax")
 
-        @for_loop(n)
-        def _loop(i):
-            ctrl(
-                SWAP(wires=[mu_w[i], nu_w[i]]),
-                control=[swap_flag, edge_flag],
-                control_values=[1, 0],
-            )
-
-        _loop()  # pylint: disable=no-value-for-parameter
-        return
-    for i in range(n):
+    @for_loop(n)
+    def _loop(i):
         ctrl(
             SWAP(wires=[mu_wires[i], nu_wires[i]]),
             control=[swap_flag, edge_flag],
             control_values=[1, 0],
         )
+
+    _loop()  # pylint: disable=no-value-for-parameter
 
 
 class AliasSamplingTHC(Operator2):
@@ -488,12 +475,6 @@ class AliasSamplingTHC(Operator2):
         _build_thc_pairs(M, N, zeta, t_ell)
         zeta = _canonicalize_zeta(zeta)
         t_ell = _canonicalize_t_ell(t_ell)
-
-        if isinstance(mu_wires, AbstractWires):
-            super().__init__(
-                M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph, apply_sign
-            )
-            return
 
         mu_wires = Wires(mu_wires)
         nu_wires = Wires(nu_wires)

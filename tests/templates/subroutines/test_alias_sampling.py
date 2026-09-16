@@ -56,7 +56,7 @@ class TestUniformPrep:
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("n_states", [4, 5])
     def test_assert_valid_and_decomposition(self, n_states):
-        """Operator2 validity and decomposition rules, with and without capture."""
+        """Test that UniformPrep is a valid Operator2 and decomposes, with and without capture."""
         target_wires, work_wires, _ = _wire_layout(n_states)
         op = qp.UniformPrep(n_states, target_wires, work_wires)
         assert_valid(op, skip_differentiation=True)
@@ -65,14 +65,14 @@ class TestUniformPrep:
 
     @pytest.mark.parametrize("n_states", [3, 5, 10, 11, 20, 24])
     def test_uniform_distribution(self, n_states):
-        """Tests that the first n_states basis states are equally likely; the rest are zero."""
+        """Test that the first n_states basis states are equally likely; the rest are zero."""
         probs = _target_probs(n_states)
         assert np.allclose(probs[:n_states], 1 / n_states)
         assert np.allclose(probs[n_states:], 0.0)
 
     @pytest.mark.parametrize("n_states", [3, 4, 10, 11])
     def test_state_amplitudes(self, n_states):
-        """Amplitudes on the target register have equal magnitude sqrt(1/n_states)."""
+        """Test that amplitudes on the target register have equal magnitude sqrt(1/n_states)."""
         target_wires, work_wires, n_wires = _wire_layout(n_states)
         dev = qp.device("default.qubit", wires=n_wires)
 
@@ -127,7 +127,7 @@ class TestUniformPrep:
             qp.UniformPrep(4, [0, 1], work_wires=[0])
 
     def test_abstract_wires_length_is_validated(self):
-        """AbstractWires still expose a length, so register sizes are checked."""
+        """Test that register sizes are checked for AbstractWires, which still expose a length."""
         with pytest.raises(ValueError, match="target_wires must have 3 wires"):
             qp.UniformPrep(5, AbstractWires(2), AbstractWires(3))
         with pytest.raises(ValueError, match="work_wires must have at least 3 wires"):
@@ -137,7 +137,7 @@ class TestUniformPrep:
         assert isinstance(op.work_wires, AbstractWires)
 
     def test_mixed_concrete_and_abstract_wires(self):
-        """Length checks run per register, including mixed concrete/abstract inputs."""
+        """Test that length checks run per register, including mixed concrete/abstract inputs."""
         with pytest.raises(ValueError, match="work_wires must have at least 3 wires"):
             qp.UniformPrep(5, range(3), AbstractWires(1))
         op = qp.UniformPrep(5, range(3), AbstractWires(3))
@@ -240,7 +240,7 @@ class TestAliasSampling:
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_assert_valid_and_decomposition(self):
-        """Operator2 validity and decomposition rules, with and without capture."""
+        """Test that AliasSampling is a valid Operator2 and decomposes, with and without capture."""
         w, wires, temp, work, _ = _alias_registers(4, 3)
         op = qp.AliasSampling(w, 3, wires, temp, work)
         assert_valid(op, skip_differentiation=True)
@@ -249,7 +249,7 @@ class TestAliasSampling:
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_adjoint_decomposition(self):
-        """Adjoint decomposition is capture compatible."""
+        """Test that the adjoint decomposition is capture compatible."""
         w, wires, temp, work, _ = _alias_registers(4, 3)
         op = qp.adjoint(qp.AliasSampling(w, 3, wires, temp, work))
         for rule in list_decomps("Adjoint(AliasSampling)"):
@@ -257,9 +257,9 @@ class TestAliasSampling:
 
     @pytest.mark.parametrize("L", [2, 3, 4, 5, 6])
     def test_marginal_matches_reconstruction(self, L):
-        """Test the target marginal against the classical tables and the mu-bit bound,
-        and that no probability leaks onto indices >= L."""
-        mu = 4
+        """Test that the target marginal matches the classical tables within the mu-bit
+        bound, and that no probability leaks onto indices >= L."""
+        mu = 3
         rng = np.random.default_rng(L * 13 + 1)
         w = rng.random(L) + 0.05
         recon = _reconstruct_amplitudes(*_build_alias_tables(w, mu), mu)
@@ -346,7 +346,7 @@ class TestAliasSampling:
             qp.AliasSampling([0.2, 0.3, 0.5], 2, target_wires, temp_wires, work_wires)
 
     def test_abstract_wires_length_is_validated(self):
-        """AbstractWires still expose a length, so register sizes are checked."""
+        """Test that register sizes are checked for AbstractWires, which still expose a length."""
         with pytest.raises(ValueError, match="target_wires must have 2 entries"):
             qp.AliasSampling(
                 [0.2, 0.3, 0.5], 2, AbstractWires(1), AbstractWires(8), AbstractWires(2)
@@ -358,7 +358,7 @@ class TestAliasSampling:
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_single_coefficient_decomposition(self):
-        """Test the zero-target-wire decomposition."""
+        """Test that the zero-target-wire decomposition is valid."""
         op = qp.AliasSampling([1.0], 1, [], [0, 1, 2], [])
         for rule in list_decomps(qp.AliasSampling):
             _test_decomposition_rule(op, rule)

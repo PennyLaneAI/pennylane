@@ -30,7 +30,7 @@ from pennylane.ops import (
     adjoint,
     ctrl,
 )
-from pennylane.typing import AbstractWires, Bool, Wire
+from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
 from .arithmetic.left_classical_comparator import LeftClassicalComparator
@@ -157,10 +157,6 @@ class SuperpositionTHC(Operator2):
         nu_wires: WiresLike,
         work_wires: WiresLike,
     ):  # pylint: disable=too-many-arguments
-        if isinstance(mu_wires, AbstractWires):
-            super().__init__(M, N, mu_wires, nu_wires, work_wires)
-            return
-
         mu_wires = Wires(mu_wires)
         nu_wires = Wires(nu_wires)
         work_wires = Wires(work_wires)

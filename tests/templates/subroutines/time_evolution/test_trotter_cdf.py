@@ -220,8 +220,10 @@ class TestValidity:
     def test_assert_valid(self, toy_hamiltonian_cdf_concrete):
         """Run qp.ops.functions.assert_valid on a concrete CDF instance."""
         ham, num_orbitals = toy_hamiltonian_cdf_concrete
+
         wires = list(range(2 * num_orbitals))
         op = qp.TrotterCDF(0.1, 3, ham, wires)
+
         # Differentiating through the (non-trainable) hamiltonian dict is not supported.
         qp.ops.functions.assert_valid(op, skip_differentiation=True)
 

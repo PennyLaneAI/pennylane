@@ -2,9 +2,52 @@
 
 <h3>New features since last release</h3>
 
-* A new decorator is available called :func:`pennylane.subcircuit`, which can be used to 
-  create operators directly from quantum functions. This enables fast research and 
-  development of new operators without the need to create full-fledged operator classes 
+* Three new numeric Hamiltonians called :class:`pennylane.CDFHamiltonian` (based on
+  `arXiv:2506.15784, Sec. III A <https://arxiv.org/abs/2506.15784>`),
+  :class:`pennylane.CGFHamiltonian` (based on
+  `arXiv:2508.11865, Sec. III C <https://arxiv.org/abs/2508.11865>`), and
+  :class:`pennylane.VibronicHamiltonian` (based on
+  `arXiv:2411.13669 <https://arxiv.org/abs/2411.13669>`) have been added, which define compressed
+  double-factorized (CDF), Christiansen greedy-fragmentation (CGF) Hamiltonians, and vibronic
+  Hamiltonians respectively. These Hamiltonians can be defined with both concrete numeric data or
+  abstract data (using ``qp.typing.Float[...]``).
+  [(#10048)](https://github.com/PennyLaneAI/pennylane/pull/10048)
+  [(#10138)](https://github.com/PennyLaneAI/pennylane/pull/10138)
+
+* Three new state-of-the-art Trotterization operators called :class:`~.TrotterCDF`,
+  :class:`~.TrotterCGF`, and :class:`~.TrotterVibronic` have been added to encode
+  fragmentation-based Trotterization procedures of :class:`pennylane.CDFHamiltonian`,
+  :class:`pennylane.CGFHamiltonian`, and :class:`pennylane.VibronicHamiltonian` Hamiltonians,
+  respectively.
+  [(#9459)](https://github.com/PennyLaneAI/pennylane/pull/9459)
+  [(#9789)](https://github.com/PennyLaneAI/pennylane/pull/9789)
+  [(#10015)](https://github.com/PennyLaneAI/pennylane/pull/10015)
+  [(#10074)](https://github.com/PennyLaneAI/pennylane/pull/10074)
+  [(#10081)](https://github.com/PennyLaneAI/pennylane/pull/10081)
+  [(#10138)](https://github.com/PennyLaneAI/pennylane/pull/10138)
+
+* A new operator called :class:`pennylane.PPR` has been added, which represents a Pauli product
+  rotation with a fixed angle
+  :math:`\theta = \pi / k`, following this angle convention:
+  :math:`\mathrm{PPR}(-4, \mathrm{X})=\exp(-i\pi / (-4) X)=\exp(i\tfrac{\pi}{4} X)`.
+  The denominator
+  :math:`k` is restricted to :math:`\pm 2`, :math:`\pm 4` and :math:`\pm 8`, covering exactly the
+  :math:`\pm\pi/2`, :math:`\pm\pi/4` and :math:`\pm\pi/8` Pauli product rotations of Clifford+T
+  circuits. Together with :func:`~.pauli_measure`, this makes the building blocks of Pauli-based
+  computations directly expressible.
+  [(#10107)](https://github.com/PennyLaneAI/pennylane/pull/10107)
+
+  ```pycon
+  >>> import pennylane as qp
+  >>> op = qp.PPR(4, "XY", wires=[0, 1])
+  >>> op
+  PPR(4, 'XY', wires=[0, 1])
+
+  ```
+
+* A new decorator is available called :func:`pennylane.subcircuit`, which can be used to
+  create operators directly from quantum functions. This enables fast research and
+  development of new operators without the need to create full-fledged operator classes
   manually.
   [(#10126)](https://github.com/PennyLaneAI/pennylane/pull/10126)
 
@@ -29,9 +72,6 @@
 
   ```
 
-* Two new numeric Hamiltonians called :class:`pennylane.CDFHamiltonian` (based on `arXiv:2506.15784, Sec. III A <https://arxiv.org/abs/2506.15784>`) and :class:`pennylane.CGFHamiltonian` have been added (based on `arXiv:2508.11865, Sec. III C <https://arxiv.org/abs/2508.11865>`), which define compressed double-factorized (CDF) and Christiansen greedy-fragmentation Hamiltonians, respectively. These Hamiltonians can be defined
-  with both concrete numeric data or abstract data (using ``qp.typing.Float[...]``).
-  [(#10048)](https://github.com/PennyLaneAI/pennylane/pull/10048)
 
   ```python
   import numpy as np
@@ -110,11 +150,6 @@
       return qp.expval(qp.Z(0))
   ```
 
-* Added a new template :class:`~.TrotterVibronic` that implements a second-order Trotter circuit for
-  vibronic Hamiltonian simulation using phase-gradient arithmetic, based on
-  [Motlagh et al, arXiv:2411.13669](https://arxiv.org/abs/2411.13669).
-  [(#10029)](https://github.com/PennyLaneAI/pennylane/pull/10029)
-
 * ``qp.allocate`` now supports ``state="magic-T"`` and ``state="magic-T-adj"`` for requesting
   magic-state dynamic wires (:math:`|m\rangle = TH|0\rangle` and :math:`|m̄\rangle = T^\dagger H|0\rangle`).
   These states are currently supported when compiling with Catalyst; device simulators raise an
@@ -169,15 +204,6 @@
   True
 
   ```
-
-* Added :class:`~.TrotterCDF` and :class:`~.TrotterCGF`, templates for second-order Trotter time evolution of
-  fragmented Hamiltonians (CDF for electronic structure, CGF for vibrational structure) as used in modern quantum
-  chemistry algorithms.
-  [(#9459)](https://github.com/PennyLaneAI/pennylane/pull/9459)
-  [(#9789)](https://github.com/PennyLaneAI/pennylane/pull/9789)
-  [(#10015)](https://github.com/PennyLaneAI/pennylane/pull/10015)
-  [(#10074)](https://github.com/PennyLaneAI/pennylane/pull/10074)
-  [(#10081)](https://github.com/PennyLaneAI/pennylane/pull/10081)
 
 * A new arithmetic template called :class:`~.SignedOutMultiplier` has been added that multiplies numbers encoded in the
   input registers using a two's complement.
@@ -542,7 +568,7 @@
 
 * `DecompositionRule` now wraps the target qfunc, preserving it's signature and docstring.
   [(#10144)](https://github.com/PennyLaneAI/pennylane/pull/10144)
- 
+
 *  Reduced shot counts in `default.clifford` measurement tests to improve CI runtime.
   [(#10127)](https://github.com/PennyLaneAI/pennylane/pull/10127)
 
@@ -778,6 +804,7 @@
   [(#10073)](https://github.com/PennyLaneAI/pennylane/pull/10073)
   [(#10079)](https://github.com/PennyLaneAI/pennylane/pull/10079)
   [(#10098)](https://github.com/PennyLaneAI/pennylane/pull/10098)
+  [(#10154)](https://github.com/PennyLaneAI/pennylane/pull/10154)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -1295,6 +1322,7 @@
   [(#9950)](https://github.com/PennyLaneAI/pennylane/pull/9950)
   [(#9926)](https://github.com/PennyLaneAI/pennylane/pull/9926)
   [(#10077)](https://github.com/PennyLaneAI/pennylane/pull/10077)
+  [(#10150)](https://github.com/PennyLaneAI/pennylane/pull/10150)
 
   This is an internal, work-in-progress effort that is being incrementally integrated into the PennyLane
   ecosystem. Supported functionality so far:
@@ -1485,9 +1513,15 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* :func:`~.decomposition.inspect_decomps` and :func:`~.transforms.decomp_inspector` no longer
+  insert a blank line after a decomposition rule that is unreachable but has no missing operators.
+  [(#10151)](https://github.com/PennyLaneAI/pennylane/pull/10151)
+
 * Fixed a bug in :func:`~pennylane.draw` with conditionally applied operators that do not have wires,
-  such as ``cond(condition, GlobalPhase(0.52))``.
+  such as ``cond(condition, GlobalPhase(0.52))``. Also removed trailing whitespace from text
+  drawings.
   [(#10132)](https://github.com/PennyLaneAI/pennylane/pull/10132)
+  [(#10151)](https://github.com/PennyLaneAI/pennylane/pull/10151)
 
 * Fix `qp.eigvals` returns `NaN` for a legal fractional power operator.
   [(#9802)](https://github.com/PennyLaneAI/pennylane/pull/9802)

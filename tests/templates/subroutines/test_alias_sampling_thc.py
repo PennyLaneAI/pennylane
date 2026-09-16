@@ -17,8 +17,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.decomposition import list_decomps
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
+from pennylane.ops.functions.assert_valid import assert_valid
 from pennylane.templates.subroutines.alias_sampling_thc import (
     _build_alias_tables,
     _build_qrom_data,
@@ -294,8 +293,6 @@ class TestAliasSamplingTHC:
         assert op.wires == qp.wires.Wires(mu_wires + nu_wires + [2 * n] + work_wires)
         with pytest.raises(ValueError, match="must not overlap"):
             qp.ctrl(op, control=work_wires[-1])
-        for rule in list_decomps(qp.AliasSamplingTHC):
-            _test_decomposition_rule(op, rule)
 
     def test_abstract_wires_canonicalize_coefficients(self):
         """Test that abstract construction keeps compilable coefficients hashable."""

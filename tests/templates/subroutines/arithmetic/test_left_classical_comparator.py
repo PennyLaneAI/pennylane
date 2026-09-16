@@ -22,7 +22,8 @@ from pennylane.ops.functions.assert_valid import assert_valid
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_assert_valid():
-    """Standard Operator2 checks, with capture enabled and disabled."""
+    """Test that LeftClassicalComparator passes the standard Operator2 checks,
+    with capture enabled and disabled."""
     op = qp.LeftClassicalComparator(
         x_wires=[0, 1, 2], L=2, target_wire=3, work_wires=[4, 5], comparator=">="
     )
@@ -53,7 +54,7 @@ class TestLeftClassicalComparator:
     def test_operation_result(
         self, x_wires, L, target_wire, work_wires, x, comparator, qjit
     ):  # pylint: disable=too-many-arguments
-        """Test the correctness of the LeftClassicalComparator template output."""
+        """Test that the LeftClassicalComparator template produces the correct output."""
 
         @qp.qnode(qp.device("lightning.qubit", wires=range(13)), shots=1)
         def circuit(x_wires, L):
@@ -124,7 +125,7 @@ class TestLeftClassicalComparator:
     def test_wires_error(
         self, target_wire, x_wires, L, work_wires, comparator, msg_match
     ):  # pylint: disable=too-many-arguments
-        """Test an error is raised when some work_wires don't meet the requirements"""
+        """Test that an error is raised when some work_wires don't meet the requirements."""
         with pytest.raises(ValueError, match=msg_match):
             qp.LeftClassicalComparator(x_wires, L, target_wire, work_wires, comparator=comparator)
 
@@ -141,7 +142,7 @@ class TestLeftClassicalComparator:
     def test_no_phase_errors(  # pylint: disable=too-many-arguments
         self, x_wires, L, target_wire, work_wires, comparator, seed
     ):
-        """Verify the comparator introduces no complex phases.
+        """Test that the comparator introduces no complex phases.
         A correct classical reversible circuit is a real permutation matrix,
         so a real positive input must produce a real positive output."""
 
@@ -170,7 +171,7 @@ class TestLeftClassicalComparator:
     @pytest.mark.parametrize("comparator", ["<", "<=", ">", ">="])
     @pytest.mark.parametrize("n", [2, 3, 4])
     def test_max_bound_all_inputs(self, comparator, n):
-        """Test for the largest allowed bound ``L = 2 ** n - 1``."""
+        """Test that the comparator is correct for the largest allowed bound ``L = 2 ** n - 1``."""
 
         x_wires = list(range(n))
         target_wire = n
