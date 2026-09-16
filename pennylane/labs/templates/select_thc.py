@@ -318,7 +318,7 @@ def _select_half(
         num_batches (int): the number of batches the Givens angles are loaded in. The
             default of ``1`` loads all of them at once; larger values shrink
             ``work_wires`` at the cost of more ``QROM`` loads.
-        one_body_table (bool): flag to check if the the ``QROM`` address is extended by the
+        one_body_table (bool): flag to check if the ``QROM`` address is extended by the
             one-body flag and the one-body rotations are loaded
         skip_one_body (bool): if ``False``, the :math:`Z_1` reflection is controlled on the
             success flag alone, as in the first sandwich of Fig. 5. If ``True``, it carries
