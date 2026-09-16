@@ -391,6 +391,7 @@ def build_mmd_loss_pauli(
                 target_key, target_data.shape[0], shape=(target_data.shape[0],), replace=True
             )
             target_data = target_data[target_indices]
+            
         static_items = []
         traced_items = {}
         for name, value in expval_kwargs.items():
