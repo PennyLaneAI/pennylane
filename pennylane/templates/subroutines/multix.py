@@ -29,8 +29,6 @@ from pennylane.ops.op_math.prod2 import _multi_temporary_and_all_ones
 from pennylane.typing import AbstractArray, AbstractWires, Bool, TensorLike, Wire
 from pennylane.wires import DynamicWire, Wires, WiresLike, is_abstract_qubit
 
-from .arithmetic.temporary_and import TemporaryAND
-
 
 class MultiX(Operator2):
     r"""
@@ -357,6 +355,12 @@ add_decomps("Pow(MultiX)", pow_involutory)
 
 
 def _controlled_multix_ladder_resources(base, control_wires, **_):
+    # Imported lazily to avoid a circular import: ``multix`` is imported by the ``arithmetic``
+    # package (e.g. ``out_multiplier``), while ``arithmetic.temporary_and`` lives in that package.
+    from .arithmetic.temporary_and import (  # pylint: disable=import-outside-toplevel
+        TemporaryAND,
+    )
+
     # num_control_wires - 1 TemporaryAND gates to compute the AND ladder, as many to uncompute it,
     # and up to one CNOT per target wire (worst case, hence exact=False).
     num_control_wires = len(control_wires)
@@ -372,6 +376,11 @@ def _multix_ladder_fanout(base, control_wires, work_wires):
     :func:`~._multi_temporary_and_all_ones`, fans that wire out with a ``CNOT`` to every set bit of
     ``base``, then uncomputes the ladder. Requires ``len(control_wires) - 1`` wires in
     ``work_wires``, all in the zero state."""
+    # Imported lazily to avoid a circular import (see ``_controlled_multix_ladder_resources``).
+    from .arithmetic.temporary_and import (  # pylint: disable=import-outside-toplevel
+        TemporaryAND,
+    )
+
     bitstring = base.bitstring
     wires = base.wires
     if compiler.active() or capture.enabled():
