@@ -129,7 +129,7 @@ class TrotterCGF(Operator2):
 
     >>> specs = qp.specs(trotter_circuit)()["resources"].quantum_operations
     >>> dict(sorted(specs.items()))
-    {'C(IsingZZ)': 180, 'CRZ': 60, 'Hadamard': 1, 'PhaseShift': 1, 'SingleExcitation': 186}
+    {'C(IsingZZ)': 99, 'CRZ': 60, 'Hadamard': 1, 'PhaseShift': 1, 'SingleExcitation': 132}
 
     The :class:`~.SingleExcitation` gates are due to :class:`~.BasisRotation` decomposing into
     :class:`~.PhaseShift` and :class:`~.SingleExcitation` on ``lightning.qubit``.
@@ -203,7 +203,8 @@ class TrotterCGF(Operator2):
         which visits each two-body fragment *twice* per step (at the half-step duration
         ``first_order_time_step`` :math:`= \Delta t/2`) and the central one-body fragment *once* (at the
         full :math:`\Delta t`). The next steps derive :math:`e^{-i H_\nu \tau}` for a single fragment and
-        duration :math:`\tau`.
+        duration :math:`\tau`. In the circuit, adjacent :math:`H_1` half evolutions at
+        internal step boundaries are merged into one full-duration evolution.
 
         **2. Evolving a fragment**
         The fragments are obtained via Christiansen greedy fragmentation (see `arXiv:2508.11865
@@ -481,8 +482,8 @@ def _cgf_resource_counts(num_trotter_steps, hamiltonian, has_control, double_pha
     n_states = leaf_tensors.shape[2]
 
     resources = defaultdict(int)
-    num_sysrot_calls = num_trotter_steps * (2 * num_two_body_fragments + 1) + 1
-    num_twobody_blocks = num_trotter_steps * 2 * num_two_body_fragments
+    num_sysrot_calls = 2 * num_two_body_fragments * num_trotter_steps + 2
+    num_twobody_blocks = (2 * num_two_body_fragments - 1) * num_trotter_steps + 1
     num_onebody_blocks = num_trotter_steps
     num_pairs = num_modes * (num_modes - 1) // 2
     num_twobody_rotations = num_twobody_blocks * num_pairs * n_states**2
