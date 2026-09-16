@@ -163,7 +163,6 @@ def enable_and_disable_capture(request):
         def test_something():
             ...
 
-    Authored By: Cursor (Auto, Composer)
     """
     if request.param and (marker := request.node.get_closest_marker("xfail_if_capture")):
         request.applymarker(
