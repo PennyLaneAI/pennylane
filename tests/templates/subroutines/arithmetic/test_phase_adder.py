@@ -36,7 +36,7 @@ def test_standard_validity_Phase_Adder():
 
 
 @pytest.mark.xfail_if_capture(
-    reason="Come back to this when we port it to Op2 [sc-130164]", strict=False
+    reason="Come back to this when we port it to Op2 [sc-130164]"
 )
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_falsy_zero_as_work_wire():
@@ -279,7 +279,7 @@ class TestPhaseAdder:
             qp.assert_equal(op1, op2)
 
     @pytest.mark.xfail_if_capture(
-        reason="Come back to this when we port it to Op2 [sc-130164]", strict=False
+        reason="Come back to this when we port it to Op2 [sc-130164]"
     )
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("mod", [7, 8])
