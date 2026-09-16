@@ -205,8 +205,9 @@ class Wires(Sequence):
             return self.__capture_getitem(idx)
 
         if isinstance(idx, slice):
-            return Wires(self._labels[idx])
-
+            # use _override=True because there is no need to verify that a slice from
+            # an existing Wires object is valid or not.
+            return Wires(self._labels[idx], _override=True)
         return self._labels[idx]
 
     def __capture_getitem(self, idx):
