@@ -801,6 +801,7 @@
   [(#10073)](https://github.com/PennyLaneAI/pennylane/pull/10073)
   [(#10079)](https://github.com/PennyLaneAI/pennylane/pull/10079)
   [(#10098)](https://github.com/PennyLaneAI/pennylane/pull/10098)
+  [(#10154)](https://github.com/PennyLaneAI/pennylane/pull/10154)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -1513,9 +1514,15 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* :func:`~.decomposition.inspect_decomps` and :func:`~.transforms.decomp_inspector` no longer
+  insert a blank line after a decomposition rule that is unreachable but has no missing operators.
+  [(#10151)](https://github.com/PennyLaneAI/pennylane/pull/10151)
+
 * Fixed a bug in :func:`~pennylane.draw` with conditionally applied operators that do not have wires,
-  such as ``cond(condition, GlobalPhase(0.52))``.
+  such as ``cond(condition, GlobalPhase(0.52))``. Also removed trailing whitespace from text
+  drawings.
   [(#10132)](https://github.com/PennyLaneAI/pennylane/pull/10132)
+  [(#10151)](https://github.com/PennyLaneAI/pennylane/pull/10151)
 
 * Fix `qp.eigvals` returns `NaN` for a legal fractional power operator.
   [(#9802)](https://github.com/PennyLaneAI/pennylane/pull/9802)
