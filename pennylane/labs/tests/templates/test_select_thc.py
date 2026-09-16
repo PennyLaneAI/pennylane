@@ -99,10 +99,11 @@ class TestQROMTable:
     """Tests for the loaded rotation table: the angle quantization, the one-body block and
     the incremental loading of each batch as a difference from the previous one."""
 
-    @pytest.mark.parametrize("one_body", [False, True])
-    def test_shape_and_padding(self, one_body):
-        """Test that the QROM table has the correct shape and padding."""
-        M, n_half, beth = 3, 4, 5
+	@pytest.mark.parametrize("M, n_half", [(3, 4), (2, 3), (4, 2), (8, 4)])
+	@pytest.mark.parametrize("one_body", [True, False])
+	def test_shape_and_padding(self, M, n_half, one_body):
+	    """Test that the QROM table has the correct shape and padding."""
+	    block = 1 << qp.math.ceil_log2(max(M, n_half))
         rng = np.random.default_rng(0)
         rows = _build_qrom_givens_data(
             rng.standard_normal((M, n_half)),
