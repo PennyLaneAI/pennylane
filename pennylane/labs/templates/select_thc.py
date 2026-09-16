@@ -141,7 +141,7 @@ def _build_qrom_givens_data(chi, t_eigenvectors, beth, one_body_table, batches):
 
 
 def _apply_loaded_rotation(
-    psi_down, angle_wires, beth, pairs, gradient_wires, adder_work, adjoint=False
+    psi_down, angle_wires, beth, pairs, gradient_wires, adder_work
 ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
     r"""Apply the rotations of one batch, whose angles are held in ``angle_wires``.
 
@@ -167,15 +167,15 @@ def _apply_loaded_rotation(
         pairs (Sequence[int]): the Givens pairs of this batch, in application order
         gradient_wires (Sequence[int]): the ``beth + 1`` wires of the phase gradient register
         adder_work (Sequence[int]): ``beth`` clean wires for :class:`~pennylane.SemiAdder`
-        adjoint (bool): if ``True``, apply the inverse rotation
+
     """
-    for slot, p in reversed(list(enumerate(pairs))) if adjoint else enumerate(pairs):
+    for slot, p in enumerate(pairs):
         bits = angle_wires[slot * beth : (slot + 1) * beth]
 
         # Subtracting rather than adding gives the forward rotation; the adjoint rotation
         # is the same Clifford frame with the addition running the other way. Both directions
         # pick up the same constant pi offset, and Z is self-inverse, so the same Z works.
-        add = qp.SemiAdder if adjoint else qp.adjoint(qp.SemiAdder)
+        add = qp.adjoint(qp.SemiAdder)
         lower, upper = psi_down[p], psi_down[p + 1]
         qp.Hadamard(lower)
         qp.CNOT(wires=[lower, upper])
@@ -226,14 +226,16 @@ def select_thc_wires(M, N, beth, num_batches=1):
 
     Raises:
         ValueError: if ``M``, ``N``, ``beth`` or ``num_batches`` is not a positive
-            integer, or if the one-body block does not fit the index register.
+            integer, if ``N`` is odd, or if the one-body block does not fit the index
+            register.
 
     .. note::
 
         Only ``work_wires`` is a minimum; the other four are exact and must be matched.
-        Extra work wires are forwarded to the internal ``qp.QROM``, which uses them for
-        a unary iteration; the ``SelectSwap`` space-time trade-off is not engaged in this
-        mode.
+        Extra work wires are forwarded to the internal ``qp.QROM``, which splits them
+        between the unary iteration of its ``Select`` and the ``SelectSwap`` space-time
+        trade-off. Which split it picks depends on ``M``, ``N`` and ``beth``, so extra
+        wires do not necessarily lower the gate count.
 
     .. note::
 
@@ -260,6 +262,9 @@ def select_thc_wires(M, N, beth, num_batches=1):
     for name, value in (("M", M), ("N", N), ("beth", beth), ("num_batches", num_batches)):
         if isinstance(value, bool) or not isinstance(value, int) or value < 1:
             raise ValueError(f"{name} must be a positive integer, got {value!r}.")
+
+    if N % 2:
+        raise ValueError(f"N must be an even number of spin orbitals; got {N}.")
 
     n = qp.math.ceil_log2(M + 1)
     n_half = N // 2
@@ -387,21 +392,11 @@ def _select_half(
             qp.QROM(tables[b], **qrom)
             _apply_loaded_rotation(psi_down, angle_wires, beth, batch, gradient_wires, adder_work)
 
-    def _unbasis():
-        # Adjoint U, one batch at a time, then undo the spin routing.
-        for b in reversed(range(len(batches))):
-            _apply_loaded_rotation(
-                psi_down, angle_wires, beth, batches[b], gradient_wires, adder_work, adjoint=True
-            )
-            qp.adjoint(qp.QROM(tables[b], **qrom))
-        for down, up in zip(psi_down, psi_up):
-            qp.CSWAP(wires=[spin, down, up])
-
     def _reflect():
         # Reflect on the first orbital, switched off on the one-body block.
         qp.ctrl(qp.Z(psi_down[0]), control=z_control, control_values=z_values)
 
-    qp.change_op_basis(_basis, _reflect, _unbasis)
+    qp.change_op_basis(_basis, _reflect)
 
 
 def select_thc(
@@ -444,7 +439,9 @@ def select_thc(
     Use :func:`select_thc_wires` for the register sizes.
 
     Args:
-        chi (tensor_like): the THC leaf matrix, shape ``(M, N/2)``
+        chi (tensor_like): the THC leaf matrix, shape ``(M, N/2)``. Each row is assumed
+            normalized; only its direction enters the circuit, so any row norm must
+            already be absorbed into :math:`\zeta_{\mu\nu}` in ``PREPARE``.
         t_eigenvectors (tensor_like): eigenvectors of the modified one-body matrix
             :math:`T'` as columns, shape ``(N/2, N/2)``
         beth (int): bits of precision per Givens angle
@@ -464,6 +461,7 @@ def select_thc(
 
     Raises:
         ValueError: if two registers share a wire, or if a register has the wrong size
+        ValueError: if ``chi`` is not a 2D array
         ValueError: if ``t_eigenvectors`` does not have shape ``(N/2, N/2)``
         ValueError: if ``beth`` or ``num_batches`` is not a positive integer
         ValueError: if the one-body rotations do not fit the index register, that is if
@@ -505,7 +503,12 @@ def select_thc(
             return qp.probs(wires=wires["system_wires"])
 
     """
-    M = qp.math.asarray(chi, dtype=float).shape[0]
+    chi = qp.math.asarray(chi, dtype=float)
+    if len(qp.math.shape(chi)) != 2:
+        raise ValueError(
+            f"chi must be a 2D array of shape (M, N/2); got shape {qp.math.shape(chi)}."
+        )
+    M = qp.math.shape(chi)[0]
     n = qp.math.ceil_log2(M + 1)
 
     registers = {

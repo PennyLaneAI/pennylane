@@ -453,7 +453,8 @@ class TestPhaseGradientRotation:  # pylint: disable=too-few-public-methods
             qp.BasisState(bits, wires=angle)
             qp.BasisState(qp.math.int_to_binary(column, 2), wires=system)
             _prep_gradient(gradient)
-            _apply_loaded_rotation(system, angle, beth, [0], gradient, adder_work, adjoint)
+            fn = qp.adjoint(_apply_loaded_rotation) if adjoint else _apply_loaded_rotation
+            fn(system, angle, beth, [0], gradient, adder_work)
             qp.adjoint(_prep_gradient)(gradient)
             for bit, wire in zip(bits, angle):  # undo the angle load
                 if bit:
