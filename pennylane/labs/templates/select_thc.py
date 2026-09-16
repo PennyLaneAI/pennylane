@@ -167,14 +167,10 @@ def _apply_loaded_rotation(
         pairs (Sequence[int]): the Givens pairs of this batch, in application order
         gradient_wires (Sequence[int]): the ``beth + 1`` wires of the phase gradient register
         adder_work (Sequence[int]): ``beth`` clean wires for :class:`~pennylane.SemiAdder`
-
     """
     for slot, p in enumerate(pairs):
         bits = angle_wires[slot * beth : (slot + 1) * beth]
 
-        # Subtracting rather than adding gives the forward rotation; the adjoint rotation
-        # is the same Clifford frame with the addition running the other way. Both directions
-        # pick up the same constant pi offset, and Z is self-inverse, so the same Z works.
         add = qp.adjoint(qp.SemiAdder)
         lower, upper = psi_down[p], psi_down[p + 1]
         qp.Hadamard(lower)
