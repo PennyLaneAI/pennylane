@@ -807,6 +807,7 @@
   [(#10073)](https://github.com/PennyLaneAI/pennylane/pull/10073)
   [(#10079)](https://github.com/PennyLaneAI/pennylane/pull/10079)
   [(#10098)](https://github.com/PennyLaneAI/pennylane/pull/10098)
+  [(#10154)](https://github.com/PennyLaneAI/pennylane/pull/10154)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -1178,8 +1179,7 @@
   - Non-parametric operators are ported:
     - :class:`~.S`, :class:`~.T`, :class:`~.SX`, :class:`~.Y`, :class:`~.CY`, :class:`~.SISWAP`, :class:`~.ISWAP`, :class:`~.ECR`,
       :class:`~.SWAP`, :class:`~.CSWAP`, :class:`~.H`, :class:`~.CH`, :class:`~.Z`, :class:`~.CZ`, :class:`~.CCZ`, :class:`~.X`,
-      :class:`~.CNOT`, :class:`~.Toffoli`, :class:`~.MultiControlledX`
-      :class:`~.Identity`.
+      :class:`~.CNOT`, :class:`~.Toffoli`, :class:`~.MultiControlledX`, :class:`~.Identity`.
   [(#9818)](https://github.com/PennyLaneAI/pennylane/pull/9818)
   [(#9859)](https://github.com/PennyLaneAI/pennylane/pull/9859)
   [(#9819)](https://github.com/PennyLaneAI/pennylane/pull/9819)
@@ -1193,6 +1193,7 @@
   [(#9960)](https://github.com/PennyLaneAI/pennylane/pull/9960)
   [(#10004)](https://github.com/PennyLaneAI/pennylane/pull/10004)
   [(#10129)](https://github.com/PennyLaneAI/pennylane/pull/10129)
+  [(#10148)](https://github.com/PennyLaneAI/pennylane/pull/10148)
   - Parametric operators are ported:
     - :class:`~.RZ`, :class:`~.CRZ`, :class:`~.DiagonalQubitUnitary`, :class:`~.PauliRot`, :class:`~.MultiRZ`, :class:`~.PhaseShift`,
       :class:`~.ControlledPhaseShift`, :class:`~.Rot`, :class:`~.CRot`, :class:`~.U1`, :class:`~.U2`, :class:`~.U3`, :class:`~.PCPhase`,
@@ -1409,6 +1410,7 @@
     [(#9866)](https://github.com/PennyLaneAI/pennylane/pull/9866)
     [(#9897)](https://github.com/PennyLaneAI/pennylane/pull/9897)
     [(#9973)](https://github.com/PennyLaneAI/pennylane/pull/9973)
+    [(#10152)](https://github.com/PennyLaneAI/pennylane/pull/10152)
   - The way that :class:`~.Wires` arguments in pytree leaves are read out of HDF5 was changed to be compatible with :class:`~.Operator2` in the data module.
     [(#10012)](https://github.com/PennyLaneAI/pennylane/pull/10012)
 
@@ -1486,6 +1488,9 @@
   context manager that temporarily enables or disables capture is added.
   [(#10016)](https://github.com/PennyLaneAI/pennylane/pull/10016)
 
+* Improved coverage of testing operators and their decomposition rules with capture enabled.
+  [(#10019)](https://github.com/PennyLaneAI/pennylane/pull/10019)
+
 <h3>Documentation 📝</h3>
 
 * Corrected spelling errors in documentation, comments, and internal variable names across the codebase.
@@ -1519,9 +1524,15 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* :func:`~.decomposition.inspect_decomps` and :func:`~.transforms.decomp_inspector` no longer
+  insert a blank line after a decomposition rule that is unreachable but has no missing operators.
+  [(#10151)](https://github.com/PennyLaneAI/pennylane/pull/10151)
+
 * Fixed a bug in :func:`~pennylane.draw` with conditionally applied operators that do not have wires,
-  such as ``cond(condition, GlobalPhase(0.52))``.
+  such as ``cond(condition, GlobalPhase(0.52))``. Also removed trailing whitespace from text
+  drawings.
   [(#10132)](https://github.com/PennyLaneAI/pennylane/pull/10132)
+  [(#10151)](https://github.com/PennyLaneAI/pennylane/pull/10151)
 
 * Fix `qp.eigvals` returns `NaN` for a legal fractional power operator.
   [(#9802)](https://github.com/PennyLaneAI/pennylane/pull/9802)
