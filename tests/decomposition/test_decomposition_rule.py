@@ -36,9 +36,10 @@ from pennylane.decomposition.decomposition_rule import (
 from pennylane.decomposition.resources import Resources
 from pennylane.ops.mid_measure import MidMeasure
 from pennylane.ops.op_math.adjoint2 import Adjoint2
-from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
+from pennylane.ops.op_math.change_op_basis2 import ChangeOpBasis2, _change_op_basis_abstract
 from pennylane.ops.op_math.controlled2 import ControlledOp2
 from pennylane.ops.op_math.pow2 import flip_pow_adjoint, merge_powers, repeat_pow_base
+from pennylane.ops.op_math.prod2 import Prod2
 from pennylane.typing import Float, Int, Wire
 from tests.core.operator.operator2_utils import DynOp, NonParametricOp, ParametrizedHybridOp
 
@@ -1259,16 +1260,17 @@ class TestCOBUnroll:  # pylint: disable=too-few-public-methods
 
     def test_unroll_change_op_basis_resources(self):
         """ChangeOpBasis resource keys are expanded without rewriting other keys."""
+
         x_rep, y_rep, z_rep = (abstractify(op) for op in (qp.X, qp.Y, qp.Z))
         prod_rep = qp.resource_rep(qp.ops.Prod, resources={x_rep: 2})
         cob_rep = _change_op_basis_abstract(prod_rep, y_rep, x_rep)
 
         result = _unroll_change_op_basis({cob_rep: 2, z_rep: 4, prod_rep: 3})
-
         assert result == {x_rep: 6, y_rep: 2, z_rep: 4, prod_rep: 3}
 
     def test_unroll_nested_symbolic_change_op_basis_resources(self):
         """ChangeOpBasis resource keys are recursively expanded through symbolic wrappers."""
+
         x_rep, y_rep, z_rep = (abstractify(op) for op in (qp.X, qp.Y, qp.Z))
         cob = _change_op_basis_abstract(x_rep, y_rep, x_rep)
 
@@ -1276,7 +1278,23 @@ class TestCOBUnroll:  # pylint: disable=too-few-public-methods
             return qp.adjoint(qp.ctrl(op, control=Wire[1]))
 
         wrapped_z = wrapper(z_rep)
-
         result = _unroll_change_op_basis({wrapper(cob): 2, wrapped_z: 3})
-
         assert result == {wrapper(x_rep): 4, wrapper(y_rep): 2, wrapped_z: 3}
+
+    @pytest.mark.capture
+    def test_compute_resources_returns_unrolled(self):
+        """Tests that compute_resources returns a dictionary where COBs are unrolled."""
+
+        @register_resources(
+            {ChangeOpBasis2(Prod2([qp.X(Wire[1]), qp.Y(Wire[1])]), qp.H(Wire[1])): 1}
+        )
+        def custom_rule(*args, **kwargs):
+            raise NotImplementedError
+
+        assert custom_rule.compute_resources().gate_counts == {
+            qp.X(Wire[1]): 1,
+            qp.Y(Wire[1]): 1,
+            qp.H(Wire[1]): 1,
+            qp.adjoint(qp.X(Wire[1])): 1,
+            qp.adjoint(qp.Y(Wire[1])): 1,
+        }

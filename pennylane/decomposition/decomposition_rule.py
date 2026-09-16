@@ -1221,10 +1221,19 @@ def _change_op_basis_operands(op_rep):
 
 def _unroll_prod_operand(operand):
     """Expand a Prod-like ChangeOpBasis operand into its inner resource keys with counts."""
+
+    # pylint: disable=import-outside-toplevel
+    from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+
     if isinstance(operand, qp.ops.Prod2):
         counts = defaultdict(int)
         for inner_op in operand.operands:
             counts[inner_op] += 1
+        return dict(counts)
+    if isinstance(operand, qp.ops.Adjoint):
+        counts = defaultdict(int)
+        for inner_op, inner_count in _unroll_prod_operand(operand.base).items():
+            counts[_adjoint_abstract(inner_op)] += inner_count
         return dict(counts)
     if isinstance(operand, CompressedResourceOp) and operand.op_type is qp.ops.Prod:
         return dict(operand.params["resources"])
