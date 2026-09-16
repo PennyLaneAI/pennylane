@@ -17,9 +17,8 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.decomposition import list_decomps
-from pennylane.fermi import FermiWord, jordan_wigner
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
+from pennylane.fermi import FermiSentence, FermiWord, jordan_wigner
+from pennylane.ops.functions.assert_valid import assert_valid
 from pennylane.templates.subroutines.alias_sampling import _build_alias_tables
 from pennylane.typing import AbstractWires
 
@@ -32,6 +31,18 @@ def _registers(norbs, mu_bits):
     system = list(range(n_prep, n_prep + n_sys))
     work = list(range(n_prep + n_sys, n_prep + n_sys + n_work))
     return prep, system, work
+
+
+_IDENTITY = ((1.0, 0.0), (0.0, 1.0))
+
+
+def _static(op_matrix):
+    """Return ``op_matrix`` as the nested tuple of floats that ``OneBodyWalk`` requires.
+
+    The numerical tests build their matrices with numpy, but ``op_matrix`` is a compilable
+    argument, so the operator only accepts hashable static data.
+    """
+    return tuple(tuple(float(entry) for entry in row) for row in np.asarray(op_matrix))
 
 
 def _discretized_weights(weights, mu_bits):
@@ -102,23 +113,24 @@ def _reference_block_matrix(op_matrix, system_wires, mu_bits=None):
     signs = np.where(weights > 0, np.sign(mu), 1.0)
     rho = weights / weights.sum() if mu_bits is None else _discretized_weights(weights, mu_bits)
 
+    # The sum over p is done classically: with V^dag n_{p sigma} V = sum_{qs} V_qp V_sp
+    # c^dag_{q sigma} c_{s sigma}, one has sum_p rho_p sign(mu_p) V^dag n_{p sigma} V =
+    # sum_{qs} coeffs_qs c^dag_{q sigma} c_{s sigma} with coeffs = V diag(rho * sign(mu)) V^T.
+    # Only one Jordan-Wigner mapping per spin sector is left.
+    coeffs = vmat @ np.diag(rho * signs) @ vmat.T
+
     dim = 2 ** (2 * norbs)
     wire_map = {m: system_wires[m] for m in range(2 * norbs)}
-    total = np.zeros((dim, dim), dtype=complex)
-    for p in range(norbs):
-        for sigma in (0, 1):
-            fermi_op = 0
-            for q in range(norbs):
-                for s in range(norbs):
-                    fermi_op += (
-                        vmat[q, p]
-                        * vmat[s, p]
-                        * FermiWord({(0, sigma * norbs + q): "+", (1, sigma * norbs + s): "-"})
-                    )
-            number_op = qp.matrix(
-                jordan_wigner(fermi_op, wire_map=wire_map), wire_order=system_wires
-            )
-            total += rho[p] * signs[p] * (np.eye(dim) - 2 * number_op)
+    total = np.sum(rho * signs) * 2 * np.eye(dim, dtype=complex)
+    for sigma in (0, 1):
+        fermi_op = FermiSentence(
+            {
+                FermiWord({(0, sigma * norbs + q): "+", (1, sigma * norbs + s): "-"}): coeffs[q, s]
+                for q in range(norbs)
+                for s in range(norbs)
+            }
+        )
+        total -= 2 * qp.matrix(jordan_wigner(fermi_op, wire_map=wire_map), wire_order=system_wires)
     return -0.5 * total
 
 
@@ -150,7 +162,7 @@ def _apply_walk(op_matrix, mu_bits, state, n_powers=1):
     def circuit():
         qp.StatePrep(state, wires=system)
         for _ in range(n_powers):
-            qp.OneBodyWalk(op_matrix, mu_bits, prep, system, work)
+            qp.OneBodyWalk(_static(op_matrix), mu_bits, prep, system, work)
         return qp.state()
 
     psi = np.asarray(circuit()).reshape(2**n_prep, 2**n_sys, 2**n_work)
@@ -198,43 +210,37 @@ def test_one_body_walk_wires(norbs, mu_bits):
 
 
 class TestOneBodyWalk:
-    """Test that the walk block-encodes the intended operator.
+    """Test the validity of the operator, the block it encodes, and its input validation.
 
-    These run the real ``AliasSampling`` and compare against a discretization-aware
-    reference, so they hold to machine precision rather than to the alias bound.
+    The tests of the encoded block run the real ``AliasSampling`` and compare against
+    ``_reference_block_matrix``, which accounts for the ``mu_bits`` discretization, so they hold
+    to machine precision instead of only to the ``L / 2**mu_bits`` alias bound.
     """
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
-    def test_assert_valid_and_decomposition(self):
-        """Test that OneBodyWalk is a valid Operator2 and decomposes, with and without capture."""
-        prep, system, work = _registers(2, 2)
-        op = qp.OneBodyWalk([[1.0, 2.0], [2.0, 1.0]], 2, prep, system, work)
-        assert_valid(op, skip_differentiation=True)
-        for rule in list_decomps(qp.OneBodyWalk):
-            _test_decomposition_rule(op, rule)
+    @pytest.mark.parametrize(
+        "op_matrix",
+        [
+            ((1.0, 2.0), (2.0, 1.0)),  # one negative eigenvalue
+            ((2.0, 0.5), (0.5, 2.0)),  # positive definite, so no sign phase
+        ],
+    )
+    def test_assert_valid(self, op_matrix):
+        """Test that OneBodyWalk is a valid Operator2, with and without capture.
 
-    @pytest.mark.usefixtures("enable_and_disable_capture")
-    def test_assert_valid_positive_definite(self):
-        """Test the decomposition branch with no negative eigenvalues, which skips the
-        LeftClassicalComparator sign phase."""
+        ``assert_valid`` already covers the decomposition rules of both the operator and its
+        adjoint. The two matrices cover the two branches of the decomposition: with and without
+        the ``LeftClassicalComparator`` sign phase, which is only applied when some eigenvalue is
+        negative.
+        """
         prep, system, work = _registers(2, 2)
-        op = qp.OneBodyWalk([[2.0, 0.5], [0.5, 2.0]], 2, prep, system, work)
+        op = qp.OneBodyWalk(op_matrix, 2, prep, system, work)
         assert_valid(op, skip_differentiation=True)
-        for rule in list_decomps(qp.OneBodyWalk):
-            _test_decomposition_rule(op, rule)
-
-    @pytest.mark.usefixtures("enable_and_disable_capture")
-    def test_adjoint_decomposition(self):
-        """Test that the adjoint decomposition is capture compatible."""
-        prep, system, work = _registers(2, 2)
-        op = qp.adjoint(qp.OneBodyWalk([[1.0, 2.0], [2.0, 1.0]], 2, prep, system, work))
-        for rule in list_decomps("Adjoint(OneBodyWalk)"):
-            _test_decomposition_rule(op, rule)
 
     def test_hyperparameters_and_wires(self):
         """Test that the registers and the static data round-trip through the operator."""
         prep, system, work = _registers(2, 2)
-        op = qp.OneBodyWalk([[1.0, 2.0], [2.0, 1.0]], 2, prep, system, work)
+        op = qp.OneBodyWalk(((1.0, 2.0), (2.0, 1.0)), 2, prep, system, work)
         assert op.op_matrix == ((1.0, 2.0), (2.0, 1.0))
         assert op.alias_sampling_nbits == 2
         assert op.prep_wires == qp.wires.Wires(prep)
@@ -242,6 +248,36 @@ class TestOneBodyWalk:
         assert op.work_wires == qp.wires.Wires(work)
         # ``work_wires`` are auxiliary and excluded from ``wires``, as for AliasSampling
         assert op.wires == qp.wires.Wires(prep + system)
+
+    def test_op_matrix_is_hashable_static_data(self):
+        """Test that ``op_matrix`` is stored as hashable static data.
+
+        ``op_matrix`` is a compilable argument, so it travels in the hashable metadata of the
+        operator's pytree and in the parameters of the captured jaxpr equation, both of which JAX
+        requires to be hashable. Traced inputs are rejected before ``__init__`` by the metaclass,
+        covered in ``tests/core/operator/test_operator2_metaclass.py``.
+        """
+        prep, system, work = _registers(2, 2)
+        op = qp.OneBodyWalk(((1.0, 2.0), (2.0, 1.0)), 2, prep, system, work)
+        assert hash(tuple(op.compilable_args.values()))
+
+    @pytest.mark.parametrize(
+        "op_matrix",
+        [
+            [[1.0, 2.0], [2.0, 1.0]],  # list of lists
+            ([1.0, 2.0], [2.0, 1.0]),  # tuple of lists
+            np.array([[1.0, 2.0], [2.0, 1.0]]),
+        ],
+    )
+    def test_tensor_like_op_matrix_raises(self, op_matrix):
+        """Test that tensor-like input is rejected rather than converted.
+
+        A compilable argument must be hashable static data, so accepting an unhashable container
+        here would only defer the failure to capture time.
+        """
+        prep, system, work = _registers(2, 2)
+        with pytest.raises(ValueError, match="must be a tuple of tuples of floats"):
+            qp.OneBodyWalk(op_matrix, 2, prep, system, work)
 
     @pytest.mark.parametrize("norbs, mu_bits", [(2, 1), (2, 2), (2, 3), (3, 2), (4, 2)])
     def test_encodes_operator_on_random_state(self, norbs, mu_bits):
@@ -353,33 +389,33 @@ class TestOneBodyWalk:
         """Test that a non-square op_matrix is rejected."""
         prep, system, work = _registers(2, 2)
         with pytest.raises(ValueError, match="must be square"):
-            qp.OneBodyWalk(np.zeros((2, 3)), 2, prep, system, work)
+            qp.OneBodyWalk(((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)), 2, prep, system, work)
 
     def test_complex_raises(self):
         """Test that a complex op_matrix is rejected."""
         prep, system, work = _registers(2, 2)
         with pytest.raises(ValueError, match="must be real"):
-            qp.OneBodyWalk(np.eye(2, dtype=complex) * 1j, 2, prep, system, work)
+            qp.OneBodyWalk(((1j, 0.0), (0.0, 1j)), 2, prep, system, work)
 
     @pytest.mark.parametrize("bad", [np.nan, np.inf])
     def test_non_finite_raises(self, bad):
         """Test that a non-finite op_matrix is rejected."""
         prep, system, work = _registers(2, 2)
         with pytest.raises(ValueError, match="must be finite"):
-            qp.OneBodyWalk(np.array([[1.0, bad], [bad, 1.0]]), 2, prep, system, work)
+            qp.OneBodyWalk(((1.0, bad), (bad, 1.0)), 2, prep, system, work)
 
     def test_non_symmetric_raises(self):
         """Test that a non-symmetric op_matrix is rejected."""
         prep, system, work = _registers(2, 2)
         with pytest.raises(ValueError, match="must be symmetric"):
-            qp.OneBodyWalk(np.array([[1.0, 2.0], [0.0, 1.0]]), 2, prep, system, work)
+            qp.OneBodyWalk(((1.0, 2.0), (0.0, 1.0)), 2, prep, system, work)
 
     @pytest.mark.parametrize("nbits", [True, 0, -1, 2.0])
     def test_invalid_nbits_raises(self, nbits):
         """Test that alias_sampling_nbits must be a positive integer."""
         prep, system, work = _registers(2, 2)
         with pytest.raises(ValueError, match="alias_sampling_nbits must be a positive integer"):
-            qp.OneBodyWalk(np.eye(2), nbits, prep, system, work)
+            qp.OneBodyWalk(_IDENTITY, nbits, prep, system, work)
 
     @pytest.mark.parametrize("register", ["prep_wires", "system_wires", "work_wires"])
     def test_wrong_register_size_raises(self, register):
@@ -389,7 +425,7 @@ class TestOneBodyWalk:
         registers[register] = registers[register][:-1]
         with pytest.raises(ValueError, match=f"{register} must have"):
             qp.OneBodyWalk(
-                np.eye(2),
+                _IDENTITY,
                 2,
                 registers["prep_wires"],
                 registers["system_wires"],
@@ -400,21 +436,21 @@ class TestOneBodyWalk:
         """Test that the three registers must be disjoint."""
         prep, system, work = _registers(2, 2)
         with pytest.raises(ValueError, match="must not overlap"):
-            qp.OneBodyWalk(np.eye(2), 2, prep, system, prep[: len(work)])
+            qp.OneBodyWalk(_IDENTITY, 2, prep, system, prep[: len(work)])
 
     def test_abstract_wires_length_is_validated(self):
         """Test that register sizes are checked for AbstractWires, which still expose a length."""
         req = qp.one_body_walk_wires(2, 2)
         with pytest.raises(ValueError, match="prep_wires must have"):
             qp.OneBodyWalk(
-                np.eye(2),
+                _IDENTITY,
                 2,
                 AbstractWires(req["prep_wires"] - 1),
                 AbstractWires(req["system_wires"]),
                 AbstractWires(req["work_wires"]),
             )
         op = qp.OneBodyWalk(
-            np.eye(2),
+            _IDENTITY,
             2,
             AbstractWires(req["prep_wires"]),
             AbstractWires(req["system_wires"]),
@@ -426,4 +462,4 @@ class TestOneBodyWalk:
         """Test that an all-zero op_matrix has lambda = 0 and cannot be normalized."""
         prep, system, work = _registers(2, 2)
         with pytest.raises(ValueError, match="positive value"):
-            qp.OneBodyWalk(np.zeros((2, 2)), 2, prep, system, work)
+            qp.OneBodyWalk(((0.0, 0.0), (0.0, 0.0)), 2, prep, system, work)

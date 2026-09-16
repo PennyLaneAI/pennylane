@@ -490,23 +490,25 @@
   eigenvalues of the one-body matrix. Use :func:`~.one_body_walk_wires` to get the required sizes of
   the PREP and system registers, and the minimum size of the work register.
   [(#9991)](https://github.com/PennyLaneAI/pennylane/pull/9991)
+  [(#10153)](https://github.com/PennyLaneAI/pennylane/pull/10153)
 
   ```python
   import numpy as np
   import pennylane as qp
 
-  op_matrix = [[1.0, 2.0], [2.0, 1.0]]
-  req = qp.one_body_walk_wires(len(op_matrix), 2)
-  n_prep, n_sys, n_work = req["prep_wires"], req["system_wires"], req["work_wires"]
-  prep_wires = range(n_prep)
-  system_wires = range(n_prep, n_prep + n_sys)
-  work_wires = range(n_prep + n_sys, n_prep + n_sys + n_work)
+  op_matrix = ((1.0, 2.0), (2.0, 1.0))
+  req = qp.one_body_walk_wires(len(op_matrix), alias_sampling_nbits=2)
+  all_wires = qp.registers(req)
 
-  @qp.qnode(qp.device("default.qubit", wires=n_prep + n_sys + n_work))
+  @qp.qnode(qp.device("default.qubit", wires=sum(req.values())))
   def circuit():
-      qp.OneBodyWalk(op_matrix, 2, prep_wires, system_wires, work_wires)
-      return qp.probs(wires=prep_wires)
+      qp.OneBodyWalk(op_matrix, 2, **all_wires)
+      return qp.probs(wires=all_wires["prep_wires"])
   ```
+
+  The probability of finding the PREP register back in :math:`|\vec 0\rangle` is the squared norm
+  of the encoded block acting on the system state. It is equal to
+  :math:`\big(\sum_p \mu_p / \lambda\big)^2 = (2/4)^2`.
 
   ```pycon
   >>> print(np.round(circuit()[0], 3))
