@@ -34,7 +34,7 @@ from pennylane.math import ceil_log2
 from pennylane.ops import CNOT, CZ, X, cond, ctrl, pauli_measure
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.typing import AbstractArray, Bool, Int, TensorLike, Wire
-from pennylane.wires import DynamicWire, Wires, WiresLike, validate_no_wire_overlaps
+from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
 from .arithmetic import TemporaryAND
 from .multix import MultiX
@@ -849,9 +849,7 @@ def _qrom_unary_iteration_resources(
     }
 
 
-def _main_unary_loop_monolithic(bitstrings, triples, target_wires, unroll=False):
-    """The unroll option is just here to support QROM on dynamically allocated wires until
-    we can iterate with tracer indices over registers of such allocated wires."""
+def _main_unary_loop_monolithic(bitstrings, triples, target_wires):
     K = len(bitstrings)
     c = len(triples) + 1
     # last work wire in use acts as the flag qubit for data loading.
@@ -886,20 +884,13 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires, unroll=False)
         # 2a. right-elbow ladder: uncompute levels c-2 .. max(a,1) (top-down)
         lower_bound = math.max(math.array([a, 1], like=a))
 
-        if unroll:
-            _ = [
-                qp_ops.adjoint(TemporaryAND)(triples[i]) for i in range(c - 2, lower_bound - 1, -1)
-            ]
+        @for_loop(c - 2, lower_bound - 1, -1)
+        # Once resource hints are merged, use those estimates:
+        # @for_loop(c - 2, max(a - 1, 0), -1, estimated_iterations=est_ladder_len)
+        def uncompute(i):
+            qp_ops.adjoint(TemporaryAND)(wires=triples[i])
 
-        else:
-
-            @for_loop(c - 2, lower_bound - 1, -1)
-            # Once resource hints are merged, use those estimates:
-            # @for_loop(c - 2, max(a - 1, 0), -1, estimated_iterations=est_ladder_len)
-            def uncompute(i):
-                qp_ops.adjoint(TemporaryAND)(wires=triples[i])
-
-            uncompute()  # pylint: disable=no-value-for-parameter
+        uncompute()  # pylint: disable=no-value-for-parameter
 
         # 2b. merge gate(s) at the boundary
         # Once resource hints are merged, use those estimates:
@@ -921,24 +912,15 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires, unroll=False)
         cond(a == 0, CNOT)(triples[0][1:])
 
         # 2c. left-elbow ladder: recompute levels max(a,1) .. c-2 (bottom-up)
-        if unroll:
-            _ = [TemporaryAND(triples[i], (1, 0)) for i in range(lower_bound, c - 1)]
-        else:
-            # Once resource hints are merged, use those estimates:
-            @for_loop(lower_bound, c - 1)
-            # @for_loop(max(a, 1), c - 1, estimated_iterations=est_ladder_len)
-            def recompute(i):
-                TemporaryAND(triples[i], (1, 0))
+        # Once resource hints are merged, use those estimates:
+        @for_loop(lower_bound, c - 1)
+        # @for_loop(max(a, 1), c - 1, estimated_iterations=est_ladder_len)
+        def recompute(i):
+            TemporaryAND(triples[i], (1, 0))
 
-            recompute()  # pylint: disable=no-value-for-parameter
+        recompute()  # pylint: disable=no-value-for-parameter
 
-    # todo: remove unrolling logic once iteration over dynamically allocated wires with a tracer
-    # is supported [sc-129521]
-    if unroll:
-        for k in range(K - 1):
-            loop(k)
-    else:
-        for_loop(K - 1)(loop)()  # pylint: disable=no-value-for-parameter
+    for_loop(K - 1)(loop)()  # pylint: disable=no-value-for-parameter
 
     # Load last bit string
     ctrl(MultiX(bitstrings[K - 1], target_wires), control=[flag])
@@ -979,12 +961,11 @@ def _qrom_unary_iteration(
     interleaved = _interleave_controls(control_wires, work_wires, head=None)
     triples = [interleaved[2 * i : 2 * i + 3] for i in range(num_controls - 1)]
 
-    unroll_for_loop = any(isinstance(wire, DynamicWire) for wire in interleaved)
-    if not unroll_for_loop and (compiler.active() or capture.enabled()):
+    if compiler.active() or capture.enabled():
         bitstrings = math.array(bitstrings, like="jax")
         triples = math.array(triples, like="jax")
 
-    _main_unary_loop_monolithic(bitstrings, triples, target_wires, unroll=unroll_for_loop)
+    _main_unary_loop_monolithic(bitstrings, triples, target_wires)
 
 
 add_decomps(QROM, _select_swap, _qrom_unary_iteration, _qrom_measurement_decomposition)

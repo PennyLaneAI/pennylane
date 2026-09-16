@@ -3,10 +3,6 @@
 <h3>New features since last release</h3>
 
 
-* A new decorator is available called :func:`pennylane.subcircuit`, which can be used to 
-  create operators directly from quantum functions. This enables fast research and 
-  development of new operators without the need to create full-fledged operator classes 
-
 * Three new numeric Hamiltonians called :class:`pennylane.CDFHamiltonian` (based on
   `arXiv:2506.15784, Sec. III A <https://arxiv.org/abs/2506.15784>`),
   :class:`pennylane.CGFHamiltonian` (based on
