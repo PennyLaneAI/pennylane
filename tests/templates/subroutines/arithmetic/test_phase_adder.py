@@ -35,9 +35,7 @@ def test_standard_validity_Phase_Adder():
     qp.ops.functions.assert_valid(op)
 
 
-@pytest.mark.xfail_if_capture(
-    reason="Come back to this when we port it to Op2 [sc-130164]"
-)
+@pytest.mark.xfail_if_capture(reason="Come back to this when we port it to Op2 [sc-130164]")
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_falsy_zero_as_work_wire():
     """Test that work wire is not treated as a falsy zero."""
@@ -278,9 +276,7 @@ class TestPhaseAdder:
         for op1, op2 in zip(phase_adder_decomposition, op_list):
             qp.assert_equal(op1, op2)
 
-    @pytest.mark.xfail_if_capture(
-        reason="Come back to this when we port it to Op2 [sc-130164]"
-    )
+    @pytest.mark.xfail_if_capture(reason="Come back to this when we port it to Op2 [sc-130164]")
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("mod", [7, 8])
     def test_decomposition_new(self, mod):
