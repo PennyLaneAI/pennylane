@@ -266,7 +266,7 @@ def _temporary_and_to_toffoli(wires: WiresLike, control_values: Sequence[bool]):
     _toffoli_with_cvals(wires, control_values)
 
 
-def _temporary_and__ppm_resources(*_, **__):
+def _temporary_and_ppr_resources(*_, **__):
     return {
         ops.X: _number_xs,
         ops.PPR(8, "ZZY", Wire[3]): 1,
@@ -275,8 +275,8 @@ def _temporary_and__ppm_resources(*_, **__):
     }
 
 
-@register_resources(_temporary_and__ppm_resources, exact=False)
-def _temporary_and_ppm(wires: WiresLike, control_values: Sequence[bool]):
+@register_resources(_temporary_and_ppr_resources, exact=False)
+def _temporary_and_ppr(wires: WiresLike, control_values: Sequence[bool]):
     ops.cond(math.logical_not(control_values[0]), ops.X)(wires[0])
     ops.cond(math.logical_not(control_values[1]), ops.X)(wires[1])
     ops.PPR(8, "ZZY", wires)
@@ -287,7 +287,7 @@ def _temporary_and_ppm(wires: WiresLike, control_values: Sequence[bool]):
     ops.cond(math.logical_not(control_values[1]), ops.X)(wires[1])
 
 
-add_decomps(TemporaryAND, _temporary_and, _temporary_and_to_toffoli, _temporary_and_ppm)
+add_decomps(TemporaryAND, _temporary_and, _temporary_and_to_toffoli, _temporary_and_ppr)
 
 
 def _adjoint_temporary_and_resources(*_, **__):
