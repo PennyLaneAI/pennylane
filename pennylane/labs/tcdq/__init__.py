@@ -302,9 +302,9 @@ Phase functions and sparse initial states work as in the qubit case, with bitstr
 dit-strings. Note that the expectation values are complex, so the estimator returns a real–imaginary
 covariance matrix for each observable.
 
-For distribution matching, :func:`~build_qudit_mmd_loss` uses a heat kernel on either a cycle graph,
-which preserves adjacency between levels, or a complete graph, which treats distinct levels
-symmetrically.
+For distribution matching, :func:`~build_qudit_mmd_loss` accepts a Heisenberg–Weyl expectation
+value function and uses a heat kernel on either a cycle graph, which preserves adjacency between
+levels, or a complete graph, which treats distinct levels symmetrically.
 
 .. code-block:: python
 
@@ -315,7 +315,12 @@ symmetrically.
         n_ops=100,
         graph_type="cycle",
     )
-    qudit_loss_fn = build_qudit_mmd_loss(qudit_config, qudit_mmd_config)
+    qudit_loss_fn = build_qudit_mmd_loss(
+        qudit_expval_fn,
+        dims=dims,
+        n_qudits=n_qudits,
+        mmd_config=qudit_mmd_config,
+    )
     target_data = jax.random.randint(
         jax.random.PRNGKey(1), shape=(500, n_qudits), minval=0, maxval=dims
     )
