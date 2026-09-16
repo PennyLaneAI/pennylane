@@ -292,7 +292,7 @@ class TestSignedOutSquare:
 
         expected = [
             qp.OutSquare(x_wires[1:], output_wires, work_wires, output_wires_zeroed),
-            qp.BasisState([1], [1]),
+            qp.MultiX([1], [1]),
             qp.X(4),
             qp.TemporaryAND([2, 4, 8]),
             qp.X(8),
@@ -302,7 +302,7 @@ class TestSignedOutSquare:
             qp.adjoint(qp.TemporaryAND([2, 4, 8])),
             qp.ctrl(qp.CNOT([2, 4]), [0], work_wires=[9, 10, 11, 12], work_wire_type="zeroed"),
             qp.X(4),
-            qp.BasisState([1], [1]),
+            qp.MultiX([1], [1]),
             qp.X(3),
             qp.SemiAdder([0], [3], [8, 9, 10, 11, 12]),
             qp.X(3),
