@@ -18,16 +18,17 @@ Contains the OutMultiplier template.
 from collections import defaultdict
 
 from pennylane import capture, compiler, math
-from pennylane.core.operator import Operator2, abstractify
+from pennylane.core.operator import Operator2
 from pennylane.decomposition import (
     add_decomps,
     register_condition,
     register_resources,
 )
 from pennylane.decomposition.resources import resource_rep
-from pennylane.ops import BasisState, H, Prod, X, adjoint, change_op_basis, ctrl, prod
+from pennylane.ops import H, X, adjoint, change_op_basis, ctrl, prod
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
+from pennylane.templates.subroutines.multix import MultiX
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
@@ -283,7 +284,8 @@ def _out_multiplier_with_qft_resources(
     num_qft_wires = num_output_wires + 1 if mod != 2**num_output_wires else num_output_wires
 
     if output_wires_zeroed:
-        compute_rep = resource_rep(Prod, resources={abstractify(H): num_qft_wires})
+        multi_h = [H(Wire[1])] * num_qft_wires
+        compute_rep = prod(*multi_h)
     else:
         compute_rep = QFT(Wire[num_qft_wires])
 
@@ -336,7 +338,7 @@ def _out_multiplier_with_qft(
         work_wire = output_wires[:0]
 
     if output_wires_zeroed:
-        compute_op = prod(*(H(w) for w in qft_output_wires))
+        compute_op = prod(*[H(w) for w in qft_output_wires])
     else:
         compute_op = QFT(qft_output_wires)
     uncompute_op = adjoint(QFT(qft_output_wires))
@@ -538,7 +540,7 @@ def _c_add_sub_resources(num_x_wires, num_y_wires):
     """Resources for _c_add_sub."""
     resources = defaultdict(int)
     if num_x_wires > 1:
-        ctrl_basis_rep = ctrl(BasisState(Bool[num_x_wires - 1], Wire[num_x_wires - 1]), Wire[1])
+        ctrl_basis_rep = ctrl(MultiX(Bool[num_x_wires - 1], Wire[num_x_wires - 1]), Wire[1])
         resources[ctrl_basis_rep] += 2
 
     cnot_on_0_rep = ctrl(X(Wire[1]), control=Wire[1], control_values=[0])
@@ -572,7 +574,7 @@ def _c_add_sub(c_wire, x_wires, y_wires, work_wires):
     # the LSB
     c_wire = [c_wire]
     if len(x_wires) > 1:
-        ctrl(BasisState([1] * (len(x_wires) - 1), x_wires[:-1]), control=c_wire, control_values=[0])
+        ctrl(MultiX([1] * (len(x_wires) - 1), x_wires[:-1]), control=c_wire, control_values=[0])
 
     work_wires = work_wires[: len(y_wires) - 1]
     # Control-flip the LSB of the output register. This is part of achieving addition plus one
@@ -587,7 +589,7 @@ def _c_add_sub(c_wire, x_wires, y_wires, work_wires):
     ctrl(X(y_wires[-1]), control=c_wire, control_values=[0])
 
     if len(x_wires) > 1:
-        ctrl(BasisState([1] * (len(x_wires) - 1), x_wires[:-1]), control=c_wire, control_values=[0])
+        ctrl(MultiX([1] * (len(x_wires) - 1), x_wires[:-1]), control=c_wire, control_values=[0])
 
 
 @register_condition(_out_multiplier_with_caddsub_condition)

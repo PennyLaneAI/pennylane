@@ -156,7 +156,7 @@ default is the median pairwise distance of the dataset, computed with
 :func:`~median_heuristic`.
 
 For more detail on how the loss is constructed, see
-`Section 3.3 of IQPopt: Fast optimization of instantaneous quantum polynomial circuits in JAX <https://arxiv.org/pdf/2501.04776>`_.
+Section 3.3 of `arXiv:2501.04776 <https://arxiv.org/pdf/2501.04776>`_.
 
 .. code-block:: python
 
