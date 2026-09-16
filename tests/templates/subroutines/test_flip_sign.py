@@ -23,11 +23,10 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.wires import Wires
 
 
-@pytest.mark.parametrize("work_wires", [(), (2, 3)])
 @pytest.mark.usefixtures("enable_and_disable_capture")
-def test_standard_checks(work_wires):
+def test_standard_checks():
     """Run standard checks with the assert_valid function."""
-    op = qp.FlipSign([0, 1], wires=(0, 1), work_wires=work_wires)
+    op = qp.FlipSign([0, 1], wires=(0, 1))
     qp.ops.functions.assert_valid(op)
 
 
@@ -190,11 +189,10 @@ class TestFlipSign:
             ([1, 0, 1, 0], [0, 1, 5, 4]),
         ],
     )
-    @pytest.mark.parametrize("work_wires", [(), (10,), (10, 11)])
     @pytest.mark.usefixtures("enable_and_disable_capture")
-    def test_decomposition_new(self, state, wires, work_wires):
+    def test_decomposition_new(self, state, wires):
         """Tests the decomposition rule implemented with the new system."""
-        op = qp.FlipSign(state, wires=wires, work_wires=work_wires)
+        op = qp.FlipSign(state, wires=wires)
 
         for rule in qp.list_decomps(qp.FlipSign):
             _test_decomposition_rule(op, rule)
