@@ -30,6 +30,9 @@ from pennylane.pytrees import register_pytree
 from pennylane.typing import AbstractWires, _AbstractWireTypeFactory
 
 if util.find_spec("jax") is not None:
+    # pylint: disable=import-outside-toplevel
+    from pennylane.capture import QpPrimitive, enabled
+
     jax = import_module("jax")
     jax_available = True
 else:
@@ -39,6 +42,27 @@ else:
 if jax_available:
     # pylint: disable=unnecessary-lambda
     setattr(jax.interpreters.partial_eval.DynamicJaxprTracer, "__hash__", lambda x: id(x))
+
+    extract_wire_p = QpPrimitive("extract_wire")
+
+    @extract_wire_p.def_impl
+    def _extract_wire_impl(idx, *wires):
+        assert not math.is_abstract(idx)
+        return wires[idx]
+
+    @extract_wire_p.def_abstract_eval
+    def _extract_wire_aval(idx, *wires):  # pylint: disable=unused-argument
+        return AbstractQubit()
+
+    cast_to_wire_p = QpPrimitive("cast_to_wire")
+
+    @cast_to_wire_p.def_impl
+    def _cast_to_wire_impl(wire):
+        return wire
+
+    @cast_to_wire_p.def_abstract_eval
+    def _cast_to_wire_aval(wire):  # pylint: disable=unused-argument
+        return AbstractQubit()
 
 
 def _process(wires):
@@ -172,13 +196,53 @@ class Wires(Sequence):
             self._labels = _process(wires)
 
         self._hash = None
+        self._subregisters = [self]
 
     def __getitem__(self, idx):
         """Method to support indexing. Returns a Wires object if index is a slice,
         or a label if index is an integer."""
+        if math.is_abstract(idx) and enabled():
+            return self.__capture_getitem(idx)
+
         if isinstance(idx, slice):
             return Wires(self._labels[idx])
+
         return self._labels[idx]
+
+    def __capture_getitem(self, idx):
+        from pennylane.ops import cond
+
+        if len(self._subregisters) == 1:
+            if type(self._subregisters[0]) is Wires:
+                return jax.lax.select_n(idx, *self._labels)
+            return extract_wire_p.bind(idx, *self._subregisters[0]._labels)
+
+        true_fn = self.__create_getitem_cond_branch(0, 0)
+        true_pred = idx < len(self._subregisters[0])
+        elifs = []
+        start = len(self._subregisters[0])
+        for i, reg in enumerate(self._subregisters[1:-1]):
+            fn = self.__create_getitem_cond_branch(i + 1, start)
+            pred = idx < (start + len(reg))
+            elifs.append((pred, fn))
+            start += len(reg)
+
+        last_i = len(self._subregisters) - 1
+        false_fn = self.__create_getitem_cond_branch(last_i, start)
+
+        cond_fn = cond(true_pred, true_fn, false_fn=false_fn, elifs=elifs)
+        return cond_fn(idx)
+
+    def __create_getitem_cond_branch(self, i, start):
+
+        def getitem_cond(idx):
+            idx = idx if start == 0 else idx - start
+            if type(self._subregisters[i]) is Wires:
+                wire = jax.lax.select_n(idx, *self._subregisters[i]._labels)
+                return cast_to_wire_p.bind(wire)
+            return extract_wire_p.bind(idx, *self._subregisters[i]._labels)
+
+        return getitem_cond
 
     def __iter__(self):
         return self._labels.__iter__()
@@ -237,7 +301,8 @@ class Wires(Sequence):
         """
         if isinstance(other, AbstractWires):
             return AbstractWires(len(self)) + other
-        other = Wires(other)
+
+        other = Wires(other) if not isinstance(other, Wires) else other
         return Wires.all_wires([self, other])
 
     def __radd__(self, other):
@@ -251,7 +316,8 @@ class Wires(Sequence):
         """
         if isinstance(other, AbstractWires):
             return AbstractWires(len(self)) + other
-        other = Wires(other)
+
+        other = Wires(other) if not isinstance(other, Wires) else other
         return Wires.all_wires([other, self])
 
     def __array__(self, dtype=None, copy=None):
@@ -491,6 +557,115 @@ class Wires(Sequence):
         return Wires(tuple(shared), _override=True)
 
     @staticmethod
+    def _is_dynamic_label(label):
+        """Whether a wire label is a dynamically-allocated qubit rather than a static wire label.
+
+        This covers ``AbstractQubit`` tracers (from ``qp.allocate`` under program capture),
+        ``AbstractQubit`` instances, and ``DynamicWire``\\ s (the non-capture representation).
+        """
+        if isinstance(label, DynamicWire):
+            return True
+        if not jax_available:
+            return False
+        return is_abstract_qubit(label) or isinstance(label, AbstractQubit)
+
+    @staticmethod
+    def _make_sub_register(labels):
+        """Wrap a homogeneous run of ``labels`` into a sub-register object.
+
+        A run of dynamically-allocated labels becomes a :class:`~.DynamicRegister`; a run of static
+        labels becomes a :class:`Wires`.
+        """
+        labels = tuple(labels)
+        if labels and Wires._is_dynamic_label(labels[0]):
+            # Local import to avoid a circular import between wires and allocation.
+            from pennylane.allocation import (
+                DynamicRegister,  # pylint: disable=import-outside-toplevel
+            )
+
+            return DynamicRegister(labels)
+        return Wires(labels, _override=True)
+
+    @staticmethod
+    def _group_subregisters(labels):
+        """Best-effort grouping of flat ``labels`` into consecutive sub-registers.
+
+        Consecutive labels of the same kind (static vs dynamic) are merged into one sub-register.
+        This is only a fallback when register boundaries have already been lost (e.g. after
+        sorting): adjacent dynamic wires from *different* allocations cannot be told apart from
+        a flat label list, so they collapse into a single :class:`~.DynamicRegister`. Prefer
+        :meth:`_combine_subregisters` whenever the input ``Wires`` still carry their own
+        ``_subregisters``, which keeps individual dynamic registers separate.
+
+        The concatenation of the returned sub-registers reproduces ``labels`` exactly.
+
+        Args:
+            labels (Iterable): the (ordered) wire labels to group
+
+        Returns:
+            list[Wires | pennylane.allocation.DynamicRegister]: the ordered list of sub-registers
+        """
+        groups = []
+        current_is_dynamic = None
+        for label in labels:
+            is_dynamic = Wires._is_dynamic_label(label)
+            if is_dynamic == current_is_dynamic:
+                groups[-1].append(label)
+            else:
+                groups.append([label])
+                current_is_dynamic = is_dynamic
+        return [Wires._make_sub_register(group) for group in groups]
+
+    @staticmethod
+    def _effective_subregisters(wires):
+        """The sub-registers of ``wires``, computing them on the fly for freshly-created ``Wires``.
+
+        A freshly-created ``Wires`` defaults its ``_subregisters`` to ``[self]``; in that case the
+        grouping is computed from its labels. Otherwise the already-computed ``_subregisters`` are
+        returned so that previously-separated dynamic registers stay separate
+        (``[s1, d1, d2, s2, ...]``, never a merged ``d12``).
+        """
+        # pylint: disable=protected-access
+        if len(wires._subregisters) == 1 and wires._subregisters[0] is wires:
+            # A DynamicRegister is already a single allocation; keep it as one unit.
+            if type(wires) is not Wires:
+                return [wires]
+            return Wires._group_subregisters(wires._labels)
+        return wires._subregisters
+
+    @staticmethod
+    def _combine_subregisters(list_of_wires):
+        """Combine the sub-registers of several ``Wires`` into a single ordered list.
+
+        Adjacent static sub-registers are merged (they all refer to the same static register), but
+        each dynamically-allocated register is kept as its own separate sub-register. The result
+        therefore has the shape ``[s1, d1, d2, s2, d3, ...]`` — never a merged ``d12`` — so that
+        ``_subregisters`` can index into each allocation independently. Labels are de-duplicated
+        in first-seen order, so the concatenation of the returned sub-registers matches the
+        de-duplicated combined labels.
+        """
+        groups = []
+        seen = set()
+        for wires in list_of_wires:
+            for sub in Wires._effective_subregisters(wires):
+                deduped = []
+                for label in sub.labels:
+                    if label not in seen:
+                        seen.add(label)
+                        deduped.append(label)
+                if not deduped:
+                    continue
+                is_dynamic = Wires._is_dynamic_label(deduped[0])
+                prev_is_static = groups and not Wires._is_dynamic_label(groups[-1][0])
+                if not is_dynamic and prev_is_static:
+                    # Merge consecutive static sub-registers.
+                    groups[-1].extend(deduped)
+                else:
+                    # Static after a dynamic, or a distinct dynamic register (never merge dyn+dyn).
+                    groups.append(deduped)
+        return [Wires._make_sub_register(group) for group in groups]
+
+    @staticmethod
     def all_wires(list_of_wires, sort=False):
         """Return the wires that appear in any of the Wires objects in the list.
 
@@ -513,9 +688,9 @@ class Wires(Sequence):
         >>> Wires.all_wires(list_of_wires)
         Wires([4, 0, 1, 3, 5])
         """
-        converted_wires = (
+        converted_wires = [
             wires if isinstance(wires, Wires) else Wires(wires) for wires in list_of_wires
-        )
+        ]
         all_wires_list = itertools.chain(*(w.labels for w in converted_wires))
         combined = list(dict.fromkeys(all_wires_list))
 
@@ -525,7 +700,15 @@ class Wires(Sequence):
             else:
                 combined = sorted(combined, key=str)
 
-        return Wires(tuple(combined), _override=True)
+        combined_wires = Wires(tuple(combined), _override=True)
+        # pylint: disable=protected-access
+        # Keep each dynamically-allocated register separate (only merge adjacent static
+        # sub-registers). Sorting reorders labels across registers, so fall back to a flat grouping.
+        if sort:
+            combined_wires._subregisters = Wires._group_subregisters(combined)
+        else:
+            combined_wires._subregisters = Wires._combine_subregisters(converted_wires)
+        return combined_wires
 
     @staticmethod
     def unique_wires(list_of_wires):
