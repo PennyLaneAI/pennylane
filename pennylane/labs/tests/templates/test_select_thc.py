@@ -99,11 +99,11 @@ class TestQROMTable:
     """Tests for the loaded rotation table: the angle quantization, the one-body block and
     the incremental loading of each batch as a difference from the previous one."""
 
-	@pytest.mark.parametrize("M, n_half", [(3, 4), (2, 3), (4, 2), (8, 4)])
-	@pytest.mark.parametrize("one_body", [True, False])
-	def test_shape_and_padding(self, M, n_half, one_body):
-	    """Test that the QROM table has the correct shape and padding."""
-	    block = 1 << qp.math.ceil_log2(max(M, n_half))
+    @pytest.mark.parametrize("M, n_half", [(3, 4), (2, 3), (4, 2), (8, 4)])
+    @pytest.mark.parametrize("one_body", [False, True])
+    def test_shape_and_padding(self, M, n_half, one_body):
+        """Test that the QROM table has the correct shape and padding."""
+        beth = 5
         rng = np.random.default_rng(0)
         rows = _build_qrom_givens_data(
             rng.standard_normal((M, n_half)),
@@ -113,7 +113,7 @@ class TestQROMTable:
             _angle_batches(n_half, 1)[0],
         )[0]
 
-        block = 1 << qp.math.ceil_log2(M + 1)
+        block = 1 << qp.math.ceil_log2(max(M, n_half))
         assert len(rows) == (block + n_half if one_body else M)
         assert all(len(r) == (n_half - 1) * beth for r in rows)
         assert all(set(r) <= {0, 1} for r in rows)

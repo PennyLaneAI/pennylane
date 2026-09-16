@@ -322,7 +322,7 @@ def _select_half(
             one-body flag and the one-body rotations are loaded
         skip_one_body (bool): if ``False``, the :math:`Z_1` reflection is controlled on the
             success flag alone, as in the first sandwich of Fig. 5. If ``True``, it carries
-            a second control, the open circle on the :math:`\lvert \nu = M + 1 \rangle`
+            a second control, the open circle on the :math:`\lvert \nu = M \rangle`
             wire of the second sandwich in Fig. 5, so the reflection is switched off on the
             one-body block and this half acts as the identity there.
 
@@ -446,7 +446,8 @@ def select_thc(
             followed by :math:`\nu`, as left by ``PREPARE``.
         flag_wires (Sequence[int]): this includes five wires, in order the success flag, the
             one-body flag (:math:`\nu = M`), the qubit that controls the :math:`\mu \leftrightarrow
-            \nu` swap, and the two spin flags.
+            \nu` swap, and the two spin flags. All five are assumed to be prepared by
+            ``PREPARE``.
         gradient_wires (Sequence[int]): the ``beth + 1`` wires holding the phase gradient state.
             This is assumed to be prepared on entry and left unchanged, as it is reused between
             ``PREPARE`` and ``SELECT`` oracles.
