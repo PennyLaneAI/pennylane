@@ -289,8 +289,14 @@ def alias_sampling_wires(n_states, mu):
     return {"target_wires": n_target, "temp_wires": n_temp, "work_wires": n_work}
 
 
-def _canonicalize_probs(probs):
-    """Turn ``probs`` into a hashable 1-D tuple of floats for compilable static data."""
+def _validate_probs(probs):
+    """Require ``probs`` to already be a hashable 1-D tuple of floats."""
+    if not isinstance(probs, tuple) or any(isinstance(x, (tuple, list)) for x in probs):
+        raise ValueError(
+            "probs must be a tuple of floats, because it is compile-time static "
+            f"data and has to be hashable; got {type(probs).__name__}. Convert an array with "
+            "tuple(arr)."
+        )
     arr = np.asarray(probs, dtype=float)
     if arr.ndim != 1:
         raise ValueError(f"probs must be a 1-D sequence of weights, got shape {arr.shape}.")
@@ -300,7 +306,6 @@ def _canonicalize_probs(probs):
         raise ValueError("probs must be non-negative and finite")
     if arr.sum() <= 0:
         raise ValueError("probs must sum to a positive value")
-    return tuple(float(p) for p in arr)
 
 
 class AliasSampling(Operator2):
@@ -332,7 +337,7 @@ class AliasSampling(Operator2):
         them. ``work_wires`` are returned to :math:`|0\rangle` and may be reused.
 
     Args:
-        probs (Sequence[float]): non-negative weights :math:`w_\ell` (length ``L``)
+        probs (tuple[float]): non-negative weights :math:`w_\ell` in a tuple of length ``L``.
         mu (int): number of bits for ``keep`` and ``sigma``, representing the precision of the alias-sampling coefficients
         target_wires (WiresLike): the output index register :math:`|\ell\rangle`, size ``ceil(log2 L)``
         temp_wires (WiresLike): the garbage register (sigma + alt + keep + flag +
@@ -346,7 +351,7 @@ class AliasSampling(Operator2):
         import numpy as np
         import pennylane as qp
 
-        probs = np.array([0.1, 0.2, 0.3, 0.4])
+        probs = (0.1, 0.2, 0.3, 0.4)
         mu = 4
 
         req = qp.alias_sampling_wires(len(probs), mu)
@@ -383,7 +388,7 @@ class AliasSampling(Operator2):
         if isinstance(mu, bool) or not isinstance(mu, int) or mu < 1:
             raise ValueError(f"mu must be a positive integer, got {mu!r}.")
 
-        probs = _canonicalize_probs(probs)
+        _validate_probs(probs)
 
         L = len(probs)
 
