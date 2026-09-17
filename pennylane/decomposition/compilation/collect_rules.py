@@ -36,7 +36,7 @@ def _recursive_all_decomps(op: Operator2, rules_map: dict, **kwargs):
 
     if kwargs["adj"] and not has_n_ctrls:
         # if adj op appears from resources, make sure to also include target
-        target = base if is_adj else op
+        target = base if is_adj else adjoint(op)
         _pure_recursive_add_decomps(target, rules_map, **kwargs)
 
     if not has_n_ctrls and not is_adj:
