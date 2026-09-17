@@ -698,6 +698,49 @@ class TestSelectTHCInvariants:
         assert np.isclose(np.linalg.norm(outs[1]), 1.0, atol=1e-8)
         assert np.allclose(outs[0], outs[1], atol=1e-8)
 
+    def test_batching_does_not_change_the_unitary(self):
+        """Test that splitting the Givens loads into two batches leaves SELECT unchanged.
+
+        Non-trivial batching needs at least two Givens pairs, so ``N/2 >= 3``.
+        """
+        M, N, beth = 2, 6, 1
+        chi = np.random.default_rng(M).standard_normal((M, N // 2))
+        tev = np.linalg.qr(np.random.default_rng(1).standard_normal((N // 2, N // 2)))[0]
+        base = N + 2 * qp.math.ceil_log2(M + 1) + 5 + beth + 1
+
+        def run(num_batches):
+            system, index, flags, gradient, work, ntot = _layout(
+                M, N, beth, num_batches=num_batches
+            )
+            assert base + len(work) == ntot
+
+            @qp.qnode(qp.device("default.qubit", wires=ntot))
+            def circuit():
+                qp.Hadamard(system[0])
+                qp.X(index[0])
+                qp.X(flags[0])
+                _prep_gradient(gradient)
+                SelectTHC(
+                    _static_matrix(chi),
+                    _static_matrix(tev),
+                    beth,
+                    system,
+                    index,
+                    flags,
+                    gradient,
+                    work,
+                    num_batches,
+                )
+                qp.adjoint(_prep_gradient)(gradient)
+                return qp.state()
+
+            state = np.asarray(circuit()).reshape([2] * ntot)
+            out = np.asarray(state[(slice(None),) * base + (0,) * len(work)]).reshape(-1)
+            assert np.isclose(np.linalg.norm(out), 1.0, atol=1e-8)
+            return out
+
+        assert np.allclose(run(2), run(1), atol=1e-8)
+
 
 class TestControlledSelectTHC:
     """A control on ``SelectTHC`` should reach only the two ``Z_1`` reflections."""
