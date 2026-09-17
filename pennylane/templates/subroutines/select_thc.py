@@ -14,27 +14,37 @@
 """Contains the template for the tensor hypercontraction ``SELECT`` oracle."""
 
 from collections import Counter
-from itertools import islice
-from math import isfinite, pi
-from numbers import Real
+from math import pi
 
 import numpy as np
 
 from pennylane import capture, math
 from pennylane.core.operator import Operator2, abstractify
-from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.ops import CNOT, CSWAP, SWAP, Hadamard, S, X, Z, adjoint, change_op_basis, ctrl
+from pennylane.ops import (
+    CNOT,
+    CSWAP,
+    SWAP,
+    Hadamard,
+    S,
+    X,
+    Z,
+    adjoint,
+    change_op_basis,
+    ctrl,
+)
 from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
 from .arithmetic.semi_adder import SemiAdder
+from .multix import MultiX
 from .qrom import QROM
 
 
 def _validate_select_data(chi, t_eigenvectors):
     """Validate the static THC leaf and one-body eigenvector matrices."""
     shapes = {}
+    arrays = {}
     for name, matrix in (("chi", chi), ("t_eigenvectors", t_eigenvectors)):
         if (
             not isinstance(matrix, tuple)
@@ -47,23 +57,24 @@ def _validate_select_data(chi, t_eigenvectors):
         num_columns = len(matrix[0])
         if num_columns == 0 or any(len(row) != num_columns for row in matrix):
             raise ValueError(f"{name} must be a non-empty rectangular matrix.")
-        for row in matrix:
-            for entry in row:
-                if isinstance(entry, bool) or not isinstance(entry, Real) or not isfinite(entry):
-                    raise ValueError(f"{name} entries must be finite real numbers; got {entry!r}.")
+        arr = np.asarray(matrix)
+        if (
+            not np.issubdtype(arr.dtype, np.number)
+            or not np.isrealobj(arr)
+            or not np.all(np.isfinite(arr))
+        ):
+            raise ValueError(f"{name} entries must be finite real numbers.")
         shapes[name] = (len(matrix), num_columns)
+        arrays[name] = arr
 
     M, n_half = shapes["chi"]
     if shapes["t_eigenvectors"] != (n_half, n_half):
         raise ValueError(
             f"t_eigenvectors must have shape ({n_half}, {n_half}); got {shapes['t_eigenvectors']}."
         )
-    if any(sum(entry**2 for entry in row) < 1e-30 for row in chi):
+    if np.any(np.sum(arrays["chi"] ** 2, axis=1) < 1e-30):
         raise ValueError("Cannot build a rotation from a zero vector in chi.")
-    if any(
-        sum(t_eigenvectors[row][column] ** 2 for row in range(n_half)) < 1e-30
-        for column in range(n_half)
-    ):
+    if np.any(np.sum(arrays["t_eigenvectors"] ** 2, axis=0) < 1e-30):
         raise ValueError("Cannot build a rotation from a zero vector in t_eigenvectors.")
     return M, n_half
 
@@ -226,11 +237,9 @@ def _apply_loaded_rotation(
         for wire in (lower, upper):
             adjoint(S)(wire)
             Hadamard(wire)
-            for bit in bits:
-                CNOT(wires=[wire, bit])
+            ctrl(MultiX([1] * len(bits), wires=bits), control=wire)
             add(bits, gradient_wires, adder_work)
-            for bit in bits:
-                CNOT(wires=[wire, bit])
+            ctrl(MultiX([1] * len(bits), wires=bits), control=wire)
             Z(wire)
             Hadamard(wire)
             S(wire)
@@ -643,7 +652,7 @@ def _select_thc_resources(
     nu_wires = list(index[n:])
     succ, edge, _, spin1, spin2 = flags
 
-    with capture.pause(), QueuingManager.stop_recording():
+    with capture.pause():
         first_half = _select_half(
             chi,
             t_eigenvectors,
@@ -691,9 +700,8 @@ def _select_thc_decomp(
 ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
     M = len(chi)
     n = math.ceil_log2(M + 1)
-    iw_iter = iter(index_wires)
-    mu_wires = list(islice(iw_iter, n))
-    nu_wires = list(islice(iw_iter, n))
+    mu_wires = index_wires[:n]
+    nu_wires = index_wires[n : 2 * n]
     succ, edge, swap, spin1, spin2 = flag_wires
 
     # 1. V on mu in the first spin sector, the only sandwich acting on the one-body block.

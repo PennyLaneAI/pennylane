@@ -52,14 +52,21 @@ def _reference_V(leaf, N, sector):
 def _layout(M, N, beth, extra_work=0, num_batches=1):
     """Wire layout: system | mu | nu | flags | phase gradient | work."""
     sizes = select_thc_wires(M, N, beth, num_batches)
-    n = sizes["index_wires"] // 2
-    system = list(range(N))
-    index = list(range(N, N + 2 * n))
-    flags = list(range(N + 2 * n, N + 2 * n + 5))
-    gradient = list(range(flags[-1] + 1, flags[-1] + 2 + beth))
-    n_work = sizes["work_wires"] + extra_work
-    work = list(range(gradient[-1] + 1, gradient[-1] + 1 + n_work))
-    return system, index, flags, gradient, work, gradient[-1] + 1 + n_work
+    sizes["work_wires"] += extra_work
+    registers = qp.registers(sizes)
+    return (
+        *(
+            list(registers[name])
+            for name in (
+                "system_wires",
+                "index_wires",
+                "flag_wires",
+                "gradient_wires",
+                "work_wires",
+            )
+        ),
+        sum(sizes.values()),
+    )
 
 
 def _prep_gradient(wires):
@@ -376,7 +383,7 @@ class TestSelectTHCOperator:
             (((1.0, 1.0), (1.0, -1.0)), np.eye(2), "t_eigenvectors must be"),
             (((1.0, 1.0), (1.0, -1.0)), ([1.0, 0.0], [0.0, 1.0]), "t_eigenvectors must be"),
             (((1.0,), (1.0, 0.0)), ((1.0,),), "chi must be a non-empty rectangular"),
-            (((1.0, True),), ((1.0, 0.0), (0.0, 1.0)), "chi entries must be finite real"),
+            (((1.0, np.nan),), ((1.0, 0.0), (0.0, 1.0)), "chi entries must be finite real"),
             (((1.0, 0.0),), ((1.0,),), "t_eigenvectors must have shape"),
             (((0.0, 0.0),), ((1.0, 0.0), (0.0, 1.0)), "zero vector in chi"),
             (
