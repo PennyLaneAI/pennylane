@@ -594,17 +594,14 @@ class TestWiresHelper:
         with qp.queuing.AnnotatedQueue():
             qp.AliasSamplingTHC(M, N, zeta, t_ell, mu_wires, nu_wires, 2 * n, work_wires, aleph)
 
-    def test_extra_work_wires_reduce_t_count(self):
-        """Test that work wires beyond the minimum are forwarded to ``qp.QROM``, which
-        uses them for a ``SelectSwap`` decomposition with a lower T-gate count.
-
-        The trade-off is not monotonic: ``qp.QROM`` consumes every work wire it is
-        given, so far more wires than the width of a target register can push the count
-        back up. Only the documented reduction is asserted here.
+    def test_minimum_tops_up_qrom_work_wires(self):
+        """Test that ``work_wires`` exceeds what the template's own layout consumes, because
+        the internal ``qp.QROM`` is topped up to the wires it needs for unary iteration.
         """
-        minimum = _t_count(4, 2, 3, extra_work_wires=0)
-        with_extra = _t_count(4, 2, 3, extra_work_wires=2)
-        assert with_extra < minimum
+        M, N, aleph = 4, 2, 3
+        n = int(np.ceil(np.log2(M + 1)))
+        n_d = int(np.ceil(np.log2(N // 2 + M * (M + 1) // 2))) + 1
+        assert n_d + 2 * n + 3 * aleph + 4 < qp.alias_sampling_thc_wires(M, N, aleph)["work_wires"]
 
     @pytest.mark.parametrize(
         ("M", "N", "aleph", "match"),

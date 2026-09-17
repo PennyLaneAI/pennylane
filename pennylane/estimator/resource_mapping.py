@@ -437,8 +437,15 @@ def _(op: qtemps.AliasSampling):
 def _(op: qtemps.AliasSamplingTHC):
     # PrepTHC is the full THC PREPARE (Lee Figs. 3-4). AliasSamplingTHC is only the
     # alias-sampling half after SuperpositionTHC. ``N`` is spin orbitals.
+    num_orbitals = op.N // 2
+    if num_orbitals < 1:
+        raise ValueError(
+            f"Cannot map AliasSamplingTHC with N={op.N} spin orbitals to "
+            "estimator.templates.PrepTHC, which requires at least one spatial orbital "
+            "(N // 2 >= 1). This instance has an empty one-body block."
+        )
     return re_temps.PrepTHC(
-        THCHamiltonian(num_orbitals=op.N // 2, tensor_rank=op.M),
+        THCHamiltonian(num_orbitals=num_orbitals, tensor_rank=op.M),
         coeff_precision=op.aleph,
     )
 

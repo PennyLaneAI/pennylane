@@ -291,11 +291,16 @@ def alias_sampling_wires(n_states, mu):
 
 def _validate_probs(probs):
     """Require ``probs`` to already be a hashable 1-D tuple of floats."""
-    if not isinstance(probs, tuple) or any(isinstance(x, (tuple, list)) for x in probs):
+    if not isinstance(probs, tuple):
         raise ValueError(
             "probs must be a tuple of floats, because it is compile-time static "
             f"data and has to be hashable; got {type(probs).__name__}. Convert an array with "
             "tuple(arr)."
+        )
+    if any(isinstance(x, (tuple, list)) for x in probs):
+        raise ValueError(
+            "probs must be a tuple of floats, but it contains nested sequences; "
+            "a flat tuple was expected. Convert an array with tuple(arr)."
         )
     arr = np.asarray(probs, dtype=float)
     if arr.ndim != 1:
