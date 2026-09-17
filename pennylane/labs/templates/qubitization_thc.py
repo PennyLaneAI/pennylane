@@ -18,14 +18,14 @@ from functools import partial
 import numpy as np
 
 import pennylane as qp
-from pennylane.labs.templates.alias_sampling_thc import (
+from pennylane.templates.subroutines.alias_sampling_thc import (
     _num_address_wires,
     _num_index_wires,
     alias_sampling_thc,
     alias_sampling_thc_wires,
 )
-from pennylane.labs.templates.select_thc import select_thc, select_thc_wires
-from pennylane.labs.templates.superposition_thc import SuperpositionTHC
+from pennylane.templates.subroutines.select_thc import select_thc, select_thc_wires
+from pennylane.templates.subroutines.superposition_thc import SuperpositionTHC
 from pennylane.wires import Wires
 
 
