@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for the one-body qubitization walk operator."""
+"""Tests for the one-body block-encoding."""
 
 import numpy as np
 import pytest
@@ -24,8 +24,8 @@ from pennylane.typing import AbstractWires
 
 
 def _registers(norbs, mu_bits):
-    """Return the three registers with the sizes reported by ``one_body_walk_wires``."""
-    req = qp.one_body_walk_wires(norbs, mu_bits)
+    """Return the three registers with the sizes from ``one_body_block_encoding_wires``."""
+    req = qp.one_body_block_encoding_wires(norbs, mu_bits)
     n_prep, n_sys, n_work = req["prep_wires"], req["system_wires"], req["work_wires"]
     prep = list(range(n_prep))
     system = list(range(n_prep, n_prep + n_sys))
@@ -37,7 +37,7 @@ _IDENTITY = ((1.0, 0.0), (0.0, 1.0))
 
 
 def _static(op_matrix):
-    """Return ``op_matrix`` as the nested tuple of floats that ``OneBodyWalk`` requires.
+    """Return ``op_matrix`` as the nested tuple that ``OneBodyBlockEncoding`` requires.
 
     The numerical tests build their matrices with numpy, but ``op_matrix`` is a compilable
     argument, so the operator only accepts hashable static data.
@@ -48,9 +48,10 @@ def _static(op_matrix):
 def _discretized_weights(weights, mu_bits):
     r"""Return the probability distribution that coherent alias sampling actually prepares.
 
-    :class:`~.OneBodyWalk`'s only approximation is that PREP loads a ``mu_bits``-bit approximation
-    of :math:`\sqrt{|\mu_p| / \lambda}` rather than the exact value. Because the alias tables
-    ``alt`` and ``keep`` are deterministic, that approximation is classically predictable:
+    The only approximation of :class:`~.OneBodyBlockEncoding` is that PREP loads a ``mu_bits``-bit
+    approximation of :math:`\sqrt{|\mu_p| / \lambda}` rather than the exact value. Because the
+    alias tables ``alt`` and ``keep`` are deterministic, that approximation is classically
+    predictable:
 
     .. math::
 
@@ -58,8 +59,8 @@ def _discretized_weights(weights, mu_bits):
         \sum_{k \,:\, \mathrm{alt}_k = \ell} (2^\mu - \mathrm{keep}_k) \Big) ,
 
     where :math:`L` is the number of weights and :math:`\mu` is ``mu_bits``. The tests can
-    therefore compare the walk against :math:`\tilde{\rho}` to machine precision, instead of
-    against the exact weights to the loose ``L / 2**mu_bits`` alias bound.
+    therefore compare the block-encoding against :math:`\tilde{\rho}` to machine precision,
+    instead of against the exact weights to the loose ``L / 2**mu_bits`` alias bound.
 
     Args:
         weights (array): the non-negative weights :math:`|\mu_p|` that PREP loads
@@ -101,8 +102,8 @@ def _reference_block_matrix(op_matrix, system_wires, mu_bits=None):
 
     Returns:
         array: the Hermitian matrix of shape ``(2**(2 * norbs), 2**(2 * norbs))`` that
-        :class:`~.OneBodyWalk` is expected to encode in its :math:`|\vec 0\rangle` block, namely
-        :math:`\hat O / \lambda`. With ``mu_bits=None`` this is the exact
+        :class:`~.OneBodyBlockEncoding` is expected to encode in its :math:`|\vec 0\rangle` block,
+        namely :math:`\hat O / \lambda`. With ``mu_bits=None`` this is the exact
         :math:`\hat O / \lambda`; otherwise it uses the discretized weights that PREP
         really loads.
 
@@ -134,21 +135,19 @@ def _reference_block_matrix(op_matrix, system_wires, mu_bits=None):
     return -0.5 * total
 
 
-def _apply_walk(op_matrix, mu_bits, state, n_powers=1):
-    r"""Apply the walk to one system state and project onto the :math:`|\vec 0\rangle` block.
+def _apply_block_encoding(op_matrix, mu_bits, state):
+    r"""Apply the block-encoding to one system state and project onto :math:`|\vec 0\rangle`.
 
     Args:
         op_matrix (array): the real symmetric one-body matrix
         mu_bits (int): number of bits of precision used by coherent alias sampling
         state (array): normalized system state of dimension ``2**(2 * norbs)``
-        n_powers (int): number of times the walk is applied; powers greater than one encode a
-            Chebyshev polynomial of the operator rather than the operator itself
 
     Returns:
         tuple[array, float]: the ``2**(2 * norbs)`` system amplitudes left after projecting both
         the prep and the work register onto :math:`|\vec 0\rangle`, and the norm of the full state
-        outside :math:`|\vec 0\rangle` on the work register, which must vanish because the walk
-        returns the work wires to :math:`|0\rangle`
+        outside :math:`|\vec 0\rangle` on the work register, which must vanish because the
+        block-encoding returns the work wires to :math:`|0\rangle`
     """
     norbs = qp.math.shape(op_matrix)[0]
     prep, system, work = _registers(norbs, mu_bits)
@@ -161,8 +160,7 @@ def _apply_walk(op_matrix, mu_bits, state, n_powers=1):
     @qp.qnode(dev)
     def circuit():
         qp.StatePrep(state, wires=system)
-        for _ in range(n_powers):
-            qp.OneBodyWalk(_static(op_matrix), mu_bits, prep, system, work)
+        qp.OneBodyBlockEncoding(_static(op_matrix), mu_bits, prep, system, work)
         return qp.state()
 
     psi = np.asarray(circuit()).reshape(2**n_prep, 2**n_sys, 2**n_work)
@@ -170,19 +168,16 @@ def _apply_walk(op_matrix, mu_bits, state, n_powers=1):
     return psi[0, :, 0], work_scratch
 
 
-def _walk_block(op_matrix, mu_bits, n_powers=1):
+def _encoded_block(op_matrix, mu_bits):
     r"""Build the full encoded block, one column per system basis state.
 
     Args:
         op_matrix (array): the real symmetric one-body matrix
         mu_bits (int): number of bits of precision used by coherent alias sampling
-        n_powers (int): number of times the walk is applied; powers greater than one encode a
-            Chebyshev polynomial of the operator rather than the operator itself
 
     Returns:
-        array: the matrix of shape ``(2**(2 * norbs), 2**(2 * norbs))`` that the walk encodes in
-        its :math:`|\vec 0\rangle` block, directly comparable to
-        :func:`_reference_block_matrix`
+        array: the matrix of shape ``(2**(2 * norbs), 2**(2 * norbs))`` encoded in the
+        :math:`|\vec 0\rangle` block, directly comparable to :func:`_reference_block_matrix`
     """
     norbs = qp.math.shape(op_matrix)[0]
     _, system, _ = _registers(norbs, mu_bits)
@@ -192,16 +187,16 @@ def _walk_block(op_matrix, mu_bits, n_powers=1):
     for column in range(dim):
         basis = np.zeros(dim)
         basis[column] = 1.0
-        block[:, column], _ = _apply_walk(op_matrix, mu_bits, basis, n_powers=n_powers)
+        block[:, column], _ = _apply_block_encoding(op_matrix, mu_bits, basis)
 
     return block
 
 
 @pytest.mark.parametrize("norbs", [2, 3, 4, 16])
 @pytest.mark.parametrize("mu_bits", [2, 4, 7])
-def test_one_body_walk_wires(norbs, mu_bits):
-    """Test that the wire counts returned by one_body_walk_wires match the alias sampling wires."""
-    req = qp.one_body_walk_wires(norbs, mu_bits)
+def test_one_body_block_encoding_wires(norbs, mu_bits):
+    """Test that the wire counts match the alias sampling wires."""
+    req = qp.one_body_block_encoding_wires(norbs, mu_bits)
     alias = qp.alias_sampling_wires(norbs, mu_bits)
 
     assert req["prep_wires"] == alias["target_wires"] + 1 + alias["temp_wires"]
@@ -209,7 +204,7 @@ def test_one_body_walk_wires(norbs, mu_bits):
     assert req["work_wires"] == max(alias["work_wires"], alias["target_wires"])
 
 
-class TestOneBodyWalk:
+class TestOneBodyBlockEncoding:
     """Test the validity of the operator, the block it encodes, and its input validation.
 
     The tests of the encoded block run the real ``AliasSampling`` and compare against
@@ -226,7 +221,7 @@ class TestOneBodyWalk:
         ],
     )
     def test_assert_valid(self, op_matrix):
-        """Test that OneBodyWalk is a valid Operator2, with and without capture.
+        """Test that OneBodyBlockEncoding is a valid Operator2, with and without capture.
 
         ``assert_valid`` already covers the decomposition rules of both the operator and its
         adjoint. The two matrices cover the two branches of the decomposition: with and without
@@ -234,13 +229,13 @@ class TestOneBodyWalk:
         negative.
         """
         prep, system, work = _registers(2, 2)
-        op = qp.OneBodyWalk(op_matrix, 2, prep, system, work)
+        op = qp.OneBodyBlockEncoding(op_matrix, 2, prep, system, work)
         assert_valid(op, skip_differentiation=True)
 
     def test_hyperparameters_and_wires(self):
         """Test that the registers and the static data round-trip through the operator."""
         prep, system, work = _registers(2, 2)
-        op = qp.OneBodyWalk(((1.0, 2.0), (2.0, 1.0)), 2, prep, system, work)
+        op = qp.OneBodyBlockEncoding(((1.0, 2.0), (2.0, 1.0)), 2, prep, system, work)
         assert op.op_matrix == ((1.0, 2.0), (2.0, 1.0))
         assert op.alias_sampling_nbits == 2
         assert op.prep_wires == qp.wires.Wires(prep)
@@ -258,7 +253,7 @@ class TestOneBodyWalk:
         covered in ``tests/core/operator/test_operator2_metaclass.py``.
         """
         prep, system, work = _registers(2, 2)
-        op = qp.OneBodyWalk(((1.0, 2.0), (2.0, 1.0)), 2, prep, system, work)
+        op = qp.OneBodyBlockEncoding(((1.0, 2.0), (2.0, 1.0)), 2, prep, system, work)
         assert hash(tuple(op.compilable_args.values()))
 
     @pytest.mark.parametrize(
@@ -277,9 +272,9 @@ class TestOneBodyWalk:
         """
         prep, system, work = _registers(2, 2)
         with pytest.raises(ValueError, match="must be a tuple of tuples of floats"):
-            qp.OneBodyWalk(op_matrix, 2, prep, system, work)
+            qp.OneBodyBlockEncoding(op_matrix, 2, prep, system, work)
 
-    @pytest.mark.parametrize("norbs, mu_bits", [(2, 1), (2, 2), (2, 3), (3, 2), (4, 2)])
+    @pytest.mark.parametrize("norbs, mu_bits", [(2, 1), (2, 2), (2, 3), (3, 2)])
     def test_encodes_operator_on_random_state(self, norbs, mu_bits):
         """Test that the block reproduces the discretized operator on a random state."""
 
@@ -293,7 +288,7 @@ class TestOneBodyWalk:
         state = rng.standard_normal(dim) + 1j * rng.standard_normal(dim)
         state /= np.linalg.norm(state)
 
-        block_encoded_state, work_scratch = _apply_walk(op_matrix, mu_bits, state)
+        block_encoded_state, work_scratch = _apply_block_encoding(op_matrix, mu_bits, state)
 
         expected = _reference_block_matrix(op_matrix, system, mu_bits) @ state
         assert np.allclose(block_encoded_state, expected, atol=1e-8)
@@ -311,13 +306,7 @@ class TestOneBodyWalk:
         op_matrix = (a + a.T) / 2
         _, system, _ = _registers(2, 2)
 
-        dim = 2 ** len(system)
-
-        block = np.zeros((dim, dim), dtype=complex)
-        for column in range(dim):
-            basis = np.zeros(dim)
-            basis[column] = 1.0
-            block[:, column], _ = _apply_walk(op_matrix, 2, basis)
+        block = _encoded_block(op_matrix, 2)
 
         assert np.allclose(block, _reference_block_matrix(op_matrix, system, 2), atol=1e-8)
 
@@ -337,7 +326,7 @@ class TestOneBodyWalk:
         state = rng.standard_normal(dim) + 1j * rng.standard_normal(dim)
         state /= np.linalg.norm(state)
 
-        got, _ = _apply_walk(op_matrix, 2, state)
+        got, _ = _apply_block_encoding(op_matrix, 2, state)
 
         assert np.allclose(got, _reference_block_matrix(op_matrix, system, 2) @ state, atol=1e-8)
 
@@ -351,7 +340,7 @@ class TestOneBodyWalk:
         state = rng.standard_normal(dim) + 1j * rng.standard_normal(dim)
         state /= np.linalg.norm(state)
 
-        got, _ = _apply_walk(op_matrix, 2, state)
+        got, _ = _apply_block_encoding(op_matrix, 2, state)
 
         assert np.allclose(got, _reference_block_matrix(op_matrix, system, 2) @ state, atol=1e-8)
 
@@ -364,67 +353,57 @@ class TestOneBodyWalk:
 
         _, system, _ = _registers(2, mu_bits)
 
-        block = _walk_block(op_matrix, mu_bits)
+        block = _encoded_block(op_matrix, mu_bits)
 
         error = np.abs(block - _reference_block_matrix(op_matrix, system_wires=system)).max()
         assert error <= 1 / 2**mu_bits
-
-    @pytest.mark.parametrize("n_powers", [2, 3])
-    def test_chebyshev_recursion(self, n_powers):
-        r"""Test that applying the walk n times block-encodes the :math:`n`-th Chebyshev
-        polynomial of the operator it encodes."""
-        rng = np.random.default_rng(n_powers)
-        a = rng.standard_normal((2, 2))
-        op_matrix = (a + a.T) / 2
-        block_1 = _walk_block(op_matrix, 2, n_powers=1)
-        block_n = _walk_block(op_matrix, 2, n_powers=n_powers)
-
-        eigvals, eigvecs = np.linalg.eigh(block_1)
-        chebyshev = np.polynomial.chebyshev.Chebyshev.basis(n_powers)
-        expected = eigvecs @ np.diag(chebyshev(eigvals)) @ eigvecs.conj().T
-
-        assert np.allclose(block_n, expected, atol=1e-8)
 
     def test_non_square_raises(self):
         """Test that a non-square op_matrix is rejected."""
         prep, system, work = _registers(2, 2)
         with pytest.raises(ValueError, match="must be square"):
-            qp.OneBodyWalk(((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)), 2, prep, system, work)
+            qp.OneBodyBlockEncoding(((0.0, 0.0, 0.0), (0.0, 0.0, 0.0)), 2, prep, system, work)
+
+    def test_single_orbital_raises(self):
+        """Test that a single spatial orbital is rejected: the index register would be empty."""
+        prep, system, work = _registers(1, 2)
+        with pytest.raises(ValueError, match="at least two spatial orbitals"):
+            qp.OneBodyBlockEncoding(((2.0,),), 2, prep, system, work)
 
     def test_complex_raises(self):
         """Test that a complex op_matrix is rejected."""
         prep, system, work = _registers(2, 2)
         with pytest.raises(ValueError, match="must be real"):
-            qp.OneBodyWalk(((1j, 0.0), (0.0, 1j)), 2, prep, system, work)
+            qp.OneBodyBlockEncoding(((1j, 0.0), (0.0, 1j)), 2, prep, system, work)
 
     @pytest.mark.parametrize("bad", [np.nan, np.inf])
     def test_non_finite_raises(self, bad):
         """Test that a non-finite op_matrix is rejected."""
         prep, system, work = _registers(2, 2)
         with pytest.raises(ValueError, match="must be finite"):
-            qp.OneBodyWalk(((1.0, bad), (bad, 1.0)), 2, prep, system, work)
+            qp.OneBodyBlockEncoding(((1.0, bad), (bad, 1.0)), 2, prep, system, work)
 
     def test_non_symmetric_raises(self):
         """Test that a non-symmetric op_matrix is rejected."""
         prep, system, work = _registers(2, 2)
         with pytest.raises(ValueError, match="must be symmetric"):
-            qp.OneBodyWalk(((1.0, 2.0), (0.0, 1.0)), 2, prep, system, work)
+            qp.OneBodyBlockEncoding(((1.0, 2.0), (0.0, 1.0)), 2, prep, system, work)
 
     @pytest.mark.parametrize("nbits", [True, 0, -1, 2.0])
     def test_invalid_nbits_raises(self, nbits):
         """Test that alias_sampling_nbits must be a positive integer."""
         prep, system, work = _registers(2, 2)
         with pytest.raises(ValueError, match="alias_sampling_nbits must be a positive integer"):
-            qp.OneBodyWalk(_IDENTITY, nbits, prep, system, work)
+            qp.OneBodyBlockEncoding(_IDENTITY, nbits, prep, system, work)
 
     @pytest.mark.parametrize("register", ["prep_wires", "system_wires", "work_wires"])
     def test_wrong_register_size_raises(self, register):
-        """Test that each register must have the size reported by one_body_walk_wires."""
+        """Test that each register must have the reported size."""
         prep, system, work = _registers(2, 2)
         registers = {"prep_wires": prep, "system_wires": system, "work_wires": work}
         registers[register] = registers[register][:-1]
         with pytest.raises(ValueError, match=f"{register} must have"):
-            qp.OneBodyWalk(
+            qp.OneBodyBlockEncoding(
                 _IDENTITY,
                 2,
                 registers["prep_wires"],
@@ -436,20 +415,20 @@ class TestOneBodyWalk:
         """Test that the three registers must be disjoint."""
         prep, system, work = _registers(2, 2)
         with pytest.raises(ValueError, match="must not overlap"):
-            qp.OneBodyWalk(_IDENTITY, 2, prep, system, prep[: len(work)])
+            qp.OneBodyBlockEncoding(_IDENTITY, 2, prep, system, prep[: len(work)])
 
     def test_abstract_wires_length_is_validated(self):
         """Test that register sizes are checked for AbstractWires, which still expose a length."""
-        req = qp.one_body_walk_wires(2, 2)
+        req = qp.one_body_block_encoding_wires(2, 2)
         with pytest.raises(ValueError, match="prep_wires must have"):
-            qp.OneBodyWalk(
+            qp.OneBodyBlockEncoding(
                 _IDENTITY,
                 2,
                 AbstractWires(req["prep_wires"] - 1),
                 AbstractWires(req["system_wires"]),
                 AbstractWires(req["work_wires"]),
             )
-        op = qp.OneBodyWalk(
+        op = qp.OneBodyBlockEncoding(
             _IDENTITY,
             2,
             AbstractWires(req["prep_wires"]),
@@ -462,4 +441,4 @@ class TestOneBodyWalk:
         """Test that an all-zero op_matrix has lambda = 0 and cannot be normalized."""
         prep, system, work = _registers(2, 2)
         with pytest.raises(ValueError, match="positive value"):
-            qp.OneBodyWalk(((0.0, 0.0), (0.0, 0.0)), 2, prep, system, work)
+            qp.OneBodyBlockEncoding(((0.0, 0.0), (0.0, 0.0)), 2, prep, system, work)

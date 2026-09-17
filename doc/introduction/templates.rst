@@ -401,8 +401,8 @@ Other useful templates which do not belong to the previous categories can be fou
     :figure: _static/templates/qubitization/thumbnail_qubitization.png
 
 .. gallery-item::
-    :description: :doc:`OneBodyWalk <../code/api/pennylane.OneBodyWalk>`
-    :figure: _static/templates/subroutines/onebodywalk.png
+    :description: :doc:`OneBodyBlockEncoding <../code/api/pennylane.OneBodyBlockEncoding>`
+    :figure: _static/templates/subroutines/onebodyblockencoding.png
 
 .. gallery-item::
     :description: :doc:`QROM <../code/api/pennylane.QROM>`

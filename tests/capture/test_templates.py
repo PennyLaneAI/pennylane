@@ -358,7 +358,7 @@ tested_modified_templates = [
     qp.LeftQuantumComparator,
     qp.UniformPrep,
     qp.AliasSampling,
-    qp.OneBodyWalk,
+    qp.OneBodyBlockEncoding,
     qp.SignedOutMultiplier,
     qp.OutSquare,
     qp.SignedOutSquare,
@@ -1527,10 +1527,10 @@ class TestModifiedTemplates:
         [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
         qp.assert_equal(op, qp.AliasSampling(**kwargs))
 
-    def test_one_body_walk(self):
-        """Test the primitive bind call of OneBodyWalk."""
+    def test_one_body_block_encoding(self):
+        """Test the primitive bind call of OneBodyBlockEncoding."""
 
-        req = qp.one_body_walk_wires(2, 2)
+        req = qp.one_body_block_encoding_wires(2, 2)
         n = sum(req.values())
         prep, system, work = np.split(
             np.arange(n), np.cumsum([req["prep_wires"], req["system_wires"]])
@@ -1544,17 +1544,17 @@ class TestModifiedTemplates:
         }
 
         def qfunc():
-            return qp.OneBodyWalk(**kwargs).tracer
+            return qp.OneBodyBlockEncoding(**kwargs).tracer
 
         jaxpr = jax.make_jaxpr(qfunc)()
 
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        assert_eqn_matches_op(eqn, qp.OneBodyWalk)
+        assert_eqn_matches_op(eqn, qp.OneBodyBlockEncoding)
 
         [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-        qp.assert_equal(op, qp.OneBodyWalk(**kwargs))
+        qp.assert_equal(op, qp.OneBodyBlockEncoding(**kwargs))
 
     def test_signed_out_multiplier(self):
         """Test the primitive bind call of SignedOutMultiplier."""

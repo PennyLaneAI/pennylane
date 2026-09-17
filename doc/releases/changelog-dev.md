@@ -484,11 +484,12 @@
   [(#9913)](https://github.com/PennyLaneAI/pennylane/pull/9913)
   [(#10145)](https://github.com/PennyLaneAI/pennylane/pull/10145)
 
-* Added :class:`~.OneBodyWalk`, the qubitization walk operator that block-encodes a real symmetric
-  one-body operator :math:`\hat O`, giving access to the eigenvalues of :math:`\hat O / \lambda`
-  through quantum phase estimation, where :math:`\lambda = \sum_p |\mu_p|` and :math:`\mu_p` are the
-  eigenvalues of the one-body matrix. Use :func:`~.one_body_walk_wires` to get the required sizes of
-  the PREP and system registers, and the minimum size of the work register.
+* Added :class:`~.OneBodyBlockEncoding`, a block-encoding of a real symmetric one-body operator
+  :math:`\hat O`, normalized as :math:`\hat O / \lambda` with :math:`\lambda = \sum_p |\mu_p|`,
+  where :math:`\mu_p` are the eigenvalues of the one-body matrix. Composing it with a reflection
+  about :math:`|\vec 0\rangle` on the PREP register gives the corresponding qubitization walk
+  operator. Use :func:`~.one_body_block_encoding_wires` to get the required sizes of the PREP and
+  system registers, and the minimum size of the work register.
   [(#9991)](https://github.com/PennyLaneAI/pennylane/pull/9991)
   [(#10153)](https://github.com/PennyLaneAI/pennylane/pull/10153)
 
@@ -497,12 +498,12 @@
   import pennylane as qp
 
   op_matrix = ((1.0, 2.0), (2.0, 1.0))
-  req = qp.one_body_walk_wires(len(op_matrix), alias_sampling_nbits=2)
+  req = qp.one_body_block_encoding_wires(len(op_matrix), alias_sampling_nbits=2)
   all_wires = qp.registers(req)
 
   @qp.qnode(qp.device("default.qubit", wires=sum(req.values())))
   def circuit():
-      qp.OneBodyWalk(op_matrix, 2, **all_wires)
+      qp.OneBodyBlockEncoding(op_matrix, 2, **all_wires)
       return qp.probs(wires=all_wires["prep_wires"])
   ```
 

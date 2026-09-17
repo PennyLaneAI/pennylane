@@ -11,32 +11,32 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Qubitization walk operator for the block-encoding of a one-body operator."""
+"""Block-encoding of a one-body operator."""
 
 import numpy as np
 
+from pennylane import math
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.ops import Hadamard, Z, adjoint, ctrl
-from pennylane.typing import Bool, Complex, Wire
+from pennylane.ops import GlobalPhase, Hadamard, Z, adjoint
+from pennylane.typing import Complex, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
 from .alias_sampling import AliasSampling, alias_sampling_wires
 from .arithmetic.left_classical_comparator import LeftClassicalComparator
-from .multix import MultiX
 from .qchem.basis_rotation import BasisRotation
 from .select import Select
 
 
-def one_body_walk_wires(norbs, alias_sampling_nbits):
-    r"""Returns the sizes of the three wire registers required by :class:`~.OneBodyWalk`.
+def one_body_block_encoding_wires(norbs, alias_sampling_nbits):
+    r"""Returns the sizes of the three wire registers required by :class:`~.OneBodyBlockEncoding`.
 
-    :class:`~.OneBodyWalk` acts on three disjoint registers whose sizes are fixed by ``norbs``
-    and ``alias_sampling_nbits``. Use this function to size them before allocating wires.
+    :class:`~.OneBodyBlockEncoding` acts on three disjoint registers whose sizes are fixed by
+    ``norbs`` and ``alias_sampling_nbits``. Use this function to size them before allocating wires.
 
     The registers are:
-        * ``prep_wires``: the full PREP register that the reflection acts on,
-          :math:`2 \lceil \log_2 n_\text{orbs} \rceil + 3 \mu + 1` wires
+        * ``prep_wires``: the PREP register whose :math:`|\vec 0\rangle` block holds the encoded
+          operator, :math:`2 \lceil \log_2 n_\text{orbs} \rceil + 3 \mu + 1` wires
         * ``system_wires``: the state register :math:`|\psi\rangle` the operator acts on,
           :math:`2 n_\text{orbs}` wires
         * ``work_wires``: clean work wires that start and end in :math:`|0\rangle`, at least
@@ -55,7 +55,7 @@ def one_body_walk_wires(norbs, alias_sampling_nbits):
 
     **Example**
 
-    >>> qp.one_body_walk_wires(4, alias_sampling_nbits=2)
+    >>> qp.one_body_block_encoding_wires(4, alias_sampling_nbits=2)
     {'prep_wires': 11, 'system_wires': 8, 'work_wires': 2}
 
     """
@@ -72,7 +72,7 @@ def _validate_op_matrix(op_matrix):
 
     Raises:
         ValueError: if ``op_matrix`` is not a nested ``tuple``, or does not define a square, real,
-            finite, symmetric matrix
+            finite, symmetric matrix of at least two spatial orbitals
     """
     if not isinstance(op_matrix, tuple) or not all(isinstance(row, tuple) for row in op_matrix):
         raise ValueError(
@@ -87,6 +87,11 @@ def _validate_op_matrix(op_matrix):
             f"op_matrix must be square; got {norbs} row(s) of lengths "
             f"{tuple(len(row) for row in op_matrix)}."
         )
+    if norbs < 2:
+        raise ValueError(
+            "op_matrix must have at least two spatial orbitals, because a single one leaves the "
+            f"PREP index register empty; got norbs={norbs}."
+        )
     for row in op_matrix:
         for entry in row:
             if isinstance(entry, bool) or not isinstance(entry, (int, float)):
@@ -99,8 +104,8 @@ def _validate_op_matrix(op_matrix):
         raise ValueError("op_matrix must be symmetric (o_pq = o_qp).")
 
 
-def _walk_data(op_matrix):
-    r"""Return the classical data the walk needs from ``op_matrix``.
+def _block_encoding_data(op_matrix):
+    r"""Return the classical data the block-encoding needs from ``op_matrix``.
 
     Diagonalizes ``op_matrix`` as :math:`o = V \operatorname{diag}(\mu) V^T` and returns the
     PREP weights :math:`|\mu_p|`, the number of negative eigenvalues, and the orbital-rotation
@@ -134,14 +139,12 @@ def _walk_data(op_matrix):
     return absmu, n_neg, unitary_matrix
 
 
-class OneBodyWalk(Operator2):
-    r"""Qubitization walk operator that block-encodes a one-body operator.
+class OneBodyBlockEncoding(Operator2):
+    r"""Block-encoding of a one-body operator.
 
-    Implements :math:`\hat{W} = \hat{R} \cdot \text{PREP}^\dagger \cdot
-    \text{SEL} \cdot \text{PREP}`, with :math:`\hat{R} = \hat 1 - 2|0\rangle\langle 0|`
-    the reflection on ``prep_wires``, following `arXiv:2602.20270
-    <https://arxiv.org/abs/2602.20270>`_ (Fig. 12 for the block-encoding, Sec. III A for the
-    walk operator). The :math:`|\vec 0\rangle` block of the walk is :math:`\hat O / \lambda`,
+    Implements :math:`\hat{B} = -\,\text{PREP}^\dagger \cdot \text{SEL} \cdot \text{PREP}`,
+    following `arXiv:2602.20270 <https://arxiv.org/abs/2602.20270>`_ (Fig. 12). The
+    :math:`|\vec 0\rangle` block of :math:`\hat{B}` on ``prep_wires`` is :math:`\hat O / \lambda`,
     where :math:`\hat O` is the non-identity part of a one-body operator
 
     .. math::
@@ -163,9 +166,16 @@ class OneBodyWalk(Operator2):
     :math:`|1\rangle` is occupied. The paper's version of the last line carries :math:`+\mu_p/2`
     instead, because it uses :math:`\hat n = (\hat 1 + \hat z)/2`.
 
-    The normalization of the block-encoding is :math:`\lambda = \sum_p |\mu_p|`.
+    The normalization of the block-encoding is :math:`\lambda = \sum_p |\mu_p|`. The leading minus
+    sign of :math:`\hat{B}` is applied as a :class:`~.GlobalPhase`, costing no gates, and is what
+    makes the encoded block :math:`+\hat O / \lambda` rather than :math:`-\hat O / \lambda`.
 
-    Use :func:`~.one_body_walk_wires` for the required register sizes.
+    This is the block-encoding only, not the qubitization walk operator: composing it with a
+    reflection about :math:`|\vec 0\rangle` on ``prep_wires`` gives the walk operator of Sec. III A
+    of the same reference, whose powers block-encode Chebyshev polynomials of
+    :math:`\hat O / \lambda`.
+
+    Use :func:`~.one_body_block_encoding_wires` for the required register sizes.
 
     .. seealso:: :class:`~.AliasSampling` for the alias sampling used within this operator.
 
@@ -178,11 +188,11 @@ class OneBodyWalk(Operator2):
 
     Args:
         op_matrix (tuple[tuple[float]]): the real symmetric one-body matrix of shape
-            ``(norbs, norbs)``, where ``norbs`` is the number of spatial orbitals.
+            ``(norbs, norbs)``, where ``norbs >= 2`` is the number of spatial orbitals.
         alias_sampling_nbits (int): number of bits of precision used for the alias-sampling
             coefficients
-        prep_wires (WiresLike): the full PREP register, reflected by
-            :math:`\hat{\mathcal{R}}`
+        prep_wires (WiresLike): the PREP register; the encoded operator is the
+            :math:`|\vec 0\rangle` block on these wires
         system_wires (WiresLike): the ``2 * norbs`` system spin-orbitals, ordered
             spin-blocked: ``system_wires[sigma * norbs + p]`` holds spatial orbital ``p`` of spin
             sector ``sigma``, so the first ``norbs`` wires are one spin sector and the last
@@ -192,14 +202,14 @@ class OneBodyWalk(Operator2):
         work_wires (WiresLike): work wires that start in :math:`|0\rangle` and are returned to
             :math:`|0\rangle`. At least :math:`\lceil \log_2 n_\text{orbs} \rceil` of them are
             required; extra wires are forwarded to the internal :class:`~.QROM` and
-            multi-controlled :math:`Z` to lower the T-gate count
+            :class:`~.Select` to lower the T-gate count
 
     Raises:
-        ValueError: if ``op_matrix`` is not a nested ``tuple``, or is not square, not real, or not
-            symmetric
+        ValueError: if ``op_matrix`` is not a nested ``tuple``, or is not square, not real, not
+            symmetric, or smaller than ``2 x 2``
         ValueError: if ``prep_wires`` or ``system_wires`` do not have exactly the sizes reported
-            by :func:`~.one_body_walk_wires`, or if ``work_wires`` has fewer than the reported
-            minimum
+            by :func:`~.one_body_block_encoding_wires`, or if ``work_wires`` has fewer than the
+            reported minimum
         ValueError: if ``op_matrix`` is zero, so that :math:`\lambda = \sum_p |\mu_p| = 0` and
             the block-encoding cannot be normalized
 
@@ -211,12 +221,12 @@ class OneBodyWalk(Operator2):
         import pennylane as qp
 
         op_matrix = ((1.0, 2.0), (2.0, 1.0))
-        req = qp.one_body_walk_wires(len(op_matrix), alias_sampling_nbits=2)
+        req = qp.one_body_block_encoding_wires(len(op_matrix), alias_sampling_nbits=2)
         all_wires = qp.registers(req)
 
         @qp.qnode(qp.device("default.qubit", wires=sum(req.values())))
         def circuit():
-            qp.OneBodyWalk(op_matrix, 2, **all_wires)
+            qp.OneBodyBlockEncoding(op_matrix, 2, **all_wires)
             return qp.probs(wires=all_wires["prep_wires"])
 
     The probability of finding the PREP register back in :math:`|\vec 0 \rangle` is the squared
@@ -268,7 +278,7 @@ class OneBodyWalk(Operator2):
         system_wires = Wires(system_wires)
         work_wires = Wires([] if work_wires is None else work_wires)
 
-        req = one_body_walk_wires(norbs, alias_sampling_nbits)
+        req = one_body_block_encoding_wires(norbs, alias_sampling_nbits)
         for name, register in (("prep_wires", prep_wires), ("system_wires", system_wires)):
             if len(register) != req[name]:
                 raise ValueError(
@@ -292,22 +302,22 @@ class OneBodyWalk(Operator2):
         super().__init__(op_matrix, alias_sampling_nbits, prep_wires, system_wires, work_wires)
 
 
-def _split_prep_wires(prep_wires, norbs, alias_sampling_nbits):
+def _split_prep_wires(prep_wires, norbs):
     """Split ``prep_wires`` into the index, spin and garbage sub-registers."""
-    n_index = alias_sampling_wires(norbs, alias_sampling_nbits)["target_wires"]
+    n_index = math.ceil_log2(norbs)
     index_wires = prep_wires[:n_index]
     spin_wire = prep_wires[n_index]
     garbage_wires = prep_wires[n_index + 1 :]
     return index_wires, spin_wire, garbage_wires
 
 
-def _one_body_walk_resources(
+def _one_body_block_encoding_resources(
     op_matrix, alias_sampling_nbits, prep_wires, system_wires, work_wires
 ):  # pylint: disable=too-many-arguments,unused-argument
     norbs = len(op_matrix)
-    absmu, n_neg, _ = _walk_data(op_matrix)
+    absmu, n_neg, _ = _block_encoding_data(op_matrix)
     n_prep, n_work = len(prep_wires), len(work_wires)
-    n_index = alias_sampling_wires(norbs, alias_sampling_nbits)["target_wires"]
+    n_index = math.ceil_log2(norbs)
     n_garbage = n_prep - n_index - 1
 
     prep = AliasSampling(
@@ -324,13 +334,6 @@ def _one_body_walk_resources(
         work_wires=Wire[n_work],
         partial=True,
     )
-    reflection = ctrl(
-        Z(Wire[1]),
-        control=Wire[n_prep - 1],
-        control_values=[1] * (n_prep - 1),
-        work_wires=Wire[n_work],
-        work_wire_type="zeroed",
-    )
 
     resources = {
         prep: 1,
@@ -339,8 +342,7 @@ def _one_body_walk_resources(
         rotation: 2,
         adjoint(rotation): 2,
         select: 1,
-        MultiX(Bool[n_prep], Wire[n_prep]): 2,
-        reflection: 1,
+        GlobalPhase: 1,
     }
 
     if n_neg > 0:
@@ -358,16 +360,14 @@ def _one_body_walk_resources(
     return resources
 
 
-@register_resources(_one_body_walk_resources)
-def _one_body_walk_decomp(
+@register_resources(_one_body_block_encoding_resources)
+def _one_body_block_encoding_decomp(
     op_matrix, alias_sampling_nbits, prep_wires, system_wires, work_wires, **_
 ):  # pylint: disable=too-many-arguments
     norbs = len(op_matrix)
-    absmu, n_neg, unitary_matrix = _walk_data(op_matrix)
+    absmu, n_neg, unitary_matrix = _block_encoding_data(op_matrix)
 
-    index_wires, spin_wire, garbage_wires = _split_prep_wires(
-        prep_wires, norbs, alias_sampling_nbits
-    )
+    index_wires, spin_wire, garbage_wires = _split_prep_wires(prep_wires, norbs)
 
     # PREP
     AliasSampling(
@@ -427,20 +427,9 @@ def _one_body_walk_decomp(
     )
     Hadamard(spin_wire)
 
-    # R = I - 2|0><0| on the PREP register (index + spin + garbage). R|0> = -|0> is what makes
-    # the |0> block of the walk +O/lambda rather than -O/lambda.
-    n_prep = len(prep_wires)
-    MultiX([True] * n_prep, wires=prep_wires)
-
-    # AliasSampling returns work_wires to |0>, so they are available here as clean work wires.
-    ctrl(
-        Z(prep_wires[-1]),
-        control=prep_wires[:-1],
-        control_values=[1] * (n_prep - 1),
-        work_wires=work_wires,
-        work_wire_type="zeroed",
-    )
-    MultiX([True] * n_prep, wires=prep_wires)
+    # PREP^dagger . SEL . PREP encodes -O/lambda, because O carries the minus sign of
+    # Z = 1 - 2n. The global phase flips it to +O/lambda at no gate cost.
+    GlobalPhase(np.pi)
 
 
-add_decomps(OneBodyWalk, _one_body_walk_decomp)
+add_decomps(OneBodyBlockEncoding, _one_body_block_encoding_decomp)
