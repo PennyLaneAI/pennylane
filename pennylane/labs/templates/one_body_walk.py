@@ -179,7 +179,7 @@ def one_body_walk(op_matrix, alias_sampling_nbits, prep_wires, system_wires, wor
     absmu = qp.math.abs(mu)
 
     # PREP
-    qp.alias_sampling(
+    qp.AliasSampling(
         absmu,
         alias_sampling_nbits,
         target_wires=index_wires,
@@ -219,7 +219,7 @@ def one_body_walk(op_matrix, alias_sampling_nbits, prep_wires, system_wires, wor
             wires=[system_wires[s * norbs + p] for p in range(norbs)], unitary_matrix=unitary_matrix
         )
     # PREP^dagger
-    qp.adjoint(qp.alias_sampling)(
+    qp.adjoint(qp.AliasSampling)(
         absmu,
         alias_sampling_nbits,
         target_wires=index_wires,
