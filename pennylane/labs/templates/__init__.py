@@ -21,9 +21,6 @@ This module contains templates, which are pre-coded routines that can be used in
 
     ~half_signed_out_multiplier
     ~SumOfSlatersPrep2
-    ~uniform_prep_ops
-    ~select_thc
-    ~select_thc_wires
     ~qubitization_thc
     ~qubitization_thc_wires
     ~one_body_walk
@@ -32,6 +29,5 @@ This module contains templates, which are pre-coded routines that can be used in
 
 from .half_signed_out_multiplier import half_signed_out_multiplier
 from .sum_of_slaters2 import SumOfSlatersPrep2
-from .select_thc import select_thc, select_thc_wires
 from .qubitization_thc import qubitization_thc, qubitization_thc_wires
 from .one_body_walk import one_body_walk, one_body_walk_wires

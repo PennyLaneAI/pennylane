@@ -402,7 +402,7 @@ class AliasSamplingTHC(Operator2):
     Args:
         M (int): the THC rank
         N (int): the number of spin orbitals. Requires ``N // 2 <= M + 1``
-        zeta (tuple[tuple[float]]): the THC central tensor of shape ``(M, M)``, 
+        zeta (tuple[tuple[float]]): the THC central tensor of shape ``(M, M)``,
             provided as a nested tuple (use ``tuple(map(tuple, arr))`` to convert an array).
         t_ell (tuple[float]): the one-body eigenvalues as a tuple of length ``N // 2``.
         mu_wires (WiresLike): the ``n`` wires storing the first THC index

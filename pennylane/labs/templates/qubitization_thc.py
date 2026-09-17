@@ -18,14 +18,7 @@ from functools import partial
 import numpy as np
 
 import pennylane as qp
-from pennylane.templates.subroutines.alias_sampling_thc import (
-    _num_address_wires,
-    _num_index_wires,
-    alias_sampling_thc,
-    alias_sampling_thc_wires,
-)
-from pennylane.templates.subroutines.select_thc import select_thc, select_thc_wires
-from pennylane.templates.subroutines.superposition_thc import SuperpositionTHC
+from pennylane.templates.subroutines.alias_sampling_thc import _num_address_wires, _num_index_wires
 from pennylane.wires import Wires
 
 
@@ -72,11 +65,11 @@ def qubitization_thc_wires(M, N, aleph, beth, num_batches=1):
         * ``prep_garbage_wires``: *not* a state preparation register. These are the wires
           ``PREPARE`` leaves entangled with the index and that therefore have to be reflected
           along with it, laid out as the
-          :class:`~pennylane.labs.templates.SuperpositionTHC` work register, then whatever
-          :func:`~pennylane.labs.templates.alias_sampling_thc` garbage it cannot supply,
+          :class:`~.SuperpositionTHC` work register, then whatever
+          :func:`~.alias_sampling_thc` garbage it cannot supply,
           then the two spin flags. The spin flags are the exception to the name: they are
           genuine LCU index wires, placed here because ``index_wires`` is sized exactly
-          ``2 n`` by :func:`~pennylane.labs.templates.select_thc_wires`. Exact: the
+          ``2 n`` by :func:`~.select_thc_wires`. Exact: the
           reflection acts on ``index_wires + prep_garbage_wires``, so a spare wire here
           changes the walk operator
         * ``gradient_wires`` (``beth``): the phase gradient register, which must be
@@ -132,8 +125,8 @@ def qubitization_thc_wires(M, N, aleph, beth, num_batches=1):
     >>> qubitization_thc_wires(M=2, N=2, aleph=1, beth=1)
     {'system_wires': 2, 'index_wires': 4, 'prep_garbage_wires': 18, 'gradient_wires': 1, 'work_wires': 1}
     """
-    select_sizes = select_thc_wires(M, N, beth, num_batches)
-    alias_sizes = alias_sampling_thc_wires(M, N, aleph)
+    select_sizes = qp.select_thc_wires(M, N, beth, num_batches)
+    alias_sizes = qp.alias_sampling_thc_wires(M, N, aleph)
     n_sup = alias_sizes["superposition_work_wires"]
     _, n_garbage = _alias_wire_split(M, N, aleph)
 
@@ -142,7 +135,7 @@ def qubitization_thc_wires(M, N, aleph, beth, num_batches=1):
         "index_wires": select_sizes["index_wires"],
         # SuperpositionTHC work + the alias garbage it cannot supply + the two spin flags.
         "prep_garbage_wires": n_sup + max(0, n_garbage - (n_sup - 3)) + 2,
-        "gradient_wires": beth,
+        "gradient_wires": beth + 1,
         # One shared clean pool: SELECT's scratch, the alias comparator/QROM scratch that
         # ``alias_sampling_thc`` restores, and at least one zeroed auxiliary wire for the
         # reflection's multi-controlled Z.
@@ -183,9 +176,9 @@ def qubitization_thc(  # pylint: disable=too-many-arguments,too-many-positional-
 
     with :math:`\mathcal{R}` the reflection on ``index_wires + prep_garbage_wires``, following
     `Lee et al. (2021) <https://arxiv.org/abs/2011.03494>`_ (Figs. 3, 5 and 7).
-    ``PREPARE`` is :class:`~pennylane.labs.templates.SuperpositionTHC` followed by
-    :func:`~pennylane.labs.templates.alias_sampling_thc` and a ``Hadamard`` on each of the
-    two spin flags; ``SELECT`` is :func:`~pennylane.labs.templates.select_thc`.
+    ``PREPARE`` is :class:`~.SuperpositionTHC` followed by
+    :func:`~.alias_sampling_thc` and a ``Hadamard`` on each of the
+    two spin flags; ``SELECT`` is :func:`~.SelectTHC`.
 
     The :math:`\lvert \vec 0 \rangle` block of :math:`\mathcal{W}` is
     :math:`\hat{\mathcal{H}} / \lambda` with
@@ -234,7 +227,7 @@ def qubitization_thc(  # pylint: disable=too-many-arguments,too-many-positional-
         :math:`d = N/2 + M(M+1)/2` is at least :math:`2^{2n - 2}` with
         :math:`n = \lceil \log_2 (M + 1) \rceil`, the condition under which the single
         amplitude-amplification round of
-        :class:`~pennylane.labs.templates.SuperpositionTHC` is exact. Otherwise the
+        :class:`~.SuperpositionTHC` is exact. Otherwise the
         leftover garbage branch is *not* acted on by ``SELECT``, yet is mapped back onto
         :math:`\lvert \vec 0 \rangle` by ``PREPARE``:math:`^\dagger`, which contaminates
         the block. A ``ValueError`` is raised in that case rather than returning a
@@ -255,8 +248,8 @@ def qubitization_thc(  # pylint: disable=too-many-arguments,too-many-positional-
         shared across every repetition of :math:`\mathcal{W}`.
 
     .. seealso:: :func:`~pennylane.labs.templates.qubitization_thc_wires`,
-        :func:`~pennylane.labs.templates.alias_sampling_thc`,
-        :func:`~pennylane.labs.templates.select_thc`.
+        :func:`~.alias_sampling_thc`,
+        :func:`~.SelectTHC`.
 
     Args:
         zeta (tensor_like): the THC central tensor, shape ``(M, M)``. Must be symmetric
@@ -362,10 +355,10 @@ def qubitization_thc(  # pylint: disable=too-many-arguments,too-many-positional-
     :math:`(\hat{\mathcal{H}} / \lambda) \lvert \psi \rangle`.
     """
 
-    zeta = hamiltonian["zeta"]
-    t_ell = hamiltonian["t_ell"]
-    chi = hamiltonian["chi"]
-    t_eigenvectors = hamiltonian["t_eigenvectors"]
+    zeta = tuple(map(tuple, hamiltonian["zeta"]))
+    t_ell = tuple(hamiltonian["t_ell"])
+    chi = tuple(map(tuple, hamiltonian["chi"]))
+    t_eigenvectors = tuple(map(tuple, hamiltonian["t_eigenvectors"]))
 
     M = qp.math.shape(zeta)[0]
     n_half = qp.math.shape(chi)[1]
@@ -423,7 +416,7 @@ def qubitization_thc(  # pylint: disable=too-many-arguments,too-many-positional-
     # Split ``prep_garbage_wires`` into the two work registers and the two spin flags. The layout
     # is the one documented by ``qubitization_thc_wires``.
     garbage = list(registers["prep_garbage_wires"])
-    n_sup = alias_sampling_thc_wires(M, N, aleph)["superposition_work_wires"]
+    n_sup = qp.alias_sampling_thc_wires(M, N, aleph)["superposition_work_wires"]
     first_clean, n_garbage = _alias_wire_split(M, N, aleph)
     superposition_work = garbage[:n_sup]
     spin_wires = garbage[-2:]
@@ -460,8 +453,8 @@ def qubitization_thc(  # pylint: disable=too-many-arguments,too-many-positional-
     superposition_all = superposition_work + clean_pool
 
     def prepare(apply_sign):
-        SuperpositionTHC(M, N, mu_wires, nu_wires, superposition_all)
-        alias_sampling_thc(
+        qp.SuperpositionTHC(M, N, mu_wires, nu_wires, superposition_all)
+        qp.AliasSamplingTHC(
             M,
             N,
             zeta,
@@ -485,7 +478,7 @@ def qubitization_thc(  # pylint: disable=too-many-arguments,too-many-positional-
     # still returns every PREPARE auxiliary wire to |0>.
     prepare(apply_sign=True)
 
-    select_thc(
+    qp.SelectTHC(
         chi,
         t_eigenvectors,
         beth,
