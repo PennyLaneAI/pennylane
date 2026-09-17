@@ -50,6 +50,7 @@ from .iqp import IQP
 from .qrom import QROM
 from .alias_sampling import AliasSampling, UniformPrep, alias_sampling_wires
 from .alias_sampling_thc import AliasSamplingTHC, alias_sampling_thc_wires
+from .select_thc import SelectTHC, select_thc_wires
 from .superposition_thc import SuperpositionTHC
 from .gqsp import GQSP
 from .select_pauli_rot import (
@@ -129,10 +130,12 @@ __all__ = [
     "QROM",
     "AliasSampling",
     "AliasSamplingTHC",
+    "SelectTHC",
     "SuperpositionTHC",
     "UniformPrep",
     "alias_sampling_wires",
     "alias_sampling_thc_wires",
+    "select_thc_wires",
     "GQSP",
     "SelectPauliRot",
     "MultiplexedRotation",

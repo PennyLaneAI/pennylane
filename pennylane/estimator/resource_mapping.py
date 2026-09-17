@@ -444,6 +444,16 @@ def _(op: qtemps.AliasSamplingTHC):
 
 
 @_map_to_resource_op.register
+def _(op: qtemps.SelectTHC):
+    num_orbitals = len(op.chi[0])
+    return re_temps.SelectTHC(
+        THCHamiltonian(num_orbitals=num_orbitals, tensor_rank=len(op.chi)),
+        num_batches=op.num_batches,
+        rotation_precision=op.beth,
+    )
+
+
+@_map_to_resource_op.register
 def _(op: qtemps.SelectPauliRot):
     return re_temps.SelectPauliRot(
         rot_axis=op.hyperparameters["rot_axis"],
