@@ -18,15 +18,10 @@ import numpy as np
 
 from pennylane import adjoint, ctrl, math
 from pennylane.core.operator import Operation
-from pennylane.decomposition import (
-    add_decomps,
-    adjoint_resource_rep,
-    register_resources,
-    resource_rep,
-)
-from pennylane.labs.templates import LeftClassicalComparator, LeftQuantumComparator
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import RY, BasisState, GlobalPhase, Hadamard, MultiControlledX, X, Z
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
+from pennylane.templates import LeftClassicalComparator, LeftQuantumComparator
 from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires, WiresLike
 
@@ -318,7 +313,7 @@ def _left_inequalities(
         mu_wires,
         N // 2,
         target_wire=work_wires[4],
-        work_wires=work_wires[7 + 2 * n - 1 : 7 + 3 * n - 1],
+        work_wires=work_wires[7 + 2 * n - 1 : 7 + 3 * n - 2],
         comparator=">=",
     )
 
@@ -366,9 +361,9 @@ def _superposition_thc_resources(num_mu_wires, num_work_wires, M, N):
     ctrl_work = max(0, num_work_wires - 7)
     mcx_work = ctrl_work
 
-    lcc_le = resource_rep(LeftClassicalComparator, num_x_wires=n, L=M, comparator="<=")
-    lcc_gt = resource_rep(LeftClassicalComparator, num_x_wires=n, L=N // 2, comparator=">=")
-    lqc = resource_rep(LeftQuantumComparator, num_y_wires=n, comparator="<=")
+    lcc_le = LeftClassicalComparator(Wire[n], M, Wire[1], Wire[n - 1], comparator="<=")
+    lcc_gt = LeftClassicalComparator(Wire[n], N // 2, Wire[1], Wire[n - 1], comparator=">=")
+    lqc = LeftQuantumComparator(Wire[n], Wire[n], Wire[1], Wire[n], comparator="<=")
     basis = BasisState(Bool[n], Wire[n])
     mcx = _controlled_x(n, mcx_work, control_values=[0] * n)
 
@@ -391,9 +386,9 @@ def _superposition_thc_resources(num_mu_wires, num_work_wires, M, N):
     _add(lqc, 2)
     _add(basis, 2)
     # _left_inequalities applied twice as an adjoint.
-    _add(adjoint_resource_rep(LeftClassicalComparator, lcc_le.params), 2)
-    _add(adjoint_resource_rep(LeftClassicalComparator, lcc_gt.params), 2)
-    _add(adjoint_resource_rep(LeftQuantumComparator, lqc.params), 2)
+    _add(adjoint(lcc_le), 2)
+    _add(adjoint(lcc_gt), 2)
+    _add(adjoint(lqc), 2)
     _add(adjoint(BasisState(Bool[n], Wire[n])), 2)
     _add(mcx, 2)
     _add(adjoint(mcx), 1)

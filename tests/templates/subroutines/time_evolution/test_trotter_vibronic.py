@@ -13,6 +13,8 @@
 # limitations under the License.
 """Tests for the ``TrotterVibronic`` template."""
 
+from dataclasses import replace
+
 import numpy as np
 import pytest
 
@@ -58,18 +60,18 @@ def _zero_fragment(n_states, n_modes):
 
 
 def build_hamiltonian(fragments):
-    """Build the dense vibronic Hamiltonian dictionary from a list of dense fragments.
+    """Build a :class:`~.VibronicHamiltonian` from a list of dense fragments.
 
     The leading ``fragments[:-1]`` are the position fragments (stacked along a new leading
     fragment axis) and the last entry contributes the single kinetic fragment.
     """
     position, kinetic = fragments[:-1], fragments[-1]
-    return {
-        "constant": np.stack([f["constant"] for f in position]),
-        "linear": np.stack([f["linear"] for f in position]),
-        "quadratic": np.stack([f["quadratic"] for f in position]),
-        "kinetic": kinetic["kinetic"],
-    }
+    return qp.VibronicHamiltonian(
+        constant=np.stack([f["constant"] for f in position]),
+        linear=np.stack([f["linear"] for f in position]),
+        quadratic=np.stack([f["quadratic"] for f in position]),
+        kinetic=kinetic["kinetic"],
+    )
 
 
 def fragment_list(n_states=2, n_modes=2, seed=42):
@@ -130,15 +132,12 @@ def make_op(
     hamiltonian, wires, evolution_time=0.52, num_trotter_steps=1, aqft_order=None, **kwargs
 ):
     """Construct a :class:`~.TrotterVibronic` operator from a Hamiltonian and wire registers."""
-    if aqft_order is None and isinstance(hamiltonian, dict) and "linear" in hamiltonian:
-        linear = hamiltonian["linear"]
-        if hasattr(linear, "shape"):
-            n_modes = linear.shape[-1]
-            k = len(wires["vib_wires"]) // n_modes
-            # ``None`` resolves to ``k - 1`` in the template, which triggers AQFT's QFT-equivalence
-            # warning; use a genuine approximate order on the usual ``k >= 3`` test grids.
-            if k >= 3:
-                aqft_order = 1
+    if aqft_order is None and getattr(hamiltonian, "num_modes", None):
+        k = len(wires["vib_wires"]) // hamiltonian.num_modes
+        # ``None`` resolves to ``k - 1`` in the template, which triggers AQFT's QFT-equivalence
+        # warning; use a genuine approximate order on the usual ``k >= 3`` test grids.
+        if k >= 3:
+            aqft_order = 1
     return qp.TrotterVibronic(
         evolution_time=evolution_time,
         num_trotter_steps=num_trotter_steps,
@@ -249,9 +248,9 @@ class TestCoefficientReadout:
         matrix = _diagonalization_matrix((0, 1), n)[:n_states, :n_states]
         constant, linear, quadratic, bilinear = _position_coefficients(
             matrix,
-            hamiltonian["constant"][1],
-            hamiltonian["linear"][1],
-            hamiltonian["quadratic"][1],
+            hamiltonian.constant[1],
+            hamiltonian.linear[1],
+            hamiltonian.quadratic[1],
             n_states,
             n_modes,
         )
@@ -261,7 +260,7 @@ class TestCoefficientReadout:
         assert bilinear.shape == (n_modes * (n_modes - 1) // 2, n_states)
 
         # Check the rotated constant term is diagonal, not just that the diagonal matches itself.
-        rotated_constant = matrix.T @ hamiltonian["constant"][1] @ matrix
+        rotated_constant = matrix.T @ hamiltonian.constant[1] @ matrix
         assert np.allclose(rotated_constant, np.diag(np.diag(rotated_constant)))
         assert np.allclose(constant, np.diag(rotated_constant))
 
@@ -323,23 +322,23 @@ class TestConstruction:
         assert set(wires["work"]).isdisjoint(op.wires)
 
     @pytest.mark.parametrize(
-        "hamiltonian, match",
+        "hamiltonian",
         [
-            ("not a dict", "dictionary"),
-            ({}, "keys in `hamiltonian`"),
-            ({"constant": 1, "linear": 1, "quadratic": 1, "extra": 1}, "keys in `hamiltonian`"),
+            "not a Hamiltonian",
+            # the dictionary of numeric data this template used to accept
+            {
+                "constant": np.zeros((1, 2, 2)),
+                "linear": np.zeros((1, 2, 2, 2)),
+                "quadratic": np.zeros((1, 2, 2, 2, 2)),
+                "kinetic": np.zeros((2, 2, 2, 2)),
+            },
+            # a different numeric-Hamiltonian representation
+            qp.CDFHamiltonian(np.zeros((2, 2, 2)), np.zeros((2, 2, 2))),
         ],
     )
-    def test_rejects_bad_hamiltonian_container(self, hamiltonian, match):
-        """Test validation of the Hamiltonian container."""
-        with pytest.raises(ValueError, match=match):
-            make_op(hamiltonian, make_wires(2, 2))
-
-    def test_rejects_bad_hamiltonian_ndim(self):
-        """Test validation of the Hamiltonian tensor dimensions."""
-        hamiltonian = build_hamiltonian(fragment_list())
-        hamiltonian["constant"] = hamiltonian["constant"][0]  # drop the fragment axis
-        with pytest.raises(ValueError, match="3-dimensional"):
+    def test_rejects_non_vibronic_hamiltonian(self, hamiltonian):
+        """Test that anything but a ``VibronicHamiltonian`` is rejected."""
+        with pytest.raises(ValueError, match="expects a VibronicHamiltonian"):
             make_op(hamiltonian, make_wires(2, 2))
 
     @pytest.mark.parametrize("num_steps", [0, -1, 1.5, True, np.int64(0)])
@@ -385,9 +384,9 @@ class TestConstruction:
     def test_accepts_list_hamiltonian(self):
         """Test that nested list/tuple Hamiltonian leaves are coerced to arrays."""
         hamiltonian = build_hamiltonian(fragment_list(n_states=2, n_modes=2))
-        hamiltonian = {key: value.tolist() for key, value in hamiltonian.items()}
+        hamiltonian = qp.VibronicHamiltonian(*(t.tolist() for t in hamiltonian.tensors))
         op = make_op(hamiltonian, make_wires(2, 2))
-        assert all(isinstance(v, np.ndarray) for v in op.arguments["hamiltonian"].values())
+        assert all(isinstance(t, np.ndarray) for t in op.arguments["hamiltonian"].tensors)
 
     def test_rejects_bad_electronic_size_at_construction(self):
         """Test that a wrongly-sized electronic register is rejected at construction time."""
@@ -481,8 +480,7 @@ class TestConstruction:
         wires = make_wires(2, 1)
 
         def make_traced(constant):
-            traced = dict(hamiltonian)
-            traced["constant"] = constant
+            traced = replace(hamiltonian, constant=constant)
             op = qp.TrotterVibronic(
                 evolution_time=0.5,
                 num_trotter_steps=1,
@@ -497,7 +495,7 @@ class TestConstruction:
             assert op.name == "TrotterVibronic"
             return 0
 
-        jax.make_jaxpr(make_traced)(np.asarray(hamiltonian["constant"]))
+        jax.make_jaxpr(make_traced)(np.asarray(hamiltonian.constant))
 
 
 # ---------------------------------------------------------------------------
@@ -691,12 +689,12 @@ def test_default_qubit_execution():
     """Test that a small vibronic Trotter circuit executes on default.qubit."""
     n_states, n_modes, k, b = 2, 1, 3, 2
     n = int(qp.math.ceil_log2(n_states))
-    hamiltonian = {
-        "constant": np.zeros((1, n_states, n_states)),
-        "linear": np.zeros((1, n_states, n_states, n_modes)),
-        "quadratic": np.zeros((1, n_states, n_states, n_modes, n_modes)),
-        "kinetic": np.einsum("ab,cd->abcd", np.eye(n_states), np.diag(0.3 * np.ones(n_modes))),
-    }
+    hamiltonian = qp.VibronicHamiltonian(
+        constant=np.zeros((1, n_states, n_states)),
+        linear=np.zeros((1, n_states, n_states, n_modes)),
+        quadratic=np.zeros((1, n_states, n_states, n_modes, n_modes)),
+        kinetic=np.einsum("ab,cd->abcd", np.eye(n_states), np.diag(0.3 * np.ones(n_modes))),
+    )
     wires = qp.registers(
         {
             "electronic": n,
@@ -776,12 +774,12 @@ class TestNumericalCorrectness:
         c = 2 * np.pi * m / 2 ** (b - 1)
         constant = np.zeros((1, n_states, n_states))
         constant[0, electronic_state, electronic_state] = c
-        hamiltonian = {
-            "constant": constant,
-            "linear": np.zeros((1, n_states, n_states, n_modes)),
-            "quadratic": np.zeros((1, n_states, n_states, n_modes, n_modes)),
-            "kinetic": np.zeros((n_states, n_states, n_modes, n_modes)),
-        }
+        hamiltonian = qp.VibronicHamiltonian(
+            constant=constant,
+            linear=np.zeros((1, n_states, n_states, n_modes)),
+            quadratic=np.zeros((1, n_states, n_states, n_modes, n_modes)),
+            kinetic=np.zeros((n_states, n_states, n_modes, n_modes)),
+        )
         wires = make_wires(n_states, n_modes, k=k, b=b)
         got = _phase_gradient_int(hamiltonian, wires, electronic_state=electronic_state)
         # Coefficients are negated before loading (phase-gradient sign convention), so the
@@ -797,12 +795,12 @@ class TestNumericalCorrectness:
         lam = 2 * np.pi * m / 2 ** (b - 1)
         linear = np.zeros((1, n_states, n_states, n_modes))
         linear[0, 0, 0, 0] = lam
-        hamiltonian = {
-            "constant": np.zeros((1, n_states, n_states)),
-            "linear": linear,
-            "quadratic": np.zeros((1, n_states, n_states, n_modes, n_modes)),
-            "kinetic": np.zeros((n_states, n_states, n_modes, n_modes)),
-        }
+        hamiltonian = qp.VibronicHamiltonian(
+            constant=np.zeros((1, n_states, n_states)),
+            linear=linear,
+            quadratic=np.zeros((1, n_states, n_states, n_modes, n_modes)),
+            kinetic=np.zeros((n_states, n_states, n_modes, n_modes)),
+        )
         wires = make_wires(n_states, n_modes, k=k, b=b)
         got = _phase_gradient_int(hamiltonian, wires, mode_value=q, electronic_state=0)
         # Negated coefficient (see ``test_constant_term_phase``) times the (signed) mode value.
@@ -830,12 +828,12 @@ class TestNumericalCorrectness:
             constant[0, a, a] = const_m[a] * scale
             linear[0, a, a, 0] = lin_m[a] * scale
             quadratic[0, a, a, 0, 0] = quad_m[a] * scale
-        hamiltonian = {
-            "constant": constant,
-            "linear": linear,
-            "quadratic": quadratic,
-            "kinetic": np.zeros((n_states, n_states, n_modes, n_modes)),
-        }
+        hamiltonian = qp.VibronicHamiltonian(
+            constant=constant,
+            linear=linear,
+            quadratic=quadratic,
+            kinetic=np.zeros((n_states, n_states, n_modes, n_modes)),
+        )
         wires = make_wires(n_states, n_modes, k=k, b=b)
         num_wires = max(w for reg in wires.values() for w in reg) + 1
         dev = qp.device("default.qubit", wires=num_wires)

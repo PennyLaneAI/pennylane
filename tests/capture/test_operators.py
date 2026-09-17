@@ -273,15 +273,30 @@ class TestSpecialOps:
         jaxpr = jax.make_jaxpr(qp.I)()
         assert len(jaxpr.eqns) == 1
 
-        assert jaxpr.eqns[0].primitive == qp.I._primitive
-        assert len(jaxpr.eqns[0].invars) == 0
-        assert jaxpr.eqns[0].params == {"n_wires": 0}
+        i_eqn = jaxpr.eqns[0]
+        assert_eqn_matches_op(i_eqn, qp.I)
+        assert len(i_eqn.invars) == 0
+        assert i_eqn.params["wire_lens"] == (0,)
 
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts)
 
-        assert len(q.queue) == 1
-        qp.assert_equal(q.queue[0], qp.I())
+        assert len(collector.state["ops"]) == 1
+        qp.assert_equal(collector.state["ops"][0], qp.I())
+
+    def test_identity_with_wires(self):
+        """Test that an identity on wires can be captured."""
+
+        def f(wires):
+            qp.I(wires)
+
+        jaxpr = jax.make_jaxpr(f)([0, 1])
+        assert len(jaxpr.eqns) == 1
+
+        i_eqn = jaxpr.eqns[0]
+        assert_eqn_matches_op(i_eqn, qp.I)
+        assert len(i_eqn.invars) == 2
+        assert i_eqn.params["wire_lens"] == (2,)
 
 
 class TestTemplates:
@@ -400,37 +415,52 @@ class TestOpmath:
         assert_eqn_matches_op(base_eqn, qp.Y)
         assert base_eqn.params["n_ctrls"] == 3
 
-    @pytest.mark.pl2do(reason="ArgInfo issue")
     def test_Controlled(self):
-        """Test a nested control operation."""
+        """Test a nested control operation with the base operator passed as an argument."""
 
         def qfunc(op):
             qp.ctrl(op, control=(3, 4), control_values=[0, 1])
 
         jaxpr = jax.make_jaxpr(qfunc)(qp.IsingXX(1.2, wires=(0, 1)))
 
-        assert len(jaxpr.eqns) == 2
-        assert jaxpr.eqns[0].primitive == qp.IsingXX._primitive
+        # The controlled operator is captured as a single operator primitive with control metadata.
+        assert len(jaxpr.eqns) == 1
+        eqn = jaxpr.eqns[0]
+        assert_eqn_matches_op(eqn, qp.IsingXX)
+        assert eqn.params["wire_lens"] == (2,)
+        assert eqn.params["n_ctrls"] == 2
 
-        eqn = jaxpr.eqns[1]
-        assert eqn.primitive == qp.ops.Controlled._primitive
-        assert eqn.invars[0] == jaxpr.eqns[0].outvars[0]  # the isingxx
-        assert eqn.invars[1].val == 3
-        assert eqn.invars[2].val == 4
-
-        assert isinstance(eqn.outvars[0].aval, AbstractOperator)
-        assert eqn.params == {
-            "control_values": (0, 1),
-            "work_wires": None,
-            "work_wire_type": "borrowed",
-        }
-
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3.4)
-
-        assert len(q) == 1
+        # The parameter and wires of the base operator are the inputs of the jaxpr.
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, 3.4, 0, 1)
+        assert len(collector.state["ops"]) == 1
         expected = qp.ctrl(qp.IsingXX(3.4, wires=(0, 1)), control=(3, 4), control_values=[0, 1])
-        qp.assert_equal(q.queue[0], expected)
+        qp.assert_equal(collector.state["ops"][0], expected)
+
+    def test_operator_of_operators_as_argument(self):
+        """Test that capturing a function whose argument is an operator of operators
+        works correctly.
+        """
+        op = qp.prod(qp.X(0), qp.X(1))
+
+        empty_jaxpr = jax.make_jaxpr(lambda _op: None)(op)
+        assert len(empty_jaxpr.eqns) == 0
+        # The two nested operators contribute their wires as inputs of the jaxpr.
+        assert len(empty_jaxpr.jaxpr.invars) == 2
+
+        # When applied, the composite operator is re-created and can be reconstructed exactly.
+        def f(operator):
+            qp.apply(operator)
+
+        jaxpr = jax.make_jaxpr(f)(op)
+        assert len(jaxpr.eqns) == 1
+        assert jaxpr.eqns[0].primitive == operator_p
+        assert_eqn_matches_op(jaxpr.eqns[0], qp.ops.Prod2)
+
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts, 0, 1)
+        assert len(collector.state["ops"]) == 1
+        qp.assert_equal(collector.state["ops"][0], op)
 
     def test_ctrl_op_constructed_outside_qfunc(self):
         """Test an op constructed outside the qfunc can be controlled."""
@@ -495,19 +525,11 @@ class TestAbstractDunders:
 
         jaxpr = jax.make_jaxpr(qfunc)()
 
-        assert len(jaxpr.eqns) == 3
-        assert_eqn_matches_op(jaxpr.eqns[0], qp.X)
-        assert_eqn_matches_op(jaxpr.eqns[1], qp.Y)
-
-        eqn = jaxpr.eqns[2]
-
-        assert eqn.primitive == qp.ops.Prod._primitive
-        assert eqn.invars[0] == jaxpr.eqns[0].outvars[0]
-        assert eqn.invars[1] == jaxpr.eqns[1].outvars[0]
-
-        assert eqn.params == {}
-
-        assert isinstance(eqn.outvars[0].aval, AbstractOperator)
+        assert len(jaxpr.eqns) == 1
+        assert_eqn_matches_op(jaxpr.eqns[0], qp.ops.Prod2)
+        assert len(jaxpr.eqns[0].params["hybrid_trees"]) == 2
+        assert "PauliX" in str(jaxpr.eqns[0].params["hybrid_trees"][0])
+        assert "PauliY" in str(jaxpr.eqns[0].params["hybrid_trees"][0])
 
     def test_mul(self):
         """Test that the scalar multiplication dunder works."""

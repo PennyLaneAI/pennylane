@@ -433,8 +433,18 @@ def assert_pui_correctness(rule, coefficients, indices, wire_specs):
         if _qjit:
             from catalyst.device.decomposition import catalyst_decompose
 
+            # Side step the condition that the Select-SWAP network needs to be non-trivial. This
+            # allows us to use the non-for_loop QROM decomposition
+            # until dynamic allocation + for_loop is figured out.
+            # pylint: disable=cell-var-from-loop
+            sel_swap_rule = qp.list_decomps("QROM")["_select_swap"]
+
+            @qp.register_resources(sel_swap_rule._compute_resources)
+            def qrom_decomp(*args, **kwargs):
+                sel_swap_rule._impl(*args, **kwargs)
+
             gate_set = {
-                "QROM",
+                "Select",
                 "MultiplexerStatePreparation",
                 "ForLoop",
                 "Cond",
@@ -442,7 +452,12 @@ def assert_pui_correctness(rule, coefficients, indices, wire_specs):
                 "PauliX",
                 "MultiControlledX",
             }
-            func = qp.qjit(catalyst_decompose(func, capabilities=None, target_gates=gate_set))
+            fixed_decomp = {"QROM": qrom_decomp}
+            func = qp.qjit(
+                catalyst_decompose(
+                    func, capabilities=None, target_gates=gate_set, fixed_decomps=fixed_decomp
+                )
+            )
 
         out_state = func()
         # We infer the total and aux wire counts from the state shape, because small-scale
@@ -487,7 +502,7 @@ class TestPartialUnaryStatePreparation:
         target[list(indices)] = coefficients
         assert np.allclose(circuit()[::4], target)
 
-    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("provide_work_wires", [False, True])
     @pytest.mark.parametrize(
         "num_wires, num_entries",
@@ -529,7 +544,6 @@ class TestPartialUnaryStatePreparation:
     )
     def test_decomposition_prepares_state(self, num_wires, num_entries, seed, provide_work_wires):
         """Test that the decomposition of PartialUnaryStatePreparation actually prepares the desired state."""
-
         coefficients, indices = self.make_random_data(num_wires, num_entries, seed=seed)
         needed_work_wires = max(qp.math.ceil_log2(num_entries) - 1, 1)
         if provide_work_wires:

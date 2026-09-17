@@ -20,7 +20,7 @@ from itertools import product
 
 import numpy as np
 
-from pennylane import math
+from pennylane import capture, math
 from pennylane.core.operator import Operator, Operator2
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import add_decomps, register_condition, register_resources
@@ -70,7 +70,7 @@ def _partial_select(K, control):
 
 
 class Select(Operator2):
-    r"""The ``Select`` operator, also known as multiplexer or multiplexed operation,
+    r"""The ``Select`` operator, also available as :class:`~.Multiplexer` and :class:`~.Multiplexor`,
     applies different operations depending on the state of designated control wires.
 
     .. math:: Select|i\rangle \otimes |\psi\rangle = |i\rangle \otimes U_i |\psi\rangle
@@ -901,7 +901,7 @@ def _select_decomp_unary(*_, ops, control, work_wires, partial, **__):
     if 1 <= K <= 2:
         if K == 1 and partial:
             # Can skip control for partial Select and a single op
-            if QueuingManager.recording():
+            if QueuingManager.recording() or capture.enabled():
                 apply(ops[0])
             return list(ops)
         # Don't need unary iterator, just control-apply the one/two operator(s) directly.
@@ -1016,3 +1016,24 @@ def _select_decomp_multi_control_work_wire(*_, ops, control, work_wires, partial
 
 
 add_decomps(Select, _select_decomp_multi_control_work_wire)
+
+# pylint: disable=protected-access
+if getattr(Select, "_primitive", None) is not None:
+
+    @Select._primitive.def_impl
+    def _(*args, n_wires, **kwargs):
+        ops, control = args[:-n_wires], args[-n_wires:]
+        return type.__call__(Select, ops, control=control, **kwargs)
+
+
+Multiplexer = Select
+r"""Multiplexer(ops, control, work_wires=None, partial=False)
+
+Alias for :class:`~.Select`.
+"""
+
+Multiplexor = Select
+r"""Multiplexor(ops, control, work_wires=None, partial=False)
+
+Alias for :class:`~.Select`.
+"""

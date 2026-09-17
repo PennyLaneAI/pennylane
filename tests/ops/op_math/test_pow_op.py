@@ -41,7 +41,7 @@ def pow_using_dunder_method(base, z):
     return base**z
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_basic_validity():
     """Run basic operator validity checks."""
     op = qp.pow(qp.RX(1.2, wires=0), 3)
@@ -446,6 +446,8 @@ class TestProperties:
         expected_eigvals = np.array([1.0**z, (-1.0 + 0j) ** z])
 
         assert np.allclose(eigvals, expected_eigvals)
+        # the eigenvalues must sit on the same branch of ``**`` as the matrix
+        assert np.allclose(eigvals, np.diag(qp.matrix(op)))
 
 
 class TestSimplify:
