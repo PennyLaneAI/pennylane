@@ -552,6 +552,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* :class:`~.FlipSign` now accepts `work_wires`, which are forwarded to the multi-controlled
+  :class:`~.Z` gate in its decomposition. Providing work wires substantially reduces the gate count.
+  [(#10159)](https://github.com/PennyLaneAI/pennylane/pull/10159)
+
 * Added a scalable unary iterator decomposition to `QROM`. While this decomposition produces the
   same quantum circuit as the Select-SWAP decomposition with `depth=1`, once `Select` is decomposed,
   the new rule uses a flat `for_loop` structure to represent the unary iteration, instead of
