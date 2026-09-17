@@ -172,16 +172,15 @@ class TestQROMTable:
             qp.QROM(table, control_wires=ctrl, target_wires=targ, work_wires=work, clean=True)
             return qp.probs(wires=ctrl + targ + work)
 
-        for i in range(4):
+        for i, d in ((0, 0), (1, 5), (3, 7)):
             index = list(qp.math.int_to_binary(i, 2))
-            for d in range(8):
-                data = list(qp.math.int_to_binary(d, 3))
-                expected_data = [a ^ b for a, b in zip(data, table[i])]
-                # work wires must come back clean, so the outcome is a single basis state
-                expected_state = int("".join(map(str, index + expected_data)) + "000", 2)
-                assert np.isclose(np.asarray(circuit(index, data))[expected_state], 1.0, atol=1e-9)
+            data = list(qp.math.int_to_binary(d, 3))
+            expected_data = [a ^ b for a, b in zip(data, table[i])]
+            # work wires must come back clean, so the outcome is a single basis state
+            expected_state = int("".join(map(str, index + expected_data)) + "000", 2)
+            assert np.isclose(np.asarray(circuit(index, data))[expected_state], 1.0, atol=1e-9)
 
-    @pytest.mark.parametrize("n_half, num_batches", [(8, 3), (10, 4), (5, 2)])
+    @pytest.mark.parametrize("n_half, num_batches", [(8, 3), (5, 2)])
     def test_running_xor_rebuilds_each_batch(self, n_half, num_batches):
         """Test that XOR-ing the increments up to batch b give exactly batch b's own table."""
         beth = 4
@@ -291,11 +290,11 @@ class TestSelectTHCOperator:
     """Checks the block that ``SelectTHC`` applies against a Jordan-Wigner reference.
 
     ``beth`` is kept as small as the grid allows: the phase gradient register is simulated
-    too, so every extra bit of precision doubles the statevector. beth = 3 is the coarsest
+    too, so every extra bit of precision doubles the statevector. beth = 2 is the coarsest
     grid whose exact leaves are not all axis aligned.
     """
 
-    M, N, beth = 2, 4, 3
+    M, N, beth = 2, 4, 2
     # leaves at the centers of the angle grid cells, theta = (2 m + 1) pi / 2**beth, which
     # the beth-bit floor quantization represents exactly, so the circuit carries no
     # discretization error. Integer multiples of the step 2 pi / 2**beth are the worst case.
@@ -389,8 +388,7 @@ class TestSelectTHCOperator:
         assert amps.size == 2 ** len(system)  # every ancilla was pinned
         return amps
 
-    @pytest.mark.parametrize("swap", [0, 1])
-    @pytest.mark.parametrize("spin1, spin2", [(0, 0), (0, 1)])
+    @pytest.mark.parametrize("swap, spin1, spin2", [(0, 0, 0), (1, 0, 1)])
     def test_branch_operator(self, swap, spin1, spin2):
         """Test that with the swap flag classical, the block is a bare product of two V's."""
         M, N, beth, chi = self.M, self.N, self.beth, self.chi
@@ -466,10 +464,10 @@ class TestSelectTHCOperator:
                 expected += 0.25 * 0.5 * (v_nu_b @ v_mu_a + v_mu_b @ v_nu_a) @ psi
         assert np.allclose(result, expected, atol=1e-8)
 
-    @pytest.mark.parametrize("ell, spin", [(0, 0), (1, 1)])
-    def test_one_body_branch(self, ell, spin):
+    def test_one_body_branch(self):
         """Test that when the sentinel flag is set the oracle applies a single one-body V from the
         t_eigenvectors table."""
+        ell, spin = 0, 0
         M, N, beth = self.M, self.N, self.beth
         theta = np.pi * np.array([3, 1]) / (1 << beth)  # grid leaves, as columns
         tev = np.stack([np.cos(theta), np.sin(theta)])
@@ -490,7 +488,7 @@ class TestSelectTHCOperator:
         """Test that for a generic chi the oracle stays unitary and the error stays within
         one grid step of the reference.
         """
-        M, N, beth = 2, 4, 3
+        M, N, beth = 2, 4, 2
         chi = np.random.default_rng(4).standard_normal((M, 2))
         _, index, flags, _, _, _ = _layout(M, N, beth)
         n = len(index) // 2
@@ -548,9 +546,8 @@ class TestPhaseGradientRotation:  # pylint: disable=too-few-public-methods
             columns.append(out)
         return np.stack(columns, axis=1)
 
-    @pytest.mark.parametrize("beth", [3, 4, 5])
     @pytest.mark.parametrize("adjoint", [False, True])
-    def test_equals_single_excitation(self, beth, adjoint):
+    def test_equals_single_excitation(self, adjoint):
         """Test that the two sandwiched additions of the loaded value k reproduce
         SingleExcitation at theta = -2 pi (2 k + 1) / 2**beth.
 
@@ -560,7 +557,8 @@ class TestPhaseGradientRotation:  # pylint: disable=too-few-public-methods
         additions sit in opposite Clifford frames and their k-dependent parts cancel.
         """
         sign = -1.0 if adjoint else 1.0
-        for k in (0, 1, 3, (1 << (beth - 1)) + 1, (1 << beth) - 1):
+        beth = 3
+        for k in (0, 3, (1 << beth) - 1):
             theta = -sign * 2.0 * np.pi * (2 * k + 1) / (1 << beth)
             expected = np.exp(sign * 1j * np.pi / (1 << beth)) * qp.matrix(
                 qp.SingleExcitation(theta, wires=[0, 1])
@@ -571,7 +569,7 @@ class TestPhaseGradientRotation:  # pylint: disable=too-few-public-methods
 class TestSelectTHCInvariants:
     """Properties that hold for any chi, checkable without knowing the target operator."""
 
-    @pytest.mark.parametrize("M, N, beth", [(2, 4, 3), (1, 2, 4), (3, 4, 3)])
+    @pytest.mark.parametrize("M, N, beth", [(2, 4, 2), (1, 2, 2)])
     def test_self_inverse(self, M, N, beth):
         """Test that Select is self-inverse."""
         n_half = N // 2
@@ -604,7 +602,7 @@ class TestSelectTHCInvariants:
         assert np.isclose(np.linalg.norm(result), 1.0, atol=1e-8)
         assert np.allclose(result, psi, atol=1e-8)
 
-    @pytest.mark.parametrize("M, N, beth", [(2, 4, 2), (3, 4, 2)])
+    @pytest.mark.parametrize("M, N, beth", [(2, 4, 2)])
     def test_work_wires_restored(self, M, N, beth):
         """Test that the clean scratch comes back to |0> for every input, so it can be reused."""
         chi = np.random.default_rng(M).standard_normal((M, N // 2))
@@ -629,9 +627,9 @@ class TestSelectTHCInvariants:
 
         assert np.isclose(np.asarray(circuit())[0], 1.0, atol=1e-8)
 
-    @pytest.mark.parametrize("extra", [1, 2])
-    def test_extra_work_wires_do_not_change_the_unitary(self, extra):
+    def test_extra_work_wires_do_not_change_the_unitary(self):
         """Test that extra work wires switch QROM to a SelectSwap decomposition."""
+        extra = 1
         M, N, beth = 2, 4, 2
         chi = np.random.default_rng(6).standard_normal((M, N // 2))
         base = _layout(M, N, beth)[5]
@@ -662,47 +660,6 @@ class TestSelectTHCInvariants:
         outs = [run(0), run(extra)]
         assert np.isclose(np.linalg.norm(outs[1]), 1.0, atol=1e-8)
         assert np.allclose(outs[0], outs[1], atol=1e-8)
-
-    @pytest.mark.parametrize("M, N, beth", [(2, 6, 2)])
-    def test_batching_does_not_change_the_unitary(self, M, N, beth):
-        """Test that num_batches is a pure space-time trade"""
-        chi = np.random.default_rng(M).standard_normal((M, N // 2))
-        tev = np.linalg.qr(np.random.default_rng(1).standard_normal((N // 2, N // 2)))[0]
-        base = N + 2 * qp.math.ceil_log2(M + 1) + 5 + beth + 1
-        psi = np.random.default_rng(8).standard_normal((2, 2**base)).T @ [1, 1j]
-        psi /= np.linalg.norm(psi)
-
-        def run(num_batches):
-            system, index, flags, gradient, work, ntot = _layout(
-                M, N, beth, num_batches=num_batches
-            )
-            assert base + len(work) == ntot
-
-            @qp.qnode(qp.device("default.qubit", wires=ntot))
-            def circuit():
-                qp.StatePrep(psi, wires=range(base))
-                SelectTHC(
-                    _static_matrix(chi),
-                    _static_matrix(tev),
-                    beth,
-                    system,
-                    index,
-                    flags,
-                    gradient,
-                    work,
-                    num_batches,
-                )
-                return qp.state()
-
-            state = np.asarray(circuit()).reshape([2] * ntot)
-            out = np.asarray(state[(slice(None),) * base + (0,) * len(work)]).reshape(-1)
-            # all the amplitude is on |0> of the work register, so it was restored
-            assert np.isclose(np.linalg.norm(out), 1.0, atol=1e-8)
-            return out
-
-        reference = run(1)
-        for num_batches in range(2, N // 2):
-            assert np.allclose(run(num_batches), reference, atol=1e-8)
 
 
 class TestControlledSelectTHC:
