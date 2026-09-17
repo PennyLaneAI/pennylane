@@ -2,6 +2,7 @@
 
 <h3>New features since last release</h3>
 
+
 * Three new numeric Hamiltonians called :class:`pennylane.CDFHamiltonian` (based on
   `arXiv:2506.15784, Sec. III A <https://arxiv.org/abs/2506.15784>`),
   :class:`pennylane.CGFHamiltonian` (based on
@@ -483,6 +484,14 @@
   basis states.
   [(#9913)](https://github.com/PennyLaneAI/pennylane/pull/9913)
   [(#10145)](https://github.com/PennyLaneAI/pennylane/pull/10145)
+  [(#10146)](https://github.com/PennyLaneAI/pennylane/pull/10146)
+
+* Added :class:`~.AliasSamplingTHC`, the coherent alias-sampling ``PREPARE`` for tensor
+  hypercontraction qubitization, together with :class:`~.SuperpositionTHC`, which prepares the
+  index superposition it acts on.
+  [(#9554)](https://github.com/PennyLaneAI/pennylane/pull/9554)
+  [(#9940)](https://github.com/PennyLaneAI/pennylane/pull/9940)
+  [(#10146)](https://github.com/PennyLaneAI/pennylane/pull/10146)
 
 * Added :class:`~.LeftQuantumComparator` for inequality tests between two quantum registers.
   [(#9277)](https://github.com/PennyLaneAI/pennylane/pull/9277)
@@ -550,6 +559,19 @@
   ```
 
 <h3>Improvements 🛠</h3>
+
+* :class:`~.FlipSign` now accepts `work_wires`, which are forwarded to the multi-controlled
+  :class:`~.Z` gate in its decomposition. Providing work wires substantially reduces the gate count.
+  [(#10159)](https://github.com/PennyLaneAI/pennylane/pull/10159)
+
+* Added a scalable unary iterator decomposition to `QROM`. While this decomposition produces the
+  same quantum circuit as the Select-SWAP decomposition with `depth=1`, once `Select` is decomposed,
+  the new rule uses a flat `for_loop` structure to represent the unary iteration, instead of
+  recursion, making it scalable. Select-SWAP has been deactivated
+  if `depth==1 and len(work_wires)>=len(control_wires)-1`.
+  Also replaced the usage of `BasisState` by the new `MultiX` template, because the intended
+  bitflips are not applied to unconditionally zeroed qubits, which `BasisState` assumes.
+  [(#10067)](https://github.com/PennyLaneAI/pennylane/pull/10067)
 
 * Added `Multiplexer` and `Multiplexor` as aliases for :class:`~.Select`, and
   `MultiplexedRotation` and `UniformlyControlledRotation` as aliases for
@@ -876,10 +898,6 @@
 
   ```
 
-* Created a new ``labs.templates.SuperpositionTHC`` template, used as a subroutine in tensor
-  hypercontraction (THC) qubitization.
-  [(#9554)](https://github.com/PennyLaneAI/pennylane/pull/9554)
-
 * Added the :mod:`pennylane.labs.profiler` which allows users to profile the quantum resources required for
   their quantum workflows. This contains core functions and classes such as
   :class:`~.pennylane.labs.profiler.ProfileNode`, :func:`~.pennylane.labs.profiler.profile`, and
@@ -1169,8 +1187,7 @@
   - Non-parametric operators are ported:
     - :class:`~.S`, :class:`~.T`, :class:`~.SX`, :class:`~.Y`, :class:`~.CY`, :class:`~.SISWAP`, :class:`~.ISWAP`, :class:`~.ECR`,
       :class:`~.SWAP`, :class:`~.CSWAP`, :class:`~.H`, :class:`~.CH`, :class:`~.Z`, :class:`~.CZ`, :class:`~.CCZ`, :class:`~.X`,
-      :class:`~.CNOT`, :class:`~.Toffoli`, :class:`~.MultiControlledX`
-      :class:`~.Identity`.
+      :class:`~.CNOT`, :class:`~.Toffoli`, :class:`~.MultiControlledX`, :class:`~.Identity`.
   [(#9818)](https://github.com/PennyLaneAI/pennylane/pull/9818)
   [(#9859)](https://github.com/PennyLaneAI/pennylane/pull/9859)
   [(#9819)](https://github.com/PennyLaneAI/pennylane/pull/9819)
@@ -1184,6 +1201,7 @@
   [(#9960)](https://github.com/PennyLaneAI/pennylane/pull/9960)
   [(#10004)](https://github.com/PennyLaneAI/pennylane/pull/10004)
   [(#10129)](https://github.com/PennyLaneAI/pennylane/pull/10129)
+  [(#10148)](https://github.com/PennyLaneAI/pennylane/pull/10148)
   - Parametric operators are ported:
     - :class:`~.RZ`, :class:`~.CRZ`, :class:`~.DiagonalQubitUnitary`, :class:`~.PauliRot`, :class:`~.MultiRZ`, :class:`~.PhaseShift`,
       :class:`~.ControlledPhaseShift`, :class:`~.Rot`, :class:`~.CRot`, :class:`~.U1`, :class:`~.U2`, :class:`~.U3`, :class:`~.PCPhase`,
@@ -1400,6 +1418,7 @@
     [(#9866)](https://github.com/PennyLaneAI/pennylane/pull/9866)
     [(#9897)](https://github.com/PennyLaneAI/pennylane/pull/9897)
     [(#9973)](https://github.com/PennyLaneAI/pennylane/pull/9973)
+    [(#10152)](https://github.com/PennyLaneAI/pennylane/pull/10152)
   - The way that :class:`~.Wires` arguments in pytree leaves are read out of HDF5 was changed to be compatible with :class:`~.Operator2` in the data module.
     [(#10012)](https://github.com/PennyLaneAI/pennylane/pull/10012)
 
@@ -1476,6 +1495,9 @@
 * `capture.enable()`, `capture.disable()` are updated to use `ContextVar` for thread safety. A `capture.toggle_ctx`
   context manager that temporarily enables or disables capture is added.
   [(#10016)](https://github.com/PennyLaneAI/pennylane/pull/10016)
+
+* Improved coverage of testing operators and their decomposition rules with capture enabled.
+  [(#10019)](https://github.com/PennyLaneAI/pennylane/pull/10019)
 
 <h3>Documentation 📝</h3>
 

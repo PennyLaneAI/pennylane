@@ -20,7 +20,7 @@ from itertools import product
 
 import numpy as np
 
-from pennylane import math
+from pennylane import capture, math
 from pennylane.core.operator import Operator, Operator2
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import add_decomps, register_condition, register_resources
@@ -901,7 +901,7 @@ def _select_decomp_unary(*_, ops, control, work_wires, partial, **__):
     if 1 <= K <= 2:
         if K == 1 and partial:
             # Can skip control for partial Select and a single op
-            if QueuingManager.recording():
+            if QueuingManager.recording() or capture.enabled():
                 apply(ops[0])
             return list(ops)
         # Don't need unary iterator, just control-apply the one/two operator(s) directly.
