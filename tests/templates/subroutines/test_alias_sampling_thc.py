@@ -55,6 +55,14 @@ def _wire_layout(M, N, aleph):
     return mu_wires, nu_wires, sup_work, edge_flag, work_wires
 
 
+def _static_coeffs(zeta, t_ell):
+    """Hashable nested tuples for compilable ``zeta`` / ``t_ell``."""
+    return (
+        tuple(tuple(float(x) for x in row) for row in np.asarray(zeta, dtype=float)),
+        tuple(float(x) for x in np.asarray(t_ell, dtype=float).ravel()),
+    )
+
+
 def _reconstruct_distribution(M, N, zeta, t_ell, aleph):  # pylint: disable=too-many-arguments
     """Exact distribution over |mu>|nu> prepared by ``AliasSamplingTHC``.
 
@@ -121,8 +129,7 @@ def _t_count(M, N, aleph, extra_work_wires):
 
     np.random.seed(3)
     zeta = np.random.randn(M, M)
-    zeta = (zeta + zeta.T) / 2
-    t_ell = np.random.randn(N // 2)
+    zeta, t_ell = _static_coeffs((zeta + zeta.T) / 2, np.random.randn(N // 2))
 
     def qfunc():
         qp.AliasSamplingTHC(M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph)
@@ -136,6 +143,7 @@ def _t_count(M, N, aleph, extra_work_wires):
 
 
 def _run(M, N, zeta, t_ell, aleph, device="lightning.qubit"):  # pylint: disable=too-many-arguments
+    zeta, t_ell = _static_coeffs(zeta, t_ell)
     mu_wires, nu_wires, sup_work, edge_flag, work_wires = _wire_layout(M, N, aleph)
     total = max(mu_wires + nu_wires + sup_work + work_wires) + 1
     dev = qp.device(device, wires=total)
@@ -281,8 +289,7 @@ class TestAliasSamplingTHC:
     def test_assert_valid_and_decomposition(self):
         """Operator2 validity and decomposition rules, with and without capture."""
         M, N, aleph = 2, 2, 1
-        zeta = np.ones((M, M))
-        t_ell = np.ones(N // 2)
+        zeta, t_ell = _static_coeffs(np.ones((M, M)), np.ones(N // 2))
         sizes = qp.alias_sampling_thc_wires(M, N, aleph)
         n = sizes["mu_wires"]
         mu_wires = list(range(n))
@@ -294,16 +301,17 @@ class TestAliasSamplingTHC:
         with pytest.raises(ValueError, match="must not overlap"):
             qp.ctrl(op, control=work_wires[-1])
 
-    def test_abstract_wires_canonicalize_coefficients(self):
-        """Test that abstract construction keeps compilable coefficients hashable."""
+    def test_abstract_wires_keep_hashable_coefficients(self):
+        """Test that abstract construction stores compilable coefficients as given."""
         M, N, aleph = 2, 2, 1
         sizes = qp.alias_sampling_thc_wires(M, N, aleph)
         n = sizes["mu_wires"]
+        zeta, t_ell = _static_coeffs(np.ones((M, M)), np.ones(N // 2))
         op = qp.AliasSamplingTHC(
             M,
             N,
-            np.ones((M, M)),
-            np.ones(N // 2),
+            zeta,
+            t_ell,
             AbstractWires(n),
             AbstractWires(n),
             AbstractWires(1),
@@ -311,19 +319,20 @@ class TestAliasSamplingTHC:
             aleph,
         )
 
-        assert isinstance(op.zeta, tuple)
-        assert isinstance(op.t_ell, tuple)
+        assert op.zeta == zeta
+        assert op.t_ell == t_ell
         assert qp.equal(op, op)
 
     def test_abstract_wires_validate_coefficient_shapes(self):
         """Test that abstract construction still reports invalid coefficient shapes."""
         sizes = qp.alias_sampling_thc_wires(2, 2, 1)
+        zeta, t_ell = _static_coeffs(np.ones((3, 3)), np.ones(1))
         with pytest.raises(ValueError, match=r"zeta must be of shape \(2, 2\)"):
             qp.AliasSamplingTHC(
                 2,
                 2,
-                np.ones((3, 3)),
-                np.ones(1),
+                zeta,
+                t_ell,
                 AbstractWires(2),
                 AbstractWires(2),
                 AbstractWires(1),
@@ -335,8 +344,7 @@ class TestAliasSamplingTHC:
     def test_qjit_operation_result(self):
         """Test the compiler-specific decomposition branches."""
         M, N, aleph = 2, 2, 1
-        zeta = np.ones((M, M))
-        t_ell = np.ones(N // 2)
+        zeta, t_ell = _static_coeffs(np.ones((M, M)), np.ones(N // 2))
         mu_wires, nu_wires, sup_work, edge_flag, work_wires = _wire_layout(M, N, aleph)
         total_wires = max(mu_wires + nu_wires + sup_work + work_wires) + 1
 
@@ -416,8 +424,7 @@ class TestAliasSamplingTHC:
         nu_wires = list(range(n, 2 * n))
         work_wires = list(range(2 * n + 1, 2 * n + 1 + sizes["work_wires"]))
 
-        zeta = np.ones((M, M))
-        t_ell = np.ones(N // 2)
+        zeta, t_ell = _static_coeffs(np.ones((M, M)), np.ones(N // 2))
 
         op = qp.AliasSamplingTHC(M, N, zeta, t_ell, mu_wires, nu_wires, 2 * n, work_wires, aleph)
         with qp.decomposition.toggle_graph_ctx(True):
@@ -442,8 +449,7 @@ class TestAliasSamplingTHC:
 
         np.random.seed(3)
         zeta = np.random.randn(M, M)
-        zeta = (zeta + zeta.T) / 2
-        t_ell = np.random.randn(N // 2)
+        zeta, t_ell = _static_coeffs((zeta + zeta.T) / 2, np.random.randn(N // 2))
 
         total = max(mu_wires + nu_wires + sup_work + work_wires) + 1
         dev = qp.device("default.qubit", wires=total)
@@ -462,9 +468,7 @@ class TestInputValidation:
     """Test the argument checks."""
 
     def _dummy(self, M, N):
-        zeta = np.ones((M, M))
-        t_ell = np.ones(N // 2)
-        return zeta, t_ell
+        return _static_coeffs(np.ones((M, M)), np.ones(N // 2))
 
     @pytest.mark.parametrize(
         ("M", "N", "match"),
@@ -525,10 +529,24 @@ class TestInputValidation:
     @pytest.mark.parametrize(
         ("zeta", "t_ell", "match"),
         [
-            (np.ones((3, 3)), np.ones(1), r"zeta must be of shape \(2, 2\)"),
-            (np.ones(2), np.ones(1), r"zeta must be of shape \(2, 2\)"),
-            (np.ones((2, 2)), np.ones(0), r"t_ell must be of shape \(1,\)"),
-            (np.ones((2, 2)), np.ones((1, 1)), r"t_ell must be of shape \(1,\)"),
+            (np.ones((2, 2)), (1.0,), "zeta must be a tuple of tuples"),
+            (((1.0, 0.0), [0.0, 1.0]), (1.0,), "zeta must be a tuple of tuples"),
+            (((1.0, 0.0), (0.0, 1.0)), np.ones(1), "t_ell must be a tuple of floats"),
+            (((1.0, 0.0), (0.0, 1.0)), ((1.0,),), "t_ell must be a tuple of floats"),
+        ],
+    )
+    def test_coefficients_must_be_tuples(self, zeta, t_ell, match):
+        """Test that array or nested-list coefficients are rejected as compilable data."""
+        with pytest.raises(ValueError, match=match):
+            qp.AliasSamplingTHC(2, 2, zeta, t_ell, [0, 1], [2, 3], 4, list(range(5, 40)), 3)
+
+    @pytest.mark.parametrize(
+        ("zeta", "t_ell", "match"),
+        [
+            (((1.0, 1.0, 1.0),) * 3, (1.0,), r"zeta must be of shape \(2, 2\)"),
+            (((1.0, 1.0),), (1.0,), r"zeta must be of shape \(2, 2\)"),
+            (((1.0, 0.0), (0.0, 1.0)), (), r"t_ell must be of shape \(1,\)"),
+            (((1.0, 0.0), (0.0, 1.0)), (1.0, 0.0), r"t_ell must be of shape \(1,\)"),
         ],
     )
     def test_bad_coefficient_shapes(self, zeta, t_ell, match):
@@ -538,16 +556,14 @@ class TestInputValidation:
 
     def test_bad_n_over_two(self):
         """Test that a value of N // 2 larger than M + 1 raises an error."""
-        zeta = np.ones((2, 2))
-        t_ell = np.ones(4)
+        zeta, t_ell = _static_coeffs(np.ones((2, 2)), np.ones(4))
         with pytest.raises(ValueError, match="N // 2 must be"):
             qp.AliasSamplingTHC(2, 8, zeta, t_ell, [0, 1], [2, 3], 4, list(range(5, 40)), 3)
 
     def test_odd_spin_orbitals_allowed(self):
         """Test that an odd N is floor-divided, matching ``SuperpositionTHC``: N = 5, M = 1."""
         # ``N // 2 = 2 <= M + 1 = 2``, so the previous ``N / 2 = 2.5 > 2`` check was wrong.
-        zeta = np.ones((1, 1))
-        t_ell = np.ones(5 // 2)
+        zeta, t_ell = _static_coeffs(np.ones((1, 1)), np.ones(5 // 2))
         sizes = qp.alias_sampling_thc_wires(1, 5, aleph=3)
         n = sizes["mu_wires"]
         mu_wires = list(range(n))
@@ -571,8 +587,7 @@ class TestWiresHelper:
         n_d = int(np.ceil(np.log2(N // 2 + M * (M + 1) // 2))) + 1
         assert sizes["work_wires"] == n_d + 2 * n + 3 * aleph + 4
 
-        zeta = np.ones((M, M))
-        t_ell = np.ones(N // 2)
+        zeta, t_ell = _static_coeffs(np.ones((M, M)), np.ones(N // 2))
         mu_wires = list(range(n))
         nu_wires = list(range(n, 2 * n))
         work_wires = list(range(2 * n + 1, 2 * n + 1 + sizes["work_wires"]))

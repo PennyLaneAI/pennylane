@@ -51,15 +51,24 @@ def _num_address_wires(M, N):
     return ceil_log2(d) + 1
 
 
-def _canonicalize_zeta(zeta):
-    """Turn ``zeta`` into a hashable nested tuple of floats."""
-    arr = np.asarray(zeta, dtype=float)
-    return tuple(tuple(float(x) for x in row) for row in arr)
+def _validate_zeta(zeta):
+    """Require ``zeta`` to already be hashable nested tuples (compilable static data)."""
+    if not isinstance(zeta, tuple) or not all(isinstance(row, tuple) for row in zeta):
+        raise ValueError(
+            "zeta must be a tuple of tuples of floats, because it is compile-time static "
+            f"data and has to be hashable; got {type(zeta).__name__}. Convert an array with "
+            "tuple(map(tuple, arr))."
+        )
 
 
-def _canonicalize_t_ell(t_ell):
-    """Turn ``t_ell`` into a hashable tuple of floats."""
-    return tuple(float(x) for x in np.asarray(t_ell, dtype=float).ravel())
+def _validate_t_ell(t_ell):
+    """Require ``t_ell`` to already be a hashable tuple (compilable static data)."""
+    if not isinstance(t_ell, tuple) or any(isinstance(x, (tuple, list)) for x in t_ell):
+        raise ValueError(
+            "t_ell must be a tuple of floats, because it is compile-time static "
+            f"data and has to be hashable; got {type(t_ell).__name__}. Convert an array with "
+            "tuple(arr)."
+        )
 
 
 def _build_thc_pairs(M, N, zeta, t_ell):
@@ -79,8 +88,8 @@ def _build_thc_pairs(M, N, zeta, t_ell):
     Args:
         M (int): the THC rank
         N (int): the number of spin orbitals
-        zeta (tensor_like): the THC central tensor, shape ``(M, M)``
-        t_ell (tensor_like): the one-body eigenvalues, shape ``(N // 2,)``
+        zeta (tuple[tuple[float]]): the THC central tensor, shape ``(M, M)``
+        t_ell (tuple[float]): the one-body eigenvalues, shape ``(N // 2,)``
 
     Returns:
         tuple[list[tuple[int, int]], list[float]]: the pairs sorted lexicographically
@@ -168,8 +177,8 @@ def _build_qrom_data(
     Args:
         M (int): the THC rank
         N (int): the number of spin orbitals
-        zeta (tensor_like): the THC central tensor, shape ``(M, M)``
-        t_ell (tensor_like): the one-body eigenvalues, shape ``(N // 2,)``
+        zeta (tuple[tuple[float]]): the THC central tensor, shape ``(M, M)``
+        t_ell (tuple[float]): the one-body eigenvalues, shape ``(N // 2,)``
         num_index_wires (int): number of wires per index register (``len(mu_wires)``)
         aleph (int): number of bits used for the keep-probability comparison
 
@@ -393,8 +402,9 @@ class AliasSamplingTHC(Operator2):
     Args:
         M (int): the THC rank
         N (int): the number of spin orbitals. Requires ``N // 2 <= M + 1``
-        zeta (tensor_like): the THC central tensor, shape ``(M, M)``
-        t_ell (tensor_like): the one-body eigenvalues, shape ``(N // 2,)``
+        zeta (tuple[tuple[float]]): the THC central tensor of shape ``(M, M)``, 
+            provided as a nested tuple (use ``tuple(map(tuple, arr))`` to convert an array).
+        t_ell (tuple[float]): the one-body eigenvalues as a tuple of length ``N // 2``.
         mu_wires (WiresLike): the ``n`` wires storing the first THC index
             :math:`\mu`. Requires exactly ``n = ceil(log2(M + 1))`` wires
         nu_wires (WiresLike): the ``n`` wires storing the second THC index
@@ -421,12 +431,11 @@ class AliasSamplingTHC(Operator2):
 
     .. code-block:: python
 
-        import numpy as np
         import pennylane as qp
 
         M, N, aleph = 2, 2, 6
-        zeta = np.eye(M)
-        t_ell = np.ones(N // 2)
+        zeta = ((1.0, 0.0), (0.0, 1.0))
+        t_ell = (1.0,)
 
         sizes = qp.alias_sampling_thc_wires(M, N, aleph)
         n = sizes["mu_wires"]
@@ -472,9 +481,9 @@ class AliasSamplingTHC(Operator2):
         if N // 2 > M + 1:
             raise ValueError("N // 2 must be less than or equal to M + 1.")
 
+        _validate_zeta(zeta)
+        _validate_t_ell(t_ell)
         _build_thc_pairs(M, N, zeta, t_ell)
-        zeta = _canonicalize_zeta(zeta)
-        t_ell = _canonicalize_t_ell(t_ell)
 
         mu_wires = Wires(mu_wires)
         nu_wires = Wires(nu_wires)

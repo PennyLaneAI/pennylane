@@ -766,9 +766,9 @@ class TestMapToResourceOp:
         mu_wires = list(range(n))
         nu_wires = list(range(n, 2 * n))
         work_wires = list(range(2 * n + 1, 2 * n + 1 + sizes["work_wires"]))
-        op = qp.AliasSamplingTHC(
-            M, N, np.eye(M), np.ones(N // 2), mu_wires, nu_wires, 2 * n, work_wires, aleph
-        )
+        zeta = ((1.0, 0.0), (0.0, 1.0))
+        t_ell = (1.0,)
+        op = qp.AliasSamplingTHC(M, N, zeta, t_ell, mu_wires, nu_wires, 2 * n, work_wires, aleph)
         expected = re_temps.PrepTHC(
             re_ham.THCHamiltonian(num_orbitals=N // 2, tensor_rank=M),
             coeff_precision=aleph,
