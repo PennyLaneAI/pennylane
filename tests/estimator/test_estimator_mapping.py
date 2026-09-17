@@ -739,7 +739,7 @@ class TestMapToResourceOp:
 
     def test_map_alias_sampling(self):
         """Test that AliasSampling maps to its estimator resource operator."""
-        probs = [0.1, 0.2, 0.3, 0.4]
+        probs = (0.1, 0.2, 0.3, 0.4)
         mu = 4
         req = qp.alias_sampling_wires(len(probs), mu)
         n_wires = sum(req.values())

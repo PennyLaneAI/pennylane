@@ -484,6 +484,7 @@
   basis states.
   [(#9913)](https://github.com/PennyLaneAI/pennylane/pull/9913)
   [(#10145)](https://github.com/PennyLaneAI/pennylane/pull/10145)
+  [(#10146)](https://github.com/PennyLaneAI/pennylane/pull/10146)
 
 * Added :class:`~.AliasSamplingTHC`, the coherent alias-sampling ``PREPARE`` for tensor
   hypercontraction qubitization, together with :class:`~.SuperpositionTHC`, which prepares the
