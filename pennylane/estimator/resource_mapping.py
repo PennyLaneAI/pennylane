@@ -27,7 +27,11 @@ import pennylane.templates as qtemps
 from pennylane import math as pl_math
 from pennylane.core.operator import Operation
 from pennylane.core.queuing import QueuingManager
-from pennylane.estimator.compact_hamiltonian import CDFHamiltonian, VibronicHamiltonian
+from pennylane.estimator.compact_hamiltonian import (
+    CDFHamiltonian,
+    THCHamiltonian,
+    VibronicHamiltonian,
+)
 from pennylane.ops.functions import simplify
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp
@@ -426,6 +430,26 @@ def _(op: qtemps.AliasSampling):
         num_coeffs=len(op.probs),
         precision=2.0 ** (-op.mu),
         wires=op.target_wires,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qtemps.AliasSamplingTHC):
+    # PrepTHC is the full THC PREPARE (Lee Figs. 3-4). AliasSamplingTHC is only the
+    # alias-sampling half after SuperpositionTHC. ``N`` is spin orbitals.
+    return re_temps.PrepTHC(
+        THCHamiltonian(num_orbitals=op.N // 2, tensor_rank=op.M),
+        coeff_precision=op.aleph,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qtemps.SelectTHC):
+    num_orbitals = len(op.chi[0])
+    return re_temps.SelectTHC(
+        THCHamiltonian(num_orbitals=num_orbitals, tensor_rank=len(op.chi)),
+        num_batches=op.num_batches,
+        rotation_precision=op.beth,
     )
 
 

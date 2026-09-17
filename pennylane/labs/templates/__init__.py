@@ -19,7 +19,6 @@ This module contains templates, which are pre-coded routines that can be used in
 .. autosummary::
     :toctree: api
 
-    ~SuperpositionTHC
     ~half_signed_out_multiplier
     ~SumOfSlatersPrep2
     ~alias_sampling_thc
@@ -33,7 +32,6 @@ This module contains templates, which are pre-coded routines that can be used in
     ~one_body_walk_wires
 """
 
-from .superposition_thc import SuperpositionTHC
 from .half_signed_out_multiplier import half_signed_out_multiplier
 from .sum_of_slaters2 import SumOfSlatersPrep2
 from .alias_sampling_thc import alias_sampling_thc, alias_sampling_thc_wires
