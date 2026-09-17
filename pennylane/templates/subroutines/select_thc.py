@@ -126,8 +126,9 @@ def _build_qrom_givens_data(chi, t_eigenvectors, beth, one_body_table, batches):
     Each row holds the ``beth``-bit angles that rotate one leaf onto
     :math:`\lvert e_0 \rangle`, one field per pair in the batch; addresses not backed by a
     leaf are all-zero and load the identity. Since ``QROM(clean=True)`` writes with an
-    XOR, table :math:`b` is the difference from table :math:`b - 1`. The first table is
-    absolute, so re-loading it clears the register.
+    XOR, table :math:`b` is stored as its difference with table :math:`b - 1`, which carries
+    the angle register from one batch to the next instead of erasing and reloading it. The
+    first table is absolute, so re-loading it clears the register.
 
     Args:
         chi (tuple[tuple[float]]): the THC leaf matrix, shape ``(M, N/2)``, addressed by the index
@@ -157,6 +158,9 @@ def _build_qrom_givens_data(chi, t_eigenvectors, beth, one_body_table, batches):
         t_eig = math.asarray(t_eigenvectors, dtype=float)
         leaves += list(math.transpose(t_eig))
 
+    # The quantized angles are the last point where this is array math: ``QROM`` takes
+    # classical bitstrings, so the grid indices are pulled out as Python ints here and the
+    # tables below are built with plain integer arithmetic.
     levels = 1 << beth
     thetas = math.stack([_cascade_angles(leaf) for leaf in leaves])
     grid = math.floor(-math.mod(2.0 * thetas, 4.0 * pi) / (4.0 * pi) * levels)
@@ -190,8 +194,19 @@ def _apply_loaded_rotation(
     r"""Apply the rotations of one batch, whose angles are held in ``angle_wires``.
 
     This is the phase-gradient compilation of Section III.C of `Lee et al. (2021)
-    <https://arxiv.org/abs/2011.03494>`_: two :class:`~.SemiAdder` calls per Givens pair under
-    a Clifford sandwich.
+    <https://arxiv.org/abs/2011.03494>`_. Applying this to the Givens rotation, we write it as
+
+    .. math::
+
+        \mathrm{SE}(\theta) = \left(H_0\,\mathrm{CNOT}_{01}\right)^\dagger
+        \left[R_y(-\theta/2)_0 \otimes R_y(-\theta/2)_1\right]
+        \left(H_0\,\mathrm{CNOT}_{01}\right) ,
+        \qquad R_y(\alpha) = S H R_z(\alpha) H S^\dagger ,
+
+    both :math:`R_y` carry the same angle, so each becomes one addition of the
+    same loaded value under a fixed Clifford: two additions per Givens pair, and no
+    arbitrary-angle rotation anywhere. The control is moved onto the loaded bits by a ``CNOT`` layer,
+    so no controlled adder is needed.
 
     Args:
         psi_down (Sequence[int]): the ``N/2`` spatial orbitals :math:`U` acts on
@@ -681,6 +696,7 @@ def _select_thc_decomp(
     nu_wires = list(islice(iw_iter, n))
     succ, edge, swap, spin1, spin2 = flag_wires
 
+    # 1. V on mu in the first spin sector, the only sandwich acting on the one-body block.
     _select_half(
         chi,
         t_eigenvectors,
@@ -694,6 +710,7 @@ def _select_thc_decomp(
         one_body_table=True,
     )
 
+    # 2. V on nu in the other spin sector, switched off on the one-body block.
     _select_half(
         chi,
         t_eigenvectors,
