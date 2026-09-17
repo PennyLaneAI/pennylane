@@ -14,7 +14,7 @@
 """Contains the ``PREPARE`` template for tensor hypercontraction (THC) qubitization."""
 
 import pennylane as qp
-from pennylane.templates.alias_sampling import _build_alias_tables
+from pennylane.templates.subroutines.alias_sampling import _build_alias_tables
 from pennylane.wires import Wires
 
 
