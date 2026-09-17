@@ -53,21 +53,33 @@ def _num_address_wires(M, N):
 
 def _validate_zeta(zeta):
     """Require ``zeta`` to already be hashable nested tuples (compilable static data)."""
-    if not isinstance(zeta, tuple) or not all(isinstance(row, tuple) for row in zeta):
+    if not isinstance(zeta, tuple):
         raise ValueError(
             "zeta must be a tuple of tuples of floats, because it is compile-time static "
             f"data and has to be hashable; got {type(zeta).__name__}. Convert an array with "
+            "tuple(map(tuple, arr))."
+        )
+    if not all(isinstance(row, tuple) for row in zeta):
+        raise ValueError(
+            "zeta must be a tuple of tuples of floats, because it is compile-time static "
+            "data and has to be hashable; got a tuple whose rows are "
+            f"{sorted({type(row).__name__ for row in zeta})}. Convert an array with "
             "tuple(map(tuple, arr))."
         )
 
 
 def _validate_t_ell(t_ell):
     """Require ``t_ell`` to already be a hashable tuple (compilable static data)."""
-    if not isinstance(t_ell, tuple) or any(isinstance(x, (tuple, list)) for x in t_ell):
+    if not isinstance(t_ell, tuple):
         raise ValueError(
             "t_ell must be a tuple of floats, because it is compile-time static "
             f"data and has to be hashable; got {type(t_ell).__name__}. Convert an array with "
             "tuple(arr)."
+        )
+    if any(isinstance(x, (tuple, list)) for x in t_ell):
+        raise ValueError(
+            "t_ell must be a tuple of floats, but it contains nested sequences; "
+            "a flat tuple was expected. Convert an array with tuple(arr)."
         )
 
 
@@ -248,8 +260,8 @@ def alias_sampling_thc_wires(M, N, aleph):
 
     Returns:
         dict: ``{"mu_wires": n, "nu_wires": n, "superposition_work_wires": 3 * n + 5,
-        "work_wires": n_d + 2 * n + 3 * aleph + 4, "sign_wire": n_d}``,
-        where ``n = ceil(log2(M + 1))`` and
+        "work_wires": n_d + 2 * n + 3 * aleph + 4 + max(n_d - aleph - 1, 0),
+        "sign_wire": n_d}``, where ``n = ceil(log2(M + 1))`` and
         ``n_d = ceil(log2(N // 2 + M (M + 1) // 2)) + 1``
 
         * ``mu_wires`` / ``nu_wires``: the two index registers, exact
@@ -280,11 +292,12 @@ def alias_sampling_thc_wires(M, N, aleph):
 
     n = _num_index_wires(M)
     n_d = _num_address_wires(M, N)
+    qrom_deficit = max(n_d - aleph - 1, 0)
     return {
         "mu_wires": n,
         "nu_wires": n,
         "superposition_work_wires": 3 * n + 5,
-        "work_wires": n_d + 2 * n + 3 * aleph + 4,
+        "work_wires": n_d + 2 * n + 3 * aleph + 4 + qrom_deficit,
         "sign_wire": n_d,
     }
 
@@ -413,10 +426,10 @@ class AliasSamplingTHC(Operator2):
             (true when the ``nu`` register is in state :math:`\lvert M \rangle`), as
             produced by :class:`~.SuperpositionTHC`
         work_wires (WiresLike): the auxiliary wires, most of which retain data until the
-            adjoint of this template is applied. At least ``n_d + 2 * n + 3 * aleph + 4``
-            wires initialized in :math:`\lvert 0\rangle` are required, where
-            ``n = ceil(log2(M + 1))`` and
-            ``n_d = ceil(log2(N // 2 + M (M + 1) // 2)) + 1`
+            adjoint of this template is applied. The required number is the
+            ``"work_wires"`` entry of :func:`~.alias_sampling_thc_wires`; every wire must
+            be initialized in :math:`\lvert 0\rangle`. Additional wires are forwarded to
+            the internal :class:`~.QROM`.
         aleph (int): the number of bits used to encode the keep-probabilities
         apply_sign (bool): if ``True`` (default), the sign of the selected coefficient is
             applied here, so the prepared state carries it on its amplitudes. Set to
@@ -504,8 +517,9 @@ class AliasSamplingTHC(Operator2):
         req = alias_sampling_thc_wires(M, N, aleph)
         if len(work_wires) < req["work_wires"]:
             raise ValueError(
-                f"At least {req['work_wires']} work_wires (n_d + 2 * len(mu_wires) + 3 * aleph + 4) "
-                f"should be provided, but only {len(work_wires)} were given."
+                f"At least {req['work_wires']} work_wires (the \"work_wires\" entry of "
+                f"alias_sampling_thc_wires({M}, {N}, {aleph})) should be provided, but only "
+                f"{len(work_wires)} were given."
             )
         validate_no_wire_overlaps(
             {
