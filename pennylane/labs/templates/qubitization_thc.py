@@ -150,11 +150,18 @@ def qubitization_thc_wires(M, N, aleph, beth, num_batches=1):
     }
 
 
+@partial(
+    qp.templates.Subroutine,
+    wire_argnames=(
+        "system_wires",
+        "index_wires",
+        "prep_garbage_wires",
+        "gradient_wires",
+        "work_wires",
+    ),
+)
 def qubitization_thc(  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
-    zeta,
-    t_ell,
-    chi,
-    t_eigenvectors,
+    hamiltonian,
     aleph,
     beth,
     system_wires,
@@ -354,6 +361,12 @@ def qubitization_thc(  # pylint: disable=too-many-arguments,too-many-positional-
     register returns to :math:`\lvert \vec 0 \rangle`, i.e. the squared norm of
     :math:`(\hat{\mathcal{H}} / \lambda) \lvert \psi \rangle`.
     """
+
+    zeta = hamiltonian["zeta"]
+    t_ell = hamiltonian["t_ell"]
+    chi = hamiltonian["chi"]
+    t_eigenvectors = hamiltonian["t_eigenvectors"]
+
     M = qp.math.shape(zeta)[0]
     n_half = qp.math.shape(chi)[1]
     N = 2 * n_half
