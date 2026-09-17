@@ -20,7 +20,8 @@ from collections.abc import Sequence
 from pennylane import math
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.ops import X, Z, ctrl
+from pennylane.ops import CZ, X, Z, ctrl
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import AbstractArray, Wire
 from pennylane.wires import Wires, WiresLike
 
@@ -116,10 +117,19 @@ def _flip_sign_resources(state: tuple[int], wires: WiresLike, work_wires: WiresL
     num_ctrl_wires = num_wires - 1
     if num_ctrl_wires == 0:
         res = {Z: 1}
+    elif num_ctrl_wires == 1 and state[0]:
+        res = {CZ: 1}
     else:
         num_zeros = num_ctrl_wires - sum(state[:-1])
-        ctrl_kwargs = {"work_wires": Wire[len(work_wires)], "num_zero_control_values": num_zeros}
-        res = {ctrl(Z, Wire[num_ctrl_wires], work_wire_type="zeroed", **ctrl_kwargs): 1}
+        res = {
+            _ctrl_abstract(
+                Z,
+                Wire[num_ctrl_wires],
+                num_zero_control_values=num_zeros,
+                work_wires=Wire[len(work_wires)],
+                work_wire_type="zeroed",
+            ): 1
+        }
 
     if state[-1] == 0:
         res[X] = 2
@@ -131,10 +141,13 @@ def _flip_sign_decomposition(state: tuple[int], wires: WiresLike, work_wires: Wi
     if state[-1] == 0:
         X(wires[-1])
 
-    flip = Z(wires[-1])
-    if len(wires) > 1:
+    if len(wires) == 1:
+        Z(wires)
+    elif len(wires) == 2 and state[0]:
+        CZ(wires)
+    else:
         ctrl_kwargs = {"work_wires": work_wires, "control_values": state[:-1]}
-        ctrl(flip, control=wires[:-1], work_wire_type="zeroed", **ctrl_kwargs)
+        ctrl(Z(wires[-1]), control=wires[:-1], work_wire_type="zeroed", **ctrl_kwargs)
 
     if state[-1] == 0:
         X(wires[-1])
