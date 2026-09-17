@@ -24,6 +24,7 @@ from pennylane.templates.subroutines.select_thc import (
     _apply_loaded_rotation,
     _build_qrom_givens_data,
     _cascade_angles,
+    _select_half,
 )
 from pennylane.typing import AbstractWires
 
@@ -225,6 +226,7 @@ def test_select_thc_wires(M, N, beth, expected):
         ({"M": 3, "N": 4, "beth": 0}, "beth must be a positive integer"),
         ({"M": 3, "N": 4, "beth": True}, "beth must be a positive integer"),
         ({"M": 3, "N": 4, "beth": 4, "num_batches": 0}, "num_batches must be a positive integer"),
+        ({"M": 3, "N": 3, "beth": 4}, "N must be an even number"),
         ({"M": 1, "N": 8, "beth": 4}, "do not fit the index register"),
     ],
 )
@@ -250,20 +252,46 @@ def test_select_thc_wires_batched(num_batches, expected_work):
 
 
 @pytest.mark.parametrize(
-    "n_index, n_flag, n_grad, match",
+    "n_index, n_flag, n_grad, n_work, match",
     [
-        (3, 5, 3, "index_wires must have"),
-        (4, 4, 3, "flag_wires must have"),
-        (4, 5, 2, "gradient_wires must have"),
+        (3, 5, 4, 6, "index_wires must have"),
+        (4, 4, 4, 6, "flag_wires must have"),
+        (4, 5, 3, 6, "gradient_wires must have"),
+        (4, 5, 4, 5, "work_wires must have at least"),
     ],
 )
-def test_select_thc_register_sizes(n_index, n_flag, n_grad, match):
+def test_select_thc_register_sizes(n_index, n_flag, n_grad, n_work, match):
     """Test that the registers are kept disjoint so a wrong size surfaces as a ValueError"""
-    sizes = [4, n_index, n_flag, n_grad, 6]
+    sizes = [4, n_index, n_flag, n_grad, n_work]
     edges = np.cumsum([0] + sizes)
     regs = [range(int(lo), int(hi)) for lo, hi in zip(edges[:-1], edges[1:])]
     with pytest.raises(ValueError, match=match):
         SelectTHC(_static_matrix(np.ones((3, 2))), _static_matrix(np.eye(2)), 3, *regs)
+
+
+@pytest.mark.parametrize(
+    "sizes, one_body_table, t_eigenvectors, match",
+    [
+        ([3, 2, 3, 4, 6], False, np.eye(2), "system_wires must have"),
+        ([4, 1, 3, 4, 6], False, np.eye(2), "index_wires must have"),
+        ([4, 2, 2, 4, 6], False, np.eye(2), "flag_wires must have"),
+        ([4, 2, 3, 3, 6], False, np.eye(2), "gradient_wires must have"),
+        ([4, 2, 3, 4, 5], False, np.eye(2), "work_wires must have at least"),
+        ([4, 2, 3, 4, 6], True, np.eye(3), "t_eigenvectors must have shape"),
+    ],
+)
+def test_select_half_register_sizes(sizes, one_body_table, t_eigenvectors, match):
+    """Test the register validation of a single SELECT sandwich."""
+    edges = np.cumsum([0] + sizes)
+    regs = [range(int(lo), int(hi)) for lo, hi in zip(edges[:-1], edges[1:])]
+    with pytest.raises(ValueError, match=match):
+        _select_half(
+            np.ones((3, 2)),
+            t_eigenvectors,
+            3,
+            *regs,
+            one_body_table=one_body_table,
+        )
 
 
 class TestAngleBatches:
@@ -347,10 +375,19 @@ class TestSelectTHCOperator:
             (([1.0, 1.0], [1.0, -1.0]), ((1.0, 0.0), (0.0, 1.0)), "chi must be"),
             (((1.0, 1.0), (1.0, -1.0)), np.eye(2), "t_eigenvectors must be"),
             (((1.0, 1.0), (1.0, -1.0)), ([1.0, 0.0], [0.0, 1.0]), "t_eigenvectors must be"),
+            (((1.0,), (1.0, 0.0)), ((1.0,),), "chi must be a non-empty rectangular"),
+            (((1.0, True),), ((1.0, 0.0), (0.0, 1.0)), "chi entries must be finite real"),
+            (((1.0, 0.0),), ((1.0,),), "t_eigenvectors must have shape"),
+            (((0.0, 0.0),), ((1.0, 0.0), (0.0, 1.0)), "zero vector in chi"),
+            (
+                ((1.0, 0.0),),
+                ((1.0, 0.0), (0.0, 0.0)),
+                "zero vector in t_eigenvectors",
+            ),
         ],
     )
-    def test_static_data_must_be_nested_tuples(self, chi, t_eigenvectors, match):
-        """Test that arrays and nested lists are rejected as compilable data."""
+    def test_invalid_static_data(self, chi, t_eigenvectors, match):
+        """Test that invalid compilable data is rejected."""
         system, index, flags, gradient, work, _ = _layout(2, 4, 1)
         with pytest.raises(ValueError, match=match):
             qp.SelectTHC(chi, t_eigenvectors, 1, system, index, flags, gradient, work)
