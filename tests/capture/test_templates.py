@@ -1548,6 +1548,11 @@ class TestModifiedTemplates:
         def qfunc():
             return qp.OneBodyBlockEncoding(**kwargs).tracer
 
+        jaxpr = jax.make_jaxpr(qfunc)()
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
         assert_eqn_matches_op(eqn, qp.OneBodyBlockEncoding)
 
         [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
