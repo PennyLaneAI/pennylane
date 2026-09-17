@@ -494,6 +494,7 @@
   [(#9940)](https://github.com/PennyLaneAI/pennylane/pull/9940)
   [(#10119)](https://github.com/PennyLaneAI/pennylane/pull/10119)
   [(#10146)](https://github.com/PennyLaneAI/pennylane/pull/10146)
+  [(#10158)](https://github.com/PennyLaneAI/pennylane/pull/10158)
 
 * Added :class:`~.LeftQuantumComparator` for inequality tests between two quantum registers.
   [(#9277)](https://github.com/PennyLaneAI/pennylane/pull/9277)
