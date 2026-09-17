@@ -16,12 +16,12 @@ hypercontraction (THC) qubitization."""
 
 import numpy as np
 
+import pennylane as qp
 from pennylane import adjoint, ctrl, math
 from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import RY, BasisState, GlobalPhase, Hadamard, MultiControlledX, X, Z
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
-from pennylane.templates import LeftClassicalComparator, LeftQuantumComparator
 from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires, WiresLike
 
@@ -295,21 +295,21 @@ def _left_inequalities(
 
     n = len(mu_wires)
 
-    LeftClassicalComparator(
+    qp.LeftClassicalComparator(
         nu_wires,
         M,
         target_wire=work_wires[1],
         work_wires=work_wires[7 : 7 + n - 1],
         comparator="<=",
     )
-    LeftQuantumComparator(
+    qp.LeftQuantumComparator(
         mu_wires,
         nu_wires,
         target_wire=work_wires[2],
         work_wires=work_wires[7 + n - 1 : 7 + 2 * n - 1],
         comparator="<=",
     )
-    LeftClassicalComparator(
+    qp.LeftClassicalComparator(
         mu_wires,
         N // 2,
         target_wire=work_wires[4],
@@ -361,9 +361,9 @@ def _superposition_thc_resources(num_mu_wires, num_work_wires, M, N):
     ctrl_work = max(0, num_work_wires - 7)
     mcx_work = ctrl_work
 
-    lcc_le = LeftClassicalComparator(Wire[n], M, Wire[1], Wire[n - 1], comparator="<=")
-    lcc_gt = LeftClassicalComparator(Wire[n], N // 2, Wire[1], Wire[n - 1], comparator=">=")
-    lqc = LeftQuantumComparator(Wire[n], Wire[n], Wire[1], Wire[n], comparator="<=")
+    lcc_le = qp.LeftClassicalComparator(Wire[n], M, Wire[1], Wire[n - 1], comparator="<=")
+    lcc_gt = qp.LeftClassicalComparator(Wire[n], N // 2, Wire[1], Wire[n - 1], comparator=">=")
+    lqc = qp.LeftQuantumComparator(Wire[n], Wire[n], Wire[1], Wire[n], comparator="<=")
     basis = BasisState(Bool[n], Wire[n])
     mcx = _controlled_x(n, mcx_work, control_values=[0] * n)
 

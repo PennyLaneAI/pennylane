@@ -15,7 +15,6 @@
 
 import pennylane as qp
 from pennylane.labs.templates.alias_sampling import _build_alias_tables
-from pennylane.labs.templates.left_quantum_comparator import LeftQuantumComparator
 from pennylane.wires import Wires
 
 
@@ -477,7 +476,9 @@ def alias_sampling_thc(  # pylint: disable=too-many-arguments,too-many-positiona
     for w in sample_reg:
         qp.Hadamard(wires=w)
 
-    LeftQuantumComparator(keep_thresh, sample_reg, alt_flag, work_wires=cmp_work, comparator="<=")
+    qp.LeftQuantumComparator(
+        keep_thresh, sample_reg, alt_flag, work_wires=cmp_work, comparator="<="
+    )
 
     # 4. If the original pair is discarded, swap in the alternate (mu_alt, nu_alt), its
     #    alt_edge flag and its sign bit.
@@ -494,12 +495,12 @@ def alias_sampling_thc(  # pylint: disable=too-many-arguments,too-many-positiona
     #    ``sample_reg``) are untouched by step 4, so the same ``comparator="<="`` returns
     #    ``alt_flag`` and ``cmp_work`` to |0>; any other comparator would leave
     #    ``alt_flag`` entangled with the sample register.
-    # Operator form rather than the callable form ``qp.adjoint(LeftQuantumComparator)(...)``:
+    # Operator form rather than the callable form ``qp.adjoint(qp.LeftQuantumComparator)(...)``:
     # under capture the callable form traces its arguments, so the wire registers become JAX
     # tracers and leak into the jaxpr as constants, which fails MLIR lowering with
     # ``InvalidInputException: Argument 'JitTracer<~int64[]>' ... is not a valid JAX type``.
     qp.adjoint(
-        LeftQuantumComparator(
+        qp.LeftQuantumComparator(
             keep_thresh, sample_reg, alt_flag, work_wires=cmp_work, comparator="<="
         )
     )

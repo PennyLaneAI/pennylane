@@ -14,7 +14,6 @@
 """Qubitization walk operator for block-encoding of a one-body operator."""
 
 import pennylane as qp
-from pennylane.labs.templates import LeftClassicalComparator, alias_sampling, alias_sampling_wires
 
 
 def one_body_walk_wires(norbs, alias_sampling_nbits):
@@ -44,7 +43,7 @@ def one_body_walk_wires(norbs, alias_sampling_nbits):
     {'prep_wires': 11, 'system_wires': 8, 'work_wires': 2}
 
     """
-    req = alias_sampling_wires(norbs, alias_sampling_nbits)
+    req = qp.alias_sampling_wires(norbs, alias_sampling_nbits)
     return {
         "prep_wires": req["target_wires"] + 1 + req["temp_wires"],  # |p> + |sigma> + garbage
         "system_wires": 2 * norbs,
@@ -169,7 +168,7 @@ def one_body_walk(op_matrix, alias_sampling_nbits, prep_wires, system_wires, wor
     work_wires = qp.wires.Wires(work_wires)
 
     # Split prep_wires: index |p> (na) + spin |sigma> (1) + temp register.
-    na = alias_sampling_wires(norbs, alias_sampling_nbits)["target_wires"]
+    na = qp.alias_sampling_wires(norbs, alias_sampling_nbits)["target_wires"]
     index_wires, (spin_wire, *garbage_wires) = prep_wires[:na], prep_wires[na:]
 
     mu, vmat = qp.math.linalg.eigh(op_matrix)  # o = vmat diag(mu) vmat.T
@@ -180,7 +179,7 @@ def one_body_walk(op_matrix, alias_sampling_nbits, prep_wires, system_wires, wor
     absmu = qp.math.abs(mu)
 
     # PREP
-    alias_sampling(
+    qp.alias_sampling(
         absmu,
         alias_sampling_nbits,
         target_wires=index_wires,
@@ -199,7 +198,7 @@ def one_body_walk(op_matrix, alias_sampling_nbits, prep_wires, system_wires, wor
     n_neg = int(qp.math.sum(qp.math.array(mu) < 0))
     if n_neg > 0:
         n_index = len(index_wires)
-        compare = LeftClassicalComparator(
+        compare = qp.LeftClassicalComparator(
             x_wires=index_wires,
             L=n_neg,
             target_wire=work_wires[0],
@@ -220,7 +219,7 @@ def one_body_walk(op_matrix, alias_sampling_nbits, prep_wires, system_wires, wor
             wires=[system_wires[s * norbs + p] for p in range(norbs)], unitary_matrix=unitary_matrix
         )
     # PREP^dagger
-    qp.adjoint(alias_sampling)(
+    qp.adjoint(qp.alias_sampling)(
         absmu,
         alias_sampling_nbits,
         target_wires=index_wires,
