@@ -235,6 +235,11 @@ def _alias_registers(L, mu, w=None):
     return w, wires, temp, work, n
 
 
+def _as_probs(w):
+    """Hashable tuple for compilable ``probs``."""
+    return tuple(float(x) for x in np.asarray(w, dtype=float))
+
+
 class TestAliasSampling:
     """Test the alias sampling circuit."""
 
@@ -242,7 +247,7 @@ class TestAliasSampling:
     def test_assert_valid_and_decomposition(self):
         """Test that AliasSampling is a valid Operator2 and decomposes, with and without capture."""
         w, wires, temp, work, _ = _alias_registers(4, 3)
-        op = qp.AliasSampling(w, 3, wires, temp, work)
+        op = qp.AliasSampling(_as_probs(w), 3, wires, temp, work)
         assert_valid(op, skip_differentiation=True)
         for rule in list_decomps(qp.AliasSampling):
             _test_decomposition_rule(op, rule)
@@ -251,7 +256,7 @@ class TestAliasSampling:
     def test_adjoint_decomposition(self):
         """Test that the adjoint decomposition is capture compatible."""
         w, wires, temp, work, _ = _alias_registers(4, 3)
-        op = qp.adjoint(qp.AliasSampling(w, 3, wires, temp, work))
+        op = qp.adjoint(qp.AliasSampling(_as_probs(w), 3, wires, temp, work))
         for rule in list_decomps("Adjoint(AliasSampling)"):
             _test_decomposition_rule(op, rule)
 
@@ -267,7 +272,7 @@ class TestAliasSampling:
 
         @qp.qnode(qp.device("default.qubit", wires=n))
         def circuit():
-            qp.AliasSampling(w, mu, wires, temp, work)
+            qp.AliasSampling(_as_probs(w), mu, wires, temp, work)
             return qp.probs(wires=wires)
 
         probs = np.asarray(circuit())
@@ -285,7 +290,7 @@ class TestAliasSampling:
 
         @qp.qnode(qp.device("default.qubit", wires=n))
         def circuit():
-            qp.AliasSampling(w, mu, wires, temp, work)
+            qp.AliasSampling(_as_probs(w), mu, wires, temp, work)
             return qp.probs(wires=work), qp.probs(wires=temp)
 
         work_probs, temp_probs = circuit()
@@ -299,8 +304,8 @@ class TestAliasSampling:
 
         @qp.qnode(qp.device("default.qubit", wires=n))
         def circuit():
-            qp.AliasSampling(w, mu, wires, temp, work)
-            qp.adjoint(qp.AliasSampling(w, mu, wires, temp, work))
+            qp.AliasSampling(_as_probs(w), mu, wires, temp, work)
+            qp.adjoint(qp.AliasSampling(_as_probs(w), mu, wires, temp, work))
             return qp.probs()
 
         assert np.isclose(np.asarray(circuit())[0], 1.0)
@@ -309,24 +314,28 @@ class TestAliasSampling:
     def test_invalid_mu_raises(self, mu):
         """Test that mu must be a positive integer."""
         with pytest.raises(ValueError, match="mu must be a positive integer"):
-            qp.AliasSampling([1.0], mu, [], [0, 1, 2], [])
+            qp.AliasSampling((1.0,), mu, [], [0, 1, 2], [])
 
     def test_empty_probs_raises(self):
         """Test that probs must contain at least one entry."""
         with pytest.raises(ValueError, match="probs must have at least one entry"):
-            qp.AliasSampling([], 1, [], [0, 1, 2], [])
+            qp.AliasSampling((), 1, [], [0, 1, 2], [])
 
     def test_zero_sum_probs_raise(self):
         """Test that probs must have a positive sum."""
         with pytest.raises(ValueError, match="probs must sum to a positive value"):
-            qp.AliasSampling([0.0, 0.0], 1, [0], list(range(1, 5)), [])
+            qp.AliasSampling((0.0, 0.0), 1, [0], list(range(1, 5)), [])
 
-    def test_2d_probs_raise(self):
-        """Test that a 2-D probs array is rejected instead of being flattened."""
-        with pytest.raises(ValueError, match="1-D sequence"):
-            qp.AliasSampling([[0.5, 0.5]], 1, [0], list(range(1, 5)), [])
+    @pytest.mark.parametrize(
+        "probs",
+        [[0.1, 0.2], np.array([0.1, 0.2]), ((0.5, 0.5),)],
+    )
+    def test_probs_must_be_tuple(self, probs):
+        """Test that array or nested-sequence weights are rejected as compilable data."""
+        with pytest.raises(ValueError, match="probs must be a tuple of floats"):
+            qp.AliasSampling(probs, 1, [0], list(range(1, 5)), [])
 
-    @pytest.mark.parametrize("probs", [[0.5, -0.1, 0.6], [0.5, np.nan], [0.5, np.inf]])
+    @pytest.mark.parametrize("probs", [(0.5, -0.1, 0.6), (0.5, np.nan), (0.5, np.inf)])
     def test_invalid_probs_raise(self, probs):
         """Test that negative or non-finite probs are rejected in the constructor."""
         with pytest.raises(ValueError, match="non-negative and finite"):
@@ -343,22 +352,22 @@ class TestAliasSampling:
     def test_invalid_register_sizes_raise(self, target_wires, temp_wires, work_wires, match):
         """Test that each register size is validated."""
         with pytest.raises(ValueError, match=match):
-            qp.AliasSampling([0.2, 0.3, 0.5], 2, target_wires, temp_wires, work_wires)
+            qp.AliasSampling((0.2, 0.3, 0.5), 2, target_wires, temp_wires, work_wires)
 
     def test_abstract_wires_length_is_validated(self):
         """Test that register sizes are checked for AbstractWires, which still expose a length."""
         with pytest.raises(ValueError, match="target_wires must have 2 entries"):
             qp.AliasSampling(
-                [0.2, 0.3, 0.5], 2, AbstractWires(1), AbstractWires(8), AbstractWires(2)
+                (0.2, 0.3, 0.5), 2, AbstractWires(1), AbstractWires(8), AbstractWires(2)
             )
         op = qp.AliasSampling(
-            [0.2, 0.3, 0.5], 2, AbstractWires(2), AbstractWires(8), AbstractWires(2)
+            (0.2, 0.3, 0.5), 2, AbstractWires(2), AbstractWires(8), AbstractWires(2)
         )
         assert isinstance(op.target_wires, AbstractWires)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_single_coefficient_decomposition(self):
         """Test that the zero-target-wire decomposition is valid."""
-        op = qp.AliasSampling([1.0], 1, [], [0, 1, 2], [])
+        op = qp.AliasSampling((1.0,), 1, [], [0, 1, 2], [])
         for rule in list_decomps(qp.AliasSampling):
             _test_decomposition_rule(op, rule)
