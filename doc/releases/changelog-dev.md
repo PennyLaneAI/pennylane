@@ -1183,6 +1183,7 @@
 
 * An operator can now be reconstructed from operator_p with abstract wires in the form of 
   AbstractQubit, jax.core.ShapedArray, AbstractWires, and AbstractArray.
+  [(#10165)](https://github.com/PennyLaneAI/pennylane/pull/10165)
 
 * Update `tach` to `0.35.1`.
   [(#10147 )](https://github.com/PennyLaneAI/pennylane/pull/10147)
