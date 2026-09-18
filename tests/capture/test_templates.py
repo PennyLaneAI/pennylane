@@ -358,6 +358,7 @@ tested_modified_templates = [
     qp.LeftQuantumComparator,
     qp.UniformPrep,
     qp.AliasSampling,
+    qp.OneBodyBlockEncoding,
     qp.AliasSamplingTHC,
     qp.SelectTHC,
     qp.SuperpositionTHC,
@@ -1528,6 +1529,35 @@ class TestModifiedTemplates:
 
         [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
         qp.assert_equal(op, qp.AliasSampling(**kwargs))
+
+    def test_one_body_block_encoding(self):
+        """Test the primitive bind call of OneBodyBlockEncoding."""
+
+        req = qp.one_body_block_encoding_wires(2, 2)
+        n = sum(req.values())
+        prep, system, work = np.split(
+            np.arange(n), np.cumsum([req["prep_wires"], req["system_wires"]])
+        )
+        kwargs = {
+            "op_matrix": ((1.0, 2.0), (2.0, 1.0)),
+            "alias_sampling_nbits": 2,
+            "prep_wires": prep.tolist(),
+            "system_wires": system.tolist(),
+            "work_wires": work.tolist(),
+        }
+
+        def qfunc():
+            return qp.OneBodyBlockEncoding(**kwargs).tracer
+
+        jaxpr = jax.make_jaxpr(qfunc)()
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert_eqn_matches_op(eqn, qp.OneBodyBlockEncoding)
+
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        qp.assert_equal(op, qp.OneBodyBlockEncoding(**kwargs))
 
     def test_alias_sampling_thc(self):
         """Test the primitive bind call of AliasSamplingTHC."""
