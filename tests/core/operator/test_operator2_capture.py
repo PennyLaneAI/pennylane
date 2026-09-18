@@ -29,18 +29,18 @@ from operator2_utils import (
     TwoDynOp,
 )
 
+jax = pytest.importorskip("jax")
+from jax.core import ShapedArray
+
 import pennylane as qp
 from pennylane import apply
-from pennylane.typing import Float, Wire
-
-jax = pytest.importorskip("jax")
 from pennylane.capture import PlxprInterpreter
-
-pytestmark = [pytest.mark.jax, pytest.mark.capture]
-
-# pylint: disable=wrong-import-position
 from pennylane.capture.primitives import AbstractOperator, operator_p, symbolic_array_prim
 from pennylane.pytrees import unflatten
+from pennylane.typing import Float, Int, Wire
+from pennylane.wires import AbstractQubit, Wires
+
+pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 # ---------------------- Helpers ----------------------
 
@@ -436,6 +436,9 @@ class TestReconstruction:
         [op] = _eval(jaxpr, 0.7)
         qp.assert_equal(op, DynOp(0.7, wires=0))
 
+        [aop] = _eval(jaxpr, qp.typing.Float)
+        qp.assert_equal(aop, DynOp(Float, wires=0))
+
     def test_dynamic_args_roundtrip(self):
         """Test that an operator with multiple dynamic args round-trips."""
         jaxpr = jax.make_jaxpr(lambda a, b: TwoDynOp(a, b, wires=0).tracer)(0.5, 0.6)
@@ -448,11 +451,18 @@ class TestReconstruction:
         [op] = _eval(jaxpr, 1)
         qp.assert_equal(op, StaticOp("a", wires=1))
 
+        [aop] = _eval(jaxpr, qp.wires.AbstractQubit())
+        # abstractqubit just promoted back to AbstractWire
+        qp.assert_equal(aop, StaticOp("a", qp.typing.Wire[1]))
+
     def test_compilable_roundtrip(self):
         """Test that a compilable argument round-trips through capture and evaluation."""
         jaxpr = jax.make_jaxpr(lambda x: CompilableOp(5, wires=x).tracer)(0)
         [op] = _eval(jaxpr, 1)
         qp.assert_equal(op, CompilableOp(5, wires=1))
+
+        [aop] = _eval(jaxpr, qp.wires.AbstractQubit())
+        qp.assert_equal(aop, CompilableOp(5, wires=qp.typing.Wire[1]))
 
     def test_multiwire_roundtrip(self):
         """Test that an operator with multiple wire arguments round-trips."""
@@ -495,6 +505,43 @@ class TestReconstruction:
         jaxpr = jax.make_jaxpr(lambda x: FullOp(x, "lbl", [1.0, 2.0], wires=0).tracer)(0.5)
         [op] = _eval(jaxpr, 0.3)
         qp.assert_equal(op, FullOp(0.3, "lbl", [1.0, 2.0], wires=0))
+
+    @pytest.mark.parametrize(
+        "wires, expected_wires",
+        (
+            # single abstract wire
+            ((AbstractQubit(),), Wire[1]),
+            ((ShapedArray((), np.int64),), Wire[1]),
+            ((Int,), Wire[1]),
+            ((Wire[1],), Wire[1]),
+            # multiple all-abstract wires collapse to AbstractWires
+            ((AbstractQubit(), AbstractQubit()), Wire[2]),
+            ((ShapedArray((), np.int64), ShapedArray((), np.int64)), Wire[2]),
+            ((Int, Int), Wire[2]),
+            ((Wire[1], Wire[1]), Wire[2]),
+            ((AbstractQubit(), ShapedArray((), np.int64), Int), Wire[3]),
+            # hybrid concrete + abstract wires are preserved as mixed Wires
+            ((0, AbstractQubit()), Wires([0, AbstractQubit()])),
+            ((AbstractQubit(), 1), Wires([AbstractQubit(), 1])),
+            ((0, ShapedArray((), np.int64)), Wires([0, ShapedArray((), np.int64)])),
+            ((ShapedArray((), np.int64), 1), Wires([ShapedArray((), np.int64), 1])),
+            ((0, Int), Wires([0, Int])),
+            ((Int, 1), Wires([Int, 1])),
+            ((0, Wire[1]), Wires([0, Wire[1]])),
+            ((Wire[1], 1), Wires([Wire[1], 1])),
+            ((0, AbstractQubit(), 2), Wires([0, AbstractQubit(), 2])),
+            (
+                (0, ShapedArray((), np.int64), Int),
+                Wires([0, ShapedArray((), np.int64), Int]),
+            ),
+        ),
+    )
+    def test_abstract_wire_reconstruction(self, wires, expected_wires):
+        """Test that ``operator_p`` reconstructs with abstract and mixed wire types."""
+        concrete = tuple(range(len(wires)))
+        jaxpr = jax.make_jaxpr(lambda *ws: DynOp(0.5, wires=ws).tracer)(*concrete)
+        [op] = _eval(jaxpr, *wires)
+        qp.assert_equal(op, DynOp(0.5, wires=expected_wires))
 
 
 class TestApply:
