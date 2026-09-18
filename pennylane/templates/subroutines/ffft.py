@@ -174,7 +174,7 @@ def _fast_fermionic_fourier_transform_resources(num_wires):
     resources = _count_one_recursive(num_wires, resources)
 
     if num_wires > 2:
-        resources[FermionicSWAP] = num_wires * (num_wires - math.log2(num_wires) - 1) / 2
+        resources[FermionicSWAP] = num_wires * (num_wires - math.log2(num_wires) - 1) // 2
 
     return resources
 
