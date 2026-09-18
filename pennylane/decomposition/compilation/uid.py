@@ -21,18 +21,17 @@ from typing import Any
 
 import numpy as np
 
+from pennylane import math
 from pennylane.core import Operator2
-from pennylane.ops import Adjoint, Controlled
 from pennylane.pytrees import flatten
 
+from .unwrap import unwrap
 
-def _unwrap(op, is_adjoint=False, n_ctrls=0):
-    if not isinstance(op, (Adjoint, Controlled)):
-        return op, is_adjoint, n_ctrls
-    if isinstance(op, Adjoint):
-        return _unwrap(op.base, not is_adjoint, n_ctrls)
-    # is controlled
-    return _unwrap(op.base, is_adjoint, n_ctrls + len(op.control_wires))
+
+def _handle_array(arr):
+    if not hasattr(arr, "shape"):
+        arr = math.asarray(arr)
+    return (arr.shape, np.dtype(arr.dtype).name)
 
 
 def _handle_hybrid(op):
@@ -40,7 +39,7 @@ def _handle_hybrid(op):
     avals = []
     for val in op.hybrid_args.values():
         leaves, tree = flatten(val)
-        avals += [(l.shape, np.dtype(l.dtype).name) for l in leaves]
+        avals += [_handle_array(l) for l in leaves]
         trees.append(tree)
     return tuple(trees), tuple(avals)
 
@@ -116,10 +115,28 @@ def _serialize_set(val, name):
 
 
 def calculate_uid(op: Operator2) -> int | None:
+    """Calculates a unique representation of operators with non-lowerable components.
+
+    Args:
+        op (Operator2): an operator
+
+    Returns:
+        int | None: None indicates an operator that is fully lowerable. int is the unique identifier
+
+    >>> print(calculate_uid(qp.X(0)))
+    None
+    >>> op = qp.Select([qp.X(0), qp.Y(1), qp.Z(0), qp.H(1)], (2,3))
+    >>> calculate_uid(op)
+    140033415976329661
+    >>> op2 = qp.Select([qp.X(3), qp.Y(4), qp.Z(3), qp.H(4)], (0,1))
+    >>> calculate_uid(op2)
+    140033415976329661
+
+    """
     if not op.static_argnames and not op.hybrid_argnames:
         return None
 
-    op, is_adjoint, n_ctrls = _unwrap(op)
+    op, is_adjoint, n_ctrls = unwrap(op)
 
     # Flat dynamic arguments
     dynamic_avals = tuple((val.shape, val.dtype.name) for val in op.dynamic_args)

@@ -1,20 +1,45 @@
+# Copyright 2026 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+Defines add_decomps, a recursive tool for collecting all downstream operators
+and rules.
+"""
+
+from typing import TypedDict, Unpack
+
 from pennylane.core.operator import Operator2, abstractify
-from pennylane.ops import Adjoint, Controlled, adjoint, ctrl
+from pennylane.ops import adjoint, ctrl
 from pennylane.typing import Bool, Wire
 
 from ..decomposition_rule import DecompositionRule, list_decomps
+from .unwrap import unwrap
 
 
-def _unwrap(op, is_adjoint=False, n_ctrls=0):
-    if not isinstance(op, (Adjoint, Controlled)):
-        return op, is_adjoint, n_ctrls
-    if isinstance(op, Adjoint):
-        return _unwrap(op.base, not is_adjoint, n_ctrls)
-    # is controlled
-    return _unwrap(op.base, is_adjoint, n_ctrls + len(op.control_wires))
+class Modifiers(TypedDict):
+    """The keyword arguments specifing all the variants of an operator we also
+    want decomposition rules for."""
+
+    adj: bool
+    n_ctrls: int
+    adj_n_ctrls: int
 
 
-def _pure_recursive_add_decomps(op: Operator2, rules_map: dict, **kwargs):
+def _pure_recursive_all_decomps(op: Operator2, rules_map: dict, **kwargs: Unpack[Modifiers]):
+    """
+    This helper only collect the rules for the provided operator, and not any modified versions
+    of it.
+    """
     if op in rules_map:
         return
     decomps = list_decomps(op)
@@ -26,26 +51,31 @@ def _pure_recursive_add_decomps(op: Operator2, rules_map: dict, **kwargs):
             _recursive_all_decomps(r, rules_map, **kwargs)
 
 
-def _recursive_all_decomps(op: Operator2, rules_map: dict, **kwargs):
+def _recursive_all_decomps(op: Operator2, rules_map: dict, **kwargs: Unpack[Modifiers]):
+    """Collect all the rules for op, putting them into rules_map by in-place mutation.
+
+    As opposed to _pure_recursive_add_decomps, it also adds variants of the operator
+    specified by adj, n_ctrls, and adj_n_ctrls
+    """
     if op in rules_map:
         return
 
-    base, is_adj, has_n_ctrls = _unwrap(op)
+    base, is_adj, has_n_ctrls = unwrap(op)
 
-    _pure_recursive_add_decomps(op, rules_map, **kwargs)
+    _pure_recursive_all_decomps(op, rules_map, **kwargs)
 
     if kwargs["adj"] and not has_n_ctrls:
         # if adj op appears from resources, make sure to also include target
         target = base if is_adj else adjoint(op)
-        _pure_recursive_add_decomps(target, rules_map, **kwargs)
+        _pure_recursive_all_decomps(target, rules_map, **kwargs)
 
     if not has_n_ctrls and not is_adj:
         if n_ctrls := kwargs["n_ctrls"]:
             target = ctrl(base, Wire[n_ctrls], Bool[n_ctrls])
-            _pure_recursive_add_decomps(target, rules_map, **kwargs)
+            _pure_recursive_all_decomps(target, rules_map, **kwargs)
         if adj_n_ctrls := kwargs["adj_n_ctrls"]:
             target = ctrl(adjoint(base), Wire[adj_n_ctrls], Bool[adj_n_ctrls])
-            _pure_recursive_add_decomps(target, rules_map, **kwargs)
+            _pure_recursive_all_decomps(target, rules_map, **kwargs)
 
 
 def all_decomps(
