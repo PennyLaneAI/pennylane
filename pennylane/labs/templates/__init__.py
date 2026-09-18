@@ -21,7 +21,10 @@ This module contains templates, which are pre-coded routines that can be used in
 
     ~half_signed_out_multiplier
     ~SumOfSlatersPrep2
+    ~select_thc
+    ~select_thc_wires
 """
 
 from .half_signed_out_multiplier import half_signed_out_multiplier
 from .sum_of_slaters2 import SumOfSlatersPrep2
+from .select_thc import select_thc, select_thc_wires
