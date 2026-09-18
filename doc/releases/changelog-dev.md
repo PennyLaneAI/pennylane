@@ -486,12 +486,15 @@
   [(#10145)](https://github.com/PennyLaneAI/pennylane/pull/10145)
   [(#10146)](https://github.com/PennyLaneAI/pennylane/pull/10146)
 
-* Added :class:`~.AliasSamplingTHC`, the coherent alias-sampling ``PREPARE`` for tensor
-  hypercontraction qubitization, together with :class:`~.SuperpositionTHC`, which prepares the
-  index superposition it acts on.
+* You can now build the ``PREPARE`` and ``SELECT`` subroutines for tensor hypercontraction
+  qubitization with :class:`~.SuperpositionTHC`, :class:`~.AliasSamplingTHC`, and
+  :class:`~.SelectTHC`. Use :func:`~.alias_sampling_thc_wires` and
+  :func:`~.select_thc_wires` to determine their register sizes.
   [(#9554)](https://github.com/PennyLaneAI/pennylane/pull/9554)
   [(#9940)](https://github.com/PennyLaneAI/pennylane/pull/9940)
+  [(#10119)](https://github.com/PennyLaneAI/pennylane/pull/10119)
   [(#10146)](https://github.com/PennyLaneAI/pennylane/pull/10146)
+  [(#10158)](https://github.com/PennyLaneAI/pennylane/pull/10158)
 
 * Added :class:`~.OneBodyBlockEncoding`, a block-encoding of a real symmetric one-body operator
   :math:`\hat O`, normalized as :math:`\hat O / \lambda` with :math:`\lambda = \sum_p |\mu_p|`,
