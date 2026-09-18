@@ -397,7 +397,7 @@ def build_mmd_loss_pauli(
                 bandwidth=bandwidth,
                 subkey=subkey,
                 eval_key=eval_key,
-                params=jnp.asarray(params),
+                params=params,
                 target_data=target_data,
                 traced_kwargs=traced_items,
                 static_kwargs=static_kwargs,
