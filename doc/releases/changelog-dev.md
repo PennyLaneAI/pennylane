@@ -501,7 +501,7 @@
   ``PREPARE``, applies :class:`~.SelectTHC`, and reflects about
   :math:`|\vec 0\rangle` on the ``PREPARE`` register. Use :func:`~.qubitization_thc_wires` to
   determine the register sizes.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#10162)](https://github.com/PennyLaneAI/pennylane/pull/10162)
 
 * Added :class:`~.OneBodyBlockEncoding`, a block-encoding of a real symmetric one-body operator
   :math:`\hat O`, normalized as :math:`\hat O / \lambda` with :math:`\lambda = \sum_p |\mu_p|`,
