@@ -507,7 +507,7 @@ def build_qudit_mmd_loss(
                 bandwidth=bandwidth,
                 obs_key=obs_key,
                 eval_key=eval_key,
-                params=jnp.asarray(params),
+                params=params,
                 target_data=X_data,
                 n_ops=mmd_config.n_ops,
                 n_qudits=n_qudits,
