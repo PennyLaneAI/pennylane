@@ -674,7 +674,7 @@ class PartialUnaryStatePreparation(Operator2):
         preparation technique.
 
     Args:
-        coefficients (np.ndarray): Coefficients of the sparse state to prepare. The ordering should
+        coefficients (tensor_like): Coefficients of the sparse state to prepare. The ordering should
             match that in ``indices``.
         wires (qp.wires.WiresLike): Wires on which to prepare the state. All work wires will be
             allocated dynamically with :func:`~.allocate`.
@@ -835,7 +835,11 @@ class PartialUnaryStatePreparation(Operator2):
             raise ValueError("At least one state index must be provided.")
         if any(isinstance(index, bool) or not isinstance(index, Integral) for index in indices):
             raise TypeError("State indices must be integers.")
-        indices = tuple(int(index) for index in indices)
+        if not isinstance(indices, tuple):
+            raise ValueError(
+                "indices must be a tuple of ints, because it is compile-time static "
+                f"data and has to be hashable; got {type(indices).__name__}."
+            )
         if len(set(indices)) != num_entries:
             raise ValueError("The state indices must be unique.")
         if len(coefficients) != num_entries:

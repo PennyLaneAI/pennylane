@@ -642,3 +642,9 @@ class TestPartialUnaryStatePreparation:
 
         with pytest.raises(ValueError, match="must not overlap"):
             PartialUnaryStatePreparation(np.ones(2) / np.sqrt(2), wires, (0, 1), [3, 4])
+
+        with pytest.raises(ValueError, match="indices must be a tuple of ints"):
+            PartialUnaryStatePreparation(np.ones(2) / np.sqrt(2), wires, [0, 1], [])
+
+        with pytest.raises(ValueError, match="indices must be a tuple of ints"):
+            PartialUnaryStatePreparation(np.ones(2) / np.sqrt(2), wires, np.array([0, 1]), [])
