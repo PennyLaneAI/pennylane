@@ -253,7 +253,8 @@ def _capture_decomp_rule_to_tape(rule, op):
     else:
         decomposition = partial(rule, **op.static_args, **op.compilable_args)
         capture_args = ()
-        capture_kwargs = {**op.dynamic_args, **op.wire_args, **op.hybrid_args}
+        wire_args = {k: qp.math.array(w, like="jax") for k, w in op.wire_args.items()}
+        capture_kwargs = {**op.dynamic_args, **wire_args, **op.hybrid_args}
 
     plxpr = qp.capture.make_plxpr(decomposition, autograph=False)(*capture_args, **capture_kwargs)
     flat_capture_args = jax.tree.leaves((capture_args, capture_kwargs))
