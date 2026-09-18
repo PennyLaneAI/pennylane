@@ -13,7 +13,7 @@
 # limitations under the License.
 """Maximum Mean Discrepancy (MMD) loss for qudit IQP circuits.
 
-This module extends :mod:`~pennylane.labs.tcdq.mmd_loss` from qubits to
+This module extends :mod:`~pennylane.labs.tcdq.build_mmd_loss_pauli` from qubits to
 qudits. It compares the circuit output to a dataset by sampling observables,
 estimating their moments, and combining those estimates into an unbiased MMD
 loss.
