@@ -1750,6 +1750,10 @@
 * Various decomposition rules are updated so that they accept positionally passed arguments.
   [(#10088)](https://github.com/PennyLaneAI/pennylane/pull/10088)
 
+* ``build_mmd_loss`` replaced with ``build_mmd_loss_pauli`` and now supports any expectation value function
+  using Pauli-type observables.
+  [(#10123)](https://github.com/PennyLaneAI/pennylane/pull/10123)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
