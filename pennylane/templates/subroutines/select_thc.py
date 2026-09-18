@@ -652,6 +652,10 @@ def _select_thc_resources(
     nu_wires = list(index[n:])
     succ, edge, _, spin1, spin2 = flags
 
+    # `_select_half` returns change_op_basis. Under capture that unrolls eagerly
+    # (binds inner gates into the jaxpr and returns None), so pause while we
+    # build the resource keys. compute_resources already stops queuing but does
+    # not pause capture. See #10162.
     with capture.pause():
         first_half = _select_half(
             chi,
