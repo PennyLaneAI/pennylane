@@ -593,9 +593,8 @@
 
 <h3>Improvements 🛠</h3>
 
-* Multi-controlled :class:`~.RZ` gates can now reuse a single
-  :class:`~.TemporaryAND` ladder when enough zeroed work wires are available, reducing the
-  decomposition's gate count.
+* Multi-controlled operators can now reuse a single :class:`~.TemporaryAND` ladder when enough
+  zeroed work wires are available, reducing their decomposition gate counts.
   [(#10161)](https://github.com/PennyLaneAI/pennylane/pull/10161)
 
 * :class:`~.FlipSign` now accepts `work_wires`, which are forwarded to the multi-controlled

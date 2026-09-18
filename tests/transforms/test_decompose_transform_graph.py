@@ -431,13 +431,15 @@ class TestDecomposeGraphEnabled:
         ]
 
     @pytest.mark.parametrize(
-        ("gate_set", "expected_counts"),
+        ("base", "gate_set", "expected_counts"),
         [
             (
+                qp.RZ(0.5, 0),
                 {"TemporaryAND", "Adjoint(TemporaryAND)", "CRZ", "X"},
                 {"TemporaryAND": 3, "CRZ": 1, "Adjoint(TemporaryAND)": 3},
             ),
             (
+                qp.RZ(0.5, 0),
                 {"TemporaryAND", "Adjoint(TemporaryAND)", "CNOT", "RZ", "X"},
                 {
                     "TemporaryAND": 3,
@@ -446,12 +448,17 @@ class TestDecomposeGraphEnabled:
                     "Adjoint(TemporaryAND)": 3,
                 },
             ),
+            (
+                qp.H(0),
+                {"TemporaryAND", "Adjoint(TemporaryAND)", "CH", "X"},
+                {"TemporaryAND": 3, "CH": 1, "Adjoint(TemporaryAND)": 3},
+            ),
         ],
     )
-    def test_controlled_rz_shared_control(self, gate_set, expected_counts):
-        """Tests that a multi-controlled RZ shares one TemporaryAND ladder."""
+    def test_controlled_op_shared_control(self, base, gate_set, expected_counts):
+        """Tests that a multi-controlled operator shares one TemporaryAND ladder."""
         op = qp.ctrl(
-            qp.RZ(0.5, 0),
+            base,
             control=[1, 2, 3, 4],
             work_wires=[5, 6, 7],
             work_wire_type="zeroed",

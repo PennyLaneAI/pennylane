@@ -43,7 +43,6 @@ from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
 from pennylane.ops.op_math.prod import prod
-from pennylane.ops.op_math.prod2 import _multi_temporary_and_all_ones
 from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import WiresLike
 
@@ -779,32 +778,7 @@ def _controlled_rz_decomp(base, control_wires, control_values, work_wires, work_
     )
 
 
-def _controlled_rz_shared_control_resources(base, control_wires, **_):
-    num_control_wires = len(control_wires)
-    return {
-        qp.TemporaryAND: num_control_wires - 1,
-        qp.adjoint(qp.TemporaryAND(Wire[3])): num_control_wires - 1,
-        qp.CRZ: 1,
-    }
-
-
-@qp.register_condition(
-    lambda control_wires, work_wires, work_wire_type, **_: len(control_wires) > 1
-    and len(work_wires) >= len(control_wires) - 1
-    and work_wire_type == "zeroed"
-)
-@register_resources(_controlled_rz_shared_control_resources)
-def _controlled_rz_shared_control(base, control_wires, work_wires, **_):
-    effective_control = _multi_temporary_and_all_ones(control_wires, work_wires)
-    qp.CRZ(base.phi, wires=[effective_control, base.wires[0]])
-    qp.adjoint(_multi_temporary_and_all_ones)(control_wires, work_wires)
-
-
-add_decomps(
-    "C(RZ)",
-    flip_zero_control2(_controlled_rz_decomp),
-    flip_zero_control2(_controlled_rz_shared_control),
-)
+add_decomps("C(RZ)", flip_zero_control2(_controlled_rz_decomp))
 
 
 class PhaseShift(Operator2):
