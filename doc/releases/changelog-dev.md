@@ -496,6 +496,13 @@
   [(#10146)](https://github.com/PennyLaneAI/pennylane/pull/10146)
   [(#10158)](https://github.com/PennyLaneAI/pennylane/pull/10158)
 
+* Added :class:`~.QubitizationTHC`, the qubitization walk operator of a tensor hypercontracted
+  Hamiltonian. It composes :class:`~.SuperpositionTHC` and :class:`~.AliasSamplingTHC` into
+  ``PREPARE``, applies :class:`~.SelectTHC`, and reflects about
+  :math:`|\vec 0\rangle` on the ``PREPARE`` register. Use :func:`~.qubitization_thc_wires` to
+  determine the register sizes.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
 * Added :class:`~.OneBodyBlockEncoding`, a block-encoding of a real symmetric one-body operator
   :math:`\hat O`, normalized as :math:`\hat O / \lambda` with :math:`\lambda = \sum_p |\mu_p|`,
   where :math:`\mu_p` are the eigenvalues of the one-body matrix. Composing it with a reflection
