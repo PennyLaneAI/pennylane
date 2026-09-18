@@ -306,6 +306,8 @@ def _out_multiplier_with_qft_resources(
 def _out_multiplier_with_qft_condition(
     x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
 ):  # pylint: disable=unused-argument, too-many-arguments
+    if capture.enabled():
+        return False  # TODO: ControlledSequence cannot take tracer wires [sc-128372]
     return mod == 2 ** len(output_wires) or len(work_wires) >= 2
 
 
