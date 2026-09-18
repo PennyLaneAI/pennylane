@@ -42,6 +42,7 @@ zeta = (zeta + zeta.T) / 2  # the two-body THC tensor is symmetric
 chi = rng.standard_normal((M, N // 2))
 t_ell = rng.standard_normal(N // 2)
 t_eigenvectors = np.linalg.qr(rng.standard_normal((N // 2, N // 2)))[0]
+# hamiltonian = {"zeta": zeta, "chi": chi, "t_ell": t_ell, "t_eigenvectors": t_eigenvectors}
 
 
 # +---------------------------------+
@@ -112,6 +113,7 @@ def walk_operator():
             t_eigenvectors,
             aleph,
             beth,
+            1,
             registers["system_wires"],
             registers["index_wires"],
             registers["prep_garbage_wires"],
@@ -135,6 +137,7 @@ if __name__ == "__main__":
     start_proc = time.process_time()
     print(f"{M=} {N=} {aleph=} {beth=} {epsilon=} {precision=} {num_wires=}")
 
+    # This will allocate, which will fail below.
     elbow_ops = decompose(walk_operator().operations, gate_set, num_work_wires=None)
     print(Counter(op.name for op in elbow_ops))
 

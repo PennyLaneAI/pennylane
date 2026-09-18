@@ -143,8 +143,15 @@ def qubitization_thc_wires(M, N, aleph, beth, num_batches=1):
     }
 
 
+"""
 @partial(
     qp.templates.Subroutine,
+    static_argnames=(
+        "hamiltonian",
+        "aleph",
+        "beth",
+        "num_batches",
+    ),
     wire_argnames=(
         "system_wires",
         "index_wires",
@@ -153,16 +160,23 @@ def qubitization_thc_wires(M, N, aleph, beth, num_batches=1):
         "work_wires",
     ),
 )
+"""
+
+
 def qubitization_thc(  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
-    hamiltonian,
+    # hamiltonian,
+    zeta,
+    t_ell,
+    chi,
+    t_eigenvectors,
     aleph,
     beth,
+    num_batches,
     system_wires,
     index_wires,
     prep_garbage_wires,
     gradient_wires,
     work_wires,
-    num_batches=1,
 ):
     r"""Apply the qubitization walk operator of a tensor hypercontracted (THC) Hamiltonian.
 
@@ -355,10 +369,14 @@ def qubitization_thc(  # pylint: disable=too-many-arguments,too-many-positional-
     :math:`(\hat{\mathcal{H}} / \lambda) \lvert \psi \rangle`.
     """
 
-    zeta = tuple(map(tuple, hamiltonian["zeta"]))
-    t_ell = tuple(hamiltonian["t_ell"])
-    chi = tuple(map(tuple, hamiltonian["chi"]))
-    t_eigenvectors = tuple(map(tuple, hamiltonian["t_eigenvectors"]))
+    # zeta = tuple(map(tuple, hamiltonian["zeta"]))
+    # t_ell = tuple(hamiltonian["t_ell"])
+    # chi = tuple(map(tuple, hamiltonian["chi"]))
+    # t_eigenvectors = tuple(map(tuple, hamiltonian["t_eigenvectors"]))
+    zeta = tuple(map(tuple, zeta))
+    t_ell = tuple(t_ell)
+    chi = tuple(map(tuple, chi))
+    t_eigenvectors = tuple(map(tuple, t_eigenvectors))
 
     M = qp.math.shape(zeta)[0]
     n_half = qp.math.shape(chi)[1]
