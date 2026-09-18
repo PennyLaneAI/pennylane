@@ -49,7 +49,7 @@ from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
 from pennylane.ops.qubit import X, Y, Z
 from pennylane.typing import AbstractArray, AbstractWires, Bool, Complex, Float, TensorLike, Wire
-from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
+from pennylane.wires import Wires, WiresLike, concatenate_wires, validate_no_wire_overlaps
 
 from .adjoint2 import _adjoint_abstract
 from .controlled import (
@@ -1047,7 +1047,7 @@ def _ctrl_cnot_resource(base, control_wires, control_values, work_wires, work_wi
 def _ctrl_cnot_to_mcx(base, control_wires, control_values, work_wires, work_wire_type):
     ctrl_values = _resolve_ctrl_values(control_values, [True], len(control_wires))
     qp.MultiControlledX(
-        control_wires + base.wires,
+        concatenate_wires(control_wires, base.wires),
         control_values=ctrl_values,
         work_wires=work_wires,
         work_wire_type=work_wire_type,
@@ -1266,7 +1266,7 @@ def _ctrl_toffoli_resource(base, control_wires, control_values, work_wires, work
 def _ctrl_toffoli_to_mcx(base, control_wires, control_values, work_wires, work_wire_type):
     ctrl_values = _resolve_ctrl_values(control_values, [True, True], len(control_wires))
     qp.MultiControlledX(
-        control_wires + base.wires,
+        concatenate_wires(control_wires, base.wires),
         control_values=ctrl_values,
         work_wires=work_wires,
         work_wire_type=work_wire_type,
@@ -1573,9 +1573,9 @@ def _ctrl_mcx_to_mcx(base, control_wires, control_values, work_wires, work_wire_
         work_wire_type,
     )
     qp.MultiControlledX(
-        control_wires + base.wires,
+        concatenate_wires(control_wires, base.wires),
         control_values=_resolve_ctrl_values(control_values, base.control_values, n_ctrl_wires),
-        work_wires=work_wires + base.work_wires,
+        work_wires=concatenate_wires(work_wires, base.work_wires),
         work_wire_type=work_wire_type,
     )
 
