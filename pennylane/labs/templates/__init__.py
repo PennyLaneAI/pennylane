@@ -21,10 +21,7 @@ This module contains templates, which are pre-coded routines that can be used in
 
     ~half_signed_out_multiplier
     ~SumOfSlatersPrep2
-    ~qubitization_thc
-    ~qubitization_thc_wires
 """
 
 from .half_signed_out_multiplier import half_signed_out_multiplier
 from .sum_of_slaters2 import SumOfSlatersPrep2
-from .qubitization_thc import qubitization_thc, qubitization_thc_wires
