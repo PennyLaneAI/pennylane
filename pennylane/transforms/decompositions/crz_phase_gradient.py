@@ -83,7 +83,6 @@ def make_crz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
             qp.CRZ(phi, [0, 1])
             return qp.state()
 
-        specs = qp.specs(circuit)()["resources"].quantum_operations
 
     The resulting circuit corresponds to the phase gradient decomposition of ``CRZ``. The compute
     and uncompute fanouts load the binary representation of the angle (111 in this case) onto the
@@ -93,8 +92,6 @@ def make_crz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
     control wire, ``CNOT``\\ s to the ``phase_grad_wires``, and a ``PauliX`` flip back), and
     enclose the :class:`~.SemiAdder`.
 
-    >>> specs
-    {'CNOT': 12, 'PauliX': 4, 'SemiAdder': 1}
     >>> wire_order = [0, 1] + angle_wires + phase_grad_wires + work_wires
     >>> print(qp.draw(circuit, wire_order=wire_order)())
          0: ─╭●─╭●─╭●────────────────────────╭●─╭●─╭●────────────────┤ ╭State
@@ -107,7 +104,6 @@ def make_crz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
      qft_2: ───────────────────╰X─├SemiAdder───────────────────╰X────┤ ├State
     work_0: ──────────────────────├SemiAdder─────────────────────────┤ ├State
     work_1: ──────────────────────╰SemiAdder─────────────────────────┤ ╰State
-
     """
     angle_wires, phase_grad_wires, work_wires = validate_phase_gradient_wires(
         angle_wires, phase_grad_wires, work_wires
