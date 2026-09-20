@@ -1903,6 +1903,12 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* :func:`~pennylane.is_commuting` no longer reports two SWAP-like operations, such as
+  :class:`~.CSWAP` or :class:`~.Permute`, as commuting when their target wires only partially
+  overlap. Previously, ``qp.is_commuting(qp.CSWAP([0, 1, 2]), qp.CSWAP([3, 1, 4]))`` returned
+  ``True``, which let :func:`~.pattern_matching_optimization` cancel gates that do not commute.
+  [(#PRNUM)](https://github.com/PennyLaneAI/pennylane/pull/PRNUM)
+
 * Fixed captured transforms dropping keyword arguments to the transformed function,
   including when calling transformed QNodes with `qp.qjit(capture=True)`.
   [(#10301)](https://github.com/PennyLaneAI/pennylane/pull/10301)
@@ -2165,6 +2171,7 @@ Austin Huang,
 Harshal Janjani,
 Jacob Kitchen,
 Korbinian Kottmann,
+Anish Kunda,
 Isabel Nha Minh Le,
 Christina Lee,
 Joseph Lee,
