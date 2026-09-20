@@ -1626,7 +1626,7 @@
   :class:`~.CSWAP` or :class:`~.Permute`, as commuting when their target wires only partially
   overlap. Previously, ``qp.is_commuting(qp.CSWAP([0, 1, 2]), qp.CSWAP([3, 1, 4]))`` returned
   ``True``, which let :func:`~.pattern_matching_optimization` cancel gates that do not commute.
-  [(#PRNUM)](https://github.com/PennyLaneAI/pennylane/pull/PRNUM)
+  [(#10175)](https://github.com/PennyLaneAI/pennylane/pull/10175)
 
 * :func:`~.allocate` with zero wires no longer queues or captures :class:`~.allocation.Allocate`
   and :class:`~.allocation.Deallocate` instructions, including when used as a context manager.
