@@ -139,3 +139,12 @@ def graph_op_id(op: Operator2) -> GOID:
     uid = calculate_uid(op)
     formatted_tail = f"[{uid}]" if uid else ""
     return f"{name}{{{dynamic_id}}}{{{wire_id}}}{{{compilable_id}}}{formatted_tail}"
+
+
+def graph_op_id_to_operator(goid: GOID) -> Operator2:
+    split = goid.split("{")
+
+    name = split[0]
+    name_split = name.split("(")
+
+    raise NotImplementedError

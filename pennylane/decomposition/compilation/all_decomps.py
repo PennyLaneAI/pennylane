@@ -33,6 +33,7 @@ class Modifiers(TypedDict):
     adj: bool
     n_ctrls: int
     adj_n_ctrls: int
+    skip_ops: set[Operator2]
 
 
 def _pure_recursive_all_decomps(op: Operator2, rules_map: dict, **kwargs: Unpack[Modifiers]):
@@ -40,7 +41,7 @@ def _pure_recursive_all_decomps(op: Operator2, rules_map: dict, **kwargs: Unpack
     This helper only collect the rules for the provided operator, and not any modified versions
     of it.
     """
-    if op in rules_map:
+    if op in rules_map or op in kwargs["skip_ops"]:
         return
     decomps = list_decomps(op)
     applicable_rules = [r for r in decomps if r.is_applicable(**op.arguments)]
@@ -79,7 +80,11 @@ def _recursive_all_decomps(op: Operator2, rules_map: dict, **kwargs: Unpack[Modi
 
 
 def all_decomps(
-    op: Operator2, adj: bool = True, n_ctrls: int = 1, adj_n_ctrls: int = 1
+    op: Operator2,
+    adj: bool = True,
+    n_ctrls: int = 1,
+    adj_n_ctrls: int = 1,
+    skip_ops: set[Operator2] | None = None,
 ) -> dict[Operator2, list[DecompositionRule]]:
     """Collect all decomposition rules downstream of an Operator.
 
@@ -89,6 +94,7 @@ def all_decomps(
             operator
         n_ctrls=1 (int): How many controlled versions to include for each base operator
         adj_n_ctrls=1 (int): How many controlled version to include for the adjoint of each base operator
+        skip_ops (set[Operator2] | None): abstract operators that should not be included in the results
 
     Returns:
         dict[Operator2, list[DecompositionRule]]: A map from abstract operators to their applicable rules
@@ -113,8 +119,14 @@ def all_decomps(
     if adj_n_ctrls > 1:
         raise NotImplementedError
 
+    skip_ops = skip_ops or set()
     rules_map = {}
     _recursive_all_decomps(
-        abstractify(op), rules_map, adj=adj, n_ctrls=n_ctrls, adj_n_ctrls=adj_n_ctrls
+        abstractify(op),
+        rules_map,
+        adj=adj,
+        n_ctrls=n_ctrls,
+        adj_n_ctrls=adj_n_ctrls,
+        skip_ops=skip_ops,
     )
     return rules_map

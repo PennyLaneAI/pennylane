@@ -100,8 +100,12 @@ class PreparedRule:
 
 
 def all_prepared_decomps(
-    op: Operator2, adj: bool = True, n_ctrls: int = 1, adj_n_ctrls: int = 1
-) -> tuple[list[PreparedRule], dict]:
+    op: Operator2,
+    adj: bool = True,
+    n_ctrls: int = 1,
+    adj_n_ctrls: int = 1,
+    skip_ops: set[Operator2] | None = None,
+) -> tuple[list[PreparedRule], dict, set[Operator2]]:
     """Collect and prepare decomposition rules for lowering to mlir.
 
     Args:
@@ -110,12 +114,15 @@ def all_prepared_decomps(
             operator
         n_ctrls=1 (int): How many controlled versions to include for each base operator
         adj_n_ctrls=1 (int): How many controlled version to include for the adjoint of each base operator
+        skip_ops (set[Operator2] | None): Abstract Operators that should not be included in the result. These
+           can be operators handled by previous calls to ``all_prepared_decomps``.
 
     Returns:
-        list[PreparedRule], dict: a list of objects that simply need to be called in a qjit context, and a dictionary
-            of the metadata that will need to be added to each rule after lowering
+        list[PreparedRule], dict, set[Operator2]: a list of objects that simply need to be
+            called in a qjit context, a dictionary of the metadata that will need to be added
+            to each rule after lowering, and a set of all included abstract operators.
 
-    >>> rules, metadata = all_prepared_decomps(qp.X(0))
+    >>> rules, metadata, visited_ops = all_prepared_decomps(qp.X(0))
     >>> rules[0]
     <PreparedRule: PauliX, _paulix_to_rx>
     >>> metadata["_paulix_to_rx_PauliX{}{wires:1}{}"]
@@ -150,7 +157,9 @@ def all_prepared_decomps(
 
 
     """
-    rules_map = all_decomps(op, adj=adj, n_ctrls=n_ctrls, adj_n_ctrls=adj_n_ctrls)
+    rules_map = all_decomps(
+        op, adj=adj, n_ctrls=n_ctrls, adj_n_ctrls=adj_n_ctrls, skip_ops=skip_ops
+    )
 
     prepared_rules = []
     metadata_map = {}
@@ -169,4 +178,4 @@ def all_prepared_decomps(
                 "resources": {"operations": prepared_resources},
             }
 
-    return prepared_rules, metadata_map
+    return prepared_rules, metadata_map, set(rules_map)
