@@ -335,7 +335,7 @@ def _compute_qudit_loss_for_bandwidth(
     return _unbiased_mmd_squared(mu_q_hat, cov, target_data, l_visible, dims_visible, sqrt_loss)
 
 
-def build_qudit_mmd_loss(
+def build_mmd_loss_hw(
     expval_fn: Callable,
     dims: int | Sequence[int],
     n_qudits: int,
@@ -388,7 +388,7 @@ def build_qudit_mmd_loss(
     >>> import jax
     >>> import jax.numpy as jnp
     >>> from pennylane.labs.tcdq import (
-    ...     QuditCircuitConfig, QuditMMDConfig, build_qudit_expval_func, build_qudit_mmd_loss,
+    ...     QuditCircuitConfig, QuditMMDConfig, build_qudit_expval_func, build_mmd_loss_hw,
     ... )
     >>> circuit_config = QuditCircuitConfig(
     ...     dims=3,
@@ -398,7 +398,7 @@ def build_qudit_mmd_loss(
     ...     key=jax.random.PRNGKey(0),
     ... )
     >>> mmd_config = QuditMMDConfig(bandwidth=[0.3, 1.0], n_ops=32)
-    >>> loss_fn = build_qudit_mmd_loss(
+    >>> loss_fn = build_mmd_loss_hw(
     ...     build_qudit_expval_func(circuit_config), 3, 2, mmd_config
     ... )
     >>> params = jnp.array([0.2, -0.1])

@@ -25,13 +25,13 @@ from pennylane.labs.tcdq.qudit_expval_functions import (
     _dims_to_numpy,
     build_qudit_expval_func,
 )
-from pennylane.labs.tcdq.qudit_mmd_loss import (
+from pennylane.labs.tcdq.mmd_loss_hw import (
     QuditMMDConfig,
     _complete_marginal_probs,
     _cycle_marginal_probs,
     _sample_fourier_indices,
     _unbiased_mmd_squared,
-    build_qudit_mmd_loss,
+    build_mmd_loss_hw,
 )
 
 jax = pytest.importorskip("jax")
@@ -43,7 +43,7 @@ jax.config.update("jax_enable_x64", True)
 def _build_loss(circuit_config, mmd_config):
     """Build the loss function from a qudit IQP circuit configuration."""
     expval_fn = build_qudit_expval_func(replace(circuit_config, observables=None))
-    return build_qudit_mmd_loss(
+    return build_mmd_loss_hw(
         expval_fn,
         circuit_config.dims,
         circuit_config.n_qudits,
@@ -832,7 +832,7 @@ class TestQuditMMDLossStatistical:
 
 
 class TestBuildQuditMMDLoss:
-    """Tests for the build_qudit_mmd_loss factory pattern."""
+    """Tests for the build_mmd_loss_hw factory pattern."""
 
     def _make_config_and_data(self):
         config = QuditCircuitConfig(
@@ -847,7 +847,7 @@ class TestBuildQuditMMDLoss:
         return config, data, params
 
     def test_factory_matches_direct_call(self):
-        """build_qudit_mmd_loss matches one-shot evaluation."""
+        """build_mmd_loss_hw matches one-shot evaluation."""
         config, data, params = self._make_config_and_data()
         mmd_cfg = QuditMMDConfig(bandwidth=1.0, n_ops=50)
 
@@ -1084,7 +1084,7 @@ class TestArbitraryExpvalCallable:
         expval_fn = self._exact_moments(jnp.array(probs), self.D, self.N_QUDITS)
 
         mmd_cfg = QuditMMDConfig(bandwidth=0.5, n_ops=40)
-        loss_fn = build_qudit_mmd_loss(expval_fn, self.D, self.N_QUDITS, mmd_cfg)
+        loss_fn = build_mmd_loss_hw(expval_fn, self.D, self.N_QUDITS, mmd_cfg)
         data = jnp.array([[0, 1], [1, 2], [2, 0], [1, 1]])
 
         res = loss_fn(jnp.array([1.0]), data, key=jax.random.PRNGKey(0))
@@ -1101,7 +1101,7 @@ class TestArbitraryExpvalCallable:
 
         expval_fn = self._exact_moments(jnp.array(probs), self.D, self.N_QUDITS)
         mmd_cfg = QuditMMDConfig(bandwidth=bandwidth, n_ops=200, graph_type=graph_type)
-        loss_fn = build_qudit_mmd_loss(expval_fn, self.D, self.N_QUDITS, mmd_cfg)
+        loss_fn = build_mmd_loss_hw(expval_fn, self.D, self.N_QUDITS, mmd_cfg)
 
         estimates = [
             float(jnp.real(loss_fn(jnp.array([1.0]), jnp.array(data), key=jax.random.PRNGKey(s))))
@@ -1143,7 +1143,7 @@ class TestArbitraryExpvalCallable:
         expval_fn = self._exact_moments(
             jnp.full(self.D**self.N_QUDITS, 1.0 / self.D**self.N_QUDITS), self.D, self.N_QUDITS
         )
-        loss_fn = build_qudit_mmd_loss(
+        loss_fn = build_mmd_loss_hw(
             expval_fn, self.D, self.N_QUDITS, QuditMMDConfig(bandwidth=1.0, n_ops=5)
         )
         with pytest.raises(ValueError, match="must not contain 'observables'"):
@@ -1155,7 +1155,7 @@ class TestArbitraryExpvalCallable:
         def bad_expval_fn(params, observables=None, key=None):  # pylint: disable=unused-argument
             return jnp.zeros(3, dtype=jnp.complex128)
 
-        loss_fn = build_qudit_mmd_loss(
+        loss_fn = build_mmd_loss_hw(
             bad_expval_fn, self.D, self.N_QUDITS, QuditMMDConfig(bandwidth=1.0, n_ops=5)
         )
         with pytest.raises(ValueError, match=r"moments of shape \(3,\), expected \(5,\)"):
@@ -1168,7 +1168,7 @@ class TestArbitraryExpvalCallable:
             l_vecs, _ = observables
             return jnp.zeros(l_vecs.shape[0], dtype=jnp.complex128), jnp.zeros((l_vecs.shape[0], 3))
 
-        loss_fn = build_qudit_mmd_loss(
+        loss_fn = build_mmd_loss_hw(
             bad_expval_fn, self.D, self.N_QUDITS, QuditMMDConfig(bandwidth=1.0, n_ops=5)
         )
         with pytest.raises(ValueError, match=r"covariances of shape \(5, 3\)"):
@@ -1180,6 +1180,6 @@ class TestArbitraryExpvalCallable:
             jnp.full(self.D**self.N_QUDITS, 1.0 / self.D**self.N_QUDITS), self.D, self.N_QUDITS
         )
         with pytest.raises(ValueError, match="must specify both bandwidth and n_ops"):
-            build_qudit_mmd_loss(expval_fn, self.D, self.N_QUDITS, QuditMMDConfig(n_ops=5))
+            build_mmd_loss_hw(expval_fn, self.D, self.N_QUDITS, QuditMMDConfig(n_ops=5))
         with pytest.raises(ValueError, match="must specify both bandwidth and n_ops"):
-            build_qudit_mmd_loss(expval_fn, self.D, self.N_QUDITS, QuditMMDConfig(bandwidth=1.0))
+            build_mmd_loss_hw(expval_fn, self.D, self.N_QUDITS, QuditMMDConfig(bandwidth=1.0))
