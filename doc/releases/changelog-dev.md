@@ -1627,6 +1627,7 @@
   to the global phase when the gate is actually rewritten as a :class:`~.Rot`, so a circuit
   such as ``H(0); H(1)`` keeps its unitary instead of picking up a phase of :math:`-1`, which
   became a relative phase under :func:`~.ctrl`.
+  [(#10177)](https://github.com/PennyLaneAI/pennylane/pull/10177)
 
 * :func:`~.allocate` with zero wires no longer queues or captures :class:`~.allocation.Allocate`
   and :class:`~.allocation.Deallocate` instructions, including when used as a context manager.
