@@ -129,6 +129,17 @@ def all_prepared_decomps(
     {'target_gate': 'PauliX{}{wires:1}{}',
       'resources': {'operations': {'GlobalPhase{phi:f64}{}{}': 1,
         'RX{0:f64}{wires:1}{}': 1}}}
+    >>> visited_ops
+    {(Adjoint(S)) @ RY @ S,
+     (Adjoint(T)) @ (CNOT) @ T @ Hadamard,
+     (Adjoint(TemporaryAND)) @ (CNOT) @ TemporaryAND,
+    ...
+
+    Visited ops can be provided to later calls so we don't need to recapture rules again:.
+
+    >>> rules_y, _, _= all_prepared_decomps(qp.Y(0), skip_ops=visited_ops)
+    >>> rules_y
+    []
 
     .. code-block:: python
 
