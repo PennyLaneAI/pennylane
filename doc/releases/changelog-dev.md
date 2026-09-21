@@ -37,6 +37,7 @@
   circuits. Together with :func:`~.pauli_measure`, this makes the building blocks of Pauli-based
   computations directly expressible.
   [(#10107)](https://github.com/PennyLaneAI/pennylane/pull/10107)
+  [(#10108)](https://github.com/PennyLaneAI/pennylane/pull/10108)
 
   ```pycon
   >>> import pennylane as qp
@@ -596,6 +597,10 @@
   ```
 
 <h3>Improvements 🛠</h3>
+
+* Added a decomposition of :class:`~.TemporaryAND` directly to four :math:`\pm\pi/8` PPRs and a 
+  decomposition of :class:`~.SingleExcitation` to two :math:`\pm\pi/4` and two arbitrary-angle PPRs.
+  [(#10108)](https://github.com/PennyLaneAI/pennylane/pull/10108)
 
 * :class:`~.FlipSign` now accepts `work_wires`, which are forwarded to the multi-controlled
   :class:`~.Z` gate in its decomposition. Providing work wires substantially reduces the gate count.
