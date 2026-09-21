@@ -20,11 +20,6 @@ from dataclasses import replace
 import numpy as np
 import pytest
 
-from pennylane.labs.tcdq.qudit_expval_functions import (
-    QuditCircuitConfig,
-    _dims_to_numpy,
-    build_qudit_expval_func,
-)
 from pennylane.labs.tcdq.mmd_loss_hw import (
     QuditMMDConfig,
     _complete_marginal_probs,
@@ -32,6 +27,11 @@ from pennylane.labs.tcdq.mmd_loss_hw import (
     _sample_fourier_indices,
     _unbiased_mmd_squared,
     build_mmd_loss_hw,
+)
+from pennylane.labs.tcdq.qudit_expval_functions import (
+    QuditCircuitConfig,
+    _dims_to_numpy,
+    build_qudit_expval_func,
 )
 
 jax = pytest.importorskip("jax")
