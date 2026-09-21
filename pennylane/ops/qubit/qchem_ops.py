@@ -249,25 +249,25 @@ def _single_excitation_decomp(phi: TensorLike, wires: WiresLike):
 
 
 # pylint: disable=unused-argument
-def _single_excitation_ppr_resources(phi, wires):
+def _single_excitation_ppr_resource(phi, wires):
     return {
         qp.PauliRot(Float, pauli_word="XY", wires=Wire[2]): 1,
         qp.PauliRot(Float, pauli_word="YX", wires=Wire[2]): 1,
     }
 
 
-@register_resources(_single_excitation_ppr_resources)
+@register_resources(_single_excitation_ppr_resource)
 def _single_excitation_ppr(phi: TensorLike, wires: WiresLike):
     qp.PauliRot(phi / 2, "YX", wires=wires)
     qp.PauliRot(-phi / 2, "XY", wires=wires)
 
 
 # pylint: disable=unused-argument
-def _single_excitation_ppr_rz_resources(phi, wires):
+def _single_excitation_ppr_rz_resource(phi, wires):
     return {qp.RZ: 2, qp.PPR(4, "XX", Wire[2]): 1, qp.PPR(-4, "XX", Wire[2]): 1}
 
 
-@register_resources(_single_excitation_ppr_rz_resources)
+@register_resources(_single_excitation_ppr_rz_resource)
 def _single_excitation_ppr_rz(phi: TensorLike, wires: WiresLike):
     qp.PPR(4, "XX", wires=wires)
     qp.RZ(phi / 2, wires[0])
