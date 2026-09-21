@@ -1271,6 +1271,7 @@
       :class:`~.PartialUnaryStatePreparation`, :class:`~.Select`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
   [(#10164)](https://github.com/PennyLaneAI/pennylane/pull/10164)
+  [(#)](https://github.com/PennyLaneAI/pennylane/pull/)
   [(#9925)](https://github.com/PennyLaneAI/pennylane/pull/9925)
   [(#9918)](https://github.com/PennyLaneAI/pennylane/pull/9918)
   [(#9932)](https://github.com/PennyLaneAI/pennylane/pull/9932)
