@@ -1907,6 +1907,7 @@
   the X spider. Previously the control was taken from whichever spider had the larger vertex ID,
   so a circuit-like graph whose Z spider was created before the X spider was converted to a CNOT
   with the control and target swapped.
+  [(#10179)](https://github.com/PennyLaneAI/pennylane/pull/10179)
 
 * Fixed captured transforms dropping keyword arguments to the transformed function,
   including when calling transformed QNodes with `qp.qjit(capture=True)`.
