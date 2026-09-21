@@ -164,6 +164,7 @@
   [(#9833)](https://github.com/PennyLaneAI/pennylane/pull/9833)
   [(#9847)](https://github.com/PennyLaneAI/pennylane/pull/9847)
   [(#10008)](https://github.com/PennyLaneAI/pennylane/pull/10008)
+  [(#10053)](https://github.com/PennyLaneAI/pennylane/pull/10053)
 
   Given the ``amplitudes`` and the computational basis state ``indices`` of the sparse state we
   want to prepare, the template is simple to call. Consider the following example:
@@ -486,12 +487,15 @@
   [(#10145)](https://github.com/PennyLaneAI/pennylane/pull/10145)
   [(#10146)](https://github.com/PennyLaneAI/pennylane/pull/10146)
 
-* Added :class:`~.AliasSamplingTHC`, the coherent alias-sampling ``PREPARE`` for tensor
-  hypercontraction qubitization, together with :class:`~.SuperpositionTHC`, which prepares the
-  index superposition it acts on.
+* You can now build the ``PREPARE`` and ``SELECT`` subroutines for tensor hypercontraction
+  qubitization with :class:`~.SuperpositionTHC`, :class:`~.AliasSamplingTHC`, and
+  :class:`~.SelectTHC`. Use :func:`~.alias_sampling_thc_wires` and
+  :func:`~.select_thc_wires` to determine their register sizes.
   [(#9554)](https://github.com/PennyLaneAI/pennylane/pull/9554)
   [(#9940)](https://github.com/PennyLaneAI/pennylane/pull/9940)
+  [(#10119)](https://github.com/PennyLaneAI/pennylane/pull/10119)
   [(#10146)](https://github.com/PennyLaneAI/pennylane/pull/10146)
+  [(#10158)](https://github.com/PennyLaneAI/pennylane/pull/10158)
 
 * Added :class:`~.OneBodyBlockEncoding`, a block-encoding of a real symmetric one-body operator
   :math:`\hat O`, normalized as :math:`\hat O / \lambda` with :math:`\lambda = \sum_p |\mu_p|`,
@@ -1264,8 +1268,9 @@
       :class:`~.TemporaryAND`, :class:`~.SelectPauliRot`, :class:`~.GQSP`, :class:`~.AQFT`, :class:`~.SumOfSlatersPrep`,
       :class:`~.SemiAdder`, :class:`~.OutMultiplier`, :class:`~.SignedOutMultiplier`, :class:`~.BasisState`, :class:`~.TrotterCDF`,
       :class:`~.TrotterCGF`, :class:`~.OutSquare`, :class:`~.SignedOutSquare`, :class:`~.Incrementer`, :class:`~.TrotterVibronic`,
-      :class:`~.Select`
+      :class:`~.PartialUnaryStatePreparation`, :class:`~.Select`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
+  [(#10164)](https://github.com/PennyLaneAI/pennylane/pull/10164)
   [(#9925)](https://github.com/PennyLaneAI/pennylane/pull/9925)
   [(#9918)](https://github.com/PennyLaneAI/pennylane/pull/9918)
   [(#9932)](https://github.com/PennyLaneAI/pennylane/pull/9932)
@@ -1282,6 +1287,7 @@
   [(#10015)](https://github.com/PennyLaneAI/pennylane/pull/10015)
   [(#10018)](https://github.com/PennyLaneAI/pennylane/pull/10018)
   [(#9933)](https://github.com/PennyLaneAI/pennylane/pull/9933)
+  [(#10053)](https://github.com/PennyLaneAI/pennylane/pull/10053)
   [(#10042)](https://github.com/PennyLaneAI/pennylane/pull/10042)
   [(#10052)](https://github.com/PennyLaneAI/pennylane/pull/10052)
   [(#10054)](https://github.com/PennyLaneAI/pennylane/pull/10054)
@@ -1743,6 +1749,10 @@
 
 * Various decomposition rules are updated so that they accept positionally passed arguments.
   [(#10088)](https://github.com/PennyLaneAI/pennylane/pull/10088)
+
+* ``build_mmd_loss`` replaced with ``build_mmd_loss_pauli`` and now supports any expectation value function
+  using Pauli-type observables.
+  [(#10123)](https://github.com/PennyLaneAI/pennylane/pull/10123)
 
 <h3>Contributors ✍️</h3>
 

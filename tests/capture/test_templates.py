@@ -360,6 +360,7 @@ tested_modified_templates = [
     qp.AliasSampling,
     qp.OneBodyBlockEncoding,
     qp.AliasSamplingTHC,
+    qp.SelectTHC,
     qp.SuperpositionTHC,
     qp.SignedOutMultiplier,
     qp.OutSquare,
@@ -1615,6 +1616,30 @@ class TestModifiedTemplates:
 
         [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
         qp.assert_equal(op, qp.SuperpositionTHC(**kwargs))
+
+    def test_select_thc(self):
+        """Test the primitive bind call of SelectTHC."""
+
+        sizes = qp.select_thc_wires(1, 2, 1)
+        wires = qp.registers(sizes)
+        kwargs = {
+            "chi": ((1.0,),),
+            "t_eigenvectors": ((1.0,),),
+            "beth": 1,
+            **wires,
+        }
+
+        def qfunc():
+            return qp.SelectTHC(**kwargs).tracer
+
+        jaxpr = jax.make_jaxpr(qfunc)()
+
+        assert len(jaxpr.eqns) == 1
+        eqn = jaxpr.eqns[0]
+        assert_eqn_matches_op(eqn, qp.SelectTHC)
+
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        qp.assert_equal(op, qp.SelectTHC(**kwargs))
 
     def test_signed_out_multiplier(self):
         """Test the primitive bind call of SignedOutMultiplier."""
