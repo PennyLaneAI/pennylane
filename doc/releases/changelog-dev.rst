@@ -2240,6 +2240,7 @@ Bug fixes 🐛
   the sites followed the order in which the wires appeared in the circuit, which also returned
   ``qp.state()`` in that order instead of the device order and made ``StatePrep`` fail on devices with
   non-integer wire labels.
+  `(#10180) <https://github.com/PennyLaneAI/pennylane/pull/10180>`__
 
 * Fixed a bug where :class:`~.BasisRotation` for real-valued matrices :math:`u` implemented the
   rotation for :math:`S u S` instead of :math:`u`, with :math:`S=\operatorname{diag}((-1)^p)`,
