@@ -1591,6 +1591,12 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* The order of the wires given to `default.tensor` now fixes the layout of the tensor network,
+  so `wires=[0, 7, 1, 6, ...]` places wires `0` and `7` next to each other in the MPS. Previously
+  the sites followed the order in which the wires appeared in the circuit, which also returned
+  `qp.state()` in that order instead of the device order and made `StatePrep` fail on devices with
+  non-integer wire labels.
+
 * Fixed a bug where a fixed decomposition rule assigned to :class:`~.MultiControlledX` via the
   ``fixed_decomps`` keyword argument of :func:`~.transforms.decompose` was being ignored.
   This does not apply to ``qjit(capture=True)``.
@@ -1808,6 +1814,7 @@ Austin Huang,
 Harshal Janjani,
 Jacob Kitchen,
 Korbinian Kottmann,
+Anish Kunda,
 Isabel Nha Minh Le,
 Christina Lee,
 Joseph Lee,
