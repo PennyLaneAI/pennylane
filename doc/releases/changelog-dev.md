@@ -1591,6 +1591,12 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* :func:`~.transforms.single_qubit_fusion` no longer appends a :class:`~.GlobalPhase` for
+  single-qubit gates it leaves unchanged. A gate's decomposition phase now only contributes
+  to the global phase when the gate is actually rewritten as a :class:`~.Rot`, so a circuit
+  such as ``H(0); H(1)`` keeps its unitary instead of picking up a phase of :math:`-1`, which
+  became a relative phase under :func:`~.ctrl`.
+
 * Fixed a bug where a fixed decomposition rule assigned to :class:`~.MultiControlledX` via the
   ``fixed_decomps`` keyword argument of :func:`~.transforms.decompose` was being ignored.
   This does not apply to ``qjit(capture=True)``.
@@ -1808,6 +1814,7 @@ Austin Huang,
 Harshal Janjani,
 Jacob Kitchen,
 Korbinian Kottmann,
+Anish Kunda,
 Isabel Nha Minh Le,
 Christina Lee,
 Joseph Lee,
