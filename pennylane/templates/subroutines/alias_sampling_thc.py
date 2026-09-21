@@ -30,6 +30,7 @@ from .alias_sampling import _apply_hadamards, _build_alias_tables
 from .arithmetic.left_quantum_comparator import LeftQuantumComparator
 from .arithmetic.out_square import OutSquare
 from .arithmetic.semi_adder import SemiAdder
+from .arithmetic.temporary_and import TemporaryAND
 from .qrom import QROM
 
 
@@ -318,7 +319,7 @@ def _cswap_pair(flag, left, right):
     _loop()  # pylint: disable=no-value-for-parameter
 
 
-def _symmetrize(mu_wires, nu_wires, swap_flag, edge_flag):
+def _symmetrize(mu_wires, nu_wires, swap_flag, edge_flag, work_wires):
     """Swap ``mu`` and ``nu`` when ``swap_flag`` is 1 and ``edge_flag`` is 0."""
     n = len(mu_wires)
     if n == 0:
@@ -327,15 +328,21 @@ def _symmetrize(mu_wires, nu_wires, swap_flag, edge_flag):
         mu_wires = math.array(mu_wires, like="jax")
         nu_wires = math.array(nu_wires, like="jax")
 
+    joint_flag = work_wires[0]
+    cswap_work = work_wires[1:2]
+
     @for_loop(n)
     def _loop(i):
         ctrl(
             SWAP(wires=[mu_wires[i], nu_wires[i]]),
-            control=[swap_flag, edge_flag],
-            control_values=[1, 0],
+            control=[joint_flag],
+            work_wires=cswap_work,
+            work_wire_type="zeroed",
         )
 
+    TemporaryAND([swap_flag, edge_flag, joint_flag], control_values=(1, 0))
     _loop()  # pylint: disable=no-value-for-parameter
+    adjoint(TemporaryAND([swap_flag, edge_flag, joint_flag], control_values=(1, 0)))
 
 
 class AliasSamplingTHC(Operator2):
@@ -572,7 +579,9 @@ def _alias_sampling_thc_resources(
         lqc: 1,
         adjoint(lqc): 1,
         CSWAP: 2 * n + 2,
-        ctrl(SWAP(wires=Wire[2]), control=Wire[2], control_values=[1, 0]): n,
+        TemporaryAND: 1,
+        adjoint(TemporaryAND(Wire[3])): 1,
+        ctrl(SWAP(wires=Wire[2]), control=Wire[1], work_wires=Wire[1], work_wire_type="zeroed"): n,
     }
     if apply_sign:
         resources[Z] = 1
