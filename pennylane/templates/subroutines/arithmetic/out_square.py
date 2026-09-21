@@ -21,7 +21,7 @@ from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.ops import CNOT, X, adjoint, ctrl
 from pennylane.typing import Bool, Wire
-from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
+from pennylane.wires import Wires, WiresLike, concatenate_wires, validate_no_wire_overlaps
 
 from ..multix import MultiX
 from .incrementer import Incrementer
@@ -449,7 +449,7 @@ def _out_square_with_caddsub(
     c_wire = work_wires[0]
     # Second work wire is used to augment the output wires because we compute
     # twice the desired output at first, and then divide by 2.
-    output_wires = output_wires + [work_wires[1]]
+    output_wires = concatenate_wires(output_wires, [work_wires[1]])
     work_wires = work_wires[2:]
     n = len(x_wires)
     m = len(output_wires)
@@ -462,7 +462,7 @@ def _out_square_with_caddsub(
         CNOT([x_wire, c_wire])
 
     # Corrections - no need for control wire any more
-    work_wires = [c_wire] + work_wires
+    work_wires = concatenate_wires([c_wire], work_wires)
 
     # Subtract 2^(2n)
     if len(output_wires) > 2 * n:

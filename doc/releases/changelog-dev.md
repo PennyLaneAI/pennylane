@@ -1459,6 +1459,7 @@
     [(#9897)](https://github.com/PennyLaneAI/pennylane/pull/9897)
     [(#9973)](https://github.com/PennyLaneAI/pennylane/pull/9973)
     [(#10152)](https://github.com/PennyLaneAI/pennylane/pull/10152)
+    [(#10167)](https://github.com/PennyLaneAI/pennylane/pull/10167)
   - The way that :class:`~.Wires` arguments in pytree leaves are read out of HDF5 was changed to be compatible with :class:`~.Operator2` in the data module.
     [(#10012)](https://github.com/PennyLaneAI/pennylane/pull/10012)
 
@@ -1754,6 +1755,11 @@
 * ``build_mmd_loss`` replaced with ``build_mmd_loss_pauli`` and now supports any expectation value function
   using Pauli-type observables.
   [(#10123)](https://github.com/PennyLaneAI/pennylane/pull/10123)
+
+* Config option added to qubit MMD loss that bootstraps target data by default to ensure
+  unbiasedness of the estimator
+  [(#10128)](https://github.com/PennyLaneAI/pennylane/pull/10128)
+
 
 <h3>Contributors ✍️</h3>
 

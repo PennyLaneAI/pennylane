@@ -41,7 +41,7 @@ from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_con
 from pennylane.ops.op_math.pow2 import make_pow_decomp_with_period as make_pow_decomp_with_period2
 from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
 from pennylane.typing import AbstractWires, Float, TensorLike, Wire
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import Wires, WiresLike, concatenate_wires
 
 INV_SQRT2 = 1 / qp.math.sqrt(2)
 
@@ -275,7 +275,7 @@ def _controlled_h_resources(base, control_wires, control_values, work_wires, wor
 @register_resources(_controlled_h_resources)
 # pylint: disable-next=unused-argument
 def _controlled_hadamard(base, control_wires, control_values, work_wires, work_wire_type):
-    wires = control_wires + base.wires
+    wires = concatenate_wires(control_wires, base.wires)
     if len(control_wires) == 1:
         qp.CH(wires)
         return
@@ -526,7 +526,7 @@ def _ctrl_x_resource(base, control_wires, control_values, work_wires, work_wire_
 @qp.register_resources(_ctrl_x_resource)
 def _ctrl_x_to_mcx(base, control_wires, control_values, work_wires, work_wire_type):
     qp.MultiControlledX(
-        wires=control_wires + base.wires,
+        concatenate_wires(control_wires, base.wires),
         control_values=control_values,
         work_wires=work_wires,
         work_wire_type=work_wire_type,
@@ -750,7 +750,7 @@ def _controlled_y_resource(base, control_wires, control_values, work_wires, work
 
 @register_resources(_controlled_y_resource)
 def _controlled_y_decomp(base, control_wires, control_values, work_wires, work_wire_type):
-    wires = control_wires + base.wires
+    wires = concatenate_wires(control_wires, base.wires)
 
     if len(control_wires) == 1:
         qp.CY(wires=wires)
@@ -1011,7 +1011,7 @@ def _controlled_z_resources(  # pylint: disable=unused-argument
 def _controlled_z_decomp(  # pylint: disable=unused-argument
     base, control_wires, control_values, work_wires, work_wire_type
 ):
-    wires = control_wires + base.wires
+    wires = concatenate_wires(control_wires, base.wires)
 
     if len(control_wires) == 1:
         qp.CZ(wires=wires)
@@ -1601,14 +1601,14 @@ def _controlled_swap_resources(base, control_wires, control_values, work_wires, 
 @register_resources(_controlled_swap_resources)
 # pylint: disable-next=unused-argument
 def _controlled_swap_decomp(base, control_wires, control_values, work_wires, work_wire_type):
-    wires = control_wires + base.wires
+    wires = concatenate_wires(control_wires, base.wires)
     if len(control_wires) == 1:
         qp.CSWAP(wires=wires)
         return
 
     qp.CNOT(wires=[wires[-2], wires[-1]])
     qp.MultiControlledX(
-        wires=wires[:-2] + [wires[-1], wires[-2]],
+        wires=concatenate_wires(wires[:-2], [wires[-1], wires[-2]]),
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )
