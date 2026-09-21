@@ -1626,6 +1626,7 @@
   the X spider. Previously the control was taken from whichever spider had the larger vertex ID,
   so a circuit-like graph whose Z spider was created before the X spider was converted to a CNOT
   with the control and target swapped.
+  [(#10179)](https://github.com/PennyLaneAI/pennylane/pull/10179)
 
 * :func:`~.allocate` with zero wires no longer queues or captures :class:`~.allocation.Allocate`
   and :class:`~.allocation.Deallocate` instructions, including when used as a context manager.
