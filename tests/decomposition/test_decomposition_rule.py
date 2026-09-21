@@ -660,6 +660,7 @@ class TestDecompDictionary:
                 "_controlled_rule",
                 "controlled(custom_rule)",
                 "controlled(custom_rule2)",
+                "ctrl_many_zeroed_work_wires",
                 "ctrl_single_work_wire",
                 "to_controlled_unitary",
             }
@@ -725,7 +726,8 @@ class TestDecompDictionary:
 
         with qp.decomposition.local_decomps():
             qp.add_decomps(DynOp, custom_rule)
-            op = ControlledOp2(DynOp(Float, Wire[1]), control_wires=Wire[2])
+            # Single control wire so general multi-control rules are not listed.
+            op = ControlledOp2(DynOp(Float, Wire[1]), control_wires=Wire[1])
             assert list(qp.list_decomps(op)) == []
 
 

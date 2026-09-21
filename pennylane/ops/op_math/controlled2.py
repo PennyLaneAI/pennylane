@@ -652,6 +652,8 @@ def _list_controlled_decomps(op: ControlledOp2) -> DecompCollection:
     general_rules = DecompCollection([])
     if op.base.has_matrix and len(op.base.wires) == 1:
         general_rules.append(to_controlled_unitary)
+    if len(op.control_wires) > 1:
+        general_rules.append(ctrl_many_zeroed_work_wires)
     if len(op.control_wires) > 2:
         general_rules.append(ctrl_single_work_wire)
 
@@ -867,6 +869,35 @@ def _ctrl_single_work_wire(base, control_wires, *_, **__):
 
 
 ctrl_single_work_wire = flip_zero_control(_ctrl_single_work_wire, name="ctrl_single_work_wire")
+
+
+def _ctrl_many_zeroed_work_wires_resource(base, control_wires, *_, **__):
+    num_control_wires = len(control_wires)
+    return {
+        qp.TemporaryAND: num_control_wires - 1,
+        qp.adjoint(abstractify(qp.TemporaryAND)): num_control_wires - 1,
+        _ctrl_abstract(base, Wire[1]): 1,
+    }
+
+
+@register_condition(
+    lambda control_wires, work_wires, work_wire_type, **_: len(control_wires) > 1
+    and len(work_wires) >= len(control_wires) - 1
+    and work_wire_type == "zeroed"
+)
+@register_resources(_ctrl_many_zeroed_work_wires_resource)
+def _ctrl_many_zeroed_work_wires(base, control_wires, work_wires, *_, **__):
+    # pylint: disable=import-outside-toplevel
+    from pennylane.ops.op_math.prod2 import _multi_temporary_and_all_ones
+
+    effective_control = _multi_temporary_and_all_ones(control_wires, work_wires)
+    qp.ctrl(base, control=effective_control)
+    qp.adjoint(_multi_temporary_and_all_ones)(control_wires, work_wires)
+
+
+ctrl_many_zeroed_work_wires = flip_zero_control(
+    _ctrl_many_zeroed_work_wires, name="ctrl_many_zeroed_work_wires"
+)
 
 
 def _ctrl_abstract(

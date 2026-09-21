@@ -364,7 +364,10 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     Full Expansion Gates: {CNOT: 36, GlobalPhase: 72, MidMeasure: 2, RX: 18, RY: 14, RZ: 60}
     Weighted Cost: 130.0
     <BLANKLINE>
-    Decomposition 1 (name: controlled(_multi_rz_decomposition))
+    Decomposition 1 (name: ctrl_many_zeroed_work_wires)
+    Not applicable (provided operator instance does not meet all conditions for this rule).
+    <BLANKLINE>
+    Decomposition 2 (name: controlled(_multi_rz_decomposition))
     0: ─╭X─╭RZ(0.50)─╭X─┤
     1: ─├●─│─────────├●─┤
     3: ─├●─├●────────├●─┤
@@ -488,7 +491,10 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
         Full Expansion Gates: {CNOT: 58, GlobalPhase: 117, MidMeasure: 2, RX: 25, RY: 26, RZ: 94}
         Weighted Cost: 205.0
         <BLANKLINE>
-        Decomposition 1 (name: controlled(_multi_rz_decomposition))
+        Decomposition 1 (name: ctrl_many_zeroed_work_wires)
+        Not applicable (provided operator instance does not meet all conditions for this rule).
+        <BLANKLINE>
+        Decomposition 2 (name: controlled(_multi_rz_decomposition))
         0: ─╭X─╭RZ(0.50)─╭X─┤
         1: ─├●─│─────────├●─┤
         3: ─├●─├●────────├●─┤
