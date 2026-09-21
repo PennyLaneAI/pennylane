@@ -45,7 +45,7 @@ def get_runtime_call_prim():
 
     # pylint: disable=unused-argument
     @runtime_call_prim.def_abstract_eval
-    def _(*args, signature, symbol, out_bytes, dispatch, library):
+    def _(*args, signature, symbol, out_bytes, dispatch, library, local_constants):
         return operands.result_avals(signature, out_bytes)
 
     return runtime_call_prim
@@ -64,7 +64,7 @@ def runtime_call(target, *args, signature=None, out_bytes=0, address=None, libra
     through the ordinary in-process C ABI.
 
     **Dispatched** (``address`` set):
-    A dispatched call is run by the Catalyst executor. The `dispatch-executor-targets` pass turns it
+    A dispatched call is run by the Catalyst executor. The `lower-runtime-dispatch` pass turns it
     into an ``executor.call``, which reaches ``__catalyst__executor__call_wrapper`` on the addressed
     machine. That calls the symbol through LLVM ORC's wrapper convention. You need to have a
     catalyst executor running on the addressed machine, which can be enabled from within a
@@ -72,8 +72,10 @@ def runtime_call(target, *args, signature=None, out_bytes=0, address=None, libra
 
     **Local** (``address`` is ``None``):
     A local call is run in the process running the compiled program. The symbol is resolved and
-    invoked through the ordinary C ABI. ``library`` is recorded on the compiled module so the driver
-    links the shared library that exports it.
+    invoked directly through its declared C ABI. Scalars are passed by value, ``ptr`` is a native
+    pointer, and ``str`` is ``const char *``. A ``buf`` or ``out`` uses compiler-internal
+    bufferization to obtain its data pointer. ``library`` is recorded on the compiled module so the
+    driver links the shared library that exports the symbol.
 
     Args:
         target (str, CSignature): the declared symbol name, or its complete signature
@@ -112,7 +114,13 @@ def runtime_call(target, *args, signature=None, out_bytes=0, address=None, libra
         qp.runtime_declare("example_call_collect", "(ptr, out, u64) -> i32")
 
         def collect(session):
-            status, reply = qp.runtime_call("example_call_collect", session, 64, out_bytes=64)
+            status, reply = qp.runtime_call(
+                "example_call_collect",
+                session,
+                64,
+                out_bytes=64,
+                address="board:9000",
+            )
             return reply
 
     For example, the above call to this symbol declared ``(ptr, out, u64) -> i32``:
@@ -135,7 +143,11 @@ def runtime_call(target, *args, signature=None, out_bytes=0, address=None, libra
 
         def collect_both(session):
             status, first, second = qp.runtime_call(
-                "example_call_two_regions", session, 96, out_bytes=(32, 64)
+                "example_call_two_regions",
+                session,
+                96,
+                out_bytes=(32, 64),
+                address="board:9000",
             )
             return first, second
 
@@ -151,12 +163,15 @@ def runtime_call(target, *args, signature=None, out_bytes=0, address=None, libra
 def _record(signature: CSignature, args, sizes, address, library):
     """Record a call on a declared symbol, dispatched to an executor or invoked in-process.
 
-    A dispatched call (``address`` set) becomes an ``executor.call``, which flattens the arguments
-    into one buffer and invokes the symbol through LLVM ORC's wrapper convention.
+    Either dispatching to an executor (``address`` set) or
+    invoking in-process (``address`` is ``None``), the call becomes one ``catalyst.runtime_call``
+    carrying the symbol and its C signature.
 
-    A local call (``address`` is ``None``) becomes an ordinary ``catalyst.custom_call``, which
-    passes each argument as a descriptor pointer (the in-process C ABI) and reaches the symbol
-    resolved at load time.
+    For a local call, it further lowers to a direct ``llvm.call`` using scalar and pointer C ABI
+    types, with buffered arguments reduced to their data pointers.
+
+    For remote calls, it becomes an ``executor.call``, which flattens the arguments into one buffer
+    and invokes the symbol through LLVM ORC's wrapper convention.
     """
     if not _tracing():
         raise RuntimeError(
@@ -167,13 +182,18 @@ def _record(signature: CSignature, args, sizes, address, library):
         raise TypeError(
             f"{signature.symbol}{signature} returns nothing, a dispatched call to it has no result."
         )
+    call_operands, local_constants = operands.operands_for(
+        signature, args, dispatched=address is not None
+    )
+
     results = get_runtime_call_prim().bind(
-        *operands.operands_for(signature, args, local=address is None),
+        *call_operands,
         signature=signature,
         symbol=signature.symbol,
         out_bytes=sizes,
         dispatch=address,
         library=library,
+        local_constants=local_constants,
     )
     value = None if signature.result is CType.VOID else results[0][0]
     buffers = results[0 if signature.result is CType.VOID else 1 :]

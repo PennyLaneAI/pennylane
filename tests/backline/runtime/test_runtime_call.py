@@ -114,7 +114,9 @@ class TestDeclare:
 
     def test_declare_records_the_library(self):
         """A local symbol's backing library is carried on its signature."""
-        signature = qp.runtime_declare("xor_reduce", "(buf, u64) -> i32", library="/opt/libx.so")
+        signature = qp.runtime_declare(
+            "xor_reduce", "(buf, u64) -> i32", library="/opt/libx.so"
+        )
         assert signature.library == "/opt/libx.so"
 
     def test_declare_without_a_library(self):
@@ -125,7 +127,9 @@ class TestDeclare:
         """Two declarations putting the same symbol in different libraries disagree."""
         qp.runtime_declare("clashing_library", "(buf, u64) -> i32", library="/opt/a.so")
         with pytest.raises(ValueError, match="already declared"):
-            qp.runtime_declare("clashing_library", "(buf, u64) -> i32", library="/opt/b.so")
+            qp.runtime_declare(
+                "clashing_library", "(buf, u64) -> i32", library="/opt/b.so"
+            )
 
     def test_conflicting_signatures_are_refused(self):
         """Two call sites disagreeing on an ABI is a bug, so it is refused."""
@@ -144,45 +148,45 @@ class TestRecordedCalls:
     """Recording a dispatched call, and the operands it becomes."""
 
     @pytest.mark.usefixtures("x64")
-    def test_one_operand_per_parameter(self):
-        """Each argument becomes its own operand, shaped the way the callee reads it."""
+    def test_one_operand_per_dynamic_parameter(self):
+        """Each dynamic argument becomes its own operand."""
         signature = CSignature.parse("connect", "(ptr, str, u16) -> i32")
-        built = operands.operands_for(signature, (0x7FAB1234, "10.0.0.1", 18560))
+        dynamic, strings = operands.operands_for(
+            signature, (0x7FAB1234, "10.0.0.1", 18560), dispatched=True
+        )
 
-        assert [tuple(o.shape) for o in built] == [(1,), (operands.STR_OPERAND_BYTES,), (1,)]
-        assert [str(o.dtype) for o in built] == ["uint64", "uint8", "uint16"]
-        assert int(built[0][0]) == 0x7FAB1234
+        assert [tuple(o.shape) for o in dynamic] == [(1,), (1,)]
+        assert [str(o.dtype) for o in dynamic] == ["uint64", "uint16"]
+        assert int(dynamic[0][0]) == 0x7FAB1234
+        assert strings == (b"10.0.0.1\x00",)
 
     @pytest.mark.usefixtures("x64")
-    def test_a_string_is_padded_to_a_fixed_field(self):
-        """A str is padded to a fixed width, so a flat buffer needs no framing to delimit it."""
-        signature = CSignature.parse("connect", "(ptr, str, u16) -> i32")
-        built = operands.operands_for(signature, (0, "10.0.0.1", 0))
-        field = bytes(np.asarray(built[1]))
-
-        assert len(field) == operands.STR_OPERAND_BYTES
-        assert field.startswith(b"10.0.0.1\x00")
-        assert field == b"10.0.0.1".ljust(operands.STR_OPERAND_BYTES, b"\x00")
-
-    @pytest.mark.usefixtures("x64")
-    def test_a_string_that_does_not_fit_is_refused(self):
-        """A fixed field means there is a limit, and it is said rather than truncated."""
+    def test_a_string_that_does_not_fit_its_field_is_refused(self):
+        """The compiler pads a dispatched str into a fixed field."""
         signature = CSignature.parse("connect", "(ptr, str, u16) -> i32")
         with pytest.raises(ValueError, match="does not fit"):
-            operands.operands_for(signature, (0, "x" * operands.STR_OPERAND_BYTES, 0))
+            operands.operands_for(
+                signature,
+                (0, "x" * operands.STR_OPERAND_BYTES, 0),
+                dispatched=True,
+            )
 
     @pytest.mark.usefixtures("x64")
     def test_a_buffer_cannot_be_dispatched(self):
-        """A buf's length is not implied by its type, so it cannot cross in a flat buffer."""
+        """A buf cannot be passed to a dispatched call."""
         signature = CSignature.parse("write_bytes", "(ptr, buf, u64) -> i32")
         with pytest.raises(TypeError, match="cannot be read out of the flat buffer"):
-            operands.operands_for(signature, (0, np.arange(4, dtype=np.uint8), 4))
+            operands.operands_for(
+                signature, (0, np.arange(4, dtype=np.uint8), 4), dispatched=True
+            )
 
     @pytest.mark.usefixtures("x64")
     def test_an_out_buffer_comes_back_as_a_result(self):
         """A buffer the callee fills is returned, so it is never an operand."""
         signature = CSignature.parse("read_bytes", "(ptr, out, u64) -> i32")
-        assert len(operands.operands_for(signature, (1, 4))) == 2
+        dynamic, strings = operands.operands_for(signature, (1, 4), dispatched=True)
+        assert len(dynamic) == 2
+        assert strings == ()
 
         avals = operands.result_avals(signature, 4)
         assert [tuple(a.shape) for a in avals] == [(1,), (4,)]
@@ -193,7 +197,7 @@ class TestRecordedCalls:
         signature = CSignature.parse("connect", "(ptr, str, u16) -> i32")
 
         def program(peer):
-            return operands.operands_for(signature, (0, peer, 1))
+            return operands.operands_for(signature, (0, peer, 1), dispatched=True)
 
         with pytest.raises(TypeError, match="has to be a Python string"):
             x64.make_jaxpr(program)(np.uint8(3))
@@ -204,7 +208,7 @@ class TestRecordedCalls:
         signature = CSignature.parse("some_symbol", "(ptr, u32) -> i32")
         with jax.experimental.disable_x64():
             with pytest.raises(TypeError, match="jax_enable_x64 is off"):
-                operands.operands_for(signature, (0x7FAB1234, 0))
+                operands.operands_for(signature, (0x7FAB1234, 0), dispatched=True)
 
     def test_a_dispatched_call_records_its_symbol_and_address(self, x64):
         """The recorded call names the C symbol itself, and where to run it."""
@@ -274,50 +278,44 @@ class TestRecordedCalls:
 
 @pytest.mark.all_interfaces
 class TestLocalCalls:
-    """A call with no address, invoked in-process instead of dispatched to an executor."""
+    """A call with no address, invoked directly through the native C ABI."""
 
     @pytest.mark.usefixtures("x64")
-    def test_a_local_call_can_pass_a_buffer(self):
-        """A buf is refused for a dispatched call but fine locally: it crosses as its own pointer."""
+    def test_scalars_are_dynamic_and_strings_are_static(self):
+        """Scalars and strings are treated differently."""
+        signature = CSignature.parse("connect", "(ptr, str, u16) -> i32")
+        dynamic, constants = operands.operands_for(
+            signature, (0x1234, "host", 9000)
+        )
+
+        assert [tuple(value.shape) for value in dynamic] == [(1,), (1,)]
+        assert [str(value.dtype) for value in dynamic] == ["uint64", "uint16"]
+        assert constants == (b"host\x00",)
+
+    @pytest.mark.usefixtures("x64")
+    def test_a_local_buf_is_preserved_for_pointer_extraction(self):
+        """A JAX buffer remains an array until lowering can pass its data pointer."""
         signature = CSignature.parse("sum_bytes", "(buf, u64) -> i32")
-        built = operands.operands_for(signature, (np.arange(4, dtype=np.uint8), 4), local=True)
-        assert len(built) == 2
-        assert tuple(np.asarray(built[0]).shape) == (4,)
+        dynamic, constants = operands.operands_for(
+            signature, (np.arange(4, dtype=np.uint8), 4)
+        )
+        assert constants == ()
+        assert [tuple(value.shape) for value in dynamic] == [(4,), (1,)]
 
     @pytest.mark.usefixtures("x64")
-    def test_a_64_bit_buffer_keeps_its_width(self):
-        """The buffer's width is preserved."""
-        signature = CSignature.parse("sum_doubles", "(buf, u32) -> i32")
-        built = operands.operands_for(signature, (np.arange(4, dtype=np.float64), 32), local=True)
-        buffer = built[0]
-
-        assert buffer.dtype == np.float64
-        assert buffer.size * buffer.dtype.itemsize == 32
-
-    @pytest.mark.parametrize("array", [np.arange(4, dtype=np.uint64), [1.0, 2.0, 3.0]])
-    def test_a_64_bit_buffer_needs_x64(self, array):
-        """64-bit buffers are refused if JAX would narrow them to 32 bits."""
-        jax = pytest.importorskip("jax")
-        signature = CSignature.parse("sum_bytes_only", "(buf, u32) -> i32")
-        with jax.experimental.disable_x64():
-            with pytest.raises(TypeError, match="is a buf of .*narrowed to 32 bits"):
-                operands.operands_for(signature, (array, 32), local=True)
-
-    @pytest.mark.parametrize("dtype", [np.uint8, np.uint32, np.float32])
-    def test_a_narrow_buffer_is_unaffected(self, dtype):
-        """32-bit buffers are accepted if JAX would narrow them to 32 bits."""
-        jax = pytest.importorskip("jax")
-        signature = CSignature.parse("sum_narrow", "(buf, u32) -> i32")
-        with jax.experimental.disable_x64():
-            built = operands.operands_for(signature, (np.arange(4, dtype=dtype), 4), local=True)
-
-        assert built[0].dtype == dtype
+    def test_a_local_out_is_not_a_caller_operand(self):
+        """The compiler allocates an out buffer and passes its pointer in signature order."""
+        signature = CSignature.parse("read_bytes", "(out, u64) -> i32")
+        dynamic, constants = operands.operands_for(signature, (4,))
+        assert constants == ()
+        assert len(dynamic) == 1
+        assert tuple(dynamic[0].shape) == (1,)
 
     def test_a_local_call_is_not_dispatched(self, x64):
         """With no address the recorded call carries dispatch=None and the declared library."""
-        qp.runtime_declare("local_xor", "(buf, u64) -> i32", library="/opt/libx.so")
-        jaxpr = x64.make_jaxpr(lambda d: qp.runtime_call("local_xor", d, 4))(
-            np.arange(4, dtype=np.uint8)
+        qp.runtime_declare("local_xor", "(ptr, u64) -> i32", library="/opt/libx.so")
+        jaxpr = x64.make_jaxpr(lambda p: qp.runtime_call("local_xor", p, 4))(
+            np.uint64(0)
         )
         calls = [eqn for eqn in jaxpr.eqns if str(eqn.primitive) == "runtime_call"]
         assert len(calls) == 1
@@ -326,10 +324,10 @@ class TestLocalCalls:
 
     def test_the_call_site_library_wins(self, x64):
         """library= at the call site overrides the one set at declare time."""
-        qp.runtime_declare("local_override", "(buf, u64) -> i32", library="/opt/declared.so")
+        qp.runtime_declare("local_override", "(ptr, u64) -> i32", library="/opt/declared.so")
         jaxpr = x64.make_jaxpr(
-            lambda d: qp.runtime_call("local_override", d, 4, library="/opt/called.so")
-        )(np.arange(4, dtype=np.uint8))
+            lambda p: qp.runtime_call("local_override", p, 4, library="/opt/called.so")
+        )(np.uint64(0))
         calls = [eqn for eqn in jaxpr.eqns if str(eqn.primitive) == "runtime_call"]
         assert calls[0].params["library"] == "/opt/called.so"
 

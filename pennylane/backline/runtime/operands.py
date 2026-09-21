@@ -14,16 +14,12 @@
 
 """How a recorded :func:`~.runtime_call`'s arguments reach the entry point.
 
-Each C parameter becomes one array operand, in declaration order, and the compiler passes it as a
-pointer to its data:
-
-* a scalar is a one-element array of its own type
-* a ``str`` is its NUL-terminated bytes, padded to ``STR_OPERAND_BYTES``
-* a ``buf`` is the whole array, and only works for a local call
-* an ``out`` buffer is not an operand at all - the compiler allocates it and it comes back as a
-  result
-
-A call returns the declared result first, then one buffer per ``out`` parameter.
+Local and dispatched calls are recorded the same way: scalar operands stay scalar, ``str``
+becomes a compile-time constant rather than an operand, and a ``buf`` or ``out`` stays an array.
+The compiler decides what that means. Locally, ``ptr`` is lowered to ``!llvm.ptr`` and a
+``buf``/``out`` is bufferized only so its data pointer can be passed, so the external function
+receives plain C arguments rather than a memref descriptor or wrapper ABI. For a dispatched call
+the compiler marshals the same operands into the executor's flat transport buffer.
 """
 
 from __future__ import annotations
@@ -34,8 +30,9 @@ from .signature import CType
 
 SCALAR_SHAPE = (1,)
 
-# Fixed-width NUL-padded field for a ``str`` argument. Must match
-# CATALYST_TRANSPORT_STR_BYTES in runtime/include/TransportABI.h.
+# Width of the fixed NUL-padded field a dispatched ``str`` argument travels in. The compiler
+# does the padding; this is here to reject an oversized string while the program is still being
+# traced. Must match CATALYST_TRANSPORT_STR_BYTES in runtime/include/TransportABI.h.
 STR_OPERAND_BYTES = 256
 
 
@@ -101,21 +98,24 @@ def _is_tracer(value) -> bool:
     return isinstance(value, jax.core.Tracer)
 
 
-def text_bytes(ctype: CType, value, symbol: str, position: int) -> bytes:
-    """The bytes of a ``str`` argument, NUL-padded to ``STR_OPERAND_BYTES``.
+def c_string_bytes(
+    ctype: CType, value, symbol: str, position: int, *, max_bytes: int | None = None
+) -> bytes:
+    """Encode one compile-time ``str`` argument as NUL-terminated bytes.
 
     Args:
-        ctype (CType): the parameter type, used only for the error message
+        ctype (CType): the parameter type, used only for error messages
         value (str | bytes): the string
-        symbol (str): the entry point being called, for the error message
-        position (int): the argument's position, for the error message
+        symbol (str): the entry point being called, for error messages
+        position (int): the argument's position, for error messages
+        max_bytes (int | None): maximum width of the fixed field the string passes through
 
     Returns:
-        bytes: ``STR_OPERAND_BYTES`` bytes, the string followed by NULs
+        bytes: the string followed by a single NUL terminator
 
     Raises:
         TypeError: if the value is not known yet, or is not a string
-        ValueError: if the string does not fit its field
+        ValueError: if the string is not valid UTF-8, contains a NUL, or does not fit its field
     """
     if _is_tracer(value):
         raise TypeError(
@@ -126,15 +126,24 @@ def text_bytes(ctype: CType, value, symbol: str, position: int) -> bytes:
         raw = value.encode()
     elif isinstance(value, (bytes, bytearray)):
         raw = bytes(value)
+        try:
+            raw.decode()
+        except UnicodeDecodeError as exc:
+            raise ValueError(
+                f"{symbol}: argument {position} contains bytes that are not valid UTF-8"
+            ) from exc
     else:
-        raise TypeError(f"{symbol}: argument {position} is a {ctype}, got {type(value).__name__}")
-
-    if len(raw) >= STR_OPERAND_BYTES:
+        raise TypeError(
+            f"{symbol}: argument {position} is a {ctype}, got {type(value).__name__}"
+        )
+    if b"\x00" in raw:
+        raise ValueError(f"{symbol}: argument {position} contains an embedded NUL byte")
+    if max_bytes is not None and len(raw) >= max_bytes:
         raise ValueError(
             f"{symbol}: argument {position} is {len(raw)} bytes, which does not fit a {ctype}'s "
-            f"{STR_OPERAND_BYTES}-byte field (one byte goes to the NUL terminator)"
+            f"{max_bytes}-byte field (one byte goes to the NUL terminator)"
         )
-    return raw.ljust(STR_OPERAND_BYTES, b"\x00")
+    return raw + b"\x00"
 
 
 def operand_for(ctype: CType, value, symbol: str, position: int):
@@ -152,8 +161,6 @@ def operand_for(ctype: CType, value, symbol: str, position: int):
     # pylint: disable=import-outside-toplevel
     import jax.numpy as jnp
 
-    if ctype is CType.STR:
-        return jnp.frombuffer(text_bytes(ctype, value, symbol, position), dtype=jnp.uint8)
     if ctype is CType.BUF:
         # Local calls only; `operands_for` rejects buf for a dispatched call.
         check_buffer_width(value, symbol, position)
@@ -164,35 +171,48 @@ def operand_for(ctype: CType, value, symbol: str, position: int):
     return jnp.asarray(value, dtype=ctype.dtype).reshape(SCALAR_SHAPE)
 
 
-def operands_for(signature, args, *, local: bool = False) -> list:
+def operands_for(
+    signature, args, *, dispatched: bool = False
+) -> tuple[list, tuple[bytes, ...]]:
     """Build every operand a recorded call passes.
 
     Args:
         signature (CSignature): the signature being called
         args (Sequence): the caller's arguments, ``out`` buffers excluded
-        local (bool): whether the call is local (in-process). Only a local call may pass a
-            ``buf``.
+        dispatched (bool): whether the call is addressed to an executor
 
     Returns:
-        list: one array per operand, in the order the entry point takes them
+        tuple: the dynamic operands
 
     Raises:
-        TypeError: if an argument's size does not follow from its type
+        TypeError: if an argument cannot be passed the way its type requires
+        ValueError: if a compile-time string is not usable
     """
     signature.check_arity(args)
-    if not local:
-        for i, ctype in enumerate(signature.caller_params):
-            if ctype is CType.BUF:
-                raise TypeError(
-                    f"{signature.symbol}: argument {i} is a {ctype}, whose length is not implied by "
-                    f"its type, so it cannot be read out of the flat buffer a dispatched call "
-                    f"arrives in. Declare the data as a fixed-width argument, or call the symbol "
-                    f"locally (no address=)."
+
+    dynamic = []
+    strings = []
+    for position, (ctype, value) in enumerate(
+        zip(signature.caller_params, args, strict=True)
+    ):
+        if ctype is CType.BUF and dispatched:
+            raise TypeError(
+                f"{signature.symbol}: argument {position} is a {ctype}, which cannot be read "
+                f"out of the flat buffer"
+            )
+        if ctype is CType.STR:
+            strings.append(
+                c_string_bytes(
+                    ctype,
+                    value,
+                    signature.symbol,
+                    position,
+                    max_bytes=STR_OPERAND_BYTES if dispatched else None,
                 )
-    return [
-        operand_for(ctype, value, signature.symbol, i)
-        for i, (ctype, value) in enumerate(zip(signature.caller_params, args, strict=True))
-    ]
+            )
+        else:
+            dynamic.append(operand_for(ctype, value, signature.symbol, position))
+    return dynamic, tuple(strings)
 
 
 def out_sizes(signature, out_bytes) -> tuple[int, ...]:
