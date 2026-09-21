@@ -1031,6 +1031,32 @@ add_decomps("Adjoint(CNOT)", self_adjoint)
 add_decomps("Pow(CNOT)", pow_involutory2)
 
 
+def _ctrl_cnot_resource(base, control_wires, control_values, work_wires, work_wire_type):
+    ctrl_values = _resolve_ctrl_values(control_values, [True], len(control_wires))
+    return {
+        qp.MultiControlledX(
+            Wire[len(control_wires) + 2],
+            control_values=ctrl_values,
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
+        ): 1
+    }
+
+
+@qp.register_resources(_ctrl_cnot_resource)
+def _ctrl_cnot_to_mcx(base, control_wires, control_values, work_wires, work_wire_type):
+    ctrl_values = _resolve_ctrl_values(control_values, [True], len(control_wires))
+    qp.MultiControlledX(
+        control_wires + base.wires,
+        control_values=ctrl_values,
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
+    )
+
+
+add_decomps("C(CNOT)", _ctrl_cnot_to_mcx)
+
+
 class Toffoli(Controlled2):
     r"""Toffoli(wires)
     Toffoli (controlled-controlled-X) gate.
@@ -1224,6 +1250,32 @@ add_decomps("Adjoint(Toffoli)", self_adjoint)
 add_decomps("Pow(Toffoli)", pow_involutory2)
 
 
+def _ctrl_toffoli_resource(base, control_wires, control_values, work_wires, work_wire_type):
+    ctrl_values = _resolve_ctrl_values(control_values, [True, True], len(control_wires))
+    return {
+        qp.MultiControlledX(
+            Wire[len(control_wires) + 3],
+            control_values=ctrl_values,
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
+        ): 1
+    }
+
+
+@qp.register_resources(_ctrl_toffoli_resource)
+def _ctrl_toffoli_to_mcx(base, control_wires, control_values, work_wires, work_wire_type):
+    ctrl_values = _resolve_ctrl_values(control_values, [True, True], len(control_wires))
+    qp.MultiControlledX(
+        control_wires + base.wires,
+        control_values=ctrl_values,
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
+    )
+
+
+add_decomps("C(Toffoli)", _ctrl_toffoli_to_mcx)
+
+
 class MultiControlledX(Controlled2):
     r"""Apply a :class:`~.PauliX` gate controlled on an arbitrary computational basis state.
 
@@ -1365,6 +1417,20 @@ class MultiControlledX(Controlled2):
         return _to_op_list(decompose_mcx_with_no_worker)(**arguments)
 
 
+@custom_ctrl_dispatch.register
+def _ctrl_mcx(base: MultiControlledX, control, control_values, work_wires, work_wire_type):
+    ctrl_values = _resolve_ctrl_values(control_values, base.control_values, len(control))
+    work_wire_type = resolve_work_wire_type(
+        base.work_wires,
+        base.work_wire_type,
+        work_wires,
+        work_wire_type,
+    )
+    wires = control + base.wires
+    work_wires = work_wires + base.work_wires
+    return qp.MultiControlledX(wires, ctrl_values, work_wires, work_wire_type)
+
+
 def _setup_inputs_mcx(
     wires: WiresLike,
     control_values: int | bool | Sequence[int | bool] | None = None,
@@ -1460,8 +1526,61 @@ def _list_mcx_no_work_wire_decomps(op: MultiControlledX):
     ] + capture_compatible_rules
 
 
+add_decomps(
+    "MultiControlledX",
+    mcx_to_cnot_or_toffoli,
+    decompose_mcx_two_controls_elbows,
+    decompose_mcx_many_workers,
+    decompose_mcx_two_workers,
+    decompose_mcx_one_worker,
+    decompose_mcx_with_no_worker,
+    _wrap_mcx_rule_w_alloc(decompose_mcx_two_controls_elbows, 1, "zeroed"),
+    _wrap_mcx_rule_w_alloc(decompose_mcx_two_workers, 2, "zeroed", "two_zeroed_workers"),
+    _wrap_mcx_rule_w_alloc(decompose_mcx_two_workers, 2, "borrowed", "two_borrowed_workers"),
+    _wrap_mcx_rule_w_alloc(decompose_mcx_one_worker, 1, "zeroed", "one_zeroed_worker"),
+    _wrap_mcx_rule_w_alloc(decompose_mcx_one_worker, 1, "borrowed", "one_borrowed_worker"),
+    # TODO: include the allocation-wrapped versions of decompose_mcx_many_workers
+    # after we support tracer indexing into allocated wires. [sc-129521]
+)
 add_decomps("Adjoint(MultiControlledX)", self_adjoint)
 add_decomps("Pow(MultiControlledX)", pow_involutory2)
+
+
+def _ctrl_mcx_resource(base, control_wires, control_values, work_wires, work_wire_type):
+    work_wire_type = resolve_work_wire_type(
+        base.work_wires,
+        base.work_wire_type,
+        work_wires,
+        work_wire_type,
+    )
+    return {
+        qp.MultiControlledX(
+            control_wires + base.wires,
+            control_values=Bool[len(control_values) + len(base.control_values)],
+            work_wires=work_wires + base.work_wires,
+            work_wire_type=work_wire_type,
+        ): 1
+    }
+
+
+@qp.register_resources(_ctrl_mcx_resource)
+def _ctrl_mcx_to_mcx(base, control_wires, control_values, work_wires, work_wire_type):
+    n_ctrl_wires = len(control_wires)
+    work_wire_type = resolve_work_wire_type(
+        base.work_wires,
+        base.work_wire_type,
+        work_wires,
+        work_wire_type,
+    )
+    qp.MultiControlledX(
+        control_wires + base.wires,
+        control_values=_resolve_ctrl_values(control_values, base.control_values, n_ctrl_wires),
+        work_wires=work_wires + base.work_wires,
+        work_wire_type=work_wire_type,
+    )
+
+
+add_decomps("C(MultiControlledX)", _ctrl_mcx_to_mcx)
 
 
 class CRX(Controlled2):

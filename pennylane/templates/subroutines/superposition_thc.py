@@ -16,17 +16,28 @@ hypercontraction (THC) qubitization."""
 
 import numpy as np
 
-from pennylane import adjoint, ctrl, math
-from pennylane.core.operator import Operation
+from pennylane import math
+from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.ops import RY, BasisState, GlobalPhase, Hadamard, MultiControlledX, X, Z
-from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
-from pennylane.templates import LeftClassicalComparator, LeftQuantumComparator
+from pennylane.ops import (
+    RY,
+    BasisState,
+    GlobalPhase,
+    Hadamard,
+    MultiControlledX,
+    X,
+    Z,
+    adjoint,
+    ctrl,
+)
 from pennylane.typing import Bool, Wire
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
+
+from .arithmetic.left_classical_comparator import LeftClassicalComparator
+from .arithmetic.left_quantum_comparator import LeftQuantumComparator
 
 
-class SuperpositionTHC(Operation):
+class SuperpositionTHC(Operator2):
     r"""Prepare the uniform superposition over the valid :math:`(\mu, \nu)` index
     pairs of the tensor hypercontraction (THC) representation.
 
@@ -98,8 +109,8 @@ class SuperpositionTHC(Operation):
 
     .. code-block:: python
 
+        import numpy as np
         import pennylane as qp
-        from pennylane.labs.templates import SuperpositionTHC
 
         n = 3
         M, N = 5, 2
@@ -112,29 +123,31 @@ class SuperpositionTHC(Operation):
 
         @qp.qnode(dev)
         def circuit():
-            SuperpositionTHC(M, N, mu_wires, nu_wires, work_wires)
+            qp.SuperpositionTHC(M, N, mu_wires, nu_wires, work_wires)
             return qp.probs(mu_wires + nu_wires + [success_flag])
 
     The valid pairs are exactly those flagged in the success subspace, and each
     carries equal weight :math:`1 / d` with :math:`d = N/2 + M(M+1)/2`.
 
-    .. code-block:: pycon
-
-        >>> probs = circuit().reshape(2**n, 2**n, 2)
-        >>> valid = np.where(probs > 1e-9)
-        >>> valid_mu_nu = [tuple(map(int, arr)) for arr in zip(*valid[:2])]
-        >>> valid_mu_nu
-        [(0, 0), (0, 1), (0, 2), (0, 3), (0, 4), (0, 5), (1, 1), (1, 2), (1, 3), (1, 4), (2, 2), (2, 3), (2, 4), (3, 3), (3, 4), (4, 4)]
-        >>> d = N // 2 + M * (M + 1) // 2
-        >>> len(valid_mu_nu) == d
-        True
-        >>> np.allclose(probs[valid], 1/d)
-        True
+    >>> probs = circuit().reshape(2**n, 2**n, 2)
+    >>> valid = np.where(probs > 1e-9)
+    >>> valid_mu_nu = [tuple(map(int, arr)) for arr in zip(*valid[:2])]
+    >>> valid_mu_nu
+    [(0, 0), (0, 1), (0, 2), (0, 3), (0, 4), (0, 5), (1, 1), (1, 2), (1, 3), (1, 4), (2, 2), (2, 3), (2, 4), (3, 3), (3, 4), (4, 4)]
+    >>> d = N // 2 + M * (M + 1) // 2
+    >>> len(valid_mu_nu) == d
+    True
+    >>> np.allclose(probs[valid], 1/d)
+    True
     """
 
-    grad_method = None
-
-    resource_keys = {"num_mu_wires", "num_work_wires", "M", "N"}
+    wire_argnames = ("mu_wires", "nu_wires", "work_wires")
+    compilable_argnames = ("M", "N")
+    arg_specs = {
+        "mu_wires": Wire[-1],
+        "nu_wires": Wire[-1],
+        "work_wires": Wire[-1],
+    }
 
     def __init__(
         self,
@@ -161,15 +174,9 @@ class SuperpositionTHC(Operation):
                 f"provided, but only {len(work_wires)} were given."
             )
 
-        for name, register in (("mu_wires", mu_wires), ("nu_wires", nu_wires)):
-            overlap = work_wires.intersection(register)
-            if overlap:
-                raise ValueError(
-                    f"work_wires and {name} must be disjoint, but share: {list(overlap)}."
-                )
-        overlap = mu_wires.intersection(nu_wires)
-        if overlap:
-            raise ValueError(f"mu_wires and nu_wires must be disjoint, but share: {list(overlap)}.")
+        validate_no_wire_overlaps(
+            {"mu_wires": mu_wires, "nu_wires": nu_wires, "work_wires": work_wires}
+        )
 
         if N // 2 > M + 1:
             raise ValueError("M must be greater than or equal to N//2 - 1.")
@@ -184,77 +191,12 @@ class SuperpositionTHC(Operation):
                 f"Provide at least {math.ceil_log2(M + 1)} wires per index register."
             )
 
-        self.hyperparameters["M"] = M
-        self.hyperparameters["N"] = N
-        self.hyperparameters["mu_wires"] = mu_wires
-        self.hyperparameters["nu_wires"] = nu_wires
-        self.hyperparameters["work_wires"] = work_wires
-
-        all_wires = mu_wires + nu_wires + work_wires
-        super().__init__(wires=all_wires)
+        super().__init__(M, N, mu_wires, nu_wires, work_wires)
 
     @property
-    def resource_params(self) -> dict:
-        return {
-            "num_mu_wires": len(self.hyperparameters["mu_wires"]),
-            "num_work_wires": len(self.hyperparameters["work_wires"]),
-            "M": self.hyperparameters["M"],
-            "N": self.hyperparameters["N"],
-        }
-
-    def _flatten(self):
-        metadata = tuple((key, value) for key, value in self.hyperparameters.items())
-        return tuple(), metadata
-
-    @classmethod
-    def _unflatten(cls, data, metadata):
-        hyperparams_dict = dict(metadata)
-        return cls(**hyperparams_dict)
-
-    def map_wires(self, wire_map: dict) -> "SuperpositionTHC":
-        new_dict = {
-            key: [wire_map.get(w, w) for w in self.hyperparameters[key]]
-            for key in ["mu_wires", "nu_wires", "work_wires"]
-        }
-
-        return SuperpositionTHC(
-            **new_dict, M=self.hyperparameters["M"], N=self.hyperparameters["N"]
-        )
-
-    def decomposition(self):
-        r"""Representation of the operator as a product of other operators."""
-        return self.compute_decomposition(**self.hyperparameters)
-
-    @classmethod
-    def _primitive_bind_call(cls, *args, **kwargs):
-        return cls._primitive.bind(*args, **kwargs)
-
-    @staticmethod
-    def compute_decomposition(
-        M, N, mu_wires, nu_wires, work_wires
-    ):  # pylint: disable=arguments-differ, too-many-arguments
-        r"""Representation of the operator as a product of other operators.
-
-        Args:
-            M (int): The THC rank.
-            N (int): The number of spin orbitals.
-            mu_wires (WiresLike): The wires that store the first THC index :math:`\mu`.
-            nu_wires (WiresLike): The wires that store the second THC index :math:`\nu`.
-            work_wires (WiresLike): The auxiliary wires. At least
-                :math:`3\,\text{len(mu\_wires)} + 5` zeroed work wires should be provided.
-
-        Returns:
-            list[.Operator]: Decomposition of the operator
-        """
-
-        with AnnotatedQueue() as q:
-            _superposition_thc(M, N, mu_wires, nu_wires, work_wires)
-
-        if QueuingManager.recording():
-            for o in q.queue:
-                apply(o)
-
-        return q.queue
+    def wires(self):
+        """All wires involved in the operation."""
+        return self.mu_wires + self.nu_wires + self.work_wires
 
 
 def _left_inequalities(
@@ -351,10 +293,12 @@ def _controlled_x(num_control_wires, num_work_wires, control_values=None):
     )
 
 
-def _superposition_thc_resources(num_mu_wires, num_work_wires, M, N):
+def _superposition_thc_resources(M, N, mu_wires, nu_wires, work_wires):
+    # pylint: disable=unused-argument
     r"""Returns the exact gate counts of the SuperpositionTHC decomposition."""
 
-    n = num_mu_wires
+    n = len(mu_wires)
+    num_work_wires = len(work_wires)
 
     # Number of borrowed work wires available to each gate: the Controlled gates use
     # extra_work = work_wires[4n+6:], and the MCX in _left_inequalities uses work_wires[3n+6:4n+6].
@@ -434,8 +378,10 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     ctrl(Z(work_wires[5]), control=work_wires[0:3], work_wires=extra_work)
     ctrl(X(work_wires[5]), control=work_wires[3:5], work_wires=extra_work)
 
-    # 4. Uncompute the flags and the amplitude-marking rotation.
-    adjoint(_left_inequalities)(M, N, mu_wires, nu_wires, work_wires)
+    # 4. Uncompute the flags and the amplitude-marking rotation. The closure keeps ``M``
+    # and ``N`` concrete; passing them as traced arguments breaks the comparators, whose
+    # classical operands must be compile-time constants.
+    adjoint(lambda: _left_inequalities(M, N, mu_wires, nu_wires, work_wires))()
     RY(-angle, wires=work_wires[0])
 
     # 5. Reflection about the equal-superposition state (the amplification step).

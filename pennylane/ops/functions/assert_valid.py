@@ -33,9 +33,9 @@ from pennylane.decomposition.decomposition_rule import _decomp_contains_mcm
 from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.decomposition.utils import _get_decomp_args, to_name
 from pennylane.exceptions import EigvalsUndefinedError
-from pennylane.ops.op_math.adjoint2 import Adjoint2, _adjoint_abstract
+from pennylane.ops.op_math.adjoint2 import Adjoint2
 from pennylane.ops.op_math.composite2 import CompositeOp2
-from pennylane.ops.op_math.controlled2 import ControlledOp2, _ctrl_abstract
+from pennylane.ops.op_math.controlled2 import ControlledOp2
 from pennylane.ops.op_math.pow2 import Pow2
 from pennylane.ops.op_math.symbolicop2 import SymbolicOp2
 from pennylane.pytrees import flatten
@@ -271,6 +271,14 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
     # Test that the resource function is correct
     resources = rule.compute_resources(**params)
     estimated_gate_counts = resources.gate_counts
+
+    # Make sure all counts are int
+    for gate, count in estimated_gate_counts.items():
+        assert isinstance(count, int), (
+            f"Resource count for '{gate}' in '{op.name}' decomp rule '{rule.name}' must be an integer, "
+            f"but got {type(count)} ({count}). "
+        )
+
     tape = (
         _capture_decomp_rule_to_tape(rule, op)
         if qp.capture.enabled()
@@ -288,12 +296,6 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
         op_rep = abstractify(_op)
         actual_gate_counts[op_rep] += 1
     actual_gate_counts = dict(sorted(actual_gate_counts.items(), key=lambda item: str(item[0])))
-
-    if qp.capture.enabled():
-        # When capture is enabled, ChangeOpBasis is unrolled. The resource functions are typically
-        # not aware of that, and still produce resource reps of ChangeOpBasis. Therefore, we unroll
-        # the ChangeOpBasis in the resources manually so that it will match the reality.
-        estimated_gate_counts = _unroll_change_op_basis(estimated_gate_counts)
 
     if rule.exact_resources and not (
         isinstance(op, qp.templates.SubroutineOp) and not op.subroutine.exact_resources
@@ -325,86 +327,6 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
         assert qp.math.allclose(
             op_matrix, decomp_matrix
         ), "decomposition must produce the same matrix as the operator."
-
-
-def _change_op_basis_operands(op_rep):
-    """Return ``(compute_op, target_op, uncompute_op)`` for a ChangeOpBasis resource key.
-
-    Handles both a native :class:`~.ChangeOpBasis2` and a legacy ``CompressedResourceOp``
-    wrapping :class:`~.ChangeOpBasis`. Returns ``None`` for any other resource key.
-    """
-    if isinstance(op_rep, qp.ops.ChangeOpBasis2):
-        return op_rep.compute_op, op_rep.target_op, op_rep.uncompute_op
-    if isinstance(op_rep, CompressedResourceOp) and op_rep.op_type is qp.ops.ChangeOpBasis:
-        params = op_rep.params
-        return params["compute_op"], params["target_op"], params["uncompute_op"]
-    return None
-
-
-def _unroll_prod_operand(operand):
-    """Expand a Prod-like ChangeOpBasis operand into its inner resource keys with counts."""
-    if isinstance(operand, qp.ops.Prod2):
-        counts = defaultdict(int)
-        for inner_op in operand.operands:
-            counts[inner_op] += 1
-        return dict(counts)
-    if isinstance(operand, CompressedResourceOp) and operand.op_type is qp.ops.Prod:
-        return dict(operand.params["resources"])
-    return {operand: 1}
-
-
-def _unroll_symbolic_change_op_basis(op_rep, wrapper):
-    """Unroll a ChangeOpBasis nested in a single symbolic resource key and reapply its wrapper."""
-    unrolled_base = _unroll_change_op_basis_resource(op_rep.base)
-    if unrolled_base == {op_rep.base: 1}:
-        return {op_rep: 1}
-
-    gate_counts = defaultdict(int)
-    for base_rep, count in unrolled_base.items():
-        gate_counts[wrapper(base_rep)] += count
-    return gate_counts
-
-
-def _unroll_change_op_basis_resource(op_rep):
-    """Expand a single resource key that is (or wraps) a ChangeOpBasis.
-
-    Keys that do not involve a ChangeOpBasis are returned unchanged as ``{op_rep: 1}``.
-    """
-    operands = _change_op_basis_operands(op_rep)
-    if operands is not None:
-        gate_counts = defaultdict(int)
-        for operand in operands:
-            for inner_op, count in _unroll_prod_operand(operand).items():
-                gate_counts[inner_op] += count
-        return gate_counts
-
-    if isinstance(op_rep, Adjoint2):
-        return _unroll_symbolic_change_op_basis(op_rep, _adjoint_abstract)
-
-    if isinstance(op_rep, ControlledOp2):
-        wrapper = partial(
-            _ctrl_abstract,
-            control_wires=op_rep.control_wires,
-            work_wires=op_rep.work_wires,
-            work_wire_type=op_rep.work_wire_type,
-        )
-        return _unroll_symbolic_change_op_basis(op_rep, wrapper)
-
-    return {op_rep: 1}
-
-
-def _unroll_change_op_basis(gate_counts):
-    """Unroll ChangeOpBasis resource keys, including those inside symbolic operators.
-
-    ``ChangeOpBasis`` is unrolled into its compute/target/uncompute operands when program
-    capture is enabled. Resource functions call this on their returned gate-count dict so that
-    the estimate matches the captured decomposition.
-    """
-    new_gate_counts = defaultdict(int)
-    for op_rep, count in gate_counts.items():
-        for unrolled_rep, inner_count in _unroll_change_op_basis_resource(op_rep).items():
-            new_gate_counts[unrolled_rep] += count * inner_count
-    return new_gate_counts
 
 
 def _check_matrix(op):

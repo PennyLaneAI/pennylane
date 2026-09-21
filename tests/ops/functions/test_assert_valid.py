@@ -15,27 +15,25 @@
 This module contains unit tests for ``qp.ops.functions.assert_valid``.
 """
 
+# pylint: disable=too-few-public-methods,unused-argument
+
 import copy
 from pickle import PicklingError
 
 import numpy as np
-
-# pylint: disable=too-few-public-methods, unused-argument
 import pytest
 import scipy.sparse
 
 import pennylane as qp
 from pennylane.core import Operator2
-from pennylane.core.operator import Operator, abstractify
+from pennylane.core.operator import Operator
 from pennylane.ops.functions import assert_valid
 from pennylane.ops.functions.assert_valid import (
     _check_bind_new_parameters_op2,
     _check_eigendecomposition,
     _check_pytree,
     _test_decomposition_rule,
-    _unroll_change_op_basis,
 )
-from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.typing import Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import DynOp, OneWireDynOp
@@ -43,30 +41,6 @@ from tests.core.operator.operator2_utils import DynOp, OneWireDynOp
 
 class TestDecompositionErrors:
     """Test assertions involving decompositions."""
-
-    def test_unroll_change_op_basis_resources(self):
-        """ChangeOpBasis resource keys are expanded without rewriting other keys."""
-        x_rep, y_rep, z_rep = (abstractify(op) for op in (qp.X, qp.Y, qp.Z))
-        prod_rep = qp.resource_rep(qp.ops.Prod, resources={x_rep: 2})
-        cob_rep = _change_op_basis_abstract(prod_rep, y_rep, x_rep)
-
-        result = _unroll_change_op_basis({cob_rep: 2, z_rep: 4, prod_rep: 3})
-
-        assert result == {x_rep: 6, y_rep: 2, z_rep: 4, prod_rep: 3}
-
-    def test_unroll_nested_symbolic_change_op_basis_resources(self):
-        """ChangeOpBasis resource keys are recursively expanded through symbolic wrappers."""
-        x_rep, y_rep, z_rep = (abstractify(op) for op in (qp.X, qp.Y, qp.Z))
-        cob = _change_op_basis_abstract(x_rep, y_rep, x_rep)
-
-        def wrapper(op):
-            return qp.adjoint(qp.ctrl(op, control=Wire[1]))
-
-        wrapped_z = wrapper(z_rep)
-
-        result = _unroll_change_op_basis({wrapper(cob): 2, wrapped_z: 3})
-
-        assert result == {wrapper(x_rep): 4, wrapper(y_rep): 2, wrapped_z: 3}
 
     def test_bad_decomposition_output(self):
         """Test that an error is raised if decomposition output is not a list."""
@@ -203,6 +177,34 @@ class TestDecompositionErrors:
                 return mcm.measurements
 
         assert_valid(ValidMCMDecomp(wires=0), skip_pickle=True)
+
+    def test_rule_with_non_int_counts(self):
+        """Test that a rule with non-int counts raises an error."""
+
+        class MyOp(Operator):
+            num_wires = 2
+
+        op = MyOp([0, 1])
+
+        def rule(wires):
+            qp.X(wires[0])
+            qp.X(wires[1])
+            qp.Y(wires[0])
+            qp.Y(wires[1])
+
+        rule_float_counts = qp.register_resources({qp.X: 2.0, qp.Y: 3.0})(rule)
+        with pytest.raises(
+            AssertionError,
+            match="Resource count for 'PauliX' in 'MyOp' decomp rule 'rule' must be an integer",
+        ):
+            _test_decomposition_rule(op, rule_float_counts)
+
+        rule_float_counts = qp.register_resources({qp.X: 2, qp.Y: 3.0})(rule)
+        with pytest.raises(
+            AssertionError,
+            match="Resource count for 'PauliY' in 'MyOp' decomp rule 'rule' must be an integer",
+        ):
+            _test_decomposition_rule(op, rule_float_counts)
 
     def test_bad_new_decomposition_rule_exact(self):
         """Test that an informative error is raised if the
@@ -897,7 +899,7 @@ def create_op_instance(c):
     return c(*params, wires=wires) if wires else c(*params)
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_generated_list_of_ops(class_to_validate):
     """Test every auto-generated operator instance."""
     if class_to_validate.__module__[10:14] == "ftqc":
@@ -920,7 +922,7 @@ def test_generated_list_of_ops(class_to_validate):
     assert_valid(op)
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_explicit_list_of_ops(valid_instance_and_kwargs):
     """Test the validity of operators that could not be auto-generated."""
     op, kwargs = valid_instance_and_kwargs
@@ -930,7 +932,8 @@ def test_explicit_list_of_ops(valid_instance_and_kwargs):
     assert_valid(op, **kwargs)
 
 
-@pytest.mark.jax
+# these tests are explicitly for things expected to fail when capture is disabled
+@pytest.mark.usefixtures("disable_capture")
 def test_explicit_list_of_failing_ops(invalid_instance_and_error):
     """Test instances of ops that fail validation."""
     op, exc_type = invalid_instance_and_error
