@@ -13,10 +13,10 @@
 # limitations under the License.
 """Maximum Mean Discrepancy (MMD) loss for Heisenberg-Weyl expectation value functions.
 
-This module compares the output distribution of a qudit model to a dataset of
-dit-strings. It samples Heisenberg-Weyl observables from a graph heat-kernel
-distribution, estimates their moments with a user-supplied callable, and
-combines the results into an unbiased MMD loss.
+This module extends :mod:`~pennylane.labs.tcdq.build_mmd_loss_pauli` from qubits to
+qudits. It compares the circuit output to a dataset by sampling observables,
+estimating their moments, and combining those estimates into an unbiased MMD
+loss.
 
 The kernel is defined from a graph on one qudit level set. The available
 choices are the cycle graph :math:`C_d` and the complete graph :math:`K_d`.
@@ -180,9 +180,9 @@ def _empirical_fourier_moments(
     Returns:
         Complex array of shape ``(n_obs,)``.
     """
-    inv_d = 1.0 / jnp.asarray(dims_visible, dtype=jnp.float64)
-    l_scaled = l_visible.astype(jnp.float64) * inv_d[jnp.newaxis, :]
-    inner = l_scaled @ X_data.astype(jnp.float64).T
+    inv_d = 1.0 / jnp.asarray(dims_visible, dtype=float)
+    l_scaled = l_visible.astype(float) * inv_d[jnp.newaxis, :]
+    inner = l_scaled @ X_data.astype(float).T
     return jnp.mean(jnp.exp(2j * jnp.pi * inner), axis=1)
 
 

@@ -19,11 +19,12 @@ from collections import defaultdict
 from types import SimpleNamespace
 
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.ops import BasisState, X
+from pennylane.ops import X
 from pennylane.templates.subroutines.arithmetic import OutSquare, SemiAdder
 from pennylane.typing import Bool, Wire
 from pennylane.wires import WiresLike
 
+from ..multix import MultiX
 from .out_square import _SquareArithmeticOp
 from .semi_adder import _controlled_semi_adder, _ctrl_semi_adder_resource
 
@@ -192,23 +193,42 @@ class SignedOutSquare(_SquareArithmeticOp):
         >>> op = qp.SignedOutSquare(range(3), range(3, 10), range(10, 16), True)
         >>> qp.inspect_decomps(op, "signed_square_from_unsigned_square")
         Decomposition 0 (name: signed_square_from_unsigned_square)
-         0: ───────────────────────────────────╭●────────╭●──────────────╭●──────╭SemiAdder────┤
-         1: ─╭OutSquare──|Ψ⟩───────╭X────╭●────│──────●╮─├●────╭X────────│───|Ψ⟩─│─────────────┤
-         2: ─├OutSquare──────╭●────│─────│─────│───────│─│─────│──────●╮─├●──────│─────────────┤
-         3: ─├OutSquare──────│─────│─────│─────│───────│─│─────│───────│─│───────│─────────────┤
-         4: ─├OutSquare──────│─────│─────│─────├X──────│─│─────│───────│─│───X───├SemiAdder──X─┤
-         5: ─├OutSquare──────│─────│──╭X─├●────│──────●┤─╰X─╭X─│───────│─│───X───├SemiAdder──X─┤
-         6: ─├OutSquare──X───├●────│──│──│─────│───────│────│──│──────●┤─╰X──X───│─────────────┤
-         7: ─├OutSquare──────│─────│──│──│─────│───────│────│──│───────│─────────│─────────────┤
-         8: ─├OutSquare──────│─────│──│──│─────│───────│────│──│───────│─────────│─────────────┤
-         9: ─├OutSquare──────│─────│──│──│─────│───────│────│──│───────│─────────│─────────────┤
-        10: ─├OutSquare──────│─────│──│──╰⊕─╭X─╰●─╭X──⊕╯────│──│───────│─────────├SemiAdder────┤
-        11: ─├OutSquare──────╰⊕──X─╰●─╰●────╰●────╰●────────╰●─╰●──X──⊕╯─────────├SemiAdder────┤
-        12: ─├OutSquare──────────────────────────────────────────────────────────├SemiAdder────┤
-        13: ─├OutSquare──────────────────────────────────────────────────────────├SemiAdder────┤
-        14: ─├OutSquare──────────────────────────────────────────────────────────├SemiAdder────┤
-        15: ─╰OutSquare──────────────────────────────────────────────────────────╰SemiAdder────┤
-        Gate Count: {Adjoint(TemporaryAND): 2, BasisState(AbstractArray((1,), bool, weak_type=True), wires=AbstractWires(1)): 2, CNOT: 6, MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool)): 3, OutSquare(x_wires=AbstractWires(2), output_wires=AbstractWires(7), work_wires=AbstractWires(6), output_wires_zeroed=True): 1, PauliX: 8, SemiAdder(x_wires=AbstractWires(1), y_wires=AbstractWires(2), work_wires=AbstractWires(6)): 1, TemporaryAND: 2}
+         0: ──────────────────────────────────────────╭●────────╭●──────────────╭●──────────── ···
+         1: ─╭OutSquare──MultiX(M0)───────╭X────╭●────│──────●╮─├●────╭X────────│───MultiX(M0) ···
+         2: ─├OutSquare─────────────╭●────│─────│─────│───────│─│─────│──────●╮─├●──────────── ···
+         3: ─├OutSquare─────────────│─────│─────│─────│───────│─│─────│───────│─│───────────── ···
+         4: ─├OutSquare─────────────│─────│─────│─────├X──────│─│─────│───────│─│───X───────── ···
+         5: ─├OutSquare─────────────│─────│──╭X─├●────│──────●┤─╰X─╭X─│───────│─│───X───────── ···
+         6: ─├OutSquare──X──────────├●────│──│──│─────│───────│────│──│──────●┤─╰X──X───────── ···
+         7: ─├OutSquare─────────────│─────│──│──│─────│───────│────│──│───────│─────────────── ···
+         8: ─├OutSquare─────────────│─────│──│──│─────│───────│────│──│───────│─────────────── ···
+         9: ─├OutSquare─────────────│─────│──│──│─────│───────│────│──│───────│─────────────── ···
+        10: ─├OutSquare─────────────│─────│──│──╰⊕─╭X─╰●─╭X──⊕╯────│──│───────│─────────────── ···
+        11: ─├OutSquare─────────────╰⊕──X─╰●─╰●────╰●────╰●────────╰●─╰●──X──⊕╯─────────────── ···
+        12: ─├OutSquare─────────────────────────────────────────────────────────────────────── ···
+        13: ─├OutSquare─────────────────────────────────────────────────────────────────────── ···
+        14: ─├OutSquare─────────────────────────────────────────────────────────────────────── ···
+        15: ─╰OutSquare─────────────────────────────────────────────────────────────────────── ···
+        <BLANKLINE>
+         0: ··· ─╭SemiAdder────┤
+         1: ··· ─│─────────────┤
+         2: ··· ─│─────────────┤
+         3: ··· ─│─────────────┤
+         4: ··· ─├SemiAdder──X─┤
+         5: ··· ─├SemiAdder──X─┤
+         6: ··· ─│─────────────┤
+         7: ··· ─│─────────────┤
+         8: ··· ─│─────────────┤
+         9: ··· ─│─────────────┤
+        10: ··· ─├SemiAdder────┤
+        11: ··· ─├SemiAdder────┤
+        12: ··· ─├SemiAdder────┤
+        13: ··· ─├SemiAdder────┤
+        14: ··· ─├SemiAdder────┤
+        15: ··· ─╰SemiAdder────┤
+        M0 =
+        [ True]
+        Gate Count: {Adjoint(TemporaryAND): 2, CNOT: 6, MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool)): 3, MultiX(AbstractArray((1,), bool, weak_type=True), wires=AbstractWires(1)): 2, OutSquare(x_wires=AbstractWires(2), output_wires=AbstractWires(7), work_wires=AbstractWires(6), output_wires_zeroed=True): 1, PauliX: 8, SemiAdder(x_wires=AbstractWires(1), y_wires=AbstractWires(2), work_wires=AbstractWires(6)): 1, TemporaryAND: 2}
 
     """
 
@@ -229,7 +249,7 @@ def _c_subtract_then_add_one_resources(n, m, num_work_wires, output_wires_zeroed
 
     # Bit flips on input register
     if n - 1 > 1:
-        basis_rep = BasisState(Bool[n - 2], Wire[n - 2])
+        basis_rep = MultiX(Bool[n - 2], Wire[n - 2])
         cadd_resources[basis_rep] = cadd_resources.get(basis_rep, 0) + 2
 
     # Bit flips on output and work registers. The work-wire pair only occurs if there is a ladder
@@ -242,7 +262,7 @@ def _c_subtract_then_add_one(c_wire, x_wires, y_wires, work_wires):
     """Subtract x from y, controlled on c_wire."""
     # Flip input bits (except for the LSB, which would be flipped back by the input carry set)
     if len(x_wires) > 1:
-        BasisState([1] * (len(x_wires) - 1), x_wires[:-1])
+        MultiX([1] * (len(x_wires) - 1), x_wires[:-1])
     # Flip LSB of output register, due to input carry being set
     X(y_wires[-1])
 
@@ -266,7 +286,7 @@ def _c_subtract_then_add_one(c_wire, x_wires, y_wires, work_wires):
     X(y_wires[-1])
     # Flip input bits (except for the LSB, which would be flipped back by the input carry set)
     if len(x_wires) > 1:
-        BasisState([1] * (len(x_wires) - 1), x_wires[:-1])
+        MultiX([1] * (len(x_wires) - 1), x_wires[:-1])
 
 
 def _signed_out_square_resources(
