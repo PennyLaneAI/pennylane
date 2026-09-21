@@ -1908,6 +1908,7 @@
   to the global phase when the gate is actually rewritten as a :class:`~.Rot`, so a circuit
   such as ``H(0); H(1)`` keeps its unitary instead of picking up a phase of :math:`-1`, which
   became a relative phase under :func:`~.ctrl`.
+  [(#10177)](https://github.com/PennyLaneAI/pennylane/pull/10177)
 
 * Fixed captured transforms dropping keyword arguments to the transformed function,
   including when calling transformed QNodes with `qp.qjit(capture=True)`.
