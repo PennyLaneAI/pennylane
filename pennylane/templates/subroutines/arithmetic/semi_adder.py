@@ -510,8 +510,11 @@ def _semi_adder_ppm(x_wires, y_wires, work_wires=None):
     ``|0>``. That last wire stands in for the missing input carry of the first block and for
     the missing bits of ``x``, so that every block is the same circuit.
     """
-    num_missing = len(y_wires) + 1 - (0 if work_wires is None else len(work_wires))
+    # TODO: the extra |0> wire only exists to keep the first block and the blocks past the end
+    # of ``x`` identical to the rest. Specialising those blocks would remove it, bringing the
+    # requirement down to the len(y_wires) - 1 carries plus the shared auxiliary qubit.
     work_wires = [] if work_wires is None else list(work_wires)
+    num_missing = len(y_wires) + 1 - len(work_wires)
     if num_missing > 0:
         # The right ladder restores the work wires to zero, so they can be borrowed and
         # returned; the context manager deallocates them once the ladder is done with them.

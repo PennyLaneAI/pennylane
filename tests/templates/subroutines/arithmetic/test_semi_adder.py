@@ -427,8 +427,11 @@ class TestSemiAdderPPM:
         assert len([eqn for eqn in eqns if str(eqn.primitive) == "deallocate"]) == 1
 
     @pytest.mark.catalyst
-    @pytest.mark.parametrize(("num_x_wires", "num_y_wires"), [(1, 1), (2, 2), (2, 3), (3, 3)])
-    def test_ppm_correctness(self, num_x_wires, num_y_wires):
+    @pytest.mark.parametrize(
+        ("num_x_wires", "num_y_wires"),
+        [(1, 1), (1, 2), (2, 2), (3, 2), (2, 3), (3, 3), (2, 4), (4, 4)],
+    )
+    def test_ppm_correctness(self, num_x_wires, num_y_wires, seed):
         """Test that the PPM decomposition equals SemiAdder amplitude by amplitude, global phase included."""
 
         x_wires = list(range(num_x_wires))
@@ -437,7 +440,7 @@ class TestSemiAdderPPM:
         num_wires = num_x_wires + 2 * num_y_wires + 1
 
         def prepare():
-            rng = np.random.default_rng(11)
+            rng = np.random.default_rng(seed)
             for wire in x_wires + y_wires:
                 qp.RY(float(rng.uniform(0.4, 2.4)), wires=wire)
                 qp.RZ(float(rng.uniform(0.4, 2.4)), wires=wire)
@@ -464,19 +467,33 @@ class TestSemiAdderPPM:
             assert np.allclose(ratio, 1.0)
 
     @pytest.mark.catalyst
-    @pytest.mark.parametrize(("x", "y"), [(1, 0), (3, 3)])
-    def test_ppm_arithmetic_and_clean_work_wires(self, x, y):
+    @pytest.mark.parametrize(
+        ("num_x_wires", "num_y_wires", "x", "y"),
+        [
+            (1, 1, 1, 1),
+            (2, 2, 1, 0),
+            (2, 2, 3, 3),
+            (1, 3, 1, 6),
+            (3, 2, 5, 2),
+            (4, 4, 11, 9),
+        ],
+    )
+    def test_ppm_arithmetic_and_clean_work_wires(self, num_x_wires, num_y_wires, x, y):
         """Test that the PPM decomposition adds correctly and returns every work wire to |0>."""
-        x_wires, y_wires, work_wires = [0, 1], [2, 3], [4, 5, 6]
+        x_wires = list(range(num_x_wires))
+        y_wires = list(range(num_x_wires, num_x_wires + num_y_wires))
+        work_wires = list(range(num_x_wires + num_y_wires, num_x_wires + 2 * num_y_wires + 1))
+        num_wires = num_x_wires + 2 * num_y_wires + 1
 
         @qp.qjit
-        @qp.qnode(qp.device("lightning.qubit", wires=7))
+        @qp.qnode(qp.device("lightning.qubit", wires=num_wires))
         def circuit():
-            qp.BasisState(qp.math.int_to_binary(x, len(x_wires)), wires=x_wires)
-            qp.BasisState(qp.math.int_to_binary(y, len(y_wires)), wires=y_wires)
+            qp.BasisState(qp.math.int_to_binary(x, num_x_wires), wires=x_wires)
+            qp.BasisState(qp.math.int_to_binary(y, num_y_wires), wires=y_wires)
             _semi_adder_ppm(Wires(x_wires), Wires(y_wires), work_wires)
             return qp.probs(wires=y_wires), qp.probs(wires=work_wires)
 
         y_probs, work_probs = circuit()
-        assert np.isclose(y_probs[(x + y) % 4], 1.0)
+        # x is truncated to the size of y_wires, which does not change the sum modulo 2**len(y)
+        assert np.isclose(y_probs[(x + y) % 2**num_y_wires], 1.0)
         assert np.isclose(work_probs[0], 1.0)
