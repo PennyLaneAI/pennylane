@@ -322,7 +322,7 @@ class BasisRotation(Operator2):
 def _basis_rotation_decomp_resources(unitary_matrix, wires, check=False):
     dim = math.shape(unitary_matrix)[0]
 
-    se_count = dim * (dim - 1) / 2
+    se_count = dim * (dim - 1) // 2
     ps_count = dim + se_count
     return {PhaseShift: ps_count, SingleExcitation: se_count}
 

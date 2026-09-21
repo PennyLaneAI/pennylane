@@ -278,16 +278,14 @@ class TestInitialization:
             qp.TrotterCGF(evolution_time=0.1, num_trotter_steps=123, hamiltonian=ham, wires=(0, 1))
 
 
-class TestValidity:
-    """Basic structural validity tests for the TrotterCGF operator."""
-
-    def test_assert_valid(self, toy_hamiltonian_cgf_concrete):
-        """Run qp.ops.functions.assert_valid on a concrete CGF instance."""
-        ham, num_modes, n_states = toy_hamiltonian_cgf_concrete
-        wires = list(range(num_modes * n_states))
-        op = qp.TrotterCGF(0.1, 3, ham, wires)
-        # Differentiating through the (non-trainable) hamiltonian dict is not supported.
-        qp.ops.functions.assert_valid(op, skip_differentiation=True)
+@pytest.mark.usefixtures("enable_and_disable_capture")
+def test_assert_valid(toy_hamiltonian_cgf_concrete):
+    """Run qp.ops.functions.assert_valid on a concrete CGF instance."""
+    ham, num_modes, n_states = toy_hamiltonian_cgf_concrete
+    wires = list(range(num_modes * n_states))
+    op = qp.TrotterCGF(0.1, 3, ham, wires)
+    # Differentiating through the (non-trainable) hamiltonian dict is not supported.
+    qp.ops.functions.assert_valid(op, skip_differentiation=True)
 
 
 class TestCGFScheme:
@@ -596,6 +594,7 @@ class TestDecomposition:
 class TestControlledDecomposition:
     """Tests for the default (genuine) C(TrotterCGF) controlled decomposition."""
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_controlled_decomposition_self_consistent(self, toy_hamiltonian_cgf_concrete):
         """The registered C(TrotterCGF) rule is self-consistent with its resources."""
         ham, num_modes, n_states = toy_hamiltonian_cgf_concrete
@@ -656,6 +655,7 @@ class TestControlledDecomposition:
 class TestDoublePhaseControlledDecomposition:
     """Tests for the opt-in double-phase (Fig. 6) C(TrotterCGF) controlled decomposition."""
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_controlled_decomposition_self_consistent(self, toy_hamiltonian_cgf_concrete):
         """The double-phase C(TrotterCGF) rule is self-consistent with its resources."""
         ham, num_modes, n_states = toy_hamiltonian_cgf_concrete
