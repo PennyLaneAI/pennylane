@@ -21,7 +21,6 @@ import itertools
 import pickle
 from collections import defaultdict
 from functools import partial
-from numbers import Integral
 
 import numpy as np
 import scipy.sparse
@@ -275,7 +274,7 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
 
     # Make sure all counts are int
     for gate, count in estimated_gate_counts.items():
-        assert isinstance(count, Integral), (
+        assert isinstance(count, int), (
             f"Resource count for '{gate}' in '{op.name}' decomp rule '{rule.name}' must be an integer, "
             f"but got {type(count)} ({count}). "
         )

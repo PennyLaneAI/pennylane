@@ -206,8 +206,9 @@ class TestDecompositionErrors:
         ):
             _test_decomposition_rule(op, rule_float_counts)
 
-    def test_numpy_ints_are_allowed(self):
-        """Test that numpy integer types pass smoothly through."""
+    @pytest.mark.parametrize("numpy_int", (np.int64, np.int32, np.uint8))
+    def test_numpy_ints_are_not_allowed(self, numpy_int):
+        """Test that numpy integer types are not allowed."""
 
         class MyOp(Operator):
             num_wires = 2
@@ -217,14 +218,14 @@ class TestDecompositionErrors:
         def rule(wires):
             qp.X(wires[0])
             qp.X(wires[1])
-            qp.Y(wires[0])
-            qp.Y(wires[1])
-            qp.Z(wires[0])
 
-        rule = qp.register_resources({qp.X: np.int64(2), qp.Y: np.int32(2), qp.Z: np.uint8(1)})(
-            rule
-        )
-        _test_decomposition_rule(op, rule)
+        rule = qp.register_resources({qp.X: numpy_int(2)})(rule)
+
+        with pytest.raises(
+            AssertionError,
+            match="Resource count for 'PauliX' in 'MyOp' decomp rule 'rule' must be an integer",
+        ):
+            _test_decomposition_rule(op, rule)
 
     def test_bad_new_decomposition_rule_exact(self):
         """Test that an informative error is raised if the
