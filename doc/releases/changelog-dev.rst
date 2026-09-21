@@ -2316,6 +2316,11 @@ Documentation 📝
 Bug fixes 🐛
 ~~~~~~~~~~~~
 
+* :func:`~.transforms.from_zx` now picks the CNOT control from the Z spider and the target from
+  the X spider. Previously the control was taken from whichever spider had the larger vertex ID,
+  so a circuit-like graph whose Z spider was created before the X spider was converted to a CNOT
+  with the control and target swapped.
+
 * Fixed a bug where AutoGraph raised an error for empty ``for`` loops.
   `(#10448) <https://github.com/PennyLaneAI/pennylane/pull/10448>`__
 
@@ -2640,6 +2645,7 @@ Austin Huang,
 Harshal Janjani,
 Jacob Kitchen,
 Korbinian Kottmann,
+Anish Kunda,
 Isabel Nha Minh Le,
 Christina Lee,
 Joseph Lee,
