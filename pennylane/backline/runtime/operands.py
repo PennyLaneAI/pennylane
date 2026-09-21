@@ -14,12 +14,15 @@
 
 """How a recorded :func:`~.runtime_call`'s arguments reach the entry point.
 
-Local and dispatched calls are recorded the same way: scalar operands stay scalar, ``str``
-becomes a compile-time constant rather than an operand, and a ``buf`` or ``out`` stays an array.
-The compiler decides what that means. Locally, ``ptr`` is lowered to ``!llvm.ptr`` and a
-``buf``/``out`` is bufferized only so its data pointer can be passed, so the external function
-receives plain C arguments rather than a memref descriptor or wrapper ABI. For a dispatched call
-the compiler marshals the same operands into the executor's flat transport buffer.
+Each C parameter becomes one array operand, in declaration order, and the compiler passes it as a
+pointer to its data:
+
+* a scalar is a one-element array of its own type
+* a ``str`` is its NUL-terminated bytes, padded to ``STR_OPERAND_BYTES``
+* a ``buf`` is the whole array, and only works for a local call
+* an ``out`` buffer is not an operand at all - the compiler allocates it and it comes back as a
+  result
+A call returns the declared result first, then one buffer per ``out`` parameter.
 """
 
 from __future__ import annotations
