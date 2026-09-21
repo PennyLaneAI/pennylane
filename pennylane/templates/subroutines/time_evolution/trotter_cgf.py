@@ -344,7 +344,7 @@ def _apply_system_basis_rotation(U, wires):
         U_l = math.swapaxes(U[l], -2, -1)
         mode_wires = wires[l * n_states : (l + 1) * n_states]
         if math.is_abstract(U_l) or not np.allclose(U_l, np.eye(n_states)):
-            BasisRotation(unitary_matrix=U_l, wires=mode_wires)
+            BasisRotation(unitary_matrix=math.cast(U_l, complex), wires=mode_wires)
 
 
 def _merge_leaves(U_prev, U_curr):
