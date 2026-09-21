@@ -665,6 +665,7 @@ def _add_two_qubit_gates(graph, vertex, neighbor, type_1, type_2, qubit_1, qubit
         raise QuantumFunctionError(
             "A green and red node connected by a Hadamard edge does not have a circuit representation."
         )
-    # Type1 is always of type Z therefore the qubits are already ordered.
-    op = qp.CNOT(wires=[qubit_1, qubit_2])
-    return [op]
+    # The Z spider is the control and the X spider the target, whichever vertex was visited first.
+    if type_1 == VertexType.Z:
+        return [qp.CNOT(wires=[qubit_1, qubit_2])]
+    return [qp.CNOT(wires=[qubit_2, qubit_1])]
