@@ -178,6 +178,34 @@ class TestDecompositionErrors:
 
         assert_valid(ValidMCMDecomp(wires=0), skip_pickle=True)
 
+    def test_rule_with_non_int_counts(self):
+        """Test that a rule with non-int counts raises an error."""
+
+        class MyOp(Operator):
+            num_wires = 2
+
+        op = MyOp([0, 1])
+
+        def rule(wires):
+            qp.X(wires[0])
+            qp.X(wires[1])
+            qp.Y(wires[0])
+            qp.Y(wires[1])
+
+        rule_float_counts = qp.register_resources({qp.X: 2.0, qp.Y: 3.0})(rule)
+        with pytest.raises(
+            AssertionError,
+            match="Resource count for 'PauliX' in 'MyOp' decomp rule 'rule' must be an integer",
+        ):
+            _test_decomposition_rule(op, rule_float_counts)
+
+        rule_float_counts = qp.register_resources({qp.X: 2, qp.Y: 3.0})(rule)
+        with pytest.raises(
+            AssertionError,
+            match="Resource count for 'PauliY' in 'MyOp' decomp rule 'rule' must be an integer",
+        ):
+            _test_decomposition_rule(op, rule_float_counts)
+
     def test_bad_new_decomposition_rule_exact(self):
         """Test that an informative error is raised if the
         claimed-to-be-exact resources of a decomposition rule are not correct."""
