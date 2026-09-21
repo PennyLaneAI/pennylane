@@ -457,7 +457,9 @@ def _cdf_resource_counts(num_trotter_steps, hamiltonian, has_control, double_pha
     num_twobody_rotations = num_twobody_blocks * num_cas * (2 * num_cas - 1)
     num_onebody_rotations = num_onebody_blocks * 2 * num_cas
 
-    sysrot_key = BasisRotation(Complex[num_cas, num_cas], wires=Wire[num_cas])
+    # NOTE: 'BasisRotation' decomposes differently depending on the dtype of the unitary matrix.
+    dtype_leaf = Complex if math.get_dtype_name(leaf_tensors).startswith("complex") else Float
+    sysrot_key = BasisRotation(dtype_leaf[num_cas, num_cas], wires=Wire[num_cas])
     resources[sysrot_key] += 2 * num_sysrot_calls
 
     if not has_control:
