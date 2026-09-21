@@ -1908,6 +1908,7 @@
   the sites followed the order in which the wires appeared in the circuit, which also returned
   `qp.state()` in that order instead of the device order and made `StatePrep` fail on devices with
   non-integer wire labels.
+  [(#10180)](https://github.com/PennyLaneAI/pennylane/pull/10180)
 
 * Fixed captured transforms dropping keyword arguments to the transformed function,
   including when calling transformed QNodes with `qp.qjit(capture=True)`.
