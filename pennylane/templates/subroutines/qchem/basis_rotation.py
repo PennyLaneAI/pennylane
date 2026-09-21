@@ -340,7 +340,6 @@ def _basis_rotation_decomp(unitary_matrix, wires, **__):
         )
 
     def real_unitary(unitary, wires):
-        unitary = math.real(unitary)
 
         angle, unitary = _adjust_determinant(unitary)
 
