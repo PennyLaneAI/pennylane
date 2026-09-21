@@ -206,6 +206,26 @@ class TestDecompositionErrors:
         ):
             _test_decomposition_rule(op, rule_float_counts)
 
+    def test_numpy_ints_are_allowed(self):
+        """Test that numpy integer types pass smoothly through."""
+
+        class MyOp(Operator):
+            num_wires = 2
+
+        op = MyOp([0, 1])
+
+        def rule(wires):
+            qp.X(wires[0])
+            qp.X(wires[1])
+            qp.Y(wires[0])
+            qp.Y(wires[1])
+            qp.Z(wires[0])
+
+        rule = qp.register_resources({qp.X: np.int64(2), qp.Y: np.int32(2), qp.Z: np.uint8(1)})(
+            rule
+        )
+        _test_decomposition_rule(op, rule)
+
     def test_bad_new_decomposition_rule_exact(self):
         """Test that an informative error is raised if the
         claimed-to-be-exact resources of a decomposition rule are not correct."""
