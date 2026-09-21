@@ -1,4 +1,4 @@
-# Copyright 2026 Xanadu Quantum Technologies Inc.
+# Copyright 2026 Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@ import numpy as np
 
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.ops import GlobalPhase, Hadamard, X, Z, adjoint, ctrl
+from pennylane.ops import GlobalPhase, Hadamard, adjoint
 from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
@@ -30,6 +30,7 @@ from .alias_sampling_thc import (
     _validate_zeta,
     alias_sampling_thc_wires,
 )
+from .flip_sign import FlipSign
 from .select_thc import SelectTHC, _validate_select_data, select_thc_wires
 from .superposition_thc import SuperpositionTHC
 
@@ -545,12 +546,7 @@ def _qubitization_thc_resources(
         num_batches,
     )
     num_reflected = len(registers["reflected"])
-    reflection = ctrl(
-        Z(Wire[1]),
-        control=Wire[num_reflected - 1],
-        work_wires=Wire[n_work],
-        work_wire_type="zeroed",
-    )
+    reflection = FlipSign([0] * num_reflected, Wire[num_reflected], work_wires=Wire[n_work])
 
     return {
         superposition: 1,
@@ -559,7 +555,6 @@ def _qubitization_thc_resources(
         adjoint(alias_adjoint): 1,
         Hadamard: 4,
         select: 1,
-        X: 2 * num_reflected,
         reflection: 1,
         GlobalPhase: 1,
     }
@@ -652,19 +647,10 @@ def _qubitization_thc_decomp(
     # |0> block is + H / lambda: the sign flip of |0> that a bare I - 2|0><0| would give
     # is exactly what SELECT's rewriting of n = (1 - V) / 2 already supplies.
     reflected = registers["reflected"]
-    for wire in reflected:
-        X(wire)
+
     # SELECT and PREPARE both restore work_wires, so they are zeroed auxiliary wires here
     # and make the multi-controlled Z much cheaper.
-    ctrl(
-        Z(reflected[-1]),
-        control=reflected[:-1],
-        control_values=[1] * (len(reflected) - 1),
-        work_wires=list(work_wires),
-        work_wire_type="zeroed",
-    )
-    for wire in reflected:
-        X(wire)
+    FlipSign([0] * len(reflected), reflected, work_wires=work_wires)
     GlobalPhase(np.pi)
 
 
