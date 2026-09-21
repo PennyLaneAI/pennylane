@@ -22,10 +22,14 @@ from typing import Any
 import numpy as np
 
 from pennylane import math
-from pennylane.core import Operator2
+from pennylane.core.operator import Operator2, abstractify
 from pennylane.pytrees import flatten
 
 from .unwrap import unwrap
+
+type UID = int
+
+UID_CACHE: dict[Operator2, UID] = {}
 
 
 def _handle_array(arr):
@@ -114,7 +118,7 @@ def _serialize_set(val, name):
     return (name, type(val), frozenset(_serialize_static(item, None) for item in val))
 
 
-def calculate_uid(op: Operator2) -> int | None:
+def calculate_uid(op: Operator2) -> UID | None:
     """Calculates a unique representation of operators with non-lowerable components.
 
     Args:
@@ -135,18 +139,23 @@ def calculate_uid(op: Operator2) -> int | None:
     """
     if not op.static_argnames and not op.hybrid_argnames:
         return None
+    aop = abstractify(op)
+    if aop in UID_CACHE:
+        return UID_CACHE[aop]
 
-    op, is_adjoint, n_ctrls = unwrap(op)
+    aop, is_adjoint, n_ctrls = unwrap(aop)
 
     # Flat dynamic arguments
-    dynamic_avals = tuple((val.shape, val.dtype.name) for val in op.dynamic_args)
+    dynamic_avals = tuple((val.shape, val.dtype.name) for val in aop.dynamic_args)
     wire_lens = tuple[int, ...](
-        len(wires) for n, wires in op.wire_args.items() if n not in op.hybrid_argnames
+        len(wires) for n, wires in aop.wire_args.items() if n not in aop.hybrid_argnames
     )
-    reduced_static_args = [_serialize_static(val, name) for name, val in op.compilable_args.items()]
-    reduced_static_args += [_serialize_static(val, name) for name, val in op.static_args.items()]
+    reduced_static_args = [
+        _serialize_static(val, name) for name, val in aop.compilable_args.items()
+    ]
+    reduced_static_args += [_serialize_static(val, name) for name, val in aop.static_args.items()]
 
-    reduced = [type(op)]
+    reduced = [type(aop)]
     reduced.append(("dynamic", dynamic_avals))
     reduced.append(("wires", wire_lens))
     reduced.append(("hybrid", *_handle_hybrid(op)))
@@ -159,4 +168,14 @@ def calculate_uid(op: Operator2) -> int | None:
 
     # hexdigest() returns the hexadecimal hash in string format
     # Take 16 hexadecimals, since UID on Operator op is I64Attr, which is a 64-bit unsigned
-    return int("0" + sha_hash[:15], 16)
+    uid = int("0" + sha_hash[:15], 16)
+    UID_CACHE[aop] = uid
+    return uid
+
+
+def op_for_uid(uid: UID) -> Operator2 | None:
+    """Return the operator for a uid if it exists in the cache."""
+    for aop, target_uid in UID_CACHE.items():
+        if uid == target_uid:
+            return aop
+    return None
