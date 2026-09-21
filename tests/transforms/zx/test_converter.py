@@ -545,6 +545,57 @@ class TestConvertersZX:
         for op, op_ex in zip(tape.operations, expected_op):
             qp.assert_equal(op, op_ex)
 
+    @staticmethod
+    def _two_spider_graph(type_0, type_1, edge_type, z_first):
+        """Build a circuit-like graph with one spider of ``type_0`` on qubit 0 and one of
+        ``type_1`` on qubit 1 in the same row, connected by an edge of ``edge_type``. The
+        spider on qubit 1 is created first when ``z_first`` is False."""
+        graph = pyzx.Graph(None)
+        i0 = graph.add_vertex(pyzx.VertexType.BOUNDARY, 0, 0)
+        i1 = graph.add_vertex(pyzx.VertexType.BOUNDARY, 1, 0)
+        if z_first:
+            v0 = graph.add_vertex(type_0, 0, 1)
+            v1 = graph.add_vertex(type_1, 1, 1)
+        else:
+            v1 = graph.add_vertex(type_1, 1, 1)
+            v0 = graph.add_vertex(type_0, 0, 1)
+        o0 = graph.add_vertex(pyzx.VertexType.BOUNDARY, 0, 2)
+        o1 = graph.add_vertex(pyzx.VertexType.BOUNDARY, 1, 2)
+        for edge in [(i0, v0), (i1, v1), (v0, o0), (v1, o1)]:
+            graph.add_edge(edge)
+        graph.add_edge((v0, v1), edgetype=edge_type)
+        graph.set_inputs((i0, i1))
+        graph.set_outputs((o0, o1))
+        return graph
+
+    @pytest.mark.parametrize("z_first", [True, False])
+    def test_cnot_control_from_spider_type(self, z_first):
+        """Test that the CNOT control is the Z spider and the target the X spider,
+        regardless of which vertex was created first, and that the tape matches the
+        tensor of the diagram."""
+        graph = self._two_spider_graph(
+            pyzx.VertexType.Z, pyzx.VertexType.X, pyzx.EdgeType.SIMPLE, z_first
+        )
+
+        tape = qp.transforms.from_zx(graph)
+
+        assert len(tape.operations) == 1
+        qp.assert_equal(tape.operations[0], qp.CNOT(wires=[0, 1]))
+        matrix = qp.matrix(tape, wire_order=[0, 1]).reshape(2, 2, 2, 2)
+        assert pyzx.compare_tensors(graph, matrix)
+
+    @pytest.mark.parametrize("z_first", [True, False])
+    @pytest.mark.parametrize("vertex_type", [pyzx.VertexType.Z, pyzx.VertexType.X])
+    def test_same_type_spiders_vertex_order(self, vertex_type, z_first):
+        """Test that two spiders of the same type joined by a Hadamard edge give a tape
+        matching the tensor of the diagram regardless of which vertex was created first."""
+        graph = self._two_spider_graph(vertex_type, vertex_type, pyzx.EdgeType.HADAMARD, z_first)
+
+        tape = qp.transforms.from_zx(graph)
+
+        matrix = qp.matrix(tape, wire_order=[0, 1]).reshape(2, 2, 2, 2)
+        assert pyzx.compare_tensors(graph, matrix)
+
     def test_qnode_decorator(self):
         """Test the QNode decorator."""
         dev = qp.device("default.qubit", wires=2)
