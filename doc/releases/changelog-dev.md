@@ -1596,6 +1596,7 @@
   the sites followed the order in which the wires appeared in the circuit, which also returned
   `qp.state()` in that order instead of the device order and made `StatePrep` fail on devices with
   non-integer wire labels.
+  [(#10180)](https://github.com/PennyLaneAI/pennylane/pull/10180)
 
 * Fixed a bug where a fixed decomposition rule assigned to :class:`~.MultiControlledX` via the
   ``fixed_decomps`` keyword argument of :func:`~.transforms.decompose` was being ignored.
