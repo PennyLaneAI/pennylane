@@ -1627,6 +1627,7 @@
   the sites followed the order in which the wires appeared in the circuit, which also returned
   `qp.state()` in that order instead of the device order and made `StatePrep` fail on devices with
   non-integer wire labels.
+  [(#10180)](https://github.com/PennyLaneAI/pennylane/pull/10180)
 
 * :func:`~.allocate` with zero wires no longer queues or captures :class:`~.allocation.Allocate`
   and :class:`~.allocation.Deallocate` instructions, including when used as a context manager.
