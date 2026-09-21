@@ -22,6 +22,7 @@ pointer to its data:
 * a ``buf`` is the whole array, and only works for a local call
 * an ``out`` buffer is not an operand at all - the compiler allocates it and it comes back as a
   result
+
 A call returns the declared result first, then one buffer per ``out`` parameter.
 """
 
@@ -33,9 +34,8 @@ from .signature import CType
 
 SCALAR_SHAPE = (1,)
 
-# Width of the fixed NUL-padded field a dispatched ``str`` argument travels in. The compiler
-# does the padding; this is here to reject an oversized string while the program is still being
-# traced. Must match CATALYST_TRANSPORT_STR_BYTES in runtime/include/TransportABI.h.
+# Fixed-width NUL-padded field for a ``str`` argument. Must match
+# CATALYST_TRANSPORT_STR_BYTES in runtime/include/TransportABI.h.
 STR_OPERAND_BYTES = 256
 
 
@@ -114,11 +114,11 @@ def c_string_bytes(
         max_bytes (int | None): maximum width of the fixed field the string passes through
 
     Returns:
-        bytes: the string followed by a single NUL terminator
+        bytes: ``STR_OPERAND_BYTES`` bytes, the string followed by NULs
 
     Raises:
         TypeError: if the value is not known yet, or is not a string
-        ValueError: if the string is not valid UTF-8, contains a NUL, or does not fit its field
+        ValueError: if the string does not fit its field
     """
     if _is_tracer(value):
         raise TypeError(
