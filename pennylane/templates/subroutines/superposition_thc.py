@@ -21,7 +21,6 @@ from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import (
     RY,
-    BasisState,
     GlobalPhase,
     Hadamard,
     MultiControlledX,
@@ -35,6 +34,7 @@ from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
 from .arithmetic.left_classical_comparator import LeftClassicalComparator
 from .arithmetic.left_quantum_comparator import LeftQuantumComparator
+from .multix import MultiX
 
 
 class SuperpositionTHC(Operator2):
@@ -237,6 +237,21 @@ def _left_inequalities(
 
     n = len(mu_wires)
 
+    if not keep_eq:
+        # We check if the register is in state M.
+        # To do so, we use the fact that a MultiControlledX with control_values = 0 detects if
+        # the register is in state 0, and we shift that state with MultiX before and after.
+        # The work wires are reset to |0> so we can use them in the comparators as well below.
+        # TODO: alternatively could replace this zero-controlled MultiControlledX with
+        # a ladder of `TemporaryAND`.
+        MultiX(math.int_to_binary(M, len(nu_wires)), wires=nu_wires)
+        MultiControlledX(
+            wires=nu_wires + work_wires[3:4],
+            control_values=[0] * len(nu_wires),
+            work_wires=work_wires[7:],
+        )
+        MultiX(math.int_to_binary(M, len(nu_wires)), wires=nu_wires)
+
     LeftClassicalComparator(
         nu_wires,
         M,
@@ -258,20 +273,6 @@ def _left_inequalities(
         work_wires=work_wires[7 + 2 * n - 1 : 7 + 3 * n - 2],
         comparator=">=",
     )
-
-    # We check if the register is in state M.
-    # To do so, we use the fact that a MultiControlledX with control_values = 0 detects if
-    # the register is in state 0, and we shift that state with BasisState before and after.
-    # (We don't include the 'after' operation here since it will be uncomputed later.)
-    BasisState(math.int_to_binary(M, len(nu_wires)), wires=nu_wires)
-
-    # TODO: replace this zero-controlled MultiControlledX with MultiTemporaryAND.
-    if not keep_eq:
-        MultiControlledX(
-            wires=nu_wires + work_wires[3:4],
-            control_values=[0] * len(nu_wires),
-            work_wires=work_wires[7:],
-        )
 
 
 def _controlled_z(num_control_wires, num_work_wires):
@@ -308,7 +309,7 @@ def _superposition_thc_resources(M, N, mu_wires, nu_wires, work_wires):
     lcc_le = LeftClassicalComparator(Wire[n], M, Wire[1], Wire[n - 1], comparator="<=")
     lcc_gt = LeftClassicalComparator(Wire[n], N // 2, Wire[1], Wire[n - 1], comparator=">=")
     lqc = LeftQuantumComparator(Wire[n], Wire[n], Wire[1], Wire[n], comparator="<=")
-    basis = BasisState(Bool[n], Wire[n])
+    basis = MultiX(Bool[n], Wire[n])
     mcx = _controlled_x(n, mcx_work, control_values=[0] * n)
 
     resources = {}
@@ -328,12 +329,12 @@ def _superposition_thc_resources(M, N, mu_wires, nu_wires, work_wires):
     _add(lcc_le, 2)
     _add(lcc_gt, 2)
     _add(lqc, 2)
-    _add(basis, 2)
+    _add(basis, 4)
     # _left_inequalities applied twice as an adjoint.
     _add(adjoint(lcc_le), 2)
     _add(adjoint(lcc_gt), 2)
     _add(adjoint(lqc), 2)
-    _add(adjoint(BasisState(Bool[n], Wire[n])), 2)
+    _add(adjoint(basis), 2)
     _add(mcx, 2)
     _add(adjoint(mcx), 1)
 
