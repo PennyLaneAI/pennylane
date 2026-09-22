@@ -33,12 +33,12 @@ from pennylane.decomposition import (
 from pennylane.math import ceil_log2
 from pennylane.ops import CNOT, CZ, X, cond, ctrl, pauli_measure
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import AbstractArray, Bool, Int, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
 from .arithmetic import TemporaryAND
 from .multix import MultiX
-from .select import Select
 
 
 def _select_ops(
@@ -48,9 +48,6 @@ def _select_ops(
     n_control_select_wires = ceil_log2(capacity / depth)
     control_select_wires = control_wires[:n_control_select_wires]
 
-    # with QueuingManager.stop_recording(), capture.pause():
-    # ops_new = [MultiX(bits, wires=target_wires) for bits in bitstrings]
-    # ops_identity_new = ops_new + [qp_ops.I(target_wires)] * (capacity - len(ops_new))
     num_targets = len(target_wires)
     num_missing = capacity - len(bitstrings)
     n_columns = int(np.ceil(bitstrings.shape[0] / depth))
@@ -59,14 +56,20 @@ def _select_ops(
         bitstrings = math.vstack([bitstrings, math.zeros((num_missing, num_targets), dtype=int)])
 
     column_wires = swap_wires[: depth * num_targets]
+    column_bitstrings = math.stack(
+        [
+            math.concatenate([bitstrings[i * depth + j] for j in range(depth)])
+            for i in range(n_columns)
+        ]
+    )
 
-    new_ops = []
-    for i in range(n_columns):
-        column_bits = math.concatenate([bitstrings[i * depth + j] for j in range(depth)])
-        new_ops.append(MultiX(column_bits, wires=column_wires))
-
-    if len(control_select_wires) > 0:
-        Select(new_ops, control=control_select_wires, work_wires=select_work_wires)
+    QROM(
+        column_bitstrings,
+        control_wires=control_select_wires,
+        target_wires=column_wires,
+        work_wires=select_work_wires,
+        clean=False,
+    )
 
 
 def _multi_swap(wires1, wires2):
@@ -291,16 +294,13 @@ def _calculate_select_swap_sizes(terms, num_control_wires, num_target_wires, num
 
 def _select_swap_condition(bitstrings, control_wires, target_wires, work_wires, clean):
     # pylint: disable=unused-argument
-    """We use Select-SWAP decomposition only if there is an actual SWAP network used,
-    or if there are not enough work wires for unary iteration."""
+    """We use Select-SWAP only when there are enough work wires for unary iteration on the
+    nested select QROM and an actual SWAP network is used (depth > 1)."""
     num_control_wires = len(control_wires)
     num_work_wires = len(work_wires)
 
-    if num_control_wires == 0:
+    if num_control_wires == 0 or num_work_wires < num_control_wires - 1:
         return False
-
-    if num_work_wires < num_control_wires - 1:
-        return True
 
     *_, depth = _calculate_select_swap_sizes(
         len(bitstrings), num_control_wires, len(target_wires), num_work_wires
@@ -324,27 +324,17 @@ def _select_swap_resources(
     n_columns = (
         num_bitstrings // depth if num_bitstrings % depth == 0 else num_bitstrings // depth + 1
     )
-    # Select block
+    # Select block (implemented as a nested QROM over concatenated columns)
     num_control_select_wires = ceil_log2(2**num_control_wires / depth)
-
-    # Each column applies ``depth`` bitstrings on disjoint wire slices, i.e. a single MultiX.
-    column_rep = MultiX(Bool[depth * num_target_wires], Wire[depth * num_target_wires])
-    new_ops = Counter({column_rep: n_columns})
-
-    # Select block
-    num_control_select_wires = ceil_log2(2**num_control_wires / depth)
-
-    if num_control_select_wires > 0:
-        select_ops = {
-            Select(
-                [column_rep] * n_columns,
-                control=Wire[int(num_control_select_wires)],
-                work_wires=Wire[num_work_wires_select],
-                partial=False,
-            ): 1
-        }
-    else:
-        select_ops = new_ops
+    select_ops = {
+        QROM(
+            Int[n_columns, depth * num_target_wires],
+            Wire[int(num_control_select_wires)],
+            Wire[depth * num_target_wires],
+            Wire[num_work_wires_select],
+            False,
+        ): 1
+    }
 
     # Swap block
     num_control_swap_wires = num_control_wires - num_control_select_wires
@@ -413,6 +403,51 @@ def _select_swap(
         )()
         _select_ops(control_wires, depth, target_wires, swap_wires, bitstrings, select_work_wires)
         _swap_ops(control_wires, depth, swap_wires, target_wires)
+
+
+def _qrom_multicontrol_condition(
+    bitstrings, control_wires, target_wires, work_wires, clean
+):  # pylint: disable=unused-argument,too-many-arguments
+    """Naive multicontrol loading when there are too few work wires for unary iteration."""
+    return len(work_wires) < len(control_wires) - 1
+
+
+def _qrom_multicontrol_resources(
+    bitstrings, control_wires, target_wires, work_wires, clean
+):  # pylint: disable=unused-argument,too-many-arguments
+    num_control_wires = len(control_wires)
+    num_work_wires = len(work_wires)
+    basis_rep = MultiX(Bool[len(target_wires)], Wire[len(target_wires)])
+    resources = Counter()
+    for i in range(len(bitstrings)):
+        # Index ``i`` encoded in the control register (MSBs are the extra address wires).
+        num_zeros = num_control_wires - int(i).bit_count()
+        resources[
+            _ctrl_abstract(
+                basis_rep,
+                Wire[num_control_wires],
+                Wire[num_work_wires],
+                num_zero_control_values=num_zeros,
+            )
+        ] += 1
+    return dict(resources)
+
+
+@register_condition(_qrom_multicontrol_condition)
+@register_resources(_qrom_multicontrol_resources)
+def _qrom_multicontrol(
+    bitstrings, control_wires, target_wires, work_wires, clean
+):  # pylint: disable=unused-argument,too-many-arguments
+    """Load each bitstring with a single multi-controlled ``MultiX`` (no unary iteration)."""
+    num_controls = len(control_wires)
+    for i, bits in enumerate(bitstrings):
+        control_values = [(i >> (num_controls - 1 - b)) & 1 for b in range(num_controls)]
+        ctrl(
+            MultiX(bits, wires=target_wires),
+            control=control_wires,
+            control_values=control_values,
+            work_wires=work_wires,
+        )
 
 
 def _measurement_uncompute(work_wire, ctrl_wires, targets, product):
@@ -968,5 +1003,11 @@ def _qrom_unary_iteration(
     _main_unary_loop_monolithic(bitstrings, triples, target_wires)
 
 
-add_decomps(QROM, _select_swap, _qrom_unary_iteration, _qrom_measurement_decomposition)
+add_decomps(
+    QROM,
+    _select_swap,
+    _qrom_unary_iteration,
+    _qrom_multicontrol,
+    _qrom_measurement_decomposition,
+)
 add_decomps("Adjoint(QROM)", _qrom_measurement_decomposition)
