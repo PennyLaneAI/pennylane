@@ -22,11 +22,14 @@ from typing import Literal
 from pennylane.capture import enabled as capture_enabled
 from pennylane.core.operator import Operator
 from pennylane.math import is_abstract
+from pennylane.pytrees import register_pytree
 from pennylane.wires import DynamicWire, Wires
 
 has_jax = True
 try:
     # pylint: disable=ungrouped-imports
+    from jax.core import AbstractValue
+
     from pennylane.capture import QpPrimitive
     from pennylane.wires import AbstractQubit
 except ImportError:
@@ -47,11 +50,48 @@ _MAGIC_STATES = frozenset({AllocateState.MAGIC_T, AllocateState.MAGIC_T_ADJ})
 
 
 if not has_jax:
+    AbstractRegister = None
     allocate_prim = None
     deallocate_prim = None
+    extract_qubit_prim = None
 else:
+
+    class AbstractRegister(AbstractValue):
+        """Register type."""
+
+        def __init__(self, num_wires):  # , state=AllocateState.ZERO, restored=False):
+            self.num_wires = num_wires
+            # self.state = state
+            # self.restored = restored
+
+        def _getitem(self, tracer, idx):
+            return extract_qubit_prim.bind(idx, tracer)
+
+        def _len(self, _):
+            return self.num_wires
+
+        # pylint: disable=missing-function-docstring
+        def at_least_vspace(self):
+            # TODO: investigate the proper definition of this method
+            raise NotImplementedError
+
+        # pylint: disable=missing-function-docstring
+        def join(self, other):
+            # TODO: investigate the proper definition of this method
+            raise NotImplementedError
+
+        # pylint: disable=missing-function-docstring
+        def update(self, **kwargs):
+            # TODO: investigate the proper definition of this method
+            raise NotImplementedError
+
+        def __eq__(self, other):
+            return self is other
+
+        def __hash__(self):
+            return id(self)
+
     allocate_prim = QpPrimitive("allocate")
-    allocate_prim.multiple_results = True
 
     @allocate_prim.def_impl
     def _allocate_primitive_impl(
@@ -64,19 +104,32 @@ else:
     def _allocate_primitive_abstract_eval(
         *, num_wires, state: AllocateState = AllocateState.ZERO, restored=False
     ):
-        return [AbstractQubit() for _ in range(num_wires)]
+        return AbstractRegister(num_wires)
 
     deallocate_prim = QpPrimitive("deallocate")
     deallocate_prim.multiple_results = True
 
+    # pylint: disable=unused-argument
     @deallocate_prim.def_impl
-    def _deallocate_primitive_impl(*wires):
+    def _deallocate_primitive_impl(wires):
         raise NotImplementedError("jaxpr containing qubit deallocation cannot be executed.")
 
     # pylint: disable=unused-argument
     @deallocate_prim.def_abstract_eval
-    def _deallocate_primitive_abstract_eval(*wires):
+    def _deallocate_primitive_abstract_eval(wires):
         return []
+
+    extract_qubit_prim = QpPrimitive("extract_qubit")
+
+    # pylint: disable=unused-argument
+    @extract_qubit_prim.def_impl
+    def _extract_qubit_impl(idx, reg):
+        raise NotImplementedError("jaxpr containing qubit allocation cannot be executed.")
+
+    # pylint: disable=unused-argument
+    @extract_qubit_prim.def_abstract_eval
+    def _extract_qubit_abstract_eval(idx, reg):
+        return AbstractQubit()
 
 
 class Allocate(Operator):
@@ -180,10 +233,15 @@ def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate
     1: ────╰X─╰X─╭SWAP─┤
     2: ──────────╰SWAP─┤
     """
+    if isinstance(wires, CaptureRegister):
+        return deallocate_prim.bind(wires.capture_reg)
+    if is_abstract(wires) and isinstance(wires.aval, AbstractRegister):
+        return deallocate_prim.bind(wires)
     if capture_enabled():
-        if not isinstance(wires, Sequence):
-            wires = (wires,)
-        return deallocate_prim.bind(*wires)
+        # if not isinstance(wires, Sequence):
+        #     wires = (wires,)
+        # return deallocate_prim.bind(*wires)
+        raise ValueError("BOOOOOOOOOO")
     wires = Wires(wires)
     if not_dynamic_wires := [w for w in wires if not isinstance(w, DynamicWire)]:
         raise ValueError(f"deallocate only accepts DynamicWire wires. Got {not_dynamic_wires}")
@@ -204,6 +262,42 @@ class DynamicRegister(Wires):
 
     def __hash__(self):
         raise TypeError("unhashable type 'DynamicRegister'")
+
+
+class CaptureRegister(DynamicRegister):
+    """Capture dynamic register."""
+
+    def __init__(self, reg):
+        num_wires = len(reg)
+        labels = [AbstractQubit() for _ in range(num_wires)]
+        super().__init__(labels, _override=True)
+        self.capture_reg = reg
+
+    def __getitem__(self, idx):
+        if isinstance(idx, slice):
+            start = idx.start or 0
+            stop = idx.stop or len(self.capture_reg)
+            step = idx.step or 1
+            return [self.capture_reg[i] for i in range(start, stop, step)]
+
+        return self.capture_reg[idx]
+
+    def _flatten(self):
+        # The only value that needs to cross a tracing boundary is the register tracer. The
+        # placeholder ``AbstractQubit`` labels are not real leaves, so they are dropped; the number
+        # of wires is recovered from the register tracer's aval on reconstruction.
+        return (self.capture_reg,), ()
+
+    @classmethod
+    def _unflatten(cls, data, _metadata):
+        return cls(data[0])
+
+
+if has_jax:
+    # Register ``CaptureRegister`` as its own pytree so that a dynamically-allocated register can be
+    # passed across tracing boundaries (for_loop / cond / subroutine / qnode). Its single leaf is the
+    # ``AbstractRegister`` tracer; the placeholder labels are reconstructed from it.
+    register_pytree(CaptureRegister, CaptureRegister._flatten, CaptureRegister._unflatten)
 
 
 def allocate(
@@ -384,9 +478,11 @@ def allocate(
             raise NotImplementedError(
                 "Number of allocated wires must be static when capture is enabled."
             )
-        wires = allocate_prim.bind(num_wires=num_wires, state=state, restored=restored)
-    else:
-        wires = [DynamicWire() for _ in range(num_wires)]
+
+        reg = allocate_prim.bind(num_wires=num_wires)  # , state=state, restored=restored)
+        return CaptureRegister(reg)
+
+    wires = [DynamicWire() for _ in range(num_wires)]
     reg = DynamicRegister(wires)
     if not capture_enabled():
         Allocate(reg, state=state, restored=restored)

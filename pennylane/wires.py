@@ -133,6 +133,38 @@ def _process(wires):
     return tuple_of_wires
 
 
+def _maybe_expand_register(wires):
+    """Expand a dynamically-allocated register used directly as operator wires.
+
+    When a :class:`~.CaptureRegister` (or a raw ``AbstractRegister`` tracer) is passed as the wires
+    of an operator under program capture, expand it into its individual qubits via the
+    ``extract_qubit`` primitive, so each qubit lowers to a ``qref.extract``. Any other input is
+    returned unchanged.
+    """
+    reg = getattr(wires, "capture_reg", None)
+    if reg is None:
+        # A raw register tracer (its aval is an ``AbstractRegister``).
+        if not math.is_abstract(wires):
+            return wires
+        from pennylane.allocation import (  # pylint: disable=import-outside-toplevel
+            AbstractRegister,
+        )
+
+        if not isinstance(wires.aval, AbstractRegister):
+            return wires
+        reg = wires
+        num_wires = wires.aval.num_wires
+    else:
+        # A ``CaptureRegister`` holding the register tracer in ``capture_reg``.
+        num_wires = len(wires)
+
+    from pennylane.allocation import (  # pylint: disable=import-outside-toplevel
+        extract_qubit_prim,
+    )
+
+    return [extract_qubit_prim.bind(i, reg) for i in range(num_wires)]
+
+
 class Wires(Sequence):
     r"""
     A bookkeeping class for wires, which are ordered collections of unique objects.
@@ -188,6 +220,9 @@ class Wires(Sequence):
         return cls(data, _override=True)
 
     def __init__(self, wires, _override=False):
+        if not _override and jax_available and enabled():
+            # A register used directly as operator wires is expanded into its individual qubits.
+            wires = _maybe_expand_register(wires)
         if wires is None:
             raise TypeError("Must specify a set of wires. None is not a valid wire label.")
         if _override:
@@ -197,12 +232,13 @@ class Wires(Sequence):
 
         self._hash = None
         self._subregisters = [self]
+        self.capture_reg = None
 
     def __getitem__(self, idx):
         """Method to support indexing. Returns a Wires object if index is a slice,
         or a label if index is an integer."""
         if math.is_abstract(idx) and enabled():
-            return self.__capture_getitem(idx)
+            return self.__capture_getitem2(idx)
 
         if isinstance(idx, slice):
             # use _override=True because there is no need to verify that a slice from
@@ -210,29 +246,34 @@ class Wires(Sequence):
             return Wires(self._labels[idx], _override=True)
         return self._labels[idx]
 
-    def __capture_getitem(self, idx):
-        from pennylane.ops import cond
+    def __capture_getitem2(self, idx):
+        if self.capture_reg is None:
+            self.capture_reg = math.asarray(self._labels, like="jax")
+        return self.capture_reg[idx]
 
-        if len(self._subregisters) == 1:
-            if type(self._subregisters[0]) is Wires:
-                return jax.lax.select_n(idx, *self._labels)
-            return extract_wire_p.bind(idx, *self._subregisters[0]._labels)
+    # def __capture_getitem(self, idx):
+    #     from pennylane.ops import cond
 
-        true_fn = self.__create_getitem_cond_branch(0, 0)
-        true_pred = idx < len(self._subregisters[0])
-        elifs = []
-        start = len(self._subregisters[0])
-        for i, reg in enumerate(self._subregisters[1:-1]):
-            fn = self.__create_getitem_cond_branch(i + 1, start)
-            pred = idx < (start + len(reg))
-            elifs.append((pred, fn))
-            start += len(reg)
+    #     if len(self._subregisters) == 1:
+    #         if type(self._subregisters[0]) is Wires:
+    #             return jax.lax.select_n(idx, *self._labels)
+    #         return extract_wire_p.bind(idx, *self._subregisters[0]._labels)
 
-        last_i = len(self._subregisters) - 1
-        false_fn = self.__create_getitem_cond_branch(last_i, start)
+    #     true_fn = self.__create_getitem_cond_branch(0, 0)
+    #     true_pred = idx < len(self._subregisters[0])
+    #     elifs = []
+    #     start = len(self._subregisters[0])
+    #     for i, reg in enumerate(self._subregisters[1:-1]):
+    #         fn = self.__create_getitem_cond_branch(i + 1, start)
+    #         pred = idx < (start + len(reg))
+    #         elifs.append((pred, fn))
+    #         start += len(reg)
 
-        cond_fn = cond(true_pred, true_fn, false_fn=false_fn, elifs=elifs)
-        return cond_fn(idx)
+    #     last_i = len(self._subregisters) - 1
+    #     false_fn = self.__create_getitem_cond_branch(last_i, start)
+
+    #     cond_fn = cond(true_pred, true_fn, false_fn=false_fn, elifs=elifs)
+    #     return cond_fn(idx)
 
     def __create_getitem_cond_branch(self, i, start):
 
@@ -1008,10 +1049,24 @@ if jax_available:
         hash_value = hash("AbstractQubit")
 
         def __eq__(self, other):
-            return isinstance(other, AbstractQubit)
+            # return (
+            #     isinstance(other, AbstractRegister)
+            #     and self.num_wires == other.num_wires
+            #     # and self.state == other.state
+            #     # and self.restored == other.restored
+            # )
+            return self is other
 
         def __hash__(self):
-            return self.hash_value
+            # return hash(
+            #     (
+            #         "AbstractRegister",
+            #         self.num_wires,
+            #         # self.state,
+            #         # self.restored,
+            #     )
+            # )
+            return id(self)
 
         def _iter(self):  # pragma: no cover
             return
