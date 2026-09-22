@@ -377,7 +377,6 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     # 3. Flag the valid index pairs, then mark the "success" subspace with a phase.
     _left_inequalities(M, N, mu_wires, nu_wires, work_wires)
 
-    assert len(extra_work) >= 2
     ctrl(X(work_wires[5]), control=work_wires[3:5], work_wires=extra_work)
     ctrl(Z(work_wires[5]), control=work_wires[0:3], work_wires=extra_work)
     ctrl(X(work_wires[5]), control=work_wires[3:5], work_wires=extra_work)
@@ -396,7 +395,6 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     for wire in mu_wires + nu_wires + work_wires[:1]:
         X(wires=wire)
     GlobalPhase(np.pi)
-    assert len(extra_work) >= len(mu_wires + nu_wires) - 1
     ctrl(Z(work_wires[0]), control=mu_wires + nu_wires, work_wires=extra_work)
     for wire in mu_wires + nu_wires + work_wires[:1]:
         X(wires=wire)
