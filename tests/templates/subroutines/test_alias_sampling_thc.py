@@ -24,7 +24,6 @@ from pennylane.templates.subroutines.alias_sampling_thc import (
     _build_thc_pairs,
     _compute_contiguous_register,
     _cswap_pair,
-    _right_shift,
     _symmetrize,
 )
 from pennylane.typing import AbstractWires
@@ -58,7 +57,7 @@ def _wire_layout(M, N, aleph):
 def _static_coeffs(zeta, t_ell):
     """Hashable nested tuples for compilable ``zeta`` / ``t_ell``."""
     return (
-        tuple(tuple(map(float, row) for row in np.asarray(zeta, dtype=float))),
+        tuple(tuple(map(float, row)) for row in np.asarray(zeta, dtype=float)),
         tuple(map(float, np.asarray(t_ell, dtype=float).ravel())),
     )
 
@@ -140,9 +139,8 @@ def _run(M, N, zeta, t_ell, aleph, device="lightning.qubit"):  # pylint: disable
 @pytest.mark.parametrize(
     "call",
     [
-        lambda: _right_shift([0], 1),
-        lambda: _cswap_pair(0, [], []),
-        lambda: _symmetrize([], [], 1, 2),
+        lambda: _cswap_pair(0, [], [], []),
+        lambda: _symmetrize([], [], 1, 2, []),
     ],
 )
 def test_register_helpers_are_noops_when_degenerate(call):
@@ -536,8 +534,8 @@ class TestWiresHelper:
         n = sizes["mu_wires"]
         assert n == sizes["nu_wires"] == int(np.ceil(np.log2(M + 1)))
         assert sizes["superposition_work_wires"] == 3 * n + 5
-        n_d = int(np.ceil(np.log2(N // 2 + M * (M + 1) // 2))) + 1
-        assert sizes["work_wires"] == n_d + 2 * n + 3 * aleph + 4
+        n_d = qp.math.ceil_log2(N // 2 + M * (M + 1) // 2) + 1
+        assert sizes["work_wires"] == n_d + 2 * n + 2 * aleph + 4 + max(aleph, n_d - 2)
 
         zeta, t_ell = _static_coeffs(np.ones((M, M)), np.ones(N // 2))
         mu_wires = list(range(n))

@@ -323,7 +323,8 @@ def _superposition_thc_resources(M, N, mu_wires, nu_wires, work_wires):
     resources[lcc_le] += 2
     resources[lcc_gt] += 2
     resources[lqc] += 2
-    resources[MultiX(Bool[n], Wire[n])] += 6
+    resources[MultiX(Bool[n], Wire[n])] += 4
+    resources[adjoint(MultiX(Bool[n], Wire[n]))] += 2
     # _left_inequalities applied twice as an adjoint.
     resources[adjoint(lcc_le)] += 2
     resources[adjoint(lcc_gt)] += 2

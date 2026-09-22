@@ -283,7 +283,7 @@ def alias_sampling_thc_wires(M, N, aleph):
         "mu_wires": n,
         "nu_wires": n,
         "superposition_work_wires": 3 * n + 5,
-        "work_wires": n_d + 2 * n + 2 * aleph + 2 + qrom_and_compare,
+        "work_wires": n_d + 2 * n + 2 * aleph + 4 + qrom_and_compare,
         "sign_wire": n_d - 1,
     }
 
@@ -410,11 +410,16 @@ class AliasSamplingTHC(Operator2):
         edge_flag (WiresLike): the single wire holding the one-body sentinel flag
             (true when the ``nu`` register is in state :math:`\lvert M \rangle`), as
             produced by :class:`~.SuperpositionTHC`
-        work_wires (WiresLike): the auxiliary wires, most of which retain data until the
-            adjoint of this template is applied. The required number is the
-            ``"work_wires"`` entry of :func:`~.alias_sampling_thc_wires`; every wire must
-            be initialized in :math:`\lvert 0\rangle`. Additional wires are forwarded to
-            the internal :class:`~.QROM`.
+        work_wires (WiresLike): the auxiliary wires used by the operator.
+            Let :math:`n_d=\lceil \log_2(N/2 + M(M+1)/2)\rceil + 1` and
+            :math:`n=\lceil\log_2(M+1)\rceil` as above.
+            The wires ``work_wires[:n_d+2*n+aleph+2]`` retain data until the adjoint of this
+            template is applied. The wires ``work_wires[n_d+2*n+aleph+2:]`` are returned to the
+            zero state. The required number is
+            :math:`n_d + 2n + 2\aleph + 4 + \max(\aleph, n_d-2)`, computed as ``"work_wires"``
+            entry in :func:`~.alias_sampling_thc_wires`. Excess wires are forwarded to
+            the internal :class:`~.QROM`; every work wire must be initialized
+            in :math:`\lvert 0\rangle`.
         aleph (int): the number of bits used to encode the keep-probabilities
         apply_sign (bool): if ``True`` (default), the sign of the selected coefficient is
             applied here, so the prepared state carries it on its amplitudes. Set to
@@ -554,7 +559,7 @@ def _alias_sampling_thc_resources(
         adder: 2,
         SWAP: max(n_d - 1, 0),
         qrom: 1,
-        Hadamard: aleph + 1,
+        Hadamard: 2 * (aleph + 1),
         lqc: 1,
         adjoint(lqc): 1,
         CSWAP: 2 * n + 2,
@@ -578,8 +583,7 @@ def _alias_sampling_thc_decomp(
     nu_wires = list(nu_wires)
     edge_flag = Wires(edge_flag)[0]
 
-    # Work wires are used as follows (order is the same as Fig.4 in Lee et al, except for the
-    # first two entries in the list which are swapped)
+    # Work wires are used as follows (order is changed, compared to Fig.4 in Lee et al)
     # The following entries store a value by the end of the template and are not reset
     # [:n_d-1]        : ν(ν+1)//2 + μ after _compute_contiguous_register
     # n_d-1           : QROM loads the sign θ_s
@@ -588,11 +592,12 @@ def _alias_sampling_thc_decomp(
     # [n_d+1+n:n_d+1+2n] : QROM loads the alternate {ν_alt}_s
     # Call f = n_d+1+2n
     # [f:f+ℵ]         : QROM loads the keep values
-    # [f+ℵ:f+2ℵ]      : Sampling register to compare keep values against
-    # [f+2ℵ]          : The comparator flag for sampling keep values
-    # [f+2ℵ+1]        : flag for symmetrization SWAPs
-    # [f+2ℵ+2]        : alternate qubit for the input edge flag (not in Fig.4)
-    # The following registers are reset during the template and overlap partially
+    # [f+ℵ]           : alternate qubit for the input edge flag (not in Fig.4)
+    # The following registers are reset to zero
+    # [f+ℵ+1:f+2ℵ+1]  : Sampling register to compare keep values against
+    # [f+2ℵ+1]        : The comparator flag for sampling keep values
+    # [f+2ℵ+2]        : flag for symmetrization SWAPs
+    # The following registers are reset to zero, and overlap partially
     # [f+2ℵ+3:]       : Work wires for QROM
     # [f+2ℵ+3:f+3ℵ+2] : Work wires for keep value comparator
     # [f+3ℵ+2:f+3ℵ+3] : Work wires for keep value CSWAPs
@@ -604,12 +609,14 @@ def _alias_sampling_thc_decomp(
     alt_mu_wires = work_wires[n_d + 1 : n_d + 1 + n]
     alt_nu_wires = work_wires[n_d + 1 + n : (f := n_d + 1 + 2 * n)]
     keep_wires = work_wires[f : f + aleph]
+    alt_edge_flag = work_wires[f + aleph]
 
-    sample_reg = work_wires[f + aleph : f + 2 * aleph]
-    sample_flag = work_wires[f + 2 * aleph]
-    symmetrize_flag = work_wires[f + 2 * aleph + 1]
-    alt_edge_flag = work_wires[f + 2 * aleph + 2]
+    # Reset to zero and disjoint
+    sample_reg = work_wires[f + aleph + 1 : f + 2 * aleph + 1]
+    sample_flag = work_wires[f + 2 * aleph + 1]
+    symmetrize_flag = work_wires[f + 2 * aleph + 2]
 
+    # Reset to zero and overlapping
     qrom_work = work_wires[f + 2 * aleph + 3 :]
     cmp_work = qrom_work[: f + 3 * aleph + 2]
     keep_cswap_work = qrom_work[f + 3 * aleph + 2 : f + 3 * aleph + 3]
@@ -639,8 +646,11 @@ def _alias_sampling_thc_decomp(
             keep_wires, sample_reg, sample_flag, work_wires=cmp_work, comparator="<="
         )
     )
+    _apply_hadamards(sample_reg)
+
     Hadamard(symmetrize_flag)
     _symmetrize(mu_wires, nu_wires, symmetrize_flag, edge_flag, sym_cswap_work)
+    Hadamard(symmetrize_flag)
 
     if apply_sign:
         Z(sign_wire)
