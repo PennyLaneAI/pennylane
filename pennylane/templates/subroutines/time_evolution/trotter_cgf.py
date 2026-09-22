@@ -344,7 +344,7 @@ def _apply_system_basis_rotation(U, wires):
         U_l = math.swapaxes(U[l], -2, -1)
         mode_wires = wires[l * n_states : (l + 1) * n_states]
         if math.is_abstract(U_l) or not np.allclose(U_l, np.eye(n_states)):
-            BasisRotation(unitary_matrix=math.cast(U_l, complex), wires=mode_wires)
+            BasisRotation(unitary_matrix=U_l, wires=mode_wires)
 
 
 def _merge_leaves(U_prev, U_curr):
@@ -488,7 +488,9 @@ def _cgf_resource_counts(num_trotter_steps, hamiltonian, has_control, double_pha
     num_twobody_rotations = num_twobody_blocks * num_pairs * n_states**2
     num_onebody_rotations = num_onebody_blocks * num_modes * n_states
 
-    sysrot_key = BasisRotation(Complex[n_states, n_states], wires=Wire[n_states])
+    # NOTE: 'BasisRotation' decomposes differently depending on the dtype of the unitary matrix.
+    dtype_leaf = Complex if math.get_dtype_name(leaf_tensors).startswith("complex") else Float
+    sysrot_key = BasisRotation(dtype_leaf[n_states, n_states], wires=Wire[n_states])
     resources[sysrot_key] += num_modes * num_sysrot_calls
 
     if not has_control:
