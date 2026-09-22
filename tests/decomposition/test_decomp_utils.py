@@ -19,12 +19,16 @@ Unit tests for utility functions in the ``decomposition`` module.
 import pytest
 
 import pennylane as qp
-from pennylane.decomposition import register_signature, signature_registry
+from pennylane.core.operator import abstractify
+from pennylane.decomposition import (
+    initialize_signature_registry,
+    register_signature,
+    signature_registry,
+)
 from pennylane.decomposition.utils import translate_op_alias
 from pennylane.typing import Float, Wire
 from tests.core.operator.operator2_utils import (
     CompilableDynOp,
-    DynWireSpecOp,
     OneWireDynOp,
     ParametrizedHybridOp,
 )
@@ -32,7 +36,7 @@ from tests.core.operator.operator2_utils import (
 
 @pytest.mark.unit
 def test_toggle_graph_decomposition():
-    """Test the toggling of the graph-based decomposition system."""
+    """Test that the graph-based decomposition system can be toggled."""
 
     assert not qp.decomposition.enabled_graph()
 
@@ -57,7 +61,7 @@ def test_toggle_graph_decomposition():
 
 @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 def test_graph_ctx():
-    """Tests the context manager for toggling graph."""
+    """Test that the context manager for toggling the graph works."""
 
     original_status = qp.decomposition.enabled_graph()
 
@@ -84,7 +88,7 @@ def test_graph_ctx():
     ],
 )
 def test_translate_op_alias(base_op_alias, expected_op_name):
-    """Test the translation of operator aliases to their proper names."""
+    """Test that operator aliases are translated to their proper names."""
 
     assert translate_op_alias(base_op_alias) == expected_op_name
     assert translate_op_alias(f"C({base_op_alias})") == f"C({expected_op_name})"
@@ -94,7 +98,7 @@ def test_translate_op_alias(base_op_alias, expected_op_name):
 
 
 def test_translate_op_error():
-    """Tests that an error is raised when the symbolic operator name is not valid."""
+    """Test that an error is raised when the symbolic operator name is not valid."""
 
     with pytest.raises(ValueError, match="'Adj' is not a valid name for a symbolic operator"):
         translate_op_alias("Adj(X)")
@@ -102,33 +106,49 @@ def test_translate_op_error():
 
 @pytest.mark.unit
 class TestSignatureRegistration:
-    """Tests for ``register_signature`` and ``signature_registry``."""
+    """Tests for ``register_signature``, ``signature_registry`` and
+    ``initialize_signature_registry``."""
 
-    def test_fixed_signature_auto_registered(self):
-        """Test that an operator with a fixed signature is registered automatically
-        on definition."""
-        assert OneWireDynOp.has_fixed_sig
-        assert signature_registry()[OneWireDynOp] == (OneWireDynOp.arg_specs,)
+    def test_register_operator_type(self):
+        """Test that registering an operator type stores its abstract signature built from
+        ``arg_specs``."""
+        register_signature(OneWireDynOp)
+        assert abstractify(OneWireDynOp(Float, Wire[1])) in signature_registry()[OneWireDynOp]
 
-    def test_register_operator_with_compilable_arg(self):
-        """Test that a signature can be registered manually for an operator with a
-        compilable argument."""
-        assert not CompilableDynOp.has_fixed_sig
-        assert CompilableDynOp not in signature_registry()
+    def test_register_operator_instance(self):
+        """Test that registering an operator instance stores its abstractified signature."""
+        register_signature(OneWireDynOp(Float, Wire[1]))
+        assert abstractify(OneWireDynOp(Float, Wire[1])) in signature_registry()[OneWireDynOp]
 
+    def test_register_with_kwargs_override(self):
+        """Test that keyword arguments override entries in ``arg_specs`` when registering a type."""
         register_signature(CompilableDynOp, word="XY")
-        assert signature_registry()[CompilableDynOp] == (
-            {**CompilableDynOp.arg_specs, "word": "XY"},
-        )
-
         register_signature(CompilableDynOp, word="ZZ")
-        assert signature_registry()[CompilableDynOp] == (
-            {**CompilableDynOp.arg_specs, "word": "XY"},
-            {**CompilableDynOp.arg_specs, "word": "ZZ"},
-        )
+
+        registered = signature_registry()[CompilableDynOp]
+        assert abstractify(CompilableDynOp(Float, "XY", Wire[1])) in registered
+        assert abstractify(CompilableDynOp(Float, "ZZ", Wire[1])) in registered
+
+    def test_registration_deduplicates(self):
+        """Test that registering equivalent signatures does not create duplicate entries."""
+        register_signature(OneWireDynOp)
+        count = len(signature_registry()[OneWireDynOp])
+
+        register_signature(OneWireDynOp)  # same type
+        register_signature(OneWireDynOp(Float, Wire[1]))  # equivalent instance
+        register_signature(OneWireDynOp(0.5, wires=0))  # concrete, abstractifies to the same
+
+        assert len(signature_registry()[OneWireDynOp]) == count
+
+    def test_initialize_registers_fixed_sig_operators(self):
+        """Test that ``initialize_signature_registry`` registers every operator with a fixed
+        signature."""
+        initialize_signature_registry()
+        assert abstractify(qp.Hadamard(Wire[1])) in signature_registry()[qp.Hadamard]
 
     def test_registry_returns_shallow_copy(self):
         """Test that mutating the returned registry does not affect the underlying registry."""
+        register_signature(OneWireDynOp)
         registry = signature_registry()
         del registry[OneWireDynOp]
         assert OneWireDynOp in signature_registry()
@@ -139,83 +159,14 @@ class TestSignatureRegistration:
         with pytest.raises(ValueError, match="hybrid or non-compilable static arguments"):
             register_signature(ParametrizedHybridOp)
 
-    def test_error_incomplete_signature(self):
-        """Test that the registered signature must cover all of the operator's arguments."""
-        with pytest.raises(ValueError, match="must cover all operator arguments"):
-            register_signature(CompilableDynOp)  # 'word' is missing
-
-    @pytest.mark.parametrize(
-        "kwargs, match",
-        [
-            ({"phi": "not_abstract"}, "Expected an abstract type for 'phi'"),
-            ({"phi": Float[-1]}, "must have a fixed shape"),
-            ({"wires": "not_wires"}, "Expected an abstract type for 'wires'"),
-            ({"wires": Wire[-1]}, "must have a fixed shape"),
-        ],
-    )
-    def test_error_invalid_arg_spec(self, kwargs, match):
-        """Test that dynamic and wire arguments must be given fixed-shape abstract types."""
-
-        with pytest.raises(ValueError, match=match):
-            register_signature(OneWireDynOp, **kwargs)
-
-    def test_compatible_arg_spec(self):
-        """Test that a signature with types compatible with the operator's declared
-        ``arg_specs`` is accepted and added to the registry."""
-        # OneWireDynOp declares ``{"phi": Float, "wires": Wire[1]}``.
-        before = signature_registry().get(OneWireDynOp, ())
-        register_signature(OneWireDynOp, phi=Float, wires=Wire[1])
-        after = signature_registry()[OneWireDynOp]
-
-        assert len(after) == len(before) + 1
-        assert after[-1] == OneWireDynOp.arg_specs
-
-    def test_fixed_signature_compatible_with_dynamic_arg_spec(self):
-        """Test that a fixed-shape signature can be registered against an operator whose
-        declared ``arg_specs`` have a dynamic shape."""
-        # DynWireSpecOp declares dynamic ``{"phi": Float[-1], "wires": Wire[-1]}``.
-        register_signature(DynWireSpecOp, phi=Float[2], wires=Wire[3])
-        registered = signature_registry()[DynWireSpecOp][-1]
-
-        assert registered["phi"].shape == (2,)
-        assert registered["wires"] == Wire[3]
-
-    @pytest.mark.parametrize(
-        "kwargs",
-        [
-            ({"wires": Wire[2]}),  # OneWireDynOp declares a single wire (Wire[1])
-            ({"phi": Float[3]}),  # OneWireDynOp declares a scalar Float
-        ],
-    )
-    def test_error_incompatible_arg_spec(self, kwargs):
-        """Test that a signature whose (fixed-shape) types are incompatible with the
-        operator's declared ``arg_specs`` is rejected."""
-        with pytest.raises(
-            ValueError, match="compatible with the operator's argument specification"
-        ):
-            register_signature(OneWireDynOp, **kwargs)
-
-    def test_register_operator_instance(self):
-        """Test that a signature can be registered from a fully abstract operator instance."""
-        op = OneWireDynOp(Float, Wire[1])
-        assert op.is_fully_abstract
-
-        before = signature_registry().get(OneWireDynOp, ())
-        register_signature(op)
-        after = signature_registry()[OneWireDynOp]
-
-        assert len(after) == len(before) + 1
-        assert after[-1] == op.arguments
-
     def test_error_instance_with_kwargs(self):
         """Test that keyword arguments cannot be provided together with an operator instance."""
-        op = OneWireDynOp(Float, Wire[1])
         with pytest.raises(ValueError, match="Keyword arguments can only be provided"):
-            register_signature(op, phi=Float)
+            register_signature(OneWireDynOp(Float, Wire[1]), phi=Float)
 
-    def test_error_instance_not_fully_abstract(self):
-        """Test that only fully abstract operator instances can be registered."""
-        op = OneWireDynOp(0.5, wires=0)
-        assert not op.is_fully_abstract
-        with pytest.raises(ValueError, match="fully abstract operator instances"):
-            register_signature(op)
+    def test_invalid_signature_raises_at_construction(self):
+        """Test that an invalid signature is rejected when the operator instance is constructed.
+        For example, an incompatible wire count raises via the operator constructor."""
+        # OneWireDynOp declares a single wire (Wire[1]).
+        with pytest.raises(ValueError, match="Incorrect number of wires"):
+            register_signature(OneWireDynOp, wires=Wire[2])

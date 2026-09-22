@@ -47,18 +47,6 @@ class OneWireDynOp(Operator2):
         super().__init__(phi, wires=wires)
 
 
-class DynWireSpecOp(Operator2):
-    """Operator whose declared ``arg_specs`` have arbitrary shape for dynamic and
-    wire arguments."""
-
-    dynamic_argnames = ("phi",)
-
-    arg_specs = {"phi": Float[-1], "wires": Wire[-1]}
-
-    def __init__(self, phi, wires):
-        super().__init__(phi, wires=wires)
-
-
 class TwoDynOp(Operator2):
     """Operator with two dynamic parameters."""
 

@@ -21,11 +21,9 @@ from collections import defaultdict
 from contextlib import contextmanager
 from contextvars import ContextVar
 from functools import singledispatch
-from numbers import Number
-from typing import Any, overload
+from typing import overload
 
 from pennylane.core.operator import Operator, Operator1, Operator2, abstractify
-from pennylane.typing import AbstractArray, AbstractWires
 
 OP_NAME_ALIASES = {
     "X": "PauliX",
@@ -152,7 +150,7 @@ enable_graph, disable_graph, enabled_graph, toggle_graph_ctx = toggle_graph_deco
 
 def _init_signature_registration():
 
-    _registry = defaultdict(tuple)
+    _registry = defaultdict(set)
 
     @overload
     def register(op: Operator2) -> None: ...
@@ -161,36 +159,31 @@ def _init_signature_registration():
     def register(op: Operator2 | type[Operator2], **kwargs) -> None:
         r"""Register a possible signature for an operator.
 
-        A *signature* records the abstract type of every argument of an operator (its
-        dynamic parameters and wires), along with the values of any compilable static
-        arguments. Registered signatures are collected in :func:`~.signature_registry`
-        and are used to determine ahead of time which decomposition rules can be
-        precompiled, improving the performance of decomposition passes in
-        :func:`~.qjit`-compiled workflows.
+        A *signature* is a fully abstract instance of an operator, capturing the abstract type of
+        every argument (its dynamic parameters and wires) along with the values of any compilable
+        static arguments. Registered signatures are collected in :func:`~.signature_registry` and
+        are used to determine ahead of time which decomposition rules can be precompiled, improving
+        the performance of decomposition passes in :func:`~.qjit`-compiled workflows.
 
-        Operators with a fixed signature (i.e., ``op.has_fixed_sig`` is ``True``) are
-        registered automatically when the class is defined. This function can be called
-        directly to register additional signatures, for example the same operator with
-        different fixed wire counts or static argument values.
+        The signatures of all built-in operators with a fixed signature (i.e.,
+        ``op.has_fixed_sig`` is ``True``) are registered by ``initialize_signature_registry``. This
+        function can be called directly to register additional signatures, for example the same
+        operator with different fixed wire counts or static argument values.
 
         Args:
-            op (~.Operator2 | type[~.Operator2]): the operator for which to register the signature.
-                If ``op`` is an operator instance, all dynamic and wire arguments are expected
-                to be abstract.
+            op (~.Operator2 | type[~.Operator2]): the operator to register a signature for. If an
+                operator *instance* is given, it is abstractified before being stored. If an
+                operator *type* is given, an instance is constructed from its ``arg_specs``
+                (optionally overridden by keyword arguments) and then abstractified.
 
         Keyword Args:
-            **kwargs: the type or value of each argument, overriding the corresponding
-                entry in ``op.arg_specs``. Together, ``op.arg_specs`` and these keyword
-                arguments must specify every argument of ``op``. Dynamic arguments must be
-                given an abstract numeric type (a subclass of ``numbers.Number`` or an
-                :class:`~.AbstractArray`) and wire arguments an :class:`~.AbstractWires`,
-                each with a fixed shape. Keyword arguments can only be provided if the input
-                if an operator *type*, not instance.
+            **kwargs: the type or value of each argument, overriding the corresponding entry in
+                ``op.arg_specs``. These can only be provided when ``op`` is an operator *type*, not
+                an instance.
 
         Raises:
-            ValueError: if ``op`` has hybrid or non-compilable static arguments, if the
-                resulting signature does not cover every argument of ``op``, or if a
-                dynamic or wire argument is not given a fixed-shape abstract type.
+            ValueError: if ``op`` has hybrid or non-compilable static arguments, or if keyword
+                arguments are provided together with an operator instance.
 
         .. seealso:: :func:`pennylane.decomposition.signature_registry`
         """
@@ -209,74 +202,51 @@ def _init_signature_registration():
                     "Keyword arguments can only be provided when registering a signature for an "
                     "operator type, not an operator instance."
                 )
-            if not op.is_fully_abstract:
-                raise ValueError(
-                    "Signatures can only be registered for fully abstract operator instances. "
-                    "All dynamic and wire arguments of the operator must be abstract."
-                )
+            inst = op
+            op_cls = type(op)
 
-            _registry[type(op)] += (op.arguments,)
-            return
+        else:
+            specs = dict(op.arg_specs or {})
+            specs.update(**kwargs)
+            inst = op(**specs)
+            op_cls = op
 
-        op_specs = op.arg_specs or {}
-        all_specs = dict(op_specs)
-        all_specs.update(**kwargs)
+        _registry[op_cls].add(abstractify(inst))
 
-        # pylint: disable=protected-access
-        if set(all_specs.keys()) != set(op._sig.parameters.keys()):
-            raise ValueError(
-                "Signatures being registered must cover all operator arguments. Expected "
-                f"{tuple(op._sig.parameters.keys())} but got {tuple(all_specs.keys())}."
-            )
-
-        for name in (*op.dynamic_argnames, *op.wire_argnames):
-            aval = all_specs[name]
-            is_dynamic = name in op.dynamic_argnames
-
-            if is_dynamic:
-                valid_type = (isinstance(aval, type) and issubclass(aval, Number)) or isinstance(
-                    aval, AbstractArray
-                )
-            else:
-                valid_type = isinstance(aval, AbstractWires)
-
-            if not valid_type:
-                raise ValueError(
-                    f"Expected an abstract type for '{name}' when registering a signature "
-                    f"for {op.__name__}."
-                )
-
-            if is_dynamic:
-                aval = abstractify(aval)
-
-            op_spec = op_specs.get(name, None)
-            compatible = op_spec is None or op_spec.is_compatible_with(aval)
-            if not (aval.shape_fixed and compatible):
-                raise ValueError(
-                    f"Invalid type registered for '{op.__name__}.{name}'. Registered signature "
-                    f"types must have a fixed shape and be compatible with the operator's argument "
-                    f"specification ({op_spec}), but got {aval}."
-                )
-
-            all_specs[name] = aval
-
-        _registry[op] += (all_specs,)
-
-    def registry() -> dict[type[Operator2], tuple[dict[str, Any], ...]]:
+    def registry() -> dict[type[Operator2], set[Operator2]]:
         r"""Return the operator signatures registered with :func:`~.register_signature`.
 
         Returns:
-            dict[type[~.Operator2], tuple[dict[str, Any], ...]]: a mapping from each
-            registered operator class to the tuple of signatures registered for it. Each
-            signature is a dictionary mapping argument names to their abstract type (for
-            dynamic and wire arguments) or value (for compilable static arguments).
+            dict[type[~.Operator2], set[~.Operator2]]: a mapping from each registered operator
+            class to the set of registered signatures, where each signature is a fully abstract
+            instance of the operator.
 
         .. seealso:: :func:`pennylane.decomposition.register_signature`
         """
         # Create a copy so mutation doesn't affect the registry
         return dict(_registry)
 
-    return register, registry
+    def initialize_registry():
+        """Register the signatures of all PennyLane operators that have a fixed signature.
+
+        This registers a signature for every :class:`~.Operator2` subclass whose ``has_fixed_sig`` is
+        ``True``. It must be called after all operators have been imported (i.e. it should not be run
+        during import), since it constructs operator instances.
+        """
+
+        def _all_subclasses(cls: type[Operator2]) -> set[type[Operator2]]:
+            subclasses = set(cls.__subclasses__())
+            for subclass in cls.__subclasses__():
+                subclasses |= _all_subclasses(subclass)
+            return subclasses
+
+        for op_cls in _all_subclasses(Operator2):
+            if getattr(op_cls, "has_fixed_sig", False):
+                register(op_cls)
+
+    return register, registry, initialize_registry
 
 
-register_signature, signature_registry = _init_signature_registration()
+register_signature, signature_registry, initialize_signature_registry = (
+    _init_signature_registration()
+)

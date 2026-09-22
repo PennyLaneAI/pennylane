@@ -1614,9 +1614,6 @@ class Operator2(metaclass=OperatorMeta):
             sorted_names = tuple(a for a in cls._sig.parameters if a in getattr(cls, attr))
             setattr(cls, attr, sorted_names)
 
-        if cls.has_fixed_sig:
-            qp.decomposition.register_signature(cls)
-
 
 # ---------------------------------------------------------------------------------
 # ------------------------- Instance construction helpers -------------------------
