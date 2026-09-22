@@ -276,13 +276,15 @@ def alias_sampling_thc_wires(M, N, aleph):
 
     n = ceil_log2(M + 1)
     n_d = _num_address_wires(M, N)
-    qrom_deficit = max(n_d - aleph - 1, 0)
+    # The compare stage needs aleph-1 work wires for the comparator, and one work wire for CSWAPs
+    # The QROM has n_d-1 control wires and thus needs at least n_d-2 work wires for unary iteration
+    qrom_and_compare = max((aleph - 1) + 1, n_d - 2)
     return {
         "mu_wires": n,
         "nu_wires": n,
         "superposition_work_wires": 3 * n + 5,
-        "work_wires": n_d + 2 * n + 3 * aleph + 4 + qrom_deficit,
-        "sign_wire": n_d,
+        "work_wires": n_d + 2 * n + 2 * aleph + 2 + qrom_and_compare,
+        "sign_wire": n_d - 1,
     }
 
 
@@ -593,7 +595,8 @@ def _alias_sampling_thc_decomp(
     # The following registers are reset during the template and overlap partially
     # [f+2ℵ+3:]       : Work wires for QROM
     # [f+2ℵ+3:f+3ℵ+2] : Work wires for keep value comparator
-    # [f+2ℵ+3:f+2ℵ+5] : Work wires for CSWAPs
+    # [f+3ℵ+2:f+3ℵ+3] : Work wires for keep value CSWAPs
+    # [f+2ℵ+3:f+2ℵ+5] : Work wires for symmetrization CSWAPs
 
     contiguous_register = work_wires[: n_d - 1]
     sign_wire = work_wires[n_d - 1]
@@ -609,7 +612,8 @@ def _alias_sampling_thc_decomp(
 
     qrom_work = work_wires[f + 2 * aleph + 3 :]
     cmp_work = qrom_work[: f + 3 * aleph + 2]
-    cswap_work = qrom_work[:2]
+    keep_cswap_work = qrom_work[f + 3 * aleph + 2 : f + 3 * aleph + 3]
+    sym_cswap_work = qrom_work[:2]
 
     _compute_contiguous_register(M, N, mu_wires, nu_wires, contiguous_register)
 
@@ -624,9 +628,11 @@ def _alias_sampling_thc_decomp(
     _apply_hadamards(sample_reg)
     LeftQuantumComparator(keep_wires, sample_reg, sample_flag, work_wires=cmp_work, comparator="<=")
 
-    _cswap_pair(sample_flag, mu_wires, alt_mu_wires, cswap_work)
-    _cswap_pair(sample_flag, nu_wires, alt_nu_wires, cswap_work)
-    _cswap_pair(sample_flag, [edge_flag, sign_wire], [alt_edge_flag, alt_sign_wire], cswap_work)
+    _cswap_pair(sample_flag, mu_wires, alt_mu_wires, keep_cswap_work)
+    _cswap_pair(sample_flag, nu_wires, alt_nu_wires, keep_cswap_work)
+    _cswap_pair(
+        sample_flag, [edge_flag, sign_wire], [alt_edge_flag, alt_sign_wire], keep_cswap_work
+    )
 
     adjoint(
         LeftQuantumComparator(
@@ -634,7 +640,7 @@ def _alias_sampling_thc_decomp(
         )
     )
     Hadamard(symmetrize_flag)
-    _symmetrize(mu_wires, nu_wires, symmetrize_flag, edge_flag, cswap_work)
+    _symmetrize(mu_wires, nu_wires, symmetrize_flag, edge_flag, sym_cswap_work)
 
     if apply_sign:
         Z(sign_wire)

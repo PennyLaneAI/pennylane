@@ -58,8 +58,8 @@ def _wire_layout(M, N, aleph):
 def _static_coeffs(zeta, t_ell):
     """Hashable nested tuples for compilable ``zeta`` / ``t_ell``."""
     return (
-        tuple(tuple(float(x) for x in row) for row in np.asarray(zeta, dtype=float)),
-        tuple(float(x) for x in np.asarray(t_ell, dtype=float).ravel()),
+        tuple(tuple(map(float, row) for row in np.asarray(zeta, dtype=float))),
+        tuple(map(float, np.asarray(t_ell, dtype=float).ravel())),
     )
 
 
@@ -69,7 +69,7 @@ def _reconstruct_distribution(M, N, zeta, t_ell, aleph):  # pylint: disable=too-
     This is the THC analogue of ``_reconstruct_amplitudes`` in
     ``test_alias_sampling.py``: it plays the *same* integer alias tables the circuit
     loads into the QROM back classically, so the comparison is exact (independent of
-    ``aleph``) rather than an approximation of the ideal target.
+    ``aleph``).
 
     Each address keeps its original pair with probability ``keep / 2 ** aleph`` (the
     circuit tests ``keep_thresh <= sigma`` against a uniform ``aleph``-bit sample, so
@@ -79,7 +79,7 @@ def _reconstruct_distribution(M, N, zeta, t_ell, aleph):  # pylint: disable=too-
     ``nu = M`` is excluded from the swap and keeps its full weight.
     """
     entries, weights = _build_thc_pairs(M, N, zeta, t_ell)
-    probs = [abs(w) for w in weights]
+    probs = np.abs(weights)
     alt, keep = _build_alias_tables(probs, aleph)
 
     d = len(entries)
@@ -117,32 +117,10 @@ _T_GATE_SET = {
 }
 
 
-def _t_count(M, N, aleph, extra_work_wires):
-    """T-gate count of the template given ``extra_work_wires`` beyond the minimum."""
-    sizes = qp.alias_sampling_thc_wires(M, N, aleph)
-    n = sizes["mu_wires"]
-    mu_wires = list(range(n))
-    nu_wires = list(range(n, 2 * n))
-    edge_flag = 2 * n
-    num_work = sizes["work_wires"] + extra_work_wires
-    work_wires = list(range(2 * n + 1, 2 * n + 1 + num_work))
-
-    np.random.seed(3)
-    zeta = np.random.randn(M, M)
-    zeta, t_ell = _static_coeffs((zeta + zeta.T) / 2, np.random.randn(N // 2))
-
-    def qfunc():
-        qp.AliasSamplingTHC(M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph)
-
-    with qp.decomposition.toggle_graph_ctx(True):
-        tape = qp.tape.make_qscript(qfunc)()
-        [decomposed], _ = qp.transforms.decompose(tape, gate_set=_T_GATE_SET)
-
-    names = [op.name for op in decomposed.operations]
-    return names.count("T") + names.count("Adjoint(T)")
-
-
 def _run(M, N, zeta, t_ell, aleph, device="lightning.qubit"):  # pylint: disable=too-many-arguments
+    """Run SuperpositionTHC and AliasSamplingTHC and return the probability distribution on the
+    index wires, reshaped into square shape."""
+
     zeta, t_ell = _static_coeffs(zeta, t_ell)
     mu_wires, nu_wires, sup_work, edge_flag, work_wires = _wire_layout(M, N, aleph)
     total = max(mu_wires + nu_wires + sup_work + work_wires) + 1
@@ -155,10 +133,7 @@ def _run(M, N, zeta, t_ell, aleph, device="lightning.qubit"):  # pylint: disable
         return qp.probs(wires=mu_wires + nu_wires)
 
     n = len(mu_wires)
-    # The graph-based decomposition picks sub-decompositions that fit the work wires we
-    # hand out; the legacy path instead allocates dynamic scratch the device has no room for.
-    with qp.decomposition.toggle_graph_ctx(True):
-        probs = np.asarray(circuit())
+    probs = np.asarray(circuit())
     return probs.reshape((2**n, 2**n))
 
 
@@ -370,20 +345,11 @@ class TestAliasSamplingTHC:
         expected = _reconstruct_distribution(M, N, zeta, t_ell, aleph)
         assert np.allclose(probs, expected)
 
+    @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(("M", "N", "aleph"), _INSTANCES)
-    def test_probabilities_normalized(self, M, N, aleph):
-        """Test that the prepared distribution sums to one."""
-        np.random.seed(3)
-        zeta = np.random.randn(M, M)
-        zeta = (zeta + zeta.T) / 2
-        t_ell = np.random.randn(N // 2)
-        probs = _run(M, N, zeta, t_ell, aleph)
-        assert np.isclose(probs.sum(), 1.0)
-
-    @pytest.mark.parametrize(("M", "N", "aleph"), _INSTANCES)
-    def test_marginal_matches_reconstruction(self, M, N, aleph):
+    def test_marginal_matches_reconstruction(self, M, N, aleph, seed):
         """Test that the prepared distribution matches the classical alias reconstruction."""
-        np.random.seed(3)
+        np.random.seed(seed)
         zeta = np.random.randn(M, M)
         zeta = (zeta + zeta.T) / 2
         t_ell = np.random.randn(N // 2)
@@ -391,23 +357,9 @@ class TestAliasSamplingTHC:
         probs = _run(M, N, zeta, t_ell, aleph)
         recon = _reconstruct_distribution(M, N, zeta, t_ell, aleph)
 
+        # Test that the probabilities sum to one
+        assert np.isclose(probs.sum(), 1.0), "Probabilities are not normalized"
         assert np.allclose(probs, recon, atol=1e-9)
-
-    @pytest.mark.parametrize(("M", "N", "aleph"), _INSTANCES)
-    def test_support_matches_symmetric_valid_set(self, M, N, aleph):
-        """Test that all probability mass lands on the symmetrized valid support."""
-        np.random.seed(3)
-        zeta = np.random.randn(M, M)
-        zeta = (zeta + zeta.T) / 2
-        t_ell = np.random.randn(N // 2)
-
-        probs = _run(M, N, zeta, t_ell, aleph)
-        recon = _reconstruct_distribution(M, N, zeta, t_ell, aleph)
-
-        n = qp.alias_sampling_thc_wires(M, N, aleph)["mu_wires"]
-        support = {(a, b) for a in range(2**n) for b in range(2**n) if probs[a, b] > 1e-9}
-        target_support = {(a, b) for a in range(2**n) for b in range(2**n) if recon[a, b] > 1e-9}
-        assert support == target_support
 
     @pytest.mark.parametrize(("M", "N"), [(2, 2), (3, 2), (5, 2), (8, 4)])
     def test_qrom_uses_minimal_address_space(self, M, N):
@@ -434,7 +386,7 @@ class TestAliasSamplingTHC:
         d = N // 2 + M * (M + 1) // 2
         assert len(qroms[0].control_wires) == int(np.ceil(np.log2(d)))
 
-    def test_ancillas_returned_to_zero(self):
+    def test_ancillas_returned_to_zero(self, seed):
         """Test that the comparator flag and its work wires are left in |0>.
 
         The inequality test of step 3 is uncomputed with the *same* comparator
@@ -447,7 +399,7 @@ class TestAliasSamplingTHC:
         b = n_d + 2 * n + 2 * aleph
         ancillas = [work_wires[b + 2]] + list(work_wires[b + 5 : b + aleph + 4])
 
-        np.random.seed(3)
+        np.random.seed(seed)
         zeta = np.random.randn(M, M)
         zeta, t_ell = _static_coeffs((zeta + zeta.T) / 2, np.random.randn(N // 2))
 
@@ -578,7 +530,7 @@ class TestWiresHelper:
     """Test ``alias_sampling_thc_wires``."""
 
     def test_reported_sizes_are_accepted(self):
-        """Test that the reported register sizes satisfy every check in ``alias_sampling_thc``."""
+        """Test that the reported register sizes satisfy every check in ``AliasSamplingTHC``."""
         M, N, aleph = 5, 2, 4
         sizes = qp.alias_sampling_thc_wires(M, N, aleph)
         n = sizes["mu_wires"]
@@ -591,17 +543,28 @@ class TestWiresHelper:
         mu_wires = list(range(n))
         nu_wires = list(range(n, 2 * n))
         work_wires = list(range(2 * n + 1, 2 * n + 1 + sizes["work_wires"]))
-        with qp.queuing.AnnotatedQueue():
-            qp.AliasSamplingTHC(M, N, zeta, t_ell, mu_wires, nu_wires, 2 * n, work_wires, aleph)
+        qp.AliasSamplingTHC(M, N, zeta, t_ell, mu_wires, nu_wires, 2 * n, work_wires, aleph)
 
     def test_minimum_tops_up_qrom_work_wires(self):
-        """Test that ``work_wires`` exceeds what the template's own layout consumes, because
-        the internal ``qp.QROM`` is topped up to the wires it needs for unary iteration.
+        """Test that ``work_wires`` is large enough to accomodate QROM unary iteration if aleph
+        is comparably small, so that the comparator scratch space alone is not enough for
+        unary iteration. Also tests the opposite, where aleph is large and the QROM scratch space
+        is small.
         """
-        M, N, aleph = 4, 2, 3
-        n = int(np.ceil(np.log2(M + 1)))
-        n_d = int(np.ceil(np.log2(N // 2 + M * (M + 1) // 2))) + 1
-        assert n_d + 2 * n + 3 * aleph + 4 < qp.alias_sampling_thc_wires(M, N, aleph)["work_wires"]
+        M, N, aleph = 4, 2, 2
+        n = qp.math.ceil_log2(M + 1)
+        n_d = qp.math.ceil_log2(N // 2 + M * (M + 1) // 2) + 1
+        assert n_d - 2 > aleph  # Comparably small aleph
+        num_work = qp.alias_sampling_thc_wires(M, N, aleph)["work_wires"]
+        num_work_other = n_d + 2 * n + 2 * aleph + 2
+        assert num_work - num_work_other == n_d - 2  # Work wires suffice for unary iteration
+
+        # Other way around: aleph is large
+        aleph = 6
+        assert n_d - 2 < aleph  # Comparably large aleph
+        num_work = qp.alias_sampling_thc_wires(M, N, aleph)["work_wires"]
+        num_work_other = n_d + 2 * n + 2 * aleph + 2
+        assert num_work - num_work_other == aleph  # Work wires suffice for unary iteration
 
     @pytest.mark.parametrize(
         ("M", "N", "aleph", "match"),
@@ -615,6 +578,6 @@ class TestWiresHelper:
         ],
     )
     def test_invalid_arguments(self, M, N, aleph, match):
-        """Test that invalid arguments raise an error."""
+        """Test that invalid arguments to alias_sampling_thc_wires raise an error."""
         with pytest.raises(ValueError, match=match):
             qp.alias_sampling_thc_wires(M, N, aleph)
