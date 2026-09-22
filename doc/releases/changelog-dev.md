@@ -452,6 +452,12 @@
 * Added decompositions of `CNOT`, `CZ`, `CY`, and `Hadamard` directly to PPMs.
   [(#9865)](https://github.com/PennyLaneAI/pennylane/pull/9865)
 
+* Added a decomposition of :class:`~.SemiAdder` based on Pauli product rotations and Pauli product
+  measurements, which considerably reduces the depth of the compiled circuit. The rule is only
+  applicable with an active compiler, and requires ``len(y_wires) + 1`` work wires, all of which are
+  returned in the :math:`|0\rangle` state.
+  [(#10099)](https://github.com/PennyLaneAI/pennylane/pull/10099)
+
 * Sorts the gate counts in the display of resources produced from decompositions.
   [(#9916)](https://github.com/PennyLaneAI/pennylane/pull/9916)
 
