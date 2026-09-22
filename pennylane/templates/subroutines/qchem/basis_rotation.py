@@ -348,6 +348,12 @@ def _prepare_args(unitary_matrix, wires):
 
 # pylint: disable=unused-argument
 def _real_basis_rotation_resources(unitary_matrix, wires, check=False):
+    """Upper bound on the gates emitted by '_real_basis_rotation_decomp'.
+
+    - SingleExcitation: Exact count of N(N-1)/2 for Givens rotation.
+    - PhaseShift: *At most* one for determinant correction; skipped if det = +1.
+
+    """
     dim = math.shape(unitary_matrix)[0]
 
     return {PhaseShift: 1, SingleExcitation: dim * (dim - 1) // 2}
@@ -386,6 +392,12 @@ def _real_basis_rotation_decomp(unitary_matrix, wires, **_):
 
 # pylint: disable=unused-argument
 def _complex_basis_rotation_resources(unitary_matrix, wires, check=False):
+    """Upper bound on the gates emitted by '_complex_basis_rotation_decomp'.
+
+    - SingleExcitation: Exact count of N(N-1)/2 for Givens rotation.
+    - PhaseShift: *At most* N(N-1)/2 + N for the additional N diagonal phases; skipped if phase equal to zero.
+
+    """
     dim = math.shape(unitary_matrix)[0]
     se_count = dim * (dim - 1) // 2
 
