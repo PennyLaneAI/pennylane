@@ -24,6 +24,7 @@ from pennylane.decomposition.utils import translate_op_alias
 from pennylane.typing import Float, Wire
 from tests.core.operator.operator2_utils import (
     CompilableDynOp,
+    DynWireSpecOp,
     OneWireDynOp,
     ParametrizedHybridOp,
 )
@@ -104,12 +105,14 @@ class TestSignatureRegistration:
     """Tests for ``register_signature`` and ``signature_registry``."""
 
     def test_fixed_signature_auto_registered(self):
-        """An operator with a fixed signature is registered automatically on definition."""
+        """Test that an operator with a fixed signature is registered automatically
+        on definition."""
         assert OneWireDynOp.has_fixed_sig
         assert signature_registry()[OneWireDynOp] == (OneWireDynOp.arg_specs,)
 
     def test_register_operator_with_compilable_arg(self):
-        """A signature can be registered manually for an operator with a compilable argument."""
+        """Test that a signature can be registered manually for an operator with a
+        compilable argument."""
         assert not CompilableDynOp.has_fixed_sig
         assert CompilableDynOp not in signature_registry()
 
@@ -125,18 +128,19 @@ class TestSignatureRegistration:
         )
 
     def test_registry_returns_shallow_copy(self):
-        """Mutating the returned registry does not affect the underlying registry."""
+        """Test that mutating the returned registry does not affect the underlying registry."""
         registry = signature_registry()
         del registry[OneWireDynOp]
         assert OneWireDynOp in signature_registry()
 
     def test_error_hybrid_or_static_args(self):
-        """Signatures cannot be registered for operators with hybrid or static arguments."""
+        """Test that signatures cannot be registered for operators with hybrid or
+        static arguments."""
         with pytest.raises(ValueError, match="hybrid or non-compilable static arguments"):
             register_signature(ParametrizedHybridOp)
 
     def test_error_incomplete_signature(self):
-        """The registered signature must cover all of the operator's arguments."""
+        """Test that the registered signature must cover all of the operator's arguments."""
         with pytest.raises(ValueError, match="must cover all operator arguments"):
             register_signature(CompilableDynOp)  # 'word' is missing
 
@@ -144,13 +148,49 @@ class TestSignatureRegistration:
         "kwargs, match",
         [
             ({"phi": "not_abstract"}, "Expected an abstract type for 'phi'"),
-            ({"phi": Float[-1]}, "dynamic data has fixed shapes"),
+            ({"phi": Float[-1]}, "must have a fixed shape"),
             ({"wires": "not_wires"}, "Expected an abstract type for 'wires'"),
-            ({"wires": Wire[-1]}, "all wire arguments have fixed shapes"),
+            ({"wires": Wire[-1]}, "must have a fixed shape"),
         ],
     )
     def test_error_invalid_arg_spec(self, kwargs, match):
-        """Dynamic and wire arguments must be given fixed-shape abstract types."""
+        """Test that dynamic and wire arguments must be given fixed-shape abstract types."""
 
         with pytest.raises(ValueError, match=match):
+            register_signature(OneWireDynOp, **kwargs)
+
+    def test_compatible_arg_spec(self):
+        """Test that a signature with types compatible with the operator's declared
+        ``arg_specs`` is accepted and added to the registry."""
+        # OneWireDynOp declares ``{"phi": Float, "wires": Wire[1]}``.
+        before = signature_registry().get(OneWireDynOp, ())
+        register_signature(OneWireDynOp, phi=Float, wires=Wire[1])
+        after = signature_registry()[OneWireDynOp]
+
+        assert len(after) == len(before) + 1
+        assert after[-1] == OneWireDynOp.arg_specs
+
+    def test_fixed_signature_compatible_with_dynamic_arg_spec(self):
+        """Test that a fixed-shape signature can be registered against an operator whose
+        declared ``arg_specs`` have a dynamic shape."""
+        # DynWireSpecOp declares dynamic ``{"phi": Float[-1], "wires": Wire[-1]}``.
+        register_signature(DynWireSpecOp, phi=Float[2], wires=Wire[3])
+        registered = signature_registry()[DynWireSpecOp][-1]
+
+        assert registered["phi"].shape == (2,)
+        assert registered["wires"] == Wire[3]
+
+    @pytest.mark.parametrize(
+        "kwargs",
+        [
+            ({"wires": Wire[2]}),  # OneWireDynOp declares a single wire (Wire[1])
+            ({"phi": Float[3]}),  # OneWireDynOp declares a scalar Float
+        ],
+    )
+    def test_error_incompatible_arg_spec(self, kwargs):
+        """Test that a signature whose (fixed-shape) types are incompatible with the
+        operator's declared ``arg_specs`` is rejected."""
+        with pytest.raises(
+            ValueError, match="compatible with the operator's argument specification"
+        ):
             register_signature(OneWireDynOp, **kwargs)

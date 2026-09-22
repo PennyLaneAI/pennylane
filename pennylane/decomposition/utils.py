@@ -24,8 +24,7 @@ from functools import singledispatch
 from numbers import Number
 from typing import Any
 
-from pennylane.core import Operator2
-from pennylane.core.operator import Operator, Operator1, abstractify
+from pennylane.core.operator import Operator, Operator1, Operator2, abstractify
 from pennylane.typing import AbstractArray, AbstractWires
 
 OP_NAME_ALIASES = {
@@ -188,8 +187,9 @@ def _init_signature_registration():
 
         .. seealso:: :func:`pennylane.decomposition.signature_registry`
         """
-        spec = dict(op.arg_specs or {})
-        spec.update(**kwargs)
+        op_specs = op.arg_specs or {}
+        all_specs = dict(op_specs)
+        all_specs.update(**kwargs)
 
         if op.hybrid_argnames or op.static_argnames:
             # Precompiling decomposition rules will require UID generation for operators
@@ -201,45 +201,44 @@ def _init_signature_registration():
             )
 
         # pylint: disable=protected-access
-        if set(spec.keys()) != set(op._sig.parameters.keys()):
+        if set(all_specs.keys()) != set(op._sig.parameters.keys()):
             raise ValueError(
                 "Signatures being registered must cover all operator arguments. Expected "
-                f"{tuple(op._sig.parameters.keys())} but got {tuple(spec.keys())}."
+                f"{tuple(op._sig.parameters.keys())} but got {tuple(all_specs.keys())}."
             )
 
-        for dname in op.dynamic_argnames:
-            aval = spec[dname]
-            if not (
-                (isinstance(aval, type) and issubclass(aval, Number))
-                or isinstance(aval, AbstractArray)
-            ):
+        for name in (*op.dynamic_argnames, *op.wire_argnames):
+            aval = all_specs[name]
+            is_dynamic = name in op.dynamic_argnames
+
+            if is_dynamic:
+                valid_type = (isinstance(aval, type) and issubclass(aval, Number)) or isinstance(
+                    aval, AbstractArray
+                )
+            else:
+                valid_type = isinstance(aval, AbstractWires)
+
+            if not valid_type:
                 raise ValueError(
-                    f"Expected an abstract type for '{dname}' when registering a signature "
+                    f"Expected an abstract type for '{name}' when registering a signature "
                     f"for {op.__name__}."
                 )
-            aval = abstractify(aval)
-            if not aval.shape_fixed:
+
+            if is_dynamic:
+                aval = abstractify(aval)
+
+            op_spec = op_specs.get(name, None)
+            compatible = op_spec is None or op_spec.is_compatible_with(aval)
+            if not (aval.shape_fixed and compatible):
                 raise ValueError(
-                    "Signatures can only be registered if dynamic data has fixed shapes, "
-                    f"but got shape {aval.shape} for '{op.__name__}.{dname}'."
+                    f"Invalid type registered for '{op.__name__}.{name}'. Registered signature "
+                    f"types must have a fixed shape and be compatible with the operator's argument "
+                    f"specification ({op_spec}), but got {aval}."
                 )
 
-            spec[dname] = aval
+            all_specs[name] = aval
 
-        for wname in op.wire_argnames:
-            aval = spec[wname]
-            if not isinstance(aval, AbstractWires):
-                raise ValueError(
-                    f"Expected an abstract type for '{wname}' when registering a signature "
-                    f"for {op.__name__}."
-                )
-            if not aval.shape_fixed:
-                raise ValueError(
-                    "Signatures can only be registered if all wire arguments have fixed shapes, "
-                    f"but got shape {aval.shape} for '{op.__name__}.{wname}'."
-                )
-
-        _registry[op] += (spec,)
+        _registry[op] += (all_specs,)
 
     def registry() -> dict[type[Operator2], tuple[dict[str, Any], ...]]:
         r"""Return the operator signatures registered with :func:`~.register_signature`.

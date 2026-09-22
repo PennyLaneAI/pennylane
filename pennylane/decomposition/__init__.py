@@ -93,6 +93,8 @@ Inspecting and Managing Decomposition Rules
     ~has_decomp
     ~inspect_decomps
     ~local_decomps
+    ~register_signature
+    ~signature_registry
     ~DecompCollection
 
 PennyLane maintains a global dictionary of decomposition rules. New decomposition rules can be
