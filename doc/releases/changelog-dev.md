@@ -1578,6 +1578,11 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug where a fixed decomposition rule assigned to :class:`~.MultiControlledX` via the
+  ``fixed_decomps`` keyword argument of :func:`~.transforms.decompose` was being ignored.
+  This does not apply to ``qjit(capture=True)``.
+  [(#10172)](https://github.com/PennyLaneAI/pennylane/pull/10172)
+
 * :func:`~.decomposition.inspect_decomps` and :func:`~.transforms.decomp_inspector` no longer
   insert a blank line after a decomposition rule that is unreachable but has no missing operators.
   [(#10151)](https://github.com/PennyLaneAI/pennylane/pull/10151)
