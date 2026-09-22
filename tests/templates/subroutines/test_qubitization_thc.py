@@ -38,6 +38,26 @@ def test_qubitization_thc_wires(M, N, aleph, beth, expected):
     }
 
 
+def _random_input(M, N, seed):
+    """Create random inputs zeta, t_ell, chi for QubitizationTHC (excludes t_eigenvectors)."""
+    rng = np.random.default_rng(seed)
+    zeta = rng.standard_normal((M, M))
+    zeta = tuple(map(tuple, (zeta + zeta.T) / 2))
+    chi = tuple(map(tuple, rng.standard_normal((M, N // 2))))
+    t_ell = tuple(rng.standard_normal(N // 2))
+    return zeta, t_ell, chi
+
+
+def _dummy_input(M, N):
+    """Create dummy inputs zeta, t_ell, chi, t_eigenvectors for QubitizationTHC."""
+    return (
+        tuple(map(tuple, np.eye(M))),
+        tuple(np.ones(N // 2)),
+        tuple(map(tuple, np.ones((M, N // 2)))),
+        tuple(map(tuple, np.eye(N // 2))),
+    )
+
+
 def _reference_V(leaf, N, sector):
     r"""Reference :math:`V = I - 2 c^\dagger c` from Jordan-Wigner, no circuit involved."""
     leaf = np.asarray(leaf, dtype=float)
@@ -70,6 +90,10 @@ def _realized_lcu(M, N, zeta, t_ell, aleph):  # pylint: disable=too-many-argumen
 def _reference_block(M, N, zeta, t_ell, chi, t_eigenvectors, aleph):
     # pylint: disable=too-many-arguments, too-many-positional-arguments
     """The operator the walk block-encodes, assembled from the documented LCU."""
+    zeta = np.array(zeta)
+    t_ell = np.array(t_ell)
+    chi = np.array(chi)
+    t_eigenvectors = np.array(t_eigenvectors)
     per_pair, sign_of = _realized_lcu(M, N, zeta, t_ell, aleph)
     block = np.zeros((2**N, 2**N), dtype=complex)
     for (mu, nu), prob in per_pair.items():
@@ -88,13 +112,13 @@ def _reference_block(M, N, zeta, t_ell, chi, t_eigenvectors, aleph):
     return block
 
 
-def _run(zeta, t_ell, chi, t_eigenvectors, aleph, beth, psi, spare=0, num_walks=1):
+def _run(zeta, t_ell, chi, t_eigenvectors, aleph, beth, psi, num_walks=1):
     # pylint: disable=too-many-arguments, too-many-positional-arguments
     """Apply the walk ``num_walks`` times to ``psi`` and return the system amplitudes with
     every auxiliary wire on |0>."""
     M, n_half = np.shape(chi)
     sizes = qp.qubitization_thc_wires(M, 2 * n_half, aleph, beth)
-    total = sum(sizes.values()) + spare
+    total = sum(sizes.values())
     wires = qp.registers(sizes)
     system = list(wires["system_wires"])
     auxiliaries = [w for w in range(total) if w not in system]
@@ -138,33 +162,29 @@ class TestQubitizationTHC:
 
     # pylint: disable=too-few-public-methods
 
-    def test_standard_validity(self, seed):
+    @pytest.mark.parametrize("num_batches", [1, 2])
+    def test_standard_validity(self, seed, num_batches):
         """Test standard validity of the QubitizationTHC operator with assert_valid."""
 
         M, N, aleph, beth = 6, 2, 2, 2
-        rng = np.random.default_rng(seed)
-        zeta = rng.standard_normal((M, M))
-        zeta = tuple(map(tuple, (zeta + zeta.T) / 2))
-        chi = tuple(map(tuple, rng.standard_normal((M, N // 2))))
-        t_ell = tuple(rng.standard_normal(N // 2))
-        t_eigenvectors = tuple(map(tuple, np.eye(N // 2)))
+        zeta, t_ell, chi = _random_input(M, N, seed)
+        *_, t_eigenvectors = _dummy_input(M, N)
 
         sizes = qp.qubitization_thc_wires(M, N, aleph, beth)
         wires = qp.registers(sizes)
 
-        op = qp.QubitizationTHC(zeta, t_ell, chi, t_eigenvectors, aleph, beth, **wires)
+        op = qp.QubitizationTHC(
+            zeta, t_ell, chi, t_eigenvectors, aleph, beth, **wires, num_batches=num_batches
+        )
         assert_valid(op)
 
     def test_prepare_cannot_succeed_raises(self):
         """Test that an M whose valid index set is too small to amplify exactly is rejected."""
         M, N, aleph, beth = 4, 2, 1, 1  # d = 11 < 2 ** (2 * 3 - 2) = 16
+        qp.qubitization_thc_wires(M, N, aleph, beth)  # sizes are fine, the walk is not
         with pytest.raises(ValueError, match="cannot reach unit success probability"):
-            qp.qubitization_thc_wires(M, N, aleph, beth)  # sizes are fine, the walk is not
             qp.QubitizationTHC(
-                tuple(map(tuple, np.eye(M))),
-                tuple(np.ones(N // 2)),
-                tuple(map(tuple, np.ones((M, N // 2)))),
-                tuple(map(tuple, np.eye(N // 2))),
+                *_dummy_input(M, N),
                 aleph,
                 beth,
                 range(N),
@@ -191,35 +211,43 @@ class TestQubitizationTHC:
         wires = qp.registers(sizes)
         with pytest.raises(ValueError, match=match):
             qp.QubitizationTHC(
-                tuple(map(tuple, np.eye(M))),
-                tuple(np.ones(N // 2)),
-                tuple(map(tuple, np.ones((M, N // 2)))),
-                tuple(map(tuple, np.eye(N // 2))),
+                *_dummy_input(M, N),
                 aleph,
                 beth,
-                wires["system_wires"],
-                wires["index_wires"],
-                wires["prep_garbage_wires"],
-                wires["gradient_wires"],
-                wires["work_wires"],
+                **wires,
+            )
+
+    def test_too_few_work_wires_raises(self):
+        """Test that an error is raised if work_wires, which only have a lower bound on their size,
+        are too small."""
+        M, N, aleph, beth = 1, 2, 1, 1
+        sizes = qp.qubitization_thc_wires(M, N, aleph, beth)
+        sizes["work_wires"] -= 1
+        wires = qp.registers(sizes)
+        with pytest.raises(ValueError, match="work_wires must have at least"):
+            qp.QubitizationTHC(
+                *_dummy_input(M, N),
+                aleph,
+                beth,
+                **wires,
             )
 
     @pytest.mark.parametrize("zeta, t_ell", [([[2.0]], [-1.0]), ([[-2.0]], [1.0])])
-    def test_block_matches_reference(self, zeta, t_ell):
+    def test_block_matches_reference(self, zeta, t_ell, seed):
         """Test that the |0> block is the signed LCU, and in particular that flipping every
         sign flips the block: the coefficient signs must survive PREPARE^dagger."""
         M, N, aleph, beth = 1, 2, 1, 1
         zeta, t_ell = np.array(zeta), np.array(t_ell)
-        chi, tev = np.ones((M, N // 2)), np.eye(N // 2)
+        *_, chi, tev = _dummy_input(M, N)
 
-        psi = np.random.default_rng(7).standard_normal(2**N) + 0j
+        psi = np.random.default_rng(seed).standard_normal(2**N) + 0j
         psi /= np.linalg.norm(psi)
 
         got = _run(zeta, t_ell, chi, tev, aleph, beth, psi)
         expected = _reference_block(M, N, zeta, t_ell, chi, tev, aleph) @ psi
         assert np.allclose(got, expected, atol=1e-8)
 
-    def test_second_chebyshev_moment(self):
+    def test_second_chebyshev_moment(self, seed):
         """Test that two walks give T_2(H / lambda) = 2 (H / lambda)^2 - I.
 
         The single-walk test above cannot detect a reflection of the wrong scope, because
@@ -229,9 +257,9 @@ class TestQubitizationTHC:
         """
         M, N, aleph, beth = 1, 2, 1, 1
         zeta, t_ell = np.array([[2.0]]), np.array([-1.0])
-        chi, tev = np.ones((M, N // 2)), np.eye(N // 2)
+        *_, chi, tev = _dummy_input(M, N)
 
-        psi = np.random.default_rng(7).standard_normal(2**N) + 0j
+        psi = np.random.default_rng(seed).standard_normal(2**N) + 0j
         psi /= np.linalg.norm(psi)
 
         block = _reference_block(M, N, zeta, t_ell, chi, tev, aleph)
@@ -246,7 +274,7 @@ class TestQubitizationTHC:
         M, N, aleph = 2, 2, 1
         zeta = np.array([[2.0, 1.0], [1.0, -2.0]])
         t_ell = np.array([1.0])
-        chi, tev = np.ones((M, N // 2)), np.eye(N // 2)
+        *_, chi, tev = _dummy_input(M, N)
 
         def number_op(leaf):
             return sum(0.5 * (np.eye(2**N) - _reference_V(leaf, N, s)) for s in (0, 1))
@@ -254,7 +282,7 @@ class TestQubitizationTHC:
         n_mu = [number_op(chi[mu]) for mu in range(M)]
         ham = sum(zeta[mu, nu] * n_mu[mu] @ n_mu[nu] for mu in range(M) for nu in range(M))
         ham = ham - 2 * sum(zeta[mu].sum() * n_mu[mu] for mu in range(M))
-        ham = ham + 2 * t_ell[0] * number_op(tev[:, 0])
+        ham = ham + 2 * t_ell[0] * number_op(np.array(tev)[:, 0])
         lam = np.abs(zeta).sum() + 2 * np.abs(t_ell).sum()
 
         block = _reference_block(M, N, zeta, t_ell, chi, tev, aleph)

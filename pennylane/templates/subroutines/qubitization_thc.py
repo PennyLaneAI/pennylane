@@ -371,41 +371,6 @@ class QubitizationTHC(Operator2):
     register returns to :math:`\lvert \vec 0 \rangle`, i.e. the squared norm of
     :math:`(\hat{\mathcal{H}} / \lambda) \lvert \psi \rangle`.
 
-    .. warning::
-
-        Two things about that device line are load-bearing.
-
-        First, ``wires`` is deliberately left unset. ``PREPARE``'s ``QROM`` requests dynamic
-        work wires when it decomposes, and those come on top of the registers reported by
-        :func:`~.qubitization_thc_wires`, so a device fixed at ``sum(sizes.values())`` raises
-        ``AllocationError``. Measured peak of concurrent dynamic wires: ``0`` at
-        ``M = 1, N = 2``, ``1`` at ``M = 2, N = 2``, and ``3`` at ``M = 7, N = 8``. Leaving
-        ``wires`` unset lets the device size itself.
-
-        On a fixed-width device — which is what ``lightning.qubit`` requires, since it
-        cannot take a :class:`~pennylane.allocation.DynamicWire` at all — resolve the
-        dynamic requests yourself against an explicit pool:
-
-        .. code-block:: python
-
-            from functools import partial
-
-            total = sum(sizes.values())
-            pool = [total]  # size it to the peak above; 1 is enough at M = 2, N = 2
-
-            @partial(qp.transforms.resolve_dynamic_wires, zeroed=pool)
-            @partial(qp.transforms.decompose, stopping_condition=lambda op: len(op.wires) <= 3)
-            @qp.qnode(qp.device("default.qubit", wires=total + len(pool)))
-            def circuit():
-                ...
-
-        A pool smaller than the peak raises ``AllocationError: no wires left to allocate``,
-        so the failure is loud rather than silent.
-
-        Second, the :func:`~pennylane.transforms.decompose` wrapper is not an optimization.
-        Without it the simulator tries to build the dense matrix of the reflection's
-        multi-controlled :math:`Z` and dies with a ``MemoryError`` asking for over 100 TiB
-        already at ``M = 2, N = 2``.
     """
 
     wire_argnames = (
