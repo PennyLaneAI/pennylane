@@ -146,6 +146,7 @@ def _run_trotter_steps(
 
         U = merge_leaves(U_tensor[prev_fragment_idx], U_tensor[1])
         apply_system_basis_rotation(U, wires)
+        # End internal steps with a full fragment-1 block and the final step with a half block.
         endpoint_time_step = math.where(
             step_idx < num_trotter_steps - 1,
             second_order_time_step,
@@ -153,7 +154,6 @@ def _run_trotter_steps(
         )
         apply_two_body_diagonal(Z_tensor[1], wires, endpoint_time_step, control_wires, double_phase)
 
-    # End internal steps with a full fragment-1 block and the final step with a half block.
     for_loop(num_trotter_steps)(remainder_of_step)()
 
     very_last_U = transpose_leaf(U_tensor[1])
