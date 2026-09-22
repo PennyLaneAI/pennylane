@@ -508,7 +508,7 @@
   ```python
   import pennylane as qp
   import numpy as np
-  
+
   M, N, aleph, beth = 2, 2, 1, 1
   zeta = tuple(map(tuple, np.eye(M)))
   t_ell = tuple(np.ones(N//2))
@@ -516,7 +516,10 @@
   t_eigenvectors = tuple(map(tuple, np.eye(N // 2)))
   sizes = qp.qubitization_thc_wires(M, N, aleph, beth)
   wires = qp.registers(sizes)
-  print(qp.draw(qp.QubitizationTHC(zeta, t_ell, chi, t_eigenvectors, aleph, beth, **wires).decomposition, max_length=140)())
+  ```
+
+  ```pycon
+  >>> print(qp.draw(qp.QubitizationTHC(zeta, t_ell, chi, t_eigenvectors, aleph, beth, **wires).decomposition, max_length=140)())
    0: ────────────────────────────────────────╭SelectTHC────────────────────────────────────────────────────╭GlobalPhase(3.14)─┤
    1: ────────────────────────────────────────├SelectTHC────────────────────────────────────────────────────├GlobalPhase(3.14)─┤
    2: ─╭SuperpositionTHC─╭AliasSamplingTHC────├SelectTHC────╭AliasSamplingTHC†─╭SuperpositionTHC†─╭FlipSign─├GlobalPhase(3.14)─┤
@@ -545,6 +548,7 @@
   25: ─│─────────────────│────────────────────├SelectTHC────│──────────────────│────────────────────────────├GlobalPhase(3.14)─┤
   26: ─├SuperpositionTHC─├AliasSamplingTHC────├SelectTHC────├AliasSamplingTHC†─├SuperpositionTHC†───────────├GlobalPhase(3.14)─┤
   27: ─╰SuperpositionTHC─╰AliasSamplingTHC────╰SelectTHC────╰AliasSamplingTHC†─╰SuperpositionTHC†───────────╰GlobalPhase(3.14)─┤
+
   ```
 
 * Added :class:`~.OneBodyBlockEncoding`, a block-encoding of a real symmetric one-body operator
@@ -647,7 +651,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* Added a decomposition of :class:`~.TemporaryAND` directly to four :math:`\pm\pi/8` PPRs and a 
+* Added a decomposition of :class:`~.TemporaryAND` directly to four :math:`\pm\pi/8` PPRs and a
   decomposition of :class:`~.SingleExcitation` to two :math:`\pm\pi/4` and two arbitrary-angle PPRs.
   [(#10108)](https://github.com/PennyLaneAI/pennylane/pull/10108)
 
