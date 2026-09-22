@@ -21,6 +21,7 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import math
+from pennylane.decomposition.decomposition_rule import _fix_decomp
 from pennylane.ops import ctrl_decomp_bisect, ctrl_decomp_zyz
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math.decompositions.controlled_decompositions import (
@@ -774,6 +775,15 @@ class TestMCXDecomposition:
         assert rules
         for rule in rules:
             _test_decomposition_rule(mcx, rule)
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_mcx_fixed_decomp(self):
+        """Tests that a fixed decomposition rule is used instead of the stock ones."""
+
+        mcx = qp.MultiControlledX(wires=[0, 1, 2, 3])
+        with qp.decomposition.local_decomps():
+            _fix_decomp(qp.MultiControlledX, decompose_mcx_with_no_worker)
+            assert list(qp.list_decomps(mcx)) == [decompose_mcx_with_no_worker]
 
     @pytest.mark.catalyst
     @pytest.mark.usefixtures("enable_graph_decomposition")
