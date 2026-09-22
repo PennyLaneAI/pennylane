@@ -322,12 +322,12 @@ class BasisRotation(Operator2):
         super().__init__(unitary_matrix, wires=wires)
 
 
-def _is_real_matrix(unitary_matrix, **__):
-    return not math.get_dtype_name(unitary_matrix).startswith("complex")
-
-
 def _is_complex_matrix(unitary_matrix, **__):
-    return not _is_real_matrix(unitary_matrix)
+    return math.get_dtype_name(unitary_matrix).startswith("complex")
+
+
+def _is_real_matrix(unitary_matrix, **__):
+    return not _is_complex_matrix(unitary_matrix)
 
 
 def _is_jax_jit(U):
