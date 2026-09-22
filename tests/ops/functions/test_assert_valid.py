@@ -15,12 +15,12 @@
 This module contains unit tests for ``qp.ops.functions.assert_valid``.
 """
 
+# pylint: disable=too-few-public-methods,unused-argument
+
 import copy
 from pickle import PicklingError
 
 import numpy as np
-
-# pylint: disable=too-few-public-methods, unused-argument
 import pytest
 import scipy.sparse
 
@@ -34,6 +34,7 @@ from pennylane.ops.functions.assert_valid import (
     _check_pytree,
     _test_decomposition_rule,
 )
+from pennylane.typing import Wire
 from pennylane.wires import Wires
 from tests.core.operator.operator2_utils import DynOp, OneWireDynOp
 
@@ -177,6 +178,55 @@ class TestDecompositionErrors:
 
         assert_valid(ValidMCMDecomp(wires=0), skip_pickle=True)
 
+    def test_rule_with_non_int_counts(self):
+        """Test that a rule with non-int counts raises an error."""
+
+        class MyOp(Operator):
+            num_wires = 2
+
+        op = MyOp([0, 1])
+
+        def rule(wires):
+            qp.X(wires[0])
+            qp.X(wires[1])
+            qp.Y(wires[0])
+            qp.Y(wires[1])
+
+        rule_float_counts = qp.register_resources({qp.X: 2.0, qp.Y: 3.0})(rule)
+        with pytest.raises(
+            AssertionError,
+            match="Resource count for 'PauliX' in 'MyOp' decomp rule 'rule' must be an integer",
+        ):
+            _test_decomposition_rule(op, rule_float_counts)
+
+        rule_float_counts = qp.register_resources({qp.X: 2, qp.Y: 3.0})(rule)
+        with pytest.raises(
+            AssertionError,
+            match="Resource count for 'PauliY' in 'MyOp' decomp rule 'rule' must be an integer",
+        ):
+            _test_decomposition_rule(op, rule_float_counts)
+
+    @pytest.mark.parametrize("numpy_int", (np.int64, np.int32, np.uint8))
+    def test_numpy_ints_are_not_allowed(self, numpy_int):
+        """Test that numpy integer types are not allowed."""
+
+        class MyOp(Operator):
+            num_wires = 2
+
+        op = MyOp([0, 1])
+
+        def rule(wires):
+            qp.X(wires[0])
+            qp.X(wires[1])
+
+        rule = qp.register_resources({qp.X: numpy_int(2)})(rule)
+
+        with pytest.raises(
+            AssertionError,
+            match="Resource count for 'PauliX' in 'MyOp' decomp rule 'rule' must be an integer",
+        ):
+            _test_decomposition_rule(op, rule)
+
     def test_bad_new_decomposition_rule_exact(self):
         """Test that an informative error is raised if the
         claimed-to-be-exact resources of a decomposition rule are not correct."""
@@ -233,7 +283,7 @@ class TestDecompositionErrors:
         def mcm_rule(wires):
             qp.ops.measure(wires[0])
 
-        rule = qp.register_resources({qp.ops.MidMeasure: 1})(mcm_rule)
+        rule = qp.register_resources({qp.ops.MidMeasure(wires=Wire[1]): 1})(mcm_rule)
 
         spy = mocker.spy(qp, "matrix")
         _test_decomposition_rule(op, rule)
@@ -870,7 +920,7 @@ def create_op_instance(c):
     return c(*params, wires=wires) if wires else c(*params)
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_generated_list_of_ops(class_to_validate):
     """Test every auto-generated operator instance."""
     if class_to_validate.__module__[10:14] == "ftqc":
@@ -893,7 +943,7 @@ def test_generated_list_of_ops(class_to_validate):
     assert_valid(op)
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_explicit_list_of_ops(valid_instance_and_kwargs):
     """Test the validity of operators that could not be auto-generated."""
     op, kwargs = valid_instance_and_kwargs
@@ -903,7 +953,8 @@ def test_explicit_list_of_ops(valid_instance_and_kwargs):
     assert_valid(op, **kwargs)
 
 
-@pytest.mark.jax
+# these tests are explicitly for things expected to fail when capture is disabled
+@pytest.mark.usefixtures("disable_capture")
 def test_explicit_list_of_failing_ops(invalid_instance_and_error):
     """Test instances of ops that fail validation."""
     op, exc_type = invalid_instance_and_error

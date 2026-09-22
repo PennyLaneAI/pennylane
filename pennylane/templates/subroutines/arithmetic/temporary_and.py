@@ -19,14 +19,12 @@ from collections.abc import Sequence
 from typing import override
 
 from pennylane import math, ops
-from pennylane.core.operator import Operator2, abstractify
+from pennylane.core.operator import Operator2
 from pennylane.decomposition import (
     add_decomps,
-    change_op_basis_resource_rep,
     register_resources,
-    resource_rep,
 )
-from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.typing import AbstractArray, Bool, Wire
 from pennylane.wires import WiresLike
 
@@ -207,20 +205,25 @@ _number_xs = 2
 
 
 def _temporary_and_resources(*_, **__):
-    prod_rep = resource_rep(
-        ops.Prod,
-        resources={
-            abstractify(ops.Hadamard): 1,
-            abstractify(ops.T): 1,
-            abstractify(ops.CNOT): 1,
-            _adjoint_abstract(ops.T): 1,
-        },
+    compute_rep = ops.prod(
+        ops.adjoint(ops.T(Wire[1])),
+        ops.CNOT(Wire[2]),
+        ops.T(Wire[1]),
+        ops.Hadamard(Wire[1]),
     )
-    return {
+    uncompute_rep = ops.prod(
+        ops.Hadamard(Wire[1]),
+        ops.adjoint(ops.T(Wire[1])),
+        ops.CNOT(Wire[2]),
+        ops.T(Wire[1]),
+    )
+
+    resources = {
         ops.X: _number_xs,
-        change_op_basis_resource_rep(prod_rep, ops.CNOT, prod_rep): 1,
-        _adjoint_abstract(ops.S): 1,
+        _change_op_basis_abstract(compute_rep, ops.CNOT, uncompute_rep): 1,
+        ops.adjoint(ops.S(Wire[1])): 1,
     }
+    return resources
 
 
 @register_resources(_temporary_and_resources, exact=False)
@@ -228,21 +231,19 @@ def _temporary_and(wires: WiresLike, control_values: Sequence[bool]):
     ops.cond(math.logical_not(control_values[0]), ops.X)(wires[0])
     ops.cond(math.logical_not(control_values[1]), ops.X)(wires[1])
 
-    ops.change_op_basis(
-        ops.prod(
-            ops.adjoint(ops.T(wires=wires[2])),
-            ops.CNOT(wires=[wires[1], wires[2]]),
-            ops.T(wires=wires[2]),
-            ops.H(wires[2]),
-        ),
-        ops.CNOT(wires=[wires[0], wires[2]]),
-        ops.prod(
-            ops.H(wires[2]),
-            ops.adjoint(ops.T(wires=wires[2])),
-            ops.CNOT(wires=[wires[1], wires[2]]),
-            ops.T(wires=wires[2]),
-        ),
-    )
+    def _compute_fn():
+        ops.H(wires[2])
+        ops.T(wires=wires[2])
+        ops.CNOT(wires=[wires[1], wires[2]])
+        ops.adjoint(ops.T(wires=wires[2]))
+
+    def _uncompute_fn():
+        ops.T(wires=wires[2])
+        ops.CNOT(wires=[wires[1], wires[2]])
+        ops.adjoint(ops.T(wires=wires[2]))
+        ops.H(wires[2])
+
+    ops.change_op_basis(_compute_fn, ops.CNOT(wires=[wires[0], wires[2]]), _uncompute_fn)
     ops.adjoint(ops.S(wires=wires[2]))
 
     ops.cond(math.logical_not(control_values[0]), ops.X)(wires[0])
@@ -263,16 +264,43 @@ def _temporary_and_to_toffoli(wires: WiresLike, control_values: Sequence[bool]):
     _toffoli_with_cvals(wires, control_values)
 
 
-add_decomps(TemporaryAND, _temporary_and, _temporary_and_to_toffoli)
+def _temporary_and_ppr_resources(*_, **__):
+    return {
+        ops.X: _number_xs,
+        ops.PPR(8, "ZZY", Wire[3]): 1,
+        ops.PPR(-8, "ZY", Wire[2]): 2,
+        ops.PPR(8, "Y", Wire[1]): 1,
+    }
+
+
+@register_resources(_temporary_and_ppr_resources, exact=False)
+def _temporary_and_ppr(wires: WiresLike, control_values: Sequence[bool]):
+    ops.cond(math.logical_not(control_values[0]), ops.X)(wires[0])
+    ops.cond(math.logical_not(control_values[1]), ops.X)(wires[1])
+    ops.PPR(8, "ZZY", wires)
+    ops.PPR(-8, "ZY", wires[1:])
+    ops.PPR(-8, "ZY", wires[::2])
+    ops.PPR(8, "Y", wires[2:])
+    ops.cond(math.logical_not(control_values[0]), ops.X)(wires[0])
+    ops.cond(math.logical_not(control_values[1]), ops.X)(wires[1])
+
+
+add_decomps(TemporaryAND, _temporary_and, _temporary_and_to_toffoli, _temporary_and_ppr)
 
 
 def _adjoint_temporary_and_resources(*_, **__):
-    return {ops.Hadamard: 1, ops.MidMeasure: 1, ops.CZ: 1, ops.X: _number_xs}
+    return {
+        ops.Hadamard: 1,
+        ops.MidMeasure(Wire[1], reset=True): 1,
+        ops.CZ: 1,
+        ops.X: _number_xs,
+    }
 
 
 @register_resources(_adjoint_temporary_and_resources, exact=False)
 def _adjoint_temporary_and(base):
-    r"""The implementation of adjoint TemporaryAND by mid-circuit measurements as found in https://arxiv.org/abs/1805.03662."""
+    r"""The implementation of adjoint TemporaryAND by mid-circuit measurements
+    as found in https://arxiv.org/abs/1805.03662."""
     cvals = base.control_values
     ops.cond(math.logical_not(cvals[0]), ops.X)(base.wires[0])
     ops.cond(math.logical_not(cvals[1]), ops.X)(base.wires[1])

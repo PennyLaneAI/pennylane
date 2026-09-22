@@ -559,6 +559,10 @@ def _capture_apply(op):
     """Applies an op in a capture context."""
 
     if hasattr(op, "_bind_primitive"):
+        # NOTE: Shallow-copy to avoid mutating the input operator
+        op = copy.copy(op)
+        # NOTE: Reset tracer attribute to prevent tracer leaks
+        op.tracer = None
         op._bind_primitive()  # pylint: disable=protected-access
         if op.tracer is None:
             raise RuntimeError("Trying to use apply in a non-tracing context.")

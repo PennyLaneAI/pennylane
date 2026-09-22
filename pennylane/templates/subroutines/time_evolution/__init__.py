@@ -21,3 +21,4 @@ from .qdrift import QDrift
 from .trotter import TrotterProduct, TrotterizedQfunc, trotterize
 from .trotter_cdf import TrotterCDF
 from .trotter_cgf import TrotterCGF
+from .trotter_vibronic import TrotterVibronic

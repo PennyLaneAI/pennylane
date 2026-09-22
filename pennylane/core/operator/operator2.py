@@ -84,12 +84,6 @@ ARGNAME_CATEGORIES = (
 )
 
 
-def _is_pytree_placeholder(obj) -> bool:
-    """Whether 'obj' is a sentinel placeholder that JAX substitutes for real pytree leaves."""
-    cls = type(obj)
-    return cls.__name__ == "ArgInfo" and cls.__module__.partition(".")[0] == "jax"
-
-
 class Operator2(metaclass=OperatorMeta):
     r"""Base class representing quantum operators that are designed for compatibility with
     :func:`~.qjit`.
@@ -1284,13 +1278,19 @@ class Operator2(metaclass=OperatorMeta):
         serialized_compilable = tuple(str(self.arguments[c]) for c in self.compilable_argnames)
 
         serialized_hybrid = []
-        for h in self.hybrid_argnames:
-            leaves, tree = flatten(self.arguments[h], is_leaf=_is_hash_leaf)
-            ser_leaves = tuple(
-                l if isinstance(l, (AbstractWires, Operator, Wires)) else _canonicalize_dynamic(l)
-                for l in leaves
-            )
-            serialized_hybrid.append((ser_leaves, tree))
+        if self.hybrid_argnames:
+            # Imported lazily to avoid a circular import
+            # pylint: disable=import-outside-toplevel
+            from pennylane.decomposition.resources import CompressedResourceOp
+
+            hashable_leaf_types = (AbstractWires, Operator, Wires, CompressedResourceOp)
+            for h in self.hybrid_argnames:
+                leaves, tree = flatten(self.arguments[h], is_leaf=_is_hash_leaf)
+                ser_leaves = tuple(
+                    l if isinstance(l, hashable_leaf_types) else _canonicalize_dynamic(l)
+                    for l in leaves
+                )
+                serialized_hybrid.append((ser_leaves, tree))
 
         return hash(
             (
@@ -1481,10 +1481,12 @@ class Operator2(metaclass=OperatorMeta):
 
         # NOTE: To prepare for lowering, JAX 0.7.1 will insert 'ArgInfo' placeholders
         # during the `jit_trace` pass in `stages.make_args_info`. This triggers
-        # pre-mature unflattening even when just calling `make_jaxpr`.
+        # pre-mature unflattening even when just calling `make_jaxpr`. We manually populate
+        # the "shell" operator with attributes created inside the constructor to ensure
+        # correct behaviour
         # TODO: Remove this workaround once we support JAX > 0.7.1 as they fixed this in later versions
         if any(_is_pytree_placeholder(leaf) for leaf in flatten(args)[0]):
-            return object.__new__(cls)
+            return _create_hollow_operator(cls, args)
 
         with QueuingManager.stop_recording(), pause():
             return cls(**args)
@@ -2006,6 +2008,28 @@ def pop_op_eqns(ops: Iterable):
     return old_eqns
 
 
+def _is_pytree_placeholder(obj) -> bool:
+    """Whether 'obj' is a sentinel placeholder that JAX substitutes for real pytree leaves."""
+    cls = type(obj)
+    return cls.__name__ == "ArgInfo" and cls.__module__.partition(".")[0] == "jax"
+
+
+def _create_hollow_operator(cls, args) -> Operator2:
+    """Create an operator instance with hollow values. This is needed if there is any sentinel
+    placeholder that JAX substitutes for real pytree leaves. The values can be hollow because
+    these placeholders are used temporarily and discarded.
+    """
+    # pylint: disable=protected-access
+    op = object.__new__(cls)
+    op._bound_args = op._sig.bind(**args)
+    op._pauli_rep = None
+    op._wires = Wires([])
+    op._batch_size = _UNSET_BATCH_SIZE
+    op._ndim_params = _UNSET_BATCH_SIZE
+    op.tracer = None
+    return op
+
+
 def _op_arg_forward_mask(op: Operator2) -> list[bool]:
     """Build ``forward_mask`` entries for an operator argument."""
     op_leaves, _ = flatten(op, is_leaf=_is_wires)
@@ -2226,7 +2250,6 @@ def _is_abstract_specifier(val):
 @QueuingManager.stop_recording()
 def _abstractify_operator_type(op_type: type[Operator2]) -> Operator2:
     """Abstractify a subclass of operator."""
-
     if op_type.has_fixed_sig:
         return op_type(**op_type.arg_specs)
 

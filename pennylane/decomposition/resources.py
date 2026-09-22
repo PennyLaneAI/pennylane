@@ -254,8 +254,6 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
         return adjoint_resource_rep(**params)
     if issubclass(op_type, qp.ops.Pow):
         return pow_resource_rep(**params)
-    if issubclass(op_type, qp.ops.ChangeOpBasis):
-        return change_op_basis_resource_rep(**params)
     if op_type is qp.ops.ControlledOp:
         op_type = qp.ops.Controlled
     if op_type is qp.ops.Controlled:
@@ -395,16 +393,20 @@ def resolve_work_wire_type(base_work_wires, base_work_wire_type, work_wires, wor
     more flexible in the future with dynamic qubit management, but for now we're just going
     to live with this).
     """
-    if base_work_wires and base_work_wire_type == "borrowed":
+
+    def _exists(wire_arg):
+        return wire_arg is not None and len(wire_arg) > 0
+
+    if _exists(base_work_wires) and base_work_wire_type == "borrowed":
         return "borrowed"
 
-    if work_wires and work_wire_type == "borrowed":
+    if _exists(work_wires) and work_wire_type == "borrowed":
         return "borrowed"
 
-    if not base_work_wires:
+    if not _exists(base_work_wires):
         return work_wire_type
 
-    if not work_wires:
+    if not _exists(work_wires):
         return base_work_wire_type
 
     return "zeroed"

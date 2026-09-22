@@ -22,7 +22,7 @@ from collections.abc import Callable, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
-from functools import singledispatch
+from functools import partial, singledispatch, update_wrapper
 from textwrap import dedent
 from typing import overload
 
@@ -363,6 +363,7 @@ class DecompositionRule:
         name: str = "",
     ):
 
+        update_wrapper(self, func)
         self._impl = func
 
         try:
@@ -417,7 +418,16 @@ class DecompositionRule:
             _verify_is_abstract_and_fixed(op)
             if count > 0:
                 gate_counter.update({op: count})
-        return Resources(dict(gate_counter))
+
+        gate_counter = dict(gate_counter)
+        if qp.capture.enabled():
+            # When capture is enabled, ChangeOpBasis is unrolled. The resource functions are
+            # typically not aware of that, and still produce resource reps of ChangeOpBasis.
+            # Therefore, we unroll the ChangeOpBasis in the resources manually so that it will
+            # match what the decomposition rule actually produces.
+            gate_counter = _unroll_change_op_basis(gate_counter)
+
+        return Resources(gate_counter)
 
     def is_applicable(self, *args, **kwargs) -> bool:
         """Checks whether this decomposition rule is applicable."""
@@ -1107,10 +1117,11 @@ def null_decomp(*_, **__):
 
 def _is_abstract_and_fixed(val, is_leaf=False):
     """Checks whether `val` is (or only contains) abstract data of fixed shapes."""
-    # We don't actually need to check whether val is abstract, since the Resources class
-    # already abstractifies everything. We only need to make sure that it's fixed.
     if isinstance(val, (AbstractArray, AbstractWires)):
         return val.shape_fixed
+    if isinstance(val, CompressedResourceOp):
+        # Legacy resource representations are valid, fully-abstract resource leaves.
+        return True
     if is_leaf:
         # This branch is added as a precaution to avoid infinite recursion, but this should
         # never actually happen, because we always call `abstractify` first to fully abstractify
@@ -1146,3 +1157,96 @@ def _decomp_contains_mcm(rule, params):
         return False
     resources = rule.compute_resources(**params).gate_counts
     return any(_is_measurement(resource_op) for resource_op in resources)
+
+
+def _unroll_change_op_basis(gate_counts):
+    """Unroll ChangeOpBasis resource keys, including those inside symbolic operators.
+
+    ``ChangeOpBasis`` is unrolled into its compute/target/uncompute operands when program
+    capture is enabled. Resource functions call this on their returned gate-count dict so that
+    the estimate matches the captured decomposition.
+    """
+    new_gate_counts = defaultdict(int)
+    for op_rep, count in gate_counts.items():
+        for unrolled_rep, inner_count in _unroll_change_op_basis_resource(op_rep).items():
+            new_gate_counts[unrolled_rep] += count * inner_count
+    return new_gate_counts
+
+
+def _unroll_change_op_basis_resource(op_rep):
+    """Expand a single resource key that is (or wraps) a ChangeOpBasis.
+
+    Keys that do not involve a ChangeOpBasis are returned unchanged as ``{op_rep: 1}``.
+    """
+    operands = _change_op_basis_operands(op_rep)
+    if operands is not None:
+        gate_counts = defaultdict(int)
+        for operand in operands:
+            for inner_op, count in _unroll_prod_operand(operand).items():
+                gate_counts[inner_op] += count
+        return gate_counts
+
+    # pylint: disable=import-outside-toplevel
+    from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+    from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+
+    if isinstance(op_rep, qp.ops.Adjoint2):
+        return _unroll_symbolic_change_op_basis(op_rep, _adjoint_abstract)
+
+    if isinstance(op_rep, qp.ops.ControlledOp2):
+        wrapper = partial(
+            _ctrl_abstract,
+            control_wires=op_rep.control_wires,
+            work_wires=op_rep.work_wires,
+            work_wire_type=op_rep.work_wire_type,
+        )
+        return _unroll_symbolic_change_op_basis(op_rep, wrapper)
+
+    return {op_rep: 1}
+
+
+def _change_op_basis_operands(op_rep):
+    """Return ``(compute_op, target_op, uncompute_op)`` for a ChangeOpBasis resource key.
+
+    Handles both a native :class:`~.ChangeOpBasis2` and a legacy ``CompressedResourceOp``
+    wrapping :class:`~.ChangeOpBasis`. Returns ``None`` for any other resource key.
+    """
+    if isinstance(op_rep, qp.ops.ChangeOpBasis2):
+        return op_rep.compute_op, op_rep.target_op, op_rep.uncompute_op
+    if isinstance(op_rep, CompressedResourceOp) and op_rep.op_type is qp.ops.ChangeOpBasis:
+        params = op_rep.params
+        return params["compute_op"], params["target_op"], params["uncompute_op"]
+    return None
+
+
+def _unroll_prod_operand(operand):
+    """Expand a Prod-like ChangeOpBasis operand into its inner resource keys with counts."""
+
+    # pylint: disable=import-outside-toplevel
+    from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+
+    if isinstance(operand, qp.ops.Prod2):
+        counts = defaultdict(int)
+        for inner_op in operand.operands:
+            counts[inner_op] += 1
+        return dict(counts)
+    if isinstance(operand, qp.ops.Adjoint):
+        counts = defaultdict(int)
+        for inner_op, inner_count in _unroll_prod_operand(operand.base).items():
+            counts[_adjoint_abstract(inner_op)] += inner_count
+        return dict(counts)
+    if isinstance(operand, CompressedResourceOp) and operand.op_type is qp.ops.Prod:
+        return dict(operand.params["resources"])
+    return {operand: 1}
+
+
+def _unroll_symbolic_change_op_basis(op_rep, wrapper):
+    """Unroll a ChangeOpBasis nested in a single symbolic resource key and reapply its wrapper."""
+    unrolled_base = _unroll_change_op_basis_resource(op_rep.base)
+    if unrolled_base == {op_rep.base: 1}:
+        return {op_rep: 1}
+
+    gate_counts = defaultdict(int)
+    for base_rep, count in unrolled_base.items():
+        gate_counts[wrapper(base_rep)] += count
+    return gate_counts

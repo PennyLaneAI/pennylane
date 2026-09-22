@@ -439,6 +439,134 @@ class TestMapToResourceOp:
         assert mapped_op == expected_res_op
         assert mapped_op.wires == expected_res_op.wires
 
+    def test_map_to_resource_op_trotter_vibronic(self):
+        """Test mapping ``TrotterVibronic`` to its resource operator."""
+        n_states, n_modes, k, b = 4, 2, 3, 2
+        n = int(qp.math.ceil_log2(n_states))
+        num_fragments = n_states
+        hamiltonian = qp.VibronicHamiltonian(
+            constant=np.zeros((num_fragments, n_states, n_states)),
+            linear=np.zeros((num_fragments, n_states, n_states, n_modes)),
+            quadratic=np.zeros((num_fragments, n_states, n_states, n_modes, n_modes)),
+            kinetic=np.einsum("ab,cd->abcd", np.eye(n_states), np.diag(0.3 * np.ones(n_modes))),
+        )
+        wires = qp.registers(
+            {
+                "electronic": n,
+                "vib_wires": n_modes * k,
+                "cache": 2 * k,
+                "coefficients": b,
+                "phase_gradient": b,
+                "work": max(n - 1, 2 * k, 2 * b + 2),
+            }
+        )
+        operator = qp.TrotterVibronic(
+            evolution_time=0.5,
+            num_trotter_steps=3,
+            hamiltonian=hamiltonian,
+            electronic_wires=wires["electronic"],
+            vib_wires=wires["vib_wires"],
+            cache_wires=wires["cache"],
+            coefficient_wires=wires["coefficients"],
+            phase_gradient_wires=wires["phase_gradient"],
+            work_wires=wires["work"],
+        )
+
+        expected_res_op = re_temps.TrotterVibronic(
+            vibronic_ham=re_ops.VibronicHamiltonian(
+                num_modes=n_modes, num_states=n_states, grid_size=k, taylor_degree=2
+            ),
+            num_steps=3,
+            order=2,
+            phase_grad_precision=2.0**-b,
+            coeff_precision=2.0**-b,
+            wires=qp.wires.Wires([*wires["electronic"], *wires["vib_wires"]]),
+        )
+
+        mapped_op = _map_to_resource_op(operator)
+        assert mapped_op == expected_res_op
+        assert mapped_op.wires == expected_res_op.wires
+        assert mapped_op.vibronic_ham.num_states == n_states
+        assert mapped_op.vibronic_ham.num_modes == n_modes
+        assert mapped_op.vibronic_ham.grid_size == k
+        assert mapped_op.num_steps == 3
+        assert mapped_op.order == 2
+        assert mapped_op.phase_grad_precision == 2.0**-b
+        assert mapped_op.coeff_precision == 2.0**-b
+
+    def test_map_to_resource_op_trotter_vibronic_rejects_too_many_fragments(self):
+        """Test that a fragment count above the XOR-fragmentation maximum is rejected.
+
+        ``re_ops.VibronicHamiltonian`` derives its cost from ``num_states`` only.
+        """
+        n_states, n_modes, k, b = 4, 2, 3, 2
+        n = int(qp.math.ceil_log2(n_states))
+        num_fragments = n_states + 1  # standard XOR fragmentation allows at most n_states == 4
+        hamiltonian = qp.VibronicHamiltonian(
+            constant=np.zeros((num_fragments, n_states, n_states)),
+            linear=np.zeros((num_fragments, n_states, n_states, n_modes)),
+            quadratic=np.zeros((num_fragments, n_states, n_states, n_modes, n_modes)),
+            kinetic=np.einsum("ab,cd->abcd", np.eye(n_states), np.diag(0.3 * np.ones(n_modes))),
+        )
+        wires = qp.registers(
+            {
+                "electronic": n,
+                "vib_wires": n_modes * k,
+                "cache": 2 * k,
+                "coefficients": b,
+                "phase_gradient": b,
+                "work": max(n - 1, 2 * k, 2 * b + 2),
+            }
+        )
+        operator = qp.TrotterVibronic(
+            evolution_time=0.5,
+            num_trotter_steps=3,
+            hamiltonian=hamiltonian,
+            electronic_wires=wires["electronic"],
+            vib_wires=wires["vib_wires"],
+            cache_wires=wires["cache"],
+            coefficient_wires=wires["coefficients"],
+            phase_gradient_wires=wires["phase_gradient"],
+            work_wires=wires["work"],
+        )
+        with pytest.raises(ValueError, match="fragment"):
+            _map_to_resource_op(operator)
+
+    def test_map_to_resource_op_trotter_vibronic_accepts_fewer_fragments(self):
+        """Test that fewer than the maximum number of XOR fragments is accepted."""
+        n_states, n_modes, k, b = 4, 2, 3, 2
+        n = int(qp.math.ceil_log2(n_states))
+        num_fragments = 1  # fewer fragments than the maximum (n_states == 4) is still valid
+        hamiltonian = qp.VibronicHamiltonian(
+            constant=np.zeros((num_fragments, n_states, n_states)),
+            linear=np.zeros((num_fragments, n_states, n_states, n_modes)),
+            quadratic=np.zeros((num_fragments, n_states, n_states, n_modes, n_modes)),
+            kinetic=np.einsum("ab,cd->abcd", np.eye(n_states), np.diag(0.3 * np.ones(n_modes))),
+        )
+        wires = qp.registers(
+            {
+                "electronic": n,
+                "vib_wires": n_modes * k,
+                "cache": 2 * k,
+                "coefficients": b,
+                "phase_gradient": b,
+                "work": max(n - 1, 2 * k, 2 * b + 2),
+            }
+        )
+        operator = qp.TrotterVibronic(
+            evolution_time=0.5,
+            num_trotter_steps=3,
+            hamiltonian=hamiltonian,
+            electronic_wires=wires["electronic"],
+            vib_wires=wires["vib_wires"],
+            cache_wires=wires["cache"],
+            coefficient_wires=wires["coefficients"],
+            phase_gradient_wires=wires["phase_gradient"],
+            work_wires=wires["work"],
+        )
+        mapped_op = _map_to_resource_op(operator)
+        assert mapped_op.vibronic_ham.num_states == n_states
+
     @pytest.mark.parametrize(
         "operator, expected_res_op",
         (
@@ -608,6 +736,66 @@ class TestMapToResourceOp:
         mapped = _map_to_resource_op(op)
         assert mapped == expected
         assert mapped.wires == expected.wires
+
+    def test_map_alias_sampling(self):
+        """Test that AliasSampling maps to its estimator resource operator."""
+        probs = (0.1, 0.2, 0.3, 0.4)
+        mu = 4
+        req = qp.alias_sampling_wires(len(probs), mu)
+        n_wires = sum(req.values())
+        target_wires, temp_wires, work_wires = np.split(
+            np.arange(n_wires), np.cumsum([req["target_wires"], req["temp_wires"]])
+        )
+        op = qp.AliasSampling(probs, mu, target_wires, temp_wires, work_wires)
+        expected = re_temps.AliasSampling(
+            num_coeffs=len(probs),
+            precision=2.0 ** (-mu),
+            wires=target_wires,
+        )
+        mapped = _map_to_resource_op(op)
+        assert mapped == expected
+        assert mapped.wires == expected.wires
+
+    def test_map_alias_sampling_thc(self):
+        """Test that AliasSamplingTHC maps to estimator PrepTHC."""
+        import pennylane.estimator.compact_hamiltonian as re_ham
+
+        M, N, aleph = 2, 2, 3
+        sizes = qp.alias_sampling_thc_wires(M, N, aleph)
+        n = sizes["mu_wires"]
+        mu_wires = list(range(n))
+        nu_wires = list(range(n, 2 * n))
+        work_wires = list(range(2 * n + 1, 2 * n + 1 + sizes["work_wires"]))
+        zeta = ((1.0, 0.0), (0.0, 1.0))
+        t_ell = (1.0,)
+        op = qp.AliasSamplingTHC(M, N, zeta, t_ell, mu_wires, nu_wires, 2 * n, work_wires, aleph)
+        expected = re_temps.PrepTHC(
+            re_ham.THCHamiltonian(num_orbitals=N // 2, tensor_rank=M),
+            coeff_precision=aleph,
+        )
+        mapped = _map_to_resource_op(op)
+        assert mapped == expected
+
+    def test_map_select_thc(self):
+        """Test that SelectTHC maps to its estimator resource operator."""
+        import pennylane.estimator.compact_hamiltonian as re_ham
+
+        M, N, beth, num_batches = 2, 4, 3, 1
+        wires = qp.registers(qp.select_thc_wires(M, N, beth, num_batches))
+        op = qp.SelectTHC(
+            tuple(map(tuple, np.ones((M, N // 2)))),
+            tuple(map(tuple, np.eye(N // 2))),
+            beth,
+            *wires.values(),
+            num_batches,
+        )
+        expected = re_temps.SelectTHC(
+            re_ham.THCHamiltonian(num_orbitals=N // 2, tensor_rank=M),
+            num_batches=num_batches,
+            rotation_precision=beth,
+        )
+
+        assert _map_to_resource_op(op) == expected
 
 
 @pytest.mark.parametrize(
