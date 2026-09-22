@@ -422,7 +422,7 @@
 
 * The ability for a compiled program to call a runtime entry point directly via its C symbol name has been added. A symbol's signature is declared once with `qp.runtime_declare` and called with `qp.runtime_call` from inside a `qjit` program.
   [(#9970)](https://github.com/PennyLaneAI/pennylane/pull/9970)
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#10182)](https://github.com/PennyLaneAI/pennylane/pull/10182)
 
   ```python
   import pennylane as qp
