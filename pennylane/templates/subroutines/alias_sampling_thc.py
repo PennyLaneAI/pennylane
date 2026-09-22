@@ -622,7 +622,9 @@ def _alias_sampling_thc_decomp(
     keep_cswap_work = qrom_work[f + 3 * aleph + 2 : f + 3 * aleph + 3]
     sym_cswap_work = qrom_work[:2]
 
-    _compute_contiguous_register(M, N, mu_wires, nu_wires, contiguous_register)
+    # work_wires includes the output contiguous_register and additional zeroed work wires that
+    # are returned to zero, so we do not need to account for them explicitly.
+    _compute_contiguous_register(M, N, mu_wires, nu_wires, work_wires)
 
     data = _build_qrom_data(M, N, zeta, t_ell, n, aleph)
     QROM(
