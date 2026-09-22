@@ -273,7 +273,7 @@ def _c_subtract_then_add_one(c_wire, x_wires, y_wires, work_wires):
 
     # Inject a work wire bit flip where a carry-in qubit would cause one, i.e. after the very
     # first left elbow and before the last right elbow.
-    carry_flip = X if work_wires else None
+    carry_flip = X if len(work_wires) > 0 else None
     _controlled_semi_adder(
         base,
         control_wires=[c_wire],

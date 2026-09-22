@@ -366,7 +366,7 @@ class TestCtrlQfunc:
         qp.assert_equal(q.queue[0], expected)
         assert len(q) == 1
 
-        assert plxpr.eqns[0].params["work_wires"] == "aux"
+        assert plxpr.eqns[0].params["work_wires"] == qp.wires.Wires(["aux"])
 
     def test_control_values(self):
         """Test that control values can be provided."""

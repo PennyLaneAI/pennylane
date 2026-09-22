@@ -739,7 +739,7 @@ class TestMapToResourceOp:
 
     def test_map_alias_sampling(self):
         """Test that AliasSampling maps to its estimator resource operator."""
-        probs = [0.1, 0.2, 0.3, 0.4]
+        probs = (0.1, 0.2, 0.3, 0.4)
         mu = 4
         req = qp.alias_sampling_wires(len(probs), mu)
         n_wires = sum(req.values())
@@ -755,6 +755,47 @@ class TestMapToResourceOp:
         mapped = _map_to_resource_op(op)
         assert mapped == expected
         assert mapped.wires == expected.wires
+
+    def test_map_alias_sampling_thc(self):
+        """Test that AliasSamplingTHC maps to estimator PrepTHC."""
+        import pennylane.estimator.compact_hamiltonian as re_ham
+
+        M, N, aleph = 2, 2, 3
+        sizes = qp.alias_sampling_thc_wires(M, N, aleph)
+        n = sizes["mu_wires"]
+        mu_wires = list(range(n))
+        nu_wires = list(range(n, 2 * n))
+        work_wires = list(range(2 * n + 1, 2 * n + 1 + sizes["work_wires"]))
+        zeta = ((1.0, 0.0), (0.0, 1.0))
+        t_ell = (1.0,)
+        op = qp.AliasSamplingTHC(M, N, zeta, t_ell, mu_wires, nu_wires, 2 * n, work_wires, aleph)
+        expected = re_temps.PrepTHC(
+            re_ham.THCHamiltonian(num_orbitals=N // 2, tensor_rank=M),
+            coeff_precision=aleph,
+        )
+        mapped = _map_to_resource_op(op)
+        assert mapped == expected
+
+    def test_map_select_thc(self):
+        """Test that SelectTHC maps to its estimator resource operator."""
+        import pennylane.estimator.compact_hamiltonian as re_ham
+
+        M, N, beth, num_batches = 2, 4, 3, 1
+        wires = qp.registers(qp.select_thc_wires(M, N, beth, num_batches))
+        op = qp.SelectTHC(
+            tuple(map(tuple, np.ones((M, N // 2)))),
+            tuple(map(tuple, np.eye(N // 2))),
+            beth,
+            *wires.values(),
+            num_batches,
+        )
+        expected = re_temps.SelectTHC(
+            re_ham.THCHamiltonian(num_orbitals=N // 2, tensor_rank=M),
+            num_batches=num_batches,
+            rotation_precision=beth,
+        )
+
+        assert _map_to_resource_op(op) == expected
 
 
 @pytest.mark.parametrize(

@@ -30,7 +30,7 @@ from pennylane.templates.subroutines.arbitrary_unitary import (
 )
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Run standard tests of operation validity."""
     shape = (3,)
@@ -209,7 +209,7 @@ class TestDecomposition:
         (np.random.random(size=(63,)), range(3)),
     ]
 
-    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(("weights", "wires"), DECOMP_PARAMS)
     def test_decomposition_new(self, weights, wires):
         op = qp.ArbitraryUnitary(weights, wires=wires)
