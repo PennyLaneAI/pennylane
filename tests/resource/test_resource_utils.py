@@ -19,8 +19,17 @@ import pennylane as qp
 from pennylane.resource._utils import (
     get_last_tape_transform_level,
     get_marker_level_map,
+    make_level_name_unique,
     preprocess_level_input,
 )
+
+
+def test_make_level_name_unique():
+    existing_levels = {"foo", "foo-2", "bar"}
+
+    assert make_level_name_unique("foo", existing_levels) == "foo-3"
+    assert make_level_name_unique("bar", existing_levels) == "bar-2"
+    assert make_level_name_unique("baz", existing_levels) == "baz"
 
 
 @qp.transform

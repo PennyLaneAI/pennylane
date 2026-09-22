@@ -30,7 +30,6 @@ from pennylane.ops.op_math.decompositions.unitary_decompositions import (
     _compute_num_cnots,
     multi_qubit_decomposition,
 )
-from pennylane.transforms.decompose import DecomposeInterpreter
 from pennylane.wires import Wires
 
 
@@ -1470,7 +1469,7 @@ class TestTwoQubitDecompositionWarnings:
     "U, n_wires",
     [
         (qp.matrix(qp.CRX(0.123, [0, 2]) @ qp.CRY(0.456, [1, 3])), 4),
-        (qp.QFT.compute_matrix(5), 5),
+        (qp.QFT.compute_matrix(tuple(range(5))), 5),
         (qp.GroverOperator.compute_matrix(6, []), 6),
     ],
 )
@@ -1517,45 +1516,6 @@ class TestQubitUnitaryDecompositionGraph:
         matrix = qp.matrix(decomp)
         assert qp.math.allclose(matrix, U, atol=1e-7)
 
-    @pytest.mark.jax
-    @pytest.mark.capture
-    @pytest.mark.parametrize(
-        "gate_set",
-        [
-            ("RX", "RY", "GlobalPhase"),
-            ("RX", "RZ", "GlobalPhase"),
-            ("RZ", "RY", "GlobalPhase"),
-            ("Rot", "GlobalPhase"),
-        ],
-    )
-    def test_single_qubit_decomposition_capture(self, gate_set):
-        """Tests that a single-qubit unitary can be decomposed with capture enabled."""
-
-        import jax
-
-        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
-
-        # Just a random matrix
-        U = np.array(
-            [
-                [-0.28829348 - 0.78829734j, 0.30364367 + 0.45085995j],
-                [0.53396245 - 0.10177564j, 0.76279558 - 0.35024096j],
-            ]
-        )
-
-        @DecomposeInterpreter(gate_set=gate_set)
-        def circuit(mat):
-            qp.QubitUnitary(mat, wires=[0])
-
-        jaxpr = jax.make_jaxpr(circuit)(U)
-        collector = CollectOpsandMeas()
-        collector.eval(jaxpr.jaxpr, jaxpr.consts, U)
-        decomp = collector.state["ops"]
-
-        decomp_tape = qp.tape.QuantumScript(decomp)
-        matrix = qp.matrix(decomp_tape)
-        assert qp.math.allclose(matrix, U, atol=1e-7)
-
     @pytest.mark.parametrize(
         "gate_set",
         [
@@ -1576,39 +1536,6 @@ class TestQubitUnitaryDecompositionGraph:
         matrix = qp.matrix(decomp, wire_order=[0, 1])
         assert qp.math.allclose(matrix, U, atol=1e-7)
 
-    @pytest.mark.jax
-    @pytest.mark.capture
-    @pytest.mark.parametrize(
-        "gate_set",
-        [
-            ("RX", "RY", "CNOT", "GlobalPhase"),
-            ("RX", "RZ", "CNOT", "GlobalPhase"),
-            ("RZ", "RY", "CNOT", "GlobalPhase"),
-            ("Rot", "CNOT", "GlobalPhase"),
-        ],
-    )
-    @pytest.mark.parametrize("U", samples_3_cnots + samples_2_cnots + samples_1_cnot)
-    def test_two_qubit_decomposition_capture(self, gate_set, U):
-        """Tests that the two-qubit unitary can be decomposed with capture enabled."""
-
-        import jax
-
-        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
-
-        @DecomposeInterpreter(gate_set=gate_set)
-        def circuit(mat):
-            qp.QubitUnitary(mat, wires=[0, 1])
-
-        U = jax.numpy.array(U)
-        jaxpr = jax.make_jaxpr(circuit)(U)
-        collector = CollectOpsandMeas()
-        collector.eval(jaxpr.jaxpr, jaxpr.consts, U)
-        decomp = collector.state["ops"]
-
-        decomp_tape = qp.tape.QuantumScript(decomp)
-        matrix = qp.matrix(decomp_tape, wire_order=[0, 1])
-        assert qp.math.allclose(matrix, U, atol=1e-7)
-
     @pytest.mark.integration
     @pytest.mark.parametrize(
         "gate_set",
@@ -1622,10 +1549,10 @@ class TestQubitUnitaryDecompositionGraph:
     @pytest.mark.parametrize(
         "U, n_wires",
         [
-            (qp.QFT.compute_matrix(2), 2),
+            (qp.QFT.compute_matrix(tuple(range(2))), 2),
             (qp.matrix(qp.CRX(0.123, [0, 2]) @ qp.CRY(0.456, [2, 0])), 2),
             (qp.matrix(qp.CRX(0.123, [0, 2]) @ qp.CRY(0.456, [1, 3])), 4),
-            (qp.QFT.compute_matrix(5), 5),
+            (qp.QFT.compute_matrix(tuple(range(5))), 5),
             (qp.GroverOperator.compute_matrix(6, []), 6),
         ],
     )

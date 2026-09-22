@@ -21,7 +21,7 @@ import numpy as np
 
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
-from pennylane.core.operator import Operation
+from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import SWAP, ControlledPhaseShift, Hadamard, PhaseShift, cond
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
@@ -29,7 +29,7 @@ from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
 
 
-class AQFT(Operation):
+class AQFT(Operator2):
     r"""AQFT(order, wires)
     Apply an approximate quantum Fourier transform (AQFT).
 
@@ -122,7 +122,9 @@ class AQFT(Operation):
 
     """
 
-    resource_keys = {"num_wires", "order"}
+    compilable_argnames = ("order",)
+    arg_specs = {"wires": Wire[-1]}
+    wire_sizes = (None,)
 
     def __init__(self, order: int, wires: WiresLike) -> None:
         wires = Wires(wires)
@@ -144,65 +146,11 @@ class AQFT(Operation):
         if order == 0:
             warnings.warn("order=0, applying Hadamard transform")
 
-        self.hyperparameters["order"] = order
-        super().__init__(wires=wires)
-
-    @property
-    def resource_params(self) -> dict:
-        return {"order": self.hyperparameters["order"], "num_wires": len(self.wires)}
-
-    @property
-    def num_params(self):
-        return 0
-
-    @staticmethod
-    def compute_decomposition(wires, order):  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a product of other operators (static method).
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-        .. seealso:: :meth:`~.AQFT.decomposition`.
-
-        Args:
-            wires (Iterable, Wires): wires that the operator acts on
-            order (int): order of approximation
-
-        Returns:
-            list[Operator]: decomposition of the operator
-
-        **Example:**
-
-        >>> qp.AQFT.compute_decomposition((0, 1, 2), order=1)
-        [H(0), ControlledPhaseShift(1.57..., wires=[1, 0]), H(1), ControlledPhaseShift(1.57..., wires=[2, 1]), H(2), SWAP(wires=[0, 2])]
-
-        """
-        n_wires = len(wires)
-        shifts = [2 * np.pi * 2**-i for i in range(2, n_wires + 1)]
-
-        decomp_ops = []
-        for i, wire in enumerate(wires):
-            decomp_ops.append(Hadamard(wire))
-            counter = 0
-
-            for shift, control_wire in zip(shifts[: len(shifts) - i], wires[i + 1 :], strict=True):
-                if counter >= order:
-                    break
-
-                op = ControlledPhaseShift(shift, wires=[control_wire, wire])
-                decomp_ops.append(op)
-                counter = counter + 1
-
-        first_half_wires = wires[: n_wires // 2]
-        last_half_wires = wires[-(n_wires // 2) :]
-
-        for wire1, wire2 in zip(first_half_wires, reversed(last_half_wires), strict=True):
-            swap = SWAP(wires=[wire1, wire2])
-            decomp_ops.append(swap)
-
-        return decomp_ops
+        super().__init__(order, wires)
 
 
-def _AQFT_resources(num_wires, order):
+def _AQFT_resources(order, wires):
+    num_wires = len(wires)
     num_ctrl_ps = sum(min(num_wires - 1 - i, order) for i in range(num_wires))
     return {
         Hadamard: num_wires,

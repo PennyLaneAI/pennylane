@@ -17,6 +17,7 @@ This module defines StatePrepBase.
 
 import abc
 
+from pennylane.core.operator.operator2 import StatePrepBase2
 from pennylane.typing import TensorLike
 from pennylane.wires import WiresLike
 
@@ -48,6 +49,12 @@ class StatePrepBase(Operation):
         cache: dict | None = None,
     ) -> str:
         return "|Ψ⟩"
+
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        if cls is StatePrepBase and issubclass(subclass, StatePrepBase2):
+            return True
+        return NotImplemented
 
 
 __all__ = ["StatePrepBase"]

@@ -241,7 +241,7 @@ def unwrap_controls(op):
         return control_wires, control_values, op
 
     control_wires = op.control_wires
-    control_values = op.control_values
+    control_values = list(op.control_values)
     base = op.base
 
     base_ctrl_wires, base_ctrl_values, base_base = unwrap_controls(base)
@@ -273,6 +273,8 @@ def _get_mm(op: MidMeasure | PauliMeasure, bit_map, wire_map):
 
 @_get_meas.register
 def _get_c(op: Conditional, bit_map, wire_map):
+    if len(op.wires) == 0:
+        return op.meas_val.measurements, max(wire_map.values())
     return op.meas_val.measurements, max({wire_map[w] for w in op.wires})
 
 

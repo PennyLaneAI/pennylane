@@ -363,7 +363,11 @@ class TestInitialization:
         assert op.hyperparameters == new_op.hyperparameters
         assert op is not new_op
 
-    @pytest.mark.jax
+    @pytest.mark.xfail_if_capture(
+        reason="come back to this after we migrate TrotterProduct [sc-128369]",
+        strict=False,  # not all parametrized configurations fail but most do.
+    )
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_standard_validity(self, hamiltonian):
         """Test standard validity criteria using assert_valid."""
@@ -371,8 +375,8 @@ class TestInitialization:
         op = qp.TrotterProduct(hamiltonian, time, n=n, order=order)
         qp.ops.functions.assert_valid(op, skip_differentiation=True)
 
-    @pytest.mark.jax
     @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/pennylane/issues/6333", strict=False)
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_standard_validity_with_differentiation(self, hamiltonian):
         """Test standard validity criteria using assert_valid."""
@@ -485,7 +489,7 @@ class TestPrivateFunctions:
         ],
     )
 
-    @pytest.mark.parametrize("order, expected_expansion", zip((1, 2, 4), expected_expansions))
+    @pytest.mark.parametrize("order, expected_expansion", list(zip((1, 2, 4), expected_expansions)))
     def test_recursive_expression_no_queue(self, order, expected_expansion):
         """Test the _recursive_expression function correctly generates the decomposition"""
         ops = [qp.PauliX(0), qp.PauliY(0), qp.PauliZ(1)]
@@ -502,7 +506,7 @@ class TestDecomposition:
     """Test the decomposition of the TrotterProduct class."""
 
     @pytest.mark.parametrize("order", (1, 2, 4))
-    @pytest.mark.parametrize("hamiltonian_index, hamiltonian", enumerate(test_hamiltonians))
+    @pytest.mark.parametrize("hamiltonian_index, hamiltonian", list(enumerate(test_hamiltonians)))
     def test_compute_decomposition(self, hamiltonian, hamiltonian_index, order):
         """Test the decomposition is correct and queues"""
         op = qp.TrotterProduct(hamiltonian, 4.2, order=order)
@@ -518,8 +522,13 @@ class TestDecomposition:
         for op1, op2 in zip(decomp, true_decomp):
             qp.assert_equal(op1, op2)
 
+    @pytest.mark.xfail_if_capture(
+        reason="come back to this after we migrate TrotterProduct [sc-128369]",
+        strict=False,  # not all parametrized configurations fail
+    )
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("order", (1, 2, 4))
-    @pytest.mark.parametrize("hamiltonian_index, hamiltonian", enumerate(test_hamiltonians))
+    @pytest.mark.parametrize("hamiltonian_index, hamiltonian", list(enumerate(test_hamiltonians)))
     def test_decomposition_new(
         self, hamiltonian, hamiltonian_index, order
     ):  # pylint: disable=unused-argument
@@ -565,7 +574,7 @@ class TestIntegration:
 
     #   Circuit execution tests:
     @pytest.mark.parametrize("order", (1, 2, 4))
-    @pytest.mark.parametrize("hamiltonian_index, hamiltonian", enumerate(test_hamiltonians))
+    @pytest.mark.parametrize("hamiltonian_index, hamiltonian", list(enumerate(test_hamiltonians)))
     def test_execute_circuit(self, hamiltonian, hamiltonian_index, order):
         """Test that the gate executes correctly in a circuit."""
         wires = hamiltonian.wires
@@ -1083,7 +1092,7 @@ class TestTrotterizedQfuncInitialization:
                 kwargs = {special_key: 1}
                 qp.trotterize(my_dummy_qfunc)(0.1, wires=[0, 1], **kwargs)
 
-    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_standard_validity(self):
         """Test standard validity criteria using assert_valid."""
 
@@ -1100,7 +1109,7 @@ class TestTrotterizedQfuncInitialization:
             qfunc=first_order_expansion,
             n=1,
             order=2,
-            wires=["a", "b", "c"],
+            wires=[3, 4, 5],
             flip=True,
         )
         qp.ops.functions.assert_valid(op, skip_pickle=True)

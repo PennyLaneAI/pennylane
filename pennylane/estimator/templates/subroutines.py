@@ -385,7 +385,7 @@ class SelectOnlyQRAM(ResourceOperator):
         """
         n_total = num_control_wires + num_select_wires
 
-        basis_embedding = resource_rep(qre.BasisEmbedding, {"num_wires": num_select_wires})
+        basis_embedding = resource_rep(qre.BasisState, {"num_wires": num_select_wires})
         paulix = resource_rep(qre.X)
         mcx = qre.Controlled.resource_rep(resource_rep(qre.X), n_total, 0)
 

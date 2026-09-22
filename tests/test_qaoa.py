@@ -745,7 +745,7 @@ def make_edge_driver_cost_test_cases():
         ),
     ]
 
-    return zip(graphs, rewards, hamiltonians)
+    return list(zip(graphs, rewards, hamiltonians))
 
 
 def make_max_weighted_cycle_test_cases():

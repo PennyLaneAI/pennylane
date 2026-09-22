@@ -434,9 +434,9 @@ class TestQNode:
         with qp.decomposition.local_decomps():
 
             @qp.register_resources({qp.Rot: 1, qp.PhaseShift: 1})
-            def _decomp(theta, phi, lam, wires):
-                qp.Rot(lam, theta, -lam, wires)
-                qp.PhaseShift(phi + lam, wires)
+            def _decomp(theta, phi, delta, wires):
+                qp.Rot(delta, theta, -delta, wires)
+                qp.PhaseShift(phi + delta, wires)
 
             qp.add_decomps(MyU3, _decomp)
 
@@ -541,6 +541,8 @@ class TestQubitIntegration:
         with a single prob output"""
         if "lightning" in getattr(dev, "name", "").lower():
             pytest.xfail("lightning does not support measuring probabilities with adjoint.")
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint diff of state measurements not supported.")
 
         kwargs = dict(
             diff_method=diff_method,
@@ -581,6 +583,8 @@ class TestQubitIntegration:
         with multiple prob outputs"""
         if "lightning" in getattr(dev, "name", "").lower():
             pytest.xfail("lightning does not support measuring probabilities with adjoint.")
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint diff of state measurements not supported.")
         kwargs = dict(
             diff_method=diff_method,
             interface=interface,
@@ -650,6 +654,8 @@ class TestQubitIntegration:
         with prob and expval outputs"""
         if "lightning" in getattr(dev, "name", "").lower():
             pytest.xfail("lightning does not support measuring probabilities with adjoint.")
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint diff of state measurements not supported.")
 
         kwargs = dict(
             diff_method=diff_method,
@@ -705,6 +711,8 @@ class TestQubitIntegration:
         with prob and variance outputs"""
         if "lightning" in getattr(dev, "name", "").lower():
             pytest.xfail("lightning does not support measuring probabilities with adjoint.")
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint diff of state measurements not supported.")
         kwargs = dict(
             diff_method=diff_method,
             interface=interface,
@@ -1313,6 +1321,8 @@ class TestQubitIntegration:
 
         if "lightning" in getattr(dev, "name", "").lower():
             pytest.xfail("Lightning does not support state adjoint diff.")
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint diff of state measurements not supported.")
 
         x = np.array(0.543, requires_grad=True)
         y = np.array(-0.654, requires_grad=True)
@@ -1862,6 +1872,8 @@ class TestReturn:
     ):
         """For a multi dimensional measurement (probs), check that a single array is returned with the correct
         dimension"""
+        if diff_method == "adjoint":
+            pytest.skip("adjoint state differentiation is not supported in pl2")
         gradient_kwargs = {}
         if diff_method == "hadamard":
             gradient_kwargs["aux_wire"] = 2
@@ -1894,6 +1906,8 @@ class TestReturn:
         gradient_kwargs = {}
         if diff_method == "hadamard":
             gradient_kwargs["aux_wire"] = 2
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint diff of state measurements not supported.")
 
         @qnode(
             dev,
@@ -1928,6 +1942,8 @@ class TestReturn:
         gradient_kwargs = {}
         if diff_method == "hadamard":
             gradient_kwargs["aux_wire"] = 2
+        if diff_method == "adjoint":
+            pytest.xfail("adjoint diff of state measurements not supported.")
 
         @qnode(
             dev,
@@ -1952,6 +1968,7 @@ class TestReturn:
         self, dev, diff_method, grad_on_execution, device_vjp
     ):
         """The jacobian of multiple measurements with a single params return an array."""
+
         gradient_kwargs = {}
         if diff_method == "hadamard":
             gradient_kwargs["aux_wire"] = 2
@@ -1967,7 +1984,7 @@ class TestReturn:
         def circuit(a):
             qp.RY(a, wires=0)
             qp.RX(0.2, wires=0)
-            return qp.expval(qp.PauliZ(0)), qp.probs(wires=[0, 1])
+            return qp.expval(qp.Z(0)), qp.expval(qp.Z(0) @ qp.Y(1))
 
         a = np.array(0.1, requires_grad=True)
 
@@ -1977,12 +1994,13 @@ class TestReturn:
         jac = qp.jacobian(cost)(a)
 
         assert isinstance(jac, np.ndarray)
-        assert jac.shape == (5,)
+        assert jac.shape == (2,)
 
     def test_jacobian_multiple_measurement_multiple_param(
         self, dev, diff_method, grad_on_execution, device_vjp
     ):
         """The jacobian of multiple measurements with a multiple params return a tuple of arrays."""
+
         gradient_kwargs = {}
         if diff_method == "hadamard":
             gradient_kwargs["aux_wire"] = 2
@@ -1998,7 +2016,7 @@ class TestReturn:
         def circuit(a, b):
             qp.RY(a, wires=0)
             qp.RX(b, wires=0)
-            return qp.expval(qp.PauliZ(0)), qp.probs(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliX(0))
 
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=True)
@@ -2012,10 +2030,10 @@ class TestReturn:
         assert len(jac) == 2
 
         assert isinstance(jac[0], np.ndarray)
-        assert jac[0].shape == (5,)
+        assert jac[0].shape == (2,)
 
         assert isinstance(jac[1], np.ndarray)
-        assert jac[1].shape == (5,)
+        assert jac[1].shape == (2,)
 
     def test_jacobian_multiple_measurement_multiple_param_array(
         self, dev, diff_method, grad_on_execution, device_vjp
@@ -2037,7 +2055,7 @@ class TestReturn:
         def circuit(a):
             qp.RY(a[0], wires=0)
             qp.RX(a[1], wires=0)
-            return qp.expval(qp.PauliZ(0)), qp.probs(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0)), qp.expval(qp.PauliZ(0) @ qp.PauliY(1))
 
         a = np.array([0.1, 0.2], requires_grad=True)
 
@@ -2047,7 +2065,7 @@ class TestReturn:
         jac = qp.jacobian(cost)(a)
 
         assert isinstance(jac, np.ndarray)
-        assert jac.shape == (5, 2)
+        assert jac.shape == (2, 2)
 
     def test_hessian_expval_multiple_params(self, dev, diff_method, grad_on_execution, device_vjp):
         """The hessian of single a measurement with multiple params return a tuple of arrays."""

@@ -21,8 +21,11 @@ from .time_evolution import (
     ApproxTimeEvolution,
     CommutingEvolution,
     QDrift,
+    TrotterCDF,
+    TrotterCGF,
     TrotterizedQfunc,
     TrotterProduct,
+    TrotterVibronic,
     trotterize,
 )
 from .permute import Permute
@@ -34,8 +37,9 @@ from .hilbert_schmidt import HilbertSchmidt, LocalHilbertSchmidt
 from .flip_sign import FlipSign
 from .fable import FABLE
 from .ffft import FFFT, TwoWireFFT
-from .select import Select
+from .select import Multiplexer, Multiplexor, Select
 from .prepselprep import PrepSelPrep
+from .multix import MultiX
 from .reflection import Reflection
 from .qubitization import Qubitization
 from .controlled_sequence import ControlledSequence
@@ -44,8 +48,17 @@ from .amplitude_amplification import AmplitudeAmplification
 from .qram import BBQRAM, HybridQRAM, SelectOnlyQRAM, FFQRAM
 from .iqp import IQP
 from .qrom import QROM
+from .alias_sampling import AliasSampling, UniformPrep, alias_sampling_wires
+from .one_body_block_encoding import OneBodyBlockEncoding, one_body_block_encoding_wires
+from .alias_sampling_thc import AliasSamplingTHC, alias_sampling_thc_wires
+from .select_thc import SelectTHC, select_thc_wires
+from .superposition_thc import SuperpositionTHC
 from .gqsp import GQSP
-from .select_pauli_rot import SelectPauliRot
+from .select_pauli_rot import (
+    MultiplexedRotation,
+    SelectPauliRot,
+    UniformlyControlledRotation,
+)
 from .qsvt import poly_to_angles, QSVT, qsvt, transform_angles
 
 from .qchem import (
@@ -71,6 +84,8 @@ from .arithmetic import (
     TemporaryAND,
     Incrementer,
     SignedOutMultiplier,
+    LeftClassicalComparator,
+    LeftQuantumComparator,
 )
 
 __all__ = [
@@ -79,10 +94,15 @@ __all__ = [
     "BBQRAM",
     "CommutingEvolution",
     "QDrift",
+    "TrotterCDF",
+    "TrotterCGF",
     "TrotterizedQfunc",
     "TrotterProduct",
+    "TrotterVibronic",
     "trotterize",
     "Incrementer",
+    "LeftClassicalComparator",
+    "LeftQuantumComparator",
     "IQP",
     "Permute",
     "QFT",
@@ -98,16 +118,31 @@ __all__ = [
     "FFFT",
     "TwoWireFFT",
     "Select",
+    "Multiplexer",
+    "Multiplexor",
     "SelectOnlyQRAM",
     "PrepSelPrep",
+    "MultiX",
     "Reflection",
     "Qubitization",
     "ControlledSequence",
     "AQFT",
     "AmplitudeAmplification",
     "QROM",
+    "AliasSampling",
+    "AliasSamplingTHC",
+    "SelectTHC",
+    "SuperpositionTHC",
+    "UniformPrep",
+    "alias_sampling_wires",
+    "OneBodyBlockEncoding",
+    "one_body_block_encoding_wires",
+    "alias_sampling_thc_wires",
+    "select_thc_wires",
     "GQSP",
     "SelectPauliRot",
+    "MultiplexedRotation",
+    "UniformlyControlledRotation",
     "poly_to_angles",
     "QSVT",
     "qsvt",

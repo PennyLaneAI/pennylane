@@ -20,7 +20,7 @@ from pennylane import gradients, math
 from pennylane.core.operator import Operator2
 from pennylane.exceptions import ParameterFrequenciesUndefinedError
 from pennylane.gradients import parameter_frequencies
-from pennylane.ops import Exp, Hermitian, PauliZ
+from pennylane.ops import U1, U2, U3, Exp, Hermitian, PauliZ
 from pennylane.ops.functions import eigvals, generator
 from pennylane.wires import WiresLike
 
@@ -117,6 +117,20 @@ class TestParameterFrequencies:
         """Test that parameter_frequencies retrieves the parameter frequencies defined on an Operator."""
         op = Exp(PauliZ(1), 1j)
         assert parameter_frequencies(op) == [(2,)]
+
+    @pytest.mark.parametrize(
+        "op, expected",
+        [
+            (U1(0.3, wires=0), [(1.0,)]),
+            (U2(0.3, 0.4, wires=0), [(1,), (1,)]),
+            (U3(0.3, 0.4, 0.5, wires=0), [(1,), (1,), (1,)]),
+        ],
+    )
+    def test_u_gate_parameter_frequencies(self, op, expected):
+        """Test that the dedicated ``U1``/``U2``/``U3`` dispatch handlers return the
+        expected parameter frequencies (``U1`` via its generator, ``U2``/``U3`` via
+        their registered handlers)."""
+        assert math.allclose(parameter_frequencies(op), expected)
 
     def test_parameter_frequencies_raises(self):
         """Test that parameter_frequencies raises an error if given the wrong type of object."""

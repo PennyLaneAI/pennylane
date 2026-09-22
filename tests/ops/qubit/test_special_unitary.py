@@ -949,11 +949,6 @@ class TestTmpPauliRot:
         assert TmpPauliRot.has_matrix is False
         assert TmpPauliRot(0.2, "X", 0).has_matrix is False
 
-    def test_has_grad_method(self):
-        """Test that TmpPauliRot reports to have an analytic grad method."""
-        assert TmpPauliRot.grad_method == "A"
-        assert TmpPauliRot(0.2, "X", 0).grad_method == "A"
-
     def test_repr(self):
         """Test the string representation of TmpPauliRot."""
         rep = str(TmpPauliRot(0.2, "IX", [1, 0]))

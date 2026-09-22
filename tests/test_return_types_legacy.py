@@ -668,7 +668,7 @@ class TestSameMeasurementShotVector:
 
     # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("op1,wires1", probs_data)
-    @pytest.mark.parametrize("op2,wires2", reversed(probs_data2))
+    @pytest.mark.parametrize("op2,wires2", list(reversed(probs_data2)))
     def test_probs(self, shot_vector, op1, wires1, op2, wires2):
         """Test multiple probability measurements."""
         dev = DefaultQubitLegacy(wires=4)
