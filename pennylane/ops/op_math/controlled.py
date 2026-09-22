@@ -247,6 +247,7 @@ def _resolve_ctrl_values(control_values, base_ctrl_values, num_control: int):
         return Bool[len(control_values) + len(base_ctrl_values)]
 
     control_values = math.array(control_values)
+    base_ctrl_values = math.array(base_ctrl_values)
     return math.array(math.concatenate([control_values, base_ctrl_values]), dtype=bool)
 
 
@@ -467,7 +468,7 @@ def _capture_ctrl_transform(qfunc: Callable, control, control_values, work_wires
             jaxpr=jaxpr.jaxpr,
             n_control=len(control_wires),
             control_values=control_values,
-            work_wires=work_wires,
+            work_wires=qp.wires.Wires(work_wires) if work_wires is not None else work_wires,
             n_consts=len(jaxpr.consts),
         )
 

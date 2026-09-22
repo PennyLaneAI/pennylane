@@ -366,6 +366,11 @@ Circuit construction utilities
     ~create_random_gates
     ~generate_pauli_observables
 
+Any extra keyword arguments needed by the moment callable are forwarded
+through the loss, for example
+``loss_fn(params, target_data, key, n_samples=8000)`` or
+``loss_fn(params, target_data, key, phase_fn_params=xi)``.
+
 """
 
 from .expval_functions import (

@@ -354,6 +354,14 @@ tested_modified_templates = [
     qp.Multiplier,
     qp.OutMultiplier,
     qp.Incrementer,
+    qp.LeftClassicalComparator,
+    qp.LeftQuantumComparator,
+    qp.UniformPrep,
+    qp.AliasSampling,
+    qp.OneBodyBlockEncoding,
+    qp.AliasSamplingTHC,
+    qp.SelectTHC,
+    qp.SuperpositionTHC,
     qp.SignedOutMultiplier,
     qp.OutSquare,
     qp.SignedOutSquare,
@@ -478,12 +486,12 @@ class TestModifiedTemplates:
         # diagonal position fragment and a diagonal kinetic fragment.
         n_states, n_modes, k, b = 2, 1, 3, 2
         n = int(math.ceil_log2(n_states))
-        hamiltonian = {
-            "constant": np.zeros((1, n_states, n_states)),
-            "linear": np.zeros((1, n_states, n_states, n_modes)),
-            "quadratic": np.zeros((1, n_states, n_states, n_modes, n_modes)),
-            "kinetic": np.einsum("ab,cd->abcd", np.eye(n_states), np.diag(0.3 * np.ones(n_modes))),
-        }
+        hamiltonian = qp.VibronicHamiltonian(
+            constant=np.zeros((1, n_states, n_states)),
+            linear=np.zeros((1, n_states, n_states, n_modes)),
+            quadratic=np.zeros((1, n_states, n_states, n_modes, n_modes)),
+            kinetic=np.einsum("ab,cd->abcd", np.eye(n_states), np.diag(0.3 * np.ones(n_modes))),
+        )
         wires = qp.registers(
             {
                 "electronic": n,
@@ -1422,6 +1430,216 @@ class TestModifiedTemplates:
 
         [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
         qp.assert_equal(op, qp.Incrementer(**kwargs))
+
+    def test_left_classical_comparator(self):
+        """Test the primitive bind call of LeftClassicalComparator."""
+
+        kwargs = {
+            "x_wires": [0, 1, 2],
+            "L": 3,
+            "target_wire": 3,
+            "work_wires": [4, 5],
+            "comparator": "<",
+        }
+
+        def qfunc():
+            return qp.LeftClassicalComparator(**kwargs).tracer
+
+        jaxpr = jax.make_jaxpr(qfunc)()
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert_eqn_matches_op(eqn, qp.LeftClassicalComparator)
+
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        qp.assert_equal(op, qp.LeftClassicalComparator(**kwargs))
+
+    def test_left_quantum_comparator(self):
+        """Test the primitive bind call of LeftQuantumComparator."""
+
+        kwargs = {
+            "x_wires": [0, 1, 2],
+            "y_wires": [3, 4, 5],
+            "target_wire": 6,
+            "work_wires": [7, 8],
+            "comparator": "<=",
+        }
+
+        def qfunc():
+            return qp.LeftQuantumComparator(**kwargs).tracer
+
+        jaxpr = jax.make_jaxpr(qfunc)()
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert_eqn_matches_op(eqn, qp.LeftQuantumComparator)
+
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        qp.assert_equal(op, qp.LeftQuantumComparator(**kwargs))
+
+    def test_uniform_prep(self):
+        """Test the primitive bind call of UniformPrep."""
+
+        kwargs = {
+            "n_states": 4,
+            "target_wires": [0, 1],
+            "work_wires": [],
+        }
+
+        def qfunc():
+            return qp.UniformPrep(**kwargs).tracer
+
+        jaxpr = jax.make_jaxpr(qfunc)()
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert_eqn_matches_op(eqn, qp.UniformPrep)
+
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        qp.assert_equal(op, qp.UniformPrep(**kwargs))
+
+    def test_alias_sampling(self):
+        """Test the primitive bind call of AliasSampling."""
+
+        req = qp.alias_sampling_wires(2, 2)
+        n = sum(req.values())
+        target, temp, work = np.split(
+            np.arange(n), np.cumsum([req["target_wires"], req["temp_wires"]])
+        )
+        kwargs = {
+            "probs": (0.25, 0.75),
+            "mu": 2,
+            "target_wires": target.tolist(),
+            "temp_wires": temp.tolist(),
+            "work_wires": work.tolist(),
+        }
+
+        def qfunc():
+            return qp.AliasSampling(**kwargs).tracer
+
+        jaxpr = jax.make_jaxpr(qfunc)()
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert_eqn_matches_op(eqn, qp.AliasSampling)
+
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        qp.assert_equal(op, qp.AliasSampling(**kwargs))
+
+    def test_one_body_block_encoding(self):
+        """Test the primitive bind call of OneBodyBlockEncoding."""
+
+        req = qp.one_body_block_encoding_wires(2, 2)
+        n = sum(req.values())
+        prep, system, work = np.split(
+            np.arange(n), np.cumsum([req["prep_wires"], req["system_wires"]])
+        )
+        kwargs = {
+            "op_matrix": ((1.0, 2.0), (2.0, 1.0)),
+            "alias_sampling_nbits": 2,
+            "prep_wires": prep.tolist(),
+            "system_wires": system.tolist(),
+            "work_wires": work.tolist(),
+        }
+
+        def qfunc():
+            return qp.OneBodyBlockEncoding(**kwargs).tracer
+
+        jaxpr = jax.make_jaxpr(qfunc)()
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert_eqn_matches_op(eqn, qp.OneBodyBlockEncoding)
+
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        qp.assert_equal(op, qp.OneBodyBlockEncoding(**kwargs))
+
+    def test_alias_sampling_thc(self):
+        """Test the primitive bind call of AliasSamplingTHC."""
+
+        sizes = qp.alias_sampling_thc_wires(2, 2, 2)
+        n = sizes["mu_wires"]
+        mu_wires = list(range(n))
+        nu_wires = list(range(n, 2 * n))
+        work_wires = list(range(2 * n + 1, 2 * n + 1 + sizes["work_wires"]))
+        kwargs = {
+            "M": 2,
+            "N": 2,
+            "zeta": ((1.0, 0.0), (0.0, 1.0)),
+            "t_ell": (0.5,),
+            "mu_wires": mu_wires,
+            "nu_wires": nu_wires,
+            "edge_flag": 2 * n,
+            "work_wires": work_wires,
+            "aleph": 2,
+        }
+
+        def qfunc():
+            return qp.AliasSamplingTHC(**kwargs).tracer
+
+        jaxpr = jax.make_jaxpr(qfunc)()
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert_eqn_matches_op(eqn, qp.AliasSamplingTHC)
+
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        qp.assert_equal(op, qp.AliasSamplingTHC(**kwargs))
+
+    def test_superposition_thc(self):
+        """Test the primitive bind call of SuperpositionTHC."""
+
+        n = 2
+        kwargs = {
+            "M": 1,
+            "N": 2,
+            "mu_wires": list(range(n)),
+            "nu_wires": list(range(n, 2 * n)),
+            "work_wires": list(range(2 * n, 2 * n + 3 * n + 5)),
+        }
+
+        def qfunc():
+            return qp.SuperpositionTHC(**kwargs).tracer
+
+        jaxpr = jax.make_jaxpr(qfunc)()
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert_eqn_matches_op(eqn, qp.SuperpositionTHC)
+
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        qp.assert_equal(op, qp.SuperpositionTHC(**kwargs))
+
+    def test_select_thc(self):
+        """Test the primitive bind call of SelectTHC."""
+
+        sizes = qp.select_thc_wires(1, 2, 1)
+        wires = qp.registers(sizes)
+        kwargs = {
+            "chi": ((1.0,),),
+            "t_eigenvectors": ((1.0,),),
+            "beth": 1,
+            **wires,
+        }
+
+        def qfunc():
+            return qp.SelectTHC(**kwargs).tracer
+
+        jaxpr = jax.make_jaxpr(qfunc)()
+
+        assert len(jaxpr.eqns) == 1
+        eqn = jaxpr.eqns[0]
+        assert_eqn_matches_op(eqn, qp.SelectTHC)
+
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        qp.assert_equal(op, qp.SelectTHC(**kwargs))
 
     def test_signed_out_multiplier(self):
         """Test the primitive bind call of SignedOutMultiplier."""

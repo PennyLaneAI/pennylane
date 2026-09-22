@@ -130,6 +130,7 @@ operations = {
     "ECR",
     "ParametrizedEvolution",
     "GlobalPhase",
+    "PPR",
 }
 
 DEFAULT_MIXED_GATES = operations | {"Snapshot"} | channels

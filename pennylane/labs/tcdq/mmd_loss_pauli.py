@@ -13,7 +13,8 @@
 # limitations under the License.
 """Maximum Mean Discrepancy (MMD) loss for Pauli expectation value functions.
 
-This module compares the output distribution of a model to a dataset of
+This module contains functionality to construct an MMD loss function for Pauli expectation value
+functions. The MMD loss function compares the output distribution of a model to a dataset of
 bitstrings. It samples Pauli-Z observables from an RBF (Radial Basis Function) kernel distribution,
 estimates their expectation values with a user-supplied callable, and combines the results into an
 MMD loss.
@@ -44,8 +45,8 @@ class MMDConfig:
             values reduce estimator variance.
         wires (Sequence[int] | None): Subset of qubit indices to include in
             the loss. If ``None`` (default), all qubits are used.
-        sqrt_loss (bool): If ``True``, return ``sqrt(|MMD²|)`` instead of
-            ``MMD²``. Defaults to ``False``.
+        sqrt_loss (bool): If ``True``, return :math:`\sqrt{|\text{MMD}^2|}` instead of
+            :math:`\text{MMD}^2`. Defaults to ``False``.
         return_per_bandwidth (bool): If ``True``, return a list of
             per-bandwidth loss values instead of their scalar average.
             Defaults to ``False``.
@@ -78,7 +79,7 @@ class MMDConfig:
 
 
 def median_heuristic(samples: ArrayLike) -> float:
-    """Choose a reasonable radial basis function (RBF) kernel bandwidth from the target dataset.
+    """Choose a reasonable radial basis function (RBF) kernel bandwidth from a target dataset.
 
     A good starting point for :class:`MMDConfig`'s ``bandwidth`` parameter.
 
@@ -155,6 +156,7 @@ def _compute_single_mmd(
         "wire_tuple",
         "sqrt_loss",
         "expval_fn",
+        "static_kwargs",
     ],
 )
 def _compute_loss_for_bandwidth(
@@ -163,7 +165,8 @@ def _compute_loss_for_bandwidth(
     eval_key: jnp.ndarray,
     params: jnp.ndarray,
     target_data: jnp.ndarray,
-    expval_kwargs: dict,
+    traced_kwargs: dict,
+    static_kwargs: tuple,
     n_ops: int,
     n_qubits: int,
     wire_tuple: tuple[int, ...],
@@ -176,18 +179,19 @@ def _compute_loss_for_bandwidth(
     p_mmd = (1 - jnp.exp(-1 / (2 * bandwidth**2))) / 2
     visible_ops = jnp.array(
         jax.random.binomial(subkey, 1, p_mmd, shape=(n_ops, len(wire_tuple))),
-        dtype=jnp.float64,
+        dtype=float,
     )
 
-    all_ops = jnp.zeros((n_ops, n_qubits), dtype=jnp.float64)
+    all_ops = jnp.zeros((n_ops, n_qubits), dtype=float)
     all_ops = all_ops.at[:, wire_list].set(visible_ops)
 
     pauli_obs = _binary_ops_to_pauli_int(all_ops)
 
-    expval_kwargs["observables"] = pauli_obs
-    expval_kwargs["key"] = eval_key
+    call_kwargs = {**dict(static_kwargs), **traced_kwargs}
+    call_kwargs["observables"] = pauli_obs
+    call_kwargs["key"] = eval_key
 
-    model_output = expval_fn(params, **expval_kwargs)
+    model_output = expval_fn(params, **call_kwargs)
 
     model_expvals, model_expvals_variances = (
         model_output if isinstance(model_output, tuple) else (model_output, None)
@@ -222,16 +226,17 @@ def build_mmd_loss_pauli(
     n_qubits: int,
     mmd_config: MMDConfig,
 ) -> Callable:
-    r"""Build a reusable loss function that computes the qubit Pauli-kernel MMD.
+    r"""Build a reusable loss function that computes the qubit Pauli-kernel
+    Maximum Mean Discrepancy (MMD) loss.
 
     The returned callable measures the distance between a model's output
     distribution and an empirical target dataset of bitstrings using the
-    Maximum Mean Discrepancy (MMD) with an RBF kernel expanded in Pauli-Z
-    strings. The model is called as
+    Maximum Mean Discrepancy (MMD) with a Radial Basis Function (RBF) kernel
+    expanded in Pauli-Z strings. The model is called as
 
     .. code-block:: python
 
-        expval_fn(params, observables=..., **expval_kwargs)
+        expval_fn(params, observables=..., key=..., **expval_kwargs)
 
     where ``observables`` is an integer array of shape ``(n_ops, n_qubits)`` of
     Pauli codes (``0=I``, ``1=X``, ``2=Y``, ``3=Z``), of which only ``I`` and
@@ -387,6 +392,17 @@ def build_mmd_loss_pauli(
             )
             target_data = target_data[target_indices]
 
+        static_items = []
+        traced_items = {}
+        for name, value in expval_kwargs.items():
+            try:
+                hash(value)
+            except TypeError:
+                traced_items[name] = value
+            else:
+                static_items.append((name, value))
+        static_kwargs = tuple(static_items)
+
         losses = []
         for bandwidth in bandwidth_list:
             active_key, subkey, eval_key = jax.random.split(active_key, 3)
@@ -395,14 +411,15 @@ def build_mmd_loss_pauli(
                 bandwidth=bandwidth,
                 subkey=subkey,
                 eval_key=eval_key,
-                params=jnp.asarray(params),
+                params=params,
                 target_data=target_data,
+                traced_kwargs=traced_items,
+                static_kwargs=static_kwargs,
                 n_ops=mmd_config.n_ops,
                 n_qubits=n_qubits,
                 wire_tuple=wire_tuple,
                 sqrt_loss=mmd_config.sqrt_loss,
                 expval_fn=expval_fn,
-                expval_kwargs=expval_kwargs,
             )
             losses.append(loss_val)
 
