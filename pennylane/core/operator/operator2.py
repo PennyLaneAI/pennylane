@@ -400,7 +400,7 @@ class Operator2(metaclass=OperatorMeta):
         complex even though it holds real data.
 
         The decomposition graph goes by the reported type, so real and complex inputs will look 
-        like the same operator and share one rule. To let them decompos differently, leave the argument 
+        like the same operator and share one rule. To let them decompose differently, leave the argument 
         out of ``arg_specs`` and given each rule a ``register_condition`` that checks the type. For
         a concrete example see ``BasisRotation``.
     """
