@@ -581,3 +581,89 @@ class TestMMDLossStatistical:
         r_default = loss_fn(params, data)
         r_override = loss_fn(params, data, key=jax.random.PRNGKey(12345))
         assert float(r_default) != float(r_override)
+
+
+class TestBootstrapTargetData:
+    """Tests for the ``MMDConfig.bootstrap_target_data`` option."""
+
+    @staticmethod
+    def _loss_fn(bootstrap, n_qubits=2, gates=None, n_ops=60, bandwidth=1.0, **cfg_kwargs):
+        """Build a loss function differing only in ``bootstrap_target_data``."""
+        config = CircuitConfig(
+            gates=gates or {0: [[0]], 1: [[1]], 2: [[0, 1]]},
+            n_samples=400,
+            key=jax.random.PRNGKey(0),
+            n_qubits=n_qubits,
+        )
+        mmd_cfg = MMDConfig(
+            bandwidth=bandwidth,
+            n_ops=n_ops,
+            bootstrap_target_data=bootstrap,
+            **cfg_kwargs,
+        )
+        return build_mmd_loss_pauli(build_expval_func(config), n_qubits, mmd_cfg)
+
+    def test_flag_changes_the_result(self):
+        """Toggling the flag with a fixed key must change the loss value."""
+        rng = np.random.default_rng(0)
+        data = jnp.array(rng.binomial(1, 0.4, (40, 2)))
+        params = jnp.array([0.3, 0.7, 0.2])
+        key = jax.random.PRNGKey(5)
+
+        with_boot = self._loss_fn(True)(params, data, key=key)
+        without_boot = self._loss_fn(False)(params, data, key=key)
+
+        assert float(with_boot) != float(without_boot)
+
+    def test_matches_manual_resampling(self):
+        """Bootstrapping is equivalent to resampling the rows by hand."""
+        rng = np.random.default_rng(1)
+        data = jnp.array(rng.binomial(1, 0.5, (30, 2)))
+        params = jnp.array([0.3, 0.7, 0.2])
+        key = jax.random.PRNGKey(11)
+
+        loss_boot = self._loss_fn(True)(params, data, key=key)
+
+        remaining_key, target_key = jax.random.split(key)
+        indices = jax.random.choice(target_key, data.shape[0], shape=(data.shape[0],), replace=True)
+        loss_manual = self._loss_fn(False)(params, data[indices], key=remaining_key)
+
+        assert float(loss_boot) == float(loss_manual)
+
+    def test_bootstrap_increases_variance(self):
+        """Resampling adds target-data noise, so the loss varies more across keys."""
+        rng = np.random.default_rng(4)
+        data = jnp.array(rng.binomial(1, 0.4, (16, 2)))
+        params = jnp.array([0.3, 0.7, 0.2])
+        keys = jax.random.split(jax.random.PRNGKey(8), 100)
+
+        def variance(bootstrap):
+            loss_fn = self._loss_fn(bootstrap)
+            values = jax.vmap(lambda k: loss_fn(params, data, key=k))(keys)
+            return float(np.var(np.asarray(values), ddof=1))
+
+        assert variance(True) > 5.0 * variance(False)
+
+    def test_bootstrap_with_wires_subset(self):
+        """Bootstrapping runs after wire selection and returns a finite scalar."""
+        rng = np.random.default_rng(2)
+        data = jnp.array(rng.binomial(1, 0.5, (25, 3)))
+        loss_fn = self._loss_fn(
+            True, n_qubits=3, gates={0: [[0]], 1: [[1]], 2: [[2]]}, wires=[0, 2]
+        )
+
+        res = loss_fn(jnp.array([0.1, 0.2, 0.3]), data, key=jax.random.PRNGKey(4))
+
+        assert res.shape == () and np.isfinite(float(res))
+
+    def test_gradient_is_finite(self):
+        """The loss stays differentiable in ``params`` when bootstrapping."""
+        rng = np.random.default_rng(3)
+        data = jnp.array(rng.binomial(1, 0.5, (20, 2)))
+        params = jnp.array([0.3, 0.7, 0.2])
+        loss_fn = self._loss_fn(True)
+
+        grad = jax.grad(lambda p: loss_fn(p, data, key=jax.random.PRNGKey(6)))(params)
+
+        assert grad.shape == params.shape
+        assert np.all(np.isfinite(np.asarray(grad)))
