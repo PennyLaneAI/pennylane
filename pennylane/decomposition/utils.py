@@ -22,7 +22,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from functools import singledispatch
 from numbers import Number
-from typing import Any
+from typing import Any, overload
 
 from pennylane.core.operator import Operator, Operator1, Operator2, abstractify
 from pennylane.typing import AbstractArray, AbstractWires
@@ -154,7 +154,11 @@ def _init_signature_registration():
 
     _registry = defaultdict(tuple)
 
-    def register(op: type[Operator2], **kwargs) -> None:
+    @overload
+    def register(op: Operator2) -> None: ...
+    @overload
+    def register(op: type[Operator2], **kwargs) -> None: ...
+    def register(op: Operator2 | type[Operator2], **kwargs) -> None:
         r"""Register a possible signature for an operator.
 
         A *signature* records the abstract type of every argument of an operator (its
@@ -170,7 +174,9 @@ def _init_signature_registration():
         different fixed wire counts or static argument values.
 
         Args:
-            op (type[~.Operator2]): the operator class to register a signature for.
+            op (~.Operator2 | type[~.Operator2]): the operator for which to register the signature.
+                If ``op`` is an operator instance, all dynamic and wire arguments are expected
+                to be abstract.
 
         Keyword Args:
             **kwargs: the type or value of each argument, overriding the corresponding
@@ -178,7 +184,8 @@ def _init_signature_registration():
                 arguments must specify every argument of ``op``. Dynamic arguments must be
                 given an abstract numeric type (a subclass of ``numbers.Number`` or an
                 :class:`~.AbstractArray`) and wire arguments an :class:`~.AbstractWires`,
-                each with a fixed shape.
+                each with a fixed shape. Keyword arguments can only be provided if the input
+                if an operator *type*, not instance.
 
         Raises:
             ValueError: if ``op`` has hybrid or non-compilable static arguments, if the
@@ -187,10 +194,6 @@ def _init_signature_registration():
 
         .. seealso:: :func:`pennylane.decomposition.signature_registry`
         """
-        op_specs = op.arg_specs or {}
-        all_specs = dict(op_specs)
-        all_specs.update(**kwargs)
-
         if op.hybrid_argnames or op.static_argnames:
             # Precompiling decomposition rules will require UID generation for operators
             # with hybrid/non-compilable static arguments. But, the UID is Python session
@@ -199,6 +202,25 @@ def _init_signature_registration():
                 "Signatures cannot be registered for operators that contain hybrid or "
                 "non-compilable static arguments."
             )
+
+        if isinstance(op, Operator2):
+            if kwargs:
+                raise ValueError(
+                    "Keyword arguments can only be provided when registering a signature for an "
+                    "operator type, not an operator instance."
+                )
+            if not op.is_fully_abstract:
+                raise ValueError(
+                    "Signatures can only be registered for fully abstract operator instances. "
+                    "All dynamic and wire arguments of the operator must be abstract."
+                )
+
+            _registry[type(op)] += (op.arguments,)
+            return
+
+        op_specs = op.arg_specs or {}
+        all_specs = dict(op_specs)
+        all_specs.update(**kwargs)
 
         # pylint: disable=protected-access
         if set(all_specs.keys()) != set(op._sig.parameters.keys()):

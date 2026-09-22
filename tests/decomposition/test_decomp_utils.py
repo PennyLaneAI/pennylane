@@ -194,3 +194,28 @@ class TestSignatureRegistration:
             ValueError, match="compatible with the operator's argument specification"
         ):
             register_signature(OneWireDynOp, **kwargs)
+
+    def test_register_operator_instance(self):
+        """Test that a signature can be registered from a fully abstract operator instance."""
+        op = OneWireDynOp(Float, Wire[1])
+        assert op.is_fully_abstract
+
+        before = signature_registry().get(OneWireDynOp, ())
+        register_signature(op)
+        after = signature_registry()[OneWireDynOp]
+
+        assert len(after) == len(before) + 1
+        assert after[-1] == op.arguments
+
+    def test_error_instance_with_kwargs(self):
+        """Test that keyword arguments cannot be provided together with an operator instance."""
+        op = OneWireDynOp(Float, Wire[1])
+        with pytest.raises(ValueError, match="Keyword arguments can only be provided"):
+            register_signature(op, phi=Float)
+
+    def test_error_instance_not_fully_abstract(self):
+        """Test that only fully abstract operator instances can be registered."""
+        op = OneWireDynOp(0.5, wires=0)
+        assert not op.is_fully_abstract
+        with pytest.raises(ValueError, match="fully abstract operator instances"):
+            register_signature(op)
