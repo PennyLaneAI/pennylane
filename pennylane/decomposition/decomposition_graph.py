@@ -309,14 +309,21 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
     def _construct_graph(self, operations: Iterable[Operator | AbstractOperatorLike]):
         """Constructs the decomposition graph."""
+        operations = list(operations)
+        print(f"[decomp-graph] constructing graph for {len(operations)} top-level ops")
         for op in operations:
             if isinstance(op, qp.ops.Conditional):
                 op = op.base  # decompose the base of a classically controlled operator.
             if isinstance(op, Operator):
                 op = abstractify(op)
+            print(f"[decomp-graph] exploring top-level op: {op}")
             idx = self._add_op_node(op, 0)
             self._original_ops_indices.add(idx)
             self._min_work_wires = max(self._min_work_wires, self._graph[idx].min_work_wires)
+        print(
+            f"[decomp-graph] construction done: {self._graph.num_nodes()} nodes, "
+            f"{self._graph.num_edges()} edges, min_work_wires={self._min_work_wires}"
+        )
 
     def _add_op_node(self, op: AbstractOperatorLike, num_used_work_wires: int) -> int:
         """Recursively adds an operation node to the graph.
@@ -341,6 +348,9 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         op_node = _OperatorNode(op, num_used_work_wires, known_work_wire_dependent)
 
         if op_node in self._all_op_indices:
+            print(
+                f"[decomp-graph]   reuse existing node for {op} (used_work={num_used_work_wires})"
+            )
             return self._all_op_indices[op_node]
 
         if op in self._gate_set_weights:
@@ -351,11 +361,16 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         self._op_to_op_nodes[op].add(op_node)
 
         if op in self._gate_set_weights:
+            print(f"[decomp-graph]   {op} in gate set (used_work={num_used_work_wires})")
             self._graph.add_edge(self._start, op_node_idx, self._gate_set_weights[op])
             return op_node_idx
 
         self._push_in_progress(op)
-        rules = self._get_decompositions(op)
+        rules = list(self._get_decompositions(op))
+        print(
+            f"[decomp-graph]   exploring {op} (used_work={num_used_work_wires}, "
+            f"{len(rules)} rules, depth={len(self._in_progress)})"
+        )
 
         # Treat ops that do not have a decomposition as supported if strict=False
         if not rules and not self._strict:
@@ -432,6 +447,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         # try to explore it, but we still add it to the graph because later we may need to
         # inspect the graph to check which decomposition rules were considered but excluded.
         if not rule.is_applicable(**_get_kwargs(op_node.op)):
+            print(f"[decomp-graph]     rule {rule} not applicable to {op_node.op}")
             d_node = _DecompositionNode(
                 rule,
                 Resources({}),
@@ -446,6 +462,10 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         kwargs = _get_kwargs(op_node.op)
         decomp_resource = rule.compute_resources(**kwargs)
         work_wire_spec = rule.get_work_wire_spec(**kwargs)
+        print(
+            f"[decomp-graph]     rule {rule} for {op_node.op}: "
+            f"gates={dict(decomp_resource.gate_counts)}, work={work_wire_spec.total}"
+        )
 
         d_node = _DecompositionNode(rule, decomp_resource, work_wire_spec, num_used_work_wires)
         d_node_idx = self._graph.add_node(d_node)
@@ -464,10 +484,12 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         for op in decomp_resource.gate_counts:
 
             if self._base_in_progress(op):
+                print(f"[decomp-graph]       prune cycle on {op} (base still in progress)")
                 d_node.reachable = False
                 self._graph.add_edge(d_node_idx, op_idx, 0)
                 return d_node
 
+            print(f"[decomp-graph]       recurse into child {op}")
             op_node_idx = self._add_op_node(op, num_used_work_wires + work_wire_spec.total)
             self._graph.add_edge(op_node_idx, d_node_idx, (op_node_idx, d_node_idx))
             # If any of the operators in the decomposition depends on work wires, this
