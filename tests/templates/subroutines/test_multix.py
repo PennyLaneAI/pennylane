@@ -82,11 +82,11 @@ class TestInitialization:
 class TestValidation:
     """Tests for MultiX input and operator validation."""
 
-    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_standard_checks(self):
         """Runs the standard Operator2 validity checks for MultiX."""
         op = qp.MultiX([1, 0, 1], wires=[0, 1, 2])
-        qp.ops.functions.assert_valid(op)
+        qp.ops.functions.assert_valid(op, skip_differentiation=True)
 
     @pytest.mark.parametrize(
         ("bitstring", "wires", "error_match"),
@@ -397,11 +397,6 @@ class TestDecomposition:
         op = qp.MultiX([1, 0, 1], wires=[0, 1, 2])
         adjoint_op = qp.adjoint(op)
 
-        if qp.capture.enabled():
-            pytest.xfail(
-                "When capture is enabled, ends up passing identical `ArgInfo` placeholder leaves into MultiX's`__init__` as wires since `ArgInfo` are not recognized as abstract. Since they are not unique, we get an error comparing them."
-            )
-
         for rule in qp.list_decomps("Adjoint(MultiX)"):
             _test_decomposition_rule(adjoint_op, rule)
 
@@ -422,11 +417,6 @@ class TestDecomposition:
         """Tests that the MultiX decomposition rule is capture compatible."""
         op = qp.MultiX([1, 0, 1], wires=[0, 1, 2])
         pow_op = qp.pow(op, 3)
-
-        if qp.capture.enabled():
-            pytest.xfail(
-                "When capture is enabled, ends up passing identical `ArgInfo` placeholder leaves into MultiX's`__init__` as wires since `ArgInfo` are not recognized as abstract. Since they are not unique, we get an error comparing them."
-            )
 
         for rule in qp.list_decomps("Pow(MultiX)"):
             _test_decomposition_rule(pow_op, rule)

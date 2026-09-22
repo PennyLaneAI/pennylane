@@ -39,7 +39,7 @@ def test_work_wire_property():
     assert op.work_wires == expected
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Test the standard criteria for a valid operation."""
     work_wires = qp.wires.Wires((3, 4))

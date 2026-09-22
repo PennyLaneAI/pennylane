@@ -79,6 +79,7 @@ from pennylane.qchem import (
 from pennylane.numeric_hamiltonians import (
     CDFHamiltonian,
     CGFHamiltonian,
+    VibronicHamiltonian,
 )
 from pennylane._grad import grad, jacobian, vjp, jvp, value_and_grad
 from pennylane._version import __version__

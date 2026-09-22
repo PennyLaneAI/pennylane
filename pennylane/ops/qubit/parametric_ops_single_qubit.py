@@ -44,7 +44,7 @@ from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_con
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
 from pennylane.ops.op_math.prod import prod
 from pennylane.typing import Float, TensorLike, Wire
-from pennylane.wires import WiresLike
+from pennylane.wires import WiresLike, concatenate_wires
 
 from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
 
@@ -256,7 +256,7 @@ def _controlled_rx_resource(base, control_wires, control_values, work_wires, wor
 @register_resources(_controlled_rx_resource)
 # pylint: disable-next=unused-argument
 def _controlled_rx_decomp(base, control_wires, control_values, work_wires, work_wire_type):
-    wires = control_wires + base.wires
+    wires = concatenate_wires(control_wires, base.wires)
     if len(control_wires) == 1:
         qp.CRX(base.phi, wires=wires)
         return
@@ -439,12 +439,17 @@ def _ry_to_rz_cliff_resources(*_, **__):
 
 
 @register_resources(_ry_to_rz_cliff_resources)
-def _ry_to_rz_cliff(phi, wires: WiresLike):
-    qp.change_op_basis(
-        prod(qp.Hadamard(wires), qp.adjoint(qp.S(wires))),
-        qp.RZ(phi, wires),
-        prod(qp.S(wires), qp.Hadamard(wires)),
-    )
+def _ry_to_rz_cliff(phi, wires: WiresLike, **__):
+
+    def _compute():
+        qp.adjoint(qp.S(wires))
+        qp.Hadamard(wires)
+
+    def _uncompute():
+        qp.Hadamard(wires)
+        qp.S(wires)
+
+    qp.change_op_basis(_compute, qp.RZ(phi, wires), _uncompute)
 
 
 def _ry_to_ppr_resources(*_, **__):
@@ -478,7 +483,7 @@ def _controlled_ry_resource(base, control_wires, control_values, work_wires, wor
 @register_resources(_controlled_ry_resource)
 # pylint: disable-next=unused-argument
 def _controlled_ry_decomp(base, control_wires, control_values, work_wires, work_wire_type):
-    wires = control_wires + base.wires
+    wires = concatenate_wires(control_wires, base.wires)
     if len(control_wires) == 1:
         qp.CRY(base.phi, wires=wires)
         return
@@ -710,11 +715,16 @@ def _rz_to_ry_cliff_resources(phi, wires):
 
 @register_resources(_rz_to_ry_cliff_resources)
 def _rz_to_ry_cliff(phi, wires: WiresLike):
-    qp.change_op_basis(
-        prod(qp.S(wires), qp.Hadamard(wires)),
-        qp.RY(phi, wires),
-        prod(qp.Hadamard(wires), qp.adjoint(qp.S(wires))),
-    )
+
+    def _compute():
+        qp.H(wires)
+        qp.S(wires)
+
+    def _uncompute():
+        qp.adjoint(qp.S(wires))
+        qp.H(wires)
+
+    qp.change_op_basis(_compute, qp.RY(phi, wires), _uncompute)
 
 
 def _rz_to_ppr_resources(phi, wires):
@@ -749,7 +759,7 @@ def _controlled_rz_resource(base, control_wires, control_values, work_wires, wor
 def _controlled_rz_decomp(base, control_wires, control_values, work_wires, work_wire_type):
 
     if len(control_wires) == 1:
-        qp.CRZ(base.phi, wires=control_wires + base.wires)
+        qp.CRZ(base.phi, wires=concatenate_wires(control_wires, base.wires))
         return
 
     qp.RZ(base.phi / 2, wires=base.wires)
@@ -962,7 +972,7 @@ def _controlled_phase_shift_resource(base, control_wires, *_, **__):
 
 @register_resources(_controlled_phase_shift_resource)
 def _controlled_phase_shift_decomp(base, control_wires, *_, **__):
-    wires = control_wires + base.wires
+    wires = concatenate_wires(control_wires, base.wires)
     if len(control_wires) == 1:
         qp.ControlledPhaseShift(base.phi, wires=wires)
         return
@@ -1167,7 +1177,7 @@ def _controlled_rot_resource(base, control_wires, control_values, work_wires, wo
 def _controlled_rot_decomp(base, control_wires, control_values, work_wires, work_wire_type):
 
     phi, theta, omega = base.phi, base.theta, base.omega
-    wires = control_wires + base.wires
+    wires = concatenate_wires(control_wires, base.wires)
 
     if len(control_wires) == 1:
         qp.CRot(phi, theta, omega, wires=wires)
