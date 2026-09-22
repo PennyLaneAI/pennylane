@@ -167,7 +167,7 @@ def _run(M, N, zeta, t_ell, aleph, device="lightning.qubit"):  # pylint: disable
     [
         lambda: _right_shift([0], 1),
         lambda: _cswap_pair(0, [], []),
-        lambda: _symmetrize([], [], 1, 2),
+        lambda: _symmetrize([], [], 1, 2, []),
     ],
 )
 def test_register_helpers_are_noops_when_degenerate(call):
