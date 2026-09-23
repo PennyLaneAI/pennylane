@@ -32,12 +32,12 @@ from .device import active_placement
 from .placement import DEFAULT_MESSAGE_BYTES
 from .runtime import runtime_call
 
-# In-process ``__call`` adapters from TransportCAPI.h, named verbatim by a local runtime_call.
+# Native functions from TransportCAPI.h, named verbatim by a local runtime_call.
 _PREFIX = "__catalyst__transport__"
-_GET_SESSION = f"{_PREFIX}get_session__call"
-_STAGE_PAYLOAD = f"{_PREFIX}stage_payload__call"
-_POST = f"{_PREFIX}post__call"
-_COLLECT = f"{_PREFIX}collect__call"
+_GET_SESSION = f"{_PREFIX}get_session"
+_STAGE_PAYLOAD = f"{_PREFIX}stage_payload"
+_POST = f"{_PREFIX}post"
+_COLLECT = f"{_PREFIX}collect"
 
 
 _SIG_GET_SESSION = "(i32, str) -> ptr"  # role, key

@@ -34,10 +34,10 @@ from pennylane.backline.decode import (
 from pennylane.backline.runtime import operands
 
 TRANSPORT_CALLS = [
-    "__catalyst__transport__get_session__call",
-    "__catalyst__transport__stage_payload__call",
-    "__catalyst__transport__post__call",
-    "__catalyst__transport__collect__call",
+    "__catalyst__transport__get_session",
+    "__catalyst__transport__stage_payload",
+    "__catalyst__transport__post",
+    "__catalyst__transport__collect",
 ]
 
 
@@ -156,13 +156,9 @@ def scalars_of(jaxpr, call):
 
 def session_key_of(jaxpr):
     """The session key."""
-    fields = [
-        np.asarray(const)
-        for const in jaxpr.consts
-        if np.asarray(const).shape == (operands.STR_OPERAND_BYTES,)
-    ]
-    assert len(fields) == 1, "expected exactly one str operand"
-    return bytes(fields[0]).rstrip(b"\x00").decode()
+    get_session = calls_of(jaxpr)[0]
+    # local_constants is the ordered list of compile-time C strings for the call.
+    return get_session.params["local_constants"][0].removesuffix(b"\x00").decode()
 
 
 class TestSessionKey:
@@ -308,7 +304,7 @@ class TestRecordedRound:
     def test_the_session_is_claimed_as_the_controller(self, x64):
         """The controller is the data initiator."""
         jaxpr = a_round(x64, a_device(coprocessors=[a_coprocessor(name="decoder-0")]))
-        role, _key = scalars_of(jaxpr, calls_of(jaxpr)[0])
+        (role,) = scalars_of(jaxpr, calls_of(jaxpr)[0])
 
         assert role == ROLE_CONTROLLER
         assert session_key_of(jaxpr) == "decoder-0"

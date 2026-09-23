@@ -423,6 +423,7 @@
 
 * The ability for a compiled program to call a runtime entry point directly via its C symbol name has been added. A symbol's signature is declared once with `qp.runtime_declare` and called with `qp.runtime_call` from inside a `qjit` program.
   [(#9970)](https://github.com/PennyLaneAI/pennylane/pull/9970)
+  [(#10182)](https://github.com/PennyLaneAI/pennylane/pull/10182)
 
   ```python
   import pennylane as qp
@@ -433,8 +434,10 @@
       return qp.runtime_call("example_local_rounds", session, 100000)
   ```
 
-  Passing `address="host:port"` dispatches the call to the executor on the remote side, which invokes the
-  symbol on the machine the runtime lives on; without it the call is local. Meanwhile, `qp.backline.runtime.CType` lists what can cross the boundary.
+  Passing `address="host:port"` dispatches the call to the executor on the remote side, which invokes the symbol on the machine the runtime lives on. Without it the call lowers directly to a native
+  `llvm.call`: scalar values are passed by value and `ptr`/`str` use native pointers.
+  Local `buf`/`out` values are bufferized only to obtain their data pointers.
+  Meanwhile, `qp.backline.runtime.CType` lists what can cross each boundary.
 
   A symbol that fills a buffer declares it as an `out` parameter: the caller asks for `out_bytes=`
   and gets the filled buffer back alongside the result.
@@ -443,7 +446,9 @@
   qp.runtime_declare("example_collect", "(ptr, out, u64) -> i32")
 
   def collect(session):
-      status, reply = qp.runtime_call("example_collect", session, 64, out_bytes=64)
+      status, reply = qp.runtime_call(
+          "example_collect", session, 64, out_bytes=64, address="board:9000"
+      )
       return reply
   ```
 
@@ -599,7 +604,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* Added a decomposition of :class:`~.TemporaryAND` directly to four :math:`\pm\pi/8` PPRs and a 
+* Added a decomposition of :class:`~.TemporaryAND` directly to four :math:`\pm\pi/8` PPRs and a
   decomposition of :class:`~.SingleExcitation` to two :math:`\pm\pi/4` and two arbitrary-angle PPRs.
   [(#10108)](https://github.com/PennyLaneAI/pennylane/pull/10108)
 

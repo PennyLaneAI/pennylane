@@ -34,37 +34,76 @@ def x64_fixture():
         yield jax
 
 
-class TestTextBytes:
-    """Building the fixed-width byte field for a ``str`` argument.
+class TestDispatchedStringField:
+    """Guarding a ``str`` argument that has to fit the dispatched fixed-width field.
 
-    ``text_bytes`` reaches JAX only through ``_is_tracer``, which has an ``except ImportError``
-    fallback. So these tests do not need a JAX-enabled environment.
+    ``c_string_bytes`` reaches JAX only through ``_is_tracer``, which has an ``except
+    ImportError`` fallback. So these tests do not need a JAX-enabled environment.
     """
 
-    def test_str_input_is_padded(self):
-        """A plain ``str`` value is encoded and padded."""
-        raw = operands.text_bytes(CType.STR, "hello", "sym", 0)
-        assert raw == b"hello".ljust(operands.STR_OPERAND_BYTES, b"\x00")
+    def test_str_input_is_terminated(self):
+        """The compiler pads the field, so only the terminator is added here."""
+        raw = operands.c_string_bytes(
+            CType.STR, "hello", "sym", 0, max_bytes=operands.STR_OPERAND_BYTES
+        )
+        assert raw == b"hello\x00"
 
     def test_bytes_input_is_accepted(self):
-        """A ``bytes`` value is padded like a ``str``."""
-        raw = operands.text_bytes(CType.STR, b"hello", "sym", 0)
-        assert raw == b"hello".ljust(operands.STR_OPERAND_BYTES, b"\x00")
+        """A ``bytes`` value is treated like a ``str``."""
+        raw = operands.c_string_bytes(
+            CType.STR, b"hello", "sym", 0, max_bytes=operands.STR_OPERAND_BYTES
+        )
+        assert raw == b"hello\x00"
 
     def test_bytearray_input_is_accepted(self):
-        """A ``bytearray`` value is copied to bytes and padded."""
-        raw = operands.text_bytes(CType.STR, bytearray(b"hello"), "sym", 0)
-        assert raw == b"hello".ljust(operands.STR_OPERAND_BYTES, b"\x00")
+        """A ``bytearray`` value is copied to bytes."""
+        raw = operands.c_string_bytes(
+            CType.STR, bytearray(b"hello"), "sym", 0, max_bytes=operands.STR_OPERAND_BYTES
+        )
+        assert raw == b"hello\x00"
 
     def test_wrong_type_is_refused(self):
         """A non-string, non-bytes value is refused rather than coerced."""
         with pytest.raises(TypeError, match=r"argument 0 is a str, got int"):
-            operands.text_bytes(CType.STR, 42, "sym", 0)
+            operands.c_string_bytes(
+                CType.STR, 42, "sym", 0, max_bytes=operands.STR_OPERAND_BYTES
+            )
 
     def test_a_string_that_does_not_fit_is_refused(self):
         """A payload the full width of the field leaves no NUL terminator."""
         with pytest.raises(ValueError, match="does not fit"):
-            operands.text_bytes(CType.STR, "x" * operands.STR_OPERAND_BYTES, "sym", 0)
+            operands.c_string_bytes(
+                CType.STR,
+                "x" * operands.STR_OPERAND_BYTES,
+                "sym",
+                0,
+                max_bytes=operands.STR_OPERAND_BYTES,
+            )
+
+    def test_a_local_string_has_no_width_limit(self):
+        """A local ``str`` becomes a plain C string, so no field has to hold it."""
+        raw = operands.c_string_bytes(
+            CType.STR, "x" * operands.STR_OPERAND_BYTES, "sym", 0
+        )
+        assert len(raw) == operands.STR_OPERAND_BYTES + 1
+
+
+class TestCStringBytes:
+    """Building native NUL-terminated strings for direct local calls."""
+
+    def test_string_has_only_one_terminator(self):
+        """Native strings are not padded to the dispatched transport field width."""
+        assert operands.c_string_bytes(CType.STR, "hello", "sym", 0) == b"hello\x00"
+
+    def test_embedded_nul_is_refused(self):
+        """An embedded terminator would silently truncate a C string."""
+        with pytest.raises(ValueError, match="embedded NUL"):
+            operands.c_string_bytes(CType.STR, "hel\x00lo", "sym", 0)
+
+    def test_non_utf8_bytes_are_refused(self):
+        """MLIR string attributes require valid UTF-8."""
+        with pytest.raises(ValueError, match="valid UTF-8"):
+            operands.c_string_bytes(CType.STR, b"\xff", "sym", 0)
 
 
 @pytest.mark.jax
@@ -196,12 +235,12 @@ class TestOperandsForNoJax:
     """
 
     def test_a_dispatched_buf_is_refused_before_operand_for_runs(self):
-        """A ``buf`` in a dispatched (``local=False``) call is rejected before any operand is built."""
+        """A ``buf`` in a dispatched call is rejected before any operand is built."""
         signature = CSignature.parse("sym", "(buf, u64) -> i32")
         with pytest.raises(TypeError, match="cannot be read out of the flat buffer"):
-            operands.operands_for(signature, (np.zeros(4, dtype=np.uint8), 4))
+            operands.operands_for(signature, (np.zeros(4, dtype=np.uint8), 4), dispatched=True)
 
     def test_a_zero_argument_signature_returns_an_empty_list(self):
         """No parameters means no operands to build, and no JAX import is ever needed."""
         signature = CSignature.parse("sym", "() -> i32")
-        assert operands.operands_for(signature, ()) == []
+        assert operands.operands_for(signature, ()) == ([], ())
