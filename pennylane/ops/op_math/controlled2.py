@@ -50,7 +50,7 @@ from pennylane.decomposition.utils import to_name
 from pennylane.exceptions import SparseMatrixUndefinedError
 from pennylane.ops.op_math.adjoint2 import Adjoint2, get_traced_and_non_traced_args
 from pennylane.typing import AbstractArray, AbstractWires, Bool, Complex, Wire
-from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
+from pennylane.wires import Wires, WiresLike, concatenate_wires, validate_no_wire_overlaps
 
 from .symbolicop2 import SymbolicOp2
 
@@ -778,7 +778,7 @@ def to_controlled_unitary(base, control_wires, control_values, work_wires, work_
     """Convert a controlled operator to a controlled qubit unitary."""
     qp.ControlledQubitUnitary(
         base.matrix(),
-        wires=control_wires + base.wires,
+        wires=concatenate_wires(control_wires, base.wires),
         control_values=control_values,
         work_wires=work_wires,
         work_wire_type=work_wire_type,

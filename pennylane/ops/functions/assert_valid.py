@@ -253,7 +253,8 @@ def _capture_decomp_rule_to_tape(rule, op):
     else:
         decomposition = partial(rule, **op.static_args, **op.compilable_args)
         capture_args = ()
-        capture_kwargs = {**op.dynamic_args, **op.wire_args, **op.hybrid_args}
+        wire_args = {k: qp.math.array(w, like="jax") for k, w in op.wire_args.items()}
+        capture_kwargs = {**op.dynamic_args, **wire_args, **op.hybrid_args}
 
     plxpr = qp.capture.make_plxpr(decomposition, autograph=False)(*capture_args, **capture_kwargs)
     flat_capture_args = jax.tree.leaves((capture_args, capture_kwargs))
@@ -271,6 +272,14 @@ def _test_decomposition_rule(op, rule: DecompositionRule, skip_decomp_matrix_che
     # Test that the resource function is correct
     resources = rule.compute_resources(**params)
     estimated_gate_counts = resources.gate_counts
+
+    # Make sure all counts are int
+    for gate, count in estimated_gate_counts.items():
+        assert isinstance(count, int), (
+            f"Resource count for '{gate}' in '{op.name}' decomp rule '{rule.name}' must be an integer, "
+            f"but got {type(count)} ({count}). "
+        )
+
     tape = (
         _capture_decomp_rule_to_tape(rule, op)
         if qp.capture.enabled()
