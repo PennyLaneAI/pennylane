@@ -24,19 +24,26 @@ This module contains features to enable Train Classical, Deploy Quantum (TCDQ) w
 What is TCDQ?
 ~~~~~~~~~~~~~
 
-TCDQ is a framework for training and deploying parameterized quantum circuits. Unlike traditional
-approaches to circuit optimization, TCDQ circuits can be trained using classical hardware alone,
-which enables training of quantum circuits with thousands of qubits and millions of parameters on
-a laptop or GPU. Although training can be done classically, deploying the trained circuit on
-quantum hardware for sampling or downstream quantum algorithms can lead to advantages over purely
-classical algorithms.
+TCDQ is a framework for training and deploying parameterized quantum circuits
+(`Recio-Armengol et al. (2025) <https://arxiv.org/abs/2503.02934>`_). Unlike traditional approaches
+to circuit optimization, TCDQ circuits can be trained using classical hardware alone, which enables
+training of quantum circuits with thousands of qubits and millions of parameters on a laptop or
+GPU. Although training can be done classically, deploying the trained circuit on quantum hardware
+for sampling or downstream quantum algorithms can lead to advantages over purely classical
+algorithms. For example, sampling from IQP distributions is known to be hard for classical
+algorithms in general; see
+`Bremner et al. (2016) <https://arxiv.org/abs/1504.07999>`_).
+
 
 This module implements the features needed to classically train TCDQ circuits and uses
-`JAX <https://docs.jax.dev>`_. Currently, the supported circuits consist of instantaneous quantum
-polynomial (IQP) circuits and their generalizations.
+`JAX <https://docs.jax.dev>`_. Currently, the supported circuits consist of
+:ref:`qubit instantaneous quantum polynomial (IQP) circuits <tcdq-qubit-circuits>` and
+:ref:`their generalization to qudits <tcdq-qudit-circuits>`.
 
 
-Creating a circuit
+.. _tcdq-qubit-circuits:
+
+Creating an IQP circuit
 ~~~~~~~~~~~~~~~~~~
 
 A qubit IQP circuit can be created by specifying the generators of the diagonal gates.
@@ -68,7 +75,8 @@ to create gates: :func:`~create_local_gates`, :func:`~create_lattice_gates`, or
 
 
 ``n_samples`` sets the accuracy of every estimate produced from this configuration: the standard
-error of each expectation value falls off as :math:`1/\sqrt{\texttt{n\_samples}}`.
+error of each expectation value falls off as :math:`1/\sqrt{N}`, where :math:`N` is
+``n_samples``.
 
 TCDQ allows for fully flexible diagonal layers beyond those constructed by Pauli-:math:`Z`
 generators. This is achieved by defining a phase function in JAX that maps a bitstring to a real
@@ -254,13 +262,15 @@ qubits <https://arxiv.org/abs/2503.02934>`_.
 
     print("Final MMD loss:", float(mmd_result.losses[-1]))
 
+.. _tcdq-qudit-circuits:
+
 Qudit circuits
 ~~~~~~~~~~~~~~
 
 The workflow above extends to qudit circuits, where the gate generators are powers of the
 generalized Pauli-:math:`Z` operator. Observables are Heisenberg–Weyl operators specified by a pair
-``(l_vecs, m_vecs)`` of integer vectors. See `Spectral Born machines: classically trainable quantum
-generative models for discrete data <https://arxiv.org/abs/2607.06675>`_ for details.
+``(l_vecs, m_vecs)`` of integer vectors. See
+`Huang et al. (2026) <https://arxiv.org/abs/2607.06675>`_ for details.
 
 .. code-block:: python
 
