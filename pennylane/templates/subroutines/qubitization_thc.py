@@ -13,6 +13,8 @@
 # limitations under the License.
 """Qubitization walk operator for the tensor hypercontracted (THC) Hamiltonian."""
 
+from collections import defaultdict
+
 import numpy as np
 
 from pennylane.core.operator import Operator2
@@ -672,24 +674,28 @@ def _ctrl_qubitization_thc_resource(
     ctrl_reflection = ctrl(
         FlipSign([0] * num_reflected, Wire[num_reflected], work_wires=Wire[n_work]), **ctrl_kwargs
     )
-
-    return {
-        superposition: 1,
-        adjoint(superposition): 1,
-        alias: 1,
-        ctrl(Z(Wire[1]), **ctrl_kwargs): 1,
-        adjoint(alias_adjoint): 1,
-        Hadamard: 4,
-        ctrl_select: 1,
-        ctrl_reflection: 1,
-        ctrl(
+    if len(control_wires) > 1:
+        maybe_ctrl_z = ctrl(
             Z(Wire[1]),
             control=Wire[len(control_wires) - 1],
             work_wires=Wire[len(work_wires)],
             work_wire_type=work_wire_type,
-        ): 1,
-        Z: 1,
-    }
+        )
+    else:
+        maybe_ctrl_z = Z
+
+    resources = defaultdict(int)
+    resources[superposition] += 1
+    resources[adjoint(superposition)] += 1
+    resources[alias] += 1
+    resources[ctrl(Z(Wire[1]), **ctrl_kwargs)] += 1
+    resources[adjoint(alias_adjoint)] += 1
+    resources[Hadamard] += 4
+    resources[ctrl_select] += 1
+    resources[ctrl_reflection] += 1
+    resources[Z] += 1
+    resources[maybe_ctrl_z] += 1
+    return dict(resources)
 
 
 @register_resources(_ctrl_qubitization_thc_resource, exact=False)

@@ -517,7 +517,7 @@ def _ctrl_select_half(
         _extra_ctrl_values = [1] * len(control_wires)
         ctrl(
             Z(psi_down[0]),
-            control=control_wires + Wires(z_control),
+            control=Wires(control_wires) + Wires(z_control),
             control_values=_extra_ctrl_values + z_values,
             work_wires=ctrl_work_wires,
             work_wire_type=work_wire_type,
@@ -827,7 +827,7 @@ add_decomps(SelectTHC, _select_thc_decomp)
 
 
 def _ctrl_select_thc_resources(base, control_wires, control_values, work_wires, work_wire_type):
-    # pylint: disable=too-many-arguments,too-many-positional-arguments
+    # pylint: disable=too-many-arguments,too-many-positional-arguments,unused-argument
     """Return the top-level resources of the SelectTHC decomposition."""
     sizes = [
         len(base.system_wires),
@@ -835,12 +835,14 @@ def _ctrl_select_thc_resources(base, control_wires, control_values, work_wires, 
         len(base.flag_wires),
         len(base.gradient_wires),
         len(base.work_wires),
+        len(control_wires),
+        len(work_wires),
     ]
     offsets = np.cumsum([0] + sizes)
     concrete_wires = [
         range(int(start), int(stop)) for start, stop in zip(offsets[:-1], offsets[1:])
     ]
-    system, index, flags, gradient, work = concrete_wires
+    system, index, flags, gradient, work, control, ctrl_work = concrete_wires
     n = math.ceil_log2(len(base.chi) + 1)
     mu_wires = list(index[:n])
     nu_wires = list(index[n:])
@@ -852,8 +854,8 @@ def _ctrl_select_thc_resources(base, control_wires, control_values, work_wires, 
     # not pause capture. See #10162.
     with capture.pause():
         first_half = _ctrl_select_half(
-            control_wires,
-            work_wires,
+            control,
+            ctrl_work,
             work_wire_type,
             base.chi,
             base.t_eigenvectors,
@@ -867,8 +869,8 @@ def _ctrl_select_thc_resources(base, control_wires, control_values, work_wires, 
             one_body_table=True,
         )
         second_half = _ctrl_select_half(
-            control_wires,
-            work_wires,
+            control,
+            ctrl_work,
             work_wire_type,
             base.chi,
             base.t_eigenvectors,
@@ -883,13 +885,13 @@ def _ctrl_select_thc_resources(base, control_wires, control_values, work_wires, 
         )
         controlled_swap = ctrl(
             SWAP(wires=Wire[2]),
-            control=Wire[1 + len(control_values)],
+            control=Wire[1 + len(control_wires)],
             work_wires=Wire[len(work_wires)],
             work_wire_type=work_wire_type,
         )
         controlled_x = ctrl(
             X(Wire[1]),
-            control=Wire[len(control_values)],
+            control=Wire[len(control_wires)],
             work_wires=Wire[len(work_wires)],
             work_wire_type=work_wire_type,
         )
