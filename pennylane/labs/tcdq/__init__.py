@@ -312,20 +312,20 @@ Phase functions and sparse initial states work as in the qubit case, with bitstr
 dit-strings. Note that the expectation values are complex, so the estimator returns a real–imaginary
 covariance matrix for each observable.
 
-For distribution matching, :func:`~build_qudit_mmd_loss` accepts a Heisenberg–Weyl expectation
+For distribution matching, :func:`~build_mmd_loss_hw` accepts a Heisenberg–Weyl expectation
 value function and uses a heat kernel on either a cycle graph, which preserves adjacency between
 levels, or a complete graph, which treats distinct levels symmetrically.
 
 .. code-block:: python
 
-    from pennylane.labs.tcdq import QuditMMDConfig, build_qudit_mmd_loss
+    from pennylane.labs.tcdq import QuditMMDConfig, build_mmd_loss_hw
 
     qudit_mmd_config = QuditMMDConfig(
         bandwidth=0.5,
         n_ops=100,
         graph_type="cycle",
     )
-    qudit_loss_fn = build_qudit_mmd_loss(
+    qudit_loss_fn = build_mmd_loss_hw(
         qudit_expval_fn,
         dims=dims,
         n_qudits=n_qudits,
@@ -357,7 +357,7 @@ Core classes and functions
     ~build_expval_func
     ~build_mmd_loss_pauli
     ~build_qudit_expval_func
-    ~build_qudit_mmd_loss
+    ~build_mmd_loss_hw
     ~median_heuristic
     ~train
     ~training_iterator
