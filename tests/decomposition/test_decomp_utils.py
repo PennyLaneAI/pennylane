@@ -146,12 +146,16 @@ class TestSignatureRegistration:
         initialize_signature_registry()
         assert abstractify(qp.Hadamard(Wire[1])) in signature_registry()[qp.Hadamard]
 
-    def test_registry_returns_shallow_copy(self):
-        """Test that mutating the returned registry does not affect the underlying registry."""
+    def test_registry_is_read_only(self):
+        """Test that the returned registry is read-only."""
         register_signature(OneWireDynOp)
         registry = signature_registry()
-        del registry[OneWireDynOp]
-        assert OneWireDynOp in signature_registry()
+
+        with pytest.raises(TypeError, match="does not support item deletion"):
+            del registry[OneWireDynOp]
+
+        with pytest.raises(TypeError, match="does not support item assignment"):
+            registry[OneWireDynOp] = 0
 
     def test_error_hybrid_or_static_args(self):
         """Test that signatures cannot be registered for operators with hybrid or

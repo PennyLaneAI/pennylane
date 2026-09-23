@@ -21,6 +21,7 @@ from collections import defaultdict
 from contextlib import contextmanager
 from contextvars import ContextVar
 from functools import singledispatch
+from types import MappingProxyType
 from typing import overload
 
 from pennylane.core.operator import Operator, Operator1, Operator2, abstractify
@@ -217,14 +218,13 @@ def _init_signature_registration():
         r"""Return the operator signatures registered with :func:`~.register_signature`.
 
         Returns:
-            dict[type[~.Operator2], set[~.Operator2]]: a mapping from each registered operator
-            class to the set of registered signatures, where each signature is a fully abstract
-            instance of the operator.
+            MappingProxyType[type[~.Operator2], set[~.Operator2]]: a mapping from each registered
+            operator class to the set of registered signatures, where each signature is a fully
+            abstract instance of the operator.
 
         .. seealso:: :func:`pennylane.decomposition.register_signature`
         """
-        # Create a copy so mutation doesn't affect the registry
-        return dict(_registry)
+        return MappingProxyType(_registry)
 
     def initialize_registry():
         """Register the signatures of all PennyLane operators that have a fixed signature.
