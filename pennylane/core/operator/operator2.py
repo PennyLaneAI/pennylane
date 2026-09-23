@@ -2191,7 +2191,7 @@ def _is_aa(arg):
 
 def _to_int_wires(wires):
     """Cast all wires to integers."""
-    if all(_is_aa(w) for w in wires):
+    if all(_is_aa(w) for w in wires) and wires:  # dont do this for empty wires
         return AbstractWires(len(wires))
     return Wires(tuple(w if (math.is_abstract(w) or _is_aa(w)) else int(w) for w in wires))
 
