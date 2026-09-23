@@ -2204,9 +2204,7 @@ def _to_int_wires(wires):
             " AbstractWires, AbstractQubits"
         )
 
-    return Wires(
-        tuple(w if math.is_abstract(w) else int(w) for w in wires)
-    )
+    return Wires(tuple(w if math.is_abstract(w) else int(w) for w in wires))
 
 
 class _ArgType(Enum):

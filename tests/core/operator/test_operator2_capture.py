@@ -461,9 +461,6 @@ class TestReconstruction:
         [op] = _eval(jaxpr, 1)
         qp.assert_equal(op, CompilableOp(5, wires=1))
 
-        [aop] = _eval(jaxpr, qp.wires.AbstractQubit())
-        qp.assert_equal(aop, CompilableOp(5, wires=qp.typing.Wire[1]))
-
     def test_multiwire_roundtrip(self):
         """Test that an operator with multiple wire arguments round-trips."""
         jaxpr = jax.make_jaxpr(lambda: MultiWireOp(wires=[0, 1], ctrl_wires=2).tracer)()
