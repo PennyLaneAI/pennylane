@@ -37,6 +37,7 @@
   circuits. Together with :func:`~.pauli_measure`, this makes the building blocks of Pauli-based
   computations directly expressible.
   [(#10107)](https://github.com/PennyLaneAI/pennylane/pull/10107)
+  [(#10108)](https://github.com/PennyLaneAI/pennylane/pull/10108)
 
   ```pycon
   >>> import pennylane as qp
@@ -596,6 +597,10 @@
   ```
 
 <h3>Improvements 🛠</h3>
+
+* Added a decomposition of :class:`~.TemporaryAND` directly to four :math:`\pm\pi/8` PPRs and a 
+  decomposition of :class:`~.SingleExcitation` to two :math:`\pm\pi/4` and two arbitrary-angle PPRs.
+  [(#10108)](https://github.com/PennyLaneAI/pennylane/pull/10108)
 
 * :class:`~.FlipSign` now accepts `work_wires`, which are forwarded to the multi-controlled
   :class:`~.Z` gate in its decomposition. Providing work wires substantially reduces the gate count.
@@ -1271,12 +1276,14 @@
       :class:`~.PartialUnaryStatePreparation`, :class:`~.Select`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
   [(#10164)](https://github.com/PennyLaneAI/pennylane/pull/10164)
+  [(#10178)](https://github.com/PennyLaneAI/pennylane/pull/10178)
   [(#9925)](https://github.com/PennyLaneAI/pennylane/pull/9925)
   [(#9918)](https://github.com/PennyLaneAI/pennylane/pull/9918)
   [(#9932)](https://github.com/PennyLaneAI/pennylane/pull/9932)
   [(#9924)](https://github.com/PennyLaneAI/pennylane/pull/9924)
   [(#9910)](https://github.com/PennyLaneAI/pennylane/pull/9910)
   [(#9965)](https://github.com/PennyLaneAI/pennylane/pull/9965)
+  [(#10166)](https://github.com/PennyLaneAI/pennylane/pull/10166)
   [(#9943)](https://github.com/PennyLaneAI/pennylane/pull/9943)
   [(#9950)](https://github.com/PennyLaneAI/pennylane/pull/9950)
   [(#9987)](https://github.com/PennyLaneAI/pennylane/pull/9987)
@@ -1458,6 +1465,7 @@
     [(#9897)](https://github.com/PennyLaneAI/pennylane/pull/9897)
     [(#9973)](https://github.com/PennyLaneAI/pennylane/pull/9973)
     [(#10152)](https://github.com/PennyLaneAI/pennylane/pull/10152)
+    [(#10167)](https://github.com/PennyLaneAI/pennylane/pull/10167)
   - The way that :class:`~.Wires` arguments in pytree leaves are read out of HDF5 was changed to be compatible with :class:`~.Operator2` in the data module.
     [(#10012)](https://github.com/PennyLaneAI/pennylane/pull/10012)
 
@@ -1570,6 +1578,11 @@
   [(#9621)](https://github.com/PennyLaneAI/pennylane/pull/9621)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed a bug where a fixed decomposition rule assigned to :class:`~.MultiControlledX` via the
+  ``fixed_decomps`` keyword argument of :func:`~.transforms.decompose` was being ignored.
+  This does not apply to ``qjit(capture=True)``.
+  [(#10183)](https://github.com/PennyLaneAI/pennylane/pull/10183)
 
 * :func:`~.decomposition.inspect_decomps` and :func:`~.transforms.decomp_inspector` no longer
   insert a blank line after a decomposition rule that is unreachable but has no missing operators.
@@ -1753,6 +1766,11 @@
 * ``build_mmd_loss`` replaced with ``build_mmd_loss_pauli`` and now supports any expectation value function
   using Pauli-type observables.
   [(#10123)](https://github.com/PennyLaneAI/pennylane/pull/10123)
+
+* Config option added to qubit MMD loss that bootstraps target data by default to ensure
+  unbiasedness of the estimator
+  [(#10128)](https://github.com/PennyLaneAI/pennylane/pull/10128)
+
 
 <h3>Contributors ✍️</h3>
 
