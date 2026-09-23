@@ -2205,7 +2205,7 @@ def _to_int_wires(wires):
         )
 
     return Wires(
-        tuple(w if (math.is_abstract(w) or _is_abstract_array(w)) else int(w) for w in wires)
+        tuple(w if math.is_abstract(w) else int(w) for w in wires)
     )
 
 
