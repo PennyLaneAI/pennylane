@@ -834,6 +834,9 @@ if jax_available:
         def _iter(self):  # pragma: no cover
             return
 
+else:
+    AbstractQubit = None
+
 
 def is_abstract_qubit(v):
     """Returns ``True`` if the provided value is a DynamicJaxprTracer of type AbstractQubit"""
