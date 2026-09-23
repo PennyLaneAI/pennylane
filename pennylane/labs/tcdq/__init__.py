@@ -392,7 +392,7 @@ from .qudit_expval_functions import (
     build_qudit_expval_func,
 )
 from .mmd_loss_pauli import MMDConfig, build_mmd_loss_pauli, median_heuristic
-from .qudit_mmd_loss import QuditMMDConfig, build_qudit_mmd_loss
+from .mmd_loss_hw import QuditMMDConfig, build_mmd_loss_hw
 from .training import BatchResult, TrainingOptions, TrainingResult, train, training_iterator
 from .utils import (
     create_lattice_gates,
@@ -407,9 +407,9 @@ __all__ = [
     "MMDConfig",
     "QuditMMDConfig",
     "build_expval_func",
+    "build_mmd_loss_hw",
     "build_mmd_loss_pauli",
     "build_qudit_expval_func",
-    "build_qudit_mmd_loss",
     "median_heuristic",
     "BatchResult",
     "TrainingOptions",
