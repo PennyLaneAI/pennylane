@@ -20,6 +20,7 @@ from functools import singledispatch
 from typing import Any
 
 import numpy as np
+from cachetools import LRUCache
 
 from pennylane import math
 from pennylane.core.operator import Operator2, abstractify
@@ -29,7 +30,7 @@ from .unwrap import unwrap
 
 type UID = int
 
-UID_CACHE: dict[Operator2, UID] = {}
+UID_CACHE: LRUCache[Operator2, UID] = LRUCache[Operator2, UID](maxsize=1000)
 
 
 def _handle_array(arr):

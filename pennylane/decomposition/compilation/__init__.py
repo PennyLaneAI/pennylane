@@ -16,7 +16,7 @@ This submodule contains the tools and utilities for collecting and preparing all
 the relevant decomposition rules for integration with catalyst.
 """
 
-from .uid import calculate_uid
+from .uid import calculate_uid, op_for_uid
 from .goid import graph_op_id
 from .all_decomps import all_decomps
 from .prepared_rules import all_prepared_decomps
