@@ -391,6 +391,18 @@ class Operator2(metaclass=OperatorMeta):
     decomposition rules for an operator, operator types with ``arg_specs`` that spans
     all the arguments with static types can be placed in the rules' resources without needing
     to fully construct abstract operators.
+
+    .. note::
+
+        A type that is listed in 'arg_specs' says what an argument is allowed to be, 
+        not what it actually is. For example, if arg_specs contains Complex[-1, -1], the Operator 
+        can still be instantiated with a real float64 array, which will then be reported as 
+        complex even though it holds real data.
+
+        The decomposition graph goes by the reported type, so real and complex inputs will look 
+        like the same operator and share one rule. To let them decompose differently, leave the argument 
+        out of ``arg_specs`` and give each rule a ``register_condition`` that checks the type. For
+        a concrete example see ``BasisRotation``.
     """
 
     # ----------------- Class variables set automatically --------------------

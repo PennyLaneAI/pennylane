@@ -468,7 +468,7 @@ def _capture_ctrl_transform(qfunc: Callable, control, control_values, work_wires
             jaxpr=jaxpr.jaxpr,
             n_control=len(control_wires),
             control_values=control_values,
-            work_wires=work_wires,
+            work_wires=qp.wires.Wires(work_wires) if work_wires is not None else work_wires,
             n_consts=len(jaxpr.consts),
         )
 

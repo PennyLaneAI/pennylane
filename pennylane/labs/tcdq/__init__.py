@@ -37,7 +37,7 @@ Core classes and functions
     ~build_expval_func
     ~build_mmd_loss_pauli
     ~build_qudit_expval_func
-    ~build_qudit_mmd_loss
+    ~build_mmd_loss_hw
     ~median_heuristic
     ~train
     ~training_iterator
@@ -241,10 +241,15 @@ Training qudit circuits with MMD loss
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Qudit distribution matching uses
-:func:`~build_qudit_mmd_loss`, which returns a reusable loss function
+:func:`~build_mmd_loss_hw`, which returns a reusable loss function
 based on a graph-kernel MMD. The ``graph_type`` parameter selects the
 kernel: ``"cycle"`` respects the ordering of neighbouring levels, while
 ``"complete"`` treats all levels symmetrically.
+
+It takes any Heisenberg-Weyl moment callable, the qudit dimension(s), the
+number of qudits, and the MMD hyperparameters. Because it takes a callable
+rather than a circuit configuration, the same loss works for any model that
+can estimate Heisenberg-Weyl moments, not only qudit IQP circuits.
 
 .. code-block:: python
 
@@ -254,7 +259,8 @@ kernel: ``"cycle"`` respects the ordering of neighbouring levels, while
    from pennylane.labs.tcdq import (
        QuditCircuitConfig,
        QuditMMDConfig,
-       build_qudit_mmd_loss,
+       build_qudit_expval_func,
+       build_mmd_loss_hw,
        TrainingOptions,
        train,
    )
@@ -283,7 +289,8 @@ kernel: ``"cycle"`` respects the ordering of neighbouring levels, while
 
    # Build the MMD loss with a cycle-graph kernel
    mmd_config = QuditMMDConfig(bandwidth=[0.3, 1.0], n_ops=64, graph_type="cycle")
-   loss_fn = build_qudit_mmd_loss(circuit_config, mmd_config)
+   expval_fn = build_qudit_expval_func(circuit_config)
+   loss_fn = build_mmd_loss_hw(expval_fn, d, n_qudits, mmd_config)
 
    # Generate synthetic target data and train
    target_data = jax.random.randint(jax.random.PRNGKey(99), (500, n_qudits), 0, d)
@@ -300,6 +307,11 @@ kernel: ``"cycle"`` respects the ordering of neighbouring levels, while
 
    print("Final MMD loss:", float(result.losses[-1]))
 
+Any extra keyword arguments needed by the moment callable are forwarded
+through the loss, for example
+``loss_fn(params, target_data, key, n_samples=8000)`` or
+``loss_fn(params, target_data, key, phase_fn_params=xi)``.
+
 """
 
 from .expval_functions import (
@@ -311,7 +323,7 @@ from .qudit_expval_functions import (
     build_qudit_expval_func,
 )
 from .mmd_loss_pauli import MMDConfig, build_mmd_loss_pauli, median_heuristic
-from .qudit_mmd_loss import QuditMMDConfig, build_qudit_mmd_loss
+from .mmd_loss_hw import QuditMMDConfig, build_mmd_loss_hw
 from .training import BatchResult, TrainingOptions, TrainingResult, train, training_iterator
 from .utils import (
     create_lattice_gates,
@@ -328,7 +340,7 @@ __all__ = [
     "build_expval_func",
     "build_mmd_loss_pauli",
     "build_qudit_expval_func",
-    "build_qudit_mmd_loss",
+    "build_mmd_loss_hw",
     "median_heuristic",
     "BatchResult",
     "TrainingOptions",

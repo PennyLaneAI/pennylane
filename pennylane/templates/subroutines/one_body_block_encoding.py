@@ -19,7 +19,7 @@ from pennylane import math
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import GlobalPhase, Hadamard, Z, adjoint
-from pennylane.typing import Complex, Wire
+from pennylane.typing import Float, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
 from .alias_sampling import AliasSampling, alias_sampling_wires
@@ -327,7 +327,8 @@ def _one_body_block_encoding_resources(
         temp_wires=Wire[n_garbage],
         work_wires=Wire[n_work],
     )
-    rotation = BasisRotation(Complex[norbs, norbs], wires=Wire[norbs])
+    # NOTE: '_block_encoding_data' diagonalizes a real symmetric matrix, so the orbital rotation is always real.
+    rotation = BasisRotation(Float[norbs, norbs], wires=Wire[norbs])
     select = Select(
         [Z(Wire[1])] * (2 * norbs),
         control=Wire[n_index + 1],
