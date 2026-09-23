@@ -505,6 +505,52 @@
   determine the register sizes.
   [(#10163)](https://github.com/PennyLaneAI/pennylane/pull/10163)
 
+  ```python
+  import pennylane as qp
+  import numpy as np
+
+  M, N, aleph, beth = 2, 2, 1, 1
+  zeta = tuple(map(tuple, np.eye(M)))
+  t_ell = tuple(np.ones(N//2))
+  chi = tuple(map(tuple, np.ones((M, N // 2))))
+  t_eigenvectors = tuple(map(tuple, np.eye(N // 2)))
+  sizes = qp.qubitization_thc_wires(M, N, aleph, beth)
+  wires = qp.registers(sizes)
+  ```
+
+  ```pycon
+  >>> print(qp.draw(qp.QubitizationTHC(zeta, t_ell, chi, t_eigenvectors, aleph, beth, **wires).decomposition, max_length=140)())
+   0: ────────────────────────────────────────╭SelectTHC────────────────────────────────────────────────────╭GlobalPhase(3.14)─┤
+   1: ────────────────────────────────────────├SelectTHC────────────────────────────────────────────────────├GlobalPhase(3.14)─┤
+   2: ─╭SuperpositionTHC─╭AliasSamplingTHC────├SelectTHC────╭AliasSamplingTHC†─╭SuperpositionTHC†─╭FlipSign─├GlobalPhase(3.14)─┤
+   3: ─├SuperpositionTHC─├AliasSamplingTHC────├SelectTHC────├AliasSamplingTHC†─├SuperpositionTHC†─├FlipSign─├GlobalPhase(3.14)─┤
+   4: ─├SuperpositionTHC─├AliasSamplingTHC────├SelectTHC────├AliasSamplingTHC†─├SuperpositionTHC†─├FlipSign─├GlobalPhase(3.14)─┤
+   5: ─├SuperpositionTHC─├AliasSamplingTHC────├SelectTHC────├AliasSamplingTHC†─├SuperpositionTHC†─├FlipSign─├GlobalPhase(3.14)─┤
+   6: ─├SuperpositionTHC─│────────────────────│─────────────│──────────────────├SuperpositionTHC†─├FlipSign─├GlobalPhase(3.14)─┤
+   7: ─├SuperpositionTHC─├AliasSamplingTHC────│─────────────├AliasSamplingTHC†─├SuperpositionTHC†─├FlipSign─├GlobalPhase(3.14)─┤
+   8: ─├SuperpositionTHC─├AliasSamplingTHC────│─────────────├AliasSamplingTHC†─├SuperpositionTHC†─├FlipSign─├GlobalPhase(3.14)─┤
+   9: ─├SuperpositionTHC─├AliasSamplingTHC────├SelectTHC────├AliasSamplingTHC†─├SuperpositionTHC†─├FlipSign─├GlobalPhase(3.14)─┤
+  10: ─├SuperpositionTHC─├AliasSamplingTHC────│─────────────├AliasSamplingTHC†─├SuperpositionTHC†─├FlipSign─├GlobalPhase(3.14)─┤
+  11: ─├SuperpositionTHC─├AliasSamplingTHC────│─────────────├AliasSamplingTHC†─├SuperpositionTHC†─├FlipSign─├GlobalPhase(3.14)─┤
+  12: ─├SuperpositionTHC─│────────────────────├SelectTHC────│──────────────────├SuperpositionTHC†─├FlipSign─├GlobalPhase(3.14)─┤
+  13: ─├SuperpositionTHC─├AliasSamplingTHC────│─────────────├AliasSamplingTHC†─├SuperpositionTHC†─├FlipSign─├GlobalPhase(3.14)─┤
+  14: ─├SuperpositionTHC─├AliasSamplingTHC────│─────────────├AliasSamplingTHC†─├SuperpositionTHC†─├FlipSign─├GlobalPhase(3.14)─┤
+  15: ─├SuperpositionTHC─├AliasSamplingTHC────│─────────────├AliasSamplingTHC†─├SuperpositionTHC†─├FlipSign─├GlobalPhase(3.14)─┤
+  16: ─├SuperpositionTHC─├AliasSamplingTHC────│─────────────├AliasSamplingTHC†─├SuperpositionTHC†─├FlipSign─├GlobalPhase(3.14)─┤
+  17: ─│─────────────────├AliasSamplingTHC────│─────────────├AliasSamplingTHC†─│──────────────────├FlipSign─├GlobalPhase(3.14)─┤
+  18: ─│─────────────────├AliasSamplingTHC────│─────────────├AliasSamplingTHC†─│──────────────────├FlipSign─├GlobalPhase(3.14)─┤
+  19: ─│─────────────────├AliasSamplingTHC────│─────────────├AliasSamplingTHC†─│──────────────────├FlipSign─├GlobalPhase(3.14)─┤
+  20: ─│─────────────────├AliasSamplingTHC────├SelectTHC────├AliasSamplingTHC†─│──────────────────├FlipSign─├GlobalPhase(3.14)─┤
+  21: ─│─────────────────├AliasSamplingTHC────│─────────────├AliasSamplingTHC†─│──────────────────├FlipSign─├GlobalPhase(3.14)─┤
+  22: ─│─────────────────│──────────────────H─├SelectTHC──H─│──────────────────│──────────────────├FlipSign─├GlobalPhase(3.14)─┤
+  23: ─│─────────────────│──────────────────H─├SelectTHC──H─│──────────────────│──────────────────╰FlipSign─├GlobalPhase(3.14)─┤
+  24: ─│─────────────────│────────────────────├SelectTHC────│──────────────────│────────────────────────────├GlobalPhase(3.14)─┤
+  25: ─│─────────────────│────────────────────├SelectTHC────│──────────────────│────────────────────────────├GlobalPhase(3.14)─┤
+  26: ─├SuperpositionTHC─├AliasSamplingTHC────├SelectTHC────├AliasSamplingTHC†─├SuperpositionTHC†───────────├GlobalPhase(3.14)─┤
+  27: ─╰SuperpositionTHC─╰AliasSamplingTHC────╰SelectTHC────╰AliasSamplingTHC†─╰SuperpositionTHC†───────────╰GlobalPhase(3.14)─┤
+
+  ```
+
 * Added :class:`~.OneBodyBlockEncoding`, a block-encoding of a real symmetric one-body operator
   :math:`\hat O`, normalized as :math:`\hat O / \lambda` with :math:`\lambda = \sum_p |\mu_p|`,
   where :math:`\mu_p` are the eigenvalues of the one-body matrix. Composing it with a reflection
@@ -605,7 +651,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* Added a decomposition of :class:`~.TemporaryAND` directly to four :math:`\pm\pi/8` PPRs and a 
+* Added a decomposition of :class:`~.TemporaryAND` directly to four :math:`\pm\pi/8` PPRs and a
   decomposition of :class:`~.SingleExcitation` to two :math:`\pm\pi/4` and two arbitrary-angle PPRs.
   [(#10108)](https://github.com/PennyLaneAI/pennylane/pull/10108)
 
@@ -907,14 +953,6 @@
   [(#9537)](https://github.com/PennyLaneAI/pennylane/pull/9537)
   [(#9481)](https://github.com/PennyLaneAI/pennylane/pull/9481)
 
-* Created a new ``labs.templates.LeftQuantumComparator`` template for performing inequality test of two quantum registers.
-  [(#9277)](https://github.com/PennyLaneAI/pennylane/pull/9277)
-  [(#9544)](https://github.com/PennyLaneAI/pennylane/pull/9544)
-
-* Developed the ``labs.templates.alias_sampling_thc`` function to facilitate state preparation via alias sampling in THC contexts,
-  together with the ``labs.templates.alias_sampling_thc_wires`` helper function that returns the size of every register it requires.
-  [(#9940)](https://github.com/PennyLaneAI/pennylane/pull/9940)
-
 * TCDQ now supports workflows with qudits of non-uniform dimensions.
   [(#9935)](https://github.com/PennyLaneAI/pennylane/pull/9935)
 
@@ -992,16 +1030,6 @@
 
   ```
 
-* Two new functions, :func:`~.pennylane.labs.templates.one_body_walk` and
-  :func:`~.pennylane.labs.templates.one_body_walk_wires`, have been added.
-  :func:`~.pennylane.labs.templates.one_body_walk` builds the qubitization walk operator that
-  block-encodes a real symmetric one-body operator :math:`\hat O`, giving access to the
-  eigenvalues of :math:`\hat O / \lambda` through quantum phase estimation, where
-  :math:`\lambda = \sum_p |\mu_p|` and :math:`\mu_p` are the eigenvalues of the one-body matrix.
-  :func:`~.pennylane.labs.templates.one_body_walk_wires` reports the required sizes of the PREP and system registers,
-  and the minimum size of the work register.
-  [(#9991)](https://github.com/PennyLaneAI/pennylane/pull/9991)
- 
 * Performance of the Trotter error module is improved by introducing a novel algorithm for
   computing the Baker-Campbell-Hausdorff formula.
   [(#9608)][https://github.com/PennyLaneAI/pennylane/pull/9608]
@@ -1017,18 +1045,6 @@
   :func:`~.pennylane.labs.estimator_beta.mark_subroutine` which allow users to easily define their own
   resource operators from their quantum functions.
   [(#9764)](https://github.com/PennyLaneAI/pennylane/pull/9764)
-
-* Added :func:`~.pennylane.labs.templates.alias_sampling`, which prepares a state with real, positive
-  amplitudes to a chosen number of bits of precision using coherent alias sampling. The routine loads the
-  amplitudes with a single `QROM` call and one inequality test instead of a sequence of
-  controlled rotations, so its non-Clifford cost grows linearly in the number of coefficients rather
-  than with the product of the number of coefficients and the bits of precision. This makes it the
-  preferred `PREPARE` subroutine for qubitization-based algorithms. The companion functions
-  :func:`~.pennylane.labs.templates.uniform_prep_ops`, which prepares a uniform superposition over an
-  arbitrary number of basis states, and
-  :func:`~.pennylane.labs.templates.alias_sampling_wires`, which reports the required register sizes,
-  were added as well.
-  [(#9913)](https://github.com/PennyLaneAI/pennylane/pull/9913)
 
 <h3>Breaking changes 💔</h3>
 
@@ -1320,6 +1336,7 @@
   [(#9924)](https://github.com/PennyLaneAI/pennylane/pull/9924)
   [(#9910)](https://github.com/PennyLaneAI/pennylane/pull/9910)
   [(#9965)](https://github.com/PennyLaneAI/pennylane/pull/9965)
+  [(#10166)](https://github.com/PennyLaneAI/pennylane/pull/10166)
   [(#9943)](https://github.com/PennyLaneAI/pennylane/pull/9943)
   [(#9950)](https://github.com/PennyLaneAI/pennylane/pull/9950)
   [(#9987)](https://github.com/PennyLaneAI/pennylane/pull/9987)
@@ -1614,6 +1631,11 @@
   [(#9621)](https://github.com/PennyLaneAI/pennylane/pull/9621)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed a bug where a fixed decomposition rule assigned to :class:`~.MultiControlledX` via the
+  ``fixed_decomps`` keyword argument of :func:`~.transforms.decompose` was being ignored.
+  This does not apply to ``qjit(capture=True)``.
+  [(#10183)](https://github.com/PennyLaneAI/pennylane/pull/10183)
 
 * :func:`~.decomposition.inspect_decomps` and :func:`~.transforms.decomp_inspector` no longer
   insert a blank line after a decomposition rule that is unreachable but has no missing operators.

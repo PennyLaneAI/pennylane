@@ -307,6 +307,7 @@ def _superposition_thc_resources(M, N, mu_wires, nu_wires, work_wires):
     lcc_gt = LeftClassicalComparator(Wire[n], N // 2, Wire[1], Wire[n - 1], comparator=">=")
     lqc = LeftQuantumComparator(Wire[n], Wire[n], Wire[1], Wire[n], comparator="<=")
     mcx = _controlled_pauli(X, n, n - 1, control_values=[0] * n)
+    multix = MultiX(Bool[n], Wire[n])
 
     resources = defaultdict(int)
 
@@ -323,8 +324,8 @@ def _superposition_thc_resources(M, N, mu_wires, nu_wires, work_wires):
     resources[lcc_le] += 2
     resources[lcc_gt] += 2
     resources[lqc] += 2
-    resources[MultiX(Bool[n], Wire[n])] += 4
-    resources[adjoint(MultiX(Bool[n], Wire[n]))] += 2
+    resources[multix] += 4
+    resources[adjoint(multix)] += 2
     # _left_inequalities applied twice as an adjoint.
     resources[adjoint(lcc_le)] += 2
     resources[adjoint(lcc_gt)] += 2
