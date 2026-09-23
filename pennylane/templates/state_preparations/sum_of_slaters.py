@@ -1193,7 +1193,7 @@ def _sos_state_prep_with_wires(
         [coefficients, qp.math.cast_like(qp.math.zeros(missing_dim), coefficients)],
         like=qp.math.get_interface(coefficients),
     )
-    qp.MultiplexerStatePreparation(coefficients, wires=enumeration_wires)
+    qp.MultiplexerStatePreparation(qp.math.cast(coefficients, complex), wires=enumeration_wires)
 
     # Step 2 in paper (p.7): QROM to load v_bits into system register
     qp.QROM(
