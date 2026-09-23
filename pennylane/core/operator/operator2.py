@@ -2193,10 +2193,12 @@ def _to_int_wires(wires):
     """Cast all wires to integers."""
     if not wires:
         return Wires(wires)
-        
+
     if all(_is_abstract_array(w) for w in wires):
         return AbstractWires(len(wires))
-    return Wires(tuple(w if (math.is_abstract(w) or _is_abstract_array(w)) else int(w) for w in wires))
+    return Wires(
+        tuple(w if (math.is_abstract(w) or _is_abstract_array(w)) else int(w) for w in wires)
+    )
 
 
 class _ArgType(Enum):

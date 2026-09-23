@@ -835,7 +835,7 @@ if jax_available:
             return
 
 else:
-    AbstractQubit = None # pragma: no cover
+    AbstractQubit = None  # pragma: no cover
 
 
 def is_abstract_qubit(v):
