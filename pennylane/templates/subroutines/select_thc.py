@@ -450,7 +450,10 @@ def _select_half(
         ctrl(Z(psi_down[0]), control=z_control, control_values=z_values)
 
     def _unbasis():
-        adjoint(_basis)()
+        # ``lazy=False``: the QROM in ``_basis`` uncomputes through measurement-based elbow
+        # uncompute, which cannot be reversed, so the adjoint has to be pushed onto the
+        # individual ops instead of wrapping the body in a region that is reversed later.
+        adjoint(_basis, lazy=False)()
 
     return change_op_basis(_basis, _reflect, _unbasis)
 

@@ -537,10 +537,14 @@ def _alias_sampling_thc_resources(
     n = len(mu_wires)
     n_d = _num_address_wires(M, N)
     n_work = len(work_wires)
-    q = n_d + 2
-    f = q + 2 * n + 2 * aleph
+    # ``f`` and the QROM work pool are spelled exactly as in the decomposition below, where the
+    # pool is ``work_wires[f + 2 * aleph + 3:]``. Declaring a different size hands the graph a
+    # resource rep that no emitted QROM ever matches, and an op with no node in the graph
+    # silently bypasses fixed_decomps and falls back to QROM.decomposition().
+    f = n_d + 1 + 2 * n
     n_qrom_target = 2 + 2 * n + aleph + 1
-    n_qrom_work = max(n_work - (f + 3), 0)
+    n_qrom_work = max(n_work - (f + 2 * aleph + 3), 0)
+    assert n_qrom_work >= n_d - 2  # TODO: remove me
     data = _build_qrom_data(M, N, zeta, t_ell, n, aleph)
     qrom = QROM(
         data,
@@ -626,6 +630,7 @@ def _alias_sampling_thc_decomp(
     # are returned to zero, so we do not need to account for them explicitly.
     _compute_contiguous_register(M, N, mu_wires, nu_wires, work_wires)
 
+    assert len(qrom_work) >= len(contiguous_register) - 1  # TODO: remove me
     data = _build_qrom_data(M, N, zeta, t_ell, n, aleph)
     QROM(
         data,
