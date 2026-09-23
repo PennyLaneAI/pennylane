@@ -1580,6 +1580,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug where :func:`pennylane.data.load` downloaded datasets serially despite the
+  ``num_threads`` argument; downloads now run concurrently with up to ``num_threads`` threads.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
 * Fixed a bug where a fixed decomposition rule assigned to :class:`~.MultiControlledX` via the
   ``fixed_decomps`` keyword argument of :func:`~.transforms.decompose` was being ignored.
   This does not apply to ``qjit(capture=True)``.
