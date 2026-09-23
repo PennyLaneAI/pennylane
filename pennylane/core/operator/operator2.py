@@ -2183,7 +2183,7 @@ def _is_hash_leaf(l) -> bool:
     return _is_op(l) or _is_wires(l)
 
 
-def _is_aa(arg):
+def _is_abstract_array(arg):
     from jax.core import ShapedArray  # pylint: disable=import-outside-toplevel
 
     return isinstance(arg, (ShapedArray, AbstractArray, AbstractWires, AbstractQubit))
@@ -2191,7 +2191,10 @@ def _is_aa(arg):
 
 def _to_int_wires(wires):
     """Cast all wires to integers."""
-    if all(_is_aa(w) for w in wires) and wires:  # dont do this for empty wires
+    if not wires:
+        return Wires(wires)
+        
+    if all(_is_abstract_array(w) for w in wires):
         return AbstractWires(len(wires))
     return Wires(tuple(w if (math.is_abstract(w) or _is_aa(w)) else int(w) for w in wires))
 
