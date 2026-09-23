@@ -33,6 +33,7 @@ from pennylane.ops import (
     change_op_basis,
     ctrl,
 )
+from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
@@ -458,6 +459,79 @@ def _select_half(
     return change_op_basis(_basis, _reflect, _unbasis)
 
 
+def _ctrl_select_half(
+    control_wires,
+    ctrl_work_wires,
+    work_wire_type,
+    chi,
+    t_eigenvectors,
+    beth,
+    system_wires,
+    index_wires,
+    flag_wires,
+    gradient_wires,
+    work_wires,
+    num_batches=1,
+    one_body_table=False,
+    skip_one_body=False,
+):  # pylint: disable=too-many-arguments, too-many-positional-arguments
+    """Controlled version of _select_half."""
+    chi = math.asarray(chi, dtype=float)
+    M, n_half = chi.shape
+    n = math.ceil_log2(M + 1)
+    batches, width = _angle_batches(n_half, num_batches)
+    n_angle = width * beth if batches else 0
+
+    psi_down, psi_up = list(system_wires[:n_half]), list(system_wires[n_half:])
+    succ, edge, spin = flag_wires
+    angle_wires = list(work_wires[:n_angle])
+    # The QROM restores its work wires before the adder runs, so the two share the pool.
+    qrom_work = list(work_wires[n_angle:])
+    adder_work = qrom_work[:beth]
+    gradient_wires = list(gradient_wires)
+
+    tables = _build_qrom_givens_data(chi, t_eigenvectors, beth, one_body_table, batches)
+    # The index register is sized by PREPARE, which needs the ``nu = M`` sentinel, but this
+    # QROM only addresses ``mu < M`` or ``ell < N/2``, so its top wire is always in |0>.
+    n_mu = math.ceil_log2(max(M, n_half))
+    qrom = {
+        "control_wires": ([edge] if one_body_table else []) + list(index_wires)[n - n_mu :],
+        "target_wires": angle_wires,
+        "work_wires": qrom_work,
+        "clean": True,
+    }
+
+    z_control, z_values = ([succ, edge], [1, 0]) if skip_one_body else ([succ], [1])
+
+    def _basis():
+        # Route V onto the spin-up block when the spin flag is set, then apply U,
+        # one batch of angles at a time.
+        for down, up in zip(psi_down, psi_up):
+            CSWAP(wires=[spin, down, up])
+        for b, batch in enumerate(batches):
+            QROM(tables[b], **qrom)
+            _apply_loaded_rotation(psi_down, angle_wires, beth, batch, gradient_wires, adder_work)
+
+    def _reflect():
+        # Reflect on the first orbital, switched off on the one-body block.
+        _extra_ctrl_values = [1] * len(control_wires)
+        ctrl(
+            Z(psi_down[0]),
+            control=control_wires + Wires(z_control),
+            control_values=_extra_ctrl_values + z_values,
+            work_wires=ctrl_work_wires,
+            work_wire_type=work_wire_type,
+        )
+
+    def _unbasis():
+        # ``lazy=False``: the QROM in ``_basis`` uncomputes through measurement-based elbow
+        # uncompute, which cannot be reversed, so the adjoint has to be pushed onto the
+        # individual ops instead of wrapping the body in a region that is reversed later.
+        adjoint(_basis, lazy=False)()
+
+    return change_op_basis(_basis, _reflect, _unbasis)
+
+
 class SelectTHC(Operator2):
     r"""Self-inverse Hamiltonian selection oracle for tensor hypercontraction (THC).
 
@@ -743,7 +817,7 @@ def _select_thc_decomp(
     #    controls the mu <-> nu swap. This is the "X on the ancilla qubit and swapping the mu and nu
     #    registers" step between Eqs. (38) and (39) of arXiv:2011.03494, and it is what makes
     #    SELECT self-inverse.
-    for a, b in zip(mu_wires, nu_wires):
+    for a, b in zip(mu_wires, nu_wires, strict=True):
         ctrl(SWAP(wires=[a, b]), control=edge, control_values=0)
     ctrl(SWAP(wires=[spin1, spin2]), control=edge, control_values=0)
     X(swap)
@@ -752,8 +826,84 @@ def _select_thc_decomp(
 add_decomps(SelectTHC, _select_thc_decomp)
 
 
+def _ctrl_select_thc_resources(base, control_wires, control_values, work_wires, work_wire_type):
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
+    """Return the top-level resources of the SelectTHC decomposition."""
+    sizes = [
+        len(base.system_wires),
+        len(base.index_wires),
+        len(base.flag_wires),
+        len(base.gradient_wires),
+        len(base.work_wires),
+    ]
+    offsets = np.cumsum([0] + sizes)
+    concrete_wires = [
+        range(int(start), int(stop)) for start, stop in zip(offsets[:-1], offsets[1:])
+    ]
+    system, index, flags, gradient, work = concrete_wires
+    n = math.ceil_log2(len(base.chi) + 1)
+    mu_wires = list(index[:n])
+    nu_wires = list(index[n:])
+    succ, edge, _, spin1, spin2 = flags
+
+    # `_select_half` returns change_op_basis. Under capture that unrolls eagerly
+    # (binds inner gates into the jaxpr and returns None), so pause while we
+    # build the resource keys. compute_resources already stops queuing but does
+    # not pause capture. See #10162.
+    with capture.pause():
+        first_half = _ctrl_select_half(
+            control_wires,
+            work_wires,
+            work_wire_type,
+            base.chi,
+            base.t_eigenvectors,
+            base.beth,
+            system,
+            mu_wires,
+            [succ, edge, spin1],
+            gradient,
+            work,
+            num_batches=base.num_batches,
+            one_body_table=True,
+        )
+        second_half = _ctrl_select_half(
+            control_wires,
+            work_wires,
+            work_wire_type,
+            base.chi,
+            base.t_eigenvectors,
+            base.beth,
+            system,
+            nu_wires,
+            [succ, edge, spin2],
+            gradient,
+            work,
+            num_batches=base.num_batches,
+            skip_one_body=True,
+        )
+        controlled_swap = ctrl(
+            SWAP(wires=Wire[2]),
+            control=Wire[1 + len(control_values)],
+            work_wires=Wire[len(work_wires)],
+            work_wire_type=work_wire_type,
+        )
+        controlled_x = ctrl(
+            X(Wire[1]),
+            control=Wire[len(control_values)],
+            work_wires=Wire[len(work_wires)],
+            work_wire_type=work_wire_type,
+        )
+
+    resources = Counter(abstractify(op) for op in (first_half, second_half))
+    resources[abstractify(controlled_swap)] += n + 1
+    resources[X] += 2
+    resources[controlled_x] += 1
+    return resources
+
+
 @register_resources(_ctrl_select_thc_resources)
-def _select_thc_decomp(base, control_wires, control_values, work_wires, work_wire_type):
+def _ctrl_select_thc_decomp(base, control_wires, control_values, work_wires, work_wire_type):
+    # pylint: disable=unused-argument
     M = len(base.chi)
     n = math.ceil_log2(M + 1)
     mu_wires = base.index_wires[:n]
@@ -762,6 +912,9 @@ def _select_thc_decomp(base, control_wires, control_values, work_wires, work_wir
 
     # 1. V on mu in the first spin sector, the only sandwich acting on the one-body block.
     _ctrl_select_half(
+        control_wires,
+        work_wires,
+        work_wire_type,
         base.chi,
         base.t_eigenvectors,
         base.beth,
@@ -776,6 +929,9 @@ def _select_thc_decomp(base, control_wires, control_values, work_wires, work_wir
 
     # 2. V on nu in the other spin sector, switched off on the one-body block.
     _ctrl_select_half(
+        control_wires,
+        work_wires,
+        work_wire_type,
         base.chi,
         base.t_eigenvectors,
         base.beth,
@@ -792,10 +948,22 @@ def _select_thc_decomp(base, control_wires, control_values, work_wires, work_wir
     #    controls the mu <-> nu swap. This is the "X on the ancilla qubit and swapping the mu and nu
     #    registers" step between Eqs. (38) and (39) of arXiv:2011.03494, and it is what makes
     #    SELECT self-inverse.
-    for a, b in zip(mu_wires, nu_wires):
-        ctrl(SWAP(wires=[a, b]), control=control_wires + [edge], control_values=0)
-    ctrl(SWAP(wires=[spin1, spin2]), control=edge, control_values=0)
-    X(swap)
+    X(edge)
+    for a, b in zip(mu_wires, nu_wires, strict=True):
+        ctrl(
+            SWAP(wires=[a, b]),
+            control=Wires(control_wires) + Wires([edge]),
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
+        )
+    ctrl(
+        SWAP(wires=[spin1, spin2]),
+        control=Wires(control_wires) + Wires([edge]),
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
+    )
+    X(edge)
+    ctrl(X(swap), control=control_wires, work_wires=work_wires, work_wire_type=work_wire_type)
 
 
-add_decomps("C(SelectTHC)", _ctrl_select_thc_decomp)
+add_decomps("C(SelectTHC)", flip_zero_control2(_ctrl_select_thc_decomp))
