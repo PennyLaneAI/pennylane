@@ -2215,6 +2215,7 @@ def _resolve_arg_kind(cls, name: str) -> _ArgType:
     return _ArgType.DYN
 
 
+# pylint: disable=too-many-return-statements
 def _canonicalize_abstract_type(val, kind: _ArgType):
     """Canonicalizes the input into its abstract equivalent.
 
@@ -2229,6 +2230,9 @@ def _canonicalize_abstract_type(val, kind: _ArgType):
 
     if isinstance(val, (AbstractArray, AbstractWires)):
         return val
+
+    if type(val).__name__ == "ShapedArray":  # jax.core.ShapedArray
+        return AbstractArray(val.shape, val.dtype)
 
     if isinstance(val, type) and issubclass(val, Number):
         return AbstractArray((), val)
