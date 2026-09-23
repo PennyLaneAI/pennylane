@@ -2197,6 +2197,13 @@ def _to_int_wires(wires):
     if all(_is_abstract_array(w) for w in wires):
         return AbstractWires(len(wires))
 
+    if any(_is_abstract_array(w) for w in wires):
+        raise ValueError(
+            "Operator instances cannot be constructed with a combination of both concrete"
+            " wires and abstract values like ShapedArray, AbstractArray,"
+            " AbstractWires, AbstractQubits"
+        )
+
     return Wires(
         tuple(w if (math.is_abstract(w) or _is_abstract_array(w)) else int(w) for w in wires)
     )

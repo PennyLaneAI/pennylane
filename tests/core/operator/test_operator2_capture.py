@@ -38,7 +38,7 @@ from pennylane.capture import PlxprInterpreter
 from pennylane.capture.primitives import AbstractOperator, operator_p, symbolic_array_prim
 from pennylane.pytrees import unflatten
 from pennylane.typing import Float, Int, Wire
-from pennylane.wires import AbstractQubit, Wires
+from pennylane.wires import AbstractQubit
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -520,20 +520,6 @@ class TestReconstruction:
             ((Int, Int), Wire[2]),
             ((Wire[1], Wire[1]), Wire[2]),
             ((AbstractQubit(), ShapedArray((), np.int64), Int), Wire[3]),
-            # hybrid concrete + abstract wires are preserved as mixed Wires
-            ((0, AbstractQubit()), Wires([0, AbstractQubit()])),
-            ((AbstractQubit(), 1), Wires([AbstractQubit(), 1])),
-            ((0, ShapedArray((), np.int64)), Wires([0, ShapedArray((), np.int64)])),
-            ((ShapedArray((), np.int64), 1), Wires([ShapedArray((), np.int64), 1])),
-            ((0, Int), Wires([0, Int])),
-            ((Int, 1), Wires([Int, 1])),
-            ((0, Wire[1]), Wires([0, Wire[1]])),
-            ((Wire[1], 1), Wires([Wire[1], 1])),
-            ((0, AbstractQubit(), 2), Wires([0, AbstractQubit(), 2])),
-            (
-                (0, ShapedArray((), np.int64), Int),
-                Wires([0, ShapedArray((), np.int64), Int]),
-            ),
         ),
     )
     def test_abstract_wire_reconstruction(self, wires, expected_wires):
@@ -542,6 +528,15 @@ class TestReconstruction:
         jaxpr = jax.make_jaxpr(lambda *ws: DynOp(0.5, wires=ws).tracer)(*concrete)
         [op] = _eval(jaxpr, *wires)
         qp.assert_equal(op, DynOp(0.5, wires=expected_wires))
+
+    @pytest.mark.parametrize("abstract_wire", (AbstractQubit(), ShapedArray((), int), Wire[1], Int))
+    def test_error_if_both_abstract_and_concrete_wires(self, abstract_wire):
+        """Test an error is raised if both a type of abstract wire and a type of concrete wire are
+        provided."""
+
+        jaxpr = jax.make_jaxpr(lambda *ws: DynOp(0.5, wires=ws).tracer)(0, 1)
+        with pytest.raises(ValueError, match="combination of both concrete wires and "):
+            _ = _eval(jaxpr, 0, abstract_wire)
 
 
 class TestApply:
