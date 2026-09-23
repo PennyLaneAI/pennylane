@@ -17,7 +17,8 @@ import numpy as np
 
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.ops import GlobalPhase, Hadamard, adjoint
+from pennylane.ops import GlobalPhase, Hadamard, Z, adjoint, ctrl
+from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
@@ -619,4 +620,195 @@ def _qubitization_thc_decomp(
     GlobalPhase(np.pi)
 
 
+def _ctrl_qubitization_thc_resource(
+    base, control_wires, control_values, work_wires, work_wire_type
+):
+    """Return the top-level resources of the controlled QubitizationTHC decomposition."""
+    # pylint: disable=unused-argument
+    zeta, t_ell, chi, t_eigenvectors = base.zeta, base.t_ell, base.chi, base.t_eigenvectors
+    aleph, beth = base.aleph, base.beth
+    M = len(zeta)
+    N = 2 * len(chi[0])
+    n_index, n_garbage = len(base.index_wires), len(base.prep_garbage_wires)
+    n_work = len(base.work_wires)
+
+    # The sub-register sizes only depend on how the input registers are split, so the
+    # split is replayed on placeholder labels to keep it in sync with the decomposition.
+    offsets = np.cumsum([0, n_index, n_garbage, n_work])
+    registers = _prepare_registers(
+        M,
+        N,
+        aleph,
+        *(range(int(start), int(stop)) for start, stop in zip(offsets[:-1], offsets[1:])),
+    )
+    n = len(registers["mu_wires"])
+
+    superposition = SuperpositionTHC(
+        M, N, Wire[n], Wire[n], Wire[len(registers["superposition_work"])]
+    )
+    alias_args = (M, N, zeta, t_ell, Wire[n], Wire[n], Wire[1], Wire[len(registers["alias_work"])])
+    alias = AliasSamplingTHC(*alias_args, aleph, apply_sign=True)
+    alias_adjoint = AliasSamplingTHC(*alias_args, aleph, apply_sign=False)
+    ctrl_kwargs = {
+        "control": Wire[len(control_wires)],
+        "work_wires": Wire[len(work_wires)],
+        "work_wire_type": work_wire_type,
+    }
+    ctrl_select = ctrl(
+        SelectTHC(
+            chi,
+            t_eigenvectors,
+            beth,
+            Wire[len(base.system_wires)],
+            Wire[n_index],
+            Wire[5],
+            Wire[len(base.gradient_wires)],
+            Wire[n_work],
+            base.num_batches,
+        ),
+        **ctrl_kwargs,
+    )
+    num_reflected = len(registers["reflected"])
+    ctrl_reflection = ctrl(
+        FlipSign([0] * num_reflected, Wire[num_reflected], work_wires=Wire[n_work]), **ctrl_kwargs
+    )
+
+    return {
+        superposition: 1,
+        adjoint(superposition): 1,
+        alias: 1,
+        ctrl(Z(Wire[1]), **ctrl_kwargs): 1,
+        adjoint(alias_adjoint): 1,
+        Hadamard: 4,
+        ctrl_select: 1,
+        ctrl_reflection: 1,
+        ctrl(
+            Z(Wire[1]),
+            control=Wire[len(control_wires) - 1],
+            work_wires=Wire[len(work_wires)],
+            work_wire_type=work_wire_type,
+        ): 1,
+        Z: 1,
+    }
+
+
+@register_resources(_ctrl_qubitization_thc_resource, exact=False)
+def _ctrl_qubitization_thc_decomp(base, control_wires, control_values, work_wires, work_wire_type):
+    # pylint: disable=unused-argument
+    zeta = base.zeta
+    t_ell = base.t_ell
+    chi = base.chi
+    t_eigenvectors = base.t_eigenvectors
+    aleph = base.aleph
+    beth = base.beth
+    M = len(zeta)
+    N = 2 * len(chi[0])
+
+    registers = _prepare_registers(
+        M, N, aleph, base.index_wires, base.prep_garbage_wires, base.work_wires
+    )
+    mu_wires, nu_wires = registers["mu_wires"], registers["nu_wires"]
+    spin_wires = registers["spin_wires"]
+
+    # PREPARE. The sign of each LCU coefficient must be applied an *odd* number of times
+    # between PREPARE and PREPARE^dagger. AliasSamplingTHC applies it as a Z on the sign
+    # qubit, so the adjoint below switches it off: keeping it on both sides would square
+    # the sign away and block encode the coefficient *magnitudes* instead. The Z is
+    # diagonal and SELECT never touches the sign qubit, so dropping it from the adjoint
+    # still returns every PREPARE auxiliary wire to |0>.
+    SuperpositionTHC(M, N, mu_wires, nu_wires, registers["superposition_work"])
+    AliasSamplingTHC(
+        M,
+        N,
+        zeta,
+        t_ell,
+        mu_wires,
+        nu_wires,
+        registers["edge_flag"],
+        registers["alias_work"],
+        aleph,
+        apply_sign=True,
+    )
+    # The two spin flags are the |+> controls that route each V onto a spin sector.
+    for wire in spin_wires:
+        Hadamard(wire)
+
+    ctrl(
+        SelectTHC(
+            chi,
+            t_eigenvectors,
+            beth,
+            base.system_wires,
+            list(base.index_wires),
+            [
+                registers["success_flag"],
+                registers["edge_flag"],
+                registers["swap_flag"],
+                spin_wires[0],
+                spin_wires[1],
+            ],
+            base.gradient_wires,
+            base.work_wires,
+            num_batches=base.num_batches,
+        ),
+        control=control_wires,
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
+    )
+
+    # PREPARE^dagger. Hadamard is self-inverse, so only the two templates are adjointed.
+    for wire in spin_wires:
+        Hadamard(wire)
+
+    # If the control condition does _not_ trigger, we undo AliasSamplingTHC only up to the
+    # difference between apply_sign=True and apply_sign=False. So we apply the corresponding
+    # PauliZ here unconditionally, and then once more under the control condition:
+    # - if control activates, the two inserted ops (Z and ctrl(Z)) cancel and everything is correct
+    # - if control does not activate, only the Z triggers, undoing the Z applied by the difference
+    # between AliasSamplingTHC and adjoint(AliasSamplingTHC).
+    alias_sizes = alias_sampling_thc_wires(M, N, aleph)
+    sign_wire = registers["alias_work"][alias_sizes["sign_wire"]]
+    Z(sign_wire)
+    ctrl(Z(sign_wire), control=control_wires, work_wires=work_wires, work_wire_type=work_wire_type)
+    adjoint(
+        AliasSamplingTHC(
+            M,
+            N,
+            zeta,
+            t_ell,
+            mu_wires,
+            nu_wires,
+            registers["edge_flag"],
+            registers["alias_work"],
+            aleph,
+            apply_sign=False,
+        )
+    )
+    adjoint(SuperpositionTHC(M, N, mu_wires, nu_wires, registers["superposition_work"]))
+
+    # R = 2|0><0| - I on the full PREPARE register. The global sign is fixed so that the
+    # |0> block is + H / lambda: the sign flip of |0> that a bare I - 2|0><0| would give
+    # is exactly what SELECT's rewriting of n = (1 - V) / 2 already supplies.
+    reflected = registers["reflected"]
+
+    # SELECT and PREPARE both restore work_wires, so they are zeroed auxiliary wires here
+    # and make the multi-controlled Z much cheaper.
+    ctrl(
+        FlipSign([0] * len(reflected), reflected, work_wires=base.work_wires),
+        control=control_wires,
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
+    )
+    if len(control_wires) > 1:
+        ctrl(
+            Z(control_wires[-1]),
+            control=control_wires[:-1],
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
+        )
+    else:
+        Z(control_wires[-1])
+
+
 add_decomps(QubitizationTHC, _qubitization_thc_decomp)
+add_decomps("C(QubitizationTHC)", flip_zero_control2(_ctrl_qubitization_thc_decomp))

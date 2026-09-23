@@ -750,3 +750,52 @@ def _select_thc_decomp(
 
 
 add_decomps(SelectTHC, _select_thc_decomp)
+
+
+@register_resources(_ctrl_select_thc_resources)
+def _select_thc_decomp(base, control_wires, control_values, work_wires, work_wire_type):
+    M = len(base.chi)
+    n = math.ceil_log2(M + 1)
+    mu_wires = base.index_wires[:n]
+    nu_wires = base.index_wires[n : 2 * n]
+    succ, edge, swap, spin1, spin2 = base.flag_wires
+
+    # 1. V on mu in the first spin sector, the only sandwich acting on the one-body block.
+    _ctrl_select_half(
+        base.chi,
+        base.t_eigenvectors,
+        base.beth,
+        base.system_wires,
+        mu_wires,
+        [succ, edge, spin1],
+        base.gradient_wires,
+        base.work_wires,
+        num_batches=base.num_batches,
+        one_body_table=True,
+    )
+
+    # 2. V on nu in the other spin sector, switched off on the one-body block.
+    _ctrl_select_half(
+        base.chi,
+        base.t_eigenvectors,
+        base.beth,
+        base.system_wires,
+        nu_wires,
+        [succ, edge, spin2],
+        base.gradient_wires,
+        base.work_wires,
+        num_batches=base.num_batches,
+        skip_one_body=True,
+    )
+
+    # 3. Exchange the two indices and the two spin flags, and flip the qubit that
+    #    controls the mu <-> nu swap. This is the "X on the ancilla qubit and swapping the mu and nu
+    #    registers" step between Eqs. (38) and (39) of arXiv:2011.03494, and it is what makes
+    #    SELECT self-inverse.
+    for a, b in zip(mu_wires, nu_wires):
+        ctrl(SWAP(wires=[a, b]), control=control_wires + [edge], control_values=0)
+    ctrl(SWAP(wires=[spin1, spin2]), control=edge, control_values=0)
+    X(swap)
+
+
+add_decomps("C(SelectTHC)", _ctrl_select_thc_decomp)

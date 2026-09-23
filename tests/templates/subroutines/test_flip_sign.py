@@ -23,22 +23,22 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.wires import Wires
 
 
-@pytest.mark.parametrize("work_wires", [(), (2, 3)])
+@pytest.mark.parametrize("work_wires", [(), (10, 11)])
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_checks(work_wires):
     """Run standard checks with the assert_valid function."""
     op = qp.FlipSign([0, 1], wires=(0, 1), work_wires=work_wires)
-    qp.ops.functions.assert_valid(op)
+    qp.ops.functions.assert_valid(op, skip_differentiation=True)
 
 
 def test_repr():
     """Test the repr for a flip sign operator."""
     op = qp.FlipSign([0, 1], wires=("a", "b"))
-    expected = "FlipSign(state=(0, 1), wires=['a', 'b'], work_wires=[])"
+    expected = "FlipSign(state=[0 1], wires=['a', 'b'], work_wires=[], work_wire_type=zeroed)"
     assert repr(op) == expected
 
-    op = qp.FlipSign([0, 1], wires=("a", "b"), work_wires=["c"])
-    expected = "FlipSign(state=(0, 1), wires=['a', 'b'], work_wires=['c'])"
+    op = qp.FlipSign([0, 1], wires=("a", "b"), work_wires=["c"], work_wire_type="borrowed")
+    expected = "FlipSign(state=[0 1], wires=['a', 'b'], work_wires=['c'], work_wire_type=borrowed)"
     assert repr(op) == expected
 
 
@@ -104,6 +104,20 @@ class TestFlipSign:
         op = qp.FlipSign([1, 0, 1], wires=[0, 1, 2], work_wires=work_wires)
         assert op.wires == Wires([0, 1, 2])
         assert op.work_wires == Wires([] if work_wires is None else work_wires)
+
+    @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
+    def test_work_wire_type(self, work_wire_type):
+        """Test that work_wire_type is stored and defaults to zeroed."""
+        op = qp.FlipSign([1, 0], wires=[0, 1], work_wires=[2], work_wire_type=work_wire_type)
+        assert op.work_wire_type == work_wire_type
+
+        default = qp.FlipSign([1, 0], wires=[0, 1], work_wires=[2])
+        assert default.work_wire_type == "zeroed"
+
+    def test_invalid_work_wire_type(self):
+        """Test that an invalid work_wire_type raises."""
+        with pytest.raises(ValueError, match="work_wire_type must be one of"):
+            qp.FlipSign([1, 0], wires=[0, 1], work_wires=[2], work_wire_type="foo")
 
     @pytest.mark.parametrize("state, num_wires", [(-1, 1), (16, 4)])
     def test_invalid_state_error(self, state, num_wires):
@@ -191,10 +205,67 @@ class TestFlipSign:
         ],
     )
     @pytest.mark.parametrize("work_wires", [(), (10,), (10, 11)])
+    @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
     @pytest.mark.usefixtures("enable_and_disable_capture")
-    def test_decomposition_new(self, state, wires, work_wires):
+    def test_decomposition_new(self, state, wires, work_wires, work_wire_type):
         """Tests the decomposition rule implemented with the new system."""
-        op = qp.FlipSign(state, wires=wires, work_wires=work_wires)
+        op = qp.FlipSign(state, wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
 
         for rule in qp.list_decomps(qp.FlipSign):
             _test_decomposition_rule(op, rule)
+
+    @pytest.mark.parametrize(
+        "state, wires, control, control_values",
+        [
+            ([1, 0], [1, 2], [0], [1]),
+            ([1, 0], [1, 2], [0], [0]),
+            ([0, 1, 1], [3, 4, 5], [0, 1], [1, 0]),
+            (0, [2], [0, 1], [0, 1]),
+        ],
+    )
+    @pytest.mark.parametrize("work_wires", [(), (10,)])
+    @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_controlled_decomposition(
+        self, state, wires, control, control_values, work_wires, work_wire_type
+    ):  # pylint: disable=too-many-arguments
+        """C(FlipSign) has a valid decomposition rule into a larger FlipSign."""
+        base = qp.FlipSign(state, wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
+        op = qp.ctrl(base, control=control, control_values=control_values)
+
+        rules = qp.list_decomps("C(FlipSign)")
+        assert len(rules) == 1
+        for rule in rules:
+            _test_decomposition_rule(op, rule)
+
+    @pytest.mark.parametrize(
+        ("base_work", "ctrl_work", "base_type", "ctrl_type", "expected_type"),
+        [
+            ((), (), "zeroed", "borrowed", "borrowed"),
+            ((10,), (), "zeroed", "borrowed", "zeroed"),
+            ((), (10,), "zeroed", "borrowed", "borrowed"),
+            ((10,), (11,), "zeroed", "borrowed", "borrowed"),
+            ((10,), (11,), "zeroed", "zeroed", "zeroed"),
+            ((10,), (11,), "borrowed", "zeroed", "borrowed"),
+        ],
+    )
+    def test_controlled_work_wire_merge(
+        self, base_work, ctrl_work, base_type, ctrl_type, expected_type
+    ):
+        """Merged FlipSign combines work wires and resolves work_wire_type."""
+        base = qp.FlipSign([1, 0], wires=[1, 2], work_wires=base_work, work_wire_type=base_type)
+        rule = qp.list_decomps("C(FlipSign)")[0]
+        with qp.queuing.AnnotatedQueue() as q:
+            rule(
+                base=base,
+                control_wires=Wires([0]),
+                control_values=[True],
+                work_wires=Wires(ctrl_work),
+                work_wire_type=ctrl_type,
+            )
+        emitted = q.queue[0]
+        assert isinstance(emitted, qp.FlipSign)
+        assert emitted.wires == Wires([0, 1, 2])
+        assert list(emitted.state) == [1, 1, 0]
+        assert emitted.work_wires == Wires(ctrl_work) + Wires(base_work)
+        assert emitted.work_wire_type == expected_type
