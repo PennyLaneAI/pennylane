@@ -12,6 +12,7 @@ dynamic = ["version"]
 dependencies = [
     "scipy",
     "networkx",
+    "jax==0.7.1",
     "rustworkx>=0.14.0",
     "autograd<1.9",
     "appdirs",
