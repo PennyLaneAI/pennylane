@@ -472,7 +472,6 @@ def _prepare_select(
             registers["edge_flag"],
             registers["alias_work"],
             aleph,
-            apply_sign=False,
         )
         # The two spin flags are the |+> controls that route each V onto a spin sector.
         for wire in spin_wires:
@@ -482,9 +481,7 @@ def _prepare_select(
         # The sign of each LCU coefficient must be applied an *odd* number of times between
         # PREPARE and PREPARE^dagger, so it cannot sit inside ``prepare``: the adjoint would
         # square the sign away and the walk would block encode the coefficient *magnitudes*
-        # instead. AliasSamplingTHC applies it as a Z on its sign qubit, which SELECT never
-        # touches, so emitting it here instead (with ``apply_sign=False`` above) is
-        # equivalent and still returns every PREPARE auxiliary wire to |0>.
+        # instead.
         Z(sign_wire)
         SelectTHC(
             chi,
@@ -535,10 +532,10 @@ def _qubitization_thc_resources(
     )
     registers = _prepare_registers(M, N, aleph, index, garbage, work)
 
-    # `_prepare_select` returns change_op_basis. Under capture that unrolls eagerly
-    # (binds inner gates into the jaxpr and returns None), so pause while we build the
+    # `_prepare_select` returns change_op_basis. Under capture this is unrolled eagerly
+    # (binds inner gates into the jaxpr and returns None), so we pause here while we build the
     # resource key. compute_resources already stops queuing but does not pause capture.
-    # See #10162.
+    # This can be removed once https://github.com/PennyLaneAI/pennylane/issues/10162 is resolved.
     with capture.pause():
         prepselprep = _prepare_select(
             M,

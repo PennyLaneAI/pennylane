@@ -23,7 +23,7 @@ from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.math import ceil_log2
-from pennylane.ops import SWAP, Hadamard, Z, adjoint, ctrl
+from pennylane.ops import SWAP, Hadamard, adjoint, ctrl
 from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
@@ -424,9 +424,6 @@ class AliasSamplingTHC(Operator2):
             the internal :class:`~.QROM`; every work wire must be initialized
             in :math:`\lvert 0\rangle`.
         aleph (int): the number of bits used to encode the keep-probabilities
-        apply_sign (bool): if ``True`` (default), the sign of the selected coefficient is
-            applied here, so the prepared state carries it on its amplitudes. Set to
-            ``False`` when using only positive coefficients.
 
     **Example**
 
@@ -457,7 +454,7 @@ class AliasSamplingTHC(Operator2):
     """
 
     wire_argnames = ("mu_wires", "nu_wires", "edge_flag", "work_wires")
-    compilable_argnames = ("M", "N", "zeta", "t_ell", "aleph", "apply_sign")
+    compilable_argnames = ("M", "N", "zeta", "t_ell", "aleph")
     arg_specs = {
         "mu_wires": Wire[-1],
         "nu_wires": Wire[-1],
@@ -476,7 +473,6 @@ class AliasSamplingTHC(Operator2):
         edge_flag: WiresLike,
         work_wires: WiresLike,
         aleph,
-        apply_sign: bool = True,
     ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
         if isinstance(M, bool) or not isinstance(M, int) or M < 1:
             raise ValueError(f"M must be a positive integer, got {M!r}.")
@@ -524,9 +520,7 @@ class AliasSamplingTHC(Operator2):
             }
         )
 
-        super().__init__(
-            M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph, apply_sign
-        )
+        super().__init__(M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph)
 
     @property
     def wires(self):
@@ -535,7 +529,7 @@ class AliasSamplingTHC(Operator2):
 
 
 def _alias_sampling_thc_resources(
-    M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph, apply_sign
+    M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph
 ):  # pylint: disable=too-many-arguments,unused-argument
     n = len(mu_wires)
     n_d = _num_address_wires(M, N)
@@ -547,7 +541,6 @@ def _alias_sampling_thc_resources(
     f = n_d + 1 + 2 * n
     n_qrom_target = 2 + 2 * n + aleph + 1
     n_qrom_work = max(n_work - (f + 2 * aleph + 3), 0)
-    assert n_qrom_work >= n_d - 2  # TODO: remove me
     data = _build_qrom_data(M, N, zeta, t_ell, n, aleph)
     qrom = QROM(
         data,
@@ -595,14 +588,12 @@ def _alias_sampling_thc_resources(
     resources[adjoint(TemporaryAND(Wire[3]))] += 1
     resources[keep_cswap] += 2 * n + 2
     resources[sym_cswap] += n
-    if apply_sign:
-        resources[Z] += 1
     return dict(resources)
 
 
 @register_resources(_alias_sampling_thc_resources)
 def _alias_sampling_thc_decomp(
-    M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph, apply_sign, **_
+    M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph, **_
 ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
     n = len(mu_wires)
     n_d = _num_address_wires(M, N)
@@ -679,9 +670,6 @@ def _alias_sampling_thc_decomp(
 
     Hadamard(symmetrize_flag)
     _symmetrize(mu_wires, nu_wires, symmetrize_flag, edge_flag, sym_cswap_work)
-
-    if apply_sign:
-        Z(sign_wire)
 
 
 add_decomps(AliasSamplingTHC, _alias_sampling_thc_decomp)
