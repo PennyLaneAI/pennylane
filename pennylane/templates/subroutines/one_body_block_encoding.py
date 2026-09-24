@@ -341,9 +341,7 @@ def _one_body_block_encoding_resources(
         prep: 1,
         adjoint(prep): 1,
         Hadamard: 2 + 2 * n_system,
-        rotation: 2,
-        adjoint(rotation): 2,
-        # select: 1,
+        rotation: 4,
         qrom: 1,
         GlobalPhase: 1,
     }
@@ -412,7 +410,8 @@ def _one_body_block_encoding_decomp(
         Z(work_wires[0])
         adjoint(LeftClassicalComparator)(**compare_kwargs)
 
-    # Replaced Select
+    # Apply Select([Z(system_wires[s * norbs + p]) for p in range(norbs) for s in (0, 1)])
+    # by wrapping a QROM with one-hot bitstrings in Hadamard layers.
     _apply_hadamards(system_wires)
     ids = np.arange(2 * norbs).reshape((2, norbs)).T.reshape(-1)
     bitstrings = np.eye(2 * norbs, dtype=int)[ids]

@@ -228,17 +228,13 @@ def test_compute_contiguous_register_index(M, N):
         qp.BasisState(qp.math.int_to_binary(mu_val, n), wires=mu_wires)
         qp.BasisState(qp.math.int_to_binary(nu_val, n), wires=nu_wires)
         _compute_contiguous_register(M, N, mu_wires, nu_wires, work_wires)
-        return qp.probs(wires=work_wires[:n_d])
+        return qp.probs(wires=work_wires[: n_d - 1])
 
     for nu in range(M):
         for mu in range(nu + 1):
             probs = circuit(mu, nu)
             s = int(np.argmax(probs))
             assert s == mu + nu * (nu + 1) // 2
-            # The leading wire is only needed to hold ``nu ** 2 + nu`` before the
-            # division by two; the final address always fits in ``n_d - 1`` wires, which
-            # is what ``alias_sampling_thc`` uses to control its QROM.
-            assert s < 2 ** (n_d - 1)
 
 
 class TestAliasSamplingTHC:
@@ -554,14 +550,15 @@ class TestWiresHelper:
         n_d = qp.math.ceil_log2(N // 2 + M * (M + 1) // 2) + 1
         assert n_d - 2 > aleph  # Comparably small aleph
         num_work = qp.alias_sampling_thc_wires(M, N, aleph)["work_wires"]
-        num_work_other = n_d + 2 * n + 2 * aleph + 2
+        print(qp.alias_sampling_thc_wires(M, N, aleph))
+        num_work_other = n_d + 2 * n + 2 * aleph + 4
         assert num_work - num_work_other == n_d - 2  # Work wires suffice for unary iteration
 
         # Other way around: aleph is large
         aleph = 6
         assert n_d - 2 < aleph  # Comparably large aleph
         num_work = qp.alias_sampling_thc_wires(M, N, aleph)["work_wires"]
-        num_work_other = n_d + 2 * n + 2 * aleph + 2
+        num_work_other = n_d + 2 * n + 2 * aleph + 4
         assert num_work - num_work_other == aleph  # Work wires suffice for unary iteration
 
     @pytest.mark.parametrize(

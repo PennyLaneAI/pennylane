@@ -230,8 +230,8 @@ def _compute_contiguous_register(M, N, mu_wires, nu_wires, work_wires):
     """
     n_d = _num_address_wires(M, N)
     OutSquare(nu_wires, work_wires[:n_d], work_wires[n_d : 2 * n_d], output_wires_zeroed=True)
-    SemiAdder(nu_wires, work_wires[:n_d], work_wires[n_d : 2 * n_d])
-    SemiAdder(mu_wires, work_wires[: n_d - 1], work_wires[n_d : 2 * n_d])
+    SemiAdder(nu_wires, work_wires[:n_d], work_wires[n_d : 2 * n_d - 1])
+    SemiAdder(mu_wires, work_wires[: n_d - 1], work_wires[n_d : 2 * n_d - 2])
 
 
 def alias_sampling_thc_wires(M, N, aleph):
@@ -554,14 +554,20 @@ def _alias_sampling_thc_resources(
         clean=True,
     )
     out_sq = OutSquare(Wire[n], Wire[n_d], Wire[n_d], output_wires_zeroed=True)
-    adder = SemiAdder(Wire[n], Wire[n_d], Wire[n_d])
+    adder_0 = SemiAdder(Wire[n], Wire[n_d], Wire[n_d - 1])
+    adder_1 = SemiAdder(Wire[n], Wire[n_d - 1], Wire[n_d - 2])
+
     lqc = LeftQuantumComparator(
-        Wire[aleph], Wire[aleph], Wire[1], Wire[max(aleph - 1, 0)], comparator="<="
+        Wire[aleph],
+        Wire[aleph],
+        Wire[1],
+        Wire[min(n_qrom_work, f + 3 * aleph + 2)],
+        comparator="<=",
     )
     resources = {
         out_sq: 1,
-        adder: 2,
-        SWAP: max(n_d - 1, 0),
+        adder_0: 1,
+        adder_1: 1,
         qrom: 1,
         Hadamard: 2 * (aleph + 1),
         lqc: 1,
@@ -576,7 +582,7 @@ def _alias_sampling_thc_resources(
     return resources
 
 
-@register_resources(_alias_sampling_thc_resources, exact=False)
+@register_resources(_alias_sampling_thc_resources)
 def _alias_sampling_thc_decomp(
     M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph, apply_sign, **_
 ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
