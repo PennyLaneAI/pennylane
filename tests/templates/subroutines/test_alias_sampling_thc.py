@@ -381,17 +381,21 @@ class TestAliasSamplingTHC:
         assert len(qroms[0].control_wires) == int(np.ceil(np.log2(d)))
 
     def test_ancillas_returned_to_zero(self, seed):
-        """Test that the comparator flag and its work wires are left in |0>.
+        """Test that the comparator flag and the scratch above it are left in |0>.
 
-        The inequality test of step 3 is uncomputed with the *same* comparator
-        in step 6, so ``alt_flag`` and the comparator work wires end in |0>.
+        The inequality test is uncomputed with the *same* comparator, and the QROM and the
+        CSWAPs restore the pool they share, so everything from the comparator flag upwards
+        ends in |0>. The sampling register just below it does *not*: the conditional swaps
+        correlate it with the index registers, so it stays entangled and must be reflected
+        by :class:`~.QubitizationTHC`.
         """
         M, N, aleph = 2, 2, 2
         mu_wires, nu_wires, sup_work, edge_flag, work_wires = _wire_layout(M, N, aleph)
         n = len(mu_wires)
         n_d = int(np.ceil(np.log2(N // 2 + M * (M + 1) // 2))) + 1
+        # The comparator flag sits at ``f + 2 * aleph + 2`` with ``f = n_d + 1 + 2 * n``.
         b = n_d + 2 * n + 2 * aleph
-        ancillas = [work_wires[b + 2]] + list(work_wires[b + 5 : b + aleph + 4])
+        ancillas = list(work_wires[b + 3 :])
 
         np.random.seed(seed)
         zeta = np.random.randn(M, M)

@@ -131,7 +131,7 @@ def _GQSP_decomposition(unitary, angles, control, work_wires, work_wire_type):
     ops.X(control)
     ops.Z(control)
 
-    @for_loop(len(thetas) - 1)
+    @for_loop(1, len(thetas))
     def gqsp_loop(i):
         ops.ctrl(
             unitary,
