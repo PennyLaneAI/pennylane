@@ -38,7 +38,6 @@ from .arithmetic.left_classical_comparator import LeftClassicalComparator
 from .arithmetic.left_quantum_comparator import LeftQuantumComparator
 from .arithmetic.temporary_and import TemporaryAND
 from .flip_sign import FlipSign
-from .multix import MultiX
 
 
 class SuperpositionTHC(Operator2):
@@ -246,18 +245,13 @@ def _left_inequalities(
         # We check if the register is in state M.
         # To do so, we use the fact that a MultiControlledX with control_values = 0 detects if
         # the register is in state 0, and we shift that state with MultiX before and after.
-        # TODO: Can we just move these bit flips into the control values?
         # TODO: Replace by TemporaryAND ladder if it does not cost the qubits for too long
-        MultiX(math.int_to_binary(M, n), wires=nu_wires)
-        # The whole scratch pool is zeroed here: the comparators below have not run yet in the
-        # forward direction, and have already been undone in the adjoint one.
         MultiControlledX(
             wires=nu_wires + work_wires[3:4],
-            control_values=[0] * n,
+            control_values=math.int_to_binary(M, n),
             work_wires=work_wires[7:],
             work_wire_type="zeroed",
         )
-        MultiX(math.int_to_binary(M, n), wires=nu_wires)
 
     LeftClassicalComparator(
         nu_wires,
@@ -310,8 +304,7 @@ def _superposition_thc_resources(M, N, mu_wires, nu_wires, work_wires):
     lcc_le = LeftClassicalComparator(Wire[n], M, Wire[1], Wire[n - 1], comparator="<=")
     lcc_gt = LeftClassicalComparator(Wire[n], N // 2, Wire[1], Wire[n - 1], comparator=">=")
     lqc = LeftQuantumComparator(Wire[n], Wire[n], Wire[1], Wire[n], comparator="<=")
-    mcx = _controlled_pauli(X, n, num_work_wires - 7, control_values=[0] * n)
-    multix = MultiX(Bool[n], Wire[n])
+    mcx = _controlled_pauli(X, n, num_work_wires - 7, control_values=Bool[n])
 
     resources = defaultdict(int)
 
@@ -330,7 +323,6 @@ def _superposition_thc_resources(M, N, mu_wires, nu_wires, work_wires):
     resources[lcc_le] += 2
     resources[lcc_gt] += 2
     resources[lqc] += 2
-    resources[multix] += 6
     # _left_inequalities applied twice as an adjoint.
     resources[adjoint(lcc_le)] += 2
     resources[adjoint(lcc_gt)] += 2

@@ -229,8 +229,7 @@ class QubitizationTHC(Operator2):
     with :math:`\mathcal{R}` the reflection on ``index_wires + prep_garbage_wires``, following
     `Lee et al. (2021) <https://arxiv.org/abs/2011.03494>`_ (Figs. 3, 5 and 7).
     ``PREPARE`` is :class:`~.SuperpositionTHC` followed by :class:`~.AliasSamplingTHC` and a
-    ``Hadamard`` on each of the two spin flags and on the :math:`\mu \leftrightarrow \nu`
-    swap flag; ``SELECT`` is :class:`~.SelectTHC`.
+    ``Hadamard`` on each of the two spin flags; ``SELECT`` is :class:`~.SelectTHC`.
 
     The :math:`\lvert \vec 0 \rangle` block of :math:`\mathcal{W}` is
     :math:`\hat{\mathcal{H}} / \lambda` with
