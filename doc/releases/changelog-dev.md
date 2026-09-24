@@ -2,6 +2,11 @@
 
 <h3>New features since last release</h3>
 
+* :func:`~.cond` now accepts an ``estimated_probability`` resource hint indicating the expected
+  probability with which each branch is triggered. The hint is passed through to Catalyst and used
+  by :func:`~.specs` to produce scalable yet accurate resource accounting for
+  :func:`~.qjit`-compiled functions.
+  [(#10076)](https://github.com/PennyLaneAI/pennylane/pull/10076)
 
 * Three new numeric Hamiltonians called :class:`pennylane.CDFHamiltonian` (based on
   `arXiv:2506.15784, Sec. III A <https://arxiv.org/abs/2506.15784>`),

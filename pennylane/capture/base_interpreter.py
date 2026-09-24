@@ -536,7 +536,9 @@ def handle_for_loop(
 
 
 @PlxprInterpreter.register_primitive(cond_prim)
-def handle_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
+def handle_cond(
+    self, *invals, jaxpr_branches, consts_slices, args_slice, estimated_probabilities=None
+):
     """Handle a cond primitive."""
     # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
     args_slice = slice(*args_slice)
@@ -565,6 +567,7 @@ def handle_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
         jaxpr_branches=new_jaxprs,
         consts_slices=new_consts_slices,
         args_slice=new_args_slice,
+        estimated_probabilities=estimated_probabilities,
     )
 
 
@@ -759,8 +762,11 @@ FlattenedHigherOrderPrimitives[while_loop_prim] = flatten_while_loop
 
 
 @FlattenedInterpreter.register_primitive(cond_prim)
-def flattened_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
+def flattened_cond(
+    self, *invals, jaxpr_branches, consts_slices, args_slice, estimated_probabilities=None
+):
     """Handle the cond primitive by a flattened python strategy."""
+    # pylint: disable=unused-argument
     # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
     args_slice = slice(*args_slice)
     consts_slices = [slice(*s) for s in consts_slices]

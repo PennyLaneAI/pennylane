@@ -29,7 +29,11 @@ import pytest
 import pennylane as qp
 from pennylane.core.operator import Operator
 from pennylane.exceptions import ConditionalTransformError
-from pennylane.ops.op_math.condition import Conditional
+from pennylane.ops.op_math.condition import (
+    Conditional,
+    _collect_estimated_probabilities,
+    _validate_estimated_probability,
+)
 
 terminal_meas = [
     qp.probs(wires=[1, 0]),
@@ -714,3 +718,36 @@ class TestPythonFallback:
         ops = tape.operations
         assert len(ops) == 1
         assert ops[0].name == "RZ"
+
+
+class TestEstimatedProbabilityHints:
+    """Unit tests for the ``estimated_probability`` resource-hint helpers."""
+
+    def test_validate_passes_through(self):
+        """A valid float is returned unchanged and ``None`` passes through."""
+        assert _validate_estimated_probability(0.75) == 0.75
+        assert _validate_estimated_probability(None) is None
+
+    @pytest.mark.parametrize("value", [-0.1, 1.1])
+    def test_validate_out_of_range(self, value):
+        with pytest.raises(ValueError, match=r"must be in \[0, 1\]"):
+            _validate_estimated_probability(value)
+
+    @pytest.mark.parametrize("value", ["0.5", 1])
+    def test_validate_wrong_type(self, value):
+        with pytest.raises(TypeError, match="must be a float"):
+            _validate_estimated_probability(value)
+
+    def test_collect(self):
+        """Hints are collected into a tuple, and all-``None`` gives ``None``."""
+        assert _collect_estimated_probabilities([0.75]) == (0.75,)
+        assert _collect_estimated_probabilities([0.2, 0.3]) == (0.2, 0.3)
+        assert _collect_estimated_probabilities([None, None]) is None
+
+    def test_collect_partial_raises(self):
+        with pytest.raises(ValueError, match="every non-default branch"):
+            _collect_estimated_probabilities([0.5, None])
+
+    def test_collect_sum_too_large_raises(self):
+        with pytest.raises(ValueError, match="sum to at most 1"):
+            _collect_estimated_probabilities([0.6, 0.6])
