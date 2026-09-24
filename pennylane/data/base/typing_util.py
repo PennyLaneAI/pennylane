@@ -14,9 +14,10 @@
 """Contains a sentinel object, common type objects utilities for parsing types
 and converting them to strings."""
 
+import types
 from enum import Enum
 from functools import lru_cache
-from typing import Any, ForwardRef, Literal, Optional, TypeVar, _SpecialForm, get_args, get_origin
+from typing import Any, ForwardRef, Literal, Optional, TypeVar, Union, get_args, get_origin
 
 JSON = Optional[str | int | bool | float | dict[str, Any] | list[Any]]
 
@@ -38,6 +39,10 @@ class UnsetType(Enum):
 
 
 UNSET = UnsetType.UNSET
+
+# Public special forms matched by identity (``is``, not ``==``). ``Any`` is
+# omitted so ``get_type_str(Any)`` stays the fully-qualified ``typing.Any``.
+_SPECIAL_FORM_NAMES = ((Union, "Union"), (Optional, "Optional"), (Literal, "Literal"))
 
 
 def get_type(type_or_obj: object | type) -> type:
@@ -65,6 +70,9 @@ def get_type(type_or_obj: object | type) -> type:
     return type_
 
 
+# Parametrized ``typing.Union`` and ``types.UnionType`` with the same args are
+# equal and hash-equal, so they share an ``lru_cache`` slot. Both spellings now
+# render as ``Union[...]``, which makes that collision benign.
 @lru_cache
 def get_type_str(cls: type | str | None) -> str:  # pylint: disable=too-many-return-statements
     """Return a string representing the type ``cls``.
@@ -87,26 +95,21 @@ def get_type_str(cls: type | str | None) -> str:  # pylint: disable=too-many-ret
         return cls
 
     if isinstance(cls, ForwardRef):
-        # String annotations, as in List['MyClass']
-        return cls.__forward_arg__
+        # typing exposes no public accessor for the deferred string on any
+        # supported version (3.14's annotationlib.ForwardRef only offers
+        # evaluate()); fall back to repr-derived text if the dunder ever moves.
+        return getattr(cls, "__forward_arg__", None) or str(cls)
 
-    if isinstance(cls, _SpecialForm):
-        # These are typing constructs like Union, Literal etc that
-        # are not parametrized
-        return cls._name  # pylint: disable=protected-access
+    for form, name in _SPECIAL_FORM_NAMES:
+        if cls is form:
+            return name
 
     orig_type = get_origin(cls)
     if orig_type is not None:
         # This is either a parametrized generic or parametrized special form
         orig_args = get_args(cls)
         if orig_args:
-            # Special handling for Union types in Python 3.14+
-            # In Python 3.14, get_origin(Union[...]) returns typing.Union as a regular class,
-            # not a _SpecialForm, so we need to check for it explicitly
-            if (
-                getattr(orig_type, "__module__", None) == "typing"
-                and getattr(orig_type, "__name__", None) == "Union"
-            ):
+            if orig_type is Union or orig_type is types.UnionType:
                 return f"Union[{', '.join(get_type_str(arg) for arg in orig_args)}]"
             return f"{get_type_str(orig_type)}[{', '.join(get_type_str(arg) for arg in orig_args)}]"
 
