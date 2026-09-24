@@ -331,8 +331,17 @@ def is_commuting(operation1, operation2):
     target_wires_1 = qp.wires.Wires([w for w in operation1.wires if w not in op1_control_wires])
     target_wires_2 = qp.wires.Wires([w for w in operation2.wires if w not in op2_control_wires])
 
-    if intersection(target_wires_1, target_wires_2) and not _commutes(ctrl_base_1, ctrl_base_2):
-        return False
+    if intersection(target_wires_1, target_wires_2):
+        if not _commutes(ctrl_base_1, ctrl_base_2):
+            return False
+        # Two SWAP-like targets only commute when they permute the same wires. With a partial
+        # overlap, e.g. SWAP(0, 1) and SWAP(1, 2), the two permutations do not commute.
+        if (
+            ctrl_base_1 in SWAP_GROUP
+            and ctrl_base_2 in SWAP_GROUP
+            and set(target_wires_1) != set(target_wires_2)
+        ):
+            return False
 
     if intersection(target_wires_1, op2_control_wires) and not _commutes("ctrl", ctrl_base_1):
         return False
