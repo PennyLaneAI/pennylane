@@ -586,7 +586,7 @@ def _alias_sampling_thc_resources(
     resources[adder_0] += 1
     resources[adder_1] += 1
     resources[qrom] += 1
-    resources[Hadamard] += 2 * (aleph + 1)
+    resources[Hadamard] += 2 * aleph + 1
     resources[lqc] += 1
     resources[adjoint(lqc)] += 1
     resources[TemporaryAND] += 1
@@ -679,7 +679,6 @@ def _alias_sampling_thc_decomp(
 
     Hadamard(symmetrize_flag)
     _symmetrize(mu_wires, nu_wires, symmetrize_flag, edge_flag, sym_cswap_work)
-    Hadamard(symmetrize_flag)
 
     if apply_sign:
         Z(sign_wire)

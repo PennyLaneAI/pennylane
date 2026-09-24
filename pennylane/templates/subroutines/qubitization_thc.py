@@ -478,13 +478,6 @@ def _prepare_select(
         # The two spin flags are the |+> controls that route each V onto a spin sector.
         for wire in spin_wires:
             Hadamard(wire)
-        # SELECT ends by swapping mu <-> nu and flipping the swap flag, which only leaves
-        # the prepared state invariant if it arrives as
-        # (|mu nu>|0> + |nu mu>|1>) / sqrt(2). AliasSamplingTHC closes its symmetrization
-        # with a Hadamard on that flag, rotating the state into the symmetric /
-        # antisymmetric basis, on which the same operation flips the flag deterministically
-        # and the walk never returns to |0>. Undo it here; PREPARE^dagger puts it back.
-        Hadamard(registers["swap_flag"])
 
     def select():
         # The sign of each LCU coefficient must be applied an *odd* number of times between
