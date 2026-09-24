@@ -588,7 +588,7 @@ def _alias_sampling_thc_resources(
     resources[adder_0] += 1
     resources[adder_1] += 1
     resources[qrom] += 1
-    resources[Hadamard] += 2 * aleph + 1
+    resources[Hadamard] += aleph + 1
     resources[lqc] += 1
     resources[adjoint(lqc)] += 1
     resources[TemporaryAND] += 1
@@ -622,9 +622,7 @@ def _alias_sampling_thc_decomp(
     # [f:f+ℵ]         : QROM loads the keep values
     # [f+ℵ]           : alternate qubit for the input edge flag (not in Fig.4)
     # [f+ℵ+1]         : flag for symmetrization SWAPs
-    # [f+ℵ+2:f+2ℵ+2]  : Sampling register to compare keep values against. The CSWAPs below
-    #                   correlate it with the index registers, so the closing Hadamards
-    #                   rotate this register instead of returning it to zero
+    # [f+ℵ+2:f+2ℵ+2]  : Sampling register to compare keep values against.
     # The following register is reset to zero
     # [f+2ℵ+2]        : The comparator flag for sampling keep values
     # The following registers are reset to zero, and overlap partially
@@ -678,7 +676,6 @@ def _alias_sampling_thc_decomp(
             keep_wires, sample_reg, sample_flag, work_wires=cmp_work, comparator="<="
         )
     )
-    _apply_hadamards(sample_reg)
 
     Hadamard(symmetrize_flag)
     _symmetrize(mu_wires, nu_wires, symmetrize_flag, edge_flag, sym_cswap_work)
