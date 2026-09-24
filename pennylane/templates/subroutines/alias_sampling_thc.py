@@ -619,10 +619,10 @@ def _alias_sampling_thc_decomp(
     # Call f = n_d+1+2n
     # [f:f+ℵ]         : QROM loads the keep values
     # [f+ℵ]           : alternate qubit for the input edge flag (not in Fig.4)
+    # [f+ℵ+1]         : flag for symmetrization SWAPs
     # The following registers are reset to zero
-    # [f+ℵ+1:f+2ℵ+1]  : Sampling register to compare keep values against
-    # [f+2ℵ+1]        : The comparator flag for sampling keep values
-    # [f+2ℵ+2]        : flag for symmetrization SWAPs
+    # [f+ℵ+2:f+2ℵ+2]  : Sampling register to compare keep values against
+    # [f+2ℵ+2]        : The comparator flag for sampling keep values
     # The following registers are reset to zero, and overlap partially
     # [f+2ℵ+3:]       : Work wires for QROM
     # [f+2ℵ+3:f+3ℵ+2] : Work wires for keep value comparator, dirty until its adjoint runs
@@ -636,11 +636,11 @@ def _alias_sampling_thc_decomp(
     alt_nu_wires = work_wires[n_d + 1 + n : (f := n_d + 1 + 2 * n)]
     keep_wires = work_wires[f : f + aleph]
     alt_edge_flag = work_wires[f + aleph]
+    symmetrize_flag = work_wires[f + aleph + 1]
 
     # Reset to zero and disjoint
-    sample_reg = work_wires[f + aleph + 1 : f + 2 * aleph + 1]
-    sample_flag = work_wires[f + 2 * aleph + 1]
-    symmetrize_flag = work_wires[f + 2 * aleph + 2]
+    sample_reg = work_wires[f + aleph + 2 : f + 2 * aleph + 2]
+    sample_flag = work_wires[f + 2 * aleph + 2]
 
     # Reset to zero and overlapping
     qrom_work = work_wires[f + 2 * aleph + 3 :]
@@ -652,7 +652,6 @@ def _alias_sampling_thc_decomp(
     # are returned to zero, so we do not need to account for them explicitly.
     _compute_contiguous_register(M, N, mu_wires, nu_wires, work_wires)
 
-    assert len(qrom_work) >= len(contiguous_register) - 1  # TODO: remove me
     data = _build_qrom_data(M, N, zeta, t_ell, n, aleph)
     QROM(
         data,
