@@ -22,11 +22,7 @@ from .decomposition_rule import DecompositionRule, list_decomps
 
 
 def _recursive_all_decomps(op: Operator2, rules_map: dict, skip_ops):
-    """Collect all the rules for op, putting them into rules_map by in-place mutation.
-
-    As opposed to _pure_recursive_add_decomps, it also adds variants of the operator
-    specified by adj, n_ctrls, and adj_n_ctrls
-    """
+    """Collect all the rules for op, putting them into rules_map by in-place mutation."""
 
     if op in rules_map or op in skip_ops:
         return

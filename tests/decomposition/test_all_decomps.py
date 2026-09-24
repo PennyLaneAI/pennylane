@@ -16,7 +16,7 @@ Tests for qp.decompositions.all_decomps
 """
 
 import pennylane as qp
-from pennylane.decomposition import all_decomps
+from pennylane.decomposition import all_decomps, list_decomps
 from pennylane.typing import Float, Wire
 
 
@@ -34,6 +34,13 @@ def test_skip_ops_children():
     assert qp.GlobalPhase(Float) not in out
 
 
+def test_skip_ops_reuses_prior_rules_map():
+    """Test that keys from a prior all_decomps result can be reused as skip_ops."""
+
+    rules_map = all_decomps(qp.X(0))
+    assert all_decomps(qp.Y(0), skip_ops=rules_map) == {}
+
+
 def test_concrete_input_abstractified():
     """Test that if a concrete input is provided, it is abstractified."""
 
@@ -41,6 +48,13 @@ def test_concrete_input_abstractified():
     assert qp.RX(Float, Wire[1]) in out
 
     assert all(op.is_fully_abstract for op in out)
+
+
+def test_leaf_operator_empty_rules():
+    """Test that an operator with no decompositions is still recorded."""
+
+    op = qp.GlobalPhase(Float)
+    assert all_decomps(op) == {op: []}
 
 
 def test_non_applicable_rules_ignored():
@@ -52,6 +66,7 @@ def test_non_applicable_rules_ignored():
 
     rules = rules_map[op]
     assert all(r.is_applicable(**op.arguments) for r in rules)
+    assert len(rules) < len(list_decomps(op))
 
 
 def test_higher_order_operator():
