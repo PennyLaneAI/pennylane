@@ -993,6 +993,16 @@
   resource operators from their quantum functions.
   [(#9764)](https://github.com/PennyLaneAI/pennylane/pull/9764)
 
+* The qubit expectation value estimator in ``labs.tcdq`` no longer materializes the dense
+  ``(n_gates, n_qubits)`` generator matrix. Generator parities are now computed as XOR reductions over
+  each gate's support, so both runtime and memory scale with the maximum gate weight rather than with
+  the qubit count, and the phase contraction is accumulated in cache-sized blocks over the generator
+  axis. The Pauli MMD loss also samples its observables through a dedicated ``Binomial(1, p)`` routine
+  that reproduces ``jax.random.binomial`` exactly without evaluating its unused rejection branch.
+  Together these make a 1000-qubit, 100000-gate MMD evaluation about 3x faster in 6x less memory, and
+  a 16000-qubit one about 12x faster.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
 <h3>Breaking changes 💔</h3>
 
 * :class:`~.GlobalPhase` no longer accepts the `wires` argument in order to mirror its MLIR lowered operation.

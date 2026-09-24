@@ -116,6 +116,34 @@ def median_heuristic(samples: ArrayLike) -> float:
     return 1.0
 
 
+def _sample_binary_ops(key: jnp.ndarray, prob: ArrayLike, shape: tuple[int, ...]) -> jnp.ndarray:
+    """Draw ``shape`` independent Binomial(1, ``prob``) variates.
+
+    This is the ``count = 1`` specialization of ``jax.random.binomial`` and reproduces
+    its output bit for bit. The general routine evaluates *both* the inversion and the
+    transformed-rejection (BTRS) sampler as ``while`` loops and selects between them,
+    which cannot be folded away when ``prob`` is traced; for a single trial only the
+    inversion branch is ever selected, and it reduces to one inverse-CDF draw.
+
+    Args:
+        key (jnp.ndarray): JAX PRNG key.
+        prob (ArrayLike): Success probability.
+        shape (tuple[int, ...]): Output shape.
+
+    Returns:
+        jnp.ndarray: Array of zeros and ones.
+    """
+    prob = jnp.asarray(prob)
+    prob = prob.astype(jnp.result_type(prob.dtype, jnp.float32))
+    # jax.random.binomial samples with the smaller of (p, 1 - p) and reflects afterwards.
+    q = jnp.where(prob < 0.5, prob, 1.0 - prob)
+    uniforms = jax.random.uniform(jax.random.split(key)[0], shape, prob.dtype)
+    # A single geometric draw exceeding one trial means failure, otherwise success.
+    geometric = jnp.ceil(jnp.log(uniforms) / jnp.log1p(-q))
+    successes = (geometric <= 1).astype(prob.dtype)
+    return jnp.where(prob < 0.5, successes, 1.0 - successes).astype(float)
+
+
 @jax.jit
 def _binary_ops_to_pauli_int(binary_ops: ArrayLike) -> jnp.ndarray:
     """Map binary operator entries to Pauli integer codes (0 → I, 1 → Z=3)."""
@@ -177,13 +205,13 @@ def _compute_loss_for_bandwidth(
     wire_list = list(wire_tuple)
 
     p_mmd = (1 - jnp.exp(-1 / (2 * bandwidth**2))) / 2
-    visible_ops = jnp.array(
-        jax.random.binomial(subkey, 1, p_mmd, shape=(n_ops, len(wire_tuple))),
-        dtype=float,
-    )
+    visible_ops = _sample_binary_ops(subkey, p_mmd, (n_ops, len(wire_tuple)))
 
-    all_ops = jnp.zeros((n_ops, n_qubits), dtype=float)
-    all_ops = all_ops.at[:, wire_list].set(visible_ops)
+    if len(wire_tuple) == n_qubits and wire_list == list(range(n_qubits)):
+        all_ops = visible_ops
+    else:
+        all_ops = jnp.zeros((n_ops, n_qubits), dtype=float)
+        all_ops = all_ops.at[:, wire_list].set(visible_ops)
 
     pauli_obs = _binary_ops_to_pauli_int(all_ops)
 

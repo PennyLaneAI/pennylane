@@ -214,8 +214,8 @@ class TestIQPExpval:
     ):
         """Test built expval function versus full PennyLane simulation."""
         # pylint: disable=too-many-arguments
-        generators_binary, param_map = _parse_generator_dict(gates, n_qubits)
-        generators_pl = [list(np.where(row)[0]) for row in generators_binary]
+        generators, param_map = _parse_generator_dict(gates, n_qubits)
+        generators_pl = [[int(q) for q in row if q != n_qubits] for row in generators]
         params_pl = np.array(params)[param_map]
 
         obs_batch, _ = _prepare_obs_batch(obs_strings)
@@ -343,10 +343,14 @@ class TestIQPExpval:
 @pytest.mark.parametrize(
     "circuit_def,n_qubits,expected_generators,expected_param_map",
     [
-        ({0: [[0, 1]]}, 3, [[1, 1, 0]], [0]),
-        ({0: [[0]], 1: [[1, 2], [0, 2]]}, 3, [[1, 0, 0], [0, 1, 1], [1, 0, 1]], [0, 1, 1]),
-        ({}, 2, np.zeros((0, 2), dtype=int), []),
-        ({10: [[0]], 2: [[1]]}, 2, [[0, 1], [1, 0]], [2, 10]),
+        #({0: [[0, 1]]}, 3, [[1, 1, 0]], [0]),
+        #({0: [[0]], 1: [[1, 2], [0, 2]]}, 3, [[1, 0, 0], [0, 1, 1], [1, 0, 1]], [0, 1, 1]),
+        #({}, 2, np.zeros((0, 2), dtype=int), []),
+        #({10: [[0]], 2: [[1]]}, 2, [[0, 1], [1, 0]], [2, 10]),
+        ({0: [[0, 1]]}, 3, [[0, 1]], [0]),
+        ({0: [[0]], 1: [[1, 2], [0, 2]]}, 3, [[0, 3], [1, 2], [0, 2]], [0, 1, 1]),
+        ({}, 2, np.empty((0, 1)), []),
+        ({10: [[0]], 2: [[1]]}, 2, [[1], [0]], [2, 10]),
     ],
 )
 def test_parse_generator_dict(circuit_def, n_qubits, expected_generators, expected_param_map):

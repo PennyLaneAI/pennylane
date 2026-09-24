@@ -23,6 +23,7 @@ from dataclasses import dataclass
 import jax
 import jax.numpy as jnp
 import numpy as np
+from jax import lax
 from jax.typing import ArrayLike
 
 
@@ -100,19 +101,8 @@ class CircuitConfig:  # pylint: disable=too-many-instance-attributes
     phase_fn: Callable | None = None
 
 
-def _parse_generator_dict(circuit_def: dict[int, list[list[int]]], n_qubits: int):
-    """Convert a gate dictionary into a binary generator matrix and parameter map.
-
-    Args:
-        circuit_def (dict[int, list[list[int]]]): Dictionary mapping parameter indices to
-            lists of qubit indices.
-        n_qubits (int): Total number of qubits.
-
-    Returns:
-        tuple[jnp.ndarray, jnp.ndarray]: Tuple containing:
-            - Binary matrix of generators.
-            - Integer array mapping each generator to its parameter index.
-    """
+def _flatten_gate_dict(circuit_def: dict[int, list[list[int]]]):
+    """Flatten a gate dictionary into a gate list and a matching parameter-index list."""
     flat_gates = []
     param_indices = []
 
@@ -122,13 +112,154 @@ def _parse_generator_dict(circuit_def: dict[int, list[list[int]]], n_qubits: int
             flat_gates.append(gate)
             param_indices.append(param_idx)
 
-    n_gates = len(flat_gates)
-    generators = np.zeros((n_gates, n_qubits), dtype=int)
+    return flat_gates, param_indices
 
-    for i, qubits in enumerate(flat_gates):
-        generators[i, qubits] = 1
-    param_map = jnp.array(param_indices, dtype=int)
-    return jnp.array(generators), param_map
+
+def _parse_generator_dict(circuit_def: dict[int, list[list[int]]], n_qubits: int):
+    """Convert a gate dictionary into a padded array of gate qubit indices.
+
+    This is the sparse counterpart of :func:`_parse_generator_dict`. Instead of a dense
+    ``(n_gates, n_qubits)`` binary matrix it returns the qubit indices touched by each
+    gate, right-padded with the sentinel index ``n_qubits``. Downstream code appends a
+    zero row/column at that sentinel position, so padded entries are neutral for the
+    parity (XOR) reductions. Generator parities then cost ``O(max_weight)`` gathers per
+    gate rather than an ``O(n_qubits)`` inner product.
+
+    Args:
+        circuit_def (dict[int, list[list[int]]]): Dictionary mapping parameter indices to
+            lists of qubit indices.
+        n_qubits (int): Total number of qubits.
+
+    Returns:
+        tuple[jnp.ndarray, jnp.ndarray]: Tuple containing:
+            - Integer array of shape ``(n_gates, max_weight)`` of qubit indices,
+              padded with ``n_qubits``.
+            - Integer array mapping each generator to its parameter index.
+    """
+    flat_gates, param_indices = _flatten_gate_dict(circuit_def)
+    n_gates = len(flat_gates)
+
+    lengths = {len(gate) for gate in flat_gates}
+    rows = None
+    if len(lengths) == 1 and n_gates:
+        # Fast path: every gate has the same weight, so the qubit lists form a matrix.
+        candidate = np.asarray(flat_gates, dtype=np.int64).reshape(n_gates, -1)
+        candidate = np.where(candidate < 0, candidate + n_qubits, candidate)
+        no_duplicates = candidate.shape[1] < 2 or np.all(
+            np.diff(np.sort(candidate, axis=1), axis=1) != 0
+        )
+        if no_duplicates:
+            rows = candidate
+
+    if rows is None:
+        # General path: ragged weights and/or repeated qubits within a gate.
+        width = max(max(lengths, default=0), 1)
+        rows = np.full((n_gates, width), n_qubits, dtype=np.int64)
+        for i, qubits in enumerate(flat_gates):
+            unique = np.asarray(qubits, dtype=np.int64).reshape(-1)
+            unique = np.unique(np.where(unique < 0, unique + n_qubits, unique))
+            rows[i, : unique.size] = unique
+
+    if n_gates and rows.size:
+        if rows.min() < 0 or rows.max() > n_qubits:
+            raise IndexError(f"Qubit index out of range for a {n_qubits}-qubit circuit")
+
+    gate_indices = jnp.asarray(np.ascontiguousarray(rows, dtype=np.int32))
+    return gate_indices, jnp.array(param_indices, dtype=int)
+
+
+def _xor_gather_rows(bits: jnp.ndarray, gate_indices: jnp.ndarray) -> jnp.ndarray:
+    """XOR-reduce rows of ``bits`` over each gate support.
+
+    Args:
+        bits: ``(n_qubits + 1, n_cols)`` array of bits whose last row is zero.
+        gate_indices: ``(n_gates, max_weight)`` padded qubit indices.
+
+    Returns:
+        ``(n_gates, n_cols)`` parity bits.
+    """
+    out = bits[gate_indices[:, 0]]
+    for slot in range(1, gate_indices.shape[1]):
+        out = out ^ bits[gate_indices[:, slot]]
+    return out
+
+
+def _xor_gather_cols(bits: jnp.ndarray, gate_indices: jnp.ndarray) -> jnp.ndarray:
+    """XOR-reduce columns of ``bits`` over each gate support.
+
+    Args:
+        bits: ``(n_rows, n_qubits + 1)`` array of bits whose last column is zero.
+        gate_indices: ``(n_gates, max_weight)`` padded qubit indices.
+
+    Returns:
+        ``(n_rows, n_gates)`` parity bits.
+    """
+    out = bits[:, gate_indices[:, 0]]
+    for slot in range(1, gate_indices.shape[1]):
+        out = out ^ bits[:, gate_indices[:, slot]]
+    return out
+
+
+#: Target number of entries per generator-block operand. The blocked contraction below
+#: keeps both operands of the inner matrix product around this size so that they are
+#: built and consumed in cache instead of being streamed through main memory.
+_BLOCK_ELEMENTS = 2_000_000
+
+
+def _block_size(n_gates: int, n_obs: int, n_samples: int) -> int:
+    """Choose how many generators to process per block of the phase contraction."""
+    width = max(n_obs, n_samples, 1)
+    return int(min(max(_BLOCK_ELEMENTS // width, 1024), 32768, max(n_gates, 1)))
+
+
+def _phase_differences(
+    gates_params: jnp.ndarray,
+    samples_t: jnp.ndarray,
+    bitflips_padded: jnp.ndarray,
+    gate_indices: jnp.ndarray,
+    param_map: jnp.ndarray,
+) -> jnp.ndarray:
+    r"""Accumulate the phase difference matrix of the IQP estimator.
+
+    Computes, for every observable ``o`` and sample ``s``,
+
+    .. math:: E_{os} = 2 \sum_g q_{og}\,\theta_g\,(-1)^{s \cdot S_g}
+
+    where :math:`q_{og}` is one when the observable's bitflip string overlaps generator
+    :math:`S_g` in an odd number of qubits. The generator axis is processed in blocks so
+    that both operands of the inner matrix product are built and consumed in cache.
+    """
+    n_gates, width = gate_indices.shape
+    n_obs = bitflips_padded.shape[0]
+    n_samples = samples_t.shape[1]
+    dtype = jnp.result_type(jnp.asarray(gates_params).dtype, jnp.float32)
+
+    def block(gidx, pmap):
+        params = jnp.asarray(gates_params)[pmap].astype(dtype)[:, jnp.newaxis]
+        b_bits = _xor_gather_rows(samples_t, gidx)
+        q_bits = _xor_gather_cols(bitflips_padded, gidx)
+        b_scaled = jnp.where(b_bits.astype(bool), -params, params)
+        return q_bits.astype(dtype) @ b_scaled
+
+    size = _block_size(n_gates, n_obs, n_samples)
+    n_blocks = -(-n_gates // size) if n_gates else 1
+
+    if n_blocks <= 1:
+        return 2 * block(gate_indices, param_map)
+
+    # Pad the generator axis so it splits evenly. Padded entries carry the sentinel
+    # qubit index, hence zero bitflip overlap, hence no contribution to the sum.
+    pad = n_blocks * size - n_gates
+    gidx = jnp.concatenate(
+        [gate_indices, jnp.full((pad, width), samples_t.shape[0] - 1, gate_indices.dtype)]
+    ).reshape(n_blocks, size, width)
+    pmap = jnp.concatenate([param_map, jnp.zeros((pad,), param_map.dtype)]).reshape(n_blocks, size)
+
+    def step(acc, xs):
+        return acc + block(*xs), None
+
+    total, _ = lax.scan(step, jnp.zeros((n_obs, n_samples), dtype), (gidx, pmap))
+    return 2 * total
 
 
 def _compute_samples(key: ArrayLike, n_samples: int, n_qubits: int) -> jnp.ndarray:
@@ -164,25 +295,33 @@ def _core_expval_execution(
     obs_data: tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray],
     init_state_elems: ArrayLike | None,
     init_state_amps: ArrayLike | None,
-    generators: jnp.ndarray,
+    gate_indices: jnp.ndarray,
     param_map: jnp.ndarray,
     vmapped_phase_func: Callable | None,
 ) -> tuple[jnp.ndarray, jnp.ndarray]:
     """Evaluate the Monte Carlo integrand and return expectation values and variances."""
     bitflips, mask_XY, y_phase = obs_data
 
-    s_f = samples.astype(jnp.float32)
-    m_f = mask_XY.astype(jnp.float32)
-    g_f = generators.astype(jnp.float32)
-    b_f = bitflips.astype(jnp.float32)
+    n_samples = samples.shape[0]
+    n_obs = bitflips.shape[0]
 
-    sign_flip = 1 - 2 * ((m_f @ s_f.T) % 2)
+    dtype = jnp.result_type(jnp.asarray(gates_params).dtype, jnp.float32)
+
+    s_f = samples.astype(dtype)
+    sign_flip = 1 - 2 * ((mask_XY.astype(dtype) @ s_f.T) % 2)
     phases = sign_flip * y_phase
 
-    B = 1 - 2 * ((s_f @ g_f.T) % 2)
-    C = 2 * ((b_f @ g_f.T) % 2)
-    expanded_params = jnp.asarray(gates_params)[param_map]
-    E = (C * expanded_params) @ B.T
+    # Generator parities are XOR reductions over each gate's support. Pad the sample
+    # bits and the observable bitflips with a zero at the sentinel index so that padded
+    # slots of ``gate_indices`` contribute nothing to the parity.
+    samples_t = jnp.concatenate(
+        [samples.astype(jnp.uint8).T, jnp.zeros((1, n_samples), dtype=jnp.uint8)], axis=0
+    )
+    bitflips_padded = jnp.concatenate(
+        [bitflips.astype(jnp.uint8), jnp.zeros((n_obs, 1), dtype=jnp.uint8)], axis=1
+    )
+
+    E = _phase_differences(gates_params, samples_t, bitflips_padded, gate_indices, param_map)
 
     if vmapped_phase_func is not None:
         E += vmapped_phase_func(phase_fn_params, samples, bitflips)
@@ -191,10 +330,11 @@ def _core_expval_execution(
         integrand = jnp.real(phases) * jnp.cos(E) - jnp.imag(phases) * jnp.sin(E)
     else:
         M = phases * jnp.exp(1j * E)
-        X = init_state_elems
-        P = init_state_amps
-        F = P[:, jnp.newaxis] * (1 - 2 * ((X @ samples.T) % 2))
-        H1 = (1 - 2 * ((bitflips @ X.T) % 2)) @ F
+        X = jnp.asarray(init_state_elems)
+        P = jnp.asarray(init_state_amps)
+        x_f = X.astype(dtype)
+        F = P[:, jnp.newaxis] * (1 - 2 * ((x_f @ s_f.T) % 2))
+        H1 = (1 - 2 * ((bitflips.astype(dtype) @ x_f.T) % 2)) @ F
         col_sums = jnp.sum(F.conj(), axis=0, keepdims=True)
         H = H1 * col_sums
         M = M * H
@@ -265,7 +405,7 @@ def build_expval_func(
         :class:`~pennylane.labs.tcdq.CircuitConfig`,
         `IQPopt: Fast optimization of instantaneous quantum polynomial circuits in JAX <https://arxiv.org/abs/2501.04776>`_
     """
-    generators, param_map = _parse_generator_dict(config.gates, config.n_qubits)
+    gate_indices, param_map = _parse_generator_dict(config.gates, config.n_qubits)
 
     vmapped_phase_func = None
     if config.phase_fn is not None:
@@ -344,7 +484,7 @@ def build_expval_func(
             obs_data,
             state_elems,
             state_amps,
-            generators,
+            gate_indices,
             param_map,
             vmapped_phase_func,
         )
