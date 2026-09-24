@@ -26,6 +26,7 @@
   [(#10074)](https://github.com/PennyLaneAI/pennylane/pull/10074)
   [(#10081)](https://github.com/PennyLaneAI/pennylane/pull/10081)
   [(#10138)](https://github.com/PennyLaneAI/pennylane/pull/10138)
+  [(#10120)](https://github.com/PennyLaneAI/pennylane/pull/10120)
 
 * A new operator called :class:`pennylane.PPR` has been added, which represents a Pauli product
   rotation with a fixed angle
@@ -1238,6 +1239,10 @@
   [(#9925)](https://github.com/PennyLaneAI/pennylane/pull/9925)
 
 <h3>Internal changes ⚙️</h3>
+
+* An operator can now be reconstructed from operator_p with abstract wires in the form of 
+  AbstractQubit, jax.core.ShapedArray, AbstractWires, and AbstractArray.
+  [(#10165)](https://github.com/PennyLaneAI/pennylane/pull/10165)
 
 * Update `tach` to `0.35.1`.
   [(#10147 )](https://github.com/PennyLaneAI/pennylane/pull/10147)
