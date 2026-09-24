@@ -549,6 +549,5 @@ At the moment, it takes into account the following parameters:
 
     interfaces/numpy
     interfaces/torch
-    interfaces/tf
     interfaces/jax
     unsupported_gradients

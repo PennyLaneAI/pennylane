@@ -1560,7 +1560,8 @@
 
 <h3>Documentation 📝</h3>
 
-* Removed the TensorFlow section from the :doc:`Gradients and training </introduction/interfaces>` page.
+* Removed the TensorFlow section, sidebar entry, and footer trademark from the
+  :doc:`Gradients and training </introduction/interfaces>` page.
   [(#10193)](https://github.com/PennyLaneAI/pennylane/pull/10193)
 
 * Corrected spelling errors in documentation, comments, and internal variable names across the codebase.

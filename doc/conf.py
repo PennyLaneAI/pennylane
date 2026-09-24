@@ -271,9 +271,6 @@ html_theme = "pennylane"
 
 # Xanadu theme options (see theme.conf for more information).
 html_theme_options = {
-    "extra_copyrights": [
-        "TensorFlow, the TensorFlow logo, and any related marks are trademarks " "of Google Inc."
-    ],
     "google_analytics_tracking_id": "G-C480Z9JL0D",
     "search_on_pennylane_ai": True,
 }
