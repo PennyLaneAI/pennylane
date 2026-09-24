@@ -318,7 +318,7 @@ def _cswap_pair(flag, left, right):
     _loop()  # pylint: disable=no-value-for-parameter
 
 
-def _symmetrize(mu_wires, nu_wires, swap_flag, edge_flag):
+def _symmetrize(mu_wires, nu_wires, swap_flag, edge_flag, work_wires):
     """Swap ``mu`` and ``nu`` when ``swap_flag`` is 1 and ``edge_flag`` is 0."""
     n = len(mu_wires)
     if n == 0:
@@ -333,6 +333,8 @@ def _symmetrize(mu_wires, nu_wires, swap_flag, edge_flag):
             SWAP(wires=[mu_wires[i], nu_wires[i]]),
             control=[swap_flag, edge_flag],
             control_values=[1, 0],
+            work_wires=work_wires,
+            work_wire_type="zeroed",
         )
 
     _loop()  # pylint: disable=no-value-for-parameter
@@ -572,7 +574,13 @@ def _alias_sampling_thc_resources(
         lqc: 1,
         adjoint(lqc): 1,
         CSWAP: 2 * n + 2,
-        ctrl(SWAP(wires=Wire[2]), control=Wire[2], control_values=[1, 0]): n,
+        ctrl(
+            SWAP(wires=Wire[2]),
+            control=Wire[2],
+            control_values=[1, 0],
+            work_wires=Wire[n_qrom_work],
+            work_wire_type="zeroed",
+        ): n,
     }
     if apply_sign:
         resources[Z] = 1
@@ -626,7 +634,8 @@ def _alias_sampling_thc_decomp(
         )
     )
     Hadamard(swap_flag)
-    _symmetrize(mu_wires, nu_wires, swap_flag, edge_flag)
+    # Reuse QROM work wires for controlled swaps
+    _symmetrize(mu_wires, nu_wires, swap_flag, edge_flag, qrom_work)
 
     if apply_sign:
         Z(sign_wire)

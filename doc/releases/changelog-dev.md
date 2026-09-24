@@ -499,6 +499,13 @@
   [(#10146)](https://github.com/PennyLaneAI/pennylane/pull/10146)
   [(#10158)](https://github.com/PennyLaneAI/pennylane/pull/10158)
 
+* Added :class:`~.QubitizationTHC`, the qubitization walk operator of a tensor hypercontracted
+  Hamiltonian. It composes :class:`~.SuperpositionTHC` and :class:`~.AliasSamplingTHC` into
+  ``PREPARE``, applies :class:`~.SelectTHC`, and reflects about
+  :math:`|\vec 0\rangle` on the ``PREPARE`` register. Use :func:`~.qubitization_thc_wires` to
+  determine the register sizes.
+  [(#10163)](https://github.com/PennyLaneAI/pennylane/pull/10163)
+
 * Added :class:`~.OneBodyBlockEncoding`, a block-encoding of a real symmetric one-body operator
   :math:`\hat O`, normalized as :math:`\hat O / \lambda` with :math:`\lambda = \sum_p |\mu_p|`,
   where :math:`\mu_p` are the eigenvalues of the one-body matrix. Composing it with a reflection
@@ -599,7 +606,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* Added a decomposition of :class:`~.TemporaryAND` directly to four :math:`\pm\pi/8` PPRs and a 
+* Added a decomposition of :class:`~.TemporaryAND` directly to four :math:`\pm\pi/8` PPRs and a
   decomposition of :class:`~.SingleExcitation` to two :math:`\pm\pi/4` and two arbitrary-angle PPRs.
   [(#10108)](https://github.com/PennyLaneAI/pennylane/pull/10108)
 
@@ -1186,6 +1193,10 @@
   [(#9925)](https://github.com/PennyLaneAI/pennylane/pull/9925)
 
 <h3>Internal changes ⚙️</h3>
+
+* An operator can now be reconstructed from operator_p with abstract wires in the form of 
+  AbstractQubit, jax.core.ShapedArray, AbstractWires, and AbstractArray.
+  [(#10165)](https://github.com/PennyLaneAI/pennylane/pull/10165)
 
 * Update `tach` to `0.35.1`.
   [(#10147 )](https://github.com/PennyLaneAI/pennylane/pull/10147)
