@@ -256,3 +256,4 @@ from .decomposition_rule import (
     local_decomps,
     DecompCollection,
 )
+from .all_decomps import all_decomps
