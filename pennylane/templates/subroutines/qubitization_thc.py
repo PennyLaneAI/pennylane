@@ -17,9 +17,10 @@ from collections import defaultdict
 
 import numpy as np
 
-from pennylane.core.operator import Operator2
+from pennylane import capture
+from pennylane.core.operator import Operator2, abstractify
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.ops import GlobalPhase, Hadamard, Z, adjoint, ctrl
+from pennylane.ops import GlobalPhase, Hadamard, Z, adjoint, change_op_basis, ctrl
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
@@ -231,7 +232,8 @@ class QubitizationTHC(Operator2):
     with :math:`\mathcal{R}` the reflection on ``index_wires + prep_garbage_wires``, following
     `Lee et al. (2021) <https://arxiv.org/abs/2011.03494>`_ (Figs. 3, 5 and 7).
     ``PREPARE`` is :class:`~.SuperpositionTHC` followed by :class:`~.AliasSamplingTHC` and a
-    ``Hadamard`` on each of the two spin flags; ``SELECT`` is :class:`~.SelectTHC`.
+    ``Hadamard`` on each of the two spin flags and on the :math:`\mu \leftrightarrow \nu`
+    swap flag; ``SELECT`` is :class:`~.SelectTHC`.
 
     The :math:`\lvert \vec 0 \rangle` block of :math:`\mathcal{W}` is
     :math:`\hat{\mathcal{H}} / \lambda` with
@@ -440,6 +442,82 @@ class QubitizationTHC(Operator2):
         )
 
 
+def _prepare_select(
+    M,
+    N,
+    zeta,
+    t_ell,
+    chi,
+    t_eigenvectors,
+    aleph,
+    beth,
+    registers,
+    system_wires,
+    index_wires,
+    gradient_wires,
+    work_wires,
+    num_batches,
+):  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-locals
+    r"""Return ``PREPARE``:math:`^\dagger \cdot` ``SELECT`` :math:`\cdot` ``PREPARE`` as a
+    single :func:`~.change_op_basis`, given the registers of :func:`_prepare_registers`."""
+    mu_wires, nu_wires = registers["mu_wires"], registers["nu_wires"]
+    spin_wires = registers["spin_wires"]
+    sign_wire = registers["alias_work"][alias_sampling_thc_wires(M, N, aleph)["sign_wire"]]
+
+    def prepare():
+        SuperpositionTHC(M, N, mu_wires, nu_wires, registers["superposition_work"])
+        AliasSamplingTHC(
+            M,
+            N,
+            zeta,
+            t_ell,
+            mu_wires,
+            nu_wires,
+            registers["edge_flag"],
+            registers["alias_work"],
+            aleph,
+            apply_sign=False,
+        )
+        # The two spin flags are the |+> controls that route each V onto a spin sector.
+        for wire in spin_wires:
+            Hadamard(wire)
+        # SELECT ends by swapping mu <-> nu and flipping the swap flag, which only leaves
+        # the prepared state invariant if it arrives as
+        # (|mu nu>|0> + |nu mu>|1>) / sqrt(2). AliasSamplingTHC closes its symmetrization
+        # with a Hadamard on that flag, rotating the state into the symmetric /
+        # antisymmetric basis, on which the same operation flips the flag deterministically
+        # and the walk never returns to |0>. Undo it here; PREPARE^dagger puts it back.
+        Hadamard(registers["swap_flag"])
+
+    def select():
+        # The sign of each LCU coefficient must be applied an *odd* number of times between
+        # PREPARE and PREPARE^dagger, so it cannot sit inside ``prepare``: the adjoint would
+        # square the sign away and the walk would block encode the coefficient *magnitudes*
+        # instead. AliasSamplingTHC applies it as a Z on its sign qubit, which SELECT never
+        # touches, so emitting it here instead (with ``apply_sign=False`` above) is
+        # equivalent and still returns every PREPARE auxiliary wire to |0>.
+        Z(sign_wire)
+        SelectTHC(
+            chi,
+            t_eigenvectors,
+            beth,
+            system_wires,
+            list(index_wires),
+            [
+                registers["success_flag"],
+                registers["edge_flag"],
+                registers["swap_flag"],
+                spin_wires[0],
+                spin_wires[1],
+            ],
+            gradient_wires,
+            work_wires,
+            num_batches=num_batches,
+        )
+
+    return change_op_basis(prepare, select)
+
+
 def _qubitization_thc_resources(
     zeta,
     t_ell,
@@ -457,47 +535,44 @@ def _qubitization_thc_resources(
     """Return the top-level resources of the QubitizationTHC decomposition."""
     M = len(zeta)
     N = 2 * len(chi[0])
-    n_index, n_garbage = len(index_wires), len(prep_garbage_wires)
-    n_work = len(work_wires)
 
     # The sub-register sizes only depend on how the input registers are split, so the
     # split is replayed on placeholder labels to keep it in sync with the decomposition.
-    offsets = np.cumsum([0, n_index, n_garbage, n_work])
-    registers = _prepare_registers(
-        M,
-        N,
-        aleph,
-        *(range(int(start), int(stop)) for start, stop in zip(offsets[:-1], offsets[1:])),
+    sizes = [len(reg) for reg in (system_wires, index_wires, prep_garbage_wires)]
+    sizes += [len(gradient_wires), len(work_wires)]
+    offsets = np.cumsum([0] + sizes)
+    system, index, garbage, gradient, work = (
+        list(range(int(start), int(stop))) for start, stop in zip(offsets[:-1], offsets[1:])
     )
-    n = len(registers["mu_wires"])
+    registers = _prepare_registers(M, N, aleph, index, garbage, work)
 
-    superposition = SuperpositionTHC(
-        M, N, Wire[n], Wire[n], Wire[len(registers["superposition_work"])]
-    )
-    alias_args = (M, N, zeta, t_ell, Wire[n], Wire[n], Wire[1], Wire[len(registers["alias_work"])])
-    alias = AliasSamplingTHC(*alias_args, aleph, apply_sign=True)
-    alias_adjoint = AliasSamplingTHC(*alias_args, aleph, apply_sign=False)
-    select = SelectTHC(
-        chi,
-        t_eigenvectors,
-        beth,
-        Wire[len(system_wires)],
-        Wire[n_index],
-        Wire[5],
-        Wire[len(gradient_wires)],
-        Wire[n_work],
-        num_batches,
-    )
+    # `_prepare_select` returns change_op_basis. Under capture that unrolls eagerly
+    # (binds inner gates into the jaxpr and returns None), so pause while we build the
+    # resource key. compute_resources already stops queuing but does not pause capture.
+    # See #10162.
+    with capture.pause():
+        walk = _prepare_select(
+            M,
+            N,
+            zeta,
+            t_ell,
+            chi,
+            t_eigenvectors,
+            aleph,
+            beth,
+            registers,
+            system,
+            index,
+            gradient,
+            work,
+            num_batches,
+        )
+
     num_reflected = len(registers["reflected"])
-    reflection = FlipSign([0] * num_reflected, Wire[num_reflected], work_wires=Wire[n_work])
+    reflection = FlipSign([0] * num_reflected, Wire[num_reflected], work_wires=Wire[len(work)])
 
     return {
-        superposition: 1,
-        adjoint(superposition): 1,
-        alias: 1,
-        adjoint(alias_adjoint): 1,
-        Hadamard: 4,
-        select: 1,
+        abstractify(walk): 1,
         reflection: 1,
         GlobalPhase: 1,
     }
@@ -523,68 +598,22 @@ def _qubitization_thc_decomp(
     N = 2 * len(chi[0])
 
     registers = _prepare_registers(M, N, aleph, index_wires, prep_garbage_wires, work_wires)
-    mu_wires, nu_wires = registers["mu_wires"], registers["nu_wires"]
-    spin_wires = registers["spin_wires"]
-
-    # PREPARE. The sign of each LCU coefficient must be applied an *odd* number of times
-    # between PREPARE and PREPARE^dagger. AliasSamplingTHC applies it as a Z on the sign
-    # qubit, so the adjoint below switches it off: keeping it on both sides would square
-    # the sign away and block encode the coefficient *magnitudes* instead. The Z is
-    # diagonal and SELECT never touches the sign qubit, so dropping it from the adjoint
-    # still returns every PREPARE auxiliary wire to |0>.
-    SuperpositionTHC(M, N, mu_wires, nu_wires, registers["superposition_work"])
-    AliasSamplingTHC(
+    _prepare_select(
         M,
         N,
         zeta,
         t_ell,
-        mu_wires,
-        nu_wires,
-        registers["edge_flag"],
-        registers["alias_work"],
-        aleph,
-        apply_sign=True,
-    )
-    # The two spin flags are the |+> controls that route each V onto a spin sector.
-    for wire in spin_wires:
-        Hadamard(wire)
-
-    SelectTHC(
         chi,
         t_eigenvectors,
+        aleph,
         beth,
+        registers,
         system_wires,
-        list(index_wires),
-        [
-            registers["success_flag"],
-            registers["edge_flag"],
-            registers["swap_flag"],
-            spin_wires[0],
-            spin_wires[1],
-        ],
+        index_wires,
         gradient_wires,
         work_wires,
-        num_batches=num_batches,
+        num_batches,
     )
-
-    # PREPARE^dagger. Hadamard is self-inverse, so only the two templates are adjointed.
-    for wire in spin_wires:
-        Hadamard(wire)
-    adjoint(
-        AliasSamplingTHC(
-            M,
-            N,
-            zeta,
-            t_ell,
-            mu_wires,
-            nu_wires,
-            registers["edge_flag"],
-            registers["alias_work"],
-            aleph,
-            apply_sign=False,
-        )
-    )
-    adjoint(SuperpositionTHC(M, N, mu_wires, nu_wires, registers["superposition_work"]))
 
     # R = 2|0><0| - I on the full PREPARE register. The global sign is fixed so that the
     # |0> block is + H / lambda: the sign flip of |0> that a bare I - 2|0><0| would give
@@ -673,7 +702,7 @@ def _ctrl_qubitization_thc_resource(
     return dict(resources)
 
 
-@register_resources(_ctrl_qubitization_thc_resource, exact=False)
+@register_resources(_ctrl_qubitization_thc_resource)
 def _ctrl_qubitization_thc_decomp(base, control_wires, control_values, work_wires, work_wire_type):
     # pylint: disable=unused-argument
     zeta = base.zeta

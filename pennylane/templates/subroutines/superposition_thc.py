@@ -324,14 +324,12 @@ def _superposition_thc_resources(M, N, mu_wires, nu_wires, work_wires):
     resources[lcc_le] += 2
     resources[lcc_gt] += 2
     resources[lqc] += 2
-    resources[multix] += 4
-    resources[adjoint(multix)] += 2
+    resources[multix] += 6
     # _left_inequalities applied twice as an adjoint.
     resources[adjoint(lcc_le)] += 2
     resources[adjoint(lcc_gt)] += 2
     resources[adjoint(lqc)] += 2
-    resources[mcx] += 2
-    resources[adjoint(mcx)] += 1
+    resources[mcx] += 3
     return dict(resources)
 
 
