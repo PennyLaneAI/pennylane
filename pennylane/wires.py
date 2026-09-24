@@ -177,7 +177,9 @@ class Wires(Sequence):
         """Method to support indexing. Returns a Wires object if index is a slice,
         or a label if index is an integer."""
         if isinstance(idx, slice):
-            return Wires(self._labels[idx])
+            # use _override=True because there is no need to verify that a slice from
+            # an existing Wires object is valid or not.
+            return Wires(self._labels[idx], _override=True)
         return self._labels[idx]
 
     def __iter__(self):
@@ -832,6 +834,9 @@ if jax_available:
         def _iter(self):  # pragma: no cover
             return
 
+else:
+    AbstractQubit = None  # pragma: no cover
+
 
 def is_abstract_qubit(v):
     """Returns ``True`` if the provided value is a DynamicJaxprTracer of type AbstractQubit"""
@@ -852,3 +857,21 @@ def validate_no_wire_overlaps(wire_args: dict):
     for n1, n2 in combinations(concrete_wire_args, r=2):
         if Wires.shared_wires([concrete_wire_args[n1], concrete_wire_args[n2]]):
             raise ValueError(f"{n1} and {n2} must not overlap")
+
+
+def concatenate_wires(wires1, wires2):
+    """Concatenate two wire arguments."""
+
+    if _is_not_array(wires1) and _is_not_array(wires2):
+        return wires1 + wires2
+
+    if _is_not_array(wires1):
+        wires1 = math.array(wires1, like=wires2)
+    elif _is_not_array(wires2):
+        wires2 = math.array(wires2, like=wires1)
+
+    return math.concatenate([wires1, wires2])
+
+
+def _is_not_array(w):
+    return isinstance(w, (list, tuple, Wires))

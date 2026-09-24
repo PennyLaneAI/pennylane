@@ -21,6 +21,7 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import math
+from pennylane.decomposition.decomposition_rule import _fix_decomp
 from pennylane.ops import ctrl_decomp_bisect, ctrl_decomp_zyz
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math.decompositions.controlled_decompositions import (
@@ -589,6 +590,7 @@ class TestMCXDecomposition:
                 work_wire_type="blah",
             )
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.unit
     @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
     @pytest.mark.parametrize("n_ctrl_wires", [3, 4, 5])
@@ -609,7 +611,8 @@ class TestMCXDecomposition:
             if work_wire_type == "zeroed":
                 qp.Projector([0] * len(work_wires), wires=work_wires)
             # pylint: disable=missing-kwoa
-            decompose_mcx_many_workers(**mcx.arguments)
+            with qp.capture.pause():
+                decompose_mcx_many_workers(**mcx.arguments)
 
         # Verify that the resource estimate is correct.
         _test_decomposition_rule(mcx, decompose_mcx_many_workers, skip_decomp_matrix_check=True)
@@ -625,6 +628,7 @@ class TestMCXDecomposition:
 
         assert qp.math.allclose(matrix, expected_matrix)
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
     @pytest.mark.parametrize("n_ctrl_wires", [3, 4, 5, 6, 7, 8, 9])
     def test_decomposition_with_one_worker(self, n_ctrl_wires, work_wire_type):
@@ -645,7 +649,8 @@ class TestMCXDecomposition:
             if work_wire_type == "zeroed":
                 qp.Projector([0], wires=work_wire)
             # pylint: disable=missing-kwoa
-            decompose_mcx_one_worker(**mcx.arguments)
+            with qp.capture.pause():
+                decompose_mcx_one_worker(**mcx.arguments)
 
         # Verify that the resource estimate is correct.
         _test_decomposition_rule(mcx, decompose_mcx_one_worker, skip_decomp_matrix_check=True)
@@ -662,6 +667,7 @@ class TestMCXDecomposition:
 
         assert qp.math.allclose(matrix, expected_matrix)
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
     @pytest.mark.parametrize("n_ctrl_wires", [3, 4, 5, 6, 7, 8, 9, 10])
     def test_decomposition_with_two_workers(self, n_ctrl_wires, work_wire_type):
@@ -681,7 +687,8 @@ class TestMCXDecomposition:
         with qp.queuing.AnnotatedQueue() as q:
             if work_wire_type == "zeroed":
                 qp.Projector([0, 0], wires=work_wires)
-            decompose_mcx_two_workers(**mcx.arguments)
+            with qp.capture.pause():
+                decompose_mcx_two_workers(**mcx.arguments)
 
         # Verify that the resource estimate is correct.
         _test_decomposition_rule(mcx, decompose_mcx_two_workers, skip_decomp_matrix_check=True)
@@ -698,6 +705,7 @@ class TestMCXDecomposition:
 
         assert qp.math.allclose(matrix, expected_matrix)
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("n_ctrl_wires", [4, 5, 6, 7, 8, 9, 10])
     def test_decomposition_with_no_workers(self, n_ctrl_wires):
         """Test that the decomposed MCX gate using 2 work wires produce the correct matrix."""
@@ -709,7 +717,8 @@ class TestMCXDecomposition:
         mcx = qp.MultiControlledX(wires=control_wires + [target_wire])
 
         with qp.queuing.AnnotatedQueue() as q:
-            decompose_mcx_with_no_worker(**mcx.arguments)
+            with qp.capture.pause():
+                decompose_mcx_with_no_worker(**mcx.arguments)
 
         # Verify that the resource estimate is correct.
         _test_decomposition_rule(mcx, decompose_mcx_with_no_worker, skip_decomp_matrix_check=True)
@@ -720,6 +729,9 @@ class TestMCXDecomposition:
 
         expected_matrix = mcx.sparse_matrix()
         assert qp.math.allclose(matrix, expected_matrix)
+
+        if qp.capture.enabled():
+            return  # the following check is not expected to work with capture
 
         # compute decomposition result
         old_decomps = mcx.decomposition()
@@ -754,12 +766,24 @@ class TestMCXDecomposition:
             },
         ],
     )
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_mcx_decompositions(self, params):
         """Tests that MCX can be resolved into CNOT and Toffoli properly."""
 
         mcx = qp.MultiControlledX(**params)
-        for rule in qp.list_decomps(qp.MultiControlledX):
+        rules = qp.list_decomps(mcx)
+        assert rules
+        for rule in rules:
             _test_decomposition_rule(mcx, rule)
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_mcx_fixed_decomp(self):
+        """Tests that a fixed decomposition rule is used instead of the stock ones."""
+
+        mcx = qp.MultiControlledX(wires=[0, 1, 2, 3])
+        with qp.decomposition.local_decomps():
+            _fix_decomp(qp.MultiControlledX, decompose_mcx_with_no_worker)
+            assert list(qp.list_decomps(mcx)) == [decompose_mcx_with_no_worker]
 
     @pytest.mark.catalyst
     @pytest.mark.usefixtures("enable_graph_decomposition")

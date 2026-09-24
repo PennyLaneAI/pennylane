@@ -200,6 +200,7 @@ Parametrized gates
     ~pennylane.RZ
     ~pennylane.MultiRZ
     ~pennylane.PauliRot
+    ~pennylane.PPR
     ~pennylane.PhaseShift
     ~pennylane.ControlledPhaseShift
     ~pennylane.CPhase

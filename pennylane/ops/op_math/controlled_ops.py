@@ -31,7 +31,11 @@ from pennylane import math
 from pennylane.allocation import allocate
 from pennylane.core.operator import Operator
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.decomposition.decomposition_rule import DecompCollection, list_decomps
+from pennylane.decomposition.decomposition_rule import (
+    DecompCollection,
+    get_fixed_decomp,
+    list_decomps,
+)
 from pennylane.decomposition.resources import resolve_work_wire_type
 from pennylane.decomposition.symbolic_decomposition import self_adjoint
 from pennylane.ops.identity import GlobalPhase
@@ -49,7 +53,7 @@ from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
 from pennylane.ops.qubit import X, Y, Z
 from pennylane.typing import AbstractArray, AbstractWires, Bool, Complex, Float, TensorLike, Wire
-from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
+from pennylane.wires import Wires, WiresLike, concatenate_wires, validate_no_wire_overlaps
 
 from .adjoint2 import _adjoint_abstract
 from .controlled import (
@@ -432,9 +436,9 @@ def _pauli_ctrl_pauli_ppr_resources(wires: AbstractWires, pauli0, pauli1):
     """Resources for _pauli_ctrl_pauli_ppr."""
     resources = defaultdict(int)
     p0, p1 = pauli0.__name__[-1], pauli1.__name__[-1]
-    resources[qp.PauliRot(Float, pauli_word=p0, wires=Wire[len(p0)])] += 1
-    resources[qp.PauliRot(Float, pauli_word=p1, wires=Wire[len(p1)])] += 1
-    resources[qp.PauliRot(Float, pauli_word=p0 + p1, wires=Wire[len(p0 + p1)])] += 1
+    resources[qp.PPR(-4, pauli_word=p0, wires=Wire[len(p0)])] += 1
+    resources[qp.PPR(-4, pauli_word=p1, wires=Wire[len(p1)])] += 1
+    resources[qp.PPR(4, pauli_word=p0 + p1, wires=Wire[len(p0 + p1)])] += 1
     resources[qp.GlobalPhase] += 1
     return dict(resources)
 
@@ -442,9 +446,9 @@ def _pauli_ctrl_pauli_ppr_resources(wires: AbstractWires, pauli0, pauli1):
 def _pauli_ctrl_pauli_ppr(wires: AbstractWires, pauli0, pauli1):
     """Generalized two-qubit Pauli-controlled Pauli gate decomposition to PPRs."""
     p0, p1 = pauli0.__name__[-1], pauli1.__name__[-1]
-    qp.PauliRot(-np.pi / 2, p0, wires=wires[0])
-    qp.PauliRot(-np.pi / 2, p1, wires=wires[1])
-    qp.PauliRot(np.pi / 2, p0 + p1, wires=wires)
+    qp.PPR(-4, p0, wires=wires[0])
+    qp.PPR(-4, p1, wires=wires[1])
+    qp.PPR(4, p0 + p1, wires=wires)
     qp.GlobalPhase(np.pi / 4)
 
 
@@ -707,26 +711,26 @@ def _cswap(wires: WiresLike, **__):
 
 def _cswap_to_ppr_resource(wires: WiresLike = None):
     return {
-        qp.PauliRot(Float, pauli_word="ZZZ", wires=Wire[3]): 1,
-        qp.PauliRot(Float, pauli_word="ZYY", wires=Wire[3]): 1,
-        qp.PauliRot(Float, pauli_word="ZXX", wires=Wire[3]): 1,
-        qp.PauliRot(Float, pauli_word="ZZ", wires=Wire[2]): 1,
-        qp.PauliRot(Float, pauli_word="YY", wires=Wire[2]): 1,
-        qp.PauliRot(Float, pauli_word="XX", wires=Wire[2]): 1,
-        qp.PauliRot(Float, pauli_word="Z", wires=Wire[1]): 1,
+        qp.PPR(-8, pauli_word="ZZZ", wires=Wire[3]): 1,
+        qp.PPR(-8, pauli_word="ZYY", wires=Wire[3]): 1,
+        qp.PPR(-8, pauli_word="ZXX", wires=Wire[3]): 1,
+        qp.PPR(8, pauli_word="ZZ", wires=Wire[2]): 1,
+        qp.PPR(8, pauli_word="YY", wires=Wire[2]): 1,
+        qp.PPR(8, pauli_word="XX", wires=Wire[2]): 1,
+        qp.PPR(8, pauli_word="Z", wires=Wire[1]): 1,
         qp.GlobalPhase: 1,
     }
 
 
 @register_resources(_cswap_to_ppr_resource)
 def _cswap_to_ppr(wires: WiresLike, **_):
-    qp.PauliRot(-np.pi / 4, "ZZZ", wires=wires)
-    qp.PauliRot(-np.pi / 4, "ZYY", wires=wires)
-    qp.PauliRot(-np.pi / 4, "ZXX", wires=wires)
-    qp.PauliRot(np.pi / 4, "ZZ", wires=wires[1:])
-    qp.PauliRot(np.pi / 4, "YY", wires=wires[1:])
-    qp.PauliRot(np.pi / 4, "XX", wires=wires[1:])
-    qp.PauliRot(np.pi / 4, "Z", wires=wires[0])
+    qp.PPR(-8, "ZZZ", wires=wires)
+    qp.PPR(-8, "ZYY", wires=wires)
+    qp.PPR(-8, "ZXX", wires=wires)
+    qp.PPR(8, "ZZ", wires=wires[1:])
+    qp.PPR(8, "YY", wires=wires[1:])
+    qp.PPR(8, "XX", wires=wires[1:])
+    qp.PPR(8, "Z", wires=wires[0])
     qp.GlobalPhase(-np.pi / 8)
 
 
@@ -1031,6 +1035,32 @@ add_decomps("Adjoint(CNOT)", self_adjoint)
 add_decomps("Pow(CNOT)", pow_involutory2)
 
 
+def _ctrl_cnot_resource(base, control_wires, control_values, work_wires, work_wire_type):
+    ctrl_values = _resolve_ctrl_values(control_values, [True], len(control_wires))
+    return {
+        qp.MultiControlledX(
+            Wire[len(control_wires) + 2],
+            control_values=ctrl_values,
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
+        ): 1
+    }
+
+
+@qp.register_resources(_ctrl_cnot_resource)
+def _ctrl_cnot_to_mcx(base, control_wires, control_values, work_wires, work_wire_type):
+    ctrl_values = _resolve_ctrl_values(control_values, [True], len(control_wires))
+    qp.MultiControlledX(
+        concatenate_wires(control_wires, base.wires),
+        control_values=ctrl_values,
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
+    )
+
+
+add_decomps("C(CNOT)", _ctrl_cnot_to_mcx)
+
+
 class Toffoli(Controlled2):
     r"""Toffoli(wires)
     Toffoli (controlled-controlled-X) gate.
@@ -1185,24 +1215,24 @@ def _toffoli(wires: WiresLike):
 
 def _toffoli_to_ppr_resource(wires: WiresLike):
     return {
-        qp.PauliRot(Float, pauli_word="ZZ", wires=Wire[2]): 1,
-        qp.PauliRot(Float, pauli_word="ZX", wires=Wire[2]): 2,
-        qp.PauliRot(Float, pauli_word="ZZX", wires=Wire[3]): 1,
-        qp.PauliRot(Float, pauli_word="X", wires=Wire[1]): 1,
-        qp.PauliRot(Float, pauli_word="Z", wires=Wire[1]): 2,
+        qp.PPR(-8, pauli_word="ZZ", wires=Wire[2]): 1,
+        qp.PPR(-8, pauli_word="ZX", wires=Wire[2]): 2,
+        qp.PPR(8, pauli_word="ZZX", wires=Wire[3]): 1,
+        qp.PPR(8, pauli_word="X", wires=Wire[1]): 1,
+        qp.PPR(8, pauli_word="Z", wires=Wire[1]): 2,
         qp.GlobalPhase: 1,
     }
 
 
 @register_resources(_toffoli_to_ppr_resource)
 def _toffoli_to_ppr(wires: WiresLike):
-    qp.PauliRot(-np.pi / 4, "ZZ", wires=wires[:2])
-    qp.PauliRot(-np.pi / 4, "ZX", wires=[wires[0], wires[2]])
-    qp.PauliRot(-np.pi / 4, "ZX", wires=wires[1:])
-    qp.PauliRot(np.pi / 4, "ZZX", wires=wires)
-    qp.PauliRot(np.pi / 4, "X", wires=wires[2])
-    qp.PauliRot(np.pi / 4, "Z", wires=wires[1])
-    qp.PauliRot(np.pi / 4, "Z", wires=wires[0])
+    qp.PPR(-8, "ZZ", wires=wires[:2])
+    qp.PPR(-8, "ZX", wires=[wires[0], wires[2]])
+    qp.PPR(-8, "ZX", wires=wires[1:])
+    qp.PPR(8, "ZZX", wires=wires)
+    qp.PPR(8, "X", wires=wires[2])
+    qp.PPR(8, "Z", wires=wires[1])
+    qp.PPR(8, "Z", wires=wires[0])
     qp.GlobalPhase(-np.pi / 8)
 
 
@@ -1222,6 +1252,32 @@ def _toffoli_elbow(wires: WiresLike):
 add_decomps(Toffoli, _toffoli, _toffoli_to_ppr, _toffoli_elbow)
 add_decomps("Adjoint(Toffoli)", self_adjoint)
 add_decomps("Pow(Toffoli)", pow_involutory2)
+
+
+def _ctrl_toffoli_resource(base, control_wires, control_values, work_wires, work_wire_type):
+    ctrl_values = _resolve_ctrl_values(control_values, [True, True], len(control_wires))
+    return {
+        qp.MultiControlledX(
+            Wire[len(control_wires) + 3],
+            control_values=ctrl_values,
+            work_wires=work_wires,
+            work_wire_type=work_wire_type,
+        ): 1
+    }
+
+
+@qp.register_resources(_ctrl_toffoli_resource)
+def _ctrl_toffoli_to_mcx(base, control_wires, control_values, work_wires, work_wire_type):
+    ctrl_values = _resolve_ctrl_values(control_values, [True, True], len(control_wires))
+    qp.MultiControlledX(
+        concatenate_wires(control_wires, base.wires),
+        control_values=ctrl_values,
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
+    )
+
+
+add_decomps("C(Toffoli)", _ctrl_toffoli_to_mcx)
 
 
 class MultiControlledX(Controlled2):
@@ -1365,6 +1421,20 @@ class MultiControlledX(Controlled2):
         return _to_op_list(decompose_mcx_with_no_worker)(**arguments)
 
 
+@custom_ctrl_dispatch.register
+def _ctrl_mcx(base: MultiControlledX, control, control_values, work_wires, work_wire_type):
+    ctrl_values = _resolve_ctrl_values(control_values, base.control_values, len(control))
+    work_wire_type = resolve_work_wire_type(
+        base.work_wires,
+        base.work_wire_type,
+        work_wires,
+        work_wire_type,
+    )
+    wires = control + base.wires
+    work_wires = work_wires + base.work_wires
+    return qp.MultiControlledX(wires, ctrl_values, work_wires, work_wire_type)
+
+
 def _setup_inputs_mcx(
     wires: WiresLike,
     control_values: int | bool | Sequence[int | bool] | None = None,
@@ -1410,6 +1480,9 @@ def _to_op_list(rule):
 
 @list_decomps.register
 def _list_mcx_decomps(op: MultiControlledX):
+    # fixed_decomps should override everything
+    if fixed_rule := get_fixed_decomp(op):
+        return DecompCollection([fixed_rule])
     if not op.work_wires:
         return DecompCollection(_list_mcx_no_work_wire_decomps(op))
     if len(op.wires) == 2:
@@ -1460,8 +1533,61 @@ def _list_mcx_no_work_wire_decomps(op: MultiControlledX):
     ] + capture_compatible_rules
 
 
+add_decomps(
+    "MultiControlledX",
+    mcx_to_cnot_or_toffoli,
+    decompose_mcx_two_controls_elbows,
+    decompose_mcx_many_workers,
+    decompose_mcx_two_workers,
+    decompose_mcx_one_worker,
+    decompose_mcx_with_no_worker,
+    augment_with_alloc(decompose_mcx_two_controls_elbows, 1, "zeroed"),
+    augment_with_alloc(decompose_mcx_two_workers, 2, "zeroed", "two_zeroed_workers"),
+    augment_with_alloc(decompose_mcx_two_workers, 2, "borrowed", "two_borrowed_workers"),
+    augment_with_alloc(decompose_mcx_one_worker, 1, "zeroed", "one_zeroed_worker"),
+    augment_with_alloc(decompose_mcx_one_worker, 1, "borrowed", "one_borrowed_worker"),
+    # TODO: include the allocation-wrapped versions of decompose_mcx_many_workers
+    # after we support tracer indexing into allocated wires. [sc-129521]
+)
 add_decomps("Adjoint(MultiControlledX)", self_adjoint)
 add_decomps("Pow(MultiControlledX)", pow_involutory2)
+
+
+def _ctrl_mcx_resource(base, control_wires, control_values, work_wires, work_wire_type):
+    work_wire_type = resolve_work_wire_type(
+        base.work_wires,
+        base.work_wire_type,
+        work_wires,
+        work_wire_type,
+    )
+    return {
+        qp.MultiControlledX(
+            control_wires + base.wires,
+            control_values=Bool[len(control_values) + len(base.control_values)],
+            work_wires=work_wires + base.work_wires,
+            work_wire_type=work_wire_type,
+        ): 1
+    }
+
+
+@qp.register_resources(_ctrl_mcx_resource)
+def _ctrl_mcx_to_mcx(base, control_wires, control_values, work_wires, work_wire_type):
+    n_ctrl_wires = len(control_wires)
+    work_wire_type = resolve_work_wire_type(
+        base.work_wires,
+        base.work_wire_type,
+        work_wires,
+        work_wire_type,
+    )
+    qp.MultiControlledX(
+        concatenate_wires(control_wires, base.wires),
+        control_values=_resolve_ctrl_values(control_values, base.control_values, n_ctrl_wires),
+        work_wires=concatenate_wires(work_wires, base.work_wires),
+        work_wire_type=work_wire_type,
+    )
+
+
+add_decomps("C(MultiControlledX)", _ctrl_mcx_to_mcx)
 
 
 class CRX(Controlled2):

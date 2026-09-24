@@ -438,7 +438,11 @@ def augment_with_alloc(base_rule, num_work_wires, work_wire_type, name=""):
 
     def _condition_fn(*args, **kwargs):
         arguments = _get_arguments(*args, **kwargs) | abstract_sub
-        return base_rule.is_applicable(**arguments)
+        # The allocation-based rules are only considered if the operator does not
+        # come with explicitly specified work wires. We've made the decision last
+        # year that passing work wires to an operator is like explicitly saying
+        # "use these work wires in the operator's decomposition"
+        return base_rule.is_applicable(**arguments) and len(kwargs.get("work_wires", [])) == 0
 
     @register_condition(_condition_fn)
     @register_resources(
@@ -545,7 +549,7 @@ def _mcx_many_workers_resource(wires, control_values, work_wires, work_wire_type
     num_extra_work_wires = len(work_wires) - num_used_work_wires
 
     if work_wire_type == "borrowed" and not num_extra_work_wires:
-        return {ops.Toffoli: 4 * num_used_work_wires}
+        return {ops.Toffoli: 4 * num_used_work_wires, qp.X: num_control_wires}
 
     # the middle toffoli might dispatch to a Toffoli or an MultiControlledX depending on
     # whether extra work wires are available, so we need to replicate the logic here.
@@ -557,17 +561,22 @@ def _mcx_many_workers_resource(wires, control_values, work_wires, work_wire_type
     )
 
     if work_wire_type == "borrowed":
-        return {ops.Toffoli: 4 * num_used_work_wires - 1, middle_toffoli: 1}
+        return {
+            ops.Toffoli: 4 * num_used_work_wires - 1,
+            middle_toffoli: 1,
+            qp.X: num_control_wires,
+        }
 
     return {
         qp.TemporaryAND: num_used_work_wires,
         qp.adjoint(qp.TemporaryAND(Wire[3])): num_used_work_wires,
         middle_toffoli: 1,
+        qp.X: num_control_wires,
     }
 
 
 @register_condition(_mcx_many_workers_condition)
-@register_resources(_mcx_many_workers_resource)
+@register_resources(_mcx_many_workers_resource, exact=False)
 # pylint: disable-next=unused-argument
 def decompose_mcx_many_workers(wires, control_values, work_wires, work_wire_type="borrowed"):
     """Decomposes the multi-controlled PauliX gate using the approach in Lemma 7.2 of
