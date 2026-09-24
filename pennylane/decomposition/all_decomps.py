@@ -16,9 +16,7 @@ Defines add_decomps, a recursive tool for collecting all downstream operators
 and rules.
 """
 
-
 from pennylane.core.operator import Operator2, abstractify
-from pennylane.typing import Bool, Wire
 
 from .decomposition_rule import DecompositionRule, list_decomps
 
