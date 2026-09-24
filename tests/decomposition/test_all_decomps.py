@@ -51,7 +51,7 @@ def test_non_applicable_rules_ignored():
     rules_map = qp.decomposition.all_decomps(op)
 
     rules = rules_map[op]
-    assert all(r.is_appliable(**op.arguments) for r in rules)
+    assert all(r.is_applicable(**op.arguments) for r in rules)
 
 
 def test_higher_order_operator():
@@ -59,6 +59,6 @@ def test_higher_order_operator():
 
     rules_map = qp.decomposition.all_decomps(qp.Select([qp.X(0), qp.Y(0)], (1, 2)))
 
-    assert qp.Select([qp.X(Wire[1]), qp.Y(Wire[1])], Wire[2]) in rules_map
+    assert qp.Select([qp.X(Wire[1]), qp.Y(Wire[1])], Wire[2], Wire[0]) in rules_map
 
     assert qp.H(Wire[1]) in rules_map
