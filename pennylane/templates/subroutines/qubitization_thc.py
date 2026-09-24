@@ -138,7 +138,7 @@ def qubitization_thc_wires(M, N, aleph, beth, num_batches=1):
 
     >>> import pennylane as qp
     >>> qp.qubitization_thc_wires(M=2, N=2, aleph=1, beth=1)
-    {'system_wires': 2, 'index_wires': 4, 'prep_garbage_wires': 18, 'gradient_wires': 2, 'work_wires': 2}
+    {'system_wires': 2, 'index_wires': 4, 'prep_garbage_wires': 18, 'gradient_wires': 2, 'work_wires': 1}
     """
     select_sizes = select_thc_wires(M, N, beth, num_batches)
     alias_sizes = alias_sampling_thc_wires(M, N, aleph)

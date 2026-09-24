@@ -532,6 +532,7 @@ class TestWiresHelper:
         assert sizes["superposition_work_wires"] == 3 * n + 5
         n_d = qp.math.ceil_log2(N // 2 + M * (M + 1) // 2) + 1
         assert sizes["work_wires"] == n_d + 2 * n + 2 * aleph + 4 + max(aleph, n_d - 2)
+        assert sizes["sign_wire"] == n_d - 1
 
         zeta, t_ell = _static_coeffs(np.ones((M, M)), np.ones(N // 2))
         mu_wires = list(range(n))
@@ -550,7 +551,6 @@ class TestWiresHelper:
         n_d = qp.math.ceil_log2(N // 2 + M * (M + 1) // 2) + 1
         assert n_d - 2 > aleph  # Comparably small aleph
         num_work = qp.alias_sampling_thc_wires(M, N, aleph)["work_wires"]
-        print(qp.alias_sampling_thc_wires(M, N, aleph))
         num_work_other = n_d + 2 * n + 2 * aleph + 4
         assert num_work - num_work_other == n_d - 2  # Work wires suffice for unary iteration
 

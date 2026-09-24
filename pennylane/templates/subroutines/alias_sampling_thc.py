@@ -264,7 +264,7 @@ def alias_sampling_thc_wires(M, N, aleph):
     **Example**
 
     >>> qp.alias_sampling_thc_wires(M=2, N=2, aleph=6)
-    {'mu_wires': 2, 'nu_wires': 2, 'superposition_work_wires': 11, 'work_wires': 29, 'sign_wire': 3}
+    {'mu_wires': 2, 'nu_wires': 2, 'superposition_work_wires': 11, 'work_wires': 29, 'sign_wire': 2}
     """
     if isinstance(M, bool) or not isinstance(M, int) or M < 1:
         raise ValueError(f"M must be a positive integer, got {M!r}.")
