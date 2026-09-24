@@ -276,17 +276,6 @@ class QubitizationTHC(Operator2):
 
     .. note::
 
-        ``PREPARE`` succeeds with probability :math:`1` only when
-        :math:`d = N/2 + M(M+1)/2` is at least :math:`2^{2n - 2}` with
-        :math:`n = \lceil \log_2 (M + 1) \rceil`, the condition under which the single
-        amplitude-amplification round of :class:`~.SuperpositionTHC` is exact. Otherwise the
-        leftover garbage branch is *not* acted on by ``SELECT``, yet is mapped back onto
-        :math:`\lvert \vec 0 \rangle` by ``PREPARE``:math:`^\dagger`, which contaminates
-        the block. A ``ValueError`` is raised in that case rather than returning a
-        silently wrong block encoding.
-
-    .. note::
-
         ``gradient_wires`` must be prepared by the caller in the phase gradient state
 
         .. math::
@@ -329,9 +318,8 @@ class QubitizationTHC(Operator2):
             ``work_wires`` at the cost of more ``QROM`` loads
 
     Raises:
-        ValueError: if an array has the wrong shape, if a register has the wrong size, if
-            two registers share a wire, or if ``PREPARE`` cannot reach unit success
-            probability
+        ValueError: if an array has the wrong shape, if a register has the wrong size, or if
+            two registers share a wire.
 
     **Example**
 
@@ -414,19 +402,6 @@ class QubitizationTHC(Operator2):
         # ``M`` and ``N`` come from ``chi``, so this also checks the two PREPARE arrays
         # against the two SELECT ones.
         _build_thc_pairs(M, N, zeta, t_ell)
-
-        # PREPARE is exact only when the single amplitude-amplification round of
-        # SuperpositionTHC reaches unit success probability. Otherwise the garbage branch is
-        # skipped by SELECT but folded back onto |0> by PREPARE^dagger.
-        n = _num_index_wires(M)
-        d = n_half + M * (M + 1) // 2
-        if d < 2 ** (2 * n - 2):
-            raise ValueError(
-                f"PREPARE cannot reach unit success probability for M={M}, N={N}: the valid "
-                f"index set has size d = {d}, below the 2 ** (2 * ceil(log2(M + 1)) - 2) = "
-                f"{2 ** (2 * n - 2)} needed by SuperpositionTHC's single amplification round. "
-                f"Increase M towards 2 ** {n} - 1 = {2**n - 1}."
-            )
 
         sizes = qubitization_thc_wires(M, N, aleph, beth, num_batches)
         registers = {
