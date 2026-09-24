@@ -21,6 +21,7 @@ from pennylane.core.operator import Operator2, abstractify
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract, _validate_work_wire_type
 from pennylane.typing import Float, Wire
+from pennylane.wires import Wires
 
 
 class GQSP(Operator2):
@@ -89,8 +90,9 @@ class GQSP(Operator2):
 
     arg_specs = {"angles": Float[3, -1], "control": Wire[1], "work_wires": Wire[-1]}
 
-    def __init__(self, unitary, angles, control, work_wires, work_wire_type):
+    def __init__(self, unitary, angles, control, work_wires=None, work_wire_type="borrowed"):
         # pylint: disable=too-many-arguments
+        work_wires = Wires(()) if work_wires is None else work_wires
         _validate_work_wire_type(work_wire_type)
         if isinstance(angles, (list, tuple)):
             angles = math.stack(angles)

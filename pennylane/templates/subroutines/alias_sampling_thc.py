@@ -414,9 +414,11 @@ class AliasSamplingTHC(Operator2):
         work_wires (WiresLike): the auxiliary wires used by the operator.
             Let :math:`n_d=\lceil \log_2(N/2 + M(M+1)/2)\rceil + 1` and
             :math:`n=\lceil\log_2(M+1)\rceil` as above.
-            The wires ``work_wires[:n_d+2*n+aleph+2]`` retain data until the adjoint of this
-            template is applied. The wires ``work_wires[n_d+2*n+aleph+2:]`` are returned to the
-            zero state. The required number is
+            The wires ``work_wires[:n_d+2*n+2*aleph+3]`` retain data until the adjoint of this
+            template is applied; this includes the sampling register, which the conditional
+            swaps correlate with the index registers. The wires
+            ``work_wires[n_d+2*n+2*aleph+3:]`` are returned to the zero state. The required
+            number is
             :math:`n_d + 2n + 2\aleph + 4 + \max(\aleph, n_d-2)`, computed as ``"work_wires"``
             entry in :func:`~.alias_sampling_thc_wires`. Excess wires are forwarded to
             the internal :class:`~.QROM`; every work wire must be initialized
@@ -620,8 +622,10 @@ def _alias_sampling_thc_decomp(
     # [f:f+ℵ]         : QROM loads the keep values
     # [f+ℵ]           : alternate qubit for the input edge flag (not in Fig.4)
     # [f+ℵ+1]         : flag for symmetrization SWAPs
-    # The following registers are reset to zero
-    # [f+ℵ+2:f+2ℵ+2]  : Sampling register to compare keep values against
+    # [f+ℵ+2:f+2ℵ+2]  : Sampling register to compare keep values against. The CSWAPs below
+    #                   correlate it with the index registers, so the closing Hadamards
+    #                   rotate this register instead of returning it to zero
+    # The following register is reset to zero
     # [f+2ℵ+2]        : The comparator flag for sampling keep values
     # The following registers are reset to zero, and overlap partially
     # [f+2ℵ+3:]       : Work wires for QROM
