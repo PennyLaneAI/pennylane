@@ -23,8 +23,8 @@ from copy import copy
 
 import pennylane as qp
 from pennylane import math
-from pennylane.operation import Operator
-from pennylane.queuing import QueuingManager
+from pennylane.core.operator import Operator
+from pennylane.core.queuing import QueuingManager
 
 from .composite import CompositeOp, handle_recursion_error
 

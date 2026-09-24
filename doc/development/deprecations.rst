@@ -9,6 +9,11 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The ``Operation.single_qubit_rot_angles()`` method is deprecated in favour of the new ``qp.single_qubit_zyz_angles(op)`` function, and will be removed in v0.47.
+
+  - Deprecated in v0.46
+  - Will be removed in v0.47
+
 * The ``simplify`` method in ``PauliSentence``, ``FermiSentence``, and ``BoseSentence`` are deprecated in favour of ``prune``, and will be removed in v0.47.
 
   - Deprecated in v0.46
@@ -101,6 +106,11 @@ for details on how to port your legacy code to the new system. The following fun
 
 Completed deprecation cycles
 ----------------------------
+
+* Implementing ``Operator.generator`` as a property is no longer supported. Instead, define a ``generator()`` method for your operator that returns an ``Operator`` instance.
+
+  - Deprecated in v0.22
+  - Removed in v0.46
 
 * Specifying ``shots`` as a keyword argument when executing a :class:`~.QNode` has been removed.
   Instead, please set shots on ``QNode`` initialization, or use the :func:`~.workflow.set_shots` transform to set the number of shots.
@@ -398,7 +408,8 @@ Completed deprecation cycles
 
 .. code-block:: python
 
-    from pennylane.operation import TermsUndefinedError, Operator
+    from pennylane.core.operator import Operator
+    from pennylane.exceptions import TermsUndefinedError
 
     def not_tape(obj):
         return not isinstance(obj, qml.tape.QuantumScript)

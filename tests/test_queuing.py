@@ -21,8 +21,8 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.core.queuing import AnnotatedQueue, QueuingManager, WrappedObj
 from pennylane.exceptions import QueuingError
-from pennylane.queuing import AnnotatedQueue, QueuingManager, WrappedObj
 
 
 # pylint: disable=use-implicit-booleaness-not-comparison, unnecessary-dunder-call
@@ -408,6 +408,124 @@ class TestApplyOp:
 
         assert q1.queue == [op1, op2]
 
+    @pytest.mark.capture
+    def test_global_op_used_in_two_different_captures(self):
+        """Regression test for a global operator used by two different workflows."""
+        import jax
+
+        global_op = qp.X(0)
+
+        def workflow1():
+            qp.apply(global_op)
+
+        def workflow2():
+            qp.apply(global_op)
+            qp.adjoint(global_op)
+
+        cjaxpr1 = jax.make_jaxpr(workflow1)()
+        assert global_op.tracer is None
+        assert [e.params["op_cls"] for e in cjaxpr1.eqns] == [qp.X]
+
+        cjaxpr2 = jax.make_jaxpr(workflow2)()
+        assert global_op.tracer is None
+        assert [(e.params["op_cls"], e.params["adjoint"]) for e in cjaxpr2.eqns] == [
+            (qp.X, False),
+            (qp.X, True),
+        ]
+
+    @pytest.mark.capture
+    def test_apply_returns_a_copy(self):
+        """Test that 'apply' will return a new object, not the operator it was given."""
+        import jax
+
+        results = {}
+
+        def f():
+            op = qp.X(0)
+            results["is_same"] = qp.apply(op) is op
+
+        _ = jax.make_jaxpr(f)()
+        assert results["is_same"] is False
+
+    @pytest.mark.capture
+    def test_apply_does_not_bind_input_operator(self):
+        """Test that apply does not leave its tracer on the caller's operator."""
+        import jax
+
+        op = qp.X(0)
+        assert op.tracer is None
+
+        _ = jax.make_jaxpr(lambda: qp.apply(op))()
+
+        assert op.tracer is None
+
+    @pytest.mark.capture
+    def test_apply_raises_outside_a_trace_for_prev_traced_op(self):
+        """Tests that a stale tracer from an earlier trace doesn't satisfy the guard."""
+
+        import jax
+
+        op = qp.X(0)
+        _ = jax.make_jaxpr(lambda: qp.apply(op))()
+
+        with pytest.raises(RuntimeError, match="non-tracing context"):
+            qp.apply(op)
+
+    @pytest.mark.capture
+    def test_apply_then_adjoint(self):
+        """Tests that apply and then adjoint records both properly."""
+
+        import jax
+
+        op = qp.X(0)
+
+        def f():
+            qp.apply(op)
+            qp.adjoint(op)
+
+        cjaxpr = jax.make_jaxpr(f)()
+
+        assert len(cjaxpr.eqns) == 2
+        info = [(eqn.params["op_cls"], bool(eqn.params["adjoint"])) for eqn in cjaxpr.eqns]
+        assert info == [(qp.X, False), (qp.X, True)]
+
+    @pytest.mark.capture
+    def test_apply_then_ctrl(self):
+        """Tests that apply and then ctrl records both properly."""
+
+        import jax
+
+        op = qp.X(0)
+
+        def f():
+            qp.apply(op)
+            qp.ctrl(op, control=1)
+
+        cjaxpr = jax.make_jaxpr(f)()
+
+        assert len(cjaxpr.eqns) == 2
+        info = [eqn.params["op_cls"] for eqn in cjaxpr.eqns]
+        # C(PauliX) automatically gets dispatched to CNOT
+        assert info == [qp.X, qp.CNOT]
+
+    @pytest.mark.capture
+    def test_apply_twice(self):
+        """Tests that apply can be applied twice."""
+
+        import jax
+
+        op = qp.X(0)
+
+        def f():
+            qp.apply(op)
+            qp.apply(op)
+
+        cjaxpr = jax.make_jaxpr(f)()
+
+        assert len(cjaxpr.eqns) == 2
+        info = [eqn.params["op_cls"] for eqn in cjaxpr.eqns]
+        assert info == [qp.X, qp.X]
+
 
 class TestWrappedObj:
     """Tests for the ``WrappedObj`` class"""
@@ -461,25 +579,15 @@ class TestWrappedObj:
         assert wo.__repr__() == "Wrapped(test_repr)"
 
 
-def test_process_queue_error_if_not_operator_or_measurement():
-    """Test that a QueuingError is raised if process queue encounters an object that does not have a
-    _queue_category property
-    """
-    q = AnnotatedQueue()
-    q.append(1)
-    with pytest.raises(QueuingError, match="not an object that can be processed"):
-        qp.queuing.process_queue(q)
+def test_error_on_process_queue():
+    """Test that an informative error is raised indicating that process_queue has moved."""
+
+    with pytest.raises(AttributeError, match="has been moved to qp.tape.qscript.from_queue"):
+        _ = qp.queuing.process_queue
 
 
-def test_queue_category_none_removal():
+def test_error_on_nonexistent_item():
+    """Test an AttributeError is raised if an object does not exist."""
 
-    class DummyOp(qp.operation.Operator):  # pylint: disable=too-few-public-methods
-        _queue_category = None
-        num_wires = 1
-        num_params = 0
-
-    q = AnnotatedQueue()
-    q.append(DummyOp(wires=[0]))
-
-    with pytest.raises(ValueError, match="_queue_category can no longer be set to None."):
-        qp.queuing.process_queue(q)
+    with pytest.raises(AttributeError, match="module 'pennylane.queuing' has no attribute 'thing'"):
+        _ = qp.queuing.thing

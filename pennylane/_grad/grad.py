@@ -135,7 +135,7 @@ def _args_and_argnums(args, argnums):
 
     from jax.tree_util import tree_flatten, treedef_tuple  # pylint: disable=import-outside-toplevel
 
-    flat_args, in_trees = zip(*(tree_flatten(arg) for arg in args))
+    flat_args, in_trees = zip(*(tree_flatten(arg) for arg in args), strict=True)
     full_in_tree = treedef_tuple(in_trees)
 
     # Create a new input tree that only takes inputs marked by argnums into account

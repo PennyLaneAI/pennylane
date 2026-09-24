@@ -20,7 +20,7 @@ from collections import defaultdict
 from collections.abc import Callable, Sequence
 
 import pennylane as qp
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pulse import ParametrizedHamiltonian
 

@@ -33,7 +33,7 @@ def expand_matrix(mat, wires: Sequence | int, wire_order=None, sparse_format="cs
     Args:
         mat (tensor_like): matrix to expand
         wires (Sequence): wires determining the subspace that ``mat`` acts on; a matrix of
-            dimension :math:`D^n` acts on a subspace of :math:`n` wires, where :math:`D` is the qudit dimension (2).
+            dimension :math:`2^n` acts on a subspace of :math:`n` wires.
         wire_order (Iterable): global wire order, which has to contain all wire labels in ``wires``, but can also
             contain additional labels
         sparse_format (str): if ``mat`` is a SciPy sparse matrix then this is the string representing the
@@ -105,17 +105,15 @@ def expand_matrix(mat, wires: Sequence | int, wire_order=None, sparse_format="cs
     if isinstance(wires, int):
         wires = [wires]
 
-    if wires:
-        float_dim = math.shape(mat)[-1] ** (1 / (len(wires)))
-        qudit_dim = int(math.round(float_dim))
-    else:
-        qudit_dim = 2  # if no wires, just assume qubit
-
     if (wire_order is None) or (wire_order == wires):
         return mat
 
-    if not wires and math.shape(mat) == (1, 1):
-        return complex(mat[0, 0])
+    if not wires:
+        scalar = mat[0, 0] if math.ndim(mat) > 0 else mat
+        n_wires = len(wire_order) if wire_order else 0
+        if math.get_interface(mat) == "scipy":
+            return (scalar * eye(2**n_wires, format="coo")).asformat(sparse_format)
+        return scalar * math.eye(2**n_wires, like=mat)
 
     wires = list(wires)
     wire_order = list(wire_order)
@@ -126,8 +124,8 @@ def expand_matrix(mat, wires: Sequence | int, wire_order=None, sparse_format="cs
 
     def eye_interface(dim):
         if interface == "scipy":
-            return eye(qudit_dim**dim, format="coo")
-        return math.cast_like(math.eye(qudit_dim**dim, like=interface), mat)
+            return eye(2**dim, format="coo")
+        return math.cast_like(math.eye(2**dim, like=interface), mat)
 
     def kron_interface(mat1, mat2):
         if interface == "scipy":
@@ -162,9 +160,7 @@ def expand_matrix(mat, wires: Sequence | int, wire_order=None, sparse_format="cs
     if interface == "scipy":
         mat = _permute_sparse_matrix(mat, expanded_wires, subset_wire_order)
     else:
-        mat = _permute_dense_matrix(
-            mat, expanded_wires, subset_wire_order, batch_dim, qudit_dim=qudit_dim
-        )
+        mat = _permute_dense_matrix(mat, expanded_wires, subset_wire_order, batch_dim)
 
     # expand the matrix even further if needed
     if len(expanded_wires) < len(wire_order):
@@ -211,7 +207,7 @@ def _permute_sparse_matrix(matrix, wires, wire_order):
     return matrix
 
 
-def _permute_dense_matrix(matrix, wires, wire_order, batch_dim, qudit_dim: int = 2):
+def _permute_dense_matrix(matrix, wires, wire_order, batch_dim):
     """Permute the matrix to match the wires given in `wire_order`.
 
     Args:
@@ -238,14 +234,12 @@ def _permute_dense_matrix(matrix, wires, wire_order, batch_dim, qudit_dim: int =
 
     # reshape matrix to match wire values e.g. mat[0, 0, 0, 0] = <00|mat|00>
     # with this reshape we can easily swap wires
-    shape = (
-        [batch_dim] + [qudit_dim] * (num_wires * 2) if batch_dim else [qudit_dim] * (num_wires * 2)
-    )
+    shape = [batch_dim] + [2] * (num_wires * 2) if batch_dim else [2] * (num_wires * 2)
     matrix = math.reshape(matrix, shape)
     # transpose matrix
     matrix = math.transpose(matrix, axes=perm)
     # reshape back
-    shape = [batch_dim] + [qudit_dim**num_wires] * 2 if batch_dim else [qudit_dim**num_wires] * 2
+    shape = [batch_dim] + [2**num_wires] * 2 if batch_dim else [2**num_wires] * 2
     return math.reshape(matrix, shape)
 
 
@@ -375,20 +369,20 @@ def expand_vector(vector, original_wires, expanded_wires):
     D = M - N
 
     len_vector = math.shape(vector)[0]
-    qudit_order = int(2 ** (np.log2(len_vector) / N))
+    qubit_order = int(2 ** (np.log2(len_vector) / N))
 
     if not set(expanded_wires).issuperset(original_wires):
         raise ValueError("Invalid target subsystems provided in 'original_wires' argument.")
 
-    if math.shape(vector) != (qudit_order**N,):
-        raise ValueError(f"Vector parameter must be of length {qudit_order}**len(original_wires)")
+    if math.shape(vector) != (qubit_order**N,):
+        raise ValueError(f"Vector parameter must be of length {qubit_order}**len(original_wires)")
 
-    dims = [qudit_order] * N
+    dims = [qubit_order] * N
     tensor = math.reshape(vector, dims)
 
     if D > 0:
-        extra_dims = [qudit_order] * D
-        ones = math.ones(qudit_order**D).reshape(extra_dims)
+        extra_dims = [qubit_order] * D
+        ones = math.ones(qubit_order**D).reshape(extra_dims)
         expanded_tensor = math.tensordot(tensor, ones, axes=0)
     else:
         expanded_tensor = tensor
@@ -400,23 +394,20 @@ def expand_vector(vector, original_wires, expanded_wires):
     original_indices = np.array(range(N))
     expanded_tensor = math.moveaxis(expanded_tensor, tuple(original_indices), tuple(wire_indices))
 
-    return math.reshape(expanded_tensor, (qudit_order**M,))
+    return math.reshape(expanded_tensor, (qubit_order**M,))
 
 
-def convert_to_su2(U, return_global_phase=False):
+def convert_to_su2(U) -> tuple:
     r"""Convert a 2x2 unitary matrix to :math:`SU(2)`. (batched operation)
 
     Args:
         U (array[complex]): A matrix with a batch dimension, presumed to be
             of shape :math:`n \times 2 \times 2` and unitary for any positive integer n.
-        return_global_phase (bool): If `True`, the return will include the global phase.
-            If `False`, only the :math:`SU(2)` representation is returned.
 
     Returns:
-        array[complex]:
-            A :math:`n \times 2 \times 2` matrix in :math:`SU(2)` that is equivalent to U up to a
-            global phase. If ``return_global_phase=True``, a 2-element tuple is returned, with
-            the first element being the :math:`SU(2)` equivalent and the second, the global phase.
+        array[complex], float:
+            A :math:`n \times 2 \times 2` matrix :math:`V\in SU(2)` and the corresponding
+            global phase :math:`\alpha` such that :math:`U=Ve^{i\alpha}`.
 
     """
     # Compute the determinant
@@ -426,29 +417,23 @@ def convert_to_su2(U, return_global_phase=False):
         determinant = math.linalg.det(U)
     global_phase = math.angle(determinant) / 2
     U = math.cast_like(U, determinant)
+    c_phase = math.cast_like(global_phase, 1j)
     if batch_size:
-        c_phase = math.cast_like(global_phase, 1j)
-        batched_phase = math.reshape(c_phase, (batch_size, 1, 1))
-        U = U * math.exp(-1j * batched_phase)
-    else:
-        c_phase = math.cast_like(global_phase, 1j)
-        U = U * math.exp(-1j * c_phase)
-    return (U, global_phase) if return_global_phase else U
+        c_phase = math.reshape(c_phase, (batch_size, 1, 1))
+    U = U * math.exp(-1j * c_phase)
+    return U, global_phase
 
 
-def convert_to_su4(U, return_global_phase=False):
+def convert_to_su4(U) -> tuple:
     r"""Convert a 4x4 matrix to :math:`SU(4)`.
 
     Args:
         U (array[complex]): A matrix, presumed to be :math:`4 \times 4` and unitary.
-        return_global_phase (bool): If `True`, the return will include the global phase.
-            If `False`, only the :math:`SU(4)` representation is returned.
 
     Returns:
-        array[complex]:
-            A :math:`4 \times 4` matrix in :math:`SU(4)` that is equivalent to U up to a global
-            phase. If ``return_global_phase=True``, a 2-element tuple is returned, with the first
-            element being the :math:`SU(4)` equivalent and the second, the global phase.
+        array[complex], float:
+            A :math:`4 \times 4` matrix in :math:`SU(4)` that is equivalent to U up
+            to a global phase, and the global phase.
 
     """
     # Compute the determinant
@@ -457,11 +442,8 @@ def convert_to_su4(U, return_global_phase=False):
     with np.errstate(divide="ignore", invalid="ignore"):
         determinant = math.linalg.det(U)
     global_phase = math.angle(determinant) / 4
+    c_phase = math.cast_like(global_phase, 1j)
     if batch_size:
-        c_phase = math.cast_like(global_phase, 1j)
-        batched_phase = math.reshape(c_phase, (batch_size, 1, 1))
-        U = U * math.exp(-1j * batched_phase)
-    else:
-        c_phase = math.cast_like(global_phase, 1j)
-        U = U * math.exp(-1j * c_phase)
-    return (U, global_phase) if return_global_phase else U
+        c_phase = math.reshape(c_phase, (batch_size, 1, 1))
+    U = U * math.exp(-1j * c_phase)
+    return U, global_phase

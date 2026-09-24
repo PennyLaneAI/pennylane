@@ -22,8 +22,8 @@ import numpy as np
 
 import pennylane as qp
 from pennylane import math
+from pennylane.core.operator import Channel, Operator
 from pennylane.devices.qubit.apply_operation import _apply_grover_without_matrix
-from pennylane.operation import Channel, Operator
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.typing import TensorLike
 

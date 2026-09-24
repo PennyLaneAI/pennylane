@@ -89,9 +89,10 @@ import autograd
 from autograd.numpy.numpy_boxes import ArrayBox
 
 import pennylane as qp
-from pennylane.tape import QuantumScriptBatch
+from pennylane.core.qscript import QuantumScriptBatch
+from pennylane.typing import ResultBatch
 
-ExecuteFn = Callable[[QuantumScriptBatch], qp.typing.ResultBatch]
+ExecuteFn = Callable[[QuantumScriptBatch], ResultBatch]
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -144,7 +145,7 @@ def autograd_execute(
     return _execute(parameters, tuple(tapes), execute_fn, jpc)
 
 
-def _to_autograd(result: qp.typing.ResultBatch) -> qp.typing.ResultBatch:
+def _to_autograd(result: ResultBatch) -> ResultBatch:
     """Converts an arbitrary result batch to one with autograd arrays.
     Args:
         result (ResultBatch): a nested structure of lists, tuples, dicts, and numpy arrays

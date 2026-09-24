@@ -26,6 +26,15 @@ from .subroutines import (
 )
 from .comparators import OutOfPlaceIntegerComparator, RegisterEquality
 
+from .arithmetic import (
+    LabsPhaseAdder,
+    LabsAdder,
+    LabsOutAdder,
+    LabsMultiplier,
+    ClassicalOutMultiplier,
+    LabsModExp,
+)
+
 from .state_prep import (
     LabsCosineWindow,
     LabsMottonenStatePreparation,

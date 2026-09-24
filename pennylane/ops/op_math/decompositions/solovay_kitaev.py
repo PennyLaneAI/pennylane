@@ -20,7 +20,7 @@ from functools import lru_cache
 import scipy as sp
 
 import pennylane as qp
-from pennylane.queuing import QueuingManager
+from pennylane.core.queuing import QueuingManager
 
 
 def _SU2_transform(matrix):

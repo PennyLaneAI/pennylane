@@ -20,8 +20,8 @@ non-Clifford gates for quantum algorithms in first quantization using a plane-wa
 import numpy as np
 import scipy as sp
 
+from pennylane.core.operator import Operation
 from pennylane.math import ceil_log2
-from pennylane.operation import Operation
 
 
 class FirstQuantization(Operation):

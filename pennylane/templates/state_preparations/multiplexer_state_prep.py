@@ -13,16 +13,16 @@
 # limitations under the License.
 r"""Contains the MultiplexerStatePreparation template."""
 
-import numpy as np
-
 import pennylane as qp
-from pennylane import math, queuing
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.operation import Operation
+from pennylane import math
+from pennylane.core.operator import Operator2
+from pennylane.decomposition import add_decomps, register_resources
+from pennylane.templates.state_preparations.mottonen import _get_alpha_y
+from pennylane.typing import Complex, Float, Wire
 from pennylane.wires import Wires
 
 
-class MultiplexerStatePreparation(Operation):
+class MultiplexerStatePreparation(Operator2):
     r"""Prepares a quantum state using multiplexed rotations.
 
     This operation implements the state preparation method described
@@ -32,10 +32,12 @@ class MultiplexerStatePreparation(Operation):
         state_vector (tensor_like): The state vector of length :math:`2^n` to be prepared on
             :math:`n` wires.
         wires (Sequence[int]): The wires on which to prepare the state.
+        check (bool): whether to check that the input state vector has norm 1.0. Defaults to ``False``.
 
     Raises:
         ValueError: If the length of the input state vector array is not :math:`2^n`, where
-            :math:`n` is the number of wires, or if the norm of the input state is not unity.
+            :math:`n` is the number of wires, or if ``check=True`` and the norm of the input
+            state is not unity.
 
     **Example**
 
@@ -64,10 +66,13 @@ class MultiplexerStatePreparation(Operation):
 
     """
 
-    resource_keys = {"num_wires"}
+    dynamic_argnames = ("state_vector",)
+    compilable_argnames = ("check",)
 
-    # pylint: disable=too-many-positional-arguments, too-many-arguments
-    def __init__(self, state_vector, wires):
+    arg_specs = {"state_vector": Complex[-1], "wires": Wire[-1]}
+    wire_sizes = (None,)
+
+    def __init__(self, state_vector, wires, check=False):
 
         wires = Wires(wires)
         n_amplitudes = math.shape(state_vector)[0]
@@ -76,46 +81,30 @@ class MultiplexerStatePreparation(Operation):
                 f"State vector must be of length {2 ** len(wires)}; got length {n_amplitudes}."
             )
 
-        if not math.is_abstract(state_vector):
+        if check and not math.is_abstract(state_vector):
             norm = math.linalg.norm(state_vector)
             if not math.allclose(norm, 1.0, atol=1e-3):
                 raise ValueError(
                     f"State vector must have norm 1.0; the input state vector has norm {norm}"
                 )
 
-        self.state_vector = state_vector
         super().__init__(state_vector, wires=wires)
 
-    @classmethod
-    def _primitive_bind_call(cls, *args, **kwargs):
-        return cls._primitive.bind(*args, **kwargs)
 
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "num_wires": len(self.wires),
-        }
-
-    @staticmethod
-    def compute_decomposition(state_vector, wires):  # pylint: disable=arguments-differ
-        with queuing.AnnotatedQueue() as q:
-            _multiplexer_state_prep_decomposition(state_vector, wires)
-
-        if queuing.QueuingManager.recording():
-            for op in q.queue:
-                qp.apply(op)
-
-        return q.queue
-
-
-def _multiplexer_state_prep_decomposition_resources(num_wires) -> dict:
+# pylint: disable=unused-argument
+def _multiplexer_state_prep_decomposition_resources(state_vector, wires, check=False) -> dict:
     r"""Computes the resources of MultiplexerStatePreparation."""
+    num_wires = len(wires)
+
     resources = dict.fromkeys(
-        [resource_rep(qp.SelectPauliRot, num_wires=i + 1, rot_axis="Y") for i in range(num_wires)],
+        [
+            qp.SelectPauliRot(Float[2**i], control_wires=Wire[i], target_wire=Wire[1], rot_axis="Y")
+            for i in range(num_wires)
+        ],
         1,
     )
 
-    resources[resource_rep(qp.DiagonalQubitUnitary, num_wires=num_wires)] = 1
+    resources[qp.DiagonalQubitUnitary(Complex[2**num_wires], wires=Wire[num_wires])] = 1
 
     return resources
 
@@ -135,36 +124,22 @@ def _multiplexer_state_prep_decomposition(
         list: List of decomposition operations.
     """
 
-    probs = math.abs(state_vector) ** 2
-    phases = math.angle(state_vector) % (2 * np.pi)
+    # Determine if the state is real-valued. For real states, we pass signed amplitudes to
+    # _get_alpha_y so that at the leaf level (k=1) the sign is encoded directly into
+    # the SelectPauliRot("Y") angle, eliminating the need for SelectPauliRot("Z") gates.
+    is_real = math.is_real_obj_or_close(state_vector) and not math.requires_grad(state_vector)
+    a = qp.math.real(state_vector) if is_real else qp.math.abs(state_vector)
 
-    num_iterations = int(math.log2(math.shape(probs)[0]))
+    n = len(wires)
 
-    shapes = []
-    for i in range(num_iterations):
-        shapes.append([int(2 ** (i + 1)), -1])
-        probs_aux = math.reshape(probs, [1, -1])
+    for k in range(n):
+        alpha_y_k = _get_alpha_y(a, n, n - k)
+        qp.SelectPauliRot(alpha_y_k, target_wire=wires[k], control_wires=wires[:k], rot_axis="Y")
 
-        # From Eq. 5 of arXiv:quant-ph/0208112.
-        for itx in range(i + 1):
-            probs_denominator = math.sum(probs_aux, axis=1)
-            probs_aux = math.reshape(probs_aux, shapes[itx])
-            probs_numerator = math.sum(probs_aux, axis=1)[::2]
-
-        # arcos(x) = arctan2(sqrt(1-x^2), x)
-        thetas = 2 * math.arctan2(
-            math.sqrt(probs_denominator - probs_numerator),
-            math.sqrt(probs_numerator),
-        )
-
-        qp.SelectPauliRot(thetas, target_wire=wires[i], control_wires=wires[:i], rot_axis="Y")
-
-    if not math.is_abstract(phases):
-        if not math.allclose(phases, 0.0):
-            qp.DiagonalQubitUnitary(math.exp(1j * phases), wires=wires)
-
-    else:
-        qp.DiagonalQubitUnitary(math.exp(1j * phases), wires=wires)
+    if not is_real:
+        omega = math.angle(state_vector)
+        if math.is_abstract(omega) or math.requires_grad(omega) or not math.allclose(omega, 0):
+            qp.DiagonalQubitUnitary(math.exp(1j * omega), wires=wires)
 
 
 add_decomps(MultiplexerStatePreparation, _multiplexer_state_prep_decomposition)

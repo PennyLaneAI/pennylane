@@ -22,13 +22,12 @@ from string import ascii_letters
 import numpy as np
 
 from pennylane import math
+from pennylane.core.measurements import MeasurementTransform
+from pennylane.core.operator import Operator, Operator2
+from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import MeasurementShapeError
-from pennylane.operation import Operator
 from pennylane.ops import RZ, Hadamard, I, X, Y, Z
-from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires, WiresLike
-
-from .measurements import MeasurementTransform
 
 
 class ClassicalShadowMP(MeasurementTransform):
@@ -187,7 +186,7 @@ class ClassicalShadowMP(MeasurementTransform):
             [
                 Hadamard.compute_matrix(),
                 Hadamard.compute_matrix() @ RZ.compute_matrix(-np.pi / 2),
-                I.compute_matrix(),
+                I.compute_matrix(wires=[0]),
             ]
         )
         obs = obs_list[recipes]
@@ -465,8 +464,18 @@ class ShadowExpvalMP(MeasurementTransform):
         k: int = 1,
         **kwargs,
     ):
+        def _get_tracer(op):
+            if isinstance(op, Operator2):
+                if op.tracer is None:
+                    # pylint: disable-next=protected-access
+                    op._bind_primitive()  # pragma: no cover
+                return op.tracer if op.tracer is not None else op
+            return op
+
+        H = _get_tracer(H)
         if cls._obs_primitive is None:  # pragma: no cover
             return type.__call__(cls, H=H, seed=seed, k=k, **kwargs)  # pragma: no cover
+
         return cls._obs_primitive.bind(H, seed=seed, k=k, **kwargs)
 
     def process(self, tape, device):
@@ -738,23 +747,23 @@ def classical_shadow(wires: WiresLike, seed=None) -> ClassicalShadowMP:
         def circuit():
             qp.Hadamard(wires=0)
             qp.CNOT(wires=[0, 1])
-            return qp.classical_shadow(wires=[0, 1], seed=42)
+            return qp.classical_shadow(wires=[0, 1], seed=89)
 
     Executing this QNode produces the sampled bits and the Pauli measurements used:
 
     >>> bits, recipes = circuit()
     >>> bits
     array([[1, 1],
-           [0, 0],
+           [0, 1],
            [1, 1],
            [1, 0],
            [0, 0]], dtype=int8)
     >>> recipes
     array([[2, 0],
-           [2, 2],
-           [0, 0],
-           [2, 1],
-           [2, 2]], dtype=int8)
+           [1, 2],
+           [1, 2],
+           [0, 2],
+           [0, 1]], dtype=int8)
 
     .. details::
         :title: Usage Details
@@ -766,15 +775,15 @@ def classical_shadow(wires: WiresLike, seed=None) -> ClassicalShadowMP:
         >>> bits
         array([[0, 0],
            [1, 1],
+           [1, 0],
            [1, 1],
-           [1, 1],
-           [0, 0]], dtype=int8)
+           [0, 1]], dtype=int8)
         >>> recipes
         array([[2, 0],
-           [2, 2],
-           [0, 0],
-           [2, 1],
-           [2, 2]], dtype=int8)
+           [1, 2],
+           [1, 2],
+           [0, 2],
+           [0, 1]], dtype=int8)
 
         To use the same Pauli recipes for different executions, the :class:`~.tape.QuantumTape`
         interface should be used instead:

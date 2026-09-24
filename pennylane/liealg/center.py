@@ -18,7 +18,7 @@ from itertools import combinations
 import numpy as np
 from scipy.linalg import norm, null_space
 
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 from pennylane.pauli import PauliSentence, PauliWord
 
 from .structure_constants import structure_constants

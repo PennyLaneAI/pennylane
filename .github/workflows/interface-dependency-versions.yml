@@ -74,6 +74,6 @@ jobs:
     outputs:
       catalyst-jax-version: jax==${{ steps.catalyst-jax.outputs.version }} jaxlib==${{ steps.catalyst-jax.outputs.version }}
       jax-version: jax==${{ steps.jax.outputs.version }} jaxlib==${{ steps.jax.outputs.version }}
-      pytorch-version: torch~=${{ steps.pytorch.outputs.version }}
+      pytorch-version: --index-url https://download.pytorch.org/whl/cpu torch~=${{ steps.pytorch.outputs.version }}
       catalyst-nightly: ${{ steps.catalyst.outputs.nightly }}
       pennylane-lightning-latest: ${{ steps.pennylane-lightning.outputs.latest }}

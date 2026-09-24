@@ -394,7 +394,7 @@ class TestLabsSelectTHC:
         ),
     )
     def test_resources(self, thc_ham, num_batches, rotation_prec, selswap_depth, expected_res):
-        """Test that the resource decompostion for SelectTHC is correct."""
+        """Test that the resource decomposition for SelectTHC is correct."""
 
         select_cost = qre.estimate(
             qre.SelectTHC(
@@ -466,7 +466,7 @@ class TestLabsSelectTHC:
         num_zero_ctrl,
         expected_res,
     ):
-        """Test that the controlled resource decompostion for SelectTHC is correct."""
+        """Test that the controlled resource decomposition for SelectTHC is correct."""
 
         ctrl_select_cost = qre.estimate(
             qre.Controlled(
@@ -2408,7 +2408,7 @@ class TestSelectCopyQROM:
                 None,
                 4,
                 None,
-                (4, 1),
+                (4, 2),
             ),
             (
                 100,

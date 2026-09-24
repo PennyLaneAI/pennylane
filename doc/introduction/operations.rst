@@ -159,23 +159,24 @@ Non-parametrized gates
 
     ~pennylane.Identity
     ~pennylane.Hadamard
+    ~pennylane.S
+    ~pennylane.CNOT
+    ~pennylane.T
+    ~pennylane.Toffoli
     ~pennylane.PauliX
     ~pennylane.PauliY
     ~pennylane.PauliZ
-    ~pennylane.S
-    ~pennylane.T
     ~pennylane.SX
-    ~pennylane.CNOT
-    ~pennylane.CZ
     ~pennylane.CY
+    ~pennylane.CZ
     ~pennylane.CH
+    ~pennylane.CCZ
     ~pennylane.SWAP
     ~pennylane.ISWAP
-    ~pennylane.ECR
-    ~pennylane.SISWAP
-    ~pennylane.SQISW
     ~pennylane.CSWAP
-    ~pennylane.Toffoli
+    ~pennylane.SISWAP
+    ~pennylane.ECR
+    ~pennylane.SQISW
     ~pennylane.MultiControlledX
     ~pennylane.Barrier
     ~pennylane.WireCut
@@ -199,6 +200,7 @@ Parametrized gates
     ~pennylane.RZ
     ~pennylane.MultiRZ
     ~pennylane.PauliRot
+    ~pennylane.PPR
     ~pennylane.PhaseShift
     ~pennylane.ControlledPhaseShift
     ~pennylane.CPhase
@@ -347,189 +349,6 @@ Observables
     ~pennylane.Projector
     ~pennylane.Hamiltonian
     ~pennylane.SparseHamiltonian
-
-:html:`</div>`
-
-.. _intro_ref_ops_cv:
-
-Continuous-Variable (CV) operators
------------------------------------
-
-If you would like to learn more about the CV model of quantum computing, check out the
-`quantum photonics <https://strawberryfields.ai/photonics/concepts/photonics.html>`_
-page of the `Strawberry Fields <https://strawberryfields.ai/>`__ documentation.
-
-.. _intro_ref_ops_cvgates:
-
-CV gates
-^^^^^^^^
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.Identity
-    ~pennylane.Beamsplitter
-    ~pennylane.ControlledAddition
-    ~pennylane.ControlledPhase
-    ~pennylane.CrossKerr
-    ~pennylane.CubicPhase
-    ~pennylane.Displacement
-    ~pennylane.InterferometerUnitary
-    ~pennylane.Kerr
-    ~pennylane.QuadraticPhase
-    ~pennylane.Rotation
-    ~pennylane.Squeezing
-    ~pennylane.TwoModeSqueezing
-
-:html:`</div>`
-
-.. _intro_ref_ops_cvstateprep:
-
-CV state preparation
-^^^^^^^^^^^^^^^^^^^^
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.CatState
-    ~pennylane.CoherentState
-    ~pennylane.DisplacedSqueezedState
-    ~pennylane.FockDensityMatrix
-    ~pennylane.FockState
-    ~pennylane.FockStateVector
-    ~pennylane.GaussianState
-    ~pennylane.SqueezedState
-    ~pennylane.ThermalState
-
-:html:`</div>`
-
-.. _intro_ref_ops_cvobs:
-
-CV observables
-^^^^^^^^^^^^^^
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.FockStateProjector
-    ~pennylane.Identity
-    ~pennylane.NumberOperator
-    ~pennylane.TensorN
-    ~pennylane.QuadP
-    ~pennylane.PolyXP
-    ~pennylane.QuadOperator
-    ~pennylane.QuadX
-
-:html:`</div>`
-
-.. _intro_ref_ops_qutrit:
-
-Qutrit operators
-----------------
-
-.. _intro_ref_ops_qutrit_nonparam:
-
-Qutrit non-parametrized gates
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.TShift
-    ~pennylane.TClock
-    ~pennylane.THadamard
-    ~pennylane.TAdd
-    ~pennylane.TSWAP
-
-:html:`</div>`
-
-.. _intro_ref_ops_qutrit_matrix:
-
-Qutrit gates constructed from a matrix
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.QutritUnitary
-    ~pennylane.ControlledQutritUnitary
-
-:html:`</div>`
-
-.. _intro_ref_ops_qutrit_param:
-
-Qutrit parametrized gates
-^^^^^^^^^^^^^^^^^^^^^^^^^
-
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.TRX
-    ~pennylane.TRY
-    ~pennylane.TRZ
-
-:html:`</div>`
-
-.. _intro_ref_ops_qutrit_stateprep:
-
-Qutrit State preparation
-^^^^^^^^^^^^^^^^^^^^^^^^
-
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.QutritBasisState
-
-:html:`</div>`
-
-.. _intro_ref_ops_qutrit_channels:
-
-Qutrit noisy channels
-^^^^^^^^^^^^^^^^^^^^^^^^
-
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.QutritDepolarizingChannel
-    ~pennylane.QutritAmplitudeDamping
-    ~pennylane.TritFlip
-    ~pennylane.QutritChannel
-
-:html:`</div>`
-
-.. _intro_ref_ops_qutrit_obs:
-
-Qutrit Observables
-^^^^^^^^^^^^^^^^^^
-
-:html:`<div class="summary-table">`
-
-.. autosummary::
-    :nosignatures:
-
-    ~pennylane.THermitian
-    ~pennylane.GellMann
 
 :html:`</div>`
 

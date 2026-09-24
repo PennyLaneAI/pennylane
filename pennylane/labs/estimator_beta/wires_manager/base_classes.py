@@ -16,7 +16,7 @@
 from typing import Literal
 
 from pennylane.allocation import AllocateState
-from pennylane.queuing import QueuingManager
+from pennylane.core.queuing import QueuingManager
 from pennylane.wires import Wires
 
 

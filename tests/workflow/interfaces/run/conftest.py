@@ -20,8 +20,8 @@ from dataclasses import replace
 from param_shift_dev import ParamShiftDerivativesDevice
 
 import pennylane as qp
+from pennylane.core.shots import Shots
 from pennylane.devices import ExecutionConfig
-from pennylane.measurements import Shots
 
 
 def atol_for_shots(shots):

@@ -22,7 +22,7 @@ from unittest.mock import MagicMock
 import pytest
 
 import pennylane as qp
-from pennylane.tape import QuantumScript
+from pennylane.core.qscript import QuantumScript
 from pennylane.workflow import _cache_transform
 
 

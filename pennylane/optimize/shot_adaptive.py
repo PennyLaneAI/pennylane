@@ -23,9 +23,9 @@ import scipy as sp
 
 from pennylane import math, measurements
 from pennylane._grad import jacobian
+from pennylane.core.qscript import make_qscript
+from pennylane.core.queuing import apply
 from pennylane.ops import LinearCombination
-from pennylane.queuing import apply
-from pennylane.tape import make_qscript
 from pennylane.workflow import QNode, construct_tape, set_shots
 
 from .gradient_descent import GradientDescentOptimizer

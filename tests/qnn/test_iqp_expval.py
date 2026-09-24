@@ -50,7 +50,7 @@ def local_gates(n_qubits: int, max_weight=2):
         "ops",
         "gates_fn",
         "params",
-        "n_qubits",
+        "wires",
         "spin_sym",
         "sparse",
         "n_samples",
@@ -63,7 +63,7 @@ def local_gates(n_qubits: int, max_weight=2):
             [[1, 0], [0, 1]],
             "multi_gens",
             [0.54],
-            2,
+            [0, 1],
             True,
             False,
             10_000,
@@ -75,7 +75,7 @@ def local_gates(n_qubits: int, max_weight=2):
             csr_matrix([[0, 1], [1, 0]]),
             "local_gates",
             [0.3, 0.2],
-            2,
+            [0, 1],
             False,
             False,
             10_000,
@@ -87,7 +87,7 @@ def local_gates(n_qubits: int, max_weight=2):
             [1],
             "local_gates",
             [0.3],
-            1,
+            [0],
             False,
             True,
             10_000,
@@ -99,7 +99,7 @@ def local_gates(n_qubits: int, max_weight=2):
             [[0, 1], [0, 1]],
             "local_gates",
             [0.3, 0.2],
-            2,
+            [0, 1],
             False,
             True,
             10_000,
@@ -107,27 +107,28 @@ def local_gates(n_qubits: int, max_weight=2):
             10_000,
             False,
         ),
-        ([[1, 0], [0, 1]], "multi_gens", [-0.41], 2, True, False, 10_000, None, None, True),
-        ([[1, 0], [1, 0]], "multi_gens", [0.2], 2, True, True, 10_000, None, None, True),
+        ([[1, 0], [0, 1]], "multi_gens", [-0.41], [0, 1], True, False, 10_000, None, None, True),
+        ([[1, 0], [1, 0]], "multi_gens", [0.2], [0, 1], True, True, 10_000, None, None, True),
     ],
 )
 def test_expval(
     ops,
     gates_fn,
     params,
-    n_qubits,
+    wires,
     spin_sym,
     sparse,
     n_samples,
     max_batch_samples,
     max_batch_ops,
     indep_estimates,
+    seed,
 ):  # pylint: disable=too-many-arguments
-    gates = local_gates(n_qubits, 1)
+    gates = local_gates(len(wires), 1)
     if gates_fn == "multi_gens":
         gates = [[gates[0][0], gates[1][0]]] + gates[2:]
 
-    key = jax.random.PRNGKey(np.random.randint(0, 99999))
+    key = jax.random.PRNGKey(seed)
 
     if not isinstance(ops, csr_matrix):
         ops = jnp.array(ops)
@@ -136,7 +137,7 @@ def test_expval(
         ops=ops,
         n_samples=n_samples,
         key=key,
-        num_wires=n_qubits,
+        num_wires=len(wires),
         pattern=gates,
         weights=params,
         spin_sym=spin_sym,
@@ -149,8 +150,8 @@ def test_expval(
     dev = device("default.qubit")
 
     @qnode(dev)
-    def iqp_circuit(weights, pattern, spin_sym, n_qubits, ops):
-        IQP(weights, n_qubits, pattern, spin_sym)
+    def iqp_circuit(weights, pattern, spin_sym, wires, ops):
+        IQP(weights, wires, pattern, spin_sym)
 
         expectation_operators = []
         if not isinstance(ops, csr_matrix):
@@ -169,7 +170,7 @@ def test_expval(
     if len(ops.shape) == 1:
         ops = ops.reshape(1, -1)
 
-    simulated_exp_val = jnp.array(iqp_circuit(params, gates, spin_sym, n_qubits, ops))
+    simulated_exp_val = jnp.array(iqp_circuit(params, gates, spin_sym, wires, ops))
 
     for i, val in enumerate(simulated_exp_val):
         # Due to the distribution, we expect the simulated and the approximated values to be within 2 standard

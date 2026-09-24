@@ -428,7 +428,6 @@ def test_convert_format_not_supported(terms_ref, lib_name, monkeypatch):
 
 
 invalid_ops = (
-    qp.prod(qp.PauliZ(0), qp.QuadOperator(0.1, wires=1)),
     qp.prod(qp.PauliX(0), qp.Hadamard(1)),
     qp.sum(qp.PauliZ(0), qp.Hadamard(1)),
 )
@@ -731,7 +730,7 @@ def test_fail_import_openfermion(monkeypatch):
                 np.array([0.1 + 0.0j, 0.0]),
                 [
                     qp.prod(qp.PauliX(0)),
-                    qp.prod(qp.PauliZ(0), qp.QuadOperator(0.1, wires=1)),
+                    qp.prod(qp.PauliZ(0)),
                 ],
             )
 

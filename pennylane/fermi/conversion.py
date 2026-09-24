@@ -26,7 +26,7 @@ from pennylane.pauli import PauliSentence, PauliWord
 from .fermionic import FermiSentence, FermiWord
 
 if TYPE_CHECKING:
-    from pennylane.operation import Operator
+    from pennylane.core.operator import Operator
 
 
 def jordan_wigner(

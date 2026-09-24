@@ -26,10 +26,10 @@ from packaging.version import Version
 
 import pennylane as qp
 from pennylane import math
+from pennylane.core.transforms import Transform
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.logging import debug_logger
 from pennylane.math import Interface, get_interface
-from pennylane.transforms.core import Transform
 
 SupportedDiffMethods = Literal[
     None,
@@ -47,9 +47,9 @@ SupportedDiffMethods = Literal[
 ]
 
 if TYPE_CHECKING:
+    from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
     from pennylane.devices.device_api import Device
     from pennylane.devices.execution_config import ExecutionConfig, MCMConfig
-    from pennylane.tape import QuantumScript, QuantumScriptBatch
 
 
 def _get_jax_interface_name() -> Interface:
@@ -256,14 +256,7 @@ def _resolve_diff_method(
         return _resolve_hadamard(initial_config, device)
 
     if diff_method in {"best", "parameter-shift"}:
-        if tape and any(isinstance(op, qp.operation.CV) and op.name != "Identity" for op in tape):
-            updated_values["gradient_method"] = qp.gradients.param_shift_cv
-            updated_values["gradient_keyword_arguments"] = dict(
-                initial_config.gradient_keyword_arguments
-            )
-            updated_values["gradient_keyword_arguments"]["dev"] = device
-        else:
-            updated_values["gradient_method"] = qp.gradients.param_shift
+        updated_values["gradient_method"] = qp.gradients.param_shift
 
     else:
         gradient_transform_map = {

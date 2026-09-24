@@ -24,7 +24,7 @@ from pennylane.ops import adjoint
 from pennylane.ops.functions.matrix import matrix
 
 if TYPE_CHECKING:
-    from pennylane.operation import Operator
+    from pennylane.core.operator import Operator
 
 
 def is_hermitian(op: Operator):

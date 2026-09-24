@@ -62,7 +62,7 @@ class MPPoolExec(PyNativeExec):
         if len(inspect.signature(fn).parameters) > 1:  # pragma: no cover
             try:
                 # attempt offloading to starmap
-                return self.starmap(fn, zip(*args), **kwargs)
+                return self.starmap(fn, zip(*args, strict=True), **kwargs)
             except Exception as e:
                 raise ValueError(
                     "Python's `multiprocessing.Pool` does not support `map` calls with multiple arguments. "

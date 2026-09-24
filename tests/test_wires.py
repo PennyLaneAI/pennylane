@@ -15,6 +15,7 @@
 Unit tests for :mod:`pennylane.wires`.
 """
 
+import re
 from importlib import import_module, util
 
 import numpy as np
@@ -22,6 +23,7 @@ import pytest
 
 import pennylane as qp
 from pennylane.exceptions import WireError
+from pennylane.typing import Wire
 from pennylane.wires import Wires
 
 if util.find_spec("jax") is not None:
@@ -35,6 +37,12 @@ else:
 # pylint: disable=too-many-public-methods, too-many-positional-arguments
 class TestWires:
     """Tests for the ``Wires`` class."""
+
+    def test_AbstractWires_handled(self):
+        """Test that AbstractWires are left untouched."""
+
+        aw = qp.typing.AbstractWires(3)
+        assert Wires(aw) == aw
 
     def test_error_if_wires_none(self):
         """Tests that a TypeError is raised if None is given as wires."""
@@ -54,10 +62,7 @@ class TestWires:
             [qp.RX, qp.RY],
             [qp.PauliX],
             (None, qp.expval),
-            (
-                qp.device("default.qubit", wires=range(3)),
-                qp.device("default.gaussian", wires=[qp.RX, 3]),
-            ),
+            (qp.device("default.qubit", wires=range(3)),),
         ],
     )
     def test_creation_from_iterables_of_exotic_elements(self, iterable):
@@ -97,7 +102,7 @@ class TestWires:
         assert wires.labels == (wire,)
 
     @pytest.mark.parametrize(
-        "input", [[np.array([0, 1, 2]), np.array([3, 4])], [[0, 1, 2], [3, 4]], np.array(0.0)]
+        "input", [[np.array([0, 1, 2]), np.array([3, 4])], [[0, 1, 2], [3, 4]]]
     )
     def test_error_for_incorrect_wire_types(self, input):
         """Tests that a Wires object cannot be created from unhashable objects such as np arrays or lists."""
@@ -200,7 +205,7 @@ class TestWires:
 
         wires_str = str(Wires([1, 2, 3]))
         wires_repr = repr(Wires([1, 2, 3]))
-        assert wires_str == "Wires([1, 2, 3])"
+        assert wires_str == "[1, 2, 3]"
         assert wires_repr == "Wires([1, 2, 3])"
 
     def test_array_representation(self):
@@ -404,6 +409,34 @@ class TestWires:
         assert isinstance(wires2, Wires), f"{wires2} is not Wires"
         assert wires == wires2, f"{wires} != {wires2}"
 
+    @pytest.mark.jax
+    def test_wires_pytree_with_array_leaves(self):
+        """Test that unflattening wire pytrees with leaves containing scalar arrays
+        is possible and correct."""
+        import jax.numpy as jnp
+        from jax.tree import flatten, unflatten
+
+        wires = Wires([0, 1, 2, 3])
+        leaves, tree = flatten(wires)
+        inner_arr_leaves = [jnp.array(l, dtype=int) for l in leaves]
+        unflattened_wires = unflatten(tree, inner_arr_leaves)
+
+        assert wires == unflattened_wires
+
+    def test_class_index(self):
+        """Test that indexing the class raises."""
+        with pytest.raises(
+            TypeError,
+            match=re.escape("Wires[3]' is not supported syntax. Did you mean"),
+        ):
+            _ = Wires[3]
+
+        with pytest.raises(
+            TypeError,
+            match=re.escape("Wires[Ellipsis]' is not supported syntax. Did you mean"),
+        ):
+            _ = Wires[...]
+
     @pytest.mark.parametrize(
         "wire_a, wire_b, expected",
         [
@@ -591,3 +624,29 @@ class TestWiresJax:
         wires2 = jax.tree_util.tree_unflatten(tree, wires_flat)
         assert isinstance(wires2, Wires), f"{wires2} is not Wires"
         assert wires == wires2, f"{wires} != {wires2}"
+
+
+class TestAbstractWiresIntegration:
+    """test for integrating wires and AbstractWires."""
+
+    def test_pass_in_abstract_wires(self):
+        """Test that if AbstractWires is passed to Wires, it is returned unchanged."""
+
+        assert Wires(qp.typing.Wire[4]) == qp.typing.Wire[4]
+
+    def test_unsubscripted_wire_raises(self):
+        """Test that unsubscripted ``Wire`` cannot be used as a wire argument."""
+
+        with pytest.raises(TypeError, match="'Wire' cannot be used on its own"):
+            _ = Wires(Wire)
+
+    def test_addition(self):
+        """Test for addition with AbstractWires."""
+
+        assert Wires([0]) + Wire[-1] == Wire[-1]
+        assert Wire[-1] + Wires([0]) == Wire[-1]
+
+        assert Wires([0]) + Wire[4] == Wire[5]
+        assert Wire[10] + Wires([0, 1]) == Wire[12]
+
+        assert Wire[-1] + Wire[2] == Wire[-1]

@@ -19,7 +19,7 @@ import json
 from collections.abc import Callable
 from typing import Any, Literal, overload
 
-from pennylane.measurements.shots import Shots
+from pennylane.core.shots import Shots
 from pennylane.pytrees.pytrees import (
     PyTreeStructure,
     get_typename,

@@ -24,7 +24,7 @@ import numpy as np
 
 import pennylane.ops.functions as op_func
 from pennylane import math
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 from pennylane.pauli import (
     PauliSentence,
     PauliVSpace,

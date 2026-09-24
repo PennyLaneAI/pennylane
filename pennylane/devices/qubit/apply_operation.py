@@ -23,7 +23,7 @@ import scipy as sp
 
 import pennylane as qp
 from pennylane import math, ops
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 from pennylane.ops import Conditional, MidMeasure
 
 EINSUM_OP_WIRECOUNT_PERF_THRESHOLD = 3
@@ -793,7 +793,7 @@ def apply_multicontrolledx(
         return _apply_operation_default(op, state, is_state_batched, debugger)
     ctrl_wires = [w + is_state_batched for w in op.control_wires]
     # apply x on all control wires with control value 0
-    roll_axes = [w for val, w in zip(op.control_values, ctrl_wires, strict=True) if val is False]
+    roll_axes = [w for val, w in zip(op.control_values, ctrl_wires, strict=True) if not val]
     for ax in roll_axes:
         state = math.roll(state, 1, ax)
 

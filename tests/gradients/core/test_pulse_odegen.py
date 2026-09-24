@@ -863,7 +863,7 @@ class TestPulseOdegenEdgeCases:
         assert np.allclose(batched_grad, separate_grad)
 
     def test_no_trainable_params_tape(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters"""
         dev = qp.device("default.qubit", wires=2)
 
@@ -886,7 +886,7 @@ class TestPulseOdegenEdgeCases:
         assert res.shape == (0,)
 
     def test_no_trainable_params_multiple_return_tape(self):
-        """Test that the correct ouput and warning is generated in the absence of any trainable
+        """Test that the correct output and warning is generated in the absence of any trainable
         parameters with multiple returns."""
         dev = qp.device("default.qubit", wires=2)
 

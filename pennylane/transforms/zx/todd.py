@@ -18,7 +18,7 @@ pass (available through the external `pyzx <https://pyzx.readthedocs.io/en/lates
 to a PennyLane Clifford + T circuit.
 """
 
-from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
@@ -82,9 +82,9 @@ def todd(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             return qp.state()
 
     >>> print(qp.draw(circuit)())
-    0: ──S†─╭Z─╭●─╭●─┤  State
-    1: ──S──╰●─│──╰X─┤  State
-    2: ────────╰X────┤  State
+    0: ──S†─╭Z─╭●─╭●─┤ ╭State
+    1: ──S──╰●─│──╰X─┤ ├State
+    2: ────────╰X────┤ ╰State
 
     """
     # pylint: disable=import-outside-toplevel

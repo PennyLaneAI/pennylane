@@ -29,11 +29,11 @@ from scipy.sparse import coo_matrix, csr_matrix
 import pennylane as qp
 from pennylane import BasisState, Snapshot, StatePrep
 from pennylane._version import __version__
+from pennylane.core.operator import Operation
 from pennylane.devices._qubit_device import QubitDevice
 from pennylane.devices.qubit import measure
 from pennylane.exceptions import DeviceError, WireError
 from pennylane.measurements import ExpectationMP
-from pennylane.operation import Operation
 from pennylane.ops import Sum
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.pulse import ParametrizedEvolution

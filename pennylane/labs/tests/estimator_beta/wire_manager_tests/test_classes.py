@@ -15,13 +15,13 @@ r"""Tests for the base classes used when tracking qubits for resource estimation
 
 import pytest
 
+from pennylane.core.queuing import AnnotatedQueue
 from pennylane.labs.estimator_beta.wires_manager.base_classes import (
     Allocate,
     Deallocate,
     MarkClean,
     MarkQubits,
 )
-from pennylane.queuing import AnnotatedQueue
 from pennylane.wires import Wires
 
 # pylint: disable=too-many-arguments
@@ -560,11 +560,11 @@ class TestMarkQubits:
     @pytest.mark.parametrize(
         "wires, expected_str",
         (
-            ([1, 2, 3], "MarkClean(Wires([1, 2, 3]))"),
-            (None, "MarkClean(Wires([]))"),
-            ([0], "MarkClean(Wires([0]))"),
-            ([1, "a", 2, "b"], "MarkClean(Wires([1, 'a', 2, 'b']))"),
-            ("c", "MarkClean(Wires(['c']))"),
+            ([1, 2, 3], "MarkClean([1, 2, 3])"),
+            (None, "MarkClean([])"),
+            ([0], "MarkClean([0])"),
+            ([1, "a", 2, "b"], "MarkClean([1, 'a', 2, 'b'])"),
+            ("c", "MarkClean(['c'])"),
         ),
     )
     def test_MarkClean_repr(self, wires, expected_str):

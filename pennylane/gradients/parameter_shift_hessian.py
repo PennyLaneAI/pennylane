@@ -24,8 +24,8 @@ from string import ascii_letters
 import numpy as np
 
 from pennylane import math
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.measurements import ProbabilityMP, StateMP, VarianceMP
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 

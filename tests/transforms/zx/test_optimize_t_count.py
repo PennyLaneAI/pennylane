@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qp
 from pennylane import clifford_t_decomposition
-from pennylane.tape import QuantumScript
+from pennylane.core.qscript import QuantumScript
 
 pytest.importorskip("pyzx")
 

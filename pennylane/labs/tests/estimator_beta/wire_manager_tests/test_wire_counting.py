@@ -233,7 +233,7 @@ class TestProcessCircuitLst:
     def test_error_marking_qubits_not_in_circuit(self):
         """Test that an error is raised if we attempt to mark qubits that haven't been
         listed by any operator in the circuit."""
-        with pytest.raises(ValueError, match=r"Attempted to mark qubits Wires\(\[5, 6\]\)"):
+        with pytest.raises(ValueError, match=r"Attempted to mark qubits \[5, 6\]"):
             _process_circuit_lst(
                 [
                     MarkClean([0, 1, 2]),
@@ -382,7 +382,7 @@ class TestProcessCircuitLst:
         actual_processed_circ, actual_circ_wires = _process_circuit_lst(circ)
 
         assert actual_circ_wires == expected_circ_wires
-        for elem1, elem2 in zip(actual_processed_circ, expected_processed_circ):
+        for elem1, elem2 in zip(actual_processed_circ, expected_processed_circ, strict=True):
             assert (
                 elem1[0].equal(elem2[0])
                 if isinstance(elem1[0], MarkClean)

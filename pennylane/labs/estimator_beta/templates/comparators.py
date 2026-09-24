@@ -212,12 +212,12 @@ class OutOfPlaceIntegerComparator(ResourceOperator):
 
         gate_lst = []
         if value == 0:
-            if not geq:
+            if geq:
                 gate_lst.append(GateCount(resource_rep(qre.X), 1))
             return gate_lst
 
         if value > 2 ** (register_size) - 1:
-            if geq:
+            if not geq:
                 gate_lst.append(GateCount(resource_rep(qre.X), 1))
             return gate_lst
 

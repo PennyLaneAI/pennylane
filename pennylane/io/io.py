@@ -16,10 +16,8 @@ This module contains functions to load circuits from other frameworks as
 PennyLane templates.
 """
 
-from collections import defaultdict
 from collections.abc import Callable
 from importlib import metadata
-from sys import version_info
 
 has_openqasm = True
 try:
@@ -39,11 +37,7 @@ _MISSING_QISKIT_PLUGIN_MESSAGE = (
 )
 
 # get list of installed plugin converters
-__plugin_devices = (
-    defaultdict(tuple, metadata.entry_points())["pennylane.io"]
-    if version_info[:2] == (3, 9)
-    else metadata.entry_points(group="pennylane.io")
-)
+__plugin_devices = metadata.entry_points(group="pennylane.io")
 plugin_converters = {entry.name: entry for entry in __plugin_devices}
 
 

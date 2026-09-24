@@ -29,13 +29,13 @@ from cachetools import Cache
 
 import pennylane as qp
 from pennylane import math, pytrees
+from pennylane.core.qscript import QuantumScript
+from pennylane.core.queuing import AnnotatedQueue
+from pennylane.core.shots import Shots, ShotsLike
+from pennylane.core.transforms import BoundTransform, CompilePipeline, Transform
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.logging import debug_logger
 from pennylane.math import Interface
-from pennylane.measurements import Shots, ShotsLike
-from pennylane.queuing import AnnotatedQueue
-from pennylane.tape import QuantumScript
-from pennylane.transforms.core import BoundTransform, CompilePipeline, Transform
 from pennylane.typing import TensorLike
 
 from .execution import execute
@@ -190,8 +190,7 @@ def _validate_diff_method(device: SupportedDeviceAPIs, diff_method: str | Transf
 class QNode:
     r"""Represents a quantum node in the hybrid computational graph.
 
-    A *quantum node* contains a :ref:`quantum function <intro_vcirc_qfunc>` (corresponding to
-    a `variational circuit <https://pennylane.ai/qml/glossary/variational_circuit>`__)
+    A *quantum node* contains a `quantum function <https://docs.pennylane.ai/en/stable/introduction/circuits.html#intro-vcirc-qfunc>`__
     and the computational device it is executed on.
 
     The QNode calls the quantum function to construct a :class:`~.QuantumTape` instance representing

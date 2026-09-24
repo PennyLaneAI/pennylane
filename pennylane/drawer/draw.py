@@ -19,11 +19,12 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Callable, Sequence
-from functools import wraps
+from functools import partial, wraps
 from typing import TYPE_CHECKING, Literal
 
 from pennylane import math
-from pennylane.tape import make_qscript
+from pennylane.allocation import DynamicWire
+from pennylane.core.qscript import make_qscript
 from pennylane.workflow import construct_batch
 
 from .tape_mpl import tape_mpl
@@ -31,6 +32,29 @@ from .tape_text import tape_text
 
 if TYPE_CHECKING:
     from pennylane.workflow.qnode import QNode
+
+
+def _unwrap_partial(fn):
+    """Return the base callable and arguments bound by nested ``functools.partial`` wrappers."""
+    args = ()
+    kwargs = {}
+    while isinstance(fn, partial):
+        args = fn.args + args
+        kwargs = {**(fn.keywords or {}), **kwargs}
+        fn = fn.func
+    return fn, args, kwargs
+
+
+def _apply_partial_args(fn, args, kwargs):
+    """Return a callable that prepends partial-bound arguments to call-time arguments."""
+    if not args and not kwargs:
+        return fn
+
+    @wraps(fn)
+    def wrapper(*call_args, **call_kwargs):
+        return fn(*args, *call_args, **{**kwargs, **call_kwargs})
+
+    return wrapper
 
 
 def catalyst_qjit(qnode):
@@ -53,7 +77,8 @@ def draw(
     r"""Create a function that draws the given QNode or quantum function.
 
     Args:
-        qnode (.QNode or Callable): the input QNode or quantum function that is to be drawn
+        qnode (.QNode or Callable): the input QNode or quantum function that is to be drawn.
+            ``functools.partial`` wrappers around supported callables are also accepted.
         wire_order (Sequence[Any]): The order (from top to bottom) to print the wires of the circuit.
             Defaults to the device wires. If device wires are not available, the circuit wires are sorted if possible.
         show_all_wires (bool): If True, all wires, including empty wires, are printed.
@@ -100,16 +125,6 @@ def draw(
         >>> print(qp.draw(circuit, decimals=None)(a=2.3, w=[1.2, 3.2, 0.7]))
         0: ──H─╭●────────────────────╭●──┤ ╭<Z@Z>
         1: ────╰RX──Rot("arbitrary")─╰RX─┤ ╰<Z@Z>
-
-        If the parameters are not acted upon by classical processing like ``-a``, then
-        ``qp.draw`` can handle string-valued parameters as well:
-
-        >>> @qp.qnode(qp.device('lightning.qubit', wires=1))
-        ... def circuit2(x):
-        ...     qp.RX(x, wires=0)
-        ...     return qp.expval(qp.Z(0))
-        >>> print(qp.draw(circuit2)("x"))
-        0: ──RX(x)─┤  <Z>
 
         When requested with ``show_matrices=True`` (the default), matrix valued parameters
         are printed below the circuit. For ``show_matrices=False``, they are not printed:
@@ -266,14 +281,7 @@ def draw(
         In addition, globally acting operators like :class:`~.GlobalPhase` or
         :class:`~.Identity` are always represented on all wires:
 
-        >>> print(qp.draw(qp.GlobalPhase, **draw_kwargs)(phi=0.5, wires=[]))
-        0: ─╭GlobalPhase(0.50)─┤
-        1: ─├GlobalPhase(0.50)─┤
-        2: ─╰GlobalPhase(0.50)─┤
-
-        This is the case even if they are provided with a subset of all wires:
-
-        >>> print(qp.draw(qp.GlobalPhase, **draw_kwargs)(phi=0.5, wires=[0]))
+        >>> print(qp.draw(qp.GlobalPhase, **draw_kwargs)(phi=0.5))
         0: ─╭GlobalPhase(0.50)─┤
         1: ─├GlobalPhase(0.50)─┤
         2: ─╰GlobalPhase(0.50)─┤
@@ -282,25 +290,31 @@ def draw(
         nodes are exempt from the expansion:
 
         >>> ctrl_gphase = qp.ctrl(qp.GlobalPhase, control=[2])
-        >>> print(qp.draw(ctrl_gphase, **draw_kwargs)(phi=0.5, wires=[0]))
+        >>> print(qp.draw(ctrl_gphase, **draw_kwargs)(phi=0.5))
         0: ─╭GlobalPhase(0.50)─┤
         1: ─├GlobalPhase(0.50)─┤
         2: ─╰●─────────────────┤
 
     """
+    qnode, partial_args, partial_kwargs = _unwrap_partial(qnode)
+
     if catalyst_qjit(qnode):
         qnode = qnode.user_function
 
     if hasattr(qnode, "construct"):
-        return _draw_qnode(
-            qnode,
-            wire_order=wire_order,
-            show_all_wires=show_all_wires,
-            decimals=decimals,
-            max_length=max_length,
-            show_matrices=show_matrices,
-            show_wire_labels=show_wire_labels,
-            level=level,
+        return _apply_partial_args(
+            _draw_qnode(
+                qnode,
+                wire_order=wire_order,
+                show_all_wires=show_all_wires,
+                decimals=decimals,
+                max_length=max_length,
+                show_matrices=show_matrices,
+                show_wire_labels=show_wire_labels,
+                level=level,
+            ),
+            partial_args,
+            partial_kwargs,
         )
 
     if level not in {"gradient", 0, "top"}:  # default and no transform options
@@ -317,9 +331,9 @@ def draw(
             _wire_order = wire_order
         else:
             try:
-                _wire_order = sorted(tape.wires)
+                _wire_order = sorted(w for w in tape.wires if not isinstance(w, DynamicWire))
             except TypeError:
-                _wire_order = tape.wires
+                _wire_order = [w for w in tape.wires if not isinstance(w, DynamicWire)]
 
         return tape_text(
             tape,
@@ -331,7 +345,7 @@ def draw(
             max_length=max_length,
         )
 
-    return wrapper
+    return _apply_partial_args(wrapper, partial_args, partial_kwargs)
 
 
 # pylint: disable=too-many-arguments
@@ -356,9 +370,9 @@ def _draw_qnode(
             _wire_order = qnode.device.wires
         else:
             try:
-                _wire_order = sorted(tapes[0].wires)
+                _wire_order = sorted(w for w in tapes[0].wires if not isinstance(w, DynamicWire))
             except TypeError:
-                _wire_order = tapes[0].wires
+                _wire_order = [w for w in tapes[0].wires if not isinstance(w, DynamicWire)]
 
         cache = {"tape_offset": 0, "matrices": []}
         res = [
@@ -405,6 +419,7 @@ def draw_mpl(
 
     Args:
         qnode (.QNode or Callable): the input QNode/quantum function that is to be drawn.
+            ``functools.partial`` wrappers around supported callables are also accepted.
         wire_order (Sequence[Any]): the order (from top to bottom) to print the wires of the circuit.
            If not provided, the wire order defaults to the device wires. If device wires are not
            available, the circuit wires are sorted if possible.
@@ -745,22 +760,10 @@ def draw_mpl(
 
         .. code-block:: python
 
-            fig, ax = qp.draw_mpl(qp.GlobalPhase, **draw_kwargs)(phi=0.5, wires=[])
+            fig, ax = qp.draw_mpl(qp.GlobalPhase, **draw_kwargs)(phi=0.5)
             fig.show()
 
         .. figure:: ../../_static/draw_mpl/gphase_no_wires.png
-            :align: center
-            :width: 40%
-            :target: javascript:void(0);
-
-        This is the case even if they are provided with a subset of all wires:
-
-        .. code-block:: python
-
-            fig, ax = qp.draw_mpl(qp.GlobalPhase, **draw_kwargs)(phi=0.5, wires=[0])
-            fig.show()
-
-        .. figure:: ../../_static/draw_mpl/gphase_one_wire.png
             :align: center
             :width: 40%
             :target: javascript:void(0);
@@ -771,7 +774,7 @@ def draw_mpl(
         .. code-block:: python
 
             ctrl_gphase = qp.ctrl(qp.GlobalPhase, control=[2])
-            fig, ax = qp.draw_mpl(ctrl_gphase, **draw_kwargs)(phi=0.5, wires=[0])
+            fig, ax = qp.draw_mpl(ctrl_gphase, **draw_kwargs)(phi=0.5)
             fig.show()
 
         .. figure:: ../../_static/draw_mpl/ctrl_gphase.png
@@ -780,20 +783,26 @@ def draw_mpl(
             :target: javascript:void(0);
 
     """
+    qnode, partial_args, partial_kwargs = _unwrap_partial(qnode)
+
     if catalyst_qjit(qnode):
         qnode = qnode.user_function
 
     if hasattr(qnode, "construct"):
-        return _draw_mpl_qnode(
-            qnode,
-            wire_order=wire_order,
-            show_all_wires=show_all_wires,
-            decimals=decimals,
-            max_length=max_length,
-            level=level,
-            style=style,
-            fig=fig,
-            **kwargs,
+        return _apply_partial_args(
+            _draw_mpl_qnode(
+                qnode,
+                wire_order=wire_order,
+                show_all_wires=show_all_wires,
+                decimals=decimals,
+                max_length=max_length,
+                level=level,
+                style=style,
+                fig=fig,
+                **kwargs,
+            ),
+            partial_args,
+            partial_kwargs,
         )
 
     if level not in {"gradient", 0, "top"}:  # default and no transform options
@@ -825,7 +834,7 @@ def draw_mpl(
             **kwargs,
         )
 
-    return wrapper
+    return _apply_partial_args(wrapper, partial_args, partial_kwargs)
 
 
 # pylint: disable=too-many-arguments

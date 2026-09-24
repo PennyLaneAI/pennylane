@@ -22,15 +22,15 @@ from test_optimization.utils import compare_operation_lists
 
 import pennylane as qp
 from pennylane import numpy as np
-from pennylane.transforms import unitary_to_rot
-from pennylane.transforms.compile import compile
-from pennylane.transforms.optimization import (
+from pennylane.transforms import (
     cancel_inverses,
+    combine_global_phases,
     commute_controlled,
     merge_rotations,
     single_qubit_fusion,
+    unitary_to_rot,
 )
-from pennylane.transforms.optimization.optimization_utils import _fuse_global_phases
+from pennylane.transforms.compile import compile
 from pennylane.wires import Wires
 
 
@@ -202,24 +202,6 @@ class TestCompileIntegration:
         [compiled_tape], _ = qp.compile(tape)
         assert compiled_tape.operations == [qp.PauliX(0), qp.CNOT([0, 1])]
 
-    # The premise here does not make sense for graph-based decomposition
-    @pytest.mark.usefixtures("disable_graph_decomposition")
-    def test_compile_empty_basis_set(self):
-        """Test that compiling with empty basis set decomposes any decomposable operation."""
-        ops = (
-            qp.RX(0.1, 0),
-            qp.H(1),
-            qp.Barrier([0, 1]),
-            qp.CNOT([1, 0]),
-            qp.PauliY(0),
-            qp.CY([0, 1]),
-        )
-        tape = qp.tape.QuantumScript(ops)
-        decomposable_ops = {op.name for op in tape.operations if op.has_decomposition}
-
-        [transformed_tape], _ = qp.compile(tape, basis_set=[])
-        assert not any(op.name in decomposable_ops for op in transformed_tape.operations)
-
     @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
     def test_compile_pipeline_with_non_default_arguments(self, wires):
         """Test that using non-default arguments returns the correct results."""
@@ -314,7 +296,12 @@ class TestCompileIntegration:
 
         qnode = qp.QNode(qfunc, dev)
 
-        pipeline = [partial(commute_controlled, direction="left"), cancel_inverses, merge_rotations]
+        pipeline = [
+            partial(commute_controlled, direction="left"),
+            cancel_inverses,
+            merge_rotations,
+            combine_global_phases,
+        ]
 
         basis_set = ["CNOT", "RX", "RY", "RZ", "GlobalPhase"]
 
@@ -335,7 +322,6 @@ class TestCompileIntegration:
             "RX",
             "RZ",
             "RY",
-            "RY",
             "CNOT",
             "RY",
             "CNOT",
@@ -350,7 +336,6 @@ class TestCompileIntegration:
             Wires(wires[0]),
             Wires(wires[1]),
             Wires(wires[2]),
-            Wires(wires[2]),
             Wires([wires[1], wires[2]]),
             Wires(wires[2]),
             Wires([wires[1], wires[2]]),
@@ -358,8 +343,7 @@ class TestCompileIntegration:
         ]
 
         tape = qp.workflow.construct_tape(transformed_qnode)(0.3, 0.4, 0.5)
-        transformed_ops = _fuse_global_phases(tape.operations)
-        compare_operation_lists(transformed_ops, names_expected, wires_expected)
+        compare_operation_lists(tape.operations, names_expected, wires_expected)
 
     def test_compile_template(self):
         """Test that functions with templates are correctly expanded and compiled."""

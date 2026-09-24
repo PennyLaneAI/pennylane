@@ -13,7 +13,7 @@
 # limitations under the License.
 """Transform for removing the Barrier gate from quantum circuits."""
 
-from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 

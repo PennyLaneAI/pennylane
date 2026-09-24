@@ -19,7 +19,7 @@ from functools import partial
 import numpy as np
 
 import pennylane as qp
-from pennylane.tape import QuantumScript
+from pennylane.core.qscript import QuantumScript
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn, TensorLike
 

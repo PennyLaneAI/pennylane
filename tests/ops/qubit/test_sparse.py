@@ -218,10 +218,9 @@ class TestSparse:
             return qp.expval(qp.SparseHamiltonian(csr_matrix(np.eye(4)), [0, 1]))
 
         with pytest.raises(
-            QuantumFunctionError,
-            match="does not support backprop with requested circuit.",
+            QuantumFunctionError, match="does not support backprop with requested circuit."
         ):
-            qp.grad(circuit, argnums=0)([0.5])
+            qp.grad(circuit, argnums=0)(0.5)
 
     @pytest.mark.parametrize("qubits, hamiltonian, expected_output", [(4, H_hydrogen, -0.18092703)])
     def test_sparse_gradient(self, qubits, hamiltonian, expected_output, tol):

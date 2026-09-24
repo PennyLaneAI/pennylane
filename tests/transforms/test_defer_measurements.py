@@ -285,7 +285,7 @@ class TestQNode:
         deferred_tape = deferred_tapes[0]
         assert isinstance(deferred_tape.operations[5], Controlled)
         qp.assert_equal(deferred_tape.operations[5].base, qp.PauliZ(2))
-        assert deferred_tape.operations[5].hyperparameters["control_wires"] == qp.wires.Wires(0)
+        assert deferred_tape.operations[5].control_wires == qp.wires.Wires(0)
 
         qp.assert_equal(deferred_tape.operations[6], qp.CNOT([1, 2]))
 
@@ -682,37 +682,6 @@ class TestQNode:
         for idx, ob in enumerate(tensor.operands):
             assert isinstance(ob, qp.PauliZ)
             assert ob.wires == qp.wires.Wires(tp_wires[idx])
-
-    def test_cv_op_error(self):
-        """Test that CV operations are not supported."""
-        dev = qp.device("default.gaussian", wires=3)
-
-        @qp.defer_measurements
-        @qp.qnode(dev)
-        def qnode():
-            qp.measure(0)
-            qp.Rotation(0.123, wires=[0])
-            return qp.expval(qp.NumberOperator(1))
-
-        with pytest.raises(
-            ValueError, match="Continuous variable operations and observables are not supported"
-        ):
-            qnode()
-
-    def test_cv_obs_error(self):
-        """Test that CV observables are not supported."""
-        dev = qp.device("default.gaussian", wires=3)
-
-        @qp.defer_measurements
-        @qp.qnode(dev)
-        def qnode():
-            qp.measure(0)
-            return qp.expval(qp.NumberOperator(1))
-
-        with pytest.raises(
-            ValueError, match="Continuous variable operations and observables are not supported"
-        ):
-            qnode()
 
 
 class TestConditionalOperations:
@@ -1642,9 +1611,9 @@ class TestDrawing:
         transformed_qnode = qp.QNode(transformed_qfunc, dev)
 
         expected = (
-            "0: ─╭●──────────────────┤     \n"
+            "0: ─╭●──────────────────┤\n"
             "1: ─╰RY(0.31)─╭RY(0.31)─┤  <Z>\n"
-            "2: ───────────╰●────────┤     "
+            "2: ───────────╰●────────┤"
         )
         assert qp.draw(transformed_qnode)() == expected
 
@@ -1669,10 +1638,10 @@ class TestDrawing:
         transformed_qnode = qp.QNode(transformed_qfunc, dev)
 
         expected = (
-            "0: ─╭●─╭X─────────────────────┤     \n"
+            "0: ─╭●─╭X─────────────────────┤\n"
             "1: ─│──│──╭RY(0.31)─╭RY(0.31)─┤  <Z>\n"
-            "2: ─│──│──│─────────╰●────────┤     \n"
-            "3: ─╰X─╰●─╰●──────────────────┤     "
+            "2: ─│──│──│─────────╰●────────┤\n"
+            "3: ─╰X─╰●─╰●──────────────────┤"
         )
         assert qp.draw(transformed_qnode)() == expected
 
@@ -1701,11 +1670,9 @@ class TestDrawing:
         transformed_qfunc = qp.transforms.defer_measurements(qfunc)
         transformed_qnode = qp.QNode(transformed_qfunc, dev)
 
-        spaces = " " * len(label)
-        expval = "<Z>".ljust(len(label))
         expected = (
-            f"0: ─╭●─╭X───────────┤  {spaces}\n"
-            f"1: ─│──│──╭RY(0.31)─┤  {expval}\n"
+            "0: ─╭●─╭X───────────┤\n"
+            "1: ─│──│──╭RY(0.31)─┤  <Z>\n"
             f"2: ─╰X─╰●─╰●────────┤  {label}"
         )
         assert qp.draw(transformed_qnode)() == expected

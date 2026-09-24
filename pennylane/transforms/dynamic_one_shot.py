@@ -24,18 +24,18 @@ import numpy as np
 
 import pennylane as qp
 from pennylane import math
+from pennylane.core.measurements import MeasurementProcess
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
+from pennylane.core.shots import Shots
 from pennylane.exceptions import QuantumFunctionError, TransformError
 from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
-    MeasurementProcess,
     ProbabilityMP,
     SampleMP,
-    Shots,
     VarianceMP,
 )
 from pennylane.ops import MeasurementValue, MidMeasure
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn, Result, ResultBatch, TensorLike
 
 from .core import transform

@@ -255,7 +255,8 @@ def partial_trace(matrix, indices, c_dtype="complex128"):
 
     Args:
         matrix (tensor_like): 2D or 3D density matrix tensor. For a 2D tensor, the size is assumed to be
-            ``(2**n, 2**n)``, for some integer number of wires ``n``. For a 3D tensor, the first dimension is assumed to be the batch dimension, ``(batch_dim, 2**N, 2**N)``.
+            ``(2**n, 2**n)``, for some integer number of wires ``n``. For a 3D tensor, the first dimension
+            is assumed to be the batch dimension, ``(batch_dim, 2**N, 2**N)``.
 
         indices (list(int)): List of indices to be traced.
 
@@ -299,7 +300,7 @@ def partial_trace(matrix, indices, c_dtype="complex128"):
         return _batched_partial_trace_nonrep_indices(matrix, is_batched, indices, batch_dim, dim)
 
     # Dimension and reshape
-    num_indices = int(np.log2(dim))
+    num_indices = int(np.round(np.log(dim) / np.log(2)))
     rho_dim = 2 * num_indices
 
     matrix = np.reshape(matrix, [batch_dim] + [2] * 2 * num_indices)
@@ -325,6 +326,7 @@ def partial_trace(matrix, indices, c_dtype="complex128"):
     return reduced_density_matrix if is_batched else reduced_density_matrix[0]
 
 
+# pylint: disable=too-many-arguments, too-many-positional-arguments
 def _batched_partial_trace_nonrep_indices(matrix, is_batched, indices, batch_dim, dim):
     """Compute the reduced density matrix for autograd interface by tracing out the provided indices with the use
     of projectors as same subscripts indices are not supported in autograd backprop.

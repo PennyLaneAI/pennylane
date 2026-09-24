@@ -267,3 +267,25 @@ def pytest_runtest_makereport(item, call):
                 tr.outcome = "skipped"
 
     return tr
+
+
+def pytest_addoption(parser):
+    """Add the --run-skip-ci option to run tests locally"""
+    parser.addoption(
+        "--run-skip-ci",
+        action="store_true",
+        default=False,
+        help="Run tests marked with `skip_ci` ...",
+    )
+
+
+def pytest_collection_modifyitems(config, items):
+    """Add the --run-skip-ci option to run tests locally"""
+    if config.getoption("--run-skip-ci"):
+        return
+    skip_ci = pytest.mark.skip(
+        reason="`skip_ci` test excluded from CI; run locally with `--run-skip-ci`."
+    )
+    for item in items:
+        if "skip_ci" in item.keywords:
+            item.add_marker(skip_ci)

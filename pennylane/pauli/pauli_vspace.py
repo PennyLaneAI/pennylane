@@ -21,7 +21,7 @@ import numpy as np
 import scipy
 
 import pennylane as qp
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 
 from .pauli_arithmetic import PauliSentence
 

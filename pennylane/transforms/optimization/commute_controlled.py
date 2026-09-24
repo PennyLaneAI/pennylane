@@ -14,8 +14,8 @@
 """Transforms for pushing commuting gates through targets/control qubits."""
 
 import pennylane as qp  # is_commuting circular import problems
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.ops.op_math import Controlled
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 

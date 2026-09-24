@@ -21,12 +21,11 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane import numpy as np
 
 
 class TestMultiplexerStatePreparation:
 
-    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_standard_validity(self):
         """Check the operation using the assert_valid function."""
 
@@ -46,16 +45,24 @@ class TestMultiplexerStatePreparation:
                 np.array([1.0, 0, 0]),
                 "State vector must be of length",
             ),
-            (
-                np.array([1.0, 1, 0, 0]),
-                "State vector must have",
-            ),
         ],
     )
     def test_MultiplexerStatePrep_error(self, state, msg_match):
         """Test that proper errors are raised for MultiplexerStatePreparation"""
         with pytest.raises(ValueError, match=msg_match):
             qp.MultiplexerStatePreparation(state, wires=[0, 1])
+
+    def test_norm_check_error(self):
+        """Test that a non-normalized state raises an error when ``check=True``."""
+        state = np.array([1.0, 1.0, 0, 0])
+        with pytest.raises(ValueError, match="State vector must have norm 1.0"):
+            qp.MultiplexerStatePreparation(state, wires=[0, 1], check=True)
+
+    def test_norm_check_skipped_by_default(self):
+        """Test that a non-normalized state does not raise when ``check=False`` (default)."""
+        state = np.array([1.0, 1.0, 0, 0])
+        qp.MultiplexerStatePreparation(state, wires=[0, 1])
+        qp.MultiplexerStatePreparation(state, wires=[0, 1], check=False)
 
     @pytest.mark.parametrize(
         ("state", "num_wires"),
@@ -82,34 +89,34 @@ class TestMultiplexerStatePreparation:
 
         dev = qp.device("default.qubit", wires=num_wires)
 
-        qs = qp.tape.QuantumScript(
-            [
-                qp.MultiplexerStatePreparation(
-                    state,
-                    wires=wires,
-                )
-            ],
-            [qp.state()],
-        )
-
+        prep = qp.MultiplexerStatePreparation(state, wires=wires)
+        qs = qp.tape.QuantumScript([prep], [qp.state()])
         program, _ = dev.preprocess()
         tape = program([qs])
         output = dev.execute(tape[0])[0]
 
-        assert np.allclose(state, output, atol=0.05)
+        assert np.allclose(state, output, atol=1e-5)
 
     def test_decomposition(self):
         """Test that the correct gates are added in the decomposition"""
-
         wires = range(2)
 
-        decomposition = qp.MultiplexerStatePreparation.compute_decomposition(
-            np.array([1 / 2, 1j / 2, -1 / 2, -1j / 2]),
-            wires=wires,
-        )
+        complex_state = np.array([1 / 2, 1j / 2, -1 / 2, -1j / 2])
+        decomposition = qp.MultiplexerStatePreparation.compute_decomposition(complex_state, wires)
+        expected_names = ["SelectPauliRot", "SelectPauliRot", "DiagonalQubitUnitary"]
+        assert [gate.name for gate in decomposition] == expected_names
 
-        for gate in decomposition:
-            assert gate.name in ["SelectPauliRot", "C(GlobalPhase)", "DiagonalQubitUnitary"]
+        real_state = np.array([1 / 2, -1 / 2, -1 / 2, 1 / 2])
+        decomposition = qp.MultiplexerStatePreparation.compute_decomposition(real_state, wires)
+        expected_names = ["SelectPauliRot", "SelectPauliRot"]
+        assert [gate.name for gate in decomposition] == expected_names
+
+        close_to_real_state = np.array([1 / 2, -1 / 2, -1 / 2, 1 / 2 + 1e-13j])
+        decomposition = qp.MultiplexerStatePreparation.compute_decomposition(
+            close_to_real_state, wires
+        )
+        expected_names = ["SelectPauliRot", "SelectPauliRot"]
+        assert [gate.name for gate in decomposition] == expected_names
 
     @pytest.mark.jax
     def test_interface_jax(self):
@@ -139,7 +146,7 @@ class TestMultiplexerStatePreparation:
         qs = qp.tape.QuantumScript(
             [
                 qp.MultiplexerStatePreparation(
-                    state,
+                    np.array(state),
                     wires=wires,
                 )
             ],

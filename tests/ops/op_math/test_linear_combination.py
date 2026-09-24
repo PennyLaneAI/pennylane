@@ -1958,10 +1958,43 @@ class TestLinearCombinationDifferentiation:
 def test_create_instance_while_tracing():
     """Test that a LinearCombination instance can be created while tracing."""
 
+    from pennylane.capture.primitives import operator_p
+
     def f(a, b):
-        op1 = qp.X._primitive.impl(0, n_wires=1)
-        op2 = qp.Y._primitive.impl(0, n_wires=1)
+        op1 = operator_p.impl(
+            0,
+            op_cls=qp.X,
+            wire_lens=(1,),
+            hybrid_lens=(),
+            hybrid_trees=(),
+            forward_mask=(),
+        )
+        op2 = operator_p.impl(
+            0,
+            op_cls=qp.Y,
+            wire_lens=(1,),
+            hybrid_lens=(),
+            hybrid_trees=(),
+            forward_mask=(),
+        )
         op = qp.ops.LinearCombination._primitive.impl(a, b, op1, op2, n_obs=2)
         assert isinstance(op, qp.ops.LinearCombination)
 
     jax.make_jaxpr(f)(1, 2)
+
+
+@pytest.mark.capture
+def test_capture_with_legacy_observable():
+    """Test that a LinearCombination can be captured when an observable is not an Operator2."""
+
+    assert not isinstance(qp.Hermitian(np.eye(2), wires=0), qp.core.operator.Operator2)
+
+    def f(matrix):
+        # a legacy operator is already bound to the trace on construction, so its tracer is
+        # used as-is instead of being bound like an ``Operator2`` observable
+        return qp.ops.LinearCombination([1.0, 2.0], [qp.Hermitian(matrix, wires=0), qp.Z(1)])
+
+    jaxpr = jax.make_jaxpr(f)(np.eye(2))
+
+    assert jaxpr.eqns[-1].primitive == qp.ops.LinearCombination._primitive
+    assert jaxpr.eqns[-1].params["n_obs"] == 2

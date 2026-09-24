@@ -15,7 +15,7 @@
 
 import numpy as np
 
-from pennylane.measurements import Shots
+from pennylane.core.shots import Shots
 
 
 class SPSAOptimizer:

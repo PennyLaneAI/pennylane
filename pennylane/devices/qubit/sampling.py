@@ -16,12 +16,12 @@
 import numpy as np
 
 import pennylane as qp
+from pennylane.core.measurements import SampleMeasurement
+from pennylane.core.shots import Shots
 from pennylane.measurements import (
     ClassicalShadowMP,
     ExpectationMP,
-    SampleMeasurement,
     ShadowExpvalMP,
-    Shots,
 )
 from pennylane.ops import LinearCombination, Prod, SProd, Sum
 from pennylane.typing import TensorLike

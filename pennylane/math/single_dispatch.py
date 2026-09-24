@@ -154,6 +154,14 @@ ar.register_function("builtins", "block_diag", lambda x: _scipy_block_diag(*x))
 ar.register_function("numpy", "gather", lambda x, indices: x[np.array(indices)])
 ar.register_function("numpy", "unstack", list)
 
+
+def _delete_numpy(array, obj, axis=None, **kwargs):
+    kwargs.pop("assume_unique_indices", None)  #  ignore JAX-specific kwarg
+    return np.delete(array, obj, axis=axis, **kwargs)
+
+
+ar.register_function("numpy", "delete", _delete_numpy)
+
 ar.register_function("builtins", "unstack", list)
 
 

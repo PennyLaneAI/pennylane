@@ -176,13 +176,16 @@ def is_real_obj_or_close(obj):
     ``qp.math.allclose`` are used to determine whether the
     input is close to real-valued.
     """
-    if (
-        type(obj).__name__ != "AbstractArray"
-        and not is_abstract(obj)
-        and allclose(ar.imag(obj), 0.0)
-    ):
-        obj = ar.real(obj)
-    return not get_dtype_name(obj).startswith("complex")
+    # Check if object is purely real
+    if not get_dtype_name(obj).startswith("complex"):
+        return True
+
+    # If it's a concrete array, check if the imaginary part is effectively zero
+    if type(obj).__name__ != "AbstractArray":
+        imag = ar.imag(obj)
+        return not is_abstract(imag) and allclose(imag, 0.0)
+
+    return False
 
 
 class NumpyMimic(ar.autoray.AutoNamespace):

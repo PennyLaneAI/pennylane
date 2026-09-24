@@ -21,9 +21,9 @@ import pytest
 
 import pennylane as qp
 from pennylane import Hadamard, X, Y, Z
+from pennylane.core.qscript import QuantumScript
 from pennylane.measurements import ExpectationMP, SampleMP, VarianceMP
 from pennylane.pauli import diagonalize_qwc_pauli_words
-from pennylane.tape import QuantumScript
 from pennylane.transforms.diagonalize_measurements import (
     _check_if_diagonalizing,
     _diagonalize_all_pauli_obs,

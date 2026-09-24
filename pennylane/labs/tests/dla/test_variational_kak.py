@@ -19,7 +19,6 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane import X, Y, Z
 from pennylane.labs.dla import orthonormalize, run_opt, validate_kak, variational_kak_adj
 from pennylane.liealg import (
     cartan_decomp,
@@ -27,6 +26,7 @@ from pennylane.liealg import (
     concurrence_involution,
     horizontal_cartan_subalgebra,
 )
+from pennylane.ops import X, Y, Z
 
 
 @pytest.mark.parametrize("dense", [False, True])

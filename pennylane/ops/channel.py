@@ -22,7 +22,7 @@ from collections.abc import Hashable, Iterable
 from typing import Any
 
 from pennylane import math as np
-from pennylane.operation import Channel
+from pennylane.core.operator import Channel
 from pennylane.wires import Wires, WiresLike
 
 #: Small epsilon added to sqrt to prevent floating-point errors during qubit channel normalization.

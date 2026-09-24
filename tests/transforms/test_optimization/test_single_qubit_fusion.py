@@ -97,15 +97,13 @@ class TestSingleQubitFusion:
         assert len(transformed_ops) == 0
 
     def test_single_qubit_fusion_not_implemented(self):
-        """Test that fusion is correctly skipped for single-qubit gates where
-        the rotation angles are not specified."""
+        """Test that fusion is correctly skipped for multi-qubit gates."""
 
         def qfunc():
             qp.RZ(0.1, wires=0)
             qp.Hadamard(wires=0)
-            # No rotation angles specified for PauliRot since it is a gate that
-            # in principle acts on an arbitrary number of wires.
-            qp.PauliRot(0.2, "X", wires=0)
+            # No rotation angles specified for PauliRot
+            qp.PauliRot(0.2, "XY", wires=[0, 1])
             qp.RZ(0.1, wires=0)
             qp.Hadamard(wires=0)
 
@@ -113,7 +111,7 @@ class TestSingleQubitFusion:
         transformed_ops = qp.tape.make_qscript(transformed_qfunc)().operations
 
         names_expected = ["Rot", "PauliRot", "Rot", "GlobalPhase"]
-        wires_expected = [Wires(0)] * 3 + [Wires([])]
+        wires_expected = [Wires(0), Wires([0, 1]), Wires([0]), Wires([])]
         compare_operation_lists(transformed_ops, names_expected, wires_expected)
 
     def test_single_qubit_fusion_exclude_gates(self):

@@ -18,7 +18,7 @@ pass (available through the external `pyzx <https://pyzx.readthedocs.io/en/lates
 to a PennyLane Clifford + T circuit.
 """
 
-from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
@@ -83,9 +83,9 @@ def optimize_t_count(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postproce
             return qp.state()
 
     >>> print(qp.draw(circuit)())
-    0: ──Z─╭●────╭●─┤  State
-    1: ────╰X──S─│──┤  State
-    2: ──────────╰X─┤  State
+    0: ──Z─╭●────╭●─┤ ╭State
+    1: ────╰X──S─│──┤ ├State
+    2: ──────────╰X─┤ ╰State
 
     """
     # pylint: disable=import-outside-toplevel

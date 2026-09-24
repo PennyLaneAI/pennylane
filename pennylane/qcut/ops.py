@@ -17,7 +17,7 @@ Nodes for use in qcut.
 
 import uuid
 
-from pennylane.operation import Operation
+from pennylane.core.operator import Operation
 
 
 class PrepareNode(Operation):
