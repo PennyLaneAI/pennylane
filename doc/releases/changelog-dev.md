@@ -1597,6 +1597,7 @@
   error could push the argument of ``arccos`` slightly above ``1``; it is now clipped to
   ``[-1, 1]``.
   [(#10185)](https://github.com/PennyLaneAI/pennylane/issues/10185)
+  [(#10188)](https://github.com/PennyLaneAI/pennylane/pull/10188)
 
 * Fixed a bug where a fixed decomposition rule assigned to :class:`~.MultiControlledX` via the
   ``fixed_decomps`` keyword argument of :func:`~.transforms.decompose` was being ignored.
