@@ -15,7 +15,7 @@
 
 from functools import wraps
 
-from pennylane.tape import QuantumScript
+from pennylane.core.qscript import QuantumScript
 
 from ..device_api import Device
 from ..execution_config import ExecutionConfig

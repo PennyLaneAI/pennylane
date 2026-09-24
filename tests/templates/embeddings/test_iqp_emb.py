@@ -23,7 +23,7 @@ from pennylane import numpy as pnp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
     features = (0.0, 1.0, 2.0)
@@ -147,13 +147,19 @@ class TestDecomposition:
     DECOMP_PARAMS = [
         ([1.0, 2.0], [1, 2], 2, [[1, 2], [1, 2]]),
         ([1.0, 2.0, 3.0, 4.0], [1, 2, 3, 4], 3, [[2, 1], [1, 2]]),
-        ([[1.0, 1.0, 1.0], [2.0, 2.0, 2.0], [3.0, 3.0, 3.0]], [1, 2, 3], 4, [[2, 1], [1, 3]]),
+        pytest.param(
+            [[1.0, 1.0, 1.0], [2.0, 2.0, 2.0], [3.0, 3.0, 3.0]],
+            [1, 2, 3],
+            4,
+            [[2, 1], [1, 3]],
+            marks=pytest.mark.pl2do(reason="PL 2.0: Parameter broadcasting will be re-visited."),
+        ),
     ]
 
-    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(("features", "wires", "num_repeats", "pattern"), DECOMP_PARAMS)
     def test_decomposition_new(self, features, wires, num_repeats, pattern):
-        op = qp.IQPEmbedding(features, wires, n_repeats=num_repeats, pattern=pattern, id=None)
+        op = qp.IQPEmbedding(features, wires, n_repeats=num_repeats, pattern=pattern)
 
         for rule in qp.list_decomps(qp.IQPEmbedding):
             _test_decomposition_rule(op, rule)
@@ -193,12 +199,6 @@ class TestInputs:
 
         with pytest.raises(ValueError, match="Features must be a one-dimensional"):
             circuit(f=features)
-
-    @pytest.mark.usefixtures("ignore_id_deprecation")
-    def test_id(self):
-        """Tests that the id attribute can be set."""
-        template = qp.IQPEmbedding(np.array([1, 2]), wires=[0, 1], id="a")
-        assert template.id == "a"
 
 
 def circuit_template(features):

@@ -16,9 +16,10 @@ Contains the ArbitraryUnitary template.
 """
 
 from pennylane import math
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.operation import Operation
+from pennylane.core.operator import Operation
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import PauliRot
+from pennylane.typing import Float, Wire
 from pennylane.wires import WiresLike
 
 _PAULIS = ["I", "X", "Y", "Z"]
@@ -101,7 +102,7 @@ class ArbitraryUnitary(Operation):
 
     resource_keys = {"num_wires"}
 
-    def __init__(self, weights, wires, id=None):
+    def __init__(self, weights, wires):
         shape = math.shape(weights)
         dim = 4 ** len(wires) - 1
         if len(shape) not in (1, 2) or shape[-1] != dim:
@@ -109,7 +110,7 @@ class ArbitraryUnitary(Operation):
                 f"Weights tensor must be of shape {(dim,)} or (batch_dim, {dim}); got {shape}."
             )
 
-        super().__init__(weights, wires=wires, id=id)
+        super().__init__(weights, wires=wires)
 
     @property
     def resource_params(self) -> dict:
@@ -154,7 +155,7 @@ class ArbitraryUnitary(Operation):
 def _arbitrary_unitary_resources(num_wires: int) -> dict:
     resources = {}
     for pauli_word in _all_pauli_words_but_identity(num_wires):
-        resources[resource_rep(PauliRot, pauli_word=pauli_word)] = 1
+        resources[PauliRot(Float, pauli_word=pauli_word, wires=Wire[len(pauli_word)])] = 1
     return resources
 
 

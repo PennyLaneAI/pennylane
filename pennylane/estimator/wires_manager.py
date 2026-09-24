@@ -13,7 +13,7 @@
 # limitations under the License.
 """This module contains the base class for wire management."""
 
-from pennylane.queuing import QueuingManager
+from pennylane.core.queuing import QueuingManager
 
 
 class WireResourceManager:

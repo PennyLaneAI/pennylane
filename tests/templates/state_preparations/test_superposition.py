@@ -112,14 +112,13 @@ def test_order_states(basis_states, exp_map):
     assert order_states(basis_states) == exp_map
 
 
-@pytest.mark.jax
+@pytest.mark.xfail_if_capture(reason="come back to this as we port Superposition [sc-128373]")
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
 
     coeffs = np.array([0.5, 0.5, -0.5, -0.5])
-    bases = np.array(
-        [[0, 0, 0, 0, 0], [0, 1, 0, 1, 1], [0, 0, 0, 0, 1], [0, 0, 0, 1, 0], [1, 1, 0, 1, 1]]
-    )
+    bases = np.array([[0, 0, 0, 0, 0], [0, 1, 0, 1, 1], [0, 0, 0, 1, 0], [1, 1, 0, 1, 1]])
 
     op = qp.Superposition(coeffs, bases=bases, wires=range(5), work_wire=5)
     qp.ops.functions.assert_valid(op)
@@ -163,6 +162,8 @@ class TestSuperposition:
         for op1, op2 in zip(decomposition, expected):
             assert qp.equal(op1, op2)
 
+    @pytest.mark.xfail_if_capture(reason="come back to this as we port Superposition [sc-128373]")
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(("probs", "bases"), PROBS_BASES)
     def test_decomposition_new(self, probs, bases):
         """Test the decomposition of the Superposition template."""

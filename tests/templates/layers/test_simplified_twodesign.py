@@ -25,7 +25,7 @@ from pennylane import numpy as pnp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Run standard checks with the assert_valid function."""
 
@@ -165,7 +165,7 @@ class TestDecomposition:
         ([np.pi] * 4, [[[np.pi] * 2] * 3], range(4)),
     ]
 
-    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(("initial_layer_weights", "weights", "wires"), DECOMP_PARAMS)
     def test_decomposition_new(self, initial_layer_weights, weights, wires):
         op = qp.SimplifiedTwoDesign(initial_layer_weights, weights, wires)
@@ -200,14 +200,6 @@ class TestInputs:
             initial_layer = np.random.randn(3)
             weights = np.random.randn(2, 1, 2)
             circuit(initial_layer, weights)
-
-    @pytest.mark.usefixtures("ignore_id_deprecation")
-    def test_id(self):
-        """Tests that the id attribute can be set."""
-        weights = np.random.random(size=(1, 2, 2))
-        initial_layer = np.random.randn(3)
-        template = qp.SimplifiedTwoDesign(initial_layer, weights, wires=range(3), id="a")
-        assert template.id == "a"
 
 
 class TestAttributes:

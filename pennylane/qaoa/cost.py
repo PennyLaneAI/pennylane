@@ -283,7 +283,7 @@ def maxcut(graph: nx_Graph | rx.PyGraph):
 
     >>> import networkx as nx
     >>> graph = nx.Graph([(0, 1), (1, 2)])
-    >>> cost_h, mixer_h = qml.qaoa.maxcut(graph)
+    >>> cost_h, mixer_h = qp.qaoa.maxcut(graph)
     >>> print(cost_h)
     0.5 * (Z(0) @ Z(1)) + 0.5 * (Z(1) @ Z(2)) + -0.5 * (I(0) @ I(1)) + -0.5 * (I(1) @ I(2))
     >>> print(mixer_h)
@@ -293,7 +293,7 @@ def maxcut(graph: nx_Graph | rx.PyGraph):
     >>> graph = rx.PyGraph()
     >>> graph.add_nodes_from([0, 1, 2])
     >>> graph.add_edges_from([(0, 1,""), (1,2,"")])
-    >>> cost_h, mixer_h = qml.qaoa.maxcut(graph)
+    >>> cost_h, mixer_h = qp.qaoa.maxcut(graph)
     >>> print(cost_h)
     0.5 * (Z(0) @ Z(1)) + 0.5 * (Z(1) @ Z(2)) + -0.5 * (I(0) @ I(1)) + -0.5 * (I(1) @ I(2))
     >>> print(mixer_h)
@@ -656,7 +656,7 @@ def max_weight_cycle(graph: nx_Graph | rx.PyGraph | rx.PyDiGraph, constrained: b
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
             import numpy as np
             import networkx as nx
 
@@ -667,7 +667,7 @@ def max_weight_cycle(graph: nx_Graph | rx.PyGraph | rx.PyDiGraph, constrained: b
         The cost and mixer Hamiltonian as well as the mapping from wires to edges can be loaded
         using:
 
-        >>> cost, mixer, mapping = qml.qaoa.max_weight_cycle(g, constrained=True)
+        >>> cost, mixer, mapping = qp.qaoa.max_weight_cycle(g, constrained=True)
 
         Since we are using ``constrained=True``, we must ensure that the input state to the QAOA
         algorithm corresponds to a cycle. Consider the mapping:

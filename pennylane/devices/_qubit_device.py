@@ -29,6 +29,14 @@ import numpy as np
 
 from pennylane import math
 from pennylane import numpy as pnp
+from pennylane.core.measurements import (
+    MeasurementProcess,
+    MeasurementTransform,
+    SampleMeasurement,
+    StateMeasurement,
+)
+from pennylane.core.operator import Operation, Operator
+from pennylane.core.qscript import QuantumScript
 from pennylane.exceptions import DeviceError, EigvalsUndefinedError, QuantumFunctionError
 from pennylane.math import multiply as qpmul
 from pennylane.math import sum as qpsum
@@ -36,21 +44,16 @@ from pennylane.measurements import (
     ClassicalShadowMP,
     CountsMP,
     ExpectationMP,
-    MeasurementProcess,
-    MeasurementTransform,
     MutualInfoMP,
     ProbabilityMP,
-    SampleMeasurement,
     SampleMP,
     ShadowExpvalMP,
-    StateMeasurement,
     StateMP,
     VarianceMP,
     VnEntropyMP,
 )
-from pennylane.operation import Operation, Operator, operation_derivative
+from pennylane.operation import operation_derivative
 from pennylane.ops import MeasurementValue, MidMeasure, Rot, X, Y, Z, adjoint
-from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
 from ._legacy_device import Device
@@ -179,9 +182,9 @@ class QubitDevice(Device):
     ):
         super().__init__(wires=wires, shots=shots, analytic=analytic)
 
-        if "float" not in str(r_dtype):
+        if "float" not in str(r_dtype):  # pragma: no cover
             raise DeviceError("Real datatype must be a floating point type.")
-        if "complex" not in str(c_dtype):
+        if "complex" not in str(c_dtype):  # pragma: no cover
             raise DeviceError("Complex datatype must be a complex floating point type.")
 
         self.C_DTYPE = c_dtype
@@ -955,7 +958,7 @@ class QubitDevice(Device):
             Only state vector simulators support this property. Please see the
             plugin documentation for more details.
         """
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     def density_matrix(self, wires):
         """Returns the reduced density matrix over the given wires.
@@ -1487,11 +1490,11 @@ class QubitDevice(Device):
 
         # generate empty outcome dict, populate values with state counts
         base_dict = {k: np.int64(0) for k in outcomes}
-        outcome_dicts = [base_dict.copy() for _ in range(shape[0])]
+        outcome_dicts = [base_dict.copy() for _ in range(samples.shape[0])]
         results = [np.unique(batch, return_counts=True) for batch in samples]
-        for result, outcome_dict in zip(results, outcome_dicts):
+        for result, outcome_dict in zip(results, outcome_dicts, strict=True):
             states, counts = result
-            for state, count in zip(states, counts):
+            for state, count in zip(states, counts, strict=True):
                 outcome_dict[state] = count
 
         return outcome_dicts if batched else outcome_dicts[0]

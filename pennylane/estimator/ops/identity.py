@@ -41,7 +41,7 @@ class Identity(ResourceOperator):
 
     The resources for this operation can be requested using:
 
-    >>> qml.estimator.Identity.resource_decomp()
+    >>> qp.estimator.Identity.resource_decomp()
     []
     """
 
@@ -167,7 +167,7 @@ class GlobalPhase(ResourceOperator):
 
     The resources for this operation can be requested using:
 
-    >>> qml.estimator.GlobalPhase.resource_decomp()
+    >>> qp.estimator.GlobalPhase.resource_decomp()
     []
 
     """

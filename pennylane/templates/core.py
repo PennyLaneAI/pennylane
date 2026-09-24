@@ -21,7 +21,6 @@ This module contains the abstractions for defining subroutines.
 
     ~Subroutine
     ~SubroutineOp
-    ~AbstractArray
     ~change_op_basis_subroutine_resource_rep
     ~adjoint_subroutine_resource_rep
     ~subroutine_resource_rep
@@ -32,16 +31,17 @@ import copy
 from collections import defaultdict
 from collections.abc import Callable
 from copy import deepcopy
-from dataclasses import dataclass
-from functools import lru_cache, reduce, update_wrapper
+from functools import lru_cache, update_wrapper
 from importlib.util import find_spec
 from inspect import BoundArguments, Signature, signature
 from typing import Any, ParamSpec
 
 import numpy as np
 
-from pennylane import capture, math, queuing
+from pennylane import capture, math
 from pennylane.capture import subroutine as capture_subroutine
+from pennylane.core import queuing
+from pennylane.core.operator import Operation, Operator, abstractify
 from pennylane.decomposition import (
     CompressedResourceOp,
     add_decomps,
@@ -49,41 +49,14 @@ from pennylane.decomposition import (
     register_resources,
     resource_rep,
 )
-from pennylane.decomposition.resources import auto_wrap
-from pennylane.operation import Operation, Operator
 from pennylane.ops import ChangeOpBasis
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.pytrees import flatten, unflatten
-from pennylane.wires import Wires
+from pennylane.typing import AbstractArray, AbstractWires, Wire
+from pennylane.wires import Wires, is_abstract_qubit
 
 has_jax = find_spec("jax") is not None
-
-
-@dataclass(frozen=True)
-class AbstractArray:
-    """An abstract representation of an array that contains the shape and dtype
-    attributes necessary for resource calculations.
-
-    This class is used with :func:`~pennylane.templates.subroutine_resource_rep`
-    for specifying abstract information about a :class:`~.Subroutine` for
-    purposes of resource calculations used with graph decompositions.
-
-    Args:
-        shape (tuple(int)): the dimensions of the array. ``()`` corresponds to a scalar.
-        dtype (type): the data type of the array. Defaults to ``np.dtype(int)`` for easier use in specifying
-        wires.
-    """
-
-    shape: tuple[int, ...]
-    dtype: np.dtype = np.dtype(int)
-
-    def __len__(self):
-        return reduce(lambda a, b: a * b, self.shape)
-
-    def __post_init__(self):
-        if math.get_interface(self.dtype) == "torch":
-            dummy = math.array((), dtype=self.dtype, like="torch")
-            object.__setattr__(self, "dtype", dummy.numpy().dtype)
-        object.__setattr__(self, "dtype", np.dtype(self.dtype))
 
 
 def _make_signature_key(subroutine: "Subroutine", *args, **kwargs):
@@ -96,18 +69,14 @@ def _make_signature_key(subroutine: "Subroutine", *args, **kwargs):
 
 
 def _get_non_adjoint_rep(initial: "Operator | CompressedResourceOp | Subroutine"):
-    if isinstance(initial, CompressedResourceOp):
-        return auto_wrap(initial)
-    if isinstance(initial, Operator):
-        return resource_rep(type(initial), **initial.resource_params)
+    if isinstance(initial, (Operator, CompressedResourceOp)):
+        return abstractify(initial)
     return subroutine_resource_rep(initial.func, *initial.args, **initial.keywords)
 
 
 def _get_adjoint_rep(initial: "Operator | CompressedResourceOp | Subroutine"):
-    if isinstance(initial, Operator):
-        return adjoint_resource_rep(type(initial), initial.resource_params)
-    if isinstance(initial, CompressedResourceOp):
-        return adjoint_resource_rep(initial.op_type, initial.params)
+    if isinstance(initial, (Operator, CompressedResourceOp)):
+        return _adjoint_abstract(abstractify(initial))
     return adjoint_subroutine_resource_rep(initial.func, *initial.args, **initial.keywords)
 
 
@@ -115,8 +84,8 @@ def change_op_basis_subroutine_resource_rep(
     compute: "Operator | CompressedResourceOp | Subroutine",
     target: "Operator | CompressedResourceOp | Subroutine",
     uncompute: "Operator | CompressedResourceOp | Subroutine" = None,
-) -> CompressedResourceOp:
-    """Generate a :class:`~pennylane.decomposition.CompressedResourceOp` similar to :func:`~.change_op_basis_resource_rep` that is more
+) -> ChangeOpBasis | CompressedResourceOp:
+    """Generate an abstract :class:`~pennylane.ops.ChangeOpBasis` resource representation that is more
     specifically targeted for use with :class:`~.Subroutine` instances.
 
     If any of `compute`, `target`, or `uncompute` are subroutines, they should be provided as partials, with any parameters bound
@@ -127,7 +96,7 @@ def change_op_basis_subroutine_resource_rep(
         target (Operator | pennylane.decomposition.resources.CompressedResourceOp | Subroutine): the target operator or subroutine.
         uncompute (Operator | pennylane.decomposition.resources.CompressedResourceOp | Subroutine | None): the optional uncompute operator or subroutine.
     Returns:
-        pennylane.decomposition.CompressedResourceOp: a condensed representation of the :func:`~.change_op_basis` involving a subroutine that can be
+        pennylane.ops.ChangeOpBasis: an abstract representation of :func:`~.change_op_basis` involving a subroutine that can be
         used in specifying the resources of another operator, template or subroutine.
 
     .. note::
@@ -141,14 +110,7 @@ def change_op_basis_subroutine_resource_rep(
         uncompute_rep = _get_adjoint_rep(compute)
     else:
         uncompute_rep = _get_non_adjoint_rep(uncompute)
-    return CompressedResourceOp(
-        ChangeOpBasis,
-        {
-            "compute_op": compute_rep,
-            "target_op": target_rep,
-            "uncompute_op": uncompute_rep,
-        },
-    )
+    return _change_op_basis_abstract(compute_rep, target_rep, uncompute_rep)
 
 
 def adjoint_subroutine_resource_rep(
@@ -195,7 +157,7 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
         from functools import partial
 
         def S_resources(params, wires, rotation):
-            return {qp.resource_rep(rotation): params.shape[0]}
+            return {rotation: params.shape[0]}
 
         @partial(qp.templates.Subroutine, static_argnames="rotation", compute_resources=S_resources)
         def S(params, wires, rotation):
@@ -203,17 +165,20 @@ def subroutine_resource_rep(subroutine: "Subroutine", *args, **kwargs) -> Compre
                 rotation(x, wires)
 
     We can add ``S`` to the resources of another ``Operator`` by using this function together with
-    an abstract form of the arguments it will be called with, using :class:`~.AbstractArray`.
+    an abstract form of the arguments it will be called with, using :class:`~.AbstractArray` and
+    :class:`~.AbstractWires`. These can be created by indexing into the :func:`~.typing.Float` and
+    :func:`~.typing.Wire` abstract types respectively.
 
     .. code-block:: python
 
-        from pennylane.templates import AbstractArray, subroutine_resource_rep
+        from pennylane.typing import Float, Wire
+        from pennylane.templates import subroutine_resource_rep
 
         class MyOp(qp.operation.Operation):
             pass
 
-        abstract_params = AbstractArray((4, ), float)
-        abstract_wires = AbstractArray(()) # a single wire
+        abstract_params = Float[4]
+        abstract_wires = Wire[1] # a single wire
         S_rep = subroutine_resource_rep(S, abstract_params, abstract_wires, qp.RX)
 
         @qp.decomposition.register_resources({S_rep: 1})
@@ -254,7 +219,7 @@ def _create_signature_key(
         if arg in static_argnames:
             key.append(val)
         elif arg in wire_argnames:
-            key.append(AbstractArray(shape=(len(val),), dtype=int))
+            key.append(Wire[len(val)])
         else:
             leaves, struct = flatten(val)
 
@@ -367,7 +332,6 @@ class SubroutineOp(Operation):
         bound_args: BoundArguments,
         decomposition: list[Operation],
         output: Any = None,
-        id: None | str = None,
     ):
         self._subroutine = subroutine
         self._bound_args = bound_args
@@ -383,7 +347,7 @@ class SubroutineOp(Operation):
 
         dynamic_args = [self._bound_args.arguments[arg] for arg in self.subroutine.dynamic_argnames]
         data = flatten(dynamic_args)[0]
-        super().__init__(*data, wires=wires, id=id)
+        super().__init__(*data, wires=wires)
 
         self._hyperparameters = {
             "decomposition": tuple(decomposition),
@@ -431,14 +395,14 @@ def _default_resources(subroutine: "Subroutine", *args, **kwargs) -> defaultdict
             params = (np.empty(shape=aval.shape, dtype=aval.dtype) for aval in avals)
             sig.arguments[arg] = unflatten(params, struct)
     for arg in subroutine.wire_argnames:
-        if isinstance(sig.arguments[arg], AbstractArray):
+        if isinstance(sig.arguments[arg], AbstractWires):
             sig.arguments[arg] = list(range(sig.arguments[arg].shape[0]))
     with queuing.AnnotatedQueue() as q:
         subroutine.definition(**sig.arguments)
 
     resources = defaultdict(int)
     for op in q.queue:
-        resources[resource_rep(type(op), **op.resource_params)] += 1
+        resources[abstractify(op)] += 1
     return resources
 
 
@@ -507,13 +471,13 @@ class Subroutine:
     >>> print(qp.draw(c, level="device")())
     0: ──RX(0.10)──RY(0.20)─┤  State
     >>> print(qp.specs(c)().resources)
-    Wire allocations: 1
-    Total gates: 1
-    Gate counts:
-    - MyTemplate: 1
-    Measurements:
+    Quantum operations:
+    - Total: 1
+      - MyTemplate: 1
+    Measurement processes:
     - state(all wires): 1
-    Depth: 1
+    Total wires: 1
+    Circuit Depth: 1
 
     For multiple wire register inputs or use of a different name than ``"wires"``, the
     ``wire_argnames`` can be provided:
@@ -631,26 +595,29 @@ class Subroutine:
                 qp.RX(params[i], wires[i])
 
     For example, we should be able to calculate the resources using the :class:`~.AbstractArray`
-    class.
+    and :class:`~.AbstractWires` classes. :class:`~.AbstractWires` can be created by indexing into
+    :func:`~.typing.Wire` with the number of wires, and we can create the :class:`~.AbstractArray` from the available
+    :func:`~.typing.Float` abstract type.
 
-    >>> from pennylane.templates import AbstractArray
-    >>> abstract_params = AbstractArray((10,), float)
-    >>> abstract_wires = AbstractArray((10,))
+    >>> from pennylane.typing import Float, Wire
+    >>> abstract_params = Float[10]
+    >>> abstract_wires = Wire[1]
     >>> RXLayer.compute_resources(abstract_params, abstract_wires)
     {<class 'pennylane.ops.qubit.parametric_ops_single_qubit.RX'>: 10}
 
-    We can create an ``Operator`` that can decompose to a ``Subroutine`` using :class:`~.AbstractArray`
-    and :func:`~.subroutine_resource_rep`.
+    We can create an ``Operator`` that can decompose to a ``Subroutine`` using :class:`~.AbstractArray`,
+    :class:`~.AbstractWires`, and :func:`~.subroutine_resource_rep`.
 
     .. code-block:: python
 
-        from pennylane.templates import AbstractArray, subroutine_resource_rep
+        from pennylane.typing import Float, Wire
+        from pennylane.templates import subroutine_resource_rep
 
         class MyOp(qp.operation.Operation):
             pass
 
-        abstract_params = AbstractArray((3, ), float)
-        abstract_wires = AbstractArray((3, ))
+        abstract_params = Float[3]
+        abstract_wires = Wire[3]
         rxlayer_rep = subroutine_resource_rep(RXLayer, abstract_params, abstract_wires)
 
         @qp.decomposition.register_resources({rxlayer_rep: 1})
@@ -826,8 +793,12 @@ class Subroutine:
                 import jax  # pylint: disable=import-outside-toplevel
 
                 if len(register) > 0 and math.get_interface(register) != "jax":
-                    # don't stack if already a jax array
-                    bound_args.arguments[wire_argname] = jax.numpy.stack(register)
+                    # convert the integers in wires to tracers
+                    wires = [(w if is_abstract_qubit(w) else jax.numpy.array(w)) for w in register]
+                    if not any(is_abstract_qubit(w) for w in wires):
+                        wires = math.array(wires, like="jax")
+                    bound_args.arguments[wire_argname] = wires
+
             else:
                 bound_args.arguments[wire_argname] = Wires(register)
         return bound_args
@@ -852,18 +823,18 @@ class Subroutine:
 
         return tuple(name for name in self._signature.parameters if not is_static(name))
 
-    def operator(self, *args, id: str | None = None, **kwargs) -> SubroutineOp:
+    def operator(self, *args, **kwargs) -> SubroutineOp:
         """Create a ``SubroutineOp`` from the template."""
         bound_args = self._full_setup_inputs(*args, **kwargs)
         with queuing.AnnotatedQueue() as decomposition:
             output = self.definition(*bound_args.args, **bound_args.kwargs)
-        return SubroutineOp(self, bound_args, decomposition.queue, output, id=id)
+        return SubroutineOp(self, bound_args, decomposition.queue, output)
 
-    def __call__(self, *args, id: str | None = None, **kwargs):
+    def __call__(self, *args, **kwargs):
         if capture.enabled():
             bound_args = self._full_setup_inputs(*args, **kwargs)
             return self._capture_subroutine(*bound_args.args, **bound_args.kwargs)
-        op = self.operator(*args, id=id, **kwargs)
+        op = self.operator(*args, **kwargs)
         return op.output
 
 
@@ -918,7 +889,6 @@ if CollectedSubroutine._primitive is not None:  # pylint: disable=protected-acce
 __all__ = [
     "Subroutine",
     "SubroutineOp",
-    "AbstractArray",
     "subroutine_resource_rep",
     "CollectedSubroutine",
     "adjoint_subroutine_resource_rep",

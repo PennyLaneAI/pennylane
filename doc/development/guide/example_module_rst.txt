@@ -1,4 +1,4 @@
-qml.module_name
+qp.module_name
 ===============
 
 .. currentmodule:: pennylane.module_name

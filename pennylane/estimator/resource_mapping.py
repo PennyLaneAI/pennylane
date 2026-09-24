@@ -25,13 +25,18 @@ import pennylane.estimator.templates as re_temps
 import pennylane.ops as qops
 import pennylane.templates as qtemps
 from pennylane import math as pl_math
-from pennylane.operation import Operation
+from pennylane.core.operator import Operation
+from pennylane.core.queuing import QueuingManager
+from pennylane.estimator.compact_hamiltonian import (
+    CDFHamiltonian,
+    THCHamiltonian,
+    VibronicHamiltonian,
+)
 from pennylane.ops.functions import simplify
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp
 from pennylane.ops.op_math.pow import Pow, PowOperation
 from pennylane.ops.op_math.prod import Prod
-from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
 from .resource_operator import ResourceOperator
@@ -198,6 +203,12 @@ def _(op: qops.PauliRot):
 
 
 @_map_to_resource_op.register
+def _(op: qops.PCPhase):
+    dim = op.dim
+    return re_ops.PCPhase(num_wires=len(op.wires), dim=dim, wires=op.wires)
+
+
+@_map_to_resource_op.register
 def _(op: qops.SingleExcitation):
     return re_ops.SingleExcitation(wires=op.wires)
 
@@ -279,16 +290,16 @@ def _(op: qops.Toffoli):
 @_map_to_resource_op.register
 def _(op: qtemps.OutMultiplier):
     return re_temps.OutMultiplier(
-        a_num_wires=len(op.hyperparameters["x_wires"]),
-        b_num_wires=len(op.hyperparameters["y_wires"]),
+        a_num_wires=len(op.x_wires),
+        b_num_wires=len(op.y_wires),
         wires=op.wires,
     )
 
 
 @_map_to_resource_op.register
 def _(op: qtemps.SemiAdder):
-    x_wires = op.hyperparameters["x_wires"]
-    y_wires = op.hyperparameters["y_wires"]
+    x_wires = op.x_wires
+    y_wires = op.y_wires
 
     return re_temps.SemiAdder(
         max_register_size=max(len(x_wires), len(y_wires)),
@@ -310,8 +321,19 @@ def _(op: qtemps.AQFT):
     )
 
 
-@_register_subroutine(qtemps.BasisRotation)
-def _handle_basis_rotation(op):
+@_map_to_resource_op.register
+def _(op: qtemps.IQP):
+    h = op.hyperparameters
+    return re_temps.IQP(
+        num_wires=len(op.wires),
+        pattern=h["pattern"],
+        spin_sym=h["spin_sym"],
+        wires=op.wires,
+    )
+
+
+@_map_to_resource_op.register
+def _handle_basis_rotation(op: qtemps.BasisRotation):
     return re_temps.BasisRotation(dim=len(op.wires), wires=op.wires)
 
 
@@ -395,8 +417,46 @@ def _(op: qtemps.QROM):
     return re_temps.QROM(
         num_bitstrings=num_bitstrings,
         size_bitstring=size_bitstring,
-        restored=op.hyperparameters["clean"],
+        restored=op.clean,
         wires=op.wires,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qtemps.AliasSampling):
+    # ``mu`` is the number of keep/sigma bits; the estimator ResourceOperator stores that as
+    # ``precision = 2**(-mu)`` (see ``AliasSampling.resource_decomp``).
+    return re_temps.AliasSampling(
+        num_coeffs=len(op.probs),
+        precision=2.0 ** (-op.mu),
+        wires=op.target_wires,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qtemps.AliasSamplingTHC):
+    # PrepTHC is the full THC PREPARE (Lee Figs. 3-4). AliasSamplingTHC is only the
+    # alias-sampling half after SuperpositionTHC. ``N`` is spin orbitals.
+    num_orbitals = op.N // 2
+    if num_orbitals < 1:
+        raise ValueError(
+            f"Cannot map AliasSamplingTHC with N={op.N} spin orbitals to "
+            "estimator.templates.PrepTHC, which requires at least one spatial orbital "
+            "(N // 2 >= 1). This instance has an empty one-body block."
+        )
+    return re_temps.PrepTHC(
+        THCHamiltonian(num_orbitals=num_orbitals, tensor_rank=op.M),
+        coeff_precision=op.aleph,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qtemps.SelectTHC):
+    num_orbitals = len(op.chi[0])
+    return re_temps.SelectTHC(
+        THCHamiltonian(num_orbitals=num_orbitals, tensor_rank=len(op.chi)),
+        num_batches=op.num_batches,
+        rotation_precision=op.beth,
     )
 
 
@@ -413,6 +473,16 @@ def _(op: qtemps.SelectPauliRot):
 @_map_to_resource_op.register
 def _(op: qops.QubitUnitary):
     return re_ops.QubitUnitary(num_wires=len(op.wires), precision=None, wires=op.wires)
+
+
+@_map_to_resource_op.register
+def _(op: qops.BasisState):
+    return re_ops.BasisState(num_wires=len(op.wires), wires=op.wires)
+
+
+@_map_to_resource_op.register
+def _(op: qtemps.BasisEmbedding):
+    return re_ops.BasisState(num_wires=len(op.wires), wires=op.wires)
 
 
 @_map_to_resource_op.register
@@ -452,6 +522,64 @@ def _(op: qtemps.TrotterProduct):
         first_order_expansion=res_ops,
         num_steps=op.hyperparameters["n"],
         order=op.hyperparameters["order"],
+        wires=op.wires,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qtemps.TrotterVibronic):
+    hamiltonian = op.arguments["hamiltonian"]
+    num_states = hamiltonian.num_states
+    num_modes = hamiltonian.num_modes
+    grid_size = len(op.arguments["vib_wires"]) // num_modes
+    phase_grad_wires = len(op.arguments["phase_gradient_wires"])
+    # ``coefficient_wires`` may be dynamically allocated (empty); it then matches
+    # ``phase_gradient_wires`` in size (see the class docstring).
+    coeff_wires = len(op.arguments["coefficient_wires"]) or phase_grad_wires
+
+    # ``VibronicHamiltonian`` assumes the standard XOR ("blocks") fragmentation, under which the
+    # number of position fragments F is at most 2 ** ceil_log2(N) (N = number of electronic
+    # states); reject larger fragment counts so the estimate cannot silently disagree with the
+    # actual Hamiltonian.
+    num_fragments = hamiltonian.num_fragments
+    max_fragments = 2 ** pl_math.ceil_log2(num_states)
+    if num_fragments > max_fragments:
+        raise ValueError(
+            "The resource estimate for TrotterVibronic assumes the standard XOR fragmentation "
+            f"with at most {max_fragments} position fragments for {num_states} electronic "
+            f"states (arXiv:2411.13669), but the given Hamiltonian has {num_fragments} "
+            "fragments."
+        )
+
+    vibronic_ham = VibronicHamiltonian(
+        num_modes=num_modes,
+        num_states=num_states,
+        grid_size=grid_size,
+        taylor_degree=2,
+    )
+    return re_temps.TrotterVibronic(
+        vibronic_ham=vibronic_ham,
+        num_steps=op.arguments["num_trotter_steps"],
+        order=2,
+        phase_grad_precision=2.0**-phase_grad_wires,
+        coeff_precision=2.0**-coeff_wires,
+        wires=Wires.all_wires([op.arguments["electronic_wires"], op.arguments["vib_wires"]]),
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qtemps.TrotterCDF):
+    # TrotterCDF is a second-order Trotter template. The CDF Hamiltonian stores its
+    # ``core_tensors`` with shape ``(num_fragments, num_orbitals, num_orbitals)``.
+    core_tensors = op.arguments["hamiltonian"].core_tensors
+    cdf_ham = CDFHamiltonian(
+        num_orbitals=core_tensors.shape[1],
+        num_fragments=core_tensors.shape[0],
+    )
+    return re_temps.TrotterCDF(
+        cdf_ham,
+        num_steps=op.arguments["num_trotter_steps"],
+        order=2,
         wires=op.wires,
     )
 
@@ -505,6 +633,20 @@ def _(op: qtemps.Reflection):
     )
 
 
+@_map_to_resource_op.register
+def _(op: qtemps.GQSP):
+    be_op = op.unitary
+    mapped_be_op = _map_to_resource_op(be_op)
+
+    ctrl_wire = op.control
+    target_wires = mapped_be_op.wires
+    total_wires = target_wires + Wires(ctrl_wire)
+
+    d_plus = len(op.parameters[0]) - 1
+
+    return re_temps.GQSP(mapped_be_op, d_plus, wires=total_wires)
+
+
 # Symbolic Ops:
 @_map_to_resource_op.register
 def _(op: qops.ChangeOpBasis):
@@ -513,6 +655,16 @@ def _(op: qops.ChangeOpBasis):
         _map_to_resource_op(compute),
         _map_to_resource_op(target),
         _map_to_resource_op(uncompute),
+        wires=op.wires,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qops.ChangeOpBasis2):
+    return re_ops.ChangeOpBasis(
+        _map_to_resource_op(op.compute_op),
+        _map_to_resource_op(op.target_op),
+        _map_to_resource_op(op.uncompute_op),
         wires=op.wires,
     )
 

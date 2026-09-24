@@ -18,7 +18,7 @@ This module contains the qp.evolve function.
 from functools import singledispatch
 from typing import overload
 
-from pennylane.operation import Operator
+from pennylane.core.operator import Operator
 from pennylane.ops import Evolution
 from pennylane.pulse import ParametrizedEvolution, ParametrizedHamiltonian
 from pennylane.typing import TensorLike

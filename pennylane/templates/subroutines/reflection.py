@@ -20,16 +20,13 @@ import copy
 
 import numpy as np
 
-from pennylane import ops, pytrees
-from pennylane.decomposition import (
-    add_decomps,
-    adjoint_resource_rep,
-    controlled_resource_rep,
-    register_resources,
-    resource_rep,
-)
-from pennylane.operation import Operation
-from pennylane.queuing import QueuingManager
+from pennylane import ops
+from pennylane.core.operator import Operation, Operator2, abstractify
+from pennylane.core.queuing import QueuingManager, apply
+from pennylane.decomposition import add_decomps, register_resources
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.typing import Wire
 from pennylane.wires import Wires
 
 
@@ -114,7 +111,7 @@ class Reflection(Operation):
 
     grad_method = None
 
-    resource_keys = {"base_class", "base_params", "num_wires", "num_reflection_wires"}
+    resource_keys = {"base_rep", "num_wires", "num_reflection_wires"}
 
     def _flatten(self):
         data = (self.hyperparameters["base"], self.parameters[0])
@@ -123,6 +120,15 @@ class Reflection(Operation):
     # pylint: disable=arguments-differ
     @classmethod
     def _primitive_bind_call(cls, U, alpha, reflection_wires, **kwargs):
+        def _get_tracer(op):
+            if isinstance(op, Operator2):
+                if op.tracer is None:
+                    # pylint: disable-next=protected-access
+                    op._bind_primitive()  # pragma: no cover
+                return op.tracer if op.tracer is not None else op
+            return op  # pragma: no cover
+
+        U = _get_tracer(U)
         return super()._primitive_bind_call(U, alpha, wires=reflection_wires, **kwargs)
 
     @classmethod
@@ -130,7 +136,7 @@ class Reflection(Operation):
         U, alpha = data
         return cls(U, alpha=alpha, reflection_wires=metadata[0])
 
-    def __init__(self, U, alpha=np.pi, reflection_wires=None, id=None):
+    def __init__(self, U, alpha=np.pi, reflection_wires=None):
         self._name = "Reflection"
         wires = U.wires
 
@@ -145,13 +151,12 @@ class Reflection(Operation):
             "reflection_wires": tuple(reflection_wires),
         }
 
-        super().__init__(alpha, *U.data, wires=wires, id=id)
+        super().__init__(alpha, *U.data, wires=wires)
 
     @property
     def resource_params(self) -> dict:
         return {
-            "base_class": self.hyperparameters["base"].__class__,
-            "base_params": self.hyperparameters["base"].resource_params,
+            "base_rep": abstractify(self.hyperparameters["base"]),
             "num_wires": len(self.wires),
             "num_reflection_wires": len(self.hyperparameters["reflection_wires"]),
         }
@@ -211,36 +216,34 @@ class Reflection(Operation):
             decomp_ops.append(ops.PhaseShift(alpha, wires=wires))
             decomp_ops.append(ops.X(wires=wires))
 
+        if QueuingManager.recording():
+            apply(U)
+
         decomp_ops.append(U)
 
         return decomp_ops
 
 
-def _reflection_decomposition_resources(
-    base_class, base_params, num_wires, num_reflection_wires=None
-) -> dict:
+def _reflection_decomposition_resources(base_rep, num_wires, num_reflection_wires=None) -> dict:
 
     num_wires = num_reflection_wires if num_reflection_wires is not None else num_wires
 
     resources = {
         ops.GlobalPhase: 1,
-        adjoint_resource_rep(base_class, base_params): 1,
+        _adjoint_abstract(base_rep): 1,
         ops.PauliX: 2,
     }
 
     if num_wires > 1:
         resources[
-            controlled_resource_rep(
-                ops.PhaseShift,
-                {},
-                num_control_wires=num_wires - 1,
-                num_zero_control_values=num_wires - 1,
+            _ctrl_abstract(
+                ops.PhaseShift, Wire[num_wires - 1], num_zero_control_values=num_wires - 1
             )
         ] = 1
     else:
-        resources[resource_rep(ops.PhaseShift)] = 1
+        resources[ops.PhaseShift] = 1
 
-    resources[resource_rep(base_class, **base_params)] = 1
+    resources[base_rep] = 1
 
     return resources
 
@@ -272,7 +275,7 @@ def _reflection_decomposition(*parameters, wires=None, **hyperparameters):
         ops.PhaseShift(alpha, wires=wires)
         ops.PauliX(wires=wires)
 
-    pytrees.unflatten(*pytrees.flatten(U))
+    apply(U)
 
 
 add_decomps(Reflection, _reflection_decomposition)

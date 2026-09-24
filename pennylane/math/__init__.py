@@ -27,7 +27,6 @@ The following frameworks are currently supported:
 
 * NumPy
 * Autograd
-* TensorFlow
 * PyTorch
 * JAX
 
@@ -143,7 +142,7 @@ def get_dtype_name(x) -> str:
     """An interface independent way of getting the name of the datatype.
 
     >>> x = tf.Variable(0.1)
-    >>> qml.math.get_dtype_name(tf.Variable(0.1))
+    >>> qp.math.get_dtype_name(tf.Variable(0.1))
     'float32'
     """
     return ar.get_dtype_name(x)
@@ -162,28 +161,31 @@ def is_real_obj_or_close(obj):
         ``"complex"`` and returning the negated result of this.
 
     >>> x = jnp.array(0.4)
-    >>> qml.math.is_real_obj_or_close(x)
+    >>> qp.math.is_real_obj_or_close(x)
     True
 
     >>> x = tf.Variable(0.4+0.2j)
-    >>> qml.math.is_real_obj_or_close(x)
+    >>> qp.math.is_real_obj_or_close(x)
     False
 
     >>> x = torch.tensor(0.4+1e-13j)
-    >>> qml.math.is_real_obj_or_close(x)
+    >>> qp.math.is_real_obj_or_close(x)
     True
 
     Default absolute and relative tolerances of
-    ``qml.math.allclose`` are used to determine whether the
+    ``qp.math.allclose`` are used to determine whether the
     input is close to real-valued.
     """
-    if (
-        type(obj).__name__ != "AbstractArray"
-        and not is_abstract(obj)
-        and allclose(ar.imag(obj), 0.0)
-    ):
-        obj = ar.real(obj)
-    return not get_dtype_name(obj).startswith("complex")
+    # Check if object is purely real
+    if not get_dtype_name(obj).startswith("complex"):
+        return True
+
+    # If it's a concrete array, check if the imaginary part is effectively zero
+    if type(obj).__name__ != "AbstractArray":
+        imag = ar.imag(obj)
+        return not is_abstract(imag) and allclose(imag, 0.0)
+
+    return False
 
 
 class NumpyMimic(ar.autoray.AutoNamespace):
@@ -200,9 +202,6 @@ class NumpyMimic(ar.autoray.AutoNamespace):
 
 numpy_mimic = NumpyMimic()
 numpy_fft = ar.autoray.AutoNamespace(submodule="fft")
-
-# small constant for numerical stability that the user can modify
-eps = 1e-14
 
 
 def __getattr__(name):

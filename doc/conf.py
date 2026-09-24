@@ -16,7 +16,7 @@ import re
 import sys
 from docutils import nodes
 from datetime import datetime
-from sphinx.util import logging
+from sphinx.util import logging, inspect
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(".")), "doc"))
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-needs_sphinx = "8.1"
+needs_sphinx = "9.0"
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named "sphinx.ext.*") or your custom
@@ -65,6 +65,7 @@ ogp_social_cards = {
 ogp_image = "_static/opengraph.png"
 numpydoc_show_class_members = False
 
+
 # The base URL with a proper language and version.
 html_baseurl = os.environ.get("READTHEDOCS_CANONICAL_URL", "https://docs.pennylane.ai/")
 
@@ -80,6 +81,11 @@ automodapi_toctreedirnm = "code/api"
 automodapi_inheritance_diagram = False
 automodsumm_inherited_members = True
 
+# Prevent Sphinx from identifying functions/methods as single-dispatch.
+# This forces autodoc to output only the single base signature.
+inspect.is_singledispatch_function = lambda _: False
+inspect.is_singledispatch_method = lambda _: False
+
 # Hot fix for the error: 'You must configure the bibtex_bibfiles setting'
 bibtex_bibfiles = ["bibfile.bib"]
 
@@ -94,7 +100,10 @@ intersphinx_mapping = {
 mathjax_path = (
     "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"
 )
-ignore_warnings = [("code/api/qp_transforms*", "no module named pennylane.transforms")]
+ignore_warnings = [
+    ("code/api/qp_transforms*", "no module named pennylane.transforms"),
+]
+# suppress_warnings = ["docutils"]  # Suppress docutils warnings from Sphinx 9 autodoc alias-of rendering
 autodoc_mock_imports = ["torch"]
 
 # Add any paths that contain templates here, relative to this directory.

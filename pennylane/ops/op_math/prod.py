@@ -18,7 +18,6 @@ computing the product between operations.
 
 import itertools
 from collections import Counter
-from copy import copy
 from functools import reduce
 from itertools import combinations
 from typing import Union
@@ -28,22 +27,24 @@ from scipy.sparse import kron as sparse_kron
 import pennylane as qp
 from pennylane import math
 from pennylane.capture.autograph import wraps
-from pennylane.operation import Operator
-from pennylane.ops.op_math.pow import Pow
-from pennylane.ops.op_math.sprod import SProd
-from pennylane.ops.op_math.sum import Sum
-from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
-from pennylane.queuing import QueuingManager
-from pennylane.typing import TensorLike
+from pennylane.core.operator import Operator, Operator2, abstractify
+from pennylane.core.queuing import QueuingManager, apply, remove_from_program
+from pennylane.decomposition.symbolic_decomposition import flip_zero_control
+from pennylane.typing import TensorLike, Wire
 
+from .adjoint2 import _adjoint_abstract
 from .composite import CompositeOp, handle_recursion_error
+from .controlled2 import _ctrl_abstract
+from .prod2 import Prod2, _multi_temporary_and_all_ones, _ProductFactorsGrouping, _swappable_ops
+from .sprod import SProd
+from .sum import Sum
 
 MAX_NUM_WIRES_KRON_PRODUCT = 9
 """The maximum number of wires up to which using ``math.kron`` is faster than ``math.dot`` for
 computing the sparse matrix representation."""
 
 
-def prod(*ops, id=None, lazy=True):
+def prod(*ops, lazy=True):
     """Construct an operator which represents the generalized product of the
     operators provided.
 
@@ -130,16 +131,33 @@ def prod(*ops, id=None, lazy=True):
                 if qp.QueuingManager.recording():
                     op = qp.apply(op)
                 return op
-            return prod(*qs.operations[::-1], id=id, lazy=lazy)
+            return prod(*qs.operations[::-1], lazy=lazy)
 
         return wrapper
 
+    if ops and all(isinstance(op, Operator2) for op in ops):
+        if lazy:
+            return Prod2(ops)
+
+        # The outer 'Prod2's in 'ops' are discarded here and so we need to remove them from
+        # the program as nothing else will. The lazy route above does not need
+        # this as it forwards 'ops' directly to the constructor which already dequeues
+        # every operand in the '__init__' of 'CompositeOp2'.
+        operands = tuple(
+            itertools.chain.from_iterable(
+                op.operands if isinstance(op, Prod2) else (op,) for op in ops
+            )
+        )
+        for op in ops:
+            remove_from_program(op)
+
+        return Prod2(operands)
+
     if lazy:
-        return Prod(*ops, id=id)
+        return Prod(*ops)
 
     ops_simp = Prod(
         *itertools.chain.from_iterable([op if isinstance(op, Prod) else [op] for op in ops]),
-        id=id,
     )
 
     for op in ops:
@@ -249,12 +267,18 @@ class Prod(CompositeOp):
     @property
     @handle_recursion_error
     def resource_params(self):
-        resources = dict(Counter(qp.resource_rep(type(op), **op.resource_params) for op in self))
+        resources = dict(Counter(abstractify(op) for op in self))
         return {"resources": resources}
 
     _op_symbol = "@"
     _math_op = staticmethod(math.prod)
     grad_method = None
+
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        if subclass == qp.ops.op_math.Prod2:
+            return True
+        return NotImplemented
 
     @property
     def is_verified_hermitian(self):
@@ -281,8 +305,8 @@ class Prod(CompositeOp):
         to support the intuition that when we write :math:`\hat{O} = \hat{A} \cdot \hat{B}` it is implied
         that :math:`\hat{B}` is applied to the state before :math:`\hat{A}` in the quantum circuit.
         """
-        if qp.queuing.QueuingManager.recording():
-            return [qp.apply(op) for op in self[::-1]]
+        if QueuingManager.recording():
+            return [apply(op) for op in self[::-1]]
         return list(self[::-1])
 
     @handle_recursion_error
@@ -310,7 +334,9 @@ class Prod(CompositeOp):
         else:
             full_mat = qp.math.stack(
                 [
-                    reduce(math.kron, [m[i] if b else m for m, b in zip(mats, batched)])
+                    reduce(
+                        math.kron, [m[i] if b else m for m, b in zip(mats, batched, strict=True)]
+                    )
                     for i in range(self.batch_size)
                 ]
             )
@@ -339,23 +365,6 @@ class Prod(CompositeOp):
     @handle_recursion_error
     def has_sparse_matrix(self):
         return self.pauli_rep is not None or all(op.has_sparse_matrix for op in self)
-
-    # pylint: disable=protected-access
-    @property
-    @handle_recursion_error
-    def _queue_category(self):
-        """Used for sorting objects into their respective lists in `QuantumTape` objects.
-        This property is a temporary solution that should not exist long-term and should not be
-        used outside of ``QuantumTape._process_queue``.
-
-        Options are:
-        * `"_ops"`
-        * `"_measurements"`
-        * `None`
-
-        Returns (str or None): "_ops" if the _queue_catagory of all factors is "_ops", else None.
-        """
-        return "_ops" if all(op._queue_category == "_ops" for op in self) else None
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
@@ -395,7 +404,7 @@ class Prod(CompositeOp):
         """
         # try using pauli_rep:
         if pr := self.pauli_rep:
-            pr.simplify()
+            pr.prune()
             return pr.operation(wire_order=self.wires)
 
         global_phase, factors = self._simplify_factors(factors=self.operands)
@@ -495,201 +504,86 @@ def _prod_resources(resources):
 @qp.register_resources(_prod_resources)
 def _prod_decomp(*_, wires=None, operands, **__):
     for op in reversed(operands):
-        qp.pytrees.unflatten(*qp.pytrees.flatten(op))
+        qp.apply(op)
 
 
 qp.add_decomps(Prod, _prod_decomp)
 
 
-def _swappable_ops(op1, op2, wire_map: dict = None) -> bool:
-    """Boolean expression that indicates if op1 and op2 don't have intersecting wires and if they
-    should be swapped when sorting them by wire values.
+def _ctrl_prod_resources(
+    num_control_wires,
+    base_params,
+    **_,
+):
+    factor_reps = base_params["resources"]
 
-    Args:
-        op1 (.Operator): First operator.
-        op2 (.Operator): Second operator.
-        wire_map (dict): Dictionary containing the wire values as keys and its indexes as values.
-            Defaults to None.
+    resources = Counter()
+    resources[qp.TemporaryAND] += num_control_wires - 1
+    resources[_adjoint_abstract(qp.TemporaryAND)] += num_control_wires - 1
 
-    Returns:
-        bool: True if operators should be swapped, False otherwise.
+    # Per-factor single-control fan-out from the single aux qubit
+    for rep, count in factor_reps.items():
+        resources[_ctrl_abstract(rep, Wire[1])] += count
+
+    return dict(resources)
+
+
+@qp.register_condition(
+    lambda num_control_wires, num_work_wires, work_wire_type, **_: num_control_wires >= 2
+    and num_work_wires >= num_control_wires - 1
+    and work_wire_type == "zeroed"
+)
+@qp.register_resources(_ctrl_prod_resources)
+def _controlled_product_with_work_wires(*_, control_wires, work_wires, base, **__):
+    """Decomposition of ``C(Prod)`` with at least ``num_control_wires - 1`` work wires.
+
+    Assumes that all ``control_values`` are 1. Zero-control flipping is handled
+    by wrapping this rule with ``flip_zero_control``.
     """
-    # one is broadcasted onto all wires.
-    if not op1.wires:
-        return True
-    if not op2.wires:
-        return False
-    wires1 = op1.wires
-    wires2 = op2.wires
-    if wire_map is not None:
-        wires1 = wires1.map(wire_map)
-        wires2 = wires2.map(wire_map)
-    wires1 = set(wires1)
-    wires2 = set(wires2)
-    # compare strings of wire labels so that we can compare arbitrary wire labels like 0 and "a"
-    return False if wires1 & wires2 else str(wires1.pop()) > str(wires2.pop())
+    target_wire = _multi_temporary_and_all_ones(control_wires, work_wires)
+    for op in base.operands[::-1]:
+        qp.ctrl(op, control=[target_wire])
+    qp.adjoint(_multi_temporary_and_all_ones)(control_wires, work_wires)
 
 
-class _ProductFactorsGrouping:
-    """Utils class used for grouping identical product factors."""
+def _ctrl_prod_resources_with_one_work_wire(
+    num_control_wires,
+    base_params,
+    **_,
+):
+    factor_reps = base_params["resources"]  # {rep: count} from Prod
+    multicx_rep = qp.MultiControlledX(Wire[num_control_wires + 1])
 
-    _identity_map = {
-        "Identity": (1.0, "Identity"),
-        "PauliX": (1.0, "PauliX"),
-        "PauliY": (1.0, "PauliY"),
-        "PauliZ": (1.0, "PauliZ"),
-    }
-    _x_map = {
-        "Identity": (1.0, "PauliX"),
-        "PauliX": (1.0, "Identity"),
-        "PauliY": (1.0j, "PauliZ"),
-        "PauliZ": (-1.0j, "PauliY"),
-    }
-    _y_map = {
-        "Identity": (1.0, "PauliY"),
-        "PauliX": (-1.0j, "PauliZ"),
-        "PauliY": (1.0, "Identity"),
-        "PauliZ": (1.0j, "PauliX"),
-    }
-    _z_map = {
-        "Identity": (1.0, "PauliZ"),
-        "PauliX": (1.0j, "PauliY"),
-        "PauliY": (-1.0j, "PauliX"),
-        "PauliZ": (1.0, "Identity"),
-    }
-    _pauli_mult = {"Identity": _identity_map, "PauliX": _x_map, "PauliY": _y_map, "PauliZ": _z_map}
-    _paulis = {"PauliX": PauliX, "PauliY": PauliY, "PauliZ": PauliZ}
+    resources = Counter()
+    resources[multicx_rep] += 2
 
-    def __init__(self):
-        self._pauli_factors = {}  #  {wire: (pauli_coeff, pauli_word)}
-        self._non_pauli_factors = {}  # {wires: [hash, exponent, operator]}
-        self._factors = []
-        self.global_phase = 1
+    # Per-factor single-control fan-out from the single aux qubit
+    for rep, count in factor_reps.items():
+        resources[_ctrl_abstract(rep, Wire[1])] += count
 
-    def add(self, factor: Operator):
-        """Add factor.
+    return dict(resources)
 
-        Args:
-            factor (Operator): Factor to add.
-        """
-        wires = factor.wires
-        if isinstance(factor, Prod):
-            for prod_factor in factor:
-                self.add(prod_factor)
-        elif isinstance(factor, Sum):
-            self._remove_pauli_factors(wires=wires)
-            self._remove_non_pauli_factors(wires=wires)
-            self._factors += (factor.operands,)
-        elif not isinstance(factor, qp.Identity):
-            if isinstance(factor, SProd):
-                self.global_phase *= factor.scalar
-                factor = factor.base
-            if isinstance(factor, (qp.Identity, qp.X, qp.Y, qp.Z)):
-                self._add_pauli_factor(factor=factor, wires=wires)
-                self._remove_non_pauli_factors(wires=wires)
-            else:
-                self._add_non_pauli_factor(factor=factor, wires=wires)
-                self._remove_pauli_factors(wires=wires)
 
-    def _add_pauli_factor(self, factor: Operator, wires: list[int]):
-        """Adds the given Pauli operator to the temporary ``self._pauli_factors`` dictionary. If
-        there was another Pauli operator acting on the same wire, the two operators are grouped
-        together using the ``self._pauli_mult`` dictionary.
+@qp.register_condition(
+    lambda num_control_wires, num_work_wires, work_wire_type, **_: num_control_wires >= 2
+    and num_work_wires >= 1
+    and work_wire_type == "zeroed"
+)
+@qp.register_resources(_ctrl_prod_resources_with_one_work_wire)
+def _controlled_product_with_one_work_wire(*_, control_wires, work_wires, base, **__):
+    """Decomposition of ``C(Prod)`` with a single zeroed work wire.
 
-        Args:
-            factor (Operator): Factor to be added.
-            wires (List[int]): Factor wires. This argument is added to avoid calling
-                ``factor.wires`` several times.
-        """
-        wire = wires[0]
-        op2_name = factor.name
-        old_coeff, old_word = self._pauli_factors.get(wire, (1, "Identity"))
-        coeff, new_word = self._pauli_mult[old_word][op2_name]
-        self._pauli_factors[wire] = old_coeff * coeff, new_word
+    Assumes that all ``control_values`` are 1. Zero-control flipping is handled
+    by wrapping this rule with ``flip_zero_control``.
+    """
+    qp.ctrl(qp.X(work_wires[:1]), control=control_wires)
+    for op in base.operands[::-1]:
+        qp.ctrl(op, control=work_wires[:1])
+    qp.ctrl(qp.X(work_wires[:1]), control=control_wires)
 
-    def _add_non_pauli_factor(self, factor: Operator, wires: list[int]):
-        """Adds the given non-Pauli factor to the temporary ``self._non_pauli_factors`` dictionary.
-        If there alerady exists an identical operator in the dictionary, the two are grouped
-        together.
 
-        If there isn't an identical operator in the dictionary, all non Pauli factors that act on
-        the same wires are removed and added to the ``self._factors`` tuple.
-
-        Args:
-            factor (Operator): Factor to be added.
-            wires (List[int]): Factor wires. This argument is added to avoid calling
-                ``factor.wires`` several times.
-        """
-        if isinstance(factor, Pow):
-            exponent = factor.z
-            factor = factor.base
-        else:
-            exponent = 1
-        op_hash = factor.hash
-        old_hash, old_exponent, old_op = self._non_pauli_factors.get(wires, [None, None, None])
-        if isinstance(old_op, (qp.RX, qp.RY, qp.RZ)) and factor.name == old_op.name:
-            self._non_pauli_factors[wires] = [
-                op_hash,
-                old_exponent,
-                factor.__class__(factor.data[0] + old_op.data[0], wires).simplify(),
-            ]
-        elif op_hash == old_hash:
-            self._non_pauli_factors[wires][1] += exponent
-        else:
-            self._remove_non_pauli_factors(wires=wires)
-            self._non_pauli_factors[wires] = [op_hash, copy(exponent), factor]
-
-    def _remove_non_pauli_factors(self, wires: list[int]):
-        """Remove all factors from the ``self._non_pauli_factors`` dictionary that act on the given
-        wires and add them to the ``self._factors`` tuple.
-
-        Args:
-            wires (List[int]): Wires of the operators to be removed.
-        """
-        if not self._non_pauli_factors:
-            return
-        for wire in wires:
-            for key, (_, exponent, op) in list(self._non_pauli_factors.items()):
-                if wire in key:
-                    self._non_pauli_factors.pop(key)
-                    if exponent == 0:
-                        continue
-                    if exponent != 1:
-                        op = Pow(base=op, z=exponent).simplify()
-                    if not isinstance(op, qp.Identity):
-                        self._factors += ((op,),)
-
-    def _remove_pauli_factors(self, wires: list[int]):
-        """Remove all Pauli factors from the ``self._pauli_factors`` dictionary that act on the
-        given wires and add them to the ``self._factors`` tuple.
-
-        Args:
-            wires (List[int]): Wires of the operators to be removed.
-        """
-        if not self._pauli_factors:
-            return
-        for wire in wires:
-            pauli_coeff, pauli_word = self._pauli_factors.pop(wire, (1, "Identity"))
-            if pauli_word != "Identity":
-                pauli_op = self._paulis[pauli_word](wire)
-                self._factors += ((pauli_op,),)
-            self.global_phase *= pauli_coeff
-
-    def remove_factors(self, wires: list[int]):
-        """Remove all factors from the ``self._pauli_factors`` and ``self._non_pauli_factors``
-        dictionaries that act on the given wires and add them to the ``self._factors`` tuple.
-
-        Args:
-            wires (List[int]): Wires of the operators to be removed.
-        """
-        self._remove_pauli_factors(wires=wires)
-        self._remove_non_pauli_factors(wires=wires)
-
-    @property
-    def factors(self):
-        """Grouped factors tuple.
-
-        Returns:
-            tuple: Tuple of grouped factors.
-        """
-        return tuple(self._factors)
+qp.add_decomps(
+    "C(Prod)",
+    flip_zero_control(_controlled_product_with_work_wires),
+    flip_zero_control(_controlled_product_with_one_work_wire),
+)

@@ -23,11 +23,12 @@ Importing quantum circuits
 Importing quantum circuits can help you take advantage of PennyLane's various optimization,
 visualization, and interoperability features for existing circuits. For example, you can take a
 `QuantumCircuit <https://docs.quantum.ibm.com/api/qiskit/qiskit.circuit.QuantumCircuit>`__ from
-Qiskit, import it into PennyLane, and then apply a `circuit-cutting transform
-<https://pennylane.ai/qml/demos/tutorial_quantum_circuit_cutting/>`_ to reduce the number of qubits
-required to implement the circuit. You could also :ref:`compile <intro_ref_compile_worklfows>` the
-circuit using `Catalyst <https://docs.pennylane.ai/projects/catalyst/en/stable/index.html>`__ or
-differentiate and optimize the circuit using :ref:`quantum-specific optimizers <intro_ref_opt>`.
+Qiskit, import it into PennyLane, and then apply a 
+:doc:`circuit-cutting transform <demo:demos/tutorial_quantum_circuit_cutting>` to reduce the
+number of qubits required to implement the circuit. You could also 
+:ref:`compile <intro_ref_compile_worklfows>` the circuit using
+`Catalyst <https://docs.pennylane.ai/projects/catalyst/en/stable/index.html>`__ or differentiate
+and optimize the circuit using :ref:`quantum-specific optimizers <intro_ref_opt>`.
 
 :html:`<div class="summary-table">`
 
@@ -36,6 +37,7 @@ differentiate and optimize the circuit using :ref:`quantum-specific optimizers <
 
     ~pennylane.from_pyquil
     ~pennylane.from_qasm
+    ~pennylane.from_qasm3
     ~pennylane.from_qiskit
     ~pennylane.from_quil
     ~pennylane.from_quil_file
@@ -106,7 +108,65 @@ It can also be visualized using PennyLane's :func:`~pennylane.draw` utility:
 OpenQASM
 ~~~~~~~~
 
-An equivalent quantum circuit can be expressed in OpenQASM 2.0 as follows:
+:func:`~pennylane.io.from_qasm3` supports the OpenQASM 3.0 spec, including control flow,
+mid circuit measurements, subroutines, classical computation, and more.
+
+.. code-block:: python
+
+    qasm_string = '''
+            qubit q0;
+            qubit q1;
+            qubit q2;
+
+            float theta = 0.2;
+            int power = 2;
+
+            ry(theta / 2) q0;
+            rx(theta) q1;
+            pow(power) @ x q0;
+
+            def random(qubit q) -> bit
+            {
+                bit b = "0";
+                h q;
+                measure q -> b;
+                return b;
+            }
+
+            bit m = random(q2);
+
+            if (m) {
+                int i = 0;
+                while (i < 5) {
+                    i = i + 1;
+                    rz(i) q1;
+                    break;
+                }
+            }
+    '''
+
+We can convert this circuit into a PennyLane quantum function using:
+
+.. code-block:: python
+
+    @qp.qnode(qp.device("default.qubit", wires=[0, 1, 2]))
+    def my_circuit():
+        qp.from_qasm3(
+            qasm_string,
+            {'q0': 0, 'q1': 1, 'q2': 2}
+        )()
+        return qp.expval(qp.Z(0))
+
+Inspecting the circuit, we can see that the operations and measurements have been correctly interpreted.
+
+>>> print(qp.draw(my_circuit)())
+0: ──RY(0.10)──X²────────────┤  <Z>
+1: ──RX(0.20)───────RZ(1.00)─┤
+2: ──H─────────┤↗├──║────────┤
+                ╚═══╝
+
+
+:func:`~pennylane.from_qasm` relies on the PennyLane-Qiskit plugin and can import the OpenQASM 2.0 spec.
 
 .. code-block:: python
 

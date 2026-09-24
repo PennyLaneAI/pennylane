@@ -20,13 +20,13 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.wires import Wires
 
 # pylint: disable=unidiomatic-typecheck, cell-var-from-loop
 
 
-@pytest.mark.jax
+@pytest.mark.xfail_if_capture(reason="come back to this when it's ported to Op2 [sc-128372]")
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
     op = qp.ControlledSequence(qp.RX(0.25, wires=3), control=[0, 1, 2])
@@ -34,12 +34,6 @@ def test_standard_validity():
 
 
 class TestInitialization:
-
-    @pytest.mark.usefixtures("ignore_id_deprecation")
-    def test_id(self):
-        """Tests that the id attribute can be set."""
-        op = qp.ControlledSequence(qp.RX(0.25, wires=3), control=[0, 1, 2], id="a")
-        assert op.id == "a"
 
     def test_overlapping_wires_error(self):
         """Test that an error is raised if the wires of the base
@@ -64,7 +58,7 @@ class TestInitialization:
 class TestProperties:
 
     def test_hash(self):
-        """Test that op.hash uniquely describes a ControlledSequence"""
+        """Test that hash(op) uniquely describes a ControlledSequence"""
 
         op = qp.ControlledSequence(qp.RX(0.25, wires=3), control=[0, 1, 2])
         op1 = qp.ControlledSequence(qp.RX(0.25, wires=3), control=[0, 1, 2])  # identical
@@ -164,12 +158,6 @@ class TestMethods:
         for op1, op2 in zip(decomp, expected_decomp):
             assert op1 == op2
 
-    def test_decomposition_new(self):
-        """Tests the decomposition rule implemented with the new system."""
-        op = qp.ControlledSequence(qp.RX(0.25, wires=3), control=["a", 1, "blue"])
-        for rule in qp.list_decomps(qp.ControlledSequence):
-            _test_decomposition_rule(op, rule)
-
 
 class TestIntegration:
     """Tests that the ControlledSequence is executable and differentiable in a QNode context"""
@@ -248,7 +236,6 @@ class TestIntegration:
         assert jac.shape == (16,)
         assert np.allclose(jac, self.exp_jac, atol=0.006)
 
-    @pytest.mark.local_salt(1)
     @pytest.mark.torch
     @pytest.mark.parametrize("shots", [None, 50000])
     def test_qnode_torch(self, shots, seed):

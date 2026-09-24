@@ -23,14 +23,15 @@ import numpy as np
 from scipy.sparse import csr_matrix
 
 import pennylane as qp
+from pennylane.core.operator import Operation, Operator2
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.decomposition.resources import resource_rep
 from pennylane.decomposition.symbolic_decomposition import (
-    qjit_compatible_adjoint_rotation,
-    qjit_compatible_pow_rotation,
+    adjoint_rotation,
+    pow_rotation,
 )
-from pennylane.operation import Operation
-from pennylane.typing import TensorLike
+from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
+from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
+from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import WiresLike
 
 I4 = np.eye(4)
@@ -120,7 +121,7 @@ def _double_excitations_matrix(phi: TensorLike, phase_prefactor: TensorLike) -> 
     return diag + off_diag
 
 
-class SingleExcitation(Operation):
+class SingleExcitation(Operator2):
     r"""
     Single excitation rotation.
 
@@ -147,7 +148,6 @@ class SingleExcitation(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
-        id (str or None): String representing the operation (optional)
 
     **Example**
 
@@ -167,36 +167,28 @@ class SingleExcitation(Operation):
         circuit(0.1)
     """
 
-    num_wires = 2
-    """int: Number of wires that the operator acts on."""
+    dynamic_argnames = "phi"
+    arg_specs = {"phi": Float, "wires": Wire[2]}
+    wire_sizes = (2,)
 
-    num_params = 1
-    """int: Number of trainable parameters that the operator depends on."""
+    num_wires = 2  # TODO: try and get rid of this legacy property
+    num_params = 1  # TODO: try and get rid of this legacy property
 
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
-    grad_method = "A"
-    """Gradient computation method."""
-
-    parameter_frequencies = [(0.5, 1.0)]
-    """Frequencies of the operation parameter with respect to an expectation value."""
-
-    resource_keys = set()
-
-    @property
-    def resource_params(self) -> dict:
-        return {}
 
     def generator(self) -> "qp.Hamiltonian":
         w1, w2 = self.wires
         return qp.Hamiltonian([0.25, -0.25], [qp.X(w1) @ qp.Y(w2), qp.Y(w1) @ qp.X(w2)])
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
-        super().__init__(phi, wires=wires, id=id)
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
 
+    # pylint: disable=unused-argument
     @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    def compute_matrix(
+        phi: TensorLike, wires=None
+    ) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -221,51 +213,11 @@ class SingleExcitation(Operation):
         """
         return _single_excitations_matrix(phi, 0.0)
 
-    @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list["qp.operation.Operator"]:
-        r"""Representation of the operator as a product of other operators (static method). :
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.SingleExcitation.decomposition`.
-
-        Args:
-            phi (TensorLike): rotation angle :math:`\phi`
-            wires (Iterable, Wires): wires that the operator acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.SingleExcitation.compute_decomposition(1.23, wires=(0,1))
-        [H(0),
-         CNOT(wires=[0, 1]),
-         RY(-0.615, wires=[0]),
-         RY(-0.615, wires=[1]),
-         CNOT(wires=[0, 1]),
-         H(0)]
-
-        """
-        # This decomposition is reported, e.g., in Fig. 2 of https://arxiv.org/pdf/2104.05695
-        decomp_ops = [
-            qp.Hadamard(wires[0]),
-            qp.CNOT(wires),
-            qp.RY(-phi / 2, wires[0]),
-            qp.RY(-phi / 2, wires[1]),
-            qp.CNOT(wires),
-            qp.Hadamard(wires[0]),
-        ]
-
-        return decomp_ops
-
     def adjoint(self) -> "SingleExcitation":
-        (phi,) = self.parameters
-        return SingleExcitation(-phi, wires=self.wires)
+        return SingleExcitation(-self.phi, wires=self.wires)
 
     def pow(self, z: int | float) -> list["qp.operation.Operator"]:
-        return [SingleExcitation(self.data[0] * z, wires=self.wires)]
+        return [SingleExcitation(self.phi * z, wires=self.wires)]
 
     def label(
         self,
@@ -276,7 +228,9 @@ class SingleExcitation(Operation):
         return super().label(decimals=decimals, base_label=base_label or "G", cache=cache)
 
 
-def _single_excitation_resources():
+# needs to be wrapped in function due to circular dependencies
+# pylint: disable=unused-argument
+def _single_excitation_resources(phi, wires):
     return {
         qp.Hadamard: 2,
         qp.CNOT: 2,
@@ -285,7 +239,7 @@ def _single_excitation_resources():
 
 
 @register_resources(_single_excitation_resources)
-def _single_excitation_decomp(phi: TensorLike, wires: WiresLike, **__):
+def _single_excitation_decomp(phi: TensorLike, wires: WiresLike):
     qp.Hadamard(wires[0])
     qp.CNOT(wires)
     qp.RY(-phi / 2, wires[0])
@@ -294,22 +248,38 @@ def _single_excitation_decomp(phi: TensorLike, wires: WiresLike, **__):
     qp.Hadamard(wires[0])
 
 
-def _single_excitation_ppr_resource():
+# pylint: disable=unused-argument
+def _single_excitation_ppr_resource(phi, wires):
     return {
-        resource_rep(qp.PauliRot, pauli_word="XY"): 1,
-        resource_rep(qp.PauliRot, pauli_word="YX"): 1,
+        qp.PauliRot(Float, pauli_word="XY", wires=Wire[2]): 1,
+        qp.PauliRot(Float, pauli_word="YX", wires=Wire[2]): 1,
     }
 
 
 @register_resources(_single_excitation_ppr_resource)
-def _single_excitation_ppr(phi: TensorLike, wires: WiresLike, **__):
+def _single_excitation_ppr(phi: TensorLike, wires: WiresLike):
     qp.PauliRot(phi / 2, "YX", wires=wires)
     qp.PauliRot(-phi / 2, "XY", wires=wires)
 
 
-add_decomps(SingleExcitation, _single_excitation_decomp, _single_excitation_ppr)
-add_decomps("Adjoint(SingleExcitation)", qjit_compatible_adjoint_rotation)
-add_decomps("Pow(SingleExcitation)", qjit_compatible_pow_rotation)
+# pylint: disable=unused-argument
+def _single_excitation_ppr_rz_resource(phi, wires):
+    return {qp.RZ: 2, qp.PPR(4, "XX", Wire[2]): 1, qp.PPR(-4, "XX", Wire[2]): 1}
+
+
+@register_resources(_single_excitation_ppr_rz_resource)
+def _single_excitation_ppr_rz(phi: TensorLike, wires: WiresLike):
+    qp.PPR(4, "XX", wires=wires)
+    qp.RZ(phi / 2, wires[0])
+    qp.RZ(-phi / 2, wires[1])
+    qp.PPR(-4, "XX", wires=wires)
+
+
+add_decomps(
+    SingleExcitation, _single_excitation_decomp, _single_excitation_ppr, _single_excitation_ppr_rz
+)
+add_decomps("Adjoint(SingleExcitation)", adjoint_rotation2)
+add_decomps("Pow(SingleExcitation)", pow_rotation2)
 
 
 class SingleExcitationMinus(Operation):
@@ -334,7 +304,6 @@ class SingleExcitationMinus(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wires the operation acts on
-        id (str or None): String representing the operation (optional)
 
     """
 
@@ -366,8 +335,8 @@ class SingleExcitationMinus(Operation):
             [qp.Identity(w1), qp.X(w1) @ qp.Y(w2), qp.Y(w1) @ qp.X(w2), qp.Z(w1) @ qp.Z(w2)],
         )
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
-        super().__init__(phi, wires=wires, id=id)
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
 
     @staticmethod
     def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
@@ -423,7 +392,7 @@ class SingleExcitationMinus(Operation):
          H(1),
          RZ(0.615, wires=[1]),
          CNOT(wires=[0, 1]),
-         GlobalPhase(0.3075, wires=[])]
+         GlobalPhase(0.3075)]
 
         """
         decomp_ops = [
@@ -480,8 +449,8 @@ def _single_excitation_minus_decomp(phi, wires: WiresLike, **__):
 
 
 add_decomps(SingleExcitationMinus, _single_excitation_minus_decomp)
-add_decomps("Adjoint(SingleExcitationMinus)", qjit_compatible_adjoint_rotation)
-add_decomps("Pow(SingleExcitationMinus)", qjit_compatible_pow_rotation)
+add_decomps("Adjoint(SingleExcitationMinus)", adjoint_rotation)
+add_decomps("Pow(SingleExcitationMinus)", pow_rotation)
 
 
 class SingleExcitationPlus(Operation):
@@ -506,7 +475,6 @@ class SingleExcitationPlus(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int] or int): the wires the operation acts on
-        id (str or None): String representing the operation (optional)
 
     """
 
@@ -538,8 +506,8 @@ class SingleExcitationPlus(Operation):
             [qp.Identity(w1), qp.X(w1) @ qp.Y(w2), qp.Y(w1) @ qp.X(w2), qp.Z(w1) @ qp.Z(w2)],
         )
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
-        super().__init__(phi, wires=wires, id=id)
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
 
     @staticmethod
     def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
@@ -588,7 +556,7 @@ class SingleExcitationPlus(Operation):
         >>> from pprint import pprint
         >>> decomp = qp.SingleExcitationPlus.compute_decomposition(1.23, wires=(0,1))
         >>> pprint(decomp)
-        [H(1), CNOT(wires=[1, 0]), RY(0.615, wires=[0]), RY(0.615, wires=[1]), CY(wires=[1, 0]), S(1), H(1), RZ(-0.615, wires=[1]), CNOT(wires=[0, 1]), GlobalPhase(-0.3075, wires=[])]
+        [H(1), CNOT(wires=[1, 0]), RY(0.615, wires=[0]), RY(0.615, wires=[1]), CY(wires=[1, 0]), S(1), H(1), RZ(-0.615, wires=[1]), CNOT(wires=[0, 1]), GlobalPhase(-0.3075)]
 
         """
         decomp_ops = [
@@ -645,8 +613,8 @@ def _single_excitation_plus_decomp(phi, wires: WiresLike, **__):
 
 
 add_decomps(SingleExcitationPlus, _single_excitation_plus_decomp)
-add_decomps("Adjoint(SingleExcitationPlus)", qjit_compatible_adjoint_rotation)
-add_decomps("Pow(SingleExcitationPlus)", qjit_compatible_pow_rotation)
+add_decomps("Adjoint(SingleExcitationPlus)", adjoint_rotation)
+add_decomps("Pow(SingleExcitationPlus)", pow_rotation)
 
 
 class DoubleExcitation(Operation):
@@ -678,7 +646,6 @@ class DoubleExcitation(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
-        id (str or None): String representing the operation (optional)
 
     **Example**
 
@@ -739,8 +706,8 @@ class DoubleExcitation(Operation):
     def pow(self, z: int | float) -> list["qp.operation.Operator"]:
         return [DoubleExcitation(self.data[0] * z, wires=self.wires)]
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
-        super().__init__(phi, wires=wires, id=id)
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
 
     mask_s = np.zeros((16, 16))
     mask_s[3, 12] = -1
@@ -901,14 +868,14 @@ def _doublexcit(phi: TensorLike, wires: WiresLike, **_):
 
 def _doublexcit_ppr_resource():
     return {
-        resource_rep(qp.PauliRot, pauli_word="YYYX"): 1,
-        resource_rep(qp.PauliRot, pauli_word="YYXY"): 1,
-        resource_rep(qp.PauliRot, pauli_word="YXYY"): 1,
-        resource_rep(qp.PauliRot, pauli_word="YXXX"): 1,
-        resource_rep(qp.PauliRot, pauli_word="XYYY"): 1,
-        resource_rep(qp.PauliRot, pauli_word="XYXX"): 1,
-        resource_rep(qp.PauliRot, pauli_word="XXYX"): 1,
-        resource_rep(qp.PauliRot, pauli_word="XXXY"): 1,
+        qp.PauliRot(Float, pauli_word="YYYX", wires=Wire[4]): 1,
+        qp.PauliRot(Float, pauli_word="YYXY", wires=Wire[4]): 1,
+        qp.PauliRot(Float, pauli_word="YXYY", wires=Wire[4]): 1,
+        qp.PauliRot(Float, pauli_word="YXXX", wires=Wire[4]): 1,
+        qp.PauliRot(Float, pauli_word="XYYY", wires=Wire[4]): 1,
+        qp.PauliRot(Float, pauli_word="XYXX", wires=Wire[4]): 1,
+        qp.PauliRot(Float, pauli_word="XXYX", wires=Wire[4]): 1,
+        qp.PauliRot(Float, pauli_word="XXXY", wires=Wire[4]): 1,
     }
 
 
@@ -925,8 +892,8 @@ def _doublexcit_ppr(phi: TensorLike, wires: WiresLike, **_):
 
 
 add_decomps(DoubleExcitation, _doublexcit, _doublexcit_ppr)
-add_decomps("Adjoint(DoubleExcitation)", qjit_compatible_adjoint_rotation)
-add_decomps("Pow(DoubleExcitation)", qjit_compatible_pow_rotation)
+add_decomps("Adjoint(DoubleExcitation)", adjoint_rotation)
+add_decomps("Pow(DoubleExcitation)", pow_rotation)
 
 
 class DoubleExcitationPlus(Operation):
@@ -956,7 +923,6 @@ class DoubleExcitationPlus(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 4
@@ -988,8 +954,8 @@ class DoubleExcitationPlus(Operation):
         H = csr_matrix(-0.5 * G)
         return qp.SparseHamiltonian(H, wires=self.wires)
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
-        super().__init__(phi, wires=wires, id=id)
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
 
     @staticmethod
     def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
@@ -1022,8 +988,8 @@ class DoubleExcitationPlus(Operation):
         return super().label(decimals=decimals, base_label=base_label or "G²₊", cache=cache)
 
 
-add_decomps("Adjoint(DoubleExcitationPlus)", qjit_compatible_adjoint_rotation)
-add_decomps("Pow(DoubleExcitationPlus)", qjit_compatible_pow_rotation)
+add_decomps("Adjoint(DoubleExcitationPlus)", adjoint_rotation)
+add_decomps("Pow(DoubleExcitationPlus)", pow_rotation)
 
 
 class DoubleExcitationMinus(Operation):
@@ -1053,7 +1019,6 @@ class DoubleExcitationMinus(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
-        id (str or None): String representing the operation (optional)
     """
 
     num_wires = 4
@@ -1117,8 +1082,8 @@ class DoubleExcitationMinus(Operation):
         return super().label(decimals=decimals, base_label=base_label or "G²₋", cache=cache)
 
 
-add_decomps("Adjoint(DoubleExcitationMinus)", qjit_compatible_adjoint_rotation)
-add_decomps("Pow(DoubleExcitationMinus)", qjit_compatible_pow_rotation)
+add_decomps("Adjoint(DoubleExcitationMinus)", adjoint_rotation)
+add_decomps("Pow(DoubleExcitationMinus)", pow_rotation)
 
 
 class OrbitalRotation(Operation):
@@ -1157,7 +1122,6 @@ class OrbitalRotation(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
-        id (str or None): String representing the operation (optional)
 
     **Example**
 
@@ -1211,8 +1175,8 @@ class OrbitalRotation(Operation):
             ],
         )
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
-        super().__init__(phi, wires=wires, id=id)
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
 
     mask_s = np.zeros((16, 16))
     mask_s[1, 4] = mask_s[2, 8] = mask_s[13, 7] = mask_s[14, 11] = -1
@@ -1332,8 +1296,8 @@ def _orbital_rotation_decomp(phi, wires: WiresLike, **__):
 
 
 add_decomps(OrbitalRotation, _orbital_rotation_decomp)
-add_decomps("Adjoint(OrbitalRotation)", qjit_compatible_adjoint_rotation)
-add_decomps("Pow(OrbitalRotation)", qjit_compatible_pow_rotation)
+add_decomps("Adjoint(OrbitalRotation)", adjoint_rotation)
+add_decomps("Pow(OrbitalRotation)", pow_rotation)
 
 
 class FermionicSWAP(Operation):
@@ -1372,7 +1336,6 @@ class FermionicSWAP(Operation):
     Args:
         phi (float): rotation angle :math:`\phi`
         wires (Sequence[int]): the wires the operation acts on
-        id (str or None): String representing the operation (optional)
 
     **Example**
 
@@ -1426,8 +1389,8 @@ class FermionicSWAP(Operation):
             ],
         )
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
-        super().__init__(phi, wires=wires, id=id)
+    def __init__(self, phi: TensorLike, wires: WiresLike):
+        super().__init__(phi, wires=wires)
 
     @staticmethod
     def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
@@ -1539,13 +1502,13 @@ class FermionicSWAP(Operation):
         base_label: str | None = None,
         cache: dict | None = None,
     ) -> str:
-        return super().label(decimals=decimals, base_label=base_label or "fSWAP", cache=cache)
+        return super().label(decimals=decimals, base_label=base_label or "FSWAP", cache=cache)
 
 
 def _fermionic_swap_decomp_resources():
     return {
         qp.Hadamard: 4,
-        qp.resource_rep(qp.MultiRZ, num_wires=2): 2,
+        qp.MultiRZ(Float, Wire[2]): 2,
         qp.RX: 4,
         qp.RZ: 2,
         qp.GlobalPhase: 1,
@@ -1567,9 +1530,9 @@ def _fermionic_swap_decomp(phi, wires: WiresLike, **__):
     qp.RZ(phi / 2, wires=wires[0])
     qp.RZ(phi / 2, wires=wires[1])
     # for correcting global phase
-    qp.GlobalPhase(-0.5 * phi, wires=[wires[0], wires[1]])
+    qp.GlobalPhase(-0.5 * phi)
 
 
 add_decomps(FermionicSWAP, _fermionic_swap_decomp)
-add_decomps("Adjoint(FermionicSWAP)", qjit_compatible_adjoint_rotation)
-add_decomps("Pow(FermionicSWAP)", qjit_compatible_pow_rotation)
+add_decomps("Adjoint(FermionicSWAP)", adjoint_rotation)
+add_decomps("Pow(FermionicSWAP)", pow_rotation)

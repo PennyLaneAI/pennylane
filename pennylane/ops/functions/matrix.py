@@ -20,11 +20,11 @@ from functools import partial
 
 import pennylane as qp
 from pennylane import transform
+from pennylane.core.operator import Operator
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
+from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import MatrixUndefinedError, TransformError
-from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence, PauliWord
-from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn, TensorLike
 
 # pylint: disable=too-many-branches

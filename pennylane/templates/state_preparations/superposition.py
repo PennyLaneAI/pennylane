@@ -20,13 +20,10 @@ from functools import reduce
 
 import pennylane as qp
 from pennylane.control_flow import for_loop
-from pennylane.decomposition import (
-    add_decomps,
-    controlled_resource_rep,
-    register_resources,
-    resource_rep,
-)
-from pennylane.operation import Operation
+from pennylane.core.operator import Operation
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.typing import Wire
 
 
 def order_states(basis_states: list[list[int]]) -> dict[tuple[int], tuple[int]]:
@@ -79,7 +76,7 @@ def order_states(basis_states: list[list[int]]) -> dict[tuple[int], tuple[int]]:
     unmapped_states = []  # Will collect non-fixed point states
     unmapped_ints = {i: None for i in range(m)}  # Will remove fixed point states
     # Map fixed-point states to themselves and collect states and target ints still to be paired
-    for b_int, state in zip(basis_ints, basis_states):
+    for b_int, state in zip(basis_ints, basis_states, strict=True):
         if b_int < m:
             state_map[state] = state
             unmapped_ints.pop(b_int)
@@ -87,7 +84,7 @@ def order_states(basis_states: list[list[int]]) -> dict[tuple[int], tuple[int]]:
             unmapped_states.append(state)
 
     # Map non-fixed point states
-    for state, new_b_int in zip(unmapped_states, unmapped_ints):
+    for state, new_b_int in zip(unmapped_states, unmapped_ints, strict=True):
         # Convert the index of the state to be mapped into a state itself
         state_map[state] = tuple(map(int, f"{new_b_int:0{length}b}"))
 
@@ -238,7 +235,7 @@ class Superposition(Operation):
     resource_keys = {"num_wires", "num_coeffs", "bases"}
 
     def __init__(
-        self, coeffs, bases, wires, work_wire, id=None
+        self, coeffs, bases, wires, work_wire
     ):  # pylint: disable=too-many-positional-arguments, too-many-arguments
 
         if not all(
@@ -266,7 +263,7 @@ class Superposition(Operation):
 
         all_wires = self.hyperparameters["target_wires"] + self.hyperparameters["work_wire"]
 
-        super().__init__(coeffs, wires=all_wires, id=id)
+        super().__init__(coeffs, wires=all_wires)
 
     @property
     def resource_params(self) -> dict:
@@ -328,7 +325,7 @@ class Superposition(Operation):
 
         """
 
-        dic_state = dict(zip(bases, coeffs))
+        dic_state = dict(zip(bases, coeffs, strict=True))
         perms = order_states(bases)
         new_dic_state = {perms[key]: dic_state[key] for key in dic_state if key in perms}
 
@@ -393,10 +390,9 @@ def _superposition_resources(num_wires, num_coeffs, bases):
     for basis2, basis1 in perms.items():
         if not qp.math.allclose(basis1, basis2):
             resources[
-                controlled_resource_rep(
-                    base_class=qp.PauliX,
-                    base_params={},
-                    num_control_wires=num_wires,
+                _ctrl_abstract(
+                    qp.PauliX,
+                    Wire[num_wires],
                     num_zero_control_values=reduce(lambda acc, nxt: acc + int(nxt == 0), basis1, 0),
                 )
             ] += 1
@@ -409,10 +405,9 @@ def _superposition_resources(num_wires, num_coeffs, bases):
             )
 
             resources[
-                controlled_resource_rep(
-                    base_class=qp.PauliX,
-                    base_params={},
-                    num_control_wires=num_wires,
+                _ctrl_abstract(
+                    qp.PauliX,
+                    Wire[num_wires],
                     num_zero_control_values=reduce(lambda acc, nxt: acc + int(nxt == 0), basis2, 0),
                 )
             ] += 1
@@ -424,7 +419,7 @@ def _superposition_resources(num_wires, num_coeffs, bases):
 def _superposition_decomposition(
     coeffs, bases, wires, target_wires, work_wire  # pylint: disable=unused-argument
 ):
-    dic_state = dict(zip(bases, coeffs))
+    dic_state = dict(zip(bases, coeffs, strict=True))
     perms = order_states(bases)
     new_dic_state = {perms[key]: dic_state[key] for key in dic_state if key in perms}
 

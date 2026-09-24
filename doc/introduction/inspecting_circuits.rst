@@ -31,7 +31,7 @@ Extracting properties of a circuit
 ----------------------------------
 
 The :func:`~pennylane.specs` transform takes a
-QNode and creates a function that returns 
+QNode and creates a function that returns
 details about the QNode, including depth, number of gates, and number of
 gradient executions required.
 
@@ -53,26 +53,27 @@ For example:
 We can now use the :func:`~pennylane.specs` transform to generate a function that returns
 details and resource information:
 
->>> x = np.array([0.05, 0.1, 0.2, 0.3], requires_grad=True)
->>> y = np.array(0.4, requires_grad=False)
+>>> x = qp.numpy.array([0.05, 0.1, 0.2, 0.3], requires_grad=True)
+>>> y = qp.numpy.array(0.4, requires_grad=False)
 >>> specs_func = qp.specs(circuit)
 >>> specs_func(x, y)
-{'resources': Resources(num_wires=3, num_gates=4, gate_types=defaultdict(<class 'int'>, {'RX': 1, 'Toffoli': 1, 'CRY': 1, 'Rot': 1}), depth=4, shots=0),
- 'gate_sizes': defaultdict(int, {1: 2, 3: 1, 2: 1}),
- 'gate_types': defaultdict(int, {'RX': 1, 'Toffoli': 1, 'CRY': 1, 'Rot': 1}),
- 'num_operations': 4,
- 'num_observables': 2,
- 'num_diagonalizing_gates': 1,
- 'num_used_wires': 3,
- 'num_trainable_params': 4,
- 'depth': 4,
- 'num_device_wires': 4,
- 'device_name': 'default.qubit',
- 'gradient_options': {},
- 'interface': 'auto',
- 'diff_method': 'parameter-shift',
- 'gradient_fn': 'pennylane.gradients.parameter_shift.param_shift',
- 'num_gradient_executions': 10}
+Device: default.qubit
+Device wires: 4
+Shots: Shots(total=None)
+Level: gradient
+<BLANKLINE>
+Quantum operations:
+- Total: 4
+  - RX: 1
+  - Toffoli: 1
+  - CRY: 1
+  - Rot: 1
+Measurement processes:
+- expval(PauliZ): 1
+- expval(PauliX): 1
+Total wires: 3
+Circuit Depth: 4
+
 
 Circuit drawing
 ---------------
@@ -130,7 +131,6 @@ Currently supported devices include:
 
 * ``default.qubit``: each snapshot saves the quantum state vector
 * ``default.mixed``: each snapshot saves the density matrix
-* ``default.gaussian``: each snapshot saves the covariance matrix and vector of means
 
 A :class:`~pennylane.Snapshot` can be used in a QNode like any other operation:
 
@@ -168,16 +168,16 @@ the number of a snapshot is used as a key in the output dictionary instead.
 Interactive Debugging on Simulators
 -----------------------------------
 
-PennyLane allows for more interactive debugging of quantum circuits in a programmatic 
-fashion using quantum breakpoints via :func:`~pennylane.breakpoint`. This feature is 
-currently supported on ``default.qubit`` and ``lightning.qubit`` devices. 
+PennyLane allows for more interactive debugging of quantum circuits in a programmatic
+fashion using quantum breakpoints via :func:`~pennylane.breakpoint`. This feature is
+currently supported on ``default.qubit`` and ``lightning.qubit`` devices.
 
 Consider the following python script containing the quantum circuit with breakpoints.
 
 .. code-block:: python3
-    
+
     dev = qp.device("default.qubit", wires=2)
-    
+
     @qp.qnode(dev)
     def circuit(x):
         qp.breakpoint()
@@ -215,8 +215,8 @@ step through the circuit execution:
     > /Users/your/path/to/script.py(9)circuit()
     -> qp.Hadamard(wires=1)
 
-We can extract information by making measurements which do not change the state of 
-the circuit in execution: 
+We can extract information by making measurements which do not change the state of
+the circuit in execution:
 
 .. code-block:: console
 
@@ -232,12 +232,12 @@ the circuit in execution:
     [pldb] list
       8  	    qp.RX(x, wires=0)
       9  	    qp.Hadamard(wires=1)
-     10  	
+     10
      11  	    qp.breakpoint()
-     12  	
+     12
      13  	    qp.CNOT(wires=[0, 1])
      14  ->	    return qp.expval(qp.Z(0))
-     15  	
+     15
      16  	circuit(1.23)
     [EOF]
 
@@ -246,12 +246,12 @@ We can also visualize the circuit and dynamically queue operations directly to t
 .. code-block:: console
 
     [pldb] print(qp.debug_tape().draw())
-    0: ──RX─╭●─┤  
+    0: ──RX─╭●─┤
     1: ──H──╰X─┤
     [pldb] qp.RZ(-4.56, 1)
     RZ(-4.56, wires=[1])
     [pldb] print(qp.debug_tape().draw())
-    0: ──RX─╭●─────┤  
+    0: ──RX─╭●─────┤
     1: ──H──╰X──RZ─┤
 
 See :doc:`/code/qp_debugging` for more information and detailed examples.
@@ -293,7 +293,7 @@ or to check whether two gates causally influence each other.
 
 
     circuit()
-    tape = construct_tape(circuit)() 
+    tape = construct_tape(circuit)()
     ops = tape.operations
     obs = tape.observables
     g = CircuitGraph(ops, obs, tape.wires)

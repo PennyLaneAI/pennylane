@@ -32,6 +32,8 @@ on:
 
 jobs:
   determine_workflow_runner:
+    permissions:
+      contents: read
     runs-on: >-
       ${{
         (

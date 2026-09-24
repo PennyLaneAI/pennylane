@@ -15,18 +15,21 @@
 A transform for decomposing RZ rotations using a phase gradient catalyst state.
 """
 
+from functools import partial
+
 import numpy as np
 
-import pennylane as qml
-from pennylane.operation import Operator
-from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumScript, QuantumScriptBatch
+import pennylane as qp
+from pennylane import math
+from pennylane.core.operator import Operator
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
+from pennylane.core.queuing import QueuingManager
+from pennylane.ops.op_math import change_op_basis
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
 
-@QueuingManager.stop_recording()
 def _rz_phase_gradient(
     phi: float, wire: Wires, angle_wires: Wires, phase_grad_wires: Wires, work_wires: Wires
 ) -> Operator:
@@ -34,39 +37,48 @@ def _rz_phase_gradient(
     The precision is implicitly defined by the length of ``angle_wires``
     Note that the global phases are collected and added as one big global phase in the main function
     """
-
     precision = len(angle_wires)
-    # BasisEmbedding can handle integer inputs, no need to actually translate to binary
-    binary_int = 2 ** np.arange(precision - 1, -1, -1) @ qml.math.binary_decimals(
-        phi, precision, unit=2 * np.pi
-    )
 
-    compute_op = qml.ctrl(qml.BasisEmbedding(features=binary_int, wires=angle_wires), control=wire)
-    target_op = qml.SemiAdder(angle_wires, phase_grad_wires, work_wires)
+    binary_int = math.binary_decimals(phi, precision, unit=2 * np.pi)
 
-    return qml.change_op_basis(compute_op, target_op, compute_op)
+    # NOTE: To be capture compatible, must wrap in function
+    # so operators are only constructed when called
+    control_wire = Wires(wire)[0]
+
+    def compute_fn():
+        qp.ctrl(qp.MultiX(binary_int, angle_wires), control=control_wire)
+
+    target_fn = partial(qp.SemiAdder, angle_wires, phase_grad_wires, work_wires)
+
+    # NOTE: Compute function is self-inverse, pass it for the uncompute function
+    return change_op_basis(compute_fn, target_fn, compute_fn)
 
 
 @transform
 def rz_phase_gradient(
-    tape: QuantumScript, angle_wires: Wires, phase_grad_wires: Wires, work_wires: Wires
+    tape: QuantumScript,
+    angle_wires: Wires,
+    phase_grad_wires: Wires,
+    work_wires: Wires,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Quantum function transform to decompose all instances of :class:`~.RZ` gates into additions
     using a phase gradient resource state.
 
     For example, an :class:`~.RZ` gate with angle :math:`\phi = (0 \cdot 2^{-1} + 1 \cdot 2^{-2} + 0 \cdot 2^{-3}) 2\pi`
-    is translated into the following routine, where the angle is conditionally prepared on the ``angle_wires`` in binary
-    and added to a ``phase_grad_wires`` register semi-inplace via :class:`~.SemiAdder`.
+    is translated into the following routine, where the angle is loaded onto the ``angle_wires`` in
+    binary by a :class:`~.MultiX` (one ``X`` per set bit) controlled by the target - realizing one
+    controlled-``X`` per set bit, here only ``ang_1`` - and added to a ``phase_grad_wires`` register
+    semi-inplace via :class:`~.SemiAdder`.
 
     .. code-block::
 
-        target: ─RZ(ϕ)─ = ────╭●──────────────╭●────exp(iϕ/2)─┤
-         ang_0:           ────├|0⟩─╭SemiAdder─├|0⟩────────────┤
-         ang_1:           ────├|1⟩─├SemiAdder─├|1⟩────────────┤
-         ang_2:           ────╰|0⟩─├SemiAdder─╰|0⟩────────────┤
-         phg_0:           ─────────├SemiAdder─────────────────┤
-         phg_1:           ─────────├SemiAdder─────────────────┤
-         phg_2:           ─────────╰SemiAdder─────────────────┤
+        target: ─RZ(ϕ)─ = ─╭●────────────╭●──exp(iϕ/2)─┤
+         ang_0:           ─│──╭SemiAdder─│─────────────┤
+         ang_1:           ─╰X─├SemiAdder─╰X────────────┤
+         ang_2:           ────├SemiAdder───────────────┤
+         phg_0:           ────├SemiAdder───────────────┤
+         phg_1:           ────├SemiAdder───────────────┤
+         phg_2:           ────╰SemiAdder───────────────┤
 
     For this routine to work, the provided ``phase_grad_wires`` need to hold a phase gradient
     state :math:`|\nabla n\rangle = \frac{1}{\sqrt{N}} \sum_{m=0}^{N-1} e^{-2 \pi i \frac{m}{N}} |m\rangle`,
@@ -100,7 +112,7 @@ def rz_phase_gradient(
             the precision of the angle :math:`\phi`.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qp.transform <pennylane.transform>`.
 
     **Example**
 
@@ -119,23 +131,24 @@ def rz_phase_gradient(
 
         def phase_gradient(wires):
             for i, w in enumerate(wires):
-                qml.H(w)
-                qml.PhaseShift(-np.pi/2**i, w)
+                qp.H(w)
+                qp.PhaseShift(-np.pi/2**i, w)
 
+        @qp.transforms.decompose(max_expansion=1)
         @rz_phase_gradient(
             angle_wires=angle_wires,
             phase_grad_wires=phase_grad_wires,
             work_wires=work_wires,
         )
-        @qml.qnode(qml.device("default.qubit"))
+        @qp.qnode(qp.device("default.qubit"))
         def rz_circ(phi, wire):
             phase_gradient(phase_grad_wires)  # prepare phase gradient state
 
-            qml.Hadamard(wire)  # transform rotation
-            qml.RZ(phi, wire)
-            qml.Hadamard(wire)  # transform rotation
+            qp.Hadamard(wire)  # transform rotation
+            qp.RZ(phi, wire)
+            qp.Hadamard(wire)  # transform rotation
 
-            return qml.probs(wire)
+            return qp.probs(wire)
 
 
     In this example we perform the rotation of an angle of :math:`\phi = (0.111)_2 2\pi`.
@@ -147,16 +160,19 @@ def rz_phase_gradient(
 
     Overall, the full circuit looks like the following:
 
-    >>> print(qml.draw(rz_circ, wire_order=wire_order)(phi, wire))
-      targ: ──H────────────╭(|Ψ⟩)@SemiAdder@(|Ψ⟩)──H─╭GlobalPhase(2.75)─┤  Probs
-     ang_0: ───────────────├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
-     ang_1: ───────────────├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
-     ang_2: ───────────────├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
-     phg_0: ──H──Rϕ(-3.14)─├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
-     phg_1: ──H──Rϕ(-1.57)─├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
-     phg_2: ──H──Rϕ(-0.79)─├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
-    work_0: ───────────────├(|Ψ⟩)@SemiAdder@(|Ψ⟩)────├GlobalPhase(2.75)─┤
-    work_1: ───────────────╰(|Ψ⟩)@SemiAdder@(|Ψ⟩)────╰GlobalPhase(2.75)─┤
+    >>> print(qp.draw(rz_circ, wire_order=wire_order)(phi, wire))
+      targ: ──H─╭●─────────────────────╭●───────────H─╭GlobalPhase(2.75)─┤  Probs
+     ang_0: ────├MultiX(M0)─╭SemiAdder─├MultiX(M0)────├GlobalPhase(2.75)─┤
+     ang_1: ────├MultiX(M0)─├SemiAdder─├MultiX(M0)────├GlobalPhase(2.75)─┤
+     ang_2: ────╰MultiX(M0)─├SemiAdder─╰MultiX(M0)────├GlobalPhase(2.75)─┤
+     phg_0: ──H──Rϕ(-3.14)──├SemiAdder────────────────├GlobalPhase(2.75)─┤
+     phg_1: ──H──Rϕ(-1.57)──├SemiAdder────────────────├GlobalPhase(2.75)─┤
+     phg_2: ──H──Rϕ(-0.79)──├SemiAdder────────────────├GlobalPhase(2.75)─┤
+    work_0: ────────────────├SemiAdder────────────────├GlobalPhase(2.75)─┤
+    work_1: ────────────────╰SemiAdder────────────────╰GlobalPhase(2.75)─┤
+    <BLANKLINE>
+    M0 =
+    [ True  True  True]
 
     The additional work wires are required by the :class:`~.SemiAdder`.
     Executing the circuit, we get the following result:
@@ -166,7 +182,7 @@ def rz_phase_gradient(
 
     This matches the expected result of just applying a simple ``RX`` gate:
 
-    >>> np.abs(qml.RX(phi, 0).matrix()[:, 0]) ** 2
+    >>> np.abs(qp.RX(phi, 0).matrix()[:, 0]) ** 2
     array([0.853..., 0.146...])
 
     """
@@ -181,24 +197,25 @@ def rz_phase_gradient(
     operations = []
     global_phases = []
     for op in tape.operations:
-        if isinstance(op, qml.RZ):
+        if isinstance(op, qp.RZ):
             wire = op.wires
             phi = op.parameters[0]
             global_phases.append(phi / 2)
 
-            operations.append(
-                _rz_phase_gradient(
-                    phi,
-                    wire,
-                    angle_wires=angle_wires,
-                    phase_grad_wires=phase_grad_wires,
-                    work_wires=work_wires,
+            with QueuingManager.stop_recording():
+                operations.append(
+                    _rz_phase_gradient(
+                        phi,
+                        wire,
+                        angle_wires=angle_wires,
+                        phase_grad_wires=phase_grad_wires,
+                        work_wires=work_wires,
+                    )
                 )
-            )
         else:
             operations.append(op)
 
-    operations.append(qml.GlobalPhase(sum(global_phases)))
+    operations.append(qp.GlobalPhase(sum(global_phases)))
 
     new_tape = tape.copy(operations=operations)
 

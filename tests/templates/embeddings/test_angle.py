@@ -23,7 +23,7 @@ from pennylane import numpy as pnp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
     op = qp.AngleEmbedding(features=[1.0, 2.0, 3.0], wires=range(3), rotation="Z")
@@ -163,7 +163,7 @@ class TestDecomposition:
         ([1.5, 1.6, 0], range(3), "Y"),
     ]
 
-    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(("features", "wires", "rotation"), DECOMP_PARAMS)
     def test_decomposition_new(self, features, wires, rotation):
         op = qp.AngleEmbedding(features, wires, rotation=rotation)
@@ -202,12 +202,6 @@ class TestInputs:
 
         with pytest.raises(ValueError, match="Rotation option"):
             circuit(x=[1])
-
-    @pytest.mark.usefixtures("ignore_id_deprecation")
-    def test_id(self):
-        """Tests that the id attribute can be set."""
-        template = qp.AngleEmbedding(np.array([1, 2]), wires=[0, 1], id="a")
-        assert template.id == "a"
 
 
 def circuit_template(features):

@@ -19,24 +19,13 @@ import pytest
 
 import pennylane as qp
 import pennylane.numpy as np
-from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops import MeasurementValue, MidMeasure
 from pennylane.wires import Wires
 
 # pylint: disable=too-few-public-methods, too-many-public-methods
 
 
-def test_id_is_deprecated():
-    """Tests that the 'id' argument is deprecated and renamed."""
-
-    with pytest.warns(
-        PennyLaneDeprecationWarning, match="The 'id' argument has been renamed to 'meas_uid'"
-    ):
-        op = MidMeasure(0, id="blah")
-    assert op.meas_uid == "blah"
-
-
-@pytest.mark.external
 @pytest.mark.catalyst
 def test_measure_catalyst_dispatch():
     """Test that qp.measure can be used with qjit and capture disabled."""
@@ -81,9 +70,9 @@ class TestMeasure:
         m3 = MidMeasure(Wires(1), meas_uid="m1")
         m4 = MidMeasure(Wires(0), meas_uid="m1")
 
-        assert m1.hash != m2.hash
-        assert m1.hash != m3.hash
-        assert m1.hash == m4.hash
+        assert hash(m1) != hash(m2)
+        assert hash(m1) != hash(m3)
+        assert hash(m1) == hash(m4)
 
     @pytest.mark.parametrize(
         "postselect, reset, expected",
@@ -112,6 +101,12 @@ class TestMidMeasure:
         op = MidMeasure(wires="a", postselect=1, reset=True)
         assert repr(op) == "MidMeasure(wires=['a'], postselect=1, reset=True)"
 
+    def test_abstract_str(self):
+        """Test the string representation of an abstract MidMeasure."""
+
+        abstract_op = MidMeasure(wires=qp.typing.Wire[1])
+        assert str(abstract_op) == "MidMeasure"
+
     def test_properties(self):
         """Tests the properties of the MidMeasure class."""
 
@@ -119,6 +114,8 @@ class TestMidMeasure:
         assert op.postselect == 1
         assert op.reset is True
         assert op.meas_uid == "blah"
+        assert op.num_wires == 1
+        assert op.num_params == 0
 
 
 mp1 = MidMeasure(Wires(0), meas_uid="m0")
@@ -520,7 +517,9 @@ class TestMeasurementCompositeValueManipulation:
     """Test composite application of dunder methods associated with the MeasurementValue class"""
 
     @pytest.mark.parametrize("unary_name", unary_dunders)
-    @pytest.mark.parametrize("binary1_name, binary2_name", product(binary_dunders, binary_dunders))
+    @pytest.mark.parametrize(
+        "binary1_name, binary2_name", list(product(binary_dunders, binary_dunders))
+    )
     def test_composition_between_measurement_values(self, unary_name, binary1_name, binary2_name):
         """Test the composition of dunder methods."""
         m0 = MeasurementValue([mp1], lambda v: v)

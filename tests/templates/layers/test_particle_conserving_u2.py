@@ -22,9 +22,11 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
+from pennylane.core.operator import abstractify
+from pennylane.typing import Bool, Wire
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize("init_state", [np.array([1, 1, 0, 0]), None])
 def test_standard_validity(init_state):
     """Run standard checks with the assert_valid function."""
@@ -46,10 +48,10 @@ def test_resources():
     num_wires = 4
 
     expected = {
-        qp.resource_rep(qp.BasisEmbedding, num_wires=num_wires): 1,
-        qp.resource_rep(qp.RZ): n_layers * num_wires,
-        qp.resource_rep(qp.CNOT): 2 * (num_wires - 1) * n_layers,
-        qp.resource_rep(qp.CRX): (num_wires - 1) * n_layers,
+        qp.BasisState(Bool[num_wires], Wire[num_wires]): 1,
+        abstractify(qp.RZ): n_layers * num_wires,
+        abstractify(qp.CNOT): 2 * (num_wires - 1) * n_layers,
+        abstractify(qp.CRX): (num_wires - 1) * n_layers,
     }
     assert expected == rule.compute_resources(n_layers=n_layers, num_wires=num_wires).gate_counts
 
@@ -168,8 +170,7 @@ class TestDecomposition:  # pylint: disable=too-few-public-methods
         assert len(queue) == n_gates
 
         # initialization
-        expected = qp.BasisState if system == "capture" else qp.BasisEmbedding
-        assert isinstance(queue[0], expected)
+        assert isinstance(queue[0], qp.BasisState)
 
         # order of gates
         for op1, op2 in zip(queue[1:], exp_gates):
@@ -201,67 +202,55 @@ class TestDecomposition:  # pylint: disable=too-few-public-methods
         assert res_wires == exp_wires
 
 
-class TestInputs:
-    """Test inputs and pre-processing."""
-
-    @pytest.mark.parametrize(
-        ("weights", "wires", "msg_match"),
-        [
-            (
-                np.array([[-0.080, 2.629, -0.710, 5.383, 0.646, -2.872, -3.856]]),
-                [0],
-                "This template requires the number of qubits to be greater than one",
+@pytest.mark.parametrize(
+    ("weights", "wires", "msg_match"),
+    [
+        (
+            np.array([[-0.080, 2.629, -0.710, 5.383, 0.646, -2.872, -3.856]]),
+            [0],
+            "This template requires the number of qubits to be greater than one",
+        ),
+        (
+            np.array([[-0.080, 2.629, -0.710, 5.383]]),
+            [0, 1, 2, 3],
+            "Weights tensor must",
+        ),
+        (
+            np.array(
+                [
+                    [-0.080, 2.629, -0.710, 5.383, 0.646, -2.872],
+                    [-0.080, 2.629, -0.710, 5.383, 0.646, -2.872],
+                ]
             ),
-            (
-                np.array([[-0.080, 2.629, -0.710, 5.383]]),
-                [0, 1, 2, 3],
-                "Weights tensor must",
-            ),
-            (
-                np.array(
-                    [
-                        [-0.080, 2.629, -0.710, 5.383, 0.646, -2.872],
-                        [-0.080, 2.629, -0.710, 5.383, 0.646, -2.872],
-                    ]
-                ),
-                [0, 1, 2, 3],
-                "Weights tensor must",
-            ),
-            (
-                np.array([-0.080, 2.629, -0.710, 5.383, 0.646, -2.872]),
-                [0, 1, 2, 3],
-                "Weights tensor must be 2-dimensional",
-            ),
-        ],
-    )
-    def test_exceptions(self, weights, wires, msg_match):
-        """Test that ParticleConservingU2 throws an exception if the parameters have illegal
-        shapes, types or values."""
-        N = len(wires)
-        init_state = np.array([1, 1, 0, 0])
+            [0, 1, 2, 3],
+            "Weights tensor must",
+        ),
+        (
+            np.array([-0.080, 2.629, -0.710, 5.383, 0.646, -2.872]),
+            [0, 1, 2, 3],
+            "Weights tensor must be 2-dimensional",
+        ),
+    ],
+)
+def test_exceptions(weights, wires, msg_match):
+    """Test that ParticleConservingU2 throws an exception if the parameters have illegal
+    shapes, types or values."""
+    N = len(wires)
+    init_state = np.array([1, 1, 0, 0])
 
-        dev = qp.device("default.qubit", wires=N)
+    dev = qp.device("default.qubit", wires=N)
 
-        @qp.qnode(dev)
-        def circuit():
-            qp.ParticleConservingU2(
-                weights=weights,
-                wires=wires,
-                init_state=init_state,
-            )
-            return qp.expval(qp.PauliZ(0))
-
-        with pytest.raises(ValueError, match=msg_match):
-            circuit()
-
-    @pytest.mark.usefixtures("ignore_id_deprecation")
-    def test_id(self):
-        """Tests that the id attribute can be set."""
-        init_state = np.array([1, 1, 0])
-        template = qp.ParticleConservingU2(
-            weights=np.random.random(size=(1, 5)), wires=range(3), init_state=init_state, id="a"
+    @qp.qnode(dev)
+    def circuit():
+        qp.ParticleConservingU2(
+            weights=weights,
+            wires=wires,
+            init_state=init_state,
         )
-        assert template.id == "a"
+        return qp.expval(qp.PauliZ(0))
+
+    with pytest.raises(ValueError, match=msg_match):
+        circuit()
 
 
 class TestAttributes:

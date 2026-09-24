@@ -46,6 +46,11 @@ class TestGateSet:
         assert gate_set[qp.RX] == 1
         assert gate_set["CNOT"] == 2
 
+    def test_sort_on_initialization(self):
+        """Test that gates are sorted by weight and then alphabetically."""
+        gateset = GateSet({"RX": 1, "Adjoint(RX)": 1, qp.CNOT: 3.0, qp.CZ: 3.0, "I": 0.0})
+        assert list(gateset) == ["Identity", "Adjoint(RX)", "RX", "CNOT", "CZ"]
+
     def test_gate_set_eq(self):
         """Tests comparing gate sets."""
 
@@ -94,10 +99,19 @@ class TestGateSet:
 
         gate_set = GateSet({qp.RX, qp.RZ, qp.RY, qp.CNOT, qp.H})
         gate_set_two = gate_set - {qp.RX}
-        assert gate_set_two._gate_set == {"RZ": 1, "RY": 1, "CNOT": 1, "Hadamard": 1}
+        expected = {"RZ": 1, "RY": 1, "CNOT": 1, "Hadamard": 1}
+        assert gate_set_two._gate_set == expected
+        assert (gate_set - {"RX"})._gate_set == expected
+        assert (gate_set - qp.RX)._gate_set == expected
+        assert (gate_set - GateSet({qp.RX}))._gate_set == expected
 
         gate_set_three = gate_set - {qp.RY, qp.S}
         assert gate_set_three._gate_set == {"RZ": 1, "RX": 1, "CNOT": 1, "Hadamard": 1}
+
+        gs5 = gate_set - qp.S
+        expected = {"RX": 1, "RY": 1, "RZ": 1, "CNOT": 1, "Hadamard": 1}
+        assert gs5._gate_set == expected
+        assert (gate_set - "S")._gate_set == expected
 
     def test_gate_set_unsupported_arithmetic(self):
         """Tests that a TypeError is raised."""
@@ -121,7 +135,7 @@ class TestGateSet:
         """Tests the __str__ of gate sets."""
 
         gate_set = GateSet({qp.RX: 1, qp.RY: 1, qp.CNOT: 2})
-        assert str(gate_set) == "{RX, RY, CNOT}"
+        assert str(gate_set) == "{RX, RY, CNOT=2}"
 
         gate_set.name = "ROTATIONS_PLUS_CNOT"
         assert str(gate_set) == "ROTATIONS_PLUS_CNOT"
@@ -130,7 +144,7 @@ class TestGateSet:
         """Tests the __repr__ of gate sets."""
 
         gate_set = GateSet({qp.RX: 1, qp.RY: 1, qp.CNOT: 2})
-        assert repr(gate_set) == "GateSet({RX, RY, CNOT})"
+        assert repr(gate_set) == "GateSet({RX, RY, CNOT=2})"
 
         gate_set.name = "ROTATIONS_PLUS_CNOT"
-        assert repr(gate_set) == "GateSet({RX, RY, CNOT}, name='ROTATIONS_PLUS_CNOT')"
+        assert repr(gate_set) == "GateSet({RX, RY, CNOT=2}, name='ROTATIONS_PLUS_CNOT')"

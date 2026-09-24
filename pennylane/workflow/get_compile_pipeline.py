@@ -18,7 +18,7 @@ from __future__ import annotations
 from functools import wraps
 from typing import TYPE_CHECKING, ParamSpec
 
-from pennylane.transforms.core import CompilePipeline
+from pennylane.core.transforms import CompilePipeline
 from pennylane.workflow import construct_execution_config
 from pennylane.workflow._setup_transform_program import _setup_transform_program
 
@@ -29,6 +29,11 @@ if TYPE_CHECKING:
     from pennylane.workflow import QNode
 
 P = ParamSpec("P")
+
+
+def _is_qjit(obj):
+    """A method checking whether the object is compiled by catalyst.qjit"""
+    return obj.__class__.__name__ == "QJIT" and hasattr(obj, "user_function")
 
 
 def _find_level(program: CompilePipeline, level: str) -> int:
@@ -47,7 +52,7 @@ def _resolve_level(
     level: str | int | slice,
     full_pipeline: CompilePipeline,
     num_user: int,
-    config: ExecutionConfig,
+    config: ExecutionConfig | None,
 ) -> slice:
     """Resolve level to a slice."""
 
@@ -70,13 +75,18 @@ def _resolve_level(
 
 def get_compile_pipeline(
     qnode: QNode,
-    level: str | int | slice = "device",
+    level: str | int | slice = "user",
 ) -> Callable[P, CompilePipeline]:
     """Create a function that produces the compilation pipeline at the designated level.
 
+    .. note::
+
+        If used on a QJIT'd QNode, only user applied transforms are accessible.
+        Consequently, ``level="gradient"`` and ``level="device"`` are not supported.
+
     Args:
         qnode (:class:`~.QNode`): The QNode to get the compilation pipeline for.
-        level (str, int, slice): Specifies the stage at which to retrieve the compile pipeline. Defaults to ``"device"``.
+        level (str, int, slice): Specifies the stage at which to retrieve the compile pipeline. Defaults to ``"user"``.
 
             - ``"top"``: Returns an empty pipeline representing the initial stage before any transformations are applied.
             - ``"user"``: Only includes transformations that are manually applied by the user.
@@ -95,30 +105,23 @@ def get_compile_pipeline(
 
         from pennylane.workflow import get_compile_pipeline
 
-        dev = qml.device("default.qubit")
+        dev = qp.device("default.qubit")
 
-        @qml.transforms.merge_rotations
-        @qml.transforms.cancel_inverses
-        @qml.qnode(dev)
+        @qp.transforms.merge_rotations
+        @qp.transforms.cancel_inverses
+        @qp.qnode(dev)
         def circuit(angle):
-            qml.RX(angle, wires=0)
-            qml.H(0)
-            qml.H(0)
-            qml.RX(angle, wires=0)
-            return qml.expval(qml.Z(0))
+            qp.RX(angle, wires=0)
+            qp.H(0)
+            qp.H(0)
+            qp.RX(angle, wires=0)
+            return qp.expval(qp.Z(0))
 
     >>> args = (3.14,)
-    >>> print(get_compile_pipeline(circuit)(*args)) # or level="device"
+    >>> print(get_compile_pipeline(circuit)(*args)) # or level="user"
     CompilePipeline(
       [1] cancel_inverses(),
-      [2] merge_rotations(),
-      [3] defer_measurements(allow_postselect=True),
-      [4] decompose(stopping_condition=..., device_wires=None, target_gates=..., name=default.qubit),
-      [5] device_resolve_dynamic_wires(wires=None, allow_resets=False),
-      [6] validate_device_wires(None, name=default.qubit),
-      [7] validate_measurements(analytic_measurements=..., sample_measurements=..., name=default.qubit),
-      [8] _conditional_broadcast_expand(),
-      [9] no_sampling(name=backprop + default.qubit)
+      [2] merge_rotations()
     )
 
     .. details::
@@ -130,24 +133,23 @@ def get_compile_pipeline(
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit")
+            dev = qp.device("default.qubit")
 
-            @qml.metric_tensor
-            @qml.transforms.merge_rotations
-            @qml.marker("checkpoint")
-            @qml.transforms.cancel_inverses
-            @qml.qnode(dev, diff_method="parameter-shift", gradient_kwargs={"shifts": np.pi / 4})
+            @qp.metric_tensor
+            @qp.transforms.merge_rotations
+            @qp.marker("checkpoint")
+            @qp.transforms.cancel_inverses
+            @qp.qnode(dev, diff_method="parameter-shift", gradient_kwargs={"shifts": np.pi / 4})
             def circuit(x):
-                qml.RX(x, wires=0)
-                qml.H(0)
-                qml.H(0)
-                qml.RX(x, wires=0)
-                return qml.expval(qml.Z(0))
+                qp.RX(x, wires=0)
+                qp.H(0)
+                qp.H(0)
+                qp.RX(x, wires=0)
+                return qp.expval(qp.Z(0))
 
-        By default, without specifying a ``level`` we will get the full compile pipeline that is used
-        during execution on this device. Note that this can also be retrieved by manually specifying ``level="device"``,
+        To get the full compile pipeline that is used during execution on this device we can specify ``level="device"``,
 
-        >>> print(get_compile_pipeline(circuit)(3.14)) # or level="device"
+        >>> print(get_compile_pipeline(circuit, level="device")(3.14))
         CompilePipeline(
           [1] cancel_inverses(),
            ├─▶ checkpoint
@@ -192,7 +194,7 @@ def get_compile_pipeline(
           [5] _expand_transform_param_shift(shifts=0.7853981633974483)
         )
 
-        We can also retrieve our compile pipeline up to a specific stage indicated by the name given to a :func:`qml.marker`,
+        We can also retrieve our compile pipeline up to a specific stage indicated by the name given to a :func:`qp.marker`,
         which in our example is indicated by the ``"checkpoint"`` marker,
 
         >>> print(get_compile_pipeline(circuit, level="checkpoint")(3.14))
@@ -239,16 +241,37 @@ def get_compile_pipeline(
             f"'level={level}' of type '{type(level)}' is not supported. Please provide an integer, slice or a string as input."
         )
 
+    is_qjit_qnode = False
+    if _is_qjit(qnode):
+        qnode = qnode.user_function
+        if not hasattr(qnode, "compile_pipeline"):
+            raise ValueError(
+                "Can only retrieve the compilation pipeline if the QJIT'd object is a QNode."
+            )
+        is_qjit_qnode = True
+
     @wraps(qnode)
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> CompilePipeline:
-        resolved_config = construct_execution_config(qnode, resolve=True)(*args, **kwargs)
-
         full_compile_pipeline = CompilePipeline()
         full_compile_pipeline += qnode.compile_pipeline
-        # NOTE: Gradient + device transforms are *not* applied to qnodes that contain informative transforms
-        if not qnode.compile_pipeline.is_informative:
-            outer_pipeline, inner_pipeline = _setup_transform_program(qnode.device, resolved_config)
-            full_compile_pipeline += outer_pipeline + inner_pipeline
+
+        if level == "user":
+            return full_compile_pipeline
+
+        # NOTE: Anything past user applied transforms
+        # doesn't make sense for a QJIT'd QNode.
+        resolved_config = None
+        if not is_qjit_qnode:
+            # NOTE: Gradient + device transforms are *not* applied to qnodes that contain informative transforms
+            resolved_config = construct_execution_config(qnode, resolve=True)(*args, **kwargs)
+            if not qnode.compile_pipeline.is_informative:
+                outer_pipeline, inner_pipeline = _setup_transform_program(
+                    qnode.device, resolved_config
+                )
+                full_compile_pipeline += outer_pipeline + inner_pipeline
+
+        if is_qjit_qnode and isinstance(level, str) and level in ("gradient", "device"):
+            raise NotImplementedError(f"'level={level}' is not supported for QJIT'd QNodes.")
 
         num_user = len(qnode.compile_pipeline)
         level_slice: slice = _resolve_level(level, full_compile_pipeline, num_user, resolved_config)

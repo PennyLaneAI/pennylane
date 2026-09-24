@@ -31,7 +31,8 @@ def registers(register_dict):
 
     Args:
         register_dict (dict): a dictionary where keys are register names and values are either
-            positive integers indicating the number of qubits or nested dictionaries of more registers
+            non-negative integers indicating the number of qubits or nested dictionaries of
+            more registers
 
     Returns:
         dict: Dictionary where the keys are the names (str) of the registers, and the
@@ -39,12 +40,12 @@ def registers(register_dict):
 
     **Example**
 
-    Given flat input dictionary:
+    Given a flat input dictionary:
 
     >>> qp.registers({"alice": 2, "bob": 3})
     {'alice': Wires([0, 1]), 'bob': Wires([2, 3, 4])}
 
-    Given nested input dictionary:
+    Given a nested input dictionary:
 
     >>> wire_registers = qp.registers({"people": {"alice": 2, "bob": 1}})
     >>> wire_registers
@@ -107,10 +108,10 @@ def registers(register_dict):
                 )
                 _start_wire_index = wire_vals[-1] + 1
             elif isinstance(register_wires, int):
-                if register_wires < 1:
+                if register_wires < 0:
                     raise ValueError(
-                        f"Expected '{register_wires}' to be greater than 0. Please ensure that "
-                        "the number of wires for the register is a positive integer"
+                        f"Expected '{register_wires}' to be larger than or equal to 0. Please "
+                        "ensure that the number of wires for the register is a non-negative integer"
                     )
                 all_reg[register_name] = Wires(
                     range(_start_wire_index, register_wires + _start_wire_index)

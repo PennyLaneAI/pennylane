@@ -24,6 +24,7 @@ from pennylane import numpy as np
 from pennylane.exceptions import AdjointUndefinedError, DecompositionUndefinedError
 from pennylane.ops.op_math.controlled import ControlledOp
 from pennylane.ops.op_math.pow import Pow, PowOperation
+from pennylane.ops.op_math.pow2 import Pow2
 
 
 # pylint: disable=too-few-public-methods
@@ -34,12 +35,13 @@ class TempOperator(qp.operation.Operator):
 
 
 # pylint: disable=unused-argument
-def pow_using_dunder_method(base, z, id=None):
+def pow_using_dunder_method(base, z):
     """Helper function which computes the base raised to the power invoking the __pow__ dunder
     method."""
     return base**z
 
 
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_basic_validity():
     """Run basic operator validity checks."""
     op = qp.pow(qp.RX(1.2, wires=0), 3)
@@ -164,15 +166,15 @@ class TestInitialization:
 
     def test_nonparametric_ops(self, power_method):
         """Test pow initialization for a non parameteric operation."""
-        base = qp.PauliX("a")
 
+        base = qp.PauliX("a")
         op: Pow = power_method(base=base, z=-4.2)
 
         assert op.base is base
         assert op.z == -4.2
         assert op.hyperparameters["base"] is base
         assert op.hyperparameters["z"] == -4.2
-        assert op.name == "PauliX**-4.2"
+        assert op.name == ("Pow(PauliX)" if isinstance(op, Pow2) else "PauliX**-4.2")
 
         assert op.num_params == 0
         assert op.parameters == []
@@ -183,6 +185,7 @@ class TestInitialization:
 
     def test_parametric_ops(self, power_method):
         """Test pow initialization for a standard parametric operation."""
+
         params = [1.2345, 2.3456, 3.4567]
         base = qp.Rot(*params, wires="b")
 
@@ -192,11 +195,7 @@ class TestInitialization:
         assert op.z == -0.766
         assert op.hyperparameters["base"] is base
         assert op.hyperparameters["z"] == -0.766
-        assert op.name == "Rot**-0.766"
-
-        assert op.num_params == 3
-        assert qp.math.allclose(params, op.parameters)
-        assert qp.math.allclose(params, op.data)
+        assert op.name == "Pow(Rot)" if isinstance(op, Pow2) else "Rot**-0.766"
 
         assert op.wires == qp.wires.Wires("b")
         assert op.num_wires == 1
@@ -225,12 +224,12 @@ class TestInitialization:
 
 
 # pylint: disable=too-many-public-methods
-@pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method, qp.pow])
+@pytest.mark.parametrize("power_method", [pow_using_dunder_method, qp.pow])
 class TestProperties:
     """Test Pow properties."""
 
     def test_data(self, power_method):
-        """Test base data can be get and set through Pow class."""
+        """Test base data can be get and stay read-only."""
         x = np.array(1.234)
 
         base = qp.RX(x, wires="a")
@@ -238,16 +237,8 @@ class TestProperties:
 
         assert op.data == (x,)
 
-        # update parameters through pow
-        x_new = np.array(2.3456)
-        op.data = (x_new,)
-        assert base.data == (x_new,)
-        assert op.data == (x_new,)
-
-        # update base data updates pow data
-        x_new2 = np.array(3.456)
-        base.data = (x_new2,)
-        assert op.data == (x_new2,)
+        with pytest.raises(AttributeError, match="property 'data' of 'Pow2' object has no setter"):
+            setattr(op, "data", (np.array(2.3456),))
 
     def test_has_matrix_true(self, power_method):
         """Test `has_matrix` property carries over when base op defines matrix."""
@@ -363,11 +354,7 @@ class TestProperties:
         op: Pow = power_method(base=DummyOp(1), z=2.5)
         assert op.is_verified_hermitian is value
 
-    def test_queue_category(self, power_method):
-        """Test that the queue category `"_ops"` carries over."""
-        op: Pow = power_method(base=qp.PauliX(0), z=3.5)
-        assert op._queue_category == "_ops"  # pylint: disable=protected-access
-
+    @pytest.mark.pl2do("We're going to come back to batching in the future.")
     def test_batching_properties(self, power_method):
         """Test the batching properties and methods."""
 
@@ -389,6 +376,7 @@ class TestProperties:
         assert op.ndim_params == base.ndim_params
         assert op.batch_size == 3
 
+    @pytest.mark.pl2do("We're going to come back to batching in the future.")
     def test_different_batch_sizes_raises_error(self, power_method):
         """Test that using different batch sizes for base and scalar raises an error."""
         base = qp.RX(np.array([1.2, 2.3, 3.4]), 0)
@@ -444,6 +432,22 @@ class TestProperties:
         op: Pow = power_method(base=base, z=z)
         with pytest.raises(AdjointUndefinedError, match="The adjoint of Pow operators"):
             _ = op.adjoint()
+
+    @pytest.mark.parametrize("z", [0.5, 1.5, -0.5])
+    def test_eigvals_fractional_power_negative_eigenvalue(self, z, power_method):
+        """Test that the pow method correctly calculates complex eigenvalues
+        for various fractional powers of an operator."""
+
+        base = qp.PauliZ(0)
+        op = power_method(base=base, z=z)
+
+        eigvals = op.eigvals()
+
+        expected_eigvals = np.array([1.0**z, (-1.0 + 0j) ** z])
+
+        assert np.allclose(eigvals, expected_eigvals)
+        # the eigenvalues must sit on the same branch of ``**`` as the matrix
+        assert np.allclose(eigvals, np.diag(qp.matrix(op)))
 
 
 class TestSimplify:
@@ -507,24 +511,20 @@ class TestMiscMethods:
     def test_flatten_unflatten(self):
         """Test the _flatten and _unflatten methods."""
 
-        target = qp.S(0)
+        target = qp.H(0)
         z = -0.5
         op = Pow(target, z)
         data, metadata = op._flatten()
 
-        assert len(data) == 2
-        assert data[0] is target
-        assert data[1] == z
+        assert data == (target,)
+        assert metadata == (z,)
 
-        assert metadata == tuple()
-
-        new_op = type(op)._unflatten(*op._flatten())
+        new_op = type(op)._unflatten(data, metadata)
         assert new_op is not op
         qp.assert_equal(new_op, op)
 
     def test_copy(self):
-        """Test that a copy of a power operator can have its parameters updated
-        independently of the original operator."""
+        """Test that a copy can be rebound independently of the original."""
         param1 = 1.2345
         z = 2.3
         base = qp.RX(param1, wires=0)
@@ -534,8 +534,11 @@ class TestMiscMethods:
         assert copied_op.__class__ is op.__class__
         assert copied_op.z == op.z
         assert copied_op.data == (param1,)
+        assert copied_op.base is not op.base
 
-        copied_op.data = (6.54,)
+        copied_op = qp.ops.functions.bind_new_parameters(copied_op, (6.54,))
+
+        assert copied_op.data == (6.54,)
         assert op.data == (param1,)
 
     def test_label(self):
@@ -940,15 +943,10 @@ class TestOperationProperties:
         base = qp.RX(1.2, wires=0)
         op: Pow = power_method(base, 2.1)
 
-        assert base.basis == op.basis
-
-    def test_control_wires(self, power_method):
-        """Test that the control wires of a Pow operator are the same as the control wires of the base op."""
-
-        base = qp.Toffoli(wires=(0, 1, 2))
-        op: Pow = power_method(base, 3.5)
-
-        assert base.control_wires == op.control_wires
+        with pytest.warns(
+            qp.exceptions.PennyLaneDeprecationWarning, match="Operation.basis is deprecated"
+        ):
+            assert base.basis == op.basis
 
 
 class TestIntegration:
@@ -963,7 +961,7 @@ class TestIntegration:
 
         @qp.qnode(qp.device("default.qubit", wires=1), diff_method=diff_method)
         def circuit(x, z):
-            Pow(base=qp.RX(x, wires=0), z=z)
+            Pow2(base=qp.RX(x, wires=0), z=z)
             return qp.expval(qp.PauliY(0))
 
         x = qp.numpy.array(1.234, requires_grad=True)
@@ -981,7 +979,7 @@ class TestIntegration:
 
         @qp.qnode(dev)
         def circuit(x):
-            Pow(qp.RX(x, wires=0), 2.5)
+            Pow2(qp.RX(x, wires=0), 2.5)
             return qp.expval(qp.PauliY(0))
 
         x = qp.numpy.array([1.234, 2.34, 3.456])
@@ -1033,3 +1031,25 @@ class TestIntegration:
 
         assert np.allclose(res, expected)
         assert np.allclose(res_grad, expected_grad)
+
+
+# pylint: disable-next=too-few-public-methods
+class TestCapture:
+
+    @pytest.mark.jax
+    def test_pow_eigvals_is_jittable(self):
+        """Test that the eigvals method is jittable."""
+        import jax  # pylint: disable=import-outside-toplevel
+        import jax.numpy as jnp  # pylint: disable=import-outside-toplevel
+        import numpy as np  # pylint: disable=reimported,import-outside-toplevel,redefined-outer-name
+
+        import pennylane as qp  # pylint: disable=reimported,import-outside-toplevel,redefined-outer-name
+
+        @jax.jit
+        def f(x):
+            return jnp.array(Pow(qp.RX(x, 0), 2).eigvals())
+
+        x = 0.5
+        expected = np.array([np.cos(x) + np.sin(x) * 1j, np.cos(x) - np.sin(x) * 1j])
+
+        assert np.allclose(f(x), expected)

@@ -18,13 +18,12 @@ import re
 import sys
 from collections import defaultdict
 from importlib import metadata, reload
-from sys import version_info
 
 from packaging.version import Version
 
 from pennylane.exceptions import CompileError
 
-PL_CATALYST_MIN_VERSION = Version("0.14.0")
+PL_CATALYST_MIN_VERSION = Version("0.15.0")
 
 
 @dataclasses.dataclass
@@ -68,11 +67,7 @@ def _refresh_compilers():
     AvailableCompilers.names_entrypoints = defaultdict(dict)
 
     # Iterator packages entry-points with the 'pennylane.compilers' group name
-    entries = (
-        defaultdict(dict, metadata.entry_points())["pennylane.compilers"]
-        if version_info[:2] == (3, 9)
-        else metadata.entry_points(group="pennylane.compilers")
-    )
+    entries = metadata.entry_points(group="pennylane.compilers")
 
     for entry in entries:
         try:

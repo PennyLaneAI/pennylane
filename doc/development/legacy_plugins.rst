@@ -105,7 +105,7 @@ as well as potential further capabilities, by providing the following class attr
       def stopping_condition(self):
           def accepts_obj(obj):
               return obj.name in {'CNOT', 'PauliX', 'PauliY', 'PauliZ'}
-          return qml.BooleanFn(accepts_obj)
+          return qp.BooleanFn(accepts_obj)
 
   Supported operations can also be determined by the :attr:`pennylane.devices.LegacyDevice.operations` property.
   This property is a list of string names for supported operations.
@@ -153,7 +153,7 @@ as well as potential further capabilities, by providing the following class attr
   Some capabilities are queried by PennyLane core to make decisions on how to best run computations, while others are used
   by external apps built on top of the device ecosystem.
 
-  To find out which capabilities are (possibly automatically) defined for your device, ``dev = qml.device('my.device', *args, **kwargs)``,
+  To find out which capabilities are (possibly automatically) defined for your device, ``dev = qp.device('my.device', *args, **kwargs)``,
   check the output of ``dev.capabilities()``.
 
 Adding arguments to your device
@@ -206,7 +206,7 @@ Note that we have also overridden the default shot number.
 
 The user can now pass any of these arguments to the PennyLane device loader:
 
->>> dev = qml.device("example.mydevice", hardware_options={"t2": 0.1})
+>>> dev = qp.device("example.mydevice", hardware_options={"t2": 0.1})
 >>> dev.hardware_options
 {"t2": 0.1}
 
@@ -449,7 +449,7 @@ which allows the device to be initialized in the following way:
 .. code-block:: python
 
     import pennylane as qp
-    dev1 = qml.device(short_name, wires=2)
+    dev1 = qp.device(short_name, wires=2)
 
 where ``short_name`` is a string that uniquely identifies the device. The ``short_name``
 should have the form ``pluginname.devicename``, using periods for delimitation.
@@ -513,9 +513,9 @@ Users can then import this operator directly from your plugin, and use it when d
 
     @qnode(dev1)
     def my_qfunc(phi):
-        qml.Hadamard(wires=0)
+        qp.Hadamard(wires=0)
         CustomGate(phi, theta, wires=0)
-        return qml.expval(qml.PauliZ(0))
+        return qp.expval(qp.PauliZ(0))
 
 .. warning::
 

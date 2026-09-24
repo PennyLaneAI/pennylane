@@ -21,11 +21,13 @@ from .time_evolution import (
     ApproxTimeEvolution,
     CommutingEvolution,
     QDrift,
+    TrotterCDF,
+    TrotterCGF,
     TrotterizedQfunc,
     TrotterProduct,
+    TrotterVibronic,
     trotterize,
 )
-from .interferometer import Interferometer
 from .permute import Permute
 from .qft import QFT
 from .qpe import QuantumPhaseEstimation
@@ -34,18 +36,30 @@ from .grover import GroverOperator
 from .hilbert_schmidt import HilbertSchmidt, LocalHilbertSchmidt
 from .flip_sign import FlipSign
 from .fable import FABLE
-from .select import Select
+from .ffft import FFFT, TwoWireFFT
+from .select import Multiplexer, Multiplexor, Select
 from .prepselprep import PrepSelPrep
+from .multix import MultiX
 from .reflection import Reflection
 from .qubitization import Qubitization
 from .controlled_sequence import ControlledSequence
 from .aqft import AQFT
 from .amplitude_amplification import AmplitudeAmplification
-from .qram import BBQRAM, HybridQRAM, SelectOnlyQRAM
+from .qram import BBQRAM, HybridQRAM, SelectOnlyQRAM, FFQRAM
 from .iqp import IQP
 from .qrom import QROM
+from .alias_sampling import AliasSampling, UniformPrep, alias_sampling_wires
+from .one_body_block_encoding import OneBodyBlockEncoding, one_body_block_encoding_wires
+from .alias_sampling_thc import AliasSamplingTHC, alias_sampling_thc_wires
+from .select_thc import SelectTHC, select_thc_wires
+from .superposition_thc import SuperpositionTHC
+from .qubitization_thc import QubitizationTHC, qubitization_thc_wires
 from .gqsp import GQSP
-from .select_pauli_rot import SelectPauliRot
+from .select_pauli_rot import (
+    MultiplexedRotation,
+    SelectPauliRot,
+    UniformlyControlledRotation,
+)
 from .qsvt import poly_to_angles, QSVT, qsvt, transform_angles
 
 from .qchem import (
@@ -60,13 +74,19 @@ from .arithmetic import (
     PhaseAdder,
     Adder,
     Multiplier,
-    OutMultiplier,
     OutAdder,
+    OutMultiplier,
+    OutSquare,
+    SignedOutSquare,
     ModExp,
     OutPoly,
     SemiAdder,
     Elbow,
     TemporaryAND,
+    Incrementer,
+    SignedOutMultiplier,
+    LeftClassicalComparator,
+    LeftQuantumComparator,
 )
 
 __all__ = [
@@ -75,10 +95,15 @@ __all__ = [
     "BBQRAM",
     "CommutingEvolution",
     "QDrift",
+    "TrotterCDF",
+    "TrotterCGF",
     "TrotterizedQfunc",
     "TrotterProduct",
+    "TrotterVibronic",
     "trotterize",
-    "Interferometer",
+    "Incrementer",
+    "LeftClassicalComparator",
+    "LeftQuantumComparator",
     "IQP",
     "Permute",
     "QFT",
@@ -91,17 +116,36 @@ __all__ = [
     "BasisRotation",
     "QuantumMonteCarlo",
     "FABLE",
+    "FFFT",
+    "TwoWireFFT",
     "Select",
+    "Multiplexer",
+    "Multiplexor",
     "SelectOnlyQRAM",
     "PrepSelPrep",
+    "MultiX",
     "Reflection",
     "Qubitization",
     "ControlledSequence",
     "AQFT",
     "AmplitudeAmplification",
     "QROM",
+    "AliasSampling",
+    "alias_sampling_wires",
+    "AliasSamplingTHC",
+    "alias_sampling_thc_wires",
+    "SelectTHC",
+    "select_thc_wires",
+    "SuperpositionTHC",
+    "QubitizationTHC",
+    "qubitization_thc_wires",
+    "UniformPrep",
+    "OneBodyBlockEncoding",
+    "one_body_block_encoding_wires",
     "GQSP",
     "SelectPauliRot",
+    "MultiplexedRotation",
+    "UniformlyControlledRotation",
     "poly_to_angles",
     "QSVT",
     "qsvt",
@@ -115,10 +159,15 @@ __all__ = [
     "Adder",
     "Multiplier",
     "OutMultiplier",
+    "SignedOutMultiplier",
     "OutAdder",
+    "OutMultiplier",
+    "OutSquare",
+    "SignedOutSquare",
     "ModExp",
     "OutPoly",
     "SemiAdder",
     "Elbow",
     "TemporaryAND",
+    "FFQRAM",
 ]

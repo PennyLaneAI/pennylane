@@ -75,7 +75,7 @@ class PhaseShift(ResourceOperator):
 
     The resources for this operation are computed as:
 
-    >>> qml.estimator.PhaseShift.resource_decomp()
+    >>> qp.estimator.PhaseShift.resource_decomp()
     [(1 x RZ), (1 x GlobalPhase)]
     """
 
@@ -241,7 +241,7 @@ class RX(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> qml.estimator.RX.resource_decomp(precision=1e-4)
+    >>> qp.estimator.RX.resource_decomp(precision=1e-4)
     [(24 x T)]
     """
 
@@ -404,7 +404,7 @@ class RY(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> qml.estimator.RY.resource_decomp(precision=1e-4)
+    >>> qp.estimator.RY.resource_decomp(precision=1e-4)
     [(24 x T)]
     """
 
@@ -563,7 +563,7 @@ class RZ(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> qml.estimator.RZ.resource_decomp(precision=1e-4)
+    >>> qp.estimator.RZ.resource_decomp(precision=1e-4)
     [(24 x T)]
     """
 
@@ -721,7 +721,7 @@ class Rot(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> qml.estimator.Rot.resource_decomp()
+    >>> qp.estimator.Rot.resource_decomp()
     [(1 x RY), (2 x RZ)]
     """
 

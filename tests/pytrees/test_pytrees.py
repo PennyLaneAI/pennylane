@@ -19,18 +19,20 @@ import re
 
 import pytest
 
-import pennylane as qml
+import pennylane as qp
+from pennylane.measurements import ExpectationMP
 from pennylane.pytrees import PyTreeStructure, flatten, leaf, register_pytree, unflatten
 from pennylane.pytrees.pytrees import get_typename, get_typename_type
+from pennylane.wires import Wires
 
 
 def test_structure_repr_str():
     """Test the repr of the structure class."""
-    op = qml.RX(0.1, wires=0)
-    _, structure = qml.pytrees.flatten(op)
-    expected = "PyTreeStructure(RX, (Wires([0]), ()), (PyTreeStructure(),))"
+    op = qp.RX(0.1, wires=0)
+    _, structure = qp.pytrees.flatten(op)
+    expected = "PyTreeStructure(RX, (), (PyTreeStructure(list, None, (PyTreeStructure(),)), PyTreeStructure(list, None, (PyTreeStructure(Wires, (), (PyTreeStructure(),)),)), PyTreeStructure(list, None, ())))"
     assert repr(structure) == expected
-    expected_str = "PyTree(RX, (Wires([0]), ()), (Leaf,))"
+    expected_str = "PyTree(RX, (), (PyTree(list, None, (Leaf,)), PyTree(list, None, (PyTree(Wires, (), (Leaf,)),)), PyTree(list, None, ())))"
     assert str(structure) == expected_str
 
 
@@ -106,52 +108,96 @@ def test_dict():
     assert new_x == {"a": 5, "b": {"c": 6, "d": 7}}
 
 
+def test_none_is_an_empty_pytree_node():
+    """Test that pennylane treats ``None`` as an empty pytree node rather than a leaf."""
+
+    data, structure = flatten(None)
+    assert data == []
+    assert not structure.is_leaf
+    assert structure == PyTreeStructure(type(None), None, ())
+
+    assert unflatten([], structure) is None
+
+
+def test_none_nested_in_container():
+    """Test that ``None`` inside a pytree contributes no leaves and round-trips."""
+
+    x = {"a": None, "b": [1, None, 2]}
+
+    data, structure = flatten(x)
+    assert data == [1, 2]
+    assert structure == PyTreeStructure(
+        dict,
+        ("a", "b"),
+        (
+            PyTreeStructure(type(None), None, ()),
+            PyTreeStructure(list, None, (leaf, PyTreeStructure(type(None), None, ()), leaf)),
+        ),
+    )
+
+    assert unflatten([3, 4], structure) == {"a": None, "b": [3, None, 4]}
+
+
 def test_nested_pl_object():
     """Test that we can flatten and unflatten nested pennylane object."""
 
-    tape = qml.tape.QuantumScript(
-        [qml.adjoint(qml.RX(0.1, wires=0))],
-        [qml.expval(2 * qml.X(0))],
+    tape = qp.tape.QuantumScript(
+        [qp.adjoint(qp.RX(0.1, wires=0))],
+        [qp.expval(2 * qp.X(0))],
         shots=50,
         trainable_params=(0, 1),
     )
 
     data, structure = flatten(tape)
-    assert data == [0.1, 2, None]
+    assert data == [0.1, 0, 2, 0]
 
-    wires0 = qml.wires.Wires(0)
-    op_structure = PyTreeStructure(
-        tape[0].__class__, (), (PyTreeStructure(qml.RX, (wires0, ()), (leaf,)),)
-    )
-    list_op_struct = PyTreeStructure(list, None, (op_structure,))
+    list_struct = PyTreeStructure(list, None, ())
+    none_struct = PyTreeStructure(type(None), None, ())
+    leaf_struct = PyTreeStructure(list, None, (leaf,))
+    wire_struct = PyTreeStructure(Wires, (), (leaf,))
+    wire_args_struct = PyTreeStructure(list, None, (wire_struct,))
 
-    sprod_structure = PyTreeStructure(
-        qml.ops.SProd, (), (leaf, PyTreeStructure(qml.X, (wires0, ()), ()))
+    rx_struct = PyTreeStructure(qp.RX, (), (leaf_struct, wire_args_struct, list_struct))
+    adjoint_rx_struct = PyTreeStructure(
+        qp.ops.Adjoint2,
+        (),
+        (
+            list_struct,
+            list_struct,
+            PyTreeStructure(list, None, (rx_struct,)),
+        ),
     )
-    meas_structure = PyTreeStructure(
-        qml.measurements.ExpectationMP, (("wires", None),), (sprod_structure, leaf)
-    )
-    list_meas_struct = PyTreeStructure(list, None, (meas_structure,))
-    tape_structure = PyTreeStructure(
-        qml.tape.QuantumScript,
+    operations_struct = PyTreeStructure(list, None, (adjoint_rx_struct,))
+
+    paulix_struct = PyTreeStructure(qp.PauliX, (), (list_struct, wire_args_struct, list_struct))
+    sprod_struct = PyTreeStructure(qp.ops.SProd, (), (leaf, paulix_struct))
+    expval_struct = PyTreeStructure(ExpectationMP, (("wires", None),), (sprod_struct, none_struct))
+    measurements_struct = PyTreeStructure(list, None, (expval_struct,))
+
+    tape_struct = PyTreeStructure(
+        qp.tape.QuantumScript,
         (tape.shots, tape.trainable_params),
-        (list_op_struct, list_meas_struct),
+        (operations_struct, measurements_struct),
     )
+    assert structure == tape_struct
 
-    assert structure == tape_structure
-
-    new_tape = unflatten([3, 4, None], structure)
-    expected_new_tape = qml.tape.QuantumScript(
-        [qml.adjoint(qml.RX(3, wires=0))],
-        [qml.expval(4 * qml.X(0))],
+    new_tape = unflatten([3, 2, 4, 1], structure)
+    expected_new_tape = qp.tape.QuantumScript(
+        [qp.adjoint(qp.RX(3, wires=2))],
+        [qp.expval(4 * qp.X(1))],
         shots=50,
         trainable_params=(0, 1),
     )
-    qml.assert_equal(new_tape, expected_new_tape)
+    qp.assert_equal(new_tape, expected_new_tape)
 
 
 @pytest.mark.parametrize(
-    "type_,typename", [(list, "builtins.list"), (qml.Hadamard, "qml.Hadamard")]
+    "type_,typename",
+    [
+        (list, "builtins.list"),
+        (type(None), "builtins.NoneType"),
+        (qp.Hadamard, "qp.Hadamard"),
+    ],
 )
 def test_get_typename(type_, typename):
     """Test for ``get_typename()``."""
@@ -168,7 +214,12 @@ def test_get_typename_invalid():
 
 
 @pytest.mark.parametrize(
-    "type_,typename", [(list, "builtins.list"), (qml.Hadamard, "qml.Hadamard")]
+    "type_,typename",
+    [
+        (list, "builtins.list"),
+        (type(None), "builtins.NoneType"),
+        (qp.Hadamard, "qp.Hadamard"),
+    ],
 )
 def test_get_typename_type(type_, typename):
     """Tests for ``get_typename_type()``."""

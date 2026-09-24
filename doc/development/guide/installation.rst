@@ -4,7 +4,7 @@ Installation and dependencies
 Dependencies
 ------------
 
-PennyLane requires `Python <http://python.org/>`_ >= 3.11 to be installed.
+PennyLane requires `Python <http://python.org/>`_ >= 3.12 to be installed.
 
 After installing Python, we recommend using any virtual environment manager to install and manage
 dependencies. See the `Python documentation <https://docs.python.org/3/tutorial/venv.html>`_
@@ -18,9 +18,8 @@ be installed alongside PennyLane:
 * `NetworkX <https://networkx.github.io/>`_
 * `rustworkx <https://github.com/Qiskit/rustworkx>`_ >= 0.14.0
 * `autograd <https://github.com/HIPS/autograd>`_
-* `tomlkit <https://github.com/python-poetry/tomlkit>`_
 * `appdirs <https://github.com/ActiveState/appdirs>`_
-* `autoray <https://github.com/jcmgray/autoray>`__ == 0.8.2 
+* `autoray <https://github.com/jcmgray/autoray>`__ == 0.8.2
 * `cachetools <https://github.com/tkem/cachetools>`_
 * `pennylane-lightning <https://github.com/PennyLaneAI/pennylane-lightning>`_ >= 0.42
 * `requests <https://github.com/psf/requests>`_
@@ -30,14 +29,14 @@ be installed alongside PennyLane:
 
 The following Python packages are optional:
 
-* `openfermionpyscf <https://github.com/quantumlib/OpenFermion-PySCF>`_, for the non-differentiable backend of the ``qml.qchem`` module
-* ``matplotlib``: for ``qml.draw_mpl`` and associated code
+* `openfermionpyscf <https://github.com/quantumlib/OpenFermion-PySCF>`_, for the non-differentiable backend of the ``qp.qchem`` module
+* ``matplotlib``: for ``qp.draw_mpl`` and associated code
 * ``quimb``: for the ``default.tensor`` device
-* ``pyzx``: for ``qml.transforms.to_zx`` and ``qml.transforms.from_zx``
+* ``pyzx``: for ``qp.transforms.to_zx`` and ``qp.transforms.from_zx``
 * ``stim``: for ``default.clifford``
-* ``openqasm3`` and ``antlr3_python3_runtime``: for ``qml.from_qasm3``
+* ``openqasm3`` and ``antlr3_python3_runtime``: for ``qp.from_qasm3``
 * ``kahypar`` and ``opt_einsum`` for ``qcut``
-* ``cvxopt``for ``qml.kernels.closest_psd_matrix``
+* ``cvxopt``for ``qp.kernels.closest_psd_matrix``
 
 .. _install_interfaces:
 

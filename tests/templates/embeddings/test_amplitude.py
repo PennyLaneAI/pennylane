@@ -47,12 +47,12 @@ TOO_MANY_FEATURES = [
 TOO_MANY_BROADCASTED_FEATURES = [np.eye(6)[:3, :5], np.ones((3, 8)) / np.sqrt(8)]
 
 
-@pytest.mark.jax
+@pytest.mark.xfail_if_capture(reason="Come back to this as we port it to Op2")
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
 
     op = qp.AmplitudeEmbedding(features=FEATURES[0], wires=range(2))
-
     qp.ops.functions.assert_valid(op, skip_differentiation=True)
 
 
@@ -179,6 +179,7 @@ class TestDecomposition:
         ([0.4472135954999579, 0.4472135954999579], 5, 0.2, False),
     ]
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(("features", "wires", "pad_with", "normalize"), DECOMP_PARAMS)
     def test_decomposition_new(self, features, wires, pad_with, normalize):
         """Test the decomposition of the AmplitudeEmbedding template."""
@@ -305,12 +306,6 @@ class TestInputs:
 
         # No normalization error is raised
         circuit(x=inputs)
-
-    @pytest.mark.usefixtures("ignore_id_deprecation")
-    def test_id(self):
-        """Tests that the id attribute can be set."""
-        template = qp.AmplitudeEmbedding(np.array([1, 0]), wires=[0], id="a")
-        assert template.id == "a"
 
 
 def circuit_template(features, pad_with=None, normalize=False):

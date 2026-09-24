@@ -1,4 +1,6 @@
 name: Code Security Scan
+permissions:
+  contents: read
 on:
   pull_request:
   push:

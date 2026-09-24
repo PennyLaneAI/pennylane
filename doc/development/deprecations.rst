@@ -9,32 +9,162 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* The :func:`~pennylane.workflow.get_transform_program` function has been deprecated and will be removed in v0.46.
-  Instead, please use the improved :func:`~pennylane.workflow.get_compile_pipeline` to retrieve the execution pipeline
-  of a QNode.
+* The ``Operation.single_qubit_rot_angles()`` method is deprecated in favour of the new ``qp.single_qubit_zyz_angles(op)`` function, and will be removed in v0.47.
+
+  - Deprecated in v0.46
+  - Will be removed in v0.47
+
+* The ``simplify`` method in ``PauliSentence``, ``FermiSentence``, and ``BoseSentence`` are deprecated in favour of ``prune``, and will be removed in v0.47.
+
+  - Deprecated in v0.46
+  - Will be removed in v0.47
+
+* The ``Operator.hash`` and ``MeasurementProcess.hash`` properties have been deprecated and will be removed
+  in v0.47. Please use the Python builtin ``hash(obj)`` function instead.
+
+  - Deprecated in v0.46
+  - Will be removed in v0.47
+
+* ``Operation.basis`` is now deprecated. :func:`~pennylane.is_commuting` can instead be used to determine
+  whether or not two operations commute. For example, ``qp.is_commuting(op, qp.X(op.wires[0]))`` can
+  be used to determine if ``op`` is in the X basis.
+
+  - Deprecated in v0.46
+  - Will be removed in v0.47
+
+* Using :func:`qp.templates.layer <.templates.layer>` is deprecated and will be removed in v0.47. Instead, please apply
+  your unitary in a for loop.
+
+  - Deprecated in v0.46
+  - Will be removed in v0.47
+
+* Deactivating queuing of an ``Operator`` by setting its
+  :attr:`~pennylane.operation.Operator._queue_category` to ``None``
+  has been deprecated and will be removed in v0.46. If necessary, the
+  :attr:`~pennylane.operation.Operator.queue` method can be overwritten for
+  subclasses of ``Operator``.
+
+  - Deprecated in v0.46
+  - Will be removed in v0.47
+
+* The ``QuantumScript.adjoint`` (and ``QuantumTape.adjoint``) methods have been deprecated in v0.46. Instead, please use
+  ``QuantumScript([adjoint(op) for op in reversed(tape.operations)])``.
+
+  - Deprecated in v0.46
+  - Will be removed in v0.47
+
+* Setting shots on a device through the ``shots`` keyword argument is deprecated. Instead,
+  please specify shots using the ``shots`` keyword argument of :class:`~.QNode`, or use the
+  :func:`pennylane.set_shots` transform on the :class:`~.QNode`.
+
+  .. code-block:: python
+
+    dev = qml.device("default.qubit", wires=2)
+
+    @qml.qnode(dev, shots=1000)
+    def circuit(x):
+        qml.RX(x, wires=0)
+        return qml.expval(qml.Z(0))
+
+    circuit_analytic = qml.set_shots(circuit, None)
+
+  - Deprecated in v0.43
+  - Will be removed in a future version
+
+* Maintenance support for the ``tensorflow`` interface has been deprecated and will be dropped in PennyLane v0.44.
+  Future versions of PennyLane are not guaranteed to work with TensorFlow.
+  Instead, we recommend using the :doc:`jax </introduction/interfaces/jax>` or :doc:`torch </introduction/interfaces/torch>` interface for
+  machine learning applications to benefit from enhanced support and features.
+
+  - Deprecated in v0.43
+  - Will be removed in v0.44
+
+Completed removal of legacy operator arithmetic
+-----------------------------------------------
+
+In PennyLane v0.40, the legacy operator arithmetic system has been removed, and is fully replaced by the new
+operator arithmetic functionality that was introduced in v0.36. Check out the :ref:`Updated operators <new_opmath>` page
+for details on how to port your legacy code to the new system. The following functionality has been removed:
+
+* In PennyLane v0.40, legacy operator arithmetic has been removed. This includes :func:`pennylane.operation.enable_new_opmath`,
+  :func:`pennylane.operation.disable_new_opmath`, :class:`pennylane.ops.Hamiltonian`, and :class:`pennylane.operation.Tensor`. Note
+  that ``qml.Hamiltonian`` will continue to dispatch to :class:`pennylane.ops.LinearCombination`.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
+
+* :meth:`pennylane.pauli.PauliSentence.hamiltonian` and :meth:`pennylane.pauli.PauliWord.hamiltonian` have been removed. Instead, please use
+  :meth:`pennylane.pauli.PauliSentence.operation` and :meth:`pennylane.pauli.PauliWord.operation` respectively.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
+
+* :func:`pennylane.pauli.simplify` has been removed. Instead, please use :func:`pennylane.simplify` or :meth:`pennylane.operation.Operator.simplify`.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
+
+Completed deprecation cycles
+----------------------------
+
+* Implementing ``Operator.generator`` as a property is no longer supported. Instead, define a ``generator()`` method for your operator that returns an ``Operator`` instance.
+
+  - Deprecated in v0.22
+  - Removed in v0.46
+
+* Specifying ``shots`` as a keyword argument when executing a :class:`~.QNode` has been removed.
+  Instead, please set shots on ``QNode`` initialization, or use the :func:`~.workflow.set_shots` transform to set the number of shots.
+
+  - Deprecated in v0.43
+  - Removed in v0.46
+
+* Deactivating queuing of an ``Operator`` by setting its
+  :attr:`~pennylane.operation.Operator._queue_category` to ``None``
+  has been removed in v0.46. If necessary, the
+  :attr:`~pennylane.operation.Operator.queue` method can be overwritten for
+  subclasses of ``Operator``.
+  
+  - Deprecated in v0.45
+  - Removed in v0.46
+
+* The ``BoundTransform.transform`` property has been deprecated. Use ``BoundTransform.tape_transform`` instead.
+
+  - Deprecated in v0.45
+  - Removed in v0.46
+
+* The ``qp.transforms.create_expand_fn`` has been deprecated and was removed in v0.46.
+  Instead, please use the :func:`qp.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
+  
+  - Deprecated in v0.45
+  - Removed in v0.46
+  
+* :meth:`QuantumScript.expand`, :func:`~pennylane.tape.qscript.expand` and the related functions :func:`~pennylane.tape.expand_tape`,
+  :func:`~pennylane.tape.expand_tape_state_prep`, and :func:`~pennylane.tape.create_expand_trainable_multipar`
+  are removed. Instead, please use the 
+  :func:`qp.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
+  
+  - Deprecated in v0.45
+  - Removed in v0.46 
+
+* The ``id`` keyword argument to :class:`~.qcut.MeasureNode` and :class:`~.qcut.PrepareNode` has been renamed to ``node_uid``. 
+
+  - Deprecated in v0.45
+  - Removed in v0.46
+
+* The ``id`` keyword argument to :class:`~.ops.MidMeasure` has been renamed to ``meas_uid``. 
+
+  - Deprecated in v0.45
+  - Removed in v0.46
+
+* The ``id`` keyword argument to :class:`~.measurements.MeasurementProcess` has been removed. 
 
   - Deprecated in v0.45
   - Will be removed in v0.46
- 
-* The ``id`` keyword argument to :class:`~.qcut.MeasureNode` and :class:`~.qcut.PrepareNode` has been renamed to ``node_uid`` and will be removed in v0.46. 
+
+* The ``id`` keyword argument to :class:`~.Operator` has been removed. 
 
   - Deprecated in v0.45
-  - Will be removed in v0.46
-
-* The ``id`` keyword argument to :class:`~.ops.MidMeasure` has been renamed to ``meas_uid`` and will be removed in v0.46. 
-
-  - Deprecated in v0.45
-  - Will be removed in v0.46
-
-* The ``id`` keyword argument to :class:`~.measurements.MeasurementProcess` has been deprecated and will be removed in v0.46. 
-
-  - Deprecated in v0.45
-  - Will be removed in v0.46
-
-* The ``id`` keyword argument to :class:`~.Operator` has been deprecated and will be removed in v0.46. 
-
-  - Deprecated in v0.45
-  - Will be removed in v0.46
+  - Removed in v0.46
 
   The ``id`` argument previously served two purposes: (1) adding custom labels
   to operator instances which were rendered in circuit drawings and (2)
@@ -68,104 +198,24 @@ Pending deprecations
     # New method:
     qp.fourier.mark(qp.RX(0.5, wires=0), "x0")
 
-* Deactivating queuing of an ``Operator`` by setting its
-  :attr:`~pennylane.operation.Operator._queue_category` to ``None``
-  has been deprecated and will be removed in v0.46. If necessary, the
-  :attr:`~pennylane.operation.Operator.queue` method can be overwritten for
-  subclasses of ``Operator``.
+* The :func:`~pennylane.workflow.get_transform_program` function has been removed.
+  Instead, please use the improved :func:`~pennylane.workflow.get_compile_pipeline` to retrieve the execution pipeline
+  of a QNode.
 
   - Deprecated in v0.45
-  - Will be removed in v0.46
-
-* The ``BoundTransform.transform`` property has been deprecated. Use ``BoundTransform.tape_transform`` instead.
-
-  - Deprecated in v0.45
-  - Will be removed in v0.46
-
-* :func:`~pennylane.tape.qscript.expand` and the related functions :func:`~pennylane.tape.expand_tape`, :func:`~pennylane.tape.expand_tape_state_prep`, and :func:`~pennylane.tape.create_expand_trainable_multipar`
-  have been deprecated and will be removed in v0.46. Instead, please use the :func:`qp.transforms.decompose <.transforms.decompose>`
-  function for decomposing circuits.
-
-  - Deprecated in v0.45
-  - Will be removed in v0.46
-
-* Providing a value of ``None`` to ``aux_wire`` of ``qp.gradients.hadamard_grad`` with ``mode="reversed"`` or ``mode="standard"`` has been
-  deprecated and will no longer be supported in 0.46. An ``aux_wire`` will no longer be automatically assigned.
-
-  - Deprecated in v0.45
-  - Will be removed in v0.46
-
+  - Removed in v0.46 
+  
 * The ``transform_program`` property of ``QNode`` has been renamed to ``compile_pipeline``.
-  The deprecated access through ``transform_program`` will be removed in PennyLane v0.46.
+  The deprecated access through ``transform_program`` has been removed.
+  
+  - Deprecated in v0.45
+  - Removed in v0.46
+  
+* Providing a value of ``None`` to ``aux_wire`` of ``qp.gradients.hadamard_grad`` with ``mode="reversed"`` or ``mode="standard"`` has been
+  removed and will no longer be supported in 0.46. An ``aux_wire`` will no longer be automatically assigned.
 
   - Deprecated in v0.45
-  - Will be removed in v0.46
-
-* The ``qp.transforms.create_expand_fn`` has been deprecated and will be removed in v0.46.
-  Instead, please use the :func:`qp.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
-
-  - Deprecated in v0.45
-  - Will be removed in v0.46
-
-* Setting shots on a device through the ``shots`` keyword argument is deprecated. Instead,
-  please specify shots using the ``shots`` keyword argument of :class:`~.QNode`, or use the
-  :func:`pennylane.set_shots` transform on the :class:`~.QNode`.
-
-  .. code-block:: python
-
-    dev = qml.device("default.qubit", wires=2)
-
-    @qml.qnode(dev, shots=1000)
-    def circuit(x):
-        qml.RX(x, wires=0)
-        return qml.expval(qml.Z(0))
-
-    circuit_analytic = qml.set_shots(circuit, None)
-
-  - Deprecated in v0.43
-  - Will be removed in a future version
-
-* Maintenance support for the ``tensorflow`` interface has been deprecated and will be dropped in PennyLane v0.44.
-  Future versions of PennyLane are not guaranteed to work with TensorFlow.
-  Instead, we recommend using the :doc:`jax </introduction/interfaces/jax>` or :doc:`torch </introduction/interfaces/torch>` interface for
-  machine learning applications to benefit from enhanced support and features.
-
-  - Deprecated in v0.43
-  - Will be removed in v0.44
-
-* Specifying ``shots`` as a keyword argument when executing a :class:`~.QNode` is deprecated and will be removed in v0.44.
-  Instead, please set shots on ``QNode`` initialization, or use the :func:`~.workflow.set_shots` transform to set the number of shots.
-
-  - Deprecated in v0.43
-  - Will be removed in v0.44
-
-Completed removal of legacy operator arithmetic
------------------------------------------------
-
-In PennyLane v0.40, the legacy operator arithmetic system has been removed, and is fully replaced by the new
-operator arithmetic functionality that was introduced in v0.36. Check out the :ref:`Updated operators <new_opmath>` page
-for details on how to port your legacy code to the new system. The following functionality has been removed:
-
-* In PennyLane v0.40, legacy operator arithmetic has been removed. This includes :func:`pennylane.operation.enable_new_opmath`,
-  :func:`pennylane.operation.disable_new_opmath`, :class:`pennylane.ops.Hamiltonian`, and :class:`pennylane.operation.Tensor`. Note
-  that ``qml.Hamiltonian`` will continue to dispatch to :class:`pennylane.ops.LinearCombination`.
-
-  - Deprecated in v0.39
-  - Removed in v0.40
-
-* :meth:`pennylane.pauli.PauliSentence.hamiltonian` and :meth:`pennylane.pauli.PauliWord.hamiltonian` have been removed. Instead, please use
-  :meth:`pennylane.pauli.PauliSentence.operation` and :meth:`pennylane.pauli.PauliWord.operation` respectively.
-
-  - Deprecated in v0.39
-  - Removed in v0.40
-
-* :func:`pennylane.pauli.simplify` has been removed. Instead, please use :func:`pennylane.simplify` or :meth:`pennylane.operation.Operator.simplify`.
-
-  - Deprecated in v0.39
-  - Removed in v0.40
-
-Completed deprecation cycles
-----------------------------
+  - Removed in v0.46
 
 * Maintenance support of NumPy<2.0 has been removed. PennyLane v0.45 and beyond are not guaranteed to work with NumPy<2.0.
   We recommend upgrading your version of NumPy to benefit from enhanced support and features.
@@ -358,7 +408,8 @@ Completed deprecation cycles
 
 .. code-block:: python
 
-    from pennylane.operation import TermsUndefinedError, Operator
+    from pennylane.core.operator import Operator
+    from pennylane.exceptions import TermsUndefinedError
 
     def not_tape(obj):
         return not isinstance(obj, qml.tape.QuantumScript)
@@ -456,8 +507,8 @@ Completed deprecation cycles
   - Removed in v0.42
 
 * The ``KerasLayer`` class in ``qml.qnn.keras`` has been removed because Keras 2 is no longer actively maintained.
-  Please consider using a different machine learning framework, like `PyTorch <demos/tutorial_qnn_module_torch>`_
-  or `JAX <demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax>`_.
+  Please consider using a different machine learning framework, like :doc:`PyTorch <demo:demos/tutorial_qnn_module_torch>`
+  or :doc:`JAX <demo:demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax>`.
 
   - Deprecated in v0.41
   - Removed in v0.42
@@ -943,9 +994,8 @@ Completed deprecation cycles
   Use ``qml.jordan_wigner`` instead. List input to define the fermionic operator
   is no longer accepted; the fermionic operators ``qml.FermiA``, ``qml.FermiC``,
   ``qml.FermiWord`` and ``qml.FermiSentence`` should be used instead. See the
-  :mod:`pennylane.fermi` module documentation and the
-  `Fermionic Operator <https://pennylane.ai/qml/demos/tutorial_fermionic_operators>`_
-  tutorial for more details.
+  :mod:`pennylane.fermi` module documentation, and the
+  :doc:`Fermionic Operator <demo:demos/tutorial_fermionic_operators>` tutorial for more details.
 
   - Deprecated in v0.32
   - Removed in v0.33

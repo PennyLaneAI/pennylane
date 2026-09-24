@@ -25,7 +25,7 @@ from pennylane import numpy as pnp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
 
@@ -130,10 +130,11 @@ class TestDecomposition:
         ([[np.pi] * 2], range(2), qp.RY),
         ([[np.pi] * 3], range(3), qp.RZ),
         ([[np.pi] * 4], range(4), qp.RX),
-        ([[[np.pi, 1, 2, 1]] * 4], range(4), qp.RX),
+        # batching is something we'll come back to.
+        pytest.param([[[np.pi, 1, 2, 1]] * 4], range(4), qp.RX, marks=pytest.mark.pl2do),
     ]
 
-    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(("weights", "wires", "rotation"), DECOMP_PARAMS)
     def test_decomposition_new(self, weights, wires, rotation):
         op = qp.BasicEntanglerLayers(weights, wires, rotation=rotation)
@@ -160,12 +161,6 @@ class TestInputs:
 
         with pytest.raises(ValueError, match="Weights tensor must have last dimension of length"):
             circuit([[1, 0], [1, 0]])
-
-    @pytest.mark.usefixtures("ignore_id_deprecation")
-    def test_id(self):
-        """Tests that the id attribute can be set."""
-        template = qp.BasicEntanglerLayers(np.array([[1]]), wires=[0], id="a")
-        assert template.id == "a"
 
 
 class TestAttributes:

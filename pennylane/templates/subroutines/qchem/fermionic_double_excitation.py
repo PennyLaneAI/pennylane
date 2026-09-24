@@ -22,8 +22,8 @@ import numpy as np
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
+from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.operation import Operation
 from pennylane.ops import CNOT, RX, RZ, Hadamard
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
@@ -523,7 +523,7 @@ class FermionicDoubleExcitation(Operation):
     def _unflatten(cls, data, metadata) -> "FermionicDoubleExcitation":
         return cls(data[0], wires1=metadata[0], wires2=metadata[1])
 
-    def __init__(self, weight: TensorLike, wires1: WiresLike, wires2: WiresLike, *, id=None):
+    def __init__(self, weight: TensorLike, wires1: WiresLike, wires2: WiresLike):
         wires1 = Wires(wires1)
         wires2 = Wires(wires2)
         if len(wires1) < 2:
@@ -550,7 +550,7 @@ class FermionicDoubleExcitation(Operation):
         }
 
         wires = wires1 + wires2
-        super().__init__(weight, wires=wires, id=id)
+        super().__init__(weight, wires=wires)
 
     @property
     def resource_params(self) -> dict:

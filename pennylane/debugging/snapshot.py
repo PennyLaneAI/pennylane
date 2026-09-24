@@ -18,9 +18,9 @@ This file contains the snapshots function which extracts measurements from the q
 import warnings
 from functools import partial
 
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.devices import LegacyDeviceFacade
 from pennylane.ops import Snapshot
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 
@@ -284,7 +284,7 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
         new_tapes.append(tape.copy(operations=accumulated_ops))
 
     def postprocessing_fn(results, snapshot_tags):
-        return dict(zip(snapshot_tags, results))
+        return dict(zip(snapshot_tags, results, strict=True))
 
     return new_tapes, partial(postprocessing_fn, snapshot_tags=snapshot_tags)
 

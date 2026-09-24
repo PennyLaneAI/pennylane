@@ -16,6 +16,9 @@ This subpackage contains experimental PennyLane transforms and their building bl
 
 .. currentmodule:: pennylane.labs.transforms
 
+Transforms
+~~~~~~~~~~
+
 .. autosummary::
     :toctree: api
 

@@ -26,7 +26,6 @@ Execution functions and utilities
     ~workflow.construct_tape
     ~workflow.construct_batch
     ~workflow.construct_execution_config
-    ~workflow.get_transform_program
     ~workflow.get_compile_pipeline
     ~workflow.get_best_diff_method
     ~workflow.set_shots
@@ -48,7 +47,7 @@ Jacobian Product Calculation
 
 from ._cache_transform import _cache_transform
 from ._setup_transform_program import _setup_transform_program
-from .construct_batch import construct_batch, get_transform_program
+from .construct_batch import construct_batch
 from .construct_execution_config import construct_execution_config
 from .construct_tape import construct_tape
 from .execution import execute

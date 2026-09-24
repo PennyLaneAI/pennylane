@@ -17,6 +17,7 @@ Tests that apply to all device modifiers or act on a combination of them togethe
 
 # pylint: disable=unused-argument, too-few-public-methods, missing-class-docstring, no-member
 import pytest
+from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qp
 from pennylane.devices import Device
@@ -45,7 +46,7 @@ def test_chained_modifiers():
     # result unwrapped
     assert out == 0.0
 
-    assert len(dev.tracker.history) == 7
+    assert len(dev.tracker.history) == 6
     assert dev.tracker.history["batches"] == [1]
     assert dev.tracker.history["simulations"] == [1]
     assert dev.tracker.history["executions"] == [1]
@@ -62,7 +63,7 @@ class TestModifierDefaultBeahviour:
         """Test that a ValueError is raised is called on something that is not a subclass of Device."""
 
         with pytest.raises(ValueError, match=f"{modifier.__name__} only accepts"):
-            modifier(qp.devices.DefaultQutrit)
+            modifier(DefaultQubitLegacy)
 
     def test_adds_to_applied_modifiers_private_property(self, modifier):
         """Test that the modifier is added to the `_applied_modifiers` property."""

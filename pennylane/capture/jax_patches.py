@@ -149,7 +149,7 @@ def _add_make_eqn_helper():
         # We pass the equation as the parent parameter (4th argument to __init__)
         out_tracers = [
             DynamicJaxprTracer(self, aval, v, source_info, eqn)
-            for aval, v in zip(out_avals, outvars)
+            for aval, v in zip(out_avals, outvars, strict=True)
         ]
 
         return eqn, out_tracers

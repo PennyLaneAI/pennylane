@@ -68,11 +68,11 @@ coverage:
 .PHONY:format
 format:
 ifdef check
-	$(PYTHON) -m isort --py 311 --profile black -l 100 -o autoray -p ./pennylane --skip __init__.py --filter-files ./pennylane ./tests --check
-	$(PYTHON) -m black -t py311 -t py312 -t py313 -l 100 ./pennylane ./tests --check
+	$(PYTHON) -m isort --py 312 --profile black -l 100 -o autoray -p ./pennylane --skip __init__.py --filter-files ./pennylane ./tests --check
+	$(PYTHON) -m black -t py312 -t py313 -t py314 -l 100 ./pennylane ./tests --check
 else
-	$(PYTHON) -m isort --py 311 --profile black -l 100 -o autoray -p ./pennylane --skip __init__.py --filter-files ./pennylane ./tests
-	$(PYTHON) -m black -t py311 -t py312 -t py313 -l 100 ./pennylane ./tests
+	$(PYTHON) -m isort --py 312 --profile black -l 100 -o autoray -p ./pennylane --skip __init__.py --filter-files ./pennylane ./tests
+	$(PYTHON) -m black -t py312 -t py313 -t py314 -l 100 ./pennylane ./tests
 endif
 
 .PHONY: lint

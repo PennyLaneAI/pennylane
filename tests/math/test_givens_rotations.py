@@ -19,7 +19,7 @@ import numpy as onp
 import pytest
 from scipy.stats import ortho_group, unitary_group
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import numpy as np
 from pennylane.math.decomposition import _givens_matrix, _set_unitary_matrix, givens_decomposition
 
@@ -150,11 +150,10 @@ def test_givens_decomposition(shape, seed):
     [
         None,
         pytest.param("jit", marks=[pytest.mark.jax]),
-        pytest.param("qjit", marks=[pytest.mark.external, pytest.mark.catalyst]),
+        pytest.param("qjit", marks=[pytest.mark.catalyst]),
     ],
 )
 @pytest.mark.jax
-@pytest.mark.external
 def test_givens_decomposition_jax_qjit(shape, compiler, seed):
     r"""Test that `givens_decomposition` performs a correct Givens decomposition."""
     import jax
@@ -171,7 +170,7 @@ def test_givens_decomposition_jax_qjit(shape, compiler, seed):
 
     copied_matrix = matrix.copy()
     phase_mat, ordered_rotations = func(matrix)
-    assert qml.math.allclose(copied_matrix, matrix)
+    assert qp.math.allclose(copied_matrix, matrix)
     assert all(j == i + 1 for _, (i, j) in ordered_rotations)
     decomposed_matrix = np.diag(phase_mat)
     for grot_mat, (i, _) in ordered_rotations:
@@ -348,7 +347,7 @@ def test_givens_matrix_jaxpr():
 )
 @pytest.mark.parametrize(
     "compiler",
-    [None, "jit", pytest.param("qjit", marks=[pytest.mark.external, pytest.mark.catalyst])],
+    [None, "jit", pytest.param("qjit", marks=[pytest.mark.catalyst])],
 )
 @pytest.mark.jax
 def test_set_unitary_matrix_real(
@@ -378,8 +377,8 @@ def test_set_unitary_matrix_real(
     if compiler is not None:
         # If we are not compiling, we are handling matrix copying further up in
         # givens_decomposition, so modifying the matrix with _set_unitary_matrix is okay.
-        assert qml.math.allclose(unitary_matrix, copied_matrix)
-    assert qml.math.allclose(new_unitary_matrix, expected_matrix)
+        assert qp.math.allclose(unitary_matrix, copied_matrix)
+    assert qp.math.allclose(new_unitary_matrix, expected_matrix)
     assert new_unitary_matrix.dtype == unitary_matrix.dtype
 
 
@@ -446,7 +445,7 @@ def test_set_unitary_matrix_real(
 )
 @pytest.mark.parametrize(
     "compiler",
-    [None, "jit", pytest.param("qjit", marks=[pytest.mark.external, pytest.mark.catalyst])],
+    [None, "jit", pytest.param("qjit", marks=[pytest.mark.catalyst])],
 )
 @pytest.mark.jax
 def test_set_unitary_matrix_complex(
@@ -477,6 +476,6 @@ def test_set_unitary_matrix_complex(
     if compiler is not None:
         # If we are not compiling, we are handling matrix copying further up in
         # givens_decomposition, so modifying the matrix with _set_unitary_matrix is okay.
-        assert qml.math.allclose(unitary_matrix, copied_matrix)
-    assert qml.math.allclose(new_unitary_matrix, expected_matrix)
+        assert qp.math.allclose(unitary_matrix, copied_matrix)
+    assert qp.math.allclose(new_unitary_matrix, expected_matrix)
     assert new_unitary_matrix.dtype == np.complex128

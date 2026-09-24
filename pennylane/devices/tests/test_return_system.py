@@ -35,7 +35,7 @@ class TestIntegrationMultipleReturns:
     measurements.
     """
 
-    def test_multiple_expval(self, device):
+    def test_multiple_expval(self, device, shots):
         """Return multiple expvals."""
         n_wires = 2
         dev = device(n_wires)
@@ -51,7 +51,7 @@ class TestIntegrationMultipleReturns:
             func(x)
             return qp.expval(obs1), qp.expval(obs2)
 
-        qnode = qp.QNode(circuit, dev, diff_method=None)
+        qnode = qp.QNode(circuit, dev, shots=shots, diff_method=None)
         res = qnode(0.5)
 
         assert isinstance(res, tuple)
@@ -61,7 +61,7 @@ class TestIntegrationMultipleReturns:
 
         assert isinstance(res[1], (float, np.ndarray))
 
-    def test_multiple_var(self, device):
+    def test_multiple_var(self, device, shots):
         """Return multiple vars."""
 
         n_wires = 2
@@ -78,7 +78,7 @@ class TestIntegrationMultipleReturns:
             func(x)
             return qp.var(obs1), qp.var(obs2)
 
-        qnode = qp.QNode(circuit, dev, diff_method=None)
+        qnode = qp.QNode(circuit, dev, shots=shots, diff_method=None)
         res = qnode(0.5)
 
         assert isinstance(res, tuple)
@@ -88,7 +88,7 @@ class TestIntegrationMultipleReturns:
 
         assert isinstance(res[1], (float, np.ndarray))
 
-    def test_multiple_prob(self, device):
+    def test_multiple_prob(self, device, shots):
         """Return multiple probs."""
 
         n_wires = 2
@@ -98,7 +98,7 @@ class TestIntegrationMultipleReturns:
             qubit_ansatz(x)
             return qp.probs(op=qp.Z(0)), qp.probs(op=qp.Y(1))
 
-        qnode = qp.QNode(circuit, dev, diff_method=None)
+        qnode = qp.QNode(circuit, dev, shots=shots, diff_method=None)
         res = qnode(0.5)
 
         assert isinstance(res, tuple)
@@ -110,7 +110,7 @@ class TestIntegrationMultipleReturns:
         assert isinstance(res[1], np.ndarray)
         assert res[1].shape == (2**1,)
 
-    def test_mix_meas(self, device):
+    def test_mix_meas(self, device, shots):
         """Return multiple different measurements."""
         n_wires = 2
         dev = device(n_wires)
@@ -124,7 +124,7 @@ class TestIntegrationMultipleReturns:
                 qp.expval(qp.Y(1)),
             )
 
-        qnode = qp.QNode(circuit, dev, diff_method=None)
+        qnode = qp.QNode(circuit, dev, shots=shots, diff_method=None)
         res = qnode(0.5)
 
         assert isinstance(res, tuple)

@@ -20,16 +20,15 @@ from enum import StrEnum
 from typing import Literal
 
 from pennylane.capture import enabled as capture_enabled
+from pennylane.core.operator import Operator
 from pennylane.math import is_abstract
-from pennylane.operation import Operator
 from pennylane.wires import DynamicWire, Wires
 
 has_jax = True
 try:
-    import jax
-
     # pylint: disable=ungrouped-imports
     from pennylane.capture import QpPrimitive
+    from pennylane.wires import AbstractQubit
 except ImportError:
     jax = None
     has_jax = False
@@ -40,6 +39,11 @@ class AllocateState(StrEnum):
 
     ZERO = "zero"
     ANY = "any"
+    MAGIC_T = "magic-T"  # |m⟩ = TH|0⟩
+    MAGIC_T_ADJ = "magic-T-adj"  # |m̄⟩ = T†H|0⟩
+
+
+_MAGIC_STATES = frozenset({AllocateState.MAGIC_T, AllocateState.MAGIC_T_ADJ})
 
 
 if not has_jax:
@@ -60,7 +64,7 @@ else:
     def _allocate_primitive_abstract_eval(
         *, num_wires, state: AllocateState = AllocateState.ZERO, restored=False
     ):
-        return [jax.core.ShapedArray((), dtype=int) for _ in range(num_wires)]
+        return [AbstractQubit() for _ in range(num_wires)]
 
     deallocate_prim = QpPrimitive("deallocate")
     deallocate_prim.multiple_results = True
@@ -82,7 +86,7 @@ class Allocate(Operator):
         wires (list[DynamicWire]): a list of dynamic wire values.
 
     Keyword Args:
-        state (Literal["any", "zero"]): the state that the wires need to start in.
+        state (Literal["any", "zero", "magic-T", "magic-T-adj"]): the state that the wires need to start in.
         restored (bool): Whether or not the qubit will be restored to the original state before being deallocated.
 
     ..see-also:: :func:`~.allocate`.
@@ -95,7 +99,7 @@ class Allocate(Operator):
 
     @property
     def state(self) -> AllocateState:
-        """Whether or not the allocated wires are required to be in the zero state."""
+        """The initial state requested for the allocated wires."""
         return self.hyperparameters["state"]
 
     @property
@@ -159,10 +163,11 @@ def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate
             return qp.expval(qp.Z(0))
 
     >>> print(qp.draw(circuit)())
-                0: ──H────────╭●────╭●──────────────────────┤  <Z>
-    <DynamicWire>: ──Allocate─╰X────╰X───────────Deallocate─┤
-    <DynamicWire>: ─╭Allocate─╭SWAP─╭Deallocate─────────────┤
-    <DynamicWire>: ─╰Allocate─╰SWAP─╰Deallocate─────────────┤
+    0: ──H────╭●────╭●────┤  <Z>
+         |0>├─╰X────╰X──┤
+         |0>├─╭SWAP──┤
+         |0>├─╰SWAP──┤
+
 
     Here, three dynamic wires were allocated in the circuit originally. When PennyLane determines
     which concrete values to use for dynamic wires to send to the device for execution, we can see
@@ -203,10 +208,10 @@ class DynamicRegister(Wires):
 
 def allocate(
     num_wires: int,
-    state: Literal["any", "zero"] | AllocateState = AllocateState.ZERO,
+    state: Literal["any", "zero", "magic-T", "magic-T-adj"] | AllocateState = AllocateState.ZERO,
     restored: bool = False,
 ) -> DynamicRegister:
-    """Dynamically allocates new wires in-line,
+    r"""Dynamically allocates new wires in-line,
     or as a context manager which also safely deallocates the new wires upon exiting the context.
 
     Args:
@@ -214,9 +219,12 @@ def allocate(
             The number of wires to dynamically allocate.
 
     Keyword Args:
-        state (Literal["any", "zero"]):
-            Specifies whether to allocate ``num_wires`` in the all-zeros state (``"zero"``) or in
-            any arbitrary state (``"any"``). The default value is ``state="zero"``.
+        state (Literal["any", "zero", "magic-T", "magic-T-adj"]):
+            Specifies the initial state of the allocated wires. ``"zero"`` and ``"any"`` request
+            wires in the all-zeros state or an arbitrary state, respectively. ``"magic-T"`` and
+            ``"magic-T-adj"`` request magic states with :math:`|m\rangle = TH|0\rangle` or
+            :math:`|\bar{m}\rangle = T^\dagger H|0\rangle`. For ``num_wires > 1``, a product
+            state is created. The default value is ``state="zero"``.
 
         restored (bool):
             Whether or not the dynamically allocated wires are returned to the same state they
@@ -277,12 +285,13 @@ def allocate(
             return qp.expval(qp.Z(0))
 
     >>> print(qp.draw(circuit)())
-                0: ──H───────────────────────┤  <Z>
-                1: ──H───────────────────────┤
-    <DynamicWire>: ─╭Allocate──H─╭Deallocate─┤
-    <DynamicWire>: ─╰Allocate──H─╰Deallocate─┤
+    0: ──H──────────┤  <Z>
+    1: ──H──────────┤
+         |0>├──H──┤
+         |0>├──H──┤
 
-    Equivalenty, ``allocate`` can be used in-line along with :func:`~.deallocate` for manual
+
+    Equivalently, ``allocate`` can be used in-line along with :func:`~.deallocate` for manual
     handling:
 
     .. code-block:: python
@@ -319,12 +328,12 @@ def allocate(
                 return qp.expval(qp.Z(0))
 
         >>> print(qp.draw(circuit)())
-                    0: ──H─────────────────────╭●───────────────────────╭●─────────────┤  <Z>
-        <DynamicWire>: ──Allocate──┤↗│  │0⟩────│──────────Deallocate────│──────────────┤
-        <DynamicWire>: ──Allocate───║────────Z─╰X─────────Deallocate────│──────────────┤
-        <DynamicWire>: ─────────────║────────║──Allocate──┤↗│  │0⟩──────│───Deallocate─┤
-        <DynamicWire>: ─────────────║────────║──Allocate───║──────────Z─╰X──Deallocate─┤
-                                    ╚════════╝             ╚══════════╝
+        0: ──H─────────────────────╭●───────────╭●────┤  <Z>
+             |0>├──┤↗│  │0⟩────────│──────────┤ │
+             ├──────║────────Z─────╰X─────────┤ │
+                    ║        ║|0>├──┤↗│  │0⟩────│───┤
+                    ║        ║├──────║────────Z─╰X──┤
+                    ╚════════╝       ╚════════╝
 
         The user-level circuit drawing shows four separate allocations and deallocations (two per
         loop iteration). However, the circuit that the device receives gets automatically compiled
@@ -357,14 +366,19 @@ def allocate(
                 return qp.expval(qp.Z(0))
 
         >>> print(qp.draw(circuit, level="user")())
-        <DynamicWire>: ──Allocate──H──Deallocate─┤
-        <DynamicWire>: ──Allocate──X──Deallocate─┤
-                    0: ──────────────────────────┤  <Z>
+        0: ─────────────┤  <Z>
+            |0>├──H──┤
+            |0>├──X──┤
         >>> print(qp.draw(circuit, level="device")())
         0: ─────────────────┤  <Z>
         1: ──H──┤↗│  │0⟩──X─┤
     """
     state = AllocateState(state)
+    if state in _MAGIC_STATES and restored:
+        raise ValueError(
+            "restored=True is not supported for magic state allocations "
+            f"(state={state!r}). Magic states cannot be restored to their initial state."
+        )
     if capture_enabled():
         if is_abstract(num_wires):
             raise NotImplementedError(

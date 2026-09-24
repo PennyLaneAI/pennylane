@@ -20,17 +20,36 @@ from collections.abc import Callable, Sequence
 from itertools import product
 
 from pennylane import ops
+from pennylane.core.measurements import MeasurementProcess
+from pennylane.core.operator import Operator
+from pennylane.core.qscript import QuantumScript
+from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import gate_sets
-from pennylane.measurements import ExpectationMP, MeasurementProcess, SampleMP, expval, sample
-from pennylane.operation import Operator
+from pennylane.measurements import ExpectationMP, SampleMP, expval, sample
 from pennylane.ops.meta import WireCut
 from pennylane.pauli import partition_pauli_group, string_to_pauli_word
-from pennylane.queuing import QueuingManager, WrappedObj
-from pennylane.tape import QuantumScript
 from pennylane.transforms import decompose
 from pennylane.wires import Wires
 
 from .ops import MeasureNode, PrepareNode
+
+
+class _WrappedObj:
+    """Wraps an object to make its hash dependent on its identity"""
+
+    def __init__(self, obj):
+        self.obj = obj
+
+    def __hash__(self):
+        return id(self.obj)
+
+    def __eq__(self, other):
+        if not isinstance(other, _WrappedObj):
+            return False
+        return id(self.obj) == id(other.obj)
+
+    def __repr__(self):
+        return f"_Wrapped({self.obj.__repr__()})"
 
 
 def tape_to_graph(tape: QuantumScript):
@@ -40,7 +59,7 @@ def tape_to_graph(tape: QuantumScript):
     .. note::
 
         This operation is designed for use as part of the circuit cutting workflow.
-        Check out the :func:`qml.cut_circuit() <pennylane.cut_circuit>` transform for more details.
+        Check out the :func:`qp.cut_circuit() <pennylane.cut_circuit>` transform for more details.
 
     Args:
         tape (QuantumTape): tape to be converted into a directed multigraph
@@ -57,16 +76,16 @@ def tape_to_graph(tape: QuantumScript):
     .. code-block:: python
 
         ops = [
-            qml.RX(0.4, wires=0),
-            qml.RY(0.9, wires=0),
-            qml.CNOT(wires=[0, 1]),
+            qp.RX(0.4, wires=0),
+            qp.RY(0.9, wires=0),
+            qp.CNOT(wires=[0, 1]),
         ]
-        measurements = [qml.expval(qml.Z(1))]
-        tape = qml.tape.QuantumTape(ops,)
+        measurements = [qp.expval(qp.Z(1))]
+        tape = qp.tape.QuantumTape(ops,)
 
     Its corresponding circuit graph can be found using
 
-    >>> qml.qcut.tape_to_graph(tape)
+    >>> qp.qcut.tape_to_graph(tape)
     <networkx.classes.multidigraph.MultiDiGraph at 0x7fe41cbd7210>
     """
     from networkx import MultiDiGraph  # pylint: disable=import-outside-toplevel
@@ -114,7 +133,7 @@ def graph_to_tape(graph) -> QuantumScript:
     .. note::
 
         This function is designed for use as part of the circuit cutting workflow.
-        Check out the :func:`qml.cut_circuit() <pennylane.cut_circuit>` transform for more details.
+        Check out the :func:`qp.cut_circuit() <pennylane.cut_circuit>` transform for more details.
 
     Args:
         graph (nx.MultiDiGraph): directed multigraph to be converted to a tape
@@ -129,21 +148,21 @@ def graph_to_tape(graph) -> QuantumScript:
     .. code-block:: python
 
         ops = [
-            qml.RX(0.4, wires=0),
-            qml.RY(0.5, wires=1),
-            qml.CNOT(wires=[0, 1]),
-            qml.qcut.MeasureNode(wires=1),
-            qml.qcut.PrepareNode(wires=1),
-            qml.CNOT(wires=[1, 0]),
+            qp.RX(0.4, wires=0),
+            qp.RY(0.5, wires=1),
+            qp.CNOT(wires=[0, 1]),
+            qp.qcut.MeasureNode(wires=1),
+            qp.qcut.PrepareNode(wires=1),
+            qp.CNOT(wires=[1, 0]),
         ]
-        measurements = [qml.expval(qml.Z(0))]
-        tape = qml.tape.QuantumTape(ops, measurements)
+        measurements = [qp.expval(qp.Z(0))]
+        tape = qp.tape.QuantumTape(ops, measurements)
 
     This circuit contains operations that follow a :class:`~.MeasureNode`. These operations will
     subsequently act on wire ``2`` instead of wire ``1``:
 
-    >>> graph = qml.qcut.tape_to_graph(tape)
-    >>> tape = qml.qcut.graph_to_tape(graph)
+    >>> graph = qp.qcut.tape_to_graph(tape)
+    >>> tape = qp.qcut.graph_to_tape(graph)
     >>> print(tape.draw())
     0: ──RX──────────╭●──────────────╭X─┤  <Z>
     1: ──RY──────────╰X──MeasureNode─│──┤
@@ -214,7 +233,7 @@ def _add_operator_node(graph, op: Operator, order: int, wire_latest_node: dict):
     """
     Helper function to add operators as nodes during tape to graph conversion.
     """
-    node = WrappedObj(op)
+    node = _WrappedObj(op)
     graph.add_node(node, order=order)
     for wire in op.wires:
         if wire_latest_node[wire] is not None:
@@ -265,7 +284,7 @@ def expand_fragment_tape(
     .. note::
 
         This function is designed for use as part of the circuit cutting workflow.
-        Check out the :func:`qml.cut_circuit() <pennylane.cut_circuit>` transform for more details.
+        Check out the :func:`qp.cut_circuit() <pennylane.cut_circuit>` transform for more details.
 
     Args:
         tape (QuantumTape): the fragment tape containing :class:`MeasureNode` and
@@ -284,17 +303,17 @@ def expand_fragment_tape(
     .. code-block:: python
 
         ops = [
-            qml.qcut.PrepareNode(wires=0),
-            qml.RX(0.5, wires=0),
-            qml.qcut.MeasureNode(wires=0),
+            qp.qcut.PrepareNode(wires=0),
+            qp.RX(0.5, wires=0),
+            qp.qcut.MeasureNode(wires=0),
         ]
-        tape = qml.tape.QuantumTape(ops)
+        tape = qp.tape.QuantumTape(ops)
 
     We can expand over the measurement and preparation nodes using:
 
-    >>> tapes, prep, meas = qml.qcut.expand_fragment_tape(tape)
+    >>> tapes, prep, meas = qp.qcut.expand_fragment_tape(tape)
     >>> for t in tapes:
-    ...     print(qml.drawer.tape_text(t, decimals=1))
+    ...     print(qp.drawer.tape_text(t, decimals=1))
     0: ──I──RX(0.5)─┤  <I>  <Z>
     0: ──I──RX(0.5)─┤  <X>
     0: ──I──RX(0.5)─┤  <Y>
@@ -331,7 +350,8 @@ def expand_fragment_tape(
                 group = []
 
             prepare_mapping = {
-                id(n): PREPARE_SETTINGS[s] for n, s in zip(prepare_nodes, prepare_settings)
+                id(n): PREPARE_SETTINGS[s]
+                for n, s in zip(prepare_nodes, prepare_settings, strict=True)
             }
 
             ops_list = []

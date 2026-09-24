@@ -23,11 +23,9 @@ import pytest
 import pennylane as qp
 from pennylane.exceptions import WireError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.transforms.decompose import DecomposeInterpreter
-from pennylane.wires import Wires
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
 
@@ -44,59 +42,16 @@ class TestDecomposition:
         [
             [0, 1],
             [0, 1, 2, 3, 4],
-            ["a", "b", "c", "d", "e", "f"],
+            [0, 1, 2, 3, 4, 5, 6],
         ],
     )
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_new(self, wires):
         """Tests the decomposition rule implemented with the new system."""
         op = qp.CosineWindow(wires=wires)
 
         for rule in qp.list_decomps(qp.CosineWindow):
             _test_decomposition_rule(op, rule)
-
-    @pytest.mark.parametrize(
-        "wires",
-        [
-            [0, 1],
-            [0, 1, 2],
-            [0, 1, 2, 3],
-            [0, 1, 2, 3, 4],
-        ],
-    )
-    @pytest.mark.capture
-    def test_decomposition_new_capture(self, wires):
-        """Tests the decomposition rule implemented with the new system."""
-        op = qp.CosineWindow(wires=wires)
-
-        for rule in qp.list_decomps(qp.CosineWindow):
-            _test_decomposition_rule(op, rule)
-
-    @pytest.mark.integration
-    @pytest.mark.capture
-    @pytest.mark.usefixtures("enable_graph_decomposition")
-    def test_integration_decompose_interpreter(self):
-        """Tests that a simple circuit is correctly decomposed into different gate sets."""
-        import jax
-        from jax import numpy as jnp
-
-        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
-
-        def f():
-            qp.CosineWindow(wires=[0, 1])
-
-        decomposed_f = DecomposeInterpreter(
-            gate_set={"Hadamard", "RZ", "PhaseShift", "ControlledPhaseShift", "SWAP"}
-        )(f)
-        jaxpr = jax.make_jaxpr(decomposed_f)()
-        collector = CollectOpsandMeas()
-        collector.eval(jaxpr.jaxpr, jaxpr.consts)
-        assert collector.state["ops"] == [
-            qp.Hadamard(1),
-            qp.RZ(3.141592653589793, wires=[1]),
-            qp.adjoint(qp.QFT(wires=[0, 1])),
-            qp.PhaseShift(jnp.array(-2.89760778e19), wires=[0]),
-            qp.PhaseShift(jnp.array(1.44880389e19), wires=[1]),
-        ]
 
     def test_correct_gates_single_wire(self):
         """Test that the correct gates are applied."""
@@ -148,21 +103,10 @@ class TestDecomposition:
         assert np.allclose(state1, state2)
 
 
-class TestRepresentation:
-    """Test id and label."""
-
-    @pytest.mark.usefixtures("ignore_id_deprecation")
-    def test_id(self):
-        """Tests that the id attribute can be set."""
-        wires = [0, 1, 2]
-        template = qp.CosineWindow(wires=wires, id="a")
-        assert template.id == "a"
-        assert template.wires == Wires(wires)
-
-    def test_label(self):
-        """Test label method returns CosineWindow"""
-        op = qp.CosineWindow(wires=[0, 1])
-        assert op.label() == "CosineWindow"
+def test_label():
+    """Test label method returns CosineWindow"""
+    op = qp.CosineWindow(wires=[0, 1])
+    assert op.label() == "CosineWindow"
 
 
 class TestStateVector:

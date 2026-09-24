@@ -16,20 +16,36 @@
 import pytest
 
 import pennylane as qp
-from pennylane import queuing
-from pennylane.exceptions import PennyLaneDeprecationWarning
+from pennylane.core import queuing
+from pennylane.core.operator import abstractify
 from pennylane.ops import MeasurementValue, PauliMeasure
+from pennylane.typing import Wire
 from pennylane.wires import Wires
 
 
-def test_id_is_deprecated():
-    """Tests that the 'id' argument is deprecated and renamed."""
+@pytest.mark.catalyst
+def test_pauli_measure_catalyst_dispatch():
+    """Test that qp.pauli_measure can be used with qjit and capture disabled."""
 
-    with pytest.warns(
-        PennyLaneDeprecationWarning, match="The 'id' argument has been renamed to 'meas_uid'"
-    ):
-        op = PauliMeasure("XY", wires=[0, 1], id="blah")
-    assert op.meas_uid == "blah"
+    pytest.importorskip("catalyst")
+
+    @qp.qjit
+    @qp.qnode(qp.device("lightning.qubit", wires=2))
+    def c():
+        qp.X(0)
+        m = qp.pauli_measure("Z", wires=[0])
+
+        def f():
+            qp.X(1)
+
+        qp.cond(m, f)()
+
+        return qp.expval(qp.Z(0)), qp.expval(qp.Z(1))
+
+    z0, z1 = c()
+
+    assert qp.math.allclose(z0, -1)
+    assert qp.math.allclose(z1, -1)
 
 
 class TestPauliMeasure:
@@ -82,3 +98,18 @@ class TestPauliMeasure:
 
         m5 = PauliMeasure("XY", wires=[0, 1], meas_uid="id1")
         assert hash(m1) == hash(m5)
+
+    @pytest.mark.parametrize("postselect", [0, 1, None])
+    @pytest.mark.parametrize("meas_uid", [123, 456, None])
+    def test_abstract_pauli_measure(self, postselect, meas_uid):
+        """Test that instantiating an abstract PauliMeasure`` works correctly.
+
+        All data should be preserved other than ``meas_uid``, which should be ignored.
+        """
+        # Check manually created abstract instance
+        m1 = PauliMeasure("XYZ", Wire[3], postselect=postselect, meas_uid=meas_uid)
+        abstract_m1 = abstractify(m1)
+        assert abstract_m1.pauli_word == "XYZ"
+        assert abstract_m1.wires == Wire[3]
+        assert abstract_m1.postselect == postselect
+        assert abstract_m1.meas_uid is None

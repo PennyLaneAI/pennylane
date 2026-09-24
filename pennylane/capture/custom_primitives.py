@@ -18,6 +18,7 @@ This submodule offers custom primitives for the PennyLane capture module.
 from enum import Enum
 from typing import Any
 
+from jax._src import config as jax_config
 from jax.extend.core import Primitive
 
 
@@ -79,4 +80,5 @@ class QpPrimitive(Primitive):
         """
         # Convert all parameters to hashable forms
         hashable_params = {k: _make_hashable(v) for k, v in params.items()}
-        return super().bind(*args, **hashable_params)
+        with jax_config.eager_constant_folding(False):
+            return super().bind(*args, **hashable_params)

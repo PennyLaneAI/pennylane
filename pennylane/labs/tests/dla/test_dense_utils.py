@@ -17,14 +17,14 @@
 import numpy as np
 import pytest
 
-import pennylane as qml
-from pennylane import I, X, Y, Z
+import pennylane as qp
 from pennylane.labs.dla import (
     batched_pauli_decompose,
     check_orthonormal,
     orthonormalize,
     pauli_coefficients,
 )
+from pennylane.ops import I, X, Y, Z
 from pennylane.pauli import PauliSentence, PauliVSpace, trace_inner_product
 
 # Make an operator matrix on given wire and total wire count
@@ -170,14 +170,14 @@ class TestPauliDecompose:
         op = batched_pauli_decompose(H, pauli=pauli)
         if pauli:
             expected = expected.pauli_rep
-            expected.simplify()
+            expected.prune()
             assert isinstance(op, PauliSentence)
             assert all(c.dtype == np.float64 for c in op.values())
             assert set(op.keys()) == set(expected.keys())
             assert all(np.isclose(op[k], expected[k]) for k in op.keys())
         else:
-            assert isinstance(op, qml.operation.Operator)
-            assert qml.equal(op, expected)
+            assert isinstance(op, qp.operation.Operator)
+            assert qp.equal(op, expected)
 
     @pytest.mark.parametrize("pauli", [False, True])
     def test_one_qubit_batched(self, pauli):
@@ -206,17 +206,17 @@ class TestPauliDecompose:
         assert isinstance(op, list)
         assert len(op) == len(expected)
         if pauli:
-            for _op, e in zip(op, expected):
+            for _op, e in zip(op, expected, strict=True):
                 e = e.pauli_rep
-                e.simplify()
+                e.prune()
                 assert isinstance(_op, PauliSentence)
                 assert all(c.dtype == np.float64 for c in _op.values())
                 assert set(_op.keys()) == set(e.keys())
                 assert all(np.isclose(_op[k], e[k]) for k in _op.keys())
         else:
-            for _op, e in zip(op, expected):
-                assert isinstance(_op, qml.operation.Operator)
-                assert qml.equal(_op, e)
+            for _op, e in zip(op, expected, strict=True):
+                assert isinstance(_op, qp.operation.Operator)
+                assert qp.equal(_op, e)
 
     @pytest.mark.parametrize(
         "H, expected",
@@ -236,14 +236,14 @@ class TestPauliDecompose:
         op = batched_pauli_decompose(H, pauli=pauli)
         if pauli:
             expected = expected.pauli_rep
-            expected.simplify()
+            expected.prune()
             assert isinstance(op, PauliSentence)
             assert all(c.dtype == np.float64 for c in op.values())
             assert set(op.keys()) == set(expected.keys())
             assert all(np.isclose(op[k], expected[k]) for k in op.keys())
         else:
-            assert isinstance(op, qml.operation.Operator)
-            assert qml.equal(op, expected)
+            assert isinstance(op, qp.operation.Operator)
+            assert qp.equal(op, expected)
 
     @pytest.mark.parametrize("pauli", [False, True])
     def test_two_qubits_batched(self, pauli):
@@ -274,28 +274,28 @@ class TestPauliDecompose:
         assert isinstance(op, list)
         assert len(op) == len(expected)
         if pauli:
-            for _op, e in zip(op, expected):
+            for _op, e in zip(op, expected, strict=True):
                 e = e.pauli_rep
-                e.simplify()
+                e.prune()
                 assert isinstance(_op, PauliSentence)
                 assert all(c.dtype == np.float64 for c in _op.values())
                 assert set(_op.keys()) == set(e.keys())
                 assert all(np.isclose(_op[k], e[k]) for k in _op.keys())
         else:
-            for _op, e in zip(op, expected):
-                assert isinstance(_op, qml.operation.Operator)
-                assert qml.equal(_op, e)
+            for _op, e in zip(op, expected, strict=True):
+                assert isinstance(_op, qp.operation.Operator)
+                assert qp.equal(_op, e)
 
 
-id_pw = qml.pauli.PauliWord({})
+id_pw = qp.pauli.PauliWord({})
 
 
 @pytest.mark.parametrize(
     "g, inner_product",
     [
-        (qml.ops.qubit.special_unitary.pauli_basis_matrices(3), trace_inner_product),
-        (qml.pauli.pauli_group(4), lambda A, B: (A @ B).pauli_rep.trace()),
-        (qml.pauli.pauli_group(4), lambda A, B: (A.pauli_rep @ B.pauli_rep).get(id_pw, 0.0)),
+        (qp.ops.qubit.special_unitary.pauli_basis_matrices(3), trace_inner_product),
+        (qp.pauli.pauli_group(4), lambda A, B: (A @ B).pauli_rep.trace()),
+        (qp.pauli.pauli_group(4), lambda A, B: (A.pauli_rep @ B.pauli_rep).get(id_pw, 0.0)),
         (list("abcdefghi"), lambda A, B: int(A == B)),
     ],
 )
@@ -313,9 +313,9 @@ def test_check_orthonormal_True(g, inner_product):
 @pytest.mark.parametrize(
     "g, inner_product",
     [
-        ([np.eye(2), qml.X(0).matrix() + qml.Z(0).matrix()], trace_inner_product),
-        ([qml.X(0).matrix(), qml.X(0).matrix() + qml.Z(0).matrix()], trace_inner_product),
-        (qml.pauli.pauli_group(2), lambda A, B: np.trace((A @ B).matrix())),
+        ([np.eye(2), qp.X(0).matrix() + qp.Z(0).matrix()], trace_inner_product),
+        ([qp.X(0).matrix(), qp.X(0).matrix() + qp.Z(0).matrix()], trace_inner_product),
+        (qp.pauli.pauli_group(2), lambda A, B: np.trace((A @ B).matrix())),
     ],
 )
 def test_check_orthonormal_False(g, inner_product):
@@ -324,10 +324,10 @@ def test_check_orthonormal_False(g, inner_product):
 
 
 gens1 = [X(i) @ X(i + 1) + Y(i) @ Y(i + 1) + Z(i) @ Z(i + 1) for i in range(3)]
-Heisenberg4_sum_op = qml.lie_closure(gens1)
+Heisenberg4_sum_op = qp.lie_closure(gens1)
 Heisenberg4_sum_ps = [op.pauli_rep for op in Heisenberg4_sum_op]
 Heisenberg4_sum_vspace = PauliVSpace(Heisenberg4_sum_ps)
-Heisenberg4_sum_dense = [qml.matrix(op, wire_order=range(4)) for op in Heisenberg4_sum_op]
+Heisenberg4_sum_dense = [qp.matrix(op, wire_order=range(4)) for op in Heisenberg4_sum_op]
 
 
 @pytest.mark.parametrize(

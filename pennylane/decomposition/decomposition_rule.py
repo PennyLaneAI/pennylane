@@ -22,13 +22,24 @@ from collections.abc import Callable, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
+from functools import partial, singledispatch, update_wrapper
 from textwrap import dedent
 from typing import overload
 
-from pennylane.operation import Operator
+import pennylane as qp
+from pennylane.core import QueuingManager, queuing
+from pennylane.core.operator import Operator, Operator2, abstractify
+from pennylane.pytrees import flatten
+from pennylane.typing import AbstractArray, AbstractWires
+from pennylane.wires import Wires
 
-from .resources import Resources, auto_wrap
-from .utils import to_name
+from .resources import (
+    AbstractOperatorLike,
+    CompressedResourceOp,
+    Resources,
+    _gate_count_dict_to_str,
+)
+from .utils import _get_decomp_args, to_name
 
 
 @dataclass(frozen=True)
@@ -104,7 +115,7 @@ def register_condition(
         @qp.register_resources({qp.RZ: 2, qp.RY: 1, qp.GlobalPhase: 1})
         def zyz_decomposition(U, wires, **__):
             # Assumes that U is a 2x2 unitary matrix
-            phi, theta, omega, phase = zyz_rotation_angles(U, return_global_phase=True)
+            phi, theta, omega, phase = zyz_rotation_angles(U)
             qp.RZ(phi, wires=wires[0])
             qp.RY(theta, wires=wires[0])
             qp.RZ(omega, wires=wires[0])
@@ -210,8 +221,8 @@ def register_resources(
 
 
     >>> print(qp.draw(circuit, level="device")())
-    0: ────╭●────┤  State
-    1: ──H─╰Z──H─┤  State
+    0: ────╭●────┤ ╭State
+    1: ──H─╰Z──H─┤ ╰State
 
     Alternatively, the decomposition rule can be created in-line:
 
@@ -251,69 +262,6 @@ def register_resources(
 
         For each operator class, the set of parameters that affects the type of gates and their
         number of occurrences in its decompositions is given by the ``resource_keys`` attribute.
-        For example, the number of gates in the decomposition for ``qp.MultiRZ`` changes based
-        on the number of wires it acts on, in contrast to the decomposition for ``qp.CNOT``:
-
-        >>> qp.CNOT.resource_keys
-        set()
-        >>> qp.MultiRZ.resource_keys
-        {'num_wires'}
-
-        The output of ``resource_keys`` indicates that custom decompositions for the operator
-        should be registered to a resource function (as opposed to a static dictionary) that
-        accepts those exact arguments and returns a dictionary.
-
-        .. code-block:: python
-
-            def _multi_rz_resources(num_wires):
-                return {
-                    qp.CNOT: 2 * (num_wires - 1),
-                    qp.RZ: 1
-                }
-
-            @qp.register_resources(_multi_rz_resources)
-            def multi_rz_decomposition(theta, wires, **__):
-                for w0, w1 in zip(wires[-1:0:-1], wires[-2::-1]):
-                    qp.CNOT(wires=(w0, w1))
-                qp.RZ(theta, wires=wires[0])
-                for w0, w1 in zip(wires[1:], wires[:-1]):
-                    qp.CNOT(wires=(w0, w1))
-
-        Additionally, if a custom decomposition for an operator contains gates that, in turn,
-        have properties that affect their own decompositions, this information must also be
-        included in the resource function. For example, if a decomposition rule produces a
-        ``MultiRZ`` gate, it is not sufficient to declare the existence of a ``MultiRZ`` in the
-        resource function; the number of wires it acts on must also be specified.
-
-        Consider a fictitious operator with the following decomposition:
-
-        .. code-block:: python
-
-            def my_decomp(theta, wires):
-                qp.MultiRZ(theta, wires=wires[:-1])
-                qp.MultiRZ(theta, wires=wires)
-                qp.MultiRZ(theta, wires=wires[1:])
-
-        It contains two ``MultiRZ`` gates acting on ``len(wires) - 1`` wires (the first and last
-        ``MultiRZ``) and one ``MultiRZ`` gate acting on exactly ``len(wires)`` wires. This
-        distinction must be reflected in the resource function:
-
-        .. code-block:: python
-
-            def my_resources(num_wires):
-                return {
-                    qp.resource_rep(qp.MultiRZ, num_wires=num_wires - 1): 2,
-                    qp.resource_rep(qp.MultiRZ, num_wires=num_wires): 1
-                }
-
-            my_decomp = qp.register_resources(my_resources, my_decomp)
-
-        where :func:`~pennylane.resource_rep` is a utility function that wraps an operator type and any
-        additional information relevant to its resource estimate into a compressed data structure.
-        To check what (if any) additional information is required to declare an operator type
-        in a resource function, refer to the ``resource_keys`` attribute of the :class:`~pennylane.operation.Operator`
-        class. Operators with non-empty ``resource_keys`` must be declared using ``qp.resource_rep``,
-        with keyword arguments matching its ``resource_keys`` exactly.
 
         .. seealso::
 
@@ -345,22 +293,26 @@ def register_resources(
 
           import pennylane as qp
           from pennylane.allocation import allocate
-          from pennylane.decomposition import controlled_resource_rep
+          from pennylane.typing import Wire
 
           qp.decomposition.enable_graph()
 
-          def _ops_fn(num_control_wires, **_):
+          def _condition_fn(control_wires, **_):
+              return len(control_wires) > 1
+
+          def _ops_fn(control_wires, **_):
               return {
-                  controlled_resource_rep(qp.X, {}, num_control_wires): 2,
+                  qp.ctrl(qp.X(Wire[1]), control_wires): 2,
                   qp.CRot: 1
               }
 
-          @qp.register_condition(lambda num_control_wires, **_: num_control_wires > 1)
+          @qp.register_condition(_condition_fn)
           @qp.register_resources(ops=_ops_fn, work_wires={"zeroed": 1})
-          def _controlled_rot_decomp(*params, wires, **_):
+          def _controlled_rot_decomp(base, control_wires, **_):
+              wires = control_wires + base.wires
               with allocate(1, state="zero", restored=True) as work_wires:
                   qp.ctrl(qp.X(work_wires[0]), control=wires[:-1])
-                  qp.CRot(*params, wires=[work_wires[0], wires[-1]])
+                  qp.CRot(**base.dynamic_args, wires=[work_wires[0], wires[-1]])
                   qp.ctrl(qp.X(work_wires[0]), control=wires[:-1])
 
           decomps = {"C(Rot)": _controlled_rot_decomp}
@@ -372,11 +324,11 @@ def register_resources(
               return qp.probs(wires=[0, 1, 2, 3])
 
        >>> print(qp.draw(circuit)())
-       <DynamicWire>: ──Allocate─╭X─╭●───────────────────╭X──Deallocate─┤
-                   0: ───────────├●─│────────────────────├●─────────────┤ ╭Probs
-                   1: ───────────├●─│────────────────────├●─────────────┤ ├Probs
-                   2: ───────────╰●─│────────────────────╰●─────────────┤ ├Probs
-                   3: ──────────────╰Rot(0.10,0.20,0.30)────────────────┤ ╰Probs
+        0: ───────╭●──────────────────────╭●────┤ ╭Probs
+        1: ───────├●──────────────────────├●────┤ ├Probs
+        2: ───────├●──────────────────────├●────┤ ├Probs
+        3: ───────│──╭Rot(0.10,0.20,0.30)─│─────┤ ╰Probs
+             |0>├─╰X─╰●───────────────────╰X──┤
 
     """
 
@@ -411,6 +363,7 @@ class DecompositionRule:
         name: str = "",
     ):
 
+        update_wrapper(self, func)
         self._impl = func
 
         try:
@@ -443,6 +396,7 @@ class DecompositionRule:
     def __repr__(self):
         return f"DecompositionRule(name={self.name})"
 
+    @QueuingManager.stop_recording()
     def compute_resources(self, *args, **kwargs) -> Resources:
         """Computes the resources required to implement this decomposition rule."""
         if self._compute_resources is None:
@@ -451,9 +405,29 @@ class DecompositionRule:
         assert isinstance(raw_gate_counts, dict), "Resource function must return a dictionary."
         gate_counter = Counter()
         for op, count in raw_gate_counts.items():
+            if not (
+                isinstance(op, (CompressedResourceOp, Operator2))
+                or (isinstance(op, type) and issubclass(op, Operator))
+            ):
+                raise TypeError(
+                    "The keys of the dictionary returned by the resource function must be a "
+                    "subclass of Operator or a CompressedResourceOp constructed with "
+                    "qp.resource_rep, or an Operator2 constructed with abstract inputs."
+                )
+            op = abstractify(op)
+            _verify_is_abstract_and_fixed(op)
             if count > 0:
-                gate_counter.update({auto_wrap(op): count})
-        return Resources(dict(gate_counter))
+                gate_counter.update({op: count})
+
+        gate_counter = dict(gate_counter)
+        if qp.capture.enabled():
+            # When capture is enabled, ChangeOpBasis is unrolled. The resource functions are
+            # typically not aware of that, and still produce resource reps of ChangeOpBasis.
+            # Therefore, we unroll the ChangeOpBasis in the resources manually so that it will
+            # match what the decomposition rule actually produces.
+            gate_counter = _unroll_change_op_basis(gate_counter)
+
+        return Resources(gate_counter)
 
     def is_applicable(self, *args, **kwargs) -> bool:
         """Checks whether this decomposition rule is applicable."""
@@ -488,13 +462,63 @@ class DecompositionRule:
 
 
 class DecompCollection:
-    """A collection of decomposition rules.
+    """An ordered, name-addressable collection of :class:`~.DecompositionRule` objects.
 
-    The :func:`~pennylane.list_decomps` function returns a ``DecompCollection`` for an operator,
-    which is an ordered sequence of decomposition rules. Individual decomposition rules within a
-    collection can be accessed by index or by name.
+    A ``DecompCollection`` is exclusively returned by :func:`~pennylane.list_decomps`, which
+    retrieves all registered decomposition rules for a given operator. Each rule in the collection
+    has a unique name (derived from the decorated function name by default, or explicitly set via
+    :func:`~pennylane.register_resources` with ``name="..."``).
 
-    .. seealso:: :func:`~pennylane.list_decomps`
+    Individual rules can be accessed by integer index or by string name. The collection supports
+    :func:`len`, iteration, membership checks (by name or by :class:`~.DecompositionRule`
+    instance), :meth:`copy`, :meth:`append`, :meth:`extend`, ``+``, and ``+=``.  Duplicate names
+    within a collection are rejected with a ``ValueError``.
+
+    .. important::
+
+        A ``DecompCollection`` returned by :func:`~pennylane.list_decomps` is a **copy** of the
+        internally registered rules.  Mutating it (e.g. with :meth:`append` or :meth:`extend`)
+        does **not** update the global decomposition registry.  Use :func:`~pennylane.add_decomps`
+        to register new decomposition rules globally.
+
+    .. seealso::
+
+        :class:`~.DecompositionRule`,
+        :func:`~pennylane.register_resources`,
+        :func:`~pennylane.list_decomps`,
+        :func:`~pennylane.add_decomps`,
+        :func:`~pennylane.inspect_decomps`
+
+    **Examples**
+
+    Retrieve and explore decomposition rules for an operator:
+
+    >>> decomps = qp.list_decomps(qp.CRX)
+    >>> len(decomps)
+    4
+    >>> print(decomps)
+    Available Decomposition Rules:
+    0: _crx_to_rx_cz
+    1: _crx_to_rz_ry
+    2: _crx_to_h_crz
+    3: _crx_to_ppr
+
+    Access rules by index or by name:
+
+    >>> decomps[0]
+    DecompositionRule(name=_crx_to_rx_cz)
+    >>> decomps["_crx_to_ppr"]
+    DecompositionRule(name=_crx_to_ppr)
+
+    Check membership:
+
+    >>> "_crx_to_ppr" in decomps
+    True
+
+    Iterate through rule names:
+
+    >>> [rule.name for rule in decomps]
+    ['_crx_to_rx_cz', '_crx_to_rz_ry', '_crx_to_h_crz', '_crx_to_ppr']
 
     """
 
@@ -576,8 +600,13 @@ _decompositions_private = defaultdict(DecompCollection)
 
 _decompositions_var = ContextVar("_decompositions", default=_decompositions_private)
 
+_fixed_decomps_private = {}
+"""dict[str, DecompositionRule]: A dictionary mapping operators a unique decomposition rule."""
 
-def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> None:
+_fixed_decomps_var = ContextVar("_fixed_decomps", default=_fixed_decomps_private)
+
+
+def add_decomps(op_type: type[Operator | Operator2] | str, *decomps: DecompositionRule) -> None:
     """Globally registers new decomposition rules with an operator class.
 
     .. note::
@@ -616,7 +645,7 @@ def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> N
             qp.RZ(np.pi / 2, wires=wires)
             qp.RX(np.pi / 2, wires=wires)
             qp.RZ(np.pi / 2, wires=wires)
-            qp.GlobalPhase(-np.pi / 2, wires=wires)
+            qp.GlobalPhase(-np.pi / 2)
 
         @qp.register_resources({qp.RZ: 1, qp.RY: 1, qp.GlobalPhase: 1})
         def my_hadamard2(wires):
@@ -653,6 +682,7 @@ def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> N
     _decompositions_var.get()[to_name(op_type)].extend(decomps)
 
 
+@singledispatch
 def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
     """Lists all stored decomposition rules for an operator class.
 
@@ -670,6 +700,12 @@ def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
 
     Returns:
         DecompCollection: a collection of decomposition rules registered for the given operator.
+
+    .. important::
+
+        The returned :class:`~.DecompCollection` is a **copy** of the registered
+        rules.  Mutating it does not update the global decomposition registry; use
+        :func:`~pennylane.add_decomps` to register rules globally.
 
     **Example**
 
@@ -694,7 +730,7 @@ def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
     DecompositionRule(name=_crx_to_ppr)
     >>> print(qp.list_decomps(qp.CRX)[0])
     @register_resources(_crx_to_rx_cz_resources)
-    def _crx_to_rx_cz(phi: TensorLike, wires: WiresLike, **__):
+    def _crx_to_rx_cz(phi: TensorLike, wires: WiresLike):
         qp.RX(phi / 2, wires=wires[1])
         qp.CZ(wires=wires)
         qp.RX(-phi / 2, wires=wires[1])
@@ -704,6 +740,8 @@ def list_decomps(op: type[Operator] | Operator | str) -> DecompCollection:
     1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
 
     """
+    if fixed_rule := get_fixed_decomp(op):
+        return DecompCollection([fixed_rule])
     return _decompositions_var.get()[to_name(op)].copy()
 
 
@@ -726,9 +764,7 @@ def has_decomp(op: type[Operator] | Operator | str) -> bool:
         bool: whether decomposition rules are defined for the given operator.
 
     """
-    op_name = to_name(op)
-    _decompositions = _decompositions_var.get()
-    return op_name in _decompositions and len(_decompositions[op_name]) > 0
+    return len(list_decomps(op)) > 0
 
 
 @contextmanager
@@ -738,13 +774,317 @@ def local_decomps():
     This context manager is thread-safe because it uses ``ContextVar`` under the hood.
 
     """
-    current_decomps = {k: v.copy() for k, v in _decompositions_private.items()}
+
+    # Handle the global decomposition library.
+    current_decomps = {k: v.copy() for k, v in _decompositions_var.get().items()}
     _new_decomps = defaultdict(DecompCollection, current_decomps)
-    token = _decompositions_var.set(_new_decomps)
+    token_all_decomps = _decompositions_var.set(_new_decomps)
+
+    # Handle the registry of fixed decomposition rules.
+    _new_fixed_decomps = _fixed_decomps_var.get().copy()
+    token_fixed_decomps = _fixed_decomps_var.set(_new_fixed_decomps)
+
     try:
         yield
     finally:
-        _decompositions_var.reset(token)
+        _decompositions_var.reset(token_all_decomps)
+        _fixed_decomps_var.reset(token_fixed_decomps)
+
+
+def _fix_decomp(op: type[Operator] | Operator | str, rule: DecompositionRule):
+    """Fix a unique decomposition rule for an operator.
+
+    This is a developer-facing function meant to be used within a local decomps context.
+
+    """
+    _fixed_decomps_var.get()[to_name(op)] = rule
+
+
+def get_fixed_decomp(op: type[Operator] | Operator | str) -> DecompositionRule | None:
+    """Get the decomposition rule fixed to an operator if there is one.
+
+    This is a developer-facing function meant to be used within a local decomps context.
+
+    """
+    return _fixed_decomps_var.get().get(to_name(op), None)
+
+
+class _DecompInfo:  # pylint: disable=too-few-public-methods
+    """A data structure that stores a decomposition rule and an operator for inspectability."""
+
+    def __init__(self, op: Operator, rule: DecompositionRule, num_work_wires: int | None) -> None:
+        self._op = op
+        self._rule = rule
+        self._decomp_args = _get_decomp_args(op)
+        self._conditions_met = rule.is_applicable(**self._decomp_args[0])
+        self._work_wire_spec = rule.get_work_wire_spec(**self._decomp_args[0])
+        n_work_wires = self._work_wire_spec.total
+        self._enough_work_wires = num_work_wires is None or n_work_wires <= num_work_wires
+        self._num_work_wires = num_work_wires
+
+    def __str__(self) -> str:
+        if not self._conditions_met:
+            return "Not applicable (provided operator instance does not meet all conditions for this rule)."
+        if not self._enough_work_wires:
+            req = self._work_wire_spec.total
+            avail = self._num_work_wires
+            return f"Insufficient work wires: requires {req} but only {avail} available."
+        return self._circuit_drawing + "\n" + self._gate_counts_and_allocations
+
+    def _repr_markdown_(self) -> str:
+        """The string representation of this rule in Markdown format."""
+        if not self._conditions_met:
+            return "_Not applicable (provided operator instance does not meet all conditions for this rule)._"
+        if not self._enough_work_wires:
+            req = self._work_wire_spec.total
+            avail = self._num_work_wires
+            return f"_Insufficient work wires: requires {req} but only {avail} available._"
+        circuit_drawing = "```\n" + self._circuit_drawing + "\n```"
+        gate_counts_title = "Gate Counts and Wire Allocations"
+        return (
+            circuit_drawing
+            + "\n"
+            + f"<details><summary>{gate_counts_title}</summary>\n\n"
+            + f"{self._gate_counts_and_allocations_md}\n</details>"
+        )
+
+    @property
+    def _circuit_drawing(self) -> str:
+        """The circuit drawing of this decomposition rule."""
+        _, args, kwargs = _get_decomp_args(self._op)
+        assert self._conditions_met and self._enough_work_wires
+        return qp.draw(self._rule)(*args, **kwargs)
+
+    @property
+    def _name(self) -> str:
+        """The name of the decomposition rule."""
+        return self._rule.name
+
+    @property
+    def _gate_counts_and_allocations(self) -> str:
+        """The actual and estimated gate counts of this rule."""
+        assert self._conditions_met and self._enough_work_wires
+        estimated_count = self._rule.compute_resources(**self._decomp_args[0]).gate_counts
+        actual_count, allocations = _count_gates(self._op, self._rule)
+        gate_count_str = self._get_gate_count_str(estimated_count, actual_count)
+        if allocations:
+            gate_count_str += f"\nWire Allocations: {allocations}"
+        return gate_count_str
+
+    @property
+    def _gate_counts_and_allocations_md(self) -> str:
+        """The actual and estimated gate counts of this rule in the Markdown format."""
+        assert self._conditions_met and self._enough_work_wires
+        estimated_count = self._rule.compute_resources(**self._decomp_args[0]).gate_counts
+        actual_count, allocations = _count_gates(self._op, self._rule)
+        gate_count_str = self._get_gate_count_markdown(estimated_count, actual_count)
+        if allocations:
+            entries = list(allocations.items())
+            gate_count_str += "\n\n" + self._make_table(entries, ("Wire Type", "Num Allocated"))
+        return gate_count_str
+
+    def _get_gate_count_str(self, estimated_count, actual_count) -> str:
+        """Get the section of the string that specifies the gate count."""
+        estimated_count = {k: v for k, v in estimated_count.items() if v > 0}
+        estimated_str = _gate_count_dict_to_str(estimated_count)
+        if estimated_count == actual_count:
+            return f"Gate Count: {estimated_str}"
+        actual_str = _gate_count_dict_to_str(actual_count)
+        return f"Estimated Gate Count: {estimated_str}\nActual Gate Count: {actual_str}"
+
+    def _get_gate_count_markdown(self, estimated_count, actual_count) -> str:
+        """Get the section of the string that specifies the gate count."""
+        estimated_count = {k: v for k, v in estimated_count.items() if v > 0}
+        if estimated_count == actual_count:
+            entries = list(estimated_count.items())
+            return self._make_table(entries, ("Gate", "Count"))
+        all_ops = set(estimated_count.keys()) | set(actual_count.keys())
+        entries = [(op, estimated_count.get(op, 0), actual_count.get(op, 0)) for op in all_ops]
+        return self._make_table(entries, ("Gate", "Estimated", "Actual"))
+
+    def _make_table(self, entries: Sequence[tuple], columns: Sequence[str]) -> str:
+        column_str = " | ".join(columns)
+        header_line = " | ".join((":---",) * len(columns))
+        header = f"| {column_str} |\n| {header_line} |\n"
+        lines = []
+        entries = sorted(tuple(str(x) for x in entry) for entry in entries)
+        for entry in entries:
+            line_str = " | ".join(str(s) for s in entry)
+            lines.append(f"| {line_str} |")
+        return header + "\n".join(lines)
+
+    @property
+    def _is_applicable(self) -> bool:
+        """Whether the decomposition rule is applicable."""
+        return self._conditions_met and self._enough_work_wires
+
+
+# pylint: disable=protected-access,too-few-public-methods
+class _DecompInfoCollection:
+    """A collection of _DecompInfo."""
+
+    def __init__(
+        self,
+        rule_infos: Sequence[_DecompInfo],
+        show_not_applicable: bool = True,
+    ) -> None:
+        self._n_rules_original = len(rule_infos)
+        indexed_rule_infos = enumerate(rule_infos)
+        self._show_not_applicable = show_not_applicable
+        if not show_not_applicable:
+            indexed_rule_infos = filter(lambda p: p[1]._is_applicable, indexed_rule_infos)
+        self._rules = list(indexed_rule_infos)
+
+    def _title(self, index, rule) -> str:
+        return f"Decomposition {index} (name: {rule._name})"
+
+    def _title_md(self, index, rule) -> str:
+        return f"#### Decomposition {index} (name: {rule._name})"
+
+    def __str__(self) -> str:
+        if not self._n_rules_original:
+            return "No available decomposition rules."
+        if not self._rules:
+            return "No applicable decomposition rules (non-applicable rules are excluded)."
+        return "\n\n".join(f"{self._title(i, rule)}\n{rule}" for i, rule in self._rules)
+
+    # pylint: disable=protected-access
+    def _repr_markdown_(self) -> str:
+        if not self._n_rules_original:
+            return "No available decomposition rules."
+        if not self._rules:
+            return "No applicable decomposition rules (non-applicable rules are excluded)."
+        lines = (f"{self._title_md(i, d)}\n\n{d._repr_markdown_()}" for i, d in self._rules)
+        return "\n\n---\n\n".join(lines).rstrip("\n")
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+
+def inspect_decomps(
+    op: Operator,
+    *rules: str | DecompositionRule,
+    show_not_applicable: bool = True,
+    num_work_wires: int | None = None,
+) -> _DecompInfoCollection:
+    """Inspect the decomposition rules of an operator.
+
+    Takes an operator instance and displays how the operator is decomposed
+    using different decomposition rules.
+
+    .. note::
+
+        This function is only relevant when the new experimental graph-based decomposition system
+        (introduced in v0.41) is enabled via :func:`~pennylane.decomposition.enable_graph`. This
+        new way of performing decompositions is generally more resource-efficient and accommodates
+        multiple alternative decomposition rules for an operator.
+
+    Args:
+        op (Operator): the operator instance whose decomposition rules will be inspected.
+        *rules (str or DecompositionRule): the decomposition rules to inspect. Accepts instances
+            of the ``DecompositionRule`` class or rule names (str) that represent the decomposition
+            rules registered with the type of ``op``. If none are provided, all available rules
+            will be displayed.
+        show_not_applicable (bool): if True (the default), all decomposition rules, including
+            those that are not applicable to the specific operator instance (e.g., due to constraints
+            on the number of wires), are displayed.
+        num_work_wires (int or None): the maximum number of available work wires for dynamic allocation.
+            Decomposition rules that allocate more wires than are available will be marked as
+            "Not applicable" (and excluded if ``show_not_applicable=False``). Defaults to ``None``,
+            which puts no constraint on the maximum number of work wires.
+
+    Returns:
+        a displayable object with information about decomposition rules.
+
+    **Example**
+
+    By default, this function displays all available decomposition rules for an operator.
+
+    >>> qp.inspect_decomps(qp.CRX(0.5, wires=[0, 1]))
+    Decomposition 0 (name: _crx_to_rx_cz)
+    0: ───────────╭●────────────╭●─┤
+    1: ──RX(0.25)─╰Z──RX(-0.25)─╰Z─┤
+    Gate Count: {CZ: 2, RX: 2}
+    <BLANKLINE>
+    Decomposition 1 (name: _crx_to_rz_ry)
+    0: ─────────────────────╭●────────────╭●────────────┤
+    1: ──RZ(1.57)──RY(0.25)─╰X──RY(-0.25)─╰X──RZ(-1.57)─┤
+    Gate Count: {CNOT: 2, RY: 2, RZ: 2}
+    <BLANKLINE>
+    Decomposition 2 (name: _crx_to_h_crz)
+    0: ────╭●───────────┤
+    1: ──H─╰RZ(0.50)──H─┤
+    Gate Count: {CRZ: 1, Hadamard: 2}
+    <BLANKLINE>
+    Decomposition 3 (name: _crx_to_ppr)
+    0: ───────────╭RZX(-0.25)─┤
+    1: ──RX(0.25)─╰RZX(-0.25)─┤
+    Gate Count: {PauliRot(theta=AbstractArray((), float64, weak_type=True), pauli_word=X, wires=AbstractWires(1)): 1, PauliRot(theta=AbstractArray((), float64, weak_type=True), pauli_word=ZX, wires=AbstractWires(2)): 1}
+
+    For each decomposition rule, the output includes its name, circuit diagram, gate
+    count, and wire allocation (if any). Alternatively, you can inspect a single
+    decomposition rule by passing its name.
+
+    >>> qp.inspect_decomps(qp.CRX(0.5, wires=[0, 1]), "_crx_to_h_crz")
+    Decomposition 0 (name: _crx_to_h_crz)
+    0: ────╭●───────────┤
+    1: ──H─╰RZ(0.50)──H─┤
+    Gate Count: {CRZ: 1, Hadamard: 2}
+
+    Or use this tool to inspect a custom decomposition rule:
+
+    .. code-block:: python
+
+        @qp.register_resources({qp.CNOT: 1, qp.H: 2})
+        def my_cz(wires, **_):
+            qp.H(wires[1])
+            qp.CNOT(wires)
+            qp.H(wires[1])
+
+    >>> qp.inspect_decomps(qp.CZ([0, 1]), my_cz)
+    Decomposition 0 (name: my_cz)
+    0: ────╭●────┤
+    1: ──H─╰X──H─┤
+    Gate Count: {CNOT: 1, Hadamard: 2}
+
+    """
+
+    if isinstance(op, type) and issubclass(op, Operator):
+        raise TypeError(
+            "The inspect_decomps function takes a concrete operator instance as its "
+            "first argument, not an operator type."
+        )
+
+    display_rules = list_decomps(op)
+
+    if rules:
+        display_rules = [display_rules[rule] if isinstance(rule, str) else rule for rule in rules]
+
+    rule_infos = [_DecompInfo(op, rule, num_work_wires) for rule in display_rules]
+    return _DecompInfoCollection(rule_infos, show_not_applicable)
+
+
+def _count_gates(op: Operator, rule: DecompositionRule) -> tuple[dict, dict]:
+    """Count the gates that a decomposition rule produced."""
+
+    _, args, kwargs = _get_decomp_args(op)
+    with queuing.AnnotatedQueue() as q:
+        rule(*args, **kwargs)
+
+    actual_gate_counts = defaultdict(int)
+    allocations = defaultdict(int)
+    for _op in q.queue:
+        if isinstance(_op, qp.ops.Conditional):
+            _op = _op.base
+        if isinstance(_op, qp.allocation.Allocate):
+            allocations[str(_op.state)] += len(_op.wires)
+            continue
+        if isinstance(_op, qp.allocation.Deallocate):
+            continue
+        op_rep = abstractify(_op)
+        actual_gate_counts[op_rep] += 1
+
+    return dict(actual_gate_counts), dict(allocations)
 
 
 @register_resources({})
@@ -773,3 +1113,140 @@ def null_decomp(*_, **__):
 
     """
     return
+
+
+def _is_abstract_and_fixed(val, is_leaf=False):
+    """Checks whether `val` is (or only contains) abstract data of fixed shapes."""
+    if isinstance(val, (AbstractArray, AbstractWires)):
+        return val.shape_fixed
+    if isinstance(val, CompressedResourceOp):
+        # Legacy resource representations are valid, fully-abstract resource leaves.
+        return True
+    if is_leaf:
+        # This branch is added as a precaution to avoid infinite recursion, but this should
+        # never actually happen, because we always call `abstractify` first to fully abstractify
+        # an operator, which should ensure that all pytree leaves are abstract.
+        return False  # return False if val is a non-abstract pytree leaf
+    leaves, _ = flatten(val, is_leaf=lambda l: isinstance(l, Wires))
+    return all(_is_abstract_and_fixed(leaf, is_leaf=True) for leaf in leaves)
+
+
+def _verify_is_abstract_and_fixed(op: AbstractOperatorLike):
+    """Checks if an operator is fully abstract and contains only abstract data of fixed shapes."""
+    if isinstance(op, CompressedResourceOp):
+        return
+    target_argnames = op.dynamic_argnames + op.wire_argnames + op.hybrid_argnames
+    target_args = [val for name, val in op.arguments.items() if name in target_argnames]
+    if any(not _is_abstract_and_fixed(val) for val in target_args):
+        raise TypeError(
+            "The resources of a decomposition rule cannot contain operators with "
+            f"abstract data of undetermined dimensions, got {op}."
+        )
+
+
+def _is_measurement(resource_op) -> bool:
+    """Whether a resource key represents a mid-circuit or Pauli-product measurement."""
+    op_type = (
+        resource_op.op_type if isinstance(resource_op, CompressedResourceOp) else type(resource_op)
+    )
+    return issubclass(op_type, (qp.ops.MidMeasure, qp.ops.PauliMeasure))
+
+
+def _decomp_contains_mcm(rule, params):
+    if not rule.is_applicable(**params):
+        return False
+    resources = rule.compute_resources(**params).gate_counts
+    return any(_is_measurement(resource_op) for resource_op in resources)
+
+
+def _unroll_change_op_basis(gate_counts):
+    """Unroll ChangeOpBasis resource keys, including those inside symbolic operators.
+
+    ``ChangeOpBasis`` is unrolled into its compute/target/uncompute operands when program
+    capture is enabled. Resource functions call this on their returned gate-count dict so that
+    the estimate matches the captured decomposition.
+    """
+    new_gate_counts = defaultdict(int)
+    for op_rep, count in gate_counts.items():
+        for unrolled_rep, inner_count in _unroll_change_op_basis_resource(op_rep).items():
+            new_gate_counts[unrolled_rep] += count * inner_count
+    return new_gate_counts
+
+
+def _unroll_change_op_basis_resource(op_rep):
+    """Expand a single resource key that is (or wraps) a ChangeOpBasis.
+
+    Keys that do not involve a ChangeOpBasis are returned unchanged as ``{op_rep: 1}``.
+    """
+    operands = _change_op_basis_operands(op_rep)
+    if operands is not None:
+        gate_counts = defaultdict(int)
+        for operand in operands:
+            for inner_op, count in _unroll_prod_operand(operand).items():
+                gate_counts[inner_op] += count
+        return gate_counts
+
+    # pylint: disable=import-outside-toplevel
+    from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+    from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+
+    if isinstance(op_rep, qp.ops.Adjoint2):
+        return _unroll_symbolic_change_op_basis(op_rep, _adjoint_abstract)
+
+    if isinstance(op_rep, qp.ops.ControlledOp2):
+        wrapper = partial(
+            _ctrl_abstract,
+            control_wires=op_rep.control_wires,
+            work_wires=op_rep.work_wires,
+            work_wire_type=op_rep.work_wire_type,
+        )
+        return _unroll_symbolic_change_op_basis(op_rep, wrapper)
+
+    return {op_rep: 1}
+
+
+def _change_op_basis_operands(op_rep):
+    """Return ``(compute_op, target_op, uncompute_op)`` for a ChangeOpBasis resource key.
+
+    Handles both a native :class:`~.ChangeOpBasis2` and a legacy ``CompressedResourceOp``
+    wrapping :class:`~.ChangeOpBasis`. Returns ``None`` for any other resource key.
+    """
+    if isinstance(op_rep, qp.ops.ChangeOpBasis2):
+        return op_rep.compute_op, op_rep.target_op, op_rep.uncompute_op
+    if isinstance(op_rep, CompressedResourceOp) and op_rep.op_type is qp.ops.ChangeOpBasis:
+        params = op_rep.params
+        return params["compute_op"], params["target_op"], params["uncompute_op"]
+    return None
+
+
+def _unroll_prod_operand(operand):
+    """Expand a Prod-like ChangeOpBasis operand into its inner resource keys with counts."""
+
+    # pylint: disable=import-outside-toplevel
+    from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+
+    if isinstance(operand, qp.ops.Prod2):
+        counts = defaultdict(int)
+        for inner_op in operand.operands:
+            counts[inner_op] += 1
+        return dict(counts)
+    if isinstance(operand, qp.ops.Adjoint):
+        counts = defaultdict(int)
+        for inner_op, inner_count in _unroll_prod_operand(operand.base).items():
+            counts[_adjoint_abstract(inner_op)] += inner_count
+        return dict(counts)
+    if isinstance(operand, CompressedResourceOp) and operand.op_type is qp.ops.Prod:
+        return dict(operand.params["resources"])
+    return {operand: 1}
+
+
+def _unroll_symbolic_change_op_basis(op_rep, wrapper):
+    """Unroll a ChangeOpBasis nested in a single symbolic resource key and reapply its wrapper."""
+    unrolled_base = _unroll_change_op_basis_resource(op_rep.base)
+    if unrolled_base == {op_rep.base: 1}:
+        return {op_rep: 1}
+
+    gate_counts = defaultdict(int)
+    for base_rep, count in unrolled_base.items():
+        gate_counts[wrapper(base_rep)] += count
+    return gate_counts

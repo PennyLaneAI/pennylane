@@ -29,7 +29,7 @@ from pennylane.templates.state_preparations.state_prep_mps import (
 
 class TestMPSPrep:
 
-    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_standard_validity(self):
         """Check the template using the `assert_valid` function."""
         mps = [
@@ -623,6 +623,7 @@ class TestMPSPrep:
             ),
         ],
     )
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_new(self, mps, num_wires):
         """Tests the decomposition rule implemented with the new system."""
         op = qp.MPSPrep(
@@ -796,3 +797,16 @@ class TestMPSPrep:
 
         for tensor1, tensor2 in zip(mps, mps_copy):
             assert qp.math.allclose(tensor1, tensor2)
+
+    def test_mps_prep_work_wires_types(self):
+        """Tests that MPSPrep correctly accepts numpy arrays and integers as work_wires."""
+        mps = [np.eye(2) for _ in range(2)]
+
+        # Test 1: Passing a numpy array shouldn't raise a truth-value ValueError
+        work_wires_array = np.array([10, 11])
+        op_array = qp.MPSPrep(mps, wires=[0, 1], work_wires=work_wires_array)
+        assert op_array.hyperparameters["work_wires"] == qp.wires.Wires([10, 11])
+
+        # Test 2: Passing a single integer shouldn't raise a TypeError on len()
+        op_int = qp.MPSPrep(mps, wires=[0, 1], work_wires=10)
+        assert op_int.hyperparameters["work_wires"] == qp.wires.Wires([10])

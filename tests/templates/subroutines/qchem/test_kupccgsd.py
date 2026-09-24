@@ -49,7 +49,8 @@ def _pair_double_terms_wires(wires):
     ]
 
 
-@pytest.mark.jax
+@pytest.mark.xfail_if_capture(reason="Come back to this as we port kUpCCGSD [sc-129964]")
+@pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize("k, delta_sz, init_state, wires", k_delta_sz_init_state_wires)
 def test_standard_validity(k, delta_sz, init_state, wires):
     """Test standard validity criteria for kUpCCGSD."""
@@ -437,19 +438,6 @@ class TestInputs:
 
         with pytest.raises(ValueError, match=msg_match):
             circuit()
-
-    @pytest.mark.usefixtures("ignore_id_deprecation")
-    def test_id(self):
-        """Test that the id attribute can be set."""
-        template = qp.kUpCCGSD(
-            qp.math.array([[0.55, 0.72, 0.6, 0.54, 0.42, 0.65]]),
-            wires=range(4),
-            k=1,
-            delta_sz=0,
-            init_state=qp.math.array([1, 1, 0, 0]),
-            id="a",
-        )
-        assert template.id == "a"
 
 
 class TestAttributes:

@@ -18,9 +18,9 @@ This submodule contains a transform for resolving dynamic wires into real wires.
 from collections.abc import Hashable, Sequence
 
 from pennylane.allocation import AllocateState
+from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.exceptions import AllocationError
 from pennylane.ops import measure
-from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn, Result, ResultBatch
 
 from .core import transform
@@ -96,6 +96,12 @@ def _new_ops(operations, manager, wire_map, deallocated):
     for op in operations:
         # check name faster than isinstance
         if op.name == "Allocate":
+            state = op.hyperparameters["state"]
+            if state in (AllocateState.MAGIC_T, AllocateState.MAGIC_T_ADJ):
+                raise AllocationError(
+                    f"Magic state allocation (state={state!r}) is not supported by "
+                    "resolve_dynamic_wires. Use Catalyst compilation for magic state allocation."
+                )
             for w in op.wires:
                 wire, ops = manager.get_wire(**op.hyperparameters)
                 yield from ops
@@ -171,34 +177,34 @@ def resolve_dynamic_wires(
     .. code-block:: python
 
         def circuit(state="zero"):
-            with qml.allocation.allocate(1, state=state) as wires:
-                qml.X(wires)
-            with qml.allocation.allocate(1, state=state) as wires:
-                qml.Y(wires)
+            with qp.allocation.allocate(1, state=state) as wires:
+                qp.X(wires)
+            with qp.allocation.allocate(1, state=state) as wires:
+                qp.Y(wires)
 
-    >>> print(qml.draw(circuit)())
-    <DynamicWire>: ──Allocate──X──Deallocate─┤
-    <DynamicWire>: ──Allocate──Y──Deallocate─┤
+    >>> print(qp.draw(circuit)())
+      |0>├──X──┤
+      |0>├──Y──┤
 
     If we provide two zeroed qubits to the transform, we can see that the two operations have been
     assigned to both wires known to be in the zero state.
 
     >>> from pennylane.transforms import resolve_dynamic_wires
     >>> assigned_two_zeroed = resolve_dynamic_wires(circuit, zeroed=("a", "b"))
-    >>> print(qml.draw(assigned_two_zeroed)())
+    >>> print(qp.draw(assigned_two_zeroed)())
     a: ──Y─┤
     b: ──X─┤
 
     If we only provide one zeroed wire, we perform a reset on that wire before reusing for the ``Y`` operation.
 
     >>> assigned_one_zeroed = resolve_dynamic_wires(circuit, zeroed=("a",))
-    >>> print(qml.draw(assigned_one_zeroed)())
+    >>> print(qp.draw(assigned_one_zeroed)())
     a: ──X──┤↗│  │0⟩──Y─┤
 
     This reset behavior can be turned off with ``allow_resets=False``.
 
     >>> no_resets = resolve_dynamic_wires(circuit, zeroed=("a",), allow_resets=False)
-    >>> print(qml.draw(no_resets)())
+    >>> print(qp.draw(no_resets)())
     Traceback (most recent call last):
         ...
     pennylane.exceptions.AllocationError: no wires left to allocate.
@@ -207,14 +213,14 @@ def resolve_dynamic_wires(
     in an operation that requires a zero state.
 
     >>> assigned_any_state = resolve_dynamic_wires(circuit, any_state=("a", "b"))
-    >>> print(qml.draw(assigned_any_state)())
+    >>> print(qp.draw(assigned_any_state)())
     b: ──┤↗│  │0⟩──X──┤↗│  │0⟩──Y─┤
 
 
     Note that the last provided wire with label ``"b"`` is used first.
     If the wire allocations had ``state="any"``, no reset operations would occur:
 
-    >>> print(qml.draw(assigned_any_state)(state="any"))
+    >>> print(qp.draw(assigned_any_state)(state="any"))
     b: ──X──Y─┤
 
     Instead of registers of available wires, a ``min_int`` can be specified instead.  The ``min_int`` indicates
@@ -222,7 +228,7 @@ def resolve_dynamic_wires(
     and add a new wire to the pool:
 
     >>> circuit_integers = resolve_dynamic_wires(circuit, min_int=0)
-    >>> print(qml.draw(circuit_integers)())
+    >>> print(qp.draw(circuit_integers)())
     0: ──X──┤↗│  │0⟩──Y─┤
 
     Note that we still prefer using already created wires over creating new wires.
@@ -230,13 +236,13 @@ def resolve_dynamic_wires(
     .. code-block:: python
 
         def multiple_allocations():
-            with qml.allocation.allocate(1) as wires:
-                qml.X(wires)
-            with qml.allocation.allocate(3) as wires:
-                qml.Toffoli(wires)
+            with qp.allocation.allocate(1) as wires:
+                qp.X(wires)
+            with qp.allocation.allocate(3) as wires:
+                qp.Toffoli(wires)
 
     >>> circuit_integers2 = resolve_dynamic_wires(multiple_allocations, min_int=0)
-    >>> print(qml.draw(circuit_integers2)())
+    >>> print(qp.draw(circuit_integers2)())
     0: ──X──┤↗│  │0⟩─╭●─┤
     1: ──────────────├●─┤
     2: ──────────────╰X─┤
@@ -246,7 +252,7 @@ def resolve_dynamic_wires(
     are extracted starting from ``0``.
 
     >>> zeroed_and_min_int = resolve_dynamic_wires(multiple_allocations, zeroed=("a",), min_int=0)
-    >>> print(qml.draw(zeroed_and_min_int)())
+    >>> print(qp.draw(zeroed_and_min_int)())
     a: ──X──┤↗│  │0⟩─╭●─┤
     0: ──────────────├●─┤
     1: ──────────────╰X─┤

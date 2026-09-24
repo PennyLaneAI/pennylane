@@ -36,10 +36,10 @@ class CutStrategy:
 
         This class is part of a work-in-progress feature to support automatic cut placement in the
         circuit cutting workflow. Currently only manual placement of cuts is supported,
-        check out the :func:`qml.cut_circuit() <pennylane.cut_circuit>` transform for more details.
+        check out the :func:`qp.cut_circuit() <pennylane.cut_circuit>` transform for more details.
 
     Args:
-        devices (Union[qml.devices.Device, Sequence[qml.devices.Device]]): Single, or Sequence of, device(s).
+        devices (Union[qp.devices.Device, Sequence[qp.devices.Device]]): Single, or Sequence of, device(s).
             Optional only when ``max_free_wires`` is provided.
         max_free_wires (int): Number of wires for the largest available device. Optional only when
             ``devices`` is provided where it defaults to the maximum number of wires among
@@ -71,7 +71,7 @@ class CutStrategy:
     ``2`` to ``5`` fragments, with each fragment having at most ``6`` wires and
     at least ``4`` wires:
 
-    >>> cut_strategy = qml.qcut.CutStrategy(
+    >>> cut_strategy = qp.qcut.CutStrategy(
     ...     max_free_wires=6,
     ...     min_free_wires=4,
     ...     num_fragments_probed=(2, 5),
@@ -134,7 +134,7 @@ class CutStrategy:
             ):
                 raise ValueError(
                     "Argument `devices` must be a list or tuple containing elements of type "
-                    "`qml.devices.LegacyDevice` or `qml.devices.Device`"
+                    "`qp.devices.LegacyDevice` or `qp.devices.Device`"
                 )
 
             device_wire_sizes = [len(d.wires) for d in devices]

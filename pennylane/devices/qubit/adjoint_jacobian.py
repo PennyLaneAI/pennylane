@@ -19,9 +19,9 @@ from numbers import Number
 import numpy as np
 
 import pennylane as qp
+from pennylane.core.qscript import QuantumScript
 from pennylane.logging import debug_logger
 from pennylane.operation import operation_derivative
-from pennylane.tape import QuantumScript
 
 from .apply_operation import apply_operation
 from .initialize_state import create_initial_state
@@ -290,7 +290,7 @@ def _get_vjp_bras(tape, cotangents, ket):
     if batched_cotangents:
         for i, cots in enumerate(cotangents.T):
             new_cs, new_os = [], []
-            for c, o in zip(cots, tape.observables):
+            for c, o in zip(cots, tape.observables, strict=True):
                 if not np.allclose(c, 0.0):
                     new_cs.append(c)
                     new_os.append(o)
@@ -301,7 +301,7 @@ def _get_vjp_bras(tape, cotangents, ket):
 
     else:
         new_cs, new_os = [], []
-        for c, o in zip(cotangents, tape.observables):
+        for c, o in zip(cotangents, tape.observables, strict=True):
             if not np.allclose(c, 0.0):
                 new_cs.append(c)
                 new_os.append(o)

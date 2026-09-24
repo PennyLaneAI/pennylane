@@ -1,6 +1,6 @@
 """Convenience gate representations for testing"""
 
-import pennylane as qml
+import pennylane as qp
 from pennylane import math
 from pennylane import numpy as np
 
@@ -92,57 +92,6 @@ QFT = math.array(
     ]
 ) / math.sqrt(8)
 
-# Qutrit gates
-OMEGA = np.exp(2 * np.pi * 1j / 3)
-
-TSHIFT = np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]])  # Qutrit right-shift gate
-
-TCLOCK = np.array([[1, 0, 0], [0, OMEGA, 0], [0, 0, OMEGA**2]])  # Qutrit clock gate
-
-TH = (-1j / np.sqrt(3)) * np.array(
-    [[1, 1, 1], [1, OMEGA, OMEGA**2], [1, OMEGA**2, OMEGA]]
-)  # hadamard gate
-
-TSWAP = np.array(
-    [
-        [1, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 1, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 1, 0, 0],
-        [0, 1, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 1, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 1, 0],
-        [0, 0, 1, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 1, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 1],
-    ],
-    dtype=np.complex128,
-)  # Ternary swap gate
-
-TADD = np.array(
-    [
-        [1, 0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 1, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 1, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 1, 0, 0, 0],
-        [0, 0, 0, 1, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 1, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 1, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0, 1],
-        [0, 0, 0, 0, 0, 0, 1, 0, 0],
-    ],
-    dtype=np.complex128,
-)  # Ternary add gate
-
-GELL_MANN = np.zeros((8, 3, 3), dtype=np.complex128)
-GELL_MANN[0] = np.array([[0, 1, 0], [1, 0, 0], [0, 0, 0]])
-GELL_MANN[1] = np.array([[0, -1j, 0], [1j, 0, 0], [0, 0, 0]])
-GELL_MANN[2] = np.diag([1, -1, 0])
-GELL_MANN[3] = np.array([[0, 0, 1], [0, 0, 0], [1, 0, 0]])
-GELL_MANN[4] = np.array([[0, 0, -1j], [0, 0, 0], [1j, 0, 0]])
-GELL_MANN[5] = np.array([[0, 0, 0], [0, 0, 1], [0, 1, 0]])
-GELL_MANN[6] = np.array([[0, 0, 0], [0, 0, -1j], [0, 1j, 0]])
-GELL_MANN[7] = np.diag([1, 1, -2]) / np.sqrt(3)
-
 
 # ========================================================
 #  parametrized gates
@@ -168,10 +117,10 @@ def Rotx(theta):
     Returns:
         array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_x \theta/2}`
     """
-    return qml.math.array(
+    return qp.math.array(
         [
-            [qml.math.cos(0.5 * theta), -1j * qml.math.sin(0.5 * theta)],
-            [-1j * qml.math.sin(0.5 * theta), qml.math.cos(0.5 * theta)],
+            [qp.math.cos(0.5 * theta), -1j * qp.math.sin(0.5 * theta)],
+            [-1j * qp.math.sin(0.5 * theta), qp.math.cos(0.5 * theta)],
         ],
         like=theta,
     )
@@ -186,10 +135,10 @@ def Roty(theta):
         array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_y \theta/2}`
     """
     return (
-        qml.math.array(
+        qp.math.array(
             [
-                [qml.math.cos(0.5 * theta), -qml.math.sin(0.5 * theta)],
-                [qml.math.sin(0.5 * theta), qml.math.cos(0.5 * theta)],
+                [qp.math.cos(0.5 * theta), -qp.math.sin(0.5 * theta)],
+                [qp.math.sin(0.5 * theta), qp.math.cos(0.5 * theta)],
             ],
             like=theta,
         )
@@ -205,8 +154,8 @@ def Rotz(theta):
     Returns:
         array: unitary 2x2 rotation matrix :math:`e^{-i \sigma_z \theta/2}`
     """
-    return qml.math.array(
-        [[qml.math.exp(-0.5j * theta), 0.0], [0.0, qml.math.exp(0.5j * theta)]], like=theta
+    return qp.math.array(
+        [[qp.math.exp(-0.5j * theta), 0.0], [0.0, qp.math.exp(0.5j * theta)]], like=theta
     )
 
 

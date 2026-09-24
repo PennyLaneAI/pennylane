@@ -17,16 +17,16 @@ from collections import defaultdict
 from collections.abc import Callable
 from functools import singledispatch, wraps
 
+from pennylane.core.operator import Operation
+from pennylane.core.queuing import AnnotatedQueue
 from pennylane.estimator.estimate import _get_resource_decomposition, _ops_to_compressed_reps
 from pennylane.estimator.resource_mapping import _map_to_resource_op
 from pennylane.estimator.resource_operator import CompressedResourceOp, GateCount, ResourceOperator
 from pennylane.estimator.resources_base import DefaultGateSet, Resources
-from pennylane.operation import Operation
-from pennylane.queuing import AnnotatedQueue
 from pennylane.workflow.qnode import QNode
 
 from .resource_config import LabsResourceConfig
-from .wires_manager import estimate_wires_from_circuit, estimate_wires_from_resources
+from .wires_manager.wire_counting import estimate_wires_from_circuit, estimate_wires_from_resources
 
 # pylint: disable=too-many-arguments
 
@@ -276,14 +276,14 @@ def estimate(
 
         .. code-block:: python
 
-            import pennylane as qml
+            import pennylane as qp
             import pennylane.labs.estimator_beta as qre
 
-            @qml.qnode(qml.device("default.qubit"))
+            @qp.qnode(qp.device("default.qubit"))
             def circuit():
-                qml.Hadamard(0)
-                qml.CNOT(wires=[0, 1])
-                qml.QFT(wires=[0, 1, 2, 3])
+                qp.Hadamard(0)
+                qp.CNOT(wires=[0, 1])
+                qp.QFT(wires=[0, 1, 2, 3])
 
         >>> res = qre.estimate(circuit)()
         >>> print(res)

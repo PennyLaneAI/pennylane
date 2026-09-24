@@ -18,12 +18,12 @@ Contains the CommutingEvolution template.
 # pylint: disable-msg=too-many-arguments
 import copy
 
-from pennylane import math
+from pennylane import capture, math
+from pennylane.core.operator import Operation, Operator1
+from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.operation import Operation
 from pennylane.ops.op_math.linear_combination import Hamiltonian
 from pennylane.pauli import PauliWord
-from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires, WiresLike
 
 from .approx_time_evolution import ApproxTimeEvolution
@@ -136,7 +136,7 @@ class CommutingEvolution(Operation):
             "words": tuple(self.hyperparameters["hamiltonian"].pauli_rep.keys()),
         }
 
-    def __init__(self, hamiltonian, time, frequencies=None, shifts=None, id=None):
+    def __init__(self, hamiltonian, time, frequencies=None, shifts=None):
         # pylint: disable=import-outside-toplevel,too-many-positional-arguments
         from pennylane.gradients.general_shift_rules import generate_shift_rule
 
@@ -158,7 +158,7 @@ class CommutingEvolution(Operation):
             "shifts": shifts,
         }
 
-        super().__init__(time, *hamiltonian.parameters, wires=hamiltonian.wires, id=id)
+        super().__init__(time, *hamiltonian.parameters, wires=hamiltonian.wires)
 
     def map_wires(self, wire_map: dict):
         # pylint: disable=protected-access
@@ -217,6 +217,10 @@ def _commuting_evolution_resources(words: tuple[PauliWord]):
 def _commuting_evolution_decomposition(
     time: list, *_, wires: WiresLike, hamiltonian: Hamiltonian, **__
 ):  # pylint: disable=unused-argument
+    if capture.enabled() and isinstance(hamiltonian, Operator1):
+        # Reconstruct the closed-over Hamiltonian as a captured value. It is consumed by
+        # ``ApproxTimeEvolution`` below, so it is not collected as a separate circuit operation.
+        hamiltonian = apply(hamiltonian)
     ApproxTimeEvolution(hamiltonian, time, 1)
 
 

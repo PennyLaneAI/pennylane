@@ -334,20 +334,18 @@ class TestPauliRot:
                 "YY",
                 1e-3,
                 qre.Resources(
-                    zeroed_wires=3,
+                    zeroed_wires=1,
                     any_state_wires=0,
                     algo_wires=7,
                     gate_types=defaultdict(
                         int,
                         {
-                            resource_rep(qre.Toffoli, {"elbow": "left"}): 6,
-                            resource_rep(qre.Toffoli, {"elbow": None}): 2,
-                            resource_rep(qre.CNOT): 8,
+                            resource_rep(qre.Toffoli, {"elbow": None}): 14,
+                            resource_rep(qre.CNOT): 2,
                             resource_rep(qre.T): 42,
                             resource_rep(qre.Z): 2,
                             resource_rep(qre.S): 4,
                             resource_rep(qre.X): 12,
-                            resource_rep(qre.Hadamard): 18,
                         },
                     ),
                 ),

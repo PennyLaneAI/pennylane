@@ -22,10 +22,10 @@ from typing import Generic, TypeVar
 import numpy as np
 
 from pennylane import ops as qops
+from pennylane.core.operator import Operator
+from pennylane.core.queuing import QueuingManager
 from pennylane.data.base.attribute import DatasetAttribute
 from pennylane.data.base.hdf5 import HDF5Group, h5py
-from pennylane.operation import Operator
-from pennylane.queuing import QueuingManager
 
 from ._wires import wires_to_json
 
@@ -55,19 +55,20 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
         """Set of supported operators."""
         return frozenset(
             (
-                # pennylane/ops/qubit/arithmetic_qml.py
+                # pennylane/ops/qubit/arithmetic_qp.py
                 qops.QubitCarry,
                 qops.QubitSum,
                 # pennylane/ops/op_math/linear_combination.py
                 qops.LinearCombination,
-                # pennylane/ops/op_math - prod.py, s_prod.py, sum.py
+                # pennylane/ops/op_math - prod.py, prod2.py, s_prod.py, sum.py
                 qops.Prod,
+                qops.Prod2,
                 qops.SProd,
                 qops.Sum,
                 # pennylane/ops/qubit/matrix_ops.py
                 qops.QubitUnitary,
                 qops.DiagonalQubitUnitary,
-                # pennylane/ops/qubit/non_parametric_qml.py
+                # pennylane/ops/qubit/non_parametric_qp.py
                 qops.Hadamard,
                 qops.PauliX,
                 qops.PauliY,
@@ -124,15 +125,6 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
                 qops.BasisState,
                 qops.StatePrep,
                 qops.QubitDensityMatrix,
-                # pennylane/ops/qutrit/matrix_obs.py
-                qops.QutritUnitary,
-                # pennylane/ops/qutrit/non_parametric_ops.py
-                qops.TShift,
-                qops.TClock,
-                qops.TAdd,
-                qops.TSWAP,
-                # pennylane/ops/qutrit/observables.py
-                qops.THermitian,
                 # pennylane/ops/channel.py
                 qops.AmplitudeDamping,
                 qops.GeneralizedAmplitudeDamping,
@@ -143,34 +135,6 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
                 qops.PauliError,
                 qops.PhaseFlip,
                 qops.ThermalRelaxationError,
-                # pennylane/ops/cv.py
-                qops.Rotation,
-                qops.Squeezing,
-                qops.Displacement,
-                qops.Beamsplitter,
-                qops.TwoModeSqueezing,
-                qops.QuadraticPhase,
-                qops.ControlledAddition,
-                qops.ControlledPhase,
-                qops.Kerr,
-                qops.CrossKerr,
-                qops.InterferometerUnitary,
-                qops.CoherentState,
-                qops.SqueezedState,
-                qops.DisplacedSqueezedState,
-                qops.ThermalState,
-                qops.GaussianState,
-                qops.FockState,
-                qops.FockStateVector,
-                qops.FockDensityMatrix,
-                qops.CatState,
-                qops.NumberOperator,
-                qops.TensorN,
-                qops.QuadX,
-                qops.QuadP,
-                qops.QuadOperator,
-                qops.PolyXP,
-                qops.FockStateProjector,
                 # pennylane/ops/identity.py
                 qops.Identity,
                 # pennylane/ops/op_math/controlled_ops.py
@@ -207,7 +171,7 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
         op_class_names = []
         for i, op in enumerate(value):
             op_key = f"op_{i}"
-            if isinstance(op, (qops.Prod, qops.SProd, qops.Sum)):
+            if isinstance(op, (qops.Prod, qops.Prod2, qops.SProd, qops.Sum)):
                 op = op.simplify()
             if type(op) not in self.supported_ops():
                 raise TypeError(
@@ -219,7 +183,7 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
                 ham_grp = self._ops_to_hdf5(bind, op_key, ops)
                 ham_grp["hamiltonian_coeffs"] = coeffs
                 op_wire_labels.append("null")
-            elif isinstance(op, (qops.Prod, qops.Sum)):
+            elif isinstance(op, (qops.Prod, qops.Prod2, qops.Sum)):
                 self._ops_to_hdf5(bind, op_key, op.operands)
                 op_wire_labels.append("null")
             elif isinstance(op, qops.SProd):
@@ -258,6 +222,8 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
                             observables=self._hdf5_to_ops(bind[op_key]),
                         )
                     )
+                elif op_cls is qops.Prod2:
+                    ops.append(op_cls(self._hdf5_to_ops(bind[op_key])))
                 elif op_cls in (qops.Prod, qops.Sum):
                     ops.append(op_cls(*self._hdf5_to_ops(bind[op_key])))
                 elif op_cls is qops.SProd:

@@ -31,9 +31,9 @@ quantum-classical programs.
     ~disable
     ~enable
     ~enabled
+    ~toggle_ctx
     ~pause
     ~determine_abstracted_axes
-    ~expand_plxpr_transforms
     ~eval_jaxpr
     ~run_autograph
     ~disable_autograph
@@ -168,10 +168,10 @@ If needed, developers can also override the implementation method of the primiti
         return type.__call__(MyCustomOp, *args, **kwargs)
 """
 
-from typing import Type
+from typing import Type, TYPE_CHECKING
 from collections.abc import Callable
 
-from .switches import disable, enable, enabled, pause
+from .switches import disable, enable, enabled, pause, toggle_ctx
 from .capture_meta import CaptureMeta, ABCCaptureMeta
 from .flatfn import FlatFn
 from .make_plxpr import make_plxpr
@@ -182,21 +182,26 @@ from .dynamic_shapes import determine_abstracted_axes, register_custom_staging_r
 from .patching import Patcher
 from .jax_patches import get_jax_patches
 from .subroutine import subroutine
+from .symbolic_array import symbolic_array
+from .tracing_device import get_tracing_device, tracing_device
 
-# by defining this here, we avoid
-# E0611: No name 'AbstractOperator' in module 'pennylane.capture' (no-name-in-module)
-# on use of from capture import AbstractOperator
-AbstractOperator: type
-AbstractMeasurement: type
-qnode_prim: "jax.extend.core.Primitive"
-PlxprInterpreter: type
-expand_plxpr_transforms: Callable[[Callable], Callable]
-eval_jaxpr: Callable
-QpPrimitive: "Type[jax.extend.core.Primitive]"
+if TYPE_CHECKING:
+    # pylint: disable=import-outside-toplevel, unused-import
+    # We only import these if type-checking because JAX is imported unconditionally, so they
+    # cannot be imported at runtime without ModuleNotFoundErrors if JAX isn't installed
+    from . import primitives
+    from .base_interpreter import PlxprInterpreter, eval_jaxpr
+    from .custom_primitives import QpPrimitive
+    from .primitives import AbstractMeasurement, AbstractOperator, qnode_prim
 
 
 # pylint: disable=import-outside-toplevel, redefined-outer-name, too-many-return-statements
 def __getattr__(key):
+    if key == "primitives":
+        import importlib  # pragma: no cover
+
+        return importlib.import_module(".primitives", __name__)  # pragma: no cover
+
     if key == "QpPrimitive":
         from .custom_primitives import QpPrimitive
 
@@ -227,11 +232,6 @@ def __getattr__(key):
 
         return eval_jaxpr
 
-    if key == "expand_plxpr_transforms":
-        from .expand_transforms import expand_plxpr_transforms
-
-        return expand_plxpr_transforms
-
     raise AttributeError(f"module 'pennylane.capture' has no attribute '{key}'")
 
 
@@ -239,11 +239,13 @@ __all__ = (
     "disable",
     "enable",
     "enabled",
+    "toggle_ctx",
+    "pause",
     "eval_jaxpr",
+    "primitives",
     "CaptureMeta",
     "ABCCaptureMeta",
     "determine_abstracted_axes",
-    "expand_plxpr_transforms",
     "register_custom_staging_rule",
     "AbstractOperator",
     "AbstractMeasurement",
@@ -254,4 +256,7 @@ __all__ = (
     "make_plxpr",
     "Patcher",
     "get_jax_patches",
+    "symbolic_array",
+    "tracing_device",
+    "get_tracing_device",
 )

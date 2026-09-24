@@ -23,9 +23,11 @@ import pytest
 import pennylane as qp
 import pennylane.numpy as qnp
 from pennylane import math
+from pennylane.core.operator import Operator, abstractify
 from pennylane.exceptions import DeviceError, MatrixUndefinedError
-from pennylane.operation import Operator
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math.prod import Prod, _swappable_ops, prod
+from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 
 X, Y, Z = qp.PauliX, qp.PauliY, qp.PauliZ
@@ -91,12 +93,13 @@ ops_hermitian_status = (  # computed manually
 )
 
 
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_basic_validity():
     """Run basic validity checks on a prod operator."""
     op1 = qp.PauliZ(0)
     op2 = qp.Rot(1.2, 2.3, 3.4, wires=0)
-    op3 = qp.IsingZZ(4.32, wires=("a", "b"))
-    op = qp.prod(op1, op2, op3)
+    op3 = qp.IsingZZ(4.32, wires=(1, 2))
+    op = Prod(op1, op2, op3)
     qp.ops.functions.assert_valid(op)
 
 
@@ -150,12 +153,12 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         # same hash if different order but can be permuted to right order
         op1 = qp.prod(qp.PauliX(0), qp.PauliY("a"))
         op2 = qp.prod(qp.PauliY("a"), qp.PauliX(0))
-        assert op1.hash == op2.hash
+        assert hash(op1) == hash(op2)
 
         # test not the same hash if different order and cant be exchanged to correct order
         op3 = qp.prod(qp.PauliX("a"), qp.PauliY("a"), qp.PauliX(1))
         op4 = qp.prod(qp.PauliY("a"), qp.PauliX("a"), qp.PauliX(1))
-        assert op3.hash != op4.hash
+        assert hash(op3) != hash(op4)
 
     PROD_TERMS_OP_PAIRS_MIXED = (  # not all operands have pauli representation
         (
@@ -303,7 +306,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         eig_vecs = eig_decomp["eigvec"]
         eig_vals = eig_decomp["eigval"]
 
-        eigs_cache = prod_op._eigs[prod_op.hash]
+        eigs_cache = prod_op._eigs[prod_op]
         cached_vecs = eigs_cache["eigvec"]
         cached_vals = eigs_cache["eigval"]
 
@@ -697,23 +700,28 @@ class TestMatrix:
         ]
         assert np.allclose(mat, true_mat)
 
-    def test_matrix_all_batched(self):
+    # ``prod`` dispatches to ``Prod2`` for these operands, so both classes are tested
+    @pytest.mark.parametrize("prod_fn", [Prod, prod])
+    def test_matrix_all_batched(self, prod_fn):
         """Test that Prod matrix has batching support when all operands are batched."""
         x = qp.numpy.array([0.1, 0.2, 0.3])
         y = qp.numpy.array([0.4, 0.5, 0.6])
-        op = prod(qp.RX(x, wires=0), qp.RY(y, wires=2), qp.PauliZ(1))
+        op = prod_fn(qp.RX(x, wires=0), qp.RY(y, wires=2), qp.PauliZ(1))
         mat = op.matrix()
-        sum_list = [prod(qp.RX(i, wires=0), qp.RY(j, wires=2), qp.PauliZ(1)) for i, j in zip(x, y)]
+        sum_list = [
+            prod_fn(qp.RX(i, wires=0), qp.RY(j, wires=2), qp.PauliZ(1)) for i, j in zip(x, y)
+        ]
         compare = qp.math.stack([s.matrix() for s in sum_list])
         assert qp.math.allclose(mat, compare)
         assert mat.shape == (3, 8, 8)
 
-    def test_matrix_not_all_batched(self):
+    @pytest.mark.parametrize("prod_fn", [Prod, prod])
+    def test_matrix_not_all_batched(self, prod_fn):
         """Test that Prod matrix has batching support when all operands are not batched."""
         x = qp.numpy.array([0.1, 0.2, 0.3])
         y = 0.5
         z = qp.numpy.array([0.4, 0.5, 0.6])
-        op = prod(
+        op = prod_fn(
             qp.RX(x, wires=0),
             qp.RY(y, wires=2),
             qp.RZ(z, wires=1),
@@ -722,7 +730,7 @@ class TestMatrix:
         mat = op.matrix()
         batched_y = [y for _ in x]
         sum_list = [
-            prod(
+            prod_fn(
                 qp.RX(i, wires=0),
                 qp.RY(j, wires=2),
                 qp.RZ(k, wires=1),
@@ -944,24 +952,6 @@ class TestProperties:
         for op, hermitian_state in zip(prod_ops, true_hermitian_states):
             assert qp.is_hermitian(op) == hermitian_state
 
-    @pytest.mark.parametrize("ops_lst", ops)
-    def test_queue_category_ops(self, ops_lst):
-        """Test _queue_category property is '_ops' when all factors are `_ops`."""
-        prod_op = prod(*ops_lst)
-        assert prod_op._queue_category == "_ops"
-
-    def test_queue_category_none(self):
-        """Test _queue_category property is None when any factor is not `_ops`."""
-
-        class DummyOp(Operator):  # pylint:disable=too-few-public-methods
-            """Dummy op with None queue category"""
-
-            _queue_category = None
-            num_wires = 1
-
-        prod_op = prod(qp.Identity(wires=0), DummyOp(wires=0))
-        assert prod_op._queue_category is None
-
     def test_eigendecomposition(self):
         """Test that the computed Eigenvalues and Eigenvectors are correct."""
         diag_prod_op = Prod(qp.PauliZ(wires=0), qp.PauliZ(wires=1))
@@ -983,26 +973,6 @@ class TestProperties:
         assert np.allclose(eig_vals, true_eigvals)
         assert np.allclose(eig_vecs, true_eigvecs)
 
-    def test_qutrit_eigvals(self):
-        """Test that the eigvals can be computed with qutrit observables."""
-
-        op1 = qp.GellMann(wires=0)
-        op2 = qp.GellMann(index=8, wires=1)
-
-        prod_op = qp.prod(op1, op2)
-        eigs = prod_op.eigvals()
-
-        mat_eigs = np.linalg.eigvals(prod_op.matrix())
-
-        sorted_eigs = np.sort(eigs)
-        sorted_mat_eigs = np.sort(mat_eigs)
-        assert qp.math.allclose(sorted_eigs, sorted_mat_eigs)
-
-        # pylint: disable=import-outside-top-level
-        from pennylane.ops.functions.assert_valid import _check_eigendecomposition
-
-        _check_eigendecomposition(prod_op)
-
     def test_eigen_caching(self):
         """Test that the eigendecomposition is stored in cache."""
         diag_prod_op = Prod(qp.PauliZ(wires=0), qp.PauliZ(wires=1))
@@ -1010,7 +980,7 @@ class TestProperties:
 
         eig_vecs = eig_decomp["eigvec"]
         eig_vals = eig_decomp["eigval"]
-        eigs_cache = diag_prod_op._eigs[diag_prod_op.hash]
+        eigs_cache = diag_prod_op._eigs[diag_prod_op]
         cached_vecs = eigs_cache["eigvec"]
         cached_vals = eigs_cache["eigval"]
 
@@ -1185,14 +1155,23 @@ class TestSimplify:
         simplified_op = prod_op.simplify()
         qp.assert_equal(simplified_op, final_op)
 
-    def test_simplify_method_groups_rotations(self):
+    # ``qp.prod`` dispatches to ``Prod2`` for these operands, so both classes are tested
+    @pytest.mark.parametrize("prod_fn", [Prod, qp.prod])
+    def test_simplify_method_groups_rotations(self, prod_fn):
         """Test that the simplify method groups rotation operators."""
-        prod_op = qp.prod(
+        prod_op = prod_fn(
             qp.RX(1, 0), qp.RZ(1, 1), qp.CNOT((1, 2)), qp.RZ(1, 1), qp.RX(3, 0), qp.RZ(1, 1)
         )
-        final_op = qp.prod(qp.RZ(1, 1), qp.CNOT((1, 2)), qp.RX(4, 0), qp.RZ(2, 1))
+        final_op = prod_fn(qp.RZ(1, 1), qp.CNOT((1, 2)), qp.RX(4, 0), qp.RZ(2, 1))
         simplified_op = prod_op.simplify()
         qp.assert_equal(simplified_op, final_op)
+
+    def test_simplify_method_cancels_powers(self):
+        """Test that the simplify method cancels ``Pow`` factors with opposite exponents."""
+        rot = qp.Rot(0.1, 0.2, 0.3, 0)
+        prod_op = Prod(qp.ops.Pow(rot, 2), qp.ops.Pow(rot, -2), qp.RY(0.3, 1))
+        simplified_op = prod_op.simplify()
+        qp.assert_equal(simplified_op, qp.RY(0.3, 1))
 
     def test_simplify_method_with_pauli_words(self):
         """Test that the simplify method groups pauli words."""
@@ -1683,14 +1662,24 @@ class TestSwappableOps:
         """Test the check for non-swappable operators."""
         assert not _swappable_ops(op1, op2)
 
+    def test_op_with_abstract_wires(self):
+        """Test that the check works with abstract wires."""
+        assert not _swappable_ops(qp.X(Wire[1]), qp.X(5))
+        assert not _swappable_ops(qp.X(5), qp.X(Wire[1]))
+
+        assert not _swappable_ops(qp.X(Wire[1]), qp.X(Wire[1]))
+        assert not _swappable_ops(qp.X(Wire[1]), qp.CNOT(Wire[2]))
+
+        assert not _swappable_ops(qp.CNOT([0, Wire[1]]), qp.X(2))
+
 
 class TestDecomposition:
 
     def test_resource_keys(self):
         """Test that the resource keys of `Prod` are op_reps."""
         assert Prod.resource_keys == frozenset({"resources"})
-        product = qp.X(0) @ qp.Y(1) @ qp.X(2)
-        resources = {qp.resource_rep(qp.X): 2, qp.resource_rep(qp.Y): 1}
+        product = Prod(qp.X(0), qp.Y(1), qp.X(2))
+        resources = {abstractify(qp.X): 2, abstractify(qp.Y): 1}
         assert product.resource_params == {"resources": resources}
 
     def test_registered_decomp(self):
@@ -1700,7 +1689,7 @@ class TestDecomposition:
 
         default_decomp = decomps[0]
         _ops = [qp.X(0), qp.X(1), qp.X(2), qp.MultiRZ(0.5, wires=(0, 1))]
-        resources = {qp.resource_rep(qp.X): 3, qp.resource_rep(qp.MultiRZ, num_wires=2): 1}
+        resources = {abstractify(qp.X): 3, qp.MultiRZ(Float, Wire[2]): 1}
 
         resource_obj = default_decomp.compute_resources(resources=resources)
 
@@ -1724,3 +1713,106 @@ class TestDecomposition:
             solution.decomposition(op)(**op.hyperparameters)
 
         assert q.queue == list(op[::-1])
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_controlled_prod_basic_validity(self):
+        """Check that Controlled(Prod) is valid, in particular its custom decomp rule"""
+        op = qp.ctrl(
+            qp.prod(qp.X(0), qp.X(1), qp.X(2)),
+            control=[4, 5, 6],
+            work_wires=[7, 8, 9],
+        )
+        qp.ops.functions.assert_valid(op, skip_decomp_matrix_check=True)
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("control_values", [[1, 1, 1], [0, 1, 0], [1, 0, 1], [0, 0, 0]])
+    @pytest.mark.parametrize("work_wires", [[7, 8, 9], [7]])
+    def test_controlled_prod_decomposition_new(self, control_values, work_wires):
+        """The registered ``C(Prod)`` rule decomposes controlled products.
+
+        Covers both rules (many work wires and single work wire) as well as the
+        ``flip_zero_control`` wrapper for arbitrary ``control_values``. Both rules require
+        zeroed work wires, so ``work_wire_type="borrowed"`` only checks that they are skipped.
+        """
+
+        op = qp.ctrl(
+            qp.ops.Prod(qp.X(0), qp.X(1), qp.X(2)),
+            control=[4, 5, 6],
+            control_values=control_values,
+            work_wires=work_wires,
+            work_wire_type="zeroed",
+        )
+        rules = qp.list_decomps("C(Prod)")
+        assert rules, "no decomp rules registered for C(Prod)"
+
+        # ``_test_decomposition_rule`` is a no-op for rules that are not applicable, so check
+        # explicitly that when the work_wire_type is "zeroed", at least one rule is applicable
+        applicable = [rule for rule in rules if rule.is_applicable(**op.resource_params)]
+        assert applicable
+
+        for rule in rules:
+            _test_decomposition_rule(op, rule)
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.catalyst
+    @pytest.mark.parametrize("num_control_wires, num_work_wires", [(3, 1), (3, 2), (4, 1), (5, 3)])
+    @pytest.mark.parametrize("work_wire_type", ["zeroed"])
+    def test_controlled_prod_qjit(self, num_control_wires, num_work_wires, work_wire_type):
+        """Test that the ``C(Prod)`` decompositions* is QJIT-compatible with JAX-traced wires.
+
+        Decompositions this test targets:
+        - _controlled_product_with_work_wires
+        - _controlled_product_with_one_work_wire
+
+        Mirrors the pattern used in
+        ``tests/ops/op_math/test_controlled_decompositions.py::TestMCXDecomposition::test_mcx_qjit``
+        so that the ``TemporaryAND`` ladder inside the ``C(Prod)`` rule is exercised
+        under the Catalyst compiler without ``control_values`` being traced (they
+        are treated as static so that ``flip_zero_control`` can branch on them).
+        """
+
+        from catalyst.device.decomposition import catalyst_decompose
+
+        gate_set = {
+            "X": 1,
+            "CNOT": 1,
+            "TemporaryAND": 4,
+            "Adjoint(TemporaryAND)": 1,
+            "Cond": 1,
+            "HybridAdjoint": 1,
+            "ForLoop": 1,
+            "GlobalPhase": 1,
+            "MultiControlledX": 1000,
+        }
+
+        num_base_wires = 3
+        control_wires = list(range(num_control_wires))
+        base_wires = list(range(num_control_wires, num_control_wires + num_base_wires))
+        work_wires = list(
+            range(
+                num_control_wires + num_base_wires,
+                num_control_wires + num_base_wires + num_work_wires,
+            )
+        )
+        total_wires = int(num_control_wires + num_base_wires + num_work_wires)
+        cvals = (1, 0, 1, 1, 0, 0, 1)[:num_control_wires]
+
+        @qp.qjit(capture=False, static_argnums=3)
+        @catalyst_decompose(capabilities=None, target_gates=gate_set)
+        @qp.qnode(qp.device("lightning.qubit", wires=total_wires))
+        def circuit(control_wires, base_wires, work_wires, cvals):
+            qp.ctrl(
+                qp.prod(
+                    qp.X(base_wires[0]),
+                    qp.X(base_wires[1]),
+                    qp.X(base_wires[2]),
+                ),
+                control=[control_wires[i] for i in range(num_control_wires)],
+                control_values=cvals,
+                work_wires=[work_wires[i] for i in range(num_work_wires)],
+                work_wire_type=work_wire_type,
+            )
+            return qp.probs()
+
+        result = circuit(control_wires, base_wires, work_wires, cvals)
+        assert result is not None

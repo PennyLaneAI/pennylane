@@ -189,7 +189,11 @@ test_data_decomposition_new = [
 ]
 
 
-@pytest.mark.jax
+@pytest.mark.xfail_if_capture(
+    reason="Come back to this when we migrate UCCSD [sc-129958]",
+    strict=False,  # not all parametrized configurations fail.
+)
+@pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize("s_wires, d_wires, weights, n_repeats, _", test_data_decomposition)
 def test_standard_validity(s_wires, d_wires, weights, n_repeats, _):
     """Test standard validity criteria using assert_valid."""
@@ -289,6 +293,11 @@ class TestDecomposition:
 
     @pytest.mark.parametrize("s_wires, d_wires, weights, n_repeats", test_data_decomposition_new)
     # Note: UCCSD is not capture compatible
+    @pytest.mark.xfail_if_capture(
+        reason="Come back to this when we migrate UCCSD [sc-129958]",
+        strict=False,  # not all parametrized configurations fail.
+    )
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_new(
         self, s_wires, d_wires, weights, n_repeats
     ):  # pylint: disable=unused-argument
@@ -340,159 +349,143 @@ class TestDecomposition:
         assert np.allclose(state1, state2, atol=tol, rtol=0)
 
 
-class TestInputs:
-    """Test inputs and pre-processing."""
+@pytest.mark.parametrize(
+    ("weights", "s_wires", "d_wires", "init_state", "n_repeats", "msg_match"),
+    [
+        (
+            np.array([-2.8]),
+            [[0, 1, 2]],
+            [],
+            np.array([1.2, 1, 0, 0]),
+            1,
+            "Elements of 'init_state' must be integers",
+        ),
+        (
+            np.array([-2.8]),
+            [],
+            [],
+            np.array([1, 1, 0, 0]),
+            1,
+            "s_wires and d_wires lists can not be both empty",
+        ),
+        (
+            np.array([-2.8]),
+            [],
+            [[[0, 1, 2, 3]]],
+            np.array([1, 1, 0, 0]),
+            1,
+            "expected entries of d_wires to be of size 2",
+        ),
+        (
+            np.array([-2.8]),
+            [[0, 2]],
+            [],
+            np.array([1, 1, 0, 0, 0]),
+            1,
+            r"Expected length of 'init_state' to match number of wires \(4\)",
+        ),
+        (
+            np.array([-2.8]),
+            [[0, 2]],
+            [],
+            None,
+            1,
+            r"Requires `init_state` to be provided",
+        ),
+        (
+            np.array([-2.8, 1.6]),
+            [[0, 1, 2]],
+            [],
+            np.array([1, 1, 0, 0]),
+            1,
+            "For one-dimensional weights tensor",
+        ),
+        (
+            np.array([-2.8, 1.6]),
+            [],
+            [[[0, 1], [2, 3]]],
+            np.array([1, 1, 0, 0]),
+            1,
+            "For one-dimensional weights tensor",
+        ),
+        (
+            np.array([-2.8, 1.6]),
+            [[0, 1, 2], [1, 2, 3]],
+            [[[0, 1], [2, 3]]],
+            np.array([1, 1, 0, 0]),
+            1,
+            "For one-dimensional weights tensor",
+        ),
+        (
+            np.array([-2.8]),
+            [[0, 1, 2]],
+            [],
+            np.array([1, 1, 0, 0]),
+            0,
+            "Requires n_repeats to be at least 1",
+        ),
+        (
+            np.array([-2.8]),
+            [[0, 1, 2]],
+            [],
+            np.array([1, 1, 0, 0]),
+            -1,
+            "Requires n_repeats to be at least 1",
+        ),
+        (
+            np.array([-2.8]),
+            [[0, 1, 2]],
+            [],
+            np.array([1, 1, 0, 0]),
+            2,
+            "For one-dimensional weights tensor",
+        ),
+        (
+            np.array([[-2.8], [-1.8]]),
+            [[0, 1, 2]],
+            [],
+            np.array([1, 1, 0, 0]),
+            3,
+            "Weights tensor must be of",
+        ),
+    ],
+)
+def test_uccsd_xceptions(weights, s_wires, d_wires, init_state, n_repeats, msg_match):
+    """Test that UCCSD throws an exception if the parameters have illegal
+    shapes, types or values."""
+    N = 4
+    wires = range(4)
+    dev = qp.device("default.qubit", wires=N)
 
-    @pytest.mark.parametrize(
-        ("weights", "s_wires", "d_wires", "init_state", "n_repeats", "msg_match"),
-        [
-            (
-                np.array([-2.8]),
-                [[0, 1, 2]],
-                [],
-                np.array([1.2, 1, 0, 0]),
-                1,
-                "Elements of 'init_state' must be integers",
-            ),
-            (
-                np.array([-2.8]),
-                [],
-                [],
-                np.array([1, 1, 0, 0]),
-                1,
-                "s_wires and d_wires lists can not be both empty",
-            ),
-            (
-                np.array([-2.8]),
-                [],
-                [[[0, 1, 2, 3]]],
-                np.array([1, 1, 0, 0]),
-                1,
-                "expected entries of d_wires to be of size 2",
-            ),
-            (
-                np.array([-2.8]),
-                [[0, 2]],
-                [],
-                np.array([1, 1, 0, 0, 0]),
-                1,
-                r"Expected length of 'init_state' to match number of wires \(4\)",
-            ),
-            (
-                np.array([-2.8]),
-                [[0, 2]],
-                [],
-                None,
-                1,
-                r"Requires `init_state` to be provided",
-            ),
-            (
-                np.array([-2.8, 1.6]),
-                [[0, 1, 2]],
-                [],
-                np.array([1, 1, 0, 0]),
-                1,
-                "For one-dimensional weights tensor",
-            ),
-            (
-                np.array([-2.8, 1.6]),
-                [],
-                [[[0, 1], [2, 3]]],
-                np.array([1, 1, 0, 0]),
-                1,
-                "For one-dimensional weights tensor",
-            ),
-            (
-                np.array([-2.8, 1.6]),
-                [[0, 1, 2], [1, 2, 3]],
-                [[[0, 1], [2, 3]]],
-                np.array([1, 1, 0, 0]),
-                1,
-                "For one-dimensional weights tensor",
-            ),
-            (
-                np.array([-2.8]),
-                [[0, 1, 2]],
-                [],
-                np.array([1, 1, 0, 0]),
-                0,
-                "Requires n_repeats to be at least 1",
-            ),
-            (
-                np.array([-2.8]),
-                [[0, 1, 2]],
-                [],
-                np.array([1, 1, 0, 0]),
-                -1,
-                "Requires n_repeats to be at least 1",
-            ),
-            (
-                np.array([-2.8]),
-                [[0, 1, 2]],
-                [],
-                np.array([1, 1, 0, 0]),
-                2,
-                "For one-dimensional weights tensor",
-            ),
-            (
-                np.array([[-2.8], [-1.8]]),
-                [[0, 1, 2]],
-                [],
-                np.array([1, 1, 0, 0]),
-                3,
-                "Weights tensor must be of",
-            ),
-        ],
-    )
-    def test_uccsd_xceptions(self, weights, s_wires, d_wires, init_state, n_repeats, msg_match):
-        """Test that UCCSD throws an exception if the parameters have illegal
-        shapes, types or values."""
-        N = 4
-        wires = range(4)
-        dev = qp.device("default.qubit", wires=N)
-
-        def circuit(
+    def circuit(
+        weights=weights,
+        wires=wires,
+        s_wires=s_wires,
+        d_wires=d_wires,
+        init_state=init_state,
+        n_repeats=n_repeats,
+    ):
+        qp.UCCSD(
             weights=weights,
             wires=wires,
             s_wires=s_wires,
             d_wires=d_wires,
             init_state=init_state,
             n_repeats=n_repeats,
-        ):
-            qp.UCCSD(
-                weights=weights,
-                wires=wires,
-                s_wires=s_wires,
-                d_wires=d_wires,
-                init_state=init_state,
-                n_repeats=n_repeats,
-            )
-            return qp.expval(qp.PauliZ(0))
-
-        qnode = qp.QNode(circuit, dev)
-
-        with pytest.raises(ValueError, match=msg_match):
-            qnode(
-                weights=weights,
-                wires=wires,
-                s_wires=s_wires,
-                d_wires=d_wires,
-                init_state=init_state,
-                n_repeats=n_repeats,
-            )
-
-    @pytest.mark.usefixtures("ignore_id_deprecation")
-    def test_id(self):
-        """Tests that the id attribute can be set."""
-        template = qp.UCCSD(
-            [0.1, 0.2],
-            wires=range(4),
-            s_wires=[[0, 1]],
-            d_wires=[[[0, 1], [2, 3]]],
-            init_state=np.array([0, 1, 0, 1]),
-            id="a",
         )
-        assert template.id == "a"
+        return qp.expval(qp.PauliZ(0))
+
+    qnode = qp.QNode(circuit, dev)
+
+    with pytest.raises(ValueError, match=msg_match):
+        qnode(
+            weights=weights,
+            wires=wires,
+            s_wires=s_wires,
+            d_wires=d_wires,
+            init_state=init_state,
+            n_repeats=n_repeats,
+        )
 
 
 def circuit_template(weights, n_repeats=1):

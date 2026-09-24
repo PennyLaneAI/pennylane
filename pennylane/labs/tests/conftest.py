@@ -20,7 +20,7 @@ import numpy as np
 import pytest
 from _pytest.runner import pytest_runtest_makereport as orig_pytest_runtest_makereport
 
-import pennylane as qml
+import pennylane as qp
 from pennylane.exceptions import DeviceError
 
 # ==========================================================
@@ -69,10 +69,10 @@ def init_state():
 def get_legacy_capabilities(dev):
     """Gets the capabilities dictionary of a device."""
 
-    if isinstance(dev, qml.devices.LegacyDeviceFacade):
+    if isinstance(dev, qp.devices.LegacyDeviceFacade):
         return dev.target_device.capabilities()
 
-    if isinstance(dev, qml.devices.LegacyDevice):
+    if isinstance(dev, qp.devices.LegacyDevice):
         return dev.capabilities()
 
     return {}
@@ -104,7 +104,7 @@ def validate_diff_method(device, diff_method, device_kwargs):
     if diff_method == "backprop" and device_kwargs.get("shots") is not None:
         pytest.skip(reason="test should only be run in analytic mode")
     dev = device(1)
-    config = qml.devices.ExecutionConfig(gradient_method=diff_method)
+    config = qp.devices.ExecutionConfig(gradient_method=diff_method)
     if not dev.supports_derivatives(execution_config=config):
         pytest.skip(reason="device does not support diff_method")
 
@@ -120,7 +120,7 @@ def fixture_device(device_kwargs):
         device_kwargs["wires"] = wires
 
         try:
-            dev = qml.device(**device_kwargs)
+            dev = qp.device(**device_kwargs)
         except DeviceError:
             dev_name = device_kwargs["name"]
             # exit the tests if the device cannot be created
@@ -267,3 +267,25 @@ def pytest_runtest_makereport(item, call):
                 tr.outcome = "skipped"
 
     return tr
+
+
+def pytest_addoption(parser):
+    """Add the --run-skip-ci option to run tests locally"""
+    parser.addoption(
+        "--run-skip-ci",
+        action="store_true",
+        default=False,
+        help="Run tests marked with `skip_ci` ...",
+    )
+
+
+def pytest_collection_modifyitems(config, items):
+    """Add the --run-skip-ci option to run tests locally"""
+    if config.getoption("--run-skip-ci"):
+        return
+    skip_ci = pytest.mark.skip(
+        reason="`skip_ci` test excluded from CI; run locally with `--run-skip-ci`."
+    )
+    for item in items:
+        if "skip_ci" in item.keywords:
+            item.add_marker(skip_ci)

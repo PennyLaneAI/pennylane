@@ -153,7 +153,7 @@ class RotosolveOptimizer:
         ``RotosolveOptimizer`` will only update parameters that are *explicitly*
         marked as trainable. This can be done via ``requires_grad`` if using Autograd
         or PyTorch. ``RotosolveOptimizer`` is not yet implemented to work in a stable
-        manner with TensorFlow or JAX.
+        manner with JAX.
 
     Args:
         substep_optimizer (str or callable): optimizer to use for the substeps of Rotosolve
@@ -202,24 +202,24 @@ class RotosolveOptimizer:
     We will run Rotosolve itself for three iterations.
 
     >>> opt_kwargs = {"num_steps": 4}
-    >>> opt = qml.optimize.RotosolveOptimizer(substep_optimizer="brute", substep_kwargs=opt_kwargs)
+    >>> opt = qp.optimize.RotosolveOptimizer(substep_optimizer="brute", substep_kwargs=opt_kwargs)
     >>> num_steps = 3
 
     Next, we create a QNode we wish to optimize:
 
     .. code-block :: python
 
-        dev = qml.device('default.qubit', wires=3)
+        dev = qp.device('default.qubit', wires=3)
 
-        @qml.qnode(dev)
+        @qp.qnode(dev)
         def cost_function(rot_param, layer_par, crot_param, rot_weights=None, crot_weights=None):
             for i, par in enumerate(rot_param * rot_weights):
-                qml.RX(par, wires=i)
+                qp.RX(par, wires=i)
             for w in dev.wires:
-                qml.RX(layer_par, wires=w)
+                qp.RX(layer_par, wires=w)
             for i, par in enumerate(crot_param*crot_weights):
-                qml.CRY(par, wires=[i, (i+1)%3])
-            return qml.expval(qml.Z(0) @ qml.Z(1) @ qml.Z(2))
+                qp.CRY(par, wires=[i, (i+1)%3])
+            return qp.expval(qp.Z(0) @ qp.Z(1) @ qp.Z(2))
 
     This QNode is defined simply by measuring the expectation value of the tensor
     product of ``PauliZ`` operators on all qubits.
@@ -257,8 +257,6 @@ class RotosolveOptimizer:
     The keyword argument ``requires_grad`` can be used to determine whether the respective
     parameter should be optimized or not, following the behaviour of gradient computations and
     gradient-based optimizers when using Autograd or Torch.
-    With TensorFlow, a ``tf.Variable`` inside a ``tf.GradientTape`` may be used to
-    mark variables as trainable.
 
     Now we carry out the optimization.
     The minimized cost of the intermediate univariate reconstructions can
@@ -297,7 +295,7 @@ class RotosolveOptimizer:
 
     >>> rot_weights = np.array([0.4, 0.8, 1.2], requires_grad=False)
     >>> crot_weights = np.array([0.5, 1.0, 1.5], requires_grad=False)
-    >>> spectrum_fn = qml.fourier.qnode_spectrum(cost_function)
+    >>> spectrum_fn = qp.fourier.qnode_spectrum(cost_function)
     >>> spectra = spectrum_fn(*param, rot_weights=rot_weights, crot_weights=crot_weights)
     >>> spectra["rot_param"]
     {(0,): [-0.4, 0.0, 0.4], (1,): [-0.8, 0.0, 0.8], (2,): [-1.2, 0.0, 1.2]}

@@ -79,7 +79,7 @@ def _validate_tangents(params, dparams, argnums):
             f"as many tangents, but got {len(dparams)} instead."
         )
 
-    for i, dx in zip(argnums, dparams):
+    for i, dx in zip(argnums, dparams, strict=True):
         x = params[i]
         if _dtype(x) != _dtype(dx):
             raise TypeError(

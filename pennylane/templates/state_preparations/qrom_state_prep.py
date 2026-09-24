@@ -16,8 +16,11 @@ r"""Contains the QROMStatePreparation template."""
 import numpy as np
 
 import pennylane as qp
-from pennylane.operation import Operation
+from pennylane.core.operator import Operation
 from pennylane.wires import Wires
+
+#: Small constant to prevent division by zero in state preparation.
+_DIVISION_EPS = 1e-15
 
 
 def _float_to_binary(val, num_bits):
@@ -102,7 +105,7 @@ class QROMStatePreparation(Operation):
 
     # pylint: disable=too-many-positional-arguments
     def __init__(
-        self, state_vector, wires, precision_wires, work_wires=None, id=None
+        self, state_vector, wires, precision_wires, work_wires=None
     ):  # pylint: disable=too-many-arguments
 
         n_amplitudes = qp.math.shape(state_vector)[0]
@@ -130,7 +133,7 @@ class QROMStatePreparation(Operation):
             + self.hyperparameters["work_wires"]
         )
 
-        super().__init__(state_vector, wires=all_wires, id=id)
+        super().__init__(state_vector, wires=all_wires)
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
@@ -186,7 +189,6 @@ class QROMStatePreparation(Operation):
 
         probs = qp.math.abs(state_vector) ** 2
         phases = qp.math.angle(state_vector) % (2 * np.pi)
-        eps = 1e-15  # Small constant to avoid division by zero
 
         decomp_ops = []
         num_iterations = int(qp.math.log2(qp.math.shape(probs)[0]))
@@ -207,7 +209,7 @@ class QROMStatePreparation(Operation):
                 _float_to_binary(
                     2
                     * qp.math.arccos(
-                        qp.math.sqrt(probs_numerator[j] / (probs_denominator[j] + eps))
+                        qp.math.sqrt(probs_numerator[j] / (probs_denominator[j] + _DIVISION_EPS))
                     )
                     / np.pi,
                     len(precision_wires),
@@ -217,7 +219,7 @@ class QROMStatePreparation(Operation):
             # Apply the QROM operation to encode the thetas binary representation
             decomp_ops.append(
                 qp.QROM(
-                    data=thetas_binary,
+                    bitstrings=thetas_binary,
                     target_wires=precision_wires,
                     control_wires=input_wires[:i],
                     work_wires=work_wires,
@@ -232,7 +234,7 @@ class QROMStatePreparation(Operation):
             # Clean wires used to store the theta values
             decomp_ops.append(
                 qp.adjoint(qp.QROM)(
-                    data=thetas_binary,
+                    bitstrings=thetas_binary,
                     target_wires=precision_wires,
                     control_wires=input_wires[:i],
                     work_wires=work_wires,
@@ -250,7 +252,7 @@ class QROMStatePreparation(Operation):
             # Apply the QROM operation to encode the thetas binary representation
             decomp_ops.append(
                 qp.QROM(
-                    data=thetas_binary,
+                    bitstrings=thetas_binary,
                     target_wires=precision_wires,
                     control_wires=input_wires,
                     work_wires=work_wires,
@@ -261,14 +263,14 @@ class QROMStatePreparation(Operation):
             for ind, wire in enumerate(precision_wires):
                 decomp_ops.append(
                     qp.ctrl(
-                        qp.GlobalPhase((2 * np.pi) * (-rotation_angles[ind]), wires=input_wires[0]),
+                        qp.GlobalPhase((2 * np.pi) * (-rotation_angles[ind])),
                         control=wire,
                     )
                 )
 
             decomp_ops.append(
                 qp.adjoint(qp.QROM)(
-                    data=thetas_binary,
+                    bitstrings=thetas_binary,
                     target_wires=precision_wires,
                     control_wires=input_wires,
                     work_wires=work_wires,

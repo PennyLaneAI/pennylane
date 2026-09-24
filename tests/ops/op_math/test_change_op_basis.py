@@ -15,23 +15,27 @@
 Unit tests for the ChangeOpBasis arithmetic class of qubit operations
 """
 
+# pylint:disable=protected-access, unused-argument
+
 import re
 from functools import partial
 
 import numpy as np
-
-# pylint:disable=protected-access, unused-argument
 import pytest
 
 import pennylane as qp
 import pennylane.numpy as qnp
-from pennylane.decomposition import resource_rep
+from pennylane.core.operator import abstractify
+from pennylane.core.operator.base import Operator
 from pennylane.exceptions import DeviceError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math import ChangeOpBasis, change_op_basis
-from pennylane.queuing import AnnotatedQueue
+from pennylane.ops.op_math.change_op_basis import _convert_to_prod, _validate_callable
 from pennylane.templates import Subroutine
+from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
+from tests.capture.capture_utils import assert_eqn_matches_op
+from tests.core.operator.operator2_utils import NonParametricOp
 
 X, Y, Z = qp.PauliX, qp.PauliY, qp.PauliZ
 
@@ -42,10 +46,18 @@ ops = (
 )
 
 
+# pylint: disable-next=too-few-public-methods
+class DummyOp(qp.core.Operator1):
+    pass
+
+
+# ChangeOpBasis as an operator only exists in the tape-based pipeline
+@pytest.mark.usefixtures("disable_capture")
+@pytest.mark.jax
 def test_basic_validity():
     """Run basic validity checks on a change_op_basis operator."""
     op1 = qp.PauliZ(0)
-    op2 = qp.Rot(1.2, 2.3, 3.4, wires=0)
+    op2 = DummyOp(0)
     op3 = qp.PauliZ(0)
     op = qp.change_op_basis(op1, op2, op3)
     qp.ops.functions.assert_valid(op)
@@ -120,8 +132,17 @@ def test_change_op_basis_callables_capture_with_none():
 
     assert jaxpr.eqns[-1].primitive.name == "adjoint_transform"
     assert jaxpr.eqns[-1].params["jaxpr"].eqns[-1].primitive.name == "quantum_subroutine_prim"
-    assert jaxpr.eqns[-2].primitive.name == "PauliX"
+
+    assert_eqn_matches_op(jaxpr.eqns[-2], qp.X)
     assert jaxpr.eqns[-3].primitive.name == "quantum_subroutine_prim"
+
+
+def test_convert_to_prod_raises():
+    """Test that _convert_to_prod raises for inputs that are neither Operators nor Callables."""
+    with pytest.raises(
+        TypeError, match="The parameters to change_op_basis must be Operator or Callable"
+    ):
+        _convert_to_prod(5)
 
 
 def test_change_op_basis_raises():
@@ -137,7 +158,8 @@ def test_change_op_basis_raises():
         qp.adjoint(qp.RX)(a, reg1[0])
 
     with pytest.raises(
-        TypeError, match="change_op_basis requires that Callable inputs have no parameters"
+        TypeError,
+        match="change_op_basis requires that Callable inputs have no unbound mandatory parameters",
     ):
         qp.change_op_basis(f, qp.X(0), qp.RX(0.1, 0))
 
@@ -156,7 +178,8 @@ def test_change_op_basis_raises_capture():
         qp.adjoint(qp.RX)(a, reg1[0])
 
     with pytest.raises(
-        TypeError, match="change_op_basis requires that Callable inputs have no parameters"
+        TypeError,
+        match="change_op_basis requires that Callable inputs have no unbound mandatory parameters",
     ):
         qp.change_op_basis(f, qp.X(0), qp.RX(0.1, 0))
 
@@ -191,7 +214,7 @@ def test_change_op_basis_callables_capture():
     jaxpr = jax.make_jaxpr(circuit)()
 
     assert jaxpr.eqns[-1].primitive.name == "quantum_subroutine_prim"
-    assert jaxpr.eqns[-3].primitive.name == "PauliX"
+    assert_eqn_matches_op(jaxpr.eqns[-3], qp.X)
     assert jaxpr.eqns[-4].primitive.name == "quantum_subroutine_prim"
 
 
@@ -211,16 +234,25 @@ def test_change_op_basis_with_mixed_types():
     qp.assert_equal(cob.operands[0], qp.adjoint(f)(0.1, Wires([0]), Wires([1])))
 
 
+@pytest.mark.parametrize(
+    "compute_op, target_op, uncompute_op",
+    (
+        (qp.X, qp.Z, qp.X),  # Operator1 only
+        (NonParametricOp, NonParametricOp, NonParametricOp),  # Operator2 only
+        (qp.X, NonParametricOp, qp.X),  # Operator1 compute and Operator2 target
+        (NonParametricOp, qp.X, NonParametricOp),  # Operator2 compute and Operator1 target
+    ),
+)
 @pytest.mark.capture
-def test_change_op_basis_capture():
-    """Tests that a change_op_basis can be captured."""
+def test_change_op_basis_capture(compute_op, target_op, uncompute_op):
+    """Tests that Operator1 and Operator2 operands are captured in argument order."""
 
     def circuit():
-        qp.change_op_basis(qp.X(0), qp.Y(0), qp.X(0))
+        qp.change_op_basis(compute_op(0), target_op(1), uncompute_op(0))
 
     jaxpr = qp.capture.make_plxpr(circuit)()
     tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
-    assert tape.operations == [qp.X(0), qp.Y(0), qp.X(0)]
+    assert tape.operations == [compute_op(0), target_op(1), uncompute_op(0)]
 
 
 class MyOp(qp.RX):  # pylint:disable=too-few-public-methods
@@ -250,19 +282,19 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
     def test_hash(self):
         """Testing some situations for the hash property."""
         # test not the same hash if different order
-        op1 = qp.change_op_basis(qp.PauliX("a"), qp.PauliY("a"), qp.PauliX(1))
-        op2 = qp.change_op_basis(qp.PauliY("a"), qp.PauliX("a"), qp.PauliX(1))
-        assert op1.hash != op2.hash
+        op1 = ChangeOpBasis(qp.PauliX("a"), qp.PauliY("a"), qp.PauliX(1))
+        op2 = ChangeOpBasis(qp.PauliY("a"), qp.PauliX("a"), qp.PauliX(1))
+        assert hash(op1) != hash(op2)
 
     def test_batch_size(self):
         """Test that batch size returns the batch size of a base operation if it is batched."""
         x = qp.numpy.array([1.0, 2.0, 3.0])
-        change_op_basis_op = change_op_basis(qp.PauliX(0), qp.RX(x, wires=0))
+        change_op_basis_op = ChangeOpBasis(qp.PauliX(0), qp.RX(x, wires=0))
         assert change_op_basis_op.batch_size == 3
 
     def test_batch_size_None(self):
         """Test that the batch size is none if no factors have batching."""
-        change_op_basis_op = change_op_basis(qp.PauliX(0), qp.RX(1.0, wires=0))
+        change_op_basis_op = ChangeOpBasis(qp.PauliX(0), qp.RX(1.0, wires=0))
         assert change_op_basis_op.batch_size is None
 
     @pytest.mark.parametrize(
@@ -278,7 +310,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         """Test that a change_op_basis of operators that have `has_adjoint=True`
         has `has_adjoint=True` as well."""
 
-        change_op_basis_op = change_op_basis(*factors)
+        change_op_basis_op = ChangeOpBasis(*factors)
         assert change_op_basis_op.has_adjoint is True
 
     @pytest.mark.parametrize(
@@ -325,11 +357,18 @@ class TestProperties:  # pylint: disable=too-few-public-methods
         change_op = change_op_basis(*ops_lst)
         assert middle_op.is_verified_hermitian == change_op.is_verified_hermitian
 
-    @pytest.mark.parametrize("ops_lst", ops)
-    def test_queue_category_ops(self, ops_lst):
-        """Test _queue_category property is '_ops' when all factors are `_ops`."""
-        change_op_basis_op = change_op_basis(*ops_lst)
-        assert change_op_basis_op._queue_category == "_ops"
+    @pytest.mark.parametrize(
+        "target_op, expected",
+        [
+            (qp.PauliZ(0), True),  # hermitian target
+            (qp.S(0), False),  # non-hermitian target
+        ],
+    )
+    def test_is_verified_hermitian(self, target_op, expected):
+        """Test that a ChangeOpBasis's is_verified_hermitian delegates to its target op."""
+        op = ChangeOpBasis(qp.Hadamard(0), target_op, qp.Hadamard(0))
+        assert op.is_verified_hermitian is target_op.is_verified_hermitian
+        assert op.is_verified_hermitian is expected
 
 
 class TestWrapperFunc:  # pylint: disable=too-few-public-methods
@@ -339,7 +378,13 @@ class TestWrapperFunc:  # pylint: disable=too-few-public-methods
         """Test that the top level function constructs an identical instance to one
         created using the class."""
 
-        factors = (qp.PauliX(wires=1), qp.RX(1.23, wires=0), qp.CNOT(wires=[0, 1]))
+        class DummyOp1(Operator):
+            pass
+
+        class DummyOp2(Operator):
+            pass
+
+        factors = (DummyOp1(0), DummyOp2(1))
 
         change_op_basis_func_op = change_op_basis(*factors)
         change_op_basis_class_op = ChangeOpBasis(*factors)
@@ -385,15 +430,14 @@ class TestIntegration:
 
 
 class TestDecomposition:
-
     def test_resource_keys(self):
         """Test that the resource keys of `ChangeOpBasis` are op_reps."""
         assert ChangeOpBasis.resource_keys == frozenset({"compute_op", "target_op", "uncompute_op"})
         change_op_basis_op = ChangeOpBasis(qp.X(0), qp.Y(1), qp.X(2))
         assert change_op_basis_op.resource_params == {
-            "compute_op": resource_rep(qp.X),
-            "target_op": resource_rep(qp.Y),
-            "uncompute_op": resource_rep(qp.X),
+            "compute_op": abstractify(qp.X),
+            "target_op": abstractify(qp.Y),
+            "uncompute_op": abstractify(qp.X),
         }
 
     def test_registered_decomp(self):
@@ -403,12 +447,12 @@ class TestDecomposition:
 
         default_decomp = decomps[0]
         _ops = [qp.X(0), qp.MultiRZ(0.5, wires=(0, 1)), qp.X(0)]
-        resources = {qp.resource_rep(qp.X): 2, qp.resource_rep(qp.MultiRZ, num_wires=2): 1}
+        resources = {abstractify(qp.X): 2, qp.MultiRZ(Float, Wire[2]): 1}
 
         resource_obj = default_decomp.compute_resources(
-            compute_op=resource_rep(qp.X),
-            target_op=resource_rep(qp.MultiRZ, num_wires=2),
-            uncompute_op=resource_rep(qp.X),
+            compute_op=abstractify(qp.X),
+            target_op=qp.MultiRZ(Float, Wire[2]),
+            uncompute_op=abstractify(qp.X),
         )
 
         assert resource_obj.num_gates == 3
@@ -431,10 +475,12 @@ class TestDecomposition:
         for op1, op2 in zip(decomposition, true_decomposition):
             qp.assert_equal(op1, op2)
 
+    # ChangeOpBasis as an operator only exists in the tape-based pipeline
+    @pytest.mark.usefixtures("disable_capture")
     @pytest.mark.parametrize("ops_lst", ops)
     def test_decomposition_new(self, ops_lst):
         """Test the qfunc decomposition."""
-        change_op_basis_op = change_op_basis(*ops_lst)
+        change_op_basis_op = ChangeOpBasis(*ops_lst)
 
         for rule in qp.list_decomps(ChangeOpBasis):
             _test_decomposition_rule(change_op_basis_op, rule)
@@ -442,14 +488,15 @@ class TestDecomposition:
     @pytest.mark.parametrize("ops_lst", ops)
     @pytest.mark.capture
     def test_decomposition_new_capture(self, ops_lst):
-        """Test the qfunc decomposition."""
+        """Test that capture applies each decomposition operand in order."""
 
-        with AnnotatedQueue() as q:
-            change_op_basis(*ops_lst)
+        jaxpr = qp.capture.make_plxpr(lambda: change_op_basis(*ops_lst))()
+        tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts)
 
-        for i, op in enumerate(q.queue):
-            assert op == ops_lst[i]
+        assert tape.operations == list(ops_lst)
 
+    # ChangeOpBasis as an operator only exists in the tape-based pipeline
+    @pytest.mark.usefixtures("disable_capture")
     @pytest.mark.parametrize("ops_lst", ops)
     def test_controlled_decomposition_new(self, ops_lst):
         """Tests the decomposition rule implemented with the new system."""
@@ -476,3 +523,53 @@ class TestDecomposition:
         tape = qp.tape.QuantumScript.from_queue(q)
         for op1, op2 in zip(tape.operations, true_decomposition):
             qp.assert_equal(op1, op2)
+
+
+def test_callable_validation_doesnt_hide_bugs_with_typeerror():
+    """Regression test for sc-121194."""
+
+    def f():
+        # Create TypeError
+        wire = "0" + 1
+        qp.X(wire)
+
+    with pytest.raises(TypeError, match="can only concatenate"):
+        change_op_basis(f, qp.Y(0))
+
+
+def blah(a, b, c=3):
+    pass
+
+
+partially_bound_func = partial(blah, a=1)
+partially_bound_with_opt_kwarg_func = partial(blah, a=1, b=2)
+fully_bound_func = partial(blah, a=1, b=2, c=3)
+
+
+@pytest.mark.parametrize(
+    "f, valid",
+    [
+        # Standard
+        pytest.param(lambda: None, True, id="no_params"),
+        pytest.param(lambda a: None, False, id="single_arg"),
+        pytest.param(lambda a, b=None: None, False, id="mixed_arg_kwarg"),
+        pytest.param(lambda a=None, b=None: None, True, id="only_kwargs"),
+        # *args, **kwargs special cases
+        pytest.param(lambda *args: None, True, id="star_args"),
+        pytest.param(lambda **kwargs: None, True, id="star_kwargs"),
+        pytest.param(lambda *args, **kwargs: None, True, id="mixed_star_args_star_kwargs"),
+        # Partial integration
+        pytest.param(partially_bound_func, False, id="partially_bound_function"),
+        pytest.param(
+            partially_bound_with_opt_kwarg_func, True, id="partially_bound_function_with_opt_kwarg"
+        ),
+        pytest.param(fully_bound_func, True, id="fully_bound_function"),
+    ],
+)
+def test_validate_callable_helper(f, valid):
+    """Tests helpers ability to validate callables."""
+    if valid:
+        _validate_callable(f)
+    else:
+        with pytest.raises(TypeError):
+            _validate_callable(f)

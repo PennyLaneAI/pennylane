@@ -21,28 +21,120 @@ import pytest
 import scipy as sp
 
 import pennylane as qp
+from pennylane.core.operator import StatePrepBase, StatePrepBase2
 from pennylane.exceptions import WireError
 
 densitymat0 = np.array([[1.0, 0.0], [0.0, 0.0]])
 
 
-def test_basis_state_input_cast_to_int():
-    """Test that the input to BasisState is cast to an int."""
+def test_subclasshook_state_prep_base():
+    """Test that anything that inherits from StatePrepBase2 is a StatePrepBase."""
+
+    class NewOp(StatePrepBase2):  # pylint: disable=too-few-public-methods
+        """dummy operator2"""
+
+        def __init__(self, wires):  # pylint: disable=useless-parent-delegation
+            super().__init__(wires)
+
+        def state_vector(self, wire_order):  # pylint: disable=signature-differs, unused-argument
+            return [0, 1]
+
+    new_op = NewOp(wires=0)
+    assert isinstance(new_op, StatePrepBase)
+    assert issubclass(NewOp, StatePrepBase)
+
+
+def test_basis_state_input_cast_to_bool():
+    """Test that the input to BasisState is cast to the correct dtype."""
 
     state = np.array([1.0, 0.0], dtype=np.float64)
     op = qp.BasisState(state, wires=(0, 1))
-    assert op.data[0].dtype == np.int64
+    assert op.state.dtype == bool
+
+
+def test_basis_state_custom_repr():
+    """Tests that the custom repr doesn't show booleans."""
+
+    op = qp.BasisState([1, 1], wires=range(2))
+    assert repr(op) == "BasisState([1 1], wires=[0, 1])"
+
+
+class TestInputs:
+    """Test inputs and pre-processing."""
+
+    def test_boolean_input(self):
+        """Tests that boolean arrays are fine as input."""
+
+        op_bool = qp.BasisState([True, False], range(2))
+        op_int = qp.BasisState([1, 0], range(2))
+
+        assert op_bool == op_int
+
+    def test_integer_input_raises_error(self):
+        """Tests that an int as input raises an error."""
+
+        with pytest.raises(
+            ValueError, match=r"Integer states are not support.*qp.math.int_to_binary"
+        ):
+            _ = qp.BasisState(5, wires=[0, 1, 2])
+
+    @pytest.mark.parametrize(
+        "x, msg",
+        [
+            ([0], "State and wires must have the same length"),
+            ([0, 1, 1], "State and wires must have the same length"),
+        ],
+    )
+    def test_wrong_input_bits_exception(self, x, msg):
+        """Checks exception if number of features is not same as number of qubits."""
+
+        dev = qp.device("default.qubit", wires=2)
+
+        @qp.qnode(dev)
+        def circuit():
+            qp.BasisState(x, wires=range(2))
+            return qp.expval(qp.PauliZ(0))
+
+        with pytest.raises(ValueError, match=msg):
+            circuit()
+
+    def test_input_not_binary_exception(self):
+        """Checks exception if the features contain values other than zero and one."""
+
+        dev = qp.device("default.qubit", wires=2)
+
+        @qp.qnode(dev)
+        def circuit(x=None):
+            qp.BasisState(x, wires=range(2))
+            return qp.expval(qp.PauliZ(0))
+
+        with pytest.raises(ValueError, match="Basis state must only consist of"):
+            circuit(x=[2, 3])
+
+    def test_exception_wrong_dim(self):
+        """Checks exception if the number of dimensions of features is incorrect."""
+
+        dev = qp.device("default.qubit", wires=2)
+
+        @qp.qnode(dev)
+        def circuit(x=None):
+            qp.BasisState(x, wires=2)
+            return qp.expval(qp.PauliZ(0))
+
+        with pytest.raises(ValueError, match="State must be one-dimensional"):
+            circuit(x=[[1], [0]])
 
 
 class TestStandardValidityBasisState:
     """Test `BasisState` validity, including its decomposition in JIT contexts."""
 
-    def test_assert_valid(self):
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("input_state", (np.array([0, 1]), [0, 1], (0, 1), (True, False)))
+    def test_assert_valid(self, input_state):
         """Test standard validity."""
         # pylint: disable=import-outside-toplevel
-        state = np.array([0, 1])
-        wires = qp.wires.Wires([0, 1])
-        op = qp.BasisState(state, wires=wires)
+        wires = [0, 1]
+        op = qp.BasisState(input_state, wires=wires)
         qp.ops.functions.assert_valid(op, skip_differentiation=True)
 
     @staticmethod
@@ -72,33 +164,8 @@ class TestStandardValidityBasisState:
 
         return abstract_check
 
-    @pytest.mark.jax
-    @pytest.mark.parametrize("state_traced", [True, False])
-    @pytest.mark.parametrize("wires_traced", [True, False])
-    def test_jit_compatibility(self, state_traced, wires_traced):
-        """Test compatibility with jax.jit."""
-        # pylint: disable=import-outside-toplevel
-        import jax
-
-        state = np.array([0, 1, 0])
-        closure_state = state  # We can use a closure variable to avoid automatic tracing
-        wires = qp.wires.Wires([0, 2, 1])
-        closure_wires = wires  # We can use a closure variable to avoid automatic tracing
-        if wires_traced:
-            wires = jax.numpy.array(wires)
-
-        abstract_check = self.make_abstract_check(
-            state_traced, wires_traced, closure_state, closure_wires
-        )
-
-        tapes = jax.jit(abstract_check)(state, wires)
-        for tape in tapes:
-            assert len(tape) == 3
-            assert all(
-                isinstance(op, qp.ops.Pow) and isinstance(op.base, qp.X) for op in tape.operations
-            )
-
-    @pytest.mark.external
+    @pytest.mark.xfail(reason="it's qjit with capture disabled so we don't care")
+    @pytest.mark.catalyst
     @pytest.mark.parametrize("state_traced", [True, False])
     @pytest.mark.parametrize("wires_traced", [True, False])
     def test_qjit_compatibility(self, state_traced, wires_traced):
@@ -109,9 +176,7 @@ class TestStandardValidityBasisState:
         wires = qp.wires.Wires([1, 0, 2])
         closure_wires = wires
         if wires_traced:
-            import jax  # pylint: disable=import-outside-toplevel
-
-            wires = jax.numpy.array(wires)
+            wires = qp.math.array(wires, like="jax")
 
         abstract_check = self.make_abstract_check(
             state_traced, wires_traced, closure_state, closure_wires
@@ -121,6 +186,25 @@ class TestStandardValidityBasisState:
         for tape in tapes:
             assert len(tape) == 1
             assert isinstance(tape[0], qp.X)
+
+
+@pytest.mark.all_interfaces
+@pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
+def test_ml_interface(interface):
+    """Tests all the ml interfaces."""
+
+    state = qp.math.array([0, 1], like=interface)
+
+    dev = qp.device("default.qubit", wires=2)
+
+    @qp.qnode(dev)
+    def circuit(state):
+        qp.BasisState(state, wires=range(2))
+        return qp.state()
+
+    res = circuit(state)
+    exp = qp.math.array([0, 1, 0, 0])  # |01>
+    assert qp.math.allclose(res, exp)
 
 
 @pytest.mark.parametrize(
@@ -157,17 +241,35 @@ def test_labelling_matrix_cache(op, mat, base):
 
 
 class TestDecomposition:
-    def test_BasisState_decomposition(self):
-        """Test the decomposition for BasisState"""
+    @pytest.mark.catalyst
+    @pytest.mark.parametrize(
+        "state",
+        [
+            [0, 0, 0],
+            [1, 0, 0],
+            [0, 1, 0],
+            [1, 1, 0],
+            [1, 1, 1],
+        ],
+    )
+    def test_BasisState_abstract_decomposition_correctness(self, state):
+        """Test that the abstract decomposition of BasisState produces the correct
+        state vector when compiled and executed via ``qjit``."""
+        n_wires = len(state)
+        dev = qp.device("lightning.qubit", wires=n_wires)
 
-        n = np.array([0, 1, 0])
-        wires = (0, 1, 2)
-        ops1 = qp.BasisState.compute_decomposition(n, wires)
-        ops2 = qp.BasisState(n, wires=wires).decomposition()
+        @qp.qjit
+        @qp.qnode(dev)
+        def circuit(s):
+            qp.BasisState(s, wires=range(n_wires))
+            return qp.state()
 
-        assert len(ops1) == len(ops2) == 1
-        assert isinstance(ops1[0], qp.X)
-        assert isinstance(ops2[0], qp.X)
+        result = circuit(qp.math.array(state, like="jax"))
+
+        expected = np.zeros(2**n_wires, dtype=complex)
+        expected[int("".join(str(b) for b in state), 2)] = 1.0
+
+        assert np.allclose(result, expected)
 
     def test_StatePrep_decomposition(self):
         """Test the decomposition for StatePrep."""
@@ -208,6 +310,35 @@ class TestDecomposition:
 
 
 class TestStatePrepIntegration:
+    @pytest.mark.catalyst
+    @pytest.mark.parametrize("input_type", [tuple, list])
+    def test_state_prep_tuple_list_capture(self, input_type):
+        """Tests that tuple or list types for 'state' can be used."""
+
+        state = input_type([1, 0, 0, 0])
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device("lightning.qubit", wires=2))
+        def circuit():
+            qp.StatePrep(state, wires=[0, 1])
+            return qp.state()
+
+        result = circuit()
+        assert np.allclose(result, state)
+
+    @pytest.mark.catalyst
+    @pytest.mark.parametrize("input_type", [tuple, list])
+    def test_basis_state_tuple_list_capture(self, input_type):
+        """Tests that tuple or list types for 'state' can be used."""
+        # Note that this test only validates that we can compile (via AOT compilation).
+
+        state = input_type([1, 0])
+
+        @qp.qjit(capture=True, target="mlir")
+        @qp.qnode(qp.device("lightning.qubit", wires=2))
+        def circuit():
+            qp.BasisState(state, wires=[0, 1])
+            return qp.state()
 
     @pytest.mark.parametrize(
         "state, pad_with, expected",
@@ -262,6 +393,8 @@ class TestStatePrepIntegration:
 
 class TestStateVector:
     """Test the state_vector() method of various state-prep operations."""
+
+    # pylint: disable=too-many-public-methods
 
     @pytest.mark.parametrize(
         "num_wires,wire_order,one_position",
@@ -520,12 +653,20 @@ class TestStateVector:
         with pytest.raises(WireError, match="wire_order must contain all BasisState wires"):
             basis_op.state_vector(wire_order=[1, 2])
 
-    def test_BasisState_wrong_param_size(self):
-        """Tests that the parameter must be of length num_wires."""
-        with pytest.raises(
-            ValueError, match=r"State must be of length 2; got length 1 \(state=\[0\]\)."
-        ):
+    def test_BasisState_wrong_state_size(self):
+        """Tests that the state must be of length num_wires."""
+        with pytest.raises(ValueError, match=r"State and wires must have the same length."):
             _ = qp.BasisState([0], wires=[0, 1])
+
+    def test_input_not_binary_exception(self):
+        """Checks exception if the state contains values other than zero and one."""
+        with pytest.raises(ValueError, match="Basis state must only consist of"):
+            qp.BasisState([2, 3], wires=range(2))
+
+    def test_exception_wrong_shape(self):
+        """Checks exception if the number of dimensions of state is incorrect."""
+        with pytest.raises(ValueError, match="State must be one-dimensional"):
+            qp.BasisState([[1], [0]], wires=2)
 
 
 class TestSparseStateVector:

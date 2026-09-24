@@ -25,8 +25,7 @@ import numpy as np
 import pytest
 from packaging.version import Version
 
-import pennylane as qml
-from pennylane.devices import DefaultGaussian
+import pennylane as qp
 from pennylane.exceptions import PennyLaneDeprecationWarning
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "helpers"))
@@ -35,26 +34,6 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "helpers"))
 TOL = 1e-3
 TF_TOL = 2e-2
 TOL_STOCHASTIC = 0.05
-
-
-# pylint: disable=too-few-public-methods
-class DummyDevice(DefaultGaussian):
-    """Dummy device to allow Kerr operations"""
-
-    _operation_map = DefaultGaussian._operation_map.copy()
-    _operation_map["Kerr"] = lambda *x, **y: np.identity(2)
-
-
-@pytest.fixture
-def ignore_id_deprecation():
-    """Fixture to suppress PennyLaneDeprecationWarning for 'id' tests."""
-    with warnings.catch_warnings():
-        warnings.filterwarnings(
-            "ignore",
-            category=PennyLaneDeprecationWarning,
-            message="The 'id' argument is deprecated",
-        )
-        yield
 
 
 @pytest.fixture(scope="session")
@@ -89,26 +68,7 @@ def n_subsystems_fixture(request):
 
 @pytest.fixture(scope="session")
 def qubit_device(n_subsystems):
-    return qml.device("default.qubit", wires=n_subsystems)
-
-
-# The following 3 fixtures are for default.qutrit devices to be used
-# for testing with various real and complex dtypes.
-
-
-@pytest.fixture(scope="function", params=[(np.float32, np.complex64), (np.float64, np.complex128)])
-def qutrit_device_1_wire(request):
-    return qml.device("default.qutrit", wires=1, r_dtype=request.param[0], c_dtype=request.param[1])
-
-
-@pytest.fixture(scope="function", params=[(np.float32, np.complex64), (np.float64, np.complex128)])
-def qutrit_device_2_wires(request):
-    return qml.device("default.qutrit", wires=2, r_dtype=request.param[0], c_dtype=request.param[1])
-
-
-@pytest.fixture(scope="function", params=[(np.float32, np.complex64), (np.float64, np.complex128)])
-def qutrit_device_3_wires(request):
-    return qml.device("default.qutrit", wires=3, r_dtype=request.param[0], c_dtype=request.param[1])
+    return qp.device("default.qubit", wires=n_subsystems)
 
 
 #######################################################################
@@ -119,26 +79,19 @@ def mock_device(monkeypatch):
     """A mock instance of the abstract Device class"""
 
     with monkeypatch.context() as m:
-        dev = qml.devices.LegacyDevice
+        dev = qp.devices.LegacyDevice
         m.setattr(dev, "__abstractmethods__", frozenset())
         m.setattr(dev, "short_name", "mock_device")
         m.setattr(dev, "capabilities", lambda cls: {"model": "qubit"})
         m.setattr(dev, "operations", {"RX", "RY", "RZ", "CNOT", "SWAP"})
-        yield qml.devices.LegacyDevice(wires=2)  # pylint:disable=abstract-class-instantiated
+        yield qp.devices.LegacyDevice(wires=2)  # pylint:disable=abstract-class-instantiated
 
 
 # pylint: disable=protected-access
 @pytest.fixture
 def tear_down_hermitian():
     yield None
-    qml.Hermitian._eigs = {}
-
-
-# pylint: disable=protected-access
-@pytest.fixture
-def tear_down_thermitian():
-    yield None
-    qml.THermitian._eigs = {}
+    qp.Hermitian._eigs = {}
 
 
 @pytest.fixture(autouse=True)
@@ -177,13 +130,50 @@ def seed(request):
 
 
 @pytest.fixture(scope="function")
-def enable_disable_plxpr():
+def enable_capture():
     """enable and disable capture around each test."""
-    qml.capture.enable()
-    try:
+    with qp.capture.toggle_ctx(True):
         yield
-    finally:
-        qml.capture.disable()
+
+
+@pytest.fixture(scope="function")
+def disable_capture():
+    """make sure capture is disabled around each test."""
+    with qp.capture.toggle_ctx(False):
+        yield
+
+
+@pytest.fixture(
+    params=[False, pytest.param(True, marks=(pytest.mark.capture, pytest.mark.jax))],
+    ids=["capture_disabled", "capture_enabled"],
+)
+def enable_and_disable_capture(request):
+    """
+    A fixture that parametrizes a test to run twice: once with program capture
+    disabled and once with it enabled (the enabled variant requires JAX).
+
+    It handles enabling capture before the test runs and always disabling it
+    afterwards.
+
+    When used with ``@pytest.mark.xfail_if_capture(reason=..., strict=...)``, the
+    capture-enabled run is marked as ``xfail``. Prefer stacking the markers as::
+
+        @pytest.mark.xfail_if_capture(reason="...")
+        @pytest.mark.usefixtures("enable_and_disable_capture")
+        def test_something():
+            ...
+
+    """
+    if request.param and (marker := request.node.get_closest_marker("xfail_if_capture")):
+        request.applymarker(
+            pytest.mark.xfail(
+                reason=marker.kwargs.get("reason", ""),
+                strict=marker.kwargs.get("strict", True),
+            )
+        )
+
+    with qp.capture.toggle_ctx(request.param):
+        yield
 
 
 @pytest.fixture(scope="function")
@@ -210,14 +200,14 @@ def enable_disable_dynamic_shapes():
 @pytest.fixture(scope="function")
 def enable_graph_decomposition():
     """enable and disable graph-decomposition around each test."""
-    with qml.decomposition.toggle_graph_ctx(True):
+    with qp.decomposition.toggle_graph_ctx(True):
         yield
 
 
 @pytest.fixture(scope="function")
 def disable_graph_decomposition():
     """disable graph-decomposition."""
-    with qml.decomposition.toggle_graph_ctx(False):
+    with qp.decomposition.toggle_graph_ctx(False):
         yield
 
 
@@ -232,7 +222,7 @@ def enable_and_disable_graph_decomp(request):
 
     """
     use_graph_decomp = request.param
-    with qml.decomposition.toggle_graph_ctx(use_graph_decomp):
+    with qp.decomposition.toggle_graph_ctx(use_graph_decomp):
         yield
 
 
@@ -261,6 +251,21 @@ def pytest_generate_tests(metafunc):
         jax.config.update("jax_enable_x64", True)
 
 
+@pytest.fixture
+def preserve_jax_x64():
+    """Save and restore jax_enable_x64 around a test.
+
+    Use this fixture on any test that sets ``jax_enable_x64`` to ``False`` so
+    that subsequent tests in the same xdist worker are not contaminated.
+    """
+    if not jax_available:
+        yield
+        return
+    original = jax.config.jax_enable_x64
+    yield
+    jax.config.update("jax_enable_x64", original)
+
+
 @pytest.fixture(
     params=[
         pytest.param("autograd", marks=pytest.mark.autograd),
@@ -275,51 +280,100 @@ def interface(request):
     yield request.param
 
 
+CUSTOM_MARKERS = {
+    "autograd",
+    "data",
+    "torch",
+    "jax",
+    "qchem",
+    "qcut",
+    "all_interfaces",
+    "finite-diff",
+    "param-shift",
+    "external",
+    "capture",
+    "catalyst",
+}
+
+
+# pylint: disable=unused-argument
 def pytest_collection_modifyitems(items, config):
+    """Handles markers for tests automatically."""
+
     rootdir = pathlib.Path(config.rootdir)
     for item in items:
         rel_path = pathlib.Path(item.fspath).relative_to(rootdir)
-        if "qchem" in rel_path.parts:
-            mark = getattr(pytest.mark, "qchem")
-            item.add_marker(mark)
-        if "finite_diff" in rel_path.parts:
-            mark = getattr(pytest.mark, "finite-diff")
-            item.add_marker(mark)
-        if "parameter_shift" in rel_path.parts:
-            mark = getattr(pytest.mark, "param-shift")
-            item.add_marker(mark)
-        if "data" in rel_path.parts:
-            mark = getattr(pytest.mark, "data")
-            item.add_marker(mark)
+        _handle_xfail_if_capture_marker(item)
+        _handle_capture_marker(item)
+        _auto_assign_markers(item, rel_path)
+        if pl2do_marker := item.get_closest_marker("pl2do"):
+            reason = _get_pl2do_reason(pl2do_marker)
+            item.add_marker(pytest.mark.xfail(reason=reason, strict=False))
 
-    # Tests that do not have a specific suite marker are marked `core`
-    for item in items:
-        markers = {mark.name for mark in item.iter_markers()}
-        if (
-            not any(
-                elem
-                in [
-                    "autograd",
-                    "data",
-                    "torch",
-                    "jax",
-                    "qchem",
-                    "qcut",
-                    "all_interfaces",
-                    "finite-diff",
-                    "param-shift",
-                    "external",
-                    "capture",
-                ]
-                for elem in markers
-            )
-            or not markers
-        ):
-            item.add_marker(pytest.mark.core)
-        if "capture" in markers:
-            item.fixturenames = [*item.fixturenames, "enable_disable_plxpr"]
-            if "jax" not in markers:
-                item.add_marker(pytest.mark.jax)
+
+def _handle_xfail_if_capture_marker(item):
+    """Require enable_and_disable_capture when xfail_if_capture is used."""
+    if not item.get_closest_marker("xfail_if_capture"):
+        return
+    if "enable_and_disable_capture" not in item.fixturenames:
+        raise pytest.UsageError(
+            f"{item.nodeid}: @pytest.mark.xfail_if_capture requires "
+            f'@pytest.mark.usefixtures("enable_and_disable_capture")'
+        )
+
+
+def _auto_assign_markers(item, test_path):
+    """Assign markers automatically if not specified."""
+
+    if "qchem" in test_path.parts:
+        mark = getattr(pytest.mark, "qchem")
+        item.add_marker(mark)
+    if "finite_diff" in test_path.parts:
+        mark = getattr(pytest.mark, "finite-diff")
+        item.add_marker(mark)
+    if "parameter_shift" in test_path.parts:
+        mark = getattr(pytest.mark, "param-shift")
+        item.add_marker(mark)
+    if "data" in test_path.parts:
+        mark = getattr(pytest.mark, "data")
+        item.add_marker(mark)
+
+    # Get all existing marker names
+    marker_names = {mark.name for mark in item.iter_markers()}
+
+    # Default to the core marker if it's missing one of our markers
+    if not marker_names & CUSTOM_MARKERS:
+        item.add_marker(pytest.mark.core)
+
+
+def _handle_capture_marker(item):
+    """Handle the marker of capture related tests."""
+
+    # Get all existing marker names
+    marker_names = {mark.name for mark in item.iter_markers()}
+
+    # Check for existing capture-related prefix
+    capture_enabled = "enable_capture" in item.fixturenames
+
+    # Make sure that capture-enabled tests have capture markers
+    if capture_enabled and "capture" not in marker_names:
+        item.add_marker(pytest.mark.capture)
+
+    # Automatically add enable_capture fixture for capture tests
+    if "capture" in marker_names and not capture_enabled:
+        item.fixturenames = [*item.fixturenames, "enable_capture"]
+
+    # Automatically add jax marker for capture tests
+    if "capture" in marker_names and "jax" not in marker_names:
+        item.add_marker(pytest.mark.jax)
+
+
+def _get_pl2do_reason(marker):
+    if marker.args:
+        return marker.args[0]
+    if "reason" in marker.kwargs:
+        return marker.kwargs["reason"]
+    return "PL 2.0: Feature is deprioritized and is scheduled to be re-visited."
 
 
 def pytest_runtest_setup(item):

@@ -37,7 +37,7 @@ def qcut_processing_fn(
     .. note::
 
         This function is designed for use as part of the circuit cutting workflow.
-        Check out the :func:`qml.cut_circuit() <pennylane.cut_circuit>` transform for more details.
+        Check out the :func:`qp.cut_circuit() <pennylane.cut_circuit>` transform for more details.
 
     Args:
         results (Sequence[Sequence]): A collection of execution results generated from the
@@ -86,7 +86,7 @@ def qcut_processing_fn_sample(results: Sequence, communication_graph, shots: int
     .. note::
 
         This function is designed for use as part of the sampling-based circuit cutting workflow.
-        Check out the :func:`qml.cut_circuit_mc() <pennylane.cut_circuit_mc>` transform for more details.
+        Check out the :func:`qp.cut_circuit_mc() <pennylane.cut_circuit_mc>` transform for more details.
 
     Args:
         results (Sequence): a collection of sample-based execution results generated from the
@@ -105,7 +105,7 @@ def qcut_processing_fn_sample(results: Sequence, communication_graph, shots: int
     samples = []
     for result in results:
         sample = []
-        for fragment_result, out_degree in zip(result, out_degrees):
+        for fragment_result, out_degree in zip(result, out_degrees, strict=True):
             sample.append(fragment_result[: -out_degree or None])
         samples.append(pnp.hstack(sample))
     return [math.convert_like(pnp.array(samples), res0)]
@@ -126,7 +126,7 @@ def qcut_processing_fn_mc(
     .. note::
 
         This function is designed for use as part of the sampling-based circuit cutting workflow.
-        Check out the :func:`qml.cut_circuit_mc() <pennylane.cut_circuit_mc>` transform for more details.
+        Check out the :func:`qp.cut_circuit_mc() <pennylane.cut_circuit_mc>` transform for more details.
 
     Args:
         results (Sequence): a collection of sample-based execution results generated from the
@@ -151,11 +151,11 @@ def qcut_processing_fn_mc(
 
     evals = (0.5, 0.5, 0.5, -0.5, 0.5, -0.5, 0.5, -0.5)
     expvals = []
-    for result, setting in zip(results, settings.T):
+    for result, setting in zip(results, settings.T, strict=True):
         sample_terminal = []
         sample_mid = []
 
-        for fragment_result, out_degree in zip(result, out_degrees):
+        for fragment_result, out_degree in zip(result, out_degrees, strict=True):
             sample_terminal.append(fragment_result[: -out_degree or None])
             sample_mid.append(fragment_result[-out_degree or len(fragment_result) :])
 
@@ -194,7 +194,7 @@ def _reshape_results(results: Sequence, shots: int) -> list[list]:
 
     results = [math.flatten(r) for r in results]
     results = [results[i : i + shots] for i in range(0, len(results), shots)]
-    results = list(map(list, zip(*results)))  # calculate list-based transpose
+    results = list(map(list, zip(*results, strict=True)))  # calculate list-based transpose
 
     return results
 
@@ -223,7 +223,7 @@ def contract_tensors(
     .. note::
 
         This function is designed for use as part of the circuit cutting workflow.
-        Check out the :func:`qml.cut_circuit() <pennylane.cut_circuit>` transform for more details.
+        Check out the :func:`qp.cut_circuit() <pennylane.cut_circuit>` transform for more details.
 
     Consider the three tensors :math:`T^{(1)}`, :math:`T^{(2)}`, and :math:`T^{(3)}`, along with
     their contraction equation
@@ -293,7 +293,7 @@ def contract_tensors(
 
     The network can then be contracted using:
 
-    >>> qml.qcut.contract_tensors(tensors, graph, prep, meas)
+    >>> qp.qcut.contract_tensors(tensors, graph, prep, meas)
     38
     """
     # pylint: disable=import-outside-toplevel
@@ -315,7 +315,7 @@ def contract_tensors(
 
     meas_map = {}
 
-    for i, (node, prep) in enumerate(zip(communication_graph.nodes, prepare_nodes)):
+    for i, (node, prep) in enumerate(zip(communication_graph.nodes, prepare_nodes, strict=True)):
         predecessors = communication_graph.pred[node]
 
         for p in prep:
@@ -329,7 +329,7 @@ def contract_tensors(
                         tensor_indxs[i] += symb
                         meas_map[meas_op] = symb
 
-    for i, (node, meas) in enumerate(zip(communication_graph.nodes, measure_nodes)):
+    for i, (node, meas) in enumerate(zip(communication_graph.nodes, measure_nodes, strict=True)):
         successors = communication_graph.succ[node]
 
         for m in meas:
@@ -360,7 +360,7 @@ def _process_tensor(results, n_prep: int, n_meas: int):
     1. Reshapes ``results`` into the intermediate shape ``(4,) * n_prep + (4**n_meas,)``
     2. Shuffles the final axis to follow the standard product over measurement settings. E.g., for
       ``n_meas = 2`` the standard product is: II, IX, IY, IZ, XI, ..., ZY, ZZ while the input order
-      will be the result of ``qml.pauli.partition_pauli_group(2)``, i.e., II, IZ, ZI, ZZ, ...,
+      will be the result of ``qp.pauli.partition_pauli_group(2)``, i.e., II, IZ, ZI, ZZ, ...,
       YY.
     3. Reshapes into the final target shape ``(4,) * (n_prep + n_meas)``
     4. Performs a change of basis for the preparation indices (the first ``n_prep`` indices) from
@@ -448,7 +448,7 @@ def _to_tensors(
     ctr = 0
     tensors = []
 
-    for p, m in zip(prepare_nodes, measure_nodes):
+    for p, m in zip(prepare_nodes, measure_nodes, strict=True):
         n_prep = len(p)
         n_meas = len(m)
         n = n_prep + n_meas

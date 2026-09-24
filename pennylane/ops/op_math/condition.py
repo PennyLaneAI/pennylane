@@ -24,8 +24,8 @@ from pennylane import QueuingManager, math
 from pennylane.capture import FlatFn
 from pennylane.capture.autograph import wraps
 from pennylane.compiler import compiler
+from pennylane.core.operator import Operation, Operator, Operator2
 from pennylane.exceptions import ConditionalTransformError
-from pennylane.operation import Operation, Operator
 from pennylane.ops.op_math.symbolicop import SymbolicOp
 
 
@@ -80,14 +80,30 @@ def _is_operator_type(fn):
     return isinstance(fn, type) and issubclass(fn, Operator)
 
 
-def _no_return(fn):
+def _format_and_validate_branch_fn(fn):
+    """Normalizes conditional branches to prevent quantum operators from being returned."""
+
+    # Format directly returned operators as a function with no return
     if _is_operator_type(fn) or (isinstance(fn, functools.partial) and _is_operator_type(fn.func)):
 
-        def new_fn(*args, **kwargs):
+        def fn_with_no_return(*args, **kwargs):
             fn(*args, **kwargs)
 
-        return new_fn
-    return fn
+        return fn_with_no_return
+
+    # Standard branch functions should not return any Operator2
+    import jax  # pylint: disable=import-outside-toplevel
+
+    def wrapped_fn(*args, **kwargs):
+        output = fn(*args, **kwargs)
+        if any(
+            isinstance(l, Operator2)
+            for l in jax.tree.leaves(output, is_leaf=lambda obj: isinstance(obj, Operator2))
+        ):
+            raise ValueError("Operator2 instances cannot be returned from conditional branches.")
+        return output
+
+    return wrapped_fn
 
 
 def _empty_return_fn(*_, **__):
@@ -110,20 +126,16 @@ class Conditional(SymbolicOp, Operation):
     Args:
         expr (qp.ops.MeasurementValue): the measurement outcome value to consider
         then_op (Operation): the PennyLane operation to apply conditionally
-        id (str): custom label given to an operator instance,
-            can be useful for some applications where the instance has to be identified
     """
 
-    def __init__(self, expr, then_op: Operation, id=None):
+    def __init__(self, expr, then_op: Operation):
         # pylint: disable=super-init-not-called
         self.hyperparameters["meas_val"] = expr
         self._name = f"Conditional({then_op.name})"
         self.hyperparameters["base"] = then_op
-        self._id = id
         self._pauli_rep = None
         self.queue()
         self._wires = then_op.wires
-        self.__queue_category = then_op._queue_category  # pylint: disable=protected-access
 
         if self.grad_recipe is None:
             self.grad_recipe = [None] * self.num_params
@@ -135,10 +147,6 @@ class Conditional(SymbolicOp, Operation):
     def meas_val(self):
         """the measurement outcome value to consider from `expr` argument"""
         return self.hyperparameters["meas_val"]
-
-    @property
-    def _queue_category(self):
-        return self.__queue_category  # pylint: disable=protected-access
 
     @property
     def num_params(self):
@@ -222,7 +230,7 @@ class CondCallable:
             # elifs = (elif_condition, elif_function)
             elifs = (elifs,)
         if elifs:
-            elif_preds, elif_fns = list(zip(*elifs))
+            elif_preds, elif_fns = list(zip(*elifs, strict=True))
             self.preds.extend(elif_preds)
             self.branch_fns.extend(elif_fns)
 
@@ -276,10 +284,9 @@ class CondCallable:
     @property
     def elifs(self):
         """(List(Tuple(bool, callable))): a list of (bool, elif_fn) clauses"""
-        return list(zip(self.preds[1:], self.branch_fns[1:]))
+        return list(zip(self.preds[1:], self.branch_fns[1:], strict=True))
 
     def __call_capture_disabled(self, *args, **kwargs):
-
         # dequeue operators passed to args
         leaves, _ = qp.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
         for l in leaves:
@@ -287,7 +294,7 @@ class CondCallable:
                 qp.QueuingManager.remove(l)
 
         # python fallback
-        for pred, branch_fn in zip(self.preds, self.branch_fns):
+        for pred, branch_fn in zip(self.preds, self.branch_fns, strict=True):
             if pred:
                 return branch_fn(*args, **kwargs)
         if self.otherwise_fn:
@@ -299,26 +306,31 @@ class CondCallable:
 
         cond_prim = _get_cond_qfunc_prim()
 
-        elifs = zip(self.preds[1:], self.branch_fns[1:])  # skip true branch
-        true_fn = _no_return(self.true_fn) if self.otherwise_fn is None else self.true_fn
-        flat_true_fn = FlatFn(true_fn)
-        branches = [(self.preds[0], flat_true_fn), *elifs, (True, self.otherwise_fn)]
-
-        # consts go after the len(branches) conditions, first const at len(branches)
-        end_const_ind = len(branches)
+        # consts go after the len(branches) conditions
+        end_const_ind = len(self.branch_fns)
         conditions = []
         jaxpr_branches = []
         consts = []
         consts_slices = []
 
         abstracted_axes, abstract_shapes = qp.capture.determine_abstracted_axes(args)
+        for i, _fn in enumerate(self.branch_fns + [self.otherwise_fn]):
+            # otherwise_fn does not have a pred
+            is_otherwise = i == len(self.preds)
 
-        for pred, fn in branches:
-            if (pred_shape := math.shape(pred)) != ():
-                raise ValueError(f"Condition predicate must be a scalar. Got {pred_shape}.")
-            if getattr(pred, "dtype", None) != jax.numpy.bool:
-                pred = jax.numpy.bool(pred)
-            conditions.append(pred)
+            # NOTE: Prevent quantum operators from being returned as data from branches
+            fn = _format_and_validate_branch_fn(_fn) if _fn is not None else None
+
+            if i == 0:
+                flat_true_fn = FlatFn(fn)
+                fn = flat_true_fn
+            if not is_otherwise:
+                pred = self.preds[i]
+                if (pred_shape := math.shape(pred)) != ():
+                    raise ValueError(f"Condition predicate must be a scalar. Got {pred_shape}.")
+                if getattr(pred, "dtype", None) != jax.numpy.bool:
+                    pred = jax.numpy.bool(pred)
+                conditions.append(pred)
             if fn is None:
                 fn = _empty_return_fn
             f = fn if isinstance(fn, FlatFn) else FlatFn(fn)
@@ -749,7 +761,7 @@ def _validate_abstract_values(
             msg += "\n This may be due to different sized shapes when dynamic shapes are enabled."
         raise ValueError(msg)
 
-    for i, (outval, expected_outval) in enumerate(zip(outvals, expected_outvals)):
+    for i, (outval, expected_outval) in enumerate(zip(outvals, expected_outvals, strict=True)):
         if jax.config.jax_dynamic_shapes:
             # we need to be a bit more manual with the comparison.
             if type(outval) != type(expected_outval):  # pragma: no cover
@@ -808,26 +820,26 @@ def _get_cond_qfunc_prim():
         consts_slices = [slice(*s) for s in consts_slices]
 
         n_branches = len(jaxpr_branches)
-        conditions = all_args[:n_branches]
+        conditions = all_args[: n_branches - 1]
         args = all_args[args_slice]
 
-        # Find predicates that use mid-circuit measurements. We don't check the last
-        # condition as that is always `True`.
+        # Find predicates that use mid-circuit measurements.
         mcm_conditions = tuple(
-            pred for pred in conditions[:-1] if isinstance(pred, qp.ops.MeasurementValue)
+            pred for pred in conditions if isinstance(pred, qp.ops.MeasurementValue)
         )
         if len(mcm_conditions) != 0:
-            if len(mcm_conditions) != len(conditions) - 1:
+            if len(mcm_conditions) != len(conditions):
                 raise ConditionalTransformError(
                     "Cannot use qp.cond with a combination of mid-circuit measurements "
                     "and other classical conditions as predicates."
                 )
             conditions = qp.measurements.get_mcm_predicates(mcm_conditions)
+        else:
+            conditions = (*conditions, True)
 
-        for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices):
+        for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices, strict=True):
             consts = all_args[const_slice]
             if isinstance(pred, qp.ops.MeasurementValue):
-
                 with qp.queuing.AnnotatedQueue() as q:
                     out = qp.capture.eval_jaxpr(jaxpr, consts, *args)
                 if len(out) != 0:

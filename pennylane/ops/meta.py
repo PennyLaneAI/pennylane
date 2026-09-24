@@ -23,7 +23,7 @@ from copy import copy
 from typing import Literal
 
 import pennylane as qp
-from pennylane.operation import Operation
+from pennylane.core.operator import Operation
 from pennylane.wires import Wires, WiresLike
 
 
@@ -44,11 +44,11 @@ class Barrier(Operation):
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
 
-    def __init__(self, wires: WiresLike = (), only_visual=False, id=None):
+    def __init__(self, wires: WiresLike = (), only_visual=False):
         wires = Wires(wires)
         self.only_visual = only_visual
         self.hyperparameters["only_visual"] = only_visual
-        super().__init__(wires=wires, id=id)
+        super().__init__(wires=wires)
 
     @staticmethod
     def compute_decomposition(wires, only_visual=False):  # pylint: disable=unused-argument
@@ -117,9 +117,9 @@ class WireCut(Operation):
     num_params = 0
     grad_method = None
 
-    def __init__(self, wires: WiresLike = (), id=None):
+    def __init__(self, wires: WiresLike = ()):
         wires = Wires(wires)
-        super().__init__(wires=wires, id=id)
+        super().__init__(wires=wires)
         if not self._wires:
             raise ValueError(
                 f"{self.name}: wrong number of wires. At least one wire has to be provided."

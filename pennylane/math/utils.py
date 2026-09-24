@@ -370,7 +370,7 @@ def is_abstract(tensor, like=None):
 
         def function(x):
             print("Value:", x)
-            print("Abstract:", qml.math.is_abstract(x))
+            print("Abstract:", qp.math.is_abstract(x))
             return jnp.sum(x ** 2)
 
     When we execute it, we see that the tensor is not abstract; it has known value:
@@ -392,30 +392,6 @@ def is_abstract(tensor, like=None):
     Note that JAX uses an abstract *shaped* array, so although we won't be able to
     include conditionals within our function that depend on the value of the tensor,
     we *can* include conditionals that depend on the shape of the tensor.
-
-    Similarly, consider the following TensorFlow function:
-
-    .. code-block:: python
-
-        import tensorflow as tf
-
-        def function(x):
-            print("Value:", x)
-            print("Abstract:", qml.math.is_abstract(x))
-            return tf.reduce_sum(x ** 2)
-
-    >>> x = tf.Variable([0.5, 0.1])
-    >>> function(x)
-    Value: <tf.Variable 'Variable:0' shape=(2,) dtype=float32, numpy=array([0.5, 0.1], dtype=float32)>
-    Abstract: False
-    <tf.Tensor: shape=(), dtype=float32, numpy=0.26>
-
-    If we apply the ``@tf.function`` decorator, the tensor will now be abstract:
-
-    >>> tf.function(function)(x)
-    Value: <tf.Variable 'Variable:0' shape=(2,) dtype=float32>
-    Abstract: True
-    <tf.Tensor: shape=(), dtype=float32, numpy=0.26>
     """
     interface = like or math.get_interface(tensor)
 
@@ -449,7 +425,7 @@ def is_abstract(tensor, like=None):
 
 
 def import_should_record_backprop():  # pragma: no cover
-    """Return should_record_backprop or an equivalent function from TensorFlow."""
+    """Return should_record_backprop or an equivalent function."""
     import tensorflow.python as tfpy
 
     if hasattr(tfpy.eager.tape, "should_record_backprop"):
@@ -473,8 +449,7 @@ def requires_grad(tensor, interface=None):
         may be context dependent.
 
         For example, Torch tensors and PennyLane tensors track trainability
-        as a property of the tensor itself. TensorFlow, on the other hand,
-        only tracks trainability if being watched by a gradient tape.
+        as a property of the tensor itself.
 
     Args:
         tensor (tensor_like): input tensor
@@ -496,28 +471,6 @@ def requires_grad(tensor, interface=None):
     False
 
     PyTorch has similar behaviour.
-
-    With TensorFlow, the output is dependent on whether the tensor
-    is currently being watched by a gradient tape:
-
-    >>> x = tf.Variable([0.6, 0.1])
-    >>> requires_grad(x)
-    False
-    >>> with tf.GradientTape() as tape:
-    ...     print(requires_grad(x))
-    True
-
-    While TensorFlow constants are by default not trainable, they can be
-    manually watched by the gradient tape:
-
-    >>> x = tf.constant([0.6, 0.1])
-    >>> with tf.GradientTape() as tape:
-    ...     print(requires_grad(x))
-    False
-    >>> with tf.GradientTape() as tape:
-    ...     tape.watch([x])
-    ...     print(requires_grad(x))
-    True
     """
     interface = interface or math.get_interface(tensor)
 
@@ -550,8 +503,8 @@ def requires_grad(tensor, interface=None):
 
 
 def in_backprop(tensor, interface=None):
-    """Returns True if the tensor is considered to be in a backpropagation environment, it works for Autograd,
-    TensorFlow and Jax. It is not only checking the differentiability of the tensor like :func:`~.requires_grad`, but
+    """Returns True if the tensor is considered to be in a backpropagation environment, it works for Autograd
+    and Jax. It is not only checking the differentiability of the tensor like :func:`~.requires_grad`, but
     rather checking if the gradient is actually calculated.
 
     Args:
@@ -611,21 +564,21 @@ def ceil_log2(n: int) -> int:
     On powers of two, ``ceil_log2`` simply acts like ``np.log2`` whose result was converted to
     an ``int``:
 
-    >>> qml.math.ceil_log2(8)
+    >>> qp.math.ceil_log2(8)
     3
 
     On other numbers, the rounding of the logarithm becomes visible:
 
-    >>> qml.math.log2(14)
+    >>> qp.math.log2(14)
     3.807354922057604
-    >>> qml.math.ceil_log2(14)
+    >>> qp.math.ceil_log2(14)
     4
 
     Note that we always round up:
 
-    >>> qml.math.round(qml.math.log2(9))
+    >>> qp.math.round(qp.math.log2(9))
     3.0
-    >>> qml.math.ceil_log2(9)
+    >>> qp.math.ceil_log2(9)
     4
     """
     if is_abstract(n):
