@@ -54,7 +54,7 @@ from pennylane.typing import (
     TensorLike,
     _AbstractWireTypeFactory,
 )
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import AbstractQubit, Wires, WiresLike
 
 from .base import _UNSET_BATCH_SIZE, Operator, _get_abstract_operator
 from .meta import OperatorMeta
@@ -1647,7 +1647,6 @@ def _init_wires(op: Operator2):
             warg = op._bound_args.arguments[wname]
             canonical_wires = warg if isinstance(warg, AbstractWires) else Wires(warg)
             op._bound_args.arguments[wname] = canonical_wires
-
             if wsize is not None and len(canonical_wires) != wsize:
                 raise ValueError(
                     f"Incorrect number of wires for '{op.name}.{wname}'. Expected {wsize} "
@@ -2184,8 +2183,27 @@ def _is_hash_leaf(l) -> bool:
     return _is_op(l) or _is_wires(l)
 
 
+def _is_abstract_array(arg):
+    from jax.core import ShapedArray  # pylint: disable=import-outside-toplevel
+
+    return isinstance(arg, (ShapedArray, AbstractArray, AbstractWires, AbstractQubit))
+
+
 def _to_int_wires(wires):
     """Cast all wires to integers."""
+    if not wires:
+        return Wires(wires)
+
+    if all(_is_abstract_array(w) for w in wires):
+        return AbstractWires(len(wires))
+
+    if any(_is_abstract_array(w) for w in wires):
+        raise ValueError(
+            "Operator instances cannot be constructed with a combination of both concrete"
+            " wires and abstract values like ShapedArray, AbstractArray,"
+            " AbstractWires, AbstractQubits"
+        )
+
     return Wires(tuple(w if math.is_abstract(w) else int(w) for w in wires))
 
 
@@ -2208,6 +2226,7 @@ def _resolve_arg_kind(cls, name: str) -> _ArgType:
     return _ArgType.DYN
 
 
+# pylint: disable=too-many-return-statements
 def _canonicalize_abstract_type(val, kind: _ArgType):
     """Canonicalizes the input into its abstract equivalent.
 
@@ -2222,6 +2241,9 @@ def _canonicalize_abstract_type(val, kind: _ArgType):
 
     if isinstance(val, (AbstractArray, AbstractWires)):
         return val
+
+    if type(val).__name__ == "ShapedArray":  # jax.core.ShapedArray
+        return AbstractArray(val.shape, val.dtype)
 
     if isinstance(val, type) and issubclass(val, Number):
         return AbstractArray((), val)
