@@ -1560,6 +1560,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Fixed a typo in the :class:`~.AllSinglesDoubles` docstring where the third ``DoubleExcitation`` qubit index was incorrectly documented.
+  [(#10034)](https://github.com/PennyLaneAI/pennylane/issues/10034)
+
 * Corrected spelling errors in documentation, comments, and internal variable names across the codebase.
   [(#9752)](https://github.com/PennyLaneAI/pennylane/pull/9752)
 
@@ -1792,6 +1795,7 @@ Usman Ahmed,
 Guillermo Alonso,
 Abdullah Al Omar Galib,
 Ali Asadi,
+Anshuman Biswas,
 Gabriel Bottrill,
 Joseph Bowles,
 Astral Cai,
