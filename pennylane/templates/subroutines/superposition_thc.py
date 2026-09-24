@@ -222,7 +222,7 @@ def _left_inequalities(
 
     The auxiliary wires used on each comparator are drawn from disjoint slices of ``work_wires``
     starting at index ``7``, except for the one-body sentinel flag calculator, which resets its
-    work wires directly.
+    work wires directly and therefore takes the whole pool from index ``7`` on.
 
     Args:
         M (int): The THC rank.
@@ -249,10 +249,12 @@ def _left_inequalities(
         # TODO: Can we just move these bit flips into the control values?
         # TODO: Replace by TemporaryAND ladder if it does not cost the qubits for too long
         MultiX(math.int_to_binary(M, n), wires=nu_wires)
+        # The whole scratch pool is zeroed here: the comparators below have not run yet in the
+        # forward direction, and have already been undone in the adjoint one.
         MultiControlledX(
             wires=nu_wires + work_wires[3:4],
             control_values=[0] * n,
-            work_wires=work_wires[7 : n + 6],
+            work_wires=work_wires[7:],
             work_wire_type="zeroed",
         )
         MultiX(math.int_to_binary(M, n), wires=nu_wires)
@@ -299,14 +301,16 @@ def _superposition_thc_resources(M, N, mu_wires, nu_wires, work_wires):
     n = len(mu_wires)
     num_work_wires = len(work_wires)
 
-    # Number of borrowed work wires available to each gate: the Controlled gates use
-    # extra_work = work_wires[4n+6:], and the MCX in _left_inequalities uses work_wires[3n+6:4n+6].
+    # Number of zeroed work wires available to each gate, spelled as in the decomposition:
+    # extra_work = work_wires[3n+5:], the MCX of _left_inequalities takes work_wires[7:], the
+    # reflection takes work_wires[1:] and the Controlled(Z) of step 3 one wire more than
+    # extra_work. The Controlled(X) of step 6 is the only one left with extra_work alone.
     extra_work = max(0, num_work_wires - (3 * n + 5))
 
     lcc_le = LeftClassicalComparator(Wire[n], M, Wire[1], Wire[n - 1], comparator="<=")
     lcc_gt = LeftClassicalComparator(Wire[n], N // 2, Wire[1], Wire[n - 1], comparator=">=")
     lqc = LeftQuantumComparator(Wire[n], Wire[n], Wire[1], Wire[n], comparator="<=")
-    mcx = _controlled_pauli(X, n, n - 1, control_values=[0] * n)
+    mcx = _controlled_pauli(X, n, num_work_wires - 7, control_values=[0] * n)
     multix = MultiX(Bool[n], Wire[n])
 
     resources = defaultdict(int)
@@ -316,10 +320,12 @@ def _superposition_thc_resources(M, N, mu_wires, nu_wires, work_wires):
     resources[X] += 4
     resources[RY] += 2
     resources[TemporaryAND] += 2
-    resources[FlipSign([0] * (2 * n + 1), Wire[2 * n + 1], work_wires=Wire[extra_work])] += 1
+    resources[
+        FlipSign([0] * (2 * n + 1), Wire[2 * n + 1], work_wires=Wire[num_work_wires - 1])
+    ] += 1
     resources[adjoint(TemporaryAND(Wire[3]))] += 2
     resources[_controlled_pauli(X, 3, extra_work)] += 1
-    resources[_controlled_pauli(Z, 3, extra_work)] += 1
+    resources[_controlled_pauli(Z, 3, extra_work + 1)] += 1
     # _left_inequalities applied twice in the forward direction
     resources[lcc_le] += 2
     resources[lcc_gt] += 2
@@ -370,7 +376,14 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
     # around a little bit
     TemporaryAND(work_wires[3:6])
     X(wires=work_wires[5])
-    ctrl(Z(work_wires[5]), control=work_wires[0:3], work_wires=extra_work, work_wire_type="zeroed")
+    # The comparators leave their scratch dirty until the adjoint of step 4, so the only
+    # zeroed wires here are the not-yet-written success flag and whatever was passed in extra.
+    ctrl(
+        Z(work_wires[5]),
+        control=work_wires[0:3],
+        work_wires=work_wires[6:7] + extra_work,
+        work_wire_type="zeroed",
+    )
     X(wires=work_wires[5])
     adjoint(TemporaryAND(work_wires[3:6]))
 
@@ -389,7 +402,9 @@ def _superposition_thc(M, N, mu_wires, nu_wires, work_wires, **_):
         Hadamard(wire)
 
     # Fig. 3 has a typo; the correct reflection state is [0...0]
-    FlipSign([0] * (2 * n + 1), mu_wires + nu_wires + work_wires[:1], work_wires=extra_work)
+    # Step 4 undid every flag and every comparator, so all of ``work_wires`` but the amplitude
+    # amplification wire is zeroed and can absorb the controls of this reflection.
+    FlipSign([0] * (2 * n + 1), mu_wires + nu_wires + work_wires[:1], work_wires=work_wires[1:])
     GlobalPhase(np.pi)
 
     for wire in mu_wires + nu_wires:

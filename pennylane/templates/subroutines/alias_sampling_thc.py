@@ -13,6 +13,7 @@
 # limitations under the License.
 """Contains the ``PREPARE`` template for tensor hypercontraction (THC) qubitization."""
 
+from collections import defaultdict
 from functools import lru_cache
 
 import numpy as np
@@ -22,7 +23,7 @@ from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.math import ceil_log2
-from pennylane.ops import CSWAP, SWAP, Hadamard, Z, adjoint, ctrl
+from pennylane.ops import SWAP, Hadamard, Z, adjoint, ctrl
 from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
@@ -317,7 +318,7 @@ def _symmetrize(mu_wires, nu_wires, swap_flag, edge_flag, work_wires):
         return
 
     joint_flag = work_wires[0]
-    _cswap_work = work_wires[1:2]
+    _cswap_work = work_wires[1:]
     TemporaryAND([swap_flag, edge_flag, joint_flag], control_values=(1, 0))
     _cswap_pair(joint_flag, mu_wires, nu_wires, _cswap_work)
     adjoint(TemporaryAND([swap_flag, edge_flag, joint_flag], control_values=(1, 0)))
@@ -557,29 +558,44 @@ def _alias_sampling_thc_resources(
     adder_0 = SemiAdder(Wire[n], Wire[n_d], Wire[n_d - 1])
     adder_1 = SemiAdder(Wire[n], Wire[n_d - 1], Wire[n_d - 2])
 
+    # The comparator does not restore its work wires, so the keep-value swaps only get the
+    # tail of the pool; the symmetrization swaps run after the adjoint comparator and get
+    # all of it but the joint flag. Both slices are spelled as in the decomposition below.
+    n_cmp_work = min(aleph - 1, n_qrom_work)
     lqc = LeftQuantumComparator(
         Wire[aleph],
         Wire[aleph],
         Wire[1],
-        Wire[min(n_qrom_work, f + 3 * aleph + 2)],
+        Wire[n_cmp_work],
         comparator="<=",
     )
-    resources = {
-        out_sq: 1,
-        adder_0: 1,
-        adder_1: 1,
-        qrom: 1,
-        Hadamard: 2 * (aleph + 1),
-        lqc: 1,
-        adjoint(lqc): 1,
-        CSWAP: 2 * n + 2,
-        TemporaryAND: 1,
-        adjoint(TemporaryAND(Wire[3])): 1,
-        ctrl(SWAP(wires=Wire[2]), control=Wire[1], work_wires=Wire[1], work_wire_type="zeroed"): n,
-    }
+    keep_cswap = ctrl(
+        SWAP(wires=Wire[2]),
+        control=Wire[1],
+        work_wires=Wire[n_qrom_work - n_cmp_work],
+        work_wire_type="zeroed",
+    )
+    sym_cswap = ctrl(
+        SWAP(wires=Wire[2]),
+        control=Wire[1],
+        work_wires=Wire[max(n_qrom_work - 1, 0)],
+        work_wire_type="zeroed",
+    )
+    resources = defaultdict(int)
+    resources[out_sq] += 1
+    resources[adder_0] += 1
+    resources[adder_1] += 1
+    resources[qrom] += 1
+    resources[Hadamard] += 2 * (aleph + 1)
+    resources[lqc] += 1
+    resources[adjoint(lqc)] += 1
+    resources[TemporaryAND] += 1
+    resources[adjoint(TemporaryAND(Wire[3]))] += 1
+    resources[keep_cswap] += 2 * n + 2
+    resources[sym_cswap] += n
     if apply_sign:
-        resources[Z] = 1
-    return resources
+        resources[Z] += 1
+    return dict(resources)
 
 
 @register_resources(_alias_sampling_thc_resources)
@@ -609,9 +625,9 @@ def _alias_sampling_thc_decomp(
     # [f+2ℵ+2]        : flag for symmetrization SWAPs
     # The following registers are reset to zero, and overlap partially
     # [f+2ℵ+3:]       : Work wires for QROM
-    # [f+2ℵ+3:f+3ℵ+2] : Work wires for keep value comparator
-    # [f+3ℵ+2:f+3ℵ+3] : Work wires for keep value CSWAPs
-    # [f+2ℵ+3:f+2ℵ+5] : Work wires for symmetrization CSWAPs
+    # [f+2ℵ+3:f+3ℵ+2] : Work wires for keep value comparator, dirty until its adjoint runs
+    # [f+3ℵ+2:]       : Work wires for keep value CSWAPs, the part the comparator leaves zeroed
+    # [f+2ℵ+3:]       : Work wires for symmetrization CSWAPs, once the comparator is undone
 
     contiguous_register = work_wires[: n_d - 1]
     sign_wire = work_wires[n_d - 1]
@@ -628,9 +644,9 @@ def _alias_sampling_thc_decomp(
 
     # Reset to zero and overlapping
     qrom_work = work_wires[f + 2 * aleph + 3 :]
-    cmp_work = qrom_work[: f + 3 * aleph + 2]
-    keep_cswap_work = qrom_work[f + 3 * aleph + 2 : f + 3 * aleph + 3]
-    sym_cswap_work = qrom_work[:2]
+    cmp_work = qrom_work[: aleph - 1]
+    keep_cswap_work = qrom_work[aleph - 1 :]
+    sym_cswap_work = qrom_work
 
     # work_wires includes the output contiguous_register and additional zeroed work wires that
     # are returned to zero, so we do not need to account for them explicitly.
