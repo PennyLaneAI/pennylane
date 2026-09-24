@@ -27,11 +27,7 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.utils import translate_op_alias
 from pennylane.typing import Float, Wire
-from tests.core.operator.operator2_utils import (
-    CompilableDynOp,
-    OneWireDynOp,
-    ParametrizedHybridOp,
-)
+from tests.core.operator.operator2_utils import CompilableDynOp, OneWireDynOp
 
 
 @pytest.mark.unit
@@ -156,12 +152,6 @@ class TestSignatureRegistration:
 
         with pytest.raises(TypeError, match="does not support item assignment"):
             registry[OneWireDynOp] = 0
-
-    def test_error_hybrid_or_static_args(self):
-        """Test that signatures cannot be registered for operators with hybrid or
-        static arguments."""
-        with pytest.raises(ValueError, match="hybrid or non-compilable static arguments"):
-            register_signature(ParametrizedHybridOp)
 
     def test_error_instance_with_kwargs(self):
         """Test that keyword arguments cannot be provided together with an operator instance."""

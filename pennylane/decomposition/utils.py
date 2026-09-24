@@ -152,6 +152,13 @@ enable_graph, disable_graph, enabled_graph, toggle_graph_ctx = toggle_graph_deco
 def _init_signature_registration():
 
     _registry = defaultdict(set)
+    _lazy_registry = defaultdict(tuple)
+
+    def lazy_register(op: type[Operator2], **kwargs) -> None:
+        """Lazily register the signature of an operator."""
+        specs = dict(op.arg_specs or {})
+        specs.update(**kwargs)
+        _lazy_registry[op] += (specs,)
 
     @overload
     def register(op: Operator2) -> None: ...
@@ -183,28 +190,18 @@ def _init_signature_registration():
                 an instance.
 
         Raises:
-            ValueError: if ``op`` has hybrid or non-compilable static arguments, or if keyword
-                arguments are provided together with an operator instance.
+            ValueError: if keyword arguments are provided together with an operator instance.
 
         .. seealso:: :func:`pennylane.decomposition.signature_registry`
         """
-        if op.hybrid_argnames or op.static_argnames:
-            # Precompiling decomposition rules will require UID generation for operators
-            # with hybrid/non-compilable static arguments. But, the UID is Python session
-            # dependent, and precompilation happens in a different Python session.
-            raise ValueError(
-                "Signatures cannot be registered for operators that contain hybrid or "
-                "non-compilable static arguments."
-            )
-
         if isinstance(op, Operator2):
             if kwargs:
                 raise ValueError(
                     "Keyword arguments can only be provided when registering a signature for an "
                     "operator type, not an operator instance."
                 )
-            inst = op
             op_cls = type(op)
+            inst = op
 
         else:
             specs = dict(op.arg_specs or {})
@@ -227,26 +224,15 @@ def _init_signature_registration():
         return MappingProxyType(_registry)
 
     def initialize_registry():
-        """Register the signatures of all PennyLane operators that have a fixed signature.
+        """Initialize the registry by migrating signatures from the lazy registry."""
+        for op_cls, sigs in _lazy_registry.items():
+            for sig in sigs:
+                _registry[op_cls].add(abstractify(op_cls(**sig)))
+        _lazy_registry.clear()
 
-        This registers a signature for every :class:`~.Operator2` subclass whose ``has_fixed_sig`` is
-        ``True``. It must be called after all operators have been imported (i.e. it should not be run
-        during import), since it constructs operator instances.
-        """
-
-        def _all_subclasses(cls: type[Operator2]) -> set[type[Operator2]]:
-            subclasses = set(cls.__subclasses__())
-            for subclass in cls.__subclasses__():
-                subclasses |= _all_subclasses(subclass)
-            return subclasses
-
-        for op_cls in _all_subclasses(Operator2):
-            if getattr(op_cls, "has_fixed_sig", False):
-                register(op_cls)
-
-    return register, registry, initialize_registry
+    return register, lazy_register, registry, initialize_registry
 
 
-register_signature, signature_registry, initialize_signature_registry = (
+register_signature, lazy_register_signature, signature_registry, initialize_signature_registry = (
     _init_signature_registration()
 )

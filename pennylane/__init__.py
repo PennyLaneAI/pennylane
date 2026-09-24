@@ -252,6 +252,9 @@ _entry_point_groups = ["pennylane.drawer"]
 __all__, __getattr__, __dir__ = _setup_entry_points(__name__, _entry_point_groups)
 
 
+# Operator signatures are registered automatically when operator classes are defined in a private
+# registry. However, using the public registry requires PennyLane to be fully initialized. Thus,
+# we initialize it here.
 decomposition.initialize_signature_registry()
 
 
