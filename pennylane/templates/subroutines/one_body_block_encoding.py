@@ -15,17 +15,18 @@
 
 import numpy as np
 
-from pennylane import math
+from pennylane import capture, compiler, math
+from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import GlobalPhase, Hadamard, Z, adjoint
-from pennylane.typing import Float, Wire
+from pennylane.typing import Bool, Float, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
-from .alias_sampling import AliasSampling, alias_sampling_wires
+from .alias_sampling import AliasSampling, _apply_hadamards, alias_sampling_wires
 from .arithmetic.left_classical_comparator import LeftClassicalComparator
 from .qchem.basis_rotation import BasisRotation
-from .select import Select
+from .qrom import QROM
 
 
 def one_body_block_encoding_wires(norbs, alias_sampling_nbits):
@@ -316,7 +317,7 @@ def _one_body_block_encoding_resources(
 ):  # pylint: disable=too-many-arguments,unused-argument
     norbs = len(op_matrix)
     absmu, n_neg, _ = _block_encoding_data(op_matrix)
-    n_prep, n_work = len(prep_wires), len(work_wires)
+    n_prep, n_work, n_system = len(prep_wires), len(work_wires), len(system_wires)
     n_index = math.ceil_log2(norbs)
     n_garbage = n_prep - n_index - 1
 
@@ -329,20 +330,21 @@ def _one_body_block_encoding_resources(
     )
     # NOTE: '_block_encoding_data' diagonalizes a real symmetric matrix, so the orbital rotation is always real.
     rotation = BasisRotation(Float[norbs, norbs], wires=Wire[norbs])
-    select = Select(
-        [Z(Wire[1])] * (2 * norbs),
-        control=Wire[n_index + 1],
+    qrom = QROM(
+        Bool[2 * norbs, n_system],
+        control_wires=Wire[n_index + 1],
+        target_wires=Wire[n_system],
         work_wires=Wire[n_work],
-        partial=True,
     )
 
     resources = {
         prep: 1,
         adjoint(prep): 1,
-        Hadamard: 2,
+        Hadamard: 2 + 2 * n_system,
         rotation: 2,
         adjoint(rotation): 2,
-        select: 1,
+        # select: 1,
+        qrom: 1,
         GlobalPhase: 1,
     }
 
@@ -380,13 +382,19 @@ def _one_body_block_encoding_decomp(
     )
     Hadamard(spin_wire)
 
+    reshaped_system_wires = [system_wires[:norbs], system_wires[norbs : 2 * norbs]]
+    if compiler.active() or capture.enabled():
+        reshaped_system_wires = math.array(reshaped_system_wires, like="jax")
+
     # SEL = V^dagger . (multiplexed Z_{p,sigma}) . V as a matrix product, so V is applied first.
     # The signs of mu_p are phased in before the multiplexed Z.
-    for s in (0, 1):
-        BasisRotation(
-            unitary_matrix=unitary_matrix,
-            wires=system_wires[s * norbs : (s + 1) * norbs],
-        )
+
+    @for_loop(2)
+    def basis_rot_both_spins(i, mat):
+        BasisRotation(unitary_matrix=mat, wires=reshaped_system_wires[i])
+        return mat
+
+    basis_rot_both_spins(unitary_matrix)  # pylint: disable=no-value-for-parameter
 
     # Carry the sign of mu_p as a -1 phase on |p> rather than scaling the multiplexed Z: Select
     # controls a bare Pauli far more cheaply than a scaled SProd. The negative eigenvalues occupy
@@ -404,18 +412,20 @@ def _one_body_block_encoding_decomp(
         Z(work_wires[0])
         adjoint(LeftClassicalComparator)(**compare_kwargs)
 
-    ops = [Z(system_wires[s * norbs + p]) for p in range(norbs) for s in (0, 1)]
-    # We can use `partial=True` because PREP puts amplitude only on |p> with p < norbs,
-    # so the control register has no support on basis states with no matching op.
-    Select(ops, control=list(index_wires) + [spin_wire], work_wires=work_wires, partial=True)
+    # Replaced Select
+    _apply_hadamards(system_wires)
+    ids = np.arange(2 * norbs).reshape((2, norbs)).T.reshape(-1)
+    bitstrings = np.eye(2 * norbs, dtype=int)[ids]
+    QROM(
+        bitstrings,
+        control_wires=list(index_wires) + [spin_wire],
+        target_wires=system_wires,
+        work_wires=work_wires,
+    )
+    _apply_hadamards(system_wires)
 
-    for s in (0, 1):
-        adjoint(
-            BasisRotation(
-                unitary_matrix=unitary_matrix,
-                wires=system_wires[s * norbs : (s + 1) * norbs],
-            )
-        )
+    basis_rot_both_spins(unitary_matrix.conj().T)  # pylint: disable=no-value-for-parameter
+
     # PREP^dagger
     adjoint(
         AliasSampling(
