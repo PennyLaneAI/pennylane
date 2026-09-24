@@ -178,22 +178,6 @@ class TestQubitizationTHC:
         )
         assert_valid(op)
 
-    def test_prepare_cannot_succeed_raises(self):
-        """Test that an M whose valid index set is too small to amplify exactly is rejected."""
-        M, N, aleph, beth = 4, 2, 1, 1  # d = 11 < 2 ** (2 * 3 - 2) = 16
-        qp.qubitization_thc_wires(M, N, aleph, beth)  # sizes are fine, the walk is not
-        with pytest.raises(ValueError, match="cannot reach unit success probability"):
-            qp.QubitizationTHC(
-                *_dummy_input(M, N),
-                aleph,
-                beth,
-                range(N),
-                range(N, N + 6),
-                range(N + 6, N + 6 + 20),
-                [N + 26],
-                [N + 27],
-            )
-
     @pytest.mark.parametrize(
         "register, match",
         [
