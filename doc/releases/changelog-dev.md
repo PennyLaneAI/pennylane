@@ -1003,7 +1003,7 @@
 
 <h3>Breaking changes 💔</h3>
 
-* Jax 0.7.1 is how a hard requirement for pennylane.
+* Jax 0.7.1 is now a hard requirement for PennyLane.
   [(#10192)](https://github.com/PennyLaneAI/pennylane/pull/10192)
 
 * :class:`~.GlobalPhase` no longer accepts the `wires` argument in order to mirror its MLIR lowered operation.
