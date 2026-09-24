@@ -1561,7 +1561,7 @@
 <h3>Documentation 📝</h3>
 
 * Removed the TensorFlow section from the :doc:`Gradients and training </introduction/interfaces>` page.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#10193)](https://github.com/PennyLaneAI/pennylane/pull/10193)
 
 * Corrected spelling errors in documentation, comments, and internal variable names across the codebase.
   [(#9752)](https://github.com/PennyLaneAI/pennylane/pull/9752)
