@@ -390,10 +390,10 @@ class MottonenStatePreparation(Operation):
         >>> ops = qp.MottonenStatePreparation.compute_decomposition(state_vector, wires=["a", "b"])
         >>> from pprint import pprint
         >>> pprint(ops)
-        [RY(tensor(1.5708, dtype=torch.float64), wires=['a']),
-        RY(tensor(1.5708, dtype=torch.float64), wires=['b']),
-        CNOT(wires=['a', 'b']),
-        CNOT(wires=['a', 'b'])]
+        [RY(1.5707..., wires=['a']),
+         RY(1.5707..., wires=['b']),
+         CNOT(wires=['a', 'b']),
+         CNOT(wires=['a', 'b'])]
 
         """
         omega = qp.math.angle(state_vector)
@@ -437,7 +437,7 @@ class MottonenStatePreparation(Operation):
                     op_list.extend(_uniform_rotation_dagger_ops(qp.RZ, alpha_z_k, control, target))
 
             global_phase = -1 * qp.math.sum(omega, axis=-1) / qp.math.shape(state_vector)[-1]
-            op_list.extend([qp.GlobalPhase(global_phase, wires=wires)])
+            op_list.extend([qp.GlobalPhase(global_phase)])
 
         return op_list
 

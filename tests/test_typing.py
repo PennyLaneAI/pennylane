@@ -251,11 +251,11 @@ class TestAbstractArray:
 
         b = a[2]
         assert isinstance(b, AbstractWires)
-        assert b.num_wires == 2
+        assert b._num_wires == 2
 
         c = a[-1]
         assert isinstance(c, AbstractWires)
-        assert c.num_wires == -1
+        assert c._num_wires == -1
 
     def test_type_factory(self):
         """Test that we can index into a type factory to produce a new hint with a size."""
@@ -335,6 +335,26 @@ class TestAbstractArray:
 
         with pytest.raises(IndexError, match="Cannot index into an AbstractArray."):
             a[1] = 2
+
+    def test_error_converting_to_concrete_array(self):
+        """Test that numpy coercion raises instead of silently producing an empty array.
+
+        ``AbstractArray`` reports a ``__len__`` but raises on ``__getitem__``, so without a
+        guard numpy reads it as an empty sequence: ``np.asarray`` returned ``array([])``
+        and callers failed far away with misleading messages, such as ``np.linalg.det``
+        complaining about a 1-dim input.
+        """
+        a = AbstractArray((3, 2, 2), float)
+
+        with pytest.raises(TypeError, match="cannot be converted to a concrete array"):
+            np.asarray(a)
+
+        with pytest.raises(TypeError, match="cannot be converted to a concrete array"):
+            np.linalg.det(a)
+
+        # Shape and dtype access is unaffected.
+        assert a.shape == (3, 2, 2)
+        assert len(a) == 3
 
     def test_error_len_on_scalar(self):
         """Test that requesting the len of a scalar results in an error."""
@@ -470,7 +490,7 @@ class TestAbstractWires:
         """Basic tests for the AbstractWires class."""
 
         a = AbstractWires(3)
-        assert a.num_wires == 3
+        assert a._num_wires == 3
         assert len(a) == 3
         assert a.shape_fixed is True
 
@@ -489,11 +509,6 @@ class TestAbstractWires:
         assert a != AbstractWires(4)
         assert hash(a) == hash(AbstractWires(3))
         assert hash(a) != hash(AbstractWires(4))
-
-        with pytest.raises(
-            TypeError, match="Cannot check equality between AbstractWires and an object"
-        ):
-            _ = a == 2
 
     def test_repr(self):
         """Test that the repr of AbstractWires is correct."""
@@ -514,7 +529,7 @@ class TestAbstractWires:
     def test_unknown_num_wires(self):
         """Test that -1 marks an unknown number of wires."""
         a = AbstractWires(-1)
-        assert a.num_wires == -1
+        assert a._num_wires == -1
         assert a.shape == (-1,)
         assert a.shape_fixed is False
 
@@ -548,7 +563,7 @@ class TestAbstractWires:
             assert not isinstance(w, Wire[6])
 
         # non-wires
-        assert not isinstance({"not": "wires"}, Wire)
+        assert not isinstance({"not": "wires"}, Wire[1])
 
     def test_addition(self):
         """Tests adding abstract wires."""
@@ -558,3 +573,37 @@ class TestAbstractWires:
 
         with pytest.raises(TypeError):
             _ = Wire[2] + 1
+
+    def test_iteration(self):
+        """Test that AbstractWires can be iterated over."""
+
+        assert list(Wire[4]) == [Wire[1], Wire[1], Wire[1], Wire[1]]
+
+        with pytest.raises(TypeError, match="Cannot iterate over an AbstractWires of unfixed"):
+            list(Wire[-1])
+
+        with pytest.raises(TypeError, match="'Wire' object is not iterable"):
+            list(Wire)
+
+    def test_indexing(self):
+        """Test indexing into AbstractWires."""
+
+        w8 = Wire[8]
+        assert w8[0] == Wire[1]
+        assert w8[5] == Wire[1]
+
+        with pytest.raises(IndexError, match="out of bounds"):
+            _ = w8[8]
+
+        with pytest.raises(IndexError, match="out of bounds"):
+            _ = w8[10]
+
+        assert w8[2:] == Wire[6]
+
+        assert w8[2:7:2] == Wire[3]
+
+        with pytest.raises(TypeError, match="Wire indices must be integers or slices"):
+            _ = w8[[1, 2, 3]]
+
+        with pytest.raises(TypeError, match="Cannot index into an AbstractWires with"):
+            _ = Wire[-1][2]

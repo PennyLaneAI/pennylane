@@ -23,9 +23,10 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.core.operator import abstractify
+from pennylane.typing import Bool, Wire
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize("init_state", [np.array([1, 1, 0, 0]), None])
 def test_standard_validity(init_state):
     """Run standard checks with the assert_valid function."""
@@ -47,7 +48,7 @@ def test_resources():
     num_wires = 4
 
     expected = {
-        qp.resource_rep(qp.BasisEmbedding, num_wires=num_wires): 1,
+        qp.BasisState(Bool[num_wires], Wire[num_wires]): 1,
         abstractify(qp.RZ): n_layers * num_wires,
         abstractify(qp.CNOT): 2 * (num_wires - 1) * n_layers,
         abstractify(qp.CRX): (num_wires - 1) * n_layers,
@@ -169,8 +170,7 @@ class TestDecomposition:  # pylint: disable=too-few-public-methods
         assert len(queue) == n_gates
 
         # initialization
-        expected = qp.BasisState if system == "capture" else qp.BasisEmbedding
-        assert isinstance(queue[0], expected)
+        assert isinstance(queue[0], qp.BasisState)
 
         # order of gates
         for op1, op2 in zip(queue[1:], exp_gates):

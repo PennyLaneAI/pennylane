@@ -26,7 +26,7 @@ import pennylane as qp
 from pennylane import math
 from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import PennyLaneDeprecationWarning
-from pennylane.ops import Identity, PauliX, PauliY, PauliZ, Prod, SProd, Sum
+from pennylane.ops import Identity, PauliX, PauliY, PauliZ, Prod2, SProd, Sum
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
@@ -531,7 +531,7 @@ class PauliWord(dict):
             factors = [_make_operation(op, wire) for wire, op in self.items()]
 
         pauli_rep = PauliSentence({self: 1})
-        return factors[0] if len(factors) == 1 else Prod(*factors, _pauli_rep=pauli_rep)
+        return factors[0] if len(factors) == 1 else Prod2(factors, _init_pauli_rep=pauli_rep)
 
     def map_wires(self, wire_map: dict) -> "PauliWord":
         """Return a new PauliWord with the wires mapped."""

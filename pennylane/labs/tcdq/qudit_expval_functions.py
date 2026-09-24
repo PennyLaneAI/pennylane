@@ -29,7 +29,7 @@ of the technical notes.
 """
 
 import itertools
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import NamedTuple
 
@@ -66,12 +66,15 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
     :class:`~pennylane.labs.tcdq.CircuitConfig`.
 
     Args:
-        d (int): Local qudit dimension (e.g., 2 for qubits, 3 for qutrits).
+        dims (int | Sequence[int]): Local qudit dimension(s). Either a single
+            ``int`` (e.g., 2 for qubits, 3 for qutrits), which is broadcast to
+            every qudit, or a sequence of length ``n_qudits`` giving a distinct
+            dimension :math:`d_j` per qudit.
         n_qudits (int): Number of qudits in the circuit.
         gates (dict[int, list[list[int]]]): Circuit structure mapping each
             trainable-parameter index to a list of generator vectors. Each
             generator vector has length ``n_qudits`` with integer entries in
-            :math:`\{0, \ldots, d-1\}` that specify the power of :math:`Z` on
+            :math:`\{0, \ldots, d_j-1\}` that specify the power of :math:`Z` on
             each qudit. For example, with ``d=3`` and ``n_qudits=2``,
             ``{0: [[1, 0]], 1: [[0, 1]], 2: [[1, 1]]}`` defines three gates:
             :math:`Z^1` on qudit 0, :math:`Z^1` on qudit 1, and
@@ -116,8 +119,8 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
     ... )
     """
 
-    #: Local qudit dimension.
-    d: int = None
+    #: Local qudit dimension(s): an int (uniform) or list (per-qudit sequence).
+    dims: int | Sequence[int] = None
     #: Number of qudits in the circuit.
     n_qudits: int = None
     #: Circuit structure mapping parameter indices to generator vectors.
@@ -134,6 +137,29 @@ class QuditCircuitConfig:  # pylint: disable=too-many-instance-attributes
     init_state_amps: ArrayLike | None = None
     #: Learnable phase layer
     phase_fn: Callable | None = None
+
+
+def _dims_to_numpy(dims: int | Sequence[int], n_qudits: int) -> np.ndarray:
+    """Normalize the ``dims`` field to an integer array of per-qudit dimensions.
+
+    Accepts either a scalar ``int`` (broadcast to all qudits, the uniform case)
+    or a sequence of length ``n_qudits`` (mixed-dimension case), and always
+    returns a NumPy integer array of shape ``(n_qudits,)``.
+
+    Raises:
+        ValueError: If ``dims`` is a sequence whose length is not ``n_qudits``.
+    """
+    if isinstance(dims, int):
+        return np.full((n_qudits,), int(dims), dtype=int)
+
+    normalized_dims = np.asarray(dims, dtype=int)
+    if normalized_dims.shape != (n_qudits,):
+        raise ValueError(
+            f"d given as a sequence must have length n_qudits={n_qudits}, "
+            f"got shape {normalized_dims.shape}."
+        )
+
+    return normalized_dims
 
 
 def _parse_qudit_generator_dict(circuit_def: dict[int, list[list[int]]], n_qudits: int):
@@ -176,9 +202,13 @@ def _parse_qudit_generator_dict(circuit_def: dict[int, list[list[int]]], n_qudit
     return jnp.array(generators), param_map
 
 
-def _compute_qudit_samples(key: ArrayLike, num_samples: int, n_qudits: int, d: int) -> jnp.ndarray:
-    """Generates uniformly random dit-strings from Z_d^n."""
-    return jax.random.randint(key, shape=(num_samples, n_qudits), minval=0, maxval=d)
+def _compute_qudit_samples(
+    key: ArrayLike, num_samples: int, n_qudits: int, dims: ArrayLike
+) -> jnp.ndarray:
+    """Generates uniformly random dit-strings from the product Z_{d_1} x ... x Z_{d_n}."""
+
+    maxval = jnp.asarray(dims, dtype=jnp.int32)[jnp.newaxis, :]  # (1, n_qudits)
+    return jax.random.randint(key, shape=(num_samples, n_qudits), minval=0, maxval=maxval)
 
 
 class WeightGroupData(NamedTuple):
@@ -238,12 +268,16 @@ def _gather_support_values(
 
 
 def _compute_trigonometric_building_blocks(
-    gate_vals: np.ndarray, z_at_support: jnp.ndarray, l_at_support: jnp.ndarray, d: int
+    gate_vals: np.ndarray,
+    z_at_support: jnp.ndarray,
+    l_at_support: jnp.ndarray,
+    d_at_support: jnp.ndarray,
 ) -> tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray, jnp.ndarray]:
     """Compute (state_cos, state_sin, obs_cos, obs_sin) trig factors over the gate support."""
     g = jnp.array(gate_vals, dtype=jnp.float32)[:, :, jnp.newaxis]
-    angle_z = 2 * jnp.pi * g * z_at_support.astype(jnp.float32) / d + jnp.pi / 4
-    angle_l = 2 * jnp.pi * g * l_at_support.astype(jnp.float32) / d
+    d_s = jnp.asarray(d_at_support, dtype=jnp.float32)[:, :, jnp.newaxis]
+    angle_z = 2 * jnp.pi * g * z_at_support.astype(jnp.float32) / d_s + jnp.pi / 4
+    angle_l = 2 * jnp.pi * g * l_at_support.astype(jnp.float32) / d_s
     return (
         jnp.sqrt(2.0) * jnp.cos(angle_z),
         jnp.sqrt(2.0) * jnp.sin(angle_z),
@@ -285,7 +319,7 @@ def _build_weight_group(
     param_indices: jnp.ndarray,
     samples: jnp.ndarray,
     l_vecs: jnp.ndarray,
-    d: int,
+    dims: np.ndarray,
 ) -> WeightGroupData:
     """Precompute the factor matrices for a group of gates with the same weight."""
     n_gates = len(generators_w)
@@ -294,12 +328,13 @@ def _build_weight_group(
     omega = int(np.count_nonzero(generators_w[0]))
     supports = np.array([np.where(g != 0)[0] for g in generators_w])  # (n_gates, omega)
     gate_vals = np.array([g[s] for g, s in zip(generators_w, supports)])  # (n_gates, omega)
+    d_at_support = np.asarray(dims)[supports]  # (n_gates, omega)
 
     z_at_support = _gather_support_values(samples, supports, num_samples, n_gates, omega)
     l_at_support = _gather_support_values(l_vecs, supports, n_obs, n_gates, omega)
 
     state_cos, state_sin, obs_cos, obs_sin = _compute_trigonometric_building_blocks(
-        gate_vals, z_at_support, l_at_support, d
+        gate_vals, z_at_support, l_at_support, d_at_support
     )
     samples_matrices, obs_matrices = _expand_angle_addition(state_cos, state_sin, obs_cos, obs_sin)
     return WeightGroupData(
@@ -319,15 +354,17 @@ class _PrecomputedObsData(NamedTuple):
 
 
 def _obs_phase_matrix(
-    samples: jnp.ndarray, m_f: jnp.ndarray, l_f: jnp.ndarray, d: int
+    samples: jnp.ndarray, m_f: jnp.ndarray, l_f: jnp.ndarray, dims: ArrayLike
 ) -> jnp.ndarray:
     """Compute the observable phase matrix.
 
-    :math:`J[i, j] = \\exp(i\\pi / d \\cdot \\mathbf{m}_i \\cdot (2\\mathbf{z}_j - \\mathbf{l}_i))`.
+    :math:`J[i, j] = \\exp(i\\pi \\sum_k m_{ik} (2 z_{jk} - l_{ik}) / d_k)`.
     """
     s_f = samples.astype(jnp.float32)
+    inv_d = (1.0 / jnp.asarray(dims, dtype=jnp.float32))[jnp.newaxis, :]  # (1, n_qudits)
+    m_scaled = m_f * inv_d  # (n_obs, n_qudits)
     return jnp.exp(
-        (1j * jnp.pi / d) * (2 * m_f @ s_f.T - jnp.sum(m_f * l_f, axis=1, keepdims=True))
+        1j * jnp.pi * (2 * m_scaled @ s_f.T - jnp.sum(m_scaled * l_f, axis=1, keepdims=True))
     )
 
 
@@ -338,7 +375,7 @@ def _build_all_weight_groups(
     gate_weights: np.ndarray,
     samples: jnp.ndarray,
     l_vecs: jnp.ndarray,
-    d: int,
+    dims: np.ndarray,
 ) -> list[WeightGroupData]:
     """Build :class:`WeightGroupData` for each non-zero gate weight."""
     weight_data: list[WeightGroupData] = []
@@ -352,7 +389,7 @@ def _build_all_weight_groups(
                 param_indices=jnp.array(pm_np[gate_indices]),
                 samples=samples,
                 l_vecs=l_vecs,
-                d=d,
+                dims=dims,
             )
         )
     return weight_data
@@ -387,15 +424,16 @@ def _compute_initial_state_correction(
     l_f: jnp.ndarray,
     state_elems: ArrayLike,
     state_amps: ArrayLike,
-    d: int,
+    dims: ArrayLike,
 ) -> jnp.ndarray:
     """Compute the correction factor for a non-standard initial state."""
     s_f = samples.astype(jnp.float32)
     X_state = jnp.asarray(state_elems).astype(jnp.float32)  # (N, n)
     Psi = jnp.asarray(state_amps)  # (N,)
+    inv_d = (1.0 / jnp.asarray(dims, dtype=jnp.float32))[jnp.newaxis, :]  # (1, n)
 
-    # ω^{Z·X^T} where ω = exp(2πi/d) — shape (s, N)
-    omega_ZX = jnp.exp(2j * jnp.pi * (s_f @ X_state.T) / d)
+    # ω^{Z·X^T} where ω_j = exp(2πi/d_j) — shape (s, N)
+    omega_ZX = jnp.exp(2j * jnp.pi * ((s_f * inv_d) @ X_state.T))
 
     # Ψ̃^(2) = ω^{Z·X^T} · Ψ — shape (s,)
     psi_tilde_2 = omega_ZX @ Psi
@@ -404,7 +442,7 @@ def _compute_initial_state_correction(
     F_mat = Psi.conj()[:, jnp.newaxis] * omega_ZX.conj().T
 
     # Ψ̃^(1) = ω^{L·X^T} · F — shape (l, s)
-    omega_LX = jnp.exp(2j * jnp.pi * (l_f @ X_state.T) / d)  # (l, N)
+    omega_LX = jnp.exp(2j * jnp.pi * ((l_f * inv_d) @ X_state.T))  # (l, N)
     psi_tilde_1 = omega_LX @ F_mat
 
     # H = Ψ̃^(1) ⊙ (1_{l×1} · (Ψ̃^(2))^T) — shape (l, s)
@@ -413,14 +451,13 @@ def _compute_initial_state_correction(
 
 def _compute_mc_statistics(
     integrand: jnp.ndarray, n_samples: int
-) -> tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
-    """Compute Monte Carlo mean, covariance, and mean squared magnitude from the integrand.
+) -> tuple[jnp.ndarray, jnp.ndarray]:
+    """Compute the Monte Carlo mean and covariance from the integrand.
 
-    Returns ``(expvals, cov, mean_y_sq)`` where ``cov`` is the per-observable
-    covariance matrix of the mean estimator, shape ``(n_obs, 2, 2)``.
+    Returns ``(expvals, cov)`` where ``cov`` is the per-observable covariance
+    matrix of the mean estimator, shape ``(n_obs, 2, 2)``.
     """
     expvals = jnp.mean(integrand, axis=1)
-    mean_y_sq = jnp.mean(jnp.abs(integrand) ** 2, axis=1)  # (n_obs,)
 
     re = jnp.real(integrand)
     im = jnp.imag(integrand)
@@ -436,10 +473,10 @@ def _compute_mc_statistics(
         ],
         axis=-2,
     )  # (n_obs, 2, 2)
-    return expvals, cov, mean_y_sq
+    return expvals, cov
 
 
-def build_qudit_expval_func(
+def build_qudit_expval_func(  # pylint: disable=too-many-statements
     config: QuditCircuitConfig,
 ) -> Callable:
     """Build an estimator for expectation values of a qudit IQP circuit.
@@ -468,15 +505,12 @@ def build_qudit_expval_func(
                 observables=None,
                 init_state_elems=None,
                 init_state_amps=None,
-                return_mean_y_sq=False,
-            ) -> (expvals, cov) or (expvals, cov, mean_y_sq)
+            ) -> (expvals, cov)
 
         where ``expvals`` is a complex array of shape ``(n_obs,)`` containing
         the estimated moments, and ``cov`` has shape ``(n_obs, 2, 2)``
         providing the real/imaginary covariance matrix of the mean estimator
-        for each observable. When ``return_mean_y_sq=True``, also returns the
-        per-observable mean of :math:`|y|^2` (needed internally by the MMD
-        loss).
+        for each observable.
 
         When ``config.phase_fn`` is set, the returned callable requires ``phase_fn_params`` to be
         passed as the second argument (the trainable parameters of the phase layer).
@@ -513,15 +547,17 @@ def build_qudit_expval_func(
     """
     generators, param_map = _parse_qudit_generator_dict(config.gates, config.n_qudits)
 
-    d, n = config.d, config.n_qudits
-    default_samples = _compute_qudit_samples(config.key, config.n_samples, n, d)
+    n = config.n_qudits
+    dims = _dims_to_numpy(config.dims, n)
+    default_samples = _compute_qudit_samples(config.key, config.n_samples, n, dims)
 
     vmapped_phase_func = None
     if config.phase_fn is not None:
+        dims_j = jnp.asarray(dims)
 
         def compute_phase_diff(p_params, sample, l_vec):
             return config.phase_fn(p_params, sample) - config.phase_fn(
-                p_params, (sample - l_vec) % d
+                p_params, (sample - l_vec) % dims_j
             )
 
         vmapped_phase_func = jax.vmap(
@@ -544,9 +580,9 @@ def build_qudit_expval_func(
             l_f=l_f,
             m_f=m_f,
             weight_data=_build_all_weight_groups(
-                gen_np, pm_np, gate_weights, default_samples, l_vecs, d
+                gen_np, pm_np, gate_weights, default_samples, l_vecs, dims
             ),
-            obs_phase_matrix=_obs_phase_matrix(default_samples, m_f, l_f, d),
+            obs_phase_matrix=_obs_phase_matrix(default_samples, m_f, l_f, dims),
         )
     else:
         defaults = None
@@ -559,10 +595,7 @@ def build_qudit_expval_func(
         observables: tuple[ArrayLike, ArrayLike] | None = None,
         init_state_elems: ArrayLike | None = None,
         init_state_amps: ArrayLike | None = None,
-        return_mean_y_sq: bool = False,
-    ) -> (
-        tuple[jnp.ndarray, jnp.ndarray] | tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]
-    ):  # pylint: disable=too-many-arguments
+    ) -> tuple[jnp.ndarray, jnp.ndarray]:  # pylint: disable=too-many-arguments
         """Compute batched expectation values for the configured circuit.
 
         Args:
@@ -582,19 +615,12 @@ def build_qudit_expval_func(
             init_state_amps (ArrayLike | None, optional): Runtime override for the
                 complex amplitudes of the initial state. Array of shape ``(N,)``.
                 Defaults to None.
-            return_mean_y_sq (bool, optional): If ``True``, also return the
-                per-observable mean of ``|y_r|^2``. Defaults to ``False``.
 
         Returns:
-            tuple[jnp.ndarray, jnp.ndarray] | tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
-            By default returns ``(expvals, cov)`` where ``expvals`` are the estimated
-            complex expectation values, shape ``(n_obs,)``, and ``cov`` stores the
-            real-imaginary covariance matrices of the mean estimator, shape
-            ``(n_obs, 2, 2)``.
-
-            When ``return_mean_y_sq=True``, also returns ``mean_y_sq`` with shape
-            ``(n_obs,)``. This equals 1 when the per-sample integrand has unit
-            modulus (default input state, diagonal observables).
+            tuple[jnp.ndarray, jnp.ndarray]: Returns ``(expvals, cov)`` where
+            ``expvals`` are the estimated complex expectation values, shape
+            ``(n_obs,)``, and ``cov`` stores the real-imaginary covariance matrices
+            of the mean estimator, shape ``(n_obs, 2, 2)``.
         """
         if observables is not None:
             l_vecs = jnp.array(observables[0], dtype=jnp.int32)
@@ -612,7 +638,7 @@ def build_qudit_expval_func(
         if key is not None or n_samples is not None:
             _key = key if key is not None else config.key
             _n = n_samples if n_samples is not None else config.n_samples
-            samples = _compute_qudit_samples(_key, _n, n, d)
+            samples = _compute_qudit_samples(_key, _n, n, dims)
         else:
             _n = config.n_samples
             samples = default_samples
@@ -624,8 +650,8 @@ def build_qudit_expval_func(
             obs_pm = defaults.obs_phase_matrix
             w_data = defaults.weight_data
         else:
-            obs_pm = _obs_phase_matrix(samples, m_f, l_f, d)
-            w_data = _build_all_weight_groups(gen_np, pm_np, gate_weights, samples, l_vecs, d)
+            obs_pm = _obs_phase_matrix(samples, m_f, l_f, dims)
+            w_data = _build_all_weight_groups(gen_np, pm_np, gate_weights, samples, l_vecs, dims)
 
         accumulated_phase_diffs = _accumulate_phase_diffs(
             gates_params, w_data, n_obs, _n, vmapped_phase_func, phase_fn_params, samples, l_vecs
@@ -636,13 +662,9 @@ def build_qudit_expval_func(
 
         integrand = obs_pm * jnp.exp(1j * accumulated_phase_diffs)
         if state_elems is not None and state_amps is not None:
-            H = _compute_initial_state_correction(samples, l_f, state_elems, state_amps, d)
+            H = _compute_initial_state_correction(samples, l_f, state_elems, state_amps, dims)
             integrand = integrand * H
 
-        expvals, cov, mean_y_sq = _compute_mc_statistics(integrand, _n)
-
-        if return_mean_y_sq:
-            return expvals, cov, mean_y_sq
-        return expvals, cov
+        return _compute_mc_statistics(integrand, _n)
 
     return qudit_expval_batched

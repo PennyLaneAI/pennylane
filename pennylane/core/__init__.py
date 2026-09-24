@@ -42,6 +42,15 @@ Operator Types
 .. inheritance-diagram:: Operator Operation Channel StatePrepBase
     :parts: 1
 
+Utility Functions
+~~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.core.operator
+
+.. autosummary::
+    :toctree: api
+
+    ~abstractify
 
 Measurements
 ~~~~~~~~~~~~
@@ -105,6 +114,7 @@ from .operator import (
     Operator2,
     StatePrepBase,
     StatePrepBase2,
+    abstractify,
 )
 from .measurements import (
     MeasurementProcess,
@@ -130,6 +140,7 @@ __all__ = [
     "Operator1",
     "Operator2",
     "Operation",
+    "abstractify",
     "Channel",
     "StatePrepBase",
     "StatePrepBase2",

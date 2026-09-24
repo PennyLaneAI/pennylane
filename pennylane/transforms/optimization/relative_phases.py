@@ -198,14 +198,14 @@ def match_controlled_iX_gate(
         )
     pattern_ops = [
         qp.ctrl(qp.S(num_controls), control=list(range(num_controls))),
-        qp.MultiControlledX(list(range(num_controls + 2))),
+        qp.ctrl(qp.X(num_controls + 1), control=list(range(num_controls + 1))),
         # ------------
         qp.Hadamard(num_controls + 1),
-        qp.MultiControlledX(list(range(num_controls)) + [num_controls + 1]),
+        qp.ctrl(qp.X(num_controls + 1), control=list(range(num_controls))),
         qp.adjoint(qp.T(num_controls + 1)),
         qp.CNOT([num_controls, num_controls + 1]),
         qp.T(num_controls + 1),
-        qp.MultiControlledX(list(range(num_controls)) + [num_controls + 1]),
+        qp.ctrl(qp.X(num_controls + 1), control=list(range(num_controls))),
         qp.adjoint(qp.T(num_controls + 1)),
         qp.CNOT([num_controls, num_controls + 1]),
         qp.T(num_controls + 1),

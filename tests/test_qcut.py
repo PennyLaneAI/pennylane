@@ -4106,7 +4106,7 @@ class TestCutCircuitTransform:
             qp.RZ(0.133, wires=1)
             return qp.expval(qp.PauliZ(wires=[0]))
 
-        x = torch.tensor(0.531, requires_grad=True, dtype=torch.complex128)
+        x = torch.tensor(0.531, requires_grad=True, dtype=torch.float64)
 
         # Note that the jit.trace ends up calling qcut_processing_fn multiple times, so below we
         # delay introducing the spy until afterwards and then ensure that qcut_processing_fn is

@@ -1,3 +1,16 @@
+# Copyright 2026 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """
 Tests for the combine_global_phases transform.
 """
@@ -11,11 +24,11 @@ from pennylane.transforms import combine_global_phases
 
 def original_qfunc(phi1, phi2, return_state=False):
     qp.Hadamard(wires=1)
-    qp.GlobalPhase(phi1, wires=[0, 1])
+    qp.GlobalPhase(phi1)
     qp.PauliY(wires=0)
     qp.PauliX(wires=2)
     qp.CNOT(wires=[1, 2])
-    qp.GlobalPhase(phi2, wires=1)
+    qp.GlobalPhase(phi2)
     qp.CNOT(wires=[2, 0])
     if return_state:
         return qp.state()
@@ -48,7 +61,7 @@ def test_single_global_phase_gate():
     """Test that when the input ``QuantumScript`` has a single ``qp.GlobalPhase`` gate, the returned output has an equivalent
     ``qp.GlobalPhase`` operation appended at the end"""
     phi = 1.23
-    qscript = qp.tape.QuantumScript([qp.Hadamard(0), qp.GlobalPhase(phi, 0), qp.RX(0, 0)])
+    qscript = qp.tape.QuantumScript([qp.Hadamard(0), qp.GlobalPhase(phi), qp.RX(0, 0)])
 
     expected_qscript = qp.tape.QuantumScript([qp.Hadamard(0), qp.RX(0, 0), qp.GlobalPhase(phi)])
     (transformed_qscript,), _ = combine_global_phases(qscript)
@@ -63,7 +76,7 @@ def test_multiple_global_phase_gates():
     phi1 = 1.23
     phi2 = 4.56
     qscript = qp.tape.QuantumScript(
-        [qp.GlobalPhase(phi1, 0), qp.Hadamard(0), qp.GlobalPhase(phi2, 0), qp.RX(0, 0)]
+        [qp.GlobalPhase(phi1), qp.Hadamard(0), qp.GlobalPhase(phi2), qp.RX(0, 0)]
     )
 
     expected_qscript = qp.tape.QuantumScript(
@@ -187,12 +200,12 @@ def test_catalyst_integration():
     @qp.transforms.combine_global_phases
     @qp.qnode(dev)
     def circuit():
-        qp.GlobalPhase(0.1, wires=2)
+        qp.GlobalPhase(0.1)
         qp.X(n - 1)
-        qp.GlobalPhase(0.1, wires=1)
+        qp.GlobalPhase(0.1)
         qp.H(n - 2)
-        qp.GlobalPhase(0.1, wires=0)
-        qp.GlobalPhase(0.1, wires=0)
+        qp.GlobalPhase(0.1)
+        qp.GlobalPhase(0.1)
 
         return qp.expval(qp.Z(0))
 

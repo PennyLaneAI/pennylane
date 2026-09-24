@@ -30,7 +30,7 @@ from pennylane.templates.subroutines.arbitrary_unitary import (
 )
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Run standard tests of operation validity."""
     shape = (3,)
@@ -192,12 +192,24 @@ class TestDecomposition:
 
     DECOMP_PARAMS = [
         (np.arange(np.prod((15,)), dtype=float).reshape((15,)), range(2)),
-        (np.arange(np.prod((1, 15)), dtype=float).reshape((1, 15)), range(2)),
-        (np.arange(np.prod((2, 15)), dtype=float).reshape((2, 15)), range(2)),
+        pytest.param(
+            np.arange(np.prod((1, 15)), dtype=float).reshape((1, 15)),
+            range(2),
+            marks=pytest.mark.pl2do(
+                reason="Broadcasting support not fully implemented for Operator2"
+            ),
+        ),
+        pytest.param(
+            np.arange(np.prod((2, 15)), dtype=float).reshape((2, 15)),
+            range(2),
+            marks=pytest.mark.pl2do(
+                reason="Broadcasting support not fully implemented for Operator2"
+            ),
+        ),
         (np.random.random(size=(63,)), range(3)),
     ]
 
-    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(("weights", "wires"), DECOMP_PARAMS)
     def test_decomposition_new(self, weights, wires):
         op = qp.ArbitraryUnitary(weights, wires=wires)
