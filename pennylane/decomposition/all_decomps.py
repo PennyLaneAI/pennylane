@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Defines add_decomps, a recursive tool for collecting all downstream operators
+Defines all_decomps, a recursive tool for collecting all downstream operators
 and rules.
 """
 
