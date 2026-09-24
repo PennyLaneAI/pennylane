@@ -1636,6 +1636,17 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug where :func:`~.ops.two_qubit_decomposition` could silently return a
+  decomposition using fewer CNOTs than actually required, for unitaries whose entangling
+  angle is small but nonzero. The classifier used to guess the number of CNOTs relied on
+  a trace-based test that is only quadratically sensitive near each classification
+  boundary, so no fixed tolerance could distinguish genuine weak entanglement from
+  numerical noise. The classifier now also checks linear residuals of the same
+  conditions, and its guess is verified by recomposing and comparing against the input,
+  escalating to the next candidate on a mismatch. Both ``two_qubit_decomposition``
+  and the graph-based decomposition rule ``two_qubit_decomp_rule`` are fixed.
+  [(#PR_NUMBER)](https://github.com/PennyLaneAI/pennylane/pull/PR_NUMBER)
+
 * :func:`~.allocate` with zero wires no longer queues or captures :class:`~.allocation.Allocate`
   and :class:`~.allocation.Deallocate` instructions, including when used as a context manager.
   [(#10219)](https://github.com/PennyLaneAI/pennylane/pull/10219)
@@ -1847,6 +1858,7 @@ This release contains contributions from (in alphabetical order):
 
 Usman Ahmed,
 Guillermo Alonso,
+elkadylojain-ops,
 Abdullah Al Omar Galib,
 Ali Asadi,
 Gabriel Bottrill,

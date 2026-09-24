@@ -17,6 +17,7 @@ Tests for the QubitUnitary decomposition transforms.
 
 # pylint: disable=unused-variable,unused-argument
 
+import warnings
 from functools import reduce
 
 import numpy as np
@@ -28,6 +29,7 @@ import pennylane as qp
 from pennylane.ops.op_math.decompositions import one_qubit_decomposition, two_qubit_decomposition
 from pennylane.ops.op_math.decompositions.unitary_decompositions import (
     _compute_num_cnots,
+    _try_branch,
     multi_qubit_decomposition,
 )
 from pennylane.wires import Wires
@@ -1565,3 +1567,177 @@ class TestQubitUnitaryDecompositionGraph:
 
         matrix = qp.matrix(decomp, wire_order=list(range(n_wires)))
         assert qp.math.allclose(matrix, op.matrix(wire_order=list(range(n_wires))), atol=1e-7)
+
+
+class TestTwoQubitDecompositionWeaklyEntangling:
+    """Regression tests for #9631: two_qubit_decomposition silently drops
+    genuine-but-small entangling content, misclassifying it as a 0-CNOT
+    (fully separable) unitary."""
+
+    @staticmethod
+    def _random_su2(rng):
+        """Haar-random SU(2) matrix."""
+        X = rng.normal(size=(2, 2)) + 1j * rng.normal(size=(2, 2))
+        Q, R = np.linalg.qr(X)
+        d = np.diag(R)
+        Q = Q * (d / np.abs(d))
+        Q /= np.linalg.det(Q) ** 0.5
+        return Q
+
+    def _dressed_unitary(self, theta, rng):
+        """local_post @ IsingXX(theta) @ local_pre -- a controlled-strength
+        entangler sandwiched by random local gates, the shape a real 2-qubit
+        block coming out of a variational circuit / Trotter step usually has."""
+        A, B, C, D = (self._random_su2(rng) for _ in range(4))
+        core = qp.matrix(qp.IsingXX(theta, wires=(0, 1)))
+        return qp.math.kron(C, D) @ core @ qp.math.kron(A, B)
+
+    def test_issue_9631_exact_reproduction(self):
+        """The exact case reported in the issue must recompose correctly."""
+        rng = np.random.default_rng(123)
+        A, B, C, D = (self._random_su2(rng) for _ in range(4))
+        ops = [
+            qp.QubitUnitary(A, 0),
+            qp.QubitUnitary(B, 1),
+            qp.CNOT((1, 0)),
+            qp.RZ(8.471910266820082e-04, 0),
+            qp.RX(-1.3556395803158893e-03, 1),
+            qp.CNOT((1, 0)),
+            qp.QubitUnitary(C, 0),
+            qp.QubitUnitary(D, 1),
+        ]
+        tape = qp.tape.QuantumScript(ops)
+        U = qp.matrix(tape, wire_order=(0, 1))
+        decomp = two_qubit_decomposition(U, wires=(0, 1))
+        tape2 = qp.tape.QuantumScript(decomp)
+        U2 = qp.matrix(tape2, wire_order=(0, 1))
+        assert check_matrix_equivalence(U, U2, atol=1e-7)
+
+    @pytest.mark.parametrize("theta", [1e-6, 1e-4, 1e-3])
+    def test_weakly_entangling_unitary_is_not_misclassified_as_separable(self, theta):
+        """For theta large enough that a 0-CNOT decomposition would exceed our
+        verification tolerance (atol=1e-7), two_qubit_decomposition must not
+        settle for a 0-CNOT circuit, even if _compute_num_cnots guesses 0
+        internally. (theta=1e-8 is excluded: its induced error is below the
+        tolerance, so 0 CNOTs is a legitimately correct answer there.)"""
+        U = self._dressed_unitary(theta, np.random.default_rng(42))
+        decomp = two_qubit_decomposition(U, wires=(0, 1))
+        n_cnots = sum(isinstance(op, qp.CNOT) for op in decomp)
+        assert n_cnots > 0, (
+            f"theta={theta:.1e}: two_qubit_decomposition returned a 0-CNOT "
+            "circuit for a unitary that is entangling well beyond the "
+            "verification tolerance"
+        )
+
+    @pytest.mark.parametrize("theta", [1e-8, 1e-6, 1e-4, 1e-3, 1e-2, 0.1, 1.0])
+    def test_recomposition_matches_original_unitary(self, theta):
+        """Whatever number of CNOTs is chosen, recomposing the returned
+        operations must reproduce the input unitary up to global phase."""
+        U = self._dressed_unitary(theta, np.random.default_rng(7))
+        decomp = two_qubit_decomposition(U, wires=(0, 1))
+        tape = qp.tape.QuantumScript(decomp)
+        U2 = qp.matrix(tape, wire_order=(0, 1))
+        assert check_matrix_equivalence(U, U2, atol=1e-7)
+
+    @pytest.mark.parametrize("theta", [1e-8, 1e-6, 1e-4, 1e-3, 1e-2, 0.1, 1.0])
+    def test_recomposed_circuit_is_unitary(self, theta):
+        """The operations returned by two_qubit_decomposition must always
+        compose into an actual unitary, regardless of which branch is taken."""
+        U = self._dressed_unitary(theta, np.random.default_rng(7))
+        decomp = two_qubit_decomposition(U, wires=(0, 1))
+        tape = qp.tape.QuantumScript(decomp)
+        U2 = qp.matrix(tape, wire_order=(0, 1))
+        assert qp.math.allclose(U2 @ qp.math.conj(qp.math.T(U2)), np.eye(4), atol=1e-7)
+
+    def test_exactly_separable_unitary_still_uses_zero_cnots(self):
+        rng = np.random.default_rng(99)
+        A, B = self._random_su2(rng), self._random_su2(rng)
+        U = qp.math.kron(A, B)
+        decomp = two_qubit_decomposition(U, wires=(0, 1))
+        n_cnots = sum(isinstance(op, qp.CNOT) for op in decomp)
+        assert n_cnots == 0
+
+
+class TestTwoQubitDecompositionPredictFirstCascade:
+    realistic_gates = [
+        ("CNOT", qp.CNOT(wires=[0, 1]), 1),
+        ("CZ", qp.CZ(wires=[0, 1]), 1),
+        ("ISWAP", qp.ISWAP(wires=[0, 1]), 2),
+        ("SISWAP", qp.SISWAP(wires=[0, 1]), 2),
+        ("SWAP", qp.SWAP(wires=[0, 1]), 3),
+    ]
+
+    @pytest.mark.parametrize("name, op, expected_cnots", realistic_gates)
+    def test_named_gate_is_minimal_correct_and_clean(self, name, op, expected_cnots, monkeypatch):
+        U = np.array(qp.matrix(op))
+        wires = [0, 1]
+        attempts = []
+
+        def counting_try_branch(branch_fn, U, wires, phase):
+            attempts.append(branch_fn.__name__)
+            return _try_branch(branch_fn, U, wires, phase)
+
+        monkeypatch.setattr(
+            "pennylane.ops.op_math.decompositions.unitary_decompositions._try_branch",
+            counting_try_branch,
+        )
+
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            decomposition = two_qubit_decomposition(U, wires=wires)
+
+        obtained = qp.matrix(qp.tape.QuantumScript(decomposition), wire_order=wires)
+        assert check_matrix_equivalence(U, obtained, atol=1e-7)
+        assert sum(isinstance(o, qp.CNOT) for o in decomposition) == expected_cnots
+        assert len(attempts) <= 1, f"expected at most one trial, tried {attempts}"
+        assert not caught, f"unexpected warnings: {[str(w.message) for w in caught]}"
+
+        dev = qp.device("default.qubit", wires=2)
+
+        @qp.qnode(dev)
+        def with_original(x, y):
+            qp.RX(x, wires=0)
+            qp.RY(y, wires=1)
+            qp.QubitUnitary(U, wires=wires)
+            return qp.probs(wires=[0, 1])
+
+        @qp.qnode(dev)
+        def with_decomposition(x, y):
+            qp.RX(x, wires=0)
+            qp.RY(y, wires=1)
+            for gate in decomposition:
+                qp.apply(gate)
+            return qp.probs(wires=[0, 1])
+
+        for x, y in [(0.4, -1.1), (2.3, 0.6)]:
+            assert np.allclose(with_original(x, y), with_decomposition(x, y), atol=1e-6)
+
+    def test_recovers_when_the_classifier_guesses_wrong(self, monkeypatch):
+        target = np.array(qp.matrix(qp.ISWAP(wires=[0, 1])))
+        monkeypatch.setattr(
+            "pennylane.ops.op_math.decompositions.unitary_decompositions._compute_num_cnots",
+            lambda U: 0,
+        )
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
+            decomposition = two_qubit_decomposition(target, wires=[0, 1])
+
+        obtained = qp.matrix(qp.tape.QuantumScript(decomposition), wire_order=[0, 1])
+        assert check_matrix_equivalence(target, obtained, atol=1e-7)
+        assert sum(isinstance(o, qp.CNOT) for o in decomposition) == 2
+
+    @pytest.mark.jax
+    def test_two_qubit_decomposition_correct_under_capture_despite_no_2_cnot_shortcut(self):
+        """Program capture disables the 2-CNOT branch (eigenvalue sorting isn't
+        supported with its abstract tracers -- see the qjit regression test for
+        #9016), so a 2-CNOT unitary falls back to the 3-CNOT branch under
+        capture. That's a gate-count regression, not a correctness one: the
+        recomposition must still exactly reproduce the input."""
+        U = np.array(qp.matrix(qp.ISWAP(wires=[0, 1])))
+        qp.capture.enable()
+        try:
+            decomposition = two_qubit_decomposition(U, wires=[0, 1])
+        finally:
+            qp.capture.disable()
+        obtained = qp.matrix(qp.tape.QuantumScript(decomposition), wire_order=[0, 1])
+        assert check_matrix_equivalence(U, obtained, atol=1e-7)

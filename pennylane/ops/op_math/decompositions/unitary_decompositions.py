@@ -108,6 +108,60 @@ def one_qubit_decomposition(U, wire, rotations="ZYZ", return_global_phase=False)
     return q.queue
 
 
+def _try_branch(branch_fn, U, wires, initial_phase):
+    """Run a decomposition branch inside an isolated queue, without affecting
+    any real queuing context that may be active."""
+    with queuing.AnnotatedQueue() as q:
+        branch_phase = branch_fn(U, wires, initial_phase)
+    return list(q.queue), branch_phase
+
+
+def _verify_decomposition(ops_list, U, wires, atol=1e-7):
+    """Check that recomposing ops_list reproduces U, up to global phase."""
+    # pylint: disable=import-outside-toplevel
+    # Deferred to avoid a circular import: this module is loaded early in
+    # pennylane.ops's own init chain, and pennylane.tape ultimately imports
+    # back from pennylane.ops.
+    from pennylane.ops.functions.matrix import matrix as compute_matrix
+    from pennylane.tape import QuantumScript
+
+    tape = QuantumScript(ops_list)
+    obtained = compute_matrix(tape, wire_order=wires)
+    mat_product = math.dot(math.conj(math.T(obtained)), U)
+    mat_product = mat_product / (math.trace(mat_product) / mat_product.shape[0])
+    return math.allclose(mat_product, math.eye(U.shape[0]), atol=atol)
+
+
+def _predict_and_verify_cascade(U, wires, phase):
+    """Use the cheap trace-based classifier as a first guess for the number
+    of CNOTs needed, but verify it by actually recomposing the candidate
+    circuit and comparing it against U. Near the boundary between two cases
+    the guess can be wrong (issue #9631), so on failure we fall through to
+    the next candidate in a fixed order. 3 CNOTs is tried last since it is
+    guaranteed to work for any U, and is not itself verified.
+
+    If a candidate verifies, its operations are queued onto the currently
+    active context as a side effect, and its phase contribution is returned.
+    """
+    num_cnots = _compute_num_cnots(U)
+    branch_by_count = {
+        0: _decompose_0_cnots,
+        1: _decompose_1_cnot,
+        2: _decompose_2_cnots,
+    }
+
+    if num_cnots in branch_by_count:
+        candidates = [num_cnots] + [n for n in (0, 1, 2) if n != num_cnots]
+        for n in candidates:
+            trial_ops, trial_phase = _try_branch(branch_by_count[n], U, wires, phase)
+            if _verify_decomposition(trial_ops, U, wires):
+                for op in trial_ops:
+                    queuing.apply(op)
+                return trial_phase
+
+    return _decompose_3_cnots(U, wires, phase)
+
+
 def two_qubit_decomposition(U, wires):
     r"""Decompose a two-qubit unitary :math:`U` in terms of elementary operations.
 
@@ -212,17 +266,19 @@ def two_qubit_decomposition(U, wires):
             # with conditional logic. However, we want to still take advantage of the
             # more efficient decompositions in a qjit or program capture context.
             phase += _decompose_3_cnots(U, wires, phase)
+        elif not capture.enabled() and not compiler.active():
+            # See _predict_and_verify_cascade for the strategy: guess via the
+            # cheap trace-based classifier, verify by recomposing, escalate
+            # through the fixed candidates on failure (issue #9631).
+            phase += _predict_and_verify_cascade(U, wires, phase)
         else:
+            # capture / qjit: the try-and-verify logic above needs concrete matrix
+            # values to compare against, which isn't compatible with abstract
+            # tracers, so we keep the original dynamic-conditional dispatch here.
             num_cnots = _compute_num_cnots(U)
-
             elifs = [(num_cnots == 1, _decompose_1_cnot)]
-
-            # The 2-CNOT decomposition relies on sorting eigenvalues, which is not supported
-            # with abstract tracers when capture is enabled. In that case, we fall back
-            # to the 3-CNOT decomposition.
             if not capture.enabled() and not compiler.active():
                 elifs.append((num_cnots == 2, _decompose_2_cnots))
-
             phase += ops.cond(
                 num_cnots == 0,
                 _decompose_0_cnots,
@@ -404,22 +460,23 @@ def two_qubit_decomp_rule(U, wires, **_):
     """The decomposition rule for a two-qubit unitary."""
 
     U, initial_phase = math.convert_to_su4(U)
-    num_cnots = _compute_num_cnots(U)
 
-    elifs = [(num_cnots == 1, _decompose_1_cnot)]
-
-    # The 2-CNOT decomposition relies on sorting eigenvalues, which is not supported
-    # with abstract tracers when capture is enabled. In that case, we fall back
-    # to the 3-CNOT decomposition.
     if not capture.enabled() and not compiler.active():
-        elifs.append((num_cnots == 2, _decompose_2_cnots))
+        additional_phase = _predict_and_verify_cascade(U, wires, initial_phase)
+    else:
+        num_cnots = _compute_num_cnots(U)
 
-    additional_phase = ops.cond(
-        num_cnots == 0,
-        _decompose_0_cnots,
-        _decompose_3_cnots,
-        elifs=elifs,
-    )(U, wires, initial_phase)
+        elifs = [(num_cnots == 1, _decompose_1_cnot)]
+
+        if not capture.enabled() and not compiler.active():
+            elifs.append((num_cnots == 2, _decompose_2_cnots))
+
+        additional_phase = ops.cond(
+            num_cnots == 0,
+            _decompose_0_cnots,
+            _decompose_3_cnots,
+            elifs=elifs,
+        )(U, wires, initial_phase)
     total_phase = initial_phase + additional_phase
     ops.cond(math.logical_not(math.allclose(total_phase, 0)), ops.GlobalPhase)(-total_phase)
 
@@ -536,6 +593,13 @@ def _compute_num_cnots(U):
         \gamma(U) = (E^\dag U E) (E^\dag U E)^T,
 
     and follows the arguments of this paper: https://arxiv.org/abs/quant-ph/0308045.
+
+    The trace test above is only checked to a coarse tolerance, since it is
+    only quadratically sensitive to the entangling angle near each boundary
+    and cannot by itself distinguish a weakly-entangling U from numerical
+    noise (issue #9631). Each case below therefore also checks a residual
+    that is linearly sensitive to the same condition, giving much sharper
+    resolution near the boundary between cases.
     """
 
     U = math.dot(E_dag, math.dot(U, E))
@@ -544,21 +608,42 @@ def _compute_num_cnots(U):
     g2 = math.dot(gamma, gamma)
     id4 = math.eye(4, like=g2)
 
-    # We need a tolerance of around 1e-7 here to accommodate U specified with 8 decimal places.
+    _residual_atol = 1e-7
+
+    traceless_gamma = gamma - math.cast_like(trace / 4, gamma) * id4
+    zero_cnot_residual = math.linalg.norm(math.imag(traceless_gamma))
+    one_cnot_residual = math.linalg.norm(g2 + id4)
+
+    eigvals = math.linalg.eigvals(gamma)
+    conjugate_pair_residual = math.min(
+        math.stack(
+            [
+                math.maximum(
+                    math.abs(eigvals[i] - math.conj(eigvals[j])),
+                    math.abs(eigvals[k] - math.conj(eigvals[l])),
+                )
+                for (i, j, k, l) in [(0, 1, 2, 3), (0, 2, 1, 3), (0, 3, 1, 2)]
+            ]
+        )
+    )
+
     return ops.cond(
-        # Case: 0 CNOTs (tensor product), the trace is +/- 4
-        math.allclose(trace, 4, atol=1e-7) | math.allclose(trace, -4, atol=1e-7),
+        (math.allclose(trace, 4, atol=1e-7) | math.allclose(trace, -4, atol=1e-7))
+        & math.allclose(zero_cnot_residual, 0.0, atol=_residual_atol),
         lambda: 0,
-        # Case: 3 CNOTs, the trace is a non-zero complex number with both real and imaginary parts.
         lambda: 3,
         elifs=[
-            # Case: 1 CNOT, the trace is 0, and the eigenvalues of gammaU are [-1j, -1j, 1j, 1j]
             (
-                math.allclose(trace, 0.0, atol=1e-7) & math.allclose(g2 + id4, 0.0, atol=1e-7),
+                math.allclose(trace, 0.0, atol=1e-7)
+                & math.allclose(g2 + id4, 0.0, atol=1e-7)
+                & math.allclose(one_cnot_residual, 0.0, atol=_residual_atol),
                 lambda: 1,
             ),
-            # Case: 2 CNOTs, the trace has only a real part (or is 0)
-            (math.allclose(math.imag(trace), 0.0, atol=1e-7), lambda: 2),
+            (
+                math.allclose(math.imag(trace), 0.0, atol=1e-7)
+                & math.allclose(conjugate_pair_residual, 0.0, atol=_residual_atol),
+                lambda: 2,
+            ),
         ],
     )()
 
