@@ -77,9 +77,9 @@ from .decompositions.controlled_decompositions import (
 )
 from .pow2 import pow_involutory as pow_involutory2
 
-INV_SQRT2 = 1 / qp.math.sqrt(2)
+INV_SQRT2 = 1 / math.sqrt(2)
 
-stack_last = partial(qp.math.stack, axis=-1)
+stack_last = partial(math.stack, axis=-1)
 
 
 class ControlledQubitUnitary(Controlled2):
@@ -172,7 +172,7 @@ class ControlledQubitUnitary(Controlled2):
 
         work_wires = Wires(() if work_wires is None else work_wires)
 
-        num_base_wires = int(qp.math.log2(qp.math.shape(U)[-1]))
+        num_base_wires = int(math.log2(qp.math.shape(U)[-1]))
         target_wires = wires[-num_base_wires:]
         control_wires = wires[:-num_base_wires]
 
@@ -214,7 +214,7 @@ def _ctrl_c_qu(base: ControlledQubitUnitary, control, control_values, work_wires
 
 
 def _to_general_c_qu_resource(U, wires, control_values, work_wires, work_wire_type, **_):
-    num_target_wires = int(qp.math.log2(qp.math.shape(U)[-1]))
+    num_target_wires = int(math.log2(qp.math.shape(U)[-1]))
     num_control_wires = len(wires) - num_target_wires
     num_work_wires = len(work_wires)
     u_size = 2**num_target_wires
@@ -229,7 +229,7 @@ def _to_general_c_qu_resource(U, wires, control_values, work_wires, work_wire_ty
     }
 
 
-@qp.register_condition(lambda U, *_, **__: qp.math.ceil_log2(qp.math.shape(U)[0]) > 2)
+@qp.register_condition(lambda U, *_, **__: math.ceil_log2(qp.math.shape(U)[0]) > 2)
 @qp.register_resources(_to_general_c_qu_resource)
 # pylint: disable=too-many-arguments
 def _to_general_c_qu(U, wires, control_values, work_wires, work_wire_type, **_):
@@ -1358,15 +1358,6 @@ class MultiControlledX(Controlled2):
             work_wire_type=arguments["work_wire_type"],
         )
 
-    def __repr__(self):
-        params = [f"wires={self.wires}"]
-        ctrl_values = self.control_values
-        if isinstance(ctrl_values, AbstractArray) or math.is_abstract(ctrl_values):
-            params.append(f"control_values={ctrl_values}")
-        elif not all(ctrl_values):
-            params.append(f"control_values={ctrl_values.tolist()}")
-        return f"MultiControlledX({", ".join(params)})"
-
     @override
     def adjoint(self):
         return MultiControlledX(
@@ -1674,22 +1665,22 @@ class CRX(Controlled2):
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.0000-0.2474j, 0.9689+0.0000j]])
         """
 
-        interface = qp.math.get_interface(phi)
+        interface = math.get_interface(phi)
 
-        c = qp.math.cos(phi / 2)
-        s = qp.math.sin(phi / 2)
+        c = math.cos(phi / 2)
+        s = math.sin(phi / 2)
 
         if (
             interface == "tensorflow"
         ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            c = qp.math.cast_like(c, 1j)
-            s = qp.math.cast_like(s, 1j)
+            c = math.cast_like(c, 1j)
+            s = math.cast_like(s, 1j)
 
         # The following avoids casting an imaginary quantity to reals when back propagating
         c = (1 + 0j) * c
         js = -1j * s
-        ones = qp.math.ones_like(js)
-        zeros = qp.math.zeros_like(js)
+        ones = math.ones_like(js)
+        zeros = math.zeros_like(js)
         matrix = [
             [ones, zeros, zeros, zeros],
             [zeros, ones, zeros, zeros],
@@ -1697,7 +1688,7 @@ class CRX(Controlled2):
             [zeros, zeros, js, c],
         ]
 
-        return qp.math.stack([stack_last(row) for row in matrix], axis=-2)
+        return math.stack([stack_last(row) for row in matrix], axis=-2)
 
 
 def _crx_to_rz_ry_resources(phi, wires):  # pylint: disable=unused-argument
@@ -1839,22 +1830,22 @@ class CRY(Controlled2):
                 [ 0.0000+0.j,  0.0000+0.j,  0.9689+0.j, -0.2474-0.j],
                 [ 0.0000+0.j,  0.0000+0.j,  0.2474+0.j,  0.9689+0.j]])
         """
-        interface = qp.math.get_interface(phi)
+        interface = math.get_interface(phi)
 
-        c = qp.math.cos(phi / 2)
-        s = qp.math.sin(phi / 2)
+        c = math.cos(phi / 2)
+        s = math.sin(phi / 2)
 
         if (
             interface == "tensorflow"
         ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            c = qp.math.cast_like(c, 1j)
-            s = qp.math.cast_like(s, 1j)
+            c = math.cast_like(c, 1j)
+            s = math.cast_like(s, 1j)
 
         # The following avoids casting an imaginary quantity to reals when back propagating
         c = (1 + 0j) * c
         s = (1 + 0j) * s
-        ones = qp.math.ones_like(s)
-        zeros = qp.math.zeros_like(s)
+        ones = math.ones_like(s)
+        zeros = math.zeros_like(s)
         matrix = [
             [ones, zeros, zeros, zeros],
             [zeros, ones, zeros, zeros],
@@ -1862,7 +1853,7 @@ class CRY(Controlled2):
             [zeros, zeros, s, c],
         ]
 
-        return qp.math.stack([stack_last(row) for row in matrix], axis=-2)
+        return math.stack([stack_last(row) for row in matrix], axis=-2)
 
 
 def _cry_resources(phi, wires):  # pylint: disable=unused-argument
@@ -1984,24 +1975,24 @@ class CRZ(Controlled2):
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9689+0.2474j]])
         """
         if (
-            qp.math.get_interface(phi) == "tensorflow"
+            math.get_interface(phi) == "tensorflow"
         ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            p = qp.math.exp(-0.5j * qp.math.cast_like(phi, 1j))
-            if qp.math.ndim(p) == 0:
-                return qp.math.diag([1, 1, p, qp.math.conj(p)])
+            p = math.exp(-0.5j * qp.math.cast_like(phi, 1j))
+            if math.ndim(p) == 0:
+                return math.diag([1, 1, p, qp.math.conj(p)])
 
-            ones = qp.math.ones_like(p)
-            diags = stack_last([ones, ones, p, qp.math.conj(p)])
-            return diags[:, :, np.newaxis] * qp.math.cast_like(qp.math.eye(4, like=diags), diags)
+            ones = math.ones_like(p)
+            diags = stack_last([ones, ones, p, math.conj(p)])
+            return diags[:, :, np.newaxis] * math.cast_like(qp.math.eye(4, like=diags), diags)
 
-        signs = qp.math.array([0, 0, 1, -1], like=phi)
+        signs = math.array([0, 0, 1, -1], like=phi)
         arg = -0.5j * phi
 
-        if qp.math.ndim(arg) == 0:
-            return qp.math.diag(qp.math.exp(arg * signs))
+        if math.ndim(arg) == 0:
+            return math.diag(qp.math.exp(arg * signs))
 
-        diags = qp.math.exp(qp.math.outer(arg, signs))
-        return diags[:, :, np.newaxis] * qp.math.cast_like(qp.math.eye(4, like=diags), diags)
+        diags = math.exp(qp.math.outer(arg, signs))
+        return diags[:, :, np.newaxis] * math.cast_like(qp.math.eye(4, like=diags), diags)
 
     @staticmethod
     # pylint: disable=unused-argument, arguments-differ
@@ -2032,18 +2023,18 @@ class CRZ(Controlled2):
         tensor([1.0000+0.0000j, 1.0000+0.0000j, 0.9689-0.2474j, 0.9689+0.2474j])
         """
         if (
-            qp.math.get_interface(phi) == "tensorflow"
+            math.get_interface(phi) == "tensorflow"
         ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phase = qp.math.exp(-0.5j * qp.math.cast_like(phi, 1j))
-            ones = qp.math.ones_like(phase)
-            return stack_last([ones, ones, phase, qp.math.conj(phase)])
+            phase = math.exp(-0.5j * qp.math.cast_like(phi, 1j))
+            ones = math.ones_like(phase)
+            return stack_last([ones, ones, phase, math.conj(phase)])
 
-        prefactors = qp.math.array([0, 0, -0.5j, 0.5j], like=phi)
-        if qp.math.ndim(phi) == 0:
+        prefactors = math.array([0, 0, -0.5j, 0.5j], like=phi)
+        if math.ndim(phi) == 0:
             product = phi * prefactors
         else:
-            product = qp.math.outer(phi, prefactors)
-        return qp.math.exp(product)
+            product = math.outer(phi, prefactors)
+        return math.exp(product)
 
     def eigvals(self):
         return self.compute_eigvals(*self.parameters)
@@ -2168,45 +2159,45 @@ class CRot(Controlled2):
         # It might be that they are in different interfaces, e.g.,
         # CRot(0.2, 0.3, tf.Variable(0.5), wires=[0, 1])
         # So we need to make sure the matrix comes out having the right type
-        interface = qp.math.get_interface(phi, theta, omega)
+        interface = math.get_interface(phi, theta, omega)
 
-        c = qp.math.cos(theta / 2)
-        s = qp.math.sin(theta / 2)
+        c = math.cos(theta / 2)
+        s = math.sin(theta / 2)
 
         # If anything is not tensorflow, it has to be casted
         if (
             interface == "tensorflow"
         ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phi = qp.math.cast_like(qp.math.asarray(phi, like=interface), 1j)
-            omega = qp.math.cast_like(qp.math.asarray(omega, like=interface), 1j)
-            c = qp.math.cast_like(qp.math.asarray(c, like=interface), 1j)
-            s = qp.math.cast_like(qp.math.asarray(s, like=interface), 1j)
+            phi = math.cast_like(qp.math.asarray(phi, like=interface), 1j)
+            omega = math.cast_like(qp.math.asarray(omega, like=interface), 1j)
+            c = math.cast_like(qp.math.asarray(c, like=interface), 1j)
+            s = math.cast_like(qp.math.asarray(s, like=interface), 1j)
 
         # The following variable is used to assert the all terms to be stacked have same shape
-        one = qp.math.ones_like(phi) * qp.math.ones_like(omega)
+        one = math.ones_like(phi) * qp.math.ones_like(omega)
         c = c * one
         s = s * one
 
-        o = qp.math.ones_like(c)
-        z = qp.math.zeros_like(c)
+        o = math.ones_like(c)
+        z = math.zeros_like(c)
         mat = [
             [o, z, z, z],
             [z, o, z, z],
             [
                 z,
                 z,
-                qp.math.exp(-0.5j * (phi + omega)) * c,
-                -qp.math.exp(0.5j * (phi - omega)) * s,
+                math.exp(-0.5j * (phi + omega)) * c,
+                -math.exp(0.5j * (phi - omega)) * s,
             ],
             [
                 z,
                 z,
-                qp.math.exp(-0.5j * (phi - omega)) * s,
-                qp.math.exp(0.5j * (phi + omega)) * c,
+                math.exp(-0.5j * (phi - omega)) * s,
+                math.exp(0.5j * (phi + omega)) * c,
             ],
         ]
 
-        return qp.math.stack([stack_last(row) for row in mat], axis=-2)
+        return math.stack([stack_last(row) for row in mat], axis=-2)
 
 
 def _crot_resources(*_, **__):
@@ -2308,24 +2299,24 @@ class ControlledPhaseShift(Controlled2):
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.8776+0.4794j]])
         """
         if (
-            qp.math.get_interface(phi) == "tensorflow"
+            math.get_interface(phi) == "tensorflow"
         ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            p = qp.math.exp(1j * qp.math.cast_like(phi, 1j))
-            if qp.math.ndim(p) == 0:
-                return qp.math.diag([1, 1, 1, p])
+            p = math.exp(1j * qp.math.cast_like(phi, 1j))
+            if math.ndim(p) == 0:
+                return math.diag([1, 1, 1, p])
 
-            ones = qp.math.ones_like(p)
+            ones = math.ones_like(p)
             diags = stack_last([ones, ones, ones, p])
-            return diags[:, :, np.newaxis] * qp.math.cast_like(qp.math.eye(4, like=diags), diags)
+            return diags[:, :, np.newaxis] * math.cast_like(qp.math.eye(4, like=diags), diags)
 
-        signs = qp.math.array([0, 0, 0, 1], like=phi)
+        signs = math.array([0, 0, 0, 1], like=phi)
         arg = 1j * phi
 
-        if qp.math.ndim(arg) == 0:
-            return qp.math.diag(qp.math.exp(arg * signs))
+        if math.ndim(arg) == 0:
+            return math.diag(qp.math.exp(arg * signs))
 
-        diags = qp.math.exp(qp.math.outer(arg, signs))
-        return diags[:, :, np.newaxis] * qp.math.cast_like(qp.math.eye(4, like=diags), diags)
+        diags = math.exp(qp.math.outer(arg, signs))
+        return diags[:, :, np.newaxis] * math.cast_like(qp.math.eye(4, like=diags), diags)
 
     @staticmethod
     # pylint: disable=arguments-differ,unused-argument
@@ -2356,18 +2347,18 @@ class ControlledPhaseShift(Controlled2):
         tensor([1.0000+0.0000j, 1.0000+0.0000j, 1.0000+0.0000j, 0.8776+0.4794j])
         """
         if (
-            qp.math.get_interface(phi) == "tensorflow"
+            math.get_interface(phi) == "tensorflow"
         ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phase = qp.math.exp(1j * qp.math.cast_like(phi, 1j))
-            ones = qp.math.ones_like(phase)
+            phase = math.exp(1j * qp.math.cast_like(phi, 1j))
+            ones = math.ones_like(phase)
             return stack_last([ones, ones, ones, phase])
 
-        prefactors = qp.math.array([0, 0, 0, 1j], like=phi)
-        if qp.math.ndim(phi) == 0:
+        prefactors = math.array([0, 0, 0, 1j], like=phi)
+        if math.ndim(phi) == 0:
             product = phi * prefactors
         else:
-            product = qp.math.outer(phi, prefactors)
-        return qp.math.exp(product)
+            product = math.outer(phi, prefactors)
+        return math.exp(product)
 
 
 def _cphase_rz_resource(phi, wires):  # pylint: disable=unused-argument
