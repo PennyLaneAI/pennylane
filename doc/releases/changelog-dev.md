@@ -506,52 +506,6 @@
   determine the register sizes.
   [(#10163)](https://github.com/PennyLaneAI/pennylane/pull/10163)
 
-  ```python
-  import pennylane as qp
-  import numpy as np
-
-  M, N, aleph, beth = 2, 2, 1, 1
-  zeta = tuple(map(tuple, np.eye(M)))
-  t_ell = tuple(np.ones(N//2))
-  chi = tuple(map(tuple, np.ones((M, N // 2))))
-  t_eigenvectors = tuple(map(tuple, np.eye(N // 2)))
-  sizes = qp.qubitization_thc_wires(M, N, aleph, beth)
-  wires = qp.registers(sizes)
-  ```
-
-  ```pycon
-  >>> print(qp.draw(qp.QubitizationTHC(zeta, t_ell, chi, t_eigenvectors, aleph, beth, **wires).decomposition, max_length=140)())
-   0: ────────────────────────────────────────╭SelectTHC────────────────────────────────────────────────────╭GlobalPhase(3.14)─┤
-   1: ────────────────────────────────────────├SelectTHC────────────────────────────────────────────────────├GlobalPhase(3.14)─┤
-   2: ─╭SuperpositionTHC─╭AliasSamplingTHC────├SelectTHC────╭AliasSamplingTHC†─╭SuperpositionTHC†─╭FlipSign─├GlobalPhase(3.14)─┤
-   3: ─├SuperpositionTHC─├AliasSamplingTHC────├SelectTHC────├AliasSamplingTHC†─├SuperpositionTHC†─├FlipSign─├GlobalPhase(3.14)─┤
-   4: ─├SuperpositionTHC─├AliasSamplingTHC────├SelectTHC────├AliasSamplingTHC†─├SuperpositionTHC†─├FlipSign─├GlobalPhase(3.14)─┤
-   5: ─├SuperpositionTHC─├AliasSamplingTHC────├SelectTHC────├AliasSamplingTHC†─├SuperpositionTHC†─├FlipSign─├GlobalPhase(3.14)─┤
-   6: ─├SuperpositionTHC─│────────────────────│─────────────│──────────────────├SuperpositionTHC†─├FlipSign─├GlobalPhase(3.14)─┤
-   7: ─├SuperpositionTHC─├AliasSamplingTHC────│─────────────├AliasSamplingTHC†─├SuperpositionTHC†─├FlipSign─├GlobalPhase(3.14)─┤
-   8: ─├SuperpositionTHC─├AliasSamplingTHC────│─────────────├AliasSamplingTHC†─├SuperpositionTHC†─├FlipSign─├GlobalPhase(3.14)─┤
-   9: ─├SuperpositionTHC─├AliasSamplingTHC────├SelectTHC────├AliasSamplingTHC†─├SuperpositionTHC†─├FlipSign─├GlobalPhase(3.14)─┤
-  10: ─├SuperpositionTHC─├AliasSamplingTHC────│─────────────├AliasSamplingTHC†─├SuperpositionTHC†─├FlipSign─├GlobalPhase(3.14)─┤
-  11: ─├SuperpositionTHC─├AliasSamplingTHC────│─────────────├AliasSamplingTHC†─├SuperpositionTHC†─├FlipSign─├GlobalPhase(3.14)─┤
-  12: ─├SuperpositionTHC─│────────────────────├SelectTHC────│──────────────────├SuperpositionTHC†─├FlipSign─├GlobalPhase(3.14)─┤
-  13: ─├SuperpositionTHC─├AliasSamplingTHC────│─────────────├AliasSamplingTHC†─├SuperpositionTHC†─├FlipSign─├GlobalPhase(3.14)─┤
-  14: ─├SuperpositionTHC─├AliasSamplingTHC────│─────────────├AliasSamplingTHC†─├SuperpositionTHC†─├FlipSign─├GlobalPhase(3.14)─┤
-  15: ─├SuperpositionTHC─├AliasSamplingTHC────│─────────────├AliasSamplingTHC†─├SuperpositionTHC†─├FlipSign─├GlobalPhase(3.14)─┤
-  16: ─├SuperpositionTHC─├AliasSamplingTHC────│─────────────├AliasSamplingTHC†─├SuperpositionTHC†─├FlipSign─├GlobalPhase(3.14)─┤
-  17: ─│─────────────────├AliasSamplingTHC────│─────────────├AliasSamplingTHC†─│──────────────────├FlipSign─├GlobalPhase(3.14)─┤
-  18: ─│─────────────────├AliasSamplingTHC────│─────────────├AliasSamplingTHC†─│──────────────────├FlipSign─├GlobalPhase(3.14)─┤
-  19: ─│─────────────────├AliasSamplingTHC────│─────────────├AliasSamplingTHC†─│──────────────────├FlipSign─├GlobalPhase(3.14)─┤
-  20: ─│─────────────────├AliasSamplingTHC────├SelectTHC────├AliasSamplingTHC†─│──────────────────├FlipSign─├GlobalPhase(3.14)─┤
-  21: ─│─────────────────├AliasSamplingTHC────│─────────────├AliasSamplingTHC†─│──────────────────├FlipSign─├GlobalPhase(3.14)─┤
-  22: ─│─────────────────│──────────────────H─├SelectTHC──H─│──────────────────│──────────────────├FlipSign─├GlobalPhase(3.14)─┤
-  23: ─│─────────────────│──────────────────H─├SelectTHC──H─│──────────────────│──────────────────╰FlipSign─├GlobalPhase(3.14)─┤
-  24: ─│─────────────────│────────────────────├SelectTHC────│──────────────────│────────────────────────────├GlobalPhase(3.14)─┤
-  25: ─│─────────────────│────────────────────├SelectTHC────│──────────────────│────────────────────────────├GlobalPhase(3.14)─┤
-  26: ─├SuperpositionTHC─├AliasSamplingTHC────├SelectTHC────├AliasSamplingTHC†─├SuperpositionTHC†───────────├GlobalPhase(3.14)─┤
-  27: ─╰SuperpositionTHC─╰AliasSamplingTHC────╰SelectTHC────╰AliasSamplingTHC†─╰SuperpositionTHC†───────────╰GlobalPhase(3.14)─┤
-
-  ```
-
 * Added :class:`~.OneBodyBlockEncoding`, a block-encoding of a real symmetric one-body operator
   :math:`\hat O`, normalized as :math:`\hat O / \lambda` with :math:`\lambda = \sum_p |\mu_p|`,
   where :math:`\mu_p` are the eigenvalues of the one-body matrix. Composing it with a reflection
