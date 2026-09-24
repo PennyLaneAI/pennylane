@@ -33,7 +33,7 @@ from pennylane.decomposition import (
 from pennylane.math import ceil_log2
 from pennylane.ops import CNOT, CZ, X, cond, ctrl, pauli_measure
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
-from pennylane.typing import AbstractArray, Bool, Int, TensorLike, Wire
+from pennylane.typing import AbstractArray, Bool, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
 from .arithmetic import TemporaryAND
@@ -190,7 +190,7 @@ class QROM(Operator2):
     compilable_argnames = ("clean",)
 
     arg_specs = {
-        "bitstrings": Int[-1, -1],
+        "bitstrings": Bool[-1, -1],
         "control_wires": Wire[-1],
         "target_wires": Wire[-1],
         "work_wires": Wire[-1],
@@ -214,10 +214,10 @@ class QROM(Operator2):
                 bitstrings = list(map(_to_int_array, bitstrings))
 
             if isinstance(bitstrings, (list, tuple)):
-                bitstrings = math.array(bitstrings, dtype=int)
+                bitstrings = math.array(bitstrings, dtype=bool)
 
             else:
-                bitstrings = bitstrings.astype(int)
+                bitstrings = bitstrings.astype(bool)
 
         wire_args = {
             "control_wires": control_wires,
