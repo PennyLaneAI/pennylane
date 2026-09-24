@@ -54,7 +54,7 @@ from pennylane.typing import (
     TensorLike,
     _AbstractWireTypeFactory,
 )
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import AbstractQubit, Wires, WiresLike
 
 from .base import _UNSET_BATCH_SIZE, Operator, _get_abstract_operator
 from .meta import OperatorMeta
@@ -391,6 +391,18 @@ class Operator2(metaclass=OperatorMeta):
     decomposition rules for an operator, operator types with ``arg_specs`` that spans
     all the arguments with static types can be placed in the rules' resources without needing
     to fully construct abstract operators.
+
+    .. note::
+
+        A type that is listed in 'arg_specs' says what an argument is allowed to be, 
+        not what it actually is. For example, if arg_specs contains Complex[-1, -1], the Operator 
+        can still be instantiated with a real float64 array, which will then be reported as 
+        complex even though it holds real data.
+
+        The decomposition graph goes by the reported type, so real and complex inputs will look 
+        like the same operator and share one rule. To let them decompose differently, leave the argument 
+        out of ``arg_specs`` and give each rule a ``register_condition`` that checks the type. For
+        a concrete example see ``BasisRotation``.
     """
 
     # ----------------- Class variables set automatically --------------------
@@ -1635,7 +1647,6 @@ def _init_wires(op: Operator2):
             warg = op._bound_args.arguments[wname]
             canonical_wires = warg if isinstance(warg, AbstractWires) else Wires(warg)
             op._bound_args.arguments[wname] = canonical_wires
-
             if wsize is not None and len(canonical_wires) != wsize:
                 raise ValueError(
                     f"Incorrect number of wires for '{op.name}.{wname}'. Expected {wsize} "
@@ -2172,8 +2183,27 @@ def _is_hash_leaf(l) -> bool:
     return _is_op(l) or _is_wires(l)
 
 
+def _is_abstract_array(arg):
+    from jax.core import ShapedArray  # pylint: disable=import-outside-toplevel
+
+    return isinstance(arg, (ShapedArray, AbstractArray, AbstractWires, AbstractQubit))
+
+
 def _to_int_wires(wires):
     """Cast all wires to integers."""
+    if not wires:
+        return Wires(wires)
+
+    if all(_is_abstract_array(w) for w in wires):
+        return AbstractWires(len(wires))
+
+    if any(_is_abstract_array(w) for w in wires):
+        raise ValueError(
+            "Operator instances cannot be constructed with a combination of both concrete"
+            " wires and abstract values like ShapedArray, AbstractArray,"
+            " AbstractWires, AbstractQubits"
+        )
+
     return Wires(tuple(w if math.is_abstract(w) else int(w) for w in wires))
 
 
@@ -2196,6 +2226,7 @@ def _resolve_arg_kind(cls, name: str) -> _ArgType:
     return _ArgType.DYN
 
 
+# pylint: disable=too-many-return-statements
 def _canonicalize_abstract_type(val, kind: _ArgType):
     """Canonicalizes the input into its abstract equivalent.
 
@@ -2210,6 +2241,9 @@ def _canonicalize_abstract_type(val, kind: _ArgType):
 
     if isinstance(val, (AbstractArray, AbstractWires)):
         return val
+
+    if type(val).__name__ == "ShapedArray":  # jax.core.ShapedArray
+        return AbstractArray(val.shape, val.dtype)
 
     if isinstance(val, type) and issubclass(val, Number):
         return AbstractArray((), val)
