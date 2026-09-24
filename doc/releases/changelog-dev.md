@@ -1198,7 +1198,7 @@
   now render as ``Union[int, str]`` on Python 3.12 and 3.13 (matching 3.14), so dataset
   ``py_type`` metadata no longer writes ``types.UnionType[...]``. Existing dataset files are
   unaffected because ``py_type`` is never parsed back into a type.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#10195)](https://github.com/PennyLaneAI/pennylane/pull/10195)
 
 * An operator can now be reconstructed from operator_p with abstract wires in the form of 
   AbstractQubit, jax.core.ShapedArray, AbstractWires, and AbstractArray.
