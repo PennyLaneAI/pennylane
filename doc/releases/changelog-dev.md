@@ -1591,6 +1591,13 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a bug where :func:`~.transforms.single_qubit_fusion` (through ``fuse_rot_angles``)
+  produced a gate with ``NaN`` rotation angles when the two fused rotations compose to a
+  diagonal or anti-diagonal unitary, such as fusing two Hadamards. A floating-point rounding
+  error could push the argument of ``arccos`` slightly above ``1``; it is now clipped to
+  ``[-1, 1]``.
+  [(#10185)](https://github.com/PennyLaneAI/pennylane/issues/10185)
+
 * Fixed a bug where a fixed decomposition rule assigned to :class:`~.MultiControlledX` via the
   ``fixed_decomps`` keyword argument of :func:`~.transforms.decompose` was being ignored.
   This does not apply to ``qjit(capture=True)``.
@@ -1810,6 +1817,7 @@ Jacob Kitchen,
 Korbinian Kottmann,
 Isabel Nha Minh Le,
 Christina Lee,
+Dongjae Lee,
 Joseph Lee,
 William Maxwell,
 Anton Naim Ibrahim,
