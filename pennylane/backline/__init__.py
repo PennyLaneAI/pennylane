@@ -29,7 +29,7 @@ GPUs, CPUs, FPGAs, and QPUs. For examples and tutorials see the
 .. note::
 
     Backline requires a recent version of PennyLane, Catalyst, and Lightning. Check out the `installation
-    instructions and requirements <https://github.com/PennyLaneAI/backline/tree/readme#installation>`__.
+    instructions and requirements <https://github.com/PennyLaneAI/backline/#installation>`__.
 
     Note that due to the wide range of system, network, and hardware configurations you can use
     Backline with, there are different installation requirements and steps depending on your
