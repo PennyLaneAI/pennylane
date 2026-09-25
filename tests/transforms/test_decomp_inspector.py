@@ -87,8 +87,9 @@ class TestInspectDecompGraph:
         expected = (
             "The decomposition graph was solved with 1 work wires available for dynamic "
             "allocation at the top level. There is not a point where a MultiControlledX("
-            "wires=AbstractWires(5), control_values=AbstractArray((4,), bool)) is decomposed "
-            "with a dynamic allocation budget of 2."
+            "wires=AbstractWires(5), control_values=AbstractArray((4,), bool, weak_type=True), "
+            "work_wires=AbstractWires(0), work_wire_type=borrowed) is decomposed with a "
+            "dynamic allocation budget of 2."
         )
         result = inspector.inspect_decomps(qp.MultiControlledX([0, 1, 2, 3, 4]), num_work_wires=2)
         assert str(result) == expected
@@ -117,8 +118,8 @@ class TestInspectDecompGraph:
             3: ─├●─├●────────├●─┤
             4: ─├●─├●────────├●─┤
             5: ─╰●─╰●────────╰●─┤
-            Estimated First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool)): 2, PauliX: 3}
-            Actual First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool)): 2}
+            Estimated First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool, weak_type=True), work_wires=AbstractWires(0), work_wire_type=borrowed): 2, PauliX: 3}
+            Actual First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool, weak_type=True), work_wires=AbstractWires(0), work_wire_type=borrowed): 2}
             Full Expansion Gates: {CNOT: 160, GlobalPhase: 140, RX: 60, RY: 20, RZ: 144}
             Weighted Cost: 384.0
             """).strip()
@@ -144,7 +145,7 @@ class TestInspectDecompGraph:
             | First-Level Expansion | Estimated | Actual |
             | :--- | :--- | :--- |
             | Controlled(RZ, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)) | 1 | 1 |
-            | MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool)) | 2 | 2 |
+            | MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool, weak_type=True), work_wires=AbstractWires(0), work_wire_type=borrowed) | 2 | 2 |
             | PauliX | 3 | 0 |
 
             | Full Expansion | Count |
@@ -179,8 +180,8 @@ class TestInspectDecompGraph:
             4: ───────├●─│──────────────├●────┤
             5: ───────├●─│──────────────├●────┤
                  |0>├─╰X─╰●─────────────╰X──┤
-            Estimated First-Level Expansion Gates: {Controlled(MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(2)), control_wires=AbstractWires(1), control_values=AbstractArray((1,), bool)): 1, MultiControlledX(wires=AbstractWires(4), control_values=AbstractArray((3,), bool)): 2, PauliX: 3}
-            Actual First-Level Expansion Gates: {Controlled(MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(2)), control_wires=AbstractWires(1), control_values=AbstractArray((1,), bool)): 1, MultiControlledX(wires=AbstractWires(4), control_values=AbstractArray((3,), bool)): 2}
+            Estimated First-Level Expansion Gates: {Controlled(MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(2)), control_wires=AbstractWires(1), control_values=AbstractArray((1,), bool)): 1, MultiControlledX(wires=AbstractWires(4), control_values=AbstractArray((3,), bool, weak_type=True), work_wires=AbstractWires(0), work_wire_type=borrowed): 2, PauliX: 3}
+            Actual First-Level Expansion Gates: {Controlled(MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(2)), control_wires=AbstractWires(1), control_values=AbstractArray((1,), bool)): 1, MultiControlledX(wires=AbstractWires(4), control_values=AbstractArray((3,), bool, weak_type=True), work_wires=AbstractWires(0), work_wire_type=borrowed): 2}
             Wire Allocations: {'zero': 1}
             Full Expansion Gates: {CNOT: 36, GlobalPhase: 72, MidMeasure: 2, RX: 18, RY: 14, RZ: 60}
             Weighted Cost: 130.0
@@ -191,8 +192,8 @@ class TestInspectDecompGraph:
             3: ─├●─├●────────├●─┤
             4: ─├●─├●────────├●─┤
             5: ─╰●─╰●────────╰●─┤
-            Estimated First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool)): 2, PauliX: 3}
-            Actual First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool)): 2}
+            Estimated First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool, weak_type=True), work_wires=AbstractWires(0), work_wire_type=borrowed): 2, PauliX: 3}
+            Actual First-Level Expansion Gates: {Controlled(RZ, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool, weak_type=True), work_wires=AbstractWires(0), work_wire_type=borrowed): 2}
             Full Expansion Gates: {CNOT: 76, GlobalPhase: 94, MidMeasure: 4, RX: 38, RY: 16, RZ: 84}
             Weighted Cost: 218.0
             """).strip()
@@ -213,7 +214,7 @@ class TestInspectDecompGraph:
             | First-Level Expansion | Estimated | Actual |
             | :--- | :--- | :--- |
             | Controlled(MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(2)), control_wires=AbstractWires(1), control_values=AbstractArray((1,), bool)) | 1 | 1 |
-            | MultiControlledX(wires=AbstractWires(4), control_values=AbstractArray((3,), bool)) | 2 | 2 |
+            | MultiControlledX(wires=AbstractWires(4), control_values=AbstractArray((3,), bool, weak_type=True), work_wires=AbstractWires(0), work_wire_type=borrowed) | 2 | 2 |
             | PauliX | 3 | 0 |
 
             | Wire Type | Num Allocated |
@@ -247,7 +248,7 @@ class TestInspectDecompGraph:
             | First-Level Expansion | Estimated | Actual |
             | :--- | :--- | :--- |
             | Controlled(RZ, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)) | 1 | 1 |
-            | MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool)) | 2 | 2 |
+            | MultiControlledX(wires=AbstractWires(5), control_values=AbstractArray((4,), bool, weak_type=True), work_wires=AbstractWires(0), work_wire_type=borrowed) | 2 | 2 |
             | PauliX | 3 | 0 |
 
             | Full Expansion | Count |
@@ -272,8 +273,8 @@ class TestInspectDecompGraph:
             M0 = 
             [[ 9.23879533e-01+0.38268343j -5.34910791e-34+0.j        ]
              [ 5.34910791e-34+0.j          9.23879533e-01-0.38268343j]]
-            Estimated First-Level Expansion Gates: {Adjoint(QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1))): 2, CNOT: 2, Controlled(GlobalPhase, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, Hadamard: 2, MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool)): 2, PauliX: 3, QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1)): 2}
-            Actual First-Level Expansion Gates: {Adjoint(QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1))): 2, CNOT: 2, Controlled(GlobalPhase, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, Hadamard: 2, MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool)): 2, QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1)): 2}
+            Estimated First-Level Expansion Gates: {Adjoint(QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1))): 2, CNOT: 2, Controlled(GlobalPhase, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, Hadamard: 2, MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool, weak_type=True), work_wires=AbstractWires(1), work_wire_type=borrowed): 2, PauliX: 3, QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1)): 2}
+            Actual First-Level Expansion Gates: {Adjoint(QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1))): 2, CNOT: 2, Controlled(GlobalPhase, control_wires=AbstractWires(3), control_values=AbstractArray((3,), bool)): 1, Hadamard: 2, MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool, weak_type=True), work_wires=AbstractWires(1), work_wire_type=borrowed): 2, QubitUnitary(U=AbstractArray((2, 2), complex128, weak_type=True), wires=AbstractWires(1)): 2}
 
             Decomposition 1 (name: one_borrowed_worker)
             0: ────╭●────╭●───────┤
