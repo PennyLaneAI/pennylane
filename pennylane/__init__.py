@@ -133,15 +133,6 @@ from pennylane.transforms import (
     gridsynth,
     CompilePipeline,
 )
-from pennylane.noise import (
-    add_noise,
-    insert,
-    mitigate_with_zne,
-    fold_global,
-    poly_extrapolate,
-    richardson_extrapolate,
-    exponential_extrapolate,
-)
 from pennylane.ops.functions import (
     dot,
     eigvals,
@@ -185,7 +176,6 @@ from pennylane.io import (
     from_qasm,
     to_openqasm,
     from_qiskit,
-    from_qiskit_noise,
     from_qiskit_op,
     from_quil,
     from_quil_file,
@@ -199,9 +189,6 @@ from pennylane.io import (
 from pennylane import logging  # pylint:disable=wrong-import-order
 
 from pennylane import data
-
-from pennylane import noise
-from pennylane.noise import NoiseModel
 
 from pennylane.devices import Tracker
 from pennylane.devices.device_constructor import device, refresh_devices
