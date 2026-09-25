@@ -489,22 +489,19 @@
   [(#10145)](https://github.com/PennyLaneAI/pennylane/pull/10145)
   [(#10146)](https://github.com/PennyLaneAI/pennylane/pull/10146)
 
-* You can now build the ``PREPARE`` and ``SELECT`` subroutines for tensor hypercontraction
-  qubitization with :class:`~.SuperpositionTHC`, :class:`~.AliasSamplingTHC`, and
-  :class:`~.SelectTHC`. Use :func:`~.alias_sampling_thc_wires` and
-  :func:`~.select_thc_wires` to determine their register sizes.
+* Added :class:`~.QubitizationTHC`, the qubitization walk operator of a tensor hypercontracted
+  Hamiltonian. It composes the (also newly added) :class:`~.SuperpositionTHC` and 
+  :class:`~.AliasSamplingTHC` into ``PREPARE``, applies :class:`~.SelectTHC`, and reflects about
+  :math:`|\vec 0\rangle` on the ``PREPARE`` register. Use :func:`~.qubitization_thc_wires` to
+  determine the register sizes, as well as :func:`~.alias_sampling_thc_wires` and
+  :func:`~.select_thc_wires` to determine the register sizes of the respective component.
   [(#9554)](https://github.com/PennyLaneAI/pennylane/pull/9554)
   [(#9940)](https://github.com/PennyLaneAI/pennylane/pull/9940)
   [(#10119)](https://github.com/PennyLaneAI/pennylane/pull/10119)
   [(#10146)](https://github.com/PennyLaneAI/pennylane/pull/10146)
   [(#10158)](https://github.com/PennyLaneAI/pennylane/pull/10158)
-
-* Added :class:`~.QubitizationTHC`, the qubitization walk operator of a tensor hypercontracted
-  Hamiltonian. It composes :class:`~.SuperpositionTHC` and :class:`~.AliasSamplingTHC` into
-  ``PREPARE``, applies :class:`~.SelectTHC`, and reflects about
-  :math:`|\vec 0\rangle` on the ``PREPARE`` register. Use :func:`~.qubitization_thc_wires` to
-  determine the register sizes.
   [(#10163)](https://github.com/PennyLaneAI/pennylane/pull/10163)
+  [(#10184)](https://github.com/PennyLaneAI/pennylane/pull/10184)
 
 * Added :class:`~.OneBodyBlockEncoding`, a block-encoding of a real symmetric one-body operator
   :math:`\hat O`, normalized as :math:`\hat O / \lambda` with :math:`\lambda = \sum_p |\mu_p|`,
@@ -605,6 +602,10 @@
   ```
 
 <h3>Improvements 🛠</h3>
+
+* Added ``work_wires`` and ``work_wire_type`` arguments to :class:`~.GQSP` that are passed
+  through to the controlled walk operator in its decomposition.
+  [(#10184)](https://github.com/PennyLaneAI/pennylane/pull/10184)
 
 * Added a decomposition of :class:`~.TemporaryAND` directly to four :math:`\pm\pi/8` PPRs and a
   decomposition of :class:`~.SingleExcitation` to two :math:`\pm\pi/4` and two arbitrary-angle PPRs.
@@ -1003,6 +1004,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Jax 0.7.1 is now a hard requirement for PennyLane.
+  [(#10192)](https://github.com/PennyLaneAI/pennylane/pull/10192)
+
 * :class:`~.GlobalPhase` no longer accepts the `wires` argument in order to mirror its MLIR lowered operation.
   [(#9992)](https://github.com/PennyLaneAI/pennylane/pull/9992)
 
@@ -1193,6 +1197,9 @@
   [(#9925)](https://github.com/PennyLaneAI/pennylane/pull/9925)
 
 <h3>Internal changes ⚙️</h3>
+
+* Removes indirection and deferred imports now that jax is always available.
+  [(#10198)](https://github.com/PennyLaneAI/pennylane/pull/10198)
 
 * An operator can now be reconstructed from operator_p with abstract wires in the form of 
   AbstractQubit, jax.core.ShapedArray, AbstractWires, and AbstractArray.

@@ -19,6 +19,8 @@ of pulse sequences in a qubit-based quantum tape.
 import warnings
 from functools import partial
 
+import jax
+import jax.numpy as jnp
 import numpy as np
 
 from pennylane import math
@@ -42,26 +44,6 @@ from .gradient_transform import (
     reorder_grads,
 )
 from .parameter_shift import _make_zero_rep
-
-has_jax = True
-try:
-    import jax
-    import jax.numpy as jnp
-except ImportError:
-    has_jax = False
-
-
-def _assert_has_jax(transform_name):
-    """Check that JAX is installed and imported correctly, otherwise raise an error.
-
-    Args:
-        transform_name (str): Name of the gradient transform that queries the return system
-    """
-    if not has_jax:  # pragma: no cover
-        raise ImportError(
-            f"Module jax is required for the {transform_name} gradient transform. "
-            "You can install jax via: pip install jax"
-        )
 
 
 def raise_pulse_diff_on_qnode(transform_name):
@@ -607,7 +589,6 @@ def stoch_pulse_grad(
     """
 
     transform_name = "stochastic pulse parameter-shift"
-    _assert_has_jax(transform_name)
     assert_no_state_returns(tape.measurements, transform_name)
     assert_no_variance(tape.measurements, transform_name)
     assert_no_trainable_tape_batching(tape, transform_name)

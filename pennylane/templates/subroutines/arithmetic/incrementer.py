@@ -13,6 +13,8 @@
 # limitations under the License.
 """Contains the implementation of the Incrementer template."""
 
+from jax import lax
+
 from pennylane import compiler, math
 from pennylane.capture import enabled
 from pennylane.control_flow import for_loop
@@ -25,12 +27,6 @@ from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike, is_abstract_qubit
 
 from .temporary_and import TemporaryAND
-
-has_jax = True
-try:
-    from jax import lax
-except (ModuleNotFoundError, ImportError):  # pragma: no cover
-    has_jax = False  # pragma: no cover
 
 
 class Incrementer(Operator2):

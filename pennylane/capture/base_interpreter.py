@@ -20,10 +20,10 @@ This submodule defines a strategy structure for defining custom plxpr interprete
 from collections.abc import Callable, Sequence
 from copy import copy
 from functools import partial, wraps
-from importlib.metadata import version
 
 import jax
-from packaging.version import Version
+import jax.extend.core
+from jax._src.pjit import jit_p as pjit_p
 
 import pennylane as qp
 from pennylane import math
@@ -44,7 +44,7 @@ from .primitives import (
     while_loop_prim,
 )
 
-FlattenedHigherOrderPrimitives: dict["jax.extend.core.Primitive", Callable] = {}
+FlattenedHigherOrderPrimitives: dict[jax.extend.core.Primitive, Callable] = {}
 """
 A dictionary containing flattened style cond, while, and for loop higher order primitives.
 
@@ -55,7 +55,7 @@ A dictionary containing flattened style cond, while, and for loop higher order p
 """
 
 
-def _fill_in_shape_with_dyn_shape(dyn_shape: tuple["jax.core.Tracer"], shape: tuple[int | None]):
+def _fill_in_shape_with_dyn_shape(dyn_shape: tuple[jax.core.Tracer], shape: tuple[int | None]):
     """
     A helper for broadcast_in_dim and iota to combine static dimensions and dynamic dimensions.
 
@@ -103,8 +103,8 @@ def _fill_in_shape_with_dyn_shape(dyn_shape: tuple["jax.core.Tracer"], shape: tu
 
 
 def jaxpr_to_jaxpr(
-    interpreter: "PlxprInterpreter", jaxpr: "jax.extend.core.Jaxpr", consts, *args
-) -> "jax.extend.core.ClosedJaxpr":
+    interpreter: "PlxprInterpreter", jaxpr: jax.extend.core.Jaxpr, consts, *args
+) -> jax.extend.core.ClosedJaxpr:
     """A convenience utility for converting jaxpr to a new jaxpr via an interpreter."""
 
     f = partial(interpreter.eval, jaxpr, consts)
@@ -229,7 +229,7 @@ class PlxprInterpreter:
     """
 
     _env: dict
-    _primitive_registrations: dict["jax.extend.core.Primitive", Callable] = {}
+    _primitive_registrations: dict[jax.extend.core.Primitive, Callable] = {}
 
     def __init_subclass__(cls) -> None:
         cls._primitive_registrations = copy(cls._primitive_registrations)
@@ -240,7 +240,7 @@ class PlxprInterpreter:
 
     @classmethod
     def register_primitive(
-        cls, primitive: "jax.extend.core.Primitive"
+        cls, primitive: jax.extend.core.Primitive
     ) -> Callable[[Callable], Callable]:
         """Registers a custom method for handling a primitive
 
@@ -313,7 +313,7 @@ class PlxprInterpreter:
             new_op._bind_primitive()  # pylint: disable=protected-access
         return new_op
 
-    def interpret_operation_eqn(self, eqn: "jax.extend.core.JaxprEqn"):
+    def interpret_operation_eqn(self, eqn: jax.extend.core.JaxprEqn):
         """Interpret an equation corresponding to an operator.
 
         Args:
@@ -329,7 +329,7 @@ class PlxprInterpreter:
             return self.interpret_operation(op)
         return op
 
-    def interpret_measurement_eqn(self, eqn: "jax.extend.core.JaxprEqn"):
+    def interpret_measurement_eqn(self, eqn: jax.extend.core.JaxprEqn):
         """Interpret an equation corresponding to a measurement process.
 
         Args:
@@ -355,7 +355,7 @@ class PlxprInterpreter:
         data, struct = jax.tree_util.tree_flatten(measurement)
         return jax.tree_util.tree_unflatten(struct, data)
 
-    def eval(self, jaxpr: "jax.extend.core.Jaxpr", consts: Sequence, *args) -> list:
+    def eval(self, jaxpr: jax.extend.core.Jaxpr, consts: Sequence, *args) -> list:
         """Evaluate a jaxpr.
 
         Args:
@@ -706,13 +706,6 @@ class FlattenedInterpreter(PlxprInterpreter):
     """
 
 
-jax_version = version("jax")
-if Version(jax_version) > Version("0.6.2"):  # pragma: no cover
-    from jax._src.pjit import jit_p as pjit_p
-else:  # pragma: no cover
-    from jax._src.pjit import pjit_p
-
-
 @FlattenedInterpreter.register_primitive(pjit_p)
 def _pjit_primitive(self, *invals, jaxpr, **params):
     if jax.config.jax_dynamic_shapes:
@@ -810,7 +803,7 @@ def flattened_for(
 FlattenedHigherOrderPrimitives[for_loop_prim] = flattened_for
 
 
-def eval_jaxpr(jaxpr: "jax.extend.core.Jaxpr", consts: list, *args) -> list:
+def eval_jaxpr(jaxpr: jax.extend.core.Jaxpr, consts: list, *args) -> list:
     """A version of ``jax.core.eval_jaxpr`` that can handle creating arrays with dynamic shapes.
 
     Args:
