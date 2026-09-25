@@ -15,19 +15,14 @@ r"""
 Contains the ``AngleEmbedding`` template.
 """
 
+from jax import numpy as jnp
+
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation, abstractify
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import RX, RY, RZ
 from pennylane.wires import WiresLike
-
-has_jax = True
-try:
-    from jax import numpy as jnp
-except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
-    has_jax = False  # pragma: no cover
-
 
 ROT = {"X": RX, "Y": RY, "Z": RZ}
 
@@ -163,7 +158,7 @@ def _angle_embedding_decomposition(features: list, wires: WiresLike, rotation: O
     # If the leading dimension is a batch dimension, exchange the wire and batching axes.
     features = math.T(features) if batched else features
 
-    if has_jax and capture.enabled():
+    if capture.enabled():
         features, wires = jnp.array(features), jnp.array(wires)
 
     @for_loop(len(wires))

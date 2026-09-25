@@ -16,101 +16,88 @@ This submodule defines the abstract classes and primitives for capturing measure
 """
 
 from collections.abc import Callable
-from functools import lru_cache
-from typing import Optional
+
+import jax
 
 from pennylane import capture
 from pennylane.math import is_abstract
 from pennylane.wires import Wires
 
-has_jax = True
-try:
-    import jax
-except ImportError:
-    has_jax = False
 
+class AbstractMeasurement(jax.core.AbstractValue):
+    """An abstract measurement.
 
-@lru_cache
-def _get_abstract_measurement():
-    if not has_jax:  # pragma: no cover
-        raise ImportError("Jax is required for plxpr.")  # pragma: no cover
+    Args:
+        abstract_eval (Callable): See :meth:`~.MeasurementProcess._abstract_eval`.  A function of
+           ``n_wires``, ``has_eigvals``, ``num_device_wires`` and ``shots`` that returns a shape
+           and numeric type.
+        n_wires=None (Optional[int]): the number of wires
+        has_eigvals=False (bool): Whether or not the measurement contains eigenvalues in a wires+eigvals
+           diagonal representation.
 
-    class AbstractMeasurement(jax.core.AbstractValue):
-        """An abstract measurement.
+    """
 
-        Args:
-            abstract_eval (Callable): See :meth:`~.MeasurementProcess._abstract_eval`.  A function of
-               ``n_wires``, ``has_eigvals``, ``num_device_wires`` and ``shots`` that returns a shape
-               and numeric type.
-            n_wires=None (Optional[int]): the number of wires
-            has_eigvals=False (bool): Whether or not the measurement contains eigenvalues in a wires+eigvals
-               diagonal representation.
+    def __init__(
+        self, abstract_eval: Callable, n_wires: int | None = None, has_eigvals: bool = False
+    ):
+        self._abstract_eval = abstract_eval
+        self._n_wires = n_wires
+        self.has_eigvals: bool = has_eigvals
+
+    def abstract_eval(self, num_device_wires: int, shots: int) -> tuple[tuple, type]:
+        """Calculate the shape and dtype for an evaluation with specified number of device
+        wires and shots.
 
         """
+        return self._abstract_eval(
+            n_wires=self._n_wires,
+            has_eigvals=self.has_eigvals,
+            num_device_wires=num_device_wires,
+            shots=shots,
+        )
 
-        def __init__(
-            self, abstract_eval: Callable, n_wires: int | None = None, has_eigvals: bool = False
-        ):
-            self._abstract_eval = abstract_eval
-            self._n_wires = n_wires
-            self.has_eigvals: bool = has_eigvals
+    @property
+    def n_wires(self) -> int | None:
+        """The number of wires for a wire based measurement.
 
-        def abstract_eval(self, num_device_wires: int, shots: int) -> tuple[tuple, type]:
-            """Calculate the shape and dtype for an evaluation with specified number of device
-            wires and shots.
+        Options are:
+        * ``None``:  The measurement is observable based or single mcm based
+        * ``0``: The measurement is broadcasted across all available devices wires
+        * ``int>0``: A wire or mcm based measurement with specified wires or mid circuit measurements.
 
-            """
-            return self._abstract_eval(
-                n_wires=self._n_wires,
-                has_eigvals=self.has_eigvals,
-                num_device_wires=num_device_wires,
-                shots=shots,
-            )
+        """
+        return self._n_wires
 
-        @property
-        def n_wires(self) -> int | None:
-            """The number of wires for a wire based measurement.
+    def __repr__(self):
+        if self.has_eigvals:
+            return f"AbstractMeasurement(n_wires={self.n_wires}, has_eigvals=True)"
+        return f"AbstractMeasurement(n_wires={self.n_wires})"
 
-            Options are:
-            * ``None``:  The measurement is observable based or single mcm based
-            * ``0``: The measurement is broadcasted across all available devices wires
-            * ``int>0``: A wire or mcm based measurement with specified wires or mid circuit measurements.
+    # pylint: disable=missing-function-docstring
+    def at_least_vspace(self):
+        # TODO: investigate the proper definition of this method
+        raise NotImplementedError
 
-            """
-            return self._n_wires
+    # pylint: disable=missing-function-docstring
+    def join(self, other):
+        # TODO: investigate the proper definition of this method
+        raise NotImplementedError
 
-        def __repr__(self):
-            if self.has_eigvals:
-                return f"AbstractMeasurement(n_wires={self.n_wires}, has_eigvals=True)"
-            return f"AbstractMeasurement(n_wires={self.n_wires})"
+    # pylint: disable=missing-function-docstring
+    def update(self, **kwargs):
+        # TODO: investigate the proper definition of this method
+        raise NotImplementedError
 
-        # pylint: disable=missing-function-docstring
-        def at_least_vspace(self):
-            # TODO: investigate the proper definition of this method
-            raise NotImplementedError
+    def __eq__(self, other):
+        return isinstance(other, AbstractMeasurement)
 
-        # pylint: disable=missing-function-docstring
-        def join(self, other):
-            # TODO: investigate the proper definition of this method
-            raise NotImplementedError
-
-        # pylint: disable=missing-function-docstring
-        def update(self, **kwargs):
-            # TODO: investigate the proper definition of this method
-            raise NotImplementedError
-
-        def __eq__(self, other):
-            return isinstance(other, AbstractMeasurement)
-
-        def __hash__(self):
-            return hash("AbstractMeasurement")
-
-    return AbstractMeasurement
+    def __hash__(self):
+        return hash("AbstractMeasurement")
 
 
 def create_measurement_obs_primitive(
     measurement_type: type["qp.measurements.MeasurementProcess"], name: str
-) -> Optional["jax.extend.core.Primitive"]:
+) -> jax.extend.core.Primitive:
     """Create a primitive corresponding to the input type where the abstract inputs are an operator.
 
     Called by default when defining any class inheriting from :class:`~.MeasurementProcess`, and is used to
@@ -122,12 +109,9 @@ def create_measurement_obs_primitive(
             ``"_obs"`` is appended to this name for the name of the primitive.
 
     Returns:
-        Optional[jax.extend.core.Primitive]: A new jax primitive. ``None`` is returned if jax is not available.
+        jax.extend.core.Primitive: A new jax primitive.
 
     """
-    if not has_jax:
-        return None
-
     primitive = capture.QpPrimitive(name + "_obs")
     primitive.prim_type = "measurement"
 
@@ -135,19 +119,17 @@ def create_measurement_obs_primitive(
     def _impl(obs, **kwargs):
         return type.__call__(measurement_type, obs=obs, **kwargs)
 
-    abstract_type = _get_abstract_measurement()
-
     @primitive.def_abstract_eval
     def _abstract_eval(*_, **__):
         abstract_eval = measurement_type._abstract_eval  # pylint: disable=protected-access
-        return abstract_type(abstract_eval, n_wires=None)
+        return AbstractMeasurement(abstract_eval, n_wires=None)
 
     return primitive
 
 
 def create_measurement_mcm_primitive(
     measurement_type: type["qp.measurements.MeasurementProcess"], name: str
-) -> Optional["jax.extend.core.Primitive"]:
+) -> jax.extend.core.Primitive:
     """Create a primitive corresponding to the input type where the abstract inputs are classical
     mid circuit measurement results.
 
@@ -160,11 +142,8 @@ def create_measurement_mcm_primitive(
             ``"_mcm"`` is appended to this name for the name of the primitive.
 
     Returns:
-        Optional[jax.extend.core.Primitive]: A new jax primitive. ``None`` is returned if jax is not available.
+        jax.extend.core.Primitive: A new jax primitive.
     """
-
-    if not has_jax:
-        return None
     primitive = capture.QpPrimitive(name + "_mcm")
     primitive.prim_type = "measurement"
 
@@ -172,19 +151,17 @@ def create_measurement_mcm_primitive(
     def _impl(*mcms, single_mcm=True, **kwargs):
         return type.__call__(measurement_type, obs=mcms[0] if single_mcm else mcms, **kwargs)
 
-    abstract_type = _get_abstract_measurement()
-
     @primitive.def_abstract_eval
     def _abstract_eval(*mcms, **__):
         abstract_eval = measurement_type._abstract_eval  # pylint: disable=protected-access
-        return abstract_type(abstract_eval, n_wires=len(mcms))
+        return AbstractMeasurement(abstract_eval, n_wires=len(mcms))
 
     return primitive
 
 
 def create_measurement_wires_primitive(
     measurement_type: type, name: str
-) -> Optional["jax.extend.core.Primitive"]:
+) -> jax.extend.core.Primitive:
     """Create a primitive corresponding to the input type where the abstract inputs are the wires.
 
     Called by default when defining any class inheriting from :class:`~.MeasurementProcess`, and is used to
@@ -196,11 +173,8 @@ def create_measurement_wires_primitive(
             ``"_wires"`` is appended to this name for the name of the primitive.
 
     Returns:
-        Optional[jax.extend.core.Primitive]: A new jax primitive. ``None`` is returned if jax is not available.
+        jax.extend.core.Primitive: A new jax primitive.
     """
-    if not has_jax:
-        return None
-
     primitive = capture.QpPrimitive(name + "_wires")
     primitive.prim_type = "measurement"
 
@@ -214,12 +188,10 @@ def create_measurement_wires_primitive(
             wires = Wires(wires)
         return type.__call__(measurement_type, wires=wires, **kwargs)
 
-    abstract_type = _get_abstract_measurement()
-
     @primitive.def_abstract_eval
     def _abstract_eval(*args, has_eigvals=False, **_):
         abstract_eval = measurement_type._abstract_eval  # pylint: disable=protected-access
         n_wires = len(args) - 1 if has_eigvals else len(args)
-        return abstract_type(abstract_eval, n_wires=n_wires, has_eigvals=has_eigvals)
+        return AbstractMeasurement(abstract_eval, n_wires=n_wires, has_eigvals=has_eigvals)
 
     return primitive

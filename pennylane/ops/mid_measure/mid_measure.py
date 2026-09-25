@@ -17,10 +17,12 @@ This module contains the qp.measure measurement.
 
 import uuid
 from collections.abc import Hashable
-from functools import lru_cache
 from typing import override
 
+import jax
+
 from pennylane.capture import enabled as capture_enabled
+from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.compiler import compiler
 from pennylane.core import QueuingManager
 from pennylane.core.operator import Operator2, abstractify
@@ -45,34 +47,18 @@ def _measure_impl(wires: Hashable | Wires, reset: bool = False, postselect: int 
     return MeasurementValue([mp])
 
 
-@lru_cache
-def _create_mid_measure_primitive():
-    """Create a primitive corresponding to an mid-circuit measurement type.
+measure_prim = QpPrimitive("measure")
 
-    Called when using :func:`~pennylane.measure`.
 
-    Returns:
-        jax.extend.core.Primitive: A new jax primitive corresponding to a mid-circuit
-        measurement.
+@measure_prim.def_impl
+def _measure_prim_impl(wires, reset=False, postselect=None):
+    return _measure_impl(wires, reset=reset, postselect=postselect)
 
-    """
-    # pylint: disable=import-outside-toplevel
-    import jax
 
-    from pennylane.capture.custom_primitives import QpPrimitive
-
-    mid_measure_p = QpPrimitive("measure")
-
-    @mid_measure_p.def_impl
-    def _impl(wires, reset=False, postselect=None):
-        return _measure_impl(wires, reset=reset, postselect=postselect)
-
-    @mid_measure_p.def_abstract_eval
-    def _abstract_eval(*_, **__):
-        dtype = jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
-        return jax.core.ShapedArray((), dtype)
-
-    return mid_measure_p
+@measure_prim.def_abstract_eval
+def _measure_prim_abstract_eval(*_, **__):
+    dtype = jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
+    return jax.core.ShapedArray((), dtype)
 
 
 def get_mcm_predicates(conditions: tuple[MeasurementValue]) -> list[MeasurementValue]:
@@ -377,8 +363,7 @@ def measure(
 
     """
     if capture_enabled():
-        primitive = _create_mid_measure_primitive()
-        return primitive.bind(wires, reset=reset, postselect=postselect)
+        return measure_prim.bind(wires, reset=reset, postselect=postselect)
 
     if active_jit := compiler.active_compiler():
         available_eps = compiler.AvailableCompilers.names_entrypoints

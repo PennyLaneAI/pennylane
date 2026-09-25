@@ -20,12 +20,7 @@ from dataclasses import dataclass
 from typing import Any
 
 import autograd
-
-has_jax = True
-try:
-    import jax.tree_util as jax_tree_util
-except ImportError:
-    has_jax = False
+import jax.tree_util as jax_tree_util
 
 Leaves = Any
 Metadata = Any
@@ -141,9 +136,7 @@ def register_pytree(
 
     typename = f"{namespace}.{pytree_type.__qualname__}"
     _register_pytree_with_pennylane(pytree_type, typename, flatten_fn, unflatten_fn)
-
-    if has_jax:
-        _register_pytree_with_jax(pytree_type, flatten_fn, unflatten_fn)
+    _register_pytree_with_jax(pytree_type, flatten_fn, unflatten_fn)
 
 
 def is_pytree(type_: type[Any]) -> bool:

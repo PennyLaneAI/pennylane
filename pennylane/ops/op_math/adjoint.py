@@ -16,13 +16,14 @@ This submodule defines the symbolic operation that indicates the adjoint of an o
 """
 
 from collections.abc import Callable
-from functools import lru_cache, partial
+from functools import partial
 from typing import overload
 from warnings import warn
 
 import pennylane as qp
 from pennylane import pytrees
 from pennylane.capture.autograph import wraps
+from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.compiler import compiler
 from pennylane.core.operator import Operation, Operator, Operator2
 from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
@@ -201,34 +202,29 @@ def create_adjoint_op(fn, lazy):
     )
 
 
-@lru_cache  # only create the first time requested
-def _get_adjoint_qfunc_prim():
-    """See capture/explanations.md : Higher Order primitives for more information on this code."""
-    # if capture is enabled, jax should be installed
-    # pylint: disable=import-outside-toplevel
-    from pennylane.capture.custom_primitives import QpPrimitive
+adjoint_transform_prim = QpPrimitive("adjoint_transform")
+adjoint_transform_prim.multiple_results = True
+adjoint_transform_prim.prim_type = "higher_order"
 
-    adjoint_prim = QpPrimitive("adjoint_transform")
-    adjoint_prim.multiple_results = True
-    adjoint_prim.prim_type = "higher_order"
 
-    @adjoint_prim.def_impl
-    def _impl(*args, jaxpr, lazy, n_consts):
-        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+@adjoint_transform_prim.def_impl
+def _adjoint_transform_impl(*args, jaxpr, lazy, n_consts):
+    from pennylane.tape.plxpr_conversion import (  # pylint: disable=import-outside-toplevel
+        CollectOpsandMeas,
+    )
 
-        consts = args[:n_consts]
-        args = args[n_consts:]
-        collector = CollectOpsandMeas()
-        collector.eval(jaxpr, consts, *args)
-        for op in reversed(collector.state["ops"]):
-            adjoint(op, lazy=lazy)
-        return []
+    consts = args[:n_consts]
+    args = args[n_consts:]
+    collector = CollectOpsandMeas()
+    collector.eval(jaxpr, consts, *args)
+    for op in reversed(collector.state["ops"]):
+        adjoint(op, lazy=lazy)
+    return []
 
-    @adjoint_prim.def_abstract_eval
-    def _abstract_eval(*_, **__):
-        return []
 
-    return adjoint_prim
+@adjoint_transform_prim.def_abstract_eval
+def _adjoint_transform_abstract_eval(*_, **__):
+    return []
 
 
 def _capture_adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
@@ -236,14 +232,12 @@ def _capture_adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
     # note that this logic is tested in `tests/capture/test_nested_plxpr.py`
     import jax  # pylint: disable=import-outside-toplevel
 
-    adjoint_prim = _get_adjoint_qfunc_prim()
-
     @wraps(qfunc)
     def new_qfunc(*args, **kwargs):
         abstracted_axes, abstract_shapes = qp.capture.determine_abstracted_axes(args)
         jaxpr = jax.make_jaxpr(partial(qfunc, **kwargs), abstracted_axes=abstracted_axes)(*args)
         flat_args = jax.tree_util.tree_leaves(args)
-        adjoint_prim.bind(
+        adjoint_transform_prim.bind(
             *jaxpr.consts,
             *abstract_shapes,
             *flat_args,
