@@ -15,8 +15,6 @@
 Contains the GQSP template.
 """
 
-from jax import numpy as jnp
-
 from pennylane import capture, compiler, math, ops
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2, abstractify
