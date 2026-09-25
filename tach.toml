@@ -303,11 +303,6 @@ layer = "tertiary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
-path = "pennylane.qaoa"
-layer = "tertiary"
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-
-[[modules]]
 path = "pennylane.data"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "tertiary"
