@@ -1302,6 +1302,7 @@
   [(#10178)](https://github.com/PennyLaneAI/pennylane/pull/10178)
   [(#9925)](https://github.com/PennyLaneAI/pennylane/pull/9925)
   [(#9918)](https://github.com/PennyLaneAI/pennylane/pull/9918)
+  [(#10189)](https://github.com/PennyLaneAI/pennylane/pull/10189)
   [(#9932)](https://github.com/PennyLaneAI/pennylane/pull/9932)
   [(#9924)](https://github.com/PennyLaneAI/pennylane/pull/9924)
   [(#9910)](https://github.com/PennyLaneAI/pennylane/pull/9910)
