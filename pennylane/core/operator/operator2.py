@@ -17,7 +17,7 @@ TODO: [sc-120453] Fill docstring
 """
 
 from abc import abstractmethod
-from collections.abc import Callable, Hashable, Iterable, Sequence
+from collections.abc import Hashable, Iterable, Sequence
 from copy import copy, deepcopy
 from enum import Enum, StrEnum, auto
 from functools import partial
@@ -1369,10 +1369,8 @@ class Operator2(metaclass=OperatorMeta):
 
     __radd__ = __add__
 
-    def __mul__(self, other: Callable | TensorLike) -> Operator:
+    def __mul__(self, other: TensorLike) -> Operator:
         """The scalar multiplication between scalars and Operators."""
-        if callable(other):
-            return qp.pulse.ParametrizedHamiltonian([other], [self])
         if isinstance(other, TensorLike):
             return qp.s_prod(scalar=other, operator=self, lazy=False)
         return NotImplemented

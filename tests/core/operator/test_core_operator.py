@@ -16,7 +16,6 @@ Unit tests for :mod:`pennylane.operation`.
 """
 
 import copy
-from collections.abc import Callable
 
 import numpy as np
 import pytest
@@ -1841,18 +1840,14 @@ class TestNewOpMath:
                 (1.1, X2(0)),
                 (1 + 2j, X2(0)),
                 ([3, 4j], X2(0)),
-                (lambda x: x, X2(0)),
             ],
         )
         def test_mul(self, operand, base):
             """Tests multiplying an operator by a scalar coefficient works as expected."""
             for op in [operand * base, base * operand]:
-                if isinstance(operand, Callable):
-                    assert isinstance(op, qp.pulse.ParametrizedHamiltonian)
-                else:
-                    assert isinstance(op, SProd)
-                    assert qp.math.allequal(op.scalar, operand)
-                    qp.assert_equal(op.base, base)
+                assert isinstance(op, SProd)
+                assert qp.math.allequal(op.scalar, operand)
+                qp.assert_equal(op.base, base)
 
         @pytest.mark.parametrize(
             "scalar, base",

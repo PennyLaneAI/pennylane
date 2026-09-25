@@ -176,10 +176,6 @@ _INSTANCES_TO_FAIL = [
         AssertionError,  # needs flattening helpers to be updated, also cannot be pickled
     ),
     (
-        qp.pulse.ParametrizedEvolution(qp.PauliX(0) + sum * qp.PauliZ(0)),
-        ValueError,  # binding parameters fail, and more
-    ),
-    (
         qp.estimator.DoubleFactorization(np.eye(2), np.arange(16).reshape((2,) * 4)),
         TypeError,  # op.eigvals is a list (overwritten in the init)
     ),

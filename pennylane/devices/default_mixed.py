@@ -128,7 +128,6 @@ operations = {
     "QFT",
     "ThermalRelaxationError",
     "ECR",
-    "ParametrizedEvolution",
     "GlobalPhase",
     "PPR",
 }

@@ -295,11 +295,6 @@ with the number of trainable circuit parameters.
   and the
   `original paper outlining this gradient method <https://arxiv.org/pdf/2408.05406>`__.
 
-* :func:`qp.gradients.stoch_pulse_grad <pennylane.gradients.stoch_pulse_grad>`: Use a stochastic variant of the
-  parameter-shift rule for pulse programs.
-
-* :func:`qp.gradients.pulse_odegen <pennylane.gradients.pulse_odegen>`: Combine classical processing with the parameter-shift rule for multivariate gates to differentiate pulse programs.
-
 
 Device gradients
 ~~~~~~~~~~~~~~~~

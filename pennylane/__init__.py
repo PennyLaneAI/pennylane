@@ -162,7 +162,6 @@ from pennylane.debugging import (
     debug_tape,
 )
 from pennylane.shadows import ClassicalShadow
-from pennylane import pulse
 
 from pennylane import fourier
 from pennylane.gradients import metric_tensor, adjoint_metric_tensor

@@ -26,7 +26,7 @@ SUPPORTED_GRADIENT_KWARGS = {
     "argnum",
     "atol",
     "aux_wire",
-    "broadcast",  # [TODO: This is in param_shift. Unify with use_broadcasting in stoch_pulse_grad
+    "broadcast",  # [TODO: This is in param_shift
     "device_wires",
     "diagonal_shifts",
     "fallback_fn",
