@@ -119,11 +119,17 @@ def median_heuristic(samples: ArrayLike) -> float:
 def _sample_binary_ops(key: jnp.ndarray, prob: ArrayLike, shape: tuple[int, ...]) -> jnp.ndarray:
     """Draw ``shape`` independent Binomial(1, ``prob``) variates.
 
-    This is the ``count = 1`` specialization of ``jax.random.binomial`` and reproduces
-    its output bit for bit. The general routine evaluates *both* the inversion and the
-    transformed-rejection (BTRS) sampler as ``while`` loops and selects between them,
-    which cannot be folded away when ``prob`` is traced; for a single trial only the
-    inversion branch is ever selected, and it reduces to one inverse-CDF draw.
+    This is the ``count = 1`` specialization of ``jax.random.binomial``. The general
+    routine evaluates *both* the inversion and the transformed-rejection (BTRS) sampler
+    as ``while`` loops and selects between them, which cannot be folded away when
+    ``prob`` is traced; for a single trial only the inversion branch is ever selected,
+    and it reduces to one inverse-CDF draw.
+
+    That draw is a single threshold test. The inversion sampler succeeds when
+    ``ceil(log(u) / log1p(-q)) <= 1``, and since ``log1p(-q)`` is negative this is
+    exactly ``log(u) >= log1p(-q)``, i.e. ``u >= exp(log1p(-q))``. Comparing against the
+    precomputed scalar threshold removes one logarithm and one division per variate,
+    which dominates the sampler at large shapes.
 
     Args:
         key (jnp.ndarray): JAX PRNG key.
@@ -138,17 +144,31 @@ def _sample_binary_ops(key: jnp.ndarray, prob: ArrayLike, shape: tuple[int, ...]
     # jax.random.binomial samples with the smaller of (p, 1 - p) and reflects afterwards.
     q = jnp.where(prob < 0.5, prob, 1.0 - prob)
     uniforms = jax.random.uniform(jax.random.split(key)[0], shape, prob.dtype)
-    # A single geometric draw exceeding one trial means failure, otherwise success.
-    geometric = jnp.ceil(jnp.log(uniforms) / jnp.log1p(-q))
-    successes = (geometric <= 1).astype(prob.dtype)
-    return jnp.where(prob < 0.5, successes, 1.0 - successes).astype(float)
+    successes = (uniforms >= jnp.exp(jnp.log1p(-q))).astype(prob.dtype)
+    return jnp.where(prob < 0.5, successes, 1.0 - successes)
+
+
+@jax.jit
+def _bootstrap_target_data(key: jnp.ndarray, target_data: jnp.ndarray) -> jnp.ndarray:
+    """Resample the rows of ``target_data`` with replacement.
+
+    Compiling the draw and the gather together replaces two eagerly dispatched
+    operations, whose overhead is independent of the (typically small) amount of work
+    they do, with one.
+    """
+    m = target_data.shape[0]
+    return jnp.take(target_data, jax.random.choice(key, m, shape=(m,), replace=True), axis=0)
 
 
 @jax.jit
 def _binary_ops_to_pauli_int(binary_ops: ArrayLike) -> jnp.ndarray:
-    """Map binary operator entries to Pauli integer codes (0 → I, 1 → Z=3)."""
-    ops = jnp.asarray(binary_ops, dtype=jnp.int32)
-    return jnp.where(ops == 1, 3, 0).astype(jnp.int32)
+    """Map binary operator entries to Pauli integer codes (0 → I, 1 → Z=3).
+
+    Pauli codes fit in a byte, and the observable array is one of the largest
+    intermediates in the loss, so it is emitted as ``int8``.
+    """
+    ops = jnp.asarray(binary_ops)
+    return jnp.where(ops == 1, jnp.int8(3), jnp.int8(0))
 
 
 @partial(jax.jit, static_argnames=["sqrt_loss"])
@@ -163,7 +183,12 @@ def _compute_single_mmd(
 
     ``model_expvals_variances`` may be ``None`` for an exact model.
     """
-    tr_train = jnp.mean(1 - 2 * ((target_data @ visible_ops.T) % 2), axis=0)
+    # Both operands are binary, so the parity contraction is exact in any dtype with at
+    # least log2(n_qubits) mantissa bits. Promoting to a common dtype avoids silently
+    # running a float64 product when one side is integer and the other float32.
+    parity_dtype = jnp.result_type(target_data.dtype, visible_ops.dtype, jnp.float32)
+    overlap = target_data.astype(parity_dtype) @ visible_ops.astype(parity_dtype).T
+    tr_train = jnp.mean(1 - 2 * (overlap % 2), axis=0)
     m = target_data.shape[0]
 
     result = model_expvals**2
@@ -210,7 +235,7 @@ def _compute_loss_for_bandwidth(
     if len(wire_tuple) == n_qubits and wire_list == list(range(n_qubits)):
         all_ops = visible_ops
     else:
-        all_ops = jnp.zeros((n_ops, n_qubits), dtype=float)
+        all_ops = jnp.zeros((n_ops, n_qubits), dtype=visible_ops.dtype)
         all_ops = all_ops.at[:, wire_list].set(visible_ops)
 
     pauli_obs = _binary_ops_to_pauli_int(all_ops)
@@ -218,6 +243,10 @@ def _compute_loss_for_bandwidth(
     call_kwargs = {**dict(static_kwargs), **traced_kwargs}
     call_kwargs["observables"] = pauli_obs
     call_kwargs["key"] = eval_key
+    if getattr(expval_fn, "supports_diagonal_observables", False):
+        # The observables sampled above are tensor products of I and Z only, so the
+        # estimator can skip its X/Y bookkeeping entirely.
+        call_kwargs["observables_are_diagonal"] = True
 
     model_output = expval_fn(params, **call_kwargs)
 
@@ -344,6 +373,12 @@ def build_mmd_loss_pauli(
     if len(bandwidth_list) == 0:
         raise ValueError("bandwidth must not be empty")
 
+    # Selecting every wire in order is the identity. Resolving that here keeps a
+    # ``target_data[:, list(range(n_qubits))]`` fancy-index — whose tracing cost in
+    # ``jax.numpy`` grows with ``n_qubits`` and is paid on every call — out of loss_fn.
+    selects_wires = wire_tuple != tuple(range(n_qubits))
+    wire_index = jnp.asarray(wire_tuple) if selects_wires else None
+
     def loss_fn(
         params: ArrayLike,
         target_data: ArrayLike,
@@ -404,7 +439,8 @@ def build_mmd_loss_pauli(
         if target_data.shape[0] <= 1:
             raise ValueError("target_data must contain more than one sample")
         if target_data.shape[1] == n_qubits:
-            target_data = target_data[:, list(wire_tuple)]
+            if selects_wires:
+                target_data = jnp.take(target_data, wire_index, axis=1)
         elif target_data.shape[1] != len(wire_tuple):
             expected = (
                 f"{n_qubits} (one per qubit)"
@@ -415,10 +451,7 @@ def build_mmd_loss_pauli(
 
         if mmd_config.bootstrap_target_data:
             active_key, target_key = jax.random.split(active_key)
-            target_indices = jax.random.choice(
-                target_key, target_data.shape[0], shape=(target_data.shape[0],), replace=True
-            )
-            target_data = target_data[target_indices]
+            target_data = _bootstrap_target_data(target_key, target_data)
 
         static_items = []
         traced_items = {}
