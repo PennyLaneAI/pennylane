@@ -96,7 +96,7 @@ def _get_decomp_args(op: Operator):
 def toggle_graph_decomposition():
     """A closure that toggles the experimental graph-based decomposition on and off."""
 
-    _GRAPH_DECOMPOSITION = ContextVar("_GRAPH_DECOMPOSITION", default=False)
+    _GRAPH_DECOMPOSITION = ContextVar("_GRAPH_DECOMPOSITION", default=True)
 
     def enable():
         """

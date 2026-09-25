@@ -961,7 +961,7 @@ class TestIntegration:
 
         @qp.qnode(qp.device("default.qubit", wires=1), diff_method=diff_method)
         def circuit(x, z):
-            Pow(base=qp.RX(x, wires=0), z=z)
+            Pow2(base=qp.RX(x, wires=0), z=z)
             return qp.expval(qp.PauliY(0))
 
         x = qp.numpy.array(1.234, requires_grad=True)
@@ -979,7 +979,7 @@ class TestIntegration:
 
         @qp.qnode(dev)
         def circuit(x):
-            Pow(qp.RX(x, wires=0), 2.5)
+            Pow2(qp.RX(x, wires=0), 2.5)
             return qp.expval(qp.PauliY(0))
 
         x = qp.numpy.array([1.234, 2.34, 3.456])

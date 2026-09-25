@@ -287,6 +287,8 @@ class TestCompileIntegration:
         tape = qp.workflow.construct_tape(transformed_qnode)(0.3, 0.4, 0.5)
         compare_operation_lists(tape.operations, names_expected, wires_expected)
 
+    # this tests verifies an exact sequence of expected ops, which is specific to the old pathway
+    @pytest.mark.usefixtures("disable_graph_decomposition")
     @pytest.mark.parametrize(("wires"), [["a", "b", "c"], [0, 1, 2], [3, 1, 2], [0, "a", 4]])
     def test_compile_decompose_into_basis_gates(self, wires):
         """Test that running multiple passes produces the correct results."""
