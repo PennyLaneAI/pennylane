@@ -15,17 +15,13 @@
 Contains the GQSP template.
 """
 
+from jax import numpy as jnp
+
 from pennylane import capture, math, ops
 from pennylane.core.operator import Operator2, abstractify
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import Float, Wire
-
-has_jax = True
-try:
-    from jax import numpy as jnp
-except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
-    has_jax = False  # pragma: no cover
 
 
 class GQSP(Operator2):
@@ -113,7 +109,7 @@ def _GQSP_resources(unitary, angles, control):  # pylint: disable=unused-argumen
 def _GQSP_decomposition(unitary, angles, control):
     thetas, phis, lambdas = angles[0], angles[1], angles[2]
 
-    if has_jax and capture.enabled():
+    if capture.enabled():
         thetas, phis, lambdas = jnp.array(thetas), jnp.array(phis), jnp.array(lambdas)
 
     # These four gates adapt PennyLane's ops.U3 to the chosen U3 format in the GQSP paper.

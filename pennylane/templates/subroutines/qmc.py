@@ -455,13 +455,13 @@ class QuantumMonteCarlo(Operation):
 
 
 # pylint: disable=protected-access
-if QuantumMonteCarlo._primitive is not None:
 
-    @QuantumMonteCarlo._primitive.def_impl
-    def _quantum_monte_carlo_impl(probs, *wires, func, num_target_wires):
-        target_wires = wires[:num_target_wires]
-        estimation_wires = wires[num_target_wires:]
-        return type.__call__(QuantumMonteCarlo, probs, func, target_wires, estimation_wires)
+
+@QuantumMonteCarlo._primitive.def_impl
+def _quantum_monte_carlo_impl(probs, *wires, func, num_target_wires):
+    target_wires = wires[:num_target_wires]
+    estimation_wires = wires[num_target_wires:]
+    return type.__call__(QuantumMonteCarlo, probs, func, target_wires, estimation_wires)
 
 
 def _quantum_monte_carlo_resources(num_target_wires, num_estimation_wires, q_shape):

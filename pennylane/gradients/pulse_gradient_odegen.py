@@ -18,6 +18,7 @@ parameter-shift gradient of pulse sequences in a qubit-based quantum tape.
 
 from functools import partial
 
+import jax
 import numpy as np
 
 from pennylane import math
@@ -39,13 +40,7 @@ from .gradient_transform import (
     reorder_grads,
 )
 from .parameter_shift import _make_zero_rep
-from .pulse_gradient import _assert_has_jax, raise_pulse_diff_on_qnode
-
-try:
-    import jax
-except ImportError:
-    # Handling the case where JAX is not installed is done via _assert_has_jax
-    pass
+from .pulse_gradient import raise_pulse_diff_on_qnode
 
 
 def _one_parameter_generators(op):
@@ -683,7 +678,6 @@ def pulse_odegen(
 
     """
     transform_name = "pulse generator parameter-shift"
-    _assert_has_jax(transform_name)
     assert_no_state_returns(tape.measurements, transform_name)
     assert_no_variance(tape.measurements, transform_name)
     assert_no_trainable_tape_batching(tape, transform_name)

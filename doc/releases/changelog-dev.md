@@ -1197,6 +1197,8 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Removes indirection and deferred imports now that jax is always available.
+
 * An operator can now be reconstructed from operator_p with abstract wires in the form of 
   AbstractQubit, jax.core.ShapedArray, AbstractWires, and AbstractArray.
   [(#10165)](https://github.com/PennyLaneAI/pennylane/pull/10165)
