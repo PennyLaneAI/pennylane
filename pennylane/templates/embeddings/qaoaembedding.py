@@ -17,6 +17,8 @@ Contains the QAOAEmbedding template.
 
 from collections import defaultdict
 
+from jax import numpy as jnp
+
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation, abstractify
@@ -26,13 +28,6 @@ from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
 
 # pylint: disable=too-many-arguments
-
-
-has_jax = True
-try:
-    from jax import numpy as jnp
-except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
-    has_jax = False  # pragma: no cover
 
 
 class QAOAEmbedding(Operation):
@@ -361,7 +356,7 @@ def _qaoa_embedding_resources(repeat, n_features, num_wires, local_field):
 
 @register_resources(_qaoa_embedding_resources)
 def _qaoa_embedding_decomposition(features, weights, wires, local_field):
-    if has_jax and capture.enabled():
+    if capture.enabled():
         weights, wires, features = jnp.array(weights), jnp.array(wires), jnp.array(features)
 
     repeat = math.shape(weights)[-2]

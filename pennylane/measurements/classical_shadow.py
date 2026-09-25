@@ -473,9 +473,6 @@ class ShadowExpvalMP(MeasurementTransform):
             return op
 
         H = _get_tracer(H)
-        if cls._obs_primitive is None:  # pragma: no cover
-            return type.__call__(cls, H=H, seed=seed, k=k, **kwargs)  # pragma: no cover
-
         return cls._obs_primitive.bind(H, seed=seed, k=k, **kwargs)
 
     def process(self, tape, device):
@@ -828,8 +825,6 @@ def classical_shadow(wires: WiresLike, seed=None) -> ClassicalShadowMP:
     return ClassicalShadowMP(wires=wires, seed=seed)
 
 
-if ShadowExpvalMP._obs_primitive is not None:  # pylint: disable=protected-access
-
-    @ShadowExpvalMP._obs_primitive.def_impl  # pylint: disable=protected-access
-    def _(H, **kwargs):
-        return type.__call__(ShadowExpvalMP, H, **kwargs)
+@ShadowExpvalMP._obs_primitive.def_impl  # pylint: disable=protected-access
+def _(H, **kwargs):
+    return type.__call__(ShadowExpvalMP, H, **kwargs)

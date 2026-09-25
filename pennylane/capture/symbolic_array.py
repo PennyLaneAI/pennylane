@@ -14,37 +14,24 @@
 A tool for capturing dummy arrays that can be used for resource estimation.
 """
 
-from functools import lru_cache
-from importlib.util import find_spec
+import jax
 
 from pennylane.typing import AbstractArray
 
+from .custom_primitives import QpPrimitive
 from .switches import enabled
 
-has_jax = find_spec("jax") is not None
+symbolic_array_p = QpPrimitive("symbolic_array")
 
 
-@lru_cache
-def _symbolic_array_primitive():
-    if not has_jax:
-        raise ImportError("jax is required for creating a jax primitive.")  # pragma: no cover
+@symbolic_array_p.def_abstract_eval
+def _symbolic_array_p_abstract_eval(shape, dtype):
+    return jax.core.ShapedArray(shape, dtype)
 
-    # pylint: disable=import-outside-toplevel
-    import jax
 
-    from pennylane.capture.custom_primitives import QpPrimitive
-
-    symbolic_array_p = QpPrimitive("symbolic_array")
-
-    @symbolic_array_p.def_abstract_eval
-    def _symbolic_array_p_abstract_eval(shape, dtype):
-        return jax.core.ShapedArray(shape, dtype)
-
-    @symbolic_array_p.def_impl
-    def _symbolic_array_p_impl(shape, dtype):
-        return AbstractArray(shape, dtype)
-
-    return symbolic_array_p
+@symbolic_array_p.def_impl
+def _symbolic_array_p_impl(shape, dtype):
+    return AbstractArray(shape, dtype)
 
 
 def symbolic_array(shape: tuple[int, ...], dtype: type):
@@ -100,4 +87,4 @@ def symbolic_array(shape: tuple[int, ...], dtype: type):
     if not all(isinstance(s, int) and s > 0 for s in shape):
         raise ValueError(f"The shape must be a tuple of positive integers. Got shape {shape}.")
 
-    return _symbolic_array_primitive().bind(shape=shape, dtype=jnp_dtype(dtype))
+    return symbolic_array_p.bind(shape=shape, dtype=jnp_dtype(dtype))

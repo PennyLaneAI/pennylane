@@ -15,17 +15,13 @@ r"""
 Contains the SimplifiedTwoDesign template.
 """
 
+from jax import numpy as jnp
+
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import CZ, RY
-
-has_jax = True
-try:
-    from jax import numpy as jnp
-except ModuleNotFoundError:  # pragma: no cover
-    has_jax = False  # pragma: no cover
 
 
 class SimplifiedTwoDesign(Operation):
@@ -249,7 +245,7 @@ def _simplified_two_design_resources(n_layers, num_wires):
 def _simplified_two_design_decomposition(initial_layer_weights, weights, wires):
     n_layers = math.shape(weights)[0]
 
-    if has_jax and capture.enabled():
+    if capture.enabled():
         initial_layer_weights, weights, wires = (
             jnp.array(initial_layer_weights),
             jnp.array(weights),
@@ -269,7 +265,7 @@ def _simplified_two_design_decomposition(initial_layer_weights, weights, wires):
         all_wire_pairs = [wires[i : i + 2] for i in range(0, len(wires) - 1, 2)] + [
             wires[i : i + 2] for i in range(1, len(wires) - 1, 2)
         ]
-        if has_jax and capture.enabled():
+        if capture.enabled():
             all_wire_pairs = jnp.array(all_wire_pairs)
 
         @for_loop(len(all_wire_pairs))
