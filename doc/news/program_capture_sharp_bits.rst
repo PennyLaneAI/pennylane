@@ -302,10 +302,7 @@ errors may occur. Currently, this includes:
 * :func:`~.pennylane.transforms.zx.push_hadamards`
 * :func:`~.pennylane.transforms.zx.reduce_non_clifford`
 * :func:`~.pennylane.transforms.zx.todd`
-* :func:`~.pennylane.add_noise`
 * :func:`~.pennylane.transforms.undo_swaps`
-* :func:`~.pennylane.cut_circuit_mc`
-* :func:`~.pennylane.cut_circuit`
 * :func:`~.pennylane.transforms.rowcol`
 * :func:`~.pennylane.map_wires`
 * Custom tape transforms created with :func:`~.pennylane.transform`.

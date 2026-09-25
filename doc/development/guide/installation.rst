@@ -35,7 +35,6 @@ The following Python packages are optional:
 * ``pyzx``: for ``qp.transforms.to_zx`` and ``qp.transforms.from_zx``
 * ``stim``: for ``default.clifford``
 * ``openqasm3`` and ``antlr3_python3_runtime``: for ``qp.from_qasm3``
-* ``kahypar`` and ``opt_einsum`` for ``qcut``
 
 .. _install_interfaces:
 

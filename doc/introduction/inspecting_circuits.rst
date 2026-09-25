@@ -321,23 +321,6 @@ False
 False
 
 
-Another way to construct the "causal" DAG of a circuit is to use the
-:func:`~pennylane.qcut.tape_to_graph` function used by the ``qcut`` module. This
-function takes a quantum tape and creates a ``MultiDiGraph`` instance from the ``networkx`` python package.
-
-Using the above example, we get:
-
->>> g2 = qp.qcut.tape_to_graph(tape)
->>> type(g2)
-<class 'networkx.classes.multidigraph.MultiDiGraph'>
->>> for k, v in g2.adjacency():
-...    print(k, v)
-H(0) {expval(Z(0)): {0: {'wire': 0}}}
-CNOT(wires=[1, 2]) {CNOT(wires=[2, 3]): {0: {'wire': 2}}, CNOT(wires=[3, 1]): {0: {'wire': 1}}}
-CNOT(wires=[2, 3]) {CNOT(wires=[3, 1]): {0: {'wire': 3}}}
-CNOT(wires=[3, 1]) {}
-expval(Z(0)) {}
-
 DAG of non-commuting ops
 ~~~~~~~~~~~~~~~~~~~~~~~~
 

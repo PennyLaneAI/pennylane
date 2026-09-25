@@ -499,59 +499,6 @@ As mentioned earlier we can also simplify QNode objects to, for example, group r
 1: ───────────┤ ├Probs
 2: ──RZ(5.00)─┤ ╰Probs
 
-Circuit cutting
----------------
-
-Circuit cutting allows you to replace a circuit with ``N`` wires by a set of circuits with less than
-``N`` wires (see also `Peng et. al <https://arxiv.org/abs/1904.00102>`_). Of course this comes with a cost: The smaller circuits
-require a greater number of device executions to be evaluated.
-
-In PennyLane, circuit cutting can be
-activated by positioning :class:`~.pennylane.WireCut` operators at the desired cut locations, and
-by decorating the QNode with the :func:`~.pennylane.cut_circuit` transform.
-
-The example below shows how a three-wire circuit can be run on a two-wire device:
-
-.. code-block:: python
-
-    dev = qp.device("default.qubit", wires=2)
-
-    @qp.cut_circuit
-    @qp.qnode(dev)
-    def circuit(x):
-        qp.RX(x, wires=0)
-        qp.RY(0.9, wires=1)
-        qp.RX(0.3, wires=2)
-
-        qp.CZ(wires=[0, 1])
-        qp.RY(-0.4, wires=0)
-
-        qp.WireCut(wires=1)
-
-        qp.CZ(wires=[1, 2])
-
-        return qp.expval(qp.pauli.string_to_pauli_word("ZZZ"))
-
-Instead of being executed directly, the circuit will be partitioned into
-smaller fragments according to the :class:`~.pennylane.WireCut` locations,
-and each fragment will be executed multiple times. PennyLane automatically combines the results
-of the fragment executions to recover the expected output of the original uncut circuit.
-
->>> x = np.array(0.531, requires_grad=True)
->>> circuit(0.531)
-0.47165198882111165
-
-Circuit cutting support is also differentiable:
-
->>> qp.grad(circuit)(x)
--0.276982865449393
-
-.. note::
-
-    Simulated quantum circuits that produce samples can be cut using
-    the :func:`~.pennylane.cut_circuit_mc`
-    transform, which is based on the Monte Carlo method.
-
 Groups of commuting Pauli words
 -------------------------------
 

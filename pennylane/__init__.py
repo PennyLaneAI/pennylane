@@ -162,7 +162,6 @@ from pennylane.debugging import (
     debug_tape,
 )
 from pennylane.shadows import ClassicalShadow
-from pennylane.qcut import cut_circuit, cut_circuit_mc
 from pennylane import pulse
 
 from pennylane import fourier
