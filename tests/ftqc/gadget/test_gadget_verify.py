@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Unit tests for the algebraic checks in ``pennylane.gadget.verify``.
+"""Unit tests for the algebraic checks in ``pennylane.ftqc.gadget.verify``.
 
 Every test here runs with ``simulate=False``; the stim-backed checks are covered in
 ``test_gadget_simulate.py``.
@@ -23,8 +23,8 @@ from dataclasses import replace
 import numpy as np
 import pytest
 
-from pennylane import gadget
-from pennylane.gadget.library import rep_chain, rep_code_zz_merge
+from pennylane.ftqc import gadget
+from pennylane.ftqc.gadget.library import rep_chain, rep_code_zz_merge
 
 
 def _statuses(receipt):

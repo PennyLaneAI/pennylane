@@ -17,7 +17,8 @@ This module contains :func:`emit`, which writes a traced gadget as an xDSL modul
 
 The module contains one ``gadget.phase`` per phase, one ``func.func`` holding the traced
 operations, and one ``gadget.detectors`` operation referring to the function. The function
-carries ``gadget.action``, ``gadget.code`` and ``gadget.fingerprint`` attributes, so the
+carries ``gadget.action``, ``gadget.code`` (with the code's check matrices in
+``gadget.code_hx`` and ``gadget.code_hz``) and ``gadget.fingerprint`` attributes, so the
 detectors can be checked against the gadget they were derived from.
 """
 
@@ -130,8 +131,8 @@ def emit(
 
     .. code-block:: python
 
-        from pennylane.gadget.library import steane_memory
-        from pennylane.gadget.lowering import emit
+        from pennylane.ftqc.gadget.library import steane_memory
+        from pennylane.ftqc.gadget.lowering import emit
 
         _, _, memory = steane_memory(rounds=3)
         emission = emit(memory.program)
@@ -199,6 +200,8 @@ def emit(
     fn = func.FuncOp(program.name, ((cb,), (cb,)), Region([block]))
     fn.attributes["gadget.action"] = StringAttr(str(program.action))
     fn.attributes["gadget.code"] = StringAttr(program.code.name)
+    fn.attributes["gadget.code_hx"] = gd.bits_attr(program.code.hx)
+    fn.attributes["gadget.code_hz"] = gd.bits_attr(program.code.hz)
     fn.attributes["gadget.fingerprint"] = StringAttr(program.fingerprint())
     fn.attributes["gadget.frame_update"] = gd.bits_attr(program.frame_update)
     fn.attributes["gadget.claims"] = ArrayAttr([StringAttr(str(c)) for c in program.claims])

@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Unit tests for the traced form of a gadget, ``pennylane.gadget.ir``."""
+"""Unit tests for the traced form of a gadget, ``pennylane.ftqc.gadget.ir``."""
 
 import numpy as np
 import pytest
 
-from pennylane import gadget
-from pennylane.gadget.ir import Deform, Frame, Observe, RecordTerm, Rounds
-from pennylane.gadget.library import rep_code_zz_merge, steane_code
+from pennylane.ftqc import gadget
+from pennylane.ftqc.gadget.ir import Deform, Frame, Observe, RecordTerm, Rounds
+from pennylane.ftqc.gadget.library import rep_code_zz_merge, steane_code
 
 
 class TestPhase:

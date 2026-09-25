@@ -208,8 +208,8 @@ def check_support(
 
     **Example**
 
-    >>> from pennylane import gadget
-    >>> from pennylane.gadget.library import steane_memory
+    >>> from pennylane.ftqc import gadget
+    >>> from pennylane.ftqc.gadget.library import steane_memory
     >>> _, _, memory = steane_memory(rounds=3)
     >>> report = gadget.check_support(memory.program)
     >>> report.lowerable

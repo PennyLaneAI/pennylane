@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Unit tests for syndrome-extraction scheduling, ``pennylane.gadget.schedule``."""
+"""Unit tests for syndrome-extraction scheduling, ``pennylane.ftqc.gadget.schedule``."""
 
 import numpy as np
 import pytest
 
-from pennylane import gadget
-from pennylane.gadget.library import rep_code_zz_merge, repetition_code, steane_code
+from pennylane.ftqc import gadget
+from pennylane.ftqc.gadget.library import rep_code_zz_merge, repetition_code, steane_code
 
 
 def _phases():

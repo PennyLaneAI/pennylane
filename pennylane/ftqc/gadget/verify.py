@@ -17,7 +17,7 @@ for each result.
 
 The algebraic checks always run. When `Stim <https://github.com/quantumlib/Stim>`__ is
 installed, :func:`verify` also builds a phenomenological noise simulation of the gadget
-(see :mod:`pennylane.gadget.simulate`), which confirms the derived detectors are
+(see :mod:`pennylane.ftqc.gadget.simulate`), which confirms the derived detectors are
 deterministic and certifies a fault distance. A check that cannot run is reported as
 skipped, never as passed.
 """
@@ -67,7 +67,7 @@ class Receipt:
 
     **Example**
 
-    >>> from pennylane import gadget
+    >>> from pennylane.ftqc import gadget
     >>> receipt = gadget.Receipt("g", "0123")
     >>> receipt.add("k.entry", "pass", "entry phase protects k=1 as declared")
     >>> receipt.add("rounds.budget", "fail", "too few merged rounds")
@@ -171,8 +171,8 @@ def verify(
 
     **Example**
 
-    >>> from pennylane import gadget
-    >>> from pennylane.gadget.library import rep_code_zz_merge
+    >>> from pennylane.ftqc import gadget
+    >>> from pennylane.ftqc.gadget.library import rep_code_zz_merge
     >>> _, _, measure_zz = rep_code_zz_merge(d=3)
     >>> receipt, layout = gadget.verify(measure_zz.program, simulate=False)
     >>> receipt.ok

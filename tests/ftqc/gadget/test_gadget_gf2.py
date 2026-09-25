@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Unit tests for the GF(2) linear algebra used by ``pennylane.gadget``."""
+"""Unit tests for the GF(2) linear algebra used by ``pennylane.ftqc.gadget``."""
 
 import numpy as np
 import pytest
 
-from pennylane.gadget import _gf2
+from pennylane.ftqc.gadget import _gf2
 
 STEANE_H = np.array(
     [

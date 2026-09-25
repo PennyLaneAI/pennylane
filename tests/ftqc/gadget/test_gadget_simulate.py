@@ -12,18 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for the stim-backed checks in ``pennylane.gadget.simulate`` and ``verify``."""
+"""Tests for the stim-backed checks in ``pennylane.ftqc.gadget.simulate`` and ``verify``."""
 
 from dataclasses import replace
 
 import numpy as np
 import pytest
 
-from pennylane import gadget
-from pennylane.gadget.library import rep_code_zz_merge
+from pennylane.ftqc import gadget
+from pennylane.ftqc.gadget.library import rep_code_zz_merge
 
 stim = pytest.importorskip("stim")
-simulate = pytest.importorskip("pennylane.gadget.simulate")
+simulate = pytest.importorskip("pennylane.ftqc.gadget.simulate")
 
 pytestmark = pytest.mark.external
 

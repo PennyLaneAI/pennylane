@@ -39,7 +39,7 @@ class DistanceClaim:
 
     A code distance says nothing on its own about the fault distance of a gadget built from
     that code, so every distance in this module carries its regime. Claims made by an author
-    are uncertified; :func:`~pennylane.gadget.verify` adds certified claims when it
+    are uncertified; :func:`~pennylane.ftqc.gadget.verify` adds certified claims when it
     establishes a distance by simulation.
 
     Args:
@@ -52,7 +52,7 @@ class DistanceClaim:
 
     **Example**
 
-    >>> from pennylane import gadget
+    >>> from pennylane.ftqc import gadget
     >>> print(gadget.DistanceClaim(3, "phenomenological"))
     d=3 (phenomenological, UNCERTIFIED: asserted by author, not checked)
     """
@@ -92,7 +92,7 @@ class CSSCode:
 
     **Example**
 
-    >>> from pennylane import gadget
+    >>> from pennylane.ftqc import gadget
     >>> code = gadget.CSSCode.from_matrices(
     ...     "rep3", hx=[], hz=[[1, 1, 0], [0, 1, 1]], lx=[1, 1, 1], lz=[1, 0, 0]
     ... )
@@ -106,7 +106,7 @@ class CSSCode:
     >>> gadget.CSSCode.from_matrices("bad", hx=[], hz=[[1, 1, 0]], lx=[1, 1, 1], lz=[1, 0, 0])
     Traceback (most recent call last):
     ...
-    pennylane.gadget.codes.CodeError: bad: rank accounting gives k=2, but got 1 X logicals and 1 Z logicals
+    pennylane.ftqc.gadget.codes.CodeError: bad: rank accounting gives k=2, but got 1 X logicals and 1 Z logicals
     """
 
     name: str

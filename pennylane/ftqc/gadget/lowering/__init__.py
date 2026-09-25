@@ -17,7 +17,7 @@ Catalyst's ``qecl`` dialect.
 
 It requires `xDSL <https://xdsl.dev>`__ and Catalyst's dialect definitions, which are
 imported from an installed Catalyst or loaded from a source checkout (see
-:func:`load_dialect_module`). The rest of :mod:`pennylane.gadget` does not depend on it.
+:func:`load_dialect_module`). The rest of :mod:`pennylane.ftqc.gadget` does not depend on it.
 """
 
 from .catalyst_dialects import CatalystNotFound, load_dialect_module
@@ -33,7 +33,13 @@ from .dialect import (
     RoundsOp,
 )
 from .emit import QECL_SOURCE, Emission, codeblock_type, context, emit
-from .passes import LoweringGap, LoweringResult, lower_gadget_to_qecl
+from .passes import (
+    LoweringGap,
+    LoweringResult,
+    check_pipeline_code,
+    inline_gadget_call,
+    lower_gadget_to_qecl,
+)
 
 __all__ = [
     "CatalystNotFound",
@@ -55,4 +61,6 @@ __all__ = [
     "LoweringGap",
     "LoweringResult",
     "lower_gadget_to_qecl",
+    "inline_gadget_call",
+    "check_pipeline_code",
 ]

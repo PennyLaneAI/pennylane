@@ -12,15 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Unit tests for toolchain support checks, ``pennylane.gadget.support``."""
+"""Unit tests for toolchain support checks, ``pennylane.ftqc.gadget.support``."""
 
 from dataclasses import replace
 
 import pytest
 
-from pennylane import gadget
-from pennylane.gadget.library import rep_code_zz_merge, steane_memory
-from pennylane.gadget.support import CATALYST_EVIDENCE
+from pennylane.ftqc import gadget
+from pennylane.ftqc.gadget.library import rep_code_zz_merge, steane_memory
+from pennylane.ftqc.gadget.support import CATALYST_EVIDENCE
 
 
 def _gaps(report):

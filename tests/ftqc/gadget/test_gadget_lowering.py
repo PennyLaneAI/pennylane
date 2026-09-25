@@ -12,19 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for emission into Catalyst IR and lowering to ``qecl``, ``pennylane.gadget.lowering``."""
+"""Tests for emission into Catalyst IR and lowering to ``qecl``, ``pennylane.ftqc.gadget.lowering``."""
 
 import numpy as np
 import pytest
 
-from pennylane import gadget
-from pennylane.gadget.library import steane_code
-from pennylane.gadget.support import CATALYST_EVIDENCE
+from pennylane.ftqc import gadget
+from pennylane.ftqc.gadget.library import steane_code
+from pennylane.ftqc.gadget.support import CATALYST_EVIDENCE
 
 func = pytest.importorskip("xdsl.dialects.func")
+xdsl_ir = pytest.importorskip("xdsl.ir")
+builtin = pytest.importorskip("xdsl.dialects.builtin")
+Block = xdsl_ir.Block
+ModuleOp = builtin.ModuleOp
 xdsl_parser = pytest.importorskip("xdsl.parser")
 pytest.importorskip("catalyst")
-lowering = pytest.importorskip("pennylane.gadget.lowering")
+lowering = pytest.importorskip("pennylane.ftqc.gadget.lowering")
 
 pytestmark = pytest.mark.catalyst
 
@@ -242,9 +246,9 @@ class TestLower:
             lowering.lower_gadget_to_qecl(lowering.emit(drop.program).module)
         assert info.value.op == "gadget.detach to @base"
 
-    def test_records_used_later(self):
-        """Test that a k=1 gadget whose records feed a later op stops, because ``qecl.qec``
-        produces no syndrome value."""
+    def test_outcome(self):
+        """Test that a k=1 gadget with an outcome reports the gap for outcomes, not the
+        generic gap for records used by a later op."""
         code = steane_code()
         meas = gadget.Phase("meas", code.hx, np.vstack([code.hz, code.lz]), np.ones(7, bool))
 
@@ -253,5 +257,54 @@ class TestLower:
             handle, r = gadget.rounds(handle, 1, record="m")
             return handle, gadget.observe(r.product((6,)), index=0)
 
-        with pytest.raises(lowering.LoweringGap, match="measurement records as IR values"):
+        with pytest.raises(lowering.LoweringGap, match="non-destructive logical product"):
             lowering.lower_gadget_to_qecl(lowering.emit(measure_z.program).module)
+
+    def test_frame_update(self):
+        """Test that a k=1 gadget with a conditioned frame update reports that gap."""
+        code = steane_code()
+        phase = gadget.Phase.from_code("s", code)
+
+        @gadget.define(action=gadget.Action.idle(), code=code, phases=(phase,))
+        def conditioned(handle):
+            handle, r = gadget.rounds(handle, 1, record="m")
+            return gadget.frame(handle, r.product((3,)))
+
+        with pytest.raises(lowering.LoweringGap, match="classically conditioned Pauli frame"):
+            lowering.lower_gadget_to_qecl(lowering.emit(conditioned.program).module)
+
+
+class TestGadgetCalls:
+    """Tests for the hooks Catalyst's QEC passes use to compile ``gadget.apply`` calls."""
+
+    def test_inline(self, steane_mem):
+        """Test that a memory gadget becomes a chain of tagged qecl.qec cycles on the given
+        codeblock."""
+        _, _, memory = steane_mem
+        block = Block(arg_types=[lowering.codeblock_type(memory.program)])
+        payload = lowering.emit(memory.program).text()
+        ops, out = lowering.inline_gadget_call(payload, block.args[0])
+        assert [op.name for op in ops] == ["qecl.qec"] * 3
+        assert ops[0].operands[0] is block.args[0]
+        assert ops[1].operands[0] is ops[0].results[0]
+        assert out is ops[-1].results[0]
+        assert ops[0].attributes["gadget.name"].data == "steane_memory"
+
+    def test_inline_rejects_other_codeblock_types(self, steane_mem):
+        """Test that a gadget cannot be inlined on a codeblock of a different type."""
+        _, _, memory = steane_mem
+        qecl = lowering.load_dialect_module("qecl")
+        block = Block(arg_types=[qecl.LogicalCodeblockType(2)])
+        with pytest.raises(gadget.GadgetError, match="is applied to !qecl.codeblock<2>"):
+            lowering.inline_gadget_call(lowering.emit(memory.program).text(), block.args[0])
+
+    def test_check_pipeline_code(self, steane_mem):
+        """Test that inlined cycles are accepted for the same checks, in any row order, and
+        rejected for checks on a different qubit order."""
+        code, _, memory = steane_mem
+        block = Block(arg_types=[lowering.codeblock_type(memory.program)])
+        ops, _ = lowering.inline_gadget_call(lowering.emit(memory.program).text(), block.args[0])
+        module = ModuleOp([op.clone() for op in ops[:1]])
+        lowering.check_pipeline_code(module, code.hx[::-1], code.hz, "Steane")
+        with pytest.raises(gadget.GadgetError, match="whose checks differ from those of"):
+            lowering.check_pipeline_code(module, code.hx[:, ::-1], code.hz, "reversed")

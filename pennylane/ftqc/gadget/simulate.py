@@ -13,7 +13,7 @@
 # limitations under the License.
 """
 This module contains the Stim-based phenomenological simulation of a gadget, used by
-:func:`~pennylane.gadget.verify`. It requires `Stim <https://github.com/quantumlib/Stim>`__.
+:func:`~pennylane.ftqc.gadget.verify`. It requires `Stim <https://github.com/quantumlib/Stim>`__.
 
 The circuit measures each check as a whole Pauli product, applies X and Z errors to every
 live qubit before each round and flips each measurement with the same probability. No
@@ -89,9 +89,9 @@ def build_circuit(
 
     **Example**
 
-    >>> from pennylane import gadget
-    >>> from pennylane.gadget.simulate import build_circuit
-    >>> from pennylane.gadget.library import steane_memory
+    >>> from pennylane.ftqc import gadget
+    >>> from pennylane.ftqc.gadget.simulate import build_circuit
+    >>> from pennylane.ftqc.gadget.library import steane_memory
     >>> _, _, memory = steane_memory(rounds=3)
     >>> layout = gadget.derive_detectors(memory.program)
     >>> circuit, _, _, n_meas = build_circuit(memory.program, layout)
@@ -221,9 +221,9 @@ def check(
 
     **Example**
 
-    >>> from pennylane import gadget
-    >>> from pennylane.gadget.simulate import check
-    >>> from pennylane.gadget.library import rep_code_zz_merge
+    >>> from pennylane.ftqc import gadget
+    >>> from pennylane.ftqc.gadget.simulate import check
+    >>> from pennylane.ftqc.gadget.library import rep_code_zz_merge
     >>> _, _, measure_zz = rep_code_zz_merge(d=3, merged_rounds=2)
     >>> result = check(measure_zz.program, gadget.derive_detectors(measure_zz.program))
     >>> result.deterministic, result.distance

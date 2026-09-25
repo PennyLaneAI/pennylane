@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Unit tests for authoring gadgets with ``pennylane.gadget.define``."""
+"""Unit tests for authoring gadgets with ``pennylane.ftqc.gadget.define``."""
 
 import numpy as np
 import pytest
 
-from pennylane import gadget
-from pennylane.gadget.ir import Deform, Detach, Frame, Observe
-from pennylane.gadget.library import steane_code
+from pennylane.ftqc import gadget
+from pennylane.ftqc.gadget.ir import Deform, Detach, Frame, Observe
+from pennylane.ftqc.gadget.library import steane_code
 
 
 def _idle(code, phases, **kwargs):
@@ -680,3 +680,24 @@ class TestUnroll:
 
         assert not any(isinstance(op, Observe) for op in unrolled.program.ops)
         assert [r.name for r in unrolled.records] == ["r0", "r1"]
+
+
+class TestApply:
+    """Tests for the checks ``apply`` makes before recording a gadget call."""
+
+    def test_needs_a_traced_gadget(self):
+        """Test that only a traced gadget can be applied."""
+        with pytest.raises(gadget.GadgetError, match="expected a TracedGadget, got str"):
+            gadget.apply("memory", wires=0)
+
+    def test_wire_count(self, steane_mem):
+        """Test that one wire is needed per logical qubit of the gadget's code."""
+        _, _, memory = steane_mem
+        with pytest.raises(gadget.GadgetError, match=r"1 logical qubit\(s\) of code Steane"):
+            gadget.apply(memory, wires=[0, 1])
+
+    def test_needs_program_capture(self, steane_mem):
+        """Test that a call is only recorded into a captured program."""
+        _, _, memory = steane_mem
+        with pytest.raises(gadget.GadgetError, match="enable program capture"):
+            gadget.apply(memory, wires=0)

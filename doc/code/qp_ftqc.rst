@@ -14,6 +14,12 @@ qp.ftqc
 Overview
 --------
 
+Fault-tolerant gadgets
+^^^^^^^^^^^^^^^^^^^^^^
+
+The :doc:`qp.ftqc.gadget </code/qp_ftqc_gadget>` submodule contains functionality for writing
+fault-tolerant gadgets on CSS codes, checking them, and compiling them with Catalyst.
+
 Pauli Tracker
 ^^^^^^^^^^^^^
 

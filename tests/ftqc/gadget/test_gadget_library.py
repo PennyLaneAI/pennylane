@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Unit tests for the worked examples in ``pennylane.gadget.library``."""
+"""Unit tests for the worked examples in ``pennylane.ftqc.gadget.library``."""
 
 import numpy as np
 import pytest
 
-from pennylane import gadget
-from pennylane.gadget.library import rep_chain, rep_code_zz_merge, repetition_code, steane_code
+from pennylane.ftqc import gadget
+from pennylane.ftqc.gadget.library import rep_chain, rep_code_zz_merge, repetition_code, steane_code
 
 
 def test_rep_chain_inside_frame():

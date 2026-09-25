@@ -15,7 +15,7 @@
 This module contains the traced representation of a gadget: phases, handles, records,
 operations and the declared logical action.
 
-A gadget body is ordinary Python. Tracing it with :func:`~pennylane.gadget.define` produces a
+A gadget body is ordinary Python. Tracing it with :func:`~pennylane.ftqc.gadget.define` produces a
 :class:`GadgetProgram`, a frozen record of the phases it measures, the operations it applies
 and the measurement records those operations produce. Every later stage (detector
 derivation, verification, scheduling, support checks and emission) consumes the program,
@@ -70,8 +70,8 @@ class Phase:
 
     **Example**
 
-    >>> from pennylane import gadget
-    >>> from pennylane.gadget.library import steane_code
+    >>> from pennylane.ftqc import gadget
+    >>> from pennylane.ftqc.gadget.library import steane_code
     >>> phase = gadget.Phase.from_code("steane", steane_code())
     >>> phase.syndrome_width, phase.k
     (6, 1)
@@ -259,7 +259,7 @@ class RecordExpr:
 
     **Example**
 
-    >>> from pennylane import gadget
+    >>> from pennylane.ftqc import gadget
     >>> block = gadget.RecordBlock("m", 0, "merged", rounds=2, width=3, axes=("z",) * 3)
     >>> (block.at(1, 0) ^ gadget.entry_syndrome((2,))).describe()
     'm[r1,c0] ^ entry[2]'
@@ -297,8 +297,8 @@ class RecordBlock:
     A block holds ``rounds`` rounds of ``width`` outcomes. Its name identifies it within
     the gadget, and outcomes are addressed by position rather than by the Python variable
     they were assigned to, so they keep their identity through inlining and emission.
-    Blocks are created by :func:`~pennylane.gadget.rounds` and
-    :func:`~pennylane.gadget.detach`.
+    Blocks are created by :func:`~pennylane.ftqc.gadget.rounds` and
+    :func:`~pennylane.ftqc.gadget.detach`.
 
     Args:
         name (str): name, unique within the gadget
@@ -310,7 +310,7 @@ class RecordBlock:
 
     **Example**
 
-    >>> from pennylane import gadget
+    >>> from pennylane.ftqc import gadget
     >>> block = gadget.RecordBlock("m", 0, "merged", rounds=3, width=5, axes=("z",) * 5)
     >>> block.at(2, 4).describe()
     'm[r2,c4]'
@@ -383,7 +383,7 @@ def entry_syndrome(indices: tuple[int, ...]) -> RecordExpr:
 
     **Example**
 
-    >>> from pennylane import gadget
+    >>> from pennylane.ftqc import gadget
     >>> gadget.entry_syndrome((0, 3)).describe()
     'entry[0] ^ entry[3]'
     """
@@ -491,7 +491,7 @@ class Action:
     """The logical operation a gadget is declared to perform.
 
     The declared action is checked against the traced body by
-    :func:`~pennylane.gadget.verify`: for a measurement, each outcome parity must measure
+    :func:`~pennylane.ftqc.gadget.verify`: for a measurement, each outcome parity must measure
     exactly the declared logical Pauli product. Create actions with :meth:`idle`,
     :meth:`measure` or :meth:`prepare`.
 
@@ -503,7 +503,7 @@ class Action:
 
     **Example**
 
-    >>> from pennylane import gadget
+    >>> from pennylane.ftqc import gadget
     >>> action = gadget.Action.measure(("z", (0, 1)), ("x", (1,)))
     >>> print(action)
     measure(Z_0_1, X_1)
@@ -580,7 +580,7 @@ class Action:
 class GadgetProgram:
     """The traced form of one gadget.
 
-    Programs are produced by :func:`~pennylane.gadget.define` and consumed by every later
+    Programs are produced by :func:`~pennylane.ftqc.gadget.define` and consumed by every later
     stage. They contain no Python callables, and :meth:`fingerprint` identifies the code,
     phases and operation sequence, so results derived from a program can be checked
     against it later.
@@ -604,7 +604,7 @@ class GadgetProgram:
 
     **Example**
 
-    >>> from pennylane.gadget.library import rep_code_zz_merge
+    >>> from pennylane.ftqc.gadget.library import rep_code_zz_merge
     >>> _, _, measure_zz = rep_code_zz_merge(d=3)
     >>> program = measure_zz.program
     >>> print(program.action)

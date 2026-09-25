@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Shared gadgets for the ``pennylane.gadget`` tests."""
+"""Shared gadgets for the ``pennylane.ftqc.gadget`` tests."""
 
 import numpy as np
 import pytest
 
-from pennylane import gadget
-from pennylane.gadget.library import rep_chain, rep_code_zz_merge, steane_memory
+from pennylane.ftqc import gadget
+from pennylane.ftqc.gadget.library import rep_chain, rep_code_zz_merge, steane_memory
 
 
 @pytest.fixture

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Unit tests for detector derivation, ``pennylane.gadget.detectors``."""
+"""Unit tests for detector derivation, ``pennylane.ftqc.gadget.detectors``."""
 
 from collections import Counter
 from dataclasses import replace
@@ -20,9 +20,9 @@ from dataclasses import replace
 import numpy as np
 import pytest
 
-from pennylane import gadget
-from pennylane.gadget.ir import RecordTerm
-from pennylane.gadget.library import steane_code
+from pennylane.ftqc import gadget
+from pennylane.ftqc.gadget.ir import RecordTerm
+from pennylane.ftqc.gadget.library import steane_code
 
 
 def _by_name(layout):

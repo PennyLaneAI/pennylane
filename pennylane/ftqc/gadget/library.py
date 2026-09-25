@@ -47,7 +47,7 @@ def rep_chain(
 
     **Example**
 
-    >>> from pennylane.gadget.library import rep_chain
+    >>> from pennylane.ftqc.gadget.library import rep_chain
     >>> hz, lx, lz = rep_chain(3, offset=1, n_frame=5)
     >>> hz
     array([[0, 1, 1, 0, 0],
@@ -76,7 +76,7 @@ def repetition_code(d: int) -> CSSCode:
 
     **Example**
 
-    >>> from pennylane.gadget.library import repetition_code
+    >>> from pennylane.ftqc.gadget.library import repetition_code
     >>> code = repetition_code(3)
     >>> code.n, code.k, code.distance.value
     (3, 1, 3)
@@ -101,21 +101,24 @@ def repetition_code(d: int) -> CSSCode:
 def steane_code() -> CSSCode:
     """The seven-qubit Steane code.
 
+    The qubits are ordered as in Catalyst's QEC code library, so gadgets on this code can be
+    compiled with the ``"Steane"`` code of Catalyst's QEC pipeline.
+
     Returns:
         ~.CSSCode: the ``[[7, 1, 3]]`` code, with the same checks for X and Z
 
     **Example**
 
-    >>> from pennylane.gadget.library import steane_code
+    >>> from pennylane.ftqc.gadget.library import steane_code
     >>> code = steane_code()
     >>> code.n, code.k, code.distance.value
     (7, 1, 3)
     """
     h = np.array(
         [
-            [0, 0, 0, 1, 1, 1, 1],
-            [0, 1, 1, 0, 0, 1, 1],
-            [1, 0, 1, 0, 1, 0, 1],
+            [1, 1, 1, 1, 0, 0, 0],
+            [0, 1, 1, 0, 1, 1, 0],
+            [0, 0, 1, 1, 0, 1, 1],
         ],
         dtype=np.uint8,
     )
@@ -155,7 +158,7 @@ def steane_memory(rounds: int = 3):
 
     **Example**
 
-    >>> from pennylane.gadget.library import steane_memory
+    >>> from pennylane.ftqc.gadget.library import steane_memory
     >>> code, (phase,), memory = steane_memory(rounds=3)
     >>> str(memory.program.action), memory.program.total_rounds
     ('idle', 3)
@@ -208,7 +211,7 @@ def rep_code_zz_merge(d: int = 3, merged_rounds: int | None = None, pre_rounds: 
 
     **Example**
 
-    >>> from pennylane.gadget.library import rep_code_zz_merge
+    >>> from pennylane.ftqc.gadget.library import rep_code_zz_merge
     >>> code, (base, merged), measure_zz = rep_code_zz_merge(d=3)
     >>> code.k, base.k, merged.k
     (2, 2, 1)

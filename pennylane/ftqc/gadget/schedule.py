@@ -87,8 +87,8 @@ def schedule_phase(phase: Phase) -> Schedule:
 
     **Example**
 
-    >>> from pennylane import gadget
-    >>> from pennylane.gadget.library import steane_code
+    >>> from pennylane.ftqc import gadget
+    >>> from pennylane.ftqc.gadget.library import steane_code
     >>> schedule = gadget.schedule_phase(gadget.Phase.from_code("steane", steane_code()))
     >>> print(schedule.summary())
     phase steane: depth 6 (optimal), 24 interactions per round
@@ -210,8 +210,8 @@ def schedule_gadget(program: GadgetProgram) -> GadgetSchedule:
 
     **Example**
 
-    >>> from pennylane import gadget
-    >>> from pennylane.gadget.library import rep_code_zz_merge
+    >>> from pennylane.ftqc import gadget
+    >>> from pennylane.ftqc.gadget.library import rep_code_zz_merge
     >>> _, _, measure_zz = rep_code_zz_merge(d=3)
     >>> print(gadget.schedule_gadget(measure_zz.program).summary())
     schedule for measure_zz

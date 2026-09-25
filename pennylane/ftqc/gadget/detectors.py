@@ -107,8 +107,8 @@ class DetectorLayout:
 
     **Example**
 
-    >>> from pennylane import gadget
-    >>> from pennylane.gadget.library import rep_code_zz_merge
+    >>> from pennylane.ftqc import gadget
+    >>> from pennylane.ftqc.gadget.library import rep_code_zz_merge
     >>> _, _, measure_zz = rep_code_zz_merge(d=3)
     >>> layout = gadget.derive_detectors(measure_zz.program)
     >>> layout.n_detectors, layout.entry_width
@@ -309,8 +309,8 @@ def derive_detectors(program: GadgetProgram, regime: str = "phenomenological") -
     check alone. Completion adds the outcomes of the base checks that turn it into logical
     Z on both blocks:
 
-    >>> from pennylane import gadget
-    >>> from pennylane.gadget.library import rep_code_zz_merge
+    >>> from pennylane.ftqc import gadget
+    >>> from pennylane.ftqc.gadget.library import rep_code_zz_merge
     >>> _, _, measure_zz = rep_code_zz_merge(d=3)
     >>> (obs,) = gadget.derive_detectors(measure_zz.program).observables
     >>> obs.author_expr.describe()

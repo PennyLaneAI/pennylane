@@ -183,8 +183,8 @@ def rounds(handle: Handle, count: int, *, record: str) -> tuple[Handle, RecordBl
 
     **Example**
 
-    >>> from pennylane import gadget
-    >>> from pennylane.gadget.library import steane_code
+    >>> from pennylane.ftqc import gadget
+    >>> from pennylane.ftqc.gadget.library import steane_code
     >>> code = steane_code()
     >>> @gadget.define(
     ...     action=gadget.Action.idle(), code=code, phases=(gadget.Phase.from_code("s", code),)
@@ -241,8 +241,8 @@ def deform(handle: Handle, *, to: str, init: dict[int, str] | None = None) -> Ha
 
     **Example**
 
-    >>> from pennylane import gadget
-    >>> from pennylane.gadget.library import rep_code_zz_merge
+    >>> from pennylane.ftqc import gadget
+    >>> from pennylane.ftqc.gadget.library import rep_code_zz_merge
     >>> code, phases, _ = rep_code_zz_merge(d=3)
     >>> @gadget.define(action=gadget.Action.idle(), code=code, phases=phases)
     ... def merge_and_split(handle):
@@ -314,8 +314,8 @@ def detach(
     .. code-block:: python
 
         import numpy as np
-        from pennylane import gadget
-        from pennylane.gadget.library import repetition_code
+        from pennylane.ftqc import gadget
+        from pennylane.ftqc.gadget.library import repetition_code
 
         code = repetition_code(1)
         no_x = np.zeros((0, 2), dtype=np.uint8)
@@ -391,8 +391,8 @@ def observe(expr: RecordExpr | Outcome, *, index: int) -> Outcome:
 
     **Example**
 
-    >>> from pennylane import gadget
-    >>> from pennylane.gadget.library import rep_code_zz_merge
+    >>> from pennylane.ftqc import gadget
+    >>> from pennylane.ftqc.gadget.library import rep_code_zz_merge
     >>> code, phases, _ = rep_code_zz_merge(d=3)
     >>> @gadget.define(action=gadget.Action.measure(("z", (0, 1))), code=code, phases=phases)
     ... def measure_zz(handle):
@@ -445,8 +445,8 @@ def frame(handle: Handle, expr: RecordExpr | Outcome, *, update_index: int = 0) 
 
     **Example**
 
-    >>> from pennylane import gadget
-    >>> from pennylane.gadget.library import rep_code_zz_merge
+    >>> from pennylane.ftqc import gadget
+    >>> from pennylane.ftqc.gadget.library import rep_code_zz_merge
     >>> _, _, measure_zz = rep_code_zz_merge(d=3)
     >>> [op.update_index for op in measure_zz.program.ops if type(op).__name__ == "Frame"]
     [0]
@@ -486,7 +486,7 @@ class TracedGadget:
 
     **Example**
 
-    >>> from pennylane.gadget.library import steane_memory
+    >>> from pennylane.ftqc.gadget.library import steane_memory
     >>> _, _, memory = steane_memory(rounds=3)
     >>> memory
     <gadget steane_memory action=idle>
@@ -570,8 +570,8 @@ def define(
 
     A memory gadget that measures the Steane code's checks for three rounds:
 
-    >>> from pennylane import gadget
-    >>> from pennylane.gadget.library import steane_code
+    >>> from pennylane.ftqc import gadget
+    >>> from pennylane.ftqc.gadget.library import steane_code
     >>> code = steane_code()
     >>> @gadget.define(
     ...     action=gadget.Action.idle(), code=code, phases=(gadget.Phase.from_code("s", code),)
@@ -596,8 +596,8 @@ def define(
 
         .. code-block:: python
 
-            from pennylane import gadget
-            from pennylane.gadget.library import rep_code_zz_merge
+            from pennylane.ftqc import gadget
+            from pennylane.ftqc.gadget.library import rep_code_zz_merge
 
             code, phases, measure_zz = rep_code_zz_merge(d=3)
 
@@ -868,8 +868,8 @@ def unroll(count: int, handle: Handle, body: Callable[[Handle], Handle]) -> Hand
 
     **Example**
 
-    >>> from pennylane import gadget
-    >>> from pennylane.gadget.library import steane_memory
+    >>> from pennylane.ftqc import gadget
+    >>> from pennylane.ftqc.gadget.library import steane_memory
     >>> code, phases, memory = steane_memory(rounds=2)
     >>> @gadget.define(action=gadget.Action.idle(), code=code, phases=phases)
     ... def hold(handle):

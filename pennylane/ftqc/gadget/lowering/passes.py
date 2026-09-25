@@ -26,12 +26,18 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+import numpy as np
 from xdsl.dialects import func
-from xdsl.dialects.builtin import ModuleOp
+from xdsl.dialects.builtin import ModuleOp, StringAttr
+from xdsl.ir import Operation, SSAValue
+from xdsl.parser import Parser
 
+from .. import _gf2
+from ..ir import GadgetError
 from ..support import CATALYST_EVIDENCE
 from . import dialect as gd
 from .catalyst_dialects import load_dialect_module
+from .emit import context
 
 _qecl = load_dialect_module("qecl")
 
@@ -105,15 +111,15 @@ def lower_gadget_to_qecl(module: ModuleOp) -> LoweringResult:
         ~.LoweringResult: what was lowered
 
     Raises:
-        LoweringGap: if a gadget uses a codeblock with ``k > 1``, a deformation or detach,
-            more than one phase, records used by later operations, or a frame update
+        LoweringGap: if a gadget uses a codeblock with ``k > 1``, a deformation or detach, an
+            outcome, a frame update, more than one phase, or records used by later operations
 
     **Example**
 
     .. code-block:: python
 
-        from pennylane.gadget.library import steane_memory
-        from pennylane.gadget.lowering import emit, lower_gadget_to_qecl
+        from pennylane.ftqc.gadget.library import steane_memory
+        from pennylane.ftqc.gadget.lowering import emit, lower_gadget_to_qecl
 
         _, _, memory = steane_memory(rounds=3)
         result = lower_gadget_to_qecl(emit(memory.program).module)
@@ -147,6 +153,17 @@ def lower_gadget_to_qecl(module: ModuleOp) -> LoweringResult:
                     workaround="qecl.measure addresses logical qubits, not physical ones; "
                     "detach has to be expanded at the qecp level where physical qubits exist",
                 )
+            if isinstance(op, gd.ObservableOp):
+                raise _observable_gap()
+            if isinstance(op, gd.FrameUpdateOp):
+                raise LoweringGap(
+                    capability="classically conditioned Pauli frame update",
+                    op="gadget.frame_update",
+                    evidence="the PauliFrame dialect exists in Catalyst but qecl has no op "
+                    "that consumes a measurement record to condition a frame update",
+                    workaround="lower the frame update into the PauliFrame dialect rather "
+                    "than qecl, and keep the record identity attached to the producing op",
+                )
         if len(phases) > 1:
             raise LoweringGap(
                 capability="more than one stabilizer group per program",
@@ -158,17 +175,6 @@ def lower_gadget_to_qecl(module: ModuleOp) -> LoweringResult:
         for op in ops:
             if isinstance(op, gd.RoundsOp):
                 _lower_rounds(op, result)
-            elif isinstance(op, gd.ObservableOp):
-                _lower_observable(fn, op, result)
-            elif isinstance(op, gd.FrameUpdateOp):
-                raise LoweringGap(
-                    capability="classically conditioned Pauli frame update",
-                    op="gadget.frame_update",
-                    evidence="the PauliFrame dialect exists in Catalyst but qecl has no op "
-                    "that consumes a measurement record to condition a frame update",
-                    workaround="lower the frame update into the PauliFrame dialect rather "
-                    "than qecl, and keep the record identity attached to the producing op",
-                )
     return result
 
 
@@ -212,10 +218,10 @@ def _lower_rounds(op: gd.RoundsOp, result: LoweringResult) -> None:
     result.qec_cycles += len(inserted)
 
 
-def _lower_observable(fn: func.FuncOp, op: gd.ObservableOp, result: LoweringResult) -> None:
-    """Reject an outcome, since ``qecl.measure`` is a destructive single-qubit projection
-    rather than the parity of records a gadget outcome is."""
-    raise LoweringGap(
+def _observable_gap() -> LoweringGap:
+    """The gap for an outcome: ``qecl.measure`` is a destructive single-qubit projection, not
+    the parity of records a gadget outcome is."""
+    return LoweringGap(
         capability="non-destructive logical product measurement",
         op="gadget.observable",
         evidence=CATALYST_EVIDENCE["measurable_axes"]
@@ -226,4 +232,111 @@ def _lower_observable(fn: func.FuncOp, op: gd.ObservableOp, result: LoweringResu
     )
 
 
-__all__ = ["LoweringGap", "LoweringResult", "lower_gadget_to_qecl"]
+def inline_gadget_call(payload: str, codeblock: SSAValue) -> tuple[list[Operation], SSAValue]:
+    """Lower an emitted gadget to ``qecl`` operations acting on a given codeblock.
+
+    This is the hook Catalyst's ``convert-quantum-to-qecl`` pass uses for a call recorded by
+    :func:`~pennylane.ftqc.gadget.apply`: the payload is the text of the gadget's emitted module,
+    and the returned operations replace the call. Each ``qecl.qec`` operation is tagged with
+    the gadget's name and its code's check matrices, so that :func:`check_pipeline_code` can
+    later compare them with the code the pipeline lowers to.
+
+    Args:
+        payload (str): IR text produced by :func:`~.lowering.emit`
+        codeblock (SSAValue): the ``!qecl.codeblock`` value the gadget acts on
+
+    Returns:
+        tuple[list[Operation], SSAValue]: the operations to insert, in order, and the
+        codeblock value after the gadget
+
+    Raises:
+        LoweringGap: if the gadget cannot be expressed in ``qecl``
+        GadgetError: if the payload holds no gadget, or the gadget acts on a different
+            codeblock type
+    """
+    module = Parser(context(), payload).parse_module()
+    lower_gadget_to_qecl(module)
+    fns = [
+        op
+        for op in module.body.block.ops
+        if isinstance(op, func.FuncOp) and "gadget.action" in op.attributes
+    ]
+    if len(fns) != 1:
+        raise GadgetError(f"gadget payload must hold exactly one gadget, found {len(fns)}")
+    fn = fns[0]
+    arg = fn.body.block.args[0]
+    if arg.type != codeblock.type:
+        raise GadgetError(
+            f"gadget {fn.sym_name.data} acts on {arg.type} but is applied to {codeblock.type}"
+        )
+
+    tags = {
+        "gadget.name": StringAttr(fn.sym_name.data),
+        "gadget.code": fn.attributes["gadget.code"],
+        "gadget.code_hx": fn.attributes["gadget.code_hx"],
+        "gadget.code_hz": fn.attributes["gadget.code_hz"],
+    }
+    mapping: dict[SSAValue, SSAValue] = {arg: codeblock}
+    inserted: list[Operation] = []
+    for op in fn.body.block.ops:
+        if isinstance(op, func.ReturnOp):
+            return inserted, mapping.get(op.operands[0], op.operands[0])
+        new = op.clone(value_mapper=mapping)
+        if isinstance(new, _qecl.QecCycleOp):
+            new.attributes.update(tags)
+        inserted.append(new)
+    raise GadgetError(f"gadget {fn.sym_name.data} has no return")  # pragma: no cover
+
+
+def check_pipeline_code(module: ModuleOp, x_checks, z_checks, code: str) -> None:
+    """Check that every inlined gadget was written for the code the pipeline lowers to.
+
+    ``qecl.qec`` does not name a code; the code is chosen when ``qecl`` is lowered to
+    ``qecp``. Catalyst's ``convert-qecl-to-qecp`` pass calls this function, so that a gadget
+    written for one code is not silently compiled with another. Codes are compared by the
+    stabilizer groups their checks generate, on the same qubit order.
+
+    Args:
+        module (ModuleOp): the module being lowered
+        x_checks (array_like): X checks of the pipeline code
+        z_checks (array_like): Z checks of the pipeline code
+        code (str): name of the pipeline code, for error messages
+
+    Raises:
+        GadgetError: if a gadget's code differs from the pipeline code
+    """
+    x = np.asarray(x_checks, dtype=np.uint8)
+    z = np.asarray(z_checks, dtype=np.uint8)
+    for op in module.walk():
+        if not isinstance(op, _qecl.QecCycleOp) or "gadget.code_hx" not in op.attributes:
+            continue
+        hx = _matrix(op.attributes["gadget.code_hx"])
+        hz = _matrix(op.attributes["gadget.code_hz"])
+        if not (_same_group(hx, x) and _same_group(hz, z)):
+            raise GadgetError(
+                f"gadget {op.attributes['gadget.name'].data} was written for code "
+                f"{op.attributes['gadget.code'].data}, whose checks differ from those of the "
+                f"pipeline code {code}. Compile it with a pipeline code that has the same "
+                "checks on the same qubits."
+            )
+
+
+def _matrix(attr) -> np.ndarray:
+    shape = attr.get_type().get_shape()
+    return np.array(attr.get_values(), dtype=np.uint8).reshape(shape)
+
+
+def _same_group(a: np.ndarray, b: np.ndarray) -> bool:
+    if a.shape[1:] != b.shape[1:]:
+        return False
+    rank = _gf2.rank(np.vstack([a, b]))
+    return rank == _gf2.rank(a) == _gf2.rank(b)
+
+
+__all__ = [
+    "LoweringGap",
+    "LoweringResult",
+    "lower_gadget_to_qecl",
+    "inline_gadget_call",
+    "check_pipeline_code",
+]

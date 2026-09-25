@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-.. currentmodule:: pennylane.gadget
+.. currentmodule:: pennylane.ftqc.gadget
 
 This module contains functionality for writing fault-tolerant gadgets on CSS codes in
 Python, checking them, and emitting them into Catalyst's IR.
@@ -33,15 +33,15 @@ parities from the schedule, and checks them against the declared logical operati
 
     The module requires only NumPy. :func:`verify` also runs a noise simulation when
     `Stim <https://github.com/quantumlib/Stim>`__ is installed, and
-    :mod:`pennylane.gadget.lowering` requires xDSL and Catalyst's dialect definitions.
+    :mod:`pennylane.ftqc.gadget.lowering` requires xDSL and Catalyst's dialect definitions.
 
 For example, the library gadget :func:`~.library.rep_code_zz_merge` measures logical
 :math:`Z \\otimes Z` on two distance-3 repetition codes by merging them. Verifying it
 derives 22 detectors, reports the one record that has no detector, and passes every
 algebraic check:
 
->>> from pennylane import gadget
->>> from pennylane.gadget.library import rep_code_zz_merge
+>>> from pennylane.ftqc import gadget
+>>> from pennylane.ftqc.gadget.library import rep_code_zz_merge
 >>> code, phases, measure_zz = rep_code_zz_merge(d=3)
 >>> receipt, layout = gadget.verify(measure_zz.program, simulate=False)
 >>> receipt.ok, layout.n_detectors
@@ -83,7 +83,7 @@ qubits and uses five operations:
 
 .. code-block:: python
 
-    from pennylane import gadget
+    from pennylane.ftqc import gadget
 
     code, (base, merged), _ = rep_code_zz_merge(d=3)
 
@@ -228,7 +228,7 @@ outcome measures exactly the declared logical operator. A check that cannot run 
 reported as skipped, not passed.
 
 With Stim installed, :func:`verify` also simulates the gadget under phenomenological
-noise (see :mod:`pennylane.gadget.simulate`). It confirms that every derived detector is
+noise (see :mod:`pennylane.ftqc.gadget.simulate`). It confirms that every derived detector is
 deterministic without noise, and searches for the smallest undetectable error that flips an
 outcome. The distance found is added to the receipt as a certified claim, and a larger
 phenomenological claim by the author fails. For the merge above, the certified distance is
@@ -266,6 +266,50 @@ blocking or degrading :class:`Gap` objects. :data:`~.support.CATALYST_CURRENT` d
 the current Catalyst QEC pipeline and Backline real-time path, with each limit backed by an
 entry of :data:`~.support.CATALYST_EVIDENCE`; :data:`~.support.CATALYST_PROPOSED` describes
 the pipeline with those limits lifted. The report never changes the gadget to fit.
+
+Compiling with Catalyst
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~apply
+
+:func:`apply` places a gadget on logical qubits inside a QNode compiled with
+:func:`~pennylane.qjit` and Catalyst's QEC pipeline, which encodes each wire of the QNode
+in a code block. The call is recorded as a ``quantum.custom "GadgetCall"`` operation that
+carries the gadget's emitted IR. The pipeline's ``convert-quantum-to-qecl`` pass replaces
+it with the gadget's ``qecl`` operations on that wire's codeblock, and
+``convert-qecl-to-qecp`` checks that the gadget's code has the same checks, on the same
+qubits, as the code the pipeline compiles to. :func:`~.library.steane_code` uses the qubit
+order of Catalyst's ``"Steane"`` code, so the library memory gadget compiles with it:
+
+.. code-block:: python
+
+    import pennylane as qp
+    from catalyst.ftqc import qec_pipeline
+    from catalyst.python_interface.transforms.qecl import convert_quantum_to_qecl_pass
+    from catalyst.python_interface.transforms.qecp import (
+        convert_qecl_to_qecp_pass,
+        convert_qecp_to_quantum_pass,
+    )
+    from pennylane.ftqc.gadget.library import steane_memory
+
+    _, _, memory = steane_memory(rounds=3)
+
+    @qp.qjit(capture=True, pipelines=qec_pipeline())
+    @convert_qecp_to_quantum_pass
+    @convert_qecl_to_qecp_pass(qec_code="Steane", number_errors=0)
+    @convert_quantum_to_qecl_pass(k=1)
+    @qp.set_shots(10)
+    @qp.qnode(qp.device("lightning.qubit", wires=1), mcm_method="one-shot")
+    def circuit():
+        qp.X(0)
+        gadget.apply(memory, wires=0)
+        return qp.sample(wires=[0])
+
+Gadgets that ``qecl`` cannot express, such as merges or gadgets with outcomes, raise
+:class:`~.lowering.LoweringGap` when the program is compiled.
 
 Emission into Catalyst IR
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -323,12 +367,14 @@ Limitations
   measures the same operator in sequence, and it does not flag a merged phase whose ``k``
   equals the entry ``k``.
 - Emitted outcome and frame-update parities must come from a single record block.
-- Only single-phase ``k=1`` gadgets whose records are not used later lower to ``qecl``.
+- Only single-phase ``k=1`` gadgets whose records are not used later lower to ``qecl``,
+  and so only these can be used with :func:`apply`.
   Lowering more needs ``qecl.qec`` to return its syndrome and a ``qecl`` operation that
   changes the measured stabilizer group.
 """
 
 from . import codes, detectors, ir, library, schedule, support
+from .calls import apply
 from .authoring import (
     Outcome,
     TracedGadget,
@@ -380,6 +426,7 @@ __all__ = [
     "TracedGadget",
     "Outcome",
     "define",
+    "apply",
     "rounds",
     "deform",
     "detach",

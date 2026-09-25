@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Unit tests for codes and distance claims, ``pennylane.gadget.codes``."""
+"""Unit tests for codes and distance claims, ``pennylane.ftqc.gadget.codes``."""
 
 import numpy as np
 import pytest
 
-from pennylane import gadget
-from pennylane.gadget.library import rep_chain, steane_code
+from pennylane.ftqc import gadget
+from pennylane.ftqc.gadget.library import rep_chain, steane_code
 
 
 def _rep3(lx=((1, 1, 1),), lz=((1, 0, 0),)):
