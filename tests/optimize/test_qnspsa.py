@@ -145,7 +145,8 @@ class TestQNSPSAOptimizer:
             seed=seed,
         )
         qnode, params_shape = get_single_input_qnode()
-        params = np.random.rand(*params_shape)
+        rng = np.random.default_rng(seed)
+        params = rng.random(params_shape)
 
         # gradient result from QNSPSAOptimizer
         grad_tapes, grad_dirs = opt._get_spsa_grad_tapes(qnode, [params], {})
@@ -171,7 +172,8 @@ class TestQNSPSAOptimizer:
         )
 
         qnode, params_shape = get_single_input_qnode()
-        params = np.random.rand(*params_shape)
+        rng = np.random.default_rng(seed)
+        params = rng.random(params_shape)
 
         # raw metric tensor result from QNSPSAOptimizer
         metric_tapes, tensor_dirs = opt._get_tensor_tapes(qnode, [params], {})
@@ -197,7 +199,8 @@ class TestQNSPSAOptimizer:
             seed=seed,
         )
         qnode = get_multi_input_qnode()
-        params = [np.random.rand(1) for _ in range(2)]
+        rng = np.random.default_rng(seed)
+        params = [rng.random(1) for _ in range(2)]
         # gradient result from QNSPSAOptimizer
         grad_tapes, grad_dirs = opt._get_spsa_grad_tapes(qnode, params, {})
         raw_results = qp.execute(grad_tapes, qnode.device, None)
@@ -227,7 +230,8 @@ class TestQNSPSAOptimizer:
         target_opt = deepcopy(opt)
 
         qnode, params_shape = get_single_input_qnode()
-        params = np.random.rand(*params_shape)
+        rng = np.random.default_rng(seed)
+        params = rng.random(params_shape)
 
         new_params_res = opt.step(qnode, params)
 
@@ -271,7 +275,8 @@ class TestQNSPSAOptimizer:
         target_opt = deepcopy(opt_blocking)
 
         qnode, params_shape = get_single_input_qnode()
-        params = np.random.rand(*params_shape)
+        rng = np.random.default_rng(seed)
+        params = rng.random(params_shape)
 
         new_params_blocking_res, qnode_blocking_res = opt_blocking.step_and_cost(qnode, params)
         with pytest.warns(UserWarning):
@@ -367,10 +372,11 @@ class TestQNSPSAOptimizer:
         # a deep copy of the same opt, to be applied to qnode_reduced
         target_opt = deepcopy(opt)
         dev = qp.device("default.qubit", wires=2)
-        non_trainable_param = np.random.rand(1)
+        rng = np.random.default_rng(seed)
+        non_trainable_param = rng.random(1)
         non_trainable_param.requires_grad = False
 
-        trainable_param = np.random.rand(1)
+        trainable_param = rng.random(1)
 
         @qp.qnode(dev)
         def qnode_with_non_trainable(trainable, non_trainable):
@@ -435,7 +441,8 @@ def test_template_no_adjoint(seed):
         qp.RandomLayers(weights=params, wires=range(num_qubits), seed=seed)
         return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
 
-    params = np.random.normal(0, np.pi, (2, 4))
+    rng = np.random.default_rng(seed)
+    params = rng.normal(0, np.pi, (2, 4))
     opt = qp.QNSPSAOptimizer(stepsize=5e-2)
     assert opt.step_and_cost(cost, params)  # just checking it runs without error
     assert not qp.RandomLayers.has_adjoint
