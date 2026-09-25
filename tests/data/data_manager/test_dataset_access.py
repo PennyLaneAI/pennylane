@@ -17,6 +17,8 @@ Unit tests for the :class:`pennylane.data.data_manager` functions.
 
 import os
 import re
+import threading
+import time
 from pathlib import Path, PosixPath
 from typing import NamedTuple
 from unittest.mock import MagicMock, call, patch
@@ -506,6 +508,159 @@ def test_load_except(monkeypatch, tmp_path):
         pennylane.data.data_manager.load(
             "qchem", molname="H2", basis="6-31G", bondlength="0.46", folder_path=tmp_path
         )
+
+
+def _concurrency_mock(sleep=0.2):
+    """Builds a mock for ``_download_dataset`` that sleeps like an I/O-bound download
+    and returns ``(mock, state)``, where ``state`` tracks the maximum number of
+    invocations that were simultaneously in flight (``max_concurrent``) and the total
+    number of invocations (``call_count``)."""
+    state = {"active": 0, "max_concurrent": 0, "call_count": 0}
+    lock = threading.Lock()
+
+    # pylint: disable=too-many-arguments
+    def mock(data_path, dest, attributes, force, block_size, pbar_task):
+        with lock:
+            state["active"] += 1
+            state["call_count"] += 1
+            state["max_concurrent"] = max(state["max_concurrent"], state["active"])
+        time.sleep(sleep)
+        with lock:
+            state["active"] -= 1
+
+    return mock, state
+
+
+def _call_download_datasets(monkeypatch, tmp_path, dataset_urls, num_threads, download_mock):
+    """Patches ``_download_dataset`` and calls ``_download_datasets`` directly with
+    synthetic dataset ids for the given urls, no progress bar."""
+    monkeypatch.setattr(pennylane.data.data_manager, "_download_dataset", download_mock)
+    dataset_ids = [f"ds_{i}" for i in range(len(dataset_urls))]
+    return pennylane.data.data_manager._download_datasets(
+        "test_data",
+        tmp_path,
+        dataset_urls,
+        dataset_ids,
+        attributes=None,
+        force=False,
+        block_size=1,
+        num_threads=num_threads,
+        pbar=None,
+    )
+
+
+def test_download_datasets_concurrency(tmp_path, monkeypatch):
+    """Five 0.2 s mock downloads with ``num_threads=5`` run concurrently: the wall-clock
+    time is well below the ~1.0 s serial duration and all five tasks overlap."""
+    urls = [f"https://example.com/ds_{i}.h5" for i in range(5)]
+    download_mock, state = _concurrency_mock(sleep=0.2)
+
+    start = time.monotonic()
+    dest_paths = _call_download_datasets(
+        monkeypatch, tmp_path, urls, num_threads=5, download_mock=download_mock
+    )
+    elapsed = time.monotonic() - start
+
+    assert state["max_concurrent"] == 5
+    assert elapsed < 0.8  # serial execution would take ~1.0 s
+    assert len(dest_paths) == 5
+
+
+@pytest.mark.parametrize(
+    "num_threads, n_datasets, expect_concurrent",
+    [
+        (5, 5, 5),  # pool fully utilized
+        (2, 5, 2),  # concurrency capped at num_threads
+        (1, 5, 1),  # num_threads=1 stays serial
+        (10, 3, 3),  # more threads than datasets: capped at len(dest_paths)
+        (5, 1, 1),  # single dataset
+    ],
+)
+def test_download_datasets_thread_cap(
+    tmp_path, monkeypatch, num_threads, n_datasets, expect_concurrent
+):
+    """Observed concurrency equals ``min(num_threads, len(datasets))`` and every
+    dataset is submitted exactly once."""
+    urls = [f"https://example.com/ds_{i}.h5" for i in range(n_datasets)]
+    download_mock, state = _concurrency_mock(sleep=0.2)
+
+    dest_paths = _call_download_datasets(
+        monkeypatch, tmp_path, urls, num_threads=num_threads, download_mock=download_mock
+    )
+
+    assert state["max_concurrent"] == expect_concurrent
+    assert state["call_count"] == n_datasets
+    assert dest_paths == [tmp_path / "test_data" / f"ds_{i}.h5" for i in range(n_datasets)]
+
+
+@pytest.mark.parametrize(
+    "failing_index, fail_sleep, ok_sleep",
+    [
+        (0, 0.05, 0.2),  # first-submitted task fails first-completed
+        (4, 0.30, 0.1),  # last-submitted task fails last-completed
+    ],
+)
+def test_download_datasets_raises_first_exception(
+    tmp_path, monkeypatch, failing_index, fail_sleep, ok_sleep
+):
+    """The exception of the first completed failing task propagates out of
+    ``_download_datasets`` regardless of submission/completion order, and all
+    tasks were submitted (bulk-submit semantics)."""
+    urls = [f"https://example.com/ds_{i}.h5" for i in range(5)]
+    submitted = []
+    lock = threading.Lock()
+
+    # pylint: disable=too-many-arguments
+    def failing_mock(data_path, dest, attributes, force, block_size, pbar_task):
+        with lock:
+            submitted.append(data_path)
+        time.sleep(fail_sleep if data_path == urls[failing_index] else ok_sleep)
+        if data_path == urls[failing_index]:
+            raise RuntimeError("boom")
+
+    with pytest.raises(RuntimeError, match="boom"):
+        _call_download_datasets(
+            monkeypatch, tmp_path, urls, num_threads=5, download_mock=failing_mock
+        )
+
+    assert len(submitted) == 5
+
+
+@patch.object(pennylane.data.data_manager, "head", head_mock)
+def test_download_datasets_progress_tasks(tmp_path, monkeypatch):
+    """Each dataset gets its own progress task via ``pbar.add_task``, and the
+    per-task object is passed through to its ``_download_dataset`` invocation."""
+    urls = [f"https://example.com/ds_{i}.h5" for i in range(3)]
+    pbar = MagicMock()
+    pbar.add_task.side_effect = lambda *args, **kwargs: MagicMock()
+    seen_tasks = []
+    lock = threading.Lock()
+
+    # pylint: disable=too-many-arguments
+    def mock(data_path, dest, attributes, force, block_size, pbar_task):
+        with lock:
+            seen_tasks.append(pbar_task)
+
+    monkeypatch.setattr(pennylane.data.data_manager, "_download_dataset", mock)
+    dataset_ids = [f"ds_{i}" for i in range(len(urls))]
+    dest_paths = pennylane.data.data_manager._download_datasets(
+        "test_data",
+        tmp_path,
+        urls,
+        dataset_ids,
+        attributes=None,
+        force=False,
+        block_size=1,
+        num_threads=3,
+        pbar=pbar,
+    )
+
+    assert pbar.add_task.call_count == 3
+    assert [args[0] for args, _ in pbar.add_task.call_args_list] == [
+        str(path.relative_to(tmp_path)) for path in dest_paths
+    ]
+    assert len(seen_tasks) == 3
+    assert len({id(task) for task in seen_tasks}) == 3  # distinct task per download
 
 
 @patch("pennylane.data.data_manager._download_partial")
