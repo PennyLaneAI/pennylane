@@ -21,7 +21,7 @@ import numpy as np
 import pennylane as qp
 from pennylane import allocate, math
 from pennylane.core.operator import Operator2
-from pennylane.typing import AbstractWires, Bool, Complex, Int, TensorLike, Wire
+from pennylane.typing import AbstractWires, Bool, Complex, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
 _U64 = np.uint64
@@ -893,7 +893,7 @@ def _pui_state_prep_resources(coefficients, wires, indices, work_wires):
 
     qrom_reps = {
         p: qp.QROM(
-            bitstrings=Int[p, p],
+            bitstrings=Bool[p, p],
             control_wires=Wire[n_subspace],
             target_wires=Wire[p],
             work_wires=Wire[n_subspace - 1],
