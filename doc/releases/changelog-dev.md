@@ -1004,6 +1004,11 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The custom `__repr__` of :class:`~.MultiControlledX` has been removed in favour of the one inherited from
+  `Operator2`. The representation now reports every argument, including `work_wires` and `work_wire_type`,
+  instead of only `wires` and non-trivial `control_values`.
+  [(#10190)](https://github.com/PennyLaneAI/pennylane/pull/10190)
+  
 * Jax 0.7.1 is now a hard requirement for PennyLane.
   [(#10192)](https://github.com/PennyLaneAI/pennylane/pull/10192)
 

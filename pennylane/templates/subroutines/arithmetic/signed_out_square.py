@@ -228,7 +228,7 @@ class SignedOutSquare(_SquareArithmeticOp):
         15: ··· ─╰SemiAdder────┤
         M0 =
         [ True]
-        Gate Count: {Adjoint(TemporaryAND): 2, CNOT: 6, MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool)): 3, MultiX(AbstractArray((1,), bool, weak_type=True), wires=AbstractWires(1)): 2, OutSquare(x_wires=AbstractWires(2), output_wires=AbstractWires(7), work_wires=AbstractWires(6), output_wires_zeroed=True): 1, PauliX: 8, SemiAdder(x_wires=AbstractWires(1), y_wires=AbstractWires(2), work_wires=AbstractWires(6)): 1, TemporaryAND: 2}
+        Gate Count: {Adjoint(TemporaryAND): 2, CNOT: 6, MultiControlledX(wires=AbstractWires(3), control_values=AbstractArray((2,), bool, weak_type=True), work_wires=AbstractWires(4), work_wire_type=zeroed): 3, MultiX(AbstractArray((1,), bool, weak_type=True), wires=AbstractWires(1)): 2, OutSquare(x_wires=AbstractWires(2), output_wires=AbstractWires(7), work_wires=AbstractWires(6), output_wires_zeroed=True): 1, PauliX: 8, SemiAdder(x_wires=AbstractWires(1), y_wires=AbstractWires(2), work_wires=AbstractWires(6)): 1, TemporaryAND: 2}
 
     """
 

@@ -828,12 +828,21 @@ class TestMultiControlledX:
         assert np.allclose(mat1, mat2)
 
     def test_repr(self):
-        """Test ``__repr__`` method that shows ``control_values``"""
-        wires = [0, 1, 2]
-        control_values = [False, True]
-        # pylint: disable=unnecessary-dunder-call
-        op_repr = qp.MultiControlledX(wires=wires, control_values=control_values).__repr__()
-        assert op_repr == f"MultiControlledX(wires={wires}, control_values={control_values})"
+        """Test that the inherited ``Operator2.__repr__`` shows every argument, including
+        ``work_wires`` and ``work_wire_type``."""
+        op = qp.MultiControlledX(wires=[0, 1, 2], control_values=[False, True])
+        assert repr(op) == (
+            f"MultiControlledX(wires={op.wires.tolist()}, "
+            f"control_values={op.control_values}, "
+            f"work_wires={op.work_wires.tolist()}, "
+            f"work_wire_type={op.work_wire_type})"
+        )
+
+    def test_repr_with_work_wires(self):
+        """Test that ``work_wires`` and ``work_wire_type`` are reported in the repr."""
+        op = qp.MultiControlledX(wires=[0, 1, 2], work_wires=[3], work_wire_type="zeroed")
+        assert "work_wires=[3]" in repr(op)
+        assert "work_wire_type=zeroed" in repr(op)
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("num_work_wires", [0, 1, 2, 3])
