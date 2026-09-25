@@ -24,6 +24,8 @@ from copy import copy
 from functools import partial, singledispatch, update_wrapper, wraps
 from inspect import Parameter, signature
 
+import jax
+
 from pennylane import capture, math
 from pennylane.capture import autograph, register_custom_staging_rule
 from pennylane.capture.custom_primitives import QpPrimitive
@@ -998,7 +1000,6 @@ def _apply_to_tape(obj: QuantumScript, transform, *targs, **tkwargs):
 def _capture_apply(obj, transform, *targs, **tkwargs):
     @autograph.wraps(obj)
     def qfunc_transformed(*args, **kwargs):
-        import jax  # pylint: disable=import-outside-toplevel
 
         flat_qfunc = capture.flatfn.FlatFn(obj)
         jaxpr = jax.make_jaxpr(flat_qfunc)(*args, **kwargs)

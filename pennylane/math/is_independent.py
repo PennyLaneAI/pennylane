@@ -23,6 +23,7 @@ a function is independent of its arguments for the interfaces
 import warnings
 from functools import partial
 
+import jax
 import numpy as np
 from autograd.core import VJPNode
 from autograd.tracer import isbox, new_box, trace_stack
@@ -109,7 +110,6 @@ def _jax_is_indep_analytic(func, *args, **kwargs):
         This is an experimental function and unknown edge
         cases may exist to this two-stage test.
     """
-    import jax
 
     mapped_func = partial(func, **kwargs)
 

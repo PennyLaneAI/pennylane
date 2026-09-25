@@ -27,6 +27,7 @@ from autograd.core import make_vjp as _make_vjp
 from autograd.extend import vspace
 from autograd.numpy.numpy_boxes import ArrayBox
 from autograd.wrap_util import unary_to_nary
+from jax.tree_util import tree_flatten, tree_leaves, tree_unflatten, treedef_tuple
 
 from pennylane import capture
 from pennylane.compiler import compiler
@@ -120,8 +121,6 @@ def _args_and_argnums(args, argnums):
             f" positional arguments. Got {len(args)} positional arguments."
         )
 
-    from jax.tree_util import tree_flatten, treedef_tuple  # pylint: disable=import-outside-toplevel
-
     flat_args, in_trees = zip(*(tree_flatten(arg) for arg in args), strict=True)
     full_in_tree = treedef_tuple(in_trees)
 
@@ -166,9 +165,6 @@ def _setup_method(method):
 
 def _capture_diff(func, *, argnums=None, scalar_out: bool = False, method=None, h=None):
     """Capture-compatible gradient computation."""
-    # pylint: disable=import-outside-toplevel
-    from jax.tree_util import tree_flatten, tree_leaves, tree_unflatten
-
     h = _setup_h(h)
     method = _setup_method(method)
     _argnums = argnums  # somehow renaming stops it from being unbound?

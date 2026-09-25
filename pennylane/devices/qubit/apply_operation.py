@@ -18,8 +18,12 @@
 from functools import singledispatch
 from string import ascii_letters as alphabet
 
+import jax
 import numpy as np
 import scipy as sp
+from jax.experimental.ode import odeint
+from jax.lax import cond
+from jax.random import binomial
 
 import pennylane as qp
 from pennylane import math, ops
@@ -381,8 +385,6 @@ def apply_conditional(
     prng_key = execution_kwargs.get("prng_key", None)
     interface = math.get_deep_interface(state)
     if interface == "jax":
-        # pylint: disable=import-outside-toplevel
-        from jax.lax import cond
 
         return cond(
             op.meas_val.concretize(mid_measurements),
@@ -457,8 +459,6 @@ def apply_mid_measure(
             prob0 = prob0 / norm
 
     if prng_key is not None:
-        # pylint: disable=import-outside-toplevel
-        from jax.random import binomial
 
         def binomial_fn(n, p):
             return binomial(prng_key, n, p).astype(int)
@@ -964,17 +964,7 @@ def _evolve_state_vector_under_parametrized_evolution(
         TensorLike[complex]: output state
     """
 
-    try:
-        import jax
-        from jax.experimental.ode import odeint
-
-        from pennylane.pulse.parametrized_hamiltonian_pytree import ParametrizedHamiltonianPytree
-
-    except ImportError as e:  # pragma: no cover
-        raise ImportError(
-            "Module jax is required for the ``ParametrizedEvolution`` class. "
-            "You can install jax via: pip install jax"
-        ) from e
+    from pennylane.pulse.parametrized_hamiltonian_pytree import ParametrizedHamiltonianPytree
 
     if operation.data is None or operation.t is None:
         raise ValueError(

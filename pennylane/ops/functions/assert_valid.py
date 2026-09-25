@@ -22,6 +22,7 @@ import pickle
 from collections import defaultdict
 from functools import partial
 
+import jax
 import numpy as np
 import scipy.sparse
 
@@ -241,8 +242,6 @@ def _decomp_rule_to_tape(rule, args, kwargs):
 
 
 def _capture_decomp_rule_to_tape(rule, op):
-
-    import jax  # pylint: disable=import-outside-toplevel
 
     # Match each operator model's capture boundary: legacy hyperparameters remain
     # closed over, while Operator2 exposes its dynamic, wire, and hybrid arguments.
@@ -489,15 +488,9 @@ def _check_pytree(op):
             "metadata and data must be able to reproduce the original operation"
         ) from e
 
-    try:
-        import jax
-
-        leaves, struct = jax.tree_util.tree_flatten(op)
-        unflattened = jax.tree_util.tree_unflatten(struct, leaves)
-        assert unflattened == op, f"op must be a valid pytree. Got {unflattened} instead of {op}."
-
-    except ImportError:
-        pass
+    leaves, struct = jax.tree_util.tree_flatten(op)
+    unflattened = jax.tree_util.tree_unflatten(struct, leaves)
+    assert unflattened == op, f"op must be a valid pytree. Got {unflattened} instead of {op}."
 
     leaves, struct = qp.pytrees.flatten(op)
     unflattened = qp.pytrees.unflatten(leaves, struct)
@@ -538,8 +531,6 @@ def _check_capture(op):
 
     if not all(isinstance(w, int) for w in op.wires):
         return
-
-    import jax  # pylint: disable=import-outside-toplevel
 
     data, struct = jax.tree_util.tree_flatten(op)
 

@@ -16,6 +16,9 @@
 from collections.abc import Callable
 from typing import Literal
 
+import jax
+from jax import numpy as jnp
+
 from pennylane import capture
 from pennylane.capture import FlatFn, enabled
 from pennylane.capture.custom_primitives import QpPrimitive
@@ -34,7 +37,6 @@ from ._loop_abstract_axes import (
 
 def _to_bool_cond_fn(cond_fn):
     def _new_cond_fn(*args, **kwargs):
-        from jax import numpy as jnp  # pylint: disable=import-outside-toplevel
 
         [out] = cond_fn(*args, **kwargs)
         if getattr(out, "dtype", None) == jnp.bool:
@@ -319,7 +321,6 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
         return fn_res
 
     def _get_jaxprs(self, init_state, allow_array_resizing):
-        import jax  # pylint: disable=import-outside-toplevel
 
         body_consts_extracted, dynamic_consts = promote_consts_to_inputs(self.body_fn)
 
@@ -360,8 +361,6 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
         return jaxpr_body_fn, jaxpr_cond_fn, abstract_shapes + flat_args, flat_body_fn.out_tree
 
     def _call_capture_enabled(self, *init_state):
-
-        import jax  # pylint: disable=import-outside-toplevel
 
         jaxpr_body_fn, jaxpr_cond_fn, all_args, out_tree = self._get_jaxprs(
             init_state, allow_array_resizing=self.allow_array_resizing

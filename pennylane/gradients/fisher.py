@@ -16,6 +16,8 @@
 # pylint: disable=import-outside-toplevel, not-callable
 from functools import partial
 
+import jax
+
 from pennylane import math
 from pennylane._grad import jacobian
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
@@ -249,7 +251,6 @@ def classical_fisher(qnode, argnums=0):
         interface = qnode.interface
 
         if interface in ("jax", "jax-jit"):
-            import jax
 
             jac = jax.jacobian(new_qnode, argnums=argnums)
 

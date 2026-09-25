@@ -28,6 +28,8 @@ A call returns the declared result first, then one buffer per ``out`` parameter.
 
 from __future__ import annotations
 
+import jax
+import jax.numpy as jnp
 import numpy as np
 
 from .signature import CType
@@ -41,9 +43,6 @@ STR_OPERAND_BYTES = 256
 
 def _narrows_64_bit() -> bool:
     """Check whether JAX would narrow 64-bit values to 32-bit."""
-    # pylint: disable=import-outside-toplevel
-    import jax
-
     return not jax.config.jax_enable_x64
 
 
@@ -93,11 +92,6 @@ def check_buffer_width(value, symbol: str, position: int) -> None:
 
 def _is_tracer(value) -> bool:
     """Whether a value only exists while the program is being traced."""
-    # pylint: disable=import-outside-toplevel
-    try:
-        import jax
-    except ImportError:  # pragma: no cover
-        return False
     return isinstance(value, jax.core.Tracer)
 
 
@@ -149,9 +143,6 @@ def operand_for(ctype: CType, value, symbol: str, position: int):
     Returns:
         A ``jax`` array holding the argument as the entry point will read it
     """
-    # pylint: disable=import-outside-toplevel
-    import jax.numpy as jnp
-
     if ctype is CType.STR:
         return jnp.frombuffer(text_bytes(ctype, value, symbol, position), dtype=jnp.uint8)
     if ctype is CType.BUF:
@@ -258,9 +249,6 @@ def result_avals(signature, out_bytes):
     Returns:
         tuple: one ``jax.core.ShapedArray`` per returned value
     """
-    # pylint: disable=import-outside-toplevel
-    import jax
-
     avals = []
     if signature.result is not CType.VOID:
         check_width(signature.result, signature.symbol, "the result")

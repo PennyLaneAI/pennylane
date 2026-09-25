@@ -13,6 +13,8 @@
 # limitations under the License.
 """Tests that a device has the right attributes, arguments and methods."""
 
+import jax
+
 # pylint: disable=no-self-use
 import pytest
 
@@ -37,14 +39,6 @@ try:
 
 except ImportError:
     TORCH_SUPPORT = False
-
-try:
-    import jax
-
-    JAX_SUPPORT = True
-
-except ImportError:
-    JAX_SUPPORT = False
 
 
 class TestDeviceProperties:
@@ -142,12 +136,9 @@ class TestCapabilities:
             g(x)
 
         if interface == "jax":
-            if JAX_SUPPORT:
-                x = pnp.array(0.1, requires_grad=True)
-                g = jax.grad(lambda a: qnode(a).reshape(()))
-                g(x)
-            else:
-                pytest.skip("Cannot import jax")
+            x = jax.numpy.array(0.1)
+            g = jax.grad(lambda a: qnode(a).reshape(()))
+            g(x)
 
         if interface == "torch":
             if TORCH_SUPPORT:
