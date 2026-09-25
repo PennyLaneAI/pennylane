@@ -15,7 +15,7 @@
 Tests for the :mod:`pennylane.data.base.typing_util` functions.
 """
 
-from typing import Optional, Union
+from typing import ForwardRef, Literal, Optional, Union
 
 import pytest
 
@@ -40,12 +40,31 @@ pytestmark = pytest.mark.data
         (str, "str"),
         (type[str], "type[str]"),
         (Union[list[list[int]], str], "Union[list[list[int]], str]"),
+        (int | str, "Union[int, str]"),
+        (int | None, "Union[int, None]"),
+        (list[int] | None, "Union[list[int], None]"),
+        (Union, "Union"),
+        (Optional, "Optional"),
+        (Literal, "Literal"),
+        (ForwardRef("MyClass"), "MyClass"),
     ],
 )
 def test_get_type_str(type_, expect):
     """Test that ``get_type_str()`` returns the expected value for various
     typing forms."""
     assert get_type_str(type_) == expect
+
+
+def test_get_type_str_pep604_union_uncached():
+    """PEP 604 unions must render as Union[...] even with a cold cache.
+
+    ``Union[int, str]`` and ``int | str`` are equal and hash-equal, so they
+    share an ``lru_cache`` slot. Clearing the cache isolates the PEP 604 path.
+    """
+    get_type_str.cache_clear()
+    assert get_type_str(int | str) == "Union[int, str]"
+    get_type_str.cache_clear()
+    assert get_type_str(int | None) == "Union[int, None]"
 
 
 @pytest.mark.parametrize(
