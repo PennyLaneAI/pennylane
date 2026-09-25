@@ -236,7 +236,9 @@ def _init_signature_registration():
 
         # Static/compilable arguments carry concrete values; only dynamic and wire arguments must
         # be abstract so that the operator can be constructed into an abstract instance later.
-        for argname, argval in specs.items():
+        # Iterate over `kwargs` instead of `specs` because we don't need to verify the correctness
+        # of values in `op.arg_specs`
+        for argname, argval in kwargs.items():
             if argname in op.static_argnames + op.compilable_argnames:
                 continue
 
@@ -265,8 +267,8 @@ def _init_signature_registration():
             for sig in sigs:
                 op = sig if isinstance(sig, Operator2) else op_cls(**sig)
                 _registry[op_cls].add(abstractify(op))
-        _lazy_registry.clear()
 
+        _lazy_registry.clear()
         return MappingProxyType(_registry)
 
     return register, registry

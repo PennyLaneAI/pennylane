@@ -128,11 +128,12 @@ class TestSignatureRegistration:
         assert abstractify(CompilableDynOp(Float, "ZZ", Wire[1])) in registered
 
     def test_registration_deduplicates(self):
-        """Test that registering equivalent signatures does not create duplicate entries."""
+        """Test that registering equivalent signatures does not create duplicate entries, whether
+        registered as a type or as an instance."""
         register, registry = _init_signature_registration()
         register(OneWireDynOp)  # type
         register(OneWireDynOp)  # same type again
-        register(OneWireDynOp(Float, Wire[1]))  # equivalent fully abstract instance
+        register(OneWireDynOp(Float, Wire[1]))  # equivalent instance
 
         assert len(registry()[OneWireDynOp]) == 1
 
@@ -175,8 +176,8 @@ class TestSignatureRegistration:
         with pytest.raises(ValueError, match="must cover all operator arguments"):
             register_signature(CompilableDynOp)
 
-    def test_error_non_abstract_spec_value(self):
-        """Test that dynamic and wire arguments must be registered as abstract types."""
+    def test_error_non_abstract_kwarg(self):
+        """Test that dynamic and wire arguments overridden via keyword must be abstract types."""
         with pytest.raises(ValueError, match="must be fully abstract"):
             register_signature(OneWireDynOp, phi=0.5)
 
