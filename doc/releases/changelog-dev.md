@@ -603,6 +603,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Adds a `qp.decomposition.all_decomps` functions for finding all decompositions that might be hit by
+  decomposing a gate to any gateset.
+  [(#10187)](https://github.com/PennyLaneAI/pennylane/pull/10187)
+
 * Added ``work_wires`` and ``work_wire_type`` arguments to :class:`~.GQSP` that are passed
   through to the controlled walk operator in its decomposition.
   [(#10184)](https://github.com/PennyLaneAI/pennylane/pull/10184)
