@@ -18,19 +18,15 @@ from __future__ import annotations
 
 import functools
 
+from jax._src.core import trace_state_clean
+
 from . import operands
 from .signature import CSignature, CType, declare, signature_of
 
 
 def _tracing() -> bool:
     """Whether a JAX trace is open, which is where a recorded call belongs."""
-    # pylint: disable=import-outside-toplevel
-    try:
-        from jax._src.core import trace_state_clean
-
-        return not trace_state_clean()
-    except ImportError:  # pragma: no cover
-        return True
+    return not trace_state_clean()
 
 
 @functools.lru_cache(maxsize=1)

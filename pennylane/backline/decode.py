@@ -24,6 +24,7 @@ come from the ``inject-transport-session`` pass; :func:`decode` only drives the 
 
 from __future__ import annotations
 
+import jax.numpy as jnp
 import numpy as np
 
 from pennylane import math
@@ -148,7 +149,6 @@ def _validate_packed(syndrome, in_bytes, out_bytes):
         else math.get_interface(syndrome)
     )
     if interface == "jax":
-        import jax.numpy as jnp  # pylint: disable=import-outside-toplevel
 
         syndrome = jnp.asarray(syndrome, dtype=jnp.uint8)
     else:
@@ -166,7 +166,6 @@ def _validate_packed(syndrome, in_bytes, out_bytes):
 def _pack(syndrome):
     """Pack a syndrome bit vector into 8 little-endian bytes."""
     if math.get_interface(syndrome) == "jax":
-        import jax.numpy as jnp  # pylint: disable=import-outside-toplevel
 
         xp = jnp
     else:
@@ -181,7 +180,6 @@ def _pack(syndrome):
 def _unpack(correction):
     """Unpack 8 little-endian bytes into a 64-entry boolean bit vector."""
     if math.get_interface(correction) == "jax":
-        import jax.numpy as jnp  # pylint: disable=import-outside-toplevel
 
         xp = jnp
     else:

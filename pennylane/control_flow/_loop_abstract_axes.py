@@ -26,6 +26,7 @@ from typing import Any
 
 import jax
 import jax.extend.core
+from jax.numpy import empty
 
 from pennylane.typing import TensorLike
 
@@ -144,7 +145,6 @@ def get_dummy_arg(arg):  # pragma: no cover
         return arg
     # add small, non-trivial size 2 as a concrete stand-in for dynamic axes
     shape = tuple(s if isinstance(s, int) else 2 for s in arg.shape)
-    from jax.numpy import empty  # pylint: disable=import-outside-toplevel
 
     return empty(shape=shape, dtype=arg.dtype)
 

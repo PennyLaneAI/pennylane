@@ -18,6 +18,8 @@ Defines qp.jvp
 from collections.abc import Sequence
 
 import jax
+from jax._src.api import _dtype
+from jax.tree_util import tree_leaves, tree_unflatten
 
 from pennylane import capture
 from pennylane.compiler import compiler
@@ -58,7 +60,6 @@ def _jvp_abstract_eval(*args, jaxpr, fn, method, h, argnums):
 
 
 def _validate_tangents(params, dparams, argnums):
-    from jax._src.api import _dtype  # pylint: disable=import-outside-toplevel
 
     if len(dparams) != len(argnums):
         raise TypeError(
@@ -88,7 +89,6 @@ def _validate_tangents(params, dparams, argnums):
 
 # pylint: disable=too-many-arguments
 def _capture_jvp(func, params, dparams, *, argnums=None, method=None, h=None):
-    from jax.tree_util import tree_leaves, tree_unflatten  # pylint: disable=import-outside-toplevel
 
     if not isinstance(params, Sequence):
         raise ValueError(f"params must be a Sequence in qp.jvp. Got type {type(params)}.")

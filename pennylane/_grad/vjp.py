@@ -16,6 +16,8 @@ Defines qp.vjp
 """
 
 import jax
+from jax._src.api import _dtype
+from jax.tree_util import tree_leaves, tree_unflatten
 
 from pennylane import capture
 from pennylane.compiler import compiler
@@ -48,7 +50,6 @@ def _vjp_abstract_eval(*args, jaxpr, fn, method, h, argnums):
 
 
 def _validate_cotangents(cotangents, out_avals):
-    from jax._src.api import _dtype  # pylint: disable=import-outside-toplevel
 
     def get_shape(x):
         return getattr(x, "shape", jax.numpy.shape(x))
@@ -77,7 +78,6 @@ def _validate_cotangents(cotangents, out_avals):
 
 # pylint: disable=too-many-arguments
 def _capture_vjp(func, params, cotangents, *, argnums=None, method=None, h=None):
-    from jax.tree_util import tree_leaves, tree_unflatten  # pylint: disable=import-outside-toplevel
 
     h = _setup_h(h)
     method = _setup_method(method)

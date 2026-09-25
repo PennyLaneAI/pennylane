@@ -20,6 +20,9 @@ from importlib import import_module
 import autoray as ar
 import numpy as np
 import scipy as sp
+from jax import numpy as jnp
+from jax.core import concrete_or_error
+from jax.errors import ConcretizationTypeError, TracerArrayConversionError
 from packaging.version import Version
 from scipy.linalg import block_diag as _scipy_block_diag
 
@@ -907,8 +910,6 @@ ar.register_function("torch", "cond", _cond)
 
 
 def _to_numpy_jax(x):
-    from jax.core import concrete_or_error
-    from jax.errors import ConcretizationTypeError, TracerArrayConversionError
 
     try:
         x = concrete_or_error(None, x)
@@ -942,7 +943,6 @@ ar.register_function("jax", "asarray", _asarray_jax)
 
 
 def _ndim_jax(x):
-    import jax.numpy as jnp
 
     return jnp.ndim(x)
 
@@ -951,7 +951,6 @@ ar.register_function("jax", "ndim", lambda x: _ndim_jax(x))
 
 
 def _scatter_jax(indices, array, new_dimensions):
-    from jax import numpy as jnp
 
     new_array = jnp.zeros(new_dimensions, dtype=array.dtype.type)
     new_array = new_array.at[indices].set(array)

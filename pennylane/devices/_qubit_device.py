@@ -25,6 +25,7 @@ import logging
 import warnings
 from collections import defaultdict
 
+import jax
 import numpy as np
 
 from pennylane import math
@@ -862,7 +863,6 @@ class QubitDevice(Device):
         basis_states = np.arange(number_of_states)
         # pylint:disable = import-outside-toplevel
         if math.is_abstract(state_probability) and math.get_interface(state_probability) == "jax":
-            import jax
 
             key = jax.random.PRNGKey(np.random.randint(0, 2**31))
             if jax.numpy.ndim(state_probability) == 2:

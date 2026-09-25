@@ -99,15 +99,6 @@ def _resolve_interface(interface: str | Interface | None, tapes: QuantumScriptBa
     ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         interface = Interface.TF_AUTOGRAPH
     if interface == Interface.JAX:
-        # pylint: disable=unused-import
-        try:  # pragma: no cover
-            import jax
-        except ImportError as e:  # pragma: no cover
-            raise QuantumFunctionError(  # pragma: no cover
-                "jax not found. Please install the latest "  # pragma: no cover
-                "version of jax to enable the 'jax' interface."  # pragma: no cover
-            ) from e  # pragma: no cover
-
         interface = _get_jax_interface_name()
 
     return interface
