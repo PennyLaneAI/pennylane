@@ -68,6 +68,36 @@ class TestGQSP:
         # the unitary hybrid argument
         assert op.wires == qp.wires.Wires(c_wires + u_wires)
 
+    def test_default_work_wires(self):
+        """Test that omitting work_wires leaves the register empty."""
+        op = qp.GQSP(qp.Z(1), angles=np.ones([3, 2]), control=0)
+        assert op.work_wires == qp.wires.Wires(())
+        assert op.work_wire_type == "borrowed"
+
+    @pytest.mark.parametrize("work_wire_type", ["borrowed", "zeroed"])
+    def test_work_wires_are_forwarded_to_controlled_unitary(self, work_wire_type):
+        """Test that work_wires reach the controlled unitary, the only gate of the
+        decomposition that can use them, and that they stay out of ``op.wires``."""
+        angles = np.array([[1, 2], [3, 4], [5, 6]])
+        op = qp.GQSP(qp.Z(1), angles, control=0, work_wires=[2, 3], work_wire_type=work_wire_type)
+        assert op.work_wires == qp.wires.Wires([2, 3])
+        assert op.wires == qp.wires.Wires([0, 1])
+
+        [controlled] = [o for o in op.decomposition() if o.wires == qp.wires.Wires([0, 1])]
+        qp.assert_equal(
+            controlled,
+            qp.ctrl(
+                qp.Z(1),
+                control=0,
+                control_values=[0],
+                work_wires=[2, 3],
+                work_wire_type=work_wire_type,
+            ),
+        )
+
+        for rule in qp.list_decomps(qp.GQSP):
+            _test_decomposition_rule(op, rule)
+
     @pytest.mark.parametrize(
         ("unitary", "poly"),
         [
