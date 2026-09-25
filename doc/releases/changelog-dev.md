@@ -1784,6 +1784,9 @@
   unbiasedness of the estimator
   [(#10128)](https://github.com/PennyLaneAI/pennylane/pull/10128)
 
+* TCDQ user guide (labs/tcdq/__init__.py) updated
+  [(#10134)](https://github.com/PennyLaneAI/pennylane/pull/10134)
+  
 
 <h3>Contributors ✍️</h3>
 
