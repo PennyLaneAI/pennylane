@@ -94,9 +94,7 @@ Inspecting and Managing Decomposition Rules
     ~inspect_decomps
     ~local_decomps
     ~register_signature
-    ~lazy_register_signature
     ~signature_registry
-    ~initialize_signature_registry
     ~DecompCollection
 
 PennyLane maintains a global dictionary of decomposition rules. New decomposition rules can be
@@ -236,8 +234,6 @@ from .utils import (
     enable_graph,
     disable_graph,
     enabled_graph,
-    initialize_signature_registry,
-    lazy_register_signature,
     register_signature,
     signature_registry,
     toggle_graph_ctx,

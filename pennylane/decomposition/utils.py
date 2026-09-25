@@ -21,10 +21,12 @@ from collections import defaultdict
 from contextlib import contextmanager
 from contextvars import ContextVar
 from functools import singledispatch
-from types import MappingProxyType
+from types import MappingProxyType, NoneType
 from typing import overload
 
 from pennylane.core.operator import Operator, Operator1, Operator2, abstractify
+from pennylane.pytrees import flatten
+from pennylane.typing import AbstractArray, AbstractWires
 
 OP_NAME_ALIASES = {
     "X": "PauliX",
@@ -150,15 +152,29 @@ enable_graph, disable_graph, enabled_graph, toggle_graph_ctx = toggle_graph_deco
 
 
 def _init_signature_registration():
+    # The signature registry is deliberately built in two stages: a *lazy* registry that records
+    # pending registrations, and a *materialized* registry of the resulting abstract operators.
+    #
+    # This split exists because ``register`` is invoked from ``Operator2.__init_subclass__`` to
+    # auto-register every fixed-signature operator as its class is defined, which happens *while
+    # pennylane itself is still being imported*. At that point we cannot eagerly build the abstract
+    # operator a signature ultimately needs, because both required steps assume a fully imported
+    # pennylane:
+    #
+    #   * Constructing an instance (``op_cls(**specs)``) runs the operator's ``__init__``, which for
+    #     many operators references other operators that do not exist yet
+    #   * ``abstractify`` dispatches through ``functools.singledispatch``, whose MRO resolution walks
+    #     the operator ABC hierarchy and triggers legacy ``__subclasshook__`` methods that read
+    #     ``qp.ops.op_math.*`` - attributes that only exist once ``pennylane.ops`` has imported.
+    #
+    # So ``register`` performs only cheap, construction-free validation and stashes the raw
+    # specs/instance in ``_lazy_registry``. The expensive "construct + abstractify" step is deferred
+    # to the first access of ``signature_registry``, which only ever happens after import completes.
 
+    # op class -> set of fully abstract operator instances (the public, materialized registry).
     _registry = defaultdict(set)
+    # op class -> tuple of pending registrations, each a fully abstract instance or a specs dict.
     _lazy_registry = defaultdict(tuple)
-
-    def lazy_register(op: type[Operator2], **kwargs) -> None:
-        """Lazily register the signature of an operator."""
-        specs = dict(op.arg_specs or {})
-        specs.update(**kwargs)
-        _lazy_registry[op] += (specs,)
 
     @overload
     def register(op: Operator2) -> None: ...
@@ -168,29 +184,28 @@ def _init_signature_registration():
         r"""Register a possible signature for an operator.
 
         A *signature* is a fully abstract instance of an operator, capturing the abstract type of
-        every argument (its dynamic parameters and wires) along with the values of any compilable
-        static arguments. Registered signatures are collected in :func:`~.signature_registry` and
-        are used to determine ahead of time which decomposition rules can be precompiled, improving
-        the performance of decomposition passes in :func:`~.qjit`-compiled workflows.
-
-        The signatures of all built-in operators with a fixed signature (i.e.,
-        ``op.has_fixed_sig`` is ``True``) are registered by ``initialize_signature_registry``. This
-        function can be called directly to register additional signatures, for example the same
-        operator with different fixed wire counts or static argument values.
+        every argument (its dynamic parameters and wires) along with the values of any static
+        arguments. Registered signatures are collected in :func:`~.signature_registry`
+        and are used to determine ahead of time which decomposition rules can be precompiled,
+        improving the performance of decomposition passes in :func:`~.qjit`-compiled workflows.
 
         Args:
             op (~.Operator2 | type[~.Operator2]): the operator to register a signature for. If an
-                operator *instance* is given, it is abstractified before being stored. If an
-                operator *type* is given, an instance is constructed from its ``arg_specs``
-                (optionally overridden by keyword arguments) and then abstractified.
+                operator *instance* is given, it must be fully abstract and is stored as-is. If an
+                operator *type* is given, its ``arg_specs`` (optionally overridden by keyword
+                arguments) are used to construct the abstract instance when the registry is
+                materialized.
 
         Keyword Args:
             **kwargs: the type or value of each argument, overriding the corresponding entry in
-                ``op.arg_specs``. These can only be provided when ``op`` is an operator *type*, not
-                an instance.
+                ``op.arg_specs``. Together with ``op.arg_specs`` these must cover *every* argument of
+                the operator. These can only be provided when ``op`` is an operator *type*, not an
+                instance.
 
         Raises:
-            ValueError: if keyword arguments are provided together with an operator instance.
+            ValueError: if keyword arguments are provided together with an operator instance; if an
+                operator instance is not fully abstract; if the provided specs do not cover every
+                argument of the operator; or if a dynamic or wire argument is not fully abstract.
 
         .. seealso:: :func:`pennylane.decomposition.signature_registry`
         """
@@ -200,39 +215,61 @@ def _init_signature_registration():
                     "Keyword arguments can only be provided when registering a signature for an "
                     "operator type, not an operator instance."
                 )
-            op_cls = type(op)
-            inst = op
+            if not op.is_fully_abstract:
+                raise ValueError(
+                    "Signatures can only be registered for fully abstract operator instances. "
+                    "All dynamic and wire arguments of the operator must be abstract."
+                )
 
-        else:
-            specs = dict(op.arg_specs or {})
-            specs.update(**kwargs)
-            inst = op(**specs)
-            op_cls = op
+            _lazy_registry[type(op)] += (op,)
+            return
 
-        _registry[op_cls].add(abstractify(inst))
+        specs = dict(op.arg_specs or {})
+        specs.update(**kwargs)
+
+        # pylint: disable=protected-access
+        if set(specs.keys()) != set(op._sig.parameters.keys()):
+            raise ValueError(
+                "Signatures being registered must cover all operator arguments. Expected "
+                f"{tuple(op._sig.parameters.keys())} but got {tuple(specs.keys())}."
+            )
+
+        # Static/compilable arguments carry concrete values; only dynamic and wire arguments must
+        # be abstract so that the operator can be constructed into an abstract instance later.
+        for argname, argval in specs.items():
+            if argname in op.static_argnames + op.compilable_argnames:
+                continue
+
+            leaves, _ = flatten(argval)
+            if any(not isinstance(l, (AbstractArray, AbstractWires, NoneType)) for l in leaves):
+                raise ValueError(
+                    f"Cannot register a signature for {op.__name__!r}: the dynamic/wire argument "
+                    f"'{argname}' must be fully abstract. Specify it using abstract types "
+                    f"(e.g. Float or Wire[1]), not concrete values."
+                )
+
+        _lazy_registry[op] += (specs,)
 
     def registry() -> dict[type[Operator2], set[Operator2]]:
-        r"""Return the operator signatures registered with :func:`~.register_signature`.
+        r"""Return a read-only mapping of the registered operator signatures.
 
         Returns:
-            MappingProxyType[type[~.Operator2], set[~.Operator2]]: a mapping from each registered
-            operator class to the set of registered signatures, where each signature is a fully
-            abstract instance of the operator.
+            MappingProxyType[type[~.Operator2], set[~.Operator2]]: a read-only mapping from each
+            registered operator class to the set of its fully abstract signature instances.
 
         .. seealso:: :func:`pennylane.decomposition.register_signature`
         """
-        return MappingProxyType(_registry)
-
-    def initialize_registry():
-        """Initialize the registry by migrating signatures from the lazy registry."""
+        # see the note in ``_init_signature_registration`` for why construction/abstractify
+        # cannot happen at registration time
         for op_cls, sigs in _lazy_registry.items():
             for sig in sigs:
-                _registry[op_cls].add(abstractify(op_cls(**sig)))
+                op = sig if isinstance(sig, Operator2) else op_cls(**sig)
+                _registry[op_cls].add(abstractify(op))
         _lazy_registry.clear()
 
-    return register, lazy_register, registry, initialize_registry
+        return MappingProxyType(_registry)
+
+    return register, registry
 
 
-register_signature, lazy_register_signature, signature_registry, initialize_signature_registry = (
-    _init_signature_registration()
-)
+register_signature, signature_registry = _init_signature_registration()
