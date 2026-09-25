@@ -611,6 +611,11 @@
   through to the controlled walk operator in its decomposition.
   [(#10184)](https://github.com/PennyLaneAI/pennylane/pull/10184)
 
+* The ``basis_set`` argument of :func:`~.compile` now accepts :class:`~.Operator` subclasses
+  (e.g., ``qp.RX``) in addition to operator names. A ``ValueError`` is raised if ``basis_set``
+  contains anything other than strings or :class:`~.Operator` subclasses.
+  [(#10196)](https://github.com/PennyLaneAI/pennylane/pull/10196)
+
 * Added a decomposition of :class:`~.TemporaryAND` directly to four :math:`\pm\pi/8` PPRs and a
   decomposition of :class:`~.SingleExcitation` to two :math:`\pm\pi/4` and two arbitrary-angle PPRs.
   [(#10108)](https://github.com/PennyLaneAI/pennylane/pull/10108)
@@ -1828,6 +1833,7 @@ Mudit Pandey,
 Andrija Paurevic,
 Francesco Pernice Botta,
 David D.W. Ren,
+David Ryan,
 Jay Soni,
 Paul Haochen Wang,
 Dennis Wayo,
