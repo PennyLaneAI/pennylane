@@ -243,3 +243,40 @@ def test_detector_matrix_rejects_unknown_records(rep_zz):
     bad = replace(layout, detectors=layout.detectors + (stray,))
     with pytest.raises(gadget.GadgetError, match="detector stray refers to unknown record"):
         bad.detector_matrix(prog)
+
+
+def test_anticommuting_measurement_forgets_known_operator():
+    """Test that an operator known from a preparation stops being known once a check that
+    anticommutes with it is measured.
+
+    The auxiliary qubit is prepared in Z, then an X check on it and the data qubit is
+    measured, which randomizes its Z value, so reading it out yields no detector.
+    """
+    bare = gadget.CSSCode(
+        "bare",
+        np.zeros((0, 1), np.uint8),
+        np.zeros((0, 1), np.uint8),
+        np.ones((1, 1), np.uint8),
+        np.ones((1, 1), np.uint8),
+    )
+    none = np.zeros((0, 2), np.uint8)
+    base = gadget.Phase("base", none, none, np.array([True, False]))
+    coupled = gadget.Phase("coupled", np.array([[1, 1]], np.uint8), none, np.ones(2, bool))
+
+    @gadget.define(action=gadget.Action.idle(), code=bare, phases=(base, coupled), n_data=1)
+    def couple(handle):
+        handle = gadget.deform(handle, to="coupled", init={1: "z"})
+        handle, _ = gadget.rounds(handle, 1, record="c")
+        handle, _ = gadget.detach(handle, to="base", measure_out={1: "z"}, record="out")
+        return handle
+
+    layout = gadget.derive_detectors(couple.program)
+    assert [d.kind for d in layout.detectors if d.kind == "readout"] == []
+
+
+def test_split_keeps_checks_determined_by_readouts(surface_merge):
+    """Test that a patch check whose value follows from a merged check and the readouts of the
+    qubits leaving the frame keeps a detector after the split."""
+    layout = gadget.derive_detectors(surface_merge.program)
+    assert [name for name, _ in layout.undetermined if name.startswith("post")] == []
+    assert all(name.startswith("merged[r0,") for name, _ in layout.undetermined)

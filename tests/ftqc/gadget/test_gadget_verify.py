@@ -76,6 +76,7 @@ class TestLibraryGadgets:
             "k.entry": "pass",
             "k.gauged": "pass",
             "logical.action": "pass",
+            "logical.revealed": "pass",
             "detector.coverage": "warn",
             "rounds.budget": "pass",
             "claims.discipline": "warn",
@@ -98,6 +99,7 @@ class TestLibraryGadgets:
             "k.entry": "pass",
             "k.gauged": "skip",
             "logical.action": "skip",
+            "logical.revealed": "pass",
             "detector.coverage": "pass",
             "rounds.budget": "skip",
             "claims.discipline": "warn",
@@ -105,11 +107,23 @@ class TestLibraryGadgets:
         }
         assert _detail(receipt, "rounds.budget") == "no merged phase"
 
-    def test_aux_merge(self, aux_merge):
-        """Test that a merge through an initialized, then detached, auxiliary qubit verifies."""
+    def test_aux_merge_reveals_each_block(self, aux_merge):
+        """Test that joining two blocks through an auxiliary qubit prepared in Z is rejected:
+        with the auxiliary value known, each merged check reveals one block's logical Z."""
         receipt, _ = gadget.verify(aux_merge.program, simulate=False)
-        assert receipt.ok
+        assert [c.name for c in receipt.failures] == ["logical.revealed"]
+        assert "also determines Z_0, Z_1" in _detail(receipt, "logical.revealed")
         assert _detail(receipt, "frame.shared") == "6 data + 1 auxiliary in one frame of 7"
+
+    def test_surface_merge_preparation(self, surface_merge_factory):
+        """Test that a surface-code merge is accepted with the auxiliary column prepared in X
+        and rejected when it is prepared in Z, which reveals each patch's logical Z."""
+        good, _ = gadget.verify(surface_merge_factory("x").program, simulate=False)
+        assert good.ok
+        assert "(Z_0_1)" in _detail(good, "logical.revealed")
+        bad, _ = gadget.verify(surface_merge_factory("z").program, simulate=False)
+        assert [c.name for c in bad.failures] == ["logical.revealed"]
+        assert "also determines Z_0, Z_1" in _detail(bad, "logical.revealed")
 
     def test_claims_are_carried_uncertified(self, rep_zz):
         """Test that author claims are carried forward unchanged and flagged."""
@@ -230,6 +244,30 @@ class TestFailures:
         assert "outcome 0 is declared but the detector layout has no observable" in _detail(
             receipt, "logical.action"
         )
+
+    @pytest.mark.parametrize("k", [13, 40])
+    def test_revealed_is_checked_for_many_logical_qubits(self, k):
+        """Test that the revealed-logical check runs for codes with many logical qubits: an
+        idle gadget on an unencoded register that measures Z on one qubit is rejected."""
+        none = np.zeros((0, k), dtype=np.uint8)
+        register = gadget.CSSCode(
+            f"register{k}", none, none, np.eye(k, dtype=np.uint8), np.eye(k, dtype=np.uint8)
+        )
+        probe_z = np.zeros((1, k), dtype=np.uint8)
+        probe_z[0, 0] = 1
+        idle = gadget.Phase("idle", none, none, np.ones(k, dtype=bool))
+        probe = gadget.Phase("probe", none, probe_z, np.ones(k, dtype=bool))
+
+        @gadget.define(action=gadget.Action.idle(), code=register, phases=(idle, probe))
+        def peek(handle):
+            handle = gadget.deform(handle, to="probe")
+            handle, _ = gadget.rounds(handle, 1, record="p")
+            return gadget.deform(handle, to="idle")
+
+        receipt, layout = gadget.verify(peek.program, simulate=False)
+        assert layout.revealed == (("z", (0,)),)
+        assert _statuses(receipt)["logical.revealed"] == "fail"
+        assert "also determines Z_0," in _detail(receipt, "logical.revealed")
 
     def test_round_budget(self):
         """Test that a fault-distance claim above the merged round count fails."""

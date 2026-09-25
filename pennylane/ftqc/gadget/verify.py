@@ -147,6 +147,8 @@ def verify(
       phase removes exactly one logical degree of freedom per declared outcome.
     * ``logical.action``: each completed outcome parity measures exactly the declared
       logical operator.
+    * ``logical.revealed``: no logical Pauli product beyond those the declared action
+      measures becomes determined, since determining one destroys that logical information.
     * ``detector.coverage``: records without a detector are reported.
     * ``rounds.budget``: a claimed fault distance is not larger than the number of rounds
       spent in merged phases.
@@ -197,6 +199,7 @@ def verify(
     _check_transitions(program, receipt)
     _check_k_accounting(program, receipt)
     _check_logical_action(program, layout, receipt)
+    _check_revealed(program, layout, receipt)
     _check_detector_coverage(program, layout, receipt)
     _check_round_budget(program, receipt)
     _carry_claims(program, receipt)
@@ -392,6 +395,50 @@ def _check_logical_action(program: GadgetProgram, layout: DetectorLayout, receip
             "pass",
             "every completed outcome parity measures exactly the declared logical "
             f"operator of {program.action}",
+        )
+
+
+def _check_revealed(program: GadgetProgram, layout: DetectorLayout, receipt: Receipt) -> None:
+    if program.action.kind == "prepare":
+        receipt.add(
+            "logical.revealed", "skip", f"action {program.action} fixes logical values by design"
+        )
+        return
+
+    def as_vector(qubits):
+        v = np.zeros(program.code.k, dtype=np.uint8)
+        for q in qubits:
+            v[q] ^= 1
+        return v
+
+    def label(axis, qubits):
+        return axis.upper() + "".join(f"_{q}" for q in qubits)
+
+    allowed = {
+        axis: np.array(
+            [as_vector(q) for a, q in program.action.paulis if a == axis], dtype=np.uint8
+        ).reshape(-1, program.code.k)
+        for axis in ("x", "z")
+    }
+    extra = [
+        label(axis, qubits)
+        for axis, qubits in layout.revealed
+        if not _gf2.in_row_space(as_vector(qubits), allowed[axis])
+    ]
+    if extra:
+        receipt.add(
+            "logical.revealed",
+            "fail",
+            f"the gadget also determines {', '.join(extra)}, which its declared action "
+            f"{program.action} does not measure; measuring them destroys that logical "
+            "information",
+        )
+    else:
+        measured = ", ".join(label(a, q) for a, q in layout.revealed) or "no logical product"
+        receipt.add(
+            "logical.revealed",
+            "pass",
+            f"the gadget determines only what its declared action measures ({measured})",
         )
 
 

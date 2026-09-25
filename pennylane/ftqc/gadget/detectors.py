@@ -104,6 +104,11 @@ class DetectorLayout:
             detectors against these.
         undetermined (tuple[tuple[str, str]]): Records with no detector, each with the
             reason. A decoder must not treat these outcomes as deterministic.
+        revealed (tuple[tuple[str, tuple[int]]]): A basis, per axis and in reduced row
+            echelon form over GF(2), of the logical Pauli products whose value becomes
+            determined at some point in the gadget, which means the gadget measures them.
+            Each product is ``(axis, logical_qubits)``; every product of basis elements of
+            one axis is determined as well.
 
     **Example**
 
@@ -127,6 +132,7 @@ class DetectorLayout:
     entry_width: int = 0
     exit_records: dict[int, RecordExpr] = field(default_factory=dict)
     undetermined: tuple[tuple[str, str], ...] = ()
+    revealed: tuple[tuple[str, tuple[int, ...]], ...] = ()
 
     @property
     def n_detectors(self) -> int:
@@ -258,10 +264,52 @@ class _Tracker:
             out = out ^ exprs[int(i)]
         return out
 
+    def measure(self, axis: str, vec: np.ndarray) -> None:
+        """Update the known operators for a measurement or preparation of ``vec`` on ``axis``.
+
+        Known operators of the other axis that anticommute with ``vec`` stop being
+        deterministic. Each of them but one is multiplied by that one, which leaves products
+        that commute with ``vec`` and stay known; the remaining one is dropped.
+        """
+        other = "z" if axis == "x" else "x"
+        vec = np.asarray(vec, dtype=np.uint8).reshape(-1)
+        hits = [
+            i
+            for i, known in enumerate(self.vecs[other])
+            if int(known.astype(np.int64) @ vec.astype(np.int64)) % 2
+        ]
+        if not hits:
+            return
+        pivot, rest = hits[0], hits[1:]
+        for i in rest:
+            self.vecs[other][i] = self.vecs[other][i] ^ self.vecs[other][pivot]
+            self.exprs[other][i] = self.exprs[other][i] ^ self.exprs[other][pivot]
+        del self.vecs[other][pivot]
+        del self.exprs[other][pivot]
+
     def restrict(self, live: np.ndarray) -> None:
-        """Forget operators with support outside the live qubits."""
+        """Keep only operators supported on the live qubits.
+
+        Known single-qubit operators on qubits leaving the frame, such as their readouts, are
+        first multiplied into the other known operators, so that an operator whose value
+        follows from them and from live-qubit support stays known.
+        """
+        dead = ~live
         for axis in ("x", "z"):
-            keep = [i for i, v in enumerate(self.vecs[axis]) if not v[~live].any()]
+            singles = {
+                int(np.flatnonzero(v)[0]): i
+                for i, v in enumerate(self.vecs[axis])
+                if v.sum() == 1 and dead[np.flatnonzero(v)[0]]
+            }
+            for i, vec in enumerate(self.vecs[axis]):
+                if i in singles.values():
+                    continue
+                for q in np.flatnonzero(vec & dead):
+                    j = singles.get(int(q))
+                    if j is not None:
+                        self.vecs[axis][i] = self.vecs[axis][i] ^ self.vecs[axis][j]
+                        self.exprs[axis][i] = self.exprs[axis][i] ^ self.exprs[axis][j]
+            keep = [i for i, v in enumerate(self.vecs[axis]) if not v[dead].any()]
             self.vecs[axis] = [self.vecs[axis][i] for i in keep]
             self.exprs[axis] = [self.exprs[axis][i] for i in keep]
 
@@ -285,6 +333,12 @@ def derive_detectors(program: GadgetProgram, regime: str = "phenomenological") -
     same operator, including across phase changes. A check whose operator is not known
     when it is first measured has a random outcome, so it gets no first-round detector and
     is listed in :attr:`~.DetectorLayout.undetermined`.
+
+    Measuring a check makes the known operators it anticommutes with random, except for
+    their products that commute with it, which stay known. When qubits leave the frame,
+    operators whose values follow from their readouts and from checks on the remaining
+    qubits stay known. A basis of the logical products whose values become known is
+    recorded in :attr:`~.DetectorLayout.revealed`.
 
     Each declared outcome is completed: if its parity differs from the declared logical
     operator by operators whose values are known, the parities holding those values are
@@ -329,12 +383,14 @@ def derive_detectors(program: GadgetProgram, regime: str = "phenomenological") -
     detectors: list[Detector] = []
     undetermined: list[tuple[str, str]] = []
     observables: list[LogicalObservable] = []
+    revealed: dict[str, list[np.ndarray]] = {"x": [], "z": []}
     last_seen: dict[int, RecordExpr] = {}
     current = entry_name
 
     for op in program.ops:
         if isinstance(op, Deform):
             for qubit, basis in op.init:
+                track.measure(basis, _single(program.n_frame, qubit))
                 track.assign(basis, _single(program.n_frame, qubit), RecordExpr())
             current = op.to_phase
             continue
@@ -375,8 +431,10 @@ def derive_detectors(program: GadgetProgram, regime: str = "phenomenological") -
                             kind="repeat",
                         )
                     )
+                track.measure(axis, row)
                 track.assign(axis, row, block.at(op.count - 1, c))
                 last_seen[c] = block.at(op.count - 1, c)
+            _record_revealed(program, track, revealed)
             current = op.phase
             continue
 
@@ -406,7 +464,9 @@ def derive_detectors(program: GadgetProgram, regime: str = "phenomenological") -
                         )
                     )
             for q, basis in op.measure_out:
+                track.measure(basis, _single(program.n_frame, q))
                 track.assign(basis, _single(program.n_frame, q), block.at(0, index_of[q]))
+            _record_revealed(program, track, revealed)
             track.restrict(program.phase(op.to_phase).active)
             current = op.to_phase
             continue
@@ -425,7 +485,43 @@ def derive_detectors(program: GadgetProgram, regime: str = "phenomenological") -
         entry_width=entry.syndrome_width,
         exit_records=exit_records,
         undetermined=tuple(undetermined),
+        revealed=_revealed_basis(revealed),
     )
+
+
+def _record_revealed(
+    program: GadgetProgram, track: _Tracker, revealed: dict[str, list[np.ndarray]]
+) -> None:
+    """Add, per axis, generators of the logical products whose value is currently determined.
+
+    A product ``c`` of logical operators ``L`` is determined when ``c @ L`` is a combination
+    ``e @ K`` of the known operators ``K``. The pairs ``(c, e)`` with ``c @ L + e @ K = 0``
+    are the null space of ``[L; K]`` transposed, and their ``c`` parts span the determined
+    products.
+    """
+    k = program.code.k
+    if not k:
+        return
+    for axis in ("x", "z"):
+        logicals = np.array(
+            [_logical_operator(program, axis, (q,)) for q in range(k)], dtype=np.uint8
+        )
+        stacked = np.vstack([logicals, track.stack(axis)])
+        for combination in _gf2.null_space(stacked.T.astype(np.uint8)):
+            if combination[:k].any():
+                revealed[axis].append(combination[:k])
+
+
+def _revealed_basis(
+    revealed: dict[str, list[np.ndarray]],
+) -> tuple[tuple[str, tuple[int, ...]], ...]:
+    """A canonical basis, per axis, of the recorded logical products."""
+    basis = []
+    for axis in ("x", "z"):
+        if revealed[axis]:
+            rows, _ = _gf2.row_reduce(np.array(revealed[axis], dtype=np.uint8))
+            basis += [(axis, tuple(int(q) for q in np.flatnonzero(row))) for row in rows]
+    return tuple(basis)
 
 
 def _first_phase(program: GadgetProgram) -> str:

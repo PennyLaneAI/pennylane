@@ -198,6 +198,10 @@ the parity that last determined it:
   of a merge, has a random first outcome. It gets no first-round detector and is listed in
   :attr:`~.DetectorLayout.undetermined`, so a decoder is not told to expect determinism
   there.
+- Measuring a check forgets the known operators it anticommutes with, keeping their products
+  that commute with it, and reading out qubits that leave the frame keeps the operators whose
+  values follow from the readouts. A basis of the logical products whose values become
+  known is recorded in :attr:`~.DetectorLayout.revealed`.
 - Each declared outcome is completed. If its parity differs from the declared logical
   operator by operators whose values are known, their parities are added, so the observable
   measures the declared operator exactly and any representative of the right coset can be
@@ -223,9 +227,10 @@ Verification
 :func:`verify` returns a :class:`Receipt` of named checks, each passed, warned, skipped or
 failed with a stated reason. It checks that the detector layout matches the program, that
 the entry phase accepts the code, that each deformation's prepared qubits are checked, that
-a merged phase removes one logical degree of freedom per outcome, and that each completed
-outcome measures exactly the declared logical operator. A check that cannot run is
-reported as skipped, not passed.
+a merged phase removes one logical degree of freedom per outcome, that each completed
+outcome measures exactly the declared logical operator, and that no logical product beyond
+the declared ones becomes determined, since determining one destroys that logical
+information. A check that cannot run is reported as skipped, not passed.
 
 With Stim installed, :func:`verify` also simulates the gadget under phenomenological
 noise (see :mod:`pennylane.ftqc.gadget.simulate`). It confirms that every derived detector is

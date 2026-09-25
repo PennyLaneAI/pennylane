@@ -155,10 +155,12 @@ class TestVerifyWithSimulation:
         )
 
     def test_aux_merge(self, aux_merge):
-        """Test that a merge through a detached auxiliary qubit is deterministic with distance 3."""
+        """Test that a merge through a detached auxiliary qubit is deterministic with distance 3,
+        and that verification still rejects it for revealing each block's logical Z."""
         receipt, _ = gadget.verify(aux_merge.program)
-        assert receipt.ok
+        assert _statuses(receipt)["simulation.determinism"] == "pass"
         assert "has weight 3" in _detail(receipt, "simulation.distance")
+        assert [c.name for c in receipt.failures] == ["logical.revealed"]
 
     def test_repeated_measurement(self, rep_zz):
         """Test that measuring the same logical twice in an enclosing gadget keeps every detector
@@ -180,3 +182,12 @@ class TestVerifyWithSimulation:
         assert _statuses(receipt)["logical.action"] == "pass"
         assert [name for name, _ in layout.undetermined] == ["measure_zz#0/merged[r0,c4]"]
         assert "has weight 3" in _detail(receipt, "simulation.distance")
+
+
+def test_surface_code_lattice_surgery(surface_merge):
+    """Test that a surface-code merge whose auxiliary qubits are prepared in Z and then touched
+    by X checks has only deterministic detectors, and certifies its distance."""
+    receipt, _ = gadget.verify(surface_merge.program)
+    assert receipt.ok
+    assert _statuses(receipt)["simulation.determinism"] == "pass"
+    assert "has weight 3" in _detail(receipt, "simulation.distance")
