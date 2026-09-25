@@ -750,11 +750,9 @@ class TestSpecialUnitary:
         was not properly handled for large wire counts, causing tensor type
         mismatches in the itertools.product path vs pauli_basis_matrices path.
         """
-        # Use 6 wires to trigger itertools.product path
-        num_wires = 6  # This triggers the itertools.product code path (num_wires > 5)
-
-        # Create just 10 parameters for testing - this is sufficient to test interface conversion
-        num_params = 10
+        # Use 6 wires to trigger itertools.product path (num_wires > 5)
+        num_wires = 6
+        num_params = 4**num_wires - 1
         theta_np = (
             np.random.randn(num_params) * 0.01 + 0.0j
         )  # crucial for jax to proceed with holomorphic

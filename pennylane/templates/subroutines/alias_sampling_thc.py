@@ -13,6 +13,7 @@
 # limitations under the License.
 """Contains the ``PREPARE`` template for tensor hypercontraction (THC) qubitization."""
 
+from collections import defaultdict
 from functools import lru_cache
 
 import numpy as np
@@ -22,7 +23,7 @@ from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.math import ceil_log2
-from pennylane.ops import CSWAP, SWAP, Hadamard, Z, adjoint, ctrl
+from pennylane.ops import SWAP, Hadamard, adjoint, ctrl
 from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
@@ -30,6 +31,7 @@ from .alias_sampling import _apply_hadamards, _build_alias_tables
 from .arithmetic.left_quantum_comparator import LeftQuantumComparator
 from .arithmetic.out_square import OutSquare
 from .arithmetic.semi_adder import SemiAdder
+from .arithmetic.temporary_and import TemporaryAND
 from .qrom import QROM
 
 
@@ -219,22 +221,6 @@ def _build_qrom_data(
     return data
 
 
-def _right_shift(work_wires, n_d):
-    """Divide the ``n_d``-bit address by two via a right shift of SWAP gates."""
-    n_swaps = n_d - 1
-    if n_swaps <= 0:
-        return
-    if compiler.active() or capture.enabled():
-        work_wires = math.array(work_wires, like="jax")
-
-    @for_loop(n_swaps)
-    def _loop(j):
-        i = n_d - 2 - j
-        SWAP(wires=[work_wires[i], work_wires[i + 1]])
-
-    _loop()  # pylint: disable=no-value-for-parameter
-
-
 def _compute_contiguous_register(M, N, mu_wires, nu_wires, work_wires):
     r"""Compute the contiguous address ``s = mu + nu (nu + 1) / 2`` into ``work_wires``.
 
@@ -245,9 +231,8 @@ def _compute_contiguous_register(M, N, mu_wires, nu_wires, work_wires):
     """
     n_d = _num_address_wires(M, N)
     OutSquare(nu_wires, work_wires[:n_d], work_wires[n_d : 2 * n_d], output_wires_zeroed=True)
-    SemiAdder(nu_wires, work_wires[:n_d], work_wires[n_d : 2 * n_d])
-    _right_shift(work_wires, n_d)
-    SemiAdder(mu_wires, work_wires[:n_d], work_wires[n_d : 2 * n_d])
+    SemiAdder(nu_wires, work_wires[:n_d], work_wires[n_d : 2 * n_d - 1])
+    SemiAdder(mu_wires, work_wires[: n_d - 1], work_wires[n_d : 2 * n_d - 2])
 
 
 def alias_sampling_thc_wires(M, N, aleph):
@@ -279,7 +264,7 @@ def alias_sampling_thc_wires(M, N, aleph):
     **Example**
 
     >>> qp.alias_sampling_thc_wires(M=2, N=2, aleph=6)
-    {'mu_wires': 2, 'nu_wires': 2, 'superposition_work_wires': 11, 'work_wires': 29, 'sign_wire': 3}
+    {'mu_wires': 2, 'nu_wires': 2, 'superposition_work_wires': 11, 'work_wires': 29, 'sign_wire': 2}
     """
     if isinstance(M, bool) or not isinstance(M, int) or M < 1:
         raise ValueError(f"M must be a positive integer, got {M!r}.")
@@ -290,30 +275,38 @@ def alias_sampling_thc_wires(M, N, aleph):
     if N // 2 > M + 1:
         raise ValueError("N // 2 must be less than or equal to M + 1.")
 
-    n = _num_index_wires(M)
+    n = ceil_log2(M + 1)
     n_d = _num_address_wires(M, N)
-    qrom_deficit = max(n_d - aleph - 1, 0)
+    # The compare stage needs aleph-1 work wires for the comparator, and one work wire for CSWAPs
+    # The QROM has n_d-1 control wires and thus needs at least n_d-2 work wires for unary iteration
+    qrom_and_compare = max((aleph - 1) + 1, n_d - 2)
     return {
         "mu_wires": n,
         "nu_wires": n,
         "superposition_work_wires": 3 * n + 5,
-        "work_wires": n_d + 2 * n + 3 * aleph + 4 + qrom_deficit,
-        "sign_wire": n_d,
+        "work_wires": n_d + 2 * n + 2 * aleph + 4 + qrom_and_compare,
+        "sign_wire": n_d - 1,
     }
 
 
-def _cswap_pair(flag, left, right):
+def _cswap_pair(flag, left, right, work_wires):
     """CSWAP each pair of wires in ``left`` / ``right`` controlled on ``flag``."""
     n = min(len(left), len(right))
     if n == 0:
         return
+
     if compiler.active() or capture.enabled():
         left = math.array(left, like="jax")
         right = math.array(right, like="jax")
 
     @for_loop(n)
     def _loop(i):
-        CSWAP(wires=[flag, left[i], right[i]])
+        ctrl(
+            SWAP(wires=[left[i], right[i]]),
+            control=[flag],
+            work_wires=work_wires,
+            work_wire_type="zeroed",
+        )
 
     _loop()  # pylint: disable=no-value-for-parameter
 
@@ -323,21 +316,12 @@ def _symmetrize(mu_wires, nu_wires, swap_flag, edge_flag, work_wires):
     n = len(mu_wires)
     if n == 0:
         return
-    if compiler.active() or capture.enabled():
-        mu_wires = math.array(mu_wires, like="jax")
-        nu_wires = math.array(nu_wires, like="jax")
 
-    @for_loop(n)
-    def _loop(i):
-        ctrl(
-            SWAP(wires=[mu_wires[i], nu_wires[i]]),
-            control=[swap_flag, edge_flag],
-            control_values=[1, 0],
-            work_wires=work_wires,
-            work_wire_type="zeroed",
-        )
-
-    _loop()  # pylint: disable=no-value-for-parameter
+    joint_flag = work_wires[0]
+    _cswap_work = work_wires[1:]
+    TemporaryAND([swap_flag, edge_flag, joint_flag], control_values=(1, 0))
+    _cswap_pair(joint_flag, mu_wires, nu_wires, _cswap_work)
+    adjoint(TemporaryAND([swap_flag, edge_flag, joint_flag], control_values=(1, 0)))
 
 
 class AliasSamplingTHC(Operator2):
@@ -427,15 +411,19 @@ class AliasSamplingTHC(Operator2):
         edge_flag (WiresLike): the single wire holding the one-body sentinel flag
             (true when the ``nu`` register is in state :math:`\lvert M \rangle`), as
             produced by :class:`~.SuperpositionTHC`
-        work_wires (WiresLike): the auxiliary wires, most of which retain data until the
-            adjoint of this template is applied. The required number is the
-            ``"work_wires"`` entry of :func:`~.alias_sampling_thc_wires`; every wire must
-            be initialized in :math:`\lvert 0\rangle`. Additional wires are forwarded to
-            the internal :class:`~.QROM`.
+        work_wires (WiresLike): the auxiliary wires used by the operator.
+            Let :math:`n_d=\lceil \log_2(N/2 + M(M+1)/2)\rceil + 1` and
+            :math:`n=\lceil\log_2(M+1)\rceil` as above.
+            The wires ``work_wires[:n_d+2*n+2*aleph+3]`` retain data until the adjoint of this
+            template is applied; this includes the sampling register, which the conditional
+            swaps correlate with the index registers. The wires
+            ``work_wires[n_d+2*n+2*aleph+3:]`` are returned to the zero state. The required
+            number is
+            :math:`n_d + 2n + 2\aleph + 4 + \max(\aleph, n_d-2)`, computed as ``"work_wires"``
+            entry in :func:`~.alias_sampling_thc_wires`. Excess wires are forwarded to
+            the internal :class:`~.QROM`; every work wire must be initialized
+            in :math:`\lvert 0\rangle`.
         aleph (int): the number of bits used to encode the keep-probabilities
-        apply_sign (bool): if ``True`` (default), the sign of the selected coefficient is
-            applied here, so the prepared state carries it on its amplitudes. Set to
-            ``False`` when using only positive coefficients.
 
     **Example**
 
@@ -466,7 +454,7 @@ class AliasSamplingTHC(Operator2):
     """
 
     wire_argnames = ("mu_wires", "nu_wires", "edge_flag", "work_wires")
-    compilable_argnames = ("M", "N", "zeta", "t_ell", "aleph", "apply_sign")
+    compilable_argnames = ("M", "N", "zeta", "t_ell", "aleph")
     arg_specs = {
         "mu_wires": Wire[-1],
         "nu_wires": Wire[-1],
@@ -485,7 +473,6 @@ class AliasSamplingTHC(Operator2):
         edge_flag: WiresLike,
         work_wires: WiresLike,
         aleph,
-        apply_sign: bool = True,
     ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
         if isinstance(M, bool) or not isinstance(M, int) or M < 1:
             raise ValueError(f"M must be a positive integer, got {M!r}.")
@@ -511,10 +498,11 @@ class AliasSamplingTHC(Operator2):
                 f"mu_wires and nu_wires must contain the same number of wires, "
                 f"but got {n} and {len(nu_wires)}."
             )
-        if n != _num_index_wires(M):
+        expected_n = ceil_log2(M + 1)
+        if n != expected_n:
             raise ValueError(
                 f"mu_wires and nu_wires must each contain exactly ceil(log2(M + 1)) wires. "
-                f"Got M={M} with {n} wires, but {_num_index_wires(M)} are required."
+                f"Got M={M} with {n} wires, but {expected_n} are required."
             )
         req = alias_sampling_thc_wires(M, N, aleph)
         if len(work_wires) < req["work_wires"]:
@@ -532,9 +520,7 @@ class AliasSamplingTHC(Operator2):
             }
         )
 
-        super().__init__(
-            M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph, apply_sign
-        )
+        super().__init__(M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph)
 
     @property
     def wires(self):
@@ -543,15 +529,18 @@ class AliasSamplingTHC(Operator2):
 
 
 def _alias_sampling_thc_resources(
-    M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph, apply_sign
+    M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph
 ):  # pylint: disable=too-many-arguments,unused-argument
     n = len(mu_wires)
     n_d = _num_address_wires(M, N)
     n_work = len(work_wires)
-    q = n_d + 2
-    f = q + 2 * n + 2 * aleph
+    # ``f`` and the QROM work pool are spelled exactly as in the decomposition below, where the
+    # pool is ``work_wires[f + 2 * aleph + 3:]``. Declaring a different size hands the graph a
+    # resource rep that no emitted QROM ever matches, and an op with no node in the graph
+    # silently bypasses fixed_decomps and falls back to QROM.decomposition().
+    f = n_d + 1 + 2 * n
     n_qrom_target = 2 + 2 * n + aleph + 1
-    n_qrom_work = max(n_work - (f + 3), 0)
+    n_qrom_work = max(n_work - (f + 2 * aleph + 3), 0)
     data = _build_qrom_data(M, N, zeta, t_ell, n, aleph)
     qrom = QROM(
         data,
@@ -561,35 +550,50 @@ def _alias_sampling_thc_resources(
         clean=True,
     )
     out_sq = OutSquare(Wire[n], Wire[n_d], Wire[n_d], output_wires_zeroed=True)
-    adder = SemiAdder(Wire[n], Wire[n_d], Wire[n_d])
+    adder_0 = SemiAdder(Wire[n], Wire[n_d], Wire[n_d - 1])
+    adder_1 = SemiAdder(Wire[n], Wire[n_d - 1], Wire[n_d - 2])
+
+    # The comparator does not restore its work wires, so the keep-value swaps only get the
+    # tail of the pool; the symmetrization swaps run after the adjoint comparator and get
+    # all of it but the joint flag. Both slices are spelled as in the decomposition below.
+    n_cmp_work = min(aleph - 1, n_qrom_work)
     lqc = LeftQuantumComparator(
-        Wire[aleph], Wire[aleph], Wire[1], Wire[max(aleph - 1, 0)], comparator="<="
+        Wire[aleph],
+        Wire[aleph],
+        Wire[1],
+        Wire[n_cmp_work],
+        comparator="<=",
     )
-    resources = {
-        out_sq: 1,
-        adder: 2,
-        SWAP: max(n_d - 1, 0),
-        qrom: 1,
-        Hadamard: aleph + 1,
-        lqc: 1,
-        adjoint(lqc): 1,
-        CSWAP: 2 * n + 2,
-        ctrl(
-            SWAP(wires=Wire[2]),
-            control=Wire[2],
-            control_values=[1, 0],
-            work_wires=Wire[n_qrom_work],
-            work_wire_type="zeroed",
-        ): n,
-    }
-    if apply_sign:
-        resources[Z] = 1
-    return resources
+    keep_cswap = ctrl(
+        SWAP(wires=Wire[2]),
+        control=Wire[1],
+        work_wires=Wire[n_qrom_work - n_cmp_work],
+        work_wire_type="zeroed",
+    )
+    sym_cswap = ctrl(
+        SWAP(wires=Wire[2]),
+        control=Wire[1],
+        work_wires=Wire[max(n_qrom_work - 1, 0)],
+        work_wire_type="zeroed",
+    )
+    resources = defaultdict(int)
+    resources[out_sq] += 1
+    resources[adder_0] += 1
+    resources[adder_1] += 1
+    resources[qrom] += 1
+    resources[Hadamard] += aleph + 1
+    resources[lqc] += 1
+    resources[adjoint(lqc)] += 1
+    resources[TemporaryAND] += 1
+    resources[adjoint(TemporaryAND(Wire[3]))] += 1
+    resources[keep_cswap] += 2 * n + 2
+    resources[sym_cswap] += n
+    return dict(resources)
 
 
-@register_resources(_alias_sampling_thc_resources, exact=False)
+@register_resources(_alias_sampling_thc_resources)
 def _alias_sampling_thc_decomp(
-    M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph, apply_sign, **_
+    M, N, zeta, t_ell, mu_wires, nu_wires, edge_flag, work_wires, aleph, **_
 ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
     n = len(mu_wires)
     n_d = _num_address_wires(M, N)
@@ -598,47 +602,74 @@ def _alias_sampling_thc_decomp(
     nu_wires = list(nu_wires)
     edge_flag = Wires(edge_flag)[0]
 
-    q = n_d + 2
-    f = q + 2 * n + 2 * aleph
-    sign_wire = work_wires[n_d]
-    alt_sign_wire = work_wires[n_d + 1]
-    keep_thresh = work_wires[q + 2 * n : q + 2 * n + aleph]
-    sample_reg = work_wires[q + 2 * n + aleph : f]
-    alt_flag = work_wires[f]
-    swap_flag = work_wires[f + 1]
-    alt_edge_flag = work_wires[f + 2]
-    cmp_work = work_wires[f + 3 : f + aleph + 2]
-    qrom_work = work_wires[f + 3 :]
+    # Work wires are used as follows (order is changed, compared to Fig.4 in Lee et al)
+    # The following entries store a value by the end of the template and are not reset
+    # [:n_d-1]        : ν(ν+1)//2 + μ after _compute_contiguous_register
+    # n_d-1           : QROM loads the sign θ_s
+    # n_d             : QROM loads the alternate sign {θ_alt}_s
+    # [n_d+1:n_d+1+n] : QROM loads the alternate {μ_alt}_s
+    # [n_d+1+n:n_d+1+2n] : QROM loads the alternate {ν_alt}_s
+    # Call f = n_d+1+2n
+    # [f:f+ℵ]         : QROM loads the keep values
+    # [f+ℵ]           : alternate qubit for the input edge flag (not in Fig.4)
+    # [f+ℵ+1]         : flag for symmetrization SWAPs
+    # [f+ℵ+2:f+2ℵ+2]  : Sampling register to compare keep values against.
+    # The following register is reset to zero
+    # [f+2ℵ+2]        : The comparator flag for sampling keep values
+    # The following registers are reset to zero, and overlap partially
+    # [f+2ℵ+3:]       : Work wires for QROM
+    # [f+2ℵ+3:f+3ℵ+2] : Work wires for keep value comparator, dirty until its adjoint runs
+    # [f+3ℵ+2:]       : Work wires for keep value CSWAPs, the part the comparator leaves zeroed
+    # [f+2ℵ+3:]       : Work wires for symmetrization CSWAPs, once the comparator is undone
 
+    contiguous_register = work_wires[: n_d - 1]
+    sign_wire = work_wires[n_d - 1]
+    alt_sign_wire = work_wires[n_d]
+    alt_mu_wires = work_wires[n_d + 1 : n_d + 1 + n]
+    alt_nu_wires = work_wires[n_d + 1 + n : (f := n_d + 1 + 2 * n)]
+    keep_wires = work_wires[f : f + aleph]
+    alt_edge_flag = work_wires[f + aleph]
+    symmetrize_flag = work_wires[f + aleph + 1]
+
+    # Reset to zero and disjoint
+    sample_reg = work_wires[f + aleph + 2 : f + 2 * aleph + 2]
+    sample_flag = work_wires[f + 2 * aleph + 2]
+
+    # Reset to zero and overlapping
+    qrom_work = work_wires[f + 2 * aleph + 3 :]
+    cmp_work = qrom_work[: aleph - 1]
+    keep_cswap_work = qrom_work[aleph - 1 :]
+    sym_cswap_work = qrom_work
+
+    # work_wires includes the output contiguous_register and additional zeroed work wires that
+    # are returned to zero, so we do not need to account for them explicitly.
     _compute_contiguous_register(M, N, mu_wires, nu_wires, work_wires)
 
     data = _build_qrom_data(M, N, zeta, t_ell, n, aleph)
     QROM(
         data,
-        control_wires=work_wires[1:n_d],
-        target_wires=work_wires[n_d : q + 2 * n + aleph] + [alt_edge_flag],
+        control_wires=contiguous_register,
+        target_wires=work_wires[n_d - 1 : f + aleph] + [alt_edge_flag],
         work_wires=qrom_work,
     )
 
     _apply_hadamards(sample_reg)
-    LeftQuantumComparator(keep_thresh, sample_reg, alt_flag, work_wires=cmp_work, comparator="<=")
+    LeftQuantumComparator(keep_wires, sample_reg, sample_flag, work_wires=cmp_work, comparator="<=")
 
-    _cswap_pair(alt_flag, mu_wires, work_wires[q : q + n])
-    _cswap_pair(alt_flag, nu_wires, work_wires[q + n : q + 2 * n])
-    CSWAP(wires=[alt_flag, edge_flag, alt_edge_flag])
-    CSWAP(wires=[alt_flag, sign_wire, alt_sign_wire])
+    _cswap_pair(sample_flag, mu_wires, alt_mu_wires, keep_cswap_work)
+    _cswap_pair(sample_flag, nu_wires, alt_nu_wires, keep_cswap_work)
+    _cswap_pair(
+        sample_flag, [edge_flag, sign_wire], [alt_edge_flag, alt_sign_wire], keep_cswap_work
+    )
 
     adjoint(
         LeftQuantumComparator(
-            keep_thresh, sample_reg, alt_flag, work_wires=cmp_work, comparator="<="
+            keep_wires, sample_reg, sample_flag, work_wires=cmp_work, comparator="<="
         )
     )
-    Hadamard(swap_flag)
-    # Reuse QROM work wires for controlled swaps
-    _symmetrize(mu_wires, nu_wires, swap_flag, edge_flag, qrom_work)
 
-    if apply_sign:
-        Z(sign_wire)
+    Hadamard(symmetrize_flag)
+    _symmetrize(mu_wires, nu_wires, symmetrize_flag, edge_flag, sym_cswap_work)
 
 
 add_decomps(AliasSamplingTHC, _alias_sampling_thc_decomp)

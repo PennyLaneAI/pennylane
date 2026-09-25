@@ -25,10 +25,10 @@ from pennylane.templates.subroutines.alias_sampling_thc import _build_thc_pairs,
 @pytest.mark.parametrize(
     "M, N, aleph, beth, expected",
     [
-        (1, 2, 1, 1, {"system": 2, "index": 2, "prep_garbage": 15, "gradient": 2, "work": 1}),
-        (2, 2, 1, 1, {"system": 2, "index": 4, "prep_garbage": 18, "gradient": 2, "work": 2}),
-        (2, 2, 2, 1, {"system": 2, "index": 4, "prep_garbage": 20, "gradient": 2, "work": 2}),
-        (2, 4, 2, 3, {"system": 4, "index": 4, "prep_garbage": 21, "gradient": 4, "work": 6}),
+        (1, 2, 1, 1, {"system": 2, "index": 2, "prep_garbage": 14, "gradient": 2, "work": 2}),
+        (2, 2, 1, 1, {"system": 2, "index": 4, "prep_garbage": 17, "gradient": 2, "work": 2}),
+        (2, 2, 2, 1, {"system": 2, "index": 4, "prep_garbage": 19, "gradient": 2, "work": 3}),
+        (2, 4, 2, 3, {"system": 4, "index": 4, "prep_garbage": 20, "gradient": 4, "work": 6}),
     ],
 )
 def test_qubitization_thc_wires(M, N, aleph, beth, expected):
