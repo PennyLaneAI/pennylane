@@ -18,6 +18,7 @@ Defines a function for converting plxpr to a tape.
 from copy import copy
 
 import jax
+import jax.extend.core
 import numpy as np
 
 from pennylane import math, ops
@@ -290,7 +291,7 @@ def _and(self, lhs, rhs):
     return jax.lax.and_p.bind(lhs, rhs)
 
 
-def plxpr_to_tape(plxpr: "jax.extend.core.Jaxpr", consts, *args, shots=None) -> QuantumScript:
+def plxpr_to_tape(plxpr: jax.extend.core.Jaxpr, consts, *args, shots=None) -> QuantumScript:
     """Convert a plxpr into a tape.
 
     Args:

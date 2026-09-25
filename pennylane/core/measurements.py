@@ -21,12 +21,15 @@ import copy
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from typing import Optional, Union
+from typing import Union
+
+import jax
+import jax.extend.core
 
 from pennylane import math
 from pennylane.capture import ABCCaptureMeta
 from pennylane.capture import enabled as capture_enabled
-from pennylane.core.operator.base import _get_abstract_operator  # tach-ignore
+from pennylane.core.operator.base import AbstractOperator  # tach-ignore
 from pennylane.core.queuing import QueuingManager
 from pennylane.exceptions import (
     DecompositionUndefinedError,
@@ -64,9 +67,9 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
 
     _shortname = None
 
-    _obs_primitive: Optional["jax.extend.core.Primitive"] = None
-    _wires_primitive: Optional["jax.extend.core.Primitive"] = None
-    _mcm_primitive: Optional["jax.extend.core.Primitive"] = None
+    _obs_primitive: jax.extend.core.Primitive
+    _wires_primitive: jax.extend.core.Primitive
+    _mcm_primitive: jax.extend.core.Primitive
 
     def __init_subclass__(cls, **_):
         register_pytree(cls, cls._flatten, cls._unflatten)
@@ -89,9 +92,6 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         allow being specified via an observable. But we handle the generic case here.
 
         """
-        if cls._obs_primitive is None:
-            # safety check if primitives aren't set correctly.
-            return type.__call__(cls, obs=obs, wires=wires, eigvals=eigvals, **kwargs)
         if obs is None:
             wires = () if wires is None else wires
             if eigvals is None:
@@ -113,7 +113,7 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
             with QueuingManager.stop_recording():
                 obs = unflatten(*flatten(obs))
 
-        if isinstance(getattr(obs, "aval", None), _get_abstract_operator()):
+        if isinstance(getattr(obs, "aval", None), AbstractOperator):
             return cls._obs_primitive.bind(obs, **kwargs)
         if isinstance(obs, (list, tuple)):
             out = cls._mcm_primitive.bind(*obs, single_mcm=False, **kwargs)  # iterable of mcms
