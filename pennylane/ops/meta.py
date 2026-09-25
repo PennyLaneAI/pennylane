@@ -298,8 +298,8 @@ class Snapshot(Operation):
 # Since measurements are captured as variables in plxpr with the capture module,
 # the measurement is treated as a traceable argument.
 # This step is mandatory for fixing the order of arguments overwritten by ``Snapshot._primitive_bind_call``.
-if Snapshot._primitive:  # pylint: disable=protected-access
 
-    @Snapshot._primitive.def_impl  # pylint: disable=protected-access
-    def _(measurement, tag=None, shots="workflow"):
-        return type.__call__(Snapshot, tag=tag, measurement=measurement, shots=shots)
+
+@Snapshot._primitive.def_impl  # pylint: disable=protected-access
+def _(measurement, tag=None, shots="workflow"):
+    return type.__call__(Snapshot, tag=tag, measurement=measurement, shots=shots)

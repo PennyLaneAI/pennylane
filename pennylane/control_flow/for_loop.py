@@ -13,13 +13,13 @@
 # limitations under the License.
 """For loop."""
 
-import functools
 import logging
 import warnings
 from typing import Literal
 
 from pennylane import capture, math
 from pennylane.capture import FlatFn, enabled
+from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.capture.dynamic_shapes import register_custom_staging_rule
 from pennylane.compiler.compiler import AvailableCompilers, active_compiler
 from pennylane.exceptions import CaptureWarning
@@ -289,77 +289,72 @@ def for_loop(
     return _decorator
 
 
-@functools.lru_cache
-def _get_for_loop_qfunc_prim():
-    """Get the loop_for primitive for quantum functions."""
+for_loop_prim = QpPrimitive("for_loop")
+for_loop_prim.multiple_results = True
+for_loop_prim.prim_type = "higher_order"
 
-    # pylint: disable=import-outside-toplevel
-    from pennylane.capture.custom_primitives import QpPrimitive
 
-    for_loop_prim = QpPrimitive("for_loop")
-    for_loop_prim.multiple_results = True
-    for_loop_prim.prim_type = "higher_order"
+def _for_loop_setup_env(tracers, params):
+    # slice out start, stop, step
+    tracers = tracers[3:]
+    # tracers now (*consts, *abstract_shapes, *args)
+    tracer_consts = tracers[slice(*params["consts_slice"])]
+    abstract_shapes_slice = slice(*params["abstract_shapes_slice"])
+    tracer_abstract_shapes = tracers[abstract_shapes_slice]
+    args_slice = slice(*params["args_slice"])
+    tracer_args = tracers[args_slice]
 
-    def setup_env(tracers, params):
-        # slice out start, stop, step
-        tracers = tracers[3:]
-        # tracers now (*consts, *abstract_shapes, *args)
-        tracer_consts = tracers[slice(*params["consts_slice"])]
-        abstract_shapes_slice = slice(*params["abstract_shapes_slice"])
-        tracer_abstract_shapes = tracers[abstract_shapes_slice]
-        args_slice = slice(*params["args_slice"])
-        tracer_args = tracers[args_slice]
+    # invars now (*abstract_shapes, i, *args)
+    var_consts = params["jaxpr_body_fn"].constvars
+    jaxpr_invars = params["jaxpr_body_fn"].invars
 
-        # invars now (*abstract_shapes, i, *args)
-        var_consts = params["jaxpr_body_fn"].constvars
-        jaxpr_invars = params["jaxpr_body_fn"].invars
+    num_abstract_shapes = abstract_shapes_slice.stop - abstract_shapes_slice.start
+    invars_abstract_shapes = jaxpr_invars[:num_abstract_shapes]
+    # skip index
+    invars_args = jaxpr_invars[num_abstract_shapes + 1 :]
 
-        num_abstract_shapes = abstract_shapes_slice.stop - abstract_shapes_slice.start
-        invars_abstract_shapes = jaxpr_invars[:num_abstract_shapes]
-        # skip index
-        invars_args = jaxpr_invars[num_abstract_shapes + 1 :]
+    env = dict(zip(invars_abstract_shapes, tracer_abstract_shapes, strict=True))
+    env.update(dict(zip(invars_args, tracer_args, strict=True)))
+    env.update(dict(zip(var_consts, tracer_consts, strict=True)))
+    return env
 
-        env = dict(zip(invars_abstract_shapes, tracer_abstract_shapes, strict=True))
-        env.update(dict(zip(invars_args, tracer_args, strict=True)))
-        env.update(dict(zip(var_consts, tracer_consts, strict=True)))
-        return env
 
-    register_custom_staging_rule(
-        for_loop_prim,
-        get_jaxpr_from_params=lambda params: params["jaxpr_body_fn"],
-        setup_env=setup_env,
-    )
+register_custom_staging_rule(
+    for_loop_prim,
+    get_jaxpr_from_params=lambda params: params["jaxpr_body_fn"],
+    setup_env=_for_loop_setup_env,
+)
 
-    # pylint: disable=too-many-arguments
-    @for_loop_prim.def_impl
-    def _impl(
-        start, stop, step, *args, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice
-    ):
-        # Convert tuples back to slices (tuples are used for JAX 0.7.1 hashability)
-        consts_slice = slice(*consts_slice)
-        args_slice = slice(*args_slice)
-        abstract_shapes_slice = slice(*abstract_shapes_slice)
 
-        consts = args[consts_slice]
-        init_state = args[args_slice]
-        abstract_shapes = args[abstract_shapes_slice]
+# pylint: disable=too-many-arguments
+@for_loop_prim.def_impl
+def _for_loop_impl(
+    start, stop, step, *args, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice
+):
+    # Convert tuples back to slices (tuples are used for JAX 0.7.1 hashability)
+    consts_slice = slice(*consts_slice)
+    args_slice = slice(*args_slice)
+    abstract_shapes_slice = slice(*abstract_shapes_slice)
 
-        # in case start >= stop, return the initial state
-        fn_res = init_state
+    consts = args[consts_slice]
+    init_state = args[args_slice]
+    abstract_shapes = args[abstract_shapes_slice]
 
-        for i in range(start, stop, step):
-            fn_res = capture.eval_jaxpr(jaxpr_body_fn, consts, *abstract_shapes, i, *fn_res)
+    # in case start >= stop, return the initial state
+    fn_res = init_state
 
-        return fn_res
+    for i in range(start, stop, step):
+        fn_res = capture.eval_jaxpr(jaxpr_body_fn, consts, *abstract_shapes, i, *fn_res)
 
-    # pylint: disable=unused-argument
-    @for_loop_prim.def_abstract_eval
-    def __abstract_eval(start, stop, step, *args, args_slice, abstract_shapes_slice, **_):
-        args_slice = slice(*args_slice)
-        abstract_shapes_slice = slice(*abstract_shapes_slice)
-        return args[abstract_shapes_slice] + args[args_slice]
+    return fn_res
 
-    return for_loop_prim
+
+# pylint: disable=unused-argument
+@for_loop_prim.def_abstract_eval
+def _for_loop_abstract_eval(start, stop, step, *args, args_slice, abstract_shapes_slice, **_):
+    args_slice = slice(*args_slice)
+    abstract_shapes_slice = slice(*abstract_shapes_slice)
+    return args[abstract_shapes_slice] + args[args_slice]
 
 
 class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-arguments
@@ -488,8 +483,6 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
                 " outputs for the for_loop function. The additional input "
                 f"is the loop index. Got num_inputs {ni} and num_outputs {no}."
             )
-
-        for_loop_prim = _get_for_loop_qfunc_prim()
 
         consts_slice = slice(0, len(jaxpr_body_fn.consts))
         abstract_shapes_slice = slice(consts_slice.stop, consts_slice.stop + len(abstract_shapes))

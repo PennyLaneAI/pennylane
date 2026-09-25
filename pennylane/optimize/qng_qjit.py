@@ -13,16 +13,12 @@
 # limitations under the License.
 """Quantum natural gradient optimizer for Jax/Catalyst interface"""
 
+import jax
+
 from pennylane import math
 from pennylane.compiler import active_compiler
 from pennylane.gradients.metric_tensor import metric_tensor
 from pennylane.workflow import QNode
-
-has_jax = True
-try:
-    import jax
-except ModuleNotFoundError:
-    has_jax = False
 
 
 class QNGOptimizerQJIT:
@@ -199,9 +195,7 @@ class QNGOptimizerQJIT:
             import catalyst  # pylint: disable=import-outside-toplevel
 
             return catalyst.grad(qnode)(params, **kwargs)
-        if has_jax:
-            return jax.grad(qnode)(params, **kwargs)
-        raise ModuleNotFoundError("Jax is required.")  # pragma: no cover
+        return jax.grad(qnode)(params, **kwargs)
 
     @staticmethod
     def _get_value_and_grad(qnode, params, **kwargs):
@@ -214,9 +208,7 @@ class QNGOptimizerQJIT:
             import catalyst  # pylint: disable=import-outside-toplevel
 
             return catalyst.value_and_grad(qnode)(params, **kwargs)
-        if has_jax:
-            return jax.value_and_grad(qnode)(params, **kwargs)
-        raise ModuleNotFoundError("Jax is required.")  # pragma: no cover
+        return jax.value_and_grad(qnode)(params, **kwargs)
 
     def _get_metric_tensor(self, qnode, params, **kwargs):
         """Compute the metric tensor of the QNode objective function at the given point using the method specified
