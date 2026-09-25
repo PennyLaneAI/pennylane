@@ -166,7 +166,7 @@ class _NonPytreeWrapper:
     """We aren't quite ready to switch to having tapes as pytrees as our
     differentiable argument due to:
 
-    * Operators that aren't valid pytrees: ex. ParametrizedEvolution, ParametrizedHamiltonian, HardwareHamiltonian
+    * Operators that aren't valid pytrees
     * Validation checks on initialization: see BasisStateProjector, StatePrep that does not allow the operator to store the cotangents
     * Jitting non-jax parametrized circuits.  NumPy parameters turn into abstract parameters during the pytree process.
 

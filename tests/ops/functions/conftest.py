@@ -33,7 +33,6 @@ from pennylane.core.operator import (
 )
 from pennylane.drawer.label import LabelledOp
 from pennylane.exceptions import DeviceError
-from pennylane.fourier.mark import MarkedOp
 from pennylane.ops.op_math import ChangeOpBasis
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
 from pennylane.ops.op_math.adjoint2 import Adjoint2
@@ -55,7 +54,6 @@ _INSTANCES_TO_TEST = [
     # GlobalPhase acts on no wires, so `_check_differentiation`'s `qp.probs(wires=op.wires)` cannot be constructed
     (qp.GlobalPhase(1.1), {"skip_differentiation": True}),
     (LabelledOp(qp.X(0), "my-x"), {}),
-    (MarkedOp(qp.X(0), "my-x"), {}),
     # MidMeasure and PauliMeasure are only operators in the tape-based pipeline.
     (qp.ops.MidMeasure(wires=0), {"skip_capture": True}),
     (qp.ops.PauliMeasure("X", wires=0), {"skip_capture": True}),
@@ -176,10 +174,6 @@ _INSTANCES_TO_FAIL = [
         AssertionError,  # needs flattening helpers to be updated, also cannot be pickled
     ),
     (
-        qp.pulse.ParametrizedEvolution(qp.PauliX(0) + sum * qp.PauliZ(0)),
-        ValueError,  # binding parameters fail, and more
-    ),
-    (
         qp.estimator.DoubleFactorization(np.eye(2), np.arange(16).reshape((2,) * 4)),
         TypeError,  # op.eigvals is a list (overwritten in the init)
     ),
@@ -194,7 +188,6 @@ These operators need to break PL conventions, and each one's reason is specified
 
 _ABSTRACT_OR_META_TYPES = {
     LabelledOp,
-    MarkedOp,
     Adjoint,
     Adjoint2,
     AdjointOperation,

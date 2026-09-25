@@ -1246,7 +1246,6 @@ def parameter_frequencies(op: Operation | Operator2) -> list[tuple[int | float, 
 
     These frequencies encode the behaviour of the operator :math:`U(\mathbf{p})`
     on the value of the expectation value as the parameters are modified.
-    For more details, please see the :mod:`.pennylane.fourier` module.
 
     Returns:
         list[tuple[int or float]]: Tuple of frequencies for each parameter.
