@@ -31,7 +31,6 @@ from pennylane import numpy as npp
 from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.drawer.label import LabelledOp
-from pennylane.fourier.mark import MarkedOp
 from pennylane.measurements import ExpectationMP
 from pennylane.measurements.probs import ProbabilityMP
 from pennylane.ops import Conditional, PauliMeasure
@@ -3205,20 +3204,4 @@ class TestCompareSubroutines:
             assert_equal(op1, op3)
         assert qp.equal(op1, op4) is False
         with pytest.raises(AssertionError, match="op1 and op2 have different custom labels"):
-            assert_equal(op1, op4)
-
-    @pytest.mark.parametrize("base", PARAMETRIZED_OPERATIONS)
-    def test_marked_op_comparison(self, base):
-        """Test that equal compares two objects of the MarkedOp class"""
-        op1 = MarkedOp(base, "my-base")
-        op2 = MarkedOp(base, "my-base")
-        op3 = MarkedOp(qp.PauliX(15), "my-base")
-        op4 = MarkedOp(base, "blah")
-
-        assert qp.equal(op1, op2) is True
-        assert qp.equal(op1, op3) is False
-        with pytest.raises(AssertionError, match=BASE_OPERATION_MISMATCH_ERROR_MESSAGE):
-            assert_equal(op1, op3)
-        assert qp.equal(op1, op4) is False
-        with pytest.raises(AssertionError, match="op1 and op2 have different markers"):
             assert_equal(op1, op4)

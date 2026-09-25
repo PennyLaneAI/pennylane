@@ -26,15 +26,30 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.fourier.reconstruct import (
+from pennylane.optimize.reconstruct import (
     _prepare_jobs,
     _reconstruct_equ,
     _reconstruct_gen,
     reconstruct,
 )
-from pennylane.fourier.utils import join_spectra
 
 dev_0 = qp.device("default.qubit", wires=1)
+
+
+def join_spectra(spec1, spec2):
+    """Join two non-negative frequency spectra (copied from former fourier.utils)."""
+    if spec1 == {0}:
+        return spec2
+    if spec2 == {0}:
+        return spec1
+
+    sums = set()
+    diffs = set()
+    for s1 in spec1:
+        for s2 in spec2:
+            sums.add(s1 + s2)
+            diffs.add(np.abs(s1 - s2))
+    return sums.union(diffs)
 
 
 class Lambda:

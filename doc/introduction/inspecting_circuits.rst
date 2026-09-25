@@ -361,17 +361,3 @@ CNOT(wires=[1, 2])
 [3, 4, 5, 6]
 >>> second_node.predecessors
 []
-
-Fourier representation
-----------------------
-
-Parametrized quantum circuits often compute functions in the parameters that
-can be represented by Fourier series of a low degree.
-
-The :doc:`../code/qp_fourier` module contains functionality to compute and visualize
-properties of such Fourier series.
-
-.. image:: ../_static/fourier_vis_radial_box.png
-    :align: center
-    :width: 500px
-    :target: javascript:void(0);
