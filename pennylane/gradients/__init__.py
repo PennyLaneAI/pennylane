@@ -47,8 +47,7 @@ Gradient transforms
     param_shift_hessian
     spsa_grad
     hadamard_grad
-    stoch_pulse_grad
-    pulse_odegen
+    spsa_grad
 
 Metric tensors
 ^^^^^^^^^^^^^^
@@ -341,8 +340,6 @@ from . import (
     hadamard_gradient,
     parameter_shift,
     parameter_shift_hessian,
-    pulse_gradient,
-    pulse_gradient_odegen,
     spsa_gradient,
 )
 from .adjoint_metric_tensor import adjoint_metric_tensor
@@ -362,7 +359,5 @@ from .jvp import batch_jvp, compute_jvp_multi, compute_jvp_single, jvp
 from .metric_tensor import metric_tensor
 from .parameter_shift import param_shift, parameter_frequencies
 from .parameter_shift_hessian import param_shift_hessian
-from .pulse_gradient import stoch_pulse_grad
-from .pulse_gradient_odegen import pulse_odegen
 from .spsa_gradient import spsa_grad
 from .vjp import batch_vjp, compute_vjp_multi, compute_vjp_single, vjp
