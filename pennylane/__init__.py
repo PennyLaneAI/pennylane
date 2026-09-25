@@ -25,7 +25,7 @@ from pennylane import queuing
 from pennylane.core.queuing import QueuingManager, apply
 
 from pennylane import compiler
-from pennylane.compiler import qjit
+from pennylane.compiler import qjit, flatten
 from pennylane import capture
 from pennylane import core
 from pennylane import control_flow
