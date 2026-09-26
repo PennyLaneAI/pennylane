@@ -133,9 +133,9 @@ def test_as_fixed_decomps(phi, p):
         qp.RZ(phi, 0)
         return qp.state()
 
-    expected = _expected_rz_specs(phi, p)
-    specs = qp.specs(circuit)()["resources"].quantum_operations
-    assert specs == expected
+    tape = qp.workflow.construct_tape(circuit)()
+    specs = qp.resource.resources_from_tape(tape).quantum_operations
+    assert specs == _expected_rz_specs(phi, p)
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
@@ -163,9 +163,9 @@ def test_as_alt_decomps(phi, p):
         qp.RZ(phi, 0)
         return qp.state()
 
-    expected = _expected_rz_specs(phi, p)
-    specs = qp.specs(circuit)()["resources"].quantum_operations
-    assert specs == expected
+    tape = qp.workflow.construct_tape(circuit)()
+    specs = qp.resource.resources_from_tape(tape).quantum_operations
+    assert specs == _expected_rz_specs(phi, p)
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
