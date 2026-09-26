@@ -504,6 +504,49 @@ class AbstractWires:
         """np.int64. The dtype of wires when used with Catalyst."""
         return np.int64
 
+    def is_compatible_with(self, val) -> bool:
+        """Check whether an input value is compatible with an ``AbstractWires``. A value is
+        considered compatible if it represents a number of wires consistent with this
+        ``AbstractWires``.
+
+        Args:
+            val (Any): input value to check for compatibility. This can be another
+                ``AbstractWires`` or any object with a length (for example, a :class:`~.Wires`
+                instance or a sequence of wire labels).
+
+        Returns:
+            bool: ``True`` if ``val`` is compatible, ``False`` otherwise
+
+        The following conditions must be met to be considered compatible:
+
+        * If this ``AbstractWires`` has an unknown number of wires (``num_wires = -1``), then
+          the input value can have any number of wires.
+        * Otherwise, the input value must have the same, fixed number of wires.
+
+        **Example**
+
+        >>> AbstractWires(-1).is_compatible_with(AbstractWires(3))
+        True
+        >>> AbstractWires(2).is_compatible_with(AbstractWires(2))
+        True
+        >>> AbstractWires(2).is_compatible_with(AbstractWires(3))
+        False
+        >>> AbstractWires(2).is_compatible_with(AbstractWires(-1))
+        False
+        """
+        if isinstance(val, AbstractWires):
+            num_wires = val.shape[0]
+        else:
+            val = np.array(val) if isinstance(val, (Number, list, tuple)) else val
+            shape = getattr(val, "shape", None)
+            if shape is None or len(shape) > 1:
+                return False
+            num_wires = shape[0] if shape else 1
+
+        if not self.shape_fixed:
+            return True
+        return num_wires == self._num_wires
+
     def __hash__(self):
         return hash(("AbstractWires", self._num_wires))
 
@@ -578,7 +621,7 @@ class _AbstractWireTypeFactory:
 
 
 Wire = _AbstractWireTypeFactory()
-"""An :class:`~.AbstractWires` subclass. It can be indexed to create :class:`~.AbstractWires` 
+"""An :class:`~.AbstractWires` subclass. It can be indexed to create :class:`~.AbstractWires`
 with a fixed or dynamic wire count. It should not be used on its own.
 
 >>> from pennylane.typing import Wire
