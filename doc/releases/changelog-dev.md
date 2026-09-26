@@ -1602,6 +1602,12 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* :func:`~.transforms.from_zx` now picks the CNOT control from the Z spider and the target from
+  the X spider. Previously the control was taken from whichever spider had the larger vertex ID,
+  so a circuit-like graph whose Z spider was created before the X spider was converted to a CNOT
+  with the control and target swapped.
+  [(#10179)](https://github.com/PennyLaneAI/pennylane/pull/10179)
+
 * Fixed a bug where a fixed decomposition rule assigned to :class:`~.MultiControlledX` via the
   ``fixed_decomps`` keyword argument of :func:`~.transforms.decompose` was being ignored.
   This does not apply to ``qjit(capture=True)``.
@@ -1819,6 +1825,7 @@ Austin Huang,
 Harshal Janjani,
 Jacob Kitchen,
 Korbinian Kottmann,
+Anish Kunda,
 Isabel Nha Minh Le,
 Christina Lee,
 Joseph Lee,
