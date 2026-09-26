@@ -96,6 +96,21 @@ class TestSingleQubitFusion:
         transformed_ops = qp.tape.make_qscript(transformed_qfunc)().operations
         assert len(transformed_ops) == 0
 
+    def test_single_qubit_fusion_hadamard_pair_no_nan(self):
+        """Regression test for issue #10185. Fusing two Hadamards hits a diagonal
+        singularity where a rounding error used to make ``arccos`` return NaN. The fused
+        circuit must be a finite unitary equal to the original up to a global phase."""
+
+        def qfunc():
+            qp.Hadamard(wires=0)
+            qp.Hadamard(wires=0)
+
+        transformed_qfunc = single_qubit_fusion(qfunc)
+        matrix_expected = qp.matrix(qfunc, [0])()
+        matrix_obtained = qp.matrix(transformed_qfunc, [0])()
+        assert np.all(np.isfinite(matrix_obtained))
+        assert check_matrix_equivalence(matrix_expected, matrix_obtained)
+
     def test_single_qubit_fusion_not_implemented(self):
         """Test that fusion is correctly skipped for multi-qubit gates."""
 
