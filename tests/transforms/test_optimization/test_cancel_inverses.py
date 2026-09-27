@@ -16,6 +16,7 @@ Unit tests for the optimization transform ``cancel_inverses``.
 """
 
 import pytest
+from scipy.sparse import csr_matrix
 from utils import compare_operation_lists
 
 import pennylane as qp
@@ -279,6 +280,47 @@ class TestCancelInverses:
 
         names_expected = []
         wires_expected = []
+        compare_operation_lists(ops, names_expected, wires_expected)
+
+    @pytest.mark.parametrize(
+        "make_op, data",
+        [
+            (qp.QubitUnitary, np.array([[1, 1], [1, -1]]) / np.sqrt(2)),
+            (qp.QubitUnitary, csr_matrix(np.array([[0, 1], [1, 0]]))),
+            (qp.RX, np.array([0.1, 0.2])),
+        ],
+    )
+    def test_tensor_data_cancelled(self, make_op, data):
+        """Test that an operator with tensor data cancels with its adjoint."""
+
+        def qfunc():
+            make_op(data, wires=0)
+            qp.adjoint(make_op(data, wires=0))
+
+        ops = qp.tape.make_qscript(cancel_inverses(qfunc))().operations
+
+        assert len(ops) == 0
+
+    @pytest.mark.parametrize(
+        "make_op, data1, data2",
+        [
+            (qp.QubitUnitary, np.eye(2), np.array([[0, 1], [1, 0]])),
+            (qp.QubitUnitary, csr_matrix(np.eye(2)), csr_matrix(np.array([[0, 1], [1, 0]]))),
+            (qp.RX, np.array([0.1, 0.2]), np.array([0.1, 0.3])),
+            (qp.RX, 0.1, np.array([0.1, 0.1])),
+        ],
+    )
+    def test_different_tensor_data_not_cancelled(self, make_op, data1, data2):
+        """Test that operators whose tensor data differ in value or shape do not cancel."""
+
+        def qfunc():
+            make_op(data1, wires=0)
+            qp.adjoint(make_op(data2, wires=0))
+
+        ops = qp.tape.make_qscript(cancel_inverses(qfunc))().operations
+
+        names_expected = [make_op.__name__, f"Adjoint({make_op.__name__})"]
+        wires_expected = [Wires(0), Wires(0)]
         compare_operation_lists(ops, names_expected, wires_expected)
 
     @pytest.mark.parametrize("adjoint_first", [True, False])
