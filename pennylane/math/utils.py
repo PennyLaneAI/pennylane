@@ -550,6 +550,45 @@ def in_backprop(tensor, interface=None):
     raise ValueError(f"Cannot determine if {tensor} is in backpropagation.")
 
 
+def _is_integer_scalar(n) -> bool:
+    """Return whether ``n`` is a concrete scalar with an integer dtype."""
+    if isinstance(n, (int, _np.integer)):
+        return True
+
+    if getattr(n, "shape", None) != ():
+        return False
+
+    try:
+        dtype_name = math.get_dtype_name(n)
+    except (TypeError, ValueError):
+        return False
+
+    return dtype_name.startswith(("int", "uint"))
+
+
+def _is_integer_dtype(dtype) -> bool:
+    """Return whether ``dtype`` is an integer dtype recognized by NumPy."""
+    if dtype is None:
+        return False
+
+    try:
+        return _np.issubdtype(dtype, _np.integer)
+    except TypeError:
+        return False
+
+
+def _ceil_log2_integer_array(n):
+    """Compute ``ceil(log2(n))`` exactly for integer arrays."""
+    n_minus_one = n - 1
+    out = np.zeros_like(n_minus_one)
+    max_exponent = _np.iinfo(getattr(n, "dtype")).max.bit_length()
+
+    for exponent in range(max_exponent):
+        out = out + (n_minus_one >= (1 << exponent)).astype(int)
+
+    return out.astype(int)
+
+
 def ceil_log2(n: int) -> int:
     """Compute the ceiling of the base-2 logarithm of an integer, with integer as output data type.
 
@@ -582,5 +621,16 @@ def ceil_log2(n: int) -> int:
     4
     """
     if is_abstract(n):
-        return np.ceil(np.log2(n)).astype(int)
+        log2 = np.ceil(np.log2(n)).astype(int)
+
+        if _is_integer_dtype(getattr(n, "dtype", None)):
+            return np.where(n > 0, _ceil_log2_integer_array(n), log2)
+
+        return log2
+
+    if _is_integer_scalar(n):
+        n_int = int(n)
+        if n_int > 0:
+            return (n_int - 1).bit_length()
+
     return int(np.ceil(np.log2(n)))
