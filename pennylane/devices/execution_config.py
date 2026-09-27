@@ -21,6 +21,7 @@ from collections.abc import MutableMapping
 from copy import deepcopy
 from dataclasses import dataclass, field
 from enum import StrEnum
+from pprint import pformat
 from typing import TYPE_CHECKING
 
 from pennylane.concurrency.executors.backends import ExecBackends, get_executor
@@ -242,6 +243,10 @@ class ExecutionConfig:
     """
     Defines the class for the executor backend.
     """
+
+    def __str__(self):
+        """Display the execution configuration in a readable multi-line format."""
+        return pformat(self)
 
     def __post_init__(self):
         """

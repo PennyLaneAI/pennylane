@@ -17,6 +17,7 @@ Unit tests for the :class:`~pennylane.devices.ExecutionConfig` class.
 
 from copy import copy, deepcopy
 from dataclasses import replace
+from pprint import pformat
 
 import pytest
 
@@ -270,6 +271,27 @@ class TestExecutionConfig:
             mcm_config={"mcm_method": "deferred", "postselect_mode": "hw-like"},
         )
         assert isinstance(hash(config), int)
+
+    def test_str_pretty_prints_config(self):
+        """Test that printing an ExecutionConfig uses a readable multi-line format."""
+        config = ExecutionConfig()
+
+        assert str(config) == pformat(config)
+        assert str(config) != repr(config)
+        assert str(config).splitlines() == [
+            "ExecutionConfig(grad_on_execution=None,",
+            "                use_device_gradient=None,",
+            "                use_device_jacobian_product=None,",
+            "                gradient_method=None,",
+            "                gradient_keyword_arguments={},",
+            "                device_options={},",
+            "                interface=<Interface.NUMPY: 'numpy'>,",
+            "                derivative_order=1,",
+            "                mcm_config=MCMConfig(mcm_method=None, postselect_mode=None),",
+            "                convert_to_numpy=True,",
+            "                executor_backend=<class "
+            "'pennylane.concurrency.executors.native.multiproc.MPPoolExec'>)",
+        ]
 
 
 class TestMCMConfig:

@@ -419,7 +419,7 @@ class DeviceDerivatives(JacobianProductCalculator):
     """
 
     def __repr__(self):
-        return f"<DeviceDerivatives: {self._device.name}, {self._execution_config}>"
+        return f"<DeviceDerivatives: {self._device.name}, {self._execution_config!r}>"
 
     def __init__(
         self,
@@ -668,7 +668,7 @@ class DeviceJacobianProducts(JacobianProductCalculator):
     """
 
     def __repr__(self):
-        return f"<DeviceJacobianProducts: {self._device.name}, {self._execution_config}>"
+        return f"<DeviceJacobianProducts: {self._device.name}, {self._execution_config!r}>"
 
     def __init__(self, device: qp.devices.Device, execution_config: qp.devices.ExecutionConfig):
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
