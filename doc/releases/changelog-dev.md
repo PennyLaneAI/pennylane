@@ -1907,6 +1907,7 @@
   tensor data, such as a :class:`~.QubitUnitary` or a broadcast rotation, is followed by an
   adjoint of the same class. Operator data is now compared by shape and value, so matching
   pairs are cancelled and pairs whose data differ in value or shape are kept.
+  [(#10205)](https://github.com/PennyLaneAI/pennylane/pull/10205)
 
 * Fixed captured transforms dropping keyword arguments to the transformed function,
   including when calling transformed QNodes with `qp.qjit(capture=True)`.
