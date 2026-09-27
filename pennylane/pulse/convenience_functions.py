@@ -15,13 +15,8 @@
 
 from collections.abc import Callable
 
+import jax.numpy as jnp
 import numpy as np
-
-has_jax = True
-try:
-    import jax.numpy as jnp
-except ImportError:
-    has_jax = False
 
 
 # pylint: disable=unused-argument
@@ -171,11 +166,6 @@ def rect(x: float | Callable, windows: tuple[float] | list[tuple[float]] | None 
     >>> H(params, t=5)
     10.0 * X(0)
     """
-    if not has_jax:
-        raise ImportError(
-            "Module jax is required for any pulse-related convenience function. "
-            "You can install jax via: pip install jax"
-        )
     if windows is not None:
         is_nested = any(hasattr(w, "__len__") for w in windows)
         single_window = len(windows) == 2 and not is_nested
@@ -286,11 +276,6 @@ def pwc(timespan):
     0.0 * X(0)
 
     """
-    if not has_jax:
-        raise ImportError(
-            "Module jax is required for any pulse-related convenience function. "
-            "You can install jax via: pip install jax"
-        )
 
     if isinstance(timespan, (tuple, list)):
         t0, t1 = timespan
@@ -360,11 +345,6 @@ def pwc_from_function(timespan, num_bins):
     Array(10.666667, dtype=float32)
 
     """
-    if not has_jax:
-        raise ImportError(
-            "Module jax is required for any pulse-related convenience function. "
-            "You can install jax via: pip install jax"
-        )
 
     if isinstance(timespan, tuple):
         t0, t1 = timespan

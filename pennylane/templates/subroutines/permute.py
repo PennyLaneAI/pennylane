@@ -18,17 +18,13 @@ Contains the Permute template.
 import copy
 from collections import Counter
 
+from jax import numpy as jnp
+
 from pennylane import capture
 from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import SWAP, cond
 from pennylane.wires import Wires
-
-has_jax = True
-try:
-    from jax import numpy as jnp
-except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
-    has_jax = False  # pragma: no cover
 
 
 class Permute(Operation):
@@ -260,7 +256,7 @@ def _permute_decomposition(wires, permutation):
     # Temporary storage to keep track as we permute
     working_order = wires.tolist()
 
-    if has_jax and capture.enabled():
+    if capture.enabled():
         # The swap index is traced inside ``cond``. JAX arrays support indexing with that
         # tracer and the functional updates needed to carry the new order between branches.
         wires = jnp.array(wires)

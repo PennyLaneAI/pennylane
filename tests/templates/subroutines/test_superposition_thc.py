@@ -23,7 +23,7 @@ from pennylane.ops.functions.assert_valid import assert_valid
 from pennylane.templates.subroutines.superposition_thc import SuperpositionTHC
 
 
-def _wire_layout(n, work_offset=None):
+def _wire_layout(n):
     """Build disjoint mu / nu / work registers for ``n`` index wires.
 
     The minimum number of work wires required by ``SuperpositionTHC`` is
@@ -31,8 +31,7 @@ def _wire_layout(n, work_offset=None):
     """
     mu_wires = list(range(0, n))
     nu_wires = list(range(n, 2 * n))
-    start = 2 * n if work_offset is None else work_offset
-    work_wires = list(range(start, start + 3 * n + 5))
+    work_wires = list(range(2 * n, 2 * n + 3 * n + 5))
     return mu_wires, nu_wires, work_wires
 
 
@@ -98,8 +97,10 @@ def test_standard_validity(M, N, n):
     assert_valid(gate, skip_differentiation=True)
 
     # Surplus work used to clip the >= comparator slice to n-1 wires (not n).
-    extra_work = work_wires + list(range(work_wires[-1] + 1, work_wires[-1] + 9))
-    assert_valid(SuperpositionTHC(M, N, mu_wires, nu_wires, extra_work), skip_differentiation=True)
+    more_work_wires = work_wires + list(range(work_wires[-1] + 1, work_wires[-1] + 9))
+    assert_valid(
+        SuperpositionTHC(M, N, mu_wires, nu_wires, more_work_wires), skip_differentiation=True
+    )
 
     assert gate.M == M
     assert gate.N == N
