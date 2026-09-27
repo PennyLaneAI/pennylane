@@ -2316,6 +2316,11 @@ Documentation 📝
 Bug fixes 🐛
 ~~~~~~~~~~~~
 
+* :func:`~.transforms.cancel_inverses` no longer raises a ``ValueError`` when an operator with
+  tensor data, such as a :class:`~.QubitUnitary` or a broadcast rotation, is followed by an
+  adjoint of the same class. Operator data is now compared by shape and value, so matching
+  pairs are cancelled and pairs whose data differ in value or shape are kept.
+
 * Fixed a bug where AutoGraph raised an error for empty ``for`` loops.
   `(#10448) <https://github.com/PennyLaneAI/pennylane/pull/10448>`__
 
@@ -2640,6 +2645,7 @@ Austin Huang,
 Harshal Janjani,
 Jacob Kitchen,
 Korbinian Kottmann,
+Anish Kunda,
 Isabel Nha Minh Le,
 Christina Lee,
 Joseph Lee,
