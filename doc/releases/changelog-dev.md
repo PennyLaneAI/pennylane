@@ -1626,6 +1626,7 @@
   tensor data, such as a :class:`~.QubitUnitary` or a broadcast rotation, is followed by an
   adjoint of the same class. Operator data is now compared by shape and value, so matching
   pairs are cancelled and pairs whose data differ in value or shape are kept.
+  [(#10205)](https://github.com/PennyLaneAI/pennylane/pull/10205)
 
 * :func:`~.allocate` with zero wires no longer queues or captures :class:`~.allocation.Allocate`
   and :class:`~.allocation.Deallocate` instructions, including when used as a context manager.
