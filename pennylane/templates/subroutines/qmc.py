@@ -22,7 +22,7 @@ import numpy as np
 
 from pennylane import math
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import QubitUnitary
 from pennylane.typing import Complex, Wire
 from pennylane.wires import Wires
@@ -473,10 +473,9 @@ def _quantum_monte_carlo_resources(num_target_wires, num_estimation_wires, q_sha
         QubitUnitary(
             Complex[2**num_target_wires, 2**num_target_wires], wires=Wire[num_target_wires]
         ): 1,
-        resource_rep(
-            QuantumPhaseEstimation,
-            base=QubitUnitary(Complex[*q_shape], wires=Wire[num_target_wires]),
-            num_estimation_wires=num_estimation_wires,
+        QuantumPhaseEstimation(
+            QubitUnitary(Complex[*q_shape], wires=Wire[num_target_wires]),
+            estimation_wires=Wire[num_estimation_wires],
         ): 1,
     }
 

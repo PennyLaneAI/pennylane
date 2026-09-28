@@ -15,8 +15,6 @@
 Contains the QuantumPhaseEstimation template.
 """
 
-import copy
-
 from pennylane import ops
 from pennylane.core.operator import Operator, Operator2
 from pennylane.decomposition import (
@@ -161,7 +159,7 @@ class QuantumPhaseEstimation(Operator2):
     def __init__(self, unitary, target_wires=None, estimation_wires=None):
         if isinstance(unitary, Operator):
             # If the unitary is expressed in terms of operators, do not provide target wires
-            if target_wires is not None:
+            if target_wires is not None and Wires(target_wires) != unitary.wires:
                 raise QuantumFunctionError(
                     "The unitary is expressed as an operator, which already has target wires "
                     "defined, do not additionally specify target wires."
@@ -183,23 +181,10 @@ class QuantumPhaseEstimation(Operator2):
 
         super().__init__(unitary, target_wires, estimation_wires)
 
-        if any(wire in self.target_wires for wire in self.estimation_wires):
+        if not self.is_fully_abstract and any(
+            wire in self.target_wires for wire in self.estimation_wires
+        ):
             raise QuantumFunctionError("The target wires and estimation wires must not overlap.")
-
-    # pylint: disable=protected-access
-    def map_wires(self, wire_map: dict):
-        new_op = copy.deepcopy(self)
-        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        new_op._hyperparameters["unitary"] = ops.functions.map_wires(
-            new_op._hyperparameters["unitary"], wire_map
-        )
-
-        for key in ["estimation_wires", "target_wires"]:
-            new_op._hyperparameters[key] = [
-                wire_map.get(wire, wire) for wire in self.hyperparameters[key]
-            ]
-
-        return new_op
 
 
 def _qpe_decomp_resource(
