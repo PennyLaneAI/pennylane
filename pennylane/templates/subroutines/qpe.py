@@ -18,27 +18,25 @@ Contains the QuantumPhaseEstimation template.
 import copy
 
 from pennylane import ops
-from pennylane.core.operator import Operation, Operator, Operator2, abstractify
-from pennylane.core.queuing import QueuingManager
+from pennylane.core.operator import Operator, Operator2
 from pennylane.decomposition import (
     add_decomps,
     register_resources,
 )
 from pennylane.exceptions import QuantumFunctionError
+from pennylane.ops import adjoint
 from pennylane.ops import pow as qp_pow
-from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.pow2 import _pow_abstract
 
 # pylint: disable=arguments-differ
-from pennylane.ops.qubit.matrix_ops import QubitUnitary
 from pennylane.typing import Wire
 from pennylane.wires import Wires
 
 from .qft import QFT
 
 
-class QuantumPhaseEstimation(Operation):
+class QuantumPhaseEstimation(Operator2):
     r"""Performs the
     `quantum phase estimation <https://en.wikipedia.org/wiki/Quantum_phase_estimation_algorithm>`__
     circuit.
@@ -155,40 +153,10 @@ class QuantumPhaseEstimation(Operation):
 
     """
 
+    wire_argnames = ("target_wires", "estimation_wires")
+    hybrid_argnames = ("unitary",)
+
     grad_method = None
-
-    resource_keys = {"base", "num_estimation_wires"}
-
-    def _flatten(self):
-        data = (self.hyperparameters["unitary"],)
-        metadata = (self.hyperparameters["estimation_wires"],)
-        return data, metadata
-
-    @classmethod
-    def _primitive_bind_call(cls, unitary, *args, **kwargs):
-        def _get_tracer(op):
-            if isinstance(op, Operator2):
-                if op.tracer is None:
-                    # pylint: disable-next=protected-access
-                    op._bind_primitive()  # pragma: no cover
-                return op.tracer if op.tracer is not None else op
-            return op
-
-        unitary = _get_tracer(unitary)
-        return cls._primitive.bind(unitary, *args, **kwargs)
-
-    @classmethod
-    def _unflatten(cls, data, metadata) -> "QuantumPhaseEstimation":
-        return cls(data[0], estimation_wires=metadata[0])
-
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "base": abstractify(
-                QubitUnitary(self.hyperparameters["unitary"].matrix(), wires=self.target_wires)
-            ),
-            "num_estimation_wires": len(self.estimation_wires),
-        }
 
     def __init__(self, unitary, target_wires=None, estimation_wires=None):
         if isinstance(unitary, Operator):
@@ -213,30 +181,10 @@ class QuantumPhaseEstimation(Operation):
         if estimation_wires is None:
             raise QuantumFunctionError("No estimation wires specified.")
 
-        target_wires = Wires(target_wires)
-        estimation_wires = Wires(estimation_wires)
-        wires = target_wires + estimation_wires
+        super().__init__(unitary, target_wires, estimation_wires)
 
-        if any(wire in target_wires for wire in estimation_wires):
+        if any(wire in self.target_wires for wire in self.estimation_wires):
             raise QuantumFunctionError("The target wires and estimation wires must not overlap.")
-
-        self._hyperparameters = {
-            "unitary": unitary,
-            "target_wires": target_wires,
-            "estimation_wires": estimation_wires,
-        }
-
-        super().__init__(*unitary.data, wires=wires)
-
-    @property
-    def target_wires(self):
-        """The target wires of the QPE"""
-        return self._hyperparameters["target_wires"]
-
-    @property
-    def estimation_wires(self):
-        """The estimation wires of the QPE"""
-        return self._hyperparameters["estimation_wires"]
 
     # pylint: disable=protected-access
     def map_wires(self, wire_map: dict):
@@ -253,46 +201,18 @@ class QuantumPhaseEstimation(Operation):
 
         return new_op
 
-    def queue(self, context=QueuingManager):
-        context.remove(self._hyperparameters["unitary"])
-        context.append(self)
-        return self
 
-    @staticmethod
-    def compute_decomposition(*_, unitary, estimation_wires, **__):
-        r"""Representation of the QPE circuit as a product of other operators.
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.QuantumPhaseEstimation.decomposition`.
-
-        Args:
-            wires (Any or Iterable[Any]): wires that the QPE circuit acts on
-            unitary (Operator): the phase estimation unitary, specified as an operator
-            target_wires (Any or Iterable[Any]): the target wires to apply the unitary
-            estimation_wires (Any or Iterable[Any]): the wires to be used for phase estimation
-
-        Returns:
-            list[.Operator]: decomposition of the operator
-        """
-        # pylint: disable=arguments-differ
-        op_list = [ops.Hadamard(w) for w in estimation_wires]
-        pow_ops = (pow(unitary, 2**i) for i in range(len(estimation_wires) - 1, -1, -1))
-        op_list.extend(ops.ctrl(op, w) for op, w in zip(pow_ops, estimation_wires, strict=True))
-        op_list.append(ops.adjoint(QFT(wires=estimation_wires)))
-
-        return op_list
-
-
-def _qpe_decomp_resource(base, num_estimation_wires):
+def _qpe_decomp_resource(
+    unitary, target_wires, estimation_wires
+):  # pylint: disable=unused-argument
+    num_estimation_wires = len(estimation_wires)
     gate_count = {
         ops.Hadamard: num_estimation_wires,
-        _adjoint_abstract(QFT(Wire[num_estimation_wires])): 1,
+        adjoint(QFT(Wire[num_estimation_wires])): 1,
     }
     for i in range(num_estimation_wires):
         pow_rep = _pow_abstract(
-            base,
+            unitary,
             2**i,
         )
         gate_count[_ctrl_abstract(pow_rep, control_wires=Wire[1])] = 1
@@ -300,7 +220,7 @@ def _qpe_decomp_resource(base, num_estimation_wires):
 
 
 @register_resources(_qpe_decomp_resource)
-def _qpe_decomp(*_, unitary, estimation_wires, **__):  # pylint: disable=unused-argument
+def _qpe_decomp(unitary, target_wires, estimation_wires):  # pylint: disable=unused-argument
     for w in estimation_wires:
         ops.Hadamard(w)
     for i, w in enumerate(estimation_wires):
