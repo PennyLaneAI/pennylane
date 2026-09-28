@@ -233,11 +233,6 @@ path = "pennylane.optimize"
 layer = "auxiliary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
-[[modules]]
-path = "pennylane.pulse"
-layer = "auxiliary"
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-
 # TEMPLATES MODULE
 
 [[modules]]
@@ -303,16 +298,6 @@ layer = "tertiary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
-path = "pennylane.qaoa"
-layer = "tertiary"
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-
-[[modules]]
-path = "pennylane.kernels"
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-layer = "tertiary"
-
-[[modules]]
 path = "pennylane.data"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 layer = "tertiary"
@@ -343,22 +328,7 @@ layer = "tertiary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[modules]]
-path = "pennylane.fourier"
-layer = "tertiary"
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-
-[[modules]]
-path = "pennylane.noise"
-layer = "tertiary"
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-
-[[modules]]
 path = "pennylane.debugging"
-layer = "tertiary"
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
-
-[[modules]]
-path = "pennylane.qcut"
 layer = "tertiary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 

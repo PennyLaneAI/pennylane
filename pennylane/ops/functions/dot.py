@@ -17,28 +17,27 @@ a vector and a list of operators.
 """
 
 from collections import defaultdict
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 
 import pennylane as qp
 from pennylane.core.operator import Operator
 from pennylane.pauli import PauliSentence, PauliWord
-from pennylane.pulse import ParametrizedHamiltonian
 
 
 def dot(
-    coeffs: Sequence[float | Callable],
+    coeffs: Sequence[float],
     ops: Sequence[Operator | PauliWord | PauliSentence],
     pauli=False,
     grouping_type=None,
     method="lf",
-) -> Operator | ParametrizedHamiltonian | PauliSentence:
+) -> Operator | PauliSentence:
     r"""Returns the dot product between the ``coeffs`` vector and the ``ops`` list of operators.
 
     This function returns the following linear combination: :math:`\sum_{k} c_k O_k`, where
     :math:`c_k` and :math:`O_k` are the elements inside the ``coeffs`` and ``ops`` arguments, respectively.
 
     Args:
-        coeffs (Sequence[float, Callable]): sequence containing the coefficients of the linear combination
+        coeffs (Sequence[float]): sequence containing the coefficients of the linear combination
         ops (Sequence[Operator, PauliWord, PauliSentence]): sequence containing the operators of the linear combination.
            Can also be ``PauliWord`` or ``PauliSentence`` instances.
         pauli (bool, optional): If ``True``, a :class:`~.PauliSentence`
@@ -57,7 +56,7 @@ def dot(
         ValueError: if the number of coefficients and operators does not match or if they are empty
 
     Returns:
-        Operator or ParametrizedHamiltonian: operator describing the linear combination
+        Operator: operator describing the linear combination
 
     .. note::
 
@@ -95,17 +94,6 @@ def dot(
     Using ``pauli=True`` and then converting the result to an :class:`~.Operator` is much faster
     than using ``pauli=False``, but it only works for pauli words
     (see :func:`~.is_pauli_word`).
-
-    If any of the parameters listed in ``coeffs`` are callables, the resulting dot product will be a
-    :class:`~.ParametrizedHamiltonian`:
-
-    >>> coeffs = [lambda p, t: p * jnp.sin(t) for _ in range(2)]
-    >>> ops = [qp.X(0), qp.Y(0)]
-    >>> qp.dot(coeffs, ops)
-    (
-        <lambda>(params_0, t) * X(0)
-      + <lambda>(params_1, t) * Y(0)
-    )
 
     .. details::
         :title: Grouping
@@ -155,7 +143,9 @@ def dot(
             )
 
     if any(callable(c) for c in coeffs):
-        return ParametrizedHamiltonian(coeffs, ops)
+        raise ValueError(
+            "Callable coefficients are no longer supported after removal of the qp.pulse module."
+        )
 
     # User-specified Pauli route
     if pauli:

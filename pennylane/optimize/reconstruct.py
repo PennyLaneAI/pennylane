@@ -399,7 +399,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
     the
     :doc:`Quantum models as Fourier series <demo:demos/tutorial_expressivity_fourier_series>`
     and :doc:`General parameter-shift rules <demo:demos/tutorial_general_parshift>` demos as well
-    as the :mod:`qp.fourier <pennylane.fourier>` module docstring.
+    in the Fourier analysis literature.
 
     **Example**
 
@@ -433,7 +433,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
 
     >>> nums_frequency = {"Y": {(0,): 1, (1,): 6}}
     >>> with qp.Tracker(circuit.device) as tracker:
-    ...     rec = qp.fourier.reconstruct(circuit, {"Y": [(0,), (1,)]}, nums_frequency)(x, Y)
+    ...     rec = reconstruct(circuit, {"Y": [(0,), (1,)]}, nums_frequency)(x, Y)
     >>> rec.keys()
     dict_keys(['Y'])
     >>> print(*rec["Y"].items(), sep="\n")
@@ -455,18 +455,9 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
     {'batches': 15, 'simulations': 15, 'executions': 15}
 
     The example above used that we already knew the frequency spectra of the
-    QNode of interest. However, this is in general not the case and we may need
-    to compute the spectrum first. This can be done with
-    :func:`.fourier.qnode_spectrum` :
+    QNode of interest. Spectra can be provided explicitly, for example:
 
-    >>> spectra = qp.fourier.qnode_spectrum(circuit)(x, Y)
-    >>> spectra.keys()
-    dict_keys(['x', 'Y'])
-    >>> spectra["x"]
-    {(): [np.float64(-1.0), 0.0, np.float64(1.0)]}
-    >>> print(*spectra["Y"].items(), sep="\n")
-    ((0,), [np.float64(-1.0), 0.0, np.float64(1.0)])
-    ((1,), [np.float64(-6.0), np.float64(-5.0), np.float64(-4.0), np.float64(-1.0), 0.0, np.float64(1.0), np.float64(4.0), np.float64(5.0), np.float64(6.0)])
+    >>> spectra = {"Y": {(0,): [-1.0, 0.0, 1.0], (1,): [-1.0, 0.0, 1.0]}}
 
     For more detailed explanations, usage details and additional examples, see
     the usage details section below.
@@ -569,7 +560,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
         ``ids`` determines which reconstructions are performed.
 
         >>> with qp.Tracker(circuit.device) as tracker:
-        ...     rec = qp.fourier.reconstruct(circuit, {"Y": [(1,)]}, nums_frequency)(x, Y)
+        ...     rec = reconstruct(circuit, {"Y": [(1,)]}, nums_frequency)(x, Y)
         >>> tracker.totals
         {'batches': 13, 'simulations': 13, 'executions': 13}
 
@@ -579,7 +570,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
 
         >>> spectra = {"Y": {(1,): [0., 1., 4., 5., 6.]}}
         >>> with tracker:
-        ...     rec = qp.fourier.reconstruct(circuit, {"Y": [(1,)]}, None, spectra)(x, Y)
+        ...     rec = reconstruct(circuit, {"Y": [(1,)]}, None, spectra)(x, Y)
         >>> tracker.totals
         {'batches': 9, 'simulations': 9, 'executions': 9}
 
@@ -602,7 +593,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
 
         >>> spectra = {"x": {(): [0., f]}, "Y": {(0,): [0., 1.]}}
         >>> with tracker:
-        ...     rec = qp.fourier.reconstruct(circuit, None, None, spectra)(x, Y, f=f)
+        ...     rec = reconstruct(circuit, None, None, spectra)(x, Y, f=f)
         >>> tracker.totals
         {'batches': 5, 'simulations': 5, 'executions': 5}
         >>> recon_x = rec["x"][()]

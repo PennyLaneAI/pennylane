@@ -19,7 +19,7 @@ Defines the base class for Operator and Operation.
 import abc
 import copy
 import warnings
-from collections.abc import Callable, Hashable, Iterable, Set
+from collections.abc import Hashable, Iterable, Set
 from typing import TYPE_CHECKING, Any, ClassVar, Literal, Optional, Union
 from warnings import warn
 
@@ -1481,10 +1481,8 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
     __radd__ = __add__
 
-    def __mul__(self, other: Callable | TensorLike) -> "Operator":
+    def __mul__(self, other: TensorLike) -> "Operator":
         """The scalar multiplication between scalars and Operators."""
-        if callable(other):
-            return qp.pulse.ParametrizedHamiltonian([other], [self])
         if isinstance(other, TensorLike):
             return qp.s_prod(scalar=other, operator=self, lazy=False)
         return NotImplemented  # pragma: no cover
@@ -1703,7 +1701,6 @@ class Operation(Operator):
 
         These frequencies encode the behaviour of the operator :math:`U(\mathbf{p})`
         on the value of the expectation value as the parameters are modified.
-        For more details, please see the :mod:`.pennylane.fourier` module.
 
         Returns:
             list[tuple[int or float]]: Tuple of frequencies for each parameter.

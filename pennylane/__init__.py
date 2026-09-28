@@ -30,7 +30,6 @@ from pennylane import capture
 from pennylane import core
 from pennylane import control_flow
 from pennylane.control_flow import for_loop, while_loop
-from pennylane import kernels
 from pennylane import math
 from pennylane import operation
 from pennylane.core import operator
@@ -111,7 +110,6 @@ from pennylane.templates.tensornetworks import *
 from pennylane.templates.swapnetworks import *
 from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
-from pennylane import qaoa
 from pennylane.workflow import QNode, qnode, execute, set_shots, marker
 from pennylane import workflow
 
@@ -133,15 +131,6 @@ from pennylane.transforms import (
     clifford_t_decomposition,
     gridsynth,
     CompilePipeline,
-)
-from pennylane.noise import (
-    add_noise,
-    insert,
-    mitigate_with_zne,
-    fold_global,
-    poly_extrapolate,
-    richardson_extrapolate,
-    exponential_extrapolate,
 )
 from pennylane.ops.functions import (
     dot,
@@ -173,10 +162,7 @@ from pennylane.debugging import (
     debug_tape,
 )
 from pennylane.shadows import ClassicalShadow
-from pennylane.qcut import cut_circuit, cut_circuit_mc
-from pennylane import pulse
 
-from pennylane import fourier
 from pennylane.gradients import metric_tensor, adjoint_metric_tensor
 from pennylane import gradients  # pylint:disable=wrong-import-order
 from pennylane.drawer import draw, draw_mpl
@@ -186,7 +172,6 @@ from pennylane.io import (
     from_qasm,
     to_openqasm,
     from_qiskit,
-    from_qiskit_noise,
     from_qiskit_op,
     from_quil,
     from_quil_file,
@@ -200,9 +185,6 @@ from pennylane.io import (
 from pennylane import logging  # pylint:disable=wrong-import-order
 
 from pennylane import data
-
-from pennylane import noise
-from pennylane.noise import NoiseModel
 
 from pennylane.devices import Tracker
 from pennylane.devices.device_constructor import device, refresh_devices

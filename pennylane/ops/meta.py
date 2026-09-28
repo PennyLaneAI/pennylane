@@ -100,11 +100,6 @@ class WireCut(Operation):
     r"""WireCut(wires)
     The wire cut operation, used to manually mark locations for wire cuts.
 
-    .. note::
-
-        This operation is designed for use as part of the circuit cutting workflow.
-        Check out the :func:`qp.cut_circuit() <pennylane.cut_circuit>` transform for more details.
-
     **Details:**
 
     * Number of wires: AnyWires
