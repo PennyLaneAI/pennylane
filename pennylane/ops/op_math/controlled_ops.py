@@ -48,6 +48,7 @@ from pennylane.ops.op_math.controlled2 import (
     ControlledOp2,
     _setup_control_values,
     _validate_work_wire_type,
+    flip_zero_control,
 )
 from pennylane.ops.op_math.pow2 import pow_involutory as pow_involutory2
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
@@ -63,17 +64,17 @@ from .controlled import (
     custom_ctrl_dispatch,
 )
 from .decompositions.controlled_decompositions import (
+    _ctrl_decomp_bisect,
+    _ctrl_two_qubit_unitary,
+    _multi_ctrl_decomp_zyz,
+    _single_ctrl_decomp_zyz,
     augment_with_alloc,
-    controlled_two_qubit_unitary_rule,
-    ctrl_decomp_bisect_rule,
     decompose_mcx_many_workers,
     decompose_mcx_one_worker,
     decompose_mcx_two_controls_elbows,
     decompose_mcx_two_workers,
     decompose_mcx_with_no_worker,
     mcx_to_cnot_or_toffoli,
-    multi_control_decomp_zyz_rule,
-    single_ctrl_decomp_zyz_rule,
 )
 from .pow2 import pow_involutory as pow_involutory2
 
@@ -248,10 +249,10 @@ def _to_general_c_qu(U, wires, control_values, work_wires, work_wire_type, **_):
 
 add_decomps(
     ControlledQubitUnitary,
-    ctrl_decomp_bisect_rule,
-    single_ctrl_decomp_zyz_rule,
-    multi_control_decomp_zyz_rule,
-    controlled_two_qubit_unitary_rule,
+    flip_zero_control(_ctrl_decomp_bisect, "ctrl_decomp_bisect", ControlledQubitUnitary),
+    flip_zero_control(_single_ctrl_decomp_zyz, "single_ctrl_zyz", ControlledQubitUnitary),
+    flip_zero_control(_multi_ctrl_decomp_zyz, "multi_ctrl_zyz", ControlledQubitUnitary),
+    flip_zero_control(_ctrl_two_qubit_unitary, "ctrl_two_qubit_unitary", ControlledQubitUnitary),
     _to_general_c_qu,
 )
 

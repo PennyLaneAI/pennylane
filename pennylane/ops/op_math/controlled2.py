@@ -14,9 +14,8 @@
 
 """Defines the base class for controlled operators."""
 
-import inspect
 from collections.abc import Sequence
-from functools import partial
+from functools import partial, update_wrapper
 from inspect import signature
 from textwrap import dedent
 from typing import Literal, override
@@ -25,7 +24,7 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import allocation, capture, compiler, math
-from pennylane.core.operator import Operator, abstractify
+from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.core.operator.operator2 import (  # tach-ignore
     _to_symbolic_array,
     operator_p,
@@ -786,11 +785,15 @@ def to_controlled_unitary(base, control_wires, control_values, work_wires, work_
     )
 
 
-def flip_zero_control(inner_decomp: DecompositionRule, name: str = "") -> DecompositionRule:
+def flip_zero_control(
+    rule: DecompositionRule,
+    name: str = "",
+    op_cls: type[Operator2] = ControlledOp2,
+) -> DecompositionRule:
     """Wraps a decomposition for a controlled operator with X gates to flip zero control wires."""
 
     # pylint: disable=protected-access
-    sig = inspect.signature(inner_decomp._impl)
+    sig = op_cls._sig
 
     def _get_arguments(*args, **kwargs):
         bound_args = sig.bind(*args, **kwargs)
@@ -799,12 +802,12 @@ def flip_zero_control(inner_decomp: DecompositionRule, name: str = "") -> Decomp
 
     def _condition_fn(*args, **kwargs):
         arguments = _get_arguments(*args, **kwargs) | {"control_values": None}
-        return inner_decomp.is_applicable(**arguments)
+        return rule.is_applicable(**arguments)
 
     def _resource_fn(*args, **kwargs):
         arguments = _get_arguments(*args, **kwargs)
         new_arguments = arguments | {"control_values": None}
-        gate_counts = inner_decomp.compute_resources(**new_arguments).gate_counts
+        gate_counts = rule.compute_resources(**new_arguments).gate_counts
         if ctrl_values := arguments["control_values"]:
             gate_counts[qp.X] = gate_counts.get(qp.X, 0) + len(ctrl_values)
         return gate_counts
@@ -812,9 +815,9 @@ def flip_zero_control(inner_decomp: DecompositionRule, name: str = "") -> Decomp
     @register_condition(_condition_fn)
     @register_resources(
         _resource_fn,
-        work_wires=inner_decomp._work_wire_spec,
+        work_wires=rule._work_wire_spec,
         exact=False,
-        name=name or f"flip_zero_ctrl_values({inner_decomp.name})",
+        name=name or f"flip_zero_ctrl_values({rule.name})",
     )
     def _impl(*args, **kwargs):
 
@@ -835,13 +838,14 @@ def flip_zero_control(inner_decomp: DecompositionRule, name: str = "") -> Decomp
             qp.cond(qp.math.logical_not(_cvals[i]), qp.X)(_cwires[i])
 
         _x_flips()
-        inner_decomp._impl(**(arguments | {"control_values": None}))
+        rule._impl(**(arguments | {"control_values": None}))
         _x_flips()
 
-    base_source = inner_decomp._source
+    update_wrapper(_impl, rule)
+    base_source = rule._source
     _impl._source = (
         dedent(_impl._source).strip()
-        + "\n\nwhere inner_decomp is defined as:\n\n"
+        + "\n\nwhere rule is defined as:\n\n"
         + dedent(base_source).strip()
     )
     return _impl

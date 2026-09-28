@@ -14,7 +14,6 @@
 
 """This submodule defines functions to decompose controlled operations."""
 
-import inspect
 from functools import partial
 from textwrap import dedent
 from typing import Literal
@@ -97,7 +96,7 @@ def ctrl_decomp_bisect(target_operation: Operator, control_wires: Wires):
         )
 
     with queuing.AnnotatedQueue() as q:
-        ctrl_decomp_bisect_rule(
+        _ctrl_decomp_bisect(
             target_operation.matrix(),
             control_wires + target_operation.wires,
             control_values=[True] * len(control_wires),
@@ -231,29 +230,19 @@ def _ctrl_decomp_bisect_resources(U, wires, control_values, *_, **__):
         # but it still needs to be accounted for.
         ops.Hadamard: 2,
         ops.ctrl(ops.GlobalPhase(Float), Wire[num_ctrl_wires], work_wires=Wire[1]): 1,
-        qp.X: num_ctrl_wires,  # assume half the control values are 0s
     } | mcx_reps
 
 
 # Resources are not exact because rotations might be skipped for zero angles
 @register_condition(_ctrl_decomp_bisect_condition)
-@register_resources(_ctrl_decomp_bisect_resources, exact=False)
-def ctrl_decomp_bisect_rule(U, wires, control_values, *_, **__):
+@register_resources(_ctrl_decomp_bisect_resources)
+def _ctrl_decomp_bisect(U, wires, *_, **__):
     """The decomposition rule for ControlledQubitUnitary from
     `Vale et al. (2023) <https://arxiv.org/abs/2302.06377>`_."""
-
-    if compiler.active() or capture.enabled():
-        wires = math.array(wires, like="jax")
-        control_values = math.array(control_values, like="jax")
-
-    @qp.for_loop(len(control_values))
-    def _x_flips(i):
-        qp.cond(qp.math.logical_not(control_values[i]), qp.X)(wires[i])
 
     su2_U, phase = math.convert_to_su2(U)
     imag_U = math.imag(su2_U)
 
-    _x_flips()  # pylint: disable=no-value-for-parameter
     real_main_diagonal = math.allclose(imag_U[0, 0], 0) & math.allclose(imag_U[1, 1], 0)
     ops.cond(
         math.allclose(imag_U[1, 0], 0) & math.allclose(imag_U[0, 1], 0),
@@ -266,7 +255,6 @@ def ctrl_decomp_bisect_rule(U, wires, control_values, *_, **__):
     )(su2_U, wires)
     fn = partial(_ctrl_global_phase, work_wire_type="borrowed")
     ops.cond(_not_zero(phase), fn)(phase, wires[:-1], wires[-1])
-    _x_flips()  # pylint: disable=no-value-for-parameter
 
 
 def _single_ctrl_decomp_zyz_condition(U, wires, *_, **__):
@@ -282,7 +270,6 @@ def _single_ctrl_decomp_zyz_resources(U, wires, **_):
         ops.RY: 2,
         ops.CNOT: 2,
         ops.ctrl(ops.GlobalPhase(Float), Wire[1]): 1,
-        ops.X: len(wires) - 1,
     }
 
 
@@ -290,24 +277,12 @@ def _single_ctrl_decomp_zyz_resources(U, wires, **_):
 @register_condition(_single_ctrl_decomp_zyz_condition)
 @register_resources(_single_ctrl_decomp_zyz_resources, exact=False)
 # pylint: disable-next=unused-argument
-def single_ctrl_decomp_zyz_rule(U, wires, control_values, work_wires, **_):
+def _single_ctrl_decomp_zyz(U, wires, *_, **__):
     """The decomposition rule for ControlledQubitUnitary from Lemma 5.1 of
     https://arxiv.org/pdf/quant-ph/9503016"""
-
-    if capture.enabled() or compiler.active():
-        wires = qp.math.array(wires, like="jax")
-        control_values = math.array(control_values, like="jax")
-
-    @qp.for_loop(len(control_values))
-    def _x_flips(i):
-        qp.cond(qp.math.logical_not(control_values[i]), qp.X)(wires[i])
-
     phi, theta, omega, phase = math.decomposition.zyz_rotation_angles(U)
-
-    _x_flips()  # pylint: disable=no-value-for-parameter
     _single_control_zyz(phi, theta, omega, wires=wires)
     ops.cond(_not_zero(phase), _ctrl_global_phase)(phase, wires[:-1])
-    _x_flips()  # pylint: disable=no-value-for-parameter
 
 
 def _multi_ctrl_decomp_zyz_condition(U, wires, *_, **__):
@@ -330,7 +305,6 @@ def _multi_ctrl_decomp_zyz_resources(U, wires, control_values, work_wires, work_
             work_wire_type=work_wire_type,
         ): 2,
         ops.ctrl(ops.GlobalPhase(Float), Wire[num_ctrl_wires], work_wires=Wire[1]): 1,
-        ops.X: num_ctrl_wires,
     }
 
 
@@ -338,21 +312,11 @@ def _multi_ctrl_decomp_zyz_resources(U, wires, control_values, work_wires, work_
 # Resources are not exact because rotations might be skipped for zero angle(s)
 @register_resources(_multi_ctrl_decomp_zyz_resources, exact=False)
 # pylint: disable-next=unused-argument
-def multi_control_decomp_zyz_rule(U, wires, control_values, work_wires, work_wire_type, **_):
+def _multi_ctrl_decomp_zyz(U, wires, control_values, work_wires, work_wire_type, **_):
     """The decomposition rule for ControlledQubitUnitary from Lemma 7.9 of
     https://arxiv.org/pdf/quant-ph/9503016"""
 
-    if compiler.active() or capture.enabled():
-        wires = math.array(wires, like="jax")
-        control_values = math.array(control_values, like="jax")
-
-    @qp.for_loop(len(control_values))
-    def _x_flips(i):
-        qp.cond(qp.math.logical_not(control_values[i]), qp.X)(wires[i])
-
     phi, theta, omega, phase = math.decomposition.zyz_rotation_angles(U)
-
-    _x_flips()  # pylint: disable=no-value-for-parameter
     _multi_control_zyz(
         phi,
         theta,
@@ -363,7 +327,6 @@ def multi_control_decomp_zyz_rule(U, wires, control_values, work_wires, work_wir
     )
     fn = partial(_ctrl_global_phase, work_wire_type="borrowed")
     ops.cond(_not_zero(phase), fn)(phase, wires[:-1], wires[-1])
-    _x_flips()  # pylint: disable=no-value-for-parameter
 
 
 # pylint: disable-next=unused-argument
@@ -393,25 +356,15 @@ def _ctrl_two_qubit_unitary_resource(U, wires, control_values, work_wires, work_
 # Resources are not exact because rotations might be skipped for zero angle(s)
 @register_condition(lambda U, *_, **__: qp.math.ceil_log2(qp.math.shape(U)[0]) == 2)
 @register_resources(_ctrl_two_qubit_unitary_resource, exact=False)
-def controlled_two_qubit_unitary_rule(U, wires, control_values, work_wires, work_wire_type, **_):
+# pylint: disable-next=unused-argument
+def _ctrl_two_qubit_unitary(U, wires, control_values, work_wires, work_wire_type, **_):
     """A controlled two-qubit unitary is decomposed by applying ctrl to the base decomposition."""
-
-    if compiler.active() or capture.enabled():
-        wires = math.array(wires, like="jax")
-        control_values = math.array(control_values, like="jax")
-
-    @qp.for_loop(len(control_values))
-    def _x_flips(i):
-        qp.cond(qp.math.logical_not(control_values[i]), qp.X)(wires[i])
-
-    _x_flips()  # pylint: disable=no-value-for-parameter
     ops.ctrl(
         two_qubit_decomp_rule._impl,  # pylint: disable=protected-access
         control=wires[:-2],
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )(U, wires=wires[-2:])
-    _x_flips()  # pylint: disable=no-value-for-parameter
 
 
 ########################################
@@ -420,29 +373,30 @@ def controlled_two_qubit_unitary_rule(U, wires, control_values, work_wires, work
 
 
 def augment_with_alloc(base_rule, num_work_wires, work_wire_type, name=""):
-    """Given a decomposition rule that takes explicit work wires, populate the same
+    """Given a decomposition rule for MCX that takes explicit work wires, populate the same
     decomposition rule that uses dynamic work wire allocation instead."""
 
-    # pylint: disable=protected-access
-    signature = inspect.signature(base_rule._impl)
-    abstract_sub = {"work_wires": Wire[num_work_wires], "work_wire_type": work_wire_type}
+    def _resource_fn(wires, control_values, *_, **__):
+        # pylint: disable-next=protected-access
+        return base_rule._compute_resources(
+            wires,
+            control_values,
+            Wire[num_work_wires],
+            work_wire_type=work_wire_type,
+        )
 
-    def _get_arguments(*args, **kwargs):
-        bound_args = signature.bind(*args, **kwargs)
-        bound_args.apply_defaults()
-        return bound_args.arguments
-
-    def _resource_fn(*args, **kwargs):
-        arguments = _get_arguments(*args, **kwargs) | abstract_sub
-        return base_rule._compute_resources(**arguments)
-
-    def _condition_fn(*args, **kwargs):
-        arguments = _get_arguments(*args, **kwargs) | abstract_sub
+    # pylint: disable-next=unused-argument
+    def _condition_fn(wires, control_values, work_wires, work_wire_type):
         # The allocation-based rules are only considered if the operator does not
         # come with explicitly specified work wires. We've made the decision last
         # year that passing work wires to an operator is like explicitly saying
         # "use these work wires in the operator's decomposition"
-        return base_rule.is_applicable(**arguments) and len(kwargs.get("work_wires", [])) == 0
+        return len(work_wires) == 0 and base_rule.is_applicable(
+            wires,
+            control_values,
+            Wire[num_work_wires],
+            work_wire_type=work_wire_type,
+        )
 
     @register_condition(_condition_fn)
     @register_resources(
@@ -451,12 +405,11 @@ def augment_with_alloc(base_rule, num_work_wires, work_wire_type, name=""):
         exact=base_rule.exact_resources,
         name=name or f"use_allocation({base_rule.name})",
     )
-    def _impl(*args, **kwargs):
-        arguments = _get_arguments(*args, **kwargs)
+    def _impl(wires, control_values, *_, **__):
         state = "zero" if work_wire_type == "zeroed" else "any"
         with qp.allocation.allocate(num_work_wires, state, restored=True) as work_wires:
-            arguments |= {"work_wires": work_wires, "work_wire_type": work_wire_type}
-            base_rule._impl(**arguments)  # pylint: disable=protected-access
+            # pylint: disable-next=protected-access
+            base_rule._impl(wires, control_values, work_wires, work_wire_type=work_wire_type)
 
     base_source = base_rule._source
     _impl._source = (
