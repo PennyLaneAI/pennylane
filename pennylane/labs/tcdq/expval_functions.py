@@ -111,20 +111,6 @@ class CircuitConfig:  # pylint: disable=too-many-instance-attributes
     dtype: DTypeLike | None = None
 
 
-def _flatten_gate_dict(circuit_def: dict[int, list[list[int]]]):
-    """Flatten a gate dictionary into a gate list and a matching parameter-index list."""
-    flat_gates = []
-    param_indices = []
-
-    for param_idx in sorted(circuit_def.keys()):
-        gates_for_this_param = circuit_def[param_idx]
-        for gate in gates_for_this_param:
-            flat_gates.append(gate)
-            param_indices.append(param_idx)
-
-    return flat_gates, param_indices
-
-
 def _parse_generator_dict(circuit_def: dict[int, list[list[int]]], n_qubits: int):
     """Convert a gate dictionary into a padded array of gate qubit indices.
 
@@ -146,7 +132,15 @@ def _parse_generator_dict(circuit_def: dict[int, list[list[int]]], n_qubits: int
               padded with ``n_qubits``.
             - Integer array mapping each generator to its parameter index.
     """
-    flat_gates, param_indices = _flatten_gate_dict(circuit_def)
+    flat_gates = []
+    param_indices = []
+
+    for param_idx in sorted(circuit_def.keys()):
+        gates_for_this_param = circuit_def[param_idx]
+        for gate in gates_for_this_param:
+            flat_gates.append(gate)
+            param_indices.append(param_idx)
+
     n_gates = len(flat_gates)
 
     lengths = {len(gate) for gate in flat_gates}
