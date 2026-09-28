@@ -720,11 +720,11 @@ def _QSVT_decomposition(*_data, UA, projectors, **_kwargs):
 add_decomps(QSVT, _QSVT_decomposition)
 
 # pylint: disable=protected-access
-if QSVT._primitive is not None:
 
-    @QSVT._primitive.def_impl
-    def _(UA, *projectors, **kwargs):  # kwarg might be id
-        return type.__call__(QSVT, UA, projectors, **kwargs)
+
+@QSVT._primitive.def_impl
+def _(UA, *projectors, **kwargs):  # kwarg might be id
+    return type.__call__(QSVT, UA, projectors, **kwargs)
 
 
 def _complementary_poly(poly_coeffs):
