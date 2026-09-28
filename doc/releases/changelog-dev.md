@@ -1212,7 +1212,7 @@
   [(#10200)](https://github.com/PennyLaneAI/pennylane/pull/10200)
 
 * Remove leftover array-interface selection from QSVT iterative angle solvers now that JAX is always available.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#10216)](https://github.com/PennyLaneAI/pennylane/pull/10216)
 
 * An operator can now be reconstructed from operator_p with abstract wires in the form of 
   AbstractQubit, jax.core.ShapedArray, AbstractWires, and AbstractArray.
