@@ -20,6 +20,8 @@ from functools import partial
 from typing import overload
 from warnings import warn
 
+import jax
+
 import pennylane as qp
 from pennylane import pytrees
 from pennylane.capture.autograph import wraps
@@ -230,7 +232,6 @@ def _adjoint_transform_abstract_eval(*_, **__):
 def _capture_adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
     """Capture compatible way of performing an adjoint transform."""
     # note that this logic is tested in `tests/capture/test_nested_plxpr.py`
-    import jax  # pylint: disable=import-outside-toplevel
 
     @wraps(qfunc)
     def new_qfunc(*args, **kwargs):
