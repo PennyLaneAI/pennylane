@@ -188,8 +188,6 @@ class TestIQPExpval:
         expval_func = build_expval_func(config)
         approx_val, _ = expval_func(params_jax)
 
-        print(exact_vals, approx_val)
-
         assert np.allclose(exact_vals, approx_val, atol=atol)
 
     @pytest.mark.parametrize(
