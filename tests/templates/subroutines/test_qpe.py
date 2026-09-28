@@ -23,7 +23,6 @@ import pennylane as qp
 from pennylane.exceptions import QuantumFunctionError
 
 
-@pytest.mark.xfail_if_capture(reason="come back to this when we port QPE [sc-128367]")
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Test standard validity criteria using assert_valid."""
