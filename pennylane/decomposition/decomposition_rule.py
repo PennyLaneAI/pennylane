@@ -641,6 +641,7 @@ def _canonicalize_signature(op_type, rule):
         rule._impl(**_get_arguments(*args, **kwargs))
 
     _impl._source = rule._source
+    update_wrapper(_impl, rule)
     return _impl
 
 
