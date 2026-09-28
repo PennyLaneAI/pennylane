@@ -17,14 +17,9 @@ Contains a utility for handling inputs with dynamically shaped arrays.
 
 from collections.abc import Callable
 
-has_jax = True
-try:
-    import jax
-    from jax._src.interpreters.partial_eval import TracingEqn
-
-
-except ImportError as e:  # pragma: no cover
-    has_jax = False
+import jax
+import jax.extend.core
+from jax._src.interpreters.partial_eval import TracingEqn
 
 
 def _get_shape_for_array(x, abstract_shapes: list, previous_ints: list) -> dict:
@@ -124,7 +119,6 @@ def determine_abstracted_axes(args):
     was already in the argument loop.
 
     """
-    assert has_jax
     if not jax.config.jax_dynamic_shapes:
         return None, ()
 
@@ -150,14 +144,14 @@ def _default_setup_env(tracers, params):
 
 def register_custom_staging_rule(
     primitive,
-    get_jaxpr_from_params: Callable[[dict], "jax.extend.core.Jaxpr"],
+    get_jaxpr_from_params: Callable[[dict], jax.extend.core.Jaxpr],
     setup_env: Callable = _default_setup_env,
 ) -> None:
     """Register a custom staging rule for a higher order primitive that can handle dynamic shapes.
 
     Args:
         primitive (jax.extend.core.Primitive): a jax primitive we want to register a custom staging rule for
-        get_jaxpr_from_params (Callable[[dict], "jax.extend.core.Jaxpr"]): A function that takes in the equation's ``params``
+        get_jaxpr_from_params (Callable[[dict], jax.extend.core.Jaxpr]): A function that takes in the equation's ``params``
             and returns a target jaxpr
         setup_env (Callable): A function that setups a dictionary for mapping from the inner jaxpr variables to the tracers
             that are inputs to the equation.  The inputs are the tracers that are inputs to the equation

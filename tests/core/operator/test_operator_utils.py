@@ -16,6 +16,7 @@ import numpy as np
 import pytest
 from operator2_utils import CompilableOp, DynOp, FullOp, MixedHybridOp, MultiWireOp, TwoDynOp
 
+import pennylane as qp
 from pennylane.core import Operator1
 from pennylane.core.operator import Operator2
 from pennylane.core.operator.utils import abstractify
@@ -61,6 +62,16 @@ class TestAbstractifyBasics:
         aw = Wire[2]
         assert abstractify(aa) is aa
         assert abstractify(aw) is aw
+
+    @pytest.mark.jax
+    def test_ShapedArray_promoted_to_AbstractArray(self):
+        """Test that jax.core.ShapedArray is promoted to an AbstractArray."""
+
+        import jax
+
+        assert abstractify(jax.core.ShapedArray((4, 3, 2), jax.numpy.int32)) == AbstractArray(
+            (4, 3, 2), np.int32
+        )
 
     def test_pytree_with_wires_leaves(self):
         """Test that pytrees containing ``Wires`` leaves are abstractified recursively."""
@@ -135,6 +146,16 @@ class TestAbstractifyOperatorInstances:
         assert result.phi == Float
         assert result.theta == Int[2]
         assert result.wires == Wire[1]
+
+    @pytest.mark.jax
+    def test_ShapedArray_input(self):
+        """Test that ShapedArray inputs get promoted to AbstractArray."""
+        import jax
+
+        op = DynOp(jax.core.ShapedArray((), np.float64), Wire[2])
+        aop = abstractify(op)
+
+        qp.assert_equal(aop, DynOp(Float, Wire[2]))
 
     def test_multiple_wire_op(self):
         """Tests when there are multiple wires."""
