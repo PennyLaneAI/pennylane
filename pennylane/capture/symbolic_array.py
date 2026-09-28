@@ -15,6 +15,7 @@ A tool for capturing dummy arrays that can be used for resource estimation.
 """
 
 import jax
+from jax.numpy import dtype as jnp_dtype
 
 from pennylane.typing import AbstractArray
 
@@ -81,8 +82,6 @@ def symbolic_array(shape: tuple[int, ...], dtype: type):
     """
     if not enabled():
         raise NotImplementedError("symbolic_array requires program capture to be enabled.")
-
-    from jax.numpy import dtype as jnp_dtype  # pylint: disable=import-outside-toplevel
 
     if not all(isinstance(s, int) and s > 0 for s in shape):
         raise ValueError(f"The shape must be a tuple of positive integers. Got shape {shape}.")

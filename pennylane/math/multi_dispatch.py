@@ -18,10 +18,17 @@ import functools
 from collections.abc import Sequence
 from operator import attrgetter
 
+import jax
+import jax.numpy as jnp
+
 # pylint: disable=wrong-import-order
 import numpy as onp
 from autograd.numpy.numpy_boxes import ArrayBox
 from autoray import numpy as np
+from jax.numpy.linalg import norm as jax_norm
+from jax.numpy.linalg import svd as jax_svd
+from jax.scipy.linalg import expm as jax_expm
+from jax.scipy.special import gammainc as jax_gammainc
 from numpy import ndarray
 
 from . import single_dispatch  # pylint:disable=unused-import
@@ -885,8 +892,6 @@ def expm(tensor, like=None):
     if like == "torch":
         return tensor.matrix_exp()
     if like == "jax":
-        from jax.scipy.linalg import expm as jax_expm
-
         return jax_expm(tensor)
     if like == "tensorflow":  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         import tensorflow as tf
@@ -901,7 +906,7 @@ def expm(tensor, like=None):
 def norm(tensor, like=None, **kwargs):
     """Compute the norm of a tensor in each interface."""
     if like == "jax":
-        from jax.numpy.linalg import norm
+        norm = jax_norm
 
     elif (
         like == "tensorflow"
@@ -961,7 +966,7 @@ def svd(tensor, like=None, **kwargs):
         return svd(tensor, **kwargs)
 
     if like == "jax":
-        from jax.numpy.linalg import svd
+        svd = jax_svd
 
     elif like == "torch":
         # Torch is deprecating torch.svd() in favour of torch.linalg.svd().
@@ -1008,9 +1013,7 @@ def gammainc(m, t, like=None):
         (array[float]): value of the incomplete Gamma function
     """
     if like == "jax":
-        from jax.scipy.special import gammainc
-
-        return gammainc(m, t)
+        return jax_gammainc(m, t)
 
     if like == "autograd":
         from autograd.scipy.special import gammainc
@@ -1035,8 +1038,6 @@ def detach(tensor, like=None):
         with a stopped gradient.
     """
     if like == "jax":
-        import jax
-
         return jax.lax.stop_gradient(tensor)
 
     if like == "torch":
@@ -1069,8 +1070,6 @@ def set_index(array, idx, val, like=None):
     Whether the original array is modified is interface-dependent.
     """
     if like == "jax":
-        from jax import numpy as jnp
-
         # ensure array is jax array (interface may be jax because of idx or val and not array)
         jax_array = jnp.array(array)
         return jax_array.at[idx].set(val)

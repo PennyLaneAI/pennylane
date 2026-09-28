@@ -1209,6 +1209,7 @@
 
 * Removes indirection and deferred imports now that jax is always available.
   [(#10198)](https://github.com/PennyLaneAI/pennylane/pull/10198)
+  [(#10200)](https://github.com/PennyLaneAI/pennylane/pull/10200)
 
 * An operator can now be reconstructed from operator_p with abstract wires in the form of 
   AbstractQubit, jax.core.ShapedArray, AbstractWires, and AbstractArray.
@@ -1799,6 +1800,9 @@
 * Config option added to qubit MMD loss that bootstraps target data by default to ensure
   unbiasedness of the estimator
   [(#10128)](https://github.com/PennyLaneAI/pennylane/pull/10128)
+
+* Fixed a bug in the TCDQ module that caused incorrect results for states with complex coefficients.
+  [(#10215)](https://github.com/PennyLaneAI/pennylane/pull/10215)
 
 
 <h3>Contributors ✍️</h3>
