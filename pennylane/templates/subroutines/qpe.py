@@ -153,8 +153,6 @@ class QuantumPhaseEstimation(Operator2):
     wire_argnames = ("target_wires", "estimation_wires")
     hybrid_argnames = ("unitary",)
 
-    grad_method = None
-
     def __init__(self, unitary, target_wires=None, estimation_wires=None):
         if isinstance(unitary, Operator):
             # If the unitary is expressed in terms of operators, do not provide target wires
@@ -199,6 +197,9 @@ def _qpe_decomp_resource(
         ops.Hadamard: num_estimation_wires,
         adjoint(QFT(Wire[num_estimation_wires])): 1,
     }
+
+    # NOTE: Need abstract resource representations just in case
+    # the unitary is an operator1.
     for i in range(num_estimation_wires):
         pow_rep = _pow_abstract(
             unitary,
