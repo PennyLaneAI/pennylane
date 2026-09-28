@@ -26,12 +26,11 @@ from jax import value_and_grad
 
 import pennylane as qp
 
-has_jax_optax = True
+has_optax = True
 try:  # pragma: no cover
-
     import optax
 except (ModuleNotFoundError, ImportError) as e:  # pragma: no cover
-    has_jax_optax = False
+    has_optax = False
 
 # pylint: disable=too-many-arguments, too-many-positional-arguments
 
@@ -260,7 +259,7 @@ def factorize(
             )
 
     else:
-        if not has_jax_optax:
+        if not has_optax:
             raise ImportError(
                 "Jax and Optax libraries are required for optimizing the factors. Install them via "
                 "pip install jax optax"
