@@ -1801,6 +1801,9 @@
   unbiasedness of the estimator
   [(#10128)](https://github.com/PennyLaneAI/pennylane/pull/10128)
 
+* Fixed a bug in the TCDQ module that caused incorrect results for states with complex coefficients.
+  [(#10215)](https://github.com/PennyLaneAI/pennylane/pull/10215)
+
 
 <h3>Contributors ✍️</h3>
 
