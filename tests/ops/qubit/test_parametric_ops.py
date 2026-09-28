@@ -164,7 +164,8 @@ SKIP_ASSERT_VALID = {
 
 
 class TestOperations:
-    @pytest.mark.jax
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("op", ALL_OPERATIONS)
     def test_assert_valid(self, op):
         kwargs = SKIP_ASSERT_VALID.get(type(op), {})
@@ -632,7 +633,9 @@ class TestDecompositions:
         """Tests that the decomposition of the IsingZZ gate is correct"""
         param = 0.1234
         op = qp.IsingZZ(param, wires=[3, 2])
-        res = op.decomposition()
+        # IsingZZ decomposes into a single ChangeOpBasis;
+        # expand one more level to get at the three underlying gates.
+        res = op.decomposition()[0].decomposition()
 
         assert len(res) == 3
 
@@ -660,7 +663,9 @@ class TestDecompositions:
         """Tests that the decomposition of the broadcasted IsingZZ gate is correct"""
         param = np.array([-0.1, 0.2, 0.5])
         op = qp.IsingZZ(param, wires=[3, 2])
-        res = op.decomposition()
+        # IsingZZ decomposes into a single ChangeOpBasis;
+        # expand one more level to get at the three underlying gates.
+        res = op.decomposition()[0].decomposition()
 
         assert len(res) == 3
 
@@ -686,9 +691,66 @@ class TestDecompositions:
 
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
-    two_wire_pcphases = [(0, [0, 1]), (1, [1, 0]), (2, ["a", 2]), (3, [1, 3]), (4, [9, 0])]
+    @pytest.mark.integration
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_controlled_isingzz_decomposition_graph(self):
+        r"""Controlling ``IsingZZ`` should control only the inner ``RZ``, leaving the two
+        conjugating ``CNOT``'s bare. There's no dedicated ``C(IsingZZ)`` rule for this: writing
+        the bare decomposition as a ``change_op_basis`` (see ``_isingzz_to_cnot_rz_cnot``) lets
+        PennyLane's generic ``C(ChangeOpBasis)`` rule produce this automatically, since
+        ``IsingZZ`` is itself a compute-uncompute pattern:
+
+        .. code-block::
+
+            a: ─╭●───────────╭●─┤   =   IsingZZ(angle, [a, b])
+            b: ─╰X──RZ(angle)╰X─┤
+
+        so controlling it only requires controlling the ``RZ`` inside, via the standard
+        controlled-``RZ`` decomposition:
+
+        .. code-block::
+
+               b: ─RZ(angle/2)─╭X──RZ(-angle/2)─╭X─┤   =   Ctrl-RZ(angle, b)
+            ctrl: ─────────────╰●───────────────╰●─┤
+
+        Substituting the second diagram's four gates for the single ``RZ(angle, b)`` box in the
+        first gives the final six-gate circuit:
+
+        .. code-block::
+
+               a: ─╭●────────────────────────────────╭●─┤
+               b: ─╰X─RZ(angle/2)─╭X─RZ(-angle/2)─╭X─╰X─┤
+            ctrl: ────────────────╰●──────────────╰●────┤
+
+        This test drives the actual graph-based decomposition system (rather than hand-picking
+        rules by name) to confirm it lands on this minimal six-gate circuit for the gate set
+        ``{CNOT, RZ, GlobalPhase}``.
+        """
+        angle = 0.6931
+        op = qp.ctrl(qp.IsingZZ(angle, wires=[2, 3]), control=[4])
+        tape = qp.tape.QuantumScript([op], [])
+        expected_matrix = qp.matrix(tape, wire_order=[2, 3, 4])
+
+        [decomp], _ = qp.transforms.decompose(
+            tape,
+            gate_set={
+                qp.CNOT,
+                qp.RZ,
+                qp.GlobalPhase,
+                qp.PauliX,
+            },  # PauliX because controlled-decomposition needs it in case there is a 0-control, see https://github.com/PennyLaneAI/pennylane/issues/10080
+        )
+
+        gates = decomp.operations
+        assert [g.name for g in gates] == ["CNOT", "RZ", "CNOT", "RZ", "CNOT", "CNOT"]
+        assert qp.math.allclose(gates[1].parameters[0], angle / 2)
+        assert qp.math.allclose(gates[3].parameters[0], -angle / 2)
+        mat = qp.matrix(decomp, wire_order=[2, 3, 4])
+        assert qp.math.allclose(mat, expected_matrix)
+
+    two_wire_pcphases = [(0, [0, 1]), (1, [1, 0]), (2, [1, 2]), (3, [1, 3]), (4, [9, 0])]
     five_wire_pcphases = [(i, [0, 1, 3, 2, 7]) for i in range(2**5)]
-    other_pcphases = [(1, [0]), (2, [1]), (17, ["a", 2, "c", 4, 3, 0]), (3, list(range(5)))]
+    other_pcphases = [(1, [0]), (2, [1]), (17, [1, 2, 5, 4, 3, 0]), (3, list(range(5)))]
 
     @pytest.mark.parametrize("dim, wires", two_wire_pcphases + five_wire_pcphases + other_pcphases)
     def test_pcphase_decomposition(self, dim, wires):
@@ -715,6 +777,7 @@ class TestDecompositions:
         for expected_mat, decomp_mat in zip(expected_mats, decomp_mats):
             assert np.allclose(expected_mat, decomp_mat)
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.unit
     @pytest.mark.parametrize("dim, wires", two_wire_pcphases + five_wire_pcphases + other_pcphases)
     def test_pcphase_decomposition_new(self, dim, wires):
@@ -817,8 +880,8 @@ class TestMatrix:
         """Test Identity matrix is correct with no wires"""
 
         # test Identity().compute_matrix()
-        assert np.allclose(qp.Identity().compute_matrix(1), np.identity(2), atol=tol, rtol=0)
-        assert np.allclose(qp.Identity().compute_matrix(2), np.identity(4), atol=tol, rtol=0)
+        assert np.allclose(qp.Identity().compute_matrix([0]), np.identity(2), atol=tol, rtol=0)
+        assert np.allclose(qp.Identity().compute_matrix([0, 1]), np.identity(4), atol=tol, rtol=0)
 
         # test Identity().matrix()
         assert np.allclose(qp.Identity().matrix(), np.identity(1), atol=tol, rtol=0)
@@ -1856,13 +1919,13 @@ class TestEigvals:
         dim = 2**n_wires
         # test identity for theta=0
         phi = qp.math.asarray(0.0, like=interface)
-        op = qp.GlobalPhase(phi, wires=list(range(n_wires)))
+        op = qp.GlobalPhase(phi)
         assert np.allclose(op.compute_eigvals(phi, wires=list(range(n_wires))), np.ones(dim))
         assert np.allclose(op.eigvals(), np.ones(dim))
 
         # test arbitrary global phase
         phi = qp.math.asarray(0.5432, like=interface)
-        op = qp.GlobalPhase(phi, wires=list(range(n_wires)))
+        op = qp.GlobalPhase(phi)
         phi_complex = qp.math.cast_like(phi, 1j)
         expected = np.array([np.exp(-1j * phi_complex)] * dim)
         assert np.allclose(op.compute_eigvals(phi, wires=list(range(n_wires))), expected)
@@ -1871,7 +1934,7 @@ class TestEigvals:
         # test arbitrary broadcasted global phase
         phi = qp.math.asarray(np.array([0.5, 0.4, 0.3]), like=interface)
         phi_complex = qp.math.cast_like(phi, 1j)
-        op = qp.GlobalPhase(phi, wires=list(range(n_wires)))
+        op = qp.GlobalPhase(phi)
         expected = np.array([np.exp(-1j * p) * np.ones(dim) for p in phi_complex])
         assert np.allclose(op.compute_eigvals(phi, wires=list(range(n_wires))), expected)
         assert np.allclose(op.eigvals(), expected)
@@ -2179,7 +2242,7 @@ class TestGrad:
         @qp.qnode(dev, diff_method=diff_method)
         def circuit(x):
             qp.Identity(wires[0])
-            qp.GlobalPhase(x, wires=[0, 1])  # Does not change the derivative, but tests it
+            qp.GlobalPhase(x)
             qp.Hadamard(wires[1])
             qp.ctrl(qp.GlobalPhase(x), control=wires[1])
             qp.Hadamard(wires[1])
@@ -2838,7 +2901,7 @@ PAULI_ROT_MATRIX_TEST_DATA = [
 class TestPauliRot:
     """Test the PauliRot operation."""
 
-    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_assert_valid(self):
         """Tests that a PauliRot is valid"""
 
@@ -3336,7 +3399,7 @@ class TestMultiRZ:
         assert decomp_ops[4].name == "CNOT"
         assert decomp_ops[4].wires == Wires([3, 2])
 
-    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_MultiRZ_assert_valid(self):
         """Tests that MultiRZ is valid."""
 

@@ -87,6 +87,18 @@ class CompilableOp(Operator2):
         super().__init__(n, wires=wires)
 
 
+class CompilableDynOp(Operator2):
+    """Operator with a dynamic parameter, wires, and a compilable static argument."""
+
+    dynamic_argnames = ("phi",)
+    compilable_argnames = ("word",)
+
+    arg_specs = {"phi": Float, "wires": Wire[1]}
+
+    def __init__(self, phi, word, wires):
+        super().__init__(phi, word, wires=wires)
+
+
 class MultiWireOp(Operator2):
     """Operator with two wire arguments."""
 
@@ -149,3 +161,11 @@ class FullOp(Operator2):
 
     def __init__(self, phi, static, hybrid, wires):
         super().__init__(phi, static, hybrid, wires=wires)
+
+
+class OpBuildsNestedOp(Operator2):
+    """Operator that builds a sub-operator based on input wires."""
+
+    def __init__(self, wires):
+        _ = NonParametricOp(wires[1])
+        super().__init__(wires)

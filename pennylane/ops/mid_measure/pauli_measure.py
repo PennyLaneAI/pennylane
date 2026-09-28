@@ -16,22 +16,22 @@ Implements the pauli measurement.
 """
 
 import uuid
-from functools import lru_cache
-from importlib.util import find_spec
 from typing import override
 
+import jax
 import numpy as np
 
 import pennylane as qp
 from pennylane import math
 from pennylane.capture import enabled as capture_enabled
+from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.compiler import compiler
-from pennylane.core.operator import Operator2
+from pennylane.core import QueuingManager
+from pennylane.core.operator import Operator2, abstractify
+from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
 
 from .measurement_value import MeasurementValue
-
-has_jax = find_spec("jax") is not None
 
 _VALID_PAULI_CHARS = "XYZ"
 
@@ -66,19 +66,6 @@ class PauliMeasure(Operator2):
             )
 
     @override
-    def __abstract_init__(
-        self,
-        pauli_word: str,
-        wires: WiresLike,
-        postselect: int | None = None,
-        meas_uid: str | None = None,
-    ):  # pylint: disable=arguments-differ,unused-argument
-        # meas_uid and postselect are irrelevant to abstract operators and will be ignored
-        super().__abstract_init__(
-            pauli_word=pauli_word, wires=wires, postselect=None, meas_uid=None
-        )
-
-    @override
     def label(self, decimals=None, base_label=None, cache=None, wire=None) -> str:
         """How the pauli-product measurement is represented in diagrams and drawings."""
         postselect = "" if self.postselect is None else ("₁" if self.postselect == 1 else "₀")
@@ -91,6 +78,13 @@ class PauliMeasure(Operator2):
         return f"PauliMeasure('{self.pauli_word}', wires={self.wires})"
 
 
+@abstractify.register
+@QueuingManager.stop_recording()
+def _abstractify_pauli_measure(op: PauliMeasure):
+    # This is necessary so that an abstractified PauliMeasure would not have meas_uid
+    return PauliMeasure(op.pauli_word, Wire[len(op.wires)], postselect=op.postselect, meas_uid=None)
+
+
 def _pauli_measure_impl(wires: WiresLike, pauli_word: str, postselect: int | None = None):
     """Concrete implementation of the pauli_measure primitive."""
     measurement_id = str(uuid.uuid4())
@@ -98,57 +92,31 @@ def _pauli_measure_impl(wires: WiresLike, pauli_word: str, postselect: int | Non
     return MeasurementValue([measurement])
 
 
-@lru_cache
-def _create_pauli_measure_primitive():
-    """Create a primitive corresponding to a Pauli product measurement."""
-
-    # pylint: disable=import-outside-toplevel
-    import jax
-
-    from pennylane.capture.custom_primitives import QpPrimitive
-
-    pauli_measure_p = QpPrimitive("pauli_measure")
-
-    @pauli_measure_p.def_impl
-    def _pauli_measure_primitive_impl(*wires, pauli_word="", postselect=None):
-        wires = [w if math.is_abstract(w) else int(w) for w in wires]
-        return _pauli_measure_impl(wires, pauli_word=pauli_word, postselect=postselect)
-
-    @pauli_measure_p.def_abstract_eval
-    def _pauli_measure_primitive_abstract_eval(*_, **__):
-        dtype = jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
-        return jax.core.ShapedArray((), dtype)
-
-    return pauli_measure_p
+pauli_measure_prim = QpPrimitive("pauli_measure")
 
 
-@lru_cache
-def _get_array_types():
-    if has_jax:
-        import jax  # pylint: disable=import-outside-toplevel
-
-        return (jax.numpy.ndarray, np.ndarray)
-    return (np.ndarray,)
+@pauli_measure_prim.def_impl
+def _pauli_measure_primitive_impl(*wires, pauli_word="", postselect=None):
+    wires = [w if math.is_abstract(w) else int(w) for w in wires]
+    return _pauli_measure_impl(wires, pauli_word=pauli_word, postselect=postselect)
 
 
-@lru_cache
-def _get_non_array_iterables():
-    return (
-        list,
-        tuple,
-        Wires,
-        range,
-        qp.capture.autograph.ag_primitives.PRange,
-        set,
-    )
+@pauli_measure_prim.def_abstract_eval
+def _pauli_measure_primitive_abstract_eval(*_, **__):
+    dtype = jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
+    return jax.core.ShapedArray((), dtype)
+
+
+_ARRAY_TYPES = (jax.numpy.ndarray, np.ndarray)
+_NON_ARRAY_ITERABLES = (list, tuple, Wires, range, qp.capture.autograph.ag_primitives.PRange, set)
 
 
 def _setup_wires(wires):
-    if isinstance(wires, _get_array_types()):
+    if isinstance(wires, _ARRAY_TYPES):
         if wires.shape == ():
             return (wires,)
         return wires
-    if isinstance(wires, _get_non_array_iterables()):
+    if isinstance(wires, _NON_ARRAY_ITERABLES):
         return tuple(wires)
     return (wires,)
 
@@ -164,13 +132,13 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
 
     .. note::
 
-        Circuits comprising ``pauli_measure`` are currently not executable on any backend.
-        This function is only for analysis using the ``null.qubit`` device and potential future execution when a suitable backend is
-        available.
+        Circuits comprising ``pauli_measure`` are currently only executable with
+        :func:`~.qjit` and lightning qubit.
 
     .. seealso::
-        For more information on Pauli product measurements, check out the `Quantum Compilation hub <https://pennylane.ai/compilation/pauli-based-computation>`_ and
-        :func:`catalyst.passes.ppm_compilation` for compiling these circuits with Catalyst.
+        For more information on Pauli product measurements, check out the
+        `Quantum Compilation hub <https://pennylane.ai/compilation/pauli-based-computation>`_ and
+        :func:`~.ppm_compilation` for compiling these circuits with ``qjit``.
 
     Args:
         pauli_word (str): The Pauli word to measure.
@@ -226,9 +194,8 @@ def pauli_measure(pauli_word: str, wires: WiresLike, postselect: int | None = No
     """
 
     if capture_enabled():
-        primitive = _create_pauli_measure_primitive()
         wires = _setup_wires(wires)
-        return primitive.bind(*wires, pauli_word=pauli_word, postselect=postselect)
+        return pauli_measure_prim.bind(*wires, pauli_word=pauli_word, postselect=postselect)
 
     if active_jit := compiler.active_compiler():
         available_eps = compiler.AvailableCompilers.names_entrypoints

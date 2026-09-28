@@ -262,7 +262,22 @@ def _single_excitation_ppr(phi: TensorLike, wires: WiresLike):
     qp.PauliRot(-phi / 2, "XY", wires=wires)
 
 
-add_decomps(SingleExcitation, _single_excitation_decomp, _single_excitation_ppr)
+# pylint: disable=unused-argument
+def _single_excitation_ppr_rz_resource(phi, wires):
+    return {qp.RZ: 2, qp.PPR(4, "XX", Wire[2]): 1, qp.PPR(-4, "XX", Wire[2]): 1}
+
+
+@register_resources(_single_excitation_ppr_rz_resource)
+def _single_excitation_ppr_rz(phi: TensorLike, wires: WiresLike):
+    qp.PPR(4, "XX", wires=wires)
+    qp.RZ(phi / 2, wires[0])
+    qp.RZ(-phi / 2, wires[1])
+    qp.PPR(-4, "XX", wires=wires)
+
+
+add_decomps(
+    SingleExcitation, _single_excitation_decomp, _single_excitation_ppr, _single_excitation_ppr_rz
+)
 add_decomps("Adjoint(SingleExcitation)", adjoint_rotation2)
 add_decomps("Pow(SingleExcitation)", pow_rotation2)
 
@@ -377,7 +392,7 @@ class SingleExcitationMinus(Operation):
          H(1),
          RZ(0.615, wires=[1]),
          CNOT(wires=[0, 1]),
-         GlobalPhase(0.3075, wires=[])]
+         GlobalPhase(0.3075)]
 
         """
         decomp_ops = [
@@ -541,7 +556,7 @@ class SingleExcitationPlus(Operation):
         >>> from pprint import pprint
         >>> decomp = qp.SingleExcitationPlus.compute_decomposition(1.23, wires=(0,1))
         >>> pprint(decomp)
-        [H(1), CNOT(wires=[1, 0]), RY(0.615, wires=[0]), RY(0.615, wires=[1]), CY(wires=[1, 0]), S(1), H(1), RZ(-0.615, wires=[1]), CNOT(wires=[0, 1]), GlobalPhase(-0.3075, wires=[])]
+        [H(1), CNOT(wires=[1, 0]), RY(0.615, wires=[0]), RY(0.615, wires=[1]), CY(wires=[1, 0]), S(1), H(1), RZ(-0.615, wires=[1]), CNOT(wires=[0, 1]), GlobalPhase(-0.3075)]
 
         """
         decomp_ops = [
@@ -1515,7 +1530,7 @@ def _fermionic_swap_decomp(phi, wires: WiresLike, **__):
     qp.RZ(phi / 2, wires=wires[0])
     qp.RZ(phi / 2, wires=wires[1])
     # for correcting global phase
-    qp.GlobalPhase(-0.5 * phi, wires=[wires[0], wires[1]])
+    qp.GlobalPhase(-0.5 * phi)
 
 
 add_decomps(FermionicSWAP, _fermionic_swap_decomp)

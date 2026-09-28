@@ -86,11 +86,6 @@ class BasisState(StatePrepBase2):
 
     """
 
-    # This is a mock attribute to satisfy an assumption made by Catalyst
-    # (BasisState._primitive needs to exist). This attribute is not used anywhere in PennyLane.
-    # It can be removed as soon as Catalyst is updated to BasisState being an Operator2.
-    _primitive = "This is a mocked attribute, not a valid primitive"
-
     dynamic_argnames = ("state",)
     arg_specs = {"state": Bool[-1], "wires": Wire[-1]}
 
@@ -99,16 +94,12 @@ class BasisState(StatePrepBase2):
         canonicalized_state = self._canonicalize_state(state, len(wires))
         super().__init__(canonicalized_state, wires=wires)
 
-    def __abstract_init__(self, state, wires):  # pylint: disable=unused-argument
-        super().__abstract_init__(Bool[len(wires)], wires)
-
     def _canonicalize_state(
-        self, state: TensorLike | Sequence[int | bool], num_wires: int
-    ) -> Sequence[bool]:
+        self, state: TensorLike | Sequence[int | bool] | AbstractArray, num_wires: int
+    ) -> Sequence[bool] | AbstractArray:
+
         if isinstance(state, (list, tuple)):
             state = qp.math.stack(state)
-
-        abstract_state = qp.math.is_abstract(state)
 
         shape = math.shape(state)
         if not shape:
@@ -120,14 +111,16 @@ class BasisState(StatePrepBase2):
         if len(shape) != 1:
             raise ValueError(f"State must be one-dimensional; got shape {shape}.")
 
-        n_states = shape[0]
-        if n_states != num_wires:
+        if shape[0] != num_wires:
             raise ValueError(
                 f"State and wires must have the same length; got {num_wires} wires but "
-                f"a state of length {n_states} ({state=})."
+                f"a state of length {shape[0]} ({state=})."
             )
 
-        if not abstract_state:
+        if isinstance(state, AbstractArray):
+            return state
+
+        if not qp.math.is_abstract(state):
             state_list = list(qp.math.toarray(state))
             if not set(state_list).issubset({0, 1}):
                 raise ValueError(f"Basis state must only consist of 0s and 1s; got {state_list}")

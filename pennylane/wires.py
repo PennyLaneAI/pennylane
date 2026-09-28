@@ -19,24 +19,18 @@ import functools
 import itertools
 import uuid
 from collections.abc import Hashable, Iterable, Sequence
-from importlib import import_module, util
+from itertools import combinations
 
+import jax
 import numpy as np
 
 from pennylane import math
 from pennylane.exceptions import WireError
 from pennylane.pytrees import register_pytree
+from pennylane.typing import AbstractWires, _AbstractWireTypeFactory
 
-if util.find_spec("jax") is not None:
-    jax = import_module("jax")
-    jax_available = True
-else:
-    jax_available = False
-    jax = None
-
-if jax_available:
-    # pylint: disable=unnecessary-lambda
-    setattr(jax.interpreters.partial_eval.DynamicJaxprTracer, "__hash__", lambda x: id(x))
+# pylint: disable=unnecessary-lambda
+setattr(jax.interpreters.partial_eval.DynamicJaxprTracer, "__hash__", lambda x: id(x))
 
 
 def _process(wires):
@@ -130,6 +124,16 @@ class Wires(Sequence):
          wires (Any): the wire label(s)
     """
 
+    def __new__(cls, wires=None, _override=False):
+        if isinstance(wires, AbstractWires):
+            return wires
+        if isinstance(wires, _AbstractWireTypeFactory):
+            raise TypeError(
+                "'Wire' cannot be used on its own to represent a single wire, "
+                "Use 'Wire[1]' instead."
+            )
+        return super().__new__(cls)
+
     def _flatten(self):
         """Serialize Wires into a flattened representation according to the PyTree convention."""
         return self._labels, ()
@@ -165,7 +169,9 @@ class Wires(Sequence):
         """Method to support indexing. Returns a Wires object if index is a slice,
         or a label if index is an integer."""
         if isinstance(idx, slice):
-            return Wires(self._labels[idx])
+            # use _override=True because there is no need to verify that a slice from
+            # an existing Wires object is valid or not.
+            return Wires(self._labels[idx], _override=True)
         return self._labels[idx]
 
     def __iter__(self):
@@ -223,6 +229,8 @@ class Wires(Sequence):
         >>> wires1 + wires2
         Wires([4, 0, 1, 2])
         """
+        if isinstance(other, AbstractWires):
+            return AbstractWires(len(self)) + other
         other = Wires(other)
         return Wires.all_wires([self, other])
 
@@ -235,6 +243,8 @@ class Wires(Sequence):
         Returns:
             Wires: all wires appearing in either object
         """
+        if isinstance(other, AbstractWires):
+            return AbstractWires(len(self)) + other
         other = Wires(other)
         return Wires.all_wires([other, self])
 
@@ -259,9 +269,7 @@ class Wires(Sequence):
         Returns:
             JAX ndarray: array representing Wires object
         """
-        if jax_available:
-            return jax.numpy.array(self._labels)
-        raise ModuleNotFoundError("JAX not found")  # pragma: no cover
+        return jax.numpy.array(self._labels)
 
     @property
     def labels(self):
@@ -800,25 +808,53 @@ class DynamicWire:
         return "<DynamicWire>"
 
 
-if jax_available:
+class AbstractQubit(jax.core.AbstractValue):
+    """An aval representing an abstract qubit, usually coming from an allocated qubit"""
 
-    class AbstractQubit(jax.core.AbstractValue):
-        """An aval representing an abstract qubit, usually coming from an allocated qubit"""
+    hash_value = hash("AbstractQubit")
 
-        hash_value = hash("AbstractQubit")
+    def __eq__(self, other):
+        return isinstance(other, AbstractQubit)
 
-        def __eq__(self, other):
-            return isinstance(other, AbstractQubit)
+    def __hash__(self):
+        return self.hash_value
 
-        def __hash__(self):
-            return self.hash_value
-
-        def _iter(self):  # pragma: no cover
-            return
+    def _iter(self):  # pragma: no cover
+        return
 
 
 def is_abstract_qubit(v):
     """Returns ``True`` if the provided value is a DynamicJaxprTracer of type AbstractQubit"""
-    if not jax_available:
-        return False
     return math.is_abstract(v) and isinstance(v.val.aval, AbstractQubit)
+
+
+def _filter_abstract_and_traced_wires(v):
+    if isinstance(v, AbstractWires):
+        return Wires([])
+    return Wires([w for w in v if not math.is_abstract(w)])
+
+
+def validate_no_wire_overlaps(wire_args: dict):
+    """Validate that the given wires do not overlap."""
+    concrete_wire_args = {n: _filter_abstract_and_traced_wires(w) for n, w in wire_args.items()}
+    for n1, n2 in combinations(concrete_wire_args, r=2):
+        if Wires.shared_wires([concrete_wire_args[n1], concrete_wire_args[n2]]):
+            raise ValueError(f"{n1} and {n2} must not overlap")
+
+
+def concatenate_wires(wires1, wires2):
+    """Concatenate two wire arguments."""
+
+    if _is_not_array(wires1) and _is_not_array(wires2):
+        return wires1 + wires2
+
+    if _is_not_array(wires1):
+        wires1 = math.array(wires1, like=wires2)
+    elif _is_not_array(wires2):
+        wires2 = math.array(wires2, like=wires1)
+
+    return math.concatenate([wires1, wires2])
+
+
+def _is_not_array(w):
+    return isinstance(w, (list, tuple, Wires))

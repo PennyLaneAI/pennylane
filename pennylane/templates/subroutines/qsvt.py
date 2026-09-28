@@ -31,7 +31,8 @@ from pennylane import math, ops
 from pennylane.core.operator import Operation, Operator, Operator2, abstractify
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.decomposition.resources import change_op_basis_resource_rep
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
@@ -693,7 +694,7 @@ def _QSVT_resources(projectors, UA):
     resources = defaultdict(int)
     resources[abstractify(projectors[0])] = 1
     for i in range(1, len(projectors) - 1, 2):
-        resources[change_op_basis_resource_rep(abstractify(UA), abstractify(projectors[i]))] += 1
+        resources[_change_op_basis_abstract(UA, projectors[i], _adjoint_abstract(UA))] += 1
         resources[abstractify(projectors[i + 1])] += 1
 
     if len(projectors) % 2 == 0:
@@ -719,11 +720,11 @@ def _QSVT_decomposition(*_data, UA, projectors, **_kwargs):
 add_decomps(QSVT, _QSVT_decomposition)
 
 # pylint: disable=protected-access
-if QSVT._primitive is not None:
 
-    @QSVT._primitive.def_impl
-    def _(UA, *projectors, **kwargs):  # kwarg might be id
-        return type.__call__(QSVT, UA, projectors, **kwargs)
+
+@QSVT._primitive.def_impl
+def _(UA, *projectors, **kwargs):  # kwarg might be id
+    return type.__call__(QSVT, UA, projectors, **kwargs)
 
 
 def _complementary_poly(poly_coeffs):

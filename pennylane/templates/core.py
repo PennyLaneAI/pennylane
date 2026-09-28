@@ -31,11 +31,11 @@ import copy
 from collections import defaultdict
 from collections.abc import Callable
 from copy import deepcopy
-from functools import lru_cache, update_wrapper
-from importlib.util import find_spec
+from functools import update_wrapper
 from inspect import BoundArguments, Signature, signature
 from typing import Any, ParamSpec
 
+import jax
 import numpy as np
 
 from pennylane import capture, math
@@ -51,11 +51,10 @@ from pennylane.decomposition import (
 )
 from pennylane.ops import ChangeOpBasis
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.pytrees import flatten, unflatten
 from pennylane.typing import AbstractArray, AbstractWires, Wire
 from pennylane.wires import Wires, is_abstract_qubit
-
-has_jax = find_spec("jax") is not None
 
 
 def _make_signature_key(subroutine: "Subroutine", *args, **kwargs):
@@ -83,8 +82,8 @@ def change_op_basis_subroutine_resource_rep(
     compute: "Operator | CompressedResourceOp | Subroutine",
     target: "Operator | CompressedResourceOp | Subroutine",
     uncompute: "Operator | CompressedResourceOp | Subroutine" = None,
-) -> CompressedResourceOp:
-    """Generate a :class:`~pennylane.decomposition.CompressedResourceOp` similar to :func:`~.change_op_basis_resource_rep` that is more
+) -> ChangeOpBasis | CompressedResourceOp:
+    """Generate an abstract :class:`~pennylane.ops.ChangeOpBasis` resource representation that is more
     specifically targeted for use with :class:`~.Subroutine` instances.
 
     If any of `compute`, `target`, or `uncompute` are subroutines, they should be provided as partials, with any parameters bound
@@ -95,7 +94,7 @@ def change_op_basis_subroutine_resource_rep(
         target (Operator | pennylane.decomposition.resources.CompressedResourceOp | Subroutine): the target operator or subroutine.
         uncompute (Operator | pennylane.decomposition.resources.CompressedResourceOp | Subroutine | None): the optional uncompute operator or subroutine.
     Returns:
-        pennylane.decomposition.CompressedResourceOp: a condensed representation of the :func:`~.change_op_basis` involving a subroutine that can be
+        pennylane.ops.ChangeOpBasis: an abstract representation of :func:`~.change_op_basis` involving a subroutine that can be
         used in specifying the resources of another operator, template or subroutine.
 
     .. note::
@@ -109,14 +108,7 @@ def change_op_basis_subroutine_resource_rep(
         uncompute_rep = _get_adjoint_rep(compute)
     else:
         uncompute_rep = _get_non_adjoint_rep(uncompute)
-    return CompressedResourceOp(
-        ChangeOpBasis,
-        {
-            "compute_op": compute_rep,
-            "target_op": target_rep,
-            "uncompute_op": uncompute_rep,
-        },
-    )
+    return _change_op_basis_abstract(compute_rep, target_rep, uncompute_rep)
 
 
 def adjoint_subroutine_resource_rep(
@@ -241,33 +233,23 @@ def _default_setup_inputs(*args, **kwargs):
     return args, kwargs
 
 
-@lru_cache
-def _get_array_types():
-    if has_jax:
-        import jax  # pylint: disable=import-outside-toplevel
-
-        return (jax.numpy.ndarray, np.ndarray)
-    return (np.ndarray,)
-
-
-@lru_cache
-def _get_non_array_iterables():
-    return (
-        list,
-        tuple,
-        Wires,
-        range,
-        capture.autograph.ag_primitives.PRange,
-        set,
-    )
+_ARRAY_TYPES = (jax.numpy.ndarray, np.ndarray)
+_NON_ARRAY_ITERABLES = (
+    list,
+    tuple,
+    Wires,
+    range,
+    capture.autograph.ag_primitives.PRange,
+    set,
+)
 
 
 def _setup_wires(wires):
-    if isinstance(wires, _get_array_types()):
+    if isinstance(wires, _ARRAY_TYPES):
         if wires.shape == ():
             return (wires,)
         return wires
-    if isinstance(wires, _get_non_array_iterables()):
+    if isinstance(wires, _NON_ARRAY_ITERABLES):
         return tuple(wires)
     return (wires,)
 
@@ -796,8 +778,6 @@ class Subroutine:
         for wire_argname in self.wire_argnames:
             register = _setup_wires(bound_args.arguments[wire_argname])
             if capture.enabled():
-                import jax  # pylint: disable=import-outside-toplevel
-
                 if len(register) > 0 and math.get_interface(register) != "jax":
                     # convert the integers in wires to tracers
                     wires = [(w if is_abstract_qubit(w) else jax.numpy.array(w)) for w in register]
@@ -883,13 +863,9 @@ class CollectedSubroutine(Operation):
         return self._decomp
 
 
-if CollectedSubroutine._primitive is not None:  # pylint: disable=protected-access
-
-    @CollectedSubroutine._primitive.def_abstract_eval  # pylint: disable=protected-access
-    def _(*args, **kwargs):
-        raise NotImplementedError(
-            "CollectedSubroutine should never be hit during abstract evaluation."
-        )
+@CollectedSubroutine._primitive.def_abstract_eval  # pylint: disable=protected-access
+def _(*args, **kwargs):
+    raise NotImplementedError("CollectedSubroutine should never be hit during abstract evaluation.")
 
 
 __all__ = [

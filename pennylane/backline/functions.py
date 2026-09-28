@@ -26,17 +26,17 @@ class CoprocessorFunction:
 
     This is a thin handle over a precompiled library symbol. It contains the information needed to
     locate and dispatch the function - its symbol name, and the library it lives in. The compiled
-    artifact is produced separately (cross-compiled, or built on the same host, e.g. via Triton) and
+    artifact is produced separately (cross-compiled, or built on the same host, e.g., via Triton) and
     loaded by the runtime.
 
     .. warning::
 
-        Backline is experimental. Its API may change without notice, and it is only usable through
-        the Catalyst compiler.
+        :mod:`Backline <.backline>` is experimental and only usable through the Catalyst
+        compiler.
 
     Args:
         name (str): The name the function is known by, used to resolve the precompiled symbol.
-        lib_path (str | None): Path to the shared library providing the symbol. Defaults to
+        lib_path (str, None): Path to the shared library providing the symbol. Defaults to
             ``None``, in which case the runtime resolves :attr:`name` from the symbols already
             loaded on the host.
 
@@ -78,10 +78,16 @@ def triton_decoder(
     decoder_fns: tuple[object, ...],
     **build_options,
 ) -> CoprocessorFunction:
-    """Compile Triton decoder functions into a coprocessor decode function.
+    """Compile Triton quantum error correction decoder functions into a coprocessor function
+    for use with :mod:`~.backline`.
 
-    Accepts a tuple of un-jitted Triton decoder functions and compiles them into a shared library
-    that can be used as a :class:`~.CoprocessorFunction`.
+    This function accepts a tuple of un-jitted Triton decoder functions, and compiles them into a
+    shared library that can be used as a :class:`~.CoprocessorFunction`.
+
+    .. warning::
+
+        :mod:`Backline <.backline>` is experimental and only usable through the Catalyst
+        compiler.
 
     Args:
         decoder_fns (tuple[object, ...]): Un-jitted Triton decoder functions. Each entry is
@@ -140,10 +146,16 @@ def css_bp_decoder(
     prob: float = 0.1,
     **build_options,
 ) -> CoprocessorFunction:
-    """Compile a CSS code's Tanner graph into a coprocessor decode function.
+    """Compile a CSS code's Tanner graph into a coprocessor decode function for use with
+    :mod:`~.backline`.
 
     Accepts the X- and Z-type parity-check matrices of a CSS code and compiles a decoder down to a
     shared library that can be used as a :class:`~.CoprocessorFunction`.
+
+    .. warning::
+
+        :mod:`Backline <.backline>` is experimental and only usable through the Catalyst
+        compiler.
 
     Args:
         Hx (ArrayLike): X parity-check matrix.

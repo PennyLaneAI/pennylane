@@ -32,6 +32,7 @@ def _persistent_decoder_kernel(  # pylint: disable=too-many-arguments  # pragma:
     ring_slots,
     total,
     decoder_fns: tl.constexpr,
+    cache_mod: tl.constexpr,
 ):
     """Poll decoder requests from a ring buffer and write packed corrections.
 
@@ -52,6 +53,8 @@ def _persistent_decoder_kernel(  # pylint: disable=too-many-arguments  # pragma:
             running until ``stop_u32_ptr`` becomes nonzero.
         decoder_fns (tuple[Callable]): Compile-time tuple of Triton decoder
             functions selected by ``decoder_id``.
+        cache_mod (str): Cache modifier for the polling loads, chosen per backend by
+            :func:`~.decoder_frontend._build_triton_decoder`.
     """
     stop_poll_iters = tl.full((), 1024, tl.uint32)
 
@@ -67,7 +70,7 @@ def _persistent_decoder_kernel(  # pylint: disable=too-many-arguments  # pragma:
         # PayloadSlot = 8 * uint64
         req = ring_u64_ptr + idx * _PAYLOAD_SLOT_WORDS
         # little-endian: low32=decoder_id, high32=seq
-        metadata = tl.load(req + 1, volatile=True, cache_modifier=".cv")
+        metadata = tl.load(req + 1, volatile=True, cache_modifier=cache_mod)
         seq = tl.cast(metadata >> 32, tl.uint32)
 
         nspins = tl.zeros((), dtype=tl.uint32)
@@ -75,15 +78,15 @@ def _persistent_decoder_kernel(  # pylint: disable=too-many-arguments  # pragma:
         while (seq != expect) and (halt == 0):
             if (nspins % stop_poll_iters) == 0:
                 # check the stop flag only every stop_poll_iters iters
-                halt = tl.load(stop_u32_ptr, volatile=True, cache_modifier=".cv") != 0
+                halt = tl.load(stop_u32_ptr, volatile=True, cache_modifier=cache_mod) != 0
             nspins += 1
-            metadata = tl.load(req + 1, volatile=True, cache_modifier=".cv")
+            metadata = tl.load(req + 1, volatile=True, cache_modifier=cache_mod)
             seq = tl.cast(metadata >> 32, tl.uint32)
         decoder_id = tl.cast(metadata, tl.uint32)
 
         # return statements are unsupported so we need to check halt again
         if halt == 0:
-            syndrome = tl.load(req, volatile=True, cache_modifier=".cv")
+            syndrome = tl.load(req, volatile=True, cache_modifier=cache_mod)
             correction = tl.cast(0, tl.uint64)
             # dispatch to the right decoder e.g., X/Z CSS code
             for i in tl.static_range(len(decoder_fns)):

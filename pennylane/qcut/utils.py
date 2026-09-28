@@ -23,7 +23,7 @@ import numpy as np
 
 from pennylane import ops
 from pennylane.core.measurements import MeasurementProcess
-from pennylane.ops import Operation
+from pennylane.core.operator import Operation
 from pennylane.ops.meta import WireCut
 
 from .cutstrategy import CutStrategy

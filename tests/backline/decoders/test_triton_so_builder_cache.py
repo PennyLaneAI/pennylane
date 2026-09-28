@@ -60,7 +60,7 @@ class TestConstexprCacheKeys:
             # AST does not.
             src = builder.ASTSource(
                 fn=_persistent_decoder_kernel,
-                constexprs={"decoder_fns": wrapped},
+                constexprs={"decoder_fns": wrapped, "cache_mod": ".cv"},
                 signature=signature,
                 attrs={},
             )

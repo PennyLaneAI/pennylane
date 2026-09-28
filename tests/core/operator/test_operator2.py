@@ -49,7 +49,7 @@ from pennylane.exceptions import (
 from pennylane.operation import _UNSET_BATCH_SIZE
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pytrees.pytrees import flatten_registrations, unflatten_registrations
-from pennylane.typing import AbstractArray, AbstractWires, Float, Wire
+from pennylane.typing import AbstractArray, AbstractWires, Complex, Float, Int, Wire
 from pennylane.wires import Wires
 
 
@@ -350,6 +350,19 @@ class TestInitSubclass:
 
         assert Op.arg_specs == {"phi": AbstractArray((), float)}
 
+    def test_arg_specs_bare_wire_raises(self):
+        """Test that unsubscripted ``Wire`` is rejected in ``arg_specs``."""
+
+        with pytest.raises(TypeError, match=r"'Wire' cannot be used on its own"):
+
+            # pylint: disable=unused-variable
+            class InvalidSpecsOp(Operator2):
+
+                arg_specs = {"wires": Wire}
+
+                def __init__(self, wires):  # pylint: disable=useless-parent-delegation
+                    super().__init__(wires)
+
     def test_has_fixed_sig_false_with_argnames_without_arg_specs(self):
         """Test that ``has_fixed_sig`` is ``False`` when ``arg_specs`` is not declared and there
         are any arguments."""
@@ -515,6 +528,15 @@ class TestOperatorInit:
                 Float[3], Wire[3], DynOp(Float[2], Wire[-1])
             )  # hybrid wire is not fixed
 
+    def test_unsubscripted_wire_raises(self):
+        """Test that unsubscripted ``Wire`` cannot initialize an operator."""
+
+        with pytest.raises(TypeError, match="'Wire' cannot be used on its own"):
+            NonParametricOp(Wire)
+
+        with pytest.raises(TypeError, match="'Wire' cannot be used on its own"):
+            DynOp(Float, Wire)
+
     def test_arguments_bound(self):
         """Test that constructor positional/keyword arguments are bound into ``arguments``."""
 
@@ -534,7 +556,7 @@ class TestOperatorInit:
 
         op = Op(0.5, wires=0)
         assert op.arguments["method"] == "auto"
-        assert op.is_abstract is False
+        assert op.is_fully_abstract is False
 
     def test_wires_collected_from_wire_argnames(self):
         """Test that the ``_wires`` attribute combines the contents of ``wire_argnames``."""
@@ -903,6 +925,21 @@ class TestProperties:
 
         op = Op([0, 1], [2, 3, 4])
         assert op.wires == Wires([0, 1, 2, 3, 4])
+
+    @pytest.mark.parametrize(
+        "args, expected",
+        [
+            ((Float, Float[2], [Float, Int, Complex], Wire[1]), True),
+            ((Float, Float[2], [Float, Int, Complex], [0]), False),
+            ((np.pi, Float[2], [np.pi, 7, 5 + 2j], Wire[1]), False),
+            ((Float, Float[2], [np.pi, 7, 5 + 2j], (0,)), False),
+            ((np.pi, np.array([1.5, 1.25]), [np.pi, 7, 5 + 2j], (0,)), False),
+        ],
+    )
+    def test_is_abstract(self, args, expected):
+        """Tests that is_abstract is correct."""
+        op = FullOp(*args)
+        assert op.is_fully_abstract == expected
 
 
 class TestBroadcasting:

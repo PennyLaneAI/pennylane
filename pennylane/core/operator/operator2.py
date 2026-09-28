@@ -21,9 +21,9 @@ from collections.abc import Callable, Hashable, Iterable, Sequence
 from copy import copy, deepcopy
 from enum import Enum, StrEnum, auto
 from functools import partial
-from importlib.util import find_spec
 from inspect import BoundArguments, Signature, signature
 from numbers import Number
+from types import NoneType
 from typing import TYPE_CHECKING, Any, ClassVar, TypeAlias
 
 import numpy as np
@@ -32,7 +32,8 @@ from scipy.sparse import spmatrix
 import pennylane as qp
 from pennylane import math
 from pennylane._class_property import classproperty
-from pennylane.capture import enabled, pause
+from pennylane.capture import enabled, pause, symbolic_array
+from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.exceptions import (
     AdjointUndefinedError,
@@ -46,18 +47,22 @@ from pennylane.exceptions import (
     SparseMatrixUndefinedError,
     TermsUndefinedError,
 )
-from pennylane.pytrees import flatten, register_pytree, unflatten
-from pennylane.typing import AbstractArray, AbstractWires, FlatPytree, TensorLike
-from pennylane.wires import Wires, WiresLike
+from pennylane.pytrees import flatten, leaf, register_pytree, unflatten
+from pennylane.typing import (
+    AbstractArray,
+    AbstractWires,
+    FlatPytree,
+    TensorLike,
+    _AbstractWireTypeFactory,
+)
+from pennylane.wires import AbstractQubit, Wires, WiresLike
 
-from .base import _UNSET_BATCH_SIZE, Operator, _get_abstract_operator
+from .base import _UNSET_BATCH_SIZE, AbstractOperator, Operator
 from .meta import OperatorMeta
 from .utils import abstractify
 
 if TYPE_CHECKING:
     from pennylane.pauli import PauliSentence
-
-has_jax = find_spec("jax") is not None
 
 ArgSpecType: TypeAlias = type[Number] | AbstractArray | AbstractWires
 
@@ -385,6 +390,18 @@ class Operator2(metaclass=OperatorMeta):
     decomposition rules for an operator, operator types with ``arg_specs`` that spans
     all the arguments with static types can be placed in the rules' resources without needing
     to fully construct abstract operators.
+
+    .. note::
+
+        A type that is listed in 'arg_specs' says what an argument is allowed to be,
+        not what it actually is. For example, if arg_specs contains Complex[-1, -1], the Operator
+        can still be instantiated with a real float64 array, which will then be reported as
+        complex even though it holds real data.
+
+        The decomposition graph goes by the reported type, so real and complex inputs will look
+        like the same operator and share one rule. To let them decompose differently, leave the argument
+        out of ``arg_specs`` and give each rule a ``register_condition`` that checks the type. For
+        a concrete example see ``BasisRotation``.
     """
 
     # ----------------- Class variables set automatically --------------------
@@ -392,7 +409,7 @@ class Operator2(metaclass=OperatorMeta):
     _sig: ClassVar[Signature]
     """The signature of the operator. Internal use only."""
 
-    has_fixed_sig: ClassVar[bool]
+    has_fixed_sig: ClassVar[bool] = False
     """Whether the expected signature of an operator is fixed. If ``True``, then the operator's
     signature will always be fully known. When defining decomposition rules for an operator,
     operator types with fixed signatures can be placed in the rules' resources without needing
@@ -419,8 +436,6 @@ class Operator2(metaclass=OperatorMeta):
         # pauli sentence, if applicable
         self._pauli_rep: PauliSentence | None = None
 
-        self._is_abstract = False
-
         self._bound_args = self._sig.bind(*args, **kwargs)
         self._bound_args.apply_defaults()
 
@@ -434,28 +449,17 @@ class Operator2(metaclass=OperatorMeta):
 
         self.tracer = None
 
-    def __abstract_init__(self, *args, **kwargs):
-        """Constructor for canonicalization of abstract inputs."""
-        bound_args = self._sig.bind(*args, **kwargs)
-        bound_args.apply_defaults()
-        arguments = bound_args.arguments
-
-        target_args = self.dynamic_argnames + self.hybrid_argnames + self.wire_argnames
-        for name in target_args:
-            kind = _resolve_arg_kind(type(self), name)
-            arguments[name] = _canonicalize_abstract_type(arguments[name], kind)
-
-        Operator2.__init__(self, *bound_args.args, **bound_args.kwargs)
-        self._is_abstract = True
-
     # ------------------------------------------------------------------------
     # -------------------------- Public properties ---------------------------
     # ------------------------------------------------------------------------
 
     @property
-    def is_abstract(self) -> bool:
-        """Whether the operator has abstract args."""
-        return self._is_abstract
+    def is_fully_abstract(self) -> bool:
+        """Whether this operator contains only abstract data."""
+        # Make sure not to flatten wires here, because an empty Wires([]) flattens to
+        # empty leaves, so it'd be incorrectly not identified as something concrete.
+        leaves, _ = flatten(self, is_leaf=lambda l: isinstance(l, Wires))
+        return all(isinstance(l, (AbstractArray, AbstractWires, NoneType)) for l in leaves)
 
     @property
     def arguments(self) -> dict[str, Any]:
@@ -856,16 +860,14 @@ class Operator2(metaclass=OperatorMeta):
         for n, wires in self.wire_args.items():
             # Flattening/unflattening allows mapping hybrid wire arguments
             leaves, tree = flatten(wires, is_leaf=lambda w: isinstance(w, Wires))
-            mapped_leaves = [Wires([wire_map.get(w, w) for w in leaf]) for leaf in leaves]
+            mapped_leaves = [Wires([wire_map.get(w, w) for w in l]) for l in leaves]
             new_args[n] = unflatten(mapped_leaves, tree)
 
         for n, arg in self.hybrid_args.items():
             if n in self.wire_argnames:
                 continue
             leaves, tree = flatten(arg, is_leaf=_is_op)
-            leaves = [
-                leaf.map_wires(wire_map) if isinstance(leaf, Operator) else leaf for leaf in leaves
-            ]
+            leaves = [l.map_wires(wire_map) if isinstance(l, Operator) else l for l in leaves]
             new_args[n] = unflatten(leaves, tree)
 
         return type(self)(**new_args)
@@ -994,7 +996,6 @@ class Operator2(metaclass=OperatorMeta):
 
         Returns:
             scipy.sparse._csr.csr_matrix: sparse matrix representation
-
         """
         canonical_sparse_matrix = self.compute_sparse_matrix(**self.arguments, format=format)
         return self._expand_canonical_matrix(canonical_sparse_matrix, wire_order).asformat(format)
@@ -1273,7 +1274,7 @@ class Operator2(metaclass=OperatorMeta):
         return f"{self.name}({inputs})"
 
     def __str__(self) -> str:
-        if self.is_abstract and self.has_fixed_sig:
+        if self.has_fixed_sig and self.is_fully_abstract:
             return self.name
         return repr(self)
 
@@ -1288,13 +1289,19 @@ class Operator2(metaclass=OperatorMeta):
         serialized_compilable = tuple(str(self.arguments[c]) for c in self.compilable_argnames)
 
         serialized_hybrid = []
-        for h in self.hybrid_argnames:
-            leaves, tree = flatten(self.arguments[h], is_leaf=_is_hash_leaf)
-            ser_leaves = tuple(
-                l if isinstance(l, (AbstractWires, Operator, Wires)) else _canonicalize_dynamic(l)
-                for l in leaves
-            )
-            serialized_hybrid.append((ser_leaves, tree))
+        if self.hybrid_argnames:
+            # Imported lazily to avoid a circular import
+            # pylint: disable=import-outside-toplevel
+            from pennylane.decomposition.resources import CompressedResourceOp
+
+            hashable_leaf_types = (AbstractWires, Operator, Wires, CompressedResourceOp)
+            for h in self.hybrid_argnames:
+                leaves, tree = flatten(self.arguments[h], is_leaf=_is_hash_leaf)
+                ser_leaves = tuple(
+                    l if isinstance(l, hashable_leaf_types) else _canonicalize_dynamic(l)
+                    for l in leaves
+                )
+                serialized_hybrid.append((ser_leaves, tree))
 
         return hash(
             (
@@ -1483,9 +1490,17 @@ class Operator2(metaclass=OperatorMeta):
         for name, value in zip(hashable_argnames, metadata, strict=True):
             args[name] = value
 
-        with QueuingManager.stop_recording():
-            with pause():
-                return cls(**args)
+        # NOTE: To prepare for lowering, JAX 0.7.1 will insert 'ArgInfo' placeholders
+        # during the `jit_trace` pass in `stages.make_args_info`. This triggers
+        # pre-mature unflattening even when just calling `make_jaxpr`. We manually populate
+        # the "shell" operator with attributes created inside the constructor to ensure
+        # correct behaviour
+        # TODO: Remove this workaround once we support JAX > 0.7.1 as they fixed this in later versions
+        if any(_is_pytree_placeholder(leaf) for leaf in flatten(args)[0]):
+            return _create_hollow_operator(cls, args)
+
+        with QueuingManager.stop_recording(), pause():
+            return cls(**args)
 
     def _check_batching(self):
         """Check if the expected numbers of dimensions of parameters coincides with the
@@ -1532,26 +1547,37 @@ class Operator2(metaclass=OperatorMeta):
 
     def _bind_primitive(self):
         """Bind the operator plxpr primitive."""
+
         # Skip if program capture is disabled
         if not enabled():
             return
 
-        pos_args = [self.arguments[d] for d in self.dynamic_argnames]
+        # Substitute AbstractArray and AbstractWires for symbolic arrays.
+        arguments = {k: _to_symbolic_array(v) for k, v in self.arguments.items()}
+        positional_args = [arguments[d] for d in self.dynamic_argnames]
+
+        # In _to_symbolic_array, we explicitly replace AbstractWires and AbstractArray
+        # with bindings of the symbolic_array primitive. If the arguments still contain
+        # instances of AbstractArray, it indicates that we're not in a tracing context,
+        # in which case we can exit early.
+        new_argument_leaves, _ = flatten(arguments)
+        if any(isinstance(l, (AbstractArray, AbstractWires)) for l in new_argument_leaves):
+            return
 
         wire_lens = []
-        for name, value in self.wire_args.items():
-            if name not in self.hybrid_argnames:
-                pos_args.extend(value)
-                wire_lens.append(len(value))
+        pure_wire_argnames = (n for n in self.wire_argnames if n not in self.hybrid_argnames)
+        for name in pure_wire_argnames:
+            positional_args.extend(arguments[name])
+            wire_lens.append(len(arguments[name]))
 
         hybrid_lens, hybrid_trees = [], []
         forward_mask = []
         for name in self.hybrid_argnames:
             leaves, tree, mask = _process_bind_hybrid_arg(
-                self.arguments[name], is_wire_arg=name in self.wire_argnames
+                arguments[name], is_wire_arg=name in self.wire_argnames
             )
             forward_mask.extend(mask)
-            pos_args.extend(leaves)
+            positional_args.extend(leaves)
             hybrid_lens.append(len(leaves))
             hybrid_trees.append(tree)
 
@@ -1563,7 +1589,7 @@ class Operator2(metaclass=OperatorMeta):
             static_args[name] = (tuple(leaves), tree)
 
         res = operator_p.bind(
-            *pos_args,
+            *positional_args,
             op_cls=type(self),
             wire_lens=wire_lens,
             hybrid_lens=hybrid_lens,
@@ -1599,6 +1625,9 @@ class Operator2(metaclass=OperatorMeta):
             sorted_names = tuple(a for a in cls._sig.parameters if a in getattr(cls, attr))
             setattr(cls, attr, sorted_names)
 
+        if cls.has_fixed_sig:
+            qp.decomposition.register_signature(cls)
+
 
 # ---------------------------------------------------------------------------------
 # ------------------------- Instance construction helpers -------------------------
@@ -1620,7 +1649,6 @@ def _init_wires(op: Operator2):
             warg = op._bound_args.arguments[wname]
             canonical_wires = warg if isinstance(warg, AbstractWires) else Wires(warg)
             op._bound_args.arguments[wname] = canonical_wires
-
             if wsize is not None and len(canonical_wires) != wsize:
                 raise ValueError(
                     f"Incorrect number of wires for '{op.name}.{wname}'. Expected {wsize} "
@@ -1772,25 +1800,30 @@ def _init_subclass_validate_argnames(cls: type[Operator2]) -> None:
 
 def _init_subclass_arg_specs_setup(cls: type[Operator2]) -> None:
     """Set up ``arg_specs`` for ``Operator2`` subclasses."""
-    arg_specs = cls.arg_specs or {}
-    disallowed_argnames = cls.hybrid_argnames + cls.compilable_argnames + cls.static_argnames
 
-    if names := (set(arg_specs.keys()) & set(disallowed_argnames)):
+    arg_specs = cls.arg_specs or {}
+    argnames_in_specs = set(arg_specs.keys())
+    illegal_args_in_specs = set(cls.hybrid_argnames + cls.compilable_argnames + cls.static_argnames)
+    traced_argnames = set(cls.dynamic_argnames + cls.wire_argnames)
+
+    if illegal_argnames := argnames_in_specs & illegal_args_in_specs:
         raise TypeError(
-            f"{cls.__name__}.arg_specs can only contain dynamic and wire arguments, but got {names}."
+            f"{cls.__name__}.arg_specs can only contain dynamic and wire "
+            f"arguments, but got {illegal_argnames}."
         )
 
-    cls.has_fixed_sig = (
-        set(arg_specs.keys()) == set(cls.dynamic_argnames + cls.wire_argnames)
-        and len(disallowed_argnames) == 0
-    )
+    cls.has_fixed_sig = argnames_in_specs == traced_argnames and len(illegal_args_in_specs) == 0
 
     for name, exp_type in arg_specs.items():
+        if isinstance(exp_type, _AbstractWireTypeFactory):
+            raise TypeError(
+                "'Wire' cannot be used on its own to represent a single wire, "
+                "Use 'Wire[1]' instead."
+            )
         canonical_exp_type = exp_type
         if isinstance(exp_type, type) and issubclass(exp_type, Number):
             canonical_exp_type = AbstractArray((), exp_type)
             cls.arg_specs[name] = canonical_exp_type
-
         if not canonical_exp_type.shape_fixed:
             cls.has_fixed_sig = False
 
@@ -1876,80 +1909,85 @@ def _init_subclass_dynamic_property(self: Operator2, name: str) -> Any:
 # -------------------------------------------------------------------------------
 
 
-if has_jax:
-    # pylint: disable=import-outside-toplevel,ungrouped-imports
-    from pennylane.capture.custom_primitives import QpPrimitive
+# pylint: disable=ungrouped-imports
+operator_p = QpPrimitive("operator")
+operator_p.prim_type = "operator"
 
-    operator_p = QpPrimitive("operator")
-    operator_p.prim_type = "operator"
 
-    # pylint: disable=too-many-arguments,unused-argument
-    @operator_p.def_impl
-    def _op_impl(
-        *all_args,
-        op_cls,
-        wire_lens,
-        hybrid_lens,
-        hybrid_trees,
-        forward_mask,
-        n_ctrls=0,
-        adjoint=False,
-        **static_args,
-    ):
-        args = {name: unflatten(*value) for name, value in static_args.items()}
-        i = 0
+# pylint: disable=too-many-arguments,unused-argument
+@operator_p.def_impl
+def _op_impl(
+    *all_args,
+    op_cls,
+    wire_lens,
+    hybrid_lens,
+    hybrid_trees,
+    forward_mask,
+    n_ctrls=0,
+    n_ctrl_work_wires=0,
+    ctrl_work_wire_type="borrowed",
+    adjoint=False,
+    **static_args,
+):
+    # NOTE: every explicit keyword above shadows an operator argname of the same name, so the
+    # controlled-specific params injected by `ControlledOp2._bind_primitive` are namespaced
+    # with a `ctrl_`/`n_ctrl_` prefix. Otherwise an operator declaring e.g. `work_wire_type`
+    # as a static/compilable arg (`MultiControlledX`, `ControlledQubitUnitary`) would have its
+    # own value swallowed here and silently replaced by the controlled default.
+    args = {name: unflatten(*value) for name, value in static_args.items()}
+    i = 0
 
-        for name in op_cls.dynamic_argnames:
-            args[name] = all_args[i]
-            i += 1
+    for name in op_cls.dynamic_argnames:
+        args[name] = all_args[i]
+        i += 1
 
-        wire_lens_iter = iter(wire_lens)
-        for name in op_cls.wire_argnames:
-            if name not in op_cls.hybrid_argnames:
-                len_ = next(wire_lens_iter)
-                # TODO: impl is being used here for reconstruction while the interpreter itself is
-                # under JAX tracing. Need to separate this logic from such scenario. For now,
-                # we can use the fact that wires are always integers and cast them to int.
-                args[name] = Wires(
-                    tuple(w if math.is_abstract(w) else int(w) for w in all_args[i : i + len_])
-                )
-                i += len_
-
-        # Reorder hybrid args such that hybrid wire args are first
-        for name, len_, tree in zip(op_cls.hybrid_argnames, hybrid_lens, hybrid_trees, strict=True):
-            leaves = all_args[i : i + len_]
-            args[name] = unflatten(leaves, tree)
+    wire_lens_iter = iter(wire_lens)
+    for name in op_cls.wire_argnames:
+        if name not in op_cls.hybrid_argnames:
+            len_ = next(wire_lens_iter)
+            # TODO: impl is being used here for reconstruction while the interpreter itself is
+            # under JAX tracing. Need to separate this logic from such scenario. For now,
+            # we can use the fact that wires are always integers and cast them to int.
+            args[name] = _to_int_wires(all_args[i : i + len_])
             i += len_
 
-        if n_ctrls:
-            control_wires = Wires(
-                tuple(w if math.is_abstract(w) else int(w) for w in all_args[i : i + n_ctrls])
-            )
-            i += n_ctrls
-            control_values = all_args[i:]
-            assert len(control_wires) == len(control_values)
-        else:
-            control_wires = control_values = ()
+    # Reorder hybrid args such that hybrid wire args are first
+    for name, len_, tree in zip(op_cls.hybrid_argnames, hybrid_lens, hybrid_trees, strict=True):
+        leaves = all_args[i : i + len_]
+        args[name] = unflatten(leaves, tree)
+        i += len_
 
-        op = type.__call__(op_cls, **args)
-        if adjoint:
-            op = type.__call__(qp.ops.op_math.Adjoint2, op)
-        if n_ctrls:
-            op = type.__call__(
-                qp.ops.op_math.ControlledOp2,
-                op,
-                control_wires=control_wires,
-                control_values=control_values,
-            )
-        return op
+    # `ControlledOp2._bind_primitive` appends control wires, control values, and work
+    # wires (in that order) after the base op's own args, so they're consumed in the
+    # same order here.
+    if n_ctrls:
+        control_wires = _to_int_wires(all_args[i : i + n_ctrls])
+        i += n_ctrls
+        control_values = all_args[i : i + n_ctrls]
+        i += n_ctrls
+        work_wires = _to_int_wires(all_args[i : i + n_ctrl_work_wires])
+        i += n_ctrl_work_wires
+    else:
+        control_wires = control_values = work_wires = ()
 
-    @operator_p.def_abstract_eval
-    def _op_aval(*_, **__):
-        AbstractOperator = _get_abstract_operator()
-        return AbstractOperator()
+    op = type.__call__(op_cls, **args)
+    if adjoint:
+        op = type.__call__(qp.ops.op_math.Adjoint2, op)
+    if n_ctrls:
+        op = type.__call__(
+            qp.ops.op_math.ControlledOp2,
+            op,
+            control_wires=control_wires,
+            control_values=control_values,
+            work_wires=work_wires,
+            work_wire_type=ctrl_work_wire_type,
+        )
+    return op
 
-else:  # pragma: no cover
-    operator_p = None
+
+@operator_p.def_abstract_eval
+def _op_aval(*_, **__):
+    return AbstractOperator()
 
 
 def pop_op_eqns(ops: Iterable):
@@ -1978,6 +2016,28 @@ def pop_op_eqns(ops: Iterable):
     return old_eqns
 
 
+def _is_pytree_placeholder(obj) -> bool:
+    """Whether 'obj' is a sentinel placeholder that JAX substitutes for real pytree leaves."""
+    cls = type(obj)
+    return cls.__name__ == "ArgInfo" and cls.__module__.partition(".")[0] == "jax"
+
+
+def _create_hollow_operator(cls, args) -> Operator2:
+    """Create an operator instance with hollow values. This is needed if there is any sentinel
+    placeholder that JAX substitutes for real pytree leaves. The values can be hollow because
+    these placeholders are used temporarily and discarded.
+    """
+    # pylint: disable=protected-access
+    op = object.__new__(cls)
+    op._bound_args = op._sig.bind(**args)
+    op._pauli_rep = None
+    op._wires = Wires([])
+    op._batch_size = _UNSET_BATCH_SIZE
+    op._ndim_params = _UNSET_BATCH_SIZE
+    op.tracer = None
+    return op
+
+
 def _op_arg_forward_mask(op: Operator2) -> list[bool]:
     """Build ``forward_mask`` entries for an operator argument."""
     op_leaves, _ = flatten(op, is_leaf=_is_wires)
@@ -1990,14 +2050,48 @@ def _op_arg_forward_mask(op: Operator2) -> list[bool]:
     return hybrid_mask
 
 
+def _to_symbolic_array(value):
+
+    if isinstance(value, AbstractWires):
+        wire_array = [symbolic_array((), int) for _ in range(len(value))]
+        if any(isinstance(w, AbstractArray) for w in wire_array):
+            return value  # if we're not in a tracing context, do nothing
+        return wire_array
+
+    if isinstance(value, AbstractArray):
+        return symbolic_array(value.shape, value.dtype)
+
+    leaves, struct = flatten(value)
+    if struct == leaf:
+        return value  # return pytree leaves as is
+
+    # before using unflatten to reconstruct the hybrid args which would bind new
+    # operator primitives, we remove the old operator primitives from the program.
+    _prune_op_primitives(value)
+
+    new_leaves = [_to_symbolic_array(l) for l in leaves]
+    return unflatten(new_leaves, struct)
+
+
+def _prune_op_primitives(value):
+    partial_leaves, struct = flatten(value, is_leaf=_is_op)
+    op_leaves = list(filter(_is_op, partial_leaves))
+    _ = pop_op_eqns(op_leaves)
+    if struct != leaf:
+        for l in op_leaves:
+            _prune_op_primitives(l)
+
+
 def _process_bind_hybrid_arg(hybrid_val, is_wire_arg: bool) -> tuple[list, Any, list[bool]]:
     """Process a hybrid argument for binding an operator primitive."""
+
     # We don't use is_leaf=_is_op because we're deliberately not supporting program
     # capture with legacy operators mixed with new operators
     partial_leaves, _ = flatten(hybrid_val, is_leaf=lambda h: isinstance(h, Operator2))
     _ = pop_op_eqns(filter(_is_op, partial_leaves))
 
     leaves, tree = flatten(hybrid_val)
+
     if is_wire_arg:
         return leaves, tree, [False] * len(leaves)
 
@@ -2086,6 +2180,30 @@ def _is_hash_leaf(l) -> bool:
     return _is_op(l) or _is_wires(l)
 
 
+def _is_abstract_array(arg):
+    from jax.core import ShapedArray  # pylint: disable=import-outside-toplevel
+
+    return isinstance(arg, (ShapedArray, AbstractArray, AbstractWires, AbstractQubit))
+
+
+def _to_int_wires(wires):
+    """Cast all wires to integers."""
+    if not wires:
+        return Wires(wires)
+
+    if all(_is_abstract_array(w) for w in wires):
+        return AbstractWires(len(wires))
+
+    if any(_is_abstract_array(w) for w in wires):
+        raise ValueError(
+            "Operator instances cannot be constructed with a combination of both concrete"
+            " wires and abstract values like ShapedArray, AbstractArray,"
+            " AbstractWires, AbstractQubits"
+        )
+
+    return Wires(tuple(w if math.is_abstract(w) else int(w) for w in wires))
+
+
 class _ArgType(Enum):
     """Enum to keep track of an arguments type."""
 
@@ -2105,6 +2223,7 @@ def _resolve_arg_kind(cls, name: str) -> _ArgType:
     return _ArgType.DYN
 
 
+# pylint: disable=too-many-return-statements
 def _canonicalize_abstract_type(val, kind: _ArgType):
     """Canonicalizes the input into its abstract equivalent.
 
@@ -2119,6 +2238,9 @@ def _canonicalize_abstract_type(val, kind: _ArgType):
 
     if isinstance(val, (AbstractArray, AbstractWires)):
         return val
+
+    if type(val).__name__ == "ShapedArray":  # jax.core.ShapedArray
+        return AbstractArray(val.shape, val.dtype)
 
     if isinstance(val, type) and issubclass(val, Number):
         return AbstractArray((), val)
@@ -2156,9 +2278,9 @@ def _is_abstract_specifier(val):
 
 
 @abstractify.register(OperatorMeta)
+@QueuingManager.stop_recording()
 def _abstractify_operator_type(op_type: type[Operator2]) -> Operator2:
     """Abstractify a subclass of operator."""
-
     if op_type.has_fixed_sig:
         return op_type(**op_type.arg_specs)
 
@@ -2169,18 +2291,17 @@ def _abstractify_operator_type(op_type: type[Operator2]) -> Operator2:
 
 
 @abstractify.register(Operator2)
+@QueuingManager.stop_recording()
 def _abstractify_operator(op: Operator2) -> Operator2:
     """Abstractify an operator."""
-    if op.is_abstract:
+    if op.is_fully_abstract:
         return op
-
     op_cls = type(op)
     target_args = op_cls.dynamic_argnames + op_cls.hybrid_argnames + op_cls.wire_argnames
     new_args = dict(op.arguments)
     for name in target_args:
         kind = _resolve_arg_kind(op_cls, name)
         new_args[name] = _canonicalize_abstract_type(new_args[name], kind)
-
     return op_cls(**new_args)
 
 

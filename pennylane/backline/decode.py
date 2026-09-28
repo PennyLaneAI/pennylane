@@ -201,11 +201,18 @@ def decode(  # pylint: disable=too-many-arguments
     bitpack=True,
     library=None,
 ):
-    r"""Offload one syndrome to a coprocessor and return its correction (post & collect).
+    r"""Calls a coprocessor function available on the :class:`~.Backline` to perform quantum error correction
+    decoding --- providing a syndrome and recieving the corresponding correction.
 
-    Records a single transport round inside a captured QNode. Every step is a local
-    :func:`~pennylane.runtime_call`, so the round is driven from the controller's own process over
-    the session that ``inject-transport-session`` brought up from the device's placement.
+    ``decode`` is implemented internally as a series of :func:`~pennylane.runtime_call`, with the
+    communication driven from the controller's own process over the session that
+    ``inject-transport-session`` brought up from the device's placement.
+
+    .. warning::
+
+        :mod:`Backline <.backline>` is experimental and only usable through the Catalyst
+        compiler. :func:`decode` must be called inside a ``@qjit`` program, within a QNode executing
+        on a :class:`~.Backline`. Calling it in any other context will fail.
 
     Args:
         syndrome: The syndrome to send. Passed by data pointer, so its byte length comes from its
@@ -216,14 +223,14 @@ def decode(  # pylint: disable=too-many-arguments
         coprocessor (Coprocessor | None): The :class:`~.Coprocessor` the round targets. Selects the
             session key; which coprocessor serves the round is otherwise fixed by the session's
             configuration.
-        out_bytes (int | None): The correction reply size in bytes. Defaults to the controller's
+        out_bytes (int, None): The correction reply size in bytes. Defaults to the controller's
             :attr:`~.Controller.out_bytes`.
-        in_bytes (int | None): How many bytes of ``syndrome`` to send, at most what the round was
+        in_bytes (int, None): How many bytes of ``syndrome`` to send, at most what the round was
             committed to carry. Defaults to ``syndrome``'s full byte length.
         decoder_id (int): Which coprocessor-side decoder handles this round.
         work_item_idx (int): The committed work-item index to post.
         bitpack (bool): Pack syndrome bits into 8-byte payload and unpack reply to 64-bit vector.
-        library (str | None): Shared library exporting the transport symbols, recorded so the
+        library (str, None): Shared library exporting the transport symbols, recorded so the
             compiler links it. Defaults to ``None``, relying on ``librt_transport`` already being
             loaded.
 
@@ -232,22 +239,13 @@ def decode(  # pylint: disable=too-many-arguments
         bit vector when ``bitpack=True``.
 
     Raises:
-        ValueError: if the round targets an unnamed coprocessor while the placement holds more
-        than one.
-
-    .. warning::
-
-        Backline is experimental and only usable through the Catalyst compiler. :func:`decode` must
-        be called inside a ``@qjit`` program; calling it eagerly raises.
+        ValueError: if the round targets an unnamed coprocessor which cannot be resolved as the
+            placement holds more than one coprocessor.
 
     .. seealso:: :class:`~.Controller`, :class:`~.Coprocessor`,
         :class:`~pennylane.Backline`
 
     **Example**
-
-    The nodes come from the placement of the device being traced, so a round on a built backline is
-    just ``qp.backline.decode(syndrome)``. Here the controller commits to an 8-byte correction, and
-    the coprocessor runs the decoder that produces it:
 
     .. code-block:: python
 
@@ -272,13 +270,6 @@ def decode(  # pylint: disable=too-many-arguments
             correction = qp.backline.decode(syndrome)
             qp.cond(correction[0] == 1, qp.X)(0)
             return qp.expval(qp.Z(0))
-
-    The round is resolved from the device being traced, so the program has to be captured
-    (:func:`~pennylane.qjit` with ``capture=True``). ``syndrome`` is sent by data pointer, so its
-    byte length is fixed by its shape and dtype at compile time; ``correction`` comes back as a
-    ``uint8`` buffer of ``out_bytes`` bytes. Pass ``controller=`` / ``coprocessor=`` to choose the
-    nodes explicitly, and ``decoder_id=`` to select which coprocessor-side decoder handles the
-    round.
     """
 
     controller, coprocessor = _resolve_nodes(controller, coprocessor)

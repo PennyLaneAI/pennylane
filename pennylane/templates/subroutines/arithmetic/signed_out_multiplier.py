@@ -16,30 +16,20 @@ Contains the SignedOutMultiplier template.
 """
 
 from collections import defaultdict
-from itertools import combinations
+
+from jax import numpy as jnp
 
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
-from pennylane.decomposition import (
-    add_decomps,
-    controlled_resource_rep,
-    register_condition,
-    register_resources,
-)
-from pennylane.ops import CNOT, Controlled
+from pennylane.decomposition import add_decomps, register_condition, register_resources
+from pennylane.ops import CNOT, ctrl
 from pennylane.typing import Wire
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import Wires, WiresLike, is_abstract_qubit, validate_no_wire_overlaps
 
 from .incrementer import Incrementer
 from .out_multiplier import OutMultiplier
 from .semi_adder import SemiAdder
-
-has_jax = True
-try:
-    from jax import numpy as jnp
-except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
-    has_jax = False  # pragma: no cover
 
 
 class SignedOutMultiplier(Operator2):
@@ -324,21 +314,19 @@ class SignedOutMultiplier(Operator2):
         work_wires: WiresLike,
         output_wires_zeroed: bool = False,
     ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
+
         x_wires = Wires(x_wires)
         y_wires = Wires(y_wires)
         output_wires = Wires(output_wires)
         work_wires = Wires(work_wires)
 
-        wires_list = [x_wires, y_wires, output_wires, work_wires]
-        wires_name = ["x_wires", "y_wires", "output_wires", "work_wires"]
-
-        _wires_are_traced = any(math.is_abstract(w) for ws in wires_list for w in ws)
-
-        if not _wires_are_traced:
-            wires_dict = dict(zip(wires_name, wires_list, strict=True))
-            for name0, name1 in combinations(wires_name, r=2):
-                if wires_dict[name0].intersection(wires_dict[name1]):
-                    raise ValueError(f"None of the wires in {name1} should be included in {name0}.")
+        wire_args = {
+            "x_wires": x_wires,
+            "y_wires": y_wires,
+            "output_wires": output_wires,
+            "work_wires": work_wires,
+        }
+        validate_no_wire_overlaps(wire_args)
 
         super().__init__(
             x_wires,
@@ -366,11 +354,7 @@ def _zeroed_signed_out_multiplier_resources(
     num_work_wires = len(work_wires)
     resources = defaultdict(int)
     resources[
-        controlled_resource_rep(
-            Incrementer,
-            {"num_wires": num_x_wires, "num_work_wires": num_work_wires - 2},
-            num_control_wires=1,
-        )
+        ctrl(Incrementer(Wire[num_x_wires], work_wires=Wire[num_work_wires - 2]), Wire[1])
     ] += 2
     resources[
         OutMultiplier(
@@ -383,18 +367,10 @@ def _zeroed_signed_out_multiplier_resources(
         )
     ] += 1
     resources[
-        controlled_resource_rep(
-            Incrementer,
-            {"num_wires": num_output_wires - 1, "num_work_wires": num_work_wires - 2},
-            num_control_wires=1,
-        )
+        ctrl(Incrementer(Wire[num_output_wires - 1], work_wires=Wire[num_work_wires - 2]), Wire[1])
     ] += 1
     resources[
-        controlled_resource_rep(
-            Incrementer,
-            {"num_wires": num_y_wires, "num_work_wires": num_work_wires - 2},
-            num_control_wires=1,
-        )
+        ctrl(Incrementer(Wire[num_y_wires], work_wires=Wire[num_work_wires - 2]), Wire[1])
     ] += 2
     resources[CNOT] = 6 + (num_x_wires + num_y_wires) * 2 + (num_output_wires - 1)
     # Convert to a builtin dict so downstream lookups of missing gates
@@ -432,29 +408,35 @@ def _not_zeroed_signed_out_multiplier_resources(
 
 
 def _twos_complement_helper(input_reg, aux_wire, work_wires):
-
-    if compiler.active() or capture.enabled():
-        input_reg_arr = math.array(input_reg, like="jax")
+    # Dynamically-allocated wires (``AbstractQubit``) cannot be
+    # stacked into a numeric array for ``for_loop``-based dynamic indexing, so unroll instead.
+    # Remove this fallback once dynamic-wire indexing is supported (shortcut.com/story/129521).
+    if any(is_abstract_qubit(w) for w in input_reg):
+        for wire in input_reg:
+            CNOT([aux_wire, wire])
     else:
-        input_reg_arr = input_reg
+        if compiler.active() or capture.enabled():
+            input_reg_arr = math.array(input_reg, like="jax")
+        else:
+            input_reg_arr = input_reg
 
-    # Invert all bits
-    @for_loop(len(input_reg_arr))
-    def invert(w):
-        # sign bit of 1 indicates a negative value
-        CNOT([aux_wire, input_reg_arr[w]])
+        # Invert all bits
+        @for_loop(len(input_reg_arr))
+        def invert(w):
+            # sign bit of 1 indicates a negative value
+            CNOT([aux_wire, input_reg_arr[w]])
 
-    invert()  # pylint: disable=no-value-for-parameter
+        invert()  # pylint: disable=no-value-for-parameter
 
     # Add one
-    Controlled(
+    ctrl(
         Incrementer(
             wires=Wires(input_reg),
             work_wires=Wires(
                 work_wires
             ),  # we can use the work wires since they are returned in a clean state
         ),
-        control_wires=aux_wire,
+        control=aux_wire,
         control_values=(1,),
     )
 

@@ -216,11 +216,10 @@ def test_fallback_creating_resources_AbstractArray():
     w = AbstractWires(3)
 
     resources = f.compute_resources({"a": p}, w, "Z")
-    expected = defaultdict(int)
-    expected[qp.PauliRot(Float, pauli_word="Z", wires=Wire[1])] = 3
-
-    r = qp.MultiControlledX(Wire[3], work_wires=Wire[0])
-    expected[r] = 1
+    expected = {
+        qp.PauliRot(Float, pauli_word="Z", wires=Wire[1]): 3,
+        abstractify(qp.MultiControlledX(Wire[3], work_wires=Wire[0])): 1,
+    }
     assert resources == expected
 
 
@@ -255,6 +254,8 @@ class TestSubroutineOp:
         # pylint: disable=isinstance-second-argument-not-valid-type
         assert isinstance(self.op1, Example1Subroutine)
 
+    # SubroutineOp exists for the tape pipeline only. It does not need to be capture compatible.
+    @pytest.mark.usefixtures("disable_capture")
     def test_basic_validity(self):
         """Test that subroutine op passes basic validity checks."""
         qp.ops.functions.assert_valid(self.op1, skip_pickle=True)
@@ -658,7 +659,7 @@ class TestGraphDecomposition:
 
     # pylint: disable=too-many-statements
     def test_change_op_basis_subroutine_resource_rep_with_a_subroutine(self):
-        """Test creating a CompressedResourceRep specific to templates within change_op_basis with a subroutine and a nested resource_rep."""
+        """Test creating a ChangeOpBasis resource representation with a subroutine."""
 
         # use a non-standard order
         @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
@@ -674,7 +675,7 @@ class TestGraphDecomposition:
         assert rr.name == "ChangeOpBasis"
 
         assert isinstance(rr.params["target_op"], PauliX)
-        assert rr.params["target_op"].is_abstract
+        assert rr.params["target_op"].is_fully_abstract
 
         assert isinstance(rr.params["compute_op"], qp.decomposition.CompressedResourceOp)
         assert rr.params["compute_op"].name == "SubroutineOp"
@@ -708,21 +709,20 @@ class TestGraphDecomposition:
         }
 
     def test_change_op_basis_subroutine_resource_rep_with_an_op_and_a_resource_rep(self):
-        """Test creating a CompressedResourceRep specific to templates within change_op_basis with an op and a nested resource_rep."""
+        """Test creating a ChangeOpBasis resource representation with operators."""
 
         rr = change_op_basis_subroutine_resource_rep(qp.PauliZ(0), abstractify(qp.PauliX))
-        assert isinstance(rr, qp.decomposition.CompressedResourceOp)
-        assert rr.name == "ChangeOpBasis"
-
-        assert rr.params["compute_op"] == qp.Z(AbstractWires(1))
-
-        assert isinstance(rr.params["target_op"], PauliX)
-        assert rr.params["target_op"].is_abstract
-
-        assert rr.params["uncompute_op"] == qp.adjoint(qp.Z(AbstractWires(1)))
+        assert isinstance(rr, qp.ops.ChangeOpBasis2)
+        assert rr.name == "ChangeOpBasis2"
+        assert rr.compute_op == qp.Z(Wire[1])
+        assert rr.compute_op.is_fully_abstract
+        assert rr.target_op == qp.X(Wire[1])
+        assert rr.target_op.is_fully_abstract
+        assert rr.uncompute_op == qp.adjoint(qp.Z(Wire[1]))
+        assert rr.uncompute_op.is_fully_abstract
 
     def test_change_op_basis_subroutine_resource_rep_with_a_resource_rep_and_a_subroutine(self):
-        """Test creating a CompressedResourceRep specific to templates within change_op_basis with a subroutine and a nested resource_rep."""
+        """Test creating a ChangeOpBasis resource representation with a subroutine target."""
 
         @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
         def f(a, reg1, reg2, x):
@@ -735,8 +735,8 @@ class TestGraphDecomposition:
         assert isinstance(rr, qp.decomposition.CompressedResourceOp)
         assert rr.name == "ChangeOpBasis"
 
-        assert isinstance(rr.params["compute_op"], PauliX)
-        assert rr.params["compute_op"].is_abstract
+        assert rr.params["compute_op"] == PauliX(Wire[1])
+        assert rr.params["compute_op"].is_fully_abstract
 
         assert isinstance(rr.params["target_op"], qp.decomposition.CompressedResourceOp)
         assert rr.params["target_op"].name == "SubroutineOp"
@@ -754,10 +754,10 @@ class TestGraphDecomposition:
 
         assert isinstance(rr.params["uncompute_op"], Adjoint2)
         assert rr.params["uncompute_op"].name == "Adjoint(PauliX)"
-        assert rr.params["uncompute_op"].is_abstract
+        assert rr.params["uncompute_op"].is_fully_abstract
 
     def test_change_op_basis_subroutine_resource_rep_with_a_subroutine_uncompute(self):
-        """Test creating a CompressedResourceRep specific to templates within change_op_basis with a subroutine uncompute."""
+        """Test creating a ChangeOpBasis resource representation with a subroutine uncompute."""
 
         @partial(Subroutine, static_argnames="a", wire_argnames=("reg1", "reg2"))
         def f(a, reg1, reg2, x):
@@ -775,10 +775,10 @@ class TestGraphDecomposition:
         assert rr.name == "ChangeOpBasis"
 
         assert isinstance(rr.params["compute_op"], CNOT)
-        assert rr.params["compute_op"].is_abstract
+        assert rr.params["compute_op"].is_fully_abstract
 
         assert isinstance(rr.params["target_op"], PauliX)
-        assert rr.params["target_op"].is_abstract
+        assert rr.params["target_op"].is_fully_abstract
 
         assert isinstance(rr.params["uncompute_op"], qp.decomposition.CompressedResourceOp)
         assert rr.params["uncompute_op"].name == "SubroutineOp"
@@ -1059,6 +1059,7 @@ class TestGraphDecomposition:
         qp.assert_equal(tape_ry[1], qp.RY(1.0, 1))
         qp.assert_equal(tape_ry[2], qp.RY(2.0, 2))
 
+    @pytest.mark.usefixtures("disable_capture")
     def test_inexact_resources_testing(self):
         """Test that assert_valid will work on a Subroutine with inexact resources."""
 
@@ -1070,7 +1071,7 @@ class TestGraphDecomposition:
             qp.X(wires)
 
         op = f.operator(0)
-        qp.ops.functions.assert_valid(op, skip_pickle=True, skip_capture=True)
+        qp.ops.functions.assert_valid(op, skip_pickle=True)
 
     def test_compute_resources_fallback(self):
         """Test that the compute_resources fallback allows integration with decomps by default."""

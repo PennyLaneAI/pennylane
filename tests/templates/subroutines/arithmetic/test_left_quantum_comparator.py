@@ -11,33 +11,33 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-Tests for the LeftQuantumComparator template.
-"""
+"""Tests for LeftQuantumComparator."""
 
 import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.labs.templates.left_quantum_comparator import LeftQuantumComparator
 from pennylane.ops.functions.assert_valid import assert_valid
 
 
-def test_standard_validity_left_comparator():
-    """Check the operation using the assert_valid function."""
-    x_wires = [0, 1, 2]
-    y_wires = [3, 4, 5]
-    work_wires = [6, 7]
-    target_wire = 8
-    comparator = ">="
-
-    gate = LeftQuantumComparator(x_wires, y_wires, target_wire, work_wires, comparator=comparator)
-    assert_valid(gate)
+@pytest.mark.usefixtures("enable_and_disable_capture")
+def test_assert_valid():
+    """Test that LeftQuantumComparator passes the standard Operator2 checks,
+    with capture enabled and disabled."""
+    op = qp.LeftQuantumComparator(
+        x_wires=[0, 1, 2],
+        y_wires=[3, 4, 5],
+        target_wire=6,
+        work_wires=[7, 8],
+        comparator="<=",
+    )
+    assert_valid(op, skip_differentiation=True)
 
 
 class TestLeftQuantumComparator:
     """Test LeftQuantumComparator template."""
 
+    @pytest.mark.catalyst
     @pytest.mark.parametrize("comparator", ["<", "<=", ">", ">="])
     @pytest.mark.parametrize(
         ("x_wires", "y_wires", "target_wire", "work_wires", "x", "y"),
@@ -51,18 +51,18 @@ class TestLeftQuantumComparator:
     def test_operation_result(
         self, comparator, x_wires, y_wires, target_wire, work_wires, x, y
     ):  # pylint: disable=too-many-arguments
-        """Test the correctness of the LeftComparator template output."""
+        """Test that the LeftQuantumComparator template produces the correct output."""
 
         @qp.qjit
         @qp.qnode(qp.device("lightning.qubit", wires=range(13)), shots=1)
         def circuit():
             qp.BasisState(qp.math.int_to_binary(x, len(x_wires)), wires=x_wires)
             qp.BasisState(qp.math.int_to_binary(y, len(y_wires)), wires=y_wires)
-            LeftQuantumComparator(x_wires, y_wires, target_wire, work_wires, comparator)
+            qp.LeftQuantumComparator(x_wires, y_wires, target_wire, work_wires, comparator)
             qp.CNOT([11, 12])
             qp.adjoint(
-                lambda: LeftQuantumComparator(x_wires, y_wires, target_wire, work_wires, comparator)
-            )()
+                qp.LeftQuantumComparator(x_wires, y_wires, target_wire, work_wires, comparator)
+            )
             return qp.sample(wires=[12])
 
         expected = {"<": x < y, "<=": x <= y, ">": x > y, ">=": x >= y}[comparator]
@@ -148,9 +148,9 @@ class TestLeftQuantumComparator:
     def test_wires_error(
         self, target_wire, x_wires, y_wires, work_wires, comparator, msg_match
     ):  # pylint: disable=too-many-arguments
-        """Test an error is raised when some work_wires don't meet the requirements"""
+        """Test that an error is raised when some work_wires don't meet the requirements."""
         with pytest.raises(ValueError, match=msg_match):
-            qp.labs.templates.LeftQuantumComparator(
+            qp.LeftQuantumComparator(
                 x_wires, y_wires, target_wire, work_wires, comparator=comparator
             )
 
@@ -167,7 +167,7 @@ class TestLeftQuantumComparator:
     def test_no_phase_errors(  # pylint: disable=too-many-arguments
         self, x_wires, y_wires, target_wire, work_wires, comparator, seed
     ):
-        """Verify the comparator introduces no complex phases.
+        """Test that the comparator introduces no complex phases.
         A correct classical reversible circuit is a real permutation matrix,
         so a real positive input must produce a real positive output."""
 
@@ -178,7 +178,7 @@ class TestLeftQuantumComparator:
             qp.StatePrep(x_state, x_wires)
             qp.StatePrep(y_state, y_wires)
 
-            LeftQuantumComparator(x_wires, y_wires, target_wire, work_wires, comparator)
+            qp.LeftQuantumComparator(x_wires, y_wires, target_wire, work_wires, comparator)
             return qp.state()
 
         num_x = 2 ** len(x_wires)

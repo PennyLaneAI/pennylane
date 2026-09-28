@@ -33,6 +33,7 @@ from pennylane import math, pytrees
 from pennylane._class_property import classproperty
 from pennylane.allocation import Allocate, Deallocate
 from pennylane.capture.autograph import wraps
+from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.compiler import compiler
 from pennylane.core import Operator2
 from pennylane.core.operator import Operation, Operator
@@ -43,7 +44,7 @@ from pennylane.exceptions import (
     ParameterFrequenciesUndefinedError,
     SparseMatrixUndefinedError,
 )
-from pennylane.typing import AbstractArray, AbstractWires, Bool, Wire
+from pennylane.typing import AbstractArray, AbstractWires, Bool
 from pennylane.wires import Wires, WiresLike
 
 from .controlled2 import Controlled2, ControlledOp2
@@ -228,21 +229,13 @@ def create_controlled_op2(op, control_wires, control_values, work_wires, work_wi
         ctrl_values = _resolve_ctrl_values(control_values, op.control_values, len(control_wires))
         return ctrl(
             op.base,
-            control=_concat_wires(control_wires, op.control_wires),
+            control=control_wires + op.control_wires,
             control_values=ctrl_values,
-            work_wires=_concat_wires(work_wires, op.work_wires),
+            work_wires=work_wires + op.work_wires,
             work_wire_type=work_wire_type,
         )
 
     return ControlledOp2(op, control_wires, control_values, work_wires, work_wire_type)
-
-
-def _concat_wires(wire1, wire2):
-
-    if isinstance(wire2, AbstractWires):
-        return Wire[len(wire1) + len(wire2)]
-
-    return wire1 + wire2
 
 
 def _resolve_ctrl_values(control_values, base_ctrl_values, num_control: int):
@@ -251,10 +244,11 @@ def _resolve_ctrl_values(control_values, base_ctrl_values, num_control: int):
     if control_values is None:
         control_values = [True] * num_control
 
-    if isinstance(base_ctrl_values, AbstractArray):
+    if isinstance(control_values, AbstractArray) or isinstance(base_ctrl_values, AbstractArray):
         return Bool[len(control_values) + len(base_ctrl_values)]
 
     control_values = math.array(control_values)
+    base_ctrl_values = math.array(base_ctrl_values)
     return math.array(math.concatenate([control_values, base_ctrl_values]), dtype=bool)
 
 
@@ -417,47 +411,39 @@ def _ctrl_transform(op, control, control_values, work_wires, one_controlled):
     return wrapper
 
 
-@functools.lru_cache  # only create the first time requested
-def _get_ctrl_qfunc_prim():
-    """See capture/explanations.md : Higher Order primitives for more information on this code."""
-    # if capture is enabled, jax should be installed
+ctrl_transform_prim = QpPrimitive("ctrl_transform")
+ctrl_transform_prim.multiple_results = True
+ctrl_transform_prim.prim_type = "higher_order"
 
-    # pylint: disable=import-outside-toplevel
-    from pennylane.capture.custom_primitives import QpPrimitive
 
-    ctrl_prim = QpPrimitive("ctrl_transform")
-    ctrl_prim.multiple_results = True
-    ctrl_prim.prim_type = "higher_order"
+@ctrl_transform_prim.def_impl
+def _ctrl_transform_impl(*args, n_control, jaxpr, control_values, work_wires, n_consts):
+    from pennylane.tape.plxpr_conversion import (  # pylint: disable=import-outside-toplevel
+        CollectOpsandMeas,
+    )
 
-    @ctrl_prim.def_impl
-    def _impl(*args, n_control, jaxpr, control_values, work_wires, n_consts):
-        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+    consts = args[:n_consts]
+    control_wires = args[-n_control:]
+    args = args[n_consts:-n_control]
 
-        consts = args[:n_consts]
-        control_wires = args[-n_control:]
-        args = args[n_consts:-n_control]
+    collector = CollectOpsandMeas()
+    with qp.QueuingManager.stop_recording():
+        collector.eval(jaxpr, consts, *args)
 
-        collector = CollectOpsandMeas()
-        with qp.QueuingManager.stop_recording():
-            collector.eval(jaxpr, consts, *args)
+    for op in collector.state["ops"]:
+        ctrl(op, control_wires, control_values, work_wires)
+    return []
 
-        for op in collector.state["ops"]:
-            ctrl(op, control_wires, control_values, work_wires)
-        return []
 
-    @ctrl_prim.def_abstract_eval
-    def _abstract_eval(*_, **__):
-        return []
-
-    return ctrl_prim
+@ctrl_transform_prim.def_abstract_eval
+def _ctrl_transform_abstract_eval(*_, **__):
+    return []
 
 
 def _capture_ctrl_transform(qfunc: Callable, control, control_values, work_wires) -> Callable:
     """Capture compatible way of performing an ctrl transform."""
     # note that this logic is tested in `tests/capture/test_nested_plxpr.py`
     import jax  # pylint: disable=import-outside-toplevel
-
-    ctrl_prim = _get_ctrl_qfunc_prim()
 
     @wraps(qfunc)
     def new_qfunc(*args, **kwargs):
@@ -467,7 +453,7 @@ def _capture_ctrl_transform(qfunc: Callable, control, control_values, work_wires
         )
         flat_args = jax.tree_util.tree_leaves(args)
         control_wires = qp.wires.Wires(control)  # make sure is iterable
-        ctrl_prim.bind(
+        ctrl_transform_prim.bind(
             *jaxpr.consts,
             *abstract_shapes,
             *flat_args,
@@ -475,7 +461,7 @@ def _capture_ctrl_transform(qfunc: Callable, control, control_values, work_wires
             jaxpr=jaxpr.jaxpr,
             n_control=len(control_wires),
             control_values=control_values,
-            work_wires=work_wires,
+            work_wires=qp.wires.Wires(work_wires) if work_wires is not None else work_wires,
             n_consts=len(jaxpr.consts),
         )
 
@@ -1174,26 +1160,25 @@ class ControlledOp(Controlled, Operation):
 
 # Program capture with controlled ops needs to unpack and re-pack the control wires to support dynamic wires
 # See capture module for more information on primitives
-# If None, jax isn't installed so the class never got a primitive.
-if Controlled._primitive is not None:  # pylint: disable=protected-access
 
-    @Controlled._primitive.def_impl  # pylint: disable=protected-access
-    def _impl(
+
+@Controlled._primitive.def_impl  # pylint: disable=protected-access
+def _impl(
+    base,
+    *control_wires,
+    control_values=None,
+    work_wires=None,
+    work_wire_type="borrowed",
+):
+    control_wires = tuple(w if math.is_abstract(w) else int(w) for w in control_wires)
+    return type.__call__(
+        Controlled,
         base,
-        *control_wires,
-        control_values=None,
-        work_wires=None,
-        work_wire_type="borrowed",
-    ):
-        control_wires = tuple(w if math.is_abstract(w) else int(w) for w in control_wires)
-        return type.__call__(
-            Controlled,
-            base,
-            control_wires,
-            control_values=control_values,
-            work_wires=work_wires,
-            work_wire_type=work_wire_type,
-        )
+        control_wires,
+        control_values=control_values,
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
+    )
 
 
 # easier to just keep the same primitive for both versions

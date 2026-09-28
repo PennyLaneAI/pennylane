@@ -399,7 +399,7 @@ def _trotter_product_decomposition_resources(n, order, ops):
         return reps
     for op in ops:
         reps[resource_rep(qp_ops.op_math.Evolution, base=op)] = (
-            n * _count(op, ops) * 2 * 5 * (order - 2) / 2
+            n * _count(op, ops) * 2 * 5 * (order - 2) // 2
         )
     return reps
 

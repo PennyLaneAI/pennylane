@@ -254,8 +254,6 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
         return adjoint_resource_rep(**params)
     if issubclass(op_type, qp.ops.Pow):
         return pow_resource_rep(**params)
-    if issubclass(op_type, qp.ops.ChangeOpBasis):
-        return change_op_basis_resource_rep(**params)
     if op_type is qp.ops.ControlledOp:
         op_type = qp.ops.Controlled
     if op_type is qp.ops.Controlled:
@@ -388,19 +386,28 @@ def pow_resource_rep(base_class, base_params, z):
 
 
 def resolve_work_wire_type(base_work_wires, base_work_wire_type, work_wires, work_wire_type):
-    """Resolves the overall work wire type when the base op comes with work wires."""
+    """Resolves the overall work wire type when the base op comes with work wires.
 
-    # If any of the work wires is borrowed, we treat all work wires as borrowed. We can be
-    # more flexible in the future with dynamic qubit management, but for now we're
-    # just going to live with this.
-    if base_work_wires and base_work_wire_type == "borrowed":
+    A side with no work wires has no opinion, so its ``work_wire_type`` is ignored. If any
+    side that does have work wires is "borrowed", the merged result is "borrowed" (we can be
+    more flexible in the future with dynamic qubit management, but for now we're just going
+    to live with this).
+    """
+
+    def _exists(wire_arg):
+        return wire_arg is not None and len(wire_arg) > 0
+
+    if _exists(base_work_wires) and base_work_wire_type == "borrowed":
         return "borrowed"
 
-    if work_wires and work_wire_type == "borrowed":
+    if _exists(work_wires) and work_wire_type == "borrowed":
         return "borrowed"
 
-    if not work_wires and not base_work_wires:
-        return "borrowed"
+    if not _exists(base_work_wires):
+        return work_wire_type
+
+    if not _exists(work_wires):
+        return base_work_wire_type
 
     return "zeroed"
 

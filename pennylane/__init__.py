@@ -76,6 +76,11 @@ from pennylane.qchem import (
     from_openfermion,
     to_openfermion,
 )
+from pennylane.numeric_hamiltonians import (
+    CDFHamiltonian,
+    CGFHamiltonian,
+    VibronicHamiltonian,
+)
 from pennylane._grad import grad, jacobian, vjp, jvp, value_and_grad
 from pennylane._version import __version__
 from pennylane.about import about
@@ -155,6 +160,7 @@ from pennylane.ops.functions import (
     commutator,
     comm,
     single_qubit_zyz_angles,
+    subcircuit,
 )
 from pennylane.ops.identity import I
 from pennylane.optimize import *
@@ -207,7 +213,6 @@ from pennylane.backline import (
     Coprocessor,
     CoprocessorFunction,
     Endpoint,
-    Node,
 )
 from pennylane.backline.runtime import declare as runtime_declare
 from pennylane.backline.runtime import runtime_call

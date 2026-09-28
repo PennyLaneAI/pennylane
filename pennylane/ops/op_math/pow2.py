@@ -39,6 +39,7 @@ from pennylane.decomposition.resources import (
     pow_resource_rep,
 )
 from pennylane.decomposition.symbolic_decomposition import is_integer
+from pennylane.decomposition.utils import to_name
 from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
@@ -239,11 +240,12 @@ class Pow2(SymbolicOp2):
         """
         return base.diagonalizing_gates()
 
-    @staticmethod
     @override
-    def compute_eigvals(base, z):
-        base_eigvals = base.eigvals()
-        return [math.cast(value, dtype="complex128") ** z for value in base_eigvals]
+    def eigvals(self):
+        base_eigvals = self.base.eigvals()
+        is_single_precision = math.get_dtype_name(base_eigvals) in ("float32", "complex64")
+        complex_dtype = "complex64" if is_single_precision else "complex128"
+        return math.cast(base_eigvals, complex_dtype) ** self.z
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
@@ -332,15 +334,15 @@ def _pow_abstract(op: AbstractOperatorLike | type[Operator], z: int | float = 1)
     return qp.pow(op, z)
 
 
-# pylint: disable=protected-access,unused-argument
-@register_condition(lambda z, **__: is_integer(z) and z >= 0)
+# pylint: disable-next=unused-argument
+@register_condition(lambda base, z, **_: is_integer(z) and z >= 0)
 @register_resources(lambda base, z: {abstractify(base): z})
 def repeat_pow_base(base, z):
     """Decompose the power of an operator by repeating the base operator. Assumes z
     is a non-negative integer."""
 
     @qp.for_loop(0, z)
-    def _loop(i):
+    def _loop(_):
         qp.apply(base)
 
     _loop()  # pylint: disable=no-value-for-parameter
@@ -428,3 +430,8 @@ def _list_pow_decomps(op: Pow2) -> DecompCollection:
     custom_rules = list_decomps.dispatch(object)(abs_op)
 
     return custom_rules + [repeat_pow_base] if is_integer(op.z) else custom_rules
+
+
+@to_name.register
+def _pow2_to_name(op: Pow2):
+    return f"Pow({to_name(op.base)})"
