@@ -2157,6 +2157,8 @@ class TestTapeExpansionWithControlled:
         res2 = circuit2(params=params)
         assert qp.math.allclose(res1, res2)
 
+    # tests that the decomposed circuit matches an explicitly defined sequence
+    @pytest.mark.usefixtures("disable_graph_decomposition")
     def test_ctrl_within_ctrl(self):
         """Test using ctrl on a method that uses ctrl."""
 
