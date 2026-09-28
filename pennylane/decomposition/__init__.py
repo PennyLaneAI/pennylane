@@ -93,6 +93,8 @@ Inspecting and Managing Decomposition Rules
     ~has_decomp
     ~inspect_decomps
     ~local_decomps
+    ~register_signature
+    ~signature_registry
     ~DecompCollection
     ~all_decomps
 
@@ -233,6 +235,8 @@ from .utils import (
     enable_graph,
     disable_graph,
     enabled_graph,
+    register_signature,
+    signature_registry,
     toggle_graph_ctx,
 )
 from .decomposition_graph import DecompositionGraph, DecompGraphSolution
