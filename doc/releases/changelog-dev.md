@@ -1013,6 +1013,13 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The ``pennylane.noise`` module has been removed, including ``NoiseModel``,
+  ``add_noise``, ``insert``, noise mitigation transforms (``mitigate_with_zne``,
+  ``fold_global``, ``poly_extrapolate``, ``richardson_extrapolate``,
+  ``exponential_extrapolate``), and ``from_qiskit_noise``. Noise channels such as
+  :class:`~.AmplitudeDamping` are unaffected.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
 * Jax 0.7.1 is now a hard requirement for PennyLane.
   [(#10192)](https://github.com/PennyLaneAI/pennylane/pull/10192)
 
@@ -1478,7 +1485,7 @@
     [(#9753)](https://github.com/PennyLaneAI/pennylane/pull/9753)
   - Integration with :func:`pennylane.apply`.
     [(#9738)](https://github.com/PennyLaneAI/pennylane/pull/9738)
-  - Integration with :func:`pennylane.insert`.
+  - Integration with ``pennylane.insert``.
     [(#9685)](https://github.com/PennyLaneAI/pennylane/pull/9685)
   - Integration with the graph-based decomposition system.
     [(#9723)](https://github.com/PennyLaneAI/pennylane/pull/9723)
