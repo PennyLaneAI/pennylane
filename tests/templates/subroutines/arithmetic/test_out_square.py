@@ -288,6 +288,7 @@ class TestOutSquare:
             ([0, 1], [3, 4, 5, 6, 7], [9, 10, 11, 12, 13, 14, 15], False, [1]),
         ],
     )
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("use_jit", [pytest.param(True, marks=(pytest.mark.catalyst,)), False])
     def test_decomposition_new(
         self,
@@ -300,11 +301,18 @@ class TestOutSquare:
         seed,
     ):  # pylint: disable=too-many-arguments
         """Tests the decomposition rule implemented with the new system."""
+
         op = OutSquare(x_wires, output_wires, work_wires, output_wires_zeroed)
         for j, rule in enumerate(qp.list_decomps(OutSquare)):
             applicable = rule.is_applicable(**op.arguments)
             assert applicable is (j in applicable_rules)
             _test_decomposition_rule(op, rule)
+
+        if qp.capture.enabled():
+            pytest.skip("The following test relies on executing a qnode with capture.")
+
+        for rule in qp.list_decomps(OutSquare):
+            applicable = rule.is_applicable(**op.arguments)
             if applicable:
                 all_wires = (x_wires, output_wires, work_wires)
                 _test_square_correctness(all_wires, rule, seed, output_wires_zeroed, use_jit)
@@ -387,11 +395,9 @@ class TestOutSquare:
             qp.SemiAdder([0], [2, 3], [5, 6, 7, 8]),
             qp.MultiX([True, True], [2, 3]),
             # Shifted adder
-            qp.MultiX([True], [1]),
-            qp.MultiX([True], [2]),
+            qp.MultiX([True, True], [1, 2]),
             qp.SemiAdder([1], [2], [5, 6, 7, 8]),
-            qp.MultiX([True], [2]),
-            qp.MultiX([True], [1]),
+            qp.MultiX([True, True], [1, 2]),
         ]
         assert q.queue == expected
 
@@ -405,7 +411,7 @@ class TestOutSquare:
 
         expected = [
             # Controlled add-subtract block (contains decomposed adder)
-            qp.ctrl(qp.BasisState([1], [0]), control=[2], control_values=[False]),
+            qp.ctrl(qp.MultiX([1], [0]), control=[2], control_values=[False]),
             qp.MultiControlledX(wires=[2, 4], control_values=[False]),
             qp.TemporaryAND(wires=[1, 4, 6]),
             qp.MultiControlledX(wires=[2, 6], control_values=[False]),
@@ -415,7 +421,7 @@ class TestOutSquare:
             Adjoint(qp.TemporaryAND(wires=[1, 4, 6])),
             qp.CNOT(wires=[1, 4]),
             qp.MultiControlledX(wires=[2, 4], control_values=[False]),
-            qp.ctrl(qp.BasisState([1], [0]), control=[2], control_values=[False]),
+            qp.ctrl(qp.MultiX([1], [0]), control=[2], control_values=[False]),
             # Sparse adder
             qp.TemporaryAND(wires=[2, 5, 7]),
             qp.TemporaryAND(wires=[7, 4, 6]),

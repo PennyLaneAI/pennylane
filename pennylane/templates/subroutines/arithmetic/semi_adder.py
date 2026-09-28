@@ -74,7 +74,7 @@ def _left_ladder(x_wires, y_wires, work_wires, carry_flip=None, skip_input_pos=N
     x_pos = 1
     for i in range(1, num_y_wires - 1):
         if i in skip_input_pos:
-            # For a skipped input position,, we don't have an input bit in x, so we just
+            # For a skipped input position, we don't have an input bit in x, so we just
             # need to propagate the carry over y
             _left_block_zeroed([work_wires[i - 1], y_wires[i], work_wires[i]])
         else:
@@ -98,6 +98,9 @@ def _right_ladder(x_wires, y_wires, work_wires, carry_flip=None, skip_input_pos=
         carry_flip(Callable[[Wire], None], optional): if given, called with ``work_wires[0]``
             right before it is uncomputed, undoing the flip applied by ``_left_ladder``'s own
             ``carry_flip`` (see ``_adder_flipped_first_work_wire`` and ``_c_subtract_then_add_one``).
+        skip_input_pos (set[int]): Set of input qubit positions at which no qubit from ``x_wires``
+            is used. Instead, a fixed zeroed input is assumed, and all subsequent input qubits
+            from ``x_wires`` are shifted to the next (not skipped) position.
     """
     num_y_wires = len(y_wires)
     # This is x_pos as computed by _left_ladder, minus one.
@@ -339,7 +342,7 @@ def _semi_adder(x_wires, y_wires, work_wires=None, carry_flip=None, skip_input_p
 
     # Turn wires from big endian to little endian
     # Truncate x_wires, as values larger than 2**num_y_wires-1 can anyways not be stored. If there
-    # are skiped input positions in skip_input_pos, we could truncate even further, which
+    # are skipped input positions in skip_input_pos, we could truncate even further, which
     # happens anyways in the ladder functions.
     x_wires = x_wires[::-1][:num_y_wires]
     y_wires = y_wires[::-1]

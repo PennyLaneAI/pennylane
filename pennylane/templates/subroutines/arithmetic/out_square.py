@@ -378,9 +378,8 @@ def _out_square_with_caddsub_resources(
         resources[SemiAdder(Wire[n - 1], Wire[m - 1], Wire[num_work_wires])] += 1
 
         if m > n:
-            # Shifted addition
-            resources[MultiX(Bool[m - n], Wire[m - n])] += 2
-            resources[MultiX(Bool[n - 1], Wire[n - 1])] += 2
+            # Shifted addition: MultiX spans the respective output_wires (m-n) and x_wires (n-1)
+            resources[MultiX(Bool[m - 1], Wire[m - 1])] += 2
             resources[SemiAdder(Wire[n - 1], Wire[m - n], Wire[num_work_wires])] += 1
 
     return dict(resources)
@@ -391,13 +390,11 @@ def _shifted_adder(x_wires, output_wires, work_wires):
 
     Wires are in PennyLane (big-endian) order.
     """
-    x_ones = [True] * len(x_wires)
-    output_ones = [True] * len(output_wires)
-    MultiX(x_ones, x_wires)
-    MultiX(output_ones, output_wires)
+    all_ones = [True] * (len(x_wires) + len(output_wires))
+    all_target_wires = Wires(x_wires) + Wires(output_wires)
+    MultiX(all_ones, all_target_wires)
     SemiAdder(x_wires, output_wires, work_wires)
-    MultiX(output_ones, output_wires)
-    MultiX(x_ones, x_wires)
+    MultiX(all_ones, all_target_wires)
 
 
 @register_condition(_out_square_with_caddsub_condition)

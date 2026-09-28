@@ -17,11 +17,7 @@ Defines a utility for capturing higher order primitives that return pytrees.
 
 from functools import update_wrapper
 
-has_jax = True
-try:
-    import jax
-except ImportError:
-    has_jax = False
+import jax
 
 
 # pylint: disable=too-few-public-methods
