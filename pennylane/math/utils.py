@@ -13,6 +13,8 @@
 # limitations under the License.
 """Utility functions"""
 
+import numbers
+
 # pylint: disable=wrong-import-order
 import autoray as ar
 import numpy as _np
@@ -550,7 +552,7 @@ def in_backprop(tensor, interface=None):
     raise ValueError(f"Cannot determine if {tensor} is in backpropagation.")
 
 
-def ceil_log2(n: int | float) -> int:
+def ceil_log2(n: numbers.Real) -> int:
     """Compute the ceiling of the base-2 logarithm of a number, with integer as output data type.
 
     Args:
@@ -594,10 +596,14 @@ def ceil_log2(n: int | float) -> int:
     # np.log2 loses precision for inputs with more than 53 significant bits, so that its rounded
     # result may be off by one. Comparing to the neighbouring powers of two corrects this.
     exponent = int(np.ceil(np.log2(n)))
-    return exponent + int(2**exponent < n) - int(2 ** (exponent - 1) >= n)
+    if (1 << exponent) < n:
+        return exponent + 1
+    if (2 ** (exponent - 1)) >= n:  # Can't use shifts because exponent might be 0
+        return exponent - 1
+    return exponent
 
 
-def floor_log2(n: int | float) -> int:
+def floor_log2(n: numbers.Real) -> int:
     """Compute the floor of the base-2 logarithm of a number, with integer as output data type.
 
     Args:
@@ -643,4 +649,8 @@ def floor_log2(n: int | float) -> int:
         shifted = n >> math.cast_like(exponent, n)
         return exponent - (shifted == 0) + (shifted >= 2)
     exponent = int(np.floor(np.log2(n)))
-    return exponent + int(2 ** (exponent + 1) <= n) - int(2**exponent > n)
+    if (1 << exponent + 1) <= n:
+        return exponent + 1
+    if (1 << exponent) > n:
+        return exponent - 1
+    return exponent
