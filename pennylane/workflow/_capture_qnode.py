@@ -81,13 +81,9 @@ from functools import partial
 from numbers import Number
 from warnings import warn
 
-try:
-    import jax
-    from jax.interpreters import ad, batching, mlir
-    from jax.interpreters import partial_eval as pe
-
-except (ImportError, NameError) as e:  # pragma: no cover
-    pass
+import jax
+from jax.interpreters import ad, batching, mlir
+from jax.interpreters import partial_eval as pe
 
 import pennylane as qp
 from pennylane import math
