@@ -15,7 +15,8 @@
 Contains the QuantumPhaseEstimation template.
 """
 
-from pennylane import ops
+from pennylane import capture, compiler, math, ops
+from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator, Operator2
 from pennylane.decomposition import (
     add_decomps,
@@ -26,10 +27,8 @@ from pennylane.ops import adjoint
 from pennylane.ops import pow as qp_pow
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.pow2 import _pow_abstract
-
-# pylint: disable=arguments-differ
 from pennylane.typing import Wire
-from pennylane.wires import Wires
+from pennylane.wires import Wires, _filter_abstract_and_traced_wires
 
 from .qft import QFT
 
@@ -159,7 +158,9 @@ class QuantumPhaseEstimation(Operator2):
     def __init__(self, unitary, target_wires=None, estimation_wires=None):
         if isinstance(unitary, Operator):
             # If the unitary is expressed in terms of operators, do not provide target wires
-            if target_wires is not None and Wires(target_wires) != unitary.wires:
+            if target_wires is not None and _filter_abstract_and_traced_wires(
+                target_wires
+            ) != _filter_abstract_and_traced_wires(unitary.wires):
                 raise QuantumFunctionError(
                     "The unitary is expressed as an operator, which already has target wires "
                     "defined, do not additionally specify target wires."
@@ -181,8 +182,11 @@ class QuantumPhaseEstimation(Operator2):
 
         super().__init__(unitary, target_wires, estimation_wires)
 
-        if not self.is_fully_abstract and any(
-            wire in self.target_wires for wire in self.estimation_wires
+        if Wires.shared_wires(
+            [
+                _filter_abstract_and_traced_wires(self.target_wires),
+                _filter_abstract_and_traced_wires(self.estimation_wires),
+            ]
         ):
             raise QuantumFunctionError("The target wires and estimation wires must not overlap.")
 
@@ -206,10 +210,24 @@ def _qpe_decomp_resource(
 
 @register_resources(_qpe_decomp_resource)
 def _qpe_decomp(unitary, target_wires, estimation_wires):  # pylint: disable=unused-argument
-    for w in estimation_wires:
-        ops.Hadamard(w)
+
+    if compiler.active() or capture.enabled():
+        estimation_wires = math.array(estimation_wires, like="jax")
+
+    num_estimation_wires = len(estimation_wires)
+
+    @for_loop(0, num_estimation_wires)
+    def _apply_h(i):
+        ops.Hadamard(estimation_wires[i])
+
+    # pylint: disable=no-value-for-parameter
+    _apply_h()
+
+    # NOTE: Must be pythonic for loop as 'z' argument in 'pow'
+    # is a static argument.
     for i, w in enumerate(estimation_wires):
         ops.ctrl(qp_pow(unitary, 2 ** (len(estimation_wires) - 1 - i)), w)
+
     ops.adjoint(QFT(wires=estimation_wires))
 
 

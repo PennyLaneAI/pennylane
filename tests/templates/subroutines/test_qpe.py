@@ -280,8 +280,6 @@ class TestDecomposition:
 
     def test_map_wires(self):
         """Tests that QPE behaves correctly in a wire map"""
-        # pylint: disable=protected-access
-
         unitary = qp.RX(np.pi / 4, wires=[0]) @ qp.CNOT(wires=[0, 1])
         qpe = qp.QuantumPhaseEstimation(unitary, estimation_wires=[2, 3])
         new_qpe = qp.map_wires(
@@ -295,9 +293,9 @@ class TestDecomposition:
         )
 
         assert list(new_qpe.wires) == [2, 3, 4, 5]
-        assert list(new_qpe._hyperparameters["target_wires"]) == [2, 3]
-        assert list(new_qpe._hyperparameters["estimation_wires"]) == [4, 5]
-        assert list(new_qpe._hyperparameters["unitary"].wires) == [2, 3]
+        assert list(new_qpe.target_wires) == [2, 3]
+        assert list(new_qpe.estimation_wires) == [4, 5]
+        assert list(new_qpe.unitary.wires) == [2, 3]
 
     def test_adjoint(self):
         """Test that the QPE adjoint works."""
