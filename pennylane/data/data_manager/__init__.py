@@ -200,21 +200,21 @@ def _download_datasets(  # pylint: disable=too-many-arguments
         pbar_tasks = (None for _ in dest_paths)
 
     with futures.ThreadPoolExecutor(min(num_threads, len(dest_paths))) as pool:
-        for url, dest_path, pbar_task in zip(dataset_urls, dest_paths, pbar_tasks, strict=True):
-            futs = [
-                pool.submit(
-                    _download_dataset,
-                    url,
-                    dest_path,
-                    attributes=attributes,
-                    force=force,
-                    block_size=block_size,
-                    pbar_task=pbar_task,
-                )
-            ]
-            for result in futures.wait(futs, return_when=futures.FIRST_EXCEPTION).done:
-                if result.exception() is not None:
-                    raise result.exception()
+        futs = [
+            pool.submit(
+                _download_dataset,
+                url,
+                dest_path,
+                attributes=attributes,
+                force=force,
+                block_size=block_size,
+                pbar_task=pbar_task,
+            )
+            for url, dest_path, pbar_task in zip(dataset_urls, dest_paths, pbar_tasks, strict=True)
+        ]
+        for fut in futures.as_completed(futs):
+            if fut.exception() is not None:
+                raise fut.exception()
 
     return dest_paths
 
