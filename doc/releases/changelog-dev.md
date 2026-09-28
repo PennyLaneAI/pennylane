@@ -1018,7 +1018,7 @@
   ``fold_global``, ``poly_extrapolate``, ``richardson_extrapolate``,
   ``exponential_extrapolate``), and ``from_qiskit_noise``. Noise channels such as
   :class:`~.AmplitudeDamping` are unaffected.
-  [(#10213)](https://github.com/PennyLaneAI/pennylane/pull/10213)
+  [(#10214)](https://github.com/PennyLaneAI/pennylane/pull/10214)
 
 * Jax 0.7.1 is now a hard requirement for PennyLane.
   [(#10192)](https://github.com/PennyLaneAI/pennylane/pull/10192)
