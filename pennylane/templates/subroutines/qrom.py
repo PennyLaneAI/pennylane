@@ -15,7 +15,6 @@
 This submodule contains the template for QROM.
 """
 
-from collections import Counter
 from collections.abc import Sequence
 from functools import partial
 
@@ -33,7 +32,6 @@ from pennylane.decomposition import (
 from pennylane.math import ceil_log2
 from pennylane.ops import CNOT, CZ, X, cond, ctrl, pauli_measure
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
-from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import AbstractArray, Bool, Int, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
@@ -273,7 +271,7 @@ def _calculate_select_swap_sizes(
     """
 
     if num_work_wires < num_control_wires - 1:
-        return num_work_wires, 0, 1
+        return num_control_wires, num_work_wires, 0, 1
 
     # Initialize available swap space using total work wires
     n_swap_work_wires = num_work_wires
@@ -288,20 +286,20 @@ def _calculate_select_swap_sizes(
     n_select_work_wires = num_work_wires - n_swap_work_wires
 
     # Adjust depth if Select doesn't have enough work wires for the required control logic
-    n_select_control_wires = num_control_wires - math.floor(math.log2(depth))
+    n_select_control_wires = num_control_wires - int(math.floor(math.log2(depth)))
     while n_select_work_wires < n_select_control_wires - 1:
         depth = depth // 2
         n_swap_work_wires = num_target_wires * depth - num_target_wires
         n_select_work_wires = num_work_wires - n_swap_work_wires
-        n_select_control_wires = num_control_wires - math.floor(math.log2(depth))
+        n_select_control_wires = num_control_wires - int(math.floor(math.log2(depth)))
 
-    return n_select_work_wires, n_swap_work_wires, depth
+    return n_select_control_wires, n_select_work_wires, n_swap_work_wires, depth
 
 
 def _select_swap_condition(bitstrings, control_wires, target_wires, work_wires, clean):
     # pylint: disable=unused-argument
     """We use Select-SWAP only when there are enough work wires for unary iteration on the
-    nested select QROM and an actual SWAP network is used (depth > 1)."""
+    nested select QROM and an actual SWAP network is used on top, i.e. for depth > 1."""
     num_control_wires = len(control_wires)
     num_work_wires = len(work_wires)
 
@@ -323,24 +321,23 @@ def _select_swap_resources(
     num_target_wires = len(target_wires)
     num_work_wires = len(work_wires)
 
-    num_work_wires_select, _, depth = _calculate_select_swap_sizes(
+    num_control_wires_select, num_work_wires_select, _, depth = _calculate_select_swap_sizes(
         num_bitstrings, num_control_wires, num_target_wires, num_work_wires
     )
 
     n_columns = int(np.ceil(num_bitstrings / depth))
     # Select block (implemented as a nested QROM over concatenated columns)
-    num_control_select_wires = ceil_log2(2**num_control_wires / depth)
     new_num_targets = depth * num_target_wires
     bigger_qrom = QROM(
         Int[n_columns, new_num_targets],
-        Wire[num_control_select_wires],
+        Wire[num_control_wires_select],
         Wire[new_num_targets],
         Wire[num_work_wires_select],
         False,
     )
 
     # Swap block
-    num_control_swap_wires = num_control_wires - num_control_select_wires
+    num_control_swap_wires = num_control_wires - num_control_wires_select
     num_cswaps_per_block = num_target_wires * (2**num_control_swap_wires - 1)
 
     if not clean or depth == 1:
@@ -358,7 +355,7 @@ def _select_swap(
         MultiX(bitstrings[0, :], wires=target_wires)
         return
 
-    _, num_work_wires_swap, depth = _calculate_select_swap_sizes(
+    n_select_control_wires, _, num_work_wires_swap, depth = _calculate_select_swap_sizes(
         len(bitstrings), len(control_wires), len(target_wires), len(work_wires)
     )
 
@@ -366,8 +363,6 @@ def _select_swap(
     select_work_wires = work_wires[num_work_wires_swap:]
     swap_wires = Wires(target_wires) + Wires(swap_work_wires)
 
-    capacity = 1 << len(control_wires)
-    n_select_control_wires = ceil_log2(capacity / depth)
     select_control_wires = control_wires[:n_select_control_wires]
     swap_control_wires = control_wires[n_select_control_wires:]
 
@@ -400,51 +395,6 @@ def _select_swap(
         cswaps()
 
     _select_swap_loop()  # pylint: disable=no-value-for-parameter
-
-
-def _qrom_multicontrol_condition(
-    bitstrings, control_wires, target_wires, work_wires, clean
-):  # pylint: disable=unused-argument,too-many-arguments
-    """Naive multicontrol loading when there are too few work wires for unary iteration."""
-    return len(work_wires) < len(control_wires) - 1
-
-
-def _qrom_multicontrol_resources(
-    bitstrings, control_wires, target_wires, work_wires, clean
-):  # pylint: disable=unused-argument,too-many-arguments
-    num_control_wires = len(control_wires)
-    num_work_wires = len(work_wires)
-    basis_rep = MultiX(Bool[len(target_wires)], Wire[len(target_wires)])
-    resources = Counter()
-    for i in range(len(bitstrings)):
-        # Index ``i`` encoded in the control register (MSBs are the extra address wires).
-        num_zeros = num_control_wires - int(i).bit_count()
-        resources[
-            _ctrl_abstract(
-                basis_rep,
-                Wire[num_control_wires],
-                Wire[num_work_wires],
-                num_zero_control_values=num_zeros,
-            )
-        ] += 1
-    return dict(resources)
-
-
-@register_condition(_qrom_multicontrol_condition)
-@register_resources(_qrom_multicontrol_resources)
-def _qrom_multicontrol(
-    bitstrings, control_wires, target_wires, work_wires, clean
-):  # pylint: disable=unused-argument,too-many-arguments
-    """Load each bitstring with a single multi-controlled ``MultiX`` (no unary iteration)."""
-    num_controls = len(control_wires)
-    for i, bits in enumerate(bitstrings):
-        control_values = [(i >> (num_controls - 1 - b)) & 1 for b in range(num_controls)]
-        ctrl(
-            MultiX(bits, wires=target_wires),
-            control=control_wires,
-            control_values=control_values,
-            work_wires=work_wires,
-        )
 
 
 def _measurement_uncompute(work_wire, ctrl_wires, targets, product):
@@ -830,10 +780,19 @@ def _qrom_measurement_decomposition(
     _measurement_qrom_outer(controls, list(target_wires), bitstrings, L)
 
 
-def _qrom_unary_iteration_condition(
-    bitstrings, control_wires, target_wires, work_wires, clean=True
-):  # pylint: disable=unused-argument,too-many-arguments
-    return len(work_wires) >= len(control_wires) - 1
+def _unary_iteration_split(num_control_wires, num_work_wires):
+    """Split the control register between the unary iteration tree and the data loads.
+
+    The tree spans the most-significant control wires and consumes one work wire per level, so
+    at most ``num_work_wires + 1`` control wires can be absorbed into it. The remaining,
+    least-significant control wires are attached as additional controls to each load.
+
+    Returns:
+        tuple[int]: the number of control wires spanned by the tree, and the number of remaining
+        control wires.
+    """
+    num_tree_wires = min(num_control_wires, num_work_wires + 1)
+    return num_tree_wires, num_control_wires - num_tree_wires
 
 
 def _qrom_unary_iteration_resources(
@@ -848,15 +807,28 @@ def _qrom_unary_iteration_resources(
     num_target_wires = len(target_wires)
 
     basis_rep = MultiX(Bool[num_target_wires], Wire[num_target_wires])
-    cbasis_rep = ctrl(basis_rep, control=Wire[1])
     if c == 0:
         return {basis_rep: 1}
     if c == 1:
+        cbasis_rep = ctrl(basis_rep, control=Wire[1])
         if K == 1:
             return {cbasis_rep: 1}
         return {cbasis_rep: 1, basis_rep: 1}
 
-    # The number of elbows required for non-partial unary iteration is given by
+    num_tree_wires, num_extra = _unary_iteration_split(c, len(work_wires))
+    # Each load is controlled on the ``num_extra`` leftover control wires, plus the flag wire of
+    # the iteration tree if there is one.
+    load_rep = ctrl(basis_rep, control=Wire[1 + num_extra])
+    if num_tree_wires == 1:
+        # No work wires, so there is no tree and every load is controlled on all control wires.
+        return {load_rep: K}
+
+    # The tree iterates over blocks of ``2**num_extra`` bitstrings rather than over single
+    # bitstrings, so the elbow count below is in terms of the number of blocks.
+    num_blocks = -(-K // (1 << num_extra))
+
+    # The number of elbows required for non-partial unary iteration over K slots with c control
+    # nodes is given by
     # N(c, K) = c + K - 2 - ‖K-1‖_H - int(K>2^{c-1}),
     # where ‖.‖_H denotes the Hamming weight, or bit count.
     # To see this, note that adding a control node to a given unary iteration is done by using the
@@ -870,23 +842,81 @@ def _qrom_unary_iteration_resources(
     # The formula at the top is the solution to this recursion relation. An alternative expression
     # for the same is
     # N(c,K)=1+∑_{j=1}^{c−2} ⌈K⋅2^{−j}⌉
-    more_than_half = int(K > 2 ** (c - 1))
-    num_elbows = c + K - 2 - (K - 1).bit_count() - more_than_half
+    more_than_half = int(num_blocks > 2 ** (num_tree_wires - 1))
+    num_elbows = num_tree_wires + num_blocks - 2 - (num_blocks - 1).bit_count() - more_than_half
     return {
         TemporaryAND: num_elbows,
         qp_ops.adjoint(TemporaryAND(Wire[3])): num_elbows,
-        CNOT: K - 1 + more_than_half,
-        X: 2 * int(K > 2 ** (c - 2)),
-        cbasis_rep: K,
+        CNOT: num_blocks - 1 + more_than_half,
+        X: 2 * int(num_blocks > 2 ** (num_tree_wires - 2)),
+        load_rep: K,
     }
 
 
-def _main_unary_loop_monolithic(bitstrings, triples, target_wires):
-    K = len(bitstrings)
+def _load_block(block, address_wires, target_wires, flag=None):
+    """Load one block of bitstrings into the target register.
+
+    The ``s``-th entry of ``block`` is loaded when the ``address_wires`` hold the value ``s``,
+    read most-significant bit first. If given, ``flag`` is an additional control wire that must
+    be in state 1, which is how the unary iteration selects the current block.
+    """
+    num_address = len(address_wires)
+    controls = list(address_wires) if flag is None else [flag, *address_wires]
+    address_start = 0 if flag is None else (1 << num_address)
+
+    @for_loop(len(block))
+    def ctrl_sequence(s):
+        control_values = math.int_to_binary(s + address_start, len(controls))
+        ctrl(MultiX(block[s], target_wires), control=controls, control_values=control_values)
+
+    ctrl_sequence()  # pylint: disable=no-value-for-parameter
+
+
+def flip_iteration_bit(a, triples, top_not_flipped):
+    """Update the unary iteration tree by flipping the most significant bit that differs between
+    subsequent addresses (the central remains of merging a temporary AND uncomputation
+    ladder and the next temporary AND computation ladder).
+
+    Args:
+        a (int): MSB-first index of least-significant 0 bit of k, the last loaded address
+        triples (TensorLike): wire triples for unary iteration, sliced from the interleaved
+            control and auxiliary wires.
+        top_not_flipped (bool): whether the last loaded address is in the first half of
+            the total capacity given by the number of control wires.
+
+    """
+    flip_first_control = math.logical_and(a == 1, top_not_flipped)
+
+    # Once resource hints are merged, use those estimates:
+    # cond(flip_first_control, X, estimated_probability=quarter_prob)(triples[0][0])
+    # cond(a > 0, CNOT, estimated_probability=1 - mid_prob)(triples[a - 1][::2])
+    # cond(flip_first_control, X, estimated_probability=quarter_prob)(triples[0][0])
+    # cond(a == 0, CNOT, estimated_probability=mid_prob)(triples[0][::2])
+    # cond(a == 0, CNOT, estimated_probability=mid_prob)(triples[0][1:])
+    cond(flip_first_control, X)(triples[0][0])
+    cond(a > 0, CNOT)(triples[a - 1][::2])
+    cond(flip_first_control, X)(triples[0][0])
+    cond(a == 0, CNOT)(triples[0][::2])
+    cond(a == 0, CNOT)(triples[0][1:])
+
+
+def _main_unary_loop_monolithic(bitstrings, triples, target_wires, extra_control_wires):
     c = len(triples) + 1
+    assert c >= 2
+    block_size = 1 << len(extra_control_wires)
+    # The iteration runs over blocks of bitstrings, all of which are full except for the last.
+    num_blocks = -(-len(bitstrings) // block_size)
+    # An explicit trailing dimension is required because ``num_blocks - 1`` may be zero.
+    blocks = math.reshape(
+        bitstrings[: (num_blocks - 1) * block_size], (num_blocks - 1, block_size, len(target_wires))
+    )
+    last_block = bitstrings[(num_blocks - 1) * block_size :]
     # last work wire in use acts as the flag qubit for data loading.
     flag = triples[-1][2]
-    assert c >= 2
+
+    concrete_load = partial(
+        _load_block, address_wires=extra_control_wires, target_wires=target_wires, flag=flag
+    )
 
     TemporaryAND(triples[0], (0, 0))
     for i in range(1, len(triples)):
@@ -894,24 +924,20 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires):
 
     # [dwierichs] todo: Once resource hints are merged, use those estimates:
     # [sc-129626] [sc-129627]
-    # quarter_prob = int(K > (1 << (c - 2))) / (K - 1)
-    # mid_prob = int(K > (1 << (c - 1))) / (K - 1)
+    # quarter_prob = int(num_blocks > (1 << (c - 2))) / (num_blocks - 1)
+    # mid_prob = int(num_blocks > (1 << (c - 1))) / (num_blocks - 1)
     # est_ladder_len = float(
-    # np.mean([math.bitwise_count(math.bitwise_xor(k, k + 1)) - 1 for k in range(K - 1)])
+    # np.mean([math.bitwise_count(math.bitwise_xor(k, k + 1)) - 1 for k in range(num_blocks - 1)])
     # )
 
-    # Loop over all bitstrings but the last one
+    # Loop over all blocks but the last one
     def loop(k):
-        # 1. load bitstrings[k], controlled on the flag circuit
-        ctrl(MultiX(bitstrings[k], target_wires), control=[flag])
+        # 1. load the k-th block, controlled on the flag circuit
+        concrete_load(blocks[k])
 
         # 2. transition address k -> k+1
         # a is the MSB-first index of least-significant 0 bit of k
         a = c - math.bitwise_count(math.bitwise_xor(k, k + 1)).astype(int)
-
-        # Whether we are in the first half of the iteration, so that the top bit
-        # has not been flipped yet
-        top_not_flipped = k < (1 << (c - 1))
 
         # 2a. right-elbow ladder: uncompute levels c-2 .. max(a,1) (top-down)
         lower_bound = math.max(math.array([a, 1], like=a))
@@ -925,23 +951,10 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires):
         uncompute()  # pylint: disable=no-value-for-parameter
 
         # 2b. merge gate(s) at the boundary
-        # Once resource hints are merged, use those estimates:
-        # cond(math.logical_and(a == 1, top_not_flipped), X, estimated_probability=quarter_prob)(
-        #    triples[0][0]
-        # )
-        cond(math.logical_and(a == 1, top_not_flipped), X)(triples[0][0])
-        # cond(a > 0, CNOT, estimated_probability=1 - mid_prob)(triples[a - 1][::2])
-        cond(a > 0, CNOT)(triples[a - 1][::2])
-        # cond(math.logical_and(a == 1, top_not_flipped), X, estimated_probability=quarter_prob)(
-        #    triples[0][0]
-        # )
-        cond(math.logical_and(a == 1, top_not_flipped), X)(triples[0][0])
-
-        # Once resource hints are merged, use those estimates:
-        # cond(a == 0, CNOT, estimated_probability=mid_prob)(triples[0][::2])
-        cond(a == 0, CNOT)(triples[0][::2])
-        # cond(a == 0, CNOT, estimated_probability=mid_prob)(triples[0][1:])
-        cond(a == 0, CNOT)(triples[0][1:])
+        # Whether we are in the first half of the iteration, so that the top bit
+        # has not been flipped yet
+        top_not_flipped = k < (1 << (c - 1))
+        flip_iteration_bit(a, triples, top_not_flipped)
 
         # 2c. left-elbow ladder: recompute levels max(a,1) .. c-2 (bottom-up)
         # Once resource hints are merged, use those estimates:
@@ -952,13 +965,13 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires):
 
         recompute()  # pylint: disable=no-value-for-parameter
 
-    for_loop(K - 1)(loop)()  # pylint: disable=no-value-for-parameter
+    for_loop(num_blocks - 1)(loop)()  # pylint: disable=no-value-for-parameter
 
-    # Load last bit string
-    ctrl(MultiX(bitstrings[K - 1], target_wires), control=[flag])
+    # Load the last block, which may be partially filled
+    concrete_load(last_block)
 
-    # closing ladder of right elbows for address K-1; control values depend on the bits of K-1
-    closing_bits = [(K - 1 >> (c - 1 - b)) & 1 for b in range(c)]
+    # closing ladder of right elbows for address num_blocks-1; control values depend on the bits of num_blocks-1
+    closing_bits = [(num_blocks - 1 >> (c - 1 - b)) & 1 for b in range(c)]
     # levels i=c-2 .. 1 close with cvals (1, closing_bits[i+1]); level 0 closes with
     # cvals closing_bits[:2]
     for i in range(len(triples) - 1, 0, -1):
@@ -966,12 +979,18 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires):
     qp_ops.adjoint(TemporaryAND(wires=triples[0], control_values=tuple(closing_bits[:2])))
 
 
-@register_condition(_qrom_unary_iteration_condition)
 @register_resources(_qrom_unary_iteration_resources)
 def _qrom_unary_iteration(
     bitstrings, control_wires, target_wires, work_wires, clean, **__
 ):  # pylint: disable=unused-argument, too-many-arguments
-    """Unary iteration decomposition of QROM."""
+    """Unary iteration decomposition of QROM.
+
+    The unary iteration tree is grown over the most-significant control wires, one level per
+    available work wire. Any control wire that is left over becomes an additional control of the
+    ``MultiX`` loads, so that each slot of the unary iteration tree loads a block of bitstrings.
+    With no work wires at all this reduces to one multi-controlled load per bitstring, with
+    at least ``len(control_wires)-1`` work wires, we obtain classic unary iteration.
+    """
     num_controls = len(control_wires)
 
     if num_controls == 0:
@@ -989,22 +1008,34 @@ def _qrom_unary_iteration(
         ctrl(MultiX(bitstrings[0] ^ bitstrings[1], target_wires), control=control_wires)
         return
 
+    num_tree_wires, num_extra = _unary_iteration_split(num_controls, len(work_wires))
+
+    if num_tree_wires == 1:
+        # Without work wires there is no unary iteration tree to build and the full control
+        # register controls each bitstring to be loaded.
+        _load_block(bitstrings, control_wires, target_wires)
+        return
+
+    # We are guaranteed num_tree_wires > 1 from here on, because num_tree_wires >= 1 initially.
+    tree_wires, extra_control_wires = control_wires[:num_tree_wires], control_wires[num_tree_wires:]
+
     # Compute unary iteration wires
-    interleaved = _interleave_controls(control_wires, work_wires, head=None)
-    triples = [interleaved[2 * i : 2 * i + 3] for i in range(num_controls - 1)]
+    interleaved = _interleave_controls(tree_wires, work_wires, head=None)
+    triples = [interleaved[2 * i : 2 * i + 3] for i in range(num_tree_wires - 1)]
 
     if compiler.active() or capture.enabled():
         bitstrings = math.array(bitstrings, like="jax")
         triples = math.array(triples, like="jax")
+        if num_extra > 0:
+            extra_control_wires = math.array(extra_control_wires, like="jax")
 
-    _main_unary_loop_monolithic(bitstrings, triples, target_wires)
+    _main_unary_loop_monolithic(bitstrings, triples, target_wires, extra_control_wires)
 
 
 add_decomps(
     QROM,
     _select_swap,
     _qrom_unary_iteration,
-    _qrom_multicontrol,
     _qrom_measurement_decomposition,
 )
 add_decomps("Adjoint(QROM)", _qrom_measurement_decomposition)

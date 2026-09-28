@@ -309,6 +309,8 @@ class TestQROM:
             (6, [0, 1, 2], [3, 4], [5, 6], False),
             (1, [0, 1, 2, 6], [3, 4, 5], [7, 8, 9], True),
             (1, [0, 1, 2, 6], [3, 4, 5], [7, 8, 9], False),
+            (11, [0, 1, 2, 3], [4, 5], [6, 7], True),
+            (5, [0, 1, 2, 3], [4], [], False),
         ],  # pylint: disable=too-many-arguments
     )
     @pytest.mark.parametrize("rule", qp.list_decomps(qp.QROM))
@@ -489,32 +491,41 @@ def test_too_many_work_wires_case():
 
 
 @pytest.mark.parametrize(
-    ("terms", "n_ctrl", "n_target", "n_work", "expected"),
+    ("num_bitstrings", "n_ctrl", "n_target", "n_work", "expected"),
     [
-        (16, 4, 1, 3, (2, 1, 2)),
-        (16, 4, 10, 5, (5, 0, 1)),
-        (7, 3, 2, 2, (2, 0, 1)),
-        (14, 4, 2, 10, (4, 6, 4)),
-        (256, 8, 2, 10, (8, 2, 2)),
-        (4, 2, 1, 1, (0, 1, 2)),
-        (14, 4, 2, 2, (2, 0, 1)),
-        (256, 8, 2, 6, (6, 0, 1)),
-        (4, 2, 1, 0, (0, 0, 1)),
+        (16, 4, 1, 3, (3, 2, 1, 2)),
+        (16, 4, 10, 5, (4, 5, 0, 1)),
+        (7, 3, 2, 2, (3, 2, 0, 1)),
+        (14, 4, 2, 10, (2, 4, 6, 4)),
+        (256, 8, 2, 10, (7, 8, 2, 2)),
+        (4, 2, 1, 1, (1, 0, 1, 2)),
+        # Quick-return path (n_work < n_ctrl-1): We get depth 1, no swap work wires and copied
+        # control/work wires for the Select part
+        (14, 4, 2, 2, (4, 2, 0, 1)),
+        (256, 8, 2, 6, (8, 6, 0, 1)),
+        (4, 2, 1, 0, (2, 0, 0, 1)),
     ],
 )
-def test_calculate_select_swap_sizes(terms, n_ctrl, n_target, n_work, expected):
+def test_calculate_select_swap_sizes(num_bitstrings, n_ctrl, n_target, n_work, expected):
     """Test the allocation logic for Select vs Swap work wires."""
 
-    # result contains (num_select_work_wires, num_swap_work_wires, depth)
-    num_select_work_wires, num_swap_work_wires, depth = _calculate_select_swap_sizes(
-        terms=terms, num_control_wires=n_ctrl, num_target_wires=n_target, num_work_wires=n_work
+    # result contains (num_select_control_wires, num_select_work_wires, num_swap_work_wires, depth)
+    num_select_control_wires, num_select_work_wires, num_swap_work_wires, depth = (
+        _calculate_select_swap_sizes(
+            num_bitstrings=num_bitstrings,
+            num_control_wires=n_ctrl,
+            num_target_wires=n_target,
+            num_work_wires=n_work,
+        )
     )
     assert num_select_work_wires + num_swap_work_wires == n_work  # all work wires are used
     new_n_target = int(np.ceil(n_target / depth))
     new_n_ctrl = qp.math.ceil_log2(new_n_target)
-    # Select has enough work wires for unary iteration
+    # Select has enough work wires for unary iteration if originally that was the case
+    if n_work >= n_ctrl - 1:
+        assert num_select_work_wires >= num_select_control_wires - 1
     assert num_select_work_wires >= new_n_ctrl - 1
-    assert (num_select_work_wires, num_swap_work_wires, depth) == expected
+    assert (num_select_control_wires, num_select_work_wires, num_swap_work_wires, depth) == expected
 
 
 class TestMeasurementQROM:
