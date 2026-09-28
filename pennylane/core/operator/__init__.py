@@ -101,6 +101,7 @@ Utility Functions
     :toctree: api
 
     ~abstractify
+    ~generate_uid
 
 Boolean Functions
 ~~~~~~~~~~~~~~~~~
@@ -165,6 +166,7 @@ from .operator2 import Operator2, StatePrepBase2
 from .channel import Channel
 from .state_prep import StatePrepBase
 from .utils import abstractify
+from .generate_uid import generate_uid
 
 __all__ = [
     "Operator",
@@ -175,4 +177,5 @@ __all__ = [
     "Operator1",
     "StatePrepBase2",
     "abstractify",
+    "generate_uid",
 ]

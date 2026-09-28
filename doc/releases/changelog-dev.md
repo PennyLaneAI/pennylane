@@ -603,6 +603,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Adds `qp.core.operator.generate_uid` for returning the UID of an ``Operator2``. This UID is used to represent
+  non-lowerable static and hybrid arguments uniquely.
+
 * Adds a `qp.decomposition.all_decomps` functions for finding all decompositions that might be hit by
   decomposing a gate to any gateset.
   [(#10187)](https://github.com/PennyLaneAI/pennylane/pull/10187)
