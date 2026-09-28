@@ -173,6 +173,17 @@ class TestRotGateFusion:
         angles_1, angles_2 = np.transpose(special_angles, (1, 0, 2))
         self.run_interface_test(angles_1, angles_2)
 
+    def test_full_rot_fusion_diagonal_singularity(self):
+        """Regression test for issue #10185. Fusing two Hadamards (each represented by
+        ``Rot(pi, pi / 2, 0)``) lands on a diagonal singularity where a floating-point
+        rounding error pushes the intermediate magnitude slightly above 1. The unguarded
+        ``arccos`` then returned NaN. The fused angles must instead be finite and reproduce
+        the original operation."""
+        angles = [np.pi, np.pi / 2, 0.0]
+        fused_angles = fuse_rot_angles(angles, angles)
+        assert np.all(np.isfinite(fused_angles))
+        self.run_interface_test(angles, angles)
+
     # pylint: disable=too-many-arguments
     def run_jacobian_test(self, all_angles, jac_fn, is_batched, jit_fn=None, array_fn=None):
         """Execute standard test lines for testing Jacobians with different interfaces.

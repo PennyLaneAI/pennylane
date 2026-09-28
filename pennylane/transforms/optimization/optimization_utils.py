@@ -130,6 +130,7 @@ def fuse_rot_angles(angles_1, angles_2):
     mag = qp.math.sqrt(
         c1**2 * c2**2 + s1**2 * s2**2 - 2 * c1 * c2 * s1 * s2 * qp.math.cos(omega1 + phi2)
     )
+    mag = qp.math.clip(mag, -1.0, 1.0)
     theta_f = 2 * qp.math.arccos(mag)
 
     alpha1, beta1 = (phi1 + omega1) / 2, (phi1 - omega1) / 2
