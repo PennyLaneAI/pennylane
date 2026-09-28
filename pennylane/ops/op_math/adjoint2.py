@@ -38,6 +38,7 @@ from pennylane.decomposition.resources import (
     adjoint_resource_rep,
 )
 from pennylane.decomposition.symbolic_decomposition import self_adjoint
+from pennylane.decomposition.utils import to_name
 
 from .symbolicop2 import SymbolicOp2
 
@@ -303,3 +304,8 @@ def adjoint_rotation(base):
     assert len(base.dynamic_argnames) == 1
     angle = tuple(base.dynamic_args.values())[0]
     qp.ops.functions.bind_new_parameters(base, (-angle,))
+
+
+@to_name.register
+def _adjoint2_to_name(op: Adjoint2):
+    return f"Adjoint({to_name(op.base)})"

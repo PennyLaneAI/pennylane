@@ -24,6 +24,7 @@ from pennylane.allocation import allocate
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
+from pennylane.numeric_hamiltonians import VibronicHamiltonian
 from pennylane.ops import CNOT, Hadamard, adjoint, cond, ctrl
 from pennylane.typing import AbstractWires, Float, Wire
 from pennylane.wires import Wires, WiresLike
@@ -36,9 +37,6 @@ from ..arithmetic.signed_out_multiplier import SignedOutMultiplier, _twos_comple
 from ..arithmetic.signed_out_square import SignedOutSquare
 from ..multix import MultiX
 from ..qrom import QROM
-
-# Keys expected in the dense vibronic Hamiltonian dictionary.
-HAMILTONIAN_KEYS = ("constant", "linear", "quadratic", "kinetic")
 
 
 def _aqft(order, wires):
@@ -59,26 +57,30 @@ class TrotterVibronic(Operator2):
 
     This template realizes :math:`U \approx e^{-iHt}` for a vibronic Hamiltonian, using the
     phase-gradient arithmetic construction of `Motlagh et al, arXiv:2411.13669
-    <https://arxiv.org/abs/2411.13669>`__. The Hamiltonian acts on :math:`N` electronic states
-    (represented on :math:`n = \lceil\log_2(N)\rceil` qubits) and :math:`M` vibrational modes,
-    each discretized on a grid represented with :math:`k` qubits. The vibronic Hamiltonian is
-    partitioned into position fragments (diagonal in a fragment-specific electronic basis and
-    polynomial in the mode positions up to second order) and a single trailing kinetic fragment
-    (quadratic in the mode momenta).
+    <https://arxiv.org/abs/2411.13669>`__,
+
+    .. math::
+
+        H = \sum_{i=0}^{F-1} H_i + H_{\text{kin}},
+        \qquad
+        H_i = V_i D_i(Q) V_i^\dagger,
+        \qquad
+        H_{\text{kin}} = \sum_r t_r P_r^2 .
+
+    .. seealso:: :class:`pennylane.VibronicHamiltonian`
 
     Args:
         evolution_time (float): time :math:`t` for which to evolve under the vibronic Hamiltonian.
         num_trotter_steps (int): number of second-order Trotter steps to use.
-        hamiltonian (dict): the vibronic Hamiltonian as a dictionary of dense coefficient tensors.
-            The expected keys and shapes are
-
-            * ``"constant"``: ``(F, N, N)`` -- the constant (mode-independent) coefficients of the
-              ``F`` position fragments;
-            * ``"linear"``: ``(F, N, N, M)`` -- the linear-in-position coefficients;
-            * ``"quadratic"``: ``(F, N, N, M, M)`` -- the quadratic-in-position coefficients (see
-              the Implementation Details section for the diagonal/off-diagonal convention);
-            * ``"kinetic"``: ``(N, N, M, M)`` -- the quadratic-in-momentum coefficients of the
-              single kinetic fragment.
+        hamiltonian (:class:`pennylane.VibronicHamiltonian`): A
+            :class:`pennylane.VibronicHamiltonian` instance whose arguments are ``constant``,
+            ``linear``, ``quadratic`` and ``kinetic``. The expected shapes are
+            ``constant: (F, N, N)``, ``linear: (F, N, N, M)``, ``quadratic: (F, N, N, M, M)`` and
+            ``kinetic: (N, N, M, M)``, where ``F`` is the number of position fragments, ``N`` the
+            number of electronic states and ``M`` the number of vibrational modes. ``N`` must be a
+            power of 2, and the fragments must follow the "XOR" scheme described in the
+            Implementation Details section. See the documentation for
+            :class:`pennylane.VibronicHamiltonian` for more information.
         electronic_wires (WiresLike): the :math:`n` electronic-state wires.
         vib_wires (WiresLike): the :math:`M \cdot k` vibrational-mode wires, provided as a single
             flattened register. Internally these are reshaped into ``M`` registers of ``k`` wires,
@@ -99,6 +101,8 @@ class TrotterVibronic(Operator2):
 
     **Example**
 
+    Let's first create a :class:`pennylane.VibronicHamiltonian` with dummy data.
+
     .. code-block:: python
 
         import numpy as np
@@ -112,14 +116,20 @@ class TrotterVibronic(Operator2):
         constant[0, 0, 0], constant[0, 1, 1] = 0.4, -0.4
         linear = np.zeros((1, n_states, n_states, n_modes))
         linear[0, 0, 0, 0], linear[0, 1, 1, 0] = 0.2, -0.2
-        hamiltonian = {
-            "constant": constant,
-            "linear": linear,
-            "quadratic": np.zeros((1, n_states, n_states, n_modes, n_modes)),
-            "kinetic": np.einsum(
+
+        hamiltonian = qp.VibronicHamiltonian(
+            constant=constant,
+            linear=linear,
+            quadratic=np.zeros((1, n_states, n_states, n_modes, n_modes)),
+            kinetic=np.einsum(
                 "ab,cd->abcd", np.eye(n_states), np.diag(0.3 * np.ones(n_modes))
             ),
-        }
+        )
+
+    With this, we can setup a simple circuit that includes ``TrotterVibronic``.
+
+    .. code-block:: python
+
         wires = qp.registers({
             "electronic": n, "vib_wires": n_modes * k, "cache": 2 * k,
             "coefficients": b, "phase_gradient": b, "work": max(n - 1, 2 * k, 2 * b + 2),
@@ -153,9 +163,9 @@ class TrotterVibronic(Operator2):
            :widths: 25 25 50
            :header-rows: 1
 
-           * - argument
-             - expected size
-             - information content
+           * - Argument
+             - Expected size
+             - Physical meaning / information content
            * - ``electronic_wires``
              - :math:`n`
              - electronic state
@@ -179,8 +189,8 @@ class TrotterVibronic(Operator2):
         :title: Implementation Details
         :href: implementation-details
 
-        This section shows how the dense ``hamiltonian`` is turned into gates, making every phase
-        prefactor explicit, following `Motlagh et al, arXiv:2411.13669
+        This section shows how the dense :class:`pennylane.VibronicHamiltonian` is turned into gates,
+        making every phase prefactor explicit, following `Motlagh et al, arXiv:2411.13669
         <https://arxiv.org/abs/2411.13669>`__ (see also this `PennyLane demo
         <https://pennylane.ai/demos/simulating_vibronic_dynamics>`__ for a from-scratch,
         step-by-step implementation). The mode positions :math:`Q_r` and momenta
@@ -213,7 +223,8 @@ class TrotterVibronic(Operator2):
                               + \sum_{r<s} \beta_{a,rs} Q_r Q_s .
 
         The entries :math:`c, l, q, \beta` are the diagonalized ``constant``/``linear``/``quadratic``
-        tensors and :math:`t_r` the diagonal of ``kinetic``. The ``quadratic`` tensor packs both
+        tensors of the :class:`~.VibronicHamiltonian` and :math:`t_r` the diagonal of its
+        ``kinetic`` tensor. The ``quadratic`` tensor packs both
         :math:`q_{a,r}` (diagonal, ``[..., r, r]``) and :math:`\beta_{a,rs}` (read once from the
         entry with :math:`r < s`). The mirror entry :math:`(s, r)` is ignored, so put the full
         weight on :math:`r < s`. Splitting it evenly between the two would drop half.
@@ -365,7 +376,7 @@ class TrotterVibronic(Operator2):
         self,
         evolution_time,
         num_trotter_steps,
-        hamiltonian,
+        hamiltonian: VibronicHamiltonian,
         electronic_wires: WiresLike,
         vib_wires: WiresLike,
         phase_gradient_wires: WiresLike,
@@ -374,9 +385,7 @@ class TrotterVibronic(Operator2):
         work_wires: WiresLike = (),
         aqft_order=None,
     ):
-        hamiltonian = _validate_hamiltonian(hamiltonian)
-        # Sort dict keys for stable pytree round-trip.
-        hamiltonian = {key: hamiltonian[key] for key in sorted(hamiltonian)}
+        _validate_hamiltonian(hamiltonian)
         # Reject ``bool`` (subclass of ``int``); accept numpy integers.
         if (
             isinstance(num_trotter_steps, bool)
@@ -391,8 +400,8 @@ class TrotterVibronic(Operator2):
         # Check register sizes against the Hamiltonian shape eagerly, when possible (wires may
         # be abstract, e.g. under capture, in which case this is deferred to decomposition time).
         if _wires_are_concrete(vib_wires) and _wires_are_concrete(electronic_wires):
-            n_states = hamiltonian["constant"].shape[1]
-            n_modes = hamiltonian["linear"].shape[-1]
+            n_states = hamiltonian.num_states
+            n_modes = hamiltonian.num_modes
             # `Wires(...)` cast needed since a single wire label is valid `WiresLike` but not
             # itself `len()`-able.
             num_vib_wires = len(Wires(vib_wires))
@@ -443,9 +452,9 @@ def _trotter_vibronic_resources(
     # ``evolution_time`` and ``cache_wires`` are part of the shared resource/decomposition
     # signature but do not affect the (structural) gate counts.
     # pylint: disable=unused-argument
-    num_fragments = hamiltonian["constant"].shape[0]
-    n_states = hamiltonian["constant"].shape[1]
-    n_modes = hamiltonian["linear"].shape[-1]
+    num_fragments = hamiltonian.num_fragments
+    n_states = hamiltonian.num_states
+    n_modes = hamiltonian.num_modes
     n_elec = len(electronic_wires)
     # ``coefficient_wires`` may be dynamically allocated (empty here); fall back to
     # ``len(phase_gradient_wires)`` so the sub-operations are counted consistently.
@@ -577,8 +586,8 @@ def _coefficient_register_size(coefficient_wires, phase_gradient_wires):
 
 def _required_work_wire_sizes(hamiltonian, vib_wires, b):
     """Required ``(cache, work)`` register sizes for the vibronic Trotter circuit."""
-    n_states = hamiltonian["constant"].shape[1]
-    n_modes = hamiltonian["linear"].shape[-1]
+    n_states = hamiltonian.num_states
+    n_modes = hamiltonian.num_modes
     k = len(vib_wires) // n_modes
     n = math.ceil_log2(n_states)
     return 2 * k, max(n - 1, 2 * k, 2 * b + 2)
@@ -618,8 +627,8 @@ def _trotter_vibronic_decomposition(
     work_wires,
     aqft_order,
 ):
-    n_states = hamiltonian["constant"].shape[1]
-    n_modes = hamiltonian["linear"].shape[-1]
+    n_states = hamiltonian.num_states
+    n_modes = hamiltonian.num_modes
     n_elec = len(electronic_wires)
 
     vib = list(vib_wires)
@@ -914,10 +923,10 @@ def _preprocess_data(time, hamiltonian, n_elec, n_states, n_modes):
     diagonalized with the ``(0, i)`` key.
     """
     first_order_time_step = time / 2
-    constant_dense = hamiltonian["constant"]
-    linear_dense = hamiltonian["linear"]
-    quadratic_dense = hamiltonian["quadratic"]
-    num_fragments = constant_dense.shape[0]
+    constant_dense = hamiltonian.constant
+    linear_dense = hamiltonian.linear
+    quadratic_dense = hamiltonian.quadratic
+    num_fragments = hamiltonian.num_fragments
 
     all_constant, all_linear, all_quadratic, all_bilinear = [], [], [], []
     for i in range(num_fragments):
@@ -1065,7 +1074,7 @@ def _trotter_step_second_order(
     all_coeffs, bilinear_indices = _preprocess_data(time, hamiltonian, n_elec, n_states, n_modes)
     all_constant, all_linear, all_quadratic, all_bilinear = all_coeffs
     qrom_wires = _extract_registers(registers, mode_registers, "QROM")
-    num_position_fragments = hamiltonian["constant"].shape[0]
+    num_position_fragments = hamiltonian.num_fragments
 
     def position_fragments(i):
         const_coeffs = all_constant[i]
@@ -1163,7 +1172,7 @@ def _trotter_step_second_order(
     def kinetic_fragment():
         # use ``time``, not ``first_order_time_step`` because the kinetic fragment is the
         # middle one in second-order Trotter, so the two neighbouring first-order steps merge.
-        kinetic_coeffs = _momentum_coefficients(hamiltonian["kinetic"]) * time
+        kinetic_coeffs = _momentum_coefficients(hamiltonian.kinetic) * time
         if compiler.active() or capture.enabled():
             kinetic_coeffs = math.array(kinetic_coeffs, like="jax")
 
@@ -1246,39 +1255,29 @@ def _wires_are_concrete(wires):
 
 
 def _validate_hamiltonian(hamiltonian):
-    """Validate the vibronic Hamiltonian dict; coerce list/tuple leaves to arrays."""
-    if not isinstance(hamiltonian, dict):
+    """Validate the vibronic Hamiltonian against ``TrotterVibronic``'s own requirements.
+
+    The tensor ranks and the consistency of the shared ``F``/``N``/``M`` dimensions are already
+    enforced by :class:`pennylane.VibronicHamiltonian`; only the extra constraint this template imposes on
+    top of that shape family is checked here.
+    """
+    if not isinstance(hamiltonian, VibronicHamiltonian):
         raise ValueError(
-            f"Expected `hamiltonian` to be a dictionary, got {type(hamiltonian).__name__}."
+            "TrotterVibronic expects a VibronicHamiltonian for the hamiltonian argument. Got "
+            f"{type(hamiltonian)}."
         )
-    if set(hamiltonian) != set(HAMILTONIAN_KEYS):
-        raise ValueError(
-            f"Expected the keys in `hamiltonian` to be {set(HAMILTONIAN_KEYS)}, "
-            f"but got {set(hamiltonian)}."
-        )
-    # Materialize list/tuple leaves on the host with ``np.asarray`` (not ``math.asarray``).
-    hamiltonian = {
-        key: np.asarray(value) if isinstance(value, (list, tuple)) else value
-        for key, value in hamiltonian.items()
-    }
-    expected_ndim = {"constant": 3, "linear": 4, "quadratic": 5, "kinetic": 4}
-    for key, ndim in expected_ndim.items():
-        if math.ndim(hamiltonian[key]) != ndim:
-            raise ValueError(
-                f"Expected `hamiltonian['{key}']` to be a {ndim}-dimensional array, "
-                f"but got {math.ndim(hamiltonian[key])} dimensions."
-            )
     # The electronic diagonalization (see ``_diagonalization_matrix``) embeds each fragment's
     # 2x2 Clifford circuit into a ``2 ** n``-dimensional matrix and then slices it down to
     # ``n_states``. That slice is only guaranteed to stay orthogonal (i.e. a valid change of
     # basis) when it spans the full space, i.e. when ``n_states`` is itself a power of 2.
-    n_states = math.shape(hamiltonian["constant"])[1]
-    if n_states & (n_states - 1) != 0:
+    # ``num_states`` is ``None`` when no tensor pins that axis (an abstract Hamiltonian declared
+    # with a ``-1`` electronic axis), in which case there is nothing to check.
+    n_states = hamiltonian.num_states
+    if n_states is not None and n_states & (n_states - 1) != 0:
         raise ValueError(
             f"`hamiltonian` implies {n_states} electronic states, but TrotterVibronic currently "
             "only supports a number of electronic states that is a power of 2."
         )
-    return hamiltonian
 
 
 def _validate_registers(registers, mode_registers, n_modes, n_states):

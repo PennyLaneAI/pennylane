@@ -41,7 +41,7 @@ class TestCatalystDraw:
             qp.RZ(z, wires=1.234)
             return qp.expval(qp.PauliZ(0))
 
-        expected = "    0: ──RX─┤  <Z>\n    a: ──RY─┤     \n1.234: ──RZ─┤     "
+        expected = "    0: ──RX─┤  <Z>\n    a: ──RY─┤\n1.234: ──RZ─┤"
         assert qp.draw(circuit, decimals=None)(1.234, 2.345, 3.456) == expected
 
     def test_partial_circuit(self):
@@ -59,8 +59,8 @@ class TestCatalystDraw:
         expected = "\n".join(
             (
                 "    0: ──RX(1.23)─┤  <Z>",
-                "    a: ──RY(2.35)─┤     ",
-                "1.234: ──RZ(3.46)─┤     ",
+                "    a: ──RY(2.35)─┤",
+                "1.234: ──RZ(3.46)─┤",
             )
         )
         assert qp.draw(partial(circuit, 1.234, z=3.456))(2.345) == expected
@@ -87,8 +87,8 @@ class TestCatalystDraw:
             return qp.expval(qp.PauliZ(0))
 
         expected = [
-            "    0: ──RX─┤  <Z>\n    a: ──RY─┤     \n1.234: ──RZ─┤     ",
-            "    0: ──RX──X─┤  <Z>\n    a: ──RY────┤     \n1.234: ──RZ────┤     ",
+            "    0: ──RX─┤  <Z>\n    a: ──RY─┤\n1.234: ──RZ─┤",
+            "    0: ──RX──X─┤  <Z>\n    a: ──RY────┤\n1.234: ──RZ────┤",
         ]
         assert qp.draw(circuit, decimals=None)(1.234, 2.345, 3.456, c) == expected[c]
 
@@ -114,8 +114,8 @@ class TestCatalystDraw:
             return qp.expval(qp.PauliZ(0))
 
         expected = [
-            "0: ──RX──H─┤  <Z>\n1: ──RY────┤     \n2: ──RZ────┤     ",
-            "0: ──RX──H──┤  <Z>\n1: ──H───RY─┤     \n2: ──RZ─────┤     ",
+            "0: ──RX──H─┤  <Z>\n1: ──RY────┤\n2: ──RZ────┤",
+            "0: ──RX──H──┤  <Z>\n1: ──H───RY─┤\n2: ──RZ─────┤",
         ]
         assert qp.draw(circuit, decimals=None)(1.234, 2.345, 3.456, c) == expected[c - 1]
 
@@ -144,8 +144,8 @@ class TestCatalystDraw:
             return qp.expval(qp.PauliZ(0))
 
         expected = [
-            "0: ──RX──RX──RX─┤  <Z>\n1: ──RY─────────┤     \n2: ──RZ─────────┤     ",
-            "0: ──RX──RX─┤  <Z>\n1: ──RY─────┤     \n2: ──RZ─────┤     ",
+            "0: ──RX──RX──RX─┤  <Z>\n1: ──RY─────────┤\n2: ──RZ─────────┤",
+            "0: ──RX──RX─┤  <Z>\n1: ──RY─────┤\n2: ──RZ─────┤",
         ]
         assert qp.draw(circuit, decimals=None)(1.234, 2.345, 3.456, c) == expected[c]
 

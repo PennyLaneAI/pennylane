@@ -26,6 +26,7 @@ import pytest
 import pennylane as qp
 import pennylane.numpy as qnp
 from pennylane.core.operator import abstractify
+from pennylane.core.operator.base import Operator, Operator1
 from pennylane.exceptions import DeviceError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math import ChangeOpBasis, change_op_basis
@@ -36,12 +37,45 @@ from pennylane.wires import Wires
 from tests.capture.capture_utils import assert_eqn_matches_op
 from tests.core.operator.operator2_utils import NonParametricOp
 
+# pylint: disable=too-few-public-methods
+
 X, Y, Z = qp.PauliX, qp.PauliY, qp.PauliZ
 
+
+class Z1(Operator1):
+
+    def adjoint(self):
+        return Z1(self.wires)
+
+
+class X1(Operator1):
+
+    def adjoint(self):
+        return X1(self.wires)
+
+
+class H1(Operator1):
+
+    def adjoint(self):
+        return H1(self.wires)
+
+
+class CNOT1(Operator1):
+
+    def adjoint(self):
+        return CNOT1(self.wires)
+
+
+class RX1(Operator1):
+
+    def adjoint(self):
+        return RX1(self.data[0], self.wires)
+
+
 ops = (
-    (qp.PauliZ(0), qp.PauliX(1), qp.PauliZ(0)),
-    (qp.Hadamard(wires=0), qp.PauliZ(wires=0), qp.Hadamard(wires=0)),
-    (qp.CNOT(wires=[0, 1]), qp.RX(1.23, wires=1), qp.CNOT(wires=[0, 1])),
+    (Z1(0), X1(0), Z1(0)),
+    (H1(wires=0), Z1(wires=0), H1(wires=0)),
+    (CNOT1(wires=[0, 1]), RX1(1.23, wires=1), CNOT1(wires=[0, 1])),
 )
 
 
@@ -50,6 +84,8 @@ class DummyOp(qp.core.Operator1):
     pass
 
 
+# ChangeOpBasis as an operator only exists in the tape-based pipeline
+@pytest.mark.usefixtures("disable_capture")
 @pytest.mark.jax
 def test_basic_validity():
     """Run basic validity checks on a change_op_basis operator."""
@@ -279,19 +315,19 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
     def test_hash(self):
         """Testing some situations for the hash property."""
         # test not the same hash if different order
-        op1 = qp.change_op_basis(qp.PauliX("a"), qp.PauliY("a"), qp.PauliX(1))
-        op2 = qp.change_op_basis(qp.PauliY("a"), qp.PauliX("a"), qp.PauliX(1))
+        op1 = ChangeOpBasis(qp.PauliX("a"), qp.PauliY("a"), qp.PauliX(1))
+        op2 = ChangeOpBasis(qp.PauliY("a"), qp.PauliX("a"), qp.PauliX(1))
         assert hash(op1) != hash(op2)
 
     def test_batch_size(self):
         """Test that batch size returns the batch size of a base operation if it is batched."""
         x = qp.numpy.array([1.0, 2.0, 3.0])
-        change_op_basis_op = change_op_basis(qp.PauliX(0), qp.RX(x, wires=0))
+        change_op_basis_op = ChangeOpBasis(qp.PauliX(0), qp.RX(x, wires=0))
         assert change_op_basis_op.batch_size == 3
 
     def test_batch_size_None(self):
         """Test that the batch size is none if no factors have batching."""
-        change_op_basis_op = change_op_basis(qp.PauliX(0), qp.RX(1.0, wires=0))
+        change_op_basis_op = ChangeOpBasis(qp.PauliX(0), qp.RX(1.0, wires=0))
         assert change_op_basis_op.batch_size is None
 
     @pytest.mark.parametrize(
@@ -307,7 +343,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         """Test that a change_op_basis of operators that have `has_adjoint=True`
         has `has_adjoint=True` as well."""
 
-        change_op_basis_op = change_op_basis(*factors)
+        change_op_basis_op = ChangeOpBasis(*factors)
         assert change_op_basis_op.has_adjoint is True
 
     @pytest.mark.parametrize(
@@ -375,7 +411,13 @@ class TestWrapperFunc:  # pylint: disable=too-few-public-methods
         """Test that the top level function constructs an identical instance to one
         created using the class."""
 
-        factors = (qp.PauliX(wires=1), qp.RX(1.23, wires=0), qp.CNOT(wires=[0, 1]))
+        class DummyOp1(Operator):
+            pass
+
+        class DummyOp2(Operator):
+            pass
+
+        factors = (DummyOp1(0), DummyOp2(1))
 
         change_op_basis_func_op = change_op_basis(*factors)
         change_op_basis_class_op = ChangeOpBasis(*factors)
@@ -466,10 +508,12 @@ class TestDecomposition:
         for op1, op2 in zip(decomposition, true_decomposition):
             qp.assert_equal(op1, op2)
 
+    # ChangeOpBasis as an operator only exists in the tape-based pipeline
+    @pytest.mark.usefixtures("disable_capture")
     @pytest.mark.parametrize("ops_lst", ops)
     def test_decomposition_new(self, ops_lst):
         """Test the qfunc decomposition."""
-        change_op_basis_op = change_op_basis(*ops_lst)
+        change_op_basis_op = ChangeOpBasis(*ops_lst)
 
         for rule in qp.list_decomps(ChangeOpBasis):
             _test_decomposition_rule(change_op_basis_op, rule)
@@ -484,12 +528,14 @@ class TestDecomposition:
 
         assert tape.operations == list(ops_lst)
 
+    # ChangeOpBasis as an operator only exists in the tape-based pipeline
+    @pytest.mark.usefixtures("disable_capture")
     @pytest.mark.parametrize("ops_lst", ops)
     def test_controlled_decomposition_new(self, ops_lst):
         """Tests the decomposition rule implemented with the new system."""
         control_wires = [4]
         work_wires = [2, 3]
-        op = qp.ops.Controlled(
+        op = qp.ctrl(
             change_op_basis(*ops_lst),
             control_wires,
             [1],

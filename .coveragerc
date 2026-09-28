@@ -7,6 +7,10 @@ omit =
     pennylane/workflow/interfaces/tensorflow.py
     pennylane/workflow/interfaces/tensorflow_autograph.py
     pennylane/backline/decoders/triton/*
+    # Parametric mid-circuit measurement support is deferred during the Operator2 migration. sc-130033
+    pennylane/ftqc/conditional_measure.py
+    pennylane/ftqc/decomposition.py
+    pennylane/ftqc/parametric_midmeasure.py
 
 [report]
 # Regexes for lines to exclude from consideration

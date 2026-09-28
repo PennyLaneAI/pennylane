@@ -19,10 +19,11 @@ from collections import defaultdict
 
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_condition, register_resources
-from pennylane.ops import CNOT, BasisState, X, adjoint, ctrl
+from pennylane.ops import CNOT, X, adjoint, ctrl
 from pennylane.typing import Bool, Wire
-from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
+from pennylane.wires import Wires, WiresLike, concatenate_wires, validate_no_wire_overlaps
 
+from ..multix import MultiX
 from .incrementer import Incrementer
 from .out_multiplier import _add_plus_one, _c_add_sub
 from .semi_adder import SemiAdder, _semi_adder_resources
@@ -380,7 +381,7 @@ def _out_square_with_caddsub_resources(
     loop_size = min(m, n)
     # Bit flips on the y_wires, controlled on |0>: two per ctrl-add-subtract
     if n > 1:
-        c_flips = ctrl(BasisState(Bool[n - 1], Wire[n - 1]), Wire[1])
+        c_flips = ctrl(MultiX(Bool[n - 1], Wire[n - 1]), Wire[1])
         resources[c_flips] += 2 * loop_size
 
     # Caching of bit in x onto c_wire, to control on it.
@@ -448,7 +449,7 @@ def _out_square_with_caddsub(
     c_wire = work_wires[0]
     # Second work wire is used to augment the output wires because we compute
     # twice the desired output at first, and then divide by 2.
-    output_wires = output_wires + [work_wires[1]]
+    output_wires = concatenate_wires(output_wires, [work_wires[1]])
     work_wires = work_wires[2:]
     n = len(x_wires)
     m = len(output_wires)
@@ -461,7 +462,7 @@ def _out_square_with_caddsub(
         CNOT([x_wire, c_wire])
 
     # Corrections - no need for control wire any more
-    work_wires = [c_wire] + work_wires
+    work_wires = concatenate_wires([c_wire], work_wires)
 
     # Subtract 2^(2n)
     if len(output_wires) > 2 * n:

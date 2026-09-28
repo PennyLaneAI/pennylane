@@ -159,9 +159,9 @@ def half_signed_out_multiplier(x_wires, y_wires, output_wires, work_wires):
     # If y was negative, flip all output qubits before and after (unsigned) multiplication onto
     # the output wires. This effects that we are subtracting the product if y was negative, and
     # add it otherwise.
-    # Note that BasisState is used as a surrogate for a PauliX broadcasted across all wires, for
+    # Note that MultiX is used as a surrogate for a PauliX broadcasted across all wires, for
     # compactness and efficient decomposition of the Fanout operation.
-    qp.ctrl(qp.BasisState([1] * len(output_wires), output_wires), control=y_aux)
+    qp.ctrl(qp.MultiX([1] * len(output_wires), output_wires), control=y_aux)
     qp.OutMultiplier(
         x_wires,
         y_wires,
@@ -169,7 +169,7 @@ def half_signed_out_multiplier(x_wires, y_wires, output_wires, work_wires):
         work_wires=work_wires,
         output_wires_zeroed=False,
     )
-    qp.ctrl(qp.BasisState([1] * len(output_wires), output_wires), control=y_aux)
+    qp.ctrl(qp.MultiX([1] * len(output_wires), output_wires), control=y_aux)
 
     # Return input y to original state
     _twos_complement_helper(y_wires, y_aux, work_wires)

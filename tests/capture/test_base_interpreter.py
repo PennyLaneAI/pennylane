@@ -34,6 +34,7 @@ from pennylane.capture.primitives import (
     qnode_prim,
     while_loop_prim,
 )
+from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from tests.capture.capture_utils import assert_eqn_matches_op
 from tests.core.operator.operator2_utils import DynOp, NonParametricOp
 
@@ -463,15 +464,15 @@ class TestHigherOrderPrimitiveRegistrations:
         false_branch = jaxpr.eqns[0].params["jaxpr_branches"][-1]
         assert len(false_branch.eqns) == 0
 
-        with qp.queuing.AnnotatedQueue() as q_true:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, True)
+        # ``Operator2`` instances are collected with an interpreter rather than a queue, since
+        # evaluating the ``operator`` primitive does not append to the active queuing context.
+        collector_true = CollectOpsandMeas()
+        collector_true.eval(jaxpr.jaxpr, jaxpr.consts, True)
+        qp.assert_equal(collector_true.state["ops"][0], qp.I(0))
 
-        qp.assert_equal(q_true.queue[0], qp.I(0))
-
-        with qp.queuing.AnnotatedQueue() as q_false:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, False)
-
-        assert len(q_false.queue) == 0
+        collector_false = CollectOpsandMeas()
+        collector_false.eval(jaxpr.jaxpr, jaxpr.consts, False)
+        assert len(collector_false.state["ops"]) == 0
 
     def test_cond_consts(self):
         """Test that consts propagate correctly when interpreting the cond primitive."""
@@ -584,6 +585,10 @@ class TestHigherOrderPrimitiveRegistrations:
         class AddNoise(PlxprInterpreter):
             def interpret_operation(self, op):
                 new_op = op._unflatten(*op._flatten())
+                if isinstance(new_op, Operator2):
+                    # ``Operator2`` pytree reconstruction happens with capture paused, so the
+                    # reconstructed op has to be explicitly bound into the surrounding trace.
+                    new_op._bind_primitive()
                 _ = [qp.RX(0.1, w) for w in op.wires]
                 return new_op
 
@@ -601,8 +606,8 @@ class TestHigherOrderPrimitiveRegistrations:
         inner_jaxpr = jaxpr.eqns[0].params["qfunc_jaxpr"]
 
         assert len(inner_jaxpr.eqns) == 5
-        assert inner_jaxpr.eqns[0].primitive == qp.I._primitive
-        assert inner_jaxpr.eqns[2].primitive == qp.I._primitive
+        assert_eqn_matches_op(inner_jaxpr.eqns[0], qp.I)
+        assert_eqn_matches_op(inner_jaxpr.eqns[2], qp.I)
         assert_eqn_matches_op(inner_jaxpr.eqns[1], qp.RX)
         assert_eqn_matches_op(inner_jaxpr.eqns[3], qp.RX)
 

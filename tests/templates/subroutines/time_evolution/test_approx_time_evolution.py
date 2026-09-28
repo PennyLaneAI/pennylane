@@ -23,7 +23,7 @@ from pennylane import numpy as pnp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Run standard tests of operation validity."""
     H = 2.0 * qp.PauliX(0) + 3.0 * qp.PauliY(0)
@@ -208,7 +208,7 @@ class TestDecomposition:
         ),
     ]
 
-    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(("hamiltonian", "time", "steps"), DECOMP_PARAMS)
     def test_decomposition_new(self, hamiltonian, time, steps):
         op = qp.ApproxTimeEvolution(hamiltonian, time, steps)

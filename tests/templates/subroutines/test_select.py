@@ -35,7 +35,7 @@ from pennylane.typing import AbstractWires, Bool, Wire
 from tests.decomposition.conftest import to_resources
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize(
     "num_ops, num_controls",
     [(0, 1), (1, 1), (2, 1), (1, 2), (4, 2), (3, 4), (10, 4), (15, 4), (16, 4)],
@@ -51,7 +51,7 @@ def test_standard_checks(num_ops, num_controls, partial, work_wires, parametrize
         ops = [qp.MultiControlledX([0, 10, 11, 12]) for _ in range(num_ops)]
     control = list(range(1, num_controls + 1))
 
-    op = qp.Select(ops, control, work_wires, partial=partial)
+    op = qp.Select(ops, control, work_wires=work_wires, partial=partial)
     if num_ops > 0:
         if parametrized:
             assert op.target_wires == qp.wires.Wires(0)
@@ -218,6 +218,22 @@ class TestAbstractSelect:
         # Usable interchangeably as dictionary keys (as in resource counting).
         counts = {op1: 3}
         assert counts[op2] == 3
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("alias_name", ["Multiplexer", "Multiplexor"])
+def test_aliases(alias_name):
+    """Test that Select aliases are public and instantiate Select."""
+    alias = getattr(qp, alias_name)
+
+    assert alias is qp.Select
+    assert getattr(qp.templates, alias_name) is qp.Select
+    assert alias_name in qp.__all__
+
+    op = alias([qp.X(0), qp.Y(0)], control=[1])
+    expected = qp.Select([qp.X(0), qp.Y(0)], control=[1])
+
+    qp.assert_equal(op, expected)
 
 
 @pytest.mark.unit

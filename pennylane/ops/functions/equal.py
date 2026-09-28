@@ -396,6 +396,12 @@ def _equal_operator2(
     if type(op1) is not type(op2):
         return f"op1 and op2 have different types. Got {type(op1)} and {type(op2)}."
 
+    if isinstance(op1, qp.Identity):
+        # All Identities are equivalent, independent of wires.
+        # We already know op1 and op2 are of the same type, so no need to check
+        # that op2 is also an Identity
+        return True
+
     # Check static arguments
     for (sname, sval1), (_, sval2) in zip(
         op1.static_args.items(), op2.static_args.items(), strict=True
