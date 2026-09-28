@@ -44,7 +44,7 @@ from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_con
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
 from pennylane.ops.op_math.prod import prod
 from pennylane.typing import Float, TensorLike, Wire
-from pennylane.wires import WiresLike
+from pennylane.wires import WiresLike, concatenate_wires
 
 from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
 
@@ -256,7 +256,7 @@ def _controlled_rx_resource(base, control_wires, control_values, work_wires, wor
 @register_resources(_controlled_rx_resource)
 # pylint: disable-next=unused-argument
 def _controlled_rx_decomp(base, control_wires, control_values, work_wires, work_wire_type):
-    wires = control_wires + base.wires
+    wires = concatenate_wires(control_wires, base.wires)
     if len(control_wires) == 1:
         qp.CRX(base.phi, wires=wires)
         return
@@ -483,7 +483,7 @@ def _controlled_ry_resource(base, control_wires, control_values, work_wires, wor
 @register_resources(_controlled_ry_resource)
 # pylint: disable-next=unused-argument
 def _controlled_ry_decomp(base, control_wires, control_values, work_wires, work_wire_type):
-    wires = control_wires + base.wires
+    wires = concatenate_wires(control_wires, base.wires)
     if len(control_wires) == 1:
         qp.CRY(base.phi, wires=wires)
         return
@@ -759,7 +759,7 @@ def _controlled_rz_resource(base, control_wires, control_values, work_wires, wor
 def _controlled_rz_decomp(base, control_wires, control_values, work_wires, work_wire_type):
 
     if len(control_wires) == 1:
-        qp.CRZ(base.phi, wires=control_wires + base.wires)
+        qp.CRZ(base.phi, wires=concatenate_wires(control_wires, base.wires))
         return
 
     qp.RZ(base.phi / 2, wires=base.wires)
@@ -972,7 +972,7 @@ def _controlled_phase_shift_resource(base, control_wires, *_, **__):
 
 @register_resources(_controlled_phase_shift_resource)
 def _controlled_phase_shift_decomp(base, control_wires, *_, **__):
-    wires = control_wires + base.wires
+    wires = concatenate_wires(control_wires, base.wires)
     if len(control_wires) == 1:
         qp.ControlledPhaseShift(base.phi, wires=wires)
         return
@@ -1177,7 +1177,7 @@ def _controlled_rot_resource(base, control_wires, control_values, work_wires, wo
 def _controlled_rot_decomp(base, control_wires, control_values, work_wires, work_wire_type):
 
     phi, theta, omega = base.phi, base.theta, base.omega
-    wires = control_wires + base.wires
+    wires = concatenate_wires(control_wires, base.wires)
 
     if len(control_wires) == 1:
         qp.CRot(phi, theta, omega, wires=wires)

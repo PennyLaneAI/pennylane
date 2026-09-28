@@ -26,6 +26,7 @@
   [(#10074)](https://github.com/PennyLaneAI/pennylane/pull/10074)
   [(#10081)](https://github.com/PennyLaneAI/pennylane/pull/10081)
   [(#10138)](https://github.com/PennyLaneAI/pennylane/pull/10138)
+  [(#10120)](https://github.com/PennyLaneAI/pennylane/pull/10120)
 
 * A new operator called :class:`pennylane.PPR` has been added, which represents a Pauli product
   rotation with a fixed angle
@@ -37,6 +38,7 @@
   circuits. Together with :func:`~.pauli_measure`, this makes the building blocks of Pauli-based
   computations directly expressible.
   [(#10107)](https://github.com/PennyLaneAI/pennylane/pull/10107)
+  [(#10108)](https://github.com/PennyLaneAI/pennylane/pull/10108)
 
   ```pycon
   >>> import pennylane as qp
@@ -164,6 +166,7 @@
   [(#9833)](https://github.com/PennyLaneAI/pennylane/pull/9833)
   [(#9847)](https://github.com/PennyLaneAI/pennylane/pull/9847)
   [(#10008)](https://github.com/PennyLaneAI/pennylane/pull/10008)
+  [(#10053)](https://github.com/PennyLaneAI/pennylane/pull/10053)
 
   Given the ``amplitudes`` and the computational basis state ``indices`` of the sparse state we
   want to prepare, the template is simple to call. Consider the following example:
@@ -486,12 +489,19 @@
   [(#10145)](https://github.com/PennyLaneAI/pennylane/pull/10145)
   [(#10146)](https://github.com/PennyLaneAI/pennylane/pull/10146)
 
-* Added :class:`~.AliasSamplingTHC`, the coherent alias-sampling ``PREPARE`` for tensor
-  hypercontraction qubitization, together with :class:`~.SuperpositionTHC`, which prepares the
-  index superposition it acts on.
+* Added :class:`~.QubitizationTHC`, the qubitization walk operator of a tensor hypercontracted
+  Hamiltonian. It composes the (also newly added) :class:`~.SuperpositionTHC` and 
+  :class:`~.AliasSamplingTHC` into ``PREPARE``, applies :class:`~.SelectTHC`, and reflects about
+  :math:`|\vec 0\rangle` on the ``PREPARE`` register. Use :func:`~.qubitization_thc_wires` to
+  determine the register sizes, as well as :func:`~.alias_sampling_thc_wires` and
+  :func:`~.select_thc_wires` to determine the register sizes of the respective component.
   [(#9554)](https://github.com/PennyLaneAI/pennylane/pull/9554)
   [(#9940)](https://github.com/PennyLaneAI/pennylane/pull/9940)
+  [(#10119)](https://github.com/PennyLaneAI/pennylane/pull/10119)
   [(#10146)](https://github.com/PennyLaneAI/pennylane/pull/10146)
+  [(#10158)](https://github.com/PennyLaneAI/pennylane/pull/10158)
+  [(#10163)](https://github.com/PennyLaneAI/pennylane/pull/10163)
+  [(#10184)](https://github.com/PennyLaneAI/pennylane/pull/10184)
 
 * Added :class:`~.OneBodyBlockEncoding`, a block-encoding of a real symmetric one-body operator
   :math:`\hat O`, normalized as :math:`\hat O / \lambda` with :math:`\lambda = \sum_p |\mu_p|`,
@@ -596,6 +606,18 @@
 * Multi-controlled operators can now reuse a single :class:`~.TemporaryAND` ladder when enough
   zeroed work wires are available, reducing their decomposition gate counts.
   [(#10161)](https://github.com/PennyLaneAI/pennylane/pull/10161)
+
+* Adds a `qp.decomposition.all_decomps` functions for finding all decompositions that might be hit by
+  decomposing a gate to any gateset.
+  [(#10187)](https://github.com/PennyLaneAI/pennylane/pull/10187)
+
+* Added ``work_wires`` and ``work_wire_type`` arguments to :class:`~.GQSP` that are passed
+  through to the controlled walk operator in its decomposition.
+  [(#10184)](https://github.com/PennyLaneAI/pennylane/pull/10184)
+
+* Added a decomposition of :class:`~.TemporaryAND` directly to four :math:`\pm\pi/8` PPRs and a
+  decomposition of :class:`~.SingleExcitation` to two :math:`\pm\pi/4` and two arbitrary-angle PPRs.
+  [(#10108)](https://github.com/PennyLaneAI/pennylane/pull/10108)
 
 * :class:`~.FlipSign` now accepts `work_wires`, which are forwarded to the multi-controlled
   :class:`~.Z` gate in its decomposition. Providing work wires substantially reduces the gate count.
@@ -990,6 +1012,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Jax 0.7.1 is now a hard requirement for PennyLane.
+  [(#10192)](https://github.com/PennyLaneAI/pennylane/pull/10192)
+
 * :class:`~.GlobalPhase` no longer accepts the `wires` argument in order to mirror its MLIR lowered operation.
   [(#9992)](https://github.com/PennyLaneAI/pennylane/pull/9992)
 
@@ -1181,6 +1206,13 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Removes indirection and deferred imports now that jax is always available.
+  [(#10198)](https://github.com/PennyLaneAI/pennylane/pull/10198)
+
+* An operator can now be reconstructed from operator_p with abstract wires in the form of 
+  AbstractQubit, jax.core.ShapedArray, AbstractWires, and AbstractArray.
+  [(#10165)](https://github.com/PennyLaneAI/pennylane/pull/10165)
+
 * Update `tach` to `0.35.1`.
   [(#10147 )](https://github.com/PennyLaneAI/pennylane/pull/10147)
 
@@ -1268,14 +1300,17 @@
       :class:`~.TemporaryAND`, :class:`~.SelectPauliRot`, :class:`~.GQSP`, :class:`~.AQFT`, :class:`~.SumOfSlatersPrep`,
       :class:`~.SemiAdder`, :class:`~.OutMultiplier`, :class:`~.SignedOutMultiplier`, :class:`~.BasisState`, :class:`~.TrotterCDF`,
       :class:`~.TrotterCGF`, :class:`~.OutSquare`, :class:`~.SignedOutSquare`, :class:`~.Incrementer`, :class:`~.TrotterVibronic`,
-      :class:`~.Select`
+      :class:`~.PartialUnaryStatePreparation`, :class:`~.Select`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
+  [(#10164)](https://github.com/PennyLaneAI/pennylane/pull/10164)
+  [(#10178)](https://github.com/PennyLaneAI/pennylane/pull/10178)
   [(#9925)](https://github.com/PennyLaneAI/pennylane/pull/9925)
   [(#9918)](https://github.com/PennyLaneAI/pennylane/pull/9918)
   [(#9932)](https://github.com/PennyLaneAI/pennylane/pull/9932)
   [(#9924)](https://github.com/PennyLaneAI/pennylane/pull/9924)
   [(#9910)](https://github.com/PennyLaneAI/pennylane/pull/9910)
   [(#9965)](https://github.com/PennyLaneAI/pennylane/pull/9965)
+  [(#10166)](https://github.com/PennyLaneAI/pennylane/pull/10166)
   [(#9943)](https://github.com/PennyLaneAI/pennylane/pull/9943)
   [(#9950)](https://github.com/PennyLaneAI/pennylane/pull/9950)
   [(#9987)](https://github.com/PennyLaneAI/pennylane/pull/9987)
@@ -1286,6 +1321,7 @@
   [(#10015)](https://github.com/PennyLaneAI/pennylane/pull/10015)
   [(#10018)](https://github.com/PennyLaneAI/pennylane/pull/10018)
   [(#9933)](https://github.com/PennyLaneAI/pennylane/pull/9933)
+  [(#10053)](https://github.com/PennyLaneAI/pennylane/pull/10053)
   [(#10042)](https://github.com/PennyLaneAI/pennylane/pull/10042)
   [(#10052)](https://github.com/PennyLaneAI/pennylane/pull/10052)
   [(#10054)](https://github.com/PennyLaneAI/pennylane/pull/10054)
@@ -1456,6 +1492,7 @@
     [(#9897)](https://github.com/PennyLaneAI/pennylane/pull/9897)
     [(#9973)](https://github.com/PennyLaneAI/pennylane/pull/9973)
     [(#10152)](https://github.com/PennyLaneAI/pennylane/pull/10152)
+    [(#10167)](https://github.com/PennyLaneAI/pennylane/pull/10167)
   - The way that :class:`~.Wires` arguments in pytree leaves are read out of HDF5 was changed to be compatible with :class:`~.Operator2` in the data module.
     [(#10012)](https://github.com/PennyLaneAI/pennylane/pull/10012)
 
@@ -1568,6 +1605,11 @@
   [(#9621)](https://github.com/PennyLaneAI/pennylane/pull/9621)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed a bug where a fixed decomposition rule assigned to :class:`~.MultiControlledX` via the
+  ``fixed_decomps`` keyword argument of :func:`~.transforms.decompose` was being ignored.
+  This does not apply to ``qjit(capture=True)``.
+  [(#10183)](https://github.com/PennyLaneAI/pennylane/pull/10183)
 
 * :func:`~.decomposition.inspect_decomps` and :func:`~.transforms.decomp_inspector` no longer
   insert a blank line after a decomposition rule that is unreachable but has no missing operators.
@@ -1747,6 +1789,15 @@
 
 * Various decomposition rules are updated so that they accept positionally passed arguments.
   [(#10088)](https://github.com/PennyLaneAI/pennylane/pull/10088)
+
+* ``build_mmd_loss`` replaced with ``build_mmd_loss_pauli`` and now supports any expectation value function
+  using Pauli-type observables.
+  [(#10123)](https://github.com/PennyLaneAI/pennylane/pull/10123)
+
+* Config option added to qubit MMD loss that bootstraps target data by default to ensure
+  unbiasedness of the estimator
+  [(#10128)](https://github.com/PennyLaneAI/pennylane/pull/10128)
+
 
 <h3>Contributors ✍️</h3>
 

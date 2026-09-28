@@ -42,7 +42,7 @@ from pennylane.ops.op_math.decompositions.unitary_decompositions import (
     zyz_decomp_rule,
 )
 from pennylane.typing import Bool, Complex, FlatPytree, Float, TensorLike, Wire
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import Wires, WiresLike, concatenate_wires
 
 _walsh_hadamard_matrix = np.array([[1, 1], [1, -1]]) / 2
 
@@ -427,7 +427,7 @@ def _ctrl_qubit_unitary_resource(base, control_wires, control_values, work_wires
 def _controlled_qubit_unitary(base, control_wires, control_values, work_wires, work_wire_type):
     qp.ControlledQubitUnitary(
         base.U,
-        control_wires + base.wires,
+        concatenate_wires(control_wires, base.wires),
         control_values=control_values,
         work_wires=work_wires,
         work_wire_type=work_wire_type,

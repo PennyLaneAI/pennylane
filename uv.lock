@@ -3259,7 +3259,7 @@ dev = [
     { name = "pytest-xdist", specifier = ">=2.5.0" },
     { name = "rich", specifier = ">=13.7.1" },
     { name = "sybil" },
-    { name = "tach", specifier = "==0.32.2" },
+    { name = "tach", specifier = "==0.35.1" },
 ]
 docs = [
     { name = "aiohttp" },
@@ -5165,7 +5165,7 @@ wheels = [
 
 [[package]]
 name = "tach"
-version = "0.32.2"
+version = "0.35.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "gitpython" },
@@ -5177,23 +5177,23 @@ dependencies = [
     { name = "tomli" },
     { name = "tomli-w" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ee/5a/732029a738278d960e5e33c9b76e0431243ac1024f339a19c55668088b92/tach-0.32.2.tar.gz", hash = "sha256:51fff9132e33f7c7d7e59c4274be6ad5d546f8123150f6bf1ec15dcddcbd795a", size = 775967, upload-time = "2025-12-07T03:39:29.033Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/f3/66/d5b253c9e846a2de009d14fbf3fa352a2f8fe74d0184ae3dbe453772f2fa/tach-0.35.1.tar.gz", hash = "sha256:72a30df29fcf6cfef4cf145447eef23c1432377594d37b0b28ab195e11ccfe64", size = 733511, upload-time = "2026-09-14T12:00:04.256Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/67/d9/1ffebc46538fb3fe55293cb2de2894efa2f267e74d1704fe84c81d968273/tach-0.32.2-cp37-abi3-macosx_10_12_x86_64.whl", hash = "sha256:f50be337a3fff4595dc0f40e7d1578f91a5ac9e8cca5d3dd7fc987566a3e7305", size = 4092084, upload-time = "2025-12-07T03:39:22.411Z" },
-    { url = "https://files.pythonhosted.org/packages/5a/76/19a58ad1dfff0f6960f3f60ec4f15d329711d61c366b9cd43dfeb747279b/tach-0.32.2-cp37-abi3-macosx_11_0_arm64.whl", hash = "sha256:0bcc8c7e9d74be4f0e74df6bc5d2684856f7e0e9ecc04615c5e7e5b81dc6ef5a", size = 3982942, upload-time = "2025-12-07T03:39:20.795Z" },
-    { url = "https://files.pythonhosted.org/packages/48/d6/74315f5b810204e5f405a59de195148b28fd2d21f03955a437ed3fd906af/tach-0.32.2-cp37-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:e6c2b0dcb415741c028f041e98e3c640229059664238a2f9cb56269497524068", size = 4314151, upload-time = "2025-12-07T03:39:14.259Z" },
-    { url = "https://files.pythonhosted.org/packages/cc/42/8c02e28f47b8027e56677a59c5a64eed035a6811670ee9e5fc06eeda124f/tach-0.32.2-cp37-abi3-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:d05187e9dd3770d75435e6b6aa1d7e1dac03d4b2b601683b410922a11388d840", size = 4249524, upload-time = "2025-12-07T03:39:17.88Z" },
-    { url = "https://files.pythonhosted.org/packages/82/6b/a838ec61ec2f4d512b2583c2c67a54c9fba8fe9af4ac9ff214dba61a986a/tach-0.32.2-cp37-abi3-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:21e8d219e228a840036cec5c3e115aa81a75a6f55c2e603c27d8f9208e6a69be", size = 4644336, upload-time = "2025-12-07T03:39:32.866Z" },
-    { url = "https://files.pythonhosted.org/packages/36/e2/a2f12e2bb6b76e3b8c15232aaa1dbd06f062e814f4368394c285e9445aca/tach-0.32.2-cp37-abi3-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:95014a154bcd340e421d52e438a238fa22d7d17caeddbe4654c083d92b6874b8", size = 5171182, upload-time = "2025-12-07T03:39:24.167Z" },
-    { url = "https://files.pythonhosted.org/packages/8c/72/19bbb900a06c069fedc4a53e2dd4686e9d1d029dd398da646951930dbf41/tach-0.32.2-cp37-abi3-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:664722b9f8678e088998b847be1cd62f41272ade1c3cde11a02c9ef6afb41aaa", size = 4333057, upload-time = "2025-12-07T03:39:27.493Z" },
-    { url = "https://files.pythonhosted.org/packages/b1/dc/02150ec3085627f3d1d14e1a40198defa13fa243ea8ab73164cc3e75847b/tach-0.32.2-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f93dc75f46ef70b755e24d434c7e4ef9cc0334cf9952d3909f474ab4c36d7f52", size = 4416054, upload-time = "2025-12-07T03:39:37.701Z" },
-    { url = "https://files.pythonhosted.org/packages/b6/60/6ceef846a861dab34d25c9cc1c6378f876e74a2dfd1819fc923a1ea08cd9/tach-0.32.2-cp37-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:97a4b279c932a752bcf8d4d7d23b3035542973e5cb1ac4871a75eda81e51c4ec", size = 4474819, upload-time = "2025-12-07T03:39:16.374Z" },
-    { url = "https://files.pythonhosted.org/packages/e0/95/53876b1cbfee1fd18acd1638e76f4823a78dcf9c8fb4e0b2970ad83a013a/tach-0.32.2-cp37-abi3-musllinux_1_2_armv7l.whl", hash = "sha256:db53ea81ae7a4088a6d13081711fadbbed42281abe783d53403aaf406ca19f24", size = 4513515, upload-time = "2025-12-07T03:39:19.494Z" },
-    { url = "https://files.pythonhosted.org/packages/aa/79/8dd84143069bc915eeffb557ff3d85e6343ce1b237a287f65ddce9c07b01/tach-0.32.2-cp37-abi3-musllinux_1_2_i686.whl", hash = "sha256:617aa03136ede042d38a36037144270998acdf5666d81a687e409ccf95bc1f12", size = 4610007, upload-time = "2025-12-07T03:39:35.92Z" },
-    { url = "https://files.pythonhosted.org/packages/57/e3/e364c58cb8d367b931d010e5ba63757b9dca340bcf32c9d87963aef05947/tach-0.32.2-cp37-abi3-musllinux_1_2_ppc64le.whl", hash = "sha256:879b17febf5eca7b3dbee7f98f0929af05391ba5a085bc80cc8a22158eb0d15e", size = 5387603, upload-time = "2025-12-07T03:39:25.837Z" },
-    { url = "https://files.pythonhosted.org/packages/bd/f7/d827bc7800986f6b1955408233ccb31630b443e8cd7f53b1d6b74d0daff0/tach-0.32.2-cp37-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:d4b4894e2855245928ed20bb5044170d98e374df84570b2cf3131fb929f99a95", size = 4589805, upload-time = "2025-12-07T03:39:40.639Z" },
-    { url = "https://files.pythonhosted.org/packages/ce/3b/397e266a7a0ded116834adb87d2f2591a7f8e3a74359ab05365feff9c1a9/tach-0.32.2-cp37-abi3-win32.whl", hash = "sha256:0cbf176580107ed6d2df79bafc8172165ac83855edc64edd948f102139bf2c93", size = 3434263, upload-time = "2025-12-07T03:39:31.572Z" },
-    { url = "https://files.pythonhosted.org/packages/8d/be/43b479130bd96befde1bcd042dd8cd8b5dffbeef0044016f93868a484f18/tach-0.32.2-cp37-abi3-win_amd64.whl", hash = "sha256:b028e1aa7e81087b695afed7501cfab0289ba150165913926b6a1e6de8f0c7f3", size = 3754498, upload-time = "2025-12-07T03:39:30.184Z" },
+    { url = "https://files.pythonhosted.org/packages/8d/00/95a1b96312854e65782a43c3a86b03417916f83466c73432cd646f23b859/tach-0.35.1-cp37-abi3-macosx_10_12_x86_64.whl", hash = "sha256:f1bd7c24e3df8fe7254ac543acb04ae7b016f6f7b25e731e3746a2d505932e18", size = 4071809, upload-time = "2026-09-14T11:59:56.436Z" },
+    { url = "https://files.pythonhosted.org/packages/64/c6/32f14b791f95dc9b4de09a369257bfc851962a29ad498e5cd24f34febe83/tach-0.35.1-cp37-abi3-macosx_11_0_arm64.whl", hash = "sha256:586891d8a4a963b87c3120aaf1872300065b169655f537b87b94bb2dca39b2d1", size = 3959845, upload-time = "2026-09-14T11:59:54.196Z" },
+    { url = "https://files.pythonhosted.org/packages/c9/86/7b3b69bc7cfec8495fb153daa6eda92218b1b79a223a0f245095373e2786/tach-0.35.1-cp37-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:898cf75fd0801359bf8ec97a98057234bdb03ee71f95fd5b23e2a9a7e9bd9584", size = 4314920, upload-time = "2026-09-14T11:59:46.303Z" },
+    { url = "https://files.pythonhosted.org/packages/24/8b/95185f077bac5c748786401f928f93b301158cfc0f5cd22f3deff72a2c49/tach-0.35.1-cp37-abi3-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:5e058235503560414abdcabe4ab3f1311b0af6fbf29fee2aad1ffe1b68b084cc", size = 4221087, upload-time = "2026-09-14T11:59:50.587Z" },
+    { url = "https://files.pythonhosted.org/packages/38/0c/c47a60dbbc60f1f9c5e5d88d0e5b03e7ffbebb64af8b731bbd4b2a06f02e/tach-0.35.1-cp37-abi3-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:db255b02a23191313544ce8fb027ca886d21eca9185dd8a2a3724b0ada098cd9", size = 4622973, upload-time = "2026-09-14T12:00:09.252Z" },
+    { url = "https://files.pythonhosted.org/packages/9e/64/ee9b750191e6bf43e34a468f74a2f30090ec1339f0fcf63bcd8e357bc284/tach-0.35.1-cp37-abi3-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:b5e263401ab7718ed5cd7027615557023ce01c96ab2fd892ca2ed3f517299b13", size = 5279985, upload-time = "2026-09-14T11:59:58.392Z" },
+    { url = "https://files.pythonhosted.org/packages/81/95/b4e3234c63e3b3b41f1fc3a7cefef56c3e1ae196c2a1112f23ca4686f338/tach-0.35.1-cp37-abi3-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:c29d57de5b247c42544af135fa62536db6e5bad5891793a5756ed6563e1edf76", size = 4343692, upload-time = "2026-09-14T12:00:02.599Z" },
+    { url = "https://files.pythonhosted.org/packages/ec/54/99aa72a2f72a9682b1e2f8b75e8fe2a17c6f78556c156cad11f3cf12c139/tach-0.35.1-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:3765c38fb8608c81411a2a5399d1225a250e61dd4890bd4a1b725104af65a0cb", size = 4577553, upload-time = "2026-09-14T12:00:14.417Z" },
+    { url = "https://files.pythonhosted.org/packages/21/0b/df8e0801a4a8fcb5231bf8539ba42801946ce24043410aa4e244a312d8d5/tach-0.35.1-cp37-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:40f6a24244b0a8593a8030c5a4a7ceeddaafca763c03e47750dfaed30466666d", size = 4488282, upload-time = "2026-09-14T11:59:48.495Z" },
+    { url = "https://files.pythonhosted.org/packages/40/5e/50336da6289da448e0dc958d861edddd6529d749b869570f3071c3260a9b/tach-0.35.1-cp37-abi3-musllinux_1_2_armv7l.whl", hash = "sha256:d9ebe880217101a8b984a1aa19487462320ba5d89bae5961a50d1b830b7d0d9b", size = 4493930, upload-time = "2026-09-14T11:59:52.409Z" },
+    { url = "https://files.pythonhosted.org/packages/ef/46/05a52ffddfd1dc402c71a4e3347b5cf1b72bf7f46a90e88b7293b3673466/tach-0.35.1-cp37-abi3-musllinux_1_2_i686.whl", hash = "sha256:00eedc986fd7cdab9a169964f3dd73aa8ac89dd6f1e91e59c3b3851a3d589cff", size = 4637802, upload-time = "2026-09-14T12:00:11.264Z" },
+    { url = "https://files.pythonhosted.org/packages/60/9c/1248ddb7bfad9e0b6194a158d7c00e1a9ba97fa4c8c13329de052a0582d2/tach-0.35.1-cp37-abi3-musllinux_1_2_ppc64le.whl", hash = "sha256:2f6548c9c1cc232f0ba35a08e7b2c24b3d0e2f0d51392dbe0bd0e37c088f1775", size = 5407705, upload-time = "2026-09-14T12:00:00.422Z" },
+    { url = "https://files.pythonhosted.org/packages/b9/57/54a3c4d0cda115e3f769c45d844c9e12b404ff2a1171ed152a20f253ea1e/tach-0.35.1-cp37-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:e7ff352cfc4bd627720cc3c9cbf0dd930d5e740306cd3c87b4519604b1b2349d", size = 4610723, upload-time = "2026-09-14T12:00:16.22Z" },
+    { url = "https://files.pythonhosted.org/packages/39/71/d1e483360ef95fa1e067f1c86ab269a27f11ad801276d16d5bfb09ab7974/tach-0.35.1-cp37-abi3-win32.whl", hash = "sha256:6888312a598da48e24b89d272397bb357a93e1312767d2c4b7e75abdc43d924f", size = 3446015, upload-time = "2026-09-14T12:00:07.461Z" },
+    { url = "https://files.pythonhosted.org/packages/4e/e1/e8959ee0f771cb8e32bd10a9f4258cc3f08a359cf54b7ebc36fea445c14c/tach-0.35.1-cp37-abi3-win_amd64.whl", hash = "sha256:5b153fdc159306dbc1443a099973e7f15c5a4bc564865a36a47217edd24ab0f4", size = 3712246, upload-time = "2026-09-14T12:00:05.755Z" },
 ]
 
 [[package]]

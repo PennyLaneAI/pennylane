@@ -306,6 +306,8 @@ def _out_multiplier_with_qft_resources(
 def _out_multiplier_with_qft_condition(
     x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
 ):  # pylint: disable=unused-argument, too-many-arguments
+    if capture.enabled():
+        return False  # TODO: ControlledSequence cannot take tracer wires [sc-128372]
     return mod == 2 ** len(output_wires) or len(work_wires) >= 2
 
 
@@ -510,7 +512,7 @@ def _adder_flipped_first_work_wire(x_wires, y_wires, work_wires, flip_control=No
     unchanged. We only expect this function to be used with two values for `flip_control`: None
     or a tuple ``(c_wire, c_val)`` for a single control wire.
     """
-    if not work_wires:
+    if len(work_wires) == 0:
         _semi_adder(x_wires, y_wires, work_wires)
         return
 
@@ -633,7 +635,7 @@ def _out_multiplier_with_caddsub(
     """
     # We extend our output by one wire because we need to store 2x*y intermediately, instead
     # of x*y. This also multiplies the value stored in output_wires with two.
-    output_wires = output_wires + [work_wires[0]]
+    output_wires = list(output_wires) + [work_wires[0]]
     # The other work wires can be used for arithmetic building blocks
     work_wires = work_wires[1:]
     n = len(x_wires)

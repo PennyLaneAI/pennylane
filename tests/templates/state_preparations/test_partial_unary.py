@@ -26,9 +26,12 @@ from pennylane.templates.state_preparations.partial_unary import (
     PartialUnaryStatePreparation,
     PUIsometryFinder,
     _find_affine_subspace_isometry,
+    _is_affine_subspace,
     _pui_state_prep_core,
     _pui_state_prep_resources,
 )
+from pennylane.typing import Complex, Float, Wire
+from pennylane.wires import Wires
 
 # pylint: disable=protected-access
 
@@ -331,17 +334,16 @@ class TestAffineSubspaceIsometry:
 
     def test_resource_model_caps_batches_and_accounts_for_excess_wires(self):
         """Resource heuristics cap QROM widths and account for the enlarged register."""
-        base = _pui_state_prep_resources(
-            num_entries=3, num_wires=4, num_work_wires=1, is_affine=False
-        )
-        excess = _pui_state_prep_resources(
-            num_entries=3, num_wires=4, num_work_wires=5, is_affine=False
-        )
+        # Four states with affine rank 3, so the generic (non-Clifford) resource model applies.
+        indices = (0, 1, 2, 4)
+        coefficients = np.ones(4) / 2
+        base = _pui_state_prep_resources(coefficients, range(4), indices, work_wires=[4])
+        excess = _pui_state_prep_resources(coefficients, range(4), indices, work_wires=range(4, 9))
 
         assert len(base) == 8
-        assert len(excess) == 9
+        assert len(excess) == 10
         assert {len(rep.target_wires) for rep in base if isinstance(rep, qp.QROM)} == {1, 2}
-        assert {len(rep.target_wires) for rep in excess if isinstance(rep, qp.QROM)} == {1, 2, 3}
+        assert {len(rep.target_wires) for rep in excess if isinstance(rep, qp.QROM)} == {1, 2, 3, 4}
         assert base[qp.SWAP] == 4
         assert excess[qp.SWAP] == 8
 
@@ -355,10 +357,10 @@ class TestAffineSubspaceIsometry:
         )
         dynamic_rule, provided_rule = list_decomps(PartialUnaryStatePreparation)
 
-        assert op.resource_params["is_affine"]
-        assert not dynamic_rule.is_applicable(**op.resource_params)
-        assert provided_rule.is_applicable(**op.resource_params)
-        assert dynamic_rule.get_work_wire_spec(**op.resource_params).total == 0
+        assert _is_affine_subspace(op.indices, 2)
+        assert not dynamic_rule.is_applicable(**op.arguments)
+        assert provided_rule.is_applicable(**op.arguments)
+        assert dynamic_rule.get_work_wire_spec(**op.arguments).total == 0
 
 
 def _is_binary(x: np.ndarray) -> bool:
@@ -502,6 +504,7 @@ class TestPartialUnaryStatePreparation:
         target[list(indices)] = coefficients
         assert np.allclose(circuit()[::4], target)
 
+    @pytest.mark.jax
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("provide_work_wires", [False, True])
     @pytest.mark.parametrize(
@@ -522,6 +525,19 @@ class TestPartialUnaryStatePreparation:
             coefficients, wires, indices=indices, work_wires=work_wires
         )
         assert_valid(op, skip_differentiation=True)
+
+    @pytest.mark.parametrize(
+        "coeffs", [Complex[15], Float[15], np.arange(15) / np.linalg.norm(np.arange(15))]
+    )
+    @pytest.mark.parametrize("wires", [Wire[9], Wires(range(9))])
+    @pytest.mark.parametrize("work_wires", [Wire[0], Wire[4], (), Wires(range(10, 14))])
+    def test_abstract_init(self, coeffs, wires, work_wires):
+        """Test that PartialUnaryStatePreparation can be initialized with abstract inputs."""
+        indices = tuple(range(15))
+        op = PartialUnaryStatePreparation(coeffs, wires, indices=indices, work_wires=work_wires)
+        assert len(op.wires) == 9
+        assert len(op.coefficients) == 15
+        assert len(op.indices) == 15
 
     @pytest.mark.catalyst
     @pytest.mark.parametrize("provide_work_wires", [False, True])
@@ -558,10 +574,11 @@ class TestPartialUnaryStatePreparation:
         work_wires = list(range(num_wires, num_wires + num_work_wires))
         rng.shuffle(work_wires)
         op = PartialUnaryStatePreparation(coefficients, wires, indices, work_wires)
-        applicable_rule = int(provide_work_wires or op.resource_params["is_affine"])
+        is_affine = _is_affine_subspace(indices, max(qp.math.ceil_log2(num_entries), 1))
+        applicable_rule = int(provide_work_wires or is_affine)
 
         for j, rule in enumerate(list_decomps(PartialUnaryStatePreparation)):
-            applicable = rule.is_applicable(**op.resource_params)
+            applicable = rule.is_applicable(**op.arguments)
             assert applicable is (j == applicable_rule)
             if not applicable:
                 continue
@@ -588,7 +605,7 @@ class TestPartialUnaryStatePreparation:
         op = PartialUnaryStatePreparation(coefficients, wires, indices, work_wires)
 
         for j, rule in enumerate(list_decomps(PartialUnaryStatePreparation)):
-            applicable = rule.is_applicable(**op.resource_params)
+            applicable = rule.is_applicable(**op.arguments)
             assert applicable is (j == 1)
             if not applicable:
                 continue
@@ -623,5 +640,11 @@ class TestPartialUnaryStatePreparation:
         with pytest.raises(TypeError, match="must be integers"):
             PartialUnaryStatePreparation(np.ones(2) / np.sqrt(2), wires, (0, 1.5), [])
 
-        with pytest.raises(ValueError, match="must be disjoint"):
+        with pytest.raises(ValueError, match="must not overlap"):
             PartialUnaryStatePreparation(np.ones(2) / np.sqrt(2), wires, (0, 1), [3, 4])
+
+        with pytest.raises(ValueError, match="indices must be a tuple of ints"):
+            PartialUnaryStatePreparation(np.ones(2) / np.sqrt(2), wires, [0, 1], [])
+
+        with pytest.raises(ValueError, match="indices must be a tuple of ints"):
+            PartialUnaryStatePreparation(np.ones(2) / np.sqrt(2), wires, np.array([0, 1]), [])

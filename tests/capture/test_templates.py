@@ -360,7 +360,9 @@ tested_modified_templates = [
     qp.AliasSampling,
     qp.OneBodyBlockEncoding,
     qp.AliasSamplingTHC,
+    qp.SelectTHC,
     qp.SuperpositionTHC,
+    qp.QubitizationTHC,
     qp.SignedOutMultiplier,
     qp.OutSquare,
     qp.SignedOutSquare,
@@ -1615,6 +1617,60 @@ class TestModifiedTemplates:
 
         [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
         qp.assert_equal(op, qp.SuperpositionTHC(**kwargs))
+
+    def test_select_thc(self):
+        """Test the primitive bind call of SelectTHC."""
+
+        sizes = qp.select_thc_wires(1, 2, 1)
+        wires = qp.registers(sizes)
+        kwargs = {
+            "chi": ((1.0,),),
+            "t_eigenvectors": ((1.0,),),
+            "beth": 1,
+            **wires,
+        }
+
+        def qfunc():
+            return qp.SelectTHC(**kwargs).tracer
+
+        jaxpr = jax.make_jaxpr(qfunc)()
+
+        assert len(jaxpr.eqns) == 1
+        eqn = jaxpr.eqns[0]
+        assert_eqn_matches_op(eqn, qp.SelectTHC)
+
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        qp.assert_equal(op, qp.SelectTHC(**kwargs))
+
+    def test_qubitization_thc(self, seed):
+        """Test the primitive bind call of QubitizationTHC."""
+
+        M, N, aleph, beth = 6, 2, 2, 2
+        sizes = qp.qubitization_thc_wires(M, N, aleph, beth)
+        wires = qp.registers(sizes)
+        rng = np.random.default_rng(seed)
+        zeta = rng.standard_normal((M, M))
+        kwargs = {
+            "zeta": tuple(map(tuple, (zeta + zeta.T) / 2)),
+            "t_ell": tuple(rng.standard_normal(N // 2)),
+            "chi": tuple(map(tuple, rng.standard_normal((M, N // 2)))),
+            "t_eigenvectors": tuple(map(tuple, np.eye(N // 2))),
+            "aleph": aleph,
+            "beth": beth,
+        }
+
+        def qfunc():
+            return qp.QubitizationTHC(**kwargs, **wires).tracer
+
+        jaxpr = jax.make_jaxpr(qfunc)()
+
+        assert len(jaxpr.eqns) == 1
+
+        eqn = jaxpr.eqns[0]
+        assert_eqn_matches_op(eqn, qp.QubitizationTHC)
+
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        qp.assert_equal(op, qp.QubitizationTHC(**kwargs, **wires))
 
     def test_signed_out_multiplier(self):
         """Test the primitive bind call of SignedOutMultiplier."""

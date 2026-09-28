@@ -12,6 +12,7 @@ dynamic = ["version"]
 dependencies = [
     "scipy",
     "networkx",
+    "jax==0.7.1",
     "rustworkx>=0.14.0",
     "autograd<1.9",
     "appdirs",
@@ -76,8 +77,6 @@ upload-reports = [
     "requests==2.33.0",
 ]
 docs = [
-    "jax==0.7.1",
-    "jaxlib==0.7.1",
     "mistune==0.8.4",
     "m2r2",
     # TODO: Remove once galois becomes compatible with latest numpy
@@ -142,8 +141,6 @@ doctest = [
     "matplotlib",
     "torch",
     "pyzx",
-    "jax==0.7.1",
-    "jaxlib==0.7.1",
     "stim",
     "quimb",
     "triton==3.5.1; platform_system == 'Linux' and platform_machine == 'x86_64'",

@@ -35,9 +35,9 @@ Core classes and functions
     ~MMDConfig
     ~QuditMMDConfig
     ~build_expval_func
+    ~build_mmd_loss_pauli
     ~build_qudit_expval_func
-    ~build_qudit_mmd_loss
-    ~mmd_loss
+    ~build_mmd_loss_hw
     ~median_heuristic
     ~train
     ~training_iterator
@@ -143,18 +143,25 @@ dataset of bitstrings, use the built-in Maximum Mean Discrepancy (MMD)
 loss. The MMD is a kernel-based distance between probability distributions.
 Smaller values mean the circuit output is closer to the target data.
 
+:func:`~build_mmd_loss_pauli` takes any Pauli expectation value callable,
+the number of qubits, and the MMD hyperparameters, and returns a reusable
+loss function with signature ``loss_fn(params, target_data, key=None)``.
+Because it takes a callable rather than a circuit configuration, the same
+loss works for any model that can estimate Pauli-``Z`` expectation values,
+not only IQP circuits.
+
 The ``bandwidth`` parameter controls how sensitive the loss is to
 fine-grained versus broad differences between distributions. A good
 default is the median pairwise distance of the dataset, computed with
 :func:`~median_heuristic`.
 
 For more detail on how the loss is constructed, see
-`Section IV B, Loss functions via graph-Fourier kernels. <https://arxiv.org/pdf/2607.06675>`_
+Section 3.3 of `arXiv:2501.04776 <https://arxiv.org/pdf/2501.04776>`_.
 
 .. code-block:: python
 
    import numpy as np
-   from pennylane.labs.tcdq import MMDConfig, mmd_loss, median_heuristic
+   from pennylane.labs.tcdq import MMDConfig, build_mmd_loss_pauli, median_heuristic
 
    np.random.seed(42)
    target_data = np.random.binomial(1, 0.5, size=(500, n_qubits))
@@ -162,23 +169,23 @@ For more detail on how the loss is constructed, see
    bandwidth = median_heuristic(target_data)
    mmd_config = MMDConfig(bandwidth=bandwidth, n_ops=100)
 
-   loss_kwargs = {
-       "params": params,
-       "circuit_config": config,
-       "mmd_config": mmd_config,
-       "target_data": target_data,
-   }
+   # Build the loss once, then reuse it for every optimization step
+   loss_fn = build_mmd_loss_pauli(expval_fn, n_qubits, mmd_config)
 
    mmd_result = train(
        optimizer="Adam",
-       loss=mmd_loss,
+       loss=loss_fn,
        stepsize=0.01,
        n_iters=100,
-       loss_kwargs=loss_kwargs,
+       loss_kwargs={"params": params, "target_data": target_data},
        options=TrainingOptions(unroll_steps=10),
    )
 
    print("Final MMD loss:", float(mmd_result.losses[-1]))
+
+Any extra keyword arguments needed by the expectation value callable are
+forwarded through the loss, for example
+``loss_fn(params, target_data, key, n_samples=8000)``.
 
 
 Qudit circuits
@@ -217,7 +224,7 @@ qudit.
    m_vecs = jnp.zeros_like(l_vecs)
 
    config = QuditCircuitConfig(
-       d=d,
+       dims=d,
        n_qudits=n_qudits,
        gates=gates,
        observables=(l_vecs, m_vecs),
@@ -234,10 +241,15 @@ Training qudit circuits with MMD loss
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Qudit distribution matching uses
-:func:`~build_qudit_mmd_loss`, which returns a reusable loss function
+:func:`~build_mmd_loss_hw`, which returns a reusable loss function
 based on a graph-kernel MMD. The ``graph_type`` parameter selects the
 kernel: ``"cycle"`` respects the ordering of neighbouring levels, while
 ``"complete"`` treats all levels symmetrically.
+
+It takes any Heisenberg-Weyl moment callable, the qudit dimension(s), the
+number of qudits, and the MMD hyperparameters. Because it takes a callable
+rather than a circuit configuration, the same loss works for any model that
+can estimate Heisenberg-Weyl moments, not only qudit IQP circuits.
 
 .. code-block:: python
 
@@ -247,7 +259,8 @@ kernel: ``"cycle"`` respects the ordering of neighbouring levels, while
    from pennylane.labs.tcdq import (
        QuditCircuitConfig,
        QuditMMDConfig,
-       build_qudit_mmd_loss,
+       build_qudit_expval_func,
+       build_mmd_loss_hw,
        TrainingOptions,
        train,
    )
@@ -267,7 +280,7 @@ kernel: ``"cycle"`` respects the ordering of neighbouring levels, while
    }
 
    circuit_config = QuditCircuitConfig(
-       d=d,
+       dims=d,
        n_qudits=n_qudits,
        gates=gates,
        n_samples=2000,
@@ -276,7 +289,8 @@ kernel: ``"cycle"`` respects the ordering of neighbouring levels, while
 
    # Build the MMD loss with a cycle-graph kernel
    mmd_config = QuditMMDConfig(bandwidth=[0.3, 1.0], n_ops=64, graph_type="cycle")
-   loss_fn = build_qudit_mmd_loss(circuit_config, mmd_config)
+   expval_fn = build_qudit_expval_func(circuit_config)
+   loss_fn = build_mmd_loss_hw(expval_fn, d, n_qudits, mmd_config)
 
    # Generate synthetic target data and train
    target_data = jax.random.randint(jax.random.PRNGKey(99), (500, n_qudits), 0, d)
@@ -293,6 +307,11 @@ kernel: ``"cycle"`` respects the ordering of neighbouring levels, while
 
    print("Final MMD loss:", float(result.losses[-1]))
 
+Any extra keyword arguments needed by the moment callable are forwarded
+through the loss, for example
+``loss_fn(params, target_data, key, n_samples=8000)`` or
+``loss_fn(params, target_data, key, phase_fn_params=xi)``.
+
 """
 
 from .expval_functions import (
@@ -303,8 +322,8 @@ from .qudit_expval_functions import (
     QuditCircuitConfig,
     build_qudit_expval_func,
 )
-from .mmd_loss import MMDConfig, median_heuristic, mmd_loss
-from .qudit_mmd_loss import QuditMMDConfig, build_qudit_mmd_loss
+from .mmd_loss_pauli import MMDConfig, build_mmd_loss_pauli, median_heuristic
+from .mmd_loss_hw import QuditMMDConfig, build_mmd_loss_hw
 from .training import BatchResult, TrainingOptions, TrainingResult, train, training_iterator
 from .utils import (
     create_lattice_gates,
@@ -319,9 +338,9 @@ __all__ = [
     "MMDConfig",
     "QuditMMDConfig",
     "build_expval_func",
+    "build_mmd_loss_pauli",
     "build_qudit_expval_func",
-    "mmd_loss",
-    "build_qudit_mmd_loss",
+    "build_mmd_loss_hw",
     "median_heuristic",
     "BatchResult",
     "TrainingOptions",
