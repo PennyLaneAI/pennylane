@@ -208,14 +208,14 @@ def __getattr__(key):
         return QpPrimitive
 
     if key == "AbstractOperator":
-        from .primitives import _get_abstract_operator
+        from .primitives import AbstractOperator
 
-        return _get_abstract_operator()
+        return AbstractOperator
 
     if key == "AbstractMeasurement":
-        from .primitives import _get_abstract_measurement
+        from .primitives import AbstractMeasurement
 
-        return _get_abstract_measurement()
+        return AbstractMeasurement
 
     if key == "qnode_prim":
         from ..workflow._capture_qnode import qnode_prim

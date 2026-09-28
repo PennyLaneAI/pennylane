@@ -782,10 +782,11 @@ class TestControlledSelectTHC:
         tape = qp.tape.QuantumScript.from_queue(q)
 
         with qp.decomposition.toggle_graph_ctx(True):
-            # one ChangeOpBasis per V sandwich, and the control lands on the outside of it
+            # one ChangeOpBasis per V sandwich plus one for the index swaps, and the control
+            # lands on the outside of each of them
             tape = qp.transforms.decompose(tape, max_expansion=1)[0][0]
             names = [op.name for op in tape.operations]
-            assert sum(name.startswith("C(ChangeOpBasis") for name in names) == 2
+            assert sum(name.startswith("C(ChangeOpBasis") for name in names) == 3
 
             tape = qp.transforms.decompose(tape, max_expansion=1)[0][0]
             tape = qp.transforms.decompose(tape, max_expansion=1)[0][0]
