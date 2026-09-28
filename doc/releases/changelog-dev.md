@@ -1576,6 +1576,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Fixed four incorrect links that referred to hardcoded `blob/master/` URLs by replacing them with relative paths.
+  [(#10211)](https://github.com/PennyLaneAI/pennylane/pull/10211)
+
 * Corrected spelling errors in documentation, comments, and internal variable names across the codebase.
   [(#9752)](https://github.com/PennyLaneAI/pennylane/pull/9752)
 
