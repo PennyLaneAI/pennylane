@@ -93,7 +93,10 @@ Inspecting and Managing Decomposition Rules
     ~has_decomp
     ~inspect_decomps
     ~local_decomps
+    ~register_signature
+    ~signature_registry
     ~DecompCollection
+    ~all_decomps
 
 PennyLane maintains a global dictionary of decomposition rules. New decomposition rules can be
 registered under an operator using ``add_decomps``, and ``list_decomps`` can be called to inspect
@@ -232,6 +235,8 @@ from .utils import (
     enable_graph,
     disable_graph,
     enabled_graph,
+    register_signature,
+    signature_registry,
     toggle_graph_ctx,
 )
 from .decomposition_graph import DecompositionGraph, DecompGraphSolution
@@ -256,3 +261,4 @@ from .decomposition_rule import (
     local_decomps,
     DecompCollection,
 )
+from .all_decomps import all_decomps
