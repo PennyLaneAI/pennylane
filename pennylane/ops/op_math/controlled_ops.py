@@ -31,7 +31,11 @@ from pennylane import math
 from pennylane.allocation import allocate
 from pennylane.core.operator import Operator
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.decomposition.decomposition_rule import DecompCollection, list_decomps
+from pennylane.decomposition.decomposition_rule import (
+    DecompCollection,
+    get_fixed_decomp,
+    list_decomps,
+)
 from pennylane.decomposition.resources import resolve_work_wire_type
 from pennylane.decomposition.symbolic_decomposition import self_adjoint
 from pennylane.ops.identity import GlobalPhase
@@ -1476,6 +1480,9 @@ def _to_op_list(rule):
 
 @list_decomps.register
 def _list_mcx_decomps(op: MultiControlledX):
+    # fixed_decomps should override everything
+    if fixed_rule := get_fixed_decomp(op):
+        return DecompCollection([fixed_rule])
     if not op.work_wires:
         return DecompCollection(_list_mcx_no_work_wire_decomps(op))
     if len(op.wires) == 2:
