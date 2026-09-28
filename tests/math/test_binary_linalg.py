@@ -448,6 +448,37 @@ class TestBinaryIsIndependent:
         is_indep = math.binary_is_independent(vector, basis)
         assert is_indep is expected
 
+    def test_batched(self):
+        """Test that a batch of vectors, stacked as columns, is processed correctly."""
+        basis = np.array([[1, 0], [0, 1], [1, 0]])
+        # Columns are [0, 0, 1], [1, 1, 1] and [1, 0, 1]
+        vectors = np.array([[0, 1, 1], [0, 1, 0], [1, 1, 1]])
+
+        is_indep = math.binary_is_independent(vectors, basis)
+        assert isinstance(is_indep, np.ndarray) and is_indep.dtype == bool
+        assert np.array_equal(is_indep, [True, False, False])
+
+    def test_batched_empty_basis(self):
+        """Test a batch of vectors against an empty basis, for which only the zero vector
+        is linearly dependent."""
+        basis = np.zeros((3, 0), dtype=int)
+        vectors = np.array([[0, 1, 0], [0, 1, 0], [0, 1, 1]])
+
+        is_indep = math.binary_is_independent(vectors, basis)
+        assert np.array_equal(is_indep, [False, True, True])
+
+    @pytest.mark.parametrize("num_cols", [1, 4, 9])
+    def test_batched_matches_single(self, num_cols):
+        """Test that the batched evaluation matches looping over the vectors one by one."""
+        r = 9
+        basis = _make_random_regular_matrix(r, 40, seed=6212)[:, :num_cols]
+        vectors = np.random.default_rng(1247).choice(2, size=(r, 13))
+
+        is_indep = math.binary_is_independent(vectors, basis)
+        expected = [math.binary_is_independent(vec, basis) for vec in vectors.T]
+        assert is_indep.shape == (13,)
+        assert np.array_equal(is_indep, expected)
+
 
 class TestBinarySelectBasis:
 

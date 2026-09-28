@@ -340,9 +340,7 @@ def _find_w(bits_basis, other_bits, t):
         #  - set_M <> \mathcal{M}
         #  - v_r <> \{v_l\}
         #  - set_N <> \mathcal{N}
-        indep_of_reduced_basis = np.array(
-            [math.binary_is_independent(vec, bits_basis[:, :-1]) for vec in bits_without_v_r.T]
-        )
+        indep_of_reduced_basis = math.binary_is_independent(bits_without_v_r, bits_basis[:, :-1])
 
         # Note that the first columns of set_M are guaranteed to match bits_basis[:, :-1]
         set_M = bits_without_v_r[:, np.where(~indep_of_reduced_basis)[0]]
