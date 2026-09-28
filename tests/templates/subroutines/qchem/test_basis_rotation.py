@@ -22,7 +22,6 @@ import pennylane as qp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
-@pytest.mark.jax
 @pytest.mark.parametrize(
     "rotation",
     [
@@ -49,6 +48,7 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
         ),  # unitary matrix
     ],
 )
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity(rotation):
     """Run standard tests of operation validity."""
     op = qp.BasisRotation(wires=range(len(rotation)), unitary_matrix=rotation)
@@ -218,6 +218,7 @@ class TestDecomposition:
             ),
         ],
     )
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_basis_rotation_operations_real_without_jax(self, num_wires, ortho_matrix):
         """Test the correctness of the BasisRotation template including the gate count

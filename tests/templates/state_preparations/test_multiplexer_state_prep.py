@@ -25,7 +25,7 @@ import pennylane as qp
 
 class TestMultiplexerStatePreparation:
 
-    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_standard_validity(self):
         """Check the operation using the assert_valid function."""
 

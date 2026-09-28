@@ -822,16 +822,14 @@ class QubitChannel(Channel):
         return list(kraus_matrices)
 
 
-# The primitive will be None if jax is not installed in the environment
-# If defined, we need to update the implementation to repack matrices
-# See capture module for more information
-if QubitChannel._primitive is not None:  # pylint: disable=protected-access
+# Update the implementation to repack matrices. See capture module for more information.
 
-    @QubitChannel._primitive.def_impl  # pylint: disable=protected-access
-    def _(*args, n_wires):
-        K_list = args[:-n_wires]
-        wires = args[-n_wires:]
-        return type.__call__(QubitChannel, K_list, wires=wires)
+
+@QubitChannel._primitive.def_impl  # pylint: disable=protected-access
+def _(*args, n_wires):
+    K_list = args[:-n_wires]
+    wires = args[-n_wires:]
+    return type.__call__(QubitChannel, K_list, wires=wires)
 
 
 class ThermalRelaxationError(Channel):

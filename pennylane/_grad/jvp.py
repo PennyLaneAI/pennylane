@@ -16,8 +16,8 @@ Defines qp.jvp
 """
 
 from collections.abc import Sequence
-from functools import lru_cache
-from importlib.util import find_spec
+
+import jax
 
 from pennylane import capture
 from pennylane.compiler import compiler
@@ -25,47 +25,36 @@ from pennylane.exceptions import CompileError
 
 from .grad import _args_and_argnums, _setup_h, _setup_method
 
-has_jax = find_spec("jax") is not None
-
 
 def _get_shape(x):
-    import jax  # pylint: disable=import-outside-toplevel
-
     return getattr(x, "shape", jax.numpy.shape(x))
 
 
 # pylint: disable=unused-argument
-@lru_cache
-def _get_jvp_prim():
-    if not has_jax:  # pragma: no cover
-        return None
+jvp_prim = capture.QpPrimitive("jvp")
+jvp_prim.multiple_results = True
+jvp_prim.prim_type = "higher_order"
 
-    import jax  # pylint: disable=import-outside-toplevel
 
-    jvp_prim = capture.QpPrimitive("jvp")
-    jvp_prim.multiple_results = True
-    jvp_prim.prim_type = "higher_order"
+@jvp_prim.def_impl
+def _jvp_impl(*args, jaxpr, fn, method, h, argnums):
+    params = list(args[: len(jaxpr.invars)])
+    dparams = list(args[len(jaxpr.invars) :])
 
-    @jvp_prim.def_impl
-    def _jvp_impl(*args, jaxpr, fn, method, h, argnums):
-        params = list(args[: len(jaxpr.invars)])
-        dparams = list(args[len(jaxpr.invars) :])
+    for i, p in enumerate(params):
+        if i not in argnums:
+            dparams.insert(i, 0 * p)
 
-        for i, p in enumerate(params):
-            if i not in argnums:
-                dparams.insert(i, 0 * p)
+    def func(*inner_args):
+        return jax.core.eval_jaxpr(jaxpr, [], *inner_args)
 
-        def func(*inner_args):
-            return jax.core.eval_jaxpr(jaxpr, [], *inner_args)
+    results, dresults = jax.jvp(func, params, dparams)
+    return (*results, *dresults)
 
-        results, dresults = jax.jvp(func, params, dparams)
-        return (*results, *dresults)
 
-    @jvp_prim.def_abstract_eval
-    def _jvp_abstract_eval(*args, jaxpr, fn, method, h, argnums):
-        return 2 * [v.aval for v in jaxpr.outvars]
-
-    return jvp_prim
+@jvp_prim.def_abstract_eval
+def _jvp_abstract_eval(*args, jaxpr, fn, method, h, argnums):
+    return 2 * [v.aval for v in jaxpr.outvars]
 
 
 def _validate_tangents(params, dparams, argnums):
@@ -99,7 +88,6 @@ def _validate_tangents(params, dparams, argnums):
 
 # pylint: disable=too-many-arguments
 def _capture_jvp(func, params, dparams, *, argnums=None, method=None, h=None):
-    import jax  # pylint: disable=import-outside-toplevel
     from jax.tree_util import tree_leaves, tree_unflatten  # pylint: disable=import-outside-toplevel
 
     if not isinstance(params, Sequence):
@@ -127,7 +115,7 @@ def _capture_jvp(func, params, dparams, *, argnums=None, method=None, h=None):
         "argnums": shifted_argnums,
         "jaxpr": no_consts_jaxpr,
     }
-    out_flat = _get_jvp_prim().bind(*jaxpr.consts, *flat_args, *flat_dargs, **prim_kwargs)
+    out_flat = jvp_prim.bind(*jaxpr.consts, *flat_args, *flat_dargs, **prim_kwargs)
     flat_results, flat_dresults = out_flat[: len(j.outvars)], out_flat[len(j.outvars) :]
 
     results = tree_unflatten(flat_fn.out_tree, flat_results)
