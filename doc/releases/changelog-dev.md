@@ -603,6 +603,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* ZX transforms now require the optional extra ``pyzx>=0.10`` and raise an error if an older
+  version is installed.
+  [(#10121)](https://github.com/PennyLaneAI/pennylane/pull/10121)
+
 * Adds a `qp.decomposition.all_decomps` functions for finding all decompositions that might be hit by
   decomposing a gate to any gateset.
   [(#10187)](https://github.com/PennyLaneAI/pennylane/pull/10187)

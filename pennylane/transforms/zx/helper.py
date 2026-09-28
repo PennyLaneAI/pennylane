@@ -18,23 +18,33 @@ Helper functions for the ZX calculus module.
 from collections.abc import Callable
 from functools import wraps
 
+from packaging.version import Version
+
 from pennylane.core.qscript import QuantumScript
+
+_MIN_PYZX_VERSION = "0.10"
 
 
 def _needs_pyzx(func):
     """Private function to use as a ZX-based transforms decorator to raise the
-    appropriate error when the pyzx external package is not installed."""
+    appropriate error when the pyzx external package is missing or too old."""
 
     @wraps(func)
     def wrapper(*args, **kwargs):
         try:
-            # pylint: disable=import-outside-toplevel,unused-import
+            # pylint: disable=import-outside-toplevel
             import pyzx
 
         except ModuleNotFoundError as e:
             raise ModuleNotFoundError(
-                "The `pyzx` package is required. You can install it with `pip install pyzx`."
+                "The `pyzx` package is required. You can install it with `pip install 'pyzx>=0.10'`."
             ) from e
+
+        if Version(pyzx.__version__) < Version(_MIN_PYZX_VERSION):
+            raise ImportError(
+                f"PennyLane's ZX transforms require pyzx>={_MIN_PYZX_VERSION}, "
+                f"but version {pyzx.__version__} is installed."
+            )
 
         return func(*args, **kwargs)
 
