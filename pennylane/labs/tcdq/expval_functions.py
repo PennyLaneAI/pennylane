@@ -234,12 +234,23 @@ def _parity_signs(parity: jnp.ndarray, dtype) -> jnp.ndarray:
     return 1 - 2 * parity.astype(dtype)
 
 
+#: Number of generators whose parity rows are materialized at once by
+#: :func:`_phase_differences`. The peak temporary is
+#: ``_GATE_BLOCK * (n_samples + n_observables) * 4`` bytes, so 2**17 keeps it under
+#: ~0.5 GiB for the 500x500 shapes typical of the MMD loss while still giving the
+#: matrix product enough rows to run at full throughput.
+_GATE_BLOCK = 1 << 17
+
+
+# pylint: disable=too-many-arguments
 def _phase_differences(
     gates_params: jnp.ndarray,
     samples_t: jnp.ndarray,
     bitflips_t: jnp.ndarray,
     gate_indices: jnp.ndarray,
     param_map: jnp.ndarray,
+    *,
+    gate_block: int = _GATE_BLOCK,
 ) -> jnp.ndarray:
     r"""Accumulate the phase difference matrix of the IQP estimator.
 
@@ -265,14 +276,46 @@ def _phase_differences(
         ``(n_observables, n_samples)`` phase differences.
     """
     dtype = gates_params.dtype
-    theta = gates_params[param_map][:, jnp.newaxis]
-    b_bits = _xor_gather_rows(samples_t, gate_indices)
-    q_bits = _xor_gather_rows(bitflips_t, gate_indices)
+    n_gates, max_weight = gate_indices.shape
 
-    b_scaled = jnp.where(b_bits.astype(bool), -theta, theta)
-    return 2 * lax.dot_general(
-        q_bits.astype(dtype), b_scaled, (((0,), (0,)), ((), ())), preferred_element_type=dtype
+    def block_contribution(block_indices: jnp.ndarray, block_params: jnp.ndarray) -> jnp.ndarray:
+        theta = gates_params[block_params][:, jnp.newaxis]
+        b_bits = _xor_gather_rows(samples_t, block_indices)
+        q_bits = _xor_gather_rows(bitflips_t, block_indices)
+        b_scaled = jnp.where(b_bits.astype(bool), -theta, theta)
+        return lax.dot_general(
+            q_bits.astype(dtype), b_scaled, (((0,), (0,)), ((), ())), preferred_element_type=dtype
+        )
+
+    if n_gates <= gate_block:
+        return 2 * block_contribution(gate_indices, param_map)
+
+    # The generator axis is contracted away, so it can be walked in blocks and the
+    # (n_observables, n_samples) result accumulated. Pad up to a whole number of blocks
+    # with the sentinel qubit index: its parity rows are zero, so ``q_bits`` is zero for
+    # the padded generators and they contribute nothing to the product.
+    n_blocks = -(-n_gates // gate_block)
+    n_pad = n_blocks * gate_block - n_gates
+    if n_pad:
+        sentinel = samples_t.shape[0] - 1
+        gate_indices = jnp.concatenate(
+            [gate_indices, jnp.full((n_pad, max_weight), sentinel, gate_indices.dtype)]
+        )
+        param_map = jnp.concatenate([param_map, jnp.zeros((n_pad,), param_map.dtype)])
+
+    def accumulate(total, block):
+        return total + block_contribution(*block), None
+
+    zero = jnp.zeros((bitflips_t.shape[1], samples_t.shape[1]), dtype)
+    total, _ = lax.scan(
+        accumulate,
+        zero,
+        (
+            gate_indices.reshape(n_blocks, gate_block, max_weight),
+            param_map.reshape(n_blocks, gate_block),
+        ),
     )
+    return 2 * total
 
 
 def _compute_samples(key: ArrayLike, n_samples: int, n_qubits: int) -> jnp.ndarray:

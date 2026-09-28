@@ -873,17 +873,6 @@
 * The Phox module has been renamed to `tcdq` (Train Classical, Deploy Quantum) and now supports qudit systems of arbitrary dimension.
   [(#9745)](https://github.com/PennyLaneAI/pennylane/pull/9745)
 
-* The `tcdq` qubit expectation-value estimator and its Pauli MMD loss are faster. The estimator
-  now assembles its integrand in real arithmetic instead of building `complex64` intermediates,
-  reduces generator parities with gathers over each gate's support instead of a dense
-  `(n_gates, n_qubits)` product, contracts binary parity operands as `int8`, and contracts in
-  single precision by default. `CircuitConfig` gained a `dtype` field to select that working
-  precision, and `build_expval_func` accepts `observables_are_diagonal=True` to skip the X/Y
-  bookkeeping for `I`/`Z` observables, which `build_mmd_loss_pauli` now sets automatically.
-  On a 2000-qubit, 2000-gate, 2000-sample, 2000-observable MMD loss with a 2000-element custom
-  initial state, one evaluation takes 0.19 s on four CPU cores, down from 2.2 s.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
-
 * Added a factory :func:`~.labs.transforms.make_crz_to_phase_gradient_decomp` for phase gradient
   decompositions of :class:`~.CRZ`, as described
   [in the compilation hub](https://pennylane.ai/compilation/phase-gradient/c-control-rotations).
@@ -1003,16 +992,6 @@
   :func:`~.pennylane.labs.estimator_beta.mark_subroutine` which allow users to easily define their own
   resource operators from their quantum functions.
   [(#9764)](https://github.com/PennyLaneAI/pennylane/pull/9764)
-
-* The qubit expectation value estimator in ``labs.tcdq`` no longer materializes the dense
-  ``(n_gates, n_qubits)`` generator matrix. Generator parities are now computed as XOR reductions over
-  each gate's support, so both runtime and memory scale with the maximum gate weight rather than with
-  the qubit count, and the phase contraction is accumulated in cache-sized blocks over the generator
-  axis. The Pauli MMD loss also samples its observables through a dedicated ``Binomial(1, p)`` routine
-  that reproduces ``jax.random.binomial`` exactly without evaluating its unused rejection branch.
-  Together these make a 1000-qubit, 100000-gate MMD evaluation about 3x faster in 6x less memory, and
-  a 16000-qubit one about 12x faster.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
 
 <h3>Breaking changes 💔</h3>
 
