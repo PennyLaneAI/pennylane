@@ -6,6 +6,12 @@
   in analogy to the existing `qp.math.ceil_log2`.
   [(#10101)](https://github.com/PennyLaneAI/pennylane/pull/10101)
 
+* A :func:`pennylane.decomposition.register_signature` function is added for recording the possible signatures of
+  an operator, along with a :func:`pennylane.decomposition.signature_registry` function for retrieving the recorded
+  signatures. The resulting registry is used to identify decomposition rules that can be precompiled, improving
+  the performance of decomposition passes in :func:`~.qjit`-compiled workflows.
+  [(#9921)](https://github.com/PennyLaneAI/pennylane/pull/9921)
+
 * Three new numeric Hamiltonians called :class:`pennylane.CDFHamiltonian` (based on
   `arXiv:2506.15784, Sec. III A <https://arxiv.org/abs/2506.15784>`),
   :class:`pennylane.CGFHamiltonian` (based on

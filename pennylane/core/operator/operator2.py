@@ -23,6 +23,7 @@ from enum import Enum, StrEnum, auto
 from functools import partial
 from inspect import BoundArguments, Signature, signature
 from numbers import Number
+from types import NoneType
 from typing import TYPE_CHECKING, Any, ClassVar, TypeAlias
 
 import numpy as np
@@ -392,13 +393,13 @@ class Operator2(metaclass=OperatorMeta):
 
     .. note::
 
-        A type that is listed in 'arg_specs' says what an argument is allowed to be, 
-        not what it actually is. For example, if arg_specs contains Complex[-1, -1], the Operator 
-        can still be instantiated with a real float64 array, which will then be reported as 
+        A type that is listed in 'arg_specs' says what an argument is allowed to be,
+        not what it actually is. For example, if arg_specs contains Complex[-1, -1], the Operator
+        can still be instantiated with a real float64 array, which will then be reported as
         complex even though it holds real data.
 
-        The decomposition graph goes by the reported type, so real and complex inputs will look 
-        like the same operator and share one rule. To let them decompose differently, leave the argument 
+        The decomposition graph goes by the reported type, so real and complex inputs will look
+        like the same operator and share one rule. To let them decompose differently, leave the argument
         out of ``arg_specs`` and give each rule a ``register_condition`` that checks the type. For
         a concrete example see ``BasisRotation``.
     """
@@ -408,7 +409,7 @@ class Operator2(metaclass=OperatorMeta):
     _sig: ClassVar[Signature]
     """The signature of the operator. Internal use only."""
 
-    has_fixed_sig: ClassVar[bool]
+    has_fixed_sig: ClassVar[bool] = False
     """Whether the expected signature of an operator is fixed. If ``True``, then the operator's
     signature will always be fully known. When defining decomposition rules for an operator,
     operator types with fixed signatures can be placed in the rules' resources without needing
@@ -458,7 +459,7 @@ class Operator2(metaclass=OperatorMeta):
         # Make sure not to flatten wires here, because an empty Wires([]) flattens to
         # empty leaves, so it'd be incorrectly not identified as something concrete.
         leaves, _ = flatten(self, is_leaf=lambda l: isinstance(l, Wires))
-        return all(isinstance(l, (AbstractArray, AbstractWires)) for l in leaves)
+        return all(isinstance(l, (AbstractArray, AbstractWires, NoneType)) for l in leaves)
 
     @property
     def arguments(self) -> dict[str, Any]:
@@ -1623,6 +1624,9 @@ class Operator2(metaclass=OperatorMeta):
             # enforce sorting by signature
             sorted_names = tuple(a for a in cls._sig.parameters if a in getattr(cls, attr))
             setattr(cls, attr, sorted_names)
+
+        if cls.has_fixed_sig:
+            qp.decomposition.register_signature(cls)
 
 
 # ---------------------------------------------------------------------------------
