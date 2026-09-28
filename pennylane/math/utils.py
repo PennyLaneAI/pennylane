@@ -562,6 +562,15 @@ def ceil_log2(n: numbers.Real) -> int:
     Returns:
         int: Rounded-up base-2 logarithm of ``n``.
 
+    .. warning::
+
+        Under just-in-time (JIT) compilation with JAX, this function will not raise an error
+        for the input ``0``:
+
+        >>> import jax
+        >>> jax.jit(qp.math.ceil_log2)(0)
+        Array(-2147483648, dtype=int32)
+
     **Example**
 
     On powers of two, ``ceil_log2`` simply acts like ``np.log2`` whose result was converted to
@@ -588,6 +597,9 @@ def ceil_log2(n: numbers.Real) -> int:
 
     >>> qp.math.ceil_log2(2**53 + 1)
     54
+
+    For simple ``int`` inputs, this function computes the same as ``(n - 1).bit_length()``, which
+    does not work for inputs like ``np.int64``.
     """
     if is_abstract(n):
         # The ceiling exceeds the floor by one unless n is a power of two, which is the
@@ -598,8 +610,6 @@ def ceil_log2(n: numbers.Real) -> int:
     exponent = int(np.ceil(np.log2(n)))
     if (1 << exponent) < n:
         return exponent + 1
-    if (2 ** (exponent - 1)) >= n:  # Can't use shifts because exponent might be 0
-        return exponent - 1
     return exponent
 
 
@@ -612,6 +622,16 @@ def floor_log2(n: numbers.Real) -> int:
 
     Returns:
         int: Rounded-down base-2 logarithm of ``n``.
+
+
+    .. warning::
+
+        Under just-in-time (JIT) compilation with JAX, this function will not raise an error
+        for the input ``0``:
+
+        >>> import jax
+        >>> jax.jit(qp.math.floor_log2)(0)
+        Array(2147483647, dtype=int32)
 
     **Example**
 
@@ -639,6 +659,9 @@ def floor_log2(n: numbers.Real) -> int:
 
     >>> qp.math.floor_log2(2**53 - 1)
     52
+
+    For simple ``int`` inputs, this function computes the same as ``n.bit_length() - 1``, which
+    does not work for inputs like ``np.int64``.
     """
     # np.log2 loses precision for inputs with more than 53 significant bits, so that its rounded
     # result may be off by one. Comparing to the neighbouring powers of two corrects this.
@@ -646,10 +669,11 @@ def floor_log2(n: numbers.Real) -> int:
         exponent = np.floor(np.log2(n)).astype(int)
         # Shifting compares n to 2 ** exponent without forming the power itself, which could
         # exceed the integer data type
-        shifted = n >> math.cast_like(exponent, n)
+        shifted = n >> exponent
         return exponent - (shifted == 0) + (shifted >= 2)
+
     exponent = int(np.floor(np.log2(n)))
-    if (1 << exponent + 1) <= n:
+    if (1 << (exponent + 1)) <= n:
         return exponent + 1
     if (1 << exponent) > n:
         return exponent - 1

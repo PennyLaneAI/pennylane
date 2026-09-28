@@ -27,7 +27,8 @@ jnp = pytest.importorskip("jax.numpy")
 
 
 @pytest.mark.parametrize(
-    "n, exp", [(1, 0), (2, 1), (4, 2), (1024, 10), (3, 2), (17, 5), (1023, 10)]
+    "n, exp",
+    [(1, 0), (2, 1), (4, 2), (1024, 10), (3, 2), (17, 5), (1023, 10), (jnp.int32(8192), 13)],
 )
 class TestCeilLog2:
     """Tests for ``qp.math.ceil_log2``."""
@@ -38,6 +39,7 @@ class TestCeilLog2:
         assert isinstance(out, int)
         assert out == exp
         assert fn.ceil_log2(2**out) == out
+        assert out == int(n - 1).bit_length()
 
     def test_ceil_log2_jit(self, n, exp):
         """Test ``ceil_log2`` with JIT, which computes the ceiling of log2,
@@ -47,9 +49,13 @@ class TestCeilLog2:
         assert out.dtype == jnp.int64
         assert out == exp
         assert fn.ceil_log2(2**out) == out
+        assert out == int(n - 1).bit_length()
 
 
-@pytest.mark.parametrize("n, exp", [(1, 0), (2, 1), (4, 2), (1024, 10), (3, 1), (17, 4), (1023, 9)])
+@pytest.mark.parametrize(
+    "n, exp",
+    [(1, 0), (2, 1), (4, 2), (1024, 10), (3, 1), (17, 4), (1023, 9), (jnp.int32(8192), 13)],
+)
 class TestFloorLog2:
     """Tests for ``qp.math.floor_log2``."""
 
@@ -59,6 +65,7 @@ class TestFloorLog2:
         assert isinstance(out, int)
         assert out == exp
         assert fn.floor_log2(2**out) == out
+        assert out == int(n).bit_length() - 1
 
     def test_floor_log2_jit(self, n, exp):
         """Test ``floor_log2`` with JIT, which computes the flooring of log2,
@@ -68,6 +75,7 @@ class TestFloorLog2:
         assert out.dtype == jnp.int64
         assert out == exp
         assert fn.floor_log2(2**out) == out
+        assert out == int(n).bit_length() - 1
 
 
 @pytest.mark.parametrize("n", [2**53 - 1, 2**53, 2**53 + 1, 2**60 + 3, 2**62 + 1, 2**64 - 1])
