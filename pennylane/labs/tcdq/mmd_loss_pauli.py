@@ -162,11 +162,7 @@ def _bootstrap_target_data(key: jnp.ndarray, target_data: jnp.ndarray) -> jnp.nd
 
 @jax.jit
 def _binary_ops_to_pauli_int(binary_ops: ArrayLike) -> jnp.ndarray:
-    """Map binary operator entries to Pauli integer codes (0 → I, 1 → Z=3).
-
-    Pauli codes fit in a byte, and the observable array is one of the largest
-    intermediates in the loss, so it is emitted as ``int8``.
-    """
+    """Map binary operator entries to Pauli integer codes (0 → I, 1 → Z=3)."""
     ops = jnp.asarray(binary_ops)
     return jnp.where(ops == 1, jnp.int8(3), jnp.int8(0))
 
