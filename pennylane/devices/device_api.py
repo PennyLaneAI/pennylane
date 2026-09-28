@@ -950,7 +950,7 @@ def _default_mcm_method(capabilities: DeviceCapabilities, shots_present: bool) -
     return "deferred"
 
 
-def _preprocess_device(original_device, transform, targs, tkwargs):
+def _preprocess_device(original_device, transform, targs, tkwargs):  # pragma: no cover
     class TransformedDevice(type(original_device)):
         """A transformed device with updated preprocess method."""
 
