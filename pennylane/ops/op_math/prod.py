@@ -18,7 +18,6 @@ computing the product between operations.
 
 import itertools
 from collections import Counter
-from copy import copy
 from functools import reduce
 from itertools import combinations
 from typing import Union
@@ -26,20 +25,19 @@ from typing import Union
 from scipy.sparse import kron as sparse_kron
 
 import pennylane as qp
-from pennylane import compiler, control_flow, math
+from pennylane import math
 from pennylane.capture.autograph import wraps
-from pennylane.core.operator import Operator, abstractify
-from pennylane.core.queuing import QueuingManager, apply
+from pennylane.core.operator import Operator, Operator2, abstractify
+from pennylane.core.queuing import QueuingManager, apply, remove_from_program
 from pennylane.decomposition.symbolic_decomposition import flip_zero_control
-from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
-from pennylane.ops.op_math.controlled2 import _ctrl_abstract
-from pennylane.ops.op_math.pow import Pow
-from pennylane.ops.op_math.sprod import SProd
-from pennylane.ops.op_math.sum import Sum
-from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
 from pennylane.typing import TensorLike, Wire
 
+from .adjoint2 import _adjoint_abstract
 from .composite import CompositeOp, handle_recursion_error
+from .controlled2 import _ctrl_abstract
+from .prod2 import Prod2, _multi_temporary_and_all_ones, _ProductFactorsGrouping, _swappable_ops
+from .sprod import SProd
+from .sum import Sum
 
 MAX_NUM_WIRES_KRON_PRODUCT = 9
 """The maximum number of wires up to which using ``math.kron`` is faster than ``math.dot`` for
@@ -136,6 +134,24 @@ def prod(*ops, lazy=True):
             return prod(*qs.operations[::-1], lazy=lazy)
 
         return wrapper
+
+    if ops and all(isinstance(op, Operator2) for op in ops):
+        if lazy:
+            return Prod2(ops)
+
+        # The outer 'Prod2's in 'ops' are discarded here and so we need to remove them from
+        # the program as nothing else will. The lazy route above does not need
+        # this as it forwards 'ops' directly to the constructor which already dequeues
+        # every operand in the '__init__' of 'CompositeOp2'.
+        operands = tuple(
+            itertools.chain.from_iterable(
+                op.operands if isinstance(op, Prod2) else (op,) for op in ops
+            )
+        )
+        for op in ops:
+            remove_from_program(op)
+
+        return Prod2(operands)
 
     if lazy:
         return Prod(*ops)
@@ -257,6 +273,12 @@ class Prod(CompositeOp):
     _op_symbol = "@"
     _math_op = staticmethod(math.prod)
     grad_method = None
+
+    @classmethod
+    def __subclasshook__(cls, subclass):
+        if subclass == qp.ops.op_math.Prod2:
+            return True
+        return NotImplemented
 
     @property
     def is_verified_hermitian(self):
@@ -565,224 +587,3 @@ qp.add_decomps(
     flip_zero_control(_controlled_product_with_work_wires),
     flip_zero_control(_controlled_product_with_one_work_wire),
 )
-
-
-def _multi_temporary_and_all_ones(
-    control,
-    work_wires,
-):
-    """Controlled decomposition using a ``TemporaryAND`` ladder.
-
-    Assumes all control values are 1 and returns the last ancilla as the
-    effective control target. Compatible with QJIT: the ladder is expressed
-    via ``control_flow.for_loop`` when running under tracing.
-    """
-    num_needed = len(control) - 1
-
-    if compiler.active() or qp.capture.enabled():
-        control = math.array(control, like="jax")
-        work_wires = math.array(work_wires, like="jax")
-
-    qp.TemporaryAND(wires=[control[0], control[1], work_wires[0]])
-
-    @control_flow.for_loop(1, num_needed, 1)
-    def _ladder(i):
-        qp.TemporaryAND(wires=[work_wires[i - 1], control[i + 1], work_wires[i]])
-
-    _ladder()  # pylint: disable = no-value-for-parameter
-
-    return work_wires[num_needed - 1]
-
-
-def _swappable_ops(op1, op2, wire_map: dict = None) -> bool:
-    """Boolean expression that indicates if op1 and op2 don't have intersecting wires and if they
-    should be swapped when sorting them by wire values.
-
-    Args:
-        op1 (.Operator): First operator.
-        op2 (.Operator): Second operator.
-        wire_map (dict): Dictionary containing the wire values as keys and its indexes as values.
-            Defaults to None.
-
-    Returns:
-        bool: True if operators should be swapped, False otherwise.
-    """
-    # one is broadcasted onto all wires.
-    if not op1.wires:
-        return True
-    if not op2.wires:
-        return False
-    wires1 = op1.wires
-    wires2 = op2.wires
-    if wire_map is not None:
-        wires1 = wires1.map(wire_map)
-        wires2 = wires2.map(wire_map)
-    wires1 = set(wires1)
-    wires2 = set(wires2)
-    # compare strings of wire labels so that we can compare arbitrary wire labels like 0 and "a"
-    return False if wires1 & wires2 else str(wires1.pop()) > str(wires2.pop())
-
-
-class _ProductFactorsGrouping:
-    """Utils class used for grouping identical product factors."""
-
-    _identity_map = {
-        "Identity": (1.0, "Identity"),
-        "PauliX": (1.0, "PauliX"),
-        "PauliY": (1.0, "PauliY"),
-        "PauliZ": (1.0, "PauliZ"),
-    }
-    _x_map = {
-        "Identity": (1.0, "PauliX"),
-        "PauliX": (1.0, "Identity"),
-        "PauliY": (1.0j, "PauliZ"),
-        "PauliZ": (-1.0j, "PauliY"),
-    }
-    _y_map = {
-        "Identity": (1.0, "PauliY"),
-        "PauliX": (-1.0j, "PauliZ"),
-        "PauliY": (1.0, "Identity"),
-        "PauliZ": (1.0j, "PauliX"),
-    }
-    _z_map = {
-        "Identity": (1.0, "PauliZ"),
-        "PauliX": (1.0j, "PauliY"),
-        "PauliY": (-1.0j, "PauliX"),
-        "PauliZ": (1.0, "Identity"),
-    }
-    _pauli_mult = {"Identity": _identity_map, "PauliX": _x_map, "PauliY": _y_map, "PauliZ": _z_map}
-    _paulis = {"PauliX": PauliX, "PauliY": PauliY, "PauliZ": PauliZ}
-
-    def __init__(self):
-        self._pauli_factors = {}  #  {wire: (pauli_coeff, pauli_word)}
-        self._non_pauli_factors = {}  # {wires: [hash, exponent, operator]}
-        self._factors = []
-        self.global_phase = 1
-
-    def add(self, factor: Operator):
-        """Add factor.
-
-        Args:
-            factor (Operator): Factor to add.
-        """
-        wires = factor.wires
-        if isinstance(factor, Prod):
-            for prod_factor in factor:
-                self.add(prod_factor)
-        elif isinstance(factor, Sum):
-            self._remove_pauli_factors(wires=wires)
-            self._remove_non_pauli_factors(wires=wires)
-            self._factors += (factor.operands,)
-        elif not isinstance(factor, qp.Identity):
-            if isinstance(factor, SProd):
-                self.global_phase *= factor.scalar
-                factor = factor.base
-            if isinstance(factor, (qp.Identity, qp.X, qp.Y, qp.Z)):
-                self._add_pauli_factor(factor=factor, wires=wires)
-                self._remove_non_pauli_factors(wires=wires)
-            else:
-                self._add_non_pauli_factor(factor=factor, wires=wires)
-                self._remove_pauli_factors(wires=wires)
-
-    def _add_pauli_factor(self, factor: Operator, wires: list[int]):
-        """Adds the given Pauli operator to the temporary ``self._pauli_factors`` dictionary. If
-        there was another Pauli operator acting on the same wire, the two operators are grouped
-        together using the ``self._pauli_mult`` dictionary.
-
-        Args:
-            factor (Operator): Factor to be added.
-            wires (List[int]): Factor wires. This argument is added to avoid calling
-                ``factor.wires`` several times.
-        """
-        wire = wires[0]
-        op2_name = factor.name
-        old_coeff, old_word = self._pauli_factors.get(wire, (1, "Identity"))
-        coeff, new_word = self._pauli_mult[old_word][op2_name]
-        self._pauli_factors[wire] = old_coeff * coeff, new_word
-
-    def _add_non_pauli_factor(self, factor: Operator, wires: list[int]):
-        """Adds the given non-Pauli factor to the temporary ``self._non_pauli_factors`` dictionary.
-        If there alerady exists an identical operator in the dictionary, the two are grouped
-        together.
-
-        If there isn't an identical operator in the dictionary, all non Pauli factors that act on
-        the same wires are removed and added to the ``self._factors`` tuple.
-
-        Args:
-            factor (Operator): Factor to be added.
-            wires (List[int]): Factor wires. This argument is added to avoid calling
-                ``factor.wires`` several times.
-        """
-        if isinstance(factor, Pow):
-            exponent = factor.z
-            factor = factor.base
-        else:
-            exponent = 1
-        op_hash = hash(factor)
-        old_hash, old_exponent, old_op = self._non_pauli_factors.get(wires, [None, None, None])
-        if isinstance(old_op, (qp.RX, qp.RY, qp.RZ)) and factor.name == old_op.name:
-            self._non_pauli_factors[wires] = [
-                op_hash,
-                old_exponent,
-                factor.__class__(factor.data[0] + old_op.data[0], wires).simplify(),
-            ]
-        elif op_hash == old_hash:
-            self._non_pauli_factors[wires][1] += exponent
-        else:
-            self._remove_non_pauli_factors(wires=wires)
-            self._non_pauli_factors[wires] = [op_hash, copy(exponent), factor]
-
-    def _remove_non_pauli_factors(self, wires: list[int]):
-        """Remove all factors from the ``self._non_pauli_factors`` dictionary that act on the given
-        wires and add them to the ``self._factors`` tuple.
-
-        Args:
-            wires (List[int]): Wires of the operators to be removed.
-        """
-        if not self._non_pauli_factors:
-            return
-        for wire in wires:
-            for key, (_, exponent, op) in list(self._non_pauli_factors.items()):
-                if wire in key:
-                    self._non_pauli_factors.pop(key)
-                    if exponent == 0:
-                        continue
-                    if exponent != 1:
-                        op = Pow(base=op, z=exponent).simplify()
-                    if not isinstance(op, qp.Identity):
-                        self._factors += ((op,),)
-
-    def _remove_pauli_factors(self, wires: list[int]):
-        """Remove all Pauli factors from the ``self._pauli_factors`` dictionary that act on the
-        given wires and add them to the ``self._factors`` tuple.
-
-        Args:
-            wires (List[int]): Wires of the operators to be removed.
-        """
-        if not self._pauli_factors:
-            return
-        for wire in wires:
-            pauli_coeff, pauli_word = self._pauli_factors.pop(wire, (1, "Identity"))
-            if pauli_word != "Identity":
-                pauli_op = self._paulis[pauli_word](wire)
-                self._factors += ((pauli_op,),)
-            self.global_phase *= pauli_coeff
-
-    def remove_factors(self, wires: list[int]):
-        """Remove all factors from the ``self._pauli_factors`` and ``self._non_pauli_factors``
-        dictionaries that act on the given wires and add them to the ``self._factors`` tuple.
-
-        Args:
-            wires (List[int]): Wires of the operators to be removed.
-        """
-        self._remove_pauli_factors(wires=wires)
-        self._remove_non_pauli_factors(wires=wires)
-
-    @property
-    def factors(self):
-        """Grouped factors tuple.
-
-        Returns:
-            tuple: Tuple of grouped factors.
-        """
-        return tuple(self._factors)

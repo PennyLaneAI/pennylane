@@ -372,12 +372,15 @@ class TestSemiAdder:
         registers = qp.registers(wire_lens)
         control_wires = qp.math.array(registers.pop("control"), like="jax")
         base = qp.SemiAdder(**registers)
-        ctrl_kwargs = {
+        decomp_args = {
+            "base": base,
             "control_wires": control_wires,
             "control_values": jnp.zeros(len(control_wires)),
+            "work_wires": jnp.array([]),
         }
         for rule in qp.list_decomps("C(SemiAdder)"):
-            if not rule.is_applicable(base=base, **ctrl_kwargs):
+            if not rule.is_applicable(**decomp_args):
                 continue
             # pylint: disable-next=protected-access
-            jax.make_jaxpr(qp.capture.subroutine(partial(rule._impl, base=base)))(**ctrl_kwargs)
+            subroutine = qp.capture.subroutine(partial(rule._impl, work_wire_type="borrowed"))
+            jax.make_jaxpr(subroutine)(**decomp_args)

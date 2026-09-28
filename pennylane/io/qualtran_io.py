@@ -237,7 +237,7 @@ def _(op: qtemps.state_preparations.QROMStatePreparation):
         gate_types[
             _map_to_bloq(
                 qops.ctrl(
-                    qops.GlobalPhase((2 * np.pi), wires=input_wires[0]),
+                    qops.GlobalPhase(2 * np.pi),
                     control=0,
                 ),
                 call_graph="decomposition",
@@ -734,7 +734,7 @@ def _get_to_pl_op():
 
     @_to_pl_op.register
     def _(bloq: qt.bloqs.basic_gates.GlobalPhase, wires):
-        return qops.GlobalPhase(bloq.exponent * np.pi, wires)
+        return qops.GlobalPhase(bloq.exponent * np.pi)
 
     @_to_pl_op.register
     def _(bloq: qt.bloqs.basic_gates.Hadamard, wires):

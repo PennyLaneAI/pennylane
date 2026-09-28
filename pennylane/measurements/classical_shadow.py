@@ -186,7 +186,7 @@ class ClassicalShadowMP(MeasurementTransform):
             [
                 Hadamard.compute_matrix(),
                 Hadamard.compute_matrix() @ RZ.compute_matrix(-np.pi / 2),
-                I.compute_matrix(),
+                I.compute_matrix(wires=[0]),
             ]
         )
         obs = obs_list[recipes]

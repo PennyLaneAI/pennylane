@@ -227,7 +227,10 @@ class TestControlledInit:
     @pytest.mark.parametrize(
         "base",
         [
-            qp.prod(qp.X(0), qp.X(1), qp.X(2)),
+            # NOTE: 'qp.prod' now will dispatch to 'Prod2'
+            # which belongs to 'ControlledOp2'. This equivalent test
+            # is covered by 'test_prod.py::test_controlled_prod_basic_validity'
+            qp.ops.Prod(qp.X(0), qp.X(1), qp.X(2)),
             qp.X(0) + qp.Y(1),
         ],
     )
@@ -971,7 +974,8 @@ class TestDecomposition:
         """Tests decompositions of custom operations"""
 
         active_wires = ctrl_wires + base_wires
-        base_op = base_cls(*params, wires=base_wires)
+        kwargs = {} if base_cls is qp.GlobalPhase else {"wires": base_wires}
+        base_op = base_cls(*params, **kwargs)
         ctrl_op = qp.ctrl(base_op, control=ctrl_wires)
         custom_ctrl_op = custom_ctrl_cls(*params, active_wires)
 
@@ -1057,7 +1061,8 @@ class TestDecomposition:
     ):
         """Tests that custom ops are not converted when wires are control-on-zero."""
 
-        base_op = base_cls(*params, wires=base_wires)
+        kwargs = {} if base_cls is qp.GlobalPhase else {"wires": base_wires}
+        base_op = base_cls(*params, **kwargs)
         op = qp.ctrl(base_op, control=ctrl_wires, control_values=[False] * len(ctrl_wires))
 
         if base_cls is qp.GlobalPhase and len(op.control_wires) == 1:
@@ -1066,6 +1071,12 @@ class TestDecomposition:
             )
 
         decomp = op.decomposition()
+
+        if base_cls is qp.Identity:
+            # A controlled Identity is the identity for any control values, so it decomposes
+            # into nothing and needs no gates to flip the control values.
+            assert decomp == []
+            return
 
         i = 0
         for ctrl_wire in ctrl_wires:

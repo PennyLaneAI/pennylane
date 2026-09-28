@@ -38,6 +38,7 @@ from pennylane.decomposition.resources import (
     adjoint_resource_rep,
 )
 from pennylane.decomposition.symbolic_decomposition import self_adjoint
+from pennylane.decomposition.utils import to_name
 
 from .symbolicop2 import SymbolicOp2
 
@@ -236,13 +237,24 @@ def _make_adjoint_decomp(base_rule: DecompositionRule):
         base_gates = base_res.gate_counts
         return {_adjoint_abstract(op): count for op, count in base_gates.items()}
 
+    def _wrap_work_wire_spec(base_rule):
+
+        # pylint: disable=protected-access
+        if isinstance(base_rule._work_wire_spec, dict):
+            return base_rule._work_wire_spec
+
+        def _wrapper(base, *_, **__):
+            return base_rule._work_wire_spec(**base.arguments)
+
+        return _wrapper
+
     base_source = base_rule._source
 
     # pylint: disable=protected-access
     @register_condition(_condition_fn)
     @register_resources(
         _resource_fn,
-        work_wires=base_rule._work_wire_spec,
+        work_wires=_wrap_work_wire_spec(base_rule),
         exact=base_rule.exact_resources,
         name=f"adjoint({base_rule.name})",
     )
@@ -292,3 +304,8 @@ def adjoint_rotation(base):
     assert len(base.dynamic_argnames) == 1
     angle = tuple(base.dynamic_args.values())[0]
     qp.ops.functions.bind_new_parameters(base, (-angle,))
+
+
+@to_name.register
+def _adjoint2_to_name(op: Adjoint2):
+    return f"Adjoint({to_name(op.base)})"

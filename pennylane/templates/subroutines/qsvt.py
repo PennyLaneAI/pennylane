@@ -31,7 +31,8 @@ from pennylane import math, ops
 from pennylane.core.operator import Operation, Operator, Operator2, abstractify
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.decomposition.resources import change_op_basis_resource_rep
+from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
@@ -693,7 +694,7 @@ def _QSVT_resources(projectors, UA):
     resources = defaultdict(int)
     resources[abstractify(projectors[0])] = 1
     for i in range(1, len(projectors) - 1, 2):
-        resources[change_op_basis_resource_rep(abstractify(UA), abstractify(projectors[i]))] += 1
+        resources[_change_op_basis_abstract(UA, projectors[i], _adjoint_abstract(UA))] += 1
         resources[abstractify(projectors[i + 1])] += 1
 
     if len(projectors) % 2 == 0:

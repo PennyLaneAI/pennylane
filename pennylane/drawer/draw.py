@@ -281,14 +281,7 @@ def draw(
         In addition, globally acting operators like :class:`~.GlobalPhase` or
         :class:`~.Identity` are always represented on all wires:
 
-        >>> print(qp.draw(qp.GlobalPhase, **draw_kwargs)(phi=0.5, wires=[]))
-        0: ─╭GlobalPhase(0.50)─┤
-        1: ─├GlobalPhase(0.50)─┤
-        2: ─╰GlobalPhase(0.50)─┤
-
-        This is the case even if they are provided with a subset of all wires:
-
-        >>> print(qp.draw(qp.GlobalPhase, **draw_kwargs)(phi=0.5, wires=[0]))
+        >>> print(qp.draw(qp.GlobalPhase, **draw_kwargs)(phi=0.5))
         0: ─╭GlobalPhase(0.50)─┤
         1: ─├GlobalPhase(0.50)─┤
         2: ─╰GlobalPhase(0.50)─┤
@@ -297,7 +290,7 @@ def draw(
         nodes are exempt from the expansion:
 
         >>> ctrl_gphase = qp.ctrl(qp.GlobalPhase, control=[2])
-        >>> print(qp.draw(ctrl_gphase, **draw_kwargs)(phi=0.5, wires=[0]))
+        >>> print(qp.draw(ctrl_gphase, **draw_kwargs)(phi=0.5))
         0: ─╭GlobalPhase(0.50)─┤
         1: ─├GlobalPhase(0.50)─┤
         2: ─╰●─────────────────┤
@@ -767,22 +760,10 @@ def draw_mpl(
 
         .. code-block:: python
 
-            fig, ax = qp.draw_mpl(qp.GlobalPhase, **draw_kwargs)(phi=0.5, wires=[])
+            fig, ax = qp.draw_mpl(qp.GlobalPhase, **draw_kwargs)(phi=0.5)
             fig.show()
 
         .. figure:: ../../_static/draw_mpl/gphase_no_wires.png
-            :align: center
-            :width: 40%
-            :target: javascript:void(0);
-
-        This is the case even if they are provided with a subset of all wires:
-
-        .. code-block:: python
-
-            fig, ax = qp.draw_mpl(qp.GlobalPhase, **draw_kwargs)(phi=0.5, wires=[0])
-            fig.show()
-
-        .. figure:: ../../_static/draw_mpl/gphase_one_wire.png
             :align: center
             :width: 40%
             :target: javascript:void(0);
@@ -793,7 +774,7 @@ def draw_mpl(
         .. code-block:: python
 
             ctrl_gphase = qp.ctrl(qp.GlobalPhase, control=[2])
-            fig, ax = qp.draw_mpl(ctrl_gphase, **draw_kwargs)(phi=0.5, wires=[0])
+            fig, ax = qp.draw_mpl(ctrl_gphase, **draw_kwargs)(phi=0.5)
             fig.show()
 
         .. figure:: ../../_static/draw_mpl/ctrl_gphase.png

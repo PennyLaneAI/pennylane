@@ -377,7 +377,7 @@ class SingleExcitationMinus(Operation):
          H(1),
          RZ(0.615, wires=[1]),
          CNOT(wires=[0, 1]),
-         GlobalPhase(0.3075, wires=[])]
+         GlobalPhase(0.3075)]
 
         """
         decomp_ops = [
@@ -541,7 +541,7 @@ class SingleExcitationPlus(Operation):
         >>> from pprint import pprint
         >>> decomp = qp.SingleExcitationPlus.compute_decomposition(1.23, wires=(0,1))
         >>> pprint(decomp)
-        [H(1), CNOT(wires=[1, 0]), RY(0.615, wires=[0]), RY(0.615, wires=[1]), CY(wires=[1, 0]), S(1), H(1), RZ(-0.615, wires=[1]), CNOT(wires=[0, 1]), GlobalPhase(-0.3075, wires=[])]
+        [H(1), CNOT(wires=[1, 0]), RY(0.615, wires=[0]), RY(0.615, wires=[1]), CY(wires=[1, 0]), S(1), H(1), RZ(-0.615, wires=[1]), CNOT(wires=[0, 1]), GlobalPhase(-0.3075)]
 
         """
         decomp_ops = [
@@ -1515,7 +1515,7 @@ def _fermionic_swap_decomp(phi, wires: WiresLike, **__):
     qp.RZ(phi / 2, wires=wires[0])
     qp.RZ(phi / 2, wires=wires[1])
     # for correcting global phase
-    qp.GlobalPhase(-0.5 * phi, wires=[wires[0], wires[1]])
+    qp.GlobalPhase(-0.5 * phi)
 
 
 add_decomps(FermionicSWAP, _fermionic_swap_decomp)

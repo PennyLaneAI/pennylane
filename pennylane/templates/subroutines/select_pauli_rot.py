@@ -21,13 +21,11 @@ from pennylane import capture, math
 from pennylane.core.operator import Operator2, abstractify
 from pennylane.decomposition import (
     add_decomps,
-    change_op_basis_resource_rep,
     register_resources,
-    resource_rep,
 )
-from pennylane.ops import CNOT, RZ, Hadamard, S, adjoint, change_op_basis
-from pennylane.ops.op_math import Prod
+from pennylane.ops import CNOT, RZ, Hadamard, S, adjoint, change_op_basis, prod
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.templates.state_preparations.mottonen import _apply_uniform_rotation_dagger
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
@@ -37,7 +35,7 @@ class SelectPauliRot(Operator2):
     r"""Applies individual single-qubit Pauli rotations depending on the state of
     designated control qubits.
 
-    This operator, also called a **multiplexed rotation** or **uniformly controlled rotation**,
+    This operator, also available as :class:`~.MultiplexedRotation` and :class:`~.UniformlyControlledRotation`,
     applies a sequence of multi-controlled rotations about the same axis to a single target qubit.
     The rotation angles are selected based on the state of the control qubits.
     Its definition is given by:
@@ -128,29 +126,27 @@ class SelectPauliRot(Operator2):
 def _select_pauli_rot_resource(angles, control_wires, target_wire, rot_axis):
 
     num_wires = len(control_wires) + 1
+    num_rotations = 2 ** (num_wires - 1)
+
+    rz_rep = abstractify(RZ)
+    cnot_rep = abstractify(CNOT)
 
     prod_res = {
-        abstractify(RZ): 2 ** (num_wires - 1),
-        abstractify(CNOT): 2 ** (num_wires - 1) if num_wires > 1 else 0,
+        RZ: num_rotations,
+        CNOT: num_rotations if num_wires > 1 else 0,
     }
     if rot_axis == "Z":
         return prod_res
 
+    target_rep = prod(*((cnot_rep, rz_rep) * num_rotations)) if num_wires > 1 else rz_rep
+
     if rot_axis == "X":
-        return {
-            change_op_basis_resource_rep(
-                Hadamard, resource_rep(Prod, resources=prod_res), Hadamard
-            ): 1,
-        }
+        return {_change_op_basis_abstract(Hadamard, target_rep, Hadamard): 1}
 
-    prod_rep1 = resource_rep(Prod, resources={abstractify(Hadamard): 1, _adjoint_abstract(S): 1})
-    prod_rep2 = resource_rep(Prod, resources={abstractify(S): 1, abstractify(Hadamard): 1})
+    prod_rep1 = prod(abstractify(Hadamard), _adjoint_abstract(S))
+    prod_rep2 = prod(abstractify(S), abstractify(Hadamard))
 
-    return {
-        change_op_basis_resource_rep(
-            prod_rep1, resource_rep(Prod, resources=prod_res), prod_rep2
-        ): 1,
-    }
+    return {_change_op_basis_abstract(prod_rep1, target_rep, prod_rep2): 1}
 
 
 # Not exact resources because rotations might be skipped based on angles
@@ -202,3 +198,24 @@ def decompose_select_pauli_rot(angles, control_wires, target_wire, rot_axis):
 
 
 add_decomps(SelectPauliRot, decompose_select_pauli_rot)
+
+# pylint: disable=protected-access
+if getattr(SelectPauliRot, "_primitive", None) is not None:
+
+    @SelectPauliRot._primitive.def_impl
+    def _(*args, n_wires, **kwargs):
+        (angles,), (*control_wires, target_wire) = args[:-n_wires], args[-n_wires:]
+        return type.__call__(SelectPauliRot, angles, control_wires, target_wire, **kwargs)
+
+
+MultiplexedRotation = SelectPauliRot
+r"""MultiplexedRotation(angles, control_wires, target_wire, rot_axis="Z")
+
+Alias for :class:`~.SelectPauliRot`.
+"""
+
+UniformlyControlledRotation = SelectPauliRot
+r"""UniformlyControlledRotation(angles, control_wires, target_wire, rot_axis="Z")
+
+Alias for :class:`~.SelectPauliRot`.
+"""

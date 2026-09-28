@@ -26,6 +26,7 @@ from pennylane import math
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.operator import Operator, Operator2
 from pennylane.core.qscript import QuantumScript
+from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
 from pennylane.measurements.counts import CountsMP
 from pennylane.measurements.mutual_info import MutualInfoMP
@@ -43,6 +44,7 @@ from pennylane.ops import (
 )
 from pennylane.ops.mid_measure.pauli_measure import PauliMeasure
 from pennylane.ops.op_math.adjoint2 import Adjoint2
+from pennylane.ops.op_math.composite2 import CompositeOp2
 from pennylane.ops.op_math.controlled2 import Controlled2
 from pennylane.ops.op_math.pow2 import Pow2
 from pennylane.pauli import PauliSentence, PauliWord
@@ -394,6 +396,12 @@ def _equal_operator2(
     if type(op1) is not type(op2):
         return f"op1 and op2 have different types. Got {type(op1)} and {type(op2)}."
 
+    if isinstance(op1, qp.Identity):
+        # All Identities are equivalent, independent of wires.
+        # We already know op1 and op2 are of the same type, so no need to check
+        # that op2 is also an Identity
+        return True
+
     # Check static arguments
     for (sname, sval1), (_, sval2) in zip(
         op1.static_args.items(), op2.static_args.items(), strict=True
@@ -686,10 +694,11 @@ def _equal_paulisentence(
     return True
 
 
-@_equal_dispatch.register
+@_equal_dispatch.register(CompositeOp)
+@_equal_dispatch.register(CompositeOp2)
 # pylint: disable=protected-access
-def _equal_prod_and_sum(op1: CompositeOp, op2: CompositeOp, **kwargs):
-    """Determine whether two Prod or Sum objects are equal"""
+def _equal_prod_and_sum(op1, op2, **kwargs):
+    """Determine whether two Prod, Sum or Prod2 objects are equal"""
     if op1.pauli_rep is not None and (op1.pauli_rep == op2.pauli_rep):  # shortcut check
         return True
 
@@ -1225,3 +1234,13 @@ def _equal_select(op1: Select, op2: Select, **kwargs):
         if isinstance(comparer, str):
             return f"got different operations at index {idx}: {_t1} and {_t2}. They differ because {comparer}."
     return True
+
+
+@_equal_dispatch.register
+def _equal_compressed_resource_op(op1: CompressedResourceOp, op2: CompressedResourceOp, **_):
+    """Determine whether two resource representations are equal.
+
+    Resource representations (produced by abstractifying operators for the decomposition graph)
+    appear, for example, as the target operators of an abstract ``Select``.
+    """
+    return op1 == op2 or f"op1 and op2 are different resource representations. Got {op1} and {op2}."

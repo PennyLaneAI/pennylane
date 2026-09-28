@@ -878,8 +878,8 @@ class TestMatrix:
         """Test Identity matrix is correct with no wires"""
 
         # test Identity().compute_matrix()
-        assert np.allclose(qp.Identity().compute_matrix(1), np.identity(2), atol=tol, rtol=0)
-        assert np.allclose(qp.Identity().compute_matrix(2), np.identity(4), atol=tol, rtol=0)
+        assert np.allclose(qp.Identity().compute_matrix([0]), np.identity(2), atol=tol, rtol=0)
+        assert np.allclose(qp.Identity().compute_matrix([0, 1]), np.identity(4), atol=tol, rtol=0)
 
         # test Identity().matrix()
         assert np.allclose(qp.Identity().matrix(), np.identity(1), atol=tol, rtol=0)
@@ -1917,13 +1917,13 @@ class TestEigvals:
         dim = 2**n_wires
         # test identity for theta=0
         phi = qp.math.asarray(0.0, like=interface)
-        op = qp.GlobalPhase(phi, wires=list(range(n_wires)))
+        op = qp.GlobalPhase(phi)
         assert np.allclose(op.compute_eigvals(phi, wires=list(range(n_wires))), np.ones(dim))
         assert np.allclose(op.eigvals(), np.ones(dim))
 
         # test arbitrary global phase
         phi = qp.math.asarray(0.5432, like=interface)
-        op = qp.GlobalPhase(phi, wires=list(range(n_wires)))
+        op = qp.GlobalPhase(phi)
         phi_complex = qp.math.cast_like(phi, 1j)
         expected = np.array([np.exp(-1j * phi_complex)] * dim)
         assert np.allclose(op.compute_eigvals(phi, wires=list(range(n_wires))), expected)
@@ -1932,7 +1932,7 @@ class TestEigvals:
         # test arbitrary broadcasted global phase
         phi = qp.math.asarray(np.array([0.5, 0.4, 0.3]), like=interface)
         phi_complex = qp.math.cast_like(phi, 1j)
-        op = qp.GlobalPhase(phi, wires=list(range(n_wires)))
+        op = qp.GlobalPhase(phi)
         expected = np.array([np.exp(-1j * p) * np.ones(dim) for p in phi_complex])
         assert np.allclose(op.compute_eigvals(phi, wires=list(range(n_wires))), expected)
         assert np.allclose(op.eigvals(), expected)
@@ -2240,7 +2240,7 @@ class TestGrad:
         @qp.qnode(dev, diff_method=diff_method)
         def circuit(x):
             qp.Identity(wires[0])
-            qp.GlobalPhase(x, wires=[0, 1])  # Does not change the derivative, but tests it
+            qp.GlobalPhase(x)
             qp.Hadamard(wires[1])
             qp.ctrl(qp.GlobalPhase(x), control=wires[1])
             qp.Hadamard(wires[1])

@@ -18,15 +18,15 @@ Contains the OutMultiplier template.
 from collections import defaultdict
 
 from pennylane import capture, compiler, math
-from pennylane.core.operator import Operator2, abstractify
+from pennylane.core.operator import Operator2
 from pennylane.decomposition import (
     add_decomps,
-    change_op_basis_resource_rep,
     register_condition,
     register_resources,
 )
 from pennylane.decomposition.resources import resource_rep
-from pennylane.ops import BasisState, H, Prod, X, adjoint, change_op_basis, ctrl, prod
+from pennylane.ops import BasisState, H, X, adjoint, change_op_basis, ctrl, prod
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.typing import Bool, Wire
@@ -283,7 +283,8 @@ def _out_multiplier_with_qft_resources(
     num_qft_wires = num_output_wires + 1 if mod != 2**num_output_wires else num_output_wires
 
     if output_wires_zeroed:
-        compute_rep = resource_rep(Prod, resources={abstractify(H): num_qft_wires})
+        multi_h = [H(Wire[1])] * num_qft_wires
+        compute_rep = prod(*multi_h)
     else:
         compute_rep = QFT(Wire[num_qft_wires])
 
@@ -297,7 +298,8 @@ def _out_multiplier_with_qft_resources(
         ),
         num_control_wires=num_y_wires,
     )
-    return {change_op_basis_resource_rep(compute_rep, target_rep, uncompute_rep): 1}
+    resources = {_change_op_basis_abstract(compute_rep, target_rep, uncompute_rep): 1}
+    return resources
 
 
 def _out_multiplier_with_qft_condition(
@@ -335,7 +337,7 @@ def _out_multiplier_with_qft(
         work_wire = output_wires[:0]
 
     if output_wires_zeroed:
-        compute_op = prod(*(H(w) for w in qft_output_wires))
+        compute_op = prod(*[H(w) for w in qft_output_wires])
     else:
         compute_op = QFT(qft_output_wires)
     uncompute_op = adjoint(QFT(qft_output_wires))

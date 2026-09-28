@@ -1074,7 +1074,7 @@ class PrepTHC(ResourceOperator):
         num_orb = thc_ham.num_orbitals
         tensor_rank = thc_ham.tensor_rank
 
-        num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2  # N+M(M+1)/2
+        num_coeff = num_orb + tensor_rank * (tensor_rank + 1) // 2  # N+M(M+1)/2
         m_register = ceil_log2(tensor_rank + 1)
 
         gate_list = []
@@ -1193,7 +1193,7 @@ class PrepTHC(ResourceOperator):
         num_orb = thc_ham.num_orbitals
         tensor_rank = thc_ham.tensor_rank
 
-        num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2
+        num_coeff = num_orb + tensor_rank * (tensor_rank + 1) // 2
         m_register = ceil_log2(tensor_rank + 1)
         gate_list = []
 

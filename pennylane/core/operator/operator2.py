@@ -1284,13 +1284,19 @@ class Operator2(metaclass=OperatorMeta):
         serialized_compilable = tuple(str(self.arguments[c]) for c in self.compilable_argnames)
 
         serialized_hybrid = []
-        for h in self.hybrid_argnames:
-            leaves, tree = flatten(self.arguments[h], is_leaf=_is_hash_leaf)
-            ser_leaves = tuple(
-                l if isinstance(l, (AbstractWires, Operator, Wires)) else _canonicalize_dynamic(l)
-                for l in leaves
-            )
-            serialized_hybrid.append((ser_leaves, tree))
+        if self.hybrid_argnames:
+            # Imported lazily to avoid a circular import
+            # pylint: disable=import-outside-toplevel
+            from pennylane.decomposition.resources import CompressedResourceOp
+
+            hashable_leaf_types = (AbstractWires, Operator, Wires, CompressedResourceOp)
+            for h in self.hybrid_argnames:
+                leaves, tree = flatten(self.arguments[h], is_leaf=_is_hash_leaf)
+                ser_leaves = tuple(
+                    l if isinstance(l, hashable_leaf_types) else _canonicalize_dynamic(l)
+                    for l in leaves
+                )
+                serialized_hybrid.append((ser_leaves, tree))
 
         return hash(
             (
@@ -2226,7 +2232,6 @@ def _is_abstract_specifier(val):
 @QueuingManager.stop_recording()
 def _abstractify_operator_type(op_type: type[Operator2]) -> Operator2:
     """Abstractify a subclass of operator."""
-
     if op_type.has_fixed_sig:
         return op_type(**op_type.arg_specs)
 
