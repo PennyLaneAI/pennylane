@@ -497,12 +497,10 @@ class MPSPrep(Operation):
         return ops
 
 
-if MPSPrep._primitive is not None:  # pylint: disable=protected-access
-
-    @MPSPrep._primitive.def_impl  # pylint: disable=protected-access
-    def _(*args, n_wires, **kwargs):
-        mps, wires = args[:-n_wires], args[-n_wires:]
-        return type.__call__(MPSPrep, mps, wires=wires, **kwargs)
+@MPSPrep._primitive.def_impl  # pylint: disable=protected-access
+def _(*args, n_wires, **kwargs):
+    mps, wires = args[:-n_wires], args[-n_wires:]
+    return type.__call__(MPSPrep, mps, wires=wires, **kwargs)
 
 
 def _mps_prep_decomposition_resources(

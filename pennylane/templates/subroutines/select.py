@@ -1017,14 +1017,6 @@ def _select_decomp_multi_control_work_wire(*_, ops, control, work_wires, partial
 
 add_decomps(Select, _select_decomp_multi_control_work_wire)
 
-# pylint: disable=protected-access
-if getattr(Select, "_primitive", None) is not None:
-
-    @Select._primitive.def_impl
-    def _(*args, n_wires, **kwargs):
-        ops, control = args[:-n_wires], args[-n_wires:]
-        return type.__call__(Select, ops, control=control, **kwargs)
-
 
 Multiplexer = Select
 r"""Multiplexer(ops, control, work_wires=None, partial=False)

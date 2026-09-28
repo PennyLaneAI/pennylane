@@ -21,11 +21,12 @@ import os
 import warnings
 from collections.abc import Callable, Sequence
 from copy import copy
-from functools import lru_cache, partial, singledispatch, update_wrapper, wraps
+from functools import partial, singledispatch, update_wrapper, wraps
 from inspect import Parameter, signature
 
 from pennylane import capture, math
-from pennylane.capture import autograph
+from pennylane.capture import autograph, register_custom_staging_rule
+from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.operator import Operator
 from pennylane.core.qscript import QuantumScript
@@ -34,45 +35,39 @@ from pennylane.exceptions import TransformError
 from pennylane.pytrees import flatten
 from pennylane.typing import ResultBatch
 
+transform_prim = QpPrimitive("transform")
+transform_prim.multiple_results = True
+transform_prim.prim_type = "transform"
 
-@lru_cache
-def _create_transform_primitive():
-    try:
-        # pylint: disable=import-outside-toplevel
-        from pennylane.capture import register_custom_staging_rule
-        from pennylane.capture.custom_primitives import QpPrimitive
-    except ImportError:
-        return None
 
-    transform_prim = QpPrimitive("transform")
-    transform_prim.multiple_results = True
-    transform_prim.prim_type = "transform"
+# pylint: disable=too-many-arguments, disable=unused-argument
+@transform_prim.def_impl
+def _transform_prim_impl(*all_args, inner_jaxpr, args_slice, consts_slice, **_):
+    args = all_args[slice(*args_slice)]
+    consts = all_args[slice(*consts_slice)]
+    return capture.eval_jaxpr(inner_jaxpr, consts, *args)
 
-    # pylint: disable=too-many-arguments, disable=unused-argument
-    @transform_prim.def_impl
-    def _impl(*all_args, inner_jaxpr, args_slice, consts_slice, **_):
-        args = all_args[slice(*args_slice)]
-        consts = all_args[slice(*consts_slice)]
-        return capture.eval_jaxpr(inner_jaxpr, consts, *args)
 
-    @transform_prim.def_abstract_eval
-    def _abstract_eval(*_, inner_jaxpr, **__):
-        return [out.aval for out in inner_jaxpr.outvars]
+@transform_prim.def_abstract_eval
+def _transform_prim_abstract_eval(*_, inner_jaxpr, **__):
+    return [out.aval for out in inner_jaxpr.outvars]
 
-    def setup_env(tracers, params):
-        args_tracers = tracers[slice(*params["args_slice"])]
-        args_vars = params["inner_jaxpr"].invars
-        env = dict(zip(args_vars, args_tracers, strict=True))
 
-        consts_tracers = tracers[slice(*params["consts_slice"])]
-        consts_vars = params["inner_jaxpr"].constvars
-        consts_env = dict(zip(consts_vars, consts_tracers, strict=True))
-        env.update(consts_env)
-        return env
+def _transform_setup_env(tracers, params):
+    args_tracers = tracers[slice(*params["args_slice"])]
+    args_vars = params["inner_jaxpr"].invars
+    env = dict(zip(args_vars, args_tracers, strict=True))
 
-    register_custom_staging_rule(transform_prim, lambda params: params["inner_jaxpr"], setup_env)
+    consts_tracers = tracers[slice(*params["consts_slice"])]
+    consts_vars = params["inner_jaxpr"].constvars
+    consts_env = dict(zip(consts_vars, consts_tracers, strict=True))
+    env.update(consts_env)
+    return env
 
-    return transform_prim
+
+register_custom_staging_rule(
+    transform_prim, lambda params: params["inner_jaxpr"], _transform_setup_env
+)
 
 
 def specific_apply_transform(transform, obj, *targs, **tkwargs):
@@ -1015,7 +1010,7 @@ def _capture_apply(obj, transform, *targs, **tkwargs):
         consts_slice = slice(n_args, n_args + n_consts)
         targs_slice = slice(n_args + n_consts, None)
 
-        results = _create_transform_primitive().bind(  # pylint: disable=protected-access
+        results = transform_prim.bind(
             *flat_args,
             *jaxpr.consts,
             *targs,
