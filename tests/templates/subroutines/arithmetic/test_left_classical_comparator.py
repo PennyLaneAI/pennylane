@@ -11,34 +11,29 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-Tests for the LeftClassicalComparator template.
-"""
+"""Tests for LeftClassicalComparator."""
 
 import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.labs.templates.left_classical_comparator import LeftClassicalComparator
 from pennylane.ops.functions.assert_valid import assert_valid
 
 
-def test_standard_validity_left_comparator():
-    """Check the operation using the assert_valid function."""
-    x_wires = [0, 1, 2]
-    L = 2
-    work_wires = [6, 7]
-    target_wire = 8
-    comparator = ">="
+@pytest.mark.usefixtures("enable_and_disable_capture")
+def test_assert_valid():
+    """Test that LeftClassicalComparator passes the standard Operator2 checks,
+    with capture enabled and disabled."""
+    op = qp.LeftClassicalComparator(
+        x_wires=[0, 1, 2], L=2, target_wire=3, work_wires=[4, 5], comparator=">="
+    )
+    assert_valid(op, skip_differentiation=True)
 
-    gate = LeftClassicalComparator(x_wires, L, target_wire, work_wires, comparator=comparator)
-    assert_valid(gate)
-
-    assert gate.hyperparameters["target_wire"] == qp.wires.Wires(8)
-    assert gate.hyperparameters["x_wires"] == qp.wires.Wires([0, 1, 2])
-    assert gate.hyperparameters["L"] == L
-    assert gate.hyperparameters["work_wires"] == qp.wires.Wires([6, 7])
-    assert gate.hyperparameters["comparator"] == ">="
+    assert op.arguments["x_wires"] == qp.wires.Wires([0, 1, 2])
+    assert op.arguments["L"] == 2
+    assert op.arguments["target_wire"] == qp.wires.Wires(3)
+    assert op.arguments["work_wires"] == qp.wires.Wires([4, 5])
+    assert op.arguments["comparator"] == ">="
 
 
 class TestLeftClassicalComparator:
@@ -59,15 +54,17 @@ class TestLeftClassicalComparator:
     def test_operation_result(
         self, x_wires, L, target_wire, work_wires, x, comparator, qjit
     ):  # pylint: disable=too-many-arguments
-        """Test the correctness of the LeftClassicalComparator template output."""
+        """Test that the LeftClassicalComparator template produces the correct output."""
 
         @qp.qnode(qp.device("lightning.qubit", wires=range(13)), shots=1)
         def circuit(x_wires, L):
             qp.BasisState(qp.math.int_to_binary(x, len(x_wires)), wires=x_wires)
-            LeftClassicalComparator(x_wires, L, target_wire, work_wires, comparator)
+            qp.LeftClassicalComparator(x_wires, L, target_wire, work_wires, comparator)
             qp.CNOT([11, 12])
+            # qfunc form: L is traced under qjit, and adjoint(op) would evaluate the
+            # resource function, which branches on L.
             qp.adjoint(
-                lambda: LeftClassicalComparator(x_wires, L, target_wire, work_wires, comparator)
+                lambda: qp.LeftClassicalComparator(x_wires, L, target_wire, work_wires, comparator)
             )()
             qp.BasisState(qp.math.int_to_binary(x, len(x_wires)), wires=x_wires)
             return qp.sample(wires=[12]), qp.sample(wires=work_wires), qp.sample(wires=x_wires)
@@ -128,11 +125,9 @@ class TestLeftClassicalComparator:
     def test_wires_error(
         self, target_wire, x_wires, L, work_wires, comparator, msg_match
     ):  # pylint: disable=too-many-arguments
-        """Test an error is raised when some work_wires don't meet the requirements"""
+        """Test that an error is raised when some work_wires don't meet the requirements."""
         with pytest.raises(ValueError, match=msg_match):
-            qp.labs.templates.LeftClassicalComparator(
-                x_wires, L, target_wire, work_wires, comparator=comparator
-            )
+            qp.LeftClassicalComparator(x_wires, L, target_wire, work_wires, comparator=comparator)
 
     @pytest.mark.parametrize("comparator", ["<", "<=", ">", ">="])
     @pytest.mark.parametrize(
@@ -147,7 +142,7 @@ class TestLeftClassicalComparator:
     def test_no_phase_errors(  # pylint: disable=too-many-arguments
         self, x_wires, L, target_wire, work_wires, comparator, seed
     ):
-        """Verify the comparator introduces no complex phases.
+        """Test that the comparator introduces no complex phases.
         A correct classical reversible circuit is a real permutation matrix,
         so a real positive input must produce a real positive output."""
 
@@ -156,7 +151,7 @@ class TestLeftClassicalComparator:
         @qp.qnode(dev)
         def circuit(x_state):
             qp.StatePrep(x_state, x_wires)
-            LeftClassicalComparator(x_wires, L, target_wire, work_wires, comparator)
+            qp.LeftClassicalComparator(x_wires, L, target_wire, work_wires, comparator)
             return qp.state()
 
         num_x = 2 ** len(x_wires)
@@ -176,7 +171,7 @@ class TestLeftClassicalComparator:
     @pytest.mark.parametrize("comparator", ["<", "<=", ">", ">="])
     @pytest.mark.parametrize("n", [2, 3, 4])
     def test_max_bound_all_inputs(self, comparator, n):
-        """Test for the largest allowed bound ``L = 2 ** n - 1``."""
+        """Test that the comparator is correct for the largest allowed bound ``L = 2 ** n - 1``."""
 
         x_wires = list(range(n))
         target_wire = n
@@ -189,7 +184,7 @@ class TestLeftClassicalComparator:
         @qp.qnode(dev)
         def circuit(x):
             qp.BasisState(qp.math.int_to_binary(x, len(x_wires)), wires=x_wires)
-            LeftClassicalComparator(x_wires, L, target_wire, work_wires, comparator)
+            qp.LeftClassicalComparator(x_wires, L, target_wire, work_wires, comparator)
             return qp.probs(wires=[target_wire])
 
         expected_fn = {

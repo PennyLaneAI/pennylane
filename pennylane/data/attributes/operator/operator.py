@@ -60,8 +60,9 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
                 qops.QubitSum,
                 # pennylane/ops/op_math/linear_combination.py
                 qops.LinearCombination,
-                # pennylane/ops/op_math - prod.py, s_prod.py, sum.py
+                # pennylane/ops/op_math - prod.py, prod2.py, s_prod.py, sum.py
                 qops.Prod,
+                qops.Prod2,
                 qops.SProd,
                 qops.Sum,
                 # pennylane/ops/qubit/matrix_ops.py
@@ -170,7 +171,7 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
         op_class_names = []
         for i, op in enumerate(value):
             op_key = f"op_{i}"
-            if isinstance(op, (qops.Prod, qops.SProd, qops.Sum)):
+            if isinstance(op, (qops.Prod, qops.Prod2, qops.SProd, qops.Sum)):
                 op = op.simplify()
             if type(op) not in self.supported_ops():
                 raise TypeError(
@@ -182,7 +183,7 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
                 ham_grp = self._ops_to_hdf5(bind, op_key, ops)
                 ham_grp["hamiltonian_coeffs"] = coeffs
                 op_wire_labels.append("null")
-            elif isinstance(op, (qops.Prod, qops.Sum)):
+            elif isinstance(op, (qops.Prod, qops.Prod2, qops.Sum)):
                 self._ops_to_hdf5(bind, op_key, op.operands)
                 op_wire_labels.append("null")
             elif isinstance(op, qops.SProd):
@@ -221,6 +222,8 @@ class DatasetOperator(Generic[Op], DatasetAttribute[HDF5Group, Op, Op]):
                             observables=self._hdf5_to_ops(bind[op_key]),
                         )
                     )
+                elif op_cls is qops.Prod2:
+                    ops.append(op_cls(self._hdf5_to_ops(bind[op_key])))
                 elif op_cls in (qops.Prod, qops.Sum):
                     ops.append(op_cls(*self._hdf5_to_ops(bind[op_key])))
                 elif op_cls is qops.SProd:

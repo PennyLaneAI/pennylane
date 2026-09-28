@@ -19,8 +19,9 @@ import inspect
 import numbers
 import warnings
 from collections.abc import Sequence
-from functools import lru_cache, wraps
+from functools import wraps
 
+import jax
 from autograd import jacobian as _jacobian
 from autograd.core import make_vjp as _make_vjp
 from autograd.extend import vspace
@@ -32,57 +33,43 @@ from pennylane.compiler import compiler
 
 make_vjp = unary_to_nary(_make_vjp)
 
-has_jax = True
-try:
-    import jax
-except ImportError:
-    has_jax = False
-
 
 # pylint: disable=unused-argument, too-many-arguments
-@lru_cache
-def _get_jacobian_prim():
-    """Create a primitive for gradient computations.
-    This primitive is used when capturing ``qp.grad``.
-    """
-    if not has_jax:  # pragma: no cover
-        return None
+jacobian_prim = capture.QpPrimitive("jacobian")
+jacobian_prim.multiple_results = True
+jacobian_prim.prim_type = "higher_order"
 
-    jacobian_prim = capture.QpPrimitive("jacobian")
-    jacobian_prim.multiple_results = True
-    jacobian_prim.prim_type = "higher_order"
 
-    @jacobian_prim.def_impl
-    def _grad_impl(*args, argnums, jaxpr, n_consts, method, h, scalar_out, fn):
-        if method != "auto":  # pragma: no cover
-            raise ValueError(f"Invalid value '{method=}' without QJIT.")
-        consts = args[:n_consts]
-        args = args[n_consts:]
+@jacobian_prim.def_impl
+def _grad_impl(*args, argnums, jaxpr, n_consts, method, h, scalar_out, fn):
+    if method != "auto":  # pragma: no cover
+        raise ValueError(f"Invalid value '{method=}' without QJIT.")
+    consts = args[:n_consts]
+    args = args[n_consts:]
 
-        def func(*inner_args):
-            res = jax.core.eval_jaxpr(jaxpr, consts, *inner_args)
-            return res[0] if scalar_out else res
+    def func(*inner_args):
+        res = jax.core.eval_jaxpr(jaxpr, consts, *inner_args)
+        return res[0] if scalar_out else res
 
-        if scalar_out:
-            res = jax.grad(func, argnums=argnums)(*args)
-        else:
-            res = jax.jacobian(func, argnums=argnums)(*args)
-        return jax.tree_util.tree_leaves(res)
+    if scalar_out:
+        res = jax.grad(func, argnums=argnums)(*args)
+    else:
+        res = jax.jacobian(func, argnums=argnums)(*args)
+    return jax.tree_util.tree_leaves(res)
 
-    # pylint: disable=unused-argument
-    @jacobian_prim.def_abstract_eval
-    def _grad_abstract(*args, argnums, jaxpr, n_consts, method, h, scalar_out, fn):
-        if scalar_out and not (len(jaxpr.outvars) == 1 and jaxpr.outvars[0].aval.shape == ()):
-            raise TypeError("Grad only applies to scalar-output functions. Try jacobian.")
-        in_avals = tuple(args[i + n_consts] for i in argnums)
-        out_shapes = tuple(outvar.aval.shape for outvar in jaxpr.outvars)
-        return [
-            _ShapedArray(out_shape + in_aval.shape, in_aval.dtype, weak_type=in_aval.weak_type)
-            for out_shape in out_shapes
-            for in_aval in in_avals
-        ]
 
-    return jacobian_prim
+# pylint: disable=unused-argument
+@jacobian_prim.def_abstract_eval
+def _grad_abstract(*args, argnums, jaxpr, n_consts, method, h, scalar_out, fn):
+    if scalar_out and not (len(jaxpr.outvars) == 1 and jaxpr.outvars[0].aval.shape == ()):
+        raise TypeError("Grad only applies to scalar-output functions. Try jacobian.")
+    in_avals = tuple(args[i + n_consts] for i in argnums)
+    out_shapes = tuple(outvar.aval.shape for outvar in jaxpr.outvars)
+    return [
+        _ShapedArray(out_shape + in_aval.shape, in_aval.dtype, weak_type=in_aval.weak_type)
+        for out_shape in out_shapes
+        for in_aval in in_avals
+    ]
 
 
 def _ShapedArray(shape, dtype, weak_type=False):
@@ -210,7 +197,7 @@ def _capture_diff(func, *, argnums=None, scalar_out: bool = False, method=None, 
             "h": h,
             "scalar_out": scalar_out,
         }
-        out_flat = _get_jacobian_prim().bind(
+        out_flat = jacobian_prim.bind(
             *jaxpr.consts,
             *abstract_shapes,
             *flat_inputs,

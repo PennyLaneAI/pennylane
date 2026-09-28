@@ -19,11 +19,11 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-from pennylane.labs.templates.superposition_thc import SuperpositionTHC
 from pennylane.ops.functions.assert_valid import assert_valid
+from pennylane.templates.subroutines.superposition_thc import SuperpositionTHC
 
 
-def _wire_layout(n, work_offset=None):
+def _wire_layout(n):
     """Build disjoint mu / nu / work registers for ``n`` index wires.
 
     The minimum number of work wires required by ``SuperpositionTHC`` is
@@ -31,8 +31,7 @@ def _wire_layout(n, work_offset=None):
     """
     mu_wires = list(range(0, n))
     nu_wires = list(range(n, 2 * n))
-    start = 2 * n if work_offset is None else work_offset
-    work_wires = list(range(start, start + 3 * n + 5))
+    work_wires = list(range(2 * n, 2 * n + 3 * n + 5))
     return mu_wires, nu_wires, work_wires
 
 
@@ -84,6 +83,7 @@ def _full_state(M, N, n):
         (7, 3, 3),
     ],
 )
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity(M, N, n):
     """Check the operation using the assert_valid function.
 
@@ -94,13 +94,23 @@ def test_standard_validity(M, N, n):
     mu_wires, nu_wires, work_wires = _wire_layout(n)
 
     gate = SuperpositionTHC(M, N, mu_wires, nu_wires, work_wires)
-    assert_valid(gate)
+    assert_valid(gate, skip_differentiation=True)
 
-    assert gate.hyperparameters["M"] == M
-    assert gate.hyperparameters["N"] == N
-    assert gate.hyperparameters["mu_wires"] == qp.wires.Wires(mu_wires)
-    assert gate.hyperparameters["nu_wires"] == qp.wires.Wires(nu_wires)
-    assert gate.hyperparameters["work_wires"] == qp.wires.Wires(work_wires)
+    # Surplus work used to clip the >= comparator slice to n-1 wires (not n).
+    more_work_wires = work_wires + list(range(work_wires[-1] + 1, work_wires[-1] + 9))
+    assert_valid(
+        SuperpositionTHC(M, N, mu_wires, nu_wires, more_work_wires), skip_differentiation=True
+    )
+
+    assert gate.M == M
+    assert gate.N == N
+    assert gate.mu_wires == qp.wires.Wires(mu_wires)
+    assert gate.nu_wires == qp.wires.Wires(nu_wires)
+    assert gate.work_wires == qp.wires.Wires(work_wires)
+    assert gate.wires == qp.wires.Wires(mu_wires + nu_wires + work_wires)
+
+    with pytest.raises(ValueError, match="must not overlap"):
+        qp.ctrl(gate, control=work_wires[-1])
 
 
 class TestSuperpositionTHC:
@@ -143,7 +153,7 @@ class TestSuperpositionTHC:
         probs = np.asarray(circuit()).reshape((2**n, 2**n, 2))
         success = probs[:, :, 1]
 
-        support = set(tuple(map(int, arr)) for arr in zip(*np.where(success > 1e-9)))
+        support = {tuple(map(int, arr)) for arr in zip(*np.where(success > 1e-9))}
 
         assert set(support) == _valid_pairs(M, N)
 
@@ -273,7 +283,7 @@ class TestSuperpositionTHC:
                 [0, 1, 2],
                 [0, 4, 5],
                 list(range(6, 6 + 14)),
-                r"mu_wires and nu_wires must be disjoint, but share: \[0\]",
+                "mu_wires and nu_wires must not overlap",
             ),
             (
                 2,
@@ -281,7 +291,7 @@ class TestSuperpositionTHC:
                 [0, 1, 2],
                 [3, 4, 5],
                 [0] + list(range(6, 6 + 13)),
-                r"work_wires and mu_wires must be disjoint, but share: \[0\]",
+                "mu_wires and work_wires must not overlap",
             ),
             (
                 2,
@@ -289,7 +299,7 @@ class TestSuperpositionTHC:
                 [0, 1, 2],
                 [3, 4, 5],
                 [3] + list(range(6, 6 + 13)),
-                r"work_wires and nu_wires must be disjoint, but share: \[3\]",
+                "nu_wires and work_wires must not overlap",
             ),
             (
                 8,

@@ -27,7 +27,11 @@ import pennylane.templates as qtemps
 from pennylane import math as pl_math
 from pennylane.core.operator import Operation
 from pennylane.core.queuing import QueuingManager
-from pennylane.estimator.compact_hamiltonian import CDFHamiltonian, VibronicHamiltonian
+from pennylane.estimator.compact_hamiltonian import (
+    CDFHamiltonian,
+    THCHamiltonian,
+    VibronicHamiltonian,
+)
 from pennylane.ops.functions import simplify
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp
@@ -419,6 +423,44 @@ def _(op: qtemps.QROM):
 
 
 @_map_to_resource_op.register
+def _(op: qtemps.AliasSampling):
+    # ``mu`` is the number of keep/sigma bits; the estimator ResourceOperator stores that as
+    # ``precision = 2**(-mu)`` (see ``AliasSampling.resource_decomp``).
+    return re_temps.AliasSampling(
+        num_coeffs=len(op.probs),
+        precision=2.0 ** (-op.mu),
+        wires=op.target_wires,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qtemps.AliasSamplingTHC):
+    # PrepTHC is the full THC PREPARE (Lee Figs. 3-4). AliasSamplingTHC is only the
+    # alias-sampling half after SuperpositionTHC. ``N`` is spin orbitals.
+    num_orbitals = op.N // 2
+    if num_orbitals < 1:
+        raise ValueError(
+            f"Cannot map AliasSamplingTHC with N={op.N} spin orbitals to "
+            "estimator.templates.PrepTHC, which requires at least one spatial orbital "
+            "(N // 2 >= 1). This instance has an empty one-body block."
+        )
+    return re_temps.PrepTHC(
+        THCHamiltonian(num_orbitals=num_orbitals, tensor_rank=op.M),
+        coeff_precision=op.aleph,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qtemps.SelectTHC):
+    num_orbitals = len(op.chi[0])
+    return re_temps.SelectTHC(
+        THCHamiltonian(num_orbitals=num_orbitals, tensor_rank=len(op.chi)),
+        num_batches=op.num_batches,
+        rotation_precision=op.beth,
+    )
+
+
+@_map_to_resource_op.register
 def _(op: qtemps.SelectPauliRot):
     return re_temps.SelectPauliRot(
         rot_axis=op.hyperparameters["rot_axis"],
@@ -487,8 +529,8 @@ def _(op: qtemps.TrotterProduct):
 @_map_to_resource_op.register
 def _(op: qtemps.TrotterVibronic):
     hamiltonian = op.arguments["hamiltonian"]
-    num_states = hamiltonian["constant"].shape[1]
-    num_modes = hamiltonian["linear"].shape[-1]
+    num_states = hamiltonian.num_states
+    num_modes = hamiltonian.num_modes
     grid_size = len(op.arguments["vib_wires"]) // num_modes
     phase_grad_wires = len(op.arguments["phase_gradient_wires"])
     # ``coefficient_wires`` may be dynamically allocated (empty); it then matches
@@ -499,7 +541,7 @@ def _(op: qtemps.TrotterVibronic):
     # number of position fragments F is at most 2 ** ceil_log2(N) (N = number of electronic
     # states); reject larger fragment counts so the estimate cannot silently disagree with the
     # actual Hamiltonian.
-    num_fragments = hamiltonian["constant"].shape[0]
+    num_fragments = hamiltonian.num_fragments
     max_fragments = 2 ** pl_math.ceil_log2(num_states)
     if num_fragments > max_fragments:
         raise ValueError(
@@ -613,6 +655,16 @@ def _(op: qops.ChangeOpBasis):
         _map_to_resource_op(compute),
         _map_to_resource_op(target),
         _map_to_resource_op(uncompute),
+        wires=op.wires,
+    )
+
+
+@_map_to_resource_op.register
+def _(op: qops.ChangeOpBasis2):
+    return re_ops.ChangeOpBasis(
+        _map_to_resource_op(op.compute_op),
+        _map_to_resource_op(op.target_op),
+        _map_to_resource_op(op.uncompute_op),
         wires=op.wires,
     )
 

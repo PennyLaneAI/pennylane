@@ -63,30 +63,18 @@ JAX versions no longer exists. All patches assume DynamicJaxprTrace.
 # pylint: disable=unused-import,no-else-return,unidiomatic-typecheck,use-dict-literal
 # pylint: disable=protected-access,possibly-used-before-assignment
 
-has_jax = True
-try:
-    import jax
-
-    # only do the following if jax is 0.7.x
-    jax_version = jax.__version__
-    from packaging import version
-
-    if version.parse(jax_version) >= version.parse("0.7.0") and version.parse(
-        jax_version
-    ) < version.parse("0.8.0"):
-        from jax._src import config as jax_config
-        from jax._src import core, pjit, source_info_util
-        from jax._src.core import JaxprEqnContext, Var
-        from jax._src.interpreters import partial_eval as pe
-        from jax._src.interpreters.partial_eval import (
-            DynamicJaxprTracer,
-            TracingEqn,
-            compute_on,
-            xla_metadata_lib,
-        )
-        from jax._src.lax import lax
-except ModuleNotFoundError:  # pragma: no cover
-    has_jax = False  # pragma: no cover
+import jax
+from jax._src import config as jax_config
+from jax._src import core, pjit, source_info_util
+from jax._src.core import JaxprEqnContext, Var
+from jax._src.interpreters import partial_eval as pe
+from jax._src.interpreters.partial_eval import (
+    DynamicJaxprTracer,
+    TracingEqn,
+    compute_on,
+    xla_metadata_lib,
+)
+from jax._src.lax import lax
 
 
 def _add_make_eqn_helper():
@@ -327,9 +315,6 @@ def get_jax_patches():
         ...     # JAX operations with patches applied
         ...     jaxpr = jax.make_jaxpr(my_function)(args)
     """
-    if not has_jax:
-        return ()  # pragma: no cover
-
     patches = []
 
     # Get all patches from the helper functions
