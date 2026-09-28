@@ -2,6 +2,11 @@
 
 <h3>New features since last release</h3>
 
+* A :func:`pennylane.decomposition.register_signature` function is added for recording the possible signatures of
+  an operator, along with a :func:`pennylane.decomposition.signature_registry` function for retrieving the recorded
+  signatures. The resulting registry is used to identify decomposition rules that can be precompiled, improving
+  the performance of decomposition passes in :func:`~.qjit`-compiled workflows.
+  [(#9921)](https://github.com/PennyLaneAI/pennylane/pull/9921)
 
 * Three new numeric Hamiltonians called :class:`pennylane.CDFHamiltonian` (based on
   `arXiv:2506.15784, Sec. III A <https://arxiv.org/abs/2506.15784>`),
@@ -602,6 +607,10 @@
   ```
 
 <h3>Improvements 🛠</h3>
+
+* Adds a `qp.decomposition.all_decomps` functions for finding all decompositions that might be hit by
+  decomposing a gate to any gateset.
+  [(#10187)](https://github.com/PennyLaneAI/pennylane/pull/10187)
 
 * Added ``work_wires`` and ``work_wire_type`` arguments to :class:`~.GQSP` that are passed
   through to the controlled walk operator in its decomposition.
