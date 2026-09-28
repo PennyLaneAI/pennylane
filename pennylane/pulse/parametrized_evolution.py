@@ -20,6 +20,10 @@ This file contains the ``ParametrizedEvolution`` operator.
 import warnings
 from collections.abc import Sequence
 
+import jax
+import jax.numpy as jnp
+from jax.experimental.ode import odeint
+
 from pennylane import math
 from pennylane.core.operator import Operation
 from pennylane.core.queuing import QueuingManager
@@ -28,16 +32,7 @@ from pennylane.typing import TensorLike
 
 from .hardware_hamiltonian import HardwareHamiltonian
 from .parametrized_hamiltonian import ParametrizedHamiltonian
-
-has_jax = True
-try:
-    import jax
-    import jax.numpy as jnp
-    from jax.experimental.ode import odeint
-
-    from .parametrized_hamiltonian_pytree import ParametrizedHamiltonianPytree
-except ImportError as e:
-    has_jax = False
+from .parametrized_hamiltonian_pytree import ParametrizedHamiltonianPytree
 
 
 class ParametrizedEvolution(Operation):
@@ -416,11 +411,6 @@ class ParametrizedEvolution(Operation):
     def __call__(
         self, params, t, return_intermediate=None, complementary=None, dense=None, **odeint_kwargs
     ):
-        if not has_jax:
-            raise ImportError(
-                "Module jax is required for the ``ParametrizedEvolution`` class. "
-                "You can install jax via: pip install jax"
-            )
         # Need to cast all elements inside params to `jnp.arrays` to make sure they are not cast
         # to `np.arrays` inside `Operator.__init__`
         params = [jnp.array(p) for p in params]
@@ -507,11 +497,6 @@ class ParametrizedEvolution(Operation):
         return self._has_matrix
 
     def matrix(self, wire_order=None):
-        if not has_jax:
-            raise ImportError(
-                "Module jax is required for the ``ParametrizedEvolution`` class. "
-                "You can install jax via: pip install jax"
-            )
         if not self.has_matrix:
             raise ValueError(
                 "The parameters and the time window are required to compute the matrix. "

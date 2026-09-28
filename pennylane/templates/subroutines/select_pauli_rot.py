@@ -199,14 +199,6 @@ def decompose_select_pauli_rot(angles, control_wires, target_wire, rot_axis):
 
 add_decomps(SelectPauliRot, decompose_select_pauli_rot)
 
-# pylint: disable=protected-access
-if getattr(SelectPauliRot, "_primitive", None) is not None:
-
-    @SelectPauliRot._primitive.def_impl
-    def _(*args, n_wires, **kwargs):
-        (angles,), (*control_wires, target_wire) = args[:-n_wires], args[-n_wires:]
-        return type.__call__(SelectPauliRot, angles, control_wires, target_wire, **kwargs)
-
 
 MultiplexedRotation = SelectPauliRot
 r"""MultiplexedRotation(angles, control_wires, target_wire, rot_axis="Z")

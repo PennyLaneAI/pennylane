@@ -223,7 +223,7 @@ class TestControlledInit:
         with pytest.raises(ValueError, match="work_wire_type must be either"):
             Controlled(self.temp_op, control_wires="b", work_wires="c", work_wire_type="foo")
 
-    @pytest.mark.jax
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(
         "base",
         [

@@ -19,11 +19,12 @@ from collections import Counter
 from collections.abc import Sequence
 from functools import partial
 
+import numpy as np
+
 from pennylane import capture, compiler, math
 from pennylane import ops as qp_ops
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
-from pennylane.core.queuing import QueuingManager
 from pennylane.decomposition import (
     add_decomps,
     register_condition,
@@ -40,50 +41,38 @@ from .multix import MultiX
 from .select import Select
 
 
+def _select_ops(
+    control_wires, depth, target_wires, swap_wires, bitstrings, select_work_wires
+):  # pylint:disable=too-many-arguments
+    capacity = 1 << len(control_wires)
+    n_control_select_wires = ceil_log2(capacity / depth)
+    control_select_wires = control_wires[:n_control_select_wires]
+
+    # with QueuingManager.stop_recording(), capture.pause():
+    # ops_new = [MultiX(bits, wires=target_wires) for bits in bitstrings]
+    # ops_identity_new = ops_new + [qp_ops.I(target_wires)] * (capacity - len(ops_new))
+    num_targets = len(target_wires)
+    num_missing = capacity - len(bitstrings)
+    n_columns = int(np.ceil(bitstrings.shape[0] / depth))
+
+    if num_missing > 0:
+        bitstrings = math.vstack([bitstrings, math.zeros((num_missing, num_targets), dtype=int)])
+
+    column_wires = swap_wires[: depth * num_targets]
+
+    new_ops = []
+    for i in range(n_columns):
+        column_bits = math.concatenate([bitstrings[i * depth + j] for j in range(depth)])
+        new_ops.append(MultiX(column_bits, wires=column_wires))
+
+    if len(control_select_wires) > 0:
+        Select(new_ops, control=control_select_wires, work_wires=select_work_wires)
+
+
 def _multi_swap(wires1, wires2):
     """Apply a series of SWAP gates between two sets of wires."""
     for wire1, wire2 in zip(wires1, wires2, strict=True):
         qp_ops.SWAP(wires=[wire1, wire2])
-
-
-def _new_ops(depth, target_wires, control_wires, swap_wires, bitstrings):
-
-    num_targets = len(target_wires)
-
-    with QueuingManager.stop_recording():
-        bitstrings_identity = list(bitstrings) + [math.zeros(num_targets, dtype=int)] * int(
-            2 ** len(control_wires) - len(bitstrings)
-        )
-
-    n_columns = (
-        bitstrings.shape[0] // depth
-        if bitstrings.shape[0] % depth == 0
-        else bitstrings.shape[0] // depth + 1
-    )
-    new_ops = []
-    for i in range(n_columns):
-        # A column applies ``depth`` bitstrings on disjoint wire slices, which is a single
-        # MultiX over the concatenated bitstrings and wires.
-        column_bits = math.concatenate([bitstrings_identity[i * depth + j] for j in range(depth)])
-        column_wires = swap_wires[: depth * num_targets]
-        new_ops.append(MultiX(column_bits, wires=column_wires))
-    return new_ops
-
-
-def _select_ops(
-    control_wires, depth, target_wires, swap_wires, bitstrings, select_work_wires
-):  # pylint:disable=too-many-arguments
-    n_control_select_wires = ceil_log2(2 ** len(control_wires) // depth)
-    control_select_wires = control_wires[:n_control_select_wires]
-
-    if len(control_select_wires) > 0:
-        Select(
-            _new_ops(depth, target_wires, control_wires, swap_wires, bitstrings),
-            control=control_select_wires,
-            work_wires=select_work_wires,
-        )
-    else:
-        _new_ops(depth, target_wires, control_wires, swap_wires, bitstrings)
 
 
 def _swap_ops(control_wires, depth, swap_wires, target_wires):
@@ -408,7 +397,7 @@ def _select_swap(
 
     swap_work_wires = work_wires[:num_work_wires_swap]
     select_work_wires = work_wires[num_work_wires_swap:]
-    swap_wires = target_wires + swap_work_wires
+    swap_wires = Wires(target_wires) + Wires(swap_work_wires)
 
     if not clean or depth == 1:
         _select_ops(control_wires, depth, target_wires, swap_wires, bitstrings, select_work_wires)
@@ -871,7 +860,8 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires):
     for i in range(1, len(triples)):
         TemporaryAND(triples[i], (1, 0))
 
-    # Once resource hints are merged, use those estimates:
+    # [dwierichs] todo: Once resource hints are merged, use those estimates:
+    # [sc-129626] [sc-129627]
     # quarter_prob = int(K > (1 << (c - 2))) / (K - 1)
     # mid_prob = int(K > (1 << (c - 1))) / (K - 1)
     # est_ladder_len = float(
@@ -879,7 +869,6 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires):
     # )
 
     # Loop over all bitstrings but the last one
-    @for_loop(K - 1)
     def loop(k):
         # 1. load bitstrings[k], controlled on the flag circuit
         ctrl(MultiX(bitstrings[k], target_wires), control=[flag])
@@ -893,10 +882,10 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires):
         top_not_flipped = k < (1 << (c - 1))
 
         # 2a. right-elbow ladder: uncompute levels c-2 .. max(a,1) (top-down)
-        # Once resource hints are merged, use those estimates:
         lower_bound = math.max(math.array([a, 1], like=a))
 
         @for_loop(c - 2, lower_bound - 1, -1)
+        # Once resource hints are merged, use those estimates:
         # @for_loop(c - 2, max(a - 1, 0), -1, estimated_iterations=est_ladder_len)
         def uncompute(i):
             qp_ops.adjoint(TemporaryAND)(wires=triples[i])
@@ -931,7 +920,7 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires):
 
         recompute()  # pylint: disable=no-value-for-parameter
 
-    loop()  # pylint: disable=no-value-for-parameter
+    for_loop(K - 1)(loop)()  # pylint: disable=no-value-for-parameter
 
     # Load last bit string
     ctrl(MultiX(bitstrings[K - 1], target_wires), control=[flag])

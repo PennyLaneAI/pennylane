@@ -25,9 +25,10 @@ from pennylane.decomposition import (
     register_resources,
 )
 from pennylane.decomposition.resources import resource_rep
-from pennylane.ops import BasisState, H, X, adjoint, change_op_basis, ctrl, prod
+from pennylane.ops import H, X, adjoint, change_op_basis, ctrl, prod
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.templates.subroutines.controlled_sequence import ControlledSequence
+from pennylane.templates.subroutines.multix import MultiX
 from pennylane.templates.subroutines.qft import QFT
 from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
@@ -305,6 +306,8 @@ def _out_multiplier_with_qft_resources(
 def _out_multiplier_with_qft_condition(
     x_wires, y_wires, output_wires, mod, work_wires, output_wires_zeroed=False
 ):  # pylint: disable=unused-argument, too-many-arguments
+    if capture.enabled():
+        return False  # TODO: ControlledSequence cannot take tracer wires [sc-128372]
     return mod == 2 ** len(output_wires) or len(work_wires) >= 2
 
 
@@ -337,9 +340,14 @@ def _out_multiplier_with_qft(
         work_wire = output_wires[:0]
 
     if output_wires_zeroed:
-        compute_op = prod(*[H(w) for w in qft_output_wires])
+
+        def compute_op():
+            for w in qft_output_wires:
+                H(w)
+
     else:
         compute_op = QFT(qft_output_wires)
+
     uncompute_op = adjoint(QFT(qft_output_wires))
 
     target_op = ControlledSequence(
@@ -504,7 +512,7 @@ def _adder_flipped_first_work_wire(x_wires, y_wires, work_wires, flip_control=No
     unchanged. We only expect this function to be used with two values for `flip_control`: None
     or a tuple ``(c_wire, c_val)`` for a single control wire.
     """
-    if not work_wires:
+    if len(work_wires) == 0:
         _semi_adder(x_wires, y_wires, work_wires)
         return
 
@@ -539,7 +547,7 @@ def _c_add_sub_resources(num_x_wires, num_y_wires):
     """Resources for _c_add_sub."""
     resources = defaultdict(int)
     if num_x_wires > 1:
-        ctrl_basis_rep = ctrl(BasisState(Bool[num_x_wires - 1], Wire[num_x_wires - 1]), Wire[1])
+        ctrl_basis_rep = ctrl(MultiX(Bool[num_x_wires - 1], Wire[num_x_wires - 1]), Wire[1])
         resources[ctrl_basis_rep] += 2
 
     cnot_on_0_rep = ctrl(X(Wire[1]), control=Wire[1], control_values=[0])
@@ -573,7 +581,7 @@ def _c_add_sub(c_wire, x_wires, y_wires, work_wires):
     # the LSB
     c_wire = [c_wire]
     if len(x_wires) > 1:
-        ctrl(BasisState([1] * (len(x_wires) - 1), x_wires[:-1]), control=c_wire, control_values=[0])
+        ctrl(MultiX([1] * (len(x_wires) - 1), x_wires[:-1]), control=c_wire, control_values=[0])
 
     work_wires = work_wires[: len(y_wires) - 1]
     # Control-flip the LSB of the output register. This is part of achieving addition plus one
@@ -588,7 +596,7 @@ def _c_add_sub(c_wire, x_wires, y_wires, work_wires):
     ctrl(X(y_wires[-1]), control=c_wire, control_values=[0])
 
     if len(x_wires) > 1:
-        ctrl(BasisState([1] * (len(x_wires) - 1), x_wires[:-1]), control=c_wire, control_values=[0])
+        ctrl(MultiX([1] * (len(x_wires) - 1), x_wires[:-1]), control=c_wire, control_values=[0])
 
 
 @register_condition(_out_multiplier_with_caddsub_condition)
@@ -627,7 +635,7 @@ def _out_multiplier_with_caddsub(
     """
     # We extend our output by one wire because we need to store 2x*y intermediately, instead
     # of x*y. This also multiplies the value stored in output_wires with two.
-    output_wires = output_wires + [work_wires[0]]
+    output_wires = list(output_wires) + [work_wires[0]]
     # The other work wires can be used for arithmetic building blocks
     work_wires = work_wires[1:]
     n = len(x_wires)

@@ -16,8 +16,9 @@ Defines qp.value_and_grad.
 """
 
 import inspect
-from functools import lru_cache, wraps
-from importlib.util import find_spec
+from functools import wraps
+
+import jax
 
 from pennylane import capture
 from pennylane.compiler import compiler
@@ -25,52 +26,39 @@ from pennylane.exceptions import CompileError
 
 from .grad import _args_and_argnums, _setup_h, _setup_method, _ShapedArray
 
-_has_jax = find_spec("jax") is not None
-
-
 # pylint: disable=unused-argument, too-many-arguments
-@lru_cache
-def _get_value_and_grad_prim():
-    """Create a primitive for value and gradient computations."""
-    if not _has_jax:  # pragma: no cover
-        return None
+value_and_grad_prim = capture.QpPrimitive("value_and_grad")
+value_and_grad_prim.multiple_results = True
+value_and_grad_prim.prim_type = "higher_order"
 
-    import jax  # pylint: disable=import-outside-toplevel
 
-    value_and_grad_prim = capture.QpPrimitive("value_and_grad")
-    value_and_grad_prim.multiple_results = True
-    value_and_grad_prim.prim_type = "higher_order"
+@value_and_grad_prim.def_impl
+def _value_and_grad_impl(*args, argnums, jaxpr, method, h, fn):
+    if method != "auto":  # pragma: no cover
+        raise ValueError(f"Invalid value '{method=}' without QJIT.")
 
-    @value_and_grad_prim.def_impl
-    def _value_and_grad_impl(*args, argnums, jaxpr, method, h, fn):
-        if method != "auto":  # pragma: no cover
-            raise ValueError(f"Invalid value '{method=}' without QJIT.")
+    def func(*inner_args):
+        res = jax.core.eval_jaxpr(jaxpr, [], *inner_args)
+        return res[0]
 
-        def func(*inner_args):
-            res = jax.core.eval_jaxpr(jaxpr, [], *inner_args)
-            return res[0]
+    res = jax.value_and_grad(func, argnums=argnums)(*args)
+    return jax.tree_util.tree_leaves(res)
 
-        res = jax.value_and_grad(func, argnums=argnums)(*args)
-        return jax.tree_util.tree_leaves(res)
 
-    # pylint: disable=unused-argument
-    @value_and_grad_prim.def_abstract_eval
-    def _value_and_grad_abstract(*args, argnums, jaxpr, method, h, fn):
-        in_avals = tuple(args[i] for i in argnums)
-        grad_avals = (
-            _ShapedArray(in_aval.shape, in_aval.dtype, weak_type=in_aval.weak_type)
-            for in_aval in in_avals
-        )
-        return [jaxpr.outvars[0].aval, *grad_avals]
-
-    return value_and_grad_prim
+# pylint: disable=unused-argument
+@value_and_grad_prim.def_abstract_eval
+def _value_and_grad_abstract(*args, argnums, jaxpr, method, h, fn):
+    in_avals = tuple(args[i] for i in argnums)
+    grad_avals = (
+        _ShapedArray(in_aval.shape, in_aval.dtype, weak_type=in_aval.weak_type)
+        for in_aval in in_avals
+    )
+    return [jaxpr.outvars[0].aval, *grad_avals]
 
 
 def _capture_value_and_grad(func, *, argnums=0, method=None, h=None):
     # mostly a copy-paste of _capture_diff, but a few minor things needed to get updated
     # Could also find a way to remove code duplication
-
-    import jax  # pylint: disable=import-outside-toplevel
 
     # pylint: disable=import-outside-toplevel
     from jax.tree_util import tree_flatten, tree_leaves, tree_unflatten
@@ -108,7 +96,7 @@ def _capture_value_and_grad(func, *, argnums=0, method=None, h=None):
             "method": method,
             "h": h,
         }
-        out_flat = _get_value_and_grad_prim().bind(
+        out_flat = value_and_grad_prim.bind(
             *jaxpr.consts,
             *abstract_shapes,
             *flat_inputs,
