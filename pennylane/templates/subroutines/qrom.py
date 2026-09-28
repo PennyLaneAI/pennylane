@@ -42,55 +42,59 @@ from .multix import MultiX
 
 
 def _select_ops(
-    control_wires, depth, target_wires, swap_wires, bitstrings, select_work_wires
+    bitstrings, depth, target_wires, swap_wires, select_control_wires, select_work_wires
 ):  # pylint:disable=too-many-arguments
-    capacity = 1 << len(control_wires)
-    n_control_select_wires = ceil_log2(capacity / depth)
-    control_select_wires = control_wires[:n_control_select_wires]
-
     num_targets = len(target_wires)
-    num_missing = capacity - len(bitstrings)
-    n_columns = int(np.ceil(bitstrings.shape[0] / depth))
+    num_bitstrings = bitstrings.shape[0]
+    n_columns = int(np.ceil(num_bitstrings / depth))
+    num_missing = (-num_bitstrings) % depth
 
     if num_missing > 0:
         bitstrings = math.vstack([bitstrings, math.zeros((num_missing, num_targets), dtype=int)])
 
-    column_wires = swap_wires[: depth * num_targets]
-    column_bitstrings = math.stack(
-        [
-            math.concatenate([bitstrings[i * depth + j] for j in range(depth)])
-            for i in range(n_columns)
-        ]
-    )
-
+    new_num_targets = depth * num_targets
+    new_bitstrings = bitstrings.reshape((n_columns, new_num_targets))
     QROM(
-        column_bitstrings,
-        control_wires=control_select_wires,
-        target_wires=column_wires,
+        new_bitstrings,
+        control_wires=select_control_wires,
+        target_wires=swap_wires[:new_num_targets],
         work_wires=select_work_wires,
         clean=False,
     )
 
 
-def _multi_swap(wires1, wires2):
-    """Apply a series of SWAP gates between two sets of wires."""
-    for wire1, wire2 in zip(wires1, wires2, strict=True):
-        qp_ops.SWAP(wires=[wire1, wire2])
-
-
-def _swap_ops(control_wires, depth, swap_wires, target_wires):
-    n_control_select_wires = ceil_log2(2 ** len(control_wires) / depth)
-    control_swap_wires = control_wires[n_control_select_wires:]
+def _swap_ops(swap_control_wires, swap_wires, target_wires):
+    # TODO : work in aux wire for CSWAPs
     num_targets = len(target_wires)
-    for i in range(len(control_swap_wires) - 1, -1, -1):
-        for j in range(2**i - 1, -1, -1):
-            _wires0 = swap_wires[j * num_targets : (j + 1) * num_targets]
-            _wires1 = swap_wires[(j + 2**i) * num_targets : (j + 2**i + 1) * num_targets]
-            ctrl(_multi_swap, control=control_swap_wires[-i - 1])(_wires0, _wires1)
 
+    if capture.enabled() or compiler.active():
+        swap_wires = math.array(swap_wires, like="jax").reshape((-1, num_targets))
+        swap_control_wires = math.array(swap_control_wires, like="jax")
+    else:
+        # Need to work with nested list here in order to not coerce (deprecated) string wire labels
+        # to object-dtyped np.array. This forces manual "reshape" here and indexing via [j][k]
+        # instead of [j, k] below.
+        n_columns = len(swap_wires) // num_targets
+        swap_wires = [swap_wires[i * num_targets : (i + 1) * num_targets] for i in range(n_columns)]
 
-def _to_int_array(bitstring):
-    return [int(bit) for bit in bitstring]
+    @for_loop(len(swap_control_wires) - 1, -1, -1)
+    def outer(i):
+
+        @for_loop(2**i - 1, -1, -1)
+        def inner(j):
+
+            @for_loop(num_targets)
+            def swap_layer(k):
+                ctrl(
+                    qp_ops.SWAP([swap_wires[j][k], swap_wires[j + 2**i][k]]),
+                    control=swap_control_wires[-i - 1],
+                )
+
+            swap_layer()  # pylint: disable=no-value-for-parameter
+
+        inner()  # pylint: disable=no-value-for-parameter
+
+    outer()  # pylint: disable=no-value-for-parameter
 
 
 class QROM(Operator2):
@@ -214,7 +218,7 @@ class QROM(Operator2):
 
         if not isinstance(bitstrings, AbstractArray):
             if isinstance(bitstrings[0], str):
-                bitstrings = list(map(_to_int_array, bitstrings))
+                bitstrings = [[int(bit) for bit in bitstring] for bitstring in bitstrings]
 
             if isinstance(bitstrings, (list, tuple)):
                 bitstrings = math.array(bitstrings, dtype=int)
@@ -247,14 +251,16 @@ class QROM(Operator2):
         return self.control_wires + self.target_wires + self.work_wires
 
 
-def _calculate_select_swap_sizes(terms, num_control_wires, num_target_wires, num_work_wires, **_):
+def _calculate_select_swap_sizes(
+    num_bitstrings, num_control_wires, num_target_wires, num_work_wires, **_
+):
     """Calculates the register sizes for the Select-SWAP decomposition.
 
     This utility function determines how many auxiliary wires from the total pool
     should be allocated to the Select operation versus the SWAP network.
 
     Args:
-        terms (int): number of bitstrings/entries in the data
+        num_bitstrings (int): number of bitstrings/entries in the data
         num_control_wires (int): number of control wires
         num_target_wires (int): number of target wires (bitstring length)
         num_work_wires (int): total number of available work wires
@@ -275,7 +281,7 @@ def _calculate_select_swap_sizes(terms, num_control_wires, num_target_wires, num
 
     # Calculate depth: how many bitstrings we can load in parallel (power of 2)
     depth = n_swap_wires // num_target_wires
-    depth = int(2 ** math.floor(math.log2(min(depth, terms))))
+    depth = int(2 ** math.floor(math.log2(min(depth, num_bitstrings))))
 
     # Recalculate actual wires used by SWAP and the remaining for Select
     n_swap_work_wires = num_target_wires * depth - num_target_wires
@@ -321,55 +327,26 @@ def _select_swap_resources(
         num_bitstrings, num_control_wires, num_target_wires, num_work_wires
     )
 
-    n_columns = (
-        num_bitstrings // depth if num_bitstrings % depth == 0 else num_bitstrings // depth + 1
-    )
+    n_columns = int(np.ceil(num_bitstrings / depth))
     # Select block (implemented as a nested QROM over concatenated columns)
     num_control_select_wires = ceil_log2(2**num_control_wires / depth)
-    select_ops = {
-        QROM(
-            Int[n_columns, depth * num_target_wires],
-            Wire[int(num_control_select_wires)],
-            Wire[depth * num_target_wires],
-            Wire[num_work_wires_select],
-            False,
-        ): 1
-    }
+    new_num_targets = depth * num_target_wires
+    bigger_qrom = QROM(
+        Int[n_columns, new_num_targets],
+        Wire[num_control_select_wires],
+        Wire[new_num_targets],
+        Wire[num_work_wires_select],
+        False,
+    )
 
     # Swap block
     num_control_swap_wires = num_control_wires - num_control_select_wires
-    swap_resources = Counter()
-    for ind in range(num_control_swap_wires):
-        for j in range(2**ind):
-            num_swaps = min(
-                (j + 1) * num_target_wires - (j) * num_target_wires,
-                (j + 2 ** (ind + 1)) * num_target_wires - (j + 2**ind) * num_target_wires,
-            )
-            if num_swaps > 1:
-                swap_resources[qp_ops.CSWAP] += num_swaps
-            else:
-                swap_resources[qp_ops.CSWAP] += 1
+    num_cswaps_per_block = num_target_wires * (2**num_control_swap_wires - 1)
 
     if not clean or depth == 1:
-        resources = swap_resources
-        resources.update(select_ops)
-        return resources
+        return {bigger_qrom: 1, qp_ops.CSWAP: num_cswaps_per_block}
 
-    resources = {}
-
-    hadamard_ops = {qp_ops.Hadamard: num_target_wires}
-
-    for key, val in swap_resources.items():
-        swap_resources[key] = val * 2
-
-    resources.update(hadamard_ops)
-    resources.update(swap_resources)
-    resources.update(select_ops)
-
-    for key, val in resources.items():
-        resources[key] = val * 2
-
-    return resources
+    return {bigger_qrom: 2, qp_ops.CSWAP: 4 * num_cswaps_per_block, qp_ops.H: 2 * num_target_wires}
 
 
 @register_condition(_select_swap_condition)
@@ -389,20 +366,40 @@ def _select_swap(
     select_work_wires = work_wires[num_work_wires_swap:]
     swap_wires = Wires(target_wires) + Wires(swap_work_wires)
 
+    capacity = 1 << len(control_wires)
+    n_select_control_wires = ceil_log2(capacity / depth)
+    select_control_wires = control_wires[:n_select_control_wires]
+    swap_control_wires = control_wires[n_select_control_wires:]
+
     if not clean or depth == 1:
-        _select_ops(control_wires, depth, target_wires, swap_wires, bitstrings, select_work_wires)
+        _select_ops(
+            bitstrings, depth, target_wires, swap_wires, select_control_wires, select_work_wires
+        )
         if depth > 1:
-            _swap_ops(control_wires, depth, swap_wires, target_wires)
+            _swap_ops(swap_control_wires, swap_wires, target_wires)
         return
 
-    for _ in range(2):
-        for w in target_wires:
-            qp_ops.Hadamard(wires=w)
-        qp_ops.adjoint(
-            partial(_swap_ops, control_wires, depth, swap_wires, target_wires), lazy=False
-        )()
-        _select_ops(control_wires, depth, target_wires, swap_wires, bitstrings, select_work_wires)
-        _swap_ops(control_wires, depth, swap_wires, target_wires)
+    if capture.enabled() or compiler.active():
+        target_wires = math.array(target_wires, like="jax")
+
+    @for_loop(2)
+    def _select_swap_loop(i):
+
+        @for_loop(len(target_wires))
+        def apply_h(i):
+            qp_ops.H(target_wires[i])
+
+        apply_h()  # pylint: disable=no-value-for-parameter
+
+        cswaps = partial(_swap_ops, swap_control_wires, swap_wires, target_wires)
+
+        qp_ops.adjoint(cswaps, lazy=False)()
+        _select_ops(
+            bitstrings, depth, target_wires, swap_wires, select_control_wires, select_work_wires
+        )
+        cswaps()
+
+    _select_swap_loop()  # pylint: disable=no-value-for-parameter
 
 
 def _qrom_multicontrol_condition(

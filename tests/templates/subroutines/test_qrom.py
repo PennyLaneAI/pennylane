@@ -271,22 +271,14 @@ class TestQROM:
         expected_gates = [
             qp.Hadamard(wires=[2]),
             qp.CSWAP(wires=[1, 2, 3]),
-            qp.Select(
-                ops=(
-                    qp.MultiX([1, 0], wires=[2, 3]),
-                    qp.MultiX([0, 1], wires=[2, 3]),
-                ),
-                control=[0],
+            qp.QROM(
+                [[1, 0], [0, 1]], control_wires=[0], target_wires=[2, 3], work_wires=[], clean=False
             ),
             qp.CSWAP(wires=[1, 2, 3]),
             qp.Hadamard(wires=[2]),
             qp.CSWAP(wires=[1, 2, 3]),
-            qp.Select(
-                ops=(
-                    qp.MultiX([1, 0], wires=[2, 3]),
-                    qp.MultiX([0, 1], wires=[2, 3]),
-                ),
-                control=[0],
+            qp.QROM(
+                [[1, 0], [0, 1]], control_wires=[0], target_wires=[2, 3], work_wires=[], clean=False
             ),
             qp.CSWAP(wires=[1, 2, 3]),
         ]
@@ -464,28 +456,36 @@ def test_none_work_wires_case():
     gates_clean = qp.QROM(
         np.array([[1], [0], [0], [1]]), [0, 1], [2], [], clean=True
     ).decomposition()
-    expected_gates = qp.QROM(
+    gates_not_clean = qp.QROM(
         np.array([[1], [0], [0], [1]]), [0, 1], [2], [], clean=False
     ).decomposition()
 
-    assert gates_clean == expected_gates
+    assert gates_clean == gates_not_clean
 
 
 def test_too_many_work_wires_case():
     """Test that QROM works when more work wires are given than necessary"""
 
-    gates_clean = qp.QROM(
-        np.array([[1], [0], [0], [1]]), [0, 1], [2], [3, 4, 5], clean=False
+    gates_few_work = qp.QROM(
+        np.array([[1], [0], [1], [1]]), [0, 1], [2], [3, 4, 5], clean=False
     ).decomposition()
-    expected_gates = qp.QROM(
-        np.array([[1], [0], [0], [1]]),
+    gates_many_work = qp.QROM(
+        np.array([[1], [0], [1], [1]]),
         [0, 1],
         [2],
         [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16],
         clean=False,
     ).decomposition()
 
-    assert gates_clean == expected_gates
+    assert len(gates_few_work) == 4 == len(gates_many_work)
+    # Compare the QROM manually because the work wires are expected to differ
+    for qrom_op in [gates_few_work[0], gates_many_work[0]]:
+        assert isinstance(qrom_op, qp.QROM)
+        assert np.allclose(qrom_op.bitstrings, np.array([[1, 0, 1, 1]]))
+        assert qrom_op.control_wires == qp.wires.Wires([])
+        assert qrom_op.target_wires == qp.wires.Wires([2, 3, 4, 5])
+
+    assert gates_few_work[1:] == gates_many_work[1:]
 
 
 @pytest.mark.parametrize(
