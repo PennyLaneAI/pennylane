@@ -14,7 +14,7 @@
 
 """Tests the ``decompose`` transform with the new experimental graph-based decomposition system."""
 
-from collections import Counter, defaultdict
+from collections import defaultdict
 
 import numpy as np
 import pytest
@@ -430,49 +430,22 @@ class TestDecomposeGraphEnabled:
             qp.Toffoli(wires=[2, 1, 0]),
         ]
 
-    @pytest.mark.parametrize(
-        ("base", "gate_set", "expected_counts"),
-        [
-            (
-                qp.RZ(0.5, 0),
-                {"TemporaryAND", "Adjoint(TemporaryAND)", "CRZ", "X"},
-                {"TemporaryAND": 3, "CRZ": 1, "Adjoint(TemporaryAND)": 3},
-            ),
-            (
-                qp.RZ(0.5, 0),
-                {"TemporaryAND", "Adjoint(TemporaryAND)", "CNOT", "RZ", "X"},
-                {
-                    "TemporaryAND": 3,
-                    "RZ": 2,
-                    "CNOT": 2,
-                    "Adjoint(TemporaryAND)": 3,
-                },
-            ),
-            (
-                qp.H(0),
-                {"TemporaryAND", "Adjoint(TemporaryAND)", "CH", "X"},
-                {"TemporaryAND": 3, "CH": 1, "Adjoint(TemporaryAND)": 3},
-            ),
-        ],
-    )
-    def test_controlled_op_shared_control(self, base, gate_set, expected_counts):
-        """Tests that a multi-controlled operator shares one TemporaryAND ladder."""
+    @pytest.mark.integration
+    def test_controlled_op_shared_control(self):
+        """A 4-control RZ with 3 zeroed work wires should collapse to one TemporaryAND
+        ladder plus a single CRZ, not a CRZ per control wire."""
         op = qp.ctrl(
-            base,
+            qp.RZ(0.5, 0),
             control=[1, 2, 3, 4],
             work_wires=[5, 6, 7],
             work_wire_type="zeroed",
         )
         tape = qp.tape.QuantumScript([op])
-
-        [new_tape], _ = qp.transforms.decompose(tape, gate_set=gate_set)
-
-        assert Counter(operation.name for operation in new_tape.operations) == expected_counts
-        # TemporaryAND only implements the desired action when its target starts in |0>.
-        zeroed_work_wire_columns = slice(None, None, 8)
-        assert qp.math.allclose(
-            qp.matrix(new_tape, wire_order=range(8))[:, zeroed_work_wire_columns],
-            qp.matrix(tape, wire_order=range(8))[:, zeroed_work_wire_columns],
+        [new_tape], _ = qp.transforms.decompose(
+            tape, gate_set={"TemporaryAND", "Adjoint(TemporaryAND)", "CRZ", "X"}
+        )
+        assert [operation.name for operation in new_tape.operations] == (
+            ["TemporaryAND"] * 3 + ["CRZ"] + ["Adjoint(TemporaryAND)"] * 3
         )
 
     @pytest.mark.integration

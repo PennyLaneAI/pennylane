@@ -875,16 +875,20 @@ def _ctrl_many_zeroed_work_wires_resource(base, control_wires, *_, **__):
     num_control_wires = len(control_wires)
     return {
         qp.TemporaryAND: num_control_wires - 1,
-        qp.adjoint(abstractify(qp.TemporaryAND)): num_control_wires - 1,
+        qp.adjoint(qp.TemporaryAND(Wire[3])): num_control_wires - 1,
         _ctrl_abstract(base, Wire[1]): 1,
     }
 
 
-@register_condition(
-    lambda control_wires, work_wires, work_wire_type, **_: len(control_wires) > 1
-    and len(work_wires) >= len(control_wires) - 1
-    and work_wire_type == "zeroed"
-)
+def _ctrl_many_zeroed_work_wires_condition(control_wires, work_wires, work_wire_type, **_):
+    return (
+        len(control_wires) > 1
+        and len(work_wires) >= len(control_wires) - 1
+        and work_wire_type == "zeroed"
+    )
+
+
+@register_condition(_ctrl_many_zeroed_work_wires_condition)
 @register_resources(_ctrl_many_zeroed_work_wires_resource)
 def _ctrl_many_zeroed_work_wires(base, control_wires, work_wires, *_, **__):
     # pylint: disable=import-outside-toplevel
