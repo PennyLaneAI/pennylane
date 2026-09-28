@@ -21,7 +21,6 @@ from collections.abc import Callable, Hashable, Iterable, Sequence
 from copy import copy, deepcopy
 from enum import Enum, StrEnum, auto
 from functools import partial
-from importlib.util import find_spec
 from inspect import BoundArguments, Signature, signature
 from numbers import Number
 from typing import TYPE_CHECKING, Any, ClassVar, TypeAlias
@@ -33,6 +32,7 @@ import pennylane as qp
 from pennylane import math
 from pennylane._class_property import classproperty
 from pennylane.capture import enabled, pause, symbolic_array
+from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.core.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.exceptions import (
     AdjointUndefinedError,
@@ -56,14 +56,12 @@ from pennylane.typing import (
 )
 from pennylane.wires import AbstractQubit, Wires, WiresLike
 
-from .base import _UNSET_BATCH_SIZE, Operator, _get_abstract_operator
+from .base import _UNSET_BATCH_SIZE, AbstractOperator, Operator
 from .meta import OperatorMeta
 from .utils import abstractify
 
 if TYPE_CHECKING:
     from pennylane.pauli import PauliSentence
-
-has_jax = find_spec("jax") is not None
 
 ArgSpecType: TypeAlias = type[Number] | AbstractArray | AbstractWires
 
@@ -1907,90 +1905,85 @@ def _init_subclass_dynamic_property(self: Operator2, name: str) -> Any:
 # -------------------------------------------------------------------------------
 
 
-if has_jax:
-    # pylint: disable=import-outside-toplevel,ungrouped-imports
-    from pennylane.capture.custom_primitives import QpPrimitive
+# pylint: disable=ungrouped-imports
+operator_p = QpPrimitive("operator")
+operator_p.prim_type = "operator"
 
-    operator_p = QpPrimitive("operator")
-    operator_p.prim_type = "operator"
 
-    # pylint: disable=too-many-arguments,unused-argument
-    @operator_p.def_impl
-    def _op_impl(
-        *all_args,
-        op_cls,
-        wire_lens,
-        hybrid_lens,
-        hybrid_trees,
-        forward_mask,
-        n_ctrls=0,
-        n_ctrl_work_wires=0,
-        ctrl_work_wire_type="borrowed",
-        adjoint=False,
-        **static_args,
-    ):
-        # NOTE: every explicit keyword above shadows an operator argname of the same name, so the
-        # controlled-specific params injected by `ControlledOp2._bind_primitive` are namespaced
-        # with a `ctrl_`/`n_ctrl_` prefix. Otherwise an operator declaring e.g. `work_wire_type`
-        # as a static/compilable arg (`MultiControlledX`, `ControlledQubitUnitary`) would have its
-        # own value swallowed here and silently replaced by the controlled default.
-        args = {name: unflatten(*value) for name, value in static_args.items()}
-        i = 0
+# pylint: disable=too-many-arguments,unused-argument
+@operator_p.def_impl
+def _op_impl(
+    *all_args,
+    op_cls,
+    wire_lens,
+    hybrid_lens,
+    hybrid_trees,
+    forward_mask,
+    n_ctrls=0,
+    n_ctrl_work_wires=0,
+    ctrl_work_wire_type="borrowed",
+    adjoint=False,
+    **static_args,
+):
+    # NOTE: every explicit keyword above shadows an operator argname of the same name, so the
+    # controlled-specific params injected by `ControlledOp2._bind_primitive` are namespaced
+    # with a `ctrl_`/`n_ctrl_` prefix. Otherwise an operator declaring e.g. `work_wire_type`
+    # as a static/compilable arg (`MultiControlledX`, `ControlledQubitUnitary`) would have its
+    # own value swallowed here and silently replaced by the controlled default.
+    args = {name: unflatten(*value) for name, value in static_args.items()}
+    i = 0
 
-        for name in op_cls.dynamic_argnames:
-            args[name] = all_args[i]
-            i += 1
+    for name in op_cls.dynamic_argnames:
+        args[name] = all_args[i]
+        i += 1
 
-        wire_lens_iter = iter(wire_lens)
-        for name in op_cls.wire_argnames:
-            if name not in op_cls.hybrid_argnames:
-                len_ = next(wire_lens_iter)
-                # TODO: impl is being used here for reconstruction while the interpreter itself is
-                # under JAX tracing. Need to separate this logic from such scenario. For now,
-                # we can use the fact that wires are always integers and cast them to int.
-                args[name] = _to_int_wires(all_args[i : i + len_])
-                i += len_
-
-        # Reorder hybrid args such that hybrid wire args are first
-        for name, len_, tree in zip(op_cls.hybrid_argnames, hybrid_lens, hybrid_trees, strict=True):
-            leaves = all_args[i : i + len_]
-            args[name] = unflatten(leaves, tree)
+    wire_lens_iter = iter(wire_lens)
+    for name in op_cls.wire_argnames:
+        if name not in op_cls.hybrid_argnames:
+            len_ = next(wire_lens_iter)
+            # TODO: impl is being used here for reconstruction while the interpreter itself is
+            # under JAX tracing. Need to separate this logic from such scenario. For now,
+            # we can use the fact that wires are always integers and cast them to int.
+            args[name] = _to_int_wires(all_args[i : i + len_])
             i += len_
 
-        # `ControlledOp2._bind_primitive` appends control wires, control values, and work
-        # wires (in that order) after the base op's own args, so they're consumed in the
-        # same order here.
-        if n_ctrls:
-            control_wires = _to_int_wires(all_args[i : i + n_ctrls])
-            i += n_ctrls
-            control_values = all_args[i : i + n_ctrls]
-            i += n_ctrls
-            work_wires = _to_int_wires(all_args[i : i + n_ctrl_work_wires])
-            i += n_ctrl_work_wires
-        else:
-            control_wires = control_values = work_wires = ()
+    # Reorder hybrid args such that hybrid wire args are first
+    for name, len_, tree in zip(op_cls.hybrid_argnames, hybrid_lens, hybrid_trees, strict=True):
+        leaves = all_args[i : i + len_]
+        args[name] = unflatten(leaves, tree)
+        i += len_
 
-        op = type.__call__(op_cls, **args)
-        if adjoint:
-            op = type.__call__(qp.ops.op_math.Adjoint2, op)
-        if n_ctrls:
-            op = type.__call__(
-                qp.ops.op_math.ControlledOp2,
-                op,
-                control_wires=control_wires,
-                control_values=control_values,
-                work_wires=work_wires,
-                work_wire_type=ctrl_work_wire_type,
-            )
-        return op
+    # `ControlledOp2._bind_primitive` appends control wires, control values, and work
+    # wires (in that order) after the base op's own args, so they're consumed in the
+    # same order here.
+    if n_ctrls:
+        control_wires = _to_int_wires(all_args[i : i + n_ctrls])
+        i += n_ctrls
+        control_values = all_args[i : i + n_ctrls]
+        i += n_ctrls
+        work_wires = _to_int_wires(all_args[i : i + n_ctrl_work_wires])
+        i += n_ctrl_work_wires
+    else:
+        control_wires = control_values = work_wires = ()
 
-    @operator_p.def_abstract_eval
-    def _op_aval(*_, **__):
-        AbstractOperator = _get_abstract_operator()
-        return AbstractOperator()
+    op = type.__call__(op_cls, **args)
+    if adjoint:
+        op = type.__call__(qp.ops.op_math.Adjoint2, op)
+    if n_ctrls:
+        op = type.__call__(
+            qp.ops.op_math.ControlledOp2,
+            op,
+            control_wires=control_wires,
+            control_values=control_values,
+            work_wires=work_wires,
+            work_wire_type=ctrl_work_wire_type,
+        )
+    return op
 
-else:  # pragma: no cover
-    operator_p = None
+
+@operator_p.def_abstract_eval
+def _op_aval(*_, **__):
+    return AbstractOperator()
 
 
 def pop_op_eqns(ops: Iterable):
