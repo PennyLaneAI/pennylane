@@ -25,6 +25,7 @@ from copy import copy
 from inspect import signature
 from typing import Any, Literal, overload
 
+import jax
 import numpy as np
 from scipy import sparse
 
@@ -443,7 +444,6 @@ def _ctrl_transform_abstract_eval(*_, **__):
 def _capture_ctrl_transform(qfunc: Callable, control, control_values, work_wires) -> Callable:
     """Capture compatible way of performing an ctrl transform."""
     # note that this logic is tested in `tests/capture/test_nested_plxpr.py`
-    import jax  # pylint: disable=import-outside-toplevel
 
     @wraps(qfunc)
     def new_qfunc(*args, **kwargs):

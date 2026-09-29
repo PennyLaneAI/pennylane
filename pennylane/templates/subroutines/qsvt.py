@@ -23,8 +23,10 @@ from functools import partial, reduce
 from importlib import import_module, util
 from typing import Literal
 
+import jax
 import numpy as np
 import scipy
+from jax import jacobian, jit, vmap
 from numpy.polynomial import Polynomial, chebyshev
 
 from pennylane import math, ops
@@ -40,30 +42,12 @@ from .fable import FABLE
 from .prepselprep import PrepSelPrep
 from .qubitization import Qubitization
 
-if util.find_spec("jax") is not None:
-    jax = import_module("jax")
-    is_jax_available = True
-else:  # pragma: no cover
-    is_jax_available = False
-    jax = None
-
 if util.find_spec("optax") is not None:  # pragma: no cover
     optax = import_module("optax")
     is_optax_available = True
 else:
     is_optax_available = False
     optax = None
-
-
-def jit_if_jax_available(f, **kwargs):
-    r"""thin wrapper around jax.jit
-    that jit the function if jax is available
-    otherwise return the input function
-    """
-
-    if is_jax_available:
-        return jax.jit(f, **kwargs)
-    return f  # pragma: no cover
 
 
 def _pauli_rep_process(A, poly, encoding_wires, block_encoding, angle_solver="root-finding"):
@@ -830,7 +814,7 @@ def _compute_qsp_angle(poly_coeffs):
     return rotation_angles
 
 
-@jit_if_jax_available
+@jax.jit
 def _cheby_pol(x, degree):
     r"""Return the value of the Chebyshev polynomial cos(degree*arcos(x)) at point x
 
@@ -859,7 +843,7 @@ def _poly_func_scipy(coeffs, parity, x):
     return coeffs @ np.vectorize(_cheby_pol, excluded={"x"})(x, 2 * ind + parity)
 
 
-@partial(jit_if_jax_available, static_argnames=["interface"])
+@partial(jax.jit, static_argnames=["interface"])
 def _z_rotation(phi, interface):
     r"""Returns the matrix of the `RZ(2 \phi)` gate.
 
@@ -872,7 +856,7 @@ def _z_rotation(phi, interface):
     return math.array([[math.exp(1j * phi), 0.0], [0.0, math.exp(-1j * phi)]], like=interface)
 
 
-@partial(jit_if_jax_available, static_argnames=["interface"])
+@partial(jax.jit, static_argnames=["interface"])
 def _W_of_x(x, interface):
     r"""Returns the matrix of the operator W(x) defined in Theorem (1) of https://arxiv.org/pdf/2002.11649
 
@@ -897,7 +881,7 @@ def _W_of_x(x, interface):
     )
 
 
-@partial(jit_if_jax_available, static_argnames=["interface"])
+@partial(jax.jit, static_argnames=["interface"])
 def _qsp_iterate(phi, x, interface):
     r"""
     Signal operator defined as the product of RZ(phi) and W(x)
@@ -912,7 +896,7 @@ def _qsp_iterate(phi, x, interface):
     return math.dot(_W_of_x(x=x, interface=interface), _z_rotation(phi=phi, interface=interface))
 
 
-@partial(jit_if_jax_available, static_argnames=["interface"])
+@partial(jax.jit, static_argnames=["interface"])
 def _qsp_iterate_broadcast(phis, x, interface):
     r"""Eq (13) Resulting unitary of the QSP circuit (on reduced invariant subspace ofc)
 
@@ -922,16 +906,8 @@ def _qsp_iterate_broadcast(phis, x, interface):
     Returns:
         tensor_like: 2x2 block-encoding of polynomial implemented by the angles phi
     """
-    # pylint: disable=import-outside-toplevel
-    try:
-        from jax import vmap
-
-        interface = "jax"
-        qsp_iterate_list = vmap(_qsp_iterate, in_axes=(0, None, None))(phis[1:], x, interface)
-    except ModuleNotFoundError:
-        qsp_iterate_list = math.vectorize(_qsp_iterate, excluded=(1, 2), signature="()->(m,n)")(
-            phis[1:], x, interface
-        )
+    interface = "jax"
+    qsp_iterate_list = vmap(_qsp_iterate, in_axes=(0, None, None))(phis[1:], x, interface)
 
     matrix_iterate = reduce(math.dot, qsp_iterate_list)
     matrix_iterate = math.dot(_z_rotation(phi=phis[0], interface=interface), matrix_iterate)
@@ -953,14 +929,7 @@ def _qsp_optimization_scipy(degree, coeffs_target_func, interface=None):
     """
     parity = degree % 2
 
-    # pylint: disable=import-outside-toplevel
-    try:
-        from jax import jacobian
-
-        interface = "jax"
-
-    except ModuleNotFoundError:
-        from autograd import jacobian
+    interface = "jax"
 
     grid_points = _grid_pts(degree, interface=interface)
 
@@ -972,32 +941,14 @@ def _qsp_optimization_scipy(degree, coeffs_target_func, interface=None):
 
     def obj_function(phi):
         # Equation (23) in https://arxiv.org/pdf/2002.11649
-
-        # pylint: disable=import-outside-toplevel
-        try:
-            from jax import jit, vmap
-
-            qsp_iterates = jit(_qsp_iterate_broadcast, static_argnames=["interface"])
-
-            obj_func = (
-                vmap(qsp_iterates, in_axes=(None, 0, None))(phi, grid_points, interface) - targets
-            )
-        except ModuleNotFoundError:
-            obj_func = (
-                math.vectorize(_qsp_iterate_broadcast, excluded=(0, 2))(phi, grid_points, interface)
-                - targets
-            )
-
+        qsp_iterates = jit(_qsp_iterate_broadcast, static_argnames=["interface"])
+        obj_func = (
+            vmap(qsp_iterates, in_axes=(None, 0, None))(phi, grid_points, interface) - targets
+        )
         obj_func = math.dot(obj_func, obj_func)
-
         return 1 / len(grid_points) * obj_func
 
-    try:
-        from jax import jit
-
-        obj_function = jit(obj_function)
-    except ModuleNotFoundError:
-        pass
+    obj_function = jit(obj_function)
 
     results = scipy.optimize.minimize(
         fun=obj_function,
@@ -1037,7 +988,7 @@ def _compute_qsp_angles_iteratively_scipy(poly):
     return angles
 
 
-@jit_if_jax_available
+@jax.jit
 def _poly_func_optax(coeffs, x):
     r"""\sum c_kT_{k}(x) where T_k(x)=cos(karccos(x))"""
     return jax.numpy.sum(
@@ -1061,7 +1012,7 @@ def _grid_pts(degree, interface):
     )
 
 
-@jit_if_jax_available
+@jax.jit
 def _obj_function_optax(phi, x, y):
     r"""Objective function to be optimized in Equation (23)
 
@@ -1073,21 +1024,14 @@ def _obj_function_optax(phi, x, y):
     Returns:
         float: \frac{\|f_\Phi(x) - y\|^2}{N}
     """
-    # pylint: disable=import-outside-toplevel,redefined-outer-name
-    import jax
-
     obj_func = jax.vmap(_qsp_iterate_broadcast, in_axes=(None, 0, None))(phi, x, "jax") - y
     obj_func = jax.numpy.dot(obj_func, obj_func)
     return 1 / x.shape[0] * obj_func
 
 
-@partial(jit_if_jax_available, static_argnames=["maxiter", "tol"])
+@partial(jax.jit, static_argnames=["maxiter", "tol"])
 def _optax_lbfgs_opt(initial_guess, x, y, maxiter, tol):
     """Dispatch optimization to the L-BFGS of optax."""
-    # pylint: disable=import-outside-toplevel,redefined-outer-name
-    import jax
-    import optax
-
     opt = optax.lbfgs()
     init_carry = (initial_guess, opt.init(initial_guess))
 
@@ -1119,9 +1063,6 @@ def _qsp_optimization_optax(degree: int, coeffs_target_func, maxiter=100, tol=1e
     r"""Algorithm 1 in https://arxiv.org/pdf/2002.11649 produces the angle parameters by
     minimizing the distance between the target and qsp polynomial over the grid.
     """
-    # pylint: disable=import-outside-toplevel,redefined-outer-name
-    import jax
-
     grid_points = _grid_pts(degree, "jax")
     initial_guess = [np.pi / 4] + [0.0] * (degree - 1) + [np.pi / 4]
 
@@ -1144,13 +1085,8 @@ def _compute_qsp_angles_iteratively_optax(poly):
         poly (tensor_like): coefficients of the polynomial ordered from lowest to highest power
 
     Raises:
-        ModuleNotFoundError: if JAX or Optax are not installed
+        ModuleNotFoundError: if Optax is not installed
     """
-    if not is_jax_available:
-        raise ModuleNotFoundError(
-            "JAX is required for this functionality. Please install it with 'pip install jax'."
-        )  # pragma: no cover
-
     if not is_optax_available:
         raise ModuleNotFoundError(
             "Optax is required for this functionality. Please install it with 'pip install optax'."
