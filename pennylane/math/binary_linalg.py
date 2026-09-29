@@ -372,7 +372,7 @@ def binary_is_independent(vector: np.ndarray, basis: np.ndarray) -> bool | np.nd
             f"Got {vector.shape=} and {basis.shape=}"
         )
     batched = vector.ndim == 2
-    vectors = vector.T if batched else vector[None]
+    vectors = vector.T if batched else vector[np.newaxis]
 
     # The non-zero rows of the RREF of ``basis.T`` span the column space of ``basis``
     rref = binary_finite_reduced_row_echelon(basis.T)

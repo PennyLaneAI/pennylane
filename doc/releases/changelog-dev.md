@@ -608,7 +608,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* :func:`~.math.binary_is_independent` now also accepts multiple vectors, stacked as the columns 
+* :func:`~.math.binary_is_independent` now also accepts multiple vectors, stacked as the columns
   of a two-dimensional array, and returns a boolean array with one entry per vector.
   [(#10055)](https://github.com/PennyLaneAI/pennylane/pull/10055)
 
