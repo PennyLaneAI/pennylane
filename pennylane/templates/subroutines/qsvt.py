@@ -15,7 +15,6 @@
 Contains the QSVT template and qsvt wrapper function.
 """
 
-import copy
 import warnings
 from collections import defaultdict
 from collections.abc import Sequence
@@ -30,13 +29,13 @@ from jax import jacobian, jit, vmap
 from numpy.polynomial import Polynomial, chebyshev
 
 from pennylane import math, ops
-from pennylane.core.operator import Operation, Operator, Operator2, abstractify
+from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.core.queuing import QueuingManager, apply
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import CompressedResourceOp, add_decomps, register_resources
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.typing import TensorLike
-from pennylane.wires import Wires
+from pennylane.wires import Wires, all_wires_concrete_or_abstract
 
 from .fable import FABLE
 from .prepselprep import PrepSelPrep
@@ -308,7 +307,7 @@ def qsvt(
     return QSVT(encoding, projectors)
 
 
-class QSVT(Operation):
+class QSVT(Operator2):
     r"""QSVT(UA,projectors)
     Implements the
     `quantum singular value transformation <https://arxiv.org/abs/1806.01838>`__ (QSVT) circuit.
@@ -477,62 +476,25 @@ class QSVT(Operation):
                 -2.79501771e-01-4.82849614e-02j,  0.00000000e+00+0.00000000e+00j])
     """
 
-    grad_method = None
-    """Gradient computation method."""
+    # Signature order is ``(UA, projectors)``. Wire order is overridden in ``__init__``.
+    hybrid_argnames = ("UA", "projectors")
 
-    def _flatten(self):
-        data = (self.hyperparameters["UA"], self.hyperparameters["projectors"])
-        return data, tuple()
-
-    # pylint: disable=arguments-differ
-    @classmethod
-    def _primitive_bind_call(cls, UA, projectors, **kwargs):  # kwarg is id
-
-        def _get_tracer(op):
-            if isinstance(op, Operator2):
-                if op.tracer is None:
-                    # pylint: disable-next=protected-access
-                    op._bind_primitive()
-                return op.tracer if op.tracer is not None else op
-            return op
-
-        return cls._primitive.bind(_get_tracer(UA), *list(map(_get_tracer, projectors)), **kwargs)
-
-    @classmethod
-    def _unflatten(cls, data, _) -> "QSVT":
-        return cls(*data)
-
-    resource_keys = {"UA", "projectors"}
+    wire_argnames = ()
 
     def __init__(self, UA, projectors):
-        if not isinstance(UA, Operator):
+
+        # CompressedResourceOp is added here defensively because `abstractify` may
+        # turn an Operator1 subclass into a CompressedResourceOp.
+        if not isinstance(UA, (Operator, CompressedResourceOp)):
             raise ValueError("Input block encoding must be an Operator")
 
-        self._hyperparameters = {
-            "UA": UA,
-            "projectors": projectors,
-        }
+        super().__init__(UA, projectors)
 
-        total_wires = Wires.all_wires([proj.wires for proj in projectors]) + Wires(UA.wires)
-
-        super().__init__(wires=total_wires)
-
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "UA": self.hyperparameters["UA"],
-            "projectors": self.hyperparameters["projectors"],
-        }
-
-    def map_wires(self, wire_map: dict):
-        # pylint: disable=protected-access
-        new_op = copy.deepcopy(self)
-        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        new_op._hyperparameters["UA"] = new_op._hyperparameters["UA"].map_wires(wire_map)
-        new_op._hyperparameters["projectors"] = [
-            proj.map_wires(wire_map) for proj in new_op._hyperparameters["projectors"]
-        ]
-        return new_op
+        # The constructor takes `UA` before `projectors`, but the canonical wire
+        # order is projector wires followed by UA wires. Here we re-calculate the
+        # wires to maintain the same wire order as before.
+        all_wire_args = tuple(op.wires for op in projectors) + (UA.wires,)
+        self._wires = all_wires_concrete_or_abstract(all_wire_args)
 
     @property
     def data(self):
@@ -542,102 +504,16 @@ class QSVT(Operation):
         ``QSVT`` operation can be inferred with respect to the types of the
         ``QSVT`` block encoding and projector-controlled phase shift data.
         """
-        return tuple(datum for op in self._operators for datum in op.data)
-
-    def __copy__(self):
-        # Override Operator.__copy__() to avoid setting the "data" property before the new instance
-        # is assigned hyper-parameters since QSVT data is derived from the hyper-parameters.
-        clone = QSVT.__new__(QSVT)
-
-        # Ensure the operators in the hyper-parameters are copied instead of aliased.
-        clone._hyperparameters = {
-            "UA": copy.copy(self._hyperparameters["UA"]),
-            "projectors": list(map(copy.copy, self._hyperparameters["projectors"])),
-        }
-
-        for attr, value in vars(self).items():
-            if attr != "_hyperparameters":
-                setattr(clone, attr, value)
-
-        return clone
+        return tuple(d for op in (self.UA, *self.projectors) for d in getattr(op, "data", ()))
 
     @property
-    def _operators(self) -> list[Operator]:
-        """Flattened list of operators that compose this QSVT operation."""
-        return [self._hyperparameters["UA"], *self._hyperparameters["projectors"]]
+    def num_params(self) -> int:
+        """Number of trainable parameters of the block encoding and projectors."""
+        return sum(getattr(op, "num_params", 0) for op in (self.UA, *self.projectors))
 
     @staticmethod
-    def compute_decomposition(
-        *_data, UA, projectors, **_kwargs
-    ):  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a product of other operators.
-
-        The :class:`~.QSVT` is decomposed into alternating block encoding
-        and projector-controlled phase shift operators. This is defined by the following
-        equations, where :math:`U` is the block encoding operation and both :math:`\Pi_\phi` and
-        :math:`\tilde{\Pi}_\phi` are projector-controlled phase shifts with angle :math:`\phi`.
-
-        When the number of projector-controlled phase shifts is even (:math:`d` is odd), the QSVT
-        circuit is defined as:
-
-        .. math::
-
-            U_{QSVT} = \Pi_{\phi_1}U\left[\prod^{(d-1)/2}_{k=1}\Pi_{\phi_{2k}}U^\dagger
-            \tilde{\Pi}_{\phi_{2k+1}}U\right]\Pi_{\phi_{d+1}}.
-
-
-        And when the number of projector-controlled phase shifts is odd (:math:`d` is even):
-
-        .. math::
-
-            U_{QSVT} = \left[\prod^{d/2}_{k=1}\Pi_{\phi_{2k-1}}U^\dagger\tilde{\Pi}_{\phi_{2k}}U\right]
-            \Pi_{\phi_{d+1}}.
-
-        .. seealso:: :meth:`~.QSVT.decomposition`.
-
-        Args:
-            UA (Operator): the block encoding circuit, specified as a :class:`~.Operator`
-            projectors (list[Operator]): a list of projector-controlled phase
-                shift circuits that implement the desired polynomial
-
-        Returns:
-            list[.Operator]: decomposition of the operator
-        """
-
-        op_list = []
-
-        op_list.append(projectors[0])
-        if QueuingManager.recording():
-            apply(projectors[0])
-
-        for i in range(1, len(projectors) - 1, 2):
-            op_list.append(ops.change_op_basis(UA, projectors[i]))
-            op_list.append(projectors[i + 1])
-            if QueuingManager.recording():
-                apply(projectors[i + 1])
-
-        if len(projectors) % 2 == 0:
-            op_list.append(UA)
-            op_list.append(projectors[-1])
-            if QueuingManager.recording():
-                apply(UA)
-                apply(projectors[-1])
-
-        return op_list
-
-    def label(self, decimals=None, base_label=None, cache=None):
-        op_label = base_label or self.__class__.__name__
-        return op_label
-
-    def queue(self, context=QueuingManager):
-        context.remove(self._hyperparameters["UA"])
-        for op in self._hyperparameters["projectors"]:
-            context.remove(op)
-        context.append(self)
-        return self
-
-    @staticmethod
-    def compute_matrix(*args, **kwargs):
+    @QueuingManager.stop_recording()
+    def compute_matrix(UA, projectors):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -646,50 +522,36 @@ class QSVT(Operation):
         .. seealso:: :meth:`~.Operator.matrix` and :func:`~.matrix`
 
         Args:
-            *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
-            **hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
+            UA (Operator): the block encoding circuit, specified as a :class:`~.Operator`
+            projectors (Sequence[Operator]): a list of projector-controlled phase
+                shifts that implement the desired polynomial
 
         Returns:
             tensor_like: matrix representation
         """
-        # pylint: disable=unused-argument
         op_list = []
-        UA = kwargs["UA"]
-        projectors = kwargs["projectors"]
-
-        # incase this method is called in a queue context, this prevents queuing ops unnecessarily
-        with QueuingManager.stop_recording():
-            UA_copy = copy.copy(UA)
-
-            for idx, op in enumerate(projectors[:-1]):
-                op_list.append(op)
-                if idx % 2 == 0:
-                    op_list.append(UA)
-                else:
-                    op_list.append(ops.adjoint(UA_copy))
-
-            op_list.append(projectors[-1])
-            mat = ops.functions.matrix(ops.prod(*tuple(op_list[::-1])))
-
-        return mat
+        for idx, op in enumerate(projectors[:-1]):
+            op_list.append(op)
+            op_list.append(UA if idx % 2 == 0 else ops.adjoint(UA))
+        op_list.append(projectors[-1])
+        return ops.functions.matrix(ops.prod(*tuple(op_list[::-1])))
 
 
-def _QSVT_resources(projectors, UA):
+def _QSVT_resources(UA, projectors):
     resources = defaultdict(int)
     resources[abstractify(projectors[0])] = 1
     for i in range(1, len(projectors) - 1, 2):
         resources[_change_op_basis_abstract(UA, projectors[i], _adjoint_abstract(UA))] += 1
         resources[abstractify(projectors[i + 1])] += 1
-
     if len(projectors) % 2 == 0:
         resources[abstractify(UA)] += 1
-        resources[abstractify(projectors[0])] += 1
-
+        resources[abstractify(projectors[-1])] += 1
     return dict(resources)
 
 
 @register_resources(_QSVT_resources)
-def _QSVT_decomposition(*_data, UA, projectors, **_kwargs):
+def _QSVT_decomposition(UA, projectors):
+
     apply(projectors[0])
 
     for i in range(1, len(projectors) - 1, 2):
@@ -702,13 +564,6 @@ def _QSVT_decomposition(*_data, UA, projectors, **_kwargs):
 
 
 add_decomps(QSVT, _QSVT_decomposition)
-
-# pylint: disable=protected-access
-
-
-@QSVT._primitive.def_impl
-def _(UA, *projectors, **kwargs):  # kwarg might be id
-    return type.__call__(QSVT, UA, projectors, **kwargs)
 
 
 def _complementary_poly(poly_coeffs):

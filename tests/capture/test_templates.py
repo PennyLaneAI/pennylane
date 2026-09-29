@@ -867,39 +867,28 @@ class TestModifiedTemplates:
         qp.assert_equal(q.queue[0], template(**kwargs))
 
     def test_qsvt(self):
-        """Test the primitive bind call of QSVT."""
+        """Test QSVT with program capture."""
 
-        def qfunc(A):
-            block_encode = qp.BlockEncode(A, wires=[0, 1])
-            shifts = [qp.PCPhase(i + 0.1, dim=1, wires=[0, 1]) for i in range(3)]
-            qp.QSVT(block_encode, projectors=shifts)
+        def qfunc(ua, projectors):
+            return qp.QSVT(ua, projectors).tracer
 
-        A = np.array([[0.1]])
+        ua = qp.H(0)
+        projectors = [qp.RZ(0.2, 0), qp.RZ(0.3, 0)]
         # Validate inputs
-        qfunc(A)
+        qfunc(ua, projectors)
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)(A)
+        jaxpr = jax.make_jaxpr(qfunc)(ua, projectors)
+        assert len(jaxpr.eqns) == 1
 
-        assert len(jaxpr.eqns) == 5
+        eqn = jaxpr.eqns[0]
+        assert_eqn_matches_op(eqn, qp.QSVT)
 
-        assert jaxpr.eqns[0].primitive == qp.BlockEncode._primitive
+        flattened_ua, _ = qp.pytrees.flatten(ua)
+        flattened_projectors, _ = qp.pytrees.flatten(projectors)
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *flattened_ua, *flattened_projectors)
 
-        eqn = jaxpr.eqns[-1]
-        assert eqn.primitive == qp.QSVT._primitive
-        for i in range(4):
-            assert eqn.invars[i] == jaxpr.eqns[i].outvars[0]
-        assert eqn.params == {}
-        assert len(eqn.outvars) == 1
-        assert isinstance(eqn.outvars[0], jax.core.DropVar)
-
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, A)
-
-        assert len(q) == 1
-        block_encode = qp.BlockEncode(A, wires=[0, 1])
-        shifts = [qp.PCPhase(i + 0.1, dim=1, wires=[0, 1]) for i in range(3)]
-        assert q.queue[0] == qp.QSVT(block_encode, shifts)
+        qp.assert_equal(op, qp.QSVT(ua, projectors))
 
     def test_mps_prep(self):
         """Test the primitive bind call of MPSPrep."""

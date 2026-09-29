@@ -27,7 +27,7 @@ import numpy as np
 from pennylane import math
 from pennylane.exceptions import WireError
 from pennylane.pytrees import register_pytree
-from pennylane.typing import AbstractWires, _AbstractWireTypeFactory
+from pennylane.typing import AbstractWires, Wire, _AbstractWireTypeFactory
 
 # pylint: disable=unnecessary-lambda
 setattr(jax.interpreters.partial_eval.DynamicJaxprTracer, "__hash__", lambda x: id(x))
@@ -854,6 +854,28 @@ def concatenate_wires(wires1, wires2):
         wires2 = math.array(wires2, like=wires1)
 
     return math.concatenate([wires1, wires2])
+
+
+def all_wires_concrete_or_abstract(wire_args):
+    """Produce a union of all the wires.
+
+    This helper function handles the case where some of the wires are abstract. Concrete
+    wires have known labels and are deduplicated, while abstract wires are assumed disjoint
+    from other wires and only contribute to the total wire count.
+
+    """
+    concrete_wires = Wires([])
+    num_abstract_wires = 0
+    for wires in wire_args:
+        if isinstance(wires, AbstractWires):
+            num_abstract_wires += len(wires)
+        else:
+            concrete_wires = concatenate_wires(concrete_wires, wires)
+
+    if num_abstract_wires:
+        return Wire[len(concrete_wires) + num_abstract_wires]
+
+    return concrete_wires
 
 
 def _is_not_array(w):

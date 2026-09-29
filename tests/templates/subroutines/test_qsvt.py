@@ -15,8 +15,7 @@
 Tests for the QSVT template and qsvt wrapper function.
 """
 
-# pylint: disable=too-many-arguments, import-outside-toplevel, no-self-use
-from copy import copy
+from copy import deepcopy
 
 import pytest
 from numpy.linalg import matrix_power
@@ -25,6 +24,8 @@ from numpy.polynomial.chebyshev import Chebyshev
 import pennylane as qp
 from pennylane import numpy as np
 from pennylane.core.queuing import AnnotatedQueue
+
+# pylint: disable=too-many-arguments, import-outside-toplevel, no-self-use
 from pennylane.templates.subroutines.qsvt import (
     _cheby_pol,
     _complementary_poly,
@@ -84,11 +85,16 @@ class TestQSVTBasics:
     """Basic validity checks for QSVT."""
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
-    @pytest.mark.pl2do(reason="Operators of operators not yet supported with Operator2")
-    def test_standard_validity(self):
+    @pytest.mark.parametrize(
+        "UA, projectors",
+        [
+            (qp.X(0), [qp.PCPhase(0.2, dim=1, wires=0), qp.PCPhase(0.3, dim=1, wires=0)]),
+            (qp.H(0), [qp.RZ(0.1, wires=0), qp.RZ(0.2, wires=0), qp.RZ(0.3, wires=0)]),
+        ],
+    )
+    def test_standard_validity(self, UA, projectors):
         """Test standard validity criteria with assert_valid."""
-        projectors = [qp.PCPhase(0.2, dim=1, wires=0), qp.PCPhase(0.3, dim=1, wires=0)]
-        op = qp.QSVT(qp.PauliX(wires=0), projectors)
+        op = qp.QSVT(UA, projectors)
         qp.ops.functions.assert_valid(op)
 
     def test_init_error(self):
@@ -226,17 +232,17 @@ class TestQSVTBasics:
             setattr(op, "data", [4, 5, 6])
 
     def test_copy(self):
-        """Test that a QSVT operator can be copied."""
+        """Test that a QSVT operator can be deepcopied."""
         orig_op = qp.QSVT(qp.RX(1, wires=0), [qp.RY(2, wires=0), qp.RZ(3, wires=0)])
-        copy_op = copy(orig_op)
+        copy_op = deepcopy(orig_op)
         qp.assert_equal(orig_op, copy_op)
 
         # Ensure the (nested) operations are copied instead of aliased.
         assert orig_op is not copy_op
-        assert orig_op.hyperparameters["UA"] is not copy_op.hyperparameters["UA"]
+        assert orig_op.UA is not copy_op.UA
 
-        orig_projectors = orig_op.hyperparameters["projectors"]
-        copy_projectors = copy_op.hyperparameters["projectors"]
+        orig_projectors = orig_op.projectors
+        copy_projectors = copy_op.projectors
         assert all(p1 is not p2 for p1, p2 in zip(orig_projectors, copy_projectors))
 
 

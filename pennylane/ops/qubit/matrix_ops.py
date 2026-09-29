@@ -27,7 +27,7 @@ from scipy.sparse import csr_matrix
 import pennylane as qp
 from pennylane import math
 from pennylane import numpy as pnp
-from pennylane.core.operator import Operation, Operator2, abstractify
+from pennylane.core.operator import Operator2, abstractify
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.symbolic_decomposition import is_integer
 from pennylane.exceptions import DecompositionUndefinedError
@@ -41,7 +41,7 @@ from pennylane.ops.op_math.decompositions.unitary_decompositions import (
     zxz_decomp_rule,
     zyz_decomp_rule,
 )
-from pennylane.typing import Bool, Complex, FlatPytree, Float, TensorLike, Wire
+from pennylane.typing import AbstractArray, Bool, Complex, FlatPytree, Float, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike, concatenate_wires
 
 _walsh_hadamard_matrix = np.array([[1, 1], [1, -1]]) / 2
@@ -630,7 +630,7 @@ def _pow_diagonal_unitary(base, z):
 add_decomps("Pow(DiagonalQubitUnitary)", _pow_diagonal_unitary)
 
 
-class BlockEncode(Operation):
+class BlockEncode(Operator2):
     r"""BlockEncode(A, wires)
     Construct a unitary :math:`U(A)` such that an arbitrary matrix :math:`A`
     is encoded in the top-left block.
@@ -708,32 +708,19 @@ class BlockEncode(Operation):
     ndim_params = (2,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    grad_method = None
-    """Gradient computation method."""
+    dynamic_argnames = ("A",)
+
+    arg_specs = {"A": Complex[-1, -1], "wires": Wire[-1]}
 
     def __init__(self, A: TensorLike, wires: WiresLike):
         wires = Wires(wires)
-        shape_a = qp.math.shape(A)
-        if shape_a == () or all(x == 1 for x in shape_a):
-            A = qp.math.reshape(A, [1, 1])
-            normalization = qp.math.abs(A)
-            subspace = (1, 1, 2 ** len(wires))
+        A, normalization, subspace = _prepare_blockencode_matrix(A, len(wires))
 
-        else:
-            if len(shape_a) == 1:
-                A = qp.math.reshape(A, [1, len(A)])
-                shape_a = qp.math.shape(A)
+        if not isinstance(A, AbstractArray):
+            # Clip the normalization to at least 1 (= normalize(A) if norm > 1 else A).
+            A = qp.math.array(A) / qp.math.maximum(normalization, qp.math.ones_like(normalization))
 
-            normalization = qp.math.maximum(
-                math.norm(A @ qp.math.transpose(qp.math.conj(A)), ord=pnp.inf),
-                math.norm(qp.math.transpose(qp.math.conj(A)) @ A, ord=pnp.inf),
-            )
-            subspace = (*shape_a, 2 ** len(wires))
-
-        # Clip the normalization to at least 1 (= normalize(A) if norm > 1 else A).
-        A = qp.math.array(A) / qp.math.maximum(normalization, qp.math.ones_like(normalization))
-
-        if subspace[2] < (subspace[0] + subspace[1]):
+        if min(subspace[:2]) >= 0 and subspace[2] < subspace[0] + subspace[1]:
             raise ValueError(
                 f"Block encoding a ({subspace[0]} x {subspace[1]}) matrix "
                 f"requires a Hilbert space of size at least "
@@ -742,9 +729,8 @@ class BlockEncode(Operation):
             )
 
         super().__init__(A, wires=wires)
-        self.hyperparameters["norm"] = normalization
-        self.hyperparameters["subspace"] = subspace
-
+        self._norm = normalization
+        self._subspace = subspace
         self._issparse = sp.sparse.issparse(A)
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
@@ -763,7 +749,7 @@ class BlockEncode(Operation):
         return self.data, (self.wires, ())
 
     @staticmethod
-    def compute_matrix(*params, **hyperparams):
+    def compute_matrix(A, wires):
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -791,8 +777,7 @@ class BlockEncode(Operation):
                [ 0.94561648, -0.07621992, -0.1       , -0.3       ],
                [-0.07621992,  0.89117368, -0.2       , -0.4       ]])
         """
-        A = params[0]
-        subspace = hyperparams["subspace"]
+        subspace = (*A.shape, 2 ** len(wires))
         if sp.sparse.issparse(A):
             raise qp.operation.MatrixUndefinedError(
                 "The operator was initialized with a sparse matrix. Use sparse_matrix instead."
@@ -800,9 +785,8 @@ class BlockEncode(Operation):
         return _process_blockencode(A, subspace)
 
     @staticmethod
-    def compute_sparse_matrix(*params, **hyperparams):
-        A = params[0]
-        subspace = hyperparams["subspace"]
+    def compute_sparse_matrix(A, wires, **_):
+        subspace = (*A.shape, 2 ** len(wires))
         if sp.sparse.issparse(A):
             return _process_blockencode(A, subspace)
         raise qp.operation.SparseMatrixUndefinedError(
@@ -810,8 +794,12 @@ class BlockEncode(Operation):
         )
 
     def adjoint(self) -> "BlockEncode":
-        A = self.parameters[0]
-        return BlockEncode(qp.math.transpose(qp.math.conj(A)), wires=self.wires)
+        A = (
+            self.A.T
+            if isinstance(self.A, AbstractArray)
+            else qp.math.transpose(qp.math.conj(self.A))
+        )
+        return BlockEncode(A, wires=self.wires)
 
     def label(
         self,
@@ -820,6 +808,30 @@ class BlockEncode(Operation):
         cache: dict | None = None,
     ):
         return super().label(decimals=decimals, base_label=base_label or "BlockEncode", cache=cache)
+
+
+def _prepare_blockencode_matrix(A, n_wires):
+    """Canonicalize ``A`` to 2D and compute its operator-norm scaling and encoding subspace."""
+
+    is_abstract = isinstance(A, AbstractArray)
+    shape_a = qp.math.shape(A)
+
+    if not shape_a or all(s == 1 for s in shape_a):
+        shape_a = (1, 1)
+    elif len(shape_a) == 1:
+        shape_a = (1, shape_a[0])
+
+    if is_abstract:
+        return AbstractArray(shape_a, A.dtype), 1, (*shape_a, 2**n_wires)
+
+    A = qp.math.reshape(A, shape_a)
+    adj = qp.math.transpose(qp.math.conj(A))
+    normalization = (
+        qp.math.abs(A)
+        if shape_a == (1, 1)
+        else qp.math.maximum(math.norm(A @ adj, ord=pnp.inf), math.norm(adj @ A, ord=pnp.inf))
+    )
+    return A, normalization, (*shape_a, 2**n_wires)
 
 
 def _process_blockencode(A, subspace):
