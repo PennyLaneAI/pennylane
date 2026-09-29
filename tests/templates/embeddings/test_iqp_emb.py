@@ -21,6 +21,7 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.typing import Wire
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -212,6 +213,13 @@ class TestInputs:
 
         with pytest.raises(ValueError, match="Features must be a one-dimensional"):
             circuit(f=features)
+
+    def test_abstract_wires_default_pattern(self):
+        """Default pattern is index pairs when wires are abstract."""
+
+        op = qp.IQPEmbedding([1.0, 2.0, 3.0], wires=Wire[3])
+        assert op.arguments["pattern"] == ((0, 1), (0, 2), (1, 2))
+        assert op.wires == Wire[3]
 
 
 def circuit_template(features):
