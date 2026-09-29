@@ -188,7 +188,7 @@ def observable_accepts_analytic(obs: Operator, is_expval=False) -> bool:
 def _safe_in_backprop(tensor) -> bool:
     try:
         return math.in_backprop(tensor)
-    except Exception:
+    except (ValueError, TypeError, AttributeError):
         return False
 
 
