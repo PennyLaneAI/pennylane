@@ -21,6 +21,7 @@ from functools import lru_cache, reduce
 from itertools import product
 from typing import Literal
 
+import jax
 import numpy as np
 
 import pennylane as qp
@@ -562,7 +563,6 @@ class SpecialUnitary(Operation):
             return qp.math.real(mat), qp.math.imag(mat)
 
         if interface == "jax":
-            import jax
 
             theta = qp.math.cast_like(theta, 1j)
             # These lines compute the Jacobian of compute_matrix every time -> to be optimized

@@ -156,6 +156,7 @@ class TestIQPExpval:
                 [0.1],
                 ([[0, 0], [1, 1]], [1 / np.sqrt(2), 1 / np.sqrt(2)]),
             ),
+            (["Y"], [], [], ([[0], [1]], [1 / np.sqrt(2), 1j / np.sqrt(2)])),
         ],
     )
     def test_build_expval_func_core_vs_pennylane(
