@@ -1019,6 +1019,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* ZX transforms now require ``pyzx>=0.10``. Upgrade with ``pip install 'pyzx>=0.10'``.
+  [(#10121)](https://github.com/PennyLaneAI/pennylane/pull/10121)
+
 * Jax 0.7.1 is now a hard requirement for PennyLane.
   [(#10192)](https://github.com/PennyLaneAI/pennylane/pull/10192)
 
@@ -1613,6 +1616,11 @@
   [(#9621)](https://github.com/PennyLaneAI/pennylane/pull/9621)
 
 <h3>Bug fixes 🐛</h3>
+
+* ZX optimization transforms now preserve the original wire labels when round-tripping through
+  PyZX, preventing circuits on nonconsecutive, noncanonical, or string-valued wires from being
+  permuted.
+  [(#10121)](https://github.com/PennyLaneAI/pennylane/pull/10121)
 
 * Fixed a bug where a fixed decomposition rule assigned to :class:`~.MultiControlledX` via the
   ``fixed_decomps`` keyword argument of :func:`~.transforms.decompose` was being ignored.
