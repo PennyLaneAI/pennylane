@@ -286,3 +286,18 @@ class TestCaptureIQPE:
         qp.capture.enable()
 
         assert [type(op) for op in captured.operations] == [type(op) for op in expected.operations]
+
+    def test_subroutine_is_shared(self):
+        """Test that two calls share one subroutine body."""
+
+        import jax
+
+        def circuit(phi):
+            qp.iterative_qpe(qp.RZ(phi, wires=[0]), aux_wire=1, iters=3)
+            qp.iterative_qpe(qp.RZ(phi, wires=[2]), aux_wire=3, iters=3)
+
+        eqns = jax.make_jaxpr(circuit)(2.0).eqns
+
+        assert len(eqns) == 2
+        # Shared impl
+        assert eqns[0].params["jaxpr"] is eqns[1].params["jaxpr"]
