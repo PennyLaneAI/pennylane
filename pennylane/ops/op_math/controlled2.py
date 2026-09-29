@@ -15,7 +15,7 @@
 """Defines the base class for controlled operators."""
 
 from collections.abc import Sequence
-from functools import partial, update_wrapper
+from functools import partial
 from inspect import signature
 from textwrap import dedent
 from typing import Literal, override
@@ -843,7 +843,6 @@ def flip_zero_control(
         rule._impl(**(arguments | {"control_values": None}))
         _x_flips()
 
-    update_wrapper(_impl, rule)
     base_source = rule._source
     _impl._source = (
         dedent(_impl._source).strip()
