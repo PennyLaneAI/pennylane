@@ -178,7 +178,7 @@ class IQPEmbedding(Operator2):
 
     def __init__(self, features, wires, n_repeats=1, pattern=None):
         if isinstance(features, (list, tuple)):
-            features = math.array(features)
+            features = math.stack(features)
 
         shape = math.shape(features)
 

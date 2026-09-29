@@ -296,6 +296,32 @@ class TestInterfaces:
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
+    @pytest.mark.autograd
+    def test_autograd_list_of_arrayboxes(self, tol, seed):
+        """A Python list of autograd ArrayBox scalars remains differentiable."""
+
+        features = pnp.array([0.1, 0.2], requires_grad=True)
+        dev = qp.device("default.qubit", wires=2, seed=seed)
+
+        @qp.qnode(dev, diff_method="backprop")
+        def circuit(x):
+            qp.IQPEmbedding([x[0], x[1]], wires=[0, 1])
+            return qp.expval(qp.X(0))
+
+        @qp.qnode(dev, diff_method="backprop")
+        def circuit_decomposed_list(x):
+            qp.Hadamard(0)
+            qp.RZ(x[0], 0)
+            qp.Hadamard(1)
+            qp.RZ(x[1], 1)
+            qp.MultiRZ(x[0] * x[1], [0, 1])
+            return qp.expval(qp.X(0))
+
+        assert qp.math.allclose(circuit(features), circuit_decomposed_list(features), atol=tol)
+        assert qp.math.allclose(
+            qp.grad(circuit)(features), qp.grad(circuit_decomposed_list)(features), atol=tol
+        )
+
     @pytest.mark.jax
     @pytest.mark.parametrize("features", [[0.1, -1.3], [[0.5, 2.0], [1.2, 0.6], [-0.7, 0.3]]])
     def test_jax(self, tol, features):
