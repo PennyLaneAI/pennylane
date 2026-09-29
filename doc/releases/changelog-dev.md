@@ -1309,7 +1309,7 @@
       :class:`~.TemporaryAND`, :class:`~.SelectPauliRot`, :class:`~.GQSP`, :class:`~.AQFT`, :class:`~.SumOfSlatersPrep`,
       :class:`~.SemiAdder`, :class:`~.OutMultiplier`, :class:`~.SignedOutMultiplier`, :class:`~.BasisState`, :class:`~.TrotterCDF`,
       :class:`~.TrotterCGF`, :class:`~.OutSquare`, :class:`~.SignedOutSquare`, :class:`~.Incrementer`, :class:`~.TrotterVibronic`,
-      :class:`~.PartialUnaryStatePreparation`, :class:`~.Select`, :class:`~.QSVT`
+      :class:`~.PartialUnaryStatePreparation`, :class:`~.Select`, :class:`~.QSVT`, :class:`~.BlockEncode`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
   [(#10164)](https://github.com/PennyLaneAI/pennylane/pull/10164)
   [(#10178)](https://github.com/PennyLaneAI/pennylane/pull/10178)
@@ -1341,6 +1341,7 @@
   [(#10069)](https://github.com/PennyLaneAI/pennylane/pull/10069)
   [(#10085)](https://github.com/PennyLaneAI/pennylane/pull/10085)
   [(#10020)](https://github.com/PennyLaneAI/pennylane/pull/10020)
+  [(#10223)](https://github.com/PennyLaneAI/pennylane/pull/10223)
   - Quantum chemistry operators are ported:
     - :class:`~.SingleExcitation`
   [(#9944)](https://github.com/PennyLaneAI/pennylane/pull/9944)
@@ -1621,10 +1622,6 @@
   [(#9621)](https://github.com/PennyLaneAI/pennylane/pull/9621)
 
 <h3>Bug fixes 🐛</h3>
-
-* :class:`~.BlockEncode` can now be constructed with an ``AbstractArray``
-  as the encoded matrix, including when abstractifying a concrete instance.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
 
 * ZX optimization transforms now preserve the original wire labels when round-tripping through
   PyZX, preventing circuits on nonconsecutive, noncanonical, or string-valued wires from being
