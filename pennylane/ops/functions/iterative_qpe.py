@@ -25,10 +25,12 @@ from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
 def _iterative_qpe(base, aux_wire, iters):
     """The rounds of iterative QPE.
 
-    Note that 'iters' is a static argument to this subroutine, so
-    the two for loops can be plain python loops. The outer loop cannot be
-    a 'qp.for_loop' as the exponent of 'Pow2'
-    must be a concrete, compile-time constant.
+    Notes regarding implementation,
+
+    * Static Argument: 'iters' must be a concrete value known at trace time,
+                        as it dictates the shape of the returned measurements
+    ^ Python Loops: Standard for loops are used instead of 'qp.for_loop'
+                    as 'Pow2' expects a static, concrete, compile-time constant.
 
     """
 
