@@ -316,7 +316,7 @@ def _select_swap_condition(bitstrings, control_wires, target_wires, work_wires, 
 def _select_swap_resources(
     bitstrings, control_wires, target_wires, work_wires, clean
 ):  # pylint: disable=too-many-branches
-
+    """Assumes depth computed below satisfies depth > 1, as guaranteed by _select_swap_condition."""
     num_bitstrings = len(bitstrings)
     num_control_wires = len(control_wires)
     num_targets = len(target_wires)
@@ -341,7 +341,7 @@ def _select_swap_resources(
     num_control_wires_swap = num_control_wires - num_control_wires_select
     num_cswaps_per_block = num_targets * (2**num_control_wires_swap - 1)
 
-    if not clean or depth == 1:
+    if not clean:
         return {bigger_qrom: 1, qp_ops.CSWAP: num_cswaps_per_block}
 
     return {bigger_qrom: 2, qp_ops.CSWAP: 4 * num_cswaps_per_block, qp_ops.H: 2 * num_targets}
@@ -367,12 +367,11 @@ def _select_swap(
     select_control_wires = control_wires[:num_control_wires_select]
     swap_control_wires = control_wires[num_control_wires_select:]
 
-    if not clean or depth == 1:
+    if not clean:
         _select_ops(
             bitstrings, depth, target_wires, swap_wires, select_control_wires, select_work_wires
         )
-        if depth > 1:
-            _swap_ops(swap_control_wires, swap_wires, target_wires)
+        _swap_ops(swap_control_wires, swap_wires, target_wires)
         return
 
     if capture.enabled() or compiler.active():
