@@ -149,7 +149,7 @@ if Jax is installed and a developer wants to run only Jax related tests, they co
 
     python -m pytest tests -m "jax"
 
-There exists markers for interfaces (``autograd``, ``torch``, ``tf``, ``jax``), for multiple interfaces (``all_interfaces``) and
+There exists markers for interfaces (``autograd``, ``torch``, ``jax``), for multiple interfaces (``all_interfaces``) and
 also for certain PennyLane submodules (``qchem`` and ``qcut``).
 
 For running ``qchem`` tests, one can run the following:

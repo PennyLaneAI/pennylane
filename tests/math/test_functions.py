@@ -2479,16 +2479,11 @@ class TestSize:
         ([[0], [1], [2], [3], [4], [5]], 6),
     ]
 
-    @pytest.mark.parametrize(
-        "interface",
-        [
-            pytest.param("torch", marks=pytest.mark.torch),
-        ],
-    )
+    @pytest.mark.torch
     @pytest.mark.parametrize(("array", "size"), array_and_size)
-    def test_size_torch_and_tf(self, array, size, interface):
-        """Test size function with the torch and tf interfaces."""
-        r = fn.size(fn.asarray(array, like=interface))
+    def test_size_torch(self, array, size):
+        """Test size function with the torch."""
+        r = fn.size(fn.asarray(array, like="torch"))
         assert r == size
 
 

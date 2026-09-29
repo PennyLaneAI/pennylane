@@ -1030,7 +1030,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         if any(len(qp.math.shape(p)) >= 1 and qp.math.shape(p)[0] is None for p in params):
             # if the batch dimension is unknown, then skip the validation
             # this happens when a tensor with a partially known shape is passed, e.g. (None, 12),
-            # typically during compilation of a function decorated with jax.jit or tf.function
+            # typically during compilation of a function decorated with jax.jit
             return  # pragma: no cover
 
         self._ndim_params = ndims

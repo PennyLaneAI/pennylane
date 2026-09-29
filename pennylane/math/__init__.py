@@ -141,8 +141,8 @@ T = ar.numpy.transpose
 def get_dtype_name(x) -> str:
     """An interface independent way of getting the name of the datatype.
 
-    >>> x = tf.Variable(0.1)
-    >>> qp.math.get_dtype_name(tf.Variable(0.1))
+    >>> x = torch.tensor(0.1)
+    >>> qp.math.get_dtype_name(x)
     'float32'
     """
     return ar.get_dtype_name(x)
@@ -164,7 +164,7 @@ def is_real_obj_or_close(obj):
     >>> qp.math.is_real_obj_or_close(x)
     True
 
-    >>> x = tf.Variable(0.4+0.2j)
+    >>> x = torch.tensor(0.4+0.2j)
     >>> qp.math.is_real_obj_or_close(x)
     False
 

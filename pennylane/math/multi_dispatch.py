@@ -235,13 +235,12 @@ def concatenate(values, axis=0, like=None):
 
     **Example**
 
-    >>> x = tf.constant([0.6, 0.1, 0.6])
-    >>> y = tf.Variable([0.1, 0.2, 0.3])
+    >>> x = torch.tensor([0.6, 0.1, 0.6])
+    >>> y = torch.tensor([0.1, 0.2, 0.3])
     >>> z = np.array([5., 8., 101.])
     >>> concatenate([x, y, z])
-    <tf.Tensor: shape=(9,), dtype=float32, numpy=
-    array([6.00e-01, 1.00e-01, 6.00e-01, 1.00e-01, 2.00e-01, 3.00e-01,
-           5.00e+00, 8.00e+00, 1.01e+02], dtype=float32)>
+    tensor([6.0000e-01, 1.0000e-01, 6.0000e-01, 1.0000e-01, 2.0000e-01, 3.0000e-01,
+            5.0000e+00, 8.0000e+00, 1.0100e+02], dtype=torch.float64)
     """
 
     if like == "torch":
@@ -302,19 +301,17 @@ def diag(values, k=0, like=None):
 
     **Example**
 
-    >>> x = [1., 2., tf.Variable(3.)]
+    >>> x = [1., 2., torch.tensor(3.)]
     >>> qp.math.diag(x)
-    <tf.Tensor: shape=(3, 3), dtype=float32, numpy=
-    array([[1., 0., 0.],
-           [0., 2., 0.],
-           [0., 0., 3.]], dtype=float32)>
-    >>> y = tf.Variable([0.65, 0.2, 0.1])
+    tensor([[1., 0., 0.],
+            [0., 2., 0.],
+            [0., 0., 3.]])
+    >>> y = torch.tensor([0.65, 0.2, 0.1])
     >>> qp.math.diag(y, k=-1)
-    <tf.Tensor: shape=(4, 4), dtype=float32, numpy=
-    array([[0.  , 0.  , 0.  , 0.  ],
-           [0.65, 0.  , 0.  , 0.  ],
-           [0.  , 0.2 , 0.  , 0.  ],
-           [0.  , 0.  , 0.1 , 0.  ]], dtype=float32)>
+    tensor([[0.0000, 0.0000, 0.0000, 0.0000],
+            [0.6500, 0.0000, 0.0000, 0.0000],
+            [0.0000, 0.2000, 0.0000, 0.0000],
+            [0.0000, 0.0000, 0.1000, 0.0000]])
     >>> z = torch.tensor([0.1, 0.2])
     >>> qp.math.diag(z, k=1)
     tensor([[0.0000, 0.1000, 0.0000],
@@ -489,11 +486,10 @@ def ones_like(tensor, dtype=None):
     >>> x = torch.tensor([1., 2.])
     >>> ones_like(x)
     tensor([1., 1.])
-    >>> y = tf.Variable([[0], [5]])
+    >>> y = torch.tensor([[0], [5]])
     >>> ones_like(y, dtype=np.complex128)
-    <tf.Tensor: shape=(2, 1), dtype=complex128, numpy=
-    array([[1.+0.j],
-           [1.+0.j]])>
+    tensor([[1.+0.j],
+            [1.+0.j]], dtype=torch.complex128)
     """
     if dtype is not None:
         return cast(np.ones_like(tensor), dtype)
@@ -522,14 +518,13 @@ def stack(values, axis=0, like=None):
 
     **Example**
 
-    >>> x = tf.constant([0.6, 0.1, 0.6])
-    >>> y = tf.Variable([0.1, 0.2, 0.3])
+    >>> x = torch.tensor([0.6, 0.1, 0.6])
+    >>> y = torch.tensor([0.1, 0.2, 0.3])
     >>> z = np.array([5., 8., 101.])
     >>> stack([x, y, z])
-    <tf.Tensor: shape=(3, 3), dtype=float32, numpy=
-    array([[6.00e-01, 1.00e-01, 6.00e-01],
-           [1.00e-01, 2.00e-01, 3.00e-01],
-           [5.00e+00, 8.00e+00, 1.01e+02]], dtype=float32)>
+    tensor([[6.0000e-01, 1.0000e-01, 6.0000e-01],
+            [1.0000e-01, 2.0000e-01, 3.0000e-01],
+            [5.0000e+00, 8.0000e+00, 1.0100e+02]], dtype=torch.float64)
     """
     values = np.coerce(values, like=like)
     return np.stack(values, axis=axis, like=like)

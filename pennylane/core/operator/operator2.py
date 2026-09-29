@@ -1518,7 +1518,7 @@ class Operator2(metaclass=OperatorMeta):
         if any(len(math.shape(arg)) >= 1 and math.shape(arg)[0] is None for arg in dynamic_args):
             # if the batch dimension is unknown, then skip the validation
             # this happens when a tensor with a partially known shape is passed, e.g. (None, 12),
-            # typically during compilation of a function decorated with jax.jit or tf.function
+            # typically during compilation of a function decorated with jax.jit
             return  # pragma: no cover
 
         self._ndim_params = ndims
