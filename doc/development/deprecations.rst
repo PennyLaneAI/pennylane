@@ -71,14 +71,6 @@ Pending deprecations
   - Deprecated in v0.43
   - Will be removed in a future version
 
-* Maintenance support for the ``tensorflow`` interface has been deprecated and will be dropped in PennyLane v0.44.
-  Future versions of PennyLane are not guaranteed to work with TensorFlow.
-  Instead, we recommend using the :doc:`jax </introduction/interfaces/jax>` or :doc:`torch </introduction/interfaces/torch>` interface for
-  machine learning applications to benefit from enhanced support and features.
-
-  - Deprecated in v0.43
-  - Will be removed in v0.44
-
 Completed removal of legacy operator arithmetic
 -----------------------------------------------
 
@@ -106,6 +98,14 @@ for details on how to port your legacy code to the new system. The following fun
 
 Completed deprecation cycles
 ----------------------------
+
+* Maintenance support for the ``tensorflow`` interface has been deprecated and will be dropped in PennyLane v0.44.
+  Future versions of PennyLane are not guaranteed to work with TensorFlow.
+  Instead, we recommend using the :doc:`jax </introduction/interfaces/jax>` or :doc:`torch </introduction/interfaces/torch>` interface for
+  machine learning applications to benefit from enhanced support and features.
+
+  - Deprecated in v0.43
+  - Removed in v0.46
 
 * Implementing ``Operator.generator`` as a property is no longer supported. Instead, define a ``generator()`` method for your operator that returns an ``Operator`` instance.
 

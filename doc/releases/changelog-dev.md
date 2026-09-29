@@ -1017,6 +1017,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Tensorflow and tensorflow-autograph interfaces are removed.
+  [(#10229)](https://github.com/PennyLaneAI/pennylane/pull/10229)
+
 * ZX transforms now require ``pyzx>=0.10``. Upgrade with ``pip install 'pyzx>=0.10'``.
   [(#10121)](https://github.com/PennyLaneAI/pennylane/pull/10121)
 
