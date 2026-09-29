@@ -349,7 +349,7 @@ Completed deprecation cycles
   - Removed in v0.44
 
 * Access to ``add_noise``, ``insert`` and noise mitigation transforms from the ``pennylane.transforms`` module has been removed.
-  These functions lived in the ``pennylane.noise`` module until that module was removed in v0.46.
+  Instead, these functions should be imported from the ``pennylane.noise`` module.
 
   - Deprecated in v0.43
   - Removed in v0.44
