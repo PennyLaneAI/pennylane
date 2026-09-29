@@ -768,7 +768,7 @@ class BlockEncode(Operator2):
         >>> A
         array([[0.1, 0.2],
             [0.3, 0.4]])
-        >>> qp.BlockEncode.compute_matrix(A, subspace=[2,2,4])
+        >>> qp.BlockEncode.compute_matrix(A, wires=[0, 1])
         array([[ 0.1       ,  0.2       ,  0.97283788, -0.05988708],
                [ 0.3       ,  0.4       , -0.05988708,  0.86395228],
                [ 0.94561648, -0.07621992, -0.1       , -0.3       ],
