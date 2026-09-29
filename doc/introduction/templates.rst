@@ -127,6 +127,10 @@ state preparation is typically used as the first operation.
     :description: :doc:`AliasSampling <../code/api/pennylane.AliasSampling>`
     :figure: _static/templates/state_preparations/aliassampling.png
 
+.. gallery-item::
+    :description: :doc:`PhaseGradientStatePrep <../code/api/pennylane.PhaseGradientStatePrep>`
+    :figure: _static/templates/state_preparations/phasegradientstateprep.png
+
 
 .. raw:: html
 
