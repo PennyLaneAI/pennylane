@@ -304,22 +304,23 @@ def _semi_adder(x_wires, y_wires, work_wires=None, carry_flip=None):
     work_wires = [] if work_wires is None else list(work_wires)
     # The right ladder restores the work wires to zero, so they can be borrowed and returned.
     # ``allocate(0)`` records nothing when every work wire was already provided.
-    work_wires += list(allocate(max(num_y_wires - 1 - len(work_wires), 0), restored=True))
+    with allocate(max(num_y_wires - 1 - len(work_wires), 0), restored=True) as extra_work_wires:
+        work_wires += list(extra_work_wires)
 
-    # Turn wires from big endian to little endian
-    # Truncate x_wires, as values larger than 2**num_y_wires-1 can anyways not be stored
-    x_wires = x_wires[::-1][:num_y_wires]
-    y_wires = y_wires[::-1]
-    work_wires = work_wires[: num_y_wires - 1][::-1]
+        # Turn wires from big endian to little endian
+        # Truncate x_wires, as values larger than 2**num_y_wires-1 can anyways not be stored
+        x_wires = x_wires[::-1][:num_y_wires]
+        y_wires = y_wires[::-1]
+        work_wires = work_wires[: num_y_wires - 1][::-1]
 
-    _left_ladder(x_wires, y_wires, work_wires, carry_flip=carry_flip)
+        _left_ladder(x_wires, y_wires, work_wires, carry_flip=carry_flip)
 
-    CNOT([work_wires[-1], y_wires[-1]])
+        CNOT([work_wires[-1], y_wires[-1]])
 
-    if num_x_wires >= num_y_wires:
-        CNOT([x_wires[-1], y_wires[-1]])
+        if num_x_wires >= num_y_wires:
+            CNOT([x_wires[-1], y_wires[-1]])
 
-    _right_ladder(x_wires, y_wires, work_wires, carry_flip=carry_flip)
+        _right_ladder(x_wires, y_wires, work_wires, carry_flip=carry_flip)
 
 
 add_decomps(SemiAdder, _semi_adder)
@@ -408,36 +409,37 @@ def _controlled_semi_adder(
     base_work_wires = list(base_work_wires[: len(y_wires) - 1])
     # The right ladder restores the work wires to zero, so they can be borrowed and returned.
     # ``allocate(0)`` records nothing when every work wire was already provided.
-    base_work_wires += list(
-        allocate(max(len(y_wires) - 1 - len(base_work_wires), 0), restored=True)
-    )
-    work_wires = [] if work_wires is None else work_wires
-    ctrl_kwargs = {
-        "control": control_wires,
-        "control_values": control_values,
-        "work_wires": Wires.all_wires([work_wires, extra_work_wires_from_base]),
-        "work_wire_type": work_wire_type,
-    }
+    num_to_allocate = max(len(y_wires) - 1 - len(base_work_wires), 0)
+    with allocate(num_to_allocate, restored=True) as alloc_work_wires:
+        base_work_wires += list(alloc_work_wires)
+        work_wires = [] if work_wires is None else work_wires
+        ctrl_work_wires = Wires.all_wires([work_wires, extra_work_wires_from_base])
+        ctrl_kwargs = {
+            "control": control_wires,
+            "control_values": control_values,
+            "work_wires": ctrl_work_wires,
+            "work_wire_type": work_wire_type,
+        }
 
-    num_y_wires = len(y_wires)
-    num_x_wires = len(x_wires)
-    if num_y_wires == 1:
-        ctrl(CNOT([x_wires[-1], y_wires[0]]), **ctrl_kwargs)
-        return
+        num_y_wires = len(y_wires)
+        num_x_wires = len(x_wires)
+        if num_y_wires == 1:
+            ctrl(CNOT([x_wires[-1], y_wires[0]]), **ctrl_kwargs)
+            return
 
-    # Turn wires from big endian to little endian
-    # Truncate x_wires, as values larger than 2**num_y_wires-1 can anyways not be stored
-    x_wires = x_wires[::-1][:num_y_wires]
-    y_wires = y_wires[::-1]
-    work_wires = base_work_wires[::-1]
+        # Turn wires from big endian to little endian
+        # Truncate x_wires, as values larger than 2**num_y_wires-1 can anyways not be stored
+        x_wires = x_wires[::-1][:num_y_wires]
+        y_wires = y_wires[::-1]
+        work_wires = base_work_wires[::-1]
 
-    _left_ladder(x_wires, y_wires, work_wires, carry_flip=carry_flip)
+        _left_ladder(x_wires, y_wires, work_wires, carry_flip=carry_flip)
 
-    ctrl(CNOT([work_wires[-1], y_wires[-1]]), **ctrl_kwargs)
-    if num_x_wires >= num_y_wires:
-        ctrl(CNOT([x_wires[-1], y_wires[-1]]), **ctrl_kwargs)
+        ctrl(CNOT([work_wires[-1], y_wires[-1]]), **ctrl_kwargs)
+        if num_x_wires >= num_y_wires:
+            ctrl(CNOT([x_wires[-1], y_wires[-1]]), **ctrl_kwargs)
 
-    _controlled_right_ladder(x_wires, y_wires, work_wires, carry_flip=carry_flip, **ctrl_kwargs)
+        _controlled_right_ladder(x_wires, y_wires, work_wires, carry_flip=carry_flip, **ctrl_kwargs)
 
 
 add_decomps("C(SemiAdder)", flip_zero_control2(_controlled_semi_adder))
