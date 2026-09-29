@@ -691,9 +691,9 @@ def _assert_valid_operator2(
                 f"Op not properly abstractified. {abstractified_op} had non-abstract leaf {l}."
             )
 
-    # Some operators (e.g. composites, ``Select``, and ``QSVT``) hold their data inside
-    # operator-valued arguments rather than dynamic arguments, so their ``data`` does not
-    # correspond to ``dynamic_argnames`` and this check does not apply.
+    # Some operators (e.g. composites and ``Select``) hold their data inside operator-valued
+    # arguments rather than dynamic arguments, so their ``data`` does not correspond to
+    # ``dynamic_argnames`` and this check does not apply.
     # pylint: disable=import-outside-toplevel
     from pennylane.templates.subroutines.qsvt import QSVT
     from pennylane.templates.subroutines.select import Select

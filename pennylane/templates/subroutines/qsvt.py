@@ -476,7 +476,6 @@ class QSVT(Operator2):
                 -2.79501771e-01-4.82849614e-02j,  0.00000000e+00+0.00000000e+00j])
     """
 
-    # Signature order is ``(UA, projectors)``. Wire order is overridden in ``__init__``.
     hybrid_argnames = ("UA", "projectors")
 
     wire_argnames = ()

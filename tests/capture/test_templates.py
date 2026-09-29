@@ -867,28 +867,27 @@ class TestModifiedTemplates:
         qp.assert_equal(q.queue[0], template(**kwargs))
 
     def test_qsvt(self):
-        """Test QSVT with program capture."""
+        """Test the primitive bind call of QSVT."""
 
-        def qfunc(ua, projectors):
-            return qp.QSVT(ua, projectors).tracer
+        def qfunc(A):
+            block_encode = qp.BlockEncode(A, wires=[0, 1])
+            shifts = [qp.PCPhase(i + 0.1, dim=1, wires=[0, 1]) for i in range(3)]
+            return qp.QSVT(block_encode, projectors=shifts).tracer
 
-        ua = qp.H(0)
-        projectors = [qp.RZ(0.2, 0), qp.RZ(0.3, 0)]
+        A = np.array([[0.1]])
         # Validate inputs
-        qfunc(ua, projectors)
+        qfunc(A)
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)(ua, projectors)
-        assert len(jaxpr.eqns) == 1
+        jaxpr = jax.make_jaxpr(qfunc)(A)
 
-        eqn = jaxpr.eqns[0]
+        eqn = jaxpr.eqns[-1]
         assert_eqn_matches_op(eqn, qp.QSVT)
 
-        flattened_ua, _ = qp.pytrees.flatten(ua)
-        flattened_projectors, _ = qp.pytrees.flatten(projectors)
-        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *flattened_ua, *flattened_projectors)
-
-        qp.assert_equal(op, qp.QSVT(ua, projectors))
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, A)
+        block_encode = qp.BlockEncode(A, wires=[0, 1])
+        shifts = [qp.PCPhase(i + 0.1, dim=1, wires=[0, 1]) for i in range(3)]
+        qp.assert_equal(op, qp.QSVT(block_encode, shifts), check_interface=False)
 
     def test_mps_prep(self):
         """Test the primitive bind call of MPSPrep."""

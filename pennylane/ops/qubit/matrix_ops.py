@@ -41,7 +41,7 @@ from pennylane.ops.op_math.decompositions.unitary_decompositions import (
     zxz_decomp_rule,
     zyz_decomp_rule,
 )
-from pennylane.typing import AbstractArray, Bool, Complex, FlatPytree, Float, TensorLike, Wire
+from pennylane.typing import AbstractArray, Bool, Complex, Float, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike, concatenate_wires
 
 _walsh_hadamard_matrix = np.array([[1, 1], [1, -1]]) / 2
@@ -744,9 +744,6 @@ class BlockEncode(Operator2):
     def has_matrix(self) -> bool:
         """bool: Whether the operator has a sparse matrix representation."""
         return not self._issparse
-
-    def _flatten(self) -> FlatPytree:
-        return self.data, (self.wires, ())
 
     @staticmethod
     def compute_matrix(A, wires):
