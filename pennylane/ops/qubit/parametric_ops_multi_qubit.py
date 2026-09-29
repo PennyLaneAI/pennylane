@@ -218,13 +218,24 @@ def _multi_rz_decomposition(theta: TensorLike, wires: WiresLike):
         qp.RZ(theta, wires=wires[0])
         return
 
+    # A Python ``range`` unrolls into one CNOT per wire. ``qp.for_loop`` stays a loop under qjit
+    # and capture. Traced indexing needs an array in both of those cases.
+    if qp.compiler.active() or qp.capture.enabled():
+        wires = math.array(wires, like="jax")
+
     def _ladder():
-        for i in range(len(wires) - 1, 0, -1):
+        @qp.for_loop(len(wires) - 1, 0, -1)
+        def _cnots(i):
             qp.CNOT(wires=(wires[i], wires[i - 1]))
 
+        _cnots()  # pylint: disable=no-value-for-parameter
+
     def _unladder():
-        for i in range(1, len(wires)):
+        @qp.for_loop(1, len(wires))
+        def _cnots(i):
             qp.CNOT(wires=(wires[i], wires[i - 1]))
+
+        _cnots()  # pylint: disable=no-value-for-parameter
 
     qp.change_op_basis(_ladder, qp.RZ(theta, wires=wires[0]), _unladder)
 
