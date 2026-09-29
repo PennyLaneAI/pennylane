@@ -64,9 +64,6 @@ unmodified_templates_cases = [
     (qp.AngleEmbedding, (jnp.array([1.0, 0.0]), [2, 3]), {}),
     (qp.AngleEmbedding, (jnp.array([0.4]), [0]), {"rotation": "X"}),
     (qp.AngleEmbedding, (jnp.array([0.3, 0.1, 0.2]),), {"rotation": "Z", "wires": [0, 2, 3]}),
-    (qp.IQPEmbedding, (jnp.array([2.3, 0.1]), [2, 0]), {}),
-    (qp.IQPEmbedding, (jnp.array([0.4, 0.2, 0.1]), [2, 1, 0]), {"pattern": [[2, 0], [1, 0]]}),
-    (qp.IQPEmbedding, (jnp.array([0.4, 0.1]), [0, 10]), {"n_repeats": 3, "pattern": None}),
     (qp.QAOAEmbedding, (jnp.array([1.0, 0.0]), jnp.ones((3, 3)), [2, 3]), {}),
     (qp.QAOAEmbedding, (jnp.array([0.4]), jnp.ones((2, 1)), [0]), {"local_field": "X"}),
     (
@@ -334,6 +331,7 @@ tested_modified_templates = [
     qp.HilbertSchmidt,
     qp.HybridQRAM,
     qp.IQP,
+    qp.IQPEmbedding,
     qp.LocalHilbertSchmidt,
     qp.QDrift,
     qp.QSVT,
@@ -807,6 +805,42 @@ class TestModifiedTemplates:
 
         assert len(q) == 1
         qp.assert_equal(q.queue[0], qp.IQP(**kwargs))
+
+    @pytest.mark.parametrize(
+        "features, wires, kwargs, expected_repeats, expected_pattern",
+        [
+            (jnp.array([2.3, 0.1]), [2, 0], {}, 1, ((2, 0),)),
+            (
+                jnp.array([0.4, 0.2, 0.1]),
+                [2, 1, 0],
+                {"pattern": [[2, 0], [1, 0]]},
+                1,
+                ((2, 0), (1, 0)),
+            ),
+            (jnp.array([0.4, 0.1]), [0, 10], {"n_repeats": 3, "pattern": None}, 3, ((0, 10),)),
+        ],
+    )
+    def test_iqp_embedding(self, features, wires, kwargs, expected_repeats, expected_pattern):
+        """Test the primitive bind call of IQPEmbedding."""
+
+        def qfunc(features):
+            qp.IQPEmbedding(features, wires, **kwargs)
+
+        qfunc(features)
+        jaxpr = jax.make_jaxpr(qfunc)(features)
+
+        assert len(jaxpr.eqns) == 1
+        eqn = jaxpr.eqns[0]
+        assert_eqn_matches_op(eqn, qp.IQPEmbedding)
+        assert eqn.invars[:1] == jaxpr.jaxpr.invars
+        assert [invar.val for invar in eqn.invars[1:]] == list(wires)
+        assert len(eqn.outvars) == 1
+        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
+        n_repeats_values, _ = eqn.params["n_repeats"]
+        assert tuple(n_repeats_values) == (expected_repeats,)
+        pattern_values, _ = eqn.params["pattern"]
+        assert tuple(pattern_values) == tuple(label for pair in expected_pattern for label in pair)
 
     @pytest.mark.parametrize("template", [qp.MERA, qp.MPS, qp.TTN])
     def test_tensor_networks(self, template):

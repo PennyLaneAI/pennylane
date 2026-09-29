@@ -121,6 +121,19 @@ class TestDecomposition:
             assert gate.name == expected_names[i]
             assert gate.wires.labels == tuple(expected_wires[i])
 
+    def test_map_wires_remaps_pattern(self):
+        """Pattern wire labels must follow map_wires along with the operator wires."""
+
+        op = qp.IQPEmbedding([1.0, 2.0, 3.0], wires=[0, 1, 2], pattern=[[0, 2], [1, 2]])
+        mapped = op.map_wires({0: "a", 1: "b", 2: "c"})
+
+        assert mapped.wires.labels == ("a", "b", "c")
+        assert mapped.hyperparameters["pattern"] == (("a", "c"), ("b", "c"))
+
+        tape = qp.tape.QuantumScript(mapped.decomposition())
+        multi_rz_wires = [gate.wires.labels for gate in tape.operations if gate.name == "MultiRZ"]
+        assert multi_rz_wires == [("a", "c"), ("b", "c")]
+
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
         features = np.random.random(size=(3,))

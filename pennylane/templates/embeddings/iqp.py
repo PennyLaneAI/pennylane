@@ -15,22 +15,19 @@ r"""
 Contains the IQPEmbedding template.
 """
 
-# pylint: disable=too-many-arguments
-import copy
+from collections.abc import Hashable
 from itertools import combinations
 
-from jax import numpy as jnp
-
-from pennylane import capture, math
+from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop, while_loop
-from pennylane.core.operator import Operation
+from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import RZ, H, MultiRZ
-from pennylane.typing import Float, Wire
-from pennylane.wires import Wires
+from pennylane.typing import AbstractWires, Float, Wire
+from pennylane.wires import Wires, WiresLike
 
 
-class IQPEmbedding(Operation):
+class IQPEmbedding(Operator2):
     r"""
     Encodes :math:`n` features into :math:`n` qubits using diagonal gates of an IQP circuit.
 
@@ -172,11 +169,17 @@ class IQPEmbedding(Operation):
 
     """
 
+    dynamic_argnames = ("features",)
+    compilable_argnames = ("n_repeats", "pattern")
+    arg_specs = {"features": Float[-1], "wires": Wire[-1]}
+
+    ndim_params = (1,)
     grad_method = None
 
-    resource_keys = {"pattern_size", "n_repeats", "num_wires"}
-
     def __init__(self, features, wires, n_repeats=1, pattern=None):
+        if isinstance(features, (list, tuple)):
+            features = math.array(features)
+
         shape = math.shape(features)
 
         if len(shape) not in {1, 2}:
@@ -190,115 +193,42 @@ class IQPEmbedding(Operation):
             raise ValueError(f"Features must be of length {len(wires)}; got length {n_features}.")
 
         if pattern is None:
-            # default is an all-to-all pattern
-            pattern = tuple(combinations(wires, 2))
-        self._hyperparameters = {"pattern": pattern, "n_repeats": n_repeats}
+            if isinstance(wires, AbstractWires):
+                pattern = tuple(combinations(range(len(wires)), 2))
+            else:
+                pattern = tuple(combinations(wires, 2))
+        else:
+            pattern = tuple(tuple(pair) for pair in pattern)
 
-        super().__init__(features, wires=wires)
+        super().__init__(features, wires, n_repeats, pattern)
 
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "pattern_size": len(self.hyperparameters["pattern"]),
-            "n_repeats": self.hyperparameters["n_repeats"],
-            "num_wires": len(self.wires),
-        }
-
-    def map_wires(self, wire_map):
-        # pylint: disable=protected-access
-        new_op = copy.deepcopy(self)
-        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        new_op._hyperparameters["pattern"] = [
-            [wire_map.get(w, w) for w in wires] for wires in new_op._hyperparameters["pattern"]
-        ]
-        return new_op
-
-    @property
-    def num_params(self):
-        return 1
-
-    @property
-    def ndim_params(self):
-        return (1,)
-
-    @staticmethod
-    def compute_decomposition(
-        features, wires, n_repeats, pattern
-    ):  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a product of other operators.
-
-        .. math:: O = O_1 O_2 \dots O_n.
+    def map_wires(self, wire_map: dict[Hashable, Hashable]) -> "IQPEmbedding":
+        new_args = dict(self.arguments)
+        new_args["wires"] = Wires([wire_map.get(w, w) for w in self.arguments["wires"]])
+        new_args["pattern"] = tuple(
+            tuple(wire_map.get(w, w) for w in pair) for pair in new_args["pattern"]
+        )
+        return type(self)(**new_args)
 
 
-
-        .. seealso:: :meth:`~.IQPEmbedding.decomposition`.
-
-        Args:
-            features (tensor_like): tensor of features to encode
-            wires (Any or Iterable[Any]): wires that the template acts on
-
-        Returns:
-            list[.Operator]: decomposition of the operator
-
-        **Example**
-
-        >>> features = torch.tensor([1., 2., 3.])
-        >>> pattern = [(0, 1), (0, 2), (1, 2)]
-        >>> from pprint import pprint
-        >>> pprint(qp.IQPEmbedding.compute_decomposition(features, wires=[0, 1, 2], n_repeats=2, pattern=pattern))
-        [H(0),
-        RZ(1.0, wires=[0]),
-        H(1),
-        RZ(2.0, wires=[1]),
-        H(2),
-        RZ(3.0, wires=[2]),
-        MultiRZ(2.0, wires=[0, 1]),
-        MultiRZ(3.0, wires=[0, 2]),
-        MultiRZ(6.0, wires=[1, 2]),
-        H(0),
-        RZ(1.0, wires=[0]),
-        H(1),
-        RZ(2.0, wires=[1]),
-        H(2),
-        RZ(3.0, wires=[2]),
-        MultiRZ(2.0, wires=[0, 1]),
-        MultiRZ(3.0, wires=[0, 2]),
-        MultiRZ(6.0, wires=[1, 2])]
-        """
-        wires = Wires(wires)
-        op_list = []
-        if math.ndim(features) > 1:
-            # If broadcasting is used, we want to iterate over the wires axis of the features,
-            # not over the broadcasting dimension. The latter is passed on to the rotations.
-            features = math.T(features)
-
-        for _ in range(n_repeats):
-            for i in range(len(wires)):  # pylint: disable=consider-using-enumerate
-                op_list.append(H(wires=wires[i]))
-                op_list.append(RZ(features[i], wires=wires[i]))
-
-            for wire_pair in pattern:
-                # get the position of the wire indices in the array
-                idx1, idx2 = wires.indices(wire_pair)
-                # apply product of two features as entangler
-                op_list.append(MultiRZ(features[idx1] * features[idx2], wires=wire_pair))
-
-        return op_list
-
-
-def _iqp_embedding_resources(pattern_size, n_repeats, num_wires):
+# pylint: disable=unused-argument
+def _iqp_embedding_resources(features, wires, n_repeats, pattern):
     return {
-        RZ: n_repeats * num_wires,
-        H: n_repeats * num_wires,
-        MultiRZ(Float, Wire[2]): pattern_size * n_repeats,
+        RZ: n_repeats * len(wires),
+        H: n_repeats * len(wires),
+        MultiRZ(Float, Wire[2]): len(pattern) * n_repeats,
     }
 
 
 @register_resources(_iqp_embedding_resources, exact=False)
-def _iqp_embedding_decomposition(features, wires, n_repeats, pattern):
+def _iqp_embedding_decomposition(features, wires: WiresLike, n_repeats, pattern):
 
-    if capture.enabled():
-        wires, pattern, features = jnp.array(wires), jnp.array(pattern), jnp.array(features)
+    if capture.enabled() or compiler.active():
+        wires, pattern, features = (
+            math.array(wires, like="jax"),
+            math.array(pattern, like="jax"),
+            math.array(features, like="jax"),
+        )
 
     if math.ndim(features) > 1:
         features = math.T(features)
