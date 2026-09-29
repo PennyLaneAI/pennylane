@@ -111,7 +111,10 @@ class TestInspectDecompGraph:
             Decomposition 0 (name: ctrl_single_work_wire)
             Insufficient work wires: requires 1 but only 0 available.
 
-            CHOSEN: Decomposition 1 (name: controlled(_multi_rz_decomposition))
+            Decomposition 1 (name: ctrl_many_zeroed_work_wires)
+            Not applicable (provided operator instance does not meet all conditions for this rule).
+
+            CHOSEN: Decomposition 2 (name: controlled(_multi_rz_decomposition))
             0: ─╭(X)@RZ(0.50)@(X)─┤
             1: ─├(X)@RZ(0.50)@(X)─┤
             3: ─├●────────────────┤
@@ -130,7 +133,13 @@ class TestInspectDecompGraph:
 
             ---
 
-            #### **CHOSEN:** Decomposition 1 (name: controlled(_multi_rz_decomposition))
+            #### Decomposition 1 (name: ctrl_many_zeroed_work_wires)
+
+            _Not applicable (provided operator instance does not meet all conditions for this rule)._
+
+            ---
+
+            #### **CHOSEN:** Decomposition 2 (name: controlled(_multi_rz_decomposition))
 
             ```
             0: ─╭(X)@RZ(0.50)@(X)─┤
@@ -187,7 +196,10 @@ class TestInspectDecompGraph:
             Full Expansion Gates: {CNOT: 26, GlobalPhase: 55, MidMeasure: 2, RX: 19, RY: 10, RZ: 42}
             Weighted Cost: 3578.0
 
-            CHOSEN: Decomposition 1 (name: controlled(_multi_rz_decomposition))
+            Decomposition 1 (name: ctrl_many_zeroed_work_wires)
+            Not applicable (provided operator instance does not meet all conditions for this rule).
+
+            CHOSEN: Decomposition 2 (name: controlled(_multi_rz_decomposition))
             0: ─╭(X)@RZ(0.50)@(X)─┤
             1: ─├(X)@RZ(0.50)@(X)─┤
             3: ─├●────────────────┤
@@ -235,7 +247,13 @@ class TestInspectDecompGraph:
 
             ---
 
-            #### **CHOSEN:** Decomposition 1 (name: controlled(_multi_rz_decomposition))
+            #### Decomposition 1 (name: ctrl_many_zeroed_work_wires)
+
+            _Not applicable (provided operator instance does not meet all conditions for this rule)._
+
+            ---
+
+            #### **CHOSEN:** Decomposition 2 (name: controlled(_multi_rz_decomposition))
 
             ```
             0: ─╭(X)@RZ(0.50)@(X)─┤

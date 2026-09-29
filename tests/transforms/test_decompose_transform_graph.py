@@ -431,6 +431,24 @@ class TestDecomposeGraphEnabled:
         ]
 
     @pytest.mark.integration
+    def test_controlled_op_shared_control(self):
+        """A 4-control RZ with 3 zeroed work wires should collapse to one TemporaryAND
+        ladder plus a single CRZ, not a CRZ per control wire."""
+        op = qp.ctrl(
+            qp.RZ(0.5, 0),
+            control=[1, 2, 3, 4],
+            work_wires=[5, 6, 7],
+            work_wire_type="zeroed",
+        )
+        tape = qp.tape.QuantumScript([op])
+        [new_tape], _ = qp.transforms.decompose(
+            tape, gate_set={"TemporaryAND", "Adjoint(TemporaryAND)", "CRZ", "X"}
+        )
+        assert [operation.name for operation in new_tape.operations] == (
+            ["TemporaryAND"] * 3 + ["CRZ"] + ["Adjoint(TemporaryAND)"] * 3
+        )
+
+    @pytest.mark.integration
     def test_controlled_change_op_basis(self):
         """Tests that a controlled ChangeOpBasis is correctly decomposed."""
 
