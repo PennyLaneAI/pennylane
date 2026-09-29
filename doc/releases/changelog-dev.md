@@ -612,7 +612,7 @@
 
       ctrl = qp.Controller(in_bytes=120, out_bytes=121)
 
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#10224)](https://github.com/PennyLaneAI/pennylane/pull/10224)
 
 * Added :func:`~pennylane.backline.onnx_decoder`, which runs an ONNX model on a
   :class:`~.Coprocessor`, through the ONNX coprocessor function Catalyst ships. It loads onnxruntime
