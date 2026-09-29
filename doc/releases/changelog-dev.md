@@ -1588,6 +1588,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Fixed four incorrect links that referred to hardcoded `blob/master/` URLs by replacing them with relative paths.
+  [(#10211)](https://github.com/PennyLaneAI/pennylane/pull/10211)
+
 * Removed the TensorFlow section, sidebar entry, and dedicated interface page
   from the :doc:`Gradients and training </introduction/interfaces>` docs.
   [(#10193)](https://github.com/PennyLaneAI/pennylane/pull/10193)
@@ -1622,6 +1625,10 @@
   [(#9621)](https://github.com/PennyLaneAI/pennylane/pull/9621)
 
 <h3>Bug fixes 🐛</h3>
+
+* :func:`~.allocate` with zero wires no longer queues or captures :class:`~.allocation.Allocate`
+  and :class:`~.allocation.Deallocate` instructions, including when used as a context manager.
+  [(#10219)](https://github.com/PennyLaneAI/pennylane/pull/10219)
 
 * ZX optimization transforms now preserve the original wire labels when round-tripping through
   PyZX, preventing circuits on nonconsecutive, noncanonical, or string-valued wires from being
