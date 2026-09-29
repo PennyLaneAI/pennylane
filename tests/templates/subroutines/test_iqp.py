@@ -21,16 +21,12 @@ from itertools import combinations
 import numpy as np
 import pytest
 
-from pennylane import math, qnode
-from pennylane.core import queuing
+import pennylane as qp
+from pennylane import math
 from pennylane.decomposition import list_decomps
-from pennylane.devices import device
-from pennylane.measurements import probs
-from pennylane.ops import H, MultiRZ, PauliRot
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.ops import PPR, H, MultiRZ
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
 from pennylane.templates.subroutines.iqp import IQP
-
-dev = device("default.qubit")
 
 
 def local_gates(n_qubits: int, max_weight=2):
@@ -83,6 +79,19 @@ def test_raises(params, error, match):
             True,
             range(6),
         ),
+        # multi-qubit (Pauli weight 2) generators exercise the multi-wire ``MultiRZ`` path
+        (
+            math.random.uniform(0, 2 * np.pi, len(local_gates(4, 2))),
+            local_gates(4, 2),
+            False,
+            [0, 1, 2, 3],
+        ),
+        (
+            math.random.uniform(0, 2 * np.pi, len(local_gates(4, 2))),
+            local_gates(4, 2),
+            True,
+            [0, 1, 2, 3],
+        ),
     ],
 )
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -93,12 +102,6 @@ def test_decomposition_new(weights, pattern, spin_sym, wires):  # pylint: disabl
         _test_decomposition_rule(op, rule)
 
 
-@qnode(dev)
-def iqp_circuit(weights, pattern, spin_sym, wires):  # pylint: disable=too-many-arguments
-    IQP(weights, wires, pattern, spin_sym)
-    return probs(wires=wires)
-
-
 @pytest.mark.parametrize(
     ("weights", "pattern", "spin_sym", "wires", "expected_circuit"),
     [
@@ -107,29 +110,89 @@ def iqp_circuit(weights, pattern, spin_sym, wires):  # pylint: disable=too-many-
             local_gates(4, 1),
             True,
             ["a", "b", "c", "d"],
-            [
-                PauliRot,
-                H,
-                H,
-                H,
-                H,
-                MultiRZ,
-                MultiRZ,
-                MultiRZ,
-                MultiRZ,
-                H,
-                H,
-                H,
-                H,
-            ],
+            [PPR, H, H, H, H, MultiRZ, MultiRZ, MultiRZ, MultiRZ, H, H, H, H],
+        ),
+        (
+            math.random.uniform(0, 2 * np.pi, 4),
+            local_gates(4, 1),
+            False,
+            ["a", "b", "c", "d"],
+            [H, H, H, H, MultiRZ, MultiRZ, MultiRZ, MultiRZ, H, H, H, H],
         ),
     ],
 )
 def test_decomposition_contents(
     weights, pattern, spin_sym, wires, expected_circuit
 ):  # pylint: disable=too-many-arguments
-    with queuing.AnnotatedQueue() as q:
-        iqp_circuit(weights, pattern, spin_sym, wires)
+    op = IQP(weights, wires, pattern, spin_sym)
+    decomp = op.decomposition()
 
-    for op, expected in zip(q.queue, expected_circuit):
-        assert isinstance(op, expected)
+    assert [type(o) for o in decomp] == expected_circuit
+
+
+@pytest.mark.parametrize("spin_sym", [False, True])
+@pytest.mark.parametrize("max_weight", [1, 2])
+def test_standard_validity(spin_sym, max_weight):
+    """Test that IQP satisfies the standard ``Operator2`` validity checks."""
+    pattern = local_gates(4, max_weight)
+    weights = math.random.uniform(0, 2 * np.pi, len(pattern))
+    op = IQP(weights, [0, 1, 2, 3], pattern, spin_sym)
+    assert_valid(op, skip_differentiation=True)
+
+
+class TestAttributes:
+    """Tests for the argument classification and stored data of the migrated operator."""
+
+    def test_data(self):
+        """Test that weights are exposed as the operator's (trainable) data."""
+        op = IQP([0.1, 0.2], [0, 1], [[[0]], [[1]]], spin_sym=False)
+        assert len(op.data) == 1
+        assert math.allclose(op.data[0], [0.1, 0.2])
+
+    def test_pattern_canonicalized_to_tuples(self):
+        """Test that pattern is stored as nested tuples (required for pytree metadata)."""
+        op = IQP([0.1, 0.2], [0, 1], [[[0]], [[1]]], spin_sym=False)
+        assert op.arguments["pattern"] == (((0,),), ((1,),))
+
+
+class TestMatrix:
+    """Tests for ``IQP.compute_matrix`` against independent references."""
+
+    def test_single_qubit_generator(self):
+        """Test that a single-qubit generator equals ``RX(2 * theta)``."""
+        theta = 0.7
+        op = IQP([theta], [0], [[[0]]], spin_sym=False)
+        assert math.allclose(op.matrix(), qp.RX(2 * theta, 0).matrix())
+
+    def test_two_qubit_generator(self):
+        """Test that a two-qubit generator equals ``PauliRot(2 * theta, 'XX')``."""
+        theta = 0.7
+        op = IQP([theta], [0, 1], [[[0, 1]]], spin_sym=False)
+        assert math.allclose(op.matrix(), qp.PauliRot(2 * theta, "XX", [0, 1]).matrix())
+
+    def test_multiple_generators(self):
+        """Test that commuting single-qubit generators equal the product of ``RX`` rotations."""
+        a, b = 0.3, 0.9
+        op = IQP([a, b], [0, 1], [[[0]], [[1]]], spin_sym=False)
+        reference = qp.matrix(
+            qp.tape.QuantumScript([qp.RX(2 * a, 0), qp.RX(2 * b, 1)]), wire_order=[0, 1]
+        )
+        assert math.allclose(op.matrix(), reference)
+
+    def test_spin_sym_prepends_ppr(self):
+        """Test that ``spin_sym=True`` multiplies the ``spin_sym=False`` matrix by the PPR factor."""
+        num_wires = 3
+        weights = math.random.uniform(0, 2 * np.pi, num_wires)
+        pattern = [[[i]] for i in range(num_wires)]
+        without = IQP(weights, range(num_wires), pattern, spin_sym=False).matrix()
+        ppr = PPR.compute_matrix(4, "Y" + "X" * (num_wires - 1))
+        with_spin_sym = IQP(weights, range(num_wires), pattern, spin_sym=True).matrix()
+        assert math.allclose(with_spin_sym, without @ ppr)
+
+    def test_matrix_respects_wire_order(self):
+        """Test that ``matrix`` embeds the operator according to a provided wire order."""
+        theta = 0.6
+        # generator [[0]] targets ``wires[0]`` (wire 1 here), so this is ``RX(2 * theta)`` on wire 1
+        op = IQP([theta], [0], [[[0]]], spin_sym=False)
+        reference = qp.matrix(qp.tape.QuantumScript([qp.RX(2 * theta, 0)]))
+        assert math.allclose(op.matrix(reference))

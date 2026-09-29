@@ -19,15 +19,15 @@ from collections import defaultdict
 from functools import reduce
 
 from pennylane import math
-from pennylane.core.operator import Operation
+from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.math import expand_matrix
 from pennylane.ops import PPR, Hadamard, MultiRZ, PauliX
-from pennylane.typing import Float, TensorLike, Wire
-from pennylane.wires import Wires
+from pennylane.typing import AbstractArray, Float, TensorLike, Wire
+from pennylane.wires import Wires, WiresLike
 
 
-class IQP(Operation):
+class IQP(Operator2):
     r"""
     A template that builds an Instantaneous Quantum Polynomial (IQP) circuit. The gates of these circuits correspond
     to multi-qubit X rotations, whose generators are given by tensor products of Pauli X operators.
@@ -82,34 +82,43 @@ class IQP(Operation):
     .. seealso:: :doc:`IQP tutorial <demo:demos/tutorial_iqp_circuit_optimization_jax>`
     """
 
-    resource_keys = {"spin_sym", "pattern", "num_wires"}
+    dynamic_argnames = ("weights",)
+    compilable_argnames = ("pattern", "spin_sym")
+
+    arg_specs = {"weights": Float[-1], "wires": Wire[-1]}
 
     def __init__(
-        self, weights, wires, pattern, spin_sym=False
-    ):  # pylint: disable=too-many-arguments
-        if len(pattern) != len(weights):
-            raise ValueError(
-                "Number of gates and number of parameters for an Instantaneous Quantum Polynomial "
-                f"circuit must be the same, got {len(pattern)} gates and {len(weights)} weights."
-            )
+        self,
+        weights: TensorLike,
+        wires: WiresLike,
+        pattern: list[list[list[int]]],
+        spin_sym: bool = False,
+    ):
+        if isinstance(weights, (list, tuple)):
+            weights = math.asarray(weights)
+
+        # Skip validation if the parameters have dynamic shape
+        if not isinstance(weights, AbstractArray) or weights.shape_fixed:
+            if len(weights) != len(pattern):
+                raise ValueError(
+                    "Number of gates and number of parameters for an Instantaneous Quantum Polynomial "
+                    f"circuit must be the same, got {len(pattern)} gates and {len(weights)} weights."
+                )
 
         wires = Wires(wires)
-        num_wires = len(wires)
-
-        if num_wires == 0:
+        if len(wires) == 0:
             raise ValueError("At least one valid wire is required.")
 
-        self._hyperparameters = {
-            "spin_sym": spin_sym,
-            "weights": weights,
-            "pattern": pattern,
-            "num_wires": len(wires),
-        }
-        super().__init__(wires=wires)
+        # ``pattern`` is a compilable argument, so it is stored as pytree metadata and must be
+        # hashable. Canonicalize the nested lists into nested tuples.
+        pattern = tuple(tuple(tuple(gen) for gen in gate) for gate in pattern)
+
+        super().__init__(weights, wires=wires, pattern=pattern, spin_sym=spin_sym)
 
     # pylint: disable=arguments-differ
     @staticmethod
-    def compute_matrix(weights, num_wires, pattern, spin_sym) -> TensorLike:
+    def compute_matrix(weights, wires, pattern, spin_sym) -> TensorLike:
+        num_wires = len(Wires(wires))
         layers = []
 
         if spin_sym:
@@ -124,20 +133,11 @@ class IQP(Operation):
 
         return reduce(math.matmul, layers[::-1])
 
-    @classmethod
-    def _primitive_bind_call(cls, *args, **kwargs):
-        return cls._primitive.bind(*args, **kwargs)
 
-    @property
-    def resource_params(self):
-        return {
-            "spin_sym": self.hyperparameters["spin_sym"],
-            "pattern": self.hyperparameters["pattern"],
-            "num_wires": len(self.wires),
-        }
-
-
-def _instantaneous_quantum_polynomial_resources(spin_sym, pattern, num_wires):
+def _instantaneous_quantum_polynomial_resources(
+    weights, wires, pattern, spin_sym
+):  # pylint: disable=unused-argument
+    num_wires = len(wires)
     resources = defaultdict(int)
     if spin_sym:
         resources[PPR(4, pauli_word="Y" + "X" * (num_wires - 1), wires=Wire[num_wires])] = 1
@@ -152,9 +152,7 @@ def _instantaneous_quantum_polynomial_resources(spin_sym, pattern, num_wires):
 
 
 @register_resources(_instantaneous_quantum_polynomial_resources)
-def _instantaneous_quantum_polynomial_decomposition(
-    wires, weights, pattern, spin_sym, **__
-):  # pylint: disable=unused-argument, too-many-arguments
+def _instantaneous_quantum_polynomial_decomposition(weights, wires, pattern, spin_sym):
     num_wires = len(wires)
 
     if spin_sym:
