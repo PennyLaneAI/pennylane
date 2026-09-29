@@ -1608,6 +1608,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* :func:`~.allocate` with zero wires no longer queues or captures :class:`~.allocation.Allocate`
+  and :class:`~.allocation.Deallocate` instructions, including when used as a context manager.
+
 * Fixed a bug where a fixed decomposition rule assigned to :class:`~.MultiControlledX` via the
   ``fixed_decomps`` keyword argument of :func:`~.transforms.decompose` was being ignored.
   This does not apply to ``qjit(capture=True)``.

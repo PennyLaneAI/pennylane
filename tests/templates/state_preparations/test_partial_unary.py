@@ -348,19 +348,18 @@ class TestAffineSubspaceIsometry:
         assert excess[qp.SWAP] == 8
 
     def test_affine_resource_params_avoid_dynamic_allocation(self):
-        """Affine support uses the decomposition rule that does not allocate work wires."""
+        """Affine support requests no dynamically allocated work wires."""
         op = PartialUnaryStatePreparation(
             np.ones(4) / 2,
             wires=range(4),
             indices=(0b0000, 0b0011, 0b1100, 0b1111),
             work_wires=(),
         )
-        dynamic_rule, provided_rule = list_decomps(PartialUnaryStatePreparation)
+        [rule] = list_decomps(PartialUnaryStatePreparation)
 
         assert _is_affine_subspace(op.indices, 2)
-        assert not dynamic_rule.is_applicable(**op.arguments)
-        assert provided_rule.is_applicable(**op.arguments)
-        assert dynamic_rule.get_work_wire_spec(**op.arguments).total == 0
+        assert rule.is_applicable(**op.arguments)
+        assert rule.get_work_wire_spec(**op.arguments).total == 0
 
 
 def _is_binary(x: np.ndarray) -> bool:
@@ -574,17 +573,11 @@ class TestPartialUnaryStatePreparation:
         work_wires = list(range(num_wires, num_wires + num_work_wires))
         rng.shuffle(work_wires)
         op = PartialUnaryStatePreparation(coefficients, wires, indices, work_wires)
-        is_affine = _is_affine_subspace(indices, max(qp.math.ceil_log2(num_entries), 1))
-        applicable_rule = int(provide_work_wires or is_affine)
+        [rule] = list_decomps(PartialUnaryStatePreparation)
+        assert rule.is_applicable(**op.arguments)
 
-        for j, rule in enumerate(list_decomps(PartialUnaryStatePreparation)):
-            applicable = rule.is_applicable(**op.arguments)
-            assert applicable is (j == applicable_rule)
-            if not applicable:
-                continue
-
-            wire_specs = wires, work_wires, num_wires + needed_work_wires
-            assert_pui_correctness(rule, coefficients, indices, wire_specs)
+        wire_specs = wires, work_wires, num_wires + needed_work_wires
+        assert_pui_correctness(rule, coefficients, indices, wire_specs)
 
     @pytest.mark.catalyst
     @pytest.mark.usefixtures("enable_graph_decomposition")
@@ -604,14 +597,11 @@ class TestPartialUnaryStatePreparation:
         rng.shuffle(work_wires)
         op = PartialUnaryStatePreparation(coefficients, wires, indices, work_wires)
 
-        for j, rule in enumerate(list_decomps(PartialUnaryStatePreparation)):
-            applicable = rule.is_applicable(**op.arguments)
-            assert applicable is (j == 1)
-            if not applicable:
-                continue
+        [rule] = list_decomps(PartialUnaryStatePreparation)
+        assert rule.is_applicable(**op.arguments)
 
-            wire_specs = wires, work_wires, num_wires + num_work_wires
-            assert_pui_correctness(rule, coefficients, indices, wire_specs)
+        wire_specs = wires, work_wires, num_wires + num_work_wires
+        assert_pui_correctness(rule, coefficients, indices, wire_specs)
 
     def test_input_validation(self):
         """Test that validation errors are raise for invalid inputs."""
