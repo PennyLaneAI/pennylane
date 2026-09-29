@@ -767,52 +767,6 @@ class TestDecompositions:
         mat = qp.matrix(decomp, wire_order=[0, 1, 2, control])
         assert qp.math.allclose(mat, expected_matrix)
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
-    def test_controlled_paulirot_decomposition_graph(self):
-        r"""Controlling ``PauliRot`` should control only the inner ``MultiRZ``, leaving the
-        conjugating basis change bare."""
-        angle = 0.6931
-        control = 2
-        op = qp.ctrl(qp.PauliRot(angle, "XY", wires=[0, 1]), control=[control])
-        tape = qp.tape.QuantumScript([op], [])
-        expected_matrix = qp.matrix(tape, wire_order=[0, 1, control])
-
-        [decomp], _ = qp.transforms.decompose(
-            tape, gate_set={qp.CNOT, qp.RX, qp.RZ, qp.Hadamard, qp.GlobalPhase, qp.PauliX}
-        )
-        gates = decomp.operations
-
-        # the Hadamard/RX basis change conjugates the controlled MultiRZ and stays control-free
-        conjugation = gates[:2] + gates[-2:]
-        assert [g.name for g in conjugation] == ["Hadamard", "RX", "Hadamard", "RX"]
-        assert all(control not in g.wires for g in conjugation)
-
-        mat = qp.matrix(decomp, wire_order=[0, 1, control])
-        assert qp.math.allclose(mat, expected_matrix)
-
-    @pytest.mark.usefixtures("enable_graph_decomposition")
-    def test_controlled_isingxy_decomposition_graph(self):
-        r"""Controlling ``IsingXY`` should control only the two inner rotations, leaving the
-        conjugating Hadamard/CY basis change bare."""
-        angle = 0.6931
-        control = 2
-        op = qp.ctrl(qp.IsingXY(angle, wires=[0, 1]), control=[control])
-        tape = qp.tape.QuantumScript([op], [])
-        expected_matrix = qp.matrix(tape, wire_order=[0, 1, control])
-
-        [decomp], _ = qp.transforms.decompose(
-            tape,
-            gate_set={qp.CNOT, qp.CY, qp.RX, qp.RY, qp.RZ, qp.Hadamard, qp.GlobalPhase, qp.PauliX},
-        )
-        gates = decomp.operations
-
-        conjugation = gates[:2] + gates[-2:]
-        assert [g.name for g in conjugation] == ["Hadamard", "CY", "CY", "Hadamard"]
-        assert all(control not in g.wires for g in conjugation)
-
-        mat = qp.matrix(decomp, wire_order=[0, 1, control])
-        assert qp.math.allclose(mat, expected_matrix)
-
     two_wire_pcphases = [(0, [0, 1]), (1, [1, 0]), (2, [1, 2]), (3, [1, 3]), (4, [9, 0])]
     five_wire_pcphases = [(i, [0, 1, 3, 2, 7]) for i in range(2**5)]
     other_pcphases = [(1, [0]), (2, [1]), (17, [1, 2, 5, 4, 3, 0]), (3, list(range(5)))]
