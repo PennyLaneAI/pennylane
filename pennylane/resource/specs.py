@@ -30,6 +30,29 @@ from .track import _run_with_resource_tracking
 def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:
     original_qnode = unwrap_qjit_qnode(qjit, fn_name="qp.specs")
 
+    # Unwrap the original QNode if any transforms have been applied
+    if isinstance(qjit, QJIT) and isinstance(qjit.original_function, qp.QNode):
+        return qjit.original_function
+
+    raise ValueError(f"{fn_name} can only be applied to a qjit'd QNode, instead got: {qjit}")
+
+
+def _build_circuit_specs(original_qnode, resources, level) -> CircuitSpecs:
+    """Assemble the ``CircuitSpecs`` describing a qjit'd QNode at a given level."""
+    return CircuitSpecs(
+        resources=resources,
+        shots=original_qnode.shots,
+        device_name=original_qnode.device.name,
+        num_device_wires=(
+            len(original_qnode.device.wires) if original_qnode.device.wires is not None else None
+        ),
+        level=level,
+    )
+
+
+def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:
+    original_qnode = _unwrap_qjit_qnode(qjit, fn_name="qp.specs")
+
     if level is None:
         level = "device"
 
@@ -54,6 +77,8 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:
         raise NotImplementedError(f"Unsupported level argument '{level}'.")
 
     return build_circuit_specs(original_qnode, resources, level)
+
+    return results, _build_circuit_specs(original_qnode, resources, level)
 
 
 def specs(
@@ -423,3 +448,74 @@ def specs(
     return apply_partial_args(
         partial(_specs_qjit, qnode, level, compute_depth), partial_args, partial_kwargs
     )
+
+
+def track(
+    qnode,
+    level: str = "device",
+) -> Callable[..., tuple[Any, CircuitSpecs]]:
+    r"""Executes a quantum circuit and tracks the resources it uses.
+
+    This transform converts a QNode into a callable that executes the circuit on
+    ``null.qubit`` and returns both the result of that execution and the resource
+    information gathered while running it.
+
+    Args:
+        qnode (:class:`~catalyst.jit.QJIT`): the (qjit'd) QNode to execute and track.
+            ``functools.partial`` wrappers around supported callables are also accepted.
+
+    Keyword Args:
+        level (str): The level at which to track resources. Only ``"device"`` is currently
+            supported, meaning that resources are counted after all user-specified transforms
+            and device preprocessing transforms have been applied.
+
+    Returns:
+        A function that has the same argument signature as ``qnode``. This function returns a
+        tuple containing the result of executing the circuit and a
+        :class:`~.resource.CircuitSpecs` object containing the ``qnode`` specifications,
+        including gate and measurement data, total wires, device information, shots, and more.
+
+    .. seealso:: :func:`~.specs`, which returns the same information without the execution result,
+        and supports levels other than ``"device"``.
+
+    .. note::
+
+        Resources are tracked by mock-executing the workflow on ``null.qubit``. For a QNode bound
+        to any other device, the returned execution result therefore carries the shape and dtype
+        of that device's result, but not its values.
+
+    .. warning::
+
+        ``null.qubit`` does not perform a true state-vector simulation, so mid-circuit measurement
+        outcomes are not grounded in real measurement statistics. If the circuit contains a
+        conditional whose branch depends on such an outcome, the reported circuit depth and any
+        branch-dependent gate counts correspond to the branch taken during the mock execution, and
+        should be treated as an estimate rather than exact counts.
+
+    **Example**
+
+    .. code-block:: python
+
+        dev = qp.device("null.qubit", wires=2)
+
+        @qp.qjit
+        @qp.qnode(dev)
+        def circuit(theta):
+            qp.RX(theta, wires=0)
+            qp.CNOT(wires=(0,1))
+            return qp.probs(wires=(0,1))
+
+    >>> result, circuit_specs = qp.track(circuit)(1.23)
+    >>> result.shape
+    (4,)
+    >>> circuit_specs.resources.quantum_operations
+    {'CNOT': 1, 'RX': 1}
+
+    The specifications are the same as the ones returned by :func:`~.specs` at the device level:
+
+    >>> circuit_specs == qp.specs(circuit, level="device")(1.23)
+    True
+    """
+    qnode, partial_args, partial_kwargs = unwrap_partial(qnode)
+
+    return apply_partial_args(partial(_track_qjit, qnode, level), partial_args, partial_kwargs)
