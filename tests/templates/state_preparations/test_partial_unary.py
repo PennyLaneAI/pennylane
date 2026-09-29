@@ -27,8 +27,8 @@ from pennylane.templates.state_preparations.partial_unary import (
     PUIsometryFinder,
     _find_affine_subspace_isometry,
     _is_affine_subspace,
-    _pui_state_prep_core,
-    _pui_state_prep_resources,
+    _partial_unary_state_prep_core,
+    _partial_unary_state_prep_resources,
 )
 from pennylane.typing import Complex, Float, Wire
 from pennylane.wires import Wires
@@ -326,7 +326,7 @@ class TestAffineSubspaceIsometry:
         indices = (0b1010, 0b0110, 0b1001, 0b0101)
 
         with qp.queuing.AnnotatedQueue() as queue:
-            _pui_state_prep_core(coefficients, range(4), indices, work_wires=[4])
+            _partial_unary_state_prep_core(coefficients, range(4), indices, work_wires=[4])
 
         ops = [wrapped.obj for wrapped in queue]
         assert not any(isinstance(op, (qp.QROM, qp.MultiControlledX)) for op in ops)
@@ -337,8 +337,10 @@ class TestAffineSubspaceIsometry:
         # Four states with affine rank 3, so the generic (non-Clifford) resource model applies.
         indices = (0, 1, 2, 4)
         coefficients = np.ones(4) / 2
-        base = _pui_state_prep_resources(coefficients, range(4), indices, work_wires=[4])
-        excess = _pui_state_prep_resources(coefficients, range(4), indices, work_wires=range(4, 9))
+        base = _partial_unary_state_prep_resources(coefficients, range(4), indices, work_wires=[4])
+        excess = _partial_unary_state_prep_resources(
+            coefficients, range(4), indices, work_wires=range(4, 9)
+        )
 
         assert len(base) == 8
         assert len(excess) == 10
