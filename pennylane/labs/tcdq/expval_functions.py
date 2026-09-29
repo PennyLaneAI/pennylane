@@ -164,7 +164,7 @@ def _parity_dot(a: jnp.ndarray, b: jnp.ndarray) -> jnp.ndarray:
     return product % 2
 
 def _parity_signs(parity: jnp.ndarray) -> jnp.ndarray:
-    return 1 - 2 * parity
+    return 1 - 2 * parity.astype(jnp.float32)
 
 def _phase_differences(
     gate_params: jnp.ndarray,
@@ -174,14 +174,47 @@ def _phase_differences(
     param_map: jnp.ndarray,
 ) -> jnp.ndarray:
 
-    theta = gate_params[param_map][:, jnp.newaxis]
-    b_bits = _xor_gather_rows(samples_t, gate_indices)
-    q_bits = _xor_gather_rows(bitflips_t, gate_indices)
-    b_scaled = jnp.where(b_bits.astype(bool), -theta, theta)
+    gate_block = 1 << 17
+    dtype = gate_params.dtype
+    n_gates, max_weight = gate_indices.shape
 
-    return 2 * jax.lax.dot_general(
-        q_bits, b_scaled, (((0, ), (0, )), ((), ()))
+    def block_contribution(block_indices: jnp.ndarray, block_params: jnp.ndarray) -> jnp.ndarray:
+        theta = gate_params[block_params][:, jnp.newaxis]
+        b_bits = _xor_gather_rows(samples_t, block_indices)
+        q_bits = _xor_gather_rows(bitflips_t, block_indices)
+        b_scaled = jnp.where(b_bits.astype(bool), -theta, theta)
+
+        return jax.lax.dot_general(
+            q_bits, b_scaled, (((0, ), (0, )), ((), ()))
+        )
+
+    if n_gates <= gate_block:
+        return 2 * block_contribution(gate_indices, param_map)
+
+    n_blocks = -(-n_gates // gate_block)
+    n_pad = n_blocks * gate_block - n_gates
+
+    if n_pad:
+        sentinel = samples_t.shape[0] - 1
+        gate_indices = jnp.concatenate(
+            [gate_indices, jnp.full((n_pad, max_weight), sentinel, gate_indices.dtype)]
+        )
+        param_map = jnp.concatenate([param_map, jnp.zeros((n_pad, ), param_map.dtype)])
+
+    def accumulate(total, block):
+        return total + block_contribution(*block), None
+
+    zero = jnp.zeros((bitflips_t.shape[1], samples_t.shape[1]))
+    total, _ = jax.lax.scan(
+        accumulate,
+        zero,
+        (
+            gate_indices.reshape(n_blocks, gate_block, max_weight),
+            param_map.reshape(n_blocks, gate_block),
+        ),
     )
+
+    return 2 * total
 
 
 def _compute_samples(key: ArrayLike, n_samples: int, n_qubits: int) -> jnp.ndarray:
