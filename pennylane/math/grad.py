@@ -17,6 +17,8 @@ This submodule defines grad and jacobian for differentiating circuits in an inte
 
 from collections.abc import Callable, Sequence
 
+import jax
+
 from pennylane._grad import grad as _autograd_grad
 from pennylane._grad import jacobian as _autograd_jacobian
 
@@ -76,7 +78,6 @@ def grad(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
             return g[0] if argnums_integer else g
 
         if interface == "jax":
-            import jax
 
             g = jax.grad(f, argnums=argnums)(*args, **kwargs)
             return g[0] if argnums_integer else g
@@ -235,7 +236,6 @@ def jacobian(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
             return _autograd_jacobian(f, argnums=argnums)(*args, **kwargs)
 
         if interface == "jax":
-            import jax
 
             return jax.jacobian(f, argnums=argnums)(*args, **kwargs)
 

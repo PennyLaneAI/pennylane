@@ -2,6 +2,11 @@
 
 <h3>New features since last release</h3>
 
+* A :func:`pennylane.decomposition.register_signature` function is added for recording the possible signatures of
+  an operator, along with a :func:`pennylane.decomposition.signature_registry` function for retrieving the recorded
+  signatures. The resulting registry is used to identify decomposition rules that can be precompiled, improving
+  the performance of decomposition passes in :func:`~.qjit`-compiled workflows.
+  [(#9921)](https://github.com/PennyLaneAI/pennylane/pull/9921)
 
 * Three new numeric Hamiltonians called :class:`pennylane.CDFHamiltonian` (based on
   `arXiv:2506.15784, Sec. III A <https://arxiv.org/abs/2506.15784>`),
@@ -1210,6 +1215,7 @@
 
 * Removes indirection and deferred imports now that jax is always available.
   [(#10198)](https://github.com/PennyLaneAI/pennylane/pull/10198)
+  [(#10200)](https://github.com/PennyLaneAI/pennylane/pull/10200)
 
 * An operator can now be reconstructed from operator_p with abstract wires in the form of 
   AbstractQubit, jax.core.ShapedArray, AbstractWires, and AbstractArray.
@@ -1799,6 +1805,9 @@
 * Config option added to qubit MMD loss that bootstraps target data by default to ensure
   unbiasedness of the estimator
   [(#10128)](https://github.com/PennyLaneAI/pennylane/pull/10128)
+
+* Fixed a bug in the TCDQ module that caused incorrect results for states with complex coefficients.
+  [(#10215)](https://github.com/PennyLaneAI/pennylane/pull/10215)
 
 
 <h3>Contributors ✍️</h3>

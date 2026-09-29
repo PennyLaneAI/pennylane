@@ -195,8 +195,8 @@ def _core_expval_execution(
         P = init_state_amps
         F = P[:, jnp.newaxis] * (1 - 2 * ((X @ samples.T) % 2))
         H1 = (1 - 2 * ((bitflips @ X.T) % 2)) @ F
-        col_sums = jnp.sum(F.conj(), axis=0, keepdims=True)
-        H = H1 * col_sums
+        col_sums = jnp.sum(F, axis=0, keepdims=True)
+        H = H1.conj() * col_sums
         M = M * H
         integrand = jnp.real(M)
 
