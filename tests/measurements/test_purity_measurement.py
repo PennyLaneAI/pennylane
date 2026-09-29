@@ -72,12 +72,8 @@ class TestPurityUnitTest:
     def test_process_density_matrix_pure_state(self, interface):
         """Test purity calculation for a pure single-qubit state."""
         dm = qp.math.array([[1, 0], [0, 0]], like=interface)
-        if interface == "tensorflow":
-            dm = qp.math.cast(dm, "float64")
         wires = qp.wires.Wires(range(1))
         expected = qp.math.array(1.0, like=interface)
-        if interface == "tensorflow":
-            expected = qp.math.cast(expected, "float64")
         purity = qp.purity(wires=wires).process_density_matrix(dm, wires)
         atol = 1.0e-7 if interface == "torch" else 1.0e-8
         assert qp.math.allclose(purity, expected, atol=atol), f"Expected {expected}, got {purity}"
@@ -104,10 +100,6 @@ class TestPurityUnitTest:
             [[0.15, 0, 0.1, 0], [0, 0.35, 0, 0.4], [0.1, 0, 0.1, 0], [0, 0.4, 0, 0.4]],
             like=interface,
         )
-
-        # TensorFlow requires explicit casting to float64 for consistency
-        if interface == "tensorflow":
-            dm = qp.math.cast(dm, "float64")
 
         # Define the wires (qubits) of our system
         wires = qp.wires.Wires(range(2))
@@ -361,57 +353,6 @@ class TestPurityIntegration:
         grad_purity = param.grad
 
         assert qp.math.allclose(grad_purity, expected_grad, rtol=1e-04, atol=1e-05)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("param", parameters)
-    @pytest.mark.parametrize("wires,is_partial", wires_list)
-    @pytest.mark.parametrize("interface", ["tf"])
-    def test_IsingXX_qnode_purity_tf(self, device, param, wires, is_partial, interface):
-        """Tests purity for a qnode"""
-
-        import tensorflow as tf
-
-        dev = qp.device(device, wires=2)
-
-        @qp.qnode(dev, interface=interface)
-        def circuit(x):
-            qp.IsingXX(x, wires=[0, 1])
-            return qp.purity(wires=wires)
-
-        purity = circuit(tf.Variable(param))
-        expected_purity = expected_purity_ising_xx(param) if is_partial else 1
-        assert qp.math.allclose(purity, expected_purity)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("device", grad_supported_devices)
-    @pytest.mark.parametrize("param", parameters)
-    @pytest.mark.parametrize("wires,is_partial", wires_list)
-    @pytest.mark.parametrize("diff_method", diff_methods)
-    @pytest.mark.parametrize("interface", ["tf"])
-    def test_IsingXX_qnode_purity_grad_tf(
-        self, device, param, wires, is_partial, diff_method, interface
-    ):
-        """Test purity for a QNode gradient with tf."""
-
-        import tensorflow as tf
-
-        dev = qp.device(device, wires=2)
-
-        @qp.qnode(dev, interface=interface, diff_method=diff_method)
-        def circuit(x):
-            qp.IsingXX(x, wires=[0, 1])
-            return qp.purity(wires=wires)
-
-        grad_expected_purity = expected_purity_grad_ising_xx(param) if is_partial else 0
-
-        param = tf.Variable(param)
-        with tf.GradientTape() as tape:
-            purity = circuit(param)
-
-        grad_purity = tape.gradient(purity, param)
-
-        assert qp.math.allclose(grad_purity, grad_expected_purity, rtol=1e-04, atol=1e-05)
 
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("param", parameters)

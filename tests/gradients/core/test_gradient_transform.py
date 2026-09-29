@@ -678,7 +678,6 @@ class TestGradientTransformIntegration:
             pytest.param("autograd", marks=pytest.mark.autograd),
             pytest.param("jax", marks=pytest.mark.jax),
             pytest.param("torch", marks=pytest.mark.torch),
-            pytest.param("tensorflow", marks=pytest.mark.tf),
         ),
     )
     def test_use_with_batch_transform(self, interface):
@@ -694,13 +693,7 @@ class TestGradientTransformIntegration:
 
         x = qp.math.asarray(0.5, like=interface, requires_grad=True)
 
-        if interface == "tensorflow":
-            import tensorflow as tf
-
-            with tf.GradientTape():  # need to make x trainable
-                grad_z, grad_y, grad_x = qp.gradients.param_shift(c)(x)
-        else:
-            grad_z, grad_y, grad_x = qp.gradients.param_shift(c)(x)
+        grad_z, grad_y, grad_x = qp.gradients.param_shift(c)(x)
 
         expected_z = -2 * x * qp.math.sin(x**2)
         expected_y = -2 * x * qp.math.cos(x**2)
@@ -734,34 +727,6 @@ class TestInterfaceIntegration:
 
         res = qp.grad(circuit)(x)
         expected = -2 * (4 * x**2 * np.cos(2 * x**2) + np.sin(2 * x**2))
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    def test_tf(self, tol):
-        """Test that a gradient transform remains differentiable
-        with TF"""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.gradients.param_shift
-        @qp.qnode(dev, interface="tf", diff_method="parameter-shift")
-        def circuit(x):
-            qp.RY(x**2, wires=[1])
-            qp.CNOT(wires=[0, 1])
-            return qp.var(qp.PauliX(1))
-
-        x_ = -0.654
-        x = tf.Variable(x_, dtype=tf.float64)
-
-        with tf.GradientTape() as tape:
-            res = circuit(x)
-
-        expected = -4 * x_ * np.cos(x_**2) * np.sin(x_**2)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-        res = tape.gradient(res, x)
-        expected = -2 * (4 * x_**2 * np.cos(2 * x_**2) + np.sin(2 * x_**2))
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.torch
