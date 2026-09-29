@@ -1585,6 +1585,13 @@
 
 <h3>Documentation 📝</h3>
 
+* Fixed four incorrect links that referred to hardcoded `blob/master/` URLs by replacing them with relative paths.
+  [(#10211)](https://github.com/PennyLaneAI/pennylane/pull/10211)
+
+* Removed the TensorFlow section, sidebar entry, and dedicated interface page
+  from the :doc:`Gradients and training </introduction/interfaces>` docs.
+  [(#10193)](https://github.com/PennyLaneAI/pennylane/pull/10193)
+
 * Corrected spelling errors in documentation, comments, and internal variable names across the codebase.
   [(#9752)](https://github.com/PennyLaneAI/pennylane/pull/9752)
 
