@@ -56,6 +56,7 @@ def _iterative_qpe(base, aux_wire, iters):
     return measurements
 
 
+# NOTE: See '_iterative_qpe' for why 'iters' is a static argument
 _iterative_qpe_subroutine = capture.subroutine(_iterative_qpe, static_argnames="iters")
 
 
