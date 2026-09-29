@@ -441,7 +441,7 @@ def _core_expval_execution(
         col_im = amps_im @ g_signs
 
         h_re = overlap_re * col_re + overlap_im * col_im
-        h_im = overlap_im * col_re - overlap_re * col_im
+        h_im = overlap_re * col_im - overlap_im * col_re
 
         integrand = phase_re * h_re - phase_im * h_im
 
