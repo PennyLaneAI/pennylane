@@ -608,6 +608,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Multi-controlled operators can now reuse a single :class:`~.TemporaryAND` ladder when enough
+  zeroed work wires are available, reducing their decomposition gate counts.
+  [(#10161)](https://github.com/PennyLaneAI/pennylane/pull/10161)
+
 * Adds a `qp.decomposition.all_decomps` functions for finding all decompositions that might be hit by
   decomposing a gate to any gateset.
   [(#10187)](https://github.com/PennyLaneAI/pennylane/pull/10187)
