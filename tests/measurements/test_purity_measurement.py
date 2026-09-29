@@ -108,7 +108,7 @@ class TestPurityUnitTest:
         purity = qp.purity(wires=subset_wires).process_density_matrix(dm, wires)
 
         # Set the tolerance for floating-point comparisons
-        # TensorFlow and PyTorch may require a slightly higher tolerance due to numerical precision issues
+        # PyTorch may require a slightly higher tolerance due to numerical precision issues
         atol = 1.0e-7 if interface == "torch" else 1.0e-8
 
         # Assert that the calculated purity matches the expected value within the tolerance

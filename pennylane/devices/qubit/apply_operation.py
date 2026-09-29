@@ -822,16 +822,13 @@ def _apply_grover_without_matrix(state, op_wires, is_state_batched):
         # If the operation acts on all wires, we can skip the tensor product with all-ones state
         new_shape = (-1,) + (1,) * num_wires if is_state_batched else (1,) * num_wires
         return prefactor * math.reshape(collapsed, new_shape) - state
-        # [todo]: Once Tensorflow support expand_dims with multiple axes in the second argument,
-        # use the following line instead of the two above.
-        # return prefactor * math.expand_dims(collapsed, sum_axes) - state
 
     all_plus = math.cast_like(math.full([2] * num_wires, prefactor), state)
     # After the Kronecker product (realized with tensordot with axes=0), we need to move
     # the new axes to the summed-away axes' positions. Finally, subtract the original state.
     source = list(range(math.ndim(collapsed), math.ndim(state)))
     # Probably it will be better to use math.full or math.tile to create the outer product
-    # here computed with math.tensordot. However, Tensorflow and Torch do not have full support
+    # here computed with math.tensordot. However, Torch does not have full support.
     return math.moveaxis(math.tensordot(collapsed, all_plus, axes=0), source, sum_axes) - state
 
 

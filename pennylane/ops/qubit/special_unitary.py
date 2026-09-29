@@ -628,7 +628,7 @@ class SpecialUnitary(Operation):
 
             An auto-differentiation framework is required by this function.
             The matrix exponential is not differentiable in Autograd. Therefore this function
-            only supports JAX, Torch and Tensorflow.
+            only supports JAX and Torch.
 
         .. seealso:: :meth:`~.SpecialUnitary.get_one_parameter_generators`
 

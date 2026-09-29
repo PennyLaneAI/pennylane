@@ -504,8 +504,7 @@ def gather_mcm(measurement: MeasurementProcess, samples, is_valid, postselect_mo
             values = [list(m.branches.values()) for m in mv]
             values = list(itertools.product(*values))
             values = [math.array([v], like=interface, dtype=mcm_samples.dtype) for v in values]
-            # Need to use boolean functions explicitly as Tensorflow does not allow integer math
-            # on boolean arrays
+            # Use boolean functions explicitly; integer math on boolean arrays is not portable.
             counts = [
                 math.count_nonzero(math.logical_and(math.all(mcm_samples == v, axis=1), is_valid))
                 for v in values
@@ -518,8 +517,7 @@ def gather_mcm(measurement: MeasurementProcess, samples, is_valid, postselect_mo
 
     mcm_samples = math.array(mv.concretize(samples), like=interface)
     if isinstance(measurement, ProbabilityMP):
-        # Need to use boolean functions explicitly as Tensorflow does not allow integer math
-        # on boolean arrays
+        # Use boolean functions explicitly; integer math on boolean arrays is not portable.
         mcm_samples = math.squeeze(mcm_samples)
         counts = [
             math.count_nonzero(math.logical_and((mcm_samples == v), is_valid))
