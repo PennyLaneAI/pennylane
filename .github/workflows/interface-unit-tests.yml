@@ -1,7 +1,7 @@
 # This workflow is designed to run unit tests for all interfaces of the PennyLane library on GitHub Actions.
 # It allows for customization of various parameters such as the branch to checkout, the job name prefix and suffix,
 # the PyTest coverage flags, additional PyTest arguments, and the option to run a lightened version of the CI.
-# The workflow includes multiple jobs that run tests for different interfaces such as Torch, Autograd, TensorFlow, JAX, and more.
+# The workflow includes multiple jobs that run tests for different interfaces such as Torch, Autograd, JAX, and more.
 # It also includes a job to upload the coverage report to Codecov.
 # The workflow utilizes matrix strategies to parallelize the test runs and supports skipping specific jobs on a lightened CI run.
 
