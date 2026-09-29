@@ -614,6 +614,22 @@
 
   [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
 
+* Added :func:`~pennylane.backline.onnx_decoder`, which runs an ONNX model on a
+  :class:`~.Coprocessor`, through the ONNX coprocessor function Catalyst ships. It loads onnxruntime
+  and the model when the coprocessor starts. With the default ``provider="auto"`` the model runs on
+  the GPU the installed onnxruntime supports (MIGraphX on AMD, CUDA on NVIDIA) or on the CPU, so one
+  program runs on either vendor. :class:`~.CoprocessorFunction` gains ``config``, the
+  ``key=value;...`` configuration a function receives before its first message, and
+  ``per_message``, which a GPU coprocessor uses to call a host function per message.
+
+  .. code-block:: python
+
+      coproc = qp.Coprocessor(
+          hardware="gpu", coprocessor_fn=qp.backline.onnx_decoder("predecoder.onnx")
+      )
+
+  [(#YYYY)](https://github.com/PennyLaneAI/pennylane/pull/YYYY)
+
 * Adds a `qp.decomposition.all_decomps` functions for finding all decompositions that might be hit by
   decomposing a gate to any gateset.
   [(#10187)](https://github.com/PennyLaneAI/pennylane/pull/10187)

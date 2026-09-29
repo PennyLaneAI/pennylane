@@ -115,6 +115,7 @@ Coprocessing functions and QEC
     ~CoprocessorFunction
     ~backline.decode
     ~backline.css_bp_decoder
+    ~backline.onnx_decoder
     ~backline.triton_decoder
 
 When using a backline to execute a quantum program, there are multiple ways to incorporate
@@ -217,7 +218,7 @@ the machine the runtime lives on.
 from . import runtime
 from .decode import decode
 from .device import Backline
-from .functions import CoprocessorFunction, css_bp_decoder, triton_decoder
+from .functions import CoprocessorFunction, css_bp_decoder, onnx_decoder, triton_decoder
 from .placement import Controller, Coprocessor, Endpoint, Node, Placement
 from .transports import Transport, get_transport, register_transport
 
@@ -231,6 +232,7 @@ __all__ = [
     "decode",
     "CoprocessorFunction",
     "css_bp_decoder",
+    "onnx_decoder",
     "triton_decoder",
     "Transport",
     "get_transport",
