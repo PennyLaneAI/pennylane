@@ -15,7 +15,6 @@ r"""
 Contains the IQPEmbedding template.
 """
 
-from collections.abc import Hashable
 from itertools import combinations
 
 from pennylane import capture, compiler, math
@@ -202,7 +201,7 @@ class IQPEmbedding(Operator2):
 
         super().__init__(features, wires, n_repeats, pattern)
 
-    def map_wires(self, wire_map: dict[Hashable, Hashable]) -> "IQPEmbedding":
+    def map_wires(self, wire_map) -> "IQPEmbedding":
         new_args = dict(self.arguments)
         new_args["wires"] = Wires([wire_map.get(w, w) for w in self.arguments["wires"]])
         new_args["pattern"] = tuple(
