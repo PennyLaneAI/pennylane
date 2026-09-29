@@ -328,6 +328,33 @@
   The new function returns a tuple of four values, where the first three corresponds to the rotation
   angles of the ZYZ decomposition of this operator, and the last one corresponds to the global phase.
 
+* A new function called :func:`~.track` is available, which executes a ``qjit``-compiled QNode while
+  tracking the resources it uses, returning both the result of the execution and the corresponding
+  :class:`~.resource.CircuitSpecs`. This is the same device-level tracking that :func:`~.specs`
+  performs with ``level="device"``, but the result of the circuit execution is no longer discarded.
+  Only ``level="device"`` is currently supported.
+  [(#10228)](https://github.com/PennyLaneAI/pennylane/pull/10228)
+
+  ```python
+  dev = qp.device("null.qubit", wires=2)
+
+  @qp.qjit
+  @qp.qnode(dev)
+  def circuit(theta):
+      qp.RX(theta, wires=0)
+      qp.CNOT(wires=(0, 1))
+      return qp.probs(wires=(0, 1))
+  ```
+
+  ```pycon
+  >>> result, circuit_specs = qp.track(circuit)(1.23)
+  >>> result.shape
+  (4,)
+  >>> circuit_specs.resources.quantum_operations
+  {'CNOT': 1, 'RX': 1}
+
+  ```
+
 * :func:`~.specs` will now output symbolic resource information when it encounters a loop that uses dynamic control-flow
   that can't be resolved at compile time.
   In such cases the returned :class:`~.resource.CircuitSpecs` will contain :class:`~.resource.Expression` instances where `int` values would normally appear.
@@ -1967,6 +1994,7 @@ Andrija Paurevic,
 Francesco Pernice Botta,
 David D.W. Ren,
 Jay Soni,
+Jaume Villasante,
 Paul Haochen Wang,
 Dennis Wayo,
 David Wierichs,
