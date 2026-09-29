@@ -15,19 +15,19 @@
 # pylint: disable=too-few-public-methods
 
 import pytest
-from operator2_utils import HybridOp, HybridWireOp, MixedHybridOp, StaticOp
+from operator2_utils import HybridOp, HybridWireOp, MixedHybridOp, NonParametricOp, StaticOp
 
 import pennylane as qp
 from pennylane.core.operator import abstractify
-from pennylane.core.operator.generate_uid import _serialize_static, generate_uid
+from pennylane.core.operator.generate_uid import _serialize, generate_uid
 
 
 class _Opaque:
     """Opaque type for testing."""
 
 
-class TestSerializeStatic:
-    """Tests for the ``_serialize_static`` helper."""
+class TestSerialize:
+    """Tests for the ``_serialize`` helper."""
 
     @pytest.mark.parametrize(
         "value",
@@ -48,12 +48,17 @@ class TestSerializeStatic:
     )
     def test_supported_types(self, value):
         """Test that common static Python types are serialized for UID hashing."""
-        ser = _serialize_static(value, "name")
+        ser = _serialize(value)
         assert hash(ser)
 
 
 class TestGenerateUID:
     """Tests for ``generate_uid``."""
+
+    def test_no_static_or_hybrid_returns_none(self):
+        """Test that operators without static or hybrid arguments do not get a UID."""
+        assert generate_uid(NonParametricOp(wires=[0])) is None
+        assert generate_uid(qp.X(0)) is None
 
     def test_deterministic(self):
         """Test that generating a UID for the same operator twice gives the same result."""
@@ -73,11 +78,11 @@ class TestGenerateUID:
         op_b = StaticOp("world", wires=[0])
         assert generate_uid(op_a) != generate_uid(op_b)
 
-    def test_different_wire_count_different_uid(self):
-        """Test that operators with a different number of wires have different UIDs."""
+    def test_non_hybrid_wire_count_does_not_affect_uid(self):
+        """Test that the number of non-hybrid wires does not affect the UID."""
         op_a = StaticOp("hello", wires=[0])
         op_b = StaticOp("hello", wires=[0, 1])
-        assert generate_uid(op_a) != generate_uid(op_b)
+        assert generate_uid(op_a) == generate_uid(op_b)
 
     def test_same_hybrid_wire_count_same_uid(self):
         """Test that operators with the same number of hybrid wires and the same PyTree
@@ -125,48 +130,12 @@ class TestGenerateUID:
         )
         assert generate_uid(op_a) == generate_uid(op_b)
 
-    def test_adjoint_and_n_ctrls_affect_uid(self):
-        """Test that the ``adjoint`` and ``n_ctrls`` flags affect the generated UID."""
-        op = StaticOp("hello", wires=[0])
-        base_uid = generate_uid(op)
-        assert generate_uid(op, adjoint=True) != base_uid
-        assert generate_uid(op, n_ctrls=1) != base_uid
-        assert generate_uid(op, adjoint=True) != generate_uid(op, n_ctrls=1)
-
-    def test_qp_adjoint_matches_adjoint_flag(self):
-        """Test that ``generate_uid`` on a ``qp.adjoint``-wrapped operator matches calling
-        ``generate_uid`` on the base operator with ``adjoint=True``."""
-        op = StaticOp("hello", wires=[0])
-        assert generate_uid(qp.adjoint(op)) == generate_uid(op, adjoint=True)
-
-    def test_qp_ctrl_matches_n_ctrls_flag(self):
-        """Test that ``generate_uid`` on a ``qp.ctrl``-wrapped operator matches calling
-        ``generate_uid`` on the base operator with the corresponding ``n_ctrls``."""
-        op = StaticOp("hello", wires=[0])
-        ctrl_op = qp.ctrl(op, control=[1, 2])
-        assert generate_uid(ctrl_op) == generate_uid(op, n_ctrls=2)
-
-    def test_qp_adjoint_of_qp_ctrl_matches_both_flags(self):
-        """Test that ``generate_uid`` on ``qp.adjoint(qp.ctrl(op))`` matches calling
-        ``generate_uid`` on the base operator with both ``adjoint=True`` and the corresponding
-        ``n_ctrls``."""
-        op = StaticOp("hello", wires=[0])
-        wrapped = qp.adjoint(qp.ctrl(op, control=[1, 2]))
-        assert generate_uid(wrapped) == generate_uid(op, adjoint=True, n_ctrls=2)
-
-    def test_qp_ctrl_of_qp_adjoint_matches_both_flags(self):
-        """Test that ``generate_uid`` on ``qp.ctrl(qp.adjoint(op))`` matches calling
-        ``generate_uid`` on the base operator with both ``adjoint=True`` and the corresponding
-        ``n_ctrls``, regardless of wrapping order."""
-        op = StaticOp("hello", wires=[0])
-        wrapped = qp.ctrl(qp.adjoint(op), control=[1, 2])
-        assert generate_uid(wrapped) == generate_uid(op, adjoint=True, n_ctrls=2)
-        assert generate_uid(wrapped) == generate_uid(qp.adjoint(qp.ctrl(op, control=[1, 2])))
-
-    def test_qp_ctrl_wire_labels_do_not_affect_uid(self):
-        """Test that the concrete control wire labels do not affect the UID, only their count,
-        for both ``qp.adjoint`` and ``qp.ctrl`` wrapped operators."""
-        op = StaticOp("hello", wires=[0])
-        ctrl_a = qp.ctrl(qp.adjoint(op), control=[1, 2])
-        ctrl_b = qp.ctrl(qp.adjoint(op), control=[9, 10])
-        assert generate_uid(ctrl_a) == generate_uid(ctrl_b)
+    def test_dynamic_values_do_not_affect_uid(self):
+        """Test that the concrete values of dynamic arguments do not affect the UID."""
+        op_a = MixedHybridOp(
+            phi=0.5, ops=StaticOp("x", wires=[0]), pytree_wires=[[1, 2]], wires=[3]
+        )
+        op_b = MixedHybridOp(
+            phi=1.5, ops=StaticOp("x", wires=[0]), pytree_wires=[[1, 2]], wires=[3]
+        )
+        assert generate_uid(op_a) == generate_uid(op_b)

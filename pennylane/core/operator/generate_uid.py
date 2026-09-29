@@ -25,84 +25,28 @@ from pennylane.wires import Wires
 from .operator2 import Operator2
 
 
-def _unwrap(op, is_adjoint=False, n_ctrls=0):
-    from pennylane.ops import Adjoint, Controlled  # pylint: disable=import-outside-toplevel
-
-    if not isinstance(op, (Adjoint, Controlled)):
-        return op, is_adjoint, n_ctrls
-    if isinstance(op, Adjoint):
-        return _unwrap(op.base, not is_adjoint, n_ctrls)
-    return _unwrap(op.base, is_adjoint, n_ctrls + len(op.control_wires))
-
-
 @singledispatch
-def _serialize_static(val: Any, name: str | None):
-    """Create a reduced representation of a value that can be used to easily
+def _serialize(val: Any):
+    """Create a serialized representation of a value that can be used to easily
     create a UID for it.
-
-    The reduced representation will be a tuple with the following format:
-
-    .. code-block::
-
-        (name, type, hashable_reduction)
     """
-    # For arbitrary opaque data that may be unhashable, just use the id
-    return (name, type(val), id(val))
+    return str(val)
 
 
-# pylint: disable=unused-argument
-@_serialize_static.register(type(None))
-def _serialize_none(val, name):
-    return (name, type(None), None)
+@_serialize.register(list | tuple)
+def _serialize_sequence(val):
+    return tuple(_serialize(item) for item in val)
 
 
-@_serialize_static.register(bool)
-def _serialize_bool(val, name):
-    return (name, bool, val)
+@_serialize.register(dict)
+def _serialize_dict(val):
+    serialized = ((str(_serialize(k)), _serialize(v)) for k, v in val.items())
+    return tuple(sorted(serialized, key=lambda item: item[0]))
 
 
-@_serialize_static.register(int)
-def _serialize_int(val, name):
-    return (name, int, val)
-
-
-@_serialize_static.register(float)
-def _serialize_float(val, name):
-    return (name, float, repr(val))
-
-
-@_serialize_static.register(complex)
-def _serialize_complex(val, name):
-    return (name, complex, (repr(val.real), repr(val.imag)))
-
-
-@_serialize_static.register(str)
-def _serialize_str(val, name):
-    return (name, str, val)
-
-
-@_serialize_static.register(list)
-def _serialize_list(val, name):
-    return (name, list, tuple(_serialize_static(item, None) for item in val))
-
-
-@_serialize_static.register(tuple)
-def _serialize_tuple(val, name):
-    return (name, tuple, tuple(_serialize_static(item, None) for item in val))
-
-
-@_serialize_static.register(dict)
-def _serialize_dict(val, name):
-    return (
-        name,
-        dict,
-        frozenset((_serialize_static(k, None), _serialize_static(v, None)) for k, v in val.items()),
-    )
-
-
-@_serialize_static.register(set | frozenset)
-def _serialize_set(val, name):
-    return (name, type(val), frozenset(_serialize_static(item, None) for item in val))
+@_serialize.register(set | frozenset)
+def _serialize_set(val):
+    return tuple(sorted(str(_serialize(v)) for v in val))
 
 
 def _is_wires_like(val: Any) -> bool:
@@ -121,7 +65,7 @@ def _leaf_aval(value: Any) -> Any:
     return (math.shape(value), math.get_dtype_name(value))
 
 
-def generate_uid(op: Operator2, *, adjoint: bool = False, n_ctrls: int = 0) -> int | None:
+def generate_uid(op: Operator2) -> int | None:
     """Generate a unique identifier (UID) that distinguishes ``op`` from other operators of the
     same type based on the concrete values of its non-compilable static and hybrid arguments.
 
@@ -143,10 +87,6 @@ def generate_uid(op: Operator2, *, adjoint: bool = False, n_ctrls: int = 0) -> i
         op (Operator2): the operator to generate a UID for. ``op`` may be abstract, e.g. one of
             its wire arguments may hold an :class:`~.AbstractWires` value instead of concrete
             :class:`~.Wires`.
-        adjoint (bool): whether ``op`` is adjointed. Default is ``False``. ``op`` may also
-            be an Adjoint operator, which will compose with this.
-        n_ctrls (int): the number of controls wrapping ``op``. Default is ``0``. ``op``
-            may also be a ``Controlled`` operator, which will compose with this.
 
     Returns:
         int | None: the generated UID if the op has static or compilable argnames. None if
@@ -157,38 +97,24 @@ def generate_uid(op: Operator2, *, adjoint: bool = False, n_ctrls: int = 0) -> i
     >>> print(generate_uid(qp.X(0)))
     None
 
-    Otherwise, the UID that depends on the the static information.
+    Otherwise, the an integer that depends on the the static and hybrid arguments is returned.
 
     >>> op = qp.Select([qp.X(0), qp.Y(0)], 1)
     >>> generate_uid(op)
-    557601774904406859
+    8998383583439072221
     >>> op2 = qp.Select([qp.X(1), qp.Y(2)], 3)
     >>> generate_uid(op2)
-    557601774904406859
+    8998383583439072221
 
-    ``adjoint`` and ``n_ctrls`` keywords compose with the operator itself:
+    Note that it does not depend on the static information from the dynamic, wire, or compilable arguments.
 
-    >>> generate_uid(op, adjoint=True)
-    439243942176638131
-    >>> generate_uid(qp.adjoint(op))
-    439243942176638131
-
-    This UID is consistent across processes.
+    >>> op3 = qp.Select([qp.X(0), qp.Y(0)], (2, 3))
+    >>> generate_uid(op3)
+    8998383583439072221
 
     """
-    op, adjoint, n_ctrls = _unwrap(op, adjoint, n_ctrls)
-    op_cls = type(op)
-
     if not op.static_argnames and not op.hybrid_argnames:
-        print(op, "is noen?")
-        print(op.static_argnames, op.hybrid_argnames)
         return None
-
-    dynamic_avals = tuple(_leaf_aval(val) for val in op.dynamic_args.values())
-
-    wire_lens = tuple(
-        len(op.arguments[name]) for name in op.wire_argnames if name not in op.hybrid_argnames
-    )
 
     hybrid_trees = []
     hybrid_avals = []
@@ -202,22 +128,18 @@ def generate_uid(op: Operator2, *, adjoint: bool = False, n_ctrls: int = 0) -> i
             hybrid_avals.append(tuple(_leaf_aval(l) for l in leaves))
 
     reduced_static_args = tuple(
-        _serialize_static(val, name) for name, val in op.static_args.items()
+        (name, type(val), _serialize(val)) for name, val in op.static_args.items()
     )
 
-    reduced = [
-        op_cls,
-        ("dynamic", dynamic_avals),
-        ("wires", wire_lens),
+    reduced = (
+        type(op),
         ("hybrid", tuple(hybrid_trees), tuple(hybrid_avals)),
         ("static", reduced_static_args),
-        ("adjoint", adjoint),
-        ("n_ctrls", n_ctrls),
-    ]
+    )
 
     encoded_bytes = str(reduced).encode("utf-8")
     sha_hash = hashlib.sha256(encoded_bytes).hexdigest()
 
     # hexdigest() returns the hexadecimal hash in string format
     # Take 16 hexadecimals, since UID on Operator op is I64Attr, which is a 64-bit unsigned
-    return int("0" + sha_hash[:15], 16)
+    return int(sha_hash[:16], 16) >> 1
