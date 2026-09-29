@@ -41,7 +41,7 @@ def grad(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
     Note that this function follows the same design as jax. By default, the function will return the gradient
     of the first argument, whether or not other arguments are trainable.
 
-    >>> import jax, torch, tensorflow as tf
+    >>> import jax, torch
     >>> def f(x, y):
     ...     return  x * y
     >>> qp.math.grad(f)(qp.numpy.array(2.0), qp.numpy.array(3.0))
@@ -50,8 +50,6 @@ def grad(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
     Array(3., dtype=float32, weak_type=True)
     >>> qp.math.grad(f)(torch.tensor(2.0, requires_grad=True), torch.tensor(3.0, requires_grad=True))
     tensor(3.)
-    >>> qp.math.grad(f)(tf.Variable(2.0), tf.Variable(3.0))
-    <tf.Tensor: shape=(), dtype=float32, numpy=3.0>
 
     ``argnums`` can be provided to differentiate multiple arguments.
 
@@ -135,7 +133,7 @@ def jacobian(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
     Note that this function follows the same design as jax. By default, the function will return the gradient
     of the first argument, whether or not other arguments are trainable.
 
-    >>> import jax, torch, tensorflow as tf
+    >>> import jax, torch
     >>> def f(x, y):
     ...     return  x * y
     >>> qp.math.jacobian(f)(qp.numpy.array([2.0, 3.0]), qp.numpy.array(3.0))
@@ -149,10 +147,6 @@ def jacobian(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
     >>> qp.math.jacobian(f)(x_torch, y_torch)
     tensor([[3., 0.],
                 [0., 3.]])
-    >>> qp.math.jacobian(f)(tf.Variable([2.0, 3.0]), tf.Variable(3.0))
-    <tf.Tensor: shape=(2, 2), dtype=float32, numpy=
-    array([[3., 0.],
-              [0., 3.]], dtype=float32)>
 
     ``argnums`` can be provided to differentiate multiple arguments.
 
@@ -180,15 +174,10 @@ def jacobian(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
     either a Tensor or a tuple of Tensors but the given outputs of the user-provided
     function has type <class 'dict'>.
 
-
-    But tensorflow and autograd can only handle array-valued outputs:
+    Autograd can only handle array-valued outputs:
 
     >>> qp.math.jacobian(tuple_f)(qp.numpy.array(2.0))
     ValueError: autograd can only differentiate with respect to arrays, not <class 'tuple'>
-    >>> qp.math.jacobian(tuple_f)(tf.Variable(2.0))
-    ValueError: qp.math.jacobian does not work with tensorflow and non-tensor outputs.
-    Got (<tf.Tensor: shape=(), dtype=float32, numpy=4.0>,
-    <tf.Tensor: shape=(), dtype=float32, numpy=8.0>) of type <class 'tuple'>.
 
     """
 
