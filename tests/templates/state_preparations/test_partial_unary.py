@@ -435,31 +435,16 @@ def assert_pui_correctness(rule, coefficients, indices, wire_specs):
         if _qjit:
             from catalyst.device.decomposition import catalyst_decompose
 
-            # Side step the condition that the Select-SWAP network needs to be non-trivial. This
-            # allows us to use the non-for_loop QROM decomposition
-            # until dynamic allocation + for_loop is figured out.
-            # pylint: disable=cell-var-from-loop
-            sel_swap_rule = qp.list_decomps("QROM")["_select_swap"]
-
-            @qp.register_resources(sel_swap_rule._compute_resources)
-            def qrom_decomp(*args, **kwargs):
-                sel_swap_rule._impl(*args, **kwargs)
-
             gate_set = {
-                "Select",
                 "MultiplexerStatePreparation",
                 "ForLoop",
                 "Cond",
                 "CNOT",
                 "PauliX",
                 "MultiControlledX",
+                "QROM",
             }
-            fixed_decomp = {"QROM": qrom_decomp}
-            func = qp.qjit(
-                catalyst_decompose(
-                    func, capabilities=None, target_gates=gate_set, fixed_decomps=fixed_decomp
-                )
-            )
+            func = qp.qjit(catalyst_decompose(func, capabilities=None, target_gates=gate_set))
 
         out_state = func()
         # We infer the total and aux wire counts from the state shape, because small-scale
@@ -540,7 +525,18 @@ class TestPartialUnaryStatePreparation:
         assert len(op.indices) == 15
 
     @pytest.mark.catalyst
-    @pytest.mark.parametrize("provide_work_wires", [False, True])
+    @pytest.mark.parametrize(
+        "provide_work_wires",
+        [
+            pytest.param(
+                False,
+                marks=pytest.mark.pl2do(
+                    reason="Dynamic wire allocation together with for_loop iteration (used in QROM) is not supported yet. See epic [sc-130789]"
+                ),
+            ),
+            True,
+        ],
+    )
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize(
         "num_wires,num_entries",

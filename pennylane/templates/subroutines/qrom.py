@@ -930,42 +930,46 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires, extra_control
     # np.mean([math.bitwise_count(math.bitwise_xor(k, k + 1)) - 1 for k in range(num_blocks - 1)])
     # )
 
-    # Loop over all blocks but the last one
-    def loop(k):
-        # 1. load the k-th block, controlled on the flag circuit
-        concrete_load(blocks[k])
+    # Loop over all blocks but the last one. Skip entirely when there is only one block:
+    # ``blocks`` then has shape ``(0, ...)``, and Catalyst's ``for_loop(0)`` still traces the
+    # body, which would index into that empty axis.
+    if num_blocks > 1:
 
-        # 2. transition address k -> k+1
-        # a is the MSB-first index of least-significant 0 bit of k
-        a = c - math.bitwise_count(math.bitwise_xor(k, k + 1)).astype(int)
+        def loop(k):
+            # 1. load the k-th block, controlled on the flag circuit
+            concrete_load(blocks[k])
 
-        # 2a. right-elbow ladder: uncompute levels c-2 .. max(a,1) (top-down)
-        lower_bound = math.max(math.array([a, 1], like=a))
+            # 2. transition address k -> k+1
+            # a is the MSB-first index of least-significant 0 bit of k
+            a = c - math.bitwise_count(math.bitwise_xor(k, k + 1)).astype(int)
 
-        @for_loop(c - 2, lower_bound - 1, -1)
-        # Once resource hints are merged, use those estimates:
-        # @for_loop(c - 2, max(a - 1, 0), -1, estimated_iterations=est_ladder_len)
-        def uncompute(i):
-            qp_ops.adjoint(TemporaryAND)(wires=triples[i])
+            # 2a. right-elbow ladder: uncompute levels c-2 .. max(a,1) (top-down)
+            lower_bound = math.max(math.array([a, 1], like=a))
 
-        uncompute()  # pylint: disable=no-value-for-parameter
+            @for_loop(c - 2, lower_bound - 1, -1)
+            # Once resource hints are merged, use those estimates:
+            # @for_loop(c - 2, max(a - 1, 0), -1, estimated_iterations=est_ladder_len)
+            def uncompute(i):
+                qp_ops.adjoint(TemporaryAND)(wires=triples[i])
 
-        # 2b. merge gate(s) at the boundary
-        # Whether we are in the first half of the iteration, so that the top bit
-        # has not been flipped yet
-        top_not_flipped = k < (1 << (c - 1))
-        flip_iteration_bit(a, triples, top_not_flipped)
+            uncompute()  # pylint: disable=no-value-for-parameter
 
-        # 2c. left-elbow ladder: recompute levels max(a,1) .. c-2 (bottom-up)
-        # Once resource hints are merged, use those estimates:
-        @for_loop(lower_bound, c - 1)
-        # @for_loop(max(a, 1), c - 1, estimated_iterations=est_ladder_len)
-        def recompute(i):
-            TemporaryAND(triples[i], (1, 0))
+            # 2b. merge gate(s) at the boundary
+            # Whether we are in the first half of the iteration, so that the top bit
+            # has not been flipped yet
+            top_not_flipped = k < (1 << (c - 1))
+            flip_iteration_bit(a, triples, top_not_flipped)
 
-        recompute()  # pylint: disable=no-value-for-parameter
+            # 2c. left-elbow ladder: recompute levels max(a,1) .. c-2 (bottom-up)
+            # Once resource hints are merged, use those estimates:
+            @for_loop(lower_bound, c - 1)
+            # @for_loop(max(a, 1), c - 1, estimated_iterations=est_ladder_len)
+            def recompute(i):
+                TemporaryAND(triples[i], (1, 0))
 
-    for_loop(num_blocks - 1)(loop)()  # pylint: disable=no-value-for-parameter
+            recompute()  # pylint: disable=no-value-for-parameter
+
+        for_loop(num_blocks - 1)(loop)()  # pylint: disable=no-value-for-parameter
 
     # Load the last block, which may be partially filled
     concrete_load(last_block)

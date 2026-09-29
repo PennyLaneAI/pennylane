@@ -170,6 +170,28 @@ class TestQROM:
                 np.array(["a", 5, 6, 7]),
                 True,
             ),
+            # Single bitstring with multiple controls and work wires (num_blocks=1 unary path).
+            (
+                [[1, 0]],
+                [0, 1],
+                [2, 3],
+                [4],
+                True,
+            ),
+            (
+                np.array([[1, 0, 1]]),
+                np.array([0, 1, 2]),
+                np.array([3, 4, 5]),
+                np.array([6]),
+                True,
+            ),
+            (
+                [[0, 1]],
+                [0, 1],
+                [2, 3, 4],
+                [5, 6],
+                False,
+            ),
         ],
     )
     def test_operation_result(
@@ -193,8 +215,10 @@ class TestQROM:
             qp.QROM(bitstrings, control_wires, target_wires, work_wires, clean)
             return qp.sample(wires=target_wires)
 
+        num_bitstrings = len(bitstrings)
         for j in range(2 ** len(control_wires)):
-            assert np.allclose(circuit(j), [int(bit) for bit in bitstrings[j]])
+            expected = bitstrings[j] if j < num_bitstrings else [0] * len(target_wires)
+            assert np.allclose(circuit(j), [int(bit) for bit in expected])
 
     @pytest.mark.parametrize(
         ("bitstrings", "target_wires", "control_wires", "work_wires"),
@@ -307,6 +331,8 @@ class TestQROM:
             (5, [0, 1, 2], [3, 4], [5], True),
             (2, [0, 1, 2], [3, 4], [5, 6], True),
             (6, [0, 1, 2], [3, 4], [5, 6], False),
+            (1, [0, 1], [2, 3], [4], True),
+            (1, [0, 1, 2], [3, 4, 5], [6], True),
             (1, [0, 1, 2, 6], [3, 4, 5], [7, 8, 9], True),
             (1, [0, 1, 2, 6], [3, 4, 5], [7, 8, 9], False),
             (11, [0, 1, 2, 3], [4, 5], [6, 7], True),
@@ -864,7 +890,20 @@ class TestMeasurementQROM:
     @pytest.mark.catalyst
     @pytest.mark.parametrize(
         ("L", "n_extra"),
-        [(4, 1), (4, 2), (4, 3), (5, 1), (5, 2), (3, 2), (8, 1), (8, 2), (2, 1), (2, 2)],
+        [
+            (1, 1),
+            (1, 2),
+            (4, 1),
+            (4, 2),
+            (4, 3),
+            (5, 1),
+            (5, 2),
+            (3, 2),
+            (8, 1),
+            (8, 2),
+            (2, 1),
+            (2, 2),
+        ],
     )
     def test_extra_control_wires(self, L, n_extra, seed):
         """Extra control wires (beyond ceil_log2(L)) must gate the whole QROM."""
