@@ -1609,6 +1609,23 @@ class TestBlockEncode:  # pylint: disable=too-many-public-methods
         assert np.allclose(np.eye(len(mat)), mat @ adj)
         assert np.allclose(np.eye(len(mat)), mat @ other_adj)
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize(
+        ("input_matrix", "wires"),
+        [
+            (1, 0),
+            (0.3, 0),
+            ([[0.1, 0.2], [0.3, 0.4]], range(2)),
+            ([[0.1, 0.2, 0.3], [0.3, 0.4, 0.2], [0.1, 0.2, 0.3]], range(3)),
+            ([[0.2, 0, 0.2], [-0.2, 0.2, 0]], range(3)),
+        ],
+    )
+    def test_adjoint_decomposition_rule(self, input_matrix, wires):
+        """Test the graph decomposition of Adjoint(BlockEncode)."""
+        op = qp.adjoint(qp.BlockEncode(input_matrix, wires))
+        for rule in qp.list_decomps("Adjoint(BlockEncode)"):
+            _test_decomposition_rule(op, rule)
+
     def test_label(self):
         """Test the label method for BlockEncode op"""
         op = qp.BlockEncode(0.5, wires=[0, 1])

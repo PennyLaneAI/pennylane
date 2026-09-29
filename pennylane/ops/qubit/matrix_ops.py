@@ -807,6 +807,18 @@ class BlockEncode(Operator2):
         return super().label(decimals=decimals, base_label=base_label or "BlockEncode", cache=cache)
 
 
+def _adjoint_block_encode_resources(base):
+    return {abstractify(base.adjoint()): 1}
+
+
+@register_resources(_adjoint_block_encode_resources)
+def _adjoint_block_encode(base):
+    base.adjoint()
+
+
+add_decomps("Adjoint(BlockEncode)", _adjoint_block_encode)
+
+
 def _prepare_blockencode_matrix(A, n_wires):
     """Canonicalize ``A`` to 2D and compute its operator-norm scaling and encoding subspace."""
 
