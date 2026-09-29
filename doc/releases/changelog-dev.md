@@ -628,7 +628,7 @@
           hardware="gpu", coprocessor_fn=qp.backline.onnx_decoder("predecoder.onnx")
       )
 
-  [(#YYYY)](https://github.com/PennyLaneAI/pennylane/pull/YYYY)
+  [(#10225)](https://github.com/PennyLaneAI/pennylane/pull/10225)
 
 * Adds a `qp.decomposition.all_decomps` functions for finding all decompositions that might be hit by
   decomposing a gate to any gateset.
