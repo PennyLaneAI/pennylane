@@ -19,6 +19,7 @@ import inspect
 from functools import wraps
 
 import jax
+from jax.tree_util import tree_flatten, tree_leaves, tree_unflatten
 
 from pennylane import capture
 from pennylane.compiler import compiler
@@ -59,9 +60,6 @@ def _value_and_grad_abstract(*args, argnums, jaxpr, method, h, fn):
 def _capture_value_and_grad(func, *, argnums=0, method=None, h=None):
     # mostly a copy-paste of _capture_diff, but a few minor things needed to get updated
     # Could also find a way to remove code duplication
-
-    # pylint: disable=import-outside-toplevel
-    from jax.tree_util import tree_flatten, tree_leaves, tree_unflatten
 
     h = _setup_h(h)
     method = _setup_method(method)
