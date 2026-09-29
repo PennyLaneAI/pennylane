@@ -1610,6 +1610,7 @@
 
 * :func:`~.allocate` with zero wires no longer queues or captures :class:`~.allocation.Allocate`
   and :class:`~.allocation.Deallocate` instructions, including when used as a context manager.
+  [(#10219)](https://github.com/PennyLaneAI/pennylane/pull/10219)
 
 * Fixed a bug where a fixed decomposition rule assigned to :class:`~.MultiControlledX` via the
   ``fixed_decomps`` keyword argument of :func:`~.transforms.decompose` was being ignored.
