@@ -28,6 +28,9 @@ from typing import Any, Optional, TypeVar, Union
 
 import numpy as np
 from autograd.numpy.numpy_boxes import ArrayBox
+from jax import Array
+from jax.core import Tracer
+from jax.numpy import ndarray
 
 FlatPytree = tuple[Sequence[Any], Hashable]
 
@@ -83,17 +86,9 @@ True
 
 def _is_jax(other, subclass=False):
     """Check if other is an instance or a subclass of a jax tensor."""
-    if "jax" in sys.modules:
-        with contextlib.suppress(ImportError):
-            from jax import Array
-            from jax.core import Tracer
-            from jax.numpy import ndarray
-
-            JaxTensor = ndarray | Array | Tracer
-            check = issubclass if subclass else isinstance
-
-            return check(other, JaxTensor)
-    return False
+    JaxTensor = ndarray | Array | Tracer
+    check = issubclass if subclass else isinstance
+    return check(other, JaxTensor)
 
 
 def _is_tensorflow(
