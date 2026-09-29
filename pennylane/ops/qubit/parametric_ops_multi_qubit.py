@@ -212,32 +212,35 @@ def _multi_rz_decomposition_resources(theta: TensorLike, wires: WiresLike):
     return {_change_op_basis_abstract(ladder, RZ(Float, wires=Wire[1]), unladder): 1}
 
 
+def _cnot_ladder(wires, start, stop, step):
+    """Return a zero-argument callable applying one direction of the CNOT ladder."""
+
+    def _apply():
+        @qp.for_loop(start, stop, step)
+        def _cnots(i):
+            qp.CNOT(wires=(wires[i], wires[i - 1]))
+
+        _cnots()  # pylint: disable=no-value-for-parameter
+
+    return _apply
+
+
 @register_resources(_multi_rz_decomposition_resources)
 def _multi_rz_decomposition(theta: TensorLike, wires: WiresLike):
+    """CNOT ladder around an ``RZ``, so a control applies only to the rotation."""
     if len(wires) == 1:
         qp.RZ(theta, wires=wires[0])
         return
 
-    # A Python ``range`` unrolls into one CNOT per wire. ``qp.for_loop`` stays a loop under qjit
-    # and capture. Traced indexing needs an array in both of those cases.
     if qp.compiler.active() or qp.capture.enabled():
         wires = math.array(wires, like="jax")
 
-    def _ladder():
-        @qp.for_loop(len(wires) - 1, 0, -1)
-        def _cnots(i):
-            qp.CNOT(wires=(wires[i], wires[i - 1]))
-
-        _cnots()  # pylint: disable=no-value-for-parameter
-
-    def _unladder():
-        @qp.for_loop(1, len(wires))
-        def _cnots(i):
-            qp.CNOT(wires=(wires[i], wires[i - 1]))
-
-        _cnots()  # pylint: disable=no-value-for-parameter
-
-    qp.change_op_basis(_ladder, qp.RZ(theta, wires=wires[0]), _unladder)
+    num_wires = len(wires)
+    qp.change_op_basis(
+        _cnot_ladder(wires, num_wires - 1, 0, -1),
+        qp.RZ(theta, wires=wires[0]),
+        _cnot_ladder(wires, 1, num_wires, 1),
+    )
 
 
 add_decomps(MultiRZ, _multi_rz_decomposition)
