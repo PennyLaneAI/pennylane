@@ -510,8 +510,6 @@ class TestDecompositions:
         """Tests that the decomposition of the IsingXY gate is correct"""
         param = 0.1234
         op = qp.IsingXY(param, wires=[3, 2])
-        # IsingXY decomposes into a single ChangeOpBasis conjugating the two rotations with a
-        # Hadamard-CY basis change, which is what lets a control skip the basis change.
         (cob,) = op.decomposition()
 
         # operands are in matrix order, i.e. reversed relative to the order they are applied in
@@ -3082,15 +3080,15 @@ class TestPauliRot:
         op = qp.PauliRot(theta, "XY", wires=[0, 1])
         (cob,) = op.decomposition()
 
-        assert [gate.name for gate in cob.compute_op.operands] == ["RX", "Hadamard"]
-        assert [gate.wires for gate in cob.compute_op.operands] == [Wires([1]), Wires([0])]
-        assert cob.compute_op.operands[0].data[0] == np.pi / 2
+        assert [gate.name for gate in cob.compute_op.operands] == ["PPR", "Hadamard"]
+        qp.assert_equal(cob.compute_op.operands[0], qp.PPR(4, "X", wires=1))
+        qp.assert_equal(cob.compute_op.operands[1], qp.Hadamard(wires=0))
 
         qp.assert_equal(cob.target_op, qp.MultiRZ(theta, wires=[0, 1]))
 
-        assert [gate.name for gate in cob.uncompute_op.operands] == ["RX", "Hadamard"]
-        assert [gate.wires for gate in cob.uncompute_op.operands] == [Wires([1]), Wires([0])]
-        assert cob.uncompute_op.operands[0].data[0] == -np.pi / 2
+        assert [gate.name for gate in cob.uncompute_op.operands] == ["PPR", "Hadamard"]
+        qp.assert_equal(cob.uncompute_op.operands[0], qp.PPR(-4, "X", wires=1))
+        qp.assert_equal(cob.uncompute_op.operands[1], qp.Hadamard(wires=0))
 
     @pytest.mark.parametrize("theta", [0.4, np.array([np.pi / 3, 0.1, -0.9])])
     def test_PauliRot_decomposition_XIYZ(self, theta):
@@ -3099,15 +3097,15 @@ class TestPauliRot:
         op = qp.PauliRot(theta, "XIYZ", wires=[0, 1, 2, 3])
         (cob,) = op.decomposition()
 
-        assert [gate.name for gate in cob.compute_op.operands] == ["RX", "Hadamard"]
-        assert [gate.wires for gate in cob.compute_op.operands] == [Wires([2]), Wires([0])]
-        assert cob.compute_op.operands[0].data[0] == np.pi / 2
+        assert [gate.name for gate in cob.compute_op.operands] == ["PPR", "Hadamard"]
+        qp.assert_equal(cob.compute_op.operands[0], qp.PPR(4, "X", wires=2))
+        qp.assert_equal(cob.compute_op.operands[1], qp.Hadamard(wires=0))
 
         qp.assert_equal(cob.target_op, qp.MultiRZ(theta, wires=[0, 2, 3]))
 
-        assert [gate.name for gate in cob.uncompute_op.operands] == ["RX", "Hadamard"]
-        assert [gate.wires for gate in cob.uncompute_op.operands] == [Wires([2]), Wires([0])]
-        assert cob.uncompute_op.operands[0].data[0] == -np.pi / 2
+        assert [gate.name for gate in cob.uncompute_op.operands] == ["PPR", "Hadamard"]
+        qp.assert_equal(cob.uncompute_op.operands[0], qp.PPR(-4, "X", wires=2))
+        qp.assert_equal(cob.uncompute_op.operands[1], qp.Hadamard(wires=0))
 
     def test_PauliRot_single_basis_gate_is_unwrapped(self):
         """Test that a single basis gate is not wrapped in a product."""
@@ -3117,6 +3115,11 @@ class TestPauliRot:
         qp.assert_equal(cob.compute_op, qp.Hadamard(0))
         qp.assert_equal(cob.target_op, qp.MultiRZ(theta, wires=[0]))
         qp.assert_equal(cob.uncompute_op, qp.Hadamard(0))
+
+        (cob,) = qp.PauliRot(theta, "Y", wires=0).decomposition()
+        qp.assert_equal(cob.compute_op, qp.PPR(4, "X", wires=0))
+        qp.assert_equal(cob.target_op, qp.MultiRZ(theta, wires=[0]))
+        qp.assert_equal(cob.uncompute_op, qp.PPR(-4, "X", wires=0))
 
     @pytest.mark.parametrize("angle", npp.linspace(0, 2 * np.pi, 7, requires_grad=True))
     @pytest.mark.parametrize("pauli_word", ["XX", "YY", "ZZ"])

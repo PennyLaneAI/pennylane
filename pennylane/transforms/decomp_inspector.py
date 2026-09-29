@@ -379,8 +379,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
     Full Expansion Gates: {CNOT: 46, GlobalPhase: 19, RX: 17, RZ: 22}
     Weighted Cost: 1996.0
 
-    The ``(X)@RZ@(X)`` above is a controlled change of basis. Decomposing it once more leaves the
-    CNOT ladder bare and controls only the ``RZ``:
+    The CNOT ladder of the base operator stays unchanged, and the control applies only to the ``RZ``:
 
     >>> cnot = qp.CNOT([1, 0])
     >>> cob = qp.change_op_basis(cnot, qp.RZ(0.5, wires=0), cnot)
@@ -434,7 +433,7 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
 
         qp.decomposition.enable_graph()
 
-        @qp.decomp_inspector(gate_set={"RZ", "RX", "CNOT"}, num_work_wires=2)
+        @qp.decomp_inspector(gate_set={"RZ", "RX", "CNOT", "PPR"}, num_work_wires=2)
         @qp.qnode(qp.device("default.qubit"))
         def circuit():
             qp.PauliRot(0.5, "XYZ", [0, 1, 2])
@@ -444,33 +443,26 @@ def decomp_inspector(  # pylint: disable=too-many-arguments
 
     >>> inspector.inspect_decomps(qp.PauliRot(0.5, "XYZ", [0, 1, 2]))
     Decomposition 0 (name: _pauli_rot_decomposition)
-    0: ─╭(RX(-1.57)@H)@MultiRZ(0.50)@(RX(1.57)@H)─┤
-    1: ─├(RX(-1.57)@H)@MultiRZ(0.50)@(RX(1.57)@H)─┤
-    2: ─╰(RX(-1.57)@H)@MultiRZ(0.50)@(RX(1.57)@H)─┤
-    First-Level Expansion Gates: {(RX @ Hadamard) @ MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)) @ (RX @ Hadamard): 1}
-    Missing Ops: {(RX @ Hadamard) @ MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)) @ (RX @ Hadamard)}
+    0: ─╭(PPR(-π/4, X)@H)@MultiRZ(0.50)@(PPR(π/4, X)@H)─┤
+    1: ─├(PPR(-π/4, X)@H)@MultiRZ(0.50)@(PPR(π/4, X)@H)─┤
+    2: ─╰(PPR(-π/4, X)@H)@MultiRZ(0.50)@(PPR(π/4, X)@H)─┤
+    First-Level Expansion Gates: {(PPR(-4, 'X', wires=AbstractWires(1)) @ Hadamard) @ MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)) @ (PPR(4, 'X', wires=AbstractWires(1)) @ Hadamard): 1}
+    Missing Ops: {(PPR(-4, 'X', wires=AbstractWires(1)) @ Hadamard) @ MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)) @ (PPR(4, 'X', wires=AbstractWires(1)) @ Hadamard)}
 
-    That missing operator is a change of basis. Decomposing it once more separates the ``MultiRZ``
-    from the basis change:
+    That missing operator is a change of basis, conjugating the ``MultiRZ`` with a Hadamard/``PPR``
+    basis change. The ``MultiRZ`` is available, so splitting the basis change surfaces the root
+    problem:
 
-    >>> basis = qp.prod(qp.RX(np.pi / 2, wires=1), qp.Hadamard(wires=0))
-    >>> pauli_cob = qp.change_op_basis(basis, qp.MultiRZ(0.5, wires=[0, 1, 2]), basis)
-    >>> inspector.inspect_decomps(pauli_cob)
-    Decomposition 0 (name: _change_op_basis_decomp)
-    0: ─╭RX(1.57)@H─╭MultiRZ(0.50)─╭RX(1.57)@H─┤
-    1: ─╰RX(1.57)@H─├MultiRZ(0.50)─╰RX(1.57)@H─┤
-    2: ─────────────╰MultiRZ(0.50)─────────────┤
-    First-Level Expansion Gates: {MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)): 1, RX @ Hadamard: 2}
-    Missing Ops: {RX @ Hadamard}
-
-    ``RX @ Hadamard`` is still one operator. Splitting it is what surfaces the ``Hadamard``:
-
-    >>> inspector.inspect_decomps(basis)
+    >>> to_basis = qp.prod(qp.PPR(4, "X", wires=1), qp.Hadamard(wires=0))
+    >>> inspector.inspect_decomps(to_basis)
     Decomposition 0 (name: _prod2_decomp)
-    0: ──H────────┤
-    1: ──RX(1.57)─┤
-    First-Level Expansion Gates: {Hadamard: 1, RX: 1}
+    0: ──H───────────┤
+    1: ──PPR(π/4, X)─┤
+    First-Level Expansion Gates: {Hadamard: 1, PPR(4, 'X', wires=AbstractWires(1)): 1}
     Missing Ops: {Hadamard}
+
+    That missing operator is the ``Hadamard``. The graph has no decomposition for it into this gate
+    set, which is why ``PauliRot`` stops here. Inspecting it directly:
 
     >>> inspector.inspect_decomps(qp.Hadamard(0))
     Decomposition 0 (name: _hadamard_ppm)
