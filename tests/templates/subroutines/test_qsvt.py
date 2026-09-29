@@ -15,6 +15,7 @@
 Tests for the QSVT template and qsvt wrapper function.
 """
 
+# pylint: disable=too-many-arguments, import-outside-toplevel, no-self-use
 from copy import deepcopy
 
 import pytest
@@ -24,8 +25,6 @@ from numpy.polynomial.chebyshev import Chebyshev
 import pennylane as qp
 from pennylane import numpy as np
 from pennylane.core.queuing import AnnotatedQueue
-
-# pylint: disable=too-many-arguments, import-outside-toplevel, no-self-use
 from pennylane.templates.subroutines.qsvt import (
     _cheby_pol,
     _complementary_poly,
