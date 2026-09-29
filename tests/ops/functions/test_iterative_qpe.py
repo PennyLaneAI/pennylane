@@ -17,6 +17,7 @@ Unit tests for the iterative_qpe function
 
 from functools import partial
 
+import jax
 import numpy as np
 import pytest
 
@@ -60,8 +61,6 @@ class TestIQPE:
     @pytest.mark.jax
     def test_check_gradients_jax(self):
         """Test to check that the gradients are correct comparing with the expanded circuit using JAX"""
-
-        import jax
 
         dev = qp.device("default.qubit")
 
@@ -250,8 +249,6 @@ class TestCaptureIQPE:
     def test_capture_as_single_subroutine_eqn(self, recwarn):
         """Test that the rounds are captured into one subroutine."""
 
-        import jax
-
         def circuit(phi, iters):
             return qp.iterative_qpe(qp.RZ(phi, wires=[0]), aux_wire=1, iters=iters)
 
@@ -268,8 +265,6 @@ class TestCaptureIQPE:
     @pytest.mark.parametrize("iters", (2, 3, 4))
     def test_subroutine_body_matches_uncaptured(self, iters):
         """Test that the captured body matches the legacy tape implementation."""
-
-        import jax
 
         # CAPTURE
         jaxpr = jax.make_jaxpr(
@@ -290,8 +285,6 @@ class TestCaptureIQPE:
     def test_subroutine_is_shared_if_different_dyn_args(self):
         """Test that two calls share one subroutine body."""
 
-        import jax
-
         def circuit(phi):
             qp.iterative_qpe(qp.RZ(phi, wires=[0]), aux_wire=1, iters=3)
             qp.iterative_qpe(qp.RZ(phi, wires=[2]), aux_wire=3, iters=3)
@@ -304,8 +297,6 @@ class TestCaptureIQPE:
 
     def test_subroutine_is_not_shared_if_different_static_args(self):
         """Test that two calls with diff iters do not share one subroutine body."""
-
-        import jax
 
         def circuit(phi):
             qp.iterative_qpe(qp.RZ(phi, wires=[0]), aux_wire=3, iters=1)
@@ -321,8 +312,6 @@ class TestCaptureIQPE:
     def test_different_aux_wire_containers(self, aux_wire):
         """Test different wire inputs can be used."""
 
-        import jax
-
         jaxpr = jax.make_jaxpr(
             lambda phi: qp.iterative_qpe(qp.RZ(phi, wires=[0]), aux_wire=aux_wire, iters=3)
         )(2.0)
@@ -335,8 +324,6 @@ class TestCaptureIQPE:
 
         class DummyOp(qp.core.Operator):  # pylint: disable=too-few-public-methods
             pass
-
-        import jax
 
         def circuit(phi):
             return qp.iterative_qpe(DummyOp(phi, 0), 1, 3)
