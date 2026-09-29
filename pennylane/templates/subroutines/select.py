@@ -21,7 +21,7 @@ from itertools import product
 import numpy as np
 
 from pennylane import capture, math
-from pennylane.core.operator import Operator2
+from pennylane.core.operator import Operator, Operator2
 from pennylane.core.queuing import QueuingManager, apply
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.ops import CNOT, X, adjoint, ctrl
@@ -360,7 +360,7 @@ class Select(Operator2):
                 + "wires are required."
             )
 
-        target_wire_args = tuple(op.wires for op in self.ops)
+        target_wire_args = tuple(op.wires for op in self.ops if isinstance(op, Operator))
         self._target_wires = all_wires_concrete_or_abstract(target_wire_args)
         all_wire_args = (self.control, self._target_wires)
         self._wires = all_wires_concrete_or_abstract(all_wire_args)
