@@ -126,7 +126,7 @@ def get_interface(*values):
             UserWarning,
         )
 
-    priority_queue = ("tensorflow", "torch", "jax", "autograd", "scipy")
+    priority_queue = ("torch", "jax", "autograd", "scipy")
     for target_interface in priority_queue:
         if target_interface in interfaces:
             return target_interface

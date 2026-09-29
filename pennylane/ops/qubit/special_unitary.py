@@ -497,14 +497,14 @@ class SpecialUnitary(Operation):
         return qp.math.expm(1j * A)
 
     def get_one_parameter_generators(
-        self, interface: Literal[None, "jax", "tensorflow", "tf", "torch"] = None
+        self, interface: Literal[None, "jax", "torch"] = None
     ) -> TensorLike:
         r"""Compute the generators of one-parameter groups that reproduce
         the partial derivatives of a special unitary gate.
 
         Args:
             interface (str): The auto-differentiation framework to be used for the
-                computation. Has to be one of ``["jax", "tensorflow", "tf", "torch"]``.
+                computation. Has to be one of ``["jax", "torch"]``.
 
         Raises:
             NotImplementedError: If the chosen interface is ``"autograd"``. Autograd
@@ -588,7 +588,7 @@ class SpecialUnitary(Operation):
         # After contracting, move the parameter derivative axis to the first position
         return qp.math.transpose(qp.math.tensordot(U_dagger, jac, axes=[[1], [0]]), [2, 0, 1])
 
-    def get_one_parameter_coeffs(self, interface: Literal["jax", "tensorflow", "tf", "torch"]):
+    def get_one_parameter_coeffs(self, interface: Literal["jax", "torch"]):
         r"""Compute the Pauli basis coefficients of the generators of one-parameter groups
         that reproduce the partial derivatives of a special unitary gate.
 

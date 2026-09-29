@@ -219,9 +219,9 @@ def _compute_fidelity_vjp0(dm0, dm1, grad_out):
         u0_dag = math.transpose(math.conj(u0))
         grad_dm0 = sqrt_dm1 @ u0 @ (1 / math.sqrt(evs0)[..., None] * u0_dag) @ sqrt_dm1
 
-        # torch and tensorflow use the Wirtinger derivative which is a different convention
+        # torch uses the Wirtinger derivative which is a different convention
         # than the one autograd and jax use for complex differentiation
-        if math.get_interface(dm0) in ["torch", "tensorflow"]:
+        if math.get_interface(dm0) == "torch":
             grad_dm0 = math.sum(math.sqrt(evs0), -1) * grad_dm0
         else:
             grad_dm0 = math.sum(math.sqrt(evs0), -1) * math.transpose(grad_dm0)
@@ -233,9 +233,9 @@ def _compute_fidelity_vjp0(dm0, dm1, grad_out):
     u0_dag = math.transpose(math.conj(u0), (0, 2, 1))
     grad_dm0 = sqrt_dm1 @ u0 @ (1 / math.sqrt(evs0)[..., None] * u0_dag) @ sqrt_dm1
 
-    # torch and tensorflow use the Wirtinger derivative which is a different convention
+    # torch uses the Wirtinger derivative which is a different convention
     # than the one autograd and jax use for complex differentiation
-    if math.get_interface(dm0) in ["torch", "tensorflow"]:
+    if math.get_interface(dm0) == "torch":
         grad_dm0 = math.sum(math.sqrt(evs0), -1)[:, None, None] * grad_dm0
     else:
         grad_dm0 = math.sum(math.sqrt(evs0), -1)[:, None, None] * math.transpose(

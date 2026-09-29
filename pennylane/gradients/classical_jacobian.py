@@ -108,10 +108,6 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
          - ``array`` [2]
          - ``array``
          - ``tuple(array)``
-       * - ``'tf'``
-         - ``tuple(array)``
-         - ``array``
-         - ``tuple(array)``
        * - ``'torch'``
          - ``tuple(array)``
          - ``array``

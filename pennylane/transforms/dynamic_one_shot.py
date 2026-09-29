@@ -289,7 +289,6 @@ def parse_native_mid_circuit_measurements(
     assert results is not None  # condition needed to not break signature
     interface = math.get_deep_interface(results)
     interface = "numpy" if interface == "builtins" else interface
-    interface = "tensorflow" if interface == "tf" else interface
 
     all_mcms = [op for op in circuit.operations if is_mcm(op)]
     mcm_samples = math.hstack(

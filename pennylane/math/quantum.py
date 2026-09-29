@@ -286,8 +286,7 @@ def partial_trace(matrix, indices, c_dtype="complex128"):
            [[0.+0.j, 0.+0.j],
             [0.+0.j, 1.+0.j]]])
     """
-    # Autograd does not support same indices sum in backprop, and tensorflow
-    # has a limit of 8 dimensions if same indices are used
+    # Autograd does not support same indices sum in backprop
     matrix = math.cast(matrix, dtype=c_dtype)
     if math.ndim(matrix) == 2:
         is_batched = False
@@ -296,7 +295,7 @@ def partial_trace(matrix, indices, c_dtype="complex128"):
         is_batched = True
         batch_dim, dim = matrix.shape[:2]
 
-    if math.get_interface(matrix) in ["autograd", "tensorflow"]:
+    if math.get_interface(matrix) == "autograd":
         return _batched_partial_trace_nonrep_indices(matrix, is_batched, indices, batch_dim, dim)
 
     # Dimension and reshape

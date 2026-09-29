@@ -219,7 +219,7 @@ def is_independent(
         func (callable): Function to be tested
         interface (str): Autodiff framework used by ``func``. Must correspond to one
             of the supported PennyLane interface strings, such as ``"autograd"``,
-            ``"tf"``, ``"torch"``, ``"jax"``.
+            ``"torch"``, ``"jax"``.
         args (tuple): Positional arguments with respect to which to test
         kwargs (dict): Keyword arguments for ``func`` at which to test;
             the keyword arguments are kept fixed in this test.
