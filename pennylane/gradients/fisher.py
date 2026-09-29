@@ -46,19 +46,6 @@ def _torch_jac(circ):
     return wrapper
 
 
-# TODO: create qp.math.jacobian and replace it here
-def _tf_jac(circ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-    """TF jacobian as a callable function"""
-    import tensorflow as tf
-
-    def wrapper(*args, **kwargs):
-        with tf.GradientTape() as tape:
-            loss = circ(*args, **kwargs)
-        return tape.jacobian(loss, args)
-
-    return wrapper
-
-
 def _compute_cfim(p, dp):
     r"""Computes the (num_params, num_params) classical fisher information matrix from the probabilities and its derivatives
     I.e. it computes :math:`classical_fisher_{ij} = \sum_\ell (\partial_i p_\ell) (\partial_i p_\ell) / p_\ell`
@@ -260,10 +247,6 @@ def classical_fisher(qnode, argnums=0):
         elif interface == "autograd":
             jac = jacobian(new_qnode)
 
-        elif (
-            interface == "tf"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            jac = _tf_jac(new_qnode)
         else:
             raise ValueError(
                 f"Interface {interface} not supported for jacobian calculations."
@@ -281,7 +264,7 @@ def classical_fisher(qnode, argnums=0):
             for j_i in j:
                 res.append(_compute_cfim(p, j_i))
 
-            if len(j) == 1:  # pragma: no cover (TensorFlow tests were disabled during deprecation)
+            if len(j) == 1:
                 return res[0]
 
             return res

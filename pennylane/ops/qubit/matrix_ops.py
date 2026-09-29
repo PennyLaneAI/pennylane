@@ -832,11 +832,6 @@ def _process_blockencode(A, subspace):
     sqrtm = math.sqrt_matrix_sparse if sp.sparse.issparse(A) else math.sqrt_matrix
 
     def _stack(lst, h=False, like=None):
-        if (
-            like == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            axis = 1 if h else 0
-            return qp.math.concat(lst, like=like, axis=axis)
         return qp.math.hstack(lst) if h else qp.math.vstack(lst)
 
     interface = qp.math.get_interface(A)

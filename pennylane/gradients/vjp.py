@@ -148,9 +148,7 @@ def compute_vjp_single(dy, jac, num=None):
             try:
                 res = dy_row @ jac
             # pylint: disable=broad-except
-            except (
-                Exception
-            ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
+            except Exception:  # pylint: disable=broad-except
                 res = math.tensordot(jac, dy_row, [[0], [0]])
 
         # Single measurement with dimension e.g. probs
@@ -159,9 +157,7 @@ def compute_vjp_single(dy, jac, num=None):
             try:
                 res = jac @ dy_row
             # pylint: disable=broad-except
-            except (
-                Exception
-            ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
+            except Exception:  # pylint: disable=broad-except
                 res = math.tensordot(jac, dy_row, [[1], [0]])
 
     return res
@@ -215,7 +211,6 @@ def compute_vjp_multi(dy, jac, num=None):
     # Multiple parameters
     else:
         try:
-            dy_interface = math.get_interface(dy[0])
             # dy  -> (i,j)      observables, entries per observable
             # jac -> (i,k,j)    observables, parameters, entries per observable
             # Contractions over observables and entries per observable
@@ -223,13 +218,6 @@ def compute_vjp_multi(dy, jac, num=None):
             if len(dy_shape) > 1:  # multiple values exist per observable output
                 return math.array(math.einsum("ij,i...j", dy, jac), like=dy[0])
 
-            if (
-                dy_interface == "tensorflow"
-            ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-                # TF needs a different path for Hessian support
-                return math.array(
-                    math.einsum("i,i...", dy, jac, like=dy[0]), like=dy[0]
-                )  # Scalar value per observable output
             return math.array(
                 math.einsum("i,i...", dy, jac), like=dy[0]
             )  # Scalar value per observable output
@@ -533,9 +521,7 @@ def batch_vjp(tapes, dys, gradient_fn, reduction="append", gradient_kwargs=None)
 
             if isinstance(reduction, str):
                 getattr(vjps, reduction)(vjp_)
-            elif callable(
-                reduction
-            ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
+            elif callable(reduction):
                 reduction(vjps, vjp_)
 
         return vjps

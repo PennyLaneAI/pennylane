@@ -88,17 +88,6 @@ def grad(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
             g = tuple(args[i].grad for i in argnums)
             return g[0] if argnums_integer else g
 
-        if (
-            interface == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            import tensorflow as tf
-
-            with tf.GradientTape() as tape:
-                y = f(*args, **kwargs)
-
-            g = tape.gradient(y, tuple(args[i] for i in argnums))
-            return g[0] if argnums_integer else g
-
         raise ValueError(f"Interface {interface} is not differentiable.")
 
     return compute_grad
@@ -128,32 +117,6 @@ def _torch_jac(f, argnums, args, kwargs):
         return tuple(j[0] for j in jac) if isinstance(argnums, int) else jac
     # else array
     return jac[0] if isinstance(argnums, int) else jac
-
-
-# pylint: disable=import-outside-toplevel
-def _tensorflow_jac(
-    f, argnums, args, kwargs
-):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-    """Calculate a jacobian via tensorflow"""
-    import tensorflow as tf
-
-    with tf.GradientTape() as tape:
-        y = f(*args, **kwargs)
-
-    if get_interface(y) != "tensorflow":
-        raise ValueError(
-            f"qp.math.jacobian does not work with tensorflow and non-tensor outputs. Got {y} of type {type(y)}."
-        )
-
-    argnums_integer = False
-    if isinstance(argnums, int):
-        argnums_tf = (argnums,)
-        argnums_integer = True
-    else:
-        argnums_tf = argnums
-
-    g = tape.jacobian(y, tuple(args[i] for i in argnums_tf))
-    return g[0] if argnums_integer else g
 
 
 # pylint: disable=import-outside-toplevel
@@ -241,11 +204,6 @@ def jacobian(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
 
         if interface == "torch":
             return _torch_jac(f, argnums, args, kwargs)
-
-        if (
-            interface == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            return _tensorflow_jac(f, argnums, args, kwargs)
 
         raise ValueError(f"Interface {interface} is not differentiable.")
 

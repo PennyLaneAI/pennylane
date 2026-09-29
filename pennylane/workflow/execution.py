@@ -214,9 +214,6 @@ def execute(
 
     interface = _resolve_interface(interface, tapes)
 
-    if interface in {Interface.TF, Interface.TF_AUTOGRAPH}:  # pragma: no cover
-        warnings.warn(_TF_DEPRECATION_MSG, PennyLaneDeprecationWarning, stacklevel=4)
-
     config = qp.devices.ExecutionConfig(
         interface=interface,
         gradient_method=diff_method,

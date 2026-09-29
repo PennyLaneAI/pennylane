@@ -408,36 +408,12 @@ def is_abstract(tensor, like=None):
 
         return False
 
-    if (
-        interface == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        import tensorflow as tf
-        from tensorflow.python.framework.ops import EagerTensor
-
-        return not isinstance(tf.convert_to_tensor(tensor), EagerTensor)
-
     # Autograd does not have a JIT
 
     # QNodes do not currently support TorchScript:
     #   NotSupportedError: Compiled functions can't take variable number of arguments or
     #   use keyword-only arguments with defaults.
     return False
-
-
-def import_should_record_backprop():  # pragma: no cover
-    """Return should_record_backprop or an equivalent function."""
-    import tensorflow.python as tfpy
-
-    if hasattr(tfpy.eager.tape, "should_record_backprop"):
-        from tensorflow.python.eager.tape import should_record_backprop
-    elif hasattr(tfpy.eager.tape, "should_record"):
-        from tensorflow.python.eager.tape import should_record as should_record_backprop
-    elif hasattr(tfpy.eager.record, "should_record_backprop"):
-        from tensorflow.python.eager.record import should_record_backprop
-    else:
-        raise ImportError("Cannot import should_record_backprop from TensorFlow.")
-
-    return should_record_backprop
 
 
 def requires_grad(tensor, interface=None):
@@ -473,14 +449,6 @@ def requires_grad(tensor, interface=None):
     PyTorch has similar behaviour.
     """
     interface = interface or math.get_interface(tensor)
-
-    if (
-        interface == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        import tensorflow as tf
-
-        should_record_backprop = import_should_record_backprop()
-        return should_record_backprop([tf.convert_to_tensor(tensor)])
 
     if interface == "autograd":
         if isinstance(tensor, ArrayBox):
@@ -526,14 +494,6 @@ def in_backprop(tensor, interface=None):
     .. seealso:: :func:`~.requires_grad`
     """
     interface = interface or math.get_interface(tensor)
-
-    if (
-        interface == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        import tensorflow as tf
-
-        should_record_backprop = import_should_record_backprop()
-        return should_record_backprop([tf.convert_to_tensor(tensor)])
 
     if interface == "autograd":
         return isinstance(tensor, ArrayBox)

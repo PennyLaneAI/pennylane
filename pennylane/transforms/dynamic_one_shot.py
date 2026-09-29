@@ -464,13 +464,6 @@ def _gather_samples(measurement: SampleMP, samples, is_valid, postselect_mode=No
 @gather_non_mcm.register
 def _gather_expval(measurement: ExpectationMP, samples, is_valid, postselect_mode=None):
     samples = math.stack(samples)
-    if (
-        math.get_interface(is_valid) == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        # Tensorflow requires arrays that are used for arithmetic with each other to have the
-        # same dtype. We don't cast if measuring samples as float tf.Tensors cannot be used to
-        # index other tf.Tensors (is_valid is used to index valid samples).
-        is_valid = math.cast_like(is_valid, samples)
     return math.sum(math.squeeze(samples) * is_valid) / math.sum(is_valid)
 
 
@@ -478,34 +471,14 @@ def _gather_expval(measurement: ExpectationMP, samples, is_valid, postselect_mod
 @gather_non_mcm.register
 def _gather_probability(measurement: ProbabilityMP, samples, is_valid, postselect_mode=None):
     samples = math.stack(samples, axis=0)
-    if (
-        math.get_interface(is_valid) == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        # Tensorflow requires arrays that are used for arithmetic with each other to have the
-        # same dtype. We don't cast if measuring samples as float tf.Tensors cannot be used to
-        # index other tf.Tensors (is_valid is used to index valid samples).
-        is_valid = math.cast_like(is_valid, samples)
     return math.sum(samples * math.reshape(is_valid, (-1, 1)), axis=0) / math.sum(is_valid)
 
 
 @gather_non_mcm.register
 def _gather_variance(measurement: VarianceMP, samples, is_valid, postselect_mode=None):
     samples = math.stack(samples)
-    if (
-        interface := math.get_interface(is_valid)
-    ) == "tensorflow":  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        # Tensorflow requires arrays that are used for arithmetic with each other to have the
-        # same dtype. We don't cast if measuring samples as float tf.Tensors cannot be used to
-        # index other tf.Tensors (is_valid is used to index valid samples).
-        is_valid = math.cast_like(is_valid, samples)
     samples = math.squeeze(samples)
     expval = math.sum(samples * is_valid) / math.sum(is_valid)
-    if (
-        interface == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        # Casting needed for tensorflow
-        samples = math.cast_like(samples, expval)
-        is_valid = math.cast_like(is_valid, expval)
     return math.sum((samples - expval) ** 2 * is_valid) / math.sum(is_valid)
 
 

@@ -178,10 +178,6 @@ def _register_vjp(state0, state1):
         _register_jax_vjp()
     elif interface == "torch":
         _register_torch_vjp()
-    elif (
-        interface == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        _register_tf_vjp()
 
 
 def _compute_fidelity_vanilla(density_matrix0, density_matrix1):
@@ -343,26 +339,3 @@ def _register_torch_vjp():
             return _compute_fidelity_grad(dm0, dm1, grad_out)
 
     ar.register_function("torch", "compute_fidelity", _TorchFidelity.apply)
-
-
-############################### tensorflow ################################
-
-
-@lru_cache(maxsize=None)
-def _register_tf_vjp():  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-    """
-    Register the custom VJP for tensorflow
-    """
-    # pylint: disable=import-outside-toplevel
-    import tensorflow as tf
-
-    @tf.custom_gradient
-    def _compute_fidelity_tf(dm0, dm1):
-        fid = _compute_fidelity_vanilla(dm0, dm1)
-
-        def vjp(grad_out):
-            return _compute_fidelity_grad(dm0, dm1, grad_out)
-
-        return fid, vjp
-
-    ar.register_function("tensorflow", "compute_fidelity", _compute_fidelity_tf)

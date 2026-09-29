@@ -574,18 +574,6 @@ class SpecialUnitary(Operation):
             rjac, ijac = torch.autograd.functional.jacobian(split_matrix, theta)
             jac = rjac + 1j * ijac
 
-        elif interface in (
-            "tensorflow",
-            "tf",
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            import tensorflow as tf
-
-            with tf.GradientTape(persistent=True) as tape:
-                mats = qp.math.stack(split_matrix(theta))
-
-            rjac, ijac = tape.jacobian(mats, theta)
-            jac = qp.math.cast_like(rjac, 1j) + 1j * qp.math.cast_like(ijac, 1j)
-
         elif interface == "autograd":
             # TODO check whether we can add support for Autograd using eigenvalue decomposition
             raise NotImplementedError(
