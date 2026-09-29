@@ -612,7 +612,7 @@
 
       ctrl = qp.Controller(in_bytes=120, out_bytes=121)
 
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#10224)](https://github.com/PennyLaneAI/pennylane/pull/10224)
 
 * Adds a `qp.decomposition.all_decomps` functions for finding all decompositions that might be hit by
   decomposing a gate to any gateset.
