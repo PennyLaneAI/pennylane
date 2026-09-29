@@ -20,6 +20,7 @@ import numpy as np
 from pennylane import capture
 from pennylane import ops as pl_ops
 from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
+from pennylane.wires import Wires
 
 
 def _iterative_qpe(base, aux_wire, iters):
@@ -112,6 +113,9 @@ def iterative_qpe(base, aux_wire, iters):
                                                                  ╚══════════════════════╩═════════════════════════║═══════╡ ├Sample[MCM]
                                                                                                                   ╚═══════╡ ╰Sample[MCM]
     """
+
+    # NOTE: Normalize to scalar so 'Wires' objects can survive the pytree boundary
+    aux_wire = Wires(aux_wire)[0]
 
     if not capture.enabled():
         return _iterative_qpe(base, aux_wire, iters)

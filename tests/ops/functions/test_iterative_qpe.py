@@ -247,7 +247,7 @@ class TestIQPE:
 class TestCaptureIQPE:
     """Tests the capture of the function as a subroutine in jaxpr."""
 
-    def test_capture_as_single_subroutine(self, recwarn):
+    def test_capture_as_single_subroutine_eqn(self, recwarn):
         """Test that the rounds are captured into one subroutine."""
 
         import jax
@@ -287,7 +287,7 @@ class TestCaptureIQPE:
 
         assert [type(op) for op in captured.operations] == [type(op) for op in expected.operations]
 
-    def test_subroutine_is_shared(self):
+    def test_subroutine_is_shared_if_different_dyn_args(self):
         """Test that two calls share one subroutine body."""
 
         import jax
@@ -301,3 +301,48 @@ class TestCaptureIQPE:
         assert len(eqns) == 2
         # Shared impl
         assert eqns[0].params["jaxpr"] is eqns[1].params["jaxpr"]
+
+    def test_subroutine_is_not_shared_if_different_static_args(self):
+        """Test that two calls with diff iters do not share one subroutine body."""
+
+        import jax
+
+        def circuit(phi):
+            qp.iterative_qpe(qp.RZ(phi, wires=[0]), aux_wire=3, iters=1)
+            qp.iterative_qpe(qp.RZ(phi, wires=[2]), aux_wire=3, iters=3)
+
+        eqns = jax.make_jaxpr(circuit)(2.0).eqns
+
+        assert len(eqns) == 2
+        # Shared impl
+        assert eqns[0].params["jaxpr"] is not eqns[1].params["jaxpr"]
+
+    @pytest.mark.parametrize("aux_wire", (1, [1], qp.wires.Wires([1])))
+    def test_different_aux_wire_containers(self, aux_wire):
+        """Test different wire inputs can be used."""
+
+        import jax
+
+        jaxpr = jax.make_jaxpr(
+            lambda phi: qp.iterative_qpe(qp.RZ(phi, wires=[0]), aux_wire=aux_wire, iters=3)
+        )(2.0)
+
+        assert len(jaxpr.eqns) == 1
+        assert jaxpr.eqns[0].primitive == qp.capture.primitives.quantum_subroutine_prim
+
+    def test_legacy_op_can_be_used_as_base(self):
+        """Ensure a legacy operator still works fine under capture."""
+
+        class DummyOp(qp.core.Operator):
+            pass
+
+        import jax
+
+        def circuit(phi):
+            return qp.iterative_qpe(DummyOp(phi, 0), 1, 3)
+
+        cjaxpr = jax.make_jaxpr(circuit)(0.5)
+
+        assert cjaxpr.eqns[-1].primitive == qp.capture.primitives.quantum_subroutine_prim
+        # op is captured as data into subroutine
+        assert cjaxpr.eqns[-2].outvars[0] in cjaxpr.eqns[-1].invars
