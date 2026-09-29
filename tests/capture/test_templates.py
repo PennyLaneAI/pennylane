@@ -872,9 +872,10 @@ class TestModifiedTemplates:
         def qfunc(A):
             block_encode = qp.BlockEncode(A, wires=[0, 1])
             shifts = [qp.PCPhase(i + 0.1, dim=1, wires=[0, 1]) for i in range(3)]
-            return qp.QSVT(block_encode, projectors=shifts).tracer
+            qp.QSVT(block_encode, projectors=shifts)
 
         A = np.array([[0.1]])
+
         # Validate inputs
         qfunc(A)
 
@@ -883,11 +884,16 @@ class TestModifiedTemplates:
 
         eqn = jaxpr.eqns[-1]
         assert_eqn_matches_op(eqn, qp.QSVT)
+        assert len(eqn.outvars) == 1
+        assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
-        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, A)
+        A = jax.numpy.array(A)
+        tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, A)
+
+        assert len(tape) == 1
         block_encode = qp.BlockEncode(A, wires=[0, 1])
         shifts = [qp.PCPhase(i + 0.1, dim=1, wires=[0, 1]) for i in range(3)]
-        qp.assert_equal(op, qp.QSVT(block_encode, shifts), check_interface=False)
+        qp.assert_equal(tape.operations[0], qp.QSVT(block_encode, shifts))
 
     def test_mps_prep(self):
         """Test the primitive bind call of MPSPrep."""
