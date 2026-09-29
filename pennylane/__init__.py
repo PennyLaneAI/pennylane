@@ -48,7 +48,7 @@ from pennylane.decomposition import (
 from pennylane import templates
 from pennylane import pauli
 from pennylane.pauli import pauli_decompose
-from pennylane.resource import specs
+from pennylane.resource import specs, track
 from pennylane import resource
 from pennylane import qchem
 from pennylane.fermi import (

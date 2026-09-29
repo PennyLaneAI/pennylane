@@ -409,7 +409,7 @@ path = "pennylane.resource"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs"]
 
 [[interfaces]]
-expose = ["SpecsResources", "SymbolicSpecsResources", "CircuitSpecs", "resources_from_tape", "Expression", "specs"]
+expose = ["SpecsResources", "SymbolicSpecsResources", "CircuitSpecs", "resources_from_tape", "Expression", "specs", "track"]
 from = ["pennylane.resource"]
 
 [[modules]]
