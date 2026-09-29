@@ -35,33 +35,25 @@ def _iterative_qpe(base, aux_wire, iters):
 
     """
 
-    measurements = qp.math.zeros(iters, dtype=int, like="jax")
+    measurements = []
 
-    @qp.for_loop(iters)
-    def outer(i, measurements):
+    for i in range(iters):
         pl_ops.Hadamard(aux_wire)
-        
-        @qp.for_loop(2 ** (iters - i - 1))
-        def base_power(k):
-            pl_ops.ctrl(base, control=aux_wire)
-
-        base_power()
+        pl_ops.ctrl(pl_ops.pow(base, z=2 ** (iters - i - 1)), control=aux_wire)
 
         # Apply phase corrections based on previous bit measurements
-        @qp.for_loop(i)
-        def inner(j):
-            meas = measurements[i-1-j]
-            angle = -2.0 * np.pi / (2 ** (j + 2))
-            pl_ops.cond(meas, pl_ops.PhaseShift)(angle, wires=aux_wire)
+        for j in range(i):
+            meas = measurements[j]
 
-        inner()
-        
+            def cond_func(j=j):
+                pl_ops.PhaseShift(-2.0 * np.pi / (2 ** (j + 2)), wires=aux_wire)
+
+            pl_ops.cond(meas, cond_func)()
+
         pl_ops.Hadamard(aux_wire)
         # Measure and reset auxiliary wire to reuse for next iteration
-        measurements[i] = pl_ops.measure(wires=aux_wire, reset=True)
-        return measurements
+        measurements.insert(0, pl_ops.measure(wires=aux_wire, reset=True))
 
-    measurements = outer(measurements)
     return measurements
 
 
