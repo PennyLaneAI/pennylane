@@ -17,7 +17,44 @@ This module contains the qp.iterative_qpe function.
 
 import numpy as np
 
-import pennylane as qp
+from pennylane import capture
+from pennylane import ops as pl_ops
+from pennylane.core.operator import pop_op_eqns  # tach-ignore
+
+
+def _iterative_qpe(base, aux_wire, iters):
+    """The rounds of iterative QPE.
+
+    Note that 'iters' is a static argument to this subroutine, so
+    the two for loops can be plain python loops. The outer loop cannot be
+    a 'qp.for_loop' as the exponent of 'Pow2'
+    must be a concrete, compile-time constant.
+
+    """
+
+    measurements = []
+
+    for i in range(iters):
+        pl_ops.Hadamard(aux_wire)
+        pl_ops.ctrl(pl_ops.pow(base, z=2 ** (iters - i - 1)), control=aux_wire)
+
+        # Apply phase corrections based on previous bit measurements
+        for j in range(i):
+            meas = measurements[j]
+
+            def cond_func(j=j):
+                pl_ops.PhaseShift(-2.0 * np.pi / (2 ** (j + 2)), wires=aux_wire)
+
+            pl_ops.cond(meas, cond_func)()
+
+        pl_ops.Hadamard(aux_wire)
+        # Measure and reset auxiliary wire to reuse for next iteration
+        measurements.insert(0, pl_ops.measure(wires=aux_wire, reset=True))
+
+    return measurements
+
+
+_iterative_qpe_subroutine = capture.subroutine(_iterative_qpe, static_argnames="iters")
 
 
 def iterative_qpe(base, aux_wire, iters):
@@ -72,35 +109,12 @@ def iterative_qpe(base, aux_wire, iters):
                                                                  ╚══════════════════════╩═════════════════════════║═══════╡ ├Sample[MCM]
                                                                                                                   ╚═══════╡ ╰Sample[MCM]
     """
-    if qp.capture.enabled():
-        measurements = qp.math.zeros(iters, dtype=int, like="jax")
-    else:
-        measurements = [0] * iters
 
-    def measurement_loop(i, measurements, target):
-        # closure: aux_wire, iters, target
+    if not capture.enabled():
+        return _iterative_qpe(base, aux_wire, iters)
 
-        qp.Hadamard(wires=aux_wire)
-        qp.ctrl(qp.pow(target, z=2 ** (iters - i - 1)), control=aux_wire)
+    # NOTE: Guard so that operator1 instances still work here
+    if getattr(base, "tracer", None) is not None:
+        pop_op_eqns((base,))
 
-        def conditional_loop(j):
-            # closure: measurements, iters, i, aux_wire
-            meas = measurements[iters - i + j]
-
-            def cond_func():
-                qp.PhaseShift(-2.0 * np.pi / (2 ** (j + 2)), wires=aux_wire)
-
-            qp.cond(meas, cond_func)()
-
-        qp.for_loop(i)(conditional_loop)()
-
-        qp.Hadamard(wires=aux_wire)
-        m = qp.measure(wires=aux_wire, reset=True)
-        if qp.capture.enabled():
-            measurements = measurements.at[iters - i - 1].set(m)
-        else:
-            measurements[iters - i - 1] = m
-
-        return measurements, target
-
-    return qp.for_loop(iters)(measurement_loop)(measurements, base)[0]
+    return _iterative_qpe_subroutine(base, aux_wire, iters)

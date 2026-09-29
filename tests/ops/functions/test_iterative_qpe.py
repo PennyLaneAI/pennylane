@@ -15,6 +15,8 @@
 Unit tests for the iterative_qpe function
 """
 
+from functools import partial
+
 import numpy as np
 import pytest
 
@@ -239,3 +241,48 @@ class TestIQPE:
             return [qp.expval(op=i) for i in measurements]
 
         assert np.allclose(circuit_qpe(), circuit_iterative())
+
+
+@pytest.mark.capture
+class TestCaptureIQPE:
+    """Tests the capture of the function as a subroutine in jaxpr."""
+
+    def test_capture_as_single_subroutine(self, recwarn):
+        """Test that the rounds are captured into one subroutine."""
+
+        import jax
+
+        def circuit(phi, iters):
+            return qp.iterative_qpe(qp.RZ(phi, wires=[0]), aux_wire=1, iters=iters)
+
+        for iters in (3, 6):
+            fixed_circuit = partial(circuit, iters=iters)
+            cjaxpr = jax.make_jaxpr(fixed_circuit)(2)
+
+            assert len(cjaxpr.eqns) == 1
+            assert cjaxpr.eqns[0].primitive == qp.capture.primitives.quantum_subroutine_prim
+            assert len(cjaxpr.jaxpr.outvars) == iters
+
+        assert not [w for w in recwarn if issubclass(w.category, qp.exceptions.CaptureWarning)]
+
+    @pytest.mark.parametrize("iters", (2, 3, 4))
+    def test_subroutine_body_matches_uncaptured(self, iters):
+        """Test that the captured body matches the legacy tape implementation."""
+
+        import jax
+
+        # CAPTURE
+        jaxpr = jax.make_jaxpr(
+            lambda phi: qp.iterative_qpe(qp.RZ(phi, wires=[0]), aux_wire=1, iters=iters)
+        )(2.0)
+        cjaxpr = jaxpr.eqns[0].params["jaxpr"]
+        captured = qp.tape.plxpr_to_tape(cjaxpr.jaxpr, cjaxpr.consts, 2.0, 0, 1)
+
+        # LEGACY TAPE
+        qp.capture.disable()
+        with qp.queuing.AnnotatedQueue() as q:
+            qp.iterative_qpe(qp.RZ(2.0, wires=[0]), aux_wire=1, iters=iters)
+        expected = qp.tape.QuantumScript.from_queue(q)
+        qp.capture.enable()
+
+        assert [type(op) for op in captured.operations] == [type(op) for op in expected.operations]
