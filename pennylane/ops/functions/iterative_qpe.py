@@ -19,7 +19,7 @@ import numpy as np
 
 from pennylane import capture
 from pennylane import ops as pl_ops
-from pennylane.core.operator import pop_op_eqns  # tach-ignore
+from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
 
 
 def _iterative_qpe(base, aux_wire, iters):
