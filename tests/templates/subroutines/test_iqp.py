@@ -23,10 +23,12 @@ import pytest
 
 import pennylane as qp
 from pennylane import math
+from pennylane.core.operator import abstractify
 from pennylane.decomposition import list_decomps
 from pennylane.ops import PPR, H, MultiRZ
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule, assert_valid
 from pennylane.templates.subroutines.iqp import IQP
+from pennylane.typing import AbstractArray, AbstractWires
 
 
 def local_gates(n_qubits: int, max_weight=2):
@@ -130,6 +132,7 @@ def test_decomposition_contents(
     assert [type(o) for o in decomp] == expected_circuit
 
 
+@pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize("spin_sym", [False, True])
 @pytest.mark.parametrize("max_weight", [1, 2])
 def test_standard_validity(spin_sym, max_weight):
@@ -153,6 +156,20 @@ class TestAttributes:
         """Test that pattern is stored as nested tuples (required for pytree metadata)."""
         op = IQP([0.1, 0.2], [0, 1], [[[0]], [[1]]], spin_sym=False)
         assert op.arguments["pattern"] == (((0,),), ((1,),))
+
+    def test_abstractify(self):
+        """Test that abstractify replaces the dynamic weights and wires with abstract types while
+        preserving the compilable pattern and spin_sym arguments."""
+        op = IQP([0.1, 0.2], [0, 1], [[[0]], [[1]]], spin_sym=True)
+        abstract_op = abstractify(op)
+
+        assert isinstance(abstract_op, IQP)
+        assert isinstance(abstract_op.arguments["weights"], AbstractArray)
+        assert abstract_op.arguments["weights"].shape == (2,)
+        assert abstract_op.arguments["wires"] == AbstractWires(2)
+        assert abstract_op.arguments["pattern"] == (((0,),), ((1,),))
+        assert abstract_op.arguments["spin_sym"] is True
+        assert abstract_op.is_fully_abstract
 
 
 class TestMatrix:
@@ -193,6 +210,6 @@ class TestMatrix:
         """Test that ``matrix`` embeds the operator according to a provided wire order."""
         theta = 0.6
         # generator [[0]] targets ``wires[0]`` (wire 1 here), so this is ``RX(2 * theta)`` on wire 1
-        op = IQP([theta], [0], [[[0]]], spin_sym=False)
-        reference = qp.matrix(qp.tape.QuantumScript([qp.RX(2 * theta, 0)]))
-        assert math.allclose(op.matrix(reference))
+        op = IQP([theta], [1], [[[0]]], spin_sym=False)
+        reference = qp.matrix(qp.tape.QuantumScript([qp.RX(2 * theta, 1)]), wire_order=[0, 1])
+        assert math.allclose(op.matrix(wire_order=[0, 1]), reference)

@@ -16,7 +16,6 @@ Integration tests for the capture of PennyLane templates into plxpr.
 """
 
 import inspect
-from itertools import combinations
 
 # pylint: disable=protected-access
 from typing import Any
@@ -771,42 +770,26 @@ class TestModifiedTemplates:
     def test_iqp(self):
         """Test the primitive bind call of IQP."""
 
-        pattern = []
-        for weight in math.arange(1, 2):
-            for gate in combinations(math.arange(4), weight):
-                pattern.append(tuple(tuple(gate)))
-        pattern = tuple(pattern)
+        weights = math.random.uniform(0, 2 * np.pi, 4)
+        wires = list(range(4))
+        pattern = [[[i]] for i in range(4)]
 
-        kwargs = {
-            "wires": range(4),
-            "weights": tuple(math.random.uniform(0, 2 * np.pi, 4)),
-            "pattern": pattern,
-            "spin_sym": True,
-        }
-
-        def qfunc():
-            qp.IQP(**kwargs)
+        def qfunc(weights, wires):
+            qp.IQP(weights, wires=wires, pattern=pattern, spin_sym=True)
 
         # Validate inputs
-        qfunc()
+        qfunc(weights, wires)
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)()
+        jaxpr = jax.make_jaxpr(qfunc)(weights, wires)
 
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        assert eqn.primitive == qp.IQP._primitive
+        assert_eqn_matches_op(eqn, qp.IQP)
         assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params == kwargs
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
-
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-
-        assert len(q) == 1
-        qp.assert_equal(q.queue[0], qp.IQP(**kwargs))
 
     @pytest.mark.parametrize("template", [qp.MERA, qp.MPS, qp.TTN])
     def test_tensor_networks(self, template):

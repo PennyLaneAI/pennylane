@@ -23,7 +23,7 @@ from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.math import expand_matrix
 from pennylane.ops import PPR, Hadamard, MultiRZ, PauliX
-from pennylane.typing import AbstractArray, Float, TensorLike, Wire
+from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 
@@ -97,13 +97,11 @@ class IQP(Operator2):
         if isinstance(weights, (list, tuple)):
             weights = math.asarray(weights)
 
-        # Skip validation if the parameters have dynamic shape
-        if not isinstance(weights, AbstractArray) or weights.shape_fixed:
-            if len(weights) != len(pattern):
-                raise ValueError(
-                    "Number of gates and number of parameters for an Instantaneous Quantum Polynomial "
-                    f"circuit must be the same, got {len(pattern)} gates and {len(weights)} weights."
-                )
+        if len(weights) != len(pattern):
+            raise ValueError(
+                "Number of gates and number of parameters for an Instantaneous Quantum Polynomial "
+                f"circuit must be the same, got {len(pattern)} gates and {len(weights)} weights."
+            )
 
         wires = Wires(wires)
         if len(wires) == 0:
