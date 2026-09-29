@@ -62,7 +62,6 @@ def _select_ops(
 
 
 def _swap_ops(swap_control_wires, swap_wires, target_wires, cswap_work_wires):
-    # TODO : work in aux wire for CSWAPs
     num_targets = len(target_wires)
 
     if capture.enabled() or compiler.active():
