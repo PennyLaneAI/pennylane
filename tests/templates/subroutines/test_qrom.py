@@ -535,23 +535,23 @@ def test_too_many_work_wires_case():
 def test_calculate_select_swap_sizes(num_bitstrings, n_ctrl, n_target, n_work, expected):
     """Test the allocation logic for Select vs Swap work wires."""
 
-    # result contains (num_select_control_wires, num_select_work_wires, num_swap_work_wires, depth)
-    num_select_control_wires, num_select_work_wires, num_swap_work_wires, depth = (
+    # result contains (num_control_wires_select, num_work_wires_select, num_work_wires_swap, depth)
+    num_control_wires_select, num_work_wires_select, num_work_wires_swap, depth = (
         _calculate_select_swap_sizes(
             num_bitstrings=num_bitstrings,
             num_control_wires=n_ctrl,
-            num_target_wires=n_target,
+            num_targets=n_target,
             num_work_wires=n_work,
         )
     )
-    assert num_select_work_wires + num_swap_work_wires == n_work  # all work wires are used
+    assert num_work_wires_select + num_work_wires_swap == n_work  # all work wires are used
     new_n_target = int(np.ceil(n_target / depth))
     new_n_ctrl = qp.math.ceil_log2(new_n_target)
     # Select has enough work wires for unary iteration if originally that was the case
     if n_work >= n_ctrl - 1:
-        assert num_select_work_wires >= num_select_control_wires - 1
-    assert num_select_work_wires >= new_n_ctrl - 1
-    assert (num_select_control_wires, num_select_work_wires, num_swap_work_wires, depth) == expected
+        assert num_work_wires_select >= num_control_wires_select - 1
+    assert num_work_wires_select >= new_n_ctrl - 1
+    assert (num_control_wires_select, num_work_wires_select, num_work_wires_swap, depth) == expected
 
 
 class TestMeasurementQROM:
