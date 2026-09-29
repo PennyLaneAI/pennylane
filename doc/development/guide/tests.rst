@@ -47,9 +47,7 @@ Tests involving interfaces have to be marked with their respective marker:
 
 - ``@pytest.mark.autograd``,
 
-- ``@pytest.mark.torch``,
-
-- ``@pytest.mark.tf``, and
+- ``@pytest.mark.torch``, and
 
 - ``@pytest.mark.jax``.
 
