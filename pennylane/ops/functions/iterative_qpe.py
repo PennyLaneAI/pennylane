@@ -31,7 +31,7 @@ def _iterative_qpe(base, aux_wire, iters):
     * Static Argument: 'iters' must be a concrete value known at trace time,
                         as it dictates the shape of the returned measurements
     ^ Python Loops: Standard for loops are used instead of 'qp.for_loop'
-                    as 'Pow2' expects a static, concrete, compile-time constant.
+                    as 'qp.pow' expects a static, concrete, compile-time constant.
 
     """
 
