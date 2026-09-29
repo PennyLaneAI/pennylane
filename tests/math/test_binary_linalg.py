@@ -422,6 +422,13 @@ class TestBinaryIsIndependent:
         with pytest.raises(ValueError, match="columns of `basis` should have the same length"):
             math.binary_is_independent(vector, basis)
 
+    def test_error_invalid_ndim(self):
+        """Test that vectors with ndim other than 1 or 2 raise a ValueError."""
+        vector = np.zeros((2, 2, 2), dtype=int)
+        basis = np.eye(2, dtype=int)
+        with pytest.raises(ValueError, match="Only a single vector or a batch of vectors"):
+            math.binary_is_independent(vector, basis)
+
     @pytest.mark.parametrize(
         "vector, basis, expected",
         [
@@ -447,6 +454,16 @@ class TestBinaryIsIndependent:
 
         is_indep = math.binary_is_independent(vector, basis)
         assert is_indep is expected
+
+    def test_rank_deficient_basis(self):
+        """Test that a rank-deficient basis yields False for any vector, since adding
+        a column cannot raise the rank above ``min(basis.shape)``."""
+        # Two identical columns: shape suggests rank up to 2, but actual rank is 1.
+        basis = np.array([[1, 1], [0, 0], [1, 1]])
+        assert math.binary_is_independent(np.array([0, 1, 0]), basis) is False
+
+        vectors = np.array([[0, 1], [1, 0], [0, 1]])
+        assert np.array_equal(math.binary_is_independent(vectors, basis), [False, False])
 
     def test_batched(self):
         """Test that a batch of vectors, stacked as columns, is processed correctly."""

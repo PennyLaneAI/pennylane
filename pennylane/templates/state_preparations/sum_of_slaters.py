@@ -343,8 +343,8 @@ def _find_w(bits_basis, other_bits, t):
         indep_of_reduced_basis = math.binary_is_independent(bits_without_v_r, bits_basis[:, :-1])
 
         # Note that the first columns of set_M are guaranteed to match bits_basis[:, :-1]
-        set_M = bits_without_v_r[:, np.where(~indep_of_reduced_basis)[0]]
-        set_N = bits_without_v_r[:, np.where(indep_of_reduced_basis)[0]]
+        set_M = bits_without_v_r[:, ~indep_of_reduced_basis]
+        set_N = bits_without_v_r[:, indep_of_reduced_basis]
 
         # Step 6: Brute-force search bitstring ell to replace v_l. Step 5 is included in _find_ell
         ell = _find_ell(bits_basis, set_M, set_N)

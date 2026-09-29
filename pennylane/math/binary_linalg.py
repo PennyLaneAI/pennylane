@@ -371,6 +371,11 @@ def binary_is_independent(vector: np.ndarray, basis: np.ndarray) -> bool | np.nd
             "The columns of `basis` should have the same length as `vector`. "
             f"Got {vector.shape=} and {basis.shape=}"
         )
+    if vector.ndim not in (1, 2):
+        raise ValueError(
+            f"Only a single vector or a batch of vectors is supported, got {vector.ndim=}."
+        )
+
     batched = vector.ndim == 2
     vectors = vector.T if batched else vector[np.newaxis]
 
