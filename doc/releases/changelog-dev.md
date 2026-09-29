@@ -608,6 +608,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* The so-called Select-SWAP decomposition of :class:`~.QROM` no longer uses :class:`~.Select`,
+  but instead expresses the Select block as another ``QROM`` with fewer controls and more target
+  qubits. This allows for scalable compilation of this decomposition rule.
+  [(#10207)](https://github.com/PennyLaneAI/pennylane/pull/10207)
+
 * Multi-controlled operators can now reuse a single :class:`~.TemporaryAND` ladder when enough
   zeroed work wires are available, reducing their decomposition gate counts.
   [(#10161)](https://github.com/PennyLaneAI/pennylane/pull/10161)
