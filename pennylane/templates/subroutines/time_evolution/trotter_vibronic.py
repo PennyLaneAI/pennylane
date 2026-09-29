@@ -676,10 +676,6 @@ def _trotter_vibronic_decomposition(
         + (work_size if need_work else 0)
     )
 
-    if num_alloc == 0:
-        _run(coefficients, cache, work)
-        return
-
     with allocate(num_alloc, state="zero", restored=True) as allocated:
         start = 0
         if need_coefficients:
