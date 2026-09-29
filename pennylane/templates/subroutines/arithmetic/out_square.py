@@ -200,7 +200,7 @@ class OutSquare(_SquareArithmeticOp):
 
         >>> specs_false = qp.specs(circuit)(False).resources.quantum_operations
         >>> print(specs_false)
-        {'BasisState': 1, 'C(BasisState)': 4, 'MultiControlledX': 12, 'TemporaryAND': 19, 'CNOT': 49, 'Adjoint(TemporaryAND)': 19, 'MultiX': 6, 'SemiAdder': 2}
+        {'BasisState': 1, 'C(MultiX)': 4, 'MultiControlledX': 12, 'TemporaryAND': 19, 'CNOT': 49, 'Adjoint(TemporaryAND)': 19, 'MultiX': 4, 'SemiAdder': 2}
 
         When we do pass the information, we reduce the required resources by a lot:
 
