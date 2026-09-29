@@ -51,11 +51,37 @@ def test_controller_owns_message_sizes():
     assert controller.out_bytes == 8
 
 
+def test_controller_message_sizes_are_chosen_by_the_caller():
+    """Message sizes passed to the constructor are kept, each direction independently."""
+    controller = qp.Controller(in_bytes=120, out_bytes=121)
+
+    assert controller.in_bytes == 120
+    assert controller.out_bytes == 121
+
+
 @pytest.mark.parametrize("name", ["in_bytes", "out_bytes"])
-def test_controller_message_sizes_are_not_constructor_arguments(name):
-    """Message sizes are fixed on the instance and cannot be passed to the constructor."""
-    with pytest.raises(TypeError, match="unexpected keyword argument"):
-        qp.Controller(**{name: 16})
+def test_controller_message_sizes_accept_the_bounds(name):
+    """Both 1 and MAX_MESSAGE_BYTES are valid sizes."""
+    from pennylane.backline.placement import MAX_MESSAGE_BYTES
+
+    assert getattr(qp.Controller(**{name: 1}), name) == 1
+    assert getattr(qp.Controller(**{name: MAX_MESSAGE_BYTES}), name) == MAX_MESSAGE_BYTES
+
+
+@pytest.mark.parametrize("name", ["in_bytes", "out_bytes"])
+@pytest.mark.parametrize("size", [0, -8, 4097])
+def test_controller_rejects_message_sizes_out_of_range(name, size):
+    """A size outside 1..MAX_MESSAGE_BYTES raises."""
+    with pytest.raises(ValueError, match=f"{name} must be between 1 and 4096"):
+        qp.Controller(**{name: size})
+
+
+@pytest.mark.parametrize("name", ["in_bytes", "out_bytes"])
+@pytest.mark.parametrize("size", [8.0, "8", True])
+def test_controller_rejects_message_sizes_that_are_not_ints(name, size):
+    """A size that is not an int raises, including a bool."""
+    with pytest.raises(TypeError, match=f"{name} must be an int"):
+        qp.Controller(**{name: size})
 
 
 def test_controller_hides_message_sizes_from_repr():

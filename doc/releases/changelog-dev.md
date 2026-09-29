@@ -603,6 +603,17 @@
 
 <h3>Improvements 🛠</h3>
 
+* A :class:`~.Controller` now takes the size of its messages in each direction, with the
+  ``in_bytes`` and ``out_bytes`` keyword arguments. Both default to 8 and may be up to
+  :data:`~pennylane.backline.placement.MAX_MESSAGE_BYTES` (4096), which the ``"memcpy"``
+  transport carries.
+
+  .. code-block:: python
+
+      ctrl = qp.Controller(in_bytes=120, out_bytes=121)
+
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
 * Adds a `qp.decomposition.all_decomps` functions for finding all decompositions that might be hit by
   decomposing a gate to any gateset.
   [(#10187)](https://github.com/PennyLaneAI/pennylane/pull/10187)
@@ -1822,6 +1833,7 @@ Korbinian Kottmann,
 Isabel Nha Minh Le,
 Christina Lee,
 Joseph Lee,
+Mehrdad Malekmohammadi,
 William Maxwell,
 Anton Naim Ibrahim,
 Mudit Pandey,
