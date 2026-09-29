@@ -61,7 +61,7 @@ def _select_ops(
     )
 
 
-def _swap_ops(swap_control_wires, swap_wires, target_wires):
+def _swap_ops(swap_control_wires, swap_wires, target_wires, cswap_work_wires):
     # TODO : work in aux wire for CSWAPs
     num_targets = len(target_wires)
 
@@ -88,6 +88,8 @@ def _swap_ops(swap_control_wires, swap_wires, target_wires):
                 ctrl(
                     qp_ops.SWAP([swap_wires[j][k], swap_wires[j + 2**i][k]]),
                     control=swap_control_wires[-i - 1],
+                    work_wires=cswap_work_wires,
+                    work_wire_type="zeroed",
                 )
 
             swap_layer()  # pylint: disable=no-value-for-parameter
@@ -267,12 +269,12 @@ def _calculate_select_swap_sizes(
 
     Returns:
         tuple[int]: ``(num_control_wires_select, num_work_wires_select, num_work_wires_swap,
-        depth)`` — control and work wires assigned to the Select component, work wires assigned
-        to the SWAP network, and the number of bitstrings loaded in parallel.
+        num_work_wires_cswap, depth)`` — control and work wires assigned to the Select component,
+        work wires assigned to the SWAP network, and the number of bitstrings loaded in parallel.
     """
 
     if num_work_wires < num_control_wires - 1:
-        return num_control_wires, num_work_wires, 0, 1
+        return num_control_wires, num_work_wires, 0, 0, 1
 
     # Initialize available swap space using total work wires
     num_work_wires_swap = num_work_wires
@@ -290,11 +292,20 @@ def _calculate_select_swap_sizes(
     num_control_wires_select = num_control_wires - int(math.floor(math.log2(depth)))
     while num_work_wires_select < num_control_wires_select - 1:
         depth = depth // 2
-        num_work_wires_swap = num_targets * depth - num_targets
+        num_work_wires_swap = num_targets * (depth - 1)
         num_work_wires_select = num_work_wires - num_work_wires_swap
         num_control_wires_select = num_control_wires - int(math.floor(math.log2(depth)))
 
-    return num_control_wires_select, num_work_wires_select, num_work_wires_swap, depth
+    # As soon as there is an excess work wire for Select, reroute it to the CSWAPs themselves.
+    num_work_wires_cswap = int(num_work_wires_select - max(0, num_control_wires_select - 1) >= 1)
+
+    return (
+        num_control_wires_select,
+        num_work_wires_select,
+        num_work_wires_swap,
+        num_work_wires_cswap,
+        depth,
+    )
 
 
 def _select_swap_condition(bitstrings, control_wires, target_wires, work_wires, clean):
@@ -322,8 +333,8 @@ def _select_swap_resources(
     num_targets = len(target_wires)
     num_work_wires = len(work_wires)
 
-    num_control_wires_select, num_work_wires_select, _, depth = _calculate_select_swap_sizes(
-        num_bitstrings, num_control_wires, num_targets, num_work_wires
+    num_control_wires_select, num_work_wires_select, _, num_work_wires_cswap, depth = (
+        _calculate_select_swap_sizes(num_bitstrings, num_control_wires, num_targets, num_work_wires)
     )
 
     num_columns = int(np.ceil(num_bitstrings / depth))
@@ -333,7 +344,7 @@ def _select_swap_resources(
         Int[num_columns, num_targets_select],
         Wire[num_control_wires_select],
         Wire[num_targets_select],
-        Wire[num_work_wires_select],
+        Wire[num_work_wires_select - num_work_wires_cswap],
         False,
     )
 
@@ -341,10 +352,17 @@ def _select_swap_resources(
     num_control_wires_swap = num_control_wires - num_control_wires_select
     num_cswaps_per_block = num_targets * (2**num_control_wires_swap - 1)
 
-    if not clean:
-        return {bigger_qrom: 1, qp_ops.CSWAP: num_cswaps_per_block}
+    cswap_rep = ctrl(
+        qp_ops.SWAP(Wire[2]),
+        control=Wire[1],
+        work_wires=Wire[num_work_wires_cswap],
+        work_wire_type="zeroed",
+    )
 
-    return {bigger_qrom: 2, qp_ops.CSWAP: 4 * num_cswaps_per_block, qp_ops.H: 2 * num_targets}
+    if not clean:
+        return {bigger_qrom: 1, cswap_rep: num_cswaps_per_block}
+
+    return {bigger_qrom: 2, cswap_rep: 4 * num_cswaps_per_block, qp_ops.H: 2 * num_targets}
 
 
 @register_condition(_select_swap_condition)
@@ -356,12 +374,15 @@ def _select_swap(
         MultiX(bitstrings[0, :], wires=target_wires)
         return
 
-    num_control_wires_select, _, num_work_wires_swap, depth = _calculate_select_swap_sizes(
-        len(bitstrings), len(control_wires), len(target_wires), len(work_wires)
+    num_control_wires_select, _, num_work_wires_swap, num_work_wires_cswap, depth = (
+        _calculate_select_swap_sizes(
+            len(bitstrings), len(control_wires), len(target_wires), len(work_wires)
+        )
     )
 
     swap_work_wires = work_wires[:num_work_wires_swap]
-    select_work_wires = work_wires[num_work_wires_swap:]
+    select_work_wires = work_wires[num_work_wires_swap : len(work_wires) - num_work_wires_cswap]
+    cswap_work_wires = work_wires[len(work_wires) - num_work_wires_cswap :]
     swap_wires = Wires(target_wires) + Wires(swap_work_wires)
 
     select_control_wires = control_wires[:num_control_wires_select]
@@ -371,7 +392,7 @@ def _select_swap(
         _select_ops(
             bitstrings, depth, target_wires, swap_wires, select_control_wires, select_work_wires
         )
-        _swap_ops(swap_control_wires, swap_wires, target_wires)
+        _swap_ops(swap_control_wires, swap_wires, target_wires, cswap_work_wires)
         return
 
     if capture.enabled() or compiler.active():
@@ -386,7 +407,7 @@ def _select_swap(
 
         apply_h()  # pylint: disable=no-value-for-parameter
 
-        cswaps = partial(_swap_ops, swap_control_wires, swap_wires, target_wires)
+        cswaps = partial(_swap_ops, swap_control_wires, swap_wires, target_wires, cswap_work_wires)
 
         qp_ops.adjoint(cswaps, lazy=False)()
         _select_ops(
