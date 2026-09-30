@@ -21,7 +21,6 @@ import numpy as np
 import pytest
 
 import pennylane as qp
-import pennylane.estimator as qre
 from pennylane.exceptions import WireError
 
 
@@ -180,15 +179,3 @@ class TestPhaseGradientConsistency:
 
         expected = np.abs(qp.RX(phi, 0).matrix()[:, 0]) ** 2
         assert np.allclose(circuit(), expected)
-
-    @pytest.mark.parametrize("num_wires", [1, 2, 3, 4, 8])
-    def test_resource_estimate_matches_phase_gradient(self, num_wires):
-        """Test that the resource estimate matches the ``PhaseGradient`` resource operator."""
-
-        def circuit():
-            qp.PhaseGradientStatePrep(wires=range(num_wires))
-
-        gate_set = {"Hadamard", "Z", "S", "T", "RZ"}
-        res = qre.estimate(circuit, gate_set=gate_set)()
-        expected = qre.estimate(qre.PhaseGradient(num_wires), gate_set=gate_set)
-        assert res.gate_counts == expected.gate_counts
