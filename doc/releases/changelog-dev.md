@@ -1585,7 +1585,7 @@
 <h3>Documentation 📝</h3>
 
 * The dependency versions in the developer installation guide now match `pyproject.toml`, and a rendering issue in the list of optional dependencies was fixed.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#10232)](https://github.com/PennyLaneAI/pennylane/pull/10232)
 
 * Fixed four incorrect links that referred to hardcoded `blob/master/` URLs by replacing them with relative paths.
   [(#10211)](https://github.com/PennyLaneAI/pennylane/pull/10211)
