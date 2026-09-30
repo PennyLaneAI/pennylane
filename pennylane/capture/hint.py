@@ -89,7 +89,15 @@ def _stack_to_HintedCallable(f: HintedCallable, hints: dict) -> HintedCallable:
 
 
 def hint(hints: dict[str, Any]) -> Callable:
-    """Create a decorator for applying compiler hints."""
+    """Create a decorator for applying compiler hints.
+
+    Args:
+        hints (dict[str, Any]): a dictionary of compiler hints
+
+    Returns:
+        Callable: a decorator that can be applied.
+
+    """
 
     def decorator(f):
         return apply_hint(f, hints)
