@@ -608,6 +608,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* :func:`~.transforms.compile` now supports passing :class:`~.Operator` subclasses, instances,
+  and :class:`~.decomposition.GateSet` objects to ``basis_set`` in addition to gate names, and
+  validates that all elements are valid operations.
+  [(#6132)](https://github.com/PennyLaneAI/pennylane/issues/6132)
+
 * Multi-controlled operators can now reuse a single :class:`~.TemporaryAND` ladder when enough
   zeroed work wires are available, reducing their decomposition gate counts.
   [(#10161)](https://github.com/PennyLaneAI/pennylane/pull/10161)

@@ -20,7 +20,7 @@ import pennylane as qp
 from pennylane.core.qscript import QuantumScript, QuantumScriptBatch
 from pennylane.core.queuing import QueuingManager
 from pennylane.core.transforms import Transform, transform
-from pennylane.decomposition import gate_sets
+from pennylane.decomposition import GateSet, gate_sets
 from pennylane.transforms.optimization import (
     cancel_inverses,
     commute_controlled,
@@ -64,8 +64,9 @@ def compile(
             :func:`~.transforms.commute_controlled`,
             :func:`~.cancel_inverses`, and
             :func:`~.transforms.merge_rotations`.
-        basis_set (list[str]): A list of basis gates. When expanding the tape,
-            expansion will continue until gates in the specific set are
+        basis_set (Sequence[str | type] | GateSet): A collection of basis gates (specified by name,
+            as an :class:`~.Operator` subclass, or as a :class:`~.GateSet`).
+            When expanding the tape, expansion will continue until gates in the specific set are
             reached. If no basis set is specified, a default of
             ``pennylane.ops.__all__`` will be used. This decomposes templates and
             operator arithmetic. If an empty basis set (e.g. ``[]``, ``()``, or
@@ -194,13 +195,22 @@ def compile(
     with QueuingManager.stop_recording():
         if basis_set is None:
             basis_set = gate_sets.ALL_OPS
+        elif not isinstance(basis_set, GateSet):
+            if isinstance(basis_set, str):
+                basis_set = [basis_set]
+            try:
+                basis_set = GateSet(basis_set)
+            except (NotImplementedError, TypeError, ValueError) as e:
+                raise TypeError(
+                    "Invalid element in basis_set: elements must be valid operation names (str) or Operator types."
+                ) from e
 
         def stop_at(obj):
             if not isinstance(obj, qp.operation.Operator):
                 return True
             if not obj.has_decomposition:
                 return True
-            return obj.name in basis_set and (not getattr(obj, "only_visual", False))
+            return obj in basis_set and (not getattr(obj, "only_visual", False))
 
         [expanded_tape], _ = qp.devices.preprocess.decompose(
             tape,

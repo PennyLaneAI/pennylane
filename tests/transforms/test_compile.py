@@ -576,3 +576,33 @@ class TestCompileInterfaces:
             jax.grad(jitted_compiled_qnode)(x),
             atol=1e-7,
         )
+
+    @pytest.mark.parametrize(
+        "basis_set",
+        [
+            [qp.CNOT, qp.RX, qp.RY, qp.RZ, qp.GlobalPhase],
+            [qp.CNOT, "RX", qp.RY, "RZ", "GlobalPhase"],
+            qp.decomposition.GateSet([qp.CNOT, qp.RX, qp.RY, qp.RZ, qp.GlobalPhase]),
+        ],
+    )
+    def test_compile_basis_set_operator_types(self, basis_set):
+        """Test that compile supports Operator types and GateSet in basis_set (#6132)."""
+
+        def qfunc():
+            qp.Hadamard(0)
+            qp.CNOT([0, 1])
+            return qp.expval(qp.PauliZ(0))
+
+        compiled_qfunc = compile(qfunc, basis_set=basis_set)
+        tape = qp.tape.make_qscript(compiled_qfunc)()
+        assert all(op.name in {"CNOT", "RX", "RY", "RZ", "GlobalPhase"} for op in tape.operations)
+
+    def test_compile_invalid_basis_set_element(self):
+        """Test that invalid elements in basis_set raise a TypeError (#6132)."""
+
+        def qfunc():
+            qp.PauliX(0)
+            return qp.expval(qp.PauliZ(0))
+
+        with pytest.raises(TypeError, match="Invalid element in basis_set"):
+            compile(qfunc, basis_set=[123])()
