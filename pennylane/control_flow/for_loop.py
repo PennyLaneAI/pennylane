@@ -342,7 +342,15 @@ register_custom_staging_rule(
 # pylint: disable=too-many-arguments, unused-argument
 @for_loop_prim.def_impl
 def _for_loop_impl(
-    start, stop, step, *args, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice, hints
+    start,
+    stop,
+    step,
+    *args,
+    jaxpr_body_fn,
+    consts_slice,
+    args_slice,
+    abstract_shapes_slice,
+    estimated_iterations,
 ):
     # Convert tuples back to slices (tuples are used for JAX 0.7.1 hashability)
     consts_slice = slice(*consts_slice)
@@ -517,7 +525,7 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
             consts_slice=consts_slice,
             args_slice=args_slice,
             abstract_shapes_slice=abstract_shapes_slice,
-            hints=(("num-iters", self.num_iters_hint)),
+            estimated_iterations=self.num_iters_hint,
         )
 
         results = results[-out_tree.num_leaves :]

@@ -516,7 +516,7 @@ def handle_for_loop(
     consts_slice,
     args_slice,
     abstract_shapes_slice,
-    hints,
+    estimated_iterations,
 ):
     """Handle a for loop primitive."""
     # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
@@ -541,7 +541,7 @@ def handle_for_loop(
         consts_slice=consts_slice,
         args_slice=args_slice,
         abstract_shapes_slice=abstract_shapes_slice,
-        hints=hints,
+        estimated_iterations=estimated_iterations,
     )
 
 
@@ -587,7 +587,7 @@ def handle_while_loop(
     body_slice,
     cond_slice,
     args_slice,
-    hints,
+    estimated_iterations,
 ):
     """Handle a while loop primitive."""
     # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
@@ -615,7 +615,7 @@ def handle_while_loop(
         body_slice=body_consts,
         cond_slice=cond_consts,
         args_slice=args_slice,
-        hints=hints,
+        estimated_iterations=estimated_iterations,
     )
 
 
@@ -743,7 +743,7 @@ def flatten_while_loop(
     body_slice,
     cond_slice,
     args_slice,
-    hints,
+    estimated_iterations,
 ):
     """Handle the while loop by a flattened python strategy."""
     # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
@@ -802,7 +802,7 @@ def flattened_for(
     consts_slice,
     args_slice,
     abstract_shapes_slice,
-    hints,
+    estimated_iterations,
 ):
     """Handle the for loop by a flattened python strategy."""
     # Convert tuples back to slices (tuples are used for JAX 0.7.0 hashability)
