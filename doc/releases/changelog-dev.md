@@ -332,7 +332,6 @@
   tracking the resources it uses, returning both the result of the execution and the corresponding
   :class:`~.resource.CircuitSpecs`. This is the same device-level tracking that :func:`~.specs`
   performs with ``level="device"``, but the result of the circuit execution is no longer discarded.
-  Only ``level="device"`` is currently supported.
   [(#10228)](https://github.com/PennyLaneAI/pennylane/pull/10228)
 
   ```python

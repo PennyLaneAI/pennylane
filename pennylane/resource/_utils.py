@@ -24,6 +24,10 @@ from collections.abc import Iterable
 from functools import partial, wraps
 from typing import TYPE_CHECKING
 
+import pennylane as qp
+
+from .resource import CircuitSpecs
+
 if TYPE_CHECKING:
     from pennylane.core.transforms import CompilePipeline
 
@@ -49,6 +53,40 @@ def apply_partial_args(fn, args, kwargs):
         return fn(*args, *call_args, **{**kwargs, **call_kwargs})
 
     return wrapper
+
+
+def unwrap_qjit_qnode(qjit, *, fn_name: str) -> "qp.QNode":
+    """Return the QNode underlying a qjit'd workflow, raising a helpful error otherwise.
+
+    ``fn_name`` is the name of the public function to report in the error message.
+    """
+    # pylint: disable=import-outside-toplevel
+    # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
+    try:
+        from catalyst import QJIT
+    except ImportError as exc:  # pragma: no cover
+        raise ValueError(
+            f"{fn_name} can only be applied to a qjit'd QNode, instead got: {qjit}"
+        ) from exc
+
+    # Unwrap the original QNode if any transforms have been applied
+    if isinstance(qjit, QJIT) and isinstance(qjit.original_function, qp.QNode):
+        return qjit.original_function
+
+    raise ValueError(f"{fn_name} can only be applied to a qjit'd QNode, instead got: {qjit}")
+
+
+def build_circuit_specs(original_qnode, resources, level) -> CircuitSpecs:
+    """Assemble the ``CircuitSpecs`` describing a qjit'd QNode at a given level."""
+    return CircuitSpecs(
+        resources=resources,
+        shots=original_qnode.shots,
+        device_name=original_qnode.device.name,
+        num_device_wires=(
+            len(original_qnode.device.wires) if original_qnode.device.wires is not None else None
+        ),
+        level=level,
+    )
 
 
 def preprocess_level_input(

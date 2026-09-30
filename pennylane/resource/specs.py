@@ -15,81 +15,22 @@
 
 from __future__ import annotations
 
-import copy
-import json
-import os
-import tempfile
-import time
 import warnings
 from collections import defaultdict
 from collections.abc import Callable, Iterable
 from functools import partial
-from pathlib import Path
-from typing import Any
-
-import pennylane as qp
 
 from ._utils import (
     apply_partial_args,
+    build_circuit_specs,
     get_marker_level_map,
     preprocess_level_input,
     unwrap_partial,
+    unwrap_qjit_qnode,
 )
 from .mlir_specs import resources_from_analysis_pass
 from .resource import CircuitSpecs, SpecsResources
-
-# Used for device-level qjit resource tracking
-_RESOURCE_TRACKING_PREFIX = "pennylane_specs_qjit_resources"
-
-
-def _run_with_resource_tracking(
-    qjit, original_qnode, compute_depth, *args, **kwargs
-) -> tuple[Any, SpecsResources]:
-    """Execute a qjit'd QNode on ``null.qubit`` with resource tracking enabled.
-
-    Returns the result of the execution along with the resources counted while running it.
-    """
-    # pylint: disable=import-outside-toplevel
-    # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
-    from catalyst import QJIT
-
-    from ..devices import NullQubit
-
-    if compute_depth is None:
-        compute_depth = True
-
-    with tempfile.TemporaryDirectory(
-        prefix=f"{_RESOURCE_TRACKING_PREFIX}_{os.getpid()}_"
-    ) as tmpdirname:
-        filepath = Path(f"{tmpdirname}/{_RESOURCE_TRACKING_PREFIX}_{time.time_ns()}.json")
-
-        # When running at the device level, execute on null.qubit directly with resource tracking,
-        # which will give resource usage information for after all transforms have completed
-        # TODO: Find a way to inherit all devices args from input
-        original_device = original_qnode.device
-        spoofed_dev = NullQubit(
-            target_device=original_device,
-            wires=original_device.wires,
-            track_resources=True,
-            resources_filename=str(filepath),
-            compute_depth=compute_depth,
-        )
-
-        new_qnode = original_qnode.update(device=spoofed_dev)
-        new_qjit = QJIT(new_qnode, copy.deepcopy(qjit.compile_options))
-
-        # Execute on null.qubit with resource tracking
-        results = new_qjit(*args, **kwargs)
-
-        with filepath.open("r", encoding="utf-8") as f:
-            resource_data = json.load(f)
-
-        return results, SpecsResources(
-            counts=resource_data["gate_types"],
-            measurement_processes=resource_data["measurements"],
-            num_wires=resource_data["num_wires"],
-            circuit_depth=resource_data["depth"],
-        )
+from .track import _run_with_resource_tracking
 
 
 def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs) -> tuple[
@@ -134,42 +75,8 @@ def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs
     return resources, level_to_name
 
 
-def _unwrap_qjit_qnode(qjit, *, fn_name: str) -> qp.QNode:
-    """Return the QNode underlying a qjit'd workflow, raising a helpful error otherwise.
-
-    ``fn_name`` is the name of the public function to report in the error message.
-    """
-    # pylint: disable=import-outside-toplevel
-    # Have to import locally to prevent circular imports as well as accounting for Catalyst not being installed
-    try:
-        from catalyst import QJIT
-    except ImportError as exc:  # pragma: no cover
-        raise ValueError(
-            f"{fn_name} can only be applied to a qjit'd QNode, instead got: {qjit}"
-        ) from exc
-
-    # Unwrap the original QNode if any transforms have been applied
-    if isinstance(qjit, QJIT) and isinstance(qjit.original_function, qp.QNode):
-        return qjit.original_function
-
-    raise ValueError(f"{fn_name} can only be applied to a qjit'd QNode, instead got: {qjit}")
-
-
-def _build_circuit_specs(original_qnode, resources, level) -> CircuitSpecs:
-    """Assemble the ``CircuitSpecs`` describing a qjit'd QNode at a given level."""
-    return CircuitSpecs(
-        resources=resources,
-        shots=original_qnode.shots,
-        device_name=original_qnode.device.name,
-        num_device_wires=(
-            len(original_qnode.device.wires) if original_qnode.device.wires is not None else None
-        ),
-        level=level,
-    )
-
-
 def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:
-    original_qnode = _unwrap_qjit_qnode(qjit, fn_name="qp.specs")
+    original_qnode = unwrap_qjit_qnode(qjit, fn_name="qp.specs")
 
     if level is None:
         level = "device"
@@ -177,7 +84,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:
     if level == "device":
         # Tracking executes the circuit, but specs only reports the resources
         _, resources = _run_with_resource_tracking(
-            qjit, original_qnode, compute_depth, *args, **kwargs
+            qjit, original_qnode, *args, compute_depth=compute_depth, **kwargs
         )
 
     elif isinstance(level, (int, tuple, list, range, str)):
@@ -194,23 +101,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:
     else:
         raise NotImplementedError(f"Unsupported level argument '{level}'.")
 
-    return _build_circuit_specs(original_qnode, resources, level)
-
-
-def _track_qjit(qjit, level, *args, **kwargs) -> tuple[Any, CircuitSpecs]:
-    """Execute a qjit'd QNode on ``null.qubit`` and return its result along with its specs."""
-    original_qnode = _unwrap_qjit_qnode(qjit, fn_name="qp.track")
-
-    if level != "device":
-        raise NotImplementedError(f"qp.track only supports level='device', instead got: {level!r}.")
-
-    # ``track`` has no option to skip depth computation, unlike ``specs``
-    compute_depth = True
-    results, resources = _run_with_resource_tracking(
-        qjit, original_qnode, compute_depth, *args, **kwargs
-    )
-
-    return results, _build_circuit_specs(original_qnode, resources, level)
+    return build_circuit_specs(original_qnode, resources, level)
 
 
 def specs(
@@ -579,74 +470,3 @@ def specs(
     return apply_partial_args(
         partial(_specs_qjit, qnode, level, compute_depth), partial_args, partial_kwargs
     )
-
-
-def track(
-    qnode,
-    level: str = "device",
-) -> Callable[..., tuple[Any, CircuitSpecs]]:
-    r"""Executes a quantum circuit and tracks the resources it uses.
-
-    This transform converts a QNode into a callable that executes the circuit on
-    ``null.qubit`` and returns both the result of that execution and the resource
-    information gathered while running it.
-
-    Args:
-        qnode (:class:`~catalyst.jit.QJIT`): the (qjit'd) QNode to execute and track.
-            ``functools.partial`` wrappers around supported callables are also accepted.
-
-    Keyword Args:
-        level (str): The level at which to track resources. Only ``"device"`` is currently
-            supported, meaning that resources are counted after all user-specified transforms
-            and device preprocessing transforms have been applied.
-
-    Returns:
-        A function that has the same argument signature as ``qnode``. This function returns a
-        tuple containing the result of executing the circuit and a
-        :class:`~.resource.CircuitSpecs` object containing the ``qnode`` specifications,
-        including gate and measurement data, total wires, device information, shots, and more.
-
-    .. seealso:: :func:`~.specs`, which returns the same information without the execution result,
-        and supports levels other than ``"device"``.
-
-    .. note::
-
-        Resources are tracked by mock-executing the workflow on ``null.qubit``. For a QNode bound
-        to any other device, the returned execution result therefore carries the shape and dtype
-        of that device's result, but not its values.
-
-    .. warning::
-
-        ``null.qubit`` does not perform a true state-vector simulation, so mid-circuit measurement
-        outcomes are not grounded in real measurement statistics. If the circuit contains a
-        conditional whose branch depends on such an outcome, the reported circuit depth and any
-        branch-dependent gate counts correspond to the branch taken during the mock execution, and
-        should be treated as an estimate rather than exact counts.
-
-    **Example**
-
-    .. code-block:: python
-
-        dev = qp.device("null.qubit", wires=2)
-
-        @qp.qjit
-        @qp.qnode(dev)
-        def circuit(theta):
-            qp.RX(theta, wires=0)
-            qp.CNOT(wires=(0,1))
-            return qp.probs(wires=(0,1))
-
-    >>> result, circuit_specs = qp.track(circuit)(1.23)
-    >>> result.shape
-    (4,)
-    >>> circuit_specs.resources.quantum_operations
-    {'CNOT': 1, 'RX': 1}
-
-    The specifications are the same as the ones returned by :func:`~.specs` at the device level:
-
-    >>> circuit_specs == qp.specs(circuit, level="device")(1.23)
-    True
-    """
-    qnode, partial_args, partial_kwargs = unwrap_partial(qnode)
-
-    return apply_partial_args(partial(_track_qjit, qnode, level), partial_args, partial_kwargs)
