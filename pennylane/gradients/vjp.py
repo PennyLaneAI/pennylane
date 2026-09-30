@@ -146,10 +146,7 @@ def compute_vjp_single(dy, jac, num=None):
         # Single measurement with no dimension e.g. expval
         if num == 1:
             jac = math.reshape(math.stack(jac), (1, -1))
-            if use_tensordot:
-                res = math.tensordot(jac, dy_row, [[1], [0]])
-            else:
-                res = dy_row @ jac
+            res = dy_row @ jac
 
         # Single measurement with dimension e.g. probs
         else:
