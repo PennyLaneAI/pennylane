@@ -74,6 +74,7 @@ class TestRotGateFusion:
         ([np.pi, np.pi / 2, 0.0], [0.0, -np.pi / 2, 0.0]),
         ([0.9, np.pi / 2, 0.0], [0.0, -np.pi / 2, 0.0]),
         ([0.9, np.pi / 2, np.pi / 2], [-np.pi / 2, -np.pi / 2, 0.0]),
+        ([0.0, 0.501002004008016, np.pi], [0.0, 0.501002004008016, 0.0]),
     ]
 
     def run_interface_test(self, angles_1, angles_2):

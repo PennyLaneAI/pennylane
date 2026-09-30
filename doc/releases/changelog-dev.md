@@ -1622,6 +1622,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a numerical instability in :func:`~.transforms.single_qubit_fusion` where floating-point
+  rounding errors when fusing :class:`~.Rot` gates could cause ``NaN`` and an invalid-value warning.
+  [(#10197)](https://github.com/PennyLaneAI/pennylane/issues/10197)
+
 * :func:`~.allocate` with zero wires no longer queues or captures :class:`~.allocation.Allocate`
   and :class:`~.allocation.Deallocate` instructions, including when used as a context manager.
   [(#10219)](https://github.com/PennyLaneAI/pennylane/pull/10219)
