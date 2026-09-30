@@ -33,7 +33,7 @@ _RESOURCE_TRACKING_PREFIX = "pennylane_track_resources"
 
 
 def _run_with_resource_tracking(
-    qjit, original_qnode, *args, compute_depth, **kwargs
+    qjit, original_qnode, *args, compute_depth: bool, **kwargs
 ) -> tuple[Any, SpecsResources]:
     """Execute a qjit'd QNode on ``null.qubit`` with resource tracking enabled.
 
@@ -44,9 +44,6 @@ def _run_with_resource_tracking(
     from catalyst import QJIT
 
     from ..devices import NullQubit
-
-    if compute_depth is None:
-        compute_depth = True
 
     with tempfile.TemporaryDirectory(
         prefix=f"{_RESOURCE_TRACKING_PREFIX}_{os.getpid()}_"

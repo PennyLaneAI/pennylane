@@ -82,7 +82,9 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:
         level = "device"
 
     if level == "device":
-        # Tracking executes the circuit, but specs only reports the resources
+        # Tracking executes the circuit, but specs only reports the resources.
+        if compute_depth is None:
+            compute_depth = True
         _, resources = _run_with_resource_tracking(
             qjit, original_qnode, *args, compute_depth=compute_depth, **kwargs
         )
