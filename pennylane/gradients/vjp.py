@@ -118,9 +118,9 @@ def compute_vjp_single(dy, jac, num=None):
         jac = _convert(jac, dy_row)
 
     # Check if we're dealing with object arrays or non-standard types that don't support matmul
-    use_tensordot = (
-        isinstance(dy_row, np.ndarray) and dy_row.dtype == object
-    ) or (hasattr(jac, "dtype") and getattr(jac, "dtype", None) == object)
+    use_tensordot = (isinstance(dy_row, np.ndarray) and dy_row.dtype == object) or (
+        hasattr(jac, "dtype") and getattr(jac, "dtype", None) == object
+    )
 
     # Single measurement with a single param
     if not isinstance(jac, (tuple, list, autograd.builtins.SequenceBox)):
