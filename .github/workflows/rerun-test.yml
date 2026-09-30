@@ -27,7 +27,7 @@ on:
           - all-interfaces-tests
           - external-libraries-tests
           - catalyst-tests
-          - qchem-tests:
+          - qchem-tests
           - gradients-tests
           - data-tests
           - device-tests
