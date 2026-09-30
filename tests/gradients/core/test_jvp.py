@@ -715,7 +715,6 @@ class TestJVPGradients:
         exp = qp.jacobian(expected_jvp)(params_np, tangent_np)
         assert np.allclose(res, exp, atol=tol, rtol=0)
 
-
     # Include batch_dim!=None cases once #4462 is resolved
     @pytest.mark.jax
     @pytest.mark.parametrize("batch_dim", [None])  # , 1, 3])
