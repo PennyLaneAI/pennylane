@@ -24,7 +24,7 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.typing import Wire
 
 
-@pytest.mark.usefixtures("enable_and_disable_capture")
+@pytest.mark.capture
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
     features = (0.0, 1.0, 2.0)
