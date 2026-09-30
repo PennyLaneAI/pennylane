@@ -825,19 +825,21 @@ def flip_zero_control(
 
         arguments = _get_arguments(*args, **kwargs)
 
-        _cwires = arguments["control_wires"]
+        wire_argname = "control_wires" if "control_wires" in arguments else "wires"
+
+        _wires = arguments[wire_argname]
         _cvals = arguments["control_values"]
         if compiler.active() or capture.enabled():
             # We perform the cast on these temporary variables for the sole purpose
             # of indexing into them with tracers. the inner wrapper rule may still
             # depend on control_wires being a Wires object. Ideally we should have a
             # strictly enforced convention for what form the wires argument takes.
-            _cwires = math.array(_cwires, like="jax")
+            _wires = math.array(_wires, like="jax")
             _cvals = math.array(_cvals, like="jax")
 
-        @qp.for_loop(0, len(_cwires))
+        @qp.for_loop(0, len(_cvals))
         def _x_flips(i):
-            qp.cond(qp.math.logical_not(_cvals[i]), qp.X)(_cwires[i])
+            qp.cond(qp.math.logical_not(_cvals[i]), qp.X)(_wires[i])
 
         _x_flips()
         rule._impl(**(arguments | {"control_values": None}))
