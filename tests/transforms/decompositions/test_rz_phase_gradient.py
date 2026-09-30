@@ -202,14 +202,14 @@ def test_integration_multi_wire(seed):
     @qp.qnode(qp.device("default.qubit", wires=all_wires))
     def circuit(phi, in_state):
         qp.StatePrep(in_state, wires=wires)  # input state
-        qp.PhaseGradientStatePrep(wires=phase_grad_wires)  # phase gradient state
+        qp.PhaseGradientStatePrep(phase_grad_wires)  # phase gradient state
         qp.RZ(phi, wires)
-        qp.adjoint(qp.StatePrep(wires=phase_grad_wires))  # uncompute phase gradient state
+        qp.adjoint(qp.PhaseGradientStatePrep(phase_grad_wires))  # uncompute phase gradient state
         return qp.state()
 
     # random input state
     rng = np.random.default_rng(seed=seed)
-    in_state = rng.random(2 ** len(wires))
+    in_state = rng.random(2 ** len(wires)) + 1j * rng.random(2 ** len(wires))
     in_state /= np.linalg.norm(in_state)
 
     # returned output state

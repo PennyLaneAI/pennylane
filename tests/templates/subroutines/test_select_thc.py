@@ -798,9 +798,7 @@ class TestControlledSelectTHC:
             for w in wires["flag_wires"][3:]:
                 qp.Hadamard(w)
             grad = wires["gradient_wires"]
-            for j, w in enumerate(grad):
-                qp.Hadamard(w)
-                qp.PhaseShift(-2 * np.pi * 2 ** (len(grad) - 1 - j) / 2 ** len(grad), wires=w)
+            qp.PhaseGradientStatePrep(grad)
             for w in wires["index_wires"]:
                 qp.Hadamard(w)
             qp.Hadamard(wires["system_wires"][0])
