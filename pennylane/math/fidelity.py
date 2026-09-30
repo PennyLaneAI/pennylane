@@ -22,6 +22,7 @@ from functools import lru_cache
 
 import autograd
 import autoray as ar
+import jax
 
 from pennylane import math
 
@@ -299,8 +300,6 @@ def _register_jax_vjp():
     """
     Register the custom VJP for JAX
     """
-    # pylint: disable=import-outside-toplevel
-    import jax
 
     @jax.custom_vjp
     def _compute_fidelity_jax(dm0, dm1):
