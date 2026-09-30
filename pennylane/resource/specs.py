@@ -16,65 +16,15 @@
 from __future__ import annotations
 
 import warnings
-from collections import defaultdict
 from collections.abc import Callable, Iterable
 from functools import partial
 
 from pennylane.workflow import QNode
 
-from ._utils import (
-    apply_partial_args,
-    build_circuit_specs,
-    get_marker_level_map,
-    preprocess_level_input,
-    unwrap_partial,
-    unwrap_qjit_qnode,
-)
-from .mlir_specs import resources_from_analysis_pass
-from .resource import CircuitSpecs, SpecsResources
+from ._utils import apply_partial_args, build_circuit_specs, unwrap_partial, unwrap_qjit_qnode
+from .analyze import _run_resource_analysis
+from .resource import CircuitSpecs
 from .track import _run_with_resource_tracking
-
-
-def _specs_qjit_intermediate_passes(qjit, original_qnode, level, *args, **kwargs) -> tuple[
-    SpecsResources | list[SpecsResources] | dict[str, SpecsResources | list[SpecsResources]],
-    str | dict[int, str],
-]:
-    # Note that this only gets transforms manually applied by the user
-    compile_pipeline = original_qnode.compile_pipeline
-
-    # Map to convert back and forth between marker name and int level
-    marker_to_level = get_marker_level_map(compile_pipeline)
-    level_to_markers = defaultdict(list)  # Multiple markers can correspond to the same level
-    for marker, lvl in marker_to_level.items():
-        level_to_markers[lvl].append(marker)
-
-    return_single_level: bool = isinstance(level, (int, str)) and level != "all"
-
-    # Easier to assume level is always a sorted list of int levels
-    level = preprocess_level_input(level, compile_pipeline)
-    level_to_name: dict[int, str] = {}
-
-    resources = {}
-
-    # Handle MLIR passes
-    resources.update(
-        resources_from_analysis_pass(
-            qjit,
-            original_qnode,
-            level,
-            level_to_markers,
-            level_to_name,
-            *args,
-            **kwargs,
-        )
-    )
-
-    # Unpack dictionary to single item if only 1 level was given as input
-    if return_single_level:
-        resources = next(iter(resources.values()))
-        level_to_name = next(iter(level_to_name.values()))
-
-    return resources, level_to_name
 
 
 def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:
@@ -98,9 +48,7 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:
                 " To compute the depth, please use level='device'.",
                 UserWarning,
             )
-        resources, level = _specs_qjit_intermediate_passes(
-            qjit, original_qnode, level, *args, **kwargs
-        )
+        resources, level = _run_resource_analysis(qjit, original_qnode, level, *args, **kwargs)
 
     else:
         raise NotImplementedError(f"Unsupported level argument '{level}'.")
@@ -136,8 +84,9 @@ def specs(
         :class:`~.resource.CircuitSpecs` object containing the ``qnode`` specifications, including gate and
         measurement data, total wires, device information, shots, and more.
 
-    .. seealso:: :func:`~.track`, which returns the same information along with the result of
-        executing the circuit.
+    .. seealso:: :func:`~.analyze`, which provides the same pass-by-pass analysis, and
+        :func:`~.track`, which returns the same device-level information along with the result
+        of executing the circuit.
 
     .. warning::
 
