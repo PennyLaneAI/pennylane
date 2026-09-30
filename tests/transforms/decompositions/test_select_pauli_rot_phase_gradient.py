@@ -188,8 +188,9 @@ def test_integration_multi_wire(rot_axis, seed):
         "CNOT",
         "PauliX",
         "GlobalPhase",
+        "PhaseGradientStatePrep",
+        "Adjoint(PhaseGradientStatePrep)",
         "StatePrep",
-        "Adjoint(StatePrep)",
     }
 
     # Depending on the rot_axis, additional operators
@@ -221,7 +222,7 @@ def test_integration_multi_wire(rot_axis, seed):
 
     # random input state
     rng = np.random.default_rng(seed)
-    in_state = rng.random(2 ** len(sys_wires))
+    in_state = rng.random(2 ** len(sys_wires)) + 1j * rng.random(2 ** len(sys_wires))
     in_state /= np.linalg.norm(in_state)
 
     # returned output state
