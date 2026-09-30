@@ -126,39 +126,42 @@ class SPSAOptimizer:
     -0.4294539602541956
 
     The algorithm provided by SPSA does not rely on built-in automatic differentiation capabilities of the interface being used
-    and therefore the optimizer can be used in more complex hybrid classical-quantum workflow with any of the interfaces:
+    and therefore the optimizer can be used in more complex hybrid classical-quantum workflows with other interfaces, such as PyTorch:
 
-    >>> import torch
-    >>> n_qubits = 1
-    >>> max_iterations = 20
-    >>> dev = qp.device("default.qubit", wires=n_qubits)
-    >>> @qp.qnode(dev, interface="torch")
-    ... def layer_fn_spsa(inputs, weights):
-    ...     qp.AngleEmbedding(inputs, wires=range(n_qubits))
-    ...     qp.BasicEntanglerLayers(weights, wires=range(n_qubits))
-    ...     return qp.expval(qp.Z(0))
-    ...
-    >>> opt = qp.SPSAOptimizer(maxiter=max_iterations)
-    >>> def fn(params, tensor_in, tensor_out):
-    ...     for _ in range(max_iterations):
-    ...         # Some classical steps before the quantum computation
-    ...         params_a, layer_res = opt.step_and_cost(layer_fn_spsa,
-    ...                         torch.tensor(tensor_in),
-    ...                         torch.tensor(params))
-    ...         params = params_a[0]
-    ...         tensor_out = layer_res
-    ...         # Some classical steps after the quantum computation
-    ...     return layer_res
-    ...
-    >>> tensor_in = torch.tensor([0.27507603], dtype=torch.float64)
-    >>> tensor_out = torch.tensor([0], dtype=torch.float64)
-    >>> params = torch.tensor([[3.97507603],
-    ...     [3.12950603],
-    ...     [1.00854038],
-    ...     [1.25907603]], dtype=torch.float64)
-    >>> loss = fn(params, tensor_in, tensor_out)  # doctest: +SKIP
-    >>> print(loss)  # doctest: +SKIP
-    tensor(..., dtype=torch.float64)
+    .. code-block:: python
+
+        import torch
+        n_qubits = 1
+        max_iterations = 20
+        dev = qp.device("default.qubit", wires=n_qubits)
+
+        @qp.qnode(dev, interface="torch")
+        def layer_fn_spsa(inputs, weights):
+            qp.AngleEmbedding(inputs, wires=range(n_qubits))
+            qp.BasicEntanglerLayers(weights, wires=range(n_qubits))
+            return qp.expval(qp.Z(0))
+
+        opt = qp.SPSAOptimizer(maxiter=max_iterations)
+
+        def fn(params, tensor_in, tensor_out):
+            for _ in range(max_iterations):
+                # Some classical steps before the quantum computation
+                params_a, layer_res = opt.step_and_cost(layer_fn_spsa,
+                                torch.tensor(tensor_in),
+                                torch.tensor(params))
+                params = params_a[0]
+                tensor_out = layer_res
+                # Some classical steps after the quantum computation
+            return layer_res
+
+        tensor_in = torch.tensor([0.27507603], dtype=torch.float64)
+        tensor_out = torch.tensor([0], dtype=torch.float64)
+        params = torch.tensor([[3.97507603],
+            [3.12950603],
+            [1.00854038],
+            [1.25907603]], dtype=torch.float64)
+        loss = fn(params, tensor_in, tensor_out)
+        print(loss)  # tensor(..., dtype=torch.float64)
     """
 
     # pylint: disable-msg=too-many-arguments
