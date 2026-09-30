@@ -333,3 +333,24 @@ class TestCaptureIQPE:
         assert cjaxpr.eqns[-1].primitive == qp.capture.primitives.quantum_subroutine_prim
         # op is captured as data into subroutine
         assert cjaxpr.eqns[-2].outvars[0] in cjaxpr.eqns[-1].invars
+
+    def test_qjit_integration(self):
+        """Test that this subroutine can be used with QJIT."""
+        num_iters = 3
+
+        @qp.qjit(capture=True, target="mlir", collect_decomp_rules=False)
+        @qp.set_shots(10)
+        @qp.qnode(qp.device("null.qubit", wires=2))
+        def c():
+            return qp.sample(qp.iterative_qpe(qp.RX(0.5, 0), 1, num_iters))
+
+        specs = qp.specs(c, level="all-mlir")()
+        # NOTE: PauliX comes from the aux_wire reset
+        expected_operations = {
+            "C(Pow2)": num_iters,
+            "Hadamard": 2 * num_iters,
+            "MidCircuitMeasure": num_iters,
+            "PhaseShift": num_iters,
+            "PauliX": num_iters,
+        }
+        assert specs.resources["Before MLIR Passes"].quantum_operations == expected_operations
