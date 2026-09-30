@@ -2,6 +2,24 @@
 
 <h3>New features since last release</h3>
 
+* Added a new state preparation routine :class:`~.PhaseGradientStatePrep` that prepares the 
+  phase gradient state 
+  :math:`|\nabla_b\rangle = \frac{1}{\sqrt{B}} \sum_{k=0}^{B-1} e^{-2\pi i \frac{k}{B}} |k\rangle`,
+  which is a catalytic state for (generalized) rotation gates.
+  See the [compilation hub](https://pennylane.ai/compilation/phase-gradient/) for more details on the state and how to use it in rotations.
+  [(#10227)](https://github.com/PennyLaneAI/pennylane/pull/10227)
+
+  ```pycon
+  import pennylane as qp
+  >>> print(qp.draw(qp.PhaseGradientStatePrep(wires=range(5)).decomposition)())
+  0: ──H──Z─────────┤
+  1: ──H──S†────────┤
+  2: ──H──T†────────┤
+  3: ──H──Rϕ(-0.39)─┤
+  4: ──H──Rϕ(-0.20)─┤
+
+  ```
+
 * A :func:`pennylane.decomposition.register_signature` function is added for recording the possible signatures of
   an operator, along with a :func:`pennylane.decomposition.signature_registry` function for retrieving the recorded
   signatures. The resulting registry is used to identify decomposition rules that can be precompiled, improving
