@@ -172,6 +172,8 @@ unmodified_templates_cases = [
     ),
     (qp.CosineWindow, ([2, 3],), {}),
     (qp.CosineWindow, (), {"wires": [2, 0, 1]}),
+    (qp.PhaseGradientStatePrep, ([2, 3],), {}),
+    (qp.PhaseGradientStatePrep, (), {"wires": [2, 0, 1]}),
     (qp.MottonenStatePreparation, (jnp.ones(4) / 2, [2, 3]), {}),
     (
         qp.MottonenStatePreparation,
