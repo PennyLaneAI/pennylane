@@ -87,6 +87,26 @@ returns the result of executing the circuit:
 Resources are tracked by mock-executing the circuit on ``null.qubit``, so ``result`` has the
 shape and dtype of the real result, but not its values.
 
+The :func:`~pennylane.analyze` transform instead estimates the resources without executing the
+circuit, by analyzing the compiled program at a given stage of compilation (``level``).
+This makes it possible to see how each transform changes the circuit:
+
+.. code-block:: python
+
+    @qp.qjit
+    @qp.transforms.cancel_inverses
+    @qp.qnode(dev)
+    def optimized_circuit(x):
+        qp.RX(x, wires=0)
+        qp.X(0)
+        qp.X(0)
+        return qp.expval(qp.Z(0))
+
+>>> qp.analyze(optimized_circuit, level=0)(0.1).resources.quantum_operations
+{'PauliX': 2, 'RX': 1}
+>>> qp.analyze(optimized_circuit, level="user")(0.1).resources.quantum_operations
+{'RX': 1}
+
 
 Circuit drawing
 ---------------
