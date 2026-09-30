@@ -260,14 +260,7 @@ def classical_fisher(qnode, argnums=0):
 
         # In case multiple variables are used, we create a list of cfi matrices
         if isinstance(j, tuple):
-            res = []
-            for j_i in j:
-                res.append(_compute_cfim(p, j_i))
-
-            if len(j) == 1:
-                return res[0]
-
-            return res
+            return [_compute_cfim(p, j_i) for j_i in j]
 
         return _compute_cfim(p, j)
 

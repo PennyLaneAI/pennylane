@@ -117,9 +117,6 @@ def compute_vjp_single(dy, jac, num=None):
     if not isinstance(dy_row, np.ndarray):
         jac = _convert(jac, dy_row)
 
-    # Note: For generality, all exception type warnings are disabled.
-    # TODO: Excplictly catalogue and update raises for known types.
-
     # Single measurement with a single param
     if not isinstance(jac, (tuple, list, autograd.builtins.SequenceBox)):
         # No trainable parameters
@@ -130,11 +127,7 @@ def compute_vjp_single(dy, jac, num=None):
         if num == 1:
             jac = math.squeeze(jac)
         jac = math.reshape(jac, (-1, 1))
-        try:
-            res = dy_row @ jac
-
-        except Exception:  # pylint: disable=broad-except
-            res = math.tensordot(jac, dy_row, [[0], [0]])
+        res = dy_row @ jac
 
     # Single measurement with multiple params
     else:
@@ -145,20 +138,12 @@ def compute_vjp_single(dy, jac, num=None):
         # Single measurement with no dimension e.g. expval
         if num == 1:
             jac = math.reshape(math.stack(jac), (1, -1))
-            try:
-                res = dy_row @ jac
-            # pylint: disable=broad-except
-            except Exception:  # pylint: disable=broad-except
-                res = math.tensordot(jac, dy_row, [[0], [0]])
+            res = dy_row @ jac
 
         # Single measurement with dimension e.g. probs
         else:
             jac = math.reshape(math.stack(jac), (-1, num))
-            try:
-                res = jac @ dy_row
-            # pylint: disable=broad-except
-            except Exception:  # pylint: disable=broad-except
-                res = math.tensordot(jac, dy_row, [[1], [0]])
+            res = jac @ dy_row
 
     return res
 
@@ -521,8 +506,6 @@ def batch_vjp(tapes, dys, gradient_fn, reduction="append", gradient_kwargs=None)
 
             if isinstance(reduction, str):
                 getattr(vjps, reduction)(vjp_)
-            elif callable(reduction):
-                reduction(vjps, vjp_)
 
         return vjps
 
