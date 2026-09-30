@@ -1047,7 +1047,7 @@
 
 * The `pennylane.qcut` module has been removed, including `cut_circuit`,
   `cut_circuit_mc`, and the `WireCut` operator.
-  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+  [(#10235)](https://github.com/PennyLaneAI/pennylane/pull/10235)
 
 * Removes `qp.Configuration` and the ability to pass a `config` to `pennylane.device`.
   [(#9879)](https://github.com/PennyLaneAI/pennylane/pull/9879)
