@@ -20,7 +20,6 @@ Functions
     ~from_qasm
     ~from_qasm3
     ~from_qiskit
-    ~from_qiskit_noise
     ~from_qiskit_op
     ~from_quil
     ~from_quil_file

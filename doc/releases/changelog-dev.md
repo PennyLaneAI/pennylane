@@ -1017,6 +1017,13 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The ``pennylane.noise`` module has been removed, including ``NoiseModel``,
+  ``add_noise``, ``insert``, noise mitigation transforms (``mitigate_with_zne``,
+  ``fold_global``, ``poly_extrapolate``, ``richardson_extrapolate``,
+  ``exponential_extrapolate``), and ``from_qiskit_noise``. Noise channels such as
+  :class:`~.AmplitudeDamping` are unaffected.
+  [(#10214)](https://github.com/PennyLaneAI/pennylane/pull/10214)
+
 * Removed the ``qp.fourier`` module. This includes ``circuit_spectrum``, ``coefficients``,
   ``qnode_spectrum``, ``mark``, ``get_spectrum``, ``join_spectra`` and the
   ``qp.fourier.visualize`` plotting functions. Also, ``qp.fourier.reconstruct`` has moved to
@@ -1493,7 +1500,7 @@
     [(#9753)](https://github.com/PennyLaneAI/pennylane/pull/9753)
   - Integration with :func:`pennylane.apply`.
     [(#9738)](https://github.com/PennyLaneAI/pennylane/pull/9738)
-  - Integration with :func:`pennylane.insert`.
+  - Integration with ``pennylane.insert``.
     [(#9685)](https://github.com/PennyLaneAI/pennylane/pull/9685)
   - Integration with the graph-based decomposition system.
     [(#9723)](https://github.com/PennyLaneAI/pennylane/pull/9723)
