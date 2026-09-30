@@ -191,10 +191,8 @@ class IQPEmbedding(Operator2):
             raise ValueError(f"Features must be of length {len(wires)}; got length {n_features}.")
 
         if pattern is None:
-            if isinstance(wires, AbstractWires):
-                pattern = tuple(combinations(range(len(wires)), 2))
-            else:
-                pattern = tuple(combinations(wires, 2))
+            _wires = range(len(wires)) if isinstance(wires, AbstractWires) else wires
+            pattern = tuple(combinations(_wires, 2))
         else:
             pattern = tuple(tuple(pair) for pair in pattern)
 
