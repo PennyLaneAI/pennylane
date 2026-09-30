@@ -1021,7 +1021,7 @@
   ``target_wires`` argument has been removed. The target wires are the wires of ``unitary``.
   To use a unitary matrix, wrap it in a :class:`~.QubitUnitary`:
 
-  ```python
+  ```python3
   # Before (no longer supported):
   # qp.QuantumPhaseEstimation(matrix, target_wires=[0], estimation_wires=[1, 2])
 
