@@ -14,13 +14,13 @@
 """While loop."""
 
 from collections.abc import Callable
-from typing import Literal
+from typing import Any, Literal
 
 import jax
 from jax import numpy as jnp
 
 from pennylane import capture
-from pennylane.capture import FlatFn, enabled
+from pennylane.capture import FlatFn, HintedCallable, apply_hint, enabled
 from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.capture.dynamic_shapes import register_custom_staging_rule
 from pennylane.compiler.compiler import AvailableCompilers, active_compiler
@@ -234,7 +234,18 @@ def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "au
         Returns:
             Callable: a callable with the same signature as ``body_fn`` and ``cond_fn``.
         """
-        return WhileLoopCallable(cond_fn, body_fn, allow_array_resizing=allow_array_resizing)
+        if isinstance(body_fn, HintedCallable):
+            num_iters_hint = body_fn.hints.get("num-iters", None)
+            body_fn = body_fn.f
+        else:
+            num_iters_hint = None
+
+        return WhileLoopCallable(
+            cond_fn,
+            body_fn,
+            allow_array_resizing=allow_array_resizing,
+            num_iters_hint=num_iters_hint,
+        )
 
     return _decorator
 
@@ -260,6 +271,7 @@ register_custom_staging_rule(
 )
 
 
+# pylint: disable=too-many-arguments, unused-argument
 @while_loop_prim.def_impl
 def _while_loop_impl(
     *args,
@@ -268,6 +280,7 @@ def _while_loop_impl(
     body_slice,
     cond_slice,
     args_slice,
+    hints,
 ):
     body_slice = slice(*body_slice)
     cond_slice = slice(*cond_slice)
@@ -305,10 +318,12 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
         cond_fn: Callable,
         body_fn: Callable,
         allow_array_resizing: Literal["auto", True, False] = "auto",
+        num_iters_hint: int | None = None,
     ):
         self.cond_fn: Callable = cond_fn
         self.body_fn: Callable = body_fn
         self.allow_array_resizing = allow_array_resizing
+        self.num_iters_hint = num_iters_hint
 
     def _call_capture_disabled(self, *init_state):
         args = init_state
@@ -379,6 +394,7 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
             body_slice=body_consts,
             cond_slice=cond_consts,
             args_slice=args_slice,
+            hints=(("num-iters", self.num_iters_hint)),
         )
 
         results = results[-out_tree.num_leaves :]
@@ -401,3 +417,24 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
             return self._call_capture_enabled(*init_state)
 
         return self._call_capture_disabled(*init_state)
+
+
+def _validate_hints(hints):
+    # this pattern will generalize to more hints better
+    if not all(key == "num-iters" for key in hints):
+        raise ValueError(
+            f"Only num-iters is currently supported as a compiler hint. Got {tuple(hints)}"
+        )
+
+
+@apply_hint.register
+def _apply_hint_to_while_loop(
+    f: WhileLoopCallable, hints: dict[Literal["num-iters"], Any]
+) -> WhileLoopCallable:
+    _validate_hints(hints)
+    return WhileLoopCallable(
+        f.cond_fn,
+        f.body_fn,
+        allow_array_resizing=f.allow_array_resizing,
+        num_iters_hint=hints["num-iters"],
+    )
