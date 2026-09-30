@@ -508,6 +508,7 @@ class Wires(Sequence):
         """
         concrete_labels = []
         num_abstract_wires = 0
+        list_of_wires = tuple(list_of_wires)
 
         if any(isinstance(w, AbstractWires) and not w.shape_fixed for w in list_of_wires):
             return AbstractWires(-1)
