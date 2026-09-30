@@ -608,6 +608,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Adds `qp.hint` for adding compiler hints for things like the likely number of iterations
+  on for or while loops.
+  [(#10230)](https://github.com/PennyLaneAI/pennylane/pull/10230/)
+
 * Multi-controlled operators can now reuse a single :class:`~.TemporaryAND` ladder when enough
   zeroed work wires are available, reducing their decomposition gate counts.
   [(#10161)](https://github.com/PennyLaneAI/pennylane/pull/10161)
