@@ -188,6 +188,24 @@ def test_allocate_kwargs():
     assert op.restored
 
 
+def test_allocate_zero_wires():
+    """Test that allocating zero wires queues neither Allocate nor Deallocate."""
+    with qp.queuing.AnnotatedQueue() as q:
+        wires = allocate(0, state="any", restored=True)
+        deallocate(wires)
+
+    assert isinstance(wires, DynamicRegister)
+    assert len(wires) == 0
+    assert q.queue == []
+
+    with qp.queuing.AnnotatedQueue() as q:
+        with allocate(0) as wires:
+            qp.X(0)
+
+    assert len(wires) == 0
+    assert q.queue == [qp.X(0)]
+
+
 class TestDeallocate:
 
     def test_single_dynamic_wire(self):
@@ -361,6 +379,21 @@ class TestCaptureIntegration:
 
         with pytest.raises(NotImplementedError):
             deallocate(2)
+
+    def test_allocate_zero_wires(self):
+        """Test that allocating zero wires binds neither allocate nor deallocate."""
+        import jax
+
+        def f():
+            with allocate(0, state="zero", restored=True) as wires:
+                qp.X(0)
+                assert len(wires) == 0
+
+        jaxpr = jax.make_jaxpr(f)()
+        primitives = [eqn.primitive for eqn in jaxpr.eqns]
+        assert allocate_prim not in primitives
+        assert deallocate_prim not in primitives
+        assert len(primitives) == 1
 
     def test_no_dynamic_allocation_size(self):
         """Test that allocation size must be static with capture."""

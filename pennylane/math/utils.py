@@ -17,6 +17,7 @@ import numbers
 
 # pylint: disable=wrong-import-order
 import autoray as ar
+import jax
 import numpy as _np
 import scipy as sp
 
@@ -398,7 +399,6 @@ def is_abstract(tensor, like=None):
     interface = like or math.get_interface(tensor)
 
     if interface == "jax":
-        import jax
 
         # Use jax.core.Tracer as base class to catch all tracer types including new ones in JAX 0.7.0+
         # (e.g., LinearizeTracer, JVPTracer, BatchTracer, JaxprTracer, DynamicJaxprTracer, etc.)
@@ -497,7 +497,6 @@ def requires_grad(tensor, interface=None):
         return False
 
     if interface == "jax":
-        import jax
 
         return isinstance(tensor, jax.core.Tracer)
 
@@ -542,7 +541,6 @@ def in_backprop(tensor, interface=None):
         return isinstance(tensor, ArrayBox)
 
     if interface == "jax":
-        import jax
 
         return isinstance(tensor, jax.core.Tracer)
 
