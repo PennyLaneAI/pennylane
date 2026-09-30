@@ -1337,41 +1337,30 @@ def _sos_state_prep(
     sizes = SumOfSlatersPrep._required_register_sizes_from_nums(num_entries, data.r, n)
     all_allocate_wires = sum(sizes.values()) - n - num_enum - num_id - num_qrom - num_mcx
 
-    if all_allocate_wires > 0:
-        with allocate(all_allocate_wires, state="zero", restored=True) as allocated:
-            start = 0
-            # There is no implementation of QROM with allocate yet, so we allocate its work wires here
-            all_wires = {}
+    with allocate(all_allocate_wires, state="zero", restored=True) as allocated:
+        start = 0
+        # There is no implementation of QROM with allocate yet, so we allocate its work wires here.
+        # ``allocate(0)`` records nothing when every register was already provided.
+        all_wires = {}
 
-            def _allocate_conditionally(wires_arg, name, start):
-                if sizes[name] == 0:
-                    all_wires[name] = []
-                if len(wires_arg) > 0:
-                    all_wires[name] = wires_arg
-                else:
-                    all_wires[name] = allocated[start : (start := start + sizes[name])]
-                return start
+        def _allocate_conditionally(wires_arg, name, start):
+            if sizes[name] == 0:
+                all_wires[name] = []
+            if len(wires_arg) > 0:
+                all_wires[name] = wires_arg
+            else:
+                all_wires[name] = allocated[start : (start := start + sizes[name])]
+            return start
 
-            start = _allocate_conditionally(enumeration_wires, "enumeration_wires", start)
-            start = _allocate_conditionally(identification_wires, "identification_wires", start)
-            start = _allocate_conditionally(qrom_work_wires, "qrom_work_wires", start)
-            start = _allocate_conditionally(mcx_cache_wires, "mcx_cache_wires", start)
+        start = _allocate_conditionally(enumeration_wires, "enumeration_wires", start)
+        start = _allocate_conditionally(identification_wires, "identification_wires", start)
+        start = _allocate_conditionally(qrom_work_wires, "qrom_work_wires", start)
+        start = _allocate_conditionally(mcx_cache_wires, "mcx_cache_wires", start)
 
-            all_wires["wires"] = wires
-            all_wires["selected_wires"] = selected_wires
-            data = (coefficients, v_bits, data)
-            _sos_state_prep_with_wires(data, **all_wires)  # pylint: disable=missing-kwoa
-    else:
-        all_wires = {
-            "enumeration_wires": enumeration_wires,
-            "identification_wires": identification_wires,
-            "qrom_work_wires": qrom_work_wires,
-            "mcx_cache_wires": mcx_cache_wires,
-            "wires": wires,
-            "selected_wires": selected_wires,
-        }
+        all_wires["wires"] = wires
+        all_wires["selected_wires"] = selected_wires
         data = (coefficients, v_bits, data)
-        _sos_state_prep_with_wires(data, **all_wires)
+        _sos_state_prep_with_wires(data, **all_wires)  # pylint: disable=missing-kwoa
 
 
 add_decomps(SumOfSlatersPrep, _sos_state_prep)
