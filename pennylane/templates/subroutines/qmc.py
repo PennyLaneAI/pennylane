@@ -448,7 +448,9 @@ class QuantumMonteCarlo(Operation):
         op_list = [
             QubitUnitary(A, wires=target_wires[:-1]),
             QubitUnitary(R, wires=target_wires),
-            QuantumPhaseEstimation(Q, target_wires=target_wires, estimation_wires=estimation_wires),
+            QuantumPhaseEstimation(
+                QubitUnitary(Q, wires=target_wires), estimation_wires=estimation_wires
+            ),
         ]
 
         return op_list
@@ -486,7 +488,7 @@ def _quantum_monte_carlo_decomposition(
 ):  # pylint: disable=unused-argument
     QubitUnitary(A, wires=target_wires[:-1])
     QubitUnitary(R, wires=target_wires)
-    QuantumPhaseEstimation(Q, target_wires=target_wires, estimation_wires=estimation_wires)
+    QuantumPhaseEstimation(QubitUnitary(Q, wires=target_wires), estimation_wires=estimation_wires)
 
 
 add_decomps(QuantumMonteCarlo, _quantum_monte_carlo_decomposition)
