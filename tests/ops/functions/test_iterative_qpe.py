@@ -334,6 +334,7 @@ class TestCaptureIQPE:
         # op is captured as data into subroutine
         assert cjaxpr.eqns[-2].outvars[0] in cjaxpr.eqns[-1].invars
 
+    @pytest.mark.catalyst
     def test_qjit_integration(self):
         """Test that this subroutine can be used with QJIT."""
         num_iters = 3
