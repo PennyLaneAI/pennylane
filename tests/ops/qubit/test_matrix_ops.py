@@ -1739,9 +1739,10 @@ class TestBlockEncode:  # pylint: disable=too-many-public-methods
         assert abstract_op.wires == AbstractWires(2)
         assert abstract_op._subspace == (2, 2, 4)
 
-    def test_abstract_array_adjoint(self):
+    @pytest.mark.parametrize("dtype", [float, complex])
+    def test_abstract_array_adjoint(self, dtype):
         """Test that the adjoint of an abstract BlockEncode only transposes the shape."""
-        op = qp.BlockEncode(AbstractArray((2, 3), float), wires=range(3))
+        op = qp.BlockEncode(AbstractArray((2, 3), dtype), wires=range(3))
         adj = op.adjoint()
         assert isinstance(adj.A, AbstractArray)
         # pylint: disable=protected-access
