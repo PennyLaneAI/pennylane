@@ -173,7 +173,6 @@ class IQPEmbedding(Operator2):
     arg_specs = {"features": Float[-1], "wires": Wire[-1]}
 
     ndim_params = (1,)
-    grad_method = None
 
     def __init__(self, features, wires, n_repeats=1, pattern=None):
         if isinstance(features, (list, tuple)):
