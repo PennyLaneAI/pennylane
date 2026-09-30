@@ -105,7 +105,7 @@ Completed deprecation cycles
   machine learning applications to benefit from enhanced support and features.
 
   - Deprecated in v0.43
-  - Removed in v0.46
+  - Removed in future releases
 
 * Implementing ``Operator.generator`` as a property is no longer supported. Instead, define a ``generator()`` method for your operator that returns an ``Operator`` instance.
 
