@@ -1384,6 +1384,7 @@ class TestBlockEncode:  # pylint: disable=too-many-public-methods
     def test_correct_output_matrix(self, input_matrix, wires, output_matrix):
         """Test that BlockEncode outputs the correct matrix."""
         assert np.allclose(qp.matrix(qp.BlockEncode(input_matrix, wires)), output_matrix)
+        assert np.allclose(qp.BlockEncode.compute_matrix(input_matrix, wires), output_matrix)
 
     @pytest.mark.parametrize(
         ("input_matrix", "wires"),
@@ -1400,6 +1401,8 @@ class TestBlockEncode:  # pylint: disable=too-many-public-methods
     def test_unitary(self, input_matrix, wires):
         """Test that BlockEncode matrices are unitary."""
         mat = qp.matrix(qp.BlockEncode(input_matrix, wires))
+        assert np.allclose(np.eye(len(mat)), mat.dot(mat.T.conj()))
+        mat = qp.BlockEncode.compute_matrix(input_matrix, wires)
         assert np.allclose(np.eye(len(mat)), mat.dot(mat.T.conj()))
 
     @pytest.mark.tf
@@ -1703,6 +1706,8 @@ class TestBlockEncode:  # pylint: disable=too-many-public-methods
         assert np.allclose(np.eye(mat.shape[0]), (mat @ mat.T.conj()).toarray())
         mat_dense = qp.matrix(qp.BlockEncode(sparse_matrix.toarray(), wires=range(num_wires)))
         assert qp.math.allclose(mat, mat_dense)
+        mat_static = qp.BlockEncode.compute_sparse_matrix(sparse_matrix, wires=range(num_wires))
+        assert qp.math.allclose(mat, mat_static)
 
     @pytest.mark.parametrize(
         ("A", "wires", "expected_shape", "expected_subspace"),

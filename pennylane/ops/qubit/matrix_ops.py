@@ -707,11 +707,7 @@ class BlockEncode(Operator2):
         wires = Wires(wires)
         A, normalization, subspace = _prepare_blockencode_matrix(A, len(wires))
 
-        if not isinstance(A, AbstractArray):
-            # Clip the normalization to at least 1 (= normalize(A) if norm > 1 else A).
-            A = math.array(A) / math.maximum(normalization, math.ones_like(normalization))
-
-        if min(subspace[:2]) >= 0 and subspace[2] < subspace[0] + subspace[1]:
+        if subspace[2] < subspace[0] + subspace[1]:
             raise ValueError(
                 f"Block encoding a ({subspace[0]} x {subspace[1]}) matrix "
                 f"requires a Hilbert space of size at least "
@@ -765,21 +761,21 @@ class BlockEncode(Operator2):
                [ 0.94561648, -0.07621992, -0.1       , -0.3       ],
                [-0.07621992,  0.89117368, -0.2       , -0.4       ]])
         """
-        subspace = (*A.shape, 2 ** len(wires))
         if sp.sparse.issparse(A):
             raise qp.operation.MatrixUndefinedError(
                 "The operator was initialized with a sparse matrix. Use sparse_matrix instead."
             )
+        A, _, subspace = _prepare_blockencode_matrix(A, len(Wires(wires)))
         return _process_blockencode(A, subspace)
 
     @staticmethod
     def compute_sparse_matrix(A, wires, **_):
-        subspace = (*A.shape, 2 ** len(wires))
-        if sp.sparse.issparse(A):
-            return _process_blockencode(A, subspace)
-        raise qp.operation.SparseMatrixUndefinedError(
-            "The operator is initialized with a dense matrix, use the matrix method instead."
-        )
+        if not sp.sparse.issparse(A):
+            raise qp.operation.SparseMatrixUndefinedError(
+                "The operator is initialized with a dense matrix, use the matrix method instead."
+            )
+        A, _, subspace = _prepare_blockencode_matrix(A, len(Wires(wires)))
+        return _process_blockencode(A, subspace)
 
     def adjoint(self) -> "BlockEncode":
         A = self.A.T if isinstance(self.A, AbstractArray) else math.transpose(math.conj(self.A))
@@ -807,7 +803,7 @@ add_decomps("Adjoint(BlockEncode)", _adjoint_block_encode)
 
 
 def _prepare_blockencode_matrix(A, n_wires):
-    """Canonicalize ``A`` to 2D and compute its operator-norm scaling and encoding subspace."""
+    """Canonicalize ``A`` to 2D, normalize it, and compute its encoding subspace."""
 
     is_abstract = isinstance(A, AbstractArray)
     shape_a = math.shape(A)
@@ -827,6 +823,8 @@ def _prepare_blockencode_matrix(A, n_wires):
         if shape_a == (1, 1)
         else math.maximum(math.norm(A @ adj, ord=np.inf), math.norm(adj @ A, ord=np.inf))
     )
+    # Clip the normalization to at least 1 (= normalize(A) if norm > 1 else A).
+    A = math.array(A) / math.maximum(normalization, math.ones_like(normalization))
     return A, normalization, (*shape_a, 2**n_wires)
 
 

@@ -510,31 +510,6 @@ class QSVT(Operator2):
         """Number of trainable parameters of the block encoding and projectors."""
         return sum(getattr(op, "num_params", 0) for op in (self.UA, *self.projectors))
 
-    @staticmethod
-    @QueuingManager.stop_recording()
-    def compute_matrix(UA, projectors):  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
-
-        The canonical matrix is the textbook matrix representation that does not consider wires.
-        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
-
-        .. seealso:: :meth:`~.Operator.matrix` and :func:`~.matrix`
-
-        Args:
-            UA (Operator): the block encoding circuit, specified as a :class:`~.Operator`
-            projectors (Sequence[Operator]): a list of projector-controlled phase
-                shifts that implement the desired polynomial
-
-        Returns:
-            tensor_like: matrix representation
-        """
-        op_list = []
-        for idx, op in enumerate(projectors[:-1]):
-            op_list.append(op)
-            op_list.append(UA if idx % 2 == 0 else ops.adjoint(UA))
-        op_list.append(projectors[-1])
-        return ops.functions.matrix(ops.prod(*tuple(op_list[::-1])))
-
 
 def _QSVT_resources(UA, projectors):
     resources = defaultdict(int)
