@@ -335,9 +335,9 @@ class TestCaptureIQPE:
         assert cjaxpr.eqns[-2].outvars[0] in cjaxpr.eqns[-1].invars
 
     @pytest.mark.catalyst
-    def test_qjit_integration(self):
+    @pytest.mark.parametrize("num_iters", (3, 6))
+    def test_qjit_integration(self, num_iters):
         """Test that this subroutine can be used with QJIT."""
-        num_iters = 3
 
         @qp.qjit(capture=True, target="mlir", collect_decomp_rules=False)
         @qp.set_shots(10)
@@ -351,7 +351,7 @@ class TestCaptureIQPE:
             "C(Pow2)": num_iters,
             "Hadamard": 2 * num_iters,
             "MidCircuitMeasure": num_iters,
-            "PhaseShift": num_iters,
+            "PhaseShift": num_iters * (num_iters - 1) // 2,
             "PauliX": num_iters,
         }
         assert specs.resources["Before MLIR Passes"].quantum_operations == expected_operations
