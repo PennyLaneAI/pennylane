@@ -14,8 +14,17 @@
 
 # pylint: disable=too-few-public-methods
 
+import numpy as np
 import pytest
-from operator2_utils import HybridOp, HybridWireOp, MixedHybridOp, NonParametricOp, StaticOp
+from operator2_utils import (
+    DynOp,
+    FullOp,
+    HybridOp,
+    HybridWireOp,
+    MixedHybridOp,
+    NonParametricOp,
+    StaticOp,
+)
 
 import pennylane as qp
 from pennylane.core.operator import abstractify
@@ -139,3 +148,32 @@ class TestGenerateUID:
             phi=1.5, ops=StaticOp("x", wires=[0]), pytree_wires=[[1, 2]], wires=[3]
         )
         assert generate_uid(op_a) == generate_uid(op_b)
+
+    def test_hybrid_dynamic_leaf_values_do_not_affect_uid(self):
+        """Test that concrete values of non-wire dynamic leaves inside a hybrid argument do
+        not affect the UID — only their shapes and dtypes do."""
+        op_a = FullOp(0.1, "s", hybrid=np.array([1.0, 2.0]), wires=[0])
+        op_b = FullOp(0.1, "s", hybrid=np.array([9.0, 8.0]), wires=[0])
+        assert generate_uid(op_a) == generate_uid(op_b)
+
+        nested_a = HybridOp(ops=DynOp(0.5, wires=[0]), wires=[])
+        nested_b = HybridOp(ops=DynOp(1.5, wires=[0]), wires=[])
+        assert generate_uid(nested_a) == generate_uid(nested_b)
+
+    def test_hybrid_dynamic_leaf_shape_affects_uid(self):
+        """Test that the shape of a non-wire dynamic leaf inside a hybrid argument affects
+        the UID."""
+        op_a = FullOp(0.1, "s", hybrid=np.array([1.0, 2.0]), wires=[0])
+        op_b = FullOp(0.1, "s", hybrid=np.array([[1.0], [2.0]]), wires=[0])
+        assert generate_uid(op_a) != generate_uid(op_b)
+
+        nested_a = HybridOp(ops=DynOp(0.5, wires=[0]), wires=[])
+        nested_b = HybridOp(ops=DynOp(np.array([0.5, 0.1]), wires=[0]), wires=[])
+        assert generate_uid(nested_a) != generate_uid(nested_b)
+
+    def test_hybrid_dynamic_leaf_dtype_affects_uid(self):
+        """Test that the dtype of a non-wire dynamic leaf inside a hybrid argument affects
+        the UID."""
+        op_a = FullOp(0.1, "s", hybrid=np.array([1.0, 2.0], dtype=float), wires=[0])
+        op_b = FullOp(0.1, "s", hybrid=np.array([1, 2], dtype=int), wires=[0])
+        assert generate_uid(op_a) != generate_uid(op_b)
