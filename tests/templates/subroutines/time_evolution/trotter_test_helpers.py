@@ -190,6 +190,65 @@ def assert_merged_trotter_matches(
     assert np.allclose(block1, expected_u, atol=1e-10)
 
 
+def assert_randomized_trotter_matches(
+    helpers,
+    ham,
+    sys_wires,
+    t,
+    steps,
+    key,
+    expected_u,
+    expected_reversed_u,
+    has_control,
+    double_phase,
+):  # pylint: disable=too-many-arguments
+    """Capture ``_run_trotter_steps`` with random fragment orderings, passing ``t``, ``key``, and
+    the wires as dynamic inputs, and compare the (controlled) circuit to ``expected_u``, the
+    Trotter product formula without the energy shift. Requires program capture to be enabled.
+
+    ``expected_reversed_u`` is the same product formula with the order of the Trotter steps
+    reversed. The double-phase control-1 branch negates all diagonal angles in place, which yields
+    the adjoint of this reversed product, as the full step sequence is not a palindrome."""
+    import jax  # pylint: disable=import-outside-toplevel
+
+    from pennylane.templates.subroutines.time_evolution._trotter_utils import (  # pylint: disable=import-outside-toplevel
+        _run_trotter_steps,
+    )
+
+    num_sys_wires = len(sys_wires)
+    control_wires = [max(sys_wires) + 1] if has_control else []
+
+    def circuit(t, key, *wires):
+        _run_trotter_steps(
+            t,
+            steps,
+            ham,
+            list(wires[:num_sys_wires]),
+            list(wires[num_sys_wires:]),
+            double_phase,
+            key=key,
+            **helpers,
+        )
+
+    args = (t, key, *sys_wires, *control_wires)
+    jaxpr = jax.make_jaxpr(circuit)(*args)
+    tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, *args)
+    with qp.capture.pause():
+        matrix = qp.matrix(tape, wire_order=control_wires + list(sys_wires))
+
+    if not has_control:
+        assert np.allclose(matrix, expected_u, atol=1e-10)
+        return
+    dim = expected_u.shape[0]
+    block0, block1 = matrix[:dim, :dim], matrix[dim:, dim:]
+    if double_phase:
+        assert np.allclose(block0, expected_u, atol=1e-10)
+        assert np.allclose(block1, expected_reversed_u.conj().T, atol=1e-10)
+        return
+    assert np.allclose(block0, np.eye(dim), atol=1e-10)
+    assert np.allclose(block1, expected_u, atol=1e-10)
+
+
 def assert_resource_counts_match(resources, operations):
     """Assert that resource estimates match the operation counts of a traced decomposition."""
 

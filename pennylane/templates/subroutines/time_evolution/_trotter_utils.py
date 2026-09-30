@@ -16,7 +16,7 @@
 
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
-from pennylane.ops import RZ, IsingZZ
+from pennylane.ops import RZ, IsingZZ, cond
 from pennylane.ops.op_math import ctrl
 
 # pylint: disable=too-many-arguments
@@ -56,6 +56,7 @@ def _run_trotter_steps(
     apply_one_body_diagonal,
     merge_leaves,
     transpose_leaf,
+    key=None,
 ):
     r"""Emit the second-order Trotter step sequence and the trailing basis rotation.
 
@@ -99,6 +100,11 @@ def _run_trotter_steps(
             basis rotations telescope into one.
         transpose_leaf (callable): ``(U) -> U``. Inverse of a leaf, for the trailing basis
             rotation that closes the final fragment.
+        key (jax.Array | None): JAX PRNG key for randomized fragment orderings. If ``None``
+            (default), every step uses the fixed ordering :math:`H_1, \dots, H_L, H_0` for its
+            first-order half. Otherwise, each step draws an independent uniformly random ordering
+            of all :math:`L+1` fragments, see :func:`~._run_randomized_trotter_steps`. Requires
+            program capture.
     """
     U_tensor = hamiltonian.leaf_tensors
     Z_tensor = hamiltonian.core_tensors
@@ -114,12 +120,30 @@ def _run_trotter_steps(
     second_order_time_step = evolution_time / num_trotter_steps
     first_order_time_step = second_order_time_step / 2
 
+    if key is not None:
+        _run_randomized_trotter_steps(
+            second_order_time_step,
+            num_trotter_steps,
+            U_tensor,
+            Z_tensor,
+            wires,
+            control_wires,
+            double_phase,
+            key,
+            apply_system_basis_rotation=apply_system_basis_rotation,
+            apply_two_body_diagonal=apply_two_body_diagonal,
+            apply_one_body_diagonal=apply_one_body_diagonal,
+            merge_leaves=merge_leaves,
+            transpose_leaf=transpose_leaf,
+        )
+        return
+
     num_two_body_fragments = U_tensor.shape[0] - 1
 
     apply_system_basis_rotation(U_tensor[1], wires)
     apply_two_body_diagonal(Z_tensor[1], wires, first_order_time_step, control_wires, double_phase)
 
-    def remainder_of_step(step_idx):
+    def main_loop(step_idx):
         def two_body_fragment(fragment_idx, prev_fragment_idx):
             U = merge_leaves(U_tensor[prev_fragment_idx], U_tensor[fragment_idx])
             apply_system_basis_rotation(U, wires)
@@ -154,7 +178,93 @@ def _run_trotter_steps(
         )
         apply_two_body_diagonal(Z_tensor[1], wires, endpoint_time_step, control_wires, double_phase)
 
-    for_loop(num_trotter_steps)(remainder_of_step)()
+    for_loop(num_trotter_steps)(main_loop)()
 
     very_last_U = transpose_leaf(U_tensor[1])
     apply_system_basis_rotation(very_last_U, wires)
+
+
+def _random_fragment_orderings(key, num_trotter_steps, num_fragments):
+    """Draw one independent, uniformly random permutation of ``range(num_fragments)`` per
+    Trotter step, as an integer array of shape ``(num_trotter_steps, num_fragments)``.
+
+    The orderings are computed with ``jax.random`` inside the traced program, so a
+    compiled circuit draws new orderings for each new (dynamic) ``key``.
+    """
+    import jax  # pylint: disable=import-outside-toplevel
+
+    orderings = math.tile(math.arange(num_fragments, like="jax"), (num_trotter_steps, 1))
+    return jax.random.permutation(key, orderings, axis=1, independent=True)
+
+
+def _run_randomized_trotter_steps(
+    second_order_time_step,
+    num_trotter_steps,
+    U_tensor,
+    Z_tensor,
+    wires,
+    control_wires,
+    double_phase,
+    key,
+    *,
+    apply_system_basis_rotation,
+    apply_two_body_diagonal,
+    apply_one_body_diagonal,
+    merge_leaves,
+    transpose_leaf,
+):
+    r"""Emit second-order Trotter steps with a random fragment ordering per step.
+
+    Each step :math:`k` draws a random permutation :math:`\pi_k` of all :math:`L+1` fragments
+    (the one-body fragment :math:`H_0` included) and applies
+
+    .. math::
+
+        S_2^{(k)}(\Delta t) = \Big(\prod_{j=0}^{L-1} e^{-i H_{\pi_k(j)} \Delta t/2}\Big)\,
+            e^{-i H_{\pi_k(L)} \Delta t}\,
+            \Big(\prod_{j=L-1}^{0} e^{-i H_{\pi_k(j)} \Delta t/2}\Big) ,
+
+    i.e. the first-order product formula in the order :math:`\pi_k` followed by its reverse.
+    The two half blocks of the central fragment :math:`H_{\pi_k(L)}` are merged. Unlike in the
+    deterministic scheme, the half blocks at step boundaries belong to different fragments in
+    general and are not merged, and :math:`H_0` is no longer pinned to the center. Basis rotations
+    of consecutive fragments are still merged throughout, including across step boundaries.
+
+    Arguments are as in :func:`~._run_trotter_steps`, except that ``U_tensor`` and ``Z_tensor``
+    must be JAX arrays, as they are indexed with traced fragment indices.
+    """
+    num_fragments = U_tensor.shape[0]
+    first_order_time_step = second_order_time_step / 2
+    orderings = _random_fragment_orderings(key, num_trotter_steps, num_fragments)
+
+    def fragment(fragment_idx, U_prev, time_step):
+        apply_system_basis_rotation(merge_leaves(U_prev, U_tensor[fragment_idx]), wires)
+
+        @cond(fragment_idx == 0)
+        def diagonal():
+            # ``apply_one_body_diagonal`` evolves for twice the time step it is given.
+            apply_one_body_diagonal(Z_tensor[0], wires, time_step / 2, control_wires, double_phase)
+
+        @diagonal.otherwise
+        def _():
+            apply_two_body_diagonal(
+                Z_tensor[fragment_idx], wires, time_step, control_wires, double_phase
+            )
+
+        diagonal()
+        return U_tensor[fragment_idx]
+
+    def step(step_idx, U_prev):
+        ordering = orderings[step_idx]
+
+        def half_block(position, U_prev):
+            return fragment(ordering[position], U_prev, first_order_time_step)
+
+        U_prev = for_loop(num_fragments - 1)(half_block)(U_prev)
+        U_prev = fragment(ordering[num_fragments - 1], U_prev, second_order_time_step)
+        return for_loop(num_fragments - 2, -1, -1)(half_block)(U_prev)
+
+    # Merging with the identity leaf makes the very first basis rotation plain ``U_tensor[idx]``.
+    identity_leaf = math.zeros_like(U_tensor[0]) + math.eye(U_tensor.shape[-1], like="jax")
+    U_last = for_loop(num_trotter_steps)(step)(identity_leaf)
+    apply_system_basis_rotation(transpose_leaf(U_last), wires)

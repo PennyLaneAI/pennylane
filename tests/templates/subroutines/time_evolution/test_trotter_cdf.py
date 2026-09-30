@@ -37,7 +37,11 @@ from pennylane.decomposition.resources import Resources
 from pennylane.exceptions import CaptureWarning
 from pennylane.numeric_hamiltonians import CDFHamiltonian
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.templates.subroutines.time_evolution._trotter_utils import (
+    _random_fragment_orderings,
+)
 from pennylane.templates.subroutines.time_evolution.trotter_cdf import (
+    _CDF_HELPERS,
     _apply_system_basis_rotation,
     _cdf_resource_counts,
     _controlled_trotter_cdf_decomp,
@@ -56,6 +60,7 @@ from tests.templates.subroutines.time_evolution.trotter_test_helpers import (  #
     CATALYST_GATE_SET_GENUINE,
     _single_z,
     assert_merged_trotter_matches,
+    assert_randomized_trotter_matches,
     assert_resource_counts_match,
     cdf_reference_hamiltonian,
     control_branches,
@@ -113,8 +118,11 @@ def cdf_reference_hamiltonian_leaves(ham):
     return H
 
 
-def cdf_second_order_trotter_matrix(ham, evolution_time, num_steps):
-    """Build the unmerged second-order Trotter product from independently assembled fragments."""
+def cdf_second_order_trotter_matrix(ham, evolution_time, num_steps, orderings=None):
+    """Build the unmerged second-order Trotter product from independently assembled fragments.
+
+    ``orderings[k]`` is the fragment ordering of the first-order half of step ``k``, defaulting
+    to ``(1, ..., L, 0)`` for every step."""
     Z = np.asarray(ham.core_tensors, dtype=float)
     U = np.asarray(ham.leaf_tensors, dtype=float)
     num_orbitals = Z.shape[-1]
@@ -136,18 +144,16 @@ def cdf_second_order_trotter_matrix(ham, evolution_time, num_steps):
         )
         fragments.append(Bl.conj().T @ Dl @ Bl)
 
-    dt = evolution_time / num_steps
-    step = np.eye(dim, dtype=complex)
-    for generator, duration in [
-        *((fragment, dt / 2) for fragment in fragments[1:]),
-        (fragments[0], dt),
-        *((fragment, dt / 2) for fragment in reversed(fragments[1:])),
-    ]:
-        step = expm(-1j * generator * duration) @ step
+    if orderings is None:
+        orderings = [[*range(1, len(fragments)), 0]] * num_steps
 
-    return np.exp(-1j * _energy_shift(ham) * evolution_time) * np.linalg.matrix_power(
-        step, num_steps
-    )
+    dt = evolution_time / num_steps
+    u = np.eye(dim, dtype=complex)
+    for ordering in orderings:
+        for frag in [*ordering, *reversed(ordering)]:
+            u = expm(-1j * fragments[frag] * dt / 2) @ u
+
+    return np.exp(-1j * _energy_shift(ham) * evolution_time) * u
 
 
 def toy_hamiltonian_cdf_generator(seed, abstract=False):
@@ -582,6 +588,68 @@ class TestDecomposition:
         ]
         assert diffs[0] > diffs[1] > diffs[2]
         assert diffs[1] / diffs[2] > 3.0
+
+
+class TestRandomizedFragmentOrdering:
+    """Tests for the random per-step fragment orderings of ``_run_trotter_steps``."""
+
+    def test_random_fragment_orderings(self, seed):
+        """Each step gets a permutation of all fragments, drawn inside a jitted function from a
+        dynamic key, and different steps get different orderings."""
+        key = jax.random.PRNGKey(seed)
+        num_steps, num_fragments = 20, 4
+        orderings = jax.jit(_random_fragment_orderings, static_argnums=(1, 2))(
+            key, num_steps, num_fragments
+        )
+        assert orderings.shape == (num_steps, num_fragments)
+        assert np.array_equal(
+            np.sort(orderings, axis=1), np.tile(np.arange(num_fragments), (num_steps, 1))
+        )
+        assert len({tuple(ordering) for ordering in orderings.tolist()}) > 1
+        assert np.array_equal(orderings, _random_fragment_orderings(key, num_steps, num_fragments))
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize("make_key", [jax.random.PRNGKey, jax.random.key])
+    @pytest.mark.parametrize("num_fragments", [1, 2])
+    @pytest.mark.parametrize("num_steps", [1, 3])
+    @pytest.mark.parametrize(
+        ("has_control", "double_phase"), [(False, False), (True, False), (True, True)]
+    )
+    def test_matches_second_order_trotter_product(
+        self, seed, make_key, num_fragments, num_steps, has_control, double_phase
+    ):
+        """The randomized circuit equals the unmerged second-order Trotter product with the
+        fragment orderings drawn from the key, for uncontrolled, genuine-controlled, and
+        double-phase circuits."""
+        rng = np.random.default_rng(seed)
+        num_orbitals = 2
+        core = rng.normal(size=(num_fragments + 1, num_orbitals, num_orbitals)) * 0.4
+        core = 0.5 * (core + np.transpose(core, (0, 2, 1)))
+        leaf = np.stack([random_orthogonal(num_orbitals, rng) for _ in range(num_fragments + 1)])
+        ham = CDFHamiltonian(core_tensors=core, leaf_tensors=leaf, nuc_constant=0.37)
+        wires = list(range(2 * num_orbitals))
+        evolution_time = 0.7
+        key = make_key(seed)
+
+        orderings = np.asarray(_random_fragment_orderings(key, num_steps, num_fragments + 1))
+        phase = np.exp(1j * _energy_shift(ham) * evolution_time)
+        with qp.capture.pause():
+            expected, expected_reversed = (
+                phase * cdf_second_order_trotter_matrix(ham, evolution_time, num_steps, ords)
+                for ords in (orderings, orderings[::-1])
+            )
+        assert_randomized_trotter_matches(
+            _CDF_HELPERS,
+            ham.normalize_leaf_determinant(),
+            wires,
+            evolution_time,
+            num_steps,
+            key,
+            expected,
+            expected_reversed,
+            has_control,
+            double_phase,
+        )
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
