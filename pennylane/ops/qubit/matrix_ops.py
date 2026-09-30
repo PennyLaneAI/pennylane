@@ -392,7 +392,8 @@ def _matrix_pow(U, z):
         return sp.sparse.linalg.matrix_power(U, z)
     if is_integer(z) and math.get_deep_interface(U) != "tensorflow":
         return math.linalg.matrix_power(U, z)
-    return math.convert_like(fractional_matrix_power(U, z), U)
+    eigs, vecs = math.linalg.eig(U)
+    return vecs @ math.diag(eigs**z) @ math.linalg.inv(vecs)
 
 
 @register_resources(lambda base, z: {abstractify(base): 1})

@@ -239,6 +239,20 @@ class TestQubitUnitary:
 
         assert qp.math.allclose(pow_op.matrix(), expected)
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("z", [2, 0.123])
+    def test_pow_decomposition_rule(self, z):
+        """Test the graph decomposition of Pow(QubitUnitary)."""
+        U = np.array(
+            [
+                [0.98877108 + 0.0j, 0.0 - 0.14943813j],
+                [0.0 - 0.14943813j, 0.98877108 + 0.0j],
+            ]
+        )
+        op = qp.pow(qp.QubitUnitary(U, wires=0), z)
+        for rule in qp.list_decomps("Pow(QubitUnitary)"):
+            _test_decomposition_rule(op, rule)
+
     def test_qubit_unitary_noninteger_pow_broadcasted(self):
         """Test broadcasted QubitUnitary raised to a non-integer power raises an error."""
 
