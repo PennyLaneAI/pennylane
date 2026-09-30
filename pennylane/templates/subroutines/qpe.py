@@ -28,7 +28,7 @@ from pennylane.ops import pow as qp_pow
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.pow2 import _pow_abstract
 from pennylane.typing import Wire
-from pennylane.wires import Wires, _filter_abstract_and_traced_wires, concatenate_wires
+from pennylane.wires import Wires, _filter_abstract_and_traced_wires
 
 from .qft import QFT
 
@@ -172,7 +172,7 @@ class QuantumPhaseEstimation(Operator2):
     @property
     def wires(self) -> Wires:
         """All wires involved in the operation: the target wires followed by the estimation wires."""
-        return concatenate_wires(self.target_wires, self.estimation_wires)
+        return self.target_wires + self.estimation_wires
 
 
 def _qpe_decomp_resource(unitary, estimation_wires):
