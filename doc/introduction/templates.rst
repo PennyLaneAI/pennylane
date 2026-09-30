@@ -129,7 +129,7 @@ state preparation is typically used as the first operation.
 
 .. gallery-item::
     :description: :doc:`PhaseGradientStatePrep <../code/api/pennylane.PhaseGradientStatePrep>`
-    :figure: _static/templates/state_preparations/phasegradientstateprep.png
+    :figure: _static/templates/state_preparations/phasegradientstateprep_template.png
 
 
 .. raw:: html
