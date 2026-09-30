@@ -25,6 +25,7 @@ from numpy.polynomial.chebyshev import Chebyshev
 import pennylane as qp
 from pennylane import numpy as np
 from pennylane.core.queuing import AnnotatedQueue
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.qsvt import (
     _cheby_pol,
     _complementary_poly,
@@ -179,6 +180,7 @@ class TestQSVTBasics:
             for actual, op in zip(tape.operations, flat_expected, strict=True):
                 qp.assert_equal(actual, op)
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(
         ("UA", "projectors"),
         [
@@ -197,16 +199,9 @@ class TestQSVTBasics:
         ],
     )
     def test_decomposition(self, UA, projectors):
-        with qp.queuing.AnnotatedQueue() as q:
-            qp.QSVT.compute_decomposition(UA=UA, projectors=projectors)
-        tape = qp.tape.QuantumScript.from_queue(q)
-
-        # Tests that the decomposition produces the right matrix
-        op_matrix = qp.QSVT.compute_matrix(UA=UA, projectors=projectors)
-        decomp_matrix = qp.matrix(tape, wire_order=tape.wires)
-        assert qp.math.allclose(
-            op_matrix, decomp_matrix
-        ), "decomposition must produce the same matrix as the operator."
+        op = qp.QSVT(UA, projectors)
+        for rule in qp.list_decomps(op):
+            _test_decomposition_rule(op, rule)
 
     def test_wire_order(self):
         """Test that the wire order is preserved."""
