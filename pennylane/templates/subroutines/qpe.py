@@ -38,10 +38,6 @@ class QuantumPhaseEstimation(Operator2):
     `quantum phase estimation <https://en.wikipedia.org/wiki/Quantum_phase_estimation_algorithm>`__
     circuit.
 
-    Given a unitary operator :math:`U`, this template applies the circuit for quantum phase
-    estimation. The unitary is applied to the wires it is defined on (the target wires) and
-    :math:`n` qubits are used for phase estimation as specified by ``estimation_wires``.
-
     .. figure:: ../../_static/templates/subroutines/qpe.svg
         :align: center
         :width: 60%
