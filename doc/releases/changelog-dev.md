@@ -1013,6 +1013,20 @@
 
 <h3>Breaking changes 💔</h3>
 
+* :class:`~.QuantumPhaseEstimation` now only accepts an :class:`~.Operator` as the ``unitary``, and the
+  ``target_wires`` argument has been removed. The target wires are the wires of ``unitary``.
+  To use a unitary matrix, wrap it in a :class:`~.QubitUnitary`:
+
+  ```python
+  # Before (no longer supported):
+  # qp.QuantumPhaseEstimation(matrix, target_wires=[0], estimation_wires=[1, 2])
+
+  # After:
+  qp.QuantumPhaseEstimation(qp.QubitUnitary(matrix, wires=[0]), estimation_wires=[1, 2])
+  ```
+
+  [(#10209)](https://github.com/PennyLaneAI/pennylane/pull/10209)
+
 * Jax 0.7.1 is now a hard requirement for PennyLane.
   [(#10192)](https://github.com/PennyLaneAI/pennylane/pull/10192)
 

@@ -213,7 +213,7 @@ with creating a :class:`~.pennylane.QuantumPhaseEstimation` circuit:
 
     phase = 1 
     target_wires = [0]
-    unitary = qp.RX(phase, wires=0).matrix()
+    unitary = qp.QubitUnitary(qp.RX(phase, wires=0).matrix(), wires=target_wires)
     n_estimation_wires = 3
     estimation_wires = range(1, n_estimation_wires + 1)
 
@@ -221,11 +221,7 @@ with creating a :class:`~.pennylane.QuantumPhaseEstimation` circuit:
     def circuit():
         # Start in the |+> eigenstate of the unitary
         qp.Hadamard(wires=target_wires)
-        qp.QuantumPhaseEstimation(
-            unitary,
-            target_wires=target_wires,
-            estimation_wires=estimation_wires,
-        ) 
+        qp.QuantumPhaseEstimation(unitary, estimation_wires=estimation_wires)
 
 From here, we can iterate through the stages of decomposition:
 
