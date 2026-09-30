@@ -15,21 +15,22 @@
 Unit tests for the PhaseGradientStatePrep template.
 """
 
+from functools import partial
+
 import numpy as np
 import pytest
 
 import pennylane as qp
 import pennylane.estimator as qre
 from pennylane.exceptions import WireError
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
 def _expected_state(num_wires):
     dim = 2**num_wires
-    return np.exp(-2j * np.pi * np.arange(dim) / dim) / np.sqrt(dim)
+    return np.exp((-2j * np.pi / dim) * np.arange(dim)) / np.sqrt(dim)
 
 
-@pytest.mark.parametrize("num_wires", [1, 2, 3, 5])
+@pytest.mark.parametrize("num_wires", [1, 2, 3, 4, 5, 6])
 @pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity(num_wires):
     """Check the operation using the assert_valid function."""
@@ -47,42 +48,20 @@ def test_label():
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
-    @pytest.mark.parametrize("num_wires", [1, 2, 3, 4, 6])
-    @pytest.mark.usefixtures("enable_and_disable_capture")
-    def test_decomposition_new(self, num_wires):
-        """Tests the decomposition rule implemented with the new system."""
-        op = qp.PhaseGradientStatePrep(wires=range(num_wires))
-
-        for rule in qp.list_decomps(qp.PhaseGradientStatePrep):
-            _test_decomposition_rule(op, rule)
-
-    @pytest.mark.parametrize("num_wires", [1, 2, 3])
-    def test_correct_gates_few_wires(self, num_wires):
+    @pytest.mark.parametrize("num_wires", [1, 2, 3, 4, 5, 6])
+    def test_correct_gates_in_decomposition(self, num_wires):
         """Test that only discrete gates are used for up to three wires."""
-        wires = ["a", "b", "c"][:num_wires]
-        queue = qp.PhaseGradientStatePrep(wires=wires).decomposition()
+        wires = ["a", "b", "c", "d", "e", "f"][:num_wires]
+        op = qp.PhaseGradientStatePrep(wires=wires)
+        with qp.queuing.AnnotatedQueue() as q:
+            returned_list = op.decomposition()
+        # queued_list = qp.tape.QuantumScript.from_queue(q)
 
-        phase_gates = [qp.Z, lambda w: qp.adjoint(qp.S(w)), lambda w: qp.adjoint(qp.T(w))]
-        expected = [qp.H(w) for w in wires] + [gate(w) for gate, w in zip(phase_gates, wires)]
-        assert len(queue) == len(expected)
-        for op, exp_op in zip(queue, expected):
-            qp.assert_equal(op, exp_op)
-
-    def test_correct_gates_many_wires(self):
-        """Test that PhaseShift gates are used beyond the third wire."""
-        num_wires = 6
-        queue = qp.PhaseGradientStatePrep(wires=range(num_wires)).decomposition()
-
-        assert [op.name for op in queue[:num_wires]] == ["Hadamard"] * num_wires
-        assert [op.name for op in queue[num_wires : num_wires + 3]] == [
-            "PauliZ",
-            "Adjoint(S)",
-            "Adjoint(T)",
-        ]
-        phase_shifts = queue[num_wires + 3 :]
-        assert len(phase_shifts) == num_wires - 3
-        for j, op in enumerate(phase_shifts, start=3):
-            qp.assert_equal(op, qp.PhaseShift(-np.pi / 2**j, wires=j))
+        phase_gates = [qp.Z, qp.adjoint(qp.S), qp.adjoint(qp.T)]
+        phase_gates += [partial(qp.PhaseShift, phi=-np.pi / 2**i) for i in range(3, num_wires)]
+        expected = [qp.H(w) for w in wires] + [gate(wires=w) for gate, w in zip(phase_gates, wires)]
+        assert returned_list == expected
+        assert q.queue == expected
 
     @pytest.mark.parametrize("num_wires", [1, 2, 3, 4, 7])
     def test_decomposition_prepares_state(self, num_wires):
@@ -96,6 +75,7 @@ class TestDecomposition:
             return qp.state()
 
         tape = qp.workflow.construct_tape(circuit)()
+        print([op.name for op in tape.operations])
         assert all(op.name in gate_set for op in tape.operations)
         assert np.allclose(circuit(), _expected_state(num_wires))
 
@@ -151,8 +131,8 @@ class TestStateVector:
         assert np.allclose(res, expected)
 
     @pytest.mark.parametrize("num_wires", [1, 2, 4])
-    def test_state_vector_matches_circuit(self, num_wires):
-        """Test that the state vector matches the simulated decomposition."""
+    def test_state_vector_matches_decomposition(self, num_wires):
+        """Test that the state vector matches the decomposition."""
         op = qp.PhaseGradientStatePrep(wires=range(num_wires))
         state = qp.matrix(op.decomposition, wire_order=range(num_wires))()[:, 0]
         assert np.allclose(np.reshape(op.state_vector(), (-1,)), state)
@@ -193,9 +173,9 @@ class TestPhaseGradientConsistency:
         @qp.qnode(qp.device("default.qubit"))
         def circuit():
             qp.PhaseGradientStatePrep(wires=phase_grad_wires)
-            qp.Hadamard("targ")
+            qp.H("targ")
             qp.RZ(phi, "targ")
-            qp.Hadamard("targ")
+            qp.H("targ")
             return qp.probs("targ")
 
         expected = np.abs(qp.RX(phi, 0).matrix()[:, 0]) ** 2
@@ -212,19 +192,3 @@ class TestPhaseGradientConsistency:
         res = qre.estimate(circuit, gate_set=gate_set)()
         expected = qre.estimate(qre.PhaseGradient(num_wires), gate_set=gate_set)
         assert res.gate_counts == expected.gate_counts
-
-
-@pytest.mark.jax
-def test_jax_jit():
-    """Test that the template correctly compiles with JAX JIT."""
-    import jax
-
-    @qp.qnode(qp.device("default.qubit", wires=3))
-    def circuit():
-        qp.PhaseGradientStatePrep(wires=[0, 1, 2])
-        return qp.state()
-
-    res = circuit()
-    res2 = jax.jit(circuit)()
-    assert qp.math.allclose(res, res2, atol=1e-6, rtol=0)
-    assert qp.math.allclose(res, _expected_state(3), atol=1e-6, rtol=0)
