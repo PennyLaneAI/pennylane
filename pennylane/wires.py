@@ -16,7 +16,6 @@ This module contains the :class:`Wires` class, which takes care of wire bookkeep
 """
 
 import functools
-import itertools
 import uuid
 from collections.abc import Hashable, Iterable, Sequence
 from itertools import combinations
@@ -229,9 +228,6 @@ class Wires(Sequence):
         >>> wires1 + wires2
         Wires([4, 0, 1, 2])
         """
-        if isinstance(other, AbstractWires):
-            return AbstractWires(len(self)) + other
-        other = Wires(other)
         return Wires.all_wires([self, other])
 
     def __radd__(self, other):
@@ -243,9 +239,6 @@ class Wires(Sequence):
         Returns:
             Wires: all wires appearing in either object
         """
-        if isinstance(other, AbstractWires):
-            return AbstractWires(len(self)) + other
-        other = Wires(other)
         return Wires.all_wires([other, self])
 
     def __array__(self, dtype=None, copy=None):
@@ -484,14 +477,18 @@ class Wires(Sequence):
 
     @staticmethod
     def all_wires(list_of_wires, sort=False):
-        """Return the wires that appear in any of the Wires objects in the list.
+        """Combine a list of wires into a single Wires object.
 
-        This is similar to a set combine method, but keeps the order of wires as they appear in the list.
+        This is similar to a set combine method, but keeps the order of wires as they appear
+        in the list. If any ``AbstractWires`` are present, an ``AbstractWires`` is returned.
+        Concrete wires have known labels and are deduplicated. Abstract wires are assumed
+        disjoint from other wires and only contribute to the total wire count.
 
         Args:
-            list_of_wires (list[Wires]): list of Wires objects
+            list_of_wires (list[Wires]): list of ``Wires`` or ``AbstractWires`` objects.
             sort (bool): Toggle for sorting the combined wire labels. The sorting is based on
-                value if all keys are int, else labels' str representations are used.
+                value if all keys are integers, else labels' str representations are used.
+                Ignored if any of the wires are abstract.
 
         Returns:
             Wires: combined wires
@@ -504,12 +501,28 @@ class Wires(Sequence):
         >>> list_of_wires = [wires1, wires2, wires3]
         >>> Wires.all_wires(list_of_wires)
         Wires([4, 0, 1, 3, 5])
+        >>> wires4 = qp.typing.Wire[3]
+        >>> Wires.all_wires(list_of_wires + [wire4])
+        AbstractWires(8)
+
         """
-        converted_wires = (
-            wires if isinstance(wires, Wires) else Wires(wires) for wires in list_of_wires
-        )
-        all_wires_list = itertools.chain(*(w.labels for w in converted_wires))
-        combined = list(dict.fromkeys(all_wires_list))
+        concrete_labels = []
+        num_abstract_wires = 0
+
+        if any(isinstance(w, AbstractWires) and not w.shape_fixed for w in list_of_wires):
+            return AbstractWires(-1)
+
+        for wires in list_of_wires:
+            if isinstance(wires, AbstractWires):
+                num_abstract_wires += len(wires)
+            else:
+                concrete_labels.extend(Wires(wires))
+
+        # use dict here to maintain the insertion order
+        combined = list(dict.fromkeys(concrete_labels))
+
+        if num_abstract_wires:
+            return Wire[len(combined) + num_abstract_wires]
 
         if sort:
             if all(isinstance(w, int) for w in combined):
@@ -854,28 +867,6 @@ def concatenate_wires(wires1, wires2):
         wires2 = math.array(wires2, like=wires1)
 
     return math.concatenate([wires1, wires2])
-
-
-def all_wires_concrete_or_abstract(wire_args):
-    """Produce a union of all the wires.
-
-    This helper function handles the case where some of the wires are abstract. Concrete
-    wires have known labels and are deduplicated, while abstract wires are assumed disjoint
-    from other wires and only contribute to the total wire count.
-
-    """
-    concrete_wires = Wires([])
-    num_abstract_wires = 0
-    for wires in wire_args:
-        if isinstance(wires, AbstractWires):
-            num_abstract_wires += len(wires)
-        else:
-            concrete_wires = concatenate_wires(concrete_wires, wires)
-
-    if num_abstract_wires:
-        return Wire[len(concrete_wires) + num_abstract_wires]
-
-    return concrete_wires
 
 
 def _is_not_array(w):

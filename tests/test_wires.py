@@ -352,6 +352,13 @@ class TestWires:
         assert new_wires.labels == (1, 2, 3, 4, 5, 6)
         assert Wires.all_wires([[3, 4], [8, 5]]).labels == (3, 4, 8, 5)
 
+    def test_all_wires_with_abstract(self):
+        """Tests that ``all_wires`` unions concrete and abstract wires."""
+        assert Wires.all_wires([Wires([0, 1]), Wire[3]]) == Wire[5]
+        assert Wires.all_wires([Wire[2], Wire[4]]) == Wire[6]
+        assert Wires.all_wires([Wires([0, 1]), Wires([1, 2]), Wire[3]]) == Wire[6]
+        assert Wires.all_wires([Wires([0]), Wire[-1]]) == Wire[-1]
+
     def test_shared_wires_method(self):
         """Tests the ``shared_wires()`` method."""
 

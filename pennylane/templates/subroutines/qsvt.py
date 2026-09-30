@@ -35,7 +35,7 @@ from pennylane.decomposition import CompressedResourceOp, add_decomps, register_
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.typing import TensorLike
-from pennylane.wires import Wires, all_wires_concrete_or_abstract
+from pennylane.wires import Wires
 
 from .fable import FABLE
 from .prepselprep import PrepSelPrep
@@ -493,7 +493,7 @@ class QSVT(Operator2):
         # order is projector wires followed by UA wires. Here we re-calculate the
         # wires to maintain the same wire order as before.
         all_wire_args = tuple(op.wires for op in projectors) + (UA.wires,)
-        self._wires = all_wires_concrete_or_abstract(all_wire_args)
+        self._wires = Wires.all_wires(all_wire_args)
 
     @property
     def data(self):

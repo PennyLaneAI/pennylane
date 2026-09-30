@@ -28,7 +28,7 @@ from pennylane.ops import CNOT, X, adjoint, ctrl
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import Wire
-from pennylane.wires import all_wires_concrete_or_abstract, validate_no_wire_overlaps
+from pennylane.wires import Wires, validate_no_wire_overlaps
 
 from .arithmetic.temporary_and import TemporaryAND
 
@@ -361,9 +361,9 @@ class Select(Operator2):
             )
 
         target_wire_args = tuple(op.wires for op in self.ops if isinstance(op, Operator))
-        self._target_wires = all_wires_concrete_or_abstract(target_wire_args)
+        self._target_wires = Wires.all_wires(target_wire_args)
         all_wire_args = (self.control, self._target_wires)
-        self._wires = all_wires_concrete_or_abstract(all_wire_args)
+        self._wires = Wires.all_wires(all_wire_args)
 
         wire_args = {
             "target_wires": self._target_wires,

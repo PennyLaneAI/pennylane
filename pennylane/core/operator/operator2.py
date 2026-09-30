@@ -56,7 +56,7 @@ from pennylane.typing import (
     TensorLike,
     _AbstractWireTypeFactory,
 )
-from pennylane.wires import AbstractQubit, Wires, WiresLike, all_wires_concrete_or_abstract
+from pennylane.wires import AbstractQubit, Wires, WiresLike
 
 from .base import _UNSET_BATCH_SIZE, AbstractOperator, Operator
 from .meta import OperatorMeta
@@ -1683,7 +1683,7 @@ def _init_wires(op: Operator2):
     if any(isinstance(w, AbstractWires) and not w.shape_fixed for w in all_algorithmic_wires):
         raise ValueError("Operator2 instances must be constructed with wires of fixed length.")
 
-    op._wires = all_wires_concrete_or_abstract(all_algorithmic_wires)
+    op._wires = Wires.all_wires(all_algorithmic_wires)
 
 
 def _init_arg_types(op: Operator2) -> None:
