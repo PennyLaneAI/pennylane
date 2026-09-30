@@ -110,7 +110,7 @@ Completed deprecation cycles
 * The ``pennylane.qcut`` module, including ``pennylane.cut_circuit``,
   ``pennylane.cut_circuit_mc``, and the ``WireCut`` operator, has been removed.
 
-  - Removed in v0.46
+  - Removed in future releases
 
 * Implementing ``Operator.generator`` as a property is no longer supported. Instead, define a ``generator()`` method for your operator that returns an ``Operator`` instance.
 
