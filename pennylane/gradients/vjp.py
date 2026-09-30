@@ -117,6 +117,11 @@ def compute_vjp_single(dy, jac, num=None):
     if not isinstance(dy_row, np.ndarray):
         jac = _convert(jac, dy_row)
 
+    # Check if we're dealing with object arrays or non-standard types that don't support matmul
+    use_tensordot = (
+        isinstance(dy_row, np.ndarray) and dy_row.dtype == object
+    ) or (hasattr(jac, "dtype") and getattr(jac, "dtype", None) == object)
+
     # Single measurement with a single param
     if not isinstance(jac, (tuple, list, autograd.builtins.SequenceBox)):
         # No trainable parameters
@@ -127,7 +132,10 @@ def compute_vjp_single(dy, jac, num=None):
         if num == 1:
             jac = math.squeeze(jac)
         jac = math.reshape(jac, (-1, 1))
-        res = dy_row @ jac
+        if use_tensordot:
+            res = math.tensordot(jac, dy_row, [[0], [0]])
+        else:
+            res = dy_row @ jac
 
     # Single measurement with multiple params
     else:
@@ -138,7 +146,10 @@ def compute_vjp_single(dy, jac, num=None):
         # Single measurement with no dimension e.g. expval
         if num == 1:
             jac = math.reshape(math.stack(jac), (1, -1))
-            res = dy_row @ jac
+            if use_tensordot:
+                res = math.tensordot(jac, dy_row, [[1], [0]])
+            else:
+                res = dy_row @ jac
 
         # Single measurement with dimension e.g. probs
         else:
