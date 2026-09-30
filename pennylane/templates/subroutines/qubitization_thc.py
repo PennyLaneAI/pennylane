@@ -282,8 +282,8 @@ class QubitizationTHC(Operator2):
             \sum_{k = 0}^{2^{\mathrm{beth} + 1} - 1}
             e^{-2 \pi i k / 2^{\mathrm{beth} + 1}} \lvert k \rangle ,
 
-        a product state that ``beth + 1`` ``Hadamard`` and ``beth + 1`` ``PhaseShift`` gates
-        prepare. The walk leaves it unchanged, so a single register is prepared once and
+        which can be done with :class:`~.PhaseGradientStatePrep`.
+        The walk leaves it unchanged, so a single register is prepared once and
         shared across every repetition of :math:`\mathcal{W}`.
 
     .. seealso:: :func:`~.qubitization_thc_wires`, :class:`~.SuperpositionTHC`,
@@ -338,22 +338,19 @@ class QubitizationTHC(Operator2):
         wires = qp.registers(sizes)
         gradient = wires["gradient_wires"]
 
-        def gradient_state():
-            for j, w in enumerate(gradient):
-                qp.Hadamard(w)
-                qp.PhaseShift(-2 * np.pi * 2 ** (len(gradient) - 1 - j) / 2 ** len(gradient), w)
 
         @qp.transforms.decompose(stopping_condition=lambda op: len(op.wires) <= 3)
         @qp.qnode(qp.device("default.qubit"))
         def circuit():
-            gradient_state()
+            qp.PhaseGradientStatePrep(gradient)
             qp.QubitizationTHC(
                 tuple(map(tuple, zeta)), tuple(t_ell), tuple(map(tuple, chi)),
                 tuple(map(tuple, t_eigenvectors)), aleph, beth,
                 wires["system_wires"], wires["index_wires"], wires["prep_garbage_wires"],
                 gradient, wires["work_wires"],
             )
-            qp.adjoint(gradient_state)()
+            qp.adjoint(qp.PhaseGradientStatePrep(gradient))
+
             return qp.probs(wires=wires["index_wires"] + wires["prep_garbage_wires"])
 
     The first entry of the returned distribution is the probability that the reflected
