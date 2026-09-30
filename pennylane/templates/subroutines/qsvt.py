@@ -843,8 +843,8 @@ def _poly_func_scipy(coeffs, parity, x):
     return coeffs @ np.vectorize(_cheby_pol, excluded={"x"})(x, 2 * ind + parity)
 
 
-@partial(jax.jit, static_argnames=["interface"])
-def _z_rotation(phi, interface):
+@jax.jit
+def _z_rotation(phi):
     r"""Returns the matrix of the `RZ(2 \phi)` gate.
 
     Args:
@@ -853,11 +853,11 @@ def _z_rotation(phi, interface):
     Returns:
         tensor_like: Z rotation matrix
     """
-    return math.array([[math.exp(1j * phi), 0.0], [0.0, math.exp(-1j * phi)]], like=interface)
+    return jax.numpy.array([[jax.numpy.exp(1j * phi), 0.0], [0.0, jax.numpy.exp(-1j * phi)]])
 
 
-@partial(jax.jit, static_argnames=["interface"])
-def _W_of_x(x, interface):
+@jax.jit
+def _W_of_x(x):
     r"""Returns the matrix of the operator W(x) defined in Theorem (1) of https://arxiv.org/pdf/2002.11649
 
     Args:
@@ -866,23 +866,13 @@ def _W_of_x(x, interface):
     Returns:
         tensor_like: 2x2 matrix of W(x)
     """
-    return math.array(
-        [
-            [
-                _cheby_pol(x=x, degree=1.0),
-                1j * math.sqrt(1 - _cheby_pol(x=x, degree=1.0) ** 2),
-            ],
-            [
-                1j * math.sqrt(1 - _cheby_pol(x=x, degree=1.0) ** 2),
-                _cheby_pol(x=x, degree=1.0),
-            ],
-        ],
-        like=interface,
-    )
+    t = _cheby_pol(x=x, degree=1.0)
+    s = 1j * jax.numpy.sqrt(1 - t**2)
+    return jax.numpy.array([[t, s], [s, t]])
 
 
-@partial(jax.jit, static_argnames=["interface"])
-def _qsp_iterate(phi, x, interface):
+@jax.jit
+def _qsp_iterate(phi, x):
     r"""
     Signal operator defined as the product of RZ(phi) and W(x)
 
@@ -893,11 +883,11 @@ def _qsp_iterate(phi, x, interface):
     Returns:
         tensor_like: 2x2 matrix of operator defined in Theorem (1) of https://arxiv.org/pdf/2002.11649
     """
-    return math.dot(_W_of_x(x=x, interface=interface), _z_rotation(phi=phi, interface=interface))
+    return _W_of_x(x=x) @ _z_rotation(phi=phi)
 
 
-@partial(jax.jit, static_argnames=["interface"])
-def _qsp_iterate_broadcast(phis, x, interface):
+@jax.jit
+def _qsp_iterate_broadcast(phis, x):
     r"""Eq (13) Resulting unitary of the QSP circuit (on reduced invariant subspace ofc)
 
     Args:
@@ -906,16 +896,15 @@ def _qsp_iterate_broadcast(phis, x, interface):
     Returns:
         tensor_like: 2x2 block-encoding of polynomial implemented by the angles phi
     """
-    interface = "jax"
-    qsp_iterate_list = vmap(_qsp_iterate, in_axes=(0, None, None))(phis[1:], x, interface)
+    qsp_iterate_list = vmap(_qsp_iterate, in_axes=(0, None))(phis[1:], x)
 
-    matrix_iterate = reduce(math.dot, qsp_iterate_list)
-    matrix_iterate = math.dot(_z_rotation(phi=phis[0], interface=interface), matrix_iterate)
+    matrix_iterate = reduce(jax.numpy.matmul, qsp_iterate_list)
+    matrix_iterate = _z_rotation(phi=phis[0]) @ matrix_iterate
 
-    return math.real(matrix_iterate[0, 0])
+    return jax.numpy.real(matrix_iterate[0, 0])
 
 
-def _qsp_optimization_scipy(degree, coeffs_target_func, interface=None):
+def _qsp_optimization_scipy(degree, coeffs_target_func):
     r"""
     Algorithm 1 in https://arxiv.org/pdf/2002.11649 produces the angle parameters by minimizing
     the distance between the target and qsp polynomial over the grid
@@ -929,23 +918,18 @@ def _qsp_optimization_scipy(degree, coeffs_target_func, interface=None):
     """
     parity = degree % 2
 
-    interface = "jax"
-
-    grid_points = _grid_pts(degree, interface=interface)
+    grid_points = _grid_pts(degree)
 
     initial_guess = [np.pi / 4] + [0.0] * (degree - 1) + [np.pi / 4]
-    initial_guess = math.array(initial_guess, like=interface)
+    initial_guess = jax.numpy.array(initial_guess)
 
     targets = [_poly_func_scipy(coeffs=coeffs_target_func, x=x, parity=parity) for x in grid_points]
-    targets = math.array(targets, like=interface)
+    targets = jax.numpy.array(targets)
 
     def obj_function(phi):
         # Equation (23) in https://arxiv.org/pdf/2002.11649
-        qsp_iterates = jit(_qsp_iterate_broadcast, static_argnames=["interface"])
-        obj_func = (
-            vmap(qsp_iterates, in_axes=(None, 0, None))(phi, grid_points, interface) - targets
-        )
-        obj_func = math.dot(obj_func, obj_func)
+        obj_func = vmap(_qsp_iterate_broadcast, in_axes=(None, 0))(phi, grid_points) - targets
+        obj_func = jax.numpy.dot(obj_func, obj_func)
         return 1 / len(grid_points) * obj_func
 
     obj_function = jit(obj_function)
@@ -996,7 +980,7 @@ def _poly_func_optax(coeffs, x):
     )
 
 
-def _grid_pts(degree, interface):
+def _grid_pts(degree):
     r"""Generate the grid: x_j = cos(\frac{(2j-1)\pi}{4\tilde{d}}) over which the polynomials
     are evaluated and the optimization is carried defined in page 8 (https://arxiv.org/pdf/2002.11649)
 
@@ -1007,9 +991,7 @@ def _grid_pts(degree, interface):
         tensor_like: optimization grid points
     """
     d = (degree + 1) // 2 + (degree + 1) % 2
-    return math.array(
-        [math.cos((2 * j - 1) * np.pi / (4 * d)) for j in range(1, d + 1)], like=interface
-    )
+    return jax.numpy.array([math.cos((2 * j - 1) * np.pi / (4 * d)) for j in range(1, d + 1)])
 
 
 @jax.jit
@@ -1024,7 +1006,7 @@ def _obj_function_optax(phi, x, y):
     Returns:
         float: \frac{\|f_\Phi(x) - y\|^2}{N}
     """
-    obj_func = jax.vmap(_qsp_iterate_broadcast, in_axes=(None, 0, None))(phi, x, "jax") - y
+    obj_func = jax.vmap(_qsp_iterate_broadcast, in_axes=(None, 0))(phi, x) - y
     obj_func = jax.numpy.dot(obj_func, obj_func)
     return 1 / x.shape[0] * obj_func
 
@@ -1063,7 +1045,7 @@ def _qsp_optimization_optax(degree: int, coeffs_target_func, maxiter=100, tol=1e
     r"""Algorithm 1 in https://arxiv.org/pdf/2002.11649 produces the angle parameters by
     minimizing the distance between the target and qsp polynomial over the grid.
     """
-    grid_points = _grid_pts(degree, "jax")
+    grid_points = _grid_pts(degree)
     initial_guess = [np.pi / 4] + [0.0] * (degree - 1) + [np.pi / 4]
 
     initial_guess = jax.numpy.array(initial_guess)

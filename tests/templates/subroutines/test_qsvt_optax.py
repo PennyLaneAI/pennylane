@@ -178,7 +178,7 @@ class TestOptaxInternalFunctions:
         )
 
         assert qp.math.isclose(
-            _qsp_iterate_broadcast(phis, x_point, "jax"),
+            _qsp_iterate_broadcast(phis, x_point),
             _poly_func_optax(coeffs=jnp.array(target_polynomial_coeffs), x=x_point),
             atol=tolerance,
         )
@@ -199,16 +199,14 @@ class TestOptaxInternalFunctions:
         assert np.isclose(val, ref)
 
     @pytest.mark.parametrize("angle", list([0.1, 0.2, 0.3, 0.4]))
-    @pytest.mark.parametrize("interface", ["jax"])
-    def test_z_rotation_optax(self, angle, interface):
-        """Test internal function _z_rotation_optax"""
-        assert np.allclose(_z_rotation(angle, interface), qp.RZ.compute_matrix(-2 * angle))
+    def test_z_rotation_optax(self, angle):
+        """Test internal function _z_rotation"""
+        assert np.allclose(_z_rotation(angle), qp.RZ.compute_matrix(-2 * angle))
 
     @pytest.mark.parametrize("phi", [0.1, 0.2, 0.3, 0.4])
-    @pytest.mark.parametrize("interface", ["jax"])
-    def test_qsp_iterate_optax(self, phi, interface):
-        """Test internal function _qsp_iterate_optax"""
-        mtx = _qsp_iterate(0.0, phi, interface)
+    def test_qsp_iterate_optax(self, phi):
+        """Test internal function _qsp_iterate"""
+        mtx = _qsp_iterate(0.0, phi)
         ref = qp.RX.compute_matrix(-2 * np.arccos(phi))
         assert np.allclose(mtx, ref)
 
@@ -218,27 +216,25 @@ class TestOptaxInternalFunctions:
     )
     @pytest.mark.parametrize("degree", range(2, 6))
     def test_qsp_iterate_broadcast_optax(self, x, degree):
-        """Test internal function _qsp_iterate_broadcast_optax"""
+        """Test internal function _qsp_iterate_broadcast"""
         jax.config.update("jax_enable_x64", True)
 
         phis = jnp.array([np.pi / 4] + [0.0] * (degree - 1) + [-np.pi / 4])
-        qsp_be = _qsp_iterate_broadcast(phis, x, "jax")
+        qsp_be = _qsp_iterate_broadcast(phis, x)
         ref = qp.RX.compute_matrix(-2 * (degree) * np.arccos(x))[0, 0]
         assert jnp.isclose(qsp_be, ref)
 
     @pytest.mark.parametrize("x", [0.1, 0.2, 0.3, 0.4])
-    @pytest.mark.parametrize("interface", ["jax"])
-    def test_W_of_x_optax(self, x, interface):
-        """Test internal function _W_of_x_optax"""
-        mtx = _W_of_x(x, interface)
+    def test_W_of_x_optax(self, x):
+        """Test internal function _W_of_x"""
+        mtx = _W_of_x(x)
         ref = qp.RX.compute_matrix(-2 * np.arccos(x))
         assert np.allclose(mtx, ref)
 
     @pytest.mark.parametrize("degree", [4, 5, 10])
-    @pytest.mark.parametrize("interface", ["jax"])
-    def test_grid_pts(self, degree, interface):
+    def test_grid_pts(self, degree):
         """Test internal function _grid_pts"""
-        grid = _grid_pts(degree, interface)
+        grid = _grid_pts(degree)
         # Grid points should be in [-1, 1]
         assert all(-1 <= x <= 1 for x in grid)
         # Grid points should have correct length: (degree + 1) // 2 + (degree + 1) % 2
