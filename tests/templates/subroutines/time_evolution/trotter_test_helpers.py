@@ -13,7 +13,9 @@
 # limitations under the License.
 """Shared helpers for TrotterCDF and TrotterCGF tests."""
 
+import operator
 from collections import Counter
+from functools import reduce
 
 import numpy as np
 from scipy.linalg import expm
@@ -190,51 +192,52 @@ def assert_merged_trotter_matches(
     assert np.allclose(block1, expected_u, atol=1e-10)
 
 
-def assert_randomized_trotter_matches(
-    helpers,
-    ham,
-    sys_wires,
-    t,
-    steps,
-    key,
-    expected_u,
-    expected_reversed_u,
-    has_control,
-    double_phase,
+def trace_randomized_decomposition(
+    trotter_cls, decomposition, controlled_decomposition, ham, sys_wires, t, steps, key, ctrl_mode
 ):  # pylint: disable=too-many-arguments
-    """Capture ``_run_trotter_steps`` with random fragment orderings, passing ``t``, ``key``, and
-    the wires as dynamic inputs, and compare the (controlled) circuit to ``expected_u``, the
-    Trotter product formula without the energy shift. Requires program capture to be enabled.
-
-    ``expected_reversed_u`` is the same product formula with the order of the Trotter steps
-    reversed. The double-phase control-1 branch negates all diagonal angles in place, which yields
-    the adjoint of this reversed product, as the full step sequence is not a palindrome."""
+    """Capture the base (``ctrl_mode=None``) or controlled (``ctrl_mode`` in ``"genuine"``,
+    ``"double_phase"``) decomposition rule of ``trotter_cls`` with random fragment orderings,
+    passing ``t``, ``key``, and the wires as dynamic inputs, and return the resulting tape and
+    its wire order. Requires program capture to be enabled."""
     import jax  # pylint: disable=import-outside-toplevel
 
-    from pennylane.templates.subroutines.time_evolution._trotter_utils import (  # pylint: disable=import-outside-toplevel
-        _run_trotter_steps,
-    )
-
     num_sys_wires = len(sys_wires)
-    control_wires = [max(sys_wires) + 1] if has_control else []
+    control_wires = [] if ctrl_mode is None else [max(sys_wires) + 1]
+    double_phase = ctrl_mode == "double_phase"
 
     def circuit(t, key, *wires):
-        _run_trotter_steps(
-            t,
-            steps,
-            ham,
-            list(wires[:num_sys_wires]),
-            list(wires[num_sys_wires:]),
-            double_phase,
-            key=key,
-            **helpers,
-        )
+        system_wires = list(wires[:num_sys_wires])
+        with qp.capture.pause():
+            base = trotter_cls(t, steps, ham, system_wires, double_phase=double_phase, key=key)
+        if ctrl_mode is None:
+            decomposition(t, steps, ham, system_wires, False, base.arguments["key"])
+            return
+        controlled_decomposition(base, list(wires[num_sys_wires:]), [1], [], "borrowed")
 
     args = (t, key, *sys_wires, *control_wires)
     jaxpr = jax.make_jaxpr(circuit)(*args)
     tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, *args)
+    return tape, control_wires + list(sys_wires)
+
+
+def assert_randomized_trotter_matches(
+    decomposition_rules, ham, sys_wires, t, steps, key, expected_u, expected_reversed_u, ctrl_mode
+):  # pylint: disable=too-many-arguments
+    """Compare the captured randomized (controlled) decomposition, see
+    :func:`trace_randomized_decomposition`, to the Trotter product formula ``expected_u``.
+    ``decomposition_rules`` are the operator class and its base and controlled decomposition
+    rules.
+
+    ``expected_reversed_u`` is the same product formula with the order of the Trotter steps
+    reversed. The double-phase control-1 branch negates all diagonal angles in place, which yields
+    the adjoint of this reversed product, as the full step sequence is not a palindrome."""
+    tape, wire_order = trace_randomized_decomposition(
+        *decomposition_rules, ham, sys_wires, t, steps, key, ctrl_mode
+    )
     with qp.capture.pause():
-        matrix = qp.matrix(tape, wire_order=control_wires + list(sys_wires))
+        matrix = qp.matrix(tape, wire_order=wire_order)
+    has_control = ctrl_mode is not None
+    double_phase = ctrl_mode == "double_phase"
 
     if not has_control:
         assert np.allclose(matrix, expected_u, atol=1e-10)
@@ -249,14 +252,31 @@ def assert_randomized_trotter_matches(
     assert np.allclose(block1, expected_u, atol=1e-10)
 
 
-def assert_resource_counts_match(resources, operations):
-    """Assert that resource estimates match the operation counts of a traced decomposition."""
+def _resource_name_counts(resources):
+    """Resource counts keyed by gate name."""
 
     def resource_name(resource):
         return resource.__name__ if isinstance(resource, type) else resource.name
 
-    expected = Counter(
+    return Counter(
         {resource_name(resource): count for resource, count in resources.items() if count}
     )
+
+
+def assert_resource_counts_match(resources, operations):
+    """Assert that resource estimates match the operation counts of a traced decomposition."""
     actual = Counter(op.name for op in operations)
-    assert actual == expected
+    assert actual == _resource_name_counts(resources)
+
+
+def assert_randomized_resource_bounds(resources, tapes, tight):
+    """Assert that resource estimates count the basis rotations of each traced randomized
+    decomposition in ``tapes`` exactly and bound all other gate counts. With ``tight=True``, also
+    assert that each bound is attained by at least one of the tapes."""
+    expected = _resource_name_counts(resources)
+    actual = [Counter(op.name for op in tape.operations) for tape in tapes]
+    for counts in actual:
+        assert counts["BasisRotation"] == expected["BasisRotation"]
+        assert counts <= expected
+    if tight:
+        assert reduce(operator.or_, actual) == expected

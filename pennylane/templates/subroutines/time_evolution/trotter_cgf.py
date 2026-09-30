@@ -29,7 +29,13 @@ from pennylane.templates.subroutines.qchem.basis_rotation import BasisRotation
 from pennylane.typing import AbstractArray, AbstractWires, Complex, Float, Wire
 from pennylane.wires import WiresLike
 
-from ._trotter_utils import _emit_one_body_rz, _run_trotter_steps
+from ._trotter_utils import (
+    _block_counts,
+    _emit_one_body_rz,
+    _max_counts,
+    _raw_key_data,
+    _run_trotter_steps,
+)
 
 # pylint: disable=too-many-arguments, no-value-for-parameter, unused-argument
 
@@ -66,6 +72,10 @@ class TrotterCGF(Operator2):
             :math:`\text{diag}(1, U)` where :math:`U = e^{-iHt}` is the Trotter evolution.
             If ``True``, it produces :math:`\text{diag}(U, U^\dagger)` instead, leading to the
             double phase trick for Hadamard test circuits (see `Fig. 6 <https://arxiv.org/abs/2506.15784>`__ and Usage Details below).
+        key (jax.Array | None): JAX PRNG key, e.g., ``jax.random.PRNGKey(0)``, that randomizes the
+            fragment ordering. If ``None`` (default), all Trotter steps use the same fixed fragment
+            ordering. Otherwise, each step uses an independent, uniformly random ordering of all
+            fragments (see Usage Details below). Requires program capture.
 
     **Example**
 
@@ -158,6 +168,54 @@ class TrotterCGF(Operator2):
 
         This is not a true controlled operation, but can be used to reduce the cost in Hadamard test
         circuits instead of the controlled evolution.
+
+        **Randomized fragment ordering**
+
+        Passing a JAX PRNG ``key`` randomizes the product formula: each of the :math:`n` Trotter
+        steps draws an independent, uniformly random ordering :math:`\pi_k` of all :math:`L+1`
+        fragments (including the one-body fragment :math:`H_0`) and applies the second-order step
+
+        .. math::
+
+            S_2^{(k)}(\Delta t) = \Big(\prod_{j=0}^{L-1} e^{-i H_{\pi_k(j)} \Delta t/2}\Big)\,
+                e^{-i H_{\pi_k(L)} \Delta t}\,
+                \Big(\prod_{j=L-1}^{0} e^{-i H_{\pi_k(j)} \Delta t/2}\Big) .
+
+        The orderings are drawn with ``jax.random`` inside the program, so a program compiled
+        with :func:`~.qjit` that receives the key as an argument draws new orderings for each new
+        key without recompilation. This requires program capture to be enabled.
+
+        .. code-block:: python
+
+            import jax
+
+            qp.capture.enable()
+
+            @qp.qjit
+            @qp.transforms.decompose(gate_set=gate_set)
+            @qp.qnode(qp.device("lightning.qubit", wires=1 + M * N))
+            def randomized_trotter_circuit(key):
+                qp.H(registers["hadamard"])
+                qp.ctrl(
+                    qp.TrotterCGF(1.0, 10, hamiltonian, wires=registers["system"], key=key),
+                    control=registers["hadamard"],
+                )
+                return qp.expval(qp.X(registers["hadamard"]))
+
+            expval = randomized_trotter_circuit(jax.random.PRNGKey(0))
+
+        Consecutive steps generally end and start with different fragments, so their half
+        evolutions are not merged across step boundaries. As a consequence, the number of
+        one-body and two-body rotation layers depends on the drawn orderings, and the
+        registered resources are an upper bound for each gate type.
+
+        With ``double_phase=True``, the control-1 branch negates every diagonal rotation angle
+        in place. Because the sequence of randomized Trotter steps is not symmetric under
+        reversal, this branch realizes :math:`\big(S_2^{(1)} \cdots S_2^{(n)}\big)^\dagger`
+        rather than :math:`U^\dagger = \big(S_2^{(n)} \cdots S_2^{(1)}\big)^\dagger`. The
+        Hadamard test then estimates the expectation value of
+        :math:`S_2^{(1)} \cdots S_2^{(n)} S_2^{(n)} \cdots S_2^{(1)}`, a symmetric second-order
+        approximation of :math:`e^{-2iHt}` with mirrored orderings.
 
     .. details ::
         :title: Implementation Details
@@ -298,7 +356,8 @@ class TrotterCGF(Operator2):
     """
 
     dynamic_argnames = ("evolution_time",)
-    hybrid_argnames = ("hamiltonian",)
+    # ``key`` is hybrid so that it can be ``None``.
+    hybrid_argnames = ("hamiltonian", "key")
     # `hybrid_argnames` and `compilable_argnames` cannot both be non-empty on the same
     # operator, so `num_trotter_steps` (a plain Python int that drives Python-level
     # control flow) is treated as `static_argnames` instead.
@@ -311,6 +370,7 @@ class TrotterCGF(Operator2):
         hamiltonian: CGFHamiltonian,
         wires: WiresLike | AbstractWires,
         double_phase=False,
+        key: AbstractArray | None = None,
     ):
         # ``hamiltonian`` is a hybrid argument: its array-like leaves must be arrays (or scalars)
         # to be captured and lowered correctly. Cast only list/tuple inputs, leaving array inputs
@@ -332,7 +392,9 @@ class TrotterCGF(Operator2):
                 f"leaf_tensors.ndim == 4. Got core_tensors.ndim={Z.ndim}, "
                 f"leaf_tensors.ndim={U.ndim}. For electronic (CDF) Hamiltonians, use TrotterCDF."
             )
-        super().__init__(evolution_time, num_trotter_steps, hamiltonian, wires, double_phase)
+        # Typed keys can not be abstracted, so we store their raw key data instead.
+        key = _raw_key_data(key)
+        super().__init__(evolution_time, num_trotter_steps, hamiltonian, wires, double_phase, key)
 
 
 def _apply_system_basis_rotation(U, wires):
@@ -466,12 +528,15 @@ _CGF_HELPERS = {
 }
 
 
-def _cgf_resource_counts(num_trotter_steps, hamiltonian, has_control, double_phase=False):
+def _cgf_resource_counts(
+    num_trotter_steps, hamiltonian, has_control, double_phase=False, randomized=False
+):
     """Shared (upper-bound) gate counts for the base and controlled CGF circuits.
 
     The exact gate count can be lower at runtime because fragments whose basis rotation
     happens to be the identity are skipped when the Hamiltonian data is concrete (not
-    traced); this estimate assumes no such fragment is skipped.
+    traced); this estimate assumes no such fragment is skipped. See :func:`~._block_counts` for
+    the randomized case.
     """
     if num_trotter_steps <= 0:
         return {}
@@ -480,47 +545,56 @@ def _cgf_resource_counts(num_trotter_steps, hamiltonian, has_control, double_pha
     num_two_body_fragments = leaf_tensors.shape[0] - 1
     num_modes = leaf_tensors.shape[1]
     n_states = leaf_tensors.shape[2]
-
-    resources = defaultdict(int)
-    num_sysrot_calls = 2 * num_two_body_fragments * num_trotter_steps + 2
-    num_twobody_blocks = (2 * num_two_body_fragments - 1) * num_trotter_steps + 1
-    num_onebody_blocks = num_trotter_steps
     num_pairs = num_modes * (num_modes - 1) // 2
-    num_twobody_rotations = num_twobody_blocks * num_pairs * n_states**2
-    num_onebody_rotations = num_onebody_blocks * num_modes * n_states
 
     # NOTE: 'BasisRotation' decomposes differently depending on the dtype of the unitary matrix.
     dtype_leaf = Complex if math.get_dtype_name(leaf_tensors).startswith("complex") else Float
     sysrot_key = BasisRotation(dtype_leaf[n_states, n_states], wires=Wire[n_states])
-    resources[sysrot_key] += num_modes * num_sysrot_calls
 
-    if not has_control:
-        resources[IsingZZ] += num_twobody_rotations
-        resources[RZ] += num_onebody_rotations
-        resources[GlobalPhase] += 1
-    elif double_phase:
-        # Double-phase (Fig. 6 https://arxiv.org/abs/2506.15784): ``IsingZZ`` on every diagonal
-        # term (one- and two-body), plus one CNOT pair around each *two-body* block, plus an RZ on
-        # the control wire for the global phase.
-        resources[IsingZZ] += num_twobody_rotations + num_onebody_rotations
-        resources[CNOT] += num_twobody_blocks * num_pairs * 2 * n_states
-        resources[RZ] += 1
-    else:
-        # Genuine controlled: one-body ``ctrl(RZ(...))``, two-body ``ctrl(IsingZZ(...))``; the
-        # global phase becomes a PhaseShift on the control wire. There are no bare IsingZZ/RZ gates.
-        resources[ctrl(RZ(Float, wires=Wire[1]), control=Wire[1])] += num_onebody_rotations
-        resources[ctrl(IsingZZ(Float, wires=Wire[2]), control=Wire[1])] += num_twobody_rotations
-        resources[PhaseShift] += 1
+    def block_resources(num_sysrot_calls, num_twobody_blocks, num_onebody_blocks):
+        resources = defaultdict(int)
+        num_twobody_rotations = num_twobody_blocks * num_pairs * n_states**2
+        num_onebody_rotations = num_onebody_blocks * num_modes * n_states
+        resources[sysrot_key] += num_modes * num_sysrot_calls
 
-    return dict(resources)
+        if not has_control:
+            resources[IsingZZ] += num_twobody_rotations
+            resources[RZ] += num_onebody_rotations
+            resources[GlobalPhase] += 1
+        elif double_phase:
+            # Double-phase (Fig. 6 https://arxiv.org/abs/2506.15784): ``IsingZZ`` on every diagonal
+            # term (one- and two-body), plus one CNOT pair around each *two-body* block, plus an RZ
+            # on the control wire for the global phase.
+            resources[IsingZZ] += num_twobody_rotations + num_onebody_rotations
+            resources[CNOT] += num_twobody_blocks * num_pairs * 2 * n_states
+            resources[RZ] += 1
+        else:
+            # Genuine controlled: one-body ``ctrl(RZ(...))``, two-body ``ctrl(IsingZZ(...))``; the
+            # global phase becomes a PhaseShift on the control wire. There are no bare IsingZZ/RZ
+            # gates.
+            resources[ctrl(RZ(Float, wires=Wire[1]), control=Wire[1])] += num_onebody_rotations
+            resources[ctrl(IsingZZ(Float, wires=Wire[2]), control=Wire[1])] += num_twobody_rotations
+            resources[PhaseShift] += 1
+        return resources
+
+    return _max_counts(
+        block_resources(*block_counts)
+        for block_counts in _block_counts(num_trotter_steps, num_two_body_fragments, randomized)
+    )
 
 
-def _trotter_cgf_resources(evolution_time, num_trotter_steps, hamiltonian, wires, double_phase):
-    return _cgf_resource_counts(num_trotter_steps, hamiltonian, has_control=False)
+def _trotter_cgf_resources(
+    evolution_time, num_trotter_steps, hamiltonian, wires, double_phase, key
+):
+    return _cgf_resource_counts(
+        num_trotter_steps, hamiltonian, has_control=False, randomized=key is not None
+    )
 
 
 @register_resources(_trotter_cgf_resources, exact=False)
-def _trotter_cgf_decomposition(evolution_time, num_trotter_steps, hamiltonian, wires, double_phase):
+def _trotter_cgf_decomposition(
+    evolution_time, num_trotter_steps, hamiltonian, wires, double_phase, key
+):
     # ``double_phase`` only affects the controlled decomposition; the base operator is
     # always the plain (uncontrolled) e^{-iHt} circuit.
     if num_trotter_steps > 0:
@@ -530,6 +604,7 @@ def _trotter_cgf_decomposition(evolution_time, num_trotter_steps, hamiltonian, w
             hamiltonian.normalize_leaf_determinant().align_one_body_leaf(),
             wires,
             (),
+            key=key,
             **_CGF_HELPERS,
         )
         phi = (_energy_shift(hamiltonian) * evolution_time) % (4 * np.pi)
@@ -547,6 +622,7 @@ def _controlled_trotter_cgf_resource(
         base.arguments["hamiltonian"],
         has_control=True,
         double_phase=base.arguments["double_phase"],
+        randomized=base.arguments["key"] is not None,
     )
 
 
@@ -558,6 +634,7 @@ def _controlled_trotter_cgf_decomp(base, control_wires, control_values, work_wir
     hamiltonian = base.arguments["hamiltonian"]
     wires = base.arguments["wires"]
     double_phase = base.arguments["double_phase"]
+    key = base.arguments["key"]
 
     if num_trotter_steps == 0:
         return
@@ -579,6 +656,7 @@ def _controlled_trotter_cgf_decomp(base, control_wires, control_values, work_wir
             wires,
             control_wires,
             True,
+            key=key,
             **_CGF_HELPERS,
         )
         RZ(2 * phi, control_wires)
@@ -594,6 +672,7 @@ def _controlled_trotter_cgf_decomp(base, control_wires, control_values, work_wir
         wires,
         control_wires,
         False,
+        key=key,
         **_CGF_HELPERS,
     )
     PhaseShift(-phi, control_wires)

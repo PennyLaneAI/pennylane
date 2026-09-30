@@ -24,7 +24,9 @@
   :class:`~.TrotterCGF`, and :class:`~.TrotterVibronic` have been added to encode
   fragmentation-based Trotterization procedures of :class:`pennylane.CDFHamiltonian`,
   :class:`pennylane.CGFHamiltonian`, and :class:`pennylane.VibronicHamiltonian` Hamiltonians,
-  respectively.
+  respectively. With program capture enabled, :class:`~.TrotterCDF` and :class:`~.TrotterCGF`
+  accept a JAX PRNG ``key`` that randomizes the fragment ordering in each Trotter step, and that
+  can be passed as a dynamic argument to :func:`~.qjit`-compiled workflows.
   [(#9459)](https://github.com/PennyLaneAI/pennylane/pull/9459)
   [(#9789)](https://github.com/PennyLaneAI/pennylane/pull/9789)
   [(#10015)](https://github.com/PennyLaneAI/pennylane/pull/10015)
@@ -32,6 +34,7 @@
   [(#10081)](https://github.com/PennyLaneAI/pennylane/pull/10081)
   [(#10138)](https://github.com/PennyLaneAI/pennylane/pull/10138)
   [(#10120)](https://github.com/PennyLaneAI/pennylane/pull/10120)
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
 
 * A new operator called :class:`pennylane.PPR` has been added, which represents a Pauli product
   rotation with a fixed angle

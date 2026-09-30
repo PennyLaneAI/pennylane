@@ -14,6 +14,8 @@
 """Shared functionality for fragmented-Hamiltonian Trotter templates
 (:class:`~.TrotterCDF` and :class:`~.TrotterCGF`)."""
 
+from collections import defaultdict
+
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
 from pennylane.ops import RZ, IsingZZ, cond
@@ -41,6 +43,47 @@ def _emit_one_body_rz(angle, target_wire, control_wires, double_phase):
         IsingZZ(angle, [control_wire, target_wire])
         return
     ctrl(RZ(angle, target_wire), control=[control_wire])
+
+
+def _raw_key_data(key):
+    """Convert a typed JAX PRNG key into its raw ``uint32`` key data. Other inputs, including
+    ``None``, are returned unchanged."""
+    if key is None:
+        return None
+    import jax  # pylint: disable=import-outside-toplevel
+
+    if jax.dtypes.issubdtype(key.dtype, jax.dtypes.prng_key):
+        return jax.random.key_data(key)
+    return key
+
+
+def _block_counts(num_trotter_steps, num_two_body_fragments, randomized):
+    """Numbers of basis rotations, two-body diagonal blocks, and one-body diagonal blocks
+    emitted by :func:`~._run_trotter_steps`, as a list of candidate configurations.
+
+    Without randomization, there is a single configuration. With randomization, the fragment at
+    the center of each step, whose two half blocks are merged, is only known at runtime. All block
+    counts are linear in the number of steps with the one-body fragment at their center, so each
+    count is bounded by one of the two extreme configurations, in which the one-body fragment
+    sits at the center of all steps or of none.
+    """
+    L, n = num_two_body_fragments, num_trotter_steps
+    if not randomized:
+        return [(2 * L * n + 2, (2 * L - 1) * n + 1, n)]
+    num_basis_rotations = (2 * L + 1) * n + 1
+    one_body_always_central = (num_basis_rotations, 2 * L * n, n)
+    if L == 0:
+        return [one_body_always_central]
+    return [one_body_always_central, (num_basis_rotations, (2 * L - 1) * n, 2 * n)]
+
+
+def _max_counts(counts_list):
+    """Gate-wise maximum of an iterable of gate-count dictionaries."""
+    max_counts = defaultdict(int)
+    for counts in counts_list:
+        for gate, count in counts.items():
+            max_counts[gate] = max(max_counts[gate], count)
+    return dict(max_counts)
 
 
 def _run_trotter_steps(

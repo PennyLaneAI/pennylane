@@ -41,7 +41,6 @@ from pennylane.templates.subroutines.time_evolution._trotter_utils import (
     _random_fragment_orderings,
 )
 from pennylane.templates.subroutines.time_evolution.trotter_cdf import (
-    _CDF_HELPERS,
     _apply_system_basis_rotation,
     _cdf_resource_counts,
     _controlled_trotter_cdf_decomp,
@@ -60,15 +59,19 @@ from tests.templates.subroutines.time_evolution.trotter_test_helpers import (  #
     CATALYST_GATE_SET_GENUINE,
     _single_z,
     assert_merged_trotter_matches,
+    assert_randomized_resource_bounds,
     assert_randomized_trotter_matches,
     assert_resource_counts_match,
     cdf_reference_hamiltonian,
     control_branches,
     hadamard_test,
     random_orthogonal,
+    trace_randomized_decomposition,
 )
 
 pytestmark = pytest.mark.jax
+
+_CDF_RULES = (qp.TrotterCDF, _trotter_cdf_decomposition, _controlled_trotter_cdf_decomp)
 
 
 def _basis_rotation_matrix(U, n_wires):
@@ -312,6 +315,7 @@ class TestResourceRule:
             hamiltonian=ham,
             wires=wires,
             double_phase=False,
+            key=None,
         )
         assert resources == Resources({})
 
@@ -344,7 +348,7 @@ class TestResourceRule:
         def circuit(t, *wires):
             system_wires = list(wires[:num_system_wires])
             if not has_control:
-                _trotter_cdf_decomposition(t, num_steps, ham, system_wires, False)
+                _trotter_cdf_decomposition(t, num_steps, ham, system_wires, False, None)
                 return
             with qp.capture.pause():
                 base = qp.TrotterCDF(t, num_steps, ham, system_wires, double_phase=double_phase)
@@ -395,7 +399,7 @@ class TestDecomposition:
         wires = list(range(2 * num_orbitals))
 
         tape = qp.tape.make_qscript(_trotter_cdf_decomposition)(
-            evolution_time, num_steps, ham, wires, False
+            evolution_time, num_steps, ham, wires, False, None
         )
         angles = np.array([op.data[0] for op in tape.operations if isinstance(op, qp.IsingZZ)])
         pairs_per_block = num_orbitals * (2 * num_orbitals - 1)
@@ -591,7 +595,7 @@ class TestDecomposition:
 
 
 class TestRandomizedFragmentOrdering:
-    """Tests for the random per-step fragment orderings of ``_run_trotter_steps``."""
+    """Tests for the random per-step fragment orderings enabled by the ``key`` argument."""
 
     def test_random_fragment_orderings(self, seed):
         """Each step gets a permutation of all fragments, drawn inside a jitted function from a
@@ -608,19 +612,43 @@ class TestRandomizedFragmentOrdering:
         assert len({tuple(ordering) for ordering in orderings.tolist()}) > 1
         assert np.array_equal(orderings, _random_fragment_orderings(key, num_steps, num_fragments))
 
+    def test_init_key(self, toy_hamiltonian_cdf_concrete):
+        """The key defaults to ``None``, and typed keys are stored as their raw key data."""
+        ham, num_orbitals = toy_hamiltonian_cdf_concrete
+        wires = list(range(2 * num_orbitals))
+        assert qp.TrotterCDF(0.3, 5, ham, wires).arguments["key"] is None
+        key = jax.random.PRNGKey(3)
+        assert qp.TrotterCDF(0.3, 5, ham, wires, key=key).arguments["key"] is key
+        typed_key = jax.random.key(3)
+        stored_key = qp.TrotterCDF(0.3, 5, ham, wires, key=typed_key).arguments["key"]
+        assert np.array_equal(stored_key, jax.random.key_data(typed_key))
+
+    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.parametrize("double_phase", [False, True])
+    def test_decomposition_self_consistent(self, toy_hamiltonian_cdf_concrete, double_phase):
+        """The registered base and controlled rules are self-consistent with their resources
+        when a key is given."""
+        ham, num_orbitals = toy_hamiltonian_cdf_concrete
+        wires = list(range(2 * num_orbitals))
+        key = jax.random.PRNGKey(0)
+        op = qp.TrotterCDF(0.4, 3, ham, wires, double_phase=double_phase, key=key)
+        for rule in qp.list_decomps(qp.TrotterCDF):
+            _test_decomposition_rule(op, rule)
+        for rule in qp.list_decomps("C(TrotterCDF)"):
+            _test_decomposition_rule(qp.ctrl(op, control=[99]), rule)
+
     @pytest.mark.capture
     @pytest.mark.parametrize("make_key", [jax.random.PRNGKey, jax.random.key])
     @pytest.mark.parametrize("num_fragments", [1, 2])
     @pytest.mark.parametrize("num_steps", [1, 3])
-    @pytest.mark.parametrize(
-        ("has_control", "double_phase"), [(False, False), (True, False), (True, True)]
-    )
+    @pytest.mark.parametrize("ctrl_mode", [None, "genuine", "double_phase"])
     def test_matches_second_order_trotter_product(
-        self, seed, make_key, num_fragments, num_steps, has_control, double_phase
+        self, seed, make_key, num_fragments, num_steps, ctrl_mode
     ):
-        """The randomized circuit equals the unmerged second-order Trotter product with the
-        fragment orderings drawn from the key, for uncontrolled, genuine-controlled, and
-        double-phase circuits."""
+        """The randomized decomposition equals the unmerged second-order Trotter product with the
+        fragment orderings drawn from the key, including the global phase, for uncontrolled,
+        genuine-controlled, and double-phase circuits."""
         rng = np.random.default_rng(seed)
         num_orbitals = 2
         core = rng.normal(size=(num_fragments + 1, num_orbitals, num_orbitals)) * 0.4
@@ -632,24 +660,45 @@ class TestRandomizedFragmentOrdering:
         key = make_key(seed)
 
         orderings = np.asarray(_random_fragment_orderings(key, num_steps, num_fragments + 1))
-        phase = np.exp(1j * _energy_shift(ham) * evolution_time)
         with qp.capture.pause():
             expected, expected_reversed = (
-                phase * cdf_second_order_trotter_matrix(ham, evolution_time, num_steps, ords)
+                cdf_second_order_trotter_matrix(ham, evolution_time, num_steps, ords)
                 for ords in (orderings, orderings[::-1])
             )
         assert_randomized_trotter_matches(
-            _CDF_HELPERS,
-            ham.normalize_leaf_determinant(),
+            _CDF_RULES,
+            ham,
             wires,
             evolution_time,
             num_steps,
             key,
             expected,
             expected_reversed,
-            has_control,
-            double_phase,
+            ctrl_mode,
         )
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize("num_fragments", [1, 2])
+    @pytest.mark.parametrize("num_steps", [1, 3])
+    @pytest.mark.parametrize("ctrl_mode", [None, "genuine", "double_phase"])
+    def test_resource_counts_bound_traced_decomposition(self, num_fragments, num_steps, ctrl_mode):
+        """The resources count the basis rotations of the traced randomized decomposition
+        exactly and bound all other gate counts. For a single step, every bound is attained."""
+        num_orbitals = 2
+        core = np.zeros((num_fragments + 1, num_orbitals, num_orbitals))
+        leaf = np.stack([np.eye(num_orbitals)] * (num_fragments + 1))
+        ham = CDFHamiltonian(core_tensors=core, leaf_tensors=leaf, nuc_constant=0.0)
+        wires = list(range(2 * num_orbitals))
+        resources = _cdf_resource_counts(
+            num_steps, ham, ctrl_mode is not None, ctrl_mode == "double_phase", randomized=True
+        )
+        tapes = [
+            trace_randomized_decomposition(
+                *_CDF_RULES, ham, wires, 0.4, num_steps, jax.random.PRNGKey(key_seed), ctrl_mode
+            )[0]
+            for key_seed in range(16)
+        ]
+        assert_randomized_resource_bounds(resources, tapes, tight=num_steps == 1)
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
