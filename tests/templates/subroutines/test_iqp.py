@@ -213,3 +213,17 @@ class TestMatrix:
         op = IQP([theta], [1], [[[0]]], spin_sym=False)
         reference = qp.matrix(qp.tape.QuantumScript([qp.RX(2 * theta, 1)]), wire_order=[0, 1])
         assert math.allclose(op.matrix(wire_order=[0, 1]), reference)
+
+
+def test_lower_to_mlir():
+    """Test that IQP can be lowered to MLIR through ``qjit``."""
+    pytest.importorskip("catalyst")
+
+    @qp.qjit(capture=True, target="mlir")
+    @qp.qnode(qp.device("lightning.qubit", wires=2))
+    def circuit():
+        qp.IQP([0.1, 0.2], wires=[0, 1], pattern=[[[0]], [[1]]], spin_sym=False)
+        return qp.state()
+
+    resources = qp.specs(circuit, level=0)()["resources"]
+    assert resources.counts == {"IQP": 1}

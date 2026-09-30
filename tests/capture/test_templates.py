@@ -32,7 +32,7 @@ jax = pytest.importorskip("jax")
 jnp = jax.numpy
 
 # pylint: disable=wrong-import-position,no-name-in-module
-from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+from pennylane.tape.plxpr_conversion import plxpr_to_tape
 from tests.capture.capture_utils import assert_eqn_matches_op
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
@@ -792,12 +792,10 @@ class TestModifiedTemplates:
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
         # The operator can be recovered by evaluating the jaxpr
-        collector = CollectOpsandMeas()
-        collector.eval(jaxpr.jaxpr, jaxpr.consts, weights, *wires)
-
-        assert len(collector.state["ops"]) == 1
+        tape = plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, weights, *wires)
+        assert len(tape.operations) == 1
         qp.assert_equal(
-            collector.state["ops"][0], qp.IQP(weights, wires=wires, pattern=pattern, spin_sym=True)
+            tape.operations[0], qp.IQP(weights, wires=wires, pattern=pattern, spin_sym=True)
         )
 
     @pytest.mark.parametrize("template", [qp.MERA, qp.MPS, qp.TTN])
