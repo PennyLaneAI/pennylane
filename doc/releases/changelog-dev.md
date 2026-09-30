@@ -1013,7 +1013,10 @@
 
 <h3>Breaking changes 💔</h3>
 
-* Removed the ``qp.fourier`` module.
+* Removed the ``qp.fourier`` module. This includes ``circuit_spectrum``, ``coefficients``,
+  ``qnode_spectrum``, ``mark``, ``get_spectrum``, ``join_spectra`` and the
+  ``qp.fourier.visualize`` plotting functions. Also, ``qp.fourier.reconstruct`` has moved to
+  ``pennylane.optimize.reconstruct``.
   [(#10212)](https://github.com/PennyLaneAI/pennylane/pull/10212)
 
 * Jax 0.7.1 is now a hard requirement for PennyLane.

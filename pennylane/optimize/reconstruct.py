@@ -559,6 +559,7 @@ def reconstruct(qnode, ids=None, nums_frequency=None, spectra=None, shifts=None)
         Note that even though information about ``Y[0]`` is contained in ``nums_frequency`` ,
         ``ids`` determines which reconstructions are performed.
 
+        >>> from pennylane.optimize import reconstruct
         >>> with qp.Tracker(circuit.device) as tracker:
         ...     rec = reconstruct(circuit, {"Y": [(1,)]}, nums_frequency)(x, Y)
         >>> tracker.totals
