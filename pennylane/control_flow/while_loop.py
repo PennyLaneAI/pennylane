@@ -280,7 +280,7 @@ def _while_loop_impl(
     body_slice,
     cond_slice,
     args_slice,
-    hints,
+    estimated_iterations,
 ):
     body_slice = slice(*body_slice)
     cond_slice = slice(*cond_slice)
@@ -394,7 +394,7 @@ class WhileLoopCallable:  # pylint:disable=too-few-public-methods
             body_slice=body_consts,
             cond_slice=cond_consts,
             args_slice=args_slice,
-            hints=(("num-iters", self.num_iters_hint)),
+            estimated_iterations=self.num_iters_hint,
         )
 
         results = results[-out_tree.num_leaves :]
