@@ -20,7 +20,6 @@ import pytest
 from scipy.stats import unitary_group
 
 import pennylane as qp
-from pennylane.exceptions import QuantumFunctionError
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
@@ -344,5 +343,5 @@ def test_same_wires():
     """Tests if a QuantumFunctionError is raised if target_wires and estimation_wires contain a
     common element"""
 
-    with pytest.raises(QuantumFunctionError, match="The target wires and estimation wires"):
+    with pytest.raises(ValueError, match="target_wires and estimation_wires must not overlap"):
         qp.QuantumPhaseEstimation(qp.QubitUnitary(np.eye(4), wires=[0, 1]), estimation_wires=[1, 2])

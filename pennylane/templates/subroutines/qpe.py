@@ -22,13 +22,12 @@ from pennylane.decomposition import (
     add_decomps,
     register_resources,
 )
-from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops import adjoint
 from pennylane.ops import pow as qp_pow
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.ops.op_math.pow2 import _pow_abstract
 from pennylane.typing import Wire
-from pennylane.wires import Wires, _filter_abstract_and_traced_wires
+from pennylane.wires import Wires, validate_no_wire_overlaps
 
 from .qft import QFT
 
@@ -152,13 +151,9 @@ class QuantumPhaseEstimation(Operator2):
 
         super().__init__(unitary, estimation_wires)
 
-        if Wires.shared_wires(
-            [
-                _filter_abstract_and_traced_wires(self.target_wires),
-                _filter_abstract_and_traced_wires(self.estimation_wires),
-            ]
-        ):
-            raise QuantumFunctionError("The target wires and estimation wires must not overlap.")
+        validate_no_wire_overlaps(
+            {"target_wires": self.target_wires, "estimation_wires": self.estimation_wires}
+        )
 
     @property
     def target_wires(self) -> Wires:
