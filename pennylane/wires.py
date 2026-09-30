@@ -502,7 +502,7 @@ class Wires(Sequence):
         >>> Wires.all_wires(list_of_wires)
         Wires([4, 0, 1, 3, 5])
         >>> wires4 = qp.typing.Wire[3]
-        >>> Wires.all_wires(list_of_wires + [wire4])
+        >>> Wires.all_wires(list_of_wires + [wires4])
         AbstractWires(8)
 
         """
