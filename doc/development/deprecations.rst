@@ -111,7 +111,7 @@ Completed deprecation cycles
   ``insert``, noise mitigation transforms, and ``from_qiskit_noise``. Noise channels such as
   :class:`~.AmplitudeDamping` are unaffected.
 
-  - Removed in v0.46
+  - Removed in future releases
 
 * Implementing ``Operator.generator`` as a property is no longer supported. Instead, define a ``generator()`` method for your operator that returns an ``Operator`` instance.
 
