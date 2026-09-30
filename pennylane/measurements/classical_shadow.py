@@ -787,7 +787,7 @@ def classical_shadow(wires: WiresLike, seed=None) -> ClassicalShadowMP:
 
         .. code-block:: python
 
-            dev = qp.device("default.qubit", wires=2)
+            dev = qp.device("default.qubit", wires=2, seed=0)
 
             ops = [qp.Hadamard(wires=0), qp.CNOT(wires=(0,1))]
             measurements = [qp.classical_shadow(wires=(0,1))]
@@ -805,7 +805,7 @@ def classical_shadow(wires: WiresLike, seed=None) -> ClassicalShadowMP:
 
         .. code-block:: python
 
-            dev = qp.device("default.qubit", wires=2)
+            dev = qp.device("default.qubit", wires=2, seed=0)
 
             measurements1 = [qp.classical_shadow(wires=(0,1), seed=10)]
             tape1 = qp.tape.QuantumTape(ops, measurements1, shots=5)
