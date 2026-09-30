@@ -1021,6 +1021,12 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Removed the ``qp.fourier`` module. This includes ``circuit_spectrum``, ``coefficients``,
+  ``qnode_spectrum``, ``mark``, ``get_spectrum``, ``join_spectra`` and the
+  ``qp.fourier.visualize`` plotting functions. Also, ``qp.fourier.reconstruct`` has moved to
+  ``pennylane.optimize.reconstruct``.
+  [(#10212)](https://github.com/PennyLaneAI/pennylane/pull/10212)
+  
 * ZX transforms now require ``pyzx>=0.10``. Upgrade with ``pip install 'pyzx>=0.10'``.
   [(#10121)](https://github.com/PennyLaneAI/pennylane/pull/10121)
 
