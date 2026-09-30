@@ -1058,6 +1058,7 @@
   `qp.QuadX`, `qp.QuadP`, `qp.QuadOperator`, `qp.PolyXP`, `qp.FockStateProjector`,
   `qp.DisplacementEmbedding`, `qp.SqueezingEmbedding`, `qp.CVNeuralNetLayers`, and `qp.Interferometer`.
   [(#9869)](https://github.com/PennyLaneAI/pennylane/pull/9869)
+  [(#10236)](https://github.com/PennyLaneAI/pennylane/pull/10236)
 
 * Support for Python 3.11 has been dropped. PennyLane now requires Python 3.12 or later.
   [(#9700)](https://github.com/PennyLaneAI/pennylane/pull/9700)
