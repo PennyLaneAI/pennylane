@@ -109,8 +109,14 @@ Completed deprecation cycles
 
 * The ``pennylane.qcut`` module, including ``pennylane.cut_circuit``,
   ``pennylane.cut_circuit_mc``, and the ``WireCut`` operator, has been removed.
+  
+  - Removed in releases after v0.45
 
-  - Removed in future releases
+* The ``pennylane.noise`` module has been removed, including ``NoiseModel``, ``add_noise``,
+  ``insert``, noise mitigation transforms, and ``from_qiskit_noise``. Noise channels such as
+  :class:`~.AmplitudeDamping` are unaffected.
+
+  - Removed in releases after v0.45
 
 * Implementing ``Operator.generator`` as a property is no longer supported. Instead, define a ``generator()`` method for your operator that returns an ``Operator`` instance.
 
