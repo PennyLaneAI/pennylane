@@ -119,6 +119,10 @@ jobs:
         with:
           python-version: '${{ inputs.python_version }}'
 
+      - name: Update apt package index
+          if: inputs.additional_os_packages != ''
+          run: sudo apt-get -y update
+
       - name: Install additional os packages
         if: inputs.additional_os_packages != ''
         env:
