@@ -92,7 +92,6 @@ jobs:
           --ignore=pennylane/pulse
           --ignore=pennylane/io
           --ignore=pennylane/qnn
-          --ignore=pennylane/qaoa
           --ignore=pennylane/data
           --ignore=pennylane/debugging
           --ignore=pennylane/qchem

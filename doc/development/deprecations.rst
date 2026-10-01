@@ -107,6 +107,14 @@ for details on how to port your legacy code to the new system. The following fun
 Completed deprecation cycles
 ----------------------------
 
+* The ``pennylane.qaoa`` module has been removed, including the mixer Hamiltonians
+  (``x_mixer``, ``xy_mixer``, ``bit_flip_mixer``), the cost Hamiltonians (``maxcut``,
+  ``max_independent_set``, ``min_vertex_cover``, ``max_clique``, ``max_weight_cycle``,
+  ``bit_driver``, ``edge_driver``), the ansatz layers (``cost_layer``, ``mixer_layer``)
+  and the ``pennylane.qaoa.cycle`` helpers. :class:`~.QAOAEmbedding` is unaffected.
+
+  - Removed in releases after v0.45
+
 * The ``pennylane.qcut`` module, including ``pennylane.cut_circuit``,
   ``pennylane.cut_circuit_mc``, and the ``WireCut`` operator, has been removed.
   
