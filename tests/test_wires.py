@@ -22,6 +22,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.allocation import DynamicRegister
 from pennylane.exceptions import WireError
 from pennylane.typing import Wire
 from pennylane.wires import Wires
@@ -74,8 +75,20 @@ class TestWires:
     def test_creation_from_wires_object(self):
         """Tests that a Wires object can be created from another Wires object."""
 
-        wires = Wires(Wires([0, 1, 2]))
+        original = Wires([0, 1, 2])
+        wires = Wires(original)
+        assert wires is original
         assert wires.labels == (0, 1, 2)
+
+    def test_creation_from_dynamic_register(self):
+        """Tests that a DynamicRegister is copied into a hashable Wires."""
+
+        reg = DynamicRegister([qp.wires.DynamicWire(), qp.wires.DynamicWire()])
+        wires = Wires(reg)
+        assert isinstance(wires, Wires)
+        assert not isinstance(wires, DynamicRegister)
+        assert wires.labels == reg.labels
+        _ = hash(wires)
 
     def test_creation_from_wires_lists(self):
         """Tests that a Wires object can be created from a list of Wires."""

@@ -124,7 +124,10 @@ class Wires(Sequence):
     """
 
     def __new__(cls, wires=None, _override=False):
-        if isinstance(wires, (Wires, AbstractWires)):
+        # type() not isinstance(): unhashable Wires subclasses (e.g. DynamicRegister) must be copied.
+        if type(wires) is Wires:  # pylint: disable=unidiomatic-typecheck
+            return wires
+        if isinstance(wires, AbstractWires):
             return wires
         if isinstance(wires, _AbstractWireTypeFactory):
             raise TypeError(
