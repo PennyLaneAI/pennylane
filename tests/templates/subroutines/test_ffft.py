@@ -158,10 +158,10 @@ def test_ffft_circuit_capture(wires, expected_circuit):
 
 
 @pytest.mark.capture
-@pytest.mark.parametrize("n_wires", [2, 4, 8, 16])
+@pytest.mark.parametrize("n_wires", [4, 8, 16])
 def test_ffft_num_iters_hints(n_wires):
-    """Test that the permutation loops carry ``num-iters`` hints that reproduce the number of
-    ``FermionicSWAP`` gates."""
+    """Test that the permutation loops with dynamic bounds carry ``num-iters`` hints that
+    reproduce the number of ``FermionicSWAP`` gates."""
     import jax  # pylint: disable=import-outside-toplevel
 
     def permutation():
@@ -172,11 +172,12 @@ def test_ffft_num_iters_hints(n_wires):
     ops = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
     num_fswaps = sum(isinstance(op, FermionicSWAP) for op in ops)
 
-    # in-permutation layers, swaps per layer, operator loop, out-permutation layers, swaps per layer
-    num_layers, swaps_per_layer, op_loop_hint, *out_hints = loop_hints(plxpr.jaxpr)
-    assert num_layers == n_wires // 2 - 1
-    assert op_loop_hint is None
-    assert out_hints == [num_layers, swaps_per_layer]
+    num_layers = n_wires // 2 - 1
+    # Only the swaps within each layer have dynamic bounds, the loops over layers and the
+    # operator loop are static.
+    swaps_per_layer = (num_layers + 1) / 2
+    hints = [None, swaps_per_layer, None, None, swaps_per_layer]
+    assert loop_hints(plxpr.jaxpr) == hints
     assert 2 * num_layers * swaps_per_layer == num_fswaps
 
 

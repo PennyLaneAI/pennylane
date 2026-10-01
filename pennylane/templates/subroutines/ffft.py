@@ -21,7 +21,7 @@ import numpy as np
 
 from pennylane import capture, math
 from pennylane.capture import hint
-from pennylane.control_flow import for_loop, while_loop
+from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import FermionicSWAP, PauliZ, pow
@@ -220,26 +220,23 @@ def _permute_and_apply_parallel(wires, operator):
 
     num_layers = len(wires) // 2 - 1
 
-    # The layers contain 1, ..., num_layers parallel swaps
-    @hint({"num-iters": (num_layers + 1) / 2})
-    @while_loop(lambda i, count, num_parallel_swaps, wires: count < num_parallel_swaps)
-    def apply_swaps(i, count, num_parallel_swaps, wires):
-        # apply the FSWAP
-        FermionicSWAP(np.pi, [wires[i], wires[i + 1]])
+    def apply_swaps(start, num_parallel_swaps):
 
-        # increase index of next FSWAP and count of FSWAPs
-        return i + 2, count + 1, num_parallel_swaps, wires
+        # The layers contain 1, ..., num_layers parallel swaps
+        @hint({"num-iters": (num_layers + 1) / 2})
+        @for_loop(start, start + 2 * num_parallel_swaps, 2)
+        def swap_layer(i):
+            FermionicSWAP(np.pi, [wires[i], wires[i + 1]])
 
-    @hint({"num-iters": num_layers})
-    @while_loop(lambda num_parallel_swaps, curr_start, wires: num_parallel_swaps < len(wires) // 2)
-    def permutation_in_layers(num_parallel_swaps, curr_start, wires):
+        swap_layer()  # pylint: disable=no-value-for-parameter
+
+    @for_loop(1, len(wires) // 2)
+    def permutation_in_layers(num_parallel_swaps):
         # applies a layer of parallel FSWAPs
-        apply_swaps((len(wires) - 2) // 2 - curr_start, 0, num_parallel_swaps, wires)
-
-        return num_parallel_swaps + 1, curr_start + 1, wires
+        apply_swaps(num_layers - (num_parallel_swaps - 1), num_parallel_swaps)
 
     # applies several layers of FSWAPs that achieve the parallel permutation of all needed indices
-    permutation_in_layers(1, 0, wires)
+    permutation_in_layers()  # pylint: disable=no-value-for-parameter
 
     # applies the operator on the indices that are now in range
     @for_loop(len(wires) // 2)
@@ -249,17 +246,14 @@ def _permute_and_apply_parallel(wires, operator):
 
     apply_op()  # pylint: disable=no-value-for-parameter
 
-    @hint({"num-iters": num_layers})
-    @while_loop(lambda num_parallel_swaps, curr_start, wires: num_parallel_swaps > 0)
-    def permutation_out_layers(num_parallel_swaps, curr_start, wires):
+    # number of parallel swaps and their starting index is decreasing this time
+    @for_loop(num_layers, 0, -1)
+    def permutation_out_layers(num_parallel_swaps):
         # applies a layer of parallel FSWAPs
-        apply_swaps((len(wires) - 2) // 2 - curr_start, 0, num_parallel_swaps, wires)
-
-        # number of parallel swaps and their starting index is decreasing this time
-        return num_parallel_swaps - 1, curr_start - 1, wires
+        apply_swaps(num_layers - (num_parallel_swaps - 1), num_parallel_swaps)
 
     # applies the inverse permutation
-    permutation_out_layers(len(wires) // 2 - 1, len(wires) // 2 - 2, wires)
+    permutation_out_layers()  # pylint: disable=no-value-for-parameter
 
 
 add_decomps(FFFT, _fast_fermionic_fourier_transform_decomposition)
