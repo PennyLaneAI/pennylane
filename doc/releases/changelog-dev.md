@@ -2,6 +2,10 @@
 
 <h3>New features since last release</h3>
 
+* Added a `qp.math.floor_log2` function that computes the integer :math:`\lfloor \log_2(x)\rfloor`,
+  in analogy to the existing `qp.math.ceil_log2`.
+  [(#10101)](https://github.com/PennyLaneAI/pennylane/pull/10101)
+
 * A :func:`pennylane.decomposition.register_signature` function is added for recording the possible signatures of
   an operator, along with a :func:`pennylane.decomposition.signature_registry` function for retrieving the recorded
   signatures. The resulting registry is used to identify decomposition rules that can be precompiled, improving
@@ -291,6 +295,7 @@
   a quantum register in unsigned or signed encoding convention into another quantum register.
   [(#9003)](https://github.com/PennyLaneAI/pennylane/pull/9003)
   [(#9558)](https://github.com/PennyLaneAI/pennylane/pull/9558)
+  [(#9769)](https://github.com/PennyLaneAI/pennylane/pull/9769)
 
 * A new :func:`~.single_qubit_zyz_angles` function that returns the pre-defined rotation angles
   of a ZYZ decomposition of a single-qubit operator has been added.
@@ -495,7 +500,7 @@
   [(#10146)](https://github.com/PennyLaneAI/pennylane/pull/10146)
 
 * Added :class:`~.QubitizationTHC`, the qubitization walk operator of a tensor hypercontracted
-  Hamiltonian. It composes the (also newly added) :class:`~.SuperpositionTHC` and 
+  Hamiltonian. It composes the (also newly added) :class:`~.SuperpositionTHC` and
   :class:`~.AliasSamplingTHC` into ``PREPARE``, applies :class:`~.SelectTHC`, and reflects about
   :math:`|\vec 0\rangle` on the ``PREPARE`` register. Use :func:`~.qubitization_thc_wires` to
   determine the register sizes, as well as :func:`~.alias_sampling_thc_wires` and
@@ -1017,6 +1022,33 @@
 
 <h3>Breaking changes 💔</h3>
 
+* :class:`~.QuantumPhaseEstimation` now only accepts an :class:`~.Operator` as the ``unitary``, and the
+  ``target_wires`` argument has been removed. The target wires are the wires of ``unitary``.
+  To use a unitary matrix, wrap it in a :class:`~.QubitUnitary`:
+
+  ```python3
+  # Before (no longer supported):
+  # qp.QuantumPhaseEstimation(matrix, target_wires=[0], estimation_wires=[1, 2])
+
+  # After:
+  qp.QuantumPhaseEstimation(qp.QubitUnitary(matrix, wires=[0]), estimation_wires=[1, 2])
+  ```
+  
+  [(#10209)](https://github.com/PennyLaneAI/pennylane/pull/10209)
+  
+* The ``pennylane.noise`` module has been removed, including ``NoiseModel``,
+  ``add_noise``, ``insert``, noise mitigation transforms (``mitigate_with_zne``,
+  ``fold_global``, ``poly_extrapolate``, ``richardson_extrapolate``,
+  ``exponential_extrapolate``), and ``from_qiskit_noise``. Noise channels such as
+  :class:`~.AmplitudeDamping` are unaffected.
+  [(#10214)](https://github.com/PennyLaneAI/pennylane/pull/10214)
+
+* Removed the ``qp.fourier`` module. This includes ``circuit_spectrum``, ``coefficients``,
+  ``qnode_spectrum``, ``mark``, ``get_spectrum``, ``join_spectra`` and the
+  ``qp.fourier.visualize`` plotting functions. Also, ``qp.fourier.reconstruct`` has moved to
+  ``pennylane.optimize.reconstruct``.
+  [(#10212)](https://github.com/PennyLaneAI/pennylane/pull/10212)
+  
 * ZX transforms now require ``pyzx>=0.10``. Upgrade with ``pip install 'pyzx>=0.10'``.
   [(#10121)](https://github.com/PennyLaneAI/pennylane/pull/10121)
 
@@ -1218,7 +1250,7 @@
   [(#10198)](https://github.com/PennyLaneAI/pennylane/pull/10198)
   [(#10200)](https://github.com/PennyLaneAI/pennylane/pull/10200)
 
-* An operator can now be reconstructed from operator_p with abstract wires in the form of 
+* An operator can now be reconstructed from operator_p with abstract wires in the form of
   AbstractQubit, jax.core.ShapedArray, AbstractWires, and AbstractArray.
   [(#10165)](https://github.com/PennyLaneAI/pennylane/pull/10165)
 
@@ -1309,7 +1341,7 @@
       :class:`~.TemporaryAND`, :class:`~.SelectPauliRot`, :class:`~.GQSP`, :class:`~.AQFT`, :class:`~.SumOfSlatersPrep`,
       :class:`~.SemiAdder`, :class:`~.OutMultiplier`, :class:`~.SignedOutMultiplier`, :class:`~.BasisState`, :class:`~.TrotterCDF`,
       :class:`~.TrotterCGF`, :class:`~.OutSquare`, :class:`~.SignedOutSquare`, :class:`~.Incrementer`, :class:`~.TrotterVibronic`,
-      :class:`~.PartialUnaryStatePreparation`, :class:`~.Select`
+      :class:`~.PartialUnaryStatePreparation`, :class:`~.Select`, :class:`~.QuantumPhaseEstimation`, :class:`~.IQP`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
   [(#10164)](https://github.com/PennyLaneAI/pennylane/pull/10164)
   [(#10178)](https://github.com/PennyLaneAI/pennylane/pull/10178)
@@ -1341,6 +1373,8 @@
   [(#10069)](https://github.com/PennyLaneAI/pennylane/pull/10069)
   [(#10085)](https://github.com/PennyLaneAI/pennylane/pull/10085)
   [(#10020)](https://github.com/PennyLaneAI/pennylane/pull/10020)
+  [(#10209)](https://github.com/PennyLaneAI/pennylane/pull/10209)
+  [(#10226)](https://github.com/PennyLaneAI/pennylane/pull/10226)
   - Quantum chemistry operators are ported:
     - :class:`~.SingleExcitation`
   [(#9944)](https://github.com/PennyLaneAI/pennylane/pull/9944)
@@ -1486,7 +1520,7 @@
     [(#9753)](https://github.com/PennyLaneAI/pennylane/pull/9753)
   - Integration with :func:`pennylane.apply`.
     [(#9738)](https://github.com/PennyLaneAI/pennylane/pull/9738)
-  - Integration with :func:`pennylane.insert`.
+  - Integration with ``pennylane.insert``.
     [(#9685)](https://github.com/PennyLaneAI/pennylane/pull/9685)
   - Integration with the graph-based decomposition system.
     [(#9723)](https://github.com/PennyLaneAI/pennylane/pull/9723)
@@ -1625,6 +1659,10 @@
 * Fixed a numerical instability in :func:`~.transforms.single_qubit_fusion` where floating-point
   rounding errors when fusing :class:`~.Rot` gates could cause ``NaN`` and an invalid-value warning.
   [(#10197)](https://github.com/PennyLaneAI/pennylane/issues/10197)
+
+* Fixed `qp.math.ceil_log2` returning results that were off by one
+  for inputs with more significant bits than a float can hold, like `2 ** 53 + 1`.
+  [(#10101)](https://github.com/PennyLaneAI/pennylane/pull/10101)
 
 * :func:`~.allocate` with zero wires no longer queues or captures :class:`~.allocation.Allocate`
   and :class:`~.allocation.Deallocate` instructions, including when used as a context manager.

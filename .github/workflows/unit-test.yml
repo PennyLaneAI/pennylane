@@ -124,6 +124,7 @@ jobs:
         env:
           ADDITIONAL_OS_PACKAGES: ${{ inputs.additional_os_packages }}
         run: |
+          sudo apt-get update
           while IFS= read -r line; do
             if [ ! -z "$line" ]; then
                 echo ''
