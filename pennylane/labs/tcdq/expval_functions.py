@@ -63,6 +63,8 @@ class CircuitConfig:  # pylint: disable=too-many-instance-attributes
         phase_fn (Callable | None): Optional custom phase function
             ``phase_fn(params, bitstring)`` applied as an extra diagonal layer.
             Defaults to ``None``.
+        diagonal_observables (Bool): Flag when the circuit will only be used with Pauli-Z gates for
+            a performance increase. Defaults to ``False``.
 
     **Example**
 
@@ -98,6 +100,8 @@ class CircuitConfig:  # pylint: disable=too-many-instance-attributes
     init_state_amps: ArrayLike | None = None
     #: Optional custom phase function applied as an extra diagonal layer.
     phase_fn: Callable | None = None
+    #: If true, the expectation value assumes diagonal observables for a performance increase.
+    diagonal_observables: bool = False
 
 
 def _parse_generator_dict(circuit_def: dict[int, list[list[int]]], n_qubits: int):
@@ -175,7 +179,6 @@ def _phase_differences(
 ) -> jnp.ndarray:
 
     gate_block = 1 << 17
-    dtype = gate_params.dtype
     n_gates, max_weight = gate_indices.shape
 
     def block_contribution(block_indices: jnp.ndarray, block_params: jnp.ndarray) -> jnp.ndarray:
@@ -225,9 +228,14 @@ def _compute_samples(key: ArrayLike, n_samples: int, n_qubits: int) -> jnp.ndarr
     return unpacked_bits[:, :n_qubits]
 
 
-def _prep_observables(observables_int: ArrayLike) -> tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
+def _prep_observables(observables_int: ArrayLike, diagonal: bool = False) -> tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
     """Precompute masks and phase factors for integer-encoded Pauli observables."""
+
     obs_arr = jnp.asarray(observables_int, dtype=jnp.int32)
+
+    if diagonal:
+        return jnp.asarray(obs_arr != 0, dtype = jnp.uint8), None, None, None
+
 
     is_X = obs_arr == 1
     is_Y = obs_arr == 2
@@ -270,9 +278,12 @@ def _core_expval_execution(
     cos_E = jnp.cos(E)
     sin_E = jnp.sin(E)
 
-    sign_flip = _parity_signs(_parity_dot(mask_XY, samples))
-    phase_re = sign_flip * (y_real * cos_E - y_imag * sin_E)
-    phase_im = sign_flip * (y_real * sin_E + y_imag * cos_E)
+    if mask_XY is None:
+        phase_re, phase_im = cos_E, sin_E
+    else:
+        sign_flip = _parity_signs(_parity_dot(mask_XY, samples))
+        phase_re = sign_flip * (y_real * cos_E - y_imag * sin_E)
+        phase_im = sign_flip * (y_real * sin_E + y_imag * cos_E)
 
     if init_state_elems is None or init_state_amps is None:
         integrand = phase_re
@@ -386,7 +397,7 @@ def build_expval_func(
         )
 
     default_samples = _compute_samples(config.key, config.n_samples, config.n_qubits)
-    default_obs_data = None if config.observables is None else _prep_observables(config.observables)
+    default_obs_data = None if config.observables is None else _prep_observables(config.observables, config.diagonal_observables)
 
     # pylint: disable=too-many-arguments
     def expval_execution(
@@ -431,7 +442,7 @@ def build_expval_func(
             samples = default_samples
 
         if observables is not None:
-            obs_data = _prep_observables(observables)
+            obs_data = _prep_observables(observables, config.diagonal_observables)
         elif default_obs_data is not None:
             obs_data = default_obs_data
         else:

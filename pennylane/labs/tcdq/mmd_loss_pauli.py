@@ -180,25 +180,25 @@ def _compute_loss_for_bandwidth(
 
     # sample ops
     # key = subkey, probs = p_mmd, shape=(n_ops, len(wire_tuple))
-    prob = jnp.asarray(p_mmd)
-    q = jnp.where(prob < 0.5, prob, 1.0 - prob)
-    uniforms = jax.random.uniform(jax.random.split(subkey)[0], (n_ops, len(wire_tuple)), prob.dtype)
-    successes = (uniforms >= jnp.exp(jnp.log1p(-q)))
-    visible_ops = jnp.where(prob < 0.5, successes, 1.0 - successes)
+    #prob = jnp.asarray(p_mmd)
+    #q = jnp.where(prob < 0.5, prob, 1.0 - prob)
+    #uniforms = jax.random.uniform(jax.random.split(subkey)[0], (n_ops, len(wire_tuple)), prob.dtype)
+    #successes = (uniforms >= jnp.exp(jnp.log1p(-q)))
+    #visible_ops = jnp.where(prob < 0.5, successes, 1.0 - successes)
 
-    #visible_ops = jnp.array(
-    #    jax.random.binomial(subkey, 1, p_mmd, shape=(n_ops, len(wire_tuple))),
-    #    dtype=float,
-    #)
+    visible_ops = jnp.array(
+        jax.random.binomial(subkey, 1, p_mmd, shape=(n_ops, len(wire_tuple))),
+        dtype=float,
+    )
 
-    #all_ops = jnp.zeros((n_ops, n_qubits), dtype=float)
-    #all_ops = all_ops.at[:, wire_list].set(visible_ops)
+    all_ops = jnp.zeros((n_ops, n_qubits), dtype=float)
+    all_ops = all_ops.at[:, wire_list].set(visible_ops)
 
-    if len(wire_tuple) == n_qubits and wire_list == list(range(n_qubits)):
-        all_ops = visible_ops
-    else:
-        all_ops = jnp.zeros((n_ops, n_qubits), dtype=visible_ops.dtype)
-        all_ops = all_ops.at[:, wire_list].set(visible_ops)
+    #if len(wire_tuple) == n_qubits and wire_list == list(range(n_qubits)):
+    #    all_ops = visible_ops
+    #else:
+    #    all_ops = jnp.zeros((n_ops, n_qubits), dtype=visible_ops.dtype)
+    #    all_ops = all_ops.at[:, wire_list].set(visible_ops)
 
     pauli_obs = _binary_ops_to_pauli_int(all_ops)
 
