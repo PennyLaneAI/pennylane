@@ -97,6 +97,62 @@ def hint(hints: dict[str, Any]) -> Callable:
     Returns:
         Callable: a decorator that can be applied.
 
+    **Available Hints:**
+
+    * :func:`~.for_loop` supports `"num-iters"` to indicate the number of loops
+    : :func:`~.while_loop` supports `"num-iters"` to indicate the number of loops
+
+    By hinting control flow like :func:`~.for_loop` and :func:`~.while_loop`, profiling
+    with :func:`~.specs` can fully specify the number of iterations.
+
+    .. code-block:: python
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device('lightning.qubit', wires=1))
+        def c(n):
+
+            @qp.for_loop(n)
+            def loop(i):
+                qp.X(0)
+
+            #  hinted loop
+            qp.hint({"num-iters": 10})(loop)()
+
+            # normal loop
+            loop()
+
+            return qp.expval(qp.Z(0))
+
+    >>> print(qp.specs(c, level=0)(5).resources)
+    Symbolic Variables: a
+    Quantum operations:
+    - Total: a + 10
+      - PauliX: a + 10
+    Measurement processes:
+    - expval(PauliZ): 1
+    Total wires: 1
+    Circuit Depth: Not computed
+
+    The concrete ``10`` corresponds to the hinted loop, contrasting the
+    symbolic ``a`` from to the unhinted loop.
+
+    This function can also  be used as a decorator:
+
+    .. code-block:: python
+
+        @qp.qjit(capture=True)
+        @qp.qnode(qp.device('lightning.qubit' wires=10))
+        def c(n):
+
+            @qp.hint({"num-iters": 10})
+            @qp.while_loop(lambda i: i < 10)
+            def loop(i):
+                qp.X(i)
+                return i + 1
+
+            loop(0)
+            return qp.expval(qp.Z(0))
+
     """
 
     def decorator(f):
