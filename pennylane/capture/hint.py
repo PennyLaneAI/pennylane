@@ -16,8 +16,50 @@ Adds a tool for annotating things with compiler hints.
 """
 
 import functools
-from collections.abc import Callable
+from collections.abc import Callable, Set
+from difflib import SequenceMatcher
 from typing import Any
+
+
+def process_hints(hints: dict[str, Any], supported: Set[str]) -> dict[str, Any]:
+    """Return a copy of ``hints`` remapped onto canonical supported keys.
+
+    Exact matches are kept. Close misspellings are rewritten to the matching
+    supported key so typos like ``"num_iters"`` become ``"num-iters"``.
+    Similarity uses a case-insensitive :class:`~difflib.SequenceMatcher` ratio
+    with a cutoff of ``0.8``. Unrecognized keys are ignored.
+
+    Args:
+        hints (dict[str, Any]): user-provided compiler hints
+        supported (Set[str]): allowed canonical hint keys
+
+    Returns:
+        dict[str, Any]: hints keyed only by names in ``supported``
+
+    >>> process_hints({"num_iters": 10}, {"num-iters"})
+    {'num-iters': 10}
+    >>> process_hints({"numiters": 10}, {"num-iters"})
+    {'num-iters': 10}
+
+    """
+    processed: dict[str, Any] = {}
+    for key, value in hints.items():
+        if key in supported:
+            canonical = key
+        else:
+            canonical = None
+            for target in sorted(supported):
+                ratio = SequenceMatcher(a=key.casefold(), b=target.casefold()).ratio()
+                if ratio >= 0.8:
+                    canonical = target
+                    break
+
+        if canonical is None:
+            continue
+        if canonical in processed:
+            raise ValueError(f"Multiple hint keys map to {canonical!r}. Got {tuple(hints)}.")
+        processed[canonical] = value
+    return processed
 
 
 class HintedCallable:
