@@ -124,7 +124,7 @@ class Wires(Sequence):
     """
 
     def __new__(cls, wires=None, _override=False):
-        if isinstance(wires, AbstractWires):
+        if isinstance(wires, (Wires, AbstractWires)):
             return wires
         if isinstance(wires, _AbstractWireTypeFactory):
             raise TypeError(
@@ -161,7 +161,6 @@ class Wires(Sequence):
             self._labels = wires
         else:
             self._labels = _process(wires)
-
         self._hash = None
 
     def __getitem__(self, idx):
