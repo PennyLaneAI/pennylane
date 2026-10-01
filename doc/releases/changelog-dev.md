@@ -613,6 +613,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Adds `qp.core.operator.generate_uid` for returning the UID of an ``Operator2``. This UID is used to represent
+  non-lowerable static and hybrid arguments uniquely.
+  [(#10222)](https://github.com/PennyLaneAI/pennylane/pull/10222)
+
 * Multi-controlled operators can now reuse a single :class:`~.TemporaryAND` ladder when enough
   zeroed work wires are available, reducing their decomposition gate counts.
   [(#10161)](https://github.com/PennyLaneAI/pennylane/pull/10161)
