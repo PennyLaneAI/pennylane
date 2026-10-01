@@ -169,7 +169,7 @@ class IQPEmbedding(Operator2):
     """
 
     dynamic_argnames = ("features",)
-    compilable_argnames = ("n_repeats", "pattern")
+    static_argnames = ("n_repeats", "pattern")
     arg_specs = {"features": Float[-1], "wires": Wire[-1]}
 
     ndim_params = (1,)
@@ -191,7 +191,11 @@ class IQPEmbedding(Operator2):
             raise ValueError(f"Features must be of length {len(wires)}; got length {n_features}.")
 
         if pattern is None:
-            _wires = range(len(wires)) if isinstance(wires, AbstractWires) else wires
+            # Do not close over traced wire labels; those cannot live in static args.
+            if isinstance(wires, AbstractWires) or any(math.is_abstract(w) for w in wires):
+                _wires = range(len(wires))
+            else:
+                _wires = wires
             pattern = tuple(combinations(_wires, 2))
         else:
             pattern = tuple(tuple(pair) for pair in pattern)
