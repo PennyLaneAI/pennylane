@@ -604,9 +604,8 @@
 <h3>Improvements 🛠</h3>
 
 * A :class:`~.Controller` now takes the size of its messages in each direction, with the
-  ``in_bytes`` and ``out_bytes`` keyword arguments. Both default to 8 and may be up to
-  :data:`~pennylane.backline.placement.MAX_MESSAGE_BYTES` (4096), which the ``"memcpy"``
-  transport carries.
+  ``in_bytes`` and ``out_bytes`` keyword arguments. Both default to 8, and the ``"memcpy"``
+  transport carries any size.
 
   .. code-block:: python
 
