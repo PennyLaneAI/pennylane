@@ -279,7 +279,6 @@ CUSTOM_MARKERS = {
     "torch",
     "jax",
     "qchem",
-    "qcut",
     "all_interfaces",
     "finite-diff",
     "param-shift",

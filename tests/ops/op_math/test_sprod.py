@@ -29,10 +29,7 @@ from pennylane.wires import Wires
 
 scalars = (1, 1.23, 0.0, 1 + 2j)  # int, float, zero, and complex cases accounted for
 
-no_mat_ops = (
-    qp.Barrier,
-    qp.WireCut,
-)
+no_mat_ops = (qp.Barrier,)
 
 non_param_ops = (
     (qp.Identity, gd.I),

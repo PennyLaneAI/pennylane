@@ -30,10 +30,7 @@ from pennylane.exceptions import MatrixUndefinedError
 from pennylane.ops.op_math import Prod, Sum
 from pennylane.wires import Wires
 
-no_mat_ops = (
-    qp.Barrier,
-    qp.WireCut,
-)
+no_mat_ops = (qp.Barrier,)
 
 non_param_ops = (
     (qp.Identity, gd.I),
