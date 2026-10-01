@@ -78,6 +78,7 @@ def preprocess_level_input(
         >>> preprocess_level_input("all", pipeline)
         [0, 1, 2]
     """
+    # pylint: disable=too-many-branches
     if trans := [pass_ for pass_ in compile_pipeline if pass_.pass_name is None]:
         raise ValueError(
             f"Specs encountered the following tape transforms: {trans}."
@@ -109,12 +110,9 @@ def preprocess_level_input(
 
     # Convert marker names to the associated level number
     for i, lvl in enumerate(level):
-        if isinstance(lvl, str):
-            if lvl == "top":
-                level[i] = 0
-                continue
-            if lvl == "user":
-                level[i] = len(compile_pipeline)
+        if isinstance(lvl, str) and lvl != "all":
+            if lvl in default_level_map:
+                level[i] = default_level_map[lvl][0]
                 continue
             if lvl not in marker_to_level:
                 raise ValueError(f"Marker name '{lvl}' not found in the compile pipeline.")

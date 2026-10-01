@@ -345,7 +345,7 @@ class TestCaptureIQPE:
         def c():
             return qp.sample(qp.iterative_qpe(qp.RX(0.5, 0), 1, num_iters))
 
-        specs = qp.specs(c, level="all-mlir")()
+        specs = qp.specs(c, level="top")()
         # NOTE: PauliX comes from the aux_wire reset
         expected_operations = {
             "C(Pow2)": num_iters,
@@ -354,4 +354,4 @@ class TestCaptureIQPE:
             "PhaseShift": num_iters * (num_iters - 1) // 2,
             "PauliX": num_iters,
         }
-        assert specs.resources["Before MLIR Passes"].quantum_operations == expected_operations
+        assert specs.resources.quantum_operations == expected_operations
