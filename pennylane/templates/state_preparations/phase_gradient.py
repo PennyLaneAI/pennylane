@@ -23,7 +23,6 @@ from pennylane.control_flow import for_loop
 from pennylane.core.operator import StatePrepBase2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.exceptions import WireError
-from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.typing import AbstractWires, Wire
 from pennylane.wires import Wires, WiresLike
 
@@ -39,7 +38,7 @@ class PhaseGradientStatePrep(StatePrepBase2):
 
     where the first wire holds the most significant bit of :math:`k`.
     Adding an integer :math:`M` to this state with a (semi-in-place) adder like
-    :class:`~.SemiAdder` imprints the global phase :math:`e^{2\pi i \frac{M}{B}}`, which makes it a
+    :class:`~.SemiAdder` imprints the phase :math:`e^{2\pi i \frac{M}{B}}`, which makes it a
     catalytic resource state for implementing rotation gates.
     See the `compilation hub <https://pennylane.ai/compilation/phase-gradient>`__ for more details.
 
@@ -92,7 +91,7 @@ class PhaseGradientStatePrep(StatePrepBase2):
     def state_vector(self, wire_order: WiresLike | None = None):
         num_op_wires = len(self.wires)
         dim = 2**num_op_wires
-        op_vector = np.exp(-2j * np.pi * np.arange(dim) / dim) / np.sqrt(dim)
+        op_vector = np.exp((-2j * np.pi / dim) * np.arange(dim)) / np.sqrt(dim)
         op_vector = math.reshape(op_vector, (2,) * num_op_wires)
 
         if wire_order is None or Wires(wire_order) == self.wires:
@@ -123,9 +122,9 @@ def _phase_gradient_state_prep_resources(wires: AbstractWires):
     if num_wires > 0:
         resources[qp.Z] = 1
     if num_wires > 1:
-        resources[_adjoint_abstract(qp.S)] = 1
+        resources[qp.adjoint(qp.S(Wire[1]))] = 1
     if num_wires > 2:
-        resources[_adjoint_abstract(qp.T)] = 1
+        resources[qp.adjoint(qp.T(Wire[1]))] = 1
     if num_wires > 3:
         resources[qp.PhaseShift] = num_wires - 3
     return resources
