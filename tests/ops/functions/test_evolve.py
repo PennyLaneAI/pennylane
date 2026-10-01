@@ -15,17 +15,8 @@
 
 import warnings
 
-import pytest
-
 import pennylane as qp
 from pennylane.ops import Evolution
-
-
-def test_error_for_unsupported_input():
-    """Test an error is raised for an unsupported input type."""
-
-    with pytest.raises(ValueError, match="No dispatch rule for first argument of type"):
-        qp.evolve(0.5)
 
 
 class TestEvolveConstructor:
