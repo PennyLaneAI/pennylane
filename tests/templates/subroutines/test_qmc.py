@@ -340,7 +340,7 @@ class TestQuantumMonteCarlo:
         Q = make_Q(A, R)
 
         with qp.queuing.AnnotatedQueue() as q_qpe_tape:
-            qp.QuantumPhaseEstimation(Q, target_wires, estimation_wires)
+            qp.QuantumPhaseEstimation(qp.QubitUnitary(Q, wires=target_wires), estimation_wires)
 
         qpe_tape = qp.tape.QuantumScript.from_queue(q_qpe_tape)
         [qpe_tape], _ = qp.transforms.decompose(

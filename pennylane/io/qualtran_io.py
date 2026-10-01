@@ -539,7 +539,7 @@ def _(
 
     return TextbookQPE(
         unitary=_map_to_bloq(op.hyperparameters["unitary"]),
-        ctrl_state_prep=RectangularWindowState(len(op.hyperparameters["estimation_wires"])),
+        ctrl_state_prep=RectangularWindowState(len(op.estimation_wires)),
     )
 
 
