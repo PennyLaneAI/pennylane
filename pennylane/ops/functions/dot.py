@@ -142,11 +142,6 @@ def dot(
                 f"ops must be an Iterable of {t.__name__}'s, not a {t.__name__} itself."
             )
 
-    if any(callable(c) for c in coeffs):
-        raise ValueError(
-            "Callable coefficients are no longer supported after removal of the qp.pulse module."
-        )
-
     # User-specified Pauli route
     if pauli:
         if all(isinstance(pauli, (PauliWord, PauliSentence)) for pauli in ops):
