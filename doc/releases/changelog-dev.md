@@ -617,9 +617,11 @@
 * Added :func:`~pennylane.backline.onnx_decoder`, which runs an ONNX model on a
   :class:`~.Coprocessor`, through the ONNX coprocessor function Catalyst ships. It loads onnxruntime
   and the model when the coprocessor starts. With the default ``provider="auto"`` the model runs on
-  the GPU the installed onnxruntime supports (MIGraphX on AMD, CUDA on NVIDIA) or on the CPU, so one
-  program runs on either vendor. :class:`~.CoprocessorFunction` gains ``config``, the
-  ``key=value;...`` configuration a function receives before its first message, and
+  the GPU the installed onnxruntime supports (MIGraphX on AMD, CUDA on NVIDIA) or, when it has no
+  GPU provider, on the CPU, so one program runs on either vendor. ``device`` and ``threads`` choose
+  the GPU and onnxruntime's intra-op threads. The coprocessor must run in the compiling process,
+  since the model and onnxruntime paths are local. :class:`~.CoprocessorFunction` gains ``config``,
+  the ``key=value;...`` configuration a function receives before its first message, and
   ``per_message``, which a GPU coprocessor uses to call a host function per message.
 
   .. code-block:: python

@@ -15,6 +15,7 @@
 """Coprocessor functions for backline placement."""
 
 import importlib.util
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -42,8 +43,10 @@ class CoprocessorFunction:
             ``None``, in which case the runtime resolves :attr:`name` from the symbols already
             loaded on the host.
         config (str): The function's own configuration, as ``key=value`` entries separated by
-            ``;``. Defaults to ``""``. A function that exports ``<name>_init`` is handed these
-            entries once, before its first message, and is then called with what that returns.
+            ``;``. Defaults to ``""``. A function whose library exports lifecycle hooks under
+            ``<name>_info`` (for example ``catalyst_onnx_coprocessor_info``) receives these entries
+            in its ``init`` hook once, before its first message, and is then called with the
+            context that hook returns.
         per_message (bool): Whether the function is a host function called once per message,
             rather than a launcher that starts a persistent GPU kernel. Defaults to ``False``. It
             matters only on a GPU coprocessor, which then runs the function per message. On a CPU
@@ -58,7 +61,7 @@ class CoprocessorFunction:
 
     >>> coproc = qp.Coprocessor(coprocessor_fn="decoder")
     >>> coproc.coprocessor_fn
-    CoprocessorFunction(name='decoder', lib_path=None)
+    CoprocessorFunction(name='decoder', lib_path=None, config='', per_message=False)
 
     Construct one directly to point at a symbol in a specific shared library. The path is what the
     coprocessor's node passes to the runtime as its backend library:
@@ -78,7 +81,8 @@ class CoprocessorFunction:
     runtime resolves :attr:`name` from the symbols already loaded on the host."""
 
     config: str = ""
-    """The function's own ``key=value;...`` configuration, handed to its ``<name>_init``."""
+    """The function's own ``key=value;...`` configuration, handed to the ``init`` hook its library
+    exports under ``<name>_info``."""
 
     per_message: bool = False
     """Whether the function is called once per message, rather than launching a persistent GPU
@@ -245,13 +249,24 @@ def _onnxruntime_library() -> str:
             "onnxruntime-migraphx for AMD GPUs"
         )
     capi = Path(list(spec.submodule_search_locations)[0]) / "capi"
-    libraries = sorted(capi.glob("libonnxruntime.so*"))
+    pattern = "libonnxruntime.*dylib" if sys.platform == "darwin" else "libonnxruntime.so*"
+    libraries = sorted(capi.glob(pattern))
     if not libraries:
         raise ImportError(f"no onnxruntime shared library found in {capi}")
     return str(libraries[0])
 
 
-def onnx_decoder(model, *, provider: str = "auto", device: int = 0) -> CoprocessorFunction:
+def _check_count(name: str, value, minimum: int) -> None:
+    """Raise if ``value`` is not an int of at least ``minimum``."""
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise TypeError(f"onnx_decoder: {name} must be an int, got {type(value).__name__}")
+    if value < minimum:
+        raise ValueError(f"onnx_decoder: {name} must be at least {minimum}, got {value}")
+
+
+def onnx_decoder(
+    model, *, provider: str = "auto", device: int = 0, threads: int = 1
+) -> CoprocessorFunction:
     """A coprocessor function that runs an ONNX model on each message, for use with
     :mod:`~.backline`.
 
@@ -261,15 +276,23 @@ def onnx_decoder(model, *, provider: str = "auto", device: int = 0) -> Coprocess
     :attr:`~.Controller.in_bytes` must hold the input tensor and its
     :attr:`~.Controller.out_bytes` the output tensor.
 
-    The function is one Catalyst ships, so nothing is compiled. It loads onnxruntime and the model
-    when its coprocessor starts, so a model file is all a decoder needs.
-    It is a per-message function, so a GPU coprocessor calls it once per message from the host,
-    and the model's own GPU work runs from there.
+    The function is implemented in Catalyst's ONNX coprocessor library
+    (``libcatalyst_onnx_coprocessor``), so no build step is needed: the model file is loaded when
+    the coprocessor starts. It is a per-message function,
+    so a GPU coprocessor calls it once per message from the host, and the model's own GPU work runs
+    from there.
 
     The device the model runs on is chosen by onnxruntime. With ``provider="auto"`` it is the first
-    GPU provider the installed onnxruntime has, so one program runs on an AMD GPU with the
+    GPU provider the installed onnxruntime has, of ``"migraphx"``, ``"cuda"`` and ``"rocm"`` in that
+    order (``"tensorrt"`` is used only when named), so one program runs on an AMD GPU with the
     ``onnxruntime-migraphx`` package, on an NVIDIA GPU with ``onnxruntime-gpu``, and on the CPU with
-    plain ``onnxruntime``.
+    plain ``onnxruntime``. If that GPU provider is present but cannot be attached (for example
+    because its GPU libraries are missing), the coprocessor fails to start rather than falling back
+    to the CPU. Pass an explicit ``provider`` to choose the device yourself. The provider in use is
+    printed when the model loads.
+
+    The model and onnxruntime paths are resolved on this machine, so the coprocessor must run in
+    this process. Catalyst rejects one dispatched to an executor.
 
     .. warning::
 
@@ -282,34 +305,46 @@ def onnx_decoder(model, *, provider: str = "auto", device: int = 0) -> Coprocess
     Keyword Args:
         provider (str): The onnxruntime execution provider: ``"auto"`` (the default), ``"cpu"``,
             ``"migraphx"`` for AMD GPUs, ``"cuda"`` or ``"tensorrt"`` for NVIDIA GPUs, or
-            ``"rocm"``. A GPU provider needs an onnxruntime build that contains it.
-        device (int): The GPU a GPU provider runs on. Defaults to ``0``.
+            ``"rocm"``. A GPU provider needs an onnxruntime build that contains it. ``"cpu"`` and
+            ``"migraphx"`` have been tested. The NVIDIA providers and ``"rocm"`` have not.
+        device (int): The GPU a GPU provider runs on, from ``0``. Defaults to ``0``.
+        threads (int): onnxruntime's intra-op threads, at least ``1``. Defaults to ``1``, which
+            keeps onnxruntime's thread pool from competing with the transport's threads. A model
+            run on the CPU provider may run faster with more.
 
     Returns:
         CoprocessorFunction: The function, ready to pass as :attr:`~.Coprocessor.coprocessor_fn`.
 
     Raises:
         FileNotFoundError: If ``model`` does not exist.
-        ValueError: If ``provider`` is unknown.
-        ImportError: If no onnxruntime package is installed.
+        ValueError: If ``provider`` is unknown, or ``device`` or ``threads`` is out of range.
+        TypeError: If ``device`` or ``threads`` is not an int.
+        ImportError: If no onnxruntime package is installed, or it has no shared library.
 
     .. seealso:: :class:`~.CoprocessorFunction`, :class:`~.Coprocessor`
 
     **Example**
 
     >>> fn = qp.backline.onnx_decoder("predecoder.onnx")  # doctest: +SKIP
-    >>> coproc = qp.Coprocessor(name="gpu-coproc", hardware="gpu", coprocessor_fn=fn)  # doctest: +SKIP
+    >>> coproc = qp.Coprocessor(  # doctest: +SKIP
+    ...     name="gpu-coproc", hardware="gpu", coprocessor_fn=fn
+    ... )
     """
     model = Path(model).resolve()
     if not model.is_file():
         raise FileNotFoundError(f"onnx_decoder: no model at {model}")
     if provider not in _ONNX_PROVIDERS:
-        raise ValueError(f"provider must be one of {list(_ONNX_PROVIDERS)}, got {provider!r}")
+        raise ValueError(
+            f"onnx_decoder: provider must be one of {list(_ONNX_PROVIDERS)}, got {provider!r}"
+        )
+    _check_count("device", device, 0)
+    _check_count("threads", threads, 1)
     entries = [
         f"model={model}",
         f"ort_lib={_onnxruntime_library()}",
         f"provider={provider}",
         f"device={device}",
+        f"threads={threads}",
     ]
     if any(";" in entry for entry in entries):
         raise ValueError("onnx_decoder: paths must not contain ';', which separates config entries")

@@ -143,6 +143,9 @@ can be specified in multiple ways:
   :func:`~.css_bp_decoder` is a convenience function to compile a CSS Tanner graph to a
   belief proagation decoder using Triton.
 
+* **An ONNX model**: :func:`~.onnx_decoder` runs a model exported to ONNX on each message,
+  on the CPU or on the GPU the installed onnxruntime supports, with no build step.
+
 * **A precompiled library**: :class:`~.CoprocessorFunction` registers a precompiled library symbol
   and (optionally) the library path.
 
