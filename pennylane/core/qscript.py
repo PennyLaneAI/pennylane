@@ -24,7 +24,7 @@ import warnings
 from collections import Counter
 from collections.abc import Callable, Hashable, Iterable, Iterator, Sequence
 from functools import cached_property
-from typing import Any, ParamSpec, TypeVar
+from typing import ParamSpec, TypeVar
 
 from pennylane.core.measurements import MeasurementProcess
 from pennylane.core.operator import Operation, Operator, Operator2, StatePrepBase
