@@ -2,6 +2,10 @@
 
 <h3>New features since last release</h3>
 
+* Added a `qp.math.floor_log2` function that computes the integer :math:`\lfloor \log_2(x)\rfloor`,
+  in analogy to the existing `qp.math.ceil_log2`.
+  [(#10101)](https://github.com/PennyLaneAI/pennylane/pull/10101)
+
 * A :func:`pennylane.decomposition.register_signature` function is added for recording the possible signatures of
   an operator, along with a :func:`pennylane.decomposition.signature_registry` function for retrieving the recorded
   signatures. The resulting registry is used to identify decomposition rules that can be precompiled, improving
@@ -291,6 +295,7 @@
   a quantum register in unsigned or signed encoding convention into another quantum register.
   [(#9003)](https://github.com/PennyLaneAI/pennylane/pull/9003)
   [(#9558)](https://github.com/PennyLaneAI/pennylane/pull/9558)
+  [(#9769)](https://github.com/PennyLaneAI/pennylane/pull/9769)
 
 * A new :func:`~.single_qubit_zyz_angles` function that returns the pre-defined rotation angles
   of a ZYZ decomposition of a single-qubit operator has been added.
@@ -607,6 +612,10 @@
   ```
 
 <h3>Improvements 🛠</h3>
+
+* :func:`~.iterative_qpe` is now captured as a single :func:`~.capture.subroutine` instead of
+  falling back to an unrolled ``qp.for_loop``. 
+  [(#10220)](https://github.com/PennyLaneAI/pennylane/pull/10220)
 
 * Multi-controlled operators can now reuse a single :class:`~.TemporaryAND` ladder when enough
   zeroed work wires are available, reducing their decomposition gate counts.
@@ -1075,19 +1084,24 @@
   still remains.
   [(#9867)](https://github.com/PennyLaneAI/pennylane/pull/9867)
 
+* The `pennylane.qcut` module has been removed, including `cut_circuit`,
+  `cut_circuit_mc`, and the `WireCut` operator.
+  [(#10235)](https://github.com/PennyLaneAI/pennylane/pull/10235)
+
 * Removes `qp.Configuration` and the ability to pass a `config` to `pennylane.device`.
   [(#9879)](https://github.com/PennyLaneAI/pennylane/pull/9879)
   [(#9931)](https://github.com/PennyLaneAI/pennylane/pull/9931)
 
-* Removes all Continuous Variable (CV) code. This include `CV`, `CVOperation`, `CVObservable`,
+* Removes all Continuous Variable (CV) code. This includes `CV`, `CVOperation`, `CVObservable`,
   `DefaultGaussian`, `qp.gradients.param_shift_cv`, `qp.Rotation`, `qp.Squeezing`, `qp.Displacement`,
   `qp.Beamsplitter`, `qp.TwoModeSqueezing`, `qp.QuadraticPhase`, `qp.ControlledAddition`, `qp.ControlledPhase`,
   `qp.Kerr`, `qp.CrossKerr`, `qp.CubicPhase`, `qp.InterferometerUnitary`, `qp.CoherentState`,
   `qp.SqueezedState`, `qp.DisplacedSqueezedState`, `qp.ThermalState`, `qp.GaussianState`, `qp.FockState`,
   `qp.FockStateVector`, `qp.FockDensityMatrix`, `qp.CatState`, `qp.NumberOperator`, `qp.TensorN`,
   `qp.QuadX`, `qp.QuadP`, `qp.QuadOperator`, `qp.PolyXP`, `qp.FockStateProjector`,
-  `qp.DisplacementEmbedding`, `qp.SqueezingEmbedding`, `qp.CVNeuralNetLayers`, amd `qp.Interferomenter`.
+  `qp.DisplacementEmbedding`, `qp.SqueezingEmbedding`, `qp.CVNeuralNetLayers`, and `qp.Interferometer`.
   [(#9869)](https://github.com/PennyLaneAI/pennylane/pull/9869)
+  [(#10236)](https://github.com/PennyLaneAI/pennylane/pull/10236)
 
 * Support for Python 3.11 has been dropped. PennyLane now requires Python 3.12 or later.
   [(#9700)](https://github.com/PennyLaneAI/pennylane/pull/9700)
@@ -1155,9 +1169,6 @@
   are removed. Instead, please use the
   :func:`qp.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
   [(#9473)](https://github.com/PennyLaneAI/pennylane/pull/9473)
-
-* The `id` keyword argument to :class:`~.qcut.MeasureNode` and :class:`~.qcut.PrepareNode` has been renamed to `node_uid`.
-  [(#9467)](https://github.com/PennyLaneAI/pennylane/pull/9467)
 
 * The `id` keyword argument to :class:`~.ops.MidMeasure` has been renamed to `meas_uid`.
   [(#9467)](https://github.com/PennyLaneAI/pennylane/pull/9467)
@@ -1650,11 +1661,11 @@
 * Clarified the documentation for the :class:`~.QNode` to apply to more than just variational circuits.
   [(#9599)](https://github.com/PennyLaneAI/pennylane/pull/9599)
 
-* Added a warning to the :class:`~.DefaultGaussian` documentation noting that the device may not work as
-  expected with recent versions of PennyLane.
-  [(#9621)](https://github.com/PennyLaneAI/pennylane/pull/9621)
-
 <h3>Bug fixes 🐛</h3>
+
+* Fixed `qp.math.ceil_log2` returning results that were off by one
+  for inputs with more significant bits than a float can hold, like `2 ** 53 + 1`.
+  [(#10101)](https://github.com/PennyLaneAI/pennylane/pull/10101)
 
 * :func:`~.allocate` with zero wires no longer queues or captures :class:`~.allocation.Allocate`
   and :class:`~.allocation.Deallocate` instructions, including when used as a context manager.
