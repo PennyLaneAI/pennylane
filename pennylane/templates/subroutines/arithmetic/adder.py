@@ -23,7 +23,7 @@ from pennylane.decomposition import (
     register_resources,
 )
 from pennylane.decomposition.resources import resource_rep
-from pennylane.ops import CNOT, MultiControlledX, PauliX
+from pennylane.ops import CNOT, MultiControlledX, X
 from pennylane.ops.op_math import change_op_basis
 from pennylane.ops.op_math.adjoint import adjoint
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
@@ -47,7 +47,7 @@ def _increment(wires, control=()):
     for i in range(n):
         controls = wires[i + 1 :] + control
         if len(controls) == 0:
-            PauliX(wires[i])
+            X(wires[i])
         else:
             MultiControlledX(
                 wires=controls + wires[i : i + 1],
@@ -104,10 +104,11 @@ class Adder(Operator2):
         x_wires (Sequence[int]): the wires the operation acts on. The number of wires must be enough
             for encoding `x` in the computational basis. The number of wires also limits the
             maximum value for `mod`.
-        mod (int): the modulo for performing the addition. If not provided, it will be set to its maximum value, :math:`2^{\text{len(x_wires)}}`.
+        mod (int): the modulo for performing the addition. If not provided, it will be set to its
+            maximum value, :math:`2^{\text{len(x_wires)}}`.
         work_wires (Sequence[int]): the auxiliary wires to use for the addition. The
-            work wires are not needed if :math:`mod=2^{\text{len(x_wires)}}`, otherwise two work wires
-            should be provided. Defaults to empty tuple.
+            work wires are not needed if :math:`mod=2^{\text{len(x_wires)}}`, otherwise at least
+            two work wires should be provided. Defaults to empty tuple.
 
     **Example**
 
@@ -169,8 +170,10 @@ class Adder(Operator2):
 
         if mod is None:
             mod = 2 ** len(x_wires)
-        elif mod != 2 ** len(x_wires) and num_works_wires != 2:
-            raise ValueError(f"If mod is not 2^{len(x_wires)}, two work wires should be provided")
+        elif mod != 2 ** len(x_wires) and num_works_wires < 2:
+            raise ValueError(
+                f"If mod is not 2^{len(x_wires)}, at least two work wires should be provided"
+            )
         if not isinstance(k, int) or not isinstance(mod, int):
             raise ValueError("Both k and mod must be integers")
         if mod > 2 ** len(x_wires):
@@ -209,7 +212,7 @@ def _adder_decomposition(k, x_wires: WiresLike, mod, work_wires: WiresLike, **__
         work_wire = ()
     else:
         qft_wires = concatenate_wires(work_wires[:1], x_wires)
-        work_wire = work_wires[1:]
+        work_wire = work_wires[1:2]
 
     change_op_basis(QFT(qft_wires), PhaseAdder(k, qft_wires, mod, work_wire))
 
@@ -220,7 +223,7 @@ def _increment_resources(num_wires, num_control=0):
     for i in range(num_wires):
         num_controls = (num_wires - 1 - i) + num_control
         if num_controls == 0:
-            counts[PauliX] += 1
+            counts[X] += 1
         else:
             counts[MultiControlledX(Wire[num_controls + 1], work_wires=Wire[i])] += 1
     return counts
@@ -254,7 +257,7 @@ def _adder_arithmetic_resources(x_wires: WiresLike, mod, **_) -> dict:
     for rep, count in _add_constant_resources(aug, num_control=1).items():
         counts[rep] += count
     counts[CNOT] += 2
-    counts[PauliX] += 2
+    counts[X] += 2
     return dict(counts)
 
 
@@ -282,9 +285,9 @@ def _adder_arithmetic_decomposition(k, x_wires: WiresLike, mod, work_wires: Wire
     CNOT(wires=msb + flag)  # flag = 1 iff x + k < mod
     _add_constant(mod, aug, control=flag)  # add mod back when flag is set
     _add_constant(-k, aug)  # re-expose the branch in msb ...
-    PauliX(msb[0])
+    X(msb[0])
     CNOT(wires=msb + flag)  # ... to reset flag to 0
-    PauliX(msb[0])
+    X(msb[0])
     _add_constant(k, aug)  # aug <- (x + k) mod mod, work wires restored
 
 
