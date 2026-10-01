@@ -15,6 +15,7 @@
 Unit tests for the iterative_qpe function
 """
 
+import itertools
 from functools import partial
 
 import jax
@@ -22,6 +23,9 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.capture.base_interpreter import FlattenedInterpreter
+from pennylane.capture.primitives import measure_prim
+from pennylane.ops.mid_measure import MidMeasure
 
 
 class TestIQPE:
@@ -262,25 +266,183 @@ class TestCaptureIQPE:
 
         assert not [w for w in recwarn if issubclass(w.category, qp.exceptions.CaptureWarning)]
 
-    @pytest.mark.parametrize("iters", (2, 3, 4))
-    def test_subroutine_body_matches_uncaptured(self, iters):
-        """Test that the captured body matches the legacy tape implementation."""
+    # NOTE: This is an alternative to using 'plxpr_to_tape' which does not work for this specific inner for loop.
+    @pytest.mark.parametrize("iters", (1, 2, 3, 4))
+    def test_subroutine_body_structure(self, iters):
+        """Test the structure of the captured body: each round is a Hadamard, a controlled power
+        of the base, one ``for_loop`` of conditional phase corrections, a Hadamard and a
+        measurement with reset, all acting on the auxiliary wire.
 
-        # CAPTURE
+        NOTE: Drafted with the help of Jukebox
+
+        """
+
         jaxpr = jax.make_jaxpr(
             lambda phi: qp.iterative_qpe(qp.RZ(phi, wires=[0]), aux_wire=1, iters=iters)
         )(2.0)
-        cjaxpr = jaxpr.eqns[0].params["jaxpr"]
-        captured = qp.tape.plxpr_to_tape(cjaxpr.jaxpr, cjaxpr.consts, 2.0, 0, 1)
+        body = jaxpr.eqns[0].params["jaxpr"].jaxpr
+        aux = body.invars[-1]
 
-        # LEGACY TAPE
+        # ignore the array bookkeeping ('broadcast_in_dim', 'concatenate') of the outcomes
+        eqns = [e for e in body.eqns if e.primitive.name in ("operator", "for_loop", "measure")]
+        meas_outvars = []
+        for i in range(iters):
+            expected = ["Hadamard", "Pow2", "for_loop", "Hadamard", "measure"]
+
+            # no for loop if there are no measurements
+            if i == 0:
+                expected.remove("for_loop")
+
+            rnd, eqns = eqns[: len(expected)], eqns[len(expected) :]
+            names = [
+                e.params["op_cls"].__name__ if e.primitive.name == "operator" else e.primitive.name
+                for e in rnd
+            ]
+            assert names == expected
+
+            _, ctrl_pow, *_, meas = rnd
+            assert ctrl_pow.params["n_ctrls"] == 1
+            assert ctrl_pow.params["z"][0] == (2 ** (iters - i - 1),)
+            assert ctrl_pow.invars[-2] is aux  # control wire
+
+            assert meas.params["reset"] is True
+            assert all(e.invars[-1] is aux for e in (rnd[0], rnd[-2], meas))
+
+            if i > 0:
+                loop = rnd[2]
+                start, stop, step, *_ = loop.invars
+                assert (start.val, stop.val, step.val) == (0, i, 1)
+                # previous outcomes and the aux wire are the only loop arguments
+                assert loop.invars[-1] is aux
+
+                # the loop body only does classical indexing plus a single conditional
+                body_eqns = loop.params["jaxpr_body_fn"].eqns
+                quantum = [
+                    e for e in body_eqns if e.primitive.name in ("operator", "measure", "cond")
+                ]
+                (cond_eqn,) = quantum
+                assert cond_eqn.primitive.name == "cond"
+                true_branch, false_branch = cond_eqn.params["jaxpr_branches"]
+                assert not false_branch.eqns
+                (phase,) = (
+                    e for e in true_branch.eqns if e.primitive.name in ("operator", "measure")
+                )
+                assert phase.params["op_cls"] is qp.PhaseShift
+                # PhaseShift acts on the aux wire threaded through the loop and the cond
+                loop_body = loop.params["jaxpr_body_fn"]
+                assert cond_eqn.invars[-1] is loop_body.constvars[-1]
+                assert phase.invars[-1] is true_branch.constvars[-1]
+
+            meas_outvars.append(meas.outvars[0])
+
+        assert not eqns
+        # the most recent outcome is returned first
+        assert body.outvars == meas_outvars[::-1]
+
+    @pytest.mark.parametrize("iters", (1, 2, 3, 4))
+    def test_subroutine_body_matches_uncaptured(self, iters):
+        """Test that, for every combination of mid-circuit measurement outcomes, the captured
+        program applies exactly the same gates as the uncaptured circuit.
+
+        The uncaptured circuit is checked numerically against ``qp.QuantumPhaseEstimation`` in
+        ``TestIQPE``, so an exact match here makes the captured circuit correct too.
+
+        NOTE: Drafted with the help of Jukebox
+        """
+        phi, wire, aux_wire = 0.7, 3, 5
+
+        # ---------------------------------------------------------
+        # PHASE 1: GENERATE BOTH REPRESENTATIONS
+        # ---------------------------------------------------------
+
+        jaxpr = jax.make_jaxpr(
+            lambda p: qp.iterative_qpe(qp.RZ(p, wires=[wire]), aux_wire=aux_wire, iters=iters)
+        )(phi)
+
         qp.capture.disable()
-        with qp.queuing.AnnotatedQueue() as q:
-            qp.iterative_qpe(qp.RZ(2.0, wires=[0]), aux_wire=1, iters=iters)
-        expected = qp.tape.QuantumScript.from_queue(q)
-        qp.capture.enable()
+        try:
+            with qp.queuing.AnnotatedQueue() as q:
+                mcm_values = qp.iterative_qpe(
+                    qp.RZ(phi, wires=[wire]), aux_wire=aux_wire, iters=iters
+                )
+            uncaptured = qp.tape.QuantumScript.from_queue(q).operations
+        finally:
+            qp.capture.enable()
 
-        assert [type(op) for op in captured.operations] == [type(op) for op in expected.operations]
+        # 'iterative_qpe' returns the most recent outcome first (it uses insert(0, m)).
+        # We need to map each symbolic MeasurementValue back to its chronological iteration
+        # step (0 to iters-1) so we can feed it the correct forced bit later.
+        rounds = {mv.measurements[0]: i for i, mv in enumerate(reversed(mcm_values))}
+
+        # ---------------------------------------------------------
+        # PHASE 2: DEFINE THE JAXPR INTERPRETER
+        # ---------------------------------------------------------
+
+        class _FixedOutcomes(FlattenedInterpreter):
+            """Evaluates a plxpr with each mid-circuit measurement returning a fixed outcome, and records
+            the gates applied and the measurements made."""
+
+            def __init__(self, outcomes):
+                super().__init__()
+                # 'outcomes' is a predefined sequence of 1s and 0s (e.g., (1, 0, 1))
+                self.outcomes = iter(outcomes)
+                self.ops = []  # List to store the flat sequence of gates actually executed
+
+            def interpret_operation(self, op):
+                # For standard quantum gates (Hadamard, PhaseShift), just record them.
+                self.ops.append(op)
+                return op
+
+        # Intercept JAX primitive measurement nodes. Instead of doing quantum math,
+        # record the measurement intent as a tuple, and return the next hardcoded bit.
+        @_FixedOutcomes.register_primitive(measure_prim)
+        def _fixed_measure(self, wires, reset, postselect):
+            self.ops.append(("measure", qp.wires.Wires(int(wires)), reset, postselect))
+            return jax.numpy.int32(next(self.outcomes))
+
+        # ---------------------------------------------------------
+        # PHASE 3: SIMULATE EVERY POSSIBLE MEASUREMENT PATH
+        # ---------------------------------------------------------
+
+        # itertools.product((0,1), repeat=iters) generates all possible bitstrings.
+        # e.g., for iters=2: (0,0), (0,1), (1,0), (1,1)
+        for outcomes in itertools.product((0, 1), repeat=iters):
+
+            # 1. EVALUATE CAPTURED CIRCUIT
+            captured = _FixedOutcomes(outcomes)
+            # This walks the JAXpr graph. When it hits a 'cond', it uses the forced bits
+            # returned by _fixed_measure to decide which branch to take.
+            returned = captured.eval(jaxpr.jaxpr, jaxpr.consts, phi)
+
+            # Verify the function returns the measurements in reverse-chronological order
+            assert [int(r) for r in returned] == list(outcomes[::-1])
+
+            # 2. EVALUATE UNCAPTURED CIRCUIT
+            expected = []
+            for op in uncaptured:
+                if isinstance(op, MidMeasure):
+                    # Record measurements as tuples to match the captured formatting
+                    expected.append(("measure", op.wires, op.reset, op.postselect))
+                elif isinstance(op, qp.ops.Conditional):
+                    # For uncaptured conditionals, classically evaluate the boolean condition
+                    # using our mocked 'outcomes' bits.
+                    bits = [outcomes[rounds[m]] for m in op.meas_val.measurements]
+                    # If the condition evaluates to True, append the underlying gate (e.g. PhaseShift)
+                    if op.meas_val.processing_fn(*bits):
+                        expected.append(op.base)
+                else:
+                    # Append standard unconditional gates (Hadamards, C-Unitary)
+                    expected.append(op)
+
+            # 3. ASSERT EXACT MATCH
+            # Ensure both systems decided to apply the exact same number and sequence of gates
+            # under this specific measurement path.
+            assert len(captured.ops) == len(expected)
+            for actual, op in zip(captured.ops, expected, strict=True):
+                if isinstance(op, tuple):
+                    assert actual == op
+                else:
+                    qp.assert_equal(actual, op, check_interface=False, check_trainability=False)
 
     def test_subroutine_is_shared_if_different_dyn_args(self):
         """Test that two calls share one subroutine body."""
