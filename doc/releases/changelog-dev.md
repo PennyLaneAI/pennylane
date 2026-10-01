@@ -11,6 +11,7 @@
   Jones repeat-until-success construction for Clifford+T workflows.
   See the [compilation hub](https://pennylane.ai/compilation/phase-gradient/) for more details on the state and how to use it in rotations.
   [(#10227)](https://github.com/PennyLaneAI/pennylane/pull/10227)
+  [(#10245)](https://github.com/PennyLaneAI/pennylane/pull/10245)
 
   ```pycon
   import pennylane as qp
