@@ -19,6 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.decomposition.decomposition_rule import _fix_decomp
 from pennylane.exceptions import WireError
 
 phase_gradient_decomp = import_module(
@@ -238,16 +239,18 @@ def test_qjit_graph_decomposition_and_all_mlir_specs():
         "measure",
     }
 
-    @qp.qjit(capture=True, target="mlir")
-    @catalyst.passes.graph_decomposition(gate_set=gate_set)
-    @qp.qnode(qp.device("null.qubit", wires=3 * num_wires - 1))
-    def circuit():
-        # Calling the rule directly is temporary. Catalyst cannot yet capture a local fixed
-        # decomposition for an operator absent from COMPILER_OPS_FOR_DECOMPOSITION.
-        rule(wires=registers["grad"])
-        return qp.state()
+    with qp.decomposition.local_decomps():
+        _fix_decomp(qp.PhaseGradientStatePrep, rule)
 
-    specs = qp.specs(circuit, level="all-mlir")()
+        @qp.qjit(capture=True, target="mlir")
+        @catalyst.passes.graph_decomposition(gate_set=gate_set)
+        @qp.qnode(qp.device("null.qubit", wires=3 * num_wires - 1))
+        def circuit():
+            qp.PhaseGradientStatePrep(registers["grad"])
+            return qp.state()
+
+        specs = qp.specs(circuit, level="all-mlir")()
+
     final_resources = specs.resources[max(specs.resources)]
     gate_types = final_resources.quantum_operations
 

@@ -236,10 +236,9 @@ def make_phase_gradient_distillation_decomp(aux_wires, work_wires, mode="repeat-
         measurement-assisted uncomputation of :class:`~.TemporaryAND`; omitting it can double
         the :math:`T` count.
 
-        Catalyst releases that do not yet include ``PhaseGradientStatePrep`` in their operator
-        registry cannot attach this local rule through ``fixed_decomps``. With those releases,
-        call the returned rule directly inside the captured QNode. The nested retry loops and
-        subsequent graph decomposition are unchanged.
+        For Catalyst capture, fix the generated rule with the developer-facing ``_fix_decomp``
+        function inside a :func:`~.decomposition.local_decomps` context. Keep the context active
+        while lazy qjit capture or ``specs`` runs.
     """
     if mode not in {"repeat-until-success", "postselect"}:
         raise ValueError("mode must be 'repeat-until-success' or 'postselect'; " f"got {mode!r}.")
