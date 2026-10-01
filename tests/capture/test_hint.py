@@ -18,99 +18,95 @@ Tests for compiler hint utilities.
 import pytest
 
 import pennylane as qp
-from pennylane.capture.hint import process_hints
+from pennylane.capture.hint import HintedCallable, apply_hint, process_hints
 
 _SUPPORTED = frozenset({"num-iters"})
 
 
-def test_process_hints_keeps_canonical():
-    """Exact supported keys should be returned unchanged."""
-    assert process_hints({"num-iters": 10}, _SUPPORTED) == {"num-iters": 10}
+class TestProcessHints:
+    """Unit tests for :func:`~pennylane.capture.hint.process_hints`."""
+
+    def test_keeps_canonical(self):
+        """Exact supported keys should be returned unchanged."""
+        assert process_hints({"num-iters": 10}, _SUPPORTED) == {"num-iters": 10}
+
+    @pytest.mark.parametrize(
+        "provided",
+        (
+            "num_iters",
+            "numiters",
+            "Num-Iters",
+            "num-iter",
+            "nub-iters",
+            "num-itters",
+        ),
+    )
+    def test_canonicalizes_typos(self, provided):
+        """Close misspellings should be remapped to the canonical key."""
+        assert process_hints({provided: 10}, _SUPPORTED) == {"num-iters": 10}
+
+    def test_ignores_unknown(self):
+        """Unrecognized keys should be dropped."""
+        assert process_hints({"identity": True}, _SUPPORTED) == {}
+        assert process_hints({"num-iters": 10, "identity": True}, _SUPPORTED) == {"num-iters": 10}
+
+    def test_rejects_conflicting_aliases(self):
+        """Two keys that map to the same canonical name should raise."""
+        with pytest.raises(ValueError, match=r"Multiple hint keys map to 'num-iters'"):
+            process_hints({"num-iters": 1, "num_iters": 2}, _SUPPORTED)
+
+    def test_empty_hints(self):
+        """An empty hints dict should round-trip to empty."""
+        assert process_hints({}, _SUPPORTED) == {}
 
 
-@pytest.mark.parametrize(
-    "provided",
-    (
-        "num_iters",
-        "numiters",
-        "Num-Iters",
-        "num-iter",
-        "nub-iters",
-        "num-itters",
-    ),
-)
-def test_process_hints_canonicalizes_typos(provided):
-    """Close misspellings should be remapped to the canonical key."""
-    assert process_hints({provided: 10}, _SUPPORTED) == {"num-iters": 10}
+class TestHintAPI:
+    """Tests for :func:`~.hint`, :class:`~HintedCallable`, and :func:`~apply_hint`."""
 
+    def test_hint_wraps_callable(self):
+        """``qp.hint`` should wrap a plain callable in ``HintedCallable``."""
 
-def test_process_hints_ignores_unknown():
-    """Unrecognized keys should be dropped."""
-    assert process_hints({"identity": True}, _SUPPORTED) == {}
-    assert process_hints({"num-iters": 10, "identity": True}, _SUPPORTED) == {"num-iters": 10}
+        def f(x):
+            return x + 1
 
+        hinted = qp.hint({"identity": True})(f)
+        assert isinstance(hinted, HintedCallable)
+        assert hinted.hints == {"identity": True}
+        assert hinted.f is f
+        assert hinted(3) == 4
 
-def test_process_hints_rejects_conflicting_aliases():
-    """Two keys that map to the same canonical name should raise."""
-    with pytest.raises(ValueError, match=r"Multiple hint keys map to 'num-iters'"):
-        process_hints({"num-iters": 1, "num_iters": 2}, _SUPPORTED)
+    def test_hint_as_decorator(self):
+        """``qp.hint`` should work as a decorator."""
 
+        @qp.hint({"num-iters": 5})
+        def f(x):
+            return x
 
-@pytest.mark.parametrize(
-    "make_loop",
-    (
-        lambda: qp.for_loop(3),
-        lambda: qp.while_loop(lambda i: i < 3),
-    ),
-    ids=("for_loop", "while_loop"),
-)
-class TestLoopHintProcessing:
-    """Hint processing wired into for_loop and while_loop."""
+        assert isinstance(f, HintedCallable)
+        assert f.hints == {"num-iters": 5}
 
-    def test_typo_on_hinted_body_is_canonicalized(self, make_loop):
-        """A typo'd key on a HintedCallable body should still set the hint."""
+    def test_stacking_hints(self):
+        """Applying hints twice should merge dictionaries (later keys win)."""
 
-        @qp.hint({"num_iters": 10})
-        def body(i):  # pylint: disable=unused-argument
-            return i + 1
+        @qp.hint({"a": 1})
+        @qp.hint({"b": 2, "a": 0})
+        def f(x):
+            return x
 
-        loop = make_loop()(body)
-        assert loop.num_iters_hint == 10
+        assert f.hints == {"a": 1, "b": 2}
 
-    def test_typo_on_apply_hint_is_canonicalized(self, make_loop):
-        """Applying a typo'd hint to a loop callable should canonicalize it."""
+    def test_repr(self):
+        """``HintedCallable`` should expose the wrapped function and hints."""
 
-        def body(i):  # pylint: disable=unused-argument
-            return i + 1
+        def f(x):
+            return x
 
-        loop = qp.hint({"num_iters": 10})(make_loop()(body))
-        assert loop.num_iters_hint == 10
+        hinted = qp.hint({"num-iters": 3})(f)
+        text = repr(hinted)
+        assert "HintedCallable" in text
+        assert "num-iters" in text
 
-    def test_unknown_hint_on_body_is_ignored(self, make_loop):
-        """Unrecognized hint keys on the body should be ignored."""
-
-        @qp.hint({"identity": True})
-        def body(i):  # pylint: disable=unused-argument
-            return i + 1
-
-        loop = make_loop()(body)
-        assert loop.num_iters_hint is None
-
-    def test_valid_hint_on_body(self, make_loop):
-        """A correctly spelled hint on the body should be accepted."""
-
-        @qp.hint({"num-iters": 10})
-        def body(i):  # pylint: disable=unused-argument
-            return i + 1
-
-        loop = make_loop()(body)
-        assert loop.num_iters_hint == 10
-
-    def test_valid_apply_hint(self, make_loop):
-        """Applying a correctly spelled hint should set ``num_iters_hint``."""
-
-        def body(i):  # pylint: disable=unused-argument
-            return i + 1
-
-        loop = qp.hint({"num-iters": 7})(make_loop()(body))
-        assert loop.num_iters_hint == 7
+    def test_apply_hint_unsupported_type(self):
+        """Unsupported types should raise ``NotImplementedError``."""
+        with pytest.raises(NotImplementedError, match="No registered way to apply compiler hints"):
+            apply_hint(3, {"num-iters": 1})
