@@ -24,12 +24,21 @@ from pennylane.templates.subroutines.arithmetic.adder import _adder_arithmetic_d
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
-def test_standard_validity_Adder():
+@pytest.mark.parametrize(
+    "mod, work_wires",
+    [
+        (11, [4, 5]),
+        pytest.param(
+            16,
+            [],
+            marks=pytest.mark.xfail_if_capture(reason="Needs PhaseAdder to be Op2 [sc-130164]"),
+        ),
+    ],
+)
+def test_standard_validity_Adder(mod, work_wires):
     """Check the operation using the assert_valid function."""
     k = 6
-    mod = 11
     x_wires = [0, 1, 2, 3]
-    work_wires = [4, 5]
     op = qp.Adder(k, x_wires=x_wires, mod=mod, work_wires=work_wires)
     qp.ops.functions.assert_valid(op)
 
@@ -249,18 +258,25 @@ class TestAdder:
         mat1, mat2 = qp.matrix(ctrl_op1, wire_order), qp.matrix(ctrl_op2, wire_order)
         assert qp.math.allclose(mat1, mat2)
 
-    @pytest.mark.xfail_if_capture(reason="Needs PhaseAdder to be Op2 [sc-130164]", strict=False)
     @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("rule", qp.list_decomps(qp.Adder), ids=lambda rule: rule.name)
     @pytest.mark.parametrize("mod", [7, 8])
-    def test_decomposition_new(self, mod):
+    def test_decomposition_new(self, rule, mod, request):
         """Tests the decomposition rules implemented with the new system."""
 
         k = 4
         x_wires = [2, 3, 4]
         work_wires = [0, 1]
+        if (
+            qp.capture.enabled()
+            and rule.name == "_adder_decomposition"
+            and mod == 2 ** len(x_wires)
+        ):
+            request.applymarker(
+                pytest.mark.xfail(reason="Needs PhaseAdder to be Op2 [sc-130164]", strict=True)
+            )
         op = qp.Adder(k, x_wires, mod, work_wires)
-        for rule in qp.list_decomps(qp.Adder):
-            _test_decomposition_rule(op, rule)
+        _test_decomposition_rule(op, rule)
 
     @pytest.mark.parametrize(
         ("k", "x_wires", "mod", "work_wires"),
