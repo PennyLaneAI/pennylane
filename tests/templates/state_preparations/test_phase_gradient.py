@@ -62,20 +62,29 @@ class TestDecomposition:
         assert returned_list == expected
         assert q.queue == expected
 
+    @pytest.mark.parametrize("use_qjit", [False, pytest.param(True, marks=pytest.mark.catalyst)])
     @pytest.mark.parametrize("num_wires", [1, 2, 3, 4, 7])
-    def test_decomposition_prepares_state(self, num_wires):
+    def test_decomposition_prepares_state(self, num_wires, use_qjit):
         """Test that executing the decomposition prepares the phase gradient state."""
+
         gate_set = {"Hadamard", "PauliZ", "Adjoint(S)", "Adjoint(T)", "PhaseShift"}
 
-        @qp.transforms.decompose(gate_set=gate_set)
-        @qp.qnode(qp.device("default.qubit", wires=num_wires))
+        @qp.qnode(qp.device("lightning.qubit", wires=num_wires))
         def circuit():
             qp.PhaseGradientStatePrep(wires=range(num_wires))
             return qp.state()
 
-        tape = qp.workflow.construct_tape(circuit)()
-        print([op.name for op in tape.operations])
-        assert all(op.name in gate_set for op in tape.operations)
+        if use_qjit:
+            import catalyst
+
+            # TODO: Use `decompose` for this branch as well once graph_decomposition is integrated
+            circuit = catalyst.passes.graph_decomposition(circuit, gate_set=gate_set)
+            circuit = qp.qjit(circuit, capture=True)
+
+        else:
+            circuit = qp.transforms.decompose(circuit, gate_set=gate_set)
+            tape = qp.workflow.construct_tape(circuit)()
+            assert all(op.name in gate_set for op in tape.operations)
         assert np.allclose(circuit(), _expected_state(num_wires))
 
     def test_custom_wire_labels(self):
