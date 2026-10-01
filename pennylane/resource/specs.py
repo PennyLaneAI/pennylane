@@ -753,15 +753,6 @@ def specs(
     specs_fn = _specs_qnode if isinstance(qnode, qp.QNode) else None
 
     if specs_fn is None:
-        try:
-            from ..qnn.torch import TorchLayer
-
-            if isinstance(qnode, TorchLayer) and isinstance(qnode.qnode, qp.QNode):
-                specs_fn = _specs_qnode
-        except ImportError:  # pragma: no cover
-            pass
-
-    if specs_fn is None:
         try:  # pragma: no cover
             # This is tested by integration tests within the Catalyst frontend
             import catalyst

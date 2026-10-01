@@ -27,7 +27,6 @@ from .resolution import _resolve_execution_config
 
 if TYPE_CHECKING:
     from pennylane.core.qscript import QuantumScriptBatch
-    from pennylane.qnn.torch import TorchLayer
     from pennylane.typing import PostprocessingFn
 
     from .qnode import QNode
@@ -136,10 +135,7 @@ def _get_inner_transform_slice(
     return slice(start, stop, level.step)
 
 
-def construct_batch(
-    qnode: QNode | TorchLayer,
-    level: str | int | slice = "user",
-) -> Callable:
+def construct_batch(qnode: QNode, level: str | int | slice = "user") -> Callable:
     """Construct the batch of tapes and post processing for a designated stage in the transform program.
 
     Args:
@@ -231,18 +227,11 @@ def construct_batch(
 
     """
     _validate_level(level)
-    is_torch_layer = type(qnode).__name__ == "TorchLayer"
     user_program = qnode.compile_pipeline
     num_user_transforms = len(user_program)
 
     def batch_constructor(*args, **kwargs) -> tuple[QuantumScriptBatch, PostprocessingFn]:
         """Create a batch of tapes and a post processing function."""
-        if is_torch_layer:
-            x = args[0]
-            kwargs = {
-                **{arg: weight.to(x) for arg, weight in qnode.qnode_weights.items()},
-            }
-
         initial_tape = make_qscript(qnode.func, shots=qnode.shots)(*args, **kwargs)
         params = initial_tape.get_parameters(trainable_only=False)
         initial_tape.trainable_params = math.get_trainable_indices(params)

@@ -235,11 +235,3 @@ the GPU will dominate performance; for less than 15 wires, the GPU will probably
 >>> params = params.to(device=torch.device('cuda'))
 >>> timeit.timeit("circuit_cuda(params)", globals=globals(), number=5)
 2.297812332981266
-
-Torch.nn integration
---------------------
-
-Once you have a Torch-compaible QNode, it is easy to convert this into a ``torch.nn`` layer. To help
-automate this process, PennyLane also provides a :class:`~.qnn.TorchLayer` class to easily
-convert a QNode to a ``torch.nn`` layer. Please see the corresponding :class:`~.qnn.TorchLayer`
-documentation for more details and examples.
