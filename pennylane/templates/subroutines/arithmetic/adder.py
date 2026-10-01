@@ -208,13 +208,11 @@ def _adder_decomposition_resources(x_wires: WiresLike, mod, **_) -> dict:
 @register_resources(_adder_decomposition_resources)
 def _adder_decomposition(k, x_wires: WiresLike, mod, work_wires: WiresLike, **__):
     if mod == 2 ** len(x_wires):
-        qft_wires = x_wires
-        work_wire = ()
-    else:
-        qft_wires = concatenate_wires(work_wires[:1], x_wires)
-        work_wire = work_wires[1:2]
+        change_op_basis(QFT(x_wires), PhaseAdder(k, x_wires, mod))
+        return
 
-    change_op_basis(QFT(qft_wires), PhaseAdder(k, qft_wires, mod, work_wire))
+    qft_wires = concatenate_wires(work_wires[:1], x_wires)
+    change_op_basis(QFT(qft_wires), PhaseAdder(k, qft_wires, mod, work_wires[1:2]))
 
 
 def _increment_resources(num_wires, num_control=0):

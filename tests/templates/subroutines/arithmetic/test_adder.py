@@ -24,17 +24,7 @@ from pennylane.templates.subroutines.arithmetic.adder import _adder_arithmetic_d
 
 
 @pytest.mark.usefixtures("enable_and_disable_capture")
-@pytest.mark.parametrize(
-    "mod, work_wires",
-    [
-        (11, [4, 5]),
-        pytest.param(
-            16,
-            [],
-            marks=pytest.mark.xfail_if_capture(reason="Needs PhaseAdder to be Op2 [sc-130164]"),
-        ),
-    ],
-)
+@pytest.mark.parametrize("mod, work_wires", [(11, [4, 5]), (16, [])])
 def test_standard_validity_Adder(mod, work_wires):
     """Check the operation using the assert_valid function."""
     k = 6
@@ -261,20 +251,12 @@ class TestAdder:
     @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("rule", qp.list_decomps(qp.Adder), ids=lambda rule: rule.name)
     @pytest.mark.parametrize("mod", [7, 8])
-    def test_decomposition_new(self, rule, mod, request):
+    def test_decomposition_new(self, rule, mod):
         """Tests the decomposition rules implemented with the new system."""
 
         k = 4
         x_wires = [2, 3, 4]
         work_wires = [0, 1]
-        if (
-            qp.capture.enabled()
-            and rule.name == "_adder_decomposition"
-            and mod == 2 ** len(x_wires)
-        ):
-            request.applymarker(
-                pytest.mark.xfail(reason="Needs PhaseAdder to be Op2 [sc-130164]", strict=True)
-            )
         op = qp.Adder(k, x_wires, mod, work_wires)
         _test_decomposition_rule(op, rule)
 
