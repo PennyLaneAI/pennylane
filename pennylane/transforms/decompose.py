@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import warnings
 from collections.abc import Callable, Generator, Iterable, Sequence
+from functools import partial
 
 from pennylane.allocation import Allocate, Deallocate
 from pennylane.core import queuing
@@ -31,7 +32,6 @@ from pennylane.ops import Conditional, GlobalPhase
 from pennylane.templates import SubroutineOp
 from pennylane.transforms.core import transform
 
-from functools import partial
 
 def null_postprocessing(results):
     """A postprocessing function returned by a transform that only converts the batch of results
