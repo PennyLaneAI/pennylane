@@ -349,7 +349,6 @@ class QubitizationTHC(Operator2):
                 wires["system_wires"], wires["index_wires"], wires["prep_garbage_wires"],
                 gradient, wires["work_wires"],
             )
-            qp.adjoint(qp.PhaseGradientStatePrep(gradient))
 
             return qp.probs(wires=wires["index_wires"] + wires["prep_garbage_wires"])
 
