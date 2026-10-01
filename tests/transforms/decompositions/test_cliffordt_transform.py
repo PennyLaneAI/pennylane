@@ -34,7 +34,7 @@ from pennylane.transforms.decompositions.clifford_t_transform import (
 )
 from pennylane.transforms.optimization.optimization_utils import _fuse_global_phases
 
-_SKIP_GATES = (qp.Barrier, qp.Snapshot, qp.WireCut)
+_SKIP_GATES = (qp.Barrier, qp.Snapshot)
 _CLIFFORD_PHASE_GATES = _CLIFFORD_T_GATES + _SKIP_GATES
 
 INVSQ2 = 1 / math.sqrt(2)
@@ -83,7 +83,6 @@ def circuit_3():
     qp.PauliX(wires=[1])
     qp.ISWAP(wires=[0, 1])
     qp.Hadamard(wires=[0])
-    qp.WireCut(wires=[1])
     qp.RZ(PI, wires=[0])
     return qp.expval(qp.PauliZ(0))
 
@@ -159,7 +158,6 @@ class TestCliffordCompile:
             (qp.PhaseShift(2 * PI, wires=["a"]), True),
             (qp.ECR(wires=["e", "f"]), True),
             (qp.CH(wires=["a", "b"]), False),
-            (qp.WireCut(0), False),
         ],
     )
     def test_clifford_checker(self, op, res):

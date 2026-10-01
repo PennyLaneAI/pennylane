@@ -179,7 +179,6 @@ Non-parametrized gates
     ~pennylane.SQISW
     ~pennylane.MultiControlledX
     ~pennylane.Barrier
-    ~pennylane.WireCut
 
 :html:`</div>`
 

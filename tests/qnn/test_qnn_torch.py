@@ -793,9 +793,8 @@ def test_vjp_is_unwrapped_for_param_shift():
     """Test that the intermediate vjps used by the batch Torch interface
     are unwrapped and no error is raised for a custom operation.
 
-    Note: the execution flow of the operation resembles the implementation
-    of the Kerr gate in Strawberry Fields as a similar example was failing
-    for qp.Kerr and the strawberryfields.fock device.
+    Note: the execution flow of the operation resembles a custom diagonal
+    gate whose matrix is built from a trainable parameter.
     """
     nqubits = 2
 
