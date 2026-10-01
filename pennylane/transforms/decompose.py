@@ -31,6 +31,7 @@ from pennylane.ops import Conditional, GlobalPhase
 from pennylane.templates import SubroutineOp
 from pennylane.transforms.core import transform
 
+from functools import partial
 
 def null_postprocessing(results):
     """A postprocessing function returned by a transform that only converts the batch of results
@@ -39,7 +40,7 @@ def null_postprocessing(results):
     return results[0]
 
 
-@transform
+@partial(transform, pass_name="graph_decomposition")
 def decompose(
     tape,
     *,
