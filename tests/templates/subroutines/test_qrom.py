@@ -20,6 +20,7 @@ from functools import partial
 
 import numpy
 import pytest
+from capture_utils import loop_hints
 
 import pennylane as qp
 from pennylane import numpy as np
@@ -32,6 +33,7 @@ from pennylane.templates.subroutines.qrom import (
     _qrom_measurement_condition,
     _qrom_measurement_decomposition,
     _qrom_measurement_resources,
+    _qrom_unary_iteration,
     _select_swap,
 )
 from pennylane.typing import AbstractArray, Bool, Int, Wire
@@ -401,6 +403,43 @@ class TestQROM:
         # pylint: disable-next=protected-access
         rule = qp.capture.subroutine(partial(_select_swap._impl, clean=clean))
         _ = jax.make_jaxpr(rule)(**kwargs)
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize(
+        ("num_bitstrings", "num_controls"),
+        [(3, 2), (4, 2), (5, 3), (6, 3), (8, 3), (11, 4), (16, 4), (21, 5)],
+    )
+    def test_unary_iteration_num_iters_hints(self, num_bitstrings, num_controls, seed):
+        """Test that the elbow ladder loops of the unary iteration carry ``num-iters`` hints that
+        reproduce the number of elbows applied within the main loop."""
+        import jax
+
+        rng = np.random.default_rng(seed)
+        bitstrings = rng.integers(0, 2, size=(num_bitstrings, 2))
+        control_wires = list(range(num_controls))
+        target_wires = [num_controls, num_controls + 1]
+        work_wires = list(range(num_controls + 2, 2 * num_controls + 1))
+
+        plxpr = jax.make_jaxpr(
+            lambda: _qrom_unary_iteration(
+                bitstrings, control_wires, target_wires, work_wires, clean=True
+            )
+        )()
+        ops = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
+        num_left_elbows = sum(isinstance(op, TemporaryAND) for op in ops)
+        num_right_elbows = sum(
+            isinstance(op, qp.ops.Adjoint) and isinstance(op.base, TemporaryAND) for op in ops
+        )
+        # Opening and closing ladders outside of the main loop have ``num_controls - 1`` elbows
+        num_main_loop_iterations = num_bitstrings - 1
+        expected_left = (num_left_elbows - num_controls + 1) / num_main_loop_iterations
+        expected_right = (num_right_elbows - num_controls + 1) / num_main_loop_iterations
+
+        assert loop_hints(plxpr.jaxpr) == [
+            None,
+            pytest.approx(expected_right),
+            pytest.approx(expected_left),
+        ]
 
 
 @pytest.mark.parametrize(

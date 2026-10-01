@@ -20,10 +20,11 @@ import warnings
 import numpy as np
 
 from pennylane import capture, compiler, math
+from pennylane.capture import hint
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.ops import SWAP, ControlledPhaseShift, Hadamard, PhaseShift, cond
+from pennylane.ops import SWAP, ControlledPhaseShift, Hadamard, PhaseShift
 from pennylane.ops.op_math.controlled2 import _ctrl_abstract
 from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
@@ -128,17 +129,17 @@ class AQFT(Operator2):
 
     def __init__(self, order: int, wires: WiresLike) -> None:
         wires = Wires(wires)
-        n_wires = len(wires)
+        num_wires = len(wires)
 
         if not isinstance(order, int):
             warnings.warn(f"The order must be an integer. Using order = {round(order)}.")
             order = round(order)
 
-        if order >= n_wires - 1:
+        if order >= num_wires - 1:
             warnings.warn(
-                f"The order ({order}) is >= to the number of wires - 1 ({n_wires - 1}). Using the QFT class is recommended in this case."
+                f"The order ({order}) is >= to the number of wires - 1 ({num_wires - 1}). Using the QFT class is recommended in this case."
             )
-            order = n_wires - 1
+            order = num_wires - 1
 
         if order < 0:
             raise ValueError("Order can not be less than 0")
@@ -161,33 +162,29 @@ def _AQFT_resources(order, wires):
 
 @register_resources(_AQFT_resources)
 def _AQFT_decomposition(wires, order):
-    n_wires = len(wires)
-    shifts = [2 * np.pi * 2**-i for i in range(2, n_wires + 1)]
+    num_wires = len(wires)
+    shifts = [2 * np.pi * 2**-i for i in range(2, num_wires + 1)]
 
     if compiler.active() or capture.enabled():
         shifts = math.array(shifts, like="jax")
         wires = math.array(wires, like="jax")
 
-    @for_loop(len(wires))
+    total_inner_iters = sum(min(num_wires - 1 - i, order) for i in range(num_wires))
+    average_inner_iters = total_inner_iters / num_wires
+
+    @for_loop(num_wires)
     def wire_loop(i):
         wire = wires[i]
         Hadamard(wire)
 
-        @for_loop(n_wires - 1 - i)
-        def wires_limited_shift_loop(j):
+        @hint({"num-iters": average_inner_iters})
+        @for_loop(math.min(math.array([num_wires - 1 - i, order], like=math.get_interface(i))))
+        def cphase_loop(j):
             shift = shifts[j]
             control_wire = wires[i + 1 + j]
-
             ControlledPhaseShift(shift, wires=[control_wire, wire])
 
-        @for_loop(order)
-        def order_limited_shift_loop(j):
-            shift = shifts[j]
-            control_wire = wires[i + 1 + j]
-
-            ControlledPhaseShift(shift, wires=[control_wire, wire])
-
-        cond(n_wires - 1 - i < order, wires_limited_shift_loop, order_limited_shift_loop)()
+        cphase_loop()  # pylint: disable=no-value-for-parameter
 
     wire_loop()  # pylint: disable=no-value-for-parameter
 

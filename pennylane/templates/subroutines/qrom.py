@@ -23,6 +23,7 @@ import numpy as np
 
 from pennylane import capture, compiler, math
 from pennylane import ops as qp_ops
+from pennylane.capture import hint
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import (
@@ -860,67 +861,72 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires):
     for i in range(1, len(triples)):
         TemporaryAND(triples[i], (1, 0))
 
-    # [dwierichs] todo: Once resource hints are merged, use those estimates:
-    # [sc-129626] [sc-129627]
+    # [dwierichs] todo: Once resource hints for cond are merged, use those estimates:
+    # [sc-129627]
     # quarter_prob = int(K > (1 << (c - 2))) / (K - 1)
     # mid_prob = int(K > (1 << (c - 1))) / (K - 1)
-    # est_ladder_len = float(
-    # np.mean([math.bitwise_count(math.bitwise_xor(k, k + 1)) - 1 for k in range(K - 1)])
-    # )
 
-    # Loop over all bitstrings but the last one
-    def loop(k):
-        # 1. load bitstrings[k], controlled on the flag circuit
-        ctrl(MultiX(bitstrings[k], target_wires), control=[flag])
+    if K > 1:
+        # Average length of the elbow ladders below, which is min(t, c - 2) for t trailing ones in k
+        # ladder_lens = [min((k ^ (k + 1)).bit_count() - 1, c - 2) for k in range(K - 1)]
+        # est_ladder_len = sum(ladder_lens) / (K - 1)
+        # Compute total elbow count, subtract the leading ones outside of `loop`, and divide by
+        # outer iteration count.
+        more_than_half = int(K > 2 ** (c - 1))
+        num_elbows = c + K - 2 - (K - 1).bit_count() - more_than_half
+        average_ladder_len = (num_elbows - len(triples)) / (K - 1)
 
-        # 2. transition address k -> k+1
-        # a is the MSB-first index of least-significant 0 bit of k
-        a = c - math.bitwise_count(math.bitwise_xor(k, k + 1)).astype(int)
+        # Loop over all bitstrings but the last one
+        def loop(k):
+            # 1. load bitstrings[k], controlled on the flag circuit
+            ctrl(MultiX(bitstrings[k], target_wires), control=[flag])
 
-        # Whether we are in the first half of the iteration, so that the top bit
-        # has not been flipped yet
-        top_not_flipped = k < (1 << (c - 1))
+            # 2. transition address k -> k+1
+            # a is the MSB-first index of least-significant 0 bit of k
+            a = c - math.bitwise_count(math.bitwise_xor(k, k + 1)).astype(int)
 
-        # 2a. right-elbow ladder: uncompute levels c-2 .. max(a,1) (top-down)
-        lower_bound = math.max(math.array([a, 1], like=a))
+            # Whether we are in the first half of the iteration, so that the top bit
+            # has not been flipped yet
+            top_not_flipped = k < (1 << (c - 1))
 
-        @for_loop(c - 2, lower_bound - 1, -1)
-        # Once resource hints are merged, use those estimates:
-        # @for_loop(c - 2, max(a - 1, 0), -1, estimated_iterations=est_ladder_len)
-        def uncompute(i):
-            qp_ops.adjoint(TemporaryAND)(wires=triples[i])
+            # 2a. right-elbow ladder: uncompute levels c-2 .. max(a,1) (top-down)
+            lower_bound = math.max(math.array([a, 1], like=a))
 
-        uncompute()  # pylint: disable=no-value-for-parameter
+            @hint({"num-iters": average_ladder_len})
+            @for_loop(c - 2, lower_bound - 1, -1)
+            def uncompute(i):
+                qp_ops.adjoint(TemporaryAND)(wires=triples[i])
 
-        # 2b. merge gate(s) at the boundary
-        # Once resource hints are merged, use those estimates:
-        # cond(math.logical_and(a == 1, top_not_flipped), X, estimated_probability=quarter_prob)(
-        #    triples[0][0]
-        # )
-        cond(math.logical_and(a == 1, top_not_flipped), X)(triples[0][0])
-        # cond(a > 0, CNOT, estimated_probability=1 - mid_prob)(triples[a - 1][::2])
-        cond(a > 0, CNOT)(triples[a - 1][::2])
-        # cond(math.logical_and(a == 1, top_not_flipped), X, estimated_probability=quarter_prob)(
-        #    triples[0][0]
-        # )
-        cond(math.logical_and(a == 1, top_not_flipped), X)(triples[0][0])
+            uncompute()  # pylint: disable=no-value-for-parameter
 
-        # Once resource hints are merged, use those estimates:
-        # cond(a == 0, CNOT, estimated_probability=mid_prob)(triples[0][::2])
-        cond(a == 0, CNOT)(triples[0][::2])
-        # cond(a == 0, CNOT, estimated_probability=mid_prob)(triples[0][1:])
-        cond(a == 0, CNOT)(triples[0][1:])
+            # 2b. merge gate(s) at the boundary
+            # Once resource hints are merged, use those estimates:
+            # cond(math.logical_and(a == 1, top_not_flipped), X, estimated_probability=quarter_prob)(
+            #    triples[0][0]
+            # )
+            cond(math.logical_and(a == 1, top_not_flipped), X)(triples[0][0])
+            # cond(a > 0, CNOT, estimated_probability=1 - mid_prob)(triples[a - 1][::2])
+            cond(a > 0, CNOT)(triples[a - 1][::2])
+            # cond(math.logical_and(a == 1, top_not_flipped), X, estimated_probability=quarter_prob)(
+            #    triples[0][0]
+            # )
+            cond(math.logical_and(a == 1, top_not_flipped), X)(triples[0][0])
 
-        # 2c. left-elbow ladder: recompute levels max(a,1) .. c-2 (bottom-up)
-        # Once resource hints are merged, use those estimates:
-        @for_loop(lower_bound, c - 1)
-        # @for_loop(max(a, 1), c - 1, estimated_iterations=est_ladder_len)
-        def recompute(i):
-            TemporaryAND(triples[i], (1, 0))
+            # Once resource hints are merged, use those estimates:
+            # cond(a == 0, CNOT, estimated_probability=mid_prob)(triples[0][::2])
+            cond(a == 0, CNOT)(triples[0][::2])
+            # cond(a == 0, CNOT, estimated_probability=mid_prob)(triples[0][1:])
+            cond(a == 0, CNOT)(triples[0][1:])
 
-        recompute()  # pylint: disable=no-value-for-parameter
+            # 2c. left-elbow ladder: recompute levels max(a,1) .. c-2 (bottom-up)
+            @hint({"num-iters": average_ladder_len})
+            @for_loop(lower_bound, c - 1)
+            def recompute(i):
+                TemporaryAND(triples[i], (1, 0))
 
-    for_loop(K - 1)(loop)()  # pylint: disable=no-value-for-parameter
+            recompute()  # pylint: disable=no-value-for-parameter
+
+        for_loop(K - 1)(loop)()  # pylint: disable=no-value-for-parameter
 
     # Load last bit string
     ctrl(MultiX(bitstrings[K - 1], target_wires), control=[flag])

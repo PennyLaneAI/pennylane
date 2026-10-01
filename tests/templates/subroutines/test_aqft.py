@@ -17,6 +17,7 @@ Unit tests for the aqft template.
 
 import numpy as np
 import pytest
+from capture_utils import loop_hints
 
 import pennylane as qp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
@@ -94,6 +95,20 @@ class TestAQFT:
 
         for rule in qp.list_decomps(qp.AQFT):
             _test_decomposition_rule(op, rule)
+
+    @pytest.mark.capture
+    @pytest.mark.parametrize("order,n_wires", [(0, 4), (1, 4), (2, 5), (3, 6), (5, 6)])
+    def test_num_iters_hint(self, order, n_wires):
+        """Test that the loop over the controlled phase shifts on the last wires carries a
+        ``num-iters`` hint that reproduces the number of ``ControlledPhaseShift`` gates."""
+        import jax
+
+        rule = qp.list_decomps(qp.AQFT)[0]
+        plxpr = jax.make_jaxpr(lambda: rule(wires=list(range(n_wires)), order=order))()
+        ops = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
+        num_cps = sum(isinstance(op, qp.ControlledPhaseShift) for op in ops)
+        expected_hint = num_cps / n_wires
+        assert [hint for hint in loop_hints(plxpr.jaxpr) if hint is not None] == [expected_hint]
 
     @pytest.mark.parametrize("order,wires", [(o, w) for w in range(2, 10) for o in range(1, w)])
     def test_gates(self, order, wires):
