@@ -113,6 +113,36 @@ def test_rdma_coprocessor_requires_endpoint():
         qp.Backline(controller=controller, coprocessors=[coprocessor], transport="rdma")
 
 
+@pytest.mark.parametrize("name", ["in_bytes", "out_bytes"])
+def test_rdma_rejects_messages_above_eight_bytes(name):
+    """RDMA carries 8-byte messages, so a larger controller message size is rejected."""
+    controller = qp.Controller(**{name: 9})
+    coprocessor = qp.Coprocessor(coprocessor_fn="decoder", endpoint=qp.Endpoint("127.0.0.1", 7760))
+
+    with pytest.raises(ValueError, match=f"transport='rdma' carries at most 8 bytes.*{name}=9"):
+        qp.Backline(controller=controller, coprocessors=[coprocessor], transport="rdma")
+
+
+def test_rdma_accepts_eight_byte_messages():
+    """Eight bytes each way, the default, is accepted over RDMA."""
+    controller = qp.Controller(in_bytes=8, out_bytes=8)
+    coprocessor = qp.Coprocessor(coprocessor_fn="decoder", endpoint=qp.Endpoint("127.0.0.1", 7760))
+
+    dev = qp.Backline(controller=controller, coprocessors=[coprocessor], transport="rdma")
+
+    assert dev.placement.controller.in_bytes == 8
+
+
+def test_memcpy_accepts_messages_above_eight_bytes():
+    """Memcpy carries messages larger than 8 bytes."""
+    controller = qp.Controller(in_bytes=120, out_bytes=121)
+    coprocessor = qp.Coprocessor(coprocessor_fn="decoder")
+
+    dev = qp.Backline(controller=controller, coprocessors=[coprocessor], transport="memcpy")
+
+    assert dev.placement.controller.out_bytes == 121
+
+
 def test_coprocessor_stores_endpoint():
     """A coprocessor keeps the endpoint it was constructed with."""
     endpoint = qp.Endpoint("192.0.2.11", 7760)
