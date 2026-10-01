@@ -1636,6 +1636,13 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* The order of the wires given to `default.tensor` now fixes the layout of the tensor network,
+  so `wires=[0, 7, 1, 6, ...]` places wires `0` and `7` next to each other in the MPS. Previously
+  the sites followed the order in which the wires appeared in the circuit, which also returned
+  `qp.state()` in that order instead of the device order and made `StatePrep` fail on devices with
+  non-integer wire labels.
+  [(#10180)](https://github.com/PennyLaneAI/pennylane/pull/10180)
+
 * :func:`~.allocate` with zero wires no longer queues or captures :class:`~.allocation.Allocate`
   and :class:`~.allocation.Deallocate` instructions, including when used as a context manager.
   [(#10219)](https://github.com/PennyLaneAI/pennylane/pull/10219)
@@ -1865,6 +1872,7 @@ Austin Huang,
 Harshal Janjani,
 Jacob Kitchen,
 Korbinian Kottmann,
+Anish Kunda,
 Isabel Nha Minh Le,
 Christina Lee,
 Joseph Lee,

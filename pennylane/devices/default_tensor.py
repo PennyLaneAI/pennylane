@@ -675,10 +675,27 @@ class DefaultTensor(Device):
                     f"Circuit has wires {circuit.wires}. "
                     f"Tensor on device has wires {self.wires}"
                 )
-            circuit = circuit.map_to_standard_wires()
+            circuit = self._map_to_sites(circuit)
             results.append(self.simulate(circuit))
 
         return tuple(results)
+
+    def _map_to_sites(self, circuit: QuantumScript) -> QuantumScript:
+        """Map the wires of a circuit to the sites of the tensor network.
+
+        If the device has wires, the site of a wire is its position in the device wires, so
+        the order given to the device fixes the layout of the tensor network. Otherwise the
+        wires are mapped in the order they appear in the circuit.
+        """
+        if self.wires is None:
+            return circuit.map_to_standard_wires()
+        wire_map = {wire: site for site, wire in enumerate(self.wires)}
+        if all(wire_map[wire] == wire for wire in circuit.wires):
+            return circuit
+        return circuit.copy(
+            operations=[op.map_wires(wire_map) for op in circuit.operations],
+            measurements=[mp.map_wires(wire_map) for mp in circuit.measurements],
+        )
 
     def simulate(self, circuit: QuantumScript) -> Result:
         """Simulate a single quantum script. This function assumes that all operations provide matrices.
@@ -691,8 +708,9 @@ class DefaultTensor(Device):
         """
 
         # The state is reset every time a new circuit is executed, and number of wires
-        # is established at runtime to match the circuit if not provided.
-        wires = circuit.wires if self.wires is None else self.wires
+        # is established at runtime to match the circuit if not provided. The circuit
+        # wires have already been mapped to the sites ``0, ..., n - 1`` by ``_map_to_sites``.
+        wires = circuit.wires if self.wires is None else qp.wires.Wires(range(len(self.wires)))
         operations = copy.deepcopy(circuit.operations)
         if operations and isinstance(operations[0], qp.BasisState):
             op = operations.pop(0)
