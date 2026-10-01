@@ -239,6 +239,17 @@ class TestQSVTBasics:
         copy_projectors = copy_op.projectors
         assert all(p1 is not p2 for p1, p2 in zip(orig_projectors, copy_projectors))
 
+    def test_bind_new_parameters(self):
+        """Test that bind_new_parameters rebinds UA and projectors without mutating the original."""
+
+        op = qp.QSVT(qp.RX(1, wires=0), [qp.RY(2, wires=0), qp.RZ(3, wires=0)])
+        new_op = qp.ops.functions.bind_new_parameters(op, (4, 5, 6))
+
+        qp.assert_equal(new_op, qp.QSVT(qp.RX(4, wires=0), [qp.RY(5, wires=0), qp.RZ(6, wires=0)]))
+        assert new_op is not op
+        assert new_op.UA is not op.UA
+        assert op.data == (1, 2, 3)
+
 
 @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
 @pytest.mark.integration
@@ -527,16 +538,7 @@ class TestQSVTMatrix:
         assert np.allclose(qp.matrix(op), default_matrix)
         assert qp.math.get_interface(qp.matrix(op)) == "tensorflow"
 
-    @pytest.mark.parametrize(
-        ("A", "phis"),
-        [
-            (
-                [[0.1, 0.2], [0.3, 0.4]],
-                [0.1, 0.2, 0.3],
-            )
-        ],
-    )
-    def test_QSVT_grad(self, A, phis):
+    def test_QSVT_grad(self):
         """Test that qp.grad results are the same as finite difference results"""
 
         @qp.qnode(qp.device("default.qubit", wires=2))
