@@ -139,7 +139,8 @@ def track(
 
     .. code-block:: python
 
-        dev = qp.device("null.qubit", wires=2)
+        n_wires = 2
+        dev = qp.device("lightning.qubit", wires=n_wires)
 
         @qp.qjit
         @qp.qnode(dev)
@@ -149,15 +150,44 @@ def track(
             return qp.probs(wires=(0,1))
 
     >>> result, circuit_specs = qp.track(circuit)(1.23)
-    >>> result.shape
-    (4,)
     >>> circuit_specs.resources.quantum_operations
     {'CNOT': 1, 'RX': 1}
+
+    Since the circuit is executed on ``null.qubit``, the result has the shape and dtype of the
+    ``lightning.qubit`` result, but not its values:
+
+    >>> result
+    Array([1., 0., 0., 0.], dtype=float64)
+    >>> circuit(1.23)
+    Array([0.66711886, 0.        , 0.        , 0.33288114], dtype=float64)
 
     The specifications are the same as the ones returned by :func:`~.specs` at the device level:
 
     >>> circuit_specs == qp.specs(circuit, level="device")(1.23)
     True
+
+    Because the circuit is executed, control flow is unrolled with the given arguments and
+    the resources are concrete numbers:
+
+    .. code-block:: python
+
+        @qp.qjit(autograph=True)
+        @qp.qnode(dev)
+        def circuit(n):
+            for i in range(n):
+                qp.Hadamard(wires=i % n_wires)
+            qp.CNOT(wires=(0, 1))
+            return qp.probs(wires=(0, 1))
+
+    >>> _, circuit_specs = qp.track(circuit)(3)
+    >>> circuit_specs.resources.quantum_operations
+    {'CNOT': 1, 'Hadamard': 3}
+
+    In contrast, the compile-time analysis reports the number of loop iterations
+    symbolically, since it does not depend on the runtime value of ``n``:
+
+    >>> qp.specs(circuit, level=0)(3).resources.quantum_operations
+    {'CNOT': 1, 'Hadamard': Expression({('a',): 1})}
     """
     qnode, partial_args, partial_kwargs = unwrap_partial(qnode)
 
