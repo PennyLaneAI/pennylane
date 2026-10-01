@@ -27,6 +27,7 @@ from types import NoneType
 from typing import TYPE_CHECKING, Any, ClassVar, TypeAlias
 
 import numpy as np
+from jax.core import ShapedArray
 from scipy.sparse import spmatrix
 
 import pennylane as qp
@@ -2181,7 +2182,6 @@ def _is_hash_leaf(l) -> bool:
 
 
 def _is_abstract_array(arg):
-    from jax.core import ShapedArray  # pylint: disable=import-outside-toplevel
 
     return isinstance(arg, (ShapedArray, AbstractArray, AbstractWires, AbstractQubit))
 

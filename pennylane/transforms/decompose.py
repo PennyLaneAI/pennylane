@@ -182,7 +182,7 @@ def decompose(
 
         phase = 1
         target_wires = [0]
-        unitary = qp.RX(phase, wires=0).matrix()
+        unitary = qp.QubitUnitary(qp.RX(phase, wires=0).matrix(), wires=target_wires)
         n_estimation_wires = 3
         estimation_wires = range(1, n_estimation_wires + 1)
 
@@ -190,21 +190,13 @@ def decompose(
         def circuit():
             # Start in the |+> eigenstate of the unitary
             qp.Hadamard(wires=target_wires)
-            qp.QuantumPhaseEstimation(
-                unitary,
-                target_wires=target_wires,
-                estimation_wires=estimation_wires,
-            )
+            qp.QuantumPhaseEstimation(unitary, estimation_wires=estimation_wires)
 
     >>> print(qp.draw(qp.decompose(circuit, max_expansion=0))())
-    0: ──H─╭QuantumPhaseEstimation(M0)─┤
-    1: ────├QuantumPhaseEstimation(M0)─┤
-    2: ────├QuantumPhaseEstimation(M0)─┤
-    3: ────╰QuantumPhaseEstimation(M0)─┤
-    <BLANKLINE>
-    M0 =
-    [[0.877...+0.j         0.        -0.479...j]
-     [0.        -0.479...j 0.877...+0.j        ]]
+    0: ──H─╭QuantumPhaseEstimation─┤
+    1: ────├QuantumPhaseEstimation─┤
+    2: ────├QuantumPhaseEstimation─┤
+    3: ────╰QuantumPhaseEstimation─┤
 
     >>> print(qp.draw(qp.decompose(circuit, max_expansion=1))())
     0: ──H─╭U(M0)⁴─╭U(M0)²─╭U(M0)¹───────┤
