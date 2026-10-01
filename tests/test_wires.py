@@ -358,7 +358,9 @@ class TestWires:
         assert Wires.all_wires([Wires([0, 1]), Wire[3]]) == Wire[5]
         assert Wires.all_wires([Wire[2], Wire[4]]) == Wire[6]
         assert Wires.all_wires([Wires([0, 1]), Wires([1, 2]), Wire[3]]) == Wire[6]
+        assert Wires.all_wires([Wire[2], Wires([0, 2, 6]), Wire[3]]) == Wire[8]
         assert Wires.all_wires([Wires([0]), Wire[-1]]) == Wire[-1]
+        assert Wires.all_wires([Wire[6], Wire[-1]]) == Wire[-1]
 
     def test_shared_wires_method(self):
         """Tests the ``shared_wires()`` method."""
