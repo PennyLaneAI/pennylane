@@ -492,7 +492,7 @@ class QSVT(Operator2):
         # The constructor takes `UA` before `projectors`, but the canonical wire
         # order is projector wires followed by UA wires. Here we re-calculate the
         # wires to maintain the same wire order as before.
-        all_wire_args = tuple(op.wires for op in projectors) + (UA.wires,)
+        all_wire_args = tuple(op.wires for op in (*projectors, UA) if isinstance(op, Operator))
         self._wires = Wires.all_wires(all_wire_args)
 
     @property
