@@ -338,7 +338,7 @@ class QubitUnitary(Operator2):
             return [QubitUnitary(pow_mat, wires=self.wires)]
 
         mat = self.matrix()
-        if isinstance(z, int) and qp.math.get_deep_interface(mat) != "tensorflow":
+        if isinstance(z, int):
             pow_mat = qp.math.linalg.matrix_power(mat, z)
         elif self.batch_size is not None or qp.math.shape(z) != ():
             return super().pow(z)
@@ -395,7 +395,7 @@ add_decomps("Adjoint(QubitUnitary)", _adjoint_qubit_unitary)
 def _matrix_pow(U, z):
     if sp.sparse.issparse(U):
         return sp.sparse.linalg.matrix_power(U, z)
-    if is_integer(z) and qp.math.get_deep_interface(U) != "tensorflow":
+    if is_integer(z):
         return qp.math.linalg.matrix_power(U, z)
     return qp.math.convert_like(fractional_matrix_power(U, z), U)
 
@@ -832,11 +832,6 @@ def _process_blockencode(A, subspace):
     sqrtm = math.sqrt_matrix_sparse if sp.sparse.issparse(A) else math.sqrt_matrix
 
     def _stack(lst, h=False, like=None):
-        if (
-            like == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            axis = 1 if h else 0
-            return qp.math.concat(lst, like=like, axis=axis)
         return qp.math.hstack(lst) if h else qp.math.vstack(lst)
 
     interface = qp.math.get_interface(A)

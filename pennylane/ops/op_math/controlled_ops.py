@@ -1674,16 +1674,8 @@ class CRX(Controlled2):
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.0000-0.2474j, 0.9689+0.0000j]])
         """
 
-        interface = qp.math.get_interface(phi)
-
         c = qp.math.cos(phi / 2)
         s = qp.math.sin(phi / 2)
-
-        if (
-            interface == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            c = qp.math.cast_like(c, 1j)
-            s = qp.math.cast_like(s, 1j)
 
         # The following avoids casting an imaginary quantity to reals when back propagating
         c = (1 + 0j) * c
@@ -1839,16 +1831,8 @@ class CRY(Controlled2):
                 [ 0.0000+0.j,  0.0000+0.j,  0.9689+0.j, -0.2474-0.j],
                 [ 0.0000+0.j,  0.0000+0.j,  0.2474+0.j,  0.9689+0.j]])
         """
-        interface = qp.math.get_interface(phi)
-
         c = qp.math.cos(phi / 2)
         s = qp.math.sin(phi / 2)
-
-        if (
-            interface == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            c = qp.math.cast_like(c, 1j)
-            s = qp.math.cast_like(s, 1j)
 
         # The following avoids casting an imaginary quantity to reals when back propagating
         c = (1 + 0j) * c
@@ -1983,17 +1967,6 @@ class CRZ(Controlled2):
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.9689-0.2474j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9689+0.2474j]])
         """
-        if (
-            qp.math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            p = qp.math.exp(-0.5j * qp.math.cast_like(phi, 1j))
-            if qp.math.ndim(p) == 0:
-                return qp.math.diag([1, 1, p, qp.math.conj(p)])
-
-            ones = qp.math.ones_like(p)
-            diags = stack_last([ones, ones, p, qp.math.conj(p)])
-            return diags[:, :, np.newaxis] * qp.math.cast_like(qp.math.eye(4, like=diags), diags)
-
         signs = qp.math.array([0, 0, 1, -1], like=phi)
         arg = -0.5j * phi
 
@@ -2031,13 +2004,6 @@ class CRZ(Controlled2):
         >>> qp.CRZ.compute_eigvals(torch.tensor(0.5))
         tensor([1.0000+0.0000j, 1.0000+0.0000j, 0.9689-0.2474j, 0.9689+0.2474j])
         """
-        if (
-            qp.math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phase = qp.math.exp(-0.5j * qp.math.cast_like(phi, 1j))
-            ones = qp.math.ones_like(phase)
-            return stack_last([ones, ones, phase, qp.math.conj(phase)])
-
         prefactors = qp.math.array([0, 0, -0.5j, 0.5j], like=phi)
         if qp.math.ndim(phi) == 0:
             product = phi * prefactors
@@ -2165,22 +2131,8 @@ class CRot(Controlled2):
                 [ 0.0000+0.0000j,  0.0000+0.0000j,  0.9752-0.1977j, -0.0993+0.0100j],
                 [ 0.0000+0.0000j,  0.0000+0.0000j,  0.0993+0.0100j,  0.9752+0.1977j]])
         """
-        # It might be that they are in different interfaces, e.g.,
-        # CRot(0.2, 0.3, tf.Variable(0.5), wires=[0, 1])
-        # So we need to make sure the matrix comes out having the right type
-        interface = qp.math.get_interface(phi, theta, omega)
-
         c = qp.math.cos(theta / 2)
         s = qp.math.sin(theta / 2)
-
-        # If anything is not tensorflow, it has to be casted
-        if (
-            interface == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phi = qp.math.cast_like(qp.math.asarray(phi, like=interface), 1j)
-            omega = qp.math.cast_like(qp.math.asarray(omega, like=interface), 1j)
-            c = qp.math.cast_like(qp.math.asarray(c, like=interface), 1j)
-            s = qp.math.cast_like(qp.math.asarray(s, like=interface), 1j)
 
         # The following variable is used to assert the all terms to be stacked have same shape
         one = qp.math.ones_like(phi) * qp.math.ones_like(omega)
@@ -2307,17 +2259,6 @@ class ControlledPhaseShift(Controlled2):
                 [0.0000+0.0000j, 0.0000+0.0000j, 1.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.8776+0.4794j]])
         """
-        if (
-            qp.math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            p = qp.math.exp(1j * qp.math.cast_like(phi, 1j))
-            if qp.math.ndim(p) == 0:
-                return qp.math.diag([1, 1, 1, p])
-
-            ones = qp.math.ones_like(p)
-            diags = stack_last([ones, ones, ones, p])
-            return diags[:, :, np.newaxis] * qp.math.cast_like(qp.math.eye(4, like=diags), diags)
-
         signs = qp.math.array([0, 0, 0, 1], like=phi)
         arg = 1j * phi
 
@@ -2355,13 +2296,6 @@ class ControlledPhaseShift(Controlled2):
         >>> qp.ControlledPhaseShift.compute_eigvals(torch.tensor(0.5))
         tensor([1.0000+0.0000j, 1.0000+0.0000j, 1.0000+0.0000j, 0.8776+0.4794j])
         """
-        if (
-            qp.math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phase = qp.math.exp(1j * qp.math.cast_like(phi, 1j))
-            ones = qp.math.ones_like(phase)
-            return stack_last([ones, ones, ones, phase])
-
         prefactors = qp.math.array([0, 0, 0, 1j], like=phi)
         if qp.math.ndim(phi) == 0:
             product = phi * prefactors

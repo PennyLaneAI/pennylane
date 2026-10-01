@@ -1025,6 +1025,9 @@
   [(#9764)](https://github.com/PennyLaneAI/pennylane/pull/9764)
 
 <h3>Breaking changes 💔</h3>
+  
+* Tensorflow and tensorflow-autograph interfaces are removed.
+  [(#10229)](https://github.com/PennyLaneAI/pennylane/pull/10229)
 
 * :class:`~.QuantumPhaseEstimation` now only accepts an :class:`~.Operator` as the ``unitary``, and the
   ``target_wires`` argument has been removed. The target wires are the wires of ``unitary``.
@@ -1052,7 +1055,7 @@
   ``qp.fourier.visualize`` plotting functions. Also, ``qp.fourier.reconstruct`` has moved to
   ``pennylane.optimize.reconstruct``.
   [(#10212)](https://github.com/PennyLaneAI/pennylane/pull/10212)
-  
+
 * ZX transforms now require ``pyzx>=0.10``. Upgrade with ``pip install 'pyzx>=0.10'``.
   [(#10121)](https://github.com/PennyLaneAI/pennylane/pull/10121)
 
