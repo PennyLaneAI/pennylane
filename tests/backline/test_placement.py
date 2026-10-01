@@ -60,19 +60,17 @@ def test_controller_message_sizes_are_chosen_by_the_caller():
 
 
 @pytest.mark.parametrize("name", ["in_bytes", "out_bytes"])
-def test_controller_message_sizes_accept_the_bounds(name):
-    """Both 1 and MAX_MESSAGE_BYTES are valid sizes."""
-    from pennylane.backline.placement import MAX_MESSAGE_BYTES
-
+def test_controller_message_sizes_have_no_upper_bound(name):
+    """Any size from 1 up is valid, including sizes larger than one memory page."""
     assert getattr(qp.Controller(**{name: 1}), name) == 1
-    assert getattr(qp.Controller(**{name: MAX_MESSAGE_BYTES}), name) == MAX_MESSAGE_BYTES
+    assert getattr(qp.Controller(**{name: 1 << 20}), name) == 1 << 20
 
 
 @pytest.mark.parametrize("name", ["in_bytes", "out_bytes"])
-@pytest.mark.parametrize("size", [0, -8, 4097])
-def test_controller_rejects_message_sizes_out_of_range(name, size):
-    """A size outside 1..MAX_MESSAGE_BYTES raises."""
-    with pytest.raises(ValueError, match=f"{name} must be between 1 and 4096"):
+@pytest.mark.parametrize("size", [0, -8])
+def test_controller_rejects_message_sizes_below_one(name, size):
+    """A size below 1 raises."""
+    with pytest.raises(ValueError, match=f"{name} must be at least 1"):
         qp.Controller(**{name: size})
 
 

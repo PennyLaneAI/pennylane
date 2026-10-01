@@ -30,10 +30,6 @@ if TYPE_CHECKING:
 DEFAULT_WIRES = 32
 DEFAULT_MESSAGE_BYTES = 8
 """The default size, in bytes, of a controller's messages in each direction."""
-MAX_MESSAGE_BYTES = 4096
-"""The largest message, in bytes, a controller may choose in either direction. The ``"memcpy"``
-transport carries any size up to this bound. The ``"rdma"`` backends carry
-:data:`DEFAULT_MESSAGE_BYTES` and reject a larger size when the session is set up."""
 Hardware = Literal["cpu", "gpu", "fpga"]
 """Hardware on which a backline node executes."""
 _SUPPORTED_HARDWARE = frozenset(get_args(Hardware))
@@ -251,8 +247,8 @@ class Controller(Node):
         device (pennylane.devices.Device, None): The PennyLane device the controller executes.
             Defaults to ``None``, which builds a ``null.qubit``.
         in_bytes (int): The size in bytes of each message the controller sends. Defaults to
-            :data:`DEFAULT_MESSAGE_BYTES`. ``"memcpy"`` supports up to :data:`MAX_MESSAGE_BYTES`,
-            while ``"rdma"`` currently supports up to :data:`DEFAULT_MESSAGE_BYTES`.
+            :data:`DEFAULT_MESSAGE_BYTES`. ``"memcpy"`` supports any size, while ``"rdma"``
+            currently supports up to :data:`DEFAULT_MESSAGE_BYTES`.
         out_bytes (int): The size in bytes of each reply the controller receives. Defaults to
             :data:`DEFAULT_MESSAGE_BYTES`, with the same bound as ``in_bytes``.
 
@@ -294,12 +290,10 @@ class Controller(Node):
     simulation, should pass a device of its own."""
 
     in_bytes: int = field(default=DEFAULT_MESSAGE_BYTES, repr=False)
-    """The size in bytes of each message the controller sends, from 1 to
-    :data:`MAX_MESSAGE_BYTES`."""
+    """The size in bytes of each message the controller sends, at least 1."""
 
     out_bytes: int = field(default=DEFAULT_MESSAGE_BYTES, repr=False)
-    """The size in bytes of each reply the controller receives, from 1 to
-    :data:`MAX_MESSAGE_BYTES`."""
+    """The size in bytes of each reply the controller receives, at least 1."""
 
     def __post_init__(self):
         super().__post_init__()
@@ -307,8 +301,8 @@ class Controller(Node):
             value = getattr(self, name)
             if isinstance(value, bool) or not isinstance(value, int):
                 raise TypeError(f"{name} must be an int, got {type(value).__name__}")
-            if not 1 <= value <= MAX_MESSAGE_BYTES:
-                raise ValueError(f"{name} must be between 1 and {MAX_MESSAGE_BYTES}, got {value}")
+            if value < 1:
+                raise ValueError(f"{name} must be at least 1, got {value}")
         if self.device is None:
             object.__setattr__(self, "device", _make_device("null.qubit", wires=DEFAULT_WIRES))
 
@@ -495,6 +489,5 @@ class Placement:
                 if size > DEFAULT_MESSAGE_BYTES:
                     raise ValueError(
                         f"transport='rdma' carries at most {DEFAULT_MESSAGE_BYTES} bytes per "
-                        f"message, got {name}={size}; transport='memcpy' carries up to "
-                        f"{MAX_MESSAGE_BYTES}"
+                        f"message, got {name}={size}; transport='memcpy' carries any size"
                     )
