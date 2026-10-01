@@ -40,7 +40,7 @@ def null_postprocessing(results):
     return results[0]
 
 
-@partial(transform, pass_name="graph_decomposition")
+@partial(transform, pass_name="graph-decomposition")
 def decompose(
     tape,
     *,
