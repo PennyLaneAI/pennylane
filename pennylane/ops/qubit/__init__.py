@@ -30,7 +30,7 @@ The operations are divided into the following files:
 """
 
 from ..identity import GlobalPhase, Identity, I
-from ..meta import Barrier, Snapshot, WireCut
+from ..meta import Barrier, Snapshot
 from .arithmetic_ops import QubitCarry, QubitSum, IntegerComparator
 from .matrix_ops import QubitUnitary, DiagonalQubitUnitary, BlockEncode
 from .non_parametric_ops import (
@@ -144,7 +144,6 @@ __ops__ = {
     "OrbitalRotation",
     "FermionicSWAP",
     "Barrier",
-    "WireCut",
     "GlobalPhase",
 }
 

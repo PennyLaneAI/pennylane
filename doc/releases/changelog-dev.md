@@ -613,6 +613,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* :func:`~.iterative_qpe` is now captured as a single :func:`~.capture.subroutine` instead of
+  falling back to an unrolled ``qp.for_loop``. 
+  [(#10220)](https://github.com/PennyLaneAI/pennylane/pull/10220)
+
 * Multi-controlled operators can now reuse a single :class:`~.TemporaryAND` ladder when enough
   zeroed work wires are available, reducing their decomposition gate counts.
   [(#10161)](https://github.com/PennyLaneAI/pennylane/pull/10161)
@@ -1082,6 +1086,10 @@
   still remains.
   [(#9867)](https://github.com/PennyLaneAI/pennylane/pull/9867)
 
+* The `pennylane.qcut` module has been removed, including `cut_circuit`,
+  `cut_circuit_mc`, and the `WireCut` operator.
+  [(#10235)](https://github.com/PennyLaneAI/pennylane/pull/10235)
+
 * Removes `qp.Configuration` and the ability to pass a `config` to `pennylane.device`.
   [(#9879)](https://github.com/PennyLaneAI/pennylane/pull/9879)
   [(#9931)](https://github.com/PennyLaneAI/pennylane/pull/9931)
@@ -1163,9 +1171,6 @@
   are removed. Instead, please use the
   :func:`qp.transforms.decompose <.transforms.decompose>` function for decomposing circuits.
   [(#9473)](https://github.com/PennyLaneAI/pennylane/pull/9473)
-
-* The `id` keyword argument to :class:`~.qcut.MeasureNode` and :class:`~.qcut.PrepareNode` has been renamed to `node_uid`.
-  [(#9467)](https://github.com/PennyLaneAI/pennylane/pull/9467)
 
 * The `id` keyword argument to :class:`~.ops.MidMeasure` has been renamed to `meas_uid`.
   [(#9467)](https://github.com/PennyLaneAI/pennylane/pull/9467)
