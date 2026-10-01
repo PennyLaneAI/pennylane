@@ -102,7 +102,7 @@ and takes into account the circuit, device, autodiff framework, and metadata
     dev = qp.device("default.qubit")
 
     @qp.set_shots(shots=1000)
-    @qp.qnode(dev, interface="tf")
+    @qp.qnode(dev, interface="torch")
     def circuit(weights):
         ...
 

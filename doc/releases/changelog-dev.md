@@ -1025,6 +1025,9 @@
   [(#9764)](https://github.com/PennyLaneAI/pennylane/pull/9764)
 
 <h3>Breaking changes 💔</h3>
+  
+* Tensorflow and tensorflow-autograph interfaces are removed.
+  [(#10229)](https://github.com/PennyLaneAI/pennylane/pull/10229)
 
 * The ``pennylane.pulse`` module has been removed. This includes ``ParametrizedHamiltonian`` and
   ``ParametrizedEvolution``, as well as the ``stoch_pulse_grad`` and ``pulse_odegen``

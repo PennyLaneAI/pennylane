@@ -71,14 +71,6 @@ Pending deprecations
   - Deprecated in v0.43
   - Will be removed in a future version
 
-* Maintenance support for the ``tensorflow`` interface has been deprecated and will be dropped in PennyLane v0.44.
-  Future versions of PennyLane are not guaranteed to work with TensorFlow.
-  Instead, we recommend using the :doc:`jax </introduction/interfaces/jax>` or :doc:`torch </introduction/interfaces/torch>` interface for
-  machine learning applications to benefit from enhanced support and features.
-
-  - Deprecated in v0.43
-  - Will be removed in v0.44
-
 Completed removal of legacy operator arithmetic
 -----------------------------------------------
 
@@ -120,9 +112,17 @@ Completed deprecation cycles
 
   - Removed in releases after v0.45
 
+* Maintenance support for the ``tensorflow`` interface has been removed. Future versions of
+  PennyLane will not work with TensorFlow. Instead, we recommend using the
+  :doc:`jax </introduction/interfaces/jax>` or :doc:`torch </introduction/interfaces/torch>` interface for
+  machine learning applications to benefit from enhanced support and features.
+
+  - Deprecated in v0.43
+  - Removed in releases after v0.45
+
 * The ``pennylane.qcut`` module, including ``pennylane.cut_circuit``,
   ``pennylane.cut_circuit_mc``, and the ``WireCut`` operator, has been removed.
-  
+
   - Removed in releases after v0.45
 
 * The ``pennylane.noise`` module has been removed, including ``NoiseModel``, ``add_noise``,
@@ -170,7 +170,7 @@ Completed deprecation cycles
   - Deprecated in v0.45
   - Removed in v0.46
 
-* The ``id`` keyword argument to :class:`~.ops.MidMeasure` has been renamed to ``meas_uid``. 
+* The ``id`` keyword argument to :class:`~.ops.MidMeasure` has been renamed to ``meas_uid``.
 
   - Deprecated in v0.45
   - Removed in v0.46

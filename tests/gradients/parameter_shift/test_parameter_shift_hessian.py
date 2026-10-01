@@ -1480,23 +1480,6 @@ class TestParameterShiftHessianQNode:
         with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
             qp.gradients.param_shift_hessian(circuit)(weights)
 
-    @pytest.mark.tf
-    def test_no_trainable_params_qnode_tf(self):
-        """Test that the correct output and warning is generated in the absence of any trainable
-        parameters"""
-
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.qnode(dev, interface="tf", diff_method="parameter-shift")
-        def circuit(weights):
-            qp.RX(weights[0], wires=0)
-            qp.RY(weights[1], wires=0)
-            return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
-
-        weights = [0.1, 0.2]
-        with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
-            qp.gradients.param_shift_hessian(circuit)(weights)
-
     @pytest.mark.jax
     def test_no_trainable_params_qnode_jax(self):
         """Test that the correct output and warning is generated in the absence of any trainable
@@ -1888,57 +1871,3 @@ class TestInterfaces:
         jax_deriv = jax.jacobian(cost_fn)(x_jax)
 
         assert np.allclose(qp.math.transpose(expected, (1, 2, 0, 3)), jax_deriv)
-
-    @pytest.mark.tf
-    @pytest.mark.slow
-    def test_hessian_transform_with_tensorflow(self):
-        """Test that the Hessian transform can be used with TensorFlow (1d -> 1d)"""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.qnode(dev, max_diff=2)
-        def circuit(x):
-            qp.RX(x[1], wires=0)
-            qp.RY(x[0], wires=0)
-            qp.CNOT(wires=[0, 1])
-            return qp.probs(wires=[0, 1])
-
-        x_np = np.array([0.1, 0.2], requires_grad=True)
-        x_tf = tf.Variable([0.1, 0.2], dtype=tf.float64)
-
-        expected = qp.jacobian(qp.jacobian(circuit))(x_np)
-        circuit.interface = "tf"
-        with tf.GradientTape():
-            hess = qp.gradients.param_shift_hessian(circuit)(x_tf)
-
-        assert np.allclose(qp.math.transpose(expected, (1, 2, 0)), hess)
-
-    @pytest.mark.tf
-    @pytest.mark.slow
-    def test_hessian_transform_is_differentiable_tensorflow(self):
-        """Test that the 3rd derivate can be calculated via auto-differentiation in Tensorflow
-        (1d -> 1d)"""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.qnode(dev, max_diff=3)
-        def circuit(x):
-            qp.RX(x[1], wires=0)
-            qp.RY(x[0], wires=0)
-            qp.CNOT(wires=[0, 1])
-            return qp.probs(wires=[0, 1])
-
-        x = np.array([0.1, 0.2], requires_grad=True)
-        x_tf = tf.Variable([0.1, 0.2], dtype=tf.float64)
-
-        expected = qp.jacobian(qp.jacobian(qp.jacobian(circuit)))(x)
-        circuit.interface = "tf"
-        with tf.GradientTape() as tf_tape:
-            hessian = qp.gradients.param_shift_hessian(circuit)(x_tf)[0]
-            hessian = qp.math.stack([qp.math.stack(row) for row in hessian])
-
-        tensorflow_deriv = tf_tape.jacobian(hessian, x_tf)
-
-        assert np.allclose(qp.math.transpose(expected, (1, 2, 0, 3)), tensorflow_deriv)

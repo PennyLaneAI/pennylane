@@ -165,12 +165,7 @@ def apply_operation_einsum(op: Operator, state, is_state_batched: bool = False):
     # We use this implicit casting strategy as autograd raises ComplexWarnings
     # when backpropagating if casting explicitly. Some type of casting is needed
     # to prevent ComplexWarnings with backpropagation with other interfaces
-    if (
-        math.get_interface(state) == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        mat = math.cast_like(op.matrix(), state)
-    else:
-        mat = op.matrix() + 0j
+    mat = op.matrix() + 0j
 
     total_indices = len(state.shape) - is_state_batched
     num_indices = len(op.wires)
@@ -216,12 +211,7 @@ def apply_operation_tensordot(op: Operator, state, is_state_batched: bool = Fals
     # We use this implicit casting strategy as autograd raises ComplexWarnings
     # when backpropagating if casting explicitly. Some type of casting is needed
     # to prevent ComplexWarnings with backpropagation with other interfaces
-    if (
-        math.get_interface(state) == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        mat = math.cast_like(op.matrix(), state)
-    else:
-        mat = op.matrix() + 0j
+    mat = op.matrix() + 0j
 
     total_indices = len(state.shape) - is_state_batched
     num_indices = len(op.wires)
@@ -529,11 +519,6 @@ def apply_pauliz(op: ops.Z, state, is_state_batched: bool = False, debugger=None
     axis = op.wires[0] + is_state_batched
     n_dim = math.ndim(state)
 
-    if (
-        n_dim >= 9 and math.get_interface(state) == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
-
     sl_0 = _get_slice(0, axis, n_dim)
     sl_1 = _get_slice(1, axis, n_dim)
 
@@ -547,11 +532,6 @@ def apply_phaseshift(op: ops.PhaseShift, state, is_state_batched: bool = False, 
     """Apply PhaseShift to state."""
 
     n_dim = math.ndim(state)
-
-    if (
-        n_dim >= 9 and math.get_interface(state) == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
     axis = op.wires[0] + is_state_batched
 
@@ -576,11 +556,6 @@ def apply_T(op: ops.T, state, is_state_batched: bool = False, debugger=None, **_
     axis = op.wires[0] + is_state_batched
     n_dim = math.ndim(state)
 
-    if (
-        n_dim >= 9 and math.get_interface(state) == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
-
     sl_0 = _get_slice(0, axis, n_dim)
     sl_1 = _get_slice(1, axis, n_dim)
 
@@ -594,11 +569,6 @@ def apply_S(op: ops.S, state, is_state_batched: bool = False, debugger=None, **_
 
     axis = op.wires[0] + is_state_batched
     n_dim = math.ndim(state)
-
-    if (
-        n_dim >= 9 and math.get_interface(state) == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
     sl_0 = _get_slice(0, axis, n_dim)
     sl_1 = _get_slice(1, axis, n_dim)
@@ -617,11 +587,6 @@ def apply_hadamard(op: ops.Hadamard, state, is_state_batched: bool = False, debu
     if state_interface == "autograd":
         if n_dim < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD:
             return apply_operation_einsum(op, state, is_state_batched=is_state_batched)
-        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
-
-    if (
-        n_dim >= 9 and state_interface == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
     if state_interface == "numpy":
@@ -662,11 +627,6 @@ def _apply_rotation_1q(  # pylint: disable=too-many-return-statements
     if state_interface == "autograd":
         if n_dim < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD:
             return apply_operation_einsum(op, state, is_state_batched=is_state_batched)
-        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
-
-    if (
-        n_dim >= 9 and state_interface == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
     axis = op.wires[0] + is_state_batched
@@ -764,11 +724,6 @@ def apply_cnot(op: ops.CNOT, state, is_state_batched: bool = False, debugger=Non
     control_axes = op.wires[0] + is_state_batched
     n_dim = math.ndim(state)
 
-    if (
-        n_dim >= 9 and math.get_interface(state) == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
-
     sl_0 = _get_slice(0, control_axes, n_dim)
     sl_1 = _get_slice(1, control_axes, n_dim)
 
@@ -865,16 +820,13 @@ def _apply_grover_without_matrix(state, op_wires, is_state_batched):
         # If the operation acts on all wires, we can skip the tensor product with all-ones state
         new_shape = (-1,) + (1,) * num_wires if is_state_batched else (1,) * num_wires
         return prefactor * math.reshape(collapsed, new_shape) - state
-        # [todo]: Once Tensorflow support expand_dims with multiple axes in the second argument,
-        # use the following line instead of the two above.
-        # return prefactor * math.expand_dims(collapsed, sum_axes) - state
 
     all_plus = math.cast_like(math.full([2] * num_wires, prefactor), state)
     # After the Kronecker product (realized with tensordot with axes=0), we need to move
     # the new axes to the summed-away axes' positions. Finally, subtract the original state.
     source = list(range(math.ndim(collapsed), math.ndim(state)))
     # Probably it will be better to use math.full or math.tile to create the outer product
-    # here computed with math.tensordot. However, Tensorflow and Torch do not have full support
+    # here computed with math.tensordot. However, Torch does not have full support.
     return math.moveaxis(math.tensordot(collapsed, all_plus, axes=0), source, sum_axes) - state
 
 
