@@ -613,6 +613,14 @@
 
 <h3>Improvements 🛠</h3>
 
+* :class:`~.SpecialUnitary` now builds its matrix for more than five wires by contracting the
+  Pauli coefficients one wire at a time, instead of summing over all :math:`4^n-1` basis elements
+  in a Python loop. This takes :math:`\mathcal{O}(n4^n)` operations rather than
+  :math:`\mathcal{O}(16^n)`, keeps the differentiation graph small, and makes broadcasting work
+  for more than five wires. Differentiating a six-wire :class:`~.SpecialUnitary` matrix is roughly
+  85 times faster.
+  [(#10253)](https://github.com/PennyLaneAI/pennylane/pull/10253)
+
 * :func:`~.iterative_qpe` is now captured as a single :func:`~.capture.subroutine` instead of
   falling back to an unrolled ``qp.for_loop``. 
   [(#10220)](https://github.com/PennyLaneAI/pennylane/pull/10220)
