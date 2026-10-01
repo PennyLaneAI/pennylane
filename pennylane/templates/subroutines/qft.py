@@ -153,8 +153,6 @@ def _qft_decomposition(wires: WiresLike):
         shifts = math.array(shifts, like="jax")
         wires = math.array(wires, like="jax")
 
-    shift_len = len(shifts)
-
     @for_loop(num_wires)
     def outer_loop(i):
         Hadamard(wires[i])
@@ -162,7 +160,7 @@ def _qft_decomposition(wires: WiresLike):
         if num_wires > 1:
 
             @hint({"num-iters": (num_wires - 1) / 2})
-            @for_loop(shift_len - i)
+            @for_loop(num_wires - 1 - i)
             def cphaseshift_loop(j):
                 ControlledPhaseShift(shifts[j], wires=[wires[i + j + 1], wires[i]])
 
