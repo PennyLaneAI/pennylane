@@ -47,7 +47,6 @@ Gradient transforms
     param_shift_hessian
     spsa_grad
     hadamard_grad
-    spsa_grad
 
 Metric tensors
 ^^^^^^^^^^^^^^
