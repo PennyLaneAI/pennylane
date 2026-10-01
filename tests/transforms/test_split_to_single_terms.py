@@ -611,26 +611,3 @@ class TestDifferentiability:
         actual = jacobian(circuit, params)
 
         assert qp.math.allclose(actual, [-0.5, np.cos(np.pi / 4)], rtol=0.05)
-
-    @pytest.mark.tf
-    def test_trainable_hamiltonian_tensorflow(self, seed):
-        """Tests that measurements of trainable Hamiltonians are differentiable with tensorflow"""
-
-        import tensorflow as tf
-
-        dev = NoTermsDevice(wires=2, seed=seed)
-
-        @qp.qnode(dev, shots=50000)
-        def circuit(coeff1, coeff2):
-            qp.RX(np.pi / 4, wires=0)
-            qp.RY(np.pi / 4, wires=1)
-            return qp.expval(qp.Hamiltonian([coeff1, coeff2], [qp.Y(0) @ qp.Z(1), qp.X(1)]))
-
-        params = tf.Variable(np.pi / 4), tf.Variable(3 * np.pi / 4)
-
-        with tf.GradientTape() as tape:
-            cost = split_to_single_terms(circuit)(*params)
-
-        actual = tape.jacobian(cost, params)
-
-        assert qp.math.allclose(actual, [-0.5, np.cos(np.pi / 4)], rtol=0.05)

@@ -532,14 +532,14 @@ class SpecialUnitary(Operation):
         return qp.math.expm(1j * A)
 
     def get_one_parameter_generators(
-        self, interface: Literal[None, "jax", "tensorflow", "tf", "torch"] = None
+        self, interface: Literal[None, "jax", "torch"] = None
     ) -> TensorLike:
         r"""Compute the generators of one-parameter groups that reproduce
         the partial derivatives of a special unitary gate.
 
         Args:
             interface (str): The auto-differentiation framework to be used for the
-                computation. Has to be one of ``["jax", "tensorflow", "tf", "torch"]``.
+                computation. Has to be one of ``["jax", "torch"]``.
 
         Raises:
             NotImplementedError: If the chosen interface is ``"autograd"``. Autograd
@@ -609,18 +609,6 @@ class SpecialUnitary(Operation):
             rjac, ijac = torch.autograd.functional.jacobian(split_matrix, theta)
             jac = rjac + 1j * ijac
 
-        elif interface in (
-            "tensorflow",
-            "tf",
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            import tensorflow as tf
-
-            with tf.GradientTape(persistent=True) as tape:
-                mats = qp.math.stack(split_matrix(theta))
-
-            rjac, ijac = tape.jacobian(mats, theta)
-            jac = qp.math.cast_like(rjac, 1j) + 1j * qp.math.cast_like(ijac, 1j)
-
         elif interface == "autograd":
             # TODO check whether we can add support for Autograd using eigenvalue decomposition
             raise NotImplementedError(
@@ -635,7 +623,7 @@ class SpecialUnitary(Operation):
         # After contracting, move the parameter derivative axis to the first position
         return qp.math.transpose(qp.math.tensordot(U_dagger, jac, axes=[[1], [0]]), [2, 0, 1])
 
-    def get_one_parameter_coeffs(self, interface: Literal["jax", "tensorflow", "tf", "torch"]):
+    def get_one_parameter_coeffs(self, interface: Literal["jax", "torch"]):
         r"""Compute the Pauli basis coefficients of the generators of one-parameter groups
         that reproduce the partial derivatives of a special unitary gate.
 
@@ -675,7 +663,7 @@ class SpecialUnitary(Operation):
 
             An auto-differentiation framework is required by this function.
             The matrix exponential is not differentiable in Autograd. Therefore this function
-            only supports JAX, Torch and Tensorflow.
+            only supports JAX and Torch.
 
         .. seealso:: :meth:`~.SpecialUnitary.get_one_parameter_generators`
 

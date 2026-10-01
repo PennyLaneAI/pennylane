@@ -450,27 +450,3 @@ class TestInterfaces:
 
         qp.assert_equal(H_fixed, expected_H_fixed)
         qp.assert_equal(H_parametrized, expected_H_parametrized)
-
-    @pytest.mark.tf
-    def test_call_tf(self):
-        """Test result of calling the ParametrizedHamiltonian works with
-        parameters as a Tensorflow tensor"""
-        import tensorflow as tf
-
-        pH = ParametrizedHamiltonian([1.2, f1, 2.3, f2], [qp.PauliX(i) for i in range(4)])
-        params = tf.constant([4.5, 6.7])
-        t = 2
-        op = pH(params, t)
-
-        assert isinstance(op, qp.ops.Sum)
-        assert len(op) == 2
-
-        H_fixed = op[0]
-        H_parametrized = op[1]
-        expected_H_fixed = qp.sum(qp.s_prod(1.2, qp.PauliX(0)), qp.s_prod(2.3, qp.PauliX(2)))
-        expected_H_parametrized = qp.sum(
-            qp.s_prod(f1(params[0], t), qp.PauliX(1)), qp.s_prod(f2(params[1], t), qp.PauliX(3))
-        )
-
-        qp.assert_equal(H_fixed, expected_H_fixed)
-        qp.assert_equal(H_parametrized, expected_H_parametrized)
