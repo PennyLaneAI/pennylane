@@ -415,9 +415,8 @@ class TestDeviceIntegration:
     @pytest.mark.parametrize("device_wires", (None, (0, 1, 2)))
     def test_reuse_without_mcms(self, device_wires, seed):
         """Test that a dynamic allocations that do not require mcms can be executed."""
-        dev_name = "default.qubit"
 
-        @qp.qnode(qp.device(dev_name, wires=device_wires, seed=seed))
+        @qp.qnode(qp.device("default.qubit", wires=device_wires, seed=seed))
         def c():
             with allocate(1, restored=True) as wires:
                 qp.H(wires)
