@@ -61,13 +61,19 @@ test_cases = [
     (qp.H(0) ** 2.5, qp.H(0), True),
     (qp.GlobalPhase(0.5) ** 0.25, qp.H(0), True),
     # various things in the same group
-    (qp.Permute((2, 1, 0), (0, 1, 2)), qp.SWAP((0, 1)), True),
+    (qp.Permute((1, 0), (0, 1)), qp.SWAP((0, 1)), True),
+    (qp.CSWAP((0, 1, 2)), qp.CSWAP((3, 2, 1)), True),
+    (qp.CSWAP((0, 1, 2)), qp.SWAP((2, 1)), True),
     (qp.H(0), qp.H(0), True),
     (qp.BasisState((0, 1), (0, 1)), qp.X(1), True),
     (qp.BasisState((0, 1), (0, 1)), qp.X(0), True),
     # various things that shouldn't commute
     (qp.U2(0.5, 2.4, 0), qp.U2(-0.7, 1.9, wires=0), False),
     (qp.Rot(1.2, 2.3, 3.4, 0), qp.Rot(0.12, 0.23, 0.34, 0), False),
+    # SWAP-like targets that only partially overlap
+    (qp.Permute((2, 1, 0), (0, 1, 2)), qp.SWAP((0, 1)), False),
+    (qp.CSWAP((0, 1, 2)), qp.CSWAP((3, 1, 4)), False),
+    (qp.CSWAP((0, 1, 2)), qp.SWAP((2, 3)), False),
 ]
 
 
@@ -324,6 +330,9 @@ class TestCommutingFunction:
         "wires,res",
         [
             ([[0, 1, 2], [2, 1, 0]], False),
+            ([[0, 1, 2], [3, 2, 1]], True),
+            ([[0, 1, 2], [3, 1, 4]], False),
+            ([[0, 1, 2], [3, 4, 2]], False),
         ],
     )
     def test_cswap_cswap(self, wires, res):
