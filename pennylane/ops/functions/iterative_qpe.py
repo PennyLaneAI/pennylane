@@ -41,6 +41,11 @@ def _iterative_qpe(base, aux_wire, iters):
         pl_ops.Hadamard(aux_wire)
         pl_ops.ctrl(pl_ops.pow(base, z=2 ** (iters - i - 1)), control=aux_wire)
 
+        # NOTE: The number of branches here scales as ~ (iter^2 / 2).
+        # Since `iters` is typically at most ~10, the unrolled trace is small enough
+        # that replacing this with a structured `qp.for_loop` is just a "nice-to-have"
+        # rather than a performance necessity.
+
         # Apply phase corrections based on previous bit measurements
         for j in range(i):
             meas = measurements[j]
