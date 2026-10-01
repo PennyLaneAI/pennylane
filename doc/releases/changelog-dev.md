@@ -885,6 +885,9 @@
   [(#10098)](https://github.com/PennyLaneAI/pennylane/pull/10098)
   [(#10154)](https://github.com/PennyLaneAI/pennylane/pull/10154)
 
+* ``Wires.all_wires`` can now handle a list with mixed ``Wires`` and ``AbstractWires`` instances.
+  [(#10223)](https://github.com/PennyLaneAI/pennylane/pull/10223)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Added an arithmetic function ``labs.templates.half_signed_out_multiplier`` that multiplies
