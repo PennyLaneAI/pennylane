@@ -436,10 +436,9 @@ class TestDeviceIntegration:
     @pytest.mark.parametrize("mcm_method", ("tree-traversal", "deferred", "one-shot"))
     def test_reuse_with_mcms(self, device_wires, mcm_method, seed):
         """Test that a simple dynamic allocation can be executed."""
-        dev_name = "default.qubit"
 
         @qp.set_shots(5000 if mcm_method == "one-shot" else None)
-        @qp.qnode(qp.device(dev_name, wires=device_wires, seed=seed), mcm_method=mcm_method)
+        @qp.qnode(qp.device("default.qubit", wires=device_wires, seed=seed), mcm_method=mcm_method)
         def c():
             with allocate(1, restored=False) as wires:
                 qp.H(wires)
