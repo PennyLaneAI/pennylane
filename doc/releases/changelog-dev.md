@@ -1029,6 +1029,11 @@
 * Tensorflow and tensorflow-autograph interfaces are removed.
   [(#10229)](https://github.com/PennyLaneAI/pennylane/pull/10229)
 
+* The ``pennylane.pulse`` module has been removed. This includes ``ParametrizedHamiltonian`` and
+  ``ParametrizedEvolution``, as well as the ``stoch_pulse_grad`` and ``pulse_odegen``
+  pulse-level gradient transforms.
+  [(#10238)](https://github.com/PennyLaneAI/pennylane/pull/10238)
+
 * :class:`~.QuantumPhaseEstimation` now only accepts an :class:`~.Operator` as the ``unitary``, and the
   ``target_wires`` argument has been removed. The target wires are the wires of ``unitary``.
   To use a unitary matrix, wrap it in a :class:`~.QubitUnitary`:
@@ -1040,9 +1045,9 @@
   # After:
   qp.QuantumPhaseEstimation(qp.QubitUnitary(matrix, wires=[0]), estimation_wires=[1, 2])
   ```
-  
+
   [(#10209)](https://github.com/PennyLaneAI/pennylane/pull/10209)
-  
+
 * The ``pennylane.noise`` module has been removed, including ``NoiseModel``,
   ``add_noise``, ``insert``, noise mitigation transforms (``mitigate_with_zne``,
   ``fold_global``, ``poly_extrapolate``, ``richardson_extrapolate``,
