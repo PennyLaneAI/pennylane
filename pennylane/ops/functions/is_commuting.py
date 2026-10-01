@@ -24,7 +24,6 @@ from pennylane.wires import Wires
 
 SPECIAL_UTILITIES = {
     "Barrier",
-    "WireCut",
     "Snapshot",
 }
 # Ops that don't commute with anything

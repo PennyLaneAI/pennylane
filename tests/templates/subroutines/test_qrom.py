@@ -320,7 +320,6 @@ class TestQROM:
         ],  # pylint: disable=too-many-arguments
     )
     @pytest.mark.parametrize("rule", qp.list_decomps(qp.QROM))
-    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_new(
         self, num_bitstrings, control_wires, target_wires, work_wires, clean, rule, seed
     ):  # pylint: disable=too-many-arguments
