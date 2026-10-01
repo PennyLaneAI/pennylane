@@ -251,8 +251,7 @@ class Controller(Node):
         device (pennylane.devices.Device, None): The PennyLane device the controller executes.
             Defaults to ``None``, which builds a ``null.qubit``.
         in_bytes (int): The size in bytes of each message the controller sends. Defaults to
-            :data:`DEFAULT_MESSAGE_BYTES`. At most :data:`MAX_MESSAGE_BYTES`, which only the
-            ``"memcpy"`` transport carries.
+            :data:`DEFAULT_MESSAGE_BYTES`. ``"memcpy"`` supports up to :data:`MAX_MESSAGE_BYTES` while ``"rdma"`` currently only supports up to :data:`DEFAULT_MESSAGE_BYTES` bytes.
         out_bytes (int): The size in bytes of each reply the controller receives. Defaults to
             :data:`DEFAULT_MESSAGE_BYTES`, with the same bound as ``in_bytes``.
 
