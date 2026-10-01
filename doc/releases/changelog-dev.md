@@ -2,6 +2,10 @@
 
 <h3>New features since last release</h3>
 
+* Added a `qp.math.floor_log2` function that computes the integer :math:`\lfloor \log_2(x)\rfloor`,
+  in analogy to the existing `qp.math.ceil_log2`.
+  [(#10101)](https://github.com/PennyLaneAI/pennylane/pull/10101)
+
 * A :func:`pennylane.decomposition.register_signature` function is added for recording the possible signatures of
   an operator, along with a :func:`pennylane.decomposition.signature_registry` function for retrieving the recorded
   signatures. The resulting registry is used to identify decomposition rules that can be precompiled, improving
@@ -1650,6 +1654,10 @@
   [(#9621)](https://github.com/PennyLaneAI/pennylane/pull/9621)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed `qp.math.ceil_log2` returning results that were off by one
+  for inputs with more significant bits than a float can hold, like `2 ** 53 + 1`.
+  [(#10101)](https://github.com/PennyLaneAI/pennylane/pull/10101)
 
 * :func:`~.allocate` with zero wires no longer queues or captures :class:`~.allocation.Allocate`
   and :class:`~.allocation.Deallocate` instructions, including when used as a context manager.
