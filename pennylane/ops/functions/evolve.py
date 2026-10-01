@@ -15,14 +15,11 @@
 This module contains the qp.evolve function.
 """
 
-from functools import singledispatch
-
 from pennylane.core.operator import Operator
 from pennylane.ops import Evolution
 
 
-@singledispatch
-def evolve(*args, **kwargs):
+def evolve(op: Operator, coeff: float = 1):
     r"""Returns a new operator that computes the evolution of ``op``.
 
     .. math::
@@ -30,7 +27,7 @@ def evolve(*args, **kwargs):
         e^{-i x \bm{O}}
 
     Args:
-        op (.Operator): operator to evolve. This must be passed as a *positional* argument. Passing it as a *keyword* argument will result in an error.
+        op (.Operator): operator to evolve
         coeff (float): coefficient multiplying the exponentiated operator
 
     Returns:
@@ -44,12 +41,4 @@ def evolve(*args, **kwargs):
     >>> op
     Evolution(-2j PauliX)
     """
-    raise ValueError(
-        f"No dispatch rule for first argument of type {type(args[0])}. Options are Operator"
-    )
-
-
-# pylint: disable=missing-function-docstring
-@evolve.register
-def evolution(op: Operator, coeff: float = 1):
     return Evolution(op, coeff)
