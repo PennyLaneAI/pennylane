@@ -17,24 +17,10 @@ This module contains the qp.iterative_qpe function.
 
 import numpy as np
 
-from pennylane import capture, math
+from pennylane import capture
 from pennylane import ops as pl_ops
-from pennylane.control_flow import for_loop
 from pennylane.core.operator.operator2 import pop_op_eqns  # tach-ignore
 from pennylane.wires import Wires
-
-
-def _phase_corrections(prev, aux_wire, num_prev):
-    """Apply the phase corrections conditioned on the ``num_prev`` previous outcomes, ordered
-    from the most recent one."""
-
-    def body(j):
-        def cond_func():
-            pl_ops.PhaseShift(-2.0 * np.pi / (2.0 ** (j + 2)), wires=aux_wire)
-
-        pl_ops.cond(prev[j], cond_func)()
-
-    for_loop(num_prev)(body)()
 
 
 def _iterative_qpe(base, aux_wire, iters):
@@ -44,28 +30,30 @@ def _iterative_qpe(base, aux_wire, iters):
 
     * Static Argument: 'iters' must be a concrete value known at trace time,
                         as it dictates the shape of the returned measurements
-    * Outer Python loop: a standard for loop is used for the rounds, since 'qp.pow'
-                         expects a static, concrete, compile-time exponent.
-    * Inner 'qp.for_loop': the phase corrections only depend on the loop index, so they
-                           are captured as a single loop per round. With capture enabled,
-                           the previous outcomes are stacked into a traced array so they
-                           can be indexed with the traced loop index. This enables a structured
-                           for loop to be captured into the jaxpr.
+    ^ Python Loops: Standard for loops are used instead of 'qp.for_loop'
+                    as 'qp.pow' expects a static, concrete, compile-time constant.
 
     """
 
-    measurements = []  # most recent outcome first
+    measurements = []
 
     for i in range(iters):
         pl_ops.Hadamard(aux_wire)
         pl_ops.ctrl(pl_ops.pow(base, z=2 ** (iters - i - 1)), control=aux_wire)
 
-        if i > 0:
-            # NOTE: With capture, outcomes are traced scalars and must be stacked into an
-            # array to be indexed by the traced loop index. Without capture, they are
-            # 'MeasurementValue's, which cannot be stacked but are indexed concretely.
-            prev = math.stack(measurements) if capture.enabled() else measurements
-            _phase_corrections(prev, aux_wire, i)
+        # NOTE: The number of branches here scales as ~ (iter^2 / 2).
+        # Since `iters` is typically at most ~10, the unrolled trace is small enough
+        # that replacing this with a structured `qp.for_loop` is just a "nice-to-have"
+        # rather than a performance necessity.
+
+        # Apply phase corrections based on previous bit measurements
+        for j in range(i):
+            meas = measurements[j]
+
+            def cond_func(j=j):
+                pl_ops.PhaseShift(-2.0 * np.pi / (2 ** (j + 2)), wires=aux_wire)
+
+            pl_ops.cond(meas, cond_func)()
 
         pl_ops.Hadamard(aux_wire)
         # Measure and reset auxiliary wire to reuse for next iteration
