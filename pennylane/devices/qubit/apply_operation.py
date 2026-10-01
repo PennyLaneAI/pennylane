@@ -18,7 +18,6 @@
 from functools import singledispatch
 from string import ascii_letters as alphabet
 
-import jax
 import numpy as np
 import scipy as sp
 from jax.lax import cond
