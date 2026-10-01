@@ -86,7 +86,7 @@ class PhaseGradientStatePrep(StatePrepBase2):
         super().__init__(wires)
 
     def label(self, decimals=None, base_label=None, cache=None):
-        return base_label or "|∇⟩"
+        return base_label or "|∇z⟩"
 
     def state_vector(self, wire_order: WiresLike | None = None):
         num_op_wires = len(self.wires)
