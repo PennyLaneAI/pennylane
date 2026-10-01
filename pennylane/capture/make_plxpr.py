@@ -89,7 +89,7 @@ def make_plxpr(func: Callable, static_argnums: int | Sequence[int] = (), autogra
 
         The ``autograph`` argument is ``True`` by default, converting Pythonic control flow to PennyLane
         supported control flow. This requires the ``diastatic-malt`` package, a standalone fork of the AutoGraph
-        module originally from TensorFlow (`official documentation <https://github.com/PennyLaneAI/diastatic-malt/blob/main/g3doc/reference/index.md>`_
+        module in TensorFlow (`official documentation <https://github.com/tensorflow/tensorflow/blob/master/tensorflow/python/autograph/g3doc/reference/index.md>`_
         ).
 
         .. note::
