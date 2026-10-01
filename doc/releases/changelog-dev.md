@@ -2,6 +2,10 @@
 
 <h3>New features since last release</h3>
 
+* Added a `qp.math.floor_log2` function that computes the integer :math:`\lfloor \log_2(x)\rfloor`,
+  in analogy to the existing `qp.math.ceil_log2`.
+  [(#10101)](https://github.com/PennyLaneAI/pennylane/pull/10101)
+
 * A :func:`pennylane.decomposition.register_signature` function is added for recording the possible signatures of
   an operator, along with a :func:`pennylane.decomposition.signature_registry` function for retrieving the recorded
   signatures. The resulting registry is used to identify decomposition rules that can be precompiled, improving
@@ -291,6 +295,7 @@
   a quantum register in unsigned or signed encoding convention into another quantum register.
   [(#9003)](https://github.com/PennyLaneAI/pennylane/pull/9003)
   [(#9558)](https://github.com/PennyLaneAI/pennylane/pull/9558)
+  [(#9769)](https://github.com/PennyLaneAI/pennylane/pull/9769)
 
 * A new :func:`~.single_qubit_zyz_angles` function that returns the pre-defined rotation angles
   of a ZYZ decomposition of a single-qubit operator has been added.
@@ -1020,6 +1025,20 @@
 * Tensorflow and tensorflow-autograph interfaces are removed.
   [(#10229)](https://github.com/PennyLaneAI/pennylane/pull/10229)
 
+* :class:`~.QuantumPhaseEstimation` now only accepts an :class:`~.Operator` as the ``unitary``, and the
+  ``target_wires`` argument has been removed. The target wires are the wires of ``unitary``.
+  To use a unitary matrix, wrap it in a :class:`~.QubitUnitary`:
+
+  ```python3
+  # Before (no longer supported):
+  # qp.QuantumPhaseEstimation(matrix, target_wires=[0], estimation_wires=[1, 2])
+
+  # After:
+  qp.QuantumPhaseEstimation(qp.QubitUnitary(matrix, wires=[0]), estimation_wires=[1, 2])
+  ```
+  
+  [(#10209)](https://github.com/PennyLaneAI/pennylane/pull/10209)
+  
 * The ``pennylane.noise`` module has been removed, including ``NoiseModel``,
   ``add_noise``, ``insert``, noise mitigation transforms (``mitigate_with_zne``,
   ``fold_global``, ``poly_extrapolate``, ``richardson_extrapolate``,
@@ -1325,7 +1344,7 @@
       :class:`~.TemporaryAND`, :class:`~.SelectPauliRot`, :class:`~.GQSP`, :class:`~.AQFT`, :class:`~.SumOfSlatersPrep`,
       :class:`~.SemiAdder`, :class:`~.OutMultiplier`, :class:`~.SignedOutMultiplier`, :class:`~.BasisState`, :class:`~.TrotterCDF`,
       :class:`~.TrotterCGF`, :class:`~.OutSquare`, :class:`~.SignedOutSquare`, :class:`~.Incrementer`, :class:`~.TrotterVibronic`,
-      :class:`~.PartialUnaryStatePreparation`, :class:`~.Select`, :class:`~.IQP`
+      :class:`~.PartialUnaryStatePreparation`, :class:`~.Select`, :class:`~.QuantumPhaseEstimation`, :class:`~.IQP`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
   [(#10164)](https://github.com/PennyLaneAI/pennylane/pull/10164)
   [(#10178)](https://github.com/PennyLaneAI/pennylane/pull/10178)
@@ -1357,6 +1376,7 @@
   [(#10069)](https://github.com/PennyLaneAI/pennylane/pull/10069)
   [(#10085)](https://github.com/PennyLaneAI/pennylane/pull/10085)
   [(#10020)](https://github.com/PennyLaneAI/pennylane/pull/10020)
+  [(#10209)](https://github.com/PennyLaneAI/pennylane/pull/10209)
   [(#10226)](https://github.com/PennyLaneAI/pennylane/pull/10226)
   - Quantum chemistry operators are ported:
     - :class:`~.SingleExcitation`
@@ -1638,6 +1658,10 @@
   [(#9621)](https://github.com/PennyLaneAI/pennylane/pull/9621)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed `qp.math.ceil_log2` returning results that were off by one
+  for inputs with more significant bits than a float can hold, like `2 ** 53 + 1`.
+  [(#10101)](https://github.com/PennyLaneAI/pennylane/pull/10101)
 
 * :func:`~.allocate` with zero wires no longer queues or captures :class:`~.allocation.Allocate`
   and :class:`~.allocation.Deallocate` instructions, including when used as a context manager.
