@@ -1011,6 +1011,9 @@
   resource operators from their quantum functions.
   [(#9764)](https://github.com/PennyLaneAI/pennylane/pull/9764)
 
+* Performance gains for qubit workflows in the TCDQ module.
+  [(#10246)](https://github.com/PennyLaneAI/pennylane/pull/10246)
+
 <h3>Breaking changes 💔</h3>
 
 * ZX transforms now require ``pyzx>=0.10``. Upgrade with ``pip install 'pyzx>=0.10'``.
