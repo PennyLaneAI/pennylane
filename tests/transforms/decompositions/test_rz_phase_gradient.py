@@ -191,7 +191,8 @@ def test_integration_multi_wire(seed):
     @qp.transforms.decompose(
         gate_set={
             "StatePrep",
-            "Adjoint(StatePrep)",
+            "PhaseGradientStatePrep",
+            "Adjoint(PhaseGradientStatePrep)",
             "SemiAdder",
             "CNOT",
             "PauliX",
