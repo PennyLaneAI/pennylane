@@ -405,21 +405,6 @@ class TestSpecialGates:
 
         plt.close()
 
-    def test_WireCut(self):
-        """Test WireCut gets correct special call."""
-
-        with qp.queuing.AnnotatedQueue() as q_tape:
-            qp.WireCut(wires=(0, 1))
-
-        tape = QuantumScript.from_queue(q_tape)
-        _, ax = tape_mpl(tape)
-
-        assert len(ax.lines) == 2
-        assert len(ax.texts) == 3
-        assert len(ax.collections) == 1
-
-        plt.close()
-
     def test_Prod(self):
         """Test Prod gets correct special call."""
         with qp.queuing.AnnotatedQueue() as q_tape:
