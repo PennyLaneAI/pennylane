@@ -104,13 +104,6 @@ class TestAdder:
                 [4, 5],
                 3,
             ),
-            (
-                5,
-                [0, 1, 2],
-                7,
-                [3, 4, 5, 6],
-                4,
-            ),
         ],
     )
     def test_operation_result(
@@ -162,19 +155,16 @@ class TestAdder:
         with pytest.raises(ValueError, match=msg_match):
             qp.Adder(k, x_wires, mod, work_wires)
 
-    @pytest.mark.parametrize("work_wires", [None, [3], [3, 4], [3, 4, 5]])
+    @pytest.mark.parametrize("work_wires", [None, [3], [3, 4, 5]])
     def test_validation_of_num_work_wires(self, work_wires):
-        """Test that when mod is not 2**len(x_wires), validation confirms at least two
+        """Test that when mod is not 2**len(x_wires), validation confirms two
         work wires are present, while any work wires are accepted for mod=2**len(x_wires)"""
 
         # if mod=2**len(x_wires), anything goes
         qp.Adder(1, [0, 1, 2], mod=8, work_wires=work_wires)
 
-        if work_wires is not None and len(work_wires) >= 2:
-            qp.Adder(1, [0, 1, 2], mod=7, work_wires=work_wires)
-        else:
-            with pytest.raises(ValueError, match="at least two work wires should be provided"):
-                qp.Adder(1, [0, 1, 2], mod=7, work_wires=work_wires)
+        with pytest.raises(ValueError, match="two work wires should be provided"):
+            qp.Adder(1, [0, 1, 2], mod=9, work_wires=work_wires)
 
     @pytest.mark.parametrize(
         ("k", "x_wires", "mod", "work_wires", "msg_match"),
@@ -254,13 +244,13 @@ class TestAdder:
 
     @pytest.mark.xfail_if_capture(reason="Needs PhaseAdder to be Op2 [sc-130164]", strict=False)
     @pytest.mark.usefixtures("enable_and_disable_capture")
-    @pytest.mark.parametrize("work_wires", [[0, 1], [0, 1, 5, 6]])
     @pytest.mark.parametrize("mod", [7, 8])
-    def test_decomposition_new(self, mod, work_wires):
+    def test_decomposition_new(self, mod):
         """Tests the decomposition rules implemented with the new system."""
 
         k = 4
         x_wires = [2, 3, 4]
+        work_wires = [0, 1]
         op = qp.Adder(k, x_wires, mod, work_wires)
         for rule in qp.list_decomps(qp.Adder):
             _test_decomposition_rule(op, rule)
@@ -272,7 +262,6 @@ class TestAdder:
             (4, [2, 3, 4], 7, [0, 1]),
             (6, [0, 1, 2, 3], 11, [4, 5]),
             (-3, [0, 1, 2], 5, [3, 4]),
-            (5, [0, 1, 2], 7, [3, 4, 5, 6]),
         ],
     )
     def test_arithmetic_matches_qft(self, k, x_wires, mod, work_wires):

@@ -203,18 +203,14 @@ def _work_wire_condition(wires, work_wires):
     return (len(work_wires) + 1) >= len(wires) and not _has_dynamic_qubits(wires)
 
 
-def _work_wire_inverse_condition(wires, work_wires):
-    return not _work_wire_condition(wires, work_wires)
-
-
 def _ctrl_work_wire_condition(base, control_wires, work_wires, **_):
     num_wires = len(base.increment_wires) + len(control_wires)
     num_work_wires = len(base.work_wires) + len(work_wires)
     return (num_work_wires + 1) >= num_wires and not _has_dynamic_qubits(base.increment_wires)
 
 
-def _ctrl_work_wire_inverse_condition(base, control_wires, work_wires, **_):
-    return not _ctrl_work_wire_condition(base, control_wires, work_wires)
+def _work_wire_inverse_condition(wires, work_wires):
+    return not _work_wire_condition(wires, work_wires)
 
 
 def _decompose_mcxs(wires, work_wires, control_wires=None):
@@ -344,47 +340,6 @@ def _controlled_incrementer_decomposition(base, control_wires, work_wires, **_):
     _decompose_mcxs(wires, work_wires, control_wires)
 
 
-def _ctrl_incrementer_fallback_resources(base, control_wires, work_wires, **_):
-    work_wires = Wire[len(work_wires) + len(base.work_wires)]
-    num_increment_wires = len(base.increment_wires)
-    num_wires = num_increment_wires + len(control_wires)
-    resources = {}
-    for i in range(num_increment_wires):
-        if num_wires - i == 1:
-            resources[X] = 1
-        else:
-            mcx = MultiControlledX(
-                Wire[num_wires - i], work_wires=work_wires, work_wire_type="zeroed"
-            )
-            resources[mcx] = 1
-    return resources
-
-
-@register_condition(_ctrl_work_wire_inverse_condition)
-@register_resources(_ctrl_incrementer_fallback_resources)
-def _ctrl_incrementer_fallback_decomposition(base, control_wires, work_wires, **_):
-    # This loop is intentionally a plain Python loop rather than a ``qp.for_loop``: each
-    # iteration emits a ``MultiControlledX`` with a different number of controls (``i - 1``),
-    # so the loop body has no fixed structure and cannot be traced as a dynamic loop. Keeping
-    # it unrolled lets this fallback run under program capture without any extra gating.
-    num_increment_wires = len(base.increment_wires)
-    # Revert incrementer wires to little endian, so slicing becomes more convenient
-    wires = Wires(control_wires) + Wires(base.increment_wires[::-1])
-    num_wires = len(wires)
-
-    work_wires = Wires(base.work_wires) + Wires(work_wires)
-
-    for i in range(num_increment_wires):
-        if num_wires - i == 1:
-            X(wires[0])
-        else:
-            MultiControlledX(wires[: num_wires - i], work_wires=work_wires, work_wire_type="zeroed")
-
-
 add_decomps(Incrementer, _incrementer_decomposition)
 add_decomps(Incrementer, _incrementer_fallback_decomposition)
-add_decomps(
-    "C(Incrementer)",
-    flip_zero_control2(_controlled_incrementer_decomposition),
-    flip_zero_control2(_ctrl_incrementer_fallback_decomposition),
-)
+add_decomps("C(Incrementer)", flip_zero_control2(_controlled_incrementer_decomposition))
