@@ -23,6 +23,7 @@ import numpy as np
 
 from pennylane import capture, compiler, math
 from pennylane import ops as qp_ops
+from pennylane.capture import hint
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import (
@@ -860,13 +861,14 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires):
     for i in range(1, len(triples)):
         TemporaryAND(triples[i], (1, 0))
 
-    # [dwierichs] todo: Once resource hints are merged, use those estimates:
-    # [sc-129626] [sc-129627]
+    # [dwierichs] todo: Once resource hints for cond are merged, use those estimates:
+    # [sc-129627]
     # quarter_prob = int(K > (1 << (c - 2))) / (K - 1)
     # mid_prob = int(K > (1 << (c - 1))) / (K - 1)
-    # est_ladder_len = float(
-    # np.mean([math.bitwise_count(math.bitwise_xor(k, k + 1)) - 1 for k in range(K - 1)])
-    # )
+
+    # Average length of the elbow ladders below, which is min(t, c - 2) for t trailing ones in k
+    ladder_lens = [min((k ^ (k + 1)).bit_count() - 1, c - 2) for k in range(K - 1)]
+    est_ladder_len = sum(ladder_lens) / max(K - 1, 1)
 
     # Loop over all bitstrings but the last one
     def loop(k):
@@ -884,9 +886,8 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires):
         # 2a. right-elbow ladder: uncompute levels c-2 .. max(a,1) (top-down)
         lower_bound = math.max(math.array([a, 1], like=a))
 
+        @hint({"num-iters": est_ladder_len})
         @for_loop(c - 2, lower_bound - 1, -1)
-        # Once resource hints are merged, use those estimates:
-        # @for_loop(c - 2, max(a - 1, 0), -1, estimated_iterations=est_ladder_len)
         def uncompute(i):
             qp_ops.adjoint(TemporaryAND)(wires=triples[i])
 
@@ -912,9 +913,8 @@ def _main_unary_loop_monolithic(bitstrings, triples, target_wires):
         cond(a == 0, CNOT)(triples[0][1:])
 
         # 2c. left-elbow ladder: recompute levels max(a,1) .. c-2 (bottom-up)
-        # Once resource hints are merged, use those estimates:
+        @hint({"num-iters": est_ladder_len})
         @for_loop(lower_bound, c - 1)
-        # @for_loop(max(a, 1), c - 1, estimated_iterations=est_ladder_len)
         def recompute(i):
             TemporaryAND(triples[i], (1, 0))
 

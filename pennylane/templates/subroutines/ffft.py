@@ -20,6 +20,7 @@ from collections import defaultdict
 import numpy as np
 
 from pennylane import capture, math
+from pennylane.capture import hint
 from pennylane.control_flow import for_loop, while_loop
 from pennylane.core.operator import Operator
 from pennylane.decomposition import add_decomps, register_resources
@@ -217,6 +218,10 @@ def _permute_and_apply_parallel(wires, operator):
         operator (Type[Operator]): The operator to apply once the Fermions are adjacent in the encoding.
     """
 
+    num_layers = len(wires) // 2 - 1
+
+    # The layers contain 1, ..., num_layers parallel swaps
+    @hint({"num-iters": (num_layers + 1) / 2})
     @while_loop(lambda i, count, num_parallel_swaps, wires: count < num_parallel_swaps)
     def apply_swaps(i, count, num_parallel_swaps, wires):
         # apply the FSWAP
@@ -225,6 +230,7 @@ def _permute_and_apply_parallel(wires, operator):
         # increase index of next FSWAP and count of FSWAPs
         return i + 2, count + 1, num_parallel_swaps, wires
 
+    @hint({"num-iters": num_layers})
     @while_loop(lambda num_parallel_swaps, curr_start, wires: num_parallel_swaps < len(wires) // 2)
     def permutation_in_layers(num_parallel_swaps, curr_start, wires):
         # applies a layer of parallel FSWAPs
@@ -243,6 +249,7 @@ def _permute_and_apply_parallel(wires, operator):
 
     apply_op()  # pylint: disable=no-value-for-parameter
 
+    @hint({"num-iters": num_layers})
     @while_loop(lambda num_parallel_swaps, curr_start, wires: num_parallel_swaps > 0)
     def permutation_out_layers(num_parallel_swaps, curr_start, wires):
         # applies a layer of parallel FSWAPs

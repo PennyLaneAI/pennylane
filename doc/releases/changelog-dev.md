@@ -612,6 +612,11 @@
   on for or while loops.
   [(#10230)](https://github.com/PennyLaneAI/pennylane/pull/10230/)
 
+* The decompositions of :class:`~.QROM` (unary iteration), :class:`~.QFT`, :class:`~.AQFT` and
+  :class:`~.FFFT` now provide `num-iters` hints for loops with dynamic bounds, avoiding symbolic
+  resource counts when compiling them with Catalyst.
+  [(#XXXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXXX)
+
 * Multi-controlled operators can now reuse a single :class:`~.TemporaryAND` ladder when enough
   zeroed work wires are available, reducing their decomposition gate counts.
   [(#10161)](https://github.com/PennyLaneAI/pennylane/pull/10161)

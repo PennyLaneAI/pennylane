@@ -15,13 +15,14 @@
 
 import numpy as np
 import pytest
+from capture_utils import loop_hints
 
 import pennylane as qp
 from pennylane import FermionicSWAP, PauliZ, device, list_decomps, qnode
 from pennylane.measurements import state
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates import BasisEmbedding
-from pennylane.templates.subroutines.ffft import FFFT, TwoWireFFT
+from pennylane.templates.subroutines.ffft import FFFT, TwoWireFFT, _permute_and_apply_parallel
 from pennylane.wires import Wires
 
 dev = device("default.qubit")
@@ -154,6 +155,29 @@ def test_ffft_circuit_capture(wires, expected_circuit):
         assert actual.wires == expected.wires
         if actual.data:
             assert np.allclose(actual.data, expected.data)
+
+
+@pytest.mark.capture
+@pytest.mark.parametrize("n_wires", [2, 4, 8, 16])
+def test_ffft_num_iters_hints(n_wires):
+    """Test that the permutation loops carry ``num-iters`` hints that reproduce the number of
+    ``FermionicSWAP`` gates."""
+    import jax  # pylint: disable=import-outside-toplevel
+
+    def permutation():
+        wires = qp.math.array(list(range(n_wires)), like="jax")
+        _permute_and_apply_parallel(wires, TwoWireFFT)
+
+    plxpr = jax.make_jaxpr(permutation)()
+    ops = qp.tape.plxpr_to_tape(plxpr.jaxpr, plxpr.consts).operations
+    num_fswaps = sum(isinstance(op, FermionicSWAP) for op in ops)
+
+    # in-permutation layers, swaps per layer, operator loop, out-permutation layers, swaps per layer
+    num_layers, swaps_per_layer, op_loop_hint, *out_hints = loop_hints(plxpr.jaxpr)
+    assert num_layers == n_wires // 2 - 1
+    assert op_loop_hint is None
+    assert out_hints == [num_layers, swaps_per_layer]
+    assert 2 * num_layers * swaps_per_layer == num_fswaps
 
 
 def fermionic_superposition_state(amplitudes):
