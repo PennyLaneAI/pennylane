@@ -566,5 +566,5 @@ def _apply_hint_to_for_loop(
         f.step,
         f.body_fn,
         allow_array_resizing=f.allow_array_resizing,
-        num_iters_hint=hints["num-iters"],
+        num_iters_hint=hints.get("num-iters", None),
     )

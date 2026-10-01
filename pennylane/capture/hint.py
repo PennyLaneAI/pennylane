@@ -72,9 +72,9 @@ class HintedCallable:
     """
 
     def __init__(self, f: Callable, hints: dict[str, Any]):
+        functools.update_wrapper(self, f)
         self._f = f
         self._hints = hints
-        functools.update_wrapper(self, f)
 
     def __repr__(self):
         return f"<HintedCallable({self.f}, {self.hints})>"
@@ -102,8 +102,8 @@ def apply_hint(f, hints: dict[str, Any]):
         hints (dict[str, Any]): a dictionary of hints to be applied
 
     This is a single dispatch function, and custom behaviour for more types of classes can
-    be registered. For example, the ``ForLoopCallable`` produced by :func:`~for_loop` can
-    have a custom way of applying the hint.
+    be registered. For example, the ``ForLoopCallable`` produced by :func:`~for_loop` has
+    a custom way of applying the hint.
 
     By default, all callables are converted to a :class:`~HintedCallable` for deferred handling.
 
@@ -143,6 +143,11 @@ def hint(hints: dict[str, Any]) -> Callable:
 
     * :func:`~.for_loop` supports `"num-iters"` to indicate the number of loops
     : :func:`~.while_loop` supports `"num-iters"` to indicate the number of loops
+
+    .. warning::
+
+        While close mispellings may be accepted, hints sufficiently far away from the target
+        will be simply ignored.
 
     By hinting control flow like :func:`~.for_loop` and :func:`~.while_loop`, profiling
     with :func:`~.specs` can fully specify the number of iterations.
