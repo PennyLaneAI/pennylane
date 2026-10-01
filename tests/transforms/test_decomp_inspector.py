@@ -360,35 +360,49 @@ class TestInspectDecompGraph:
         op = qp.PauliRot(0.5, "XYZ", [0, 1, 2])
         result = inspector.inspect_decomps(op)
         assert str(result) == dedent("""
-            Decomposition 0 (name: _pauli_rot_decomposition)
-            0: ─╭(PPR(-π/4, X)@H)@MultiRZ(0.50)@(PPR(π/4, X)@H)─┤
-            1: ─├(PPR(-π/4, X)@H)@MultiRZ(0.50)@(PPR(π/4, X)@H)─┤
-            2: ─╰(PPR(-π/4, X)@H)@MultiRZ(0.50)@(PPR(π/4, X)@H)─┤
-            First-Level Expansion Gates: {(PPR(-4, 'X', wires=AbstractWires(1)) @ Hadamard) @ MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)) @ (PPR(4, 'X', wires=AbstractWires(1)) @ Hadamard): 1}
-            Missing Ops: {(PPR(-4, 'X', wires=AbstractWires(1)) @ Hadamard) @ MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)) @ (PPR(4, 'X', wires=AbstractWires(1)) @ Hadamard)}
+            CHOSEN: Decomposition 0 (name: _pauli_rot_decomposition)
+            0: ─╭(PPR(-π/4, X)@PPR(π/4, Y))@MultiRZ(0.50)@(PPR(π/4, X)@PPR(-π/4, Y))─┤
+            1: ─├(PPR(-π/4, X)@PPR(π/4, Y))@MultiRZ(0.50)@(PPR(π/4, X)@PPR(-π/4, Y))─┤
+            2: ─╰(PPR(-π/4, X)@PPR(π/4, Y))@MultiRZ(0.50)@(PPR(π/4, X)@PPR(-π/4, Y))─┤
+            First-Level Expansion Gates: {(PPR(-4, 'X', wires=AbstractWires(1)) @ PPR(4, 'Y', wires=AbstractWires(1))) @ MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)) @ (PPR(4, 'X', wires=AbstractWires(1)) @ PPR(-4, 'Y', wires=AbstractWires(1))): 1}
+            Full Expansion Gates: {CNOT: 4, PPR(-4, 'X', wires=AbstractWires(1)): 1, PPR(-4, 'Y', wires=AbstractWires(1)): 1, PPR(4, 'X', wires=AbstractWires(1)): 1, PPR(4, 'Y', wires=AbstractWires(1)): 1, RZ: 1}
+            Weighted Cost: 9.0
             """).strip()
 
         assert result._repr_markdown_() == dedent("""
-            #### Decomposition 0 (name: _pauli_rot_decomposition)
+            #### **CHOSEN:** Decomposition 0 (name: _pauli_rot_decomposition)
 
             ```
-            0: ─╭(PPR(-π/4, X)@H)@MultiRZ(0.50)@(PPR(π/4, X)@H)─┤
-            1: ─├(PPR(-π/4, X)@H)@MultiRZ(0.50)@(PPR(π/4, X)@H)─┤
-            2: ─╰(PPR(-π/4, X)@H)@MultiRZ(0.50)@(PPR(π/4, X)@H)─┤
+            0: ─╭(PPR(-π/4, X)@PPR(π/4, Y))@MultiRZ(0.50)@(PPR(π/4, X)@PPR(-π/4, Y))─┤
+            1: ─├(PPR(-π/4, X)@PPR(π/4, Y))@MultiRZ(0.50)@(PPR(π/4, X)@PPR(-π/4, Y))─┤
+            2: ─╰(PPR(-π/4, X)@PPR(π/4, Y))@MultiRZ(0.50)@(PPR(π/4, X)@PPR(-π/4, Y))─┤
             ```
             <details><summary>Gate Counts and Wire Allocations</summary>
 
             | First-Level Expansion | Count |
             | :--- | :--- |
-            | (PPR(-4, 'X', wires=AbstractWires(1)) @ Hadamard) @ MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)) @ (PPR(4, 'X', wires=AbstractWires(1)) @ Hadamard) | 1 |
-            </details>
+            | (PPR(-4, 'X', wires=AbstractWires(1)) @ PPR(4, 'Y', wires=AbstractWires(1))) @ MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)) @ (PPR(4, 'X', wires=AbstractWires(1)) @ PPR(-4, 'Y', wires=AbstractWires(1))) | 1 |
 
-            | Missing Ops |
-            | :--- |
-            | (PPR(-4, 'X', wires=AbstractWires(1)) @ Hadamard) @ MultiRZ(AbstractArray((), float64, weak_type=True), wires=AbstractWires(3)) @ (PPR(4, 'X', wires=AbstractWires(1)) @ Hadamard) |
+            | Full Expansion | Count |
+            | :--- | :--- |
+            | CNOT | 4 |
+            | PPR(-4, 'X', wires=AbstractWires(1)) | 1 |
+            | PPR(-4, 'Y', wires=AbstractWires(1)) | 1 |
+            | PPR(4, 'X', wires=AbstractWires(1)) | 1 |
+            | PPR(4, 'Y', wires=AbstractWires(1)) | 1 |
+            | RZ | 1 |
+            | **Weighted Cost** | 9.0 |
+            </details>
             """).strip()
 
-        assert str(inspector.inspect_decomps(qp.H(0))) == dedent("""
+        @decomp_inspector(gate_set={"RZ", "RX", "CNOT", "PPR"}, num_work_wires=2)
+        @qp.qnode(qp.device("default.qubit"))
+        def hadamard_circuit():
+            qp.Hadamard(0)
+            return qp.probs()
+
+        hadamard_inspector = hadamard_circuit()
+        assert str(hadamard_inspector.inspect_decomps(qp.H(0))) == dedent("""
             Decomposition 0 (name: _hadamard_ppm)
             Insufficient work wires: requires 1 but only 0 available.
 

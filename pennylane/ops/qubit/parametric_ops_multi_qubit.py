@@ -523,11 +523,15 @@ def _pauli_rot_resources(theta, pauli_word, wires):  # pylint: disable=unused-ar
         # a pure-Z word needs no basis change, so there is nothing to conjugate
         return {qp.MultiRZ(Float, Wire[num_active_wires]): 1}
 
-    # A Y is an X rotation by ``±π/2``, i.e. ``PPR(±4, "X")``; an X uses a Hadamard. The compute
-    # and uncompute bases differ only in the sign of that rotation.
+    # X and Y basis changes are Y and X rotations by ``∓π/2`` and ``±π/2``, respectively.
+    # The compute and uncompute bases differ only in the sign of those rotations.
     def _basis(denominator):
         gates = tuple(
-            qp.Hadamard(wires=Wire[1]) if gate == "X" else qp.PPR(denominator, "X", wires=Wire[1])
+            qp.PPR(
+                (1 if gate == "Y" else -1) * denominator,
+                "X" if gate == "Y" else "Y",
+                wires=Wire[1],
+            )
             for gate in basis_word
         )
         # a single-gate basis change is not wrapped in a product
@@ -556,18 +560,17 @@ def _pauli_rot_decomposition(theta: TensorLike, pauli_word: str, wires: WiresLik
         qp.MultiRZ(theta, wires=list(active_wires))
         return
 
-    def _basis_change(denominator):
-        def _apply():
-            for wire, gate in zip(active_wires, active_gates, strict=True):
-                if gate == "X":
-                    qp.Hadamard(wires=[wire])
-                elif gate == "Y":
-                    qp.PPR(denominator, "X", wires=[wire])
-
-        return _apply
+    def _apply_basis_change(denominator):
+        for wire, gate in zip(active_wires, active_gates, strict=True):
+            if gate == "X":
+                qp.PPR(-denominator, "Y", wires=[wire])
+            elif gate == "Y":
+                qp.PPR(denominator, "X", wires=[wire])
 
     qp.change_op_basis(
-        _basis_change(4), qp.MultiRZ(theta, wires=list(active_wires)), _basis_change(-4)
+        functools.partial(_apply_basis_change, 4),
+        qp.MultiRZ(theta, wires=list(active_wires)),
+        functools.partial(_apply_basis_change, -4),
     )
 
 
