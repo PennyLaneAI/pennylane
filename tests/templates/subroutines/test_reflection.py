@@ -273,30 +273,6 @@ class TestIntegration:
 
         assert qp.math.allclose(jac, self.exp_jac, atol=0.005)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("shots", [None, 50000])
-    @pytest.mark.xfail(reason="tf gradient doesn't seem to be working, returns ()")
-    def test_qnode_tf(self, shots, seed):
-        """Test that the QNode executes and is differentiable with TensorFlow. The shots
-        argument controls whether autodiff or parameter-shift gradients are used."""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", seed=seed)
-        diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qp.set_shots(
-            qp.QNode(self.circuit, dev, interface="tf", diff_method=diff_method), shots=shots
-        )
-
-        x = tf.Variable(self.x)
-        with tf.GradientTape() as tape:
-            res = qnode(x)
-
-        assert qp.math.shape(res) == (8,)
-        assert qp.math.allclose(res, self.exp_result, atol=0.002)
-
-        jac = tape.gradient(res, x)
-        assert qp.math.shape(jac) == (8,)
-
 
 def test_correct_queueing():
     """Test that the Reflection operator is correctly queued in the circuit"""

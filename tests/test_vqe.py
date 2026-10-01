@@ -308,50 +308,6 @@ class TestVQE:
         assert np.allclose(c1, c2, atol=1e-1)
 
     # pylint: disable=protected-access
-    @pytest.mark.tf
-    @pytest.mark.slow
-    @pytest.mark.parametrize("shots", [None, [(8000, 5)], [(8000, 5), (9000, 4)]])
-    def test_optimize_tf(self, shots, seed):
-        """Test that a Hamiltonian cost function is the same with and without
-        grouping optimization when using the TensorFlow interface."""
-
-        dev = qp.device("default.qubit", wires=4)
-
-        hamiltonian1 = copy.copy(big_hamiltonian)
-        hamiltonian2 = copy.copy(big_hamiltonian)
-        hamiltonian1.compute_grouping()
-
-        cost = generate_cost_fn(
-            qp.templates.StronglyEntanglingLayers,
-            hamiltonian1,
-            dev,
-            interface="tf",
-            diff_method="parameter-shift",
-        )
-        cost2 = generate_cost_fn(
-            qp.templates.StronglyEntanglingLayers,
-            hamiltonian2,
-            dev,
-            interface="tf",
-            diff_method="parameter-shift",
-        )
-
-        shape = qp.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
-        _rng = np.random.default_rng(seed)
-        w = _rng.random(shape)
-
-        with qp.Tracker(dev) as tracker:
-            c1 = cost(w)
-        exec_opt = tracker.totals["executions"]
-
-        with tracker:
-            c2 = cost2(w)
-        exec_no_opt = tracker.totals["executions"]
-
-        assert exec_opt == 5  # Number of groups in the Hamiltonian
-        assert exec_no_opt == 8  # Number of wire-based groups
-
-        assert np.allclose(c1, c2, atol=1e-1)
 
     # pylint: disable=protected-access
     @pytest.mark.autograd
@@ -514,60 +470,6 @@ class TestVQE:
         assert np.allclose(c1, c2)
 
     # pylint: disable=protected-access
-    @pytest.mark.tf
-    def test_optimize_multiple_terms_tf(self, seed):
-        """Test that a Hamiltonian cost function is the same with and without
-        grouping optimization when using the TensorFlow interface, even when
-        there are non-unique Hamiltonian terms."""
-
-        dev = qp.device("default.qubit", wires=5)
-        obs = [
-            qp.PauliZ(wires=[2]) @ qp.PauliZ(wires=[4]),  # <---- These two terms
-            qp.PauliZ(wires=[4]) @ qp.PauliZ(wires=[2]),  # <---- are equal
-            qp.PauliZ(wires=[1]),
-            qp.PauliZ(wires=[2]),
-            qp.PauliZ(wires=[1]) @ qp.PauliZ(wires=[2]),
-            qp.PauliZ(wires=[2]) @ qp.PauliZ(wires=[0]),
-            qp.PauliZ(wires=[3]) @ qp.PauliZ(wires=[1]),
-            qp.PauliZ(wires=[4]) @ qp.PauliZ(wires=[3]),
-        ]
-
-        coeffs = (np.random.rand(len(obs)) - 0.5) * 2
-        hamiltonian1 = qp.Hamiltonian(coeffs, obs)
-        hamiltonian2 = qp.Hamiltonian(coeffs, obs)
-        hamiltonian1.compute_grouping()
-
-        cost = generate_cost_fn(
-            qp.templates.StronglyEntanglingLayers,
-            hamiltonian1,
-            dev,
-            interface="tf",
-            diff_method="parameter-shift",
-        )
-        cost2 = generate_cost_fn(
-            qp.templates.StronglyEntanglingLayers,
-            hamiltonian2,
-            dev,
-            interface="tf",
-            diff_method="parameter-shift",
-        )
-
-        shape = qp.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=5)
-        _rng = np.random.default_rng(seed)
-        w = _rng.random(shape)
-
-        with qp.Tracker(dev) as tracker:
-            c1 = cost(w)
-        exec_opt = tracker.totals["executions"]
-
-        with tracker:
-            c2 = cost2(w)
-        exec_no_opt = tracker.totals["executions"]
-
-        assert exec_opt == 1  # Number of groups in the Hamiltonian
-        assert exec_no_opt == 4
-
-        assert np.allclose(c1, c2)
 
     # pylint: disable=protected-access
     @pytest.mark.autograd
@@ -667,37 +569,6 @@ class TestVQE:
         res = cost(w)
         res.backward()
         dc = w.grad.detach().numpy()
-
-        assert np.allclose(dc, big_hamiltonian_grad)
-
-    @pytest.mark.tf
-    @pytest.mark.slow
-    def test_optimize_grad_tf(self):
-        """Test that the gradient of a Hamiltonian cost function is accessible
-        and correct when using observable grouping optimization and the
-        TensorFlow interface."""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", wires=4)
-        hamiltonian = big_hamiltonian
-        hamiltonian.compute_grouping()
-
-        cost = generate_cost_fn(
-            qp.templates.StronglyEntanglingLayers, hamiltonian, dev, interface="tf"
-        )
-
-        shape = qp.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
-        # TODO: This is another case of a magic number in the sense that no other number allows
-        #       this test to pass. This is likely because the expected `big_hamiltonian_grad`
-        #       was calculated using this exact seed. This test needs to be revisited.
-        _rng = np.random.default_rng(1967)
-        w = _rng.uniform(low=0, high=2 * np.pi, size=shape)
-        w = tf.Variable(w)
-
-        with tf.GradientTape() as tape:
-            res = cost(w)
-
-        dc = tape.gradient(res, w).numpy()
 
         assert np.allclose(dc, big_hamiltonian_grad)
 
@@ -919,28 +790,6 @@ class TestNewVQE:
 
         assert np.allclose(dc, big_hamiltonian_grad, atol=tol)
 
-    @pytest.mark.tf
-    def test_grad_tf(self, tol):
-        """Tests VQE gradients in the tf interface."""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", wires=4)
-        H = big_hamiltonian
-
-        @qp.qnode(dev)
-        def circuit(w):
-            qp.templates.StronglyEntanglingLayers(w, wires=range(4))
-            return qp.expval(H)
-
-        w = tf.Variable(PARAMS, dtype=tf.double)
-
-        with tf.GradientTape() as tape:
-            res = circuit(w)
-
-        dc = tape.gradient(res, w).numpy()
-
-        assert np.allclose(dc, big_hamiltonian_grad, atol=tol)
-
     @pytest.mark.jax
     @pytest.mark.slow
     def test_grad_jax(self, tol):
@@ -1039,36 +888,6 @@ class TestInterfaces:
         loss.backward()
 
         res = params.grad.numpy()
-
-        expected = [
-            -coeffs[0] * np.sin(a) * np.sin(b) - coeffs[1] * np.cos(a),
-            coeffs[0] * np.cos(a) * np.cos(b),
-        ]
-
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    def test_gradient_tf(self, tol):
-        """Tests for the TF interface"""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", wires=1)
-
-        def ansatz(params, **kwargs):
-            qp.RX(params[0], wires=0)
-            qp.RY(params[1], wires=0)
-
-        coeffs = [0.2, 0.5]
-        observables = [qp.PauliX(0), qp.PauliY(0)]
-
-        H = qp.Hamiltonian(coeffs, observables)
-        a, b = 0.54, 0.123
-        params = tf.Variable([a, b], dtype=tf.float64)
-        cost = generate_cost_fn(ansatz, H, dev, interface="tf")
-
-        with tf.GradientTape() as tape:
-            loss = cost(params)
-            res = np.array(tape.gradient(loss, params))
 
         expected = [
             -coeffs[0] * np.sin(a) * np.sin(b) - coeffs[1] * np.cos(a),

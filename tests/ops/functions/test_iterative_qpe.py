@@ -120,47 +120,6 @@ class TestIQPE:
         phi = torch.tensor(1.0, requires_grad=True)
         assert torch.isclose(torch.func.grad(circuit)(phi), torch.func.grad(manual_circuit)(phi))
 
-    @pytest.mark.tf
-    def test_check_gradients_tf(self):
-        """Test to check that the gradients are correct comparing with the expanded circuit using TensorFlow"""
-
-        import tensorflow as tf
-
-        def grad(f):
-            def wrapper(x):
-                with tf.GradientTape() as tape:
-                    y = f(x)
-
-                return tape.gradient(y, x)
-
-            return wrapper
-
-        dev = qp.device("default.qubit")
-
-        @qp.qnode(dev)
-        def circuit(theta):
-            meas = qp.iterative_qpe(qp.RZ(theta, wires=[0]), [1], iters=2)
-            return qp.expval(meas[0])
-
-        @qp.qnode(dev)
-        def manual_circuit(phi):
-            qp.Hadamard(wires=[1])
-            qp.ctrl(qp.RZ(phi, wires=[0]) ** 2, control=[1])
-            qp.Hadamard(wires=[1])
-            qp.CNOT(wires=[1, 2])
-            qp.CNOT(wires=[2, 1])
-            qp.Hadamard(wires=[1])
-            qp.ctrl(qp.RZ(phi, wires=[0]), control=[1])
-            qp.ctrl(qp.PhaseShift(-np.pi / 2, wires=[1]), control=[2])
-            qp.Hadamard(wires=[1])
-            qp.CNOT(wires=[1, 3])
-            qp.CNOT(wires=[3, 1])
-
-            return qp.expval(qp.Hermitian([[0, 0], [0, 1]], wires=3))
-
-        phi = tf.Variable(1.0)
-        assert np.isclose(grad(circuit)(phi), grad(manual_circuit)(phi))
-
     @pytest.mark.parametrize("iters", (1, 2, 3, 4))
     def test_size_return(self, iters):
         """Test to check that the size of the returned list is correct"""

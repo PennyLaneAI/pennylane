@@ -1025,6 +1025,9 @@
   [(#9764)](https://github.com/PennyLaneAI/pennylane/pull/9764)
 
 <h3>Breaking changes 💔</h3>
+  
+* Tensorflow and tensorflow-autograph interfaces are removed.
+  [(#10229)](https://github.com/PennyLaneAI/pennylane/pull/10229)
 
 * :class:`~.QuantumPhaseEstimation` now only accepts an :class:`~.Operator` as the ``unitary``, and the
   ``target_wires`` argument has been removed. The target wires are the wires of ``unitary``.
