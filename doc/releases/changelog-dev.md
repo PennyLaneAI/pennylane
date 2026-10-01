@@ -495,7 +495,7 @@
   [(#10146)](https://github.com/PennyLaneAI/pennylane/pull/10146)
 
 * Added :class:`~.QubitizationTHC`, the qubitization walk operator of a tensor hypercontracted
-  Hamiltonian. It composes the (also newly added) :class:`~.SuperpositionTHC` and 
+  Hamiltonian. It composes the (also newly added) :class:`~.SuperpositionTHC` and
   :class:`~.AliasSamplingTHC` into ``PREPARE``, applies :class:`~.SelectTHC`, and reflects about
   :math:`|\vec 0\rangle` on the ``PREPARE`` register. Use :func:`~.qubitization_thc_wires` to
   determine the register sizes, as well as :func:`~.alias_sampling_thc_wires` and
@@ -1017,6 +1017,33 @@
 
 <h3>Breaking changes 💔</h3>
 
+* :class:`~.QuantumPhaseEstimation` now only accepts an :class:`~.Operator` as the ``unitary``, and the
+  ``target_wires`` argument has been removed. The target wires are the wires of ``unitary``.
+  To use a unitary matrix, wrap it in a :class:`~.QubitUnitary`:
+
+  ```python3
+  # Before (no longer supported):
+  # qp.QuantumPhaseEstimation(matrix, target_wires=[0], estimation_wires=[1, 2])
+
+  # After:
+  qp.QuantumPhaseEstimation(qp.QubitUnitary(matrix, wires=[0]), estimation_wires=[1, 2])
+  ```
+  
+  [(#10209)](https://github.com/PennyLaneAI/pennylane/pull/10209)
+  
+* The ``pennylane.noise`` module has been removed, including ``NoiseModel``,
+  ``add_noise``, ``insert``, noise mitigation transforms (``mitigate_with_zne``,
+  ``fold_global``, ``poly_extrapolate``, ``richardson_extrapolate``,
+  ``exponential_extrapolate``), and ``from_qiskit_noise``. Noise channels such as
+  :class:`~.AmplitudeDamping` are unaffected.
+  [(#10214)](https://github.com/PennyLaneAI/pennylane/pull/10214)
+
+* Removed the ``qp.fourier`` module. This includes ``circuit_spectrum``, ``coefficients``,
+  ``qnode_spectrum``, ``mark``, ``get_spectrum``, ``join_spectra`` and the
+  ``qp.fourier.visualize`` plotting functions. Also, ``qp.fourier.reconstruct`` has moved to
+  ``pennylane.optimize.reconstruct``.
+  [(#10212)](https://github.com/PennyLaneAI/pennylane/pull/10212)
+  
 * ZX transforms now require ``pyzx>=0.10``. Upgrade with ``pip install 'pyzx>=0.10'``.
   [(#10121)](https://github.com/PennyLaneAI/pennylane/pull/10121)
 
@@ -1218,7 +1245,7 @@
   [(#10198)](https://github.com/PennyLaneAI/pennylane/pull/10198)
   [(#10200)](https://github.com/PennyLaneAI/pennylane/pull/10200)
 
-* An operator can now be reconstructed from operator_p with abstract wires in the form of 
+* An operator can now be reconstructed from operator_p with abstract wires in the form of
   AbstractQubit, jax.core.ShapedArray, AbstractWires, and AbstractArray.
   [(#10165)](https://github.com/PennyLaneAI/pennylane/pull/10165)
 
@@ -1310,6 +1337,7 @@
       :class:`~.SemiAdder`, :class:`~.OutMultiplier`, :class:`~.SignedOutMultiplier`, :class:`~.BasisState`, :class:`~.TrotterCDF`,
       :class:`~.TrotterCGF`, :class:`~.OutSquare`, :class:`~.SignedOutSquare`, :class:`~.Incrementer`, :class:`~.TrotterVibronic`,
       :class:`~.PartialUnaryStatePreparation`, :class:`~.Select`, :class:`~.IQPEmbedding`
+      :class:`~.PartialUnaryStatePreparation`, :class:`~.Select`, :class:`~.QuantumPhaseEstimation`, :class:`~.IQP`
   [(#9896)](https://github.com/PennyLaneAI/pennylane/pull/9896)
   [(#10164)](https://github.com/PennyLaneAI/pennylane/pull/10164)
   [(#10178)](https://github.com/PennyLaneAI/pennylane/pull/10178)
@@ -1342,6 +1370,8 @@
   [(#10085)](https://github.com/PennyLaneAI/pennylane/pull/10085)
   [(#10020)](https://github.com/PennyLaneAI/pennylane/pull/10020)
   [(#10221)](https://github.com/PennyLaneAI/pennylane/pull/10221)
+  [(#10209)](https://github.com/PennyLaneAI/pennylane/pull/10209)
+  [(#10226)](https://github.com/PennyLaneAI/pennylane/pull/10226)
   - Quantum chemistry operators are ported:
     - :class:`~.SingleExcitation`
   [(#9944)](https://github.com/PennyLaneAI/pennylane/pull/9944)
@@ -1487,7 +1517,7 @@
     [(#9753)](https://github.com/PennyLaneAI/pennylane/pull/9753)
   - Integration with :func:`pennylane.apply`.
     [(#9738)](https://github.com/PennyLaneAI/pennylane/pull/9738)
-  - Integration with :func:`pennylane.insert`.
+  - Integration with ``pennylane.insert``.
     [(#9685)](https://github.com/PennyLaneAI/pennylane/pull/9685)
   - Integration with the graph-based decomposition system.
     [(#9723)](https://github.com/PennyLaneAI/pennylane/pull/9723)
