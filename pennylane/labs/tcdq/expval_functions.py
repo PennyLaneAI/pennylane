@@ -63,8 +63,6 @@ class CircuitConfig:  # pylint: disable=too-many-instance-attributes
         phase_fn (Callable | None): Optional custom phase function
             ``phase_fn(params, bitstring)`` applied as an extra diagonal layer.
             Defaults to ``None``.
-        diagonal_observables (Bool): Flag when the circuit will only be used with Pauli-Z gates for
-            a performance increase. Defaults to ``False``.
 
     **Example**
 
@@ -100,8 +98,6 @@ class CircuitConfig:  # pylint: disable=too-many-instance-attributes
     init_state_amps: ArrayLike | None = None
     #: Optional custom phase function applied as an extra diagonal layer.
     phase_fn: Callable | None = None
-    #: If true, the expectation value assumes diagonal observables for a performance increase.
-    diagonal_observables: bool = False
 
 
 def _parse_generator_dict(circuit_def: dict[int, list[list[int]]], n_qubits: int):
@@ -164,7 +160,7 @@ def _parity_dot(a: jnp.ndarray, b: jnp.ndarray) -> jnp.ndarray:
     b = jnp.asarray(b)
     dims = (((a.ndim - 1, ), (b.ndim - 1, )), ((), ()))
 
-    product = jax.lax.dot_general(a, b, dims)
+    product = jax.lax.dot_general(a.astype(jnp.int8), b.astype(jnp.int8), dims)
     return product % 2
 
 def _parity_signs(parity: jnp.ndarray) -> jnp.ndarray:
@@ -228,14 +224,10 @@ def _compute_samples(key: ArrayLike, n_samples: int, n_qubits: int) -> jnp.ndarr
     return unpacked_bits[:, :n_qubits]
 
 
-def _prep_observables(observables_int: ArrayLike, diagonal: bool = False) -> tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
+def _prep_observables(observables_int: ArrayLike) -> tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
     """Precompute masks and phase factors for integer-encoded Pauli observables."""
 
     obs_arr = jnp.asarray(observables_int, dtype=jnp.int32)
-
-    if diagonal:
-        return jnp.asarray(obs_arr != 0, dtype = jnp.uint8), None, None, None
-
 
     is_X = obs_arr == 1
     is_Y = obs_arr == 2
@@ -397,7 +389,7 @@ def build_expval_func(
         )
 
     default_samples = _compute_samples(config.key, config.n_samples, config.n_qubits)
-    default_obs_data = None if config.observables is None else _prep_observables(config.observables, config.diagonal_observables)
+    default_obs_data = None if config.observables is None else _prep_observables(config.observables)
 
     # pylint: disable=too-many-arguments
     def expval_execution(
@@ -442,7 +434,7 @@ def build_expval_func(
             samples = default_samples
 
         if observables is not None:
-            obs_data = _prep_observables(observables, config.diagonal_observables)
+            obs_data = _prep_observables(observables)
         elif default_obs_data is not None:
             obs_data = default_obs_data
         else:
