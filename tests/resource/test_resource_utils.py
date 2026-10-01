@@ -58,6 +58,9 @@ def test_make_level_name_unique():
         ("all", [0, 1, 2, 3, 4, 5, 6], False),
         ("user", [6], False),
         ("top", [0], False),
+        (["top", 0], [0], True),
+        (["top", 1], [0, 1], False),
+        (["top", "user"], [0, 6], False),
     ],
 )
 def test_preprocess_levels(level, output, expect_warnings, example_pipeline):
@@ -87,10 +90,20 @@ def test_preprocess_levels_invalid(example_pipeline):
         preprocess_level_input(10, example_pipeline)
 
     with pytest.raises(ValueError, match="Invalid level"):
-        preprocess_level_input([1, 2, 3.14], example_pipeline)
+        preprocess_level_input([1, 2, 3.14, True], example_pipeline)
 
     with pytest.raises(ValueError, match="Marker name 'potato' not found"):
         preprocess_level_input("potato", example_pipeline)
+
+    with pytest.raises(
+        ValueError, match="The level 'gradient' is no longer supported by qp.specs."
+    ):
+        preprocess_level_input("gradient", example_pipeline)
+
+    with pytest.raises(
+        ValueError, match="The level 'all-mlir' is no longer supported by qp.specs."
+    ):
+        preprocess_level_input("all-mlir", example_pipeline)
 
 
 def test_preprocess_levels_tape_transforms():

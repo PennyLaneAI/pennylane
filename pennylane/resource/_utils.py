@@ -89,6 +89,10 @@ def preprocess_level_input(
     # Account for "Before MLIR passes" level
     total_levels = len(compile_pipeline) + 1
 
+    # Explicitly deny old level shorthands
+    if level in ("gradient", "all-mlir"):
+        raise ValueError(f"The level '{level}' is no longer supported by qp.specs.")
+
     default_level_map = {
         "top": [0],
         "user": [len(compile_pipeline)],
@@ -106,10 +110,16 @@ def preprocess_level_input(
     # Convert marker names to the associated level number
     for i, lvl in enumerate(level):
         if isinstance(lvl, str):
+            if lvl == "top":
+                level[i] = 0
+                continue
+            if lvl == "user":
+                level[i] = len(compile_pipeline)
+                continue
             if lvl not in marker_to_level:
                 raise ValueError(f"Marker name '{lvl}' not found in the compile pipeline.")
             level[i] = marker_to_level[lvl]
-        elif isinstance(lvl, int):
+        elif isinstance(lvl, int) and not isinstance(lvl, bool):
             if lvl < 0 or lvl >= total_levels:
                 raise ValueError(
                     "The 'level' argument to qp.specs for QJIT'd QNodes is out of bounds, "

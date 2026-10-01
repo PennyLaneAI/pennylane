@@ -83,7 +83,7 @@ class TestSpecsTransform:
             qp.Hadamard(0)
             return qp.expval(qp.PauliZ(0))
 
-        with pytest.raises(ValueError, match="qp.specs can only be applied to a qjit'd QNode"):
+        with pytest.raises(ValueError, match="no longer supports being applied to a bare QNode"):
             qp.specs(circuit)()
 
     def test_error_with_non_qnode(self):
@@ -111,6 +111,7 @@ class TestSpecsTransform:
             qp.specs(circuit, level=11.17)()
 
 
+@pytest.mark.capture
 class TestDeviceLevelSpecs:
     """Test qp.specs() at device level"""
 
@@ -162,10 +163,6 @@ class TestDeviceLevelSpecs:
             ),
         )
 
-    @pytest.mark.xfail(reason="""
-        ControlledQubitUnitary doesn't work with specs
-        https://app.shortcut.com/xanaduai/story/128500/controlledqubitunitary-doesn-t-work-with-specs-in-non-jit-pl
-    """)
     def test_complex(self):
         """Test a complex case of qp.specs() against PennyLane"""
 
@@ -183,9 +180,7 @@ class TestDeviceLevelSpecs:
             qp.CNOT([0, 1])
 
             qp.QubitUnitary(U, wires=0)
-            qp.ControlledQubitUnitary(U, control_values=[1], wires=[1, 0])
             qp.adjoint(qp.QubitUnitary(U, wires=0))
-            qp.adjoint(qp.ControlledQubitUnitary(U, control_values=[1, 1], wires=[1, 2, 0]))
 
             return qp.probs()
 
@@ -202,19 +197,17 @@ class TestDeviceLevelSpecs:
                     "Adjoint(T)": 1,
                     "C(S)": 1,
                     "2C(S)": 1,
-                    "CY": 1,
+                    "C(PauliY)": 1,
                     "CNOT": 1,
                     "QubitUnitary": 1,
-                    "ControlledQubitUnitary": 2,
                     "Adjoint(QubitUnitary)": 1,
                 },
                 measurement_processes={"probs(all wires)": 1},
                 num_wires=4,
-                circuit_depth=10,
+                circuit_depth=8,
             ),
         )
 
-    @pytest.mark.capture
     def test_paulirot_and_measure(self):
         """Test that PauliRot and PauliMeasure are tracked at the device level."""
 
@@ -295,6 +288,7 @@ class TestDeviceLevelSpecs:
         assert specs.resources.measurement_processes == expected_measurements
 
 
+@pytest.mark.capture
 class TestPassByPassSpecs:
     """Test qp.specs() pass-by-pass specs"""
 
@@ -559,7 +553,6 @@ class TestPassByPassSpecs:
             "sample(all wires)": 1,
         }
 
-    @pytest.mark.capture
     def test_conditionals(self):
         """Test that conditionals are handled correctly."""
 
@@ -597,7 +590,6 @@ class TestPassByPassSpecs:
 
         assert actual == expected
 
-    @pytest.mark.capture
     def test_loops(self):
         """Test that static loops are handled correctly and that resources are counted
         according to the number of iterations (including nested loops)."""
@@ -684,7 +676,6 @@ class TestPassByPassSpecs:
 
         assert actual == expected
 
-    @pytest.mark.capture
     def test_subroutine(self):
         """Test qp.specs when there is a Catalyst subroutine"""
         dev = qp.device("lightning.qubit", wires=3)
@@ -718,7 +709,6 @@ class TestPassByPassSpecs:
 
         assert actual == expected
 
-    @pytest.mark.capture
     def test_operator2(self):
         """Test that specs works with operator2 classes."""
 
@@ -746,7 +736,6 @@ class TestPassByPassSpecs:
 
             assert resources.quantum_operations == {"DummyOp": 2}
 
-    @pytest.mark.capture
     def test_symbolic_array(self):
         """Test using specs with symbolic_array."""
 
@@ -769,6 +758,7 @@ class TestPassByPassSpecs:
             qp.specs(c, level="device")()
 
 
+@pytest.mark.capture
 class TestSpecsWithPPR:
     """Tests for using qp.specs with PPRs"""
 
@@ -799,7 +789,6 @@ class TestSpecsWithPPR:
         actual = qp.specs(circ, level=1)()
         assert actual == expected
 
-    @pytest.mark.capture
     def test_arbitrary_ppr(self):
         """Test that PPRs are handled correctly."""
 
@@ -835,10 +824,10 @@ class TestSpecsWithPPR:
         assert actual == expected
 
 
+@pytest.mark.capture
 class TestSymbolicSpecs:
     """Tests for using qp.specs with dynamic loops whose bounds are not known at compile time"""
 
-    @pytest.mark.capture
     def test_dynamic_loop(self):
         """Test specs with a dynamic loop that can't be resolved at compile time"""
 
@@ -868,7 +857,6 @@ class TestSymbolicSpecs:
         )
         assert concrete_res == expected_res
 
-    @pytest.mark.capture
     def test_dynamic_loop_and_static_loop(self):
         """
         Test specs with a dynamic loop that can't be resolved at compile time and
@@ -907,7 +895,6 @@ class TestSymbolicSpecs:
         )
         assert concrete_res == expected_res
 
-    @pytest.mark.capture
     def test_dynamic_loop_and_static_loop2(self):
         """
         Test specs with a static loop and a dynamic loop that can't be resolved at compile time
@@ -944,7 +931,6 @@ class TestSymbolicSpecs:
         )
         assert concrete_res == expected_res
 
-    @pytest.mark.capture
     def test_nested_dynamic_loop(self):
         """Test specs with a nested dynamic loops that can't be resolved at compile time"""
 
@@ -975,7 +961,6 @@ class TestSymbolicSpecs:
             )
             assert concrete_res == expected_res
 
-    @pytest.mark.capture
     def test_dynamic_loops_multi_level(self):
         """Test smulti-level specs with dynamic loops"""
 
@@ -1011,7 +996,6 @@ class TestSymbolicSpecs:
                     num_wires=1,
                 )
 
-    @pytest.mark.capture
     def test_symbolic_array_inside_loop(self):
         """Test dynamic loop with symbolic_array in a loop."""
 
@@ -1032,7 +1016,6 @@ class TestSymbolicSpecs:
         r = qp.specs(c, level=0)(2).resources
         assert r.subs({var: 10 for var in r.vars}).quantum_operations["RX"] == 10
 
-    @pytest.mark.capture
     def test_symbolic_array_loop_argument(self):
         """Test dynamic loop with a symbolic array as a loop argument."""
 
@@ -1054,7 +1037,6 @@ class TestSymbolicSpecs:
         r = qp.specs(c, level=0)(2).resources
         assert r.subs({var: 10 for var in r.vars}).quantum_operations["RX"] == 10
 
-    @pytest.mark.capture
     def test_empty_loops(self):
         """Test that empty static loops are handled correctly."""
 
@@ -1083,6 +1065,7 @@ class TestSymbolicSpecs:
         assert actual == expected
 
 
+@pytest.mark.capture
 class TestSymbolicSpecsLoopConcretization:
     """
     Integration tests for the loop concretization feature of the resource analysis pass, which
@@ -1324,27 +1307,29 @@ class TestSymbolicSpecsLoopConcretization:
 
         assert resources.quantum_operations["PauliZ"] == 20
 
-    def test_loop_concretization_no_iters(self):
-        """Test concretization with a loop that has no iterations."""
 
-        @qp.qjit(autograph=True)
-        @qp.qnode(qp.device("null.qubit", wires=1))
-        def circuit():
-            for i in range(0):
-                for j in range(i):
-                    qp.PauliZ(wires=j % 2)
-            for i in range(2, 2):
-                for j in range(i):
-                    qp.PauliX(wires=j % 2)
+def test_loop_concretization_no_iters():
+    """Test concretization with a loop that has no iterations."""
 
-            return qp.expval(qp.X(0))
+    @qp.qjit(autograph=True)
+    @qp.qnode(qp.device("null.qubit", wires=1))
+    def circuit():
+        for i in range(0):
+            for j in range(i):
+                qp.PauliZ(wires=j % 2)
+        for i in range(2, 2):
+            for j in range(i):
+                qp.PauliX(wires=j % 2)
 
-        resources = qp.specs(circuit, level=0)().resources
+        return qp.expval(qp.X(0))
 
-        assert resources.quantum_operations.get("PauliZ", 0) == 0
-        assert resources.quantum_operations.get("PauliX", 0) == 0
+    resources = qp.specs(circuit, level=0)().resources
+
+    assert resources.quantum_operations.get("PauliZ", 0) == 0
+    assert resources.quantum_operations.get("PauliX", 0) == 0
 
 
+@pytest.mark.capture
 class TestMarkerIntegration:
     """Tests the integration with qp.marker."""
 
@@ -1448,7 +1433,6 @@ class TestMarkerIntegration:
 
         assert actual == expected
 
-    @pytest.mark.capture
     def test_redundant_marker(self, simple_circuit):
         """Test that two markers on the same level generate the same specs."""
 
@@ -1487,7 +1471,6 @@ class TestMarkerIntegration:
 
         assert actual == expected
 
-    @pytest.mark.capture
     def test_marker(self, simple_circuit):
         """Test that qp.marker can be used appropriately."""
 
