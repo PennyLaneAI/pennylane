@@ -181,7 +181,7 @@ def _compute_loss_for_bandwidth(
     prob = jnp.asarray(p_mmd)
     q = jnp.where(prob < 0.5, prob, 1.0 - prob)
     uniforms = jax.random.uniform(jax.random.split(subkey)[0], (n_ops, len(wire_tuple)), prob.dtype)
-    successes = (uniforms >= jnp.exp(jnp.log1p(-q)))
+    successes = uniforms >= jnp.exp(jnp.log1p(-q))
     visible_ops = jnp.where(prob < 0.5, successes, 1.0 - successes)
 
     if len(wire_tuple) == n_qubits and wire_list == list(range(n_qubits)):

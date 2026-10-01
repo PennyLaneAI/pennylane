@@ -152,19 +152,22 @@ def _xor_gather_rows(bits: jnp.ndarray, gate_indices: jnp.ndarray) -> jnp.ndarra
 
 def _pad_sentinel_row(bits: jnp.ndarray) -> jnp.ndarray:
     return jnp.concatenate(
-        [bits.astype(jnp.uint8), jnp.zeros((1, ) + bits.shape[1:], jnp.uint8)], axis=0
+        [bits.astype(jnp.uint8), jnp.zeros((1,) + bits.shape[1:], jnp.uint8)], axis=0
     )
+
 
 def _parity_dot(a: jnp.ndarray, b: jnp.ndarray) -> jnp.ndarray:
     a = jnp.asarray(a)
     b = jnp.asarray(b)
-    dims = (((a.ndim - 1, ), (b.ndim - 1, )), ((), ()))
+    dims = (((a.ndim - 1,), (b.ndim - 1,)), ((), ()))
 
     product = jax.lax.dot_general(a.astype(jnp.int8), b.astype(jnp.int8), dims)
     return product % 2
 
+
 def _parity_signs(parity: jnp.ndarray) -> jnp.ndarray:
     return 1 - 2 * parity.astype(jnp.float32)
+
 
 def _phase_differences(
     gate_params: jnp.ndarray,
@@ -183,9 +186,7 @@ def _phase_differences(
         q_bits = _xor_gather_rows(bitflips_t, block_indices)
         b_scaled = jnp.where(b_bits.astype(bool), -theta, theta)
 
-        return jax.lax.dot_general(
-            q_bits, b_scaled, (((0, ), (0, )), ((), ()))
-        )
+        return jax.lax.dot_general(q_bits, b_scaled, (((0,), (0,)), ((), ())))
 
     if n_gates <= gate_block:
         return 2 * block_contribution(gate_indices, param_map)
@@ -198,7 +199,7 @@ def _phase_differences(
         gate_indices = jnp.concatenate(
             [gate_indices, jnp.full((n_pad, max_weight), sentinel, gate_indices.dtype)]
         )
-        param_map = jnp.concatenate([param_map, jnp.zeros((n_pad, ), param_map.dtype)])
+        param_map = jnp.concatenate([param_map, jnp.zeros((n_pad,), param_map.dtype)])
 
     def accumulate(total, block):
         return total + block_contribution(*block), None
@@ -293,13 +294,11 @@ def _core_expval_execution(
             [amps_re[:, jnp.newaxis] * g_signs, amps_im[:, jnp.newaxis] * g_signs], axis=1
         )
 
-        overlap = jax.lax.dot_general(
-            w_signs, stacked, (((1,), (0,)), ((), ()))
-        )
+        overlap = jax.lax.dot_general(w_signs, stacked, (((1,), (0,)), ((), ())))
 
         n_samples = samples.shape[0]
-        overlap_re = overlap[:, : n_samples]
-        overlap_im = overlap[:, n_samples :]
+        overlap_re = overlap[:, :n_samples]
+        overlap_im = overlap[:, n_samples:]
 
         col_re = amps_re @ g_signs
         col_im = amps_im @ g_signs
