@@ -323,23 +323,45 @@ def binary_solve_linear_system(A: np.ndarray, b: np.ndarray) -> np.ndarray:
     return rref[:, -1]
 
 
-def binary_is_independent(vector: np.ndarray, basis: np.ndarray) -> bool:
+def binary_is_independent(vector: np.ndarray, basis: np.ndarray) -> bool | np.ndarray:
     r"""Check whether a binary vector, i.e., a bitstring, is
     linearly independent (over :math:`\mathbb{Z}_2`) of a basis of binary vectors, given as column
     vectors of a matrix.
 
     Args:
-        vector (np.ndarray): Binary vector to check.
-        basis (np.ndarray): Basis of binary vectors against which ``vector`` is checked. If
-            ``vector`` has shape ``(r,)``, ``basis`` should have shape ``(r, m)`` and rank
-            ``min(r, m)``. I.e., the columns of ``basis`` all need to be linearly independent.
+        vector (np.ndarray): Binary vector to check, of shape ``(r,)``. Multiple vectors may be
+            checked at once by passing them as the columns of an array of shape ``(r, k)``.
+        basis (np.ndarray): Basis of binary vectors against which ``vector`` is checked. It
+            should have shape ``(r, m)`` and rank ``min(r, m)``. I.e., the columns of ``basis``
+            all need to be linearly independent.
 
     Returns:
-        bool: Whether ``vector`` is linearly independent of ``basis`` over :math:`\mathbb{Z}_2`.
+        bool or np.ndarray: Whether ``vector`` is linearly independent of ``basis`` over
+        :math:`\mathbb{Z}_2`. For a single vector, a ``bool`` is returned, for ``k`` vectors,
+        a boolean array of shape ``(k,)`` is returned.
 
     .. warning::
 
         This function is currently not compatible with JAX.
+
+    **Example**
+
+    Consider the basis consisting of the two columns ``[1, 0, 1]`` and ``[0, 1, 0]``:
+
+    >>> basis = np.array([[1, 0], [0, 1], [1, 0]])
+
+    The vector ``[0, 0, 1]`` is not in the span of this basis:
+
+    >>> qp.math.binary_is_independent(np.array([0, 0, 1]), basis)
+    True
+
+    We may check multiple vectors at once by stacking them as columns. Here we check
+    ``[0, 0, 1]``, ``[1, 1, 1]`` and ``[1, 0, 1]``, of which only the first is independent
+    of ``basis``:
+
+    >>> vectors = np.array([[0, 1, 1], [0, 1, 0], [1, 1, 1]])
+    >>> qp.math.binary_is_independent(vectors, basis)
+    array([ True, False, False])
 
     """
     # We assume ``basis`` to have full rank.
@@ -349,9 +371,30 @@ def binary_is_independent(vector: np.ndarray, basis: np.ndarray) -> bool:
             "The columns of `basis` should have the same length as `vector`. "
             f"Got {vector.shape=} and {basis.shape=}"
         )
+    if vector.ndim not in (1, 2):
+        raise ValueError(
+            f"Only a single vector or a batch of vectors is supported, got {vector.ndim=}."
+        )
+
+    batched = vector.ndim == 2
+    vectors = vector.T if batched else vector[np.newaxis]
+
+    # The non-zero rows of the RREF of ``basis.T`` span the column space of ``basis``
+    rref = binary_finite_reduced_row_echelon(basis.T)
+    pivot_rows = rref[np.any(rref, axis=1)]
+
     basis_rank = min(basis.shape)
-    rk = binary_matrix_rank(np.concatenate([basis, vector[:, None]], axis=1))
-    return rk > basis_rank
+    if len(pivot_rows) < basis_rank:
+        # ``basis`` is rank-deficient, so adding a column can not raise the rank above basis_rank
+        return np.zeros(len(vectors), dtype=bool) if batched else False
+
+    # Eliminate the pivot entries of each vector. A vector lies in the span of ``basis``
+    # if and only if nothing is left after this elimination.
+    pivot_cols = np.argmax(pivot_rows, axis=1)
+    residual = vectors ^ ((vectors[:, pivot_cols] @ pivot_rows) % 2)
+
+    independent = np.any(residual, axis=1)
+    return independent if batched else bool(independent[0])
 
 
 def binary_select_basis(bitstrings: np.ndarray):

@@ -608,6 +608,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* :func:`~.math.binary_is_independent` now also accepts multiple vectors, stacked as the columns
+  of a two-dimensional array, and returns a boolean array with one entry per vector.
+  [(#10055)](https://github.com/PennyLaneAI/pennylane/pull/10055)
+
 * Multi-controlled operators can now reuse a single :class:`~.TemporaryAND` ladder when enough
   zeroed work wires are available, reducing their decomposition gate counts.
   [(#10161)](https://github.com/PennyLaneAI/pennylane/pull/10161)
@@ -1226,6 +1230,10 @@
   [(#9925)](https://github.com/PennyLaneAI/pennylane/pull/9925)
 
 <h3>Internal changes ⚙️</h3>
+
+* Updated the decomposition of :class:`~.SumOfSlatersPrep` to replace a recursive by an iterative
+  helper function to enable tracing it.
+  [(#10055)](https://github.com/PennyLaneAI/pennylane/pull/10055)
 
 * Removes indirection and deferred imports now that jax is always available.
   [(#10198)](https://github.com/PennyLaneAI/pennylane/pull/10198)
