@@ -359,25 +359,6 @@ class TestInterfaces:
 
         assert qp.math.allclose(grad_fn(weight), grad_fn2(weight))
 
-    @pytest.mark.tf
-    def test_tf(self):
-        """Tests the tf interface."""
-
-        import tensorflow as tf
-
-        weight = tf.Variable(0.5)
-        dev = qp.device("default.qubit", wires=4)
-
-        circuit = qp.QNode(circuit_template, dev)
-
-        circuit(weight)
-
-        with tf.GradientTape() as tape:
-            res = circuit(weight)
-
-        # check that the gradient is computed without error
-        tape.gradient(res, [weight])
-
     @pytest.mark.torch
     def test_torch(self):
         """Tests the torch interface."""

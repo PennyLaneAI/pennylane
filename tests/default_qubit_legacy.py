@@ -651,7 +651,6 @@ class DefaultQubitLegacy(QubitDevice):
             # Compute  <psi| H |psi> via sum_i coeff_i * <psi| PauliWord |psi> using a sparse
             # representation of the Pauliword
             res = qp.math.cast(qp.math.convert_like(0.0, observable.data), dtype=complex)
-            interface = qp.math.get_interface(self.state)
 
             # Note: it is important that we use the Hamiltonian's data and not the coeffs
             # attribute. This is because the .data attribute may be 'unwrapped' as required by
@@ -669,9 +668,6 @@ class DefaultQubitLegacy(QubitDevice):
                     * self._gather(self.state, coo.col)
                 )
                 c = qp.math.convert_like(coeff, product)
-
-                if interface == "tensorflow":
-                    c = qp.math.cast(c, "complex128")
 
                 res = qp.math.convert_like(res, product) + qp.math.sum(c * product)
 

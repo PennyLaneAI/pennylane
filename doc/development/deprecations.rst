@@ -71,14 +71,6 @@ Pending deprecations
   - Deprecated in v0.43
   - Will be removed in a future version
 
-* Maintenance support for the ``tensorflow`` interface has been deprecated and will be dropped in PennyLane v0.44.
-  Future versions of PennyLane are not guaranteed to work with TensorFlow.
-  Instead, we recommend using the :doc:`jax </introduction/interfaces/jax>` or :doc:`torch </introduction/interfaces/torch>` interface for
-  machine learning applications to benefit from enhanced support and features.
-
-  - Deprecated in v0.43
-  - Will be removed in v0.44
-
 Completed removal of legacy operator arithmetic
 -----------------------------------------------
 
@@ -112,7 +104,15 @@ Completed deprecation cycles
   ``max_independent_set``, ``min_vertex_cover``, ``max_clique``, ``max_weight_cycle``,
   ``bit_driver``, ``edge_driver``), the ansatz layers (``cost_layer``, ``mixer_layer``)
   and the ``pennylane.qaoa.cycle`` helpers. :class:`~.QAOAEmbedding` is unaffected.
+  
+  - Removed in releases after v0.45
 
+* Maintenance support for the ``tensorflow`` interface has been removed. Future versions of 
+  PennyLane will not work with TensorFlow. Instead, we recommend using the
+  :doc:`jax </introduction/interfaces/jax>` or :doc:`torch </introduction/interfaces/torch>` interface for
+  machine learning applications to benefit from enhanced support and features.
+
+  - Deprecated in v0.43
   - Removed in releases after v0.45
 
 * The ``pennylane.qcut`` module, including ``pennylane.cut_circuit``,
