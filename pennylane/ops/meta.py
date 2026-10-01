@@ -96,65 +96,6 @@ class Barrier(Operation):
         return self
 
 
-class WireCut(Operation):
-    r"""WireCut(wires)
-    The wire cut operation, used to manually mark locations for wire cuts.
-
-    .. note::
-
-        This operation is designed for use as part of the circuit cutting workflow.
-        Check out the :func:`qp.cut_circuit() <pennylane.cut_circuit>` transform for more details.
-
-    **Details:**
-
-    * Number of wires: AnyWires
-    * Number of parameters: 0
-
-    Args:
-        wires (Sequence[int] or int): the wires the operation acts on
-    """
-
-    num_params = 0
-    grad_method = None
-
-    def __init__(self, wires: WiresLike = ()):
-        wires = Wires(wires)
-        super().__init__(wires=wires)
-        if not self._wires:
-            raise ValueError(
-                f"{self.name}: wrong number of wires. At least one wire has to be provided."
-            )
-
-    @staticmethod
-    def compute_decomposition(wires: WiresLike):
-        r"""Representation of the operator as a product of other operators (static method).
-
-        Since this operator is a placeholder inside a circuit, it decomposes into an empty list.
-
-        Args:
-            wires (Any, Wires): Wire that the operator acts on.
-
-        Returns:
-            list[Operator]: decomposition of the operator
-
-        **Example:**
-
-        >>> print(qp.WireCut.compute_decomposition(0))
-        []
-
-        """
-        return []
-
-    def label(self, decimals=None, base_label=None, cache=None):
-        return "//"
-
-    def adjoint(self):
-        return WireCut(wires=self.wires)
-
-    def pow(self, z):
-        return [copy(self)]
-
-
 class Snapshot(Operation):
     r"""
     The Snapshot operation saves the internal execution state of the quantum function
