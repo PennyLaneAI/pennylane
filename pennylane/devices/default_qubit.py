@@ -241,8 +241,8 @@ def no_counts(tape):
 
 @transform
 def adjoint_state_measurements(
-    tape: QuantumScript, device_vjp=False
-) -> tuple[QuantumScriptBatch, PostprocessingFn]:  # pylint: disable=unused-argument
+    tape: QuantumScript, device_vjp=False  # pylint: disable=unused-argument
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Perform adjoint measurement preprocessing.
 
     * Allows a tape with only expectation values through unmodified
