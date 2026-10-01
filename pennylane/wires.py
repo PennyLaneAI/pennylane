@@ -158,12 +158,11 @@ class Wires(Sequence):
         return cls(data, _override=True)
 
     def __init__(self, wires, _override=False):
+        if wires is self:
+            return  # happens if constructed with a Wires object, returned as is.
         if wires is None:
             raise TypeError("Must specify a set of wires. None is not a valid wire label.")
-        if _override:
-            self._labels = wires
-        else:
-            self._labels = _process(wires)
+        self._labels = wires if _override else _process(wires)
         self._hash = None
 
     def __getitem__(self, idx):
@@ -528,10 +527,8 @@ class Wires(Sequence):
             return Wire[len(combined) + num_abstract_wires]
 
         if sort:
-            if all(isinstance(w, int) for w in combined):
-                combined = sorted(combined)
-            else:
-                combined = sorted(combined, key=str)
+            int_wires = all(isinstance(w, int) for w in combined)
+            combined = sorted(combined) if int_wires else sorted(combined, key=str)
 
         return Wires(tuple(combined), _override=True)
 

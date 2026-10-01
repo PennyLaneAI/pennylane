@@ -480,6 +480,8 @@ class QSVT(Operator2):
 
     wire_argnames = ()
 
+    grad_method = None
+
     def __init__(self, UA, projectors):
 
         # CompressedResourceOp is added here defensively because `abstractify` may

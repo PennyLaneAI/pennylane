@@ -704,6 +704,8 @@ class BlockEncode(Operator2):
 
     arg_specs = {"A": Complex[-1, -1], "wires": Wire[-1]}
 
+    grad_method = None
+
     def __init__(self, A: TensorLike, wires: WiresLike):
         wires = Wires(wires)
         A, normalization, subspace = _prepare_blockencode_matrix(A, len(wires))
