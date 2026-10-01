@@ -99,7 +99,7 @@ def _run_trotter_steps(
     apply_one_body_diagonal,
     merge_leaves,
     transpose_leaf,
-    key=None,
+    shuffle_key=None,
 ):
     r"""Emit the second-order Trotter step sequence and the trailing basis rotation.
 
@@ -143,7 +143,7 @@ def _run_trotter_steps(
             basis rotations telescope into one.
         transpose_leaf (callable): ``(U) -> U``. Inverse of a leaf, for the trailing basis
             rotation that closes the final fragment.
-        key (jax.Array | None): JAX PRNG key for randomized fragment orderings. If ``None``
+        shuffle_key (jax.Array | None): JAX PRNG key for randomized fragment orderings. If ``None``
             (default), every step uses the fixed ordering :math:`H_1, \dots, H_L, H_0` for its
             first-order half. Otherwise, each step draws an independent uniformly random ordering
             of all :math:`L+1` fragments, see :func:`~._run_randomized_trotter_steps`. Requires
@@ -163,7 +163,7 @@ def _run_trotter_steps(
     second_order_time_step = evolution_time / num_trotter_steps
     first_order_time_step = second_order_time_step / 2
 
-    if key is not None:
+    if shuffle_key is not None:
         _run_randomized_trotter_steps(
             second_order_time_step,
             num_trotter_steps,
@@ -172,7 +172,7 @@ def _run_trotter_steps(
             wires,
             control_wires,
             double_phase,
-            key,
+            shuffle_key,
             apply_system_basis_rotation=apply_system_basis_rotation,
             apply_two_body_diagonal=apply_two_body_diagonal,
             apply_one_body_diagonal=apply_one_body_diagonal,
@@ -227,17 +227,17 @@ def _run_trotter_steps(
     apply_system_basis_rotation(very_last_U, wires)
 
 
-def _random_fragment_orderings(key, num_trotter_steps, num_fragments):
+def _random_fragment_orderings(shuffle_key, num_trotter_steps, num_fragments):
     """Draw one independent, uniformly random permutation of ``range(num_fragments)`` per
     Trotter step, as an integer array of shape ``(num_trotter_steps, num_fragments)``.
 
     The orderings are computed with ``jax.random`` inside the traced program, so a
-    compiled circuit draws new orderings for each new (dynamic) ``key``.
+    compiled circuit draws new orderings for each new (dynamic) ``shuffle_key``.
     """
     import jax  # pylint: disable=import-outside-toplevel
 
     orderings = math.tile(math.arange(num_fragments, like="jax"), (num_trotter_steps, 1))
-    return jax.random.permutation(key, orderings, axis=1, independent=True)
+    return jax.random.permutation(shuffle_key, orderings, axis=1, independent=True)
 
 
 def _run_randomized_trotter_steps(
@@ -248,7 +248,7 @@ def _run_randomized_trotter_steps(
     wires,
     control_wires,
     double_phase,
-    key,
+    shuffle_key,
     *,
     apply_system_basis_rotation,
     apply_two_body_diagonal,
@@ -278,7 +278,7 @@ def _run_randomized_trotter_steps(
     """
     num_fragments = U_tensor.shape[0]
     first_order_time_step = second_order_time_step / 2
-    orderings = _random_fragment_orderings(key, num_trotter_steps, num_fragments)
+    orderings = _random_fragment_orderings(shuffle_key, num_trotter_steps, num_fragments)
 
     def fragment(fragment_idx, U_prev, time_step):
         apply_system_basis_rotation(merge_leaves(U_prev, U_tensor[fragment_idx]), wires)

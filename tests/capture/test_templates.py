@@ -1933,7 +1933,7 @@ class TestModifiedTemplates:
         qp.assert_equal(op, qp.TrotterCGF(1.0, 3, hamiltonian, wires))
 
     @pytest.mark.parametrize("trotter_cls", [qp.TrotterCDF, qp.TrotterCGF])
-    def test_trotter_with_key(self, trotter_cls):
+    def test_trotter_with_shuffle_key(self, trotter_cls):
         """Test TrotterCDF and TrotterCGF with a traced PRNG key under program capture."""
 
         from pennylane.numeric_hamiltonians import (  # pylint: disable=import-outside-toplevel
@@ -1954,20 +1954,22 @@ class TestModifiedTemplates:
                 nuc_constant=0.5,
             )
         wires = [0, 1, 2, 3]
-        key = jax.random.PRNGKey(0)
+        shuffle_key = jax.random.PRNGKey(0)
 
-        def qfunc(evolution_time, key):
-            return trotter_cls(evolution_time, 3, hamiltonian, wires, key=key).tracer
+        def qfunc(evolution_time, shuffle_key):
+            return trotter_cls(
+                evolution_time, 3, hamiltonian, wires, shuffle_key=shuffle_key
+            ).tracer
 
-        jaxpr = jax.make_jaxpr(qfunc)(1.0, key)
+        jaxpr = jax.make_jaxpr(qfunc)(1.0, shuffle_key)
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
         assert_eqn_matches_op(eqn, trotter_cls)
         assert eqn.invars[-1] is jaxpr.jaxpr.invars[1]
 
-        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.0, key)
-        qp.assert_equal(op, trotter_cls(1.0, 3, hamiltonian, wires, key=key))
+        [op] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.0, shuffle_key)
+        qp.assert_equal(op, trotter_cls(1.0, 3, hamiltonian, wires, shuffle_key=shuffle_key))
 
     @pytest.mark.xfail(reason="operators of operators not yet supported with Operator2")
     def test_reflection(self):

@@ -25,7 +25,7 @@
   fragmentation-based Trotterization procedures of :class:`pennylane.CDFHamiltonian`,
   :class:`pennylane.CGFHamiltonian`, and :class:`pennylane.VibronicHamiltonian` Hamiltonians,
   respectively. With program capture enabled, :class:`~.TrotterCDF` and :class:`~.TrotterCGF`
-  accept a JAX PRNG ``key`` that randomizes the fragment ordering in each Trotter step, and that
+  accept a JAX PRNG key via the ``shuffle_key`` argument that randomizes the fragment ordering in each Trotter step, and that
   can be passed as a dynamic argument to :func:`~.qjit`-compiled workflows.
   [(#9459)](https://github.com/PennyLaneAI/pennylane/pull/9459)
   [(#9789)](https://github.com/PennyLaneAI/pennylane/pull/9789)

@@ -74,7 +74,7 @@ class TrotterCDF(Operator2):
             :math:`\text{diag}(1, U)` where :math:`U = e^{-iHt}` is the Trotter evolution.
             If ``True``, it produces a cheaper :math:`\text{diag}(U, U^\dagger)` instead, leading to the
             double phase trick for Hadamard test circuits (see `Fig. 6 <https://arxiv.org/abs/2506.15784>`__ and Usage Details below).
-        key (jax.Array | None): JAX PRNG key, e.g., ``jax.random.PRNGKey(0)``, that randomizes the
+        shuffle_key (jax.Array | None): JAX PRNG key, e.g., ``jax.random.PRNGKey(0)``, that randomizes the
             fragment ordering. If ``None`` (default), all Trotter steps use the same fixed fragment
             ordering. Otherwise, each step uses an independent, uniformly random ordering of all
             fragments (see Usage Details below).
@@ -152,7 +152,7 @@ class TrotterCDF(Operator2):
 
         **Randomized fragment ordering**
 
-        Passing a JAX PRNG ``key`` randomizes the product formula: each of the :math:`n` Trotter
+        Passing a JAX PRNG key as ``shuffle_key`` randomizes the product formula: each of the :math:`n` Trotter
         steps draws an independent, uniformly random ordering :math:`\pi_k` of all :math:`L+1`
         fragments (including the one-body fragment :math:`H_0`) and applies the second-order step
 
@@ -176,7 +176,7 @@ class TrotterCDF(Operator2):
             @qp.transforms.decompose(gate_set=gate_set)
             @qp.qnode(qp.device("lightning.qubit", wires=2 * N))
             def randomized_trotter_circuit(key):
-                qp.TrotterCDF(1.0, 10, hamiltonian, wires=range(2 * N), key=key)
+                qp.TrotterCDF(1.0, 10, hamiltonian, wires=range(2 * N), shuffle_key=key)
                 return qp.state()
 
             state = randomized_trotter_circuit(jax.random.PRNGKey(0))
@@ -330,8 +330,8 @@ class TrotterCDF(Operator2):
     """
 
     dynamic_argnames = ("evolution_time",)
-    # ``key`` is hybrid so that it can be ``None``.
-    hybrid_argnames = ("hamiltonian", "key")
+    # ``shuffle_key`` is hybrid so that it can be ``None``.
+    hybrid_argnames = ("hamiltonian", "shuffle_key")
     # `hybrid_argnames` and `compilable_argnames` cannot both be non-empty on the same
     # operator, so `num_trotter_steps` (a plain Python int that drives Python-level
     # control flow) is treated as `static_argnames` instead.
@@ -347,7 +347,7 @@ class TrotterCDF(Operator2):
         hamiltonian: CDFHamiltonian,
         wires: WiresLike | AbstractWires,
         double_phase=False,
-        key: AbstractArray | None = None,
+        shuffle_key: AbstractArray | None = None,
     ):
         # ``hamiltonian`` is a hybrid argument: its array-like leaves must be arrays (or scalars)
         # to be captured and lowered correctly. Cast only list/tuple inputs, leaving array inputs
@@ -370,8 +370,10 @@ class TrotterCDF(Operator2):
                 f"leaf_tensors.ndim={U.ndim}. For vibrational (CGF) Hamiltonians, use TrotterCGF."
             )
         # Typed keys can not be abstracted, so we store their raw key data instead.
-        key = _raw_key_data(key)
-        super().__init__(evolution_time, num_trotter_steps, hamiltonian, wires, double_phase, key)
+        shuffle_key = _raw_key_data(shuffle_key)
+        super().__init__(
+            evolution_time, num_trotter_steps, hamiltonian, wires, double_phase, shuffle_key
+        )
 
 
 def _apply_system_basis_rotation(U, wires):
@@ -548,16 +550,16 @@ def _cdf_resource_counts(
 
 
 def _trotter_cdf_resources(
-    evolution_time, num_trotter_steps, hamiltonian, wires, double_phase, key
+    evolution_time, num_trotter_steps, hamiltonian, wires, double_phase, shuffle_key
 ):
     return _cdf_resource_counts(
-        num_trotter_steps, hamiltonian, has_control=False, randomized=key is not None
+        num_trotter_steps, hamiltonian, has_control=False, randomized=shuffle_key is not None
     )
 
 
 @register_resources(_trotter_cdf_resources, exact=False)
 def _trotter_cdf_decomposition(
-    evolution_time, num_trotter_steps, hamiltonian, wires, double_phase, key
+    evolution_time, num_trotter_steps, hamiltonian, wires, double_phase, shuffle_key
 ):
     # ``double_phase`` only affects the controlled decomposition; the base operator is
     # always the plain (uncontrolled) e^{-iHt} circuit.
@@ -568,7 +570,7 @@ def _trotter_cdf_decomposition(
             hamiltonian.normalize_leaf_determinant(),
             wires,
             (),
-            key=key,
+            shuffle_key=shuffle_key,
             **_CDF_HELPERS,
         )
         phi = (_energy_shift(hamiltonian) * evolution_time) % (4 * np.pi)
@@ -586,7 +588,7 @@ def _controlled_trotter_cdf_resource(
         base.arguments["hamiltonian"],
         has_control=True,
         double_phase=base.arguments["double_phase"],
-        randomized=base.arguments["key"] is not None,
+        randomized=base.arguments["shuffle_key"] is not None,
     )
 
 
@@ -598,7 +600,7 @@ def _controlled_trotter_cdf_decomp(base, control_wires, control_values, work_wir
     hamiltonian = base.arguments["hamiltonian"]
     wires = base.arguments["wires"]
     double_phase = base.arguments["double_phase"]
-    key = base.arguments["key"]
+    shuffle_key = base.arguments["shuffle_key"]
 
     if num_trotter_steps == 0:
         return
@@ -620,7 +622,7 @@ def _controlled_trotter_cdf_decomp(base, control_wires, control_values, work_wir
             wires,
             control_wires,
             True,
-            key=key,
+            shuffle_key=shuffle_key,
             **_CDF_HELPERS,
         )
         RZ(2 * phi, control_wires)
@@ -636,7 +638,7 @@ def _controlled_trotter_cdf_decomp(base, control_wires, control_values, work_wir
         wires,
         control_wires,
         False,
-        key=key,
+        shuffle_key=shuffle_key,
         **_CDF_HELPERS,
     )
     PhaseShift(-phi, control_wires)

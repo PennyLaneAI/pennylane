@@ -340,7 +340,7 @@ class TestResourceRule:
             hamiltonian=ham,
             wires=wires,
             double_phase=False,
-            key=None,
+            shuffle_key=None,
         )
         assert resources == Resources({})
 
@@ -601,17 +601,19 @@ class TestDecomposition:
 
 
 class TestRandomizedFragmentOrdering:
-    """Tests for the random per-step fragment orderings enabled by the ``key`` argument."""
+    """Tests for the random per-step fragment orderings enabled by the ``shuffle_key`` argument."""
 
-    def test_init_key(self, toy_hamiltonian_cgf_concrete):
-        """The key defaults to ``None``, and typed keys are stored as their raw key data."""
+    def test_init_shuffle_key(self, toy_hamiltonian_cgf_concrete):
+        """The shuffle key defaults to ``None``, and typed keys are stored as their raw key data."""
         ham, num_modes, n_states = toy_hamiltonian_cgf_concrete
         wires = list(range(num_modes * n_states))
-        assert qp.TrotterCGF(0.3, 5, ham, wires).arguments["key"] is None
-        key = jax.random.PRNGKey(3)
-        assert qp.TrotterCGF(0.3, 5, ham, wires, key=key).arguments["key"] is key
+        assert qp.TrotterCGF(0.3, 5, ham, wires).arguments["shuffle_key"] is None
+        shuffle_key = jax.random.PRNGKey(3)
+        op = qp.TrotterCGF(0.3, 5, ham, wires, shuffle_key=shuffle_key)
+        assert op.arguments["shuffle_key"] is shuffle_key
         typed_key = jax.random.key(3)
-        stored_key = qp.TrotterCGF(0.3, 5, ham, wires, key=typed_key).arguments["key"]
+        op = qp.TrotterCGF(0.3, 5, ham, wires, shuffle_key=typed_key)
+        stored_key = op.arguments["shuffle_key"]
         assert np.array_equal(stored_key, jax.random.key_data(typed_key))
 
     @pytest.mark.capture
@@ -619,11 +621,11 @@ class TestRandomizedFragmentOrdering:
     @pytest.mark.parametrize("double_phase", [False, True])
     def test_decomposition_self_consistent(self, toy_hamiltonian_cgf_concrete, double_phase):
         """The registered base and controlled rules are self-consistent with their resources
-        when a key is given."""
+        when a shuffle key is given."""
         ham, num_modes, n_states = toy_hamiltonian_cgf_concrete
         wires = list(range(num_modes * n_states))
-        key = jax.random.PRNGKey(0)
-        op = qp.TrotterCGF(0.4, 3, ham, wires, double_phase=double_phase, key=key)
+        shuffle_key = jax.random.PRNGKey(0)
+        op = qp.TrotterCGF(0.4, 3, ham, wires, double_phase=double_phase, shuffle_key=shuffle_key)
         for rule in qp.list_decomps(qp.TrotterCGF):
             _test_decomposition_rule(op, rule)
         for rule in qp.list_decomps("C(TrotterCGF)"):
@@ -649,9 +651,11 @@ class TestRandomizedFragmentOrdering:
         ham = CGFHamiltonian(core_tensors=core, leaf_tensors=leaf, nuc_constant=0.37)
         wires = list(range(num_modes * n_states))
         evolution_time = 0.7
-        key = jax.random.PRNGKey(seed)
+        shuffle_key = jax.random.PRNGKey(seed)
 
-        orderings = np.asarray(_random_fragment_orderings(key, num_steps, num_fragments + 1))
+        orderings = np.asarray(
+            _random_fragment_orderings(shuffle_key, num_steps, num_fragments + 1)
+        )
         with qp.capture.pause():
             expected, expected_reversed = (
                 cgf_second_order_trotter_matrix(ham, evolution_time, num_steps, ords)
@@ -663,7 +667,7 @@ class TestRandomizedFragmentOrdering:
             wires,
             evolution_time,
             num_steps,
-            key,
+            shuffle_key,
             expected,
             expected_reversed,
             ctrl_mode,

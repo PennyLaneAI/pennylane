@@ -315,7 +315,7 @@ class TestResourceRule:
             hamiltonian=ham,
             wires=wires,
             double_phase=False,
-            key=None,
+            shuffle_key=None,
         )
         assert resources == Resources({})
 
@@ -595,32 +595,36 @@ class TestDecomposition:
 
 
 class TestRandomizedFragmentOrdering:
-    """Tests for the random per-step fragment orderings enabled by the ``key`` argument."""
+    """Tests for the random per-step fragment orderings enabled by the ``shuffle_key`` argument."""
 
     def test_random_fragment_orderings(self, seed):
         """Each step gets a permutation of all fragments, drawn inside a jitted function from a
         dynamic key, and different steps get different orderings."""
-        key = jax.random.PRNGKey(seed)
+        shuffle_key = jax.random.PRNGKey(seed)
         num_steps, num_fragments = 20, 4
         orderings = jax.jit(_random_fragment_orderings, static_argnums=(1, 2))(
-            key, num_steps, num_fragments
+            shuffle_key, num_steps, num_fragments
         )
         assert orderings.shape == (num_steps, num_fragments)
         assert np.array_equal(
             np.sort(orderings, axis=1), np.tile(np.arange(num_fragments), (num_steps, 1))
         )
         assert len({tuple(ordering) for ordering in orderings.tolist()}) > 1
-        assert np.array_equal(orderings, _random_fragment_orderings(key, num_steps, num_fragments))
+        assert np.array_equal(
+            orderings, _random_fragment_orderings(shuffle_key, num_steps, num_fragments)
+        )
 
-    def test_init_key(self, toy_hamiltonian_cdf_concrete):
-        """The key defaults to ``None``, and typed keys are stored as their raw key data."""
+    def test_init_shuffle_key(self, toy_hamiltonian_cdf_concrete):
+        """The shuffle key defaults to ``None``, and typed keys are stored as their raw key data."""
         ham, num_orbitals = toy_hamiltonian_cdf_concrete
         wires = list(range(2 * num_orbitals))
-        assert qp.TrotterCDF(0.3, 5, ham, wires).arguments["key"] is None
-        key = jax.random.PRNGKey(3)
-        assert qp.TrotterCDF(0.3, 5, ham, wires, key=key).arguments["key"] is key
+        assert qp.TrotterCDF(0.3, 5, ham, wires).arguments["shuffle_key"] is None
+        shuffle_key = jax.random.PRNGKey(3)
+        op = qp.TrotterCDF(0.3, 5, ham, wires, shuffle_key=shuffle_key)
+        assert op.arguments["shuffle_key"] is shuffle_key
         typed_key = jax.random.key(3)
-        stored_key = qp.TrotterCDF(0.3, 5, ham, wires, key=typed_key).arguments["key"]
+        op = qp.TrotterCDF(0.3, 5, ham, wires, shuffle_key=typed_key)
+        stored_key = op.arguments["shuffle_key"]
         assert np.array_equal(stored_key, jax.random.key_data(typed_key))
 
     @pytest.mark.capture
@@ -628,11 +632,11 @@ class TestRandomizedFragmentOrdering:
     @pytest.mark.parametrize("double_phase", [False, True])
     def test_decomposition_self_consistent(self, toy_hamiltonian_cdf_concrete, double_phase):
         """The registered base and controlled rules are self-consistent with their resources
-        when a key is given."""
+        when a shuffle key is given."""
         ham, num_orbitals = toy_hamiltonian_cdf_concrete
         wires = list(range(2 * num_orbitals))
-        key = jax.random.PRNGKey(0)
-        op = qp.TrotterCDF(0.4, 3, ham, wires, double_phase=double_phase, key=key)
+        shuffle_key = jax.random.PRNGKey(0)
+        op = qp.TrotterCDF(0.4, 3, ham, wires, double_phase=double_phase, shuffle_key=shuffle_key)
         for rule in qp.list_decomps(qp.TrotterCDF):
             _test_decomposition_rule(op, rule)
         for rule in qp.list_decomps("C(TrotterCDF)"):
@@ -657,9 +661,11 @@ class TestRandomizedFragmentOrdering:
         ham = CDFHamiltonian(core_tensors=core, leaf_tensors=leaf, nuc_constant=0.37)
         wires = list(range(2 * num_orbitals))
         evolution_time = 0.7
-        key = make_key(seed)
+        shuffle_key = make_key(seed)
 
-        orderings = np.asarray(_random_fragment_orderings(key, num_steps, num_fragments + 1))
+        orderings = np.asarray(
+            _random_fragment_orderings(shuffle_key, num_steps, num_fragments + 1)
+        )
         with qp.capture.pause():
             expected, expected_reversed = (
                 cdf_second_order_trotter_matrix(ham, evolution_time, num_steps, ords)
@@ -671,7 +677,7 @@ class TestRandomizedFragmentOrdering:
             wires,
             evolution_time,
             num_steps,
-            key,
+            shuffle_key,
             expected,
             expected_reversed,
             ctrl_mode,

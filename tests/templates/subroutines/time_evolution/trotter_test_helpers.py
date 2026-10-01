@@ -193,11 +193,19 @@ def assert_merged_trotter_matches(
 
 
 def trace_randomized_decomposition(
-    trotter_cls, decomposition, controlled_decomposition, ham, sys_wires, t, steps, key, ctrl_mode
+    trotter_cls,
+    decomposition,
+    controlled_decomposition,
+    ham,
+    sys_wires,
+    t,
+    steps,
+    shuffle_key,
+    ctrl_mode,
 ):  # pylint: disable=too-many-arguments
     """Capture the base (``ctrl_mode=None``) or controlled (``ctrl_mode`` in ``"genuine"``,
     ``"double_phase"``) decomposition rule of ``trotter_cls`` with random fragment orderings,
-    passing ``t``, ``key``, and the wires as dynamic inputs, and return the resulting tape and
+    passing ``t``, ``shuffle_key``, and the wires as dynamic inputs, and return the resulting tape and
     its wire order. Requires program capture to be enabled."""
     import jax  # pylint: disable=import-outside-toplevel
 
@@ -205,23 +213,33 @@ def trace_randomized_decomposition(
     control_wires = [] if ctrl_mode is None else [max(sys_wires) + 1]
     double_phase = ctrl_mode == "double_phase"
 
-    def circuit(t, key, *wires):
+    def circuit(t, shuffle_key, *wires):
         system_wires = list(wires[:num_sys_wires])
         with qp.capture.pause():
-            base = trotter_cls(t, steps, ham, system_wires, double_phase=double_phase, key=key)
+            base = trotter_cls(
+                t, steps, ham, system_wires, double_phase=double_phase, shuffle_key=shuffle_key
+            )
         if ctrl_mode is None:
-            decomposition(t, steps, ham, system_wires, False, base.arguments["key"])
+            decomposition(t, steps, ham, system_wires, False, base.arguments["shuffle_key"])
             return
         controlled_decomposition(base, list(wires[num_sys_wires:]), [1], [], "borrowed")
 
-    args = (t, key, *sys_wires, *control_wires)
+    args = (t, shuffle_key, *sys_wires, *control_wires)
     jaxpr = jax.make_jaxpr(circuit)(*args)
     tape = qp.tape.plxpr_to_tape(jaxpr.jaxpr, jaxpr.consts, *args)
     return tape, control_wires + list(sys_wires)
 
 
 def assert_randomized_trotter_matches(
-    decomposition_rules, ham, sys_wires, t, steps, key, expected_u, expected_reversed_u, ctrl_mode
+    decomposition_rules,
+    ham,
+    sys_wires,
+    t,
+    steps,
+    shuffle_key,
+    expected_u,
+    expected_reversed_u,
+    ctrl_mode,
 ):  # pylint: disable=too-many-arguments
     """Compare the captured randomized (controlled) decomposition, see
     :func:`trace_randomized_decomposition`, to the Trotter product formula ``expected_u``.
@@ -232,7 +250,7 @@ def assert_randomized_trotter_matches(
     reversed. The double-phase control-1 branch negates all diagonal angles in place, which yields
     the adjoint of this reversed product, as the full step sequence is not a palindrome."""
     tape, wire_order = trace_randomized_decomposition(
-        *decomposition_rules, ham, sys_wires, t, steps, key, ctrl_mode
+        *decomposition_rules, ham, sys_wires, t, steps, shuffle_key, ctrl_mode
     )
     with qp.capture.pause():
         matrix = qp.matrix(tape, wire_order=wire_order)
