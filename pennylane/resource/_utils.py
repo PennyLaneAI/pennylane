@@ -24,7 +24,7 @@ from collections.abc import Iterable
 from functools import partial, wraps
 from typing import TYPE_CHECKING
 
-import pennylane as qp
+from pennylane.workflow import QNode
 
 from .resource import CircuitSpecs
 
@@ -55,7 +55,7 @@ def apply_partial_args(fn, args, kwargs):
     return wrapper
 
 
-def unwrap_qjit_qnode(qjit, *, fn_name: str) -> "qp.QNode":
+def unwrap_qjit_qnode(qjit, *, fn_name: str) -> QNode:
     """Return the QNode underlying a qjit'd workflow, raising a helpful error otherwise.
 
     ``fn_name`` is the name of the public function to report in the error message.
@@ -65,12 +65,10 @@ def unwrap_qjit_qnode(qjit, *, fn_name: str) -> "qp.QNode":
     try:
         from catalyst import QJIT
     except ImportError as exc:  # pragma: no cover
-        raise ValueError(
-            f"{fn_name} can only be applied to a qjit'd QNode, instead got: {qjit}"
-        ) from exc
+        raise ImportError(f"Catalyst must be installed to use {fn_name}.") from exc
 
     # Unwrap the original QNode if any transforms have been applied
-    if isinstance(qjit, QJIT) and isinstance(qjit.original_function, qp.QNode):
+    if isinstance(qjit, QJIT) and isinstance(qjit.original_function, QNode):
         return qjit.original_function
 
     raise ValueError(f"{fn_name} can only be applied to a qjit'd QNode, instead got: {qjit}")
