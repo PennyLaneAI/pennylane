@@ -191,7 +191,10 @@ class Adder(Operator2):
         return self.x_wires + self.work_wires
 
 
-def _adder_decomposition_resources(x_wires: WiresLike, mod, **_) -> dict:
+def _adder_decomposition_resources(
+    k: int, x_wires: WiresLike, mod: int, work_wires: WiresLike
+) -> dict:
+    # pylint: disable=unused-argument
     num_x_wires = len(x_wires)
     num_qft_wires = num_x_wires if mod == 2**num_x_wires else 1 + num_x_wires
     _compute_op = QFT(Wire[num_qft_wires])
@@ -206,7 +209,7 @@ def _adder_decomposition_resources(x_wires: WiresLike, mod, **_) -> dict:
 
 
 @register_resources(_adder_decomposition_resources)
-def _adder_decomposition(k, x_wires: WiresLike, mod, work_wires: WiresLike, **__):
+def _adder_decomposition(k: int, x_wires: WiresLike, mod: int, work_wires: WiresLike):
     if mod == 2 ** len(x_wires):
         change_op_basis(QFT(x_wires), PhaseAdder(k, x_wires, mod))
         return
@@ -215,7 +218,7 @@ def _adder_decomposition(k, x_wires: WiresLike, mod, work_wires: WiresLike, **__
     change_op_basis(QFT(qft_wires), PhaseAdder(k, qft_wires, mod, work_wires[1:2]))
 
 
-def _increment_resources(num_wires, num_control=0):
+def _increment_resources(num_wires: int, num_control: int = 0) -> dict:
     """Gate counts for :func:`_increment` acting on ``num_wires`` wires."""
     counts = defaultdict(int)
     for i in range(num_wires):
@@ -224,10 +227,10 @@ def _increment_resources(num_wires, num_control=0):
             counts[X] += 1
         else:
             counts[MultiControlledX(Wire[num_controls + 1], work_wires=Wire[i])] += 1
-    return counts
+    return dict(counts)
 
 
-def _add_constant_resources(num_wires, num_control=0):
+def _add_constant_resources(num_wires: int, num_control: int = 0) -> dict:
     """Upper-bound gate counts for an ``_add_constant`` on ``num_wires`` wires.
 
     The estimate is taken at the worst case where every bit is set, so it is independent of the
@@ -237,10 +240,13 @@ def _add_constant_resources(num_wires, num_control=0):
     for size in range(1, num_wires + 1):
         for rep, count in _increment_resources(size, num_control).items():
             counts[rep] += count
-    return counts
+    return dict(counts)
 
 
-def _adder_arithmetic_resources(x_wires: WiresLike, mod, **_) -> dict:
+def _adder_arithmetic_resources(
+    k: int, x_wires: WiresLike, mod: int, work_wires: WiresLike
+) -> dict:
+    # pylint: disable=unused-argument
     num_x_wires = len(x_wires)
     counts = defaultdict(int)
     if mod == 2**num_x_wires:
@@ -260,7 +266,7 @@ def _adder_arithmetic_resources(x_wires: WiresLike, mod, **_) -> dict:
 
 
 @register_resources(_adder_arithmetic_resources, exact=False)
-def _adder_arithmetic_decomposition(k, x_wires: WiresLike, mod, work_wires: WiresLike, **__):
+def _adder_arithmetic_decomposition(k: int, x_wires: WiresLike, mod: int, work_wires: WiresLike):
     x_wires = Wires(x_wires)
     work_wires = Wires(work_wires)
     n = len(x_wires)
