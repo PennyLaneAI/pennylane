@@ -113,6 +113,13 @@ Completed deprecation cycles
 
   - Removed in releases after v0.45
 
+* The ``pennylane.fourier`` module has been removed. This includes ``circuit_spectrum``, ``coefficients``,
+  ``qnode_spectrum``, ``mark``, ``get_spectrum``, ``join_spectra`` and the
+  ``qp.fourier.visualize`` plotting functions. Also, ``qp.fourier.reconstruct`` has moved to
+  ``pennylane.optimize.reconstruct``.
+
+  - Removed in releases after v0.45
+
 * The ``pennylane.noise`` module has been removed, including ``NoiseModel``, ``add_noise``,
   ``insert``, noise mitigation transforms, and ``from_qiskit_noise``. Noise channels such as
   :class:`~.AmplitudeDamping` are unaffected.
