@@ -1026,6 +1026,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The ``pennylane.qnn`` module has been removed, including ``TorchLayer`` and ``iqp_expval``.
+  [(#10247)](https://github.com/PennyLaneAI/pennylane/pull/10247)
+
 * :class:`~.QuantumPhaseEstimation` now only accepts an :class:`~.Operator` as the ``unitary``, and the
   ``target_wires`` argument has been removed. The target wires are the wires of ``unitary``.
   To use a unitary matrix, wrap it in a :class:`~.QubitUnitary`:
@@ -1037,9 +1040,9 @@
   # After:
   qp.QuantumPhaseEstimation(qp.QubitUnitary(matrix, wires=[0]), estimation_wires=[1, 2])
   ```
-  
+
   [(#10209)](https://github.com/PennyLaneAI/pennylane/pull/10209)
-  
+
 * The ``pennylane.noise`` module has been removed, including ``NoiseModel``,
   ``add_noise``, ``insert``, noise mitigation transforms (``mitigate_with_zne``,
   ``fold_global``, ``poly_extrapolate``, ``richardson_extrapolate``,
@@ -1052,7 +1055,7 @@
   ``qp.fourier.visualize`` plotting functions. Also, ``qp.fourier.reconstruct`` has moved to
   ``pennylane.optimize.reconstruct``.
   [(#10212)](https://github.com/PennyLaneAI/pennylane/pull/10212)
-  
+
 * ZX transforms now require ``pyzx>=0.10``. Upgrade with ``pip install 'pyzx>=0.10'``.
   [(#10121)](https://github.com/PennyLaneAI/pennylane/pull/10121)
 
