@@ -145,11 +145,8 @@ class TestCapabilities:
 
         @qp.qnode(dev, shots=shots)
         def circuit():
-            """Model agnostic quantum function with tensor observable"""
-            if cap["model"] == "qubit":
-                qp.X(0)
-            else:
-                qp.QuadX(wires=0)
+            """Quantum function with tensor observable"""
+            qp.X(0)
             return qp.expval(qp.Identity(wires=0) @ qp.Identity(wires=1))
 
         if cap["supports_tensor_observables"]:
@@ -208,10 +205,7 @@ class TestCapabilities:
 
         @qp.qnode(dev, shots=shots)
         def circuit():
-            if cap["model"] == "qubit":
-                qp.X(0)
-            else:
-                qp.QuadX(wires=0)
+            qp.X(0)
             return qp.probs(wires=0)
 
         if cap["returns_probs"]:
@@ -234,10 +228,7 @@ class TestCapabilities:
 
         @qp.qnode(dev, shots=shots)
         def circuit(x):
-            if cap["model"] == "qubit":
-                qp.RX(x, wires=0)
-            else:
-                qp.Rotation(x, wires=0)
+            qp.RX(x, wires=0)
             return qp.probs(wires=0)
 
         spy = mocker.spy(qp.transforms, "broadcast_expand")

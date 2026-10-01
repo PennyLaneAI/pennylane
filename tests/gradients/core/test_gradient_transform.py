@@ -51,9 +51,6 @@ def test_supported_gradient_kwargs():
 
     # Remove arguments that are not keyword arguments
     grad_kwargs -= {"tape"}
-    # Remove "dev", because we decided against supporting this kwarg, although
-    # it is an argument to param_shift_cv, to avoid confusion.
-    grad_kwargs -= {"dev"}
 
     # Check equality of required and supported gradient kwargs
     assert grad_kwargs == SUPPORTED_GRADIENT_KWARGS
