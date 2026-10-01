@@ -1023,7 +1023,7 @@
 <h3>Breaking changes 💔</h3>
 
 * The ``pennylane.qnn`` module has been removed, including ``TorchLayer`` and ``iqp_expval``.
-  [(#XXXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXXX)
+  [(#10247)](https://github.com/PennyLaneAI/pennylane/pull/10247)
 
 * :class:`~.QuantumPhaseEstimation` now only accepts an :class:`~.Operator` as the ``unitary``, and the
   ``target_wires`` argument has been removed. The target wires are the wires of ``unitary``.
