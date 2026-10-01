@@ -87,6 +87,18 @@ class CompilableOp(Operator2):
         super().__init__(n, wires=wires)
 
 
+class CompilableDynOp(Operator2):
+    """Operator with a dynamic parameter, wires, and a compilable static argument."""
+
+    dynamic_argnames = ("phi",)
+    compilable_argnames = ("word",)
+
+    arg_specs = {"phi": Float, "wires": Wire[1]}
+
+    def __init__(self, phi, word, wires):
+        super().__init__(phi, word, wires=wires)
+
+
 class MultiWireOp(Operator2):
     """Operator with two wire arguments."""
 

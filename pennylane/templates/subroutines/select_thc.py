@@ -14,6 +14,7 @@
 """Contains the template for the tensor hypercontraction ``SELECT`` oracle."""
 
 from collections import Counter
+from functools import partial
 from math import pi
 
 import numpy as np
@@ -23,7 +24,6 @@ from pennylane.core.operator import Operator2, abstractify
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import (
     CNOT,
-    CSWAP,
     SWAP,
     Hadamard,
     S,
@@ -200,7 +200,7 @@ def _build_qrom_givens_data(chi, t_eigenvectors, beth, one_body_table, batches):
 
 
 def _apply_loaded_rotation(
-    psi_down, angle_wires, beth, pairs, gradient_wires, adder_work
+    psi_down, angle_wires, beth, pairs, gradient_wires, work_wires
 ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
     r"""Apply the rotations of one batch, whose angles are held in ``angle_wires``.
 
@@ -225,8 +225,11 @@ def _apply_loaded_rotation(
         beth (int): bits of precision per Givens angle
         pairs (Sequence[int]): the Givens pairs of this batch, in application order
         gradient_wires (Sequence[int]): the ``beth + 1`` wires of the phase gradient register
-        adder_work (Sequence[int]): ``beth`` clean wires for :class:`~.SemiAdder`
+        work_wires (Sequence[int]): at least ``beth`` zeroed wires. The first ``beth`` are the
+            scratch of :class:`~.SemiAdder`.
     """
+    adder_work = work_wires[:beth]
+
     for slot, p in enumerate(pairs):
         bits = angle_wires[slot * beth : (slot + 1) * beth]
 
@@ -419,8 +422,10 @@ def _select_half(
     succ, edge, spin = flag_wires
     angle_wires = list(work_wires[:n_angle])
     # The QROM restores its work wires before the adder runs, so the two share the pool.
+    # ``angle_wires`` holds the loaded angles while the sandwich is open, so ``qrom_work`` is
+    # the only part of the pool that is zeroed for the ops between the two QROM calls.
     qrom_work = list(work_wires[n_angle:])
-    adder_work = qrom_work[:beth]
+    swap_work = list(work_wires)
     gradient_wires = list(gradient_wires)
 
     tables = _build_qrom_givens_data(chi, t_eigenvectors, beth, one_body_table, batches)
@@ -440,19 +445,69 @@ def _select_half(
         # Route V onto the spin-up block when the spin flag is set, then apply U,
         # one batch of angles at a time.
         for down, up in zip(psi_down, psi_up):
-            CSWAP(wires=[spin, down, up])
+            ctrl(
+                SWAP(wires=[down, up]),
+                control=spin,
+                work_wires=swap_work,
+                work_wire_type="zeroed",
+            )
         for b, batch in enumerate(batches):
             QROM(tables[b], **qrom)
-            _apply_loaded_rotation(psi_down, angle_wires, beth, batch, gradient_wires, adder_work)
+            _apply_loaded_rotation(psi_down, angle_wires, beth, batch, gradient_wires, qrom_work)
 
     def _reflect():
         # Reflect on the first orbital, switched off on the one-body block.
-        ctrl(Z(psi_down[0]), control=z_control, control_values=z_values)
+        ctrl(
+            Z(psi_down[0]),
+            control=z_control,
+            control_values=z_values,
+            work_wires=qrom_work,
+            work_wire_type="zeroed",
+        )
 
     def _unbasis():
-        adjoint(_basis)()
+        # ``lazy=False``: the QROM in ``_basis`` uncomputes through measurement-based elbow
+        # uncompute, which cannot be reversed, so the adjoint has to be pushed onto the
+        # individual ops instead of wrapping the body in a region that is reversed later.
+        adjoint(_basis, lazy=False)()
 
     return change_op_basis(_basis, _reflect, _unbasis)
+
+
+def _index_swaps(
+    mu_wires, nu_wires, edge, spin1, spin2, work_wires
+):  # pylint: disable=too-many-arguments, too-many-positional-arguments
+    r"""Exchange the two index registers and the two spin flags off the one-body block.
+
+    The swaps are conditioned on :math:`\nu \neq M`, so they are emitted as a
+    :func:`~.change_op_basis` around an ``X`` on ``edge``: a control placed on this block then
+    falls only on the swaps, not on the two bit flips.
+
+    Args:
+        mu_wires (Sequence[int]): the wires of the first THC index
+        nu_wires (Sequence[int]): the wires of the second THC index
+        edge (int): the one-body sentinel flag
+        spin1 (int): the spin flag of the first sandwich
+        spin2 (int): the spin flag of the second sandwich
+        work_wires (Sequence[int]): zeroed scratch for the controlled swaps
+    """
+
+    def _swaps():
+        for a, b in zip(mu_wires, nu_wires, strict=True):
+            ctrl(
+                SWAP(wires=[a, b]),
+                control=edge,
+                work_wires=work_wires,
+                work_wire_type="zeroed",
+            )
+        ctrl(
+            SWAP(wires=[spin1, spin2]),
+            control=edge,
+            work_wires=work_wires,
+            work_wire_type="zeroed",
+        )
+
+    return change_op_basis(partial(X, wires=edge), _swaps)
 
 
 class SelectTHC(Operator2):
@@ -681,10 +736,9 @@ def _select_thc_resources(
             num_batches=num_batches,
             skip_one_body=True,
         )
-        controlled_swap = ctrl(SWAP(wires=Wire[2]), control=Wire[1], control_values=0)
+        swaps = _index_swaps(mu_wires, nu_wires, edge, spin1, spin2, work)
 
-    resources = Counter(abstractify(op) for op in (first_half, second_half))
-    resources[abstractify(controlled_swap)] += n + 1
+    resources = Counter(abstractify(op) for op in (first_half, second_half, swaps))
     resources[X] += 1
     return resources
 
@@ -740,9 +794,7 @@ def _select_thc_decomp(
     #    controls the mu <-> nu swap. This is the "X on the ancilla qubit and swapping the mu and nu
     #    registers" step between Eqs. (38) and (39) of arXiv:2011.03494, and it is what makes
     #    SELECT self-inverse.
-    for a, b in zip(mu_wires, nu_wires):
-        ctrl(SWAP(wires=[a, b]), control=edge, control_values=0)
-    ctrl(SWAP(wires=[spin1, spin2]), control=edge, control_values=0)
+    _index_swaps(mu_wires, nu_wires, edge, spin1, spin2, work_wires)
     X(swap)
 
 

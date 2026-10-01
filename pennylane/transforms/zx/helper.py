@@ -15,24 +15,54 @@
 Helper functions for the ZX calculus module.
 """
 
+from collections.abc import Callable
 from functools import wraps
+
+from packaging.version import Version
+
+from pennylane.core.qscript import QuantumScript
+
+_MIN_PYZX_VERSION = "0.10"
 
 
 def _needs_pyzx(func):
     """Private function to use as a ZX-based transforms decorator to raise the
-    appropriate error when the pyzx external package is not installed."""
+    appropriate error when the pyzx external package is missing or too old."""
 
     @wraps(func)
     def wrapper(*args, **kwargs):
         try:
-            # pylint: disable=import-outside-toplevel,unused-import
+            # pylint: disable=import-outside-toplevel
             import pyzx
 
         except ModuleNotFoundError as e:
             raise ModuleNotFoundError(
-                "The `pyzx` package is required. You can install it with `pip install pyzx`."
+                "The `pyzx` package is required. You can install it with `pip install 'pyzx>=0.10'`."
             ) from e
+
+        if Version(pyzx.__version__) < Version(_MIN_PYZX_VERSION):
+            raise ImportError(
+                f"PennyLane's ZX transforms require pyzx>={_MIN_PYZX_VERSION}, "
+                f"but version {pyzx.__version__} is installed."
+            )
 
         return func(*args, **kwargs)
 
     return wrapper
+
+
+def _apply_zx_transform(
+    tape: QuantumScript,
+    transform_fn: Callable[[object], object],
+) -> QuantumScript:
+    """Apply a PyZX transform and restore the original PennyLane wire labels."""
+    # Avoid a circular import: converter.py imports ``_needs_pyzx`` from this module.
+    from .converter import from_zx, to_zx  # pylint: disable=import-outside-toplevel
+
+    transformed_graph = transform_fn(to_zx(tape))
+    qscript = from_zx(transformed_graph)
+
+    wire_map = dict(enumerate(tape.wires))
+    mapped_operations = [op.map_wires(wire_map) for op in qscript.operations]
+
+    return tape.copy(operations=mapped_operations)
