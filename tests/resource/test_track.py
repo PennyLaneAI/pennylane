@@ -66,7 +66,7 @@ class TestTrack:
     def test_with_and_without_capture(self):
         """Test that track matches device-level specs with program capture enabled and disabled."""
 
-        @qp.qjit
+        @qp.qjit(capture="global")
         @qp.qnode(qp.device("null.qubit", wires=2))
         def circuit(x):
             qp.RX(x, wires=0)
