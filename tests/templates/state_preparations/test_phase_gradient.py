@@ -40,7 +40,7 @@ def test_standard_validity(num_wires):
 def test_label():
     """Test the label of the template."""
     op = qp.PhaseGradientStatePrep(wires=[0, 1])
-    assert op.label() == "|∇⟩"
+    assert op.label() == "|∇z⟩"
     assert op.label(base_label="grad") == "grad"
 
 
