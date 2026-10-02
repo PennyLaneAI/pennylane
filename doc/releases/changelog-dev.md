@@ -1879,6 +1879,9 @@
 * Fixed a bug in the TCDQ module that caused incorrect results for states with complex coefficients.
   [(#10215)](https://github.com/PennyLaneAI/pennylane/pull/10215)
 
+* `DeviceCapabilities` can now indicate whether a device supports
+  all gates in its device gateset via `DeviceCapabilities.supports_all_gates_in_device_gateset`.
+
 
 <h3>Contributors ✍️</h3>
 
