@@ -25,6 +25,10 @@ import jax.numpy as jnp
 import numpy as np
 from jax.typing import ArrayLike
 
+_REAL_DTYPE = jnp.float32
+_COMPLEX_DTYPE = jnp.complex64
+_INDEX_DTYPE = jnp.int32
+
 
 @dataclass
 class CircuitConfig:  # pylint: disable=too-many-instance-attributes
@@ -98,7 +102,7 @@ class CircuitConfig:  # pylint: disable=too-many-instance-attributes
     init_state_amps: ArrayLike | None = None
     #: Optional custom phase function applied as an extra diagonal layer.
     phase_fn: Callable | None = None
-    #: Controls the memory usage of the generator matrix during the phase difference computation. Higher block size decreases memory usage.
+    #: Controls the memory usage of the generator matrix during the phase difference computation. Higher block size increases memory usage.
     block_size: int = 1 << 17
 
 
@@ -138,9 +142,9 @@ def _parse_generator_dict(circuit_def: dict[int, list[list[int]]], n_qubits: int
 
         rows[i, : unique.size] = unique
 
-    gate_indices = jnp.asarray(np.ascontiguousarray(rows))
+    gate_indices = jnp.asarray(np.ascontiguousarray(rows), dtype=_INDEX_DTYPE)
 
-    return gate_indices, jnp.array(param_indices, dtype=int)
+    return gate_indices, jnp.array(param_indices, dtype=_INDEX_DTYPE)
 
 
 def _xor_gather_rows(bits: jnp.ndarray, gate_indices: jnp.ndarray) -> jnp.ndarray:
@@ -168,9 +172,10 @@ def _parity_dot(a: jnp.ndarray, b: jnp.ndarray) -> jnp.ndarray:
 
 
 def _parity_signs(parity: jnp.ndarray) -> jnp.ndarray:
-    return 1 - 2 * parity.astype(jnp.float32)
+    return 1 - 2 * parity.astype(_REAL_DTYPE)
 
 
+# pylint: disable=too-many-arguments
 def _phase_differences(
     gate_params: jnp.ndarray,
     samples_t: jnp.ndarray,
@@ -206,7 +211,7 @@ def _phase_differences(
     def accumulate(total, block):
         return total + block_contribution(*block), None
 
-    zero = jnp.zeros((bitflips_t.shape[1], samples_t.shape[1]))
+    zero = jnp.zeros((bitflips_t.shape[1], samples_t.shape[1]), dtype=gate_params.dtype)
     total, _ = jax.lax.scan(
         accumulate,
         zero,
@@ -239,8 +244,10 @@ def _prep_observables(observables_int: ArrayLike) -> tuple[jnp.ndarray, jnp.ndar
     mask_XY = jnp.array(is_X | is_Y, dtype=jnp.uint8)
 
     count_Y = is_Y.sum(axis=1, dtype=jnp.int32) & 3
-    y_real = jnp.where(count_Y == 0, 1.0, jnp.where(count_Y == 2, -1.0, 0.0))[:, jnp.newaxis]
-    y_imag = jnp.where(count_Y == 1, -1.0, jnp.where(count_Y == 3, 1.0, 0.0))[:, jnp.newaxis]
+    y_real = jnp.where(count_Y == 0, 1.0, jnp.where(count_Y == 2, -1.0, 0.0))
+    y_imag = jnp.where(count_Y == 1, -1.0, jnp.where(count_Y == 3, 1.0, 0.0))
+    y_real = y_real.astype(_REAL_DTYPE)[:, jnp.newaxis]
+    y_imag = y_imag.astype(_REAL_DTYPE)[:, jnp.newaxis]
 
     return bitflips, mask_XY, y_real, y_imag
 
@@ -265,10 +272,12 @@ def _core_expval_execution(
     bitflips_t = _pad_sentinel_row(bitflips.T)
 
     gates_params = jnp.asarray(gates_params)
+    out_dtype = jnp.promote_types(gates_params.dtype, _REAL_DTYPE)
+    gates_params = gates_params.astype(_REAL_DTYPE)
     E = _phase_differences(gates_params, samples_t, bitflips_t, gate_indices, param_map, block_size)
 
     if vmapped_phase_func is not None:
-        E += vmapped_phase_func(phase_fn_params, samples, bitflips)
+        E = E + vmapped_phase_func(phase_fn_params, samples, bitflips).astype(_REAL_DTYPE)
 
     cos_E = jnp.cos(E)
     sin_E = jnp.sin(E)
@@ -280,8 +289,8 @@ def _core_expval_execution(
     if init_state_elems is None or init_state_amps is None:
         integrand = phase_re
     else:
-        state_elems = jnp.asarray(init_state_elems)
-        amps = jnp.asarray(init_state_amps)
+        state_elems = jnp.asarray(init_state_elems).astype(jnp.uint8)
+        amps = jnp.asarray(init_state_amps).astype(_COMPLEX_DTYPE)
 
         g_signs = _parity_signs(_parity_dot(state_elems, samples))
         w_signs = _parity_signs(_parity_dot(bitflips, state_elems))
@@ -310,7 +319,7 @@ def _core_expval_execution(
     expvals = jnp.mean(integrand, axis=1)
     variances = jnp.var(integrand, axis=-1, ddof=1) / samples.shape[0]
 
-    return expvals, variances
+    return expvals.astype(out_dtype), variances.astype(out_dtype)
 
 
 def build_expval_func(
