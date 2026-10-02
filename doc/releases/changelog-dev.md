@@ -336,6 +336,36 @@
 
   ```
 
+* A new function called :func:`~.analyze` is available, which estimates the resources of a
+  ``qjit``-compiled QNode by compiling it up to the given ``level`` and analyzing the resulting
+  program, without executing it. This is the same pass-by-pass analysis that :func:`~.specs`
+  performs for ``qjit``-compiled QNodes.
+  [(#10237)](https://github.com/PennyLaneAI/pennylane/pull/10237)
+
+  ```python
+  dev = qp.device("null.qubit", wires=2)
+
+  @qp.qjit
+  @qp.transforms.merge_rotations
+  @qp.transforms.cancel_inverses
+  @qp.qnode(dev)
+  def circuit(x):
+      qp.RX(x, wires=0)
+      qp.RX(x, wires=0)
+      qp.X(0)
+      qp.X(0)
+      qp.CNOT([0, 1])
+      return qp.probs()
+  ```
+
+  ```pycon
+  >>> qp.analyze(circuit, level=0)(1.23).resources.quantum_operations
+  {'CNOT': 1, 'PauliX': 2, 'RX': 2}
+  >>> qp.analyze(circuit, level="user")(1.23).resources.quantum_operations
+  {'CNOT': 1, 'RX': 1}
+
+  ```
+
 * :func:`~.specs` will now output symbolic resource information when it encounters a loop that uses dynamic control-flow
   that can't be resolved at compile time.
   In such cases the returned :class:`~.resource.CircuitSpecs` will contain :class:`~.resource.Expression` instances where `int` values would normally appear.

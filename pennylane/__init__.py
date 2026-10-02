@@ -112,7 +112,7 @@ from pennylane.templates.subroutines import *
 from pennylane import qaoa
 from pennylane.workflow import QNode, qnode, execute, set_shots, marker
 from pennylane import workflow
-from pennylane.resource import specs, track
+from pennylane.resource import analyze, specs, track
 from pennylane import resource
 
 from pennylane.transforms import (
