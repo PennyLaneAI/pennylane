@@ -18,8 +18,8 @@ The ``resource`` module provides classes and functionality to track the quantum 
 .. seealso::
     The :mod:`~.estimator` module for higher level resource estimation of quantum programs.
 
-Circuit Specifications (specs)
-------------------------------
+Circuit Resource Profiling
+--------------------------
 
 .. currentmodule:: pennylane
 
@@ -27,6 +27,7 @@ Circuit Specifications (specs)
     :toctree: api
 
     ~specs
+    ~track
 
 Circuit Specification Classes and Utilities
 -------------------------------------------
@@ -54,6 +55,7 @@ from .resource import (
 )
 from .expression import Expression
 from .specs import specs
+from .track import track
 
 __all__ = [
     "Resources",
@@ -63,4 +65,5 @@ __all__ = [
     "resources_from_tape",
     "Expression",
     "specs",
+    "track",
 ]

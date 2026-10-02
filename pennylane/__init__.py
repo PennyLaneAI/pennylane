@@ -48,8 +48,6 @@ from pennylane.decomposition import (
 from pennylane import templates
 from pennylane import pauli
 from pennylane.pauli import pauli_decompose
-from pennylane.resource import specs
-from pennylane import resource
 from pennylane import qchem
 from pennylane.fermi import (
     FermiC,
@@ -114,6 +112,8 @@ from pennylane.templates.subroutines import *
 from pennylane import qaoa
 from pennylane.workflow import QNode, qnode, execute, set_shots, marker
 from pennylane import workflow
+from pennylane.resource import specs, track
+from pennylane import resource
 
 from pennylane.transforms import (
     transform,
