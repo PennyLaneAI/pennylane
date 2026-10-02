@@ -130,11 +130,11 @@ def _parse_generator_dict(circuit_def: dict[int, list[list[int]]], n_qubits: int
     for i, qubits in enumerate(flat_gates):
         unique = np.asarray(qubits).reshape(-1)
         unique = np.unique(np.where(unique < 0, unique + n_qubits, unique))
-        rows[i, : unique.size] = unique
 
-    if n_gates and rows.size:
-        if rows.min() < 0 or rows.max() > n_qubits:
+        if unique.size and (unique.min() < 0 or unique.max() >= n_qubits):
             raise IndexError(f"Qubit index out of range for a {n_qubits}-qubit circuit")
+
+        rows[i, : unique.size] = unique
 
     gate_indices = jnp.asarray(np.ascontiguousarray(rows))
 
@@ -177,7 +177,7 @@ def _phase_differences(
     param_map: jnp.ndarray,
 ) -> jnp.ndarray:
 
-    gate_block = 1 << 17
+    gate_block = 1 << 16
     n_gates, max_weight = gate_indices.shape
 
     def block_contribution(block_indices: jnp.ndarray, block_params: jnp.ndarray) -> jnp.ndarray:
@@ -271,12 +271,9 @@ def _core_expval_execution(
     cos_E = jnp.cos(E)
     sin_E = jnp.sin(E)
 
-    if mask_XY is None:
-        phase_re, phase_im = cos_E, sin_E
-    else:
-        sign_flip = _parity_signs(_parity_dot(mask_XY, samples))
-        phase_re = sign_flip * (y_real * cos_E - y_imag * sin_E)
-        phase_im = sign_flip * (y_real * sin_E + y_imag * cos_E)
+    sign_flip = _parity_signs(_parity_dot(mask_XY, samples))
+    phase_re = sign_flip * (y_real * cos_E - y_imag * sin_E)
+    phase_im = sign_flip * (y_real * sin_E + y_imag * cos_E)
 
     if init_state_elems is None or init_state_amps is None:
         integrand = phase_re
