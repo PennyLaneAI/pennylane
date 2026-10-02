@@ -1028,6 +1028,14 @@
   [(#9764)](https://github.com/PennyLaneAI/pennylane/pull/9764)
 
 <h3>Breaking changes 💔</h3>
+  
+* Tensorflow and tensorflow-autograph interfaces are removed.
+  [(#10229)](https://github.com/PennyLaneAI/pennylane/pull/10229)
+
+* The ``pennylane.pulse`` module has been removed. This includes ``ParametrizedHamiltonian`` and
+  ``ParametrizedEvolution``, as well as the ``stoch_pulse_grad`` and ``pulse_odegen``
+  pulse-level gradient transforms.
+  [(#10238)](https://github.com/PennyLaneAI/pennylane/pull/10238)
 
 * :class:`~.QuantumPhaseEstimation` now only accepts an :class:`~.Operator` as the ``unitary``, and the
   ``target_wires`` argument has been removed. The target wires are the wires of ``unitary``.
@@ -1040,9 +1048,9 @@
   # After:
   qp.QuantumPhaseEstimation(qp.QubitUnitary(matrix, wires=[0]), estimation_wires=[1, 2])
   ```
-  
+
   [(#10209)](https://github.com/PennyLaneAI/pennylane/pull/10209)
-  
+
 * The ``pennylane.noise`` module has been removed, including ``NoiseModel``,
   ``add_noise``, ``insert``, noise mitigation transforms (``mitigate_with_zne``,
   ``fold_global``, ``poly_extrapolate``, ``richardson_extrapolate``,
@@ -1055,7 +1063,7 @@
   ``qp.fourier.visualize`` plotting functions. Also, ``qp.fourier.reconstruct`` has moved to
   ``pennylane.optimize.reconstruct``.
   [(#10212)](https://github.com/PennyLaneAI/pennylane/pull/10212)
-  
+
 * ZX transforms now require ``pyzx>=0.10``. Upgrade with ``pip install 'pyzx>=0.10'``.
   [(#10121)](https://github.com/PennyLaneAI/pennylane/pull/10121)
 

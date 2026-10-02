@@ -383,12 +383,6 @@ def apply_paulix(op: qp.X, state, is_state_batched: bool = False, debugger=None,
 def apply_pauliz(op: qp.Z, state, is_state_batched: bool = False, debugger=None, **_):
     """Applies a :class:`~.PauliZ` operation by multiplying the state by the Pauli-Z matrix."""
     num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
-    n_dim = math.ndim(state)
-
-    if (
-        n_dim >= TENSORDOT_STATE_NDIM_PERF_THRESHOLD and math.get_interface(state) == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
     # First, flip the left side
     axis = op.wires[0] + is_state_batched
@@ -405,12 +399,6 @@ def apply_pauliz(op: qp.Z, state, is_state_batched: bool = False, debugger=None,
 def apply_T(op: qp.T, state, is_state_batched: bool = False, debugger=None, **_):
     """Applies a :class:`~.T` operation by multiplying the state by the T matrix."""
     num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
-    n_dim = math.ndim(state)
-
-    if (
-        n_dim >= TENSORDOT_STATE_NDIM_PERF_THRESHOLD and math.get_interface(state) == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
     # First, flip the left side
     axis = op.wires[0] + is_state_batched
@@ -427,12 +415,6 @@ def apply_T(op: qp.T, state, is_state_batched: bool = False, debugger=None, **_)
 def apply_S(op: qp.S, state, is_state_batched: bool = False, debugger=None, **_):
     """Applies a :class:`~.S` operation by multiplying the state by the S matrix."""
     num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
-    n_dim = math.ndim(state)
-
-    if (
-        n_dim >= TENSORDOT_STATE_NDIM_PERF_THRESHOLD and math.get_interface(state) == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
     # First, flip the left side
     axis = op.wires[0] + is_state_batched
@@ -448,14 +430,6 @@ def apply_S(op: qp.S, state, is_state_batched: bool = False, debugger=None, **_)
 @apply_operation.register
 def apply_phaseshift(op: qp.PhaseShift, state, is_state_batched: bool = False, debugger=None, **_):
     """Applies a :class:`~.Phaseshift` operation by multiplying the state by the Phaseshift matrix."""
-    num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
-    n_dim = math.ndim(state)
-
-    if (
-        n_dim >= TENSORDOT_STATE_NDIM_PERF_THRESHOLD and math.get_interface(state) == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
-
     # Common constants always needed
     n_dim = math.ndim(state)
     num_wires = _get_num_wires(state, is_state_batched)
