@@ -32,7 +32,7 @@ from malt.impl.api import PyToPy
 import pennylane as qp
 from pennylane.exceptions import AutoGraphError, AutoGraphWarning
 
-from . import ag_primitives
+from . import ag_primitives, pragmas
 
 
 class PennyLaneTransformer(PyToPy):
@@ -92,6 +92,18 @@ class PennyLaneTransformer(PyToPy):
             new_obj.func = new_fn
 
         return new_obj, module, source_map
+
+    def transform_ast(self, node, ctx):
+        """Apply source code pragmas around the AutoGraph conversion passes.
+
+        Reading the pragmas first keeps the AutoGraph pipeline itself untouched. The annotations
+        they leave behind survive it, as both the templating system and the break statement
+        converter preserve them when they rewrite a statement. Statements that AutoGraph offers
+        no annotation for are handled afterwards instead, by editing the generated call."""
+
+        node, edits = pragmas.transform(node, ctx)
+        node = super().transform_ast(node, ctx)
+        return pragmas.apply_edits(node, edits)
 
     def get_extra_locals(self):
         """Here we can provide any extra names that the converted function should have access to.

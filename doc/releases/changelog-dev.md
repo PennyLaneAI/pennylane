@@ -611,6 +611,19 @@
 
   ```
 
+* Native Python control flow converted by AutoGraph can now be given compiler hints with a
+  `# qphint: key=value` comment, which is the AutoGraph equivalent of applying :func:`~.hint`
+  to a :func:`~.for_loop` or :func:`~.while_loop`. The comment may trail the statement or sit on
+  its own line directly above it. The branches of an `if` statement can be annotated separately,
+  though no hint keys are consumed for conditionals yet.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
+  ```python
+  def f(n):
+      for i in range(n):  # qphint: num-iters=10
+          qp.X(0)
+  ```
+
 <h3>Improvements 🛠</h3>
 
 * :func:`~.iterative_qpe` is now captured as a single :func:`~.capture.subroutine` instead of
