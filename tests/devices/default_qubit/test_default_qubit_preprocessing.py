@@ -304,6 +304,80 @@ class TestConfigSetup:
         with pytest.raises(DeviceError, match="Using postselect_mode='fill-shots'"):
             dev.setup_execution_config(config)
 
+    def test_error_tree_traversal_backprop_execution_config(self):
+        """Tests that backprop gradient_method raises DeviceError with tree-traversal."""
+        config = ExecutionConfig(
+            mcm_config=MCMConfig(mcm_method="tree-traversal"), gradient_method="backprop"
+        )
+        dev = qp.device("default.qubit")
+        with pytest.raises(DeviceError, match="tree-traversal"):
+            dev.setup_execution_config(config)
+
+    def test_tree_traversal_autograd_analytic_shots_raises_error(self):
+        """Tree-traversal with Autograd differentiation and shots=None raises a clear DeviceError."""
+        dev = qp.device("default.qubit", wires=2)
+
+        @qp.qnode(dev, mcm_method="tree-traversal")
+        def circuit(x):
+            qp.RX(x, wires=0)
+            qp.measure(0)
+            return qp.expval(qp.X(0))
+
+        grad_fn = qp.grad(circuit)
+
+        with pytest.raises(
+            DeviceError,
+            match="tree-traversal",
+        ):
+            grad_fn(pnp.array(0.1))
+
+    def test_tree_traversal_supported_differentiation_and_execution(self):
+        """Tests that supported execution and differentiation methods remain functional with tree-traversal."""
+        dev = qp.device("default.qubit", wires=2)
+
+        @qp.qnode(dev, mcm_method="tree-traversal")
+        def circuit(x):
+            qp.RX(x, wires=0)
+            qp.measure(0)
+            return qp.expval(qp.X(0))
+
+        # Forward execution without differentiation remains executable
+        res = circuit(pnp.array(0.1))
+        assert qp.math.allclose(res, 0.0)
+
+        # Finite-diff with shots=None remains supported
+        @qp.qnode(dev, mcm_method="tree-traversal", diff_method="finite-diff")
+        def circuit_fd_analytic(x):
+            qp.RX(x, wires=0)
+            qp.measure(0)
+            return qp.expval(qp.X(0))
+
+        df_fd = qp.grad(circuit_fd_analytic)
+        assert qp.math.allclose(df_fd(pnp.array(0.1)), 0.0, atol=1e-5)
+
+        # Finite-diff with finite shots remains supported
+        dev_shots = qp.device("default.qubit", wires=2)
+
+        @qp.set_shots(1000)
+        @qp.qnode(dev_shots, mcm_method="tree-traversal", diff_method="finite-diff")
+        def circuit_fd_shots(x):
+            qp.RX(x, wires=0)
+            qp.measure(0)
+            return qp.expval(qp.X(0))
+
+        df_shots = qp.grad(circuit_fd_shots)
+        res_shots = df_shots(pnp.array(0.1))
+        assert isinstance(res_shots, (float, np.ndarray))
+
+        # Circuit without mid-circuit measurements remains differentiable with default/backprop
+        @qp.qnode(dev, mcm_method="tree-traversal")
+        def circuit_no_mcms(x):
+            qp.RX(x, wires=0)
+            return qp.expval(qp.X(0))
+
+        df_no_mcm = qp.grad(circuit_no_mcms)
+        assert qp.math.allclose(df_no_mcm(pnp.array(0.1)), 0.0)
+
 
 # pylint: disable=too-few-public-methods
 class TestPreprocessing:

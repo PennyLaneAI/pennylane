@@ -420,6 +420,10 @@ cost.
     * `lightning.kokkos <https://docs.pennylane.ai/projects/lightning/en/stable/lightning_kokkos/device.html>`_,
 
     Just-in-time (JIT) compilation is not available on ``DefaultQubit`` with ``shots=None``.
+    Additionally, differentiating circuits with mid-circuit measurements using ``mcm_method="tree-traversal"``
+    and ``shots=None`` is not supported with backpropagation on ``DefaultQubit``.
+    Use ``diff_method="finite-diff"``, ``diff_method="parameter-shift"``, or
+    ``mcm_method="deferred"`` instead.
 
 .. _mcm_config:
 
