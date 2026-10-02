@@ -142,7 +142,12 @@ def preprocess_level_input(
     if isinstance(level, (int, str)):
         level = [level]
     else:
-        level = list(level)
+        try:
+            level = list(level)
+        except TypeError as exc:
+            raise ValueError(
+                f"Invalid level '{level}', expected int, str, or an iterable of those."
+            ) from exc
 
     # Convert marker names to the associated level number
     for i, lvl in enumerate(level):
