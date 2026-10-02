@@ -17,7 +17,7 @@ TODO: [sc-120453] Fill docstring
 """
 
 from abc import abstractmethod
-from collections.abc import Callable, Hashable, Iterable, Sequence
+from collections.abc import Hashable, Iterable, Sequence
 from copy import copy, deepcopy
 from enum import Enum, StrEnum, auto
 from functools import partial
@@ -1371,10 +1371,8 @@ class Operator2(metaclass=OperatorMeta):
 
     __radd__ = __add__
 
-    def __mul__(self, other: Callable | TensorLike) -> Operator:
+    def __mul__(self, other: TensorLike) -> Operator:
         """The scalar multiplication between scalars and Operators."""
-        if callable(other):
-            return qp.pulse.ParametrizedHamiltonian([other], [self])
         if isinstance(other, TensorLike):
             return qp.s_prod(scalar=other, operator=self, lazy=False)
         return NotImplemented
@@ -1680,15 +1678,10 @@ def _init_wires(op: Operator2):
         ops = filter(_is_op, leaves)
         all_algorithmic_wires.extend(op.wires for op in ops)
 
-    abstract_wires = [w for w in all_algorithmic_wires if isinstance(w, AbstractWires)]
-    if abstract_wires:
-        if any(not aw.shape_fixed for aw in abstract_wires):
-            raise ValueError("Operator2 instances must be constructed with wires of fixed length.")
+    if any(isinstance(w, AbstractWires) and not w.shape_fixed for w in all_algorithmic_wires):
+        raise ValueError("Operator2 instances must be constructed with wires of fixed length.")
 
-        total_wires = sum(len(w) for w in all_algorithmic_wires)
-        op._wires = AbstractWires(total_wires)
-    else:
-        op._wires = Wires.all_wires(all_algorithmic_wires)
+    op._wires = Wires.all_wires(all_algorithmic_wires)
 
 
 def _init_arg_types(op: Operator2) -> None:

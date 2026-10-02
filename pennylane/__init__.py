@@ -163,8 +163,6 @@ from pennylane.debugging import (
     debug_tape,
 )
 from pennylane.shadows import ClassicalShadow
-from pennylane import pulse
-
 from pennylane.gradients import metric_tensor, adjoint_metric_tensor
 from pennylane import gradients  # pylint:disable=wrong-import-order
 from pennylane.drawer import draw, draw_mpl
