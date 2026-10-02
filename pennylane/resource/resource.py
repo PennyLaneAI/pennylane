@@ -1202,6 +1202,13 @@ def resources_from_tape(tape: QuantumScript, compute_depth: bool = True) -> Spec
     This is useful when the depth is not needed, for example, in some
     resource counting scenarios or heavy circuits where computing depth is expensive.
 
+    Args:
+        tape (.QuantumScript): The quantum circuit for which we extract resources
+        compute_depth (bool): If True, the depth of the circuit is computed and included in the resources.
+            If False, the depth is set to None.
+    Returns:
+        SpecsResources: The resources associated with this tape.
+
     **Example**
 
     .. code-block:: python
@@ -1218,24 +1225,17 @@ def resources_from_tape(tape: QuantumScript, compute_depth: bool = True) -> Spec
             return qp.expval(qp.PauliZ(0))
 
         tape = qp.workflow.construct_tape(circuit)(3)
+        resources = resources_from_tape(tape)
 
-        >>> resources = resources_from_tape(tape)
-        >>> print(resources)
-        Quantum operations:
-        - Total: 2
-          - RX: 1
-          - CNOT: 1
-        Measurement processes:
-        - expval(PauliZ): 1
-        Total wires: 2
-        Circuit Depth: 2
-
-    Args:
-        tape (.QuantumScript): The quantum circuit for which we extract resources
-        compute_depth (bool): If True, the depth of the circuit is computed and included in the resources.
-            If False, the depth is set to None.
-    Returns:
-        SpecsResources: The resources associated with this tape.
+    >>> print(resources)
+    Quantum operations:
+    - Total: 2
+        - RX: 1
+        - CNOT: 1
+    Measurement processes:
+    - expval(PauliZ): 1
+    Total wires: 2
+    Circuit Depth: 2
     """
     resources = _count_resources(tape, compute_depth=compute_depth)
 
