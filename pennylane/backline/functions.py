@@ -323,35 +323,13 @@ def _check_count(name: str, value, minimum: int) -> None:
 def onnx_decoder(
     model, *, provider: str = "auto", device: int = 0, threads: int = 1
 ) -> CoprocessorFunction:
-    """A coprocessor function that runs an ONNX model on each message, for use with
+    """Create a coprocessor function that runs an ONNX model on each message, for use with
     :mod:`~.backline`.
 
-    The model must have one input and one output. Each message's payload is the input tensor as raw
-    bytes in row-major order, and the reply is the output tensor, likewise. A dynamic dimension of
-    the input or output, such as a batch dimension, is taken as 1. The model is read with the
-    installed onnxruntime when the function is made, and the function declares the tensors' sizes
-    as its :attr:`~.CoprocessorFunction.message_bytes`. So a controller that leaves
-    :attr:`~.Controller.in_bytes` and :attr:`~.Controller.out_bytes` unset sends exactly the
-    input tensor and receives exactly the output tensor, and one that sets a different size is
-    rejected.
-
-    The function is implemented in Catalyst's ONNX coprocessor library
-    (``libcatalyst_onnx_coprocessor``), so no build step is needed: the model file is loaded when
-    the coprocessor starts. It is a per-message function,
-    so a GPU coprocessor calls it once per message from the host, and the model's own GPU work runs
-    from there.
-
-    The device the model runs on is chosen by onnxruntime. With ``provider="auto"`` it is the first
-    GPU provider the installed onnxruntime has, of ``"migraphx"``, ``"cuda"`` and ``"rocm"`` in that
-    order (``"tensorrt"`` is used only when named), so one program runs on an AMD GPU with the
-    ``onnxruntime-migraphx`` package, on an NVIDIA GPU with ``onnxruntime-gpu``, and on the CPU with
-    plain ``onnxruntime``. If that GPU provider is present but cannot be attached (for example
-    because its GPU libraries are missing), the coprocessor fails to start rather than falling back
-    to the CPU. Pass an explicit ``provider`` to choose the device yourself. The provider in use is
-    printed when the model loads.
-
-    The model and onnxruntime paths are resolved on this machine, so the coprocessor must run in
-    this process. Catalyst rejects one dispatched to an executor.
+    Each message the controller sends is the model's input tensor as raw bytes, and each reply is
+    its output tensor. The tensors' sizes become the controller's message sizes, so the controller
+    needs no ``in_bytes`` or ``out_bytes`` of its own. The model runs on a GPU when the installed
+    onnxruntime has a GPU provider, and on the CPU otherwise.
 
     .. warning::
 
@@ -359,17 +337,19 @@ def onnx_decoder(
         compiler.
 
     Args:
-        model (str | os.PathLike): Path to the ``.onnx`` model.
+        model (str | os.PathLike): Path to the ``.onnx`` model, which must have one input and one
+            output.
 
     Keyword Args:
-        provider (str): The onnxruntime execution provider: ``"auto"`` (the default), ``"cpu"``,
-            ``"migraphx"`` for AMD GPUs, ``"cuda"`` or ``"tensorrt"`` for NVIDIA GPUs, or
-            ``"rocm"``. A GPU provider needs an onnxruntime build that contains it. ``"cpu"`` and
-            ``"migraphx"`` have been tested. The NVIDIA providers and ``"rocm"`` have not.
+        provider (str): The onnxruntime execution provider: ``"auto"``, ``"cpu"``, ``"migraphx"``
+            for AMD GPUs, ``"cuda"`` or ``"tensorrt"`` for NVIDIA GPUs, or ``"rocm"``. ``"auto"``
+            uses the first of ``"migraphx"``, ``"cuda"`` and ``"rocm"`` that the installed
+            onnxruntime has, or the CPU when it has none. A GPU provider that is present but cannot
+            be attached stops the coprocessor from starting, rather than falling back to the CPU.
+            Defaults to ``"auto"``.
         device (int): The GPU a GPU provider runs on, from ``0``. Defaults to ``0``.
         threads (int): onnxruntime's intra-op threads, at least ``1``. Defaults to ``1``, which
-            keeps onnxruntime's thread pool from competing with the transport's threads. A model
-            run on the CPU provider may run faster with more.
+            keeps onnxruntime's thread pool from competing with the transport's threads.
 
     Returns:
         CoprocessorFunction: The function, ready to pass as :attr:`~.Coprocessor.coprocessor_fn`.
@@ -385,10 +365,34 @@ def onnx_decoder(
 
     **Example**
 
+    A model taking 120 bytes and returning 121 sets both message sizes:
+
     >>> fn = qp.backline.onnx_decoder("predecoder.onnx")  # doctest: +SKIP
-    >>> coproc = qp.Coprocessor(  # doctest: +SKIP
-    ...     name="gpu-coproc", hardware="gpu", coprocessor_fn=fn
+    >>> coproc = qp.Coprocessor(hardware="gpu", coprocessor_fn=fn)  # doctest: +SKIP
+    >>> dev = qp.Backline(  # doctest: +SKIP
+    ...     controller=qp.Controller(), coprocessors=[coproc], transport="memcpy"
     ... )
+    >>> dev.placement.in_bytes, dev.placement.out_bytes  # doctest: +SKIP
+    (120, 121)
+
+    .. details::
+        :title: Usage Details
+
+        **Message sizes.** Each payload is the input tensor as raw bytes in row-major order, and
+        each reply is the output tensor. A dynamic dimension, such as a batch dimension, is taken
+        as 1. A controller that sets :attr:`~.Controller.in_bytes` or
+        :attr:`~.Controller.out_bytes` to a size the model does not match is rejected when the
+        :class:`~pennylane.Backline` is built.
+
+        **Choosing the device.** With ``provider="auto"``, the same program runs on an AMD GPU with
+        the ``onnxruntime-migraphx`` package, on an NVIDIA GPU with ``onnxruntime-gpu``, and on the
+        CPU with plain ``onnxruntime``. ``"auto"`` never picks ``"tensorrt"``, so pass it
+        explicitly to use it. The provider in use is printed when the coprocessor starts, which is
+        also when a provider that cannot be attached fails. ``"cpu"`` and ``"migraphx"`` have been
+        tested, and the NVIDIA providers and ``"rocm"`` have not.
+
+        **In-process only.** The model and onnxruntime paths are resolved on the compiling
+        machine, so the coprocessor must run in the same process, not on an executor.
     """
     model = Path(model).resolve()
     if not model.is_file():

@@ -613,26 +613,24 @@
 
   [(#10224)](https://github.com/PennyLaneAI/pennylane/pull/10224)
 
-* Added :func:`~pennylane.backline.onnx_decoder`, which runs an ONNX model on a
-  :class:`~.Coprocessor`, through the ONNX coprocessor function Catalyst ships. It loads onnxruntime
-  and the model when the coprocessor starts. With the default ``provider="auto"`` the model runs on
-  the GPU the installed onnxruntime supports (MIGraphX on AMD, CUDA on NVIDIA) or, when it has no
-  GPU provider, on the CPU, so one program runs on either vendor. ``device`` and ``threads`` choose
-  the GPU and onnxruntime's intra-op threads. The coprocessor must run in the compiling process,
-  since the model and onnxruntime paths are local. :class:`~.CoprocessorFunction` gains ``config``,
-  the ``key=value;...`` configuration a function receives before its first message,
-  ``per_message``, which a GPU coprocessor uses to call a host function per message, and
-  ``message_bytes``, the message sizes a function expects. ``onnx_decoder`` reads them from the
-  model's input and output tensors. :class:`~.Controller` sizes now default to ``None`` (unset).
-  The sizes a placement commits are its new ``in_bytes`` and ``out_bytes``: the controller's when
-  set, else its coprocessors' functions' declared sizes, else 8 bytes. A set size that differs from
-  a function's, or coprocessors declaring different sizes, raise a ``ValueError``.
+* A new function, :func:`~pennylane.backline.onnx_decoder`, runs an ONNX model on a Backline
+  :class:`~.Coprocessor`, on the GPU the installed onnxruntime supports or on the CPU.
 
   .. code-block:: pycon
 
       >>> fn = qp.backline.onnx_decoder("predecoder.onnx")  # doctest: +SKIP
       >>> coproc = qp.Coprocessor(hardware="gpu", coprocessor_fn=fn)  # doctest: +SKIP
+      >>> dev = qp.Backline(  # doctest: +SKIP
+      ...     controller=qp.Controller(), coprocessors=[coproc], transport="memcpy"
+      ... )
 
+  See :func:`~pennylane.backline.onnx_decoder` for the supported providers and usage details.
+  [(#10225)](https://github.com/PennyLaneAI/pennylane/pull/10225)
+
+* :class:`~.CoprocessorFunction` gains ``config``, ``per_message`` and ``message_bytes``, and a
+  :class:`~.Controller` that leaves ``in_bytes`` and ``out_bytes`` unset takes the sizes its
+  coprocessors' functions declare, available as :attr:`~.Placement.in_bytes` and
+  :attr:`~.Placement.out_bytes`.
   [(#10225)](https://github.com/PennyLaneAI/pennylane/pull/10225)
 
 * Adds a `qp.decomposition.all_decomps` functions for finding all decompositions that might be hit by
