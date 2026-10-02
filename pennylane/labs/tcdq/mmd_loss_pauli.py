@@ -31,6 +31,7 @@ from jax.typing import ArrayLike
 
 _REAL_DTYPE = jnp.float32
 
+
 @dataclass(frozen=True)
 class MMDConfig:
     r"""Hyperparameters for the qubit Maximum Mean Discrepancy (MMD) loss.
