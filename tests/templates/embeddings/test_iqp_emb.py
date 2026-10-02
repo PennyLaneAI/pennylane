@@ -21,9 +21,10 @@ import pytest
 import pennylane as qp
 from pennylane import numpy as pnp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.typing import Wire
 
 
-@pytest.mark.usefixtures("enable_and_disable_capture")
+@pytest.mark.capture
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
     features = (0.0, 1.0, 2.0)
@@ -121,6 +122,19 @@ class TestDecomposition:
             assert gate.name == expected_names[i]
             assert gate.wires.labels == tuple(expected_wires[i])
 
+    def test_map_wires_remaps_pattern(self):
+        """Pattern wire labels must follow map_wires along with the operator wires."""
+
+        op = qp.IQPEmbedding([1.0, 2.0, 3.0], wires=[0, 1, 2], pattern=[[0, 2], [1, 2]])
+        mapped = op.map_wires({0: "a", 1: "b", 2: "c"})
+
+        assert mapped.wires.labels == ("a", "b", "c")
+        assert mapped.hyperparameters["pattern"] == (("a", "c"), ("b", "c"))
+
+        tape = qp.tape.QuantumScript(mapped.decomposition())
+        multi_rz_wires = [gate.wires.labels for gate in tape.operations if gate.name == "MultiRZ"]
+        assert multi_rz_wires == [("a", "c"), ("b", "c")]
+
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
         features = np.random.random(size=(3,))
@@ -200,6 +214,13 @@ class TestInputs:
         with pytest.raises(ValueError, match="Features must be a one-dimensional"):
             circuit(f=features)
 
+    def test_abstract_wires_default_pattern(self):
+        """Default pattern is index pairs when wires are abstract."""
+
+        op = qp.IQPEmbedding([1.0, 2.0, 3.0], wires=Wire[3])
+        assert op.arguments["pattern"] == ((0, 1), (0, 2), (1, 2))
+        assert op.wires == Wire[3]
+
 
 def circuit_template(features):
     qp.IQPEmbedding(features, range(2))
@@ -274,6 +295,32 @@ class TestInterfaces:
         grads2 = grad_fn2(features)
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
+
+    @pytest.mark.autograd
+    def test_autograd_list_of_arrayboxes(self, tol, seed):
+        """A Python list of autograd ArrayBox scalars remains differentiable."""
+
+        features = pnp.array([0.1, 0.2], requires_grad=True)
+        dev = qp.device("default.qubit", wires=2, seed=seed)
+
+        @qp.qnode(dev, diff_method="backprop")
+        def circuit(x):
+            qp.IQPEmbedding([x[0], x[1]], wires=[0, 1])
+            return qp.expval(qp.X(0))
+
+        @qp.qnode(dev, diff_method="backprop")
+        def circuit_decomposed_list(x):
+            qp.Hadamard(0)
+            qp.RZ(x[0], 0)
+            qp.Hadamard(1)
+            qp.RZ(x[1], 1)
+            qp.MultiRZ(x[0] * x[1], [0, 1])
+            return qp.expval(qp.X(0))
+
+        assert qp.math.allclose(circuit(features), circuit_decomposed_list(features), atol=tol)
+        assert qp.math.allclose(
+            qp.grad(circuit)(features), qp.grad(circuit_decomposed_list)(features), atol=tol
+        )
 
     @pytest.mark.jax
     @pytest.mark.parametrize("features", [[0.1, -1.3], [[0.5, 2.0], [1.2, 0.6], [-0.7, 0.3]]])
