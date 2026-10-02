@@ -739,6 +739,8 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
     Keyword Args:
         use_argnum (bool): An advanced option used in conjunction with calculating
             classical cotransforms of jax workflows.
+        is_device_transform (bool): Whether this bound transform was added by a
+            device (for example, via device preprocessing). Defaults to ``False``.
 
     .. seealso:: :func:`~.pennylane.transform`
 
@@ -809,6 +811,7 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
         kwargs: None | dict = None,
         *,
         use_argnum: bool = False,
+        is_device_transform: bool = False,
         **transform_config,
     ):
         if not isinstance(transform, Transform):
@@ -821,6 +824,7 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
         self._args = tuple(args)
         self._kwargs = kwargs or {}
         self._use_argnum = use_argnum
+        self._is_device_transform = is_device_transform
 
     def __repr__(self):
         name = self.tape_transform.__name__ if self.tape_transform else self.pass_name
@@ -920,6 +924,11 @@ class BoundTransform:  # pylint: disable=too-many-instance-attributes
         This property is ``True`` for most gradient transforms.
         """
         return self._transform.is_final_transform
+
+    @property
+    def is_device_transform(self) -> bool:
+        """Whether this bound transform was added by a device."""
+        return self._is_device_transform
 
     def __add__(self, other):
         """Add two transforms to create a CompilePipeline."""
