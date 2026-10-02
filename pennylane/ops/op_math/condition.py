@@ -23,10 +23,11 @@ import jax
 
 import pennylane as qp
 from pennylane import QueuingManager, math
-from pennylane.capture import FlatFn
+from pennylane.capture import FlatFn, HintedCallable
 from pennylane.capture.autograph import wraps
 from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.capture.dynamic_shapes import register_custom_staging_rule
+from pennylane.capture.hint import process_hints
 from pennylane.compiler import compiler
 from pennylane.core.operator import Operation, Operator, Operator2
 from pennylane.exceptions import ConditionalTransformError
@@ -111,6 +112,30 @@ def _format_and_validate_branch_fn(fn):
 
 def _empty_return_fn(*_, **__):
     return None
+
+
+def _setup_probs(branch_fns) -> None | tuple[float, ...]:
+    branch_probs = []
+    n_encountered = 0
+    for branch_fn in branch_fns:
+        if isinstance(branch_fn, HintedCallable):
+            hints = process_hints(branch_fn.hints, {"branch-prob"})
+            p = hints.get("branch-prob")
+            if p is not None:
+                p = float(p)
+                n_encountered += 1
+            branch_probs.append(p)
+        else:
+            branch_probs.append(None)
+
+    if not n_encountered:
+        return None
+    if n_encountered == len(branch_fns):
+        return tuple[float](branch_probs)
+
+    total = sum(s for s in branch_probs if s is not None)
+    guess = max(1 - total, 0) / (len(branch_fns) - n_encountered)
+    return tuple[float](p or guess for p in branch_probs)
 
 
 class Conditional(SymbolicOp, Operation):
@@ -236,6 +261,7 @@ class CondCallable:
             elif_preds, elif_fns = list(zip(*elifs, strict=True))
             self.preds.extend(elif_preds)
             self.branch_fns.extend(elif_fns)
+        self._branch_probs = _setup_probs((*self.branch_fns, self.otherwise_fn))
 
     def else_if(self, pred):
         """Decorator that allows else-if functions to be registered with a corresponding
@@ -352,6 +378,7 @@ class CondCallable:
             jaxpr_branches=jaxpr_branches,
             consts_slices=consts_slices,
             args_slice=slice(end_const_ind, None),
+            estimated_probabilities=self._branch_probs,
         )
         assert flat_true_fn.out_tree is not None, "out_tree of flat_true_fn should exist"
         results = results[-flat_true_fn.out_tree.num_leaves :]
