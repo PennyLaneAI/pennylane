@@ -73,6 +73,37 @@ class TestCompile:
         with pytest.raises(ValueError, match="Number of passes must be an integer"):
             transformed_qnode(0.1, 0.2, 0.3)
 
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
+    def test_compile_basis_set_with_operator_types(self):
+        """Test that basis_set accepts Operator subclasses in addition to strings."""
+        tape = qp.tape.QuantumScript([qp.Hadamard(0), qp.RX(0.5, 0)])
+
+        # Using operator types should work the same as using strings
+        [result_types], _ = compile(tape, basis_set=[qp.Hadamard, qp.RX])
+        [result_strings], _ = compile(tape, basis_set=["Hadamard", "RX"])
+
+        assert [op.name for op in result_types.operations] == ["Hadamard", "RX"]
+        assert [op.name for op in result_strings.operations] == ["Hadamard", "RX"]
+
+    @pytest.mark.usefixtures("enable_and_disable_graph_decomp")
+    def test_compile_basis_set_mixed_strings_and_types(self):
+        """Test that basis_set accepts a mix of strings and Operator types."""
+        # Use S and T gates - both have decompositions
+        # S as string, T as type - both should be preserved (not decomposed)
+        tape = qp.tape.QuantumScript([qp.S(0), qp.T(1)])
+
+        [result], _ = compile(tape, basis_set=["S", qp.T])
+        assert [op.name for op in result.operations] == ["S", "T"]
+
+    @pytest.mark.parametrize("invalid", [42, int, qp.RX(0.5, 0)])
+    def test_compile_basis_set_invalid_element_raises_error(self, invalid):
+        """Test that basis_set elements that are neither strings nor Operator subclasses
+        raise a ValueError."""
+        tape = qp.tape.QuantumScript([qp.Hadamard(0)])
+
+        with pytest.raises(ValueError, match="must be strings or Operator subclasses"):
+            compile(tape, basis_set=[invalid])
+
     def test_compile_mixed_tape_qfunc_transform(self):
         """Test that we can interchange tape and qfunc transforms."""
 
