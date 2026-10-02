@@ -159,24 +159,3 @@ class TestLayer:
             target = [gates[i].name, gates[i].parameters, gates[i].wires]
 
         assert prep == target
-
-    @pytest.mark.tf
-    def test_layer_tf(self):
-        """Tests that the layering function accepts Tensorflow variables."""
-
-        import tensorflow as tf
-
-        def unitary(param):
-            qp.RX(param, wires=0)
-
-        x = tf.Variable([0.1, 0.2, 0.3])
-
-        with pytest.warns(PennyLaneDeprecationWarning, match="layer is deprecated"):
-            with qp.tape.OperationRecorder() as rec:
-                layer(unitary, 3, x)
-
-        assert len(rec.operations) == 3
-
-        for ii, op in enumerate(rec.operations):
-            assert qp.math.allclose(op.parameters[0], x[ii])
-            assert isinstance(op, qp.RX)

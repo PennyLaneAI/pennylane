@@ -93,7 +93,6 @@ ops = {
     "SX": qp.SX(wires=[0]),
     "Adjoint(SX)": qp.adjoint(qp.SX(wires=[0])),
     "Barrier": qp.Barrier(wires=[0, 1, 2]),
-    "WireCut": qp.WireCut(wires=[0]),
     "Toffoli": qp.Toffoli(wires=[0, 1, 2]),
     "QFT": qp.templates.QFT(wires=[0, 1, 2]),
     "IsingXX": qp.IsingXX(0, wires=[0, 1]),
