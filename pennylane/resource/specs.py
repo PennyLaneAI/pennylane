@@ -146,12 +146,6 @@ def _specs_qjit(qjit, level, compute_depth, *args, **kwargs) -> CircuitSpecs:
     if isinstance(qjit, QJIT) and isinstance(qjit.original_function, qp.QNode):
         original_qnode = qjit.original_function
     else:
-        if isinstance(qjit, qp.QNode):
-            raise ValueError(
-                "qp.specs no longer supports being applied to a bare QNode; it must be applied to "
-                "a qjit'd QNode. Instead, apply qp.qjit to the QNode first or consider "
-                "using qp.workflow.construct_tape with qp.resource.resources_from_tape."
-            )
         raise ValueError(f"qp.specs can only be applied to a qjit'd QNode, instead got: {qjit}")
 
     device = original_qnode.device
@@ -538,6 +532,13 @@ def specs(
         Circuit Depth: Not computed
     """
     qnode, partial_args, partial_kwargs = unwrap_partial(qnode)
+
+    if isinstance(qnode, qp.QNode):
+        raise ValueError(
+            "qp.specs no longer supports being applied to a bare QNode; it must be applied to "
+            "a qjit'd QNode. Instead, apply qp.qjit to the QNode first or consider "
+            "using qp.workflow.construct_tape with qp.resource.resources_from_tape."
+        )
 
     return apply_partial_args(
         partial(_specs_qjit, qnode, level, compute_depth), partial_args, partial_kwargs
