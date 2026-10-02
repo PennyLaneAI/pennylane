@@ -24,7 +24,7 @@ from scipy import sparse
 
 import pennylane as qp
 from pennylane import allocation, capture, compiler, math
-from pennylane.core.operator import Operator, abstractify
+from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.core.operator.operator2 import (  # tach-ignore
     _to_symbolic_array,
     operator_p,
@@ -787,26 +787,33 @@ def to_controlled_unitary(base, control_wires, control_values, work_wires, work_
     )
 
 
-def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionRule:
+def flip_zero_control(
+    rule: DecompositionRule,
+    name: str = "",
+    op_cls: type[Operator2] = ControlledOp2,
+) -> DecompositionRule:
     """Wraps a decomposition for a controlled operator with X gates to flip zero control wires."""
 
-    def _condition_fn(*args, **kwargs):
-        return rule.is_applicable(*args, **kwargs)
+    # pylint: disable=protected-access
+    sig = op_cls._sig
 
-    def _resource_fn(base, control_wires, control_values, work_wires, work_wire_type):
-        base_resources = rule.compute_resources(
-            base,
-            control_wires,
-            control_values=None,
-            work_wires=work_wires,
-            work_wire_type=work_wire_type,
-        )
-        gate_counts = base_resources.gate_counts
-        base_x_count = gate_counts.get(qp.X, 0)
-        gate_counts[qp.X] = base_x_count + len(control_values)
+    def _get_arguments(*args, **kwargs):
+        bound_args = sig.bind(*args, **kwargs)
+        bound_args.apply_defaults()
+        return bound_args.arguments
+
+    def _condition_fn(*args, **kwargs):
+        arguments = _get_arguments(*args, **kwargs) | {"control_values": None}
+        return rule.is_applicable(**arguments)
+
+    def _resource_fn(*args, **kwargs):
+        arguments = _get_arguments(*args, **kwargs)
+        new_arguments = arguments | {"control_values": None}
+        gate_counts = rule.compute_resources(**new_arguments).gate_counts
+        if ctrl_values := arguments["control_values"]:
+            gate_counts[qp.X] = gate_counts.get(qp.X, 0) + len(ctrl_values)
         return gate_counts
 
-    # pylint: disable=protected-access
     @register_condition(_condition_fn)
     @register_resources(
         _resource_fn,
@@ -814,36 +821,34 @@ def flip_zero_control(rule: DecompositionRule, name: str = "") -> DecompositionR
         exact=False,
         name=name or f"flip_zero_ctrl_values({rule.name})",
     )
-    def _impl(base, control_wires, control_values, work_wires, work_wire_type):
+    def _impl(*args, **kwargs):
 
-        _cwires = control_wires
-        _cvals = control_values
+        arguments = _get_arguments(*args, **kwargs)
+
+        wire_argname = "control_wires" if "control_wires" in arguments else "wires"
+
+        _wires = arguments[wire_argname]
+        _cvals = arguments["control_values"]
         if compiler.active() or capture.enabled():
             # We perform the cast on these temporary variables for the sole purpose
             # of indexing into them with tracers. the inner wrapper rule may still
             # depend on control_wires being a Wires object. Ideally we should have a
             # strictly enforced convention for what form the wires argument takes.
-            _cwires = math.array(_cwires, like="jax")
+            _wires = math.array(_wires, like="jax")
             _cvals = math.array(_cvals, like="jax")
 
-        @qp.for_loop(0, len(_cwires))
+        @qp.for_loop(0, len(_cvals))
         def _x_flips(i):
-            qp.cond(qp.math.logical_not(_cvals[i]), qp.X)(_cwires[i])
+            qp.cond(qp.math.logical_not(_cvals[i]), qp.X)(_wires[i])
 
         _x_flips()
-        rule(
-            base,
-            control_wires,
-            control_values=None,
-            work_wires=work_wires,
-            work_wire_type=work_wire_type,
-        )
+        rule._impl(**(arguments | {"control_values": None}))
         _x_flips()
 
     base_source = rule._source
     _impl._source = (
         dedent(_impl._source).strip()
-        + "\n\nwhere inner_decomp is defined as:\n\n"
+        + "\n\nwhere rule is defined as:\n\n"
         + dedent(base_source).strip()
     )
     return _impl
