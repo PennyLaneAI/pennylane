@@ -227,7 +227,6 @@ def _compute_samples(key: ArrayLike, n_samples: int, n_qubits: int) -> jnp.ndarr
 
 def _prep_observables(observables_int: ArrayLike) -> tuple[jnp.ndarray, jnp.ndarray, jnp.ndarray]:
     """Precompute masks and phase factors for integer-encoded Pauli observables."""
-
     obs_arr = jnp.asarray(observables_int, dtype=jnp.int32)
 
     is_X = obs_arr == 1
