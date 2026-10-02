@@ -43,7 +43,7 @@ from pennylane.ops.op_math.controlled import _is_empty_or_all_true, custom_ctrl_
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
 from pennylane.ops.op_math.prod import prod
-from pennylane.typing import Float, TensorLike, Wire
+from pennylane.typing import AbstractArray, Float, TensorLike, Wire
 from pennylane.wires import WiresLike, concatenate_wires
 
 from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
@@ -484,6 +484,117 @@ def _controlled_ry_decomp(base, control_wires, control_values, work_wires, work_
 
 
 add_decomps("C(RY)", flip_zero_control2(_controlled_ry_decomp))
+
+
+class RQang(Operator2):
+    r"""Quantum angular rotation parameterized by a :math:`\langle Z \rangle`-like expectation value.
+
+    This operation is mathematically equivalent to a :class:`~.RY` rotation by
+    :math:`\arccos(qg_z)`:
+
+    .. math::
+
+        \operatorname{RQang}(qg_z) = R_y(\arccos(qg_z))
+        = \begin{bmatrix}
+            \sqrt{\tfrac{1+qg_z}{2}} & -\sqrt{\tfrac{1-qg_z}{2}} \\[4pt]
+            \sqrt{\tfrac{1-qg_z}{2}} & \sqrt{\tfrac{1+qg_z}{2}}
+          \end{bmatrix}.
+
+    The parameter :math:`qg_z` represents a value in :math:`[-1, 1]`, such as an expectation value
+    of the Pauli-:math:`Z` operator. **The operation does not itself perform any measurement**;
+    :math:`qg_z` is supplied as a classical input parameter.
+
+    .. note::
+
+        The derivative of :math:`\arccos` is singular at :math:`qg_z = \pm 1`, so
+        gradient-based optimization near the boundary values should be handled with care.
+
+    **Details:**
+
+    * Number of wires: 1
+    * Number of parameters: 1
+    * Number of dimensions per parameter: (0,)
+
+    Args:
+        qg_z (float): expectation-like scalar in :math:`[-1, 1]`
+        wires (Sequence[int] or int): the wire the operation acts on
+
+    **Example**
+
+    >>> import pennylane as qp
+    >>> op = qp.qang.RQang(0.5, wires=0)
+    >>> op.matrix()
+    array([[ 0.8660254+0.j, -0.5      -0.j],
+           [ 0.5      +0.j,  0.8660254+0.j]])
+    >>> import numpy as np
+    >>> np.allclose(op.matrix(), qp.RY.compute_matrix(np.arccos(0.5)))
+    True
+    """
+
+    num_wires = 1
+    """int: Number of wires that the operation acts on."""
+
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    dynamic_argnames = ("qg_z",)
+
+    arg_specs = {"qg_z": Float, "wires": Wire[1]}
+
+    def __init__(self, qg_z: "TensorLike", wires: "WiresLike"):
+        if not isinstance(qg_z, AbstractArray) and not qp.math.is_abstract(qg_z):
+            if qp.math.any(qp.math.asarray(qg_z) < -1) or qp.math.any(qp.math.asarray(qg_z) > 1):
+                raise ValueError(f"RQang: parameter qg_z must lie in [-1, 1], got {qg_z}.")
+        super().__init__(qg_z, wires=wires)
+
+    @staticmethod
+    # pylint: disable-next=arguments-differ,unused-argument
+    def compute_matrix(qg_z: "TensorLike", wires: "WiresLike | None" = None) -> "TensorLike":
+        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
+
+        The canonical matrix is the textbook matrix representation that does not consider wires.
+        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
+
+        .. seealso:: :meth:`~.RQang.matrix`
+
+        Args:
+            qg_z (tensor_like or float): expectation-like scalar in :math:`[-1, 1]`
+
+        Returns:
+            tensor_like: canonical matrix
+
+        **Example**
+
+        >>> qp.qang.RQang.compute_matrix(0.5)
+        array([[ 0.8660254+0.j, -0.5      -0.j],
+               [ 0.5      +0.j,  0.8660254+0.j]])
+        """
+        # Use qp.math for interface-agnostic computation.
+        # The matrix equals RY(arccos(qg_z)):
+        #   cos(arccos(qg_z)/2) = sqrt((1 + qg_z) / 2)
+        #   sin(arccos(qg_z)/2) = sqrt((1 - qg_z) / 2)
+        c = qp.math.sqrt((1 + qg_z) / 2)
+        s = qp.math.sqrt((1 - qg_z) / 2)
+        # Cast to complex to match RY convention
+        c = (1 + 0j) * c
+        s = (1 + 0j) * s
+        return qp.math.stack([stack_last([c, -s]), stack_last([s, c])], axis=-2)
+
+
+# pylint: disable=unused-argument
+def _rqang_to_ry_resources(qg_z, wires):
+    return {RY: 1}
+
+
+@register_resources(_rqang_to_ry_resources)
+def _rqang_to_ry(qg_z, wires: "WiresLike"):
+    RY(qp.math.arccos(qg_z), wires=wires)
+
+
+add_decomps(RQang, _rqang_to_ry)
 
 
 class RZ(Operator2):
