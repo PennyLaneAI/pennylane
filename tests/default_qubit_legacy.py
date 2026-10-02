@@ -36,8 +36,6 @@ from pennylane.exceptions import DeviceError, WireError
 from pennylane.measurements import ExpectationMP
 from pennylane.ops import Sum
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
-from pennylane.pulse import ParametrizedEvolution
-from pennylane.typing import TensorLike
 
 ascii_letter_arr = np.array(list(ascii_letters))
 
@@ -325,8 +323,6 @@ class DefaultQubitLegacy(QubitDevice):
                         self._debugger.snapshots[operation.tag] = state_vector
                     else:
                         self._debugger.snapshots[len(self._debugger.snapshots)] = state_vector
-            elif isinstance(operation, ParametrizedEvolution):
-                self._state = self._apply_parametrized_evolution(self._state, operation)
             else:
                 self._state = self._apply_operation(self._state, operation)
 
@@ -336,18 +332,6 @@ class DefaultQubitLegacy(QubitDevice):
         # apply the circuit rotations
         for operation in rotations:
             self._state = self._apply_operation(self._state, operation)
-
-    def _apply_parametrized_evolution(self, state: TensorLike, operation: ParametrizedEvolution):
-        """Applies a parametrized evolution to the input state.
-
-        Args:
-            state (array[complex]): input state
-            operation (ParametrizedEvolution): operation to apply on the state
-        """
-        raise NotImplementedError(
-            f"The device {self.short_name} cannot execute a ParametrizedEvolution operation. "
-            "Please use the jax interface."
-        )
 
     def _apply_operation(self, state, operation):
         """Applies operations to the input state.
