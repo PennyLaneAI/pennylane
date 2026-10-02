@@ -142,6 +142,7 @@ class _DecompositionNode:  # pylint: disable=too-many-instance-attributes
     min_work_wires: int = 0
     reachable: bool = True
     applicable: bool = True
+    offset: float = 0.0  # small numerical offset to break degeneracies in a predictable way
 
     def __post_init__(self):
         self.min_work_wires = self.min_work_wires or self.work_wire_spec.total
@@ -369,8 +370,10 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         op_reachable = False
         work_wire_dependent = known_work_wire_dependent
         min_work_wires = -1  # use -1 to represent undetermined work wire requirement
-        for decomposition in rules:
-            d_node = self._add_decomp(decomposition, op_node, op_node_idx, num_used_work_wires)
+        for offset, decomposition in enumerate(rules):
+            d_node = self._add_decomp(
+                decomposition, op_node, op_node_idx, num_used_work_wires, offset=offset
+            )
             if not d_node.applicable or not d_node.reachable:
                 continue
             # If a decomposition is reachable, the operator is also reachable
@@ -425,6 +428,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         op_node: _OperatorNode,
         op_idx: int,
         num_used_work_wires: int,
+        offset=0,
     ) -> _DecompositionNode:
         """Adds a decomposition rule to the graph and returns whether it depends on work wires."""
 
@@ -447,7 +451,13 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         decomp_resource = rule.compute_resources(**kwargs)
         work_wire_spec = rule.get_work_wire_spec(**kwargs)
 
-        d_node = _DecompositionNode(rule, decomp_resource, work_wire_spec, num_used_work_wires)
+        d_node = _DecompositionNode(
+            rule,
+            decomp_resource,
+            work_wire_spec,
+            num_used_work_wires,
+            offset=1e-6 * offset,
+        )
         d_node_idx = self._graph.add_node(d_node)
         if not decomp_resource.gate_counts:
             # If an operator decomposes to nothing (e.g., a Hadamard raised to a
@@ -922,7 +932,9 @@ class DecompositionSearchVisitor(DijkstraVisitor):  # pylint: disable=too-many-i
             raise PruneSearch
 
         if target_idx not in self._temp_distances:
-            self._temp_distances[target_idx] = Resources()  # initialize with empty resource
+            self._temp_distances[target_idx] = Resources(
+                weighted_cost=target_node.offset
+            )  # initialize with empty resource
 
         self._temp_distances[target_idx] += self.distances[src_idx] * target_node.count(src_node.op)
         self._n_edges_examined[target_idx] += 1
