@@ -1050,6 +1050,13 @@
   ```
 
   [(#10209)](https://github.com/PennyLaneAI/pennylane/pull/10209)
+  
+* The ``pennylane.qaoa`` module has been removed. This includes the mixer Hamiltonians
+  (``x_mixer``, ``xy_mixer``, ``bit_flip_mixer``), the cost Hamiltonians (``maxcut``,
+  ``max_independent_set``, ``min_vertex_cover``, ``max_clique``, ``max_weight_cycle``,
+  ``bit_driver``, ``edge_driver``), the ansatz layers (``cost_layer``, ``mixer_layer``) and the
+  ``pennylane.qaoa.cycle`` helpers. :class:`~.QAOAEmbedding` is unaffected.
+  [(#10249)](https://github.com/PennyLaneAI/pennylane/pull/10249)
 
 * The ``pennylane.noise`` module has been removed, including ``NoiseModel``,
   ``add_noise``, ``insert``, noise mitigation transforms (``mitigate_with_zne``,
