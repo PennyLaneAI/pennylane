@@ -684,6 +684,12 @@
   [(#10059)](https://github.com/PennyLaneAI/pennylane/pull/10059)
   [(#10059)](https://github.com/PennyLaneAI/pennylane/pull/10015)
 
+* Updated :class:`~.IsingXX`, :class:`~.IsingYY`,
+  :class:`~.IsingXY`, :class:`~.MultiRZ`, :class:`~.PauliRot` and
+  :class:`~.SingleExcitation` to use :func:`~.change_op_basis`, which enables more
+  efficient controlled decompositions.
+  [(#10118)](https://github.com/PennyLaneAI/pennylane/pull/10118)
+
 * Coprocessor connection addresses are grouped on :class:`~pennylane.Endpoint` as ``endpoint=qp.Endpoint(host, port)``, replacing the separate ``comm_host`` and ``oob_port`` fields.
   [(#10017)](https://github.com/PennyLaneAI/pennylane/pull/10017)
 
