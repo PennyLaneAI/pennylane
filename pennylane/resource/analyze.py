@@ -54,19 +54,16 @@ def _run_resource_analysis(qjit, original_qnode, level, *args, **kwargs) -> tupl
         level_to_markers[lvl].append(marker)
 
     level_to_name: dict[int, str] = {}
-    resources = {}
 
     # Handle MLIR passes
-    resources.update(
-        resources_from_analysis_pass(
-            qjit,
-            original_qnode,
-            level,
-            level_to_markers,
-            level_to_name,
-            *args,
-            **kwargs,
-        )
+    resources = resources_from_analysis_pass(
+        qjit,
+        original_qnode,
+        level,
+        level_to_markers,
+        level_to_name,
+        *args,
+        **kwargs,
     )
 
     # Unpack dictionary to single item if only 1 level was given as input
