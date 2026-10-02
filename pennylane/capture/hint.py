@@ -134,13 +134,13 @@ def hint(hints: dict[str, Any]) -> Callable:
     """Attaches a compiler hint to applicable functionality.
 
     .. warning::
-        By definition, the :func:`~.qjit` compiler may decide to completely ignore any instances of 
-        `hint` in a program; a compiler hint is something that does not affect program correctness, 
+        By definition, the :func:`~.qjit` compiler may decide to completely ignore any instances of
+        `hint` in a program; a compiler hint is something that does not affect program correctness,
         meaning that the compiler _can_ safely ignore them and still provide correct results.
 
     Args:
         `hints` (dict[str, Any]):
-            A dictionary containing compiler hint information. 
+            A dictionary containing compiler hint information.
 
     Returns:
         Callable: a decorator that can be applied.
@@ -151,11 +151,11 @@ def hint(hints: dict[str, Any]) -> Callable:
 
     .. warning::
 
-        While close mispellings may be accepted (e.g., `"num-iter"`), spellings sufficiently far away 
+        While close mispellings may be accepted (e.g., `"num-iter"`), spellings sufficiently far away
         from the target will be ignored.
 
     .. details::
-        :title: Usage Details 
+        :title: Usage Details
 
         By hinting control flow like :func:`~.for_loop` and :func:`~.while_loop`, profiling
         with :func:`~.specs` can heuristically specify the number of iterations, leading to concrete
