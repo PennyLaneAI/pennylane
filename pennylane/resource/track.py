@@ -118,8 +118,6 @@ def track(
         :class:`~.resource.CircuitSpecs` object containing the ``qnode`` specifications,
         including gate and measurement data, total wires, device information, shots, and more.
 
-    .. seealso:: :func:`~.specs`, which returns the same information without the execution result,
-        and supports levels other than ``"device"``.
 
     .. note::
 
