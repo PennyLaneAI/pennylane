@@ -42,18 +42,18 @@ def _run_resource_analysis(qjit, original_qnode, level, *args, **kwargs) -> tupl
     # Note that this only gets transforms manually applied by the user
     compile_pipeline = original_qnode.compile_pipeline
 
+    return_single_level: bool = isinstance(level, (int, str)) and level != "all"
+
+    # Easier to assume level is always a sorted list of int levels
+    level = preprocess_level_input(level, compile_pipeline)
+
     # Map to convert back and forth between marker name and int level
     marker_to_level = get_marker_level_map(compile_pipeline)
     level_to_markers = defaultdict(list)  # Multiple markers can correspond to the same level
     for marker, lvl in marker_to_level.items():
         level_to_markers[lvl].append(marker)
 
-    return_single_level: bool = isinstance(level, (int, str)) and level != "all"
-
-    # Easier to assume level is always a sorted list of int levels
-    level = preprocess_level_input(level, compile_pipeline)
     level_to_name: dict[int, str] = {}
-
     resources = {}
 
     # Handle MLIR passes
@@ -83,9 +83,6 @@ def _analyze_qjit(qjit, level, *args, **kwargs) -> CircuitSpecs:
 
     if level == "device":
         raise NotImplementedError("qp.analyze does not support level='device' yet.")
-
-    if not isinstance(level, (int, tuple, list, range, str)):
-        raise NotImplementedError(f"Unsupported level argument '{level}'.")
 
     resources, level = _run_resource_analysis(qjit, original_qnode, level, *args, **kwargs)
 

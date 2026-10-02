@@ -180,19 +180,21 @@ class TestAnalyze:
 
         assert specs.resources.counts == self.USER_COUNTS
 
-    def test_device_level_not_supported(self, circuit):
-        """Test that a helpful error message is raised for level='device'."""
+    @pytest.mark.xfail(
+        raises=NotImplementedError, strict=True, reason="level='device' is not supported yet."
+    )
+    def test_device_level(self, circuit):
+        """Test that analyze counts the resources after device preprocessing."""
 
-        with pytest.raises(
-            NotImplementedError, match="qp.analyze does not support level='device' yet."
-        ):
-            qp.analyze(circuit, level="device")(0.1)
+        specs = qp.analyze(circuit, level="device")(0.1)
+
+        assert specs.resources.counts == self.USER_COUNTS
 
     @pytest.mark.parametrize("level", [None, 1.5])
     def test_unsupported_level(self, circuit, level):
         """Test that a helpful error message is raised for levels of an unsupported type."""
 
-        with pytest.raises(NotImplementedError, match="Unsupported level argument"):
+        with pytest.raises(ValueError, match="Invalid level"):
             qp.analyze(circuit, level=level)(0.1)
 
     def test_error_with_non_qjit(self):
