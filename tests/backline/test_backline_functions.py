@@ -16,6 +16,7 @@
 
 # pylint: disable=too-few-public-methods
 
+import base64
 import importlib
 import importlib.machinery
 import importlib.util
@@ -26,8 +27,15 @@ import pytest
 
 import pennylane as qp
 from pennylane.backline import CoprocessorFunction, css_bp_decoder, onnx_decoder, triton_decoder
+from pennylane.backline.functions import _onnx_message_bytes
 
 _DECODER_FRONTEND = "pennylane.backline.decoders.triton.decoder_frontend"
+
+# An ONNX model whose single uint8[1, 8] input passes through Identity to its uint8[1, 8] output.
+_IDENTITY_U8X8_ONNX = (
+    "CAgSDmNhdGFseXN0LXRlc3RzOksKEAoBeBIBeSIISWRlbnRpdHkSDWlkZW50aXR5X3U4eDhaEwoBeBIOCgwIAhIICgIIAQoC"
+    "CAhiEwoBeRIOCgwIAhIICgIIAQoCCAhCBAoAEA0="
+)
 
 
 class TestCoprocessorFunction:
@@ -59,6 +67,13 @@ class TestCoprocessorFunction:
 class TestOnnxDecoder:
     """The ONNX coprocessor function and the config it carries."""
 
+    @pytest.fixture(autouse=True)
+    def model_sizes(self, monkeypatch):
+        """Stand in for reading a model, whose files here are empty, as uint8[120] to uint8[121]."""
+        monkeypatch.setattr(
+            "pennylane.backline.functions._onnx_message_bytes", lambda model: (120, 121)
+        )
+
     @pytest.fixture
     def model(self, tmp_path, monkeypatch):
         monkeypatch.setattr(
@@ -67,6 +82,21 @@ class TestOnnxDecoder:
         path = tmp_path / "model.onnx"
         path.write_bytes(b"")
         return path
+
+    def test_the_function_declares_the_model_tensor_sizes(self, model):
+        """The function declares the model's input and output sizes as its message sizes."""
+        assert onnx_decoder(model).message_bytes == (120, 121)
+
+    def test_message_bytes_given_as_a_list_is_stored_as_a_tuple(self):
+        """A declared size pair is kept as a tuple, so placements can compare and hash it."""
+        assert CoprocessorFunction("fn", message_bytes=[120, 121]).message_bytes == (120, 121)
+
+    def test_the_model_tensor_sizes_are_read_with_onnxruntime(self, tmp_path):
+        """A uint8[1, 8] to uint8[1, 8] identity model declares 8 B in and 8 B out."""
+        pytest.importorskip("onnxruntime")
+        path = tmp_path / "identity.onnx"
+        path.write_bytes(base64.b64decode(_IDENTITY_U8X8_ONNX))
+        assert _onnx_message_bytes(path) == (8, 8)
 
     def test_config_defaults_to_empty(self):
         """A CoprocessorFunction built by hand carries no config."""

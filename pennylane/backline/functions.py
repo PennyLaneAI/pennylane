@@ -14,9 +14,10 @@
 
 """Coprocessor functions for backline placement."""
 
+import importlib
 import importlib.util
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from numpy.typing import ArrayLike
@@ -51,6 +52,8 @@ class CoprocessorFunction:
             rather than a launcher that starts a persistent GPU kernel. Defaults to ``False``. It
             matters only on a GPU coprocessor, which then runs the function per message. On a CPU
             coprocessor every function is called per message.
+        message_bytes (tuple[int, int], None): The ``(in_bytes, out_bytes)`` message sizes the
+            function expects. Defaults to ``None``, declaring none.
 
     .. seealso:: :class:`~.Coprocessor`, :func:`~.css_bp_decoder`, :func:`~.triton_decoder`
 
@@ -87,6 +90,15 @@ class CoprocessorFunction:
     per_message: bool = False
     """Whether the function is called once per message, rather than launching a persistent GPU
     kernel."""
+
+    message_bytes: tuple[int, int] | None = field(default=None, repr=False)
+    """The ``(in_bytes, out_bytes)`` message sizes the function expects, or ``None`` when it does
+    not declare them. A :class:`~.Placement` takes the controller's unset sizes from it, and
+    rejects a controller size that differs."""
+
+    def __post_init__(self):
+        if self.message_bytes is not None:
+            object.__setattr__(self, "message_bytes", tuple(self.message_bytes))
 
     @property
     def symbol_name(self) -> str:
@@ -239,6 +251,50 @@ def css_bp_decoder(
 _ONNX_FUNCTION = "catalyst_onnx_coprocessor"
 _ONNX_PROVIDERS = ("auto", "cpu", "migraphx", "cuda", "tensorrt", "rocm")
 
+# Bytes per element of each onnxruntime tensor type an ONNX model may take or give.
+_ONNX_ELEMENT_BYTES = {
+    "tensor(bool)": 1,
+    "tensor(int8)": 1,
+    "tensor(uint8)": 1,
+    "tensor(int16)": 2,
+    "tensor(uint16)": 2,
+    "tensor(float16)": 2,
+    "tensor(bfloat16)": 2,
+    "tensor(int32)": 4,
+    "tensor(uint32)": 4,
+    "tensor(float)": 4,
+    "tensor(int64)": 8,
+    "tensor(uint64)": 8,
+    "tensor(double)": 8,
+}
+
+
+def _onnx_message_bytes(model: Path) -> tuple[int, int]:
+    """The ``(in_bytes, out_bytes)`` of an ONNX model's single input and output tensors, with each
+    dynamic dimension taken as 1, read with the installed onnxruntime's CPU provider."""
+    onnxruntime = importlib.import_module("onnxruntime")
+    options = onnxruntime.SessionOptions()
+    options.graph_optimization_level = onnxruntime.GraphOptimizationLevel.ORT_DISABLE_ALL
+    session = onnxruntime.InferenceSession(
+        str(model), sess_options=options, providers=["CPUExecutionProvider"]
+    )
+    inputs, outputs = session.get_inputs(), session.get_outputs()
+    if len(inputs) != 1 or len(outputs) != 1:
+        raise ValueError(
+            f"onnx_decoder: the model must have one input and one output, it has {len(inputs)} "
+            f"and {len(outputs)}"
+        )
+
+    def tensor_bytes(arg) -> int:
+        if arg.type not in _ONNX_ELEMENT_BYTES:
+            raise ValueError(f"onnx_decoder: unsupported tensor type {arg.type} for {arg.name!r}")
+        elements = 1
+        for dim in arg.shape:
+            elements *= dim if isinstance(dim, int) and dim >= 0 else 1
+        return elements * _ONNX_ELEMENT_BYTES[arg.type]
+
+    return tensor_bytes(inputs[0]), tensor_bytes(outputs[0])
+
 
 def _onnxruntime_library() -> str:
     """The onnxruntime shared library of the installed ``onnxruntime`` package."""
@@ -272,9 +328,12 @@ def onnx_decoder(
 
     The model must have one input and one output. Each message's payload is the input tensor as raw
     bytes in row-major order, and the reply is the output tensor, likewise. A dynamic dimension of
-    the input, such as a batch dimension, is taken as 1. So the controller's
-    :attr:`~.Controller.in_bytes` must hold the input tensor and its
-    :attr:`~.Controller.out_bytes` the output tensor.
+    the input or output, such as a batch dimension, is taken as 1. The model is read with the
+    installed onnxruntime when the function is made, and the function declares the tensors' sizes
+    as its :attr:`~.CoprocessorFunction.message_bytes`. So a controller that leaves
+    :attr:`~.Controller.in_bytes` and :attr:`~.Controller.out_bytes` unset sends exactly the
+    input tensor and receives exactly the output tensor, and one that sets a different size is
+    rejected.
 
     The function is implemented in Catalyst's ONNX coprocessor library
     (``libcatalyst_onnx_coprocessor``), so no build step is needed: the model file is loaded when
@@ -317,7 +376,8 @@ def onnx_decoder(
 
     Raises:
         FileNotFoundError: If ``model`` does not exist.
-        ValueError: If ``provider`` is unknown, or ``device`` or ``threads`` is out of range.
+        ValueError: If ``provider`` is unknown, ``device`` or ``threads`` is out of range, or the
+            model does not have one input and one output of a supported tensor type.
         TypeError: If ``device`` or ``threads`` is not an int.
         ImportError: If no onnxruntime package is installed, or it has no shared library.
 
@@ -348,4 +408,9 @@ def onnx_decoder(
     ]
     if any(";" in entry for entry in entries):
         raise ValueError("onnx_decoder: paths must not contain ';', which separates config entries")
-    return CoprocessorFunction(name=_ONNX_FUNCTION, config=";".join(entries), per_message=True)
+    return CoprocessorFunction(
+        name=_ONNX_FUNCTION,
+        config=";".join(entries),
+        per_message=True,
+        message_bytes=_onnx_message_bytes(model),
+    )

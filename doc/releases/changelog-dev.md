@@ -620,8 +620,13 @@
   GPU provider, on the CPU, so one program runs on either vendor. ``device`` and ``threads`` choose
   the GPU and onnxruntime's intra-op threads. The coprocessor must run in the compiling process,
   since the model and onnxruntime paths are local. :class:`~.CoprocessorFunction` gains ``config``,
-  the ``key=value;...`` configuration a function receives before its first message, and
-  ``per_message``, which a GPU coprocessor uses to call a host function per message.
+  the ``key=value;...`` configuration a function receives before its first message,
+  ``per_message``, which a GPU coprocessor uses to call a host function per message, and
+  ``message_bytes``, the message sizes a function expects. ``onnx_decoder`` reads them from the
+  model's input and output tensors. :class:`~.Controller` sizes now default to ``None`` (unset).
+  The sizes a placement commits are its new ``in_bytes`` and ``out_bytes``: the controller's when
+  set, else its coprocessors' functions' declared sizes, else 8 bytes. A set size that differs from
+  a function's, or coprocessors declaring different sizes, raise a ``ValueError``.
 
   .. code-block:: pycon
 
