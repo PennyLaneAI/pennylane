@@ -28,6 +28,9 @@ from typing import Any, Optional, TypeVar, Union
 
 import numpy as np
 from autograd.numpy.numpy_boxes import ArrayBox
+from jax import Array
+from jax.core import Tracer
+from jax.numpy import ndarray
 
 FlatPytree = tuple[Sequence[Any], Hashable]
 
@@ -41,15 +44,11 @@ class InterfaceTensorMeta(type):
 
     def __instancecheck__(cls, other):
         """Dunder method used to check if an object is a `InterfaceTensor` instance."""
-        return _is_jax(other) or _is_torch(other) or _is_tensorflow(other)  # pragma: no cover
+        return _is_jax(other) or _is_torch(other)  # pragma: no cover
 
     def __subclasscheck__(cls, other):
         """Dunder method that checks if a class is a subclass of ``InterfaceTensor``."""
-        return (
-            _is_jax(other, subclass=True)
-            or _is_torch(other, subclass=True)
-            or _is_tensorflow(other, subclass=True)
-        )
+        return _is_jax(other, subclass=True) or _is_torch(other, subclass=True)
 
 
 class InterfaceTensor(metaclass=InterfaceTensorMeta):
@@ -83,32 +82,9 @@ True
 
 def _is_jax(other, subclass=False):
     """Check if other is an instance or a subclass of a jax tensor."""
-    if "jax" in sys.modules:
-        with contextlib.suppress(ImportError):
-            from jax import Array
-            from jax.core import Tracer
-            from jax.numpy import ndarray
-
-            JaxTensor = ndarray | Array | Tracer
-            check = issubclass if subclass else isinstance
-
-            return check(other, JaxTensor)
-    return False
-
-
-def _is_tensorflow(
-    other, subclass=False
-):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-    """Check if other is an instance or a subclass of a tensorflow tensor."""
-    if "tensorflow" in sys.modules or "tensorflow-macos" in sys.modules:
-        with contextlib.suppress(ImportError):
-            from tensorflow import Tensor as tfTensor
-            from tensorflow import Variable
-
-            check = issubclass if subclass else isinstance
-
-            return check(other, (tfTensor, Variable))
-    return False
+    JaxTensor = ndarray | Array | Tracer
+    check = issubclass if subclass else isinstance
+    return check(other, JaxTensor)
 
 
 def _is_torch(other, subclass=False):

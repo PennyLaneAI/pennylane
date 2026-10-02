@@ -19,6 +19,8 @@ import functools
 from collections.abc import Callable, Sequence
 from typing import Union
 
+import jax
+
 import pennylane as qp
 from pennylane import QueuingManager, math
 from pennylane.capture import FlatFn
@@ -94,7 +96,6 @@ def _format_and_validate_branch_fn(fn):
         return fn_with_no_return
 
     # Standard branch functions should not return any Operator2
-    import jax  # pylint: disable=import-outside-toplevel
 
     def wrapped_fn(*args, **kwargs):
         output = fn(*args, **kwargs)
@@ -304,7 +305,6 @@ class CondCallable:
         return None
 
     def __call_capture_enabled(self, *args, **kwargs):
-        import jax  # pylint: disable=import-outside-toplevel
 
         # consts go after the len(branches) conditions
         end_const_ind = len(self.branch_fns)
@@ -749,7 +749,6 @@ def _validate_abstract_values(
     outvals: list, expected_outvals: list, branch_type: str, branch_index: int
 ) -> None:
     """Ensure the collected abstract values match the expected ones."""
-    import jax  # pylint: disable=import-outside-toplevel
 
     if len(outvals) != len(expected_outvals):
         msg = (

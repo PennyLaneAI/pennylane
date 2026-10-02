@@ -1084,11 +1084,10 @@ class TestPowMethod:
         expected = qp.math.linalg.matrix_power(op_mat, n)
         assert qp.math.allclose(mat, expected)
 
-    @pytest.mark.parametrize("op", (qp.WireCut(0), qp.Barrier(0)))
     @pytest.mark.parametrize("n", (2, 0.123, -2.3))
-    def test_pow_independent_ops(self, op, n):
-        """Assert that the pow-independent ops WireCut and Barrier can be raised
-        to any power and just return a copy."""
+    def test_pow_independent_ops(self, n):
+        """Assert that Barrier can be raised to any power and just return a copy."""
+        op = qp.Barrier(0)
         assert op.pow(n)[0].__class__ is op.__class__
 
 
@@ -1219,7 +1218,6 @@ label_data = [
     (qp.SISWAP(wires=(0, 1)), "SISWAP"),
     (qp.SQISW(wires=(0, 1)), "SISWAP"),
     (qp.Barrier(0), "||"),
-    (qp.WireCut(wires=0), "//"),
     # Controlled operations
     (qp.CY(wires=(0, 1)), "Y"),
     (qp.CZ(wires=(0, 1)), "Z"),
@@ -1266,7 +1264,6 @@ involution_ops = [  # ops who are their own inverses
     qp.SWAP((0, 1)),
     qp.ECR((0, 1)),
     qp.Barrier(0),
-    qp.WireCut(0),
     # Controlled operations
     qp.CNOT((0, 1)),
     qp.CH((0, 1)),

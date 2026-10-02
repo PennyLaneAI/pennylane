@@ -428,7 +428,7 @@ class QuantumScript:
         Returns:
             ~.Wires: wires in quantum script process
         """
-        return Wires.all_wires(dict.fromkeys(op.wires for op in self))
+        return Wires.all_wires(op.wires for op in self)
 
     @property
     def num_wires(self) -> int:
