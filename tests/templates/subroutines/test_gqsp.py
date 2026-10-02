@@ -265,27 +265,6 @@ class TestGQSP:
         assert np.allclose(expected_output, generated_output)
         assert qp.math.get_interface(generated_output) == "torch"
 
-    @pytest.mark.tf
-    def test_gqsp_tensorflow(self):
-        """Test that GQSP works with tensorflow"""
-
-        import tensorflow as tf
-
-        angles = np.array([[1, 2], [3, 4], [5, 6]])
-
-        dev = qp.device("default.qubit")
-
-        @qp.qnode(dev)
-        def circuit(angles):
-            qp.GQSP(qp.RX(0.3, wires=1), angles, control=0)
-            return qp.expval(qp.Z(0))
-
-        expected_output = tf.Variable(qp.matrix(circuit, wire_order=[0, 1])(angles))
-        generated_output = qp.matrix(circuit, wire_order=[0, 1])(tf.Variable(angles))
-
-        assert np.allclose(expected_output, generated_output)
-        assert qp.math.get_interface(generated_output) == "tensorflow"
-
     @pytest.mark.jax
     def test_gqsp_jax_jit(self):
         """Test that GQSP works with jax"""
