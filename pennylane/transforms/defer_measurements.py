@@ -166,7 +166,6 @@ def defer_measurements(
 
     Raises:
         ValueError: If any measurements with no wires or observable are present
-        ValueError: If continuous variable operations or measurements are present
         ValueError: If using the transform with any device other than
             :class:`default.qubit <~pennylane.devices.DefaultQubit>` and postselection is used
 

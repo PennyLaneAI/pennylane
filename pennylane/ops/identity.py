@@ -291,10 +291,6 @@ class GlobalPhase(Operator2):
         array([6.123234e-17-1.j, 6.123234e-17-1.j])
         """
         n_wires = len(wires)
-        if (
-            qp.math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phi = qp.math.cast_like(phi, 1j)
         exp = qp.math.exp(-1j * phi)
         ones = qp.math.ones(2**n_wires, like=phi)
 
@@ -324,11 +320,7 @@ class GlobalPhase(Operator2):
         interface = qp.math.get_interface(phi)
         eye = qp.math.eye(2**n_wires, like=phi)
         exp = qp.math.exp(-1j * qp.math.cast(phi, complex))
-        if (
-            interface == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            eye = qp.math.cast_like(eye, 1j)
-        elif interface == "torch":
+        if interface == "torch":
             eye = eye.to(exp.device)
 
         if qp.math.ndim(phi) == 0:

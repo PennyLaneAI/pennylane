@@ -13,6 +13,8 @@
 # limitations under the License.
 """Utility functions"""
 
+import numbers
+
 # pylint: disable=wrong-import-order
 import autoray as ar
 import jax
@@ -250,9 +252,9 @@ def cast(tensor, dtype):
 
     We can also use strings:
 
-    >>> x = tf.Variable([1, 2])
+    >>> x = torch.tensor([1, 2])
     >>> cast(x, "complex128")
-    <tf.Tensor: shape=(2,), dtype=complex128, numpy=array([1.+0.j, 2.+0.j])>
+    tensor([1.+0.j, 2.+0.j], dtype=torch.complex128)
     """
     if isinstance(tensor, (list, tuple, int, float, complex)):
         tensor = np.asarray(tensor)
@@ -317,9 +319,9 @@ def convert_like(tensor1, tensor2):
     **Example**
 
     >>> x = np.array([1, 2])
-    >>> y = tf.Variable([3, 4])
+    >>> y = torch.tensor([3, 4])
     >>> convert_like(x, y)
-    <tf.Tensor: shape=(2,), dtype=int64, numpy=array([1, 2])>
+    tensor([1, 2])
     """
     interface = math.get_interface(tensor2)
 
@@ -341,7 +343,7 @@ def is_abstract(tensor, like=None):
     (JIT) compilation.
 
     Abstract tensors most commonly occur within a function that has been
-    decorated using ``@tf.function`` or ``@jax.jit``.
+    decorated using ``@jax.jit``.
 
     .. note::
 
@@ -408,36 +410,12 @@ def is_abstract(tensor, like=None):
 
         return False
 
-    if (
-        interface == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        import tensorflow as tf
-        from tensorflow.python.framework.ops import EagerTensor
-
-        return not isinstance(tf.convert_to_tensor(tensor), EagerTensor)
-
     # Autograd does not have a JIT
 
     # QNodes do not currently support TorchScript:
     #   NotSupportedError: Compiled functions can't take variable number of arguments or
     #   use keyword-only arguments with defaults.
     return False
-
-
-def import_should_record_backprop():  # pragma: no cover
-    """Return should_record_backprop or an equivalent function."""
-    import tensorflow.python as tfpy
-
-    if hasattr(tfpy.eager.tape, "should_record_backprop"):
-        from tensorflow.python.eager.tape import should_record_backprop
-    elif hasattr(tfpy.eager.tape, "should_record"):
-        from tensorflow.python.eager.tape import should_record as should_record_backprop
-    elif hasattr(tfpy.eager.record, "should_record_backprop"):
-        from tensorflow.python.eager.record import should_record_backprop
-    else:
-        raise ImportError("Cannot import should_record_backprop from TensorFlow.")
-
-    return should_record_backprop
 
 
 def requires_grad(tensor, interface=None):
@@ -474,14 +452,6 @@ def requires_grad(tensor, interface=None):
     """
     interface = interface or math.get_interface(tensor)
 
-    if (
-        interface == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        import tensorflow as tf
-
-        should_record_backprop = import_should_record_backprop()
-        return should_record_backprop([tf.convert_to_tensor(tensor)])
-
     if interface == "autograd":
         if isinstance(tensor, ArrayBox):
             return True
@@ -516,24 +486,20 @@ def in_backprop(tensor, interface=None):
 
     **Example**
 
-    >>> x = tf.Variable([0.6, 0.1])
-    >>> requires_grad(x)
+    >>> from pennylane import numpy as np
+    >>> x = np.array(0.6, requires_grad=True)
+    >>> in_backprop(x)
     False
-    >>> with tf.GradientTape() as tape:
-    ...     print(requires_grad(x))
+    >>> def cost(x):
+    ...     print(in_backprop(x))
+    ...     return x ** 2
+    >>> qp.grad(cost)(x)
     True
+    tensor(1.2, requires_grad=True)
 
     .. seealso:: :func:`~.requires_grad`
     """
     interface = interface or math.get_interface(tensor)
-
-    if (
-        interface == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        import tensorflow as tf
-
-        should_record_backprop = import_should_record_backprop()
-        return should_record_backprop([tf.convert_to_tensor(tensor)])
 
     if interface == "autograd":
         return isinstance(tensor, ArrayBox)
@@ -548,14 +514,24 @@ def in_backprop(tensor, interface=None):
     raise ValueError(f"Cannot determine if {tensor} is in backpropagation.")
 
 
-def ceil_log2(n: int) -> int:
-    """Compute the ceiling of the base-2 logarithm of an integer, with integer as output data type.
+def ceil_log2(n: numbers.Real) -> int:
+    """Compute the ceiling of the base-2 logarithm of a number, with integer as output data type.
 
     Args:
-        n (int): Integer to compute the rounded-up base-2 logarithm of.
+        n (int or float): Number to compute the rounded-up base-2 logarithm of.
+            Traced inputs must have an integer data type.
 
     Returns:
         int: Rounded-up base-2 logarithm of ``n``.
+
+    .. warning::
+
+        Under just-in-time (JIT) compilation with JAX, this function will not raise an error
+        for the input ``0``:
+
+        >>> import jax
+        >>> jax.jit(qp.math.ceil_log2)(0)
+        Array(-2147483648, dtype=int32)
 
     **Example**
 
@@ -578,7 +554,89 @@ def ceil_log2(n: int) -> int:
     3.0
     >>> qp.math.ceil_log2(9)
     4
+
+    The result is exact even for inputs with more significant bits than a float can hold:
+
+    >>> qp.math.ceil_log2(2**53 + 1)
+    54
+
+    For simple ``int`` inputs, this function computes the same as ``(n - 1).bit_length()``, which
+    does not work for inputs like ``np.int64``.
     """
     if is_abstract(n):
-        return np.ceil(np.log2(n)).astype(int)
-    return int(np.ceil(np.log2(n)))
+        # The ceiling exceeds the floor by one unless n is a power of two, which is the
+        # case if and only if n & (n - 1) vanishes
+        return floor_log2(n) + ((n & (n - 1)) != 0)
+    # np.log2 loses precision for inputs with more than 53 significant bits, so that its rounded
+    # result may be off by one. Comparing to the neighbouring powers of two corrects this.
+    exponent = int(np.ceil(np.log2(n)))
+    if (1 << exponent) < n:
+        return exponent + 1
+    return exponent
+
+
+def floor_log2(n: numbers.Real) -> int:
+    """Compute the floor of the base-2 logarithm of a number, with integer as output data type.
+
+    Args:
+        n (int or float): Number to compute the rounded-down base-2 logarithm of.
+            Traced inputs must have an integer data type.
+
+    Returns:
+        int: Rounded-down base-2 logarithm of ``n``.
+
+
+    .. warning::
+
+        Under just-in-time (JIT) compilation with JAX, this function will not raise an error
+        for the input ``0``:
+
+        >>> import jax
+        >>> jax.jit(qp.math.floor_log2)(0)
+        Array(2147483647, dtype=int32)
+
+    **Example**
+
+    On powers of two, ``floor_log2`` simply acts like ``np.log2`` whose result was converted to
+    an ``int``:
+
+    >>> qp.math.floor_log2(8)
+    3
+
+    On other numbers, the rounding of the logarithm becomes visible:
+
+    >>> qp.math.log2(14)
+    3.807354922057604
+    >>> qp.math.floor_log2(14)
+    3
+
+    Note that we always round down:
+
+    >>> qp.math.round(qp.math.log2(15))
+    4.0
+    >>> qp.math.floor_log2(15)
+    3
+
+    The result is exact even for inputs with more significant bits than a float can hold:
+
+    >>> qp.math.floor_log2(2**53 - 1)
+    52
+
+    For simple ``int`` inputs, this function computes the same as ``n.bit_length() - 1``, which
+    does not work for inputs like ``np.int64``.
+    """
+    # np.log2 loses precision for inputs with more than 53 significant bits, so that its rounded
+    # result may be off by one. Comparing to the neighbouring powers of two corrects this.
+    if is_abstract(n):
+        exponent = np.floor(np.log2(n)).astype(int)
+        # Shifting compares n to 2 ** exponent without forming the power itself, which could
+        # exceed the integer data type
+        shifted = n >> exponent
+        return exponent - (shifted == 0) + (shifted >= 2)
+
+    exponent = int(np.floor(np.log2(n)))
+    if (1 << (exponent + 1)) <= n:
+        return exponent + 1
+    if (1 << exponent) > n:
+        return exponent - 1
+    return exponent

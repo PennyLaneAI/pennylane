@@ -131,74 +131,92 @@ def _stack_to_HintedCallable(f: HintedCallable, hints: dict) -> HintedCallable:
 
 
 def hint(hints: dict[str, Any]) -> Callable:
-    """Create a decorator for applying compiler hints.
+    """Attaches a compiler hint to applicable functionality.
+
+    .. warning::
+        By definition, the :func:`~.qjit` compiler may decide to completely ignore any instances of 
+        `hint` in a program; a compiler hint is something that does not affect program correctness, 
+        meaning that the compiler _can_ safely ignore them and still provide correct results.
 
     Args:
-        hints (dict[str, Any]): a dictionary of compiler hints
+        `hints` (dict[str, Any]):
+            A dictionary containing compiler hint information. 
 
     Returns:
         Callable: a decorator that can be applied.
 
     **Available Hints:**
 
-    * :func:`~.for_loop` supports `"num-iters"` to indicate the number of loops
-    : :func:`~.while_loop` supports `"num-iters"` to indicate the number of loops
+    * :func:`~.for_loop` and :func:`~.while_loop` support `"num-iters"` to indicate a heuristic number of loop iterations for the purposes of resource estimation with :func:`~.specs`. See Usage Details for more information.
 
     .. warning::
 
-        While close mispellings may be accepted, hints sufficiently far away from the target
-        will be simply ignored.
+        While close mispellings may be accepted (e.g., `"num-iter"`), spellings sufficiently far away 
+        from the target will be ignored.
 
-    By hinting control flow like :func:`~.for_loop` and :func:`~.while_loop`, profiling
-    with :func:`~.specs` can fully specify the number of iterations.
+    .. details::
+        :title: Usage Details 
 
-    .. code-block:: python
+        By hinting control flow like :func:`~.for_loop` and :func:`~.while_loop`, profiling
+        with :func:`~.specs` can heuristically specify the number of iterations, leading to concrete
+        resource counts (no symbolic expressions).
 
-        @qp.qjit(capture=True)
-        @qp.qnode(qp.device('lightning.qubit', wires=1))
-        def c(n):
+        .. code-block:: python
 
-            @qp.for_loop(n)
-            def loop(i):
-                qp.X(0)
+            @qp.qjit(capture=True)
+            @qp.qnode(qp.device('lightning.qubit', wires=1))
+            def c(n):
 
-            #  hinted loop
-            qp.hint({"num-iters": 10})(loop)()
+                @qp.for_loop(n)
+                def loop(i):
+                    qp.X(0)
 
-            # normal loop
-            loop()
+                #  hinted loop
+                qp.hint({"num-iters": 10})(loop)()
 
-            return qp.expval(qp.Z(0))
+                # normal loop
+                loop()
 
-    >>> print(qp.specs(c, level=0)(5).resources)
-    Symbolic Variables: a
-    Quantum operations:
-    - Total: a + 10
-      - PauliX: a + 10
-    Measurement processes:
-    - expval(PauliZ): 1
-    Total wires: 1
-    Circuit Depth: Not computed
+                return qp.expval(qp.Z(0))
 
-    The concrete ``10`` corresponds to the hinted loop, contrasting the
-    symbolic ``a`` from to the unhinted loop.
+        >>> print(qp.specs(c, level=0)(5).resources)
+        Symbolic Variables: a
+        Quantum operations:
+        - Total: a + 10
+          - PauliX: a + 10
+        Measurement processes:
+        - expval(PauliZ): 1
+        Total wires: 1
+        Circuit Depth: Not computed
 
-    This function can also  be used as a decorator:
+        The concrete ``10`` corresponds to the hinted loop, contrasting the symbolic ``a`` from to i
+        the unhinted loop.
 
-    .. code-block:: python
+        This function can also  be used as a decorator:
 
-        @qp.qjit(capture=True)
-        @qp.qnode(qp.device('lightning.qubit' wires=10))
-        def c(n):
+        .. code-block:: python
 
-            @qp.hint({"num-iters": 10})
-            @qp.while_loop(lambda i: i < 10)
-            def loop(i):
-                qp.X(i)
-                return i + 1
+            @qp.qjit(capture=True)
+            @qp.qnode(qp.device('lightning.qubit' wires=10))
+            def c(n):
 
-            loop(0)
-            return qp.expval(qp.Z(0))
+                @qp.hint({"num-iters": 10})
+                @qp.while_loop(lambda i: i < 10)
+                def loop(i):
+                    qp.X(i)
+                    return i + 1
+
+                loop(0)
+                return qp.expval(qp.Z(0))
+
+        >>> print(qp.specs(c, level=0)(5).resources)
+        Quantum operations:
+        - Total: 10
+          - PauliX: 10
+        Measurement processes:
+        - expval(PauliZ): 1
+        Total wires: 1
+        Circuit Depth: Not computed
 
     """
 
