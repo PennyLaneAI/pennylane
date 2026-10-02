@@ -248,12 +248,14 @@ class Controller(Node):
             Defaults to ``None``, which builds a ``null.qubit``.
         in_bytes (int, None): The size in bytes of each message the controller sends.
             ``"memcpy"`` supports any size, while ``"rdma"`` currently supports up to
-            :data:`DEFAULT_MESSAGE_BYTES`. Defaults to ``None``, which takes the size the
-            coprocessors' functions declare (as :func:`~.onnx_decoder` does from its model), or
-            else :data:`DEFAULT_MESSAGE_BYTES`. A size passed explicitly must match what they
+            :data:`DEFAULT_MESSAGE_BYTES`. Defaults to ``None`` (unset), in which case the
+            placement sends the size the coprocessors' functions declare (as
+            :func:`~.onnx_decoder` does from its model), or else :data:`DEFAULT_MESSAGE_BYTES`.
+            See :attr:`~.Placement.in_bytes`. A size passed explicitly must match what they
             declare.
         out_bytes (int, None): The size in bytes of each reply the controller receives. Defaults
-            to ``None``, resolved like ``in_bytes`` and with the same bound.
+            to ``None``, resolved like ``in_bytes`` (see :attr:`~.Placement.out_bytes`) and with
+            the same bound.
 
     See :class:`~.Node` for the options every node shares.
 
