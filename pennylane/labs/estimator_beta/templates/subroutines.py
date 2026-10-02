@@ -2299,3 +2299,69 @@ class SelectCopyQROM(ResourceOperator):
         gate_cost.append(GateCount(r_elbow, bits_per_iter * num_data_blocks))
         gate_cost.append(Deallocate(allocated_register=temp_and_reg))
         return gate_cost
+
+
+class SelAmp(qre.ResourceOperator):
+    """
+    Given an amp state and an input state of size $n$, calculates the resources required to apply the select operator that
+    block encodes a signed integer.
+    """
+
+    resource_keys = {"n"}  # the parameters that determine the resources of this operator
+
+    def __init__(self, n, wires=None):
+        self.n = n
+        # n from amp state, n from target state, 1 ctrl, 1 plus, ignore allocated qubit
+        self.num_wires = n + n + 2
+        # we also usually validate the wires here to make sure they match num_wires
+        super().__init__(wires=wires)
+
+    @property
+    def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information
+        needed to compute the resources."""
+        # the keys should match the resource keys
+        return {
+            "n": self.n,
+        }
+
+    @classmethod
+    def resource_rep(cls, n) -> qre.CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute the resources.
+
+        Returns:
+            :class:`~.pennylane.estimator.resource_operator.CompressedResourceOp`:
+            the operator in a compressed representation
+        """
+        params = {"n": n}
+        return qre.CompressedResourceOp(cls, 2 * n + 2, params)
+
+    @classmethod
+    def resource_decomp(cls, n):
+        gate_cost = []
+        x = qre.X.resource_rep()
+        cnot = qre.CNOT.resource_rep()
+        cz = qre.CZ.resource_rep()
+        ccz = qre.CCZ.resource_rep()
+
+        tof = qre.Toffoli.resource_rep()
+
+        l_elbow = qre.TemporaryAND.resource_rep()
+        r_elbow = qre.Adjoint.resource_rep(l_elbow)
+
+        alloc = qre.Allocate(2)
+        gate_cost.append(alloc)
+
+        # cost:
+        gate_cost.append(qre.GateCount(cz, 1))
+        gate_cost.append(qre.GateCount(cnot, n - 1))
+        gate_cost.append(qre.GateCount(tof, 2 * (n - 1)))
+        gate_cost.append(qre.GateCount(x, 2))  # conjugate zero control
+        gate_cost.append(qre.GateCount(l_elbow))  # use a temp and for the triply controlled Z
+        gate_cost.append(qre.GateCount(r_elbow))
+        gate_cost.append(qre.GateCount(ccz, 2))
+        gate_cost.append(qre.GateCount(cnot, n - 1))
+
+        gate_cost.append(qre.Deallocate(2))
+        return gate_cost
