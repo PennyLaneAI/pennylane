@@ -566,6 +566,67 @@ will be ignored by AutoGraph:
 >>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 10)
 [0]
 
+Compiler hints
+--------------
+
+Native Python control flow converted by AutoGraph can be annotated with compiler hints using a
+``# qphint:`` comment. This is the AutoGraph equivalent of applying :func:`~.hint` to a
+:func:`~.for_loop` or :func:`~.while_loop`, which native Python control flow cannot do because
+there is no callable to decorate.
+
+A hint is written as one or more comma separated ``key=value`` pairs, where each value must
+be a Python literal. The comment can either trail the statement it annotates, or sit on its own
+line directly above it:
+
+.. code-block:: python
+
+    def f(n):
+
+        for i in range(n):  # qphint: num-iters=10
+            qp.X(0)
+
+        # qphint: num-iters=4
+        while n > 0:
+            n = n - 1
+
+The ``"num-iters"`` hint tells :func:`~.specs` how many iterations to assume for a loop whose
+trip count is not known at capture time, which gives concrete resource counts rather than
+symbolic ones. As with :func:`~.hint`, the compiler is free to ignore any hint, close
+misspellings such as ``num_iters`` are accepted, and unrecognized keys are dropped.
+
+The branches of an ``if`` statement can be annotated separately. A pragma on the ``if`` or
+``elif`` line annotates that branch, and a pragma on the ``else:`` line annotates the false
+branch:
+
+.. code-block:: python
+
+    def g(x):
+        if x > 5:  # qphint: some-hint=1
+            y = 1
+        else:  # qphint: some-hint=2
+            y = 2
+        return y
+
+.. note::
+
+    Branch hints are currently plumbing only. They are applied to the branch functions, but no
+    hint keys are consumed for conditionals yet, so they have no effect on the captured
+    program. Only loops support a hint, ``"num-iters"``, that is acted upon today.
+
+A few limitations are worth knowing about:
+
+* Pragmas are read from the source code of the function being converted, so they have no
+  effect on functions whose source is unavailable, such as those defined in an interactive
+  shell.
+* Only ``for``, ``while`` and ``if`` statements can be annotated. Annotating anything else is
+  an error, as is annotating the ``else`` clause of a loop, which AutoGraph does not convert.
+* A loop cannot carry both a ``# qphint`` pragma and a ``malt.experimental.set_loop_options``
+  call, because AutoGraph would discard the pragma.
+* A pragma that cannot be matched to a statement, and one whose name is not recognized, each
+  raise an ``AutoGraphWarning`` rather than failing silently.
+* Comments do not survive the conversion, so pragmas do not appear as comments in the output of
+  :func:`~.autograph_source`, though their effect does.
+
 Debugging
 ---------
 
