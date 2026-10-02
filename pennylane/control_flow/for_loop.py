@@ -15,14 +15,15 @@
 
 import logging
 import warnings
-from typing import Literal
+from typing import Any, Literal
 
 import jax
 
 from pennylane import capture, math
-from pennylane.capture import FlatFn, enabled
+from pennylane.capture import FlatFn, HintedCallable, apply_hint, enabled
 from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.capture.dynamic_shapes import register_custom_staging_rule
+from pennylane.capture.hint import process_hints
 from pennylane.compiler.compiler import AvailableCompilers, active_compiler
 from pennylane.exceptions import CaptureWarning
 
@@ -284,8 +285,20 @@ def for_loop(
         Returns:
             Callable: a callable with the same signature as ``body_fn``
         """
+        if isinstance(body_fn, HintedCallable):
+            hints = process_hints(body_fn.hints, {"num-iters"})
+            num_iters_hint = hints.get("num-iters", None)
+            body_fn = body_fn.f
+        else:
+            num_iters_hint = None
+
         return ForLoopCallable(
-            start, stop, step, body_fn, allow_array_resizing=allow_array_resizing
+            start,
+            stop,
+            step,
+            body_fn,
+            allow_array_resizing=allow_array_resizing,
+            num_iters_hint=num_iters_hint,
         )
 
     return _decorator
@@ -328,10 +341,18 @@ register_custom_staging_rule(
 )
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, unused-argument
 @for_loop_prim.def_impl
 def _for_loop_impl(
-    start, stop, step, *args, jaxpr_body_fn, consts_slice, args_slice, abstract_shapes_slice
+    start,
+    stop,
+    step,
+    *args,
+    jaxpr_body_fn,
+    consts_slice,
+    args_slice,
+    abstract_shapes_slice,
+    estimated_iterations,
 ):
     # Convert tuples back to slices (tuples are used for JAX 0.7.1 hashability)
     consts_slice = slice(*consts_slice)
@@ -388,12 +409,14 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
         body_fn,
         *,
         allow_array_resizing: Literal["auto", True, False] = "auto",
+        num_iters_hint: int | None = None,
     ):
         self.start = start
         self.stop = stop
         self.step = step
         self.body_fn = body_fn
         self.allow_array_resizing = allow_array_resizing
+        self.num_iters_hint = num_iters_hint
 
     def _call_capture_disabled(self, *init_state):
         args = init_state
@@ -504,6 +527,7 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
             consts_slice=consts_slice,
             args_slice=args_slice,
             abstract_shapes_slice=abstract_shapes_slice,
+            estimated_iterations=self.num_iters_hint,
         )
 
         results = results[-out_tree.num_leaves :]
@@ -529,3 +553,18 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
         if enabled() and not start_equals_stop:
             return self._call_capture_enabled(*init_state)
         return self._call_capture_disabled(*init_state)
+
+
+@apply_hint.register
+def _apply_hint_to_for_loop(
+    f: ForLoopCallable, hints: dict[Literal["num-iters"], Any]
+) -> ForLoopCallable:
+    hints = process_hints(hints, {"num-iters"})
+    return ForLoopCallable(
+        f.start,
+        f.stop,
+        f.step,
+        f.body_fn,
+        allow_array_resizing=f.allow_array_resizing,
+        num_iters_hint=hints.get("num-iters", None),
+    )

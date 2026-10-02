@@ -567,3 +567,40 @@ class TestCaptureWhileLoopDynamicShapes:
         jaxpr = jax.make_jaxpr(w)()
         assert jaxpr.eqns[0].primitive == while_loop_prim
         assert jaxpr.eqns[0].params["jaxpr_body_fn"].eqns[0].primitive.name == "add"
+
+
+class TestWhileLoopHintsCapture:
+    """Tests that ``num-iters`` reaches the while-loop capture primitive."""
+
+    def test_estimated_iterations_in_jaxpr(self):
+        """``num-iters`` should become ``estimated_iterations`` on ``while_loop``."""
+
+        @qp.hint({"num-iters": 7})
+        @qp.while_loop(lambda i: i < 3)
+        def loop(i):
+            return i + 1
+
+        jaxpr = jax.make_jaxpr(loop)(0)
+        assert jaxpr.eqns[0].primitive == while_loop_prim
+        assert jaxpr.eqns[0].params["estimated_iterations"] == 7
+
+    def test_without_hint_has_none_estimated_iterations(self):
+        """Unhinted while loops should bind ``estimated_iterations=None``."""
+
+        @qp.while_loop(lambda i: i < 3)
+        def loop(i):
+            return i + 1
+
+        jaxpr = jax.make_jaxpr(loop)(0)
+        assert jaxpr.eqns[0].params["estimated_iterations"] is None
+
+    def test_apply_hint_form_sets_estimated_iterations(self):
+        """``qp.hint(...)(loop)`` should also populate ``estimated_iterations``."""
+
+        @qp.while_loop(lambda i: i < 3)
+        def loop(i):
+            return i + 1
+
+        hinted = qp.hint({"num-iters": 4})(loop)
+        jaxpr = jax.make_jaxpr(hinted)(0)
+        assert jaxpr.eqns[0].params["estimated_iterations"] == 4
