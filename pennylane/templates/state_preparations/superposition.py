@@ -319,7 +319,7 @@ class Superposition(Operation):
         >>> from pprint import pprint
         >>> pprint(ops)
         [StatePrep(array([0.707..., 0.707...]), wires=[1]),
-        MultiControlledX(wires=[0, 1, 2], control_values=[False, True]),
+        MultiControlledX(wires=[0, 1, 2], control_values=[False  True], work_wires=[], work_wire_type=borrowed),
         CNOT(wires=[2, 0]),
         Toffoli(wires=[0, 1, 2])]
 
