@@ -2,12 +2,16 @@
 
 <h3>New features since last release</h3>
 
-* Added a new state preparation routine :class:`~.PhaseGradientStatePrep` that prepares the 
-  phase gradient state 
+* Added a new state preparation routine :class:`~.PhaseGradientStatePrep` that prepares the
+  phase gradient state
   :math:`|\nabla_b\rangle = \frac{1}{\sqrt{B}} \sum_{k=0}^{B-1} e^{-2\pi i \frac{k}{B}} |k\rangle`,
   which is a catalytic state for (generalized) rotation gates.
+  Its exact product-state decomposition remains the default, while
+  :func:`~.transforms.decompositions.make_phase_gradient_distillation_decomp` provides an opt-in
+  Jones repeat-until-success construction for Clifford+T workflows.
   See the [compilation hub](https://pennylane.ai/compilation/phase-gradient/) for more details on the state and how to use it in rotations.
   [(#10227)](https://github.com/PennyLaneAI/pennylane/pull/10227)
+  [(#10245)](https://github.com/PennyLaneAI/pennylane/pull/10245)
 
   ```pycon
   import pennylane as qp
