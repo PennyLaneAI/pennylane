@@ -125,12 +125,6 @@ Completed deprecation cycles
 
   - Removed in releases after v0.45
 
-* The ``pennylane.noise`` module has been removed, including ``NoiseModel``, ``add_noise``,
-  ``insert``, noise mitigation transforms, and ``from_qiskit_noise``. Noise channels such as
-  :class:`~.AmplitudeDamping` are unaffected.
-
-  - Removed in releases after v0.45
-
 * Implementing ``Operator.generator`` as a property is no longer supported. Instead, define a ``generator()`` method for your operator that returns an ``Operator`` instance.
 
   - Deprecated in v0.22
