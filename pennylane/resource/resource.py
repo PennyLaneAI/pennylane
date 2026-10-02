@@ -1208,6 +1208,31 @@ def resources_from_tape(tape: QuantumScript, compute_depth: bool = True) -> Spec
             If False, the depth is set to None.
     Returns:
         SpecsResources: The resources associated with this tape.
+
+    Example:
+        import pennylane as qp
+        from pennylane.resource import resources_from_tape
+
+        dev = qp.device("default.qubit", wires=2)
+
+        @qp.qnode(dev)
+        def circuit(theta):
+            qp.RX(theta, wires=0)
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0))
+
+        tape = qp.workflow.construct_tape(circuit)(3)
+        resources = resources_from_tape(tape)
+
+        >>> print(resources)
+        Quantum operations:
+        - Total: 2
+          - RX: 1
+          - CNOT: 1
+        Measurement processes:
+        - expval(PauliZ): 1
+        Total wires: 2
+        Circuit Depth: 2
     """
     resources = _count_resources(tape, compute_depth=compute_depth)
 
