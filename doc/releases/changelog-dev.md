@@ -613,6 +613,16 @@
 
 <h3>Improvements 🛠</h3>
 
+* A :class:`~.Controller` now takes the size of its messages in each direction, with the
+  ``in_bytes`` and ``out_bytes`` keyword arguments. Both default to 8, and the ``"memcpy"``
+  transport carries any size.
+
+  .. code-block:: python
+
+      ctrl = qp.Controller(in_bytes=120, out_bytes=121)
+
+  [(#10224)](https://github.com/PennyLaneAI/pennylane/pull/10224)
+
 * :func:`~.iterative_qpe` is now captured as a single :func:`~.capture.subroutine` instead of
   falling back to an unrolled ``qp.for_loop``. 
   [(#10220)](https://github.com/PennyLaneAI/pennylane/pull/10220)
@@ -1914,6 +1924,7 @@ Korbinian Kottmann,
 Isabel Nha Minh Le,
 Christina Lee,
 Joseph Lee,
+Mehrdad Malekmohammadi,
 William Maxwell,
 Anton Naim Ibrahim,
 Mudit Pandey,

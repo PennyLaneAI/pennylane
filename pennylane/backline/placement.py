@@ -29,6 +29,7 @@ if TYPE_CHECKING:
 # Wires given to the ``null.qubit`` device a :class:`~.Controller` falls back to.
 DEFAULT_WIRES = 32
 DEFAULT_MESSAGE_BYTES = 8
+"""The default size, in bytes, of a controller's messages in each direction."""
 Hardware = Literal["cpu", "gpu", "fpga"]
 """Hardware on which a backline node executes."""
 _SUPPORTED_HARDWARE = frozenset(get_args(Hardware))
@@ -245,6 +246,11 @@ class Controller(Node):
             :attr:`~.Node.init_args` attribute below for the keys it accepts.
         device (pennylane.devices.Device, None): The PennyLane device the controller executes.
             Defaults to ``None``, which builds a ``null.qubit``.
+        in_bytes (int): The size in bytes of each message the controller sends. Defaults to
+            :data:`DEFAULT_MESSAGE_BYTES`. ``"memcpy"`` supports any size, while ``"rdma"``
+            currently supports up to :data:`DEFAULT_MESSAGE_BYTES`.
+        out_bytes (int): The size in bytes of each reply the controller receives. Defaults to
+            :data:`DEFAULT_MESSAGE_BYTES`, with the same bound as ``in_bytes``.
 
     See :class:`~.Node` for the options every node shares.
 
@@ -283,16 +289,20 @@ class Controller(Node):
     ``null.qubit`` over :data:`DEFAULT_WIRES` wires. A controller needing more wires, or an actual
     simulation, should pass a device of its own."""
 
-    in_bytes: int = field(default=DEFAULT_MESSAGE_BYTES, init=False, repr=False)
-    """The transport's input-message capacity in bytes. Always :data:`DEFAULT_MESSAGE_BYTES`;
-    provided for the compiler, not a constructor argument."""
+    in_bytes: int = field(default=DEFAULT_MESSAGE_BYTES, repr=False)
+    """The size in bytes of each message the controller sends, at least 1."""
 
-    out_bytes: int = field(default=DEFAULT_MESSAGE_BYTES, init=False, repr=False)
-    """The transport's reply-message capacity in bytes. Always :data:`DEFAULT_MESSAGE_BYTES`;
-    provided for the compiler, not a constructor argument."""
+    out_bytes: int = field(default=DEFAULT_MESSAGE_BYTES, repr=False)
+    """The size in bytes of each reply the controller receives, at least 1."""
 
     def __post_init__(self):
         super().__post_init__()
+        for name in ("in_bytes", "out_bytes"):
+            value = getattr(self, name)
+            if isinstance(value, bool) or not isinstance(value, int):
+                raise TypeError(f"{name} must be an int, got {type(value).__name__}")
+            if value < 1:
+                raise ValueError(f"{name} must be at least 1, got {value}")
         if self.device is None:
             object.__setattr__(self, "device", _make_device("null.qubit", wires=DEFAULT_WIRES))
 
@@ -473,4 +483,11 @@ class Placement:
                     raise ValueError(
                         "transport='rdma' requires every coprocessor to set endpoint; "
                         "memcpy does not require it"
+                    )
+            for name in ("in_bytes", "out_bytes"):
+                size = getattr(self.controller, name)
+                if size > DEFAULT_MESSAGE_BYTES:
+                    raise ValueError(
+                        f"transport='rdma' carries at most {DEFAULT_MESSAGE_BYTES} bytes per "
+                        f"message, got {name}={size}; transport='memcpy' carries any size"
                     )
