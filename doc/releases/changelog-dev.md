@@ -623,11 +623,10 @@
   the ``key=value;...`` configuration a function receives before its first message, and
   ``per_message``, which a GPU coprocessor uses to call a host function per message.
 
-  .. code-block:: python
+  .. code-block:: pycon
 
-      coproc = qp.Coprocessor(
-          hardware="gpu", coprocessor_fn=qp.backline.onnx_decoder("predecoder.onnx")
-      )
+      >>> fn = qp.backline.onnx_decoder("predecoder.onnx")  # doctest: +SKIP
+      >>> coproc = qp.Coprocessor(hardware="gpu", coprocessor_fn=fn)  # doctest: +SKIP
 
   [(#10225)](https://github.com/PennyLaneAI/pennylane/pull/10225)
 
