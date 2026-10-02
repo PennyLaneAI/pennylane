@@ -94,9 +94,9 @@ def analyze(
     representation at the specified level of compilation.
 
     This transform converts a QNode into a callable that compiles the circuit up to ``level``
-    and runs Catalyst's ``resource-analysis`` pass over the resulting program. The circuit is
-    compiled but never executed, so the resource information only relies on what is known at
-    compile time.
+    and inspects the resulting representation, without executing the circuit or unrolling its
+    control flow. The resource information therefore only relies on what is known at compile
+    time.
 
     Args:
         qnode (:class:`~catalyst.jit.QJIT`): the (qjit'd) QNode for which to estimate resources.
