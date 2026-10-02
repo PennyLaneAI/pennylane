@@ -1270,6 +1270,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Name the decompose transform as `graph-decomposition` to match the new decomposition system in Catalyst.
+  [(#10242)](https://github.com/PennyLaneAI/pennylane/pull/10242)
+
 * Removes indirection and deferred imports now that jax is always available.
   [(#10198)](https://github.com/PennyLaneAI/pennylane/pull/10198)
   [(#10200)](https://github.com/PennyLaneAI/pennylane/pull/10200)
