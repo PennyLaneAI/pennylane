@@ -32,10 +32,9 @@ The following Python packages are optional:
 * `openfermionpyscf <https://github.com/quantumlib/OpenFermion-PySCF>`_, for the non-differentiable backend of the ``qp.qchem`` module
 * ``matplotlib``: for ``qp.draw_mpl`` and associated code
 * ``quimb``: for the ``default.tensor`` device
-* ``pyzx``: for ``qp.transforms.to_zx`` and ``qp.transforms.from_zx``
+* ``pyzx>=0.10``: for ``qp.transforms.to_zx``, ``qp.transforms.from_zx``, and ZX optimization transforms
 * ``stim``: for ``default.clifford``
 * ``openqasm3`` and ``antlr3_python3_runtime``: for ``qp.from_qasm3``
-* ``kahypar`` and ``opt_einsum`` for ``qcut``
 * ``cvxopt``for ``qp.kernels.closest_psd_matrix``
 
 .. _install_interfaces:

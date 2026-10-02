@@ -27,8 +27,6 @@ class Interface(Enum):
     TORCH = "torch"
     JAX = "jax"
     JAX_JIT = "jax-jit"
-    TF = "tf"
-    TF_AUTOGRAPH = "tf-autograph"
     AUTO = "auto"
 
     @classmethod
@@ -42,14 +40,6 @@ class Interface(Enum):
                 return cls.JAX
             case "pytorch":
                 return cls.TORCH
-            case (
-                "tensorflow"
-            ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-                return cls.TF
-            case (
-                "tensorflow-autograph"
-            ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-                return cls.TF_AUTOGRAPH
 
         supported_values = [item.value for item in cls]
 
@@ -65,8 +55,6 @@ class Interface(Enum):
             Interface.TORCH: "torch",
             Interface.JAX: "jax",
             Interface.JAX_JIT: "jax",
-            Interface.TF: "tensorflow",
-            Interface.TF_AUTOGRAPH: "tensorflow",
             Interface.AUTO: None,
         }
         return mapping[self]
@@ -124,9 +112,7 @@ def get_interface(*values):
 
     interfaces = {_get_interface_of_single_tensor(v) for v in values}
 
-    if (
-        len(interfaces - {"numpy", "scipy", "autograd"}) > 1
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)# pragma: no cover (TensorFlow tests were disabled during deprecation)
+    if len(interfaces - {"numpy", "scipy", "autograd"}) > 1:
         # contains multiple non-autograd interfaces
         raise ValueError("Tensors contain mixed types; cannot determine dispatch library")
 
@@ -140,7 +126,7 @@ def get_interface(*values):
             UserWarning,
         )
 
-    priority_queue = ("tensorflow", "torch", "jax", "autograd", "scipy")
+    priority_queue = ("torch", "jax", "autograd", "scipy")
     for target_interface in priority_queue:
         if target_interface in interfaces:
             return target_interface

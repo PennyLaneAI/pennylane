@@ -2144,7 +2144,7 @@ class TestLabsQROM:
                 ]
             )
         if index == 4:  # 12, 2, 5, 4, True
-            allocate_sel = qre.Allocate(ceil_log2(12 / 4) - 1, "zero", True)
+            allocate_sel = qre.Allocate(ceil_log2(12 // 4) - 1, "zero", True)
             allocate_swap = qre.Allocate((4 - 1) * 2, "any", True)
             h = qre.Hadamard.resource_rep()
 
@@ -2603,8 +2603,8 @@ class TestSelectCopyQROM:
             (100, 2, None, 4, 1, 78, 7),
             (1000, 4, 4, 2, 4, 1002, 12),
             (1000, 4, 9, 8, 1, 665, 13),
-            (1e8, 16, None, 64, 3, 10939103, 209),
-            (1e8, 16, None, 32, 8, 9375822, 269),
+            (int(1e8), 16, None, 64, 3, 10939103, 209),
+            (int(1e8), 16, None, 32, 8, 9375822, 269),
         ),  # toffoli and qubit costs computed by hand
     )
     def test_resource_decomp(

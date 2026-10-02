@@ -288,8 +288,7 @@ Defining special properties of an operator
 ##########################################
 
 Apart from the main :class:`~.Operator` class, operators with special methods or representations
-are implemented as subclasses :class:`~.Operation`, :class:`~.Channel`,
-:class:`~.CVOperation` and :class:`~.CVObservable`.
+are implemented as subclasses :class:`~.Operation` and :class:`~.Channel`.
 
 However, unlike many other frameworks, PennyLane does not use class
 inheritance to define fine-grained properties of operators,
