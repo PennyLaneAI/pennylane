@@ -161,7 +161,7 @@ def _parity_dot(a: jnp.ndarray, b: jnp.ndarray) -> jnp.ndarray:
     b = jnp.asarray(b)
     dims = (((a.ndim - 1,), (b.ndim - 1,)), ((), ()))
 
-    product = jax.lax.dot_general(a.astype(jnp.int8), b.astype(jnp.int8), dims)
+    product = jax.lax.dot_general(a, b, dims)
     return product % 2
 
 
