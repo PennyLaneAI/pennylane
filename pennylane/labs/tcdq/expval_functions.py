@@ -187,6 +187,7 @@ def _phase_differences(
 
     n_gates, max_weight = gate_indices.shape
 
+    @jax.checkpoint
     def block_contribution(block_indices: jnp.ndarray, block_params: jnp.ndarray) -> jnp.ndarray:
         theta = gate_params[block_params][:, jnp.newaxis]
         b_bits = _xor_gather_rows(samples_t, block_indices)
