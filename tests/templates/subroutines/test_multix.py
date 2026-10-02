@@ -455,8 +455,9 @@ class TestDecomposition:
             )
             return qp.state()
 
-        specs = qp.specs(circuit)()["resources"].quantum_operations
-        assert dict(specs) == expected
+        tape = qp.workflow.construct_tape(circuit)()
+        resources = qp.resource.resources_from_tape(tape).quantum_operations
+        assert resources == expected
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     @pytest.mark.parametrize("control_values", [[1], [0]])
@@ -507,12 +508,13 @@ class TestDecomposition:
             qp.ctrl(qp.MultiX(bitstring, wires=targets), control=control)
             return qp.state()
 
-        specs = qp.specs(circuit)()["resources"].quantum_operations
+        tape = qp.workflow.construct_tape(circuit)()
+        resources = qp.resource.resources_from_tape(tape).quantum_operations
         num_controls = len(control)
         num_set_bits = sum(bitstring)
         # One CNOT per set target bit fanned out from the ladder's single work wire, instead of
         # one MultiControlledX (which itself needs O(num_controls) gates) per set target bit.
-        assert dict(specs) == {
+        assert resources == {
             "Allocate": 1,
             "Deallocate": 1,
             "TemporaryAND": num_controls - 1,

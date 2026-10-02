@@ -810,7 +810,7 @@ class CircuitSpecs:
         elif isinstance(res, list):
             prefix = preindent * " "
             for i, r in enumerate(res):
-                lines.append(f"{prefix}Batched tape {num_to_letters(i)}:")
+                lines.append(f"{prefix}Batched qnode {num_to_letters(i)}:")
                 lines.append(r.to_pretty_str(preindent=preindent + 4))
                 lines.append("")  # Blank line
         else:
@@ -1172,9 +1172,9 @@ class CircuitSpecs:
             for i, r in enumerate(self.resources):
                 if collapsible:
                     lines.append("<details open>")
-                    lines.append(f"<summary>Batched tape {num_to_letters(i)}</summary>")
+                    lines.append(f"<summary>Batched qnode {num_to_letters(i)}</summary>")
                 else:
-                    lines.append(f"**Batched tape {num_to_letters(i)}:**")
+                    lines.append(f"**Batched qnode {num_to_letters(i)}:**")
                 lines.append("")
                 lines.append(r._repr_markdown_())  # pylint: disable=protected-access
                 lines.append("")
@@ -1190,9 +1190,9 @@ class CircuitSpecs:
         return "\n".join(lines)
 
 
-# The reason why this function is not a method of the QuantumScript class is
-# because we don't want a core module (QuantumScript) to depend on an auxiliary module (Resource).
-# The `QuantumScript.specs` property will eventually be deprecated in favor of this function.
+# TODO: Everything below this line can be removed once tape-based functionality is removed.
+
+
 def resources_from_tape(tape: QuantumScript, compute_depth: bool = True) -> SpecsResources:
     """
     Extracts the resource information from a quantum circuit (tape).
@@ -1208,6 +1208,34 @@ def resources_from_tape(tape: QuantumScript, compute_depth: bool = True) -> Spec
             If False, the depth is set to None.
     Returns:
         SpecsResources: The resources associated with this tape.
+
+    **Example**
+
+    .. code-block:: python
+
+        import pennylane as qp
+        from pennylane.resource import resources_from_tape
+
+        dev = qp.device("default.qubit", wires=2)
+
+        @qp.qnode(dev)
+        def circuit(theta):
+            qp.RX(theta, wires=0)
+            qp.CNOT(wires=[0, 1])
+            return qp.expval(qp.PauliZ(0))
+
+        tape = qp.workflow.construct_tape(circuit)(3)
+        resources = resources_from_tape(tape)
+
+    >>> print(resources)
+    Quantum operations:
+    - Total: 2
+        - RX: 1
+        - CNOT: 1
+    Measurement processes:
+    - expval(PauliZ): 1
+    Total wires: 2
+    Circuit Depth: 2
     """
     resources = _count_resources(tape, compute_depth=compute_depth)
 
