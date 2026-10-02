@@ -149,7 +149,7 @@ adj0 = qp.structure_constants(dla0, matrix=True)
 
 
 class TestInterfacesStructureConstants:
-    """Test interfaces jax, torch and tensorflow with structure constants"""
+    """Test interfaces jax and torch with structure constants"""
 
     @pytest.mark.jax
     def test_jax_structure_constants(self):
@@ -174,15 +174,3 @@ class TestInterfacesStructureConstants:
 
         assert qp.math.allclose(adj_torch, adj0)
         assert qp.math.get_interface(adj_torch) == "torch"
-
-    @pytest.mark.tf
-    def test_tf_structure_constants(self):
-        """Test tf interface for structure constants"""
-
-        import tensorflow as tf
-
-        dla_tf = tf.constant(dla0)
-        adj_tf = qp.structure_constants(dla_tf, matrix=True)
-
-        assert qp.math.allclose(adj_tf, adj0)
-        assert qp.math.get_interface(adj_tf) == "tensorflow"

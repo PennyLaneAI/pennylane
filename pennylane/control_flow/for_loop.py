@@ -17,6 +17,8 @@ import logging
 import warnings
 from typing import Literal
 
+import jax
+
 from pennylane import capture, math
 from pennylane.capture import FlatFn, enabled
 from pennylane.capture.custom_primitives import QpPrimitive
@@ -410,8 +412,6 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
 
     def _get_jaxpr(self, init_state, allow_array_resizing):
 
-        import jax  # pylint: disable=import-outside-toplevel
-
         f_consts_extracted, dynamic_consts = promote_consts_to_inputs(self.body_fn)
 
         # need in_tree to include index so flat_fn will repack args correctly
@@ -456,8 +456,6 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
         return jaxpr_body_fn, abstract_shapes, flat_args, flat_fn.out_tree
 
     def _call_capture_enabled(self, *init_state):
-
-        import jax  # pylint: disable=import-outside-toplevel
 
         try:
             jaxpr_body_fn, abstract_shapes, flat_args, out_tree = self._get_jaxpr(

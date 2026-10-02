@@ -473,35 +473,6 @@ class TestIntegration:
 
         assert dev.num_executions == 5
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("interface", ["auto"])
-    def test_correct_number_of_executions_tf(self, interface):
-        """Test that number of executions are tracked in the tf interface."""
-
-        def func():
-            qp.Hadamard(wires=0)
-            qp.CNOT(wires=[0, 1])
-            return qp.expval(qp.PauliZ(0))
-
-        dev = DefaultQubitLegacy(wires=2)
-        qn = QNode(func, dev, interface=interface)
-        for _ in range(2):
-            qn()
-
-        assert dev.num_executions == 2
-
-        qn2 = QNode(func, dev, interface=interface)
-        for _ in range(3):
-            qn2()
-
-        assert dev.num_executions == 5
-
-        # qubit of different interface
-        qn3 = QNode(func, dev, interface="autograd")
-        qn3()
-
-        assert dev.num_executions == 6
-
     @pytest.mark.torch
     @pytest.mark.parametrize("interface", ["torch", "auto"])
     def test_correct_number_of_executions_torch(self, interface):
@@ -669,49 +640,6 @@ class TestIntegration:
         r2 = conditional_ry_qnode(first_par)
         assert np.allclose(r1, r2)
         spy.assert_called()
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("interface", ["auto"])
-    def test_conditional_ops_tensorflow(self, interface):
-        """Test conditional operations with TensorFlow."""
-        import tensorflow as tf
-
-        dev = DefaultQubitLegacy(wires=3)
-
-        @qp.qnode(dev, interface=interface, diff_method="parameter-shift")
-        def cry_qnode(x):
-            """QNode where we apply a controlled Y-rotation."""
-            qp.Hadamard(1)
-            qp.RY(1.234, wires=0)
-            qp.CRY(x, wires=[0, 1])
-            return qp.expval(qp.PauliZ(1))
-
-        @qp.qnode(dev, interface=interface, diff_method="parameter-shift")
-        @qp.defer_measurements
-        def conditional_ry_qnode(x):
-            """QNode where the defer measurements transform is applied by
-            default under the hood."""
-            qp.Hadamard(1)
-            qp.RY(1.234, wires=0)
-            m_0 = qp.measure(0)
-            qp.cond(m_0, qp.RY)(x, wires=1)
-            return qp.expval(qp.PauliZ(1))
-
-        x_ = -0.654
-        x1 = tf.Variable(x_, dtype=tf.float64)
-        x2 = tf.Variable(x_, dtype=tf.float64)
-
-        with tf.GradientTape() as tape1:
-            r1 = cry_qnode(x1)
-
-        with tf.GradientTape() as tape2:
-            r2 = conditional_ry_qnode(x2)
-
-        assert np.allclose(r1, r2)
-
-        grad1 = tape1.gradient(r1, x1)
-        grad2 = tape2.gradient(r2, x2)
-        assert np.allclose(grad1, grad2)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("interface", ["torch", "auto"])
