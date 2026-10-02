@@ -128,7 +128,10 @@ def _run(zeta, t_ell, chi, t_eigenvectors, aleph, beth, psi, num_walks=1):
             qp.Hadamard(wire)
             qp.PhaseShift(-2 * np.pi * 2 ** (beth - 1 - j) / 2**beth, wires=wire)
 
-    @qp.transforms.decompose(stopping_condition=lambda op: len(op.wires) <= 3)
+    @qp.transforms.decompose(
+        gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ,
+        stopping_condition=lambda op: len(op.wires) <= 3,
+    )
     @qp.qnode(qp.device("default.qubit", wires=total))
     def circuit():
         qp.StatePrep(psi, wires=system)

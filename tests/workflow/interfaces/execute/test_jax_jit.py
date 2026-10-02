@@ -634,7 +634,9 @@ class TestJaxExecuteIntegration:
                 [qp.RX(a, wires=0), MyU3(*p, wires=0)], [qp.expval(qp.PauliX(0))]
             )
             [qscript], _ = qp.decompose(
-                qscript, stopping_condition=qp.devices.default_qubit.stopping_condition
+                qscript,
+                gate_set=qp.gate_sets.CLIFFORD_T_PLUS_RZ,
+                stopping_condition=qp.devices.default_qubit.stopping_condition,
             )
             return execute([qscript], device, **execute_kwargs)[0]
 

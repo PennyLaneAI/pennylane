@@ -30,7 +30,7 @@ from tests.core.operator.operator2_utils import CompilableDynOp, OneWireDynOp
 def test_toggle_graph_decomposition():
     """Test that the graph-based decomposition system can be toggled."""
 
-    assert not qp.decomposition.enabled_graph()
+    assert qp.decomposition.enabled_graph()
 
     qp.decomposition.enable_graph()
     assert qp.decomposition.enabled_graph()
