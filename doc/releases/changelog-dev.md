@@ -1678,6 +1678,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a numerical instability in :func:`~.transforms.single_qubit_fusion` where floating-point
+  rounding errors when fusing :class:`~.Rot` gates could cause ``NaN`` and an invalid-value warning.
+  [(#10197)](https://github.com/PennyLaneAI/pennylane/issues/10197)
+
 * Fixed `qp.math.ceil_log2` returning results that were off by one
   for inputs with more significant bits than a float can hold, like `2 ** 53 + 1`.
   [(#10101)](https://github.com/PennyLaneAI/pennylane/pull/10101)

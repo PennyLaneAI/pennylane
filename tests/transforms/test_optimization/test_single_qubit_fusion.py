@@ -346,3 +346,21 @@ class TestSingleQubitFusionInterfaces:
 
         assert f(0) == 3
         assert f2(0) == 2
+
+    def test_single_qubit_fusion_numerical_stability(self):
+        """Test that single_qubit_fusion does not produce NaN or warnings due to
+        floating-point rounding errors when combining rotations (#10197)."""
+        theta = 0.501002004008016
+        dev = qp.device("default.qubit", wires=1)
+
+        @qp.qnode(dev)
+        @single_qubit_fusion
+        def circuit():
+            qp.Rot(0.0, theta, np.pi, wires=0)
+            qp.Rot(0.0, theta, 0.0, wires=0)
+            return qp.expval(qp.PauliZ(0))
+
+        res = circuit()
+        assert not qp.math.isnan(res)
+        assert qp.math.allclose(res, 1.0)
+
