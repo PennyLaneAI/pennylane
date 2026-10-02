@@ -98,6 +98,8 @@ class CircuitConfig:  # pylint: disable=too-many-instance-attributes
     init_state_amps: ArrayLike | None = None
     #: Optional custom phase function applied as an extra diagonal layer.
     phase_fn: Callable | None = None
+    #: Controls the memory usage of the generator matrix during the phase difference computation. Higher block size decreases memory usage.
+    block_size: int = 1 << 17
 
 
 def _parse_generator_dict(circuit_def: dict[int, list[list[int]]], n_qubits: int):
@@ -175,9 +177,9 @@ def _phase_differences(
     bitflips_t: jnp.ndarray,
     gate_indices: jnp.ndarray,
     param_map: jnp.ndarray,
+    block_size: int,
 ) -> jnp.ndarray:
 
-    gate_block = 1 << 16
     n_gates, max_weight = gate_indices.shape
 
     def block_contribution(block_indices: jnp.ndarray, block_params: jnp.ndarray) -> jnp.ndarray:
@@ -188,11 +190,11 @@ def _phase_differences(
 
         return jax.lax.dot_general(q_bits, b_scaled, (((0,), (0,)), ((), ())))
 
-    if n_gates <= gate_block:
+    if n_gates <= block_size:
         return 2 * block_contribution(gate_indices, param_map)
 
-    n_blocks = -(-n_gates // gate_block)
-    n_pad = n_blocks * gate_block - n_gates
+    n_blocks = -(-n_gates // block_size)
+    n_pad = n_blocks * block_size - n_gates
 
     if n_pad:
         sentinel = samples_t.shape[0] - 1
@@ -209,8 +211,8 @@ def _phase_differences(
         accumulate,
         zero,
         (
-            gate_indices.reshape(n_blocks, gate_block, max_weight),
-            param_map.reshape(n_blocks, gate_block),
+            gate_indices.reshape(n_blocks, block_size, max_weight),
+            param_map.reshape(n_blocks, block_size),
         ),
     )
 
@@ -255,6 +257,7 @@ def _core_expval_execution(
     gate_indices: jnp.ndarray,
     param_map: jnp.ndarray,
     vmapped_phase_func: Callable | None,
+    block_size: int,
 ) -> tuple[jnp.ndarray, jnp.ndarray]:
     """Evaluate the Monte Carlo integrand and return expectation values and variances."""
     bitflips, mask_XY, y_real, y_imag = obs_data
@@ -263,7 +266,7 @@ def _core_expval_execution(
     bitflips_t = _pad_sentinel_row(bitflips.T)
 
     gates_params = jnp.asarray(gates_params)
-    E = _phase_differences(gates_params, samples_t, bitflips_t, gate_indices, param_map)
+    E = _phase_differences(gates_params, samples_t, bitflips_t, gate_indices, param_map, block_size)
 
     if vmapped_phase_func is not None:
         E += vmapped_phase_func(phase_fn_params, samples, bitflips)
@@ -452,6 +455,7 @@ def build_expval_func(
             gate_indices,
             param_map,
             vmapped_phase_func,
+            config.block_size,
         )
 
     return expval_execution
