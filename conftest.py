@@ -13,16 +13,19 @@
 # limitations under the License.
 
 # pylint: disable = missing-module-docstring
+import re
+from collections.abc import Iterable
 from doctest import ELLIPSIS, NORMALIZE_WHITESPACE
 
-
-import pytest
-from sybil import Sybil
-from sybil.parsers.rest import DocTestParser, PythonCodeBlockParser
-from sybil.parsers.markdown import PythonCodeBlockParser as MarkDownPythonCodeBlockParser
-
 import numpy as base_numpy
+import pytest
 import scipy as base_scipy
+from sybil import Document, Example, Region, Sybil
+from sybil.parsers.abstract.lexers import LexerCollection
+from sybil.parsers.markdown import PythonCodeBlockParser as MarkDownPythonCodeBlockParser
+from sybil.parsers.rest import DocTestParser, PythonCodeBlockParser
+from sybil.parsers.rest.lexers import DirectiveInCommentLexer
+
 import pennylane as qp
 
 try:
@@ -74,12 +77,49 @@ def pytest_configure(config):
     )
 
 
+class XfailParser:
+    directive = "xfail"
+
+    def __init__(self):
+        self.lexers = LexerCollection(
+            [DirectiveInCommentLexer(directive=re.escape(self.directive))]
+        )
+
+    def __call__(self, document: Document) -> Iterable[Region]:
+        for lexed in self.lexers(document):
+            reason = (lexed.lexemes.get("arguments") or "").lstrip(
+                ": "
+            ).strip() or "expected failure"
+            yield Region(lexed.start, lexed.end, reason, self._install)
+
+    def _install(self, example: Example):
+        example.document.push_evaluator(_XfailInterceptor(example.parsed))
+
+
+class _XfailInterceptor:
+    def __init__(self, reason):
+        self.reason = reason
+
+    def __call__(self, example: Example):
+        example.document.pop_evaluator(self)  # one-shot: wrap only the next example
+        try:
+            result = example.region.evaluator(example)  # run the real doctest
+        except Exception:
+            return None  # expected failure -> xfailed
+        if result:  # evaluator returned a failure string
+            return None  # xfailed
+        raise AssertionError(
+            f"[xfail strict] example unexpectedly PASSED (marked xfail: {self.reason})"
+        )
+
+
 pytest_collect_file = Sybil(
     setup=lambda ns: ns.update(namespace),
     parsers=[
         DocTestParser(optionflags=ELLIPSIS | NORMALIZE_WHITESPACE),
         PythonCodeBlockParser(),
         MarkDownPythonCodeBlockParser(),
+        XfailParser(),
     ],
     fixtures=["local_decomp_context"],
     patterns=["*.rst", "*.py", "*.md"],
