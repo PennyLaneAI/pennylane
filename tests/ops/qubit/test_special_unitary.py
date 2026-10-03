@@ -25,6 +25,7 @@ from scipy.linalg import expm
 import pennylane as qp
 from pennylane.ops.qubit.special_unitary import (
     TmpPauliRot,
+    _pauli_compose,
     _pauli_letters,
     _pauli_matrices,
     pauli_basis_matrices,
@@ -80,6 +81,15 @@ class TestPauliUtils:
 
         # The words are sorted lexicographically
         assert sorted(words) == words
+
+    @pytest.mark.parametrize("n", [1, 2, 3, 4, 5, 6])
+    @pytest.mark.parametrize("batch_shape", [(), (2,), (2, 3)])
+    def test_pauli_compose(self, n, batch_shape, seed):
+        """Test that ``_pauli_compose`` reproduces the contraction with the dense Pauli basis."""
+        rng = np.random.default_rng(seed)
+        theta = rng.standard_normal(batch_shape + (4**n - 1,)) + 0j
+        expected = np.tensordot(theta, pauli_basis_matrices(n), axes=[[-1], [0]])
+        assert np.allclose(_pauli_compose(theta, n), expected)
 
 
 eye = np.eye(15)
@@ -379,6 +389,24 @@ class TestSpecialUnitary:
                 matrix = matrix.detach().numpy()
             assert matrix.shape == (2**n, 2**n)
             assert np.allclose(matrix @ qp.math.conj(qp.math.T(matrix)), I)
+
+    @pytest.mark.parametrize("interface", interfaces)
+    def test_compute_matrix_random_broadcasted_many_wires(self, seed, interface):
+        """Test that ``compute_matrix`` supports broadcasting for more than 5 wires."""
+        rng = np.random.default_rng(seed)
+        n = 6
+        theta = rng.random((2, 4**n - 1))
+        separate_matrices = [qp.SpecialUnitary.compute_matrix(t, n) for t in theta]
+        theta = self.interface_array(theta, interface)
+        matrices = [
+            qp.SpecialUnitary(theta, list(range(n))).matrix(),
+            qp.SpecialUnitary.compute_matrix(theta, n),
+        ]
+        for matrix in matrices:
+            if interface == "torch":
+                matrix = matrix.detach().numpy()
+            assert qp.math.shape(matrix) == (2, 2**n, 2**n)
+            assert qp.math.allclose(separate_matrices, matrix)
 
     @pytest.mark.parametrize("interface", interfaces)
     @pytest.mark.parametrize("n", [1, 2])
