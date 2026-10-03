@@ -21,23 +21,18 @@ from collections import Counter
 from collections.abc import Sequence
 
 import numpy as np
+from jax import numpy as jnp
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.ops import BasisState
-from pennylane.typing import TensorLike
+from pennylane.typing import Bool, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .fermionic_double_excitation import FermionicDoubleExcitation
 from .fermionic_single_excitation import FermionicSingleExcitation
-
-has_jax = True
-try:
-    from jax import numpy as jnp
-except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
-    has_jax = False  # pragma: no cover
 
 
 class UCCSD(Operation):
@@ -330,11 +325,7 @@ class UCCSD(Operation):
 
 
 def _UCCSD_resources(num_wires, n_repeats, num_d_wires, num_s_wires):
-    resources = Counter(
-        {
-            resource_rep(BasisState, num_wires=num_wires): 1,
-        }
-    )
+    resources = Counter({BasisState(Bool[num_wires], Wire[num_wires]): 1})
 
     for _ in range(n_repeats):
         for w1, w2 in num_d_wires:
@@ -353,7 +344,7 @@ def _UCCSD_decomposition(weights, wires, s_wires, d_wires, init_state, n_repeats
     if n_repeats == 1 and len(math.shape(weights)) == 1:
         weights = math.expand_dims(weights, 0)
 
-    if has_jax and capture.enabled():
+    if capture.enabled():
         weights, d_wires, s_wires = jnp.array(weights), jnp.array(d_wires), jnp.array(s_wires)
 
     @for_loop(n_repeats)

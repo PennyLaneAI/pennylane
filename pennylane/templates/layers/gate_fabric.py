@@ -17,20 +17,15 @@ Contains the quantum-number-preserving GateFabric template.
 
 # pylint: disable=too-many-arguments
 import numpy as np
+from jax import numpy as jnp
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.ops import DoubleExcitation, OrbitalRotation, cond
-from pennylane.templates.embeddings import BasisEmbedding
+from pennylane.decomposition import add_decomps, register_resources
+from pennylane.ops import BasisState, DoubleExcitation, OrbitalRotation, cond
+from pennylane.typing import Bool, Wire
 from pennylane.wires import Wires
-
-has_jax = True
-try:
-    from jax import numpy as jnp
-except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
-    has_jax = False  # pragma: no cover
 
 
 class GateFabric(Operation):
@@ -275,7 +270,7 @@ class GateFabric(Operation):
 
         >>> weights = torch.tensor([[[0.3, 1.]]])
         >>> qp.GateFabric.compute_decomposition(weights, wires=["a", "b", "c", "d"], init_state=[0, 1, 0, 1], include_pi=False)
-        [BasisEmbedding(array([0, 1, 0, 1]), wires=['a', 'b', 'c', 'd']), DoubleExcitation(tensor(0.3000), wires=['a', 'b', 'c', 'd']), OrbitalRotation(tensor(1.), wires=['a', 'b', 'c', 'd'])]
+        [BasisState([0 1 0 1], wires=['a', 'b', 'c', 'd']), DoubleExcitation(tensor(0.3000), wires=['a', 'b', 'c', 'd']), OrbitalRotation(tensor(1.), wires=['a', 'b', 'c', 'd'])]
 
         """
         op_list = []
@@ -288,7 +283,7 @@ class GateFabric(Operation):
                 wires[i : i + 4] for i in range(2, len(wires), 4) if len(wires[i : i + 4]) == 4
             ]
 
-        op_list.append(BasisEmbedding(init_state, wires=wires))
+        op_list.append(BasisState(init_state, wires=wires))
 
         for layer in range(n_layers):
             for idx, wires_ in enumerate(wire_pattern):
@@ -326,17 +321,12 @@ class GateFabric(Operation):
 
 
 def _gate_fabric_resources(n_layers, num_wires, len_wire_pattern, include_pi):
-    resources = {
-        resource_rep(BasisEmbedding, num_wires=num_wires): 1,
-        resource_rep(DoubleExcitation): n_layers * len_wire_pattern,
+    rotation_count = 2 * n_layers * len_wire_pattern if include_pi else n_layers * len_wire_pattern
+    return {
+        BasisState(Bool[num_wires], Wire[num_wires]): 1,
+        DoubleExcitation: n_layers * len_wire_pattern,
+        OrbitalRotation: rotation_count,
     }
-
-    if include_pi:
-        resources[resource_rep(OrbitalRotation)] = 2 * n_layers * len_wire_pattern
-    else:
-        resources[resource_rep(OrbitalRotation)] = n_layers * len_wire_pattern
-
-    return resources
 
 
 @register_resources(_gate_fabric_resources)
@@ -352,7 +342,7 @@ def _gate_fabric_decomposition(weights, wires, init_state, include_pi):
             wires[i : i + 4] for i in range(2, len(wires), 4) if len(wires[i : i + 4]) == 4
         ]
 
-    if has_jax and capture.enabled():
+    if capture.enabled():
         weights, wires, init_state, wire_pattern, n_layers = (
             jnp.array(weights),
             jnp.array(wires),
@@ -361,7 +351,7 @@ def _gate_fabric_decomposition(weights, wires, init_state, include_pi):
             jnp.array(n_layers),
         )
 
-    BasisEmbedding(init_state, wires=wires)
+    BasisState(init_state, wires=wires)
 
     @for_loop(n_layers)
     def layers_loop(layer):

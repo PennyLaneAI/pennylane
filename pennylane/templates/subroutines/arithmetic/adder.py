@@ -20,13 +20,15 @@ from collections import defaultdict
 from pennylane.core.operator import Operation
 from pennylane.decomposition import (
     add_decomps,
-    change_op_basis_resource_rep,
     register_resources,
 )
 from pennylane.decomposition.resources import resource_rep
 from pennylane.ops import CNOT, MultiControlledX, PauliX
 from pennylane.ops.op_math import change_op_basis
+from pennylane.ops.op_math.adjoint import adjoint
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.templates.subroutines.qft import QFT
+from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike
 
 from .phase_adder import PhaseAdder
@@ -123,7 +125,8 @@ class Adder(Operation):
         dev = qp.device("default.qubit")
         @qp.qnode(dev, shots=1)
         def circuit():
-            qp.BasisEmbedding(x, wires=x_wires)
+            x_bin = qp.math.int_to_binary(x, len(x_wires))
+            qp.BasisEmbedding(x_bin, wires=x_wires)
             qp.Adder(k, x_wires, mod, work_wires)
             return qp.sample(wires=x_wires)
 
@@ -230,13 +233,16 @@ class Adder(Operation):
 
 
 def _adder_decomposition_resources(num_x_wires, mod) -> dict:
-    qft_wires = num_x_wires if mod == 2**num_x_wires else 1 + num_x_wires
-    return {
-        change_op_basis_resource_rep(
-            resource_rep(QFT, num_wires=qft_wires),
-            resource_rep(PhaseAdder, num_x_wires=qft_wires, mod=mod),
+    num_qft_wires = num_x_wires if mod == 2**num_x_wires else 1 + num_x_wires
+    _compute_op = QFT(Wire[num_qft_wires])
+    resources = {
+        _change_op_basis_abstract(
+            _compute_op,
+            resource_rep(PhaseAdder, num_x_wires=num_qft_wires, mod=mod),
+            adjoint(_compute_op),
         ): 1,
     }
+    return resources
 
 
 @register_resources(_adder_decomposition_resources)
@@ -257,17 +263,9 @@ def _increment_resources(num_wires, num_control=0):
     for i in range(num_wires):
         num_controls = (num_wires - 1 - i) + num_control
         if num_controls == 0:
-            counts[resource_rep(PauliX)] += 1
+            counts[PauliX] += 1
         else:
-            counts[
-                resource_rep(
-                    MultiControlledX,
-                    num_control_wires=num_controls,
-                    num_zero_control_values=0,
-                    num_work_wires=i,
-                    work_wire_type="borrowed",
-                )
-            ] += 1
+            counts[MultiControlledX(Wire[num_controls + 1], work_wires=Wire[i])] += 1
     return counts
 
 
@@ -297,8 +295,8 @@ def _adder_arithmetic_resources(num_x_wires, mod, **__) -> dict:
         counts[rep] += 4 * count
     for rep, count in _add_constant_resources(aug, num_control=1).items():
         counts[rep] += count
-    counts[resource_rep(CNOT)] += 2
-    counts[resource_rep(PauliX)] += 2
+    counts[CNOT] += 2
+    counts[PauliX] += 2
     return dict(counts)
 
 

@@ -13,6 +13,8 @@
 # limitations under the License.
 """Tests that a device has the right attributes, arguments and methods."""
 
+import jax
+
 # pylint: disable=no-self-use
 import pytest
 
@@ -23,46 +25,12 @@ from pennylane.exceptions import QuantumFunctionError
 from .conftest import get_legacy_capabilities
 
 try:
-    import tensorflow as tf
-
-    TF_SUPPORT = True
-
-except ImportError:
-    TF_SUPPORT = False
-
-try:
     import torch
 
     TORCH_SUPPORT = True
 
 except ImportError:
     TORCH_SUPPORT = False
-
-try:
-    import jax
-
-    JAX_SUPPORT = True
-
-except ImportError:
-    JAX_SUPPORT = False
-
-# Shared test data =====
-
-
-def qfunc_with_scalar_input(model=None):
-    """Model dependent quantum function taking a single input"""
-
-    def qfunc(x):
-        if model == "qubit":
-            qp.RX(x, wires=0)
-        elif model == "cv":
-            qp.Displacement(x, 0.0, wires=0)
-        return qp.expval(qp.Identity(wires=0))
-
-    return qfunc
-
-
-# =======================
 
 
 class TestDeviceProperties:
@@ -112,21 +80,12 @@ class TestCapabilities:
             pytest.skip("test is old interface specific.")
         cap = get_legacy_capabilities(dev)
         assert "model" in cap
-        assert cap["model"] in ["qubit", "cv"]
+        assert cap["model"] == "qubit"
 
-        if cap["model"] == "qubit":
-
-            @qp.qnode(dev, shots=shots)
-            def circuit():
-                qp.X(0)
-                return qp.expval(qp.Z(0))
-
-        else:
-
-            @qp.qnode(dev, shots=shots)
-            def circuit():
-                qp.Displacement(1.0, 1.2345, wires=0)
-                return qp.expval(qp.QuadX(wires=0))
+        @qp.qnode(dev, shots=shots)
+        def circuit():
+            qp.X(0)
+            return qp.expval(qp.Z(0))
 
         # assert that device can measure observable from its model
         circuit()
@@ -145,20 +104,14 @@ class TestCapabilities:
         interface = cap["passthru_interface"]
         assert interface in ["autograd", "jax", "torch"]  # for new interface, add test case
 
-        qfunc = qfunc_with_scalar_input(cap["model"])
+        def qfunc(x):
+            qp.RX(x, wires=0)
+            return qp.expval(qp.Identity(wires=0))
+
         qnode = qp.QNode(qfunc, dev, shots=shots, interface=interface)
 
         # assert that we can do a simple gradient computation in the passthru interface
         # without raising an error
-
-        if interface == "tf":
-            if TF_SUPPORT:
-                x = tf.Variable(0.1)
-                with tf.GradientTape() as tape:
-                    res = qnode(x)
-                    tape.gradient(res, [x])
-            else:
-                pytest.skip("Cannot import tensorflow.")
 
         if interface == "autograd":
             x = pnp.array(0.1, requires_grad=True)
@@ -166,12 +119,9 @@ class TestCapabilities:
             g(x)
 
         if interface == "jax":
-            if JAX_SUPPORT:
-                x = pnp.array(0.1, requires_grad=True)
-                g = jax.grad(lambda a: qnode(a).reshape(()))
-                g(x)
-            else:
-                pytest.skip("Cannot import jax")
+            x = jax.numpy.array(0.1)
+            g = jax.grad(lambda a: qnode(a).reshape(()))
+            g(x)
 
         if interface == "torch":
             if TORCH_SUPPORT:
@@ -195,11 +145,8 @@ class TestCapabilities:
 
         @qp.qnode(dev, shots=shots)
         def circuit():
-            """Model agnostic quantum function with tensor observable"""
-            if cap["model"] == "qubit":
-                qp.X(0)
-            else:
-                qp.QuadX(wires=0)
+            """Quantum function with tensor observable"""
+            qp.X(0)
             return qp.expval(qp.Identity(wires=0) @ qp.Identity(wires=1))
 
         if cap["supports_tensor_observables"]:
@@ -258,10 +205,7 @@ class TestCapabilities:
 
         @qp.qnode(dev, shots=shots)
         def circuit():
-            if cap["model"] == "qubit":
-                qp.X(0)
-            else:
-                qp.QuadX(wires=0)
+            qp.X(0)
             return qp.probs(wires=0)
 
         if cap["returns_probs"]:
@@ -284,10 +228,7 @@ class TestCapabilities:
 
         @qp.qnode(dev, shots=shots)
         def circuit(x):
-            if cap["model"] == "qubit":
-                qp.RX(x, wires=0)
-            else:
-                qp.Rotation(x, wires=0)
+            qp.RX(x, wires=0)
             return qp.probs(wires=0)
 
         spy = mocker.spy(qp.transforms, "broadcast_expand")

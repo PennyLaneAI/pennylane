@@ -110,10 +110,10 @@ class QuantumScript:
 
         qscript = QuantumScript(ops, [qp.expval(qp.Z(0))])
 
-    >>> list(qscript)
-    [BasisState(array([1, 1]), wires=[0, 'a']), RX(0.432, wires=[0]), RY(0.543, wires=[0]), CNOT(wires=[0, 'a']), RX(0.133, wires=['a']), expval(Z(0))]
-    >>> qscript.operations
-    [BasisState(array([1, 1]), wires=[0, 'a']), RX(0.432, wires=[0]), RY(0.543, wires=[0]), CNOT(wires=[0, 'a']), RX(0.133, wires=['a'])]
+    >>> print(list(qscript))
+    [BasisState([1 1], wires=[0, 'a']), RX(0.432, wires=[0]), RY(0.543, wires=[0]), CNOT(wires=[0, 'a']), RX(0.133, wires=['a']), expval(Z(0))]
+    >>> print(qscript.operations)
+    [BasisState([1 1], wires=[0, 'a']), RX(0.432, wires=[0]), RY(0.543, wires=[0]), CNOT(wires=[0, 'a']), RX(0.133, wires=['a'])]
     >>> qscript.measurements
     [expval(Z(0))]
 
@@ -121,7 +121,7 @@ class QuantumScript:
 
     >>> for op in qscript:
     ...     print(op)
-    BasisState(array([1, 1]), wires=[0, 'a'])
+    BasisState([1 1], wires=[0, 'a'])
     RX(0.432, wires=[0])
     RY(0.543, wires=[0])
     CNOT(wires=[0, 'a'])
@@ -130,8 +130,8 @@ class QuantumScript:
 
     Quantum scripts also support indexing and length determination:
 
-    >>> qscript[0]
-    BasisState(array([1, 1]), wires=[0, 'a'])
+    >>> print(qscript[0])
+    BasisState([1 1], wires=[0, 'a'])
     >>> len(qscript)
     6
 
@@ -187,7 +187,7 @@ class QuantumScript:
         self._obs_sharing_wires_id = None
 
     def __repr__(self) -> str:
-        return f"<{self.__class__.__name__}: wires={self.wires.tolist()}, params={self.num_params}>"
+        return f"<{self.__class__.__name__}: wires={self.wires}, params={self.num_params}>"
 
     @cached_property
     def hash(self) -> int:
@@ -392,7 +392,8 @@ class QuantumScript:
 
     @property
     def num_preps(self) -> int:
-        """Returns the index of the first operator that is not an StatePrepBase operator."""
+        """Returns the index of the first operator that is not an StatePrepBase
+        or StatePrepBase operator."""
         idx = 0
         num_ops = len(self.operations)
         while idx < num_ops and isinstance(self.operations[idx], StatePrepBase):
@@ -427,7 +428,7 @@ class QuantumScript:
         Returns:
             ~.Wires: wires in quantum script process
         """
-        return Wires.all_wires(dict.fromkeys(op.wires for op in self))
+        return Wires.all_wires(op.wires for op in self)
 
     @property
     def num_wires(self) -> int:
@@ -954,11 +955,11 @@ class QuantumScript:
 
         >>> from pprint import pprint
         >>> pprint(qscript.specs['resources'])
-        SpecsResources(gate_types={'CNOT': 2, 'Hadamard': 2, 'RX': 1, 'Rot': 1},
-                       gate_sizes={1: 4, 2: 2},
-                       measurements={'expval(Prod(num_wires=2, num_terms=2))': 1},
-                       num_allocs=2,
-                       depth=4)
+        SpecsResources(counts={'CNOT': 2, 'Hadamard': 2, 'RX': 1, 'Rot': 1},
+                       measurement_processes={'expval(Prod(num_wires=2, num_terms=2))': 1},
+                       num_wires=2,
+                       circuit_depth=4,
+                       total_quantum_operations=6)
         """
         if self._specs is None:
             # pylint: disable=import-outside-toplevel # tach-ignore
@@ -1050,8 +1051,7 @@ class QuantumScript:
         >>> circuit = qp.tape.QuantumScript([mcx], [qp.probs(wires=[2, 3, 6])])
         >>> mapped_circuit = circuit.map_to_standard_wires()
         >>> mapped_circuit.circuit
-        [MultiControlledX(wires=[0, 1, 2, 3], control_values=[True, True, True]),
-         probs(wires=[3, 4, 5])]
+        [MultiControlledX(wires=[0, 1, 2, 3]), probs(wires=[3, 4, 5])]
         >>> mapped_circuit[0].work_wires
         Wires([6, 5])
         """

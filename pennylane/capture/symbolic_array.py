@@ -14,36 +14,25 @@
 A tool for capturing dummy arrays that can be used for resource estimation.
 """
 
-from functools import lru_cache
-from importlib.util import find_spec
+import jax
+from jax.numpy import dtype as jnp_dtype
 
+from pennylane.typing import AbstractArray
+
+from .custom_primitives import QpPrimitive
 from .switches import enabled
 
-has_jax = find_spec("jax") is not None
+symbolic_array_p = QpPrimitive("symbolic_array")
 
 
-@lru_cache
-def _symbolic_array_primitive():
-    if not has_jax:
-        raise ImportError("jax is required for creating a jax primitive.")  # pragma: no cover
+@symbolic_array_p.def_abstract_eval
+def _symbolic_array_p_abstract_eval(shape, dtype):
+    return jax.core.ShapedArray(shape, dtype)
 
-    import jax  # pylint: disable=import-outside-toplevel
 
-    import pennylane  # pylint: disable=import-outside-toplevel
-
-    estimation_p = pennylane.capture.custom_primitives.QpPrimitive("symbolic_array")
-
-    @estimation_p.def_abstract_eval
-    def _estimation_p_abstract_eval(shape, dtype):
-        return jax.core.ShapedArray(shape, dtype)
-
-    @estimation_p.def_impl
-    def _estimation_p_impl(shape, dtype):
-        raise NotImplementedError(
-            "symbolic_arrays can only be produced for abstract evaluation and cannot be executed."
-        )
-
-    return estimation_p
+@symbolic_array_p.def_impl
+def _symbolic_array_p_impl(shape, dtype):
+    return AbstractArray(shape, dtype)
 
 
 def symbolic_array(shape: tuple[int, ...], dtype: type):
@@ -79,9 +68,9 @@ def symbolic_array(shape: tuple[int, ...], dtype: type):
     Even though we do not have actual values for ``x`` and ``y``, we can still see
     the effect of the ``merge_rotations`` pass on the resources.
 
-    >>> qp.specs(c, level=0)().resources.gate_types # doctest: +SKIP
+    >>> qp.specs(c, level=0)().resources.quantum_operations
     {'RX': 2}
-    >>> qp.specs(c, level=1)().resources.gate_types # doctest: +SKIP
+    >>> qp.specs(c, level=1)().resources.quantum_operations
     {'RX': 1}
 
     Trying to execute or calculate specs at ``level="device"`` will result in errors.
@@ -93,10 +82,8 @@ def symbolic_array(shape: tuple[int, ...], dtype: type):
     """
     if not enabled():
         raise NotImplementedError("symbolic_array requires program capture to be enabled.")
-    from jax.numpy import dtype as jnp_dtype  # pylint: disable=import-outside-toplevel
 
     if not all(isinstance(s, int) and s > 0 for s in shape):
-        raise ValueError(
-            f"All shape dimensions must be integers greater than zero. Got shape {shape}."
-        )
-    return _symbolic_array_primitive().bind(shape=shape, dtype=jnp_dtype(dtype))
+        raise ValueError(f"The shape must be a tuple of positive integers. Got shape {shape}.")
+
+    return symbolic_array_p.bind(shape=shape, dtype=jnp_dtype(dtype))

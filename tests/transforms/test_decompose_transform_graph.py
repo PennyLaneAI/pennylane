@@ -404,7 +404,7 @@ class TestDecomposeGraphEnabled:
             ):
                 [new_tape], _ = qp.transforms.decompose([tape], gate_set={"RX"})
 
-        assert new_tape.operations == [qp.RX(np.pi, wires=0), qp.GlobalPhase(-np.pi / 2, wires=0)]
+        assert new_tape.operations == [qp.RX(np.pi, wires=0), qp.GlobalPhase(-np.pi / 2)]
 
     @pytest.mark.integration
     def test_controlled_decomp(self):
@@ -429,6 +429,24 @@ class TestDecomposeGraphEnabled:
             # Decomposition of C(CNOT)
             qp.Toffoli(wires=[2, 1, 0]),
         ]
+
+    @pytest.mark.integration
+    def test_controlled_op_shared_control(self):
+        """A 4-control RZ with 3 zeroed work wires should collapse to one TemporaryAND
+        ladder plus a single CRZ, not a CRZ per control wire."""
+        op = qp.ctrl(
+            qp.RZ(0.5, 0),
+            control=[1, 2, 3, 4],
+            work_wires=[5, 6, 7],
+            work_wire_type="zeroed",
+        )
+        tape = qp.tape.QuantumScript([op])
+        [new_tape], _ = qp.transforms.decompose(
+            tape, gate_set={"TemporaryAND", "Adjoint(TemporaryAND)", "CRZ", "X"}
+        )
+        assert [operation.name for operation in new_tape.operations] == (
+            ["TemporaryAND"] * 3 + ["CRZ"] + ["Adjoint(TemporaryAND)"] * 3
+        )
 
     @pytest.mark.integration
     def test_controlled_change_op_basis(self):
@@ -492,8 +510,14 @@ class TestDecomposeGraphEnabled:
         """Tests that circuits and decomposition rules containing MCMs and PPMs are supported."""
 
         measure_obj_class = MidMeasure if m_type == "mcm" else PauliMeasure
+        # ``MidMeasure`` and ``PauliMeasure`` are ``Operator2``s with compilable arguments, so
+        # neither can be abstractified from its bare type; abstract instances are used as the
+        # resource keys.
+        measure_resource = (
+            MidMeasure(wires=Wire[1]) if m_type == "mcm" else PauliMeasure("XY", wires=Wire[2])
+        )
 
-        @qp.register_resources({qp.H: 2, measure_obj_class: 1})
+        @qp.register_resources({qp.H: 2, measure_resource: 1})
         def _custom_decomp(wires, **_):
             qp.H(wires[0])
             m0 = (

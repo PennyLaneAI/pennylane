@@ -32,15 +32,6 @@ from pennylane.wires import Wires
 
 def _check_tape_validity(tape: QuantumScript):
     """Helper function to check that the tape is valid."""
-    cv_types = (qp.operation.CVOperation, qp.operation.CVObservable)
-    ops_cv = any(isinstance(op, cv_types) and op.name != "Identity" for op in tape.operations)
-    obs_cv = any(
-        isinstance(getattr(op, "obs", None), cv_types)
-        and not isinstance(getattr(op, "obs", None), qp.Identity)
-        for op in tape.measurements
-    )
-    if ops_cv or obs_cv:
-        raise ValueError("Continuous variable operations and observables are not supported.")
 
     for mp in tape.measurements:
         if isinstance(mp, (CountsMP, ProbabilityMP, SampleMP)) and not (
@@ -175,7 +166,6 @@ def defer_measurements(
 
     Raises:
         ValueError: If any measurements with no wires or observable are present
-        ValueError: If continuous variable operations or measurements are present
         ValueError: If using the transform with any device other than
             :class:`default.qubit <~pennylane.devices.DefaultQubit>` and postselection is used
 

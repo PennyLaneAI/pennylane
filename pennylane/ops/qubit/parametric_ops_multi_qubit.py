@@ -17,7 +17,6 @@ This submodule contains the discrete-variable quantum operations that are the
 core parametrized gates.
 """
 
-# pylint: disable=arguments-differ
 import functools
 from collections import Counter
 from operator import matmul
@@ -29,25 +28,25 @@ import numpy as np
 import pennylane as qp
 from pennylane import compiler, math
 from pennylane.capture.autograph import disable_autograph
-from pennylane.core import queuing
-from pennylane.core.operator import Operation, Operator
-from pennylane.decomposition import (
-    add_decomps,
-    controlled_resource_rep,
-    register_resources,
-    resource_rep,
-)
+
+# pylint: disable=arguments-differ
+from pennylane.core.operator import Operation, Operator, Operator2
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.decomposition.symbolic_decomposition import adjoint_rotation, pow_rotation
 from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.math.decomposition import decomp_int_to_powers_of_two
-from pennylane.typing import FlatPytree, TensorLike
+from pennylane.ops.op_math.adjoint2 import adjoint_rotation as adjoint_rotation2
+from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
+from pennylane.ops.op_math.controlled2 import _ctrl_abstract
+from pennylane.ops.op_math.pow2 import pow_rotation as pow_rotation2
+from pennylane.typing import Float, TensorLike, Wire
 from pennylane.wires import Wires, WiresLike
 
 from .non_parametric_ops import Hadamard, PauliX, PauliY, PauliZ
 from .parametric_ops_single_qubit import RX, RY, RZ, PhaseShift, _can_replace, stack_last
 
 
-class MultiRZ(Operation):
+class MultiRZ(Operator2):
     r"""
     Arbitrary multi Z rotation.
 
@@ -73,23 +72,19 @@ class MultiRZ(Operation):
         wires (Sequence[int] or int): the wires the operation acts on
     """
 
+    dynamic_argnames = ("theta",)
+    wire_argnames = ("wires",)
+
+    arg_specs = {"theta": Float, "wires": Wire[-1]}
+
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = {"num_wires"}
-
-    grad_method = "A"
-    parameter_frequencies = [(1,)]
-
-    def _flatten(self) -> FlatPytree:
-        return self.data, (self.wires, tuple())
-
     def __init__(self, theta: TensorLike, wires: WiresLike):
         wires = Wires(wires)
-        self.hyperparameters["num_wires"] = len(wires)
         super().__init__(theta, wires=wires)
         if not self._wires:
             raise ValueError(
@@ -97,7 +92,7 @@ class MultiRZ(Operation):
             )
 
     @staticmethod
-    def compute_matrix(theta: TensorLike, num_wires: int) -> TensorLike:
+    def compute_matrix(theta: TensorLike, wires: WiresLike) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -107,27 +102,23 @@ class MultiRZ(Operation):
 
         Args:
             theta (TensorLike): rotation angle
-            num_wires (int): number of wires the rotation acts on
+            wires (WiresLike): wires the rotation acts on
 
         Returns:
             TensorLike: canonical matrix
 
         **Example**
 
-        >>> qp.MultiRZ.compute_matrix(torch.tensor(0.1), 2)
+        >>> qp.MultiRZ.compute_matrix(torch.tensor(0.1), (0, 1))
         tensor([[0.9988-0.0500j, 0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.9988+0.0500j, 0.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.9988+0.0500j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9988-0.0500j]],
                dtype=torch.complex128)
         """
+        wires = Wires(wires)
+        num_wires = len(wires)
         eigs = math.convert_like(qp.pauli.pauli_eigs(num_wires), theta)
-
-        if (
-            math.get_interface(theta) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            theta = math.cast_like(theta, 1j)
-            eigs = math.cast_like(eigs, 1j)
 
         if math.ndim(theta) == 0:
             return math.diag(math.exp(-0.5j * theta * eigs))
@@ -138,8 +129,13 @@ class MultiRZ(Operation):
     def generator(self) -> "qp.Hamiltonian":
         return qp.Hamiltonian([-0.5], [functools.reduce(matmul, [PauliZ(w) for w in self.wires])])
 
+    @property
+    def num_wires(self):
+        """Returns the number of wires the operation acts on."""
+        return len(self.wires)
+
     @staticmethod
-    def compute_eigvals(theta: TensorLike, num_wires: int) -> TensorLike:
+    def compute_eigvals(theta: TensorLike, wires: WiresLike) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -156,7 +152,7 @@ class MultiRZ(Operation):
 
         Args:
             theta (TensorLike): rotation angle
-            num_wires (int): number of wires the rotation acts on
+            wires (WiresLike): wires the rotation acts on
 
         Returns:
             TensorLike: eigenvalues
@@ -164,58 +160,16 @@ class MultiRZ(Operation):
         **Example**
 
         >>> qp.MultiRZ.compute_eigvals(torch.tensor(0.5), 3)
-        tensor([0.9689-0.2474j, 0.9689+0.2474j, 0.9689+0.2474j, 0.9689-0.2474j,
-                0.9689+0.2474j, 0.9689-0.2474j, 0.9689-0.2474j, 0.9689+0.2474j],
-               dtype=torch.complex128)
+        tensor([0.9689-0.2474j, 0.9689+0.2474j], dtype=torch.complex128)
         """
+        wires = Wires(wires)
+        num_wires = len(wires)
         eigs = math.convert_like(qp.pauli.pauli_eigs(num_wires), theta)
-
-        if (
-            math.get_interface(theta) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            theta = math.cast_like(theta, 1j)
-            eigs = math.cast_like(eigs, 1j)
 
         if math.ndim(theta) == 0:
             return math.exp(-0.5j * theta * eigs)
 
         return math.exp(math.outer(-0.5j * theta, eigs))
-
-    @staticmethod
-    def compute_decomposition(  # pylint: disable=arguments-differ,unused-argument
-        theta: TensorLike, wires: WiresLike, **kwargs
-    ) -> list[Operator]:
-        r"""Representation of the operator as a product of other operators (static method). :
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.MultiRZ.decomposition`.
-
-        Args:
-            theta (TensorLike): rotation angle :math:`\theta`
-            wires (Iterable, Wires): the wires the operation acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.MultiRZ.compute_decomposition(1.2, wires=(0,1))
-        [CNOT(wires=[1, 0]), RZ(1.2, wires=[0]), CNOT(wires=[1, 0])]
-
-        """
-        ops = [
-            qp.CNOT(wires=(w0, w1)) for w0, w1 in zip(wires[~0:0:-1], wires[~1::-1], strict=True)
-        ]
-        ops.append(RZ(theta, wires=wires[0]))
-        ops += [qp.CNOT(wires=(w0, w1)) for w0, w1 in zip(wires[1:], wires[:~0], strict=True)]
-
-        return ops
-
-    @property
-    def resource_params(self) -> dict:
-        return {"num_wires": self.hyperparameters["num_wires"]}
 
     def adjoint(self) -> "MultiRZ":
         return MultiRZ(-self.parameters[0], wires=self.wires)
@@ -232,12 +186,14 @@ class MultiRZ(Operation):
         return MultiRZ(theta, wires=self.wires)
 
 
-def _multi_rz_decomposition_resources(num_wires):
+# pylint: disable=unused-argument
+def _multi_rz_decomposition_resources(theta: TensorLike, wires: WiresLike):
+    num_wires = len(wires)
     return {qp.RZ: 1, qp.CNOT: 2 * (num_wires - 1)}
 
 
 @register_resources(_multi_rz_decomposition_resources)
-def _multi_rz_decomposition(theta: TensorLike, wires: WiresLike, **__):
+def _multi_rz_decomposition(theta: TensorLike, wires: WiresLike):
 
     if compiler.active() or qp.capture.enabled():
         wires = math.array(wires, like="jax")
@@ -256,11 +212,11 @@ def _multi_rz_decomposition(theta: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(MultiRZ, _multi_rz_decomposition)
-add_decomps("Adjoint(MultiRZ)", adjoint_rotation)
-add_decomps("Pow(MultiRZ)", pow_rotation)
+add_decomps("Adjoint(MultiRZ)", adjoint_rotation2)
+add_decomps("Pow(MultiRZ)", pow_rotation2)
 
 
-class PauliRot(Operation):
+class PauliRot(Operator2):
     r"""
     Arbitrary Pauli word rotation.
 
@@ -304,23 +260,33 @@ class PauliRot(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    do_check_domain = False
-    grad_method = "A"
-    parameter_frequencies = [(1,)]
+    num_wires = None
+    """int | None: Number of wires the operator acts on. ``None`` since ``PauliRot`` acts on an
+    arbitrary number of wires."""
 
-    resource_keys = {"pauli_word"}
+    dynamic_argnames = ("theta",)
+    compilable_argnames = ("pauli_word",)
+    wire_argnames = ("wires",)
+    wire_sizes = (None,)
+    arg_specs = {"theta": Float, "wires": Wire[-1]}
+
+    grad_recipe = (None,)
 
     _ALLOWED_CHARACTERS = "IXYZ"
 
     _PAULI_CONJUGATION_MATRICES = {
-        "X": Hadamard.compute_matrix(),
-        "Y": RX.compute_matrix(np.pi / 2),
+        # Hadamard
+        "X": np.array([[1, 1], [1, -1]]) / np.sqrt(2),
+        # RX(pi / 2)
+        "Y": np.array(
+            [
+                [np.cos(np.pi / 4), -1j * np.sin(np.pi / 4)],
+                [-1j * np.sin(np.pi / 4), np.cos(np.pi / 4)],
+            ]
+        ),
+        # Identity
         "Z": np.array([[1, 0], [0, 1]]),
     }
-
-    @classmethod
-    def _primitive_bind_call(cls, theta, pauli_word, wires=None):
-        return super()._primitive_bind_call(theta, pauli_word=pauli_word, wires=wires)
 
     def __init__(
         self,
@@ -328,18 +294,17 @@ class PauliRot(Operation):
         pauli_word: str,
         wires: WiresLike,
     ):
-        super().__init__(theta, wires=wires)
-
-        if not self._wires:
-            raise ValueError(
-                f"{self.name}: wrong number of wires. At least one wire has to be provided."
-            )
-
-        self.hyperparameters["pauli_word"] = pauli_word
         if not PauliRot._check_pauli_word(pauli_word):
             raise ValueError(
                 f'The given Pauli word "{pauli_word}" contains characters that are not allowed. '
                 "Allowed characters are I, X, Y and Z"
+            )
+
+        super().__init__(theta, pauli_word, wires=wires)
+
+        if not self._wires:
+            raise ValueError(
+                f"{self.name}: wrong number of wires. At least one wire has to be provided."
             )
 
         num_wires = len(self._wires)
@@ -350,9 +315,6 @@ class PauliRot(Operation):
                 f"The Pauli word {pauli_word} has length {len(pauli_word)}, and "
                 f"{num_wires} wires were given {wires}."
             )
-
-    def __repr__(self) -> str:
-        return f"PauliRot({self.data[0]}, {self.hyperparameters['pauli_word']}, wires={self.wires.tolist()})"
 
     def label(
         self,
@@ -383,8 +345,7 @@ class PauliRot(Operation):
         'PauliRot'
 
         """
-        pauli_word = self.hyperparameters["pauli_word"]
-        op_label = base_label or ("R" + pauli_word)
+        op_label = base_label or ("R" + self.arguments["pauli_word"])
 
         # TODO[dwierichs]: Implement a proper label for parameter-broadcasted operators
         if decimals is not None and self.batch_size is None:
@@ -392,10 +353,6 @@ class PauliRot(Operation):
             op_label += param_string
 
         return op_label
-
-    @property
-    def resource_params(self) -> dict:
-        return {"pauli_word": self.hyperparameters["pauli_word"]}
 
     @staticmethod
     def _check_pauli_word(pauli_word) -> bool:
@@ -410,7 +367,9 @@ class PauliRot(Operation):
         return all(pauli in PauliRot._ALLOWED_CHARACTERS for pauli in set(pauli_word))
 
     @staticmethod
-    def compute_matrix(theta: TensorLike, pauli_word: str) -> TensorLike:
+    def compute_matrix(  # pylint: disable=unused-argument
+        theta: TensorLike, pauli_word: str, wires=None
+    ) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -438,16 +397,9 @@ class PauliRot(Operation):
                 "Allowed characters are I, X, Y and Z"
             )
 
-        interface = math.get_interface(theta)
-
-        if (
-            interface == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            theta = math.cast_like(theta, 1j)
-
         # Simplest case is if the Pauli is the identity matrix
         if set(pauli_word) == {"I"}:
-            return qp.GlobalPhase.compute_matrix(0.5 * theta, n_wires=len(pauli_word))
+            return qp.GlobalPhase.compute_matrix(0.5 * theta, wires=range(len(pauli_word)))
 
         # We first generate the matrix excluding the identity parts and expand it afterwards.
         # To this end, we have to store on which wires the non-identity parts act
@@ -456,17 +408,13 @@ class PauliRot(Operation):
             strict=True,
         )
 
-        multi_Z_rot_matrix = MultiRZ.compute_matrix(theta, len(non_identity_gates))
+        multi_Z_rot_matrix = MultiRZ.compute_matrix(theta, list(range(len(non_identity_gates))))
 
         # now we conjugate with Hadamard and RX to create the Pauli string
         conjugation_matrix = functools.reduce(
             math.kron,
             [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in non_identity_gates],
         )
-        if (
-            interface == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            conjugation_matrix = math.cast_like(conjugation_matrix, 1j)
         # Note: we use einsum with reverse arguments here because it is not multi-dispatched
         # and the tensordot containing multi_Z_rot_matrix should decide about the interface
         return math.expand_matrix(
@@ -480,15 +428,16 @@ class PauliRot(Operation):
         )
 
     def generator(self) -> "qp.Hamiltonian":
-        pauli_word = self.hyperparameters["pauli_word"]
         wire_map = {w: i for i, w in enumerate(self.wires)}
 
         return qp.Hamiltonian(
-            [-0.5], [qp.pauli.string_to_pauli_word(pauli_word, wire_map=wire_map)]
+            [-0.5], [qp.pauli.string_to_pauli_word(self.arguments["pauli_word"], wire_map=wire_map)]
         )
 
     @staticmethod
-    def compute_eigvals(theta: TensorLike, pauli_word: str) -> TensorLike:
+    def compute_eigvals(  # pylint: disable=unused-argument
+        theta: TensorLike, pauli_word: str, wires=None
+    ) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -511,16 +460,11 @@ class PauliRot(Operation):
         >>> qp.PauliRot.compute_eigvals(torch.tensor(0.5), "X")
         tensor([0.9689-0.2474j, 0.9689+0.2474j], dtype=torch.complex128)
         """
-        if (
-            math.get_interface(theta) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            theta = math.cast_like(theta, 1j)
-
         # Identity must be treated specially because its eigenvalues are all the same
         if set(pauli_word) == {"I"}:
-            return qp.GlobalPhase.compute_eigvals(0.5 * theta, n_wires=len(pauli_word))
+            return qp.GlobalPhase.compute_eigvals(0.5 * theta, wires=range(len(pauli_word)))
 
-        return MultiRZ.compute_eigvals(theta, len(pauli_word))
+        return MultiRZ.compute_eigvals(theta, list(range(len(pauli_word))))
 
     @staticmethod
     def compute_decomposition(
@@ -576,26 +520,28 @@ class PauliRot(Operation):
         return ops
 
     def adjoint(self):
-        return PauliRot(-self.parameters[0], self.hyperparameters["pauli_word"], wires=self.wires)
+        return PauliRot(-self.arguments["theta"], self.arguments["pauli_word"], wires=self.wires)
 
     def pow(self, z):
-        return [PauliRot(self.data[0] * z, self.hyperparameters["pauli_word"], wires=self.wires)]
+        return [
+            PauliRot(self.arguments["theta"] * z, self.arguments["pauli_word"], wires=self.wires)
+        ]
 
 
-def _pauli_rot_resources(pauli_word):
+def _pauli_rot_resources(theta, pauli_word, wires):  # pylint: disable=unused-argument
     if set(pauli_word) == {"I"}:
         return {qp.GlobalPhase: 1}
     num_active_wires = len(pauli_word.replace("I", ""))
     return {
         qp.Hadamard: 2 * pauli_word.count("X"),
         qp.RX: 2 * pauli_word.count("Y"),
-        qp.resource_rep(qp.MultiRZ, num_wires=num_active_wires): 1,
+        qp.MultiRZ(Float, Wire[num_active_wires]): 1,
     }
 
 
 @register_resources(_pauli_rot_resources)
 @disable_autograph
-def _pauli_rot_decomposition(theta: TensorLike, wires: WiresLike, pauli_word: str, **__):
+def _pauli_rot_decomposition(theta: TensorLike, pauli_word: str, wires: WiresLike):
     if set(pauli_word) == {"I"}:
         qp.GlobalPhase(theta / 2)
         return
@@ -617,11 +563,11 @@ def _pauli_rot_decomposition(theta: TensorLike, wires: WiresLike, pauli_word: st
 
 
 add_decomps(PauliRot, _pauli_rot_decomposition)
-add_decomps("Adjoint(PauliRot)", adjoint_rotation)
-add_decomps("Pow(PauliRot)", pow_rotation)
+add_decomps("Adjoint(PauliRot)", adjoint_rotation2)
+add_decomps("Pow(PauliRot)", pow_rotation2)
 
 
-class PCPhase(Operation):
+class PCPhase(Operator2):
     r"""PCPhase(phi, dim, wires)
     A projector-controlled phase gate.
 
@@ -695,137 +641,9 @@ class PCPhase(Operation):
     4: ─────────────────├GlobalPhase(1.23)─┤
     5: ─────────────────╰GlobalPhase(1.23)─┤
 
-    """
+    .. details::
+        :title: Decomposition
 
-    num_params = 1
-    """int: Number of trainable parameters that the operator depends on."""
-    ndim_params = (0,)
-    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
-    @property
-    def basis(self) -> Literal["X", "Y", "Z", None]:
-        warn(
-            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
-            "qp.is_commuting should be used instead to check commutivity.",
-            PennyLaneDeprecationWarning,
-        )
-        return "Z"
-
-    grad_method = "A"
-    parameter_frequencies = [(2,)]
-
-    resource_keys = {"num_wires", "dim"}
-
-    def generator(self) -> "qp.Hermitian":
-        r"""Generator of the ``PCPhase`` operator, which is in single-parameter-form.
-        The operator reads
-
-        .. math:: \Pi(\phi) = e^{i\phi (2\Pi - \mathbb{I}_N)},
-
-        where :math:`\Pi` is the projector onto the first :math`d` (``dim``) computational basis
-        states and :math:`N=2^n` is the Hilbert space dimension for :math:`n` qubits.
-
-        Correspondingly, the generator is
-        :math:`2\Pi - \mathbb{I}_N=\text{diag}(\underset{d\text{ times}}{\underbrace{1, \dots, 1}},\underset{(N-d)\text{ times}}{\underbrace{-1, \dots, -1}})`:
-
-        >>> qp.PCPhase(0.5, dim=3, wires=[0, 1]).generator()
-        Hermitian(array([[ 1,  0,  0,  0],
-           [ 0,  1,  0,  0],
-           [ 0,  0,  1,  0],
-           [ 0,  0,  0, -1]]), wires=[0, 1])
-        """
-        dim, N = self.hyperparameters["dimension"]
-        mat = np.diag([1] * dim + [-1] * (N - dim))
-        return qp.Hermitian(mat, wires=self.wires)
-
-    def _flatten(self) -> FlatPytree:
-        hyperparameter = (("dim", self.hyperparameters["dimension"][0]),)
-        return tuple(self.data), (self.wires, hyperparameter)
-
-    def __init__(self, phi: TensorLike, dim: int, wires: WiresLike):
-        wires = wires if isinstance(wires, Wires) else Wires(wires)
-
-        if not (isinstance(dim, int) and (dim <= 2 ** len(wires))):
-            raise ValueError(
-                f"The projected dimension {dim} must be an integer that is less than or equal to "
-                f"the max size of the matrix {2 ** len(wires)}. Try adding more wires."
-            )
-
-        super().__init__(phi, wires=wires)
-        self.hyperparameters["dimension"] = (dim, 2 ** len(wires))
-
-    @property
-    def resource_params(self) -> dict:
-        return {"num_wires": len(self.wires), "dim": self.hyperparameters["dimension"][0]}
-
-    @staticmethod
-    def compute_matrix(phi: TensorLike, dimension: tuple[int, int]) -> TensorLike:
-        """Get the matrix representation of Pi-controlled phase unitary."""
-        d, t = dimension
-
-        if (
-            math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            p = math.exp(1j * math.cast_like(phi, 1j))
-            minus_p = math.exp(-1j * math.cast_like(phi, 1j))
-            zeros = math.zeros_like(p)
-
-            columns = []
-            for i in range(t):
-                columns.append(
-                    [p if j == i else zeros for j in range(t)]
-                    if i < d
-                    else [minus_p if j == i else zeros for j in range(t)]
-                )
-            r = math.stack(columns, like="tensorflow", axis=-2)
-            return r
-
-        arg = 1j * phi
-        prefactors = math.array([1] * d + [-1] * (t - d), like=phi)
-
-        if math.ndim(arg) == 0:
-            return math.diag(math.exp(arg * prefactors))
-
-        diags = math.exp(math.outer(arg, prefactors))
-        return math.stack([math.diag(d) for d in diags])
-
-    @staticmethod
-    def compute_eigvals(*params: TensorLike, **hyperparams) -> TensorLike:
-        """Get the eigvals for the Pi-controlled phase unitary."""
-        phi = params[0]
-        d, t = hyperparams["dimension"]
-
-        if (
-            math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phase = math.exp(1j * math.cast_like(phi, 1j))
-            minus_phase = math.exp(-1j * math.cast_like(phi, 1j))
-            return stack_last([phase if index < d else minus_phase for index in range(t)])
-
-        arg = 1j * phi
-        prefactors = math.array([1] * d + [-1] * (t - d), like=phi)
-
-        if math.ndim(phi) == 0:
-            product = arg * prefactors
-        else:
-            product = math.outer(arg, prefactors)
-        return math.exp(product)
-
-    @staticmethod
-    def compute_decomposition(
-        *params: TensorLike, wires: WiresLike, **hyperparams
-    ) -> list[Operator]:
-        r"""Representation of the PCPhase operator as a product of other operators (static method).
-
-        Args:
-            *params (list): trainable parameters of the operator, as stored in the
-                ``parameters`` attribute
-            wires (Iterable[Any], Wires): wires that the operator acts on
-            **hyperparams (dict): non-trainable hyper-parameters of the operator,
-                as stored in the ``hyperparameters`` attribute
-
-        Returns:
-            list[Operator]: decomposition of the operator
 
         In short, this decomposition relies on decomposing the generator (see :meth:`~.generator`)
         of the ``PCPhase`` gate into generators of multicontrolled :class:`~.PhaseShift` gates,
@@ -907,33 +725,105 @@ class PCPhase(Operation):
         1: ──X─╰Rϕ(2.46)──X─├○─────────├GlobalPhase(1.23)─┤
         2: ─────────────────├●─────────├GlobalPhase(1.23)─┤
         3: ─────────────────╰Rϕ(-2.46)─╰GlobalPhase(1.23)─┤
+    """
 
+    dynamic_argnames = ("phi",)
+    wire_argnames = ("wires",)
+    compilable_argnames = ("dim",)
+    arg_specs = {"phi": Float, "wires": Wire[-1]}
+
+    num_params = 1
+    """int: Number of trainable parameters that the operator depends on."""
+    ndim_params = (0,)
+    """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    @property
+    def basis(self) -> Literal["X", "Y", "Z", None]:
+        """The basis of the operator."""
+        warn(
+            "Operation.basis is deprecated in v0.46 and will be removed in v0.47. "
+            "qp.is_commuting should be used instead to check commutivity.",
+            PennyLaneDeprecationWarning,
+        )
+        return "Z"
+
+    def generator(self) -> "qp.Hermitian":
+        r"""Generator of the ``PCPhase`` operator, which is in single-parameter-form.
+        The operator reads
+
+        .. math:: \Pi(\phi) = e^{i\phi (2\Pi - \mathbb{I}_N)},
+
+        where :math:`\Pi` is the projector onto the first :math`d` (``dim``) computational basis
+        states and :math:`N=2^n` is the Hilbert space dimension for :math:`n` qubits.
+
+        Correspondingly, the generator is
+        :math:`2\Pi - \mathbb{I}_N=\text{diag}(\underset{d\text{ times}}{\underbrace{1, \dots, 1}},\underset{(N-d)\text{ times}}{\underbrace{-1, \dots, -1}})`:
+
+        >>> qp.PCPhase(0.5, dim=3, wires=[0, 1]).generator()
+        Hermitian(array([[ 1,  0,  0,  0],
+           [ 0,  1,  0,  0],
+           [ 0,  0,  1,  0],
+           [ 0,  0,  0, -1]]), wires=[0, 1])
         """
-        with queuing.AnnotatedQueue() as q:
-            _decompose_pcphase(*params, wires=wires, **hyperparams)
+        dim, N = (self.dim, 2 ** len(self.wires))
+        mat = np.diag([1] * dim + [-1] * (N - dim))
+        return qp.Hermitian(mat, wires=self.wires)
 
-        if queuing.QueuingManager.recording():
-            for op in q.queue:
-                queuing.apply(op)
+    def __init__(self, phi: TensorLike, dim: int, wires: WiresLike):
+        wires = wires if isinstance(wires, Wires) else Wires(wires)
 
-        return q.queue
+        if not (isinstance(dim, int) and (dim <= 2 ** len(wires))):
+            raise ValueError(
+                f"The projected dimension {dim} must be an integer that is less than or equal to "
+                f"the max size of the matrix {2 ** len(wires)}. Try adding more wires."
+            )
+
+        super().__init__(phi, dim, wires=wires)
+
+    @staticmethod
+    def compute_matrix(phi: TensorLike, dim: int, wires: WiresLike) -> TensorLike:
+        """Get the matrix representation of Pi-controlled phase unitary."""
+        d, t = (dim, 2 ** len(wires))
+
+        arg = 1j * phi
+        prefactors = math.array([1] * d + [-1] * (t - d), like=phi)
+
+        if math.ndim(arg) == 0:
+            return math.diag(math.exp(arg * prefactors))
+
+        diags = math.exp(math.outer(arg, prefactors))
+        return math.stack([math.diag(d) for d in diags])
+
+    @staticmethod
+    def compute_eigvals(phi: TensorLike, dim: int, wires: WiresLike) -> TensorLike:
+        """Get the eigvals for the Pi-controlled phase unitary."""
+        d, t = (dim, 2 ** len(wires))
+
+        arg = 1j * phi
+        prefactors = math.array([1] * d + [-1] * (t - d), like=phi)
+
+        if math.ndim(phi) == 0:
+            product = arg * prefactors
+        else:
+            product = math.outer(arg, prefactors)
+        return math.exp(product)
 
     def adjoint(self) -> "PCPhase":
         """Computes the adjoint of the operator."""
-        phi = self.parameters[0]
-        dim, _ = self.hyperparameters["dimension"]
+        phi = self.phi
+        dim = self.dim
         return PCPhase(-1 * phi, dim=dim, wires=self.wires)
 
     def pow(self, z: int | float) -> list[Operator]:
         """Computes the operator raised to z."""
-        phi = self.parameters[0]
-        dim, _ = self.hyperparameters["dimension"]
+        phi = self.phi
+        dim = self.dim
         return [PCPhase(phi * z, dim=dim, wires=self.wires)]
 
     def simplify(self) -> "PCPhase":
         """Simplifies the operator if possible."""
-        phi = self.parameters[0] % (2 * np.pi)
-        dim, _ = self.hyperparameters["dimension"]
+        phi = self.phi % (2 * np.pi)
+        dim = self.dim
 
         if _can_replace(phi, 0):
             return qp.Identity(wires=self.wires[0])
@@ -954,12 +844,11 @@ def _ctrl_phase_shift_resource(subspace, n_control_wires, n_zero_control_values,
     if n_control_wires == 0:
         return {qp.PhaseShift: 1}
     return {
-        controlled_resource_rep(
+        _ctrl_abstract(
             qp.PhaseShift,
-            {},
-            num_control_wires=n_control_wires,
+            Wire[n_control_wires],
+            Wire[n_work_wires],
             num_zero_control_values=n_zero_control_values,
-            num_work_wires=n_work_wires,
         ): 1,
         qp.X: 2 * (1 - subspace),
     }
@@ -1035,9 +924,11 @@ def _ctrl_phase_shift(
     return 0.0
 
 
-def _decompose_pcphase_resource(num_wires, dim):
+# pylint: disable-next=unused-argument
+def _decompose_pcphase_resource(phi: TensorLike, dim: int, wires: WiresLike):
     """Decompose the PCPhase operation into controlled phase shifts and Pauli-X gates."""
 
+    num_wires = len(wires)
     gate_count = Counter()
     flipped, *powers_of_two = decomp_int_to_powers_of_two(dim, num_wires + 1)
     sigma = (-1) ** flipped
@@ -1045,7 +936,6 @@ def _decompose_pcphase_resource(num_wires, dim):
 
     n_zero_control_values = 0
     for i, c_i in enumerate(powers_of_two):
-
         if c_i != 0:
             subspace = int(c_i < 0)
             if flipped:
@@ -1073,10 +963,8 @@ def _decompose_pcphase_resource(num_wires, dim):
 
 
 @register_resources(_decompose_pcphase_resource)
-def _decompose_pcphase(phi, wires, dimension, **_):
+def _decompose_pcphase(phi: TensorLike, dim: int, wires: WiresLike):
     """Decompose the PCPhase operation into controlled phase shifts and Pauli-X gates."""
-
-    dim, _ = dimension
 
     # Use one more bit than there are wires, according to flipping all relevant bits for the
     # projector decomposition, or a global phase on the gate level. Afterwards, we have
@@ -1097,7 +985,6 @@ def _decompose_pcphase(phi, wires, dimension, **_):
 
     control_values = []
     for i, c_i in enumerate(powers_of_two):
-
         if c_i != 0:
             # Projector with rank 2**(n-1-i) needs to be added/subtracted
             subspace = int(c_i < 0)  # If c_i < 0, target |1> subspace, else target |0> subspace
@@ -1131,7 +1018,7 @@ def _decompose_pcphase(phi, wires, dimension, **_):
 add_decomps(PCPhase, _decompose_pcphase)
 
 
-class IsingXX(Operation):
+class IsingXX(Operator2):
     r"""
     Ising XX coupling gate
 
@@ -1163,6 +1050,9 @@ class IsingXX(Operation):
         wires (int): the subsystem the gate acts on
     """
 
+    dynamic_argnames = ("phi",)
+    arg_specs = {"phi": Float, "wires": Wire[2]}
+
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -1170,23 +1060,15 @@ class IsingXX(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
-
-    grad_method = "A"
-    parameter_frequencies = [(1,)]
-
     def generator(self) -> "qp.Hamiltonian":
         return qp.Hamiltonian([-0.5], [PauliX(wires=self.wires[0]) @ PauliX(wires=self.wires[1])])
 
     def __init__(self, phi: TensorLike, wires: WiresLike):
         super().__init__(phi, wires=wires)
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
     @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    # pylint: disable-next=unused-argument
+    def compute_matrix(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1214,14 +1096,6 @@ class IsingXX(Operation):
 
         eye = math.eye(4, like=phi)
         rev_eye = math.convert_like(np.eye(4)[::-1].copy(), phi)
-        if (
-            math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            c = math.cast_like(c, 1j)
-            s = math.cast_like(s, 1j)
-            eye = math.cast_like(eye, 1j)
-            rev_eye = math.cast_like(rev_eye, 1j)
-
         # The following avoids casting an imaginary quantity to reals when backpropagating
         js = -1j * s
         if math.ndim(phi) == 0:
@@ -1229,44 +1103,14 @@ class IsingXX(Operation):
 
         return math.tensordot(c, eye, axes=0) + math.tensordot(js, rev_eye, axes=0)
 
-    @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list[Operator]:
-        r"""Representation of the operator as a product of other operators (static method). :
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.IsingXX.decomposition`.
-
-        Args:
-            phi (TensorLike): the phase angle
-            wires (Iterable, Wires): the subsystem the gate acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.IsingXX.compute_decomposition(1.23, wires=(0,1))
-        [CNOT(wires=[0, 1]), RX(1.23, wires=[0]), CNOT(wires=[0, 1])]
-
-        """
-        decomp_ops = [
-            qp.CNOT(wires=wires),
-            RX(phi, wires=[wires[0]]),
-            qp.CNOT(wires=wires),
-        ]
-        return decomp_ops
-
     def adjoint(self) -> "IsingXX":
-        (phi,) = self.parameters
-        return IsingXX(-phi, wires=self.wires)
+        return IsingXX(-self.phi, wires=self.wires)
 
     def pow(self, z: int | float) -> list[Operator]:
-        return [IsingXX(self.data[0] * z, wires=self.wires)]
+        return [IsingXX(self.phi * z, wires=self.wires)]
 
     def simplify(self) -> "IsingXX":
-        phi = self.data[0] % (4 * np.pi)
+        phi = self.phi % (4 * np.pi)
 
         if _can_replace(phi, 0):
             return qp.Identity(wires=self.wires[0])
@@ -1274,7 +1118,8 @@ class IsingXX(Operation):
         return IsingXX(phi, wires=self.wires)
 
 
-def _isingxx_to_cnot_rx_cnot_resources():
+# pylint: disable-next=unused-argument
+def _isingxx_to_cnot_rx_cnot_resources(phi: TensorLike, wires: WiresLike | None = None):
     return {qp.CNOT: 2, qp.RX: 1}
 
 
@@ -1285,8 +1130,9 @@ def _isingxx_to_cnot_rx_cnot(phi: TensorLike, wires: WiresLike, **__):
     qp.CNOT(wires=wires)
 
 
-def _isingxx_to_ppr_resource():
-    return {resource_rep(qp.PauliRot, pauli_word="XX"): 1}
+# pylint: disable-next=unused-argument
+def _isingxx_to_ppr_resource(phi: TensorLike, wires: WiresLike | None = None):
+    return {PauliRot(Float, pauli_word="XX", wires=Wire[2]): 1}
 
 
 @register_resources(_isingxx_to_ppr_resource)
@@ -1295,11 +1141,11 @@ def _isingxx_to_ppr(phi: TensorLike, wires: WiresLike, **_):
 
 
 add_decomps(IsingXX, _isingxx_to_cnot_rx_cnot, _isingxx_to_ppr)
-add_decomps("Adjoint(IsingXX)", adjoint_rotation)
-add_decomps("Pow(IsingXX)", pow_rotation)
+add_decomps("Adjoint(IsingXX)", adjoint_rotation2)
+add_decomps("Pow(IsingXX)", pow_rotation2)
 
 
-class IsingYY(Operation):
+class IsingYY(Operator2):
     r"""
     Ising YY coupling gate
 
@@ -1331,6 +1177,9 @@ class IsingYY(Operation):
         wires (int): the subsystem the gate acts on
     """
 
+    dynamic_argnames = ("phi",)
+    arg_specs = {"phi": Float, "wires": Wire[2]}
+
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -1338,51 +1187,15 @@ class IsingYY(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
-
-    grad_method = "A"
-    parameter_frequencies = [(1,)]
-
     def generator(self) -> "qp.Hamiltonian":
         return qp.Hamiltonian([-0.5], [PauliY(wires=self.wires[0]) @ PauliY(wires=self.wires[1])])
 
     def __init__(self, phi: TensorLike, wires: WiresLike):
         super().__init__(phi, wires=wires)
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
     @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list[Operator]:
-        r"""Representation of the operator as a product of other operators (static method). :
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.IsingYY.decomposition`.
-
-        Args:
-            phi (float): the phase angle
-            wires (Iterable, Wires): the subsystem the gate acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.IsingYY.compute_decomposition(1.23, wires=(0,1))
-        [CY(wires=[0, 1]), RY(1.23, wires=[0]), CY(wires=[0, 1])]
-
-        """
-        return [
-            qp.CY(wires=wires),
-            RY(phi, wires=[wires[0]]),
-            qp.CY(wires=wires),
-        ]
-
-    @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    # pylint: disable-next=unused-argument
+    def compute_matrix(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1409,12 +1222,6 @@ class IsingYY(Operation):
         c = math.cos(phi / 2)
         s = math.sin(phi / 2)
 
-        if (
-            math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            c = math.cast_like(c, 1j)
-            s = math.cast_like(s, 1j)
-
         js = 1j * s
         r_term = math.cast_like(
             math.array(
@@ -1434,8 +1241,7 @@ class IsingYY(Operation):
         return math.tensordot(c, np.eye(4), axes=0) + math.tensordot(js, r_term, axes=0)
 
     def adjoint(self) -> "IsingYY":
-        (phi,) = self.parameters
-        return IsingYY(-phi, wires=self.wires)
+        return IsingYY(-self.phi, wires=self.wires)
 
     def pow(self, z: int | float) -> list[Operator]:
         return [IsingYY(self.data[0] * z, wires=self.wires)]
@@ -1449,7 +1255,8 @@ class IsingYY(Operation):
         return IsingYY(phi, wires=self.wires)
 
 
-def _isingyy_to_cy_ry_cy_resources():
+# pylint: disable-next=unused-argument
+def _isingyy_to_cy_ry_cy_resources(phi: TensorLike, wires: WiresLike | None = None):
     return {qp.CY: 2, RY: 1}
 
 
@@ -1460,8 +1267,9 @@ def _isingyy_to_cy_ry_cy(phi: TensorLike, wires: WiresLike, **__):
     qp.CY(wires=wires)
 
 
-def _isingyy_to_ppr_resource():
-    return {resource_rep(qp.PauliRot, pauli_word="YY"): 1}
+# pylint: disable-next=unused-argument
+def _isingyy_to_ppr_resource(phi: TensorLike, wires: WiresLike | None = None):
+    return {PauliRot(Float, pauli_word="YY", wires=Wire[2]): 1}
 
 
 @register_resources(_isingyy_to_ppr_resource)
@@ -1470,11 +1278,11 @@ def _isingyy_to_ppr(phi: TensorLike, wires: WiresLike, **_):
 
 
 add_decomps(IsingYY, _isingyy_to_cy_ry_cy, _isingyy_to_ppr)
-add_decomps("Adjoint(IsingYY)", adjoint_rotation)
-add_decomps("Pow(IsingYY)", pow_rotation)
+add_decomps("Adjoint(IsingYY)", adjoint_rotation2)
+add_decomps("Pow(IsingYY)", pow_rotation2)
 
 
-class IsingZZ(Operation):
+class IsingZZ(Operator2):
     r"""
     Ising ZZ coupling gate
 
@@ -1507,6 +1315,9 @@ class IsingZZ(Operation):
         wires (int): the subsystem the gate acts on
     """
 
+    dynamic_argnames = ("phi",)
+    arg_specs = {"phi": Float, "wires": Wire[2]}
+
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -1514,51 +1325,15 @@ class IsingZZ(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
-
-    grad_method = "A"
-    parameter_frequencies = [(1,)]
-
     def generator(self) -> "qp.Hamiltonian":
         return qp.Hamiltonian([-0.5], [PauliZ(wires=self.wires[0]) @ PauliZ(wires=self.wires[1])])
 
     def __init__(self, phi: TensorLike, wires: WiresLike):
         super().__init__(phi, wires=wires)
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
     @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike):
-        r"""Representation of the operator as a product of other operators (static method). :
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.IsingZZ.decomposition`.
-
-        Args:
-            phi (float): the phase angle
-            wires (Iterable, Wires): the subsystem the gate acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.IsingZZ.compute_decomposition(1.23, wires=[0, 1])
-        [CNOT(wires=[0, 1]), RZ(1.23, wires=[1]), CNOT(wires=[0, 1])]
-
-        """
-        return [
-            qp.CNOT(wires=wires),
-            RZ(phi, wires=[wires[1]]),
-            qp.CNOT(wires=wires),
-        ]
-
-    @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    # pylint: disable-next=unused-argument
+    def compute_matrix(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1581,16 +1356,6 @@ class IsingZZ(Operation):
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.9689+0.2474j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9689-0.2474j]])
         """
-        if (
-            math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            p = math.exp(-0.5j * math.cast_like(phi, 1j))
-            if math.ndim(p) == 0:
-                return math.diag([p, math.conj(p), math.conj(p), p])
-
-            diags = stack_last([p, math.conj(p), math.conj(p), p])
-            return diags[:, :, np.newaxis] * math.cast_like(math.eye(4, like=diags), diags)
-
         signs = math.array([1, -1, -1, 1], like=phi)
         arg = -0.5j * phi
 
@@ -1601,7 +1366,8 @@ class IsingZZ(Operation):
         return diags[:, :, np.newaxis] * math.cast_like(math.eye(4, like=diags), diags)
 
     @staticmethod
-    def compute_eigvals(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    # pylint: disable-next=unused-argument
+    def compute_eigvals(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -1627,12 +1393,6 @@ class IsingZZ(Operation):
         >>> qp.IsingZZ.compute_eigvals(torch.tensor(0.5))
         tensor([0.9689-0.2474j, 0.9689+0.2474j, 0.9689+0.2474j, 0.9689-0.2474j])
         """
-        if (
-            math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phase = math.exp(-0.5j * math.cast_like(phi, 1j))
-            return stack_last([phase, math.conj(phase), math.conj(phase), phase])
-
         prefactors = math.array([-0.5j, 0.5j, 0.5j, -0.5j], like=phi)
         if math.ndim(phi) == 0:
             product = phi * prefactors
@@ -1641,14 +1401,13 @@ class IsingZZ(Operation):
         return math.exp(product)
 
     def adjoint(self) -> "IsingZZ":
-        (phi,) = self.parameters
-        return IsingZZ(-phi, wires=self.wires)
+        return IsingZZ(-self.phi, wires=self.wires)
 
     def pow(self, z: int | float) -> list[Operator]:
-        return [IsingZZ(self.data[0] * z, wires=self.wires)]
+        return [IsingZZ(self.phi * z, wires=self.wires)]
 
     def simplify(self) -> "IsingZZ":
-        phi = self.data[0] % (4 * np.pi)
+        phi = self.phi % (4 * np.pi)
 
         if _can_replace(phi, 0):
             return qp.Identity(wires=self.wires[0])
@@ -1656,19 +1415,27 @@ class IsingZZ(Operation):
         return IsingZZ(phi, wires=self.wires)
 
 
-def _isingzz_to_cnot_rz_cnot_resources():
-    return {qp.CNOT: 2, RZ: 1}
+# pylint: disable-next=unused-argument
+def _isingzz_to_cnot_rz_cnot_resources(phi: TensorLike, wires: WiresLike | None = None):
+    return {
+        _change_op_basis_abstract(
+            qp.CNOT(wires=Wire[2]),
+            RZ(Float, wires=Wire[1]),
+            qp.CNOT(wires=Wire[2]),
+        ): 1
+    }
 
 
 @register_resources(_isingzz_to_cnot_rz_cnot_resources)
 def _isingzz_to_cnot_rz_cnot(phi: TensorLike, wires: WiresLike, **__):
-    qp.CNOT(wires=wires)
-    RZ(phi, wires=[wires[1]])
-    qp.CNOT(wires=wires)
+    r"""Expressing ``IsingZZ``  via :func:`~.change_op_basis` (instead of three bare gates) lets
+    PennyLane's generic ``C(ChangeOpBasis)`` rule automatically control it in an efficient way."""
+    qp.change_op_basis(qp.CNOT(wires=wires), RZ(phi, wires=[wires[1]]), qp.CNOT(wires=wires))
 
 
-def _isingzz_to_ppr_resource():
-    return {resource_rep(qp.PauliRot, pauli_word="ZZ"): 1}
+# pylint: disable-next=unused-argument
+def _isingzz_to_ppr_resource(phi: TensorLike, wires: WiresLike | None = None):
+    return {PauliRot(Float, pauli_word="ZZ", wires=Wire[2]): 1}
 
 
 @register_resources(_isingzz_to_ppr_resource)
@@ -1677,11 +1444,11 @@ def _isingzz_to_ppr(phi: TensorLike, wires: WiresLike, **_):
 
 
 add_decomps(IsingZZ, _isingzz_to_cnot_rz_cnot, _isingzz_to_ppr)
-add_decomps("Adjoint(IsingZZ)", adjoint_rotation)
-add_decomps("Pow(IsingZZ)", pow_rotation)
+add_decomps("Adjoint(IsingZZ)", adjoint_rotation2)
+add_decomps("Pow(IsingZZ)", pow_rotation2)
 
 
-class IsingXY(Operation):
+class IsingXY(Operator2):
     r"""
     Ising (XX + YY) coupling gate
 
@@ -1724,6 +1491,9 @@ class IsingXY(Operation):
         wires (int): the subsystem the gate acts on
     """
 
+    dynamic_argnames = ("phi",)
+    arg_specs = {"phi": Float, "wires": Wire[2]}
+
     num_wires = 2
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -1731,13 +1501,7 @@ class IsingXY(Operation):
     ndim_params = (0,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    resource_keys = set()
-
-    grad_method = "A"
-    parameter_frequencies = [(0.5, 1.0)]
-
     def generator(self) -> "qp.Hamiltonian":
-
         return qp.Hamiltonian(
             [0.25, 0.25],
             [
@@ -1749,43 +1513,9 @@ class IsingXY(Operation):
     def __init__(self, phi: TensorLike, wires: WiresLike):
         super().__init__(phi, wires=wires)
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
-
     @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list[Operator]:
-        r"""Representation of the operator as a product of other operators (static method). :
-
-        .. math:: O = O_1 O_2 \dots O_n.
-
-
-        .. seealso:: :meth:`~.IsingXY.decomposition`.
-
-        Args:
-            phi (float): the phase angle
-            wires (Iterable, Wires): the subsystem the gate acts on
-
-        Returns:
-            list[Operator]: decomposition into lower level operations
-
-        **Example:**
-
-        >>> qp.IsingXY.compute_decomposition(1.23, wires=(0,1))
-        [H(0), CY(wires=[0, 1]), RY(0.615, wires=[0]), RX(-0.615, wires=[1]), CY(wires=[0, 1]), H(0)]
-
-        """
-        return [
-            Hadamard(wires=[wires[0]]),
-            qp.CY(wires=wires),
-            RY(phi / 2, wires=[wires[0]]),
-            RX(-phi / 2, wires=[wires[1]]),
-            qp.CY(wires=wires),
-            Hadamard(wires=[wires[0]]),
-        ]
-
-    @staticmethod
-    def compute_matrix(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    # pylint: disable-next=unused-argument
+    def compute_matrix(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -1811,12 +1541,6 @@ class IsingXY(Operation):
         c = math.cos(phi / 2)
         s = math.sin(phi / 2)
 
-        if (
-            math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            c = math.cast_like(c, 1j)
-            s = math.cast_like(s, 1j)
-
         js = 1j * s
         off_diag = math.cast_like(
             math.array(
@@ -1838,7 +1562,8 @@ class IsingXY(Operation):
         return diags * np.eye(4) + math.tensordot(js, off_diag, axes=0)
 
     @staticmethod
-    def compute_eigvals(phi: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
+    # pylint: disable-next=unused-argument
+    def compute_eigvals(phi: TensorLike, wires: WiresLike | None = None) -> TensorLike:
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -1864,11 +1589,6 @@ class IsingXY(Operation):
         >>> qp.IsingXY.compute_eigvals(0.5)
         array([0.96891242+0.24740396j, 0.96891242-0.24740396j,       1.        +0.j        , 1.        +0.j        ])
         """
-        if (
-            math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phi = math.cast_like(phi, 1j)
-
         signs = np.array([1, -1, 0, 0])
         if math.ndim(phi) == 0:
             return math.exp(0.5j * phi * signs)
@@ -1876,14 +1596,13 @@ class IsingXY(Operation):
         return math.exp(math.tensordot(0.5j * phi, signs, axes=0))
 
     def adjoint(self) -> "IsingXY":
-        (phi,) = self.parameters
-        return IsingXY(-phi, wires=self.wires)
+        return IsingXY(-self.phi, wires=self.wires)
 
     def pow(self, z: int | float) -> list[Operator]:
-        return [IsingXY(self.data[0] * z, wires=self.wires)]
+        return [IsingXY(self.phi * z, wires=self.wires)]
 
     def simplify(self) -> "IsingXY":
-        phi = self.data[0] % (4 * np.pi)
+        phi = self.phi % (4 * np.pi)
 
         if _can_replace(phi, 0):
             return qp.Identity(wires=self.wires[0])
@@ -1891,7 +1610,8 @@ class IsingXY(Operation):
         return IsingXY(phi, wires=self.wires)
 
 
-def _isingxy_to_h_cy_resources():
+# pylint: disable-next=unused-argument
+def _isingxy_to_h_cy_resources(phi: TensorLike, wires: WiresLike | None = None):
     return {Hadamard: 2, qp.CY: 2, RY: 1, RX: 1}
 
 
@@ -1906,8 +1626,8 @@ def _isingxy_to_h_cy(phi: TensorLike, wires: WiresLike, **__):
 
 
 add_decomps(IsingXY, _isingxy_to_h_cy)
-add_decomps("Adjoint(IsingXY)", adjoint_rotation)
-add_decomps("Pow(IsingXY)", pow_rotation)
+add_decomps("Adjoint(IsingXY)", adjoint_rotation2)
+add_decomps("Pow(IsingXY)", pow_rotation2)
 
 
 class PSWAP(Operation):
@@ -2010,11 +1730,6 @@ class PSWAP(Operation):
                [0.        +0.j        , 0.        +0.j        ,
                 0.        +0.j        , 1.        +0.j        ]])
         """
-        if (
-            math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phi = math.cast_like(phi, 1j)
-
         e = math.exp(1j * phi)
         zero = math.zeros_like(phi)
         one = math.ones_like(phi)
@@ -2057,11 +1772,6 @@ class PSWAP(Operation):
         array([ 1.        +0.j        ,  1.        +0.j        ,
                -0.87758256-0.47942554j,  0.87758256+0.47942554j])
         """
-        if (
-            math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phi = math.cast_like(phi, 1j)
-
         e = math.exp(1j * phi)
         one = math.ones_like(phi)
         return math.transpose(math.stack([one, one, -e, e]))
@@ -2093,18 +1803,18 @@ def _pswap_to_swap_cnot_phaseshift_cnot(phi: TensorLike, wires: WiresLike, **__)
 
 def _pswap_to_ppr_resources():
     return {
-        resource_rep(qp.PauliRot, pauli_word="XX"): 1,
-        resource_rep(qp.PauliRot, pauli_word="YY"): 1,
-        resource_rep(qp.PauliRot, pauli_word="ZZ"): 1,
+        qp.PPR(-4, pauli_word="XX", wires=Wire[2]): 1,
+        qp.PPR(-4, pauli_word="YY", wires=Wire[2]): 1,
+        PauliRot(Float, pauli_word="ZZ", wires=Wire[2]): 1,
         qp.GlobalPhase: 1,
     }
 
 
 @register_resources(_pswap_to_ppr_resources)
 def _pswap_to_ppr(phi: TensorLike, wires: WiresLike, **__):
-    qp.PauliRot(-np.pi / 2, pauli_word="YY", wires=wires)
-    qp.PauliRot(-np.pi / 2, pauli_word="XX", wires=wires)
-    qp.PauliRot(phi - np.pi / 2, pauli_word="ZZ", wires=wires)
+    qp.PPR(-4, pauli_word="YY", wires=wires)
+    qp.PPR(-4, pauli_word="XX", wires=wires)
+    PauliRot(phi - np.pi / 2, pauli_word="ZZ", wires=wires)
     qp.GlobalPhase(np.pi / 4 - phi / 2)
 
 
@@ -2196,11 +1906,6 @@ class CPhaseShift00(Operation):
                 [0.0000+0.0000j, 0.0000+0.0000j, 1.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 1.0000+0.0000j]])
         """
-        if (
-            math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phi = math.cast_like(phi, 1j)
-
         exp_part = math.exp(1j * phi)
 
         if math.ndim(phi) > 0:
@@ -2244,11 +1949,6 @@ class CPhaseShift00(Operation):
         >>> qp.CPhaseShift00.compute_eigvals(torch.tensor(0.5))
         tensor([0.8776+0.4794j, 1.0000+0.0000j, 1.0000+0.0000j, 1.0000+0.0000j])
         """
-        if (
-            math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phi = math.cast_like(phi, 1j)
-
         exp_part = math.exp(1j * phi)
         ones = math.ones_like(exp_part)
         return stack_last([exp_part, ones, ones, ones])
@@ -2419,11 +2119,6 @@ class CPhaseShift01(Operation):
                 [0.0000+0.0000j, 0.0000+0.0000j, 1.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 1.0000+0.0000j]])
         """
-        if (
-            math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phi = math.cast_like(phi, 1j)
-
         exp_part = math.exp(1j * phi)
 
         if math.ndim(phi) > 0:
@@ -2467,11 +2162,6 @@ class CPhaseShift01(Operation):
         >>> qp.CPhaseShift01.compute_eigvals(torch.tensor(0.5))
         tensor([1.0000+0.0000j, 0.8776+0.4794j, 1.0000+0.0000j, 1.0000+0.0000j])
         """
-        if (
-            math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phi = math.cast_like(phi, 1j)
-
         exp_part = math.exp(1j * phi)
         ones = math.ones_like(exp_part)
         return stack_last([ones, exp_part, ones, ones])
@@ -2632,11 +2322,6 @@ class CPhaseShift10(Operation):
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.8776+0.4794j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 1.0000+0.0000j]])
         """
-        if (
-            math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phi = math.cast_like(phi, 1j)
-
         exp_part = math.exp(1j * phi)
 
         if math.ndim(phi) > 0:
@@ -2680,11 +2365,6 @@ class CPhaseShift10(Operation):
         >>> qp.CPhaseShift10.compute_eigvals(torch.tensor(0.5))
         tensor([1.0000+0.0000j, 1.0000+0.0000j, 0.8776+0.4794j, 1.0000+0.0000j])
         """
-        if (
-            math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phi = math.cast_like(phi, 1j)
-
         exp_part = math.exp(1j * phi)
         ones = math.ones_like(exp_part)
         return stack_last([ones, ones, exp_part, ones])

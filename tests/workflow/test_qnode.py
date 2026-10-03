@@ -422,7 +422,7 @@ class TestValidation:
             QuantumFunctionError,
             match="does not support backprop with requested circuit",
         ):
-            qp.grad(circuit, argnums=0)([0.5])
+            qp.grad(circuit, argnums=0)(0.5)
 
     def test_qnode_print(self):
         """Test that printing a QNode object yields the right information."""
@@ -932,57 +932,6 @@ class TestIntegration:
         r2 = conditional_ry_qnode_deferred(first_par)
         assert np.allclose(r1, r2)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("interface", ["auto"])
-    def test_conditional_ops_tensorflow(self, interface):
-        """Test conditional operations with TensorFlow."""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", wires=3)
-
-        @qp.qnode(dev, interface=interface, diff_method="parameter-shift")
-        def cry_qnode(x):
-            """QNode where we apply a controlled Y-rotation."""
-            qp.Hadamard(1)
-            qp.RY(1.234, wires=0)
-            qp.CRY(x, wires=[0, 1])
-            return qp.expval(qp.PauliZ(1))
-
-        @qp.qnode(dev, interface=interface, diff_method="parameter-shift")
-        def conditional_ry_qnode(x):
-            """QNode where the defer measurements transform is applied by
-            default under the hood."""
-            qp.Hadamard(1)
-            qp.RY(1.234, wires=0)
-            m_0 = qp.measure(0)
-            qp.cond(m_0, qp.RY)(x, wires=1)
-            return qp.expval(qp.PauliZ(1))
-
-        dm_conditional_ry_qnode = qp.defer_measurements(conditional_ry_qnode)
-
-        x_ = -0.654
-        x1 = tf.Variable(x_, dtype=tf.float64)
-        x2 = tf.Variable(x_, dtype=tf.float64)
-        x3 = tf.Variable(x_, dtype=tf.float64)
-
-        with tf.GradientTape() as tape1:
-            r1 = cry_qnode(x1)
-
-        with tf.GradientTape() as tape2:
-            r2 = conditional_ry_qnode(x2)
-
-        with tf.GradientTape() as tape3:
-            r3 = dm_conditional_ry_qnode(x3)
-
-        assert np.allclose(r1, r2)
-        assert np.allclose(r1, r3)
-
-        grad1 = tape1.gradient(r1, x1)
-        grad2 = tape2.gradient(r2, x2)
-        grad3 = tape3.gradient(r3, x3)
-        assert np.allclose(grad1, grad2)
-        assert np.allclose(grad1, grad3)
-
     @pytest.mark.torch
     @pytest.mark.parametrize("interface", ["torch", "auto"])
     def test_conditional_ops_torch(self, interface):
@@ -1156,7 +1105,6 @@ class TestIntegration:
             pytest.param("autograd", marks=pytest.mark.autograd),
             pytest.param("jax", marks=pytest.mark.jax),
             pytest.param("torch", marks=pytest.mark.torch),
-            pytest.param("tensorflow", marks=pytest.mark.tf),
         ),
     )
     def test_error_if_differentiate_diff_method_None(self, interface):
@@ -1403,8 +1351,8 @@ class TestCompilePipelineIntegration:
             circuit(0.1)
 
         assert tracker.totals["executions"] == 1
-        assert tracker.history["resources"][0].gate_types["PauliX"] == 1
-        assert "RX" not in tracker.history["resources"][0].gate_types
+        assert tracker.history["resources"][0].quantum_operations["PauliX"] == 1
+        assert "RX" not in tracker.history["resources"][0].quantum_operations
 
     def test_transform_program_modifies_results(self):
         """Test integration with a transform that modifies the result output."""
@@ -1464,7 +1412,7 @@ class TestCompilePipelineIntegration:
         with circuit1.device.tracker as tracker:
             assert qp.math.allclose(circuit1(0.1), 1.0)
 
-        assert tracker.history["resources"][0].gate_types["PauliX"] == 2
+        assert tracker.history["resources"][0].quantum_operations["PauliX"] == 2
 
         @just_pauli_x_out
         @repeat_operations
@@ -1476,7 +1424,7 @@ class TestCompilePipelineIntegration:
         with circuit2.device.tracker as tracker:
             assert qp.math.allclose(circuit2(0.1), -1.0)
 
-        assert tracker.history["resources"][0].gate_types["PauliX"] == 1
+        assert tracker.history["resources"][0].quantum_operations["PauliX"] == 1
 
     def test_transform_order_postprocessing(self):
         """Test that transform postprocessing is called in the right order."""

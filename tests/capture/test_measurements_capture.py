@@ -15,9 +15,8 @@
 Tests for capturing measurements.
 """
 
-import numpy as np
-
 # pylint: disable=protected-access
+import numpy as np
 import pytest
 
 import pennylane as qp
@@ -38,10 +37,9 @@ from pennylane.measurements import (
 
 jax = pytest.importorskip("jax")
 
-from pennylane.capture.primitives import (  # pylint: disable=wrong-import-position
-    AbstractMeasurement,
-    operator_p,
-)
+# pylint: disable=wrong-import-position
+from pennylane.capture.primitives import AbstractMeasurement
+from tests.capture.capture_utils import assert_eqn_matches_op
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -275,27 +273,6 @@ class TestCounts:
         assert len(jaxpr.outvars) == 3
 
 
-def test_primitive_none_behavior():
-    """Test that if the obs primitive is None, the measurement can still
-    be created, but it just won't be captured into jaxpr.
-    """
-
-    # pylint: disable=too-few-public-methods
-    class MyMeasurement(qp.measurements.MeasurementProcess):
-        pass
-
-    MyMeasurement._obs_primitive = None
-
-    def f():
-        return MyMeasurement(wires=qp.wires.Wires((0, 1)))
-
-    mp = f()
-    assert isinstance(mp, MyMeasurement)
-
-    jaxpr = jax.make_jaxpr(f)()
-    assert len(jaxpr.eqns) == 0
-
-
 # pylint: disable=unnecessary-lambda
 creation_funcs = [
     lambda: qp.state(),
@@ -392,7 +369,7 @@ class TestExpvalVar:
         jaxpr = jax.make_jaxpr(f)()
 
         assert len(jaxpr.eqns) == 2
-        assert jaxpr.eqns[0].primitive == qp.X._primitive
+        assert_eqn_matches_op(jaxpr.eqns[0], qp.X)
 
         assert jaxpr.eqns[1].primitive == m_type._obs_primitive
         assert jaxpr.eqns[0].outvars == jaxpr.eqns[1].invars
@@ -433,8 +410,7 @@ class TestExpvalVar:
         jaxpr = jax.make_jaxpr(f)()
 
         assert len(jaxpr.eqns) == 2
-        assert jaxpr.eqns[0].primitive == operator_p
-        assert jaxpr.eqns[0].params["op_cls"] == PauliX
+        assert_eqn_matches_op(jaxpr.eqns[0], PauliX)
 
         assert jaxpr.eqns[1].primitive == m_type._obs_primitive
         assert jaxpr.eqns[0].outvars == jaxpr.eqns[1].invars
@@ -508,9 +484,9 @@ class TestExpvalVar:
             return m_type(obs=obs)
 
         jaxpr = jax.make_jaxpr(f)()
-        assert jaxpr.eqns[0].primitive == qp.X._primitive
+        assert_eqn_matches_op(jaxpr.eqns[0], qp.X)
         assert jaxpr.eqns[1].primitive == qp.ops.SProd._primitive
-        assert jaxpr.eqns[2].primitive == qp.Y._primitive
+        assert_eqn_matches_op(jaxpr.eqns[2], qp.Y)
         assert jaxpr.eqns[3].primitive == qp.ops.Sum._primitive
         assert jaxpr.eqns[4].invars[0] == jaxpr.eqns[3].outvars[0]
         assert jaxpr.eqns[4].primitive == m_type._obs_primitive
@@ -703,7 +679,7 @@ def test_shadow_expval(seed):
     jaxpr = jax.make_jaxpr(f)()
 
     assert len(jaxpr.eqns) == 2
-    assert jaxpr.eqns[0].primitive == qp.X._primitive
+    assert_eqn_matches_op(jaxpr.eqns[0], qp.X)
 
     assert jaxpr.eqns[1].primitive == ShadowExpvalMP._obs_primitive
     assert jaxpr.eqns[0].outvars == jaxpr.eqns[1].invars

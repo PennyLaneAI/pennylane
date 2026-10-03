@@ -51,8 +51,7 @@ For example:
 .. note::
 
     PennyLane uses the term *wires* to refer to a quantum subsystem---for most
-    devices, this corresponds to a qubit. For continuous-variable
-    devices, a wire corresponds to a quantum mode.
+    devices, this corresponds to a qubit.
 
 Quantum functions are a restricted subset of Python functions, adhering to the following
 constraints:
@@ -65,8 +64,7 @@ constraints:
 * The quantum function must always return either a single or a tuple of
   *measurement values*, by applying a :doc:`measurement function <measurements>`
   to the qubit register. The most common example is to measure the expectation value of
-  a :ref:`qubit observable <intro_ref_ops_qobs>` or
-  :ref:`continuous-value observable <intro_ref_ops_cvobs>`.
+  a :ref:`qubit observable <intro_ref_ops_qobs>`.
 
 .. note::
 
@@ -88,7 +86,7 @@ instantiated using the :func:`device <pennylane.device>` loader.
     dev = qp.device('default.qubit', wires=2)
 
 PennyLane offers some basic devices such as the ``'default.qubit'``, ``'default.mixed'``, ``lightning.qubit``,
-``'default.gaussian'``, ``'default.clifford'``, and ``'default.tensor'`` simulators; additional devices can be installed as plugins
+``'default.clifford'``, and ``'default.tensor'`` simulators; additional devices can be installed as plugins
 (see `available plugins <https://pennylane.ai/plugins>`_ for more details). Note that the
 choice of a device significantly determines the speed of your computation, as well as
 the available options that can be passed to the device loader.
@@ -98,11 +96,6 @@ the available options that can be passed to the device loader.
     For example, check out the ``'lightning.gpu'``
     `plugin <https://docs.pennylane.ai/projects/lightning-gpu/en/latest/index.html>`_,
     which is a fast state-vector simulator offloading to the NVIDIA cuQuantum SDK for GPU accelerated circuit simulation.
-
-.. note::
-
-    For details on saving device configurations, please visit the
-    :doc:`configurations page</introduction/configuration>`.
 
 Device options
 ^^^^^^^^^^^^^^

@@ -27,8 +27,9 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
 
     .. note::
 
-        Currently, only two compilers are supported; the :doc:`Catalyst <catalyst:index>` hybrid
-        quantum-classical compiler, which works with the JAX interface, and CUDA Quantum.
+        PennyLane uses the :doc:`Catalyst <catalyst:index>` hybrid quantum-classical compiler by
+        default. Other compiler packages can integrate with :func:`~.qjit` through the
+        :mod:`~.compiler` API.
 
         For more details on Catalyst, see the :doc:`Catalyst documentation <catalyst:index>` and
         :func:`catalyst.qjit`.
@@ -42,17 +43,16 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
 
         For a full list of supported devices, please see :doc:`catalyst:dev/devices`.
 
-        CUDA Quantum supports ``softwareq.qpp``, ``nvidia.custatevec``, and ``nvidia.cutensornet``.
-
     Args:
         fn (Callable): Hybrid (quantum-classical) function to compile
-        compiler (str): Name of the compiler to use for just-in-time compilation. Available
-            options include ``catalyst`` and ``cuda_quantum``.
+        compiler (str): Name of the registered compiler to use for just-in-time compilation.
+            Use :func:`~.compiler.available_compilers` to list the compiler packages available in
+            the current environment. The default is ``"catalyst"``.
         autograph (bool): Experimental support for automatically converting Python control
             flow statements to Catalyst-compatible control flow. Currently supports Python ``if``,
-            ``elif``, ``else``, and ``for`` statements. Note that this feature requires an
-            available TensorFlow installation. See the
-            :doc:`AutoGraph guide <catalyst:dev/autograph>` for more information.
+            ``elif``, ``else``, and ``for`` statements. Note that this feature requires the
+            ``diastatic-malt`` package, a standalone fork of the AutoGraph module originally from
+            TensorFlow. See the :doc:`AutoGraph guide <catalyst:dev/autograph>` for more information.
         keep_intermediate (bool): Whether or not to store the intermediate files throughout the
             compilation. The files are stored at the location where the Python script is called.
             If ``True``, intermediate representations are available via the
@@ -76,15 +76,15 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
             below.
 
     Returns:
-        catalyst.QJIT: A class that, when executed, just-in-time compiles and executes the
-        decorated function
+        Callable: A compiler-specific callable that, when executed, just-in-time compiles and
+        executes the decorated function
 
     Raises:
         FileExistsError: Unable to create temporary directory
         PermissionError: Problems creating temporary directory
         OSError: Problems while creating folder for intermediate files
         AutoGraphError: Raised if there was an issue converting the given the function(s).
-        ImportError: Raised if AutoGraph is turned on and TensorFlow could not be found.
+        ImportError: Raised if AutoGraph is turned on and ``diastatic-malt`` could not be found.
 
     **Example**
 

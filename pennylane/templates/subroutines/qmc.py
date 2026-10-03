@@ -22,8 +22,9 @@ import numpy as np
 
 from pennylane import math
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import QubitUnitary
+from pennylane.typing import Complex, Wire
 from pennylane.wires import Wires
 
 from .qpe import QuantumPhaseEstimation
@@ -340,7 +341,7 @@ class QuantumMonteCarlo(Operation):
 
     grad_method = None
 
-    resource_keys = {"num_target_wires", "num_estimation_wires", "q_resource_rep"}
+    resource_keys = {"num_target_wires", "num_estimation_wires", "q_shape"}
 
     @classmethod
     def _primitive_bind_call(
@@ -369,9 +370,7 @@ class QuantumMonteCarlo(Operation):
         return {
             "num_target_wires": len(self.hyperparameters["target_wires"]),
             "num_estimation_wires": len(self.hyperparameters["estimation_wires"]),
-            "q_resource_rep": resource_rep(
-                QubitUnitary, num_wires=len(self.hyperparameters["target_wires"])
-            ),
+            "q_shape": math.shape(self.data[2]),
         }
 
     def __init__(self, probs, func, target_wires, estimation_wires):
@@ -397,11 +396,15 @@ class QuantumMonteCarlo(Operation):
                 f" {num_target_wires} target wires"
             )
 
-        self._hyperparameters = {"estimation_wires": estimation_wires, "target_wires": target_wires}
-
         A = probs_to_unitary(probs)
         R = func_to_unitary(func, dim_p)
         Q = make_Q(A, R)
+
+        self._hyperparameters = {
+            "estimation_wires": estimation_wires,
+            "target_wires": target_wires,
+        }
+
         super().__init__(A, R, Q, wires=wires)
 
     def map_wires(self, wire_map: dict):
@@ -445,30 +448,36 @@ class QuantumMonteCarlo(Operation):
         op_list = [
             QubitUnitary(A, wires=target_wires[:-1]),
             QubitUnitary(R, wires=target_wires),
-            QuantumPhaseEstimation(Q, target_wires=target_wires, estimation_wires=estimation_wires),
+            QuantumPhaseEstimation(
+                QubitUnitary(Q, wires=target_wires), estimation_wires=estimation_wires
+            ),
         ]
 
         return op_list
 
 
 # pylint: disable=protected-access
-if QuantumMonteCarlo._primitive is not None:
-
-    @QuantumMonteCarlo._primitive.def_impl
-    def _quantum_monte_carlo_impl(probs, *wires, func, num_target_wires):
-        target_wires = wires[:num_target_wires]
-        estimation_wires = wires[num_target_wires:]
-        return type.__call__(QuantumMonteCarlo, probs, func, target_wires, estimation_wires)
 
 
-def _quantum_monte_carlo_resources(num_target_wires, num_estimation_wires, q_resource_rep):
+@QuantumMonteCarlo._primitive.def_impl
+def _quantum_monte_carlo_impl(probs, *wires, func, num_target_wires):
+    target_wires = wires[:num_target_wires]
+    estimation_wires = wires[num_target_wires:]
+    return type.__call__(QuantumMonteCarlo, probs, func, target_wires, estimation_wires)
+
+
+def _quantum_monte_carlo_resources(num_target_wires, num_estimation_wires, q_shape):
     return {
-        resource_rep(QubitUnitary, num_wires=num_target_wires - 1): 1,
-        resource_rep(QubitUnitary, num_wires=num_target_wires): 1,
-        resource_rep(
-            QuantumPhaseEstimation,
-            base_resource_rep=q_resource_rep,
-            num_estimation_wires=num_estimation_wires,
+        QubitUnitary(
+            Complex[2 ** (num_target_wires - 1), 2 ** (num_target_wires - 1)],
+            wires=Wire[num_target_wires - 1],
+        ): 1,
+        QubitUnitary(
+            Complex[2**num_target_wires, 2**num_target_wires], wires=Wire[num_target_wires]
+        ): 1,
+        QuantumPhaseEstimation(
+            QubitUnitary(Complex[*q_shape], wires=Wire[num_target_wires]),
+            estimation_wires=Wire[num_estimation_wires],
         ): 1,
     }
 
@@ -479,7 +488,7 @@ def _quantum_monte_carlo_decomposition(
 ):  # pylint: disable=unused-argument
     QubitUnitary(A, wires=target_wires[:-1])
     QubitUnitary(R, wires=target_wires)
-    QuantumPhaseEstimation(Q, target_wires=target_wires, estimation_wires=estimation_wires)
+    QuantumPhaseEstimation(QubitUnitary(Q, wires=target_wires), estimation_wires=estimation_wires)
 
 
 add_decomps(QuantumMonteCarlo, _quantum_monte_carlo_decomposition)

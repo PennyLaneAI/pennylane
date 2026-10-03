@@ -46,9 +46,8 @@ class DummyOp(qp.operation.Operator):
 test_cases = [
     # things commuting with identities, global phases.
     (qp.X(0), qp.GlobalPhase(0.5), True),
-    (qp.X(0), qp.GlobalPhase(0.5, wires=(0, 1, 2)), True),
     (qp.QFT((0, 1, 2)), qp.I((0, 1, 2)), True),
-    (DummyOp((0, 1)), qp.GlobalPhase(0.5, wires=0), True),
+    (DummyOp((0, 1)), qp.GlobalPhase(0.5), True),
     # controlled versions of operators.
     (qp.ctrl(qp.QubitUnitary(np.eye(2), 0), 1), qp.Z(0), False),
     (qp.ctrl(qp.QubitUnitary(np.eye(2), 0), 1), qp.Z(1), True),
@@ -60,7 +59,7 @@ test_cases = [
     # pow
     (qp.Z(0) ** 0.5, qp.Z(0), True),
     (qp.H(0) ** 2.5, qp.H(0), True),
-    (qp.GlobalPhase(0.5, 0) ** 0.25, qp.H(0), True),
+    (qp.GlobalPhase(0.5) ** 0.25, qp.H(0), True),
     # various things in the same group
     (qp.Permute((2, 1, 0), (0, 1, 2)), qp.SWAP((0, 1)), True),
     (qp.H(0), qp.H(0), True),

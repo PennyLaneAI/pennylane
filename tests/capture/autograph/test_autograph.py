@@ -15,7 +15,7 @@
 """PyTests for the integration between AutoGraph and PennyLane for the
 source-to-source transformation feature."""
 
-# pylint: disable = wrong-import-position, wrong-import-order, ungrouped-imports
+# pylint: disable=wrong-import-position,wrong-import-order,ungrouped-imports
 
 from functools import partial
 
@@ -45,7 +45,7 @@ from jax import make_jaxpr
 # pylint: disable=wrong-import-position
 from pennylane.capture.primitives import cond_prim, for_loop_prim
 from pennylane.exceptions import AutoGraphError
-from tests.capture.capture_utils import extract_all_primitives
+from tests.capture.capture_utils import assert_eqn_matches_op, extract_all_primitives
 
 check_cache = TRANSFORMER.has_cache
 
@@ -316,7 +316,8 @@ class TestIntegration:
 
         plxpr = qp.capture.make_plxpr(circ, autograph=True)()
         inner_jaxpr = plxpr.eqns[0].params["qfunc_jaxpr"]
-        assert inner_jaxpr.eqns[1].primitive.name == "Adjoint"
+        assert_eqn_matches_op(inner_jaxpr.eqns[0], qp.X)
+        assert inner_jaxpr.eqns[0].params["adjoint"] is True
 
     def test_adjoint_of_operator_type(self):
         """Test that the adjoint of an operator successfully passes through autograph"""
@@ -332,7 +333,7 @@ class TestIntegration:
         assert adjoint_transform.primitive.name == "adjoint_transform"
         jaxpr_inside_adjoint = adjoint_transform.params["jaxpr"]
         assert len(jaxpr_inside_adjoint.eqns) == 1
-        assert jaxpr_inside_adjoint.eqns[0].primitive.name == "PauliX"
+        assert_eqn_matches_op(jaxpr_inside_adjoint.eqns[0], qp.X)
 
     def test_adjoint_no_argument(self):
         """Test that passing no argument to qp.adjoint raises an error."""
@@ -396,15 +397,16 @@ class TestIntegration:
     def test_ctrl_of_operator_instance(self):
         """Test that controlled operators successfully pass through autograph"""
 
-        @qp.qnode(qp.device("default.qubit", wires=2))
+        @qp.qnode(qp.device("default.qubit", wires=4))
         def circ():
             qp.H(0)
-            qp.ctrl(qp.X(1), control=0)
+            qp.ctrl(qp.Y(1), control=[2, 3])
             return qp.state()
 
         plxpr = qp.capture.make_plxpr(circ, autograph=True)()
         inner_jaxpr = plxpr.eqns[0].params["qfunc_jaxpr"]
-        assert inner_jaxpr.eqns[2].primitive.name == "Controlled"
+        assert_eqn_matches_op(inner_jaxpr.eqns[1], qp.Y)
+        assert inner_jaxpr.eqns[1].params["n_ctrls"] == 2
 
     def test_ctrl_of_operator_type(self):
         """Test that controlled operators successfully pass through autograph"""
@@ -421,7 +423,7 @@ class TestIntegration:
         assert ctrl_transform.primitive.name == "ctrl_transform"
         jaxpr_inside_ctrl = ctrl_transform.params["jaxpr"]
         assert len(jaxpr_inside_ctrl.eqns) == 1
-        assert jaxpr_inside_ctrl.eqns[0].primitive.name == "PauliX"
+        assert_eqn_matches_op(jaxpr_inside_ctrl.eqns[0], qp.X)
 
     def test_ctrl_no_argument(self):
         """Test that passing no argument to qp.ctrl raises an error."""

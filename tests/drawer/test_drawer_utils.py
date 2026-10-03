@@ -193,7 +193,7 @@ class TestUnwrapControls:
     @pytest.mark.parametrize(
         "op,expected_control_wires,expected_control_values,expected_base_cls",
         [
-            (qp.X(wires="a"), Wires([]), None, qp.X),
+            (qp.X(wires="a"), Wires([]), [], qp.X),
             (qp.CNOT(wires=["a", "b"]), Wires("a"), [True], qp.X),
             (qp.ctrl(qp.X(wires="b"), control="a"), Wires("a"), [True], qp.X),
             (
@@ -285,6 +285,20 @@ class TestCwireConnections:
         new_bit_map, clayers, wires = cwire_connections(layers, bit_map, self.wire_map)
         assert clayers == {0: [[0, 1]]}
         assert wires == {0: [[0, 0]]}
+        assert new_bit_map == bit_map
+
+    @pytest.mark.parametrize("op", (qp.GlobalPhase(0.512), qp.Identity()))
+    def test_single_measure_single_cond_no_wires(self, op):
+        """Test a case with a single measurement and a single conditional where the base
+        op of the conditional does not have wires."""
+        m = qp.measure(0)
+        cond = qp.ops.Conditional(m, op)
+        layers = [m.measurements, [cond]]
+        bit_map = {m.measurements[0]: 0}
+
+        new_bit_map, clayers, wires = cwire_connections(layers, bit_map, self.wire_map)
+        assert clayers == {0: [[0, 1]]}
+        assert wires == {0: [[0, 3]]}  # GlobalPhase is drawn on all wires
         assert new_bit_map == bit_map
 
     def test_multiple_measure_multiple_cond(self):

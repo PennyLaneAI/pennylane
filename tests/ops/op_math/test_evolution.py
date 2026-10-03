@@ -22,7 +22,8 @@ from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops.op_math import Evolution, Exp
 
 
-@pytest.mark.jax
+@pytest.mark.xfail_if_capture(reason="Exp is not currently planned for porting to Op2")
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_basic_validity():
     """Assert the basic validity of an evolution op."""
     base = qp.prod(qp.PauliX(0), qp.PauliY(1))
@@ -94,12 +95,10 @@ class TestEvolution:  # pylint: disable=too-many-public-methods
         assert op.coeff == -1j * op.data[0]
         assert op.param == op.data[0]
 
-        new_param = np.array(2.345)
-        op.data = (new_param,)
-
-        assert op.data == (new_param,)
-        assert op.coeff == -1j * op.data[0]
-        assert op.data == op.data[0]
+        with pytest.raises(
+            AttributeError, match="property 'data' of 'Evolution' object has no setter"
+        ):
+            setattr(op, "data", (np.array(2.345),))
 
     def test_repr_paulix(self):
         """Test the __repr__ method when the base is a simple observable."""

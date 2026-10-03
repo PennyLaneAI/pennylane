@@ -81,20 +81,16 @@ from functools import partial
 from numbers import Number
 from warnings import warn
 
-try:
-    import jax
-    from jax.interpreters import ad, batching, mlir
-    from jax.interpreters import partial_eval as pe
-
-except (ImportError, NameError) as e:  # pragma: no cover
-    pass
+import jax
+from jax.interpreters import ad, batching, mlir
+from jax.interpreters import partial_eval as pe
 
 import pennylane as qp
 from pennylane import math
-from pennylane.capture import FlatFn, QpPrimitive
+from pennylane.capture import FlatFn, QpPrimitive, tracing_device
 from pennylane.exceptions import CaptureError
 from pennylane.logging import debug_logger
-from pennylane.typing import TensorLike
+from pennylane.typing import Result, TensorLike
 
 from .construct_execution_config import construct_execution_config
 
@@ -364,7 +360,7 @@ def _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs):
     return qfunc_jaxpr, flat_fn.out_tree
 
 
-def capture_qnode(qnode: "qp.QNode", *args, **kwargs) -> "qp.typing.Result":
+def capture_qnode(qnode: "qp.QNode", *args, **kwargs) -> Result:
     """A capture compatible call to a QNode. This function is internally used by ``QNode.__call__``.
 
     Args:
@@ -375,7 +371,7 @@ def capture_qnode(qnode: "qp.QNode", *args, **kwargs) -> "qp.typing.Result":
         kwargs (Any): Any keyword arguments accepted by the quantum function
 
     Returns:
-        qp.typing.Result: the result of a qnode execution
+        Result: the result of a qnode execution
 
     **Example:**
 
@@ -404,8 +400,24 @@ def capture_qnode(qnode: "qp.QNode", *args, **kwargs) -> "qp.typing.Result":
           execution_config=ExecutionConfig(grad_on_execution=False, use_device_gradient=None, use_device_jacobian_product=False, gradient_method='best', gradient_keyword_arguments={}, device_options={}, interface=<Interface.JAX: 'jax'>, derivative_order=1, mcm_config=MCMConfig(mcm_method=None, postselect_mode=None), convert_to_numpy=True, executor_backend=<class 'pennylane.concurrency.executors.native.multiproc.MPPoolExec'>)
           n_consts=0
           qfunc_jaxpr={ lambda ; e:f64[]. let
-              _:AbstractOperator() = RX[n_wires=1] e 0:i64[]
-              f:AbstractOperator() = PauliZ[n_wires=1] 0:i64[]
+              _:AbstractOperator() = operator[
+                adjoint=False
+                forward_mask=()
+                hybrid_lens=()
+                hybrid_trees=()
+                n_ctrls=0
+                op_cls=<class 'pennylane.ops.qubit.parametric_ops_single_qubit.RX'>
+                wire_lens=(1,)
+              ] e 0:i64[]
+              f:AbstractOperator() = operator[
+                adjoint=False
+                forward_mask=()
+                hybrid_lens=()
+                hybrid_trees=()
+                n_ctrls=0
+                op_cls=<class 'pennylane.ops.qubit.non_parametric_ops.PauliZ'>
+                wire_lens=(1,)
+              ] 0:i64[]
               g:AbstractMeasurement(n_wires=None) = expval_obs f
               h:AbstractMeasurement(n_wires=0) = probs_wires
             in (g, h) }
@@ -415,7 +427,6 @@ def capture_qnode(qnode: "qp.QNode", *args, **kwargs) -> "qp.typing.Result":
         i:f64[] = mul 2.0:f64[] c
         j:f64[2] = add i d
       in (j,) }
-
 
     """
     # apply transform to a callable so will be captured when called
@@ -456,7 +467,9 @@ def _bind_qnode(qnode, *args, **kwargs):
         struct = jax.tree_util.tree_structure(args)
         abstracted_axes = jax.tree_util.tree_unflatten(struct, abstracted_axes)
 
-    qfunc_jaxpr, out_tree = _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs)
+    # Publish the device for the duration of the trace
+    with tracing_device(qnode.device):
+        qfunc_jaxpr, out_tree = _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs)
 
     flat_shots = tuple(qnode._shots) if qnode._shots else ()  # pylint: disable=protected-access
 

@@ -761,6 +761,7 @@ class TestAdjointVJP:
         expected = jac.T @ cotangents.T
         assert np.allclose(actual, expected, atol=tol)
 
+    @pytest.mark.pl2do(reason="complex operator params unsupported, adjoint state diff unsupported")
     @pytest.mark.parametrize(
         "cotangents",
         [
@@ -780,8 +781,8 @@ class TestAdjointVJP:
     def test_multi_param_state_batched(self, cotangents, tol):
         """Test that computing the VJP with batched cotangents for state measurements
         gives the correct results for multiple trainable parameters."""
-        x = np.array(0.654 + 0j)
-        y = np.array(1.221 + 0j)
+        x = np.array(0.654)
+        y = np.array(1.221)
 
         obs = [qp.state()]
         qs = QuantumScript([qp.RY(x, wires=[0]), qp.RX(y, wires=[1])], obs, trainable_params=[0, 1])

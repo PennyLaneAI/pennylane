@@ -16,27 +16,20 @@ This module contains the :class:`Wires` class, which takes care of wire bookkeep
 """
 
 import functools
-import itertools
 import uuid
 from collections.abc import Hashable, Iterable, Sequence
-from importlib import import_module, util
+from itertools import combinations
 
+import jax
 import numpy as np
 
 from pennylane import math
 from pennylane.exceptions import WireError
 from pennylane.pytrees import register_pytree
+from pennylane.typing import AbstractWires, Wire, _AbstractWireTypeFactory
 
-if util.find_spec("jax") is not None:
-    jax = import_module("jax")
-    jax_available = True
-else:
-    jax_available = False
-    jax = None
-
-if jax_available:
-    # pylint: disable=unnecessary-lambda
-    setattr(jax.interpreters.partial_eval.DynamicJaxprTracer, "__hash__", lambda x: id(x))
+# pylint: disable=unnecessary-lambda
+setattr(jax.interpreters.partial_eval.DynamicJaxprTracer, "__hash__", lambda x: id(x))
 
 
 def _process(wires):
@@ -64,6 +57,9 @@ def _process(wires):
     if math.get_interface(wires) == "jax" and not math.is_abstract(wires):
         wires = tuple(wires.tolist() if wires.ndim > 0 else (wires.item(),))
 
+    if math.get_interface(wires) == "numpy" and hasattr(wires, "tolist") and wires.ndim == 0:
+        wires = wires.tolist()
+
     try:
         # Use tuple conversion as a check for whether `wires` can be iterated over.
         # Note, this is not the same as `isinstance(wires, Iterable)` which would
@@ -74,9 +70,15 @@ def _process(wires):
         # if not iterable, interpret as single wire label
         try:
             hash(wires)
-        except TypeError as e:
+        except TypeError as e:  # pragma: no cover
             # if object is not hashable, cannot identify unique wires
             # Check for unhashable type error - format changed in Python 3.14
+            # since this branch corresponds to a non-iterable and non-hashable object,
+            # and the only thing in Python that fits that description is an numpy array
+            # of a scalar, which we do have special handling for. This branch cannot be
+            # reasonably tested without making a convoluted example, which is probably
+            # not worth it, adding a pragma: no cover here
+            # pragma: no cover
             if "unhashable" in str(e):
                 raise WireError(f"Wires must be hashable; got object of type {type(wires)}.") from e
         return (wires,)
@@ -121,6 +123,19 @@ class Wires(Sequence):
          wires (Any): the wire label(s)
     """
 
+    def __new__(cls, wires=None, _override=False):
+        # type() not isinstance(): unhashable Wires subclasses (e.g. DynamicRegister) must be copied.
+        if type(wires) is Wires:  # pylint: disable=unidiomatic-typecheck
+            return wires
+        if isinstance(wires, AbstractWires):
+            return wires
+        if isinstance(wires, _AbstractWireTypeFactory):
+            raise TypeError(
+                "'Wire' cannot be used on its own to represent a single wire, "
+                "Use 'Wire[1]' instead."
+            )
+        return super().__new__(cls)
+
     def _flatten(self):
         """Serialize Wires into a flattened representation according to the PyTree convention."""
         return self._labels, ()
@@ -128,23 +143,35 @@ class Wires(Sequence):
     @classmethod
     def _unflatten(cls, data, _metadata):
         """De-serialize flattened representation back into the Wires object."""
+        # This is needed to handle the case where `Wires` are flattened with scalar tracers, but
+        # unflattened after concretization, resulting in scalar tracers being replaced by scalar
+        # arrays, which are not valid wire labels.
+        if math.get_deep_interface(data) == "jax":
+            data = tuple(
+                (
+                    w.item()
+                    if isinstance(w, jax.Array) and not math.is_abstract(w) and w.ndim == 0
+                    else w
+                )
+                for w in data
+            )
         return cls(data, _override=True)
 
     def __init__(self, wires, _override=False):
+        if wires is self:
+            return  # happens if constructed with a Wires object, returned as is.
         if wires is None:
             raise TypeError("Must specify a set of wires. None is not a valid wire label.")
-        if _override:
-            self._labels = wires
-        else:
-            self._labels = _process(wires)
-
+        self._labels = wires if _override else _process(wires)
         self._hash = None
 
     def __getitem__(self, idx):
         """Method to support indexing. Returns a Wires object if index is a slice,
         or a label if index is an integer."""
         if isinstance(idx, slice):
-            return Wires(self._labels[idx])
+            # use _override=True because there is no need to verify that a slice from
+            # an existing Wires object is valid or not.
+            return Wires(self._labels[idx], _override=True)
         return self._labels[idx]
 
     def __iter__(self):
@@ -167,6 +194,10 @@ class Wires(Sequence):
     def __repr__(self):
         """Method defining the string representation of this class."""
         return f"Wires({list(self._labels)})"
+
+    def __str__(self):
+        """Defines how a wires object is printed."""
+        return str(list(self._labels))
 
     def __eq__(self, other):
         """Method to support the '==' operator.
@@ -198,7 +229,6 @@ class Wires(Sequence):
         >>> wires1 + wires2
         Wires([4, 0, 1, 2])
         """
-        other = Wires(other)
         return Wires.all_wires([self, other])
 
     def __radd__(self, other):
@@ -210,7 +240,6 @@ class Wires(Sequence):
         Returns:
             Wires: all wires appearing in either object
         """
-        other = Wires(other)
         return Wires.all_wires([other, self])
 
     def __array__(self, dtype=None, copy=None):
@@ -234,9 +263,7 @@ class Wires(Sequence):
         Returns:
             JAX ndarray: array representing Wires object
         """
-        if jax_available:
-            return jax.numpy.array(self._labels)
-        raise ModuleNotFoundError("JAX not found")  # pragma: no cover
+        return jax.numpy.array(self._labels)
 
     @property
     def labels(self):
@@ -451,14 +478,18 @@ class Wires(Sequence):
 
     @staticmethod
     def all_wires(list_of_wires, sort=False):
-        """Return the wires that appear in any of the Wires objects in the list.
+        """Combine a list of wires into a single Wires object.
 
-        This is similar to a set combine method, but keeps the order of wires as they appear in the list.
+        This is similar to a set combine method, but keeps the order of wires as they appear
+        in the list. If any ``AbstractWires`` are present, an ``AbstractWires`` is returned.
+        Concrete wires have known labels and are deduplicated. Abstract wires are assumed
+        disjoint from other wires and only contribute to the total wire count.
 
         Args:
-            list_of_wires (list[Wires]): list of Wires objects
+            list_of_wires (list[Wires]): list of ``Wires`` or ``AbstractWires`` objects.
             sort (bool): Toggle for sorting the combined wire labels. The sorting is based on
-                value if all keys are int, else labels' str representations are used.
+                value if all keys are integers, else labels' str representations are used.
+                Ignored if any of the wires are abstract.
 
         Returns:
             Wires: combined wires
@@ -471,18 +502,33 @@ class Wires(Sequence):
         >>> list_of_wires = [wires1, wires2, wires3]
         >>> Wires.all_wires(list_of_wires)
         Wires([4, 0, 1, 3, 5])
+        >>> wires4 = qp.typing.Wire[3]
+        >>> Wires.all_wires(list_of_wires + [wires4])
+        AbstractWires(8)
+
         """
-        converted_wires = (
-            wires if isinstance(wires, Wires) else Wires(wires) for wires in list_of_wires
-        )
-        all_wires_list = itertools.chain(*(w.labels for w in converted_wires))
-        combined = list(dict.fromkeys(all_wires_list))
+        concrete_labels = []
+        num_abstract_wires = 0
+        list_of_wires = tuple(list_of_wires)
+
+        if any(isinstance(w, AbstractWires) and not w.shape_fixed for w in list_of_wires):
+            return AbstractWires(-1)
+
+        for wires in list_of_wires:
+            if isinstance(wires, AbstractWires):
+                num_abstract_wires += len(wires)
+            else:
+                concrete_labels.extend(Wires(wires))
+
+        # use dict here to maintain the insertion order
+        combined = list(dict.fromkeys(concrete_labels))
+
+        if num_abstract_wires:
+            return Wire[len(combined) + num_abstract_wires]
 
         if sort:
-            if all(isinstance(w, int) for w in combined):
-                combined = sorted(combined)
-            else:
-                combined = sorted(combined, key=str)
+            int_wires = all(isinstance(w, int) for w in combined)
+            combined = sorted(combined) if int_wires else sorted(combined, key=str)
 
         return Wires(tuple(combined), _override=True)
 
@@ -775,25 +821,53 @@ class DynamicWire:
         return "<DynamicWire>"
 
 
-if jax_available:
+class AbstractQubit(jax.core.AbstractValue):
+    """An aval representing an abstract qubit, usually coming from an allocated qubit"""
 
-    class AbstractQubit(jax.core.AbstractValue):
-        """An aval representing an abstract qubit, usually coming from an allocated qubit"""
+    hash_value = hash("AbstractQubit")
 
-        hash_value = hash("AbstractQubit")
+    def __eq__(self, other):
+        return isinstance(other, AbstractQubit)
 
-        def __eq__(self, other):
-            return isinstance(other, AbstractQubit)
+    def __hash__(self):
+        return self.hash_value
 
-        def __hash__(self):
-            return self.hash_value
-
-        def _iter(self):  # pragma: no cover
-            return
+    def _iter(self):  # pragma: no cover
+        return
 
 
 def is_abstract_qubit(v):
     """Returns ``True`` if the provided value is a DynamicJaxprTracer of type AbstractQubit"""
-    if not jax_available:
-        return False
     return math.is_abstract(v) and isinstance(v.val.aval, AbstractQubit)
+
+
+def _filter_abstract_and_traced_wires(v):
+    if isinstance(v, AbstractWires):
+        return Wires([])
+    return Wires([w for w in v if not math.is_abstract(w)])
+
+
+def validate_no_wire_overlaps(wire_args: dict):
+    """Validate that the given wires do not overlap."""
+    concrete_wire_args = {n: _filter_abstract_and_traced_wires(w) for n, w in wire_args.items()}
+    for n1, n2 in combinations(concrete_wire_args, r=2):
+        if Wires.shared_wires([concrete_wire_args[n1], concrete_wire_args[n2]]):
+            raise ValueError(f"{n1} and {n2} must not overlap")
+
+
+def concatenate_wires(wires1, wires2):
+    """Concatenate two wire arguments."""
+
+    if _is_not_array(wires1) and _is_not_array(wires2):
+        return wires1 + wires2
+
+    if _is_not_array(wires1):
+        wires1 = math.array(wires1, like=wires2)
+    elif _is_not_array(wires2):
+        wires2 = math.array(wires2, like=wires1)
+
+    return math.concatenate([wires1, wires2])
+
+
+def _is_not_array(w):
+    return isinstance(w, (list, tuple, Wires))

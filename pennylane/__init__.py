@@ -76,11 +76,15 @@ from pennylane.qchem import (
     from_openfermion,
     to_openfermion,
 )
+from pennylane.numeric_hamiltonians import (
+    CDFHamiltonian,
+    CGFHamiltonian,
+    VibronicHamiltonian,
+)
 from pennylane._grad import grad, jacobian, vjp, jvp, value_and_grad
 from pennylane._version import __version__
 from pennylane.about import about
 from pennylane.circuit_graph import CircuitGraph
-from pennylane.configuration import Configuration, default_config
 from pennylane.registers import registers
 from pennylane.measurements import (
     counts,
@@ -107,7 +111,6 @@ from pennylane.templates.tensornetworks import *
 from pennylane.templates.swapnetworks import *
 from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
-from pennylane import qaoa
 from pennylane.workflow import QNode, qnode, execute, set_shots, marker
 from pennylane import workflow
 
@@ -130,15 +133,6 @@ from pennylane.transforms import (
     gridsynth,
     CompilePipeline,
 )
-from pennylane.noise import (
-    add_noise,
-    insert,
-    mitigate_with_zne,
-    fold_global,
-    poly_extrapolate,
-    richardson_extrapolate,
-    exponential_extrapolate,
-)
 from pennylane.ops.functions import (
     dot,
     eigvals,
@@ -156,6 +150,7 @@ from pennylane.ops.functions import (
     commutator,
     comm,
     single_qubit_zyz_angles,
+    subcircuit,
 )
 from pennylane.ops.identity import I
 from pennylane.optimize import *
@@ -168,10 +163,6 @@ from pennylane.debugging import (
     debug_tape,
 )
 from pennylane.shadows import ClassicalShadow
-from pennylane.qcut import cut_circuit, cut_circuit_mc
-from pennylane import pulse
-
-from pennylane import fourier
 from pennylane.gradients import metric_tensor, adjoint_metric_tensor
 from pennylane import gradients  # pylint:disable=wrong-import-order
 from pennylane.drawer import draw, draw_mpl
@@ -181,7 +172,6 @@ from pennylane.io import (
     from_qasm,
     to_openqasm,
     from_qiskit,
-    from_qiskit_noise,
     from_qiskit_op,
     from_quil,
     from_quil_file,
@@ -196,11 +186,18 @@ from pennylane import logging  # pylint:disable=wrong-import-order
 
 from pennylane import data
 
-from pennylane import noise
-from pennylane.noise import NoiseModel
-
 from pennylane.devices import Tracker
 from pennylane.devices.device_constructor import device, refresh_devices
+
+from pennylane.backline import (
+    Backline,
+    Controller,
+    Coprocessor,
+    CoprocessorFunction,
+    Endpoint,
+)
+from pennylane.backline.runtime import declare as runtime_declare
+from pennylane.backline.runtime import runtime_call
 
 from pennylane import spin
 

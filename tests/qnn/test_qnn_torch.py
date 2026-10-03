@@ -793,9 +793,8 @@ def test_vjp_is_unwrapped_for_param_shift():
     """Test that the intermediate vjps used by the batch Torch interface
     are unwrapped and no error is raised for a custom operation.
 
-    Note: the execution flow of the operation resembles the implementation
-    of the Kerr gate in Strawberry Fields as a similar example was failing
-    for qp.Kerr and the strawberryfields.fock device.
+    Note: the execution flow of the operation resembles a custom diagonal
+    gate whose matrix is built from a trainable parameter.
     """
     nqubits = 2
 
@@ -985,14 +984,12 @@ def test_specs():
 
     info = qp.specs(qlayer)(x)
 
-    gate_sizes = {1: 1, 2: 2}
     gate_types = {"AngleEmbedding": 1, "RX": 1, "StronglyEntanglingLayers": 1}
     expected_resources = qp.resource.SpecsResources(
-        num_allocs=2,
-        gate_types=gate_types,
-        gate_sizes=gate_sizes,
-        measurements={"expval(PauliZ)": 2},
-        depth=3,
+        num_wires=2,
+        counts=gate_types,
+        measurement_processes={"expval(PauliZ)": 2},
+        circuit_depth=3,
     )
     assert info["resources"] == expected_resources
 

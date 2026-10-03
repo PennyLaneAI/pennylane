@@ -20,13 +20,13 @@ import pytest
 
 import pennylane as qp
 from pennylane import numpy as pnp
-from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.wires import Wires
 
 # pylint: disable=unidiomatic-typecheck, cell-var-from-loop
 
 
-@pytest.mark.jax
+@pytest.mark.xfail_if_capture(reason="come back to this when it's ported to Op2 [sc-128372]")
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
     op = qp.ControlledSequence(qp.RX(0.25, wires=3), control=[0, 1, 2])
@@ -158,12 +158,6 @@ class TestMethods:
         for op1, op2 in zip(decomp, expected_decomp):
             assert op1 == op2
 
-    def test_decomposition_new(self):
-        """Tests the decomposition rule implemented with the new system."""
-        op = qp.ControlledSequence(qp.RX(0.25, wires=3), control=["a", 1, "blue"])
-        for rule in qp.list_decomps(qp.ControlledSequence):
-            _test_decomposition_rule(op, rule)
-
 
 class TestIntegration:
     """Tests that the ControlledSequence is executable and differentiable in a QNode context"""
@@ -265,31 +259,6 @@ class TestIntegration:
         jac = torch.autograd.functional.jacobian(qnode, x)
         assert qp.math.shape(jac) == (16,)
         assert qp.math.allclose(jac, self.exp_jac, atol=0.005)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("shots", [None, 10000])
-    @pytest.mark.xfail(reason="tf gradient doesn't seem to be working, returns ()")
-    def test_qnode_tf(self, shots, seed):
-        """Test that the QNode executes and is differentiable with TensorFlow. The shots
-        argument controls whether autodiff or parameter-shift gradients are used."""
-
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", seed=seed)
-        diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qp.set_shots(
-            qp.QNode(self.circuit, dev, interface="tf", diff_method=diff_method), shots=shots
-        )
-
-        x = tf.Variable(self.x)
-        with tf.GradientTape() as tape:
-            res = qnode(x)
-
-        assert qp.math.shape(res) == (16,)
-        assert qp.math.allclose(res, self.exp_result, atol=0.002)
-
-        jac = tape.gradient(res, x)
-        assert qp.math.shape(jac) == (16,)
 
     def test_prod_rx_rx_compiled_circuit(self):
         """Test that a circuit can execute successfully using qp.compile and

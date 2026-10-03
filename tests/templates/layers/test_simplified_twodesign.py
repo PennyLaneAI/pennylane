@@ -25,7 +25,7 @@ from pennylane import numpy as pnp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Run standard checks with the assert_valid function."""
 
@@ -165,7 +165,7 @@ class TestDecomposition:
         ([np.pi] * 4, [[[np.pi] * 2] * 3], range(4)),
     ]
 
-    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(("initial_layer_weights", "weights", "wires"), DECOMP_PARAMS)
     def test_decomposition_new(self, initial_layer_weights, weights, wires):
         op = qp.SimplifiedTwoDesign(initial_layer_weights, weights, wires)
@@ -326,35 +326,6 @@ class TestInterfaces:
         grads2 = grad_fn2(initial_weights, weights)
 
         assert qp.math.allclose(grads, grads2, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    def test_tf(self, tol):
-        """Tests the tf interface."""
-
-        import tensorflow as tf
-
-        weights = tf.Variable(np.random.random(size=(1, 2, 2)))
-        initial_weights = tf.Variable(np.random.random(size=(3,)))
-
-        dev = qp.device("default.qubit", wires=3)
-
-        circuit = qp.QNode(circuit_template, dev)
-        circuit2 = qp.QNode(circuit_decomposed, dev)
-
-        res = circuit(initial_weights, weights)
-        res2 = circuit2(initial_weights, weights)
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-        with tf.GradientTape() as tape:
-            res = circuit(initial_weights, weights)
-        grads = tape.gradient(res, [initial_weights, weights])
-
-        with tf.GradientTape() as tape2:
-            res2 = circuit2(initial_weights, weights)
-        grads2 = tape2.gradient(res2, [initial_weights, weights])
-
-        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
-        assert np.allclose(grads[1], grads2[1], atol=tol, rtol=0)
 
     @pytest.mark.torch
     def test_torch(self, tol):

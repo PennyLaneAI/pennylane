@@ -220,7 +220,7 @@ class TestGraphStatePrep:
             assert op.name == one_qubit_ops(0).name
             assert isinstance(op.wires[0], QubitGraph)
         for op in queue[8:]:
-            assert op.name == two_qubit_ops.name
+            assert op.name == two_qubit_ops.__name__
             assert all(isinstance(w, QubitGraph) for w in op.wires)
 
     @pytest.mark.parametrize(

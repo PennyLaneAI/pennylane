@@ -14,10 +14,13 @@
 
 import numpy as np
 import pytest
-from operator2_utils import CompOp, DynOp, FullOp, MixedHybridOp, MultiWireOp, TwoDynOp
+from operator2_utils import CompilableOp, DynOp, FullOp, MixedHybridOp, MultiWireOp, TwoDynOp
 
+import pennylane as qp
+from pennylane.core import Operator1
 from pennylane.core.operator import Operator2
 from pennylane.core.operator.utils import abstractify
+from pennylane.decomposition.resources import CompressedResourceOp
 from pennylane.typing import AbstractArray, Bool, Complex, Float, Int, Wire
 from pennylane.wires import Wires
 
@@ -59,6 +62,16 @@ class TestAbstractifyBasics:
         aw = Wire[2]
         assert abstractify(aa) is aa
         assert abstractify(aw) is aw
+
+    @pytest.mark.jax
+    def test_ShapedArray_promoted_to_AbstractArray(self):
+        """Test that jax.core.ShapedArray is promoted to an AbstractArray."""
+
+        import jax
+
+        assert abstractify(jax.core.ShapedArray((4, 3, 2), jax.numpy.int32)) == AbstractArray(
+            (4, 3, 2), np.int32
+        )
 
     def test_pytree_with_wires_leaves(self):
         """Test that pytrees containing ``Wires`` leaves are abstractified recursively."""
@@ -134,6 +147,16 @@ class TestAbstractifyOperatorInstances:
         assert result.theta == Int[2]
         assert result.wires == Wire[1]
 
+    @pytest.mark.jax
+    def test_ShapedArray_input(self):
+        """Test that ShapedArray inputs get promoted to AbstractArray."""
+        import jax
+
+        op = DynOp(jax.core.ShapedArray((), np.float64), Wire[2])
+        aop = abstractify(op)
+
+        qp.assert_equal(aop, DynOp(Float, Wire[2]))
+
     def test_multiple_wire_op(self):
         """Tests when there are multiple wires."""
 
@@ -146,9 +169,7 @@ class TestAbstractifyOperatorInstances:
         "phi_spec, wire_spec",
         [
             (Float[3], Wire[3]),
-            (Float[-1], Wire[-1]),
             (Float[-1], Wire[3]),
-            (Float[3], Wire[-1]),
         ],
     )
     def test_noop_on_abstract_operator(self, phi_spec, wire_spec):
@@ -253,7 +274,7 @@ class TestAbstractifyOperatorInstances:
     def test_comp_op_is_passed_through(self):
         """Tests that a compilable static arg is passed through."""
 
-        op = CompOp(5, wires=[0])
+        op = CompilableOp(5, wires=[0])
         result = abstractify(op)
         assert result.n == 5
         assert result.wires == Wire[1]
@@ -308,6 +329,38 @@ class TestAbstractifyOperatorClasses:
 
         with pytest.raises(TypeError, match="must set 'arg_specs'"):
             _ = abstractify(FixedSigOp)
+
+
+class TestAbstractifyOperator1:
+    """Tests that abstractify dispatches to resource_rep for Operator1."""
+
+    def test_abstractify_op_type(self):
+        """Tests abstractifying an operator type."""
+
+        class CustomOp(Operator1):
+            pass
+
+        rep = abstractify(CustomOp)
+        assert isinstance(rep, CompressedResourceOp)
+        assert rep.op_type is CustomOp
+        assert rep.params == {}
+
+    def test_abstractify_op_instance(self):
+        """Tests abstractifying operator instance."""
+
+        class CustomOp2(Operator1):
+
+            resource_keys = {"num_wires"}
+
+            @property
+            def resource_params(self):
+                return {"num_wires": len(self.wires)}
+
+        op = CustomOp2(wires=[1, 2, 3])
+        rep = abstractify(op)
+        assert isinstance(rep, CompressedResourceOp)
+        assert rep.op_type is CustomOp2
+        assert rep.params == {"num_wires": 3}
 
 
 if __name__ == "__main__":

@@ -136,9 +136,8 @@ def transpile(
 
     # make sure every wire is present in coupling map
     if any(wire not in coupling_graph.nodes for wire in tape.wires):
-        wires = tape.wires.tolist()
         raise ValueError(
-            f"Not all wires present in coupling map! wires: {wires}, coupling map: {coupling_graph.nodes}"
+            f"Not all wires present in coupling map! wires: {tape.wires}, coupling map: {coupling_graph.nodes}"
         )
 
     if any(isinstance(m.obs, (LinearCombination, qp.ops.Prod)) for m in tape.measurements):

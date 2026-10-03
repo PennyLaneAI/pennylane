@@ -322,13 +322,13 @@ class TrotterProduct(Operation):
         Rot(1.2, 2.3, 3.4, wires=[0])
         >>> op = qp.PauliRot(1.2, "XY", wires=(0,1))
         >>> qp.PauliRot._unflatten(*op._flatten())
-        PauliRot(1.2, XY, wires=[0, 1])
+        PauliRot(theta=1.2, pauli_word=XY, wires=[0, 1])
 
         Operators that have trainable components that differ from their ``Operator.data`` must implement their own
         ``_flatten`` methods.
 
         >>> op = qp.ctrl(qp.U2(3.4, 4.5, wires="a"), ("b", "c") )
-        >>> op._flatten()
+        >>> op._flatten()  # doctest: +SKIP
         ((U2(3.4, 4.5, wires=['a']),), (Wires(['b', 'c']), (True, True), Wires([]), 'borrowed'))
 
         """
@@ -399,7 +399,7 @@ def _trotter_product_decomposition_resources(n, order, ops):
         return reps
     for op in ops:
         reps[resource_rep(qp_ops.op_math.Evolution, base=op)] = (
-            n * _count(op, ops) * 2 * 5 * (order - 2) / 2
+            n * _count(op, ops) * 2 * 5 * (order - 2) // 2
         )
     return reps
 

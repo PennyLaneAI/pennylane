@@ -45,7 +45,7 @@ merged.
 * **Python imports check**: We use `isort <https://pycqa.github.io/isort/>`_ to automatically sort Python imports.
   You may run ``isort`` locally with ``make format``. ``isort`` will run with the following options: 
 
-  * ``--py 311`` tells to ``isort`` to reorder imports as if your interpreter were Python 3.11;
+  * ``--py 312`` tells to ``isort`` to reorder imports as if your interpreter were Python 3.12;
   * ``--profile black`` is added for compatibility with Black;
   * ``-l 100`` sets the line width to 100, as with Black;
   * ``-p ./pennylane`` forces ``isort`` to recognize the ``pennylane`` modules as being part of the current python project;
@@ -55,7 +55,7 @@ merged.
 
   .. code-block:: bash
 
-      isort --py 311 --profile black -l 100 -p ./pennylane --skip __init__.py --filter-files ./pennylane ./tests
+      isort --py 312 --profile black -l 100 -p ./pennylane --skip __init__.py --filter-files ./pennylane ./tests
 
 * **Code factor**:  `Code factor <https://www.codefactor.io/>`_ checks several common code quality
   characteristics. 

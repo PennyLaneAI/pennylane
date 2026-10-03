@@ -672,8 +672,8 @@ class DefaultTensor(Device):
                 # so we raise a more informative error here
                 raise WireError(
                     "Mismatch between circuit and device wires. "
-                    f"Circuit has wires {circuit.wires.tolist()}. "
-                    f"Tensor on device has wires {self.wires.tolist()}"
+                    f"Circuit has wires {circuit.wires}. "
+                    f"Tensor on device has wires {self.wires}"
                 )
             circuit = circuit.map_to_standard_wires()
             results.append(self.simulate(circuit))
@@ -986,8 +986,8 @@ def apply_operation_core_multirz(ops: qp.MultiRZ, device):
 def apply_operation_core_paulirot(ops: qp.PauliRot, device):
     """Apply a Pauli rotation operation in the form of a Matrix Product Operator (MPO)."""
 
-    theta = ops.parameters[0]
-    pauli_string = ops._hyperparameters["pauli_word"]
+    theta = ops.arguments["theta"]
+    pauli_string = ops.arguments["pauli_word"]
 
     arrays = []
     sites = list(ops.wires)

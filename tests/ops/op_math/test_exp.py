@@ -109,7 +109,7 @@ class TestProperties:
     """Test of the properties of the Exp class."""
 
     def test_data(self):
-        """Test intializaing and accessing the data property."""
+        """Test that Exp data is read-only."""
 
         phi = np.array(1.234)
         coeff = np.array(2.345)
@@ -119,13 +119,8 @@ class TestProperties:
 
         assert op.data == (coeff, phi)
 
-        new_phi = np.array(0.1234)
-        new_coeff = np.array(3.456)
-        op.data = (new_coeff, new_phi)
-
-        assert op.data == (new_coeff, new_phi)
-        assert op.base.data == (new_phi,)
-        assert op.scalar == new_coeff
+        with pytest.raises(AttributeError, match="property 'data' of 'Exp' object has no setter"):
+            setattr(op, "data", (np.array(3.456), np.array(0.1234)))
 
     def test_is_verified_hermitian(self):
         """Test that the op is hermitian if the base is hermitian and the coeff is real."""
@@ -221,20 +216,6 @@ class TestMatrix:  # pylint: disable=too-many-public-methods
         assert qp.math.allclose(mat, true_mat)
         assert mat.shape == (3, 2, 2)
         assert isinstance(mat, torch.Tensor)
-
-    @pytest.mark.tf
-    def test_batching_tf(self):
-        """Test that Exp matrix has batching support with the tensorflow interface."""
-        import tensorflow as tf
-
-        x = tf.constant([-1.0, -2.0, -3.0])
-        y = tf.constant([1.0, 2.0, 3.0])
-        op = Exp(qp.RX(x, 0), y)
-        mat = op.matrix()
-        true_mat = qp.math.stack([Exp(qp.RX(i, 0), j).matrix() for i, j in zip(x, y)])
-        assert qp.math.allclose(mat, true_mat)
-        assert mat.shape == (3, 2, 2)
-        assert isinstance(mat, tf.Tensor)
 
     def test_tensor_base_isingxx(self):
         """Test that isingxx can be created with a tensor base."""
@@ -364,7 +345,7 @@ class TestMatrix:  # pylint: disable=too-many-public-methods
         """Test the matrix with torch."""
         import torch
 
-        phi = torch.tensor(0.4, dtype=torch.complex128)
+        phi = torch.tensor(0.4, dtype=torch.float64)
 
         base = qp.PauliX(0)
         op = Exp(base, -0.5j * phi)
@@ -372,19 +353,8 @@ class TestMatrix:  # pylint: disable=too-many-public-methods
 
         assert qp.math.allclose(op.matrix(), compare.matrix())
 
-    @pytest.mark.tf
-    def test_tf_matrix_rx(self):
-        """Test the matrix with tensorflow."""
-
-        import tensorflow as tf
-
-        phi = tf.Variable(0.4, dtype=tf.complex128)
-        base = qp.PauliX(0)
-        op = Exp(base, -0.5j * phi)
-        compare = qp.RX(phi, wires=0)
-        assert qp.math.allclose(op.matrix(), compare.matrix())
-
     @pytest.mark.jax
+    @pytest.mark.xfail(reason="differentiating complex values through RX not supported.")
     def test_jax_matrix_rx(self):
         """Test the matrix with jax."""
         import jax
@@ -527,9 +497,17 @@ class TestDecomposition:
                 "`PCPhase` decompositions not currently possible due to different signature."
             )
 
+        if op_class is qp.GlobalPhase:
+            pytest.skip(
+                "'GlobalPhase' does not act on any wires. Wire based decompositions therefore do not make sense."
+            )
+
         phi = 1.23
 
-        wires = [0, 1, 2] if op_class.num_wires is None else list(range(op_class.num_wires))
+        try:
+            wires = [0, 1, 2] if op_class.num_wires is None else list(range(op_class.num_wires))
+        except TypeError:
+            wires = [0, 1, 2]
         if str_wires:
             alphabet = ("a", "b", "c", "d", "e", "f", "g")
             wires = [alphabet[w] for w in wires]
@@ -551,13 +529,12 @@ class TestDecomposition:
                 and qp.math.isclose(dec[0].data[0], phi)
                 and dec[0].wires == op.wires
             )
-        elif op_class is qp.GlobalPhase:
-            # exp(qp.GlobalPhase.generator(), phi) decomposes to PauliRot
-            # cannot compare GlobalPhase and PauliRot with qp.equal
-            assert np.allclose(op.matrix(wire_order=op.wires), dec[0].matrix(wire_order=op.wires))
         elif op_class is qp.FermionicSWAP:
             expected = op.map_wires(dict(zip(op.wires, reversed(op.wires))))
             # simplifying the generator changes the wire order
+            qp.assert_equal(expected, dec[0])
+        elif op_class is qp.MultiRZ:
+            expected = qp.PauliRot(phi, "Z" * len(wires), wires=wires)
             qp.assert_equal(expected, dec[0])
         else:
             qp.assert_equal(op, dec[0])
@@ -734,7 +711,6 @@ class TestIntegration:
         assert qp.math.allclose(grad, -jnp.sin(phi))
 
     @pytest.mark.catalyst
-    @pytest.mark.external
     def test_catalyst_qnode(self):
         """Test with Catalyst interface"""
 
@@ -775,30 +751,6 @@ class TestIntegration:
         assert qp.math.allclose(res, jnp.cos(phi))
         grad = jax.grad(func)(phi)
         assert qp.math.allclose(grad, -jnp.sin(phi))
-
-    @pytest.mark.tf
-    def test_tensorflow_qnode(self):
-        """test the execution of a tensorflow qnode."""
-        import tensorflow as tf
-
-        phi = tf.Variable(1.2, dtype=tf.complex128)
-
-        dev = qp.device("default.qubit", wires=1)
-
-        @qp.qnode(dev)
-        def circ(phi):
-            Exp(qp.PauliX(0), -0.5j * phi)
-            return qp.expval(qp.PauliZ(0))
-
-        with tf.GradientTape() as tape:
-            res = circ(phi)
-
-        phi_grad = tape.gradient(res, phi)
-        phi_real = qp.math.cast(phi, tf.float64)
-
-        assert qp.math.allclose(res, tf.cos(phi_real))
-        # pylint: disable=invalid-unary-operand-type
-        assert qp.math.allclose(phi_grad, -tf.sin(phi))
 
     @pytest.mark.torch
     def test_torch_qnode(self):
@@ -920,29 +872,6 @@ class TestIntegration:
         expected_grad = 0.5 * (jnp.exp(x) - jnp.exp(-x))
         assert qp.math.allclose(grad, expected_grad)
 
-    @pytest.mark.tf
-    def test_tf_measurement(self):
-        """Test Exp in a measurement with gradient and tensorflow."""
-        # pylint:disable=invalid-unary-operand-type
-        import tensorflow as tf
-
-        x = tf.Variable(2.0, dtype=tf.float64)
-
-        @qp.qnode(qp.device("default.qubit", wires=1))
-        def circuit(x):
-            qp.Hadamard(0)
-            return qp.expval(Exp(qp.PauliZ(0), x))
-
-        with tf.GradientTape() as tape:
-            res = circuit(x)
-
-        expected = 0.5 * (tf.exp(x) + tf.exp(-x))
-        assert qp.math.allclose(res, expected)
-
-        x_grad = tape.gradient(res, x)
-        expected_grad = 0.5 * (tf.exp(x) - tf.exp(-x))
-        assert qp.math.allclose(x_grad, expected_grad)
-
     def test_draw_integration(self):
         """Test that Exp integrates with drawing."""
 
@@ -953,7 +882,7 @@ class TestIntegration:
 
         tape = qp.tape.QuantumScript.from_queue(q)
 
-        assert qp.drawer.tape_text(tape) == "0: ──Exp(-0.6j X)─┤  "
+        assert qp.drawer.tape_text(tape) == "0: ──Exp(-0.6j X)─┤"
 
     def test_exp_batching(self):
         """Test execution of a batched Exp operator."""

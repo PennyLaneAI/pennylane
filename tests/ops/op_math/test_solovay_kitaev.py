@@ -236,7 +236,6 @@ def test_exception():
         sk_decomposition(op, epsilon=1e-4, max_depth=1)
 
 
-@pytest.mark.external
 @pytest.mark.catalyst
 def test_exception_with_qjit():
     """Test operation wire exception in Solovay-Kitaev"""

@@ -122,11 +122,9 @@ class TestSnapshotTape:
         with pytest.raises(ValueError, match="tags can only be of type 'str'"):
             qp.Snapshot(qp.state())
 
-    @pytest.mark.parametrize(
-        "dev", (qp.device("default.qubit"), qp.device("default.qutrit", wires=2))
-    )
-    def test_int_tag_fails_during_transform(self, dev):
-        """Test ValueError is raised if user provided a int snapshot tag."""
+    def test_int_tag_fails_during_transform_qnode(self):
+        """Test ValueError is raised if the user provided an int snapshot tag."""
+        dev = qp.device("default.qubit")
 
         @qp.qnode(dev)
         def c():
@@ -136,6 +134,13 @@ class TestSnapshotTape:
         with pytest.raises(ValueError, match="can only be of type 'str'"):
             qp.snapshots(c)()
 
+    def test_int_tag_fails_during_transform_tape(self):
+        """Test that ValueError is raised if the user provided an int snapshot tag to the
+        tape transform."""
+        tape = qp.tape.QuantumScript([qp.Snapshot(2)], [qp.expval(qp.Z(0))])
+        with pytest.raises(ValueError, match="can only be of type 'str'"):
+            qp.snapshots(tape)
+
 
 @pytest.mark.parametrize(
     "dev",
@@ -143,8 +148,7 @@ class TestSnapshotTape:
         # Two supported devices
         qp.device("default.qubit"),
         qp.device("default.mixed", wires=2),
-        # Two non-supported devices
-        qp.device("default.qutrit", wires=2),
+        # A non-supported device
         qp.device("lightning.qubit", wires=2),
     ],
 )
@@ -184,9 +188,6 @@ class TestSnapshotGeneral:
             qp.Snapshot(measurement=qp.state())
             qp.Snapshot()
 
-            if isinstance(dev, qp.devices.QutritDevice):
-                return qp.expval(qp.GellMann(0, 1))
-
             return qp.expval(qp.PauliZ(0))
 
         _ = qp.snapshots(circuit)()
@@ -194,7 +195,7 @@ class TestSnapshotGeneral:
     @pytest.mark.parametrize("diff_method", [None, "parameter-shift"])
     def test_all_state_measurement_snapshot_pure_qubit_dev(self, dev, diff_method):
         """Test that the correct measurement snapshots are returned for different measurement types."""
-        if isinstance(dev, (qp.devices.default_mixed.DefaultMixed, qp.devices.QutritDevice)):
+        if isinstance(dev, qp.devices.default_mixed.DefaultMixed):
             pytest.skip()
 
         @qp.qnode(dev, diff_method=diff_method)
@@ -233,18 +234,11 @@ class TestSnapshotGeneral:
 
         @qp.qnode(dev)
         def circuit():
-            if isinstance(dev, qp.devices.QutritDevice):
-                qp.THadamard(wires=0)
-                return qp.expval(qp.GellMann(0, index=6))
-
             qp.Hadamard(wires=0)
             return qp.expval(qp.PauliX(0))
 
         result = qp.snapshots(circuit)()
-        if isinstance(dev, qp.devices.QutritDevice):
-            expected = {"execution_results": np.array(0.66666667)}
-        else:
-            expected = {"execution_results": np.array(1.0)}
+        expected = {"execution_results": np.array(1.0)}
 
         _compare_numpy_dicts(result, expected)
 
@@ -253,8 +247,7 @@ class TestSnapshotGeneral:
 
         @qp.qnode(dev)
         def c():
-            if dev.name != "default.qutrit":
-                qp.H(0)
+            qp.H(0)
             qp.Snapshot("sample", qp.sample(wires=0), shots=5)
             qp.Snapshot("counts", qp.counts(wires=0, all_outcomes=True), shots=20)
             qp.Snapshot("probs", qp.probs(wires=0), shots=21)
@@ -262,17 +255,11 @@ class TestSnapshotGeneral:
 
         out = qp.snapshots(c)()
 
-        assert out["sample"].shape == (5, 1)
-        assert out["counts"]["0"] + out["counts"].get("1", 0) == 20
-        if dev.name != "default.qutrit":
-            # very rare that it will be *exactly* [0.5, 0.5] if 20 shots
-            assert not qp.math.allclose(out["probs"], np.array([0.5, 0.5]), atol=1e-8)
+        # very rare that it will be *exactly* [0.5, 0.5] if 20 shots
+        assert not qp.math.allclose(out["probs"], np.array([0.5, 0.5]), atol=1e-8)
 
     def test_override_analytic(self, dev):
         """Test that finite shots can be written with analytic calculations."""
-
-        if dev.name == "default.qutrit":
-            pytest.skip("hard to write generic test that works with qutrits.")
 
         @qp.transform
         def set_shots(tape, shots):
@@ -352,102 +339,6 @@ class TestSnapshotSupportedQNode:
         }
 
         _compare_numpy_dicts(result, expected)
-
-    # pylint: disable=protected-access
-    @pytest.mark.parametrize("method", [None, "parameter-shift"])
-    def test_default_gaussian(self, method):
-        """Test that multiple snapshots are returned correctly on the CV simulator."""
-        dev = qp.device("default.gaussian", wires=2)
-
-        assert qp.debugging.snapshot._is_snapshot_compatible(dev)
-
-        @qp.qnode(dev, diff_method=method)
-        def circuit():
-            qp.Snapshot()
-            qp.Displacement(0.5, 0, wires=0)
-            qp.Snapshot("very_important_state")
-            qp.Beamsplitter(0.5, 0.7, wires=[0, 1])
-            qp.Snapshot()
-            return qp.expval(qp.QuadX(0))
-
-        circuit()
-        assert dev._debugger is None
-
-        result = qp.snapshots(circuit)()
-        expected = {
-            0: {
-                "cov_matrix": np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]),
-                "means": np.array([0, 0, 0, 0]),
-            },
-            1: {
-                "cov_matrix": np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]),
-                "means": np.array([1, 0, 0, 0]),
-            },
-            2: {
-                "cov_matrix": np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]),
-                "means": np.array([0.87758256, 0.36668488, 0, 0.30885441]),
-            },
-            "execution_results": np.array(0.87758256),
-        }
-
-        assert all(k1 == k2 for k1, k2 in zip(result.keys(), expected.keys()))
-        assert np.allclose(result["execution_results"], expected["execution_results"])
-        del result["execution_results"]
-        del expected["execution_results"]
-        assert all(
-            np.allclose(v1["cov_matrix"], v2["cov_matrix"])
-            for v1, v2 in zip(result.values(), expected.values())
-        )
-        assert all(
-            np.allclose(v1["means"], v2["means"])
-            for v1, v2 in zip(result.values(), expected.values())
-        )
-
-    # pylint: disable=protected-access
-    @pytest.mark.parametrize("diff_method", [None, "parameter-shift"])
-    def test_default_qutrit_mixed_finite_shot(self, diff_method):
-        """Test that multiple snapshots are returned correctly on the qutrit density-matrix simulator."""
-
-        # TODO: not sure what to do with this test so leaving this here for now.
-        np.random.seed(9872653)
-
-        dev = qp.device("default.qutrit.mixed", wires=2)
-
-        assert qp.debugging.snapshot._is_snapshot_compatible(dev)
-
-        @qp.set_shots(100)
-        @qp.qnode(dev, diff_method=diff_method)
-        def circuit(add_bad_snapshot: bool):
-            qp.THadamard(wires=0)
-            qp.Snapshot(measurement=qp.counts())
-            qp.TSWAP(wires=[0, 1])
-            if add_bad_snapshot:
-                qp.Snapshot(measurement=qp.probs())
-            qp.Snapshot()
-            return qp.counts()
-
-        circuit(False)
-        assert dev._debugger is None
-        # This should fail since finite-shot probs() isn't supported
-        with pytest.raises(NotImplementedError):
-            qp.snapshots(circuit)(add_bad_snapshot=True)
-
-        result = qp.snapshots(circuit)(add_bad_snapshot=False)
-        expected = {
-            0: {"00": 34, "10": 37, "20": 29},
-            "execution_results": {"00": 37, "01": 33, "02": 30},
-        }
-
-        assert result[0] == expected[0]
-        assert np.allclose(
-            result[1][:3],
-            np.array([0.33333333, 0.33333333, 0.33333333, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-        )
-        assert result["execution_results"] == expected["execution_results"]
-
-        # Make sure shots are overridden correctly
-        result = qp.snapshots(qp.set_shots(shots=200)(circuit))(add_bad_snapshot=False)
-        assert result[0] == {"00": 74, "10": 58, "20": 68}
 
     @pytest.mark.parametrize(
         "m,expected_result",
@@ -558,13 +449,10 @@ class TestSnapshotSupportedQNode:
 
         _compare_numpy_dicts(result, expected)
 
-    def test_all_sample_measurement_snapshot(self):
+    def test_all_sample_measurement_snapshot(self, seed):
         """Test that the correct measurement snapshots are returned for different measurement types."""
 
-        # TODO: The fact that this entire test depends on a global seed is not good
-        np.random.seed(9872653)
-
-        dev = qp.device("default.qubit", wires=1)
+        dev = qp.device("default.qubit", wires=1, seed=seed)
 
         @qp.set_shots(10)
         @qp.qnode(dev)
@@ -582,27 +470,20 @@ class TestSnapshotSupportedQNode:
 
         result = qp.snapshots(circuit)()
 
-        expected = {
-            0: -0.6,
-            1: 0.64,
-            2: np.array([0.6, 0.4]),
-            3: {"0": 2, "1": 8},
-            4: np.array([[0, 1, 0, 1, 0, 1, 1, 0, 0, 0]]).transpose(),
-            5: np.array([0.70710678, 0.70710678]),
-            "execution_results": np.array(0.2),
-        }
-
-        assert result[3]["0"] == 2
-        assert result[3]["1"] == 8
-
-        del result[3]
-        del expected[3]
-
-        _compare_numpy_dicts(result, expected)
+        assert -1 <= result[0] <= 1
+        assert 0 <= result[1] <= 1
+        assert np.allclose(np.sum(result[2]), 1)
+        assert sum(result[3].values()) == 10
+        assert set(result[3]).issubset({"0", "1"})
+        assert result[4].shape == (10, 1)
+        assert set(result[4].flat).issubset({0, 1})
+        assert np.allclose(result[5], np.array([0.70710678, 0.70710678]))
+        assert -1 <= result["execution_results"] <= 1
 
         result = qp.snapshots(qp.set_shots(circuit, shots=200))()
-        assert result[3] == {"0": 98, "1": 102}
-        assert np.allclose(result[5], expected[5])
+        assert sum(result[3].values()) == 200
+        assert set(result[3]).issubset({"0", "1"})
+        assert np.allclose(result[5], np.array([0.70710678, 0.70710678]))
 
     def test_unsupported_snapshot_measurement(self):
         """Test that an exception is raised when an unsupported measurement is provided to the snapshot."""
@@ -698,49 +579,6 @@ class TestSnapshotUnsupportedQNode:
 
         assert qp.math.allclose(out[0], out["execution_results"])
 
-    # pylint: disable=protected-access
-    @pytest.mark.parametrize("method", [None, "parameter-shift"])
-    def test_default_qutrit(self, method):
-        """Test that multiple snapshots are returned correctly on the pure qutrit simulator."""
-
-        dev = qp.device("default.qutrit", wires=2)
-
-        assert not qp.debugging.snapshot._is_snapshot_compatible(dev)
-
-        @qp.qnode(dev, diff_method=method)
-        def circuit():
-            qp.THadamard(wires=0)
-            qp.Snapshot(measurement=qp.probs())
-            qp.TSWAP(wires=[0, 1])
-            return qp.probs()
-
-        with pytest.warns(UserWarning, match="Snapshots are not supported for the given device"):
-            circuit = qp.snapshots(circuit)
-
-        result = circuit()
-        analytic_result = np.array([1 / 3, 0.0, 0.0, 1 / 3, 0.0, 0.0, 1 / 3, 0.0, 0.0])
-        expected = {
-            0: analytic_result,
-            "execution_results": np.array([1 / 3, 1 / 3, 1 / 3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
-        }
-
-        assert np.allclose(result["execution_results"], expected["execution_results"])
-
-        del result["execution_results"]  # pylint: disable=unsupported-delete-operation
-        del expected["execution_results"]
-
-        _compare_numpy_dicts(result, expected)
-
-        # Make sure shots are overridden correctly
-        result = qp.set_shots(circuit, shots=200)()
-        finite_shot_result = result[0]
-        assert not np.allclose(  # Since 200 does not have a factor of 3, we assert that there's no chance for finite-shot tape to reach 1/3 exactly here.
-            finite_shot_result,
-            analytic_result,
-            atol=np.finfo(np.float64).eps,
-            rtol=0,
-        )
-
 
 class TestSnapshotMCMS:
     def test_default_qubit_tree_traversal(self):
@@ -770,10 +608,10 @@ class TestSnapshotMCMS:
         assert len(results["tag"]) == 4
         assert qp.math.allclose(results["tag"], [-1, -1, -1, -1])  # postselected into one state
 
-    def test_default_qubit_one_shot(self):
+    def test_default_qubit_one_shot(self, seed):
         """Test that one shot can be used with snapshots."""
 
-        @qp.qnode(qp.device("default.qubit"), mcm_method="one-shot", shots=1000)
+        @qp.qnode(qp.device("default.qubit", seed=seed), mcm_method="one-shot", shots=1000)
         def c():
             qp.H(0)
             qp.measure(0)

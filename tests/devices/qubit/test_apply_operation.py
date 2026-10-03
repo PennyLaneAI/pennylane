@@ -16,7 +16,6 @@ Tests the apply_operation functions from devices/qubit
 """
 
 import importlib
-from functools import reduce
 
 import numpy as np
 import pytest
@@ -43,7 +42,6 @@ ml_frameworks_list = [
     pytest.param("autograd", marks=pytest.mark.autograd),
     pytest.param("jax", marks=pytest.mark.jax),
     pytest.param("torch", marks=pytest.mark.torch),
-    pytest.param("tensorflow", marks=pytest.mark.tf),
 ]
 
 
@@ -427,7 +425,7 @@ class TestTwoQubitStateSpecialCases:
 
         assert qp.math.allclose(initial_state, new_state)
 
-    def test_globalphase(self, method, wire, ml_framework):
+    def test_globalphase(self, method, wire, ml_framework):  # pylint: disable=unused-argument
         """Test the application of a GlobalPhase gate on a two qubit state."""
         initial_state = np.array(
             [
@@ -440,17 +438,15 @@ class TestTwoQubitStateSpecialCases:
         phase = qp.math.asarray(-2.3, like=ml_framework)
         shift = qp.math.exp(-1j * qp.math.cast(phase, np.complex128))
 
-        new_state_with_wire = method(qp.GlobalPhase(phase, wire), initial_state)
         new_state_no_wire = method(qp.GlobalPhase(phase), initial_state)
 
-        assert qp.math.allclose(shift * initial_state, new_state_with_wire)
         assert qp.math.allclose(shift * initial_state, new_state_no_wire)
 
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
 @pytest.mark.parametrize("wire", (0, 1))
 @pytest.mark.parametrize("state_batched", [False, True])
-def test_globalphase_batched(wire, ml_framework, state_batched):
+def test_globalphase_batched(wire, ml_framework, state_batched):  # pylint: disable=unused-argument
     """Test the application of a broadcasted/batched GlobalPhase gate on a two qubit state.
     We separate this test from the class above because we do not actually want to test
     apply_operation_tensordot or apply_operation_einsum.
@@ -484,287 +480,9 @@ def test_globalphase_batched(wire, ml_framework, state_batched):
     phase = qp.math.asarray([-2.3, 0.672, 0.2], like=ml_framework)
     shift = qp.math.exp(-1j * qp.math.cast(phase, np.complex128))
 
-    new_state_with_wire = apply_operation(qp.GlobalPhase(phase, wire), initial_state, state_batched)
     new_state_no_wire = apply_operation(qp.GlobalPhase(phase), initial_state, state_batched)
 
-    assert qp.math.allclose(shift[:, None, None] * initial_state, new_state_with_wire)
     assert qp.math.allclose(shift[:, None, None] * initial_state, new_state_no_wire)
-
-
-def time_independent_hamiltonian():
-    """Create a time-independent Hamiltonian on two qubits."""
-    ops = [qp.PauliX(0), qp.PauliZ(1), qp.PauliY(0), qp.PauliX(1)]
-
-    coeffs = [qp.pulse.constant, qp.pulse.constant, 0.4, 0.9]
-
-    return qp.pulse.ParametrizedHamiltonian(coeffs, ops)
-
-
-def time_dependent_hamiltonian():
-    """Create a time-dependent two-qubit Hamiltonian that takes two scalar parameters."""
-    import jax.numpy as jnp
-
-    ops = [qp.PauliX(0), qp.PauliZ(1), qp.PauliY(0), qp.PauliX(1)]
-
-    def f1(params, t):
-        return params * t
-
-    def f2(params, t):
-        return params * jnp.cos(t)
-
-    coeffs = [f1, f2, 4, 9]
-    return qp.pulse.ParametrizedHamiltonian(coeffs, ops)
-
-
-@pytest.mark.jax
-class TestApplyParametrizedEvolution:
-    """Test that apply_operation works with ParametrizedEvolution"""
-
-    @pytest.mark.parametrize("method", methods)
-    def test_parametrized_evolution_time_independent(self, method):
-        """Test that applying a ParametrizedEvolution gives the expected state
-        for a time-independent hamiltonian"""
-
-        import jax.numpy as jnp
-
-        initial_state = np.array(
-            [
-                [0.04624539 + 0.3895457j, 0.22399401 + 0.53870339j],
-                [-0.483054 + 0.2468498j, -0.02772249 - 0.45901669j],
-            ]
-        )
-
-        H = time_independent_hamiltonian()
-        params = jnp.array([1.0, 2.0])
-        t = 0.4
-
-        op = qp.pulse.ParametrizedEvolution(H=H, params=params, t=t)
-
-        true_mat = qp.math.expm(-1j * qp.matrix(H(params, t=t)) * t)
-        U = qp.QubitUnitary(U=true_mat, wires=[0, 1])
-
-        new_state = method(op, initial_state)
-        new_state_expected = apply_operation(U, initial_state)
-
-        assert np.allclose(new_state, new_state_expected, atol=0.002)
-
-    @pytest.mark.parametrize("method", methods)
-    def test_parametrized_evolution_time_dependent(self, method):
-        """Test that applying a ParametrizedEvolution gives the expected state
-        for a time dependent Hamiltonian"""
-
-        import jax
-        import jax.numpy as jnp
-
-        initial_state = np.array(
-            [
-                [0.04624539 + 0.3895457j, 0.22399401 + 0.53870339j],
-                [-0.483054 + 0.2468498j, -0.02772249 - 0.45901669j],
-            ]
-        )
-
-        H = time_dependent_hamiltonian()
-        params = jnp.array([1.0, 2.0])
-        t = 0.4
-
-        op = qp.pulse.ParametrizedEvolution(H=H, params=params, t=t)
-
-        def generator(params):
-            time_step = 1e-3
-            times = jnp.arange(0, t, step=time_step)
-            for ti in times:
-                yield jax.scipy.linalg.expm(-1j * time_step * qp.matrix(H(params, t=ti)))
-
-        true_mat = reduce(lambda x, y: y @ x, generator(params))
-        U = qp.QubitUnitary(U=true_mat, wires=[0, 1])
-
-        new_state = method(op, initial_state)
-        new_state_expected = apply_operation(U, initial_state)
-
-        assert np.allclose(new_state, new_state_expected, atol=0.002)
-
-    def test_large_state_small_matrix_evolves_matrix(self, mocker):
-        """Test that applying a ParametrizedEvolution operating on less
-        than half of the wires in the state uses the default function to evolve
-        the matrix"""
-
-        import jax.numpy as jnp
-
-        spy = mocker.spy(qp.math, "einsum")
-
-        initial_state = np.array(
-            [
-                [0.04624539 + 0.3895457j, 0.22399401 + 0.53870339j],
-                [-0.483054 + 0.2468498j, -0.02772249 - 0.45901669j],
-            ]
-        )
-
-        H = time_independent_hamiltonian()
-        params = jnp.array([1.0, 2.0])
-        t = 0.4
-
-        op = qp.pulse.ParametrizedEvolution(H=H, params=params, t=t)
-
-        true_mat = qp.math.expm(-1j * qp.matrix(H(params, t=t)) * t)
-        U = qp.QubitUnitary(U=true_mat, wires=[0, 1])
-
-        new_state = apply_operation(op, initial_state)
-        new_state_expected = apply_operation(U, initial_state)
-
-        assert np.allclose(new_state, new_state_expected, atol=0.002)
-
-        # seems like _evolve_state_vector_under_parametrized_evolution calls
-        # einsum twice, and the default apply_operation only once
-        # and it seems that getting the matrix from the hamiltonian calls einsum a few times.
-        assert spy.call_count == 6
-
-    def test_small_evolves_state(self, mocker):
-        """Test that applying a ParametrizedEvolution operating on less
-        than half of the wires in the state uses the default function to evolve
-        the matrix"""
-
-        import jax.numpy as jnp
-
-        spy = mocker.spy(qp.math, "einsum")
-
-        initial_state = np.array(
-            [
-                [
-                    [
-                        [
-                            [-0.02018048 + 0.0j, 0.0 + 0.05690523j],
-                            [0.0 + 0.01425524j, 0.04019714 + 0.0j],
-                        ],
-                        [
-                            [0.0 - 0.07174284j, -0.20230159 + 0.0j],
-                            [-0.05067824 + 0.0j, 0.0 + 0.14290331j],
-                        ],
-                    ],
-                    [
-                        [
-                            [0.0 + 0.05690523j, 0.16046226 + 0.0j],
-                            [0.04019714 + 0.0j, 0.0 - 0.11334853j],
-                        ],
-                        [
-                            [-0.20230159 + 0.0j, 0.0 + 0.57045322j],
-                            [0.0 + 0.14290331j, 0.402961 + 0.0j],
-                        ],
-                    ],
-                ],
-                [
-                    [
-                        [
-                            [0.0 + 0.01425524j, 0.04019714 + 0.0j],
-                            [0.01006972 + 0.0j, 0.0 - 0.02839476j],
-                        ],
-                        [
-                            [-0.05067824 + 0.0j, 0.0 + 0.14290331j],
-                            [0.0 + 0.03579848j, 0.10094511 + 0.0j],
-                        ],
-                    ],
-                    [
-                        [
-                            [0.04019714 + 0.0j, 0.0 - 0.11334853j],
-                            [0.0 - 0.02839476j, -0.08006798 + 0.0j],
-                        ],
-                        [
-                            [0.0 + 0.14290331j, 0.402961 + 0.0j],
-                            [0.10094511 + 0.0j, 0.0 - 0.2846466j],
-                        ],
-                    ],
-                ],
-            ]
-        )
-
-        H = time_independent_hamiltonian()
-        params = jnp.array([1.0, 2.0])
-        t = 0.4
-
-        op = qp.pulse.ParametrizedEvolution(H=H, params=params, t=t)
-
-        true_mat = qp.math.expm(-1j * qp.matrix(H(params, t=t)) * t)
-        U = qp.QubitUnitary(U=true_mat, wires=[0, 1])
-
-        new_state = apply_operation(op, initial_state)
-        new_state_expected = apply_operation(U, initial_state)
-
-        assert np.allclose(new_state, new_state_expected, atol=0.002)
-
-        # seems like _evolve_state_vector_under_parametrized_evolution calls
-        # einsum twice, and the default apply_operation only once
-        # and it seems that getting the matrix from the hamiltonian calls einsum a few times.
-        assert spy.call_count == 7
-
-    def test_parametrized_evolution_raises_error(self):
-        """Test applying a ParametrizedEvolution without params or t specified raises an error."""
-        import jax.numpy as jnp
-
-        state = jnp.array([[[1.0, 0.0], [0.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]]], dtype=complex)
-        ev = qp.evolve(qp.pulse.ParametrizedHamiltonian([1], [qp.PauliX("a")]))
-        with pytest.raises(
-            ValueError,
-            match="The parameters and the time window are required to compute the matrix",
-        ):
-            apply_operation(ev, state)
-
-    def test_parametrized_evolution_state_vector_return_intermediate(self, mocker):
-        """Test that when executing a ParametrizedEvolution with ``2 * op.wires > num_wires``
-        and ``return_intermediate=True``, the ``_evolve_state_vector_under_parametrized_evolution``
-        method is used."""
-        import jax.numpy as jnp
-
-        H = qp.pulse.ParametrizedHamiltonian([1], [qp.PauliX(0)])
-        spy_evolve = mocker.spy(
-            apply_operation_module, "_evolve_state_vector_under_parametrized_evolution"
-        )
-
-        phi = jnp.linspace(0.3, 0.7, 7)
-        phi_for_RX = phi - phi[0]
-        state = jnp.array([1.0 + 0j, 0.0], dtype=complex)
-        ev = qp.evolve(H, return_intermediate=True)(params=[], t=phi / 2)
-        state_ev = apply_operation(ev, state)
-        state_rx = apply_operation(qp.RX(phi_for_RX, 0), state)
-
-        assert spy_evolve.call_count == 1
-        assert qp.math.allclose(state_ev, state_rx, atol=1e-6)
-
-    @pytest.mark.parametrize("num_state_wires", [2, 4])
-    def test_with_batched_state(self, num_state_wires, mocker):
-        """Test that a ParametrizedEvolution is applied correctly to a batched state.
-        Note that the branching logic is different for batched input states, because
-        evolving the state vector does not support batching of the state. Instead,
-        the evolved matrix is used always."""
-        spy_einsum = mocker.spy(qp.math, "einsum")
-        H = time_independent_hamiltonian()
-        params = np.array([1.0, 2.0])
-        t = 0.1
-
-        op = qp.pulse.ParametrizedEvolution(H=H, params=params, t=t)
-
-        initial_state = np.array(
-            [
-                [[0.81677345 + 0.0j, 0.0 + 0.0j], [0.0 - 0.57695852j, 0.0 + 0.0j]],
-                [[0.33894597 + 0.0j, 0.0 + 0.0j], [0.0 - 0.94080584j, 0.0 + 0.0j]],
-                [[0.33894597 + 0.0j, 0.0 + 0.0j], [0.0 - 0.94080584j, 0.0 + 0.0j]],
-            ]
-        )
-        if num_state_wires == 4:
-            zero_state_two_wires = np.eye(4)[0].reshape((2, 2))
-            initial_state = np.tensordot(initial_state, zero_state_two_wires, axes=0)
-
-        true_mat = qp.math.expm(-1j * qp.matrix(H(params, t=t)) * t)
-        U = qp.QubitUnitary(U=true_mat, wires=[0, 1])
-
-        new_state = apply_operation(op, initial_state, is_state_batched=True)
-        new_state_expected = apply_operation(U, initial_state, is_state_batched=True)
-        assert np.allclose(new_state, new_state_expected, atol=0.002)
-
-        if num_state_wires == 4:
-            # and it seems that getting the matrix from the hamiltonian calls einsum a few times.
-            assert spy_einsum.call_count == 7
-        else:
-            # and it seems that getting the matrix from the hamiltonian calls einsum a few times.
-            assert spy_einsum.call_count == 6
 
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
@@ -908,6 +626,7 @@ class TestRXCalcGrad:
         assert qp.math.allclose(g[1], g_expected1)
 
     @pytest.mark.autograd
+    @pytest.mark.xfail(reason="differentiating complex values through RX not supported.")
     def test_rx_grad_autograd(self, method):
         """Test that the application of an rx gate is differentiable with autograd."""
 
@@ -924,6 +643,7 @@ class TestRXCalcGrad:
         self.compare_expected_result(phi, state, new_state, g)
 
     @pytest.mark.jax
+    @pytest.mark.xfail(reason="differentiating complex values through RX not supported.")
     @pytest.mark.parametrize("use_jit", (True, False))
     def test_rx_grad_jax(self, method, use_jit):
         """Test that the application of an rx gate is differentiable with jax."""
@@ -954,7 +674,7 @@ class TestRXCalcGrad:
         state = torch.tensor(self.state)
 
         def f(phi):
-            op = qp.RX(phi, wires=0)
+            op = qp.RX(qp.math.cast(phi, "float64"), wires=0)
             return method(op, state)
 
         phi = torch.tensor(0.325, requires_grad=True)
@@ -970,24 +690,6 @@ class TestRXCalcGrad:
             new_state.detach().numpy(),
             g.detach().numpy(),
         )
-
-    @pytest.mark.tf
-    def test_rx_grad_tf(self, method):
-        """Tests the application and differentiation of an rx gate with tensorflow"""
-        import tensorflow as tf
-
-        state = tf.Variable(self.state)
-        phi = tf.Variable(0.8589 + 0j)
-
-        with tf.GradientTape() as grad_tape:
-            op = qp.RX(phi, wires=0)
-            new_state = method(op, state)
-
-        grads = grad_tape.jacobian(new_state, [phi])
-        # tf takes gradient with respect to conj(z), so we need to conj the gradient
-        phi_grad = tf.math.conj(grads[0])
-
-        self.compare_expected_result(phi, state, new_state, phi_grad)
 
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
@@ -1271,34 +973,6 @@ class TestApplyGroverOperator:
         assert qp.math.allclose(out, expected_via_mat)
         assert qp.math.allclose(out, expected_via_kernel)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("op_wires, state_wires", [(2, 2), (3, 3), (9, 9), (3, 5), (9, 13)])
-    @pytest.mark.parametrize("batch_dim", [None, 1, 3])
-    def test_correctness_tf(self, op_wires, state_wires, batch_dim):
-        """Test that apply_operation is correct for GroverOperator for all dispatch branches
-        when applying it to a Tensorflow state."""
-        import tensorflow as tf
-
-        batched = batch_dim is not None
-        shape = [batch_dim] + [2] * state_wires if batched else [2] * state_wires
-        # Input state
-        state = np.random.random(shape) + 1j * np.random.random(shape)
-
-        wires = list(range(op_wires))
-        op = qp.GroverOperator(wires)
-        expected_via_mat = apply_operation_tensordot(op, state, batched)
-        if op_wires == state_wires:
-            expected_via_kernel = self.grover_kernel_full_wires(state, wires, batched)
-        else:
-            expected_via_kernel = self.grover_kernel_partial_wires(state, wires, batched)
-
-        # Cast to interface and apply operation
-        state = tf.Variable(state)
-        out = apply_operation(op, state, is_state_batched=batched, debugger=None)
-
-        assert qp.math.allclose(out, expected_via_mat)
-        assert qp.math.allclose(out, expected_via_kernel)
-
     @pytest.mark.jax
     @pytest.mark.parametrize("op_wires, state_wires", [(2, 2), (3, 3), (9, 9), (3, 5), (9, 13)])
     @pytest.mark.parametrize("batch_dim", [None, 1, 3])
@@ -1412,22 +1086,6 @@ class TestMultiControlledXKernel:
         exp_out[..., 1, :, :, 1, 1] = np.roll(exp_out[..., 1, :, :, 1, 1], 1, -2)
         assert qp.math.allclose(out, exp_out)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("batch_dim", [None, 1, 3])
-    def test_with_tf(self, batch_dim):
-        """Test that the custom kernel works with Tensorflow."""
-        import tensorflow as tf
-
-        op = qp.MultiControlledX(wires=[0, 4, 3, 1])
-        state_shape = ([batch_dim] if batch_dim is not None else []) + [2] * 5
-        state = np.random.random(state_shape).astype(complex)
-        tf_state = tf.Variable(state)
-        out = apply_operation(op, tf_state, is_state_batched=batch_dim is not None, debugger=None)
-        # Compute expected output
-        exp_out = state.copy()
-        exp_out[..., 1, :, :, 1, 1] = np.roll(exp_out[..., 1, :, :, 1, 1], 1, -2)
-        assert qp.math.allclose(out, exp_out)
-
     @pytest.mark.autograd
     @pytest.mark.parametrize("batch_dim", [None, 1, 3])
     def test_with_autograd(self, batch_dim):
@@ -1459,65 +1117,6 @@ class TestMultiControlledXKernel:
         exp_out = state.copy()
         exp_out[..., 1, :, :, 1, 1] = np.roll(exp_out[..., 1, :, :, 1, 1], 1, -2)
         assert qp.math.allclose(out, exp_out)
-
-
-@pytest.mark.tf
-class TestLargeTFCornerCases:
-    """Test large corner cases for tensorflow."""
-
-    @pytest.mark.parametrize(
-        "op", (qp.PauliZ(8), qp.PhaseShift(1.0, 8), qp.S(8), qp.T(8), qp.CNOT((5, 6)))
-    )
-    def test_tf_large_state(self, op):
-        """Tests that custom kernels that use slicing fall back to a different method when
-        the state has a large number of wires."""
-        import tensorflow as tf
-
-        state = np.zeros([2] * 10, dtype=complex)
-        state = tf.Variable(state)
-        new_state = apply_operation(op, state)
-
-        # still all zeros.  Mostly just making sure error not raised
-        assert qp.math.allclose(state, new_state)
-
-    def test_cnot_large_batched_state_tf(self):
-        """Test that CNOT with large batched states works as expected."""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", wires=8)
-
-        @qp.qnode(dev, interface="tf")
-        def auxiliary_qcnn_circuit(inputs):
-            qp.AmplitudeEmbedding(features=inputs, wires=range(4), normalize=True)
-            qp.CNOT(wires=[0, 1])
-            qp.PauliZ(1)
-            qp.Toffoli(wires=[0, 2, 4])
-            qp.Toffoli(wires=[0, 2, 5])
-            qp.Toffoli(wires=[0, 2, 6])
-            qp.Toffoli(wires=[0, 2, 7])
-            return [qp.expval(qp.PauliZ(i)) for i in range(4, 8)]
-
-        batch_size = 3
-        params = np.random.rand(batch_size, 16)
-        result = auxiliary_qcnn_circuit(tf.Variable(params))
-        assert qp.math.shape(result) == (4, batch_size)
-
-    def test_pauliz_large_batched_state_tf(self):
-        """Test that PauliZ with large batched states works as expected."""
-        import tensorflow as tf
-
-        @qp.qnode(qp.device("default.qubit"), interface="tf")
-        def circuit(init_state):
-            qp.StatePrep(init_state, wires=range(8))
-            qp.PauliX(0)
-            qp.PauliZ(0)
-            return qp.state()
-
-        states = np.zeros((3, 256))
-        states[:, 0] = 1.0
-        results = circuit(tf.Variable(states))
-        assert qp.math.shape(results) == (3, 256)
-        assert np.array_equal(results[:, 128], [-1.0 + 0.0j] * 3)
 
 
 # pylint: disable=too-few-public-methods

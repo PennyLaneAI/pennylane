@@ -11,9 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-Tests for the tcdq training module.
-"""
+"""Regression tests for the TCDQ training helpers."""
 
 import pytest
 
@@ -27,10 +25,7 @@ jaxopt = pytest.importorskip("jaxopt")
 
 @pytest.fixture
 def quadratic_problem():
-    """
-    Defines a simple convex problem: L(theta) = sum((theta - target)^2).
-    Target is 0, start is 10. Global minimum is 0.
-    """
+    """Return a small convex optimization problem with a known optimum."""
 
     def loss_fn(params, target, key=None):  # pylint: disable=unused-argument
         diff = params - target
@@ -46,10 +41,7 @@ def quadratic_problem():
 
 def test_optimization_success(quadratic_problem):
     # pylint: disable=redefined-outer-name
-    """
-    Test 1: Functional Correctness.
-    Does the optimizer actually minimize the loss?
-    """
+    """The high-level trainer should drive the quadratic loss close to zero."""
     loss_fn, _, target, loss_kwargs = quadratic_problem
 
     result = train(
@@ -68,10 +60,7 @@ def test_optimization_success(quadratic_problem):
 
 def test_determinism(quadratic_problem):
     # pylint: disable=redefined-outer-name
-    """
-    Test 2: Determinism.
-    Running the function twice with the same seed must produce bit-exact results.
-    """
+    """Repeated runs with the same seed should be bit-identical."""
     loss_fn, _, _, loss_kwargs = quadratic_problem
     opts = TrainingOptions(unroll_steps=5, random_state=123)
 
@@ -84,11 +73,7 @@ def test_determinism(quadratic_problem):
 
 def test_unroll_consistency(quadratic_problem):
     # pylint: disable=redefined-outer-name
-    """
-    Test 3: Unrolling Equivalence.
-    Running step-by-step (unroll=1) must yield the same math as
-    running in batches (unroll=10).
-    """
+    """Changing ``unroll_steps`` should not change the optimization trajectory."""
     loss_fn, _, _, loss_kwargs = quadratic_problem
     seed = 999
 
@@ -104,10 +89,7 @@ def test_unroll_consistency(quadratic_problem):
 
 def test_convergence_early_stopping(quadratic_problem):
     # pylint: disable=redefined-outer-name
-    """
-    Test 4: Convergence Logic.
-    If the loss stabilizes, training should stop before n_iters.
-    """
+    """Training should stop early once the convergence check is satisfied."""
     loss_fn, _, target, _ = quadratic_problem
 
     params_near = jnp.array([0.01, 0.01])
@@ -124,10 +106,7 @@ def test_convergence_early_stopping(quadratic_problem):
 
 def test_validation_handling(quadratic_problem):
     # pylint: disable=redefined-outer-name
-    """
-    Test 5: Validation Data.
-    Ensures validation loss is calculated correctly and separately.
-    """
+    """Validation losses should be tracked separately from training losses."""
     loss_fn, params_init, target, _ = quadratic_problem
 
     loss_kwargs = {"params": params_init, "target": target}
@@ -143,10 +122,7 @@ def test_validation_handling(quadratic_problem):
 
 
 def test_loss_signature_variations():
-    """
-    Test 6: Signature Flexibility.
-    Verifies that the trainer works for loss functions WITH and WITHOUT 'key'.
-    """
+    """The trainer should accept losses both with and without a ``key`` argument."""
     params = jnp.array([1.0])
 
     def loss_with_key(params, key):  # pylint: disable=unused-argument
@@ -163,11 +139,7 @@ def test_loss_signature_variations():
 
 def test_history_logging_manual(quadratic_problem):
     # pylint: disable=redefined-outer-name
-    """
-    Test 7: Manual Logging via Iterator.
-    Since we removed 'monitor_interval', we verify the user can manually
-    log params using the lower-level iterator if they wish.
-    """
+    """The iterator interface should expose per-batch parameters for custom logging."""
     loss_fn, _, _, loss_kwargs = quadratic_problem
     opts = TrainingOptions(unroll_steps=10)
 
@@ -186,11 +158,7 @@ def test_history_logging_manual(quadratic_problem):
 
 
 def test_iqp_optimization():
-    """
-    Test 6: Integration Test.
-    Test full loop with actual IQP simulation as loss function.
-    Objective: Minimize sum of Z expectation values.
-    """
+    """The training loop should work end-to-end with a real IQP loss function."""
     n_qubits = 2
     n_samples = 100
 

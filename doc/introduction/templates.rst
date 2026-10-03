@@ -36,9 +36,6 @@ trainable parameters, and they may be constructed from repeated layers.
     :description: :doc:`BasisEmbedding <../code/api/pennylane.BasisEmbedding>`
     :figure: _static/templates/embeddings/basis.png
 
-.. gallery-item::
-    :description: :doc:`DisplacementEmbedding <../code/api/pennylane.DisplacementEmbedding>`
-    :figure: _static/templates/embeddings/displacement.png
 
 .. gallery-item::
     :description: :doc:`IQPEmbedding <../code/api/pennylane.IQPEmbedding>`
@@ -47,10 +44,6 @@ trainable parameters, and they may be constructed from repeated layers.
 .. gallery-item::
     :description: :doc:`QAOAEmbedding <../code/api/pennylane.QAOAEmbedding>`
     :figure: _static/templates/embeddings/qaoa.png
-
-.. gallery-item::
-    :description: :doc:`SqueezingEmbedding <../code/api/pennylane.SqueezingEmbedding>`
-    :figure: _static/templates/embeddings/squeezing.png
 
 .. raw:: html
 
@@ -64,10 +57,6 @@ Layer templates
 Layer architectures define sequences of trainable gates that are repeated like the layers in a
 neural network. Note that arbitrary templates or operations can also be repeated using the
 :func:`~pennylane.layer` function.
-
-.. gallery-item::
-    :description: :doc:`CVNeuralNetLayers <../code/api/pennylane.CVNeuralNetLayers>`
-    :figure: _static/templates/layers/cvqnn.png
 
 .. gallery-item::
     :description: :doc:`RandomLayers <../code/api/pennylane.RandomLayers>`
@@ -97,10 +86,6 @@ State Preparations
 State preparation templates transform the zero state :math:`|0\dots 0 \rangle` to another initial
 state. In contrast to embeddings that can in principle be used anywhere in a circuit,
 state preparation is typically used as the first operation.
-
-.. gallery-item::
-    :description: :doc:`QutritBasisStatePreparation <../code/api/pennylane.QutritBasisStatePreparation>`
-    :figure: _static/templates/state_preparations/basis_qutrit.png
 
 .. gallery-item::
     :description: :doc:`MottonenStatePreparation <../code/api/pennylane.MottonenStatePreparation>`
@@ -134,6 +119,14 @@ state preparation is typically used as the first operation.
     :description: :doc:`PartialUnaryStatePreparation <../code/api/pennylane.PartialUnaryStatePreparation>`
     :figure: _static/templates/state_preparations/partialunarystatepreparation_template.png
 
+.. gallery-item::
+    :description: :doc:`UniformPrep <../code/api/pennylane.UniformPrep>`
+    :figure: _static/templates/state_preparations/uniformprep.png
+
+.. gallery-item::
+    :description: :doc:`AliasSampling <../code/api/pennylane.AliasSampling>`
+    :figure: _static/templates/state_preparations/aliassampling.png
+
 
 .. raw:: html
 
@@ -144,7 +137,7 @@ state preparation is typically used as the first operation.
 Arithmetic templates
 --------------------
 
-Quantum arithmetic templates enable in-place and out-place modular operations such 
+Quantum arithmetic templates enable in-place and out-place modular operations such
 as addition, multiplication and exponentiation.
 
 .. gallery-item::
@@ -158,6 +151,10 @@ as addition, multiplication and exponentiation.
 .. gallery-item::
     :description: :doc:`SemiAdder <../code/api/pennylane.SemiAdder>`
     :figure: _static/templates/arithmetic/semiadder.png
+
+.. gallery-item::
+    :description: :doc:`Incrementer <../code/api/pennylane.Incrementer>`
+    :figure: _static/templates/arithmetic/adder.png
 
 .. gallery-item::
     :description: :doc:`OutAdder <../code/api/pennylane.OutAdder>`
@@ -190,6 +187,14 @@ as addition, multiplication and exponentiation.
 .. gallery-item::
     :description: :doc:`IntegerComparator <../code/api/pennylane.IntegerComparator>`
     :figure: _static/templates/arithmetic/integercomparator.png
+
+.. gallery-item::
+    :description: :doc:`LeftClassicalComparator <../code/api/pennylane.LeftClassicalComparator>`
+    :figure: _static/templates/arithmetic/leftclassicalcomparator.png
+
+.. gallery-item::
+    :description: :doc:`LeftQuantumComparator <../code/api/pennylane.LeftQuantumComparator>`
+    :figure: _static/templates/arithmetic/leftquantumcomparator.png
 
 .. gallery-item::
     :description: :doc:`OutPoly <../code/api/pennylane.OutPoly>`
@@ -300,10 +305,6 @@ Other useful templates which do not belong to the previous categories can be fou
     :figure: _static/templates/subroutines/ampamp.png
 
 .. gallery-item::
-    :description: :doc:`Interferometer <../code/api/pennylane.Interferometer>`
-    :figure: _static/templates/subroutines/interferometer.png
-
-.. gallery-item::
     :description: :doc:`FermionicSingleExcitation <../code/api/pennylane.FermionicSingleExcitation>`
     :figure: _static/templates/subroutines/single_excitation_unitary.png
 
@@ -325,6 +326,18 @@ Other useful templates which do not belong to the previous categories can be fou
 
 .. gallery-item::
   :description: :doc:`TrotterProduct <../code/api/pennylane.TrotterProduct>`
+  :figure: _static/templates/subroutines/trotter_product.png
+
+.. gallery-item::
+  :description: :doc:`TrotterCDF <../code/api/pennylane.TrotterCDF>`
+  :figure: _static/templates/subroutines/trotter_product.png
+
+.. gallery-item::
+  :description: :doc:`TrotterCGF <../code/api/pennylane.TrotterCGF>`
+  :figure: _static/templates/subroutines/trotter_product.png
+
+.. gallery-item::
+  :description: :doc:`TrotterVibronic <../code/api/pennylane.TrotterVibronic>`
   :figure: _static/templates/subroutines/trotter_product.png
 
 .. gallery-item::
@@ -386,6 +399,10 @@ Other useful templates which do not belong to the previous categories can be fou
 .. gallery-item::
     :description: :doc:`Qubitization <../code/api/pennylane.Qubitization>`
     :figure: _static/templates/qubitization/thumbnail_qubitization.png
+
+.. gallery-item::
+    :description: :doc:`OneBodyBlockEncoding <../code/api/pennylane.OneBodyBlockEncoding>`
+    :figure: _static/templates/subroutines/onebodyblockencoding.png
 
 .. gallery-item::
     :description: :doc:`QROM <../code/api/pennylane.QROM>`

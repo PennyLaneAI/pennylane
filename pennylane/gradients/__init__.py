@@ -44,12 +44,9 @@ Gradient transforms
 
     finite_diff
     param_shift
-    param_shift_cv
     param_shift_hessian
     spsa_grad
     hadamard_grad
-    stoch_pulse_grad
-    pulse_odegen
 
 Metric tensors
 ^^^^^^^^^^^^^^
@@ -105,7 +102,7 @@ and takes into account the circuit, device, autodiff framework, and metadata
     dev = qp.device("default.qubit")
 
     @qp.set_shots(shots=1000)
-    @qp.qnode(dev, interface="tf")
+    @qp.qnode(dev, interface="torch")
     def circuit(weights):
         ...
 
@@ -341,10 +338,7 @@ from . import (
     finite_difference,
     hadamard_gradient,
     parameter_shift,
-    parameter_shift_cv,
     parameter_shift_hessian,
-    pulse_gradient,
-    pulse_gradient_odegen,
     spsa_gradient,
 )
 from .adjoint_metric_tensor import adjoint_metric_tensor
@@ -363,9 +357,6 @@ from .hadamard_gradient import hadamard_grad
 from .jvp import batch_jvp, compute_jvp_multi, compute_jvp_single, jvp
 from .metric_tensor import metric_tensor
 from .parameter_shift import param_shift, parameter_frequencies
-from .parameter_shift_cv import param_shift_cv
 from .parameter_shift_hessian import param_shift_hessian
-from .pulse_gradient import stoch_pulse_grad
-from .pulse_gradient_odegen import pulse_odegen
 from .spsa_gradient import spsa_grad
 from .vjp import batch_vjp, compute_vjp_multi, compute_vjp_single, vjp

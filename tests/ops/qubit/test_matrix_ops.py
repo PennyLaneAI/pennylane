@@ -26,10 +26,12 @@ from scipy.stats import unitary_group
 
 import pennylane as qp
 from pennylane import numpy as pnp
+from pennylane.core.operator import abstractify
 from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math.decompositions.unitary_decompositions import _compute_udv
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform, fractional_matrix_power
+from pennylane.typing import AbstractArray, AbstractWires, Complex, Wire
 from pennylane.wires import Wires
 
 
@@ -56,14 +58,14 @@ class TestQubitUnitaryCSR:
         """Test that the compute_sparse_matrix method works correctly."""
         U = np.array([[0, 1], [1, 0]])
         U = csr_matrix(U)
-        op = qp.QubitUnitary.compute_sparse_matrix(U)
+        op = qp.QubitUnitary.compute_sparse_matrix(U, wires=0)
         assert isinstance(op, csr_matrix)
         assert np.allclose(op.toarray(), U.toarray())
 
         # Test that the sparse matrix accepts the format parameter.
-        op_csc = qp.QubitUnitary.compute_sparse_matrix(U, format="csc")
-        op_lil = qp.QubitUnitary.compute_sparse_matrix(U, format="lil")
-        op_coo = qp.QubitUnitary.compute_sparse_matrix(U, format="coo")
+        op_csc = qp.QubitUnitary.compute_sparse_matrix(U, wires=0, format="csc")
+        op_lil = qp.QubitUnitary.compute_sparse_matrix(U, wires=0, format="lil")
+        op_coo = qp.QubitUnitary.compute_sparse_matrix(U, wires=0, format="coo")
         assert isinstance(op_csc, csc_matrix)
         assert isinstance(op_lil, lil_matrix)
         assert isinstance(op_coo, coo_matrix)
@@ -214,7 +216,7 @@ class TestQubitUnitaryCSR:
         op = qp.pow(qp.QubitUnitary(U, wires=[0]), 2)
         rule = qp.list_decomps("Pow(QubitUnitary)")[0]
         with qp.queuing.AnnotatedQueue() as q:
-            rule(*op.parameters, wires=op.wires, **op.hyperparameters)
+            rule(**op.arguments)
 
         tape = qp.tape.QuantumScript.from_queue(q)
         actual_mat = qp.matrix(tape)
@@ -236,6 +238,20 @@ class TestQubitUnitary:
         expected = fractional_matrix_power(U, 0.123)
 
         assert qp.math.allclose(pow_op.matrix(), expected)
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("z", [2, 0.123])
+    def test_pow_decomposition_rule(self, z):
+        """Test the graph decomposition of Pow(QubitUnitary)."""
+        U = np.array(
+            [
+                [0.98877108 + 0.0j, 0.0 - 0.14943813j],
+                [0.0 - 0.14943813j, 0.98877108 + 0.0j],
+            ]
+        )
+        op = qp.pow(qp.QubitUnitary(U, wires=0), z)
+        for rule in qp.list_decomps("Pow(QubitUnitary)"):
+            _test_decomposition_rule(op, rule)
 
     def test_qubit_unitary_noninteger_pow_broadcasted(self):
         """Test broadcasted QubitUnitary raised to a non-integer power raises an error."""
@@ -356,49 +372,6 @@ class TestQubitUnitary:
         with pytest.raises(ValueError, match="must be of shape"):
             qp.QubitUnitary(U, wires=range(num_wires + 1)).matrix()
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize(
-        "U,num_wires", [(H, 1), (np.kron(H, H), 2), (np.tensordot([1j, -1, 1], H, axes=0), 1)]
-    )
-    def test_qubit_unitary_tf(self, U, num_wires):
-        """Test that the unitary operator produces the correct output and
-        catches incorrect input with tensorflow."""
-
-        import tensorflow as tf
-
-        U = tf.Variable(U)
-        out = qp.QubitUnitary(U, wires=range(num_wires)).matrix()
-
-        # verify output type
-        assert isinstance(out, tf.Variable)
-
-        # verify equivalent to input state
-        assert qp.math.allclose(out, U)
-
-        # test non-square matrix
-        with pytest.raises(ValueError, match="must be of shape"):
-            qp.QubitUnitary(U[:, 1:], wires=range(num_wires)).matrix()
-
-        # test non-unitary matrix
-        U3 = tf.Variable(U + 0.5)
-        with pytest.warns(UserWarning, match="may not be unitary"):
-            qp.QubitUnitary(U3, wires=range(num_wires), unitary_check=True).matrix()
-
-        # test an error is thrown when constructed with incorrect number of wires
-        with pytest.raises(ValueError, match="must be of shape"):
-            qp.QubitUnitary(U, wires=range(num_wires + 1)).matrix()
-
-    @pytest.mark.tf
-    def test_qubit_unitary_int_pow_tf(self):
-        """Test that QubitUnitary.pow works with tf and int z values."""
-
-        import tensorflow as tf
-
-        mat = tf.Variable([[1, 0], [0, tf.exp(1j)]])
-        expected = tf.Variable([[1, 0], [0, tf.exp(3j)]])
-        [op] = qp.QubitUnitary(mat, wires=[0]).pow(3)
-        assert qp.math.allclose(op.matrix(), expected)
-
     @pytest.mark.jax
     @pytest.mark.parametrize(
         "U,num_wires", [(H, 1), (np.kron(H, H), 2), (np.tensordot([1j, -1, 1], H, axes=0), 1)]
@@ -468,7 +441,7 @@ class TestQubitUnitary:
 
         @qp.qnode(dev)
         def circuit(matrix):
-            qp.QubitUnitary.compute_decomposition(matrix, wires=[0, 1, 2])
+            qp.QubitUnitary(matrix, wires=[0, 1, 2]).decomposition()
             return qp.state()
 
         state_expected = circuit(matrix)
@@ -538,15 +511,15 @@ class TestQubitUnitary:
     @pytest.mark.parametrize(
         "U",
         [
-            (qp.matrix(qp.GlobalPhase(12, wires=0) @ qp.CRX(2, wires=[1, 0]))),  # 2 cnots
+            (qp.matrix(qp.GlobalPhase(12) @ qp.CRX(2, wires=[1, 0]))),  # 2 cnots
             (qp.matrix(qp.CRX(2, wires=[1, 0]))),  # 2 cnots
             (qp.matrix(qp.TrotterProduct(qp.X(0) + 0.3 * qp.Y(1), time=1, n=5))),  # 0 cnots
             (qp.matrix(qp.TrotterProduct(qp.X(0) @ qp.Z(1) - 0.3 * qp.Y(1), time=1))),  # 2 cnots
             (qp.matrix(qp.CRY(1, wires=[0, 1]))),  # 2 cnots
             (qp.matrix(qp.QFT(wires=[0, 1]))),  # 3 cnots
-            (qp.matrix(qp.GlobalPhase(12, wires=0) @ qp.QFT(wires=[0, 1]))),  # 3 cnots
+            (qp.matrix(qp.GlobalPhase(12) @ qp.QFT(wires=[0, 1]))),  # 3 cnots
             (qp.matrix(qp.RZ(1, wires=0) @ qp.GroverOperator(wires=[0, 1]))),  # 1 cnot
-            (qp.matrix(qp.GlobalPhase(12, wires=0) @ qp.GroverOperator(wires=[0, 1]))),  # 1 cnot
+            (qp.matrix(qp.GlobalPhase(12) @ qp.GroverOperator(wires=[0, 1]))),  # 1 cnot
             (qp.matrix(qp.CRY(-1, wires=[0, 1]))),  # 2 cnots
             (qp.matrix(qp.SWAP(wires=[0, 1]))),  # 3 cnots
             (qp.matrix(qp.SWAP(wires=[0, 1]) @ qp.GlobalPhase(3))),  # 3 cnots
@@ -649,7 +622,7 @@ class TestQubitUnitary:
         U = np.array(
             [[0.98877108 + 0.0j, 0.0 - 0.14943813j], [0.0 - 0.14943813j, 0.98877108 + 0.0j]]
         )
-        res_static = qp.QubitUnitary.compute_matrix(U)
+        res_static = qp.QubitUnitary.compute_matrix(U, wires=0)
         res_dynamic = qp.QubitUnitary(U, wires=0).matrix()
         expected = U
         assert np.allclose(res_static, expected, atol=tol)
@@ -661,22 +634,64 @@ class TestQubitUnitary:
             [[0.98877108 + 0.0j, 0.0 - 0.14943813j], [0.0 - 0.14943813j, 0.98877108 + 0.0j]]
         )
         U = np.tensordot([1j, -1.0, (1 + 1j) / np.sqrt(2)], U, axes=0)
-        res_static = qp.QubitUnitary.compute_matrix(U)
+        res_static = qp.QubitUnitary.compute_matrix(U, wires=0)
         res_dynamic = qp.QubitUnitary(U, wires=0).matrix()
         expected = U
         assert np.allclose(res_static, expected, atol=tol)
         assert np.allclose(res_dynamic, expected, atol=tol)
 
-    def test_controlled(self):
-        """Test QubitUnitary's controlled method."""
-        # pylint: disable=protected-access
-        U = qp.PauliX.compute_matrix()
-        base = qp.QubitUnitary(U, wires=0)
 
-        expected = qp.ControlledQubitUnitary(U, wires=["a", 0])
+class TestQubitUnitaryDecompositions:
+    """Unit tests for decomposition rules registered for QubitUnitary."""
 
-        out = base._controlled("a")
-        qp.assert_equal(out, expected)
+    def test_conditions(self):
+        """Test the registered applicability conditions for each rule."""
+
+        rules = qp.list_decomps(qp.QubitUnitary)
+        for name in ("zyz", "zxz", "xzx", "xyx", "rot"):
+            rule = rules[name]
+            assert rule.is_applicable(Complex[2, 2], Wire[1])
+            assert not rule.is_applicable(Complex[4, 4], Wire[2])
+            assert not rule.is_applicable(Complex[8, 8], Wire[3])
+
+        rule = rules["two_qubit_decomp_rule"]
+        assert not rule.is_applicable(Complex[2, 2], Wire[1])
+        assert rule.is_applicable(Complex[4, 4], Wire[2])
+        assert not rule.is_applicable(Complex[8, 8], Wire[3])
+
+        rule = rules["multi_qubit_decomp_rule"]
+        assert not rule.is_applicable(Complex[2, 2], Wire[1])
+        assert not rule.is_applicable(Complex[4, 4], Wire[2])
+        assert rule.is_applicable(Complex[8, 8], Wire[3])
+        assert rule.is_applicable(Complex[32, 32], Wire[5])
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_single_qubit_decomposition_rule(self):
+        """Tests that single-qubit decomposition rules work."""
+
+        U = unitary_group.rvs(2, random_state=0)
+        op = qp.QubitUnitary(U, wires=[0])
+        for rule in qp.list_decomps(op):
+            _test_decomposition_rule(op, rule)
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    def test_two_qubit_decomposition_rule(self):
+        """Tests that two-qubit decomposition rules work."""
+
+        U = unitary_group.rvs(4, random_state=1)
+        op = qp.QubitUnitary(U, wires=[0, 1])
+        for rule in qp.list_decomps(op):
+            _test_decomposition_rule(op, rule)
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize("num_wires", [3, 4, 5])
+    def test_multi_qubit_decomposition(self, num_wires):
+        """Test the multi-qubit rule with AnnotatedQueue."""
+
+        U = qp.QFT.compute_matrix(range(num_wires))
+        op = qp.QubitUnitary(U, wires=range(num_wires))
+        for rule in qp.list_decomps(op):
+            _test_decomposition_rule(op, rule)
 
 
 class TestWalshHadamardTransform:
@@ -740,9 +755,10 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
 
         for dec in (decomp, decomp2):
             assert len(dec) == 2
-            qp.assert_equal(decomp[0], qp.GlobalPhase(-3 * np.pi / 4, 0))
+            qp.assert_equal(decomp[0], qp.GlobalPhase(-3 * np.pi / 4))
             qp.assert_equal(decomp[1], qp.RZ(np.pi / 2, 0))
 
+    @pytest.mark.pl2do(reason="PL 2.0: Parameter broadcasting will be re-visited.")
     def test_decomposition_single_qubit_broadcasted(self):
         """Test that a broadcasted single-qubit DiagonalQubitUnitary is decomposed correctly."""
         D = np.exp(1j * np.pi * np.array([[1 / 2, 1], [1 / 8, -1 / 8], [1 / 2, -1 / 2], [1, 1]]))
@@ -754,7 +770,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
         global_angles = np.array([3 / 4, 0, 0, 1]) * np.pi
         for dec in (decomp, decomp2):
             assert len(dec) == 2
-            qp.assert_equal(decomp[0], qp.GlobalPhase(-global_angles, 0))
+            qp.assert_equal(decomp[0], qp.GlobalPhase(-global_angles))
             qp.assert_equal(decomp[1], qp.RZ(angles, 0))
 
     def test_decomposition_two_qubits(self):
@@ -772,6 +788,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
             qp.assert_equal(decomp[0], qp.DiagonalQubitUnitary(new_D, wires=[0]))
             qp.assert_equal(decomp[1], qp.SelectPauliRot(angles, [0], target_wire=1))
 
+    @pytest.mark.pl2do(reason="PL 2.0: Parameter broadcasting will be re-visited.")
     def test_decomposition_two_qubits_broadcasted(self):
         """Test that a broadcasted two-qubit DiagonalQubitUnitary is decomposed correctly."""
         D = np.exp(1j * np.array([[1, -1, 0.5, 1], [2.3, 1.9, 0.3, -0.9], [1.1, 0.4, -0.8, 1.2]]))
@@ -801,6 +818,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
             qp.assert_equal(decomp[0], qp.DiagonalQubitUnitary(new_D, wires=[0, 1]))
             qp.assert_equal(decomp[1], qp.SelectPauliRot(angles, [0, 1], target_wire=2))
 
+    @pytest.mark.pl2do(reason="PL 2.0: Parameter broadcasting will be re-visited.")
     def test_decomposition_three_qubits_broadcasted(self):
         """Test that a broadcasted three-qubit DiagonalQubitUnitary is decomposed correctly."""
         D = np.exp(
@@ -835,7 +853,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
         assert qp.math.allclose(orig_mat, decomp_mat)
         assert qp.math.allclose(orig_mat, decomp_mat2)
 
-    @pytest.mark.external
+    @pytest.mark.catalyst
     @pytest.mark.parametrize("n", [1, 2, 3])
     def test_decomposition_matrix_match_jit(self, n, seed):
         """Test that the matrix of the decomposition matches the original matrix with jit."""
@@ -852,6 +870,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
         assert qp.math.allclose(orig_mat, mat_mat)
 
     @pytest.mark.parametrize("n", [1, 2, 3])
+    @pytest.mark.pl2do(reason="PL 2.0: Parameter broadcasting will be re-visited.")
     def test_decomposition_matrix_match_broadcasted(self, n, seed):
         """Test that the broadcasted matrix of the decomposition matches the original matrix."""
         rng = np.random.default_rng(seed)
@@ -897,18 +916,19 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
         ),
     ]
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("op", standard_case_ops)
     def test_decomposition_rule_new(self, op):
         """Tests the decomposition rule compatible with the graph-based interface."""
         for rule in qp.list_decomps(qp.DiagonalQubitUnitary):
             _test_decomposition_rule(op, rule)
 
-    @pytest.mark.external
+    @pytest.mark.catalyst
     @pytest.mark.parametrize("op", standard_case_ops)
     def test_decomposition_rule_new_qjit(self, op):
         """Tests the decomposition rule for various edge cases."""
         for rule in qp.list_decomps(qp.DiagonalQubitUnitary):
-            num_work_wires = rule.get_work_wire_spec(**op.resource_params).total
+            num_work_wires = rule.get_work_wire_spec(**op.arguments).total
             work_wires = list(range(len(op.wires), len(op.wires) + num_work_wires))
             all_wires = work_wires + list(op.wires)
             fn = qp.qjit(
@@ -918,7 +938,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
                 ),
                 static_argnums=[1],
             )
-            mat = fn(*op.data, op.wires, **op.hyperparameters)
+            mat = fn(op.D, op.wires)
             dim = 2 ** len(op.wires)
             assert qp.math.allclose(mat[dim:, :dim], 0.0)
             assert qp.math.allclose(mat[:dim, dim:], 0.0)
@@ -959,18 +979,19 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
         ),
     ]
 
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize("op", edge_case_ops)
     def test_decomposition_rule_edge_cases(self, op):
         """Tests the decomposition rule for various edge cases."""
         for rule in qp.list_decomps(qp.DiagonalQubitUnitary):
             _test_decomposition_rule(op, rule)
 
-    @pytest.mark.external
+    @pytest.mark.catalyst
     @pytest.mark.parametrize("op", edge_case_ops)
     def test_decomposition_rule_edge_cases_qjit(self, op):
         """Tests the decomposition rule for various edge cases."""
         for rule in qp.list_decomps(qp.DiagonalQubitUnitary):
-            num_work_wires = rule.get_work_wire_spec(**op.resource_params).total
+            num_work_wires = rule.get_work_wire_spec(**op.arguments).total
             work_wires = list(range(len(op.wires), len(op.wires) + num_work_wires))
             all_wires = work_wires + list(op.wires)
             fn = qp.qjit(
@@ -980,7 +1001,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
                 ),
                 static_argnums=[1],
             )
-            mat = fn(*op.data, op.wires, **op.hyperparameters)
+            mat = fn(op.D, op.wires)
             dim = 2 ** len(op.wires)
             assert qp.math.allclose(mat[dim:, :dim], 0.0)
             assert qp.math.allclose(mat[:dim, dim:], 0.0)
@@ -988,25 +1009,24 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
 
     def test_controlled(self):
         """Test that the correct controlled operation is created when controlling a qp.DiagonalQubitUnitary."""
-        # pylint: disable=protected-access
         D = np.array([1j, 1, 1, -1, -1j, 1j, 1, -1])
         op = qp.DiagonalQubitUnitary(D, wires=[1, 2, 3])
         with qp.queuing.AnnotatedQueue() as q:
-            op._controlled(control=0)
+            qp.ctrl(op, control=0)
         tape = qp.tape.QuantumScript.from_queue(q)
         mat = qp.matrix(tape, wire_order=[0, 1, 2, 3])
         assert qp.math.allclose(
             mat, qp.math.diag(qp.math.append(qp.math.ones(8, dtype=complex), D))
         )
 
+    @pytest.mark.pl2do(reason="PL 2.0: Parameter broadcasting will be re-visited.")
     def test_controlled_broadcasted(self):
         """Test that the correct controlled operation is created when
         controlling a qp.DiagonalQubitUnitary with a broadcasted diagonal."""
-        # pylint: disable=protected-access
         D = np.array([[1j, 1, -1j, 1], [1, -1, 1j, -1]])
         op = qp.DiagonalQubitUnitary(D, wires=[1, 2])
         with qp.queuing.AnnotatedQueue() as q:
-            op._controlled(control=0)
+            qp.ctrl(op, control=0)
         tape = qp.tape.QuantumScript.from_queue(q)
         mat = qp.matrix(tape, wire_order=[0, 1, 2])
         expected = np.array(
@@ -1023,6 +1043,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
         assert np.allclose(res_static, expected, atol=tol)
         assert np.allclose(res_dynamic, expected, atol=tol)
 
+    @pytest.mark.pl2do(reason="PL 2.0: Parameter broadcasting will be re-visited.")
     def test_matrix_representation_broadcasted(self, tol):
         """Test that the matrix representation is defined correctly for a broadcasted diagonal."""
         diag = np.array([[1, -1], [1j, -1], [-1j, -1]])
@@ -1047,6 +1068,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
     @pytest.mark.parametrize(
         "diag", ([[1.0, -1.0]] * 5, np.array([[1.0, -1j], [1j, 1j], [-1j, 1]]))
     )
+    @pytest.mark.pl2do(reason="PL 2.0: Parameter broadcasting will be re-visited.")
     def test_pow_broadcasted(self, n, diag):
         """Test pow method returns expected results for broadcasted diagonals."""
         op = qp.DiagonalQubitUnitary(diag, wires="b")
@@ -1095,6 +1117,7 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
         assert np.allclose(grad, expected)
 
     @pytest.mark.jax
+    @pytest.mark.pl2do(reason="PL 2.0: Parameter broadcasting will be re-visited.")
     def test_jax_jit_broadcasted(self):
         """Test that the diagonal matrix unitary operation works
         within a QNode that uses the JAX JIT and broadcasting"""
@@ -1116,33 +1139,6 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
         jac = jax.jacobian(circuit)(x)
         expected = jnp.diag(-jnp.sin(x))
         assert np.allclose(jac, expected)
-
-    @pytest.mark.tf
-    @pytest.mark.slow  # test takes 12 seconds due to tf.function
-    def test_tf_function(self):
-        """Test that the diagonal matrix unitary operation works
-        within a QNode that uses TensorFlow autograph"""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", wires=1)
-
-        @tf.function
-        @qp.qnode(dev)
-        def circuit(x):
-            x = tf.cast(x, tf.complex128)
-            diag = tf.math.exp(1j * x * tf.constant([1.0 + 0j, -1.0 + 0j]) / 2)
-            qp.Hadamard(wires=0)
-            qp.DiagonalQubitUnitary(diag, wires=0)
-            return qp.expval(qp.PauliX(0))
-
-        x = tf.Variable(0.452)
-
-        with tf.GradientTape() as tape:
-            loss = circuit(x)
-
-        grad = tape.gradient(loss, x)
-        expected = -tf.math.sin(x)  # pylint: disable=invalid-unary-operand-type
-        assert np.allclose(grad, expected)
 
 
 labels = [X, X, [1, 1]]
@@ -1171,7 +1167,7 @@ class TestUnitaryLabels:
         """Test 'matrices' key pair is not a list."""
         assert op.label(cache={"matrices": 0}) == "U"
 
-    @pytest.mark.parametrize("mat, op", zip(labels, ops))
+    @pytest.mark.parametrize("mat, op", list(zip(labels, ops)))
     def test_empty_cache_list(self, mat, op):
         """Test matrices list is provided, but empty. Operation should have `0` label and matrix
         should be added to cache."""
@@ -1179,7 +1175,7 @@ class TestUnitaryLabels:
         assert op.label(cache=cache) == "U\n(M0)"
         assert qp.math.allclose(cache["matrices"][0], mat)
 
-    @pytest.mark.parametrize("mat, op", zip(labels, ops))
+    @pytest.mark.parametrize("mat, op", list(zip(labels, ops)))
     def test_something_in_cache_list(self, mat, op):
         """If something exists in the matrix list, but parameter is not in the list, then parameter
         added to list and label given number of its position."""
@@ -1189,7 +1185,7 @@ class TestUnitaryLabels:
         assert len(cache["matrices"]) == 2
         assert qp.math.allclose(cache["matrices"][1], mat)
 
-    @pytest.mark.parametrize("mat, op", zip(labels, ops))
+    @pytest.mark.parametrize("mat, op", list(zip(labels, ops)))
     def test_matrix_already_in_cache_list(self, mat, op):
         """If the parameter already exists in the matrix cache, then the label uses that index and the
         matrix cache is unchanged."""
@@ -1199,7 +1195,7 @@ class TestUnitaryLabels:
         assert len(cache["matrices"]) == 3
 
 
-class TestBlockEncode:
+class TestBlockEncode:  # pylint: disable=too-many-public-methods
     """Test the BlockEncode operation."""
 
     @pytest.mark.parametrize(
@@ -1263,8 +1259,9 @@ class TestBlockEncode:
         """Test that BlockEncode outputs expected attributes for various input matrix types."""
         op = qp.BlockEncode(input_matrix, wires)
         assert np.allclose(op.parameters, input_matrix)
-        assert op.hyperparameters["norm"] == expected_hyperparameters["norm"]
-        assert op.hyperparameters["subspace"] == expected_hyperparameters["subspace"]
+        # pylint: disable=protected-access
+        assert op._norm == expected_hyperparameters["norm"]
+        assert op._subspace == expected_hyperparameters["subspace"]
 
     @pytest.mark.parametrize(
         ("input_matrix", "wires"),
@@ -1331,6 +1328,7 @@ class TestBlockEncode:
     def test_correct_output_matrix(self, input_matrix, wires, output_matrix):
         """Test that BlockEncode outputs the correct matrix."""
         assert np.allclose(qp.matrix(qp.BlockEncode(input_matrix, wires)), output_matrix)
+        assert np.allclose(qp.BlockEncode.compute_matrix(input_matrix, wires), output_matrix)
 
     @pytest.mark.parametrize(
         ("input_matrix", "wires"),
@@ -1348,39 +1346,8 @@ class TestBlockEncode:
         """Test that BlockEncode matrices are unitary."""
         mat = qp.matrix(qp.BlockEncode(input_matrix, wires))
         assert np.allclose(np.eye(len(mat)), mat.dot(mat.T.conj()))
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize(
-        ("input_matrix", "wires", "output_matrix"),
-        [
-            (1.0, 0, [[1, 0], [0, -1]]),
-            (0.3, 0, [[0.3, 0.9539392], [0.9539392, -0.3]]),
-            (
-                [[0.1, 0.2], [0.3, 0.4]],
-                range(2),
-                [
-                    [0.1, 0.2, 0.97283788, -0.05988708],
-                    [0.3, 0.4, -0.05988708, 0.86395228],
-                    [0.94561648, -0.07621992, -0.1, -0.3],
-                    [-0.07621992, 0.89117368, -0.2, -0.4],
-                ],
-            ),
-            (
-                0.1,
-                range(2),
-                [[0.1, 0.99498744, 0, 0], [0.99498744, -0.1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]],
-            ),
-        ],
-    )
-    def test_blockencode_tf(self, input_matrix, wires, output_matrix):
-        """Test that the BlockEncode operator matrix is correct for tf."""
-        import tensorflow as tf
-
-        input_matrix = tf.Variable(input_matrix)
-
-        op = qp.BlockEncode(input_matrix, wires)
-        assert np.allclose(qp.matrix(op), output_matrix)
-        assert qp.math.get_interface(qp.matrix(op)) == "tensorflow"
+        mat = qp.BlockEncode.compute_matrix(input_matrix, wires)
+        assert np.allclose(np.eye(len(mat)), mat.dot(mat.T.conj()))
 
     @pytest.mark.torch
     @pytest.mark.parametrize(
@@ -1508,33 +1475,6 @@ class TestBlockEncode:
         grad = jax.grad(circuit, argnums=0)(input_matrix)
         assert np.allclose(grad, expected_result)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize(
-        ("wires", "input_matrix", "expected_result"),  # expected_results calculated manually
-        [
-            (range(1), pnp.array(0.3), 4 * 0.3),
-            (range(2), pnp.diag([0.2, 0.3]), 4 * pnp.diag([0.2, 0])),
-        ],
-    )
-    def test_blockencode_grad_tf(self, wires, input_matrix, expected_result):
-        """Test that block encode is differentiable when using tensorflow."""
-        import tensorflow as tf
-
-        input_matrix = tf.Variable(input_matrix)
-
-        dev = qp.device("default.qubit", wires=wires)
-
-        @qp.qnode(dev)
-        def circuit(input_matrix):
-            qp.BlockEncode(input_matrix, wires=wires)
-            return qp.expval(qp.PauliZ(wires=0))
-
-        with tf.GradientTape() as tape:
-            result = circuit(input_matrix)
-
-        computed_grad = tape.gradient(result, input_matrix)
-        assert np.allclose(computed_grad, expected_result)
-
     @pytest.mark.parametrize(
         ("input_matrix", "wires"),
         [
@@ -1555,6 +1495,23 @@ class TestBlockEncode:
         other_adj = qp.matrix(qp.BlockEncode(input_matrix, wires).adjoint())
         assert np.allclose(np.eye(len(mat)), mat @ adj)
         assert np.allclose(np.eye(len(mat)), mat @ other_adj)
+
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize(
+        ("input_matrix", "wires"),
+        [
+            (1, 0),
+            (0.3, 0),
+            ([[0.1, 0.2], [0.3, 0.4]], range(2)),
+            ([[0.1, 0.2, 0.3], [0.3, 0.4, 0.2], [0.1, 0.2, 0.3]], range(3)),
+            ([[0.2, 0, 0.2], [-0.2, 0.2, 0]], range(3)),
+        ],
+    )
+    def test_adjoint_decomposition_rule(self, input_matrix, wires):
+        """Test the graph decomposition of Adjoint(BlockEncode)."""
+        op = qp.adjoint(qp.BlockEncode(input_matrix, wires))
+        for rule in qp.list_decomps("Adjoint(BlockEncode)"):
+            _test_decomposition_rule(op, rule)
 
     def test_label(self):
         """Test the label method for BlockEncode op"""
@@ -1633,6 +1590,53 @@ class TestBlockEncode:
         assert np.allclose(np.eye(mat.shape[0]), (mat @ mat.T.conj()).toarray())
         mat_dense = qp.matrix(qp.BlockEncode(sparse_matrix.toarray(), wires=range(num_wires)))
         assert qp.math.allclose(mat, mat_dense)
+        mat_static = qp.BlockEncode.compute_sparse_matrix(sparse_matrix, wires=range(num_wires))
+        assert qp.math.allclose(mat, mat_static)
+
+    @pytest.mark.parametrize(
+        ("A", "wires", "expected_shape", "expected_subspace"),
+        [
+            (AbstractArray((), float), 0, (1, 1), (1, 1, 2)),
+            (AbstractArray((1,), float), 0, (1, 1), (1, 1, 2)),
+            (AbstractArray((3,), float), range(2), (1, 3), (1, 3, 4)),
+            (AbstractArray((2, 2), float), range(2), (2, 2), (2, 2, 4)),
+            (AbstractArray((-1, -1), float), range(2), (-1, -1), (-1, -1, 4)),
+            (AbstractArray((2, 3), float), range(3), (2, 3), (2, 3, 8)),
+        ],
+    )
+    def test_abstract_array(self, A, wires, expected_shape, expected_subspace):
+        """Test that BlockEncode can be constructed with an AbstractArray."""
+        op = qp.BlockEncode(A, wires)
+        assert isinstance(op.A, AbstractArray)
+        assert op.A.shape == expected_shape
+        # pylint: disable=protected-access
+        assert op._subspace == expected_subspace
+        assert not op.has_sparse_matrix
+
+    def test_abstractify(self):
+        """Test that a concrete BlockEncode can be abstractified."""
+        op = qp.BlockEncode([[0.1, 0.2], [0.3, 0.4]], wires=[0, 1])
+        abstract_op = abstractify(op)
+        assert isinstance(abstract_op.A, AbstractArray)
+        # pylint: disable=protected-access
+        assert abstract_op.A.shape == (2, 2)
+        assert abstract_op.wires == AbstractWires(2)
+        assert abstract_op._subspace == (2, 2, 4)
+
+    @pytest.mark.parametrize("dtype", [float, complex])
+    def test_abstract_array_adjoint(self, dtype):
+        """Test that the adjoint of an abstract BlockEncode only transposes the shape."""
+        op = qp.BlockEncode(AbstractArray((2, 3), dtype), wires=range(3))
+        adj = op.adjoint()
+        assert isinstance(adj.A, AbstractArray)
+        # pylint: disable=protected-access
+        assert adj.A.shape == (3, 2)
+        assert adj._subspace == (3, 2, 8)
+
+    def test_abstract_array_invalid_hilbert_space(self):
+        """Test that a known abstract shape still validates the Hilbert space size."""
+        with pytest.raises(ValueError, match=r"Block encoding a \(2 x 2\) matrix"):
+            qp.BlockEncode(AbstractArray((2, 2), float), wires=0)
 
 
 class TestInterfaceMatricesLabel:
@@ -1660,16 +1664,6 @@ class TestInterfaceMatricesLabel:
         mat = torch.tensor([[1, 0], [0, -1]])
         self.check_interface(mat)
 
-    @pytest.mark.tf
-    def test_labelling_tf_variable(self):
-        """Test matrix cache labelling with tf interface."""
-
-        import tensorflow as tf
-
-        mat = tf.Variable([[1, 0], [0, -1]])
-
-        self.check_interface(mat)
-
     @pytest.mark.jax
     def test_labelling_jax_variable(self):
         """Test matrix cache labelling with jax interface."""
@@ -1679,16 +1673,3 @@ class TestInterfaceMatricesLabel:
         mat = jnp.array([[1, 0], [0, -1]])
 
         self.check_interface(mat)
-
-
-control_data = [
-    (qp.QubitUnitary(X, wires=0), Wires([])),
-    (qp.DiagonalQubitUnitary([1, 1], wires=1), Wires([])),
-    (qp.ControlledQubitUnitary(X, wires=[0, 1]), Wires([0])),
-]
-
-
-@pytest.mark.parametrize("op, control_wires", control_data)
-def test_control_wires(op, control_wires):
-    """Test ``control_wires`` attribute for matrix operations."""
-    assert op.control_wires == control_wires

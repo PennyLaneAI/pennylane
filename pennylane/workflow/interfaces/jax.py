@@ -158,7 +158,7 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-ExecuteFn = Callable[[QuantumScriptBatch], qp.typing.ResultBatch]
+ExecuteFn = Callable[[QuantumScriptBatch], ResultBatch]
 
 
 @dataclasses.dataclass
@@ -166,7 +166,6 @@ class _NonPytreeWrapper:
     """We aren't quite ready to switch to having tapes as pytrees as our
     differentiable argument due to:
 
-    * Operators that aren't valid pytrees: ex. ParametrizedEvolution, ParametrizedHamiltonian, HardwareHamiltonian
     * Validation checks on initialization: see BasisStateProjector, StatePrep that does not allow the operator to store the cotangents
     * Jitting non-jax parametrized circuits.  NumPy parameters turn into abstract parameters during the pytree process.
 
@@ -192,7 +191,7 @@ def set_parameters_on_copy_and_unwrap(tapes, params, unwrap=True):
     )
 
 
-def _to_jax(result: qp.typing.ResultBatch) -> qp.typing.ResultBatch:
+def _to_jax(result: ResultBatch) -> ResultBatch:
     """Converts an arbitrary result batch to one with jax arrays.
     Args:
         result (ResultBatch): a nested structure of lists, tuples, dicts, and numpy arrays

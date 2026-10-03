@@ -17,30 +17,86 @@ Tests for the GQSP template.
 
 # pylint: disable=too-many-arguments, import-outside-toplevel, no-self-use
 
+import numpy as np
 import pytest
 from numpy.linalg import matrix_power
 
 import pennylane as qp
-from pennylane import numpy as np
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
 class TestGQSP:
     """Test the qp.GQSP template."""
 
-    @pytest.mark.jax
-    def test_standard_validity(self):
+    @pytest.mark.usefixtures("enable_and_disable_capture")
+    @pytest.mark.parametrize(
+        "unitary",
+        (
+            qp.RX(0.3, 1),
+            qp.prod(qp.RX(0.3, 1), qp.RZ(0.6, 1)),
+        ),
+    )
+    def test_standard_validity(self, unitary):
         """Test standard validity criteria with assert_valid."""
 
         angles = np.ones([3, 5])
 
-        @qp.prod
-        def unitary(wires):
-            qp.RX(0.3, wires)
-            qp.RZ(0.6, wires)
+        op = qp.GQSP(unitary, angles, control=(0,))
+        qp.ops.functions.assert_valid(op, skip_differentiation=True, skip_bind_new_parameters=True)
 
-        op = qp.GQSP(unitary(1), angles, control=(0,))
-        qp.ops.functions.assert_valid(op, skip_differentiation=True)
+    @pytest.mark.parametrize(
+        "angles",
+        [
+            [[1, 2, 3], [4, 5, 6], [7, 8, 9]],
+            ((1, 2, 3), (4, 5, 6), (7, 8, 9)),
+            [np.array([1, 2, 3]), np.array([4, 5, 6]), np.array([7, 8, 9])],
+            (np.array([1, 2, 3]), np.array([4, 5, 6]), np.array([7, 8, 9])),
+        ],
+    )
+    def test_non_array_angles_are_cast_to_arrays(self, angles):
+        """Test that angles that are not in arrays are cast to arrays."""
+        op = qp.GQSP(qp.X(0), angles, control=1)
+        assert isinstance(op.angles, np.ndarray)
+        assert np.allclose(op.angles, np.array(angles))
+
+    def test_wires(self):
+        """Test that wires are in the correct order."""
+        u_wires = [4, 1]
+        c_wires = [0]
+        op = qp.GQSP(qp.CNOT(u_wires), angles=np.ones([3, 5]), control=c_wires)
+        # Control wires from wire_argnames should be first followed by the wires of
+        # the unitary hybrid argument
+        assert op.wires == qp.wires.Wires(c_wires + u_wires)
+
+    def test_default_work_wires(self):
+        """Test that omitting work_wires leaves the register empty."""
+        op = qp.GQSP(qp.Z(1), angles=np.ones([3, 2]), control=0)
+        assert op.work_wires == qp.wires.Wires(())
+        assert op.work_wire_type == "borrowed"
+
+    @pytest.mark.parametrize("work_wire_type", ["borrowed", "zeroed"])
+    def test_work_wires_are_forwarded_to_controlled_unitary(self, work_wire_type):
+        """Test that work_wires reach the controlled unitary, the only gate of the
+        decomposition that can use them, and that they stay out of ``op.wires``."""
+        angles = np.array([[1, 2], [3, 4], [5, 6]])
+        op = qp.GQSP(qp.Z(1), angles, control=0, work_wires=[2, 3], work_wire_type=work_wire_type)
+        assert op.work_wires == qp.wires.Wires([2, 3])
+        assert op.wires == qp.wires.Wires([0, 1])
+
+        [controlled] = [o for o in op.decomposition() if o.wires == qp.wires.Wires([0, 1])]
+        qp.assert_equal(
+            controlled,
+            qp.ctrl(
+                qp.Z(1),
+                control=0,
+                control_values=[0],
+                work_wires=[2, 3],
+                work_wire_type=work_wire_type,
+            ),
+        )
+
+        for rule in qp.list_decomps(qp.GQSP):
+            _test_decomposition_rule(op, rule)
 
     @pytest.mark.parametrize(
         ("unitary", "poly"),
@@ -112,6 +168,29 @@ class TestGQSP:
         assert len(q.queue) == 1
         assert q.queue[0].name == "GQSP"
 
+    def test_queueing_dequeues_unitary(self):
+        """Test that the ``unitary`` operator is dequeued when creating a GSQP in a
+        queuing context."""
+
+        with qp.queuing.AnnotatedQueue() as q:
+            unitary = qp.Z(1)
+            op = qp.GQSP(unitary, np.ones([3, 3]), control=0)
+
+        assert len(q.queue) == 1
+        assert q.queue[0] is op
+
+    def test_map_wires(self):
+        """Test that ``map_wires`` works correctly."""
+
+        op = qp.GQSP(qp.RX(0.3, wires=1), np.ones([3, 3]), control=0)
+        compare_op = qp.GQSP(qp.RX(0.3, wires=1), np.ones([3, 3]), control=0)
+        mapped_op = op.map_wires({0: "a", 1: "b"})
+        expected_mapped_op = qp.GQSP(qp.RX(0.3, wires="b"), np.ones([3, 3]), control="a")
+
+        qp.assert_equal(mapped_op, expected_mapped_op)
+        # Check that the original op is not mutated
+        qp.assert_equal(op, compare_op)
+
     def test_decomposition(self):
 
         angles = np.array([[1, 2], [3, 4], [5, 6]])
@@ -135,15 +214,7 @@ class TestGQSP:
         for op1, op2 in zip(decomposition, expected):
             qp.assert_equal(op1, op2)
 
-    @pytest.mark.capture
-    def test_decomposition_new_capture(self):
-        """Tests the decomposition rule implemented with the new system."""
-        angles = np.array([[1, 2], [3, 4], [5, 6]])
-        op = qp.GQSP(qp.Z(1), angles, control=0)
-
-        for rule in qp.list_decomps(qp.GQSP):
-            _test_decomposition_rule(op, rule)
-
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_new(self):
         """Tests the decomposition rule implemented with the new system."""
         angles = np.array([[1, 2], [3, 4], [5, 6]])
@@ -193,27 +264,6 @@ class TestGQSP:
 
         assert np.allclose(expected_output, generated_output)
         assert qp.math.get_interface(generated_output) == "torch"
-
-    @pytest.mark.tf
-    def test_gqsp_tensorflow(self):
-        """Test that GQSP works with tensorflow"""
-
-        import tensorflow as tf
-
-        angles = np.array([[1, 2], [3, 4], [5, 6]])
-
-        dev = qp.device("default.qubit")
-
-        @qp.qnode(dev)
-        def circuit(angles):
-            qp.GQSP(qp.RX(0.3, wires=1), angles, control=0)
-            return qp.expval(qp.Z(0))
-
-        expected_output = tf.Variable(qp.matrix(circuit, wire_order=[0, 1])(angles))
-        generated_output = qp.matrix(circuit, wire_order=[0, 1])(tf.Variable(angles))
-
-        assert np.allclose(expected_output, generated_output)
-        assert qp.math.get_interface(generated_output) == "tensorflow"
 
     @pytest.mark.jax
     def test_gqsp_jax_jit(self):

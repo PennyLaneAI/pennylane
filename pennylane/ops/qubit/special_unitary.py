@@ -21,13 +21,14 @@ from functools import lru_cache, reduce
 from itertools import product
 from typing import Literal
 
+import jax
 import numpy as np
 
 import pennylane as qp
 from pennylane.core.operator import Operation
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops.qubit.parametric_ops_multi_qubit import PauliRot
-from pennylane.typing import FlatPytree, TensorLike
+from pennylane.typing import FlatPytree, Float, TensorLike, Wire
 from pennylane.wires import WiresLike
 
 _pauli_matrices = np.array(
@@ -496,14 +497,14 @@ class SpecialUnitary(Operation):
         return qp.math.expm(1j * A)
 
     def get_one_parameter_generators(
-        self, interface: Literal[None, "jax", "tensorflow", "tf", "torch"] = None
+        self, interface: Literal[None, "jax", "torch"] = None
     ) -> TensorLike:
         r"""Compute the generators of one-parameter groups that reproduce
         the partial derivatives of a special unitary gate.
 
         Args:
             interface (str): The auto-differentiation framework to be used for the
-                computation. Has to be one of ``["jax", "tensorflow", "tf", "torch"]``.
+                computation. Has to be one of ``["jax", "torch"]``.
 
         Raises:
             NotImplementedError: If the chosen interface is ``"autograd"``. Autograd
@@ -562,7 +563,6 @@ class SpecialUnitary(Operation):
             return qp.math.real(mat), qp.math.imag(mat)
 
         if interface == "jax":
-            import jax
 
             theta = qp.math.cast_like(theta, 1j)
             # These lines compute the Jacobian of compute_matrix every time -> to be optimized
@@ -573,18 +573,6 @@ class SpecialUnitary(Operation):
 
             rjac, ijac = torch.autograd.functional.jacobian(split_matrix, theta)
             jac = rjac + 1j * ijac
-
-        elif interface in (
-            "tensorflow",
-            "tf",
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            import tensorflow as tf
-
-            with tf.GradientTape(persistent=True) as tape:
-                mats = qp.math.stack(split_matrix(theta))
-
-            rjac, ijac = tape.jacobian(mats, theta)
-            jac = qp.math.cast_like(rjac, 1j) + 1j * qp.math.cast_like(ijac, 1j)
 
         elif interface == "autograd":
             # TODO check whether we can add support for Autograd using eigenvalue decomposition
@@ -600,7 +588,7 @@ class SpecialUnitary(Operation):
         # After contracting, move the parameter derivative axis to the first position
         return qp.math.transpose(qp.math.tensordot(U_dagger, jac, axes=[[1], [0]]), [2, 0, 1])
 
-    def get_one_parameter_coeffs(self, interface: Literal["jax", "tensorflow", "tf", "torch"]):
+    def get_one_parameter_coeffs(self, interface: Literal["jax", "torch"]):
         r"""Compute the Pauli basis coefficients of the generators of one-parameter groups
         that reproduce the partial derivatives of a special unitary gate.
 
@@ -640,7 +628,7 @@ class SpecialUnitary(Operation):
 
             An auto-differentiation framework is required by this function.
             The matrix exponential is not differentiable in Autograd. Therefore this function
-            only supports JAX, Torch and Tensorflow.
+            only supports JAX and Torch.
 
         .. seealso:: :meth:`~.SpecialUnitary.get_one_parameter_generators`
 
@@ -663,8 +651,8 @@ class SpecialUnitary(Operation):
 
         >>> theta = np.array([0.5, 0.1, -0.3])
         >>> qp.SpecialUnitary(theta, wires=[0]).decomposition()
-        [QubitUnitary(array([[ 0.83004499-0.28280371j,  0.0942679 +0.47133952j],
-            [-0.0942679 +0.47133952j,  0.83004499+0.28280371j]]), wires=[0])]
+        [QubitUnitary(U=[[ 0.83004499-0.28280371j  0.0942679 +0.47133952j]
+         [-0.0942679 +0.47133952j  0.83004499+0.28280371j]], wires=[0])]
         """
         theta = self.data[0]
         if qp.math.requires_grad(theta):
@@ -713,14 +701,6 @@ class TmpPauliRot(PauliRot):
     # Deactivate the matrix property of qp.PauliRot in order to force decomposition
     has_matrix = False
 
-    resource_keys = {
-        "pauli_word",
-    }
-
-    @property
-    def resource_params(self) -> dict:
-        return {"pauli_word": self.hyperparameters["pauli_word"]}
-
     @staticmethod
     def compute_decomposition(
         theta: TensorLike,
@@ -753,16 +733,14 @@ class TmpPauliRot(PauliRot):
             return []
         return [PauliRot(theta, pauli_word, wires)]
 
-    def __repr__(self) -> str:
-        return f"TmpPauliRot({self.data[0]}, {self.hyperparameters['pauli_word']}, wires={self.wires.tolist()})"
 
-
-def _tmp_paulirot_decomp_resources(pauli_word: str):
-    return {qp.resource_rep(PauliRot, pauli_word=pauli_word): 1}
+# pylint: disable-next=unused-argument
+def _tmp_paulirot_decomp_resources(theta, wires, pauli_word: str):
+    return {qp.PauliRot(Float, pauli_word=pauli_word, wires=Wire[len(pauli_word)]): 1}
 
 
 @register_resources(_tmp_paulirot_decomp_resources)
-def _tmp_paulirot_decomp(theta: TensorLike, wires: WiresLike, pauli_word: str, **__):
+def _tmp_paulirot_decomp(theta: TensorLike, wires: WiresLike, pauli_word: str):
     PauliRot(theta, pauli_word=pauli_word, wires=wires)
 
 

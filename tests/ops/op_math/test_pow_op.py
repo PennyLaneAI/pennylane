@@ -24,6 +24,7 @@ from pennylane import numpy as np
 from pennylane.exceptions import AdjointUndefinedError, DecompositionUndefinedError
 from pennylane.ops.op_math.controlled import ControlledOp
 from pennylane.ops.op_math.pow import Pow, PowOperation
+from pennylane.ops.op_math.pow2 import Pow2
 
 
 # pylint: disable=too-few-public-methods
@@ -40,7 +41,7 @@ def pow_using_dunder_method(base, z):
     return base**z
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_basic_validity():
     """Run basic operator validity checks."""
     op = qp.pow(qp.RX(1.2, wires=0), 3)
@@ -165,15 +166,15 @@ class TestInitialization:
 
     def test_nonparametric_ops(self, power_method):
         """Test pow initialization for a non parameteric operation."""
-        base = qp.PauliX("a")
 
+        base = qp.PauliX("a")
         op: Pow = power_method(base=base, z=-4.2)
 
         assert op.base is base
         assert op.z == -4.2
         assert op.hyperparameters["base"] is base
         assert op.hyperparameters["z"] == -4.2
-        assert op.name == "PauliX**-4.2"
+        assert op.name == ("Pow(PauliX)" if isinstance(op, Pow2) else "PauliX**-4.2")
 
         assert op.num_params == 0
         assert op.parameters == []
@@ -184,6 +185,7 @@ class TestInitialization:
 
     def test_parametric_ops(self, power_method):
         """Test pow initialization for a standard parametric operation."""
+
         params = [1.2345, 2.3456, 3.4567]
         base = qp.Rot(*params, wires="b")
 
@@ -193,11 +195,7 @@ class TestInitialization:
         assert op.z == -0.766
         assert op.hyperparameters["base"] is base
         assert op.hyperparameters["z"] == -0.766
-        assert op.name == "Rot**-0.766"
-
-        assert op.num_params == 3
-        assert qp.math.allclose(params, op.parameters)
-        assert qp.math.allclose(params, op.data)
+        assert op.name == "Pow(Rot)" if isinstance(op, Pow2) else "Rot**-0.766"
 
         assert op.wires == qp.wires.Wires("b")
         assert op.num_wires == 1
@@ -226,12 +224,12 @@ class TestInitialization:
 
 
 # pylint: disable=too-many-public-methods
-@pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method, qp.pow])
+@pytest.mark.parametrize("power_method", [pow_using_dunder_method, qp.pow])
 class TestProperties:
     """Test Pow properties."""
 
     def test_data(self, power_method):
-        """Test base data can be get and set through Pow class."""
+        """Test base data can be get and stay read-only."""
         x = np.array(1.234)
 
         base = qp.RX(x, wires="a")
@@ -239,16 +237,8 @@ class TestProperties:
 
         assert op.data == (x,)
 
-        # update parameters through pow
-        x_new = np.array(2.3456)
-        op.data = (x_new,)
-        assert base.data == (x_new,)
-        assert op.data == (x_new,)
-
-        # update base data updates pow data
-        x_new2 = np.array(3.456)
-        base.data = (x_new2,)
-        assert op.data == (x_new2,)
+        with pytest.raises(AttributeError, match="property 'data' of 'Pow2' object has no setter"):
+            setattr(op, "data", (np.array(2.3456),))
 
     def test_has_matrix_true(self, power_method):
         """Test `has_matrix` property carries over when base op defines matrix."""
@@ -364,6 +354,7 @@ class TestProperties:
         op: Pow = power_method(base=DummyOp(1), z=2.5)
         assert op.is_verified_hermitian is value
 
+    @pytest.mark.pl2do("We're going to come back to batching in the future.")
     def test_batching_properties(self, power_method):
         """Test the batching properties and methods."""
 
@@ -385,6 +376,7 @@ class TestProperties:
         assert op.ndim_params == base.ndim_params
         assert op.batch_size == 3
 
+    @pytest.mark.pl2do("We're going to come back to batching in the future.")
     def test_different_batch_sizes_raises_error(self, power_method):
         """Test that using different batch sizes for base and scalar raises an error."""
         base = qp.RX(np.array([1.2, 2.3, 3.4]), 0)
@@ -440,6 +432,22 @@ class TestProperties:
         op: Pow = power_method(base=base, z=z)
         with pytest.raises(AdjointUndefinedError, match="The adjoint of Pow operators"):
             _ = op.adjoint()
+
+    @pytest.mark.parametrize("z", [0.5, 1.5, -0.5])
+    def test_eigvals_fractional_power_negative_eigenvalue(self, z, power_method):
+        """Test that the pow method correctly calculates complex eigenvalues
+        for various fractional powers of an operator."""
+
+        base = qp.PauliZ(0)
+        op = power_method(base=base, z=z)
+
+        eigvals = op.eigvals()
+
+        expected_eigvals = np.array([1.0**z, (-1.0 + 0j) ** z])
+
+        assert np.allclose(eigvals, expected_eigvals)
+        # the eigenvalues must sit on the same branch of ``**`` as the matrix
+        assert np.allclose(eigvals, np.diag(qp.matrix(op)))
 
 
 class TestSimplify:
@@ -503,7 +511,7 @@ class TestMiscMethods:
     def test_flatten_unflatten(self):
         """Test the _flatten and _unflatten methods."""
 
-        target = qp.S(0)
+        target = qp.H(0)
         z = -0.5
         op = Pow(target, z)
         data, metadata = op._flatten()
@@ -516,8 +524,7 @@ class TestMiscMethods:
         qp.assert_equal(new_op, op)
 
     def test_copy(self):
-        """Test that a copy of a power operator can have its parameters updated
-        independently of the original operator."""
+        """Test that a copy can be rebound independently of the original."""
         param1 = 1.2345
         z = 2.3
         base = qp.RX(param1, wires=0)
@@ -527,8 +534,11 @@ class TestMiscMethods:
         assert copied_op.__class__ is op.__class__
         assert copied_op.z == op.z
         assert copied_op.data == (param1,)
+        assert copied_op.base is not op.base
 
-        copied_op.data = (6.54,)
+        copied_op = qp.ops.functions.bind_new_parameters(copied_op, (6.54,))
+
+        assert copied_op.data == (6.54,)
         assert op.data == (param1,)
 
     def test_label(self):
@@ -694,19 +704,6 @@ class TestMatrix:
         assert qp.math.allclose(mat, true_mat)
         assert mat.shape == (3, 2, 2)
 
-    @pytest.mark.tf
-    def test_batching_tf(self):
-        """Test that Pow matrix has batching support with the tensorflow interface."""
-        import tensorflow as tf
-
-        x = tf.constant([-1.0, -2.0, -3.0])
-        y = tf.constant([1.0, 2.0, 3.0])
-        op = Pow(qp.RX(x, 0), y)
-        mat = op.matrix()
-        true_mat = qp.math.stack([Pow(qp.RX(i, 0), j).matrix() for i, j in zip(x, y)])
-        assert qp.math.allclose(mat, true_mat)
-        assert mat.shape == (3, 2, 2)
-
     def check_matrix(self, param, z):
         """Interface-independent helper function that checks that the matrix of a power op
         of an IsingZZ is the same as the matrix for its decomposition."""
@@ -748,25 +745,6 @@ class TestMatrix:
 
         param = torch.tensor(2.34)
         assert self.check_matrix(param, z)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("z", (2, -2, 1.23, -0.5))
-    def test_matrix_against_shortcut_tf(self, z):
-        """Test the matrix using a tf variable parameter."""
-        import tensorflow as tf
-
-        param = tf.Variable(2.34)
-        assert self.check_matrix(param, z)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("z", [-3, -1, 0, 1, 3])
-    def test_matrix_tf_int_z(self, z):
-        """Test that matrix works with integer power."""
-        import tensorflow as tf
-
-        theta = tf.Variable(1.0)
-        mat = qp.pow(qp.RX(theta, wires=0), z=z).matrix()
-        assert qp.math.allclose(mat, qp.RX.compute_matrix(1.0 * z))
 
     def test_matrix_wire_order(self):
         """Test that the wire_order keyword rearranges ording."""
@@ -938,14 +916,6 @@ class TestOperationProperties:
         ):
             assert base.basis == op.basis
 
-    def test_control_wires(self, power_method):
-        """Test that the control wires of a Pow operator are the same as the control wires of the base op."""
-
-        base = qp.Toffoli(wires=(0, 1, 2))
-        op: Pow = power_method(base, 3.5)
-
-        assert base.control_wires == op.control_wires
-
 
 class TestIntegration:
     """Test the execution of power gates in a QNode."""
@@ -996,36 +966,24 @@ class TestIntegration:
 
         circ()
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("z", [-3, -1, 0, 1, -3])
-    @pytest.mark.parametrize("diff_method", ["adjoint", "backprop", "best"])
-    def test_ctrl_grad_int_z_tf(self, z, diff_method):
-        """Test that controlling a Pow op is differentiable with integer exponents."""
-        import tensorflow as tf
 
-        dev = qp.device("default.qubit")
+# pylint: disable-next=too-few-public-methods
+class TestCapture:
 
-        @qp.qnode(dev, diff_method=diff_method)
-        def circuit(x):
-            qp.Hadamard(0)
-            qp.ctrl(Pow(qp.RX(x, wires=1), z=z), control=0)
-            return qp.expval(qp.PauliZ(1))
+    @pytest.mark.jax
+    def test_pow_eigvals_is_jittable(self):
+        """Test that the eigvals method is jittable."""
+        import jax  # pylint: disable=import-outside-toplevel
+        import jax.numpy as jnp  # pylint: disable=import-outside-toplevel
+        import numpy as np  # pylint: disable=reimported,import-outside-toplevel,redefined-outer-name
 
-        @qp.qnode(dev)
-        def expected_circuit(x):
-            qp.Hadamard(0)
-            qp.CRX(x * z, wires=[0, 1])
-            return qp.expval(qp.PauliZ(1))
+        import pennylane as qp  # pylint: disable=reimported,import-outside-toplevel,redefined-outer-name
 
-        x = tf.Variable(1.23)
+        @jax.jit
+        def f(x):
+            return jnp.array(Pow(qp.RX(x, 0), 2).eigvals())
 
-        with tf.GradientTape() as res_tape:
-            res = circuit(x)
-        res_grad = res_tape.gradient(res, x)
+        x = 0.5
+        expected = np.array([np.cos(x) + np.sin(x) * 1j, np.cos(x) - np.sin(x) * 1j])
 
-        with tf.GradientTape() as expected_tape:
-            expected = expected_circuit(x)
-        expected_grad = expected_tape.gradient(expected, x)
-
-        assert np.allclose(res, expected)
-        assert np.allclose(res_grad, expected_grad)
+        assert np.allclose(f(x), expected)

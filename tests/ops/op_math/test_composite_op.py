@@ -115,18 +115,15 @@ class TestConstruction:
         op = ValidOp(qp.RX(9.87, wires=0), qp.Rot(1.23, 4.0, 5.67, wires=1), qp.PauliX(0))
         assert op.data == (9.87, 1.23, 4.0, 5.67)
 
-    def test_data_setter(self):
-        """Test the setter method for data"""
+    def test_data_is_read_only(self):
+        """Test that composite operator data is read-only."""
         op = ValidOp(qp.RX(9.87, wires=0), qp.Rot(1.23, 4.0, 5.67, wires=1), qp.PauliX(0))
         assert op.data == (9.87, 1.23, 4.0, 5.67)
 
-        new_data = (1.23, 0.0, -1.0, -2.0)
-        op.data = new_data  # pylint:disable=attribute-defined-outside-init
-        assert op.data == new_data
-
-        for o in op:
-            assert o.data == new_data[: o.num_params]
-            new_data = new_data[o.num_params :]
+        with pytest.raises(
+            AttributeError, match="property 'data' of 'ValidOp' object has no setter"
+        ):
+            setattr(op, "data", (1.23, 0.0, -1.0, -2.0))
 
     def test_ndim_params_raises_error(self):
         """Test that calling ndim_params raises a ValueError."""

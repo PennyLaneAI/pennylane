@@ -17,13 +17,18 @@ This module contains the qp.measure measurement.
 
 import uuid
 from collections.abc import Hashable
-from functools import lru_cache
+from typing import override
+
+import jax
 
 from pennylane.capture import enabled as capture_enabled
+from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.compiler import compiler
-from pennylane.core.operator import Operator
+from pennylane.core import QueuingManager
+from pennylane.core.operator import Operator2, abstractify
 from pennylane.exceptions import QuantumFunctionError
-from pennylane.wires import Wires
+from pennylane.typing import Wire
+from pennylane.wires import Wires, WiresLike
 
 from .measurement_value import MeasurementValue
 
@@ -42,34 +47,18 @@ def _measure_impl(wires: Hashable | Wires, reset: bool = False, postselect: int 
     return MeasurementValue([mp])
 
 
-@lru_cache
-def _create_mid_measure_primitive():
-    """Create a primitive corresponding to an mid-circuit measurement type.
+measure_prim = QpPrimitive("measure")
 
-    Called when using :func:`~pennylane.measure`.
 
-    Returns:
-        jax.extend.core.Primitive: A new jax primitive corresponding to a mid-circuit
-        measurement.
+@measure_prim.def_impl
+def _measure_prim_impl(wires, reset=False, postselect=None):
+    return _measure_impl(wires, reset=reset, postselect=postselect)
 
-    """
-    # pylint: disable=import-outside-toplevel
-    import jax
 
-    from pennylane.capture.custom_primitives import QpPrimitive
-
-    mid_measure_p = QpPrimitive("measure")
-
-    @mid_measure_p.def_impl
-    def _impl(wires, reset=False, postselect=None):
-        return _measure_impl(wires, reset=reset, postselect=postselect)
-
-    @mid_measure_p.def_abstract_eval
-    def _abstract_eval(*_, **__):
-        dtype = jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
-        return jax.core.ShapedArray((), dtype)
-
-    return mid_measure_p
+@measure_prim.def_abstract_eval
+def _measure_prim_abstract_eval(*_, **__):
+    dtype = jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
+    return jax.core.ShapedArray((), dtype)
 
 
 def get_mcm_predicates(conditions: tuple[MeasurementValue]) -> list[MeasurementValue]:
@@ -97,7 +86,7 @@ def get_mcm_predicates(conditions: tuple[MeasurementValue]) -> list[MeasurementV
     return new_conds
 
 
-class MidMeasure(Operator):
+class MidMeasure(Operator2):
     """Mid-circuit measurement.
 
     This class additionally stores information about unknown measurement outcomes in the qubit model.
@@ -115,50 +104,34 @@ class MidMeasure(Operator):
         meas_uid (str | None): Custom unique id given to a measurement instance.
     """
 
-    def __repr__(self):
-        return f"MidMeasure(wires={list(self.wires)}, postselect={self.postselect}, reset={self.reset})"
+    compilable_argnames = ("reset", "postselect", "meas_uid")
+
+    arg_specs = {"wires": Wire[1]}
 
     num_wires = 1
     num_params = 0
-    batch_size = None
-    resource_keys = set()
 
-    # pylint: disable=too-many-arguments
     def __init__(
         self,
-        wires: Wires | None = None,
+        wires: WiresLike,
         reset: bool = False,
         postselect: int | None = None,
         meas_uid: str | None = None,
     ):
-        super().__init__(wires=Wires(wires))
-        self._hyperparameters = {"reset": reset, "postselect": postselect, "meas_uid": meas_uid}
-        self._name = "MidMeasureMP"
+        super().__init__(wires=wires, reset=reset, postselect=postselect, meas_uid=meas_uid)
 
     @property
-    def reset(self) -> bool:
-        """Whether to reset the wire into the zero state after the measurement."""
-        return self.hyperparameters["reset"]
-
-    @property
-    def postselect(self) -> int | None:
-        """Which basis state to postselect after a mid-circuit measurement."""
-        return self.hyperparameters["postselect"]
-
-    @property
-    def meas_uid(self) -> str | None:
-        """The custom ID associated with the measurement instance."""
-        return self.hyperparameters["meas_uid"]
-
-    @classmethod
-    def _primitive_bind_call(cls, *args, **kwargs):
-        return type.__call__(cls, *args, **kwargs)
+    def name(self) -> str:
+        # Kept as ``"MidMeasureMP"`` for backwards compatibility (gate sets, resource-rep aliases,
+        # device capabilities, etc. all key on this name).
+        return "MidMeasureMP"
 
     @staticmethod
-    def compute_diagonalizing_gates(*params, wires, **hyperparams) -> list[Operator]:
+    def compute_diagonalizing_gates(*args, **kwargs) -> list:  # pylint: disable=unused-argument
         return []
 
-    def label(self, decimals=None, base_label=None, cache=None):
+    @override
+    def label(self, decimals=None, base_label=None, cache=None) -> str:
         r"""How the mid-circuit measurement is represented in diagrams and drawings.
 
         Args:
@@ -180,13 +153,22 @@ class MidMeasure(Operator):
 
         return _label
 
-    @property
-    def resource_params(self) -> dict:
-        return {}
+    @override
+    def __repr__(self) -> str:
+        return f"MidMeasure(wires={list(self.wires)}, postselect={self.postselect}, reset={self.reset})"
 
-    def __hash__(self):
-        """int: Returns an integer hash uniquely representing the measurement process"""
-        return hash((self.__class__.__name__, tuple(self.wires.tolist()), self.meas_uid))
+    @override
+    def __str__(self) -> str:
+        if self.is_fully_abstract:
+            return self.__class__.__name__
+        return super().__str__()
+
+
+@abstractify.register
+@QueuingManager.stop_recording()
+def _abstractify_mid_measure(op: MidMeasure):
+    # An abstractified MidMeasure should not carry a concrete meas_uid.
+    return MidMeasure(wires=Wire[1], reset=op.reset, postselect=op.postselect, meas_uid=None)
 
 
 def measure(
@@ -371,8 +353,7 @@ def measure(
               with postselection states that have zero or close to zero probability.
 
             * With analytic execution, ``qp.mutual_info`` will raise errors when using any interfaces except
-              ``jax``, and ``qp.vn_entropy`` will raise an error with the ``tensorflow`` interface when the
-              postselection state has zero probability.
+              ``jax`` when the postselection state has zero probability.
 
             * When using JIT, ``QNode``'s may have unexpected behaviour when postselection on a zero
               probability state is performed. Due to floating point precision, the zero probability may not be
@@ -381,8 +362,7 @@ def measure(
 
     """
     if capture_enabled():
-        primitive = _create_mid_measure_primitive()
-        return primitive.bind(wires, reset=reset, postselect=postselect)
+        return measure_prim.bind(wires, reset=reset, postselect=postselect)
 
     if active_jit := compiler.active_compiler():
         available_eps = compiler.AvailableCompilers.names_entrypoints

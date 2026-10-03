@@ -28,7 +28,7 @@ from pennylane.templates.subroutines.qrom import QROM
 def test_qrom_mapping(clean):
     """Test that the qrom operator gets mapped correctly"""
     qrom = QROM(
-        data=[[0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0]],
+        bitstrings=[[0, 1, 0], [1, 1, 1], [1, 1, 0], [0, 0, 0]],
         control_wires=[0, 1],
         target_wires=[2, 3, 4],
         work_wires=[5, 6, 7],

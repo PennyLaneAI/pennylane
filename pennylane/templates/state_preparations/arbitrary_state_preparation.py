@@ -22,7 +22,8 @@ import pennylane as qp
 from pennylane import register_resources
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operation
-from pennylane.decomposition import add_decomps, resource_rep
+from pennylane.decomposition import add_decomps
+from pennylane.typing import Float, Wire
 
 
 @functools.lru_cache
@@ -131,12 +132,12 @@ class ArbitraryStatePreparation(Operation):
         >>> ops = qp.ArbitraryStatePreparation.compute_decomposition(weights, wires=["a", "b"])
         >>> from pprint import pprint
         >>> pprint(ops)
-        [PauliRot(1.0, XI, wires=['a', 'b']),
-        PauliRot(2.0, YI, wires=['a', 'b']),
-        PauliRot(3.0, IX, wires=['a', 'b']),
-        PauliRot(4.0, IY, wires=['a', 'b']),
-        PauliRot(5.0, XX, wires=['a', 'b']),
-        PauliRot(6.0, XY, wires=['a', 'b'])]
+        [PauliRot(theta=1.0, pauli_word=XI, wires=['a', 'b']),
+         PauliRot(theta=2.0, pauli_word=YI, wires=['a', 'b']),
+         PauliRot(theta=3.0, pauli_word=IX, wires=['a', 'b']),
+         PauliRot(theta=4.0, pauli_word=IY, wires=['a', 'b']),
+         PauliRot(theta=5.0, pauli_word=XX, wires=['a', 'b']),
+         PauliRot(theta=6.0, pauli_word=XY, wires=['a', 'b'])]
 
         """
         op_list = []
@@ -161,7 +162,7 @@ class ArbitraryStatePreparation(Operation):
 def _arbitrary_state_preparation_resources(num_wires):
     return dict(
         Counter(
-            resource_rep(qp.PauliRot, pauli_word=pauli_word)
+            qp.PauliRot(Float, pauli_word=pauli_word, wires=Wire[len(pauli_word)])
             for pauli_word in _state_preparation_pauli_words(num_wires)
         )
     )

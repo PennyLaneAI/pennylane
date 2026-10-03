@@ -14,24 +14,155 @@
 r"""Contains the PartialUnaryStatePreparation template."""
 
 from collections import defaultdict
+from numbers import Integral
 
 import numpy as np
 
 import pennylane as qp
 from pennylane import allocate, math
-from pennylane.core.operator import Operation
-from pennylane.decomposition import controlled_resource_rep
-from pennylane.wires import Wires
+from pennylane.core.operator import Operator2
+from pennylane.typing import AbstractWires, Bool, Complex, Int, TensorLike, Wire
+from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
+
+_U64 = np.uint64
 
 
+def _reduced_binary_row_basis(values, max_rank):
+    """Return a reduced row basis of packed binary vectors, or ``None`` above ``max_rank``."""
+    basis = {}
+    for value in values:
+        reduced = int(value)
+        for pivot in sorted(basis, reverse=True):
+            if reduced & (1 << pivot):
+                reduced ^= basis[pivot]
+        if not reduced:
+            continue
+
+        pivot = reduced.bit_length() - 1
+        for other_pivot, row in tuple(basis.items()):
+            if row & (1 << pivot):
+                basis[other_pivot] = row ^ reduced
+        basis[pivot] = reduced
+
+        if len(basis) > max_rank:
+            return None
+
+    return basis
+
+
+def _is_affine_subspace(basis_states, n_subspace):
+    """Return whether ``basis_states`` lie in an affine subspace of the given width."""
+    anchor = int(basis_states[0])
+    translated = (int(state) ^ anchor for state in basis_states)
+    return _reduced_binary_row_basis(translated, n_subspace) is not None
+
+
+def _clear_nonpivot_columns(translated, rows, pivots, n_qubits):
+    """Clear non-pivot columns and return the corresponding CNOT gates."""
+    pivot_set = set(pivots)
+    circuit = []
+    for target_bit in range(n_qubits - 1, -1, -1):
+        if target_bit in pivot_set:
+            continue
+        for row, control_bit in zip(rows, pivots, strict=True):
+            if row & (1 << target_bit):
+                circuit.append(("CNOT", n_qubits - 1 - control_bit, n_qubits - 1 - target_bit))
+                target_mask = 1 << target_bit
+                for i, value in enumerate(translated):
+                    if value & (1 << control_bit):
+                        translated[i] = value ^ target_mask
+    return circuit
+
+
+def _move_pivots_to_leading_wires(translated, pivots, n_qubits):
+    """Move pivot columns to the leading wires and return the corresponding SWAP gates."""
+    locations = list(pivots)
+    circuit = []
+    for i, desired_bit in enumerate(range(n_qubits - 1, n_qubits - 1 - len(pivots), -1)):
+        current_bit = locations[i]
+        if current_bit == desired_bit:
+            continue
+
+        circuit.append(("SWAP", [n_qubits - 1 - current_bit, n_qubits - 1 - desired_bit]))
+        current_mask, desired_mask = 1 << current_bit, 1 << desired_bit
+        for j, value in enumerate(translated):
+            if bool(value & current_mask) != bool(value & desired_mask):
+                translated[j] = value ^ current_mask ^ desired_mask
+
+        locations[i] = desired_bit
+    return circuit
+
+
+def _find_affine_subspace_isometry(basis_states, n_qubits, n_subspace):
+    """Find a Clifford-only isometry for support in a minimal affine binary subspace.
+
+    Returns ``None`` if the translated support has binary rank larger than ``n_subspace``.
+    Otherwise, returns a circuit of X, CNOT and SWAP gates together with the induced mapping
+    into the subspace register.
+    """
+    states = list(basis_states)
+    n_remainder = n_qubits - n_subspace
+    remainder_mask = (1 << n_remainder) - 1
+
+    if all((state & remainder_mask) == 0 for state in states):
+        return [], {i: state >> n_remainder for i, state in enumerate(states)}
+
+    anchor = states[0]
+    translated = [state ^ anchor for state in states]
+
+    # Row operations only change the chosen basis of the affine span the column operations
+    # recorded below are the physical Clifford circuit.
+    basis = _reduced_binary_row_basis(translated, n_subspace)
+    if basis is None:
+        return None
+
+    pivots = sorted(basis, reverse=True)
+    rows = [basis[pivot] for pivot in pivots]
+    circuit = []
+
+    # Translate the affine support to a linear subspace.
+    for bit in range(n_qubits - 1, -1, -1):
+        if anchor & (1 << bit):
+            wire = n_qubits - 1 - bit
+            circuit.append(("X", wire))
+
+    # In reduced row-echelon form, each non-pivot column is a combination of pivot columns.
+    # Clear it with CNOTs controlled by those pivots.
+    circuit.extend(_clear_nonpivot_columns(translated, rows, pivots, n_qubits))
+
+    # Move the pivot columns to the leading wires, updating pivot locations after each swap.
+    circuit.extend(_move_pivots_to_leading_wires(translated, pivots, n_qubits))
+
+    if any(value & remainder_mask for value in translated):  # pragma: no cover
+        raise AssertionError("Affine preconditioning failed to map support into the subspace.")
+
+    bijection = {i: value >> n_remainder for i, value in enumerate(translated)}
+    return circuit, bijection
+
+
+# pylint: disable-next=too-many-instance-attributes
 class PUIsometryFinder:
     r"""Classical algorithm that finds the isometry circuit and bijection for
     :class:`~.PartialUnaryStatePreparation`. The goal is to compute an isometry that maps
-    given computational basis states :math:`\{|\ell\rangle\}_{\ell \in L}` to the first consecutive
-    computational basis states :math:`\{|j\rangle\}_{0\leq j < |L|}`. The state preparation
-    circuit will then prepare the amplitude :math:`c_\ell` on the computational basis state that
-    :math:`|\ell\rangle` was mapped to, and then runs the isometry backwards to distribute the
-    amplitudes to the states :math:`\{|\ell\rangle\}`.
+    given computational basis states :math:`\{|\ell\rangle\}_{\ell \in L}` to unique states in
+    a :math:`\lceil\log_2(|L|)\rceil`-qubit subspace register. The state preparation circuit will
+    then prepare the amplitude :math:`c_\ell` on the computational basis state to which
+    :math:`|\ell\rangle` was mapped, and run the isometry backwards to distribute the amplitudes
+    to the states :math:`\{|\ell\rangle\}`.
+
+    For example, consider the support
+    :math:`L=\{0000, 0011, 1100, 1111\}`. Relative to the anchor :math:`0000`, it is generated
+    by the binary vectors :math:`0011` and :math:`1100`, so it lies in a two-dimensional affine
+    subspace. The forward Clifford circuit ``CNOT([0, 1])``, ``CNOT([2, 3])``, and
+    ``SWAP([1, 2])`` maps the support as
+
+    .. math::
+
+        0000 \mapsto 0000,\quad 0011 \mapsto 0100,\quad
+        1100 \mapsto 1000,\quad 1111 \mapsto 1100.
+
+    The last two bits are now zero, leaving the first two wires as the subspace register. Reversing
+    the circuit maps amplitudes prepared on this register back to the original support.
 
     Args:
         basis_states (list[int]): Computational basis state indices :math:`L` that we want to map
@@ -56,13 +187,16 @@ class PUIsometryFinder:
         Throughout, we will switch between integers and their bit string representation as needed,
         for example in the split of :math:`\ell` into its first :math:`n_{\text{subspace}}` bits
         :math:`\ell_s` and the remaining substring :math:`\ell_r`.
-        Finally, we also define a *batch size* :math:`m = 2^{\lfloor \log_2(n_r)\rfloor}`.
+        Finally, we also define a *batch size*
+        :math:`m = \min(2^{\lfloor \log_2(n_r)\rfloor}, |L|)`.
 
         **Algorithm description**
 
         The algorithm now proceeds iteratively in batches. We will denote some actions in bold,
-        which are both carried out on the bit strings of all the states to be encoded (stored
-        in a bit tableau), and recorded in the circuit representation for the isometry.
+        which are both carried out on the bit strings of all the states to be encoded, and
+        recorded in the circuit representation for the isometry.
+        The former is stored in a packed bit tableau, representing each row in a single
+        ``np.uint64`` (for :math:`n\leq 63` qubits) or a large Python integer (for :math:`n>63`).
 
         0. Initialize an empty batch :math:`\mathcal{B}=\{\}` of integer pairs, a global
            bijection :math:`f` of integers, and a global counter :math:`k=0`.
@@ -112,10 +246,11 @@ class PUIsometryFinder:
            have been manipulated repeatedly by the previous steps.
 
         We now have the complete bijection :math:`f` and the recording of the isometry operations
-        required to map :math:`L` to the consecutive integers :math:`0\leq j<|L|`. The former
-        is used to prepare the dense state :math:`|\phi_0\rangle=\sum_{\ell\in L} c_{\ell}|f(\ell)\rangle`
-        on the subspace register. The latter can be executed in reverse to map the states to the
-        desired :math:`|\psi\rangle = \sum_{\ell \in L } c_\ell |\ell\rangle`.
+        required to map :math:`L` into the subspace register. The former is used to prepare the
+        dense state
+        :math:`|\phi_0\rangle=\sum_{\ell\in L} c_{\ell}|f(\ell)\rangle` on the subspace register.
+        The latter can be executed in reverse to map the states to the desired
+        :math:`|\psi\rangle = \sum_{\ell \in L } c_\ell |\ell\rangle`.
 
         **Why does this work?**
 
@@ -164,98 +299,215 @@ class PUIsometryFinder:
 
     def __init__(self, basis_states: list, n_qubits: int):
         num_entries = len(basis_states)
+        if n_qubits < 1 or not isinstance(n_qubits, int):
+            raise ValueError(f"n_qubits must be a positive integer, got {n_qubits}.")
         self.n = n_qubits
+        if (num_dist := len(set(basis_states))) != num_entries:
+            raise ValueError(
+                f"Computational basis states must be unique, got {num_entries} basis states but "
+                f"just {num_dist} distinct basis states."
+            )
+        if num_entries < 2:  # No need for this algorithm
+            raise ValueError(f"At least two basis states are required. Got {num_entries}.")
+        # Choose the packing representation. ``uint64`` is the fast native path for
+        # n <= 63 qubits; for wider registers a single 64-bit word cannot hold a row, so we fall
+        # back to Python big integers stored in a ``dtype=object`` array. ``_word`` converts a
+        # Python int to the packing scalar type.
+        if self.n > 63:
+            self._packed_dtype = object
+            self._word = int
+        else:
+            self._packed_dtype = _U64
+            self._word = _U64
+
         self.n_subspace = max(math.ceil_log2(num_entries), 1)
-        n_r = self.n - self.n_subspace
-        # Largest power of 2 less than or equal to n_r, the remainder register size
-        self.m = 1 << int(math.floor(math.log2(max(n_r, 1))))
+        self.n_r = self.n - self.n_subspace
 
-        self.tableau = qp.math.int_to_binary(basis_states, self.n).astype(np.int8)
-        self.circuit = []
+        # Packed tableau: one word per row. Column 0 is the MSB (weight 2**(n-1)), matching
+        # the MSB-first convention of ``int_to_binary``, so a row's integer value == its index.
+        # ``int(x)`` normalizes both numpy-int and Python-int inputs (the latter occur when the
+        # indices exceed int64 for n >= 64 and are already stored in an object array).
+        self.tableau = np.array([int(x) for x in basis_states], dtype=self._packed_dtype)
+        self.circuit = []  # Forward circuit realizing the isometry _to_ densified basis sates
+        self.fanout_bits = []  # Bit strings to use for Fanout operations in the circuit
 
-        # Pre-compute subspace membership (will track incrementally)
-        self._in_subspace = np.all(self.tableau[:, self.n_subspace :] == 0, axis=1)
+        # m is the maximal batch size for the partial unary iteration batches.
+        # It is the largest power of 2 less than or equal to n_r, the remainder register size, but
+        # at most the total number of computational basis states to populate.
+        if self.n_r == 0:
+            self.m = 0
+            return
 
-    def apply_multi_controlled_x(self, controls, control_values, target: int):
-        """Apply multi-controlled X to the tableau."""
-        ctrl_cols = self.tableau[:, controls]
-        # A row is flipped iff all control bits match control_values
-        match = np.all(ctrl_cols == control_values, axis=1)
-        self.tableau[:, target] ^= match.astype(np.int8)
+        # Batch size can never exceed the number of states that actually need mapping, so cap
+        # it here. This matters when there are many more (unused) remainder wires than states.
+        self.m = min(1 << math.floor_log2(self.n_r), num_entries)
 
-    def pui(self, k, batch_size):
-        """Add a Partial unary iterator circuit (in form of `Select`) to the circuit ops and
+        # Frequently used word constants, precomputed in the packing type to avoid any casts
+        # inside the hot loop.
+        self._zero = self._word(0)
+        self._one = self._word(1)
+        self._nr_shift = self._word(self.n_r)
+
+        # Mask selecting the remainder register (the low n_r bits).
+        self.rem_mask = self._word((1 << self.n_r) - 1)
+
+        # Pre-compute subspace membership: a row is in the subspace iff all remainder bits are
+        # zero. This is refreshed only inside ``pui`` (never after ``fanout``).
+        self._in_subspace = (self.tableau & self.rem_mask) == self._zero
+        # Number of rows not in the subspace. Maintained incrementally, it only changes when
+        # ``pui`` is called (the only op that refreshes ``_in_subspace``). Rows entering the
+        # current batch stay marked as "not in subspace" until the next ``pui``, so that the
+        # number of _remaining_ rows to be mapped (not in subspace and not in the batch)
+        # will equal ``_n_not_subspace - len(batch)``.
+        self._n_not_subspace = int(np.count_nonzero(~self._in_subspace))
+
+        # Precompute per-column single-bit masks (big endian) and shift amounts. These are
+        # looked up many times in the main loop, so caching avoids repeated casting to _word type.
+        self._shifts = [self._word(self.n - 1 - c) for c in range(self.n)]
+        self._col_masks = [self._one << s for s in self._shifts]
+
+    def _col_bit(self, col: int):
+        """Return the word mask with a single set bit at tableau column ``col``."""
+        return self._col_masks[col]
+
+    def _diff_bits(self, diff_val: int) -> np.ndarray:
+        """Return the length-``n`` MSB-first binary representation of ``diff_val`` (a Python
+        int) as an ``int8`` array. Uses ``math.int_to_binary`` on the single-word path; that
+        function overflows for values wider than 63 bits, so the multi-word path uses an explicit
+        big-int extraction instead."""
+        if self.n <= 63:
+            # Single-word scenario
+            return math.int_to_binary(diff_val, self.n).astype(np.int8)
+
+        # Multi-word scenario
+        _shifts = ((self.n - 1 - c) for c in range(self.n))
+        return np.fromiter(((diff_val >> s) & 1 for s in _shifts), dtype=np.int8, count=self.n)
+
+    def pui(self, k: int, batch_size: int):
+        """Add a Partial unary iterator circuit (in form of ``Select``) to the circuit ops and
         apply the corresponding multicontrolled bit flips to the tableau."""
         k_start = k - batch_size
-        self.circuit.append(("PUI", k_start, k))
+        # Pad with zeros to allow for array casting later
+        self.circuit.append((0, k_start, k, 0, 0))
 
         # Update tableau for PUI effect
-        target_bits = qp.math.int_to_binary(np.arange(k_start, k), self.n_subspace)
+        # For batch element j, rows whose subspace value equals k_start + j get remainder
+        # qubit j flipped. Remainder qubit j is tableau column n_subspace + j, whose cached
+        # single-bit mask has value 2**(n_r - 1 - j).
+        subspace_val = self.tableau >> self._nr_shift
+        for j in range(batch_size):
+            mask = subspace_val == (k_start + j)
+            self.tableau[mask] ^= self._col_masks[self.n_subspace + j]
 
-        # Broadcasted version of `apply_multi_controlled_x`.
-        ctrl_cols = self.tableau[None, :, : self.n_subspace]
-        # A row is flipped iff all control bits match control_values
-        match = np.all(ctrl_cols == target_bits[:, None, :], axis=2)
-        self.tableau[
-            :, np.arange(self.n_subspace, len(target_bits) + self.n_subspace)
-        ] ^= match.astype(np.int8).T
-
-        # Update subspace status after PUI
-        self._in_subspace = np.all(self.tableau[:, self.n_subspace :] == 0, axis=1)
+        # Update subspace status after PUI.
+        self._in_subspace = (self.tableau & self.rem_mask) == self._zero
+        self._n_not_subspace = int(np.count_nonzero(~self._in_subspace))
 
     def fanout(self, control: int, bits: np.ndarray):
-        """Add a Fanout operation to the circuit ops and apply corresponding CNOTs to the tableau."""
-        self.circuit.append(("Fanout", control, np.delete(bits, control)))
-        ctrl_bits = self.tableau[:, control].copy()
-        target_bits = np.where(bits)[0]
-        self.tableau[:, target_bits] ^= ctrl_bits[:, None]
-        self.tableau[:, control] = ctrl_bits
+        """Add a Fanout operation to the circuit ops and apply corresponding CNOTs to the tableau.
 
-    def toffoli(self, controls, control_values, target):
+        ``bits`` is a length-``n`` binary array (the diff vector marking the bits to be flipped).
+        All columns set in ``bits`` except ``control`` itself are XORed with the ``control``
+        column (per row), while the ``control`` column is left unchanged.
+        """
+        # Pad with zeros to allow for array casting later
+        self.circuit.append((1, control, len(self.fanout_bits), 0, 0))
+        self.fanout_bits.append(np.delete(bits, control))
+
+        # Packed flip mask: all set bits of ``bits`` except the control bit.
+        flip_mask = self._zero
+        for c in np.nonzero(bits)[0]:
+            if int(c) != control:
+                flip_mask |= self._col_bit(int(c))
+
+        # Vectorized XOR: rows whose control bit is 1 get ``flip_mask`` applied.
+        # Broadcasting ``ctrl_bit`` (0/1) to the full flip word avoids a boolean fancy-index
+        # write, which causes overhead for large registers.
+        ctrl_bit = (self.tableau >> self._shifts[control]) & self._one
+        self.tableau ^= ctrl_bit * flip_mask
+
+    def toffoli(self, controls: list, second_ctrl_val: int, target: int):
         """Add a MultiControlledX operation to the circuit ops and apply it to the tableau."""
-        self.circuit.append(("Toffoli", controls + [target], control_values))
-        self.apply_multi_controlled_x(controls, np.array(control_values), target)
+        self.circuit.append((3, *controls, target, second_ctrl_val))
 
-    def swap(self, w0, w1):
+        # Apply multi-controlled X to the tableau.
+        # Create control mask and the control pattern we want to match, from ``controls`` and
+        # ``control_values``. This is fast enough because we only ever use this function to realize
+        # bit flips from Toffoli gates, so len(control)=len(control_values)=2
+        ctrl_mask = self._zero
+        ctrl_pattern = self._zero
+        for c, v in zip(controls, (1, second_ctrl_val), strict=True):
+            bit = self._col_bit(c)
+            ctrl_mask |= bit
+            if v:
+                ctrl_pattern |= bit
+        match = (self.tableau & ctrl_mask) == ctrl_pattern
+        # Where the control pattern matches, we flip the target bit by XORing with the bitstring
+        # having only the target bit set to one.
+        self.tableau[match] ^= self._col_bit(target)
+
+    def swap(self, w0: int, w1: int):
         """Add a SWAP operation to the circuit ops and apply SWAP to the tableau."""
-        self.circuit.append(("SWAP", [w0, w1]))
-        self.tableau[:, [w0, w1]] = self.tableau[:, [w1, w0]]
+        # Pad with zeros to allow for array casting later
+        self.circuit.append((2, w0, w1, 0, 0))
+        # positions for the two qubits
+        p0 = self._shifts[w0]
+        p1 = self._shifts[w1]
+        # masks rows which have the bits w0 / w1 set, respectively
+        b0 = (self.tableau >> p0) & self._one
+        b1 = (self.tableau >> p1) & self._one
+        diff = b0 ^ b1  # masks rows where the two bits differ
+        self.tableau ^= (diff << p0) | (diff << p1)  # Flip differing bits on correct positions
 
-    def _next_state_with_target_set(self, target_qubit):
+    def _next_state_with_target_set(self, target_qubit: int) -> int | None:
         """Stage 1 of step 2.
         Find the next state in the tableau that has the remainder qubit with
         index ``target_qubit`` set to one."""
         # Translate from remainder index to total index
         actual_qubit = self.n_subspace + target_qubit
+        bit = self._col_bit(actual_qubit)
+        # masks rows where the actual target qubit is set
+        hits = self.tableau & bit
+        # We only need the *first* row with the bit set. ``argmax`` finds it in a single scan
+        # with no output allocation (unlike ``nonzero``).
+        # ``argmax`` returns 0 both when row 0 is the first hit and when there is no hit, so we
+        # disambiguate by checking explicitly that the bit is set in the returned row.
+        first = int(np.argmax(hits != self._zero))
+        if hits[first]:
+            # The bit is indeed set
+            return first
+        # We got first=0 but because there was no hit, not because row 0 had the target qubit set.
+        return None
 
-        # which rows have bit at actual_qubit set?
-        search_idx = np.where(self.tableau[:, actual_qubit])[0]
-        return int(search_idx[0]) if len(search_idx) else None
-
-    def _try_swap(self, remaining, target_qubit):
-        """Stage 2 of step 2
-        Find a remainder qubit that is set on at least one bit string, and swap it with
-        ``target_qubit``."""
-        # Translate from remainder index to total index
+    def _try_swap(self, remaining: np.ndarray, target_qubit: int) -> int | None:
+        """Stage 2 of step 2:
+        find a remainder qubit (of higher index than ``target_qubit``)
+        that is set on at least one remaining bit string, and swap it with ``target_qubit``."""
         actual_qubit = self.n_subspace + target_qubit
         # We know that no bit string has the actual_qubit set to 1 because
         # _next_state_with_target_set failed to find it. We look for a one on a higher-index
-        # qubit in the remainder register
-        ns_cols = self.tableau[np.array(remaining), actual_qubit + 1 :]
-        if ns_cols.size > 0:
-            # Find first (row, col) with a 1
-            row_idx, col_idx = np.where(ns_cols)
-            if len(row_idx):
-                # Find absolute qubit index from relative index within ns_cols and apply swap.
-                swap_from = actual_qubit + 1 + int(col_idx[0])
-                self.swap(actual_qubit, swap_from)
-                # Return the index of the bitstring that had the qubit set to 1, and now has
-                # actual_qubit set to one due to the swap.
-                return int(remaining[row_idx[0]])
+        # qubit in the remainder register, i.e. columns actual_qubit+1 .. n-1.
+        # Create a mask for higher-index remainder qubits.
+        lower_mask = self._col_bit(actual_qubit) - self._one
+        if lower_mask == self._zero:
+            return None
 
-        return None
+        rem = np.asarray(remaining)
+        masked = self.tableau[rem] & lower_mask
+        rows_with_qubit_set = np.nonzero(masked)[0]
+        if len(rows_with_qubit_set) == 0:
+            return None
 
-    def _try_toffoli(self, remaining, target_qubit, batch):
+        # First remaining row (smallest position) that has such a bit set.
+        r_pos = int(rows_with_qubit_set[0])
+        row_val = int(masked[r_pos])
+        # First matching column == highest set bit within the region.
+        # column c has weight 2**(n-1-c); highest set bit -> smallest column index.
+        swap_from = self.n - row_val.bit_length()
+        self.swap(actual_qubit, swap_from)
+        return int(rem[r_pos])
+
+    def _try_toffoli(self, remaining: np.ndarray, target_qubit: int, batch: list) -> int:
         """Stage 3 of step 2.
         Find a bitstring that has one of the remainder qubits set to one that are already
         used in ``batch`` but differs on a different qubit. Then apply the Toffoli trick
@@ -263,63 +515,85 @@ class PUIsometryFinder:
         otherwise _next_state_with_target_set would have identified the bit string as next
         candidate in stage 1 of this step already."""
         actual_qubit = self.n_subspace + target_qubit
-
-        # Take the next-best bitstring that we still need to map
         idx = remaining[0]
+
         # Find a remainder qubit lower than actual_qubit that is set to one. We know that
         # idx must have such a qubit because
         # - it must have at least one remainder qubit set to one because it is in `remaining`
         # - it can't have any qubits at or above the index `actual_qubit` set, because if it did,
         #   _next_state_with_target_set or _try_swap would have been successful.
-        active_remainder_bit = np.where(self.tableau[idx, self.n_subspace : actual_qubit])[0][0]
+        # Create a mask for this by XORing away the higher-index bits from the
+        # ``rem_mask`` constant.
+        region_mask = self.rem_mask ^ (self._col_bit(actual_qubit) - self._one)
+        region_val = int(self.tableau[idx] & region_mask)
+        # Highest set bit (smallest column index) within the region.
+        active_col = self.n - region_val.bit_length()
+        # Translate to index in remainder space
+        active_remainder_bit = active_col - self.n_subspace
+
         # Find a qubit at which the bitstrings A at position batch[active_remainder_bit] and
         # B at position `idx` differ. Note that we know that there is a differing qubit because
         # the bitstrings are unique. Also, note that actual_qubit can't be a differing qubit,
         # because A only has ones in the subspace and at position
         # active_remainder_bit < actual_qubit, and B does not have actual_qubit set because
         # in that case, _next_state_with_target_set would have found it already.
-        A, B = self.tableau[idx], self.tableau[batch[active_remainder_bit]]
-        diff_qubit = int(np.where(A != B)[0][0])
+        xor_val = int(self.tableau[idx] ^ self.tableau[batch[active_remainder_bit]])
+        diff_qubit = self.n - xor_val.bit_length()
 
         controls = [self.n_subspace + active_remainder_bit, diff_qubit]
-        control_values = [1, int(self.tableau[idx, diff_qubit])]
-        self.toffoli(controls, control_values, actual_qubit)
+        second_ctrl_val = int((int(self.tableau[idx]) >> (self.n - 1 - diff_qubit)) & 1)
+        self.toffoli(controls, second_ctrl_val, actual_qubit)
         return idx
 
-    def _map_full_state(self, found_state, k, target_qubit):
+    def _map_full_state(self, found_state: int, k: int, target_qubit: int):
         """Execute step 3 of the algorithm, zeroing all remainder qubits controlled on
         ``target_qubit`` (except for ``target_qubit`` itself) and setting the subspace qubits
         to the integer ``k``."""
+        # Target packed value: subspace bits = k, remainder bits = 0:  k << n_r.
+        found_val = int(self.tableau[found_state])
+        target_val = k << self.n_r
+        diff_val = target_val ^ found_val
+
+        # Reconstruct the length-n diff bit array for faithful circuit record.
+        diff_bits = self._diff_bits(diff_val)
         actual_qubit = self.n_subspace + target_qubit
-        k_bits = qp.math.int_to_binary(k, self.n_subspace)
-        target_state = qp.math.concatenate([k_bits, np.zeros(self.n - self.n_subspace, dtype=int)])
-        current_state = self.tableau[found_state]
-        diff = np.bitwise_xor(target_state, current_state)
-        self.fanout(actual_qubit, diff)
+        self.fanout(actual_qubit, diff_bits)
 
     def find_isometry(self):
         """Main method to find the isometry. See main docstring for a detailed description."""
-        bijection = {}  # Bijection f between desired states and consecutive basis states
+        # Forward circuit realizing the isometry _to_ densified basis states. Separates out the
+        # bit strings used for fanout operations.
+        if self.m == 0:
+            return (
+                self.circuit,
+                self.fanout_bits,
+                {i: int(val) for i, val in enumerate(self.tableau)},
+            )
+
+        bijection = {}  # Bijection f between desired states and densified basis states
         batch = []
 
         k = 0
         while True:
             b = len(batch)
 
-            # Get remaining indices not in subspace and not in batch
-            remaining = np.where(~self._in_subspace)[0]
-            remaining = [int(i) for i in remaining if i not in batch]
+            # Number of remaining rows (not in subspace and not in batch). ``_n_not_subspace``
+            # counts rows not in the subspace; batch members are a subset of those (they stay
+            # marked until the next ``pui``), so subtracting ``b`` gives the remaining count.
+            # The actual ``remaining`` index array is only materialized on demand for the
+            # rare fallback stages below, so we save those cost in most iterations
+            n_remaining = self._n_not_subspace - b
 
-            if b == self.m or (not remaining and b > 0):
+            if b == self.m or (n_remaining == 0 and b > 0):
                 # Step 4
                 # Need to flush because the batch is full, or because there are no remaining
                 # bit strings to map but the batch still has some entries.
-                self.pui(k, len(batch))
+                self.pui(k, b)
                 batch = []
                 continue
 
-            if not remaining:
-                # We know that b == 0 because (not remaining and b>0) is caught above
+            if n_remaining == 0:
+                # We know that b == 0 because (n_remaining==0 and b>0) is caught above
                 # Hence, the batch is empty and there are not states remaining to be handled.
                 # We thus are done and exit the loop.
                 break
@@ -331,20 +605,27 @@ class PUIsometryFinder:
 
             if found_state is None:
                 # Stage 2: Try swapping with a qubit further right to get a state with b-th
-                # non-subspace qubit set to 1
+                # non-subspace qubit set to 1. Now we need the explicit ``remaining`` index array.
+                mask = ~self._in_subspace
+                if batch:
+                    # Make sure not to overwrite _in_subspace
+                    mask = mask.copy()
+                    mask[batch] = False
+                remaining = np.nonzero(mask)[0]
+
                 found_state = self._try_swap(remaining, target_qubit)
 
-            if found_state is None:
-                # If we still have to map at least one bit string, the batch is currently empty,
-                # and neither _next_state_with_target_set nor _try_swap were successful, we know
-                # that _try_toffoli can't work (because it needs a reference batch state to
-                # discriminate against). Thus, we would be stuck in an infinite loop of trying the
-                # three stages of step 2.
-                assert (
-                    b > 0
-                ), "This scenario should never happen because it would lead to infinite recursion."
-                # Stage 3: Use Toffoli trick to fabricate a suitable state instead
-                found_state = self._try_toffoli(remaining, target_qubit, batch)
+                if found_state is None:
+                    # If we still have to map at least one bit string, the batch is currently empty,
+                    # and neither _next_state_with_target_set nor _try_swap were successful, we know
+                    # that _try_toffoli can't work (because it needs a reference batch state to
+                    # discriminate against). Thus, we would be stuck in an infinite loop of trying the
+                    # three stages of step 2.
+                    assert b > 0, (
+                        "This scenario should never happen because it would lead to "
+                        "infinite recursion."
+                    )
+                    found_state = self._try_toffoli(remaining, target_qubit, batch)
 
             # Step 3
             #  - Transform found_state: zero out other non-subspace bits using CX
@@ -357,16 +638,16 @@ class PUIsometryFinder:
             k += 1
 
         # Step 5: Assign bijection for states already in subspace
-        vals = self.tableau[:, : self.n_subspace] @ (2 ** np.arange(self.n_subspace - 1, -1, -1))
-        for i, val in enumerate(vals):
+        tableau = (self.tableau >> self._nr_shift).astype(object)
+        for i, val in enumerate(tableau):
             # setdefault means that no states are overwritten. We only did isometric steps,
             # so we exactly set all other states that we did not take care of yet with this.
             bijection.setdefault(i, int(val))
 
-        return self.circuit, bijection
+        return self.circuit, self.fanout_bits, bijection
 
 
-class PartialUnaryStatePreparation(Operation):
+class PartialUnaryStatePreparation(Operator2):
     r"""Prepare a sparse quantum state with the partial unary iteration technique.
 
     This operation prepares an arbitrary state
@@ -393,7 +674,7 @@ class PartialUnaryStatePreparation(Operation):
         preparation technique.
 
     Args:
-        coefficients (np.ndarray): Coefficients of the sparse state to prepare. The ordering should
+        coefficients (tensor_like): Coefficients of the sparse state to prepare. The ordering should
             match that in ``indices``.
         wires (qp.wires.WiresLike): Wires on which to prepare the state. All work wires will be
             allocated dynamically with :func:`~.allocate`.
@@ -449,18 +730,35 @@ class PartialUnaryStatePreparation(Operation):
     >>> print(np.allclose(prepared_state[where], coefficients))
     True
 
+    In addition to the generic path for building the isometry, there is an alternative fast path
+    for affine mappings. A minimal example of this affine fast path is given by the indices
+    ``(0b0000, 0b0011, 0b1100, 0b1111)``. They are generated by XOR combinations of
+    ``0b0011`` and ``0b1100``, so they fit exactly in a two-qubit affine subspace. For such
+    supports, the isometry uses only ``X``, ``CNOT``, and ``SWAP`` gates, avoiding the
+    ``QROM`` and Toffoli operations needed by the generic path.
+
     The preparation circuit looks like this:
 
     >>> print(qp.draw(qp.decompose(circuit, max_expansion=1), max_length=200, show_matrices=False)())
-    0: ─╭MultiplexerStatePreparation(M0)─╭|Ψ⟩─╭◑────────╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭◑────────╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭◑────────╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭◑────────╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─╭◑────────╭|Ψ⟩─╭|Ψ⟩─╭|Ψ⟩─┤ ╭State
-    1: ─├MultiplexerStatePreparation(M0)─├|Ψ⟩─├◑────────├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├◑────────├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├◑────────├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├◑────────├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├◑────────├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─┤ ├State
-    2: ─├MultiplexerStatePreparation(M0)─├|Ψ⟩─├◑────────├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├◑────────├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├◑────────├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├◑────────├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─├◑────────├|Ψ⟩─├|Ψ⟩─├|Ψ⟩─┤ ├State
-    3: ─╰MultiplexerStatePreparation(M0)─╰|Ψ⟩─├◑────────╰|Ψ⟩─├|Ψ⟩─├|Ψ⟩─╰|Ψ⟩─├◑────────╰|Ψ⟩─├|Ψ⟩─├|Ψ⟩─╰|Ψ⟩─├◑────────╰|Ψ⟩─├|Ψ⟩─├|Ψ⟩─╰|Ψ⟩─├◑────────╰|Ψ⟩─├|Ψ⟩─├|Ψ⟩─╰|Ψ⟩─├◑────────╰|Ψ⟩─├|Ψ⟩─├|Ψ⟩─┤ ├State
-    4: ───────────────────────────────────────├QROM(M1)──────├|Ψ⟩─├●────────├QROM(M1)──────├|Ψ⟩─├●────────├QROM(M1)──────├|Ψ⟩─├●────────├QROM(M1)──────├|Ψ⟩─├●────────├QROM(M1)──────├|Ψ⟩─├●───┤ ├State
-    5: ───────────────────────────────────────├QROM(M1)──────╰●───╰|Ψ⟩──────├QROM(M1)──────╰●───╰|Ψ⟩──────├QROM(M1)──────╰●───╰|Ψ⟩──────├QROM(M1)──────╰●───╰|Ψ⟩──────├QROM(M1)──────╰●───╰|Ψ⟩─┤ ├State
-    6: ───────────────────────────────────────├work─────────────────────────├work─────────────────────────├work─────────────────────────├work─────────────────────────├work────────────────────┤ ├State
-    7: ───────────────────────────────────────├work─────────────────────────├work─────────────────────────├work─────────────────────────├work─────────────────────────├work────────────────────┤ ├State
-    8: ───────────────────────────────────────╰work─────────────────────────╰work─────────────────────────╰work─────────────────────────╰work─────────────────────────╰work────────────────────┤ ╰State
+    0: ─╭MultiplexerStatePreparation(M0)─╭MultiX(M1)─╭◑────────╭MultiX(M1)─╭MultiX(M3)─╭MultiX(M4)─╭MultiX(M5)─╭◑────────╭MultiX(M5)─╭MultiX(M6)─╭MultiX(M7)─╭MultiX(M8)─╭◑────────╭MultiX(M8) ···
+    1: ─├MultiplexerStatePreparation(M0)─├MultiX(M1)─├◑────────├MultiX(M1)─├MultiX(M3)─├MultiX(M4)─├MultiX(M5)─├◑────────├MultiX(M5)─├MultiX(M6)─├MultiX(M7)─├MultiX(M8)─├◑────────├MultiX(M8) ···
+    2: ─├MultiplexerStatePreparation(M0)─├MultiX(M1)─├◑────────├MultiX(M1)─├MultiX(M3)─├MultiX(M4)─├MultiX(M5)─├◑────────├MultiX(M5)─├MultiX(M6)─├MultiX(M7)─├MultiX(M8)─├◑────────├MultiX(M8) ···
+    3: ─╰MultiplexerStatePreparation(M0)─╰MultiX(M1)─├◑────────╰MultiX(M1)─├MultiX(M3)─├MultiX(M4)─╰MultiX(M5)─├◑────────╰MultiX(M5)─├MultiX(M6)─├MultiX(M7)─╰MultiX(M8)─├◑────────╰MultiX(M8) ···
+    4: ──────────────────────────────────────────────├QROM(M2)─────────────├MultiX(M3)─├●──────────────────────├QROM(M2)─────────────├MultiX(M6)─├●──────────────────────├QROM(M2)──────────── ···
+    5: ──────────────────────────────────────────────├QROM(M2)─────────────╰●──────────╰MultiX(M4)─────────────├QROM(M2)─────────────╰●──────────╰MultiX(M7)─────────────├QROM(M2)──────────── ···
+    6: ──────────────────────────────────────────────├work─────────────────────────────────────────────────────├work─────────────────────────────────────────────────────├work──────────────── ···
+    7: ──────────────────────────────────────────────├work─────────────────────────────────────────────────────├work─────────────────────────────────────────────────────├work──────────────── ···
+    8: ──────────────────────────────────────────────╰work─────────────────────────────────────────────────────╰work─────────────────────────────────────────────────────╰work──────────────── ···
+    <BLANKLINE>
+    0: ··· ─╭MultiX(M6)─╭MultiX(M9)─╭MultiX(M10)─╭◑────────╭MultiX(M10)─╭MultiX(M11)─╭MultiX(M11)─╭MultiX(M12)─╭◑────────╭MultiX(M12)─╭MultiX(M13)─╭MultiX(M14)─┤ ╭State
+    1: ··· ─├MultiX(M6)─├MultiX(M9)─├MultiX(M10)─├◑────────├MultiX(M10)─├MultiX(M11)─├MultiX(M11)─├MultiX(M12)─├◑────────├MultiX(M12)─├MultiX(M13)─├MultiX(M14)─┤ ├State
+    2: ··· ─├MultiX(M6)─├MultiX(M9)─├MultiX(M10)─├◑────────├MultiX(M10)─├MultiX(M11)─├MultiX(M11)─├MultiX(M12)─├◑────────├MultiX(M12)─├MultiX(M13)─├MultiX(M14)─┤ ├State
+    3: ··· ─├MultiX(M6)─├MultiX(M9)─╰MultiX(M10)─├◑────────╰MultiX(M10)─├MultiX(M11)─├MultiX(M11)─╰MultiX(M12)─├◑────────╰MultiX(M12)─├MultiX(M13)─├MultiX(M14)─┤ ├State
+    4: ··· ─├MultiX(M6)─├●───────────────────────├QROM(M2)──────────────├MultiX(M11)─├●────────────────────────├QROM(M2)──────────────├MultiX(M13)─├●───────────┤ ├State
+    5: ··· ─╰●──────────╰MultiX(M9)──────────────├QROM(M2)──────────────╰●───────────╰MultiX(M11)──────────────├QROM(M2)──────────────╰●───────────╰MultiX(M14)─┤ ├State
+    6: ··· ──────────────────────────────────────├work─────────────────────────────────────────────────────────├work────────────────────────────────────────────┤ ├State
+    7: ··· ──────────────────────────────────────├work─────────────────────────────────────────────────────────├work────────────────────────────────────────────┤ ├State
+    8: ··· ──────────────────────────────────────╰work─────────────────────────────────────────────────────────╰work────────────────────────────────────────────┤ ╰State
 
     We can make out the dense state preparation on the *subspace register* ``0`` through ``3``,
     followed by the isometry circuit consisting of partial unary iteration circuits and ``CNOT``
@@ -477,24 +775,24 @@ class PartialUnaryStatePreparation(Operation):
         num_entries = 2553
         coefficients = np.random.random(num_entries)
         coefficients /= np.linalg.norm(coefficients)
-        indices = np.random.choice(2**15, num_entries, replace=False)
+        indices = tuple(np.random.choice(2**15, num_entries, replace=False))
         wires = list(range(15))
         num_work_wires = qp.math.ceil_log2(num_entries) - 1
         work_wires = list(range(15, 15 + num_work_wires))
 
     >>> print(qp.specs(qp.decompose(circuit, max_expansion=1), compute_depth=False)()["resources"])
-    Wire allocations: 26
-    Total gates: 6,040
-    Gate counts:
-    - MultiplexerStatePreparation: 1
-    - BasisState: 2,414
-    - QROM: 1,207
-    - C(BasisState): 2,414
-    - MultiControlledX: 3
-    - SWAP: 1
-    Measurements:
+    Quantum operations:
+    - Total: 6,046
+      - MultiplexerStatePreparation: 1
+      - MultiX: 2,420
+      - QROM: 1,207
+      - C(MultiX): 2,414
+      - MultiControlledX: 3
+      - SWAP: 1
+    Measurement processes:
     - state(all wires): 1
-    Depth: Not computed
+    Total wires: 26
+    Circuit Depth: Not computed
 
     Note that passing more work wires than the needed :math:`\max(\lceil \log_2(|L|)\rceil-1, 1)`
     makes the isometry circuit of the state preparation cheaper:
@@ -502,36 +800,46 @@ class PartialUnaryStatePreparation(Operation):
     >>> new_num_work_wires = 3*num_work_wires
     >>> work_wires = list(range(15, 15 + new_num_work_wires))
     >>> print(qp.specs(qp.decompose(circuit, max_expansion=1), compute_depth=False)()["resources"])
-    Wire allocations: 48
-    Total gates: 3,056
-    Gate counts:
-    - MultiplexerStatePreparation: 1
-    - BasisState: 320
-    - QROM: 160
-    - C(BasisState): 2,553
-    - MultiControlledX: 6
-    - SWAP: 16
-    Measurements:
+    Quantum operations:
+    - Total: 3,068
+      - MultiplexerStatePreparation: 1
+      - MultiX: 332
+      - QROM: 160
+      - C(MultiX): 2,553
+      - MultiControlledX: 6
+      - SWAP: 16
+    Measurement processes:
     - state(all wires): 1
-    Depth: Not computed
+    Total wires: 48
+    Circuit Depth: Not computed
 
     We used just ``160`` ``QROM``\ s instead of ``1207``, and as their size is dictated only by the
     number of indices :math:`|L|`, it is the same between the two decompositions.
 
     """
 
-    resource_keys = {"num_entries", "num_wires", "num_work_wires"}
+    dynamic_argnames = ("coefficients",)
+    wire_argnames = ("wires", "work_wires")
+    compilable_argnames = ("indices",)
+    arg_specs = {"coefficients": Complex[-1], "wires": Wire[-1]}
 
-    @property
-    def resource_params(self):
-        return {
-            "num_entries": len(self.hyperparameters["indices"]),
-            "num_wires": len(self.wires),
-            "num_work_wires": len(self.hyperparameters["work_wires"]),
-        }
-
-    def __init__(self, coefficients, wires, indices, work_wires):
+    def __init__(
+        self,
+        coefficients: TensorLike,
+        wires: AbstractWires | WiresLike,
+        indices: tuple,
+        work_wires: AbstractWires | WiresLike,
+    ):
         num_entries = len(indices)
+        if num_entries == 0:
+            raise ValueError("At least one state index must be provided.")
+        if any(isinstance(index, bool) or not isinstance(index, Integral) for index in indices):
+            raise TypeError("State indices must be integers.")
+        if not isinstance(indices, tuple):
+            raise ValueError(
+                "indices must be a tuple of ints, because it is compile-time static "
+                f"data and has to be hashable; got {type(indices).__name__}."
+            )
         if len(set(indices)) != num_entries:
             raise ValueError("The state indices must be unique.")
         if len(coefficients) != num_entries:
@@ -547,38 +855,47 @@ class PartialUnaryStatePreparation(Operation):
                 f"The state indices must be positive. Smallest index is {min(indices)}"
             )
 
-        work_wires = Wires([] if work_wires is None else work_wires)
-        super().__init__(coefficients, wires=wires)
-        self.hyperparameters["indices"] = indices
-        self.hyperparameters["work_wires"] = Wires(work_wires)
+        work_wires = () if work_wires is None else work_wires
+        validate_no_wire_overlaps({"wires": wires, "work_wires": work_wires})
+        super().__init__(coefficients, wires, indices, work_wires)
 
 
-def _pui_state_prep_resources(num_entries, num_wires, num_work_wires):
-    """Compute the resources for _pui_state_prep, the partial unary iteration state prep.
+def _partial_unary_state_prep_resources(coefficients, wires, indices, work_wires):
+    """Compute the resources for the partial unary iteration state preparation technique.
     These resource counts are numerically obtained heuristics, extended to guarantee all
     resource reps that may appear are included at least once."""
+    # pylint: disable=unused-argument
+    num_entries = len(indices)
+    num_wires = 1 if isinstance(wires, int) else len(wires)
     if num_entries == 1:
-        return {qp.resource_rep(qp.BasisState, num_wires=num_wires): 1}
+        return {qp.MultiX(Bool[num_wires], Wire[num_wires]): 1}
 
     n_subspace = max(math.ceil_log2(num_entries), 1)
+    is_affine = _is_affine_subspace(indices, n_subspace)
     resources = defaultdict(int)
-    if num_work_wires < max(n_subspace - 1, 1):
-        resources[qp.resource_rep(qp.allocation.Allocate)] += 1
-        resources[qp.resource_rep(qp.allocation.Deallocate)] += 1
+    # QROM needs n_subspace - 1 work wires, while Toffoli needs one zeroed work wire.
+    needed_work_wires = max(n_subspace - 1, 1)
+    effective_num_wires = num_wires + max(len(work_wires) - needed_work_wires, 0)
+    resources[qp.MultiplexerStatePreparation(Complex[2**n_subspace], wires=Wire[n_subspace])] += 1
 
-    num_work_wires = max(num_work_wires, n_subspace - 1, 1)
-    resources[qp.resource_rep(qp.MultiplexerStatePreparation, num_wires=n_subspace)] += 1
+    if is_affine:
+        resources[qp.X] += effective_num_wires
+        resources[qp.CNOT] += n_subspace * max(effective_num_wires - n_subspace, 1)
+        resources[qp.SWAP] += effective_num_wires
+        return resources
 
-    R = num_wires - n_subspace
-    main_pui_batch_size = 1 << int(math.floor(math.log2(max(R, 1))))
+    R = effective_num_wires - n_subspace
+    # Cap by num_entries: the isometry finder (PUIsometryFinder) can never actually produce a
+    # batch larger than the number of states being mapped, regardless of how many remainder
+    # wires are available.
+    main_pui_batch_size = min(1 << math.floor_log2(max(R, 1)), num_entries)
 
     qrom_reps = {
-        p: qp.resource_rep(
-            qp.QROM,
-            num_bitstrings=p,
-            num_control_wires=n_subspace,
-            num_target_wires=p,
-            num_work_wires=n_subspace - 1,
+        p: qp.QROM(
+            bitstrings=Int[p, p],
+            control_wires=Wire[n_subspace],
+            target_wires=Wire[p],
+            work_wires=Wire[n_subspace - 1],
             clean=True,
         )
         for p in range(1, main_pui_batch_size + 1)
@@ -588,33 +905,54 @@ def _pui_state_prep_resources(num_entries, num_wires, num_work_wires):
     for p in range(1, main_pui_batch_size):
         resources[qrom_reps[p]] += 1
 
-    resources[
-        controlled_resource_rep(qp.BasisState, {"num_wires": num_wires - 1}, num_control_wires=1)
-    ] += num_entries
+    ctrl_basis_rep = qp.ctrl(
+        qp.MultiX(Bool[effective_num_wires - 1], Wire[effective_num_wires - 1]), Wire[1]
+    )
+    resources[ctrl_basis_rep] += num_entries
 
-    embed_rep = qp.resource_rep(qp.BasisState, num_wires=n_subspace)
+    embed_rep = qp.MultiX(Bool[n_subspace], Wire[n_subspace])
     resources[embed_rep] += 2 * (num_entries // main_pui_batch_size + 1)
 
-    swap_rep = qp.resource_rep(qp.SWAP)
-    resources[swap_rep] += num_wires
+    resources[qp.SWAP] += effective_num_wires
 
-    num_toffolis = int(num_wires / 10) + 1
-    toffoli_params = {"num_control_wires": 2, "num_work_wires": 1, "work_wire_type": "zeroed"}
-    mcx_rep_0 = qp.resource_rep(qp.MultiControlledX, num_zero_control_values=0, **toffoli_params)
-    resources[mcx_rep_0] += max(num_toffolis // 2, 1)
-    mcx_rep_1 = qp.resource_rep(qp.MultiControlledX, num_zero_control_values=1, **toffoli_params)
-    resources[mcx_rep_1] += max(num_toffolis - num_toffolis // 2, 1)
+    num_toffolis = int(effective_num_wires / 10) + 1
+    mcx_rep = qp.MultiControlledX(Wire[3], work_wires=Wire[1], work_wire_type="zeroed")
+    resources[mcx_rep] += num_toffolis
+    resources[qp.MultiX(Bool[1], Wire[1])] += 2 * num_toffolis
 
     return resources
 
 
-def _pui_state_prep_core(coefficients, wires, indices, work_wires):
+def _select_isometry(indices, num_wires, n_subspace):
+    """Select the Clifford-only affine isometry when available, or use the generic finder."""
+    affine_isometry = _find_affine_subspace_isometry(indices, num_wires, n_subspace)
+    if affine_isometry is not None:
+        circuit, bijection = affine_isometry
+        return circuit, [], bijection, True
+
+    iso_finder = PUIsometryFinder(np.array(indices), num_wires)
+    circuit, fanout_bits, bijection = iso_finder.find_isometry()
+    return circuit, fanout_bits, bijection, False
+
+
+def _apply_affine_isometry(circuit, wires):
+    """Apply the inverse of a Clifford-only affine isometry."""
+    for op_type, *data in reversed(circuit):
+        if op_type == "X":
+            qp.X(wires[data[0]])
+        elif op_type == "CNOT":
+            qp.CNOT([wires[data[0]], wires[data[1]]])
+        else:
+            qp.SWAP([wires[idx] for idx in data[0]])
+
+
+def _partial_unary_state_prep_core(coefficients, wires, indices, work_wires):
     """Compute the decomposition of the partial unary iteration state preparation technique.
     This core method is used by the two rules below, which only differ by the work
     wire management."""
     num_entries = len(indices)
     if num_entries == 1:
-        qp.BasisState(indices[0], wires)
+        qp.MultiX(math.int_to_binary(indices[0], len(wires)), wires)
         return
 
     n_subspace = max(math.ceil_log2(num_entries), 1)
@@ -628,92 +966,161 @@ def _pui_state_prep_core(coefficients, wires, indices, work_wires):
         # be cheaper in terms of quantum resources used in the isometry circuit.
         wires = Wires(work_wires[needed_work_wires:]) + wires
 
-    iso_finder = PUIsometryFinder(np.array(indices), len(wires))
-    circuit, bijection = iso_finder.find_isometry()
+    circuit, fanout_bits, bijection, is_affine = _select_isometry(indices, len(wires), n_subspace)
 
     subspace_wires = Wires(wires[:n_subspace])
     nonsubspace_wires = Wires(wires[n_subspace:])
 
     # Step 1: Dense state preparation
-    dense_state = np.zeros(2**n_subspace, dtype=complex)
-    ids = np.array([bijection[i] for i in range(len(coefficients))])
-    dense_state[ids] = coefficients
+    ids = np.array([bijection[i] for i in range(num_entries)])
+    dense_size = 2**n_subspace
+    dense_state = math.scatter(ids, coefficients, dense_size, like=math.get_interface(coefficients))
     qp.MultiplexerStatePreparation(dense_state, subspace_wires)
 
+    if not circuit:
+        return
+
+    if is_affine:
+        _apply_affine_isometry(circuit, wires)
+        return
+
+    batch_sizes = list({data[1] - data[0] for _type, *data in circuit if _type == 0})
+
+    if qp.compiler.active() or qp.capture.enabled():
+        fanout_bits = qp.math.array(fanout_bits, like="jax")
+        circuit = qp.math.array(circuit, like="jax")
+        wires = qp.math.array(wires, like="jax")
+
+        def del_cwire(control):
+            """Return wires with the wire at position ``control`` deleted (qjit-compatible)"""
+            return qp.math.delete(wires, control, assume_unique_indices=True)
+
+    else:
+
+        def del_cwire(control):
+            """Return wires with the wire at position ``control`` deleted."""
+            return wires[:control] + wires[control + 1 :]
+
     # Step 2: Apply the inverse of the isometry circuit
-    for _type, *data in reversed(circuit):
-        if _type == "PUI":
-            k_start, k = data
-            qp.BasisState(k_start, subspace_wires)
+    @qp.for_loop(len(circuit) - 1, -1, -1)
+    def main_loop(i):
+        """This main loop exclusively reads ``circuit[i]`` and then calls a conditional function,
+        with the branches corresponding to the different data put into ``circuit`` by
+        ``PUIsometryFinder.find_isometry``. The first entry in ``circuit[i]``, ``_type``, encodes
+        the operation to be applied:
+
+        - 0: Partial unary iterator (realized via shifted ``QROM``)
+        - 1: Fanout (realized via controlled ``MultiX``)
+        - 2: SWAP of two remainder qubits (realized via a simple ``SWAP``)
+        - 3: Toffoli (realized via ``MultiControlledX`` in order to use work wires for elbow decomp)
+
+        Note that the entries in ``circuit`` have been padded with zeros to all have length 5,
+        the ``_type`` and four data integers, in order to enable casting to an ``ndarray``.
+        Each branch of the conditional then reads out only the entries it needs, and discards
+        the padded zeros. The data type of the array depends on the number of qubits :math:`n`.
+        """
+        # pylint: disable=cell-var-from-loop
+
+        _type, *data = circuit[i]
+
+        @qp.cond(_type == 0)
+        def branches():
+            """The first branch calls a partial unary iterator, in form of a ``QROM`` of a given
+            size. In order to avoid dynamic shapes, we define an inner conditional function
+            ``qrom_branches`` and register ``iso_finder.m`` many branches to it, one for each
+            possible batch size. This is not optimal in terms of coding practice and resource
+            accounting, but it works in a stable manner and is sufficiently efficient.
+            """
+            k_start, k = data[:2]
             b = k - k_start
-            qp.QROM(np.eye(b), subspace_wires, nonsubspace_wires[:b], work_wires[: n_subspace - 1])
-            qp.BasisState(k_start, subspace_wires)
-            continue
-        if _type == "Fanout":
-            control, bits = data
-            qp.ctrl(qp.BasisState(bits, wires[:control] + wires[control + 1 :]), wires[control])
-            continue
+            _work_wires = work_wires[: n_subspace - 1]
 
-        ids = data[0]
-        _wires = [wires[idx] for idx in ids]
-        if _type == "SWAP":
+            first_case_b = batch_sizes[0]
+
+            @qp.cond(b == first_case_b)
+            def qrom_branches():
+                target_wires = nonsubspace_wires[:first_case_b]
+                qp.QROM(np.eye(first_case_b, dtype=int), subspace_wires, target_wires, _work_wires)
+
+            for case_b in batch_sizes[1:]:
+                # Register an additional branch to ``qrom_branches`` for each occurring batch size.
+                # Passing a default argument makes sure that we don't use an outdated closure
+                # variable `case_b` when calling the function.
+                @qrom_branches.else_if(b == case_b)
+                def _(case_b=case_b):
+                    target_wires = nonsubspace_wires[:case_b]
+                    qp.QROM(np.eye(case_b, dtype=int), subspace_wires, target_wires, _work_wires)
+
+            # Realize PUI via QROM, shifted by k_start
+            k_start_bits = math.int_to_binary(k_start, n_subspace)
+            qp.MultiX(k_start_bits, subspace_wires)
+            qrom_branches()
+            qp.MultiX(k_start_bits, subspace_wires)
+
+        @branches.else_if(_type == 1)
+        def fanout():
+            """The second branch calls a fan-out, in form of a controlled ``MultiX``,
+            controlled by one of the (first ``iso_finder.m``) remainder qubits and targeting
+            all other qubits.
+            """
+            control, fanout_bit_pointer = data[:2]
+            target_wires = del_cwire(control)
+            qp.ctrl(qp.MultiX(fanout_bits[fanout_bit_pointer], target_wires), wires[control])
+
+        @branches.else_if(_type == 2)
+        def swap():
+            """The third branch is a simple SWAP gate."""
+            _wires = [wires[idx] for idx in data[:2]]
             qp.SWAP(_wires)
-        elif _type == "Toffoli":
-            qp.MultiControlledX(_wires, data[1], work_wires=work_wires[0], work_wire_type="zeroed")
-        else:
-            raise NotImplementedError  # pragma: no cover
+
+        @branches.else_if(_type == 3)
+        def toffoli():
+            """The fourth branch is a simple Toffoli gate. We manually realize the control values
+            in order to avoid dynamic control values in MultiControlledX. We don't use ``Toffoli``
+            directly because it does not have ``work_wires`` and we would like to use the cheaper
+            elbow-based decomposition.
+            """
+            _wires = [wires[idx] for idx in data[:3]]
+            cval = 1 - math.array(data[3:4], like=math.get_interface(data[3]))
+            qp.MultiX(cval, _wires[1:2])
+            qp.MultiControlledX(_wires, work_wires=work_wires[0], work_wire_type="zeroed")
+            qp.MultiX(cval, _wires[1:2])
+
+        branches()
+
+    main_loop()  # pylint: disable=no-value-for-parameter
 
 
-# Decomposition rule with statically given work_wires to PartialUnaryStatePreparation
-
-
-def _pui_state_prep_provided_work_wires_condition(num_entries, num_wires, num_work_wires):
+def _partial_unary_state_prep_work_wires(coefficients, wires, indices, work_wires):
     # pylint: disable=unused-argument
-    if num_entries == 1:
-        return True
-    return num_work_wires >= max(math.ceil_log2(num_entries) - 1, 1)
+    work_wires = [] if work_wires is None else list(work_wires)
+    num_entries = len(indices)
+    is_affine = _is_affine_subspace(indices, max(math.ceil_log2(num_entries), 1))
+    needed_work_wires = (
+        0 if (is_affine or num_entries == 1) else max(math.ceil_log2(num_entries) - 1, 1)
+    )
+    need_to_allocate = max(needed_work_wires - len(work_wires), 0)
+    return {"zeroed": need_to_allocate}
 
 
-@qp.register_condition(_pui_state_prep_provided_work_wires_condition)
-@qp.register_resources(_pui_state_prep_resources, exact=False)
-def _pui_state_prep_provided_work_wires(coefficients, wires, indices, work_wires, **__):
-    """Compute the decomposition of the partial unary iteration state preparation technique.
-    Uses the work_wires given to PartialUnaryStatePreparation as an argument."""
-    _pui_state_prep_core(coefficients, wires, indices, work_wires)
-
-
-# Decomposition rule with dynamic work wire allocation
-
-
-def _pui_state_prep_work_wires(num_entries, num_wires, num_work_wires):
-    # pylint: disable=unused-argument
-    return {"zeroed": max(math.ceil_log2(num_entries) - 1, 1)}
-
-
-def _pui_state_prep_dyn_work_wires_condition(num_entries, num_wires, num_work_wires):
-    # pylint: disable=unused-argument
-    if num_entries == 1:
-        return False  # Just use _pui_state_prep_provided_work_wires, we don't need work wires
-    return num_work_wires < max(math.ceil_log2(num_entries) - 1, 1)
-
-
-@qp.register_condition(_pui_state_prep_dyn_work_wires_condition)
 @qp.register_resources(
-    _pui_state_prep_resources, work_wires=_pui_state_prep_work_wires, exact=False
+    _partial_unary_state_prep_resources,
+    work_wires=_partial_unary_state_prep_work_wires,
+    exact=False,
 )
-def _pui_state_prep_dyn_work_wires(coefficients, wires, indices, **__):
+def _partial_unary_state_prep(coefficients, wires, indices, work_wires):
     """Compute the decomposition of the partial unary iteration state preparation technique.
-    This decomposition dynamically allocates work wires. If PartialUnaryStatePreparation
-    has work_wires but too few of them, they will **not** be used here."""
-    # The case num_entries=1 is excluded via _pui_state_prep_dyn_work_wires_condition, so
-    # we know that we want to allocate at least one work wire.
-    need_to_allocate = max(math.ceil_log2(len(indices)) - 1, 1)
-    with allocate(need_to_allocate, state="zero", restored=True) as work_wires:
-        _pui_state_prep_core(coefficients, wires, indices, work_wires)
+
+    Dynamically allocates any work wires still missing after the ones passed to
+    ``PartialUnaryStatePreparation``. Allocating zero wires records no operators.
+    """
+    work_wires = [] if work_wires is None else list(work_wires)
+    need_to_allocate = _partial_unary_state_prep_work_wires(
+        coefficients, wires, indices, work_wires
+    )["zeroed"]
+    with allocate(need_to_allocate, state="zero", restored=True) as extra_work_wires:
+        work_wires = work_wires + list(extra_work_wires)
+        _partial_unary_state_prep_core(coefficients, wires, indices, work_wires)
 
 
-qp.add_decomps(
-    PartialUnaryStatePreparation,
-    _pui_state_prep_dyn_work_wires,
-    _pui_state_prep_provided_work_wires,
-)
+qp.add_decomps(PartialUnaryStatePreparation, _partial_unary_state_prep)

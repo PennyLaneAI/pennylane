@@ -21,3 +21,5 @@ from .controlled_ops import (
     mcx_one_dirty_aux_resource_decomp,
     mcx_many_clean_aux_resource_decomp,
 )
+
+from .symbolic import mark_subroutine, ResourceQfunc

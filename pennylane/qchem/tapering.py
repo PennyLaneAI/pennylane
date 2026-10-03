@@ -243,6 +243,15 @@ def _taper_pauli_sentence(ps_h, generators, paulixops, paulix_sector):
         (Operator): the tapered Hamiltonian
     """
 
+    if any(qp.math.is_abstract(label) for label in ps_h.wires):
+        raise ValueError(
+            "Cannot taper an operator whose wire labels are abstract JAX tracers. This "
+            "happens when the operator is passed as a traced argument to jax.jit. Tapering "
+            "requires a static operator structure, including concrete wire labels; only the "
+            "numerical coefficients may be traced. Construct the operator inside the "
+            "jit-compiled function from the traced coefficients instead."
+        )
+
     u = clifford(generators, paulixops)
     ps_u = pauli_sentence(u)  # cast to pauli sentence
 

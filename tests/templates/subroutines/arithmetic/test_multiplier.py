@@ -22,7 +22,7 @@ import pennylane as qp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity_Multiplier():
     """Check the operation using the assert_valid function."""
     k = 6
@@ -87,7 +87,8 @@ class TestMultiplier:
         @qp.set_shots(1)
         @qp.qnode(dev)
         def circuit(x):
-            qp.BasisEmbedding(x, wires=x_wires)
+            x_bin = qp.math.int_to_binary(x, len(x_wires))
+            qp.BasisEmbedding(x_bin, wires=x_wires)
             qp.Multiplier(k, x_wires, mod, work_wires)
             return qp.sample(wires=x_wires)
 
@@ -156,7 +157,8 @@ class TestMultiplier:
         @qp.set_shots(1)
         @qp.qnode(dev)
         def circuit():
-            qp.BasisEmbedding(x, wires=x_wires)
+            x_bin = qp.math.int_to_binary(x, len(x_wires))
+            qp.BasisEmbedding(x_bin, wires=x_wires)
             qp.Multiplier(k, x_wires, mod, work_wires)
             return qp.sample(wires=x_wires)
 
@@ -169,6 +171,8 @@ class TestMultiplier:
 class TestMultiplierUnit:
     """Unit tests for Multiplier"""
 
+    @pytest.mark.xfail_if_capture(reason="Needs PhaseAdder to be Op2 [sc-130164]", strict=False)
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(
         ("k", "x_wire", "mod", "work_wires"), [(3, [1], 1, [2, 3, 4]), (3, [1], 2, [2, 3, 4])]
     )

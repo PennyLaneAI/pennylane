@@ -22,7 +22,9 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.allocation import DynamicRegister
 from pennylane.exceptions import WireError
+from pennylane.typing import Wire
 from pennylane.wires import Wires
 
 if util.find_spec("jax") is not None:
@@ -36,6 +38,12 @@ else:
 # pylint: disable=too-many-public-methods, too-many-positional-arguments
 class TestWires:
     """Tests for the ``Wires`` class."""
+
+    def test_AbstractWires_handled(self):
+        """Test that AbstractWires are left untouched."""
+
+        aw = qp.typing.AbstractWires(3)
+        assert Wires(aw) == aw
 
     def test_error_if_wires_none(self):
         """Tests that a TypeError is raised if None is given as wires."""
@@ -55,10 +63,7 @@ class TestWires:
             [qp.RX, qp.RY],
             [qp.PauliX],
             (None, qp.expval),
-            (
-                qp.device("default.qubit", wires=range(3)),
-                qp.device("default.gaussian", wires=[qp.RX, 3]),
-            ),
+            (qp.device("default.qubit", wires=range(3)),),
         ],
     )
     def test_creation_from_iterables_of_exotic_elements(self, iterable):
@@ -70,8 +75,20 @@ class TestWires:
     def test_creation_from_wires_object(self):
         """Tests that a Wires object can be created from another Wires object."""
 
-        wires = Wires(Wires([0, 1, 2]))
+        original = Wires([0, 1, 2])
+        wires = Wires(original)
+        assert wires is original
         assert wires.labels == (0, 1, 2)
+
+    def test_creation_from_dynamic_register(self):
+        """Tests that a DynamicRegister is copied into a hashable Wires."""
+
+        reg = DynamicRegister([qp.wires.DynamicWire(), qp.wires.DynamicWire()])
+        wires = Wires(reg)
+        assert isinstance(wires, Wires)
+        assert not isinstance(wires, DynamicRegister)
+        assert wires.labels == reg.labels
+        _ = hash(wires)
 
     def test_creation_from_wires_lists(self):
         """Tests that a Wires object can be created from a list of Wires."""
@@ -98,7 +115,7 @@ class TestWires:
         assert wires.labels == (wire,)
 
     @pytest.mark.parametrize(
-        "input", [[np.array([0, 1, 2]), np.array([3, 4])], [[0, 1, 2], [3, 4]], np.array(0.0)]
+        "input", [[np.array([0, 1, 2]), np.array([3, 4])], [[0, 1, 2], [3, 4]]]
     )
     def test_error_for_incorrect_wire_types(self, input):
         """Tests that a Wires object cannot be created from unhashable objects such as np arrays or lists."""
@@ -201,7 +218,7 @@ class TestWires:
 
         wires_str = str(Wires([1, 2, 3]))
         wires_repr = repr(Wires([1, 2, 3]))
-        assert wires_str == "Wires([1, 2, 3])"
+        assert wires_str == "[1, 2, 3]"
         assert wires_repr == "Wires([1, 2, 3])"
 
     def test_array_representation(self):
@@ -347,6 +364,16 @@ class TestWires:
         new_wires = Wires.all_wires([wires1, wires2, wires3], sort=True)
         assert new_wires.labels == (1, 2, 3, 4, 5, 6)
         assert Wires.all_wires([[3, 4], [8, 5]]).labels == (3, 4, 8, 5)
+        assert Wires.all_wires(w for w in ([3, 4], [8, 5])).labels == (3, 4, 8, 5)
+
+    def test_all_wires_with_abstract(self):
+        """Tests that ``all_wires`` unions concrete and abstract wires."""
+        assert Wires.all_wires([Wires([0, 1]), Wire[3]]) == Wire[5]
+        assert Wires.all_wires([Wire[2], Wire[4]]) == Wire[6]
+        assert Wires.all_wires([Wires([0, 1]), Wires([1, 2]), Wire[3]]) == Wire[6]
+        assert Wires.all_wires([Wire[2], Wires([0, 2, 6]), Wire[3]]) == Wire[8]
+        assert Wires.all_wires([Wires([0]), Wire[-1]]) == Wire[-1]
+        assert Wires.all_wires([Wire[6], Wire[-1]]) == Wire[-1]
 
     def test_shared_wires_method(self):
         """Tests the ``shared_wires()`` method."""
@@ -404,6 +431,20 @@ class TestWires:
         wires2 = tree_unflatten(tree, wires_flat)
         assert isinstance(wires2, Wires), f"{wires2} is not Wires"
         assert wires == wires2, f"{wires} != {wires2}"
+
+    @pytest.mark.jax
+    def test_wires_pytree_with_array_leaves(self):
+        """Test that unflattening wire pytrees with leaves containing scalar arrays
+        is possible and correct."""
+        import jax.numpy as jnp
+        from jax.tree import flatten, unflatten
+
+        wires = Wires([0, 1, 2, 3])
+        leaves, tree = flatten(wires)
+        inner_arr_leaves = [jnp.array(l, dtype=int) for l in leaves]
+        unflattened_wires = unflatten(tree, inner_arr_leaves)
+
+        assert wires == unflattened_wires
 
     def test_class_index(self):
         """Test that indexing the class raises."""
@@ -606,3 +647,29 @@ class TestWiresJax:
         wires2 = jax.tree_util.tree_unflatten(tree, wires_flat)
         assert isinstance(wires2, Wires), f"{wires2} is not Wires"
         assert wires == wires2, f"{wires} != {wires2}"
+
+
+class TestAbstractWiresIntegration:
+    """test for integrating wires and AbstractWires."""
+
+    def test_pass_in_abstract_wires(self):
+        """Test that if AbstractWires is passed to Wires, it is returned unchanged."""
+
+        assert Wires(qp.typing.Wire[4]) == qp.typing.Wire[4]
+
+    def test_unsubscripted_wire_raises(self):
+        """Test that unsubscripted ``Wire`` cannot be used as a wire argument."""
+
+        with pytest.raises(TypeError, match="'Wire' cannot be used on its own"):
+            _ = Wires(Wire)
+
+    def test_addition(self):
+        """Test for addition with AbstractWires."""
+
+        assert Wires([0]) + Wire[-1] == Wire[-1]
+        assert Wire[-1] + Wires([0]) == Wire[-1]
+
+        assert Wires([0]) + Wire[4] == Wire[5]
+        assert Wire[10] + Wires([0, 1]) == Wire[12]
+
+        assert Wire[-1] + Wire[2] == Wire[-1]

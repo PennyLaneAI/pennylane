@@ -30,7 +30,7 @@ from pennylane.templates.subroutines.arbitrary_unitary import (
 )
 
 
-@pytest.mark.jax
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Run standard tests of operation validity."""
     shape = (3,)
@@ -192,12 +192,24 @@ class TestDecomposition:
 
     DECOMP_PARAMS = [
         (np.arange(np.prod((15,)), dtype=float).reshape((15,)), range(2)),
-        (np.arange(np.prod((1, 15)), dtype=float).reshape((1, 15)), range(2)),
-        (np.arange(np.prod((2, 15)), dtype=float).reshape((2, 15)), range(2)),
+        pytest.param(
+            np.arange(np.prod((1, 15)), dtype=float).reshape((1, 15)),
+            range(2),
+            marks=pytest.mark.pl2do(
+                reason="Broadcasting support not fully implemented for Operator2"
+            ),
+        ),
+        pytest.param(
+            np.arange(np.prod((2, 15)), dtype=float).reshape((2, 15)),
+            range(2),
+            marks=pytest.mark.pl2do(
+                reason="Broadcasting support not fully implemented for Operator2"
+            ),
+        ),
         (np.random.random(size=(63,)), range(3)),
     ]
 
-    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     @pytest.mark.parametrize(("weights", "wires"), DECOMP_PARAMS)
     def test_decomposition_new(self, weights, wires):
         op = qp.ArbitraryUnitary(weights, wires=wires)
@@ -348,32 +360,6 @@ class TestInterfaces:
         grads2 = grad_fn2(weights)
 
         assert qp.math.allclose(grads, grads2, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    def test_tf(self, tol):
-        """Tests the tf interface."""
-
-        import tensorflow as tf
-
-        weights = tf.Variable(np.random.random(size=(15,)))
-        dev = qp.device("default.qubit", wires=2)
-
-        circuit = qp.QNode(circuit_template, dev)
-        circuit2 = qp.QNode(circuit_decomposed, dev)
-
-        res = circuit(weights)
-        res2 = circuit2(weights)
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-        with tf.GradientTape() as tape:
-            res = circuit(weights)
-        grads = tape.gradient(res, [weights])
-
-        with tf.GradientTape() as tape2:
-            res2 = circuit2(weights)
-        grads2 = tape2.gradient(res2, [weights])
-
-        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
     @pytest.mark.torch
     def test_torch(self, tol):

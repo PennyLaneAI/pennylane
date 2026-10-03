@@ -304,18 +304,14 @@ class TestProperties:
 
         assert np.all(m.eigvals() == np.array([1, 2, 3, 4]))
 
-        # changing the observable data should be reflected
-        obs.data = [np.diag([5, 6, 7, 8])]
-        assert np.all(m.eigvals() == np.array([5, 6, 7, 8]))
-
     def test_measurement_value_eigvals(self):
         """Test that eigenvalues of the measurement process
         are correct if the internal observable is a
         MeasurementValue."""
         m0 = qp.measure(0)
-        m0.measurements[0]._hyperparameters["meas_uid"] = "abc"  # pylint: disable=protected-access
+        m0.measurements[0].arguments["meas_uid"] = "abc"
         m1 = qp.measure(1)
-        m1.measurements[0]._hyperparameters["meas_uid"] = "def"  # pylint: disable=protected-access
+        m1.measurements[0].arguments["meas_uid"] = "def"
 
         mp1 = qp.sample(op=[m0, m1])
         assert np.all(mp1.eigvals() == [0, 1, 2, 3])
@@ -342,8 +338,13 @@ class TestProperties:
     def test_observable_with_no_eigvals(self):
         """An observable with no eigenvalues defined should cause
         the eigvals method to return a NotImplementedError"""
-        obs = qp.NumberOperator(wires=0)
-        m = qp.expval(op=obs)
+
+        class DummyObs(qp.core.Operator2):
+
+            def __init__(self, wires):
+                super().__init__(wires=wires)
+
+        m = qp.expval(op=DummyObs(0))
         with pytest.raises(qp.operation.EigvalsUndefinedError):
             _ = m.eigvals()
 
@@ -376,12 +377,8 @@ class TestProperties:
         m1 = qp.measure("b")
         m2 = qp.measure(0)
         m3 = qp.measure(1)
-        m2.measurements[0]._hyperparameters["meas_uid"] = m0.measurements[0]._hyperparameters[
-            "meas_uid"
-        ]  # pylint: disable=protected-access
-        m3.measurements[0]._hyperparameters["meas_uid"] = m1.measurements[0]._hyperparameters[
-            "meas_uid"
-        ]  # pylint: disable=protected-access
+        m2.measurements[0].arguments["meas_uid"] = m0.measurements[0].arguments["meas_uid"]
+        m3.measurements[0].arguments["meas_uid"] = m1.measurements[0].arguments["meas_uid"]
 
         wire_map = {"a": 0, "b": 1}
 

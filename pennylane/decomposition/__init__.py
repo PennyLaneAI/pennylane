@@ -93,7 +93,10 @@ Inspecting and Managing Decomposition Rules
     ~has_decomp
     ~inspect_decomps
     ~local_decomps
+    ~register_signature
+    ~signature_registry
     ~DecompCollection
+    ~all_decomps
 
 PennyLane maintains a global dictionary of decomposition rules. New decomposition rules can be
 registered under an operator using ``add_decomps``, and ``list_decomps`` can be called to inspect
@@ -106,31 +109,20 @@ Integration with the Decompose Transform
 
 The :func:`~pennylane.transforms.decompose` transform takes advantage of this new graph-based
 decomposition algorithm when :func:`~pennylane.decomposition.enable_graph` is present, and allows for more
-flexible decompositions towards any target gate set. For example, the current system does not
-guarantee a decomposition to the desired target gate set:
+flexible decompositions towards any target gate set.
 
 .. code-block:: python
 
     from pprint import pprint
 
+    qp.decomposition.enable_graph()
+
     with qp.queuing.AnnotatedQueue() as q:
         qp.CRX(0.5, wires=[0, 1])
 
     tape = qp.tape.QuantumScript.from_queue(q)
-    [new_tape], _ = qp.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ"})
+    [new_tape], _ = qp.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ", "GlobalPhase"})
 
->>> pprint(new_tape.operations)
-[RZ(np.float64(1.5707963267948966), wires=[1]),
-     RY(0.25, wires=[1]),
-     CNOT(wires=[0, 1]),
-     RY(-0.25, wires=[1]),
-     CNOT(wires=[0, 1]),
-     RZ(np.float64(-1.5707963267948966), wires=[1])]
-
-With the new system enabled, the transform produces the expected outcome.
-
->>> qp.decomposition.enable_graph()
->>> [new_tape], _ = qp.decompose([tape], gate_set={"RX", "RY", "RZ", "CZ"})
 >>> pprint(new_tape.operations)
 [RX(0.25, wires=[1]), CZ(wires=[0, 1]), RX(-0.25, wires=[1]), CZ(wires=[0, 1])]
 
@@ -185,7 +177,7 @@ among ``my_cnot1``, ``my_cnot2``, and all existing decomposition rules defined f
         qp.IsingXX(0.5, wires=[0, 1])
         return qp.state()
 
->>> qp.specs(circuit)()["resources"].gate_types
+>>> qp.specs(circuit)()["resources"].quantum_operations
 {'RZ': 12, 'RX': 7, 'GlobalPhase': 6, 'CZ': 3}
 
 To register alternative decomposition rules under an operator to be used globally, use
@@ -224,7 +216,7 @@ operator towards a target gate set.
     CNOT(wires=[0, 1]),
     RZ(-1.5707963267948966, wires=[1])]
 >>> solution.resource_estimate(op)
-<num_gates=10, gate_counts={RZ: 6, CNOT: 2, RX: 2}, weighted_cost=10.0>
+<num_gates=10, gate_counts={CNOT: 2, RX: 2, RZ: 6}, weighted_cost=10.0>
 
 Utility Classes
 ~~~~~~~~~~~~~~~
@@ -243,6 +235,8 @@ from .utils import (
     enable_graph,
     disable_graph,
     enabled_graph,
+    register_signature,
+    signature_registry,
     toggle_graph_ctx,
 )
 from .decomposition_graph import DecompositionGraph, DecompGraphSolution
@@ -267,3 +261,4 @@ from .decomposition_rule import (
     local_decomps,
     DecompCollection,
 )
+from .all_decomps import all_decomps

@@ -63,6 +63,8 @@ class TestHelpers:
             assert expected_pauli_words[idx] == pauli_word
 
 
+@pytest.mark.xfail_if_capture(reason="Come back to this when we port it to Op2.")
+@pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize(
     ("weights", "wires"),
     [
@@ -71,7 +73,6 @@ class TestHelpers:
         ([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13], [0, 1, 2]),
     ],
 )
-# No capture test as JAX does not support indexing into arrays of strings
 def test_decomposition_new(weights, wires):
     """Tests the decomposition rule implemented with the new system."""
     weights = np.array(weights, dtype=float)
@@ -82,7 +83,8 @@ def test_decomposition_new(weights, wires):
         _test_decomposition_rule(op, rule)
 
 
-@pytest.mark.jax
+@pytest.mark.xfail_if_capture(reason="Come back to this when we port it to Op2.")
+@pytest.mark.usefixtures("enable_and_disable_capture")
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
 
@@ -361,33 +363,6 @@ class TestInterfaces:
         grads2 = grad_fn2(weights)
 
         assert qp.math.allclose(grads, grads2, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    def test_tf(self, tol):
-        """Tests the tf interface."""
-
-        import tensorflow as tf
-
-        weights = tf.Variable(np.random.random(size=(6,)))
-
-        dev = qp.device("default.qubit", wires=2)
-
-        circuit = qp.QNode(circuit_template, dev)
-        circuit2 = qp.QNode(circuit_decomposed, dev)
-
-        res = circuit(weights)
-        res2 = circuit2(weights)
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-        with tf.GradientTape() as tape:
-            res = circuit(weights)
-        grads = tape.gradient(res, [weights])
-
-        with tf.GradientTape() as tape2:
-            res2 = circuit2(weights)
-        grads2 = tape2.gradient(res2, [weights])
-
-        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
     @pytest.mark.torch
     def test_torch(self, tol):

@@ -76,7 +76,6 @@ def test_ross_selinger(op, epsilon):
 
 @pytest.mark.catalyst
 @pytest.mark.jax
-@pytest.mark.external
 @pytest.mark.parametrize(
     ("op", "epsilon", "wires"),
     [
@@ -136,7 +135,6 @@ def test_exception():
 
 @pytest.mark.catalyst
 @pytest.mark.jax
-@pytest.mark.external
 @pytest.mark.parametrize(
     ("decomposition_info"),
     [

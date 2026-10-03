@@ -21,18 +21,12 @@ import pytest
 import pennylane as qp
 
 test_wires = [2, 3, 4]
-devices = ["default.qubit", "lightning.qubit", "default.mixed", "default.qutrit"]
+devices = ["default.qubit", "lightning.qubit", "default.mixed"]
 
 
 def qubit_ansatz(x):
     qp.Hadamard(wires=[0])
     qp.CRX(x, wires=[0, 1])
-
-
-def qutrit_ansatz(x):
-    qp.THadamard(wires=[0])
-    mat = np.exp(1j * x) * np.eye(9)
-    qp.QutritUnitary(mat, wires=[0, 1])
 
 
 class TestIntegrationSingleReturn:
@@ -73,30 +67,25 @@ class TestIntegrationSingleReturn:
     def test_density_matrix(self, d_wires, device):
         """Return density matrix with default.qubit."""
         dev = qp.device(device, wires=4)
-        func = qutrit_ansatz if device == "default.qutrit" else qubit_ansatz
 
         def circuit(x):
-            func(x)
+            qubit_ansatz(x)
             return qp.density_matrix(wires=range(0, d_wires))
 
         qnode = qp.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
 
-        dim = 3 if device == "default.qutrit" else 2
-        assert res.shape == (dim**d_wires, dim**d_wires)
+        assert res.shape == (2**d_wires, 2**d_wires)
         assert isinstance(res, (np.ndarray, np.float64))
 
     @pytest.mark.parametrize("device", devices)
     def test_expval(self, device):
         """Return a single expval."""
         dev = qp.device(device, wires=2)
-        func = qutrit_ansatz if device == "default.qutrit" else qubit_ansatz
 
         def circuit(x):
-            func(x)
-            return qp.expval(
-                qp.PauliZ(wires=1) if device != "default.qutrit" else qp.GellMann(1, 3)
-            )
+            qubit_ansatz(x)
+            return qp.expval(qp.PauliZ(wires=1))
 
         qnode = qp.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
@@ -108,15 +97,11 @@ class TestIntegrationSingleReturn:
     @pytest.mark.parametrize("shots", [[10, 10]])
     def test_expval_single_return_in_list(self, device, shots):
         """Test that the return shape is expected for a single expectation value in a list."""
-
         dev = qp.device(device, wires=2)
-        func = qutrit_ansatz if device == "default.qutrit" else qubit_ansatz
-
-        obs = qp.PauliZ(wires=1) if device != "default.qutrit" else qp.GellMann(1, 3)
 
         def circuit(x):
-            func(x)
-            return [qp.expval(obs)]
+            qubit_ansatz(x)
+            return [qp.expval(qp.PauliZ(wires=1))]
 
         qnode = qp.set_shots(qp.QNode(circuit, dev, diff_method=None), shots=shots)
         res = qnode(0.5)
@@ -127,11 +112,10 @@ class TestIntegrationSingleReturn:
     def test_var(self, device):
         """Return a single var."""
         dev = qp.device(device, wires=2)
-        func = qutrit_ansatz if device == "default.qutrit" else qubit_ansatz
 
         def circuit(x):
-            func(x)
-            return qp.var(qp.PauliZ(wires=1) if device != "default.qutrit" else qp.GellMann(1, 3))
+            qubit_ansatz(x)
+            return qp.var(qp.PauliZ(wires=1))
 
         qnode = qp.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
@@ -142,9 +126,6 @@ class TestIntegrationSingleReturn:
     @pytest.mark.parametrize("device", devices)
     def test_vn_entropy(self, device):
         """Return a single vn entropy."""
-        if device == "default.qutrit":
-            pytest.skip("DefaultQutrit does not support VnEntropy.")
-
         dev = qp.device(device, wires=2)
 
         def circuit(x):
@@ -177,9 +158,6 @@ class TestIntegrationSingleReturn:
     @pytest.mark.parametrize("device", devices)
     def test_mutual_info(self, device):
         """Return a single mutual information."""
-        if device == "default.qutrit":
-            pytest.skip("DefaultQutrit does not support MutualInfo.")
-
         dev = qp.device(device, wires=2)
 
         def circuit(x):
@@ -221,10 +199,8 @@ class TestIntegrationSingleReturn:
     @pytest.mark.parametrize("op,wires", probs_data)
     def test_probs(self, op, wires, device):
         """Return a single prob."""
-        if device in ("lightning.qubit", "default.qutrit"):
-            pytest.skip(
-                "Skip Lightning (wire reordering unsupported) and Qutrit (unsuported observables)."
-            )
+        if device == "lightning.qubit":
+            pytest.skip("Skip Lightning (wire reordering unsupported).")
         dev = qp.device(device, wires=3)
 
         def circuit(x):
@@ -240,31 +216,6 @@ class TestIntegrationSingleReturn:
         assert res.shape == (2 ** len(wires),)
         assert isinstance(res, (np.ndarray, np.float64))
 
-    probs_data_qutrit = [
-        (qp.GellMann(0, 3), None),
-        (qp.THermitian(np.eye(9), wires=[1, 0]), None),
-        (None, [0]),
-        (None, [0, 1]),
-    ]
-
-    @pytest.mark.parametrize("op,wires", probs_data_qutrit)
-    def test_probs_qutrit(self, op, wires):
-        """Return a single prob."""
-        dev = qp.device("default.qutrit", wires=3)
-
-        def circuit(x):
-            qutrit_ansatz(x)
-            return qp.probs(op=op, wires=wires)
-
-        qnode = qp.QNode(circuit, dev, diff_method=None)
-        res = qnode(0.5)
-
-        if wires is None:
-            wires = op.wires
-
-        assert res.shape == (3 ** len(wires),)
-        assert isinstance(res, (np.ndarray, np.float64))
-
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize(
         "measurement",
@@ -272,22 +223,14 @@ class TestIntegrationSingleReturn:
             qp.sample(qp.PauliZ(0)),
             qp.sample(wires=[0]),
             qp.sample(wires=[0, 1]),
-            qp.sample(qp.GellMann(0, 3)),
         ],
     )
     def test_sample(self, measurement, device, shots=100):
         """Test the sample measurement."""
-        if device == "default.qutrit":
-            if isinstance(measurement.obs, qp.PauliZ):
-                pytest.skip("DefaultQutrit doesn't support qubit observables.")
-        elif isinstance(measurement.obs, qp.GellMann):
-            pytest.skip("DefaultQubitLegacy doesn't support qutrit observables.")
-
         dev = qp.device(device, wires=2)
-        func = qutrit_ansatz if device == "default.qutrit" else qubit_ansatz
 
         def circuit(x):
-            func(x)
+            qubit_ansatz(x)
             return qp.apply(measurement)
 
         qnode = qp.set_shots(qp.QNode(circuit, dev, diff_method=None), shots=shots)
@@ -298,7 +241,7 @@ class TestIntegrationSingleReturn:
         if measurement.wires.tolist() != [0, 1]:
             assert res.shape == (shots,) if measurement.obs else (shots, 1)
         else:
-            assert res.shape == (shots, 2) if device != "default.qutrit" else (shots, 3)
+            assert res.shape == (shots, 2)
 
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize(
@@ -307,22 +250,14 @@ class TestIntegrationSingleReturn:
             qp.counts(qp.PauliZ(0)),
             qp.counts(wires=[0]),
             qp.counts(wires=[0, 1]),
-            qp.counts(qp.GellMann(0, 3)),
         ],
     )
     def test_counts(self, measurement, device, shots=100):
         """Test the counts measurement."""
-        if device == "default.qutrit":
-            if isinstance(measurement.obs, qp.PauliZ):
-                pytest.skip("DefaultQutrit doesn't support qubit observables.")
-        elif isinstance(measurement.obs, qp.GellMann):
-            pytest.skip("DefaultQubitLegacy doesn't support qutrit observables.")
-
         dev = qp.device(device, wires=2)
-        func = qutrit_ansatz if device == "default.qutrit" else qubit_ansatz
 
         def circuit(x):
-            func(x)
+            qubit_ansatz(x)
             return qp.apply(measurement)
 
         qnode = qp.set_shots(qp.QNode(circuit, dev, diff_method=None), shots=shots)
@@ -333,219 +268,6 @@ class TestIntegrationSingleReturn:
 
 
 devices = ["default.mixed"]
-
-
-@pytest.mark.tf
-class TestIntegrationSingleReturnTensorFlow:
-    """Test that single measurements return behavior does not change for Torch device."""
-
-    @pytest.mark.parametrize("wires", test_wires)
-    def test_state_default(self, wires):
-        """Return state with default.qubit."""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", wires=wires)
-
-        def circuit(x):
-            qp.Hadamard(wires=[0])
-            qp.CRX(x, wires=[0, 1])
-            return qp.state()
-
-        qnode = qp.QNode(circuit, dev, diff_method=None)
-        res = qnode(tf.Variable(0.5))
-
-        assert res.shape == (2**wires,)
-        assert isinstance(res, tf.Tensor)
-
-    @pytest.mark.parametrize("wires", test_wires)
-    def test_state_mixed(self, wires):
-        """Return state with default.mixed."""
-        import tensorflow as tf
-
-        dev = qp.device("default.mixed", wires=wires)
-
-        def circuit(x):
-            qp.Hadamard(wires=[0])
-            qp.CRX(x, wires=[0, 1])
-            return qp.state()
-
-        qnode = qp.QNode(circuit, dev, diff_method=None)
-        res = qnode(tf.Variable(0.5))
-
-        assert res.shape == (2**wires, 2**wires)
-        assert isinstance(res, tf.Tensor)
-
-    wires_tf = [2, 3]
-
-    @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("d_wires", wires_tf)
-    def test_density_matrix(self, d_wires, device):
-        """Return density matrix."""
-        import tensorflow as tf
-
-        dev = qp.device(device, wires=3)
-
-        def circuit(x):
-            qp.Hadamard(wires=[0])
-            qp.CRX(x, wires=[0, 1])
-            return qp.density_matrix(wires=range(0, d_wires))
-
-        qnode = qp.QNode(circuit, dev, diff_method=None)
-        res = qnode(tf.Variable(0.5))
-
-        assert res.shape == (2**d_wires, 2**d_wires)
-        assert isinstance(res, tf.Tensor)
-
-    @pytest.mark.parametrize("device", devices)
-    def test_expval(self, device):
-        """Return a single expval."""
-        import tensorflow as tf
-
-        dev = qp.device(device, wires=2)
-
-        def circuit(x):
-            qp.Hadamard(wires=[0])
-            qp.CRX(x, wires=[0, 1])
-            return qp.expval(qp.PauliZ(wires=1))
-
-        qnode = qp.QNode(circuit, dev, diff_method=None)
-        res = qnode(tf.Variable(0.5))
-
-        assert res.shape == ()
-        assert isinstance(res, tf.Tensor)
-
-    @pytest.mark.parametrize("device", devices)
-    def test_var(self, device):
-        """Return a single var."""
-        import tensorflow as tf
-
-        dev = qp.device(device, wires=2)
-
-        def circuit(x):
-            qp.Hadamard(wires=[0])
-            qp.CRX(x, wires=[0, 1])
-            return qp.var(qp.PauliZ(wires=1))
-
-        qnode = qp.QNode(circuit, dev, diff_method=None)
-        res = qnode(tf.Variable(0.5))
-
-        assert res.shape == ()
-        assert isinstance(res, tf.Tensor)
-
-    @pytest.mark.parametrize("device", devices)
-    def test_vn_entropy(self, device):
-        """Return a single vn entropy."""
-        import tensorflow as tf
-
-        dev = qp.device(device, wires=2)
-
-        def circuit(x):
-            qp.Hadamard(wires=[0])
-            qp.CRX(x, wires=[0, 1])
-            return qp.vn_entropy(wires=0)
-
-        qnode = qp.QNode(circuit, dev, diff_method=None)
-        res = qnode(tf.Variable(0.5))
-
-        assert res.shape == ()
-        assert isinstance(res, tf.Tensor)
-
-    @pytest.mark.parametrize("device", devices)
-    def test_mutual_info(self, device):
-        """Return a single mutual information."""
-        import tensorflow as tf
-
-        dev = qp.device(device, wires=2)
-
-        def circuit(x):
-            qp.Hadamard(wires=[0])
-            qp.CRX(x, wires=[0, 1])
-            return qp.mutual_info(wires0=[0], wires1=[1])
-
-        qnode = qp.QNode(circuit, dev, diff_method=None)
-        res = qnode(tf.Variable(0.5))
-
-        assert res.shape == ()
-        assert isinstance(res, tf.Tensor)
-
-    herm = np.diag([1, 2, 3, 4])
-    probs_data = [
-        (None, [0]),
-        (None, [0, 1]),
-        (qp.PauliZ(0), None),
-        (qp.Hermitian(herm, wires=[1, 0]), None),
-    ]
-
-    @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("op,wires", probs_data)
-    def test_probs(self, op, wires, device):
-        """Return a single prob."""
-        import tensorflow as tf
-
-        dev = qp.device(device, wires=3)
-
-        def circuit(x):
-            qp.Hadamard(wires=[0])
-            qp.CRX(x, wires=[0, 1])
-            return qp.probs(op=op, wires=wires)
-
-        qnode = qp.QNode(circuit, dev, diff_method=None)
-        res = qnode(tf.Variable(0.5))
-
-        if wires is None:
-            wires = op.wires
-
-        assert res.shape == (2 ** len(wires),)
-        assert isinstance(res, tf.Tensor)
-
-    @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize(
-        "measurement", [qp.sample(qp.PauliZ(0)), qp.sample(wires=[0]), qp.sample(wires=[0, 1])]
-    )
-    def test_sample(self, measurement, device, shots=100):
-        """Test the sample measurement."""
-        import tensorflow as tf
-
-        if device in ["default.mixed", "default.qubit"]:
-            pytest.skip("Sample need to be rewritten for Tf.")
-
-        dev = qp.device(device, wires=2)
-
-        def circuit(x):
-            qp.Hadamard(wires=[0])
-            qp.CRX(x, wires=[0, 1])
-            return qp.apply(measurement)
-
-        qnode = qp.set_shots(qp.QNode(circuit, dev, diff_method=None), shots=shots)
-        res = qnode(tf.Variable(0.5))
-
-        assert isinstance(res, tf.Tensor)
-
-        if measurement.wires.tolist() != [0, 1]:
-            assert res.shape == (shots,)
-        else:
-            assert res.shape == (shots, 2)
-
-    @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize(
-        "measurement", [qp.counts(qp.PauliZ(0)), qp.counts(wires=[0]), qp.counts(wires=[0, 1])]
-    )
-    def test_counts(self, measurement, device, shots=100):
-        """Test the counts measurement."""
-        import tensorflow as tf
-
-        dev = qp.device(device, wires=2)
-
-        def circuit(x):
-            qp.Hadamard(wires=[0])
-            qp.CRX(x, wires=[0, 1])
-            return qp.apply(measurement)
-
-        qnode = qp.set_shots(qp.QNode(circuit, dev, diff_method=None), shots=shots)
-        res = qnode(tf.Variable(0.5))
-
-        assert isinstance(res, dict)
-        assert sum(res.values()) == shots
 
 
 devices = ["default.mixed"]
@@ -980,7 +702,7 @@ class TestIntegrationSingleReturnJax:
 
 multi_return_wires = [([0], [1]), ([1], [0]), ([0], [0]), ([1], [1])]
 
-devices = ["default.qubit", "lightning.qubit", "default.mixed", "default.qutrit"]
+devices = ["default.qubit", "lightning.qubit", "default.mixed"]
 
 
 class TestIntegrationMultipleReturns:
@@ -993,17 +715,9 @@ class TestIntegrationMultipleReturns:
         """Return multiple expvals."""
         dev = qp.device(device, wires=2)
 
-        obs1 = (
-            qp.Projector([0], wires=0)
-            if device != "default.qutrit"
-            else qp.THermitian(np.eye(3), wires=0)
-        )
-        obs2 = qp.PauliZ(wires=1) if device != "default.qutrit" else qp.GellMann(1, 3)
-        func = qutrit_ansatz if device == "default.qutrit" else qubit_ansatz
-
         def circuit(x):
-            func(x)
-            return qp.expval(obs1), qp.expval(obs2)
+            qubit_ansatz(x)
+            return qp.expval(qp.Projector([0], wires=0)), qp.expval(qp.PauliZ(wires=1))
 
         qnode = qp.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
@@ -1022,17 +736,9 @@ class TestIntegrationMultipleReturns:
         """Return multiple vars."""
         dev = qp.device(device, wires=2)
 
-        obs1 = (
-            qp.Projector([0], wires=0)
-            if device != "default.qutrit"
-            else qp.THermitian(np.eye(3), wires=0)
-        )
-        obs2 = qp.PauliZ(wires=1) if device != "default.qutrit" else qp.GellMann(1, 3)
-        func = qutrit_ansatz if device == "default.qutrit" else qubit_ansatz
-
         def circuit(x):
-            func(x)
-            return qp.var(obs1), qp.var(obs2)
+            qubit_ansatz(x)
+            return qp.var(qp.Projector([0], wires=0)), qp.var(qp.PauliZ(wires=1))
 
         qnode = qp.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
@@ -1063,9 +769,6 @@ class TestIntegrationMultipleReturns:
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
     def test_multiple_prob(self, op1, op2, wires1, wires2, device):
         """Return multiple probs."""
-        if device == "default.qutrit":
-            pytest.skip("Separate test for DefaultQutrit.")
-
         dev = qp.device(device, wires=2)
 
         def circuit(x):
@@ -1090,53 +793,12 @@ class TestIntegrationMultipleReturns:
         assert isinstance(res[1], (np.ndarray, np.float64))
         assert res[1].shape == (2 ** len(wires2),)
 
-    multi_probs_data_qutrit = [
-        (qp.GellMann(0, 3), None, qp.GellMann(1, 3), None),
-        (None, [0], qp.GellMann(1, 3), None),
-        (qp.GellMann(0, 3), None, None, [1]),
-        (qp.GellMann(1, 3), None, qp.GellMann(0, 3), None),
-        (None, [0], None, [0]),
-        (None, [0], None, [0, 1]),
-        (None, [0, 1], None, [0]),
-        (None, [0, 1], None, [0, 1]),
-    ]
-
-    @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data_qutrit)
-    def test_multiple_prob_qutrit(self, op1, op2, wires1, wires2):
-        """Return multiple probs."""
-        dev = qp.device("default.qutrit", wires=2)
-
-        def circuit(x):
-            qutrit_ansatz(x)
-            return qp.probs(op=op1, wires=wires1), qp.probs(op=op2, wires=wires2)
-
-        qnode = qp.QNode(circuit, dev, diff_method=None)
-        res = qnode(0.5)
-
-        assert isinstance(res, tuple)
-        assert len(res) == 2
-
-        if wires1 is None:
-            wires1 = op1.wires
-
-        if wires2 is None:
-            wires2 = op2.wires
-
-        assert isinstance(res[0], (np.ndarray, np.float64))
-        assert res[0].shape == (3 ** len(wires1),)
-
-        assert isinstance(res[1], (np.ndarray, np.float64))
-        assert res[1].shape == (3 ** len(wires2),)
-
     # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
     @pytest.mark.parametrize("wires3, wires4", multi_return_wires)
     def test_mix_meas(self, op1, wires1, op2, wires2, wires3, wires4, device):
         """Return multiple different measurements."""
-        if device == "default.qutrit":
-            pytest.skip("Different test for DefaultQutrit.")
-
         dev = qp.device(device, wires=2)
 
         def circuit(x):
@@ -1172,68 +834,18 @@ class TestIntegrationMultipleReturns:
         assert isinstance(res[3], (np.ndarray, np.float64, float))
         assert qp.math.shape(res[3]) == ()
 
-    # pylint: disable=too-many-arguments
-    @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data_qutrit)
-    @pytest.mark.parametrize("wires3, wires4", multi_return_wires)
-    def test_mix_meas_qutrit(self, op1, wires1, op2, wires2, wires3, wires4):
-        """Return multiple different measurements."""
-        pytest.skip("Non-commuting observables don't work correctly for qutrits yet.")
-
-        dev = qp.device("default.qutrit", wires=2)
-
-        def circuit(x):
-            qutrit_ansatz(x)
-            return (
-                qp.probs(op=op1, wires=wires1),
-                qp.var(qp.GellMann(wires3, 3)),
-                qp.probs(op=op2, wires=wires2),
-                qp.expval(qp.GellMann(wires4, 3)),
-            )
-
-        qnode = qp.QNode(circuit, dev, diff_method=None)
-        res = qnode(0.5)
-
-        if wires1 is None:
-            wires1 = op1.wires
-
-        if wires2 is None:
-            wires2 = op2.wires
-
-        assert isinstance(res, tuple)
-        assert len(res) == 4
-
-        assert isinstance(res[0], (np.ndarray, np.float64))
-        assert res[0].shape == (3 ** len(wires1),)
-
-        assert isinstance(res[1], (np.ndarray, np.float64))
-        assert res[1].shape == ()
-
-        assert isinstance(res[2], (np.ndarray, np.float64))
-        assert res[2].shape == (3 ** len(wires2),)
-
-        assert isinstance(res[3], (np.ndarray, np.float64))
-        assert res[3].shape == ()
-
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize(
         "measurement",
-        [qp.sample(qp.PauliZ(0)), qp.sample(wires=[0]), qp.sample(qp.GellMann(0, 3))],
+        [qp.sample(qp.PauliZ(0)), qp.sample(wires=[0])],
     )
     def test_expval_sample(self, measurement, device, shots=100):
         """Test the expval and sample measurements together."""
-        if device == "default.qutrit":
-            if isinstance(measurement.obs, qp.PauliZ):
-                pytest.skip("DefaultQutrit doesn't support qubit observables.")
-        elif isinstance(measurement.obs, qp.GellMann):
-            pytest.skip("DefaultQubitLegacy doesn't support qutrit observables.")
-
         dev = qp.device(device, wires=2)
-        func = qubit_ansatz if device != "default.qutrit" else qutrit_ansatz
-        obs = qp.PauliZ(1) if device != "default.qutrit" else qp.GellMann(1, 3)
 
         def circuit(x):
-            func(x)
-            return qp.expval(obs), qp.apply(measurement)
+            qubit_ansatz(x)
+            return qp.expval(qp.PauliZ(1)), qp.apply(measurement)
 
         qnode = qp.set_shots(qp.QNode(circuit, dev, diff_method=None), shots=shots)
         res = qnode(0.5)
@@ -1249,23 +861,15 @@ class TestIntegrationMultipleReturns:
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize(
         "measurement",
-        [qp.counts(qp.PauliZ(0)), qp.counts(wires=[0]), qp.counts(qp.GellMann(0, 3))],
+        [qp.counts(qp.PauliZ(0)), qp.counts(wires=[0])],
     )
     def test_expval_counts(self, measurement, device, shots=100):
         """Test the expval and counts measurements together."""
-        if device == "default.qutrit":
-            if isinstance(measurement.obs, qp.PauliZ):
-                pytest.skip("DefaultQutrit doesn't support qubit observables.")
-        elif isinstance(measurement.obs, qp.GellMann):
-            pytest.skip("DefaultQubitLegacy doesn't support qutrit observables.")
-
         dev = qp.device(device, wires=2)
-        func = qubit_ansatz if device != "default.qutrit" else qutrit_ansatz
-        obs = qp.PauliZ(1) if device != "default.qutrit" else qp.GellMann(1, 3)
 
         def circuit(x):
-            func(x)
-            return qp.expval(obs), qp.apply(measurement)
+            qubit_ansatz(x)
+            return qp.expval(qp.PauliZ(1)), qp.apply(measurement)
 
         qnode = qp.set_shots(qp.QNode(circuit, dev, diff_method=None), shots=shots)
         res = qnode(0.5)
@@ -1285,12 +889,10 @@ class TestIntegrationMultipleReturns:
     def test_list_one_expval(self, wires, device):
         """Return a comprehension list of one expvals."""
         dev = qp.device(device, wires=wires)
-        func = qubit_ansatz if device != "default.qutrit" else qutrit_ansatz
-        obs = qp.PauliZ(0) if device != "default.qutrit" else qp.GellMann(0, 3)
 
         def circuit(x):
-            func(x)
-            return [qp.expval(obs)]
+            qubit_ansatz(x)
+            return [qp.expval(qp.PauliZ(0))]
 
         qnode = qp.QNode(circuit, dev, diff_method=None)
         res = qnode(0.5)
@@ -1308,16 +910,11 @@ class TestIntegrationMultipleReturns:
     def test_list_multiple_expval(self, wires, device, shot_vector):
         """Return a comprehension list of multiple expvals."""
         dev = qp.device(device, wires=wires)
-        func = qubit_ansatz if device != "default.qutrit" else qutrit_ansatz
-        obs = qp.PauliZ if device != "default.qutrit" else qp.GellMann
 
         def circuit(x):
-            func(x)
+            qubit_ansatz(x)
             # pylint:disable=unexpected-keyword-arg
-            return [
-                qp.expval(obs(wires=i) if device != "default.qutrit" else obs(wires=i, index=3))
-                for i in range(0, wires)
-            ]
+            return [qp.expval(qp.PauliZ(wires=i)) for i in range(0, wires)]
 
         qnode = qp.set_shots(qp.QNode(circuit, dev, diff_method=None), shots=shot_vector)
         res = qnode(0.5)
@@ -1342,18 +939,13 @@ class TestIntegrationMultipleReturns:
     @pytest.mark.parametrize("comp_basis_sampling", [qp.sample(), qp.counts()])
     def test_sample_counts_no_obs(self, device, comp_basis_sampling):
         """Measuring qp.sample()/qp.counts() works with other measurements even with the same wire being measured."""
-        if device == "default.qutrit":
-            pytest.skip("Non-commuting observables don't work correctly for qutrits yet.")
-
         shot_num = 1000
         num_wires = 2
         dev = qp.device(device, wires=num_wires)
-        func = qubit_ansatz if device != "default.qutrit" else qutrit_ansatz
-        obs = qp.PauliZ(1) if device != "default.qutrit" else qp.GellMann(1, 3)
 
         def circuit(x):
-            func(x)
-            return qp.apply(comp_basis_sampling), qp.expval(obs), qp.probs(wires=[0])
+            qubit_ansatz(x)
+            return qp.apply(comp_basis_sampling), qp.expval(qp.PauliZ(1)), qp.probs(wires=[0])
 
         qnode = qp.set_shots(qp.QNode(circuit, dev, diff_method=None), shots=shot_num)
         res = qnode(0.5)
@@ -1372,264 +964,6 @@ class TestIntegrationMultipleReturns:
 
 
 devices = ["default.mixed"]
-
-
-@pytest.mark.tf
-class TestIntegrationMultipleReturnsTensorflow:
-    """Test the new return types for multiple measurements, it should always return a tuple containing the single
-    measurements.
-    """
-
-    @pytest.mark.parametrize("device", devices)
-    def test_multiple_expval(self, device):
-        """Return multiple expvals."""
-        import tensorflow as tf
-
-        dev = qp.device(device, wires=2)
-
-        def circuit(x):
-            qp.Hadamard(wires=[0])
-            qp.CRX(x, wires=[0, 1])
-            return qp.expval(qp.Projector([0], wires=0)), qp.expval(qp.PauliZ(wires=1))
-
-        qnode = qp.QNode(circuit, dev, diff_method=None)
-        res = qnode(tf.Variable(0.5))
-
-        assert isinstance(res, tuple)
-        assert len(res) == 2
-
-        assert isinstance(res[0], tf.Tensor)
-        assert res[0].shape == ()
-
-        assert isinstance(res[1], tf.Tensor)
-        assert res[1].shape == ()
-
-    @pytest.mark.parametrize("device", devices)
-    def test_multiple_var(self, device):
-        """Return multiple vars."""
-        import tensorflow as tf
-
-        dev = qp.device(device, wires=2)
-
-        def circuit(x):
-            qp.Hadamard(wires=[0])
-            qp.CRX(x, wires=[0, 1])
-            return qp.var(qp.PauliZ(wires=0)), qp.var(qp.Hermitian([[1, 0], [0, 1]], wires=1))
-
-        qnode = qp.QNode(circuit, dev, diff_method=None)
-        res = qnode(tf.Variable(0.5))
-
-        assert isinstance(res, tuple)
-        assert len(res) == 2
-
-        assert isinstance(res[0], tf.Tensor)
-        assert res[0].shape == ()
-
-        assert isinstance(res[1], tf.Tensor)
-        assert res[1].shape == ()
-
-    # op1, wires1, op2, wires2
-    multi_probs_data = [
-        (None, [0], None, [0]),
-        (None, [0], None, [0, 1]),
-        (None, [0, 1], None, [0]),
-        (None, [0, 1], None, [0, 1]),
-        (qp.PauliZ(0), None, qp.PauliZ(1), None),
-        (None, [0], qp.PauliZ(1), None),
-        (qp.PauliZ(0), None, None, [0]),
-        (qp.PauliZ(1), None, qp.PauliZ(0), None),
-    ]
-
-    # pylint: disable=too-many-arguments
-    @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
-    def test_multiple_prob(self, op1, op2, wires1, wires2, device):
-        """Return multiple probs."""
-        import tensorflow as tf
-
-        dev = qp.device(device, wires=2)
-
-        def circuit(x):
-            qp.Hadamard(wires=[0])
-            qp.CRX(x, wires=[0, 1])
-            return qp.probs(op=op1, wires=wires1), qp.probs(op=op2, wires=wires2)
-
-        qnode = qp.QNode(circuit, dev, diff_method=None)
-        res = qnode(tf.Variable(0.5))
-
-        assert isinstance(res, tuple)
-        assert len(res) == 2
-
-        if wires1 is None:
-            wires1 = op1.wires
-
-        if wires2 is None:
-            wires2 = op2.wires
-
-        assert isinstance(res[0], tf.Tensor)
-        assert res[0].shape == (2 ** len(wires1),)
-
-        assert isinstance(res[1], tf.Tensor)
-        assert res[1].shape == (2 ** len(wires2),)
-
-    # pylint: disable=too-many-arguments
-    @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
-    @pytest.mark.parametrize("wires3, wires4", multi_return_wires)
-    def test_mix_meas(self, op1, wires1, op2, wires2, wires3, wires4, device):
-        """Return multiple different measurements."""
-        import tensorflow as tf
-
-        dev = qp.device(device, wires=2)
-
-        def circuit(x):
-            qp.Hadamard(wires=[0])
-            qp.CRX(x, wires=[0, 1])
-            return (
-                qp.probs(op=op1, wires=wires1),
-                qp.vn_entropy(wires=wires3),
-                qp.probs(op=op2, wires=wires2),
-                qp.expval(qp.PauliZ(wires=wires4)),
-            )
-
-        qnode = qp.QNode(circuit, dev, diff_method=None)
-        res = qnode(tf.Variable(0.5))
-
-        if wires1 is None:
-            wires1 = op1.wires
-
-        if wires2 is None:
-            wires2 = op2.wires
-
-        assert isinstance(res, tuple)
-        assert len(res) == 4
-
-        assert isinstance(res[0], tf.Tensor)
-        assert res[0].shape == (2 ** len(wires1),)
-
-        assert isinstance(res[1], tf.Tensor)
-        assert res[1].shape == ()
-
-        assert isinstance(res[2], tf.Tensor)
-        assert res[2].shape == (2 ** len(wires2),)
-
-        assert isinstance(res[3], tf.Tensor)
-        assert res[3].shape == ()
-
-    @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("measurement", [qp.sample(qp.PauliZ(0)), qp.sample(wires=[0])])
-    def test_expval_sample(self, measurement, device, shots=100):
-        """Test the expval and sample measurements together."""
-        import tensorflow as tf
-
-        if device in ["default.mixed", "default.qubit"]:
-            pytest.skip("Sample must be reworked with interfaces.")
-
-        dev = qp.device(device, wires=2)
-
-        def circuit(x):
-            qp.Hadamard(wires=[0])
-            qp.CRX(x, wires=[0, 1])
-            return qp.expval(qp.PauliX(1)), qp.apply(measurement)
-
-        qnode = qp.set_shots(qp.QNode(circuit, dev, diff_method=None), shots=shots)
-        res = qnode(tf.Variable(0.5))
-
-        # Expval
-        assert isinstance(res[0], tf.Tensor)
-        assert res[0].shape == ()
-
-        # Sample
-        assert isinstance(res[1], tf.Tensor)
-        assert res[1].shape == (shots,)
-
-    @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("measurement", [qp.counts(qp.PauliZ(0)), qp.counts(wires=[0])])
-    def test_expval_counts(self, measurement, device, shots=100):
-        """Test the expval and counts measurements together."""
-        import tensorflow as tf
-
-        dev = qp.device(device, wires=2)
-
-        if device == "default.mixed":
-            pytest.skip("Mixed as array must be reworked for shots.")
-
-        def circuit(x):
-            qp.Hadamard(wires=[0])
-            qp.CRX(x, wires=[0, 1])
-            return qp.expval(qp.PauliX(1)), qp.apply(measurement)
-
-        qnode = qp.set_shots(qp.QNode(circuit, dev, diff_method=None), shots=shots)
-        res = qnode(tf.Variable(0.5))
-
-        # Expval
-        assert isinstance(res[0], tf.Tensor)
-        assert res[0].shape == ()
-
-        # Counts
-        assert isinstance(res[1], dict)
-        assert sum(res[1].values()) == shots
-
-    wires = [2, 3, 4, 5]
-
-    @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("wires", wires)
-    def test_list_one_expval(self, wires, device):
-        """Return a comprehension list of one expvals."""
-        import tensorflow as tf
-
-        dev = qp.device(device, wires=wires)
-
-        def circuit(x):
-            qp.Hadamard(wires=[0])
-            qp.CRX(x, wires=[0, 1])
-            return [qp.expval(qp.PauliZ(wires=0))]
-
-        qnode = qp.QNode(circuit, dev, diff_method=None)
-        res = qnode(tf.Variable(0.5))
-
-        assert isinstance(res, list)
-        assert len(res) == 1
-        assert isinstance(res[0], tf.Tensor)
-        assert res[0].shape == ()
-
-    shot_vectors = [None, [10, 1000], [1, 10, 10, 1000], [1, (10, 2), 1000]]
-
-    @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("wires", wires)
-    @pytest.mark.parametrize("shot_vector", shot_vectors)
-    def test_list_multiple_expval(self, wires, device, shot_vector):
-        """Return a comprehension list of multiple expvals."""
-        import tensorflow as tf
-
-        if device == "default.mixed" and shot_vector:
-            pytest.skip("No support for shot vector and Tensorflow because use of .T in statistics")
-
-        dev = qp.device(device, wires=wires)
-
-        def circuit(x):
-            qp.Hadamard(wires=[0])
-            qp.CRX(x, wires=[0, 1])
-            return [qp.expval(qp.PauliZ(wires=i)) for i in range(0, wires)]
-
-        qnode = qp.set_shots(qp.QNode(circuit, dev, diff_method=None), shots=shot_vector)
-        res = qnode(tf.Variable(0.5))
-
-        if shot_vector is None:
-            assert isinstance(res, list)
-            assert len(res) == wires
-            for r in res:
-                assert isinstance(r, tf.Tensor)
-                assert r.shape == ()
-
-        else:
-            for r in res:
-                assert isinstance(r, list)
-                assert len(r) == wires
-
-                for t in r:
-                    assert isinstance(t, tf.Tensor)
-                    assert t.shape == ()
 
 
 devices = ["default.mixed"]
@@ -2311,7 +1645,7 @@ class TestIntegrationSameMeasurementShotVector:
 
     # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("op1,wires1", probs_data)
-    @pytest.mark.parametrize("op2,wires2", reversed(probs_data2))
+    @pytest.mark.parametrize("op2,wires2", list(reversed(probs_data2)))
     def test_probs(self, shot_vector, op1, wires1, op2, wires2, device):
         """Test multiple probability measurements."""
         dev = qp.device(device, wires=4)
@@ -2876,64 +2210,6 @@ class TestIntegrationJacobianBackpropMultipleReturns:
             assert isinstance(elem, torch.Tensor)
             assert elem.shape == (3,)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("interface", ["auto"])
-    def test_multiple_expval_tf(self, interface, device):
-        """Return Jacobian of multiple expvals."""
-        import tensorflow as tf
-
-        dev = qp.device(device, wires=2)
-
-        @qp.qnode(dev, interface=interface)
-        def circuit(a):
-            qp.RX(a[0], wires=0)
-            qp.CNOT(wires=(0, 1))
-            qp.RY(a[1], wires=1)
-            qp.RZ(a[2], wires=1)
-            return qp.expval(qp.PauliZ(wires=0)), qp.expval(qp.PauliZ(wires=1))
-
-        x = tf.Variable([0.1, 0.2, 0.3])
-
-        with tf.GradientTape() as tape:
-            out = circuit(x)
-            out = tf.stack(out)
-
-        res = tape.jacobian(out, x)
-
-        assert isinstance(res, tf.Tensor)
-        assert res.shape == (2, 3)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("interface", ["auto"])
-    def test_multiple_meas_tf_autograph(self, interface):
-        """Return Jacobian of multiple measurements with Tf Autograph."""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", wires=2)
-
-        @tf.function
-        @qp.qnode(dev, interface=interface)
-        def circuit(a):
-            qp.RX(a[0], wires=0)
-            qp.CNOT(wires=(0, 1))
-            qp.RY(a[1], wires=1)
-            qp.RZ(a[2], wires=1)
-            return qp.expval(qp.PauliZ(wires=0)), qp.expval(qp.PauliZ(wires=1))
-
-        # Autograph does not support multiple measurements with different shape.
-
-        x = tf.Variable([0.1, 0.2, 0.3])
-
-        with tf.GradientTape() as tape:
-            out = circuit(x)
-            out = tf.stack(out)
-
-        res = tape.jacobian(out, x)
-
-        assert isinstance(res, tf.Tensor)
-        assert res.shape == (2, 3)
-
     @pytest.mark.jax
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("interface", ["auto", "jax"])
@@ -3036,34 +2312,6 @@ class TestIntegrationJacobianBackpropMultipleReturns:
         for elem in res:
             assert isinstance(elem, torch.Tensor)
             assert elem.shape == (2, 3)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("interface", ["auto"])
-    def test_multiple_probs_tf(self, interface, device):
-        """Return Jacobian of multiple probs."""
-        import tensorflow as tf
-
-        dev = qp.device(device, wires=2)
-
-        @qp.qnode(dev, interface=interface)
-        def circuit(a):
-            qp.RX(a[0], wires=0)
-            qp.CNOT(wires=(0, 1))
-            qp.RY(a[1], wires=1)
-            qp.RZ(a[2], wires=1)
-            return qp.probs(op=qp.PauliZ(wires=0)), qp.probs(wires=1)
-
-        x = tf.Variable([0.1, 0.2, 0.3])
-
-        with tf.GradientTape() as tape:
-            out = circuit(x)
-            out = tf.stack(out)
-
-        res = tape.jacobian(out, x)
-
-        assert isinstance(res, tf.Tensor)
-        assert res.shape == (2, 2, 3)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("device", devices)
@@ -3174,38 +2422,6 @@ class TestIntegrationJacobianBackpropMultipleReturns:
                 assert elem.shape == (4, 3)
             elif i == 2:
                 assert elem.shape == (3,)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("interface", ["auto"])
-    def test_multiple_meas_tf(self, interface, device):
-        """Return Jacobian of multiple measurements."""
-        import tensorflow as tf
-
-        dev = qp.device(device, wires=2)
-
-        @qp.qnode(dev, interface=interface)
-        def circuit(a):
-            qp.RX(a[0], wires=0)
-            qp.CNOT(wires=(0, 1))
-            qp.RY(a[1], wires=1)
-            qp.RZ(a[2], wires=1)
-            return (
-                qp.expval(qp.PauliZ(wires=0)),
-                qp.probs(wires=[0, 1]),
-                qp.var(qp.PauliZ(wires=0)),
-            )
-
-        x = tf.Variable([0.1, 0.2, 0.3])
-
-        with tf.GradientTape() as tape:
-            out = circuit(x)
-            out = tf.experimental.numpy.hstack(out)
-
-        res = tape.jacobian(out, x)
-
-        assert isinstance(res, tf.Tensor)
-        assert res.shape == (6, 3)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("device", devices)

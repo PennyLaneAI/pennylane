@@ -189,7 +189,11 @@ test_data_decomposition_new = [
 ]
 
 
-@pytest.mark.jax
+@pytest.mark.xfail_if_capture(
+    reason="Come back to this when we migrate UCCSD [sc-129958]",
+    strict=False,  # not all parametrized configurations fail.
+)
+@pytest.mark.usefixtures("enable_and_disable_capture")
 @pytest.mark.parametrize("s_wires, d_wires, weights, n_repeats, _", test_data_decomposition)
 def test_standard_validity(s_wires, d_wires, weights, n_repeats, _):
     """Test standard validity criteria using assert_valid."""
@@ -289,6 +293,11 @@ class TestDecomposition:
 
     @pytest.mark.parametrize("s_wires, d_wires, weights, n_repeats", test_data_decomposition_new)
     # Note: UCCSD is not capture compatible
+    @pytest.mark.xfail_if_capture(
+        reason="Come back to this when we migrate UCCSD [sc-129958]",
+        strict=False,  # not all parametrized configurations fail.
+    )
+    @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_decomposition_new(
         self, s_wires, d_wires, weights, n_repeats
     ):  # pylint: disable=unused-argument
@@ -658,55 +667,6 @@ class TestInterfaces:
         grads2 = grad_fn2(weights, n_repeats=2)
 
         assert np.allclose(grads, grads2, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    def test_tf(self, tol):
-        """Tests the tf interface."""
-
-        import tensorflow as tf
-
-        weights = tf.Variable(np.random.random(size=(2,)))
-        dev = qp.device("default.qubit", wires=4)
-
-        circuit = qp.QNode(circuit_template, dev)
-        circuit2 = qp.QNode(circuit_decomposed, dev)
-
-        res = circuit(weights)
-        res2 = circuit2(weights)
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-        with tf.GradientTape() as tape:
-            res = circuit(weights)
-        grads = tape.gradient(res, [weights])
-
-        with tf.GradientTape() as tape2:
-            res2 = circuit2(weights)
-        grads2 = tape2.gradient(res2, [weights])
-
-        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
-
-        # Test with n_repeats=2
-        weights = tf.Variable(
-            np.random.random(
-                size=(
-                    2,
-                    2,
-                )
-            )
-        )
-        res = circuit(weights, n_repeats=2)
-        res2 = circuit2(weights, n_repeats=2)
-        assert qp.math.allclose(res, res2, atol=tol, rtol=0)
-
-        with tf.GradientTape() as tape:
-            res = circuit(weights, n_repeats=2)
-        grads = tape.gradient(res, [weights])
-
-        with tf.GradientTape() as tape2:
-            res2 = circuit2(weights, n_repeats=2)
-        grads2 = tape2.gradient(res2, [weights])
-
-        assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
     @pytest.mark.torch
     def test_torch(self, tol):

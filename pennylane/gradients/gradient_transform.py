@@ -24,27 +24,22 @@ from pennylane.pytrees import flatten, unflatten
 SUPPORTED_GRADIENT_KWARGS = {
     "approx_order",
     "argnum",
-    "atol",
     "aux_wire",
-    "broadcast",  # [TODO: This is in param_shift. Unify with use_broadcasting in stoch_pulse_grad
+    "broadcast",
     "device_wires",
     "diagonal_shifts",
     "fallback_fn",
     "f0",
-    "force_order2",
     "gradient_recipes",
     "h",
     "mode",
     "n",
     "num_directions",
-    "num_split_times",
     "off_diagonal_shifts",
     "sampler",
     "sampler_rng",
-    "sampler_seed",
     "shifts",
     "strategy",
-    "use_broadcasting",
     "validate_params",
 }
 
@@ -258,7 +253,6 @@ def _all_zero_grad(tape):
 
     par_shapes = [math.shape(p) for p in tape.get_parameters()]
     for m in tape.measurements:
-        # TODO: Update shape for CV variables
         shape = (2 ** len(m.wires),) if isinstance(m, ProbabilityMP) else ()
         if len(tape.trainable_params) == 1:
             sub_list_zeros = math.zeros(par_shapes[0] + shape)

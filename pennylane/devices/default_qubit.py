@@ -241,7 +241,7 @@ def no_counts(tape):
 
 @transform
 def adjoint_state_measurements(
-    tape: QuantumScript, device_vjp=False
+    tape: QuantumScript, device_vjp=False  # pylint: disable=unused-argument
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Perform adjoint measurement preprocessing.
 
@@ -262,17 +262,6 @@ def adjoint_state_measurements(
         )
 
     params = tape.get_parameters()
-
-    if device_vjp:
-        for p in params:
-            if (
-                math.requires_grad(p)
-                and math.get_interface(p) == "tensorflow"
-                and math.get_dtype_name(p) in {"float32", "complex64"}
-            ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-                raise ValueError(
-                    "tensorflow with adjoint differentiation of the state requires float64 or complex128 parameters."
-                )
 
     complex_data = [math.cast(p, complex) for p in params]
     tape = tape.bind_new_parameters(complex_data, list(range(len(params))))
@@ -307,11 +296,7 @@ def _supports_adjoint(circuit, device_wires, device_name):
 
     try:
         program((circuit,))
-    except (
-        DecompositionUndefinedError,
-        DeviceError,
-        AttributeError,
-    ):
+    except (DecompositionUndefinedError, DeviceError, AttributeError):
         return False
     return True
 
