@@ -21,6 +21,7 @@ import importlib
 import importlib.machinery
 import importlib.util
 import sys
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -63,6 +64,24 @@ class TestCoprocessorFunction:
             "decode", lib_path="/a.so"
         )
 
+    def test_a_function_declares_no_files_by_default(self):
+        """A CoprocessorFunction built by hand names no local files in its config."""
+        assert CoprocessorFunction("fn").files == ()
+
+    def test_files_given_as_a_list_are_stored_as_a_tuple(self):
+        """The declared file keys are kept as a tuple, like the other sequence fields."""
+        assert CoprocessorFunction("fn", config="table=t.cfg", files=["table"]).files == ("table",)
+
+    def test_extra_files_are_stored_as_a_tuple_of_paths(self):
+        """Extra files default to none, and are kept as a tuple of path strings."""
+        assert CoprocessorFunction("fn").extra_files == ()
+        extra = CoprocessorFunction("fn", extra_files=[Path("/opt/a.so")]).extra_files
+        assert extra == ("/opt/a.so",)
+
+    def test_message_bytes_given_as_a_list_is_stored_as_a_tuple(self):
+        """A declared size pair is kept as a tuple, so placements can compare and hash it."""
+        assert CoprocessorFunction("fn", message_bytes=[120, 121]).message_bytes == (120, 121)
+
 
 class TestOnnxDecoder:
     """The ONNX coprocessor function and the config it carries."""
@@ -87,9 +106,9 @@ class TestOnnxDecoder:
         """The function declares the model's input and output sizes as its message sizes."""
         assert onnx_decoder(model).message_bytes == (120, 121)
 
-    def test_message_bytes_given_as_a_list_is_stored_as_a_tuple(self):
-        """A declared size pair is kept as a tuple, so placements can compare and hash it."""
-        assert CoprocessorFunction("fn", message_bytes=[120, 121]).message_bytes == (120, 121)
+    def test_the_onnx_function_declares_its_model_and_onnxruntime_as_files(self, model):
+        """The model and the onnxruntime library are the files a remote coprocessor needs."""
+        assert onnx_decoder(model).files == ("model", "ort_lib")
 
     def test_the_model_tensor_sizes_are_read_with_onnxruntime(self, tmp_path):
         """A uint8[1, 8] to uint8[1, 8] identity model declares 8 B in and 8 B out."""
@@ -173,18 +192,21 @@ class TestOnnxDecoder:
             onnx_decoder(model)
 
     def test_the_installed_onnxruntime_is_found(self, monkeypatch, tmp_path):
-        """The library is the one in the installed onnxruntime package."""
+        """The library is the one in the installed onnxruntime package, and its execution provider
+        libraries beside it travel with it as extra files."""
         package = tmp_path / "onnxruntime"
         (package / "capi").mkdir(parents=True)
         (package / "capi" / "libonnxruntime.so.1.2.3").write_bytes(b"")
+        (package / "capi" / "libonnxruntime_providers_shared.so").write_bytes(b"")
+        (package / "capi" / "onnxruntime_pybind11_state.so").write_bytes(b"")
         spec = importlib.machinery.ModuleSpec("onnxruntime", None, is_package=True)
         spec.submodule_search_locations = [str(package)]
         monkeypatch.setattr(importlib.util, "find_spec", lambda name: spec)
         model = tmp_path / "model.onnx"
         model.write_bytes(b"")
-        assert (
-            f"ort_lib={package / 'capi' / 'libonnxruntime.so.1.2.3'}" in onnx_decoder(model).config
-        )
+        fn = onnx_decoder(model)
+        assert f"ort_lib={package / 'capi' / 'libonnxruntime.so.1.2.3'}" in fn.config
+        assert fn.extra_files == (str(package / "capi" / "libonnxruntime_providers_shared.so"),)
 
     def test_missing_onnxruntime_raises_import_error(self, monkeypatch, tmp_path):
         """With no onnxruntime installed, the error says what to install."""

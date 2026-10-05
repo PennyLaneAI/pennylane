@@ -54,6 +54,13 @@ class CoprocessorFunction:
             coprocessor every function is called per message.
         message_bytes (tuple[int, int], None): The ``(in_bytes, out_bytes)`` message sizes the
             function expects. Defaults to ``None``, declaring none.
+        files (Sequence[str]): The keys of ``config`` whose values are paths to files on this
+            machine, such as a model the function loads. Defaults to ``()``. A coprocessor on
+            another machine gets each file deployed beside it, with the key's value naming the
+            file there.
+        extra_files (Sequence[str]): Further paths to files on this machine that a coprocessor on
+            another machine gets deployed beside ``files``, without a config key naming them, such
+            as libraries a declared library loads from its own directory. Defaults to ``()``.
 
     .. seealso:: :class:`~.Coprocessor`, :func:`~.css_bp_decoder`, :func:`~.triton_decoder`
 
@@ -96,9 +103,20 @@ class CoprocessorFunction:
     not declare them. A :class:`~.Placement` takes the controller's unset sizes from it, and
     rejects a controller size that differs."""
 
+    files: tuple[str, ...] = field(default=(), repr=False)
+    """The keys of :attr:`config` whose values are paths to files on this machine. A coprocessor on
+    another machine gets each file deployed beside it, with the key's value naming the file
+    there."""
+
+    extra_files: tuple[str, ...] = field(default=(), repr=False)
+    """Further paths to files on this machine that a coprocessor on another machine gets deployed
+    beside :attr:`files`, without a config key naming them."""
+
     def __post_init__(self):
         if self.message_bytes is not None:
             object.__setattr__(self, "message_bytes", tuple(self.message_bytes))
+        object.__setattr__(self, "files", tuple(self.files))
+        object.__setattr__(self, "extra_files", tuple(str(f) for f in self.extra_files))
 
     @property
     def symbol_name(self) -> str:
@@ -312,6 +330,13 @@ def _onnxruntime_library() -> str:
     return str(libraries[0])
 
 
+def _onnxruntime_providers(ort_lib: str) -> tuple[str, ...]:
+    """The onnxruntime execution provider libraries beside ``ort_lib``, which onnxruntime loads
+    from its own directory."""
+    lib = Path(ort_lib)
+    return tuple(str(p) for p in sorted(lib.parent.glob("libonnxruntime_providers*")) if p != lib)
+
+
 def _check_count(name: str, value, minimum: int) -> None:
     """Raise if ``value`` is not an int of at least ``minimum``."""
     if isinstance(value, bool) or not isinstance(value, int):
@@ -403,9 +428,10 @@ def onnx_decoder(
         )
     _check_count("device", device, 0)
     _check_count("threads", threads, 1)
+    ort_lib = _onnxruntime_library()
     entries = [
         f"model={model}",
-        f"ort_lib={_onnxruntime_library()}",
+        f"ort_lib={ort_lib}",
         f"provider={provider}",
         f"device={device}",
         f"threads={threads}",
@@ -417,4 +443,6 @@ def onnx_decoder(
         config=";".join(entries),
         per_message=True,
         message_bytes=_onnx_message_bytes(model),
+        files=("model", "ort_lib"),
+        extra_files=_onnxruntime_providers(ort_lib),
     )
