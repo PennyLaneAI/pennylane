@@ -43,23 +43,24 @@ def process_hints(hints: dict[str, Any], supported: Set[str]) -> dict[str, Any]:
 
     """
     processed: dict[str, Any] = {}
+    supported = sorted(supported)
     for key, value in hints.items():
-        if key in supported:
-            canonical = key
-        else:
-            canonical = None
-            for target in sorted(supported):
-                ratio = SequenceMatcher(a=key.casefold(), b=target.casefold()).ratio()
-                if ratio >= 0.8:
-                    canonical = target
-                    break
-
-        if canonical is None:
-            continue
-        if canonical in processed:
-            raise ValueError(f"Multiple hint keys map to {canonical!r}. Got {tuple(hints)}.")
-        processed[canonical] = value
+        match = _canonical_match(key, supported)
+        if match in processed:
+            raise ValueError(f"Multiple hint keys map to {match!r}. Got {tuple(hints)}.")
+        processed[match] = value
     return processed
+
+
+def _canonical_match(key: str, supported: Set[str]) -> str | None:
+    """Return match if key has a close match in supported, else None."""
+    if key in supported:
+        return key
+    for target in supported:
+        ratio = SequenceMatcher(a=key.casefold(), b=target.casefold()).ratio()
+        if ratio >= 0.5:
+            return target
+    return None
 
 
 class HintedCallable:
@@ -147,7 +148,9 @@ def hint(hints: dict[str, Any]) -> Callable:
 
     **Available Hints:**
 
-    * :func:`~.for_loop` and :func:`~.while_loop` support `"num-iters"` to indicate a heuristic number of loop iterations for the purposes of resource estimation with :func:`~.specs`. See Usage Details for more information.
+    * :func:`~.for_loop` and :func:`~.while_loop` support `"num-iters"` to indicate a heuristic
+      number of loop iterations for the purposes of resource estimation with
+      :func:`~.specs`. See Usage Details for more information.
 
     .. warning::
 
@@ -164,18 +167,21 @@ def hint(hints: dict[str, Any]) -> Callable:
         .. code-block:: python
 
             @qp.qjit(capture=True)
-            @qp.qnode(qp.device('lightning.qubit', wires=1))
+            @qp.qnode(qp.device('lightning.qubit', wires=10))
             def c(n):
 
+                @qp.hint({"num-iters": 10})
                 @qp.for_loop(n)
-                def loop(i):
-                    qp.X(0)
+                def hinted_loop(i):
+                    qp.X(i)
 
-                #  hinted loop
-                qp.hint({"num-iters": 10})(loop)()
+                hinted_loop()
 
-                # unhinted loop
-                loop()
+                @qp.for_loop(n)
+                def unhinted_loop(i):
+                    qp.Y(i)
+
+                unhinted_loop()
 
                 return qp.expval(qp.Z(0))
 
@@ -183,10 +189,11 @@ def hint(hints: dict[str, Any]) -> Callable:
         Symbolic Variables: a
         Quantum operations:
         - Total: a + 10
-          - PauliX: a + 10
+          - PauliX: 10
+          - PauliY: a
         Measurement processes:
         - expval(PauliZ): 1
-        Total wires: 1
+        Total wires: 10
         Circuit Depth: Not computed
 
         The concrete ``10`` corresponds to the hinted loop, contrasting the symbolic ``a`` from the unhinted loop.
