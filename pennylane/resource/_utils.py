@@ -129,6 +129,7 @@ def preprocess_level_input(
         "top": [0],
         "user": [len(compile_pipeline)],
         "all": list(range(0, total_levels)),
+        "device": -1,
     }
     if isinstance(level, str) and level in default_level_map:
         return default_level_map[level]

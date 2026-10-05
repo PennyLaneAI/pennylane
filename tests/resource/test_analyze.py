@@ -180,15 +180,37 @@ class TestAnalyze:
 
         assert specs.resources.counts == self.USER_COUNTS
 
-    @pytest.mark.xfail(
-        raises=NotImplementedError, strict=True, reason="level='device' is not supported yet."
-    )
-    def test_device_level(self, circuit):
-        """Test that analyze counts the resources after device preprocessing."""
+    # @pytest.mark.xfail(
+    #     raises=NotImplementedError, strict=True, reason="level='device' is not supported yet."
+    # )
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_device_level(self):
+        """Test that analyze counts the resources after device preprocessing, including after
+        Catalyst passes and a Clifford+T graph decomposition."""
 
-        specs = qp.analyze(circuit, level="device")(0.1)
+        pipeline = qp.CompilePipeline(
+            catalyst.passes.cancel_inverses, catalyst.passes.merge_rotations
+        )
 
-        assert specs.resources.counts == self.USER_COUNTS
+        @qp.qjit(capture=True)
+        @pipeline
+        @catalyst.passes.graph_decomposition(gate_set=qp.gate_sets.CLIFFORD_T)
+        @qp.qnode(qp.device("null.qubit", wires=3))
+        def qfunc():
+            qp.Toffoli([0, 1, 2])
+            qp.Hadamard(0)
+            qp.Hadamard(0)
+            return qp.expval(qp.Z(0))
+
+        specs = qp.analyze(qfunc, level="device")()
+
+        # Toffoli → Clifford+T; the consecutive Hadamards cancel
+        assert specs.resources.counts == {
+            "Hadamard": 2,
+            "CNOT": 6,
+            "Adjoint(T)": 3,
+            "T": 4,
+        }
 
     @pytest.mark.parametrize("level", [None, 1.5])
     def test_unsupported_level(self, circuit, level):

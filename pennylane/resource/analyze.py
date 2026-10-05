@@ -78,8 +78,8 @@ def _analyze_qjit(qjit, level, *args, **kwargs) -> CircuitSpecs:
     """Compile a qjit'd QNode up to the given level and return the specs found by analyzing it."""
     original_qnode = unwrap_qjit_qnode(qjit, fn_name="qp.analyze")
 
-    if level == "device":
-        raise NotImplementedError("qp.analyze does not support level='device' yet.")
+    # if level == "device":
+    #     raise NotImplementedError("qp.analyze does not support level='device' yet.")
 
     resources, level = _run_resource_analysis(qjit, original_qnode, level, *args, **kwargs)
 

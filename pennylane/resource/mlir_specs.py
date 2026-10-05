@@ -117,6 +117,7 @@ def resources_from_analysis_pass(
 
     iter_pipeline = copy.deepcopy(original_qnode._compile_pipeline)
     new_compile_pipeline = CompilePipeline()
+    new_post_device_pipeline = CompilePipeline()
 
     if isinstance(level, int):
         level = [level]
@@ -142,7 +143,17 @@ def resources_from_analysis_pass(
             new_compile_pipeline += transform(pass_name="resource-analysis")(
                 output_json=True, output_fname=fname
             )
-
+        if level == [-1]: # device level
+            new_compile_pipeline = iter_pipeline
+            fname = f"{fname_prefix}device.json"
+            fname_to_level[fname] = level[0]
+            level_name = make_level_name_unique(
+                "device", frozenset(level_to_name.values())
+            )
+            level_to_name[level[0]] = level_name
+            new_post_device_pipeline += transform(pass_name="resource-analysis")(
+                output_json=True, output_fname=fname
+            )
         for i, comp_pass in enumerate(iter_pipeline, start=1):
             if i > max_level:
                 break
@@ -163,6 +174,7 @@ def resources_from_analysis_pass(
 
         new_qnode = copy.copy(original_qnode)
         new_qnode._compile_pipeline = new_compile_pipeline
+        new_qnode._post_device_pipeline = new_post_device_pipeline
         compile_options = copy.deepcopy(qjit.compile_options)
         compile_options.target = "mlir"
         compile_options.lower_to_llvm = False

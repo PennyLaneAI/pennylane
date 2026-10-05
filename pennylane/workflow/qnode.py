@@ -583,6 +583,7 @@ class QNode:
         self._shots: Shots = device.shots if shots == "unset" else Shots(shots)
         self._shots_override_device: bool = shots != "unset"
         self._compile_pipeline = CompilePipeline()
+        self._post_device_pipeline = CompilePipeline()
         functools.update_wrapper(self, func)
 
     def __copy__(self) -> QNode:
