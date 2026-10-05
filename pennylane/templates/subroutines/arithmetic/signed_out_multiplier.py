@@ -17,6 +17,8 @@ Contains the SignedOutMultiplier template.
 
 from collections import defaultdict
 
+from jax import numpy as jnp
+
 from pennylane import capture, compiler, math
 from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
@@ -28,12 +30,6 @@ from pennylane.wires import Wires, WiresLike, is_abstract_qubit, validate_no_wir
 from .incrementer import Incrementer
 from .out_multiplier import OutMultiplier
 from .semi_adder import SemiAdder
-
-has_jax = True
-try:
-    from jax import numpy as jnp
-except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
-    has_jax = False  # pragma: no cover
 
 
 class SignedOutMultiplier(Operator2):

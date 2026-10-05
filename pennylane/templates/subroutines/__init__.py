@@ -53,6 +53,7 @@ from .one_body_block_encoding import OneBodyBlockEncoding, one_body_block_encodi
 from .alias_sampling_thc import AliasSamplingTHC, alias_sampling_thc_wires
 from .select_thc import SelectTHC, select_thc_wires
 from .superposition_thc import SuperpositionTHC
+from .qubitization_thc import QubitizationTHC, qubitization_thc_wires
 from .gqsp import GQSP
 from .select_pauli_rot import (
     MultiplexedRotation,
@@ -130,15 +131,17 @@ __all__ = [
     "AmplitudeAmplification",
     "QROM",
     "AliasSampling",
-    "AliasSamplingTHC",
-    "SelectTHC",
-    "SuperpositionTHC",
-    "UniformPrep",
     "alias_sampling_wires",
+    "AliasSamplingTHC",
+    "alias_sampling_thc_wires",
+    "SelectTHC",
+    "select_thc_wires",
+    "SuperpositionTHC",
+    "QubitizationTHC",
+    "qubitization_thc_wires",
+    "UniformPrep",
     "OneBodyBlockEncoding",
     "one_body_block_encoding_wires",
-    "alias_sampling_thc_wires",
-    "select_thc_wires",
     "GQSP",
     "SelectPauliRot",
     "MultiplexedRotation",

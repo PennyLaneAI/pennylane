@@ -19,6 +19,8 @@ Contains the IQPEmbedding template.
 import copy
 from itertools import combinations
 
+from jax import numpy as jnp
+
 from pennylane import capture, math
 from pennylane.control_flow import for_loop, while_loop
 from pennylane.core.operator import Operation
@@ -26,12 +28,6 @@ from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import RZ, H, MultiRZ
 from pennylane.typing import Float, Wire
 from pennylane.wires import Wires
-
-has_jax = True
-try:
-    from jax import numpy as jnp
-except ModuleNotFoundError:  # pragma: no cover
-    has_jax = False  # pragma: no cover
 
 
 class IQPEmbedding(Operation):
@@ -301,7 +297,7 @@ def _iqp_embedding_resources(pattern_size, n_repeats, num_wires):
 @register_resources(_iqp_embedding_resources, exact=False)
 def _iqp_embedding_decomposition(features, wires, n_repeats, pattern):
 
-    if has_jax and capture.enabled():
+    if capture.enabled():
         wires, pattern, features = jnp.array(wires), jnp.array(pattern), jnp.array(features)
 
     if math.ndim(features) > 1:
