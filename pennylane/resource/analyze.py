@@ -88,21 +88,20 @@ def _analyze_qjit(qjit, level, *args, **kwargs) -> CircuitSpecs:
 
 def analyze(
     qnode,
-    level: str | int | Iterable[int | str],
+    level: str | int | Iterable[int | str] = "user",
 ) -> Callable[..., CircuitSpecs]:
-    r"""Provides a resource estimate of a quantum circuit, obtained by analyzing its intermediate
-    representation at the specified level of compilation.
+    r"""Provides a compile-time resource estimate of a quantum circuit, obtained by analyzing its
+    intermediate representation at the specified compilation level.
 
     This transform converts a QNode into a callable that compiles the circuit up to ``level``
     and inspects the resulting representation, without executing the circuit or unrolling its
-    control flow. The resource information therefore only relies on what is known at compile
-    time.
+    control flow. The resource information is therefore subject to compile-time constraints.
 
     Args:
         qnode (:class:`~catalyst.jit.QJIT`): the (qjit'd) QNode for which to estimate resources.
             ``functools.partial`` wrappers around supported callables are also accepted.
         level (str | int | Iterable[int | str]): The level of compilation at which to estimate
-            resources. See the note below for the accepted values.
+            resources. Defaults to ``"user"``. See the note below for the accepted values.
 
     Returns:
         A function that has the same argument signature as ``qnode``. This function returns a
@@ -195,7 +194,7 @@ def analyze(
     {'CNOT': 1, 'RX': 2}
 
     .. details::
-        :title: Resources that are not known at compile time
+        :title: Compile-time constraints of resource analysis
 
         Since the circuit is not executed, some resources cannot be counted exactly:
 
