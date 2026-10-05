@@ -635,9 +635,46 @@
   falling back to an unrolled ``qp.for_loop``. 
   [(#10220)](https://github.com/PennyLaneAI/pennylane/pull/10220)
 
-* Adds `qp.hint` for adding compiler hints for things like the likely number of iterations
-  on for or while loops.
+* Adding compiler hints when compiling with :func:`~.qjit` is now possible with :func:`~.hint`. The :func:`~.hint` function 
+  can be used on :func:`~.for_loop` and :func:`~.while_loop` to specify a heuristic number of times the loop will iterate.
   [(#10230)](https://github.com/PennyLaneAI/pennylane/pull/10230/)
+
+  By hinting control flow like :func:`~.for_loop` and :func:`~.while_loop`, profiling
+  with :func:`~.specs` can heuristically specify the number of iterations, leading to concrete
+  resource counts (no symbolic expressions).
+
+  ```python
+
+  @qp.qjit(capture=True)
+  @qp.qnode(qp.device('lightning.qubit', wires=1))
+  def c(n):
+
+      @qp.for_loop(n)
+      def loop(i):
+          qp.X(0)
+
+      #  hinted loop
+      qp.hint({"num-iters": 10})(loop)()
+
+      # unhinted loop
+      loop()
+
+      return qp.expval(qp.Z(0))
+  ```
+
+  ```pycon
+  >>> print(qp.specs(c, level=0)(5).resources)
+  Symbolic Variables: a
+  Quantum operations:
+  - Total: a + 10
+    - PauliX: a + 10
+  Measurement processes:
+  - expval(PauliZ): 1
+  Total wires: 1
+  Circuit Depth: Not computed
+  ```
+  
+  The concrete ``10`` corresponds to the hinted loop, contrasting the symbolic ``a`` from the unhinted loop.
 
 * Multi-controlled operators can now reuse a single :class:`~.TemporaryAND` ladder when enough
   zeroed work wires are available, reducing their decomposition gate counts.
