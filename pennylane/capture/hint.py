@@ -196,7 +196,7 @@ def hint(hints: dict[str, Any]) -> Callable:
         .. code-block:: python
 
             @qp.qjit(capture=True)
-            @qp.qnode(qp.device('lightning.qubit' wires=10))
+            @qp.qnode(qp.device('lightning.qubit', wires=10))
             def c(n):
 
                 @qp.hint({"num-iters": 10})
