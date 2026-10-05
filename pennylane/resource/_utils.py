@@ -117,8 +117,8 @@ def preprocess_level_input(
     # pylint: disable=too-many-branches
     if trans := [pass_ for pass_ in compile_pipeline if pass_.pass_name is None]:
         raise ValueError(
-            f"Specs encountered the following tape transforms: {trans}."
-            " Tape transforms are no longer supported by specs."
+            f"Encountered the following tape transforms: {trans}."
+            " Tape transforms are no longer supported."
         )
 
     marker_to_level = get_marker_level_map(compile_pipeline)
@@ -161,8 +161,7 @@ def preprocess_level_input(
         elif isinstance(lvl, int) and not isinstance(lvl, bool):
             if lvl < 0 or lvl >= total_levels:
                 raise ValueError(
-                    "The 'level' argument to qp.specs for QJIT'd QNodes is out of bounds, "
-                    f"got {lvl}."
+                    f"The 'level' argument for QJIT'd QNodes is out of bounds, got {lvl}."
                 )
         else:
             raise ValueError(f"Invalid level '{lvl}' in level list, expected int or str.")
@@ -170,7 +169,7 @@ def preprocess_level_input(
     level_sorted = sorted(set(level))
     if level != level_sorted:
         warnings.warn(
-            "The 'level' argument to qp.specs for QJIT'd QNodes has been sorted to be in ascending "
+            "The 'level' argument for QJIT'd QNodes has been sorted to be in ascending "
             "order with no duplicate levels.",
             UserWarning,
         )
