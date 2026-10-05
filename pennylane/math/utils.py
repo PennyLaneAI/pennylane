@@ -252,9 +252,9 @@ def cast(tensor, dtype):
 
     We can also use strings:
 
-    >>> x = tf.Variable([1, 2])
+    >>> x = torch.tensor([1, 2])
     >>> cast(x, "complex128")
-    <tf.Tensor: shape=(2,), dtype=complex128, numpy=array([1.+0.j, 2.+0.j])>
+    tensor([1.+0.j, 2.+0.j], dtype=torch.complex128)
     """
     if isinstance(tensor, (list, tuple, int, float, complex)):
         tensor = np.asarray(tensor)
@@ -319,9 +319,9 @@ def convert_like(tensor1, tensor2):
     **Example**
 
     >>> x = np.array([1, 2])
-    >>> y = tf.Variable([3, 4])
+    >>> y = torch.tensor([3, 4])
     >>> convert_like(x, y)
-    <tf.Tensor: shape=(2,), dtype=int64, numpy=array([1, 2])>
+    tensor([1, 2])
     """
     interface = math.get_interface(tensor2)
 
@@ -343,7 +343,7 @@ def is_abstract(tensor, like=None):
     (JIT) compilation.
 
     Abstract tensors most commonly occur within a function that has been
-    decorated using ``@tf.function`` or ``@jax.jit``.
+    decorated using ``@jax.jit``.
 
     .. note::
 
@@ -410,36 +410,12 @@ def is_abstract(tensor, like=None):
 
         return False
 
-    if (
-        interface == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        import tensorflow as tf
-        from tensorflow.python.framework.ops import EagerTensor
-
-        return not isinstance(tf.convert_to_tensor(tensor), EagerTensor)
-
     # Autograd does not have a JIT
 
     # QNodes do not currently support TorchScript:
     #   NotSupportedError: Compiled functions can't take variable number of arguments or
     #   use keyword-only arguments with defaults.
     return False
-
-
-def import_should_record_backprop():  # pragma: no cover
-    """Return should_record_backprop or an equivalent function."""
-    import tensorflow.python as tfpy
-
-    if hasattr(tfpy.eager.tape, "should_record_backprop"):
-        from tensorflow.python.eager.tape import should_record_backprop
-    elif hasattr(tfpy.eager.tape, "should_record"):
-        from tensorflow.python.eager.tape import should_record as should_record_backprop
-    elif hasattr(tfpy.eager.record, "should_record_backprop"):
-        from tensorflow.python.eager.record import should_record_backprop
-    else:
-        raise ImportError("Cannot import should_record_backprop from TensorFlow.")
-
-    return should_record_backprop
 
 
 def requires_grad(tensor, interface=None):
@@ -476,14 +452,6 @@ def requires_grad(tensor, interface=None):
     """
     interface = interface or math.get_interface(tensor)
 
-    if (
-        interface == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        import tensorflow as tf
-
-        should_record_backprop = import_should_record_backprop()
-        return should_record_backprop([tf.convert_to_tensor(tensor)])
-
     if interface == "autograd":
         if isinstance(tensor, ArrayBox):
             return True
@@ -518,24 +486,20 @@ def in_backprop(tensor, interface=None):
 
     **Example**
 
-    >>> x = tf.Variable([0.6, 0.1])
-    >>> requires_grad(x)
+    >>> from pennylane import numpy as np
+    >>> x = np.array(0.6, requires_grad=True)
+    >>> in_backprop(x)
     False
-    >>> with tf.GradientTape() as tape:
-    ...     print(requires_grad(x))
+    >>> def cost(x):
+    ...     print(in_backprop(x))
+    ...     return x ** 2
+    >>> qp.grad(cost)(x)
     True
+    tensor(1.2, requires_grad=True)
 
     .. seealso:: :func:`~.requires_grad`
     """
     interface = interface or math.get_interface(tensor)
-
-    if (
-        interface == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        import tensorflow as tf
-
-        should_record_backprop = import_should_record_backprop()
-        return should_record_backprop([tf.convert_to_tensor(tensor)])
 
     if interface == "autograd":
         return isinstance(tensor, ArrayBox)
