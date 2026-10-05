@@ -576,7 +576,11 @@ def decompose_mcx_many_workers(wires, control_values, work_wires, work_wire_type
 
     if compiler.active() or capture.enabled():
         wires = math.array(wires, like="jax")
-        work_wires = math.array(work_wires, like="jax")
+        try:
+            # if abstract qubits, we cant pack into an array
+            work_wires = math.array(work_wires, like="jax")
+        except Exception:
+            pass
         control_values = math.array(control_values, like="jax")
 
     @qp.for_loop(len(control_values))
