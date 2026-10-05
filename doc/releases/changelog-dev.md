@@ -1022,6 +1022,12 @@
 
 <h3>Breaking changes 💔</h3>
 
+* :class:`~.IQPEmbedding`'s ``pattern`` argument now lists pairs of *indices into* ``wires``,
+  matching :class:`~.IQP`, rather than wire labels. The default all-pairs pattern is unchanged.
+  To entangle the first and third of ``wires=["z", "a", "k"]``, pass ``pattern=[[0, 2]]``
+  (previously ``pattern=[["z", "k"]]``).
+  [(#10221)](https://github.com/PennyLaneAI/pennylane/pull/10221)
+
 * :class:`~.QuantumPhaseEstimation` now only accepts an :class:`~.Operator` as the ``unitary``, and the
   ``target_wires`` argument has been removed. The target wires are the wires of ``unitary``.
   To use a unitary matrix, wrap it in a :class:`~.QubitUnitary`:

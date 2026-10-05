@@ -18,12 +18,12 @@ Contains the IQPEmbedding template.
 from itertools import combinations
 
 from pennylane import capture, compiler, math
-from pennylane.control_flow import for_loop, while_loop
+from pennylane.control_flow import for_loop
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.ops import RZ, H, MultiRZ
-from pennylane.typing import AbstractWires, Float, Wire
-from pennylane.wires import Wires, WiresLike
+from pennylane.typing import Float, Wire
+from pennylane.wires import WiresLike
 
 
 class IQPEmbedding(Operator2):
@@ -60,9 +60,9 @@ class IQPEmbedding(Operator2):
 
       |
 
-    * Else, ``pattern`` is a list of wire pairs ``[[a, b], [c, d],...]``, applying the entangler
-      on wires ``[a, b]``, ``[c, d]``, etc. For example, ``pattern = [[0, 1], [1, 2]]`` produces
-      the following entangler pattern:
+    * Else, ``pattern`` is a list of index pairs ``[[a, b], [c, d], ...]`` into ``wires``, applying
+      the entangler on ``(wires[a], wires[b])``, ``(wires[c], wires[d])``, etc. For example,
+      ``pattern = [[0, 1], [1, 2]]`` produces the following entangler pattern:
 
       |
 
@@ -79,7 +79,8 @@ class IQPEmbedding(Operator2):
         features (tensor_like): tensor of features to encode
         wires (Any or Iterable[Any]): wires that the template acts on
         n_repeats (int): number of times the basic embedding is repeated
-        pattern (list[int]): specifies the wires and features of the entanglers
+        pattern (list[list[int]]): pairs of indices into ``wires`` that specify the entanglers.
+            ``None`` (default) applies an entangler to every pair of wires.
 
     Raises:
         ValueError: if inputs do not have the correct format
@@ -121,6 +122,8 @@ class IQPEmbedding(Operator2):
 
         A custom entangler pattern can be used by specifying the ``pattern`` argument. A pattern has to be
         a nested list of dimension ``(K, 2)``, where ``K`` is the number of entanglers to apply.
+        Each pair contains indices into ``wires``, not wire labels. For example, with
+        ``wires=["z", "a", "k"]``, ``pattern=[[0, 2]]`` entangles ``"z"`` and ``"k"``.
 
         .. code-block:: python
 
@@ -163,13 +166,13 @@ class IQPEmbedding(Operator2):
         the second feature to wire 0, and the third feature to wire 1.
 
         Likewise, using the default pattern, the entangler block applies the product of the first and second
-        feature to the wire pair ``[2, 0]``, the product of the second and third feature to ``[2, 1]``, and so
-        forth.
+        feature to the wire pair ``[2, 0]``, the product of the first and third feature to ``[2, 1]``,
+        and the product of the second and third feature to ``[0, 1]``.
 
     """
 
     dynamic_argnames = ("features",)
-    static_argnames = ("n_repeats", "pattern")
+    compilable_argnames = ("n_repeats", "pattern")
     arg_specs = {"features": Float[-1], "wires": Wire[-1]}
 
     ndim_params = (1,)
@@ -190,25 +193,13 @@ class IQPEmbedding(Operator2):
         if n_features != len(wires):
             raise ValueError(f"Features must be of length {len(wires)}; got length {n_features}.")
 
+        # ``pattern`` is compilable, so store hashable nested tuples of indices into ``wires``.
         if pattern is None:
-            # Do not close over traced wire labels; those cannot live in static args.
-            if isinstance(wires, AbstractWires) or any(math.is_abstract(w) for w in wires):
-                _wires = range(len(wires))
-            else:
-                _wires = wires
-            pattern = tuple(combinations(_wires, 2))
+            pattern = tuple(combinations(range(len(wires)), 2))
         else:
             pattern = tuple(tuple(pair) for pair in pattern)
 
         super().__init__(features, wires, n_repeats, pattern)
-
-    def map_wires(self, wire_map) -> "IQPEmbedding":
-        new_args = dict(self.arguments)
-        new_args["wires"] = Wires([wire_map.get(w, w) for w in self.arguments["wires"]])
-        new_args["pattern"] = tuple(
-            tuple(wire_map.get(w, w) for w in pair) for pair in new_args["pattern"]
-        )
-        return type(self)(**new_args)
 
 
 # pylint: disable=unused-argument
@@ -245,22 +236,8 @@ def _iqp_embedding_decomposition(features, wires: WiresLike, n_repeats, pattern)
 
         @for_loop(len(pattern))
         def pattern_loop(j):
-
-            @while_loop(lambda curr: wires[curr] != pattern[j][0])
-            def search_loop_1(curr):
-                curr += 1
-                return curr
-
-            idx1 = search_loop_1(0)
-
-            @while_loop(lambda curr: wires[curr] != pattern[j][1])
-            def search_loop_2(curr):
-                curr += 1
-                return curr
-
-            idx2 = search_loop_2(0)
-
-            MultiRZ(features[idx1] * features[idx2], wires=pattern[j])
+            idx1, idx2 = pattern[j][0], pattern[j][1]
+            MultiRZ(features[idx1] * features[idx2], wires=[wires[idx1], wires[idx2]])
 
         pattern_loop()  # pylint: disable=no-value-for-parameter
 

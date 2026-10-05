@@ -799,7 +799,7 @@ class TestModifiedTemplates:
     @pytest.mark.parametrize(
         "features, wires, kwargs, expected_repeats, expected_pattern",
         [
-            (jnp.array([2.3, 0.1]), [2, 0], {}, 1, ((2, 0),)),
+            (jnp.array([2.3, 0.1]), [2, 0], {}, 1, ((0, 1),)),
             (
                 jnp.array([0.4, 0.2, 0.1]),
                 [2, 1, 0],
@@ -807,7 +807,7 @@ class TestModifiedTemplates:
                 1,
                 ((2, 0), (1, 0)),
             ),
-            (jnp.array([0.4, 0.1]), [0, 10], {"n_repeats": 3, "pattern": None}, 3, ((0, 10),)),
+            (jnp.array([0.4, 0.1]), [0, 10], {"n_repeats": 3, "pattern": None}, 3, ((0, 1),)),
         ],
     )
     def test_iqp_embedding(self, features, wires, kwargs, expected_repeats, expected_pattern):

@@ -122,18 +122,26 @@ class TestDecomposition:
             assert gate.name == expected_names[i]
             assert gate.wires.labels == tuple(expected_wires[i])
 
-    def test_map_wires_remaps_pattern(self):
-        """Pattern wire labels must follow map_wires along with the operator wires."""
+    def test_map_wires_preserves_pattern_indices(self):
+        """Pattern stores indices into wires, so map_wires remaps wires only."""
 
         op = qp.IQPEmbedding([1.0, 2.0, 3.0], wires=[0, 1, 2], pattern=[[0, 2], [1, 2]])
         mapped = op.map_wires({0: "a", 1: "b", 2: "c"})
 
         assert mapped.wires.labels == ("a", "b", "c")
-        assert mapped.hyperparameters["pattern"] == (("a", "c"), ("b", "c"))
+        assert mapped.hyperparameters["pattern"] == ((0, 2), (1, 2))
 
         tape = qp.tape.QuantumScript(mapped.decomposition())
         multi_rz_wires = [gate.wires.labels for gate in tape.operations if gate.name == "MultiRZ"]
         assert multi_rz_wires == [("a", "c"), ("b", "c")]
+
+    def test_custom_pattern_uses_indices_into_wires(self):
+        """A custom pattern addresses positions in wires, not wire labels."""
+
+        op = qp.IQPEmbedding([1.0, 2.0, 3.0], wires=["z", "a", "k"], pattern=[[0, 2]])
+        tape = qp.tape.QuantumScript(op.decomposition())
+        multi_rz_wires = [gate.wires.labels for gate in tape.operations if gate.name == "MultiRZ"]
+        assert multi_rz_wires == [("z", "k")]
 
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
@@ -159,13 +167,13 @@ class TestDecomposition:
         assert np.allclose(state1, state2, atol=tol, rtol=0)
 
     DECOMP_PARAMS = [
-        ([1.0, 2.0], [1, 2], 2, [[1, 2], [1, 2]]),
-        ([1.0, 2.0, 3.0, 4.0], [1, 2, 3, 4], 3, [[2, 1], [1, 2]]),
+        ([1.0, 2.0], [1, 2], 2, [[0, 1], [0, 1]]),
+        ([1.0, 2.0, 3.0, 4.0], [1, 2, 3, 4], 3, [[1, 0], [0, 1]]),
         pytest.param(
             [[1.0, 1.0, 1.0], [2.0, 2.0, 2.0], [3.0, 3.0, 3.0]],
             [1, 2, 3],
             4,
-            [[2, 1], [1, 3]],
+            [[1, 0], [0, 2]],
             marks=pytest.mark.pl2do(reason="PL 2.0: Parameter broadcasting will be re-visited."),
         ),
     ]
@@ -214,12 +222,12 @@ class TestInputs:
         with pytest.raises(ValueError, match="Features must be a one-dimensional"):
             circuit(f=features)
 
-    def test_abstract_wires_default_pattern(self):
-        """Default pattern is index pairs when wires are abstract."""
+    @pytest.mark.parametrize("wires", [Wire[3], ["z", "a", "k"]])
+    def test_default_pattern_is_indices(self, wires):
+        """Default pattern is all pairs of indices into wires."""
 
-        op = qp.IQPEmbedding([1.0, 2.0, 3.0], wires=Wire[3])
+        op = qp.IQPEmbedding([1.0, 2.0, 3.0], wires=wires)
         assert op.arguments["pattern"] == ((0, 1), (0, 2), (1, 2))
-        assert op.wires == Wire[3]
 
 
 def circuit_template(features):
