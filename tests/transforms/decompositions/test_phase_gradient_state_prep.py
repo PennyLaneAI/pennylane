@@ -169,6 +169,27 @@ def test_resources_are_structural_one_attempt_counts():
     }
 
 
+@pytest.mark.parametrize(
+    ("num_wires", "expected"),
+    [
+        (0, {}),
+        (1, {"Hadamard": 1, "PauliZ": 1}),
+        (2, {"Hadamard": 2, "PauliZ": 1, "Adjoint(S)": 1}),
+    ],
+)
+def test_small_register_resources(num_wires, expected):
+    """Registers below the distillation threshold use only the Clifford seed."""
+    assert _jones_num_rounds(num_wires) == 0
+
+    rule = make_phase_gradient_distillation_decomp(
+        aux_wires=range(num_wires), work_wires=range(max(0, num_wires - 1))
+    )
+    resources = rule.compute_resources(qp.typing.Wire[num_wires])
+    counts = {resource.name: count for resource, count in resources.gate_counts.items()}
+
+    assert counts == expected
+
+
 @pytest.mark.usefixtures("enable_graph_decomposition")
 def test_fixed_rule_is_opt_in():
     """The default remains exact while fixed_decomps explicitly selects distillation."""
@@ -215,6 +236,15 @@ def test_mode_validation():
     """Only the two documented execution modes are accepted."""
     with pytest.raises(ValueError, match="mode must be"):
         make_phase_gradient_distillation_decomp([], [], mode="unknown")
+
+
+def test_schedule_workspace_validation(monkeypatch):
+    """The generated rule rejects a schedule that exceeds the supplied workspace."""
+    rule = make_phase_gradient_distillation_decomp(aux_wires=[3, 4, 5], work_wires=[6, 7])
+    monkeypatch.setattr(phase_gradient_decomp, "_required_workspace", lambda _: 9)
+
+    with pytest.raises(WireError, match="requires 9 wires, but only 8 were provided"):
+        rule(wires=[0, 1, 2])
 
 
 @pytest.mark.catalyst
