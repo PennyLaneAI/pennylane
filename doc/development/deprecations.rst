@@ -103,11 +103,6 @@ Completed deprecation cycles
 
   - Removed in releases after v0.45
 
-* The ``pennylane.qcut`` module, including ``pennylane.cut_circuit``,
-  ``pennylane.cut_circuit_mc``, and the ``WireCut`` operator, has been removed.
-  
-  - Removed in releases after v0.45
-
 * The ``pennylane.qaoa`` module has been removed, including the mixer Hamiltonians
   (``x_mixer``, ``xy_mixer``, ``bit_flip_mixer``), the cost Hamiltonians (``maxcut``,
   ``max_independent_set``, ``min_vertex_cover``, ``max_clique``, ``max_weight_cycle``,
