@@ -55,12 +55,11 @@ class CoprocessorFunction:
         message_bytes (tuple[int, int], None): The ``(in_bytes, out_bytes)`` message sizes the
             function expects. Defaults to ``None``, declaring none.
         files (Sequence[str]): The keys of ``config`` whose values are paths to files on this
-            machine, such as a model the function loads. Defaults to ``()``. A coprocessor on
-            another machine gets each file deployed beside it, with the key's value naming the
-            file there.
+            machine, such as a model the function loads. A coprocessor on another machine gets
+            each file deployed beside it, with the key's value naming the file there.
         extra_files (Sequence[str]): Further paths to files on this machine that a coprocessor on
             another machine gets deployed beside ``files``, without a config key naming them, such
-            as libraries a declared library loads from its own directory. Defaults to ``()``.
+            as libraries a declared library loads from its own directory.
 
     .. seealso:: :class:`~.Coprocessor`, :func:`~.css_bp_decoder`, :func:`~.triton_decoder`
 
@@ -416,8 +415,10 @@ def onnx_decoder(
         also when a provider that cannot be attached fails. ``"cpu"`` and ``"migraphx"`` have been
         tested, and the NVIDIA providers and ``"rocm"`` have not.
 
-        **In-process only.** The model and onnxruntime paths are resolved on the compiling
-        machine, so the coprocessor must run in the same process, not on an executor.
+        **On another machine.** The model, onnxruntime and its provider libraries are files on
+        this machine. A coprocessor on another machine (``remote=True``) gets them deployed beside
+        it, so that machine needs the same operating system and processor architecture as this
+        one, and the GPU libraries the provider uses.
     """
     model = Path(model).resolve()
     if not model.is_file():
