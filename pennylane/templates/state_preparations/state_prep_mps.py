@@ -344,7 +344,6 @@ class MPSPrep(Operator2):
     static_argnames = ("right_canonicalize",)
 
     arg_specs = {"wires": Wire[-1], "work_wires": Wire[-1]}
-    wire_sizes = (None, None)
 
     grad_method = None
 
