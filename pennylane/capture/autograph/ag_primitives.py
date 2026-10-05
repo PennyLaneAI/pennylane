@@ -115,9 +115,19 @@ def if_stmt(
     set_state: Callable[[tuple], None],
     symbol_names: tuple[str],
     _num_results: int,
+    true_hints: dict | None = None,
+    false_hints: dict | None = None,
 ):
     """An implementation of the AutoGraph 'if' statement. The interface is defined by AutoGraph,
-    here we merely provide an implementation of it in terms of PennyLane primitives."""
+    here we merely provide an implementation of it in terms of PennyLane primitives.
+
+    The two hint arguments are not part of the AutoGraph interface. They are added to the
+    generated call by a ``# qphint`` pragma annotating the corresponding branch."""
+
+    if true_hints:
+        true_fn = qp.hint(true_hints)(true_fn)
+    if false_hints:
+        false_fn = qp.hint(false_hints)(false_fn)
 
     # Cache the initial state of all modified variables. Required because we trace all branches,
     # and want to restore the initial state before entering each branch.
@@ -197,6 +207,24 @@ def _assert_iteration_results(inputs, outputs, symbol_names):
             )
 
 
+# AutoGraph passes its own loop options alongside the compiler hints collected from pragmas.
+# They are meaningless to PennyLane and must not be forwarded as hints.
+AUTOGRAPH_LOOP_OPTIONS = frozenset(
+    {
+        "iterate_names",
+        "maximum_iterations",
+        "parallel_iterations",
+        "shape_invariants",
+        "swap_memory",
+    }
+)
+
+
+def _extract_hints(opts: dict) -> dict:
+    """Separate the compiler hints from the loop options AutoGraph sets itself."""
+    return {key: value for key, value in opts.items() if key not in AUTOGRAPH_LOOP_OPTIONS}
+
+
 # pylint: disable=too-many-positional-arguments
 def _call_pennylane_for(
     start,
@@ -206,6 +234,7 @@ def _call_pennylane_for(
     get_state,
     set_state,
     symbol_names,
+    hints,
     enum_start=None,
     array_iterable=None,
 ):
@@ -237,6 +266,9 @@ def _call_pennylane_for(
 
         return get_state()
 
+    if hints:
+        functional_for = qp.hint(hints)(functional_for)
+
     final_iter_args = functional_for(*init_iter_args)
     _assert_iteration_results(init_iter_args, final_iter_args, symbol_names)
     return final_iter_args
@@ -249,7 +281,7 @@ def for_stmt(
     get_state: Callable[[], tuple],
     set_state: Callable[[tuple], None],
     symbol_names: tuple[str],
-    _opts: dict,
+    opts: dict,
 ):
     """An implementation of the AutoGraph 'for .. in ..' statement. The interface is defined by
     AutoGraph, here we merely provide an implementation of it in terms of PennyLane primitives."""
@@ -310,6 +342,7 @@ def for_stmt(
             get_state,
             set_state,
             symbol_names,
+            _extract_hints(opts),
             enum_start,
             iteration_array,
         )
@@ -331,7 +364,7 @@ def for_stmt(
     set_state(results)
 
 
-def _call_pennylane_while(loop_test, loop_body, get_state, set_state, symbol_names):
+def _call_pennylane_while(loop_test, loop_body, get_state, set_state, symbol_names, hints):
     """Dispatch to a PennyLane implementation of while loops."""
 
     init_iter_args = get_state()
@@ -350,16 +383,21 @@ def _call_pennylane_while(loop_test, loop_body, get_state, set_state, symbol_nam
         loop_body()
         return get_state()
 
+    if hints:
+        functional_while = qp.hint(hints)(functional_while)
+
     final_iter_args = functional_while(init_iter_args)
 
     return final_iter_args
 
 
-def while_stmt(loop_test, loop_body, get_state, set_state, symbol_names, _opts):
+def while_stmt(loop_test, loop_body, get_state, set_state, symbol_names, opts):
     """An implementation of the AutoGraph 'while ..' statement. The interface is defined by
     AutoGraph, here we merely provide an implementation of it in terms of PennyLane primitives."""
 
-    results = _call_pennylane_while(loop_test, loop_body, get_state, set_state, symbol_names)
+    results = _call_pennylane_while(
+        loop_test, loop_body, get_state, set_state, symbol_names, _extract_hints(opts)
+    )
     set_state(results)
 
 
