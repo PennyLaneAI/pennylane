@@ -217,6 +217,42 @@ def hint(hints: dict[str, Any]) -> Callable:
         Total wires: 10
         Circuit Depth: Not computed
 
+        Note that hints can be overwritten. The following will use ``20`` as the number of iterations:
+
+        .. code-block:: python
+
+            @qp.qjit(capture=True)
+            @qp.qnode(qp.device('lightning.qubit', wires=10))
+            def c(n):
+
+                @qp.hint({"num-iters": 20})
+                @qp.hint({"num-iters": 10})
+                @qp.while_loop(lambda i: i < 10)
+                def loop(i):
+                    qp.X(i)
+                    return i + 1
+
+                loop(0)
+                return qp.expval(qp.Z(0))
+
+        Compiler hints will also be discarded without warning if they do not match the expected type of hint.
+        The next example would run without warning:
+
+        .. code-block:: python
+
+            @qp.qjit(capture=True)
+            @qp.qnode(qp.device('null.qubit', wires=10))
+            def c(n):
+
+                @qp.hint({"unknown_hint": "a"})
+                @qp.for_loop(3)
+                def loop(i):
+                    qp.X(i)
+
+                loop()
+
+                return qp.expval(qp.Z(0))
+
     """
 
     def decorator(f):
