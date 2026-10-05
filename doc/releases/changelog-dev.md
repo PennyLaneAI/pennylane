@@ -2,6 +2,24 @@
 
 <h3>New features since last release</h3>
 
+* A new state preparation routine called :class:`~.PhaseGradientStatePrep` has been added, which
+  prepares the phase gradient state 
+  :math:`|\nabla_b\rangle = \frac{1}{\sqrt{B}} \sum_{k=0}^{B-1} e^{-2\pi i \frac{k}{B}} |k\rangle`.
+  It is a catalytic state for (generalized) rotation gates.
+  See the [compilation hub](https://pennylane.ai/compilation/phase-gradient/) for more details on the state and how to use it in rotations.
+  [(#10227)](https://github.com/PennyLaneAI/pennylane/pull/10227)
+
+  ```pycon
+  import pennylane as qp
+  >>> print(qp.draw(qp.PhaseGradientStatePrep(wires=range(5)).decomposition)())
+  0: ──H──Z─────────┤
+  1: ──H──S†────────┤
+  2: ──H──T†────────┤
+  3: ──H──Rϕ(-0.39)─┤
+  4: ──H──Rϕ(-0.20)─┤
+
+  ```
+
 * Added a `qp.math.floor_log2` function that computes the integer :math:`\lfloor \log_2(x)\rfloor`,
   in analogy to the existing `qp.math.ceil_log2`.
   [(#10101)](https://github.com/PennyLaneAI/pennylane/pull/10101)
@@ -684,6 +702,12 @@
   [(#10059)](https://github.com/PennyLaneAI/pennylane/pull/10059)
   [(#10059)](https://github.com/PennyLaneAI/pennylane/pull/10015)
 
+* Updated :class:`~.IsingXX`, :class:`~.IsingYY`,
+  :class:`~.IsingXY`, :class:`~.MultiRZ`, :class:`~.PauliRot` and
+  :class:`~.SingleExcitation` to use :func:`~.change_op_basis`, which enables more
+  efficient controlled decompositions.
+  [(#10118)](https://github.com/PennyLaneAI/pennylane/pull/10118)
+
 * Coprocessor connection addresses are grouped on :class:`~pennylane.Endpoint` as ``endpoint=qp.Endpoint(host, port)``, replacing the separate ``comm_host`` and ``oob_port`` fields.
   [(#10017)](https://github.com/PennyLaneAI/pennylane/pull/10017)
 
@@ -1057,13 +1081,6 @@
   ``bit_driver``, ``edge_driver``), the ansatz layers (``cost_layer``, ``mixer_layer``) and the
   ``pennylane.qaoa.cycle`` helpers. :class:`~.QAOAEmbedding` is unaffected.
   [(#10249)](https://github.com/PennyLaneAI/pennylane/pull/10249)
-
-* The ``pennylane.noise`` module has been removed, including ``NoiseModel``,
-  ``add_noise``, ``insert``, noise mitigation transforms (``mitigate_with_zne``,
-  ``fold_global``, ``poly_extrapolate``, ``richardson_extrapolate``,
-  ``exponential_extrapolate``), and ``from_qiskit_noise``. Noise channels such as
-  :class:`~.AmplitudeDamping` are unaffected.
-  [(#10214)](https://github.com/PennyLaneAI/pennylane/pull/10214)
 
 * Removed the ``qp.fourier`` module. This includes ``circuit_spectrum``, ``coefficients``,
   ``qnode_spectrum``, ``mark``, ``get_spectrum``, ``join_spectra`` and the
@@ -1546,7 +1563,7 @@
     [(#9753)](https://github.com/PennyLaneAI/pennylane/pull/9753)
   - Integration with :func:`pennylane.apply`.
     [(#9738)](https://github.com/PennyLaneAI/pennylane/pull/9738)
-  - Integration with ``pennylane.insert``.
+  - Integration with :func:`pennylane.insert`.
     [(#9685)](https://github.com/PennyLaneAI/pennylane/pull/9685)
   - Integration with the graph-based decomposition system.
     [(#9723)](https://github.com/PennyLaneAI/pennylane/pull/9723)
