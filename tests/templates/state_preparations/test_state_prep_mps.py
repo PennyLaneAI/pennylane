@@ -19,6 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qp
+from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.state_preparations.state_prep_mps import (
     _mps_prep_decomposition,
@@ -702,12 +703,9 @@ class TestMPSPrep:
             assert op.wires == qp.wires.Wires([2 + ind] + [0, 1])
             assert op.name == "QubitUnitary"
 
-    @pytest.mark.parametrize(
-        ("work_wires", "msg"),
-        [(None, "The qp.MPSPrep decomposition requires"), (1, "Incorrect number of `work_wires`")],
-    )
-    def test_wires_decomposition(self, work_wires, msg):
-        """Checks that error is shown if no `work_wires` are given in decomposition"""
+    @pytest.mark.parametrize("work_wires", [None, 1])
+    def test_wires_decomposition(self, work_wires):
+        """Checks that no decomposition rule applies when insufficient `work_wires` are given."""
 
         mps = [
             np.array([[0.70710678, 0.0], [0.0, 0.70710678]]),
@@ -729,7 +727,7 @@ class TestMPSPrep:
         ]
 
         op = qp.MPSPrep(mps, wires=range(2, 5), work_wires=work_wires)
-        with pytest.raises(ValueError, match=msg):
+        with pytest.raises(DecompositionUndefinedError, match="No applicable decomposition rule"):
             op.decomposition()
 
     def test_right_canonical(self):

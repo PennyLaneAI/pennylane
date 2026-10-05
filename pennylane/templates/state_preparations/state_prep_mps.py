@@ -354,102 +354,14 @@ class MPSPrep(Operator2):
 
         _validate_mps_shape(mps)
 
+        # Cast each tensor to an array so that every tensor is treated as a single pytree
+        mps = [tensor if hasattr(tensor, "shape") else qp.math.asarray(tensor) for tensor in mps]
+
         work_wires = () if work_wires is None else work_wires
 
         super().__init__(
             mps, wires=wires, work_wires=work_wires, right_canonicalize=right_canonicalize
         )
-
-    def decomposition(self):
-        return self.compute_decomposition(
-            self.mps,
-            wires=self.arguments["wires"],
-            work_wires=self.arguments["work_wires"],
-            right_canonicalize=self.arguments["right_canonicalize"],
-        )
-
-    @staticmethod
-    def compute_decomposition(
-        mps, wires, work_wires=None, right_canonicalize=False
-    ):  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a product of other operators.
-        The decomposition follows Eq. (23) in `arXiv:2310.18410 <https://arxiv.org/pdf/2310.18410>`_.
-
-        Args:
-            mps (list[Array]):  list of arrays of rank-3 and rank-2 tensors representing an MPS state as a
-                product of site matrices.
-
-            wires (Sequence[int]): wires that the template acts on. It should match the number of MPS tensors.
-            work_wires (Sequence[int]): list of extra qubits needed in the decomposition. If the maximum dimension
-                of the MPS tensors is ``2^k``, then k ``work_wires`` will be needed. If no ``work_wires`` are given,
-                this operator can only be executed on the ``lightning.tensor`` device. Default is ``None``.
-
-            right_canonicalize (bool): Indicates whether a conversion to right-canonical form should be performed
-                to the mps. Default is ``False``.
-
-        Returns:
-            list[.Operator]: Decomposition of the operator
-        """
-
-        if work_wires is None or len(work_wires) == 0:
-            raise ValueError("The qp.MPSPrep decomposition requires `work_wires` to be specified.")
-
-        max_bond_dimension = 0
-        for i in range(len(mps) - 1):
-            bond_dim = mps[i].shape[-1]
-            max_bond_dimension = max(max_bond_dimension, bond_dim)
-
-        if max_bond_dimension > 2 ** len(work_wires):
-            raise ValueError(
-                "Incorrect number of `work_wires`. At least "
-                f"{qp.math.ceil_log2(max_bond_dimension)} `work_wires` must be provided."
-            )
-
-        ops = []
-        n_wires = len(work_wires) + 1
-
-        mps = mps.copy()
-
-        # Transform the MPS to ensure that the generated matrix is unitary
-        if right_canonicalize:
-            mps = right_canonicalize_mps(mps)
-
-        mps[0] = mps[0].reshape((1, *mps[0].shape))
-        mps[-1] = mps[-1].reshape((*mps[-1].shape, 1))
-
-        interface, dtype = qp.math.get_interface(mps[0]), mps[0].dtype
-
-        for i, Ai in enumerate(mps):
-
-            # Encode the tensor Ai in a unitary matrix following Eq.23 in https://arxiv.org/pdf/2310.18410
-            vectors = []
-            for column in Ai:
-                vector = qp.math.zeros(2**n_wires, like=interface, dtype=dtype)
-
-                if interface == "jax":
-                    vector = vector.at[: len(column[0])].set(column[0])
-                    vector = vector.at[
-                        2 ** (n_wires - 1) : 2 ** (n_wires - 1) + len(column[1])
-                    ].set(column[1])
-
-                else:
-                    vector[: len(column[0])] = column[0]
-                    vector[2 ** (n_wires - 1) : 2 ** (n_wires - 1) + len(column[1])] = column[1]
-
-                vectors.append(vector)
-
-            vectors = qp.math.stack(vectors).T
-            # The unitary is completed using QR decomposition
-            d, k = vectors.shape
-            new_columns = qp.math.array(np.random.RandomState(42).random((d, d - k)))
-            unitary_matrix, R = qp.math.linalg.qr(qp.math.hstack([vectors, new_columns]))
-            unitary_matrix *= qp.math.sign(
-                qp.math.diag(R)
-            )  # Enforce uniqueness for QR decomposition
-
-            ops.append(qp.QubitUnitary(unitary_matrix, wires=[wires[i]] + work_wires))
-
-        return ops
 
 
 def _mps_prep_decomposition_resources(
