@@ -214,7 +214,7 @@ def hint(hints: dict[str, Any]) -> Callable:
           - PauliX: 10
         Measurement processes:
         - expval(PauliZ): 1
-        Total wires: 1
+        Total wires: 10
         Circuit Depth: Not computed
 
     """
