@@ -46,8 +46,7 @@ from collections import Counter
 import numpy as np
 
 import pennylane as qp
-from pennylane import capture, compiler, math
-from pennylane.control_flow import for_loop
+from pennylane import math
 from pennylane.core.operator import StatePrepBase2
 from pennylane.decomposition import add_decomps, register_condition, register_resources
 from pennylane.exceptions import WireError
@@ -98,14 +97,9 @@ class PhaseGradientStatePrep(StatePrepBase2):
     >>> np.allclose(circuit(), np.exp(-2j * np.pi * np.arange(B) / B) / np.sqrt(B))
     True
 
-    The decomposition consists of :class:`~.Hadamard` gates and phase gates (:class:`~.PhaseShift`):
+    The decomposition is supported on up to 30 wires and consists of :class:`~.PPR` gates (and
+    a :class:`~.GlobalPhase`).
 
-    >>> print(qp.draw(qp.PhaseGradientStatePrep(wires=range(5)).decomposition)())
-    0: ──H──Z─────────┤
-    1: ──H──S†────────┤
-    2: ──H──T†────────┤
-    3: ──H──Rϕ(-0.39)─┤
-    4: ──H──Rϕ(-0.20)─┤
     """
 
     arg_specs = {"wires": Wire[-1]}
@@ -142,46 +136,6 @@ class PhaseGradientStatePrep(StatePrepBase2):
             ket = ket.transpose(desired_order)
 
         return ket
-
-
-def _phase_gradient_state_prep_resources(wires: AbstractWires):
-    num_wires = len(wires)
-    resources = {qp.Hadamard: num_wires}
-    if num_wires > 0:
-        resources[qp.Z] = 1
-    if num_wires > 1:
-        resources[qp.adjoint(qp.S(Wire[1]))] = 1
-    if num_wires > 2:
-        resources[qp.adjoint(qp.T(Wire[1]))] = 1
-    if num_wires > 3:
-        resources[qp.PhaseShift] = num_wires - 3
-    return resources
-
-
-@register_resources(_phase_gradient_state_prep_resources)
-def _phase_gradient_state_prep_decomposition(wires: WiresLike):
-    num_wires = len(wires)
-    if compiler.active() or capture.enabled():
-        wires = math.array(wires, like="jax")
-
-    @for_loop(num_wires)
-    def hadamard_loop(i):
-        qp.Hadamard(wires[i])
-
-    hadamard_loop()  # pylint: disable=no-value-for-parameter
-
-    if num_wires > 0:
-        qp.Z(wires[0])
-    if num_wires > 1:
-        qp.adjoint(qp.S(wires[1]))
-    if num_wires > 2:
-        qp.adjoint(qp.T(wires[2]))
-
-    @for_loop(3, num_wires)
-    def phase_shift_loop(i):
-        qp.PhaseShift(-np.pi * 2.0**-i, wires[i])
-
-    phase_shift_loop()  # pylint: disable=no-value-for-parameter
 
 
 # Wire j is prepared in the state (|0> + exp(-i pi / 2**j)|1>) / sqrt(2) by the PPR
@@ -320,6 +274,5 @@ def _phase_gradient_state_prep_ppr_decomposition(wires: WiresLike):
 
 add_decomps(
     PhaseGradientStatePrep,
-    _phase_gradient_state_prep_decomposition,
     _phase_gradient_state_prep_ppr_decomposition,
 )

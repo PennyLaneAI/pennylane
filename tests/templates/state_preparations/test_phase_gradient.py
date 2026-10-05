@@ -15,8 +15,6 @@
 Unit tests for the PhaseGradientStatePrep template.
 """
 
-from functools import partial
-
 import numpy as np
 import pytest
 
@@ -50,27 +48,12 @@ def test_label():
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
-    @pytest.mark.parametrize("num_wires", [1, 2, 3, 4, 5, 6])
-    def test_correct_gates_in_decomposition(self, num_wires):
-        """Test that only discrete gates are used for up to three wires."""
-        wires = ["a", "b", "c", "d", "e", "f"][:num_wires]
-        op = qp.PhaseGradientStatePrep(wires=wires)
-        with qp.queuing.AnnotatedQueue() as q:
-            returned_list = op.decomposition()
-        # queued_list = qp.tape.QuantumScript.from_queue(q)
-
-        phase_gates = [qp.Z, qp.adjoint(qp.S), qp.adjoint(qp.T)]
-        phase_gates += [partial(qp.PhaseShift, phi=-np.pi / 2**i) for i in range(3, num_wires)]
-        expected = [qp.H(w) for w in wires] + [gate(wires=w) for gate, w in zip(phase_gates, wires)]
-        assert returned_list == expected
-        assert q.queue == expected
-
     @pytest.mark.parametrize("use_qjit", [False, pytest.param(True, marks=pytest.mark.catalyst)])
     @pytest.mark.parametrize("num_wires", [1, 2, 3, 4, 7])
     def test_decomposition_prepares_state(self, num_wires, use_qjit):
         """Test that executing the decomposition prepares the phase gradient state."""
 
-        gate_set = {"Hadamard", "PauliZ", "Adjoint(S)", "Adjoint(T)", "PhaseShift"}
+        gate_set = {"PPR", "GlobalPhase"}
 
         @qp.qnode(qp.device("lightning.qubit", wires=num_wires))
         def circuit():
@@ -81,7 +64,9 @@ class TestDecomposition:
             import catalyst
 
             # TODO: Use `decompose` for this branch as well once graph_decomposition is integrated
-            circuit = catalyst.passes.graph_decomposition(circuit, gate_set=gate_set)
+            circuit = qp.transforms.to_ppr(
+                catalyst.passes.graph_decomposition(circuit, gate_set=gate_set)
+            )
             circuit = qp.qjit(circuit, capture=True)
 
         else:
