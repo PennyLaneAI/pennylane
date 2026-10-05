@@ -19,25 +19,15 @@ import importlib
 import importlib.machinery
 import importlib.util
 import sys
+from pathlib import Path
 
 import pytest
 
 from pennylane.backline import onnx_decoder
 from pennylane.backline.onnx import _onnx_message_bytes
 
-
-def _identity_u8x8_model(path):
-    """Write an ONNX model whose uint8[1, 8] input passes through Identity to its uint8[1, 8]
-    output, and return its path."""
-    onnx = pytest.importorskip("onnx")
-    helper = onnx.helper
-    x = helper.make_tensor_value_info("x", onnx.TensorProto.UINT8, [1, 8])
-    y = helper.make_tensor_value_info("y", onnx.TensorProto.UINT8, [1, 8])
-    graph = helper.make_graph([helper.make_node("Identity", ["x"], ["y"])], "identity", [x], [y])
-    model = helper.make_model(graph, opset_imports=[helper.make_opsetid("", 13)])
-    model.ir_version = 8
-    onnx.save(model, str(path))
-    return path
+# An ONNX model whose uint8[1, 8] input passes through Identity to its uint8[1, 8] output.
+IDENTITY_U8X8_MODEL = Path(__file__).parent / "data" / "identity_u8x8.onnx"
 
 
 class TestOnnxDecoder:
@@ -61,10 +51,10 @@ class TestOnnxDecoder:
         """The function declares the model's input and output sizes as its message sizes."""
         assert onnx_decoder(model).message_bytes == (120, 121)
 
-    def test_the_model_tensor_sizes_are_read_with_onnxruntime(self, tmp_path):
+    def test_the_model_tensor_sizes_are_read_with_onnxruntime(self):
         """A uint8[1, 8] to uint8[1, 8] identity model declares 8 B in and 8 B out."""
         pytest.importorskip("onnxruntime")
-        assert _onnx_message_bytes(_identity_u8x8_model(tmp_path / "identity.onnx")) == (8, 8)
+        assert _onnx_message_bytes(IDENTITY_U8X8_MODEL) == (8, 8)
 
     def test_the_function_is_catalysts_own(self, model):
         """The function is Catalyst's ONNX coprocessor function, so it needs no lib_path."""
