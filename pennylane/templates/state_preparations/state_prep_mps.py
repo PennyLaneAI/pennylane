@@ -360,11 +360,6 @@ class MPSPrep(Operator2):
             mps, wires=wires, work_wires=work_wires, right_canonicalize=right_canonicalize
         )
 
-    @property
-    def mps(self):
-        """list representing the MPS input"""
-        return self.arguments["mps"]
-
     def decomposition(self):
         return self.compute_decomposition(
             self.mps,
