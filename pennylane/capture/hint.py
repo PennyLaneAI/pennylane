@@ -174,7 +174,7 @@ def hint(hints: dict[str, Any]) -> Callable:
                 #  hinted loop
                 qp.hint({"num-iters": 10})(loop)()
 
-                # normal loop
+                # unhinted loop
                 loop()
 
                 return qp.expval(qp.Z(0))
