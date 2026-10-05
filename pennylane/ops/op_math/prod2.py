@@ -157,10 +157,12 @@ class Prod2(CompositeOp2):
             return self.pauli_rep.to_mat(wire_order=wire_order or self.wires)
 
         mats: list[TensorLike] = []
+        mats_wires: list[Wires] = []
         batched: list[bool] = []
         for ops in self.overlapping_ops:
             gen = ((op.matrix(), op.wires) for op in ops)
-            reduced_mat, _ = math.reduce_matrices(gen, reduce_func=math.matmul)
+            reduced_mat, reduced_wires = math.reduce_matrices(gen, reduce_func=math.matmul)
+            mats_wires.append(reduced_wires)
 
             if self.batch_size is not None:
                 batched.append(any(op.batch_size is not None for op in ops))
@@ -180,7 +182,9 @@ class Prod2(CompositeOp2):
                     for i in range(self.batch_size)
                 ]
             )
-        return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
+        return math.expand_matrix(
+            full_mat, Wires.all_wires(mats_wires), wire_order=wire_order or self.wires
+        )
 
     @property
     @handle_recursion_error

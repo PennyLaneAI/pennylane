@@ -574,6 +574,14 @@ class TestMatrix:
         with pytest.raises(MatrixUndefinedError):
             prod_op.matrix()
 
+    def test_merged_overlapping_groups(self):
+        """Test the matrix when merging overlapping groups reorders the wires relative to
+        ``Prod.wires``."""
+        factors = [qp.Hadamard(1), qp.Hadamard(0), qp.CNOT([2, 1]), qp.CNOT([1, 0])]
+        mat = Prod(*factors).matrix(wire_order=[0, 1, 2])
+        expected = qp.matrix(qp.tape.QuantumScript(factors[::-1]), wire_order=[0, 1, 2])
+        assert np.allclose(mat, expected)
+
     def test_prod_ops_multi_terms(self):
         """Test matrix is correct for a product of more than two terms."""
         prod_op = Prod(qp.PauliX(wires=0), qp.PauliY(wires=0), qp.PauliZ(wires=0))

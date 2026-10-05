@@ -651,6 +651,10 @@
   decomposition of :class:`~.SingleExcitation` to two :math:`\pm\pi/4` and two arbitrary-angle PPRs.
   [(#10108)](https://github.com/PennyLaneAI/pennylane/pull/10108)
 
+* Added a decomposition of :class:`~.PPR` to the Clifford+T gate set, so that circuits of
+  PPRs can be decomposed exactly to :data:`~.gate_sets.CLIFFORD_T`.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
 * :class:`~.FlipSign` now accepts `work_wires`, which are forwarded to the multi-controlled
   :class:`~.Z` gate in its decomposition. Providing work wires substantially reduces the gate count.
   [(#10159)](https://github.com/PennyLaneAI/pennylane/pull/10159)
@@ -1701,6 +1705,10 @@
   [(#9599)](https://github.com/PennyLaneAI/pennylane/pull/9599)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixed the matrix of :class:`~.ops.op_math.Prod` and ``Prod2`` for products in which merging
+  factors with overlapping wires reorders the wires, e.g. ``H(1) @ H(0) @ CNOT([2, 1]) @ CNOT([1, 0])``.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
 
 * Fixed `qp.math.ceil_log2` returning results that were off by one
   for inputs with more significant bits than a float can hold, like `2 ** 53 + 1`.
