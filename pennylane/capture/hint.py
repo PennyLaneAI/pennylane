@@ -191,7 +191,7 @@ def hint(hints: dict[str, Any]) -> Callable:
 
         The concrete ``10`` corresponds to the hinted loop, contrasting the symbolic ``a`` from the unhinted loop.
 
-        This function can also  be used as a decorator:
+        This function can also be used as a decorator:
 
         .. code-block:: python
 
