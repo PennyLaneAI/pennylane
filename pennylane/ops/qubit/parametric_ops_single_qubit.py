@@ -137,12 +137,6 @@ class RX(Operator2):
         c = qp.math.cos(phi / 2)
         s = qp.math.sin(phi / 2)
 
-        if (
-            qp.math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            c = qp.math.cast_like(c, 1j)
-            s = qp.math.cast_like(s, 1j)
-
         # The following avoids casting an imaginary quantity to reals when backpropagating
         c = (1 + 0j) * c
         js = -1j * s
@@ -351,11 +345,6 @@ class RY(Operator2):
 
         c = qp.math.cos(phi / 2)
         s = qp.math.sin(phi / 2)
-        if (
-            qp.math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            c = qp.math.cast_like(c, 1j)
-            s = qp.math.cast_like(s, 1j)
         # The following avoids casting an imaginary quantity to reals when backpropagating
         c = (1 + 0j) * c
         s = (1 + 0j) * s
@@ -568,14 +557,6 @@ class RZ(Operator2):
         tensor([[0.9689-0.2474j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.9689+0.2474j]])
         """
-        if (
-            qp.math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            p = qp.math.exp(-0.5j * qp.math.cast_like(phi, 1j))
-            z = qp.math.zeros_like(p)
-
-            return qp.math.stack([stack_last([p, z]), stack_last([z, qp.math.conj(p)])], axis=-2)
-
         signs = qp.math.array([-1, 1], like=phi)
         arg = 0.5j * phi
 
@@ -622,12 +603,6 @@ class RZ(Operator2):
         >>> qp.RZ.compute_eigvals(torch.tensor(0.5))
         tensor([0.9689-0.2474j, 0.9689+0.2474j])
         """
-        if (
-            qp.math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phase = qp.math.exp(-0.5j * qp.math.cast_like(phi, 1j))
-            return qp.math.stack([phase, qp.math.conj(phase)], axis=-1)
-
         prefactors = qp.math.array([-0.5j, 0.5j], like=phi)
         if qp.math.ndim(phi) == 0:
             product = phi * prefactors
@@ -861,15 +836,6 @@ class PhaseShift(Operator2):
         tensor([[1.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.8776+0.4794j]])
         """
-        if (
-            qp.math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            p = qp.math.exp(1j * qp.math.cast_like(phi, 1j))
-            ones = qp.math.ones_like(p)
-            zeros = qp.math.zeros_like(p)
-
-            return qp.math.stack([stack_last([ones, zeros]), stack_last([zeros, p])], axis=-2)
-
         signs = qp.math.array([0, 1], like=phi)
         arg = 1j * phi
 
@@ -907,12 +873,6 @@ class PhaseShift(Operator2):
         >>> qp.PhaseShift.compute_eigvals(torch.tensor(0.5))
         tensor([1.0000+0.0000j, 0.8776+0.4794j])
         """
-        if (
-            qp.math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phase = qp.math.exp(1j * qp.math.cast_like(phi, 1j))
-            return stack_last([qp.math.ones_like(phase), phase])
-
         prefactors = qp.math.array([0, 1j], like=phi)
         if qp.math.ndim(phi) == 0:
             product = phi * prefactors
@@ -1064,22 +1024,8 @@ class Rot(Operator2):
                 [ 0.0993+0.0100j,  0.9752+0.1977j]])
 
         """
-        # It might be that they are in different interfaces, e.g.,
-        # Rot(0.2, 0.3, tf.Variable(0.5), wires=0)
-        # So we need to make sure the matrix comes out having the right type
-        interface = qp.math.get_interface(phi, theta, omega)
-
         c = qp.math.cos(theta / 2)
         s = qp.math.sin(theta / 2)
-
-        # If anything is not tensorflow, it has to be casted and then
-        if (
-            interface == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phi = qp.math.cast_like(qp.math.asarray(phi, like=interface), 1j)
-            omega = qp.math.cast_like(qp.math.asarray(omega, like=interface), 1j)
-            c = qp.math.cast_like(qp.math.asarray(c, like=interface), 1j)
-            s = qp.math.cast_like(qp.math.asarray(s, like=interface), 1j)
 
         # The following variable is used to assert the all terms to be stacked have same shape
         one = qp.math.ones_like(phi) * qp.math.ones_like(omega)
@@ -1260,13 +1206,7 @@ class U1(Operator2):
         tensor([[1.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.8776+0.4794j]])
         """
-        if (
-            qp.math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phi = qp.math.cast_like(phi, 1j)
-            fac = qp.math.cast_like([0, 1], 1j)
-        else:
-            fac = np.array([0, 1])
+        fac = np.array([0, 1])
 
         fac = qp.math.convert_like(fac, phi)
 
@@ -1387,15 +1327,6 @@ class U2(Operator2):
         tensor([[ 0.7071+0.0000j, -0.6930-0.1405j],
                 [ 0.7036+0.0706j,  0.6755+0.2090j]])
         """
-        interface = qp.math.get_interface(phi, delta)
-
-        # If anything is not tensorflow, it has to be casted and then
-        if (
-            interface == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phi = qp.math.cast_like(qp.math.asarray(phi, like=interface), 1j)
-            delta = qp.math.cast_like(qp.math.asarray(delta, like=interface), 1j)
-
         one = qp.math.ones_like(phi) * qp.math.ones_like(delta)
         mat = [
             [one, -qp.math.exp(1j * delta) * one],
@@ -1536,22 +1467,8 @@ class U3(Operator2):
                 [ 0.0490+0.0099j,  0.8765+0.4788j]])
 
         """
-        # It might be that they are in different interfaces, e.g.,
-        # U3(0.2, 0.3, tf.Variable(0.5), wires=0)
-        # So we need to make sure the matrix comes out having the right type
-        interface = qp.math.get_interface(theta, phi, delta)
-
         c = qp.math.cos(theta / 2)
         s = qp.math.sin(theta / 2)
-
-        # If anything is not tensorflow, it has to be casted and then
-        if (
-            interface == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phi = qp.math.cast_like(qp.math.asarray(phi, like=interface), 1j)
-            delta = qp.math.cast_like(qp.math.asarray(delta, like=interface), 1j)
-            c = qp.math.cast_like(qp.math.asarray(c, like=interface), 1j)
-            s = qp.math.cast_like(qp.math.asarray(s, like=interface), 1j)
 
         # The following variable is used to assert the all terms to be stacked have same shape
         one = qp.math.ones_like(phi) * qp.math.ones_like(delta)

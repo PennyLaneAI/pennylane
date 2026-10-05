@@ -207,23 +207,6 @@ class TestSpsaGradient:
         with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
             spsa_grad(circuit, h=h_val)(weights)
 
-    @pytest.mark.tf
-    def test_no_trainable_params_qnode_tf(self):
-        """Test that the correct output and warning is generated in the absence of any trainable
-        parameters"""
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.set_shots(default_shot_vector)
-        @qp.qnode(dev)
-        def circuit(weights):
-            qp.RX(weights[0], wires=0)
-            qp.RY(weights[1], wires=0)
-            return qp.expval(qp.PauliZ(0) @ qp.PauliZ(1))
-
-        weights = [0.1, 0.2]
-        with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
-            spsa_grad(circuit, h=h_val)(weights)
-
     @pytest.mark.jax
     def test_no_trainable_params_qnode_jax(self):
         """Test that the correct output and warning is generated in the absence of any trainable
@@ -1034,88 +1017,6 @@ class TestSpsaGradientDifferentiation:
         for res in all_res:
             expected = np.array([-np.cos(x) * np.cos(y) / 2, np.sin(x) * np.sin(y) / 2])
             assert np.allclose(res, expected, atol=spsa_shot_vec_tol, rtol=0)
-
-    @pytest.mark.tf
-    @pytest.mark.slow
-    def test_tf(self, approx_order, strategy, seed):
-        """Tests that the output of the SPSA gradient transform
-        can be differentiated using TF, yielding second derivatives."""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", wires=2)
-        params = tf.Variable([0.543, -0.654], dtype=tf.float64)
-        rng = np.random.default_rng(seed)
-
-        with tf.GradientTape(persistent=True) as t:
-            with qp.queuing.AnnotatedQueue() as q:
-                qp.RX(params[0], wires=[0])
-                qp.RY(params[1], wires=[1])
-                qp.CNOT(wires=[0, 1])
-                qp.expval(qp.PauliZ(0) @ qp.PauliX(1))
-
-            tape = qp.tape.QuantumScript.from_queue(q, shots=many_shots_shot_vector)
-            tape.trainable_params = {0, 1}
-            tapes, fn = spsa_grad(
-                tape,
-                n=1,
-                approx_order=approx_order,
-                strategy=strategy,
-                h=h_val,
-                sampler_rng=rng,
-            )
-            jac_0, jac_1 = fn(dev.execute(tapes))
-
-        x, y = 1.0 * params
-
-        res_0 = t.jacobian(jac_0, params)
-        res_1 = t.jacobian(jac_1, params)
-
-        expected = np.array(
-            [
-                [-np.cos(x) * np.sin(y), -np.cos(y) * np.sin(x)],
-                [-np.cos(y) * np.sin(x), -np.cos(x) * np.sin(y)],
-            ]
-        )
-        assert np.allclose([res_0, res_1], expected, atol=spsa_shot_vec_tol, rtol=0)
-
-    @pytest.mark.tf
-    def test_tf_ragged(self, approx_order, strategy, seed):
-        """Tests that the output of the SPSA gradient transform
-        of a ragged tape can be differentiated using TF, yielding second derivatives."""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", wires=2)
-        params = tf.Variable([0.543, -0.654], dtype=tf.float64)
-        rng = np.random.default_rng(seed)
-
-        with tf.GradientTape(persistent=True) as t:
-            with qp.queuing.AnnotatedQueue() as q:
-                qp.RX(params[0], wires=[0])
-                qp.RY(params[1], wires=[1])
-                qp.CNOT(wires=[0, 1])
-                qp.expval(qp.PauliZ(0))
-                qp.probs(wires=[1])
-
-            tape = qp.tape.QuantumScript.from_queue(q, shots=many_shots_shot_vector)
-            tape.trainable_params = {0, 1}
-            tapes, fn = spsa_grad(
-                tape,
-                n=1,
-                approx_order=approx_order,
-                strategy=strategy,
-                h=h_val,
-                sampler_rng=rng,
-            )
-
-            jac_01 = fn(dev.execute(tapes))[1][0]
-
-        x, y = 1.0 * params
-
-        res_01 = t.jacobian(jac_01, params)
-
-        expected = np.array([-np.cos(x) * np.cos(y) / 2, np.sin(x) * np.sin(y) / 2])
-
-        assert np.allclose(res_01[0], expected, atol=spsa_shot_vec_tol, rtol=0)
 
     @pytest.mark.torch
     def test_torch(self, approx_order, strategy, seed):
