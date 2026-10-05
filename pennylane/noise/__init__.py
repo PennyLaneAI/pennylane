@@ -1,4 +1,4 @@
-# Copyright 2025 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2024 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,20 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-This module contains functions to import circuits and objects from external frameworks into PennyLane.
-"""
+"""This module contains the functionality to work with noise models in PennyLane."""
 
-from .io import (
-    from_pyquil,
-    from_qasm,
-    from_qiskit,
-    from_qiskit_noise,
-    from_qiskit_op,
-    from_quil,
-    from_quil_file,
-    plugin_converters,
-    from_qasm3,
+from .conditionals import wires_in, wires_eq, op_in, op_eq, meas_eq, partial_wires
+from .noise_model import NoiseModel
+from .add_noise import add_noise
+from .insert_ops import insert
+from .mitigate import (
+    mitigate_with_zne,
+    fold_global,
+    poly_extrapolate,
+    richardson_extrapolate,
+    exponential_extrapolate,
 )
-from .qualtran_io import FromBloq, bloq_registers, to_bloq, ToBloq
-from .to_openqasm import to_openqasm
