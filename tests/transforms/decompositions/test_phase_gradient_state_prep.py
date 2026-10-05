@@ -169,9 +169,9 @@ def test_resources_are_structural_one_attempt_counts():
     }
 
 
+@pytest.mark.usefixtures("enable_graph_decomposition")
 def test_fixed_rule_is_opt_in():
     """The default remains exact while fixed_decomps explicitly selects distillation."""
-    qp.decomposition.enable_graph()
     num_wires = 3
     output = range(num_wires)
     aux = range(num_wires, 2 * num_wires)
@@ -218,10 +218,10 @@ def test_mode_validation():
 
 
 @pytest.mark.catalyst
+@pytest.mark.usefixtures("enable_graph_decomposition")
 def test_qjit_graph_decomposition_and_all_mlir_specs():
     """The retry rule survives capture and graph decomposition to Clifford+T and MCM."""
     catalyst = pytest.importorskip("catalyst")
-    qp.decomposition.enable_graph()
     num_wires = 3
     registers = qp.registers({"grad": num_wires, "aux": num_wires, "work": num_wires - 1})
     rule = make_phase_gradient_distillation_decomp(registers["aux"], registers["work"])
