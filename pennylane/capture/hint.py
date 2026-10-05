@@ -189,8 +189,7 @@ def hint(hints: dict[str, Any]) -> Callable:
         Total wires: 1
         Circuit Depth: Not computed
 
-        The concrete ``10`` corresponds to the hinted loop, contrasting the symbolic ``a`` from to i
-        the unhinted loop.
+        The concrete ``10`` corresponds to the hinted loop, contrasting the symbolic ``a`` from the unhinted loop.
 
         This function can also  be used as a decorator:
 
