@@ -70,7 +70,7 @@ class PhaseGradientStatePrep(StatePrepBase2):
     >>> np.allclose(circuit(), np.exp(-2j * np.pi * np.arange(B) / B) / np.sqrt(B))
     True
 
-    The decomposition consists of :class:`~.Hadamard` gates and phase gates:
+    The decomposition consists of :class:`~.Hadamard` gates and phase gates (:class:`~.PhaseShift`):
 
     >>> print(qp.draw(qp.PhaseGradientStatePrep(wires=range(5)).decomposition)())
     0: ──H──Z─────────┤

@@ -2,10 +2,10 @@
 
 <h3>New features since last release</h3>
 
-* Added a new state preparation routine :class:`~.PhaseGradientStatePrep` that prepares the 
-  phase gradient state 
-  :math:`|\nabla_b\rangle = \frac{1}{\sqrt{B}} \sum_{k=0}^{B-1} e^{-2\pi i \frac{k}{B}} |k\rangle`,
-  which is a catalytic state for (generalized) rotation gates.
+* A new state preparation routine called :class:`~.PhaseGradientStatePrep` has been added, which
+  prepares the phase gradient state 
+  :math:`|\nabla_b\rangle = \frac{1}{\sqrt{B}} \sum_{k=0}^{B-1} e^{-2\pi i \frac{k}{B}} |k\rangle`.
+  It is a catalytic state for (generalized) rotation gates.
   See the [compilation hub](https://pennylane.ai/compilation/phase-gradient/) for more details on the state and how to use it in rotations.
   [(#10227)](https://github.com/PennyLaneAI/pennylane/pull/10227)
 
