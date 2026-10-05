@@ -8,7 +8,7 @@
   It is a catalytic state for (generalized) rotation gates.
   See the [compilation hub](https://pennylane.ai/compilation/phase-gradient/) for more details on the state and how to use it in rotations.
   [(#10227)](https://github.com/PennyLaneAI/pennylane/pull/10227)
-  [(#10227)](https://github.com/PennyLaneAI/pennylane/pull/10227)
+  [(#10264)](https://github.com/PennyLaneAI/pennylane/pull/10264)
 
   ```pycon
   import pennylane as qp
