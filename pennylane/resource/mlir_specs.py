@@ -171,11 +171,15 @@ def resources_from_analysis_pass(
                 level_name = make_level_name_unique(level_name, frozenset(level_to_name.values()))
                 fname_to_level[fname] = i
                 level_to_name[i] = level_name
-                new_compile_pipeline += qp.transform(pass_name="resource-analysis")(
+                # new_compile_pipeline += qp.transform(pass_name="resource-analysis")(
+                #     output_json=True, output_fname=fname
+                # )
+                new_qnode._post_device_pipeline += qp.transform(pass_name="resource-analysis")(
                     output_json=True, output_fname=fname
                 )
 
         new_qnode._compile_pipeline = new_compile_pipeline
+        # new_qnode.__post_device_pipeline = new_compile_pipeline
         compile_options = copy.deepcopy(qjit.compile_options)
         compile_options.target = "mlir"
         compile_options.lower_to_llvm = False
