@@ -101,6 +101,11 @@ class TestAnalyze:
 
         assert specs.resources.counts == expected_counts
 
+    def test_default_level_is_user(self, circuit):
+        """Test that analyze defaults to the resources after all user transforms."""
+
+        assert qp.analyze(circuit)(0.1) == qp.analyze(circuit, level="user")(0.1)
+
     @pytest.mark.parametrize(
         "level, expected_counts",
         [
