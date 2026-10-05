@@ -51,23 +51,6 @@ def _single_excitations_matrix(phi: TensorLike, phase_prefactor: TensorLike) -> 
         `phase_prefactor=-0.5j` : `SingleExcitationMinus`
     """
     interface = qp.math.get_interface(phi)
-    if (
-        interface == "tensorflow"
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        if isinstance(phase_prefactor, complex):
-            phi = qp.math.cast_like(phi, 1j)
-        c = qp.math.cos(phi / 2)
-        s = qp.math.sin(phi / 2)
-        e = qp.math.exp(phase_prefactor * phi)
-        zeros = qp.math.zeros_like(phi)
-        rows = [
-            [e, zeros, zeros, zeros],
-            [zeros, c, -s, zeros],
-            [zeros, s, c, zeros],
-            [zeros, zeros, zeros, e],
-        ]
-        return qp.math.stack([stack_last(row) for row in rows], axis=-2)
-
     c = qp.math.cos(phi / 2)
     s = qp.math.sin(phi / 2)
     e = qp.math.exp(phase_prefactor * phi)
@@ -99,11 +82,6 @@ def _double_excitations_matrix(phi: TensorLike, phase_prefactor: TensorLike) -> 
         `phase_prefactor=-0.5j` : `DoubleExcitationMinus`
     """
     interface = qp.math.get_interface(phi)
-
-    if interface == "tensorflow" and isinstance(
-        phase_prefactor, complex
-    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-        phi = qp.math.cast_like(phi, 1j)
 
     c = qp.math.cos(phi / 2)
     s = qp.math.sin(phi / 2)
@@ -1439,11 +1417,6 @@ class FermionicSWAP(Operation):
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.8776+0.4794j]],
                dtype=torch.complex128)
         """
-
-        if (
-            qp.math.get_interface(phi) == "tensorflow"
-        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
-            phi = qp.math.cast_like(phi, 1j)
 
         c = qp.math.cast_like(qp.math.cos(phi / 2), 1j)
         s = qp.math.cast_like(qp.math.sin(phi / 2), 1j)

@@ -271,37 +271,6 @@ class TestSingleExcitation:
 
         assert np.allclose(qp.grad(circuit)(phi), np.sin(phi))
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
-    @pytest.mark.parametrize(
-        ("excitation", "phi"),
-        [
-            (qp.SingleExcitation, -0.1),
-            (qp.SingleExcitationPlus, 0.2),
-            (qp.SingleExcitationMinus, np.pi / 4),
-        ],
-    )
-    def test_tf(self, excitation, phi, diff_method):
-        """Tests that gradients and operations are computed correctly using the
-        tensorflow interface"""
-
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit")
-
-        @qp.qnode(dev, diff_method=diff_method, interface="tf")
-        def circuit(phi):
-            qp.PauliX(wires=0)
-            excitation(phi, wires=[0, 1])
-            return qp.expval(qp.PauliZ(0))
-
-        phi_t = tf.Variable(phi, dtype=tf.float64)
-        with tf.GradientTape() as tape:
-            res = circuit(phi_t)
-
-        grad = tape.gradient(res, phi_t)
-        assert np.allclose(grad, np.sin(phi))
-
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
     @pytest.mark.parametrize(
@@ -736,29 +705,6 @@ class TestDoubleExcitation:
 
         assert np.allclose(state, circuit(np.pi / 2))
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize(
-        "excitation", [qp.DoubleExcitation, qp.DoubleExcitationPlus, qp.DoubleExcitationMinus]
-    )
-    def test_tf(self, excitation):
-        """Tests that operations are computed correctly using the
-        tensorflow interface"""
-
-        dev = qp.device("default.qubit")
-        state = np.array(
-            [0, 0, 0, -1 / np.sqrt(2), 0, 0, 0, 0, 0, 0, 0, 0, 1 / np.sqrt(2), 0, 0, 0]
-        )
-
-        @qp.qnode(dev, interface="tf")
-        def circuit(phi):
-            qp.PauliX(wires=0)
-            qp.PauliX(wires=1)
-            excitation(phi, wires=[0, 1, 2, 3])
-
-            return qp.state()
-
-        assert np.allclose(state, circuit(np.pi / 2))
-
     @pytest.mark.jax
     @pytest.mark.parametrize(
         "excitation", [qp.DoubleExcitation, qp.DoubleExcitationPlus, qp.DoubleExcitationMinus]
@@ -806,38 +752,6 @@ class TestDoubleExcitation:
             return qp.expval(qp.PauliZ(0))
 
         assert np.allclose(qp.grad(circuit)(phi), np.sin(phi))
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
-    @pytest.mark.parametrize(
-        ("excitation", "phi"),
-        [
-            (qp.DoubleExcitation, -0.1),
-            (qp.DoubleExcitationPlus, 0.2),
-            (qp.DoubleExcitationMinus, np.pi / 4),
-        ],
-    )
-    def test_tf_grad(self, excitation, phi, diff_method):
-        """Tests that gradients are computed correctly using the
-        tensorflow interface"""
-
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit")
-
-        @qp.qnode(dev, diff_method=diff_method, interface="tf")
-        def circuit(phi):
-            qp.PauliX(wires=0)
-            qp.PauliX(wires=1)
-            excitation(phi, wires=[0, 1, 2, 3])
-            return qp.expval(qp.PauliZ(0))
-
-        phi_t = tf.Variable(phi, dtype=tf.float64)
-        with tf.GradientTape() as tape:
-            res = circuit(phi_t)
-
-        grad = tape.gradient(res, phi_t)
-        assert np.allclose(grad, np.sin(phi))
 
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
@@ -1022,43 +936,6 @@ class TestOrbitalRotation:
 
         assert np.allclose(state, circuit(np.pi / 2))
 
-    @pytest.mark.tf
-    def test_tf(self):
-        """Tests that operations are computed correctly using the
-        tensorflow interface"""
-
-        dev = qp.device("default.qubit")
-        state = np.array(
-            [
-                0.0 + 0.0j,
-                0.0 + 0.0j,
-                0.0 + 0.0j,
-                0.5 + 0.0j,
-                0.0 + 0.0j,
-                0.0 + 0.0j,
-                0.5 + 0.0j,
-                0.0 + 0.0j,
-                0.0 + 0.0j,
-                -0.5 + 0.0j,
-                0.0 + 0.0j,
-                0.0 + 0.0j,
-                0.5 + 0.0j,
-                0.0 + 0.0j,
-                0.0 + 0.0j,
-                0.0 + 0.0j,
-            ]
-        )
-
-        @qp.qnode(dev, interface="tf")
-        def circuit(phi):
-            qp.PauliX(wires=0)
-            qp.PauliX(wires=1)
-            qp.OrbitalRotation(phi, wires=[0, 1, 2, 3])
-
-            return qp.state()
-
-        assert np.allclose(state, circuit(np.pi / 2))
-
     @pytest.mark.jax
     def test_jax(self):
         """Tests that operations are computed correctly using the
@@ -1157,32 +1034,6 @@ class TestOrbitalRotation:
         total = lambda phi: 1.1 * circuit_0(phi) + 0.7 * circuit_1(phi)
 
         assert np.allclose(qp.grad(total)(phi), self.expected_grad_fn(phi))
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
-    @pytest.mark.parametrize(
-        ("phi"),
-        [-0.1, 0.1421],
-    )
-    def test_tf_grad(self, phi, diff_method):
-        """Tests that gradients are computed correctly using the
-        tensorflow interface"""
-
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit")
-
-        circuit_0 = qp.QNode(self.grad_circuit_0, dev, interface="tf", diff_method=diff_method)
-        circuit_1 = qp.QNode(self.grad_circuit_1, dev, interface="tf", diff_method=diff_method)
-        total = lambda phi: 1.1 * circuit_0(phi) + 0.7 * circuit_1(phi)
-
-        phi_t = tf.Variable(phi, dtype=tf.float64)
-        with tf.GradientTape() as tape:
-            res = total(phi_t)
-
-        grad = tape.gradient(res, phi_t)
-
-        assert np.allclose(grad, self.expected_grad_fn(phi))
 
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
@@ -1366,37 +1217,6 @@ class TestFermionicSWAP:
             return qp.expval(qp.PauliZ(0))
 
         assert np.allclose(qp.grad(circuit)(phi), np.sin(phi))
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
-    @pytest.mark.parametrize(
-        ("phi"),
-        [
-            -0.1,
-            0.2,
-            np.pi / 4,
-        ],
-    )
-    def test_tf(self, phi, diff_method):
-        """Tests that gradients and operations are computed correctly using the
-        tensorflow interface"""
-
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit")
-
-        @qp.qnode(dev, diff_method=diff_method, interface="tf")
-        def circuit(phi):
-            qp.PauliX(wires=0)
-            qp.FermionicSWAP(phi, wires=[0, 1])
-            return qp.expval(qp.PauliZ(0))
-
-        phi_t = tf.Variable(phi, dtype=tf.float64)
-        with tf.GradientTape() as tape:
-            res = circuit(phi_t)
-
-        grad = tape.gradient(res, phi_t)
-        assert np.allclose(grad, np.sin(phi))
 
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ["parameter-shift", "backprop"])
