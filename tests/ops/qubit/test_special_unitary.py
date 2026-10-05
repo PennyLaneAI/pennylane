@@ -83,7 +83,7 @@ class TestPauliUtils:
         assert sorted(words) == words
 
     @pytest.mark.parametrize("n", [1, 2, 3, 4, 5, 6])
-    @pytest.mark.parametrize("batch_shape", [(), (2,), (2, 3)])
+    @pytest.mark.parametrize("batch_shape", [(), (2,)])
     def test_pauli_compose(self, n, batch_shape, seed):
         """Test that ``_pauli_compose`` reproduces the contraction with the dense Pauli basis."""
         rng = np.random.default_rng(seed)

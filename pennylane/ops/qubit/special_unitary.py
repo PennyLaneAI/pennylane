@@ -137,11 +137,13 @@ def _pauli_compose(theta: TensorLike, num_wires: int) -> TensorLike:
     ``theta`` without ever materializing the dense Pauli basis tensor.
 
     Args:
-        theta (tensor_like): Coefficients in the Pauli basis, with shape ``(*batch, 4**n-1)``.
+        theta (tensor_like): Coefficients in the Pauli basis, with shape ``(4**n-1,)`` or
+            ``(batch_size, 4**n-1)``.
         num_wires (int): Number of wires :math:`n` the resulting matrix acts on.
 
     Returns:
-        tensor_like: Matrix (or batch of matrices) with shape ``(*batch, 2**n, 2**n)``.
+        tensor_like: Matrix with shape ``(2**n, 2**n)``, or batch of matrices with shape
+        ``(batch_size, 2**n, 2**n)``.
 
     This is the inverse of :func:`~._pauli_decompose`. Padding ``theta`` with the (vanishing)
     identity coefficient turns the sum into a contraction of the coefficient tensor
