@@ -495,15 +495,13 @@ def _pauli_rot_resources(theta, pauli_word, wires):  # pylint: disable=unused-ar
         # a pure-Z word needs no basis change, so there is nothing to conjugate
         return {qp.MultiRZ(Float, Wire[num_active_wires]): 1}
 
-    # X and Y basis changes are Y and X rotations by ``∓π/2`` and ``±π/2``, respectively.
-    # The compute and uncompute bases differ only in the sign of those rotations.
+    # A Y is an X rotation by ``±π/2``, i.e. ``PPR(±4, "X")``; an X uses a Hadamard.
+    # Hadamard is required here: a ``PPR`` on Y decomposes back into ``PauliRot``, which
+    # would cycle with the Y basis change. The compute and uncompute bases differ only
+    # in the sign of the Y rotation.
     def _basis(denominator):
         gates = tuple(
-            qp.PPR(
-                (1 if gate == "Y" else -1) * denominator,
-                "X" if gate == "Y" else "Y",
-                wires=Wire[1],
-            )
+            qp.Hadamard(wires=Wire[1]) if gate == "X" else qp.PPR(denominator, "X", wires=Wire[1])
             for gate in basis_word
         )
         # a single-gate basis change is not wrapped in a product
@@ -535,7 +533,7 @@ def _pauli_rot_decomposition(theta: TensorLike, pauli_word: str, wires: WiresLik
     def _apply_basis_change(denominator):
         for wire, gate in zip(active_wires, active_gates, strict=True):
             if gate == "X":
-                qp.PPR(-denominator, "Y", wires=[wire])
+                qp.Hadamard(wires=[wire])
             elif gate == "Y":
                 qp.PPR(denominator, "X", wires=[wire])
 
