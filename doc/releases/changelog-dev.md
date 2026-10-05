@@ -8,6 +8,7 @@
   It is a catalytic state for (generalized) rotation gates.
   See the [compilation hub](https://pennylane.ai/compilation/phase-gradient/) for more details on the state and how to use it in rotations.
   [(#10227)](https://github.com/PennyLaneAI/pennylane/pull/10227)
+  [(#10227)](https://github.com/PennyLaneAI/pennylane/pull/10227)
 
   ```pycon
   import pennylane as qp
@@ -19,6 +20,11 @@
   4: ──H──Rϕ(-0.20)─┤
 
   ```
+  
+  The operation also has a gridsynth-based decomposition into :class:`~.PPR` operators on up to
+  30 wires, consisting of :math:`\pm\pi/8` PPRs, at most one Clifford PPR per wire, and a
+  :class:`~.GlobalPhase`. It approximates the phase gradient state on 30 wires to 
+  precision :math:`10^{-12}` (in 2-norm).
 
 * Added a `qp.math.floor_log2` function that computes the integer :math:`\lfloor \log_2(x)\rfloor`,
   in analogy to the existing `qp.math.ceil_log2`.
