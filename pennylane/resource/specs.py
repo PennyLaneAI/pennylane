@@ -20,6 +20,8 @@ from collections import defaultdict
 from collections.abc import Callable, Iterable
 from functools import partial
 
+from pennylane.workflow import QNode
+
 from ._utils import (
     apply_partial_args,
     build_circuit_specs,
@@ -462,7 +464,7 @@ def specs(
     """
     qnode, partial_args, partial_kwargs = unwrap_partial(qnode)
 
-    if isinstance(qnode, qp.QNode):
+    if isinstance(qnode, QNode):
         raise ValueError(
             "qp.specs no longer supports being applied to a bare QNode; it must be applied to "
             "a qjit'd QNode. Instead, apply qp.qjit to the QNode first or consider "
