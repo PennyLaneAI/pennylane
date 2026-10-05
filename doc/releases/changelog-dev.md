@@ -1708,6 +1708,10 @@
   permuted.
   [(#10121)](https://github.com/PennyLaneAI/pennylane/pull/10121)
 
+* Differentiating mid-circuit measurements using ``mcm_method="tree-traversal"`` and ``shots=None`` with
+  backpropagation on ``default.qubit`` now raises a clear ``DeviceError`` instead of an ``ArrayBox`` ``TypeError``.
+  [(#6541)](https://github.com/PennyLaneAI/pennylane/issues/6541)
+
 * Fixed a bug where a fixed decomposition rule assigned to :class:`~.MultiControlledX` via the
   ``fixed_decomps`` keyword argument of :func:`~.transforms.decompose` was being ignored.
   This does not apply to ``qjit(capture=True)``.
