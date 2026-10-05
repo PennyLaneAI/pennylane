@@ -16,44 +16,24 @@
 from pennylane.allocation import allocate
 from pennylane.core.operator import Operator2
 from pennylane.decomposition import add_decomps, register_resources
-from pennylane.ops import CNOT, adjoint, ctrl
+from pennylane.ops import CNOT, ctrl
 from pennylane.ops.op_math.controlled2 import flip_zero_control as flip_zero_control2
 from pennylane.typing import Wire
 from pennylane.wires import Wires, WiresLike, validate_no_wire_overlaps
 
+from .adder_blocks import (
+    CtrlRightFullAdder,
+    CtrlRightHalfAdder,
+    LeftFullAdder,
+    RightFullAdder,
+    RightHalfAdder,
+)
 from .temporary_and import TemporaryAND
 
 
-def _left_block(wires: list):
-    """Left full adder unit. Wires are input carry, input bit, target bit and output carry."""
-    ck, ik, tk, aux = wires
-    CNOT([ck, ik])
-    CNOT([ck, tk])
-    TemporaryAND([ik, tk, aux])
-    CNOT([ck, aux])
-
-
-_left_block_zeroed = TemporaryAND
-"""Left half adder unit. Wires are input carry, target bit and output carry."""
-
-
-def _right_block(wires: list):
-    """Right full adder unit. Wires are input carry, input bit, target bit and output carry."""
-    ck, ik, tk, aux = wires
-    CNOT([ck, aux])
-    adjoint(TemporaryAND([ik, tk, aux]))
-    CNOT([ck, ik])
-    CNOT([ik, tk])
-
-
-def _right_block_zeroed(wires: list):
-    """Right half adder unit. Wires are input carry, target bit and output carry."""
-    adjoint(TemporaryAND(wires))
-    CNOT(wires[:2])
-
-
-def _left_ladder(x_wires, y_wires, work_wires, carry_flip=None, skip_input_pos=None):
-    """Implement a ladder formed from the left block in figure 2, https://arxiv.org/pdf/1709.06648.
+def _left_ladder(x_wires, y_wires, work_wires, skip_input_pos):
+    """Implement the bit positions ``1`` to ``len(y_wires) - 2`` of the ladder formed from the
+    left blocks in figure 2, https://arxiv.org/pdf/1709.06648.
 
     Args:
         x_wires(WiresLike): Wires encoding the integer :math:`x` to be added onto :math:`y`.
@@ -61,33 +41,34 @@ def _left_ladder(x_wires, y_wires, work_wires, carry_flip=None, skip_input_pos=N
         y_wires(WiresLike): Wires encoding the integer :math:`y` onto which :math:`x` is added.
             Must be in non-PennyLane ordering, i.e., little endian.
         work_wires(WiresLike): Work wires for the addition.
-        carry_flip(Callable[[Wire], None], optional): if given, called with ``work_wires[0]``
-            right after it is computed, to simulate a ``1`` input carry (see
-            ``_adder_flipped_first_work_wire`` and ``_c_subtract_then_add_one``).
+        skip_input_pos (set[int]): Set of input qubit positions at which no qubit from ``x_wires``
+            is used. Instead, a fixed zeroed input is assumed, and all subsequent input qubits
+            from ``x_wires`` are shifted to the next (not skipped) position.
+
+    Returns:
+        int: The position in ``x_wires`` of the input bit for the most significant bit.
     """
     num_y_wires = len(y_wires)
-
-    TemporaryAND([x_wires[0], y_wires[0], work_wires[0]])
-    if carry_flip is not None:
-        carry_flip(work_wires[0])
 
     x_pos = 1
     for i in range(1, num_y_wires - 1):
         if i in skip_input_pos:
             # For a skipped input position, we don't have an input bit in x, so we just
             # need to propagate the carry over y
-            _left_block_zeroed([work_wires[i - 1], y_wires[i], work_wires[i]])
+            TemporaryAND([work_wires[i - 1], y_wires[i], work_wires[i]])
         else:
             # Add the bit of x as well as the previous carry to the bit of y, and compute
             # the next carry
-            _left_block([work_wires[i - 1], x_wires[x_pos], y_wires[i], work_wires[i]])
+            LeftFullAdder([work_wires[i - 1], x_wires[x_pos], y_wires[i], work_wires[i]])
             x_pos += 1
 
     return x_pos
 
 
-def _right_ladder(x_wires, y_wires, work_wires, carry_flip=None, skip_input_pos=None):
-    """Implement a ladder formed from the right block in figure 2, https://arxiv.org/pdf/1709.06648.
+def _right_ladder(x_wires, y_wires, work_wires, skip_input_pos, ctrl_kwargs=None):
+    """Implement the bit positions ``len(y_wires) - 2`` to ``1`` of the ladder formed from the
+    right blocks in figure 2 (or figure 4 if ``ctrl_kwargs`` are given),
+    https://arxiv.org/pdf/1709.06648.
 
     Args:
         x_wires(WiresLike): Wires encoding the integer :math:`x` to be added onto :math:`y`.
@@ -95,12 +76,9 @@ def _right_ladder(x_wires, y_wires, work_wires, carry_flip=None, skip_input_pos=
         y_wires(WiresLike): Wires encoding the integer :math:`y` onto which :math:`x` is added.
             Must be in non-PennyLane ordering, i.e., little endian.
         work_wires(WiresLike): Work wires for the addition.
-        carry_flip(Callable[[Wire], None], optional): if given, called with ``work_wires[0]``
-            right before it is uncomputed, undoing the flip applied by ``_left_ladder``'s own
-            ``carry_flip`` (see ``_adder_flipped_first_work_wire`` and ``_c_subtract_then_add_one``).
-        skip_input_pos (set[int]): Set of input qubit positions at which no qubit from ``x_wires``
-            is used. Instead, a fixed zeroed input is assumed, and all subsequent input qubits
-            from ``x_wires`` are shifted to the next (not skipped) position.
+        skip_input_pos (set[int]): See ``_left_ladder``.
+        ctrl_kwargs (dict | None): If given, the sum bits are written controlled, using the
+            ``control_wires``, ``work_wires`` and ``work_wire_type`` from this dictionary.
     """
     num_y_wires = len(y_wires)
     # This is x_pos as computed by _left_ladder, minus one.
@@ -110,63 +88,27 @@ def _right_ladder(x_wires, y_wires, work_wires, carry_flip=None, skip_input_pos=
         if i in skip_input_pos:
             # For these bits, we don't have any bits in x, we only need to uncompute the
             # carry propagation
-            _right_block_zeroed([work_wires[i - 1], y_wires[i], work_wires[i]])
+            _right_half_block([work_wires[i - 1], y_wires[i], work_wires[i]], ctrl_kwargs)
         else:
             # Uncompute the carry and the addition of the bit of x and the next
             # less-significant carry into the bit of y.
-            _right_block([work_wires[i - 1], x_wires[x_pos], y_wires[i], work_wires[i]])
+            wires = [work_wires[i - 1], x_wires[x_pos], y_wires[i], work_wires[i]]
+            _right_full_block(wires, ctrl_kwargs)
             x_pos -= 1
 
-    if carry_flip is not None:
-        carry_flip(work_wires[0])
-    adjoint(TemporaryAND([x_wires[0], y_wires[0], work_wires[0]]))
-    CNOT([x_wires[0], y_wires[0]])
+
+def _right_full_block(wires, ctrl_kwargs=None):
+    if ctrl_kwargs is None:
+        RightFullAdder(wires)
+    else:
+        CtrlRightFullAdder(wires=wires, **ctrl_kwargs)
 
 
-def _ctrl_right_block_zeroed(wires, **ctrl_kwargs):
-    ck, tk, aux = wires
-    adjoint(TemporaryAND([ck, tk, aux]))
-    ctrl(CNOT(wires=[ck, tk]), **ctrl_kwargs)
-
-
-def _ctrl_right_block(wires, **ctrl_kwargs):
-    ck, ik, tk, aux = wires
-    CNOT([ck, aux])
-    adjoint(TemporaryAND([ik, tk, aux]))
-    ctrl(CNOT(wires=[ik, tk]), **ctrl_kwargs)
-    CNOT([ck, tk])
-    CNOT([ck, ik])
-
-
-def _controlled_right_ladder(x_wires, y_wires, non_ctrl_work_wires, carry_flip=None, **ctrl_kwargs):
-    """Implement a ladder formed from the right block in figure 4, https://arxiv.org/pdf/1709.06648.
-
-    Args:
-        x_wires(WiresLike): Wires encoding the integer :math:`x` to be added onto :math:`y`.
-            Must be in non-PennyLane ordering, i.e., little endian.
-        y_wires(WiresLike): Wires encoding the integer :math:`y` onto which :math:`x` is added.
-            Must be in non-PennyLane ordering, i.e., little endian.
-        work_wires(WiresLike): Work wires for the addition.
-        carry_flip(Callable[[Wire], None], optional): see ``_right_ladder``.
-    """
-    # We need to use a different name for this variable in the function signature because
-    # work_wires is a key in ctrl_kwargs. This allows us to keep passing ctrl_kwargs around as
-    # a convenient variable. Here we rename the variable passed to the function to work_wires,
-    # in order to be more consistent with `_left_ladder` and `_right_ladder`.
-    work_wires = non_ctrl_work_wires
-    num_x_wires = len(x_wires)
-    num_y_wires = len(y_wires)
-    crossover = min(num_y_wires - 1, num_x_wires)
-
-    for i in range(len(y_wires) - 2, crossover - 1, -1):
-        _ctrl_right_block_zeroed([work_wires[i - 1], y_wires[i], work_wires[i]], **ctrl_kwargs)
-    for i in range(crossover - 1, 0, -1):
-        _ctrl_right_block([work_wires[i - 1], x_wires[i], y_wires[i], work_wires[i]], **ctrl_kwargs)
-
-    if carry_flip is not None:
-        carry_flip(work_wires[0])
-    adjoint(TemporaryAND([x_wires[0], y_wires[0], work_wires[0]]))
-    ctrl(CNOT([x_wires[0], y_wires[0]]), **ctrl_kwargs)
+def _right_half_block(wires, ctrl_kwargs=None):
+    if ctrl_kwargs is None:
+        RightHalfAdder(wires)
+    else:
+        CtrlRightHalfAdder(wires=wires, **ctrl_kwargs)
 
 
 class SemiAdder(Operator2):
@@ -293,23 +235,23 @@ def _semi_adder_resources(x_wires, y_wires, work_wires=None, skip_input_pos=None
     # Process skip_input_pos into standard format, taking
     # size of x_wires into account
     skip_input_pos = _effective_skip_input_pos(num_x_wires, num_y_wires, skip_input_pos)
-    num_elbows = num_y_wires - 1
+    num_half_blocks, num_full_blocks = _num_ladder_blocks(num_y_wires, skip_input_pos)
     # Determine whether the second CNOT in the middle of the decomposition is present
     second_middle_cnot = int((num_y_wires - 1) not in skip_input_pos)
-    # The number of zeroed blocks is given by skip_input_pos, except for the value
-    # `num_y_wires-1`, which does not modify a block but the second middle CNOT
-    num_zeroed_blocks = max(len(skip_input_pos) - (1 - second_middle_cnot), 0)
-    # There are num_y_wires-2 blocks in total, not counting the initial half adder
-    # and the middle CNOTs
-    num_nonzeroed_blocks = max((num_y_wires - 2) - num_zeroed_blocks, 0)
-    # each _left_block uses 3 CNOTs, each _left_block_zeroed none
-    # each _right_block uses 3 CNOTs, each _right_block_zeroed just 1 CNOT
-    # the remaining construction uses 2 + int(num_y_wires-1 not in skip_input_pos) CNOTs
+    # The least significant bit position is always a half adder, with x_wires[0] as carry
     return {
-        TemporaryAND: num_elbows,
-        adjoint(TemporaryAND(Wire[3])): num_elbows,
-        CNOT: num_zeroed_blocks + 6 * num_nonzeroed_blocks + 2 + second_middle_cnot,
+        TemporaryAND: num_half_blocks + 1,
+        LeftFullAdder: num_full_blocks,
+        RightFullAdder: num_full_blocks,
+        RightHalfAdder: num_half_blocks + 1,
+        CNOT: 1 + second_middle_cnot,
     }
+
+
+def _num_ladder_blocks(num_y_wires, skip_input_pos):
+    """The number of half and full adder blocks in ``_left_ladder`` (or ``_right_ladder``)."""
+    num_half_blocks = sum(i in skip_input_pos for i in range(1, num_y_wires - 1))
+    return num_half_blocks, num_y_wires - 2 - num_half_blocks
 
 
 # pylint: disable-next=unused-argument
@@ -349,22 +291,22 @@ def _semi_adder(x_wires, y_wires, work_wires=None, carry_flip=None, skip_input_p
         y_wires = y_wires[::-1]
         work_wires = work_wires[: num_y_wires - 1][::-1]
 
-        x_pos = _left_ladder(
-            x_wires, y_wires, work_wires, carry_flip=carry_flip, skip_input_pos=skip_input_pos
-        )
+        TemporaryAND([x_wires[0], y_wires[0], work_wires[0]])
+        if carry_flip is not None:
+            carry_flip(work_wires[0])
+
+        x_pos = _left_ladder(x_wires, y_wires, work_wires, skip_input_pos)
 
         CNOT([work_wires[-1], y_wires[-1]])
 
         if num_y_wires - 1 not in skip_input_pos:
             CNOT([x_wires[x_pos], y_wires[-1]])
 
-        _right_ladder(
-            x_wires,
-            y_wires,
-            work_wires,
-            carry_flip=carry_flip,
-            skip_input_pos=skip_input_pos,
-        )
+        _right_ladder(x_wires, y_wires, work_wires, skip_input_pos)
+
+        if carry_flip is not None:
+            carry_flip(work_wires[0])
+        RightHalfAdder([x_wires[0], y_wires[0], work_wires[0]])
 
 
 add_decomps(SemiAdder, _semi_adder)
@@ -395,36 +337,30 @@ def _ctrl_semi_adder_resource(base, control_wires, control_values, work_wires, w
     # are available, in addition to any extra work_wires passed to `ctrl`, to the ctrl-CNOTs.
     # Clamped at 0: if the base has too few, the ladders allocate and none are left over here.
     num_work_wires = num_extra_work_wires + max(len(base_work_wires) - (num_y_wires - 1), 0)
+    ctrl_cnot = ctrl(
+        CNOT(Wire[2]),
+        Wire[num_control_wires],
+        work_wires=Wire[num_work_wires],
+        work_wire_type=work_wire_type,
+    )
 
     if num_y_wires == 1:
-        return {
-            ctrl(
-                CNOT(Wire[2]),
-                Wire[num_control_wires],
-                work_wires=Wire[num_work_wires],
-                work_wire_type=work_wire_type,
-            ): 1
-        }
+        return {ctrl_cnot: 1}
 
-    crossover = min(num_y_wires - 1, num_x_wires)
-
-    # _left_ladder uses (num_y_wires - 1) TemporaryANDs
-    # and 3 * (crossover - 1) CNOTs
-    # _controlled_right_ladder uses (num_y_wires - 1) TemporaryANDs, (num_y_wires - 1) controlled
-    # CNOTs, and 3 * (crossover - 1) CNOTs.
-    # There are 1 + int(num_x_wires>=num_y_wires) additional ctrl-CNOTs in the main function
-    num_cnots = 6 * (crossover - 1)
-    num_ctrl_cnots = num_y_wires + int(num_x_wires >= num_y_wires)
+    skip_input_pos = _effective_skip_input_pos(num_x_wires, num_y_wires, [])
+    num_half_blocks, num_full_blocks = _num_ladder_blocks(num_y_wires, skip_input_pos)
+    second_middle_cnot = int((num_y_wires - 1) not in skip_input_pos)
+    ctrl_block_kwargs = {
+        "control_wires": Wire[num_control_wires],
+        "work_wires": Wire[num_work_wires],
+        "work_wire_type": work_wire_type,
+    }
     return {
-        TemporaryAND: num_y_wires - 1,
-        adjoint(TemporaryAND(Wire[3])): num_y_wires - 1,
-        CNOT: num_cnots,
-        ctrl(
-            CNOT(Wire[2]),
-            Wire[num_control_wires],
-            work_wires=Wire[num_work_wires],
-            work_wire_type=work_wire_type,
-        ): num_ctrl_cnots,
+        TemporaryAND: num_half_blocks + 1,
+        LeftFullAdder: num_full_blocks,
+        CtrlRightFullAdder(wires=Wire[4], **ctrl_block_kwargs): num_full_blocks,
+        CtrlRightHalfAdder(wires=Wire[3], **ctrl_block_kwargs): num_half_blocks + 1,
+        ctrl_cnot: 1 + second_middle_cnot,
     }
 
 
@@ -439,10 +375,13 @@ def _controlled_semi_adder(
     work_wires=None,
     work_wire_type="borrowed",
     carry_flip=None,
-):  # pylint: disable=too-many-arguments
+):  # pylint: disable=too-many-arguments,unused-argument
     r"""
     Decomposition extracted from `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_
     using building block described in Figure 4.
+
+    ``control_values`` are ignored, i.e., all control values are assumed to be ``1``. This rule
+    is registered wrapped in ``flip_zero_control``, which takes care of zero-valued controls.
     """
     y_wires = base.y_wires
     x_wires = base.x_wires
@@ -457,18 +396,15 @@ def _controlled_semi_adder(
     with allocate(num_to_allocate, restored=True) as alloc_work_wires:
         base_work_wires += list(alloc_work_wires)
         work_wires = [] if work_wires is None else work_wires
-        ctrl_work_wires = Wires.all_wires([work_wires, extra_work_wires_from_base])
         ctrl_kwargs = {
-            "control": control_wires,
-            "control_values": control_values,
-            "work_wires": ctrl_work_wires,
+            "control_wires": control_wires,
+            "work_wires": Wires.all_wires([work_wires, extra_work_wires_from_base]),
             "work_wire_type": work_wire_type,
         }
 
         num_y_wires = len(y_wires)
-        num_x_wires = len(x_wires)
         if num_y_wires == 1:
-            ctrl(CNOT([x_wires[-1], y_wires[0]]), **ctrl_kwargs)
+            _ctrl_cnot([x_wires[-1], y_wires[0]], ctrl_kwargs)
             return
 
         # Turn wires from big endian to little endian
@@ -477,16 +413,31 @@ def _controlled_semi_adder(
         y_wires = y_wires[::-1]
         work_wires = base_work_wires[::-1]
 
-        skip_input_pos = _effective_skip_input_pos(len(x_wires), len(y_wires), [])
-        _left_ladder(
-            x_wires, y_wires, work_wires, carry_flip=carry_flip, skip_input_pos=skip_input_pos
-        )
+        skip_input_pos = _effective_skip_input_pos(len(x_wires), num_y_wires, [])
+        TemporaryAND([x_wires[0], y_wires[0], work_wires[0]])
+        if carry_flip is not None:
+            carry_flip(work_wires[0])
 
-        ctrl(CNOT([work_wires[-1], y_wires[-1]]), **ctrl_kwargs)
-        if num_x_wires >= num_y_wires:
-            ctrl(CNOT([x_wires[-1], y_wires[-1]]), **ctrl_kwargs)
+        x_pos = _left_ladder(x_wires, y_wires, work_wires, skip_input_pos)
 
-        _controlled_right_ladder(x_wires, y_wires, work_wires, carry_flip=carry_flip, **ctrl_kwargs)
+        _ctrl_cnot([work_wires[-1], y_wires[-1]], ctrl_kwargs)
+        if num_y_wires - 1 not in skip_input_pos:
+            _ctrl_cnot([x_wires[x_pos], y_wires[-1]], ctrl_kwargs)
+
+        _right_ladder(x_wires, y_wires, work_wires, skip_input_pos, ctrl_kwargs)
+
+        if carry_flip is not None:
+            carry_flip(work_wires[0])
+        _right_half_block([x_wires[0], y_wires[0], work_wires[0]], ctrl_kwargs)
+
+
+def _ctrl_cnot(wires, ctrl_kwargs):
+    ctrl(
+        CNOT(wires),
+        ctrl_kwargs["control_wires"],
+        work_wires=ctrl_kwargs["work_wires"],
+        work_wire_type=ctrl_kwargs["work_wire_type"],
+    )
 
 
 add_decomps("C(SemiAdder)", flip_zero_control2(_controlled_semi_adder))
@@ -500,25 +451,30 @@ def _self_ctrl_one_sparse_add_resources(
         return {CNOT: 1}
 
     skip_input_pos = _effective_skip_input_pos(num_x_wires, num_y_wires, skip_input_pos=[1])
-    num_elbows = num_y_wires - 1 - int(first_and_is_output_copy)
-    num_blocks = num_y_wires - 2
+    num_half_blocks, num_full_blocks = _num_ladder_blocks(num_y_wires, skip_input_pos)
     second_middle_cnot = int(num_y_wires - 1 not in skip_input_pos)
-    num_zeroed_blocks = len(skip_input_pos) - (1 - second_middle_cnot)
-    # each _left_block uses 3 CNOTs, each _left_block_zeroed none
-    # each _ctrl_right_block uses 3 CNOTs, each _right_block_zeroed none
-    # each _ctrl_right_block or _ctrl_right_block_zeroed uses 1 ctrl(CNOT)
-    # the remaining construction uses 1 CNOT and 1 + second_middle_cnot ctrl(CNOT)s
+    ctrl_kwargs = {
+        "control_wires": Wire[1],
+        "work_wires": Wire[num_work_wires - (num_y_wires - 1)],
+        "work_wire_type": "zeroed",
+    }
     ccnot_rep = ctrl(
         CNOT(Wire[2]),
         Wire[1],
-        work_wires=Wire[num_work_wires - (num_y_wires - 1)],
+        work_wires=ctrl_kwargs["work_wires"],
         work_wire_type="zeroed",
     )
+    # The least significant bit position either copies y_0 into the work wire twice, or uses
+    # a half adder block pair with x_0 as carry, which is uncontrolled because x_0 is the control.
+    first_is_copy = int(first_and_is_output_copy)
     return {
-        TemporaryAND: num_elbows,
-        adjoint(TemporaryAND(Wire[3])): num_elbows,
-        CNOT: 6 * (num_blocks - num_zeroed_blocks) + 1 + 2 * int(first_and_is_output_copy),
-        ccnot_rep: num_blocks + (1 + second_middle_cnot),
+        TemporaryAND: num_half_blocks + 1 - first_is_copy,
+        RightHalfAdder: 1 - first_is_copy,
+        LeftFullAdder: num_full_blocks,
+        CtrlRightFullAdder(wires=Wire[4], **ctrl_kwargs): num_full_blocks,
+        CtrlRightHalfAdder(wires=Wire[3], **ctrl_kwargs): num_half_blocks,
+        CNOT: 3 * first_is_copy,
+        ccnot_rep: 1 + second_middle_cnot,
     }
 
 
@@ -536,8 +492,7 @@ def _self_ctrl_one_sparse_add(x_wires, y_wires, work_wires, first_and_is_output_
 
     # Set up control structure for controlled ops within decomposition
     ctrl_kwargs = {
-        "control": x_wires[:1],
-        "control_values": [1],
+        "control_wires": x_wires[:1],
         "work_wires": work_wires[num_y_wires - 1 :],  # Pass only additional work qubits
         "work_wire_type": "zeroed",
     }
@@ -551,29 +506,19 @@ def _self_ctrl_one_sparse_add(x_wires, y_wires, work_wires, first_and_is_output_
         CNOT([y_wires[0], work_wires[0]])
     else:
         TemporaryAND([x_wires[0], y_wires[0], work_wires[0]])
-    x_pos = 1
-    for i in range(1, num_y_wires - 1):
-        if i in skip_input_pos:
-            _left_block_zeroed([work_wires[i - 1], y_wires[i], work_wires[i]])
-        else:
-            _left_block([work_wires[i - 1], x_wires[x_pos], y_wires[i], work_wires[i]])
-            x_pos += 1
 
-    ctrl(CNOT([work_wires[-1], y_wires[-1]]), **ctrl_kwargs)
+    x_pos = _left_ladder(x_wires, y_wires, work_wires, skip_input_pos)
+
+    _ctrl_cnot([work_wires[-1], y_wires[-1]], ctrl_kwargs)
     if num_y_wires - 1 not in skip_input_pos:
-        ctrl(CNOT([x_wires[x_pos], y_wires[-1]]), **ctrl_kwargs)
+        _ctrl_cnot([x_wires[x_pos], y_wires[-1]], ctrl_kwargs)
 
-    x_pos -= 1
-    for i in range(num_y_wires - 2, 0, -1):
-        if i in skip_input_pos:
-            _ctrl_right_block_zeroed([work_wires[i - 1], y_wires[i], work_wires[i]], **ctrl_kwargs)
-        else:
-            _wires = [work_wires[i - 1], x_wires[x_pos], y_wires[i], work_wires[i]]
-            _ctrl_right_block(_wires, **ctrl_kwargs)
-            x_pos -= 1
+    _right_ladder(x_wires, y_wires, work_wires, skip_input_pos, ctrl_kwargs)
 
+    # The sum bit write at the least significant position is controlled on x_0 itself, and thus
+    # uncontrolled.
     if first_and_is_output_copy:
         CNOT([y_wires[0], work_wires[0]])
+        CNOT([x_wires[0], y_wires[0]])
     else:
-        adjoint(TemporaryAND([x_wires[0], y_wires[0], work_wires[0]]))
-    CNOT([x_wires[0], y_wires[0]])
+        RightHalfAdder([x_wires[0], y_wires[0], work_wires[0]])

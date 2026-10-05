@@ -613,6 +613,12 @@
 
 <h3>Improvements 🛠</h3>
 
+* The decompositions of :class:`~.SemiAdder`, ``C(SemiAdder)`` and of the arithmetic templates
+  built from the same ripple-carry adder (:class:`~.OutSquare`, :class:`~.OutMultiplier` and
+  :class:`~.SignedOutSquare`) now use internal operators for the left and right adder blocks, so
+  that improved decompositions of these blocks propagate to all of these templates.
+  [(#XXXX)](https://github.com/PennyLaneAI/pennylane/pull/XXXX)
+
 * :func:`~.iterative_qpe` is now captured as a single :func:`~.capture.subroutine` instead of
   falling back to an unrolled ``qp.for_loop``. 
   [(#10220)](https://github.com/PennyLaneAI/pennylane/pull/10220)
