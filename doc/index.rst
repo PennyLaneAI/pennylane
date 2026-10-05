@@ -254,10 +254,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
    code/qp_numpy
    code/qp_ops_op_math
    code/qp_pauli
-   code/qp_pulse
-   code/qp_qaoa
    code/qp_qchem
-   code/qp_qcut
    code/qp_qnn
    code/qp_resource
    code/qp_shadows
