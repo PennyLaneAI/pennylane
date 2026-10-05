@@ -2,6 +2,20 @@
 
 <h3>New features since last release</h3>
 
+* A new function called :func:`~pennylane.backline.onnx_decoder` has been added, which runs an
+  ONNX model on a Backline :class:`~.Coprocessor`, on the GPU the installed onnxruntime supports or
+  on the CPU. See :func:`~pennylane.backline.onnx_decoder` for the supported providers and usage
+  details.
+  [(#10225)](https://github.com/PennyLaneAI/pennylane/pull/10225)
+
+  ```pycon
+  >>> fn = qp.backline.onnx_decoder("predecoder.onnx")  # doctest: +SKIP
+  >>> coproc = qp.Coprocessor(hardware="gpu", coprocessor_fn=fn)  # doctest: +SKIP
+  >>> dev = qp.Backline(  # doctest: +SKIP
+  ...     controller=qp.Controller(), coprocessors=[coproc], transport="memcpy"
+  ... )
+  ```
+
 * Added a `qp.math.floor_log2` function that computes the integer :math:`\lfloor \log_2(x)\rfloor`,
   in analogy to the existing `qp.math.ceil_log2`.
   [(#10101)](https://github.com/PennyLaneAI/pennylane/pull/10101)
@@ -623,22 +637,8 @@
 
   [(#10224)](https://github.com/PennyLaneAI/pennylane/pull/10224)
 
-* A new function, :func:`~pennylane.backline.onnx_decoder`, runs an ONNX model on a Backline
-  :class:`~.Coprocessor`, on the GPU the installed onnxruntime supports or on the CPU.
-
-  .. code-block:: pycon
-
-      >>> fn = qp.backline.onnx_decoder("predecoder.onnx")  # doctest: +SKIP
-      >>> coproc = qp.Coprocessor(hardware="gpu", coprocessor_fn=fn)  # doctest: +SKIP
-      >>> dev = qp.Backline(  # doctest: +SKIP
-      ...     controller=qp.Controller(), coprocessors=[coproc], transport="memcpy"
-      ... )
-
-  See :func:`~pennylane.backline.onnx_decoder` for the supported providers and usage details.
-  [(#10225)](https://github.com/PennyLaneAI/pennylane/pull/10225)
-
-* :class:`~.CoprocessorFunction` gains ``config``, ``per_message`` and ``message_bytes``, and a
-  :class:`~.Controller` that leaves ``in_bytes`` and ``out_bytes`` unset takes the sizes its
+* :class:`~.CoprocessorFunction` now accepts ``config``, ``per_message`` and ``message_bytes``. A
+  :class:`~.Controller` that leaves ``in_bytes`` and ``out_bytes`` unset now takes the sizes its
   coprocessors' functions declare, available as :attr:`~.Placement.in_bytes` and
   :attr:`~.Placement.out_bytes`.
   [(#10225)](https://github.com/PennyLaneAI/pennylane/pull/10225)
