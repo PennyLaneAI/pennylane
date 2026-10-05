@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Adds a tool for annotating things with compiler hints.
+Adds ``qp.hint``, a tool for annotating things with compiler hints.
 """
 
 import functools
