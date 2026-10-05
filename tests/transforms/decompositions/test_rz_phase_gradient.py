@@ -184,8 +184,6 @@ def test_integration_multi_wire(seed):
     phase_grad_wires = qp.wires.Wires([f"qft_{i}" for i in range(prec)])
     work_wires = qp.wires.Wires([f"work_{i}" for i in range(prec - 1)])
 
-    phase_grad_state = np.exp(-1j * 2 * np.pi * np.arange(2**3) / 2**3) / np.sqrt(2**3)
-
     all_wires = angle_wires + phase_grad_wires + work_wires + wires
 
     custom_decomp = make_rz_to_phase_gradient_decomp(angle_wires, phase_grad_wires, work_wires)
@@ -193,7 +191,8 @@ def test_integration_multi_wire(seed):
     @qp.transforms.decompose(
         gate_set={
             "StatePrep",
-            "Adjoint(StatePrep)",
+            "PhaseGradientStatePrep",
+            "Adjoint(PhaseGradientStatePrep)",
             "SemiAdder",
             "CNOT",
             "PauliX",
@@ -204,16 +203,14 @@ def test_integration_multi_wire(seed):
     @qp.qnode(qp.device("default.qubit", wires=all_wires))
     def circuit(phi, in_state):
         qp.StatePrep(in_state, wires=wires)  # input state
-        qp.StatePrep(phase_grad_state, wires=phase_grad_wires)  # phase gradient state
+        qp.PhaseGradientStatePrep(phase_grad_wires)  # phase gradient state
         qp.RZ(phi, wires)
-        qp.adjoint(
-            qp.StatePrep(phase_grad_state, wires=phase_grad_wires)
-        )  # uncompute phase gradient state
+        qp.adjoint(qp.PhaseGradientStatePrep(phase_grad_wires))  # uncompute phase gradient state
         return qp.state()
 
     # random input state
     rng = np.random.default_rng(seed=seed)
-    in_state = rng.random(2 ** len(wires))
+    in_state = rng.random(2 ** len(wires)) + 1j * rng.random(2 ** len(wires))
     in_state /= np.linalg.norm(in_state)
 
     # returned output state
