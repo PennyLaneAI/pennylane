@@ -71,14 +71,6 @@ Pending deprecations
   - Deprecated in v0.43
   - Will be removed in a future version
 
-* Maintenance support for the ``tensorflow`` interface has been deprecated and will be dropped in PennyLane v0.44.
-  Future versions of PennyLane are not guaranteed to work with TensorFlow.
-  Instead, we recommend using the :doc:`jax </introduction/interfaces/jax>` or :doc:`torch </introduction/interfaces/torch>` interface for
-  machine learning applications to benefit from enhanced support and features.
-
-  - Deprecated in v0.43
-  - Will be removed in v0.44
-
 Completed removal of legacy operator arithmetic
 -----------------------------------------------
 
@@ -116,9 +108,38 @@ Completed deprecation cycles
   
   - Removed in releases after v0.45
 
-* The ``pennylane.noise`` module has been removed, including ``NoiseModel``, ``add_noise``,
-  ``insert``, noise mitigation transforms, and ``from_qiskit_noise``. Noise channels such as
-  :class:`~.AmplitudeDamping` are unaffected.
+* The ``pennylane.qaoa`` module has been removed, including the mixer Hamiltonians
+  (``x_mixer``, ``xy_mixer``, ``bit_flip_mixer``), the cost Hamiltonians (``maxcut``,
+  ``max_independent_set``, ``min_vertex_cover``, ``max_clique``, ``max_weight_cycle``,
+  ``bit_driver``, ``edge_driver``), the ansatz layers (``cost_layer``, ``mixer_layer``)
+  and the ``pennylane.qaoa.cycle`` helpers. :class:`~.QAOAEmbedding` is unaffected.
+  
+  - Removed in releases after v0.45
+
+* Maintenance support for the ``tensorflow`` interface has been removed. Future versions of 
+* The ``pennylane.pulse`` module has been removed. This includes ``ParametrizedHamiltonian`` and
+  ``ParametrizedEvolution``, as well as the ``stoch_pulse_grad`` and ``pulse_odegen``
+  pulse-level gradient transforms.
+
+  - Removed in releases after v0.45
+
+* The ``pennylane.fourier`` module has been removed. This includes ``circuit_spectrum``, ``coefficients``,
+  ``qnode_spectrum``, ``mark``, ``get_spectrum``, ``join_spectra`` and the
+  ``qp.fourier.visualize`` plotting functions. Also, ``qp.fourier.reconstruct`` has moved to
+  ``pennylane.optimize.reconstruct``.
+
+  - Removed in releases after v0.45
+
+* Maintenance support for the ``tensorflow`` interface has been removed. Future versions of
+  PennyLane will not work with TensorFlow. Instead, we recommend using the
+  :doc:`jax </introduction/interfaces/jax>` or :doc:`torch </introduction/interfaces/torch>` interface for
+  machine learning applications to benefit from enhanced support and features.
+
+  - Deprecated in v0.43
+  - Removed in releases after v0.45
+
+* The ``pennylane.qcut`` module, including ``pennylane.cut_circuit``,
+  ``pennylane.cut_circuit_mc``, and the ``WireCut`` operator, has been removed.
 
   - Removed in releases after v0.45
 
@@ -161,7 +182,7 @@ Completed deprecation cycles
   - Deprecated in v0.45
   - Removed in v0.46
 
-* The ``id`` keyword argument to :class:`~.ops.MidMeasure` has been renamed to ``meas_uid``. 
+* The ``id`` keyword argument to :class:`~.ops.MidMeasure` has been renamed to ``meas_uid``.
 
   - Deprecated in v0.45
   - Removed in v0.46

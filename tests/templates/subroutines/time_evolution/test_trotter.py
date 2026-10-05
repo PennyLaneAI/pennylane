@@ -718,43 +718,6 @@ class TestIntegration:
         state = circ(time, c1, c2)
         assert allclose(expected_state, state)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("time", (0.5, 1, 2))
-    def test_tf_execute(self, time):
-        """Test that the gate executes correctly in the tensorflow interface."""
-        import tensorflow as tf
-
-        time = tf.Variable(time, dtype=tf.complex128)
-        coeffs = tf.Variable([1.23, -0.45], dtype=tf.complex128)
-        terms = [qp.PauliX(0), qp.PauliZ(0)]
-
-        dev = qp.device("reference.qubit", wires=2)
-
-        @qp.qnode(dev)
-        def circ(time, coeffs):
-            h = qp.sum(
-                qp.s_prod(coeffs[0], terms[0]),
-                qp.s_prod(coeffs[1], terms[1]),
-            )
-            qp.TrotterProduct(h, time, n=2, order=2)
-
-            return qp.state()
-
-        initial_state = tf.Variable([1.0, 0.0, 0.0, 0.0], dtype=tf.complex128)
-
-        expected_product_sequence = _generate_simple_decomp(coeffs, terms, time, order=2, n=2)
-
-        expected_state = tf.linalg.matvec(
-            reduce(
-                lambda x, y: x @ y,
-                [qp.matrix(op, wire_order=range(2)) for op in expected_product_sequence],
-            ),
-            initial_state,
-        )
-
-        state = circ(time, coeffs)
-        assert allclose(expected_state, state)
-
     @pytest.mark.torch
     @pytest.mark.parametrize("time", (0.5, 1, 2))
     def test_torch_execute(self, time):
@@ -888,48 +851,6 @@ class TestIntegration:
         reference_time_grad = time_reference.grad
         reference_coeff_grad = coeffs_reference.grad
 
-        assert allclose(measured_time_grad, reference_time_grad)
-        assert allclose(measured_coeff_grad, reference_coeff_grad)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("order, n", ((1, 1), (1, 2), (2, 1), (4, 1)))
-    def test_tf_gradient(self, order, n):
-        """Test that the gradient is computed correctly using tensorflow"""
-        import tensorflow as tf
-
-        time = tf.Variable(1.5, dtype=tf.complex128)
-        coeffs = tf.Variable([1.23, -0.45], dtype=tf.complex128)
-        terms = [qp.PauliX(0), qp.PauliZ(0)]
-
-        dev = qp.device("default.qubit", wires=1)
-
-        @qp.qnode(dev)
-        def circ(time, coeffs):
-            h = qp.sum(
-                qp.s_prod(coeffs[0], terms[0]),
-                qp.s_prod(coeffs[1], terms[1]),
-            )
-            qp.TrotterProduct(h, time, n=n, order=order)
-            return qp.expval(qp.Hadamard(0))
-
-        @qp.qnode(dev)
-        def reference_circ(time, coeffs):
-            decomp = _generate_simple_decomp(coeffs, terms, time, order, n)
-
-            for op in decomp[::-1]:
-                qp.apply(op)
-
-            return qp.expval(qp.Hadamard(0))
-
-        with tf.GradientTape() as tape:
-            result = circ(time, coeffs)
-
-        measured_time_grad, measured_coeff_grad = tape.gradient(result, (time, coeffs))
-
-        with tf.GradientTape() as tape:
-            result = reference_circ(time, coeffs)
-
-        reference_time_grad, reference_coeff_grad = tape.gradient(result, (time, coeffs))
         assert allclose(measured_time_grad, reference_time_grad)
         assert allclose(measured_coeff_grad, reference_coeff_grad)
 
