@@ -521,7 +521,7 @@ class SpecialUnitary(Operation):
         theta = qp.math.cast_like(theta, 1j)
 
         if num_wires > 5:
-            # The dense Pauli basis tensor has 16**num_wires entries, which becomes prohibitive
+            # The dense Pauli basis tensor has 16**num_wires entries, which becomes expensive
             # beyond five wires. Contracting one wire at a time avoids building it at all.
             A = _pauli_compose(theta, num_wires)
         else:
