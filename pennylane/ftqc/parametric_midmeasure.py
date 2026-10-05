@@ -19,11 +19,12 @@ import hashlib
 import uuid
 from collections.abc import Hashable, Iterable
 from copy import copy
-from functools import lru_cache
 
+import jax
 import numpy as np
 
 from pennylane import capture
+from pennylane.capture.custom_primitives import QpPrimitive
 from pennylane.core.queuing import QueuingManager
 from pennylane.drawer.tape_mpl import _add_operation_to_drawer
 from pennylane.exceptions import QuantumFunctionError
@@ -34,42 +35,24 @@ from pennylane.ops.qubit import RX, RY, H, PhaseShift, S
 from pennylane.transforms import transform
 from pennylane.wires import Wires
 
+measure_in_basis_p = QpPrimitive("measure_in_basis")
 
-@lru_cache(maxsize=1)
-def _create_parametrized_mid_measure_primitive():
-    """Create a primitive corresponding to a parametrized mid-circuit measurement type.
 
-    Called when using a parametrized mid-circuit measurement, such as
-    :func:`~pennylane.measure_arbitrary_basis`.
+@measure_in_basis_p.def_impl
+def _measure_in_basis_prim_impl(wires, angle=0.0, plane="ZX", reset=False, postselect=None):
+    return _measure_impl(
+        wires,
+        measurement_class=ParametricMidMeasure,
+        angle=angle,
+        plane=plane,
+        reset=reset,
+        postselect=postselect,
+    )
 
-    Returns:
-        jax.core.Primitive: A new jax primitive corresponding to a mid-circuit
-        measurement.
 
-    """
-    # pylint: disable=import-outside-toplevel
-    import jax
-
-    from pennylane.capture.custom_primitives import QpPrimitive
-
-    measure_in_basis_p = QpPrimitive("measure_in_basis")
-
-    @measure_in_basis_p.def_impl
-    def _impl(wires, angle=0.0, plane="ZX", reset=False, postselect=None):
-        return _measure_impl(
-            wires,
-            measurement_class=ParametricMidMeasure,
-            angle=angle,
-            plane=plane,
-            reset=reset,
-            postselect=postselect,
-        )
-
-    @measure_in_basis_p.def_abstract_eval
-    def _abstract_eval(*_, **__):
-        return jax.core.ShapedArray((), jax.numpy.bool)
-
-    return measure_in_basis_p
+@measure_in_basis_p.def_abstract_eval
+def _measure_in_basis_prim_abstract_eval(*_, **__):
+    return jax.core.ShapedArray((), jax.numpy.bool)
 
 
 def measure_arbitrary_basis(
@@ -176,8 +159,9 @@ def measure_arbitrary_basis(
         )
 
     if capture.enabled():
-        primitive = _create_parametrized_mid_measure_primitive()
-        return primitive.bind(angle, wires, plane=plane, reset=reset, postselect=postselect)
+        return measure_in_basis_p.bind(
+            angle, wires, plane=plane, reset=reset, postselect=postselect
+        )
 
     return _measure_impl(
         wires, ParametricMidMeasure, angle=angle, plane=plane, reset=reset, postselect=postselect
@@ -227,8 +211,7 @@ def measure_x(
         )
 
     if capture.enabled():
-        primitive = _create_parametrized_mid_measure_primitive()
-        return primitive.bind(0.0, wires, plane="XY", reset=reset, postselect=postselect)
+        return measure_in_basis_p.bind(0.0, wires, plane="XY", reset=reset, postselect=postselect)
 
     return _measure_impl(wires, XMidMeasure, reset=reset, postselect=postselect)
 
@@ -276,8 +259,9 @@ def measure_y(
         )
 
     if capture.enabled():
-        primitive = _create_parametrized_mid_measure_primitive()
-        return primitive.bind(np.pi / 2, wires, plane="XY", reset=reset, postselect=postselect)
+        return measure_in_basis_p.bind(
+            np.pi / 2, wires, plane="XY", reset=reset, postselect=postselect
+        )
 
     return _measure_impl(wires, YMidMeasure, reset=reset, postselect=postselect)
 

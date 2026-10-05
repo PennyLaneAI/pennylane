@@ -17,6 +17,7 @@
 import warnings
 from itertools import product
 
+import jax
 import numpy as np
 from scipy import sparse
 from scipy.linalg import cossin
@@ -507,8 +508,6 @@ def multi_qubit_decomp_rule(U, wires, **__):
 #   other cases, it cannot autodifferentiate through the linalg.eigvals function.
 # - In Torch, it is not currently possible to autodiff through linalg.det for
 #   complex values.
-# - In Tensorflow, it sometimes works in limited cases (0, sometimes 1 CNOT), but
-#   for others it fails without output making it hard to pinpoint the cause.
 # - In JAX, we receive the TypeError:
 #       Can't differentiate w.r.t. type <class 'jaxlib.xla_extension.Array'>
 #
@@ -1123,11 +1122,8 @@ def _compute_udv(a, b):
 
 
 def _cossin_decomposition(U, p):
-    # pylint: disable=import-outside-toplevel
     if math.get_interface(U) == "jax":
         # Wrap scipy's cossin function with pure_callback to make the decomposition compatible with jit
-
-        import jax
 
         def scipy_cossin_callback(U_flat, p):
             dim = int(np.sqrt(U_flat.size))

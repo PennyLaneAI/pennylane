@@ -176,7 +176,6 @@ def test_integration_multi_wire(rot_axis, seed):
     num_work = max(prec, num_controls + 1) - 1
     work_wires = qp.wires.Wires([f"work_{i}" for i in range(num_work)])
 
-    phase_grad_state = np.exp(-1j * 2 * np.pi * np.arange(2**prec) / 2**prec) / np.sqrt(2**prec)
     all_wires = angle_wires + phase_grad_wires + work_wires + qp.wires.Wires(sys_wires)
 
     custom_decomp = make_selectpaulirot_to_phase_gradient_decomp(
@@ -189,8 +188,9 @@ def test_integration_multi_wire(rot_axis, seed):
         "CNOT",
         "PauliX",
         "GlobalPhase",
+        "PhaseGradientStatePrep",
+        "Adjoint(PhaseGradientStatePrep)",
         "StatePrep",
-        "Adjoint(StatePrep)",
     }
 
     # Depending on the rot_axis, additional operators
@@ -209,19 +209,20 @@ def test_integration_multi_wire(rot_axis, seed):
     )
     @qp.qnode(qp.device("default.qubit", wires=all_wires))
     def circuit(in_state):
-        qp.StatePrep(in_state, wires=sys_wires)  # input state
-        qp.StatePrep(phase_grad_state, wires=phase_grad_wires)  # phase gradient state
+        # input state
+        qp.StatePrep(in_state, wires=sys_wires)
+        # phase gradient state
+        qp.PhaseGradientStatePrep(wires=phase_grad_wires)
         qp.SelectPauliRot(
             angles, control_wires=ctrl_wires, target_wire=target_wire, rot_axis=rot_axis
         )
-        qp.adjoint(
-            qp.StatePrep(phase_grad_state, wires=phase_grad_wires)
-        )  # uncompute phase gradient state
+        # uncompute phase gradient state
+        qp.adjoint(qp.PhaseGradientStatePrep(wires=phase_grad_wires))
         return qp.state()
 
     # random input state
     rng = np.random.default_rng(seed)
-    in_state = rng.random(2 ** len(sys_wires))
+    in_state = rng.random(2 ** len(sys_wires)) + 1j * rng.random(2 ** len(sys_wires))
     in_state /= np.linalg.norm(in_state)
 
     # returned output state

@@ -15,7 +15,6 @@
 Contains the QSVT template and qsvt wrapper function.
 """
 
-import copy
 import warnings
 from collections import defaultdict
 from collections.abc import Sequence
@@ -23,14 +22,16 @@ from functools import partial, reduce
 from importlib import import_module, util
 from typing import Literal
 
+import jax
 import numpy as np
 import scipy
+from jax import jacobian, jit, vmap
 from numpy.polynomial import Polynomial, chebyshev
 
 from pennylane import math, ops
-from pennylane.core.operator import Operation, Operator, Operator2, abstractify
+from pennylane.core.operator import Operator, Operator2, abstractify
 from pennylane.core.queuing import QueuingManager, apply
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import CompressedResourceOp, add_decomps, register_resources
 from pennylane.ops.op_math.adjoint2 import _adjoint_abstract
 from pennylane.ops.op_math.change_op_basis2 import _change_op_basis_abstract
 from pennylane.typing import TensorLike
@@ -40,30 +41,12 @@ from .fable import FABLE
 from .prepselprep import PrepSelPrep
 from .qubitization import Qubitization
 
-if util.find_spec("jax") is not None:
-    jax = import_module("jax")
-    is_jax_available = True
-else:  # pragma: no cover
-    is_jax_available = False
-    jax = None
-
 if util.find_spec("optax") is not None:  # pragma: no cover
     optax = import_module("optax")
     is_optax_available = True
 else:
     is_optax_available = False
     optax = None
-
-
-def jit_if_jax_available(f, **kwargs):
-    r"""thin wrapper around jax.jit
-    that jit the function if jax is available
-    otherwise return the input function
-    """
-
-    if is_jax_available:
-        return jax.jit(f, **kwargs)
-    return f  # pragma: no cover
 
 
 def _pauli_rep_process(A, poly, encoding_wires, block_encoding, angle_solver="root-finding"):
@@ -324,7 +307,7 @@ def qsvt(
     return QSVT(encoding, projectors)
 
 
-class QSVT(Operation):
+class QSVT(Operator2):
     r"""QSVT(UA,projectors)
     Implements the
     `quantum singular value transformation <https://arxiv.org/abs/1806.01838>`__ (QSVT) circuit.
@@ -493,62 +476,26 @@ class QSVT(Operation):
                 -2.79501771e-01-4.82849614e-02j,  0.00000000e+00+0.00000000e+00j])
     """
 
+    hybrid_argnames = ("UA", "projectors")
+
+    wire_argnames = ()
+
     grad_method = None
-    """Gradient computation method."""
-
-    def _flatten(self):
-        data = (self.hyperparameters["UA"], self.hyperparameters["projectors"])
-        return data, tuple()
-
-    # pylint: disable=arguments-differ
-    @classmethod
-    def _primitive_bind_call(cls, UA, projectors, **kwargs):  # kwarg is id
-
-        def _get_tracer(op):
-            if isinstance(op, Operator2):
-                if op.tracer is None:
-                    # pylint: disable-next=protected-access
-                    op._bind_primitive()
-                return op.tracer if op.tracer is not None else op
-            return op
-
-        return cls._primitive.bind(_get_tracer(UA), *list(map(_get_tracer, projectors)), **kwargs)
-
-    @classmethod
-    def _unflatten(cls, data, _) -> "QSVT":
-        return cls(*data)
-
-    resource_keys = {"UA", "projectors"}
 
     def __init__(self, UA, projectors):
-        if not isinstance(UA, Operator):
+
+        # CompressedResourceOp is added here defensively because `abstractify` may
+        # turn an Operator1 subclass into a CompressedResourceOp.
+        if not isinstance(UA, (Operator, CompressedResourceOp)):
             raise ValueError("Input block encoding must be an Operator")
 
-        self._hyperparameters = {
-            "UA": UA,
-            "projectors": projectors,
-        }
+        super().__init__(UA, projectors)
 
-        total_wires = Wires.all_wires([proj.wires for proj in projectors]) + Wires(UA.wires)
-
-        super().__init__(wires=total_wires)
-
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "UA": self.hyperparameters["UA"],
-            "projectors": self.hyperparameters["projectors"],
-        }
-
-    def map_wires(self, wire_map: dict):
-        # pylint: disable=protected-access
-        new_op = copy.deepcopy(self)
-        new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        new_op._hyperparameters["UA"] = new_op._hyperparameters["UA"].map_wires(wire_map)
-        new_op._hyperparameters["projectors"] = [
-            proj.map_wires(wire_map) for proj in new_op._hyperparameters["projectors"]
-        ]
-        return new_op
+        # The constructor takes `UA` before `projectors`, but the canonical wire
+        # order is projector wires followed by UA wires. Here we re-calculate the
+        # wires to maintain the same wire order as before.
+        all_wire_args = tuple(op.wires for op in (*projectors, UA) if isinstance(op, Operator))
+        self._wires = Wires.all_wires(all_wire_args)
 
     @property
     def data(self):
@@ -558,154 +505,29 @@ class QSVT(Operation):
         ``QSVT`` operation can be inferred with respect to the types of the
         ``QSVT`` block encoding and projector-controlled phase shift data.
         """
-        return tuple(datum for op in self._operators for datum in op.data)
-
-    def __copy__(self):
-        # Override Operator.__copy__() to avoid setting the "data" property before the new instance
-        # is assigned hyper-parameters since QSVT data is derived from the hyper-parameters.
-        clone = QSVT.__new__(QSVT)
-
-        # Ensure the operators in the hyper-parameters are copied instead of aliased.
-        clone._hyperparameters = {
-            "UA": copy.copy(self._hyperparameters["UA"]),
-            "projectors": list(map(copy.copy, self._hyperparameters["projectors"])),
-        }
-
-        for attr, value in vars(self).items():
-            if attr != "_hyperparameters":
-                setattr(clone, attr, value)
-
-        return clone
+        return tuple(d for op in (self.UA, *self.projectors) for d in getattr(op, "data", ()))
 
     @property
-    def _operators(self) -> list[Operator]:
-        """Flattened list of operators that compose this QSVT operation."""
-        return [self._hyperparameters["UA"], *self._hyperparameters["projectors"]]
-
-    @staticmethod
-    def compute_decomposition(
-        *_data, UA, projectors, **_kwargs
-    ):  # pylint: disable=arguments-differ
-        r"""Representation of the operator as a product of other operators.
-
-        The :class:`~.QSVT` is decomposed into alternating block encoding
-        and projector-controlled phase shift operators. This is defined by the following
-        equations, where :math:`U` is the block encoding operation and both :math:`\Pi_\phi` and
-        :math:`\tilde{\Pi}_\phi` are projector-controlled phase shifts with angle :math:`\phi`.
-
-        When the number of projector-controlled phase shifts is even (:math:`d` is odd), the QSVT
-        circuit is defined as:
-
-        .. math::
-
-            U_{QSVT} = \Pi_{\phi_1}U\left[\prod^{(d-1)/2}_{k=1}\Pi_{\phi_{2k}}U^\dagger
-            \tilde{\Pi}_{\phi_{2k+1}}U\right]\Pi_{\phi_{d+1}}.
+    def num_params(self) -> int:
+        """Number of trainable parameters of the block encoding and projectors."""
+        return sum(getattr(op, "num_params", 0) for op in (self.UA, *self.projectors))
 
 
-        And when the number of projector-controlled phase shifts is odd (:math:`d` is even):
-
-        .. math::
-
-            U_{QSVT} = \left[\prod^{d/2}_{k=1}\Pi_{\phi_{2k-1}}U^\dagger\tilde{\Pi}_{\phi_{2k}}U\right]
-            \Pi_{\phi_{d+1}}.
-
-        .. seealso:: :meth:`~.QSVT.decomposition`.
-
-        Args:
-            UA (Operator): the block encoding circuit, specified as a :class:`~.Operator`
-            projectors (list[Operator]): a list of projector-controlled phase
-                shift circuits that implement the desired polynomial
-
-        Returns:
-            list[.Operator]: decomposition of the operator
-        """
-
-        op_list = []
-
-        op_list.append(projectors[0])
-        if QueuingManager.recording():
-            apply(projectors[0])
-
-        for i in range(1, len(projectors) - 1, 2):
-            op_list.append(ops.change_op_basis(UA, projectors[i]))
-            op_list.append(projectors[i + 1])
-            if QueuingManager.recording():
-                apply(projectors[i + 1])
-
-        if len(projectors) % 2 == 0:
-            op_list.append(UA)
-            op_list.append(projectors[-1])
-            if QueuingManager.recording():
-                apply(UA)
-                apply(projectors[-1])
-
-        return op_list
-
-    def label(self, decimals=None, base_label=None, cache=None):
-        op_label = base_label or self.__class__.__name__
-        return op_label
-
-    def queue(self, context=QueuingManager):
-        context.remove(self._hyperparameters["UA"])
-        for op in self._hyperparameters["projectors"]:
-            context.remove(op)
-        context.append(self)
-        return self
-
-    @staticmethod
-    def compute_matrix(*args, **kwargs):
-        r"""Representation of the operator as a canonical matrix in the computational basis (static method).
-
-        The canonical matrix is the textbook matrix representation that does not consider wires.
-        Implicitly, this assumes that the wires of the operator correspond to the global wire order.
-
-        .. seealso:: :meth:`~.Operator.matrix` and :func:`~.matrix`
-
-        Args:
-            *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
-            **hyperparams (dict): non-trainable hyperparameters of the operator, as stored in the ``hyperparameters`` attribute
-
-        Returns:
-            tensor_like: matrix representation
-        """
-        # pylint: disable=unused-argument
-        op_list = []
-        UA = kwargs["UA"]
-        projectors = kwargs["projectors"]
-
-        # incase this method is called in a queue context, this prevents queuing ops unnecessarily
-        with QueuingManager.stop_recording():
-            UA_copy = copy.copy(UA)
-
-            for idx, op in enumerate(projectors[:-1]):
-                op_list.append(op)
-                if idx % 2 == 0:
-                    op_list.append(UA)
-                else:
-                    op_list.append(ops.adjoint(UA_copy))
-
-            op_list.append(projectors[-1])
-            mat = ops.functions.matrix(ops.prod(*tuple(op_list[::-1])))
-
-        return mat
-
-
-def _QSVT_resources(projectors, UA):
+def _QSVT_resources(UA, projectors):
     resources = defaultdict(int)
     resources[abstractify(projectors[0])] = 1
     for i in range(1, len(projectors) - 1, 2):
         resources[_change_op_basis_abstract(UA, projectors[i], _adjoint_abstract(UA))] += 1
         resources[abstractify(projectors[i + 1])] += 1
-
     if len(projectors) % 2 == 0:
         resources[abstractify(UA)] += 1
-        resources[abstractify(projectors[0])] += 1
-
+        resources[abstractify(projectors[-1])] += 1
     return dict(resources)
 
 
 @register_resources(_QSVT_resources)
-def _QSVT_decomposition(*_data, UA, projectors, **_kwargs):
+def _QSVT_decomposition(UA, projectors):
+
     apply(projectors[0])
 
     for i in range(1, len(projectors) - 1, 2):
@@ -718,13 +540,6 @@ def _QSVT_decomposition(*_data, UA, projectors, **_kwargs):
 
 
 add_decomps(QSVT, _QSVT_decomposition)
-
-# pylint: disable=protected-access
-if QSVT._primitive is not None:
-
-    @QSVT._primitive.def_impl
-    def _(UA, *projectors, **kwargs):  # kwarg might be id
-        return type.__call__(QSVT, UA, projectors, **kwargs)
 
 
 def _complementary_poly(poly_coeffs):
@@ -830,7 +645,7 @@ def _compute_qsp_angle(poly_coeffs):
     return rotation_angles
 
 
-@jit_if_jax_available
+@jax.jit
 def _cheby_pol(x, degree):
     r"""Return the value of the Chebyshev polynomial cos(degree*arcos(x)) at point x
 
@@ -859,7 +674,7 @@ def _poly_func_scipy(coeffs, parity, x):
     return coeffs @ np.vectorize(_cheby_pol, excluded={"x"})(x, 2 * ind + parity)
 
 
-@partial(jit_if_jax_available, static_argnames=["interface"])
+@partial(jax.jit, static_argnames=["interface"])
 def _z_rotation(phi, interface):
     r"""Returns the matrix of the `RZ(2 \phi)` gate.
 
@@ -872,7 +687,7 @@ def _z_rotation(phi, interface):
     return math.array([[math.exp(1j * phi), 0.0], [0.0, math.exp(-1j * phi)]], like=interface)
 
 
-@partial(jit_if_jax_available, static_argnames=["interface"])
+@partial(jax.jit, static_argnames=["interface"])
 def _W_of_x(x, interface):
     r"""Returns the matrix of the operator W(x) defined in Theorem (1) of https://arxiv.org/pdf/2002.11649
 
@@ -897,7 +712,7 @@ def _W_of_x(x, interface):
     )
 
 
-@partial(jit_if_jax_available, static_argnames=["interface"])
+@partial(jax.jit, static_argnames=["interface"])
 def _qsp_iterate(phi, x, interface):
     r"""
     Signal operator defined as the product of RZ(phi) and W(x)
@@ -912,7 +727,7 @@ def _qsp_iterate(phi, x, interface):
     return math.dot(_W_of_x(x=x, interface=interface), _z_rotation(phi=phi, interface=interface))
 
 
-@partial(jit_if_jax_available, static_argnames=["interface"])
+@partial(jax.jit, static_argnames=["interface"])
 def _qsp_iterate_broadcast(phis, x, interface):
     r"""Eq (13) Resulting unitary of the QSP circuit (on reduced invariant subspace ofc)
 
@@ -922,16 +737,8 @@ def _qsp_iterate_broadcast(phis, x, interface):
     Returns:
         tensor_like: 2x2 block-encoding of polynomial implemented by the angles phi
     """
-    # pylint: disable=import-outside-toplevel
-    try:
-        from jax import vmap
-
-        interface = "jax"
-        qsp_iterate_list = vmap(_qsp_iterate, in_axes=(0, None, None))(phis[1:], x, interface)
-    except ModuleNotFoundError:
-        qsp_iterate_list = math.vectorize(_qsp_iterate, excluded=(1, 2), signature="()->(m,n)")(
-            phis[1:], x, interface
-        )
+    interface = "jax"
+    qsp_iterate_list = vmap(_qsp_iterate, in_axes=(0, None, None))(phis[1:], x, interface)
 
     matrix_iterate = reduce(math.dot, qsp_iterate_list)
     matrix_iterate = math.dot(_z_rotation(phi=phis[0], interface=interface), matrix_iterate)
@@ -953,14 +760,7 @@ def _qsp_optimization_scipy(degree, coeffs_target_func, interface=None):
     """
     parity = degree % 2
 
-    # pylint: disable=import-outside-toplevel
-    try:
-        from jax import jacobian
-
-        interface = "jax"
-
-    except ModuleNotFoundError:
-        from autograd import jacobian
+    interface = "jax"
 
     grid_points = _grid_pts(degree, interface=interface)
 
@@ -972,32 +772,14 @@ def _qsp_optimization_scipy(degree, coeffs_target_func, interface=None):
 
     def obj_function(phi):
         # Equation (23) in https://arxiv.org/pdf/2002.11649
-
-        # pylint: disable=import-outside-toplevel
-        try:
-            from jax import jit, vmap
-
-            qsp_iterates = jit(_qsp_iterate_broadcast, static_argnames=["interface"])
-
-            obj_func = (
-                vmap(qsp_iterates, in_axes=(None, 0, None))(phi, grid_points, interface) - targets
-            )
-        except ModuleNotFoundError:
-            obj_func = (
-                math.vectorize(_qsp_iterate_broadcast, excluded=(0, 2))(phi, grid_points, interface)
-                - targets
-            )
-
+        qsp_iterates = jit(_qsp_iterate_broadcast, static_argnames=["interface"])
+        obj_func = (
+            vmap(qsp_iterates, in_axes=(None, 0, None))(phi, grid_points, interface) - targets
+        )
         obj_func = math.dot(obj_func, obj_func)
-
         return 1 / len(grid_points) * obj_func
 
-    try:
-        from jax import jit
-
-        obj_function = jit(obj_function)
-    except ModuleNotFoundError:
-        pass
+    obj_function = jit(obj_function)
 
     results = scipy.optimize.minimize(
         fun=obj_function,
@@ -1037,7 +819,7 @@ def _compute_qsp_angles_iteratively_scipy(poly):
     return angles
 
 
-@jit_if_jax_available
+@jax.jit
 def _poly_func_optax(coeffs, x):
     r"""\sum c_kT_{k}(x) where T_k(x)=cos(karccos(x))"""
     return jax.numpy.sum(
@@ -1061,7 +843,7 @@ def _grid_pts(degree, interface):
     )
 
 
-@jit_if_jax_available
+@jax.jit
 def _obj_function_optax(phi, x, y):
     r"""Objective function to be optimized in Equation (23)
 
@@ -1073,21 +855,14 @@ def _obj_function_optax(phi, x, y):
     Returns:
         float: \frac{\|f_\Phi(x) - y\|^2}{N}
     """
-    # pylint: disable=import-outside-toplevel,redefined-outer-name
-    import jax
-
     obj_func = jax.vmap(_qsp_iterate_broadcast, in_axes=(None, 0, None))(phi, x, "jax") - y
     obj_func = jax.numpy.dot(obj_func, obj_func)
     return 1 / x.shape[0] * obj_func
 
 
-@partial(jit_if_jax_available, static_argnames=["maxiter", "tol"])
+@partial(jax.jit, static_argnames=["maxiter", "tol"])
 def _optax_lbfgs_opt(initial_guess, x, y, maxiter, tol):
     """Dispatch optimization to the L-BFGS of optax."""
-    # pylint: disable=import-outside-toplevel,redefined-outer-name
-    import jax
-    import optax
-
     opt = optax.lbfgs()
     init_carry = (initial_guess, opt.init(initial_guess))
 
@@ -1119,9 +894,6 @@ def _qsp_optimization_optax(degree: int, coeffs_target_func, maxiter=100, tol=1e
     r"""Algorithm 1 in https://arxiv.org/pdf/2002.11649 produces the angle parameters by
     minimizing the distance between the target and qsp polynomial over the grid.
     """
-    # pylint: disable=import-outside-toplevel,redefined-outer-name
-    import jax
-
     grid_points = _grid_pts(degree, "jax")
     initial_guess = [np.pi / 4] + [0.0] * (degree - 1) + [np.pi / 4]
 
@@ -1144,13 +916,8 @@ def _compute_qsp_angles_iteratively_optax(poly):
         poly (tensor_like): coefficients of the polynomial ordered from lowest to highest power
 
     Raises:
-        ModuleNotFoundError: if JAX or Optax are not installed
+        ModuleNotFoundError: if Optax is not installed
     """
-    if not is_jax_available:
-        raise ModuleNotFoundError(
-            "JAX is required for this functionality. Please install it with 'pip install jax'."
-        )  # pragma: no cover
-
     if not is_optax_available:
         raise ModuleNotFoundError(
             "Optax is required for this functionality. Please install it with 'pip install optax'."

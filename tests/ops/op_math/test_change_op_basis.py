@@ -26,7 +26,7 @@ import pytest
 import pennylane as qp
 import pennylane.numpy as qnp
 from pennylane.core.operator import abstractify
-from pennylane.core.operator.base import Operator
+from pennylane.core.operator.base import Operator, Operator1
 from pennylane.exceptions import DeviceError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math import ChangeOpBasis, change_op_basis
@@ -37,12 +37,45 @@ from pennylane.wires import Wires
 from tests.capture.capture_utils import assert_eqn_matches_op
 from tests.core.operator.operator2_utils import NonParametricOp
 
+# pylint: disable=too-few-public-methods
+
 X, Y, Z = qp.PauliX, qp.PauliY, qp.PauliZ
 
+
+class Z1(Operator1):
+
+    def adjoint(self):
+        return Z1(self.wires)
+
+
+class X1(Operator1):
+
+    def adjoint(self):
+        return X1(self.wires)
+
+
+class H1(Operator1):
+
+    def adjoint(self):
+        return H1(self.wires)
+
+
+class CNOT1(Operator1):
+
+    def adjoint(self):
+        return CNOT1(self.wires)
+
+
+class RX1(Operator1):
+
+    def adjoint(self):
+        return RX1(self.data[0], self.wires)
+
+
 ops = (
-    (qp.PauliZ(0), qp.PauliX(1), qp.PauliZ(0)),
-    (qp.Hadamard(wires=0), qp.PauliZ(wires=0), qp.Hadamard(wires=0)),
-    (qp.CNOT(wires=[0, 1]), qp.RX(1.23, wires=1), qp.CNOT(wires=[0, 1])),
+    (Z1(0), X1(0), Z1(0)),
+    (H1(wires=0), Z1(wires=0), H1(wires=0)),
+    (CNOT1(wires=[0, 1]), RX1(1.23, wires=1), CNOT1(wires=[0, 1])),
 )
 
 
@@ -502,7 +535,7 @@ class TestDecomposition:
         """Tests the decomposition rule implemented with the new system."""
         control_wires = [4]
         work_wires = [2, 3]
-        op = qp.ops.Controlled(
+        op = qp.ctrl(
             change_op_basis(*ops_lst),
             control_wires,
             [1],

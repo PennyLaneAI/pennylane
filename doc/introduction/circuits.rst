@@ -51,8 +51,7 @@ For example:
 .. note::
 
     PennyLane uses the term *wires* to refer to a quantum subsystem---for most
-    devices, this corresponds to a qubit. For continuous-variable
-    devices, a wire corresponds to a quantum mode.
+    devices, this corresponds to a qubit.
 
 Quantum functions are a restricted subset of Python functions, adhering to the following
 constraints:

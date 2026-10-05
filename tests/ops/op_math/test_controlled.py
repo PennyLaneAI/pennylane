@@ -911,10 +911,16 @@ class TestDecomposition:
             ),
             (
                 qp.IsingXX(0.123, wires=[0, 1]),
+                # IsingXX is a ChangeOpBasis, so control applies only to the inner RX.
                 [
-                    qp.Toffoli(wires=[2, 0, 1]),
-                    qp.CRX(0.123, wires=[2, 0]),
-                    qp.Toffoli(wires=[2, 0, 1]),
+                    ctrl(
+                        qp.change_op_basis(
+                            qp.CNOT(wires=[0, 1]),
+                            qp.RX(0.123, wires=[0]),
+                            qp.CNOT(wires=[0, 1]),
+                        ),
+                        control=2,
+                    )
                 ],
             ),
         ],
@@ -1211,30 +1217,6 @@ class TestDifferentiation:
 
         b = jnp.array(0.123)
         res = jax.grad(circuit)(b)
-        expected = pnp.sin(b / 2) / 2
-
-        assert pnp.allclose(res, expected)
-
-    @pytest.mark.tf
-    def test_tf(self, diff_method):
-        """Test differentiation using TF"""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", wires=2)
-        init_state = tf.constant([1.0, -1.0], dtype=tf.complex128) / pnp.sqrt(2)
-
-        @qp.qnode(dev, diff_method=diff_method)
-        def circuit(b):
-            qp.StatePrep(init_state, wires=0)
-            Controlled(qp.RY(b, wires=1), control_wires=0)
-            return qp.expval(qp.PauliX(0))
-
-        b = tf.Variable(0.123, dtype=tf.float64)
-
-        with tf.GradientTape() as tape:
-            loss = circuit(b)
-
-        res = tape.gradient(loss, b)
         expected = pnp.sin(b / 2) / 2
 
         assert pnp.allclose(res, expected)
@@ -2367,30 +2349,6 @@ class TestCtrlTransformDifferentiation:
 
         b = jnp.array(0.123)
         res = jax.grad(circuit)(b)
-        expected = pnp.sin(b / 2) / 2
-
-        assert pnp.allclose(res, expected)
-
-    @pytest.mark.tf
-    def test_tf(self, diff_method):
-        """Test differentiation using TF"""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", wires=2)
-        init_state = tf.constant([1.0, -1.0], dtype=tf.complex128) / pnp.sqrt(2)
-
-        @qp.qnode(dev, diff_method=diff_method)
-        def circuit(b):
-            qp.StatePrep(init_state, wires=0)
-            qp.ctrl(qp.RY, control=0)(b, wires=[1])
-            return qp.expval(qp.PauliX(0))
-
-        b = tf.Variable(0.123, dtype=tf.float64)
-
-        with tf.GradientTape() as tape:
-            loss = circuit(b)
-
-        res = tape.gradient(loss, b)
         expected = pnp.sin(b / 2) / 2
 
         assert pnp.allclose(res, expected)
