@@ -32,6 +32,7 @@ from pennylane.templates.state_preparations.sum_of_slaters import (
     _find_ell,
     _find_single_w,
     _preprocess,
+    _sos_encoding_size,
     _sos_state_prep,
     _sos_state_prep_with_wires,
     compute_sos_encoding,
@@ -365,6 +366,19 @@ class TestComputeSosEncoding:
         assert np.allclose((U @ bits) % 2, b)
         assert _columns_differ(b)
 
+    @pytest.mark.parametrize("r, D", [(22, 1800)])
+    def test_memory_limit_falls_back_to_identity(self, r, D):
+        """Test that compression falls back to identity when its estimated temporary memory
+        exceeds the limit."""
+        assert r > 2 * ceil_log2(D) - 1
+        assert _sos_encoding_size(r, D) == r
+
+        bits = random_distinct_bitstrings(r, D, 519, full_rank=True)
+        U, b = compute_sos_encoding(bits)
+
+        assert np.array_equal(U, np.eye(r, dtype=int))
+        assert np.array_equal(b, bits)
+
     @pytest.mark.parametrize(
         "r, D",
         [
@@ -570,6 +584,20 @@ class TestSumOfSlatersPrep:
         registered_work_wires = _sos_state_prep.get_work_wire_spec(coefficients, range(n), indices)
         assert sum(sizes.values()) - n == registered_work_wires.total
 
+    def test_register_sizes_memory_limit_fallback(self):
+        """Test that register sizing uses the identity encoding above the memory limit."""
+        sizes = SumOfSlatersPrep._required_register_sizes_from_nums(
+            num_entries=90102, num_bits=34, num_wires=36
+        )
+
+        assert sizes == {
+            "wires": 36,
+            "enumeration_wires": 17,
+            "identification_wires": 0,
+            "qrom_work_wires": 16,
+            "mcx_cache_wires": 33,
+        }
+
     @pytest.mark.parametrize("num_wires", [3, 5, 8])
     @pytest.mark.parametrize("num_entries", [2, 4, 5, 16])
     def test_register_sizes_abstract(self, num_wires, num_entries):
@@ -585,7 +613,7 @@ class TestSumOfSlatersPrep:
             "enumeration_wires": d,
             "identification_wires": 2 * d - 1,
             "qrom_work_wires": d - 1,
-            "mcx_cache_wires": 2 * d - 2,
+            "mcx_cache_wires": max(2 * d - 2, num_wires - 1),
         }
 
     @pytest.mark.parametrize("num_wires", [3, 4, 5])

@@ -35,8 +35,27 @@ Args:
     d (int): Number of enumeration qubits, given by :math:`\lceil \log_2(D)\rceil` where :math:`D`
         is the number of Slater determinants populated in the state to be prepared.
     r (int): Number of bits required after reducing the state ``indices`` with ``select_sos_rows``.
-    m (int): Number of encoding qubits. Equals :math:`\min(2d-1, r)`.
+    m (int): Number of encoding qubits. Equals either :math:`2d-1` when compression is used or
+        :math:`r` when the identity encoding is used.
 """
+
+
+_COMPRESSION_PAIRWISE_ENTRY_LIMIT = 2**25
+"""
+Put a limit on the amount of work done by the compression optimization's pre-processing.
+This limit corresponds roughly to ~1GB peak memory usage:
+   2**25 (pairwise scalar entries) * 8 (size of int64) * 4 (overhead)
+"""
+
+
+def _sos_encoding_size(r: int, D: int) -> int:
+    """Choose the encoding width, falling back to identity above the pairwise-entry limit."""
+    compressed_size = 2 * math.ceil_log2(D) - 1
+    if r <= compressed_size:
+        return r
+    if r * (D * (D - 1) // 2) > _COMPRESSION_PAIRWISE_ENTRY_LIMIT:
+        return r
+    return compressed_size
 
 
 def _columns_differ(bits: np.ndarray) -> bool:
@@ -372,9 +391,11 @@ def _find_U_from_W(W):
 
 def compute_sos_encoding(bits):
     r"""Map :math:`D` different bitstrings of length :math:`r` to :math:`D` different
-    bitstrings :math:`b` of length :math:`m = \min(r, 2d-1)` where
-    :math:`d=\lceil\log_2(D)\rceil`. The function computes both the mapping :math:`U` and the
-    output bitstrings :math:`b`.
+    bitstrings :math:`b`. The encoding length is :math:`m = \min(r, 2d-1)` where
+    :math:`d=\lceil\log_2(D)\rceil`, unless the pairwise-difference construction would result
+    in an unreasonable runtime and/or memory requirement, in which case the identity encoding with
+    :math:`m=r` is used. The function computes both the mapping :math:`U` and the output
+    bitstrings :math:`b`.
     This algorithm forms the constructive proof of Lemma 1 in
     `Fomichev et al., PRX Quantum 5, 040339 <https://doi.org/10.1103/PRXQuantum.5.040339>`__.
     It is the main classical coprocessing step required for the sparse state preparation
@@ -387,9 +408,8 @@ def compute_sos_encoding(bits):
 
     Returns:
         tuple[np.ndarray]: Two bit arrays. The first is :math:`U`, which maps the input ``bits``
-        to :math:`D` distinct bitstrings :math:`\{b_i\}` of length :math:`\min(r, m)`, where
-        :math:`m=2\lceil \log_2(D)\rceil-1`. The second array are the bitstrings
-        :math:`\{b_i\}` themselves, stored as columns.
+        to :math:`D` distinct bitstrings :math:`\{b_i\}` of length :math:`m`. The second array
+        are the bitstrings :math:`\{b_i\}` themselves, stored as columns.
 
     .. warning::
 
@@ -397,6 +417,13 @@ def compute_sos_encoding(bits):
         work with a reduced input here.
         Furthermore, this function assumes that the bitstrings are not overly redundant, so
         that it might error out if ``select_sos_rows`` is not used.
+
+    .. note::
+
+        Compression constructs collections of pairwise differences with quadratic scaling in
+        the number of bitstrings. If they contain more than ~32 million scalar entries, a
+        conservative proxy for approximately 1 GiB of peak memory, this function returns the
+        identity encoding instead.
 
     .. seealso:: :func:`~.select_sos_rows`
 
@@ -608,10 +635,10 @@ def compute_sos_encoding(bits):
         as rows. The same is true for case 2b), where we only had to compute a single :math:`w_1`.
     """
     r, D = bits.shape
-    d = math.ceil_log2(D)
-    m = 2 * d - 1
-    if r <= m:
-        # Case 1: We can use the identity mapping
+    m = _sos_encoding_size(r, D)
+    if r == m:
+        # Case 1: We can use the identity mapping, either because compression is unnecessary or
+        # because it would require unreasonable classical processing by the brute force impl below.
         U = np.eye(r, dtype=int)
         return U, bits
 
@@ -1026,7 +1053,7 @@ class SumOfSlatersPrep(Operator2):
             }
 
         d = math.ceil_log2(num_entries)
-        m = min(num_bits, 2 * d - 1)
+        m = _sos_encoding_size(num_bits, num_entries)
         if num_bits <= m:
             # Identity encoding. We do not need the identification register but can use the
             # (subselection of) system wires directly
@@ -1053,7 +1080,7 @@ class SumOfSlatersPrep(Operator2):
             "enumeration_wires": d,
             "identification_wires": 2 * d - 1,
             "qrom_work_wires": d - 1,
-            "mcx_cache_wires": 2 * d - 2,
+            "mcx_cache_wires": max(2 * d - 2, num_wires - 1),
         }
 
 
@@ -1073,7 +1100,7 @@ def _sos_state_prep_resources(coefficients, wires, indices, **_):
     if num_entries == 1:
         return {qp.BasisState(Bool[num_wires], Wire[num_wires]): 1}
     d = math.ceil_log2(num_entries)
-    m = min(num_bits, 2 * d - 1)
+    m = _sos_encoding_size(num_bits, num_entries)
 
     identity_encoding = num_bits == m
 
@@ -1159,12 +1186,12 @@ def _preprocess(v_bits, wires):
     # if selector_ids has length r, vtilde_bits has shape (r, num_entries)
     selector_ids, vtilde_bits = select_sos_rows(v_bits)
     selected_wires = [wires[idx] for idx in selector_ids]
-    # u_bits has shape (2d-1, r), b_bits has shape (2d-1, num_entries)
+    # u_bits has shape (m, r), b_bits has shape (m, num_entries)
     u_bits, b_bits = compute_sos_encoding(vtilde_bits)
 
     r = len(vtilde_bits)
     d = math.ceil_log2(num_entries)
-    m = min(r, 2 * d - 1)
+    m = u_bits.shape[0]
     assert u_bits.shape == (m, r), f"{u_bits.shape=}, {(m, r)=}"
     assert b_bits.shape == (m, num_entries)
 
