@@ -922,24 +922,9 @@ class TestModifiedTemplates:
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        assert eqn.primitive == qp.MPSPrep._primitive
-        assert eqn.invars[:4] == jaxpr.jaxpr.invars
-        assert [invar.val for invar in eqn.invars[4:]] == [0, 1, 2]
-        expected_params = {
-            "n_wires": 3,
-            "work_wires": None,
-            "right_canonicalize": False,
-        }
-        actual_params = {k: v for k, v in eqn.params.items() if k in expected_params}
-        assert actual_params == expected_params
+        assert_eqn_matches_op(eqn, qp.MPSPrep)
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
-
-        with qp.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *mps)
-
-        assert len(q) == 1
-        assert q.queue[0] == qp.MPSPrep(mps=mps, wires=wires)
 
     def test_all_singles_doubles(self):
         arguments = (

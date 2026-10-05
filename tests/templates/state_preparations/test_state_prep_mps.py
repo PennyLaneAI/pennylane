@@ -661,7 +661,10 @@ class TestMPSPrep:
 
         def circuit(*_mps):
             _mps_prep_decomposition(
-                *_mps, wires=range(2, num_wires + 2), work_wires=[0, 1], right_canonicalize=True
+                list(_mps),
+                wires=range(2, num_wires + 2),
+                work_wires=[0, 1],
+                right_canonicalize=True,
             )
 
         plxpr = qp.capture.make_plxpr(circuit)(*mps)
@@ -805,8 +808,8 @@ class TestMPSPrep:
         # Test 1: Passing a numpy array shouldn't raise a truth-value ValueError
         work_wires_array = np.array([10, 11])
         op_array = qp.MPSPrep(mps, wires=[0, 1], work_wires=work_wires_array)
-        assert op_array.hyperparameters["work_wires"] == qp.wires.Wires([10, 11])
+        assert op_array.work_wires == qp.wires.Wires([10, 11])
 
         # Test 2: Passing a single integer shouldn't raise a TypeError on len()
         op_int = qp.MPSPrep(mps, wires=[0, 1], work_wires=10)
-        assert op_int.hyperparameters["work_wires"] == qp.wires.Wires([10])
+        assert op_int.work_wires == qp.wires.Wires([10])
