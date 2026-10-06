@@ -583,7 +583,7 @@ class TestMatrix:
             (qp.CNOT([1, 3]), qp.X(0), qp.CNOT([3, 2]), qp.Toffoli([2, 0, 1])),
         ),
     )
-    @pytest.mark.parametrize("wire_order", [None, [0, 1, 2, 3]])
+    @pytest.mark.parametrize("wire_order", [None, [0, 1, 2, 3], [3, 2, 0, 1]])
     def test_merged_overlapping_groups(self, wire_order, factors):
         """Test the matrix when merging overlapping groups reorders the wires relative to
         the wires of the ``Prod`` op, and we need to reorder them back."""
