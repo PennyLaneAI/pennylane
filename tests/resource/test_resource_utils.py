@@ -55,8 +55,10 @@ def test_make_level_name_unique():
         ("foo", [2], False),
         (["foo", "bar"], [2, 3], False),
         ((1, "foo", "baz", 4, "bar"), [1, 2, 3, 4, 5], True),
-        ("all", [0, 1, 2, 3, 4, 5, 6], False),
+        ("all", [0, 1, 2, 3, 4, 5, 6, 7], False),
+        ("all-user", [0, 1, 2, 3, 4, 5, 6], False),
         ("user", [6], False),
+        ("device", [7], False),
         ("top", [0], False),
         (["top", 0], [0], True),
         (["top", 1], [0, 1], False),
@@ -88,6 +90,10 @@ def test_preprocess_levels_invalid(example_pipeline):
 
     with pytest.raises(ValueError, match="out of bounds"):
         preprocess_level_input(10, example_pipeline)
+
+    # Device level can be selected via "device" / "all", but not as a raw int
+    with pytest.raises(ValueError, match="out of bounds"):
+        preprocess_level_input(len(example_pipeline) + 1, example_pipeline)
 
     with pytest.raises(ValueError, match="Invalid level"):
         preprocess_level_input([1, 2, 3.14, True], example_pipeline)
