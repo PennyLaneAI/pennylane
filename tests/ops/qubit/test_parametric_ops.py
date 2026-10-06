@@ -765,6 +765,46 @@ class TestDecompositions:
         mat = qp.matrix(decomp, wire_order=[0, 1, 2, control])
         assert qp.math.allclose(mat, expected_matrix)
 
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.parametrize("num_controls", [2, 3, 6])
+    def test_multi_controlled_phase_shift_decomposition_graph(self, num_controls):
+        """A multi-controlled ``PhaseShift`` decomposes into the right unitary."""
+        angle = 0.6931
+        wire_order = list(range(num_controls + 1))
+        op = qp.ctrl(qp.PhaseShift(angle, wires=num_controls), control=wire_order[:-1])
+        tape = qp.tape.QuantumScript([op], [])
+
+        [decomp], _ = qp.transforms.decompose(
+            tape, gate_set={qp.CNOT, qp.RZ, qp.Hadamard, qp.GlobalPhase, qp.PauliX, qp.PauliRot}
+        )
+        assert qp.math.allclose(
+            qp.matrix(decomp, wire_order=wire_order), qp.matrix(tape, wire_order=wire_order)
+        )
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.parametrize(
+        "num_controls, offered", [(2, True), (9, True), (10, False), (41, False)]
+    )
+    def test_phase_polynomial_rule_only_offered_for_few_controls(self, num_controls, offered):
+        """The phase-polynomial rule of a multi-controlled ``PhaseShift`` has
+        ``2 ** (num_controls + 1) - 1`` terms, so it is not offered for more than nine control
+        wires, where the distributed rule (polynomial in the number of controls) remains."""
+        op = qp.ctrl(qp.PhaseShift(0.3, wires=num_controls), control=list(range(num_controls)))
+        applicable = str(qp.decomposition.inspect_decomps(op, show_not_applicable=False))
+        assert ("_controlled_phase_shift_decomp" in applicable) is offered
+        assert "controlled(_phaseshift_to_rz_gp)" in applicable
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_wide_multi_controlled_phase_shift_decomposition_graph(self):
+        """A multi-controlled ``PhaseShift`` beyond the phase-polynomial rule still decomposes."""
+        num_controls = 12
+        op = qp.ctrl(qp.PhaseShift(0.6931, wires=num_controls), control=list(range(num_controls)))
+        [decomp], _ = qp.transforms.decompose(
+            qp.tape.QuantumScript([op], []),
+            gate_set={qp.CNOT, qp.RZ, qp.Hadamard, qp.GlobalPhase, qp.PauliX, qp.PauliRot},
+        )
+        assert 0 < len(decomp.operations) < 2 ** (num_controls + 1) - 1
+
     two_wire_pcphases = [(0, [0, 1]), (1, [1, 0]), (2, [1, 2]), (3, [1, 3]), (4, [9, 0])]
     five_wire_pcphases = [(i, [0, 1, 3, 2, 7]) for i in range(2**5)]
     other_pcphases = [(1, [0]), (2, [1]), (17, [1, 2, 5, 4, 3, 0]), (3, list(range(5)))]

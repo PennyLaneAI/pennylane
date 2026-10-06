@@ -32,6 +32,7 @@ import pennylane as qp
 from pennylane.core.operator import Operator2, abstractify
 from pennylane.decomposition import (
     add_decomps,
+    register_condition,
     register_resources,
 )
 from pennylane.exceptions import PennyLaneDeprecationWarning
@@ -930,6 +931,21 @@ def _controlled_phase_shift_resource(base, control_wires, *_, **__):
     return resources
 
 
+# The phase-polynomial expansion below has ``2 ** (num_control_wires + 1) - 1`` terms. It is only
+# worth offering for a moderate number of control wires: from ten control wires on, the
+# decomposition graph prefers the decomposition that distributes the control over ``PhaseShift``'s
+# own rule (polynomial in the number of control wires), even when ``PauliRot`` is in the gate set
+# (10 controls: 1336 gates vs 2048). Not offering the expansion past that point therefore does not
+# change what the graph picks, but it stops consumers that materialize every candidate rule of an
+# operator, e.g. ``qjit`` with program capture, from building rules with ~2**n terms.
+_MAX_PHASE_POLYNOMIAL_CONTROL_WIRES = 9
+
+
+def _controlled_phase_shift_condition(base, control_wires, *_, **__):  # pylint: disable=unused-argument
+    return len(control_wires) <= _MAX_PHASE_POLYNOMIAL_CONTROL_WIRES
+
+
+@register_condition(_controlled_phase_shift_condition)
 @register_resources(_controlled_phase_shift_resource)
 def _controlled_phase_shift_decomp(base, control_wires, *_, **__):
     wires = concatenate_wires(control_wires, base.wires)
