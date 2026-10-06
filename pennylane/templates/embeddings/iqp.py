@@ -79,7 +79,7 @@ class IQPEmbedding(Operator2):
         features (tensor_like): tensor of features to encode
         wires (Any or Iterable[Any]): wires that the template acts on
         n_repeats (int): number of times the basic embedding is repeated
-        pattern (tensor_like): pairs of indices into ``wires`` that specify the entanglers,
+        pattern (tensor_like or Iterable[Iterable]): pairs of indices into ``wires`` that specify the entanglers,
             as a nested sequence or a ``(K, 2)`` integer array. ``None`` (default) applies
             an entangler to every pair of wires.
 
