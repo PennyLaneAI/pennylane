@@ -25,6 +25,10 @@ catalyst = pytest.importorskip("catalyst")
 
 pytestmark = pytest.mark.catalyst
 
+xfail_device_level = pytest.mark.xfail(
+    raises=NotImplementedError, strict=True, reason="level='device' is not supported yet."
+)
+
 
 class TestAnalyze:
     """Test qp.analyze()"""
@@ -37,7 +41,7 @@ class TestAnalyze:
         @qp.transforms.merge_rotations
         @qp.marker("cancelled")
         @qp.transforms.cancel_inverses
-        @qp.qnode(qp.device("null.qubit", wires=2))
+        @qp.qnode(qp.device("lightning.qubit", wires=2))
         def circuit(x):
             qp.RX(x, wires=0)
             qp.RX(x, wires=0)
@@ -52,6 +56,9 @@ class TestAnalyze:
     TOP_COUNTS = {"RX": 2, "PauliX": 2, "CNOT": 1}
     CANCELLED_COUNTS = {"RX": 2, "CNOT": 1}
     USER_COUNTS = {"RX": 1, "CNOT": 1}
+    # lightning.qubit executes the remaining RX and CNOT directly, so device preprocessing
+    # does not change the counts
+    DEVICE_COUNTS = USER_COUNTS
 
     @pytest.mark.parametrize("level", ["all", range(3)])
     def test_resources_at_each_level(self, circuit, level):
@@ -60,7 +67,7 @@ class TestAnalyze:
         specs = qp.analyze(circuit, level=level)(0.1)
 
         assert specs == CircuitSpecs(
-            device_name="null.qubit",
+            device_name="lightning.qubit",
             num_device_wires=2,
             shots=Shots(None),
             level={0: "Before MLIR Passes", 1: "cancelled", 2: "merge-rotations"},
@@ -106,11 +113,66 @@ class TestAnalyze:
 
         assert qp.analyze(circuit)(0.1) == qp.analyze(circuit, level="user")(0.1)
 
+    def test_user_level_with_pass_names(self):
+        """Test that level="user" counts the resources after all passes specified by name."""
+
+        @qp.qjit
+        @qp.transform(pass_name="merge-rotations")
+        @qp.transform(pass_name="cancel-inverses")
+        @qp.qnode(qp.device("lightning.qubit", wires=2))
+        def circuit():
+            qp.RX(1.0, wires=0)
+            qp.RX(2.0, wires=0)
+            qp.Hadamard(wires=1)
+            qp.Hadamard(wires=1)
+            qp.CNOT(wires=[0, 1])
+            return qp.probs()
+
+        specs = qp.analyze(circuit, level="user")()
+
+        assert specs.level == "merge-rotations"
+        assert specs.resources == SpecsResources(
+            counts={"RX": 1, "CNOT": 1},
+            measurement_processes={"probs(all wires)": 1},
+            num_wires=2,
+        )
+
+    def test_user_without_transforms(self):
+        """Test that level="user" is the same as level="top" if no transforms are applied."""
+
+        @qp.qjit
+        @qp.qnode(qp.device("lightning.qubit", wires=1))
+        def circuit():
+            qp.Hadamard(wires=0)
+            return qp.expval(qp.PauliZ(0))
+
+        specs = qp.analyze(circuit, level="user")()
+
+        assert specs == qp.analyze(circuit, level="top")()
+        assert specs.level == "Before MLIR Passes"
+
     @pytest.mark.parametrize(
         "level, expected_counts",
         [
             ([0, "cancelled"], {"Before MLIR Passes": TOP_COUNTS, "cancelled": CANCELLED_COUNTS}),
             ((0, 2), {"Before MLIR Passes": TOP_COUNTS, "merge-rotations": USER_COUNTS}),
+            (
+                ["top", 1, "user"],
+                {
+                    "Before MLIR Passes": TOP_COUNTS,
+                    "cancelled": CANCELLED_COUNTS,
+                    "merge-rotations": USER_COUNTS,
+                },
+            ),
+            pytest.param(
+                ["top", "device"],
+                {"Before MLIR Passes": TOP_COUNTS, "device": DEVICE_COUNTS},
+                marks=pytest.mark.xfail(
+                    raises=ValueError,
+                    strict=True,
+                    reason="level='device' is not supported yet.",
+                ),
+            ),
         ],
     )
     def test_multiple_levels(self, circuit, level, expected_counts):
@@ -120,12 +182,22 @@ class TestAnalyze:
 
         assert {name: res.counts for name, res in specs.resources.items()} == expected_counts
 
+    @pytest.mark.parametrize("level", [[2, 0], ["user", "top", "top"]])
+    def test_unsorted_levels(self, circuit, level):
+        """Test that analyze counts the resources at each of the given levels in ascending order
+        without duplicates, and warns about it."""
+
+        with pytest.warns(UserWarning, match="has been sorted to be in ascending order"):
+            specs = qp.analyze(circuit, level=level)(0.1)
+
+        assert specs == qp.analyze(circuit, level=[0, 2])(0.1)
+
     def test_symbolic_resources(self):
         """Test that analyze counts the resources inside a loop with a number of iterations that
         is not known at compile time symbolically."""
 
         @qp.qjit(autograph=True)
-        @qp.qnode(qp.device("null.qubit", wires=1))
+        @qp.qnode(qp.device("lightning.qubit", wires=1))
         def circuit(n):
             qp.Hadamard(0)
             for _ in range(n):
@@ -160,7 +232,7 @@ class TestAnalyze:
 
         @qp.qjit(capture="global")
         @pipeline
-        @qp.qnode(qp.device("null.qubit", wires=2))
+        @qp.qnode(qp.device("lightning.qubit", wires=2))
         def circuit(x):
             qp.Hadamard(wires=0)
             qp.Hadamard(wires=0)
@@ -185,19 +257,67 @@ class TestAnalyze:
 
         assert specs.resources.counts == self.USER_COUNTS
 
-    @pytest.mark.xfail(
-        raises=NotImplementedError, strict=True, reason="level='device' is not supported yet."
-    )
-    def test_device_level(self, circuit):
-        """Test that analyze counts the resources after device preprocessing."""
+    @xfail_device_level
+    @pytest.mark.usefixtures("enable_graph_decomposition", "enable_and_disable_capture")
+    def test_device_level(self):
+        """Test that level="device" counts the same resources as executing the circuit after all
+        Catalyst passes and device preprocessing, with program capture enabled and disabled."""
+
+        pipeline = qp.CompilePipeline(
+            catalyst.passes.cancel_inverses, catalyst.passes.merge_rotations
+        )
+
+        @qp.qjit(capture="global")
+        @pipeline
+        @qp.qnode(qp.device("lightning.qubit", wires=2))
+        def circuit(x):
+            qp.RX(x, wires=0)
+            qp.RX(x, wires=0)
+            qp.X(0)
+            qp.X(0)
+            qp.CNOT(wires=[0, 1])
+            return qp.probs()
 
         specs = qp.analyze(circuit, level="device")(0.1)
+        _, tracked = qp.track(circuit)(0.1)
 
-        assert specs.resources.counts == self.USER_COUNTS
+        # lightning.qubit executes the remaining RX and CNOT directly
+        assert specs.resources.counts == {"RX": 1, "CNOT": 1}
+        assert specs.resources.counts == tracked.resources.counts
+        assert specs.resources.measurement_processes == tracked.resources.measurement_processes
+        assert specs.resources.num_wires == tracked.resources.num_wires
 
-    @pytest.mark.parametrize("level", [None, 1.5])
+    @pytest.mark.xfail(
+        raises=ValueError, strict=True, reason="level='device' is not supported yet."
+    )
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_device_level_decomposes_unsupported_operations(self):
+        """Test that level="device" counts the resources after the device decomposes the
+        operations that it does not support, which are still present at level="user"."""
+
+        pipeline = qp.CompilePipeline(
+            catalyst.passes.cancel_inverses, catalyst.passes.merge_rotations
+        )
+
+        @qp.qjit(capture=True)
+        @pipeline
+        @qp.qnode(qp.device("lightning.qubit", wires=3))
+        def circuit(x):
+            qp.RX(x, wires=0)
+            qp.RX(x, wires=0)
+            qp.QFT(wires=range(3))
+            return qp.expval(qp.PauliZ(0))
+
+        specs = qp.analyze(circuit, level=["user", "device"])(0.1)
+
+        assert {name: res.counts for name, res in specs.resources.items()} == {
+            "merge-rotations": {"RX": 1, "QFT": 1},
+            "device": {"RX": 1, "Hadamard": 3, "ControlledPhaseShift": 3, "SWAP": 1},
+        }
+
+    @pytest.mark.parametrize("level", [None, 1.5, [], ["all", 0]])
     def test_unsupported_level(self, circuit, level):
-        """Test that a helpful error message is raised for levels of an unsupported type."""
+        """Test that a helpful error message is raised for unsupported levels."""
 
         with pytest.raises(ValueError, match="Invalid level"):
             qp.analyze(circuit, level=level)(0.1)
@@ -205,7 +325,7 @@ class TestAnalyze:
     def test_error_with_non_qjit(self):
         """Test that a helpful error message is raised if the input is not QJIT'd."""
 
-        @qp.qnode(qp.device("null.qubit", wires=1))
+        @qp.qnode(qp.device("lightning.qubit", wires=1))
         def circuit():
             qp.Hadamard(0)
             return qp.expval(qp.PauliZ(0))
