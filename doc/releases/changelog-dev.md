@@ -1301,6 +1301,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Controlled `~.GlobalPhase` gates now dispatch in python to `~.PhaseShift` and `~.ControlledPhaseShift` in a smaller subspace as appropriate.
+  [(#10279)](https://github.com/PennyLaneAI/pennylane/pull/10279)
+
 * Set `qp.decompose`'s `pass_name` to `"graph-decomposition"` to match the new decomposition system in Catalyst.
   [(#10242)](https://github.com/PennyLaneAI/pennylane/pull/10242)
 
