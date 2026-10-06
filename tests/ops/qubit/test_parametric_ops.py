@@ -480,7 +480,9 @@ class TestDecompositions:
         """Tests that the decomposition of the IsingXX gate is correct"""
         param = 0.1234
         op = qp.IsingXX(param, wires=[3, 2])
-        res = op.decomposition()
+        # IsingXX decomposes into a single ChangeOpBasis;
+        # expand one more level to get at the three underlying gates.
+        res = op.decomposition()[0].decomposition()
 
         assert len(res) == 3
 
@@ -508,44 +510,31 @@ class TestDecompositions:
         """Tests that the decomposition of the IsingXY gate is correct"""
         param = 0.1234
         op = qp.IsingXY(param, wires=[3, 2])
-        res = op.decomposition()
+        (cob,) = op.decomposition()
 
-        assert len(res) == 6
+        # operands are in matrix order, i.e. reversed relative to the order they are applied in
+        assert [gate.name for gate in cob.compute_op.operands] == ["CY", "Hadamard"]
+        assert [gate.wires for gate in cob.compute_op.operands] == [Wires([3, 2]), Wires([3])]
 
-        assert res[0].wires == Wires([3])
-        assert res[1].wires == Wires([3, 2])
-        assert res[2].wires == Wires([3])
-        assert res[3].wires == Wires([2])
-        assert res[4].wires == Wires([3, 2])
-        assert res[5].wires == Wires([3])
+        assert [gate.name for gate in cob.target_op.operands] == ["RX", "RY"]
+        assert [gate.wires for gate in cob.target_op.operands] == [Wires([2]), Wires([3])]
 
-        assert res[0].name == "Hadamard"
-        assert res[1].name == "CY"
-        assert res[2].name == "RY"
-        assert res[3].name == "RX"
-        assert res[4].name == "CY"
-        assert res[5].name == "Hadamard"
+        assert [gate.name for gate in cob.uncompute_op.operands] == ["Hadamard", "CY"]
+        assert [gate.wires for gate in cob.uncompute_op.operands] == [
+            Wires([3]),
+            Wires([3, 2]),
+        ]
 
-        mats = []
-        for i in reversed(res):
-            if i.wires == Wires([3]):
-                # RY and Hadamard gate
-                mats.append(np.kron(i.matrix(), np.eye(2)))
-            elif i.wires == Wires([2]):
-                # RX gate
-                mats.append(np.kron(np.eye(2), i.matrix()))
-            else:
-                mats.append(i.matrix())
-
-        decomposed_matrix = np.linalg.multi_dot(mats)
-
+        decomposed_matrix = qp.matrix(qp.tape.QuantumScript([cob]), wire_order=[3, 2])
         assert np.allclose(decomposed_matrix, op.matrix(), atol=tol, rtol=0)
 
     def test_isingxx_decomposition_broadcasted(self, tol):
         """Tests that the decomposition of the broadcasted IsingXX gate is correct"""
         param = np.array([-0.1, 0.2, 0.5])
         op = qp.IsingXX(param, wires=[3, 2])
-        res = op.decomposition()
+        # IsingXX decomposes into a single ChangeOpBasis;
+        # expand one more level to get at the three underlying gates.
+        res = op.decomposition()[0].decomposition()
 
         assert len(res) == 3
 
@@ -575,7 +564,9 @@ class TestDecompositions:
         """Tests that the decomposition of the IsingYY gate is correct"""
         param = 0.1234
         op = qp.IsingYY(param, wires=[3, 2])
-        res = op.decomposition()
+        # IsingYY decomposes into a single ChangeOpBasis;
+        # expand one more level to get at the three underlying gates.
+        res = op.decomposition()[0].decomposition()
 
         assert len(res) == 3
 
@@ -603,7 +594,9 @@ class TestDecompositions:
         """Tests that the decomposition of the broadcasted IsingYY gate is correct"""
         param = np.array([-0.1, 0.2, 0.5])
         op = qp.IsingYY(param, wires=[3, 2])
-        res = op.decomposition()
+        # IsingYY decomposes into a single ChangeOpBasis;
+        # expand one more level to get at the three underlying gates.
+        res = op.decomposition()[0].decomposition()
 
         assert len(res) == 3
 
@@ -746,6 +739,30 @@ class TestDecompositions:
         assert qp.math.allclose(gates[1].parameters[0], angle / 2)
         assert qp.math.allclose(gates[3].parameters[0], -angle / 2)
         mat = qp.matrix(decomp, wire_order=[2, 3, 4])
+        assert qp.math.allclose(mat, expected_matrix)
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_controlled_multirz_decomposition_graph(self):
+        r"""Controlling ``MultiRZ`` should control only the inner ``RZ``, leaving the conjugating
+        CNOT ladder bare. This comes out of the generic ``C(ChangeOpBasis)`` rule rather than a
+        dedicated ``C(MultiRZ)`` rule, and is what keeps the ladder from becoming Toffolis."""
+        angle = 0.6931
+        control = 3
+        op = qp.ctrl(qp.MultiRZ(angle, wires=[0, 1, 2]), control=[control])
+        tape = qp.tape.QuantumScript([op], [])
+        expected_matrix = qp.matrix(tape, wire_order=[0, 1, 2, control])
+
+        [decomp], _ = qp.transforms.decompose(
+            tape, gate_set={qp.CNOT, qp.RZ, qp.GlobalPhase, qp.PauliX}
+        )
+        gates = decomp.operations
+
+        # the ladder conjugates a controlled RZ, so it is the first and last two gates
+        conjugation = gates[:2] + gates[-2:]
+        assert [g.name for g in conjugation] == ["CNOT"] * 4
+        assert all(control not in g.wires for g in conjugation)
+
+        mat = qp.matrix(decomp, wire_order=[0, 1, 2, control])
         assert qp.math.allclose(mat, expected_matrix)
 
     two_wire_pcphases = [(0, [0, 1]), (1, [1, 0]), (2, [1, 2]), (3, [1, 3]), (4, [9, 0])]
@@ -988,30 +1005,6 @@ class TestMatrix:
         assert np.allclose(mat2, expected_mat)
         assert qp.math.get_interface(mat1) == "numpy"
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("dim", range(3))
-    @pytest.mark.parametrize("wires", (range(2), range(3)))
-    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
-    def test_pcphase_tf(self, phi, dim, wires):
-        """Test that the PCPhase operator matrix is correct for tf."""
-        import tensorflow as tf
-
-        num_wires = len(wires)
-        op = qp.PCPhase(tf.Variable(phi), dim=dim, wires=wires)
-
-        mat1 = qp.matrix(op)
-        mat2 = op.compute_matrix(**op.arguments)
-
-        expected_mat = tf.Variable(
-            np.diag(
-                [np.exp(1j * phi) if i < dim else np.exp(-1j * phi) for i in range(2**num_wires)]
-            )
-        )
-
-        assert np.allclose(mat1, expected_mat)
-        assert np.allclose(mat2, expected_mat)
-        assert qp.math.get_interface(mat1) == "tensorflow"
-
     @pytest.mark.torch
     @pytest.mark.parametrize("dim", range(3))
     @pytest.mark.parametrize("wires", (range(2), range(3)))
@@ -1178,20 +1171,6 @@ class TestMatrix:
             evs_expected = [1, 1, -qp.math.exp(1j * phi), qp.math.exp(1j * phi)]
         assert qp.math.allclose(evs, evs_expected)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("phi", pswap_angles)
-    def test_pswap_eigvals_tf(self, phi):
-        """Test eigenvalues computation for PSWAP using Tensorflow interface"""
-        import tensorflow as tf
-
-        param_tf = tf.Variable(phi)
-        evs = qp.PSWAP.compute_eigvals(param_tf)
-        if len(qp.math.shape(phi)) > 0:
-            evs_expected = np.stack([[1, 1, -exp, exp] for exp in qp.math.exp(1j * phi)])
-        else:
-            evs_expected = [1, 1, -qp.math.exp(1j * phi), qp.math.exp(1j * phi)]
-        assert qp.math.allclose(evs, evs_expected)
-
     @pytest.mark.torch
     @pytest.mark.parametrize("phi", pswap_angles)
     def test_pswap_eigvals_torch(self, phi):
@@ -1218,22 +1197,6 @@ class TestMatrix:
             evs_expected = np.stack([[1, 1, -exp, exp] for exp in qp.math.exp(1j * phi)])
         else:
             evs_expected = [1, 1, -qp.math.exp(1j * phi), qp.math.exp(1j * phi)]
-        assert qp.math.allclose(evs, evs_expected)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
-    def test_pcphase_eigvals_tf(self, phi):
-        """Test eigenvalues computation for PCPhase using Tensorflow interface"""
-        import tensorflow as tf
-
-        param_tf = tf.Variable(phi)
-
-        op = qp.PCPhase(param_tf, dim=2, wires=[0, 1])
-        evs = qp.PCPhase.compute_eigvals(*op.parameters, **op.hyperparameters)
-        evs_expected = np.array(
-            [np.exp(1j * phi), np.exp(1j * phi), np.exp(-1j * phi), np.exp(-1j * phi)]
-        )
-
         assert qp.math.allclose(evs, evs_expected)
 
     def test_isingxy(self, tol):
@@ -1307,35 +1270,6 @@ class TestMatrix:
             [[qp.math.exp(1j * _phi / 2), qp.math.exp(-1j * _phi / 2), 1, 1] for _phi in phi]
         )
         assert qp.math.allclose(evs, evs_expected)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
-    def test_isingxy_eigvals_tf(self, phi):
-        """Test eigenvalues computation for IsingXY using Tensorflow interface"""
-        import tensorflow as tf
-
-        param_tf = tf.Variable(phi)
-        evs = qp.IsingXY.compute_eigvals(param_tf)
-        evs_expected = [
-            qp.math.cos(phi / 2) + 1j * qp.math.sin(phi / 2),
-            qp.math.cos(phi / 2) - 1j * qp.math.sin(phi / 2),
-            1,
-            1,
-        ]
-        assert qp.math.allclose(evs, evs_expected)
-
-    @pytest.mark.tf
-    def test_isingxy_eigvals_tf_broadcasted(self):
-        """Test broadcasted eigenvalues computation for IsingXY on TF"""
-        import tensorflow as tf
-
-        phi = np.linspace(-np.pi, np.pi, 10)
-        evs = qp.IsingXY.compute_eigvals(tf.Variable(phi))
-        c = np.cos(phi / 2)
-        s = np.sin(phi / 2)
-        ones = np.ones_like(c)
-        expected = np.stack([c + 1j * s, c - 1j * s, ones, ones], axis=-1)
-        assert qp.math.allclose(evs, expected)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
@@ -1509,25 +1443,6 @@ class TestMatrix:
             qp.IsingZZ.compute_eigvals(param), np.diagonal(get_expected(param)), atol=tol, rtol=0
         )
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
-    def test_isingzz_eigvals_tf(self, phi):
-        """Test eigenvalues computation for IsingXY using Tensorflow interface"""
-        import tensorflow as tf
-
-        param_tf = tf.Variable(phi)
-        evs = qp.IsingZZ.compute_eigvals(param_tf)
-
-        def get_expected(theta):
-            neg_imag = np.exp(-1j * theta / 2)
-            plus_imag = np.exp(1j * theta / 2)
-            expected = np.array(
-                np.diag([neg_imag, plus_imag, plus_imag, neg_imag]), dtype=np.complex128
-            )
-            return expected
-
-        assert qp.math.allclose(evs, np.diagonal(get_expected(phi)))
-
     def test_isingzz_broadcasted(self, tol):
         """Test that the broadcasted IsingZZ operation is correct"""
         z = np.zeros(3)
@@ -1558,41 +1473,6 @@ class TestMatrix:
         )
         expected_eigvals = np.array([np.diag(m) for m in get_expected(param)])
         assert np.allclose(qp.IsingZZ.compute_eigvals(param), expected_eigvals, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    def test_isingzz_matrix_tf(self, tol):
-        """Tests the matrix representation for IsingZZ for tensorflow, since the method contains
-        different logic for this framework"""
-        import tensorflow as tf
-
-        def get_expected(theta):
-            neg_imag = np.exp(-1j * theta / 2)
-            plus_imag = np.exp(1j * theta / 2)
-            expected = np.array(
-                np.diag([neg_imag, plus_imag, plus_imag, neg_imag]), dtype=np.complex128
-            )
-            return expected
-
-        param = tf.Variable(np.pi)
-        assert np.allclose(qp.IsingZZ.compute_matrix(param), get_expected(np.pi), atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    def test_isingzz_matrix_tf_broadcasted(self, tol):
-        """Tests the matrix representation for broadcasted IsingZZ for tensorflow,
-        since the method contains different logic for this framework"""
-        import tensorflow as tf
-
-        def get_expected(theta):
-            neg_imag = np.exp(-1j * theta / 2)
-            plus_imag = np.exp(1j * theta / 2)
-            expected = np.array([np.diag([n, p, p, n]) for n, p in zip(neg_imag, plus_imag)])
-            return expected
-
-        param = np.array([np.pi, 0.1242])
-        param_tf = tf.Variable(param)
-        assert np.allclose(
-            qp.IsingZZ.compute_matrix(param_tf), get_expected(param), atol=tol, rtol=0
-        )
 
     def test_Rot(self, tol):
         """Test arbitrary single qubit rotation is correct"""
@@ -1750,29 +1630,6 @@ class TestMatrix:
         res = op.eigvals()
         assert np.allclose(res, np.diag(exp))
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
-    @pytest.mark.parametrize(
-        "cphase_op,gate_data_mat",
-        [
-            (qp.CPhaseShift00, CPhaseShift00),
-            (qp.CPhaseShift01, CPhaseShift01),
-            (qp.CPhaseShift10, CPhaseShift10),
-        ],
-    )
-    def test_c_phase_shift_matrix_and_eigvals_tf(self, phi, cphase_op, gate_data_mat):
-        """Test matrix and eigenvalues computation for CPhaseShift using Tensorflow interface"""
-        import tensorflow as tf
-
-        param_tf = tf.Variable(phi)
-        op = cphase_op(param_tf, wires=[0, 1])
-        res = op.matrix()
-        exp = gate_data_mat(phi)
-        assert np.allclose(res, exp)
-
-        res = op.eigvals()
-        assert np.allclose(res, np.diag(exp))
-
     @pytest.mark.torch
     @pytest.mark.parametrize("phi", np.linspace(-np.pi, np.pi, 10))
     @pytest.mark.parametrize(
@@ -1909,12 +1766,10 @@ class TestEigvals:
         )
         assert np.allclose(op.eigvals(), expected)
 
-    @pytest.mark.parametrize(
-        "interface", ("numpy", pytest.param("tensorflow", marks=pytest.mark.tf))
-    )
     @pytest.mark.parametrize("n_wires", [0, 1, 2])
-    def test_global_phase_eigvals(self, n_wires, interface):
+    def test_global_phase_eigvals(self, n_wires):
         """Test GlobalPhase eigenvalues are correct"""
+        interface = "numpy"
 
         dim = 2**n_wires
         # test identity for theta=0
@@ -2060,48 +1915,6 @@ class TestGrad:
 
         res = jax.grad(circuit, argnums=0)(phi)
         assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
-    def test_pswap_tf_grad(self, tol, dev_name, diff_method, phi):
-        """Test the gradient with Tensorflow for the gate PSWAP."""
-
-        if diff_method in {"adjoint"}:
-            # PSWAP does not have a generator defined
-            pytest.skip("PSWAP does not support adjoint")
-
-        import tensorflow as tf
-
-        dev = qp.device(dev_name, wires=2)
-
-        psi_0 = tf.Variable(0.1, dtype=tf.complex128)
-        psi_1 = tf.Variable(0.2, dtype=tf.complex128)
-        psi_2 = tf.Variable(0.3, dtype=tf.complex128)
-        psi_3 = tf.Variable(0.4, dtype=tf.complex128)
-
-        init_state = tf.Variable([psi_0, psi_1, psi_2, psi_3], dtype=tf.complex128)
-        norm = tf.norm(init_state)
-        init_state = init_state / norm
-
-        @qp.qnode(dev, diff_method=diff_method)
-        def circuit(phi):
-            qp.StatePrep(init_state, wires=[0, 1])
-            qp.PSWAP(phi, wires=[0, 1])
-            return qp.expval(qp.PauliY(0))
-
-        phi = tf.Variable(phi, dtype=tf.complex128)
-
-        expected = 2 * tf.cos(phi) * (psi_0 * psi_1 - psi_3 * psi_2) / norm**2
-
-        with tf.GradientTape() as tape:
-            result = circuit(phi)
-
-        res = tape.gradient(result, phi)
-        if diff_method == "backprop":
-            # Check #2872 https://github.com/PennyLaneAI/pennylane/issues/2872
-            assert np.allclose(np.real(res), expected, atol=tol, rtol=0)
-        else:
-            assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
@@ -2427,183 +2240,6 @@ class TestGrad:
         res = jax.grad(circuit, argnums=0)(phi)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
-    def test_isingxy_tf_grad(self, tol, dev_name, diff_method, phi):
-        """Test the gradient with Tensorflow for the gate IsingXY."""
-        import tensorflow as tf
-
-        dev = qp.device(dev_name, wires=2)
-
-        psi_0 = tf.Variable(0.1, dtype=tf.complex128)
-        psi_1 = tf.Variable(0.2, dtype=tf.complex128)
-        psi_2 = tf.Variable(0.3, dtype=tf.complex128)
-        psi_3 = tf.Variable(0.4, dtype=tf.complex128)
-
-        init_state = tf.Variable([psi_0, psi_1, psi_2, psi_3], dtype=tf.complex128)
-        norm = tf.norm(init_state)
-        init_state = init_state / norm
-
-        @qp.qnode(dev, diff_method=diff_method)
-        def circuit(phi):
-            qp.StatePrep(init_state, wires=[0, 1])
-            qp.IsingXY(phi, wires=[0, 1])
-            return qp.expval(qp.PauliZ(0))
-
-        phi = tf.Variable(phi, dtype=tf.complex128)
-
-        expected = (1 / norm**2) * (psi_2**2 - psi_1**2) * tf.sin(phi)
-
-        with tf.GradientTape() as tape:
-            result = circuit(phi)
-        res = tape.gradient(result, phi)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
-    def test_isingxx_tf_grad(self, tol, dev_name, diff_method, phi):
-        """Test the gradient for the gate IsingXX."""
-        import tensorflow as tf
-
-        dev = qp.device(dev_name, wires=2)
-
-        psi_0 = tf.Variable(0.1, dtype=tf.complex128)
-        psi_1 = tf.Variable(0.2, dtype=tf.complex128)
-        psi_2 = tf.Variable(0.3, dtype=tf.complex128)
-        psi_3 = tf.Variable(0.4, dtype=tf.complex128)
-
-        init_state = tf.Variable([psi_0, psi_1, psi_2, psi_3], dtype=tf.complex128)
-        norm = tf.norm(init_state)
-        init_state = init_state / norm
-
-        @qp.qnode(dev, diff_method=diff_method)
-        def circuit(phi):
-            qp.StatePrep(init_state, wires=[0, 1])
-            qp.IsingXX(phi, wires=[0, 1])
-            return qp.expval(qp.PauliZ(0))
-
-        phi = tf.Variable(phi, dtype=tf.complex128)
-
-        # pylint:disable=invalid-unary-operand-type
-        expected = (
-            0.5
-            * (1 / norm**2)
-            * (
-                -1 * tf.sin(phi) * (psi_0**2 + psi_1**2 - psi_2**2 - psi_3**2)
-                + 2
-                * tf.sin(phi / 2)
-                * tf.cos(phi / 2)
-                * (-(psi_0**2) - psi_1**2 + psi_2**2 + psi_3**2)
-            )
-        )
-
-        with tf.GradientTape() as tape:
-            result = circuit(phi)
-        res = tape.gradient(result, phi)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
-    def test_isingyy_tf_grad(self, tol, dev_name, diff_method, phi):
-        """Test the gradient for the gate IsingYY."""
-        import tensorflow as tf
-
-        dev = qp.device(dev_name, wires=2)
-
-        psi_0 = tf.Variable(0.1, dtype=tf.complex128)
-        psi_1 = tf.Variable(0.2, dtype=tf.complex128)
-        psi_2 = tf.Variable(0.3, dtype=tf.complex128)
-        psi_3 = tf.Variable(0.4, dtype=tf.complex128)
-
-        init_state = tf.Variable([psi_0, psi_1, psi_2, psi_3], dtype=tf.complex128)
-        norm = tf.norm(init_state)
-        init_state = init_state / norm
-
-        @qp.qnode(dev, diff_method=diff_method)
-        def circuit(phi):
-            qp.StatePrep(init_state, wires=[0, 1])
-            qp.IsingYY(phi, wires=[0, 1])
-            return qp.expval(qp.PauliZ(0))
-
-        phi = tf.Variable(phi, dtype=tf.complex128)
-
-        # pylint:disable=invalid-unary-operand-type
-        expected = (
-            0.5
-            * (1 / norm**2)
-            * (
-                -1 * tf.sin(phi) * (psi_0**2 + psi_1**2 - psi_2**2 - psi_3**2)
-                + 2
-                * tf.sin(phi / 2)
-                * tf.cos(phi / 2)
-                * (-(psi_0**2) - psi_1**2 + psi_2**2 + psi_3**2)
-            )
-        )
-
-        with tf.GradientTape() as tape:
-            result = circuit(phi)
-        res = tape.gradient(result, phi)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
-    def test_isingzz_tf_grad(self, tol, dev_name, diff_method, phi):
-        """Test the gradient for the gate IsingZZ."""
-        import tensorflow as tf
-
-        dev = qp.device(dev_name, wires=2)
-
-        psi_0 = tf.Variable(0.1, dtype=tf.complex128)
-        psi_1 = tf.Variable(0.2, dtype=tf.complex128)
-        psi_2 = tf.Variable(0.3, dtype=tf.complex128)
-        psi_3 = tf.Variable(0.4, dtype=tf.complex128)
-
-        init_state = tf.Variable([psi_0, psi_1, psi_2, psi_3], dtype=tf.complex128)
-        norm = tf.norm(init_state)
-        init_state = init_state / norm
-
-        @qp.qnode(dev, diff_method=diff_method)
-        def circuit(phi):
-            qp.StatePrep(init_state, wires=[0, 1])
-            qp.IsingZZ(phi, wires=[0, 1])
-            return qp.expval(qp.PauliX(0))
-
-        phi = tf.Variable(phi, dtype=tf.float64)
-
-        expected = (1 / norm**2) * (-2 * (psi_0 * psi_2 + psi_1 * psi_3) * np.sin(phi))
-
-        with tf.GradientTape() as tape:
-            result = circuit(phi)
-        res = tape.gradient(result, phi)
-        assert np.allclose(res, expected, atol=tol, rtol=0)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("dev_name,diff_method", device_methods)
-    @pytest.mark.parametrize("wires", [(0, 1), (1, 0)])
-    def test_globalphase_tf_grad(self, tol, dev_name, diff_method, wires):
-        """Test the gradient with Tensorflow for a controlled GlobalPhase."""
-
-        import tensorflow as tf
-
-        dev = qp.device(dev_name, wires=2)
-
-        @qp.qnode(dev, diff_method=diff_method)
-        def circuit(x):
-            qp.Identity(wires[0])
-            qp.Hadamard(wires[1])
-            qp.ctrl(qp.GlobalPhase(x), control=wires[1])
-            qp.Hadamard(wires[1])
-            return qp.expval(qp.PauliZ(wires[1]))
-
-        phi = tf.Variable(2.1, dtype=tf.complex128)
-
-        expected = [-0.8632093]
-
-        with tf.GradientTape() as tape:
-            result = circuit(phi)
-        res = tape.gradient(result, phi)
-        assert np.allclose(np.real(res), expected, atol=tol, rtol=0)
-
     @pytest.mark.jax
     @pytest.mark.xfail(
         reason="jax.jacobian requires complex inputs which RX doesn't support anymore"
@@ -2647,36 +2283,6 @@ class TestGrad:
 
         phi = npp.array(phi, requires_grad=True)
         computed_grad = qp.grad(circ)(phi)
-        assert np.isclose(computed_grad, expected_grad)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("dev_name,diff_method,phi", configuration)
-    def test_pcphase_grad_tf(self, dev_name, diff_method, phi):
-        """Test pcphase operator gradient"""
-        if diff_method in {"adjoint"}:
-            pytest.skip("PCPhase does not support adjoint diff")
-
-        import tensorflow as tf
-
-        dev = qp.device(dev_name, wires=[0, 1])
-        expected_grad = tf.Variable(-4 * npp.cos(phi) * npp.sin(phi))  # computed by hand
-        phi = tf.Variable(phi)
-
-        @qp.qnode(dev, diff_method=diff_method)
-        def circ(phi):
-            qp.Hadamard(wires=0)
-            qp.Hadamard(wires=1)
-
-            qp.PCPhase(phi, dim=2, wires=[0, 1])
-
-            qp.Hadamard(wires=0)
-            qp.Hadamard(wires=1)
-            return qp.expval(qp.PauliZ(wires=0))
-
-        with tf.GradientTape() as tape:
-            result = circ(phi)
-
-        computed_grad = tape.gradient(result, phi)
         assert np.isclose(computed_grad, expected_grad)
 
     @pytest.mark.torch
@@ -3054,67 +2660,55 @@ class TestPauliRot:
         decomp_ops = op.decomposition()
 
         assert len(decomp_ops) == 1
-
-        assert decomp_ops[0].name == "MultiRZ"
-
-        assert decomp_ops[0].wires == Wires([0, 1])
-        assert np.allclose(decomp_ops[0].data[0], theta)
+        qp.assert_equal(decomp_ops[0], qp.MultiRZ(theta, wires=[0, 1]))
 
     @pytest.mark.parametrize("theta", [0.4, np.array([np.pi / 3, 0.1, -0.9])])
     def test_PauliRot_decomposition_XY(self, theta):
         """Test that the decomposition for a XY rotation is correct."""
 
         op = qp.PauliRot(theta, "XY", wires=[0, 1])
-        decomp_ops = op.decomposition()
+        (cob,) = op.decomposition()
 
-        assert len(decomp_ops) == 5
+        assert [gate.name for gate in cob.compute_op.operands] == ["PPR", "Hadamard"]
+        qp.assert_equal(cob.compute_op.operands[0], qp.PPR(4, "X", wires=1))
+        qp.assert_equal(cob.compute_op.operands[1], qp.Hadamard(wires=0))
 
-        assert decomp_ops[0].name == "Hadamard"
-        assert decomp_ops[0].wires == Wires([0])
+        qp.assert_equal(cob.target_op, qp.MultiRZ(theta, wires=[0, 1]))
 
-        assert decomp_ops[1].name == "RX"
-        assert decomp_ops[1].wires == Wires([1])
-        assert decomp_ops[1].data[0] == np.pi / 2
-
-        assert decomp_ops[2].name == "MultiRZ"
-        assert decomp_ops[2].wires == Wires([0, 1])
-        assert np.allclose(decomp_ops[2].data[0], theta)
-
-        assert decomp_ops[3].name == "Hadamard"
-        assert decomp_ops[3].wires == Wires([0])
-
-        assert decomp_ops[4].name == "RX"
-        assert decomp_ops[4].wires == Wires([1])
-        assert decomp_ops[4].data[0] == -np.pi / 2
+        assert [gate.name for gate in cob.uncompute_op.operands] == ["PPR", "Hadamard"]
+        qp.assert_equal(cob.uncompute_op.operands[0], qp.PPR(-4, "X", wires=1))
+        qp.assert_equal(cob.uncompute_op.operands[1], qp.Hadamard(wires=0))
 
     @pytest.mark.parametrize("theta", [0.4, np.array([np.pi / 3, 0.1, -0.9])])
     def test_PauliRot_decomposition_XIYZ(self, theta):
         """Test that the decomposition for a XIYZ rotation is correct."""
 
         op = qp.PauliRot(theta, "XIYZ", wires=[0, 1, 2, 3])
-        decomp_ops = op.decomposition()
+        (cob,) = op.decomposition()
 
-        assert len(decomp_ops) == 5
+        assert [gate.name for gate in cob.compute_op.operands] == ["PPR", "Hadamard"]
+        qp.assert_equal(cob.compute_op.operands[0], qp.PPR(4, "X", wires=2))
+        qp.assert_equal(cob.compute_op.operands[1], qp.Hadamard(wires=0))
 
-        assert decomp_ops[0].name == "Hadamard"
-        assert decomp_ops[0].wires == Wires([0])
+        qp.assert_equal(cob.target_op, qp.MultiRZ(theta, wires=[0, 2, 3]))
 
-        assert decomp_ops[1].name == "RX"
+        assert [gate.name for gate in cob.uncompute_op.operands] == ["PPR", "Hadamard"]
+        qp.assert_equal(cob.uncompute_op.operands[0], qp.PPR(-4, "X", wires=2))
+        qp.assert_equal(cob.uncompute_op.operands[1], qp.Hadamard(wires=0))
 
-        assert decomp_ops[1].wires == Wires([2])
-        assert decomp_ops[1].data[0] == np.pi / 2
+    def test_PauliRot_single_basis_gate_is_unwrapped(self):
+        """Test that a single basis gate is not wrapped in a product."""
+        theta = 0.4
+        (cob,) = qp.PauliRot(theta, "X", wires=0).decomposition()
 
-        assert decomp_ops[2].name == "MultiRZ"
-        assert decomp_ops[2].wires == Wires([0, 2, 3])
-        assert np.allclose(decomp_ops[2].data[0], theta)
+        qp.assert_equal(cob.compute_op, qp.Hadamard(0))
+        qp.assert_equal(cob.target_op, qp.MultiRZ(theta, wires=[0]))
+        qp.assert_equal(cob.uncompute_op, qp.Hadamard(0))
 
-        assert decomp_ops[3].name == "Hadamard"
-        assert decomp_ops[3].wires == Wires([0])
-
-        assert decomp_ops[4].name == "RX"
-
-        assert decomp_ops[4].wires == Wires([2])
-        assert decomp_ops[4].data[0] == -np.pi / 2
+        (cob,) = qp.PauliRot(theta, "Y", wires=0).decomposition()
+        qp.assert_equal(cob.compute_op, qp.PPR(4, "X", wires=0))
+        qp.assert_equal(cob.target_op, qp.MultiRZ(theta, wires=[0]))
+        qp.assert_equal(cob.uncompute_op, qp.PPR(-4, "X", wires=0))
 
     @pytest.mark.parametrize("angle", npp.linspace(0, 2 * np.pi, 7, requires_grad=True))
     @pytest.mark.parametrize("pauli_word", ["XX", "YY", "ZZ"])
@@ -3281,17 +2875,6 @@ class TestPauliRot:
         assert coeff == -0.5
         assert gen == expected
 
-    @pytest.mark.tf
-    def test_pauli_rot_eigvals_tf(self):
-        """Test that the eigvals of a pauli rot can be computed with tf."""
-
-        import tensorflow as tf
-
-        x = tf.Variable(0.5)
-        eigvals = qp.PauliRot.compute_eigvals(x, "X")
-        assert qp.math.allclose(eigvals[0], qp.math.exp(-0.5j * 0.5))
-        assert qp.math.allclose(eigvals[1], qp.math.exp(0.5j * 0.5))
-
     def test_pauli_rot_eigvals_identity(self):
         """Test that the eigvals of a pauli rot can be computed when the word is the identity."""
 
@@ -3357,47 +2940,52 @@ class TestMultiRZ:
         assert np.allclose(res_static, expected, atol=tol, rtol=0)
         assert np.allclose(res_dynamic, expected, atol=tol, rtol=0)
 
+    def test_MultiRZ_decomposition_one_wire(self):
+        """Test that a one-wire MultiRZ directly decomposes to RZ."""
+        theta = 0.4
+        (decomp_op,) = qp.MultiRZ(theta, wires=0).decomposition()
+
+        qp.assert_equal(decomp_op, qp.RZ(theta, wires=0))
+
     @pytest.mark.parametrize("theta", [0.4, np.array([np.pi / 3, 0.1, -0.9])])
     def test_MultiRZ_decomposition_ZZ(self, theta):
         """Test that the decomposition for a ZZ rotation is correct."""
 
         op = qp.MultiRZ(theta, wires=[0, 1])
-        decomp_ops = op.decomposition()
+        # MultiRZ decomposes into a single ChangeOpBasis conjugating an RZ with a CNOT ladder,
+        # which is what lets a control skip the ladder entirely.
+        (cob,) = op.decomposition()
 
-        assert decomp_ops[0].name == "CNOT"
-        assert decomp_ops[0].wires == Wires([1, 0])
+        assert cob.compute_op.name == "CNOT"
+        assert cob.compute_op.wires == Wires([1, 0])
 
-        assert decomp_ops[1].name == "RZ"
+        assert cob.target_op.name == "RZ"
+        assert cob.target_op.wires == Wires([0])
+        assert np.allclose(cob.target_op.data[0], theta)
 
-        assert decomp_ops[1].wires == Wires([0])
-        assert np.allclose(decomp_ops[1].data[0], theta)
-
-        assert decomp_ops[2].name == "CNOT"
-        assert decomp_ops[2].wires == Wires([1, 0])
+        qp.assert_equal(cob.uncompute_op, qp.CNOT(wires=[1, 0]))
 
     @pytest.mark.parametrize("theta", [0.4, np.array([np.pi / 3, 0.1, -0.9])])
     def test_MultiRZ_decomposition_ZZZ(self, theta):
         """Test that the decomposition for a ZZZ rotation is correct."""
 
         op = qp.MultiRZ(theta, wires=[0, 2, 3])
-        decomp_ops = op.decomposition()
+        # MultiRZ decomposes into a single ChangeOpBasis conjugating an RZ with a CNOT ladder,
+        # which is what lets a control skip the ladder entirely.
+        (cob,) = op.decomposition()
 
-        assert decomp_ops[0].name == "CNOT"
-        assert decomp_ops[0].wires == Wires([3, 2])
+        # the ladder is applied outermost-first, so its operands are in reverse circuit order
+        ladder = cob.compute_op.operands
+        assert [gate.name for gate in ladder] == ["CNOT", "CNOT"]
+        assert [gate.wires for gate in ladder] == [Wires([2, 0]), Wires([3, 2])]
 
-        assert decomp_ops[1].name == "CNOT"
-        assert decomp_ops[1].wires == Wires([2, 0])
+        assert cob.target_op.name == "RZ"
+        assert cob.target_op.wires == Wires([0])
+        assert np.allclose(cob.target_op.data[0], theta)
 
-        assert decomp_ops[2].name == "RZ"
-
-        assert decomp_ops[2].wires == Wires([0])
-        assert np.allclose(decomp_ops[2].data[0], theta)
-
-        assert decomp_ops[3].name == "CNOT"
-        assert decomp_ops[3].wires == Wires([2, 0])
-
-        assert decomp_ops[4].name == "CNOT"
-        assert decomp_ops[4].wires == Wires([3, 2])
+        unladder = cob.uncompute_op.operands
+        assert [gate.name for gate in unladder] == ["CNOT", "CNOT"]
+        assert [gate.wires for gate in unladder] == [Wires([3, 2]), Wires([2, 0])]
 
     @pytest.mark.usefixtures("enable_and_disable_capture")
     def test_MultiRZ_assert_valid(self):
@@ -3699,84 +3287,6 @@ class TestSimplify:
 
                 assert qp.math.allclose(unsimplified_res, simplified_res)
                 assert qp.math.allclose(unsimplified_grad, simplified_grad)
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("op", rotations)
-    def test_simplify_rotations_grad_tensorflow(self, op):
-        """Test the gradient of an op after simplication for the tensorflow interface"""
-        import tensorflow as tf
-
-        dev = qp.device("default.qubit", wires=2)
-
-        @qp.qnode(dev)
-        def circuit(simplify, wires, *params, **hyperparams):
-            if simplify:
-                qp.simplify(op(*params, wires=wires, **hyperparams))
-            else:
-                op(*params, wires=wires, **hyperparams)
-
-            return qp.expval(qp.PauliZ(0))
-
-        unsimplified_op = self.get_unsimplified_op(op)
-        params, wires = self._get_params_wires(unsimplified_op)
-        hyperparams = {"dim": 2} if unsimplified_op.name == "PCPhase" else {}
-
-        for i in range(params[0].shape[0]):
-            parameters = [tf.Variable(p[i]) for p in params]
-
-            with tf.GradientTape() as unsimplified_tape:
-                unsimplified_res = circuit(False, wires, *parameters, **hyperparams)
-
-            unsimplified_grad = unsimplified_tape.gradient(unsimplified_res, parameters)
-
-            with tf.GradientTape() as simplified_tape:
-                simplified_res = circuit(False, wires, *parameters, **hyperparams)
-
-            simplified_grad = simplified_tape.gradient(simplified_res, parameters)
-
-            assert qp.math.allclose(unsimplified_res, simplified_res)
-            assert qp.math.allclose(unsimplified_grad, simplified_grad)
-
-    @pytest.mark.tf
-    def test_simplify_rotations_grad_tf_function(self):
-        """Test the gradient of an op after simplication for the tensorflow interface with
-        tf.function"""
-        import tensorflow as tf
-
-        op = qp.U2
-        wires = list(range(op.num_wires))
-
-        dev = qp.device("default.qubit", wires=2)
-
-        @tf.function
-        @qp.qnode(dev)
-        def circuit(simplify, *params, **hyperparams):
-            if simplify:
-                qp.simplify(op(*params, wires=wires, **hyperparams))
-            else:
-                op(*params, wires=wires, **hyperparams)
-
-            return qp.expval(qp.PauliZ(0))
-
-        unsimplified_op = self.get_unsimplified_op(op)
-        params, _ = self._get_params_wires(unsimplified_op)
-        hyperparams = {"dim": 2} if unsimplified_op.name == "PCPhase" else {}
-
-        for i in range(params[0].shape[0]):
-            parameters = [tf.Variable(p[i]) for p in params]
-
-            with tf.GradientTape() as unsimplified_tape:
-                unsimplified_res = circuit(False, *parameters, **hyperparams)
-
-            unsimplified_grad = unsimplified_tape.gradient(unsimplified_res, parameters)
-
-            with tf.GradientTape() as simplified_tape:
-                simplified_res = circuit(True, *parameters, **hyperparams)
-
-            simplified_grad = simplified_tape.gradient(simplified_res, parameters)
-
-            assert qp.math.allclose(unsimplified_res, simplified_res)
-            assert qp.math.allclose(unsimplified_grad, simplified_grad)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("op", rotations)
@@ -4241,20 +3751,6 @@ class TestLabel:
         assert op.label() == label1
         assert op.label(decimals=2) == label2
         assert op.label(decimals=0) == label3
-
-    @pytest.mark.tf
-    def test_label_tf(self):
-        """Test label methods work with tensorflow variables"""
-        import tensorflow as tf
-
-        op1 = qp.RX(tf.Variable(0.123456), wires=0)
-        assert op1.label(decimals=2) == "RX\n(0.12)"
-
-        op2 = qp.CRX(tf.Variable(0.12345), wires=(0, 1))
-        assert op2.label(decimals=2) == "RX\n(0.12)"
-
-        op3 = qp.Rot(tf.Variable(0.1), tf.Variable(0.2), tf.Variable(0.3), wires=0)
-        assert op3.label(decimals=2) == "Rot\n(0.10,\n0.20,\n0.30)"
 
     @pytest.mark.torch
     def test_label_torch(self):

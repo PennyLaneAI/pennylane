@@ -304,26 +304,6 @@ class TestInterfaces:
             dec = int("".join(map(str, base)), 2)
             assert jnp.isclose(output[dec], probs[i])
 
-    @pytest.mark.tf
-    def test_tensorflow(self, probs, bases):
-        """Test that Superposition can be correctly used with the TensorFlow interface."""
-        import tensorflow as tf
-
-        probs = tf.Variable(probs)
-        dev = qp.device("default.qubit")
-
-        @qp.qnode(dev)
-        def circuit():
-            qp.Superposition(
-                tf.sqrt(probs), bases=bases, wires=range(len(bases[0])), work_wire=len(bases[0])
-            )
-            return qp.probs(range(len(bases[0])))
-
-        output = circuit()
-        for i, base in enumerate(bases):
-            dec = int("".join(map(str, base)), 2)
-            assert np.isclose(output[dec], probs[i])
-
     @pytest.mark.torch
     def test_torch(self, probs, bases):
         """Test that Superposition can be correctly used with the Torch interface."""
